@@ -14,7 +14,6 @@ import { CloseOutlined } from "@ant-design/icons";
 import ServiceEndpoint from "./ServiceEndpoint";
 import ProjectDetail from "./ProjectDetail";
 import CreateProjectModal from "./CreateProjectModal";
-import pb from "../api/compiled";
 import { copy } from "../utils/copy";
 import styled from "@emotion/styled";
 import { useAuth } from "../contexts/auth";

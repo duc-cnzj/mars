@@ -4,11 +4,11 @@ import (
 	"strings"
 
 	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
 )
 
-func FromChangeLog(c *ent.Changelog) *types.ChangelogModel {
+func FromChangeLog(c *repo.Changelog) *types.ChangelogModel {
 	if c == nil {
 		return nil
 	}
@@ -21,8 +21,8 @@ func FromChangeLog(c *ent.Changelog) *types.ChangelogModel {
 		ConfigChanged:    c.ConfigChanged,
 		ProjectId:        int64(c.ProjectID),
 		GitProjectId:     int64(c.GitProjectID),
-		Project:          FromProject(c.Edges.Project),
-		GitProject:       FromGitProject(c.Edges.GitProject),
+		Project:          FromProject(c.Project),
+		GitProject:       FromGitProject(c.GitProject),
 		Date:             date.ToHumanizeDatetimeString(&c.CreatedAt),
 		ConfigType:       c.ConfigType,
 		GitBranch:        c.GitBranch,

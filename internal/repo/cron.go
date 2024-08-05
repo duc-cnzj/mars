@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/cron"
 	"github.com/duc-cnzj/mars/v4/internal/data"
@@ -13,7 +15,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
 	"github.com/dustin/go-humanize"
 	"gopkg.in/yaml.v3"
@@ -154,7 +155,8 @@ func (repo *cronRepo) CleanUploadFiles() error {
 	)
 
 	files := db.File.Query().Where(file.CreatedAtGTE(startOfDay), file.CreatedAtLTE(endOfDay)).AllX(context.TODO())
-	for _, f := range files {
+
+	for _, f := range serialize.Serialize(files, ToFile) {
 		var deleted bool
 		switch f.UploadType {
 		case upldr.Type():
@@ -163,7 +165,7 @@ func (repo *cronRepo) CleanUploadFiles() error {
 			deleted = cleanFunc(localUploader, db, f.ID, f.Path)
 		}
 		if deleted {
-			clearList = append(clearList, transformer.FromFile(f))
+			clearList = append(clearList, f)
 		}
 		filesMap[f.Path] = struct{}{}
 	}
@@ -176,7 +178,7 @@ func (repo *cronRepo) CleanUploadFiles() error {
 			if file.LastModified().Before(endOfDay) && file.LastModified().After(startOfDay) {
 				_, ok := filesMap[file.Path()]
 				if !ok {
-					clearList = append(clearList, &types.FileModel{Path: file.Path(), HumanizeSize: humanize.Bytes(file.Size())})
+					clearList = append(clearList, &File{Path: file.Path(), HumanizeSize: humanize.Bytes(file.Size())})
 					if err := up.Delete(file.Path()); err != nil {
 						repo.logger.Error(err)
 					}
@@ -204,7 +206,7 @@ func (repo *cronRepo) CleanUploadFiles() error {
 	return nil
 }
 
-type listFiles []*types.FileModel
+type listFiles []*File
 
 type item struct {
 	Name string `yaml:"name"`

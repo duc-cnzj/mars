@@ -60,8 +60,9 @@ const CreateProjectModal: React.FC<{
   const [visible, setVisible] = useAsyncState<boolean>(false);
   const info = useSelector(selectClusterInfo);
 
-  const [elements, setElements] =
-    useState<components["schemas"]["mars.Element"][]>();
+  const [elements, setElements] = useState<
+    components["schemas"]["mars.Element"][]
+  >([]);
 
   const timer = useSelector(selectTimer);
   const start = useMemo(() => timer[slug]?.start || false, [timer, slug]);

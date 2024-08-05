@@ -58,10 +58,10 @@ func IfInt64EQ(field string) func(int64) func(*sql.Selector) {
 	})
 }
 
-func IfIntEQ(field string) func(int) func(*sql.Selector) {
-	return If[int](func(s int) bool {
+func IfIntEQ[T ~int | ~int32](field string) func(T) func(*sql.Selector) {
+	return If[T](func(s T) bool {
 		return s != 0
-	}, func(s int) func(*sql.Selector) {
+	}, func(s T) func(*sql.Selector) {
 		return sql.FieldEQ(field, s)
 	})
 }

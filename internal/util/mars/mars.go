@@ -171,6 +171,12 @@ func IsRemoteConfigFile(mars *mars.Config) bool {
 	return len(split) == 3 && intPid(split[0])
 }
 
+func IsRemoteLocalChartPath(input string) bool {
+	split := strings.Split(input, "|")
+
+	return len(split) == 3 && intPid(split[0])
+}
+
 func IsRemoteChart(mars *mars.Config) bool {
 	split := strings.Split(mars.LocalChartPath, "|")
 	// 如果是这个格式意味着是远程项目, 'uid|branch|path'

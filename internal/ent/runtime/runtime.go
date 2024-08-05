@@ -466,6 +466,10 @@ func init() {
 	repoDescEnabled := repoFields[4].Descriptor()
 	// repo.DefaultEnabled holds the default value on creation for the enabled field.
 	repo.DefaultEnabled = repoDescEnabled.Default.(bool)
+	// repoDescNeedGitRepo is the schema descriptor for need_git_repo field.
+	repoDescNeedGitRepo := repoFields[5].Descriptor()
+	// repo.DefaultNeedGitRepo holds the default value on creation for the need_git_repo field.
+	repo.DefaultNeedGitRepo = repoDescNeedGitRepo.Default.(bool)
 }
 
 const (

@@ -29,6 +29,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/token.ListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
         post:
             tags:
                 - AccessToken
@@ -46,6 +52,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/token.GrantResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/access_tokens/{token}:
         put:
             tags:
@@ -70,6 +82,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/token.LeaseResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
         delete:
             tags:
                 - AccessToken
@@ -87,6 +105,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/token.RevokeResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/auth/exchange:
         post:
             tags:
@@ -105,6 +129,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/auth.ExchangeResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/auth/info:
         get:
             tags:
@@ -117,6 +147,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/auth.InfoResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/auth/login:
         post:
             tags:
@@ -135,6 +171,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/auth.LoginResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/auth/settings:
         get:
             tags:
@@ -147,6 +189,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/auth.SettingsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/cluster_info:
         get:
             tags:
@@ -159,6 +207,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.InfoResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/containers/copy_to_pod:
         post:
             tags:
@@ -177,6 +231,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/container.CopyToPodResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs:
         get:
             tags:
@@ -210,6 +270,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/container.LogResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs:
         get:
             tags:
@@ -242,6 +308,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/container.LogResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/containers/pod_exists:
         post:
             tags:
@@ -260,6 +332,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/container.IsPodExistsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/containers/pod_running_status:
         post:
             tags:
@@ -278,6 +356,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/container.IsPodRunningResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/endpoints/namespaces/{namespaceId}:
         get:
             tags:
@@ -297,6 +381,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/endpoint.InNamespaceResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/endpoints/projects/{projectId}:
         get:
             tags:
@@ -316,6 +406,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/endpoint.InProjectResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/events:
         get:
             tags:
@@ -349,6 +445,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/event.ListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/events/{id}:
         get:
             tags:
@@ -368,6 +470,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/event.ShowResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/files:
         get:
             tags:
@@ -395,6 +503,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/file.ListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/files/disk_info:
         get:
             tags:
@@ -407,6 +521,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/file.DiskInfoResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/files/max_upload_size:
         get:
             tags:
@@ -419,6 +539,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/file.MaxUploadSizeResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/files/{id}:
         delete:
             tags:
@@ -438,6 +564,36 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/file.DeleteResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/git/get_chart_values_yaml:
+        post:
+            tags:
+                - Git
+            operationId: Git_GetChartValuesYaml
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/git.GetChartValuesYamlRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.GetChartValuesYamlResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/project_options:
         get:
             tags:
@@ -450,6 +606,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/git.ProjectOptionsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/projects:
         get:
             tags:
@@ -462,6 +624,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/git.AllResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/projects/disable:
         post:
             tags:
@@ -480,6 +648,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/git.DisableProjectResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/projects/enable:
         post:
             tags:
@@ -498,6 +672,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/git.EnableProjectResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/projects/{gitProjectId}/branch_options:
         get:
             tags:
@@ -520,6 +700,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/git.BranchOptionsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/projects/{gitProjectId}/branches/{branch}/commit_options:
         get:
             tags:
@@ -543,6 +729,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/git.CommitOptionsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/projects/{gitProjectId}/branches/{branch}/commits/{commit}:
         get:
             tags:
@@ -571,6 +763,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/git.CommitResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/projects/{gitProjectId}/branches/{branch}/commits/{commit}/pipeline_info:
         get:
             tags:
@@ -599,6 +797,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/git.PipelineInfoResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/projects/{gitProjectId}/branches/{branch}/config_file:
         get:
             tags:
@@ -622,6 +826,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/git.MarsConfigFileResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/projects/{gitProjectId}/default_values:
         get:
             tags:
@@ -644,6 +854,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/gitconfig.DefaultChartValuesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/projects/{gitProjectId}/global_config:
         get:
             tags:
@@ -662,6 +878,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/gitconfig.GlobalConfigResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/projects/{gitProjectId}/mars_config:
         get:
             tags:
@@ -684,6 +906,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/gitconfig.ShowResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
         put:
             tags:
                 - GitConfig
@@ -707,6 +935,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/gitconfig.UpdateResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/projects/{gitProjectId}/toggle_status:
         post:
             tags:
@@ -731,6 +965,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/gitconfig.ToggleGlobalStatusResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/metrics/namespace/{namespaceId}/cpu_memory:
         get:
             tags:
@@ -750,6 +990,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/metrics.CpuMemoryInNamespaceResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/metrics/namespace/{namespace}/pods/{pod}:
         get:
             tags:
@@ -773,6 +1019,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/metrics.TopPodResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/metrics/namespace/{namespace}/pods/{pod}/stream:
         get:
             tags:
@@ -796,6 +1048,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/metrics.TopPodResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/metrics/projects/{projectId}/cpu_memory:
         get:
             tags:
@@ -815,6 +1073,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/metrics.CpuMemoryInProjectResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/namespaces:
         get:
             tags:
@@ -828,6 +1092,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/namespace.AllResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
         post:
             tags:
                 - Namespace
@@ -846,6 +1116,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/namespace.CreateResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/namespaces/exists:
         post:
             tags:
@@ -864,6 +1140,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/namespace.IsExistsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/namespaces/{namespaceId}:
         get:
             tags:
@@ -883,6 +1165,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/namespace.ShowResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
         delete:
             tags:
                 - Namespace
@@ -902,6 +1190,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/namespace.DeleteResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/picture/background:
         get:
             tags:
@@ -920,6 +1214,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/picture.BackgroundResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/projects:
         get:
             tags:
@@ -944,6 +1244,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.ListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/projects/host_variables:
         post:
             tags:
@@ -963,6 +1269,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.HostVariablesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/projects/{projectId}:
         get:
             tags:
@@ -983,6 +1295,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.ShowResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
         delete:
             tags:
                 - Project
@@ -1002,6 +1320,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.DeleteResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/projects/{projectId}/changelogs:
         get:
             tags:
@@ -1025,6 +1349,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/changelog.ShowResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/projects/{projectId}/containers:
         get:
             tags:
@@ -1045,6 +1375,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.AllContainersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/projects/{projectId}/version:
         get:
             tags:
@@ -1065,6 +1401,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.VersionResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/record_files/{id}:
         get:
             tags:
@@ -1084,6 +1426,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/file.ShowRecordsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/repos:
         get:
             tags:
@@ -1111,71 +1459,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/repo.ListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
         post:
             tags:
                 - Repo
             operationId: Repo_Create
-            parameters:
-                - name: name
-                  in: query
-                  schema:
-                    type: string
-                - name: gitProjectId
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: enabled
-                  in: query
-                  schema:
-                    type: boolean
-                - name: marsConfig.configFile
-                  in: query
-                  description: config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename"
-                  schema:
-                    type: string
-                - name: marsConfig.configFileValues
-                  in: query
-                  description: config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个
-                  schema:
-                    type: string
-                - name: marsConfig.configField
-                  in: query
-                  schema:
-                    type: string
-                - name: marsConfig.isSimpleEnv
-                  in: query
-                  schema:
-                    type: boolean
-                - name: marsConfig.configFileType
-                  in: query
-                  description: config_file_type 配置文件类型，php/env/yaml...
-                  schema:
-                    type: string
-                - name: marsConfig.localChartPath
-                  in: query
-                  description: local_chart_path helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 "pid|branch|path"
-                  schema:
-                    type: string
-                - name: marsConfig.branches
-                  in: query
-                  description: branches 启用的分支
-                  schema:
-                    type: array
-                    items:
-                        type: string
-                - name: marsConfig.valuesYaml
-                  in: query
-                  description: values_yaml 和 values.yaml 一样
-                  schema:
-                    type: string
-                - name: marsConfig.displayName
-                  in: query
-                  description: |-
-                    显示的名称 (helm app name), 不填就使用 git server project name
-                     以字母开头结尾，中间可以有 '_' '-'
-                  schema:
-                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/repo.CreateRequest'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -1183,6 +1482,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/repo.CreateResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/repos/toggle_enabled:
         post:
             tags:
@@ -1201,6 +1506,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/repo.ToggleEnabledResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/repos/{id}:
         get:
             tags:
@@ -1220,6 +1531,42 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/repo.ShowResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+        put:
+            tags:
+                - Repo
+            operationId: Repo_Update
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/repo.UpdateRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.UpdateResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/version:
         get:
             tags:
@@ -1233,6 +1580,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/version.Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
 components:
     schemas:
         auth.ExchangeRequest:
@@ -1545,6 +1898,19 @@ components:
         git.EnableProjectResponse:
             type: object
             properties: {}
+        git.GetChartValuesYamlRequest:
+            required:
+                - input
+            type: object
+            properties:
+                input:
+                    type: string
+                    description: '"pid|branch|path" or "path"'
+        git.GetChartValuesYamlResponse:
+            type: object
+            properties:
+                values:
+                    type: string
         git.MarsConfigFileResponse:
             type: object
             properties:
@@ -1573,6 +1939,8 @@ components:
                     type: string
                 displayName:
                     type: string
+                needGitRepo:
+                    type: boolean
         git.PipelineInfoResponse:
             type: object
             properties:
@@ -1650,6 +2018,30 @@ components:
             properties:
                 config:
                     $ref: '#/components/schemas/mars.Config'
+        google.protobuf.Any:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        google.rpc.Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/google.protobuf.Any'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
         mars.Config:
             type: object
             properties:
@@ -1853,6 +2245,20 @@ components:
                 version:
                     type: integer
                     format: int32
+        repo.CreateRequest:
+            required:
+                - name
+            type: object
+            properties:
+                name:
+                    type: string
+                gitProjectId:
+                    type: integer
+                    format: int32
+                marsConfig:
+                    $ref: '#/components/schemas/mars.Config'
+                needGitRepo:
+                    type: boolean
         repo.CreateResponse:
             type: object
             properties:
@@ -1891,6 +2297,29 @@ components:
                 enabled:
                     type: boolean
         repo.ToggleEnabledResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.RepoModel'
+        repo.UpdateRequest:
+            required:
+                - id
+                - name
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                gitProjectId:
+                    type: integer
+                    format: int32
+                marsConfig:
+                    $ref: '#/components/schemas/mars.Config'
+                needGitRepo:
+                    type: boolean
+        repo.UpdateResponse:
             type: object
             properties:
                 item:
@@ -2240,6 +2669,12 @@ components:
                     type: boolean
                 marsConfig:
                     $ref: '#/components/schemas/mars.Config'
+                needGitRepo:
+                    type: boolean
+                branches:
+                    type: array
+                    items:
+                        type: string
                 createdAt:
                     type: string
                 updatedAt:

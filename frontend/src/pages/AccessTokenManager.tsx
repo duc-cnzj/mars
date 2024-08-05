@@ -15,13 +15,13 @@ import {
   message,
   Input,
 } from "antd";
-import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { List as tokenList, Grant, Revoke, Lease } from "../api/access_token";
 import { useForm } from "antd/es/form/Form";
 import { copy } from "../utils/copy";
 import styled from "@emotion/styled";
 import theme from "../styles/theme";
+import ajax from "../api/ajax";
+import { components } from "../api/schema";
 
 const defaultPageSize = 15;
 
@@ -36,28 +36,36 @@ const AccessTokenManager: React.FC = () => {
     page_size: number;
     count: number;
   }>({ page: 0, page_size: defaultPageSize, count: 0 });
-  const [data, setData] = useState<pb.types.AccessTokenModel[]>([]);
+  const [data, setData] = useState<
+    components["schemas"]["types.AccessTokenModel"][]
+  >([]);
 
   const loadMoreData = () => {
     if (loading) {
       return;
     }
     setLoading(true);
-    tokenList({
-      page: paginate.page + 1,
-      page_size: paginate.page_size,
-    })
+    ajax
+      .GET("/api/access_tokens", {
+        params: {
+          query: {
+            page: paginate.page + 1,
+            pageSize: paginate.page_size,
+          },
+        },
+      })
       .then(({ data: res }) => {
-        setData((data) => [...data, ...res.items]);
-        setPaginate({
-          page: Number(res.page),
-          page_size: Number(res.page_size),
-          count: Number(res.count),
-        });
+        res && setData((data) => [...data, ...res.items]);
+        res &&
+          setPaginate({
+            page: res.page,
+            page_size: res.pageSize,
+            count: res.count,
+          });
         setLoading(false);
       })
       .catch((e) => {
-        message.error(e.response.data.message);
+        message.error(e.repo);
         setLoading(false);
       });
   };
@@ -67,20 +75,23 @@ const AccessTokenManager: React.FC = () => {
     if (scrollDiv.current) {
       scrollDiv.current.scrollTo(0, 0);
     }
-    tokenList({
-      page: 1,
-      page_size: defaultPageSize,
-    })
-      .then(({ data: res }) => {
-        setData(res.items);
-        setPaginate({
-          page: Number(res.page),
-          page_size: Number(res.page_size),
-          count: Number(res.count),
-        });
+    ajax
+      .GET("/api/access_tokens", {
+        params: { query: { page: 1, pageSize: defaultPageSize } },
+      })
+
+      .then(({ data }) => {
+        data && setData(data.items);
+        data &&
+          setPaginate({
+            page: data.page,
+            page_size: data.pageSize,
+            count: data.count,
+          });
       })
       .catch((e) => {
-        message.error(e.response.data.message);
+        console.log(e);
+        // message.error(e.reponse);
       });
   }, []);
 
@@ -116,10 +127,13 @@ const AccessTokenManager: React.FC = () => {
   };
 
   const onFinish = (values: any) => {
-    Grant({
-      usage: values.usage,
-      expire_seconds: getSeconds(values.unit_number),
-    })
+    ajax
+      .POST("/api/access_tokens", {
+        body: {
+          usage: values.usage,
+          expireSeconds: getSeconds(values.unit_number),
+        },
+      })
       .then((res) => {
         message.success("创建成功");
         setIsModalVisible(false);
@@ -128,14 +142,19 @@ const AccessTokenManager: React.FC = () => {
         fetch();
       })
       .catch((e) => {
-        message.error(e.response.data.message);
+        console.log(e);
+        // message.error(e.response.data.message);
       });
   };
   const onLease = (values: any) => {
-    Lease({
-      token: currToken,
-      expire_seconds: getSeconds(values.unit_number),
-    })
+    ajax
+      .PUT("/api/access_tokens/{token}", {
+        body: {
+          expireSeconds: getSeconds(values.unit_number),
+          token: currToken,
+        },
+        params: { path: { token: currToken } },
+      })
       .then((res) => {
         message.success("续租成功");
         setIsModalVisible(false);
@@ -180,25 +199,27 @@ const AccessTokenManager: React.FC = () => {
   };
 
   const [currToken, setCurrToken] = useState("");
-  const getTags = (item: pb.types.AccessTokenModel): React.ReactNode => {
+  const getTags = (
+    item: components["schemas"]["types.AccessTokenModel"]
+  ): React.ReactNode => {
     return (
       <>
-        {!item.is_deleted && (
+        {!item.isDeleted && (
           <>
-            {dayjs(item.expired_at).isBefore(dayjs(new Date()).add(1, "day")) &&
-              dayjs(item.expired_at).isAfter(dayjs(new Date())) && (
+            {dayjs(item.expiredAt).isBefore(dayjs(new Date()).add(1, "day")) &&
+              dayjs(item.expiredAt).isAfter(dayjs(new Date())) && (
                 <Tag style={{ marginLeft: 5 }} color="#facc15">
                   即将过期
                 </Tag>
               )}
-            {item.is_expired && (
+            {item.isExpired && (
               <Tag style={{ marginLeft: 5 }} color="#a1a1aa">
                 已过期
               </Tag>
             )}
           </>
         )}
-        {item.is_deleted && (
+        {item.isDeleted && (
           <Tag style={{ marginLeft: 5 }} color="red">
             已撤销
           </Tag>
@@ -255,7 +276,9 @@ const AccessTokenManager: React.FC = () => {
         >
           <List
             dataSource={data}
-            renderItem={(item: pb.types.AccessTokenModel) => (
+            renderItem={(
+              item: components["schemas"]["types.AccessTokenModel"]
+            ) => (
               <AccessTokenListItem key={item.token}>
                 <List.Item.Meta
                   title={
@@ -265,9 +288,7 @@ const AccessTokenManager: React.FC = () => {
                     </div>
                   }
                   description={
-                    <ItemWrapper
-                      lineThrough={item.is_deleted || item.is_expired}
-                    >
+                    <ItemWrapper lineThrough={item.isDeleted || item.isExpired}>
                       <TokenSpan
                         onClick={() => copy(item.token, "已复制 token！")}
                         style={{ userSelect: "all" }}
@@ -276,17 +297,17 @@ const AccessTokenManager: React.FC = () => {
                       </TokenSpan>
                       过期时间是{" "}
                       <TokenExpireDateSpan>
-                        {dayjs(item.expired_at).format("YYYY-MM-DD HH:mm:ss")}
+                        {dayjs(item.expiredAt).format("YYYY-MM-DD HH:mm:ss")}
                       </TokenExpireDateSpan>
                       &nbsp;
-                      {!!item.last_used_at
-                        ? item.last_used_at + "使用过"
+                      {!!item.lastUsedAt
+                        ? item.lastUsedAt + "使用过"
                         : "从未使用过"}
                     </ItemWrapper>
                   }
                 />
 
-                {!item.is_deleted && !item.is_expired && (
+                {!item.isDeleted && !item.isExpired && (
                   <>
                     <Button
                       size="small"
@@ -304,11 +325,19 @@ const AccessTokenManager: React.FC = () => {
                       okText="Yes"
                       cancelText="No"
                       onConfirm={() => {
-                        Revoke({ token: item.token }).then((res) => {
-                          message.success("撤销成功");
-                          setData([]);
-                          fetch();
-                        });
+                        ajax
+                          .DELETE("/api/access_tokens/{token}", {
+                            params: {
+                              path: {
+                                token: item.token,
+                              },
+                            },
+                          })
+                          .then((res) => {
+                            message.success("撤销成功");
+                            setData([]);
+                            fetch();
+                          });
                       }}
                     >
                       <Button size="small" type="dashed" danger>

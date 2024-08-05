@@ -30,6 +30,8 @@ const (
 	FieldGitProjectID = "git_project_id"
 	// FieldEnabled holds the string denoting the enabled field in the database.
 	FieldEnabled = "enabled"
+	// FieldNeedGitRepo holds the string denoting the need_git_repo field in the database.
+	FieldNeedGitRepo = "need_git_repo"
 	// FieldMarsConfig holds the string denoting the mars_config field in the database.
 	FieldMarsConfig = "mars_config"
 	// Table holds the table name of the repo in the database.
@@ -47,6 +49,7 @@ var Columns = []string{
 	FieldGitProjectName,
 	FieldGitProjectID,
 	FieldEnabled,
+	FieldNeedGitRepo,
 	FieldMarsConfig,
 }
 
@@ -80,6 +83,8 @@ var (
 	DefaultBranchValidator func(string) error
 	// DefaultEnabled holds the default value on creation for the "enabled" field.
 	DefaultEnabled bool
+	// DefaultNeedGitRepo holds the default value on creation for the "need_git_repo" field.
+	DefaultNeedGitRepo bool
 )
 
 // OrderOption defines the ordering options for the Repo queries.
@@ -128,4 +133,9 @@ func ByGitProjectID(opts ...sql.OrderTermOption) OrderOption {
 // ByEnabled orders the results by the enabled field.
 func ByEnabled(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEnabled, opts...).ToFunc()
+}
+
+// ByNeedGitRepo orders the results by the need_git_repo field.
+func ByNeedGitRepo(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNeedGitRepo, opts...).ToFunc()
 }

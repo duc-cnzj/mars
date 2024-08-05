@@ -13,7 +13,7 @@ option go_package = "github.com/duc-cnzj/mars/api/v4/event;event";
 message ListRequest {
   optional int32                 page        = 1;
   optional int32                 page_size   = 2;
-  optional types.EventActionType action_type = 3;
+  types.EventActionType action_type = 3;
   // 模糊搜索 message 和 username
   string                         search      = 4;
 }

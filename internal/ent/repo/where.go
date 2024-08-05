@@ -94,6 +94,11 @@ func Enabled(v bool) predicate.Repo {
 	return predicate.Repo(sql.FieldEQ(FieldEnabled, v))
 }
 
+// NeedGitRepo applies equality check predicate on the "need_git_repo" field. It's identical to NeedGitRepoEQ.
+func NeedGitRepo(v bool) predicate.Repo {
+	return predicate.Repo(sql.FieldEQ(FieldNeedGitRepo, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Repo {
 	return predicate.Repo(sql.FieldEQ(FieldCreatedAt, v))
@@ -497,6 +502,16 @@ func EnabledEQ(v bool) predicate.Repo {
 // EnabledNEQ applies the NEQ predicate on the "enabled" field.
 func EnabledNEQ(v bool) predicate.Repo {
 	return predicate.Repo(sql.FieldNEQ(FieldEnabled, v))
+}
+
+// NeedGitRepoEQ applies the EQ predicate on the "need_git_repo" field.
+func NeedGitRepoEQ(v bool) predicate.Repo {
+	return predicate.Repo(sql.FieldEQ(FieldNeedGitRepo, v))
+}
+
+// NeedGitRepoNEQ applies the NEQ predicate on the "need_git_repo" field.
+func NeedGitRepoNEQ(v bool) predicate.Repo {
+	return predicate.Repo(sql.FieldNEQ(FieldNeedGitRepo, v))
 }
 
 // MarsConfigIsNil applies the IsNil predicate on the "mars_config" field.

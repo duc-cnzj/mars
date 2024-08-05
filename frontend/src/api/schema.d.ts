@@ -325,6 +325,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/git/get_chart_values_yaml": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["Git_GetChartValuesYaml"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/git/project_options": {
     parameters: {
       query?: never;
@@ -825,7 +841,7 @@ export interface paths {
       cookie?: never;
     };
     get: operations["Repo_Show"];
-    put?: never;
+    put: operations["Repo_Update"];
     post?: never;
     delete?: never;
     options?: never;
@@ -1007,6 +1023,13 @@ export interface components {
       gitProjectId: string;
     };
     "git.EnableProjectResponse": Record<string, never>;
+    "git.GetChartValuesYamlRequest": {
+      /** @description "pid|branch|path" or "path" */
+      input: string;
+    };
+    "git.GetChartValuesYamlResponse": {
+      values: string;
+    };
     "git.MarsConfigFileResponse": {
       data: string;
       type: string;
@@ -1020,6 +1043,7 @@ export interface components {
       gitProjectId: string;
       branch: string;
       displayName: string;
+      needGitRepo: boolean;
     };
     "git.PipelineInfoResponse": {
       status: string;
@@ -1062,6 +1086,24 @@ export interface components {
     };
     "gitconfig.UpdateResponse": {
       config: components["schemas"]["mars.Config"];
+    };
+    /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
+    "google.protobuf.Any": {
+      /** @description The type of the serialized message. */
+      "@type": string;
+      [key: string]: unknown;
+    };
+    /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
+    "google.rpc.Status": {
+      /**
+       * Format: int32
+       * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+       */
+      code: number;
+      /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
+      message: string;
+      /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
+      details: components["schemas"]["google.protobuf.Any"][];
     };
     "mars.Config": {
       /** @description config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename" */
@@ -1174,6 +1216,13 @@ export interface components {
       /** Format: int32 */
       version: number;
     };
+    "repo.CreateRequest": {
+      name: string;
+      /** Format: int32 */
+      gitProjectId?: number;
+      marsConfig?: components["schemas"]["mars.Config"];
+      needGitRepo?: boolean;
+    };
     "repo.CreateResponse": {
       item: components["schemas"]["types.RepoModel"];
     };
@@ -1195,6 +1244,18 @@ export interface components {
       enabled: boolean;
     };
     "repo.ToggleEnabledResponse": {
+      item: components["schemas"]["types.RepoModel"];
+    };
+    "repo.UpdateRequest": {
+      /** Format: int32 */
+      id: number;
+      name: string;
+      /** Format: int32 */
+      gitProjectId?: number;
+      marsConfig?: components["schemas"]["mars.Config"];
+      needGitRepo?: boolean;
+    };
+    "repo.UpdateResponse": {
       item: components["schemas"]["types.RepoModel"];
     };
     "token.GrantRequest": {
@@ -1377,6 +1438,8 @@ export interface components {
       gitProjectName: string;
       enabled: boolean;
       marsConfig: components["schemas"]["mars.Config"];
+      needGitRepo: boolean;
+      branches: string[];
       createdAt: string;
       updatedAt: string;
       deletedAt: string;
@@ -1439,6 +1502,15 @@ export interface operations {
           "application/json": components["schemas"]["token.ListResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   AccessToken_Grant: {
@@ -1461,6 +1533,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["token.GrantResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -1489,6 +1570,15 @@ export interface operations {
           "application/json": components["schemas"]["token.LeaseResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   AccessToken_Revoke: {
@@ -1509,6 +1599,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["token.RevokeResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -1535,6 +1634,15 @@ export interface operations {
           "application/json": components["schemas"]["auth.ExchangeResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Auth_Info: {
@@ -1553,6 +1661,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["auth.InfoResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -1579,6 +1696,15 @@ export interface operations {
           "application/json": components["schemas"]["auth.LoginResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Auth_Settings: {
@@ -1599,6 +1725,15 @@ export interface operations {
           "application/json": components["schemas"]["auth.SettingsResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Cluster_ClusterInfo: {
@@ -1617,6 +1752,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["cluster.InfoResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -1641,6 +1785,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["container.CopyToPodResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -1669,6 +1822,15 @@ export interface operations {
           "application/json": components["schemas"]["container.LogResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Container_StreamContainerLog: {
@@ -1695,6 +1857,15 @@ export interface operations {
           "application/json": components["schemas"]["container.LogResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Container_IsPodExists: {
@@ -1717,6 +1888,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["container.IsPodExistsResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -1743,6 +1923,15 @@ export interface operations {
           "application/json": components["schemas"]["container.IsPodRunningResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Endpoint_InNamespace: {
@@ -1765,6 +1954,15 @@ export interface operations {
           "application/json": components["schemas"]["endpoint.InNamespaceResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Endpoint_InProject: {
@@ -1785,6 +1983,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["endpoint.InProjectResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -1813,6 +2020,15 @@ export interface operations {
           "application/json": components["schemas"]["event.ListResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Event_Show: {
@@ -1833,6 +2049,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["event.ShowResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -1859,6 +2084,15 @@ export interface operations {
           "application/json": components["schemas"]["file.ListResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   File_DiskInfo: {
@@ -1879,6 +2113,15 @@ export interface operations {
           "application/json": components["schemas"]["file.DiskInfoResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   File_MaxUploadSize: {
@@ -1897,6 +2140,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["file.MaxUploadSizeResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -1921,6 +2173,48 @@ export interface operations {
           "application/json": components["schemas"]["file.DeleteResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
+    };
+  };
+  Git_GetChartValuesYaml: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["git.GetChartValuesYamlRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["git.GetChartValuesYamlResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Git_ProjectOptions: {
@@ -1941,6 +2235,15 @@ export interface operations {
           "application/json": components["schemas"]["git.ProjectOptionsResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Git_All: {
@@ -1959,6 +2262,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["git.AllResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -1985,6 +2297,15 @@ export interface operations {
           "application/json": components["schemas"]["git.DisableProjectResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Git_EnableProject: {
@@ -2007,6 +2328,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["git.EnableProjectResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2033,6 +2363,15 @@ export interface operations {
           "application/json": components["schemas"]["git.BranchOptionsResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Git_CommitOptions: {
@@ -2054,6 +2393,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["git.CommitOptionsResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2080,6 +2428,15 @@ export interface operations {
           "application/json": components["schemas"]["git.CommitResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Git_PipelineInfo: {
@@ -2104,6 +2461,15 @@ export interface operations {
           "application/json": components["schemas"]["git.PipelineInfoResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Git_MarsConfigFile: {
@@ -2125,6 +2491,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["git.MarsConfigFileResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2151,6 +2526,15 @@ export interface operations {
           "application/json": components["schemas"]["gitconfig.DefaultChartValuesResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   GitConfig_GlobalConfig: {
@@ -2171,6 +2555,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["gitconfig.GlobalConfigResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2195,6 +2588,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["gitconfig.ShowResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2223,6 +2625,15 @@ export interface operations {
           "application/json": components["schemas"]["gitconfig.UpdateResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   GitConfig_ToggleGlobalStatus: {
@@ -2249,6 +2660,15 @@ export interface operations {
           "application/json": components["schemas"]["gitconfig.ToggleGlobalStatusResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Metrics_CpuMemoryInNamespace: {
@@ -2269,6 +2689,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["metrics.CpuMemoryInNamespaceResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2294,6 +2723,15 @@ export interface operations {
           "application/json": components["schemas"]["metrics.TopPodResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Metrics_StreamTopPod: {
@@ -2315,6 +2753,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["metrics.TopPodResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2339,6 +2786,15 @@ export interface operations {
           "application/json": components["schemas"]["metrics.CpuMemoryInProjectResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Namespace_All: {
@@ -2357,6 +2813,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["namespace.AllResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2383,6 +2848,15 @@ export interface operations {
           "application/json": components["schemas"]["namespace.CreateResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Namespace_IsExists: {
@@ -2403,6 +2877,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["namespace.IsExistsResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2427,6 +2910,15 @@ export interface operations {
           "application/json": components["schemas"]["namespace.ShowResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Namespace_Delete: {
@@ -2447,6 +2939,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["namespace.DeleteResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2471,6 +2972,15 @@ export interface operations {
           "application/json": components["schemas"]["picture.BackgroundResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Project_List: {
@@ -2492,6 +3002,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["project.ListResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2518,6 +3037,15 @@ export interface operations {
           "application/json": components["schemas"]["project.HostVariablesResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Project_Show: {
@@ -2540,6 +3068,15 @@ export interface operations {
           "application/json": components["schemas"]["project.ShowResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Project_Delete: {
@@ -2560,6 +3097,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["project.DeleteResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2586,6 +3132,15 @@ export interface operations {
           "application/json": components["schemas"]["changelog.ShowResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Project_AllContainers: {
@@ -2606,6 +3161,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["project.AllContainersResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2630,6 +3194,15 @@ export interface operations {
           "application/json": components["schemas"]["project.VersionResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   File_ShowRecords: {
@@ -2650,6 +3223,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["file.ShowRecordsResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2676,37 +3258,29 @@ export interface operations {
           "application/json": components["schemas"]["repo.ListResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Repo_Create: {
     parameters: {
-      query?: {
-        name?: string;
-        gitProjectId?: number;
-        enabled?: boolean;
-        /** @description config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename" */
-        "marsConfig.configFile"?: string;
-        /** @description config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个 */
-        "marsConfig.configFileValues"?: string;
-        "marsConfig.configField"?: string;
-        "marsConfig.isSimpleEnv"?: boolean;
-        /** @description config_file_type 配置文件类型，php/env/yaml... */
-        "marsConfig.configFileType"?: string;
-        /** @description local_chart_path helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 "pid|branch|path" */
-        "marsConfig.localChartPath"?: string;
-        /** @description branches 启用的分支 */
-        "marsConfig.branches"?: string[];
-        /** @description values_yaml 和 values.yaml 一样 */
-        "marsConfig.valuesYaml"?: string;
-        /** @description 显示的名称 (helm app name), 不填就使用 git server project name
-         *      以字母开头结尾，中间可以有 '_' '-' */
-        "marsConfig.displayName"?: string;
-      };
+      query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["repo.CreateRequest"];
+      };
+    };
     responses: {
       /** @description OK */
       200: {
@@ -2715,6 +3289,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["repo.CreateResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };
@@ -2741,6 +3324,15 @@ export interface operations {
           "application/json": components["schemas"]["repo.ToggleEnabledResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Repo_Show: {
@@ -2763,6 +3355,50 @@ export interface operations {
           "application/json": components["schemas"]["repo.ShowResponse"];
         };
       };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
+    };
+  };
+  Repo_Update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["repo.UpdateRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["repo.UpdateResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
     };
   };
   Version_Version: {
@@ -2781,6 +3417,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["version.Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
         };
       };
     };

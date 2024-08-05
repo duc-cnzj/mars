@@ -2,7 +2,9 @@ package repo
 
 import (
 	"context"
+	"time"
 
+	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
@@ -12,13 +14,49 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 )
 
+// Namespace is the model entity for the Namespace schema.
+type Namespace struct {
+	ID               int
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	DeletedAt        *time.Time
+	Name             string
+	ImagePullSecrets []string
+
+	Projects []*Project
+}
+
+func (ns *Namespace) GetImagePullSecrets() []*types.ImagePullSecret {
+	var secrets = make([]*types.ImagePullSecret, 0)
+	for _, s := range ns.ImagePullSecrets {
+		secrets = append(secrets, &types.ImagePullSecret{Name: s})
+	}
+	return secrets
+}
+
+func ToNamespace(namespace *ent.Namespace) *Namespace {
+	if namespace == nil {
+		return nil
+	}
+
+	return &Namespace{
+		ID:               namespace.ID,
+		CreatedAt:        namespace.CreatedAt,
+		UpdatedAt:        namespace.UpdatedAt,
+		DeletedAt:        namespace.DeletedAt,
+		Name:             namespace.Name,
+		ImagePullSecrets: namespace.ImagePullSecrets,
+		Projects:         serialize.Serialize(namespace.Edges.Projects, ToProject),
+	}
+}
+
 type NamespaceRepo interface {
 	Delete(ctx context.Context, id int) error
 	GetMarsNamespace(name string) string
-	FindByName(ctx context.Context, name string) (*ent.Namespace, error)
-	All(ctx context.Context) ([]*ent.Namespace, error)
-	Show(ctx context.Context, id int) (*ent.Namespace, error)
-	Create(ctx context.Context, input *CreateNamespaceInput) (*ent.Namespace, error)
+	FindByName(ctx context.Context, name string) (*Namespace, error)
+	All(ctx context.Context) ([]*Namespace, error)
+	Show(ctx context.Context, id int) (*Namespace, error)
+	Create(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error)
 }
 
 var _ NamespaceRepo = (*namespaceRepo)(nil)
@@ -37,8 +75,8 @@ func NewNamespaceRepo(logger mlog.Logger, data data.Data) NamespaceRepo {
 	}
 }
 
-func (repo *namespaceRepo) All(ctx context.Context) ([]*ent.Namespace, error) {
-	return repo.data.DB().Namespace.Query().
+func (repo *namespaceRepo) All(ctx context.Context) ([]*Namespace, error) {
+	all, err := repo.data.DB().Namespace.Query().
 		WithProjects(
 			func(query *ent.ProjectQuery) {
 				query.Select(
@@ -53,6 +91,7 @@ func (repo *namespaceRepo) All(ctx context.Context) ([]*ent.Namespace, error) {
 		namespace.FieldName,
 		namespace.FieldCreatedAt,
 	).All(ctx)
+	return serialize.Serialize(all, ToNamespace), err
 }
 
 type CreateNamespaceInput struct {
@@ -60,14 +99,15 @@ type CreateNamespaceInput struct {
 	ImagePullSecrets []string
 }
 
-func (repo *namespaceRepo) Create(ctx context.Context, input *CreateNamespaceInput) (*ent.Namespace, error) {
-	return repo.data.DB().Namespace.Create().
+func (repo *namespaceRepo) Create(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error) {
+	save, err := repo.data.DB().Namespace.Create().
 		SetName(mars.GetMarsNamespace(input.Name, repo.NsPrefix)).
 		Save(ctx)
+	return ToNamespace(save), err
 }
 
-func (repo *namespaceRepo) Show(ctx context.Context, id int) (*ent.Namespace, error) {
-	return repo.data.DB().Namespace.Query().
+func (repo *namespaceRepo) Show(ctx context.Context, id int) (*Namespace, error) {
+	first, err := repo.data.DB().Namespace.Query().
 		WithProjects(func(query *ent.ProjectQuery) {
 			query.Select(
 				project.FieldID,
@@ -78,14 +118,16 @@ func (repo *namespaceRepo) Show(ctx context.Context, id int) (*ent.Namespace, er
 		}).
 		Where(namespace.ID(id)).
 		First(ctx)
+	return ToNamespace(first), err
 }
 
 func (repo *namespaceRepo) GetMarsNamespace(name string) string {
 	return mars.GetMarsNamespace(name, repo.NsPrefix)
 }
 
-func (repo *namespaceRepo) FindByName(ctx context.Context, name string) (*ent.Namespace, error) {
-	return repo.data.DB().Namespace.Query().Where(namespace.Name(mars.GetMarsNamespace(name, repo.NsPrefix))).First(ctx)
+func (repo *namespaceRepo) FindByName(ctx context.Context, name string) (*Namespace, error) {
+	first, err := repo.data.DB().Namespace.Query().Where(namespace.Name(mars.GetMarsNamespace(name, repo.NsPrefix))).First(ctx)
+	return ToNamespace(first), err
 }
 
 func (repo *namespaceRepo) Delete(ctx context.Context, id int) error {

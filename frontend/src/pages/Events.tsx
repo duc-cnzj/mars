@@ -23,12 +23,12 @@ import {
   RadioChangeEvent,
 } from "antd";
 import theme from "../styles/theme";
-import AsciinemaPlayer from "./Player";
+import AsciinemaPlayer from "../components/Player";
 import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { downloadFile } from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
-import DiffViewer from "./DiffViewer";
+import DiffViewer from "../components/DiffViewer";
 import { css } from "@emotion/css";
 import {
   ClockCircleOutlined,

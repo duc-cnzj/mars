@@ -190,7 +190,7 @@ func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 	if err != nil {
 		return nil, err
 	}
-	if err := p.helmer.Uninstall(projectModel.Name, projectModel.Edges.Namespace.Name, p.logger.Debugf); err != nil {
+	if err := p.helmer.Uninstall(projectModel.Name, projectModel.Namespace.Name, p.logger.Debugf); err != nil {
 		p.logger.Error(err)
 	}
 	p.projRepo.Delete(ctx, int(request.ProjectId))
@@ -199,7 +199,7 @@ func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 	p.eventRepo.AuditLog(
 		types.EventActionType_Delete,
 		MustGetUser(ctx).Name,
-		fmt.Sprintf("删除项目: %d: %s/%s ", projectModel.ID, projectModel.Edges.Namespace.Name, projectModel.Name),
+		fmt.Sprintf("删除项目: %d: %s/%s ", projectModel.ID, projectModel.Namespace.Name, projectModel.Name),
 	)
 
 	return &project.DeleteResponse{}, nil
@@ -213,9 +213,9 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 	marsC, _ := GetProjectMarsConfig(projectModel.GitProjectID, projectModel.GitBranch)
 	cpu, memory := p.k8sRepo.GetCpuAndMemory(p.k8sRepo.GetAllPodMetrics(projectModel))
 
-	nodePortMapping := p.projRepo.GetNodePortMappingByProjects(projectModel.Edges.Namespace.Name, projectModel)
-	ingMapping := p.projRepo.GetIngressMappingByProjects(projectModel.Edges.Namespace.Name, projectModel)
-	lbMapping := p.projRepo.GetLoadBalancerMappingByProjects(projectModel.Edges.Namespace.Name, projectModel)
+	nodePortMapping := p.projRepo.GetNodePortMappingByProjects(projectModel.Namespace.Name, projectModel)
+	ingMapping := p.projRepo.GetIngressMappingByProjects(projectModel.Namespace.Name, projectModel)
+	lbMapping := p.projRepo.GetLoadBalancerMappingByProjects(projectModel.Namespace.Name, projectModel)
 
 	var urls = make([]*types.ServiceEndpoint, 0)
 	urls = append(urls, ingMapping.Get(projectModel.Name)...)
@@ -260,7 +260,7 @@ func (p *projectSvc) AllContainers(ctx context.Context, request *project.AllCont
 			}
 			containerList = append(containerList,
 				&types.StateContainer{
-					Namespace:   projectModel.Edges.Namespace.Name,
+					Namespace:   projectModel.Namespace.Name,
 					Pod:         item.Pod.Name,
 					Container:   c.Name,
 					IsOld:       item.IsOld,

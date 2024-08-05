@@ -9272,6 +9272,7 @@ type RepoMutation struct {
 	git_project_id    *int32
 	addgit_project_id *int32
 	enabled           *bool
+	need_git_repo     *bool
 	mars_config       **mars.Config
 	clearedFields     map[string]struct{}
 	done              bool
@@ -9551,7 +9552,7 @@ func (m *RepoMutation) DefaultBranch() (r string, exists bool) {
 // OldDefaultBranch returns the old "default_branch" field's value of the Repo entity.
 // If the Repo object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepoMutation) OldDefaultBranch(ctx context.Context) (v *string, err error) {
+func (m *RepoMutation) OldDefaultBranch(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDefaultBranch is only allowed on UpdateOne operations")
 	}
@@ -9600,7 +9601,7 @@ func (m *RepoMutation) GitProjectName() (r string, exists bool) {
 // OldGitProjectName returns the old "git_project_name" field's value of the Repo entity.
 // If the Repo object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepoMutation) OldGitProjectName(ctx context.Context) (v *string, err error) {
+func (m *RepoMutation) OldGitProjectName(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldGitProjectName is only allowed on UpdateOne operations")
 	}
@@ -9650,7 +9651,7 @@ func (m *RepoMutation) GitProjectID() (r int32, exists bool) {
 // OldGitProjectID returns the old "git_project_id" field's value of the Repo entity.
 // If the Repo object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepoMutation) OldGitProjectID(ctx context.Context) (v *int32, err error) {
+func (m *RepoMutation) OldGitProjectID(ctx context.Context) (v int32, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldGitProjectID is only allowed on UpdateOne operations")
 	}
@@ -9738,6 +9739,42 @@ func (m *RepoMutation) ResetEnabled() {
 	m.enabled = nil
 }
 
+// SetNeedGitRepo sets the "need_git_repo" field.
+func (m *RepoMutation) SetNeedGitRepo(b bool) {
+	m.need_git_repo = &b
+}
+
+// NeedGitRepo returns the value of the "need_git_repo" field in the mutation.
+func (m *RepoMutation) NeedGitRepo() (r bool, exists bool) {
+	v := m.need_git_repo
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNeedGitRepo returns the old "need_git_repo" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldNeedGitRepo(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNeedGitRepo is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNeedGitRepo requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNeedGitRepo: %w", err)
+	}
+	return oldValue.NeedGitRepo, nil
+}
+
+// ResetNeedGitRepo resets all changes to the "need_git_repo" field.
+func (m *RepoMutation) ResetNeedGitRepo() {
+	m.need_git_repo = nil
+}
+
 // SetMarsConfig sets the "mars_config" field.
 func (m *RepoMutation) SetMarsConfig(value *mars.Config) {
 	m.mars_config = &value
@@ -9821,7 +9858,7 @@ func (m *RepoMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepoMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.created_at != nil {
 		fields = append(fields, repo.FieldCreatedAt)
 	}
@@ -9845,6 +9882,9 @@ func (m *RepoMutation) Fields() []string {
 	}
 	if m.enabled != nil {
 		fields = append(fields, repo.FieldEnabled)
+	}
+	if m.need_git_repo != nil {
+		fields = append(fields, repo.FieldNeedGitRepo)
 	}
 	if m.mars_config != nil {
 		fields = append(fields, repo.FieldMarsConfig)
@@ -9873,6 +9913,8 @@ func (m *RepoMutation) Field(name string) (ent.Value, bool) {
 		return m.GitProjectID()
 	case repo.FieldEnabled:
 		return m.Enabled()
+	case repo.FieldNeedGitRepo:
+		return m.NeedGitRepo()
 	case repo.FieldMarsConfig:
 		return m.MarsConfig()
 	}
@@ -9900,6 +9942,8 @@ func (m *RepoMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldGitProjectID(ctx)
 	case repo.FieldEnabled:
 		return m.OldEnabled(ctx)
+	case repo.FieldNeedGitRepo:
+		return m.OldNeedGitRepo(ctx)
 	case repo.FieldMarsConfig:
 		return m.OldMarsConfig(ctx)
 	}
@@ -9966,6 +10010,13 @@ func (m *RepoMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetEnabled(v)
+		return nil
+	case repo.FieldNeedGitRepo:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNeedGitRepo(v)
 		return nil
 	case repo.FieldMarsConfig:
 		v, ok := value.(*mars.Config)
@@ -10094,6 +10145,9 @@ func (m *RepoMutation) ResetField(name string) error {
 		return nil
 	case repo.FieldEnabled:
 		m.ResetEnabled()
+		return nil
+	case repo.FieldNeedGitRepo:
+		m.ResetNeedGitRepo()
 		return nil
 	case repo.FieldMarsConfig:
 		m.ResetMarsConfig()

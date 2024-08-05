@@ -18,7 +18,6 @@ import (
 
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/locker"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
@@ -186,9 +185,9 @@ type jobRunner struct {
 	config *mars.Config
 
 	isNew       bool
-	ns          *ent.Namespace
-	project     *ent.Project
-	prevProject *ent.Project
+	ns          *repo.Namespace
+	project     *repo.Project
+	prevProject *repo.Project
 
 	percenter contracts.Percentable
 	messager  contracts.DeployMsger
@@ -237,11 +236,11 @@ func (j *jobRunner) ProjectModel() *types.ProjectModel {
 	return transformer.FromProject(j.project)
 }
 
-func (j *jobRunner) Project() *ent.Project {
+func (j *jobRunner) Project() *repo.Project {
 	return j.project
 }
 
-func (j *jobRunner) Namespace() *ent.Namespace {
+func (j *jobRunner) Namespace() *repo.Namespace {
 	return j.ns
 }
 
@@ -338,7 +337,7 @@ type userConfig struct {
 	EnvValues        vars                `yaml:"env_values"`
 }
 
-func newUserConfig(p *ent.Project) *userConfig {
+func newUserConfig(p *repo.Project) *userConfig {
 	var v = vars{}
 	for _, value := range p.EnvValues {
 		v.Add(value.Key, value.Value)

@@ -23,17 +23,16 @@ func (Repo) Fields() []ent.Field {
 			Comment("默认使用的名称: helm create {name}"),
 		field.String("default_branch").
 			MaxLen(255).
-			Nillable().
 			Optional(),
 		field.String("git_project_name").
 			Optional().
-			Nillable().
 			Comment("关联的 git 项目 name"),
 		field.Int32("git_project_id").
 			Optional().
-			Nillable().
 			Comment("关联的 git 项目 id"),
 		field.Bool("enabled").
+			Default(false),
+		field.Bool("need_git_repo").
 			Default(false),
 		field.JSON("mars_config", &mars.Config{}).
 			Optional().

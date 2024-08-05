@@ -13,7 +13,6 @@ import (
 	"sync"
 
 	"github.com/duc-cnzj/mars/v4/internal/data"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
@@ -36,7 +35,6 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
-	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
 const defaultContainerAnnotationName = "kubectl.kubernetes.io/default-container"
@@ -91,15 +89,13 @@ type K8sRepo interface {
 	DeleteSecret(ctx context.Context, namespace, secret string) error
 	DeleteNamespace(ctx context.Context, name string) error
 
-	GetAllPodMetrics(proj *ent.Project) []v1beta1.PodMetrics
+	GetAllPodMetrics(proj *Project) []v1beta1.PodMetrics
 }
 
 var _ K8sRepo = (*k8sRepo)(nil)
 
 type k8sRepo struct {
 	logger        mlog.Logger
-	clientSet     kubernetes.Interface
-	metricsCli    metricsv.Interface
 	uploader      uploader.Uploader
 	maxUploadSize uint64
 	archiver      Archiver
@@ -125,11 +121,11 @@ func NewK8sRepo(
 }
 
 func (repo *k8sRepo) GetPodMetrics(ctx context.Context, namespace, podName string) (*v1beta1.PodMetrics, error) {
-	return repo.metricsCli.MetricsV1beta1().PodMetricses(namespace).Get(ctx, podName, metav1.GetOptions{})
+	return repo.data.K8sClient().MetricsClient.MetricsV1beta1().PodMetricses(namespace).Get(ctx, podName, metav1.GetOptions{})
 }
 
-func (repo *k8sRepo) GetAllPodMetrics(proj *ent.Project) []v1beta1.PodMetrics {
-	metricses := repo.metricsCli.MetricsV1beta1().PodMetricses(proj.Edges.Namespace.Name)
+func (repo *k8sRepo) GetAllPodMetrics(proj *Project) []v1beta1.PodMetrics {
+	metricses := repo.data.K8sClient().MetricsClient.MetricsV1beta1().PodMetricses(proj.Namespace.Name)
 	var list []v1beta1.PodMetrics
 	if len(proj.PodSelectors) == 0 {
 		return nil
@@ -146,11 +142,11 @@ func (repo *k8sRepo) GetAllPodMetrics(proj *ent.Project) []v1beta1.PodMetrics {
 }
 
 func (repo *k8sRepo) DeleteNamespace(ctx context.Context, name string) error {
-	return repo.clientSet.CoreV1().Namespaces().Delete(ctx, name, metav1.DeleteOptions{})
+	return repo.data.K8sClient().Client.CoreV1().Namespaces().Delete(ctx, name, metav1.DeleteOptions{})
 }
 
 func (repo *k8sRepo) DeleteSecret(ctx context.Context, namespace, secret string) error {
-	return repo.clientSet.CoreV1().Secrets(namespace).Delete(ctx, secret, metav1.DeleteOptions{})
+	return repo.data.K8sClient().Client.CoreV1().Secrets(namespace).Delete(ctx, secret, metav1.DeleteOptions{})
 }
 
 func (repo *k8sRepo) CreateDockerSecrets(ctx context.Context, namespace string) (*corev1.Secret, error) {
@@ -170,7 +166,7 @@ func (repo *k8sRepo) CreateDockerSecrets(ctx context.Context, namespace string) 
 
 	marshal, _ := json.Marshal(dockerCfgJSON)
 
-	return repo.clientSet.CoreV1().Secrets(namespace).Create(context.Background(), &corev1.Secret{
+	return repo.data.K8sClient().Client.CoreV1().Secrets(namespace).Create(context.Background(), &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: corev1.SchemeGroupVersion.String(),
 			Kind:       "Secret",
@@ -187,11 +183,11 @@ func (repo *k8sRepo) CreateDockerSecrets(ctx context.Context, namespace string) 
 }
 
 func (repo *k8sRepo) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
-	return repo.clientSet.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
+	return repo.data.K8sClient().Client.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
 }
 
 func (repo *k8sRepo) CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
-	return repo.clientSet.CoreV1().
+	return repo.data.K8sClient().Client.CoreV1().
 		Namespaces().
 		Create(ctx,
 			&corev1.Namespace{
@@ -212,7 +208,7 @@ func (repo *k8sRepo) Execute(ctx context.Context, c *Container, input *ExecuteIn
 }
 
 func (repo *k8sRepo) GetPodLogs(namespace, podName string, options *corev1.PodLogOptions) (string, error) {
-	logs := repo.clientSet.CoreV1().Pods(namespace).GetLogs(podName, options)
+	logs := repo.data.K8sClient().Client.CoreV1().Pods(namespace).GetLogs(podName, options)
 	do := logs.Do(context.Background())
 	raw, err := do.Raw()
 	return string(raw), err
@@ -305,7 +301,7 @@ func (repo *k8sRepo) GetPodSelectorsByManifest(manifests []string) []string {
 }
 
 func (repo *k8sRepo) GetCpuAndMemoryInNamespace(namespace string) (string, string) {
-	metricses := repo.metricsCli.MetricsV1beta1().PodMetricses(namespace)
+	metricses := repo.data.K8sClient().MetricsClient.MetricsV1beta1().PodMetricses(namespace)
 	list, _ := metricses.List(context.Background(), metav1.ListOptions{})
 	return repo.GetCpuAndMemory(list.Items)
 }
@@ -495,7 +491,7 @@ func (repo *k8sRepo) ClusterInfo() *InfoResponse {
 	var nodes []corev1.Node
 
 	// 获取已经使用的 cpu, memory
-	nodeList, _ := repo.clientSet.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{
+	nodeList, _ := repo.data.K8sClient().Client.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{
 		LabelSelector: selector.String(),
 	})
 	nodes = append(nodes, nodeList.Items...)
@@ -538,7 +534,7 @@ func (repo *k8sRepo) ClusterInfo() *InfoResponse {
 		usedMemory = &resource.Quantity{}
 	)
 
-	list, _ := repo.metricsCli.MetricsV1beta1().NodeMetricses().List(context.TODO(), metav1.ListOptions{
+	list, _ := repo.data.K8sClient().MetricsClient.MetricsV1beta1().NodeMetricses().List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector.String(),
 	})
 
@@ -613,7 +609,7 @@ func (repo *k8sRepo) getNodeRequestCpuAndMemory(noExecuteNodes []corev1.Node) (*
 		nodeSelector = append(nodeSelector, "spec.nodeName!="+node.Name)
 	}
 	fieldSelector, _ := fields.ParseSelector(strings.Join(nodeSelector, ","))
-	nodeNonTerminatedPodsList, err := repo.clientSet.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{FieldSelector: fieldSelector.String()})
+	nodeNonTerminatedPodsList, err := repo.data.K8sClient().Client.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{FieldSelector: fieldSelector.String()})
 	if err != nil {
 		//mlog.Error(err)
 		return requestCpu, requestMemory
@@ -634,7 +630,7 @@ func (repo *k8sRepo) LogStream(
 	pod,
 	container string,
 ) (io.ReadCloser, error) {
-	logs := repo.clientSet.
+	logs := repo.data.K8sClient().Client.
 		CoreV1().
 		Pods(namespace).
 		GetLogs(pod, &corev1.PodLogOptions{

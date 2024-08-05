@@ -215,10 +215,12 @@ message AccessTokenModel {
 message RepoModel {
   int32           id               = 1;
   string          name             = 2;
-  optional int32  git_project_id   = 3;
-  optional string git_project_name = 4;
+  int32           git_project_id   = 3;
+  string          git_project_name = 4;
   bool            enabled          = 5;
   mars.Config     mars_config      = 6;
+  bool            need_git_repo    = 7;
+  repeated string branches         = 8;
 
   string          created_at       = 100;
   string          updated_at       = 101;

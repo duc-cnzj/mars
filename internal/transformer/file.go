@@ -2,12 +2,12 @@ package transformer
 
 import (
 	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
 	"github.com/dustin/go-humanize"
 )
 
-func FromFile(f *ent.File) *types.FileModel {
+func FromFile(f *repo.File) *types.FileModel {
 	if f == nil {
 		return nil
 	}

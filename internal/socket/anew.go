@@ -275,7 +275,7 @@ func (j *jobRunner) Validate() Job {
 		}
 	} else {
 		j.prevProject = found
-		j.ns = found.Edges.Namespace
+		j.ns = found.Namespace
 		if j.IsNotDryRun() {
 			j.Messager().SendMsg("[Check]: 检查当前版本")
 			j.project, err = j.projRepo.UpdateStatusByVersion(context.TODO(), j.project.ID, types.Deploy_StatusDeploying, j.project.Version+1)

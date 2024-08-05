@@ -2,12 +2,12 @@ package transformer
 
 import (
 	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
 )
 
 // FromAccessToken transform to proto model.
-func FromAccessToken(at *ent.AccessToken) *types.AccessTokenModel {
+func FromAccessToken(at *repo.AccessToken) *types.AccessTokenModel {
 	if at == nil {
 		return nil
 	}

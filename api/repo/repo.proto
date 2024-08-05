@@ -42,10 +42,20 @@ message ToggleEnabledResponse{
 message CreateRequest{
   string         name           = 1 [(validate.rules).string = {min_bytes: 1, pattern: "^[a-zA-Z0-9_-]+$"}, (google.api.field_behavior) = REQUIRED];
   optional int32 git_project_id = 2;
-  bool           enabled        = 3;
-  mars.Config    mars_config    = 4;
+  mars.Config    mars_config    = 3;
+  bool           need_git_repo  = 4;
 }
 message CreateResponse{
+  types.RepoModel item = 1;
+}
+message UpdateRequest{
+  int32          id             = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  string         name           = 2 [(validate.rules).string = {min_bytes: 1, pattern: "^[a-zA-Z0-9_-]+$"}, (google.api.field_behavior) = REQUIRED];
+  optional int32 git_project_id = 3;
+  mars.Config    mars_config    = 4;
+  bool           need_git_repo  = 5;
+}
+message UpdateResponse{
   types.RepoModel item = 1;
 }
 
@@ -61,7 +71,8 @@ service Repo {
 
   rpc Create(CreateRequest) returns (CreateResponse) {
     option (google.api.http)                                               = {
-      post: "/api/repos"
+      post: "/api/repos",
+      body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "创建 repo",
@@ -76,6 +87,17 @@ service Repo {
       summary: "获取 repo 详情",
     };
   }
+
+  rpc Update(UpdateRequest) returns (UpdateResponse) {
+    option (google.api.http)                                               = {
+      put: "/api/repos/{id}",
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "更新 repo",
+    };
+  }
+
 
   rpc ToggleEnabled(ToggleEnabledRequest) returns (ToggleEnabledResponse) {
     option (google.api.http)                                               = {

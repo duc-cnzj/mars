@@ -2,11 +2,11 @@ package transformer
 
 import (
 	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
 )
 
-func FromGitProject(g *ent.GitProject) *types.GitProjectModel {
+func FromGitProject(g *repo.GitProject) *types.GitProjectModel {
 	if g == nil {
 		return nil
 	}

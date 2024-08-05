@@ -127,6 +127,20 @@ func (rc *RepoCreate) SetNillableEnabled(b *bool) *RepoCreate {
 	return rc
 }
 
+// SetNeedGitRepo sets the "need_git_repo" field.
+func (rc *RepoCreate) SetNeedGitRepo(b bool) *RepoCreate {
+	rc.mutation.SetNeedGitRepo(b)
+	return rc
+}
+
+// SetNillableNeedGitRepo sets the "need_git_repo" field if the given value is not nil.
+func (rc *RepoCreate) SetNillableNeedGitRepo(b *bool) *RepoCreate {
+	if b != nil {
+		rc.SetNeedGitRepo(*b)
+	}
+	return rc
+}
+
 // SetMarsConfig sets the "mars_config" field.
 func (rc *RepoCreate) SetMarsConfig(m *mars.Config) *RepoCreate {
 	rc.mutation.SetMarsConfig(m)
@@ -188,6 +202,10 @@ func (rc *RepoCreate) defaults() error {
 		v := repo.DefaultEnabled
 		rc.mutation.SetEnabled(v)
 	}
+	if _, ok := rc.mutation.NeedGitRepo(); !ok {
+		v := repo.DefaultNeedGitRepo
+		rc.mutation.SetNeedGitRepo(v)
+	}
 	return nil
 }
 
@@ -214,6 +232,9 @@ func (rc *RepoCreate) check() error {
 	}
 	if _, ok := rc.mutation.Enabled(); !ok {
 		return &ValidationError{Name: "enabled", err: errors.New(`ent: missing required field "Repo.enabled"`)}
+	}
+	if _, ok := rc.mutation.NeedGitRepo(); !ok {
+		return &ValidationError{Name: "need_git_repo", err: errors.New(`ent: missing required field "Repo.need_git_repo"`)}
 	}
 	if v, ok := rc.mutation.MarsConfig(); ok {
 		if err := v.Validate(); err != nil {
@@ -265,19 +286,23 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := rc.mutation.DefaultBranch(); ok {
 		_spec.SetField(repo.FieldDefaultBranch, field.TypeString, value)
-		_node.DefaultBranch = &value
+		_node.DefaultBranch = value
 	}
 	if value, ok := rc.mutation.GitProjectName(); ok {
 		_spec.SetField(repo.FieldGitProjectName, field.TypeString, value)
-		_node.GitProjectName = &value
+		_node.GitProjectName = value
 	}
 	if value, ok := rc.mutation.GitProjectID(); ok {
 		_spec.SetField(repo.FieldGitProjectID, field.TypeInt32, value)
-		_node.GitProjectID = &value
+		_node.GitProjectID = value
 	}
 	if value, ok := rc.mutation.Enabled(); ok {
 		_spec.SetField(repo.FieldEnabled, field.TypeBool, value)
 		_node.Enabled = value
+	}
+	if value, ok := rc.mutation.NeedGitRepo(); ok {
+		_spec.SetField(repo.FieldNeedGitRepo, field.TypeBool, value)
+		_node.NeedGitRepo = value
 	}
 	if value, ok := rc.mutation.MarsConfig(); ok {
 		_spec.SetField(repo.FieldMarsConfig, field.TypeJSON, value)
@@ -446,6 +471,18 @@ func (u *RepoUpsert) SetEnabled(v bool) *RepoUpsert {
 // UpdateEnabled sets the "enabled" field to the value that was provided on create.
 func (u *RepoUpsert) UpdateEnabled() *RepoUpsert {
 	u.SetExcluded(repo.FieldEnabled)
+	return u
+}
+
+// SetNeedGitRepo sets the "need_git_repo" field.
+func (u *RepoUpsert) SetNeedGitRepo(v bool) *RepoUpsert {
+	u.Set(repo.FieldNeedGitRepo, v)
+	return u
+}
+
+// UpdateNeedGitRepo sets the "need_git_repo" field to the value that was provided on create.
+func (u *RepoUpsert) UpdateNeedGitRepo() *RepoUpsert {
+	u.SetExcluded(repo.FieldNeedGitRepo)
 	return u
 }
 
@@ -642,6 +679,20 @@ func (u *RepoUpsertOne) SetEnabled(v bool) *RepoUpsertOne {
 func (u *RepoUpsertOne) UpdateEnabled() *RepoUpsertOne {
 	return u.Update(func(s *RepoUpsert) {
 		s.UpdateEnabled()
+	})
+}
+
+// SetNeedGitRepo sets the "need_git_repo" field.
+func (u *RepoUpsertOne) SetNeedGitRepo(v bool) *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.SetNeedGitRepo(v)
+	})
+}
+
+// UpdateNeedGitRepo sets the "need_git_repo" field to the value that was provided on create.
+func (u *RepoUpsertOne) UpdateNeedGitRepo() *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.UpdateNeedGitRepo()
 	})
 }
 
@@ -1007,6 +1058,20 @@ func (u *RepoUpsertBulk) SetEnabled(v bool) *RepoUpsertBulk {
 func (u *RepoUpsertBulk) UpdateEnabled() *RepoUpsertBulk {
 	return u.Update(func(s *RepoUpsert) {
 		s.UpdateEnabled()
+	})
+}
+
+// SetNeedGitRepo sets the "need_git_repo" field.
+func (u *RepoUpsertBulk) SetNeedGitRepo(v bool) *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.SetNeedGitRepo(v)
+	})
+}
+
+// UpdateNeedGitRepo sets the "need_git_repo" field to the value that was provided on create.
+func (u *RepoUpsertBulk) UpdateNeedGitRepo() *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.UpdateNeedGitRepo()
 	})
 }
 

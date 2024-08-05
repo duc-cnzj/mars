@@ -10,13 +10,74 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
 	"github.com/duc-cnzj/mars/v4/internal/filters"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	"github.com/samber/lo"
 )
 
+type Changelog struct {
+	ID               int
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	DeletedAt        *time.Time
+	Version          int
+	Username         string
+	Manifest         []string
+	Config           string
+	ConfigType       string
+	GitBranch        string
+	GitCommit        string
+	DockerImage      []string
+	EnvValues        []*types.KeyValue
+	ExtraValues      []*types.ExtraValue
+	FinalExtraValues []string
+	GitCommitWebURL  string
+	GitCommitTitle   string
+	GitCommitAuthor  string
+	GitCommitDate    *time.Time
+	ConfigChanged    bool
+	ProjectID        int
+	GitProjectID     int
+
+	Project    *Project
+	GitProject *GitProject
+}
+
+func ToChangeLog(c *ent.Changelog) *Changelog {
+	if c == nil {
+		return nil
+	}
+	return &Changelog{
+		ID:               c.ID,
+		CreatedAt:        c.CreatedAt,
+		UpdatedAt:        c.UpdatedAt,
+		DeletedAt:        c.DeletedAt,
+		Version:          c.Version,
+		Username:         c.Username,
+		Manifest:         c.Manifest,
+		Config:           c.Config,
+		ConfigType:       c.ConfigType,
+		GitBranch:        c.GitBranch,
+		GitCommit:        c.GitCommit,
+		DockerImage:      c.DockerImage,
+		EnvValues:        c.EnvValues,
+		ExtraValues:      c.ExtraValues,
+		FinalExtraValues: c.FinalExtraValues,
+		GitCommitWebURL:  c.GitCommitWebURL,
+		GitCommitTitle:   c.GitCommitTitle,
+		GitCommitAuthor:  c.GitCommitAuthor,
+		GitCommitDate:    c.GitCommitDate,
+		ConfigChanged:    c.ConfigChanged,
+		ProjectID:        c.ProjectID,
+		GitProjectID:     c.GitProjectID,
+		Project:          ToProject(c.Edges.Project),
+		GitProject:       ToGitProject(c.Edges.GitProject),
+	}
+}
+
 type ChangelogRepo interface {
-	Show(ctx context.Context, input *ShowChangeLogInput) ([]*ent.Changelog, error)
-	Create(ctx context.Context, input *CreateChangeLogInput) (*ent.Changelog, error)
-	FindLastChangeByProjectID(ctx context.Context, projectID int) (*ent.Changelog, error)
+	Show(ctx context.Context, input *ShowChangeLogInput) ([]*Changelog, error)
+	Create(ctx context.Context, input *CreateChangeLogInput) (*Changelog, error)
+	FindLastChangeByProjectID(ctx context.Context, projectID int) (*Changelog, error)
 }
 
 var _ ChangelogRepo = (*changelogRepo)(nil)
@@ -51,9 +112,9 @@ type CreateChangeLogInput struct {
 	GitProjectID     int
 }
 
-func (c *changelogRepo) Create(ctx context.Context, input *CreateChangeLogInput) (*ent.Changelog, error) {
+func (c *changelogRepo) Create(ctx context.Context, input *CreateChangeLogInput) (*Changelog, error) {
 	var db = c.data.DB()
-	return db.Changelog.Create().
+	save, err := db.Changelog.Create().
 		SetVersion(input.Version).
 		SetUsername(input.Username).
 		SetManifest(input.Manifest).
@@ -73,6 +134,7 @@ func (c *changelogRepo) Create(ctx context.Context, input *CreateChangeLogInput)
 		SetProjectID(input.ProjectID).
 		SetGitProjectID(input.GitProjectID).
 		Save(ctx)
+	return ToChangeLog(save), err
 }
 
 type ShowChangeLogInput struct {
@@ -81,9 +143,9 @@ type ShowChangeLogInput struct {
 	OrderByVersionDesc *bool
 }
 
-func (c *changelogRepo) Show(ctx context.Context, input *ShowChangeLogInput) ([]*ent.Changelog, error) {
+func (c *changelogRepo) Show(ctx context.Context, input *ShowChangeLogInput) ([]*Changelog, error) {
 	var db = c.data.DB()
-	return db.Changelog.Query().
+	all, err := db.Changelog.Query().
 		WithProject(func(query *ent.ProjectQuery) {
 			query.Where(filters.IfBool("config_changed")(func() *bool {
 				if input.OnlyChanged {
@@ -98,9 +160,11 @@ func (c *changelogRepo) Show(ctx context.Context, input *ShowChangeLogInput) ([]
 		).
 		Limit(5).
 		All(ctx)
+	return serialize.Serialize(all, ToChangeLog), err
 }
 
-func (c *changelogRepo) FindLastChangeByProjectID(ctx context.Context, projectID int) (*ent.Changelog, error) {
+func (c *changelogRepo) FindLastChangeByProjectID(ctx context.Context, projectID int) (*Changelog, error) {
 	var db = c.data.DB()
-	return db.Changelog.Query().Where(changelog.ProjectID(projectID)).Order(ent.Desc(changelog.FieldID)).First(ctx)
+	first, err := db.Changelog.Query().Where(changelog.ProjectID(projectID)).Order(ent.Desc(changelog.FieldID)).First(ctx)
+	return ToChangeLog(first), err
 }

@@ -23,6 +23,7 @@ const (
 	Repo_List_FullMethodName          = "/repo.Repo/List"
 	Repo_Create_FullMethodName        = "/repo.Repo/Create"
 	Repo_Show_FullMethodName          = "/repo.Repo/Show"
+	Repo_Update_FullMethodName        = "/repo.Repo/Update"
 	Repo_ToggleEnabled_FullMethodName = "/repo.Repo/ToggleEnabled"
 )
 
@@ -33,6 +34,7 @@ type RepoClient interface {
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
+	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	ToggleEnabled(ctx context.Context, in *ToggleEnabledRequest, opts ...grpc.CallOption) (*ToggleEnabledResponse, error)
 }
 
@@ -71,6 +73,15 @@ func (c *repoClient) Show(ctx context.Context, in *ShowRequest, opts ...grpc.Cal
 	return out, nil
 }
 
+func (c *repoClient) Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error) {
+	out := new(UpdateResponse)
+	err := c.cc.Invoke(ctx, Repo_Update_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *repoClient) ToggleEnabled(ctx context.Context, in *ToggleEnabledRequest, opts ...grpc.CallOption) (*ToggleEnabledResponse, error) {
 	out := new(ToggleEnabledResponse)
 	err := c.cc.Invoke(ctx, Repo_ToggleEnabled_FullMethodName, in, out, opts...)
@@ -87,6 +98,7 @@ type RepoServer interface {
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	Create(context.Context, *CreateRequest) (*CreateResponse, error)
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
+	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
 	ToggleEnabled(context.Context, *ToggleEnabledRequest) (*ToggleEnabledResponse, error)
 	mustEmbedUnimplementedRepoServer()
 }
@@ -103,6 +115,9 @@ func (UnimplementedRepoServer) Create(context.Context, *CreateRequest) (*CreateR
 }
 func (UnimplementedRepoServer) Show(context.Context, *ShowRequest) (*ShowResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
+}
+func (UnimplementedRepoServer) Update(context.Context, *UpdateRequest) (*UpdateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedRepoServer) ToggleEnabled(context.Context, *ToggleEnabledRequest) (*ToggleEnabledResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ToggleEnabled not implemented")
@@ -174,6 +189,24 @@ func _Repo_Show_Handler(srv interface{}, ctx context.Context, dec func(interface
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Repo_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RepoServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Repo_Update_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RepoServer).Update(ctx, req.(*UpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Repo_ToggleEnabled_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ToggleEnabledRequest)
 	if err := dec(in); err != nil {
@@ -210,6 +243,10 @@ var Repo_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Show",
 			Handler:    _Repo_Show_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _Repo_Update_Handler,
 		},
 		{
 			MethodName: "ToggleEnabled",

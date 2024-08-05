@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/duc-cnzj/mars/api/v4/types"
@@ -14,6 +15,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/filters"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	"github.com/duc-cnzj/mars/v4/plugins/domainmanager"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -26,9 +28,25 @@ const (
 	EventProjectDeleted   event.Event = "project_deleted"
 )
 
+type Event struct {
+	ID        int
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
+	Action    types.EventActionType
+	Username  string
+	Message   string
+	Old       string
+	New       string
+	Duration  string
+	FileID    *int
+
+	File *File
+}
+
 type EventRepo interface {
-	List(ctx context.Context, input *ListEventInput) (events []*ent.Event, pag *pagination.Pagination, err error)
-	Show(ctx context.Context, id int) (*ent.Event, error)
+	List(ctx context.Context, input *ListEventInput) (events []*Event, pag *pagination.Pagination, err error)
+	Show(ctx context.Context, id int) (*Event, error)
 	Dispatch(created event.Event, createdData any)
 
 	// AuditLogWithChange 记录审计日志
@@ -54,8 +72,8 @@ type eventRepo struct {
 	gitprojectRepo GitProjectRepo
 }
 
-func NewEventRepo(gitprojectRepo GitProjectRepo, clRepo ChangelogRepo, logger mlog.Logger, data data.Data, eventer event.Dispatcher) EventRepo {
-	r := &eventRepo{gitprojectRepo: gitprojectRepo, clRepo: clRepo, logger: logger, eventer: eventer, data: data}
+func NewEventRepo(gitprojectRepo GitProjectRepo, pl application.PluginManger, clRepo ChangelogRepo, logger mlog.Logger, data data.Data, eventer event.Dispatcher) EventRepo {
+	r := &eventRepo{gitprojectRepo: gitprojectRepo, clRepo: clRepo, logger: logger, eventer: eventer, data: data, pl: pl}
 	eventer.Listen(AuditLogEvent, r.HandleAuditLog)
 	eventer.Listen(EventNamespaceCreated, r.HandleInjectTlsSecret)
 	eventer.Listen(EventNamespaceDeleted, r.HandleNamespaceDeleted)
@@ -89,15 +107,15 @@ func (repo *eventRepo) Dispatch(created event.Event, createdData any) {
 
 type ListEventInput struct {
 	Page, PageSize int32
-	ActionType     *types.EventActionType
+	ActionType     types.EventActionType
 	Search         string
 	OrderIDDesc    *bool
 }
 
-func (repo *eventRepo) List(ctx context.Context, input *ListEventInput) (events []*ent.Event, pag *pagination.Pagination, err error) {
+func (repo *eventRepo) List(ctx context.Context, input *ListEventInput) (events []*Event, pag *pagination.Pagination, err error) {
 	var db = repo.data.DB()
 	query := db.Event.Query().Where(
-		filters.IfIntPtrEQ[types.EventActionType](entevent.FieldAction)(input.ActionType),
+		filters.IfIntEQ[types.EventActionType](entevent.FieldAction)(input.ActionType),
 		filters.IfOrderByDesc("id")(input.OrderIDDesc),
 		filters.If(func(t string) bool {
 			return t != ""
@@ -113,12 +131,13 @@ func (repo *eventRepo) List(ctx context.Context, input *ListEventInput) (events 
 		Limit(int(input.PageSize)).
 		AllX(ctx)
 
-	return items, pagination.NewPagination(input.Page, input.PageSize, 0), nil
+	return serialize.Serialize(items, ToEvent), pagination.NewPagination(input.Page, input.PageSize, 0), nil
 }
 
-func (repo *eventRepo) Show(ctx context.Context, id int) (*ent.Event, error) {
+func (repo *eventRepo) Show(ctx context.Context, id int) (*Event, error) {
 	var db = repo.data.DB()
-	return db.Event.Query().WithFile().Where(entevent.ID(id)).First(ctx)
+	first, err := db.Event.Query().WithFile().Where(entevent.ID(id)).First(ctx)
+	return ToEvent(first), err
 }
 
 func (repo *eventRepo) AuditLog(action types.EventActionType, username string, msg string) {
@@ -140,7 +159,7 @@ func (repo *eventRepo) AuditLogWithChange(action types.EventActionType, username
 }
 
 type NamespaceCreatedData struct {
-	NsModel  *ent.Namespace
+	NsModel  *Namespace
 	NsK8sObj *corev1.Namespace
 }
 
@@ -160,7 +179,7 @@ func (repo *eventRepo) HandleInjectTlsSecret(data any, e event.Event) error {
 }
 
 type NamespaceDeletedData struct {
-	NsModel *ent.Namespace
+	NsModel *Namespace
 }
 
 func (repo *eventRepo) HandleNamespaceDeleted(data any, e event.Event) error {
@@ -179,7 +198,7 @@ func (repo *eventRepo) HandleNamespaceDeleted(data any, e event.Event) error {
 }
 
 type ProjectChangedData struct {
-	Project *ent.Project
+	Project *Project
 
 	Username string
 }
@@ -325,4 +344,24 @@ type StringYamlPrettier struct {
 
 func (s *StringYamlPrettier) PrettyYaml() string {
 	return s.Str
+}
+
+func ToEvent(data *ent.Event) *Event {
+	if data == nil {
+		return nil
+	}
+	return &Event{
+		ID:        data.ID,
+		CreatedAt: data.CreatedAt,
+		UpdatedAt: data.UpdatedAt,
+		DeletedAt: data.DeletedAt,
+		Action:    data.Action,
+		Username:  data.Username,
+		Message:   data.Message,
+		Old:       data.Old,
+		New:       data.New,
+		Duration:  data.Duration,
+		FileID:    data.FileID,
+		File:      ToFile(data.Edges.File),
+	}
 }

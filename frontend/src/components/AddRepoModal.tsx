@@ -1,311 +1,239 @@
-import React, { useCallback, useEffect, memo } from "react";
+import React, { useEffect, memo, useMemo } from "react";
+import yaml from "js-yaml";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
-import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
+import { CloseOutlined, CopyOutlined } from "@ant-design/icons";
 import CopyToClipboard from "./CopyToClipboard";
+import _ from "lodash";
 import DynamicElement from "./elements/DynamicElement";
 import SelectFileType from "./SelectFileType";
 import { useAsyncState } from "../utils/async";
 import { css } from "@emotion/css";
-import pb from "../api/compiled";
-import { get, debounce } from "lodash";
-import yaml from "js-yaml";
-
 import {
-  Tooltip,
   Drawer,
-  Popover,
   Switch,
   Select,
   Button,
-  message,
-  Skeleton,
   Row,
   Badge,
   Input,
   Col,
   Form,
+  message,
+  Skeleton,
+  Popover,
 } from "antd";
-import { QuestionCircleOutlined, EditOutlined } from "@ant-design/icons";
-import {
-  globalConfig as globalConfigApi,
-  marsConfig,
-  toggleGlobalEnabled as toggleGlobalEnabledApi,
-  updateGlobalConfig,
-  getDefaultValues,
-} from "../api/mars";
-import MarsExample from "./MarsExample";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import pyaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
 import { components } from "../api/schema";
 import ajax from "../api/ajax";
+import { FormProps } from "antd/lib";
 
 SyntaxHighlighter.registerLanguage("yaml", pyaml);
 
-const { Option } = Select;
+type FieldType =
+  | components["schemas"]["repo.CreateRequest"]
+  | components["schemas"]["repo.UpdateRequest"];
 
-const initConfig: components["schemas"]["mars.Config"] = {
-  displayName: "",
-  configFile: "",
-  configFileValues: "",
-  configField: "",
-  isSimpleEnv: true,
-  configFileType: "yaml",
-  localChartPath: "",
-  branches: [],
-  valuesYaml: "",
-  elements: [],
+const onFinishFailed: FormProps<FieldType>["onFinishFailed"] = (errorInfo) => {
+  console.log("Failed:", errorInfo);
 };
-
-interface WatchData {
-  config_field: string;
-  config_file_values: string;
-  config_file_type: string;
-}
-
-const initDefaultValues = "# 没找到对应的 values.yaml";
 
 const AddRepoModal: React.FC<{
   visible: boolean;
-  item?: components["schemas"]["git.ProjectItem"];
+  editItem?: components["schemas"]["types.RepoModel"];
   onCancel: () => void;
-}> = ({ visible, item, onCancel }) => {
-  const [watch, setWatch] = useAsyncState<WatchData>({
-    config_field: initConfig.configField,
-    config_file_values: initConfig.configFileValues,
-    config_file_type: initConfig.configFileType,
-  });
-  const [editMode, setEditMode] = useAsyncState(true);
-  const [globalEnabled, setGlobalEnabled] = useAsyncState(false);
-  const [config, setConfig] =
-    useAsyncState<components["schemas"]["mars.Config"]>(initConfig);
-  const [modalBranch, setModalBranch] = useAsyncState("");
-  const [configVisible, setConfigVisible] = useAsyncState(visible);
-  const [mbranches, setMbranches] = useAsyncState<string[]>([]);
-  const [defaultValues, setDefaultValues] =
-    useAsyncState<string>(initDefaultValues);
-  const [loading, setLoading] = useAsyncState(false);
-  const [mode, setMode] = useAsyncState("");
+  onSuccess?: () => void;
+}> = ({ visible, editItem, onSuccess, onCancel }) => {
   const [form] = Form.useForm();
+  const needGitRepo = Form.useWatch("needGitRepo", form);
+  const gitProjectId = Form.useWatch("gitProjectId", form);
+  const configFileType = Form.useWatch(["marsConfig", "configFileType"], form);
+  const localChartPath = Form.useWatch(["marsConfig", "localChartPath"], form);
+  const configField = Form.useWatch(["marsConfig", "configField"], form);
+  const configFileValues = Form.useWatch(
+    ["marsConfig", "configFileValues"],
+    form
+  );
+
+  let isEdit = !!editItem && editItem.id > 0;
+  const [projects, setProjects] = useAsyncState<
+    components["schemas"]["git.ProjectItem"][]
+  >([]);
+
+  const [branches, setBranches] = useAsyncState<
+    components["schemas"]["git.Option"][]
+  >([]);
+
+  const [loading, setLoading] = useAsyncState({
+    project: false,
+    branch: false,
+    submit: false,
+  });
   const [configFileContent, setConfigFileContent] = useAsyncState("");
-  const [singleConfig, setSingleConfig] = useAsyncState(true);
   const [configFileTip, setConfigFileTip] = useAsyncState(false);
-  const loadDefaultValues = useCallback(
-    (projectId: number, branch: string) => {
-      if (projectId) {
-        getDefaultValues({ git_project_id: projectId, branch: branch })
-          .then((res) => {
-            setDefaultValues(res.data.value);
-          })
-          .catch((e) => {
-            setDefaultValues(initDefaultValues);
-          });
+  const [valuesYaml, setValuesYaml] = useAsyncState("");
+
+  const onDestroy = () => {
+    setLoading({ project: false, branch: false, submit: false });
+    setConfigFileContent("");
+    setValuesYaml("");
+    setConfigFileTip(false);
+    form.resetFields();
+  };
+
+  const onFinish: FormProps<FieldType>["onFinish"] = async (values) => {
+    setLoading((v) => ({ ...v, submit: true }));
+    if (editItem && editItem.id > 0) {
+      const { error } = await ajax.PUT("/api/repos/{id}", {
+        body: { ...values, id: editItem.id },
+        params: { path: { id: editItem.id } },
+      });
+      setLoading((v) => ({ ...v, submit: false }));
+      if (error) {
+        message.error(error.message);
+        return;
       }
-    },
-    [setDefaultValues]
+      message.success("更新成功！");
+      onDestroy();
+      onSuccess?.();
+      return;
+    }
+    const { error } = await ajax.POST("/api/repos", { body: values });
+    setLoading((v) => ({ ...v, submit: false }));
+    if (error) {
+      message.error(error.message);
+      return;
+    }
+    onDestroy();
+    message.success("创建成功！");
+    onSuccess?.();
+  };
+
+  const getChartValues = useMemo(
+    () =>
+      _.debounce((input: string) => {
+        ajax
+          .POST("/api/git/get_chart_values_yaml", {
+            body: { input: input },
+          })
+          .then(({ data, error }) => {
+            if (!error) {
+              setValuesYaml(data.values);
+            }
+          });
+      }, 2000),
+    [setValuesYaml]
   );
 
-  const loadConfig = useCallback(
-    (id: number, branch = "") => {
-      setLoading(true);
-      marsConfig({ branch, git_project_id: id })
-        .then(({ data }) => {
-          if (data.config) {
-            setConfig(data.config);
-          }
-          setModalBranch(data.branch);
-          setLoading(false);
-          loadDefaultValues(id, data.branch);
-        })
-        .catch((e) => {
-          message.error(e.response.data.message);
-          setLoading(false);
-        });
-    },
-    [loadDefaultValues, setConfig, setLoading, setModalBranch]
-  );
+  useEffect(() => {
+    if (localChartPath) {
+      getChartValues(localChartPath);
+    }
+  }, [localChartPath, getChartValues]);
 
-  const loadGlobalConfig = useCallback(
-    (id: number) => {
-      setLoading(true);
-      globalConfigApi({ git_project_id: id })
-        .then(({ data }) => {
-          if (data.config) {
-            setConfig(data.config);
-          }
-          loadDefaultValues(id, "");
+  useEffect(() => {
+    if (gitProjectId > 0 && visible) {
+      if (isEdit && gitProjectId !== editItem?.gitProjectId) {
+        form.setFieldValue(["marsConfig", "branches"], []);
+      }
+      setBranches([]);
+      setLoading((item) => ({ ...item, branch: true }));
+      ajax
+        .GET("/api/git/projects/{gitProjectId}/branch_options", {
+          params: {
+            path: {
+              gitProjectId: gitProjectId,
+            },
+          },
         })
-        .catch((e) => {
-          message.error(e.response.data.message);
+        .then(({ data }) => {
+          data && setBranches(data.items);
         })
         .finally(() => {
-          setLoading(false);
+          setLoading((item) => ({ ...item, branch: false }));
         });
-    },
-    [loadDefaultValues, setConfig, setLoading]
-  );
-
-  const resetModal = useCallback(() => {
-    setMbranches([]);
-    setLoading(false);
-    setConfig({ ...initConfig });
-    setConfigVisible(false);
-    setEditMode(true);
-    setConfigFileContent("");
-    setConfigFileTip(false);
-    onCancel();
-  }, [
-    onCancel,
-    setConfig,
-    setConfigFileContent,
-    setConfigFileTip,
-    setConfigVisible,
-    setEditMode,
-    setLoading,
-    setMbranches,
-  ]);
-
-  const selectBranch = useCallback(
-    (value: string) => {
-      if (item) {
-        loadConfig(item.id, value);
-      }
-    },
-    [item, loadConfig]
-  );
-
-  const toggleGlobalEnabled = useCallback(
-    (enabled: boolean) => {
-      setConfigFileContent("");
-      if (!enabled) {
-        setEditMode(false);
-      }
-      item &&
-        toggleGlobalEnabledApi({ git_project_id: item.id, enabled })
-          .then(() => {
-            message.success("操作成功");
-            setGlobalEnabled(enabled);
-            if (enabled) {
-              loadGlobalConfig(item.id);
-            } else {
-              loadConfig(item.id, "");
-            }
-          })
-          .catch((e) => {
-            message.error(e.message);
-          });
-    },
-    [
-      loadGlobalConfig,
-      loadConfig,
-      item,
-      setConfigFileContent,
-      setEditMode,
-      setGlobalEnabled,
-    ]
-  );
-
-  const onSave = useCallback(
-    (values: any) => {
-      values.elements = values.elements.map((v: any, i: number) => ({
-        ...v,
-        order: i,
-      }));
-      item &&
-        updateGlobalConfig({
-          git_project_id: item.id,
-          config: values,
-        })
-          .then((res) => {
-            message.success("保存成功");
-            res.data.config &&
-              setConfig((c) => {
-                return { ...c, ...res.data.config };
-              });
-
-            loadDefaultValues(item.id, "");
-            setEditMode(false);
-          })
-          .catch((e) => {
-            message.error(e.response.data.message);
-            globalConfigApi({ git_project_id: item.id }).then(({ data }) => {
-              setGlobalEnabled(data.enabled);
-            });
-          });
-    },
-    [item?.id, loadDefaultValues, setConfig, setEditMode, setGlobalEnabled]
-  );
-
-  useEffect(() => {
-    if (visible && watch.config_file_type) {
-      setMode(getMode(watch.config_file_type));
-    }
-  }, [watch, visible, setMode]);
-
-  useEffect(() => {
-    setConfigVisible(visible);
-    if (visible) {
-      setLoading(true);
-      item &&
-        ajax
-          .GET("/api/git/projects/{gitProjectId}/branch_options", {
-            params: {
-              query: { all: true },
-              path: { gitProjectId: `${item.id}` },
-            },
-          })
-          .then(({ data }) => {
-            data && setMbranches(data.items.map((op) => op.value));
-          });
-
-      item &&
-        ajax
-          .GET("/api/git/projects/{gitProjectId}/global_config", {
-            params: { path: { gitProjectId: `${item.id}` } },
-          })
-          .then(({ data }) => {
-            if (data) {
-              setGlobalEnabled(data.enabled);
-              if (!data.enabled) {
-                loadConfig(item.id);
-              } else {
-                if (data.config) {
-                  setConfig(data.config);
-                }
-                loadDefaultValues(item.id, "");
-                setLoading(false);
-              }
-            }
-          })
-          .catch((e) => {
-            message.error(e.response.data.message);
-          });
+    } else {
+      setBranches([]);
     }
   }, [
-    item,
-    loadConfig,
+    gitProjectId,
+    form,
+    isEdit,
+    editItem?.gitProjectId,
+    setBranches,
     visible,
-    loadDefaultValues,
-    setConfig,
-    setConfigVisible,
-    setGlobalEnabled,
     setLoading,
-    setMbranches,
   ]);
 
   useEffect(() => {
-    if (editMode && visible) {
-      let d = debounce(() => {
-        if (watch.config_field && defaultValues) {
-          let data = get(
-            yaml.load(defaultValues),
-            watch.config_field.split("->"),
-            ""
+    setLoading((item) => ({ ...item, project: true }));
+    ajax
+      .GET("/api/git/projects")
+      .then(({ data }) => {
+        console.log(data);
+        data && setProjects(data.items);
+      })
+      .finally(() => {
+        setLoading((item) => ({ ...item, project: false }));
+      });
+  }, [setLoading, setProjects]);
+
+  const allBranches = () => {
+    let allBranches = [{ value: "*", label: "全部" }];
+    if (branches) {
+      allBranches = [
+        ...allBranches,
+        ...branches.map((item) => ({
+          value: item.branch,
+          label: item.label,
+        })),
+      ];
+    }
+    return allBranches;
+  };
+  const getProjectOptions = () => {
+    let opt: { value: number; label: React.ReactNode; search: string }[] = [
+      { value: 0, label: "未选择", search: "" },
+    ];
+    if (projects) {
+      opt = [
+        ...opt,
+        ...projects.map((item) => ({
+          value: item.id,
+          search: item.name,
+          label: (
+            <div>
+              <span>{item.name}</span>
+              <span
+                className={css`
+                  margin-left: 10px;
+                  font-size: 10;
+                  color: #a3a3a3;
+                `}
+              >
+                {item.description}
+              </span>
+            </div>
+          ),
+        })),
+      ];
+    }
+    return opt;
+  };
+  useEffect(() => {
+    if (isEdit && visible) {
+      let d = _.debounce(() => {
+        if (configField && valuesYaml) {
+          let data = _.get(yaml.load(valuesYaml), configField.split("->"), "");
+          form.setFieldValue(
+            ["marsConfig", "isSimpleEnv"],
+            typeof data === "object" ? false : true
           );
-          setSingleConfig(typeof data === "object" ? false : true);
           if (typeof data === "object") {
             data = yaml.dump(data);
           }
+          setConfigFileTip(true);
           setConfigFileContent(String(data));
         } else {
           setConfigFileContent("");
@@ -317,30 +245,35 @@ const AddRepoModal: React.FC<{
       };
     }
   }, [
-    editMode,
-    watch.config_field,
-    setSingleConfig,
-    defaultValues,
-    visible,
+    configField,
+    isEdit,
+    setConfigFileTip,
+    form,
     setConfigFileContent,
+    valuesYaml,
+    visible,
   ]);
-
-  useEffect(() => {
-    setConfigFileTip(configFileContent.length > 0 && !watch.config_file_values);
-  }, [configFileContent, watch.config_file_values, setConfigFileTip]);
-
-  useEffect(() => {
-    setWatch((w) => ({ ...w, ...config }));
-    form.setFieldsValue(config);
-  }, [config, form, setWatch]);
 
   return (
     <Drawer
       keyboard={false}
       title={
-        <div>
-          <MarsExample />
-          &nbsp;&nbsp;{item?.name}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignContent: "center",
+          }}
+        >
+          <span>{isEdit ? "更新" : "添加"} repo</span>
+          <Button
+            loading={loading.submit}
+            size="small"
+            type="primary"
+            onClick={() => form.submit()}
+          >
+            {isEdit && editItem ? "更新: " + editItem.name : "创建"}
+          </Button>
         </div>
       }
       className={css`
@@ -353,385 +286,265 @@ const AddRepoModal: React.FC<{
           opacity: 1;
         }
       `}
-      open={configVisible}
+      open={visible}
       footer={null}
       width={"100%"}
-      onClose={resetModal}
+      destroyOnClose
+      onClose={() => {
+        onDestroy();
+        onCancel();
+      }}
     >
-      <Skeleton active loading={loading}>
-        <Form
-          form={form}
-          initialValues={config}
-          name="basic"
-          layout="vertical"
-          autoComplete="off"
-          onFinish={onSave}
+      <Row gutter={[20, 12]}>
+        <Col
+          span={12}
+          style={{
+            maxHeight: "800px",
+            overflowY: "scroll",
+            position: "relative",
+          }}
         >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "start",
-              height: 40,
-            }}
-          >
-            {!globalEnabled ? (
-              <Select
-                placeholder="请选择"
-                value={modalBranch}
-                style={{ width: 250 }}
-                loading={loading}
-                onChange={selectBranch}
+          <Badge.Ribbon color="purple" text="charts 默认值">
+            <div>
+              <div
+                style={{
+                  position: "absolute",
+                  top: 40,
+                  right: 20,
+                  zIndex: 99999,
+                  color: "white",
+                }}
               >
-                {mbranches.map((item) => (
-                  <Option value={item} key={item}>
-                    {item}
-                  </Option>
-                ))}
-              </Select>
-            ) : (
-              <div>
-                <Button
-                  style={{ marginRight: 10 }}
-                  type="dashed"
-                  icon={!editMode ? <EditOutlined /> : null}
-                  onClick={() => {
-                    setEditMode((editMode) => {
-                      if (editMode) {
-                        setConfigFileTip(false);
-                        setConfigFileContent("");
-                        form.resetFields();
-                        setWatch({
-                          config_field: config.configField,
-                          config_file_values: config.configFileValues,
-                          config_file_type: config.configFileType,
-                        });
-                      }
-                      return !editMode;
-                    });
+                <CopyToClipboard text={valuesYaml} successText="已复制！">
+                  <CopyOutlined />
+                </CopyToClipboard>
+              </div>
+              <SyntaxHighlighter
+                language="yaml"
+                style={materialDark}
+                customStyle={{
+                  minHeight: 200,
+                  lineHeight: 1.2,
+                  padding: "10px",
+                  fontFamily: '"Fira code", "Fira Mono", monospace',
+                  fontSize: 13,
+                  margin: 0,
+                  height: "100%",
+                }}
+              >
+                {valuesYaml}
+              </SyntaxHighlighter>
+            </div>
+          </Badge.Ribbon>
+        </Col>
+        <Col
+          span={12}
+          style={{
+            maxHeight: "800px",
+            overflowY: "scroll",
+            position: "relative",
+          }}
+        >
+          <Form
+            form={form}
+            name="basic"
+            clearOnDestroy
+            layout="vertical"
+            autoComplete="off"
+            initialValues={isEdit ? editItem : {}}
+            onFinish={onFinish}
+            onFinishFailed={onFinishFailed}
+          >
+            <Form.Item<FieldType>
+              label="应用名称"
+              name="name"
+              rules={[{ required: true, message: "请输入名称" }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item<FieldType> label="是否关联 git 仓库" name="needGitRepo">
+              <Switch />
+            </Form.Item>
+            {needGitRepo && (
+              <Row gutter={[8, 8]}>
+                <Col span={12}>
+                  <Form.Item<FieldType> label="git 仓库" name="gitProjectId">
+                    {loading.project ? (
+                      <Skeleton.Input block style={{ width: "100%" }} active />
+                    ) : (
+                      <Select
+                        showSearch
+                        allowClear
+                        optionFilterProp="search"
+                        options={getProjectOptions()}
+                      />
+                    )}
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="启用的分支"
+                    name={["marsConfig", "branches"]}
+                  >
+                    {loading.branch ? (
+                      <Skeleton.Input block style={{ width: "100%" }} active />
+                    ) : (
+                      <Select mode="multiple" options={allBranches()} />
+                    )}
+                  </Form.Item>
+                </Col>
+              </Row>
+            )}
+
+            <Form.Item
+              label="charts 的目录"
+              name={["marsConfig", "localChartPath"]}
+              rules={[{ required: true, message: "charts 路径必填" }]}
+              tooltip="charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 'pid|branch|path'"
+            >
+              <Input />
+            </Form.Item>
+
+            <Row gutter={[8, 8]}>
+              <Col span={12}>
+                <Form.Item
+                  label="用户输入配置字段"
+                  tooltip={`用户在部署时使用的自定义配置字段, 比如 "conf->config"`}
+                  name={["marsConfig", "configField"]}
+                >
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="配置文件类型"
+                  name={["marsConfig", "configFileType"]}
+                >
+                  <SelectFileType />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Col>
+              <Form.Item
+                label="单字段"
+                tooltip="配置文件是不是一个整体的value值"
+                name={["marsConfig", "isSimpleEnv"]}
+                valuePropName="checked"
+              >
+                <Switch defaultChecked />
+              </Form.Item>
+            </Col>
+
+            <Popover
+              overlayInnerStyle={{
+                maxHeight: 400,
+                maxWidth: 600,
+                overflowY: "scroll",
+              }}
+              placement="left"
+              content={
+                <div>
+                  <SyntaxHighlighter
+                    language="yaml"
+                    style={materialDark}
+                    customStyle={{
+                      lineHeight: 1.2,
+                      padding: "10px",
+                      fontFamily: '"Fira code", "Fira Mono", monospace',
+                      fontSize: 12,
+                      margin: 0,
+                      height: "100%",
+                    }}
+                  >
+                    {String(configFileContent)}
+                  </SyntaxHighlighter>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      form.setFieldValue(
+                        ["marsConfig", "configFileValues"],
+                        String(configFileContent)
+                      );
+                      setConfigFileTip(false);
+                      setConfigFileContent("");
+                    }}
+                    type="dashed"
+                    style={{ marginTop: 3, fontSize: 12 }}
+                  >
+                    使用该配置
+                  </Button>
+                </div>
+              }
+              title={
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                   }}
                 >
-                  {!editMode ? "编辑" : "取消"}
-                </Button>
-                <Button hidden={!editMode} type="primary" htmlType="submit">
-                  保存
-                </Button>
-              </div>
-            )}
-            <div>
-              <span style={{ marginRight: 10 }}>
-                使用全局配置&nbsp;
-                <Tooltip
-                  overlayStyle={{ fontSize: "12px" }}
-                  placement="top"
-                  title="全局配置优先级最高，会覆盖所有分支的配置"
-                >
-                  <QuestionCircleOutlined />
-                </Tooltip>
-              </span>
-              <Switch
-                checkedChildren="开启"
-                unCheckedChildren="关闭"
-                checked={globalEnabled}
-                onChange={toggleGlobalEnabled}
-              />
-            </div>
-          </div>
-          <Row
-            gutter={[3, 12]}
-            className={css`
-              .ant-spin-nested-loading,
-              .ant-spin-container {
-                height: 100%;
+                  <div>检测到可用配置</div>
+                  <Button
+                    size="small"
+                    type="link"
+                    onClick={() => setConfigFileTip(false)}
+                    icon={<CloseOutlined />}
+                  ></Button>
+                </div>
               }
-            `}
-          >
-            <Col span={24}>
-              <Skeleton active loading={loading}>
-                <Row
-                  gutter={[16, 16]}
-                  style={{ height: "100%", overflowY: "auto" }}
-                >
-                  <Col
-                    span={10}
-                    style={{
-                      maxHeight: "800px",
-                      overflowY: "scroll",
-                      position: "relative",
-                    }}
-                  >
-                    <Badge.Ribbon color="purple" text="charts 默认值">
-                      <div>
-                        <div
-                          style={{
-                            display: !editMode ? "none" : "block",
-                            position: "absolute",
-                            top: 40,
-                            right: 20,
-                            zIndex: 99999,
-                            color: "white",
-                          }}
-                        >
-                          <CopyToClipboard
-                            text={defaultValues}
-                            successText="已复制！"
-                          >
-                            <CopyOutlined />
-                          </CopyToClipboard>
-                        </div>
-                        <SyntaxHighlighter
-                          language="yaml"
-                          style={materialDark}
-                          customStyle={{
-                            minHeight: 200,
-                            lineHeight: 1.2,
-                            padding: "10px",
-                            fontFamily: '"Fira code", "Fira Mono", monospace',
-                            fontSize: 13,
-                            margin: 0,
-                            height: "100%",
-                          }}
-                        >
-                          {defaultValues}
-                        </SyntaxHighlighter>
-                      </div>
-                    </Badge.Ribbon>
-                  </Col>
-                  <Col
-                    span={14}
-                    style={{
-                      maxHeight: "800px",
-                      overflowY: "scroll",
-                      position: "relative",
-                    }}
-                  >
-                    <Form.Item
-                      label="应用名称"
-                      rules={[
-                        {
-                          pattern: new RegExp("^[A-Za-z]([A-Z-_a-z]*[^_-])*$"),
-                          message:
-                            "名称必须符合表达式 '^[A-Za-z]([A-Z-_a-z]*[^_-])*$', 格式例如 my_app, my-app, app",
-                        },
-                      ]}
-                      name={"display_name"}
-                    >
-                      <Input disabled={!editMode || !globalEnabled} />
-                    </Form.Item>
+              trigger="focus"
+              open={
+                configFileTip &&
+                configFileValues !== configFileContent &&
+                configFileValues &&
+                configFileValues.length === 0
+              }
+              onOpenChange={(v) => setConfigFileTip(v)}
+            ></Popover>
+            <Form.Item
+              label="全局配置文件"
+              tooltip="全局默认配置文件，如果没有设置 config_file 则使用这个"
+              name={["marsConfig", "configFileValues"]}
+            >
+              <CodeMirror mode={getMode(configFileType)} />
+            </Form.Item>
+            <DynamicElement />
 
-                    <Form.Item
-                      label="charts 的目录(需要第一个设置并且保存)"
-                      name={"local_chart_path"}
-                      rules={[{ required: true, message: "charts 路径必填" }]}
-                      tooltip="charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 'pid|branch|path'"
-                    >
-                      <Input disabled={!editMode || !globalEnabled} />
-                    </Form.Item>
-
-                    <Row style={{ marginBottom: 0 }}>
-                      <Form.Item
-                        label="用户输入配置字段"
-                        tooltip={`用户在部署时使用的自定义配置字段, 比如 "conf->config"`}
-                        style={{
-                          display: "inline-block",
-                          width: "calc(50% - 8px)",
-                          marginRight: 8,
-                        }}
-                        name={"config_field"}
-                      >
-                        <Input
-                          disabled={!editMode || !globalEnabled}
-                          onChange={(e) => {
-                            form.setFieldsValue({
-                              config_field: e.target.value,
-                            });
-                            setWatch((w) => ({
-                              ...w,
-                              config_field: e.target.value,
-                            }));
-                          }}
-                        />
-                      </Form.Item>
-
-                      <Form.Item
-                        label="配置文件类型"
-                        style={{
-                          display: "inline-block",
-                          width: "calc(50% - 8px)",
-                        }}
-                        name={"config_file_type"}
-                      >
-                        <SelectFileType
-                          onChange={(v) => {
-                            setWatch((w) => ({ ...w, config_file_type: v }));
-                            form.setFieldsValue({ config_file_type: v });
-                          }}
-                          suffixIcon={editMode}
-                          disabled={!editMode || !globalEnabled}
-                        />
-                      </Form.Item>
-                    </Row>
-
-                    <Form.Item style={{ marginBottom: 0 }}>
-                      <Form.Item
-                        label="单字段"
-                        tooltip="配置文件是不是一个整体的value值"
-                        style={{
-                          display: "inline-block",
-                          width: "calc(15% - 8px)",
-                        }}
-                        name={"is_simple_env"}
-                        valuePropName="checked"
-                      >
-                        <Switch
-                          disabled={!editMode || !globalEnabled}
-                          defaultChecked
-                        />
-                      </Form.Item>
-                      <Form.Item
-                        label="启用的分支"
-                        style={{
-                          display: "inline-block",
-                          width: "calc(85% - 8px)",
-                        }}
-                        name={"branches"}
-                      >
-                        <Select
-                          disabled={!editMode || !globalEnabled}
-                          mode="multiple"
-                          style={{ width: "100%" }}
-                        >
-                          <Option value="*">全部</Option>
-                          {mbranches.map((v, k) => (
-                            <Select.Option key={k} value={v}>
-                              {v}
-                            </Select.Option>
-                          ))}
-                        </Select>
-                      </Form.Item>
-                    </Form.Item>
-                    <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-                      <Popover
-                        overlayInnerStyle={{
-                          maxHeight: 400,
-                          maxWidth: 600,
-                          overflowY: "scroll",
-                        }}
-                        placement="left"
-                        content={
-                          <div>
-                            <SyntaxHighlighter
-                              language="yaml"
-                              style={materialDark}
-                              customStyle={{
-                                lineHeight: 1.2,
-                                padding: "10px",
-                                fontFamily:
-                                  '"Fira code", "Fira Mono", monospace',
-                                fontSize: 12,
-                                margin: 0,
-                                height: "100%",
-                              }}
-                            >
-                              {String(configFileContent)}
-                            </SyntaxHighlighter>
-                            <Button
-                              size="small"
-                              onClick={() => {
-                                form.setFieldsValue({
-                                  config_file_values: String(configFileContent),
-                                  is_simple_env: singleConfig,
-                                });
-                                setWatch((w) => ({
-                                  ...w,
-                                  config_file_values: String(configFileContent),
-                                }));
-                                setConfigFileTip(false);
-                              }}
-                              type="dashed"
-                              style={{ marginTop: 3, fontSize: 12 }}
-                            >
-                              使用该配置
-                            </Button>
-                          </div>
-                        }
-                        title={
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                            }}
-                          >
-                            <div>检测到可用配置</div>
-                            <Button
-                              size="small"
-                              type="link"
-                              onClick={() => setConfigFileTip(false)}
-                              icon={<CloseOutlined />}
-                            ></Button>
-                          </div>
-                        }
-                        trigger="focus"
-                        open={configFileTip && editMode}
-                        onOpenChange={(v) => setConfigFileTip(v)}
-                      ></Popover>
-                      <Form.Item
-                        label="全局配置文件"
-                        tooltip="全局默认配置文件，如果没有设置 config_file 则使用这个"
-                        name={"config_file_values"}
-                      >
-                        <CodeMirror
-                          disabled={!editMode || !globalEnabled}
-                          mode={mode}
-                          onChange={(v) => {
-                            form.setFieldsValue({ config_file_values: v });
-                            setWatch((w) => ({
-                              ...w,
-                              config_file_values: v,
-                            }));
-                          }}
-                        />
-                      </Form.Item>
+            <div
+              style={{
+                maxHeight: "800px",
+                overflowY: "scroll",
+                position: "relative",
+                fontSize: 13,
+              }}
+            >
+              <Form.Item
+                name={["marsConfig", "valuesYaml"]}
+                style={{
+                  maxHeight: "800px",
+                  overflowY: "scroll",
+                  position: "relative",
+                  fontSize: 13,
+                }}
+                label={
+                  <div>
+                    <div>
+                      values.yaml &nbsp;&nbsp;&nbsp;
+                      <span style={{ fontSize: 12 }}>
+                        自动补全: 'alt+enter'
+                      </span>
                     </div>
-
-                    <DynamicElement disabled={!editMode || !globalEnabled} />
-                    <div
-                      style={{
-                        maxHeight: "800px",
-                        overflowY: "scroll",
-                        position: "relative",
-                        fontSize: 13,
-                      }}
-                    >
-                      <Form.Item
-                        name={"values_yaml"}
-                        label={
-                          <div>
-                            <div>
-                              values.yaml &nbsp;&nbsp;&nbsp;
-                              <span style={{ fontSize: 12 }}>
-                                自动补全: 'alt+enter'
-                              </span>
-                            </div>
-                          </div>
-                        }
-                        tooltip="等同于 helm 的 values.yaml, 特别注意: 不能出现特殊的用 '<>' 包裹的变量, go 模板会解析失败!"
-                      >
-                        <CodeMirror
-                          completionValues
-                          disabled={!editMode || !globalEnabled}
-                          mode={getMode("yaml")}
-                        />
-                      </Form.Item>
-                    </div>
-                  </Col>
-                </Row>
-              </Skeleton>
-            </Col>
-          </Row>
-        </Form>
-      </Skeleton>
+                  </div>
+                }
+                tooltip="等同于 helm 的 values.yaml, 特别注意: 不能出现特殊的用 '<>' 包裹的变量, go 模板会解析失败!"
+              >
+                <CodeMirror completionValues mode={getMode("yaml")} />
+              </Form.Item>
+            </div>
+          </Form>
+        </Col>
+      </Row>
     </Drawer>
   );
 };

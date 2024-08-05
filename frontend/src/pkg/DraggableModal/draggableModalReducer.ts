@@ -210,7 +210,6 @@ export const draggableModalReducer = (
           },
         };
       }
-
       return {
         ...state,
         maxZIndex: getNextZIndex(state, action.id),

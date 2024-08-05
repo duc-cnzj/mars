@@ -121,12 +121,13 @@ func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToP
 		return nil, err
 	}
 
-	file.Update().
-		SetNamespace(request.Namespace).
-		SetPod(request.Pod).
-		SetContainer(request.Container).
-		SetContainerPath(result.ContainerPath).
-		Save(ctx)
+	c.fileRepo.Update(ctx, &repo.UpdateFileRequest{
+		ID:            int(request.FileId),
+		ContainerPath: result.ContainerPath,
+		Namespace:     request.Namespace,
+		Pod:           request.Pod,
+		Container:     request.Container,
+	})
 
 	c.eventRepo.FileAuditLog(
 		types.EventActionType_Upload,

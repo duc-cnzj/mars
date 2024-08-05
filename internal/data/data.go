@@ -172,6 +172,7 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 			nsPrefix = cfg.NsPrefix
 
 			eventFanOutObj = &fanOut[*eventsv1.Event]{
+				logger:    logger,
 				name:      "event",
 				ch:        make(chan Obj[*eventsv1.Event], 100),
 				listeners: make(map[string]chan<- Obj[*eventsv1.Event]),
@@ -180,6 +181,7 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 			podFanOutObj = &fanOut[*corev1.Pod]{
 				name:      "pod",
 				ch:        make(chan Obj[*corev1.Pod], 100),
+				logger:    logger,
 				listeners: make(map[string]chan<- Obj[*corev1.Pod]),
 			}
 		)
@@ -407,8 +409,8 @@ func (k *K8sClient) start(done <-chan struct{}) {
 
 		k.PodFanOut.Distribute(done)
 	}()
-	cache.WaitForCacheSync(done, k.EventInformer.HasSynced, k.PodInformer.HasSynced, k.SecretInformer.HasSynced)
 	k.factory.Start(done)
+	cache.WaitForCacheSync(done, k.EventInformer.HasSynced, k.PodInformer.HasSynced, k.SecretInformer.HasSynced)
 }
 
 type FanOutType int

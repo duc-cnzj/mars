@@ -3,6 +3,7 @@ syntax = "proto3";
 package git;
 
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
 import "validate/validate.proto";
 import "mars/mars.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
@@ -34,13 +35,14 @@ message AllResponse {
 }
 
 message Option {
-  string value        = 1;
-  string label        = 2;
-  string type         = 3;
-  bool   isLeaf       = 4;
-  string gitProjectId = 5;
-  string branch       = 6;
-  string display_name = 7;
+  string value          = 1;
+  string label          = 2;
+  string type           = 3;
+  bool   is_leaf        = 4;
+  string git_project_id = 5;
+  string branch         = 6;
+  string display_name   = 7;
+  bool   need_git_repo  = 8;
 }
 
 message ProjectOptionsResponse {
@@ -201,4 +203,21 @@ service Git {
       summary: "获取项目 mars 配置详情",
     };
   }
+
+  rpc GetChartValuesYaml(GetChartValuesYamlRequest) returns (GetChartValuesYamlResponse) {
+    option (google.api.http)                                               = {
+      post: "/api/git/get_chart_values_yaml",
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取 helm charts 的 values.yaml",
+    };
+  }
+}
+message GetChartValuesYamlRequest {
+  // "pid|branch|path" or "path"
+  string input = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+}
+message GetChartValuesYamlResponse {
+  string values = 1;
 }

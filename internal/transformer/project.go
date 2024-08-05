@@ -4,11 +4,11 @@ import (
 	"strings"
 
 	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
 )
 
-func FromProject(project *ent.Project) *types.ProjectModel {
+func FromProject(project *repo.Project) *types.ProjectModel {
 	if project == nil {
 		return nil
 	}
@@ -36,7 +36,7 @@ func FromProject(project *ent.Project) *types.ProjectModel {
 		GitCommitAuthor:   project.GitCommitAuthor,
 		GitCommitDate:     date.ToHumanizeDatetimeString(project.GitCommitDate),
 		Version:           int32(project.Version),
-		Namespace:         FromNamespace(project.Edges.Namespace),
+		Namespace:         FromNamespace(project.Namespace),
 		CreatedAt:         date.ToRFC3339DatetimeString(&project.CreatedAt),
 		UpdatedAt:         date.ToRFC3339DatetimeString(&project.UpdatedAt),
 		DeletedAt:         date.ToRFC3339DatetimeString(project.DeletedAt),

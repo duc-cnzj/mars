@@ -150,6 +150,20 @@ func (ru *RepoUpdate) SetNillableEnabled(b *bool) *RepoUpdate {
 	return ru
 }
 
+// SetNeedGitRepo sets the "need_git_repo" field.
+func (ru *RepoUpdate) SetNeedGitRepo(b bool) *RepoUpdate {
+	ru.mutation.SetNeedGitRepo(b)
+	return ru
+}
+
+// SetNillableNeedGitRepo sets the "need_git_repo" field if the given value is not nil.
+func (ru *RepoUpdate) SetNillableNeedGitRepo(b *bool) *RepoUpdate {
+	if b != nil {
+		ru.SetNeedGitRepo(*b)
+	}
+	return ru
+}
+
 // SetMarsConfig sets the "mars_config" field.
 func (ru *RepoUpdate) SetMarsConfig(m *mars.Config) *RepoUpdate {
 	ru.mutation.SetMarsConfig(m)
@@ -276,6 +290,9 @@ func (ru *RepoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := ru.mutation.Enabled(); ok {
 		_spec.SetField(repo.FieldEnabled, field.TypeBool, value)
+	}
+	if value, ok := ru.mutation.NeedGitRepo(); ok {
+		_spec.SetField(repo.FieldNeedGitRepo, field.TypeBool, value)
 	}
 	if value, ok := ru.mutation.MarsConfig(); ok {
 		_spec.SetField(repo.FieldMarsConfig, field.TypeJSON, value)
@@ -420,6 +437,20 @@ func (ruo *RepoUpdateOne) SetEnabled(b bool) *RepoUpdateOne {
 func (ruo *RepoUpdateOne) SetNillableEnabled(b *bool) *RepoUpdateOne {
 	if b != nil {
 		ruo.SetEnabled(*b)
+	}
+	return ruo
+}
+
+// SetNeedGitRepo sets the "need_git_repo" field.
+func (ruo *RepoUpdateOne) SetNeedGitRepo(b bool) *RepoUpdateOne {
+	ruo.mutation.SetNeedGitRepo(b)
+	return ruo
+}
+
+// SetNillableNeedGitRepo sets the "need_git_repo" field if the given value is not nil.
+func (ruo *RepoUpdateOne) SetNillableNeedGitRepo(b *bool) *RepoUpdateOne {
+	if b != nil {
+		ruo.SetNeedGitRepo(*b)
 	}
 	return ruo
 }
@@ -580,6 +611,9 @@ func (ruo *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) 
 	}
 	if value, ok := ruo.mutation.Enabled(); ok {
 		_spec.SetField(repo.FieldEnabled, field.TypeBool, value)
+	}
+	if value, ok := ruo.mutation.NeedGitRepo(); ok {
+		_spec.SetField(repo.FieldNeedGitRepo, field.TypeBool, value)
 	}
 	if value, ok := ruo.mutation.MarsConfig(); ok {
 		_spec.SetField(repo.FieldMarsConfig, field.TypeJSON, value)

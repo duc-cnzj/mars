@@ -22,8 +22,46 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v4/internal/util/rand"
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	"github.com/duc-cnzj/mars/v4/internal/util/timer"
 )
+
+type File struct {
+	ID            int
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	DeletedAt     *time.Time
+	UploadType    schematype.UploadType
+	Path          string
+	Size          uint64
+	Username      string
+	Namespace     string
+	Pod           string
+	Container     string
+	ContainerPath string
+
+	HumanizeSize string
+}
+
+func ToFile(file *ent.File) *File {
+	if file == nil {
+		return nil
+	}
+	return &File{
+		ID:            file.ID,
+		CreatedAt:     file.CreatedAt,
+		UpdatedAt:     file.UpdatedAt,
+		DeletedAt:     file.DeletedAt,
+		UploadType:    file.UploadType,
+		Path:          file.Path,
+		Size:          file.Size,
+		Username:      file.Username,
+		Namespace:     file.Namespace,
+		Pod:           file.Pod,
+		Container:     file.Container,
+		ContainerPath: file.ContainerPath,
+	}
+}
 
 type Recorder interface {
 	Resize(cols, rows uint16)
@@ -38,12 +76,13 @@ type FileRepo interface {
 	Delete(ctx context.Context, id int) error
 	ShowRecords(ctx context.Context, id int) (io.ReadCloser, error)
 	DiskInfo() (int64, error)
-	List(ctx context.Context, input *ListFileInput) ([]*ent.File, *pagination.Pagination, error)
-	GetByID(ctx context.Context, id int) (*ent.File, error)
-	Create(todo context.Context, input *CreateFileInput) (*ent.File, error)
+	List(ctx context.Context, input *ListFileInput) ([]*File, *pagination.Pagination, error)
+	GetByID(ctx context.Context, id int) (*File, error)
+	Create(todo context.Context, input *CreateFileInput) (*File, error)
 	NewDisk(disk string) uploader.Uploader
 	NewFile(fpath string) (uploader.File, error)
 	NewRecorder(action types.EventActionType, user *auth.UserInfo, container *Container) Recorder
+	Update(ctx context.Context, i *UpdateFileRequest) (*File, error)
 }
 
 var _ FileRepo = (*fileRepo)(nil)
@@ -81,7 +120,7 @@ type ListFileInput struct {
 	WithSoftDelete bool
 }
 
-func (repo *fileRepo) List(ctx context.Context, input *ListFileInput) ([]*ent.File, *pagination.Pagination, error) {
+func (repo *fileRepo) List(ctx context.Context, input *ListFileInput) ([]*File, *pagination.Pagination, error) {
 	var db = repo.data.DB()
 	queryCtx := context.TODO()
 	if input.WithSoftDelete {
@@ -93,7 +132,7 @@ func (repo *fileRepo) List(ctx context.Context, input *ListFileInput) ([]*ent.Fi
 		Limit(int(input.PageSize)).AllX(queryCtx)
 	count := query.Clone().CountX(queryCtx)
 
-	return files, pagination.NewPagination(input.Page, input.PageSize, count), nil
+	return serialize.Serialize(files, ToFile), pagination.NewPagination(input.Page, input.PageSize, count), nil
 }
 
 type CreateFileInput struct {
@@ -103,19 +142,40 @@ type CreateFileInput struct {
 	UploadType schematype.UploadType
 }
 
-func (repo *fileRepo) Create(todo context.Context, input *CreateFileInput) (*ent.File, error) {
+func (repo *fileRepo) Create(todo context.Context, input *CreateFileInput) (*File, error) {
 	var db = repo.data.DB()
-	return db.File.Create().
+	save, err := db.File.Create().
 		SetPath(input.Path).
 		SetUsername(input.Username).
 		SetSize(input.Size).
 		SetUploadType(input.UploadType).
 		Save(todo)
+	return ToFile(save), err
 }
 
-func (repo *fileRepo) GetByID(ctx context.Context, id int) (*ent.File, error) {
+func (repo *fileRepo) GetByID(ctx context.Context, id int) (*File, error) {
 	var db = repo.data.DB()
-	return db.File.Query().Where(file.ID(id)).First(ctx)
+	first, err := db.File.Query().Where(file.ID(id)).First(ctx)
+	return ToFile(first), err
+}
+
+type UpdateFileRequest struct {
+	ID            int
+	ContainerPath string
+	Namespace     string
+	Pod           string
+	Container     string
+}
+
+func (repo *fileRepo) Update(ctx context.Context, i *UpdateFileRequest) (*File, error) {
+	var db = repo.data.DB()
+	first, err := db.File.UpdateOneID(i.ID).
+		SetContainerPath(i.ContainerPath).
+		SetNamespace(i.Namespace).
+		SetPod(i.Pod).
+		SetContainer(i.Container).
+		Save(ctx)
+	return ToFile(first), err
 }
 
 func (repo *fileRepo) MaxUploadSize() uint64 {

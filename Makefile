@@ -32,7 +32,7 @@ api:
 		--proto_path ./third_party/protos \
 		--go_out=paths=source_relative:./api \
 		--go-grpc_out=paths=source_relative:./api \
-	    --openapi_out=fq_schema_naming=true,default_response=false,version="$(VERSION)",title="mars api.":./doc \
+	    --openapi_out=fq_schema_naming=true,default_response=true,version="$(VERSION)",title="mars api.":./doc \
 		--grpc-gateway_out=paths=source_relative:./api \
 		--grpc-gateway_opt logtostderr=true \
 		--grpc-gateway_opt paths=source_relative \

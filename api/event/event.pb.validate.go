@@ -61,6 +61,8 @@ func (m *ListRequest) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for ActionType
+
 	// no validation rules for Search
 
 	if m.Page != nil {
@@ -69,10 +71,6 @@ func (m *ListRequest) validate(all bool) error {
 
 	if m.PageSize != nil {
 		// no validation rules for PageSize
-	}
-
-	if m.ActionType != nil {
-		// no validation rules for ActionType
 	}
 
 	if len(errors) > 0 {

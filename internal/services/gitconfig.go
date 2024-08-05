@@ -157,7 +157,7 @@ func (svc *gitConfigSvc) Update(ctx context.Context, request *gitconfig.UpdateRe
 	request.Config.ConfigFileValues = strings.TrimRight(request.Config.ConfigFileValues, " ")
 	request.Config.ValuesYaml = strings.TrimRight(request.Config.ValuesYaml, " ")
 
-	var oldConf *ent.GitProject = project
+	var oldConf *repo.GitProject = project
 	svc.gitProjRepo.UpdateGlobalConfig(ctx, int(request.GitProjectId), request.Config)
 
 	svc.eventRepo.AuditLogWithChange(types.EventActionType_Update, MustGetUser(ctx).Name, fmt.Sprintf("更新项目 %s (id: %d) 全局配置", project.Name, project.ID), oldConf, project)

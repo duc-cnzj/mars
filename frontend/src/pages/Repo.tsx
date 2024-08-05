@@ -16,28 +16,10 @@ const RepoPage: React.FC = () => {
   const [data, setData] = useState<components["schemas"]["types.RepoModel"][]>(
     []
   );
-
   const [paginate, setPaginate] = useState({
     page: 1,
     pageSize: defaultPageSize,
   });
-
-  const fetch = useCallback((page: number, pageSize: number) => {
-    setLoading((v) => ({ ...v, list: true }));
-    ajax
-      .GET("/api/repos", { params: { query: { page, pageSize } } })
-      .then(({ data }) => {
-        data && setData((v) => [...v, ...data.items]);
-      })
-      .finally(() => {
-        setLoading((v) => ({ ...v, list: false }));
-      });
-  }, []);
-
-  useEffect(() => {
-    fetch(1, defaultPageSize);
-  }, [fetch]);
-
   const [loading, setLoading] = useState<{
     list: boolean;
     items: { [name: number]: boolean };
@@ -46,14 +28,60 @@ const RepoPage: React.FC = () => {
     items: {},
   });
 
+  const [visible, setVisible] = useState(false);
+  const [editItem, setEditItem] =
+    useState<components["schemas"]["types.RepoModel"]>();
+
+  const fetch = useCallback(
+    (page: number, pageSize: number, refresh?: boolean) => {
+      setLoading((v) => ({ ...v, list: true }));
+      ajax
+        .GET("/api/repos", { params: { query: { page, pageSize } } })
+        .then(({ data }) => {
+          data &&
+            setData((v) => (refresh ? data.items : [...v, ...data.items]));
+          data && setPaginate({ page: data.page, pageSize: data.pageSize });
+        })
+        .finally(() => {
+          setLoading((v) => ({ ...v, list: false }));
+        });
+    },
+    []
+  );
+
+  useEffect(() => {
+    fetch(1, defaultPageSize);
+  }, [fetch]);
+
   return (
     <>
-      <AddRepoModal visible={false} onCancel={() => {}} />
+      <AddRepoModal
+        editItem={editItem}
+        visible={visible}
+        onSuccess={() => {
+          setVisible(false);
+          fetch(1, defaultPageSize, true);
+          setEditItem(undefined);
+        }}
+        onCancel={() => {
+          console.log("cancel");
+          setEditItem(undefined);
+          setVisible(false);
+        }}
+      />
       <Card
         className="git"
         title={
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>Repo 管理</span>
+            <div>Repo 管理</div>
+            <Button
+              style={{ fontSize: 12 }}
+              onClick={() => setVisible(true)}
+              type="default"
+              size="small"
+            >
+              添加 repo
+            </Button>
           </div>
         }
         styles={{ body: { padding: 0 } }}
@@ -62,7 +90,7 @@ const RepoPage: React.FC = () => {
         <InfiniteScroll
           dataLength={data.length}
           next={() => {
-            fetch(++paginate.page, paginate.pageSize);
+            fetch(paginate.page + 1, paginate.pageSize);
           }}
           hasMore={data.length !== 0 && data.length % paginate.pageSize === 0}
           loader={
@@ -92,6 +120,22 @@ const RepoPage: React.FC = () => {
                 `}
                 key={item.id}
                 actions={[
+                  <Button
+                    onClick={async () => {
+                      const { data, error } = await ajax.GET(
+                        "/api/repos/{id}",
+                        { params: { path: { id: item.id } } }
+                      );
+                      if (error) {
+                        message.error(error.message);
+                        return;
+                      }
+                      setEditItem(data.item);
+                      setVisible(true);
+                    }}
+                  >
+                    编辑配置
+                  </Button>,
                   <Button
                     danger={item.enabled}
                     loading={!!loading.items[item.id]}
@@ -158,7 +202,7 @@ const RepoPage: React.FC = () => {
                   }
                   description={
                     <div>
-                      {item.gitProjectId !== 0 ? (
+                      {!!item.gitProjectId ? (
                         <div>
                           已关联 git 项目: {item.gitProjectName}, git 项目 id:{" "}
                           {item.gitProjectId}

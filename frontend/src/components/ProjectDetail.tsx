@@ -158,7 +158,7 @@ const ItemDetailModal: React.FC<{
 
 const MyTabs: React.FC<{
   detail: components["schemas"]["project.ShowResponse"];
-  item: components["schemas"]["types.NamespaceModel"];
+  item: components["schemas"]["types.ProjectModel"];
   resizeAt: any;
   onSuccess: () => void;
   onDelete: () => void;

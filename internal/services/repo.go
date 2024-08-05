@@ -21,13 +21,13 @@ var _ reposerver.RepoServer = (*repoSvc)(nil)
 type repoSvc struct {
 	gitRepo   repo.GitRepo
 	logger    mlog.Logger
-	repoRepo  repo.Repo
+	repoRepo  repo.RepoImp
 	eventRepo repo.EventRepo
 
 	reposerver.UnimplementedRepoServer
 }
 
-func NewRepoSvc(logger mlog.Logger, eventRepo repo.EventRepo, gitRepo repo.GitRepo, repoRepo repo.Repo) reposerver.RepoServer {
+func NewRepoSvc(logger mlog.Logger, eventRepo repo.EventRepo, gitRepo repo.GitRepo, repoRepo repo.RepoImp) reposerver.RepoServer {
 	return &repoSvc{logger: logger, repoRepo: repoRepo, gitRepo: gitRepo, eventRepo: eventRepo}
 }
 
@@ -57,26 +57,12 @@ func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*r
 		return nil, ErrorPermissionDenied
 	}
 
-	var (
-		defaultBranch *string
-		projName      *string
-	)
-
-	if req.GitProjectId != nil {
-		project, err := r.gitRepo.GetByProjectID(ctx, int(*req.GitProjectId))
-		if err != nil {
-			return nil, err
-		}
-		defaultBranch = lo.ToPtr(project.GetDefaultBranch())
-		projName = lo.ToPtr(project.GetName())
-	}
 	create, err := r.repoRepo.Create(ctx, &repo.CreateRepoInput{
-		Name:           req.Name,
-		Enabled:        req.Enabled,
-		GitProjectID:   req.GitProjectId,
-		GitProjectName: projName,
-		MarsConfig:     req.MarsConfig,
-		DefaultBranch:  defaultBranch,
+		Name:         req.Name,
+		Enabled:      true,
+		NeedGitRepo:  req.NeedGitRepo,
+		GitProjectID: req.GitProjectId,
+		MarsConfig:   req.MarsConfig,
 	})
 	if err != nil {
 		return nil, err
@@ -101,6 +87,41 @@ func (r *repoSvc) Show(ctx context.Context, request *reposerver.ShowRequest) (*r
 	}
 	return &reposerver.ShowResponse{
 		Item: transformer.FromRepo(show),
+	}, nil
+}
+
+func (r *repoSvc) Update(ctx context.Context, req *reposerver.UpdateRequest) (*reposerver.UpdateResponse, error) {
+	user := auth.MustGetUser(ctx)
+	if !user.IsAdmin() {
+		return nil, ErrorPermissionDenied
+	}
+
+	current, err := r.repoRepo.Show(ctx, int(req.Id))
+	if err != nil {
+		return nil, err
+	}
+
+	create, err := r.repoRepo.Update(ctx, &repo.UpdateRepoInput{
+		ID:           req.Id,
+		Name:         req.Name,
+		NeedGitRepo:  req.NeedGitRepo,
+		GitProjectID: req.GitProjectId,
+		MarsConfig:   req.MarsConfig,
+	})
+	if err != nil {
+		return nil, err
+	}
+	old, _ := yaml2.PrettyMarshal(current)
+	out, _ := yaml2.PrettyMarshal(create)
+	r.eventRepo.AuditLogWithChange(
+		types.EventActionType_Update,
+		user.Name,
+		fmt.Sprintf("更新仓库: %d: %s", create.ID, create.Name),
+		&repo.StringYamlPrettier{Str: string(old)},
+		&repo.StringYamlPrettier{Str: string(out)})
+
+	return &reposerver.UpdateResponse{
+		Item: transformer.FromRepo(create),
 	}, nil
 }
 

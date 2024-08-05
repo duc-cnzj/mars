@@ -1,7 +1,3 @@
-/**
- * NOTE: This is not compiled.
- */
-
 .ant-design-draggable-modal-body-overflow {
   overflow: auto !important;
 }
@@ -15,7 +11,7 @@
 }
 
 .ant-design-draggable-modal .ant-modal {
-  display: flex;
+  /* display: flex; */
   max-width: none;
   transform-origin: 50% 50% !important;
 }

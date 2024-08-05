@@ -3,16 +3,13 @@ package services
 import (
 	"context"
 	"fmt"
+	gopath "path"
 	"sort"
-	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/duc-cnzj/mars/api/v4/git"
-	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/cache"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
@@ -34,10 +31,100 @@ type gitSvc struct {
 	gitRepo     repo.GitRepo
 	cache       cache.Cache
 	gitProjRepo repo.GitProjectRepo
+	repoRepo    repo.RepoImp
 }
 
-func NewGitSvc(eventRepo repo.EventRepo, logger mlog.Logger, gitRepo repo.GitRepo, cache cache.Cache, gitProjRepo repo.GitProjectRepo) git.GitServer {
-	return &gitSvc{eventRepo: eventRepo, logger: logger, gitRepo: gitRepo, cache: cache, gitProjRepo: gitProjRepo}
+func NewGitSvc(repoRepo repo.RepoImp, eventRepo repo.EventRepo, logger mlog.Logger, gitRepo repo.GitRepo, cache cache.Cache, gitProjRepo repo.GitProjectRepo) git.GitServer {
+	return &gitSvc{repoRepo: repoRepo, eventRepo: eventRepo, logger: logger, gitRepo: gitRepo, cache: cache, gitProjRepo: gitProjRepo}
+}
+
+func (g *gitSvc) GetChartValuesYaml(ctx context.Context, req *git.GetChartValuesYamlRequest) (*git.GetChartValuesYamlResponse, error) {
+	if !mars2.IsRemoteLocalChartPath(req.GetInput()) {
+		return &git.GetChartValuesYamlResponse{}, nil
+	}
+
+	split := strings.Split(req.GetInput(), "|")
+	pid := split[0]
+	branch := split[1]
+	filename := gopath.Join(split[2], "values.yaml")
+
+	content, err := g.gitRepo.GetFileContentWithBranch(ctx, cast.ToInt(pid), branch, filename)
+	if err != nil {
+		return nil, err
+	}
+	return &git.GetChartValuesYamlResponse{Values: content}, nil
+}
+
+func (g *gitSvc) All(ctx context.Context, req *git.AllRequest) (*git.AllResponse, error) {
+	remember, err := g.cache.Remember(cache.NewKey("AllProjects"), 30, func() ([]byte, error) {
+		projects, err := g.gitRepo.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		//gps, err := g.gitProjRepo.All(ctx, &repo.AllGitProjectInput{})
+		//if err != nil {
+		//	return nil, err
+		//}
+
+		//var m = map[int]*ent.GitProject{}
+		//for _, gp := range gps {
+		//	m[gp.GitProjectID] = gp
+		//}
+
+		var infos = make([]*git.ProjectItem, 0)
+
+		for _, project := range projects {
+			//var (
+			//	enabled, GlobalEnabled bool
+			//	displayName            string
+			//)
+			//if gitProject, ok := m[int(project.GetID())]; ok {
+			//	enabled = gitProject.Enabled
+			//	GlobalEnabled = gitProject.GlobalEnabled
+			//	displayName = gitProject.GlobalMarsConfig().DisplayName
+			//}
+			infos = append(infos, &git.ProjectItem{
+				Id:          int32(project.GetID()),
+				Name:        project.GetName(),
+				Path:        project.GetPath(),
+				WebUrl:      project.GetWebURL(),
+				AvatarUrl:   project.GetAvatarURL(),
+				Description: project.GetDescription(),
+				//Enabled:       enabled,
+				//GlobalEnabled: GlobalEnabled,
+				//DisplayName:   displayName,
+			})
+		}
+		return proto.Marshal(&git.AllResponse{Items: infos})
+	})
+	if err != nil {
+		return nil, err
+	}
+	var res = &git.AllResponse{}
+	_ = proto.Unmarshal(remember, res)
+	return res, nil
+}
+
+func (g *gitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptionsRequest) (*git.ProjectOptionsResponse, error) {
+	all, err := g.repoRepo.All(context.TODO(), &repo.AllRepoRequest{Enabled: lo.ToPtr(true)})
+	if err != nil {
+		return nil, err
+	}
+	var gitOptions []*git.Option
+	for _, repo := range all {
+		gitOptions = append(gitOptions, &git.Option{
+			DisplayName:  repo.Name,
+			Value:        cast.ToString(repo.ID),
+			Label:        repo.Name,
+			IsLeaf:       false,
+			Type:         OptionTypeProject,
+			GitProjectId: cast.ToString(repo.GitProjectID),
+		})
+	}
+	sort.Sort(sortableOption(gitOptions))
+
+	return &git.ProjectOptionsResponse{Items: gitOptions}, nil
 }
 
 func (g *gitSvc) EnableProject(ctx context.Context, request *git.EnableProjectRequest) (*git.EnableProjectResponse, error) {
@@ -73,58 +160,6 @@ func (g *gitSvc) DisableProject(ctx context.Context, request *git.DisableProject
 	return &git.DisableProjectResponse{}, nil
 }
 
-func (g *gitSvc) All(ctx context.Context, req *git.AllRequest) (*git.AllResponse, error) {
-	projects, err := g.gitRepo.All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	gps, err := g.gitProjRepo.All(ctx, &repo.AllGitProjectInput{})
-	if err != nil {
-		return nil, err
-	}
-
-	var m = map[int]*ent.GitProject{}
-	for _, gp := range gps {
-		m[gp.GitProjectID] = gp
-	}
-
-	var infos = make([]*git.ProjectItem, 0)
-
-	for _, project := range projects {
-		var (
-			enabled, GlobalEnabled bool
-			displayName            string
-		)
-		if gitProject, ok := m[int(project.GetID())]; ok {
-			enabled = gitProject.Enabled
-			GlobalEnabled = gitProject.GlobalEnabled
-			displayName = gitProject.GlobalMarsConfig().DisplayName
-		}
-		infos = append(infos, &git.ProjectItem{
-			Id:            int32(project.GetID()),
-			Name:          project.GetName(),
-			Path:          project.GetPath(),
-			WebUrl:        project.GetWebURL(),
-			AvatarUrl:     project.GetAvatarURL(),
-			Description:   project.GetDescription(),
-			Enabled:       enabled,
-			GlobalEnabled: GlobalEnabled,
-			DisplayName:   displayName,
-		})
-	}
-
-	sort.Slice(infos, func(i, j int) bool {
-		if infos[i].Enabled != infos[j].Enabled {
-			return infos[i].Enabled
-		}
-
-		return infos[i].Id < infos[j].Id
-	})
-
-	return &git.AllResponse{Items: infos}, nil
-}
-
 const (
 	OptionTypeProject string = "project"
 	OptionTypeBranch  string = "branch"
@@ -132,70 +167,6 @@ const (
 )
 
 const ProjectOptionsCacheKey = "ProjectOptions"
-
-func (g *gitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptionsRequest) (*git.ProjectOptionsResponse, error) {
-	remember, err := g.cache.Remember(cache.NewKey(ProjectOptionsCacheKey), 30, func() ([]byte, error) {
-		var (
-			ch = make(chan *git.Option)
-			wg = sync.WaitGroup{}
-		)
-
-		enabledProjects, _ := g.gitProjRepo.All(ctx, &repo.AllGitProjectInput{Enabled: lo.ToPtr(true)})
-		wg.Add(len(enabledProjects))
-		for _, project := range enabledProjects {
-			go func(project *ent.GitProject) {
-				defer wg.Done()
-				defer g.logger.HandlePanic("ProjectOptions")
-				var (
-					marsC *mars.Config
-					err   error
-				)
-				if marsC, err = GetProjectMarsConfig(project.GitProjectID, project.DefaultBranch); err != nil {
-					g.logger.Debug(err)
-					return
-				}
-				var (
-					displayName string = project.Name
-					pname       string = project.Name
-				)
-				if marsC.DisplayName != "" {
-					displayName = marsC.DisplayName
-					pname = fmt.Sprintf("%s(%s)", project.Name, displayName)
-					if strings.EqualFold(project.Name, displayName) {
-						pname = displayName
-					}
-				}
-				ch <- &git.Option{
-					DisplayName:  displayName,
-					Value:        fmt.Sprintf("%d", project.GitProjectID),
-					Label:        pname,
-					IsLeaf:       false,
-					Type:         OptionTypeProject,
-					GitProjectId: strconv.Itoa(project.GitProjectID),
-				}
-			}(project)
-		}
-		go func() {
-			wg.Wait()
-			close(ch)
-		}()
-
-		res := make([]*git.Option, 0)
-
-		for options := range ch {
-			res = append(res, options)
-		}
-
-		return proto.Marshal(&git.ProjectOptionsResponse{Items: res})
-	})
-	if err != nil {
-		return nil, err
-	}
-	var res = &git.ProjectOptionsResponse{}
-	_ = proto.Unmarshal(remember, res)
-	sort.Sort(sortableOption(res.Items))
-	return res, nil
-}
 
 type sortableOption []*git.Option
 
@@ -232,26 +203,26 @@ func (g *gitSvc) BranchOptions(ctx context.Context, request *git.BranchOptionsRe
 		return &git.BranchOptionsResponse{Items: res}, nil
 	}
 
-	var defaultBranch string
-	for _, branch := range branches {
-		if branch.IsDefault() {
-			defaultBranch = branch.GetName()
-		}
-	}
+	//var defaultBranch string
+	//for _, branch := range branches {
+	//	if branch.IsDefault() {
+	//		defaultBranch = branch.GetName()
+	//	}
+	//}
 
-	config, err := GetProjectMarsConfig(request.GitProjectId, defaultBranch)
-	if err != nil {
-		return &git.BranchOptionsResponse{Items: make([]*git.Option, 0)}, nil
-	}
+	//config, err := GetProjectMarsConfig(request.GitProjectId, defaultBranch)
+	//if err != nil {
+	//	return &git.BranchOptionsResponse{Items: make([]*git.Option, 0)}, nil
+	//}
 
-	filteredRes := make([]*git.Option, 0)
-	for _, op := range res {
-		if mars2.BranchPass(config, op.Value) {
-			filteredRes = append(filteredRes, op)
-		}
-	}
+	//filteredRes := make([]*git.Option, 0)
+	//for _, op := range res {
+	//	if mars2.BranchPass(config, op.Value) {
+	//		filteredRes = append(filteredRes, op)
+	//	}
+	//}
 
-	return &git.BranchOptionsResponse{Items: filteredRes}, nil
+	return &git.BranchOptionsResponse{Items: res}, nil
 }
 
 func (g *gitSvc) CommitOptions(ctx context.Context, request *git.CommitOptionsRequest) (*git.CommitOptionsResponse, error) {

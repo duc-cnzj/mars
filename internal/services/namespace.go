@@ -117,8 +117,8 @@ func (n *namespaceSvc) Delete(ctx context.Context, id *namespace.DeleteRequest) 
 	var deletedProjectNames []string
 	if err == nil {
 		wg := sync.WaitGroup{}
-		wg.Add(len(ns.Edges.Projects))
-		for _, project := range ns.Edges.Projects {
+		wg.Add(len(ns.Projects))
+		for _, project := range ns.Projects {
 			deletedProjectNames = append(deletedProjectNames, project.Name)
 			go func(releaseName, namespace string) {
 				defer wg.Done()

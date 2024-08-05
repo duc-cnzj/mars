@@ -117,6 +117,13 @@ function DraggableModalInnerNonMemo({
       zIndex={zIndex}
       title={titleElement}
       open={visible}
+      classNames={{
+        body: "my-modal-body",
+        mask: "my-modal-mask",
+        header: "my-modal-header",
+        footer: "my-modal-footer",
+        content: "my-modal-content",
+      }}
       {...otherProps}
     >
       <div

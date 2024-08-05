@@ -3,6 +3,8 @@ package repo
 import (
 	"context"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
@@ -43,9 +45,9 @@ func (repo *endpointRepo) InProject(ctx context.Context, projectID int) (res []*
 		return nil, err
 	}
 
-	nodePortMapping := repo.projRepo.GetNodePortMappingByProjects(first.Edges.Namespace.Name, first)
-	ingMapping := repo.projRepo.GetIngressMappingByProjects(first.Edges.Namespace.Name, first)
-	lbMapping := repo.projRepo.GetLoadBalancerMappingByProjects(first.Edges.Namespace.Name, first)
+	nodePortMapping := repo.projRepo.GetNodePortMappingByProjects(first.Edges.Namespace.Name, ToProject(first))
+	ingMapping := repo.projRepo.GetIngressMappingByProjects(first.Edges.Namespace.Name, ToProject(first))
+	lbMapping := repo.projRepo.GetLoadBalancerMappingByProjects(first.Edges.Namespace.Name, ToProject(first))
 	res = append(res, ingMapping.AllEndpoints()...)
 	res = append(res, lbMapping.AllEndpoints()...)
 	res = append(res, nodePortMapping.AllEndpoints()...)
@@ -69,9 +71,9 @@ func (repo *endpointRepo) InNamespace(ctx context.Context, namespaceID int) (res
 		return nil, err
 	}
 
-	nodePortMapping := repo.projRepo.GetNodePortMappingByProjects(first.Name, first.Edges.Projects...)
-	ingMapping := repo.projRepo.GetIngressMappingByProjects(first.Name, first.Edges.Projects...)
-	lbMapping := repo.projRepo.GetLoadBalancerMappingByProjects(first.Name, first.Edges.Projects...)
+	nodePortMapping := repo.projRepo.GetNodePortMappingByProjects(first.Name, serialize.Serialize(first.Edges.Projects, ToProject)...)
+	ingMapping := repo.projRepo.GetIngressMappingByProjects(first.Name, serialize.Serialize(first.Edges.Projects, ToProject)...)
+	lbMapping := repo.projRepo.GetLoadBalancerMappingByProjects(first.Name, serialize.Serialize(first.Edges.Projects, ToProject)...)
 	res = append(res, ingMapping.AllEndpoints()...)
 	res = append(res, lbMapping.AllEndpoints()...)
 	res = append(res, nodePortMapping.AllEndpoints()...)

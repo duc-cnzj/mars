@@ -2,11 +2,11 @@ package transformer
 
 import (
 	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
 )
 
-func FromEvent(e *ent.Event) *types.EventModel {
+func FromEvent(e *repo.Event) *types.EventModel {
 	if e == nil {
 		return nil
 	}
@@ -23,7 +23,7 @@ func FromEvent(e *ent.Event) *types.EventModel {
 		New:       e.New,
 		Duration:  e.Duration,
 		FileId:    int32(fID),
-		File:      FromFile(e.Edges.File),
+		File:      FromFile(e.File),
 		HasDiff:   e.Old != e.New,
 		EventAt:   date.ToHumanizeDatetimeString(&e.CreatedAt),
 		CreatedAt: date.ToRFC3339DatetimeString(&e.CreatedAt),

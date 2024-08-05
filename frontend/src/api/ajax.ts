@@ -22,7 +22,6 @@ const myMiddleware: Middleware = {
     return request;
   },
   async onResponse({ request, response, options }) {
-    const { body, ...resOptions } = response;
     // 对响应错误做点什么
     if (response.status === 401) {
       if (getToken()) {
@@ -37,7 +36,7 @@ const myMiddleware: Middleware = {
         }
       }, 1000);
     }
-    return new Response(body, { ...resOptions, status: 200 });
+    return response;
   },
 };
 

@@ -20,15 +20,16 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Git_EnableProject_FullMethodName  = "/git.Git/EnableProject"
-	Git_DisableProject_FullMethodName = "/git.Git/DisableProject"
-	Git_All_FullMethodName            = "/git.Git/All"
-	Git_ProjectOptions_FullMethodName = "/git.Git/ProjectOptions"
-	Git_BranchOptions_FullMethodName  = "/git.Git/BranchOptions"
-	Git_CommitOptions_FullMethodName  = "/git.Git/CommitOptions"
-	Git_Commit_FullMethodName         = "/git.Git/Commit"
-	Git_PipelineInfo_FullMethodName   = "/git.Git/PipelineInfo"
-	Git_MarsConfigFile_FullMethodName = "/git.Git/MarsConfigFile"
+	Git_EnableProject_FullMethodName      = "/git.Git/EnableProject"
+	Git_DisableProject_FullMethodName     = "/git.Git/DisableProject"
+	Git_All_FullMethodName                = "/git.Git/All"
+	Git_ProjectOptions_FullMethodName     = "/git.Git/ProjectOptions"
+	Git_BranchOptions_FullMethodName      = "/git.Git/BranchOptions"
+	Git_CommitOptions_FullMethodName      = "/git.Git/CommitOptions"
+	Git_Commit_FullMethodName             = "/git.Git/Commit"
+	Git_PipelineInfo_FullMethodName       = "/git.Git/PipelineInfo"
+	Git_MarsConfigFile_FullMethodName     = "/git.Git/MarsConfigFile"
+	Git_GetChartValuesYaml_FullMethodName = "/git.Git/GetChartValuesYaml"
 )
 
 // GitClient is the client API for Git service.
@@ -44,6 +45,7 @@ type GitClient interface {
 	Commit(ctx context.Context, in *CommitRequest, opts ...grpc.CallOption) (*CommitResponse, error)
 	PipelineInfo(ctx context.Context, in *PipelineInfoRequest, opts ...grpc.CallOption) (*PipelineInfoResponse, error)
 	MarsConfigFile(ctx context.Context, in *MarsConfigFileRequest, opts ...grpc.CallOption) (*MarsConfigFileResponse, error)
+	GetChartValuesYaml(ctx context.Context, in *GetChartValuesYamlRequest, opts ...grpc.CallOption) (*GetChartValuesYamlResponse, error)
 }
 
 type gitClient struct {
@@ -135,6 +137,15 @@ func (c *gitClient) MarsConfigFile(ctx context.Context, in *MarsConfigFileReques
 	return out, nil
 }
 
+func (c *gitClient) GetChartValuesYaml(ctx context.Context, in *GetChartValuesYamlRequest, opts ...grpc.CallOption) (*GetChartValuesYamlResponse, error) {
+	out := new(GetChartValuesYamlResponse)
+	err := c.cc.Invoke(ctx, Git_GetChartValuesYaml_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GitServer is the server API for Git service.
 // All implementations must embed UnimplementedGitServer
 // for forward compatibility
@@ -148,6 +159,7 @@ type GitServer interface {
 	Commit(context.Context, *CommitRequest) (*CommitResponse, error)
 	PipelineInfo(context.Context, *PipelineInfoRequest) (*PipelineInfoResponse, error)
 	MarsConfigFile(context.Context, *MarsConfigFileRequest) (*MarsConfigFileResponse, error)
+	GetChartValuesYaml(context.Context, *GetChartValuesYamlRequest) (*GetChartValuesYamlResponse, error)
 	mustEmbedUnimplementedGitServer()
 }
 
@@ -181,6 +193,9 @@ func (UnimplementedGitServer) PipelineInfo(context.Context, *PipelineInfoRequest
 }
 func (UnimplementedGitServer) MarsConfigFile(context.Context, *MarsConfigFileRequest) (*MarsConfigFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MarsConfigFile not implemented")
+}
+func (UnimplementedGitServer) GetChartValuesYaml(context.Context, *GetChartValuesYamlRequest) (*GetChartValuesYamlResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetChartValuesYaml not implemented")
 }
 func (UnimplementedGitServer) mustEmbedUnimplementedGitServer() {}
 
@@ -357,6 +372,24 @@ func _Git_MarsConfigFile_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Git_GetChartValuesYaml_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetChartValuesYamlRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GitServer).GetChartValuesYaml(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Git_GetChartValuesYaml_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GitServer).GetChartValuesYaml(ctx, req.(*GetChartValuesYamlRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Git_ServiceDesc is the grpc.ServiceDesc for Git service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -399,6 +432,10 @@ var Git_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MarsConfigFile",
 			Handler:    _Git_MarsConfigFile_Handler,
+		},
+		{
+			MethodName: "GetChartValuesYaml",
+			Handler:    _Git_GetChartValuesYaml_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

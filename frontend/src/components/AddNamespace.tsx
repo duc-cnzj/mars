@@ -23,13 +23,16 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
 
     ajax
       .POST("/api/namespaces", { body: { namespace } })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          message.error(error.message);
+          return;
+        }
         data && onCreated({ id: data.namespace.id, name: data.namespace.name });
         message.success("名称空间创建成功");
         setIsVisible(false);
         setNamespace("");
-      })
-      .catch((e) => message.error(e.response.data.message));
+      });
   }, [namespace, onCreated]);
 
   return (

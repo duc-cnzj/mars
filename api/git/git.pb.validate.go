@@ -546,6 +546,8 @@ func (m *Option) validate(all bool) error {
 
 	// no validation rules for DisplayName
 
+	// no validation rules for NeedGitRepo
+
 	if len(errors) > 0 {
 		return OptionMultiError(errors)
 	}
@@ -2422,3 +2424,220 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ProjectOptionsRequestValidationError{}
+
+// Validate checks the field values on GetChartValuesYamlRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetChartValuesYamlRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetChartValuesYamlRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetChartValuesYamlRequestMultiError, or nil if none found.
+func (m *GetChartValuesYamlRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetChartValuesYamlRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(m.GetInput()) < 1 {
+		err := GetChartValuesYamlRequestValidationError{
+			field:  "Input",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GetChartValuesYamlRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetChartValuesYamlRequestMultiError is an error wrapping multiple validation
+// errors returned by GetChartValuesYamlRequest.ValidateAll() if the
+// designated constraints aren't met.
+type GetChartValuesYamlRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetChartValuesYamlRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetChartValuesYamlRequestMultiError) AllErrors() []error { return m }
+
+// GetChartValuesYamlRequestValidationError is the validation error returned by
+// GetChartValuesYamlRequest.Validate if the designated constraints aren't met.
+type GetChartValuesYamlRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetChartValuesYamlRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetChartValuesYamlRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetChartValuesYamlRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetChartValuesYamlRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetChartValuesYamlRequestValidationError) ErrorName() string {
+	return "GetChartValuesYamlRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetChartValuesYamlRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetChartValuesYamlRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetChartValuesYamlRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetChartValuesYamlRequestValidationError{}
+
+// Validate checks the field values on GetChartValuesYamlResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetChartValuesYamlResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetChartValuesYamlResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetChartValuesYamlResponseMultiError, or nil if none found.
+func (m *GetChartValuesYamlResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetChartValuesYamlResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Values
+
+	if len(errors) > 0 {
+		return GetChartValuesYamlResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetChartValuesYamlResponseMultiError is an error wrapping multiple
+// validation errors returned by GetChartValuesYamlResponse.ValidateAll() if
+// the designated constraints aren't met.
+type GetChartValuesYamlResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetChartValuesYamlResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetChartValuesYamlResponseMultiError) AllErrors() []error { return m }
+
+// GetChartValuesYamlResponseValidationError is the validation error returned
+// by GetChartValuesYamlResponse.Validate if the designated constraints aren't met.
+type GetChartValuesYamlResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetChartValuesYamlResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetChartValuesYamlResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetChartValuesYamlResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetChartValuesYamlResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetChartValuesYamlResponseValidationError) ErrorName() string {
+	return "GetChartValuesYamlResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetChartValuesYamlResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetChartValuesYamlResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetChartValuesYamlResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetChartValuesYamlResponseValidationError{}
