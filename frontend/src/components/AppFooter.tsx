@@ -1,7 +1,6 @@
 import React, { memo, useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { Button, Popover } from "antd";
-import { GithubOutlined } from "@ant-design/icons";
+import { Popover } from "antd";
 import Coffee from "./Coffee";
 import ajax from "../api/ajax";
 import { components } from "../api/schema";
@@ -18,7 +17,9 @@ const AppFooter: React.FC = () => {
 
   return (
     <div className="copyright">
-      <div style={{ fontSize: 14 }}>created by duc@2021.</div>
+      <div style={{ fontSize: 14 }}>
+        created by duc@2021~{new Date().getFullYear()}.
+      </div>
       <div
         style={{
           fontSize: 12,
@@ -29,19 +30,19 @@ const AppFooter: React.FC = () => {
       >
         version: {version?.version}, build at{" "}
         {dayjs(version?.buildDate).format("YYYY-MM-DD HH:mm:ss")}
-        <Button
-          icon={<GithubOutlined />}
-          target={"_blank"}
-          href={version?.gitRepo}
-          type="link"
-        ></Button>
         <Popover
           content={<Coffee />}
           overlayInnerStyle={{ padding: 0, margin: 0 }}
           trigger="click"
         >
           <svg
-            style={{ width: 18, height: 18, cursor: "pointer" }}
+            style={{
+              margin: 7,
+              width: 18,
+              height: 18,
+              cursor: "pointer",
+              marginLeft: 10,
+            }}
             className="icon"
             aria-hidden="true"
           >

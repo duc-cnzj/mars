@@ -24,7 +24,6 @@ import {
 } from "antd";
 import theme from "../styles/theme";
 import AsciinemaPlayer from "../components/Player";
-import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { downloadFile } from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -39,11 +38,12 @@ import dayjs from "dayjs";
 import styled from "@emotion/styled";
 import ajax from "../api/ajax";
 import { components } from "../api/schema";
+import { TypesEventModelAction } from "../api/schema.d";
 
 const defaultPageSize = 15;
 const { Option } = Select;
 
-const initQuery = { action_type: pb.types.EventActionType.Unknown, search: "" };
+const initQuery = { action_type: TypesEventModelAction.Unknown, search: "" };
 
 const EventList: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -57,7 +57,7 @@ const EventList: React.FC = () => {
     []
   );
   const [queries, setQueries] = useState<{
-    action_type: pb.types.EventActionType;
+    action_type: TypesEventModelAction;
     search: string;
   }>(initQuery);
 
@@ -165,64 +165,64 @@ const EventList: React.FC = () => {
   );
 
   const getActionStyle = useCallback(
-    (type: pb.types.EventActionType): React.ReactNode => {
+    (type: TypesEventModelAction): React.ReactNode => {
       let style = { fontSize: 12, marginLeft: 5 };
       switch (type) {
-        case pb.types.EventActionType.Create:
+        case TypesEventModelAction.Create:
           return (
             <Tag color="#1890ff" style={style}>
               创建
             </Tag>
           );
-        case pb.types.EventActionType.Shell:
+        case TypesEventModelAction.Shell:
           return (
             <Tag color="#1890ff" style={style}>
               执行命令
             </Tag>
           );
-        case pb.types.EventActionType.Exec:
+        case TypesEventModelAction.Exec:
           return (
             <Tag color="#a78bfa" style={style}>
               SDK 执行命令
             </Tag>
           );
-        case pb.types.EventActionType.Update:
+        case TypesEventModelAction.Update:
           return (
             <Tag color="#52c41a" style={style}>
               更新
             </Tag>
           );
-        case pb.types.EventActionType.Delete:
+        case TypesEventModelAction.Delete:
           return (
             <Tag color="#f5222d" style={style}>
               删除
             </Tag>
           );
-        case pb.types.EventActionType.Upload:
+        case TypesEventModelAction.Upload:
           return (
             <Tag color="#fb7185" style={style}>
               上传文件
             </Tag>
           );
-        case pb.types.EventActionType.Download:
+        case TypesEventModelAction.Download:
           return (
             <Tag color="#2dd4bf" style={style}>
               下载文件
             </Tag>
           );
-        case pb.types.EventActionType.Login:
+        case TypesEventModelAction.Login:
           return (
             <Tag color="#38bdf8" style={style}>
               登录
             </Tag>
           );
-        case pb.types.EventActionType.CancelDeploy:
+        case TypesEventModelAction.CancelDeploy:
           return (
             <Tag color="#facc15" style={style}>
               取消部署
             </Tag>
           );
-        case pb.types.EventActionType.DryRun:
+        case TypesEventModelAction.DryRun:
           return (
             <Tag color="#818cf8" style={style}>
               试运行
@@ -295,7 +295,7 @@ const EventList: React.FC = () => {
           <div style={{ display: "flex", alignItems: "center" }}>
             <div>事件日志</div>
             <Select
-              defaultValue={pb.types.EventActionType.Unknown}
+              defaultValue={TypesEventModelAction.Unknown}
               size="small"
               style={{ width: 300, marginLeft: 10 }}
               onChange={(v) => {
@@ -303,21 +303,17 @@ const EventList: React.FC = () => {
                 fetch(v, queries.search);
               }}
             >
-              <Option value={pb.types.EventActionType.Unknown}>全部</Option>
-              <Option value={pb.types.EventActionType.Create}>创建</Option>
-              <Option value={pb.types.EventActionType.Delete}>删除</Option>
-              <Option value={pb.types.EventActionType.Download}>
-                下载文件
-              </Option>
-              <Option value={pb.types.EventActionType.DryRun}>试运行</Option>
-              <Option value={pb.types.EventActionType.Shell}>执行命令</Option>
-              <Option value={pb.types.EventActionType.Exec}>
-                SDK 执行命令
-              </Option>
-              <Option value={pb.types.EventActionType.Update}>更新</Option>
-              <Option value={pb.types.EventActionType.Upload}>上传文件</Option>
-              <Option value={pb.types.EventActionType.Login}>登录</Option>
-              <Option value={pb.types.EventActionType.CancelDeploy}>
+              <Option value={TypesEventModelAction.Unknown}>全部</Option>
+              <Option value={TypesEventModelAction.Create}>创建</Option>
+              <Option value={TypesEventModelAction.Delete}>删除</Option>
+              <Option value={TypesEventModelAction.Download}>下载文件</Option>
+              <Option value={TypesEventModelAction.DryRun}>试运行</Option>
+              <Option value={TypesEventModelAction.Shell}>执行命令</Option>
+              <Option value={TypesEventModelAction.Exec}>SDK 执行命令</Option>
+              <Option value={TypesEventModelAction.Update}>更新</Option>
+              <Option value={TypesEventModelAction.Upload}>上传文件</Option>
+              <Option value={TypesEventModelAction.Login}>登录</Option>
+              <Option value={TypesEventModelAction.CancelDeploy}>
                 取消部署
               </Option>
             </Select>
@@ -397,8 +393,8 @@ const EventList: React.FC = () => {
                   description={`${item.message}`}
                 />
                 {!!item.file &&
-                  (item.action === pb.types.EventActionType.Shell ||
-                    item.action === pb.types.EventActionType.Exec) && (
+                  (item.action === TypesEventModelAction.Shell ||
+                    item.action === TypesEventModelAction.Exec) && (
                     <>
                       <Button
                         type="dashed"
@@ -443,7 +439,7 @@ const EventList: React.FC = () => {
                     </>
                   )}
                 {!!item.file &&
-                  item.action === pb.types.EventActionType.Upload && (
+                  item.action === TypesEventModelAction.Upload && (
                     <>
                       <Button
                         type="dashed"
