@@ -125,7 +125,10 @@ func (d *databaseLock) ForceRelease(key string) bool {
 }
 
 func (d *databaseLock) Owner(key string) string {
-	cl, _ := d.data.DB().CacheLock.Query().Where(cachelock.Key(key)).First(context.TODO())
+	cl, err := d.data.DB().CacheLock.Query().Where(cachelock.Key(key)).First(context.TODO())
+	if err != nil {
+		return ""
+	}
 
 	return cl.Owner
 }

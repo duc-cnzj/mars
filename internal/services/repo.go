@@ -39,6 +39,7 @@ func (r *repoSvc) List(ctx context.Context, request *reposerver.ListRequest) (*r
 		PageSize:      pageSize,
 		Enabled:       request.Enabled,
 		OrderByIDDesc: lo.ToPtr(true),
+		Name:          request.Name,
 	})
 	if err != nil {
 		return nil, err

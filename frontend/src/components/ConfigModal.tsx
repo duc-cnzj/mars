@@ -608,6 +608,7 @@ const ConfigModal: React.FC<{
                         </Select>
                       </Form.Item>
                     </Form.Item>
+
                     <div style={{ maxHeight: "400px", overflowY: "auto" }}>
                       <Popover
                         overlayInnerStyle={{

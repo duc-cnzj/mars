@@ -54,19 +54,22 @@ const ProjectSelector: React.FC<{
       .finally(() => setLoading((l) => ({ ...l, project: false })));
   }, []);
 
+  const [needGitRepo, setNeedGitRepo] = useState(true);
   const onProjectChange = useCallback(
     (value: any) => {
       let pid = Number(value);
+      let repo = options?.projects.find((pro) => Number(pro.value) === pid);
+      console.log(repo);
+      repo && setNeedGitRepo(repo.needGitRepo);
+      if (!repo?.needGitRepo) {
+        return;
+      }
       let currentBranch =
         v && Number(v.gitProjectId) === Number(value) ? v?.gitBranch : "";
       let currentCommit = currentBranch === v?.gitBranch ? v.gitCommit : "";
       let commitTitle = currentCommit === v?.gitCommit ? v?.gitCommitTitle : "";
       onCh?.({
-        projectName:
-          (options &&
-            options.projects.find((pro) => Number(pro.gitProjectId) === pid)
-              ?.displayName) ||
-          "",
+        projectName: repo?.label || "",
         gitProjectId: pid,
         gitBranch: currentBranch,
         gitCommit: currentCommit,
@@ -205,49 +208,53 @@ const ProjectSelector: React.FC<{
           }
         />
       </MyCol>
-      <MyCol
-        span={6}
-        onFocus={() => setFocusIdx(2)}
-        onBlur={() => setFocusIdx(null)}
-        focus={focusIdx === 2 ? 1 : 0}
-      >
-        <SelectorItem
-          className={css`
-            .ant-select-selector {
-              border-radius: 0 !important;
-            }
-          `}
-          loading={loading.branch}
-          onDropdownVisibleChange={onBranchVisibleChange}
-          placeholder="选择分支"
-          disabled={disabled || loading.commit}
-          value={v?.gitBranch}
-          onChange={onBranchChange}
-          options={options ? options.branches : []}
-        />
-      </MyCol>
-      <MyCol
-        span={12}
-        onFocus={() => setFocusIdx(3)}
-        onBlur={() => setFocusIdx(null)}
-        focus={focusIdx === 3 ? 1 : 0}
-      >
-        <SelectorItem
-          className={css`
-            .ant-select-selector {
-              border-top-left-radius: 0 !important;
-              border-bottom-left-radius: 0 !important;
-            }
-          `}
-          loading={loading.commit}
-          onDropdownVisibleChange={onCommitClickVisibleChange}
-          placeholder="选择 Commit"
-          disabled={disabled}
-          value={v?.gitCommitTitle}
-          onChange={onCommitChange}
-          options={options ? options.commits : []}
-        />
-      </MyCol>
+      {needGitRepo && (
+        <>
+          <MyCol
+            span={6}
+            onFocus={() => setFocusIdx(2)}
+            onBlur={() => setFocusIdx(null)}
+            focus={focusIdx === 2 ? 1 : 0}
+          >
+            <SelectorItem
+              className={css`
+                .ant-select-selector {
+                  border-radius: 0 !important;
+                }
+              `}
+              loading={loading.branch}
+              onDropdownVisibleChange={onBranchVisibleChange}
+              placeholder="选择分支"
+              disabled={disabled || loading.commit}
+              value={v?.gitBranch}
+              onChange={onBranchChange}
+              options={options ? options.branches : []}
+            />
+          </MyCol>
+          <MyCol
+            span={12}
+            onFocus={() => setFocusIdx(3)}
+            onBlur={() => setFocusIdx(null)}
+            focus={focusIdx === 3 ? 1 : 0}
+          >
+            <SelectorItem
+              className={css`
+                .ant-select-selector {
+                  border-top-left-radius: 0 !important;
+                  border-bottom-left-radius: 0 !important;
+                }
+              `}
+              loading={loading.commit}
+              onDropdownVisibleChange={onCommitClickVisibleChange}
+              placeholder="选择 Commit"
+              disabled={disabled}
+              value={v?.gitCommitTitle}
+              onChange={onCommitChange}
+              options={options ? options.commits : []}
+            />
+          </MyCol>
+        </>
+      )}
     </Row>
   );
 };

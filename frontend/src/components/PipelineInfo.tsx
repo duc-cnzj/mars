@@ -28,7 +28,7 @@ const PipelineInfo: React.FC<{
     message: string;
     web_url: string;
     type: "success" | "warning" | "error";
-  }>();
+  } | null>();
 
   useEffect(() => {
     if (projectId && branch && commit) {
@@ -45,24 +45,23 @@ const PipelineInfo: React.FC<{
             },
           }
         )
-        .then(({ data }) => {
-          if (data) {
-            let p = pipelines[data.status];
-            if (p) {
-              setInfo({
-                type: p.type,
-                message: p.message,
-                web_url: data.webUrl,
-              });
-            }
+        .then(({ data, error }) => {
+          if (error) {
+            setInfo(null);
+            return;
           }
-        })
-        .catch((e) => {
-          setInfo(undefined);
+          let p = pipelines[data.status];
+          if (p) {
+            setInfo({
+              type: p.type,
+              message: p.message,
+              web_url: data.webUrl,
+            });
+          }
         });
       return;
     }
-    setInfo(undefined);
+    setInfo(null);
   }, [projectId, branch, commit]);
 
   return (

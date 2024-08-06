@@ -1,9 +1,8 @@
 import React, { useCallback, useState, Fragment, useMemo, memo } from "react";
-import pb from "../../api/compiled";
 import { Form, Input, InputNumber, Radio, Select, Switch } from "antd";
 import { omitEqual } from "../../utils/obj";
 import { css } from "@emotion/css";
-import { components } from "../../api/schema";
+import { components, MarsElementType } from "../../api/schema.d";
 
 const Option = Select.Option;
 const { TextArea } = Input;
@@ -44,23 +43,23 @@ const initStyle = {
 };
 
 const Elements: React.FC<{
-  value?: pb.types.ExtraValue[];
-  onChange?: (value: pb.types.ExtraValue[]) => void;
+  value?: components["schemas"]["types.ExtraValue"][];
+  onChange?: (value: components["schemas"]["types.ExtraValue"][]) => void;
   elements: components["schemas"]["mars.Element"][];
   style?: st;
 }> = ({ elements, style, value, onChange }) => {
   let initValues = useMemo(() => {
     return elements
-      ? elements.map((item): pb.types.ExtraValue => {
+      ? elements.map((item): components["schemas"]["types.ExtraValue"] => {
           let itemValue: any = item.default;
           if (!!value) {
             for (let i = 0; i < value.length; i++) {
               if (value[i].path === item.path) {
                 itemValue = value[i].value;
-                if (item.type === pb.mars.ElementType.ElementTypeSwitch) {
+                if (item.type === MarsElementType.ElementTypeSwitch) {
                   itemValue = isTrue(itemValue);
                 }
-                if (item.type === pb.mars.ElementType.ElementTypeInputNumber) {
+                if (item.type === MarsElementType.ElementTypeInputNumber) {
                   itemValue = Number(itemValue);
                 }
                 break;
@@ -74,7 +73,7 @@ const Elements: React.FC<{
 
   const getElement = useCallback(
     (
-      item: pb.types.ExtraValue,
+      item: components["schemas"]["types.ExtraValue"],
       ele: components["schemas"]["mars.Element"][],
       index: number
     ): React.ReactNode => {
@@ -118,7 +117,7 @@ const Element: React.FC<{
 }> = ({ element, style, value: v, onChange }) => {
   const [value, setValue] = useState(v);
   switch (element.type) {
-    case pb.mars.ElementType.ElementTypeInput:
+    case MarsElementType.ElementTypeInput:
       return (
         <Form.Item
           label={<div style={style.label}>{element.description}</div>}
@@ -135,7 +134,7 @@ const Element: React.FC<{
           />
         </Form.Item>
       );
-    case pb.mars.ElementType.ElementTypeTextArea:
+    case MarsElementType.ElementTypeTextArea:
       return (
         <Form.Item
           className={css`
@@ -159,7 +158,7 @@ const Element: React.FC<{
           />
         </Form.Item>
       );
-    case pb.mars.ElementType.ElementTypeInputNumber:
+    case MarsElementType.ElementTypeInputNumber:
       return (
         <Form.Item
           label={<div style={style.label}>{element.description}</div>}
@@ -176,8 +175,8 @@ const Element: React.FC<{
           />
         </Form.Item>
       );
-    case pb.mars.ElementType.ElementTypeRadio:
-    case pb.mars.ElementType.ElementTypeNumberRadio:
+    case MarsElementType.ElementTypeRadio:
+    case MarsElementType.ElementTypeNumberRadio:
       return (
         <Form.Item
           label={<div style={style.label}>{element.description}</div>}
@@ -200,8 +199,8 @@ const Element: React.FC<{
           </Radio.Group>
         </Form.Item>
       );
-    case pb.mars.ElementType.ElementTypeSelect:
-    case pb.mars.ElementType.ElementTypeNumberSelect:
+    case MarsElementType.ElementTypeSelect:
+    case MarsElementType.ElementTypeNumberSelect:
       return (
         <Form.Item
           label={<div style={style.label}>{element.description}</div>}
@@ -224,7 +223,7 @@ const Element: React.FC<{
           </Select>
         </Form.Item>
       );
-    case pb.mars.ElementType.ElementTypeSwitch:
+    case MarsElementType.ElementTypeSwitch:
       return (
         <Form.Item
           label={<div style={style.label}>{element.description}</div>}

@@ -92,3 +92,8 @@ func IfBool(field string) func(*bool) func(*sql.Selector) {
 var IfEmail = IfStrEQ("email")
 var IfEnabled = IfBool("enabled")
 var IfOrderByIDDesc = IfOrderByDesc("id")
+var IfNameLike = If(func(s string) bool {
+	return s != ""
+}, func(t string) func(*sql.Selector) {
+	return sql.FieldContains("name", t)
+})

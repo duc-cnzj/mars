@@ -106,7 +106,7 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 		}),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
-				UseEnumNumbers:  true,
+				UseEnumNumbers:  false,
 				EmitUnpopulated: true,
 			},
 			UnmarshalOptions: protojson.UnmarshalOptions{

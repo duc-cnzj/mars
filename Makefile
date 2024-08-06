@@ -32,7 +32,7 @@ api:
 		--proto_path ./third_party/protos \
 		--go_out=paths=source_relative:./api \
 		--go-grpc_out=paths=source_relative:./api \
-	    --openapi_out=fq_schema_naming=true,default_response=true,version="$(VERSION)",title="mars api.":./doc \
+	    --openapi_out=enum_type=string,fq_schema_naming=true,default_response=true,version="$(VERSION)",title="mars api.":./doc \
 		--grpc-gateway_out=paths=source_relative:./api \
 		--grpc-gateway_opt logtostderr=true \
 		--grpc-gateway_opt paths=source_relative \
@@ -43,7 +43,7 @@ api:
 #		--openapiv2_opt logtostderr=true \
 #		--openapiv2_opt json_names_for_fields=false \
 
-	npx openapi-typescript ./doc/openapi.yaml --properties-required-by-default -o ./frontend/src/api/schema.d.ts
+	npx openapi-typescript ./doc/openapi.yaml --enum --enum-values --properties-required-by-default -o ./frontend/src/api/schema.d.ts
 
 	#./frontend/node_modules/.bin/pbjs -t static-module -o ./frontend/src/api/compiled.js -w es6  ./api/**/*.proto \
 #      --no-verify \

@@ -431,7 +431,19 @@ paths:
                 - name: actionType
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - Unknown
+                        - Create
+                        - Update
+                        - Delete
+                        - Upload
+                        - Download
+                        - DryRun
+                        - Shell
+                        - Login
+                        - CancelDeploy
+                        - Exec
+                    type: string
                     format: enum
                 - name: search
                   in: query
@@ -570,6 +582,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+    /api/git/all_repos:
+        get:
+            tags:
+                - Git
+            operationId: Git_AllRepos
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.AllReposResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/get_chart_values_yaml:
         post:
             tags:
@@ -612,72 +642,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
-    /api/git/projects:
-        get:
-            tags:
-                - Git
-            operationId: Git_All
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/git.AllResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/google.rpc.Status'
-    /api/git/projects/disable:
-        post:
-            tags:
-                - Git
-            operationId: Git_DisableProject
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/git.DisableProjectRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/git.DisableProjectResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/google.rpc.Status'
-    /api/git/projects/enable:
-        post:
-            tags:
-                - Git
-            operationId: Git_EnableProject
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/git.EnableProjectRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/git.EnableProjectResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/google.rpc.Status'
     /api/git/projects/{gitProjectId}/branch_options:
         get:
             tags:
@@ -688,7 +652,8 @@ paths:
                   in: path
                   required: true
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
                 - name: all
                   in: query
                   schema:
@@ -716,7 +681,8 @@ paths:
                   in: path
                   required: true
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
                 - name: branch
                   in: path
                   required: true
@@ -745,7 +711,8 @@ paths:
                   in: path
                   required: true
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
                 - name: branch
                   in: path
                   required: true
@@ -1452,6 +1419,10 @@ paths:
                   in: query
                   schema:
                     type: boolean
+                - name: name
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -1830,13 +1801,23 @@ components:
                     type: array
                     items:
                         type: string
-        git.AllResponse:
+        git.AllReposResponse:
             type: object
             properties:
                 items:
                     type: array
                     items:
-                        $ref: '#/components/schemas/git.ProjectItem'
+                        $ref: '#/components/schemas/git.AllReposResponse_Item'
+        git.AllReposResponse_Item:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                description:
+                    type: string
         git.BranchOptionsResponse:
             type: object
             properties:
@@ -1859,7 +1840,8 @@ components:
                 shortId:
                     type: string
                 gitProjectId:
-                    type: string
+                    type: integer
+                    format: int32
                 label:
                     type: string
                 title:
@@ -1882,22 +1864,6 @@ components:
                     type: string
                 createdAt:
                     type: string
-        git.DisableProjectRequest:
-            type: object
-            properties:
-                gitProjectId:
-                    type: string
-        git.DisableProjectResponse:
-            type: object
-            properties: {}
-        git.EnableProjectRequest:
-            type: object
-            properties:
-                gitProjectId:
-                    type: string
-        git.EnableProjectResponse:
-            type: object
-            properties: {}
         git.GetChartValuesYamlRequest:
             required:
                 - input
@@ -1934,10 +1900,9 @@ components:
                 isLeaf:
                     type: boolean
                 gitProjectId:
-                    type: string
+                    type: integer
+                    format: int32
                 branch:
-                    type: string
-                displayName:
                     type: string
                 needGitRepo:
                     type: boolean
@@ -1947,28 +1912,6 @@ components:
                 status:
                     type: string
                 webUrl:
-                    type: string
-        git.ProjectItem:
-            type: object
-            properties:
-                id:
-                    type: integer
-                    format: int32
-                name:
-                    type: string
-                path:
-                    type: string
-                webUrl:
-                    type: string
-                avatarUrl:
-                    type: string
-                description:
-                    type: string
-                enabled:
-                    type: boolean
-                globalEnabled:
-                    type: boolean
-                displayName:
                     type: string
         git.ProjectOptionsResponse:
             type: object
@@ -2085,7 +2028,17 @@ components:
                 path:
                     type: string
                 type:
-                    type: integer
+                    enum:
+                        - ElementTypeUnknown
+                        - ElementTypeInput
+                        - ElementTypeInputNumber
+                        - ElementTypeSelect
+                        - ElementTypeRadio
+                        - ElementTypeSwitch
+                        - ElementTypeTextArea
+                        - ElementTypeNumberSelect
+                        - ElementTypeNumberRadio
+                    type: string
                     format: enum
                 default:
                     type: string
@@ -2462,7 +2415,19 @@ components:
                     type: integer
                     format: int32
                 action:
-                    type: integer
+                    enum:
+                        - Unknown
+                        - Create
+                        - Update
+                        - Delete
+                        - Upload
+                        - Download
+                        - DryRun
+                        - Shell
+                        - Login
+                        - CancelDeploy
+                        - Exec
+                    type: string
                     format: enum
                 username:
                     type: string
@@ -2625,7 +2590,12 @@ components:
                 finalExtraValues:
                     type: string
                 deployStatus:
-                    type: integer
+                    enum:
+                        - StatusUnknown
+                        - StatusDeploying
+                        - StatusDeployed
+                        - StatusFailed
+                    type: string
                     format: enum
                 humanizeCreatedAt:
                     type: string

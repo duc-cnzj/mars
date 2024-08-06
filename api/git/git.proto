@@ -10,39 +10,14 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/git;git";
 
-message EnableProjectRequest {
-  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
-}
-
-message DisableProjectRequest {
-  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
-}
-
-message ProjectItem {
-  int32  id             = 1;
-  string name           = 2;
-  string path           = 3;
-  string web_url        = 4;
-  string avatar_url     = 5;
-  string description    = 6;
-  bool   enabled        = 7;
-  bool   global_enabled = 8;
-  string display_name   = 9;
-}
-
-message AllResponse {
-  repeated ProjectItem items = 1;
-}
-
 message Option {
   string value          = 1;
   string label          = 2;
   string type           = 3;
   bool   is_leaf        = 4;
-  string git_project_id = 5;
+  int32  git_project_id = 5;
   string branch         = 6;
-  string display_name   = 7;
-  bool   need_git_repo  = 8;
+  bool   need_git_repo  = 7;
 }
 
 message ProjectOptionsResponse {
@@ -50,8 +25,8 @@ message ProjectOptionsResponse {
 }
 
 message BranchOptionsRequest {
-  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
-  bool   all            = 2;
+  int32 git_project_id = 1 [(validate.rules).int32.gt = 0];
+  bool  all            = 2;
 }
 
 message BranchOptionsResponse {
@@ -59,7 +34,7 @@ message BranchOptionsResponse {
 }
 
 message CommitOptionsRequest {
-  string git_project_id = 1;
+  int32  git_project_id = 1 [(validate.rules).int32.gt = 0];
   string branch         = 2;
 }
 
@@ -68,7 +43,7 @@ message CommitOptionsResponse {
 }
 
 message CommitRequest {
-  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
+  int32  git_project_id = 1 [(validate.rules).int32.gt = 0];
   string branch         = 2 [(validate.rules).string.min_bytes = 1];
   string commit         = 3 [(validate.rules).string.min_bytes = 1];
 }
@@ -76,7 +51,7 @@ message CommitRequest {
 message CommitResponse {
   string id              = 1;
   string short_id        = 2;
-  string git_project_id  = 3;
+  int32  git_project_id  = 3;
 
   string label           = 4;
   string title           = 5;
@@ -114,39 +89,26 @@ message MarsConfigFileResponse {
   repeated mars.Element elements = 3;
 }
 
-message EnableProjectResponse {}
-message DisableProjectResponse {}
-message AllRequest {}
 message ProjectOptionsRequest {}
 
+message AllReposRequest{}
+message AllReposResponse{
+  message Item {
+    int32  id          = 1;
+    string name        = 2;
+    string description = 3;
+  }
+
+  repeated Item items = 1;
+}
+
 service Git {
-  rpc EnableProject(EnableProjectRequest) returns (EnableProjectResponse) {
+  rpc AllRepos(AllReposRequest) returns(AllReposResponse) {
     option (google.api.http)                                               = {
-      post: "/api/git/projects/enable",
-      body: "*"
-    };
-
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "开启项目，开启后可以在项目列表看到",
-    };
-  }
-
-  rpc DisableProject(DisableProjectRequest) returns (DisableProjectResponse) {
-    option (google.api.http)                                               = {
-      post: "/api/git/projects/disable",
-      body: "*"
+      get: "/api/git/all_repos",
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "关闭项目",
-    };
-  }
-
-  rpc All(AllRequest) returns (AllResponse) {
-    option (google.api.http)                                               = {
-      get: "/api/git/projects",
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "获取所有的 git 项目",
+      summary: "获取所有 git 仓库列表",
     };
   }
 

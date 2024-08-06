@@ -149,7 +149,8 @@ func (svc *gitConfigSvc) Update(ctx context.Context, request *gitconfig.UpdateRe
 		request.Config.Branches = []string{"*"}
 	}
 	if request.Config != nil && request.Config.DisplayName != project.GlobalMarsConfig().DisplayName {
-		svc.cache.Clear(cache.NewKey(ProjectOptionsCacheKey))
+		//FIXME
+		//svc.cache.Clear(cache.NewKey(ProjectOptionsCacheKey))
 	}
 	if request.Config.ConfigField == "" {
 		request.Config.IsSimpleEnv = true

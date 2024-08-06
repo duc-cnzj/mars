@@ -325,6 +325,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/git/all_repos": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["Git_AllRepos"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/git/get_chart_values_yaml": {
     parameters: {
       query?: never;
@@ -351,54 +367,6 @@ export interface paths {
     get: operations["Git_ProjectOptions"];
     put?: never;
     post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/git/projects": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations["Git_All"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/git/projects/disable": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations["Git_DisableProject"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/git/projects/enable": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations["Git_EnableProject"];
     delete?: never;
     options?: never;
     head?: never;
@@ -990,8 +958,14 @@ export interface components {
     "file.ShowRecordsResponse": {
       items: string[];
     };
-    "git.AllResponse": {
-      items: components["schemas"]["git.ProjectItem"][];
+    "git.AllReposResponse": {
+      items: components["schemas"]["git.AllReposResponse_Item"][];
+    };
+    "git.AllReposResponse_Item": {
+      /** Format: int32 */
+      id: number;
+      name: string;
+      description: string;
     };
     "git.BranchOptionsResponse": {
       items: components["schemas"]["git.Option"][];
@@ -1002,7 +976,8 @@ export interface components {
     "git.CommitResponse": {
       id: string;
       shortId: string;
-      gitProjectId: string;
+      /** Format: int32 */
+      gitProjectId: number;
       label: string;
       title: string;
       branch: string;
@@ -1015,14 +990,6 @@ export interface components {
       committedDate: string;
       createdAt: string;
     };
-    "git.DisableProjectRequest": {
-      gitProjectId: string;
-    };
-    "git.DisableProjectResponse": Record<string, never>;
-    "git.EnableProjectRequest": {
-      gitProjectId: string;
-    };
-    "git.EnableProjectResponse": Record<string, never>;
     "git.GetChartValuesYamlRequest": {
       /** @description "pid|branch|path" or "path" */
       input: string;
@@ -1040,26 +1007,14 @@ export interface components {
       label: string;
       type: string;
       isLeaf: boolean;
-      gitProjectId: string;
+      /** Format: int32 */
+      gitProjectId: number;
       branch: string;
-      displayName: string;
       needGitRepo: boolean;
     };
     "git.PipelineInfoResponse": {
       status: string;
       webUrl: string;
-    };
-    "git.ProjectItem": {
-      /** Format: int32 */
-      id: number;
-      name: string;
-      path: string;
-      webUrl: string;
-      avatarUrl: string;
-      description: string;
-      enabled: boolean;
-      globalEnabled: boolean;
-      displayName: string;
     };
     "git.ProjectOptionsResponse": {
       items: components["schemas"]["git.Option"][];
@@ -1128,8 +1083,11 @@ export interface components {
     };
     "mars.Element": {
       path: string;
-      /** Format: enum */
-      type: number;
+      /**
+       * Format: enum
+       * @enum {string}
+       */
+      type: MarsElementType;
       default: string;
       description: string;
       selectValues: string[];
@@ -1328,8 +1286,11 @@ export interface components {
     "types.EventModel": {
       /** Format: int32 */
       id: number;
-      /** Format: enum */
-      action: number;
+      /**
+       * Format: enum
+       * @enum {string}
+       */
+      action: TypesEventModelAction;
       username: string;
       message: string;
       old: string;
@@ -1413,8 +1374,11 @@ export interface components {
       envValues: components["schemas"]["types.KeyValue"][];
       extraValues: components["schemas"]["types.ExtraValue"][];
       finalExtraValues: string;
-      /** Format: enum */
-      deployStatus: number;
+      /**
+       * Format: enum
+       * @enum {string}
+       */
+      deployStatus: TypesProjectModelDeployStatus;
       humanizeCreatedAt: string;
       humanizeUpdatedAt: string;
       configType: string;
@@ -2001,7 +1965,7 @@ export interface operations {
       query?: {
         page?: number;
         pageSize?: number;
-        actionType?: number;
+        actionType?: PathsApiEventsGetParametersQueryActionType;
         /** @description 模糊搜索 message 和 username */
         search?: string;
       };
@@ -2184,6 +2148,35 @@ export interface operations {
       };
     };
   };
+  Git_AllRepos: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["git.AllReposResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
+    };
+  };
   Git_GetChartValuesYaml: {
     parameters: {
       query?: never;
@@ -2246,101 +2239,6 @@ export interface operations {
       };
     };
   };
-  Git_All: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["git.AllResponse"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["google.rpc.Status"];
-        };
-      };
-    };
-  };
-  Git_DisableProject: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["git.DisableProjectRequest"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["git.DisableProjectResponse"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["google.rpc.Status"];
-        };
-      };
-    };
-  };
-  Git_EnableProject: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["git.EnableProjectRequest"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["git.EnableProjectResponse"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["google.rpc.Status"];
-        };
-      };
-    };
-  };
   Git_BranchOptions: {
     parameters: {
       query?: {
@@ -2348,7 +2246,7 @@ export interface operations {
       };
       header?: never;
       path: {
-        gitProjectId: string;
+        gitProjectId: number;
       };
       cookie?: never;
     };
@@ -2379,7 +2277,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        gitProjectId: string;
+        gitProjectId: number;
         branch: string;
       };
       cookie?: never;
@@ -2411,7 +2309,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        gitProjectId: string;
+        gitProjectId: number;
         branch: string;
         commit: string;
       };
@@ -3242,6 +3140,7 @@ export interface operations {
         page?: number;
         pageSize?: number;
         enabled?: boolean;
+        name?: string;
       };
       header?: never;
       path?: never;
@@ -3430,4 +3329,47 @@ export interface operations {
       };
     };
   };
+}
+export enum PathsApiEventsGetParametersQueryActionType {
+  Unknown = "Unknown",
+  Create = "Create",
+  Update = "Update",
+  Delete = "Delete",
+  Upload = "Upload",
+  Download = "Download",
+  DryRun = "DryRun",
+  Shell = "Shell",
+  Login = "Login",
+  CancelDeploy = "CancelDeploy",
+  Exec = "Exec",
+}
+export enum MarsElementType {
+  ElementTypeUnknown = "ElementTypeUnknown",
+  ElementTypeInput = "ElementTypeInput",
+  ElementTypeInputNumber = "ElementTypeInputNumber",
+  ElementTypeSelect = "ElementTypeSelect",
+  ElementTypeRadio = "ElementTypeRadio",
+  ElementTypeSwitch = "ElementTypeSwitch",
+  ElementTypeTextArea = "ElementTypeTextArea",
+  ElementTypeNumberSelect = "ElementTypeNumberSelect",
+  ElementTypeNumberRadio = "ElementTypeNumberRadio",
+}
+export enum TypesEventModelAction {
+  Unknown = "Unknown",
+  Create = "Create",
+  Update = "Update",
+  Delete = "Delete",
+  Upload = "Upload",
+  Download = "Download",
+  DryRun = "DryRun",
+  Shell = "Shell",
+  Login = "Login",
+  CancelDeploy = "CancelDeploy",
+  Exec = "Exec",
+}
+export enum TypesProjectModelDeployStatus {
+  StatusUnknown = "StatusUnknown",
+  StatusDeploying = "StatusDeploying",
+  StatusDeployed = "StatusDeployed",
+  StatusFailed = "StatusFailed",
 }

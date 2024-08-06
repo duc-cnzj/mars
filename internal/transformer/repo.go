@@ -16,7 +16,7 @@ func FromRepo(repo *repo.Repo) *types.RepoModel {
 		GitProjectId:   repo.GitProjectID,
 		GitProjectName: repo.GitProjectName,
 		Enabled:        repo.Enabled,
-		MarsConfig:     repo.MarsConfig,
+		MarsConfig:     repo.GetMarsConfig(),
 		NeedGitRepo:    repo.NeedGitRepo,
 		CreatedAt:      date.ToHumanizeDatetimeString(&repo.CreatedAt),
 		UpdatedAt:      date.ToHumanizeDatetimeString(&repo.UpdatedAt),

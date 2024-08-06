@@ -6,6 +6,7 @@ import TextArea from "antd/lib/input/TextArea";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { slice } from "lodash";
 import { css } from "@emotion/css";
+import { FormInstance } from "antd/lib";
 
 function isDefaultRequired(t: pb.mars.ElementType): boolean {
   switch (t) {
@@ -20,8 +21,7 @@ function isDefaultRequired(t: pb.mars.ElementType): boolean {
   return false;
 }
 
-const DynamicElement: React.FC<{}> = () => {
-  const form = Form.useFormInstance();
+const DynamicElement: React.FC<{ form: FormInstance }> = ({ form }) => {
   const [isDragging, setIsDragging] = useState(false);
   const onDragEnd = useCallback(
     (result: any) => {
@@ -74,7 +74,8 @@ const DynamicElement: React.FC<{}> = () => {
                   {fields.map((field, index) => {
                     const type = Number(
                       form.getFieldValue([
-                        ["marsConfig", "elements"],
+                        "marsConfig",
+                        "elements",
                         field.name,
                         "type",
                       ])
@@ -148,7 +149,10 @@ const DynamicElement: React.FC<{}> = () => {
                                       Object.assign(eles[field.name], {
                                         type: v,
                                       });
-                                      form.setFieldsValue({ elements: eles });
+                                      form.setFieldValue(
+                                        ["marsConfig", "elements"],
+                                        eles
+                                      );
                                     }}
                                   >
                                     <Select.Option
@@ -234,7 +238,7 @@ const DynamicElement: React.FC<{}> = () => {
                                       [
                                         ["marsConfig", "elements"],
                                         field.name,
-                                        "select_values",
+                                        "selectValues",
                                       ],
                                     ]}
                                     name={[field.name, "default"]}
@@ -253,7 +257,7 @@ const DynamicElement: React.FC<{}> = () => {
                                           const selectValues = getFieldValue([
                                             ["marsConfig", "elements"],
                                             field.name,
-                                            "select_values",
+                                            "selectValues",
                                           ]);
                                           let flag = false;
 
@@ -328,7 +332,7 @@ const DynamicElement: React.FC<{}> = () => {
                                   }
                                   style={{ width: "100%" }}
                                   label="选择器"
-                                  name={[field.name, "select_values"]}
+                                  name={[field.name, "selectValues"]}
                                 >
                                   <MySelect />
                                 </Form.Item>
@@ -348,7 +352,7 @@ const DynamicElement: React.FC<{}> = () => {
                                       [
                                         ["marsConfig", "elements"],
                                         field.name,
-                                        "select_values",
+                                        "selectValues",
                                       ],
                                     ]}
                                     name={[field.name, "default"]}

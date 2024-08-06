@@ -15,6 +15,7 @@ message ListRequest {
   optional int32 page      = 1;
   optional int32 page_size = 2;
   optional bool  enabled   = 3;
+  string         name      = 4;
 }
 
 message ListResponse {
@@ -57,6 +58,13 @@ message UpdateRequest{
 }
 message UpdateResponse{
   types.RepoModel item = 1;
+}
+
+message AllRequest {
+  optional bool enabled = 1;
+}
+message AllResponse{
+  repeated types.RepoModel items = 1;
 }
 
 service Repo {

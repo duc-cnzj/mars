@@ -58,7 +58,7 @@ const AddRepoModal: React.FC<{
 
   let isEdit = !!editItem && editItem.id > 0;
   const [projects, setProjects] = useAsyncState<
-    components["schemas"]["git.ProjectItem"][]
+    components["schemas"]["git.AllReposResponse_Item"][]
   >([]);
 
   const [branches, setBranches] = useAsyncState<
@@ -169,7 +169,7 @@ const AddRepoModal: React.FC<{
   useEffect(() => {
     setLoading((item) => ({ ...item, project: true }));
     ajax
-      .GET("/api/git/projects")
+      .GET("/api/git/all_repos")
       .then(({ data }) => {
         console.log(data);
         data && setProjects(data.items);
@@ -497,19 +497,19 @@ const AddRepoModal: React.FC<{
               open={
                 configFileTip &&
                 configFileValues !== configFileContent &&
-                configFileValues &&
-                configFileValues.length === 0
+                !configFileValues
               }
               onOpenChange={(v) => setConfigFileTip(v)}
-            ></Popover>
-            <Form.Item
-              label="全局配置文件"
-              tooltip="全局默认配置文件，如果没有设置 config_file 则使用这个"
-              name={["marsConfig", "configFileValues"]}
             >
-              <CodeMirror mode={getMode(configFileType)} />
-            </Form.Item>
-            <DynamicElement />
+              <Form.Item
+                label="全局配置文件"
+                tooltip="全局默认配置文件，如果没有设置 config_file 则使用这个"
+                name={["marsConfig", "configFileValues"]}
+              >
+                <CodeMirror mode={getMode(configFileType)} />
+              </Form.Item>
+            </Popover>
+            <DynamicElement form={form} />
 
             <div
               style={{

@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"regexp"
 
 	"entgo.io/ent"
@@ -20,6 +21,12 @@ func (Repo) Fields() []ent.Field {
 		field.String("name").
 			MaxLen(255).
 			Match(regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)).
+			Annotations(
+				entsql.Annotation{
+					Charset:   "utf8mb4",
+					Collation: "utf8mb4_0900_ai_ci",
+				},
+			).
 			Comment("默认使用的名称: helm create {name}"),
 		field.String("default_branch").
 			MaxLen(255).

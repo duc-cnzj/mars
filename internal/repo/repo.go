@@ -28,6 +28,14 @@ type Repo struct {
 	MarsConfig     *mars.Config `json:"mars_config"`
 }
 
+func (r *Repo) GetMarsConfig() (cfg *mars.Config) {
+	cfg = r.MarsConfig
+	if r.MarsConfig == nil {
+		cfg = &mars.Config{}
+	}
+	return
+}
+
 type RepoImp interface {
 	All(ctx context.Context, in *AllRepoRequest) ([]*Repo, error)
 	List(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error)
@@ -69,12 +77,14 @@ type ListRepoRequest struct {
 	Page, PageSize int32
 	Enabled        *bool
 	OrderByIDDesc  *bool
+	Name           string
 }
 
 func (r *repo) List(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error) {
 	query := r.data.DB().Repo.Query().Where(
 		filters.IfOrderByIDDesc(in.OrderByIDDesc),
 		filters.IfEnabled(in.Enabled),
+		filters.IfNameLike(in.Name),
 	)
 	all, err := query.Clone().
 		Offset(pagination.GetPageOffset(in.Page, in.PageSize)).

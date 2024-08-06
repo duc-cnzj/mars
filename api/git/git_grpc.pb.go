@@ -8,7 +8,6 @@ package git
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -20,9 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Git_EnableProject_FullMethodName      = "/git.Git/EnableProject"
-	Git_DisableProject_FullMethodName     = "/git.Git/DisableProject"
-	Git_All_FullMethodName                = "/git.Git/All"
+	Git_AllRepos_FullMethodName           = "/git.Git/AllRepos"
 	Git_ProjectOptions_FullMethodName     = "/git.Git/ProjectOptions"
 	Git_BranchOptions_FullMethodName      = "/git.Git/BranchOptions"
 	Git_CommitOptions_FullMethodName      = "/git.Git/CommitOptions"
@@ -36,9 +33,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GitClient interface {
-	EnableProject(ctx context.Context, in *EnableProjectRequest, opts ...grpc.CallOption) (*EnableProjectResponse, error)
-	DisableProject(ctx context.Context, in *DisableProjectRequest, opts ...grpc.CallOption) (*DisableProjectResponse, error)
-	All(ctx context.Context, in *AllRequest, opts ...grpc.CallOption) (*AllResponse, error)
+	AllRepos(ctx context.Context, in *AllReposRequest, opts ...grpc.CallOption) (*AllReposResponse, error)
 	ProjectOptions(ctx context.Context, in *ProjectOptionsRequest, opts ...grpc.CallOption) (*ProjectOptionsResponse, error)
 	BranchOptions(ctx context.Context, in *BranchOptionsRequest, opts ...grpc.CallOption) (*BranchOptionsResponse, error)
 	CommitOptions(ctx context.Context, in *CommitOptionsRequest, opts ...grpc.CallOption) (*CommitOptionsResponse, error)
@@ -56,27 +51,9 @@ func NewGitClient(cc grpc.ClientConnInterface) GitClient {
 	return &gitClient{cc}
 }
 
-func (c *gitClient) EnableProject(ctx context.Context, in *EnableProjectRequest, opts ...grpc.CallOption) (*EnableProjectResponse, error) {
-	out := new(EnableProjectResponse)
-	err := c.cc.Invoke(ctx, Git_EnableProject_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gitClient) DisableProject(ctx context.Context, in *DisableProjectRequest, opts ...grpc.CallOption) (*DisableProjectResponse, error) {
-	out := new(DisableProjectResponse)
-	err := c.cc.Invoke(ctx, Git_DisableProject_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gitClient) All(ctx context.Context, in *AllRequest, opts ...grpc.CallOption) (*AllResponse, error) {
-	out := new(AllResponse)
-	err := c.cc.Invoke(ctx, Git_All_FullMethodName, in, out, opts...)
+func (c *gitClient) AllRepos(ctx context.Context, in *AllReposRequest, opts ...grpc.CallOption) (*AllReposResponse, error) {
+	out := new(AllReposResponse)
+	err := c.cc.Invoke(ctx, Git_AllRepos_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -150,9 +127,7 @@ func (c *gitClient) GetChartValuesYaml(ctx context.Context, in *GetChartValuesYa
 // All implementations must embed UnimplementedGitServer
 // for forward compatibility
 type GitServer interface {
-	EnableProject(context.Context, *EnableProjectRequest) (*EnableProjectResponse, error)
-	DisableProject(context.Context, *DisableProjectRequest) (*DisableProjectResponse, error)
-	All(context.Context, *AllRequest) (*AllResponse, error)
+	AllRepos(context.Context, *AllReposRequest) (*AllReposResponse, error)
 	ProjectOptions(context.Context, *ProjectOptionsRequest) (*ProjectOptionsResponse, error)
 	BranchOptions(context.Context, *BranchOptionsRequest) (*BranchOptionsResponse, error)
 	CommitOptions(context.Context, *CommitOptionsRequest) (*CommitOptionsResponse, error)
@@ -167,14 +142,8 @@ type GitServer interface {
 type UnimplementedGitServer struct {
 }
 
-func (UnimplementedGitServer) EnableProject(context.Context, *EnableProjectRequest) (*EnableProjectResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method EnableProject not implemented")
-}
-func (UnimplementedGitServer) DisableProject(context.Context, *DisableProjectRequest) (*DisableProjectResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DisableProject not implemented")
-}
-func (UnimplementedGitServer) All(context.Context, *AllRequest) (*AllResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method All not implemented")
+func (UnimplementedGitServer) AllRepos(context.Context, *AllReposRequest) (*AllReposResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AllRepos not implemented")
 }
 func (UnimplementedGitServer) ProjectOptions(context.Context, *ProjectOptionsRequest) (*ProjectOptionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProjectOptions not implemented")
@@ -210,56 +179,20 @@ func RegisterGitServer(s grpc.ServiceRegistrar, srv GitServer) {
 	s.RegisterService(&Git_ServiceDesc, srv)
 }
 
-func _Git_EnableProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EnableProjectRequest)
+func _Git_AllRepos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AllReposRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GitServer).EnableProject(ctx, in)
+		return srv.(GitServer).AllRepos(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Git_EnableProject_FullMethodName,
+		FullMethod: Git_AllRepos_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).EnableProject(ctx, req.(*EnableProjectRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Git_DisableProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DisableProjectRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GitServer).DisableProject(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Git_DisableProject_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).DisableProject(ctx, req.(*DisableProjectRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Git_All_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AllRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GitServer).All(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Git_All_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).All(ctx, req.(*AllRequest))
+		return srv.(GitServer).AllRepos(ctx, req.(*AllReposRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -398,16 +331,8 @@ var Git_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*GitServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "EnableProject",
-			Handler:    _Git_EnableProject_Handler,
-		},
-		{
-			MethodName: "DisableProject",
-			Handler:    _Git_DisableProject_Handler,
-		},
-		{
-			MethodName: "All",
-			Handler:    _Git_All_Handler,
+			MethodName: "AllRepos",
+			Handler:    _Git_AllRepos_Handler,
 		},
 		{
 			MethodName: "ProjectOptions",

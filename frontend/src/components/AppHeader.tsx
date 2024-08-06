@@ -91,8 +91,8 @@ const AppHeader: React.FC = () => {
           onClick={(e) => {
             e.preventDefault();
             removeToken();
-            if (user.logout_url) {
-              window.location.href = user.logout_url;
+            if (user.logoutUrl) {
+              window.location.href = user.logoutUrl;
             } else {
               h("/login");
             }

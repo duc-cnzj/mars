@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useEffect, useState } from "react";
-import { Button, Card, Divider, message, Spin } from "antd";
+import { Button, Card, Divider, Input, message, Spin } from "antd";
 import theme from "../styles/theme";
 import { List } from "antd";
 import { css } from "@emotion/css";
@@ -33,10 +33,12 @@ const RepoPage: React.FC = () => {
     useState<components["schemas"]["types.RepoModel"]>();
 
   const fetch = useCallback(
-    (page: number, pageSize: number, refresh?: boolean) => {
+    (page: number, pageSize: number, name?: string, refresh?: boolean) => {
       setLoading((v) => ({ ...v, list: true }));
       ajax
-        .GET("/api/repos", { params: { query: { page, pageSize } } })
+        .GET("/api/repos", {
+          params: { query: { page, pageSize, name: name } },
+        })
         .then(({ data }) => {
           data &&
             setData((v) => (refresh ? data.items : [...v, ...data.items]));
@@ -49,8 +51,10 @@ const RepoPage: React.FC = () => {
     []
   );
 
+  const [searchInput, setSearchInput] = useState({ name: "" });
+
   useEffect(() => {
-    fetch(1, defaultPageSize);
+    fetch(1, defaultPageSize, "");
   }, [fetch]);
 
   return (
@@ -60,7 +64,7 @@ const RepoPage: React.FC = () => {
         visible={visible}
         onSuccess={() => {
           setVisible(false);
-          fetch(1, defaultPageSize, true);
+          fetch(1, defaultPageSize, searchInput.name, true);
           setEditItem(undefined);
         }}
         onCancel={() => {
@@ -87,10 +91,30 @@ const RepoPage: React.FC = () => {
         styles={{ body: { padding: 0 } }}
         style={{ marginTop: 20, marginBottom: 30 }}
       >
+        <div>
+          <Input
+            value={searchInput.name}
+            allowClear
+            onKeyDown={(k) => {
+              if (k.code === "Enter") {
+                fetch(1, defaultPageSize, searchInput.name, true);
+              }
+            }}
+            onChange={(v) => {
+              setSearchInput((inp) => ({ ...inp, name: v.target.value }));
+              if (v.target.value === "") {
+                fetch(1, defaultPageSize, "", true);
+              }
+            }}
+            style={{ width: "40%", marginTop: 20, marginLeft: 20 }}
+            placeholder="搜索 repo 名称..."
+          />
+        </div>
+        <Divider />
         <InfiniteScroll
           dataLength={data.length}
           next={() => {
-            fetch(paginate.page + 1, paginate.pageSize);
+            fetch(paginate.page + 1, paginate.pageSize, searchInput.name);
           }}
           hasMore={data.length !== 0 && data.length % paginate.pageSize === 0}
           loader={
