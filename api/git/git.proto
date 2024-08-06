@@ -6,7 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "validate/validate.proto";
 import "mars/mars.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
+import "openapi/v3/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/git;git";
 
@@ -107,7 +107,7 @@ service Git {
     option (google.api.http)                                               = {
       get: "/api/git/all_repos",
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取所有 git 仓库列表",
     };
   }
@@ -116,7 +116,7 @@ service Git {
     option (google.api.http)                                               = {
       get: "/api/git/project_options",
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取项目信息， 用在级联列表",
     };
   }
@@ -125,7 +125,7 @@ service Git {
     option (google.api.http)                                               = {
       get: "/api/git/projects/{git_project_id}/branch_options",
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取分支信息， 用在级联列表",
     };
   }
@@ -134,7 +134,7 @@ service Git {
     option (google.api.http)                                               = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/commit_options",
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取commit信息， 用在级联列表",
     };
   }
@@ -143,7 +143,7 @@ service Git {
     option (google.api.http)                                               = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}",
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取 commit 详情",
     };
   }
@@ -152,7 +152,7 @@ service Git {
     option (google.api.http)                                               = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info",
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取 pipeline 详情",
     };
   }
@@ -161,7 +161,7 @@ service Git {
     option (google.api.http)                                               = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/config_file",
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取项目 mars 配置详情",
     };
   }
@@ -171,7 +171,7 @@ service Git {
       post: "/api/git/get_chart_values_yaml",
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取 helm charts 的 values.yaml",
     };
   }

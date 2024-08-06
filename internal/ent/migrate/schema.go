@@ -263,7 +263,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
-		{Name: "name", Type: field.TypeString, Size: 255},
+		{Name: "name", Type: field.TypeString, Size: 255, Collation: "utf8mb4_0900_ai_ci"},
 		{Name: "default_branch", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "git_project_name", Type: field.TypeString, Nullable: true},
 		{Name: "git_project_id", Type: field.TypeInt32, Nullable: true},

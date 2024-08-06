@@ -5,7 +5,7 @@ package container;
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "validate/validate.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
+import "openapi/v3/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/container;container";
 
@@ -96,7 +96,7 @@ service Container {
       post: "/api/containers/copy_to_pod",
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "上传文件到 pod",
     };
   }
@@ -151,7 +151,7 @@ service Container {
       post: "/api/containers/pod_running_status",
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "pod 是否 running",
     };
   }
@@ -162,7 +162,7 @@ service Container {
       body: "*"
     };
 
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "pod 是否存在",
     };
   }
@@ -173,7 +173,7 @@ service Container {
       get: "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs"
     };
 
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "查看 pod 日志",
     };
   }
@@ -183,7 +183,7 @@ service Container {
       get: "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs"
     };
 
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "stream 方式查看 pod 日志",
     };
   }

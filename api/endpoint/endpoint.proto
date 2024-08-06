@@ -6,7 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "validate/validate.proto";
 import "types/types.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
+import "openapi/v3/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/endpoint;endpoint";
 
@@ -32,7 +32,7 @@ service Endpoint {
       get: "/api/endpoints/namespaces/{namespace_id}"
     };
 
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取名称空间下所有的 endpoints",
     };
   }
@@ -42,7 +42,7 @@ service Endpoint {
       get: "/api/endpoints/projects/{project_id}"
     };
 
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取项目下所有的 endpoints",
     };
   }

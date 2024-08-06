@@ -7,12 +7,13 @@
 package websocket
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	cluster "github.com/duc-cnzj/mars/api/v4/cluster"
 	types "github.com/duc-cnzj/mars/api/v4/types"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

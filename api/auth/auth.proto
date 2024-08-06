@@ -4,10 +4,37 @@ package auth;
 
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
 import "validate/validate.proto";
+import "openapi/v3/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/auth;auth";
+
+option (openapi.v3.document) = {
+  security: {
+    additional_properties: [
+      {
+        name: "BearerAuth";
+        value: {};
+      }
+    ]
+  },
+  components: {
+    security_schemes: {
+      additional_properties: [
+        {
+          name: "BearerAuth";
+          value: {
+            security_scheme: {
+              type: "http";
+              scheme: "bearer";
+              bearer_format: "JWT";
+            }
+          }
+        }
+      ]
+    }
+  }
+};
 
 message LoginRequest {
   string username = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
@@ -55,44 +82,47 @@ message SettingsResponse {
 
 service Auth {
   rpc Login(LoginRequest) returns (LoginResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       post: "/api/auth/login",
       body: "*"
     };
 
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      security: {},
+    option (openapi.v3.operation) = {
       summary: "登录接口",
+      security: {};
     };
   }
 
   rpc Info(InfoRequest) returns (InfoResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       get: "/api/auth/info"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+
+    option (openapi.v3.operation) = {
       summary: "获取当前登录的用户信息",
     };
   }
 
   rpc Settings(SettingsRequest) returns (SettingsResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       get: "/api/auth/settings"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      security: {}
+
+    option (openapi.v3.operation) = {
       summary: "获取 sso 配置以及跳转 url",
+      security: {};
     };
   }
 
   rpc Exchange(ExchangeRequest) returns (ExchangeResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       post: "/api/auth/exchange",
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      security: {},
+
+    option (openapi.v3.operation) = {
       summary: "sso code 换取 token",
+      security: {};
     };
   }
 }

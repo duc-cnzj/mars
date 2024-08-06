@@ -45,6 +45,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
+    /** sso code 换取 token */
     post: operations["Auth_Exchange"];
     delete?: never;
     options?: never;
@@ -59,6 +60,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取当前登录的用户信息 */
     get: operations["Auth_Info"];
     put?: never;
     post?: never;
@@ -77,6 +79,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
+    /** 登录接口 */
     post: operations["Auth_Login"];
     delete?: never;
     options?: never;
@@ -91,6 +94,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取 sso 配置以及跳转 url */
     get: operations["Auth_Settings"];
     put?: never;
     post?: never;
@@ -107,6 +111,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 查看集群信息 */
     get: operations["Cluster_ClusterInfo"];
     put?: never;
     post?: never;
@@ -125,6 +130,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
+    /** 上传文件到 pod */
     post: operations["Container_CopyToPod"];
     delete?: never;
     options?: never;
@@ -139,7 +145,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** @description ContainerLog 查看 pod 日志 */
+    /**
+     * 查看 pod 日志
+     * @description ContainerLog 查看 pod 日志
+     */
     get: operations["Container_ContainerLog"];
     put?: never;
     post?: never;
@@ -156,6 +165,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** stream 方式查看 pod 日志 */
     get: operations["Container_StreamContainerLog"];
     put?: never;
     post?: never;
@@ -174,6 +184,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
+    /** pod 是否存在 */
     post: operations["Container_IsPodExists"];
     delete?: never;
     options?: never;
@@ -190,6 +201,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
+    /** pod 是否 running */
     post: operations["Container_IsPodRunning"];
     delete?: never;
     options?: never;
@@ -204,6 +216,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取名称空间下所有的 endpoints */
     get: operations["Endpoint_InNamespace"];
     put?: never;
     post?: never;
@@ -220,6 +233,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取项目下所有的 endpoints */
     get: operations["Endpoint_InProject"];
     put?: never;
     post?: never;
@@ -236,6 +250,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 用户操作事件列表 */
     get: operations["Event_List"];
     put?: never;
     post?: never;
@@ -252,6 +267,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 查看事件详情, 包含 old, new */
     get: operations["Event_Show"];
     put?: never;
     post?: never;
@@ -268,6 +284,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 文件列表 */
     get: operations["File_List"];
     put?: never;
     post?: never;
@@ -284,6 +301,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 查看文件目录大小 */
     get: operations["File_DiskInfo"];
     put?: never;
     post?: never;
@@ -300,6 +318,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取最大上传大小 */
     get: operations["File_MaxUploadSize"];
     put?: never;
     post?: never;
@@ -319,6 +338,7 @@ export interface paths {
     get?: never;
     put?: never;
     post?: never;
+    /** 删除文件 */
     delete: operations["File_Delete"];
     options?: never;
     head?: never;
@@ -332,6 +352,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取所有 git 仓库列表 */
     get: operations["Git_AllRepos"];
     put?: never;
     post?: never;
@@ -350,6 +371,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
+    /** 获取 helm charts 的 values.yaml */
     post: operations["Git_GetChartValuesYaml"];
     delete?: never;
     options?: never;
@@ -364,6 +386,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取项目信息， 用在级联列表 */
     get: operations["Git_ProjectOptions"];
     put?: never;
     post?: never;
@@ -380,6 +403,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取分支信息， 用在级联列表 */
     get: operations["Git_BranchOptions"];
     put?: never;
     post?: never;
@@ -396,6 +420,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取commit信息， 用在级联列表 */
     get: operations["Git_CommitOptions"];
     put?: never;
     post?: never;
@@ -412,6 +437,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取 commit 详情 */
     get: operations["Git_Commit"];
     put?: never;
     post?: never;
@@ -428,6 +454,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取 pipeline 详情 */
     get: operations["Git_PipelineInfo"];
     put?: never;
     post?: never;
@@ -444,6 +471,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取项目 mars 配置详情 */
     get: operations["Git_MarsConfigFile"];
     put?: never;
     post?: never;
@@ -460,6 +488,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取项目 helm charts 的默认 values.yaml */
     get: operations["GitConfig_GetDefaultChartValues"];
     put?: never;
     post?: never;
@@ -476,6 +505,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 查看项目 GlobalConfig 配置 */
     get: operations["GitConfig_GlobalConfig"];
     put?: never;
     post?: never;
@@ -492,7 +522,9 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 查看项目配置 */
     get: operations["GitConfig_Show"];
+    /** 更新全局配置 */
     put: operations["GitConfig_Update"];
     post?: never;
     delete?: never;
@@ -510,6 +542,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
+    /** 开启/关闭全局配置 */
     post: operations["GitConfig_ToggleGlobalStatus"];
     delete?: never;
     options?: never;
@@ -524,6 +557,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 名称空间总共使用的 cpu memory */
     get: operations["Metrics_CpuMemoryInNamespace"];
     put?: never;
     post?: never;
@@ -540,6 +574,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取 pod 的 cpu memory 信息 */
     get: operations["Metrics_TopPod"];
     put?: never;
     post?: never;
@@ -556,6 +591,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** stream 的方式获取 pod 的 cpu memory 信息 */
     get: operations["Metrics_StreamTopPod"];
     put?: never;
     post?: never;
@@ -572,6 +608,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 项目空间总共使用的 cpu memory */
     get: operations["Metrics_CpuMemoryInProject"];
     put?: never;
     post?: never;
@@ -710,6 +747,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 查看项目修改的版本差异 */
     get: operations["Changelog_Show"];
     put?: never;
     post?: never;
@@ -760,6 +798,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 文件详情 */
     get: operations["File_ShowRecords"];
     put?: never;
     post?: never;
@@ -776,8 +815,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取 repo 列表 */
     get: operations["Repo_List"];
     put?: never;
+    /** 创建 repo */
     post: operations["Repo_Create"];
     delete?: never;
     options?: never;
@@ -794,6 +835,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
+    /** 开启/关闭 */
     post: operations["Repo_ToggleEnabled"];
     delete?: never;
     options?: never;
@@ -808,7 +850,9 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** 获取 repo 详情 */
     get: operations["Repo_Show"];
+    /** 更新 repo */
     put: operations["Repo_Update"];
     post?: never;
     delete?: never;

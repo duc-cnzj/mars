@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package repo;
 
-import "protoc-gen-openapiv2/options/annotations.proto";
+import "openapi/v3/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/api/annotations.proto";
 import "validate/validate.proto";
@@ -72,7 +72,7 @@ service Repo {
     option (google.api.http)                                               = {
       get: "/api/repos"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取 repo 列表",
     };
   }
@@ -82,7 +82,7 @@ service Repo {
       post: "/api/repos",
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "创建 repo",
     };
   }
@@ -91,7 +91,7 @@ service Repo {
     option (google.api.http)                                               = {
       get: "/api/repos/{id}"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取 repo 详情",
     };
   }
@@ -101,7 +101,7 @@ service Repo {
       put: "/api/repos/{id}",
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "更新 repo",
     };
   }
@@ -112,7 +112,7 @@ service Repo {
       post: "/api/repos/toggle_enabled"
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "开启/关闭",
     };
   }

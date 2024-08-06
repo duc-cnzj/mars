@@ -1,8 +1,9 @@
 package schema
 
 import (
-	"entgo.io/ent/dialect/entsql"
 	"regexp"
+
+	"entgo.io/ent/dialect/entsql"
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"

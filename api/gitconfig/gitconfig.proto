@@ -5,7 +5,7 @@ package gitconfig;
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 import "mars/mars.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
+import "openapi/v3/annotations.proto";
 
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/gitconfig;gitconfig";
@@ -70,7 +70,7 @@ service GitConfig {
     option (google.api.http)                                               = {
       get: "/api/git/projects/{git_project_id}/mars_config"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "查看项目配置",
     };
   }
@@ -79,7 +79,7 @@ service GitConfig {
     option (google.api.http)                                               = {
       get: "/api/git/projects/{git_project_id}/global_config"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "查看项目 GlobalConfig 配置",
     };
   }
@@ -89,7 +89,7 @@ service GitConfig {
       post: "/api/git/projects/{git_project_id}/toggle_status",
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "开启/关闭全局配置",
     };
   }
@@ -99,7 +99,7 @@ service GitConfig {
       put: "/api/git/projects/{git_project_id}/mars_config",
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "更新全局配置",
     };
   }
@@ -108,7 +108,7 @@ service GitConfig {
     option (google.api.http)                                               = {
       get: "/api/git/projects/{git_project_id}/default_values",
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取项目 helm charts 的默认 values.yaml",
     };
   }

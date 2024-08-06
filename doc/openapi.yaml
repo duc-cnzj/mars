@@ -115,6 +115,7 @@ paths:
         post:
             tags:
                 - Auth
+            summary: sso code 换取 token
             operationId: Auth_Exchange
             requestBody:
                 content:
@@ -135,10 +136,13 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
     /api/auth/info:
         get:
             tags:
                 - Auth
+            summary: 获取当前登录的用户信息
             operationId: Auth_Info
             responses:
                 "200":
@@ -157,6 +161,7 @@ paths:
         post:
             tags:
                 - Auth
+            summary: 登录接口
             operationId: Auth_Login
             requestBody:
                 content:
@@ -177,10 +182,13 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
     /api/auth/settings:
         get:
             tags:
                 - Auth
+            summary: 获取 sso 配置以及跳转 url
             operationId: Auth_Settings
             responses:
                 "200":
@@ -195,10 +203,13 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
     /api/cluster_info:
         get:
             tags:
                 - Cluster
+            summary: 查看集群信息
             operationId: Cluster_ClusterInfo
             responses:
                 "200":
@@ -213,10 +224,13 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
     /api/containers/copy_to_pod:
         post:
             tags:
                 - Container
+            summary: 上传文件到 pod
             operationId: Container_CopyToPod
             requestBody:
                 content:
@@ -241,6 +255,7 @@ paths:
         get:
             tags:
                 - Container
+            summary: 查看 pod 日志
             description: ContainerLog 查看 pod 日志
             operationId: Container_ContainerLog
             parameters:
@@ -280,6 +295,7 @@ paths:
         get:
             tags:
                 - Container
+            summary: stream 方式查看 pod 日志
             operationId: Container_StreamContainerLog
             parameters:
                 - name: namespace
@@ -318,6 +334,7 @@ paths:
         post:
             tags:
                 - Container
+            summary: pod 是否存在
             operationId: Container_IsPodExists
             requestBody:
                 content:
@@ -342,6 +359,7 @@ paths:
         post:
             tags:
                 - Container
+            summary: pod 是否 running
             operationId: Container_IsPodRunning
             requestBody:
                 content:
@@ -366,6 +384,7 @@ paths:
         get:
             tags:
                 - Endpoint
+            summary: 获取名称空间下所有的 endpoints
             operationId: Endpoint_InNamespace
             parameters:
                 - name: namespaceId
@@ -391,6 +410,7 @@ paths:
         get:
             tags:
                 - Endpoint
+            summary: 获取项目下所有的 endpoints
             operationId: Endpoint_InProject
             parameters:
                 - name: projectId
@@ -416,6 +436,7 @@ paths:
         get:
             tags:
                 - Event
+            summary: 用户操作事件列表
             operationId: Event_List
             parameters:
                 - name: page
@@ -467,6 +488,7 @@ paths:
         get:
             tags:
                 - Event
+            summary: 查看事件详情, 包含 old, new
             operationId: Event_Show
             parameters:
                 - name: id
@@ -492,6 +514,7 @@ paths:
         get:
             tags:
                 - File
+            summary: 文件列表
             operationId: File_List
             parameters:
                 - name: page
@@ -525,6 +548,7 @@ paths:
         get:
             tags:
                 - File
+            summary: 查看文件目录大小
             operationId: File_DiskInfo
             responses:
                 "200":
@@ -543,6 +567,7 @@ paths:
         get:
             tags:
                 - File
+            summary: 获取最大上传大小
             operationId: File_MaxUploadSize
             responses:
                 "200":
@@ -557,10 +582,13 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
     /api/files/{id}:
         delete:
             tags:
                 - File
+            summary: 删除文件
             operationId: File_Delete
             parameters:
                 - name: id
@@ -586,6 +614,7 @@ paths:
         get:
             tags:
                 - Git
+            summary: 获取所有 git 仓库列表
             operationId: Git_AllRepos
             responses:
                 "200":
@@ -604,6 +633,7 @@ paths:
         post:
             tags:
                 - Git
+            summary: 获取 helm charts 的 values.yaml
             operationId: Git_GetChartValuesYaml
             requestBody:
                 content:
@@ -628,6 +658,7 @@ paths:
         get:
             tags:
                 - Git
+            summary: 获取项目信息， 用在级联列表
             operationId: Git_ProjectOptions
             responses:
                 "200":
@@ -646,6 +677,7 @@ paths:
         get:
             tags:
                 - Git
+            summary: 获取分支信息， 用在级联列表
             operationId: Git_BranchOptions
             parameters:
                 - name: gitProjectId
@@ -675,6 +707,7 @@ paths:
         get:
             tags:
                 - Git
+            summary: 获取commit信息， 用在级联列表
             operationId: Git_CommitOptions
             parameters:
                 - name: gitProjectId
@@ -705,6 +738,7 @@ paths:
         get:
             tags:
                 - Git
+            summary: 获取 commit 详情
             operationId: Git_Commit
             parameters:
                 - name: gitProjectId
@@ -740,6 +774,7 @@ paths:
         get:
             tags:
                 - Git
+            summary: 获取 pipeline 详情
             operationId: Git_PipelineInfo
             parameters:
                 - name: gitProjectId
@@ -774,6 +809,7 @@ paths:
         get:
             tags:
                 - Git
+            summary: 获取项目 mars 配置详情
             operationId: Git_MarsConfigFile
             parameters:
                 - name: gitProjectId
@@ -803,6 +839,7 @@ paths:
         get:
             tags:
                 - GitConfig
+            summary: 获取项目 helm charts 的默认 values.yaml
             operationId: GitConfig_GetDefaultChartValues
             parameters:
                 - name: gitProjectId
@@ -831,6 +868,7 @@ paths:
         get:
             tags:
                 - GitConfig
+            summary: 查看项目 GlobalConfig 配置
             operationId: GitConfig_GlobalConfig
             parameters:
                 - name: gitProjectId
@@ -855,6 +893,7 @@ paths:
         get:
             tags:
                 - GitConfig
+            summary: 查看项目配置
             operationId: GitConfig_Show
             parameters:
                 - name: gitProjectId
@@ -882,6 +921,7 @@ paths:
         put:
             tags:
                 - GitConfig
+            summary: 更新全局配置
             operationId: GitConfig_Update
             parameters:
                 - name: gitProjectId
@@ -912,6 +952,7 @@ paths:
         post:
             tags:
                 - GitConfig
+            summary: 开启/关闭全局配置
             operationId: GitConfig_ToggleGlobalStatus
             parameters:
                 - name: gitProjectId
@@ -942,6 +983,7 @@ paths:
         get:
             tags:
                 - Metrics
+            summary: 名称空间总共使用的 cpu memory
             operationId: Metrics_CpuMemoryInNamespace
             parameters:
                 - name: namespaceId
@@ -967,6 +1009,7 @@ paths:
         get:
             tags:
                 - Metrics
+            summary: 获取 pod 的 cpu memory 信息
             operationId: Metrics_TopPod
             parameters:
                 - name: namespace
@@ -996,6 +1039,7 @@ paths:
         get:
             tags:
                 - Metrics
+            summary: stream 的方式获取 pod 的 cpu memory 信息
             operationId: Metrics_StreamTopPod
             parameters:
                 - name: namespace
@@ -1025,6 +1069,7 @@ paths:
         get:
             tags:
                 - Metrics
+            summary: 项目空间总共使用的 cpu memory
             operationId: Metrics_CpuMemoryInProject
             parameters:
                 - name: projectId
@@ -1187,6 +1232,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
     /api/projects:
         get:
             tags:
@@ -1297,6 +1344,7 @@ paths:
         get:
             tags:
                 - Changelog
+            summary: 查看项目修改的版本差异
             operationId: Changelog_Show
             parameters:
                 - name: projectId
@@ -1378,6 +1426,7 @@ paths:
         get:
             tags:
                 - File
+            summary: 文件详情
             operationId: File_ShowRecords
             parameters:
                 - name: id
@@ -1403,6 +1452,7 @@ paths:
         get:
             tags:
                 - Repo
+            summary: 获取 repo 列表
             operationId: Repo_List
             parameters:
                 - name: page
@@ -1439,6 +1489,7 @@ paths:
         post:
             tags:
                 - Repo
+            summary: 创建 repo
             operationId: Repo_Create
             requestBody:
                 content:
@@ -1463,6 +1514,7 @@ paths:
         post:
             tags:
                 - Repo
+            summary: 开启/关闭
             operationId: Repo_ToggleEnabled
             requestBody:
                 content:
@@ -1487,6 +1539,7 @@ paths:
         get:
             tags:
                 - Repo
+            summary: 获取 repo 详情
             operationId: Repo_Show
             parameters:
                 - name: id
@@ -1511,6 +1564,7 @@ paths:
         put:
             tags:
                 - Repo
+            summary: 更新 repo
             operationId: Repo_Update
             parameters:
                 - name: id
@@ -1557,6 +1611,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
 components:
     schemas:
         auth.ExchangeRequest:
@@ -2703,6 +2759,13 @@ components:
                     type: string
                 gitRepo:
                     type: string
+    securitySchemes:
+        BearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+security:
+    - BearerAuth: []
 tags:
     - name: AccessToken
     - name: Auth

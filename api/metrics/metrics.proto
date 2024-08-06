@@ -5,7 +5,7 @@ package metrics;
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "validate/validate.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
+import "openapi/v3/annotations.proto";
 
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/metrics;metrics";
@@ -47,7 +47,7 @@ service Metrics {
     option (google.api.http)                                               = {
       get: "/api/metrics/namespace/{namespace_id}/cpu_memory"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "名称空间总共使用的 cpu memory",
     };
   }
@@ -56,7 +56,7 @@ service Metrics {
     option (google.api.http)                                               = {
       get: "/api/metrics/projects/{project_id}/cpu_memory"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "项目空间总共使用的 cpu memory",
     };
   }
@@ -65,7 +65,7 @@ service Metrics {
     option (google.api.http)                                               = {
       get: "/api/metrics/namespace/{namespace}/pods/{pod}",
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "获取 pod 的 cpu memory 信息",
     };
   }
@@ -74,7 +74,7 @@ service Metrics {
     option (google.api.http)                                               = {
       get: "/api/metrics/namespace/{namespace}/pods/{pod}/stream",
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "stream 的方式获取 pod 的 cpu memory 信息",
     };
   }

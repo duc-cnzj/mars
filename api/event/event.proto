@@ -6,7 +6,7 @@ import "google/api/field_behavior.proto";
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 import "types/types.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
+import "openapi/v3/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/event;event";
 
@@ -37,7 +37,7 @@ service Event {
     option (google.api.http)                                               = {
       get: "/api/events"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "用户操作事件列表",
     };
   }
@@ -47,7 +47,7 @@ service Event {
       get: "/api/events/{id}"
     };
 
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       summary: "查看事件详情, 包含 old, new",
     };
   }

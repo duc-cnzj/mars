@@ -3,7 +3,7 @@ syntax = "proto3";
 package picture;
 
 import "google/api/annotations.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
+import "openapi/v3/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/picture;picture";
 
@@ -22,7 +22,7 @@ service Picture {
     option (google.api.http)                                               = {
       get: "/api/picture/background"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       security: {} // Disable security key
     };
   }

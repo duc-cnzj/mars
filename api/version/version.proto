@@ -3,7 +3,7 @@ syntax = "proto3";
 package version;
 
 import "google/api/annotations.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
+import "openapi/v3/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/version;version";
 
@@ -30,7 +30,7 @@ service Version {
       get: "/api/version"
     };
 
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+    option (openapi.v3.operation) = {
       security: {} // Disable security key
     };
   }
