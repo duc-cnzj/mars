@@ -16,6 +16,7 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/api/v4/types"
+	"github.com/duc-cnzj/mars/v4/doc"
 	"github.com/duc-cnzj/mars/v4/frontend"
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
@@ -27,8 +28,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/server/middlewares"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
 	"github.com/duc-cnzj/mars/v4/internal/util/rand"
-	"github.com/duc-cnzj/mars/v4/third_party/doc/data"
-	swagger_ui "github.com/duc-cnzj/mars/v4/third_party/doc/swagger-ui"
+	swagger_ui "github.com/duc-cnzj/mars/v4/third_party/swagger-ui"
 	"github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -436,7 +436,7 @@ func (h *handler) loadSwaggerUI(mux *mux.Router) {
 	subrouter.Handle("/doc/swagger.json",
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write(data.SwaggerJson)
+			w.Write(doc.SwaggerJson)
 		}),
 	)
 

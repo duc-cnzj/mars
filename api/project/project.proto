@@ -6,6 +6,7 @@ import "google/api/field_behavior.proto";
 import "google/api/annotations.proto";
 import "websocket/websocket.proto";
 import "validate/validate.proto";
+import "openapi/v3/annotations.proto";
 import "types/types.proto";
 import "mars/mars.proto";
 
@@ -25,10 +26,10 @@ message ListResponse {
 
 
 message ShowRequest {
-  int32 project_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 message ShowResponse {
-  types.ProjectModel             project  = 1;
+  types.ProjectModel             item     = 1;
 
   repeated types.ServiceEndpoint urls     = 13;
   string                         cpu      = 15;
@@ -38,19 +39,19 @@ message ShowResponse {
 
 
 message DeleteRequest {
-  int32 project_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 message DeleteResponse {}
 
 message VersionRequest {
-  int32 project_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 message VersionResponse {
   int32 version = 1;
 }
 
 message AllContainersRequest {
-  int32 project_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 message AllContainersResponse {
   repeated types.StateContainer items = 1;
@@ -65,23 +66,23 @@ message DryRunApplyResponse {
 }
 // ApplyRequest same as ProjectInput
 message ApplyRequest {
-  int32                     namespace_id            = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32                         namespace_id            = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
   // name 不传就使用 git 默认的 name
-  string                    name                    = 2;
-  int32                     git_project_id          = 3 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
-  string                    git_branch              = 4 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string                        name                    = 2;
+  int32                         git_project_id          = 3 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  string                        git_branch              = 4 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   //  git_commit 不传就用最新的 commit
-  string                    git_commit              = 5;
-  string                    config                  = 6;
-  bool                      atomic                  = 7;
-  bool                      websocket_sync          = 8;
-  repeated types.ExtraValue extra_values            = 9;
+  string                        git_commit              = 5;
+  string                        config                  = 6;
+  bool                          atomic                  = 7;
+  bool                          websocket_sync          = 8;
+  repeated websocket.ExtraValue extra_values            = 9;
   // 部署超时时间
-  int32                     install_timeout_seconds = 10 [(validate.rules).int32.gte = 0, (google.api.field_behavior) = REQUIRED];
+  int32                         install_timeout_seconds = 10 [(validate.rules).int32.gte = 0, (google.api.field_behavior) = REQUIRED];
   // 发送百分比
-  bool                      send_percent            = 11;
+  bool                          send_percent            = 11;
   // 版本号, dryRun 时可以不传
-  optional int32            version                 = 12 [(validate.rules).int32.gte = 0, (google.api.field_behavior) = REQUIRED];
+  optional int32                version                 = 12 [(validate.rules).int32.gte = 0, (google.api.field_behavior) = REQUIRED];
 }
 
 message HostVariablesRequest {
@@ -93,6 +94,25 @@ message HostVariablesRequest {
 }
 message HostVariablesResponse {
   map<string, string> hosts = 1;
+}
+
+message  WebApplyRequest {
+  int32                         namespace_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  string                        name         = 2;
+  int32                         repo_id      = 3 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  string                        git_branch   = 4;
+  //  git_commit 不传就用最新的 commit
+  string                        git_commit   = 5;
+  string                        config       = 6;
+  repeated websocket.ExtraValue extra_values = 7;
+  // 版本号, dryRun 时可以不传
+  optional int32                version      = 8;
+  bool                          dry_run      = 9;
+}
+message  WebApplyResponse {
+  repeated string    yaml_files = 1;
+  types.ProjectModel project    = 2;
+  bool               dry_run    = 3;
 }
 
 service Project {
@@ -109,31 +129,42 @@ service Project {
   // ApplyDryRun 创建/更新项目 '--dry-run' mode
   rpc ApplyDryRun(ApplyRequest) returns (DryRunApplyResponse);
 
+  // WebApply 创建/更新项目
+  rpc WebApply(WebApplyRequest) returns (WebApplyResponse) {
+    option (google.api.http)      = {
+      post: "/api/projects/apply"
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "WebApply 创建/更新/DryRun 项目",
+    };
+  }
+
   // Show 项目详情
   rpc Show(ShowRequest) returns (ShowResponse) {
     option (google.api.http) = {
-      get: "/api/projects/{project_id}"
+      get: "/api/projects/{id}"
     };
   }
 
   // Version 版本号, 如果不存在则返回 0
   rpc Version(VersionRequest) returns (VersionResponse) {
     option (google.api.http) = {
-      get: "/api/projects/{project_id}/version"
+      get: "/api/projects/{id}/version"
     };
   }
 
   // Delete 删除项目
   rpc Delete(DeleteRequest) returns (DeleteResponse) {
     option (google.api.http) = {
-      delete: "/api/projects/{project_id}"
+      delete: "/api/projects/{id}"
     };
   }
 
   // AllContainers 获取项目下的所有 pod
   rpc AllContainers(AllContainersRequest) returns (AllContainersResponse) {
     option (google.api.http) = {
-      get: "/api/projects/{project_id}/containers"
+      get: "/api/projects/{id}/containers"
     };
   }
 

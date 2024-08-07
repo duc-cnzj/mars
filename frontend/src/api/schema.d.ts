@@ -705,6 +705,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/projects/apply": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * WebApply 创建/更新/DryRun 项目
+     * @description WebApply 创建/更新项目
+     */
+    post: operations["Project_WebApply"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/projects/host_variables": {
     parameters: {
       query?: never;
@@ -722,7 +742,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/projects/{projectId}": {
+  "/api/projects/{id}": {
     parameters: {
       query?: never;
       header?: never;
@@ -740,24 +760,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/projects/{projectId}/changelogs": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** 查看项目修改的版本差异 */
-    get: operations["Changelog_Show"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/projects/{projectId}/containers": {
+  "/api/projects/{id}/containers": {
     parameters: {
       query?: never;
       header?: never;
@@ -774,7 +777,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/projects/{projectId}/version": {
+  "/api/projects/{id}/version": {
     parameters: {
       query?: never;
       header?: never;
@@ -783,6 +786,23 @@ export interface paths {
     };
     /** @description Version 版本号, 如果不存在则返回 0 */
     get: operations["Project_Version"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/projects/{projectId}/changelogs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 查看项目修改的版本差异 */
+    get: operations["Changelog_Show"];
     put?: never;
     post?: never;
     delete?: never;
@@ -920,17 +940,7 @@ export interface components {
       items: components["schemas"]["types.ChangelogModel"][];
     };
     "cluster.InfoResponse": {
-      status: string;
-      freeMemory: string;
-      freeCpu: string;
-      freeRequestMemory: string;
-      freeRequestCpu: string;
-      totalMemory: string;
-      totalCpu: string;
-      usageMemoryRate: string;
-      usageCpuRate: string;
-      requestMemoryRate: string;
-      requestCpuRate: string;
+      item: components["schemas"]["websocket.ClusterInfo"];
     };
     "container.CopyToPodRequest": {
       fileId: string;
@@ -1208,7 +1218,7 @@ export interface components {
       items: components["schemas"]["types.ProjectModel"][];
     };
     "project.ShowResponse": {
-      project: components["schemas"]["types.ProjectModel"];
+      item: components["schemas"]["types.ProjectModel"];
       urls: components["schemas"]["types.ServiceEndpoint"][];
       cpu: string;
       memory: string;
@@ -1217,6 +1227,29 @@ export interface components {
     "project.VersionResponse": {
       /** Format: int32 */
       version: number;
+    };
+    "project.WebApplyRequest": {
+      /** Format: int32 */
+      namespaceId: number;
+      name?: string;
+      /** Format: int32 */
+      repoId: number;
+      gitBranch?: string;
+      /** @description git_commit 不传就用最新的 commit */
+      gitCommit?: string;
+      config?: string;
+      extraValues?: components["schemas"]["websocket.ExtraValue"][];
+      /**
+       * Format: int32
+       * @description 版本号, dryRun 时可以不传
+       */
+      version?: number;
+      dryRun?: boolean;
+    };
+    "project.WebApplyResponse": {
+      yamlFiles: string[];
+      project: components["schemas"]["types.ProjectModel"];
+      dryRun: boolean;
     };
     "repo.CreateRequest": {
       name: string;
@@ -1317,7 +1350,7 @@ export interface components {
       gitCommit: string;
       dockerImage: string;
       envValues: components["schemas"]["types.KeyValue"][];
-      extraValues: components["schemas"]["types.ExtraValue"][];
+      extraValues: components["schemas"]["websocket.ExtraValue"][];
       finalExtraValues: string[];
       gitCommitWebUrl: string;
       gitCommitTitle: string;
@@ -1348,10 +1381,6 @@ export interface components {
       createdAt: string;
       updatedAt: string;
       deletedAt: string;
-    };
-    "types.ExtraValue": {
-      path: string;
-      value: string;
     };
     "types.FileModel": {
       /** Format: int32 */
@@ -1416,7 +1445,7 @@ export interface components {
       namespaceId: number;
       atomic: boolean;
       envValues: components["schemas"]["types.KeyValue"][];
-      extraValues: components["schemas"]["types.ExtraValue"][];
+      extraValues: components["schemas"]["websocket.ExtraValue"][];
       finalExtraValues: string;
       /**
        * Format: enum
@@ -1479,6 +1508,23 @@ export interface components {
       kubectlVersion: string;
       helmVersion: string;
       gitRepo: string;
+    };
+    "websocket.ClusterInfo": {
+      status: string;
+      freeMemory: string;
+      freeCpu: string;
+      freeRequestMemory: string;
+      freeRequestCpu: string;
+      totalMemory: string;
+      totalCpu: string;
+      usageMemoryRate: string;
+      usageCpuRate: string;
+      requestMemoryRate: string;
+      requestCpuRate: string;
+    };
+    "websocket.ExtraValue": {
+      path: string;
+      value: string;
     };
   };
   responses: never;
@@ -2957,6 +3003,39 @@ export interface operations {
       };
     };
   };
+  Project_WebApply: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["project.WebApplyRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["project.WebApplyResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
+    };
+  };
   Project_HostVariables: {
     parameters: {
       query?: never;
@@ -2995,7 +3074,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        projectId: number;
+        id: number;
       };
       cookie?: never;
     };
@@ -3026,7 +3105,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        projectId: number;
+        id: number;
       };
       cookie?: never;
     };
@@ -3039,6 +3118,68 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["project.DeleteResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
+    };
+  };
+  Project_AllContainers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["project.AllContainersResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
+    };
+  };
+  Project_Version: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["project.VersionResponse"];
         };
       };
       /** @description Default error response */
@@ -3072,68 +3213,6 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["changelog.ShowResponse"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["google.rpc.Status"];
-        };
-      };
-    };
-  };
-  Project_AllContainers: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        projectId: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["project.AllContainersResponse"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["google.rpc.Status"];
-        };
-      };
-    };
-  };
-  Project_Version: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        projectId: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["project.VersionResponse"];
         };
       };
       /** @description Default error response */

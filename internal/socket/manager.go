@@ -141,17 +141,17 @@ func (v vars) Add(key, value string) {
 }
 
 type jobRunner struct {
-	logger       mlog.Logger
-	nsRepo       repo.NamespaceRepo
-	projRepo     repo.ProjectRepo
-	gitServer    application.GitServer
-	domainServer application.DomainManager
-	helmer       repo.HelmerRepo
-	locker       locker.Locker
-	k8sRepo      repo.K8sRepo
-	eventRepo    repo.EventRepo
-	toolRepo     repo.ToolRepo
-	uploader     uploader.Uploader
+	logger    mlog.Logger
+	nsRepo    repo.NamespaceRepo
+	projRepo  repo.ProjectRepo
+	repoRepo  repo.RepoImp
+	helmer    repo.HelmerRepo
+	locker    locker.Locker
+	k8sRepo   repo.K8sRepo
+	eventRepo repo.EventRepo
+	toolRepo  repo.ToolRepo
+	uploader  uploader.Uploader
+	pluginMgr application.PluginManger
 
 	err error
 
@@ -178,16 +178,19 @@ type jobRunner struct {
 	installer         contracts.ReleaseInstaller
 	commit            application.Commit
 
+	repo *repo.Repo
+
 	messageCh contracts.SafeWriteMessageChInterface
 	stopCtx   context.Context
 	stopFn    func(error)
 
 	config *mars.Config
 
-	isNew       bool
-	ns          *repo.Namespace
-	project     *repo.Project
-	prevProject *repo.Project
+	isNew   bool
+	ns      *repo.Namespace
+	project *repo.Project
+
+	prevUserConfig *userConfig
 
 	percenter contracts.Percentable
 	messager  contracts.DeployMsger
@@ -326,18 +329,21 @@ func (j *jobRunner) HandleMessage(ctx context.Context) {
 }
 
 type userConfig struct {
-	Config           string              `yaml:"config"`
-	Branch           string              `yaml:"branch"`
-	Commit           string              `yaml:"commit"`
-	Atomic           bool                `yaml:"atomic"`
-	WebUrl           string              `yaml:"web_url"`
-	Title            string              `yaml:"title"`
-	ExtraValues      []*types.ExtraValue `yaml:"extra_values"`
-	FinalExtraValues mergeYamlString     `yaml:"final_extra_values"`
-	EnvValues        vars                `yaml:"env_values"`
+	Config           string                     `yaml:"config"`
+	Branch           string                     `yaml:"branch"`
+	Commit           string                     `yaml:"commit"`
+	Atomic           bool                       `yaml:"atomic"`
+	WebUrl           string                     `yaml:"web_url"`
+	Title            string                     `yaml:"title"`
+	ExtraValues      []*websocket_pb.ExtraValue `yaml:"extra_values"`
+	FinalExtraValues mergeYamlString            `yaml:"final_extra_values"`
+	EnvValues        vars                       `yaml:"env_values"`
 }
 
 func newUserConfig(p *repo.Project) *userConfig {
+	if p == nil {
+		return nil
+	}
 	var v = vars{}
 	for _, value := range p.EnvValues {
 		v.Add(value.Key, value.Value)
@@ -374,14 +380,17 @@ func (s mergeYamlString) MarshalYAML() (any, error) {
 	return string(out), nil
 }
 
-func (u userConfig) PrettyYaml() string {
+func (u *userConfig) PrettyYaml() string {
+	if u == nil {
+		return ""
+	}
 	sort.Sort(sortableExtraItem(u.ExtraValues))
 	out, _ := yaml2.PrettyMarshal(&u)
 
 	return string(out)
 }
 
-type sortableExtraItem []*types.ExtraValue
+type sortableExtraItem []*websocket_pb.ExtraValue
 
 func (s sortableExtraItem) Len() int {
 	return len(s)
@@ -499,15 +508,16 @@ func (c *ChartFileLoader) Load(j *jobRunner) error {
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"下载 helm charts path: %s", j.config.LocalChartPath))
 
 	var (
-		pid    string = fmt.Sprintf("%d", j.input.GitProjectId)
+		pid    string = fmt.Sprintf("%d", j.repo.GitProjectID)
 		branch string = j.input.GitBranch
 		path   string = j.config.LocalChartPath
 	)
-	if mars2.IsRemoteChart(j.config) {
+	if true {
 		pid = split[0]
 		branch = split[1]
 		path = split[2]
-		files, _ = j.gitServer.GetDirectoryFilesWithBranch(pid, branch, path, true)
+		j.logger.Warning("split", pid, branch, path, j.pluginMgr.Git())
+		files, _ = j.pluginMgr.Git().GetDirectoryFilesWithBranch(pid, branch, path, true)
 		if len(files) < 1 {
 			return errors.New("charts 文件不存在")
 		}
@@ -522,8 +532,8 @@ func (c *ChartFileLoader) Load(j *jobRunner) error {
 	} else {
 		var err error
 		dir = j.config.LocalChartPath
-		files, _ = j.gitServer.GetDirectoryFilesWithSha(fmt.Sprintf("%d", j.input.GitProjectId), j.input.GitCommit, j.config.LocalChartPath, true)
-		tmpChartsDir, deleteDirFn, err = j.DownloadFiles(j.input.GitProjectId, j.input.GitCommit, files)
+		files, _ = j.pluginMgr.Git().GetDirectoryFilesWithSha(fmt.Sprintf("%d", j.repo.GitProjectID), j.input.GitCommit, j.config.LocalChartPath, true)
+		tmpChartsDir, deleteDirFn, err = j.DownloadFiles(j.repo.GitProjectID, j.input.GitCommit, files)
 		if err != nil {
 			return err
 		}
@@ -540,7 +550,7 @@ func (c *ChartFileLoader) Load(j *jobRunner) error {
 	if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
 		for _, dependency := range loadDir.Metadata.Dependencies {
 			if strings.HasPrefix(dependency.Repository, "file://") {
-				depFiles, _ := j.gitServer.GetDirectoryFilesWithBranch(pid, branch, filepath.Join(path, strings.TrimPrefix(dependency.Repository, "file://")), true)
+				depFiles, _ := j.pluginMgr.Git().GetDirectoryFilesWithBranch(pid, branch, filepath.Join(path, strings.TrimPrefix(dependency.Repository, "file://")), true)
 				_, depDeleteFn, err := j.DownloadFilesToDir(pid, branch, depFiles, tmpChartsDir)
 				if err != nil {
 					return err
@@ -779,8 +789,8 @@ func (v *VariableLoader) Load(j *jobRunner) error {
 	sub := j.toolRepo.GetPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
 	j.logger.Debug("getPreOccupiedLenByValuesYaml: ", sub)
 	for i := 1; i <= 10; i++ {
-		v.Add(fmt.Sprintf("%s%d", VarHost, i), j.domainServer.GetDomainByIndex(j.project.Name, j.Namespace().Name, i, sub))
-		v.Add(fmt.Sprintf("%s%d", VarTlsSecret, i), j.domainServer.GetCertSecretName(j.project.Name, i))
+		v.Add(fmt.Sprintf("%s%d", VarHost, i), j.pluginMgr.Domain().GetDomainByIndex(j.project.Name, j.Namespace().Name, i, sub))
+		v.Add(fmt.Sprintf("%s%d", VarTlsSecret, i), j.pluginMgr.Domain().GetCertSecretName(j.project.Name, i))
 	}
 
 	//{{.Branch}}{{.Commit}}{{.Pipeline}}
@@ -790,15 +800,17 @@ func (v *VariableLoader) Load(j *jobRunner) error {
 		pipelineCommit string = j.Commit().GetShortID()
 	)
 
-	// 如果存在需要传变量的，则必须有流水线信息
-	if pipeline, e := j.gitServer.GetCommitPipeline(fmt.Sprintf("%d", j.project.GitProjectID), j.project.GitBranch, j.project.GitCommit); e == nil {
-		pipelineID = pipeline.GetID()
-		pipelineBranch = pipeline.GetRef()
+	if j.repo.NeedGitRepo {
+		// 如果存在需要传变量的，则必须有流水线信息
+		if pipeline, e := j.pluginMgr.Git().GetCommitPipeline(fmt.Sprintf("%d", j.project.GitProjectID), j.project.GitBranch, j.project.GitCommit); e == nil {
+			pipelineID = pipeline.GetID()
+			pipelineBranch = pipeline.GetRef()
 
-		j.Messager().SendMsg(fmt.Sprintf(loaderName+"镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pipelineBranch, pipelineCommit, pipelineID))
-	} else {
-		if tagRegex.MatchString(j.config.ValuesYaml) {
-			return errors.New("无法获取 Pipeline 信息")
+			j.Messager().SendMsg(fmt.Sprintf(loaderName+"镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pipelineBranch, pipelineCommit, pipelineID))
+		} else {
+			if tagRegex.MatchString(j.config.ValuesYaml) {
+				return errors.New("无法获取 Pipeline 信息")
+			}
 		}
 	}
 
@@ -807,7 +819,7 @@ func (v *VariableLoader) Load(j *jobRunner) error {
 	v.Add(VarPipeline, fmt.Sprintf("%d", pipelineID))
 
 	// ingress
-	v.Add(VarClusterIssuer, j.domainServer.GetClusterIssuer())
+	v.Add(VarClusterIssuer, j.pluginMgr.Domain().GetClusterIssuer())
 
 	tpl, err := template.New("values_yaml").Delims(leftDelim, rightDelim).Parse(j.config.ValuesYaml)
 	if err != nil {
@@ -938,7 +950,7 @@ func (j *jobRunner) DownloadFilesToDir(pid any, commit string, files []string, d
 		go func(file string) {
 			defer wg.Done()
 			defer j.logger.HandlePanic("DownloadFilesToDir")
-			raw, err := j.gitServer.GetFileContentWithSha(fmt.Sprintf("%v", pid), commit, file)
+			raw, err := j.pluginMgr.Git().GetFileContentWithSha(fmt.Sprintf("%v", pid), commit, file)
 			if err != nil {
 				j.logger.Error(err)
 			}

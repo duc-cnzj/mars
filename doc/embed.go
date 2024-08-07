@@ -1,6 +1,6 @@
-package data
+package doc
 
 import _ "embed"
 
-//go:embed swagger.json
+//go:embed openapi.yaml
 var SwaggerJson []byte

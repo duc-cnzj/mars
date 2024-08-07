@@ -92,7 +92,7 @@ func (ms *messager) SendMsg(msg string) {
 	ms.send(res)
 }
 
-func (ms *messager) SendMsgWithContainerLog(msg string, containers []*types.Container) {
+func (ms *messager) SendMsgWithContainerLog(msg string, containers []*websocket_pb.Container) {
 	res := &websocket_pb.WsWithContainerMessageResponse{
 		Metadata: &websocket_pb.Metadata{
 			Slug:    ms.slugName,

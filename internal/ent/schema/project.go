@@ -7,6 +7,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/duc-cnzj/mars/api/v4/types"
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/mixin"
 )
 
@@ -30,10 +31,16 @@ func (Project) Fields() []ent.Field {
 			MaxLen(255).
 			Comment("git commit"),
 		field.String("config"),
-		field.String("override_values"),
+		field.String("override_values").
+			SchemaType(map[string]string{
+				dialect.MySQL: "longtext",
+			}).
+			Optional(),
 		field.Strings("docker_image").
+			Optional().
 			Comment("docker 镜像"),
 		field.Strings("pod_selectors").
+			Optional().
 			Comment("pod 选择器"),
 		field.Bool("atomic").
 			Default(false),
@@ -42,10 +49,13 @@ func (Project) Fields() []ent.Field {
 			Default(0).
 			Comment("部署状态"),
 		field.JSON("env_values", []*types.KeyValue{}).
+			Optional().
 			Comment("环境变量值"),
-		field.JSON("extra_values", []*types.ExtraValue{}).
+		field.JSON("extra_values", []*websocket_pb.ExtraValue{}).
+			Optional().
 			Comment("额外值"),
 		field.Strings("final_extra_values").
+			Optional().
 			Comment("用户表单传入的额外值 + 系统默认的额外值"),
 		field.Int("version").
 			Default(1).
@@ -54,6 +64,7 @@ func (Project) Fields() []ent.Field {
 			MaxLen(255).
 			Optional(),
 		field.Strings("manifest").
+			Optional().
 			Comment("manifest"),
 		field.String("git_commit_web_url").
 			MaxLen(255).

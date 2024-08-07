@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/duc-cnzj/mars/api/v4/types"
+	"github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
 	"github.com/duc-cnzj/mars/v4/internal/ent/gitproject"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
@@ -216,14 +217,14 @@ func (cu *ChangelogUpdate) ClearEnvValues() *ChangelogUpdate {
 }
 
 // SetExtraValues sets the "extra_values" field.
-func (cu *ChangelogUpdate) SetExtraValues(tv []*types.ExtraValue) *ChangelogUpdate {
-	cu.mutation.SetExtraValues(tv)
+func (cu *ChangelogUpdate) SetExtraValues(wv []*websocket.ExtraValue) *ChangelogUpdate {
+	cu.mutation.SetExtraValues(wv)
 	return cu
 }
 
-// AppendExtraValues appends tv to the "extra_values" field.
-func (cu *ChangelogUpdate) AppendExtraValues(tv []*types.ExtraValue) *ChangelogUpdate {
-	cu.mutation.AppendExtraValues(tv)
+// AppendExtraValues appends wv to the "extra_values" field.
+func (cu *ChangelogUpdate) AppendExtraValues(wv []*websocket.ExtraValue) *ChangelogUpdate {
+	cu.mutation.AppendExtraValues(wv)
 	return cu
 }
 
@@ -886,14 +887,14 @@ func (cuo *ChangelogUpdateOne) ClearEnvValues() *ChangelogUpdateOne {
 }
 
 // SetExtraValues sets the "extra_values" field.
-func (cuo *ChangelogUpdateOne) SetExtraValues(tv []*types.ExtraValue) *ChangelogUpdateOne {
-	cuo.mutation.SetExtraValues(tv)
+func (cuo *ChangelogUpdateOne) SetExtraValues(wv []*websocket.ExtraValue) *ChangelogUpdateOne {
+	cuo.mutation.SetExtraValues(wv)
 	return cuo
 }
 
-// AppendExtraValues appends tv to the "extra_values" field.
-func (cuo *ChangelogUpdateOne) AppendExtraValues(tv []*types.ExtraValue) *ChangelogUpdateOne {
-	cuo.mutation.AppendExtraValues(tv)
+// AppendExtraValues appends wv to the "extra_values" field.
+func (cuo *ChangelogUpdateOne) AppendExtraValues(wv []*websocket.ExtraValue) *ChangelogUpdateOne {
+	cuo.mutation.AppendExtraValues(wv)
 	return cuo
 }
 

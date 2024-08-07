@@ -7,6 +7,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/duc-cnzj/mars/api/v4/types"
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/mixin"
 )
 
@@ -29,7 +30,7 @@ func (Changelog) Fields() []ent.Field {
 		field.String("git_commit").MaxLen(255).NotEmpty(),
 		field.Strings("docker_image").Optional(),
 		field.JSON("env_values", []*types.KeyValue{}).Optional().Comment("可用的环境变量值"),
-		field.JSON("extra_values", []*types.ExtraValue{}).Optional().Comment("用户表单传入的额外值"),
+		field.JSON("extra_values", []*websocket_pb.ExtraValue{}).Optional().Comment("用户表单传入的额外值"),
 		field.Strings("final_extra_values").Optional().Comment("用户表单传入的额外值 + 系统默认的额外值"),
 		field.String("git_commit_web_url").MaxLen(255).Optional(),
 		field.String("git_commit_title").MaxLen(255).Optional(),

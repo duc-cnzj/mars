@@ -1,5 +1,5 @@
 import React, { useState, memo, useCallback } from "react";
-import { Col, Row, Select, SelectProps } from "antd";
+import { Col, message, Row, Select, SelectProps } from "antd";
 import { omitEqual } from "../utils/obj";
 import { css } from "@emotion/css";
 import styled from "@emotion/styled";
@@ -92,15 +92,17 @@ const ProjectSelector: React.FC<{
             query: { all: false },
           },
         })
-        .then(
-          ({ data }) =>
-            data &&
-            setOptions((opts) => ({
-              projects: opts ? opts.projects : [],
-              branches: data.items,
-              commits: [],
-            }))
-        )
+        .then(({ data, error }) => {
+          if (error) {
+            message.error(error.message);
+            return;
+          }
+          setOptions((opts) => ({
+            projects: opts ? opts.projects : [],
+            branches: data.items,
+            commits: [],
+          }));
+        })
         .finally(() => setLoading((l) => ({ ...l, branch: false })));
     },
     [v?.gitProjectId]
@@ -137,13 +139,15 @@ const ProjectSelector: React.FC<{
             },
           }
         )
-        .then(({ data }) => {
-          data &&
-            setOptions((opts) => ({
-              projects: opts ? opts.projects : [],
-              branches: opts ? opts.branches : [],
-              commits: data.items,
-            }));
+        .then(({ data, error }) => {
+          if (error) {
+            return;
+          }
+          setOptions((opts) => ({
+            projects: opts ? opts.projects : [],
+            branches: opts ? opts.branches : [],
+            commits: data.items,
+          }));
         })
         .finally(() => {
           setLoading((l) => ({ ...l, commit: false }));

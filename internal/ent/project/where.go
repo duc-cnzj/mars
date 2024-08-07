@@ -632,6 +632,16 @@ func OverrideValuesHasSuffix(v string) predicate.Project {
 	return predicate.Project(sql.FieldHasSuffix(FieldOverrideValues, v))
 }
 
+// OverrideValuesIsNil applies the IsNil predicate on the "override_values" field.
+func OverrideValuesIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldOverrideValues))
+}
+
+// OverrideValuesNotNil applies the NotNil predicate on the "override_values" field.
+func OverrideValuesNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldOverrideValues))
+}
+
 // OverrideValuesEqualFold applies the EqualFold predicate on the "override_values" field.
 func OverrideValuesEqualFold(v string) predicate.Project {
 	return predicate.Project(sql.FieldEqualFold(FieldOverrideValues, v))
@@ -640,6 +650,26 @@ func OverrideValuesEqualFold(v string) predicate.Project {
 // OverrideValuesContainsFold applies the ContainsFold predicate on the "override_values" field.
 func OverrideValuesContainsFold(v string) predicate.Project {
 	return predicate.Project(sql.FieldContainsFold(FieldOverrideValues, v))
+}
+
+// DockerImageIsNil applies the IsNil predicate on the "docker_image" field.
+func DockerImageIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldDockerImage))
+}
+
+// DockerImageNotNil applies the NotNil predicate on the "docker_image" field.
+func DockerImageNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldDockerImage))
+}
+
+// PodSelectorsIsNil applies the IsNil predicate on the "pod_selectors" field.
+func PodSelectorsIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldPodSelectors))
+}
+
+// PodSelectorsNotNil applies the NotNil predicate on the "pod_selectors" field.
+func PodSelectorsNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldPodSelectors))
 }
 
 // AtomicEQ applies the EQ predicate on the "atomic" field.
@@ -704,6 +734,36 @@ func DeployStatusLT(v types.Deploy) predicate.Project {
 func DeployStatusLTE(v types.Deploy) predicate.Project {
 	vc := int32(v)
 	return predicate.Project(sql.FieldLTE(FieldDeployStatus, vc))
+}
+
+// EnvValuesIsNil applies the IsNil predicate on the "env_values" field.
+func EnvValuesIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldEnvValues))
+}
+
+// EnvValuesNotNil applies the NotNil predicate on the "env_values" field.
+func EnvValuesNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldEnvValues))
+}
+
+// ExtraValuesIsNil applies the IsNil predicate on the "extra_values" field.
+func ExtraValuesIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldExtraValues))
+}
+
+// ExtraValuesNotNil applies the NotNil predicate on the "extra_values" field.
+func ExtraValuesNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldExtraValues))
+}
+
+// FinalExtraValuesIsNil applies the IsNil predicate on the "final_extra_values" field.
+func FinalExtraValuesIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldFinalExtraValues))
+}
+
+// FinalExtraValuesNotNil applies the NotNil predicate on the "final_extra_values" field.
+func FinalExtraValuesNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldFinalExtraValues))
 }
 
 // VersionEQ applies the EQ predicate on the "version" field.
@@ -819,6 +879,16 @@ func ConfigTypeEqualFold(v string) predicate.Project {
 // ConfigTypeContainsFold applies the ContainsFold predicate on the "config_type" field.
 func ConfigTypeContainsFold(v string) predicate.Project {
 	return predicate.Project(sql.FieldContainsFold(FieldConfigType, v))
+}
+
+// ManifestIsNil applies the IsNil predicate on the "manifest" field.
+func ManifestIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldManifest))
+}
+
+// ManifestNotNil applies the NotNil predicate on the "manifest" field.
+func ManifestNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldManifest))
 }
 
 // GitCommitWebURLEQ applies the EQ predicate on the "git_commit_web_url" field.

@@ -107,11 +107,14 @@ const Item: React.FC<{
                 .DELETE("/api/namespaces/{namespaceId}", {
                   params: { path: { namespaceId: item.id } },
                 })
-                .then((res) => {
+                .then(({ error }) => {
+                  if (error) {
+                    message.error(error.message);
+                    return;
+                  }
                   message.success("删除成功");
                   onNamespaceDeleted();
-                })
-                .catch((e) => message.error(e.response.data.message));
+                });
             }}
           >
             <Button type="link" size="middle" icon={<CloseOutlined />} />

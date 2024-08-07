@@ -23,6 +23,7 @@ const (
 	Project_List_FullMethodName          = "/project.Project/List"
 	Project_Apply_FullMethodName         = "/project.Project/Apply"
 	Project_ApplyDryRun_FullMethodName   = "/project.Project/ApplyDryRun"
+	Project_WebApply_FullMethodName      = "/project.Project/WebApply"
 	Project_Show_FullMethodName          = "/project.Project/Show"
 	Project_Version_FullMethodName       = "/project.Project/Version"
 	Project_Delete_FullMethodName        = "/project.Project/Delete"
@@ -40,6 +41,8 @@ type ProjectClient interface {
 	Apply(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error)
 	// ApplyDryRun 创建/更新项目 '--dry-run' mode
 	ApplyDryRun(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (*DryRunApplyResponse, error)
+	// WebApply 创建/更新项目
+	WebApply(ctx context.Context, in *WebApplyRequest, opts ...grpc.CallOption) (*WebApplyResponse, error)
 	// Show 项目详情
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
 	// Version 版本号, 如果不存在则返回 0
@@ -110,6 +113,15 @@ func (c *projectClient) ApplyDryRun(ctx context.Context, in *ApplyRequest, opts 
 	return out, nil
 }
 
+func (c *projectClient) WebApply(ctx context.Context, in *WebApplyRequest, opts ...grpc.CallOption) (*WebApplyResponse, error) {
+	out := new(WebApplyResponse)
+	err := c.cc.Invoke(ctx, Project_WebApply_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *projectClient) Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error) {
 	out := new(ShowResponse)
 	err := c.cc.Invoke(ctx, Project_Show_FullMethodName, in, out, opts...)
@@ -165,6 +177,8 @@ type ProjectServer interface {
 	Apply(*ApplyRequest, Project_ApplyServer) error
 	// ApplyDryRun 创建/更新项目 '--dry-run' mode
 	ApplyDryRun(context.Context, *ApplyRequest) (*DryRunApplyResponse, error)
+	// WebApply 创建/更新项目
+	WebApply(context.Context, *WebApplyRequest) (*WebApplyResponse, error)
 	// Show 项目详情
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
 	// Version 版本号, 如果不存在则返回 0
@@ -190,6 +204,9 @@ func (UnimplementedProjectServer) Apply(*ApplyRequest, Project_ApplyServer) erro
 }
 func (UnimplementedProjectServer) ApplyDryRun(context.Context, *ApplyRequest) (*DryRunApplyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApplyDryRun not implemented")
+}
+func (UnimplementedProjectServer) WebApply(context.Context, *WebApplyRequest) (*WebApplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WebApply not implemented")
 }
 func (UnimplementedProjectServer) Show(context.Context, *ShowRequest) (*ShowResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
@@ -272,6 +289,24 @@ func _Project_ApplyDryRun_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProjectServer).ApplyDryRun(ctx, req.(*ApplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Project_WebApply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WebApplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).WebApply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Project_WebApply_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).WebApply(ctx, req.(*WebApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -380,6 +415,10 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ApplyDryRun",
 			Handler:    _Project_ApplyDryRun_Handler,
+		},
+		{
+			MethodName: "WebApply",
+			Handler:    _Project_WebApply_Handler,
 		},
 		{
 			MethodName: "Show",

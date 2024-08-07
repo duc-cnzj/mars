@@ -1,16 +1,42 @@
-import React, { useState, memo, useCallback, useEffect } from "react";
-import { Affix, Col, Form, Row, Select, Space } from "antd";
+import React, { useState, memo, useCallback, useEffect, useMemo } from "react";
+import { Affix, Button, Col, Form, message, Row, Select, Space } from "antd";
 import { css } from "@emotion/css";
 import ajax from "../api/ajax";
-import { components } from "../api/schema";
+import { components } from "../api/schema.d";
 import { Grid } from "antd";
 import PipelineInfo from "./PipelineInfo";
 import Elements from "./elements/Elements";
 import { getMode, MyCodeMirror } from "./MyCodeMirror";
+import { StopOutlined } from "@ant-design/icons";
+import { selectClusterInfo } from "../store/reducers/cluster";
+import { useSelector } from "react-redux";
+import styled from "@emotion/styled";
+import { useWs, useWsReady } from "../contexts/useWebsocket";
+import { useDispatch } from "react-redux";
+import {
+  clearCreateProjectLog,
+  setCreateProjectLoading,
+  setDeployStatus,
+} from "../store/actions";
+import { websocket } from "../api/websocket";
+import { toSlug } from "../utils/slug";
+import { DeployStatus } from "../store/reducers/createProject";
 
 const { useBreakpoint } = Grid;
 
-const DeployProjectForm: React.FC = () => {
+interface FormTypes {
+  extraValues: components["schemas"]["websocket.ExtraValue"][];
+  config: string;
+  branch: string;
+  commit: string;
+  repoId: number;
+}
+
+const DeployProjectForm: React.FC<{
+  namespaceId: number;
+  projectId?: number;
+  edit?: boolean;
+}> = ({ namespaceId, projectId, edit }) => {
   const [form] = Form.useForm();
   const repoId = Form.useWatch("repoId", form);
   const branch = Form.useWatch("branch", form);
@@ -103,8 +129,12 @@ const DeployProjectForm: React.FC = () => {
         .GET("/api/git/projects/{gitProjectId}/branch_options", {
           params: { path: { gitProjectId: found.gitProjectId } },
         })
-        .then(({ data }) => {
-          data && setOptions((opt) => ({ ...opt, branch: data.items }));
+        .then(({ data, error }) => {
+          if (error) {
+            message.error(error.message);
+            return;
+          }
+          setOptions((opt) => ({ ...opt, branch: data.items }));
         })
         .finally(() => {
           setLoading((v) => ({ ...v, branch: false }));
@@ -170,16 +200,67 @@ const DeployProjectForm: React.FC = () => {
     }
   }, [repoId, loadConfigFile]);
 
+  useEffect(() => {
+    if (repoId) {
+      form.setFieldValue("extraValues", {});
+    }
+  }, [repoId, form]);
+
+  const info = useSelector(selectClusterInfo);
+  const [focusIdx, setFocusIdx] = useState<number | null>(null);
+  let slug = useMemo(() => {
+    let found = findProject(repoId);
+    if (found) {
+      return toSlug(namespaceId, found.value);
+    }
+  }, [namespaceId, findProject, repoId]);
+
+  const ws = useWs();
+  const wsReady = useWsReady();
+  const dispatch = useDispatch();
+  // const onFinish = () => {};
+  const onFinish = useCallback(
+    (values: FormTypes) => {
+      console.log(values);
+      if (!wsReady) {
+        message.error("连接断开了");
+        return;
+      }
+      if (!slug) {
+        return;
+      }
+      let createParams = websocket.CreateProjectInput.encode({
+        type: websocket.Type.CreateProject,
+        namespaceId: namespaceId,
+        repoId: values.repoId,
+        gitBranch: values.branch,
+        gitCommit: values.commit,
+        extraValues: values.extraValues,
+        config: values.config,
+      }).finish();
+
+      dispatch(setDeployStatus(slug, DeployStatus.DeployUnknown));
+
+      dispatch(clearCreateProjectLog(slug));
+      dispatch(setCreateProjectLoading(slug, true));
+      // setShowLog(true);
+      // setStart(true);
+      // setStartAt(Date.now());
+      // setDeployStarted(true);
+      ws?.send(createParams);
+      return;
+    },
+    [namespaceId, ws, wsReady, slug, dispatch]
+  );
+
   return (
     <Form
       layout="horizontal"
       form={form}
       labelWrap
       autoComplete="off"
-      onFinish={(values) => {
-        console.log(values);
-      }}
-      // initialValues={initFormValues}
+      onFinish={onFinish}
+      // initialValues={}
       style={{
         height: "100%",
         // display: "flex",
@@ -212,100 +293,149 @@ const DeployProjectForm: React.FC = () => {
               target={() => container}
               style={{ zIndex: 18, width: "100%" }}
             >
-              <Row style={{ backgroundColor: "white" }}>
-                <Col span={24}>
+              <div>
+                <Row style={{ backgroundColor: "white" }}>
+                  <Col span={24}>
+                    {needGitRepo && (
+                      <PipelineInfo
+                        projectId={pipeline.projectID}
+                        branch={pipeline.branch}
+                        commit={pipeline.commit}
+                      />
+                    )}
+                  </Col>
+                  <MyCol
+                    md={needGitRepo ? 8 : 24}
+                    xs={24}
+                    sm={24}
+                    onFocus={() => setFocusIdx(1)}
+                    onBlur={() => setFocusIdx(null)}
+                    focus={focusIdx === 1 ? 1 : 0}
+                  >
+                    <Form.Item name={"repoId"}>
+                      <Select
+                        loading={loading.project}
+                        showSearch
+                        className={
+                          needGitRepo && isBiggerScreen()
+                            ? css`
+                                .ant-select-selector {
+                                  border-top-right-radius: 0 !important;
+                                  border-bottom-right-radius: 0 !important;
+                                }
+                              `
+                            : ""
+                        }
+                        placeholder="选择项目"
+                        optionFilterProp="label"
+                        defaultActiveFirstOption={false}
+                        onDropdownVisibleChange={onProjectVisibleChange}
+                        options={options.project.map((v) => ({
+                          label: v.label,
+                          value: v.value,
+                        }))}
+                      />
+                    </Form.Item>
+                  </MyCol>
                   {needGitRepo && (
-                    <PipelineInfo
-                      projectId={pipeline.projectID}
-                      branch={pipeline.branch}
-                      commit={pipeline.commit}
-                    />
+                    <>
+                      <MyCol
+                        md={8}
+                        xs={24}
+                        sm={24}
+                        onFocus={() => setFocusIdx(2)}
+                        onBlur={() => setFocusIdx(null)}
+                        focus={focusIdx === 2 ? 1 : 0}
+                      >
+                        <Form.Item name={"branch"}>
+                          <Select
+                            loading={loading.branch}
+                            showSearch
+                            className={
+                              needGitRepo && isBiggerScreen()
+                                ? css`
+                                    .ant-select-selector {
+                                      border-radius: 0 !important;
+                                    }
+                                  `
+                                : ""
+                            }
+                            placeholder="选择分支"
+                            optionFilterProp="label"
+                            defaultActiveFirstOption={false}
+                            options={options.branch.map((v) => ({
+                              label: v.label,
+                              value: v.value,
+                            }))}
+                          />
+                        </Form.Item>
+                      </MyCol>
+                      <MyCol
+                        md={8}
+                        xs={24}
+                        sm={24}
+                        onFocus={() => setFocusIdx(3)}
+                        onBlur={() => setFocusIdx(null)}
+                        focus={focusIdx === 3 ? 1 : 0}
+                      >
+                        <Form.Item name={"commit"}>
+                          <Select
+                            showSearch
+                            loading={loading.commit}
+                            className={
+                              needGitRepo && isBiggerScreen()
+                                ? css`
+                                    .ant-select-selector {
+                                      border-top-left-radius: 0 !important;
+                                      border-bottom-left-radius: 0 !important;
+                                    }
+                                  `
+                                : ""
+                            }
+                            placeholder="选择 commit"
+                            optionFilterProp="label"
+                            defaultActiveFirstOption={false}
+                            options={options.commit.map((v) => ({
+                              label: v.label,
+                              value: v.value,
+                            }))}
+                          />
+                        </Form.Item>
+                      </MyCol>
+                    </>
                   )}
-                </Col>
-                <Col md={needGitRepo ? 8 : 24} xs={24} sm={24}>
-                  <Form.Item name={"repoId"}>
-                    <Select
-                      loading={loading.project}
-                      showSearch
-                      className={
-                        needGitRepo && isBiggerScreen()
-                          ? css`
-                              .ant-select-selector {
-                                border-top-right-radius: 0 !important;
-                                border-bottom-right-radius: 0 !important;
-                              }
-                            `
-                          : ""
-                      }
-                      placeholder="选择项目"
-                      optionFilterProp="label"
-                      defaultActiveFirstOption={false}
-                      onDropdownVisibleChange={onProjectVisibleChange}
-                      options={options.project.map((v) => ({
-                        label: v.label,
-                        value: v.value,
-                      }))}
-                    />
-                  </Form.Item>
-                </Col>
-                {needGitRepo && (
-                  <>
-                    <Col md={8} xs={24} sm={24}>
-                      <Form.Item name={"branch"}>
-                        <Select
-                          loading={loading.branch}
-                          showSearch
-                          className={
-                            needGitRepo && isBiggerScreen()
-                              ? css`
-                                  .ant-select-selector {
-                                    border-radius: 0 !important;
-                                  }
-                                `
-                              : ""
-                          }
-                          placeholder="选择分支"
-                          optionFilterProp="label"
-                          defaultActiveFirstOption={false}
-                          options={options.branch.map((v) => ({
-                            label: v.label,
-                            value: v.value,
-                          }))}
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col md={8} xs={24} sm={24}>
-                      <Form.Item name={"commit"}>
-                        <Select
-                          showSearch
-                          loading={loading.commit}
-                          className={
-                            needGitRepo && isBiggerScreen()
-                              ? css`
-                                  .ant-select-selector {
-                                    border-top-left-radius: 0 !important;
-                                    border-bottom-left-radius: 0 !important;
-                                  }
-                                `
-                              : ""
-                          }
-                          placeholder="选择 commit"
-                          optionFilterProp="label"
-                          defaultActiveFirstOption={false}
-                          options={options.commit.map((v) => ({
-                            label: v.label,
-                            value: v.value,
-                          }))}
-                        />
-                      </Form.Item>
-                    </Col>
-                  </>
-                )}
-              </Row>
+                </Row>
+                <Row>
+                  <Space>
+                    <Button
+                      onClick={() => form.submit()}
+                      style={{ fontSize: 12, marginRight: 5 }}
+                      size="small"
+                      danger={info.status === "bad"}
+                      type={"primary"}
+                      // loading={isLoading}
+                    >
+                      部署
+                      {info.status === "bad" ? "集群资源不足" : "部署"}
+                    </Button>
+                    <Button
+                      style={{ fontSize: 12, marginRight: 5 }}
+                      size="small"
+                      // hidden={!isLoading}
+                      danger
+                      icon={<StopOutlined />}
+                      type="dashed"
+                      // onClick={onRemove}
+                    >
+                      取消
+                    </Button>
+                  </Space>
+                </Row>
+              </div>
             </Affix>
             <Row>
               <Col span={24}>
-                <Form.Item name="extra_values" noStyle>
+                <Form.Item name="extraValues" noStyle>
                   <Elements
                     elements={elements}
                     style={{
@@ -340,3 +470,15 @@ const DeployProjectForm: React.FC = () => {
 };
 
 export default memo(DeployProjectForm);
+
+const MyCol = styled(Col)<{ focus: number }>`
+  margin-right: -1px;
+  &:hover {
+    z-index: 100;
+  }
+  ${(p) =>
+    p.focus &&
+    `
+    z-index: 100;
+  `}
+`;

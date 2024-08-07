@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/api/v4/types"
+	"github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/ent/accesstoken"
 	"github.com/duc-cnzj/mars/v4/internal/ent/cachelock"
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
@@ -1363,8 +1364,8 @@ type ChangelogMutation struct {
 	appenddocker_image       []string
 	env_values               *[]*types.KeyValue
 	appendenv_values         []*types.KeyValue
-	extra_values             *[]*types.ExtraValue
-	appendextra_values       []*types.ExtraValue
+	extra_values             *[]*websocket.ExtraValue
+	appendextra_values       []*websocket.ExtraValue
 	final_extra_values       *[]string
 	appendfinal_extra_values []string
 	git_commit_web_url       *string
@@ -2059,13 +2060,13 @@ func (m *ChangelogMutation) ResetEnvValues() {
 }
 
 // SetExtraValues sets the "extra_values" field.
-func (m *ChangelogMutation) SetExtraValues(tv []*types.ExtraValue) {
-	m.extra_values = &tv
+func (m *ChangelogMutation) SetExtraValues(wv []*websocket.ExtraValue) {
+	m.extra_values = &wv
 	m.appendextra_values = nil
 }
 
 // ExtraValues returns the value of the "extra_values" field in the mutation.
-func (m *ChangelogMutation) ExtraValues() (r []*types.ExtraValue, exists bool) {
+func (m *ChangelogMutation) ExtraValues() (r []*websocket.ExtraValue, exists bool) {
 	v := m.extra_values
 	if v == nil {
 		return
@@ -2076,7 +2077,7 @@ func (m *ChangelogMutation) ExtraValues() (r []*types.ExtraValue, exists bool) {
 // OldExtraValues returns the old "extra_values" field's value of the Changelog entity.
 // If the Changelog object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ChangelogMutation) OldExtraValues(ctx context.Context) (v []*types.ExtraValue, err error) {
+func (m *ChangelogMutation) OldExtraValues(ctx context.Context) (v []*websocket.ExtraValue, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldExtraValues is only allowed on UpdateOne operations")
 	}
@@ -2090,13 +2091,13 @@ func (m *ChangelogMutation) OldExtraValues(ctx context.Context) (v []*types.Extr
 	return oldValue.ExtraValues, nil
 }
 
-// AppendExtraValues adds tv to the "extra_values" field.
-func (m *ChangelogMutation) AppendExtraValues(tv []*types.ExtraValue) {
-	m.appendextra_values = append(m.appendextra_values, tv...)
+// AppendExtraValues adds wv to the "extra_values" field.
+func (m *ChangelogMutation) AppendExtraValues(wv []*websocket.ExtraValue) {
+	m.appendextra_values = append(m.appendextra_values, wv...)
 }
 
 // AppendedExtraValues returns the list of values that were appended to the "extra_values" field in this mutation.
-func (m *ChangelogMutation) AppendedExtraValues() ([]*types.ExtraValue, bool) {
+func (m *ChangelogMutation) AppendedExtraValues() ([]*websocket.ExtraValue, bool) {
 	if len(m.appendextra_values) == 0 {
 		return nil, false
 	}
@@ -2865,7 +2866,7 @@ func (m *ChangelogMutation) SetField(name string, value ent.Value) error {
 		m.SetEnvValues(v)
 		return nil
 	case changelog.FieldExtraValues:
-		v, ok := value.([]*types.ExtraValue)
+		v, ok := value.([]*websocket.ExtraValue)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -7298,8 +7299,8 @@ type ProjectMutation struct {
 	adddeploy_status         *types.Deploy
 	env_values               *[]*types.KeyValue
 	appendenv_values         []*types.KeyValue
-	extra_values             *[]*types.ExtraValue
-	appendextra_values       []*types.ExtraValue
+	extra_values             *[]*websocket.ExtraValue
+	appendextra_values       []*websocket.ExtraValue
 	final_extra_values       *[]string
 	appendfinal_extra_values []string
 	version                  *int
@@ -7772,9 +7773,22 @@ func (m *ProjectMutation) OldOverrideValues(ctx context.Context) (v string, err 
 	return oldValue.OverrideValues, nil
 }
 
+// ClearOverrideValues clears the value of the "override_values" field.
+func (m *ProjectMutation) ClearOverrideValues() {
+	m.override_values = nil
+	m.clearedFields[project.FieldOverrideValues] = struct{}{}
+}
+
+// OverrideValuesCleared returns if the "override_values" field was cleared in this mutation.
+func (m *ProjectMutation) OverrideValuesCleared() bool {
+	_, ok := m.clearedFields[project.FieldOverrideValues]
+	return ok
+}
+
 // ResetOverrideValues resets all changes to the "override_values" field.
 func (m *ProjectMutation) ResetOverrideValues() {
 	m.override_values = nil
+	delete(m.clearedFields, project.FieldOverrideValues)
 }
 
 // SetDockerImage sets the "docker_image" field.
@@ -7822,10 +7836,24 @@ func (m *ProjectMutation) AppendedDockerImage() ([]string, bool) {
 	return m.appenddocker_image, true
 }
 
+// ClearDockerImage clears the value of the "docker_image" field.
+func (m *ProjectMutation) ClearDockerImage() {
+	m.docker_image = nil
+	m.appenddocker_image = nil
+	m.clearedFields[project.FieldDockerImage] = struct{}{}
+}
+
+// DockerImageCleared returns if the "docker_image" field was cleared in this mutation.
+func (m *ProjectMutation) DockerImageCleared() bool {
+	_, ok := m.clearedFields[project.FieldDockerImage]
+	return ok
+}
+
 // ResetDockerImage resets all changes to the "docker_image" field.
 func (m *ProjectMutation) ResetDockerImage() {
 	m.docker_image = nil
 	m.appenddocker_image = nil
+	delete(m.clearedFields, project.FieldDockerImage)
 }
 
 // SetPodSelectors sets the "pod_selectors" field.
@@ -7873,10 +7901,24 @@ func (m *ProjectMutation) AppendedPodSelectors() ([]string, bool) {
 	return m.appendpod_selectors, true
 }
 
+// ClearPodSelectors clears the value of the "pod_selectors" field.
+func (m *ProjectMutation) ClearPodSelectors() {
+	m.pod_selectors = nil
+	m.appendpod_selectors = nil
+	m.clearedFields[project.FieldPodSelectors] = struct{}{}
+}
+
+// PodSelectorsCleared returns if the "pod_selectors" field was cleared in this mutation.
+func (m *ProjectMutation) PodSelectorsCleared() bool {
+	_, ok := m.clearedFields[project.FieldPodSelectors]
+	return ok
+}
+
 // ResetPodSelectors resets all changes to the "pod_selectors" field.
 func (m *ProjectMutation) ResetPodSelectors() {
 	m.pod_selectors = nil
 	m.appendpod_selectors = nil
+	delete(m.clearedFields, project.FieldPodSelectors)
 }
 
 // SetAtomic sets the "atomic" field.
@@ -8016,20 +8058,34 @@ func (m *ProjectMutation) AppendedEnvValues() ([]*types.KeyValue, bool) {
 	return m.appendenv_values, true
 }
 
+// ClearEnvValues clears the value of the "env_values" field.
+func (m *ProjectMutation) ClearEnvValues() {
+	m.env_values = nil
+	m.appendenv_values = nil
+	m.clearedFields[project.FieldEnvValues] = struct{}{}
+}
+
+// EnvValuesCleared returns if the "env_values" field was cleared in this mutation.
+func (m *ProjectMutation) EnvValuesCleared() bool {
+	_, ok := m.clearedFields[project.FieldEnvValues]
+	return ok
+}
+
 // ResetEnvValues resets all changes to the "env_values" field.
 func (m *ProjectMutation) ResetEnvValues() {
 	m.env_values = nil
 	m.appendenv_values = nil
+	delete(m.clearedFields, project.FieldEnvValues)
 }
 
 // SetExtraValues sets the "extra_values" field.
-func (m *ProjectMutation) SetExtraValues(tv []*types.ExtraValue) {
-	m.extra_values = &tv
+func (m *ProjectMutation) SetExtraValues(wv []*websocket.ExtraValue) {
+	m.extra_values = &wv
 	m.appendextra_values = nil
 }
 
 // ExtraValues returns the value of the "extra_values" field in the mutation.
-func (m *ProjectMutation) ExtraValues() (r []*types.ExtraValue, exists bool) {
+func (m *ProjectMutation) ExtraValues() (r []*websocket.ExtraValue, exists bool) {
 	v := m.extra_values
 	if v == nil {
 		return
@@ -8040,7 +8096,7 @@ func (m *ProjectMutation) ExtraValues() (r []*types.ExtraValue, exists bool) {
 // OldExtraValues returns the old "extra_values" field's value of the Project entity.
 // If the Project object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProjectMutation) OldExtraValues(ctx context.Context) (v []*types.ExtraValue, err error) {
+func (m *ProjectMutation) OldExtraValues(ctx context.Context) (v []*websocket.ExtraValue, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldExtraValues is only allowed on UpdateOne operations")
 	}
@@ -8054,23 +8110,37 @@ func (m *ProjectMutation) OldExtraValues(ctx context.Context) (v []*types.ExtraV
 	return oldValue.ExtraValues, nil
 }
 
-// AppendExtraValues adds tv to the "extra_values" field.
-func (m *ProjectMutation) AppendExtraValues(tv []*types.ExtraValue) {
-	m.appendextra_values = append(m.appendextra_values, tv...)
+// AppendExtraValues adds wv to the "extra_values" field.
+func (m *ProjectMutation) AppendExtraValues(wv []*websocket.ExtraValue) {
+	m.appendextra_values = append(m.appendextra_values, wv...)
 }
 
 // AppendedExtraValues returns the list of values that were appended to the "extra_values" field in this mutation.
-func (m *ProjectMutation) AppendedExtraValues() ([]*types.ExtraValue, bool) {
+func (m *ProjectMutation) AppendedExtraValues() ([]*websocket.ExtraValue, bool) {
 	if len(m.appendextra_values) == 0 {
 		return nil, false
 	}
 	return m.appendextra_values, true
 }
 
+// ClearExtraValues clears the value of the "extra_values" field.
+func (m *ProjectMutation) ClearExtraValues() {
+	m.extra_values = nil
+	m.appendextra_values = nil
+	m.clearedFields[project.FieldExtraValues] = struct{}{}
+}
+
+// ExtraValuesCleared returns if the "extra_values" field was cleared in this mutation.
+func (m *ProjectMutation) ExtraValuesCleared() bool {
+	_, ok := m.clearedFields[project.FieldExtraValues]
+	return ok
+}
+
 // ResetExtraValues resets all changes to the "extra_values" field.
 func (m *ProjectMutation) ResetExtraValues() {
 	m.extra_values = nil
 	m.appendextra_values = nil
+	delete(m.clearedFields, project.FieldExtraValues)
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
@@ -8118,10 +8188,24 @@ func (m *ProjectMutation) AppendedFinalExtraValues() ([]string, bool) {
 	return m.appendfinal_extra_values, true
 }
 
+// ClearFinalExtraValues clears the value of the "final_extra_values" field.
+func (m *ProjectMutation) ClearFinalExtraValues() {
+	m.final_extra_values = nil
+	m.appendfinal_extra_values = nil
+	m.clearedFields[project.FieldFinalExtraValues] = struct{}{}
+}
+
+// FinalExtraValuesCleared returns if the "final_extra_values" field was cleared in this mutation.
+func (m *ProjectMutation) FinalExtraValuesCleared() bool {
+	_, ok := m.clearedFields[project.FieldFinalExtraValues]
+	return ok
+}
+
 // ResetFinalExtraValues resets all changes to the "final_extra_values" field.
 func (m *ProjectMutation) ResetFinalExtraValues() {
 	m.final_extra_values = nil
 	m.appendfinal_extra_values = nil
+	delete(m.clearedFields, project.FieldFinalExtraValues)
 }
 
 // SetVersion sets the "version" field.
@@ -8274,10 +8358,24 @@ func (m *ProjectMutation) AppendedManifest() ([]string, bool) {
 	return m.appendmanifest, true
 }
 
+// ClearManifest clears the value of the "manifest" field.
+func (m *ProjectMutation) ClearManifest() {
+	m.manifest = nil
+	m.appendmanifest = nil
+	m.clearedFields[project.FieldManifest] = struct{}{}
+}
+
+// ManifestCleared returns if the "manifest" field was cleared in this mutation.
+func (m *ProjectMutation) ManifestCleared() bool {
+	_, ok := m.clearedFields[project.FieldManifest]
+	return ok
+}
+
 // ResetManifest resets all changes to the "manifest" field.
 func (m *ProjectMutation) ResetManifest() {
 	m.manifest = nil
 	m.appendmanifest = nil
+	delete(m.clearedFields, project.FieldManifest)
 }
 
 // SetGitCommitWebURL sets the "git_commit_web_url" field.
@@ -8895,7 +8993,7 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 		m.SetEnvValues(v)
 		return nil
 	case project.FieldExtraValues:
-		v, ok := value.([]*types.ExtraValue)
+		v, ok := value.([]*websocket.ExtraValue)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -9036,8 +9134,29 @@ func (m *ProjectMutation) ClearedFields() []string {
 	if m.FieldCleared(project.FieldDeletedAt) {
 		fields = append(fields, project.FieldDeletedAt)
 	}
+	if m.FieldCleared(project.FieldOverrideValues) {
+		fields = append(fields, project.FieldOverrideValues)
+	}
+	if m.FieldCleared(project.FieldDockerImage) {
+		fields = append(fields, project.FieldDockerImage)
+	}
+	if m.FieldCleared(project.FieldPodSelectors) {
+		fields = append(fields, project.FieldPodSelectors)
+	}
+	if m.FieldCleared(project.FieldEnvValues) {
+		fields = append(fields, project.FieldEnvValues)
+	}
+	if m.FieldCleared(project.FieldExtraValues) {
+		fields = append(fields, project.FieldExtraValues)
+	}
+	if m.FieldCleared(project.FieldFinalExtraValues) {
+		fields = append(fields, project.FieldFinalExtraValues)
+	}
 	if m.FieldCleared(project.FieldConfigType) {
 		fields = append(fields, project.FieldConfigType)
+	}
+	if m.FieldCleared(project.FieldManifest) {
+		fields = append(fields, project.FieldManifest)
 	}
 	if m.FieldCleared(project.FieldGitCommitDate) {
 		fields = append(fields, project.FieldGitCommitDate)
@@ -9062,8 +9181,29 @@ func (m *ProjectMutation) ClearField(name string) error {
 	case project.FieldDeletedAt:
 		m.ClearDeletedAt()
 		return nil
+	case project.FieldOverrideValues:
+		m.ClearOverrideValues()
+		return nil
+	case project.FieldDockerImage:
+		m.ClearDockerImage()
+		return nil
+	case project.FieldPodSelectors:
+		m.ClearPodSelectors()
+		return nil
+	case project.FieldEnvValues:
+		m.ClearEnvValues()
+		return nil
+	case project.FieldExtraValues:
+		m.ClearExtraValues()
+		return nil
+	case project.FieldFinalExtraValues:
+		m.ClearFinalExtraValues()
+		return nil
 	case project.FieldConfigType:
 		m.ClearConfigType()
+		return nil
+	case project.FieldManifest:
+		m.ClearManifest()
 		return nil
 	case project.FieldGitCommitDate:
 		m.ClearGitCommitDate()

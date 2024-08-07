@@ -100,8 +100,10 @@ type CreateNamespaceInput struct {
 }
 
 func (repo *namespaceRepo) Create(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error) {
-	save, err := repo.data.DB().Namespace.Create().
+	save, err := repo.data.DB().Namespace.
+		Create().
 		SetName(mars.GetMarsNamespace(input.Name, repo.NsPrefix)).
+		SetImagePullSecrets(input.ImagePullSecrets).
 		Save(ctx)
 	return ToNamespace(save), err
 }

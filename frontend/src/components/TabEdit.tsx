@@ -23,11 +23,12 @@ import { StopOutlined } from "@ant-design/icons";
 import LogOutput from "./LogOutput";
 import ProjectSelector from "./ProjectSelector";
 import DebugModeSwitch from "./DebugModeSwitch";
-import pb from "../api/compiled";
+import pb from "../api/websocket";
 import TimeCost from "./TimeCost";
 import { selectTimer } from "../store/reducers/deployTimer";
 import DiffViewer from "./DiffViewer";
 import { css } from "@emotion/css";
+import { components } from "../api/schema";
 
 interface WatchData {
   gitProjectId: number;
@@ -49,9 +50,9 @@ const diffViewerStyles: ReactDiffViewerStylesOverride = {
 
 const ModalSub: React.FC<{
   namespaceId: number;
-  detail: pb.types.ProjectModel;
+  detail: components["schemas"]["types.ProjectModel"];
   onSuccess: () => void;
-  elements: pb.mars.Element[];
+  elements: components["schemas"]["mars.Element"][];
   updatedAt: any;
 }> = ({ detail, onSuccess, updatedAt, namespaceId, elements }) => {
   const ws = useWs();
@@ -91,9 +92,9 @@ const ModalSub: React.FC<{
   const [showLog, setShowLog] = useState(start);
 
   const [data, setData] = useState<WatchData>({
-    gitProjectId: detail.git_project_id,
-    gitBranch: detail.git_branch,
-    gitCommit: detail.git_commit,
+    gitProjectId: detail.gitProjectId,
+    gitBranch: detail.gitBranch,
+    gitCommit: detail.gitCommit,
     config: detail.config,
   });
 
@@ -101,19 +102,19 @@ const ModalSub: React.FC<{
     () => ({
       selectors: {
         projectName: detail.name,
-        gitProjectId: detail.git_project_id,
-        gitBranch: detail.git_branch,
-        gitCommit: detail.git_commit,
-        gitCommitTitle: `[${detail.git_commit_date}]:  ${detail.git_commit_title}`,
+        gitProjectId: detail.gitProjectId,
+        gitBranch: detail.gitBranch,
+        gitCommit: detail.gitCommit,
+        gitCommitTitle: `[${detail.gitCommitDate}]:  ${detail.gitCommitTitle}`,
       },
       name: detail.name,
-      gitProjectId: detail.git_project_id,
-      gitBranch: detail.git_branch,
-      gitCommit: detail.git_commit,
+      gitProjectId: detail.gitProjectId,
+      gitBranch: detail.gitBranch,
+      gitCommit: detail.gitCommit,
       config: detail.config,
-      config_type: detail.config_type,
+      configType: detail.configType,
       debug: !detail.atomic,
-      extra_values: detail.extra_values,
+      extraValues: detail.extraValues,
     }),
     [detail]
   );
@@ -131,8 +132,8 @@ const ModalSub: React.FC<{
       // message.error("连接断开了");
       return;
     }
-    if (values.extra_values) {
-      values.extra_values = values.extra_values.map((i: any) => ({
+    if (values.extraValues) {
+      values.extraValues = values.extraValues.map((i: any) => ({
         ...i,
         value: String(i.value),
       }));
@@ -141,10 +142,10 @@ const ModalSub: React.FC<{
       let s = pb.websocket.UpdateProjectInput.encode({
         type: pb.websocket.Type.UpdateProject,
 
-        extra_values: values.extra_values,
-        project_id: Number(detail.id),
-        git_branch: values.selectors.gitBranch,
-        git_commit: values.selectors.gitCommit,
+        extraValues: values.extraValues,
+        projectId: Number(detail.id),
+        gitBranch: values.selectors.gitBranch,
+        gitCommit: values.selectors.gitCommit,
         config: values.config,
         atomic: !values.debug,
         version: detail.version,
@@ -173,7 +174,7 @@ const ModalSub: React.FC<{
     if (Number(namespaceId) > 0 && detail.name.length > 0) {
       let s = pb.websocket.CancelInput.encode({
         type: pb.websocket.Type.CancelProject,
-        namespace_id: Number(namespaceId),
+        namespaceId: Number(namespaceId),
         name: detail.name,
       }).finish();
       ws?.send(s);
@@ -312,9 +313,9 @@ const ModalSub: React.FC<{
                         setData((d) => ({ ...d, config: s }));
                       }}
                       projectID={detail.id}
-                      configType={detail.config_type}
+                      configType={detail.configType}
                       currentConfig={data.config}
-                      updatedAt={detail.updated_at}
+                      updatedAt={detail.updatedAt}
                     />
                   )}
                 </div>
@@ -349,7 +350,7 @@ const ModalSub: React.FC<{
               flexDirection: "column",
             }}
           >
-            <Form.Item name="extra_values" noStyle>
+            <Form.Item name="extraValues" noStyle>
               <Elements
                 elements={elements}
                 style={{
@@ -371,7 +372,7 @@ const ModalSub: React.FC<{
               <Col span={detail.config === data.config ? 24 : 12}>
                 <Form.Item name={"config"} noStyle>
                   <CodeMirror
-                    mode={getMode(detail.config_type)}
+                    mode={getMode(detail.configType)}
                     onChange={(v) => {
                       form.setFieldsValue({ config: v });
                       setData((d) => {
@@ -392,7 +393,7 @@ const ModalSub: React.FC<{
               >
                 <DiffViewer
                   styles={diffViewerStyles}
-                  mode={detail.config_type}
+                  mode={detail.configType}
                   showDiffOnly={false}
                   oldValue={detail.config}
                   newValue={data.config}

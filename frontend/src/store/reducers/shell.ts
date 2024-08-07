@@ -3,7 +3,7 @@ import {
   SET_SHELL_LOG,
   REMOVE_SHELL,
 } from "./../actionTypes";
-import pb from "../../api/compiled";
+import pb from "../../api/websocket";
 
 const initialState: {
   [id: string]: {

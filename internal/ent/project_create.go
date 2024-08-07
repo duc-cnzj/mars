@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/duc-cnzj/mars/api/v4/types"
+	"github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
@@ -111,6 +112,14 @@ func (pc *ProjectCreate) SetOverrideValues(s string) *ProjectCreate {
 	return pc
 }
 
+// SetNillableOverrideValues sets the "override_values" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableOverrideValues(s *string) *ProjectCreate {
+	if s != nil {
+		pc.SetOverrideValues(*s)
+	}
+	return pc
+}
+
 // SetDockerImage sets the "docker_image" field.
 func (pc *ProjectCreate) SetDockerImage(s []string) *ProjectCreate {
 	pc.mutation.SetDockerImage(s)
@@ -158,8 +167,8 @@ func (pc *ProjectCreate) SetEnvValues(tv []*types.KeyValue) *ProjectCreate {
 }
 
 // SetExtraValues sets the "extra_values" field.
-func (pc *ProjectCreate) SetExtraValues(tv []*types.ExtraValue) *ProjectCreate {
-	pc.mutation.SetExtraValues(tv)
+func (pc *ProjectCreate) SetExtraValues(wv []*websocket.ExtraValue) *ProjectCreate {
+	pc.mutation.SetExtraValues(wv)
 	return pc
 }
 
@@ -413,29 +422,11 @@ func (pc *ProjectCreate) check() error {
 	if _, ok := pc.mutation.Config(); !ok {
 		return &ValidationError{Name: "config", err: errors.New(`ent: missing required field "Project.config"`)}
 	}
-	if _, ok := pc.mutation.OverrideValues(); !ok {
-		return &ValidationError{Name: "override_values", err: errors.New(`ent: missing required field "Project.override_values"`)}
-	}
-	if _, ok := pc.mutation.DockerImage(); !ok {
-		return &ValidationError{Name: "docker_image", err: errors.New(`ent: missing required field "Project.docker_image"`)}
-	}
-	if _, ok := pc.mutation.PodSelectors(); !ok {
-		return &ValidationError{Name: "pod_selectors", err: errors.New(`ent: missing required field "Project.pod_selectors"`)}
-	}
 	if _, ok := pc.mutation.Atomic(); !ok {
 		return &ValidationError{Name: "atomic", err: errors.New(`ent: missing required field "Project.atomic"`)}
 	}
 	if _, ok := pc.mutation.DeployStatus(); !ok {
 		return &ValidationError{Name: "deploy_status", err: errors.New(`ent: missing required field "Project.deploy_status"`)}
-	}
-	if _, ok := pc.mutation.EnvValues(); !ok {
-		return &ValidationError{Name: "env_values", err: errors.New(`ent: missing required field "Project.env_values"`)}
-	}
-	if _, ok := pc.mutation.ExtraValues(); !ok {
-		return &ValidationError{Name: "extra_values", err: errors.New(`ent: missing required field "Project.extra_values"`)}
-	}
-	if _, ok := pc.mutation.FinalExtraValues(); !ok {
-		return &ValidationError{Name: "final_extra_values", err: errors.New(`ent: missing required field "Project.final_extra_values"`)}
 	}
 	if _, ok := pc.mutation.Version(); !ok {
 		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "Project.version"`)}
@@ -444,9 +435,6 @@ func (pc *ProjectCreate) check() error {
 		if err := project.ConfigTypeValidator(v); err != nil {
 			return &ValidationError{Name: "config_type", err: fmt.Errorf(`ent: validator failed for field "Project.config_type": %w`, err)}
 		}
-	}
-	if _, ok := pc.mutation.Manifest(); !ok {
-		return &ValidationError{Name: "manifest", err: errors.New(`ent: missing required field "Project.manifest"`)}
 	}
 	if _, ok := pc.mutation.GitCommitWebURL(); !ok {
 		return &ValidationError{Name: "git_commit_web_url", err: errors.New(`ent: missing required field "Project.git_commit_web_url"`)}
@@ -784,6 +772,12 @@ func (u *ProjectUpsert) UpdateOverrideValues() *ProjectUpsert {
 	return u
 }
 
+// ClearOverrideValues clears the value of the "override_values" field.
+func (u *ProjectUpsert) ClearOverrideValues() *ProjectUpsert {
+	u.SetNull(project.FieldOverrideValues)
+	return u
+}
+
 // SetDockerImage sets the "docker_image" field.
 func (u *ProjectUpsert) SetDockerImage(v []string) *ProjectUpsert {
 	u.Set(project.FieldDockerImage, v)
@@ -796,6 +790,12 @@ func (u *ProjectUpsert) UpdateDockerImage() *ProjectUpsert {
 	return u
 }
 
+// ClearDockerImage clears the value of the "docker_image" field.
+func (u *ProjectUpsert) ClearDockerImage() *ProjectUpsert {
+	u.SetNull(project.FieldDockerImage)
+	return u
+}
+
 // SetPodSelectors sets the "pod_selectors" field.
 func (u *ProjectUpsert) SetPodSelectors(v []string) *ProjectUpsert {
 	u.Set(project.FieldPodSelectors, v)
@@ -805,6 +805,12 @@ func (u *ProjectUpsert) SetPodSelectors(v []string) *ProjectUpsert {
 // UpdatePodSelectors sets the "pod_selectors" field to the value that was provided on create.
 func (u *ProjectUpsert) UpdatePodSelectors() *ProjectUpsert {
 	u.SetExcluded(project.FieldPodSelectors)
+	return u
+}
+
+// ClearPodSelectors clears the value of the "pod_selectors" field.
+func (u *ProjectUpsert) ClearPodSelectors() *ProjectUpsert {
+	u.SetNull(project.FieldPodSelectors)
 	return u
 }
 
@@ -850,8 +856,14 @@ func (u *ProjectUpsert) UpdateEnvValues() *ProjectUpsert {
 	return u
 }
 
+// ClearEnvValues clears the value of the "env_values" field.
+func (u *ProjectUpsert) ClearEnvValues() *ProjectUpsert {
+	u.SetNull(project.FieldEnvValues)
+	return u
+}
+
 // SetExtraValues sets the "extra_values" field.
-func (u *ProjectUpsert) SetExtraValues(v []*types.ExtraValue) *ProjectUpsert {
+func (u *ProjectUpsert) SetExtraValues(v []*websocket.ExtraValue) *ProjectUpsert {
 	u.Set(project.FieldExtraValues, v)
 	return u
 }
@@ -859,6 +871,12 @@ func (u *ProjectUpsert) SetExtraValues(v []*types.ExtraValue) *ProjectUpsert {
 // UpdateExtraValues sets the "extra_values" field to the value that was provided on create.
 func (u *ProjectUpsert) UpdateExtraValues() *ProjectUpsert {
 	u.SetExcluded(project.FieldExtraValues)
+	return u
+}
+
+// ClearExtraValues clears the value of the "extra_values" field.
+func (u *ProjectUpsert) ClearExtraValues() *ProjectUpsert {
+	u.SetNull(project.FieldExtraValues)
 	return u
 }
 
@@ -871,6 +889,12 @@ func (u *ProjectUpsert) SetFinalExtraValues(v []string) *ProjectUpsert {
 // UpdateFinalExtraValues sets the "final_extra_values" field to the value that was provided on create.
 func (u *ProjectUpsert) UpdateFinalExtraValues() *ProjectUpsert {
 	u.SetExcluded(project.FieldFinalExtraValues)
+	return u
+}
+
+// ClearFinalExtraValues clears the value of the "final_extra_values" field.
+func (u *ProjectUpsert) ClearFinalExtraValues() *ProjectUpsert {
+	u.SetNull(project.FieldFinalExtraValues)
 	return u
 }
 
@@ -919,6 +943,12 @@ func (u *ProjectUpsert) SetManifest(v []string) *ProjectUpsert {
 // UpdateManifest sets the "manifest" field to the value that was provided on create.
 func (u *ProjectUpsert) UpdateManifest() *ProjectUpsert {
 	u.SetExcluded(project.FieldManifest)
+	return u
+}
+
+// ClearManifest clears the value of the "manifest" field.
+func (u *ProjectUpsert) ClearManifest() *ProjectUpsert {
+	u.SetNull(project.FieldManifest)
 	return u
 }
 
@@ -1165,6 +1195,13 @@ func (u *ProjectUpsertOne) UpdateOverrideValues() *ProjectUpsertOne {
 	})
 }
 
+// ClearOverrideValues clears the value of the "override_values" field.
+func (u *ProjectUpsertOne) ClearOverrideValues() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearOverrideValues()
+	})
+}
+
 // SetDockerImage sets the "docker_image" field.
 func (u *ProjectUpsertOne) SetDockerImage(v []string) *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
@@ -1179,6 +1216,13 @@ func (u *ProjectUpsertOne) UpdateDockerImage() *ProjectUpsertOne {
 	})
 }
 
+// ClearDockerImage clears the value of the "docker_image" field.
+func (u *ProjectUpsertOne) ClearDockerImage() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearDockerImage()
+	})
+}
+
 // SetPodSelectors sets the "pod_selectors" field.
 func (u *ProjectUpsertOne) SetPodSelectors(v []string) *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
@@ -1190,6 +1234,13 @@ func (u *ProjectUpsertOne) SetPodSelectors(v []string) *ProjectUpsertOne {
 func (u *ProjectUpsertOne) UpdatePodSelectors() *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdatePodSelectors()
+	})
+}
+
+// ClearPodSelectors clears the value of the "pod_selectors" field.
+func (u *ProjectUpsertOne) ClearPodSelectors() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearPodSelectors()
 	})
 }
 
@@ -1242,8 +1293,15 @@ func (u *ProjectUpsertOne) UpdateEnvValues() *ProjectUpsertOne {
 	})
 }
 
+// ClearEnvValues clears the value of the "env_values" field.
+func (u *ProjectUpsertOne) ClearEnvValues() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearEnvValues()
+	})
+}
+
 // SetExtraValues sets the "extra_values" field.
-func (u *ProjectUpsertOne) SetExtraValues(v []*types.ExtraValue) *ProjectUpsertOne {
+func (u *ProjectUpsertOne) SetExtraValues(v []*websocket.ExtraValue) *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.SetExtraValues(v)
 	})
@@ -1253,6 +1311,13 @@ func (u *ProjectUpsertOne) SetExtraValues(v []*types.ExtraValue) *ProjectUpsertO
 func (u *ProjectUpsertOne) UpdateExtraValues() *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateExtraValues()
+	})
+}
+
+// ClearExtraValues clears the value of the "extra_values" field.
+func (u *ProjectUpsertOne) ClearExtraValues() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearExtraValues()
 	})
 }
 
@@ -1267,6 +1332,13 @@ func (u *ProjectUpsertOne) SetFinalExtraValues(v []string) *ProjectUpsertOne {
 func (u *ProjectUpsertOne) UpdateFinalExtraValues() *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateFinalExtraValues()
+	})
+}
+
+// ClearFinalExtraValues clears the value of the "final_extra_values" field.
+func (u *ProjectUpsertOne) ClearFinalExtraValues() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearFinalExtraValues()
 	})
 }
 
@@ -1323,6 +1395,13 @@ func (u *ProjectUpsertOne) SetManifest(v []string) *ProjectUpsertOne {
 func (u *ProjectUpsertOne) UpdateManifest() *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateManifest()
+	})
+}
+
+// ClearManifest clears the value of the "manifest" field.
+func (u *ProjectUpsertOne) ClearManifest() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearManifest()
 	})
 }
 
@@ -1747,6 +1826,13 @@ func (u *ProjectUpsertBulk) UpdateOverrideValues() *ProjectUpsertBulk {
 	})
 }
 
+// ClearOverrideValues clears the value of the "override_values" field.
+func (u *ProjectUpsertBulk) ClearOverrideValues() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearOverrideValues()
+	})
+}
+
 // SetDockerImage sets the "docker_image" field.
 func (u *ProjectUpsertBulk) SetDockerImage(v []string) *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
@@ -1761,6 +1847,13 @@ func (u *ProjectUpsertBulk) UpdateDockerImage() *ProjectUpsertBulk {
 	})
 }
 
+// ClearDockerImage clears the value of the "docker_image" field.
+func (u *ProjectUpsertBulk) ClearDockerImage() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearDockerImage()
+	})
+}
+
 // SetPodSelectors sets the "pod_selectors" field.
 func (u *ProjectUpsertBulk) SetPodSelectors(v []string) *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
@@ -1772,6 +1865,13 @@ func (u *ProjectUpsertBulk) SetPodSelectors(v []string) *ProjectUpsertBulk {
 func (u *ProjectUpsertBulk) UpdatePodSelectors() *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdatePodSelectors()
+	})
+}
+
+// ClearPodSelectors clears the value of the "pod_selectors" field.
+func (u *ProjectUpsertBulk) ClearPodSelectors() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearPodSelectors()
 	})
 }
 
@@ -1824,8 +1924,15 @@ func (u *ProjectUpsertBulk) UpdateEnvValues() *ProjectUpsertBulk {
 	})
 }
 
+// ClearEnvValues clears the value of the "env_values" field.
+func (u *ProjectUpsertBulk) ClearEnvValues() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearEnvValues()
+	})
+}
+
 // SetExtraValues sets the "extra_values" field.
-func (u *ProjectUpsertBulk) SetExtraValues(v []*types.ExtraValue) *ProjectUpsertBulk {
+func (u *ProjectUpsertBulk) SetExtraValues(v []*websocket.ExtraValue) *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.SetExtraValues(v)
 	})
@@ -1835,6 +1942,13 @@ func (u *ProjectUpsertBulk) SetExtraValues(v []*types.ExtraValue) *ProjectUpsert
 func (u *ProjectUpsertBulk) UpdateExtraValues() *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateExtraValues()
+	})
+}
+
+// ClearExtraValues clears the value of the "extra_values" field.
+func (u *ProjectUpsertBulk) ClearExtraValues() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearExtraValues()
 	})
 }
 
@@ -1849,6 +1963,13 @@ func (u *ProjectUpsertBulk) SetFinalExtraValues(v []string) *ProjectUpsertBulk {
 func (u *ProjectUpsertBulk) UpdateFinalExtraValues() *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateFinalExtraValues()
+	})
+}
+
+// ClearFinalExtraValues clears the value of the "final_extra_values" field.
+func (u *ProjectUpsertBulk) ClearFinalExtraValues() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearFinalExtraValues()
 	})
 }
 
@@ -1905,6 +2026,13 @@ func (u *ProjectUpsertBulk) SetManifest(v []string) *ProjectUpsertBulk {
 func (u *ProjectUpsertBulk) UpdateManifest() *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateManifest()
+	})
+}
+
+// ClearManifest clears the value of the "manifest" field.
+func (u *ProjectUpsertBulk) ClearManifest() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearManifest()
 	})
 }
 

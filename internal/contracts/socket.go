@@ -14,10 +14,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/application"
-
 	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/api/v4/websocket"
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
+	"github.com/duc-cnzj/mars/v4/internal/application"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/release"
 )
@@ -26,7 +25,7 @@ type MessageItem struct {
 	Msg  string
 	Type MessageType
 
-	Containers []*types.Container
+	Containers []*websocket_pb.Container
 }
 
 type MessageType uint8
@@ -82,7 +81,7 @@ type DeployMsger interface {
 	Msger
 	ProcessPercentMsger
 
-	SendDeployedResult(t websocket.ResultType, msg string, p *types.ProjectModel)
+	SendDeployedResult(t websocket_pb.ResultType, msg string, p *types.ProjectModel)
 }
 
 type Msger interface {
@@ -90,7 +89,7 @@ type Msger interface {
 	SendError(error)
 	SendMsg(string)
 	SendProtoMsg(application.WebsocketMessage)
-	SendMsgWithContainerLog(msg string, containers []*types.Container)
+	SendMsgWithContainerLog(msg string, containers []*websocket_pb.Container)
 }
 
 type ProcessPercentMsger interface {

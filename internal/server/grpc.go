@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"net"
-	"runtime"
 
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	marsauthorizor "github.com/duc-cnzj/mars/v4/internal/auth"
@@ -98,10 +97,11 @@ func (g *grpcRunner) initServer() *grpc.Server {
 }
 
 func (g *grpcRunner) recoveryHandler(p any) error {
-	bf := make([]byte, 1024*5)
-	n := runtime.Stack(bf, false)
-	bf = bf[:n]
-	g.app.Logger().Errorf("[Grpc]: recovery error: \n%v", bf)
+	//bf := make([]byte, 1024*5)
+	//n := runtime.Stack(bf, false)
+	//bf = bf[:n]
+
+	g.app.Logger().Errorf("[Grpc]: recovery error: \n%v", p)
 	return nil
 }
 

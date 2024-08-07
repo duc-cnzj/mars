@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v4/types"
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
+
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
@@ -24,13 +25,13 @@ type releaseInstaller struct {
 	namespace      string
 	percenter      contracts.Percentable
 	startTime      time.Time
-	wait           bool
+	wait           *bool
 	valueOpts      *values.Options
 	logs           *timeOrderedSetString
 	messageCh      contracts.SafeWriteMessageChInterface
 }
 
-func newReleaseInstaller(logger mlog.Logger, helmer repo.HelmerRepo, releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, wait bool, timeoutSeconds int64, dryRun bool) *releaseInstaller {
+func newReleaseInstaller(logger mlog.Logger, helmer repo.HelmerRepo, releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, wait *bool, timeoutSeconds int64, dryRun bool) *releaseInstaller {
 	return &releaseInstaller{
 		logger:         logger,
 		helmer:         helmer,
@@ -56,7 +57,11 @@ func (r *releaseInstaller) Run(stopCtx context.Context, messageCh contracts.Safe
 	r.percenter = percenter
 	r.startTime = time.Now()
 
-	re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.loggerWrap(), r.wait, r.timeoutSeconds, r.dryRun, desc)
+	var wait = false
+	if r.wait != nil {
+		wait = *r.wait
+	}
+	re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.loggerWrap(), wait, r.timeoutSeconds, r.dryRun, desc)
 	if err == nil {
 		return re, nil
 	}
@@ -82,7 +87,7 @@ func (r *releaseInstaller) Logs() []string {
 }
 
 func (r *releaseInstaller) loggerWrap() repo.WrapLogFn {
-	return func(containers []*types.Container, format string, v ...any) {
+	return func(containers []*websocket_pb.Container, format string, v ...any) {
 		if r.percenter.Current() < 99 {
 			r.percenter.Add()
 		}

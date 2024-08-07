@@ -2,7 +2,7 @@ import React, { memo, useCallback, useMemo, useState } from "react";
 import { Timeline, Button, TimelineItemProps } from "antd";
 import { useSelector } from "react-redux";
 import { selectList } from "../store/reducers/createProject";
-import pb from "../api/compiled";
+import pb from "../api/websocket";
 import { LogUtil } from "./TabLog";
 import { DraggableModal } from "../pkg/DraggableModal";
 
@@ -57,7 +57,7 @@ const LogOutput: React.FC<{ slug: string; pending?: React.ReactNode }> = ({
   );
 };
 
-const LogButton: React.FC<{ c: pb.types.Container }> = memo(({ c }) => {
+const LogButton: React.FC<{ c: pb.websocket.Container }> = memo(({ c }) => {
   const [visible, setVisible] = useState(false);
   const [timestamp, setTimestamp] = useState(new Date().getTime());
 

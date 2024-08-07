@@ -168,15 +168,14 @@ const AddRepoModal: React.FC<{
 
   useEffect(() => {
     setLoading((item) => ({ ...item, project: true }));
-    ajax
-      .GET("/api/git/all_repos")
-      .then(({ data }) => {
-        console.log(data);
-        data && setProjects(data.items);
-      })
-      .finally(() => {
+    ajax.GET("/api/git/all_repos").then(({ data, error }) => {
+      if (error) {
         setLoading((item) => ({ ...item, project: false }));
-      });
+        return;
+      }
+      console.log(data);
+      data && setProjects(data.items);
+    });
   }, [setLoading, setProjects]);
 
   const allBranches = () => {

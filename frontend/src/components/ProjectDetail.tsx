@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useEffect, memo, Suspense } from "react";
 import { DraggableModal } from "../pkg/DraggableModal";
-import { detailProject } from "../api/project";
 import { css } from "@emotion/css";
 import theme from "../styles/theme";
 import { Button, Tabs, Skeleton, Badge, Spin } from "antd";
@@ -9,7 +8,6 @@ import { setNamespaceReload } from "../store/actions";
 import ErrorBoundary from "./ErrorBoundary";
 import ServiceEndpoint from "./ServiceEndpoint";
 import { useDispatch } from "react-redux";
-import pb from "../api/compiled";
 import TabInfo from "./TabInfo";
 import TabEdit from "./TabEdit";
 import Shell from "./TabShell";
@@ -21,7 +19,8 @@ import { useSelector } from "react-redux";
 import { modals } from "../store/reducers/openedModal";
 import { useSearchParams } from "react-router-dom";
 import { sortedUniq } from "lodash";
-import { components } from "../api/schema";
+import { TypesProjectModelDeployStatus, components } from "../api/schema.d";
+import ajax from "../api/ajax";
 
 const ItemDetailModal: React.FC<{
   item: components["schemas"]["types.ProjectModel"];
@@ -53,9 +52,14 @@ const ItemDetailModal: React.FC<{
 
   useEffect(() => {
     if (visible && namespaceId && item.id) {
-      detailProject(item.id).then((res) => {
-        setDetail(res.data);
-      });
+      ajax
+        .GET("/api/projects/{id}", { params: { path: { id: item.id } } })
+        .then(({ data, error }) => {
+          if (error) {
+            return;
+          }
+          setDetail(data);
+        });
     }
   }, [item.id, visible, namespaceId]);
 
@@ -66,9 +70,14 @@ const ItemDetailModal: React.FC<{
 
   const onSuccess = useCallback(() => {
     item.id &&
-      detailProject(item.id).then((res) => {
-        setDetail(res.data);
-      });
+      ajax
+        .GET("/api/projects/{id}", { params: { path: { id: item.id } } })
+        .then(({ data, error }) => {
+          if (error) {
+            return;
+          }
+          setDetail(data);
+        });
   }, [item.id]);
 
   return (
@@ -85,7 +94,7 @@ const ItemDetailModal: React.FC<{
         `}
         type="dashed"
       >
-        <DeployStatus status={item.deploy_status} />
+        <DeployStatus status={item.deployStatus} />
         <span
           title={item.name}
           style={{
@@ -97,7 +106,7 @@ const ItemDetailModal: React.FC<{
         >
           {item.name}
         </span>
-        {item.deploy_status === pb.types.Deploy.StatusDeployed && (
+        {item.deployStatus === TypesProjectModelDeployStatus.StatusDeployed && (
           <ServiceEndpoint projectId={item.id} />
         )}
       </Button>
@@ -129,10 +138,10 @@ const ItemDetailModal: React.FC<{
           </Badge.Ribbon>
         }
       >
-        {detail && detail.project ? (
+        {detail && detail.item ? (
           <MyTabs
             namespaceId={namespaceId}
-            projectID={detail.project.id}
+            projectID={detail.item.id}
             detail={detail}
             onDelete={onDelete}
             onSuccess={onSuccess}
@@ -173,12 +182,12 @@ const MyTabs: React.FC<{
         label: "容器日志",
         children: (
           <>
-            {detail?.project && detail.project.namespace ? (
+            {detail?.item && detail.item.namespace ? (
               <TabLog
-                updatedAt={detail.project.updated_at}
-                id={detail.project.id}
-                namespace={detail.project.namespace.name}
-                namespaceID={detail.project.namespace.id}
+                updatedAt={detail.item.updatedAt}
+                id={detail.item.id}
+                namespace={detail.item.namespace.name}
+                namespaceID={detail.item.namespace.id}
               />
             ) : (
               <Skeleton active />
@@ -193,12 +202,12 @@ const MyTabs: React.FC<{
           <div style={{ height: "100%" }}>
             <Suspense fallback={<Skeleton active />}>
               <ErrorBoundary>
-                {detail?.project && detail.project.namespace && (
+                {detail?.item && detail.item.namespace && (
                   <Shell
-                    namespaceID={detail.project.namespace.id}
-                    namespace={detail.project.namespace.name}
-                    id={detail.project.id}
-                    updatedAt={detail.project.updated_at}
+                    namespaceID={detail.item.namespace.id}
+                    namespace={detail.item.namespace.name}
+                    id={detail.item.id}
+                    updatedAt={detail.item.updatedAt}
                     resizeAt={resizeAt}
                   />
                 )}
@@ -213,23 +222,23 @@ const MyTabs: React.FC<{
         children: (
           <>
             <Suspense fallback={<Skeleton active />}>
-              {detail?.project && detail.project.namespace && (
+              {/* {detail?.item && detail.item.namespace && (
                 <TabEdit
                   elements={detail.elements}
-                  namespaceId={detail.project.namespace.id}
-                  detail={detail.project}
-                  updatedAt={detail.project.updated_at}
+                  namespaceId={detail.item.namespace.id}
+                  detail={detail.item}
+                  updatedAt={detail.item.updatedAt}
                   onSuccess={onSuccess}
                 />
-              )}
+              )} */}
             </Suspense>
           </>
         ),
       },
     ];
     items = [
-      ...(item.deploy_status === pb.types.Deploy.StatusDeployed ||
-      item.deploy_status === pb.types.Deploy.StatusDeploying
+      ...(item.deployStatus === TypesProjectModelDeployStatus.StatusDeployed ||
+      item.deployStatus === TypesProjectModelDeployStatus.StatusDeploying
         ? items
         : []),
       {
@@ -238,15 +247,15 @@ const MyTabs: React.FC<{
         children: (
           <div className="detail-tab">
             <Suspense fallback={<Skeleton active />}>
-              {detail?.project && (
+              {detail?.item && (
                 <TabInfo
-                  detail={detail.project}
+                  detail={detail.item}
                   cpu={detail.cpu}
                   memory={detail.memory}
-                  git_commit_web_url={detail.project.git_commit_web_url}
-                  git_commit_title={detail.project.git_commit_title}
-                  git_commit_author={detail.project.git_commit_author}
-                  git_commit_date={detail.project.git_commit_date}
+                  git_commit_web_url={detail.item.gitCommitWebUrl}
+                  git_commit_title={detail.item.gitCommitTitle}
+                  git_commit_author={detail.item.gitCommitAuthor}
+                  git_commit_date={detail.item.gitCommitDate}
                   urls={detail.urls}
                   onDeleted={onDelete}
                 />

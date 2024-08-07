@@ -1,5 +1,4 @@
 import React, { memo, useState } from "react";
-import { deleteProject } from "../api/project";
 import { Skeleton, Button, Modal, message } from "antd";
 import {
   BranchesOutlined,
@@ -10,24 +9,25 @@ import {
   FieldNumberOutlined,
   LinkOutlined,
 } from "@ant-design/icons";
-import pb from "../api/compiled";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
+import { components } from "../api/schema";
+import ajax from "../api/ajax";
 
 SyntaxHighlighter.registerLanguage("yaml", yaml);
 
 const { confirm } = Modal;
 
 const DetailTab: React.FC<{
-  detail: pb.types.ProjectModel;
+  detail: components["schemas"]["types.ProjectModel"];
   cpu: string;
   git_commit_web_url: string;
   git_commit_title: string;
   git_commit_author: string;
   git_commit_date: string;
   memory: string;
-  urls: pb.types.ServiceEndpoint[];
+  urls: components["schemas"]["types.ServiceEndpoint"][];
   onDeleted: () => void;
 }> = ({
   detail,
@@ -134,7 +134,7 @@ const DetailTab: React.FC<{
           }}
         />
         <p>
-          分支: <span className="detail-data">{detail.git_branch}</span>
+          分支: <span className="detail-data">{detail.gitBranch}</span>
         </p>
       </div>
 
@@ -162,12 +162,12 @@ const DetailTab: React.FC<{
               {item.url.startsWith("http") ? (
                 <a href={item.url} target="_blank" className="detail-data">
                   {item.url}
-                  {item.port_name ? `(${item.port_name})` : ""}
+                  {item.portName ? `(${item.portName})` : ""}
                 </a>
               ) : (
                 <span>
                   {item.url}
-                  {item.port_name ? `(${item.port_name})` : ""}
+                  {item.portName ? `(${item.portName})` : ""}
                 </span>
               )}
             </li>
@@ -191,7 +191,7 @@ const DetailTab: React.FC<{
         />
         <p>
           容器镜像:
-          <span className="detail-data">{detail.docker_image}</span>
+          <span className="detail-data">{detail.dockerImage}</span>
         </p>
       </div>
 
@@ -247,7 +247,7 @@ const DetailTab: React.FC<{
         </svg>
         <p>
           部署日期:{" "}
-          <span className="detail-data">{detail.humanize_created_at}</span>
+          <span className="detail-data">{detail.humanizeCreatedAt}</span>
         </p>
       </div>
       <div
@@ -277,7 +277,7 @@ const DetailTab: React.FC<{
         </svg>
         <p>
           更新日期:{" "}
-          <span className="detail-data">{detail.humanize_updated_at}</span>
+          <span className="detail-data">{detail.humanizeUpdatedAt}</span>
         </p>
       </div>
 
@@ -303,7 +303,7 @@ const DetailTab: React.FC<{
               fontSize: 12,
             }}
           >
-            {detail.override_values}
+            {detail.overrideValues}
           </SyntaxHighlighter>
         </details>
       </div>
@@ -323,8 +323,11 @@ const DetailTab: React.FC<{
             icon: <ExclamationCircleOutlined />,
             onOk() {
               setLoading(true);
-              deleteProject(detail.id)
-                .then((res) => {
+              ajax
+                .DELETE("/api/projects/{id}", {
+                  params: { path: { id: detail.id } },
+                })
+                .then(() => {
                   message.success("删除成功");
                   setLoading(false);
                   onDeleted();

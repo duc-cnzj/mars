@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/api/v4/types"
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
@@ -72,7 +73,7 @@ func NewDefaultHelmer(k8sRepo K8sRepo, data data.Data, cfg *config.Config, logge
 func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, desc string) (*release.Release, error) {
 	var podSelectors []string
 	if wait && !dryRun {
-		re, err := d.upgradeOrInstall(context.TODO(), releaseName, namespace, ch, valueOpts, func(container []*types.Container, format string, v ...any) {}, false, timeoutSeconds, true, nil, desc, d.KubeConfig, d.data.K8sClient())
+		re, err := d.upgradeOrInstall(context.TODO(), releaseName, namespace, ch, valueOpts, func(container []*websocket_pb.Container, format string, v ...any) {}, false, timeoutSeconds, true, nil, desc, d.KubeConfig, d.data.K8sClient())
 		if err != nil {
 			return nil, err
 		}
@@ -242,7 +243,7 @@ func (d *DefaultHelmer) watchPodStatus(ctx context.Context, podCh chan data.Obj[
 
 			var (
 				containerNames []string
-				containers     []*types.Container
+				containers     []*websocket_pb.Container
 			)
 			for _, status := range p.Status.ContainerStatuses {
 				if !status.Ready && status.RestartCount > 0 {
@@ -251,7 +252,7 @@ func (d *DefaultHelmer) watchPodStatus(ctx context.Context, podCh chan data.Obj[
 			}
 			for _, name := range containerNames {
 				//查看日志
-				containers = append(containers, &types.Container{
+				containers = append(containers, &websocket_pb.Container{
 					Namespace: p.Namespace,
 					Pod:       p.Name,
 					Container: name,
@@ -507,7 +508,7 @@ func rollback(releaseName, namespace string, wait bool, log LogFn, dryRun bool, 
 
 type LogFn func(format string, v ...any)
 
-type WrapLogFn func(container []*types.Container, format string, v ...any)
+type WrapLogFn func(container []*websocket_pb.Container, format string, v ...any)
 
 func (l WrapLogFn) UnWrap() func(format string, v ...any) {
 	return func(format string, v ...any) {

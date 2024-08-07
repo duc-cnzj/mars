@@ -27,24 +27,25 @@ type endpointRepo struct {
 	projRepo ProjectRepo
 }
 
-func NewEndpointRepo(logger mlog.Logger, data data.Data) EndpointRepo {
-	return &endpointRepo{logger: logger, data: data}
+func NewEndpointRepo(logger mlog.Logger, data data.Data, projRepo ProjectRepo) EndpointRepo {
+	return &endpointRepo{logger: logger, data: data, projRepo: projRepo}
 }
 
 func (repo *endpointRepo) InProject(ctx context.Context, projectID int) (res []*types.ServiceEndpoint, err error) {
 	var db = repo.data.DB()
-	first, err := db.Project.Query().WithNamespace().Select(
-		project.FieldID,
-		project.FieldManifest,
-		project.FieldName,
-		project.FieldNamespaceID,
-	).
+	first, err := db.Project.Query().
+		WithNamespace().
+		Select(
+			project.FieldID,
+			project.FieldName,
+			project.FieldNamespaceID,
+		).
 		Where(project.ID(projectID)).
 		First(ctx)
 	if err != nil {
 		return nil, err
 	}
-
+	repo.logger.Warning("InProject", "first", first)
 	nodePortMapping := repo.projRepo.GetNodePortMappingByProjects(first.Edges.Namespace.Name, ToProject(first))
 	ingMapping := repo.projRepo.GetIngressMappingByProjects(first.Edges.Namespace.Name, ToProject(first))
 	lbMapping := repo.projRepo.GetLoadBalancerMappingByProjects(first.Edges.Namespace.Name, ToProject(first))

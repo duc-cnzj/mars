@@ -35,6 +35,335 @@ var (
 	_ = sort.Sort
 )
 
+// Validate checks the field values on ClusterInfo with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ClusterInfo) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ClusterInfo with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ClusterInfoMultiError, or
+// nil if none found.
+func (m *ClusterInfo) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ClusterInfo) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Status
+
+	// no validation rules for FreeMemory
+
+	// no validation rules for FreeCpu
+
+	// no validation rules for FreeRequestMemory
+
+	// no validation rules for FreeRequestCpu
+
+	// no validation rules for TotalMemory
+
+	// no validation rules for TotalCpu
+
+	// no validation rules for UsageMemoryRate
+
+	// no validation rules for UsageCpuRate
+
+	// no validation rules for RequestMemoryRate
+
+	// no validation rules for RequestCpuRate
+
+	if len(errors) > 0 {
+		return ClusterInfoMultiError(errors)
+	}
+
+	return nil
+}
+
+// ClusterInfoMultiError is an error wrapping multiple validation errors
+// returned by ClusterInfo.ValidateAll() if the designated constraints aren't met.
+type ClusterInfoMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ClusterInfoMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ClusterInfoMultiError) AllErrors() []error { return m }
+
+// ClusterInfoValidationError is the validation error returned by
+// ClusterInfo.Validate if the designated constraints aren't met.
+type ClusterInfoValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ClusterInfoValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ClusterInfoValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ClusterInfoValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ClusterInfoValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ClusterInfoValidationError) ErrorName() string { return "ClusterInfoValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ClusterInfoValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sClusterInfo.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ClusterInfoValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ClusterInfoValidationError{}
+
+// Validate checks the field values on ExtraValue with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExtraValue) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExtraValue with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExtraValueMultiError, or
+// nil if none found.
+func (m *ExtraValue) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExtraValue) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Path
+
+	// no validation rules for Value
+
+	if len(errors) > 0 {
+		return ExtraValueMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExtraValueMultiError is an error wrapping multiple validation errors
+// returned by ExtraValue.ValidateAll() if the designated constraints aren't met.
+type ExtraValueMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExtraValueMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExtraValueMultiError) AllErrors() []error { return m }
+
+// ExtraValueValidationError is the validation error returned by
+// ExtraValue.Validate if the designated constraints aren't met.
+type ExtraValueValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExtraValueValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExtraValueValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExtraValueValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExtraValueValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExtraValueValidationError) ErrorName() string { return "ExtraValueValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExtraValueValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExtraValue.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExtraValueValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExtraValueValidationError{}
+
+// Validate checks the field values on Container with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Container) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Container with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ContainerMultiError, or nil
+// if none found.
+func (m *Container) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Container) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Namespace
+
+	// no validation rules for Pod
+
+	// no validation rules for Container
+
+	if len(errors) > 0 {
+		return ContainerMultiError(errors)
+	}
+
+	return nil
+}
+
+// ContainerMultiError is an error wrapping multiple validation errors returned
+// by Container.ValidateAll() if the designated constraints aren't met.
+type ContainerMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ContainerMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ContainerMultiError) AllErrors() []error { return m }
+
+// ContainerValidationError is the validation error returned by
+// Container.Validate if the designated constraints aren't met.
+type ContainerValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ContainerValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ContainerValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ContainerValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ContainerValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ContainerValidationError) ErrorName() string { return "ContainerValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ContainerValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sContainer.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ContainerValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ContainerValidationError{}
+
 // Validate checks the field values on WsRequestMetadata with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
@@ -864,17 +1193,13 @@ func (m *CreateProjectInput) validate(all bool) error {
 
 	// no validation rules for NamespaceId
 
-	// no validation rules for Name
-
-	// no validation rules for GitProjectId
+	// no validation rules for RepoId
 
 	// no validation rules for GitBranch
 
 	// no validation rules for GitCommit
 
 	// no validation rules for Config
-
-	// no validation rules for Atomic
 
 	for idx, item := range m.GetExtraValues() {
 		_, _ = idx, item
@@ -908,6 +1233,14 @@ func (m *CreateProjectInput) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if m.Name != nil {
+		// no validation rules for Name
+	}
+
+	if m.Atomic != nil {
+		// no validation rules for Atomic
 	}
 
 	if len(errors) > 0 {
@@ -1022,8 +1355,6 @@ func (m *UpdateProjectInput) validate(all bool) error {
 
 	// no validation rules for Config
 
-	// no validation rules for Atomic
-
 	for idx, item := range m.GetExtraValues() {
 		_, _ = idx, item
 
@@ -1059,6 +1390,10 @@ func (m *UpdateProjectInput) validate(all bool) error {
 	}
 
 	// no validation rules for Version
+
+	if m.Atomic != nil {
+		// no validation rules for Atomic
+	}
 
 	if len(errors) > 0 {
 		return UpdateProjectInputMultiError(errors)

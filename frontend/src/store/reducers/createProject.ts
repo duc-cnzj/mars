@@ -11,7 +11,7 @@ import {
 } from "../actionTypes";
 
 import { set, get } from "lodash";
-import pb from "../../api/compiled";
+import pb from "../../api/websocket";
 
 export enum DeployStatus {
   DeployUnknown = "unknown",
@@ -23,7 +23,7 @@ export enum DeployStatus {
 export interface Output {
   type: pb.websocket.ResultType;
   log: string;
-  containers?: pb.types.Container[];
+  containers?: pb.websocket.Container[];
 }
 
 export interface CreateProjectItem {

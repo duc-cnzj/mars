@@ -155,7 +155,7 @@ func (repo *eventRepo) AuditLogWithChange(action types.EventActionType, username
 	if newS == nil {
 		newS = &emptyYamlPrettier{}
 	}
-	repo.eventer.Dispatch(AuditLogEvent, NewEventAuditLog(username, action, msg, AuditWithOldNewStr(oldS.PrettyYaml(), newS.PrettyYaml())))
+	repo.eventer.Dispatch(AuditLogEvent, NewEventAuditLog(username, action, msg, AuditWithOldNew(oldS, newS)))
 }
 
 type NamespaceCreatedData struct {
@@ -198,62 +198,66 @@ func (repo *eventRepo) HandleNamespaceDeleted(data any, e event.Event) error {
 }
 
 type ProjectChangedData struct {
-	Project *Project
+	ID int
 
 	Username string
 }
 
 func (repo *eventRepo) HandleProjectChanged(data any, e event.Event) error {
-	if changedData, ok := data.(*ProjectChangedData); ok {
-		last, _ := repo.clRepo.FindLastChangeByProjectID(context.TODO(), changedData.Project.ID)
-		gp, _ := repo.gitprojectRepo.GetByProjectID(context.TODO(), changedData.Project.ID)
-		var (
-			configChanged bool
-			version       int = 1
-		)
-		if last != nil {
-			if last.Config != changedData.Project.Config || last.GitCommit != changedData.Project.GitCommit {
-				configChanged = true
-			}
-			version = last.Version + 1
-		}
-		repo.clRepo.Create(context.TODO(), &CreateChangeLogInput{
-			Version:          version,
-			Username:         changedData.Username,
-			Manifest:         changedData.Project.Manifest,
-			Config:           changedData.Project.Config,
-			ConfigType:       changedData.Project.ConfigType,
-			GitBranch:        changedData.Project.GitBranch,
-			GitCommit:        changedData.Project.GitCommit,
-			DockerImage:      changedData.Project.DockerImage,
-			EnvValues:        changedData.Project.EnvValues,
-			ExtraValues:      changedData.Project.ExtraValues,
-			FinalExtraValues: changedData.Project.FinalExtraValues,
-			GitCommitWebURL:  changedData.Project.GitCommitWebURL,
-			GitCommitTitle:   changedData.Project.GitCommitTitle,
-			GitCommitAuthor:  changedData.Project.GitCommitAuthor,
-			GitCommitDate:    changedData.Project.GitCommitDate,
-			ConfigChanged:    configChanged,
-			ProjectID:        changedData.Project.ID,
-			GitProjectID:     gp.ID,
-		})
-	}
+	//if changedData, ok := data.(*ProjectChangedData); ok {
+	//	show, err := repo.projectRepo.Show(context.TODO(), changedData.ID)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	last, _ := repo.clRepo.FindLastChangeByProjectID(context.TODO(), changedData.Project.ID)
+	//	gp, _ := repo.gitprojectRepo.GetByProjectID(context.TODO(), changedData.Project.ID)
+	//	var (
+	//		configChanged bool
+	//		version       int = 1
+	//	)
+	//	if last != nil {
+	//		if last.Config != changedData.Project.Config || last.GitCommit != changedData.Project.GitCommit {
+	//			configChanged = true
+	//		}
+	//		version = last.Version + 1
+	//	}
+	//	repo.clRepo.Create(context.TODO(), &CreateChangeLogInput{
+	//		Version:          version,
+	//		Username:         changedData.Username,
+	//		Manifest:         changedData.Project.Manifest,
+	//		Config:           changedData.Project.Config,
+	//		ConfigType:       changedData.Project.ConfigType,
+	//		GitBranch:        changedData.Project.GitBranch,
+	//		GitCommit:        changedData.Project.GitCommit,
+	//		DockerImage:      changedData.Project.DockerImage,
+	//		EnvValues:        changedData.Project.EnvValues,
+	//		ExtraValues:      changedData.Project.ExtraValues,
+	//		FinalExtraValues: changedData.Project.FinalExtraValues,
+	//		GitCommitWebURL:  changedData.Project.GitCommitWebURL,
+	//		GitCommitTitle:   changedData.Project.GitCommitTitle,
+	//		GitCommitAuthor:  changedData.Project.GitCommitAuthor,
+	//		GitCommitDate:    changedData.Project.GitCommitDate,
+	//		ConfigChanged:    configChanged,
+	//		ProjectID:        changedData.Project.ID,
+	//		GitProjectID:     gp.ID,
+	//	})
+	//}
 	return nil
 }
 
 func (repo *eventRepo) HandleProjectDeleted(data any, e event.Event) error {
-	var (
-		ws     = repo.pl.Ws()
-		logger = repo.logger
-	)
-	project := data.(*ent.Project)
-	sub := ws.New("", "")
-	defer sub.Close()
-	sub.ToAll(&websocket_pb.WsReloadProjectsResponse{
-		Metadata:    &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects},
-		NamespaceId: int32(project.NamespaceID),
-	})
-	logger.Debug("event handled: ", e.String(), data)
+	//var (
+	//	ws     = repo.pl.Ws()
+	//	logger = repo.logger
+	//)
+	//project := data.(*ent.Project)
+	//sub := ws.New("", "")
+	//defer sub.Close()
+	//sub.ToAll(&websocket_pb.WsReloadProjectsResponse{
+	//	Metadata:    &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects},
+	//	NamespaceId: int32(project.NamespaceID),
+	//})
+	//logger.Debug("event handled: ", e.String(), data)
 	return nil
 }
 
@@ -287,6 +291,16 @@ func AuditWithOldNewStr(o, n string) AuditOption {
 	return func(e *auditLogImpl) {
 		e.OldS = o
 		e.NewS = n
+	}
+}
+func AuditWithOldNew(o, n YamlPrettier) AuditOption {
+	return func(e *auditLogImpl) {
+		if o != nil {
+			e.OldS = o.PrettyYaml()
+		}
+		if n != nil {
+			e.NewS = n.PrettyYaml()
+		}
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/duc-cnzj/mars/api/v4/types"
+	"github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
 	"github.com/duc-cnzj/mars/v4/internal/ent/gitproject"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
@@ -146,8 +147,8 @@ func (cc *ChangelogCreate) SetEnvValues(tv []*types.KeyValue) *ChangelogCreate {
 }
 
 // SetExtraValues sets the "extra_values" field.
-func (cc *ChangelogCreate) SetExtraValues(tv []*types.ExtraValue) *ChangelogCreate {
-	cc.mutation.SetExtraValues(tv)
+func (cc *ChangelogCreate) SetExtraValues(wv []*websocket.ExtraValue) *ChangelogCreate {
+	cc.mutation.SetExtraValues(wv)
 	return cc
 }
 
@@ -749,7 +750,7 @@ func (u *ChangelogUpsert) ClearEnvValues() *ChangelogUpsert {
 }
 
 // SetExtraValues sets the "extra_values" field.
-func (u *ChangelogUpsert) SetExtraValues(v []*types.ExtraValue) *ChangelogUpsert {
+func (u *ChangelogUpsert) SetExtraValues(v []*websocket.ExtraValue) *ChangelogUpsert {
 	u.Set(changelog.FieldExtraValues, v)
 	return u
 }
@@ -1153,7 +1154,7 @@ func (u *ChangelogUpsertOne) ClearEnvValues() *ChangelogUpsertOne {
 }
 
 // SetExtraValues sets the "extra_values" field.
-func (u *ChangelogUpsertOne) SetExtraValues(v []*types.ExtraValue) *ChangelogUpsertOne {
+func (u *ChangelogUpsertOne) SetExtraValues(v []*websocket.ExtraValue) *ChangelogUpsertOne {
 	return u.Update(func(s *ChangelogUpsert) {
 		s.SetExtraValues(v)
 	})
@@ -1749,7 +1750,7 @@ func (u *ChangelogUpsertBulk) ClearEnvValues() *ChangelogUpsertBulk {
 }
 
 // SetExtraValues sets the "extra_values" field.
-func (u *ChangelogUpsertBulk) SetExtraValues(v []*types.ExtraValue) *ChangelogUpsertBulk {
+func (u *ChangelogUpsertBulk) SetExtraValues(v []*websocket.ExtraValue) *ChangelogUpsertBulk {
 	return u.Update(func(s *ChangelogUpsert) {
 		s.SetExtraValues(v)
 	})

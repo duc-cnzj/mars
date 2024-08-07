@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/duc-cnzj/mars/api/v4/types"
+	"github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
 	"github.com/duc-cnzj/mars/v4/internal/ent/gitproject"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
@@ -46,7 +47,7 @@ type Changelog struct {
 	// 可用的环境变量值
 	EnvValues []*types.KeyValue `json:"env_values,omitempty"`
 	// 用户表单传入的额外值
-	ExtraValues []*types.ExtraValue `json:"extra_values,omitempty"`
+	ExtraValues []*websocket.ExtraValue `json:"extra_values,omitempty"`
 	// 用户表单传入的额外值 + 系统默认的额外值
 	FinalExtraValues []string `json:"final_extra_values,omitempty"`
 	// GitCommitWebURL holds the value of the "git_commit_web_url" field.

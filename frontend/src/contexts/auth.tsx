@@ -53,30 +53,28 @@ function useProvideAuth() {
   const h = useNavigate();
   useEffect(() => {
     if (getToken() && !user) {
-      ajax
-        .GET("/api/auth/info")
-        .then(({ data }) => {
-          data && setUser(data);
-        })
-        .catch((e) => {
+      ajax.GET("/api/auth/info").then(({ data, error }) => {
+        if (error) {
           removeToken();
           h("/login");
-        });
+          return;
+        }
+        setUser(data);
+      });
     }
   }, [user, h]);
 
   const signin = (username: string, password: string, cb: any) => {
-    realAuth
-      .signin(username, password)
-      .then(({ data }) => {
-        setUser(data);
-        cb();
-        message.success("登录成功");
-      })
-      .catch((e) => {
-        console.log(e);
+    realAuth.signin(username, password).then(({ data, error }) => {
+      if (error) {
+        console.log(error);
         message.error("用户名或者密码不正确");
-      });
+        return;
+      }
+      setUser(data);
+      cb();
+      message.success("登录成功");
+    });
   };
 
   const signout = (cb: any) => {

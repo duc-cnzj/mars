@@ -83,7 +83,7 @@ type K8sRepo interface {
 	GetCpuAndMemory(list []v1beta1.PodMetrics) (string, string)
 	GetCpuAndMemoryQuantity(pod v1beta1.PodMetrics) (cpu *resource.Quantity, memory *resource.Quantity)
 	Copy(ctx context.Context, namespace, pod, container, fpath, targetContainerDir string) (*CopyFileToPodResult, error)
-	ClusterInfo() *InfoResponse
+	ClusterInfo() *ClusterInfo
 
 	Execute(ctx context.Context, c *Container, input *ExecuteInput) error
 	DeleteSecret(ctx context.Context, namespace, secret string) error
@@ -456,7 +456,7 @@ func (repo *k8sRepo) Copy(ctx context.Context, namespace, pod, container, fpath,
 	}, err
 }
 
-type InfoResponse struct {
+type ClusterInfo struct {
 	// 健康状况
 	Status ClusterStatus `json:"status"`
 
@@ -486,7 +486,7 @@ type InfoResponse struct {
 	RequestCpuRate string `json:"request_cpu_rate"`
 }
 
-func (repo *k8sRepo) ClusterInfo() *InfoResponse {
+func (repo *k8sRepo) ClusterInfo() *ClusterInfo {
 	selector := labels.Everything()
 	var nodes []corev1.Node
 
@@ -570,7 +570,7 @@ func (repo *k8sRepo) ClusterInfo() *InfoResponse {
 	rateRequestMemory := float64(requestMemory.Value()) / float64(totalMemory.Value()) * 100
 	rateRequestCpu := float64(requestCpu.Value()) / float64(totalCpu.Value()) * 100
 
-	return &InfoResponse{
+	return &ClusterInfo{
 		Status:            repo.getStatus(rateRequestMemory, rateRequestCpu),
 		FreeRequestMemory: humanize.IBytes(uint64(freeRequestMemory.Value())),
 		FreeRequestCpu:    fmt.Sprintf("%.2f core", float64(freeRequestCpu.MilliValue())/1000),

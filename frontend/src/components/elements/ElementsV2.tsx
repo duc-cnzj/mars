@@ -2,7 +2,7 @@ import React, { useCallback, useState, Fragment, useMemo, memo } from "react";
 import { Form, Input, InputNumber, Radio, Select, Switch } from "antd";
 import { omitEqual } from "../../utils/obj";
 import { css } from "@emotion/css";
-import { components, MarsElementType } from "../../api/schema.d";
+import { components, MarsElementType } from "../../api/schema";
 
 const Option = Select.Option;
 const { TextArea } = Input;
@@ -48,7 +48,6 @@ const Elements: React.FC<{
   elements: components["schemas"]["mars.Element"][];
   style?: st;
 }> = ({ elements, style, value, onChange }) => {
-  console.log(value, elements);
   let initValues = useMemo(() => {
     return elements
       ? elements.map((item): components["schemas"]["types.ExtraValue"] => {
@@ -72,7 +71,6 @@ const Elements: React.FC<{
       : [];
   }, [elements, value]);
 
-  onChange?.(initValues);
   const getElement = useCallback(
     (
       item: components["schemas"]["types.ExtraValue"],
@@ -88,7 +86,6 @@ const Elements: React.FC<{
               onChange={(changeValue) => {
                 let tmp: any = initValues;
                 tmp[index].value = String(changeValue);
-                console.log("Element onChange ", tmp);
                 onChange?.(tmp);
                 return tmp;
               }}
@@ -118,6 +115,7 @@ const Element: React.FC<{
   element: components["schemas"]["mars.Element"];
   style: st;
 }> = ({ element, style, value: v, onChange }) => {
+  console.log(v);
   const [value, setValue] = useState(v);
   switch (element.type) {
     case MarsElementType.ElementTypeInput:

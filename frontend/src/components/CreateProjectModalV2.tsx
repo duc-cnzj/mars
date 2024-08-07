@@ -3,7 +3,7 @@ import { selectClusterInfo } from "../store/reducers/cluster";
 import Elements from "./elements/Elements";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
-import pb from "../api/compiled";
+import pb from "../api/websocket";
 import { useAsyncState } from "../utils/async";
 import { selectTimer } from "../store/reducers/deployTimer";
 import {
@@ -130,14 +130,16 @@ const CreateProjectModal: React.FC<{
         // todo ws connected!
         let s = pb.websocket.CreateProjectInput.encode({
           type: pb.websocket.Type.CreateProject,
-          namespace_id: Number(namespaceId),
+          namespaceId: Number(namespaceId),
           name: data.projectName,
-          git_project_id: Number(data.gitProjectId),
-          git_branch: data.gitBranch,
-          git_commit: data.gitCommit,
+          // TODO
+          repoId: 0,
+          // git_project_id: Number(data.gitProjectId),
+          gitBranch: data.gitBranch,
+          gitCommit: data.gitCommit,
           config: values.config,
           atomic: !values.debug,
-          extra_values: values.extra_values,
+          extraValues: values.extra_values,
         }).finish();
 
         dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
@@ -175,7 +177,7 @@ const CreateProjectModal: React.FC<{
     if (data && data.gitProjectId && data.gitBranch && data.gitCommit) {
       let s = pb.websocket.CancelInput.encode({
         type: pb.websocket.Type.CancelProject,
-        namespace_id: namespaceId,
+        namespaceId: namespaceId,
         name: data.projectName,
       }).finish();
       ws?.send(s);
@@ -280,7 +282,7 @@ const CreateProjectModal: React.FC<{
         title={<div style={{ textAlign: "center" }}>创建项目</div>}
         className="draggable-modal"
       >
-        <ProjectSelector />
+        <ProjectSelector namespaceId={namespaceId} />
       </DraggableModal>
     </div>
   );

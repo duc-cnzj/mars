@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/application/bootstrappers"
@@ -43,6 +44,7 @@ var apiGatewayCmd = &cobra.Command{
 		fmt.Println(logo)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		log.SetFlags(log.Lshortfile)
 		cfg := config.Init(cfgFile)
 		logger := mlog.NewLogger(cfg)
 		app, err := InitializeApp(cfg, logger, serverBootstrappers)

@@ -7,6 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/data"
+	"github.com/duc-cnzj/mars/v4/internal/uploader"
+
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/application"
@@ -16,7 +19,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/util"
-	mars2 "github.com/duc-cnzj/mars/v4/internal/util/mars"
 	"github.com/duc-cnzj/mars/v4/internal/util/pipeline"
 	mysort "github.com/duc-cnzj/mars/v4/internal/util/xsort"
 	yaml2 "github.com/duc-cnzj/mars/v4/internal/util/yaml"
@@ -44,6 +46,7 @@ type Job interface {
 	Run(ctx context.Context) Job
 	Finish() Job
 	Error() error
+	Project() *repo.Project
 	Manifests() []string
 
 	OnError(p int, fn func(err error, sendResultToUser func())) Job
@@ -53,26 +56,31 @@ type Job interface {
 
 type jobManager struct {
 	logger mlog.Logger
+	data   data.Data
 
 	nsRepo   repo.NamespaceRepo
 	projRepo repo.ProjectRepo
 	k8sRepo  repo.K8sRepo
 
-	gitServer    application.GitServer
-	domainServer application.DomainManager
-	wsServer     application.WsSender
-	eventRepo    repo.EventRepo
+	pl application.PluginManger
+
+	eventRepo repo.EventRepo
 
 	helmer   repo.HelmerRepo
 	locker   locker.Locker
 	toolRepo repo.ToolRepo
+	repoRepo repo.RepoImp
+	uploader uploader.Uploader
 }
 
 func NewJobManager(
+	data data.Data,
 	logger mlog.Logger,
+	repoRepo repo.RepoImp,
 	nsRepo repo.NamespaceRepo,
 	projRepo repo.ProjectRepo,
 	helmer repo.HelmerRepo,
+	uploader uploader.Uploader,
 	locker locker.Locker,
 	k8sRepo repo.K8sRepo,
 	eventRepo repo.EventRepo,
@@ -80,34 +88,40 @@ func NewJobManager(
 	pl application.PluginManger,
 ) JobManager {
 	return &jobManager{
-		logger:       logger,
-		nsRepo:       nsRepo,
-		projRepo:     projRepo,
-		k8sRepo:      k8sRepo,
-		gitServer:    pl.Git(),
-		domainServer: pl.Domain(),
-		wsServer:     pl.Ws(),
-		helmer:       helmer,
-		locker:       locker,
-		toolRepo:     toolRepo,
-		eventRepo:    eventRepo,
+		uploader:  uploader,
+		repoRepo:  repoRepo,
+		data:      data,
+		logger:    logger,
+		nsRepo:    nsRepo,
+		projRepo:  projRepo,
+		k8sRepo:   k8sRepo,
+		pl:        pl,
+		helmer:    helmer,
+		locker:    locker,
+		toolRepo:  toolRepo,
+		eventRepo: eventRepo,
 	}
 }
 
 func (j *jobManager) NewJob(input *JobInput) Job {
+	var timeoutSeconds int64 = int64(input.TimeoutSeconds)
+	if timeoutSeconds == 0 {
+		timeoutSeconds = int64(j.data.Config().InstallTimeout.Seconds())
+	}
 	jb := &jobRunner{
 		logger:          j.logger,
 		nsRepo:          j.nsRepo,
 		projRepo:        j.projRepo,
-		gitServer:       j.gitServer,
-		domainServer:    j.domainServer,
+		repoRepo:        j.repoRepo,
+		pluginMgr:       j.pl,
 		helmer:          j.helmer,
 		locker:          j.locker,
 		k8sRepo:         j.k8sRepo,
 		eventRepo:       j.eventRepo,
 		toolRepo:        j.toolRepo,
-		deployResult:    DeployResult{},
+		uploader:        j.uploader,
 		loaders:         defaultLoaders(),
+		dryRun:          input.DryRun,
 		input:           input,
 		finallyCallback: mysort.PrioritySort[func(err error, next func())]{},
 		errorCallback:   mysort.PrioritySort[func(err error, next func())]{},
@@ -115,6 +129,10 @@ func (j *jobManager) NewJob(input *JobInput) Job {
 		vars:            vars{},
 		valuesOptions:   &values.Options{},
 		messageCh:       &safeWriteMessageCh{ch: make(chan contracts.MessageItem, 100)},
+		percenter:       newProcessPercent(input.Messager, &realSleeper{}),
+		messager:        input.Messager,
+		user:            input.User,
+		timeoutSeconds:  timeoutSeconds,
 	}
 	opts := []Option{
 		WithDryRun(input.DryRun),
@@ -167,22 +185,23 @@ func (m *CustomErrorContext) Value(key any) any {
 }
 
 type JobInput struct {
-	Type         websocket_pb.Type
-	NamespaceId  int32
-	Name         string
-	GitProjectId int32
-	GitBranch    string
-	GitCommit    string
-	Config       string
-	Atomic       bool
-	ExtraValues  []*types.ExtraValue
-	Version      *int32
+	Type        websocket_pb.Type
+	NamespaceId int32
+	Name        string
+	RepoID      int32
+	GitBranch   string
+	GitCommit   string
+	Config      string
+	Atomic      *bool
+	ExtraValues []*websocket_pb.ExtraValue
+	Version     *int32
 
 	TimeoutSeconds int32
 	User           *auth.UserInfo
 	DryRun         bool
 
-	PubSub application.PubSub
+	PubSub   application.PubSub    `json:"-"`
+	Messager contracts.DeployMsger `json:"-"`
 }
 
 func (job *JobInput) Slug() string {
@@ -239,17 +258,15 @@ func (j *jobRunner) Validate() Job {
 	j.Messager().SendMsg("[Loading]: 加载用户配置")
 	j.Percenter().To(10)
 
-	j.config, err = mars2.GetProjectConfig(j.input.GitProjectId, j.input.GitBranch)
+	j.repo, err = j.repoRepo.Show(context.TODO(), int(j.input.RepoID))
 	if err != nil {
 		return j.SetError(err)
 	}
-	if j.input.Name == "" {
-		j.input.Name = mars2.GetProjectName(j.input.GitProjectId, j.config)
-	}
+	j.config = j.repo.MarsConfig
 
 	createProjectInput := &repo.CreateProjectInput{
 		Name:         slug.Make(j.input.Name),
-		GitProjectID: int(j.input.GitProjectId),
+		GitProjectID: int(j.repo.GitProjectID),
 		GitBranch:    j.input.GitBranch,
 		GitCommit:    j.input.GitCommit,
 		Config:       j.input.Config,
@@ -266,16 +283,21 @@ func (j *jobRunner) Validate() Job {
 		createProjectInput.DeployStatus = types.Deploy_StatusDeploying
 		j.isNew = true
 		if j.IsNotDryRun() {
-			j.project, _ = j.projRepo.Create(context.TODO(), createProjectInput)
+			j.project, err = j.projRepo.Create(context.TODO(), createProjectInput)
+			if err != nil {
+				j.logger.Warning(err)
+				return j.SetError(err)
+			}
+			createdID := j.project.ID
 			j.OnError(1, func(err error, sendResultToUser func()) {
 				j.logger.Debug("清理项目")
-				j.projRepo.Delete(context.TODO(), j.project.ID)
+				j.projRepo.Delete(context.TODO(), createdID)
 				sendResultToUser()
 			})
 		}
 	} else {
-		j.prevProject = found
-		j.ns = found.Namespace
+		j.project = found
+		version := j.project.Version
 		if j.IsNotDryRun() {
 			j.Messager().SendMsg("[Check]: 检查当前版本")
 			j.project, err = j.projRepo.UpdateStatusByVersion(context.TODO(), j.project.ID, types.Deploy_StatusDeploying, j.project.Version+1)
@@ -283,7 +305,7 @@ func (j *jobRunner) Validate() Job {
 				return j.SetError(ErrorVersionNotMatched)
 			}
 			j.OnError(1, func(err error, sendResultToUser func()) {
-				j.project, _ = j.projRepo.UpdateVersion(context.TODO(), j.project.ID, j.prevProject.Version)
+				j.project, _ = j.projRepo.UpdateVersion(context.TODO(), j.project.ID, version)
 				sendResultToUser()
 			})
 		}
@@ -293,13 +315,17 @@ func (j *jobRunner) Validate() Job {
 		j.PubSub().ToAll(reloadProjectsMessage(j.ns.ID))
 		j.OnFinally(1, func(err error, sendResultToUser func()) {
 			// 如果状态出现问题，只有拿到锁的才能更新状态
-			j.project, _ = j.projRepo.UpdateDeployStatus(context.TODO(), j.project.ID, types.Deploy_StatusFailed)
+			j.project, _ = j.projRepo.UpdateDeployStatus(context.TODO(), j.project.ID, j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))
 			j.PubSub().ToAll(reloadProjectsMessage(j.Namespace().ID))
 			sendResultToUser()
 		})
 	}
 	j.imagePullSecrets = j.Namespace().ImagePullSecrets
-	j.commit, err = j.gitServer.GetCommit(fmt.Sprintf("%d", j.project.GitProjectID), j.project.GitCommit)
+	if j.repo.NeedGitRepo {
+		j.commit, err = j.pluginMgr.Git().GetCommit(fmt.Sprintf("%d", j.project.GitProjectID), j.project.GitCommit)
+	} else {
+		j.commit = application.NewEmptyCommit()
+	}
 
 	return j.SetError(err)
 }
@@ -376,6 +402,7 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 		} else {
 			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
 			marshal, _ := yaml2.PrettyMarshal(&coalesceValues)
+			j.manifests = util.SplitManifests(result.Manifest)
 			var updateProjectInput = &repo.UpdateProjectInput{
 				ID:           j.project.ID,
 				GitBranch:    j.input.GitBranch,
@@ -400,16 +427,18 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 				OverrideValues:   string(marshal),
 			}
 
-			var oldConf, newConf *userConfig
+			var oldConf, newConf repo.YamlPrettier
 
-			if j.prevProject != nil && j.prevProject.ID > 0 {
-				oldConf = newUserConfig(j.prevProject)
-			}
 			if j.IsNotDryRun() {
-				j.project, _ = j.projRepo.UpdateProject(context.TODO(), updateProjectInput)
+				j.project, err = j.projRepo.UpdateProject(context.TODO(), updateProjectInput)
+				if err != nil {
+					j.logger.Warning(err)
+					return err
+				}
+
 				newConf = newUserConfig(j.project)
 				j.eventRepo.Dispatch(repo.EventProjectChanged, &repo.ProjectChangedData{
-					Project:  j.project,
+					//Project:  j.project,
 					Username: j.User().Name,
 				})
 			}
@@ -420,6 +449,8 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 			}
 			if j.IsDryRun() {
 				act = types.EventActionType_DryRun
+				prettyMarshal, _ := yaml2.PrettyMarshal(j.input)
+				newConf = &repo.StringYamlPrettier{Str: string(prettyMarshal)}
 			}
 			j.eventRepo.AuditLogWithChange(act, j.User().Name,
 				fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Namespace().Name, j.Project().Name),

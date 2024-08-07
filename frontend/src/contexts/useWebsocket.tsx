@@ -4,7 +4,7 @@ import { handleEvents } from "../store/actions";
 import { getUid } from "../utils/uid";
 import { getToken } from "../utils/token";
 import { message } from "antd";
-import pb from "../api/compiled";
+import pb from "../api/websocket";
 
 interface State {
   ws: WebSocket | null;

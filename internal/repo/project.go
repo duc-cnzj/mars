@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
+
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/annotation"
 	"github.com/duc-cnzj/mars/v4/internal/data"
@@ -46,7 +48,7 @@ type Project struct {
 	Atomic           bool
 	DeployStatus     types.Deploy
 	EnvValues        []*types.KeyValue
-	ExtraValues      []*types.ExtraValue
+	ExtraValues      []*websocket_pb.ExtraValue
 	FinalExtraValues []string
 	Version          int
 	ConfigType       string
@@ -156,7 +158,7 @@ type CreateProjectInput struct {
 	GitBranch    string
 	GitCommit    string
 	Config       string
-	Atomic       bool
+	Atomic       *bool
 	ConfigType   string
 	NamespaceID  int
 	Manifest     []string
@@ -171,7 +173,7 @@ func (repo *projectRepo) Create(ctx context.Context, input *CreateProjectInput) 
 		SetGitBranch(input.GitBranch).
 		SetGitCommit(input.GitCommit).
 		SetConfig(input.Config).
-		SetAtomic(input.Atomic).
+		SetNillableAtomic(input.Atomic).
 		SetConfigType(input.ConfigType).
 		SetNamespaceID(input.NamespaceID).
 		SetManifest(input.Manifest).
@@ -185,7 +187,7 @@ type UpdateProjectInput struct {
 	GitBranch  string
 	GitCommit  string
 	Config     string
-	Atomic     bool
+	Atomic     *bool
 	ConfigType string
 
 	PodSelectors     []string
@@ -195,7 +197,7 @@ type UpdateProjectInput struct {
 	GitCommitWebURL  string
 	GitCommitAuthor  string
 	GitCommitDate    *time.Time
-	ExtraValues      []*types.ExtraValue
+	ExtraValues      []*websocket_pb.ExtraValue
 	FinalExtraValues []string
 	EnvValues        []*types.KeyValue
 	OverrideValues   string
@@ -210,7 +212,7 @@ func (repo *projectRepo) UpdateProject(ctx context.Context, input *UpdateProject
 		SetGitBranch(input.GitBranch).
 		SetGitCommit(input.GitCommit).
 		SetConfig(input.Config).
-		SetAtomic(input.Atomic).
+		SetNillableAtomic(input.Atomic).
 		SetConfigType(input.ConfigType).
 		SetPodSelectors(input.PodSelectors).
 		SetManifest(input.Manifest).

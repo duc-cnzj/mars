@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/duc-cnzj/mars/api/v4/types"
+	"github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
@@ -149,6 +150,12 @@ func (pu *ProjectUpdate) SetNillableOverrideValues(s *string) *ProjectUpdate {
 	return pu
 }
 
+// ClearOverrideValues clears the value of the "override_values" field.
+func (pu *ProjectUpdate) ClearOverrideValues() *ProjectUpdate {
+	pu.mutation.ClearOverrideValues()
+	return pu
+}
+
 // SetDockerImage sets the "docker_image" field.
 func (pu *ProjectUpdate) SetDockerImage(s []string) *ProjectUpdate {
 	pu.mutation.SetDockerImage(s)
@@ -161,6 +168,12 @@ func (pu *ProjectUpdate) AppendDockerImage(s []string) *ProjectUpdate {
 	return pu
 }
 
+// ClearDockerImage clears the value of the "docker_image" field.
+func (pu *ProjectUpdate) ClearDockerImage() *ProjectUpdate {
+	pu.mutation.ClearDockerImage()
+	return pu
+}
+
 // SetPodSelectors sets the "pod_selectors" field.
 func (pu *ProjectUpdate) SetPodSelectors(s []string) *ProjectUpdate {
 	pu.mutation.SetPodSelectors(s)
@@ -170,6 +183,12 @@ func (pu *ProjectUpdate) SetPodSelectors(s []string) *ProjectUpdate {
 // AppendPodSelectors appends s to the "pod_selectors" field.
 func (pu *ProjectUpdate) AppendPodSelectors(s []string) *ProjectUpdate {
 	pu.mutation.AppendPodSelectors(s)
+	return pu
+}
+
+// ClearPodSelectors clears the value of the "pod_selectors" field.
+func (pu *ProjectUpdate) ClearPodSelectors() *ProjectUpdate {
+	pu.mutation.ClearPodSelectors()
 	return pu
 }
 
@@ -220,15 +239,27 @@ func (pu *ProjectUpdate) AppendEnvValues(tv []*types.KeyValue) *ProjectUpdate {
 	return pu
 }
 
-// SetExtraValues sets the "extra_values" field.
-func (pu *ProjectUpdate) SetExtraValues(tv []*types.ExtraValue) *ProjectUpdate {
-	pu.mutation.SetExtraValues(tv)
+// ClearEnvValues clears the value of the "env_values" field.
+func (pu *ProjectUpdate) ClearEnvValues() *ProjectUpdate {
+	pu.mutation.ClearEnvValues()
 	return pu
 }
 
-// AppendExtraValues appends tv to the "extra_values" field.
-func (pu *ProjectUpdate) AppendExtraValues(tv []*types.ExtraValue) *ProjectUpdate {
-	pu.mutation.AppendExtraValues(tv)
+// SetExtraValues sets the "extra_values" field.
+func (pu *ProjectUpdate) SetExtraValues(wv []*websocket.ExtraValue) *ProjectUpdate {
+	pu.mutation.SetExtraValues(wv)
+	return pu
+}
+
+// AppendExtraValues appends wv to the "extra_values" field.
+func (pu *ProjectUpdate) AppendExtraValues(wv []*websocket.ExtraValue) *ProjectUpdate {
+	pu.mutation.AppendExtraValues(wv)
+	return pu
+}
+
+// ClearExtraValues clears the value of the "extra_values" field.
+func (pu *ProjectUpdate) ClearExtraValues() *ProjectUpdate {
+	pu.mutation.ClearExtraValues()
 	return pu
 }
 
@@ -241,6 +272,12 @@ func (pu *ProjectUpdate) SetFinalExtraValues(s []string) *ProjectUpdate {
 // AppendFinalExtraValues appends s to the "final_extra_values" field.
 func (pu *ProjectUpdate) AppendFinalExtraValues(s []string) *ProjectUpdate {
 	pu.mutation.AppendFinalExtraValues(s)
+	return pu
+}
+
+// ClearFinalExtraValues clears the value of the "final_extra_values" field.
+func (pu *ProjectUpdate) ClearFinalExtraValues() *ProjectUpdate {
+	pu.mutation.ClearFinalExtraValues()
 	return pu
 }
 
@@ -294,6 +331,12 @@ func (pu *ProjectUpdate) SetManifest(s []string) *ProjectUpdate {
 // AppendManifest appends s to the "manifest" field.
 func (pu *ProjectUpdate) AppendManifest(s []string) *ProjectUpdate {
 	pu.mutation.AppendManifest(s)
+	return pu
+}
+
+// ClearManifest clears the value of the "manifest" field.
+func (pu *ProjectUpdate) ClearManifest() *ProjectUpdate {
+	pu.mutation.ClearManifest()
 	return pu
 }
 
@@ -555,6 +598,9 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.OverrideValues(); ok {
 		_spec.SetField(project.FieldOverrideValues, field.TypeString, value)
 	}
+	if pu.mutation.OverrideValuesCleared() {
+		_spec.ClearField(project.FieldOverrideValues, field.TypeString)
+	}
 	if value, ok := pu.mutation.DockerImage(); ok {
 		_spec.SetField(project.FieldDockerImage, field.TypeJSON, value)
 	}
@@ -563,6 +609,9 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			sqljson.Append(u, project.FieldDockerImage, value)
 		})
 	}
+	if pu.mutation.DockerImageCleared() {
+		_spec.ClearField(project.FieldDockerImage, field.TypeJSON)
+	}
 	if value, ok := pu.mutation.PodSelectors(); ok {
 		_spec.SetField(project.FieldPodSelectors, field.TypeJSON, value)
 	}
@@ -570,6 +619,9 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, project.FieldPodSelectors, value)
 		})
+	}
+	if pu.mutation.PodSelectorsCleared() {
+		_spec.ClearField(project.FieldPodSelectors, field.TypeJSON)
 	}
 	if value, ok := pu.mutation.Atomic(); ok {
 		_spec.SetField(project.FieldAtomic, field.TypeBool, value)
@@ -588,6 +640,9 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			sqljson.Append(u, project.FieldEnvValues, value)
 		})
 	}
+	if pu.mutation.EnvValuesCleared() {
+		_spec.ClearField(project.FieldEnvValues, field.TypeJSON)
+	}
 	if value, ok := pu.mutation.ExtraValues(); ok {
 		_spec.SetField(project.FieldExtraValues, field.TypeJSON, value)
 	}
@@ -596,6 +651,9 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			sqljson.Append(u, project.FieldExtraValues, value)
 		})
 	}
+	if pu.mutation.ExtraValuesCleared() {
+		_spec.ClearField(project.FieldExtraValues, field.TypeJSON)
+	}
 	if value, ok := pu.mutation.FinalExtraValues(); ok {
 		_spec.SetField(project.FieldFinalExtraValues, field.TypeJSON, value)
 	}
@@ -603,6 +661,9 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, project.FieldFinalExtraValues, value)
 		})
+	}
+	if pu.mutation.FinalExtraValuesCleared() {
+		_spec.ClearField(project.FieldFinalExtraValues, field.TypeJSON)
 	}
 	if value, ok := pu.mutation.Version(); ok {
 		_spec.SetField(project.FieldVersion, field.TypeInt, value)
@@ -623,6 +684,9 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, project.FieldManifest, value)
 		})
+	}
+	if pu.mutation.ManifestCleared() {
+		_spec.ClearField(project.FieldManifest, field.TypeJSON)
 	}
 	if value, ok := pu.mutation.GitCommitWebURL(); ok {
 		_spec.SetField(project.FieldGitCommitWebURL, field.TypeString, value)
@@ -850,6 +914,12 @@ func (puo *ProjectUpdateOne) SetNillableOverrideValues(s *string) *ProjectUpdate
 	return puo
 }
 
+// ClearOverrideValues clears the value of the "override_values" field.
+func (puo *ProjectUpdateOne) ClearOverrideValues() *ProjectUpdateOne {
+	puo.mutation.ClearOverrideValues()
+	return puo
+}
+
 // SetDockerImage sets the "docker_image" field.
 func (puo *ProjectUpdateOne) SetDockerImage(s []string) *ProjectUpdateOne {
 	puo.mutation.SetDockerImage(s)
@@ -862,6 +932,12 @@ func (puo *ProjectUpdateOne) AppendDockerImage(s []string) *ProjectUpdateOne {
 	return puo
 }
 
+// ClearDockerImage clears the value of the "docker_image" field.
+func (puo *ProjectUpdateOne) ClearDockerImage() *ProjectUpdateOne {
+	puo.mutation.ClearDockerImage()
+	return puo
+}
+
 // SetPodSelectors sets the "pod_selectors" field.
 func (puo *ProjectUpdateOne) SetPodSelectors(s []string) *ProjectUpdateOne {
 	puo.mutation.SetPodSelectors(s)
@@ -871,6 +947,12 @@ func (puo *ProjectUpdateOne) SetPodSelectors(s []string) *ProjectUpdateOne {
 // AppendPodSelectors appends s to the "pod_selectors" field.
 func (puo *ProjectUpdateOne) AppendPodSelectors(s []string) *ProjectUpdateOne {
 	puo.mutation.AppendPodSelectors(s)
+	return puo
+}
+
+// ClearPodSelectors clears the value of the "pod_selectors" field.
+func (puo *ProjectUpdateOne) ClearPodSelectors() *ProjectUpdateOne {
+	puo.mutation.ClearPodSelectors()
 	return puo
 }
 
@@ -921,15 +1003,27 @@ func (puo *ProjectUpdateOne) AppendEnvValues(tv []*types.KeyValue) *ProjectUpdat
 	return puo
 }
 
-// SetExtraValues sets the "extra_values" field.
-func (puo *ProjectUpdateOne) SetExtraValues(tv []*types.ExtraValue) *ProjectUpdateOne {
-	puo.mutation.SetExtraValues(tv)
+// ClearEnvValues clears the value of the "env_values" field.
+func (puo *ProjectUpdateOne) ClearEnvValues() *ProjectUpdateOne {
+	puo.mutation.ClearEnvValues()
 	return puo
 }
 
-// AppendExtraValues appends tv to the "extra_values" field.
-func (puo *ProjectUpdateOne) AppendExtraValues(tv []*types.ExtraValue) *ProjectUpdateOne {
-	puo.mutation.AppendExtraValues(tv)
+// SetExtraValues sets the "extra_values" field.
+func (puo *ProjectUpdateOne) SetExtraValues(wv []*websocket.ExtraValue) *ProjectUpdateOne {
+	puo.mutation.SetExtraValues(wv)
+	return puo
+}
+
+// AppendExtraValues appends wv to the "extra_values" field.
+func (puo *ProjectUpdateOne) AppendExtraValues(wv []*websocket.ExtraValue) *ProjectUpdateOne {
+	puo.mutation.AppendExtraValues(wv)
+	return puo
+}
+
+// ClearExtraValues clears the value of the "extra_values" field.
+func (puo *ProjectUpdateOne) ClearExtraValues() *ProjectUpdateOne {
+	puo.mutation.ClearExtraValues()
 	return puo
 }
 
@@ -942,6 +1036,12 @@ func (puo *ProjectUpdateOne) SetFinalExtraValues(s []string) *ProjectUpdateOne {
 // AppendFinalExtraValues appends s to the "final_extra_values" field.
 func (puo *ProjectUpdateOne) AppendFinalExtraValues(s []string) *ProjectUpdateOne {
 	puo.mutation.AppendFinalExtraValues(s)
+	return puo
+}
+
+// ClearFinalExtraValues clears the value of the "final_extra_values" field.
+func (puo *ProjectUpdateOne) ClearFinalExtraValues() *ProjectUpdateOne {
+	puo.mutation.ClearFinalExtraValues()
 	return puo
 }
 
@@ -995,6 +1095,12 @@ func (puo *ProjectUpdateOne) SetManifest(s []string) *ProjectUpdateOne {
 // AppendManifest appends s to the "manifest" field.
 func (puo *ProjectUpdateOne) AppendManifest(s []string) *ProjectUpdateOne {
 	puo.mutation.AppendManifest(s)
+	return puo
+}
+
+// ClearManifest clears the value of the "manifest" field.
+func (puo *ProjectUpdateOne) ClearManifest() *ProjectUpdateOne {
+	puo.mutation.ClearManifest()
 	return puo
 }
 
@@ -1286,6 +1392,9 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 	if value, ok := puo.mutation.OverrideValues(); ok {
 		_spec.SetField(project.FieldOverrideValues, field.TypeString, value)
 	}
+	if puo.mutation.OverrideValuesCleared() {
+		_spec.ClearField(project.FieldOverrideValues, field.TypeString)
+	}
 	if value, ok := puo.mutation.DockerImage(); ok {
 		_spec.SetField(project.FieldDockerImage, field.TypeJSON, value)
 	}
@@ -1294,6 +1403,9 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 			sqljson.Append(u, project.FieldDockerImage, value)
 		})
 	}
+	if puo.mutation.DockerImageCleared() {
+		_spec.ClearField(project.FieldDockerImage, field.TypeJSON)
+	}
 	if value, ok := puo.mutation.PodSelectors(); ok {
 		_spec.SetField(project.FieldPodSelectors, field.TypeJSON, value)
 	}
@@ -1301,6 +1413,9 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, project.FieldPodSelectors, value)
 		})
+	}
+	if puo.mutation.PodSelectorsCleared() {
+		_spec.ClearField(project.FieldPodSelectors, field.TypeJSON)
 	}
 	if value, ok := puo.mutation.Atomic(); ok {
 		_spec.SetField(project.FieldAtomic, field.TypeBool, value)
@@ -1319,6 +1434,9 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 			sqljson.Append(u, project.FieldEnvValues, value)
 		})
 	}
+	if puo.mutation.EnvValuesCleared() {
+		_spec.ClearField(project.FieldEnvValues, field.TypeJSON)
+	}
 	if value, ok := puo.mutation.ExtraValues(); ok {
 		_spec.SetField(project.FieldExtraValues, field.TypeJSON, value)
 	}
@@ -1327,6 +1445,9 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 			sqljson.Append(u, project.FieldExtraValues, value)
 		})
 	}
+	if puo.mutation.ExtraValuesCleared() {
+		_spec.ClearField(project.FieldExtraValues, field.TypeJSON)
+	}
 	if value, ok := puo.mutation.FinalExtraValues(); ok {
 		_spec.SetField(project.FieldFinalExtraValues, field.TypeJSON, value)
 	}
@@ -1334,6 +1455,9 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, project.FieldFinalExtraValues, value)
 		})
+	}
+	if puo.mutation.FinalExtraValuesCleared() {
+		_spec.ClearField(project.FieldFinalExtraValues, field.TypeJSON)
 	}
 	if value, ok := puo.mutation.Version(); ok {
 		_spec.SetField(project.FieldVersion, field.TypeInt, value)
@@ -1354,6 +1478,9 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, project.FieldManifest, value)
 		})
+	}
+	if puo.mutation.ManifestCleared() {
+		_spec.ClearField(project.FieldManifest, field.TypeJSON)
 	}
 	if value, ok := puo.mutation.GitCommitWebURL(); ok {
 		_spec.SetField(project.FieldGitCommitWebURL, field.TypeString, value)

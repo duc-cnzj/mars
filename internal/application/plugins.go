@@ -704,6 +704,10 @@ type commit struct {
 	WebURL         string     `json:"web_url"`
 }
 
+func NewEmptyCommit() Commit {
+	return &commit{}
+}
+
 func (c *commit) GetID() string {
 	return c.ID
 }

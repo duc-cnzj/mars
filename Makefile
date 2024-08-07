@@ -14,7 +14,6 @@ build_tools:
 	go install \
 		github.com/envoyproxy/protoc-gen-validate \
 		github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway \
-		github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2 \
 		google.golang.org/grpc/cmd/protoc-gen-go-grpc \
 		google.golang.org/protobuf/cmd/protoc-gen-go \
 		github.com/golangci/golangci-lint/cmd/golangci-lint \
@@ -32,27 +31,24 @@ api:
 		--proto_path ./third_party/protos \
 		--go_out=paths=source_relative:./api \
 		--go-grpc_out=paths=source_relative:./api \
-	    --openapi_out=enum_type=string,fq_schema_naming=true,default_response=true,version="$(VERSION)",title="mars api.":./doc \
 		--grpc-gateway_out=paths=source_relative:./api \
 		--grpc-gateway_opt logtostderr=true \
 		--grpc-gateway_opt paths=source_relative \
 		--grpc-gateway_opt generate_unbound_methods=true \
 		--validate_out=lang=go,paths=source_relative:./api \
+	    --openapi_out=enum_type=string,fq_schema_naming=true,default_response=true,version="$(VERSION)",title="mars api.":./doc \
 		$(PROTO_FILES)
-#		--openapiv2_out=./doc \
-#		--openapiv2_opt logtostderr=true \
-#		--openapiv2_opt json_names_for_fields=false \
 
 	npx openapi-typescript ./doc/openapi.yaml --enum --enum-values --properties-required-by-default -o ./frontend/src/api/schema.d.ts
 
-	#./frontend/node_modules/.bin/pbjs -t static-module -o ./frontend/src/api/compiled.js -w es6  ./api/**/*.proto \
-#      --no-verify \
-#      --no-convert \
-#      --no-create \
-#      --force-number \
-#      --force-message \
+	./frontend/node_modules/.bin/pbjs -t static-module -o ./frontend/src/api/websocket.js -w es6  ./api/websocket/websocket.proto  \
+      --no-verify \
+      --no-convert \
+      --no-create \
+      --force-number \
+      --force-message \
+      --no-delimited
 #      --keep-case \
-#      --no-delimited
     #  --no-encode \
     #  --no-decode \
 
@@ -73,9 +69,7 @@ api:
     #  --force-number   Enforces the use of 'number' for s-/u-/int64 and s-/fixed64 fields.
     #  --force-message  Enforces the use of message instances instead of plain objects.
 
-	#./frontend/node_modules/.bin/pbts -o ./frontend/src/api/compiled.d.ts ./frontend/src/api/compiled.js --keep-case
-
-	#swagger mixin --ignore-conflicts ./third_party/doc/data/api.json ./doc/**/*.json > ./third_party/doc/data/swagger.json
+	./frontend/node_modules/.bin/pbts -o ./frontend/src/api/websocket.d.ts ./frontend/src/api/websocket.js --keep-case
 
 .PHONY: clear_proto
 clear_proto:

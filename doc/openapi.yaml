@@ -1264,6 +1264,32 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+    /api/projects/apply:
+        post:
+            tags:
+                - Project
+            summary: WebApply 创建/更新/DryRun 项目
+            description: WebApply 创建/更新项目
+            operationId: Project_WebApply
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/project.WebApplyRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.WebApplyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/projects/host_variables:
         post:
             tags:
@@ -1289,14 +1315,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
-    /api/projects/{projectId}:
+    /api/projects/{id}:
         get:
             tags:
                 - Project
             description: Show 项目详情
             operationId: Project_Show
             parameters:
-                - name: projectId
+                - name: id
                   in: path
                   required: true
                   schema:
@@ -1321,7 +1347,7 @@ paths:
             description: Delete 删除项目
             operationId: Project_Delete
             parameters:
-                - name: projectId
+                - name: id
                   in: path
                   required: true
                   schema:
@@ -1334,6 +1360,58 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.DeleteResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/projects/{id}/containers:
+        get:
+            tags:
+                - Project
+            description: AllContainers 获取项目下的所有 pod
+            operationId: Project_AllContainers
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.AllContainersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/projects/{id}/version:
+        get:
+            tags:
+                - Project
+            description: Version 版本号, 如果不存在则返回 0
+            operationId: Project_Version
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.VersionResponse'
                 default:
                     description: Default error response
                     content:
@@ -1364,58 +1442,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/changelog.ShowResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/google.rpc.Status'
-    /api/projects/{projectId}/containers:
-        get:
-            tags:
-                - Project
-            description: AllContainers 获取项目下的所有 pod
-            operationId: Project_AllContainers
-            parameters:
-                - name: projectId
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/project.AllContainersResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/google.rpc.Status'
-    /api/projects/{projectId}/version:
-        get:
-            tags:
-                - Project
-            description: Version 版本号, 如果不存在则返回 0
-            operationId: Project_Version
-            parameters:
-                - name: projectId
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/project.VersionResponse'
                 default:
                     description: Default error response
                     content:
@@ -1694,28 +1720,8 @@ components:
         cluster.InfoResponse:
             type: object
             properties:
-                status:
-                    type: string
-                freeMemory:
-                    type: string
-                freeCpu:
-                    type: string
-                freeRequestMemory:
-                    type: string
-                freeRequestCpu:
-                    type: string
-                totalMemory:
-                    type: string
-                totalCpu:
-                    type: string
-                usageMemoryRate:
-                    type: string
-                usageCpuRate:
-                    type: string
-                requestMemoryRate:
-                    type: string
-                requestCpuRate:
-                    type: string
+                item:
+                    $ref: '#/components/schemas/websocket.ClusterInfo'
         container.CopyToPodRequest:
             required:
                 - fileId
@@ -2234,7 +2240,7 @@ components:
         project.ShowResponse:
             type: object
             properties:
-                project:
+                item:
                     $ref: '#/components/schemas/types.ProjectModel'
                 urls:
                     type: array
@@ -2254,6 +2260,48 @@ components:
                 version:
                     type: integer
                     format: int32
+        project.WebApplyRequest:
+            required:
+                - namespaceId
+                - repoId
+            type: object
+            properties:
+                namespaceId:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                repoId:
+                    type: integer
+                    format: int32
+                gitBranch:
+                    type: string
+                gitCommit:
+                    type: string
+                    description: git_commit 不传就用最新的 commit
+                config:
+                    type: string
+                extraValues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/websocket.ExtraValue'
+                version:
+                    type: integer
+                    description: 版本号, dryRun 时可以不传
+                    format: int32
+                dryRun:
+                    type: boolean
+        project.WebApplyResponse:
+            type: object
+            properties:
+                yamlFiles:
+                    type: array
+                    items:
+                        type: string
+                project:
+                    $ref: '#/components/schemas/types.ProjectModel'
+                dryRun:
+                    type: boolean
         repo.CreateRequest:
             required:
                 - name
@@ -2445,7 +2493,7 @@ components:
                 extraValues:
                     type: array
                     items:
-                        $ref: '#/components/schemas/types.ExtraValue'
+                        $ref: '#/components/schemas/websocket.ExtraValue'
                 finalExtraValues:
                     type: array
                     items:
@@ -2509,13 +2557,6 @@ components:
                 updatedAt:
                     type: string
                 deletedAt:
-                    type: string
-        types.ExtraValue:
-            type: object
-            properties:
-                path:
-                    type: string
-                value:
                     type: string
         types.FileModel:
             type: object
@@ -2642,7 +2683,7 @@ components:
                 extraValues:
                     type: array
                     items:
-                        $ref: '#/components/schemas/types.ExtraValue'
+                        $ref: '#/components/schemas/websocket.ExtraValue'
                 finalExtraValues:
                     type: string
                 deployStatus:
@@ -2758,6 +2799,38 @@ components:
                 helmVersion:
                     type: string
                 gitRepo:
+                    type: string
+        websocket.ClusterInfo:
+            type: object
+            properties:
+                status:
+                    type: string
+                freeMemory:
+                    type: string
+                freeCpu:
+                    type: string
+                freeRequestMemory:
+                    type: string
+                freeRequestCpu:
+                    type: string
+                totalMemory:
+                    type: string
+                totalCpu:
+                    type: string
+                usageMemoryRate:
+                    type: string
+                usageCpuRate:
+                    type: string
+                requestMemoryRate:
+                    type: string
+                requestCpuRate:
+                    type: string
+        websocket.ExtraValue:
+            type: object
+            properties:
+                path:
+                    type: string
+                value:
                     type: string
     securitySchemes:
         BearerAuth:

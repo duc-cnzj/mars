@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
@@ -87,6 +88,7 @@ func (ms *memorySender) New(uid, id string) application.PubSub {
 		manager: ms,
 		uid:     uid,
 		id:      id,
+		logger:  ms.logger,
 	}
 }
 
@@ -95,6 +97,7 @@ type memoryPubSub struct {
 	manager *memorySender
 	uid     string
 	id      string
+	logger  mlog.Logger
 }
 
 func (p *memoryPubSub) Run(ctx context.Context) error {
@@ -116,7 +119,7 @@ func (p *memoryPubSub) Publish(nsID int64, pod *corev1.Pod) error {
 					if ok {
 						for _, selector := range selectors {
 							if selector.Matches(labels.Set(pod.Labels)) {
-								//mlog.Debugf("publish to: (%d---%d)", nsID, pid)
+								p.logger.Debugf("publish to: (%d---%d)", nsID, pid)
 								conn.ch <- wssender.TransformToResponse(&websocket_pb.WsProjectPodEventResponse{
 									Metadata: &websocket_pb.Metadata{
 										Id:     socketID,
@@ -140,10 +143,10 @@ func (p *memoryPubSub) Publish(nsID int64, pod *corev1.Pod) error {
 }
 
 func (p *memoryPubSub) Join(projectID int64) error {
-	pmodel, _ := p.db.Project.Query().Where(project.ID(int(projectID))).Only(context.TODO())
+	pmodel, _ := p.db.Project.Query().WithNamespace().Where(project.ID(int(projectID))).Only(context.TODO())
 	p.manager.roomMu.Lock()
 	defer p.manager.roomMu.Unlock()
-	//mlog.Warningf("Join to: (%d---%d)", pmodel.NamespaceId, projectID)
+	p.logger.Warningf("Join to: (%d---%d)", pmodel.NamespaceID, projectID)
 	var (
 		nsID = int64(pmodel.Edges.Namespace.ID)
 	)
@@ -173,7 +176,7 @@ func (p *memoryPubSub) Join(projectID int64) error {
 func (p *memoryPubSub) Leave(nsID, projectID int64) error {
 	p.manager.roomMu.Lock()
 	defer p.manager.roomMu.Unlock()
-	//mlog.Warningf("Leave to: (%d---%d)", nsID, projectID)
+	p.logger.Warningf("Leave to: (%d---%d)", nsID, projectID)
 	rooms, ok := p.manager.idRooms[p.id]
 	if ok {
 		delete(rooms, int32(nsID))
@@ -238,7 +241,7 @@ func (p *memoryPubSub) ToOthers(wsResponse application.WebsocketMessage) error {
 }
 
 func (p *memoryPubSub) Close() error {
-	//mlog.Debugf(fmt.Sprintf("[Websocket]: Closed, uid: %s, id: %s", p.uid, p.id))
+	p.logger.Debugf(fmt.Sprintf("[Websocket]: Closed, uid: %s, id: %s", p.uid, p.id))
 	p.manager.Delete(p.uid, p.id)
 	return nil
 }

@@ -18,9 +18,8 @@ import { DeployStatus } from "./reducers/createProject";
 import { Dispatch } from "redux";
 import { message } from "antd";
 import { setUid } from "../utils/uid";
-import pb from "../api/compiled";
+import pb from "../api/websocket";
 import { debounce } from "lodash";
-import { components } from "../api/schema";
 
 export const setCreateProjectLoading = (id: string, loading: boolean) => ({
   type: SET_CREATE_PROJECT_LOADING,
@@ -34,7 +33,7 @@ export const appendCreateProjectLog = (
   id: string,
   log: string,
   type: pb.websocket.ResultType,
-  containers?: pb.types.Container[]
+  containers?: pb.websocket.Container[]
 ) => ({
   type: APPEND_CREATE_PROJECT_LOG,
   data: {
@@ -105,9 +104,7 @@ export const setStartAt = (id: string, startAt: number) => ({
   },
 });
 
-export const setClusterInfo = (
-  info: components["schemas"]["cluster.InfoResponse"]
-) => ({
+export const setClusterInfo = (info: pb.websocket.ClusterInfo) => ({
   type: SET_CLUSTER_INFO,
   info: info,
 });
@@ -144,7 +141,7 @@ export const handleEvents = (
     switch (data.type.valueOf()) {
       case pb.websocket.Type.ProjectPodEvent:
         let nsEvent = pb.websocket.WsProjectPodEventResponse.decode(input);
-        dispatch(setPodEventPID(nsEvent.project_id));
+        dispatch(setPodEventPID(nsEvent.projectId));
         break;
       case pb.websocket.Type.SetUid:
         setUid(data.message);
@@ -155,10 +152,10 @@ export const handleEvents = (
         break;
       case pb.websocket.Type.ReloadProjects:
         let nsReload = pb.websocket.WsReloadProjectsResponse.decode(input);
-        debounceLoadNamespace(dispatch, nsReload.namespace_id);
+        debounceLoadNamespace(dispatch, nsReload.namespaceId);
         break;
       case pb.websocket.Type.UpdateProject:
-        let containers: pb.types.Container[] = [];
+        let containers: pb.websocket.Container[] = [];
         if (data.result === pb.websocket.ResultType.LogWithContainers) {
           containers =
             pb.websocket.WsWithContainerMessageResponse.decode(
@@ -202,7 +199,7 @@ export const handleEvents = (
         }
         break;
       case pb.websocket.Type.CreateProject:
-        let createContainers: pb.types.Container[] = [];
+        let createContainers: pb.websocket.Container[] = [];
         if (data.result === pb.websocket.ResultType.LogWithContainers) {
           createContainers =
             pb.websocket.WsWithContainerMessageResponse.decode(
@@ -265,21 +262,21 @@ export const handleEvents = (
         }
         let res = pb.websocket.WsHandleShellResponse.decode(input);
 
-        if (res.container && res.terminal_message) {
-          dispatch(setShellSessionId(res.terminal_message.session_id));
+        if (res.container && res.terminalMessage) {
+          dispatch(setShellSessionId(res.terminalMessage.sessionId));
           if (data.type.valueOf() === pb.websocket.Type.HandleCloseShell) {
-            dispatch(removeShell(res.terminal_message.session_id));
+            dispatch(removeShell(res.terminalMessage.sessionId));
           }
         }
         break;
       case pb.websocket.Type.HandleExecShellMsg:
         let logRes = pb.websocket.WsHandleShellResponse.decode(input);
         logRes.container &&
-          logRes.terminal_message &&
+          logRes.terminalMessage &&
           dispatch(
             setShellLog(
-              logRes.terminal_message.session_id,
-              logRes.terminal_message
+              logRes.terminalMessage.sessionId,
+              logRes.terminalMessage
             )
           );
         break;

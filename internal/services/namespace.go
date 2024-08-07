@@ -60,7 +60,6 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 	}
 
 	create, err := n.k8sRepo.CreateNamespace(ctx, nsName)
-
 	// 创建名称空间
 	if err != nil {
 		if !k8sapierrors.IsAlreadyExists(err) {
@@ -80,6 +79,8 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 	secret, err := n.k8sRepo.CreateDockerSecrets(ctx, create.Name)
 	if err == nil {
 		imagePullSecrets = append(imagePullSecrets, secret.Name)
+	} else {
+		n.logger.Error(err)
 	}
 
 	ns, err := n.nsRepo.Create(ctx, &repo.CreateNamespaceInput{

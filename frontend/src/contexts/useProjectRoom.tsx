@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import pb from "../api/compiled";
+import pb from "../api/websocket";
 
 export default function useProjectRoom(
   namespaceID: number,
@@ -8,11 +8,12 @@ export default function useProjectRoom(
 ) {
   const [online, setOnline] = useState(false);
   useEffect(() => {
+    console.log(namespaceID, projectID, "ducxxx---");
     let s = pb.websocket.ProjectPodEventJoinInput.encode({
       type: pb.websocket.Type.ProjectPodEvent,
       join: true,
-      namespace_id: namespaceID,
-      project_id: projectID,
+      namespaceId: namespaceID,
+      projectId: projectID,
     }).finish();
     ws?.send(s);
     setOnline(true);
@@ -20,8 +21,8 @@ export default function useProjectRoom(
       let leave = pb.websocket.ProjectPodEventJoinInput.encode({
         type: pb.websocket.Type.ProjectPodEvent,
         join: false,
-        namespace_id: namespaceID,
-        project_id: projectID,
+        namespaceId: namespaceID,
+        projectId: projectID,
       }).finish();
       ws?.send(leave);
       setOnline(false);

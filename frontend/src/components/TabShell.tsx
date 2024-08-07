@@ -7,7 +7,6 @@ import React, {
   memo,
 } from "react";
 import { useSelector } from "react-redux";
-import { allPodContainers, isPodRunning } from "../api/project";
 import { message, Radio, Upload, Button, Empty } from "antd";
 import { selectSessions } from "../store/reducers/shell";
 import { debounce } from "lodash";
@@ -20,7 +19,7 @@ import {
   MinusOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
-import pb from "../api/compiled";
+import pb from "../api/websocket";
 import PodMetrics from "./PodMetrics";
 import { getToken } from "../utils/token";
 import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
@@ -32,6 +31,7 @@ import { css } from "@emotion/css";
 import "../styles/allotment-overwrite.css";
 import _ from "lodash";
 import ajax from "../api/ajax";
+import { components } from "../api/schema";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -58,7 +58,9 @@ const TabShell: React.FC<{
   updatedAt: any;
 }> = ({ namespaceID, namespace, id, resizeAt, updatedAt }) => {
   console.log("render: TabShell");
-  const [list, setList] = useState<pb.types.StateContainer[]>([]);
+  const [list, setList] = useState<
+    components["schemas"]["types.StateContainer"][]
+  >([]);
   const [value, setValue] = useState<NPC | null>();
   const [timestamp, setTimestamp] = useState(new Date().getTime());
   const [maxUploadInfo, setMaxUploadInfo] = useState({
@@ -84,17 +86,20 @@ const TabShell: React.FC<{
 
   const listContainer = useCallback(
     () =>
-      allPodContainers({
-        project_id: id,
-      }).then((res) => {
-        setList(res.data.items);
-        return res;
-      }),
+      ajax
+        .GET("/api/projects/{id}/containers", { params: { path: { id: id } } })
+        .then(({ data, error }) => {
+          if (error) {
+            return;
+          }
+          setList(data.items);
+          return data;
+        }),
     [id]
   );
 
   const setValuesByResult = useCallback(
-    (items: pb.types.StateContainer[]) => {
+    (items: components["schemas"]["types.StateContainer"][]) => {
       if (items.length > 0) {
         let first = items[0];
         setValue({
@@ -154,8 +159,8 @@ const TabShell: React.FC<{
   }, []);
 
   useEffect(() => {
-    listContainer().then((res) => {
-      setValuesByResult(res.data.items);
+    listContainer().then((data) => {
+      data && setValuesByResult(data.items);
     });
   }, [listContainer, setValuesByResult, updatedAt]);
 
@@ -167,18 +172,25 @@ const TabShell: React.FC<{
       setValue((v) => {
         let [pod, container] = (e.target.value as string).split("|");
         if (v?.pod === pod && v.container === container) {
-          isPodRunning({
-            namespace: namespace,
-            pod: pod,
-          }).then((res) => {
-            if (res.data.running) {
-              setForceRender(new Date().getTime());
-            } else {
-              listContainer().then((res) => {
-                setValuesByResult(res.data.items);
-              });
-            }
-          });
+          ajax
+            .POST("/api/containers/pod_running_status", {
+              body: {
+                namespace,
+                pod,
+              },
+            })
+            .then(({ data, error }) => {
+              if (error) {
+                return;
+              }
+              if (data.running) {
+                setForceRender(new Date().getTime());
+              } else {
+                listContainer().then((data) => {
+                  data && setValuesByResult(data.items);
+                });
+              }
+            });
         }
         return { pod, container, namespace };
       });
@@ -228,18 +240,17 @@ const TabShell: React.FC<{
               fileId: info.file.response.id,
             },
           })
-          .then(({ data }) => {
+          .then(({ data, error }) => {
+            setLoading(false);
+            if (error) {
+              message.error(`文件 ${info.file.name} 上传到容器失败`);
+              return;
+            }
             console.log(data);
             message.success(
               `文件 ${info.file.name} 已上传到容器 ${data?.podFilePath} 下`,
               2
             );
-          })
-          .catch((e) => {
-            message.error(`文件 ${info.file.name} 上传到容器失败`);
-          })
-          .finally(() => {
-            setLoading(false);
           });
       } else if (info.file.status === "error") {
         message.error(`文件 ${info.file.name} 上传失败`);
@@ -536,7 +547,7 @@ const ShellWindow: React.FC<{
           pod: pod,
           container: container,
         },
-        session_id: sessionID,
+        sessionId: sessionID,
       }).finish();
       sendMsg(ss);
     }, [namespace, pod, container, sendMsg, sessionID]);
@@ -547,7 +558,7 @@ const ShellWindow: React.FC<{
         let s = pb.websocket.TerminalMessageInput.encode({
           type: pb.websocket.Type.HandleExecShellMsg,
           message: new pb.websocket.TerminalMessage({
-            session_id: id,
+            sessionId: id,
             op: "resize",
             cols: cols,
             rows: rows,
@@ -562,7 +573,7 @@ const ShellWindow: React.FC<{
         let s = pb.websocket.TerminalMessageInput.encode({
           type: pb.websocket.Type.HandleExecShellMsg,
           message: {
-            session_id: id,
+            sessionId: id,
             op: "stdin",
             data: encoder.encode(str),
             cols: 0,
@@ -645,7 +656,7 @@ const ShellWindow: React.FC<{
         if (id) {
           let s = pb.websocket.TerminalMessageInput.encode({
             type: pb.websocket.Type.HandleCloseShell,
-            message: new pb.websocket.TerminalMessage({ session_id: id }),
+            message: new pb.websocket.TerminalMessage({ sessionId: id }),
           }).finish();
           sendMsg(s);
         }

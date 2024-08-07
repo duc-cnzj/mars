@@ -83,18 +83,17 @@ const EventList: React.FC = () => {
           },
         },
       })
-      .then(({ data }) => {
-        data && setData((items) => [...items, ...data.items]);
-        data &&
-          setPaginate({
-            page: Number(data.page),
-            page_size: Number(data.pageSize),
-          });
+      .then(({ data, error }) => {
         setLoading(false);
-      })
-      .catch((e) => {
-        message.error(e.response.data.message);
-        setLoading(false);
+        if (error) {
+          message.error(error.message);
+          return;
+        }
+        setData((items) => [...items, ...data.items]);
+        setPaginate({
+          page: Number(data.page),
+          page_size: Number(data.pageSize),
+        });
       });
   };
 
@@ -114,16 +113,17 @@ const EventList: React.FC = () => {
           },
         },
       })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          message.error(error.message);
+          return;
+        }
         data && setData(data.items);
         data &&
           setPaginate({
             page: Number(data.page),
             page_size: Number(data.pageSize),
           });
-      })
-      .catch((e) => {
-        message.error(e.response.data.message);
       });
   }, []);
 
@@ -421,7 +421,11 @@ const EventList: React.FC = () => {
                             .DELETE("/api/files/{id}", {
                               params: { path: { id: item.fileId } },
                             })
-                            .then(() => {
+                            .then(({ error }) => {
+                              if (error) {
+                                message.error(error.message);
+                                return;
+                              }
                               setData(
                                 data.map((v) => {
                                   return v.id === item.id
@@ -430,10 +434,7 @@ const EventList: React.FC = () => {
                                 })
                               );
                               message.success("删除成功");
-                            })
-                            .catch((e) =>
-                              message.error(e.response.data.message)
-                            );
+                            });
                         }}
                       />
                     </>
@@ -456,17 +457,18 @@ const EventList: React.FC = () => {
                             .DELETE("/api/files/{id}", {
                               params: { path: { id: item.fileId } },
                             })
-                            .then(() => {
+                            .then(({ error }) => {
+                              if (error) {
+                                message.error(error.message);
+                                return;
+                              }
                               setData(
                                 data.map((v) =>
                                   v.id === item.id ? { ...v, fileId: 0 } : v
                                 )
                               );
                               message.success("删除成功");
-                            })
-                            .catch((e) =>
-                              message.error(e.response.data.message)
-                            );
+                            });
                         }}
                       />
                     </>

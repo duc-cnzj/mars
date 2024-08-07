@@ -303,9 +303,9 @@ func (m *ShowRequest) validate(all bool) error {
 
 	var errors []error
 
-	if m.GetProjectId() <= 0 {
+	if m.GetId() <= 0 {
 		err := ShowRequestValidationError{
-			field:  "ProjectId",
+			field:  "Id",
 			reason: "value must be greater than 0",
 		}
 		if !all {
@@ -414,11 +414,11 @@ func (m *ShowResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetProject()).(type) {
+		switch v := interface{}(m.GetItem()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, ShowResponseValidationError{
-					field:  "Project",
+					field:  "Item",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -426,16 +426,16 @@ func (m *ShowResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, ShowResponseValidationError{
-					field:  "Project",
+					field:  "Item",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetProject()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetItem()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ShowResponseValidationError{
-				field:  "Project",
+				field:  "Item",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -613,9 +613,9 @@ func (m *DeleteRequest) validate(all bool) error {
 
 	var errors []error
 
-	if m.GetProjectId() <= 0 {
+	if m.GetId() <= 0 {
 		err := DeleteRequestValidationError{
-			field:  "ProjectId",
+			field:  "Id",
 			reason: "value must be greater than 0",
 		}
 		if !all {
@@ -824,9 +824,9 @@ func (m *VersionRequest) validate(all bool) error {
 
 	var errors []error
 
-	if m.GetProjectId() <= 0 {
+	if m.GetId() <= 0 {
 		err := VersionRequestValidationError{
-			field:  "ProjectId",
+			field:  "Id",
 			reason: "value must be greater than 0",
 		}
 		if !all {
@@ -1037,9 +1037,9 @@ func (m *AllContainersRequest) validate(all bool) error {
 
 	var errors []error
 
-	if m.GetProjectId() <= 0 {
+	if m.GetId() <= 0 {
 		err := AllContainersRequestValidationError{
-			field:  "ProjectId",
+			field:  "Id",
 			reason: "value must be greater than 0",
 		}
 		if !all {
@@ -1968,3 +1968,304 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = HostVariablesResponseValidationError{}
+
+// Validate checks the field values on WebApplyRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *WebApplyRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WebApplyRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// WebApplyRequestMultiError, or nil if none found.
+func (m *WebApplyRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WebApplyRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetNamespaceId() <= 0 {
+		err := WebApplyRequestValidationError{
+			field:  "NamespaceId",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Name
+
+	if m.GetRepoId() <= 0 {
+		err := WebApplyRequestValidationError{
+			field:  "RepoId",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for GitBranch
+
+	// no validation rules for GitCommit
+
+	// no validation rules for Config
+
+	for idx, item := range m.GetExtraValues() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, WebApplyRequestValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, WebApplyRequestValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return WebApplyRequestValidationError{
+					field:  fmt.Sprintf("ExtraValues[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for DryRun
+
+	if m.Version != nil {
+		// no validation rules for Version
+	}
+
+	if len(errors) > 0 {
+		return WebApplyRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// WebApplyRequestMultiError is an error wrapping multiple validation errors
+// returned by WebApplyRequest.ValidateAll() if the designated constraints
+// aren't met.
+type WebApplyRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WebApplyRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WebApplyRequestMultiError) AllErrors() []error { return m }
+
+// WebApplyRequestValidationError is the validation error returned by
+// WebApplyRequest.Validate if the designated constraints aren't met.
+type WebApplyRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WebApplyRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WebApplyRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WebApplyRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WebApplyRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WebApplyRequestValidationError) ErrorName() string { return "WebApplyRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e WebApplyRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWebApplyRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WebApplyRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WebApplyRequestValidationError{}
+
+// Validate checks the field values on WebApplyResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *WebApplyResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WebApplyResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// WebApplyResponseMultiError, or nil if none found.
+func (m *WebApplyResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WebApplyResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetProject()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, WebApplyResponseValidationError{
+					field:  "Project",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, WebApplyResponseValidationError{
+					field:  "Project",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetProject()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return WebApplyResponseValidationError{
+				field:  "Project",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for DryRun
+
+	if len(errors) > 0 {
+		return WebApplyResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// WebApplyResponseMultiError is an error wrapping multiple validation errors
+// returned by WebApplyResponse.ValidateAll() if the designated constraints
+// aren't met.
+type WebApplyResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WebApplyResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WebApplyResponseMultiError) AllErrors() []error { return m }
+
+// WebApplyResponseValidationError is the validation error returned by
+// WebApplyResponse.Validate if the designated constraints aren't met.
+type WebApplyResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WebApplyResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WebApplyResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WebApplyResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WebApplyResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WebApplyResponseValidationError) ErrorName() string { return "WebApplyResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e WebApplyResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWebApplyResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WebApplyResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WebApplyResponseValidationError{}

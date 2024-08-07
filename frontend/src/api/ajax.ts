@@ -7,6 +7,11 @@ import {
 } from "./../utils/token";
 import createClient, { Middleware } from "openapi-fetch";
 import { paths } from "./schema";
+import _ from "lodash";
+
+const login401alert = _.debounce(() => {
+  message.error("登录过期，请重新登录");
+}, 500);
 
 const ajax = createClient<paths>({
   baseUrl: process.env.REACT_APP_BASE_URL,
@@ -26,7 +31,7 @@ const myMiddleware: Middleware = {
     if (response.status === 401) {
       if (getToken()) {
         removeToken();
-        message.error("登录过期，请重新登录");
+        login401alert();
       }
       setTimeout(() => {
         if (window.location.pathname !== "/login") {

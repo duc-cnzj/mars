@@ -193,7 +193,7 @@ func (t *myPtyHandler) Write(p []byte) (n int, err error) {
 			Data:      p,
 			SessionId: t.sessionID,
 		},
-		Container: &types.Container{
+		Container: &websocket_pb.Container{
 			Namespace: t.Container().Namespace,
 			Pod:       t.Container().Pod,
 			Container: t.Container().Container,
@@ -297,7 +297,7 @@ func (t *myPtyHandler) Close(ctx context.Context, reason string) bool {
 			Op:        OpStdout,
 			Data:      []byte(reason),
 		},
-		Container: &types.Container{
+		Container: &websocket_pb.Container{
 			Namespace: t.Container().Namespace,
 			Pod:       t.Container().Pod,
 			Container: t.Container().Container,
@@ -336,7 +336,7 @@ func (t *myPtyHandler) Toast(p string) error {
 			Data:      []byte(p),
 			SessionId: t.sessionID,
 		},
-		Container: &types.Container{
+		Container: &websocket_pb.Container{
 			Container: t.Container().Container,
 			Namespace: t.Container().Namespace,
 			Pod:       t.Container().Pod,
@@ -543,7 +543,7 @@ type TerminalResponse struct {
 	ID string `json:"sessionID"`
 }
 
-func checkSessionID(container *types.Container, id string) bool {
+func checkSessionID(container *websocket_pb.Container, id string) bool {
 	prefix := fmt.Sprintf("%s-%s-%s:", container.Namespace, container.Pod, container.Container)
 	return strings.HasPrefix(id, prefix)
 }

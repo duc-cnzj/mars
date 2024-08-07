@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
-
 	"github.com/duc-cnzj/mars/api/v4/project"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/api/v4/websocket"
@@ -20,6 +18,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/util"
 	"github.com/duc-cnzj/mars/v4/internal/util/mars"
+	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"github.com/samber/lo"
 	v1 "k8s.io/api/core/v1"
 )
@@ -40,9 +39,11 @@ type projectSvc struct {
 	helmer     repo.HelmerRepo
 	nsRepo     repo.NamespaceRepo
 	toolRepo   repo.ToolRepo
+	repoRepo   repo.RepoImp
 }
 
 func NewProjectSvc(
+	repoRepo repo.RepoImp,
 	jobManager socket.JobManager,
 	projRepo repo.ProjectRepo,
 	wsRepo repo.WsRepo,
@@ -54,7 +55,7 @@ func NewProjectSvc(
 	helmer repo.HelmerRepo,
 	nsRepo repo.NamespaceRepo,
 ) project.ProjectServer {
-	return &projectSvc{jobManager: jobManager, projRepo: projRepo, wsRepo: wsRepo, gitRepo: gitRepo, k8sRepo: k8sRepo, dm: pl.Domain(), eventRepo: eventRepo, logger: logger, helmer: helmer, nsRepo: nsRepo}
+	return &projectSvc{repoRepo: repoRepo, jobManager: jobManager, projRepo: projRepo, wsRepo: wsRepo, gitRepo: gitRepo, k8sRepo: k8sRepo, dm: pl.Domain(), eventRepo: eventRepo, logger: logger, helmer: helmer, nsRepo: nsRepo}
 }
 
 func (p *projectSvc) List(ctx context.Context, request *project.ListRequest) (*project.ListResponse, error) {
@@ -80,6 +81,78 @@ func (p *projectSvc) List(ctx context.Context, request *project.ListRequest) (*p
 	}, nil
 }
 
+func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyRequest) (*project.WebApplyResponse, error) {
+	show, err := p.repoRepo.Show(ctx, int(input.RepoId))
+	if err != nil {
+		return nil, err
+	}
+	if show.NeedGitRepo {
+		if input.GitBranch == "" {
+			input.GitBranch = show.DefaultBranch
+		}
+		if input.GitCommit == "" {
+			commits, _ := p.gitRepo.ListCommits(context.TODO(), int(show.GitProjectID), input.GitBranch)
+			if len(commits) < 1 {
+				return nil, errors.New("没有可用的 commit")
+			}
+			lastCommit := commits[0]
+			input.GitCommit = lastCommit.GetID()
+		}
+	}
+
+	if input.Name == "" {
+		input.Name = show.Name
+	}
+
+	p.logger.Debug("WebApply..")
+	user := MustGetUser(ctx)
+	job := p.jobManager.NewJob(&socket.JobInput{
+		Type:        websocket.Type_ApplyProject,
+		NamespaceId: input.NamespaceId,
+		Name:        input.Name,
+		RepoID:      int32(show.ID),
+		GitBranch:   input.GitBranch,
+		GitCommit:   input.GitCommit,
+		Config:      input.Config,
+		ExtraValues: input.ExtraValues,
+		Version:     input.Version,
+		User:        user,
+		DryRun:      input.DryRun,
+		PubSub:      &application.EmptyPubSub{},
+		Messager:    newEmptyMessager(),
+	})
+
+	ch := make(chan struct{})
+	go func() {
+		select {
+		case <-ctx.Done():
+			p.logger.Warning("WebApply ctx done", ctx.Err())
+			job.Stop(ctx.Err())
+		case <-ch:
+		}
+	}()
+	err = socket.InstallProject(ctx, job)
+	close(ch)
+	if err != nil {
+		return nil, err
+	}
+
+	var projectModel *types.ProjectModel
+	if job.IsNotDryRun() {
+		pro, err := p.projRepo.Show(ctx, job.Project().ID)
+		if err != nil {
+			return nil, err
+		}
+		projectModel = transformer.FromProject(pro)
+	}
+
+	return &project.WebApplyResponse{
+		YamlFiles: job.Manifests(),
+		Project:   projectModel,
+		DryRun:    input.GetDryRun(),
+	}, nil
+}
+
 func (p *projectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyRequest) (*project.DryRunApplyResponse, error) {
 	var pubsub application.PubSub = &application.EmptyPubSub{}
 	t := websocket.Type_ApplyProject
@@ -90,14 +163,15 @@ func (p *projectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyReques
 	p.logger.Debug("ApplyDryRun..")
 	user := MustGetUser(ctx)
 	job := p.jobManager.NewJob(&socket.JobInput{
-		Type:           t,
-		NamespaceId:    input.NamespaceId,
-		Name:           input.Name,
-		GitProjectId:   input.GitProjectId,
+		Type:        t,
+		NamespaceId: input.NamespaceId,
+		Name:        input.Name,
+		// TODO
+		//GitProjectId:   input.GitProjectId,
 		GitBranch:      input.GitBranch,
 		GitCommit:      input.GitCommit,
 		Config:         input.Config,
-		Atomic:         input.Atomic,
+		Atomic:         lo.ToPtr(input.Atomic),
 		ExtraValues:    input.ExtraValues,
 		Version:        input.Version,
 		TimeoutSeconds: input.InstallTimeoutSeconds,
@@ -142,16 +216,17 @@ func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 	ch := make(chan struct{})
 
 	job := p.jobManager.NewJob(&socket.JobInput{
-		Type:         t,
-		NamespaceId:  input.NamespaceId,
-		Name:         input.Name,
-		GitProjectId: input.GitProjectId,
-		GitBranch:    input.GitBranch,
-		GitCommit:    input.GitCommit,
-		Config:       input.Config,
-		Atomic:       input.Atomic,
-		ExtraValues:  input.ExtraValues,
-		Version:      input.Version,
+		Type:        t,
+		NamespaceId: input.NamespaceId,
+		Name:        input.Name,
+		//TODO
+		//GitProjectId: input.GitProjectId,
+		GitBranch:   input.GitBranch,
+		GitCommit:   input.GitCommit,
+		Config:      input.Config,
+		Atomic:      lo.ToPtr(input.Atomic),
+		ExtraValues: input.ExtraValues,
+		Version:     input.Version,
 		//, *user, "", msger, pubsub, input.InstallTimeoutSeconds
 		TimeoutSeconds: input.InstallTimeoutSeconds,
 		User:           user,
@@ -186,14 +261,14 @@ func (p *projectSvc) completeInput(input *project.ApplyRequest, msger contracts.
 
 func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest) (*project.DeleteResponse, error) {
 	//var event = p.eventer
-	projectModel, err := p.projRepo.Show(ctx, int(request.ProjectId))
+	projectModel, err := p.projRepo.Show(ctx, int(request.Id))
 	if err != nil {
 		return nil, err
 	}
 	if err := p.helmer.Uninstall(projectModel.Name, projectModel.Namespace.Name, p.logger.Debugf); err != nil {
 		p.logger.Error(err)
 	}
-	p.projRepo.Delete(ctx, int(request.ProjectId))
+	p.projRepo.Delete(ctx, int(request.Id))
 	p.eventRepo.Dispatch(repo.EventProjectDeleted, &projectModel)
 
 	p.eventRepo.AuditLog(
@@ -206,7 +281,7 @@ func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 }
 
 func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*project.ShowResponse, error) {
-	projectModel, err := p.projRepo.Show(ctx, int(request.ProjectId))
+	projectModel, err := p.projRepo.Show(ctx, int(request.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +298,7 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 	urls = append(urls, lbMapping.Get(projectModel.Name)...)
 
 	return &project.ShowResponse{
-		Project:  transformer.FromProject(projectModel),
+		Item:     transformer.FromProject(projectModel),
 		Urls:     urls,
 		Cpu:      cpu,
 		Memory:   memory,
@@ -232,13 +307,13 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 }
 
 func (p *projectSvc) Version(ctx context.Context, req *project.VersionRequest) (*project.VersionResponse, error) {
-	show, _ := p.projRepo.Show(ctx, int(req.ProjectId))
+	show, _ := p.projRepo.Show(ctx, int(req.Id))
 
 	return &project.VersionResponse{Version: int32(show.Version)}, nil
 }
 
 func (p *projectSvc) AllContainers(ctx context.Context, request *project.AllContainersRequest) (*project.AllContainersResponse, error) {
-	projectModel, err := p.projRepo.Show(ctx, int(request.ProjectId))
+	projectModel, err := p.projRepo.Show(ctx, int(request.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -309,12 +384,12 @@ func newEmptyMessager() *emptyMessager {
 	return &emptyMessager{}
 }
 
-func (e *emptyMessager) SendEndError(err error)                                            {}
-func (e *emptyMessager) SendError(err error)                                               {}
-func (e *emptyMessager) SendMsg(s string)                                                  {}
-func (e *emptyMessager) SendProtoMsg(message application.WebsocketMessage)                 {}
-func (e *emptyMessager) SendProcessPercent(int64)                                          {}
-func (e *emptyMessager) SendMsgWithContainerLog(msg string, containers []*types.Container) {}
+func (e *emptyMessager) SendEndError(err error)                                                {}
+func (e *emptyMessager) SendError(err error)                                                   {}
+func (e *emptyMessager) SendMsg(s string)                                                      {}
+func (e *emptyMessager) SendProtoMsg(message application.WebsocketMessage)                     {}
+func (e *emptyMessager) SendProcessPercent(int64)                                              {}
+func (e *emptyMessager) SendMsgWithContainerLog(msg string, containers []*websocket.Container) {}
 func (e *emptyMessager) SendDeployedResult(resultType websocket.ResultType, s string, p *types.ProjectModel) {
 }
 
@@ -386,7 +461,7 @@ func (m *messager) SendProtoMsg(message application.WebsocketMessage) {
 	m.send(&project.ApplyResponse{Metadata: message.GetMetadata()})
 }
 
-func (m *messager) SendMsgWithContainerLog(msg string, containers []*types.Container) {
+func (m *messager) SendMsgWithContainerLog(msg string, containers []*websocket.Container) {
 	m.send(&project.ApplyResponse{Metadata: &websocket.Metadata{
 		Slug:    m.slugName,
 		Type:    m.t,

@@ -9,7 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v4/cluster"
+	"github.com/duc-cnzj/mars/v4/internal/transformer"
+
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/application"
@@ -60,7 +61,11 @@ func (c *WsConn) Shutdown() {
 	//c.terminalSessions.CloseAll()
 	c.pubSub.Close()
 	c.conn.Close()
-	metrics.WebsocketConnectionsCount.With(prometheus.Labels{"username": c.GetUser().Name}).Dec()
+	var username string
+	if c.GetUser() != nil {
+		username = c.GetUser().Name
+	}
+	metrics.WebsocketConnectionsCount.With(prometheus.Labels{"username": username}).Dec()
 	Wait.Dec()
 }
 
@@ -92,6 +97,7 @@ type WebsocketManager struct {
 	fileRepo  repo.FileRepo
 	nsRepo    repo.NamespaceRepo
 	eventRepo repo.EventRepo
+	repoRepo  repo.RepoImp
 
 	executor repo.ExecutorManager
 
@@ -100,6 +106,7 @@ type WebsocketManager struct {
 
 func NewWebsocketManager(
 	logger mlog.Logger,
+	repoRepo repo.RepoImp,
 	jobManager JobManager,
 	data data.Data,
 	pl application.PluginManger,
@@ -112,6 +119,7 @@ func NewWebsocketManager(
 	fileRepo repo.FileRepo,
 ) application.WsServer {
 	mgr := &WebsocketManager{
+		repoRepo:           repoRepo,
 		jobManager:         jobManager,
 		fileRepo:           fileRepo,
 		healthTickDuration: 15 * time.Second,
@@ -157,19 +165,7 @@ func (wc *WebsocketManager) TickClusterHealth(done <-chan struct{}) {
 						Metadata: &websocket_pb.Metadata{
 							Type: WsClusterInfoSync,
 						},
-						Info: &cluster.InfoResponse{
-							Status:            info.Status,
-							FreeMemory:        info.FreeMemory,
-							FreeCpu:           info.FreeCpu,
-							FreeRequestMemory: info.FreeRequestMemory,
-							FreeRequestCpu:    info.FreeRequestCpu,
-							TotalMemory:       info.TotalMemory,
-							TotalCpu:          info.TotalCpu,
-							UsageMemoryRate:   info.UsageMemoryRate,
-							UsageCpuRate:      info.UsageCpuRate,
-							RequestMemoryRate: info.RequestMemoryRate,
-							RequestCpuRate:    info.RequestCpuRate,
-						},
+						Info: transformer.FromClusterInfo(info),
 					})
 				}()
 			}
@@ -328,8 +324,10 @@ func (wc *WebsocketManager) handleWsRead(ctx context.Context, wsconn *WsConn, ws
 			}
 		}(time.Now())
 
+		wc.logger.Warningf("wsType: %v, message: %v", wsRequest.Type.String(), string(message))
+
 		// websocket.onopen 事件不一定是最早发出来的，所以要等 onopen 的认证结束后才能进行后面的操作
-		if wsconn.GetUser() == nil || (wsconn.GetUser() != nil && wsconn.GetUser().GetID() == "" && wsRequest.Type != websocket_pb.Type_HandleAuthorize) {
+		if (wsconn.GetUser() == nil || (wsconn.GetUser() != nil && wsconn.GetUser().GetID() == "")) && wsRequest.Type != websocket_pb.Type_HandleAuthorize {
 			NewMessageSender(wsconn, "", WsAuthorize).SendMsg("认证中，请稍等~")
 			return
 		}
@@ -420,7 +418,7 @@ func (wc *WebsocketManager) HandleStartShell(ctx context.Context, c *WsConn, t w
 		TerminalMessage: &websocket_pb.TerminalMessage{
 			SessionId: sessionID,
 		},
-		Container: &types.Container{
+		Container: &websocket_pb.Container{
 			Namespace: input.Container.Namespace,
 			Pod:       input.Container.Pod,
 			Container: input.Container.Container,
@@ -454,19 +452,32 @@ func (wc *WebsocketManager) HandleWsCreateProject(ctx context.Context, c *WsConn
 
 		return
 	}
-	wc.upgradeOrInstall(ctx, c, &JobInput{
-		Type:         input.Type,
-		NamespaceId:  input.NamespaceId,
-		Name:         input.Name,
-		GitProjectId: input.GitProjectId,
-		GitBranch:    input.GitBranch,
-		GitCommit:    input.GitCommit,
-		Config:       input.Config,
-		Atomic:       input.Atomic,
-		ExtraValues:  input.ExtraValues,
-		User:         c.GetUser(),
-		PubSub:       c.pubSub,
-	})
+	var appName string
+	if input.Name != nil {
+		appName = *input.Name
+	} else {
+		show, _ := wc.repoRepo.Show(ctx, int(input.RepoId))
+		appName = show.Name
+	}
+
+	if err := wc.upgradeOrInstall(ctx, c, &JobInput{
+		Type:        input.Type,
+		NamespaceId: input.NamespaceId,
+		Name:        appName,
+		RepoID:      input.RepoId,
+		// TODO
+		//GitProjectId: input.GitProjectId,
+		GitBranch:   input.GitBranch,
+		GitCommit:   input.GitCommit,
+		Config:      input.Config,
+		Atomic:      input.Atomic,
+		ExtraValues: input.ExtraValues,
+		User:        c.GetUser(),
+		PubSub:      c.pubSub,
+		Messager:    NewMessageSender(c, util.GetSlugName(input.NamespaceId, appName), t),
+	}); err != nil {
+		wc.logger.Error(err)
+	}
 }
 
 func (wc *WebsocketManager) HandleWsUpdateProject(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
@@ -483,17 +494,18 @@ func (wc *WebsocketManager) HandleWsUpdateProject(ctx context.Context, c *WsConn
 	}
 
 	wc.upgradeOrInstall(ctx, c, &JobInput{
-		Type:           t,
-		NamespaceId:    int32(p.NamespaceID),
-		Name:           p.Name,
-		GitProjectId:   int32(p.GitProjectID),
+		Type:        t,
+		NamespaceId: int32(p.NamespaceID),
+		Name:        p.Name,
+		//TODO
+		//GitProjectId:   int32(p.GitProjectID),
 		GitBranch:      input.GitBranch,
 		GitCommit:      input.GitCommit,
 		Config:         input.Config,
 		Atomic:         input.Atomic,
 		ExtraValues:    input.ExtraValues,
 		Version:        &input.Version,
-		TimeoutSeconds: 0,
+		TimeoutSeconds: int32(wc.data.Config().InstallTimeout.Seconds()),
 		User:           c.GetUser(),
 		PubSub:         c.pubSub,
 	})

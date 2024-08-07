@@ -64,18 +64,6 @@ var inspectBootTagsCmd = &cobra.Command{
 	},
 }
 
-type loggerBootstrapper struct{}
-
-// Bootstrap boot logger.
-func (l *loggerBootstrapper) Bootstrap(app application.App) error {
-	return nil
-}
-
-// Tags boot tags.
-func (l *loggerBootstrapper) Tags() []string {
-	return []string{}
-}
-
 var inspectCronJobsCmd = &cobra.Command{
 	Use:     "cronjobs",
 	Aliases: []string{"cronjob", "cron", "job", "jobs"},

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
+
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
@@ -28,7 +30,7 @@ type Changelog struct {
 	GitCommit        string
 	DockerImage      []string
 	EnvValues        []*types.KeyValue
-	ExtraValues      []*types.ExtraValue
+	ExtraValues      []*websocket_pb.ExtraValue
 	FinalExtraValues []string
 	GitCommitWebURL  string
 	GitCommitTitle   string
@@ -101,7 +103,7 @@ type CreateChangeLogInput struct {
 	GitCommit        string
 	DockerImage      []string
 	EnvValues        []*types.KeyValue
-	ExtraValues      []*types.ExtraValue
+	ExtraValues      []*websocket_pb.ExtraValue
 	FinalExtraValues []string
 	GitCommitWebURL  string
 	GitCommitTitle   string

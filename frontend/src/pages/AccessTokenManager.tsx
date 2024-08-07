@@ -54,18 +54,18 @@ const AccessTokenManager: React.FC = () => {
           },
         },
       })
-      .then(({ data: res }) => {
-        res && setData((data) => [...data, ...res.items]);
-        res &&
-          setPaginate({
-            page: res.page,
-            page_size: res.pageSize,
-            count: res.count,
-          });
-        setLoading(false);
-      })
-      .catch((e) => {
-        message.error(e.repo);
+      .then(({ data: res, error }) => {
+        if (error) {
+          message.error(error.message);
+          setLoading(false);
+          return;
+        }
+        setData((data) => [...data, ...res.items]);
+        setPaginate({
+          page: res.page,
+          page_size: res.pageSize,
+          count: res.count,
+        });
         setLoading(false);
       });
   };
@@ -80,7 +80,11 @@ const AccessTokenManager: React.FC = () => {
         params: { query: { page: 1, pageSize: defaultPageSize } },
       })
 
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          message.error(error.message);
+          return;
+        }
         data && setData(data.items);
         data &&
           setPaginate({
@@ -88,10 +92,6 @@ const AccessTokenManager: React.FC = () => {
             page_size: data.pageSize,
             count: data.count,
           });
-      })
-      .catch((e) => {
-        console.log(e);
-        // message.error(e.reponse);
       });
   }, []);
 
@@ -134,16 +134,16 @@ const AccessTokenManager: React.FC = () => {
           expireSeconds: getSeconds(values.unit_number),
         },
       })
-      .then((res) => {
+      .then(({ error }) => {
+        if (error) {
+          message.error(error.message);
+          return;
+        }
         message.success("创建成功");
         setIsModalVisible(false);
         form.resetFields();
         setData([]);
         fetch();
-      })
-      .catch((e) => {
-        console.log(e);
-        // message.error(e.response.data.message);
       });
   };
   const onLease = (values: any) => {
@@ -155,16 +155,17 @@ const AccessTokenManager: React.FC = () => {
         },
         params: { path: { token: currToken } },
       })
-      .then((res) => {
+      .then(({ error }) => {
+        if (error) {
+          message.error(error.message);
+          return;
+        }
         message.success("续租成功");
         setIsModalVisible(false);
         form.resetFields();
         setCurrToken("");
         setData([]);
         fetch();
-      })
-      .catch((e) => {
-        message.error(e.response.data.message);
       });
   };
   const [unit, setUnit] = useState<unitImp>("day");

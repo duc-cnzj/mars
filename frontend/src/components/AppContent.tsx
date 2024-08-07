@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, memo } from "react";
 import { DraggableModalProvider } from "../pkg/DraggableModal/DraggableModalProvider";
 import ItemCard from "./ItemCard";
-import { Empty, Row, Col } from "antd";
+import { Empty, Row, Col, message } from "antd";
 import "../pkg/DraggableModal/index.css";
 import { useSelector, useDispatch } from "react-redux";
 import { setNamespaceReload, setOpenedModals } from "../store/actions";
@@ -26,8 +26,11 @@ const AppContent: React.FC = () => {
     setLoading(true);
     return ajax
       .GET("/api/namespaces")
-      .then(({ data }) => {
-        data && setNamespaceItems(data.items);
+      .then(({ data, error }) => {
+        if (error) {
+          return;
+        }
+        setNamespaceItems(data.items);
       })
       .finally(() => setLoading(false));
   }, [setNamespaceItems]);
@@ -67,9 +70,7 @@ const AppContent: React.FC = () => {
                 <Col md={12} lg={8} sm={12} xs={24} key={item.id}>
                   <ItemCard
                     loading={
-                      loading &&
-                      (Number(item.id) === Number(reloadNsID) ||
-                        reloadNsID === 0)
+                      loading && (item.id === reloadNsID || reloadNsID === 0)
                     }
                     item={item}
                     onNamespaceDeleted={fetchNamespaces}
