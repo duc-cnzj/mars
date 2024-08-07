@@ -35,7 +35,7 @@ func (t *TracingBootstrapper) Bootstrap(appli application.App) error {
 	//		appli.Logger().Info("shutdown tracer")
 	//		timeout, cancelFunc := context.WithTimeout(context.TODO(), 3*time.Second)
 	//		defer cancelFunc()
-	//		if err := tp.Shutdown(timeout); err != nil {
+	//		if err := tp.Stop(timeout); err != nil {
 	//			appli.Logger().Error(err)
 	//		}
 	//	})

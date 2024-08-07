@@ -1,20 +1,46 @@
 package socket
 
 import (
+	"time"
+
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/application"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
-type messager struct {
-	conn     *WsConn
-	slugName string
-	wsType   websocket_pb.Type
+type DeployMsger interface {
+	Percentable
+
+	SendProcessPercent(int64)
+	SendDeployedResult(t websocket_pb.ResultType, msg string, p *types.ProjectModel)
+	SendEndError(error)
+	SendMsg(string)
+	SendProtoMsg(application.WebsocketMessage)
+	SendMsgWithContainerLog(msg string, containers []*websocket_pb.Container)
 }
 
-func NewMessageSender(conn *WsConn, slugName string, wsType websocket_pb.Type) contracts.DeployMsger {
-	return &messager{conn: conn, slugName: slugName, wsType: wsType}
+var _ DeployMsger = (*messager)(nil)
+
+type messager struct {
+	conn     Conn
+	slugName string
+	wsType   websocket_pb.Type
+
+	percent Percentable
+}
+
+func NewMessageSender(
+	conn Conn,
+	slugName string,
+	wsType websocket_pb.Type,
+) DeployMsger {
+	m := &messager{
+		conn:     conn,
+		slugName: slugName,
+		wsType:   wsType,
+	}
+	m.percent = NewProcessPercent(m, NewRealSleeper())
+	return m
 }
 
 func (ms *messager) SendDeployedResult(result websocket_pb.ResultType, msg string, p *types.ProjectModel) {
@@ -24,8 +50,8 @@ func (ms *messager) SendDeployedResult(result websocket_pb.ResultType, msg strin
 			Type:    ms.wsType,
 			Result:  result,
 			End:     true,
-			Uid:     ms.conn.uid,
-			Id:      ms.conn.id,
+			Uid:     ms.conn.UID(),
+			Id:      ms.conn.ID(),
 			Message: msg,
 		},
 	}
@@ -39,23 +65,8 @@ func (ms *messager) SendEndError(err error) {
 			Type:    ms.wsType,
 			Result:  ResultError,
 			End:     true,
-			Uid:     ms.conn.uid,
-			Id:      ms.conn.id,
-			Message: err.Error(),
-		},
-	}
-	ms.send(res)
-}
-
-func (ms *messager) SendError(err error) {
-	res := &WsResponse{
-		Metadata: &websocket_pb.Metadata{
-			Slug:    ms.slugName,
-			Type:    ms.wsType,
-			Result:  ResultError,
-			End:     false,
-			Uid:     ms.conn.uid,
-			Id:      ms.conn.id,
+			Uid:     ms.conn.UID(),
+			Id:      ms.conn.ID(),
 			Message: err.Error(),
 		},
 	}
@@ -69,8 +80,8 @@ func (ms *messager) SendProcessPercent(percent int64) {
 			Type:    WsProcessPercent,
 			Result:  ResultSuccess,
 			End:     false,
-			Uid:     ms.conn.uid,
-			Id:      ms.conn.id,
+			Uid:     ms.conn.UID(),
+			Id:      ms.conn.ID(),
 			Percent: int32(percent),
 		},
 	}
@@ -84,8 +95,8 @@ func (ms *messager) SendMsg(msg string) {
 			Type:    ms.wsType,
 			Result:  ResultSuccess,
 			End:     false,
-			Uid:     ms.conn.uid,
-			Id:      ms.conn.id,
+			Uid:     ms.conn.UID(),
+			Id:      ms.conn.ID(),
 			Message: msg,
 		},
 	}
@@ -99,8 +110,8 @@ func (ms *messager) SendMsgWithContainerLog(msg string, containers []*websocket_
 			Type:    ms.wsType,
 			Result:  ResultLogWithContainers,
 			End:     false,
-			Uid:     ms.conn.uid,
-			Id:      ms.conn.id,
+			Uid:     ms.conn.UID(),
+			Id:      ms.conn.ID(),
 			Message: msg,
 		},
 		Containers: containers,
@@ -113,5 +124,33 @@ func (ms *messager) SendProtoMsg(msg application.WebsocketMessage) {
 }
 
 func (ms *messager) send(res application.WebsocketMessage) {
-	ms.conn.pubSub.ToSelf(res)
+	ms.conn.PubSub().ToSelf(res)
 }
+
+func (ms *messager) Current() int64 {
+	return ms.percent.Current()
+}
+
+func (ms *messager) Add() {
+	ms.percent.Add()
+}
+
+func (ms *messager) To(percent int64) {
+	ms.percent.To(percent)
+}
+
+type Sleeper interface {
+	Sleep(time.Duration)
+}
+
+type realSleeper struct{}
+
+func NewRealSleeper() Sleeper {
+	return &realSleeper{}
+}
+
+func (r *realSleeper) Sleep(duration time.Duration) {
+	time.Sleep(duration)
+}
+
+var _ Percentable = (*processPercent)(nil)

@@ -75,7 +75,7 @@ func (repo *cronRepo) CacheAllBranches() error {
 	//gitServer := plugins.GetGitServer(application, application.Config().GitServerPlugin, application.Config().GitServerCached)
 	//if server, ok := gitServer.(plugins.GitCacheServer); ok {
 	//	for i := 0; i < goroutineNum; i++ {
-	//		wg.Add(1)
+	//		wg.Register(1)
 	//		go func() {
 	//			defer wg.Done()
 	//			defer recovery.HandlePanic(application.IsDebug(), "[CRON]: all_branch_cache")

@@ -12,7 +12,6 @@ import "mars/mars.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/project;project";
 
-
 message ListRequest {
   optional int32 page      = 1;
   optional int32 page_size = 2;
@@ -61,15 +60,12 @@ message ApplyResponse {
   websocket.Metadata metadata = 1;
   types.ProjectModel project  = 2;
 }
-message DryRunApplyResponse {
-  repeated string results = 1;
-}
 // ApplyRequest same as ProjectInput
 message ApplyRequest {
   int32                         namespace_id            = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
   // name 不传就使用 git 默认的 name
   string                        name                    = 2;
-  int32                         git_project_id          = 3 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32                         repo_id                 = 3 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
   string                        git_branch              = 4 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   //  git_commit 不传就用最新的 commit
   string                        git_commit              = 5;
@@ -81,7 +77,7 @@ message ApplyRequest {
   int32                         install_timeout_seconds = 10 [(validate.rules).int32.gte = 0, (google.api.field_behavior) = REQUIRED];
   // 发送百分比
   bool                          send_percent            = 11;
-  // 版本号, dryRun 时可以不传
+  // 版本号, 创建时可以不传
   optional int32                version                 = 12 [(validate.rules).int32.gte = 0, (google.api.field_behavior) = REQUIRED];
 }
 
@@ -126,10 +122,7 @@ service Project {
   // Apply grpc 创建/更新项目
   rpc Apply(ApplyRequest) returns (stream ApplyResponse);
 
-  // ApplyDryRun 创建/更新项目 '--dry-run' mode
-  rpc ApplyDryRun(ApplyRequest) returns (DryRunApplyResponse);
-
-  // WebApply 创建/更新项目
+  // WebApply 创建/更新/DryRun 项目
   rpc WebApply(WebApplyRequest) returns (WebApplyResponse) {
     option (google.api.http)      = {
       post: "/api/projects/apply"

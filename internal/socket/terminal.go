@@ -109,7 +109,7 @@ type myPtyHandler struct {
 	sessionID string
 	container *repo.Container
 	recorder  repo.Recorder
-	conn      *WsConn
+	conn      Conn
 
 	doneChan  chan struct{}
 	sizeStore sizeStore
@@ -182,8 +182,8 @@ func (t *myPtyHandler) Write(p []byte) (n int, err error) {
 	}
 	NewMessageSender(t.conn, t.sessionID, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
-			Id:     t.conn.id,
-			Uid:    t.conn.uid,
+			Id:     t.conn.ID(),
+			Uid:    t.conn.UID(),
 			Slug:   t.sessionID,
 			Type:   WsHandleExecShellMsg,
 			Result: ResultSuccess,
@@ -286,8 +286,8 @@ func (t *myPtyHandler) Close(ctx context.Context, reason string) bool {
 	}
 	NewMessageSender(t.conn, t.sessionID, WsHandleCloseShell).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
-			Id:     t.conn.id,
-			Uid:    t.conn.uid,
+			Id:     t.conn.ID(),
+			Uid:    t.conn.UID(),
 			Slug:   t.sessionID,
 			Type:   WsHandleCloseShell,
 			Result: ResultSuccess,
@@ -325,8 +325,8 @@ func (t *myPtyHandler) Close(ctx context.Context, reason string) bool {
 func (t *myPtyHandler) Toast(p string) error {
 	NewMessageSender(t.conn, t.sessionID, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
-			Id:     t.conn.id,
-			Uid:    t.conn.uid,
+			Id:     t.conn.ID(),
+			Uid:    t.conn.UID(),
 			Slug:   t.sessionID,
 			Type:   WsHandleExecShellMsg,
 			Result: ResultSuccess,
@@ -452,13 +452,13 @@ func silence(err error) bool {
 
 // WaitForTerminal is called from apihandler.handleAttach as a goroutine
 // Waits for the SockJS connection to be opened by the client the session to be bound in handleMyPtyHandler
-func (wc *WebsocketManager) WaitForTerminal(ctx context.Context, sm SessionMapper, container *repo.Container, shell, sessionId string) {
+func (wc *WebsocketManager) WaitForTerminal(ctx context.Context, conn Conn, container *repo.Container, shell, sessionId string) {
 	defer func() {
 		wc.logger.Debugf("[Websocket]: WaitForTerminal EXIT: total go: %v", runtime.NumGoroutine())
 	}()
 	var err error
 	validShells := []string{"bash", "sh", "powershell", "cmd"}
-	session, _ := sm.Get(sessionId)
+	session, _ := conn.GetPtyHandler(sessionId)
 	if isValidShell(validShells, shell) {
 		cmd := []string{shell}
 		session.SetShell(shell)
@@ -480,7 +480,7 @@ func (wc *WebsocketManager) WaitForTerminal(ctx context.Context, sm SessionMappe
 			// 当出现 bash 回退的时候，需要注意，resize 不会触发，导致，新的 'sh', cols, rows 和用户端不一致，所以需要重置，
 			// 通过 sizeStore 记录上次用户的 rows, cols, 当 bash 回退时，在用户输入时应用到新的 sh 中
 			session = wc.resetSession(session)
-			sm.Set(sessionId, session)
+			conn.SetPtyHandler(sessionId, session)
 		}
 	}
 
@@ -489,11 +489,11 @@ func (wc *WebsocketManager) WaitForTerminal(ctx context.Context, sm SessionMappe
 		if !silence(err) {
 			session.Toast(err.Error())
 		}
-		sm.Close(ctx, sessionId, 2, err.Error())
+		conn.ClosePty(ctx, sessionId, 2, err.Error())
 		return
 	}
 
-	sm.Close(ctx, sessionId, 1, "Process exited")
+	conn.ClosePty(ctx, sessionId, 1, "Process exited")
 }
 
 func (wc *WebsocketManager) resetSession(session PtyHandler) PtyHandler {
@@ -548,7 +548,7 @@ func checkSessionID(container *websocket_pb.Container, id string) bool {
 	return strings.HasPrefix(id, prefix)
 }
 
-func (wc *WebsocketManager) StartShell(ctx context.Context, input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error) {
+func (wc *WebsocketManager) StartShell(ctx context.Context, input *websocket_pb.WsHandleExecShellInput, conn Conn) (string, error) {
 	var (
 		container = &repo.Container{
 			Namespace: input.Container.Namespace,
@@ -571,11 +571,11 @@ func (wc *WebsocketManager) StartShell(ctx context.Context, input *websocket_pb.
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
 		recorder:  wc.fileRepo.NewRecorder(types.EventActionType_Shell, conn.GetUser(), container),
 	}
-	conn.sm.Set(sessionID, pty)
+	conn.SetPtyHandler(sessionID, pty)
 
 	go func() {
 		defer wc.logger.HandlePanic("Websocket: WaitForTerminal")
-		wc.WaitForTerminal(ctx, conn.sm, container, "", sessionID)
+		wc.WaitForTerminal(ctx, conn, container, "", sessionID)
 	}()
 
 	return sessionID, nil

@@ -1422,108 +1422,6 @@ var _ interface {
 	ErrorName() string
 } = ApplyResponseValidationError{}
 
-// Validate checks the field values on DryRunApplyResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *DryRunApplyResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DryRunApplyResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// DryRunApplyResponseMultiError, or nil if none found.
-func (m *DryRunApplyResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DryRunApplyResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return DryRunApplyResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// DryRunApplyResponseMultiError is an error wrapping multiple validation
-// errors returned by DryRunApplyResponse.ValidateAll() if the designated
-// constraints aren't met.
-type DryRunApplyResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DryRunApplyResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DryRunApplyResponseMultiError) AllErrors() []error { return m }
-
-// DryRunApplyResponseValidationError is the validation error returned by
-// DryRunApplyResponse.Validate if the designated constraints aren't met.
-type DryRunApplyResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DryRunApplyResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DryRunApplyResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DryRunApplyResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DryRunApplyResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DryRunApplyResponseValidationError) ErrorName() string {
-	return "DryRunApplyResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DryRunApplyResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDryRunApplyResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DryRunApplyResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DryRunApplyResponseValidationError{}
-
 // Validate checks the field values on ApplyRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -1559,9 +1457,9 @@ func (m *ApplyRequest) validate(all bool) error {
 
 	// no validation rules for Name
 
-	if m.GetGitProjectId() <= 0 {
+	if m.GetRepoId() <= 0 {
 		err := ApplyRequestValidationError{
-			field:  "GitProjectId",
+			field:  "RepoId",
 			reason: "value must be greater than 0",
 		}
 		if !all {

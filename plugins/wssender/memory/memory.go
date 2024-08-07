@@ -43,7 +43,7 @@ type memorySender struct {
 }
 
 func (ms *memorySender) Add(uid, id string) {
-	ms.logger.Debugf("Add: %s, %s", uid, id)
+	ms.logger.Debugf("Register: %s, %s", uid, id)
 	if uid == "" || id == "" {
 		return
 	}

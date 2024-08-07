@@ -348,10 +348,10 @@ func (app *app) Shutdown() {
 			ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
 			defer cancel()
 			serverName := reflect.TypeOf(server).String()
-			defer app.logger.HandlePanic("[Shutdown]: " + serverName)
+			defer app.logger.HandlePanic("[Stop]: " + serverName)
 
 			if err := server.Shutdown(ctx); err != nil {
-				app.logger.Warningf("[Shutdown]: %s %s", serverName, err)
+				app.logger.Warningf("[Stop]: %s %s", serverName, err)
 			}
 		}(server)
 	}

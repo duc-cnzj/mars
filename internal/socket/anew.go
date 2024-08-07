@@ -14,7 +14,6 @@ import (
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/locker"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
@@ -22,7 +21,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/util/pipeline"
 	mysort "github.com/duc-cnzj/mars/v4/internal/util/xsort"
 	yaml2 "github.com/duc-cnzj/mars/v4/internal/util/yaml"
-	"github.com/gosimple/slug"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/release"
@@ -128,8 +126,7 @@ func (j *jobManager) NewJob(input *JobInput) Job {
 		successCallback: mysort.PrioritySort[func(err error, next func())]{},
 		vars:            vars{},
 		valuesOptions:   &values.Options{},
-		messageCh:       &safeWriteMessageCh{ch: make(chan contracts.MessageItem, 100)},
-		percenter:       newProcessPercent(input.Messager, &realSleeper{}),
+		messageCh:       &safeWriteMessageCh{ch: make(chan MessageItem, 100)},
 		messager:        input.Messager,
 		user:            input.User,
 		timeoutSeconds:  timeoutSeconds,
@@ -200,8 +197,8 @@ type JobInput struct {
 	User           *auth.UserInfo
 	DryRun         bool
 
-	PubSub   application.PubSub    `json:"-"`
-	Messager contracts.DeployMsger `json:"-"`
+	PubSub   application.PubSub `json:"-"`
+	Messager DeployMsger        `json:"-"`
 }
 
 func (job *JobInput) Slug() string {
@@ -246,7 +243,7 @@ func (j *jobRunner) Validate() Job {
 	}
 
 	j.Messager().SendMsg("[start]: 收到请求，开始创建项目")
-	j.Percenter().To(5)
+	j.Messager().To(5)
 
 	j.Messager().SendMsg("[Check]: 校验名称空间...")
 
@@ -256,7 +253,7 @@ func (j *jobRunner) Validate() Job {
 	}
 
 	j.Messager().SendMsg("[Loading]: 加载用户配置")
-	j.Percenter().To(10)
+	j.Messager().To(10)
 
 	j.repo, err = j.repoRepo.Show(context.TODO(), int(j.input.RepoID))
 	if err != nil {
@@ -265,7 +262,7 @@ func (j *jobRunner) Validate() Job {
 	j.config = j.repo.MarsConfig
 
 	createProjectInput := &repo.CreateProjectInput{
-		Name:         slug.Make(j.input.Name),
+		Name:         j.input.Name,
 		GitProjectID: int(j.repo.GitProjectID),
 		GitBranch:    j.input.GitBranch,
 		GitCommit:    j.input.GitCommit,
@@ -393,11 +390,11 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 			err    error
 		)
 
-		if result, err = j.ReleaseInstaller().Run(ctx, j.messageCh, j.Percenter(), j.IsNew(), j.Commit().GetTitle()); err != nil {
+		if result, err = j.ReleaseInstaller().Run(ctx, j.messageCh, j.Messager(), j.IsNew(), j.Commit().GetTitle()); err != nil {
 			j.logger.Errorf("[Websocket]: %v", err)
-			j.messageCh.Send(contracts.MessageItem{
+			j.messageCh.Send(MessageItem{
 				Msg:  err.Error(),
-				Type: contracts.MessageError,
+				Type: MessageError,
 			})
 		} else {
 			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
@@ -455,10 +452,10 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 			j.eventRepo.AuditLogWithChange(act, j.User().Name,
 				fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Namespace().Name, j.Project().Name),
 				oldConf, newConf)
-			j.Percenter().To(100)
-			j.messageCh.Send(contracts.MessageItem{
+			j.Messager().To(100)
+			j.messageCh.Send(MessageItem{
 				Msg:  "部署成功",
-				Type: contracts.MessageSuccess,
+				Type: MessageSuccess,
 			})
 		}
 		return err

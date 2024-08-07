@@ -716,7 +716,7 @@ export interface paths {
     put?: never;
     /**
      * WebApply 创建/更新/DryRun 项目
-     * @description WebApply 创建/更新项目
+     * @description WebApply 创建/更新/DryRun 项目
      */
     post: operations["Project_WebApply"];
     delete?: never;

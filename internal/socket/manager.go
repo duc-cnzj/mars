@@ -31,7 +31,6 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	mysort "github.com/duc-cnzj/mars/v4/internal/util/xsort"
 	"go.uber.org/config"
@@ -92,7 +91,7 @@ type safeWriteMessageCh struct {
 	closeable closeable.Closeable
 
 	chMu sync.Mutex
-	ch   chan contracts.MessageItem
+	ch   chan MessageItem
 }
 
 func (s *safeWriteMessageCh) Close() {
@@ -102,11 +101,11 @@ func (s *safeWriteMessageCh) Close() {
 	}
 }
 
-func (s *safeWriteMessageCh) Chan() <-chan contracts.MessageItem {
+func (s *safeWriteMessageCh) Chan() <-chan MessageItem {
 	return s.ch
 }
 
-func (s *safeWriteMessageCh) Send(m contracts.MessageItem) {
+func (s *safeWriteMessageCh) Send(m MessageItem) {
 	if s.closeable.IsClosed() {
 		s.logger.Debugf("[Websocket]: Drop %s type %s", m.Msg, m.Type)
 		return
@@ -175,12 +174,12 @@ type jobRunner struct {
 	valuesYaml        string
 	chart             *chart.Chart
 	valuesOptions     *values.Options
-	installer         contracts.ReleaseInstaller
+	installer         ReleaseInstaller
 	commit            application.Commit
 
 	repo *repo.Repo
 
-	messageCh contracts.SafeWriteMessageChInterface
+	messageCh SafeWriteMessageChInterface
 	stopCtx   context.Context
 	stopFn    func(error)
 
@@ -192,8 +191,7 @@ type jobRunner struct {
 
 	prevUserConfig *userConfig
 
-	percenter contracts.Percentable
-	messager  contracts.DeployMsger
+	messager DeployMsger
 
 	user           *auth.UserInfo
 	timeoutSeconds int64
@@ -310,9 +308,9 @@ func (j *jobRunner) HandleMessage(ctx context.Context) {
 				return
 			}
 			switch s.Type {
-			case contracts.MessageText:
+			case MessageText:
 				j.Messager().SendMsgWithContainerLog(s.Msg, s.Containers)
-			case contracts.MessageError:
+			case MessageError:
 				select {
 				case <-j.stopCtx.Done():
 					j.SetDeployResult(ResultDeployCanceled, j.stopCtx.Err().Error(), transformer.FromProject(j.project))
@@ -320,7 +318,7 @@ func (j *jobRunner) HandleMessage(ctx context.Context) {
 					j.SetDeployResult(ResultDeployFailed, s.Msg, transformer.FromProject(j.project))
 				}
 				return
-			case contracts.MessageSuccess:
+			case MessageSuccess:
 				j.SetDeployResult(ResultDeployed, s.Msg, transformer.FromProject(j.project))
 				return
 			}
@@ -415,20 +413,16 @@ func (j *jobRunner) GetStoppedErrorIfHas() error {
 	return nil
 }
 
-func (j *jobRunner) ReleaseInstaller() contracts.ReleaseInstaller {
+func (j *jobRunner) ReleaseInstaller() ReleaseInstaller {
 	return j.installer
 }
 
-func (j *jobRunner) Messager() contracts.DeployMsger {
+func (j *jobRunner) Messager() DeployMsger {
 	return j.messager
 }
 
 func (j *jobRunner) PubSub() application.PubSub {
 	return j.input.PubSub
-}
-
-func (j *jobRunner) Percenter() contracts.Percentable {
-	return j.percenter
 }
 
 func defaultLoaders() []Loader {
@@ -494,7 +488,7 @@ type ChartFileLoader struct {
 func (c *ChartFileLoader) Load(j *jobRunner) error {
 	const loaderName = "[ChartFileLoader]: "
 	j.Messager().SendMsg(loaderName + "加载 helm chart 文件")
-	j.Percenter().To(20)
+	j.Messager().To(20)
 
 	// 下载 helm charts
 	split := strings.Split(j.config.LocalChartPath, "|")
@@ -566,7 +560,7 @@ func (c *ChartFileLoader) Load(j *jobRunner) error {
 
 	chartDir := filepath.Join(tmpChartsDir, dir)
 
-	j.Percenter().To(30)
+	j.Messager().To(30)
 	j.Messager().SendMsg(loaderName + "打包 helm charts")
 	chart, err := j.helmer.PackageChart(chartDir, chartDir)
 	if err != nil {
@@ -588,7 +582,7 @@ type DynamicLoader struct{}
 func (d *DynamicLoader) Load(j *jobRunner) error {
 	const loaderName = "[DynamicLoader]: "
 
-	j.Percenter().To(50)
+	j.Messager().To(50)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "检查到用户传入的配置"))
 
 	if j.input.Config == "" {
@@ -611,7 +605,7 @@ type ExtraValuesLoader struct{}
 func (d *ExtraValuesLoader) Load(j *jobRunner) error {
 	const loaderName = "[ExtraValuesLoader]: "
 
-	j.Percenter().To(60)
+	j.Messager().To(60)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "检查项目额外的配置"))
 
 	if len(j.input.ExtraValues) <= 0 {
@@ -749,7 +743,7 @@ func (v *VariableLoader) Add(key, value string) {
 
 func (v *VariableLoader) Load(j *jobRunner) error {
 	const loaderName = "[VariableLoader]: "
-	j.Percenter().To(40)
+	j.Messager().To(40)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "注入内置环境变量"))
 
 	if j.config.ValuesYaml == "" {
@@ -839,7 +833,7 @@ type MergeValuesLoader struct{}
 // imagePullSecrets 会自动注入到 imagePullSecrets 中
 func (m *MergeValuesLoader) Load(j *jobRunner) error {
 	const loaderName = "[MergeValuesLoader]: "
-	j.Percenter().To(70)
+	j.Messager().To(70)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "合并配置文件到 values.yaml"))
 
 	// 自动注入 imagePullSecrets
@@ -928,7 +922,7 @@ type ReleaseInstallerLoader struct{}
 func (r *ReleaseInstallerLoader) Load(j *jobRunner) error {
 	const loaderName = "[ReleaseInstallerLoader]: "
 	j.Messager().SendMsg(loaderName + "worker 已就绪, 准备安装")
-	j.Percenter().To(80)
+	j.Messager().To(80)
 	j.installer = newReleaseInstaller(j.logger, j.helmer, j.project.Name, j.Namespace().Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds, j.dryRun)
 	return nil
 }

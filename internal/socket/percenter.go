@@ -3,33 +3,28 @@ package socket
 import (
 	"sync"
 	"time"
-
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
+type Percentable interface {
+	Current() int64
+	Add()
+	To(percent int64)
+}
+
+var _ Percentable = (*processPercent)(nil)
+
 type processPercent struct {
-	contracts.ProcessPercentMsger
+	msger DeployMsger
 
 	s           Sleeper
 	percentLock sync.RWMutex
 	percent     int64
 }
 
-type Sleeper interface {
-	Sleep(time.Duration)
-}
-
-type realSleeper struct{}
-
-func (r *realSleeper) Sleep(duration time.Duration) {
-	time.Sleep(duration)
-}
-
-func newProcessPercent(sender contracts.ProcessPercentMsger, s Sleeper) contracts.Percentable {
+func NewProcessPercent(sender DeployMsger, s Sleeper) Percentable {
 	return &processPercent{
-		s:                   s,
-		percent:             0,
-		ProcessPercentMsger: sender,
+		s:     s,
+		msger: sender,
 	}
 }
 
@@ -46,7 +41,7 @@ func (pp *processPercent) Add() {
 
 	if pp.percent < 100 {
 		pp.percent++
-		pp.SendProcessPercent(pp.percent)
+		pp.msger.SendProcessPercent(pp.percent)
 	}
 }
 
@@ -62,10 +57,10 @@ func (pp *processPercent) To(percent int64) {
 		if sleepTime > 50*time.Millisecond {
 			sleepTime = sleepTime / 2
 		}
-		pp.SendProcessPercent(pp.percent)
+		pp.msger.SendProcessPercent(pp.percent)
 	}
 	if pp.percent != percent {
-		pp.SendProcessPercent(pp.percent)
+		pp.msger.SendProcessPercent(pp.percent)
 		pp.percent = percent
 	}
 }

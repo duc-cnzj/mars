@@ -1269,7 +1269,7 @@ paths:
             tags:
                 - Project
             summary: WebApply 创建/更新/DryRun 项目
-            description: WebApply 创建/更新项目
+            description: WebApply 创建/更新/DryRun 项目
             operationId: Project_WebApply
             requestBody:
                 content:

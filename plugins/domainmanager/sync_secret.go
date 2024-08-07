@@ -224,7 +224,7 @@ func UpdateCertTls(db *ent.Client, k8sCli *data.K8sClient, logger mlog.Logger, s
 		secret, err := k8sCli.SecretLister.Secrets(n.Name).Get(secretName)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				logger.Infof("[TLS]: Add secret namespace: %s, name %s.", n.Name, secretName)
+				logger.Infof("[TLS]: Register secret namespace: %s, name %s.", n.Name, secretName)
 				AddTlsSecret(k8sCli, n.Name, secretName, tlsKey, tlsCrt)
 				continue
 			}

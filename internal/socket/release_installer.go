@@ -7,13 +7,41 @@ import (
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/release"
 )
+
+type MessageItem struct {
+	Msg  string
+	Type MessageType
+
+	Containers []*websocket_pb.Container
+}
+
+type MessageType uint8
+
+const (
+	_ MessageType = iota
+	MessageSuccess
+	MessageError
+	MessageText
+)
+
+type SafeWriteMessageChInterface interface {
+	Close()
+	Chan() <-chan MessageItem
+	Send(m MessageItem)
+}
+
+type ReleaseInstaller interface {
+	Chart() *chart.Chart
+	Run(stopCtx context.Context, messageCh SafeWriteMessageChInterface, percenter Percentable, isNew bool, desc string) (*release.Release, error)
+
+	Logs() []string
+}
 
 type releaseInstaller struct {
 	logger         mlog.Logger
@@ -23,12 +51,12 @@ type releaseInstaller struct {
 	timeoutSeconds int64
 	releaseName    string
 	namespace      string
-	percenter      contracts.Percentable
+	percenter      Percentable
 	startTime      time.Time
 	wait           *bool
 	valueOpts      *values.Options
 	logs           *timeOrderedSetString
-	messageCh      contracts.SafeWriteMessageChInterface
+	messageCh      SafeWriteMessageChInterface
 }
 
 func newReleaseInstaller(logger mlog.Logger, helmer repo.HelmerRepo, releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, wait *bool, timeoutSeconds int64, dryRun bool) *releaseInstaller {
@@ -50,7 +78,7 @@ func (r *releaseInstaller) Chart() *chart.Chart {
 	return r.chart
 }
 
-func (r *releaseInstaller) Run(stopCtx context.Context, messageCh contracts.SafeWriteMessageChInterface, percenter contracts.Percentable, isNew bool, desc string) (*release.Release, error) {
+func (r *releaseInstaller) Run(stopCtx context.Context, messageCh SafeWriteMessageChInterface, percenter Percentable, isNew bool, desc string) (*release.Release, error) {
 	defer r.logger.Debug("releaseInstaller exit")
 
 	r.messageCh = messageCh
@@ -96,10 +124,10 @@ func (r *releaseInstaller) loggerWrap() repo.WrapLogFn {
 
 		if !r.logs.has(msg) {
 			r.logs.add(msg)
-			r.messageCh.Send(contracts.MessageItem{
+			r.messageCh.Send(MessageItem{
 				Msg:        msg,
 				Containers: containers,
-				Type:       contracts.MessageText,
+				Type:       MessageText,
 			})
 		}
 	}

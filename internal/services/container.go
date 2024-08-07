@@ -16,7 +16,6 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/container"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
@@ -442,7 +441,7 @@ func scannerText(text string, fn func(s string)) error {
 
 type execWriter struct {
 	logger    mlog.Logger
-	recorder  contracts.RecorderInterface
+	recorder  repo.Recorder
 	closeable closeable.Closeable
 	ch        chan string
 }

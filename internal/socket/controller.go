@@ -6,21 +6,20 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/transformer"
+	"github.com/samber/lo"
 
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/locker"
 	"github.com/duc-cnzj/mars/v4/internal/metrics"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
+	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
 	"github.com/duc-cnzj/mars/v4/internal/util"
 	"github.com/google/uuid"
@@ -30,56 +29,15 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type HandleRequestFunc func(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte)
-
-type WsConn struct {
-	id     string
-	uid    string
-	conn   contracts.WebsocketConn
-	pubSub application.PubSub
-
-	userMu sync.RWMutex
-	user   *auth.UserInfo
-
-	cs CancelSignaler
-	sm SessionMapper
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
-func (wc *WebsocketManager) initConn(uid, id string, c *websocket.Conn) *WsConn {
-	return &WsConn{
-		id:     id,
-		uid:    uid,
-		conn:   c,
-		pubSub: wc.pl.Ws().New(uid, id),
-		cs:     NewCancelSignal(),
-		sm:     NewSessionMap(wc.logger),
-	}
-}
+var _ application.WsServer = (*WebsocketManager)(nil)
 
-func (c *WsConn) Shutdown() {
-	//c.cancelSignaler.CancelAll()
-	//c.terminalSessions.CloseAll()
-	c.pubSub.Close()
-	c.conn.Close()
-	var username string
-	if c.GetUser() != nil {
-		username = c.GetUser().Name
-	}
-	metrics.WebsocketConnectionsCount.With(prometheus.Labels{"username": username}).Dec()
-	Wait.Dec()
-}
-
-func (c *WsConn) SetUser(info *auth.UserInfo) {
-	c.userMu.Lock()
-	defer c.userMu.Unlock()
-	c.user = info
-}
-
-func (c *WsConn) GetUser() *auth.UserInfo {
-	c.userMu.RLock()
-	defer c.userMu.RUnlock()
-	return c.user
-}
+type HandleRequestFunc func(ctx context.Context, c Conn, t websocket_pb.Type, message []byte)
 
 type WebsocketManager struct {
 	healthTickDuration time.Duration
@@ -134,12 +92,12 @@ func NewWebsocketManager(
 		data:               data,
 	}
 	mgr.handlers = map[websocket_pb.Type]HandleRequestFunc{
-		WsAuthorize:          mgr.HandleWsAuthorize,
+		WsAuthorize:          mgr.HandleAuthorize,
 		WsHandleExecShell:    mgr.HandleStartShell,
-		WsHandleExecShellMsg: mgr.HandleWsShellMsg,
-		WsHandleCloseShell:   mgr.HandleWsCloseShell,
+		WsHandleExecShellMsg: mgr.HandleShellMessage,
+		WsHandleCloseShell:   mgr.HandleCloseShell,
 		WsCancel:             mgr.HandleWsCancelDeploy,
-		ProjectPodEvent:      mgr.HandleWsProjectPodEvent,
+		ProjectPodEvent:      mgr.HandleJoinRoom,
 		WsCreateProject:      mgr.HandleWsCreateProject,
 		WsUpdateProject:      mgr.HandleWsUpdateProject,
 	}
@@ -184,12 +142,6 @@ func (wc *WebsocketManager) Info(writer http.ResponseWriter, request *http.Reque
 	writer.Write(marshal)
 }
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
 func (wc *WebsocketManager) Serve(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -207,17 +159,17 @@ func (wc *WebsocketManager) Serve(w http.ResponseWriter, r *http.Request) {
 		uid = inputUid
 	}
 
-	wsConn := wc.initConn(uid, id, c)
+	wsConn := wc.newWsConn(uid, id, c, NewTaskManager(wc.logger), NewSessionMap(wc.logger))
 	g, ctx := errgroup.WithContext(r.Context())
 
 	defer func() {
 		wc.logger.Debugf("[Websocket]: Serve exit")
-		wsConn.Shutdown()
+		wsConn.Close(r.Context())
 	}()
 
 	g.Go(func() error {
 		defer wc.logger.HandlePanic("[ProjectPodEventSubscriber]: Run")
-		return wsConn.pubSub.Run(ctx)
+		return wsConn.PubSub().Run(ctx)
 	})
 
 	g.Go(func() error {
@@ -230,7 +182,7 @@ func (wc *WebsocketManager) Serve(w http.ResponseWriter, r *http.Request) {
 		return wc.write(ctx, wsConn)
 	})
 
-	NewMessageSender(wsConn, "", WsSetUid).SendMsg(wsConn.uid)
+	NewMessageSender(wsConn, "", WsSetUid).SendMsg(wsConn.UID())
 
 	g.Go(func() error {
 		var err error
@@ -246,54 +198,16 @@ func (wc *WebsocketManager) Serve(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (wc *WebsocketManager) write(ctx context.Context, wsconn *WsConn) (err error) {
-	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		wc.logger.Debugf("[Websocket]: go write exit, %v", err)
-		ticker.Stop()
-		wsconn.conn.Close()
-	}()
-	wc.logger.Debug(wsconn.pubSub.ID(), wsconn.pubSub.Uid())
-	ch := wsconn.pubSub.Subscribe()
-	var w io.WriteCloser
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case message, ok := <-ch:
-			if !ok {
-				return wsconn.conn.WriteMessage(websocket.CloseMessage, []byte{})
-			}
-
-			wsconn.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			w, err = wsconn.conn.NextWriter(websocket.BinaryMessage)
-			if err != nil {
-				return err
-			}
-			w.Write(message)
-
-			if err = w.Close(); err != nil {
-				return err
-			}
-		case <-ticker.C:
-			wsconn.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err = wsconn.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return err
-			}
-		}
-	}
-}
-
-func (wc *WebsocketManager) read(ctx context.Context, wsconn *WsConn) error {
-	wsconn.conn.SetReadLimit(maxMessageSize)
-	wsconn.conn.SetReadDeadline(time.Now().Add(pongWait))
-	wsconn.conn.SetPongHandler(func(string) error {
-		wsconn.conn.SetReadDeadline(time.Now().Add(pongWait))
+func (wc *WebsocketManager) read(ctx context.Context, wsconn Conn) error {
+	wsconn.SetReadLimit(maxMessageSize)
+	wsconn.SetReadDeadline(time.Now().Add(pongWait))
+	wsconn.SetPongHandler(func(string) error {
+		wsconn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
 	for {
 		var wsRequest websocket_pb.WsRequestMetadata
-		_, message, err := wsconn.conn.ReadMessage()
+		_, message, err := wsconn.ReadMessage()
 		if err != nil {
 			wc.logger.Debugf("[Websocket]: read error: %v", err)
 			return err
@@ -304,11 +218,49 @@ func (wc *WebsocketManager) read(ctx context.Context, wsconn *WsConn) error {
 			continue
 		}
 
-		go wc.handleWsRead(ctx, wsconn, &wsRequest, message)
+		go wc.dispatchEvent(ctx, wsconn, &wsRequest, message)
 	}
 }
 
-func (wc *WebsocketManager) handleWsRead(ctx context.Context, wsconn *WsConn, wsRequest *websocket_pb.WsRequestMetadata, message []byte) {
+func (wc *WebsocketManager) write(ctx context.Context, wsconn Conn) (err error) {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		wc.logger.Debugf("[Websocket]: go write exit, %v", err)
+		ticker.Stop()
+		wsconn.Close(ctx)
+	}()
+	wc.logger.Debug(wsconn.PubSub().ID(), wsconn.PubSub().Uid())
+	ch := wsconn.PubSub().Subscribe()
+	var w io.WriteCloser
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case message, ok := <-ch:
+			if !ok {
+				return wsconn.WriteMessage(websocket.CloseMessage, []byte{})
+			}
+
+			wsconn.SetWriteDeadline(time.Now().Add(writeWait))
+			w, err = wsconn.NextWriter(websocket.BinaryMessage)
+			if err != nil {
+				return err
+			}
+			w.Write(message)
+
+			if err = w.Close(); err != nil {
+				return err
+			}
+		case <-ticker.C:
+			wsconn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err = wsconn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func (wc *WebsocketManager) dispatchEvent(ctx context.Context, wsconn Conn, wsRequest *websocket_pb.WsRequestMetadata, message []byte) {
 	if handler, ok := wc.handlers[wsRequest.Type]; ok {
 		defer wc.logger.HandlePanicWithCallback(wsRequest.Type.String(), func(err error) {
 			metrics.WebsocketPanicCount.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
@@ -327,7 +279,7 @@ func (wc *WebsocketManager) handleWsRead(ctx context.Context, wsconn *WsConn, ws
 		wc.logger.Warningf("wsType: %v, message: %v", wsRequest.Type.String(), string(message))
 
 		// websocket.onopen 事件不一定是最早发出来的，所以要等 onopen 的认证结束后才能进行后面的操作
-		if (wsconn.GetUser() == nil || (wsconn.GetUser() != nil && wsconn.GetUser().GetID() == "")) && wsRequest.Type != websocket_pb.Type_HandleAuthorize {
+		if wsconn.GetUser() == nil && wsRequest.Type != websocket_pb.Type_HandleAuthorize {
 			NewMessageSender(wsconn, "", WsAuthorize).SendMsg("认证中，请稍等~")
 			return
 		}
@@ -335,7 +287,7 @@ func (wc *WebsocketManager) handleWsRead(ctx context.Context, wsconn *WsConn, ws
 	}
 }
 
-func (wc *WebsocketManager) HandleWsAuthorize(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
+func (wc *WebsocketManager) HandleAuthorize(ctx context.Context, c Conn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.AuthorizeTokenInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		wc.logger.Error("[Websocket]: " + err.Error())
@@ -350,7 +302,7 @@ func (wc *WebsocketManager) HandleWsAuthorize(ctx context.Context, c *WsConn, t 
 	}
 }
 
-func (wc *WebsocketManager) HandleWsProjectPodEvent(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
+func (wc *WebsocketManager) HandleJoinRoom(ctx context.Context, c Conn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.ProjectPodEventJoinInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		wc.logger.Error("[Websocket]: " + err.Error())
@@ -359,41 +311,13 @@ func (wc *WebsocketManager) HandleWsProjectPodEvent(ctx context.Context, c *WsCo
 		return
 	}
 	if input.Join {
-		c.pubSub.(application.ProjectPodEventSubscriber).Join(int64(input.GetProjectId()))
+		c.PubSub().(application.ProjectPodEventSubscriber).Join(int64(input.GetProjectId()))
 	} else {
-		c.pubSub.(application.ProjectPodEventSubscriber).Leave(int64(input.GetNamespaceId()), int64(input.GetProjectId()))
+		c.PubSub().(application.ProjectPodEventSubscriber).Leave(int64(input.GetNamespaceId()), int64(input.GetProjectId()))
 	}
 }
 
-func (wc *WebsocketManager) HandleWsCloseShell(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
-	var input websocket_pb.TerminalMessageInput
-	if err := proto.Unmarshal(message, &input); err != nil {
-		wc.logger.Error(err.Error())
-		NewMessageSender(c, "", t).SendEndError(err)
-
-		return
-	}
-	msg := fmt.Sprintf("[Websocket]: %v 收到客户端主动断开的消息", input.Message.SessionId)
-	wc.logger.Debugf(msg)
-	c.sm.Close(ctx, input.Message.SessionId, 0, msg)
-}
-
-func (wc *WebsocketManager) HandleWsShellMsg(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
-	var input websocket_pb.TerminalMessageInput
-	if err := proto.Unmarshal(message, &input); err != nil {
-		NewMessageSender(c, "", t).SendEndError(err)
-
-		return
-	}
-
-	if pty, ok := c.sm.Get(input.Message.SessionId); ok {
-		if err := pty.Send(ctx, input.Message); err != nil {
-			pty.Close(ctx, err.Error())
-		}
-	}
-}
-
-func (wc *WebsocketManager) HandleStartShell(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
+func (wc *WebsocketManager) HandleStartShell(ctx context.Context, c Conn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.WsHandleExecShellInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
@@ -410,8 +334,8 @@ func (wc *WebsocketManager) HandleStartShell(ctx context.Context, c *WsConn, t w
 
 	NewMessageSender(c, "", WsHandleExecShell).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
-			Id:     c.id,
-			Uid:    c.uid,
+			Id:     c.ID(),
+			Uid:    c.UID(),
 			Type:   WsHandleExecShell,
 			Result: ResultSuccess,
 		},
@@ -426,40 +350,43 @@ func (wc *WebsocketManager) HandleStartShell(ctx context.Context, c *WsConn, t w
 	})
 }
 
-func (wc *WebsocketManager) HandleWsCancelDeploy(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
-	var (
-		input websocket_pb.CancelInput
-		cs    = c.cs
-	)
+func (wc *WebsocketManager) HandleShellMessage(ctx context.Context, c Conn, t websocket_pb.Type, message []byte) {
+	var input websocket_pb.TerminalMessageInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
 
 		return
 	}
 
-	var slugName = util.GetSlugName(input.NamespaceId, input.Name)
-	if cs.Has(slugName) {
-		ns, _ := wc.nsRepo.Show(ctx, int(input.NamespaceId))
-		wc.eventRepo.AuditLogWithChange(types.EventActionType_CancelDeploy, c.GetUser().Name, fmt.Sprintf("用户取消部署 namespace: %s, 服务 %s.", ns.Name, input.Name), nil, nil)
-		cs.Cancel(slugName)
+	if pty, ok := c.GetPtyHandler(input.Message.SessionId); ok {
+		if err := pty.Send(ctx, input.Message); err != nil {
+			wc.logger.Error("[Websocket]: " + err.Error())
+		}
 	}
 }
 
-func (wc *WebsocketManager) HandleWsCreateProject(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
+func (wc *WebsocketManager) HandleCloseShell(ctx context.Context, c Conn, t websocket_pb.Type, message []byte) {
+	var input websocket_pb.TerminalMessageInput
+	if err := proto.Unmarshal(message, &input); err != nil {
+		wc.logger.Error(err.Error())
+		NewMessageSender(c, "", t).SendEndError(err)
+
+		return
+	}
+	msg := fmt.Sprintf("[Websocket]: %v 收到客户端主动断开的消息", input.Message.SessionId)
+	wc.logger.Debugf(msg)
+	c.ClosePty(ctx, input.Message.SessionId, 0, msg)
+}
+
+func (wc *WebsocketManager) HandleWsCreateProject(ctx context.Context, c Conn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.CreateProjectInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
 
 		return
 	}
-	var appName string
-	if input.Name != nil {
-		appName = *input.Name
-	} else {
-		show, _ := wc.repoRepo.Show(ctx, int(input.RepoId))
-		appName = show.Name
-	}
 
+	appName := lo.FromPtr(input.Name)
 	if err := wc.upgradeOrInstall(ctx, c, &JobInput{
 		Type:        input.Type,
 		NamespaceId: input.NamespaceId,
@@ -473,14 +400,14 @@ func (wc *WebsocketManager) HandleWsCreateProject(ctx context.Context, c *WsConn
 		Atomic:      input.Atomic,
 		ExtraValues: input.ExtraValues,
 		User:        c.GetUser(),
-		PubSub:      c.pubSub,
+		PubSub:      c.PubSub(),
 		Messager:    NewMessageSender(c, util.GetSlugName(input.NamespaceId, appName), t),
 	}); err != nil {
 		wc.logger.Error(err)
 	}
 }
 
-func (wc *WebsocketManager) HandleWsUpdateProject(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
+func (wc *WebsocketManager) HandleWsUpdateProject(ctx context.Context, c Conn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.UpdateProjectInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
@@ -507,22 +434,40 @@ func (wc *WebsocketManager) HandleWsUpdateProject(ctx context.Context, c *WsConn
 		Version:        &input.Version,
 		TimeoutSeconds: int32(wc.data.Config().InstallTimeout.Seconds()),
 		User:           c.GetUser(),
-		PubSub:         c.pubSub,
+		PubSub:         c.PubSub(),
 	})
 }
 
-func (wc *WebsocketManager) upgradeOrInstall(ctx context.Context, c *WsConn, input *JobInput) error {
+func (wc *WebsocketManager) HandleWsCancelDeploy(ctx context.Context, c Conn, t websocket_pb.Type, message []byte) {
+	var input websocket_pb.CancelInput
+	if err := proto.Unmarshal(message, &input); err != nil {
+		NewMessageSender(c, "", t).SendEndError(err)
+
+		return
+	}
+
+	var slugName = util.GetSlugName(input.NamespaceId, input.Name)
+
+	if err := c.CancelTask(slugName); err == nil {
+		ns, _ := wc.nsRepo.Show(ctx, int(input.NamespaceId))
+		wc.eventRepo.AuditLog(
+			types.EventActionType_CancelDeploy,
+			c.GetUser().Name,
+			fmt.Sprintf("用户取消部署 namespace: %s, 服务 %s.", ns.Name, input.Name))
+	}
+}
+
+func (wc *WebsocketManager) upgradeOrInstall(ctx context.Context, c Conn, input *JobInput) error {
 	slug := util.GetSlugName(input.NamespaceId, input.Name)
 	job := wc.jobManager.NewJob(input)
-	var cs = c.cs
 
 	if input.IsNotDryRun() {
-		if err := cs.Add(job.ID(), job.Stop); err != nil {
+		if err := c.AddTask(job.ID(), job.Stop); err != nil {
 			NewMessageSender(c, slug, input.Type).SendDeployedResult(ResultDeployFailed, "正在清理中，请稍后再试。", nil)
 			return nil
 		}
 		job.OnFinally(1000, func(err error, base func()) {
-			cs.Remove(job.ID())
+			c.StopTask(job.ID())
 			base()
 		})
 	}

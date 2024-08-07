@@ -29,7 +29,7 @@ type Dispatcher interface {
 	// Dispatch Fire an event and call the listeners.
 	Dispatch(Event, any) error
 
-	// Forget Remove a set of listeners from the dispatcher.
+	// Forget Shutdown a set of listeners from the dispatcher.
 	Forget(Event)
 
 	// GetListeners get all listeners by
@@ -137,7 +137,7 @@ func (d *dispatcher) Dispatch(event Event, payload any) error {
 	return nil
 }
 
-// Forget Remove a set of listeners from the dispatcher.
+// Forget Shutdown a set of listeners from the dispatcher.
 func (d *dispatcher) Forget(event Event) {
 	d.Lock()
 	defer d.Unlock()

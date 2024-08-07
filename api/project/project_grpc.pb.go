@@ -22,7 +22,6 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Project_List_FullMethodName          = "/project.Project/List"
 	Project_Apply_FullMethodName         = "/project.Project/Apply"
-	Project_ApplyDryRun_FullMethodName   = "/project.Project/ApplyDryRun"
 	Project_WebApply_FullMethodName      = "/project.Project/WebApply"
 	Project_Show_FullMethodName          = "/project.Project/Show"
 	Project_Version_FullMethodName       = "/project.Project/Version"
@@ -39,9 +38,7 @@ type ProjectClient interface {
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	// Apply grpc 创建/更新项目
 	Apply(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error)
-	// ApplyDryRun 创建/更新项目 '--dry-run' mode
-	ApplyDryRun(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (*DryRunApplyResponse, error)
-	// WebApply 创建/更新项目
+	// WebApply 创建/更新/DryRun 项目
 	WebApply(ctx context.Context, in *WebApplyRequest, opts ...grpc.CallOption) (*WebApplyResponse, error)
 	// Show 项目详情
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
@@ -102,15 +99,6 @@ func (x *projectApplyClient) Recv() (*ApplyResponse, error) {
 		return nil, err
 	}
 	return m, nil
-}
-
-func (c *projectClient) ApplyDryRun(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (*DryRunApplyResponse, error) {
-	out := new(DryRunApplyResponse)
-	err := c.cc.Invoke(ctx, Project_ApplyDryRun_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *projectClient) WebApply(ctx context.Context, in *WebApplyRequest, opts ...grpc.CallOption) (*WebApplyResponse, error) {
@@ -175,9 +163,7 @@ type ProjectServer interface {
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	// Apply grpc 创建/更新项目
 	Apply(*ApplyRequest, Project_ApplyServer) error
-	// ApplyDryRun 创建/更新项目 '--dry-run' mode
-	ApplyDryRun(context.Context, *ApplyRequest) (*DryRunApplyResponse, error)
-	// WebApply 创建/更新项目
+	// WebApply 创建/更新/DryRun 项目
 	WebApply(context.Context, *WebApplyRequest) (*WebApplyResponse, error)
 	// Show 项目详情
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
@@ -201,9 +187,6 @@ func (UnimplementedProjectServer) List(context.Context, *ListRequest) (*ListResp
 }
 func (UnimplementedProjectServer) Apply(*ApplyRequest, Project_ApplyServer) error {
 	return status.Errorf(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedProjectServer) ApplyDryRun(context.Context, *ApplyRequest) (*DryRunApplyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ApplyDryRun not implemented")
 }
 func (UnimplementedProjectServer) WebApply(context.Context, *WebApplyRequest) (*WebApplyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WebApply not implemented")
@@ -273,24 +256,6 @@ type projectApplyServer struct {
 
 func (x *projectApplyServer) Send(m *ApplyResponse) error {
 	return x.ServerStream.SendMsg(m)
-}
-
-func _Project_ApplyDryRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServer).ApplyDryRun(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Project_ApplyDryRun_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServer).ApplyDryRun(ctx, req.(*ApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _Project_WebApply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -411,10 +376,6 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _Project_List_Handler,
-		},
-		{
-			MethodName: "ApplyDryRun",
-			Handler:    _Project_ApplyDryRun_Handler,
 		},
 		{
 			MethodName: "WebApply",
