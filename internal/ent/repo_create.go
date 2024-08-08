@@ -148,6 +148,20 @@ func (rc *RepoCreate) SetMarsConfig(m *mars.Config) *RepoCreate {
 	return rc
 }
 
+// SetDescription sets the "description" field.
+func (rc *RepoCreate) SetDescription(s string) *RepoCreate {
+	rc.mutation.SetDescription(s)
+	return rc
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (rc *RepoCreate) SetNillableDescription(s *string) *RepoCreate {
+	if s != nil {
+		rc.SetDescription(*s)
+	}
+	return rc
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
 func (rc *RepoCreate) AddProjectIDs(ids ...int) *RepoCreate {
 	rc.mutation.AddProjectIDs(ids...)
@@ -222,6 +236,10 @@ func (rc *RepoCreate) defaults() error {
 		v := repo.DefaultNeedGitRepo
 		rc.mutation.SetNeedGitRepo(v)
 	}
+	if _, ok := rc.mutation.Description(); !ok {
+		v := repo.DefaultDescription
+		rc.mutation.SetDescription(v)
+	}
 	return nil
 }
 
@@ -256,6 +274,9 @@ func (rc *RepoCreate) check() error {
 		if err := v.Validate(); err != nil {
 			return &ValidationError{Name: "mars_config", err: fmt.Errorf(`ent: validator failed for field "Repo.mars_config": %w`, err)}
 		}
+	}
+	if _, ok := rc.mutation.Description(); !ok {
+		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "Repo.description"`)}
 	}
 	return nil
 }
@@ -323,6 +344,10 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.MarsConfig(); ok {
 		_spec.SetField(repo.FieldMarsConfig, field.TypeJSON, value)
 		_node.MarsConfig = value
+	}
+	if value, ok := rc.mutation.Description(); ok {
+		_spec.SetField(repo.FieldDescription, field.TypeString, value)
+		_node.Description = value
 	}
 	if nodes := rc.mutation.ProjectsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -536,6 +561,18 @@ func (u *RepoUpsert) ClearMarsConfig() *RepoUpsert {
 	return u
 }
 
+// SetDescription sets the "description" field.
+func (u *RepoUpsert) SetDescription(v string) *RepoUpsert {
+	u.Set(repo.FieldDescription, v)
+	return u
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *RepoUpsert) UpdateDescription() *RepoUpsert {
+	u.SetExcluded(repo.FieldDescription)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -746,6 +783,20 @@ func (u *RepoUpsertOne) UpdateMarsConfig() *RepoUpsertOne {
 func (u *RepoUpsertOne) ClearMarsConfig() *RepoUpsertOne {
 	return u.Update(func(s *RepoUpsert) {
 		s.ClearMarsConfig()
+	})
+}
+
+// SetDescription sets the "description" field.
+func (u *RepoUpsertOne) SetDescription(v string) *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *RepoUpsertOne) UpdateDescription() *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.UpdateDescription()
 	})
 }
 
@@ -1125,6 +1176,20 @@ func (u *RepoUpsertBulk) UpdateMarsConfig() *RepoUpsertBulk {
 func (u *RepoUpsertBulk) ClearMarsConfig() *RepoUpsertBulk {
 	return u.Update(func(s *RepoUpsert) {
 		s.ClearMarsConfig()
+	})
+}
+
+// SetDescription sets the "description" field.
+func (u *RepoUpsertBulk) SetDescription(v string) *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *RepoUpsertBulk) UpdateDescription() *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.UpdateDescription()
 	})
 }
 

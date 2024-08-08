@@ -64,6 +64,7 @@ func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*r
 		NeedGitRepo:  req.NeedGitRepo,
 		GitProjectID: req.GitProjectId,
 		MarsConfig:   req.MarsConfig,
+		Description:  req.Description,
 	})
 	if err != nil {
 		return nil, err
@@ -108,6 +109,7 @@ func (r *repoSvc) Update(ctx context.Context, req *reposerver.UpdateRequest) (*r
 		NeedGitRepo:  req.NeedGitRepo,
 		GitProjectID: req.GitProjectId,
 		MarsConfig:   req.MarsConfig,
+		Description:  req.Description,
 	})
 	if err != nil {
 		return nil, err

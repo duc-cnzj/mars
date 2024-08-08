@@ -39,6 +39,8 @@ type Repo struct {
 	NeedGitRepo bool `json:"need_git_repo,omitempty"`
 	// mars 配置
 	MarsConfig *mars.Config `json:"mars_config,omitempty"`
+	// 描述
+	Description string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RepoQuery when eager-loading is set.
 	Edges        RepoEdges `json:"edges"`
@@ -74,7 +76,7 @@ func (*Repo) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case repo.FieldID, repo.FieldGitProjectID:
 			values[i] = new(sql.NullInt64)
-		case repo.FieldName, repo.FieldDefaultBranch, repo.FieldGitProjectName:
+		case repo.FieldName, repo.FieldDefaultBranch, repo.FieldGitProjectName, repo.FieldDescription:
 			values[i] = new(sql.NullString)
 		case repo.FieldCreatedAt, repo.FieldUpdatedAt, repo.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -162,6 +164,12 @@ func (r *Repo) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field mars_config: %w", err)
 				}
 			}
+		case repo.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				r.Description = value.String
+			}
 		default:
 			r.selectValues.Set(columns[i], values[i])
 		}
@@ -234,6 +242,9 @@ func (r *Repo) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("mars_config=")
 	builder.WriteString(fmt.Sprintf("%v", r.MarsConfig))
+	builder.WriteString(", ")
+	builder.WriteString("description=")
+	builder.WriteString(r.Description)
 	builder.WriteByte(')')
 	return builder.String()
 }

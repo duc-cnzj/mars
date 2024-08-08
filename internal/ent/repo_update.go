@@ -177,6 +177,20 @@ func (ru *RepoUpdate) ClearMarsConfig() *RepoUpdate {
 	return ru
 }
 
+// SetDescription sets the "description" field.
+func (ru *RepoUpdate) SetDescription(s string) *RepoUpdate {
+	ru.mutation.SetDescription(s)
+	return ru
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (ru *RepoUpdate) SetNillableDescription(s *string) *RepoUpdate {
+	if s != nil {
+		ru.SetDescription(*s)
+	}
+	return ru
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
 func (ru *RepoUpdate) AddProjectIDs(ids ...int) *RepoUpdate {
 	ru.mutation.AddProjectIDs(ids...)
@@ -336,6 +350,9 @@ func (ru *RepoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if ru.mutation.MarsConfigCleared() {
 		_spec.ClearField(repo.FieldMarsConfig, field.TypeJSON)
+	}
+	if value, ok := ru.mutation.Description(); ok {
+		_spec.SetField(repo.FieldDescription, field.TypeString, value)
 	}
 	if ru.mutation.ProjectsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -549,6 +566,20 @@ func (ruo *RepoUpdateOne) ClearMarsConfig() *RepoUpdateOne {
 	return ruo
 }
 
+// SetDescription sets the "description" field.
+func (ruo *RepoUpdateOne) SetDescription(s string) *RepoUpdateOne {
+	ruo.mutation.SetDescription(s)
+	return ruo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (ruo *RepoUpdateOne) SetNillableDescription(s *string) *RepoUpdateOne {
+	if s != nil {
+		ruo.SetDescription(*s)
+	}
+	return ruo
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
 func (ruo *RepoUpdateOne) AddProjectIDs(ids ...int) *RepoUpdateOne {
 	ruo.mutation.AddProjectIDs(ids...)
@@ -738,6 +769,9 @@ func (ruo *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) 
 	}
 	if ruo.mutation.MarsConfigCleared() {
 		_spec.ClearField(repo.FieldMarsConfig, field.TypeJSON)
+	}
+	if value, ok := ruo.mutation.Description(); ok {
+		_spec.SetField(repo.FieldDescription, field.TypeString, value)
 	}
 	if ruo.mutation.ProjectsCleared() {
 		edge := &sqlgraph.EdgeSpec{

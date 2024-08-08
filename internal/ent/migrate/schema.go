@@ -249,6 +249,7 @@ var (
 		{Name: "enabled", Type: field.TypeBool, Default: false},
 		{Name: "need_git_repo", Type: field.TypeBool, Default: false},
 		{Name: "mars_config", Type: field.TypeJSON, Nullable: true},
+		{Name: "description", Type: field.TypeString, Default: ""},
 	}
 	// ReposTable holds the schema information for the "repos" table.
 	ReposTable = &schema.Table{

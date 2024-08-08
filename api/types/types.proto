@@ -210,7 +210,7 @@ message RepoModel {
   bool            enabled          = 5;
   mars.Config     mars_config      = 6;
   bool            need_git_repo    = 7;
-  repeated string branches         = 8;
+  string          description      = 8;
 
   string          created_at       = 100;
   string          updated_at       = 101;

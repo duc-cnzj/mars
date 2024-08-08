@@ -424,6 +424,10 @@ func init() {
 	repoDescNeedGitRepo := repoFields[5].Descriptor()
 	// repo.DefaultNeedGitRepo holds the default value on creation for the need_git_repo field.
 	repo.DefaultNeedGitRepo = repoDescNeedGitRepo.Default.(bool)
+	// repoDescDescription is the schema descriptor for description field.
+	repoDescDescription := repoFields[7].Descriptor()
+	// repo.DefaultDescription holds the default value on creation for the description field.
+	repo.DefaultDescription = repoDescDescription.Default.(string)
 }
 
 const (

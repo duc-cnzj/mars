@@ -8321,6 +8321,7 @@ type RepoMutation struct {
 	enabled           *bool
 	need_git_repo     *bool
 	mars_config       **mars.Config
+	description       *string
 	clearedFields     map[string]struct{}
 	projects          map[int]struct{}
 	removedprojects   map[int]struct{}
@@ -8874,6 +8875,42 @@ func (m *RepoMutation) ResetMarsConfig() {
 	delete(m.clearedFields, repo.FieldMarsConfig)
 }
 
+// SetDescription sets the "description" field.
+func (m *RepoMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *RepoMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *RepoMutation) ResetDescription() {
+	m.description = nil
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by ids.
 func (m *RepoMutation) AddProjectIDs(ids ...int) {
 	if m.projects == nil {
@@ -8962,7 +8999,7 @@ func (m *RepoMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepoMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, repo.FieldCreatedAt)
 	}
@@ -8993,6 +9030,9 @@ func (m *RepoMutation) Fields() []string {
 	if m.mars_config != nil {
 		fields = append(fields, repo.FieldMarsConfig)
 	}
+	if m.description != nil {
+		fields = append(fields, repo.FieldDescription)
+	}
 	return fields
 }
 
@@ -9021,6 +9061,8 @@ func (m *RepoMutation) Field(name string) (ent.Value, bool) {
 		return m.NeedGitRepo()
 	case repo.FieldMarsConfig:
 		return m.MarsConfig()
+	case repo.FieldDescription:
+		return m.Description()
 	}
 	return nil, false
 }
@@ -9050,6 +9092,8 @@ func (m *RepoMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldNeedGitRepo(ctx)
 	case repo.FieldMarsConfig:
 		return m.OldMarsConfig(ctx)
+	case repo.FieldDescription:
+		return m.OldDescription(ctx)
 	}
 	return nil, fmt.Errorf("unknown Repo field %s", name)
 }
@@ -9128,6 +9172,13 @@ func (m *RepoMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMarsConfig(v)
+		return nil
+	case repo.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Repo field %s", name)
@@ -9255,6 +9306,9 @@ func (m *RepoMutation) ResetField(name string) error {
 		return nil
 	case repo.FieldMarsConfig:
 		m.ResetMarsConfig()
+		return nil
+	case repo.FieldDescription:
+		m.ResetDescription()
 		return nil
 	}
 	return fmt.Errorf("unknown Repo field %s", name)

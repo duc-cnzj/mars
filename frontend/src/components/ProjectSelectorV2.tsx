@@ -393,7 +393,20 @@ const DeployProjectForm: React.FC<{
                         defaultActiveFirstOption={false}
                         onDropdownVisibleChange={onProjectVisibleChange}
                         options={options.project.map((v) => ({
-                          label: v.label,
+                          label: (
+                            <div>
+                              {v.label}
+                              <span
+                                style={{
+                                  color: "gray",
+                                  marginLeft: 10,
+                                  fontSize: 10,
+                                }}
+                              >
+                                {v.description}
+                              </span>
+                            </div>
+                          ),
                           value: v.value,
                         }))}
                       />

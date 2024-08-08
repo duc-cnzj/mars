@@ -846,6 +846,8 @@ func (m *CreateRequest) validate(all bool) error {
 
 	// no validation rules for NeedGitRepo
 
+	// no validation rules for Description
+
 	if m.GitProjectId != nil {
 		// no validation rules for GitProjectId
 	}
@@ -1144,6 +1146,8 @@ func (m *UpdateRequest) validate(all bool) error {
 	}
 
 	// no validation rules for NeedGitRepo
+
+	// no validation rules for Description
 
 	if m.GitProjectId != nil {
 		// no validation rules for GitProjectId

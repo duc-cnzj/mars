@@ -45,6 +45,7 @@ message CreateRequest{
   optional int32 git_project_id = 2;
   mars.Config    mars_config    = 3;
   bool           need_git_repo  = 4;
+  string         description    = 5;
 }
 message CreateResponse{
   types.RepoModel item = 1;
@@ -55,6 +56,7 @@ message UpdateRequest{
   optional int32 git_project_id = 3;
   mars.Config    mars_config    = 4;
   bool           need_git_repo  = 5;
+  string         description    = 6;
 }
 message UpdateResponse{
   types.RepoModel item = 1;
@@ -69,7 +71,7 @@ message AllResponse{
 
 service Repo {
   rpc List(ListRequest) returns (ListResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       get: "/api/repos"
     };
     option (openapi.v3.operation) = {
@@ -78,7 +80,7 @@ service Repo {
   }
 
   rpc Create(CreateRequest) returns (CreateResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       post: "/api/repos",
       body: "*"
     };
@@ -88,7 +90,7 @@ service Repo {
   }
 
   rpc Show(ShowRequest) returns (ShowResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       get: "/api/repos/{id}"
     };
     option (openapi.v3.operation) = {
@@ -97,7 +99,7 @@ service Repo {
   }
 
   rpc Update(UpdateRequest) returns (UpdateResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       put: "/api/repos/{id}",
       body: "*"
     };
@@ -108,7 +110,7 @@ service Repo {
 
 
   rpc ToggleEnabled(ToggleEnabledRequest) returns (ToggleEnabledResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       post: "/api/repos/toggle_enabled"
       body: "*"
     };

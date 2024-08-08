@@ -26,6 +26,7 @@ type Repo struct {
 	Enabled        bool         `json:"enabled"`
 	NeedGitRepo    bool         `json:"need_git_repo"`
 	MarsConfig     *mars.Config `json:"mars_config"`
+	Description    string       `json:"description"`
 
 	Projects []*Project `json:"projects"`
 }
@@ -106,6 +107,7 @@ type CreateRepoInput struct {
 	NeedGitRepo  bool
 	GitProjectID *int32
 	MarsConfig   *mars.Config
+	Description  string
 }
 
 func (r *repo) Create(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
@@ -128,6 +130,7 @@ func (r *repo) Create(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
 		SetNillableGitProjectName(projName).
 		SetNillableDefaultBranch(defaultBranch).
 		SetEnabled(in.Enabled).
+		SetDescription(in.Description).
 		SetMarsConfig(in.MarsConfig)
 	if in.NeedGitRepo {
 		cr.SetNillableGitProjectID(in.GitProjectID)
@@ -147,6 +150,7 @@ type UpdateRepoInput struct {
 	NeedGitRepo  bool
 	GitProjectID *int32
 	MarsConfig   *mars.Config
+	Description  string
 }
 
 func (r *repo) Update(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
@@ -169,6 +173,7 @@ func (r *repo) Update(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
 		SetNillableGitProjectID(in.GitProjectID).
 		SetNillableGitProjectName(projName).
 		SetNillableDefaultBranch(defaultBranch).
+		SetDescription(in.Description).
 		SetMarsConfig(in.MarsConfig)
 	if !in.NeedGitRepo {
 		up.ClearGitProjectID().ClearGitProjectName().ClearDefaultBranch()
@@ -217,6 +222,7 @@ func ToRepo(data *ent.Repo) *Repo {
 		Enabled:        data.Enabled,
 		NeedGitRepo:    data.NeedGitRepo,
 		MarsConfig:     data.MarsConfig,
+		Description:    data.Description,
 		Projects:       serialize.Serialize(data.Edges.Projects, ToProject),
 	}
 

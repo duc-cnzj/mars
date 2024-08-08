@@ -996,6 +996,7 @@ export interface components {
       gitProjectId: number;
       branch: string;
       needGitRepo: boolean;
+      description: string;
     };
     "git.PipelineInfoResponse": {
       status: string;
@@ -1165,6 +1166,7 @@ export interface components {
       gitProjectId?: number;
       marsConfig?: components["schemas"]["mars.Config"];
       needGitRepo?: boolean;
+      description?: string;
     };
     "repo.CreateResponse": {
       item: components["schemas"]["types.RepoModel"];
@@ -1197,6 +1199,7 @@ export interface components {
       gitProjectId?: number;
       marsConfig?: components["schemas"]["mars.Config"];
       needGitRepo?: boolean;
+      description?: string;
     };
     "repo.UpdateResponse": {
       item: components["schemas"]["types.RepoModel"];
@@ -1384,7 +1387,7 @@ export interface components {
       enabled: boolean;
       marsConfig: components["schemas"]["mars.Config"];
       needGitRepo: boolean;
-      branches: string[];
+      description: string;
       createdAt: string;
       updatedAt: string;
       deletedAt: string;

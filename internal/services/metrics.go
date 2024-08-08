@@ -84,8 +84,6 @@ func (m *metricsSvc) StreamTopPod(request *metrics.TopPodRequest, server metrics
 			if err := fn(); err != nil {
 				return err
 			}
-			//case <-m.app.Done():
-			//	return nil
 		}
 	}
 }

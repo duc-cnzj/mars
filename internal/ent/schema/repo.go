@@ -47,6 +47,9 @@ func (Repo) Fields() []ent.Field {
 		field.JSON("mars_config", &mars.Config{}).
 			Optional().
 			Comment("mars 配置"),
+		field.String("description").
+			Default("").
+			Comment("描述"),
 	}
 }
 

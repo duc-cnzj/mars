@@ -28,6 +28,7 @@ import pyaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
 import { components } from "../api/schema";
 import ajax from "../api/ajax";
 import { FormProps } from "antd/lib";
+import TextArea from "antd/es/input/TextArea";
 
 SyntaxHighlighter.registerLanguage("yaml", pyaml);
 
@@ -83,6 +84,7 @@ const AddRepoModal: React.FC<{
   };
 
   const onFinish: FormProps<FieldType>["onFinish"] = async (values) => {
+    console.log(values);
     setLoading((v) => ({ ...v, submit: true }));
     if (editItem && editItem.id > 0) {
       const { error } = await ajax.PUT("/api/repos/{id}", {
@@ -354,13 +356,22 @@ const AddRepoModal: React.FC<{
             onFinish={onFinish}
             onFinishFailed={onFinishFailed}
           >
-            <Form.Item<FieldType>
-              label="应用名称"
-              name="name"
-              rules={[{ required: true, message: "请输入名称" }]}
-            >
-              <Input />
-            </Form.Item>
+            <Row gutter={[8, 8]}>
+              <Col span={8}>
+                <Form.Item<FieldType>
+                  label="应用名称"
+                  name="name"
+                  rules={[{ required: true, message: "请输入名称" }]}
+                >
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col span={16}>
+                <Form.Item<FieldType> label="项目描述" name="description">
+                  <TextArea />
+                </Form.Item>
+              </Col>
+            </Row>
             <Form.Item<FieldType> label="是否关联 git 仓库" name="needGitRepo">
               <Switch />
             </Form.Item>

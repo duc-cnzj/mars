@@ -93,6 +93,7 @@ func (g *gitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptions
 			GitProjectId: repo.GitProjectID,
 			//DisplayName:  repo.Name,
 			NeedGitRepo: repo.NeedGitRepo,
+			Description: repo.Description,
 		})
 	}
 	sort.Sort(sortableOption(gitOptions))

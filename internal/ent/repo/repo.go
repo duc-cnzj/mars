@@ -35,6 +35,8 @@ const (
 	FieldNeedGitRepo = "need_git_repo"
 	// FieldMarsConfig holds the string denoting the mars_config field in the database.
 	FieldMarsConfig = "mars_config"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// EdgeProjects holds the string denoting the projects edge name in mutations.
 	EdgeProjects = "projects"
 	// Table holds the table name of the repo in the database.
@@ -61,6 +63,7 @@ var Columns = []string{
 	FieldEnabled,
 	FieldNeedGitRepo,
 	FieldMarsConfig,
+	FieldDescription,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -95,6 +98,8 @@ var (
 	DefaultEnabled bool
 	// DefaultNeedGitRepo holds the default value on creation for the "need_git_repo" field.
 	DefaultNeedGitRepo bool
+	// DefaultDescription holds the default value on creation for the "description" field.
+	DefaultDescription string
 )
 
 // OrderOption defines the ordering options for the Repo queries.
@@ -148,6 +153,11 @@ func ByEnabled(opts ...sql.OrderTermOption) OrderOption {
 // ByNeedGitRepo orders the results by the need_git_repo field.
 func ByNeedGitRepo(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNeedGitRepo, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
 // ByProjectsCount orders the results by projects count.

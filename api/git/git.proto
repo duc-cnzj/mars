@@ -18,6 +18,7 @@ message Option {
   int32  git_project_id = 5;
   string branch         = 6;
   bool   need_git_repo  = 7;
+  string description    = 8;
 }
 
 message ProjectOptionsResponse {
@@ -104,7 +105,7 @@ message AllReposResponse{
 
 service Git {
   rpc AllRepos(AllReposRequest) returns(AllReposResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       get: "/api/git/all_repos",
     };
     option (openapi.v3.operation) = {
@@ -113,7 +114,7 @@ service Git {
   }
 
   rpc ProjectOptions(ProjectOptionsRequest) returns (ProjectOptionsResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       get: "/api/git/project_options",
     };
     option (openapi.v3.operation) = {
@@ -122,7 +123,7 @@ service Git {
   }
 
   rpc BranchOptions(BranchOptionsRequest) returns (BranchOptionsResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       get: "/api/git/projects/{git_project_id}/branch_options",
     };
     option (openapi.v3.operation) = {
@@ -131,7 +132,7 @@ service Git {
   }
 
   rpc CommitOptions(CommitOptionsRequest) returns (CommitOptionsResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/commit_options",
     };
     option (openapi.v3.operation) = {
@@ -140,7 +141,7 @@ service Git {
   }
 
   rpc Commit(CommitRequest) returns (CommitResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}",
     };
     option (openapi.v3.operation) = {
@@ -149,7 +150,7 @@ service Git {
   }
 
   rpc PipelineInfo(PipelineInfoRequest) returns (PipelineInfoResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info",
     };
     option (openapi.v3.operation) = {
@@ -158,7 +159,7 @@ service Git {
   }
 
   rpc MarsConfigFile(MarsConfigFileRequest) returns (MarsConfigFileResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/config_file",
     };
     option (openapi.v3.operation) = {
@@ -167,7 +168,7 @@ service Git {
   }
 
   rpc GetChartValuesYaml(GetChartValuesYamlRequest) returns (GetChartValuesYamlResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       post: "/api/git/get_chart_values_yaml",
       body: "*"
     };

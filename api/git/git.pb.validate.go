@@ -70,6 +70,8 @@ func (m *Option) validate(all bool) error {
 
 	// no validation rules for NeedGitRepo
 
+	// no validation rules for Description
+
 	if len(errors) > 0 {
 		return OptionMultiError(errors)
 	}
