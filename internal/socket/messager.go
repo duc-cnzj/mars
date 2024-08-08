@@ -9,6 +9,8 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/application"
 )
 
+type WsResponse = websocket_pb.WsMetadataResponse
+
 type DeployMsger interface {
 	Percentable
 

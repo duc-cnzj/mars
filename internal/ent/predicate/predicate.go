@@ -24,9 +24,6 @@ type Event func(*sql.Selector)
 // File is the predicate function for file builders.
 type File func(*sql.Selector)
 
-// GitProject is the predicate function for gitproject builders.
-type GitProject func(*sql.Selector)
-
 // Namespace is the predicate function for namespace builders.
 type Namespace func(*sql.Selector)
 

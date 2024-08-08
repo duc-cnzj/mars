@@ -9,9 +9,8 @@ import (
 	"strings"
 	"time"
 
-	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
-
 	"github.com/duc-cnzj/mars/api/v4/types"
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/annotation"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
@@ -52,14 +51,16 @@ type Project struct {
 	FinalExtraValues []string
 	Version          int
 	ConfigType       string
-	Manifest         []string
 	GitCommitWebURL  string
 	GitCommitTitle   string
 	GitCommitAuthor  string
 	GitCommitDate    *time.Time
 	NamespaceID      int
+	RepoID           int
 
 	Namespace *Namespace
+	Repo      *Repo
+	Manifest  []string
 }
 
 func ToProject(project *ent.Project) *Project {
@@ -87,13 +88,15 @@ func ToProject(project *ent.Project) *Project {
 		FinalExtraValues: project.FinalExtraValues,
 		Version:          project.Version,
 		ConfigType:       project.ConfigType,
-		Manifest:         project.Manifest,
 		GitCommitWebURL:  project.GitCommitWebURL,
 		GitCommitTitle:   project.GitCommitTitle,
 		GitCommitAuthor:  project.GitCommitAuthor,
 		GitCommitDate:    project.GitCommitDate,
 		NamespaceID:      project.NamespaceID,
+		RepoID:           project.RepoID,
+		Manifest:         project.Manifest,
 		Namespace:        ToNamespace(project.Edges.Namespace),
+		Repo:             ToRepo(project.Edges.Repo),
 	}
 }
 
@@ -161,7 +164,6 @@ type CreateProjectInput struct {
 	Atomic       *bool
 	ConfigType   string
 	NamespaceID  int
-	Manifest     []string
 	PodSelectors []string
 	DeployStatus types.Deploy
 }
@@ -176,7 +178,6 @@ func (repo *projectRepo) Create(ctx context.Context, input *CreateProjectInput) 
 		SetNillableAtomic(input.Atomic).
 		SetConfigType(input.ConfigType).
 		SetNamespaceID(input.NamespaceID).
-		SetManifest(input.Manifest).
 		SetPodSelectors(input.PodSelectors).
 		Save(ctx)
 	return ToProject(save), err
@@ -191,7 +192,6 @@ type UpdateProjectInput struct {
 	ConfigType string
 
 	PodSelectors     []string
-	Manifest         []string
 	DockerImage      []string
 	GitCommitTitle   string
 	GitCommitWebURL  string
@@ -201,6 +201,7 @@ type UpdateProjectInput struct {
 	FinalExtraValues []string
 	EnvValues        []*types.KeyValue
 	OverrideValues   string
+	Manifest         []string
 }
 
 func (repo *projectRepo) UpdateProject(ctx context.Context, input *UpdateProjectInput) (*Project, error) {
@@ -214,8 +215,8 @@ func (repo *projectRepo) UpdateProject(ctx context.Context, input *UpdateProject
 		SetConfig(input.Config).
 		SetNillableAtomic(input.Atomic).
 		SetConfigType(input.ConfigType).
-		SetPodSelectors(input.PodSelectors).
 		SetManifest(input.Manifest).
+		SetPodSelectors(input.PodSelectors).
 		SetDockerImage(input.DockerImage).
 		SetGitCommitTitle(input.GitCommitTitle).
 		SetGitCommitWebURL(input.GitCommitWebURL).
@@ -230,7 +231,7 @@ func (repo *projectRepo) UpdateProject(ctx context.Context, input *UpdateProject
 }
 
 func (repo *projectRepo) Show(ctx context.Context, id int) (*Project, error) {
-	first, err := repo.data.DB().Project.Query().WithNamespace().Where(project.ID(id)).First(ctx)
+	first, err := repo.data.DB().Project.Query().WithRepo().WithNamespace().Where(project.ID(id)).First(ctx)
 	return ToProject(first), err
 }
 

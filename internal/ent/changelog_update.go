@@ -15,7 +15,6 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
-	"github.com/duc-cnzj/mars/v4/internal/ent/gitproject"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
 )
@@ -94,24 +93,6 @@ func (cu *ChangelogUpdate) SetNillableUsername(s *string) *ChangelogUpdate {
 	return cu
 }
 
-// SetManifest sets the "manifest" field.
-func (cu *ChangelogUpdate) SetManifest(s []string) *ChangelogUpdate {
-	cu.mutation.SetManifest(s)
-	return cu
-}
-
-// AppendManifest appends s to the "manifest" field.
-func (cu *ChangelogUpdate) AppendManifest(s []string) *ChangelogUpdate {
-	cu.mutation.AppendManifest(s)
-	return cu
-}
-
-// ClearManifest clears the value of the "manifest" field.
-func (cu *ChangelogUpdate) ClearManifest() *ChangelogUpdate {
-	cu.mutation.ClearManifest()
-	return cu
-}
-
 // SetConfig sets the "config" field.
 func (cu *ChangelogUpdate) SetConfig(s string) *ChangelogUpdate {
 	cu.mutation.SetConfig(s)
@@ -129,26 +110,6 @@ func (cu *ChangelogUpdate) SetNillableConfig(s *string) *ChangelogUpdate {
 // ClearConfig clears the value of the "config" field.
 func (cu *ChangelogUpdate) ClearConfig() *ChangelogUpdate {
 	cu.mutation.ClearConfig()
-	return cu
-}
-
-// SetConfigType sets the "config_type" field.
-func (cu *ChangelogUpdate) SetConfigType(s string) *ChangelogUpdate {
-	cu.mutation.SetConfigType(s)
-	return cu
-}
-
-// SetNillableConfigType sets the "config_type" field if the given value is not nil.
-func (cu *ChangelogUpdate) SetNillableConfigType(s *string) *ChangelogUpdate {
-	if s != nil {
-		cu.SetConfigType(*s)
-	}
-	return cu
-}
-
-// ClearConfigType clears the value of the "config_type" field.
-func (cu *ChangelogUpdate) ClearConfigType() *ChangelogUpdate {
-	cu.mutation.ClearConfigType()
 	return cu
 }
 
@@ -366,31 +327,6 @@ func (cu *ChangelogUpdate) ClearProjectID() *ChangelogUpdate {
 	return cu
 }
 
-// SetGitProjectID sets the "git_project_id" field.
-func (cu *ChangelogUpdate) SetGitProjectID(i int) *ChangelogUpdate {
-	cu.mutation.SetGitProjectID(i)
-	return cu
-}
-
-// SetNillableGitProjectID sets the "git_project_id" field if the given value is not nil.
-func (cu *ChangelogUpdate) SetNillableGitProjectID(i *int) *ChangelogUpdate {
-	if i != nil {
-		cu.SetGitProjectID(*i)
-	}
-	return cu
-}
-
-// ClearGitProjectID clears the value of the "git_project_id" field.
-func (cu *ChangelogUpdate) ClearGitProjectID() *ChangelogUpdate {
-	cu.mutation.ClearGitProjectID()
-	return cu
-}
-
-// SetGitProject sets the "git_project" edge to the GitProject entity.
-func (cu *ChangelogUpdate) SetGitProject(g *GitProject) *ChangelogUpdate {
-	return cu.SetGitProjectID(g.ID)
-}
-
 // SetProject sets the "project" edge to the Project entity.
 func (cu *ChangelogUpdate) SetProject(p *Project) *ChangelogUpdate {
 	return cu.SetProjectID(p.ID)
@@ -399,12 +335,6 @@ func (cu *ChangelogUpdate) SetProject(p *Project) *ChangelogUpdate {
 // Mutation returns the ChangelogMutation object of the builder.
 func (cu *ChangelogUpdate) Mutation() *ChangelogMutation {
 	return cu.mutation
-}
-
-// ClearGitProject clears the "git_project" edge to the GitProject entity.
-func (cu *ChangelogUpdate) ClearGitProject() *ChangelogUpdate {
-	cu.mutation.ClearGitProject()
-	return cu
 }
 
 // ClearProject clears the "project" edge to the Project entity.
@@ -460,11 +390,6 @@ func (cu *ChangelogUpdate) check() error {
 	if v, ok := cu.mutation.Username(); ok {
 		if err := changelog.UsernameValidator(v); err != nil {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "Changelog.username": %w`, err)}
-		}
-	}
-	if v, ok := cu.mutation.ConfigType(); ok {
-		if err := changelog.ConfigTypeValidator(v); err != nil {
-			return &ValidationError{Name: "config_type", err: fmt.Errorf(`ent: validator failed for field "Changelog.config_type": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.GitBranch(); ok {
@@ -525,28 +450,11 @@ func (cu *ChangelogUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := cu.mutation.Username(); ok {
 		_spec.SetField(changelog.FieldUsername, field.TypeString, value)
 	}
-	if value, ok := cu.mutation.Manifest(); ok {
-		_spec.SetField(changelog.FieldManifest, field.TypeJSON, value)
-	}
-	if value, ok := cu.mutation.AppendedManifest(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, changelog.FieldManifest, value)
-		})
-	}
-	if cu.mutation.ManifestCleared() {
-		_spec.ClearField(changelog.FieldManifest, field.TypeJSON)
-	}
 	if value, ok := cu.mutation.Config(); ok {
 		_spec.SetField(changelog.FieldConfig, field.TypeString, value)
 	}
 	if cu.mutation.ConfigCleared() {
 		_spec.ClearField(changelog.FieldConfig, field.TypeString)
-	}
-	if value, ok := cu.mutation.ConfigType(); ok {
-		_spec.SetField(changelog.FieldConfigType, field.TypeString, value)
-	}
-	if cu.mutation.ConfigTypeCleared() {
-		_spec.ClearField(changelog.FieldConfigType, field.TypeString)
 	}
 	if value, ok := cu.mutation.GitBranch(); ok {
 		_spec.SetField(changelog.FieldGitBranch, field.TypeString, value)
@@ -624,35 +532,6 @@ func (cu *ChangelogUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := cu.mutation.ConfigChanged(); ok {
 		_spec.SetField(changelog.FieldConfigChanged, field.TypeBool, value)
-	}
-	if cu.mutation.GitProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   changelog.GitProjectTable,
-			Columns: []string{changelog.GitProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(gitproject.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := cu.mutation.GitProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   changelog.GitProjectTable,
-			Columns: []string{changelog.GitProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(gitproject.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if cu.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -764,24 +643,6 @@ func (cuo *ChangelogUpdateOne) SetNillableUsername(s *string) *ChangelogUpdateOn
 	return cuo
 }
 
-// SetManifest sets the "manifest" field.
-func (cuo *ChangelogUpdateOne) SetManifest(s []string) *ChangelogUpdateOne {
-	cuo.mutation.SetManifest(s)
-	return cuo
-}
-
-// AppendManifest appends s to the "manifest" field.
-func (cuo *ChangelogUpdateOne) AppendManifest(s []string) *ChangelogUpdateOne {
-	cuo.mutation.AppendManifest(s)
-	return cuo
-}
-
-// ClearManifest clears the value of the "manifest" field.
-func (cuo *ChangelogUpdateOne) ClearManifest() *ChangelogUpdateOne {
-	cuo.mutation.ClearManifest()
-	return cuo
-}
-
 // SetConfig sets the "config" field.
 func (cuo *ChangelogUpdateOne) SetConfig(s string) *ChangelogUpdateOne {
 	cuo.mutation.SetConfig(s)
@@ -799,26 +660,6 @@ func (cuo *ChangelogUpdateOne) SetNillableConfig(s *string) *ChangelogUpdateOne 
 // ClearConfig clears the value of the "config" field.
 func (cuo *ChangelogUpdateOne) ClearConfig() *ChangelogUpdateOne {
 	cuo.mutation.ClearConfig()
-	return cuo
-}
-
-// SetConfigType sets the "config_type" field.
-func (cuo *ChangelogUpdateOne) SetConfigType(s string) *ChangelogUpdateOne {
-	cuo.mutation.SetConfigType(s)
-	return cuo
-}
-
-// SetNillableConfigType sets the "config_type" field if the given value is not nil.
-func (cuo *ChangelogUpdateOne) SetNillableConfigType(s *string) *ChangelogUpdateOne {
-	if s != nil {
-		cuo.SetConfigType(*s)
-	}
-	return cuo
-}
-
-// ClearConfigType clears the value of the "config_type" field.
-func (cuo *ChangelogUpdateOne) ClearConfigType() *ChangelogUpdateOne {
-	cuo.mutation.ClearConfigType()
 	return cuo
 }
 
@@ -1036,31 +877,6 @@ func (cuo *ChangelogUpdateOne) ClearProjectID() *ChangelogUpdateOne {
 	return cuo
 }
 
-// SetGitProjectID sets the "git_project_id" field.
-func (cuo *ChangelogUpdateOne) SetGitProjectID(i int) *ChangelogUpdateOne {
-	cuo.mutation.SetGitProjectID(i)
-	return cuo
-}
-
-// SetNillableGitProjectID sets the "git_project_id" field if the given value is not nil.
-func (cuo *ChangelogUpdateOne) SetNillableGitProjectID(i *int) *ChangelogUpdateOne {
-	if i != nil {
-		cuo.SetGitProjectID(*i)
-	}
-	return cuo
-}
-
-// ClearGitProjectID clears the value of the "git_project_id" field.
-func (cuo *ChangelogUpdateOne) ClearGitProjectID() *ChangelogUpdateOne {
-	cuo.mutation.ClearGitProjectID()
-	return cuo
-}
-
-// SetGitProject sets the "git_project" edge to the GitProject entity.
-func (cuo *ChangelogUpdateOne) SetGitProject(g *GitProject) *ChangelogUpdateOne {
-	return cuo.SetGitProjectID(g.ID)
-}
-
 // SetProject sets the "project" edge to the Project entity.
 func (cuo *ChangelogUpdateOne) SetProject(p *Project) *ChangelogUpdateOne {
 	return cuo.SetProjectID(p.ID)
@@ -1069,12 +885,6 @@ func (cuo *ChangelogUpdateOne) SetProject(p *Project) *ChangelogUpdateOne {
 // Mutation returns the ChangelogMutation object of the builder.
 func (cuo *ChangelogUpdateOne) Mutation() *ChangelogMutation {
 	return cuo.mutation
-}
-
-// ClearGitProject clears the "git_project" edge to the GitProject entity.
-func (cuo *ChangelogUpdateOne) ClearGitProject() *ChangelogUpdateOne {
-	cuo.mutation.ClearGitProject()
-	return cuo
 }
 
 // ClearProject clears the "project" edge to the Project entity.
@@ -1143,11 +953,6 @@ func (cuo *ChangelogUpdateOne) check() error {
 	if v, ok := cuo.mutation.Username(); ok {
 		if err := changelog.UsernameValidator(v); err != nil {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "Changelog.username": %w`, err)}
-		}
-	}
-	if v, ok := cuo.mutation.ConfigType(); ok {
-		if err := changelog.ConfigTypeValidator(v); err != nil {
-			return &ValidationError{Name: "config_type", err: fmt.Errorf(`ent: validator failed for field "Changelog.config_type": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.GitBranch(); ok {
@@ -1225,28 +1030,11 @@ func (cuo *ChangelogUpdateOne) sqlSave(ctx context.Context) (_node *Changelog, e
 	if value, ok := cuo.mutation.Username(); ok {
 		_spec.SetField(changelog.FieldUsername, field.TypeString, value)
 	}
-	if value, ok := cuo.mutation.Manifest(); ok {
-		_spec.SetField(changelog.FieldManifest, field.TypeJSON, value)
-	}
-	if value, ok := cuo.mutation.AppendedManifest(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, changelog.FieldManifest, value)
-		})
-	}
-	if cuo.mutation.ManifestCleared() {
-		_spec.ClearField(changelog.FieldManifest, field.TypeJSON)
-	}
 	if value, ok := cuo.mutation.Config(); ok {
 		_spec.SetField(changelog.FieldConfig, field.TypeString, value)
 	}
 	if cuo.mutation.ConfigCleared() {
 		_spec.ClearField(changelog.FieldConfig, field.TypeString)
-	}
-	if value, ok := cuo.mutation.ConfigType(); ok {
-		_spec.SetField(changelog.FieldConfigType, field.TypeString, value)
-	}
-	if cuo.mutation.ConfigTypeCleared() {
-		_spec.ClearField(changelog.FieldConfigType, field.TypeString)
 	}
 	if value, ok := cuo.mutation.GitBranch(); ok {
 		_spec.SetField(changelog.FieldGitBranch, field.TypeString, value)
@@ -1324,35 +1112,6 @@ func (cuo *ChangelogUpdateOne) sqlSave(ctx context.Context) (_node *Changelog, e
 	}
 	if value, ok := cuo.mutation.ConfigChanged(); ok {
 		_spec.SetField(changelog.FieldConfigChanged, field.TypeBool, value)
-	}
-	if cuo.mutation.GitProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   changelog.GitProjectTable,
-			Columns: []string{changelog.GitProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(gitproject.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := cuo.mutation.GitProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   changelog.GitProjectTable,
-			Columns: []string{changelog.GitProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(gitproject.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if cuo.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

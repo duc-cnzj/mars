@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/duc-cnzj/mars/api/v4/mars"
+	"github.com/duc-cnzj/mars/v4/internal/ent/project"
 	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
 )
 
@@ -145,6 +146,21 @@ func (rc *RepoCreate) SetNillableNeedGitRepo(b *bool) *RepoCreate {
 func (rc *RepoCreate) SetMarsConfig(m *mars.Config) *RepoCreate {
 	rc.mutation.SetMarsConfig(m)
 	return rc
+}
+
+// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
+func (rc *RepoCreate) AddProjectIDs(ids ...int) *RepoCreate {
+	rc.mutation.AddProjectIDs(ids...)
+	return rc
+}
+
+// AddProjects adds the "projects" edges to the Project entity.
+func (rc *RepoCreate) AddProjects(p ...*Project) *RepoCreate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return rc.AddProjectIDs(ids...)
 }
 
 // Mutation returns the RepoMutation object of the builder.
@@ -307,6 +323,22 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.MarsConfig(); ok {
 		_spec.SetField(repo.FieldMarsConfig, field.TypeJSON, value)
 		_node.MarsConfig = value
+	}
+	if nodes := rc.mutation.ProjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repo.ProjectsTable,
+			Columns: []string{repo.ProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

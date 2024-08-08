@@ -23,16 +23,15 @@ var _ git.GitServer = (*gitSvc)(nil)
 type gitSvc struct {
 	git.UnimplementedGitServer
 
-	eventRepo   repo.EventRepo
-	logger      mlog.Logger
-	gitRepo     repo.GitRepo
-	cache       cache.Cache
-	gitProjRepo repo.GitProjectRepo
-	repoRepo    repo.RepoImp
+	eventRepo repo.EventRepo
+	logger    mlog.Logger
+	gitRepo   repo.GitRepo
+	cache     cache.Cache
+	repoRepo  repo.RepoImp
 }
 
-func NewGitSvc(repoRepo repo.RepoImp, eventRepo repo.EventRepo, logger mlog.Logger, gitRepo repo.GitRepo, cache cache.Cache, gitProjRepo repo.GitProjectRepo) git.GitServer {
-	return &gitSvc{repoRepo: repoRepo, eventRepo: eventRepo, logger: logger, gitRepo: gitRepo, cache: cache, gitProjRepo: gitProjRepo}
+func NewGitSvc(repoRepo repo.RepoImp, eventRepo repo.EventRepo, logger mlog.Logger, gitRepo repo.GitRepo, cache cache.Cache) git.GitServer {
+	return &gitSvc{repoRepo: repoRepo, eventRepo: eventRepo, logger: logger, gitRepo: gitRepo, cache: cache}
 }
 
 func (g *gitSvc) AllRepos(ctx context.Context, req *git.AllReposRequest) (*git.AllReposResponse, error) {

@@ -12,7 +12,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/dbcache"
 	"github.com/duc-cnzj/mars/v4/internal/ent/event"
 	"github.com/duc-cnzj/mars/v4/internal/ent/file"
-	"github.com/duc-cnzj/mars/v4/internal/ent/gitproject"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
 	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
@@ -112,12 +111,8 @@ func init() {
 	changelogDescUsername := changelogFields[1].Descriptor()
 	// changelog.UsernameValidator is a validator for the "username" field. It is called by the builders before save.
 	changelog.UsernameValidator = changelogDescUsername.Validators[0].(func(string) error)
-	// changelogDescConfigType is the schema descriptor for config_type field.
-	changelogDescConfigType := changelogFields[4].Descriptor()
-	// changelog.ConfigTypeValidator is a validator for the "config_type" field. It is called by the builders before save.
-	changelog.ConfigTypeValidator = changelogDescConfigType.Validators[0].(func(string) error)
 	// changelogDescGitBranch is the schema descriptor for git_branch field.
-	changelogDescGitBranch := changelogFields[5].Descriptor()
+	changelogDescGitBranch := changelogFields[3].Descriptor()
 	// changelog.GitBranchValidator is a validator for the "git_branch" field. It is called by the builders before save.
 	changelog.GitBranchValidator = func() func(string) error {
 		validators := changelogDescGitBranch.Validators
@@ -135,7 +130,7 @@ func init() {
 		}
 	}()
 	// changelogDescGitCommit is the schema descriptor for git_commit field.
-	changelogDescGitCommit := changelogFields[6].Descriptor()
+	changelogDescGitCommit := changelogFields[4].Descriptor()
 	// changelog.GitCommitValidator is a validator for the "git_commit" field. It is called by the builders before save.
 	changelog.GitCommitValidator = func() func(string) error {
 		validators := changelogDescGitCommit.Validators
@@ -153,19 +148,19 @@ func init() {
 		}
 	}()
 	// changelogDescGitCommitWebURL is the schema descriptor for git_commit_web_url field.
-	changelogDescGitCommitWebURL := changelogFields[11].Descriptor()
+	changelogDescGitCommitWebURL := changelogFields[9].Descriptor()
 	// changelog.GitCommitWebURLValidator is a validator for the "git_commit_web_url" field. It is called by the builders before save.
 	changelog.GitCommitWebURLValidator = changelogDescGitCommitWebURL.Validators[0].(func(string) error)
 	// changelogDescGitCommitTitle is the schema descriptor for git_commit_title field.
-	changelogDescGitCommitTitle := changelogFields[12].Descriptor()
+	changelogDescGitCommitTitle := changelogFields[10].Descriptor()
 	// changelog.GitCommitTitleValidator is a validator for the "git_commit_title" field. It is called by the builders before save.
 	changelog.GitCommitTitleValidator = changelogDescGitCommitTitle.Validators[0].(func(string) error)
 	// changelogDescGitCommitAuthor is the schema descriptor for git_commit_author field.
-	changelogDescGitCommitAuthor := changelogFields[13].Descriptor()
+	changelogDescGitCommitAuthor := changelogFields[11].Descriptor()
 	// changelog.GitCommitAuthorValidator is a validator for the "git_commit_author" field. It is called by the builders before save.
 	changelog.GitCommitAuthorValidator = changelogDescGitCommitAuthor.Validators[0].(func(string) error)
 	// changelogDescConfigChanged is the schema descriptor for config_changed field.
-	changelogDescConfigChanged := changelogFields[15].Descriptor()
+	changelogDescConfigChanged := changelogFields[13].Descriptor()
 	// changelog.DefaultConfigChanged holds the default value on creation for the config_changed field.
 	changelog.DefaultConfigChanged = changelogDescConfigChanged.Default.(bool)
 	dbcacheFields := schema.DBCache{}.Fields()
@@ -280,47 +275,6 @@ func init() {
 	file.DefaultContainerPath = fileDescContainerPath.Default.(string)
 	// file.ContainerPathValidator is a validator for the "container_path" field. It is called by the builders before save.
 	file.ContainerPathValidator = fileDescContainerPath.Validators[0].(func(string) error)
-	gitprojectMixin := schema.GitProject{}.Mixin()
-	gitprojectMixinHooks2 := gitprojectMixin[2].Hooks()
-	gitproject.Hooks[0] = gitprojectMixinHooks2[0]
-	gitprojectMixinInters2 := gitprojectMixin[2].Interceptors()
-	gitproject.Interceptors[0] = gitprojectMixinInters2[0]
-	gitprojectMixinFields0 := gitprojectMixin[0].Fields()
-	_ = gitprojectMixinFields0
-	gitprojectMixinFields1 := gitprojectMixin[1].Fields()
-	_ = gitprojectMixinFields1
-	gitprojectFields := schema.GitProject{}.Fields()
-	_ = gitprojectFields
-	// gitprojectDescCreatedAt is the schema descriptor for created_at field.
-	gitprojectDescCreatedAt := gitprojectMixinFields0[0].Descriptor()
-	// gitproject.DefaultCreatedAt holds the default value on creation for the created_at field.
-	gitproject.DefaultCreatedAt = gitprojectDescCreatedAt.Default.(func() time.Time)
-	// gitprojectDescUpdatedAt is the schema descriptor for updated_at field.
-	gitprojectDescUpdatedAt := gitprojectMixinFields1[0].Descriptor()
-	// gitproject.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	gitproject.DefaultUpdatedAt = gitprojectDescUpdatedAt.Default.(func() time.Time)
-	// gitproject.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	gitproject.UpdateDefaultUpdatedAt = gitprojectDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// gitprojectDescName is the schema descriptor for name field.
-	gitprojectDescName := gitprojectFields[0].Descriptor()
-	// gitproject.DefaultName holds the default value on creation for the name field.
-	gitproject.DefaultName = gitprojectDescName.Default.(string)
-	// gitproject.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	gitproject.NameValidator = gitprojectDescName.Validators[0].(func(string) error)
-	// gitprojectDescDefaultBranch is the schema descriptor for default_branch field.
-	gitprojectDescDefaultBranch := gitprojectFields[1].Descriptor()
-	// gitproject.DefaultDefaultBranch holds the default value on creation for the default_branch field.
-	gitproject.DefaultDefaultBranch = gitprojectDescDefaultBranch.Default.(string)
-	// gitproject.DefaultBranchValidator is a validator for the "default_branch" field. It is called by the builders before save.
-	gitproject.DefaultBranchValidator = gitprojectDescDefaultBranch.Validators[0].(func(string) error)
-	// gitprojectDescEnabled is the schema descriptor for enabled field.
-	gitprojectDescEnabled := gitprojectFields[3].Descriptor()
-	// gitproject.DefaultEnabled holds the default value on creation for the enabled field.
-	gitproject.DefaultEnabled = gitprojectDescEnabled.Default.(bool)
-	// gitprojectDescGlobalEnabled is the schema descriptor for global_enabled field.
-	gitprojectDescGlobalEnabled := gitprojectFields[4].Descriptor()
-	// gitproject.DefaultGlobalEnabled holds the default value on creation for the global_enabled field.
-	gitproject.DefaultGlobalEnabled = gitprojectDescGlobalEnabled.Default.(bool)
 	namespaceMixin := schema.Namespace{}.Mixin()
 	namespaceMixinHooks2 := namespaceMixin[2].Hooks()
 	namespace.Hooks[0] = namespaceMixinHooks2[0]

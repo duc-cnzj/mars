@@ -14,7 +14,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/dbcache"
 	"github.com/duc-cnzj/mars/v4/internal/ent/event"
 	"github.com/duc-cnzj/mars/v4/internal/ent/file"
-	"github.com/duc-cnzj/mars/v4/internal/ent/gitproject"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
@@ -239,33 +238,6 @@ func (f TraverseFile) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.FileQuery", q)
 }
 
-// The GitProjectFunc type is an adapter to allow the use of ordinary function as a Querier.
-type GitProjectFunc func(context.Context, *ent.GitProjectQuery) (ent.Value, error)
-
-// Query calls f(ctx, q).
-func (f GitProjectFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
-	if q, ok := q.(*ent.GitProjectQuery); ok {
-		return f(ctx, q)
-	}
-	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GitProjectQuery", q)
-}
-
-// The TraverseGitProject type is an adapter to allow the use of ordinary function as Traverser.
-type TraverseGitProject func(context.Context, *ent.GitProjectQuery) error
-
-// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
-func (f TraverseGitProject) Intercept(next ent.Querier) ent.Querier {
-	return next
-}
-
-// Traverse calls f(ctx, q).
-func (f TraverseGitProject) Traverse(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.GitProjectQuery); ok {
-		return f(ctx, q)
-	}
-	return fmt.Errorf("unexpected query type %T. expect *ent.GitProjectQuery", q)
-}
-
 // The NamespaceFunc type is an adapter to allow the use of ordinary function as a Querier.
 type NamespaceFunc func(context.Context, *ent.NamespaceQuery) (ent.Value, error)
 
@@ -362,8 +334,6 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.EventQuery, predicate.Event, event.OrderOption]{typ: ent.TypeEvent, tq: q}, nil
 	case *ent.FileQuery:
 		return &query[*ent.FileQuery, predicate.File, file.OrderOption]{typ: ent.TypeFile, tq: q}, nil
-	case *ent.GitProjectQuery:
-		return &query[*ent.GitProjectQuery, predicate.GitProject, gitproject.OrderOption]{typ: ent.TypeGitProject, tq: q}, nil
 	case *ent.NamespaceQuery:
 		return &query[*ent.NamespaceQuery, predicate.Namespace, namespace.OrderOption]{typ: ent.TypeNamespace, tq: q}, nil
 	case *ent.ProjectQuery:

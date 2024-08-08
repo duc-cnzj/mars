@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -12,16 +13,18 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
+	"github.com/duc-cnzj/mars/v4/internal/ent/project"
 	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
 )
 
 // RepoQuery is the builder for querying Repo entities.
 type RepoQuery struct {
 	config
-	ctx        *QueryContext
-	order      []repo.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Repo
+	ctx          *QueryContext
+	order        []repo.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.Repo
+	withProjects *ProjectQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -56,6 +59,28 @@ func (rq *RepoQuery) Unique(unique bool) *RepoQuery {
 func (rq *RepoQuery) Order(o ...repo.OrderOption) *RepoQuery {
 	rq.order = append(rq.order, o...)
 	return rq
+}
+
+// QueryProjects chains the current query on the "projects" edge.
+func (rq *RepoQuery) QueryProjects() *ProjectQuery {
+	query := (&ProjectClient{config: rq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(repo.Table, repo.FieldID, selector),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, repo.ProjectsTable, repo.ProjectsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Repo entity from the query.
@@ -245,15 +270,27 @@ func (rq *RepoQuery) Clone() *RepoQuery {
 		return nil
 	}
 	return &RepoQuery{
-		config:     rq.config,
-		ctx:        rq.ctx.Clone(),
-		order:      append([]repo.OrderOption{}, rq.order...),
-		inters:     append([]Interceptor{}, rq.inters...),
-		predicates: append([]predicate.Repo{}, rq.predicates...),
+		config:       rq.config,
+		ctx:          rq.ctx.Clone(),
+		order:        append([]repo.OrderOption{}, rq.order...),
+		inters:       append([]Interceptor{}, rq.inters...),
+		predicates:   append([]predicate.Repo{}, rq.predicates...),
+		withProjects: rq.withProjects.Clone(),
 		// clone intermediate query.
 		sql:  rq.sql.Clone(),
 		path: rq.path,
 	}
+}
+
+// WithProjects tells the query-builder to eager-load the nodes that are connected to
+// the "projects" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *RepoQuery) WithProjects(opts ...func(*ProjectQuery)) *RepoQuery {
+	query := (&ProjectClient{config: rq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withProjects = query
+	return rq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -332,8 +369,11 @@ func (rq *RepoQuery) prepareQuery(ctx context.Context) error {
 
 func (rq *RepoQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Repo, error) {
 	var (
-		nodes = []*Repo{}
-		_spec = rq.querySpec()
+		nodes       = []*Repo{}
+		_spec       = rq.querySpec()
+		loadedTypes = [1]bool{
+			rq.withProjects != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Repo).scanValues(nil, columns)
@@ -341,6 +381,7 @@ func (rq *RepoQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Repo, e
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &Repo{config: rq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -352,7 +393,45 @@ func (rq *RepoQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Repo, e
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := rq.withProjects; query != nil {
+		if err := rq.loadProjects(ctx, query, nodes,
+			func(n *Repo) { n.Edges.Projects = []*Project{} },
+			func(n *Repo, e *Project) { n.Edges.Projects = append(n.Edges.Projects, e) }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (rq *RepoQuery) loadProjects(ctx context.Context, query *ProjectQuery, nodes []*Repo, init func(*Repo), assign func(*Repo, *Project)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Repo)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(project.FieldRepoID)
+	}
+	query.Where(predicate.Project(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(repo.ProjectsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.RepoID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "repo_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (rq *RepoQuery) sqlCount(ctx context.Context) (int, error) {

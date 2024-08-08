@@ -20,6 +20,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/services"
 	"github.com/duc-cnzj/mars/v4/internal/socket"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
+	"github.com/duc-cnzj/mars/v4/internal/util/counter"
 	"github.com/duc-cnzj/mars/v4/internal/util/timer"
 )
 
@@ -55,25 +56,24 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	versionServer := services.NewVersionSvc()
 	gitRepo := repo.NewGitRepo(logger, pluginManger, dataData)
 	repoImp := repo.NewRepo(logger, dataData, gitRepo)
-	namespaceRepo := repo.NewNamespaceRepo(logger, dataData)
-	projectRepo := repo.NewProjectRepo(logger, dataData)
 	archiver := repo.NewDefaultArchiver()
 	executorManager := repo.NewExecutorManager(dataData)
 	k8sRepo := repo.NewK8sRepo(logger, dataData, uploaderUploader, archiver, executorManager)
 	helmerRepo := repo.NewDefaultHelmer(k8sRepo, dataData, configConfig, logger)
-	gitProjectRepo := repo.NewGitProjectRepo(logger, dataData)
+	releaseInstaller := socket.NewReleaseInstaller(logger, helmerRepo, dataData, timerTimer)
+	namespaceRepo := repo.NewNamespaceRepo(logger, dataData)
+	projectRepo := repo.NewProjectRepo(logger, dataData)
 	changelogRepo := repo.NewChangelogRepo(logger, dataData)
-	eventRepo := repo.NewEventRepo(gitProjectRepo, pluginManger, changelogRepo, logger, dataData, dispatcher)
+	eventRepo := repo.NewEventRepo(projectRepo, pluginManger, changelogRepo, logger, dataData, dispatcher)
 	toolRepo := repo.NewToolRepo()
-	jobManager := socket.NewJobManager(dataData, logger, repoImp, namespaceRepo, projectRepo, helmerRepo, uploaderUploader, lockerLocker, k8sRepo, eventRepo, toolRepo, pluginManger)
+	jobManager := socket.NewJobManager(dataData, timerTimer, logger, releaseInstaller, repoImp, namespaceRepo, projectRepo, helmerRepo, uploaderUploader, lockerLocker, k8sRepo, eventRepo, toolRepo, pluginManger)
 	wsRepo := repo.NewWsRepo(pluginManger)
 	projectServer := services.NewProjectSvc(repoImp, jobManager, projectRepo, wsRepo, gitRepo, k8sRepo, pluginManger, eventRepo, logger, helmerRepo, namespaceRepo)
 	pictureRepo := repo.NewPictureRepo(logger, pluginManger)
 	pictureServer := services.NewPictureSvc(pictureRepo)
 	namespaceServer := services.NewNamespaceSvc(helmerRepo, namespaceRepo, k8sRepo, logger, eventRepo)
 	metricsServer := services.NewMetricsSvc(k8sRepo, logger, projectRepo, namespaceRepo)
-	gitConfigServer := services.NewGitConfigSvc(eventRepo, cacheCache, gitRepo, gitProjectRepo, logger)
-	gitServer := services.NewGitSvc(repoImp, eventRepo, logger, gitRepo, cacheCache, gitProjectRepo)
+	gitServer := services.NewGitSvc(repoImp, eventRepo, logger, gitRepo, cacheCache)
 	cronRepo := repo.NewCronRepo(logger, eventRepo, dataData, uploaderUploader, helmerRepo, gitRepo, manager)
 	fileRepo := repo.NewFileRepo(cronRepo, logger, dataData, uploaderUploader, timerTimer)
 	fileServer := services.NewFileSvc(eventRepo, fileRepo, logger)
@@ -87,8 +87,9 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	accessTokenRepo := repo.NewAccessTokenRepo(timerTimer, logger, dataData)
 	accessTokenServer := services.NewAccessTokenSvc(eventRepo, timerTimer, accessTokenRepo)
 	repoServer := services.NewRepoSvc(logger, eventRepo, gitRepo, repoImp)
-	grpcRegistry := services.NewGrpcRegistry(versionServer, projectServer, pictureServer, namespaceServer, metricsServer, gitConfigServer, gitServer, fileServer, eventServer, endpointServer, containerServer, clusterServer, changelogServer, authServer, accessTokenServer, repoServer)
-	wsServer := socket.NewWebsocketManager(logger, repoImp, jobManager, dataData, pluginManger, authAuth, uploaderUploader, lockerLocker, k8sRepo, eventRepo, executorManager, fileRepo)
+	grpcRegistry := services.NewGrpcRegistry(versionServer, projectServer, pictureServer, namespaceServer, metricsServer, gitServer, fileServer, eventServer, endpointServer, containerServer, clusterServer, changelogServer, authServer, accessTokenServer, repoServer)
+	counterCounter := counter.NewCounter()
+	wsServer := socket.NewWebsocketManager(logger, counterCounter, repoImp, namespaceRepo, jobManager, dataData, pluginManger, authAuth, uploaderUploader, lockerLocker, k8sRepo, eventRepo, executorManager, fileRepo)
 	app := newApp(configConfig, dataData, manager, arg, logger, uploaderUploader, authAuth, dispatcher, cacheCache, lockerLocker, group, pluginManger, grpcRegistry, wsServer)
 	return app, nil
 }

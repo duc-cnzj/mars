@@ -113,7 +113,6 @@ func (repo *namespaceRepo) Show(ctx context.Context, id int) (*Namespace, error)
 		WithProjects(func(query *ent.ProjectQuery) {
 			query.Select(
 				project.FieldID,
-				project.FieldManifest,
 				project.FieldName,
 				project.FieldNamespaceID,
 			)

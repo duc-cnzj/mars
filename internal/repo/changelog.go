@@ -4,9 +4,8 @@ import (
 	"context"
 	"time"
 
-	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
-
 	"github.com/duc-cnzj/mars/api/v4/types"
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
@@ -23,9 +22,7 @@ type Changelog struct {
 	DeletedAt        *time.Time
 	Version          int
 	Username         string
-	Manifest         []string
 	Config           string
-	ConfigType       string
 	GitBranch        string
 	GitCommit        string
 	DockerImage      []string
@@ -38,10 +35,8 @@ type Changelog struct {
 	GitCommitDate    *time.Time
 	ConfigChanged    bool
 	ProjectID        int
-	GitProjectID     int
 
-	Project    *Project
-	GitProject *GitProject
+	Project *Project
 }
 
 func ToChangeLog(c *ent.Changelog) *Changelog {
@@ -55,9 +50,7 @@ func ToChangeLog(c *ent.Changelog) *Changelog {
 		DeletedAt:        c.DeletedAt,
 		Version:          c.Version,
 		Username:         c.Username,
-		Manifest:         c.Manifest,
 		Config:           c.Config,
-		ConfigType:       c.ConfigType,
 		GitBranch:        c.GitBranch,
 		GitCommit:        c.GitCommit,
 		DockerImage:      c.DockerImage,
@@ -70,9 +63,7 @@ func ToChangeLog(c *ent.Changelog) *Changelog {
 		GitCommitDate:    c.GitCommitDate,
 		ConfigChanged:    c.ConfigChanged,
 		ProjectID:        c.ProjectID,
-		GitProjectID:     c.GitProjectID,
 		Project:          ToProject(c.Edges.Project),
-		GitProject:       ToGitProject(c.Edges.GitProject),
 	}
 }
 
@@ -96,9 +87,7 @@ func NewChangelogRepo(logger mlog.Logger, data data.Data) ChangelogRepo {
 type CreateChangeLogInput struct {
 	Version          int
 	Username         string
-	Manifest         []string
 	Config           string
-	ConfigType       string
 	GitBranch        string
 	GitCommit        string
 	DockerImage      []string
@@ -111,7 +100,6 @@ type CreateChangeLogInput struct {
 	GitCommitDate    *time.Time
 	ProjectID        int
 	ConfigChanged    bool
-	GitProjectID     int
 }
 
 func (c *changelogRepo) Create(ctx context.Context, input *CreateChangeLogInput) (*Changelog, error) {
@@ -119,9 +107,7 @@ func (c *changelogRepo) Create(ctx context.Context, input *CreateChangeLogInput)
 	save, err := db.Changelog.Create().
 		SetVersion(input.Version).
 		SetUsername(input.Username).
-		SetManifest(input.Manifest).
 		SetConfig(input.Config).
-		SetConfigType(input.ConfigType).
 		SetGitBranch(input.GitBranch).
 		SetGitCommit(input.GitCommit).
 		SetDockerImage(input.DockerImage).
@@ -134,7 +120,6 @@ func (c *changelogRepo) Create(ctx context.Context, input *CreateChangeLogInput)
 		SetNillableGitCommitDate(input.GitCommitDate).
 		SetConfigChanged(input.ConfigChanged).
 		SetProjectID(input.ProjectID).
-		SetGitProjectID(input.GitProjectID).
 		Save(ctx)
 	return ToChangeLog(save), err
 }

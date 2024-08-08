@@ -14,7 +14,6 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
-	"github.com/duc-cnzj/mars/v4/internal/ent/gitproject"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
 )
 
@@ -88,12 +87,6 @@ func (cc *ChangelogCreate) SetUsername(s string) *ChangelogCreate {
 	return cc
 }
 
-// SetManifest sets the "manifest" field.
-func (cc *ChangelogCreate) SetManifest(s []string) *ChangelogCreate {
-	cc.mutation.SetManifest(s)
-	return cc
-}
-
 // SetConfig sets the "config" field.
 func (cc *ChangelogCreate) SetConfig(s string) *ChangelogCreate {
 	cc.mutation.SetConfig(s)
@@ -104,20 +97,6 @@ func (cc *ChangelogCreate) SetConfig(s string) *ChangelogCreate {
 func (cc *ChangelogCreate) SetNillableConfig(s *string) *ChangelogCreate {
 	if s != nil {
 		cc.SetConfig(*s)
-	}
-	return cc
-}
-
-// SetConfigType sets the "config_type" field.
-func (cc *ChangelogCreate) SetConfigType(s string) *ChangelogCreate {
-	cc.mutation.SetConfigType(s)
-	return cc
-}
-
-// SetNillableConfigType sets the "config_type" field if the given value is not nil.
-func (cc *ChangelogCreate) SetNillableConfigType(s *string) *ChangelogCreate {
-	if s != nil {
-		cc.SetConfigType(*s)
 	}
 	return cc
 }
@@ -242,25 +221,6 @@ func (cc *ChangelogCreate) SetNillableProjectID(i *int) *ChangelogCreate {
 	return cc
 }
 
-// SetGitProjectID sets the "git_project_id" field.
-func (cc *ChangelogCreate) SetGitProjectID(i int) *ChangelogCreate {
-	cc.mutation.SetGitProjectID(i)
-	return cc
-}
-
-// SetNillableGitProjectID sets the "git_project_id" field if the given value is not nil.
-func (cc *ChangelogCreate) SetNillableGitProjectID(i *int) *ChangelogCreate {
-	if i != nil {
-		cc.SetGitProjectID(*i)
-	}
-	return cc
-}
-
-// SetGitProject sets the "git_project" edge to the GitProject entity.
-func (cc *ChangelogCreate) SetGitProject(g *GitProject) *ChangelogCreate {
-	return cc.SetGitProjectID(g.ID)
-}
-
 // SetProject sets the "project" edge to the Project entity.
 func (cc *ChangelogCreate) SetProject(p *Project) *ChangelogCreate {
 	return cc.SetProjectID(p.ID)
@@ -347,11 +307,6 @@ func (cc *ChangelogCreate) check() error {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "Changelog.username": %w`, err)}
 		}
 	}
-	if v, ok := cc.mutation.ConfigType(); ok {
-		if err := changelog.ConfigTypeValidator(v); err != nil {
-			return &ValidationError{Name: "config_type", err: fmt.Errorf(`ent: validator failed for field "Changelog.config_type": %w`, err)}
-		}
-	}
 	if _, ok := cc.mutation.GitBranch(); !ok {
 		return &ValidationError{Name: "git_branch", err: errors.New(`ent: missing required field "Changelog.git_branch"`)}
 	}
@@ -433,17 +388,9 @@ func (cc *ChangelogCreate) createSpec() (*Changelog, *sqlgraph.CreateSpec) {
 		_spec.SetField(changelog.FieldUsername, field.TypeString, value)
 		_node.Username = value
 	}
-	if value, ok := cc.mutation.Manifest(); ok {
-		_spec.SetField(changelog.FieldManifest, field.TypeJSON, value)
-		_node.Manifest = value
-	}
 	if value, ok := cc.mutation.Config(); ok {
 		_spec.SetField(changelog.FieldConfig, field.TypeString, value)
 		_node.Config = value
-	}
-	if value, ok := cc.mutation.ConfigType(); ok {
-		_spec.SetField(changelog.FieldConfigType, field.TypeString, value)
-		_node.ConfigType = value
 	}
 	if value, ok := cc.mutation.GitBranch(); ok {
 		_spec.SetField(changelog.FieldGitBranch, field.TypeString, value)
@@ -488,23 +435,6 @@ func (cc *ChangelogCreate) createSpec() (*Changelog, *sqlgraph.CreateSpec) {
 	if value, ok := cc.mutation.ConfigChanged(); ok {
 		_spec.SetField(changelog.FieldConfigChanged, field.TypeBool, value)
 		_node.ConfigChanged = value
-	}
-	if nodes := cc.mutation.GitProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   changelog.GitProjectTable,
-			Columns: []string{changelog.GitProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(gitproject.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.GitProjectID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := cc.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -635,24 +565,6 @@ func (u *ChangelogUpsert) UpdateUsername() *ChangelogUpsert {
 	return u
 }
 
-// SetManifest sets the "manifest" field.
-func (u *ChangelogUpsert) SetManifest(v []string) *ChangelogUpsert {
-	u.Set(changelog.FieldManifest, v)
-	return u
-}
-
-// UpdateManifest sets the "manifest" field to the value that was provided on create.
-func (u *ChangelogUpsert) UpdateManifest() *ChangelogUpsert {
-	u.SetExcluded(changelog.FieldManifest)
-	return u
-}
-
-// ClearManifest clears the value of the "manifest" field.
-func (u *ChangelogUpsert) ClearManifest() *ChangelogUpsert {
-	u.SetNull(changelog.FieldManifest)
-	return u
-}
-
 // SetConfig sets the "config" field.
 func (u *ChangelogUpsert) SetConfig(v string) *ChangelogUpsert {
 	u.Set(changelog.FieldConfig, v)
@@ -668,24 +580,6 @@ func (u *ChangelogUpsert) UpdateConfig() *ChangelogUpsert {
 // ClearConfig clears the value of the "config" field.
 func (u *ChangelogUpsert) ClearConfig() *ChangelogUpsert {
 	u.SetNull(changelog.FieldConfig)
-	return u
-}
-
-// SetConfigType sets the "config_type" field.
-func (u *ChangelogUpsert) SetConfigType(v string) *ChangelogUpsert {
-	u.Set(changelog.FieldConfigType, v)
-	return u
-}
-
-// UpdateConfigType sets the "config_type" field to the value that was provided on create.
-func (u *ChangelogUpsert) UpdateConfigType() *ChangelogUpsert {
-	u.SetExcluded(changelog.FieldConfigType)
-	return u
-}
-
-// ClearConfigType clears the value of the "config_type" field.
-func (u *ChangelogUpsert) ClearConfigType() *ChangelogUpsert {
-	u.SetNull(changelog.FieldConfigType)
 	return u
 }
 
@@ -887,24 +781,6 @@ func (u *ChangelogUpsert) ClearProjectID() *ChangelogUpsert {
 	return u
 }
 
-// SetGitProjectID sets the "git_project_id" field.
-func (u *ChangelogUpsert) SetGitProjectID(v int) *ChangelogUpsert {
-	u.Set(changelog.FieldGitProjectID, v)
-	return u
-}
-
-// UpdateGitProjectID sets the "git_project_id" field to the value that was provided on create.
-func (u *ChangelogUpsert) UpdateGitProjectID() *ChangelogUpsert {
-	u.SetExcluded(changelog.FieldGitProjectID)
-	return u
-}
-
-// ClearGitProjectID clears the value of the "git_project_id" field.
-func (u *ChangelogUpsert) ClearGitProjectID() *ChangelogUpsert {
-	u.SetNull(changelog.FieldGitProjectID)
-	return u
-}
-
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -1020,27 +896,6 @@ func (u *ChangelogUpsertOne) UpdateUsername() *ChangelogUpsertOne {
 	})
 }
 
-// SetManifest sets the "manifest" field.
-func (u *ChangelogUpsertOne) SetManifest(v []string) *ChangelogUpsertOne {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.SetManifest(v)
-	})
-}
-
-// UpdateManifest sets the "manifest" field to the value that was provided on create.
-func (u *ChangelogUpsertOne) UpdateManifest() *ChangelogUpsertOne {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.UpdateManifest()
-	})
-}
-
-// ClearManifest clears the value of the "manifest" field.
-func (u *ChangelogUpsertOne) ClearManifest() *ChangelogUpsertOne {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.ClearManifest()
-	})
-}
-
 // SetConfig sets the "config" field.
 func (u *ChangelogUpsertOne) SetConfig(v string) *ChangelogUpsertOne {
 	return u.Update(func(s *ChangelogUpsert) {
@@ -1059,27 +914,6 @@ func (u *ChangelogUpsertOne) UpdateConfig() *ChangelogUpsertOne {
 func (u *ChangelogUpsertOne) ClearConfig() *ChangelogUpsertOne {
 	return u.Update(func(s *ChangelogUpsert) {
 		s.ClearConfig()
-	})
-}
-
-// SetConfigType sets the "config_type" field.
-func (u *ChangelogUpsertOne) SetConfigType(v string) *ChangelogUpsertOne {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.SetConfigType(v)
-	})
-}
-
-// UpdateConfigType sets the "config_type" field to the value that was provided on create.
-func (u *ChangelogUpsertOne) UpdateConfigType() *ChangelogUpsertOne {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.UpdateConfigType()
-	})
-}
-
-// ClearConfigType clears the value of the "config_type" field.
-func (u *ChangelogUpsertOne) ClearConfigType() *ChangelogUpsertOne {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.ClearConfigType()
 	})
 }
 
@@ -1311,27 +1145,6 @@ func (u *ChangelogUpsertOne) UpdateProjectID() *ChangelogUpsertOne {
 func (u *ChangelogUpsertOne) ClearProjectID() *ChangelogUpsertOne {
 	return u.Update(func(s *ChangelogUpsert) {
 		s.ClearProjectID()
-	})
-}
-
-// SetGitProjectID sets the "git_project_id" field.
-func (u *ChangelogUpsertOne) SetGitProjectID(v int) *ChangelogUpsertOne {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.SetGitProjectID(v)
-	})
-}
-
-// UpdateGitProjectID sets the "git_project_id" field to the value that was provided on create.
-func (u *ChangelogUpsertOne) UpdateGitProjectID() *ChangelogUpsertOne {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.UpdateGitProjectID()
-	})
-}
-
-// ClearGitProjectID clears the value of the "git_project_id" field.
-func (u *ChangelogUpsertOne) ClearGitProjectID() *ChangelogUpsertOne {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.ClearGitProjectID()
 	})
 }
 
@@ -1616,27 +1429,6 @@ func (u *ChangelogUpsertBulk) UpdateUsername() *ChangelogUpsertBulk {
 	})
 }
 
-// SetManifest sets the "manifest" field.
-func (u *ChangelogUpsertBulk) SetManifest(v []string) *ChangelogUpsertBulk {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.SetManifest(v)
-	})
-}
-
-// UpdateManifest sets the "manifest" field to the value that was provided on create.
-func (u *ChangelogUpsertBulk) UpdateManifest() *ChangelogUpsertBulk {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.UpdateManifest()
-	})
-}
-
-// ClearManifest clears the value of the "manifest" field.
-func (u *ChangelogUpsertBulk) ClearManifest() *ChangelogUpsertBulk {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.ClearManifest()
-	})
-}
-
 // SetConfig sets the "config" field.
 func (u *ChangelogUpsertBulk) SetConfig(v string) *ChangelogUpsertBulk {
 	return u.Update(func(s *ChangelogUpsert) {
@@ -1655,27 +1447,6 @@ func (u *ChangelogUpsertBulk) UpdateConfig() *ChangelogUpsertBulk {
 func (u *ChangelogUpsertBulk) ClearConfig() *ChangelogUpsertBulk {
 	return u.Update(func(s *ChangelogUpsert) {
 		s.ClearConfig()
-	})
-}
-
-// SetConfigType sets the "config_type" field.
-func (u *ChangelogUpsertBulk) SetConfigType(v string) *ChangelogUpsertBulk {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.SetConfigType(v)
-	})
-}
-
-// UpdateConfigType sets the "config_type" field to the value that was provided on create.
-func (u *ChangelogUpsertBulk) UpdateConfigType() *ChangelogUpsertBulk {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.UpdateConfigType()
-	})
-}
-
-// ClearConfigType clears the value of the "config_type" field.
-func (u *ChangelogUpsertBulk) ClearConfigType() *ChangelogUpsertBulk {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.ClearConfigType()
 	})
 }
 
@@ -1907,27 +1678,6 @@ func (u *ChangelogUpsertBulk) UpdateProjectID() *ChangelogUpsertBulk {
 func (u *ChangelogUpsertBulk) ClearProjectID() *ChangelogUpsertBulk {
 	return u.Update(func(s *ChangelogUpsert) {
 		s.ClearProjectID()
-	})
-}
-
-// SetGitProjectID sets the "git_project_id" field.
-func (u *ChangelogUpsertBulk) SetGitProjectID(v int) *ChangelogUpsertBulk {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.SetGitProjectID(v)
-	})
-}
-
-// UpdateGitProjectID sets the "git_project_id" field to the value that was provided on create.
-func (u *ChangelogUpsertBulk) UpdateGitProjectID() *ChangelogUpsertBulk {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.UpdateGitProjectID()
-	})
-}
-
-// ClearGitProjectID clears the value of the "git_project_id" field.
-func (u *ChangelogUpsertBulk) ClearGitProjectID() *ChangelogUpsertBulk {
-	return u.Update(func(s *ChangelogUpsert) {
-		s.ClearGitProjectID()
 	})
 }
 

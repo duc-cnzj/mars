@@ -236,7 +236,7 @@ func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 		p.logger.Error(err)
 	}
 	p.projRepo.Delete(ctx, int(request.Id))
-	p.eventRepo.Dispatch(repo.EventProjectDeleted, &projectModel)
+	p.eventRepo.Dispatch(repo.EventProjectDeleted, projectModel)
 
 	p.eventRepo.AuditLog(
 		types.EventActionType_Delete,
@@ -246,6 +246,8 @@ func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 
 	return &project.DeleteResponse{}, nil
 }
+
+var GetProjectMarsConfig = mars.GetProjectConfig
 
 func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*project.ShowResponse, error) {
 	projectModel, err := p.projRepo.Show(ctx, int(request.Id))

@@ -56,9 +56,7 @@ var (
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "version", Type: field.TypeInt, Default: 1},
 		{Name: "username", Type: field.TypeString, Size: 100},
-		{Name: "manifest", Type: field.TypeJSON, Nullable: true},
 		{Name: "config", Type: field.TypeString, Nullable: true},
-		{Name: "config_type", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "git_branch", Type: field.TypeString, Size: 255},
 		{Name: "git_commit", Type: field.TypeString, Size: 255},
 		{Name: "docker_image", Type: field.TypeJSON, Nullable: true},
@@ -70,7 +68,6 @@ var (
 		{Name: "git_commit_author", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "git_commit_date", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "config_changed", Type: field.TypeBool, Default: false},
-		{Name: "git_project_id", Type: field.TypeInt, Nullable: true},
 		{Name: "project_id", Type: field.TypeInt, Nullable: true},
 	}
 	// ChangelogsTable holds the schema information for the "changelogs" table.
@@ -80,14 +77,8 @@ var (
 		PrimaryKey: []*schema.Column{ChangelogsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "changelogs_git_projects_changelogs",
-				Columns:    []*schema.Column{ChangelogsColumns[20]},
-				RefColumns: []*schema.Column{GitProjectsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
 				Symbol:     "changelogs_projects_changelogs",
-				Columns:    []*schema.Column{ChangelogsColumns[21]},
+				Columns:    []*schema.Column{ChangelogsColumns[18]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -96,7 +87,7 @@ var (
 			{
 				Name:    "changelog_project_id_config_changed_deleted_at_version",
 				Unique:  false,
-				Columns: []*schema.Column{ChangelogsColumns[21], ChangelogsColumns[19], ChangelogsColumns[3], ChangelogsColumns[4]},
+				Columns: []*schema.Column{ChangelogsColumns[18], ChangelogsColumns[17], ChangelogsColumns[3], ChangelogsColumns[4]},
 			},
 		},
 	}
@@ -174,25 +165,6 @@ var (
 		Columns:    FilesColumns,
 		PrimaryKey: []*schema.Column{FilesColumns[0]},
 	}
-	// GitProjectsColumns holds the columns for the "git_projects" table.
-	GitProjectsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
-		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
-		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
-		{Name: "name", Type: field.TypeString, Size: 255, Default: ""},
-		{Name: "default_branch", Type: field.TypeString, Size: 255, Default: ""},
-		{Name: "git_project_id", Type: field.TypeInt, Unique: true},
-		{Name: "enabled", Type: field.TypeBool, Default: false},
-		{Name: "global_enabled", Type: field.TypeBool, Default: false},
-		{Name: "global_config", Type: field.TypeJSON, Nullable: true},
-	}
-	// GitProjectsTable holds the schema information for the "git_projects" table.
-	GitProjectsTable = &schema.Table{
-		Name:       "git_projects",
-		Columns:    GitProjectsColumns,
-		PrimaryKey: []*schema.Column{GitProjectsColumns[0]},
-	}
 	// NamespacesColumns holds the columns for the "namespaces" table.
 	NamespacesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -235,6 +207,7 @@ var (
 		{Name: "git_commit_author", Type: field.TypeString, Size: 255, Default: ""},
 		{Name: "git_commit_date", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "namespace_id", Type: field.TypeInt, Nullable: true},
+		{Name: "repo_id", Type: field.TypeInt, Nullable: true},
 	}
 	// ProjectsTable holds the schema information for the "projects" table.
 	ProjectsTable = &schema.Table{
@@ -246,6 +219,12 @@ var (
 				Symbol:     "projects_namespaces_projects",
 				Columns:    []*schema.Column{ProjectsColumns[24]},
 				RefColumns: []*schema.Column{NamespacesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "projects_repos_projects",
+				Columns:    []*schema.Column{ProjectsColumns[25]},
+				RefColumns: []*schema.Column{ReposColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -285,7 +264,6 @@ var (
 		DbCacheTable,
 		EventsTable,
 		FilesTable,
-		GitProjectsTable,
 		NamespacesTable,
 		ProjectsTable,
 		ReposTable,
@@ -293,11 +271,11 @@ var (
 )
 
 func init() {
-	ChangelogsTable.ForeignKeys[0].RefTable = GitProjectsTable
-	ChangelogsTable.ForeignKeys[1].RefTable = ProjectsTable
+	ChangelogsTable.ForeignKeys[0].RefTable = ProjectsTable
 	DbCacheTable.Annotation = &entsql.Annotation{
 		Table: "db_cache",
 	}
 	EventsTable.ForeignKeys[0].RefTable = FilesTable
 	ProjectsTable.ForeignKeys[0].RefTable = NamespacesTable
+	ProjectsTable.ForeignKeys[1].RefTable = ReposTable
 }

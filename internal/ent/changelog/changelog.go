@@ -25,12 +25,8 @@ const (
 	FieldVersion = "version"
 	// FieldUsername holds the string denoting the username field in the database.
 	FieldUsername = "username"
-	// FieldManifest holds the string denoting the manifest field in the database.
-	FieldManifest = "manifest"
 	// FieldConfig holds the string denoting the config field in the database.
 	FieldConfig = "config"
-	// FieldConfigType holds the string denoting the config_type field in the database.
-	FieldConfigType = "config_type"
 	// FieldGitBranch holds the string denoting the git_branch field in the database.
 	FieldGitBranch = "git_branch"
 	// FieldGitCommit holds the string denoting the git_commit field in the database.
@@ -55,21 +51,10 @@ const (
 	FieldConfigChanged = "config_changed"
 	// FieldProjectID holds the string denoting the project_id field in the database.
 	FieldProjectID = "project_id"
-	// FieldGitProjectID holds the string denoting the git_project_id field in the database.
-	FieldGitProjectID = "git_project_id"
-	// EdgeGitProject holds the string denoting the git_project edge name in mutations.
-	EdgeGitProject = "git_project"
 	// EdgeProject holds the string denoting the project edge name in mutations.
 	EdgeProject = "project"
 	// Table holds the table name of the changelog in the database.
 	Table = "changelogs"
-	// GitProjectTable is the table that holds the git_project relation/edge.
-	GitProjectTable = "changelogs"
-	// GitProjectInverseTable is the table name for the GitProject entity.
-	// It exists in this package in order to avoid circular dependency with the "gitproject" package.
-	GitProjectInverseTable = "git_projects"
-	// GitProjectColumn is the table column denoting the git_project relation/edge.
-	GitProjectColumn = "git_project_id"
 	// ProjectTable is the table that holds the project relation/edge.
 	ProjectTable = "changelogs"
 	// ProjectInverseTable is the table name for the Project entity.
@@ -87,9 +72,7 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldVersion,
 	FieldUsername,
-	FieldManifest,
 	FieldConfig,
-	FieldConfigType,
 	FieldGitBranch,
 	FieldGitCommit,
 	FieldDockerImage,
@@ -102,7 +85,6 @@ var Columns = []string{
 	FieldGitCommitDate,
 	FieldConfigChanged,
 	FieldProjectID,
-	FieldGitProjectID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -133,8 +115,6 @@ var (
 	DefaultVersion int
 	// UsernameValidator is a validator for the "username" field. It is called by the builders before save.
 	UsernameValidator func(string) error
-	// ConfigTypeValidator is a validator for the "config_type" field. It is called by the builders before save.
-	ConfigTypeValidator func(string) error
 	// GitBranchValidator is a validator for the "git_branch" field. It is called by the builders before save.
 	GitBranchValidator func(string) error
 	// GitCommitValidator is a validator for the "git_commit" field. It is called by the builders before save.
@@ -187,11 +167,6 @@ func ByConfig(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldConfig, opts...).ToFunc()
 }
 
-// ByConfigType orders the results by the config_type field.
-func ByConfigType(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldConfigType, opts...).ToFunc()
-}
-
 // ByGitBranch orders the results by the git_branch field.
 func ByGitBranch(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldGitBranch, opts...).ToFunc()
@@ -232,30 +207,11 @@ func ByProjectID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProjectID, opts...).ToFunc()
 }
 
-// ByGitProjectID orders the results by the git_project_id field.
-func ByGitProjectID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldGitProjectID, opts...).ToFunc()
-}
-
-// ByGitProjectField orders the results by git_project field.
-func ByGitProjectField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newGitProjectStep(), sql.OrderByField(field, opts...))
-	}
-}
-
 // ByProjectField orders the results by project field.
 func ByProjectField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newProjectStep(), sql.OrderByField(field, opts...))
 	}
-}
-func newGitProjectStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(GitProjectInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, GitProjectTable, GitProjectColumn),
-	)
 }
 func newProjectStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

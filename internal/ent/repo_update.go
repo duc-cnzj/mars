@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
+	"github.com/duc-cnzj/mars/v4/internal/ent/project"
 	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
 )
 
@@ -176,9 +177,45 @@ func (ru *RepoUpdate) ClearMarsConfig() *RepoUpdate {
 	return ru
 }
 
+// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
+func (ru *RepoUpdate) AddProjectIDs(ids ...int) *RepoUpdate {
+	ru.mutation.AddProjectIDs(ids...)
+	return ru
+}
+
+// AddProjects adds the "projects" edges to the Project entity.
+func (ru *RepoUpdate) AddProjects(p ...*Project) *RepoUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ru.AddProjectIDs(ids...)
+}
+
 // Mutation returns the RepoMutation object of the builder.
 func (ru *RepoUpdate) Mutation() *RepoMutation {
 	return ru.mutation
+}
+
+// ClearProjects clears all "projects" edges to the Project entity.
+func (ru *RepoUpdate) ClearProjects() *RepoUpdate {
+	ru.mutation.ClearProjects()
+	return ru
+}
+
+// RemoveProjectIDs removes the "projects" edge to Project entities by IDs.
+func (ru *RepoUpdate) RemoveProjectIDs(ids ...int) *RepoUpdate {
+	ru.mutation.RemoveProjectIDs(ids...)
+	return ru
+}
+
+// RemoveProjects removes "projects" edges to Project entities.
+func (ru *RepoUpdate) RemoveProjects(p ...*Project) *RepoUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ru.RemoveProjectIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -299,6 +336,51 @@ func (ru *RepoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if ru.mutation.MarsConfigCleared() {
 		_spec.ClearField(repo.FieldMarsConfig, field.TypeJSON)
+	}
+	if ru.mutation.ProjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repo.ProjectsTable,
+			Columns: []string{repo.ProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedProjectsIDs(); len(nodes) > 0 && !ru.mutation.ProjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repo.ProjectsTable,
+			Columns: []string{repo.ProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.ProjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repo.ProjectsTable,
+			Columns: []string{repo.ProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -467,9 +549,45 @@ func (ruo *RepoUpdateOne) ClearMarsConfig() *RepoUpdateOne {
 	return ruo
 }
 
+// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
+func (ruo *RepoUpdateOne) AddProjectIDs(ids ...int) *RepoUpdateOne {
+	ruo.mutation.AddProjectIDs(ids...)
+	return ruo
+}
+
+// AddProjects adds the "projects" edges to the Project entity.
+func (ruo *RepoUpdateOne) AddProjects(p ...*Project) *RepoUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ruo.AddProjectIDs(ids...)
+}
+
 // Mutation returns the RepoMutation object of the builder.
 func (ruo *RepoUpdateOne) Mutation() *RepoMutation {
 	return ruo.mutation
+}
+
+// ClearProjects clears all "projects" edges to the Project entity.
+func (ruo *RepoUpdateOne) ClearProjects() *RepoUpdateOne {
+	ruo.mutation.ClearProjects()
+	return ruo
+}
+
+// RemoveProjectIDs removes the "projects" edge to Project entities by IDs.
+func (ruo *RepoUpdateOne) RemoveProjectIDs(ids ...int) *RepoUpdateOne {
+	ruo.mutation.RemoveProjectIDs(ids...)
+	return ruo
+}
+
+// RemoveProjects removes "projects" edges to Project entities.
+func (ruo *RepoUpdateOne) RemoveProjects(p ...*Project) *RepoUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ruo.RemoveProjectIDs(ids...)
 }
 
 // Where appends a list predicates to the RepoUpdate builder.
@@ -620,6 +738,51 @@ func (ruo *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) 
 	}
 	if ruo.mutation.MarsConfigCleared() {
 		_spec.ClearField(repo.FieldMarsConfig, field.TypeJSON)
+	}
+	if ruo.mutation.ProjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repo.ProjectsTable,
+			Columns: []string{repo.ProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedProjectsIDs(); len(nodes) > 0 && !ruo.mutation.ProjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repo.ProjectsTable,
+			Columns: []string{repo.ProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.ProjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   repo.ProjectsTable,
+			Columns: []string{repo.ProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Repo{config: ruo.config}
 	_spec.Assign = _node.assignValues

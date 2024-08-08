@@ -22,8 +22,8 @@ type Conn interface {
 	PubSub() application.PubSub
 
 	AddTask(id string, fn func(error)) error
-	StopTask(id string)
-	CancelTask(id string) error
+	RunTask(id string) error
+	RemoveTask(id string)
 
 	GetPtyHandler(sessionID string) (PtyHandler, bool)
 	SetPtyHandler(sessionID string, session PtyHandler)
@@ -68,6 +68,7 @@ func (wc *WebsocketManager) newWsConn(
 	taskManager TaskManager,
 	sm SessionMapper,
 ) Conn {
+	wc.counter.Inc()
 	return &WsConn{
 		ws:          c,
 		id:          id,
@@ -99,7 +100,7 @@ func (c *WsConn) GetUser() *auth.UserInfo {
 }
 
 func (c *WsConn) Close(ctx context.Context) error {
-	c.taskManager.CancelAll()
+	c.taskManager.StopAll()
 	c.pubSub.Close()
 	c.ws.Close()
 	c.sm.CloseAll(ctx)
@@ -108,7 +109,6 @@ func (c *WsConn) Close(ctx context.Context) error {
 		username = c.GetUser().Name
 	}
 	metrics.WebsocketConnectionsCount.With(prometheus.Labels{"username": username}).Dec()
-	Wait.Dec()
 	return nil
 }
 
@@ -160,13 +160,13 @@ func (c *WsConn) AddTask(id string, fn func(error)) error {
 	return c.taskManager.Register(id, fn)
 }
 
-func (c *WsConn) StopTask(id string) {
-	c.taskManager.Stop(id)
+func (c *WsConn) RemoveTask(id string) {
+	c.taskManager.Remove(id)
 }
 
-func (c *WsConn) CancelTask(id string) error {
+func (c *WsConn) RunTask(id string) error {
 	if c.taskManager.Has(id) {
-		c.taskManager.Cancel(id)
+		c.taskManager.Stop(id)
 		return nil
 	}
 	return errors.New("task not found")

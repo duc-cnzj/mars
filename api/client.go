@@ -26,7 +26,6 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/event"
 	"github.com/duc-cnzj/mars/api/v4/file"
 	"github.com/duc-cnzj/mars/api/v4/git"
-	"github.com/duc-cnzj/mars/api/v4/gitconfig"
 	"github.com/duc-cnzj/mars/api/v4/metrics"
 	"github.com/duc-cnzj/mars/api/v4/namespace"
 	"github.com/duc-cnzj/mars/api/v4/picture"
@@ -50,7 +49,6 @@ type Interface interface {
 	File() file.FileClient
 
 	Git() git.GitClient
-	GitConfig() gitconfig.GitConfigClient
 
 	Namespace() namespace.NamespaceClient
 	Project() project.ProjectClient
@@ -80,7 +78,6 @@ type Client struct {
 	container   container.ContainerClient
 	event       event.EventClient
 	git         git.GitClient
-	gitConfig   gitconfig.GitConfigClient
 	metrics     metrics.MetricsClient
 	namespace   namespace.NamespaceClient
 	picture     picture.PictureClient
@@ -111,7 +108,6 @@ func NewClient(addr string, opts ...Option) (Interface, error) {
 	c.container = container.NewContainerClient(dial)
 	c.event = event.NewEventClient(dial)
 	c.git = git.NewGitClient(dial)
-	c.gitConfig = gitconfig.NewGitConfigClient(dial)
 	c.metrics = metrics.NewMetricsClient(dial)
 	c.namespace = namespace.NewNamespaceClient(dial)
 	c.picture = picture.NewPictureClient(dial)
@@ -176,10 +172,6 @@ func (c *Client) File() file.FileClient {
 
 func (c *Client) Git() git.GitClient {
 	return c.git
-}
-
-func (c *Client) GitConfig() gitconfig.GitConfigClient {
-	return c.gitConfig
 }
 
 func (c *Client) Metrics() metrics.MetricsClient {

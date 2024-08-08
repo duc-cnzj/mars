@@ -3,6 +3,8 @@ package schema
 import (
 	"regexp"
 
+	"entgo.io/ent/schema/edge"
+
 	"entgo.io/ent/dialect/entsql"
 
 	"entgo.io/ent"
@@ -50,7 +52,9 @@ func (Repo) Fields() []ent.Field {
 
 // Edges of the Repo.
 func (Repo) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.To("projects", Project.Type),
+	}
 }
 
 func (Repo) Mixin() []ent.Mixin {

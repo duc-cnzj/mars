@@ -26,6 +26,8 @@ type Repo struct {
 	Enabled        bool         `json:"enabled"`
 	NeedGitRepo    bool         `json:"need_git_repo"`
 	MarsConfig     *mars.Config `json:"mars_config"`
+
+	Projects []*Project `json:"projects"`
 }
 
 func (r *Repo) GetMarsConfig() (cfg *mars.Config) {
@@ -215,6 +217,7 @@ func ToRepo(data *ent.Repo) *Repo {
 		Enabled:        data.Enabled,
 		NeedGitRepo:    data.NeedGitRepo,
 		MarsConfig:     data.MarsConfig,
+		Projects:       serialize.Serialize(data.Edges.Projects, ToProject),
 	}
 
 }

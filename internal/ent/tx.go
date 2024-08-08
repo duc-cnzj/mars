@@ -24,8 +24,6 @@ type Tx struct {
 	Event *EventClient
 	// File is the client for interacting with the File builders.
 	File *FileClient
-	// GitProject is the client for interacting with the GitProject builders.
-	GitProject *GitProjectClient
 	// Namespace is the client for interacting with the Namespace builders.
 	Namespace *NamespaceClient
 	// Project is the client for interacting with the Project builders.
@@ -169,7 +167,6 @@ func (tx *Tx) init() {
 	tx.DBCache = NewDBCacheClient(tx.config)
 	tx.Event = NewEventClient(tx.config)
 	tx.File = NewFileClient(tx.config)
-	tx.GitProject = NewGitProjectClient(tx.config)
 	tx.Namespace = NewNamespaceClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)
 	tx.Repo = NewRepoClient(tx.config)

@@ -20,7 +20,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/dbcache"
 	"github.com/duc-cnzj/mars/v4/internal/ent/event"
 	"github.com/duc-cnzj/mars/v4/internal/ent/file"
-	"github.com/duc-cnzj/mars/v4/internal/ent/gitproject"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
@@ -43,7 +42,6 @@ const (
 	TypeDBCache     = "DBCache"
 	TypeEvent       = "Event"
 	TypeFile        = "File"
-	TypeGitProject  = "GitProject"
 	TypeNamespace   = "Namespace"
 	TypeProject     = "Project"
 	TypeRepo        = "Repo"
@@ -1354,10 +1352,7 @@ type ChangelogMutation struct {
 	version                  *int
 	addversion               *int
 	username                 *string
-	manifest                 *[]string
-	appendmanifest           []string
 	_config                  *string
-	config_type              *string
 	git_branch               *string
 	git_commit               *string
 	docker_image             *[]string
@@ -1374,8 +1369,6 @@ type ChangelogMutation struct {
 	git_commit_date          *time.Time
 	config_changed           *bool
 	clearedFields            map[string]struct{}
-	git_project              *int
-	clearedgit_project       bool
 	project                  *int
 	clearedproject           bool
 	done                     bool
@@ -1694,71 +1687,6 @@ func (m *ChangelogMutation) ResetUsername() {
 	m.username = nil
 }
 
-// SetManifest sets the "manifest" field.
-func (m *ChangelogMutation) SetManifest(s []string) {
-	m.manifest = &s
-	m.appendmanifest = nil
-}
-
-// Manifest returns the value of the "manifest" field in the mutation.
-func (m *ChangelogMutation) Manifest() (r []string, exists bool) {
-	v := m.manifest
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldManifest returns the old "manifest" field's value of the Changelog entity.
-// If the Changelog object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ChangelogMutation) OldManifest(ctx context.Context) (v []string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldManifest is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldManifest requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldManifest: %w", err)
-	}
-	return oldValue.Manifest, nil
-}
-
-// AppendManifest adds s to the "manifest" field.
-func (m *ChangelogMutation) AppendManifest(s []string) {
-	m.appendmanifest = append(m.appendmanifest, s...)
-}
-
-// AppendedManifest returns the list of values that were appended to the "manifest" field in this mutation.
-func (m *ChangelogMutation) AppendedManifest() ([]string, bool) {
-	if len(m.appendmanifest) == 0 {
-		return nil, false
-	}
-	return m.appendmanifest, true
-}
-
-// ClearManifest clears the value of the "manifest" field.
-func (m *ChangelogMutation) ClearManifest() {
-	m.manifest = nil
-	m.appendmanifest = nil
-	m.clearedFields[changelog.FieldManifest] = struct{}{}
-}
-
-// ManifestCleared returns if the "manifest" field was cleared in this mutation.
-func (m *ChangelogMutation) ManifestCleared() bool {
-	_, ok := m.clearedFields[changelog.FieldManifest]
-	return ok
-}
-
-// ResetManifest resets all changes to the "manifest" field.
-func (m *ChangelogMutation) ResetManifest() {
-	m.manifest = nil
-	m.appendmanifest = nil
-	delete(m.clearedFields, changelog.FieldManifest)
-}
-
 // SetConfig sets the "config" field.
 func (m *ChangelogMutation) SetConfig(s string) {
 	m._config = &s
@@ -1806,55 +1734,6 @@ func (m *ChangelogMutation) ConfigCleared() bool {
 func (m *ChangelogMutation) ResetConfig() {
 	m._config = nil
 	delete(m.clearedFields, changelog.FieldConfig)
-}
-
-// SetConfigType sets the "config_type" field.
-func (m *ChangelogMutation) SetConfigType(s string) {
-	m.config_type = &s
-}
-
-// ConfigType returns the value of the "config_type" field in the mutation.
-func (m *ChangelogMutation) ConfigType() (r string, exists bool) {
-	v := m.config_type
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldConfigType returns the old "config_type" field's value of the Changelog entity.
-// If the Changelog object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ChangelogMutation) OldConfigType(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldConfigType is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldConfigType requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldConfigType: %w", err)
-	}
-	return oldValue.ConfigType, nil
-}
-
-// ClearConfigType clears the value of the "config_type" field.
-func (m *ChangelogMutation) ClearConfigType() {
-	m.config_type = nil
-	m.clearedFields[changelog.FieldConfigType] = struct{}{}
-}
-
-// ConfigTypeCleared returns if the "config_type" field was cleared in this mutation.
-func (m *ChangelogMutation) ConfigTypeCleared() bool {
-	_, ok := m.clearedFields[changelog.FieldConfigType]
-	return ok
-}
-
-// ResetConfigType resets all changes to the "config_type" field.
-func (m *ChangelogMutation) ResetConfigType() {
-	m.config_type = nil
-	delete(m.clearedFields, changelog.FieldConfigType)
 }
 
 // SetGitBranch sets the "git_branch" field.
@@ -2470,82 +2349,6 @@ func (m *ChangelogMutation) ResetProjectID() {
 	delete(m.clearedFields, changelog.FieldProjectID)
 }
 
-// SetGitProjectID sets the "git_project_id" field.
-func (m *ChangelogMutation) SetGitProjectID(i int) {
-	m.git_project = &i
-}
-
-// GitProjectID returns the value of the "git_project_id" field in the mutation.
-func (m *ChangelogMutation) GitProjectID() (r int, exists bool) {
-	v := m.git_project
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldGitProjectID returns the old "git_project_id" field's value of the Changelog entity.
-// If the Changelog object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ChangelogMutation) OldGitProjectID(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGitProjectID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGitProjectID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGitProjectID: %w", err)
-	}
-	return oldValue.GitProjectID, nil
-}
-
-// ClearGitProjectID clears the value of the "git_project_id" field.
-func (m *ChangelogMutation) ClearGitProjectID() {
-	m.git_project = nil
-	m.clearedFields[changelog.FieldGitProjectID] = struct{}{}
-}
-
-// GitProjectIDCleared returns if the "git_project_id" field was cleared in this mutation.
-func (m *ChangelogMutation) GitProjectIDCleared() bool {
-	_, ok := m.clearedFields[changelog.FieldGitProjectID]
-	return ok
-}
-
-// ResetGitProjectID resets all changes to the "git_project_id" field.
-func (m *ChangelogMutation) ResetGitProjectID() {
-	m.git_project = nil
-	delete(m.clearedFields, changelog.FieldGitProjectID)
-}
-
-// ClearGitProject clears the "git_project" edge to the GitProject entity.
-func (m *ChangelogMutation) ClearGitProject() {
-	m.clearedgit_project = true
-	m.clearedFields[changelog.FieldGitProjectID] = struct{}{}
-}
-
-// GitProjectCleared reports if the "git_project" edge to the GitProject entity was cleared.
-func (m *ChangelogMutation) GitProjectCleared() bool {
-	return m.GitProjectIDCleared() || m.clearedgit_project
-}
-
-// GitProjectIDs returns the "git_project" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// GitProjectID instead. It exists only for internal usage by the builders.
-func (m *ChangelogMutation) GitProjectIDs() (ids []int) {
-	if id := m.git_project; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetGitProject resets all changes to the "git_project" edge.
-func (m *ChangelogMutation) ResetGitProject() {
-	m.git_project = nil
-	m.clearedgit_project = false
-}
-
 // ClearProject clears the "project" edge to the Project entity.
 func (m *ChangelogMutation) ClearProject() {
 	m.clearedproject = true
@@ -2607,7 +2410,7 @@ func (m *ChangelogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ChangelogMutation) Fields() []string {
-	fields := make([]string, 0, 21)
+	fields := make([]string, 0, 18)
 	if m.created_at != nil {
 		fields = append(fields, changelog.FieldCreatedAt)
 	}
@@ -2623,14 +2426,8 @@ func (m *ChangelogMutation) Fields() []string {
 	if m.username != nil {
 		fields = append(fields, changelog.FieldUsername)
 	}
-	if m.manifest != nil {
-		fields = append(fields, changelog.FieldManifest)
-	}
 	if m._config != nil {
 		fields = append(fields, changelog.FieldConfig)
-	}
-	if m.config_type != nil {
-		fields = append(fields, changelog.FieldConfigType)
 	}
 	if m.git_branch != nil {
 		fields = append(fields, changelog.FieldGitBranch)
@@ -2668,9 +2465,6 @@ func (m *ChangelogMutation) Fields() []string {
 	if m.project != nil {
 		fields = append(fields, changelog.FieldProjectID)
 	}
-	if m.git_project != nil {
-		fields = append(fields, changelog.FieldGitProjectID)
-	}
 	return fields
 }
 
@@ -2689,12 +2483,8 @@ func (m *ChangelogMutation) Field(name string) (ent.Value, bool) {
 		return m.Version()
 	case changelog.FieldUsername:
 		return m.Username()
-	case changelog.FieldManifest:
-		return m.Manifest()
 	case changelog.FieldConfig:
 		return m.Config()
-	case changelog.FieldConfigType:
-		return m.ConfigType()
 	case changelog.FieldGitBranch:
 		return m.GitBranch()
 	case changelog.FieldGitCommit:
@@ -2719,8 +2509,6 @@ func (m *ChangelogMutation) Field(name string) (ent.Value, bool) {
 		return m.ConfigChanged()
 	case changelog.FieldProjectID:
 		return m.ProjectID()
-	case changelog.FieldGitProjectID:
-		return m.GitProjectID()
 	}
 	return nil, false
 }
@@ -2740,12 +2528,8 @@ func (m *ChangelogMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldVersion(ctx)
 	case changelog.FieldUsername:
 		return m.OldUsername(ctx)
-	case changelog.FieldManifest:
-		return m.OldManifest(ctx)
 	case changelog.FieldConfig:
 		return m.OldConfig(ctx)
-	case changelog.FieldConfigType:
-		return m.OldConfigType(ctx)
 	case changelog.FieldGitBranch:
 		return m.OldGitBranch(ctx)
 	case changelog.FieldGitCommit:
@@ -2770,8 +2554,6 @@ func (m *ChangelogMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldConfigChanged(ctx)
 	case changelog.FieldProjectID:
 		return m.OldProjectID(ctx)
-	case changelog.FieldGitProjectID:
-		return m.OldGitProjectID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Changelog field %s", name)
 }
@@ -2816,26 +2598,12 @@ func (m *ChangelogMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetUsername(v)
 		return nil
-	case changelog.FieldManifest:
-		v, ok := value.([]string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetManifest(v)
-		return nil
 	case changelog.FieldConfig:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetConfig(v)
-		return nil
-	case changelog.FieldConfigType:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetConfigType(v)
 		return nil
 	case changelog.FieldGitBranch:
 		v, ok := value.(string)
@@ -2921,13 +2689,6 @@ func (m *ChangelogMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetProjectID(v)
 		return nil
-	case changelog.FieldGitProjectID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetGitProjectID(v)
-		return nil
 	}
 	return fmt.Errorf("unknown Changelog field %s", name)
 }
@@ -2976,14 +2737,8 @@ func (m *ChangelogMutation) ClearedFields() []string {
 	if m.FieldCleared(changelog.FieldDeletedAt) {
 		fields = append(fields, changelog.FieldDeletedAt)
 	}
-	if m.FieldCleared(changelog.FieldManifest) {
-		fields = append(fields, changelog.FieldManifest)
-	}
 	if m.FieldCleared(changelog.FieldConfig) {
 		fields = append(fields, changelog.FieldConfig)
-	}
-	if m.FieldCleared(changelog.FieldConfigType) {
-		fields = append(fields, changelog.FieldConfigType)
 	}
 	if m.FieldCleared(changelog.FieldDockerImage) {
 		fields = append(fields, changelog.FieldDockerImage)
@@ -3012,9 +2767,6 @@ func (m *ChangelogMutation) ClearedFields() []string {
 	if m.FieldCleared(changelog.FieldProjectID) {
 		fields = append(fields, changelog.FieldProjectID)
 	}
-	if m.FieldCleared(changelog.FieldGitProjectID) {
-		fields = append(fields, changelog.FieldGitProjectID)
-	}
 	return fields
 }
 
@@ -3032,14 +2784,8 @@ func (m *ChangelogMutation) ClearField(name string) error {
 	case changelog.FieldDeletedAt:
 		m.ClearDeletedAt()
 		return nil
-	case changelog.FieldManifest:
-		m.ClearManifest()
-		return nil
 	case changelog.FieldConfig:
 		m.ClearConfig()
-		return nil
-	case changelog.FieldConfigType:
-		m.ClearConfigType()
 		return nil
 	case changelog.FieldDockerImage:
 		m.ClearDockerImage()
@@ -3068,9 +2814,6 @@ func (m *ChangelogMutation) ClearField(name string) error {
 	case changelog.FieldProjectID:
 		m.ClearProjectID()
 		return nil
-	case changelog.FieldGitProjectID:
-		m.ClearGitProjectID()
-		return nil
 	}
 	return fmt.Errorf("unknown Changelog nullable field %s", name)
 }
@@ -3094,14 +2837,8 @@ func (m *ChangelogMutation) ResetField(name string) error {
 	case changelog.FieldUsername:
 		m.ResetUsername()
 		return nil
-	case changelog.FieldManifest:
-		m.ResetManifest()
-		return nil
 	case changelog.FieldConfig:
 		m.ResetConfig()
-		return nil
-	case changelog.FieldConfigType:
-		m.ResetConfigType()
 		return nil
 	case changelog.FieldGitBranch:
 		m.ResetGitBranch()
@@ -3139,19 +2876,13 @@ func (m *ChangelogMutation) ResetField(name string) error {
 	case changelog.FieldProjectID:
 		m.ResetProjectID()
 		return nil
-	case changelog.FieldGitProjectID:
-		m.ResetGitProjectID()
-		return nil
 	}
 	return fmt.Errorf("unknown Changelog field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ChangelogMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.git_project != nil {
-		edges = append(edges, changelog.EdgeGitProject)
-	}
+	edges := make([]string, 0, 1)
 	if m.project != nil {
 		edges = append(edges, changelog.EdgeProject)
 	}
@@ -3162,10 +2893,6 @@ func (m *ChangelogMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *ChangelogMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case changelog.EdgeGitProject:
-		if id := m.git_project; id != nil {
-			return []ent.Value{*id}
-		}
 	case changelog.EdgeProject:
 		if id := m.project; id != nil {
 			return []ent.Value{*id}
@@ -3176,7 +2903,7 @@ func (m *ChangelogMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ChangelogMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
@@ -3188,10 +2915,7 @@ func (m *ChangelogMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ChangelogMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.clearedgit_project {
-		edges = append(edges, changelog.EdgeGitProject)
-	}
+	edges := make([]string, 0, 1)
 	if m.clearedproject {
 		edges = append(edges, changelog.EdgeProject)
 	}
@@ -3202,8 +2926,6 @@ func (m *ChangelogMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *ChangelogMutation) EdgeCleared(name string) bool {
 	switch name {
-	case changelog.EdgeGitProject:
-		return m.clearedgit_project
 	case changelog.EdgeProject:
 		return m.clearedproject
 	}
@@ -3214,9 +2936,6 @@ func (m *ChangelogMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ChangelogMutation) ClearEdge(name string) error {
 	switch name {
-	case changelog.EdgeGitProject:
-		m.ClearGitProject()
-		return nil
 	case changelog.EdgeProject:
 		m.ClearProject()
 		return nil
@@ -3228,9 +2947,6 @@ func (m *ChangelogMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ChangelogMutation) ResetEdge(name string) error {
 	switch name {
-	case changelog.EdgeGitProject:
-		m.ResetGitProject()
-		return nil
 	case changelog.EdgeProject:
 		m.ResetProject()
 		return nil
@@ -5673,934 +5389,6 @@ func (m *FileMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown File edge %s", name)
 }
 
-// GitProjectMutation represents an operation that mutates the GitProject nodes in the graph.
-type GitProjectMutation struct {
-	config
-	op                Op
-	typ               string
-	id                *int
-	created_at        *time.Time
-	updated_at        *time.Time
-	deleted_at        *time.Time
-	name              *string
-	default_branch    *string
-	git_project_id    *int
-	addgit_project_id *int
-	enabled           *bool
-	global_enabled    *bool
-	global_config     **mars.Config
-	clearedFields     map[string]struct{}
-	changelogs        map[int]struct{}
-	removedchangelogs map[int]struct{}
-	clearedchangelogs bool
-	done              bool
-	oldValue          func(context.Context) (*GitProject, error)
-	predicates        []predicate.GitProject
-}
-
-var _ ent.Mutation = (*GitProjectMutation)(nil)
-
-// gitprojectOption allows management of the mutation configuration using functional options.
-type gitprojectOption func(*GitProjectMutation)
-
-// newGitProjectMutation creates new mutation for the GitProject entity.
-func newGitProjectMutation(c config, op Op, opts ...gitprojectOption) *GitProjectMutation {
-	m := &GitProjectMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeGitProject,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withGitProjectID sets the ID field of the mutation.
-func withGitProjectID(id int) gitprojectOption {
-	return func(m *GitProjectMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *GitProject
-		)
-		m.oldValue = func(ctx context.Context) (*GitProject, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().GitProject.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withGitProject sets the old GitProject of the mutation.
-func withGitProject(node *GitProject) gitprojectOption {
-	return func(m *GitProjectMutation) {
-		m.oldValue = func(context.Context) (*GitProject, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m GitProjectMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m GitProjectMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *GitProjectMutation) ID() (id int, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *GitProjectMutation) IDs(ctx context.Context) ([]int, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []int{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().GitProject.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (m *GitProjectMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *GitProjectMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the GitProject entity.
-// If the GitProject object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GitProjectMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *GitProjectMutation) ResetCreatedAt() {
-	m.created_at = nil
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (m *GitProjectMutation) SetUpdatedAt(t time.Time) {
-	m.updated_at = &t
-}
-
-// UpdatedAt returns the value of the "updated_at" field in the mutation.
-func (m *GitProjectMutation) UpdatedAt() (r time.Time, exists bool) {
-	v := m.updated_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUpdatedAt returns the old "updated_at" field's value of the GitProject entity.
-// If the GitProject object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GitProjectMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
-	}
-	return oldValue.UpdatedAt, nil
-}
-
-// ResetUpdatedAt resets all changes to the "updated_at" field.
-func (m *GitProjectMutation) ResetUpdatedAt() {
-	m.updated_at = nil
-}
-
-// SetDeletedAt sets the "deleted_at" field.
-func (m *GitProjectMutation) SetDeletedAt(t time.Time) {
-	m.deleted_at = &t
-}
-
-// DeletedAt returns the value of the "deleted_at" field in the mutation.
-func (m *GitProjectMutation) DeletedAt() (r time.Time, exists bool) {
-	v := m.deleted_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDeletedAt returns the old "deleted_at" field's value of the GitProject entity.
-// If the GitProject object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GitProjectMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
-	}
-	return oldValue.DeletedAt, nil
-}
-
-// ClearDeletedAt clears the value of the "deleted_at" field.
-func (m *GitProjectMutation) ClearDeletedAt() {
-	m.deleted_at = nil
-	m.clearedFields[gitproject.FieldDeletedAt] = struct{}{}
-}
-
-// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
-func (m *GitProjectMutation) DeletedAtCleared() bool {
-	_, ok := m.clearedFields[gitproject.FieldDeletedAt]
-	return ok
-}
-
-// ResetDeletedAt resets all changes to the "deleted_at" field.
-func (m *GitProjectMutation) ResetDeletedAt() {
-	m.deleted_at = nil
-	delete(m.clearedFields, gitproject.FieldDeletedAt)
-}
-
-// SetName sets the "name" field.
-func (m *GitProjectMutation) SetName(s string) {
-	m.name = &s
-}
-
-// Name returns the value of the "name" field in the mutation.
-func (m *GitProjectMutation) Name() (r string, exists bool) {
-	v := m.name
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldName returns the old "name" field's value of the GitProject entity.
-// If the GitProject object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GitProjectMutation) OldName(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldName is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldName requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldName: %w", err)
-	}
-	return oldValue.Name, nil
-}
-
-// ResetName resets all changes to the "name" field.
-func (m *GitProjectMutation) ResetName() {
-	m.name = nil
-}
-
-// SetDefaultBranch sets the "default_branch" field.
-func (m *GitProjectMutation) SetDefaultBranch(s string) {
-	m.default_branch = &s
-}
-
-// DefaultBranch returns the value of the "default_branch" field in the mutation.
-func (m *GitProjectMutation) DefaultBranch() (r string, exists bool) {
-	v := m.default_branch
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDefaultBranch returns the old "default_branch" field's value of the GitProject entity.
-// If the GitProject object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GitProjectMutation) OldDefaultBranch(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDefaultBranch is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDefaultBranch requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDefaultBranch: %w", err)
-	}
-	return oldValue.DefaultBranch, nil
-}
-
-// ResetDefaultBranch resets all changes to the "default_branch" field.
-func (m *GitProjectMutation) ResetDefaultBranch() {
-	m.default_branch = nil
-}
-
-// SetGitProjectID sets the "git_project_id" field.
-func (m *GitProjectMutation) SetGitProjectID(i int) {
-	m.git_project_id = &i
-	m.addgit_project_id = nil
-}
-
-// GitProjectID returns the value of the "git_project_id" field in the mutation.
-func (m *GitProjectMutation) GitProjectID() (r int, exists bool) {
-	v := m.git_project_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldGitProjectID returns the old "git_project_id" field's value of the GitProject entity.
-// If the GitProject object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GitProjectMutation) OldGitProjectID(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGitProjectID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGitProjectID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGitProjectID: %w", err)
-	}
-	return oldValue.GitProjectID, nil
-}
-
-// AddGitProjectID adds i to the "git_project_id" field.
-func (m *GitProjectMutation) AddGitProjectID(i int) {
-	if m.addgit_project_id != nil {
-		*m.addgit_project_id += i
-	} else {
-		m.addgit_project_id = &i
-	}
-}
-
-// AddedGitProjectID returns the value that was added to the "git_project_id" field in this mutation.
-func (m *GitProjectMutation) AddedGitProjectID() (r int, exists bool) {
-	v := m.addgit_project_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetGitProjectID resets all changes to the "git_project_id" field.
-func (m *GitProjectMutation) ResetGitProjectID() {
-	m.git_project_id = nil
-	m.addgit_project_id = nil
-}
-
-// SetEnabled sets the "enabled" field.
-func (m *GitProjectMutation) SetEnabled(b bool) {
-	m.enabled = &b
-}
-
-// Enabled returns the value of the "enabled" field in the mutation.
-func (m *GitProjectMutation) Enabled() (r bool, exists bool) {
-	v := m.enabled
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldEnabled returns the old "enabled" field's value of the GitProject entity.
-// If the GitProject object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GitProjectMutation) OldEnabled(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldEnabled is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldEnabled requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEnabled: %w", err)
-	}
-	return oldValue.Enabled, nil
-}
-
-// ResetEnabled resets all changes to the "enabled" field.
-func (m *GitProjectMutation) ResetEnabled() {
-	m.enabled = nil
-}
-
-// SetGlobalEnabled sets the "global_enabled" field.
-func (m *GitProjectMutation) SetGlobalEnabled(b bool) {
-	m.global_enabled = &b
-}
-
-// GlobalEnabled returns the value of the "global_enabled" field in the mutation.
-func (m *GitProjectMutation) GlobalEnabled() (r bool, exists bool) {
-	v := m.global_enabled
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldGlobalEnabled returns the old "global_enabled" field's value of the GitProject entity.
-// If the GitProject object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GitProjectMutation) OldGlobalEnabled(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGlobalEnabled is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGlobalEnabled requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGlobalEnabled: %w", err)
-	}
-	return oldValue.GlobalEnabled, nil
-}
-
-// ResetGlobalEnabled resets all changes to the "global_enabled" field.
-func (m *GitProjectMutation) ResetGlobalEnabled() {
-	m.global_enabled = nil
-}
-
-// SetGlobalConfig sets the "global_config" field.
-func (m *GitProjectMutation) SetGlobalConfig(value *mars.Config) {
-	m.global_config = &value
-}
-
-// GlobalConfig returns the value of the "global_config" field in the mutation.
-func (m *GitProjectMutation) GlobalConfig() (r *mars.Config, exists bool) {
-	v := m.global_config
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldGlobalConfig returns the old "global_config" field's value of the GitProject entity.
-// If the GitProject object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GitProjectMutation) OldGlobalConfig(ctx context.Context) (v *mars.Config, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGlobalConfig is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGlobalConfig requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGlobalConfig: %w", err)
-	}
-	return oldValue.GlobalConfig, nil
-}
-
-// ClearGlobalConfig clears the value of the "global_config" field.
-func (m *GitProjectMutation) ClearGlobalConfig() {
-	m.global_config = nil
-	m.clearedFields[gitproject.FieldGlobalConfig] = struct{}{}
-}
-
-// GlobalConfigCleared returns if the "global_config" field was cleared in this mutation.
-func (m *GitProjectMutation) GlobalConfigCleared() bool {
-	_, ok := m.clearedFields[gitproject.FieldGlobalConfig]
-	return ok
-}
-
-// ResetGlobalConfig resets all changes to the "global_config" field.
-func (m *GitProjectMutation) ResetGlobalConfig() {
-	m.global_config = nil
-	delete(m.clearedFields, gitproject.FieldGlobalConfig)
-}
-
-// AddChangelogIDs adds the "changelogs" edge to the Changelog entity by ids.
-func (m *GitProjectMutation) AddChangelogIDs(ids ...int) {
-	if m.changelogs == nil {
-		m.changelogs = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.changelogs[ids[i]] = struct{}{}
-	}
-}
-
-// ClearChangelogs clears the "changelogs" edge to the Changelog entity.
-func (m *GitProjectMutation) ClearChangelogs() {
-	m.clearedchangelogs = true
-}
-
-// ChangelogsCleared reports if the "changelogs" edge to the Changelog entity was cleared.
-func (m *GitProjectMutation) ChangelogsCleared() bool {
-	return m.clearedchangelogs
-}
-
-// RemoveChangelogIDs removes the "changelogs" edge to the Changelog entity by IDs.
-func (m *GitProjectMutation) RemoveChangelogIDs(ids ...int) {
-	if m.removedchangelogs == nil {
-		m.removedchangelogs = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.changelogs, ids[i])
-		m.removedchangelogs[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedChangelogs returns the removed IDs of the "changelogs" edge to the Changelog entity.
-func (m *GitProjectMutation) RemovedChangelogsIDs() (ids []int) {
-	for id := range m.removedchangelogs {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ChangelogsIDs returns the "changelogs" edge IDs in the mutation.
-func (m *GitProjectMutation) ChangelogsIDs() (ids []int) {
-	for id := range m.changelogs {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetChangelogs resets all changes to the "changelogs" edge.
-func (m *GitProjectMutation) ResetChangelogs() {
-	m.changelogs = nil
-	m.clearedchangelogs = false
-	m.removedchangelogs = nil
-}
-
-// Where appends a list predicates to the GitProjectMutation builder.
-func (m *GitProjectMutation) Where(ps ...predicate.GitProject) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the GitProjectMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *GitProjectMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.GitProject, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *GitProjectMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *GitProjectMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (GitProject).
-func (m *GitProjectMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *GitProjectMutation) Fields() []string {
-	fields := make([]string, 0, 9)
-	if m.created_at != nil {
-		fields = append(fields, gitproject.FieldCreatedAt)
-	}
-	if m.updated_at != nil {
-		fields = append(fields, gitproject.FieldUpdatedAt)
-	}
-	if m.deleted_at != nil {
-		fields = append(fields, gitproject.FieldDeletedAt)
-	}
-	if m.name != nil {
-		fields = append(fields, gitproject.FieldName)
-	}
-	if m.default_branch != nil {
-		fields = append(fields, gitproject.FieldDefaultBranch)
-	}
-	if m.git_project_id != nil {
-		fields = append(fields, gitproject.FieldGitProjectID)
-	}
-	if m.enabled != nil {
-		fields = append(fields, gitproject.FieldEnabled)
-	}
-	if m.global_enabled != nil {
-		fields = append(fields, gitproject.FieldGlobalEnabled)
-	}
-	if m.global_config != nil {
-		fields = append(fields, gitproject.FieldGlobalConfig)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *GitProjectMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case gitproject.FieldCreatedAt:
-		return m.CreatedAt()
-	case gitproject.FieldUpdatedAt:
-		return m.UpdatedAt()
-	case gitproject.FieldDeletedAt:
-		return m.DeletedAt()
-	case gitproject.FieldName:
-		return m.Name()
-	case gitproject.FieldDefaultBranch:
-		return m.DefaultBranch()
-	case gitproject.FieldGitProjectID:
-		return m.GitProjectID()
-	case gitproject.FieldEnabled:
-		return m.Enabled()
-	case gitproject.FieldGlobalEnabled:
-		return m.GlobalEnabled()
-	case gitproject.FieldGlobalConfig:
-		return m.GlobalConfig()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *GitProjectMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case gitproject.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	case gitproject.FieldUpdatedAt:
-		return m.OldUpdatedAt(ctx)
-	case gitproject.FieldDeletedAt:
-		return m.OldDeletedAt(ctx)
-	case gitproject.FieldName:
-		return m.OldName(ctx)
-	case gitproject.FieldDefaultBranch:
-		return m.OldDefaultBranch(ctx)
-	case gitproject.FieldGitProjectID:
-		return m.OldGitProjectID(ctx)
-	case gitproject.FieldEnabled:
-		return m.OldEnabled(ctx)
-	case gitproject.FieldGlobalEnabled:
-		return m.OldGlobalEnabled(ctx)
-	case gitproject.FieldGlobalConfig:
-		return m.OldGlobalConfig(ctx)
-	}
-	return nil, fmt.Errorf("unknown GitProject field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *GitProjectMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case gitproject.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
-		return nil
-	case gitproject.FieldUpdatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUpdatedAt(v)
-		return nil
-	case gitproject.FieldDeletedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDeletedAt(v)
-		return nil
-	case gitproject.FieldName:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetName(v)
-		return nil
-	case gitproject.FieldDefaultBranch:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDefaultBranch(v)
-		return nil
-	case gitproject.FieldGitProjectID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetGitProjectID(v)
-		return nil
-	case gitproject.FieldEnabled:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetEnabled(v)
-		return nil
-	case gitproject.FieldGlobalEnabled:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetGlobalEnabled(v)
-		return nil
-	case gitproject.FieldGlobalConfig:
-		v, ok := value.(*mars.Config)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetGlobalConfig(v)
-		return nil
-	}
-	return fmt.Errorf("unknown GitProject field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *GitProjectMutation) AddedFields() []string {
-	var fields []string
-	if m.addgit_project_id != nil {
-		fields = append(fields, gitproject.FieldGitProjectID)
-	}
-	return fields
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *GitProjectMutation) AddedField(name string) (ent.Value, bool) {
-	switch name {
-	case gitproject.FieldGitProjectID:
-		return m.AddedGitProjectID()
-	}
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *GitProjectMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	case gitproject.FieldGitProjectID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddGitProjectID(v)
-		return nil
-	}
-	return fmt.Errorf("unknown GitProject numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *GitProjectMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(gitproject.FieldDeletedAt) {
-		fields = append(fields, gitproject.FieldDeletedAt)
-	}
-	if m.FieldCleared(gitproject.FieldGlobalConfig) {
-		fields = append(fields, gitproject.FieldGlobalConfig)
-	}
-	return fields
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *GitProjectMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *GitProjectMutation) ClearField(name string) error {
-	switch name {
-	case gitproject.FieldDeletedAt:
-		m.ClearDeletedAt()
-		return nil
-	case gitproject.FieldGlobalConfig:
-		m.ClearGlobalConfig()
-		return nil
-	}
-	return fmt.Errorf("unknown GitProject nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *GitProjectMutation) ResetField(name string) error {
-	switch name {
-	case gitproject.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	case gitproject.FieldUpdatedAt:
-		m.ResetUpdatedAt()
-		return nil
-	case gitproject.FieldDeletedAt:
-		m.ResetDeletedAt()
-		return nil
-	case gitproject.FieldName:
-		m.ResetName()
-		return nil
-	case gitproject.FieldDefaultBranch:
-		m.ResetDefaultBranch()
-		return nil
-	case gitproject.FieldGitProjectID:
-		m.ResetGitProjectID()
-		return nil
-	case gitproject.FieldEnabled:
-		m.ResetEnabled()
-		return nil
-	case gitproject.FieldGlobalEnabled:
-		m.ResetGlobalEnabled()
-		return nil
-	case gitproject.FieldGlobalConfig:
-		m.ResetGlobalConfig()
-		return nil
-	}
-	return fmt.Errorf("unknown GitProject field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *GitProjectMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.changelogs != nil {
-		edges = append(edges, gitproject.EdgeChangelogs)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *GitProjectMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case gitproject.EdgeChangelogs:
-		ids := make([]ent.Value, 0, len(m.changelogs))
-		for id := range m.changelogs {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *GitProjectMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.removedchangelogs != nil {
-		edges = append(edges, gitproject.EdgeChangelogs)
-	}
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *GitProjectMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case gitproject.EdgeChangelogs:
-		ids := make([]ent.Value, 0, len(m.removedchangelogs))
-		for id := range m.removedchangelogs {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *GitProjectMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.clearedchangelogs {
-		edges = append(edges, gitproject.EdgeChangelogs)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *GitProjectMutation) EdgeCleared(name string) bool {
-	switch name {
-	case gitproject.EdgeChangelogs:
-		return m.clearedchangelogs
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *GitProjectMutation) ClearEdge(name string) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown GitProject unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *GitProjectMutation) ResetEdge(name string) error {
-	switch name {
-	case gitproject.EdgeChangelogs:
-		m.ResetChangelogs()
-		return nil
-	}
-	return fmt.Errorf("unknown GitProject edge %s", name)
-}
-
 // NamespaceMutation represents an operation that mutates the Namespace nodes in the graph.
 type NamespaceMutation struct {
 	config
@@ -7316,6 +6104,8 @@ type ProjectMutation struct {
 	changelogs               map[int]struct{}
 	removedchangelogs        map[int]struct{}
 	clearedchangelogs        bool
+	repo                     *int
+	clearedrepo              bool
 	namespace                *int
 	clearednamespace         bool
 	done                     bool
@@ -8584,6 +7374,55 @@ func (m *ProjectMutation) ResetNamespaceID() {
 	delete(m.clearedFields, project.FieldNamespaceID)
 }
 
+// SetRepoID sets the "repo_id" field.
+func (m *ProjectMutation) SetRepoID(i int) {
+	m.repo = &i
+}
+
+// RepoID returns the value of the "repo_id" field in the mutation.
+func (m *ProjectMutation) RepoID() (r int, exists bool) {
+	v := m.repo
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRepoID returns the old "repo_id" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldRepoID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRepoID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRepoID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRepoID: %w", err)
+	}
+	return oldValue.RepoID, nil
+}
+
+// ClearRepoID clears the value of the "repo_id" field.
+func (m *ProjectMutation) ClearRepoID() {
+	m.repo = nil
+	m.clearedFields[project.FieldRepoID] = struct{}{}
+}
+
+// RepoIDCleared returns if the "repo_id" field was cleared in this mutation.
+func (m *ProjectMutation) RepoIDCleared() bool {
+	_, ok := m.clearedFields[project.FieldRepoID]
+	return ok
+}
+
+// ResetRepoID resets all changes to the "repo_id" field.
+func (m *ProjectMutation) ResetRepoID() {
+	m.repo = nil
+	delete(m.clearedFields, project.FieldRepoID)
+}
+
 // AddChangelogIDs adds the "changelogs" edge to the Changelog entity by ids.
 func (m *ProjectMutation) AddChangelogIDs(ids ...int) {
 	if m.changelogs == nil {
@@ -8636,6 +7475,33 @@ func (m *ProjectMutation) ResetChangelogs() {
 	m.changelogs = nil
 	m.clearedchangelogs = false
 	m.removedchangelogs = nil
+}
+
+// ClearRepo clears the "repo" edge to the Repo entity.
+func (m *ProjectMutation) ClearRepo() {
+	m.clearedrepo = true
+	m.clearedFields[project.FieldRepoID] = struct{}{}
+}
+
+// RepoCleared reports if the "repo" edge to the Repo entity was cleared.
+func (m *ProjectMutation) RepoCleared() bool {
+	return m.RepoIDCleared() || m.clearedrepo
+}
+
+// RepoIDs returns the "repo" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RepoID instead. It exists only for internal usage by the builders.
+func (m *ProjectMutation) RepoIDs() (ids []int) {
+	if id := m.repo; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRepo resets all changes to the "repo" edge.
+func (m *ProjectMutation) ResetRepo() {
+	m.repo = nil
+	m.clearedrepo = false
 }
 
 // ClearNamespace clears the "namespace" edge to the Namespace entity.
@@ -8699,7 +7565,7 @@ func (m *ProjectMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectMutation) Fields() []string {
-	fields := make([]string, 0, 24)
+	fields := make([]string, 0, 25)
 	if m.created_at != nil {
 		fields = append(fields, project.FieldCreatedAt)
 	}
@@ -8772,6 +7638,9 @@ func (m *ProjectMutation) Fields() []string {
 	if m.namespace != nil {
 		fields = append(fields, project.FieldNamespaceID)
 	}
+	if m.repo != nil {
+		fields = append(fields, project.FieldRepoID)
+	}
 	return fields
 }
 
@@ -8828,6 +7697,8 @@ func (m *ProjectMutation) Field(name string) (ent.Value, bool) {
 		return m.GitCommitDate()
 	case project.FieldNamespaceID:
 		return m.NamespaceID()
+	case project.FieldRepoID:
+		return m.RepoID()
 	}
 	return nil, false
 }
@@ -8885,6 +7756,8 @@ func (m *ProjectMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldGitCommitDate(ctx)
 	case project.FieldNamespaceID:
 		return m.OldNamespaceID(ctx)
+	case project.FieldRepoID:
+		return m.OldRepoID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Project field %s", name)
 }
@@ -9062,6 +7935,13 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetNamespaceID(v)
 		return nil
+	case project.FieldRepoID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRepoID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Project field %s", name)
 }
@@ -9164,6 +8044,9 @@ func (m *ProjectMutation) ClearedFields() []string {
 	if m.FieldCleared(project.FieldNamespaceID) {
 		fields = append(fields, project.FieldNamespaceID)
 	}
+	if m.FieldCleared(project.FieldRepoID) {
+		fields = append(fields, project.FieldRepoID)
+	}
 	return fields
 }
 
@@ -9210,6 +8093,9 @@ func (m *ProjectMutation) ClearField(name string) error {
 		return nil
 	case project.FieldNamespaceID:
 		m.ClearNamespaceID()
+		return nil
+	case project.FieldRepoID:
+		m.ClearRepoID()
 		return nil
 	}
 	return fmt.Errorf("unknown Project nullable field %s", name)
@@ -9291,15 +8177,21 @@ func (m *ProjectMutation) ResetField(name string) error {
 	case project.FieldNamespaceID:
 		m.ResetNamespaceID()
 		return nil
+	case project.FieldRepoID:
+		m.ResetRepoID()
+		return nil
 	}
 	return fmt.Errorf("unknown Project field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ProjectMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.changelogs != nil {
 		edges = append(edges, project.EdgeChangelogs)
+	}
+	if m.repo != nil {
+		edges = append(edges, project.EdgeRepo)
 	}
 	if m.namespace != nil {
 		edges = append(edges, project.EdgeNamespace)
@@ -9317,6 +8209,10 @@ func (m *ProjectMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case project.EdgeRepo:
+		if id := m.repo; id != nil {
+			return []ent.Value{*id}
+		}
 	case project.EdgeNamespace:
 		if id := m.namespace; id != nil {
 			return []ent.Value{*id}
@@ -9327,7 +8223,7 @@ func (m *ProjectMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ProjectMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedchangelogs != nil {
 		edges = append(edges, project.EdgeChangelogs)
 	}
@@ -9350,9 +8246,12 @@ func (m *ProjectMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ProjectMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedchangelogs {
 		edges = append(edges, project.EdgeChangelogs)
+	}
+	if m.clearedrepo {
+		edges = append(edges, project.EdgeRepo)
 	}
 	if m.clearednamespace {
 		edges = append(edges, project.EdgeNamespace)
@@ -9366,6 +8265,8 @@ func (m *ProjectMutation) EdgeCleared(name string) bool {
 	switch name {
 	case project.EdgeChangelogs:
 		return m.clearedchangelogs
+	case project.EdgeRepo:
+		return m.clearedrepo
 	case project.EdgeNamespace:
 		return m.clearednamespace
 	}
@@ -9376,6 +8277,9 @@ func (m *ProjectMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ProjectMutation) ClearEdge(name string) error {
 	switch name {
+	case project.EdgeRepo:
+		m.ClearRepo()
+		return nil
 	case project.EdgeNamespace:
 		m.ClearNamespace()
 		return nil
@@ -9389,6 +8293,9 @@ func (m *ProjectMutation) ResetEdge(name string) error {
 	switch name {
 	case project.EdgeChangelogs:
 		m.ResetChangelogs()
+		return nil
+	case project.EdgeRepo:
+		m.ResetRepo()
 		return nil
 	case project.EdgeNamespace:
 		m.ResetNamespace()
@@ -9415,6 +8322,9 @@ type RepoMutation struct {
 	need_git_repo     *bool
 	mars_config       **mars.Config
 	clearedFields     map[string]struct{}
+	projects          map[int]struct{}
+	removedprojects   map[int]struct{}
+	clearedprojects   bool
 	done              bool
 	oldValue          func(context.Context) (*Repo, error)
 	predicates        []predicate.Repo
@@ -9964,6 +8874,60 @@ func (m *RepoMutation) ResetMarsConfig() {
 	delete(m.clearedFields, repo.FieldMarsConfig)
 }
 
+// AddProjectIDs adds the "projects" edge to the Project entity by ids.
+func (m *RepoMutation) AddProjectIDs(ids ...int) {
+	if m.projects == nil {
+		m.projects = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.projects[ids[i]] = struct{}{}
+	}
+}
+
+// ClearProjects clears the "projects" edge to the Project entity.
+func (m *RepoMutation) ClearProjects() {
+	m.clearedprojects = true
+}
+
+// ProjectsCleared reports if the "projects" edge to the Project entity was cleared.
+func (m *RepoMutation) ProjectsCleared() bool {
+	return m.clearedprojects
+}
+
+// RemoveProjectIDs removes the "projects" edge to the Project entity by IDs.
+func (m *RepoMutation) RemoveProjectIDs(ids ...int) {
+	if m.removedprojects == nil {
+		m.removedprojects = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.projects, ids[i])
+		m.removedprojects[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedProjects returns the removed IDs of the "projects" edge to the Project entity.
+func (m *RepoMutation) RemovedProjectsIDs() (ids []int) {
+	for id := range m.removedprojects {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ProjectsIDs returns the "projects" edge IDs in the mutation.
+func (m *RepoMutation) ProjectsIDs() (ids []int) {
+	for id := range m.projects {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetProjects resets all changes to the "projects" edge.
+func (m *RepoMutation) ResetProjects() {
+	m.projects = nil
+	m.clearedprojects = false
+	m.removedprojects = nil
+}
+
 // Where appends a list predicates to the RepoMutation builder.
 func (m *RepoMutation) Where(ps ...predicate.Repo) {
 	m.predicates = append(m.predicates, ps...)
@@ -10298,48 +9262,84 @@ func (m *RepoMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RepoMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.projects != nil {
+		edges = append(edges, repo.EdgeProjects)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *RepoMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case repo.EdgeProjects:
+		ids := make([]ent.Value, 0, len(m.projects))
+		for id := range m.projects {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RepoMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedprojects != nil {
+		edges = append(edges, repo.EdgeProjects)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *RepoMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case repo.EdgeProjects:
+		ids := make([]ent.Value, 0, len(m.removedprojects))
+		for id := range m.removedprojects {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RepoMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedprojects {
+		edges = append(edges, repo.EdgeProjects)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *RepoMutation) EdgeCleared(name string) bool {
+	switch name {
+	case repo.EdgeProjects:
+		return m.clearedprojects
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *RepoMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Repo unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *RepoMutation) ResetEdge(name string) error {
+	switch name {
+	case repo.EdgeProjects:
+		m.ResetProjects()
+		return nil
+	}
 	return fmt.Errorf("unknown Repo edge %s", name)
 }

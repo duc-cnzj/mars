@@ -13,11 +13,11 @@ var (
 )
 
 type TaskManager interface {
-	Stop(id string)
+	Remove(id string)
 	Has(id string) bool
-	Cancel(id string)
+	Stop(id string)
 	Register(id string, fn func(error)) error
-	CancelAll()
+	StopAll()
 }
 
 var _ TaskManager = (*taskManagerImpl)(nil)
@@ -32,7 +32,7 @@ func NewTaskManager(logger mlog.Logger) TaskManager {
 	return &taskManagerImpl{cs: map[string]func(error){}, logger: logger}
 }
 
-func (cs *taskManagerImpl) Stop(id string) {
+func (cs *taskManagerImpl) Remove(id string) {
 	cs.Lock()
 	defer cs.Unlock()
 	delete(cs.cs, id)
@@ -47,10 +47,11 @@ func (cs *taskManagerImpl) Has(id string) bool {
 	return ok
 }
 
-func (cs *taskManagerImpl) Cancel(id string) {
+func (cs *taskManagerImpl) Stop(id string) {
 	cs.Lock()
 	defer cs.Unlock()
 	if fn, ok := cs.cs[id]; ok {
+		cs.logger.Debugf("stop task\t%v\t%v", id, errCancel)
 		fn(errCancel)
 	}
 }
@@ -65,7 +66,7 @@ func (cs *taskManagerImpl) Register(id string, fn func(error)) error {
 	return nil
 }
 
-func (cs *taskManagerImpl) CancelAll() {
+func (cs *taskManagerImpl) StopAll() {
 	cs.Lock()
 	defer cs.Unlock()
 	for _, f := range cs.cs {

@@ -193,6 +193,7 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 			},
 		}
 
+		logger.Warning(cfg.KubeConfig)
 		if cfg.KubeConfig != "" {
 			config, err = clientcmd.BuildConfigFromFlags("", cfg.KubeConfig)
 			if err != nil {

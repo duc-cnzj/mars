@@ -36,6 +36,7 @@ type WsServer interface {
 	TickClusterHealth(done <-chan struct{})
 	Info(writer http.ResponseWriter, request *http.Request)
 	Serve(w http.ResponseWriter, r *http.Request)
+	Shutdown(ctx context.Context) error
 }
 
 type Callback func(App)

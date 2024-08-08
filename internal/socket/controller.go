@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/counter"
+
 	"github.com/samber/lo"
 
 	"github.com/duc-cnzj/mars/api/v4/types"
@@ -59,12 +61,16 @@ type WebsocketManager struct {
 
 	executor repo.ExecutorManager
 
+	counter counter.Counter
+
 	handlers map[websocket_pb.Type]HandleRequestFunc
 }
 
 func NewWebsocketManager(
 	logger mlog.Logger,
+	counter counter.Counter,
 	repoRepo repo.RepoImp,
+	nsRepo repo.NamespaceRepo,
 	jobManager JobManager,
 	data data.Data,
 	pl application.PluginManger,
@@ -77,6 +83,8 @@ func NewWebsocketManager(
 	fileRepo repo.FileRepo,
 ) application.WsServer {
 	mgr := &WebsocketManager{
+		nsRepo:             nsRepo,
+		counter:            counter,
 		repoRepo:           repoRepo,
 		jobManager:         jobManager,
 		fileRepo:           fileRepo,
@@ -165,6 +173,7 @@ func (wc *WebsocketManager) Serve(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		wc.logger.Debugf("[Websocket]: Serve exit")
 		wsConn.Close(r.Context())
+		wc.counter.Dec()
 	}()
 
 	g.Go(func() error {
@@ -196,6 +205,10 @@ func (wc *WebsocketManager) Serve(w http.ResponseWriter, r *http.Request) {
 	if err = g.Wait(); err != nil {
 		return
 	}
+}
+
+func (wc *WebsocketManager) Shutdown(ctx context.Context) error {
+	return wc.counter.Wait(ctx)
 }
 
 func (wc *WebsocketManager) read(ctx context.Context, wsconn Conn) error {
@@ -387,13 +400,16 @@ func (wc *WebsocketManager) HandleWsCreateProject(ctx context.Context, c Conn, t
 	}
 
 	appName := lo.FromPtr(input.Name)
+	if appName == "" {
+		show, _ := wc.repoRepo.Show(ctx, int(input.RepoId))
+		appName = show.Name
+	}
+
 	if err := wc.upgradeOrInstall(ctx, c, &JobInput{
 		Type:        input.Type,
 		NamespaceId: input.NamespaceId,
 		Name:        appName,
 		RepoID:      input.RepoId,
-		// TODO
-		//GitProjectId: input.GitProjectId,
 		GitBranch:   input.GitBranch,
 		GitCommit:   input.GitCommit,
 		Config:      input.Config,
@@ -421,20 +437,20 @@ func (wc *WebsocketManager) HandleWsUpdateProject(ctx context.Context, c Conn, t
 	}
 
 	wc.upgradeOrInstall(ctx, c, &JobInput{
-		Type:        t,
-		NamespaceId: int32(p.NamespaceID),
-		Name:        p.Name,
-		//TODO
-		//GitProjectId:   int32(p.GitProjectID),
+		Type:           t,
+		NamespaceId:    int32(p.NamespaceID),
+		Name:           p.Name,
+		RepoID:         int32(p.RepoID),
 		GitBranch:      input.GitBranch,
 		GitCommit:      input.GitCommit,
 		Config:         input.Config,
 		Atomic:         input.Atomic,
 		ExtraValues:    input.ExtraValues,
-		Version:        &input.Version,
+		Version:        lo.ToPtr(input.Version),
 		TimeoutSeconds: int32(wc.data.Config().InstallTimeout.Seconds()),
 		User:           c.GetUser(),
 		PubSub:         c.PubSub(),
+		Messager:       NewMessageSender(c, util.GetSlugName(p.NamespaceID, p.Name), t),
 	})
 }
 
@@ -448,8 +464,12 @@ func (wc *WebsocketManager) HandleWsCancelDeploy(ctx context.Context, c Conn, t 
 
 	var slugName = util.GetSlugName(input.NamespaceId, input.Name)
 
-	if err := c.CancelTask(slugName); err == nil {
-		ns, _ := wc.nsRepo.Show(ctx, int(input.NamespaceId))
+	if err := c.RunTask(slugName); err == nil {
+		ns, err := wc.nsRepo.Show(ctx, int(input.NamespaceId))
+		if err != nil {
+			wc.logger.Error(err, input.NamespaceId)
+			return
+		}
 		wc.eventRepo.AuditLog(
 			types.EventActionType_CancelDeploy,
 			c.GetUser().Name,
@@ -458,6 +478,8 @@ func (wc *WebsocketManager) HandleWsCancelDeploy(ctx context.Context, c Conn, t 
 }
 
 func (wc *WebsocketManager) upgradeOrInstall(ctx context.Context, c Conn, input *JobInput) error {
+	indent, _ := json.MarshalIndent(input, "", "  ")
+	wc.logger.Warning(string(indent))
 	slug := util.GetSlugName(input.NamespaceId, input.Name)
 	job := wc.jobManager.NewJob(input)
 
@@ -467,7 +489,7 @@ func (wc *WebsocketManager) upgradeOrInstall(ctx context.Context, c Conn, input 
 			return nil
 		}
 		job.OnFinally(1000, func(err error, base func()) {
-			c.StopTask(job.ID())
+			c.RemoveTask(job.ID())
 			base()
 		})
 	}

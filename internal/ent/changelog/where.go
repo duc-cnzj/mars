@@ -85,11 +85,6 @@ func Config(v string) predicate.Changelog {
 	return predicate.Changelog(sql.FieldEQ(FieldConfig, v))
 }
 
-// ConfigType applies equality check predicate on the "config_type" field. It's identical to ConfigTypeEQ.
-func ConfigType(v string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldEQ(FieldConfigType, v))
-}
-
 // GitBranch applies equality check predicate on the "git_branch" field. It's identical to GitBranchEQ.
 func GitBranch(v string) predicate.Changelog {
 	return predicate.Changelog(sql.FieldEQ(FieldGitBranch, v))
@@ -128,11 +123,6 @@ func ConfigChanged(v bool) predicate.Changelog {
 // ProjectID applies equality check predicate on the "project_id" field. It's identical to ProjectIDEQ.
 func ProjectID(v int) predicate.Changelog {
 	return predicate.Changelog(sql.FieldEQ(FieldProjectID, v))
-}
-
-// GitProjectID applies equality check predicate on the "git_project_id" field. It's identical to GitProjectIDEQ.
-func GitProjectID(v int) predicate.Changelog {
-	return predicate.Changelog(sql.FieldEQ(FieldGitProjectID, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -370,16 +360,6 @@ func UsernameContainsFold(v string) predicate.Changelog {
 	return predicate.Changelog(sql.FieldContainsFold(FieldUsername, v))
 }
 
-// ManifestIsNil applies the IsNil predicate on the "manifest" field.
-func ManifestIsNil() predicate.Changelog {
-	return predicate.Changelog(sql.FieldIsNull(FieldManifest))
-}
-
-// ManifestNotNil applies the NotNil predicate on the "manifest" field.
-func ManifestNotNil() predicate.Changelog {
-	return predicate.Changelog(sql.FieldNotNull(FieldManifest))
-}
-
 // ConfigEQ applies the EQ predicate on the "config" field.
 func ConfigEQ(v string) predicate.Changelog {
 	return predicate.Changelog(sql.FieldEQ(FieldConfig, v))
@@ -453,81 +433,6 @@ func ConfigEqualFold(v string) predicate.Changelog {
 // ConfigContainsFold applies the ContainsFold predicate on the "config" field.
 func ConfigContainsFold(v string) predicate.Changelog {
 	return predicate.Changelog(sql.FieldContainsFold(FieldConfig, v))
-}
-
-// ConfigTypeEQ applies the EQ predicate on the "config_type" field.
-func ConfigTypeEQ(v string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldEQ(FieldConfigType, v))
-}
-
-// ConfigTypeNEQ applies the NEQ predicate on the "config_type" field.
-func ConfigTypeNEQ(v string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldNEQ(FieldConfigType, v))
-}
-
-// ConfigTypeIn applies the In predicate on the "config_type" field.
-func ConfigTypeIn(vs ...string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldIn(FieldConfigType, vs...))
-}
-
-// ConfigTypeNotIn applies the NotIn predicate on the "config_type" field.
-func ConfigTypeNotIn(vs ...string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldNotIn(FieldConfigType, vs...))
-}
-
-// ConfigTypeGT applies the GT predicate on the "config_type" field.
-func ConfigTypeGT(v string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldGT(FieldConfigType, v))
-}
-
-// ConfigTypeGTE applies the GTE predicate on the "config_type" field.
-func ConfigTypeGTE(v string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldGTE(FieldConfigType, v))
-}
-
-// ConfigTypeLT applies the LT predicate on the "config_type" field.
-func ConfigTypeLT(v string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldLT(FieldConfigType, v))
-}
-
-// ConfigTypeLTE applies the LTE predicate on the "config_type" field.
-func ConfigTypeLTE(v string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldLTE(FieldConfigType, v))
-}
-
-// ConfigTypeContains applies the Contains predicate on the "config_type" field.
-func ConfigTypeContains(v string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldContains(FieldConfigType, v))
-}
-
-// ConfigTypeHasPrefix applies the HasPrefix predicate on the "config_type" field.
-func ConfigTypeHasPrefix(v string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldHasPrefix(FieldConfigType, v))
-}
-
-// ConfigTypeHasSuffix applies the HasSuffix predicate on the "config_type" field.
-func ConfigTypeHasSuffix(v string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldHasSuffix(FieldConfigType, v))
-}
-
-// ConfigTypeIsNil applies the IsNil predicate on the "config_type" field.
-func ConfigTypeIsNil() predicate.Changelog {
-	return predicate.Changelog(sql.FieldIsNull(FieldConfigType))
-}
-
-// ConfigTypeNotNil applies the NotNil predicate on the "config_type" field.
-func ConfigTypeNotNil() predicate.Changelog {
-	return predicate.Changelog(sql.FieldNotNull(FieldConfigType))
-}
-
-// ConfigTypeEqualFold applies the EqualFold predicate on the "config_type" field.
-func ConfigTypeEqualFold(v string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldEqualFold(FieldConfigType, v))
-}
-
-// ConfigTypeContainsFold applies the ContainsFold predicate on the "config_type" field.
-func ConfigTypeContainsFold(v string) predicate.Changelog {
-	return predicate.Changelog(sql.FieldContainsFold(FieldConfigType, v))
 }
 
 // GitBranchEQ applies the EQ predicate on the "git_branch" field.
@@ -1013,59 +918,6 @@ func ProjectIDIsNil() predicate.Changelog {
 // ProjectIDNotNil applies the NotNil predicate on the "project_id" field.
 func ProjectIDNotNil() predicate.Changelog {
 	return predicate.Changelog(sql.FieldNotNull(FieldProjectID))
-}
-
-// GitProjectIDEQ applies the EQ predicate on the "git_project_id" field.
-func GitProjectIDEQ(v int) predicate.Changelog {
-	return predicate.Changelog(sql.FieldEQ(FieldGitProjectID, v))
-}
-
-// GitProjectIDNEQ applies the NEQ predicate on the "git_project_id" field.
-func GitProjectIDNEQ(v int) predicate.Changelog {
-	return predicate.Changelog(sql.FieldNEQ(FieldGitProjectID, v))
-}
-
-// GitProjectIDIn applies the In predicate on the "git_project_id" field.
-func GitProjectIDIn(vs ...int) predicate.Changelog {
-	return predicate.Changelog(sql.FieldIn(FieldGitProjectID, vs...))
-}
-
-// GitProjectIDNotIn applies the NotIn predicate on the "git_project_id" field.
-func GitProjectIDNotIn(vs ...int) predicate.Changelog {
-	return predicate.Changelog(sql.FieldNotIn(FieldGitProjectID, vs...))
-}
-
-// GitProjectIDIsNil applies the IsNil predicate on the "git_project_id" field.
-func GitProjectIDIsNil() predicate.Changelog {
-	return predicate.Changelog(sql.FieldIsNull(FieldGitProjectID))
-}
-
-// GitProjectIDNotNil applies the NotNil predicate on the "git_project_id" field.
-func GitProjectIDNotNil() predicate.Changelog {
-	return predicate.Changelog(sql.FieldNotNull(FieldGitProjectID))
-}
-
-// HasGitProject applies the HasEdge predicate on the "git_project" edge.
-func HasGitProject() predicate.Changelog {
-	return predicate.Changelog(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, GitProjectTable, GitProjectColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasGitProjectWith applies the HasEdge predicate on the "git_project" edge with a given conditions (other predicates).
-func HasGitProjectWith(preds ...predicate.GitProject) predicate.Changelog {
-	return predicate.Changelog(func(s *sql.Selector) {
-		step := newGitProjectStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
 }
 
 // HasProject applies the HasEdge predicate on the "project" edge.

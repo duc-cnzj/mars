@@ -174,11 +174,15 @@ func (t *myPtyHandler) Write(p []byte) (n int, err error) {
 	if t.IsClosed() {
 		return len(p), fmt.Errorf("[Websocket]: %v ws already closed", t.sessionID)
 	}
-	t.recorder.Write(string(p))
+	if err = t.recorder.Write(string(p)); err != nil {
+		t.logger.Debugf("[Websocket]: %v recorder write failed: %v", t.sessionID, err)
+	}
 	if t.sizeStore.TerminalRowColNeedReset() && t.sizeStore.Cols() != 0 {
 		t.logger.Debugf("reset shell size rows: %d, cols: %d", t.sizeStore.Rows(), t.sizeStore.Cols())
 		t.sizeStore.ResetTerminalRowCol(false)
-		t.Resize(remotecommand.TerminalSize{Width: t.sizeStore.Cols(), Height: t.sizeStore.Rows()})
+		if err = t.Resize(remotecommand.TerminalSize{Width: t.sizeStore.Cols(), Height: t.sizeStore.Rows()}); err != nil {
+			t.logger.Debugf("resize shell size failed: %v", err)
+		}
 	}
 	NewMessageSender(t.conn, t.sessionID, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
@@ -251,8 +255,6 @@ func (t *myPtyHandler) Send(ctx context.Context, m *websocket_pb.TerminalMessage
 }
 
 func (t *myPtyHandler) Resize(size remotecommand.TerminalSize) error {
-	t.sizeMu.Lock()
-	defer t.sizeMu.Unlock()
 	select {
 	case <-t.doneChan:
 		close(t.sizeChan)
@@ -260,6 +262,8 @@ func (t *myPtyHandler) Resize(size remotecommand.TerminalSize) error {
 	default:
 	}
 
+	t.sizeMu.Lock()
+	defer t.sizeMu.Unlock()
 	select {
 	case t.sizeChan <- size:
 	default:

@@ -21,7 +21,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/dbcache"
 	"github.com/duc-cnzj/mars/v4/internal/ent/event"
 	"github.com/duc-cnzj/mars/v4/internal/ent/file"
-	"github.com/duc-cnzj/mars/v4/internal/ent/gitproject"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
 	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
@@ -44,8 +43,6 @@ type Client struct {
 	Event *EventClient
 	// File is the client for interacting with the File builders.
 	File *FileClient
-	// GitProject is the client for interacting with the GitProject builders.
-	GitProject *GitProjectClient
 	// Namespace is the client for interacting with the Namespace builders.
 	Namespace *NamespaceClient
 	// Project is the client for interacting with the Project builders.
@@ -69,7 +66,6 @@ func (c *Client) init() {
 	c.DBCache = NewDBCacheClient(c.config)
 	c.Event = NewEventClient(c.config)
 	c.File = NewFileClient(c.config)
-	c.GitProject = NewGitProjectClient(c.config)
 	c.Namespace = NewNamespaceClient(c.config)
 	c.Project = NewProjectClient(c.config)
 	c.Repo = NewRepoClient(c.config)
@@ -171,7 +167,6 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		DBCache:     NewDBCacheClient(cfg),
 		Event:       NewEventClient(cfg),
 		File:        NewFileClient(cfg),
-		GitProject:  NewGitProjectClient(cfg),
 		Namespace:   NewNamespaceClient(cfg),
 		Project:     NewProjectClient(cfg),
 		Repo:        NewRepoClient(cfg),
@@ -200,7 +195,6 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		DBCache:     NewDBCacheClient(cfg),
 		Event:       NewEventClient(cfg),
 		File:        NewFileClient(cfg),
-		GitProject:  NewGitProjectClient(cfg),
 		Namespace:   NewNamespaceClient(cfg),
 		Project:     NewProjectClient(cfg),
 		Repo:        NewRepoClient(cfg),
@@ -234,7 +228,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.AccessToken, c.CacheLock, c.Changelog, c.DBCache, c.Event, c.File,
-		c.GitProject, c.Namespace, c.Project, c.Repo,
+		c.Namespace, c.Project, c.Repo,
 	} {
 		n.Use(hooks...)
 	}
@@ -245,7 +239,7 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.AccessToken, c.CacheLock, c.Changelog, c.DBCache, c.Event, c.File,
-		c.GitProject, c.Namespace, c.Project, c.Repo,
+		c.Namespace, c.Project, c.Repo,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -266,8 +260,6 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Event.mutate(ctx, m)
 	case *FileMutation:
 		return c.File.mutate(ctx, m)
-	case *GitProjectMutation:
-		return c.GitProject.mutate(ctx, m)
 	case *NamespaceMutation:
 		return c.Namespace.mutate(ctx, m)
 	case *ProjectMutation:
@@ -653,22 +645,6 @@ func (c *ChangelogClient) GetX(ctx context.Context, id int) *Changelog {
 		panic(err)
 	}
 	return obj
-}
-
-// QueryGitProject queries the git_project edge of a Changelog.
-func (c *ChangelogClient) QueryGitProject(ch *Changelog) *GitProjectQuery {
-	query := (&GitProjectClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ch.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(changelog.Table, changelog.FieldID, id),
-			sqlgraph.To(gitproject.Table, gitproject.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, changelog.GitProjectTable, changelog.GitProjectColumn),
-		)
-		fromV = sqlgraph.Neighbors(ch.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // QueryProject queries the project edge of a Changelog.
@@ -1149,157 +1125,6 @@ func (c *FileClient) mutate(ctx context.Context, m *FileMutation) (Value, error)
 	}
 }
 
-// GitProjectClient is a client for the GitProject schema.
-type GitProjectClient struct {
-	config
-}
-
-// NewGitProjectClient returns a client for the GitProject from the given config.
-func NewGitProjectClient(c config) *GitProjectClient {
-	return &GitProjectClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `gitproject.Hooks(f(g(h())))`.
-func (c *GitProjectClient) Use(hooks ...Hook) {
-	c.hooks.GitProject = append(c.hooks.GitProject, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `gitproject.Intercept(f(g(h())))`.
-func (c *GitProjectClient) Intercept(interceptors ...Interceptor) {
-	c.inters.GitProject = append(c.inters.GitProject, interceptors...)
-}
-
-// Create returns a builder for creating a GitProject entity.
-func (c *GitProjectClient) Create() *GitProjectCreate {
-	mutation := newGitProjectMutation(c.config, OpCreate)
-	return &GitProjectCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of GitProject entities.
-func (c *GitProjectClient) CreateBulk(builders ...*GitProjectCreate) *GitProjectCreateBulk {
-	return &GitProjectCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *GitProjectClient) MapCreateBulk(slice any, setFunc func(*GitProjectCreate, int)) *GitProjectCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &GitProjectCreateBulk{err: fmt.Errorf("calling to GitProjectClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*GitProjectCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &GitProjectCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for GitProject.
-func (c *GitProjectClient) Update() *GitProjectUpdate {
-	mutation := newGitProjectMutation(c.config, OpUpdate)
-	return &GitProjectUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *GitProjectClient) UpdateOne(gp *GitProject) *GitProjectUpdateOne {
-	mutation := newGitProjectMutation(c.config, OpUpdateOne, withGitProject(gp))
-	return &GitProjectUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *GitProjectClient) UpdateOneID(id int) *GitProjectUpdateOne {
-	mutation := newGitProjectMutation(c.config, OpUpdateOne, withGitProjectID(id))
-	return &GitProjectUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for GitProject.
-func (c *GitProjectClient) Delete() *GitProjectDelete {
-	mutation := newGitProjectMutation(c.config, OpDelete)
-	return &GitProjectDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *GitProjectClient) DeleteOne(gp *GitProject) *GitProjectDeleteOne {
-	return c.DeleteOneID(gp.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *GitProjectClient) DeleteOneID(id int) *GitProjectDeleteOne {
-	builder := c.Delete().Where(gitproject.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &GitProjectDeleteOne{builder}
-}
-
-// Query returns a query builder for GitProject.
-func (c *GitProjectClient) Query() *GitProjectQuery {
-	return &GitProjectQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeGitProject},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a GitProject entity by its id.
-func (c *GitProjectClient) Get(ctx context.Context, id int) (*GitProject, error) {
-	return c.Query().Where(gitproject.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *GitProjectClient) GetX(ctx context.Context, id int) *GitProject {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryChangelogs queries the changelogs edge of a GitProject.
-func (c *GitProjectClient) QueryChangelogs(gp *GitProject) *ChangelogQuery {
-	query := (&ChangelogClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := gp.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(gitproject.Table, gitproject.FieldID, id),
-			sqlgraph.To(changelog.Table, changelog.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, gitproject.ChangelogsTable, gitproject.ChangelogsColumn),
-		)
-		fromV = sqlgraph.Neighbors(gp.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *GitProjectClient) Hooks() []Hook {
-	hooks := c.hooks.GitProject
-	return append(hooks[:len(hooks):len(hooks)], gitproject.Hooks[:]...)
-}
-
-// Interceptors returns the client interceptors.
-func (c *GitProjectClient) Interceptors() []Interceptor {
-	inters := c.inters.GitProject
-	return append(inters[:len(inters):len(inters)], gitproject.Interceptors[:]...)
-}
-
-func (c *GitProjectClient) mutate(ctx context.Context, m *GitProjectMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&GitProjectCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&GitProjectUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&GitProjectUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&GitProjectDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown GitProject mutation op: %q", m.Op())
-	}
-}
-
 // NamespaceClient is a client for the Namespace schema.
 type NamespaceClient struct {
 	config
@@ -1575,6 +1400,22 @@ func (c *ProjectClient) QueryChangelogs(pr *Project) *ChangelogQuery {
 	return query
 }
 
+// QueryRepo queries the repo edge of a Project.
+func (c *ProjectClient) QueryRepo(pr *Project) *RepoQuery {
+	query := (&RepoClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, id),
+			sqlgraph.To(repo.Table, repo.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, project.RepoTable, project.RepoColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryNamespace queries the namespace edge of a Project.
 func (c *ProjectClient) QueryNamespace(pr *Project) *NamespaceQuery {
 	query := (&NamespaceClient{config: c.config}).Query()
@@ -1726,6 +1567,22 @@ func (c *RepoClient) GetX(ctx context.Context, id int) *Repo {
 	return obj
 }
 
+// QueryProjects queries the projects edge of a Repo.
+func (c *RepoClient) QueryProjects(r *Repo) *ProjectQuery {
+	query := (&ProjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(repo.Table, repo.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, repo.ProjectsTable, repo.ProjectsColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RepoClient) Hooks() []Hook {
 	hooks := c.hooks.Repo
@@ -1756,11 +1613,11 @@ func (c *RepoClient) mutate(ctx context.Context, m *RepoMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		AccessToken, CacheLock, Changelog, DBCache, Event, File, GitProject, Namespace,
-		Project, Repo []ent.Hook
+		AccessToken, CacheLock, Changelog, DBCache, Event, File, Namespace, Project,
+		Repo []ent.Hook
 	}
 	inters struct {
-		AccessToken, CacheLock, Changelog, DBCache, Event, File, GitProject, Namespace,
-		Project, Repo []ent.Interceptor
+		AccessToken, CacheLock, Changelog, DBCache, Event, File, Namespace, Project,
+		Repo []ent.Interceptor
 	}
 )

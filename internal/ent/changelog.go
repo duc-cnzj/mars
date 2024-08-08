@@ -13,7 +13,6 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
-	"github.com/duc-cnzj/mars/v4/internal/ent/gitproject"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
 )
 
@@ -32,12 +31,8 @@ type Changelog struct {
 	Version int `json:"version,omitempty"`
 	// 修改人
 	Username string `json:"username,omitempty"`
-	// Manifest holds the value of the "manifest" field.
-	Manifest []string `json:"manifest,omitempty"`
 	// 用户提交的配置
 	Config string `json:"config,omitempty"`
-	// ConfigType holds the value of the "config_type" field.
-	ConfigType string `json:"config_type,omitempty"`
 	// GitBranch holds the value of the "git_branch" field.
 	GitBranch string `json:"git_branch,omitempty"`
 	// GitCommit holds the value of the "git_commit" field.
@@ -62,8 +57,6 @@ type Changelog struct {
 	ConfigChanged bool `json:"config_changed,omitempty"`
 	// ProjectID holds the value of the "project_id" field.
 	ProjectID int `json:"project_id,omitempty"`
-	// GitProjectID holds the value of the "git_project_id" field.
-	GitProjectID int `json:"git_project_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ChangelogQuery when eager-loading is set.
 	Edges        ChangelogEdges `json:"edges"`
@@ -72,24 +65,11 @@ type Changelog struct {
 
 // ChangelogEdges holds the relations/edges for other nodes in the graph.
 type ChangelogEdges struct {
-	// GitProject holds the value of the git_project edge.
-	GitProject *GitProject `json:"git_project,omitempty"`
 	// Project holds the value of the project edge.
 	Project *Project `json:"project,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
-}
-
-// GitProjectOrErr returns the GitProject value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e ChangelogEdges) GitProjectOrErr() (*GitProject, error) {
-	if e.GitProject != nil {
-		return e.GitProject, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: gitproject.Label}
-	}
-	return nil, &NotLoadedError{edge: "git_project"}
+	loadedTypes [1]bool
 }
 
 // ProjectOrErr returns the Project value or an error if the edge
@@ -97,7 +77,7 @@ func (e ChangelogEdges) GitProjectOrErr() (*GitProject, error) {
 func (e ChangelogEdges) ProjectOrErr() (*Project, error) {
 	if e.Project != nil {
 		return e.Project, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[0] {
 		return nil, &NotFoundError{label: project.Label}
 	}
 	return nil, &NotLoadedError{edge: "project"}
@@ -108,13 +88,13 @@ func (*Changelog) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case changelog.FieldManifest, changelog.FieldDockerImage, changelog.FieldEnvValues, changelog.FieldExtraValues, changelog.FieldFinalExtraValues:
+		case changelog.FieldDockerImage, changelog.FieldEnvValues, changelog.FieldExtraValues, changelog.FieldFinalExtraValues:
 			values[i] = new([]byte)
 		case changelog.FieldConfigChanged:
 			values[i] = new(sql.NullBool)
-		case changelog.FieldID, changelog.FieldVersion, changelog.FieldProjectID, changelog.FieldGitProjectID:
+		case changelog.FieldID, changelog.FieldVersion, changelog.FieldProjectID:
 			values[i] = new(sql.NullInt64)
-		case changelog.FieldUsername, changelog.FieldConfig, changelog.FieldConfigType, changelog.FieldGitBranch, changelog.FieldGitCommit, changelog.FieldGitCommitWebURL, changelog.FieldGitCommitTitle, changelog.FieldGitCommitAuthor:
+		case changelog.FieldUsername, changelog.FieldConfig, changelog.FieldGitBranch, changelog.FieldGitCommit, changelog.FieldGitCommitWebURL, changelog.FieldGitCommitTitle, changelog.FieldGitCommitAuthor:
 			values[i] = new(sql.NullString)
 		case changelog.FieldCreatedAt, changelog.FieldUpdatedAt, changelog.FieldDeletedAt, changelog.FieldGitCommitDate:
 			values[i] = new(sql.NullTime)
@@ -170,25 +150,11 @@ func (c *Changelog) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				c.Username = value.String
 			}
-		case changelog.FieldManifest:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field manifest", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &c.Manifest); err != nil {
-					return fmt.Errorf("unmarshal field manifest: %w", err)
-				}
-			}
 		case changelog.FieldConfig:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field config", values[i])
 			} else if value.Valid {
 				c.Config = value.String
-			}
-		case changelog.FieldConfigType:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field config_type", values[i])
-			} else if value.Valid {
-				c.ConfigType = value.String
 			}
 		case changelog.FieldGitBranch:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -271,12 +237,6 @@ func (c *Changelog) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				c.ProjectID = int(value.Int64)
 			}
-		case changelog.FieldGitProjectID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field git_project_id", values[i])
-			} else if value.Valid {
-				c.GitProjectID = int(value.Int64)
-			}
 		default:
 			c.selectValues.Set(columns[i], values[i])
 		}
@@ -288,11 +248,6 @@ func (c *Changelog) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (c *Changelog) Value(name string) (ent.Value, error) {
 	return c.selectValues.Get(name)
-}
-
-// QueryGitProject queries the "git_project" edge of the Changelog entity.
-func (c *Changelog) QueryGitProject() *GitProjectQuery {
-	return NewChangelogClient(c.config).QueryGitProject(c)
 }
 
 // QueryProject queries the "project" edge of the Changelog entity.
@@ -340,14 +295,8 @@ func (c *Changelog) String() string {
 	builder.WriteString("username=")
 	builder.WriteString(c.Username)
 	builder.WriteString(", ")
-	builder.WriteString("manifest=")
-	builder.WriteString(fmt.Sprintf("%v", c.Manifest))
-	builder.WriteString(", ")
 	builder.WriteString("config=")
 	builder.WriteString(c.Config)
-	builder.WriteString(", ")
-	builder.WriteString("config_type=")
-	builder.WriteString(c.ConfigType)
 	builder.WriteString(", ")
 	builder.WriteString("git_branch=")
 	builder.WriteString(c.GitBranch)
@@ -386,9 +335,6 @@ func (c *Changelog) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("project_id=")
 	builder.WriteString(fmt.Sprintf("%v", c.ProjectID))
-	builder.WriteString(", ")
-	builder.WriteString("git_project_id=")
-	builder.WriteString(fmt.Sprintf("%v", c.GitProjectID))
 	builder.WriteByte(')')
 	return builder.String()
 }

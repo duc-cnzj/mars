@@ -61,7 +61,6 @@ func (repo *endpointRepo) InNamespace(ctx context.Context, namespaceID int) (res
 		WithProjects(func(query *ent.ProjectQuery) {
 			query.Select(
 				project.FieldID,
-				project.FieldManifest,
 				project.FieldName,
 				project.FieldNamespaceID,
 			)

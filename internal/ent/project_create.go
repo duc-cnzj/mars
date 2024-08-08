@@ -16,6 +16,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
+	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
 )
 
 // ProjectCreate is the builder for creating a Project entity.
@@ -282,6 +283,20 @@ func (pc *ProjectCreate) SetNillableNamespaceID(i *int) *ProjectCreate {
 	return pc
 }
 
+// SetRepoID sets the "repo_id" field.
+func (pc *ProjectCreate) SetRepoID(i int) *ProjectCreate {
+	pc.mutation.SetRepoID(i)
+	return pc
+}
+
+// SetNillableRepoID sets the "repo_id" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableRepoID(i *int) *ProjectCreate {
+	if i != nil {
+		pc.SetRepoID(*i)
+	}
+	return pc
+}
+
 // AddChangelogIDs adds the "changelogs" edge to the Changelog entity by IDs.
 func (pc *ProjectCreate) AddChangelogIDs(ids ...int) *ProjectCreate {
 	pc.mutation.AddChangelogIDs(ids...)
@@ -295,6 +310,11 @@ func (pc *ProjectCreate) AddChangelogs(c ...*Changelog) *ProjectCreate {
 		ids[i] = c[i].ID
 	}
 	return pc.AddChangelogIDs(ids...)
+}
+
+// SetRepo sets the "repo" edge to the Repo entity.
+func (pc *ProjectCreate) SetRepo(r *Repo) *ProjectCreate {
+	return pc.SetRepoID(r.ID)
 }
 
 // SetNamespace sets the "namespace" edge to the Namespace entity.
@@ -593,6 +613,23 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.RepoIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   project.RepoTable,
+			Columns: []string{project.RepoColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(repo.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.RepoID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pc.mutation.NamespaceIDs(); len(nodes) > 0 {
@@ -1021,6 +1058,24 @@ func (u *ProjectUpsert) UpdateNamespaceID() *ProjectUpsert {
 // ClearNamespaceID clears the value of the "namespace_id" field.
 func (u *ProjectUpsert) ClearNamespaceID() *ProjectUpsert {
 	u.SetNull(project.FieldNamespaceID)
+	return u
+}
+
+// SetRepoID sets the "repo_id" field.
+func (u *ProjectUpsert) SetRepoID(v int) *ProjectUpsert {
+	u.Set(project.FieldRepoID, v)
+	return u
+}
+
+// UpdateRepoID sets the "repo_id" field to the value that was provided on create.
+func (u *ProjectUpsert) UpdateRepoID() *ProjectUpsert {
+	u.SetExcluded(project.FieldRepoID)
+	return u
+}
+
+// ClearRepoID clears the value of the "repo_id" field.
+func (u *ProjectUpsert) ClearRepoID() *ProjectUpsert {
+	u.SetNull(project.FieldRepoID)
 	return u
 }
 
@@ -1486,6 +1541,27 @@ func (u *ProjectUpsertOne) UpdateNamespaceID() *ProjectUpsertOne {
 func (u *ProjectUpsertOne) ClearNamespaceID() *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.ClearNamespaceID()
+	})
+}
+
+// SetRepoID sets the "repo_id" field.
+func (u *ProjectUpsertOne) SetRepoID(v int) *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.SetRepoID(v)
+	})
+}
+
+// UpdateRepoID sets the "repo_id" field to the value that was provided on create.
+func (u *ProjectUpsertOne) UpdateRepoID() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.UpdateRepoID()
+	})
+}
+
+// ClearRepoID clears the value of the "repo_id" field.
+func (u *ProjectUpsertOne) ClearRepoID() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearRepoID()
 	})
 }
 
@@ -2117,6 +2193,27 @@ func (u *ProjectUpsertBulk) UpdateNamespaceID() *ProjectUpsertBulk {
 func (u *ProjectUpsertBulk) ClearNamespaceID() *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.ClearNamespaceID()
+	})
+}
+
+// SetRepoID sets the "repo_id" field.
+func (u *ProjectUpsertBulk) SetRepoID(v int) *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.SetRepoID(v)
+	})
+}
+
+// UpdateRepoID sets the "repo_id" field to the value that was provided on create.
+func (u *ProjectUpsertBulk) UpdateRepoID() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.UpdateRepoID()
+	})
+}
+
+// ClearRepoID clears the value of the "repo_id" field.
+func (u *ProjectUpsertBulk) ClearRepoID() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearRepoID()
 	})
 }
 

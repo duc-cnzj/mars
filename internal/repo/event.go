@@ -64,16 +64,16 @@ type EventRepo interface {
 var _ EventRepo = (*eventRepo)(nil)
 
 type eventRepo struct {
-	logger         mlog.Logger
-	eventer        event.Dispatcher
-	pl             application.PluginManger
-	clRepo         ChangelogRepo
-	data           data.Data
-	gitprojectRepo GitProjectRepo
+	logger      mlog.Logger
+	eventer     event.Dispatcher
+	pl          application.PluginManger
+	clRepo      ChangelogRepo
+	data        data.Data
+	projectRepo ProjectRepo
 }
 
-func NewEventRepo(gitprojectRepo GitProjectRepo, pl application.PluginManger, clRepo ChangelogRepo, logger mlog.Logger, data data.Data, eventer event.Dispatcher) EventRepo {
-	r := &eventRepo{gitprojectRepo: gitprojectRepo, clRepo: clRepo, logger: logger, eventer: eventer, data: data, pl: pl}
+func NewEventRepo(projectRepo ProjectRepo, pl application.PluginManger, clRepo ChangelogRepo, logger mlog.Logger, data data.Data, eventer event.Dispatcher) EventRepo {
+	r := &eventRepo{projectRepo: projectRepo, clRepo: clRepo, logger: logger, eventer: eventer, data: data, pl: pl}
 	eventer.Listen(AuditLogEvent, r.HandleAuditLog)
 	eventer.Listen(EventNamespaceCreated, r.HandleInjectTlsSecret)
 	eventer.Listen(EventNamespaceDeleted, r.HandleNamespaceDeleted)
@@ -204,60 +204,50 @@ type ProjectChangedData struct {
 }
 
 func (repo *eventRepo) HandleProjectChanged(data any, e event.Event) error {
-	//if changedData, ok := data.(*ProjectChangedData); ok {
-	//	show, err := repo.projectRepo.Show(context.TODO(), changedData.ID)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	last, _ := repo.clRepo.FindLastChangeByProjectID(context.TODO(), changedData.Project.ID)
-	//	gp, _ := repo.gitprojectRepo.GetByProjectID(context.TODO(), changedData.Project.ID)
-	//	var (
-	//		configChanged bool
-	//		version       int = 1
-	//	)
-	//	if last != nil {
-	//		if last.Config != changedData.Project.Config || last.GitCommit != changedData.Project.GitCommit {
-	//			configChanged = true
-	//		}
-	//		version = last.Version + 1
-	//	}
-	//	repo.clRepo.Create(context.TODO(), &CreateChangeLogInput{
-	//		Version:          version,
-	//		Username:         changedData.Username,
-	//		Manifest:         changedData.Project.Manifest,
-	//		Config:           changedData.Project.Config,
-	//		ConfigType:       changedData.Project.ConfigType,
-	//		GitBranch:        changedData.Project.GitBranch,
-	//		GitCommit:        changedData.Project.GitCommit,
-	//		DockerImage:      changedData.Project.DockerImage,
-	//		EnvValues:        changedData.Project.EnvValues,
-	//		ExtraValues:      changedData.Project.ExtraValues,
-	//		FinalExtraValues: changedData.Project.FinalExtraValues,
-	//		GitCommitWebURL:  changedData.Project.GitCommitWebURL,
-	//		GitCommitTitle:   changedData.Project.GitCommitTitle,
-	//		GitCommitAuthor:  changedData.Project.GitCommitAuthor,
-	//		GitCommitDate:    changedData.Project.GitCommitDate,
-	//		ConfigChanged:    configChanged,
-	//		ProjectID:        changedData.Project.ID,
-	//		GitProjectID:     gp.ID,
-	//	})
-	//}
+	if changedData, ok := data.(*ProjectChangedData); ok {
+		proj, err := repo.projectRepo.Show(context.TODO(), changedData.ID)
+		if err != nil {
+			repo.logger.Error("[HandleProjectChanged]: ", err)
+			return err
+		}
+		var configChanged bool
+		if lastChange, err := repo.clRepo.FindLastChangeByProjectID(context.TODO(), changedData.ID); err == nil {
+			configChanged = lastChange.Config == proj.Config || lastChange.GitCommit != proj.GitCommit
+		}
+		repo.clRepo.Create(context.TODO(), &CreateChangeLogInput{
+			Version:          proj.Version,
+			Username:         changedData.Username,
+			Config:           proj.Config,
+			GitBranch:        proj.GitBranch,
+			GitCommit:        proj.GitCommit,
+			DockerImage:      proj.DockerImage,
+			EnvValues:        proj.EnvValues,
+			ExtraValues:      proj.ExtraValues,
+			FinalExtraValues: proj.FinalExtraValues,
+			GitCommitWebURL:  proj.GitCommitWebURL,
+			GitCommitTitle:   proj.GitCommitTitle,
+			GitCommitAuthor:  proj.GitCommitAuthor,
+			GitCommitDate:    proj.GitCommitDate,
+			ConfigChanged:    configChanged,
+			ProjectID:        changedData.ID,
+		})
+	}
 	return nil
 }
 
 func (repo *eventRepo) HandleProjectDeleted(data any, e event.Event) error {
-	//var (
-	//	ws     = repo.pl.Ws()
-	//	logger = repo.logger
-	//)
-	//project := data.(*ent.Project)
-	//sub := ws.New("", "")
-	//defer sub.Close()
-	//sub.ToAll(&websocket_pb.WsReloadProjectsResponse{
-	//	Metadata:    &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects},
-	//	NamespaceId: int32(project.NamespaceID),
-	//})
-	//logger.Debug("event handled: ", e.String(), data)
+	var (
+		ws     = repo.pl.Ws()
+		logger = repo.logger
+	)
+	project := data.(*Project)
+	sub := ws.New("", "")
+	defer sub.Close()
+	sub.ToAll(&websocket_pb.WsReloadProjectsResponse{
+		Metadata:    &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects},
+		NamespaceId: int32(project.NamespaceID),
+	})
+	logger.Debug("event handled: ", e.String(), data)
 	return nil
 }
 

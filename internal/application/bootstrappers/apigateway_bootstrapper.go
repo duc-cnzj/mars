@@ -1,12 +1,12 @@
 package bootstrappers
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/server"
-	"github.com/duc-cnzj/mars/v4/internal/socket"
 )
 
 type ApiGatewayBootstrapper struct{}
@@ -18,18 +18,10 @@ func (a *ApiGatewayBootstrapper) Tags() []string {
 func (a *ApiGatewayBootstrapper) Bootstrap(appli application.App) error {
 	appli.AddServer(server.NewApiGateway(fmt.Sprintf("localhost:%s", appli.Config().GrpcPort), appli))
 	appli.RegisterAfterShutdownFunc(func(app application.App) {
-		t := time.NewTimer(5 * time.Second)
-		defer t.Stop()
-		ch := make(chan struct{})
-		go func() {
-			socket.Wait.Wait()
-			close(ch)
-		}()
-		select {
-		case <-ch:
-			app.Logger().Info("[Websocket]: all socket connection closed")
-		case <-t.C:
-			app.Logger().Warningf("[Websocket]: 等待超时, 未等待所有 socket 连接退出，当前剩余连接 %v 个。", socket.Wait.Count())
+		ctx, cancelFunc := context.WithTimeout(context.TODO(), 5*time.Second)
+		defer cancelFunc()
+		if err := appli.WsServer().Shutdown(ctx); err != nil {
+			app.Logger().Warning("shutdown ws server error", "error", err.Error())
 		}
 	})
 

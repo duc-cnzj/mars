@@ -14,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
+	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
 )
 
 // Project is the model entity for the Project schema.
@@ -69,6 +70,8 @@ type Project struct {
 	GitCommitDate *time.Time `json:"git_commit_date,omitempty"`
 	// NamespaceID holds the value of the "namespace_id" field.
 	NamespaceID int `json:"namespace_id,omitempty"`
+	// RepoID holds the value of the "repo_id" field.
+	RepoID int `json:"repo_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ProjectQuery when eager-loading is set.
 	Edges        ProjectEdges `json:"edges"`
@@ -79,11 +82,13 @@ type Project struct {
 type ProjectEdges struct {
 	// Changelogs holds the value of the changelogs edge.
 	Changelogs []*Changelog `json:"changelogs,omitempty"`
+	// Repo holds the value of the repo edge.
+	Repo *Repo `json:"repo,omitempty"`
 	// Namespace holds the value of the namespace edge.
 	Namespace *Namespace `json:"namespace,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // ChangelogsOrErr returns the Changelogs value or an error if the edge
@@ -95,12 +100,23 @@ func (e ProjectEdges) ChangelogsOrErr() ([]*Changelog, error) {
 	return nil, &NotLoadedError{edge: "changelogs"}
 }
 
+// RepoOrErr returns the Repo value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ProjectEdges) RepoOrErr() (*Repo, error) {
+	if e.Repo != nil {
+		return e.Repo, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: repo.Label}
+	}
+	return nil, &NotLoadedError{edge: "repo"}
+}
+
 // NamespaceOrErr returns the Namespace value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e ProjectEdges) NamespaceOrErr() (*Namespace, error) {
 	if e.Namespace != nil {
 		return e.Namespace, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: namespace.Label}
 	}
 	return nil, &NotLoadedError{edge: "namespace"}
@@ -115,7 +131,7 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case project.FieldAtomic:
 			values[i] = new(sql.NullBool)
-		case project.FieldID, project.FieldGitProjectID, project.FieldDeployStatus, project.FieldVersion, project.FieldNamespaceID:
+		case project.FieldID, project.FieldGitProjectID, project.FieldDeployStatus, project.FieldVersion, project.FieldNamespaceID, project.FieldRepoID:
 			values[i] = new(sql.NullInt64)
 		case project.FieldName, project.FieldGitBranch, project.FieldGitCommit, project.FieldConfig, project.FieldOverrideValues, project.FieldConfigType, project.FieldGitCommitWebURL, project.FieldGitCommitTitle, project.FieldGitCommitAuthor:
 			values[i] = new(sql.NullString)
@@ -300,6 +316,12 @@ func (pr *Project) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				pr.NamespaceID = int(value.Int64)
 			}
+		case project.FieldRepoID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field repo_id", values[i])
+			} else if value.Valid {
+				pr.RepoID = int(value.Int64)
+			}
 		default:
 			pr.selectValues.Set(columns[i], values[i])
 		}
@@ -316,6 +338,11 @@ func (pr *Project) Value(name string) (ent.Value, error) {
 // QueryChangelogs queries the "changelogs" edge of the Project entity.
 func (pr *Project) QueryChangelogs() *ChangelogQuery {
 	return NewProjectClient(pr.config).QueryChangelogs(pr)
+}
+
+// QueryRepo queries the "repo" edge of the Project entity.
+func (pr *Project) QueryRepo() *RepoQuery {
+	return NewProjectClient(pr.config).QueryRepo(pr)
 }
 
 // QueryNamespace queries the "namespace" edge of the Project entity.
@@ -421,6 +448,9 @@ func (pr *Project) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("namespace_id=")
 	builder.WriteString(fmt.Sprintf("%v", pr.NamespaceID))
+	builder.WriteString(", ")
+	builder.WriteString("repo_id=")
+	builder.WriteString(fmt.Sprintf("%v", pr.RepoID))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/event"
 	"github.com/duc-cnzj/mars/api/v4/file"
 	"github.com/duc-cnzj/mars/api/v4/git"
-	"github.com/duc-cnzj/mars/api/v4/gitconfig"
 	"github.com/duc-cnzj/mars/api/v4/metrics"
 	"github.com/duc-cnzj/mars/api/v4/namespace"
 	"github.com/duc-cnzj/mars/api/v4/picture"
@@ -33,7 +32,6 @@ var WireServiceSet = wire.NewSet(
 	NewEventSvc,
 	NewFileSvc,
 	NewGitSvc,
-	NewGitConfigSvc,
 	NewMetricsSvc,
 	NewNamespaceSvc,
 	NewPictureSvc,
@@ -48,7 +46,6 @@ func NewGrpcRegistry(
 	pictureServer picture.PictureServer,
 	namespaceServer namespace.NamespaceServer,
 	ms metrics.MetricsServer,
-	gs gitconfig.GitConfigServer,
 	gitServer git.GitServer,
 	fileServer file.FileServer,
 	eventServer event.EventServer,
@@ -69,7 +66,6 @@ func NewGrpcRegistry(
 			event.RegisterEventHandlerFromEndpoint,
 			file.RegisterFileHandlerFromEndpoint,
 			git.RegisterGitHandlerFromEndpoint,
-			gitconfig.RegisterGitConfigHandlerFromEndpoint,
 			metrics.RegisterMetricsHandlerFromEndpoint,
 			namespace.RegisterNamespaceHandlerFromEndpoint,
 			picture.RegisterPictureHandlerFromEndpoint,
@@ -87,7 +83,6 @@ func NewGrpcRegistry(
 			event.RegisterEventServer(s, eventServer)
 			file.RegisterFileServer(s, fileServer)
 			git.RegisterGitServer(s, gitServer)
-			gitconfig.RegisterGitConfigServer(s, gs)
 			metrics.RegisterMetricsServer(s, ms)
 			namespace.RegisterNamespaceServer(s, namespaceServer)
 			picture.RegisterPictureServer(s, pictureServer)

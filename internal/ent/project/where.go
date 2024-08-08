@@ -147,6 +147,11 @@ func NamespaceID(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldNamespaceID, v))
 }
 
+// RepoID applies equality check predicate on the "repo_id" field. It's identical to RepoIDEQ.
+func RepoID(v int) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldRepoID, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldCreatedAt, v))
@@ -1166,6 +1171,36 @@ func NamespaceIDNotNil() predicate.Project {
 	return predicate.Project(sql.FieldNotNull(FieldNamespaceID))
 }
 
+// RepoIDEQ applies the EQ predicate on the "repo_id" field.
+func RepoIDEQ(v int) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldRepoID, v))
+}
+
+// RepoIDNEQ applies the NEQ predicate on the "repo_id" field.
+func RepoIDNEQ(v int) predicate.Project {
+	return predicate.Project(sql.FieldNEQ(FieldRepoID, v))
+}
+
+// RepoIDIn applies the In predicate on the "repo_id" field.
+func RepoIDIn(vs ...int) predicate.Project {
+	return predicate.Project(sql.FieldIn(FieldRepoID, vs...))
+}
+
+// RepoIDNotIn applies the NotIn predicate on the "repo_id" field.
+func RepoIDNotIn(vs ...int) predicate.Project {
+	return predicate.Project(sql.FieldNotIn(FieldRepoID, vs...))
+}
+
+// RepoIDIsNil applies the IsNil predicate on the "repo_id" field.
+func RepoIDIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldRepoID))
+}
+
+// RepoIDNotNil applies the NotNil predicate on the "repo_id" field.
+func RepoIDNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldRepoID))
+}
+
 // HasChangelogs applies the HasEdge predicate on the "changelogs" edge.
 func HasChangelogs() predicate.Project {
 	return predicate.Project(func(s *sql.Selector) {
@@ -1181,6 +1216,29 @@ func HasChangelogs() predicate.Project {
 func HasChangelogsWith(preds ...predicate.Changelog) predicate.Project {
 	return predicate.Project(func(s *sql.Selector) {
 		step := newChangelogsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRepo applies the HasEdge predicate on the "repo" edge.
+func HasRepo() predicate.Project {
+	return predicate.Project(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, RepoTable, RepoColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRepoWith applies the HasEdge predicate on the "repo" edge with a given conditions (other predicates).
+func HasRepoWith(preds ...predicate.Repo) predicate.Project {
+	return predicate.Project(func(s *sql.Selector) {
+		step := newRepoStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

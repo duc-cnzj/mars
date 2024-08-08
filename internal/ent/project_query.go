@@ -16,6 +16,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
+	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
 )
 
 // ProjectQuery is the builder for querying Project entities.
@@ -26,6 +27,7 @@ type ProjectQuery struct {
 	inters         []Interceptor
 	predicates     []predicate.Project
 	withChangelogs *ChangelogQuery
+	withRepo       *RepoQuery
 	withNamespace  *NamespaceQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -78,6 +80,28 @@ func (pq *ProjectQuery) QueryChangelogs() *ChangelogQuery {
 			sqlgraph.From(project.Table, project.FieldID, selector),
 			sqlgraph.To(changelog.Table, changelog.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, project.ChangelogsTable, project.ChangelogsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRepo chains the current query on the "repo" edge.
+func (pq *ProjectQuery) QueryRepo() *RepoQuery {
+	query := (&RepoClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, selector),
+			sqlgraph.To(repo.Table, repo.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, project.RepoTable, project.RepoColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -300,6 +324,7 @@ func (pq *ProjectQuery) Clone() *ProjectQuery {
 		inters:         append([]Interceptor{}, pq.inters...),
 		predicates:     append([]predicate.Project{}, pq.predicates...),
 		withChangelogs: pq.withChangelogs.Clone(),
+		withRepo:       pq.withRepo.Clone(),
 		withNamespace:  pq.withNamespace.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
@@ -315,6 +340,17 @@ func (pq *ProjectQuery) WithChangelogs(opts ...func(*ChangelogQuery)) *ProjectQu
 		opt(query)
 	}
 	pq.withChangelogs = query
+	return pq
+}
+
+// WithRepo tells the query-builder to eager-load the nodes that are connected to
+// the "repo" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *ProjectQuery) WithRepo(opts ...func(*RepoQuery)) *ProjectQuery {
+	query := (&RepoClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withRepo = query
 	return pq
 }
 
@@ -407,8 +443,9 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 	var (
 		nodes       = []*Project{}
 		_spec       = pq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			pq.withChangelogs != nil,
+			pq.withRepo != nil,
 			pq.withNamespace != nil,
 		}
 	)
@@ -434,6 +471,12 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 		if err := pq.loadChangelogs(ctx, query, nodes,
 			func(n *Project) { n.Edges.Changelogs = []*Changelog{} },
 			func(n *Project, e *Changelog) { n.Edges.Changelogs = append(n.Edges.Changelogs, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withRepo; query != nil {
+		if err := pq.loadRepo(ctx, query, nodes, nil,
+			func(n *Project, e *Repo) { n.Edges.Repo = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -473,6 +516,35 @@ func (pq *ProjectQuery) loadChangelogs(ctx context.Context, query *ChangelogQuer
 			return fmt.Errorf(`unexpected referenced foreign-key "project_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
+	}
+	return nil
+}
+func (pq *ProjectQuery) loadRepo(ctx context.Context, query *RepoQuery, nodes []*Project, init func(*Project), assign func(*Project, *Repo)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Project)
+	for i := range nodes {
+		fk := nodes[i].RepoID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(repo.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "repo_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }
@@ -530,6 +602,9 @@ func (pq *ProjectQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != project.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if pq.withRepo != nil {
+			_spec.Node.AddColumnOnce(project.FieldRepoID)
 		}
 		if pq.withNamespace != nil {
 			_spec.Node.AddColumnOnce(project.FieldNamespaceID)

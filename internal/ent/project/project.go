@@ -64,8 +64,12 @@ const (
 	FieldGitCommitDate = "git_commit_date"
 	// FieldNamespaceID holds the string denoting the namespace_id field in the database.
 	FieldNamespaceID = "namespace_id"
+	// FieldRepoID holds the string denoting the repo_id field in the database.
+	FieldRepoID = "repo_id"
 	// EdgeChangelogs holds the string denoting the changelogs edge name in mutations.
 	EdgeChangelogs = "changelogs"
+	// EdgeRepo holds the string denoting the repo edge name in mutations.
+	EdgeRepo = "repo"
 	// EdgeNamespace holds the string denoting the namespace edge name in mutations.
 	EdgeNamespace = "namespace"
 	// Table holds the table name of the project in the database.
@@ -77,6 +81,13 @@ const (
 	ChangelogsInverseTable = "changelogs"
 	// ChangelogsColumn is the table column denoting the changelogs relation/edge.
 	ChangelogsColumn = "project_id"
+	// RepoTable is the table that holds the repo relation/edge.
+	RepoTable = "projects"
+	// RepoInverseTable is the table name for the Repo entity.
+	// It exists in this package in order to avoid circular dependency with the "repo" package.
+	RepoInverseTable = "repos"
+	// RepoColumn is the table column denoting the repo relation/edge.
+	RepoColumn = "repo_id"
 	// NamespaceTable is the table that holds the namespace relation/edge.
 	NamespaceTable = "projects"
 	// NamespaceInverseTable is the table name for the Namespace entity.
@@ -113,6 +124,7 @@ var Columns = []string{
 	FieldGitCommitAuthor,
 	FieldGitCommitDate,
 	FieldNamespaceID,
+	FieldRepoID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -267,6 +279,11 @@ func ByNamespaceID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNamespaceID, opts...).ToFunc()
 }
 
+// ByRepoID orders the results by the repo_id field.
+func ByRepoID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRepoID, opts...).ToFunc()
+}
+
 // ByChangelogsCount orders the results by changelogs count.
 func ByChangelogsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -281,6 +298,13 @@ func ByChangelogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByRepoField orders the results by repo field.
+func ByRepoField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRepoStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByNamespaceField orders the results by namespace field.
 func ByNamespaceField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -292,6 +316,13 @@ func newChangelogsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ChangelogsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ChangelogsTable, ChangelogsColumn),
+	)
+}
+func newRepoStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RepoInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, RepoTable, RepoColumn),
 	)
 }
 func newNamespaceStep() *sqlgraph.Step {

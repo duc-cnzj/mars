@@ -83,6 +83,8 @@ func (Project) Fields() []ent.Field {
 			Optional(),
 		field.Int("namespace_id").
 			Optional(),
+		field.Int("repo_id").
+			Optional(),
 	}
 }
 
@@ -90,6 +92,10 @@ func (Project) Fields() []ent.Field {
 func (Project) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("changelogs", Changelog.Type),
+		edge.From("repo", Repo.Type).
+			Ref("projects").
+			Unique().
+			Field("repo_id"),
 		edge.From("namespace", Namespace.Type).
 			Ref("projects").
 			Unique().

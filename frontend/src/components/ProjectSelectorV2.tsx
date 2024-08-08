@@ -1,5 +1,15 @@
 import React, { useState, memo, useCallback, useEffect, useMemo } from "react";
-import { Affix, Button, Col, Form, message, Row, Select, Space } from "antd";
+import {
+  Affix,
+  Button,
+  Col,
+  Form,
+  message,
+  Progress,
+  Row,
+  Select,
+  Space,
+} from "antd";
 import { css } from "@emotion/css";
 import ajax from "../api/ajax";
 import { components } from "../api/schema.d";
@@ -13,14 +23,19 @@ import { useSelector } from "react-redux";
 import styled from "@emotion/styled";
 import { useWs, useWsReady } from "../contexts/useWebsocket";
 import { useDispatch } from "react-redux";
+import TimeCost from "./TimeCost";
 import {
   clearCreateProjectLog,
   setCreateProjectLoading,
   setDeployStatus,
+  setStart as dispatchSetStart,
+  setStartAt as dispatchSetStartAt,
 } from "../store/actions";
 import { websocket } from "../api/websocket";
 import { toSlug } from "../utils/slug";
-import { DeployStatus } from "../store/reducers/createProject";
+import { DeployStatus, selectList } from "../store/reducers/createProject";
+import { selectTimer } from "../store/reducers/deployTimer";
+import LogOutput from "./LogOutput";
 
 const { useBreakpoint } = Grid;
 
@@ -211,14 +226,50 @@ const DeployProjectForm: React.FC<{
   let slug = useMemo(() => {
     let found = findProject(repoId);
     if (found) {
-      return toSlug(namespaceId, found.value);
+      return toSlug(namespaceId, found.label);
     }
   }, [namespaceId, findProject, repoId]);
 
   const ws = useWs();
   const wsReady = useWsReady();
   const dispatch = useDispatch();
-  // const onFinish = () => {};
+  const list = useSelector(selectList);
+  const isLoading = useMemo(
+    () => (slug ? list[slug]?.isLoading : false),
+    [list, slug]
+  );
+  const deployStatus = useMemo(
+    () => (slug ? list[slug]?.deployStatus : DeployStatus.DeployUnknown),
+    [list, slug]
+  );
+  const processPercent = useMemo(
+    () => (slug ? list[slug]?.processPercent : 0),
+    [list, slug]
+  );
+  const timer = useSelector(selectTimer);
+  const start = useMemo(
+    () => (slug ? timer[slug]?.start : false),
+    [timer, slug]
+  );
+  const startAt = useMemo(
+    () => (slug ? timer[slug]?.startAt : 0),
+    [timer, slug]
+  );
+  const [deployStarted, setDeployStarted] = useState(false);
+  const setStart = useCallback(
+    (start: boolean) => {
+      slug && dispatch(dispatchSetStart(slug, start));
+    },
+    [dispatch, slug]
+  );
+  const [showLog, setShowLog] = useState(start);
+  const setStartAt = useCallback(
+    (startAt: number) => {
+      slug && dispatch(dispatchSetStartAt(slug, startAt));
+    },
+    [dispatch, slug]
+  );
+
   const onFinish = useCallback(
     (values: FormTypes) => {
       console.log(values);
@@ -240,18 +291,33 @@ const DeployProjectForm: React.FC<{
       }).finish();
 
       dispatch(setDeployStatus(slug, DeployStatus.DeployUnknown));
-
       dispatch(clearCreateProjectLog(slug));
       dispatch(setCreateProjectLoading(slug, true));
-      // setShowLog(true);
-      // setStart(true);
-      // setStartAt(Date.now());
-      // setDeployStarted(true);
+      setShowLog(true);
+      setStart(true);
+      setStartAt(Date.now());
+      setDeployStarted(true);
       ws?.send(createParams);
       return;
     },
-    [namespaceId, ws, wsReady, slug, dispatch]
+    [dispatch, namespaceId, setStart, setStartAt, slug, ws, wsReady]
   );
+
+  const onRemove = useCallback(() => {
+    if (!wsReady) {
+      // message.error("连接断开了");
+      return;
+    }
+    let found = findProject(repoId);
+    if (found) {
+      let s = websocket.CancelInput.encode({
+        type: websocket.Type.CancelProject,
+        namespaceId: namespaceId,
+        name: found.label,
+      }).finish();
+      ws?.send(s);
+    }
+  }, [findProject, namespaceId, repoId, ws, wsReady]);
 
   return (
     <Form
@@ -261,11 +327,7 @@ const DeployProjectForm: React.FC<{
       autoComplete="off"
       onFinish={onFinish}
       // initialValues={}
-      style={{
-        height: "100%",
-        // display: "flex",
-        // flexDirection: "column",
-      }}
+      style={{ height: "100%" }}
     >
       <div
         ref={setContainer}
@@ -413,55 +475,87 @@ const DeployProjectForm: React.FC<{
                       size="small"
                       danger={info.status === "bad"}
                       type={"primary"}
-                      // loading={isLoading}
+                      loading={isLoading}
                     >
-                      部署
                       {info.status === "bad" ? "集群资源不足" : "部署"}
                     </Button>
                     <Button
                       style={{ fontSize: 12, marginRight: 5 }}
                       size="small"
-                      // hidden={!isLoading}
+                      hidden={!isLoading}
                       danger
                       icon={<StopOutlined />}
                       type="dashed"
-                      // onClick={onRemove}
+                      onClick={onRemove}
                     >
                       取消
                     </Button>
+                    {slug && list[slug] && list[slug].output?.length > 0 && (
+                      <Button
+                        type="dashed"
+                        style={{ fontSize: 12, marginRight: 5 }}
+                        size="small"
+                        onClick={() => setShowLog((show) => !show)}
+                      >
+                        {showLog ? "隐藏" : "查看"}日志
+                      </Button>
+                    )}
                   </Space>
                 </Row>
               </div>
             </Affix>
             <Row>
-              <Col span={24}>
-                <Form.Item name="extraValues" noStyle>
-                  <Elements
-                    elements={elements}
-                    style={{
-                      inputNumber: { fontSize: 10, width: "100%" },
-                      input: { fontSize: 10 },
-                      label: { fontSize: 10 },
-                      textarea: { fontSize: 10 },
-                      formItem: {
-                        marginBottom: 2,
-                        marginTop: 0,
-                        display: "inline-block",
-                        width: "calc(33.3% - 8px)",
-                        marginRight: 8,
-                      },
-                    }}
+              <Col span={showLog ? 24 : 0}>
+                <Progress
+                  strokeColor={{
+                    from: "#108ee9",
+                    to: "#87d068",
+                  }}
+                  style={{ padding: "0 3px", marginBottom: 5 }}
+                  percent={processPercent}
+                  status="active"
+                />
+                {slug && (
+                  <LogOutput
+                    pending={<TimeCost start={start} startAt={startAt} />}
+                    slug={slug}
                   />
-                </Form.Item>
+                )}
               </Col>
             </Row>
-            <Row style={{ height: "100%" }}>
-              <Col span={24}>
-                <Form.Item name="config" noStyle>
-                  <MyCodeMirror mode={mode} />
-                </Form.Item>
-              </Col>
-            </Row>
+            {!showLog && (
+              <>
+                <Row>
+                  <Col span={24}>
+                    <Form.Item name="extraValues" noStyle>
+                      <Elements
+                        elements={elements}
+                        style={{
+                          inputNumber: { fontSize: 10, width: "100%" },
+                          input: { fontSize: 10 },
+                          label: { fontSize: 10 },
+                          textarea: { fontSize: 10 },
+                          formItem: {
+                            marginBottom: 2,
+                            marginTop: 0,
+                            display: "inline-block",
+                            width: "calc(33.3% - 8px)",
+                            marginRight: 8,
+                          },
+                        }}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Row style={{ height: "100%" }}>
+                  <Col span={24}>
+                    <Form.Item name="config" noStyle>
+                      <MyCodeMirror mode={mode} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </>
+            )}
           </Space>
         </Row>
       </div>

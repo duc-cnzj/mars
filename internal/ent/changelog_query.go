@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
-	"github.com/duc-cnzj/mars/v4/internal/ent/gitproject"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
 )
@@ -20,12 +19,11 @@ import (
 // ChangelogQuery is the builder for querying Changelog entities.
 type ChangelogQuery struct {
 	config
-	ctx            *QueryContext
-	order          []changelog.OrderOption
-	inters         []Interceptor
-	predicates     []predicate.Changelog
-	withGitProject *GitProjectQuery
-	withProject    *ProjectQuery
+	ctx         *QueryContext
+	order       []changelog.OrderOption
+	inters      []Interceptor
+	predicates  []predicate.Changelog
+	withProject *ProjectQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -60,28 +58,6 @@ func (cq *ChangelogQuery) Unique(unique bool) *ChangelogQuery {
 func (cq *ChangelogQuery) Order(o ...changelog.OrderOption) *ChangelogQuery {
 	cq.order = append(cq.order, o...)
 	return cq
-}
-
-// QueryGitProject chains the current query on the "git_project" edge.
-func (cq *ChangelogQuery) QueryGitProject() *GitProjectQuery {
-	query := (&GitProjectClient{config: cq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := cq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := cq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(changelog.Table, changelog.FieldID, selector),
-			sqlgraph.To(gitproject.Table, gitproject.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, changelog.GitProjectTable, changelog.GitProjectColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryProject chains the current query on the "project" edge.
@@ -293,28 +269,16 @@ func (cq *ChangelogQuery) Clone() *ChangelogQuery {
 		return nil
 	}
 	return &ChangelogQuery{
-		config:         cq.config,
-		ctx:            cq.ctx.Clone(),
-		order:          append([]changelog.OrderOption{}, cq.order...),
-		inters:         append([]Interceptor{}, cq.inters...),
-		predicates:     append([]predicate.Changelog{}, cq.predicates...),
-		withGitProject: cq.withGitProject.Clone(),
-		withProject:    cq.withProject.Clone(),
+		config:      cq.config,
+		ctx:         cq.ctx.Clone(),
+		order:       append([]changelog.OrderOption{}, cq.order...),
+		inters:      append([]Interceptor{}, cq.inters...),
+		predicates:  append([]predicate.Changelog{}, cq.predicates...),
+		withProject: cq.withProject.Clone(),
 		// clone intermediate query.
 		sql:  cq.sql.Clone(),
 		path: cq.path,
 	}
-}
-
-// WithGitProject tells the query-builder to eager-load the nodes that are connected to
-// the "git_project" edge. The optional arguments are used to configure the query builder of the edge.
-func (cq *ChangelogQuery) WithGitProject(opts ...func(*GitProjectQuery)) *ChangelogQuery {
-	query := (&GitProjectClient{config: cq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	cq.withGitProject = query
-	return cq
 }
 
 // WithProject tells the query-builder to eager-load the nodes that are connected to
@@ -406,8 +370,7 @@ func (cq *ChangelogQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ch
 	var (
 		nodes       = []*Changelog{}
 		_spec       = cq.querySpec()
-		loadedTypes = [2]bool{
-			cq.withGitProject != nil,
+		loadedTypes = [1]bool{
 			cq.withProject != nil,
 		}
 	)
@@ -429,12 +392,6 @@ func (cq *ChangelogQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ch
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := cq.withGitProject; query != nil {
-		if err := cq.loadGitProject(ctx, query, nodes, nil,
-			func(n *Changelog, e *GitProject) { n.Edges.GitProject = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := cq.withProject; query != nil {
 		if err := cq.loadProject(ctx, query, nodes, nil,
 			func(n *Changelog, e *Project) { n.Edges.Project = e }); err != nil {
@@ -444,35 +401,6 @@ func (cq *ChangelogQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ch
 	return nodes, nil
 }
 
-func (cq *ChangelogQuery) loadGitProject(ctx context.Context, query *GitProjectQuery, nodes []*Changelog, init func(*Changelog), assign func(*Changelog, *GitProject)) error {
-	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*Changelog)
-	for i := range nodes {
-		fk := nodes[i].GitProjectID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(gitproject.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "git_project_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (cq *ChangelogQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*Changelog, init func(*Changelog), assign func(*Changelog, *Project)) error {
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*Changelog)
@@ -527,9 +455,6 @@ func (cq *ChangelogQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != changelog.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if cq.withGitProject != nil {
-			_spec.Node.AddColumnOnce(changelog.FieldGitProjectID)
 		}
 		if cq.withProject != nil {
 			_spec.Node.AddColumnOnce(changelog.FieldProjectID)

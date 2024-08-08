@@ -344,7 +344,7 @@ const DetailTab: React.FC<{
         disabled={loading}
         loading={loading}
         type="primary"
-        style={{ marginTop: 20 }}
+        style={{ marginTop: 10, marginBottom: 40 }}
         size="middle"
         danger
       >

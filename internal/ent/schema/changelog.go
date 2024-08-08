@@ -21,11 +21,9 @@ func (Changelog) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int("version").Default(1),
 		field.String("username").MaxLen(100).Comment("修改人"),
-		field.Strings("manifest").Optional(),
 		field.String("config").
 			Optional().
 			Comment("用户提交的配置"),
-		field.String("config_type").MaxLen(255).Optional(),
 		field.String("git_branch").MaxLen(255).NotEmpty(),
 		field.String("git_commit").MaxLen(255).NotEmpty(),
 		field.Strings("docker_image").Optional(),
@@ -43,17 +41,12 @@ func (Changelog) Fields() []ent.Field {
 			Optional(),
 		field.Bool("config_changed").Default(false),
 		field.Int("project_id").Optional(),
-		field.Int("git_project_id").Optional(),
 	}
 }
 
 // Edges of the Changelog.
 func (Changelog) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("git_project", GitProject.Type).
-			Ref("changelogs").
-			Unique().
-			Field("git_project_id"),
 		edge.From("project", Project.Type).
 			Ref("changelogs").
 			Unique().

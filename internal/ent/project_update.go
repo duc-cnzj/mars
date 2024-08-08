@@ -18,6 +18,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
+	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
 )
 
 // ProjectUpdate is the builder for updating Project entities.
@@ -422,6 +423,26 @@ func (pu *ProjectUpdate) ClearNamespaceID() *ProjectUpdate {
 	return pu
 }
 
+// SetRepoID sets the "repo_id" field.
+func (pu *ProjectUpdate) SetRepoID(i int) *ProjectUpdate {
+	pu.mutation.SetRepoID(i)
+	return pu
+}
+
+// SetNillableRepoID sets the "repo_id" field if the given value is not nil.
+func (pu *ProjectUpdate) SetNillableRepoID(i *int) *ProjectUpdate {
+	if i != nil {
+		pu.SetRepoID(*i)
+	}
+	return pu
+}
+
+// ClearRepoID clears the value of the "repo_id" field.
+func (pu *ProjectUpdate) ClearRepoID() *ProjectUpdate {
+	pu.mutation.ClearRepoID()
+	return pu
+}
+
 // AddChangelogIDs adds the "changelogs" edge to the Changelog entity by IDs.
 func (pu *ProjectUpdate) AddChangelogIDs(ids ...int) *ProjectUpdate {
 	pu.mutation.AddChangelogIDs(ids...)
@@ -435,6 +456,11 @@ func (pu *ProjectUpdate) AddChangelogs(c ...*Changelog) *ProjectUpdate {
 		ids[i] = c[i].ID
 	}
 	return pu.AddChangelogIDs(ids...)
+}
+
+// SetRepo sets the "repo" edge to the Repo entity.
+func (pu *ProjectUpdate) SetRepo(r *Repo) *ProjectUpdate {
+	return pu.SetRepoID(r.ID)
 }
 
 // SetNamespace sets the "namespace" edge to the Namespace entity.
@@ -466,6 +492,12 @@ func (pu *ProjectUpdate) RemoveChangelogs(c ...*Changelog) *ProjectUpdate {
 		ids[i] = c[i].ID
 	}
 	return pu.RemoveChangelogIDs(ids...)
+}
+
+// ClearRepo clears the "repo" edge to the Repo entity.
+func (pu *ProjectUpdate) ClearRepo() *ProjectUpdate {
+	pu.mutation.ClearRepo()
+	return pu
 }
 
 // ClearNamespace clears the "namespace" edge to the Namespace entity.
@@ -741,6 +773,35 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(changelog.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if pu.mutation.RepoCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   project.RepoTable,
+			Columns: []string{project.RepoColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(repo.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RepoIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   project.RepoTable,
+			Columns: []string{project.RepoColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(repo.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1186,6 +1247,26 @@ func (puo *ProjectUpdateOne) ClearNamespaceID() *ProjectUpdateOne {
 	return puo
 }
 
+// SetRepoID sets the "repo_id" field.
+func (puo *ProjectUpdateOne) SetRepoID(i int) *ProjectUpdateOne {
+	puo.mutation.SetRepoID(i)
+	return puo
+}
+
+// SetNillableRepoID sets the "repo_id" field if the given value is not nil.
+func (puo *ProjectUpdateOne) SetNillableRepoID(i *int) *ProjectUpdateOne {
+	if i != nil {
+		puo.SetRepoID(*i)
+	}
+	return puo
+}
+
+// ClearRepoID clears the value of the "repo_id" field.
+func (puo *ProjectUpdateOne) ClearRepoID() *ProjectUpdateOne {
+	puo.mutation.ClearRepoID()
+	return puo
+}
+
 // AddChangelogIDs adds the "changelogs" edge to the Changelog entity by IDs.
 func (puo *ProjectUpdateOne) AddChangelogIDs(ids ...int) *ProjectUpdateOne {
 	puo.mutation.AddChangelogIDs(ids...)
@@ -1199,6 +1280,11 @@ func (puo *ProjectUpdateOne) AddChangelogs(c ...*Changelog) *ProjectUpdateOne {
 		ids[i] = c[i].ID
 	}
 	return puo.AddChangelogIDs(ids...)
+}
+
+// SetRepo sets the "repo" edge to the Repo entity.
+func (puo *ProjectUpdateOne) SetRepo(r *Repo) *ProjectUpdateOne {
+	return puo.SetRepoID(r.ID)
 }
 
 // SetNamespace sets the "namespace" edge to the Namespace entity.
@@ -1230,6 +1316,12 @@ func (puo *ProjectUpdateOne) RemoveChangelogs(c ...*Changelog) *ProjectUpdateOne
 		ids[i] = c[i].ID
 	}
 	return puo.RemoveChangelogIDs(ids...)
+}
+
+// ClearRepo clears the "repo" edge to the Repo entity.
+func (puo *ProjectUpdateOne) ClearRepo() *ProjectUpdateOne {
+	puo.mutation.ClearRepo()
+	return puo
 }
 
 // ClearNamespace clears the "namespace" edge to the Namespace entity.
@@ -1535,6 +1627,35 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(changelog.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.RepoCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   project.RepoTable,
+			Columns: []string{project.RepoColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(repo.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RepoIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   project.RepoTable,
+			Columns: []string{project.RepoColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(repo.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -38,8 +38,29 @@ type Repo struct {
 	// NeedGitRepo holds the value of the "need_git_repo" field.
 	NeedGitRepo bool `json:"need_git_repo,omitempty"`
 	// mars 配置
-	MarsConfig   *mars.Config `json:"mars_config,omitempty"`
+	MarsConfig *mars.Config `json:"mars_config,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the RepoQuery when eager-loading is set.
+	Edges        RepoEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// RepoEdges holds the relations/edges for other nodes in the graph.
+type RepoEdges struct {
+	// Projects holds the value of the projects edge.
+	Projects []*Project `json:"projects,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// ProjectsOrErr returns the Projects value or an error if the edge
+// was not loaded in eager-loading.
+func (e RepoEdges) ProjectsOrErr() ([]*Project, error) {
+	if e.loadedTypes[0] {
+		return e.Projects, nil
+	}
+	return nil, &NotLoadedError{edge: "projects"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -152,6 +173,11 @@ func (r *Repo) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (r *Repo) Value(name string) (ent.Value, error) {
 	return r.selectValues.Get(name)
+}
+
+// QueryProjects queries the "projects" edge of the Repo entity.
+func (r *Repo) QueryProjects() *ProjectQuery {
+	return NewRepoClient(r.config).QueryProjects(r)
 }
 
 // Update returns a builder for updating this Repo.
