@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"reflect"
 	"sort"
 	"strings"
@@ -121,18 +120,6 @@ func (e EndpointMapping) AllEndpoints() []*Endpoint {
 		res = append(res, endpoints...)
 	}
 	return res
-}
-
-type internalCloser struct {
-	closeFn func() error
-}
-
-func (i *internalCloser) Close() error {
-	return i.closeFn()
-}
-
-func NewCloser(fn func() error) io.Closer {
-	return &internalCloser{closeFn: fn}
 }
 
 func GetSlugName[T int64 | int | int32](namespaceId T, name string) string {

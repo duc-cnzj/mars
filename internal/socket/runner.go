@@ -685,7 +685,7 @@ func (j *jobRunner) WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, er
 	}
 	path := info.Path()
 
-	return path, util.NewCloser(func() error {
+	return path, NewCloser(func() error {
 		j.logger.Debug("delete file: " + path)
 		if err := j.uploader.LocalUploader().Delete(path); err != nil {
 			j.logger.Error("WriteConfigYamlToTmpFile error: ", err)
@@ -932,4 +932,16 @@ func imageUsedPipelineVars(v pipelineVars, s string) bool {
 	}
 
 	return false
+}
+
+type internalCloser struct {
+	closeFn func() error
+}
+
+func (i *internalCloser) Close() error {
+	return i.closeFn()
+}
+
+func NewCloser(fn func() error) io.Closer {
+	return &internalCloser{closeFn: fn}
 }
