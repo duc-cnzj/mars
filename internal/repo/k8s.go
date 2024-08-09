@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync"
 
+	"helm.sh/helm/v3/pkg/releaseutil"
+
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
@@ -68,6 +70,7 @@ type DockerConfigJSON struct {
 }
 
 type K8sRepo interface {
+	SplitManifests(manifest string) []string
 	AddTlsSecret(ns string, name string, key string, crt string) (*corev1.Secret, error)
 	GetPodMetrics(ctx context.Context, namespace, podName string) (*v1beta1.PodMetrics, error)
 	CreateDockerSecrets(ctx context.Context, namespace string) (*corev1.Secret, error)
@@ -104,6 +107,34 @@ type k8sRepo struct {
 	data          data.Data
 }
 
+func NewK8sRepo(
+	logger mlog.Logger,
+	data data.Data,
+	uploader uploader.Uploader,
+	archiver Archiver,
+	remoteExecutor ExecutorManager,
+) K8sRepo {
+	return &k8sRepo{
+		data:          data,
+		logger:        logger,
+		uploader:      uploader,
+		maxUploadSize: data.Config().MaxUploadSize(),
+		archiver:      archiver,
+		executor:      remoteExecutor,
+	}
+}
+
+// SplitManifests
+// 因为有些 secret 自带 --- 的值，导致 spilt "---" 解析异常
+func (repo *k8sRepo) SplitManifests(manifest string) []string {
+	mapManifests := releaseutil.SplitManifests(manifest)
+	var manifests []string
+	for _, s := range mapManifests {
+		manifests = append(manifests, s)
+	}
+	return manifests
+}
+
 func (repo *k8sRepo) AddTlsSecret(ns string, name string, key string, crt string) (*corev1.Secret, error) {
 	return repo.data.K8sClient().Client.CoreV1().Secrets(ns).Create(context.TODO(), &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -123,23 +154,6 @@ func (repo *k8sRepo) AddTlsSecret(ns string, name string, key string, crt string
 		},
 		Type: corev1.SecretTypeTLS,
 	}, metav1.CreateOptions{})
-}
-
-func NewK8sRepo(
-	logger mlog.Logger,
-	data data.Data,
-	uploader uploader.Uploader,
-	archiver Archiver,
-	remoteExecutor ExecutorManager,
-) K8sRepo {
-	return &k8sRepo{
-		data:          data,
-		logger:        logger,
-		uploader:      uploader,
-		maxUploadSize: data.Config().MaxUploadSize(),
-		archiver:      archiver,
-		executor:      remoteExecutor,
-	}
 }
 
 func (repo *k8sRepo) GetPodMetrics(ctx context.Context, namespace, podName string) (*v1beta1.PodMetrics, error) {

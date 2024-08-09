@@ -481,7 +481,7 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 
 		coalesceValues, _ := chartutil.CoalesceValues(j.chart, result.Config)
 		marshal, _ := yaml2.PrettyMarshal(&coalesceValues)
-		manifests := util.SplitManifests(result.Manifest)
+		manifests := j.k8sRepo.SplitManifests(result.Manifest)
 		j.manifests = manifests
 		var updateProjectInput = &repo.UpdateProjectInput{
 			ID:           j.project.ID,

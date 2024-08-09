@@ -14,7 +14,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/util/hash"
 	"github.com/duc-cnzj/mars/v4/internal/util/rand"
-	"helm.sh/helm/v3/pkg/releaseutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -88,17 +87,6 @@ func (l RuntimeObjectList) Has(in runtime.Object) bool {
 	}
 
 	return false
-}
-
-// SplitManifests
-// 因为有些 secret 自带 --- 的值，导致 spilt "---" 解析异常
-func SplitManifests(manifest string) []string {
-	mapManifests := releaseutil.SplitManifests(manifest)
-	var manifests []string
-	for _, s := range mapManifests {
-		manifests = append(manifests, s)
-	}
-	return manifests
 }
 
 type sortEndpoint []*Endpoint
