@@ -408,7 +408,7 @@ func (h *handler) handleDownloadConfig() {
 //	if pid != "" {
 //		query.Where(gitproject.GitProjectID(cast.ToInt(pid)))
 //	}
-//	projects, _ := query.All(context.TODO())
+//	projects, _ := query.AllProjects(context.TODO())
 //	var pname []string = gitProjectList(projects).ExportNames()
 //	jsonString := gitProjectList(projects).ExportJsonString()
 //	if pid == "" {

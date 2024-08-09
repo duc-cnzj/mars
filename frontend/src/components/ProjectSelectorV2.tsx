@@ -21,21 +21,13 @@ import { StopOutlined } from "@ant-design/icons";
 import { selectClusterInfo } from "../store/reducers/cluster";
 import { useSelector } from "react-redux";
 import styled from "@emotion/styled";
-import { useWs, useWsReady } from "../contexts/useWebsocket";
-import { useDispatch } from "react-redux";
 import TimeCost from "./TimeCost";
-import {
-  clearCreateProjectLog,
-  setCreateProjectLoading,
-  setDeployStatus,
-  setStart as dispatchSetStart,
-  setStartAt as dispatchSetStartAt,
-} from "../store/actions";
-import { websocket } from "../api/websocket";
 import { toSlug } from "../utils/slug";
-import { DeployStatus, selectList } from "../store/reducers/createProject";
-import { selectTimer } from "../store/reducers/deployTimer";
 import LogOutput from "./LogOutput";
+import useDeploy from "../contexts/useDeploy";
+import ConfigHistory from "./ConfigHistory";
+import { ReactDiffViewerStylesOverride } from "react-diff-viewer";
+import DiffViewer from "./DiffViewer";
 
 const { useBreakpoint } = Grid;
 
@@ -47,24 +39,46 @@ interface FormTypes {
   repoId: number;
 }
 
+const defaultCurr = {
+  slug: "",
+  appName: "",
+  needGitRepo: false,
+  gitProjectId: 0,
+  projectId: 0,
+};
+
 const DeployProjectForm: React.FC<{
   namespaceId: number;
-  projectId?: number;
-  edit?: boolean;
-}> = ({ namespaceId, projectId, edit }) => {
+  onSuccess?: () => void;
+  project?: components["schemas"]["types.ProjectModel"];
+  isEdit?: boolean;
+}> = ({ namespaceId, project, isEdit, onSuccess }) => {
   const [form] = Form.useForm();
-  const repoId = Form.useWatch("repoId", form);
+
+  const initValues = project
+    ? {
+        extraValues: project.extraValues,
+        config: project.config,
+        branch: project.gitBranch,
+        commit: project.gitCommit,
+        repoId: String(project.repoId),
+      }
+    : { extraValues: [], config: "", branch: "", commit: "", repoId: "" };
+
+  console.log(initValues, " id?: string;");
+
+  const formRepoId = Form.useWatch("repoId", form);
   const branch = Form.useWatch("branch", form);
   const commit = Form.useWatch("commit", form);
+  const config = Form.useWatch("config", form);
+  useEffect(() => {
+    console.log("formRepoId", formRepoId);
+  }, [formRepoId]);
 
-  const [loading, setLoading] = useState({
-    project: false,
-    branch: false,
-    commit: false,
-  });
-  const screens = useBreakpoint();
-
-  const [needGitRepo, setNeedGitRepo] = useState(true);
+  const [repoId, setRepoId] = useState(project ? project.repoId : 0);
+  useEffect(() => {
+    setRepoId(formRepoId);
+  }, [formRepoId]);
 
   const [options, setOptions] = useState<{
     project: components["schemas"]["git.Option"][];
@@ -76,43 +90,60 @@ const DeployProjectForm: React.FC<{
     commit: [],
   });
 
-  const findProject = useCallback(
-    (repoID: string | number) => {
-      let found = options.project.find(
-        (v) => Number(v.value) === Number(repoID)
-      );
-      return found;
-    },
-    [options.project]
-  );
+  const curr = useMemo((): {
+    slug: string;
+    appName: string;
+    needGitRepo: boolean;
+    gitProjectId: number;
+    projectId: number;
+  } => {
+    let found = options.project.find((v) => Number(v.value) === Number(repoId));
+    return found
+      ? {
+          slug: toSlug(namespaceId, found.label),
+          appName: found.label,
+          needGitRepo: found.needGitRepo,
+          gitProjectId: found.gitProjectId,
+          projectId: project ? project.id : 0,
+        }
+      : defaultCurr;
+  }, [options.project, repoId, namespaceId, project]);
 
-  const onProjectVisibleChange = useCallback(
-    (open: boolean) => {
-      if (!open || options.project.length > 0) {
-        return;
-      }
-      setLoading((l) => ({ ...l, project: true }));
-      ajax
-        .GET("/api/git/project_options")
-        .then(
-          ({ data }) =>
-            data && setOptions({ project: data.items, branch: [], commit: [] })
-        )
-        .finally(() => setLoading((l) => ({ ...l, project: false })));
-    },
-    [options.project]
-  );
+  const [loading, setLoading] = useState({
+    project: false,
+    branch: false,
+    commit: false,
+  });
+  const screens = useBreakpoint();
 
-  useEffect(() => {
-    if (repoId > 0 && options.project.length > 0) {
-      let found = findProject(repoId);
-      found && setNeedGitRepo(found.needGitRepo);
+  const [needGitRepo, setNeedGitRepo] = useState(true);
+
+  const onProjectVisibleChange = useCallback((open: boolean) => {
+    if (!open) {
+      return;
     }
-  }, [repoId, options.project, findProject]);
+    setLoading((l) => ({ ...l, project: true }));
+    ajax
+      .GET("/api/git/project_options")
+      .then(
+        ({ data }) =>
+          data && setOptions({ project: data.items, branch: [], commit: [] })
+      )
+      .finally(() => setLoading((l) => ({ ...l, project: false })));
+  }, []);
 
   useEffect(() => {
-    let found = findProject(repoId);
-    if (found && found.needGitRepo && found.gitProjectId > 0 && branch) {
+    if (isEdit) {
+      onProjectVisibleChange(true);
+    }
+  }, [isEdit, onProjectVisibleChange]);
+
+  useEffect(() => {
+    setNeedGitRepo(curr.needGitRepo);
+  }, [repoId, options.project, curr]);
+
+  useEffect(() => {
+    if (curr.gitProjectId > 0 && branch) {
       setLoading((v) => ({ ...v, commit: true }));
       form.setFieldValue("commit", "");
       ajax
@@ -120,7 +151,7 @@ const DeployProjectForm: React.FC<{
           "/api/git/projects/{gitProjectId}/branches/{branch}/commit_options",
           {
             params: {
-              path: { gitProjectId: found.gitProjectId, branch: branch },
+              path: { gitProjectId: curr.gitProjectId, branch: branch },
             },
           }
         )
@@ -132,17 +163,19 @@ const DeployProjectForm: React.FC<{
           setLoading((v) => ({ ...v, commit: false }));
         });
     }
-  }, [branch, repoId, findProject, form]);
+  }, [branch, curr.gitProjectId, curr.slug, form]);
 
   useEffect(() => {
-    let found = findProject(Number(repoId));
-    if (found && found.needGitRepo && found.gitProjectId > 0) {
+    if (curr.gitProjectId && repoId) {
       setLoading((v) => ({ ...v, branch: true }));
       form.setFieldValue("branch", "");
       form.setFieldValue("commit", "");
       ajax
         .GET("/api/git/projects/{gitProjectId}/branch_options", {
-          params: { path: { gitProjectId: found.gitProjectId } },
+          params: {
+            path: { gitProjectId: curr.gitProjectId },
+            query: { repoId: repoId },
+          },
         })
         .then(({ data, error }) => {
           if (error) {
@@ -155,26 +188,11 @@ const DeployProjectForm: React.FC<{
           setLoading((v) => ({ ...v, branch: false }));
         });
     }
-  }, [findProject, form, repoId]);
+  }, [curr, form, repoId]);
 
-  const isBiggerScreen = () => {
+  const isBiggerScreen = useMemo(() => {
     return screens.md || screens.lg || screens.xl || screens.xxl;
-  };
-
-  const [pipeline, setPipeline] = useState({
-    projectID: 0,
-    branch: "",
-    commit: "",
-  });
-
-  useEffect(() => {
-    if (repoId > 0 && commit && branch) {
-      let found = findProject(repoId);
-      if (found) {
-        setPipeline({ projectID: found.gitProjectId, branch, commit });
-      }
-    }
-  }, [commit, branch, repoId, findProject]);
+  }, [screens]);
 
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
@@ -195,130 +213,92 @@ const DeployProjectForm: React.FC<{
         })
         .then(({ data }) => {
           if (data) {
-            if (!form.getFieldValue("config")) {
+            if (!isEdit) {
               form.setFieldsValue({
                 config: data.item.marsConfig.configFileValues,
               });
             }
-            setMode(getMode(data.item.marsConfig.configFileType));
-            console.log(data.item);
             setElements(data.item.marsConfig.elements);
+            setMode(getMode(data.item.marsConfig.configFileType));
           }
         });
     },
-    [form]
+    [form, isEdit]
   );
-  useEffect(() => {
-    console.log(repoId);
-    if (repoId) {
-      loadConfigFile(repoId);
-    }
-  }, [repoId, loadConfigFile]);
 
   useEffect(() => {
     if (repoId) {
-      form.setFieldValue("extraValues", {});
+      !isEdit && form.setFieldValue("extraValues", []);
+      loadConfigFile(repoId);
     }
-  }, [repoId, form]);
+  }, [repoId, loadConfigFile, form, isEdit]);
 
   const info = useSelector(selectClusterInfo);
   const [focusIdx, setFocusIdx] = useState<number | null>(null);
-  let slug = useMemo(() => {
-    let found = findProject(repoId);
-    if (found) {
-      return toSlug(namespaceId, found.label);
-    }
-  }, [namespaceId, findProject, repoId]);
 
-  const ws = useWs();
-  const wsReady = useWsReady();
-  const dispatch = useDispatch();
-  const list = useSelector(selectList);
-  const isLoading = useMemo(
-    () => (slug ? list[slug]?.isLoading : false),
-    [list, slug]
-  );
-  const deployStatus = useMemo(
-    () => (slug ? list[slug]?.deployStatus : DeployStatus.DeployUnknown),
-    [list, slug]
-  );
-  const processPercent = useMemo(
-    () => (slug ? list[slug]?.processPercent : 0),
-    [list, slug]
-  );
-  const timer = useSelector(selectTimer);
-  const start = useMemo(
-    () => (slug ? timer[slug]?.start : false),
-    [timer, slug]
-  );
-  const startAt = useMemo(
-    () => (slug ? timer[slug]?.startAt : 0),
-    [timer, slug]
-  );
-  const [deployStarted, setDeployStarted] = useState(false);
-  const setStart = useCallback(
-    (start: boolean) => {
-      slug && dispatch(dispatchSetStart(slug, start));
-    },
-    [dispatch, slug]
-  );
-  const [showLog, setShowLog] = useState(start);
-  const setStartAt = useCallback(
-    (startAt: number) => {
-      slug && dispatch(dispatchSetStartAt(slug, startAt));
-    },
-    [dispatch, slug]
-  );
+  const {
+    hasLog,
+    isLoading,
+    cancelDeploy,
+    createProject,
+    updateProject,
+    processPercent,
+    isSuccess,
+    clearProject,
+  } = useDeploy({
+    namespaceID: namespaceId,
+    slug: curr.slug,
+  });
+  const [showLog, setShowLog] = useState(false);
+
+  useEffect(() => {
+    if (isSuccess) {
+      onSuccess?.();
+      clearProject();
+      setShowLog(false);
+    }
+  }, [isSuccess, onSuccess, clearProject]);
 
   const onFinish = useCallback(
     (values: FormTypes) => {
-      console.log(values);
-      if (!wsReady) {
-        message.error("连接断开了");
+      if (curr.needGitRepo && (!values.branch || !values.commit)) {
+        message.warning("请先选择分支/commit");
         return;
       }
-      if (!slug) {
-        return;
+      if (isEdit) {
+        project?.version &&
+          updateProject({
+            projectId: curr.projectId,
+            version: project.version,
+            branch: values.branch,
+            commit: values.commit,
+            extraValues: values.extraValues,
+            config: values.config,
+          });
+      } else {
+        createProject({
+          repoId: values.repoId,
+          branch: values.branch,
+          commit: values.commit,
+          extraValues: values.extraValues,
+          config: values.config,
+        });
       }
-      let createParams = websocket.CreateProjectInput.encode({
-        type: websocket.Type.CreateProject,
-        namespaceId: namespaceId,
-        repoId: values.repoId,
-        gitBranch: values.branch,
-        gitCommit: values.commit,
-        extraValues: values.extraValues,
-        config: values.config,
-      }).finish();
 
-      dispatch(setDeployStatus(slug, DeployStatus.DeployUnknown));
-      dispatch(clearCreateProjectLog(slug));
-      dispatch(setCreateProjectLoading(slug, true));
       setShowLog(true);
-      setStart(true);
-      setStartAt(Date.now());
-      setDeployStarted(true);
-      ws?.send(createParams);
       return;
     },
-    [dispatch, namespaceId, setStart, setStartAt, slug, ws, wsReady]
+    [
+      createProject,
+      curr.needGitRepo,
+      isEdit,
+      curr.projectId,
+      project?.version,
+      updateProject,
+    ]
   );
-
-  const onRemove = useCallback(() => {
-    if (!wsReady) {
-      // message.error("连接断开了");
-      return;
-    }
-    let found = findProject(repoId);
-    if (found) {
-      let s = websocket.CancelInput.encode({
-        type: websocket.Type.CancelProject,
-        namespaceId: namespaceId,
-        name: found.label,
-      }).finish();
-      ws?.send(s);
-    }
-  }, [findProject, namespaceId, repoId, ws, wsReady]);
-
+  // console.log("curr", curr, repoId);
+  console.log("initval", initValues);
   return (
     <Form
       layout="horizontal"
@@ -326,7 +306,8 @@ const DeployProjectForm: React.FC<{
       labelWrap
       autoComplete="off"
       onFinish={onFinish}
-      // initialValues={}
+      clearOnDestroy
+      initialValues={project ? initValues : {}}
       style={{ height: "100%" }}
     >
       <div
@@ -360,9 +341,9 @@ const DeployProjectForm: React.FC<{
                   <Col span={24}>
                     {needGitRepo && (
                       <PipelineInfo
-                        projectId={pipeline.projectID}
-                        branch={pipeline.branch}
-                        commit={pipeline.commit}
+                        projectId={curr.gitProjectId}
+                        branch={branch}
+                        commit={commit}
                       />
                     )}
                   </Col>
@@ -379,7 +360,7 @@ const DeployProjectForm: React.FC<{
                         loading={loading.project}
                         showSearch
                         className={
-                          needGitRepo && isBiggerScreen()
+                          needGitRepo && isBiggerScreen
                             ? css`
                                 .ant-select-selector {
                                   border-top-right-radius: 0 !important;
@@ -427,7 +408,7 @@ const DeployProjectForm: React.FC<{
                             loading={loading.branch}
                             showSearch
                             className={
-                              needGitRepo && isBiggerScreen()
+                              needGitRepo && isBiggerScreen
                                 ? css`
                                     .ant-select-selector {
                                       border-radius: 0 !important;
@@ -458,7 +439,7 @@ const DeployProjectForm: React.FC<{
                             showSearch
                             loading={loading.commit}
                             className={
-                              needGitRepo && isBiggerScreen()
+                              needGitRepo && isBiggerScreen
                                 ? css`
                                     .ant-select-selector {
                                       border-top-left-radius: 0 !important;
@@ -492,6 +473,17 @@ const DeployProjectForm: React.FC<{
                     >
                       {info.status === "bad" ? "集群资源不足" : "部署"}
                     </Button>
+                    {isEdit && (
+                      <Button
+                        size="small"
+                        hidden={isLoading}
+                        style={{ marginRight: 5, fontSize: 12 }}
+                        disabled={isLoading}
+                        onClick={() => form.resetFields()}
+                      >
+                        重置
+                      </Button>
+                    )}
                     <Button
                       style={{ fontSize: 12, marginRight: 5 }}
                       size="small"
@@ -499,11 +491,13 @@ const DeployProjectForm: React.FC<{
                       danger
                       icon={<StopOutlined />}
                       type="dashed"
-                      onClick={onRemove}
+                      onClick={() => {
+                        cancelDeploy(curr.appName);
+                      }}
                     >
                       取消
                     </Button>
-                    {slug && list[slug] && list[slug].output?.length > 0 && (
+                    {hasLog && (
                       <Button
                         type="dashed"
                         style={{ fontSize: 12, marginRight: 5 }}
@@ -513,6 +507,18 @@ const DeployProjectForm: React.FC<{
                         {showLog ? "隐藏" : "查看"}日志
                       </Button>
                     )}
+                    {/* {!isLoading && isEdit && (
+                      <ConfigHistory
+                        // onDataChange={(s: string) => {
+                        //   form.setFieldsValue({ config: s });
+                        //   setData((d) => ({ ...d, config: s }));
+                        // }}
+                        projectID={curr.projectId}
+                        configType={project?.repo.marsConfig.configFileType||""}
+                        currentConfig={data.config}
+                        updatedAt={detail.updatedAt}
+                      />
+                    )} */}
                   </Space>
                 </Row>
               </div>
@@ -528,12 +534,10 @@ const DeployProjectForm: React.FC<{
                   percent={processPercent}
                   status="active"
                 />
-                {slug && (
-                  <LogOutput
-                    pending={<TimeCost start={start} startAt={startAt} />}
-                    slug={slug}
-                  />
-                )}
+                <LogOutput
+                  pending={<TimeCost done={!isLoading} />}
+                  slug={curr.slug}
+                />
               </Col>
             </Row>
             {!showLog && (
@@ -561,11 +565,37 @@ const DeployProjectForm: React.FC<{
                   </Col>
                 </Row>
                 <Row style={{ height: "100%" }}>
-                  <Col span={24}>
+                  <Col
+                    span={
+                      isEdit && curr.appName && config !== project?.config
+                        ? 12
+                        : 24
+                    }
+                  >
                     <Form.Item name="config" noStyle>
                       <MyCodeMirror mode={mode} />
                     </Form.Item>
                   </Col>
+                  {isEdit && curr.appName && (
+                    <Col
+                      className={css`
+                        pre {
+                          line-height: 20px !important;
+                        }
+                      `}
+                      span={isEdit && config !== project?.config ? 12 : 0}
+                      style={{ fontSize: 13 }}
+                    >
+                      <DiffViewer
+                        styles={diffViewerStyles}
+                        mode={project?.repo.marsConfig.configFileType || ""}
+                        showDiffOnly={false}
+                        oldValue={project?.config || ""}
+                        newValue={config}
+                        splitView={false}
+                      />
+                    </Col>
+                  )}
                 </Row>
               </>
             )}
@@ -589,3 +619,14 @@ const MyCol = styled(Col)<{ focus: number }>`
     z-index: 100;
   `}
 `;
+
+const diffViewerStyles: ReactDiffViewerStylesOverride = {
+  gutter: { padding: "0 5px", minWidth: 25 },
+  marker: { padding: "0 6px" },
+  diffContainer: {
+    height: "100%",
+    display: "block",
+    width: "100%",
+    overflowX: "auto",
+  },
+};

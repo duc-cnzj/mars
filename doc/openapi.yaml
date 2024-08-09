@@ -686,10 +686,12 @@ paths:
                   schema:
                     type: integer
                     format: int32
-                - name: all
+                - name: repoId
                   in: query
+                  description: 如果传入 repo_id, 就会根据 mars 配置过滤分支
                   schema:
-                    type: boolean
+                    type: integer
+                    format: int32
             responses:
                 "200":
                     description: OK
@@ -2532,6 +2534,11 @@ components:
                 version:
                     type: integer
                     format: int32
+                repoId:
+                    type: integer
+                    format: int32
+                repo:
+                    $ref: '#/components/schemas/types.RepoModel'
                 namespace:
                     $ref: '#/components/schemas/types.NamespaceModel'
                 createdAt:

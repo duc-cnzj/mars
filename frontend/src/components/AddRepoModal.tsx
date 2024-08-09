@@ -171,8 +171,8 @@ const AddRepoModal: React.FC<{
   useEffect(() => {
     setLoading((item) => ({ ...item, project: true }));
     ajax.GET("/api/git/all_repos").then(({ data, error }) => {
+      setLoading((item) => ({ ...item, project: false }));
       if (error) {
-        setLoading((item) => ({ ...item, project: false }));
         return;
       }
       console.log(data);

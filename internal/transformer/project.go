@@ -36,6 +36,8 @@ func FromProject(project *repo.Project) *types.ProjectModel {
 		GitCommitAuthor:   project.GitCommitAuthor,
 		GitCommitDate:     date.ToHumanizeDatetimeString(project.GitCommitDate),
 		Version:           int32(project.Version),
+		RepoId:            int32(project.RepoID),
+		Repo:              FromRepo(project.Repo),
 		Namespace:         FromNamespace(project.Namespace),
 		CreatedAt:         date.ToRFC3339DatetimeString(&project.CreatedAt),
 		UpdatedAt:         date.ToRFC3339DatetimeString(&project.UpdatedAt),

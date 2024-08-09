@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	repo2 "github.com/duc-cnzj/mars/v4/internal/ent/repo"
+
 	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
@@ -60,6 +62,7 @@ type repo struct {
 func (r *repo) All(ctx context.Context, in *AllRepoRequest) ([]*Repo, error) {
 	query := r.data.DB().Repo.Query().Where(
 		filters.IfEnabled(in.Enabled),
+		filters.IfBool(repo2.FieldNeedGitRepo)(in.NeedGitRepo),
 	)
 	all, err := query.All(ctx)
 	if err != nil {
@@ -73,6 +76,7 @@ func NewRepo(logger mlog.Logger, data data.Data, gitRepo GitRepo) RepoImp {
 }
 
 type AllRepoRequest struct {
+	NeedGitRepo   *bool
 	Enabled       *bool
 	OrderByIDDesc *bool
 }

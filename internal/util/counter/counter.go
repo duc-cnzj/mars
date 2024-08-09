@@ -2,13 +2,12 @@ package counter
 
 import (
 	"context"
-	"fmt"
 	"sync"
 )
 
 type Counter interface {
 	Inc()
-	Dec()
+	Dec() bool
 	Wait(ctx context.Context) error
 	Count() int
 }
@@ -17,14 +16,14 @@ func NewCounter() Counter {
 	mu := &sync.Mutex{}
 	return &counter{
 		count: 0,
-		cond:  sync.Cond{L: mu},
+		cond:  sync.NewCond(mu),
 		mu:    mu,
 	}
 }
 
 type counter struct {
 	count int
-	cond  sync.Cond
+	cond  *sync.Cond
 	mu    *sync.Mutex
 }
 
@@ -36,24 +35,28 @@ func (w *counter) Inc() {
 }
 
 func (w *counter) Wait(ctx context.Context) error {
-	w.cond.L.Lock()
-	defer w.cond.L.Unlock()
-	for w.count != 0 {
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("context done, remaining count: %d", w.count)
-		default:
+	go func() {
+		<-ctx.Done()
+		for w.Dec() {
 		}
+	}()
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	for w.count != 0 {
 		w.cond.Wait()
 	}
 	return nil
 }
 
-func (w *counter) Dec() {
+func (w *counter) Dec() bool {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	w.count--
-	w.cond.Broadcast()
+	if w.count > 0 {
+		w.count--
+		w.cond.Broadcast()
+		return true
+	}
+	return false
 }
 
 func (w *counter) Count() int {

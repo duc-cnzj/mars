@@ -38,7 +38,7 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 )
 
-var ErrorVersionNotMatched = errors.New("当前版本和最新版本存在差异, 请刷新重试, 可能是多个人同时部署导致")
+var ErrorVersionNotMatched = errors.New("[部署冲突]: 1. 可能是多个人同时部署导致 2. 项目已经存在")
 
 const (
 	ResultError             = websocket_pb.ResultType_Error
@@ -199,6 +199,7 @@ type JobInput struct {
 	Atomic      *bool
 	ExtraValues []*websocket_pb.ExtraValue
 	Version     *int32
+	ProjectID   int32
 
 	TimeoutSeconds int32
 	User           *auth.UserInfo
@@ -344,6 +345,7 @@ func (j *jobRunner) Validate() Job {
 		Atomic:       j.input.Atomic,
 		ConfigType:   j.config.ConfigFileType,
 		NamespaceID:  j.ns.ID,
+		RepoID:       j.repo.ID,
 	}
 
 	j.Messager().SendMsg("[Check]: 检查项目是否存在")
@@ -370,10 +372,10 @@ func (j *jobRunner) Validate() Job {
 		j.project = found
 		version := j.project.Version
 		if j.IsNotDryRun() {
-			j.Messager().SendMsg("[Check]: 检查当前版本")
-			j.project, err = j.projRepo.UpdateStatusByVersion(context.TODO(), j.project.ID, types.Deploy_StatusDeploying, j.project.Version+1)
+			j.Messager().SendMsg(fmt.Sprintf("[Check]: 检查当前版本, version: %v", lo.FromPtr(j.input.Version)))
+			j.project, err = j.projRepo.UpdateStatusByVersion(context.TODO(), int(j.input.ProjectID), types.Deploy_StatusDeploying, int(lo.FromPtr(j.input.Version)))
 			if err != nil {
-				return j.SetError(ErrorVersionNotMatched)
+				return j.SetError(fmt.Errorf("%w: %w", ErrorVersionNotMatched, err))
 			}
 			j.OnError(1, func(err error, sendResultToUser func()) {
 				j.project, _ = j.projRepo.UpdateVersion(context.TODO(), j.project.ID, version)

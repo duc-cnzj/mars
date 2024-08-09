@@ -13,6 +13,7 @@ import {
   PROJECT_POD_EVENT,
   REMOVE_SHELL,
   SET_OPENED_MODALS,
+  CLEAN_PROJECT,
 } from "./actionTypes";
 import { DeployStatus } from "./reducers/createProject";
 import { Dispatch } from "redux";
@@ -43,6 +44,12 @@ export const appendCreateProjectLog = (
       log,
       containers,
     },
+  },
+});
+export const cleanProject = (id: string) => ({
+  type: CLEAN_PROJECT,
+  data: {
+    id,
   },
 });
 
@@ -217,11 +224,15 @@ export const handleEvents = (
         );
 
         if (data.end) {
+          dispatch(setCreateProjectLoading(id, false));
           switch (data.result) {
             case pb.websocket.ResultType.Deployed:
+              dispatch(setProcessPercent(id, 100));
               dispatch(setDeployStatus(id, DeployStatus.DeploySuccess));
               message.success("部署成功");
-              dispatch(clearCreateProjectLog(id));
+              setTimeout(() => {
+                dispatch(clearCreateProjectLog(id));
+              }, 1000);
               break;
             case pb.websocket.ResultType.DeployedCanceled:
               dispatch(setDeployStatus(id, DeployStatus.DeployCanceled));
@@ -249,7 +260,6 @@ export const handleEvents = (
               message.error("部署失败");
               break;
           }
-          dispatch(setCreateProjectLoading(id, false));
         }
         break;
       case pb.websocket.Type.ProcessPercent:

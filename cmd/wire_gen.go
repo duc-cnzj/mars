@@ -54,7 +54,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 		return nil, err
 	}
 	versionServer := services.NewVersionSvc()
-	gitRepo := repo.NewGitRepo(logger, pluginManger, dataData)
+	gitRepo := repo.NewGitRepo(logger, cacheCache, pluginManger, dataData)
 	repoImp := repo.NewRepo(logger, dataData, gitRepo)
 	archiver := repo.NewDefaultArchiver()
 	executorManager := repo.NewExecutorManager(dataData)
@@ -64,7 +64,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	namespaceRepo := repo.NewNamespaceRepo(logger, dataData)
 	projectRepo := repo.NewProjectRepo(logger, dataData)
 	changelogRepo := repo.NewChangelogRepo(logger, dataData)
-	eventRepo := repo.NewEventRepo(projectRepo, pluginManger, changelogRepo, logger, dataData, dispatcher)
+	eventRepo := repo.NewEventRepo(projectRepo, k8sRepo, pluginManger, changelogRepo, logger, dataData, dispatcher)
 	toolRepo := repo.NewToolRepo()
 	jobManager := socket.NewJobManager(dataData, timerTimer, logger, releaseInstaller, repoImp, namespaceRepo, projectRepo, helmerRepo, uploaderUploader, lockerLocker, k8sRepo, eventRepo, toolRepo, pluginManger)
 	wsRepo := repo.NewWsRepo(pluginManger)
@@ -74,7 +74,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	namespaceServer := services.NewNamespaceSvc(helmerRepo, namespaceRepo, k8sRepo, logger, eventRepo)
 	metricsServer := services.NewMetricsSvc(k8sRepo, logger, projectRepo, namespaceRepo)
 	gitServer := services.NewGitSvc(repoImp, eventRepo, logger, gitRepo, cacheCache)
-	cronRepo := repo.NewCronRepo(logger, eventRepo, dataData, uploaderUploader, helmerRepo, gitRepo, manager)
+	cronRepo := repo.NewCronRepo(logger, repoImp, namespaceRepo, k8sRepo, pluginManger, eventRepo, dataData, uploaderUploader, helmerRepo, gitRepo, manager)
 	fileRepo := repo.NewFileRepo(cronRepo, logger, dataData, uploaderUploader, timerTimer)
 	fileServer := services.NewFileSvc(eventRepo, fileRepo, logger)
 	eventServer := services.NewEventSvc(eventRepo)
@@ -89,7 +89,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	repoServer := services.NewRepoSvc(logger, eventRepo, gitRepo, repoImp)
 	grpcRegistry := services.NewGrpcRegistry(versionServer, projectServer, pictureServer, namespaceServer, metricsServer, gitServer, fileServer, eventServer, endpointServer, containerServer, clusterServer, changelogServer, authServer, accessTokenServer, repoServer)
 	counterCounter := counter.NewCounter()
-	wsServer := socket.NewWebsocketManager(logger, counterCounter, repoImp, namespaceRepo, jobManager, dataData, pluginManger, authAuth, uploaderUploader, lockerLocker, k8sRepo, eventRepo, executorManager, fileRepo)
+	wsServer := socket.NewWebsocketManager(logger, counterCounter, projectRepo, repoImp, namespaceRepo, jobManager, dataData, pluginManger, authAuth, uploaderUploader, lockerLocker, k8sRepo, eventRepo, executorManager, fileRepo)
 	app := newApp(configConfig, dataData, manager, arg, logger, uploaderUploader, authAuth, dispatcher, cacheCache, lockerLocker, group, pluginManger, grpcRegistry, wsServer)
 	return app, nil
 }

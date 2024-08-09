@@ -180,6 +180,8 @@ message ProjectModel {
   string                        git_commit_author   = 21;
   string                        git_commit_date     = 22;
   int32                         version             = 23;
+  int32                         repo_id             = 24;
+  RepoModel                     repo                = 25;
 
   NamespaceModel                namespace           = 50;
 
@@ -203,16 +205,16 @@ message AccessTokenModel {
 }
 
 message RepoModel {
-  int32           id               = 1;
-  string          name             = 2;
-  int32           git_project_id   = 3;
-  string          git_project_name = 4;
-  bool            enabled          = 5;
-  mars.Config     mars_config      = 6;
-  bool            need_git_repo    = 7;
-  string          description      = 8;
+  int32       id               = 1;
+  string      name             = 2;
+  int32       git_project_id   = 3;
+  string      git_project_name = 4;
+  bool        enabled          = 5;
+  mars.Config mars_config      = 6;
+  bool        need_git_repo    = 7;
+  string      description      = 8;
 
-  string          created_at       = 100;
-  string          updated_at       = 101;
-  string          deleted_at       = 102;
+  string      created_at       = 100;
+  string      updated_at       = 101;
+  string      deleted_at       = 102;
 }

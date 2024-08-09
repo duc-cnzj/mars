@@ -68,6 +68,7 @@ type DockerConfigJSON struct {
 }
 
 type K8sRepo interface {
+	AddTlsSecret(ns string, name string, key string, crt string) (*corev1.Secret, error)
 	GetPodMetrics(ctx context.Context, namespace, podName string) (*v1beta1.PodMetrics, error)
 	CreateDockerSecrets(ctx context.Context, namespace string) (*corev1.Secret, error)
 	GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
@@ -101,6 +102,27 @@ type k8sRepo struct {
 	archiver      Archiver
 	executor      ExecutorManager
 	data          data.Data
+}
+
+func (repo *k8sRepo) AddTlsSecret(ns string, name string, key string, crt string) (*corev1.Secret, error) {
+	return repo.data.K8sClient().Client.CoreV1().Secrets(ns).Create(context.TODO(), &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+			Annotations: map[string]string{
+				"created-by": "mars",
+			},
+		},
+		StringData: map[string]string{
+			"tls.key": key,
+			"tls.crt": crt,
+		},
+		Type: corev1.SecretTypeTLS,
+	}, metav1.CreateOptions{})
 }
 
 func NewK8sRepo(

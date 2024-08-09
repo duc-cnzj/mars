@@ -2,12 +2,9 @@ import {
   CLEAR_CREATE_PROJECT_LOG,
   SET_DEPLOY_STATUS,
   SET_PROCESS_PERCENT,
-} from "./../actionTypes";
-import {
-  CREATE_PROJECT_LOADING,
-  CREATE_PROJECT_LOADING_DONE,
   APPEND_CREATE_PROJECT_LOG,
   SET_CREATE_PROJECT_LOADING,
+  CLEAN_PROJECT,
 } from "../actionTypes";
 
 import { set, get } from "lodash";
@@ -56,6 +53,15 @@ export default function createProject(
   }
 ) {
   switch (action.type) {
+    case CLEAN_PROJECT:
+      if (action.data) {
+        delete state[action.data.id];
+        return {
+          ...state,
+        };
+      }
+
+      return state;
     case SET_PROCESS_PERCENT:
       if (action.data) {
         return {
@@ -82,21 +88,10 @@ export default function createProject(
       return state;
     case SET_CREATE_PROJECT_LOADING:
       if (action.data) {
+        console.log("action.data.isLoading", action.data.isLoading);
         return {
           ...set(state, [action.data.id, "isLoading"], action.data.isLoading),
         };
-      }
-
-      return state;
-    case CREATE_PROJECT_LOADING:
-      if (action.data) {
-        return { ...set(state, [action.data.id, "isLoading"], true) };
-      }
-
-      return state;
-    case CREATE_PROJECT_LOADING_DONE:
-      if (action.data) {
-        return { ...set(state, [action.data.id, "isLoading"], false) };
       }
 
       return state;

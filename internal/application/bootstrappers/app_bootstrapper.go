@@ -15,7 +15,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/util"
 	"github.com/duc-cnzj/mars/v4/internal/util/mars"
-	"github.com/duc-cnzj/mars/v4/plugins/domainmanager"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,7 +30,6 @@ func (a *AppBootstrapper) Tags() []string {
 func (a *AppBootstrapper) Bootstrap(app application.App) error {
 	if app.Config().KubeConfig != "" {
 		app.BeforeServerRunHooks(blockForFuncForever("projectPodEventListener", projectPodEventListener))
-		app.BeforeServerRunHooks(lockFunc("updateCerts", updateCerts))
 		app.BeforeServerRunHooks(lockFunc("syncImagePullSecrets", syncImagePullSecrets))
 	}
 
@@ -82,11 +80,6 @@ Loop:
 		}
 	}
 	fn(releaseFn)
-}
-
-func updateCerts(app application.App) {
-	name, key, crt := app.PluginMgr().Domain().GetCerts()
-	domainmanager.UpdateCertTls(app.DB(), app.Data().K8sClient(), app.Logger(), name, key, crt)
 }
 
 // syncImagePullSecrets

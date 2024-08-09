@@ -110,7 +110,7 @@ func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyReques
 		Version:     input.Version,
 		User:        user,
 		DryRun:      input.DryRun,
-		PubSub:      &application.EmptyPubSub{},
+		PubSub:      application.NewEmptyPubSub(),
 		Messager:    msger,
 	}
 	job := p.jobManager.NewJob(jobInput)
@@ -147,7 +147,7 @@ func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyReques
 }
 
 func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_ApplyServer) error {
-	var pubsub application.PubSub = &application.EmptyPubSub{}
+	var pubsub application.PubSub = application.NewEmptyPubSub()
 	if input.WebsocketSync {
 		pubsub = p.wsRepo.New("", "")
 	}

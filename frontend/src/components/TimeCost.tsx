@@ -1,41 +1,43 @@
 import React, { useEffect, useState, useCallback, memo, useRef } from "react";
 import { FieldTimeOutlined } from "@ant-design/icons";
 
-const TimeCost: React.FC<{ start: boolean; startAt?: number }> = ({
-  start,
-  startAt,
-}) => {
-  const [startTime, setStartTime] = useState(0);
-  const [now, setNow] = useState(0);
-  const intervalRef = useRef<NodeJS.Timer>();
+const TimeCost: React.FC<{ done: boolean }> = ({ done }) => {
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [now, setNow] = useState<number>(Date.now());
+  const intervalRef = useRef<NodeJS.Timer | null>(null);
 
   const handleStart = useCallback(() => {
-    setStartTime(startAt && startAt > 0 ? startAt : Date.now());
+    setStartTime(Date.now());
     setNow(Date.now());
 
-    intervalRef.current && clearInterval(intervalRef.current);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
     intervalRef.current = setInterval(() => {
       setNow(Date.now());
     }, 10);
-  }, [startAt]);
+  }, []);
 
   const handleStop = useCallback(() => {
-    intervalRef.current && clearInterval(intervalRef.current);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
   }, []);
 
   useEffect(() => {
-    if (start) {
+    if (!done) {
       handleStart();
+    } else {
+      handleStop();
     }
 
     return () => {
-      console.log("clear");
       handleStop();
     };
-  }, [start, handleStart, handleStop]);
+  }, [done, handleStart, handleStop]);
 
   let secondsPassed = 0;
-  if (startTime != null && now != null) {
+  if (startTime != null) {
     secondsPassed = (now - startTime) / 1000;
   }
 

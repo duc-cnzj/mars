@@ -567,6 +567,7 @@ func (wc *WebsocketManager) StartShell(ctx context.Context, input *websocket_pb.
 	}
 
 	pty := &myPtyHandler{
+		logger:    wc.logger,
 		container: container,
 		sessionID: sessionID,
 		conn:      conn,

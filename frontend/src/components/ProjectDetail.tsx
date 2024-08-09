@@ -222,15 +222,13 @@ const MyTabs: React.FC<{
         children: (
           <>
             <Suspense fallback={<Skeleton active />}>
-              {/* {detail?.item && detail.item.namespace && (
+              {detail?.item && detail.item.namespace && (
                 <TabEdit
-                  elements={detail.elements}
                   namespaceId={detail.item.namespace.id}
                   detail={detail.item}
-                  updatedAt={detail.item.updatedAt}
                   onSuccess={onSuccess}
                 />
-              )} */}
+              )}
             </Suspense>
           </>
         ),

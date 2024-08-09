@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	gopath "path"
-	"sort"
 	"strings"
+
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 
 	"github.com/duc-cnzj/mars/api/v4/git"
 	"github.com/duc-cnzj/mars/v4/internal/cache"
@@ -15,7 +16,12 @@ import (
 	mars2 "github.com/duc-cnzj/mars/v4/internal/util/mars"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
-	"google.golang.org/protobuf/proto"
+)
+
+const (
+	OptionTypeProject string = "project"
+	OptionTypeBranch  string = "branch"
+	OptionTypeCommit  string = "commit"
 )
 
 var _ git.GitServer = (*gitSvc)(nil)
@@ -35,47 +41,19 @@ func NewGitSvc(repoRepo repo.RepoImp, eventRepo repo.EventRepo, logger mlog.Logg
 }
 
 func (g *gitSvc) AllRepos(ctx context.Context, req *git.AllReposRequest) (*git.AllReposResponse, error) {
-	remember, err := g.cache.Remember(cache.NewKey("all_repos"), 600, func() ([]byte, error) {
-		projects, err := g.gitRepo.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		var res []*git.AllReposResponse_Item
-		for _, project := range projects {
-			res = append(res, &git.AllReposResponse_Item{
-				Id:          int32(project.GetID()),
-				Name:        project.GetName(),
-				Description: project.GetDescription(),
-			})
-		}
-		return proto.Marshal(&git.AllReposResponse{Items: res})
-	})
+	projects, err := g.gitRepo.AllProjects(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var res git.AllReposResponse
-	proto.Unmarshal(remember, &res)
-	return &res, nil
-}
-
-func (g *gitSvc) GetChartValuesYaml(ctx context.Context, req *git.GetChartValuesYamlRequest) (*git.GetChartValuesYamlResponse, error) {
-	if !mars2.IsRemoteLocalChartPath(req.GetInput()) {
-		return &git.GetChartValuesYamlResponse{}, nil
-	}
-
-	split := strings.Split(req.GetInput(), "|")
-	if len(split) != 3 {
-		return nil, fmt.Errorf("invalid input: %s", req.GetInput())
-	}
-	pid := split[0]
-	branch := split[1]
-	filename := gopath.Join(split[2], "values.yaml")
-
-	content, err := g.gitRepo.GetFileContentWithBranch(ctx, cast.ToInt(pid), branch, filename)
-	if err != nil {
-		return nil, err
-	}
-	return &git.GetChartValuesYamlResponse{Values: content}, nil
+	return &git.AllReposResponse{
+		Items: serialize.Serialize(projects, func(v *repo.GitProject) *git.AllReposResponse_Item {
+			return &git.AllReposResponse_Item{
+				Id:          int32(v.ID),
+				Name:        v.Name,
+				Description: v.Description,
+			}
+		}),
+	}, nil
 }
 
 func (g *gitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptionsRequest) (*git.ProjectOptionsResponse, error) {
@@ -91,85 +69,42 @@ func (g *gitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptions
 			Type:         OptionTypeProject,
 			IsLeaf:       false,
 			GitProjectId: repo.GitProjectID,
-			//DisplayName:  repo.Name,
-			NeedGitRepo: repo.NeedGitRepo,
-			Description: repo.Description,
+			NeedGitRepo:  repo.NeedGitRepo,
+			Description:  repo.Description,
 		})
 	}
-	sort.Sort(sortableOption(gitOptions))
 
 	return &git.ProjectOptionsResponse{Items: gitOptions}, nil
 }
 
-const (
-	OptionTypeProject string = "project"
-	OptionTypeBranch  string = "branch"
-	OptionTypeCommit  string = "commit"
-)
-
-type sortableOption []*git.Option
-
-func (s sortableOption) Len() int {
-	return len(s)
-}
-
-func (s sortableOption) Less(i, j int) bool {
-	return s[i].GitProjectId < s[j].GitProjectId
-}
-
-func (s sortableOption) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
 func (g *gitSvc) BranchOptions(ctx context.Context, request *git.BranchOptionsRequest) (*git.BranchOptionsResponse, error) {
-	remember, err := g.cache.Remember(cache.NewKey("branch_options"), 120, func() ([]byte, error) {
-		branches, err := g.gitRepo.AllProjectBranches(ctx, cast.ToInt(request.GitProjectId))
-		if err != nil {
-			return nil, err
-		}
-		res := make([]*git.Option, 0, len(branches))
-		for _, branch := range branches {
-			branchName := branch.GetName()
-			res = append(res, &git.Option{
-				Value:        branchName,
-				Label:        branchName,
-				IsLeaf:       false,
-				Type:         OptionTypeBranch,
-				Branch:       branchName,
-				GitProjectId: request.GitProjectId,
-			})
-		}
-		return proto.Marshal(&git.BranchOptionsResponse{Items: res})
-	})
+	branches, err := g.gitRepo.AllBranches(ctx, cast.ToInt(request.GitProjectId))
 	if err != nil {
 		return nil, err
 	}
-	var res git.BranchOptionsResponse
-	proto.Unmarshal(remember, &res)
-	if request.All {
-		return &res, nil
+	res := make([]*git.Option, 0, len(branches))
+	for _, branch := range branches {
+		branchName := branch.Name
+		res = append(res, &git.Option{
+			Value:        branchName,
+			Label:        branchName,
+			IsLeaf:       false,
+			Type:         OptionTypeBranch,
+			Branch:       branchName,
+			GitProjectId: request.GitProjectId,
+		})
+	}
+	if request.RepoId > 0 {
+		show, err := g.repoRepo.Show(ctx, int(request.RepoId))
+		if err != nil {
+			return nil, err
+		}
+		res = lo.Filter(res, func(b *git.Option, _ int) bool {
+			return mars2.BranchPass(show.MarsConfig.Branches, b.Branch)
+		})
 	}
 
-	//var defaultBranch string
-	//for _, branch := range branches {
-	//	if branch.IsDefault() {
-	//		defaultBranch = branch.GetName()
-	//	}
-	//}
-
-	//config, err := GetProjectMarsConfig(request.GitProjectId, defaultBranch)
-	//if err != nil {
-	//	return &git.BranchOptionsResponse{Items: make([]*git.Option, 0)}, nil
-	//}
-
-	//filteredRes := make([]*git.Option, 0)
-	//for _, op := range res {
-	//	if mars2.BranchPass(config, op.Value) {
-	//		filteredRes = append(filteredRes, op)
-	//	}
-	//}
-
-	return &res, nil
+	return &git.BranchOptionsResponse{Items: res}, nil
 }
 
 func (g *gitSvc) CommitOptions(ctx context.Context, request *git.CommitOptionsRequest) (*git.CommitOptionsResponse, error) {
@@ -225,6 +160,26 @@ func (g *gitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequ
 		Status: pipeline.GetStatus(),
 		WebUrl: pipeline.GetWebURL(),
 	}, nil
+}
+
+func (g *gitSvc) GetChartValuesYaml(ctx context.Context, req *git.GetChartValuesYamlRequest) (*git.GetChartValuesYamlResponse, error) {
+	if !mars2.IsRemoteLocalChartPath(req.GetInput()) {
+		return &git.GetChartValuesYamlResponse{}, nil
+	}
+
+	split := strings.Split(req.GetInput(), "|")
+	if len(split) != 3 {
+		return nil, fmt.Errorf("invalid input: %s", req.GetInput())
+	}
+	pid := split[0]
+	branch := split[1]
+	filename := gopath.Join(split[2], "values.yaml")
+
+	content, err := g.gitRepo.GetFileContentWithBranch(ctx, cast.ToInt(pid), branch, filename)
+	if err != nil {
+		return nil, err
+	}
+	return &git.GetChartValuesYamlResponse{Values: content}, nil
 }
 
 func (g *gitSvc) MarsConfigFile(ctx context.Context, request *git.MarsConfigFileRequest) (*git.MarsConfigFileResponse, error) {

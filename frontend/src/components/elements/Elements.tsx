@@ -43,39 +43,15 @@ const initStyle = {
 };
 
 const Elements: React.FC<{
-  value?: components["schemas"]["types.ExtraValue"][];
-  onChange?: (value: components["schemas"]["types.ExtraValue"][]) => void;
+  value?: components["schemas"]["websocket.ExtraValue"][];
+  onChange?: (value: components["schemas"]["websocket.ExtraValue"][]) => void;
   elements: components["schemas"]["mars.Element"][];
   style?: st;
-}> = ({ elements, style, value, onChange }) => {
-  console.log(value, elements);
-  let initValues = useMemo(() => {
-    return elements
-      ? elements.map((item): components["schemas"]["types.ExtraValue"] => {
-          let itemValue: any = item.default;
-          if (!!value) {
-            for (let i = 0; i < value.length; i++) {
-              if (value[i].path === item.path) {
-                itemValue = value[i].value;
-                if (item.type === MarsElementType.ElementTypeSwitch) {
-                  itemValue = isTrue(itemValue);
-                }
-                if (item.type === MarsElementType.ElementTypeInputNumber) {
-                  itemValue = Number(itemValue);
-                }
-                break;
-              }
-            }
-          }
-          return { path: item.path, value: itemValue };
-        })
-      : [];
-  }, [elements, value]);
-
-  onChange?.(initValues);
+  id?: string;
+}> = ({ elements, style, value, onChange, id }) => {
   const getElement = useCallback(
     (
-      item: components["schemas"]["types.ExtraValue"],
+      item: components["schemas"]["websocket.ExtraValue"],
       ele: components["schemas"]["mars.Element"][],
       index: number
     ): React.ReactNode => {
@@ -86,7 +62,7 @@ const Elements: React.FC<{
             <Element
               value={item.value}
               onChange={(changeValue) => {
-                let tmp: any = initValues;
+                let tmp: any = value;
                 tmp[index].value = String(changeValue);
                 console.log("Element onChange ", tmp);
                 onChange?.(tmp);
@@ -100,14 +76,18 @@ const Elements: React.FC<{
       }
       return <></>;
     },
-    [onChange, style, initValues]
+    [onChange, style, value]
   );
 
+  console.log(value);
   return (
-    <div style={{ width: "100%" }}>
-      {initValues.map((item, index) => (
-        <Fragment key={item.path}>{getElement(item, elements, index)}</Fragment>
-      ))}
+    <div style={{ width: "100%" }} id={id}>
+      {value &&
+        value.map((item, index) => (
+          <Fragment key={item.path}>
+            {getElement(item, elements, index)}
+          </Fragment>
+        ))}
     </div>
   );
 };

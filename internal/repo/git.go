@@ -2,16 +2,18 @@ package repo
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v4/internal/cache"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 )
 
 type GitRepo interface {
-	All(ctx context.Context) (projects []application.Project, err error)
-	AllProjectBranches(ctx context.Context, projectID int) (branches []application.Branch, err error)
+	AllProjects(ctx context.Context) (projects []*GitProject, err error)
+	AllBranches(ctx context.Context, projectID int) (branches []*Branch, err error)
 	ListCommits(ctx context.Context, projectID int, branch string) ([]application.Commit, error)
 	GetCommit(ctx context.Context, projectID int, sha string) (application.Commit, error)
 	GetCommitPipeline(ctx context.Context, projectID int, branch, sha string) (application.Pipeline, error)
@@ -26,22 +28,100 @@ type gitRepo struct {
 	logger mlog.Logger
 	pl     application.PluginManger
 	data   data.Data
+	cache  cache.Cache
 }
 
-func NewGitRepo(logger mlog.Logger, pl application.PluginManger, data data.Data) GitRepo {
+type Branch struct {
+	Name      string `json:"name"`
+	IsDefault bool   `json:"is_default"`
+	WebURL    string `json:"web_url"`
+}
+
+type GitProject struct {
+	ID            int64  `json:"id"`
+	Name          string `json:"name"`
+	DefaultBranch string `json:"default_branch"`
+	WebURL        string `json:"web_url"`
+	Path          string `json:"path"`
+	AvatarURL     string `json:"avatar_url"`
+	Description   string `json:"description"`
+}
+
+func NewGitRepo(logger mlog.Logger, cache cache.Cache, pl application.PluginManger, data data.Data) GitRepo {
 	return &gitRepo{
 		logger: logger,
 		pl:     pl,
+		cache:  cache,
 		data:   data,
 	}
 }
 
-func (g *gitRepo) All(ctx context.Context) (projects []application.Project, err error) {
-	return g.pl.Git().AllProjects()
+func (g *gitRepo) AllProjects(ctx context.Context) ([]*GitProject, error) {
+	fn := func() (projects []*GitProject, err error) {
+		allProjects, err := g.pl.Git().AllProjects()
+		if err != nil {
+			return nil, err
+		}
+		for _, gp := range allProjects {
+			projects = append(projects, &GitProject{
+				ID:            gp.GetID(),
+				Name:          gp.GetName(),
+				DefaultBranch: gp.GetDefaultBranch(),
+				WebURL:        gp.GetWebURL(),
+				Path:          gp.GetPath(),
+				AvatarURL:     gp.GetAvatarURL(),
+				Description:   gp.GetDescription(),
+			})
+		}
+		return
+	}
+	if !g.data.Config().GitServerCached {
+		return fn()
+	}
+	remember, err := g.cache.Remember(cache.NewKey("all_projects"), 600, func() ([]byte, error) {
+		projects, err := fn()
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(projects)
+	})
+	var projects []*GitProject
+	if err == nil {
+		err = json.Unmarshal(remember, &projects)
+	}
+	return projects, err
 }
 
-func (g *gitRepo) AllProjectBranches(ctx context.Context, projectID int) (branches []application.Branch, err error) {
-	return g.pl.Git().AllBranches(fmt.Sprintf("%d", projectID))
+func (g *gitRepo) AllBranches(ctx context.Context, projectID int) ([]*Branch, error) {
+	fn := func() (branches []*Branch, err error) {
+		res, err := g.pl.Git().AllBranches(fmt.Sprintf("%d", projectID))
+		if err != nil {
+			return nil, err
+		}
+		for _, br := range res {
+			branches = append(branches, &Branch{
+				Name:      br.GetName(),
+				IsDefault: br.IsDefault(),
+				WebURL:    br.GetWebURL(),
+			})
+		}
+		return
+	}
+	if !g.data.Config().GitServerCached {
+		return fn()
+	}
+	remember, err := g.cache.Remember(cache.NewKey(fmt.Sprintf("all_branches_%d", projectID)), 300, func() ([]byte, error) {
+		branches, err := fn()
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(branches)
+	})
+	var branches []*Branch
+	if err == nil {
+		err = json.Unmarshal(remember, &branches)
+	}
+	return branches, err
 }
 
 func (g *gitRepo) ListCommits(ctx context.Context, projectID int, branch string) ([]application.Commit, error) {

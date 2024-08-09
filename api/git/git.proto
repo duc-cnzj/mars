@@ -27,7 +27,9 @@ message ProjectOptionsResponse {
 
 message BranchOptionsRequest {
   int32 git_project_id = 1 [(validate.rules).int32.gt = 0];
-  bool  all            = 2;
+
+  // 如果传入 repo_id, 就会根据 mars 配置过滤分支
+  int32 repo_id        = 2;
 }
 
 message BranchOptionsResponse {

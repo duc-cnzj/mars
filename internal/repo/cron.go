@@ -2,9 +2,15 @@ package repo
 
 import (
 	"context"
+	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+	"github.com/samber/lo"
+
+	"github.com/duc-cnzj/mars/v4/internal/application"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/cron"
@@ -16,6 +22,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	"github.com/dustin/go-humanize"
 	"gopkg.in/yaml.v3"
 )
@@ -24,7 +31,6 @@ type CronRepo interface {
 	CleanUploadFiles() error
 	FixDeployStatus() error
 	DiskInfo() (int64, error)
-	CacheAllGitProjects() error
 	CacheAllBranches() error
 }
 
@@ -38,10 +44,14 @@ type cronRepo struct {
 	helm        HelmerRepo
 	gitRepo     GitRepo
 	cronManager cron.Manager
+	pluginMgr   application.PluginManger
+	k8sRepo     K8sRepo
+	nsRepo      NamespaceRepo
+	repoRepo    RepoImp
 }
 
-func NewCronRepo(logger mlog.Logger, event EventRepo, data data.Data, up uploader.Uploader, helm HelmerRepo, gitRepo GitRepo, cronManager cron.Manager) CronRepo {
-	cr := &cronRepo{logger: logger, event: event, data: data, up: up, helm: helm, gitRepo: gitRepo, cronManager: cronManager}
+func NewCronRepo(logger mlog.Logger, repoRepo RepoImp, nsRepo NamespaceRepo, k8sRepo K8sRepo, pluginMgr application.PluginManger, event EventRepo, data data.Data, up uploader.Uploader, helm HelmerRepo, gitRepo GitRepo, cronManager cron.Manager) CronRepo {
+	cr := &cronRepo{logger: logger, repoRepo: repoRepo, nsRepo: nsRepo, k8sRepo: k8sRepo, event: event, pluginMgr: pluginMgr, data: data, up: up, helm: helm, gitRepo: gitRepo, cronManager: cronManager}
 
 	cronManager.NewCommand("clean_upload_files", cr.CleanUploadFiles).DailyAt("2:00")
 	cronManager.NewCommand("disk_info", func() error {
@@ -51,55 +61,100 @@ func NewCronRepo(logger mlog.Logger, event EventRepo, data data.Data, up uploade
 	cronManager.NewCommand("fix_project_deploy_status", cr.FixDeployStatus).EveryTwoMinutes()
 
 	if data.Config().GitServerCached {
-		cronManager.NewCommand("all_git_project_cache", cr.CacheAllGitProjects).EveryFiveMinutes()
 		cronManager.NewCommand("all_branch_cache", cr.CacheAllBranches).EveryTwoMinutes()
 	}
+
+	cronManager.NewCommand("sync_domain_secret", cr.SyncDomainSecret).EveryMinute()
 
 	return cr
 }
 
 func (repo *cronRepo) CacheAllBranches() error {
-	//var (
-	//	wg = &sync.WaitGroup{}
-	//)
-	//
-	//db := application.DB()
-	//enabledGitProjects := db.GitProject.Query().Where(gitproject.Enabled(true)).AllX(context.TODO())
-	//goroutineNum := len(enabledGitProjects)
-	//
-	//if len(enabledGitProjects) > 10 {
-	//	goroutineNum = 8
-	//}
-	//
-	//ch := make(chan *ent.GitProject, goroutineNum)
-	//gitServer := plugins.GetGitServer(application, application.Config().GitServerPlugin, application.Config().GitServerCached)
-	//if server, ok := gitServer.(plugins.GitCacheServer); ok {
-	//	for i := 0; i < goroutineNum; i++ {
-	//		wg.Register(1)
-	//		go func() {
-	//			defer wg.Done()
-	//			defer recovery.HandlePanic(application.IsDebug(), "[CRON]: all_branch_cache")
-	//			for gitProject := range ch {
-	//				err := server.ReCacheAllBranches(fmt.Sprintf("%d", gitProject.GitProjectID))
-	//				application.Logger().Debugf("[CRON]: fetch AllBranches: '%s' '%d', err: '%v'", gitProject.Name, gitProject.GitProjectID, err)
-	//			}
-	//		}()
-	//	}
-	//	for i := range enabledGitProjects {
-	//		ch <- enabledGitProjects[i]
-	//	}
-	//	close(ch)
-	//	wg.Wait()
-	//}
+	defer func(t time.Time) {
+		repo.logger.Debug("CacheAllBranches done", time.Since(t))
+	}(time.Now())
+
+	var wg = &sync.WaitGroup{}
+	all, err := repo.repoRepo.All(context.TODO(), &AllRepoRequest{Enabled: lo.ToPtr(true), NeedGitRepo: lo.ToPtr(true)})
+	if err != nil {
+		return err
+	}
+	goroutineNum := len(all)
+	if len(all) > 10 {
+		goroutineNum = 8
+	}
+	wg.Add(goroutineNum)
+	ch := make(chan int32, 100)
+	for i := 0; i < goroutineNum; i++ {
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case id, ok := <-ch:
+					if !ok {
+						return
+					}
+					repo.gitRepo.AllBranches(context.TODO(), int(id))
+				}
+			}
+		}()
+	}
+	for _, it := range all {
+		ch <- it.GitProjectID
+	}
+	close(ch)
+	wg.Wait()
 
 	return nil
 }
 
-func (repo *cronRepo) CacheAllGitProjects() error {
-	//var gitServer plugins.GitServer = gitRepo.GetGitServer(application, application.Config().GitServerPlugin, application.Config().GitServerCached)
-	//if cache, ok := gitRepo.(plugins.GitCacheServer); ok {
-	//	return repo.gitRepo.ReCacheAllProjects()
-	//}
+// SyncDomainSecret 定期同步域名证书，比如配置文件发生变更，或者源证书发生变更
+func (repo *cronRepo) SyncDomainSecret() error {
+	var (
+		changed        bool
+		changedSecrets []*corev1.Secret
+
+		k8sCli = repo.data.K8sClient()
+	)
+	secretName, tlsKey, tlsCrt := repo.pluginMgr.Domain().GetCerts()
+	if secretName != "" && tlsKey != "" && tlsCrt != "" {
+		all, err := repo.nsRepo.All(context.TODO())
+		if err != nil {
+			repo.logger.Error(err)
+			return err
+		}
+		for _, n := range all {
+			secret, err := k8sCli.SecretLister.Secrets(n.Name).Get(secretName)
+			if err == nil {
+				if apierrors.IsNotFound(err) {
+					repo.logger.Infof("[TLS]: Register secret namespace: %s, name %s.", n.Name, secretName)
+					if _, err := repo.k8sRepo.AddTlsSecret(n.Name, secretName, tlsKey, tlsCrt); err != nil {
+						repo.logger.Error(err)
+					}
+					continue
+				}
+			}
+			if string(secret.Data["tls.crt"]) != tlsCrt || string(secret.Data["tls.key"]) != tlsKey {
+				changed = true
+				changedSecrets = append(changedSecrets, secret.DeepCopy())
+			}
+		}
+	}
+
+	if changed {
+		sdata := map[string]string{
+			"tls.key": tlsKey,
+			"tls.crt": tlsCrt,
+		}
+		repo.logger.Warning("[TLS]: certs changed, updating...")
+		for _, secret := range changedSecrets {
+			secret.StringData = sdata
+			_, err := k8sCli.Client.CoreV1().Secrets(secret.Namespace).Update(context.TODO(), secret, metav1.UpdateOptions{})
+			if err == nil {
+				repo.logger.Infof("[TLS]: namespace: %s, name %s updated", secret.Namespace, secret.Name)
+			}
+		}
+	}
 	return nil
 }
 

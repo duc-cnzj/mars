@@ -16,7 +16,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
-	"github.com/duc-cnzj/mars/v4/plugins/domainmanager"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -69,11 +68,12 @@ type eventRepo struct {
 	pl          application.PluginManger
 	clRepo      ChangelogRepo
 	data        data.Data
+	k8sRepo     K8sRepo
 	projectRepo ProjectRepo
 }
 
-func NewEventRepo(projectRepo ProjectRepo, pl application.PluginManger, clRepo ChangelogRepo, logger mlog.Logger, data data.Data, eventer event.Dispatcher) EventRepo {
-	r := &eventRepo{projectRepo: projectRepo, clRepo: clRepo, logger: logger, eventer: eventer, data: data, pl: pl}
+func NewEventRepo(projectRepo ProjectRepo, k8sRepo K8sRepo, pl application.PluginManger, clRepo ChangelogRepo, logger mlog.Logger, data data.Data, eventer event.Dispatcher) EventRepo {
+	r := &eventRepo{projectRepo: projectRepo, k8sRepo: k8sRepo, clRepo: clRepo, logger: logger, eventer: eventer, data: data, pl: pl}
 	eventer.Listen(AuditLogEvent, r.HandleAuditLog)
 	eventer.Listen(EventNamespaceCreated, r.HandleInjectTlsSecret)
 	eventer.Listen(EventNamespaceDeleted, r.HandleNamespaceDeleted)
@@ -164,12 +164,11 @@ type NamespaceCreatedData struct {
 }
 
 func (repo *eventRepo) HandleInjectTlsSecret(data any, e event.Event) error {
-	var k8sCli = repo.data.K8sClient()
 	if createdData, ok := data.(NamespaceCreatedData); ok {
 		name, key, crt := repo.pl.Domain().GetCerts()
 		if name != "" && key != "" && crt != "" {
 			ns := createdData.NsK8sObj.Name
-			err := domainmanager.AddTlsSecret(k8sCli, ns, name, key, crt)
+			_, err := repo.k8sRepo.AddTlsSecret(ns, name, key, crt)
 			if err != nil {
 				repo.logger.Error(err)
 			}

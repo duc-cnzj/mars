@@ -14,6 +14,7 @@ func (d *PluginBootstrapper) Bootstrap(app application.App) error {
 	if err := app.PluginMgr().Load(app); err != nil {
 		return err
 	}
+
 	app.RegisterAfterShutdownFunc(func(app application.App) {
 		app.PluginMgr().Ws().Destroy()
 		app.PluginMgr().Domain().Destroy()

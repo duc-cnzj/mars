@@ -1372,6 +1372,9 @@ export interface components {
       gitCommitDate: string;
       /** Format: int32 */
       version: number;
+      /** Format: int32 */
+      repoId: number;
+      repo: components["schemas"]["types.RepoModel"];
       namespace: components["schemas"]["types.NamespaceModel"];
       createdAt: string;
       updatedAt: string;
@@ -2243,7 +2246,8 @@ export interface operations {
   Git_BranchOptions: {
     parameters: {
       query?: {
-        all?: boolean;
+        /** @description 如果传入 repo_id, 就会根据 mars 配置过滤分支 */
+        repoId?: number;
       };
       header?: never;
       path: {

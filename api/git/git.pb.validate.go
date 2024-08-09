@@ -318,7 +318,7 @@ func (m *BranchOptionsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for All
+	// no validation rules for RepoId
 
 	if len(errors) > 0 {
 		return BranchOptionsRequestMultiError(errors)

@@ -58,6 +58,12 @@ type Project struct {
 	NamespaceID      int
 	RepoID           int
 
+	// 用户前端表单 elements
+	// 和 extraValues 的区别是
+	// extraValues 是系统默认的额外值
+	// elements 是 repo 最新的
+	Elements []*types.KeyValue
+
 	Namespace *Namespace
 	Repo      *Repo
 	Manifest  []string
@@ -65,7 +71,6 @@ type Project struct {
 
 func ToProject(project *ent.Project) *Project {
 	if project == nil {
-
 		return nil
 	}
 	return &Project{
@@ -94,9 +99,9 @@ func ToProject(project *ent.Project) *Project {
 		GitCommitDate:    project.GitCommitDate,
 		NamespaceID:      project.NamespaceID,
 		RepoID:           project.RepoID,
-		Manifest:         project.Manifest,
 		Namespace:        ToNamespace(project.Edges.Namespace),
 		Repo:             ToRepo(project.Edges.Repo),
+		Manifest:         project.Manifest,
 	}
 }
 
@@ -166,6 +171,7 @@ type CreateProjectInput struct {
 	NamespaceID  int
 	PodSelectors []string
 	DeployStatus types.Deploy
+	RepoID       int
 }
 
 func (repo *projectRepo) Create(ctx context.Context, input *CreateProjectInput) (*Project, error) {
@@ -179,6 +185,7 @@ func (repo *projectRepo) Create(ctx context.Context, input *CreateProjectInput) 
 		SetConfigType(input.ConfigType).
 		SetNamespaceID(input.NamespaceID).
 		SetPodSelectors(input.PodSelectors).
+		SetRepoID(input.RepoID).
 		Save(ctx)
 	return ToProject(save), err
 }
@@ -240,6 +247,7 @@ func (repo *projectRepo) Delete(ctx context.Context, id int) error {
 }
 
 func (repo *projectRepo) UpdateStatusByVersion(ctx context.Context, id int, status types.Deploy, version int) (*Project, error) {
+	repo.logger.Warning("id-version: ", id, version)
 	if _, err := repo.FindByVersion(ctx, id, version); err != nil {
 		return nil, err
 	}

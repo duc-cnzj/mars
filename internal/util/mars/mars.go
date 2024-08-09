@@ -24,12 +24,12 @@ func GetMarsNamespace(ns, prefix string) string {
 	return prefix + ns
 }
 
-func BranchPass(mars *mars.Config, name string) bool {
-	if len(mars.Branches) < 1 {
+func BranchPass(branches []string, name string) bool {
+	if len(branches) < 1 {
 		return true
 	}
 
-	for _, branch := range mars.Branches {
+	for _, branch := range branches {
 		if branch == "*" || branch == name {
 			return true
 		}

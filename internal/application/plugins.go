@@ -171,53 +171,57 @@ type PubSub interface {
 	Close() error
 }
 
-type EmptyPubSub struct{}
+type emptyPubSub struct{}
 
-func (e *EmptyPubSub) Join(projectID int64) error {
+func NewEmptyPubSub() PubSub {
+	return &emptyPubSub{}
+}
+
+func (e *emptyPubSub) Join(projectID int64) error {
 	return nil
 }
 
-func (e *EmptyPubSub) Leave(nsID int64, projectID int64) error {
+func (e *emptyPubSub) Leave(nsID int64, projectID int64) error {
 	return nil
 }
 
-func (e *EmptyPubSub) Run(ctx context.Context) error {
+func (e *emptyPubSub) Run(ctx context.Context) error {
 	return nil
 }
 
-func (e *EmptyPubSub) Publish(nsID int64, pod *corev1.Pod) error {
+func (e *emptyPubSub) Publish(nsID int64, pod *corev1.Pod) error {
 	return nil
 }
 
-func (e *EmptyPubSub) Info() any {
+func (e *emptyPubSub) Info() any {
 	return nil
 }
 
-func (e *EmptyPubSub) Uid() string {
+func (e *emptyPubSub) Uid() string {
 	return ""
 }
 
-func (e *EmptyPubSub) ID() string {
+func (e *emptyPubSub) ID() string {
 	return ""
 }
 
-func (e *EmptyPubSub) ToSelf(message WebsocketMessage) error {
+func (e *emptyPubSub) ToSelf(message WebsocketMessage) error {
 	return nil
 }
 
-func (e *EmptyPubSub) ToAll(message WebsocketMessage) error {
+func (e *emptyPubSub) ToAll(message WebsocketMessage) error {
 	return nil
 }
 
-func (e *EmptyPubSub) ToOthers(message WebsocketMessage) error {
+func (e *emptyPubSub) ToOthers(message WebsocketMessage) error {
 	return nil
 }
 
-func (e *EmptyPubSub) Subscribe() <-chan []byte {
+func (e *emptyPubSub) Subscribe() <-chan []byte {
 	return nil
 }
 
-func (e *EmptyPubSub) Close() error {
+func (e *emptyPubSub) Close() error {
 	return nil
 }
 
@@ -261,16 +265,6 @@ type DomainManager interface {
 	// GetCerts 在 namespace 创建的时候注入证书信息
 	GetCerts() (name, key, crt string)
 }
-
-var (
-	ListCommitsCacheSeconds       int = 10
-	AllBranchesCacheSeconds       int = 60 * 2
-	AllProjectsCacheSeconds       int = 60 * 5
-	GetFileContentCacheSeconds    int = 0
-	GetDirectoryFilesCacheSeconds int = 0
-
-	GetCommitCacheSeconds int = 60 * 60
-)
 
 type Status = string
 
@@ -359,334 +353,6 @@ type GitServer interface {
 
 	GetDirectoryFilesWithBranch(pid string, branch string, path string, recursive bool) ([]string, error)
 	GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error)
-}
-
-type GitCacheServer interface {
-	ReCacheAllProjects() error
-	ReCacheAllBranches(pid string) error
-}
-
-//
-//// gitServerCache
-//// 用来缓存一些耗时比较久的请求
-//type gitServerCache struct {
-//	s     GitServer
-//	cache cache.Cache
-//}
-//
-//func (g *gitServerCache) Name() string {
-//	return ""
-//}
-//
-//func (g *gitServerCache) Initialize(args map[string]any) error {
-//	return nil
-//}
-//
-//func (g *gitServerCache) Destroy() error {
-//	return nil
-//}
-//
-//func newGitServerCache(s GitServer) *gitServerCache {
-//	return &gitServerCache{s: s}
-//}
-//
-//func (g *gitServerCache) GetProject(pid string) (Project, error) {
-//	return g.s.GetProject(pid)
-//}
-//
-//func (g *gitServerCache) ListProjects(page, pageSize int) (ListProjectResponse, error) {
-//	return g.s.ListProjects(page, pageSize)
-//}
-//
-//func CacheKeyAllProjects() cache.CacheKey {
-//	return cache.NewKey("AllProjects")
-//}
-//
-//func (g *gitServerCache) ReCacheAllProjects() error {
-//	data, err := g.allProjectsWithoutCache()
-//	if err != nil {
-//		return err
-//	}
-//
-//	return g.cache.SetWithTTL(CacheKeyAllProjects(), data, AllProjectsCacheSeconds)
-//}
-//
-//func (g *gitServerCache) AllProjects() ([]Project, error) {
-//	remember, err := g.cache.Remember(CacheKeyAllProjects(), AllProjectsCacheSeconds, g.allProjectsWithoutCache)
-//	if err != nil {
-//		return nil, err
-//	}
-//	var res []*project
-//	json.Unmarshal(remember, &res)
-//	var all = make([]Project, 0, len(res))
-//	for _, re := range res {
-//		all = append(all, re)
-//	}
-//	return all, nil
-//}
-//
-//func (g *gitServerCache) allProjectsWithoutCache() ([]byte, error) {
-//	projects, err := g.s.AllProjects()
-//	if err != nil {
-//		return nil, err
-//	}
-//	var all = make([]Project, 0, len(projects))
-//	for _, projectInterface := range projects {
-//		all = append(all, &project{
-//			ID:            projectInterface.GetID(),
-//			Name:          projectInterface.GetName(),
-//			DefaultBranch: projectInterface.GetDefaultBranch(),
-//			Path:          projectInterface.GetPath(),
-//			WebUrl:        projectInterface.GetWebURL(),
-//			AvatarUrl:     projectInterface.GetAvatarURL(),
-//			Description:   projectInterface.GetDescription(),
-//		})
-//	}
-//	marshal, _ := json.Marshal(all)
-//	return marshal, nil
-//}
-//
-//func (g *gitServerCache) ListBranches(pid string, page, pageSize int) (ListBranchResponse, error) {
-//	return g.s.ListBranches(pid, page, pageSize)
-//}
-//
-//func CacheKeyAllBranches[T ~string | ~int | ~int64](pid T) cache.CacheKey {
-//	return cache.NewKey("AllBranches-%v", pid)
-//}
-//
-//func (g *gitServerCache) ReCacheAllBranches(pid string) error {
-//	data, err := g.allBranchWithoutCache(pid)()
-//	if err != nil {
-//		return err
-//	}
-//	return g.cache.SetWithTTL(CacheKeyAllBranches(pid), data, AllBranchesCacheSeconds)
-//}
-//
-//func (g *gitServerCache) AllBranches(pid string) ([]Branch, error) {
-//	remember, err := g.cache.Remember(CacheKeyAllBranches(pid), AllBranchesCacheSeconds, g.allBranchWithoutCache(pid))
-//	if err != nil {
-//		return nil, err
-//	}
-//	var res []*branch
-//	json.Unmarshal(remember, &res)
-//	// Why? 为什么我不能直接返回 res，奇怪的 go 语法
-//	var all = make([]Branch, 0, len(res))
-//	for _, b := range res {
-//		all = append(all, b)
-//	}
-//	return all, nil
-//}
-//
-//func (g *gitServerCache) allBranchWithoutCache(pid string) func() ([]byte, error) {
-//	return func() ([]byte, error) {
-//		b, err := g.s.AllBranches(pid)
-//		if err != nil {
-//			return nil, err
-//		}
-//		var all = make([]Branch, 0, len(b))
-//		for _, branchInterface := range b {
-//			all = append(all, &branch{
-//				Name:    branchInterface.GetName(),
-//				Default: branchInterface.IsDefault(),
-//				WebUrl:  branchInterface.GetWebURL(),
-//			})
-//		}
-//
-//		marshal, _ := json.Marshal(all)
-//		return marshal, nil
-//	}
-//}
-//
-//func (g *gitServerCache) GetCommit(pid string, sha string) (Commit, error) {
-//	remember, err := g.cache.Remember(cache.NewKey("GetCommit:%s-%s", pid, sha), GetCommitCacheSeconds, func() ([]byte, error) {
-//		c, err := g.s.GetCommit(pid, sha)
-//		if err != nil {
-//			return nil, err
-//		}
-//		result := &commit{
-//			ID:             c.GetID(),
-//			ShortID:        c.GetShortID(),
-//			Title:          c.GetTitle(),
-//			CommittedDate:  c.GetCommittedDate(),
-//			AuthorName:     c.GetAuthorName(),
-//			AuthorEmail:    c.GetAuthorEmail(),
-//			CommitterName:  c.GetCommitterName(),
-//			CommitterEmail: c.GetCommitterEmail(),
-//			CreatedAt:      c.GetCreatedAt(),
-//			Message:        c.GetMessage(),
-//			ProjectID:      c.GetProjectID(),
-//			WebURL:         c.GetWebURL(),
-//		}
-//		marshal, _ := json.Marshal(result)
-//		return marshal, nil
-//	})
-//	if err != nil {
-//		return nil, err
-//	}
-//	msg := &commit{}
-//	_ = json.Unmarshal(remember, msg)
-//	return msg, nil
-//}
-//
-//func (g *gitServerCache) GetCommitPipeline(pid string, branch string, sha string) (Pipeline, error) {
-//	return g.s.GetCommitPipeline(pid, branch, sha)
-//}
-//
-//func (g *gitServerCache) ListCommits(pid string, branch string) ([]Commit, error) {
-//	remember, err := g.cache.Remember(cache.NewKey("ListCommits:%s-%s", pid, branch), ListCommitsCacheSeconds, func() ([]byte, error) {
-//		commits, err := g.s.ListCommits(pid, branch)
-//		if err != nil {
-//			return nil, err
-//		}
-//		var result = make([]Commit, 0, len(commits))
-//		for _, commitInterface := range commits {
-//			result = append(result, &commit{
-//				ID:             commitInterface.GetID(),
-//				ShortID:        commitInterface.GetShortID(),
-//				Title:          commitInterface.GetTitle(),
-//				CommittedDate:  commitInterface.GetCommittedDate(),
-//				AuthorName:     commitInterface.GetAuthorName(),
-//				AuthorEmail:    commitInterface.GetAuthorEmail(),
-//				CommitterName:  commitInterface.GetCommitterName(),
-//				CommitterEmail: commitInterface.GetCommitterEmail(),
-//				CreatedAt:      commitInterface.GetCreatedAt(),
-//				Message:        commitInterface.GetMessage(),
-//				ProjectID:      commitInterface.GetProjectID(),
-//				WebURL:         commitInterface.GetWebURL(),
-//			})
-//		}
-//		marshal, _ := json.Marshal(result)
-//		return marshal, nil
-//	})
-//	if err != nil {
-//		return nil, err
-//	}
-//	var res []*commit
-//	json.Unmarshal(remember, &res)
-//	var lists = make([]Commit, 0, len(res))
-//
-//	for _, re := range res {
-//		lists = append(lists, re)
-//	}
-//	return lists, nil
-//}
-//
-//func (g *gitServerCache) GetFileContentWithBranch(pid string, branch string, filename string) (string, error) {
-//	remember, err := g.cache.Remember(cache.NewKey("GetFileContentWithBranch-%s-%s-%s", pid, branch, filename), GetFileContentCacheSeconds, func() ([]byte, error) {
-//		content, err := g.s.GetFileContentWithBranch(pid, branch, filename)
-//		if err != nil {
-//			return nil, err
-//		}
-//		return []byte(content), nil
-//	})
-//	if err != nil {
-//		return "", err
-//	}
-//	return string(remember), nil
-//}
-//
-//func (g *gitServerCache) GetFileContentWithSha(pid string, sha string, filename string) (string, error) {
-//	remember, err := g.cache.Remember(cache.NewKey("GetFileContentWithSha-%s-%s-%s", pid, sha, filename), GetFileContentCacheSeconds, func() ([]byte, error) {
-//		content, err := g.s.GetFileContentWithSha(pid, sha, filename)
-//		if err != nil {
-//			return nil, err
-//		}
-//		return []byte(content), nil
-//	})
-//	if err != nil {
-//		return "", err
-//	}
-//	return string(remember), nil
-//}
-//
-//func (g *gitServerCache) GetDirectoryFilesWithBranch(pid string, branch string, path string, recursive bool) ([]string, error) {
-//	remember, err := g.cache.Remember(cache.NewKey("GetDirectoryFilesWithBranch-%s-%s-%s-%v", pid, branch, path, recursive), GetDirectoryFilesCacheSeconds, func() ([]byte, error) {
-//		withBranch, err := g.s.GetDirectoryFilesWithBranch(pid, branch, path, recursive)
-//		if err != nil {
-//			return nil, err
-//		}
-//		marshal, _ := json.Marshal(withBranch)
-//		return marshal, nil
-//	})
-//	if err != nil {
-//		return nil, err
-//	}
-//	var res []string
-//	json.Unmarshal(remember, &res)
-//	return res, nil
-//}
-//
-//func (g *gitServerCache) GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error) {
-//	remember, err := g.cache.Remember(cache.NewKey("GetDirectoryFilesWithSha-%s-%s-%s-%v", pid, sha, path, recursive), GetDirectoryFilesCacheSeconds, func() ([]byte, error) {
-//		withBranch, err := g.s.GetDirectoryFilesWithSha(pid, sha, path, recursive)
-//		if err != nil {
-//			return nil, err
-//		}
-//		marshal, _ := json.Marshal(withBranch)
-//		return marshal, nil
-//	})
-//	if err != nil {
-//		return nil, err
-//	}
-//	var res []string
-//	json.Unmarshal(remember, &res)
-//	return res, nil
-//}
-
-type project struct {
-	ID            int64  `json:"id"`
-	Name          string `json:"name"`
-	DefaultBranch string `json:"default_branch"`
-	Path          string `json:"path"`
-	WebUrl        string `json:"web_url"`
-	AvatarUrl     string `json:"avatar_url"`
-	Description   string `json:"description"`
-}
-
-func (p *project) GetID() int64 {
-	return p.ID
-}
-
-func (p *project) GetName() string {
-	return p.Name
-}
-
-func (p *project) GetDefaultBranch() string {
-	return p.DefaultBranch
-}
-
-func (p *project) GetPath() string {
-	return p.Path
-}
-
-func (p *project) GetWebURL() string {
-	return p.WebUrl
-}
-
-func (p *project) GetAvatarURL() string {
-	return p.AvatarUrl
-}
-
-func (p *project) GetDescription() string {
-	return p.Description
-}
-
-type branch struct {
-	Name    string `json:"name"`
-	Default bool   `json:"default"`
-	WebUrl  string `json:"web_url"`
-}
-
-func (b *branch) GetName() string {
-	return b.Name
-}
-
-func (b *branch) IsDefault() bool {
-	return b.Default
-}
-
-func (b *branch) GetWebURL() string {
-	return b.WebUrl
 }
 
 type commit struct {

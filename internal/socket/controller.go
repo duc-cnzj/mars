@@ -69,6 +69,7 @@ type WebsocketManager struct {
 func NewWebsocketManager(
 	logger mlog.Logger,
 	counter counter.Counter,
+	projRepo repo.ProjectRepo,
 	repoRepo repo.RepoImp,
 	nsRepo repo.NamespaceRepo,
 	jobManager JobManager,
@@ -83,6 +84,7 @@ func NewWebsocketManager(
 	fileRepo repo.FileRepo,
 ) application.WsServer {
 	mgr := &WebsocketManager{
+		projRepo:           projRepo,
 		nsRepo:             nsRepo,
 		counter:            counter,
 		repoRepo:           repoRepo,
@@ -436,6 +438,8 @@ func (wc *WebsocketManager) HandleWsUpdateProject(ctx context.Context, c Conn, t
 		return
 	}
 
+	wc.logger.Warning("update project", input.String())
+
 	wc.upgradeOrInstall(ctx, c, &JobInput{
 		Type:           t,
 		NamespaceId:    int32(p.NamespaceID),
@@ -447,6 +451,7 @@ func (wc *WebsocketManager) HandleWsUpdateProject(ctx context.Context, c Conn, t
 		Atomic:         input.Atomic,
 		ExtraValues:    input.ExtraValues,
 		Version:        lo.ToPtr(input.Version),
+		ProjectID:      input.ProjectId,
 		TimeoutSeconds: int32(wc.data.Config().InstallTimeout.Seconds()),
 		User:           c.GetUser(),
 		PubSub:         c.PubSub(),
