@@ -73,9 +73,7 @@ func (a *accessTokenSvc) Grant(ctx context.Context, request *token.GrantRequest)
 }
 
 func (a *accessTokenSvc) Lease(ctx context.Context, request *token.LeaseRequest) (*token.LeaseResponse, error) {
-	var (
-		user = MustGetUser(ctx)
-	)
+	var user = MustGetUser(ctx)
 
 	at, err := a.repo.Lease(ctx, request.Token, request.ExpireSeconds)
 	if err != nil {

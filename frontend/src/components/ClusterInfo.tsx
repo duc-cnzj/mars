@@ -13,7 +13,7 @@ const ClusterInfo: React.FC = () => {
 
   useEffect(() => {
     ajax.GET("/api/cluster_info").then(({ data }) => {
-      data && dispatch(setClusterInfo(data));
+      data && dispatch(setClusterInfo(data.item));
     });
   }, [dispatch]);
 
@@ -28,27 +28,27 @@ const ClusterInfo: React.FC = () => {
           </div>
           <div>
             <span>cpu 剩余可分配量: </span>
-            {info.free_request_cpu}
+            {info.freeRequestCpu}
           </div>
           <div>
             <span>memory 剩余可分配量: </span>
-            {info.free_request_memory}
+            {info.freeRequestMemory}
           </div>
           <div>
             <span>cpu 分配率: </span>
-            {info.request_cpu_rate}
+            {info.requestCpuRate}
           </div>
           <div>
             <span>memory 分配率: </span>
-            {info.request_memory_rate}
+            {info.requestMemoryRate}
           </div>
           <div>
             <span>cpu 总量: </span>
-            {info.total_cpu}
+            {info.totalCpu}
           </div>
           <div>
             <span>memory 总量: </span>
-            {info.total_memory}
+            {info.totalMemory}
           </div>
         </div>
       }

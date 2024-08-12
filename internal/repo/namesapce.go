@@ -119,6 +119,8 @@ func (repo *namespaceRepo) All(ctx context.Context, input *AllNamespaceInput) ([
 					project.FieldName,
 					project.FieldDeployStatus,
 					project.FieldNamespaceID,
+					project.FieldCreatedAt,
+					project.FieldUpdatedAt,
 				)
 			},
 		)
@@ -132,6 +134,7 @@ func (repo *namespaceRepo) All(ctx context.Context, input *AllNamespaceInput) ([
 		namespace.FieldID,
 		namespace.FieldName,
 		namespace.FieldCreatedAt,
+		namespace.FieldUpdatedAt,
 	).All(ctx)
 	return serialize.Serialize(all, ToNamespace), err
 }

@@ -169,16 +169,18 @@ const AddRepoModal: React.FC<{
   ]);
 
   useEffect(() => {
-    setLoading((item) => ({ ...item, project: true }));
-    ajax.GET("/api/git/all_repos").then(({ data, error }) => {
-      setLoading((item) => ({ ...item, project: false }));
-      if (error) {
-        return;
-      }
-      console.log(data);
-      data && setProjects(data.items);
-    });
-  }, [setLoading, setProjects]);
+    if (visible) {
+      setLoading((item) => ({ ...item, project: true }));
+      ajax.GET("/api/git/all_repos").then(({ data, error }) => {
+        setLoading((item) => ({ ...item, project: false }));
+        if (error) {
+          return;
+        }
+        console.log(data);
+        data && setProjects(data.items);
+      });
+    }
+  }, [setLoading, setProjects, visible]);
 
   const allBranches = () => {
     let allBranches = [{ value: "*", label: "全部" }];

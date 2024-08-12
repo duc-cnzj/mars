@@ -114,7 +114,7 @@ type ListEventInput struct {
 
 func (repo *eventRepo) List(ctx context.Context, input *ListEventInput) (events []*Event, pag *pagination.Pagination, err error) {
 	var db = repo.data.DB()
-	query := db.Event.Query().Where(
+	items := db.Event.Query().Where(
 		filters.IfIntEQ[types.EventActionType](entevent.FieldAction)(input.ActionType),
 		filters.IfOrderByDesc("id")(input.OrderIDDesc),
 		filters.If(func(t string) bool {
@@ -125,8 +125,17 @@ func (repo *eventRepo) List(ctx context.Context, input *ListEventInput) (events 
 				entevent.UsernameContains(t),
 			)
 		})(input.Search),
-	)
-	items := query.Clone().
+	).
+		Select(
+			entevent.FieldID,
+			entevent.FieldAction,
+			entevent.FieldUsername,
+			entevent.FieldMessage,
+			entevent.FieldDuration,
+			entevent.FieldFileID,
+			entevent.FieldCreatedAt,
+			entevent.FieldUpdatedAt,
+		).
 		Offset(pagination.GetPageOffset(input.Page, input.PageSize)).
 		Limit(int(input.PageSize)).
 		AllX(ctx)

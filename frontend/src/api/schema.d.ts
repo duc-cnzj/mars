@@ -1298,9 +1298,6 @@ export interface components {
       updatedAt: string;
       deletedAt: string;
     };
-    "types.ImagePullSecret": {
-      name: string;
-    };
     "types.KeyValue": {
       key: string;
       value: string;
@@ -1309,7 +1306,6 @@ export interface components {
       /** Format: int32 */
       id: number;
       name: string;
-      ImagePullSecrets: components["schemas"]["types.ImagePullSecret"][];
       projects: components["schemas"]["types.ProjectModel"][];
       favorite: boolean;
       createdAt: string;

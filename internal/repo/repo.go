@@ -88,12 +88,24 @@ type ListRepoRequest struct {
 }
 
 func (r *repoImpl) List(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error) {
-	query := r.data.DB().Repo.Query().Where(
-		filters.IfOrderByIDDesc(in.OrderByIDDesc),
-		filters.IfEnabled(in.Enabled),
-		filters.IfNameLike(in.Name),
-	)
+	query := r.data.DB().Repo.Query().
+		Where(
+			filters.IfOrderByIDDesc(in.OrderByIDDesc),
+			filters.IfEnabled(in.Enabled),
+			filters.IfNameLike(in.Name),
+		)
 	all, err := query.Clone().
+		Select(
+			repo.FieldID,
+			repo.FieldName,
+			repo.FieldEnabled,
+			repo.FieldGitProjectID,
+			repo.FieldGitProjectName,
+			repo.FieldNeedGitRepo,
+			repo.FieldDescription,
+			repo.FieldCreatedAt,
+			repo.FieldUpdatedAt,
+		).
 		Offset(pagination.GetPageOffset(in.Page, in.PageSize)).
 		Limit(int(in.PageSize)).
 		All(ctx)

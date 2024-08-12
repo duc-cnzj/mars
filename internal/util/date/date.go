@@ -39,8 +39,8 @@ func ToHumanizeDatetimeString(t *time.Time) string {
 
 // ToRFC3339DatetimeString "2006-01-02T15:04:05Z07:00"
 func ToRFC3339DatetimeString(t *time.Time) string {
-	if t == nil {
-		t = &time.Time{}
+	if t == nil || t.IsZero() {
+		return ""
 	}
 	return t.Format(time.RFC3339)
 }

@@ -2393,11 +2393,6 @@ components:
                     type: string
                 deletedAt:
                     type: string
-        types.ImagePullSecret:
-            type: object
-            properties:
-                name:
-                    type: string
         types.KeyValue:
             type: object
             properties:
@@ -2413,10 +2408,6 @@ components:
                     format: int32
                 name:
                     type: string
-                ImagePullSecrets:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/types.ImagePullSecret'
                 projects:
                     type: array
                     items:
