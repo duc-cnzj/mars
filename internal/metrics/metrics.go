@@ -25,8 +25,8 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/v4/version"
-
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
 const system = "mars"
@@ -158,27 +158,28 @@ var (
 	}, []string{"type"})
 )
 
-func init() {
-	prometheus.MustRegister(WebsocketConnectionsCount)
-	prometheus.MustRegister(BootstrapperStartMetrics)
+func NewRegistry() *prometheus.Registry {
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(
+		collectors.NewGoCollector(),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		WebsocketConnectionsCount,
+		BootstrapperStartMetrics,
+		GrpcLatency,
+		GrpcErrorCount,
+		GrpcRequestTotal,
+		WebsocketRequestLatency,
+		WebsocketPanicCount,
+		WebsocketRequestTotal,
+		CacheBytesGauge,
+		CacheRememberDuration,
+		CronPanicCount,
+		CronDuration,
+		CronCommandCount,
+		CronErrorCount,
+		HttpResponseSize,
+		K8sInformerFanOutListenerCount,
+	)
 
-	prometheus.MustRegister(GrpcLatency)
-	prometheus.MustRegister(GrpcErrorCount)
-	prometheus.MustRegister(GrpcRequestTotal)
-
-	prometheus.MustRegister(WebsocketRequestLatency)
-	prometheus.MustRegister(WebsocketPanicCount)
-	prometheus.MustRegister(WebsocketRequestTotal)
-
-	prometheus.MustRegister(CacheBytesGauge)
-	prometheus.MustRegister(CacheRememberDuration)
-
-	prometheus.MustRegister(CronPanicCount)
-	prometheus.MustRegister(CronDuration)
-	prometheus.MustRegister(CronCommandCount)
-	prometheus.MustRegister(CronErrorCount)
-
-	prometheus.MustRegister(HttpResponseSize)
-
-	prometheus.MustRegister(K8sInformerFanOutListenerCount)
+	return registry
 }

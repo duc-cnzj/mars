@@ -2,6 +2,7 @@ package bootstrappers
 
 import (
 	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v4/internal/metrics"
 	"github.com/duc-cnzj/mars/v4/internal/server"
 )
 
@@ -13,7 +14,11 @@ func (m *MetricsBootstrapper) Tags() []string {
 }
 
 func (m *MetricsBootstrapper) Bootstrap(app application.App) error {
-	app.AddServer(server.NewMetricsRunner(app.Config().MetricsPort, app.Logger()))
+	app.AddServer(server.NewMetricsRunner(
+		app.Config().MetricsPort,
+		app.Logger(),
+		metrics.NewRegistry()),
+	)
 
 	return nil
 }
