@@ -385,6 +385,7 @@ func (r *recorder) Close() error {
 			Save(context.TODO())
 		if err != nil {
 			r.logger.Error(err)
+			return err
 		}
 
 		r.eventRepo.FileAuditLogWithDuration(
