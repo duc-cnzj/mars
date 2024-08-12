@@ -14,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/event"
 	"github.com/duc-cnzj/mars/v4/internal/filters"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/util/date"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	corev1 "k8s.io/api/core/v1"
@@ -57,6 +58,9 @@ type EventRepo interface {
 	// FileAuditLog 记录文件审计日志
 	FileAuditLog(action types.EventActionType, username string, msg string, fileId int)
 
+	// FileAuditLogWithDuration 记录文件审计日志
+	FileAuditLogWithDuration(action types.EventActionType, username string, msg string, fileId int, duration time.Duration)
+
 	HandleAuditLog(data any, e event.Event) error
 }
 
@@ -95,6 +99,7 @@ func (repo *eventRepo) HandleAuditLog(data any, e event.Event) error {
 		SetMessage(logData.GetMsg()).
 		SetOld(logData.GetOldStr()).
 		SetNew(logData.GetNewStr()).
+		SetDuration(logData.GetDuration()).
 		SetNillableFileID(fid).
 		Save(context.TODO())
 
@@ -136,6 +141,7 @@ func (repo *eventRepo) List(ctx context.Context, input *ListEventInput) (events 
 			entevent.FieldCreatedAt,
 			entevent.FieldUpdatedAt,
 		).
+		WithFile().
 		Offset(pagination.GetPageOffset(input.Page, input.PageSize)).
 		Limit(int(input.PageSize)).
 		AllX(ctx)
@@ -155,6 +161,10 @@ func (repo *eventRepo) AuditLog(action types.EventActionType, username string, m
 
 func (repo *eventRepo) FileAuditLog(action types.EventActionType, username string, msg string, fileId int) {
 	repo.eventer.Dispatch(AuditLogEvent, NewEventAuditLog(username, action, msg, AuditWithFileID(fileId)))
+}
+
+func (repo *eventRepo) FileAuditLogWithDuration(action types.EventActionType, username string, msg string, fileId int, d time.Duration) {
+	repo.eventer.Dispatch(AuditLogEvent, NewEventAuditLog(username, action, msg, AuditWithFileID(fileId), AuditWithDuration(date.HumanDuration(d))))
 }
 
 func (repo *eventRepo) AuditLogWithChange(action types.EventActionType, username string, msg string, oldS, newS YamlPrettier) {
@@ -273,6 +283,8 @@ type AuditLog interface {
 	GetNewStr() string
 	// GetFileID file id
 	GetFileID() int
+	// GetDuration duration
+	GetDuration() string
 }
 
 var _ AuditLog = (*auditLogImpl)(nil)
@@ -282,6 +294,11 @@ type auditLogImpl struct {
 	Action          types.EventActionType
 	Msg, OldS, NewS string
 	FileId          int
+	Duration        string
+}
+
+func (e *auditLogImpl) GetDuration() string {
+	return e.Duration
 }
 
 type AuditOption func(*auditLogImpl)
@@ -306,6 +323,11 @@ func AuditWithOldNew(o, n YamlPrettier) AuditOption {
 func AuditWithFileID(id int) AuditOption {
 	return func(e *auditLogImpl) {
 		e.FileId = id
+	}
+}
+func AuditWithDuration(d string) AuditOption {
+	return func(e *auditLogImpl) {
+		e.Duration = d
 	}
 }
 

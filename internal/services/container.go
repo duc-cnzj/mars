@@ -473,6 +473,9 @@ func (rw *execWriter) Write(p []byte) (int, error) {
 		return 0, errors.New("closed")
 	}
 	rw.ch <- string(p)
-	rw.recorder.Write(string(p))
+	err := rw.recorder.Write(string(p))
+	if err != nil {
+		rw.logger.Error(err)
+	}
 	return len(p), nil
 }

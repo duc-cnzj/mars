@@ -112,7 +112,7 @@ type myPtyHandler struct {
 	conn      Conn
 
 	doneChan  chan struct{}
-	sizeStore sizeStore
+	sizeStore *sizeStore
 
 	shellMu sync.RWMutex
 	shellCh chan *websocket_pb.TerminalMessage
@@ -285,7 +285,7 @@ func (t *myPtyHandler) CloseDoneChan() bool {
 }
 
 func (t *myPtyHandler) Close(ctx context.Context, reason string) bool {
-	if !t.Closeable.IsClosed() {
+	if !t.Closeable.Close() {
 		return false
 	}
 	NewMessageSender(t.conn, t.sessionID, WsHandleCloseShell).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
@@ -319,7 +319,10 @@ func (t *myPtyHandler) Close(ctx context.Context, reason string) bool {
 		Data:      END_OF_TRANSMISSION,
 		SessionId: t.sessionID,
 	})
-	t.Recorder().Close()
+	t.logger.Debug("[Websocket]: close shell.")
+	if err := t.Recorder().Close(); err != nil {
+		t.logger.Error(err)
+	}
 	close(t.doneChan)
 	return true
 }
@@ -471,7 +474,7 @@ func (wc *WebsocketManager) WaitForTerminal(ctx context.Context, conn Conn, cont
 		// No shell given or it was not valid: try some shells until one succeeds or all fail
 		// FIXME: if the first shell fails then the first keyboard event is lost
 		for idx, testShell := range validShells {
-			wc.logger.Debug("try" + testShell)
+			wc.logger.Debug("try: " + testShell)
 			if session.IsClosed() {
 				wc.logger.Debugf("session 已关闭，不会继续尝试连接其他 shell: '%s'", strings.Join(validShells[idx:], ", "))
 				break
@@ -533,7 +536,7 @@ func (wc *WebsocketManager) resetSession(session PtyHandler) PtyHandler {
 			doneChan:  make(chan struct{}),
 			sizeChan:  make(chan remotecommand.TerminalSize, 1),
 			shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
-			sizeStore: sizeStore{
+			sizeStore: &sizeStore{
 				cols:  cols,
 				rows:  rows,
 				reset: true,
@@ -568,13 +571,14 @@ func (wc *WebsocketManager) StartShell(ctx context.Context, input *websocket_pb.
 
 	pty := &myPtyHandler{
 		logger:    wc.logger,
-		container: container,
 		sessionID: sessionID,
-		conn:      conn,
-		sizeChan:  make(chan remotecommand.TerminalSize, 1),
-		doneChan:  make(chan struct{}),
-		shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
+		container: container,
 		recorder:  wc.fileRepo.NewRecorder(types.EventActionType_Shell, conn.GetUser(), container),
+		conn:      conn,
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
+		shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
+		sizeChan:  make(chan remotecommand.TerminalSize, 1),
 	}
 	conn.SetPtyHandler(sessionID, pty)
 

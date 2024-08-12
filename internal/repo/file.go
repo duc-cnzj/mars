@@ -19,7 +19,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/filters"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
-	"github.com/duc-cnzj/mars/v4/internal/util/date"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v4/internal/util/rand"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
@@ -95,6 +94,7 @@ type fileRepo struct {
 
 	maxUploadSize uint64
 	data          data.Data
+	eventRepo     EventRepo
 }
 
 func NewFileRepo(
@@ -103,8 +103,10 @@ func NewFileRepo(
 	data data.Data,
 	uploader uploader.Uploader,
 	timer timer.Timer,
+	eventRepo EventRepo,
 ) FileRepo {
 	return &fileRepo{
+		eventRepo:     eventRepo,
 		crRepo:        crRepo,
 		logger:        logger,
 		uploader:      uploader,
@@ -216,9 +218,9 @@ func (repo *fileRepo) DiskInfo() (int64, error) {
 
 func (repo *fileRepo) NewRecorder(action types.EventActionType, user *auth.UserInfo, container *Container) Recorder {
 	return &recorder{
-		RWMutex:       sync.RWMutex{},
 		data:          repo.data,
 		logger:        repo.logger,
+		eventRepo:     repo.eventRepo,
 		action:        action,
 		timer:         repo.timer,
 		container:     container,
@@ -240,6 +242,7 @@ type recorder struct {
 	sync.RWMutex
 
 	data      data.Data
+	eventRepo EventRepo
 	logger    mlog.Logger
 	action    types.EventActionType
 	timer     timer.Timer
@@ -335,13 +338,17 @@ func (r *recorder) Close() error {
 	if r.buffer == nil || r.startTime.IsZero() {
 		return nil
 	}
-	r.buffer.Flush()
+	if err := r.buffer.Flush(); err != nil {
+		r.logger.Error(err)
+	}
 
-	upFile, _ := uploader.Disk("shell").NewFile(fmt.Sprintf("%s/%s/%s",
+	upFile, err := uploader.Disk("shell").NewFile(fmt.Sprintf("%s/%s/%s",
 		r.user.Name,
 		r.timer.Now().Format("2006-01-02"),
 		fmt.Sprintf("recorder-%s-%s-%s-%s.cast", r.container.Namespace, r.container.Pod, r.container.Container, rand.String(20))))
-
+	if err != nil {
+		r.logger.Error(err)
+	}
 	func() {
 		defer func() {
 			r.f.Close()
@@ -353,7 +360,9 @@ func (r *recorder) Close() error {
 			defer r.rcMu.RUnlock()
 			upFile.WriteString(fmt.Sprintf(startLine, r.cols, r.rows, r.startTime.Unix(), r.shell))
 		}()
-		io.Copy(upFile, r.f)
+		if _, err := io.Copy(upFile, r.f); err != nil {
+			r.logger.Error(err)
+		}
 	}()
 
 	stat, e := upFile.Stat()
@@ -365,7 +374,7 @@ func (r *recorder) Close() error {
 	}
 	var emptyFile bool = true
 	if stat.Size() > 0 {
-		file, _ := db.File.Create().
+		file, err := db.File.Create().
 			SetUploadType(uploader.Type()).
 			SetPath(upFile.Name()).
 			SetSize(uint64(stat.Size())).
@@ -374,12 +383,17 @@ func (r *recorder) Close() error {
 			SetPod(r.container.Pod).
 			SetContainer(r.container.Container).
 			Save(context.TODO())
+		if err != nil {
+			r.logger.Error(err)
+		}
 
-		db.Event.Create().SetAction(r.action).SetUsername(r.user.Name).
-			SetMessage(fmt.Sprintf("用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.container.Container, r.container.Namespace, r.container.Pod)).
-			SetFileID(file.ID).
-			SetDuration(date.HumanDuration(time.Since(r.startTime))).
-			Save(context.TODO())
+		r.eventRepo.FileAuditLogWithDuration(
+			types.EventActionType_Shell,
+			r.user.Name,
+			fmt.Sprintf("用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.container.Container, r.container.Namespace, r.container.Pod),
+			file.ID,
+			time.Since(r.startTime),
+		)
 		emptyFile = false
 	}
 	err = upFile.Close()

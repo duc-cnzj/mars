@@ -393,6 +393,7 @@ const EventList: React.FC = () => {
                   description={`${item.message}`}
                 />
                 {!!item.file &&
+                  item.fileId > 0 &&
                   (item.action === TypesEventModelAction.Shell ||
                     item.action === TypesEventModelAction.Exec) && (
                     <>
@@ -426,13 +427,13 @@ const EventList: React.FC = () => {
                                 message.error(error.message);
                                 return;
                               }
-                              setData(
-                                data.map((v) => {
-                                  return v.id === item.id
-                                    ? { ...v, fileId: 0 }
-                                    : v;
-                                })
-                              );
+
+                              setData((items) => {
+                                let a = items.map((v) =>
+                                  v.id === item.id ? { ...v, fileId: 0 } : v
+                                );
+                                return a;
+                              });
                               message.success("删除成功");
                             });
                         }}
@@ -440,6 +441,7 @@ const EventList: React.FC = () => {
                     </>
                   )}
                 {!!item.file &&
+                  item.fileId > 0 &&
                   item.action === TypesEventModelAction.Upload && (
                     <>
                       <Button
