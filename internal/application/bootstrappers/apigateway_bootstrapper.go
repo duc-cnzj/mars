@@ -21,7 +21,7 @@ func (a *ApiGatewayBootstrapper) Bootstrap(appli application.App) error {
 		ctx, cancelFunc := context.WithTimeout(context.TODO(), 5*time.Second)
 		defer cancelFunc()
 		if err := appli.WsServer().Shutdown(ctx); err != nil {
-			app.Logger().Warning("shutdown ws server error", "error", err.Error())
+			app.Logger().Warning("shutdown ws server error: ", err.Error())
 		}
 	})
 
