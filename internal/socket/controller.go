@@ -289,7 +289,7 @@ func (wc *WebsocketManager) dispatchEvent(ctx context.Context, wsconn Conn, wsRe
 			}
 		}(time.Now())
 
-		wc.logger.Warningf("wsType: %v, message: %v", wsRequest.Type.String(), string(message))
+		wc.logger.Debugf("wsType: %v, message: %v", wsRequest.Type.String(), string(message))
 
 		// websocket.onopen 事件不一定是最早发出来的，所以要等 onopen 的认证结束后才能进行后面的操作
 		if wsconn.GetUser() == nil && wsRequest.Type != websocket_pb.Type_HandleAuthorize {

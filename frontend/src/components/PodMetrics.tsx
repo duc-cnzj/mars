@@ -14,6 +14,8 @@ interface MemoryM {
   name: number;
   time: string;
 }
+
+const defaultMetricsLength = 15;
 const PodMetrics: React.FC<{
   namespace: string;
   pod: string;
@@ -28,28 +30,28 @@ const PodMetrics: React.FC<{
       let r = JSON.parse(data);
       if (r.result) {
         setCpuMetrics((l) => {
-          if (l.length > r.result.length) {
+          if (l.length > defaultMetricsLength) {
             l.shift();
           }
           let ll = [
             ...l,
             {
               cpu: r.result.cpu,
-              name: r.result.humanize_cpu,
+              name: r.result.humanizeCpu,
               time: r.result.time,
             },
           ];
           return ll;
         });
         setMemoryMetrics((l) => {
-          if (l.length > r.result.length) {
+          if (l.length > defaultMetricsLength) {
             l.shift();
           }
           let ll = [
             ...l,
             {
               memory: r.result.memory,
-              name: r.result.humanize_memory,
+              name: r.result.humanizeMemory,
               time: r.result.time,
             },
           ];
