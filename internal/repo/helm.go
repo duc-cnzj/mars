@@ -140,8 +140,6 @@ func (d *DefaultHelmer) upgradeOrInstall(
 			cancelFn()
 			k8sClient.PodFanOut.RemoveListener(key)
 			k8sClient.EventFanOut.RemoveListener(key)
-			close(podCh)
-			close(evCh)
 		}()
 		k8sClient.PodFanOut.AddListener(key, podCh)
 		k8sClient.EventFanOut.AddListener(key, evCh)

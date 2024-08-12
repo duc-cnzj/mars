@@ -41,7 +41,7 @@ func (d *databaseLock) RenewalAcquire(key string, seconds int64, renewalSeconds 
 					return
 				case <-ticker.C:
 					if !d.renewalExistKey(key, seconds) {
-						d.logger.Warning("[lock]: err renewal lock: " + key)
+						d.logger.Error("[lock]: err renewal lock: " + key)
 						return
 					}
 				}
@@ -67,15 +67,26 @@ func (d *databaseLock) Acquire(key string, seconds int64) bool {
 	var (
 		acquired bool
 
-		db = d.data.DB()
+		db        = d.data.DB()
+		now       = d.timer.Now()
+		expiredAt = now.Add(time.Duration(seconds) * time.Second)
 	)
 
-	_, err := db.CacheLock.Create().SetKey(key).SetOwner(d.owner).SetExpiredAt(d.timer.Now().Add(time.Duration(seconds) * time.Second)).Save(context.TODO())
+	_, err := db.CacheLock.Create().
+		SetKey(key).
+		SetOwner(d.owner).
+		SetExpiredAt(expiredAt).
+		Save(context.TODO())
 	if err == nil {
 		acquired = true
 	}
 	if !acquired {
-		rowsAffected, _ := db.CacheLock.Update().Where(cachelock.Key(key)).SetOwner(d.owner).SetExpiredAt(d.timer.Now().Add(time.Duration(seconds) * time.Second)).Save(context.TODO())
+		rowsAffected, _ := db.CacheLock.
+			Update().
+			Where(cachelock.Key(key), cachelock.ExpiredAtLTE(now)).
+			SetOwner(d.owner).
+			SetExpiredAt(d.timer.Now().Add(time.Duration(seconds) * time.Second)).
+			Save(context.TODO())
 		if rowsAffected >= 1 {
 			acquired = true
 		}
@@ -97,10 +108,14 @@ func (d *databaseLock) renewalExistKey(key string, seconds int64) bool {
 
 	_, err := db.CacheLock.Query().Where(cachelock.Key(key)).Only(context.TODO())
 	if err != nil {
+		d.logger.Error(err)
 		return acquired
 	}
 
-	rowsAffected, _ := db.CacheLock.Update().Where(cachelock.Key(key)).SetOwner(d.owner).SetExpiredAt(d.timer.Now().Add(time.Duration(seconds) * time.Second)).Save(context.TODO())
+	rowsAffected, err := db.CacheLock.Update().Where(cachelock.Key(key)).SetOwner(d.owner).SetExpiredAt(d.timer.Now().Add(time.Duration(seconds) * time.Second)).Save(context.TODO())
+	if err != nil {
+		d.logger.Error(err)
+	}
 	if rowsAffected >= 1 {
 		acquired = true
 	}

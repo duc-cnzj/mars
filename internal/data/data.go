@@ -124,7 +124,7 @@ func (data *dataImpl) InitDB() (func() error, error) {
 			}),
 		)
 
-		if data.Config().Debug {
+		if data.Config().DBDebug {
 			data.db = data.DB().Debug()
 		}
 		closeFunc = func() error {
@@ -233,7 +233,11 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 			FilterFunc: filterPod(nsPrefix),
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj any) {
-					podFanOutObj.ch <- NewObj[*corev1.Pod](nil, obj.(*corev1.Pod), Add)
+					select {
+					case podFanOutObj.ch <- NewObj[*corev1.Pod](nil, obj.(*corev1.Pod), Add):
+					default:
+						logger.Warningf("[INFORMER]: podFanOutObj full")
+					}
 				},
 				UpdateFunc: func(oldObj, newObj any) {
 					old := oldObj.(*corev1.Pod)
@@ -247,7 +251,11 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 					}
 				},
 				DeleteFunc: func(obj any) {
-					podFanOutObj.ch <- NewObj[*corev1.Pod](nil, obj.(*corev1.Pod), Delete)
+					select {
+					case podFanOutObj.ch <- NewObj[*corev1.Pod](nil, obj.(*corev1.Pod), Delete):
+					default:
+						logger.Warningf("[INFORMER]: podFanOutObj full")
+					}
 				},
 			},
 		})
@@ -451,8 +459,9 @@ func (s *Startable) start() bool {
 
 type FanOutInterface[T runtime2.Object] interface {
 	RemoveListener(key string)
-	AddListener(key string, ch chan<- Obj[T])
+	AddListener(key string, ch chan Obj[T])
 	Distribute(done <-chan struct{})
+	RemoveAll()
 }
 
 type Obj[T runtime2.Object] interface {
@@ -472,7 +481,7 @@ type fanOut[T runtime2.Object] struct {
 	listeners  map[string]chan<- Obj[T]
 }
 
-func (f *fanOut[T]) AddListener(key string, ch chan<- Obj[T]) {
+func (f *fanOut[T]) AddListener(key string, ch chan Obj[T]) {
 	f.listenerMu.Lock()
 	defer f.listenerMu.Unlock()
 	_, ok := f.listeners[key]
@@ -489,9 +498,10 @@ func (f *fanOut[T]) RemoveListener(key string) {
 	f.listenerMu.Lock()
 	defer f.listenerMu.Unlock()
 	f.logger.Infof("[FANOUT]: remove listener %s", key)
-	_, ok := f.listeners[key]
+	ch, ok := f.listeners[key]
 	if ok {
 		delete(f.listeners, key)
+		close(ch)
 		metrics.K8sInformerFanOutListenerCount.With(prometheus.Labels{"type": f.name}).Dec()
 	}
 }
@@ -501,6 +511,7 @@ func (f *fanOut[T]) Distribute(done <-chan struct{}) {
 	if !f.started.start() {
 		return
 	}
+	defer f.RemoveAll()
 	f.logger.Infof("[FANOUT]: '%s' start", f.name)
 	for {
 		select {
@@ -524,6 +535,15 @@ func (f *fanOut[T]) Distribute(done <-chan struct{}) {
 				}
 			}()
 		}
+	}
+}
+
+func (f *fanOut[T]) RemoveAll() {
+	f.listenerMu.Lock()
+	defer f.listenerMu.Unlock()
+	for k, s := range f.listeners {
+		close(s)
+		delete(f.listeners, k)
 	}
 }
 

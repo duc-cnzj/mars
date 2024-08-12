@@ -34,7 +34,6 @@ var serverBootstrappers = []application.Bootstrapper{
 	&bootstrappers.SSOBootstrapper{},
 	&bootstrappers.S3Bootstrapper{},
 	&bootstrappers.PluginBootstrapper{},
-	&bootstrappers.AppBootstrapper{},
 }
 
 var apiGatewayCmd = &cobra.Command{

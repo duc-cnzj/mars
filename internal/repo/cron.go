@@ -2,11 +2,15 @@ package repo
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"reflect"
 	"sync"
 	"time"
 
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/cron"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
@@ -16,6 +20,8 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
+	"github.com/duc-cnzj/mars/v4/internal/util"
+	"github.com/duc-cnzj/mars/v4/internal/util/mars"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
@@ -30,6 +36,7 @@ type CronRepo interface {
 	FixDeployStatus() error
 	DiskInfo() (int64, error)
 	CacheAllBranches() error
+	SyncImagePullSecrets() error
 }
 
 var _ CronRepo = (*cronRepo)(nil)
@@ -63,6 +70,11 @@ func NewCronRepo(logger mlog.Logger, repoRepo RepoRepo, nsRepo NamespaceRepo, k8
 	}
 
 	cronManager.NewCommand("sync_domain_secret", cr.SyncDomainSecret).EveryMinute()
+
+	if data.Config().KubeConfig != "" {
+		cronManager.NewCommand("sync_image_pull_secrets", cr.SyncImagePullSecrets).EveryFiveMinutes()
+		cronManager.NewCommand("project_pod_event_listener", cr.ProjectPodEventListener).EveryFiveSeconds()
+	}
 
 	return cr
 }
@@ -104,6 +116,123 @@ func (repo *cronRepo) CacheAllBranches() error {
 	wg.Wait()
 
 	return nil
+}
+
+// SyncImagePullSecrets
+// 少了自动加上，更新了自动修改
+// 自动同步包括
+// 1. db image_pull_secrets 丢失(不会自动删除之前的 secret)
+// 2. k8s secrets 丢失
+// 3. 密码更新
+// 4. 删除 config
+// 4. 新增 config
+func (repo *cronRepo) SyncImagePullSecrets() error {
+	var (
+		namespaceList       []*ent.Namespace
+		cfgImagePullSecrets = repo.data.Config().ImagePullSecrets
+		k8sClient           = repo.data.K8sClient()
+		db                  = repo.data.DB()
+		logger              = repo.logger
+	)
+	var serverMap = make(map[string]util.DockerConfigEntry)
+	for _, s := range cfgImagePullSecrets {
+		serverMap[s.Server] = util.DockerConfigEntry{
+			Username: s.Username,
+			Password: s.Password,
+			Email:    s.Email,
+			Auth:     base64.StdEncoding.EncodeToString([]byte(s.Username + ":" + s.Password)),
+		}
+	}
+	namespaceList, _ = db.Namespace.Query().Select(
+		namespace.FieldID,
+		namespace.FieldName,
+		namespace.FieldImagePullSecrets,
+	).All(context.TODO())
+	for _, namespace := range namespaceList {
+		var (
+			checked = make(map[string]struct{})
+			missing config.DockerAuths
+			ns      = namespace
+		)
+		for _, secretName := range ns.ImagePullSecrets {
+			secret, err := k8sClient.SecretLister.Secrets(ns.Name).Get(secretName)
+			if err != nil {
+				logger.Warningf("[syncImagePullSecrets]: error get secret '%s', err %v", secretName, err)
+				if apierrors.IsNotFound(err) {
+					repo.deleteSecret(ns, secretName)
+				}
+				continue
+			}
+			if secret.Type == corev1.SecretTypeDockerConfigJson {
+				var dockerJsonKeyData []byte = secret.Data[corev1.DockerConfigJsonKey]
+				res, err := util.DecodeDockerConfigJSON(dockerJsonKeyData)
+				if err != nil {
+					logger.Warningf("[syncImagePullSecrets]: decode secret '%s', err %v", secretName, err)
+					continue
+				}
+				var newConfigJson = util.DockerConfigJSON{
+					Auths:       map[string]util.DockerConfigEntry{},
+					HttpHeaders: map[string]string{},
+				}
+				for server, cfg := range serverMap {
+					for s := range res.Auths {
+						if server == s {
+							newConfigJson.Auths[server] = cfg
+							checked[server] = struct{}{}
+							break
+						}
+					}
+				}
+				if len(newConfigJson.Auths) == 0 {
+					repo.deleteSecret(ns, secretName)
+					continue
+				}
+
+				if !reflect.DeepEqual(newConfigJson.Auths, res.Auths) {
+					logger.Warningf("[syncImagePullSecrets]: Find Diff, Auto Sync: '%s'", secretName)
+					marshal, _ := json.Marshal(&newConfigJson)
+					secret.Data[corev1.DockerConfigJsonKey] = marshal
+					k8sClient.Client.CoreV1().Secrets(ns.Name).Update(context.TODO(), secret, metav1.UpdateOptions{})
+				}
+			}
+		}
+
+		for s, cfg := range serverMap {
+			if _, ok := checked[s]; !ok {
+				missing = append(missing, &config.DockerAuth{
+					Username: cfg.Username,
+					Password: cfg.Password,
+					Email:    cfg.Email,
+					Server:   s,
+				})
+			}
+		}
+
+		if len(missing) > 0 {
+			secret, err := util.CreateDockerSecrets(k8sClient.Client, ns.Name, missing)
+			if err == nil {
+				logger.Warningf("[syncImagePullSecrets]: Missing %v", missing)
+
+				ns.Update().SetImagePullSecrets(append(ns.ImagePullSecrets, secret.Name)).SaveX(context.TODO())
+			}
+		}
+	}
+	return nil
+}
+
+func (repo *cronRepo) deleteSecret(ns *ent.Namespace, secretName string) {
+	logger := repo.logger
+	client := repo.data.K8sClient().Client
+	logger.Warningf("[syncImagePullSecrets]: DELETE: %s", secretName)
+
+	client.CoreV1().Secrets(ns.Name).Delete(context.TODO(), secretName, metav1.DeleteOptions{})
+	var newNsArray []string
+	for _, name := range ns.ImagePullSecrets {
+		if name != secretName {
+			newNsArray = append(newNsArray, name)
+		}
+	}
+	ns.Update().SetImagePullSecrets(newNsArray).SaveX(context.TODO())
 }
 
 // SyncDomainSecret 定期同步域名证书，比如配置文件发生变更，或者源证书发生变更
@@ -276,4 +405,79 @@ func (l listFiles) PrettyYaml() string {
 	}
 	marshal, _ := yaml.Marshal(items)
 	return string(marshal)
+}
+
+func (repo *cronRepo) ProjectPodEventListener() error {
+	var cfg = repo.data.Config()
+	var ws = repo.pluginMgr.Ws()
+	db := repo.data.DB()
+	logger := repo.logger
+	ch := make(chan data.Obj[*corev1.Pod], 100)
+	listener := "pod-watcher"
+	namespacePublisher := ws.New("", "").(application.ProjectPodEventPublisher)
+	podFanOut := repo.data.K8sClient().PodFanOut
+	podFanOut.AddListener(listener, ch)
+
+	defer logger.HandlePanic(listener)
+	defer podFanOut.RemoveListener(listener)
+
+	for {
+		select {
+		case obj, ok := <-ch:
+			if !ok {
+				repo.logger.Warning("[PodEventListener]: pod-watcher channel closed")
+				return nil
+			}
+			switch obj.Type() {
+			case data.Update:
+				if obj.Old().Status.Phase != obj.Current().Status.Phase || containerStatusChanged(logger, obj.Old(), obj.Current()) {
+					logger.Debugf("old: '%s' new '%s'", obj.Old().Status.Phase, obj.Current().Status.Phase)
+					if ns, err := db.Namespace.Query().Where(namespace.NameEQ(mars.GetMarsNamespace(obj.Current().Namespace, cfg.NsPrefix))).Only(context.TODO()); err == nil {
+						if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
+							logger.Errorf("[PodEventListener]: %v", err)
+						}
+					}
+				}
+			case data.Add, data.Delete:
+				if ns, err := db.Namespace.Query().Where(namespace.NameEQ(mars.GetMarsNamespace(obj.Current().Namespace, cfg.NsPrefix))).Only(context.TODO()); err == nil {
+					logger.Debugf("[PodEventListener]: pod '%v': '%s' '%s' '%d' '%s'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID, obj.Current().Status.Phase)
+					if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
+						logger.Errorf("[PodEventListener]: %v", err)
+					}
+				}
+			default:
+			}
+		}
+	}
+}
+
+type watchContainerStatus struct {
+	Ready bool
+}
+
+func containerStatusChanged(logger mlog.Logger, old *corev1.Pod, current *corev1.Pod) bool {
+	if len(old.Status.ContainerStatuses) != len(current.Status.ContainerStatuses) {
+		return true
+	}
+	var oldMap = map[string]watchContainerStatus{}
+	for _, status := range old.Status.ContainerStatuses {
+		oldMap[status.Name] = watchContainerStatus{
+			Ready: status.Ready,
+		}
+	}
+	var currentMap = map[string]watchContainerStatus{}
+	for _, status := range current.Status.ContainerStatuses {
+		currentMap[status.Name] = watchContainerStatus{
+			Ready: status.Ready,
+		}
+	}
+
+	for k, v := range currentMap {
+		if b, ok := oldMap[k]; !(ok && b == v) {
+			logger.Debugf("ContainerStatus old: %v current: %v", b, v)
+			return true
+		}
+	}
+
+	return false
 }
