@@ -396,6 +396,9 @@ func (sm *sessionMap) CloseAll(ctx context.Context) {
 		sm.wg.Add(1)
 		go func(s PtyHandler) {
 			defer sm.wg.Done()
+			if s.IsClosed() {
+				return
+			}
 			s.Close(ctx, "websocket conn closed")
 		}(s)
 	}
