@@ -109,7 +109,6 @@ type jobManager struct {
 	eventRepo        repo.EventRepo
 	k8sRepo          repo.K8sRepo
 	helmRepo         repo.HelmerRepo
-	toolRepo         repo.ToolRepo
 	repoRepo         repo.RepoRepo
 
 	locker       locker.Locker
@@ -130,7 +129,6 @@ func NewJobManager(
 	locker locker.Locker,
 	k8sRepo repo.K8sRepo,
 	eventRepo repo.EventRepo,
-	toolRepo repo.ToolRepo,
 	pl application.PluginManger,
 ) JobManager {
 	return &jobManager{
@@ -146,7 +144,6 @@ func NewJobManager(
 		pluginManger:     pl,
 		helmRepo:         helmer,
 		locker:           locker,
-		toolRepo:         toolRepo,
 		eventRepo:        eventRepo,
 	}
 }
@@ -167,7 +164,6 @@ func (j *jobManager) NewJob(input *JobInput) Job {
 		locker:          j.locker,
 		k8sRepo:         j.k8sRepo,
 		eventRepo:       j.eventRepo,
-		toolRepo:        j.toolRepo,
 		timer:           j.timer,
 		uploader:        j.uploader,
 		loaders:         defaultLoaders(),
@@ -229,7 +225,6 @@ type jobRunner struct {
 	eventRepo       repo.EventRepo
 	messager        DeployMsger
 	timeoutSeconds  int64
-	toolRepo        repo.ToolRepo
 	uploader        uploader.Uploader
 	pluginMgr       application.PluginManger
 	installer       ReleaseInstaller

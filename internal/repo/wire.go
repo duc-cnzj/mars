@@ -10,7 +10,6 @@ var WireRepoSet = wire.NewSet(
 	NewK8sRepo,
 	NewDefaultHelmer,
 	NewRepo,
-	NewToolRepo,
 	NewDefaultArchiver,
 	NewExecutorManager,
 	NewFileRepo,

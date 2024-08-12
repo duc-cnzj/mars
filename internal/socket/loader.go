@@ -398,7 +398,7 @@ func (v *SystemVariableLoader) Load(j *jobRunner) error {
 	v.Add(VarImagePullSecretsNoName, renderResultNoName.String())
 
 	//Host1...Host10
-	sub := j.toolRepo.GetPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
+	sub := j.projRepo.GetPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
 	j.logger.Debug("getPreOccupiedLenByValuesYaml: ", sub)
 	for i := 1; i <= 10; i++ {
 		v.Add(fmt.Sprintf("%s%d", VarHost, i), j.pluginMgr.Domain().GetDomainByIndex(j.project.Name, j.Namespace().Name, i, sub))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -111,6 +112,7 @@ type ProjectRepo interface {
 	GetNodePortMappingByProjects(namespace string, projects ...*Project) EndpointMapping
 	GetLoadBalancerMappingByProjects(namespace string, projects ...*Project) EndpointMapping
 	GetIngressMappingByProjects(namespace string, projects ...*Project) EndpointMapping
+	GetPreOccupiedLenByValuesYaml(values string) int
 
 	List(ctx context.Context, input *ListProjectInput) ([]*Project, *pagination.Pagination, error)
 	Create(ctx context.Context, project *CreateProjectInput) (*Project, error)
@@ -543,6 +545,21 @@ func (repo *projectRepo) GetIngressMappingByProjects(namespace string, projects 
 	m.Sort()
 
 	return m
+}
+
+var hostMatch = regexp.MustCompile(`\s+([\w-_]*)<\s*.Host\d+\s*>`)
+
+func (*projectRepo) GetPreOccupiedLenByValuesYaml(values string) int {
+	var sub = 0
+	if len(values) > 0 {
+		submatch := hostMatch.FindAllStringSubmatch(values, -1)
+		for _, i := range submatch {
+			if len(i) == 2 {
+				sub = max(sub, len(i[1]))
+			}
+		}
+	}
+	return sub
 }
 
 type StatePod struct {

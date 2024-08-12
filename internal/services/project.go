@@ -35,7 +35,6 @@ type projectSvc struct {
 	logger     mlog.Logger
 	helmer     repo.HelmerRepo
 	nsRepo     repo.NamespaceRepo
-	toolRepo   repo.ToolRepo
 	repoRepo   repo.RepoRepo
 	plMgr      application.PluginManger
 }
