@@ -212,6 +212,7 @@ const DeployProjectForm: React.FC<{
               form.setFieldsValue({
                 config: data.item.marsConfig.configFileValues,
               });
+              form.setFieldValue("extraValues", data.item.marsConfig.elements);
             }
             setElements(data.item.marsConfig.elements);
             setMode(getMode(data.item.marsConfig.configFileType));
