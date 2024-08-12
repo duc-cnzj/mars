@@ -28,7 +28,6 @@ type projectSvc struct {
 
 	jobManager socket.JobManager
 	projRepo   repo.ProjectRepo
-	wsRepo     repo.WsRepo
 	gitRepo    repo.GitRepo
 	k8sRepo    repo.K8sRepo
 	dm         repo.DomainRepo
@@ -38,22 +37,22 @@ type projectSvc struct {
 	nsRepo     repo.NamespaceRepo
 	toolRepo   repo.ToolRepo
 	repoRepo   repo.RepoRepo
+	plMgr      application.PluginManger
 }
 
 func NewProjectSvc(
 	repoRepo repo.RepoRepo,
+	plMgr application.PluginManger,
 	jobManager socket.JobManager,
 	projRepo repo.ProjectRepo,
-	wsRepo repo.WsRepo,
 	gitRepo repo.GitRepo,
 	k8sRepo repo.K8sRepo,
-	pl application.PluginManger,
 	eventRepo repo.EventRepo,
 	logger mlog.Logger,
 	helmer repo.HelmerRepo,
 	nsRepo repo.NamespaceRepo,
 ) project.ProjectServer {
-	return &projectSvc{repoRepo: repoRepo, jobManager: jobManager, projRepo: projRepo, wsRepo: wsRepo, gitRepo: gitRepo, k8sRepo: k8sRepo, dm: pl.Domain(), eventRepo: eventRepo, logger: logger, helmer: helmer, nsRepo: nsRepo}
+	return &projectSvc{plMgr: plMgr, repoRepo: repoRepo, jobManager: jobManager, projRepo: projRepo, gitRepo: gitRepo, k8sRepo: k8sRepo, eventRepo: eventRepo, logger: logger, helmer: helmer, nsRepo: nsRepo}
 }
 
 func (p *projectSvc) List(ctx context.Context, request *project.ListRequest) (*project.ListResponse, error) {
@@ -148,7 +147,7 @@ func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyReques
 func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_ApplyServer) error {
 	var pubsub application.PubSub = application.NewEmptyPubSub()
 	if input.WebsocketSync {
-		pubsub = p.wsRepo.New("", "")
+		pubsub = p.plMgr.Ws().New("", "")
 	}
 	defer pubsub.Close()
 	t := websocket.Type_ApplyProject

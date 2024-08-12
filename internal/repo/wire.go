@@ -22,7 +22,6 @@ var WireRepoSet = wire.NewSet(
 	NewProjectRepo,
 	NewGitRepo,
 	NewChangelogRepo,
-	NewWsRepo,
 	NewDomainRepo,
 	NewAccessTokenRepo,
 )
