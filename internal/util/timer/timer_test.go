@@ -14,7 +14,5 @@ func TestRealTimerNow(t *testing.T) {
 }
 
 func TestRealTimerType(t *testing.T) {
-	realTimer := NewRealTimer()
-	_, ok := realTimer.(Timer)
-	assert.True(t, ok, "realTimer should implement the Timer interface")
+	assert.Implements(t, (*Timer)(nil), new(realTimer))
 }

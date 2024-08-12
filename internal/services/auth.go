@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -195,4 +196,15 @@ func (d *defaultAuthProvider) Exchange(ctx context.Context, code string) (string
 
 func (d *defaultAuthProvider) Verify(ctx context.Context, token string) (idToken, error) {
 	return d.provider.Verifier(&oidc.Config{ClientID: d.cfg.ClientID}).Verify(ctx, token)
+}
+
+var ErrorPermissionDenied = errors.New("没有权限执行该操作")
+
+var MustGetUser = auth2.MustGetUser
+
+type guest struct{}
+
+func (c guest) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
+	//mlog.Debug("client is calling method:", fullMethodName)
+	return ctx, nil
 }
