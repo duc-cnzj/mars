@@ -340,6 +340,7 @@ func (r *recorder) Close() error {
 	}
 	if err := r.buffer.Flush(); err != nil {
 		r.logger.Error(err)
+		return err
 	}
 
 	upFile, err := uploader.Disk("shell").NewFile(fmt.Sprintf("%s/%s/%s",
@@ -348,6 +349,7 @@ func (r *recorder) Close() error {
 		fmt.Sprintf("recorder-%s-%s-%s-%s.cast", r.container.Namespace, r.container.Pod, r.container.Container, rand.String(20))))
 	if err != nil {
 		r.logger.Error(err)
+		return err
 	}
 	func() {
 		defer func() {
