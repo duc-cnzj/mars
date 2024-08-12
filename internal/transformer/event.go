@@ -4,16 +4,14 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
+	"github.com/samber/lo"
 )
 
 func FromEvent(e *repo.Event) *types.EventModel {
 	if e == nil {
 		return nil
 	}
-	var fID int64
-	if e.FileID != nil {
-		fID = int64(*e.FileID)
-	}
+
 	return &types.EventModel{
 		Id:        int32(e.ID),
 		Action:    e.Action,
@@ -22,7 +20,7 @@ func FromEvent(e *repo.Event) *types.EventModel {
 		Old:       e.Old,
 		New:       e.New,
 		Duration:  e.Duration,
-		FileId:    int32(fID),
+		FileId:    int32(lo.FromPtr(e.FileID)),
 		File:      FromFile(e.File),
 		HasDiff:   e.Old != e.New,
 		EventAt:   date.ToHumanizeDatetimeString(&e.CreatedAt),
