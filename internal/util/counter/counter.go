@@ -45,7 +45,7 @@ func (w *counter) Wait(ctx context.Context) error {
 	for w.count != 0 {
 		w.cond.Wait()
 	}
-	return nil
+	return ctx.Err()
 }
 
 func (w *counter) Dec() bool {

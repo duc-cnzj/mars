@@ -48,7 +48,7 @@ func ToRFC3339DatetimeString(t *time.Time) string {
 func HumanDuration(d time.Duration) string {
 	// Allow deviation no more than 2 seconds(excluded) to tolerate machine time
 	// inconsistence, it can be considered as almost now.
-	if seconds := int(d.Seconds()); seconds < -1 {
+	if seconds := int(d.Seconds()); seconds <= -1 {
 		return "<invalid>"
 	} else if seconds < 0 {
 		return "0秒"
