@@ -21,6 +21,7 @@ message Option {
   string description    = 8;
 }
 
+message ProjectOptionsRequest {}
 message ProjectOptionsResponse {
   repeated Option items = 1;
 }
@@ -80,19 +81,6 @@ message PipelineInfoResponse {
   string status  = 1;
   string web_url = 2;
 }
-
-message MarsConfigFileRequest {
-  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
-  string branch         = 2 [(validate.rules).string.min_bytes = 1];
-}
-
-message MarsConfigFileResponse {
-  string                data     = 1;
-  string                type     = 2;
-  repeated mars.Element elements = 3;
-}
-
-message ProjectOptionsRequest {}
 
 message AllReposRequest{}
 message AllReposResponse{
@@ -157,15 +145,6 @@ service Git {
     };
     option (openapi.v3.operation) = {
       summary: "获取 pipeline 详情",
-    };
-  }
-
-  rpc MarsConfigFile(MarsConfigFileRequest) returns (MarsConfigFileResponse) {
-    option (google.api.http)      = {
-      get: "/api/git/projects/{git_project_id}/branches/{branch}/config_file",
-    };
-    option (openapi.v3.operation) = {
-      summary: "获取项目 mars 配置详情",
     };
   }
 

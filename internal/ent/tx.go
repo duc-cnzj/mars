@@ -22,6 +22,8 @@ type Tx struct {
 	DBCache *DBCacheClient
 	// Event is the client for interacting with the Event builders.
 	Event *EventClient
+	// Favorite is the client for interacting with the Favorite builders.
+	Favorite *FavoriteClient
 	// File is the client for interacting with the File builders.
 	File *FileClient
 	// Namespace is the client for interacting with the Namespace builders.
@@ -166,6 +168,7 @@ func (tx *Tx) init() {
 	tx.Changelog = NewChangelogClient(tx.config)
 	tx.DBCache = NewDBCacheClient(tx.config)
 	tx.Event = NewEventClient(tx.config)
+	tx.Favorite = NewFavoriteClient(tx.config)
 	tx.File = NewFileClient(tx.config)
 	tx.Namespace = NewNamespaceClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)

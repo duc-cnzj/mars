@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState } from "react";
+import React, { memo, useState } from "react";
 import { Popover, Button, Collapse, Tooltip, Spin } from "antd";
 import { CloseOutlined, HistoryOutlined } from "@ant-design/icons";
 import DiffViewer from "./DiffViewer";
@@ -9,27 +9,32 @@ const { Panel } = Collapse;
 const ConfigHistory: React.FC<{
   projectID: number;
   configType: string;
-  currentConfig: string;
-  onDataChange: (s: string) => void;
-  updatedAt: any;
-}> = ({ currentConfig, projectID, configType, updatedAt, onDataChange }) => {
+}> = ({ projectID, configType }) => {
+  const [list, setList] = useState<
+    components["schemas"]["types.ChangelogModel"][]
+  >([]);
+
   const [visible, setVisible] = useState(false);
   return (
     <Popover
       placement="right"
       open={visible}
-      content={
-        <Content
-          onDataChange={(s) => {
-            onDataChange(s);
-            setVisible(false);
-          }}
-          updatedAt={updatedAt}
-          projectID={projectID}
-          configType={configType}
-          currentConfig={currentConfig}
-        />
-      }
+      destroyTooltipOnHide
+      onOpenChange={(v) => {
+        if (v) {
+          ajax
+            .POST("/api/changelogs/find_last_changelogs_by_project_id", {
+              body: {
+                projectId: projectID,
+                onlyChanged: true,
+              },
+            })
+            .then(({ data }) => {
+              data && setList(data.items);
+            });
+        }
+      }}
+      content={<Content list={list} configType={configType} />}
       trigger="click"
       title={
         <div
@@ -51,7 +56,9 @@ const ConfigHistory: React.FC<{
     >
       <Button
         size="small"
-        onClick={() => setVisible((v) => !v)}
+        onClick={() => {
+          setVisible((v) => !v);
+        }}
         style={{ fontSize: 12 }}
         icon={<HistoryOutlined />}
       />
@@ -60,28 +67,9 @@ const ConfigHistory: React.FC<{
 };
 
 const Content: React.FC<{
-  projectID: number;
+  list: components["schemas"]["types.ChangelogModel"][];
   configType: string;
-  currentConfig: string;
-  updatedAt: any;
-  onDataChange: (s: string) => void;
-}> = ({ currentConfig, projectID, configType, updatedAt, onDataChange }) => {
-  const [list, setList] = useState<
-    components["schemas"]["types.ChangelogModel"][]
-  >([]);
-  useEffect(() => {
-    ajax
-      .GET("/api/projects/{projectId}/changelogs", {
-        params: {
-          path: { projectId: projectID },
-          query: { onlyChanged: true },
-        },
-      })
-      .then(({ data }) => {
-        data && setList(data.items);
-      });
-  }, [projectID, updatedAt]);
-
+}> = ({ configType, list }) => {
   return (
     <div
       style={{
@@ -121,13 +109,13 @@ const Content: React.FC<{
                         placement="top"
                         title={
                           <div style={{ fontSize: 12 }}>
-                            {item.git_commit_author} 提交于
-                            {item.git_commit_date}
+                            {item.gitCommitAuthor} 提交于
+                            {item.gitCommitDate}
                           </div>
                         }
                       >
-                        <a href={item.git_commit_web_url} target="_blank">
-                          {item.git_commit_title}
+                        <a href={item.gitCommitWebUrl} target="_blank">
+                          {item.gitCommitTitle}
                         </a>
                       </Tooltip>
                     </div>
@@ -156,21 +144,6 @@ const Content: React.FC<{
                     newValue={item.config}
                     splitView={false}
                   />
-
-                  <div
-                    style={{ display: "flex", flexDirection: "row-reverse" }}
-                  >
-                    <Button
-                      onClick={() => {
-                        onDataChange(item.config);
-                      }}
-                      size="small"
-                      type="dashed"
-                      style={{ marginTop: 3 }}
-                    >
-                      使用这个配置
-                    </Button>
-                  </div>
                 </div>
               </div>
             </Panel>

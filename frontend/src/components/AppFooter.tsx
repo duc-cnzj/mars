@@ -4,6 +4,7 @@ import { Popover } from "antd";
 import Coffee from "./Coffee";
 import ajax from "../api/ajax";
 import { components } from "../api/schema";
+import IconFont from "./Icon";
 
 require("dayjs/locale/zh-cn");
 
@@ -32,10 +33,10 @@ const AppFooter: React.FC = () => {
         {dayjs(version?.buildDate).format("YYYY-MM-DD HH:mm:ss")}
         <Popover
           content={<Coffee />}
-          overlayInnerStyle={{ padding: 0, margin: 0 }}
+          overlayInnerStyle={{ padding: 0, margin: 0, borderRadius: 5 }}
           trigger="click"
         >
-          <svg
+          <IconFont
             style={{
               margin: 7,
               width: 18,
@@ -43,11 +44,8 @@ const AppFooter: React.FC = () => {
               cursor: "pointer",
               marginLeft: 10,
             }}
-            className="icon"
-            aria-hidden="true"
-          >
-            <use xlinkHref="#icon-dashang"></use>
-          </svg>
+            name="#icon-dashang"
+          />
         </Popover>
       </div>
     </div>

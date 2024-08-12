@@ -107,6 +107,12 @@ func (pc *ProjectCreate) SetConfig(s string) *ProjectCreate {
 	return pc
 }
 
+// SetCreator sets the "creator" field.
+func (pc *ProjectCreate) SetCreator(s string) *ProjectCreate {
+	pc.mutation.SetCreator(s)
+	return pc
+}
+
 // SetOverrideValues sets the "override_values" field.
 func (pc *ProjectCreate) SetOverrideValues(s string) *ProjectCreate {
 	pc.mutation.SetOverrideValues(s)
@@ -442,6 +448,9 @@ func (pc *ProjectCreate) check() error {
 	if _, ok := pc.mutation.Config(); !ok {
 		return &ValidationError{Name: "config", err: errors.New(`ent: missing required field "Project.config"`)}
 	}
+	if _, ok := pc.mutation.Creator(); !ok {
+		return &ValidationError{Name: "creator", err: errors.New(`ent: missing required field "Project.creator"`)}
+	}
 	if _, ok := pc.mutation.Atomic(); !ok {
 		return &ValidationError{Name: "atomic", err: errors.New(`ent: missing required field "Project.atomic"`)}
 	}
@@ -538,6 +547,10 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 	if value, ok := pc.mutation.Config(); ok {
 		_spec.SetField(project.FieldConfig, field.TypeString, value)
 		_node.Config = value
+	}
+	if value, ok := pc.mutation.Creator(); ok {
+		_spec.SetField(project.FieldCreator, field.TypeString, value)
+		_node.Creator = value
 	}
 	if value, ok := pc.mutation.OverrideValues(); ok {
 		_spec.SetField(project.FieldOverrideValues, field.TypeString, value)
@@ -794,6 +807,18 @@ func (u *ProjectUpsert) SetConfig(v string) *ProjectUpsert {
 // UpdateConfig sets the "config" field to the value that was provided on create.
 func (u *ProjectUpsert) UpdateConfig() *ProjectUpsert {
 	u.SetExcluded(project.FieldConfig)
+	return u
+}
+
+// SetCreator sets the "creator" field.
+func (u *ProjectUpsert) SetCreator(v string) *ProjectUpsert {
+	u.Set(project.FieldCreator, v)
+	return u
+}
+
+// UpdateCreator sets the "creator" field to the value that was provided on create.
+func (u *ProjectUpsert) UpdateCreator() *ProjectUpsert {
+	u.SetExcluded(project.FieldCreator)
 	return u
 }
 
@@ -1233,6 +1258,20 @@ func (u *ProjectUpsertOne) SetConfig(v string) *ProjectUpsertOne {
 func (u *ProjectUpsertOne) UpdateConfig() *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateConfig()
+	})
+}
+
+// SetCreator sets the "creator" field.
+func (u *ProjectUpsertOne) SetCreator(v string) *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.SetCreator(v)
+	})
+}
+
+// UpdateCreator sets the "creator" field to the value that was provided on create.
+func (u *ProjectUpsertOne) UpdateCreator() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.UpdateCreator()
 	})
 }
 
@@ -1885,6 +1924,20 @@ func (u *ProjectUpsertBulk) SetConfig(v string) *ProjectUpsertBulk {
 func (u *ProjectUpsertBulk) UpdateConfig() *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateConfig()
+	})
+}
+
+// SetCreator sets the "creator" field.
+func (u *ProjectUpsertBulk) SetCreator(v string) *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.SetCreator(v)
+	})
+}
+
+// UpdateCreator sets the "creator" field to the value that was provided on create.
+func (u *ProjectUpsertBulk) UpdateCreator() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.UpdateCreator()
 	})
 }
 

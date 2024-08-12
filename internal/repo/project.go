@@ -61,7 +61,7 @@ type Project struct {
 	// 用户前端表单 elements
 	// 和 extraValues 的区别是
 	// extraValues 是系统默认的额外值
-	// elements 是 repo 最新的
+	// elements 是 repoImpl 最新的
 	Elements []*types.KeyValue
 
 	Namespace *Namespace
@@ -172,16 +172,19 @@ type CreateProjectInput struct {
 	PodSelectors []string
 	DeployStatus types.Deploy
 	RepoID       int
+	Creator      string
 }
 
 func (repo *projectRepo) Create(ctx context.Context, input *CreateProjectInput) (*Project, error) {
 	save, err := repo.data.DB().Project.Create().
 		SetName(input.Name).
+		SetCreator(input.Creator).
 		SetGitProjectID(input.GitProjectID).
 		SetGitBranch(input.GitBranch).
 		SetGitCommit(input.GitCommit).
 		SetConfig(input.Config).
 		SetNillableAtomic(input.Atomic).
+		SetDeployStatus(input.DeployStatus).
 		SetConfigType(input.ConfigType).
 		SetNamespaceID(input.NamespaceID).
 		SetPodSelectors(input.PodSelectors).
@@ -251,7 +254,7 @@ func (repo *projectRepo) UpdateStatusByVersion(ctx context.Context, id int, stat
 	if _, err := repo.FindByVersion(ctx, id, version); err != nil {
 		return nil, err
 	}
-	save, err := repo.data.DB().Project.UpdateOneID(id).SetDeployStatus(status).SetVersion(version).Save(ctx)
+	save, err := repo.data.DB().Project.UpdateOneID(id).SetDeployStatus(status).SetVersion(version + 1).Save(ctx)
 	return ToProject(save), err
 }
 

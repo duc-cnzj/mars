@@ -135,8 +135,8 @@ message NamespaceModel {
   int32                    id               = 1;
   string                   name             = 2;
   repeated ImagePullSecret ImagePullSecrets = 3;
-
   repeated ProjectModel    projects         = 4;
+  bool                     favorite         = 5;
 
   string                   created_at       = 100;
   string                   updated_at       = 101;

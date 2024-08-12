@@ -68,7 +68,7 @@ func ToChangeLog(c *ent.Changelog) *Changelog {
 }
 
 type ChangelogRepo interface {
-	Show(ctx context.Context, input *ShowChangeLogInput) ([]*Changelog, error)
+	FindLastChangelogsByProjectID(ctx context.Context, input *FindLastChangelogsByProjectIDChangeLogInput) ([]*Changelog, error)
 	Create(ctx context.Context, input *CreateChangeLogInput) (*Changelog, error)
 	FindLastChangeByProjectID(ctx context.Context, projectID int) (*Changelog, error)
 }
@@ -124,24 +124,22 @@ func (c *changelogRepo) Create(ctx context.Context, input *CreateChangeLogInput)
 	return ToChangeLog(save), err
 }
 
-type ShowChangeLogInput struct {
+type FindLastChangelogsByProjectIDChangeLogInput struct {
 	OnlyChanged        bool
 	ProjectID          int
 	OrderByVersionDesc *bool
 }
 
-func (c *changelogRepo) Show(ctx context.Context, input *ShowChangeLogInput) ([]*Changelog, error) {
+func (c *changelogRepo) FindLastChangelogsByProjectID(ctx context.Context, input *FindLastChangelogsByProjectIDChangeLogInput) ([]*Changelog, error) {
 	var db = c.data.DB()
 	all, err := db.Changelog.Query().
-		WithProject(func(query *ent.ProjectQuery) {
-			query.Where(filters.IfBool("config_changed")(func() *bool {
+		Where(
+			filters.IfBool("config_changed")(func() *bool {
 				if input.OnlyChanged {
 					return lo.ToPtr(true)
 				}
 				return nil
-			}()))
-		}).
-		Where(
+			}()),
 			changelog.ProjectID(input.ProjectID),
 			filters.IfOrderByDesc("version")(input.OrderByVersionDesc),
 		).

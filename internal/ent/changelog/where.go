@@ -490,6 +490,16 @@ func GitBranchHasSuffix(v string) predicate.Changelog {
 	return predicate.Changelog(sql.FieldHasSuffix(FieldGitBranch, v))
 }
 
+// GitBranchIsNil applies the IsNil predicate on the "git_branch" field.
+func GitBranchIsNil() predicate.Changelog {
+	return predicate.Changelog(sql.FieldIsNull(FieldGitBranch))
+}
+
+// GitBranchNotNil applies the NotNil predicate on the "git_branch" field.
+func GitBranchNotNil() predicate.Changelog {
+	return predicate.Changelog(sql.FieldNotNull(FieldGitBranch))
+}
+
 // GitBranchEqualFold applies the EqualFold predicate on the "git_branch" field.
 func GitBranchEqualFold(v string) predicate.Changelog {
 	return predicate.Changelog(sql.FieldEqualFold(FieldGitBranch, v))
@@ -553,6 +563,16 @@ func GitCommitHasPrefix(v string) predicate.Changelog {
 // GitCommitHasSuffix applies the HasSuffix predicate on the "git_commit" field.
 func GitCommitHasSuffix(v string) predicate.Changelog {
 	return predicate.Changelog(sql.FieldHasSuffix(FieldGitCommit, v))
+}
+
+// GitCommitIsNil applies the IsNil predicate on the "git_commit" field.
+func GitCommitIsNil() predicate.Changelog {
+	return predicate.Changelog(sql.FieldIsNull(FieldGitCommit))
+}
+
+// GitCommitNotNil applies the NotNil predicate on the "git_commit" field.
+func GitCommitNotNil() predicate.Changelog {
+	return predicate.Changelog(sql.FieldNotNull(FieldGitCommit))
 }
 
 // GitCommitEqualFold applies the EqualFold predicate on the "git_commit" field.

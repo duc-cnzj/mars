@@ -8,10 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/counter"
-
-	"github.com/samber/lo"
-
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/application"
@@ -24,9 +20,11 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
 	"github.com/duc-cnzj/mars/v4/internal/util"
+	"github.com/duc-cnzj/mars/v4/internal/util/counter"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/samber/lo"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/proto"
 )
@@ -57,7 +55,7 @@ type WebsocketManager struct {
 	fileRepo  repo.FileRepo
 	nsRepo    repo.NamespaceRepo
 	eventRepo repo.EventRepo
-	repoRepo  repo.RepoImp
+	repoRepo  repo.RepoRepo
 
 	executor repo.ExecutorManager
 
@@ -70,7 +68,7 @@ func NewWebsocketManager(
 	logger mlog.Logger,
 	counter counter.Counter,
 	projRepo repo.ProjectRepo,
-	repoRepo repo.RepoImp,
+	repoRepo repo.RepoRepo,
 	nsRepo repo.NamespaceRepo,
 	jobManager JobManager,
 	data data.Data,

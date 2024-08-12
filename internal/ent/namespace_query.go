@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/duc-cnzj/mars/v4/internal/ent/favorite"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
@@ -20,11 +21,12 @@ import (
 // NamespaceQuery is the builder for querying Namespace entities.
 type NamespaceQuery struct {
 	config
-	ctx          *QueryContext
-	order        []namespace.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.Namespace
-	withProjects *ProjectQuery
+	ctx           *QueryContext
+	order         []namespace.OrderOption
+	inters        []Interceptor
+	predicates    []predicate.Namespace
+	withProjects  *ProjectQuery
+	withFavorites *FavoriteQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -76,6 +78,28 @@ func (nq *NamespaceQuery) QueryProjects() *ProjectQuery {
 			sqlgraph.From(namespace.Table, namespace.FieldID, selector),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, namespace.ProjectsTable, namespace.ProjectsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryFavorites chains the current query on the "favorites" edge.
+func (nq *NamespaceQuery) QueryFavorites() *FavoriteQuery {
+	query := (&FavoriteClient{config: nq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := nq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := nq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(namespace.Table, namespace.FieldID, selector),
+			sqlgraph.To(favorite.Table, favorite.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, namespace.FavoritesTable, namespace.FavoritesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
 		return fromU, nil
@@ -270,12 +294,13 @@ func (nq *NamespaceQuery) Clone() *NamespaceQuery {
 		return nil
 	}
 	return &NamespaceQuery{
-		config:       nq.config,
-		ctx:          nq.ctx.Clone(),
-		order:        append([]namespace.OrderOption{}, nq.order...),
-		inters:       append([]Interceptor{}, nq.inters...),
-		predicates:   append([]predicate.Namespace{}, nq.predicates...),
-		withProjects: nq.withProjects.Clone(),
+		config:        nq.config,
+		ctx:           nq.ctx.Clone(),
+		order:         append([]namespace.OrderOption{}, nq.order...),
+		inters:        append([]Interceptor{}, nq.inters...),
+		predicates:    append([]predicate.Namespace{}, nq.predicates...),
+		withProjects:  nq.withProjects.Clone(),
+		withFavorites: nq.withFavorites.Clone(),
 		// clone intermediate query.
 		sql:  nq.sql.Clone(),
 		path: nq.path,
@@ -290,6 +315,17 @@ func (nq *NamespaceQuery) WithProjects(opts ...func(*ProjectQuery)) *NamespaceQu
 		opt(query)
 	}
 	nq.withProjects = query
+	return nq
+}
+
+// WithFavorites tells the query-builder to eager-load the nodes that are connected to
+// the "favorites" edge. The optional arguments are used to configure the query builder of the edge.
+func (nq *NamespaceQuery) WithFavorites(opts ...func(*FavoriteQuery)) *NamespaceQuery {
+	query := (&FavoriteClient{config: nq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	nq.withFavorites = query
 	return nq
 }
 
@@ -371,8 +407,9 @@ func (nq *NamespaceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Na
 	var (
 		nodes       = []*Namespace{}
 		_spec       = nq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			nq.withProjects != nil,
+			nq.withFavorites != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -400,6 +437,13 @@ func (nq *NamespaceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Na
 			return nil, err
 		}
 	}
+	if query := nq.withFavorites; query != nil {
+		if err := nq.loadFavorites(ctx, query, nodes,
+			func(n *Namespace) { n.Edges.Favorites = []*Favorite{} },
+			func(n *Namespace, e *Favorite) { n.Edges.Favorites = append(n.Edges.Favorites, e) }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
 }
 
@@ -418,6 +462,36 @@ func (nq *NamespaceQuery) loadProjects(ctx context.Context, query *ProjectQuery,
 	}
 	query.Where(predicate.Project(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(namespace.ProjectsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.NamespaceID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "namespace_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (nq *NamespaceQuery) loadFavorites(ctx context.Context, query *FavoriteQuery, nodes []*Namespace, init func(*Namespace), assign func(*Namespace, *Favorite)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Namespace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(favorite.FieldNamespaceID)
+	}
+	query.Where(predicate.Favorite(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(namespace.FavoritesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

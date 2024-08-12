@@ -6,14 +6,13 @@ import (
 	gopath "path"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
-
 	"github.com/duc-cnzj/mars/api/v4/git"
 	"github.com/duc-cnzj/mars/v4/internal/cache"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
 	mars2 "github.com/duc-cnzj/mars/v4/internal/util/mars"
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
@@ -33,10 +32,10 @@ type gitSvc struct {
 	logger    mlog.Logger
 	gitRepo   repo.GitRepo
 	cache     cache.Cache
-	repoRepo  repo.RepoImp
+	repoRepo  repo.RepoRepo
 }
 
-func NewGitSvc(repoRepo repo.RepoImp, eventRepo repo.EventRepo, logger mlog.Logger, gitRepo repo.GitRepo, cache cache.Cache) git.GitServer {
+func NewGitSvc(repoRepo repo.RepoRepo, eventRepo repo.EventRepo, logger mlog.Logger, gitRepo repo.GitRepo, cache cache.Cache) git.GitServer {
 	return &gitSvc{repoRepo: repoRepo, eventRepo: eventRepo, logger: logger, gitRepo: gitRepo, cache: cache}
 }
 
@@ -180,58 +179,4 @@ func (g *gitSvc) GetChartValuesYaml(ctx context.Context, req *git.GetChartValues
 		return nil, err
 	}
 	return &git.GetChartValuesYamlResponse{Values: content}, nil
-}
-
-func (g *gitSvc) MarsConfigFile(ctx context.Context, request *git.MarsConfigFileRequest) (*git.MarsConfigFileResponse, error) {
-	marsC, err := GetProjectMarsConfig(request.GitProjectId, request.Branch)
-	if err != nil {
-		return nil, err
-	}
-	// 先拿 ConfigFile 如果没有，则拿 ConfigFileValues
-	configFile := marsC.ConfigFile
-	if configFile == "" {
-		ct := marsC.ConfigFileType
-		if marsC.ConfigFileType == "" {
-			ct = "yaml"
-		}
-		return &git.MarsConfigFileResponse{
-			Data:     marsC.ConfigFileValues,
-			Type:     ct,
-			Elements: marsC.Elements,
-		}, nil
-	}
-	// 如果有 ConfigFile，则获取内容，如果没有内容，则使用 ConfigFileValues
-
-	var (
-		pid      string
-		branch   string
-		filename string
-	)
-
-	if mars2.IsRemoteConfigFile(marsC) {
-		split := strings.Split(configFile, "|")
-		pid = split[0]
-		branch = split[1]
-		filename = split[2]
-	} else {
-		pid = fmt.Sprintf("%v", request.GitProjectId)
-		branch = request.Branch
-		filename = configFile
-	}
-
-	content, err := g.gitRepo.GetFileContentWithBranch(ctx, cast.ToInt(pid), branch, filename)
-	if err != nil {
-		g.logger.Debug(err)
-		return &git.MarsConfigFileResponse{
-			Data:     marsC.ConfigFileValues,
-			Type:     marsC.ConfigFileType,
-			Elements: marsC.Elements,
-		}, nil
-	}
-
-	return &git.MarsConfigFileResponse{
-		Data:     content,
-		Type:     marsC.ConfigFileType,
-		Elements: marsC.Elements,
-	}, nil
 }

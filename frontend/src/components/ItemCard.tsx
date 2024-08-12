@@ -8,23 +8,26 @@ import {
   message,
   Tooltip,
   Button,
+  Space,
 } from "antd";
 import "../pkg/DraggableModal/index.css";
 import { CloseOutlined } from "@ant-design/icons";
 import ServiceEndpoint from "./ServiceEndpoint";
 import ProjectDetail from "./ProjectDetail";
-import CreateProjectModal from "./CreateProjectModalV2";
+import CreateProjectModal from "./CreateProjectModal";
 import { copy } from "../utils/copy";
 import styled from "@emotion/styled";
 import { useAuth } from "../contexts/auth";
 import { components } from "../api/schema";
 import ajax from "../api/ajax";
+import IconFont from "./Icon";
 
 const Item: React.FC<{
   item: components["schemas"]["types.NamespaceModel"];
   onNamespaceDeleted: () => void;
+  onFavorite: (nsID: number, favorite: boolean) => void;
   loading: boolean;
-}> = ({ item, onNamespaceDeleted, loading }) => {
+}> = ({ item, onNamespaceDeleted, loading, onFavorite }) => {
   const [cpuAndMemory, setCpuAndMemory] = useState({ cpu: "", memory: "" });
   const { isAdmin } = useAuth();
   const [deleting, setDeleting] = useState<boolean>(false);
@@ -34,7 +37,15 @@ const Item: React.FC<{
       style={{ height: "100%" }}
       title={
         <CardTitle>
-          <CardTitleBody>
+          <Space size={"small"}>
+            <IconFont
+              onClick={() => onFavorite(item.id, !item.favorite)}
+              name="#icon-wodeguanzhu"
+              style={{
+                color: !item.favorite ? "gray" : "#a78bfa",
+                cursor: "pointer",
+              }}
+            />
             <Tooltip
               title={<span style={{ fontSize: 10 }}>id: {item.id}</span>}
             >
@@ -42,7 +53,7 @@ const Item: React.FC<{
                 项目空间: <TitleNamespaceName>{item.name}</TitleNamespaceName>
               </TitleNamespace>
             </Tooltip>
-            <TitleSubItem style={{ marginRight: 5 }}>
+            <TitleSubItem>
               <Tooltip
                 onOpenChange={(visible: boolean) => {
                   if (visible) {
@@ -92,7 +103,7 @@ const Item: React.FC<{
             <TitleSubItem>
               <ServiceEndpoint namespaceId={item.id} />
             </TitleSubItem>
-          </CardTitleBody>
+          </Space>
         </CardTitle>
       }
       extra={
@@ -104,8 +115,8 @@ const Item: React.FC<{
             onConfirm={() => {
               setDeleting(true);
               ajax
-                .DELETE("/api/namespaces/{namespaceId}", {
-                  params: { path: { namespaceId: item.id } },
+                .DELETE("/api/namespaces/{id}", {
+                  params: { path: { id: item.id } },
                 })
                 .then(({ error }) => {
                   if (error) {
@@ -153,13 +164,8 @@ const CardTitle = styled.div`
   align-items: center;
   justify-content: space-between;
 `;
-const CardTitleBody = styled.div`
-  display: flex;
-  align-items: center;
-`;
 
 const TitleNamespace = styled.div`
-  margin-right: 10px;
   font-size: 12px;
   font-weight: normal;
 `;

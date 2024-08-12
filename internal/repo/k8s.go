@@ -12,8 +12,6 @@ import (
 	"strings"
 	"sync"
 
-	"helm.sh/helm/v3/pkg/releaseutil"
-
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
@@ -22,6 +20,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/mholt/archiver/v3"
 	"github.com/samber/lo"
+	"helm.sh/helm/v3/pkg/releaseutil"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"

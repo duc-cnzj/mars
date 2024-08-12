@@ -137,6 +137,20 @@ func (pu *ProjectUpdate) SetNillableConfig(s *string) *ProjectUpdate {
 	return pu
 }
 
+// SetCreator sets the "creator" field.
+func (pu *ProjectUpdate) SetCreator(s string) *ProjectUpdate {
+	pu.mutation.SetCreator(s)
+	return pu
+}
+
+// SetNillableCreator sets the "creator" field if the given value is not nil.
+func (pu *ProjectUpdate) SetNillableCreator(s *string) *ProjectUpdate {
+	if s != nil {
+		pu.SetCreator(*s)
+	}
+	return pu
+}
+
 // SetOverrideValues sets the "override_values" field.
 func (pu *ProjectUpdate) SetOverrideValues(s string) *ProjectUpdate {
 	pu.mutation.SetOverrideValues(s)
@@ -627,6 +641,9 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.Config(); ok {
 		_spec.SetField(project.FieldConfig, field.TypeString, value)
 	}
+	if value, ok := pu.mutation.Creator(); ok {
+		_spec.SetField(project.FieldCreator, field.TypeString, value)
+	}
 	if value, ok := pu.mutation.OverrideValues(); ok {
 		_spec.SetField(project.FieldOverrideValues, field.TypeString, value)
 	}
@@ -957,6 +974,20 @@ func (puo *ProjectUpdateOne) SetConfig(s string) *ProjectUpdateOne {
 func (puo *ProjectUpdateOne) SetNillableConfig(s *string) *ProjectUpdateOne {
 	if s != nil {
 		puo.SetConfig(*s)
+	}
+	return puo
+}
+
+// SetCreator sets the "creator" field.
+func (puo *ProjectUpdateOne) SetCreator(s string) *ProjectUpdateOne {
+	puo.mutation.SetCreator(s)
+	return puo
+}
+
+// SetNillableCreator sets the "creator" field if the given value is not nil.
+func (puo *ProjectUpdateOne) SetNillableCreator(s *string) *ProjectUpdateOne {
+	if s != nil {
+		puo.SetCreator(*s)
 	}
 	return puo
 }
@@ -1480,6 +1511,9 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 	}
 	if value, ok := puo.mutation.Config(); ok {
 		_spec.SetField(project.FieldConfig, field.TypeString, value)
+	}
+	if value, ok := puo.mutation.Creator(); ok {
+		_spec.SetField(project.FieldCreator, field.TypeString, value)
 	}
 	if value, ok := puo.mutation.OverrideValues(); ok {
 		_spec.SetField(project.FieldOverrideValues, field.TypeString, value)

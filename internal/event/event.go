@@ -52,6 +52,9 @@ type eventBody struct {
 type dispatcher struct {
 	sync.RWMutex
 
+	ctx    context.Context
+	cancel context.CancelFunc
+
 	ch        chan *eventBody
 	logger    mlog.Logger
 	listeners map[Event][]Listener
@@ -61,7 +64,11 @@ var _ Dispatcher = (*dispatcher)(nil)
 
 // NewDispatcher return Dispatcher.
 func NewDispatcher(logger mlog.Logger) Dispatcher {
+	ctx, cancelFunc := context.WithCancel(context.TODO())
+
 	return &dispatcher{
+		ctx:       ctx,
+		cancel:    cancelFunc,
 		ch:        make(chan *eventBody, 1000),
 		logger:    logger,
 		listeners: map[Event][]Listener{},
@@ -73,6 +80,9 @@ func (d *dispatcher) Run(ctx context.Context) error {
 	go func() {
 		for {
 			select {
+			case <-d.ctx.Done():
+				d.logger.Warning("[Shutdown]: event dispatcher context done")
+				return
 			case <-ctx.Done():
 				d.logger.Warning("event dispatcher context done")
 				return
@@ -97,6 +107,7 @@ func (d *dispatcher) Run(ctx context.Context) error {
 
 func (d *dispatcher) Shutdown(ctx context.Context) error {
 	d.logger.Info("[Event]: dispatcher shutdown")
+	d.cancel()
 	return nil
 }
 

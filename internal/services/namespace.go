@@ -37,13 +37,26 @@ func NewNamespaceSvc(helmer repo.HelmerRepo, nsRepo repo.NamespaceRepo, k8sRepo 
 }
 
 func (n *namespaceSvc) All(ctx context.Context, request *namespace.AllRequest) (*namespace.AllResponse, error) {
-	namespaces, err := n.nsRepo.All(ctx)
+	email := MustGetUser(ctx).Email
+	namespaces, err := n.nsRepo.All(ctx, &repo.AllNamespaceInput{
+		Favorite: request.Favorite,
+		Email:    email,
+	})
 	if err != nil {
 		return nil, err
 	}
 	var res = &namespace.AllResponse{Items: make([]*types.NamespaceModel, 0, len(namespaces))}
 	for _, ns := range namespaces {
-		res.Items = append(res.Items, transformer.FromNamespace(ns))
+		fav := false
+		for _, f := range ns.Favorites {
+			if f.Email == email {
+				fav = true
+				break
+			}
+		}
+		v := transformer.FromNamespace(ns)
+		v.Favorite = fav
+		res.Items = append(res.Items, v)
 	}
 
 	return res, nil
@@ -54,7 +67,7 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 	preCheckNs, err := n.nsRepo.FindByName(ctx, nsName)
 	if err == nil {
 		if request.IgnoreIfExists {
-			return &namespace.CreateResponse{Namespace: transformer.FromNamespace(preCheckNs), Exists: true}, nil
+			return &namespace.CreateResponse{Item: transformer.FromNamespace(preCheckNs), Exists: true}, nil
 		}
 		return nil, status.Error(codes.AlreadyExists, "名称空间已存在")
 	}
@@ -90,6 +103,11 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 	if err != nil {
 		return nil, err
 	}
+	n.nsRepo.Favorite(ctx, &repo.FavoriteNamespaceInput{
+		NamespaceID: ns.ID,
+		UserEmail:   MustGetUser(ctx).Email,
+		Favorite:    true,
+	})
 
 	n.eventRepo.Dispatch(repo.EventNamespaceCreated, repo.NamespaceCreatedData{
 		NsModel:  ns,
@@ -99,18 +117,18 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 	n.eventRepo.AuditLog(types.EventActionType_Create, MustGetUser(ctx).Name, fmt.Sprintf("创建项目空间: %d: %s", ns.ID, ns.Name))
 
 	return &namespace.CreateResponse{
-		Namespace: transformer.FromNamespace(ns),
-		Exists:    false,
+		Item:   transformer.FromNamespace(ns),
+		Exists: false,
 	}, nil
 }
 
-func (n *namespaceSvc) Delete(ctx context.Context, id *namespace.DeleteRequest) (*namespace.DeleteResponse, error) {
+func (n *namespaceSvc) Delete(ctx context.Context, input *namespace.DeleteRequest) (*namespace.DeleteResponse, error) {
 	user := auth.MustGetUser(ctx)
 	if !user.IsAdmin() {
 		return nil, ErrorPermissionDenied
 	}
 
-	ns, err := n.nsRepo.Show(ctx, int(id.NamespaceId))
+	ns, err := n.nsRepo.Show(ctx, int(input.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -176,10 +194,23 @@ func (n *namespaceSvc) IsExists(ctx context.Context, input *namespace.IsExistsRe
 	return &namespace.IsExistsResponse{Exists: true, Id: int64(ns.ID)}, nil
 }
 
-func (n *namespaceSvc) Show(ctx context.Context, id *namespace.ShowRequest) (*namespace.ShowResponse, error) {
-	ns, err := n.nsRepo.Show(ctx, int(id.NamespaceId))
+func (n *namespaceSvc) Show(ctx context.Context, input *namespace.ShowRequest) (*namespace.ShowResponse, error) {
+	ns, err := n.nsRepo.Show(ctx, int(input.Id))
 	if err != nil {
 		return nil, err
 	}
-	return &namespace.ShowResponse{Namespace: transformer.FromNamespace(ns)}, nil
+	return &namespace.ShowResponse{Item: transformer.FromNamespace(ns)}, nil
+}
+
+func (n *namespaceSvc) Favorite(ctx context.Context, req *namespace.FavoriteRequest) (*namespace.FavoriteResponse, error) {
+	user := MustGetUser(ctx)
+	err := n.nsRepo.Favorite(ctx, &repo.FavoriteNamespaceInput{
+		NamespaceID: int(req.Id),
+		UserEmail:   user.Email,
+		Favorite:    req.Favorite,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &namespace.FavoriteResponse{}, nil
 }

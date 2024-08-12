@@ -101,10 +101,10 @@ func (a *accessTokenRepo) Lease(ctx context.Context, token string, expireSeconds
 	var db = a.data.DB()
 	first, err := db.AccessToken.Query().Where(accesstoken.Token(token)).First(ctx)
 	if err != nil {
-		return nil, err
+		return nil, ToError(404, err)
 	}
 	if ToAccessToken(first).Expired() {
-		return nil, errors.New("token 已经过期")
+		return nil, ToError(400, errors.New("token 已经过期"))
 	}
 	save, err := first.Update().SetExpiredAt(a.timer.Now().Add(time.Duration(expireSeconds) * time.Second)).Save(ctx)
 	return ToAccessToken(save), err
@@ -132,5 +132,4 @@ func ToAccessToken(token *ent.AccessToken) *AccessToken {
 		LastUsedAt: token.LastUsedAt,
 		UserInfo:   token.UserInfo,
 	}
-
 }

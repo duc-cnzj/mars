@@ -19,9 +19,9 @@ build_tools:
 		github.com/golangci/golangci-lint/cmd/golangci-lint \
 		golang.org/x/tools/cmd/goimports \
 		github.com/securego/gosec/v2/cmd/gosec \
-		go install go.uber.org/mock/mockgen \
-		go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest \
-		go install github.com/google/wire/cmd/wire@0.5.0 \
+		go.uber.org/mock/mockgen \
+		github.com/google/gnostic/cmd/protoc-gen-openapi@latest \
+		github.com/google/wire/cmd/wire@0.5.0 \
 		entgo.io/ent/cmd/ent
 
 .PHONY: api

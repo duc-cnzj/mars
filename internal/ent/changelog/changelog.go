@@ -115,12 +115,6 @@ var (
 	DefaultVersion int
 	// UsernameValidator is a validator for the "username" field. It is called by the builders before save.
 	UsernameValidator func(string) error
-	// GitBranchValidator is a validator for the "git_branch" field. It is called by the builders before save.
-	GitBranchValidator func(string) error
-	// GitCommitValidator is a validator for the "git_commit" field. It is called by the builders before save.
-	GitCommitValidator func(string) error
-	// GitCommitWebURLValidator is a validator for the "git_commit_web_url" field. It is called by the builders before save.
-	GitCommitWebURLValidator func(string) error
 	// GitCommitTitleValidator is a validator for the "git_commit_title" field. It is called by the builders before save.
 	GitCommitTitleValidator func(string) error
 	// GitCommitAuthorValidator is a validator for the "git_commit_author" field. It is called by the builders before save.

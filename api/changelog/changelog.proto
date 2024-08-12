@@ -10,23 +10,24 @@ import "types/types.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/changelog;changelog";
 
-message ShowRequest {
+message FindLastChangelogsByProjectIDRequest {
   int32 project_id   = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
   bool  only_changed = 2;
 }
 
-message ShowResponse {
+message FindLastChangelogsByProjectIDResponse {
   repeated types.ChangelogModel items = 1;
 }
 
 service Changelog {
-  rpc Show(ShowRequest) returns (ShowResponse) {
-    option (google.api.http)                                               = {
-      get: "/api/projects/{project_id}/changelogs"
+  rpc FindLastChangelogsByProjectID(FindLastChangelogsByProjectIDRequest) returns (FindLastChangelogsByProjectIDResponse) {
+    option (google.api.http)      = {
+      post: "/api/changelogs/find_last_changelogs_by_project_id",
+      body: "*"
     };
 
     option (openapi.v3.operation) = {
-      summary: "查看项目修改的版本差异",
+      summary: "查看项目改动日志",
     };
   }
 }

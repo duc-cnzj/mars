@@ -111,46 +111,6 @@ func init() {
 	changelogDescUsername := changelogFields[1].Descriptor()
 	// changelog.UsernameValidator is a validator for the "username" field. It is called by the builders before save.
 	changelog.UsernameValidator = changelogDescUsername.Validators[0].(func(string) error)
-	// changelogDescGitBranch is the schema descriptor for git_branch field.
-	changelogDescGitBranch := changelogFields[3].Descriptor()
-	// changelog.GitBranchValidator is a validator for the "git_branch" field. It is called by the builders before save.
-	changelog.GitBranchValidator = func() func(string) error {
-		validators := changelogDescGitBranch.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(git_branch string) error {
-			for _, fn := range fns {
-				if err := fn(git_branch); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// changelogDescGitCommit is the schema descriptor for git_commit field.
-	changelogDescGitCommit := changelogFields[4].Descriptor()
-	// changelog.GitCommitValidator is a validator for the "git_commit" field. It is called by the builders before save.
-	changelog.GitCommitValidator = func() func(string) error {
-		validators := changelogDescGitCommit.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(git_commit string) error {
-			for _, fn := range fns {
-				if err := fn(git_commit); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// changelogDescGitCommitWebURL is the schema descriptor for git_commit_web_url field.
-	changelogDescGitCommitWebURL := changelogFields[9].Descriptor()
-	// changelog.GitCommitWebURLValidator is a validator for the "git_commit_web_url" field. It is called by the builders before save.
-	changelog.GitCommitWebURLValidator = changelogDescGitCommitWebURL.Validators[0].(func(string) error)
 	// changelogDescGitCommitTitle is the schema descriptor for git_commit_title field.
 	changelogDescGitCommitTitle := changelogFields[10].Descriptor()
 	// changelog.GitCommitTitleValidator is a validator for the "git_commit_title" field. It is called by the builders before save.
@@ -340,35 +300,35 @@ func init() {
 	// project.GitCommitValidator is a validator for the "git_commit" field. It is called by the builders before save.
 	project.GitCommitValidator = projectDescGitCommit.Validators[0].(func(string) error)
 	// projectDescAtomic is the schema descriptor for atomic field.
-	projectDescAtomic := projectFields[8].Descriptor()
+	projectDescAtomic := projectFields[9].Descriptor()
 	// project.DefaultAtomic holds the default value on creation for the atomic field.
 	project.DefaultAtomic = projectDescAtomic.Default.(bool)
 	// projectDescDeployStatus is the schema descriptor for deploy_status field.
-	projectDescDeployStatus := projectFields[9].Descriptor()
+	projectDescDeployStatus := projectFields[10].Descriptor()
 	// project.DefaultDeployStatus holds the default value on creation for the deploy_status field.
 	project.DefaultDeployStatus = types.Deploy(projectDescDeployStatus.Default.(int32))
 	// projectDescVersion is the schema descriptor for version field.
-	projectDescVersion := projectFields[13].Descriptor()
+	projectDescVersion := projectFields[14].Descriptor()
 	// project.DefaultVersion holds the default value on creation for the version field.
 	project.DefaultVersion = projectDescVersion.Default.(int)
 	// projectDescConfigType is the schema descriptor for config_type field.
-	projectDescConfigType := projectFields[14].Descriptor()
+	projectDescConfigType := projectFields[15].Descriptor()
 	// project.ConfigTypeValidator is a validator for the "config_type" field. It is called by the builders before save.
 	project.ConfigTypeValidator = projectDescConfigType.Validators[0].(func(string) error)
 	// projectDescGitCommitWebURL is the schema descriptor for git_commit_web_url field.
-	projectDescGitCommitWebURL := projectFields[16].Descriptor()
+	projectDescGitCommitWebURL := projectFields[17].Descriptor()
 	// project.DefaultGitCommitWebURL holds the default value on creation for the git_commit_web_url field.
 	project.DefaultGitCommitWebURL = projectDescGitCommitWebURL.Default.(string)
 	// project.GitCommitWebURLValidator is a validator for the "git_commit_web_url" field. It is called by the builders before save.
 	project.GitCommitWebURLValidator = projectDescGitCommitWebURL.Validators[0].(func(string) error)
 	// projectDescGitCommitTitle is the schema descriptor for git_commit_title field.
-	projectDescGitCommitTitle := projectFields[17].Descriptor()
+	projectDescGitCommitTitle := projectFields[18].Descriptor()
 	// project.DefaultGitCommitTitle holds the default value on creation for the git_commit_title field.
 	project.DefaultGitCommitTitle = projectDescGitCommitTitle.Default.(string)
 	// project.GitCommitTitleValidator is a validator for the "git_commit_title" field. It is called by the builders before save.
 	project.GitCommitTitleValidator = projectDescGitCommitTitle.Validators[0].(func(string) error)
 	// projectDescGitCommitAuthor is the schema descriptor for git_commit_author field.
-	projectDescGitCommitAuthor := projectFields[18].Descriptor()
+	projectDescGitCommitAuthor := projectFields[19].Descriptor()
 	// project.DefaultGitCommitAuthor holds the default value on creation for the git_commit_author field.
 	project.DefaultGitCommitAuthor = projectDescGitCommitAuthor.Default.(string)
 	// project.GitCommitAuthorValidator is a validator for the "git_commit_author" field. It is called by the builders before save.

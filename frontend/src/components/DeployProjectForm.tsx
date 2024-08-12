@@ -12,7 +12,7 @@ import {
 } from "antd";
 import { css } from "@emotion/css";
 import ajax from "../api/ajax";
-import { components } from "../api/schema.d";
+import { components } from "../api/schema";
 import { Grid } from "antd";
 import PipelineInfo from "./PipelineInfo";
 import Elements from "./elements/Elements";
@@ -65,15 +65,10 @@ const DeployProjectForm: React.FC<{
       }
     : { extraValues: [], config: "", branch: "", commit: "", repoId: "" };
 
-  console.log(initValues, " id?: string;");
-
   const formRepoId = Form.useWatch("repoId", form);
   const branch = Form.useWatch("branch", form);
   const commit = Form.useWatch("commit", form);
   const config = Form.useWatch("config", form);
-  useEffect(() => {
-    console.log("formRepoId", formRepoId);
-  }, [formRepoId]);
 
   const [repoId, setRepoId] = useState(project ? project.repoId : 0);
   useEffect(() => {
@@ -298,7 +293,7 @@ const DeployProjectForm: React.FC<{
     ]
   );
   // console.log("curr", curr, repoId);
-  console.log("initval", initValues);
+  // console.log("initval", initValues);
   return (
     <Form
       layout="horizontal"
@@ -462,10 +457,10 @@ const DeployProjectForm: React.FC<{
                   )}
                 </Row>
                 <Row>
-                  <Space>
+                  <Space size={"small"}>
                     <Button
                       onClick={() => form.submit()}
-                      style={{ fontSize: 12, marginRight: 5 }}
+                      style={{ fontSize: 12 }}
                       size="small"
                       danger={info.status === "bad"}
                       type={"primary"}
@@ -473,52 +468,48 @@ const DeployProjectForm: React.FC<{
                     >
                       {info.status === "bad" ? "集群资源不足" : "部署"}
                     </Button>
-                    {isEdit && (
+                    {isEdit && !isLoading && (
                       <Button
                         size="small"
-                        hidden={isLoading}
-                        style={{ marginRight: 5, fontSize: 12 }}
+                        style={{ fontSize: 12 }}
                         disabled={isLoading}
                         onClick={() => form.resetFields()}
                       >
                         重置
                       </Button>
                     )}
-                    <Button
-                      style={{ fontSize: 12, marginRight: 5 }}
-                      size="small"
-                      hidden={!isLoading}
-                      danger
-                      icon={<StopOutlined />}
-                      type="dashed"
-                      onClick={() => {
-                        cancelDeploy(curr.appName);
-                      }}
-                    >
-                      取消
-                    </Button>
+                    {isLoading && (
+                      <Button
+                        style={{ fontSize: 12 }}
+                        size="small"
+                        danger
+                        icon={<StopOutlined />}
+                        type="dashed"
+                        onClick={() => {
+                          cancelDeploy(curr.appName);
+                        }}
+                      >
+                        取消
+                      </Button>
+                    )}
                     {hasLog && (
                       <Button
                         type="dashed"
-                        style={{ fontSize: 12, marginRight: 5 }}
+                        style={{ fontSize: 12 }}
                         size="small"
                         onClick={() => setShowLog((show) => !show)}
                       >
                         {showLog ? "隐藏" : "查看"}日志
                       </Button>
                     )}
-                    {/* {!isLoading && isEdit && (
+                    {!isLoading && isEdit && (
                       <ConfigHistory
-                        // onDataChange={(s: string) => {
-                        //   form.setFieldsValue({ config: s });
-                        //   setData((d) => ({ ...d, config: s }));
-                        // }}
                         projectID={curr.projectId}
-                        configType={project?.repo.marsConfig.configFileType||""}
-                        currentConfig={data.config}
-                        updatedAt={detail.updatedAt}
+                        configType={
+                          project?.repo.marsConfig.configFileType || ""
+                        }
                       />
-                    )} */}
+                    )}
                   </Space>
                 </Row>
               </div>

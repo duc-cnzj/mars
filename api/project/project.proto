@@ -28,12 +28,11 @@ message ShowRequest {
   int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 message ShowResponse {
-  types.ProjectModel             item     = 1;
+  types.ProjectModel             item   = 1;
 
-  repeated types.ServiceEndpoint urls     = 13;
-  string                         cpu      = 15;
-  string                         memory   = 16;
-  repeated mars.Element          elements = 23;
+  repeated types.ServiceEndpoint urls   = 13;
+  string                         cpu    = 15;
+  string                         memory = 16;
 }
 
 
@@ -79,17 +78,6 @@ message ApplyRequest {
   bool                          send_percent            = 11;
   // 版本号, 创建时可以不传
   optional int32                version                 = 12 [(validate.rules).int32.gte = 0, (google.api.field_behavior) = REQUIRED];
-}
-
-message HostVariablesRequest {
-  // 如果不指定则使用从 git server 获取的项目名称
-  string project_name   = 1;
-  string namespace      = 2 [(validate.rules).string.min_bytes = 1];
-  int32  git_project_id = 3 [(validate.rules).int32.gt = 0];
-  string git_branch     = 4 [(validate.rules).string.min_bytes = 1];
-}
-message HostVariablesResponse {
-  map<string, string> hosts = 1;
 }
 
 message  WebApplyRequest {
@@ -158,14 +146,6 @@ service Project {
   rpc AllContainers(AllContainersRequest) returns (AllContainersResponse) {
     option (google.api.http) = {
       get: "/api/projects/{id}/containers"
-    };
-  }
-
-  // HostVariables 获取 hosts 变量
-  rpc HostVariables(HostVariablesRequest) returns (HostVariablesResponse) {
-    option (google.api.http) = {
-      post: "/api/projects/host_variables",
-      body: "*",
     };
   }
 }

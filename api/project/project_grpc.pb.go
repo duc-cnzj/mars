@@ -27,7 +27,6 @@ const (
 	Project_Version_FullMethodName       = "/project.Project/Version"
 	Project_Delete_FullMethodName        = "/project.Project/Delete"
 	Project_AllContainers_FullMethodName = "/project.Project/AllContainers"
-	Project_HostVariables_FullMethodName = "/project.Project/HostVariables"
 )
 
 // ProjectClient is the client API for Project service.
@@ -48,8 +47,6 @@ type ProjectClient interface {
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	// AllContainers 获取项目下的所有 pod
 	AllContainers(ctx context.Context, in *AllContainersRequest, opts ...grpc.CallOption) (*AllContainersResponse, error)
-	// HostVariables 获取 hosts 变量
-	HostVariables(ctx context.Context, in *HostVariablesRequest, opts ...grpc.CallOption) (*HostVariablesResponse, error)
 }
 
 type projectClient struct {
@@ -146,15 +143,6 @@ func (c *projectClient) AllContainers(ctx context.Context, in *AllContainersRequ
 	return out, nil
 }
 
-func (c *projectClient) HostVariables(ctx context.Context, in *HostVariablesRequest, opts ...grpc.CallOption) (*HostVariablesResponse, error) {
-	out := new(HostVariablesResponse)
-	err := c.cc.Invoke(ctx, Project_HostVariables_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ProjectServer is the server API for Project service.
 // All implementations must embed UnimplementedProjectServer
 // for forward compatibility
@@ -173,8 +161,6 @@ type ProjectServer interface {
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	// AllContainers 获取项目下的所有 pod
 	AllContainers(context.Context, *AllContainersRequest) (*AllContainersResponse, error)
-	// HostVariables 获取 hosts 变量
-	HostVariables(context.Context, *HostVariablesRequest) (*HostVariablesResponse, error)
 	mustEmbedUnimplementedProjectServer()
 }
 
@@ -202,9 +188,6 @@ func (UnimplementedProjectServer) Delete(context.Context, *DeleteRequest) (*Dele
 }
 func (UnimplementedProjectServer) AllContainers(context.Context, *AllContainersRequest) (*AllContainersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AllContainers not implemented")
-}
-func (UnimplementedProjectServer) HostVariables(context.Context, *HostVariablesRequest) (*HostVariablesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method HostVariables not implemented")
 }
 func (UnimplementedProjectServer) mustEmbedUnimplementedProjectServer() {}
 
@@ -348,24 +331,6 @@ func _Project_AllContainers_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Project_HostVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HostVariablesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServer).HostVariables(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Project_HostVariables_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServer).HostVariables(ctx, req.(*HostVariablesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // Project_ServiceDesc is the grpc.ServiceDesc for Project service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -396,10 +361,6 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AllContainers",
 			Handler:    _Project_AllContainers_Handler,
-		},
-		{
-			MethodName: "HostVariables",
-			Handler:    _Project_HostVariables_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

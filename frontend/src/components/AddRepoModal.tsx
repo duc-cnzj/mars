@@ -407,10 +407,9 @@ const AddRepoModal: React.FC<{
             )}
 
             <Form.Item
-              label="charts 的目录"
+              label="charts 地址, 格式为 'pid|branch|path'"
               name={["marsConfig", "localChartPath"]}
               rules={[{ required: true, message: "charts 路径必填" }]}
-              tooltip="charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 'pid|branch|path'"
             >
               <Input />
             </Form.Item>

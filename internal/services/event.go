@@ -55,7 +55,7 @@ func (e *eventSvc) Show(ctx context.Context, request *event.ShowRequest) (*event
 		return nil, err
 	}
 
-	return &event.ShowResponse{Event: transformer.FromEvent(show)}, nil
+	return &event.ShowResponse{Item: transformer.FromEvent(show)}, nil
 }
 
 func (e *eventSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {

@@ -293,6 +293,29 @@ func HasProjectsWith(preds ...predicate.Project) predicate.Namespace {
 	})
 }
 
+// HasFavorites applies the HasEdge predicate on the "favorites" edge.
+func HasFavorites() predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, FavoritesTable, FavoritesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasFavoritesWith applies the HasEdge predicate on the "favorites" edge with a given conditions (other predicates).
+func HasFavoritesWith(preds ...predicate.Favorite) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		step := newFavoritesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Namespace) predicate.Namespace {
 	return predicate.Namespace(sql.AndPredicates(predicates...))

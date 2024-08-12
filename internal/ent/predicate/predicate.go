@@ -21,6 +21,9 @@ type DBCache func(*sql.Selector)
 // Event is the predicate function for event builders.
 type Event func(*sql.Selector)
 
+// Favorite is the predicate function for favorite builders.
+type Favorite func(*sql.Selector)
+
 // File is the predicate function for file builders.
 type File func(*sql.Selector)
 

@@ -110,7 +110,7 @@ type jobManager struct {
 	k8sRepo          repo.K8sRepo
 	helmRepo         repo.HelmerRepo
 	toolRepo         repo.ToolRepo
-	repoRepo         repo.RepoImp
+	repoRepo         repo.RepoRepo
 
 	locker       locker.Locker
 	uploader     uploader.Uploader
@@ -122,7 +122,7 @@ func NewJobManager(
 	timer timer.Timer,
 	logger mlog.Logger,
 	releaseInstaller ReleaseInstaller,
-	repoRepo repo.RepoImp,
+	repoRepo repo.RepoRepo,
 	nsRepo repo.NamespaceRepo,
 	projRepo repo.ProjectRepo,
 	helmer repo.HelmerRepo,
@@ -222,7 +222,7 @@ type jobRunner struct {
 	logger          mlog.Logger
 	nsRepo          repo.NamespaceRepo
 	projRepo        repo.ProjectRepo
-	repoRepo        repo.RepoImp
+	repoRepo        repo.RepoRepo
 	helmer          repo.HelmerRepo
 	locker          locker.Locker
 	k8sRepo         repo.K8sRepo
@@ -346,6 +346,7 @@ func (j *jobRunner) Validate() Job {
 		ConfigType:   j.config.ConfigFileType,
 		NamespaceID:  j.ns.ID,
 		RepoID:       j.repo.ID,
+		Creator:      j.User().Email,
 	}
 
 	j.Messager().SendMsg("[Check]: 检查项目是否存在")
@@ -404,7 +405,9 @@ func (j *jobRunner) Validate() Job {
 	} else {
 		j.commit = application.NewEmptyCommit()
 	}
-	j.oldConf = toProjectEventYaml(j.project)
+	if !j.isNew {
+		j.oldConf = toProjectEventYaml(j.project)
+	}
 
 	return j.SetError(err)
 }

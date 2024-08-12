@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/duc-cnzj/mars/v4/internal/ent/favorite"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
 )
@@ -90,6 +91,21 @@ func (nc *NamespaceCreate) AddProjects(p ...*Project) *NamespaceCreate {
 		ids[i] = p[i].ID
 	}
 	return nc.AddProjectIDs(ids...)
+}
+
+// AddFavoriteIDs adds the "favorites" edge to the Favorite entity by IDs.
+func (nc *NamespaceCreate) AddFavoriteIDs(ids ...int) *NamespaceCreate {
+	nc.mutation.AddFavoriteIDs(ids...)
+	return nc
+}
+
+// AddFavorites adds the "favorites" edges to the Favorite entity.
+func (nc *NamespaceCreate) AddFavorites(f ...*Favorite) *NamespaceCreate {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return nc.AddFavoriteIDs(ids...)
 }
 
 // Mutation returns the NamespaceMutation object of the builder.
@@ -225,6 +241,22 @@ func (nc *NamespaceCreate) createSpec() (*Namespace, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := nc.mutation.FavoritesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.FavoritesTable,
+			Columns: []string{namespace.FavoritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favorite.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

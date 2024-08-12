@@ -57,6 +57,8 @@ func (m *AllRequest) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Favorite
+
 	if len(errors) > 0 {
 		return AllRequestMultiError(errors)
 	}
@@ -403,11 +405,11 @@ func (m *CreateResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetNamespace()).(type) {
+		switch v := interface{}(m.GetItem()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, CreateResponseValidationError{
-					field:  "Namespace",
+					field:  "Item",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -415,16 +417,16 @@ func (m *CreateResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, CreateResponseValidationError{
-					field:  "Namespace",
+					field:  "Item",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetNamespace()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetItem()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CreateResponseValidationError{
-				field:  "Namespace",
+				field:  "Item",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -533,9 +535,9 @@ func (m *ShowRequest) validate(all bool) error {
 
 	var errors []error
 
-	if m.GetNamespaceId() <= 0 {
+	if m.GetId() <= 0 {
 		err := ShowRequestValidationError{
-			field:  "NamespaceId",
+			field:  "Id",
 			reason: "value must be greater than 0",
 		}
 		if !all {
@@ -644,11 +646,11 @@ func (m *ShowResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetNamespace()).(type) {
+		switch v := interface{}(m.GetItem()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, ShowResponseValidationError{
-					field:  "Namespace",
+					field:  "Item",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -656,16 +658,16 @@ func (m *ShowResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, ShowResponseValidationError{
-					field:  "Namespace",
+					field:  "Item",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetNamespace()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetItem()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ShowResponseValidationError{
-				field:  "Namespace",
+				field:  "Item",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -882,9 +884,9 @@ func (m *IsExistsResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Exists
-
 	// no validation rules for Id
+
+	// no validation rules for Exists
 
 	if len(errors) > 0 {
 		return IsExistsResponseMultiError(errors)
@@ -986,9 +988,9 @@ func (m *DeleteRequest) validate(all bool) error {
 
 	var errors []error
 
-	if m.GetNamespaceId() <= 0 {
+	if m.GetId() <= 0 {
 		err := DeleteRequestValidationError{
-			field:  "NamespaceId",
+			field:  "Id",
 			reason: "value must be greater than 0",
 		}
 		if !all {
@@ -1174,3 +1176,216 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = DeleteResponseValidationError{}
+
+// Validate checks the field values on FavoriteRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *FavoriteRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FavoriteRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// FavoriteRequestMultiError, or nil if none found.
+func (m *FavoriteRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FavoriteRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetId() <= 0 {
+		err := FavoriteRequestValidationError{
+			field:  "Id",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Favorite
+
+	if len(errors) > 0 {
+		return FavoriteRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// FavoriteRequestMultiError is an error wrapping multiple validation errors
+// returned by FavoriteRequest.ValidateAll() if the designated constraints
+// aren't met.
+type FavoriteRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FavoriteRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FavoriteRequestMultiError) AllErrors() []error { return m }
+
+// FavoriteRequestValidationError is the validation error returned by
+// FavoriteRequest.Validate if the designated constraints aren't met.
+type FavoriteRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e FavoriteRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e FavoriteRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e FavoriteRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e FavoriteRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e FavoriteRequestValidationError) ErrorName() string { return "FavoriteRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e FavoriteRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sFavoriteRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = FavoriteRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = FavoriteRequestValidationError{}
+
+// Validate checks the field values on FavoriteResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *FavoriteResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FavoriteResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// FavoriteResponseMultiError, or nil if none found.
+func (m *FavoriteResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FavoriteResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return FavoriteResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// FavoriteResponseMultiError is an error wrapping multiple validation errors
+// returned by FavoriteResponse.ValidateAll() if the designated constraints
+// aren't met.
+type FavoriteResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FavoriteResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FavoriteResponseMultiError) AllErrors() []error { return m }
+
+// FavoriteResponseValidationError is the validation error returned by
+// FavoriteResponse.Validate if the designated constraints aren't met.
+type FavoriteResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e FavoriteResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e FavoriteResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e FavoriteResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e FavoriteResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e FavoriteResponseValidationError) ErrorName() string { return "FavoriteResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e FavoriteResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sFavoriteResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = FavoriteResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = FavoriteResponseValidationError{}

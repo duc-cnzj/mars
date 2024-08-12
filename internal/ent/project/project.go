@@ -32,6 +32,8 @@ const (
 	FieldGitCommit = "git_commit"
 	// FieldConfig holds the string denoting the config field in the database.
 	FieldConfig = "config"
+	// FieldCreator holds the string denoting the creator field in the database.
+	FieldCreator = "creator"
 	// FieldOverrideValues holds the string denoting the override_values field in the database.
 	FieldOverrideValues = "override_values"
 	// FieldDockerImage holds the string denoting the docker_image field in the database.
@@ -108,6 +110,7 @@ var Columns = []string{
 	FieldGitBranch,
 	FieldGitCommit,
 	FieldConfig,
+	FieldCreator,
 	FieldOverrideValues,
 	FieldDockerImage,
 	FieldPodSelectors,
@@ -227,6 +230,11 @@ func ByGitCommit(opts ...sql.OrderTermOption) OrderOption {
 // ByConfig orders the results by the config field.
 func ByConfig(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldConfig, opts...).ToFunc()
+}
+
+// ByCreator orders the results by the creator field.
+func ByCreator(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreator, opts...).ToFunc()
 }
 
 // ByOverrideValues orders the results by the override_values field.

@@ -211,7 +211,8 @@ func (repo *eventRepo) HandleProjectChanged(data any, e event.Event) error {
 		}
 		var configChanged bool
 		if lastChange, err := repo.clRepo.FindLastChangeByProjectID(context.TODO(), changedData.ID); err == nil {
-			configChanged = lastChange.Config == proj.Config || lastChange.GitCommit != proj.GitCommit
+			repo.logger.Debug(lastChange, "lastChange")
+			configChanged = lastChange.Config != proj.Config || lastChange.GitCommit != proj.GitCommit
 		}
 		repo.clRepo.Create(context.TODO(), &CreateChangeLogInput{
 			Version:          proj.Version,

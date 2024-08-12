@@ -60,7 +60,7 @@ func (g *gitRepo) AllProjects(ctx context.Context) ([]*GitProject, error) {
 	fn := func() (projects []*GitProject, err error) {
 		allProjects, err := g.pl.Git().AllProjects()
 		if err != nil {
-			return nil, err
+			return nil, ToError(400, err)
 		}
 		for _, gp := range allProjects {
 			projects = append(projects, &GitProject{
@@ -96,7 +96,7 @@ func (g *gitRepo) AllBranches(ctx context.Context, projectID int) ([]*Branch, er
 	fn := func() (branches []*Branch, err error) {
 		res, err := g.pl.Git().AllBranches(fmt.Sprintf("%d", projectID))
 		if err != nil {
-			return nil, err
+			return nil, ToError(400, err)
 		}
 		for _, br := range res {
 			branches = append(branches, &Branch{
@@ -125,25 +125,31 @@ func (g *gitRepo) AllBranches(ctx context.Context, projectID int) ([]*Branch, er
 }
 
 func (g *gitRepo) ListCommits(ctx context.Context, projectID int, branch string) ([]application.Commit, error) {
-	return g.pl.Git().ListCommits(fmt.Sprintf("%d", projectID), branch)
+	commits, err := g.pl.Git().ListCommits(fmt.Sprintf("%d", projectID), branch)
+	return commits, ToError(404, err)
 }
 
 func (g *gitRepo) GetProject(ctx context.Context, id int) (project application.Project, err error) {
-	return g.pl.Git().GetProject(fmt.Sprintf("%d", id))
+	getProject, err := g.pl.Git().GetProject(fmt.Sprintf("%d", id))
+	return getProject, ToError(404, err)
 }
 
 func (g *gitRepo) GetFileContentWithBranch(ctx context.Context, projectID int, branch, path string) (string, error) {
-	return g.pl.Git().GetFileContentWithBranch(fmt.Sprintf("%d", projectID), branch, path)
+	withBranch, err := g.pl.Git().GetFileContentWithBranch(fmt.Sprintf("%d", projectID), branch, path)
+	return withBranch, ToError(404, err)
 }
 
 func (g *gitRepo) GetCommit(ctx context.Context, projectID int, sha string) (application.Commit, error) {
-	return g.pl.Git().GetCommit(fmt.Sprintf("%d", projectID), sha)
+	commit, err := g.pl.Git().GetCommit(fmt.Sprintf("%d", projectID), sha)
+	return commit, ToError(404, err)
 }
 
 func (g *gitRepo) GetCommitPipeline(ctx context.Context, projectID int, branch, sha string) (application.Pipeline, error) {
-	return g.pl.Git().GetCommitPipeline(fmt.Sprintf("%d", projectID), branch, sha)
+	pipeline, err := g.pl.Git().GetCommitPipeline(fmt.Sprintf("%d", projectID), branch, sha)
+	return pipeline, ToError(404, err)
 }
 
 func (g *gitRepo) GetByProjectID(ctx context.Context, id int) (project application.Project, err error) {
-	return g.pl.Git().GetProject(fmt.Sprintf("%d", id))
+	getProject, err := g.pl.Git().GetProject(fmt.Sprintf("%d", id))
+	return getProject, ToError(404, err)
 }

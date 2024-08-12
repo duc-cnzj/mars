@@ -57,13 +57,13 @@ var (
 		{Name: "version", Type: field.TypeInt, Default: 1},
 		{Name: "username", Type: field.TypeString, Size: 100},
 		{Name: "config", Type: field.TypeString, Nullable: true},
-		{Name: "git_branch", Type: field.TypeString, Size: 255},
-		{Name: "git_commit", Type: field.TypeString, Size: 255},
+		{Name: "git_branch", Type: field.TypeString, Nullable: true},
+		{Name: "git_commit", Type: field.TypeString, Nullable: true},
 		{Name: "docker_image", Type: field.TypeJSON, Nullable: true},
 		{Name: "env_values", Type: field.TypeJSON, Nullable: true},
 		{Name: "extra_values", Type: field.TypeJSON, Nullable: true},
 		{Name: "final_extra_values", Type: field.TypeJSON, Nullable: true},
-		{Name: "git_commit_web_url", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "git_commit_web_url", Type: field.TypeString, Nullable: true},
 		{Name: "git_commit_title", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "git_commit_author", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "git_commit_date", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
@@ -144,6 +144,26 @@ var (
 			},
 		},
 	}
+	// FavoritesColumns holds the columns for the "favorites" table.
+	FavoritesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "email", Type: field.TypeString},
+		{Name: "namespace_id", Type: field.TypeInt, Nullable: true},
+	}
+	// FavoritesTable holds the schema information for the "favorites" table.
+	FavoritesTable = &schema.Table{
+		Name:       "favorites",
+		Columns:    FavoritesColumns,
+		PrimaryKey: []*schema.Column{FavoritesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "favorites_namespaces_favorites",
+				Columns:    []*schema.Column{FavoritesColumns[2]},
+				RefColumns: []*schema.Column{NamespacesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// FilesColumns holds the columns for the "files" table.
 	FilesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -191,6 +211,7 @@ var (
 		{Name: "git_branch", Type: field.TypeString, Size: 255},
 		{Name: "git_commit", Type: field.TypeString, Size: 255},
 		{Name: "config", Type: field.TypeString},
+		{Name: "creator", Type: field.TypeString},
 		{Name: "override_values", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "longtext"}},
 		{Name: "docker_image", Type: field.TypeJSON, Nullable: true},
 		{Name: "pod_selectors", Type: field.TypeJSON, Nullable: true},
@@ -217,13 +238,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "projects_namespaces_projects",
-				Columns:    []*schema.Column{ProjectsColumns[24]},
+				Columns:    []*schema.Column{ProjectsColumns[25]},
 				RefColumns: []*schema.Column{NamespacesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "projects_repos_projects",
-				Columns:    []*schema.Column{ProjectsColumns[25]},
+				Columns:    []*schema.Column{ProjectsColumns[26]},
 				RefColumns: []*schema.Column{ReposColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -264,6 +285,7 @@ var (
 		ChangelogsTable,
 		DbCacheTable,
 		EventsTable,
+		FavoritesTable,
 		FilesTable,
 		NamespacesTable,
 		ProjectsTable,
@@ -277,6 +299,7 @@ func init() {
 		Table: "db_cache",
 	}
 	EventsTable.ForeignKeys[0].RefTable = FilesTable
+	FavoritesTable.ForeignKeys[0].RefTable = NamespacesTable
 	ProjectsTable.ForeignKeys[0].RefTable = NamespacesTable
 	ProjectsTable.ForeignKeys[1].RefTable = ReposTable
 }

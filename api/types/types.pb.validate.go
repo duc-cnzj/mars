@@ -1241,6 +1241,8 @@ func (m *NamespaceModel) validate(all bool) error {
 
 	}
 
+	// no validation rules for Favorite
+
 	// no validation rules for CreatedAt
 
 	// no validation rules for UpdatedAt

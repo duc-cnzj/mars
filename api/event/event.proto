@@ -29,7 +29,7 @@ message ShowRequest {
 }
 
 message ShowResponse {
-  types.EventModel event = 1;
+  types.EventModel item = 1;
 }
 
 service Event {

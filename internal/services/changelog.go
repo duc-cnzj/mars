@@ -22,8 +22,8 @@ func NewChangelogSvc(repo repo.ChangelogRepo) changelog.ChangelogServer {
 	return &changelogSvc{repo: repo}
 }
 
-func (c *changelogSvc) Show(ctx context.Context, request *changelog.ShowRequest) (*changelog.ShowResponse, error) {
-	logs, err := c.repo.Show(ctx, &repo.ShowChangeLogInput{
+func (c *changelogSvc) FindLastChangelogsByProjectID(ctx context.Context, request *changelog.FindLastChangelogsByProjectIDRequest) (*changelog.FindLastChangelogsByProjectIDResponse, error) {
+	logs, err := c.repo.FindLastChangelogsByProjectID(ctx, &repo.FindLastChangelogsByProjectIDChangeLogInput{
 		OnlyChanged:        request.OnlyChanged,
 		ProjectID:          int(request.ProjectId),
 		OrderByVersionDesc: lo.ToPtr(true),
@@ -36,5 +36,5 @@ func (c *changelogSvc) Show(ctx context.Context, request *changelog.ShowRequest)
 		items = append(items, transformer.FromChangeLog(log))
 	}
 
-	return &changelog.ShowResponse{Items: items}, nil
+	return &changelog.FindLastChangelogsByProjectIDResponse{Items: items}, nil
 }

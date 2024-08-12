@@ -21,13 +21,13 @@ var _ reposerver.RepoServer = (*repoSvc)(nil)
 type repoSvc struct {
 	gitRepo   repo.GitRepo
 	logger    mlog.Logger
-	repoRepo  repo.RepoImp
+	repoRepo  repo.RepoRepo
 	eventRepo repo.EventRepo
 
 	reposerver.UnimplementedRepoServer
 }
 
-func NewRepoSvc(logger mlog.Logger, eventRepo repo.EventRepo, gitRepo repo.GitRepo, repoRepo repo.RepoImp) reposerver.RepoServer {
+func NewRepoSvc(logger mlog.Logger, eventRepo repo.EventRepo, gitRepo repo.GitRepo, repoRepo repo.RepoRepo) reposerver.RepoServer {
 	return &repoSvc{logger: logger, repoRepo: repoRepo, gitRepo: gitRepo, eventRepo: eventRepo}
 }
 

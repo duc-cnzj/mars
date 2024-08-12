@@ -96,6 +96,11 @@ func Config(v string) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldConfig, v))
 }
 
+// Creator applies equality check predicate on the "creator" field. It's identical to CreatorEQ.
+func Creator(v string) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldCreator, v))
+}
+
 // OverrideValues applies equality check predicate on the "override_values" field. It's identical to OverrideValuesEQ.
 func OverrideValues(v string) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldOverrideValues, v))
@@ -580,6 +585,71 @@ func ConfigEqualFold(v string) predicate.Project {
 // ConfigContainsFold applies the ContainsFold predicate on the "config" field.
 func ConfigContainsFold(v string) predicate.Project {
 	return predicate.Project(sql.FieldContainsFold(FieldConfig, v))
+}
+
+// CreatorEQ applies the EQ predicate on the "creator" field.
+func CreatorEQ(v string) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldCreator, v))
+}
+
+// CreatorNEQ applies the NEQ predicate on the "creator" field.
+func CreatorNEQ(v string) predicate.Project {
+	return predicate.Project(sql.FieldNEQ(FieldCreator, v))
+}
+
+// CreatorIn applies the In predicate on the "creator" field.
+func CreatorIn(vs ...string) predicate.Project {
+	return predicate.Project(sql.FieldIn(FieldCreator, vs...))
+}
+
+// CreatorNotIn applies the NotIn predicate on the "creator" field.
+func CreatorNotIn(vs ...string) predicate.Project {
+	return predicate.Project(sql.FieldNotIn(FieldCreator, vs...))
+}
+
+// CreatorGT applies the GT predicate on the "creator" field.
+func CreatorGT(v string) predicate.Project {
+	return predicate.Project(sql.FieldGT(FieldCreator, v))
+}
+
+// CreatorGTE applies the GTE predicate on the "creator" field.
+func CreatorGTE(v string) predicate.Project {
+	return predicate.Project(sql.FieldGTE(FieldCreator, v))
+}
+
+// CreatorLT applies the LT predicate on the "creator" field.
+func CreatorLT(v string) predicate.Project {
+	return predicate.Project(sql.FieldLT(FieldCreator, v))
+}
+
+// CreatorLTE applies the LTE predicate on the "creator" field.
+func CreatorLTE(v string) predicate.Project {
+	return predicate.Project(sql.FieldLTE(FieldCreator, v))
+}
+
+// CreatorContains applies the Contains predicate on the "creator" field.
+func CreatorContains(v string) predicate.Project {
+	return predicate.Project(sql.FieldContains(FieldCreator, v))
+}
+
+// CreatorHasPrefix applies the HasPrefix predicate on the "creator" field.
+func CreatorHasPrefix(v string) predicate.Project {
+	return predicate.Project(sql.FieldHasPrefix(FieldCreator, v))
+}
+
+// CreatorHasSuffix applies the HasSuffix predicate on the "creator" field.
+func CreatorHasSuffix(v string) predicate.Project {
+	return predicate.Project(sql.FieldHasSuffix(FieldCreator, v))
+}
+
+// CreatorEqualFold applies the EqualFold predicate on the "creator" field.
+func CreatorEqualFold(v string) predicate.Project {
+	return predicate.Project(sql.FieldEqualFold(FieldCreator, v))
+}
+
+// CreatorContainsFold applies the ContainsFold predicate on the "creator" field.
+func CreatorContainsFold(v string) predicate.Project {
+	return predicate.Project(sql.FieldContainsFold(FieldCreator, v))
 }
 
 // OverrideValuesEQ applies the EQ predicate on the "override_values" field.

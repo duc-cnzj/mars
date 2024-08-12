@@ -38,6 +38,8 @@ type Project struct {
 	GitCommit string `json:"git_commit,omitempty"`
 	// Config holds the value of the "config" field.
 	Config string `json:"config,omitempty"`
+	// Creator holds the value of the "creator" field.
+	Creator string `json:"creator,omitempty"`
 	// OverrideValues holds the value of the "override_values" field.
 	OverrideValues string `json:"override_values,omitempty"`
 	// docker 镜像
@@ -133,7 +135,7 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case project.FieldID, project.FieldGitProjectID, project.FieldDeployStatus, project.FieldVersion, project.FieldNamespaceID, project.FieldRepoID:
 			values[i] = new(sql.NullInt64)
-		case project.FieldName, project.FieldGitBranch, project.FieldGitCommit, project.FieldConfig, project.FieldOverrideValues, project.FieldConfigType, project.FieldGitCommitWebURL, project.FieldGitCommitTitle, project.FieldGitCommitAuthor:
+		case project.FieldName, project.FieldGitBranch, project.FieldGitCommit, project.FieldConfig, project.FieldCreator, project.FieldOverrideValues, project.FieldConfigType, project.FieldGitCommitWebURL, project.FieldGitCommitTitle, project.FieldGitCommitAuthor:
 			values[i] = new(sql.NullString)
 		case project.FieldCreatedAt, project.FieldUpdatedAt, project.FieldDeletedAt, project.FieldGitCommitDate:
 			values[i] = new(sql.NullTime)
@@ -206,6 +208,12 @@ func (pr *Project) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field config", values[i])
 			} else if value.Valid {
 				pr.Config = value.String
+			}
+		case project.FieldCreator:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field creator", values[i])
+			} else if value.Valid {
+				pr.Creator = value.String
 			}
 		case project.FieldOverrideValues:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -398,6 +406,9 @@ func (pr *Project) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("config=")
 	builder.WriteString(pr.Config)
+	builder.WriteString(", ")
+	builder.WriteString("creator=")
+	builder.WriteString(pr.Creator)
 	builder.WriteString(", ")
 	builder.WriteString("override_values=")
 	builder.WriteString(pr.OverrideValues)

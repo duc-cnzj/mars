@@ -19,6 +19,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
 	"github.com/duc-cnzj/mars/v4/internal/ent/dbcache"
 	"github.com/duc-cnzj/mars/v4/internal/ent/event"
+	"github.com/duc-cnzj/mars/v4/internal/ent/favorite"
 	"github.com/duc-cnzj/mars/v4/internal/ent/file"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
@@ -41,6 +42,7 @@ const (
 	TypeChangelog   = "Changelog"
 	TypeDBCache     = "DBCache"
 	TypeEvent       = "Event"
+	TypeFavorite    = "Favorite"
 	TypeFile        = "File"
 	TypeNamespace   = "Namespace"
 	TypeProject     = "Project"
@@ -1767,9 +1769,22 @@ func (m *ChangelogMutation) OldGitBranch(ctx context.Context) (v string, err err
 	return oldValue.GitBranch, nil
 }
 
+// ClearGitBranch clears the value of the "git_branch" field.
+func (m *ChangelogMutation) ClearGitBranch() {
+	m.git_branch = nil
+	m.clearedFields[changelog.FieldGitBranch] = struct{}{}
+}
+
+// GitBranchCleared returns if the "git_branch" field was cleared in this mutation.
+func (m *ChangelogMutation) GitBranchCleared() bool {
+	_, ok := m.clearedFields[changelog.FieldGitBranch]
+	return ok
+}
+
 // ResetGitBranch resets all changes to the "git_branch" field.
 func (m *ChangelogMutation) ResetGitBranch() {
 	m.git_branch = nil
+	delete(m.clearedFields, changelog.FieldGitBranch)
 }
 
 // SetGitCommit sets the "git_commit" field.
@@ -1803,9 +1818,22 @@ func (m *ChangelogMutation) OldGitCommit(ctx context.Context) (v string, err err
 	return oldValue.GitCommit, nil
 }
 
+// ClearGitCommit clears the value of the "git_commit" field.
+func (m *ChangelogMutation) ClearGitCommit() {
+	m.git_commit = nil
+	m.clearedFields[changelog.FieldGitCommit] = struct{}{}
+}
+
+// GitCommitCleared returns if the "git_commit" field was cleared in this mutation.
+func (m *ChangelogMutation) GitCommitCleared() bool {
+	_, ok := m.clearedFields[changelog.FieldGitCommit]
+	return ok
+}
+
 // ResetGitCommit resets all changes to the "git_commit" field.
 func (m *ChangelogMutation) ResetGitCommit() {
 	m.git_commit = nil
+	delete(m.clearedFields, changelog.FieldGitCommit)
 }
 
 // SetDockerImage sets the "docker_image" field.
@@ -2740,6 +2768,12 @@ func (m *ChangelogMutation) ClearedFields() []string {
 	if m.FieldCleared(changelog.FieldConfig) {
 		fields = append(fields, changelog.FieldConfig)
 	}
+	if m.FieldCleared(changelog.FieldGitBranch) {
+		fields = append(fields, changelog.FieldGitBranch)
+	}
+	if m.FieldCleared(changelog.FieldGitCommit) {
+		fields = append(fields, changelog.FieldGitCommit)
+	}
 	if m.FieldCleared(changelog.FieldDockerImage) {
 		fields = append(fields, changelog.FieldDockerImage)
 	}
@@ -2786,6 +2820,12 @@ func (m *ChangelogMutation) ClearField(name string) error {
 		return nil
 	case changelog.FieldConfig:
 		m.ClearConfig()
+		return nil
+	case changelog.FieldGitBranch:
+		m.ClearGitBranch()
+		return nil
+	case changelog.FieldGitCommit:
+		m.ClearGitCommit()
 		return nil
 	case changelog.FieldDockerImage:
 		m.ClearDockerImage()
@@ -4372,6 +4412,465 @@ func (m *EventMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Event edge %s", name)
 }
 
+// FavoriteMutation represents an operation that mutates the Favorite nodes in the graph.
+type FavoriteMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *int
+	email            *string
+	clearedFields    map[string]struct{}
+	namespace        *int
+	clearednamespace bool
+	done             bool
+	oldValue         func(context.Context) (*Favorite, error)
+	predicates       []predicate.Favorite
+}
+
+var _ ent.Mutation = (*FavoriteMutation)(nil)
+
+// favoriteOption allows management of the mutation configuration using functional options.
+type favoriteOption func(*FavoriteMutation)
+
+// newFavoriteMutation creates new mutation for the Favorite entity.
+func newFavoriteMutation(c config, op Op, opts ...favoriteOption) *FavoriteMutation {
+	m := &FavoriteMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFavorite,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFavoriteID sets the ID field of the mutation.
+func withFavoriteID(id int) favoriteOption {
+	return func(m *FavoriteMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Favorite
+		)
+		m.oldValue = func(ctx context.Context) (*Favorite, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Favorite.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFavorite sets the old Favorite of the mutation.
+func withFavorite(node *Favorite) favoriteOption {
+	return func(m *FavoriteMutation) {
+		m.oldValue = func(context.Context) (*Favorite, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FavoriteMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FavoriteMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FavoriteMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FavoriteMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Favorite.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetEmail sets the "email" field.
+func (m *FavoriteMutation) SetEmail(s string) {
+	m.email = &s
+}
+
+// Email returns the value of the "email" field in the mutation.
+func (m *FavoriteMutation) Email() (r string, exists bool) {
+	v := m.email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEmail returns the old "email" field's value of the Favorite entity.
+// If the Favorite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FavoriteMutation) OldEmail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmail: %w", err)
+	}
+	return oldValue.Email, nil
+}
+
+// ResetEmail resets all changes to the "email" field.
+func (m *FavoriteMutation) ResetEmail() {
+	m.email = nil
+}
+
+// SetNamespaceID sets the "namespace_id" field.
+func (m *FavoriteMutation) SetNamespaceID(i int) {
+	m.namespace = &i
+}
+
+// NamespaceID returns the value of the "namespace_id" field in the mutation.
+func (m *FavoriteMutation) NamespaceID() (r int, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespaceID returns the old "namespace_id" field's value of the Favorite entity.
+// If the Favorite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FavoriteMutation) OldNamespaceID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespaceID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespaceID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespaceID: %w", err)
+	}
+	return oldValue.NamespaceID, nil
+}
+
+// ClearNamespaceID clears the value of the "namespace_id" field.
+func (m *FavoriteMutation) ClearNamespaceID() {
+	m.namespace = nil
+	m.clearedFields[favorite.FieldNamespaceID] = struct{}{}
+}
+
+// NamespaceIDCleared returns if the "namespace_id" field was cleared in this mutation.
+func (m *FavoriteMutation) NamespaceIDCleared() bool {
+	_, ok := m.clearedFields[favorite.FieldNamespaceID]
+	return ok
+}
+
+// ResetNamespaceID resets all changes to the "namespace_id" field.
+func (m *FavoriteMutation) ResetNamespaceID() {
+	m.namespace = nil
+	delete(m.clearedFields, favorite.FieldNamespaceID)
+}
+
+// ClearNamespace clears the "namespace" edge to the Namespace entity.
+func (m *FavoriteMutation) ClearNamespace() {
+	m.clearednamespace = true
+	m.clearedFields[favorite.FieldNamespaceID] = struct{}{}
+}
+
+// NamespaceCleared reports if the "namespace" edge to the Namespace entity was cleared.
+func (m *FavoriteMutation) NamespaceCleared() bool {
+	return m.NamespaceIDCleared() || m.clearednamespace
+}
+
+// NamespaceIDs returns the "namespace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// NamespaceID instead. It exists only for internal usage by the builders.
+func (m *FavoriteMutation) NamespaceIDs() (ids []int) {
+	if id := m.namespace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetNamespace resets all changes to the "namespace" edge.
+func (m *FavoriteMutation) ResetNamespace() {
+	m.namespace = nil
+	m.clearednamespace = false
+}
+
+// Where appends a list predicates to the FavoriteMutation builder.
+func (m *FavoriteMutation) Where(ps ...predicate.Favorite) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FavoriteMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FavoriteMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Favorite, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FavoriteMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FavoriteMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Favorite).
+func (m *FavoriteMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FavoriteMutation) Fields() []string {
+	fields := make([]string, 0, 2)
+	if m.email != nil {
+		fields = append(fields, favorite.FieldEmail)
+	}
+	if m.namespace != nil {
+		fields = append(fields, favorite.FieldNamespaceID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FavoriteMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case favorite.FieldEmail:
+		return m.Email()
+	case favorite.FieldNamespaceID:
+		return m.NamespaceID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FavoriteMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case favorite.FieldEmail:
+		return m.OldEmail(ctx)
+	case favorite.FieldNamespaceID:
+		return m.OldNamespaceID(ctx)
+	}
+	return nil, fmt.Errorf("unknown Favorite field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FavoriteMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case favorite.FieldEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmail(v)
+		return nil
+	case favorite.FieldNamespaceID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespaceID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Favorite field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FavoriteMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FavoriteMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FavoriteMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Favorite numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FavoriteMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(favorite.FieldNamespaceID) {
+		fields = append(fields, favorite.FieldNamespaceID)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FavoriteMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FavoriteMutation) ClearField(name string) error {
+	switch name {
+	case favorite.FieldNamespaceID:
+		m.ClearNamespaceID()
+		return nil
+	}
+	return fmt.Errorf("unknown Favorite nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FavoriteMutation) ResetField(name string) error {
+	switch name {
+	case favorite.FieldEmail:
+		m.ResetEmail()
+		return nil
+	case favorite.FieldNamespaceID:
+		m.ResetNamespaceID()
+		return nil
+	}
+	return fmt.Errorf("unknown Favorite field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FavoriteMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.namespace != nil {
+		edges = append(edges, favorite.EdgeNamespace)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FavoriteMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case favorite.EdgeNamespace:
+		if id := m.namespace; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FavoriteMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FavoriteMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FavoriteMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearednamespace {
+		edges = append(edges, favorite.EdgeNamespace)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FavoriteMutation) EdgeCleared(name string) bool {
+	switch name {
+	case favorite.EdgeNamespace:
+		return m.clearednamespace
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FavoriteMutation) ClearEdge(name string) error {
+	switch name {
+	case favorite.EdgeNamespace:
+		m.ClearNamespace()
+		return nil
+	}
+	return fmt.Errorf("unknown Favorite unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FavoriteMutation) ResetEdge(name string) error {
+	switch name {
+	case favorite.EdgeNamespace:
+		m.ResetNamespace()
+		return nil
+	}
+	return fmt.Errorf("unknown Favorite edge %s", name)
+}
+
 // FileMutation represents an operation that mutates the File nodes in the graph.
 type FileMutation struct {
 	config
@@ -5405,6 +5904,9 @@ type NamespaceMutation struct {
 	projects                 map[int]struct{}
 	removedprojects          map[int]struct{}
 	clearedprojects          bool
+	favorites                map[int]struct{}
+	removedfavorites         map[int]struct{}
+	clearedfavorites         bool
 	done                     bool
 	oldValue                 func(context.Context) (*Namespace, error)
 	predicates               []predicate.Namespace
@@ -5770,6 +6272,60 @@ func (m *NamespaceMutation) ResetProjects() {
 	m.removedprojects = nil
 }
 
+// AddFavoriteIDs adds the "favorites" edge to the Favorite entity by ids.
+func (m *NamespaceMutation) AddFavoriteIDs(ids ...int) {
+	if m.favorites == nil {
+		m.favorites = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.favorites[ids[i]] = struct{}{}
+	}
+}
+
+// ClearFavorites clears the "favorites" edge to the Favorite entity.
+func (m *NamespaceMutation) ClearFavorites() {
+	m.clearedfavorites = true
+}
+
+// FavoritesCleared reports if the "favorites" edge to the Favorite entity was cleared.
+func (m *NamespaceMutation) FavoritesCleared() bool {
+	return m.clearedfavorites
+}
+
+// RemoveFavoriteIDs removes the "favorites" edge to the Favorite entity by IDs.
+func (m *NamespaceMutation) RemoveFavoriteIDs(ids ...int) {
+	if m.removedfavorites == nil {
+		m.removedfavorites = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.favorites, ids[i])
+		m.removedfavorites[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedFavorites returns the removed IDs of the "favorites" edge to the Favorite entity.
+func (m *NamespaceMutation) RemovedFavoritesIDs() (ids []int) {
+	for id := range m.removedfavorites {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// FavoritesIDs returns the "favorites" edge IDs in the mutation.
+func (m *NamespaceMutation) FavoritesIDs() (ids []int) {
+	for id := range m.favorites {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetFavorites resets all changes to the "favorites" edge.
+func (m *NamespaceMutation) ResetFavorites() {
+	m.favorites = nil
+	m.clearedfavorites = false
+	m.removedfavorites = nil
+}
+
 // Where appends a list predicates to the NamespaceMutation builder.
 func (m *NamespaceMutation) Where(ps ...predicate.Namespace) {
 	m.predicates = append(m.predicates, ps...)
@@ -5980,9 +6536,12 @@ func (m *NamespaceMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *NamespaceMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.projects != nil {
 		edges = append(edges, namespace.EdgeProjects)
+	}
+	if m.favorites != nil {
+		edges = append(edges, namespace.EdgeFavorites)
 	}
 	return edges
 }
@@ -5997,15 +6556,24 @@ func (m *NamespaceMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case namespace.EdgeFavorites:
+		ids := make([]ent.Value, 0, len(m.favorites))
+		for id := range m.favorites {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *NamespaceMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedprojects != nil {
 		edges = append(edges, namespace.EdgeProjects)
+	}
+	if m.removedfavorites != nil {
+		edges = append(edges, namespace.EdgeFavorites)
 	}
 	return edges
 }
@@ -6020,15 +6588,24 @@ func (m *NamespaceMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case namespace.EdgeFavorites:
+		ids := make([]ent.Value, 0, len(m.removedfavorites))
+		for id := range m.removedfavorites {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *NamespaceMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedprojects {
 		edges = append(edges, namespace.EdgeProjects)
+	}
+	if m.clearedfavorites {
+		edges = append(edges, namespace.EdgeFavorites)
 	}
 	return edges
 }
@@ -6039,6 +6616,8 @@ func (m *NamespaceMutation) EdgeCleared(name string) bool {
 	switch name {
 	case namespace.EdgeProjects:
 		return m.clearedprojects
+	case namespace.EdgeFavorites:
+		return m.clearedfavorites
 	}
 	return false
 }
@@ -6057,6 +6636,9 @@ func (m *NamespaceMutation) ResetEdge(name string) error {
 	switch name {
 	case namespace.EdgeProjects:
 		m.ResetProjects()
+		return nil
+	case namespace.EdgeFavorites:
+		m.ResetFavorites()
 		return nil
 	}
 	return fmt.Errorf("unknown Namespace edge %s", name)
@@ -6077,6 +6659,7 @@ type ProjectMutation struct {
 	git_branch               *string
 	git_commit               *string
 	_config                  *string
+	creator                  *string
 	override_values          *string
 	docker_image             *[]string
 	appenddocker_image       []string
@@ -6530,6 +7113,42 @@ func (m *ProjectMutation) OldConfig(ctx context.Context) (v string, err error) {
 // ResetConfig resets all changes to the "config" field.
 func (m *ProjectMutation) ResetConfig() {
 	m._config = nil
+}
+
+// SetCreator sets the "creator" field.
+func (m *ProjectMutation) SetCreator(s string) {
+	m.creator = &s
+}
+
+// Creator returns the value of the "creator" field in the mutation.
+func (m *ProjectMutation) Creator() (r string, exists bool) {
+	v := m.creator
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreator returns the old "creator" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldCreator(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreator is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreator requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreator: %w", err)
+	}
+	return oldValue.Creator, nil
+}
+
+// ResetCreator resets all changes to the "creator" field.
+func (m *ProjectMutation) ResetCreator() {
+	m.creator = nil
 }
 
 // SetOverrideValues sets the "override_values" field.
@@ -7565,7 +8184,7 @@ func (m *ProjectMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectMutation) Fields() []string {
-	fields := make([]string, 0, 25)
+	fields := make([]string, 0, 26)
 	if m.created_at != nil {
 		fields = append(fields, project.FieldCreatedAt)
 	}
@@ -7589,6 +8208,9 @@ func (m *ProjectMutation) Fields() []string {
 	}
 	if m._config != nil {
 		fields = append(fields, project.FieldConfig)
+	}
+	if m.creator != nil {
+		fields = append(fields, project.FieldCreator)
 	}
 	if m.override_values != nil {
 		fields = append(fields, project.FieldOverrideValues)
@@ -7665,6 +8287,8 @@ func (m *ProjectMutation) Field(name string) (ent.Value, bool) {
 		return m.GitCommit()
 	case project.FieldConfig:
 		return m.Config()
+	case project.FieldCreator:
+		return m.Creator()
 	case project.FieldOverrideValues:
 		return m.OverrideValues()
 	case project.FieldDockerImage:
@@ -7724,6 +8348,8 @@ func (m *ProjectMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldGitCommit(ctx)
 	case project.FieldConfig:
 		return m.OldConfig(ctx)
+	case project.FieldCreator:
+		return m.OldCreator(ctx)
 	case project.FieldOverrideValues:
 		return m.OldOverrideValues(ctx)
 	case project.FieldDockerImage:
@@ -7822,6 +8448,13 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetConfig(v)
+		return nil
+	case project.FieldCreator:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreator(v)
 		return nil
 	case project.FieldOverrideValues:
 		v, ok := value.(string)
@@ -8128,6 +8761,9 @@ func (m *ProjectMutation) ResetField(name string) error {
 		return nil
 	case project.FieldConfig:
 		m.ResetConfig()
+		return nil
+	case project.FieldCreator:
+		m.ResetCreator()
 		return nil
 	case project.FieldOverrideValues:
 		m.ResetOverrideValues()

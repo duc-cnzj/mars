@@ -16,7 +16,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/socket"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/util"
-	"github.com/duc-cnzj/mars/v4/internal/util/mars"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"github.com/samber/lo"
 	v1 "k8s.io/api/core/v1"
@@ -38,11 +37,11 @@ type projectSvc struct {
 	helmer     repo.HelmerRepo
 	nsRepo     repo.NamespaceRepo
 	toolRepo   repo.ToolRepo
-	repoRepo   repo.RepoImp
+	repoRepo   repo.RepoRepo
 }
 
 func NewProjectSvc(
-	repoRepo repo.RepoImp,
+	repoRepo repo.RepoRepo,
 	jobManager socket.JobManager,
 	projRepo repo.ProjectRepo,
 	wsRepo repo.WsRepo,
@@ -247,16 +246,12 @@ func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 	return &project.DeleteResponse{}, nil
 }
 
-var GetProjectMarsConfig = mars.GetProjectConfig
-
 func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*project.ShowResponse, error) {
 	projectModel, err := p.projRepo.Show(ctx, int(request.Id))
 	if err != nil {
 		return nil, err
 	}
-	marsC, _ := GetProjectMarsConfig(projectModel.GitProjectID, projectModel.GitBranch)
 	cpu, memory := p.k8sRepo.GetCpuAndMemory(p.k8sRepo.GetAllPodMetrics(projectModel))
-
 	nodePortMapping := p.projRepo.GetNodePortMappingByProjects(projectModel.Namespace.Name, projectModel)
 	ingMapping := p.projRepo.GetIngressMappingByProjects(projectModel.Namespace.Name, projectModel)
 	lbMapping := p.projRepo.GetLoadBalancerMappingByProjects(projectModel.Namespace.Name, projectModel)
@@ -267,11 +262,10 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 	urls = append(urls, lbMapping.Get(projectModel.Name)...)
 
 	return &project.ShowResponse{
-		Item:     transformer.FromProject(projectModel),
-		Urls:     urls,
-		Cpu:      cpu,
-		Memory:   memory,
-		Elements: marsC.Elements,
+		Item:   transformer.FromProject(projectModel),
+		Urls:   urls,
+		Cpu:    cpu,
+		Memory: memory,
 	}, nil
 }
 
@@ -326,24 +320,6 @@ func isContainerReady(pod *v1.Pod, containerName string) bool {
 		}
 	}
 	return false
-}
-
-func (p *projectSvc) HostVariables(ctx context.Context, req *project.HostVariablesRequest) (*project.HostVariablesResponse, error) {
-	marsC, err := GetProjectMarsConfig(req.GitProjectId, req.GitBranch)
-	if err != nil {
-		return nil, err
-	}
-	if req.ProjectName == "" {
-		req.ProjectName = mars.GetProjectName(fmt.Sprintf("%d", req.GitProjectId), marsC)
-	}
-
-	sub := p.toolRepo.GetPreOccupiedLenByValuesYaml(marsC.ValuesYaml)
-	hosts := make(map[string]string)
-	for i := 1; i <= 10; i++ {
-		hosts[fmt.Sprintf("%s%d", socket.VarHost, i)] = p.dm.GetDomainByIndex(req.ProjectName, p.nsRepo.GetMarsNamespace(req.Namespace), i, sub)
-	}
-
-	return &project.HostVariablesResponse{Hosts: hosts}, nil
 }
 
 var _ socket.DeployMsger = (*emptyMessager)(nil)

@@ -38,9 +38,11 @@ type Namespace struct {
 type NamespaceEdges struct {
 	// Projects holds the value of the projects edge.
 	Projects []*Project `json:"projects,omitempty"`
+	// Favorites holds the value of the favorites edge.
+	Favorites []*Favorite `json:"favorites,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // ProjectsOrErr returns the Projects value or an error if the edge
@@ -50,6 +52,15 @@ func (e NamespaceEdges) ProjectsOrErr() ([]*Project, error) {
 		return e.Projects, nil
 	}
 	return nil, &NotLoadedError{edge: "projects"}
+}
+
+// FavoritesOrErr returns the Favorites value or an error if the edge
+// was not loaded in eager-loading.
+func (e NamespaceEdges) FavoritesOrErr() ([]*Favorite, error) {
+	if e.loadedTypes[1] {
+		return e.Favorites, nil
+	}
+	return nil, &NotLoadedError{edge: "favorites"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -135,6 +146,11 @@ func (n *Namespace) Value(name string) (ent.Value, error) {
 // QueryProjects queries the "projects" edge of the Namespace entity.
 func (n *Namespace) QueryProjects() *ProjectQuery {
 	return NewNamespaceClient(n.config).QueryProjects(n)
+}
+
+// QueryFavorites queries the "favorites" edge of the Namespace entity.
+func (n *Namespace) QueryFavorites() *FavoriteQuery {
+	return NewNamespaceClient(n.config).QueryFavorites(n)
 }
 
 // Update returns a builder for updating this Namespace.

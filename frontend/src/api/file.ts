@@ -1,6 +1,5 @@
 import { message } from "antd";
 import ajax from "./ajax";
-import pb from "./compiled";
 
 export function downloadFile(id: number) {
   return download(`/api/download_file/${id}`);

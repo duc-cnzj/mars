@@ -4,11 +4,10 @@ import (
 	"context"
 	"time"
 
-	repo2 "github.com/duc-cnzj/mars/v4/internal/ent/repo"
-
 	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
 	"github.com/duc-cnzj/mars/v4/internal/filters"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
@@ -41,7 +40,7 @@ func (r *Repo) GetMarsConfig() (cfg *mars.Config) {
 	return
 }
 
-type RepoImp interface {
+type RepoRepo interface {
 	All(ctx context.Context, in *AllRepoRequest) ([]*Repo, error)
 	List(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error)
 	Show(ctx context.Context, id int) (*Repo, error)
@@ -50,19 +49,29 @@ type RepoImp interface {
 	Update(ctx context.Context, in *UpdateRepoInput) (*Repo, error)
 }
 
-var _ RepoImp = (*repo)(nil)
+var _ RepoRepo = (*repoImpl)(nil)
 
-type repo struct {
+type repoImpl struct {
 	logger mlog.Logger
 	data   data.Data
 
 	gitRepo GitRepo
 }
 
-func (r *repo) All(ctx context.Context, in *AllRepoRequest) ([]*Repo, error) {
+func NewRepo(logger mlog.Logger, data data.Data, gitRepo GitRepo) RepoRepo {
+	return &repoImpl{logger: logger, data: data, gitRepo: gitRepo}
+}
+
+type AllRepoRequest struct {
+	NeedGitRepo   *bool
+	Enabled       *bool
+	OrderByIDDesc *bool
+}
+
+func (r *repoImpl) All(ctx context.Context, in *AllRepoRequest) ([]*Repo, error) {
 	query := r.data.DB().Repo.Query().Where(
 		filters.IfEnabled(in.Enabled),
-		filters.IfBool(repo2.FieldNeedGitRepo)(in.NeedGitRepo),
+		filters.IfBool(repo.FieldNeedGitRepo)(in.NeedGitRepo),
 	)
 	all, err := query.All(ctx)
 	if err != nil {
@@ -71,15 +80,6 @@ func (r *repo) All(ctx context.Context, in *AllRepoRequest) ([]*Repo, error) {
 	return serialize.Serialize(all, ToRepo), nil
 }
 
-func NewRepo(logger mlog.Logger, data data.Data, gitRepo GitRepo) RepoImp {
-	return &repo{logger: logger, data: data, gitRepo: gitRepo}
-}
-
-type AllRepoRequest struct {
-	NeedGitRepo   *bool
-	Enabled       *bool
-	OrderByIDDesc *bool
-}
 type ListRepoRequest struct {
 	Page, PageSize int32
 	Enabled        *bool
@@ -87,7 +87,7 @@ type ListRepoRequest struct {
 	Name           string
 }
 
-func (r *repo) List(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error) {
+func (r *repoImpl) List(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error) {
 	query := r.data.DB().Repo.Query().Where(
 		filters.IfOrderByIDDesc(in.OrderByIDDesc),
 		filters.IfEnabled(in.Enabled),
@@ -114,7 +114,7 @@ type CreateRepoInput struct {
 	Description  string
 }
 
-func (r *repo) Create(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
+func (r *repoImpl) Create(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
 	var (
 		projName      *string
 		defaultBranch *string
@@ -123,7 +123,7 @@ func (r *repo) Create(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
 	if !in.NeedGitRepo {
 		in.GitProjectID = nil
 	} else {
-		projName, defaultBranch, err = r.GetProjNameAndBranch(ctx, int(*in.GitProjectID))
+		projName, defaultBranch, err = r.GetProjNameAndBranch(ctx, int(lo.FromPtr(in.GitProjectID)))
 		if err != nil {
 			return nil, err
 		}
@@ -143,7 +143,7 @@ func (r *repo) Create(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
 	return ToRepo(save), err
 }
 
-func (r *repo) Show(ctx context.Context, id int) (*Repo, error) {
+func (r *repoImpl) Show(ctx context.Context, id int) (*Repo, error) {
 	get, err := r.data.DB().Repo.Get(ctx, id)
 	return ToRepo(get), err
 }
@@ -157,7 +157,7 @@ type UpdateRepoInput struct {
 	Description  string
 }
 
-func (r *repo) Update(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+func (r *repoImpl) Update(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
 	var (
 		projName      *string
 		defaultBranch *string
@@ -186,7 +186,7 @@ func (r *repo) Update(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
 	return ToRepo(save), err
 }
 
-func (r *repo) GetProjNameAndBranch(ctx context.Context, projID int) (*string, *string, error) {
+func (r *repoImpl) GetProjNameAndBranch(ctx context.Context, projID int) (*string, *string, error) {
 	var (
 		defaultBranch *string
 		projName      *string
@@ -201,7 +201,7 @@ func (r *repo) GetProjNameAndBranch(ctx context.Context, projID int) (*string, *
 	return projName, defaultBranch, nil
 }
 
-func (r *repo) ToggleEnabled(ctx context.Context, id int, enabled bool) (*Repo, error) {
+func (r *repoImpl) ToggleEnabled(ctx context.Context, id int, enabled bool) (*Repo, error) {
 	get, err := r.data.DB().Repo.Get(ctx, id)
 	if err != nil {
 		return nil, err

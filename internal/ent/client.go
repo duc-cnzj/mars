@@ -20,6 +20,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
 	"github.com/duc-cnzj/mars/v4/internal/ent/dbcache"
 	"github.com/duc-cnzj/mars/v4/internal/ent/event"
+	"github.com/duc-cnzj/mars/v4/internal/ent/favorite"
 	"github.com/duc-cnzj/mars/v4/internal/ent/file"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
@@ -41,6 +42,8 @@ type Client struct {
 	DBCache *DBCacheClient
 	// Event is the client for interacting with the Event builders.
 	Event *EventClient
+	// Favorite is the client for interacting with the Favorite builders.
+	Favorite *FavoriteClient
 	// File is the client for interacting with the File builders.
 	File *FileClient
 	// Namespace is the client for interacting with the Namespace builders.
@@ -65,6 +68,7 @@ func (c *Client) init() {
 	c.Changelog = NewChangelogClient(c.config)
 	c.DBCache = NewDBCacheClient(c.config)
 	c.Event = NewEventClient(c.config)
+	c.Favorite = NewFavoriteClient(c.config)
 	c.File = NewFileClient(c.config)
 	c.Namespace = NewNamespaceClient(c.config)
 	c.Project = NewProjectClient(c.config)
@@ -166,6 +170,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Changelog:   NewChangelogClient(cfg),
 		DBCache:     NewDBCacheClient(cfg),
 		Event:       NewEventClient(cfg),
+		Favorite:    NewFavoriteClient(cfg),
 		File:        NewFileClient(cfg),
 		Namespace:   NewNamespaceClient(cfg),
 		Project:     NewProjectClient(cfg),
@@ -194,6 +199,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Changelog:   NewChangelogClient(cfg),
 		DBCache:     NewDBCacheClient(cfg),
 		Event:       NewEventClient(cfg),
+		Favorite:    NewFavoriteClient(cfg),
 		File:        NewFileClient(cfg),
 		Namespace:   NewNamespaceClient(cfg),
 		Project:     NewProjectClient(cfg),
@@ -227,7 +233,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.AccessToken, c.CacheLock, c.Changelog, c.DBCache, c.Event, c.File,
+		c.AccessToken, c.CacheLock, c.Changelog, c.DBCache, c.Event, c.Favorite, c.File,
 		c.Namespace, c.Project, c.Repo,
 	} {
 		n.Use(hooks...)
@@ -238,7 +244,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.AccessToken, c.CacheLock, c.Changelog, c.DBCache, c.Event, c.File,
+		c.AccessToken, c.CacheLock, c.Changelog, c.DBCache, c.Event, c.Favorite, c.File,
 		c.Namespace, c.Project, c.Repo,
 	} {
 		n.Intercept(interceptors...)
@@ -258,6 +264,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.DBCache.mutate(ctx, m)
 	case *EventMutation:
 		return c.Event.mutate(ctx, m)
+	case *FavoriteMutation:
+		return c.Favorite.mutate(ctx, m)
 	case *FileMutation:
 		return c.File.mutate(ctx, m)
 	case *NamespaceMutation:
@@ -974,6 +982,155 @@ func (c *EventClient) mutate(ctx context.Context, m *EventMutation) (Value, erro
 	}
 }
 
+// FavoriteClient is a client for the Favorite schema.
+type FavoriteClient struct {
+	config
+}
+
+// NewFavoriteClient returns a client for the Favorite from the given config.
+func NewFavoriteClient(c config) *FavoriteClient {
+	return &FavoriteClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `favorite.Hooks(f(g(h())))`.
+func (c *FavoriteClient) Use(hooks ...Hook) {
+	c.hooks.Favorite = append(c.hooks.Favorite, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `favorite.Intercept(f(g(h())))`.
+func (c *FavoriteClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Favorite = append(c.inters.Favorite, interceptors...)
+}
+
+// Create returns a builder for creating a Favorite entity.
+func (c *FavoriteClient) Create() *FavoriteCreate {
+	mutation := newFavoriteMutation(c.config, OpCreate)
+	return &FavoriteCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Favorite entities.
+func (c *FavoriteClient) CreateBulk(builders ...*FavoriteCreate) *FavoriteCreateBulk {
+	return &FavoriteCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FavoriteClient) MapCreateBulk(slice any, setFunc func(*FavoriteCreate, int)) *FavoriteCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FavoriteCreateBulk{err: fmt.Errorf("calling to FavoriteClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FavoriteCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FavoriteCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Favorite.
+func (c *FavoriteClient) Update() *FavoriteUpdate {
+	mutation := newFavoriteMutation(c.config, OpUpdate)
+	return &FavoriteUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FavoriteClient) UpdateOne(f *Favorite) *FavoriteUpdateOne {
+	mutation := newFavoriteMutation(c.config, OpUpdateOne, withFavorite(f))
+	return &FavoriteUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FavoriteClient) UpdateOneID(id int) *FavoriteUpdateOne {
+	mutation := newFavoriteMutation(c.config, OpUpdateOne, withFavoriteID(id))
+	return &FavoriteUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Favorite.
+func (c *FavoriteClient) Delete() *FavoriteDelete {
+	mutation := newFavoriteMutation(c.config, OpDelete)
+	return &FavoriteDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FavoriteClient) DeleteOne(f *Favorite) *FavoriteDeleteOne {
+	return c.DeleteOneID(f.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FavoriteClient) DeleteOneID(id int) *FavoriteDeleteOne {
+	builder := c.Delete().Where(favorite.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FavoriteDeleteOne{builder}
+}
+
+// Query returns a query builder for Favorite.
+func (c *FavoriteClient) Query() *FavoriteQuery {
+	return &FavoriteQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFavorite},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Favorite entity by its id.
+func (c *FavoriteClient) Get(ctx context.Context, id int) (*Favorite, error) {
+	return c.Query().Where(favorite.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FavoriteClient) GetX(ctx context.Context, id int) *Favorite {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryNamespace queries the namespace edge of a Favorite.
+func (c *FavoriteClient) QueryNamespace(f *Favorite) *NamespaceQuery {
+	query := (&NamespaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := f.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(favorite.Table, favorite.FieldID, id),
+			sqlgraph.To(namespace.Table, namespace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, favorite.NamespaceTable, favorite.NamespaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(f.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *FavoriteClient) Hooks() []Hook {
+	return c.hooks.Favorite
+}
+
+// Interceptors returns the client interceptors.
+func (c *FavoriteClient) Interceptors() []Interceptor {
+	return c.inters.Favorite
+}
+
+func (c *FavoriteClient) mutate(ctx context.Context, m *FavoriteMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FavoriteCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FavoriteUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FavoriteUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FavoriteDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Favorite mutation op: %q", m.Op())
+	}
+}
+
 // FileClient is a client for the File schema.
 type FileClient struct {
 	config
@@ -1242,6 +1399,22 @@ func (c *NamespaceClient) QueryProjects(n *Namespace) *ProjectQuery {
 			sqlgraph.From(namespace.Table, namespace.FieldID, id),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, namespace.ProjectsTable, namespace.ProjectsColumn),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryFavorites queries the favorites edge of a Namespace.
+func (c *NamespaceClient) QueryFavorites(n *Namespace) *FavoriteQuery {
+	query := (&FavoriteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(namespace.Table, namespace.FieldID, id),
+			sqlgraph.To(favorite.Table, favorite.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, namespace.FavoritesTable, namespace.FavoritesColumn),
 		)
 		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil
@@ -1613,11 +1786,11 @@ func (c *RepoClient) mutate(ctx context.Context, m *RepoMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		AccessToken, CacheLock, Changelog, DBCache, Event, File, Namespace, Project,
-		Repo []ent.Hook
+		AccessToken, CacheLock, Changelog, DBCache, Event, Favorite, File, Namespace,
+		Project, Repo []ent.Hook
 	}
 	inters struct {
-		AccessToken, CacheLock, Changelog, DBCache, Event, File, Namespace, Project,
-		Repo []ent.Interceptor
+		AccessToken, CacheLock, Changelog, DBCache, Event, Favorite, File, Namespace,
+		Project, Repo []ent.Interceptor
 	}
 )

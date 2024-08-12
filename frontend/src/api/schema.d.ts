@@ -104,6 +104,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/changelogs/find_last_changelogs_by_project_id": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 查看项目改动日志 */
+    post: operations["Changelog_FindLastChangelogsByProjectID"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cluster_info": {
     parameters: {
       query?: never;
@@ -464,23 +481,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/git/projects/{gitProjectId}/branches/{branch}/config_file": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** 获取项目 mars 配置详情 */
-    get: operations["Git_MarsConfigFile"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/api/metrics/namespace/{namespaceId}/cpu_memory": {
     parameters: {
       query?: never;
@@ -556,10 +556,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** @description All 获取所有的名称空间 */
+    /** 获取所有的名称空间 */
     get: operations["Namespace_All"];
     put?: never;
-    /** @description Create 创建名称空间 */
+    /** 创建名称空间 */
     post: operations["Namespace_Create"];
     delete?: never;
     options?: never;
@@ -576,7 +576,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** @description IsExists 名称空间是否存在 */
+    /** IsExists 名称空间是否存在 */
     post: operations["Namespace_IsExists"];
     delete?: never;
     options?: never;
@@ -584,18 +584,35 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/namespaces/{namespaceId}": {
+  "/api/namespaces/favorite": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** @description Show 查看名称空间详情 */
+    get?: never;
+    put?: never;
+    /** 关注/取消关注 */
+    post: operations["Namespace_Favorite"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/namespaces/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 查看名称空间详情 */
     get: operations["Namespace_Show"];
     put?: never;
     post?: never;
-    /** @description Delete 删除名称空间 */
+    /** 删除名称空间 */
     delete: operations["Namespace_Delete"];
     options?: never;
     head?: never;
@@ -656,23 +673,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/projects/host_variables": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** @description HostVariables 获取 hosts 变量 */
-    post: operations["Project_HostVariables"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/api/projects/{id}": {
     parameters: {
       query?: never;
@@ -717,23 +717,6 @@ export interface paths {
     };
     /** @description Version 版本号, 如果不存在则返回 0 */
     get: operations["Project_Version"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/projects/{projectId}/changelogs": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** 查看项目修改的版本差异 */
-    get: operations["Changelog_Show"];
     put?: never;
     post?: never;
     delete?: never;
@@ -867,7 +850,12 @@ export interface components {
       endSessionEndpoint: string;
       state: string;
     };
-    "changelog.ShowResponse": {
+    "changelog.FindLastChangelogsByProjectIDRequest": {
+      /** Format: int32 */
+      projectId: number;
+      onlyChanged?: boolean;
+    };
+    "changelog.FindLastChangelogsByProjectIDResponse": {
       items: components["schemas"]["types.ChangelogModel"][];
     };
     "cluster.InfoResponse": {
@@ -919,7 +907,7 @@ export interface components {
       items: components["schemas"]["types.EventModel"][];
     };
     "event.ShowResponse": {
-      event: components["schemas"]["types.EventModel"];
+      item: components["schemas"]["types.EventModel"];
     };
     "file.DeleteResponse": Record<string, never>;
     "file.DiskInfoResponse": {
@@ -981,11 +969,6 @@ export interface components {
     };
     "git.GetChartValuesYamlResponse": {
       values: string;
-    };
-    "git.MarsConfigFileResponse": {
-      data: string;
-      type: string;
-      elements: components["schemas"]["mars.Element"][];
     };
     "git.Option": {
       value: string;
@@ -1085,16 +1068,22 @@ export interface components {
       ignoreIfExists?: boolean;
     };
     "namespace.CreateResponse": {
-      namespace: components["schemas"]["types.NamespaceModel"];
+      item: components["schemas"]["types.NamespaceModel"];
       exists: boolean;
     };
     "namespace.DeleteResponse": Record<string, never>;
+    "namespace.FavoriteRequest": {
+      /** Format: int32 */
+      id: number;
+      favorite?: boolean;
+    };
+    "namespace.FavoriteResponse": Record<string, never>;
     "namespace.IsExistsResponse": {
-      exists: boolean;
       id: string;
+      exists: boolean;
     };
     "namespace.ShowResponse": {
-      namespace: components["schemas"]["types.NamespaceModel"];
+      item: components["schemas"]["types.NamespaceModel"];
     };
     "picture.BackgroundResponse": {
       url: string;
@@ -1104,19 +1093,6 @@ export interface components {
       items: components["schemas"]["types.StateContainer"][];
     };
     "project.DeleteResponse": Record<string, never>;
-    "project.HostVariablesRequest": {
-      /** @description 如果不指定则使用从 git server 获取的项目名称 */
-      projectName: string;
-      namespace: string;
-      /** Format: int32 */
-      gitProjectId: number;
-      gitBranch: string;
-    };
-    "project.HostVariablesResponse": {
-      hosts: {
-        [key: string]: string | undefined;
-      };
-    };
     "project.ListResponse": {
       /** Format: int32 */
       page: number;
@@ -1131,7 +1107,6 @@ export interface components {
       urls: components["schemas"]["types.ServiceEndpoint"][];
       cpu: string;
       memory: string;
-      elements: components["schemas"]["mars.Element"][];
     };
     "project.VersionResponse": {
       /** Format: int32 */
@@ -1336,6 +1311,7 @@ export interface components {
       name: string;
       ImagePullSecrets: components["schemas"]["types.ImagePullSecret"][];
       projects: components["schemas"]["types.ProjectModel"][];
+      favorite: boolean;
       createdAt: string;
       updatedAt: string;
       deletedAt: string;
@@ -1691,6 +1667,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["auth.SettingsResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
+    };
+  };
+  Changelog_FindLastChangelogsByProjectID: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["changelog.FindLastChangelogsByProjectIDRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["changelog.FindLastChangelogsByProjectIDResponse"];
         };
       };
       /** @description Default error response */
@@ -2375,38 +2384,6 @@ export interface operations {
       };
     };
   };
-  Git_MarsConfigFile: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        gitProjectId: string;
-        branch: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["git.MarsConfigFileResponse"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["google.rpc.Status"];
-        };
-      };
-    };
-  };
   Metrics_CpuMemoryInNamespace: {
     parameters: {
       query?: never;
@@ -2535,7 +2512,9 @@ export interface operations {
   };
   Namespace_All: {
     parameters: {
-      query?: never;
+      query?: {
+        favorite?: boolean;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -2626,12 +2605,45 @@ export interface operations {
       };
     };
   };
+  Namespace_Favorite: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["namespace.FavoriteRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["namespace.FavoriteResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
+    };
+  };
   Namespace_Show: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        namespaceId: string;
+        id: string;
       };
       cookie?: never;
     };
@@ -2662,7 +2674,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        namespaceId: number;
+        id: number;
       };
       cookie?: never;
     };
@@ -2771,39 +2783,6 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["project.WebApplyResponse"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["google.rpc.Status"];
-        };
-      };
-    };
-  };
-  Project_HostVariables: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["project.HostVariablesRequest"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["project.HostVariablesResponse"];
         };
       };
       /** @description Default error response */
@@ -2928,39 +2907,6 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["project.VersionResponse"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["google.rpc.Status"];
-        };
-      };
-    };
-  };
-  Changelog_Show: {
-    parameters: {
-      query?: {
-        onlyChanged?: boolean;
-      };
-      header?: never;
-      path: {
-        projectId: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["changelog.ShowResponse"];
         };
       };
       /** @description Default error response */

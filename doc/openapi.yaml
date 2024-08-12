@@ -205,6 +205,31 @@ paths:
                                 $ref: '#/components/schemas/google.rpc.Status'
             security:
                 - {}
+    /api/changelogs/find_last_changelogs_by_project_id:
+        post:
+            tags:
+                - Changelog
+            summary: 查看项目改动日志
+            operationId: Changelog_FindLastChangelogsByProjectID
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/changelog.FindLastChangelogsByProjectIDRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/changelog.FindLastChangelogsByProjectIDResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/cluster_info:
         get:
             tags:
@@ -807,36 +832,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
-    /api/git/projects/{gitProjectId}/branches/{branch}/config_file:
-        get:
-            tags:
-                - Git
-            summary: 获取项目 mars 配置详情
-            operationId: Git_MarsConfigFile
-            parameters:
-                - name: gitProjectId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: branch
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/git.MarsConfigFileResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/google.rpc.Status'
     /api/metrics/namespace/{namespaceId}/cpu_memory:
         get:
             tags:
@@ -953,8 +948,13 @@ paths:
         get:
             tags:
                 - Namespace
-            description: All 获取所有的名称空间
+            summary: 获取所有的名称空间
             operationId: Namespace_All
+            parameters:
+                - name: favorite
+                  in: query
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -971,7 +971,7 @@ paths:
         post:
             tags:
                 - Namespace
-            description: Create 创建名称空间
+            summary: 创建名称空间
             operationId: Namespace_Create
             requestBody:
                 content:
@@ -996,7 +996,7 @@ paths:
         post:
             tags:
                 - Namespace
-            description: IsExists 名称空间是否存在
+            summary: IsExists 名称空间是否存在
             operationId: Namespace_IsExists
             parameters:
                 - name: name
@@ -1016,14 +1016,39 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
-    /api/namespaces/{namespaceId}:
+    /api/namespaces/favorite:
+        post:
+            tags:
+                - Namespace
+            summary: 关注/取消关注
+            operationId: Namespace_Favorite
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/namespace.FavoriteRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.FavoriteResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/namespaces/{id}:
         get:
             tags:
                 - Namespace
-            description: Show 查看名称空间详情
+            summary: 查看名称空间详情
             operationId: Namespace_Show
             parameters:
-                - name: namespaceId
+                - name: id
                   in: path
                   required: true
                   schema:
@@ -1044,10 +1069,10 @@ paths:
         delete:
             tags:
                 - Namespace
-            description: Delete 删除名称空间
+            summary: 删除名称空间
             operationId: Namespace_Delete
             parameters:
-                - name: namespaceId
+                - name: id
                   in: path
                   required: true
                   schema:
@@ -1142,31 +1167,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.WebApplyResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/google.rpc.Status'
-    /api/projects/host_variables:
-        post:
-            tags:
-                - Project
-            description: HostVariables 获取 hosts 变量
-            operationId: Project_HostVariables
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/project.HostVariablesRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/project.HostVariablesResponse'
                 default:
                     description: Default error response
                     content:
@@ -1270,36 +1270,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.VersionResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/google.rpc.Status'
-    /api/projects/{projectId}/changelogs:
-        get:
-            tags:
-                - Changelog
-            summary: 查看项目修改的版本差异
-            operationId: Changelog_Show
-            parameters:
-                - name: projectId
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
-                - name: onlyChanged
-                  in: query
-                  schema:
-                    type: boolean
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/changelog.ShowResponse'
                 default:
                     description: Default error response
                     content:
@@ -1568,7 +1538,17 @@ components:
                     type: string
                 state:
                     type: string
-        changelog.ShowResponse:
+        changelog.FindLastChangelogsByProjectIDRequest:
+            required:
+                - projectId
+            type: object
+            properties:
+                projectId:
+                    type: integer
+                    format: int32
+                onlyChanged:
+                    type: boolean
+        changelog.FindLastChangelogsByProjectIDResponse:
             type: object
             properties:
                 items:
@@ -1678,7 +1658,7 @@ components:
         event.ShowResponse:
             type: object
             properties:
-                event:
+                item:
                     $ref: '#/components/schemas/types.EventModel'
         file.DeleteResponse:
             type: object
@@ -1797,17 +1777,6 @@ components:
             properties:
                 values:
                     type: string
-        git.MarsConfigFileResponse:
-            type: object
-            properties:
-                data:
-                    type: string
-                type:
-                    type: string
-                elements:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/mars.Element'
         git.Option:
             type: object
             properties:
@@ -1984,24 +1953,37 @@ components:
         namespace.CreateResponse:
             type: object
             properties:
-                namespace:
+                item:
                     $ref: '#/components/schemas/types.NamespaceModel'
                 exists:
                     type: boolean
         namespace.DeleteResponse:
             type: object
             properties: {}
+        namespace.FavoriteRequest:
+            required:
+                - id
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                favorite:
+                    type: boolean
+        namespace.FavoriteResponse:
+            type: object
+            properties: {}
         namespace.IsExistsResponse:
             type: object
             properties:
-                exists:
-                    type: boolean
                 id:
                     type: string
+                exists:
+                    type: boolean
         namespace.ShowResponse:
             type: object
             properties:
-                namespace:
+                item:
                     $ref: '#/components/schemas/types.NamespaceModel'
         picture.BackgroundResponse:
             type: object
@@ -2020,26 +2002,6 @@ components:
         project.DeleteResponse:
             type: object
             properties: {}
-        project.HostVariablesRequest:
-            type: object
-            properties:
-                projectName:
-                    type: string
-                    description: 如果不指定则使用从 git server 获取的项目名称
-                namespace:
-                    type: string
-                gitProjectId:
-                    type: integer
-                    format: int32
-                gitBranch:
-                    type: string
-        project.HostVariablesResponse:
-            type: object
-            properties:
-                hosts:
-                    type: object
-                    additionalProperties:
-                        type: string
         project.ListResponse:
             type: object
             properties:
@@ -2069,10 +2031,6 @@ components:
                     type: string
                 memory:
                     type: string
-                elements:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/mars.Element'
         project.VersionResponse:
             type: object
             properties:
@@ -2463,6 +2421,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/types.ProjectModel'
+                favorite:
+                    type: boolean
                 createdAt:
                     type: string
                 updatedAt:

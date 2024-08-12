@@ -24,6 +24,7 @@ func (Namespace) Fields() []ent.Field {
 func (Namespace) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("projects", Project.Type),
+		edge.To("favorites", Favorite.Type),
 	}
 }
 

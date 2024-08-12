@@ -6,9 +6,8 @@ import (
 	"strings"
 
 	"github.com/duc-cnzj/mars/v4/internal/application"
-	"github.com/duc-cnzj/mars/v4/internal/util/hash"
-
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/util/hash"
 )
 
 var (

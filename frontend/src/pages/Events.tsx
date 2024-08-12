@@ -247,11 +247,11 @@ const EventList: React.FC = () => {
         .GET("/api/events/{id}", { params: { path: { id: id } } })
         .then(({ data }) => {
           data &&
-            data.event &&
+            data.item &&
             setConfig({
-              old: data.event.old,
-              new: data.event.new,
-              title: detail(data.event.username, data.event.message),
+              old: data.item.old,
+              new: data.item.new,
+              title: detail(data.item.username, data.item.message),
             });
           setIsWindowVisible(true);
         });

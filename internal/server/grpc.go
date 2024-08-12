@@ -97,10 +97,6 @@ func (g *grpcRunner) initServer() *grpc.Server {
 }
 
 func (g *grpcRunner) recoveryHandler(p any) error {
-	//bf := make([]byte, 1024*5)
-	//n := runtime.Stack(bf, false)
-	//bf = bf[:n]
-
 	g.app.Logger().Errorf("[Grpc]: recovery error: \n%v", p)
 	return nil
 }

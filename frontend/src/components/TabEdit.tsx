@@ -1,9 +1,9 @@
 import React, { memo } from "react";
 import { css } from "@emotion/css";
 import { components } from "../api/schema";
-import ProjectSelectorV2 from "./ProjectSelectorV2";
+import DeployProjectForm from "./DeployProjectForm";
 
-const ModalSub: React.FC<{
+const EditProject: React.FC<{
   namespaceId: number;
   detail: components["schemas"]["types.ProjectModel"];
   onSuccess: () => void;
@@ -20,7 +20,7 @@ const ModalSub: React.FC<{
         }
       `}
     >
-      <ProjectSelectorV2
+      <DeployProjectForm
         onSuccess={onSuccess}
         isEdit
         namespaceId={namespaceId}
@@ -29,4 +29,4 @@ const ModalSub: React.FC<{
     </div>
   );
 };
-export default memo(ModalSub);
+export default memo(EditProject);

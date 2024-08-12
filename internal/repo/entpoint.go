@@ -3,14 +3,13 @@ package repo
 import (
 	"context"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
-
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 )
 
 type EndpointRepo interface {
@@ -43,7 +42,7 @@ func (repo *endpointRepo) InProject(ctx context.Context, projectID int) (res []*
 		Where(project.ID(projectID)).
 		First(ctx)
 	if err != nil {
-		return nil, err
+		return nil, ToError(404, err)
 	}
 	repo.logger.Warning("InProject", "first", first)
 	nodePortMapping := repo.projRepo.GetNodePortMappingByProjects(first.Edges.Namespace.Name, ToProject(first))
@@ -68,7 +67,7 @@ func (repo *endpointRepo) InNamespace(ctx context.Context, namespaceID int) (res
 		Where(namespace.ID(namespaceID)).
 		First(ctx)
 	if err != nil {
-		return nil, err
+		return nil, ToError(404, err)
 	}
 
 	nodePortMapping := repo.projRepo.GetNodePortMappingByProjects(first.Name, serialize.Serialize(first.Edges.Projects, ToProject)...)

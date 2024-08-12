@@ -5,14 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/samber/lo"
-
-	"github.com/duc-cnzj/mars/v4/internal/application"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/duc-cnzj/mars/api/v4/types"
+	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/cron"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
@@ -24,7 +18,11 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	"github.com/dustin/go-humanize"
+	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type CronRepo interface {
@@ -47,10 +45,10 @@ type cronRepo struct {
 	pluginMgr   application.PluginManger
 	k8sRepo     K8sRepo
 	nsRepo      NamespaceRepo
-	repoRepo    RepoImp
+	repoRepo    RepoRepo
 }
 
-func NewCronRepo(logger mlog.Logger, repoRepo RepoImp, nsRepo NamespaceRepo, k8sRepo K8sRepo, pluginMgr application.PluginManger, event EventRepo, data data.Data, up uploader.Uploader, helm HelmerRepo, gitRepo GitRepo, cronManager cron.Manager) CronRepo {
+func NewCronRepo(logger mlog.Logger, repoRepo RepoRepo, nsRepo NamespaceRepo, k8sRepo K8sRepo, pluginMgr application.PluginManger, event EventRepo, data data.Data, up uploader.Uploader, helm HelmerRepo, gitRepo GitRepo, cronManager cron.Manager) CronRepo {
 	cr := &cronRepo{logger: logger, repoRepo: repoRepo, nsRepo: nsRepo, k8sRepo: k8sRepo, event: event, pluginMgr: pluginMgr, data: data, up: up, helm: helm, gitRepo: gitRepo, cronManager: cronManager}
 
 	cronManager.NewCommand("clean_upload_files", cr.CleanUploadFiles).DailyAt("2:00")
@@ -118,7 +116,7 @@ func (repo *cronRepo) SyncDomainSecret() error {
 	)
 	secretName, tlsKey, tlsCrt := repo.pluginMgr.Domain().GetCerts()
 	if secretName != "" && tlsKey != "" && tlsCrt != "" {
-		all, err := repo.nsRepo.All(context.TODO())
+		all, err := repo.nsRepo.All(context.TODO(), &AllNamespaceInput{})
 		if err != nil {
 			repo.logger.Error(err)
 			return err

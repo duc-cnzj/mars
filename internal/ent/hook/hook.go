@@ -69,6 +69,18 @@ func (f EventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EventMutation", m)
 }
 
+// The FavoriteFunc type is an adapter to allow the use of ordinary
+// function as Favorite mutator.
+type FavoriteFunc func(context.Context, *ent.FavoriteMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FavoriteFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FavoriteMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FavoriteMutation", m)
+}
+
 // The FileFunc type is an adapter to allow the use of ordinary
 // function as File mutator.
 type FileFunc func(context.Context, *ent.FileMutation) (ent.Value, error)

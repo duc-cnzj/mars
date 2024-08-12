@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/duc-cnzj/mars/v4/internal/ent/favorite"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
@@ -97,6 +98,21 @@ func (nu *NamespaceUpdate) AddProjects(p ...*Project) *NamespaceUpdate {
 	return nu.AddProjectIDs(ids...)
 }
 
+// AddFavoriteIDs adds the "favorites" edge to the Favorite entity by IDs.
+func (nu *NamespaceUpdate) AddFavoriteIDs(ids ...int) *NamespaceUpdate {
+	nu.mutation.AddFavoriteIDs(ids...)
+	return nu
+}
+
+// AddFavorites adds the "favorites" edges to the Favorite entity.
+func (nu *NamespaceUpdate) AddFavorites(f ...*Favorite) *NamespaceUpdate {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return nu.AddFavoriteIDs(ids...)
+}
+
 // Mutation returns the NamespaceMutation object of the builder.
 func (nu *NamespaceUpdate) Mutation() *NamespaceMutation {
 	return nu.mutation
@@ -121,6 +137,27 @@ func (nu *NamespaceUpdate) RemoveProjects(p ...*Project) *NamespaceUpdate {
 		ids[i] = p[i].ID
 	}
 	return nu.RemoveProjectIDs(ids...)
+}
+
+// ClearFavorites clears all "favorites" edges to the Favorite entity.
+func (nu *NamespaceUpdate) ClearFavorites() *NamespaceUpdate {
+	nu.mutation.ClearFavorites()
+	return nu
+}
+
+// RemoveFavoriteIDs removes the "favorites" edge to Favorite entities by IDs.
+func (nu *NamespaceUpdate) RemoveFavoriteIDs(ids ...int) *NamespaceUpdate {
+	nu.mutation.RemoveFavoriteIDs(ids...)
+	return nu
+}
+
+// RemoveFavorites removes "favorites" edges to Favorite entities.
+func (nu *NamespaceUpdate) RemoveFavorites(f ...*Favorite) *NamespaceUpdate {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return nu.RemoveFavoriteIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -252,6 +289,51 @@ func (nu *NamespaceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if nu.mutation.FavoritesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.FavoritesTable,
+			Columns: []string{namespace.FavoritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favorite.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.RemovedFavoritesIDs(); len(nodes) > 0 && !nu.mutation.FavoritesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.FavoritesTable,
+			Columns: []string{namespace.FavoritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favorite.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.FavoritesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.FavoritesTable,
+			Columns: []string{namespace.FavoritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favorite.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, nu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{namespace.Label}
@@ -339,6 +421,21 @@ func (nuo *NamespaceUpdateOne) AddProjects(p ...*Project) *NamespaceUpdateOne {
 	return nuo.AddProjectIDs(ids...)
 }
 
+// AddFavoriteIDs adds the "favorites" edge to the Favorite entity by IDs.
+func (nuo *NamespaceUpdateOne) AddFavoriteIDs(ids ...int) *NamespaceUpdateOne {
+	nuo.mutation.AddFavoriteIDs(ids...)
+	return nuo
+}
+
+// AddFavorites adds the "favorites" edges to the Favorite entity.
+func (nuo *NamespaceUpdateOne) AddFavorites(f ...*Favorite) *NamespaceUpdateOne {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return nuo.AddFavoriteIDs(ids...)
+}
+
 // Mutation returns the NamespaceMutation object of the builder.
 func (nuo *NamespaceUpdateOne) Mutation() *NamespaceMutation {
 	return nuo.mutation
@@ -363,6 +460,27 @@ func (nuo *NamespaceUpdateOne) RemoveProjects(p ...*Project) *NamespaceUpdateOne
 		ids[i] = p[i].ID
 	}
 	return nuo.RemoveProjectIDs(ids...)
+}
+
+// ClearFavorites clears all "favorites" edges to the Favorite entity.
+func (nuo *NamespaceUpdateOne) ClearFavorites() *NamespaceUpdateOne {
+	nuo.mutation.ClearFavorites()
+	return nuo
+}
+
+// RemoveFavoriteIDs removes the "favorites" edge to Favorite entities by IDs.
+func (nuo *NamespaceUpdateOne) RemoveFavoriteIDs(ids ...int) *NamespaceUpdateOne {
+	nuo.mutation.RemoveFavoriteIDs(ids...)
+	return nuo
+}
+
+// RemoveFavorites removes "favorites" edges to Favorite entities.
+func (nuo *NamespaceUpdateOne) RemoveFavorites(f ...*Favorite) *NamespaceUpdateOne {
+	ids := make([]int, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return nuo.RemoveFavoriteIDs(ids...)
 }
 
 // Where appends a list predicates to the NamespaceUpdate builder.
@@ -517,6 +635,51 @@ func (nuo *NamespaceUpdateOne) sqlSave(ctx context.Context) (_node *Namespace, e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nuo.mutation.FavoritesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.FavoritesTable,
+			Columns: []string{namespace.FavoritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favorite.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.RemovedFavoritesIDs(); len(nodes) > 0 && !nuo.mutation.FavoritesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.FavoritesTable,
+			Columns: []string{namespace.FavoritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favorite.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.FavoritesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.FavoritesTable,
+			Columns: []string{namespace.FavoritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favorite.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

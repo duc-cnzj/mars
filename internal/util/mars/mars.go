@@ -48,27 +48,6 @@ func BranchPass(branches []string, name string) bool {
 	return false
 }
 
-func GetProjectConfig(projectId any, branch string) (*mars.Config, error) {
-	var marsC mars.Config
-
-	//var gp models.GitProject
-	//pid := fmt.Sprintf("%v", projectId)
-	//if err := app.DB().Where("`git_project_id` = ?", pid).First(&gp).Error; err == nil {
-	//	if gp.GlobalEnabled {
-	//		return gp.GlobalMarsConfig(), nil
-	//	}
-	//}
-	//// 因为 protobuf 没有生成yaml的tag，所以需要通过json来转换一下
-	//data, err := plugins.GetGitServer().GetFileContentWithBranch(pid, branch, ".mars.yaml")
-	//if err != nil {
-	//	return nil, err
-	//}
-	//toJSON, _ := goyaml.YAMLToJSON([]byte(data))
-	//json.Unmarshal(toJSON, &marsC)
-
-	return &marsC, nil
-}
-
 /*
 	values.yaml:
 	 ```
@@ -164,22 +143,8 @@ func ParseInputConfig(mars *mars.Config, input string) (string, error) {
 	return string(yamlData), nil
 }
 
-// IsRemoteConfigFile 如果是这个格式意味着是远程项目, "pid|branch|filename"
-func IsRemoteConfigFile(mars *mars.Config) bool {
-	split := strings.Split(mars.ConfigFile, "|")
-
-	return len(split) == 3 && intPid(split[0])
-}
-
 func IsRemoteLocalChartPath(input string) bool {
 	split := strings.Split(input, "|")
-
-	return len(split) == 3 && intPid(split[0])
-}
-
-func IsRemoteChart(mars *mars.Config) bool {
-	split := strings.Split(mars.LocalChartPath, "|")
-	// 如果是这个格式意味着是远程项目, 'uid|branch|path'
 
 	return len(split) == 3 && intPid(split[0])
 }
@@ -189,13 +154,4 @@ func intPid(pid string) bool {
 		return true
 	}
 	return false
-}
-
-func GetProjectName[T ~int | ~int32 | ~int64 | ~string](projectID T, marsC *mars.Config) string {
-	return ""
-	//if marsC.DisplayName != "" {
-	//	return marsC.DisplayName
-	//}
-	//gitProject, _ := plugins.GetGitServer().GetProject(fmt.Sprintf("%v", projectID))
-	//return gitProject.GetName()
 }

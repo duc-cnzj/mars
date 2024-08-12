@@ -17,6 +17,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
 	"github.com/duc-cnzj/mars/v4/internal/ent/dbcache"
 	"github.com/duc-cnzj/mars/v4/internal/ent/event"
+	"github.com/duc-cnzj/mars/v4/internal/ent/favorite"
 	"github.com/duc-cnzj/mars/v4/internal/ent/file"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
@@ -86,6 +87,7 @@ func checkColumn(table, column string) error {
 			changelog.Table:   changelog.ValidColumn,
 			dbcache.Table:     dbcache.ValidColumn,
 			event.Table:       event.ValidColumn,
+			favorite.Table:    favorite.ValidColumn,
 			file.Table:        file.ValidColumn,
 			namespace.Table:   namespace.ValidColumn,
 			project.Table:     project.ValidColumn,

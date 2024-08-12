@@ -127,6 +127,12 @@ func (cu *ChangelogUpdate) SetNillableGitBranch(s *string) *ChangelogUpdate {
 	return cu
 }
 
+// ClearGitBranch clears the value of the "git_branch" field.
+func (cu *ChangelogUpdate) ClearGitBranch() *ChangelogUpdate {
+	cu.mutation.ClearGitBranch()
+	return cu
+}
+
 // SetGitCommit sets the "git_commit" field.
 func (cu *ChangelogUpdate) SetGitCommit(s string) *ChangelogUpdate {
 	cu.mutation.SetGitCommit(s)
@@ -138,6 +144,12 @@ func (cu *ChangelogUpdate) SetNillableGitCommit(s *string) *ChangelogUpdate {
 	if s != nil {
 		cu.SetGitCommit(*s)
 	}
+	return cu
+}
+
+// ClearGitCommit clears the value of the "git_commit" field.
+func (cu *ChangelogUpdate) ClearGitCommit() *ChangelogUpdate {
+	cu.mutation.ClearGitCommit()
 	return cu
 }
 
@@ -392,21 +404,6 @@ func (cu *ChangelogUpdate) check() error {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "Changelog.username": %w`, err)}
 		}
 	}
-	if v, ok := cu.mutation.GitBranch(); ok {
-		if err := changelog.GitBranchValidator(v); err != nil {
-			return &ValidationError{Name: "git_branch", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_branch": %w`, err)}
-		}
-	}
-	if v, ok := cu.mutation.GitCommit(); ok {
-		if err := changelog.GitCommitValidator(v); err != nil {
-			return &ValidationError{Name: "git_commit", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_commit": %w`, err)}
-		}
-	}
-	if v, ok := cu.mutation.GitCommitWebURL(); ok {
-		if err := changelog.GitCommitWebURLValidator(v); err != nil {
-			return &ValidationError{Name: "git_commit_web_url", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_commit_web_url": %w`, err)}
-		}
-	}
 	if v, ok := cu.mutation.GitCommitTitle(); ok {
 		if err := changelog.GitCommitTitleValidator(v); err != nil {
 			return &ValidationError{Name: "git_commit_title", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_commit_title": %w`, err)}
@@ -459,8 +456,14 @@ func (cu *ChangelogUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := cu.mutation.GitBranch(); ok {
 		_spec.SetField(changelog.FieldGitBranch, field.TypeString, value)
 	}
+	if cu.mutation.GitBranchCleared() {
+		_spec.ClearField(changelog.FieldGitBranch, field.TypeString)
+	}
 	if value, ok := cu.mutation.GitCommit(); ok {
 		_spec.SetField(changelog.FieldGitCommit, field.TypeString, value)
+	}
+	if cu.mutation.GitCommitCleared() {
+		_spec.ClearField(changelog.FieldGitCommit, field.TypeString)
 	}
 	if value, ok := cu.mutation.DockerImage(); ok {
 		_spec.SetField(changelog.FieldDockerImage, field.TypeJSON, value)
@@ -677,6 +680,12 @@ func (cuo *ChangelogUpdateOne) SetNillableGitBranch(s *string) *ChangelogUpdateO
 	return cuo
 }
 
+// ClearGitBranch clears the value of the "git_branch" field.
+func (cuo *ChangelogUpdateOne) ClearGitBranch() *ChangelogUpdateOne {
+	cuo.mutation.ClearGitBranch()
+	return cuo
+}
+
 // SetGitCommit sets the "git_commit" field.
 func (cuo *ChangelogUpdateOne) SetGitCommit(s string) *ChangelogUpdateOne {
 	cuo.mutation.SetGitCommit(s)
@@ -688,6 +697,12 @@ func (cuo *ChangelogUpdateOne) SetNillableGitCommit(s *string) *ChangelogUpdateO
 	if s != nil {
 		cuo.SetGitCommit(*s)
 	}
+	return cuo
+}
+
+// ClearGitCommit clears the value of the "git_commit" field.
+func (cuo *ChangelogUpdateOne) ClearGitCommit() *ChangelogUpdateOne {
+	cuo.mutation.ClearGitCommit()
 	return cuo
 }
 
@@ -955,21 +970,6 @@ func (cuo *ChangelogUpdateOne) check() error {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "Changelog.username": %w`, err)}
 		}
 	}
-	if v, ok := cuo.mutation.GitBranch(); ok {
-		if err := changelog.GitBranchValidator(v); err != nil {
-			return &ValidationError{Name: "git_branch", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_branch": %w`, err)}
-		}
-	}
-	if v, ok := cuo.mutation.GitCommit(); ok {
-		if err := changelog.GitCommitValidator(v); err != nil {
-			return &ValidationError{Name: "git_commit", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_commit": %w`, err)}
-		}
-	}
-	if v, ok := cuo.mutation.GitCommitWebURL(); ok {
-		if err := changelog.GitCommitWebURLValidator(v); err != nil {
-			return &ValidationError{Name: "git_commit_web_url", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_commit_web_url": %w`, err)}
-		}
-	}
 	if v, ok := cuo.mutation.GitCommitTitle(); ok {
 		if err := changelog.GitCommitTitleValidator(v); err != nil {
 			return &ValidationError{Name: "git_commit_title", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_commit_title": %w`, err)}
@@ -1039,8 +1039,14 @@ func (cuo *ChangelogUpdateOne) sqlSave(ctx context.Context) (_node *Changelog, e
 	if value, ok := cuo.mutation.GitBranch(); ok {
 		_spec.SetField(changelog.FieldGitBranch, field.TypeString, value)
 	}
+	if cuo.mutation.GitBranchCleared() {
+		_spec.ClearField(changelog.FieldGitBranch, field.TypeString)
+	}
 	if value, ok := cuo.mutation.GitCommit(); ok {
 		_spec.SetField(changelog.FieldGitCommit, field.TypeString, value)
+	}
+	if cuo.mutation.GitCommitCleared() {
+		_spec.ClearField(changelog.FieldGitCommit, field.TypeString)
 	}
 	if value, ok := cuo.mutation.DockerImage(); ok {
 		_spec.SetField(changelog.FieldDockerImage, field.TypeJSON, value)

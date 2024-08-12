@@ -393,78 +393,6 @@ func local_request_Git_PipelineInfo_0(ctx context.Context, marshaler runtime.Mar
 
 }
 
-func request_Git_MarsConfigFile_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq MarsConfigFileRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["git_project_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "git_project_id")
-	}
-
-	protoReq.GitProjectId, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "git_project_id", err)
-	}
-
-	val, ok = pathParams["branch"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "branch")
-	}
-
-	protoReq.Branch, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "branch", err)
-	}
-
-	msg, err := client.MarsConfigFile(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_Git_MarsConfigFile_0(ctx context.Context, marshaler runtime.Marshaler, server GitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq MarsConfigFileRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["git_project_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "git_project_id")
-	}
-
-	protoReq.GitProjectId, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "git_project_id", err)
-	}
-
-	val, ok = pathParams["branch"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "branch")
-	}
-
-	protoReq.Branch, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "branch", err)
-	}
-
-	msg, err := server.MarsConfigFile(ctx, &protoReq)
-	return msg, metadata, err
-
-}
-
 func request_Git_GetChartValuesYaml_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetChartValuesYamlRequest
 	var metadata runtime.ServerMetadata
@@ -652,31 +580,6 @@ func RegisterGitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server
 		}
 
 		forward_Git_PipelineInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_Git_MarsConfigFile_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/git.Git/MarsConfigFile", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/config_file"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_Git_MarsConfigFile_0(annotatedContext, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_Git_MarsConfigFile_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -878,28 +781,6 @@ func RegisterGitHandlerClient(ctx context.Context, mux *runtime.ServeMux, client
 
 	})
 
-	mux.Handle("GET", pattern_Git_MarsConfigFile_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/git.Git/MarsConfigFile", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/config_file"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_Git_MarsConfigFile_0(annotatedContext, inboundMarshaler, client, req, pathParams)
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_Git_MarsConfigFile_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
 	mux.Handle("POST", pattern_Git_GetChartValuesYaml_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -938,8 +819,6 @@ var (
 
 	pattern_Git_PipelineInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 1, 0, 4, 1, 5, 7, 2, 8}, []string{"api", "git", "projects", "git_project_id", "branches", "branch", "commits", "commit", "pipeline_info"}, ""))
 
-	pattern_Git_MarsConfigFile_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"api", "git", "projects", "git_project_id", "branches", "branch", "config_file"}, ""))
-
 	pattern_Git_GetChartValuesYaml_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "git", "get_chart_values_yaml"}, ""))
 )
 
@@ -955,8 +834,6 @@ var (
 	forward_Git_Commit_0 = runtime.ForwardResponseMessage
 
 	forward_Git_PipelineInfo_0 = runtime.ForwardResponseMessage
-
-	forward_Git_MarsConfigFile_0 = runtime.ForwardResponseMessage
 
 	forward_Git_GetChartValuesYaml_0 = runtime.ForwardResponseMessage
 )

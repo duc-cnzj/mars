@@ -107,9 +107,25 @@ func (cc *ChangelogCreate) SetGitBranch(s string) *ChangelogCreate {
 	return cc
 }
 
+// SetNillableGitBranch sets the "git_branch" field if the given value is not nil.
+func (cc *ChangelogCreate) SetNillableGitBranch(s *string) *ChangelogCreate {
+	if s != nil {
+		cc.SetGitBranch(*s)
+	}
+	return cc
+}
+
 // SetGitCommit sets the "git_commit" field.
 func (cc *ChangelogCreate) SetGitCommit(s string) *ChangelogCreate {
 	cc.mutation.SetGitCommit(s)
+	return cc
+}
+
+// SetNillableGitCommit sets the "git_commit" field if the given value is not nil.
+func (cc *ChangelogCreate) SetNillableGitCommit(s *string) *ChangelogCreate {
+	if s != nil {
+		cc.SetGitCommit(*s)
+	}
 	return cc
 }
 
@@ -305,27 +321,6 @@ func (cc *ChangelogCreate) check() error {
 	if v, ok := cc.mutation.Username(); ok {
 		if err := changelog.UsernameValidator(v); err != nil {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "Changelog.username": %w`, err)}
-		}
-	}
-	if _, ok := cc.mutation.GitBranch(); !ok {
-		return &ValidationError{Name: "git_branch", err: errors.New(`ent: missing required field "Changelog.git_branch"`)}
-	}
-	if v, ok := cc.mutation.GitBranch(); ok {
-		if err := changelog.GitBranchValidator(v); err != nil {
-			return &ValidationError{Name: "git_branch", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_branch": %w`, err)}
-		}
-	}
-	if _, ok := cc.mutation.GitCommit(); !ok {
-		return &ValidationError{Name: "git_commit", err: errors.New(`ent: missing required field "Changelog.git_commit"`)}
-	}
-	if v, ok := cc.mutation.GitCommit(); ok {
-		if err := changelog.GitCommitValidator(v); err != nil {
-			return &ValidationError{Name: "git_commit", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_commit": %w`, err)}
-		}
-	}
-	if v, ok := cc.mutation.GitCommitWebURL(); ok {
-		if err := changelog.GitCommitWebURLValidator(v); err != nil {
-			return &ValidationError{Name: "git_commit_web_url", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_commit_web_url": %w`, err)}
 		}
 	}
 	if v, ok := cc.mutation.GitCommitTitle(); ok {
@@ -595,6 +590,12 @@ func (u *ChangelogUpsert) UpdateGitBranch() *ChangelogUpsert {
 	return u
 }
 
+// ClearGitBranch clears the value of the "git_branch" field.
+func (u *ChangelogUpsert) ClearGitBranch() *ChangelogUpsert {
+	u.SetNull(changelog.FieldGitBranch)
+	return u
+}
+
 // SetGitCommit sets the "git_commit" field.
 func (u *ChangelogUpsert) SetGitCommit(v string) *ChangelogUpsert {
 	u.Set(changelog.FieldGitCommit, v)
@@ -604,6 +605,12 @@ func (u *ChangelogUpsert) SetGitCommit(v string) *ChangelogUpsert {
 // UpdateGitCommit sets the "git_commit" field to the value that was provided on create.
 func (u *ChangelogUpsert) UpdateGitCommit() *ChangelogUpsert {
 	u.SetExcluded(changelog.FieldGitCommit)
+	return u
+}
+
+// ClearGitCommit clears the value of the "git_commit" field.
+func (u *ChangelogUpsert) ClearGitCommit() *ChangelogUpsert {
+	u.SetNull(changelog.FieldGitCommit)
 	return u
 }
 
@@ -931,6 +938,13 @@ func (u *ChangelogUpsertOne) UpdateGitBranch() *ChangelogUpsertOne {
 	})
 }
 
+// ClearGitBranch clears the value of the "git_branch" field.
+func (u *ChangelogUpsertOne) ClearGitBranch() *ChangelogUpsertOne {
+	return u.Update(func(s *ChangelogUpsert) {
+		s.ClearGitBranch()
+	})
+}
+
 // SetGitCommit sets the "git_commit" field.
 func (u *ChangelogUpsertOne) SetGitCommit(v string) *ChangelogUpsertOne {
 	return u.Update(func(s *ChangelogUpsert) {
@@ -942,6 +956,13 @@ func (u *ChangelogUpsertOne) SetGitCommit(v string) *ChangelogUpsertOne {
 func (u *ChangelogUpsertOne) UpdateGitCommit() *ChangelogUpsertOne {
 	return u.Update(func(s *ChangelogUpsert) {
 		s.UpdateGitCommit()
+	})
+}
+
+// ClearGitCommit clears the value of the "git_commit" field.
+func (u *ChangelogUpsertOne) ClearGitCommit() *ChangelogUpsertOne {
+	return u.Update(func(s *ChangelogUpsert) {
+		s.ClearGitCommit()
 	})
 }
 
@@ -1464,6 +1485,13 @@ func (u *ChangelogUpsertBulk) UpdateGitBranch() *ChangelogUpsertBulk {
 	})
 }
 
+// ClearGitBranch clears the value of the "git_branch" field.
+func (u *ChangelogUpsertBulk) ClearGitBranch() *ChangelogUpsertBulk {
+	return u.Update(func(s *ChangelogUpsert) {
+		s.ClearGitBranch()
+	})
+}
+
 // SetGitCommit sets the "git_commit" field.
 func (u *ChangelogUpsertBulk) SetGitCommit(v string) *ChangelogUpsertBulk {
 	return u.Update(func(s *ChangelogUpsert) {
@@ -1475,6 +1503,13 @@ func (u *ChangelogUpsertBulk) SetGitCommit(v string) *ChangelogUpsertBulk {
 func (u *ChangelogUpsertBulk) UpdateGitCommit() *ChangelogUpsertBulk {
 	return u.Update(func(s *ChangelogUpsert) {
 		s.UpdateGitCommit()
+	})
+}
+
+// ClearGitCommit clears the value of the "git_commit" field.
+func (u *ChangelogUpsertBulk) ClearGitCommit() *ChangelogUpsertBulk {
+	return u.Update(func(s *ChangelogUpsert) {
+		s.ClearGitCommit()
 	})
 }
 
