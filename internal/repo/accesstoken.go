@@ -52,7 +52,7 @@ type accessTokenRepo struct {
 }
 
 func NewAccessTokenRepo(timer timer.Timer, logger mlog.Logger, data data.Data) AccessTokenRepo {
-	return &accessTokenRepo{logger: logger, data: data, timer: timer}
+	return &accessTokenRepo{logger: logger.WithModule("repo/accessToken"), data: data, timer: timer}
 }
 
 type ListAccessTokenInput struct {

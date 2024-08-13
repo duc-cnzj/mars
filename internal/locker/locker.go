@@ -19,6 +19,7 @@ type Locker interface {
 }
 
 func NewLocker(cfg *config.Config, data data.Data, logger mlog.Logger, timer timer.Timer) (Locker, error) {
+	logger = logger.WithModule("locker/locker")
 	if cfg.DBDriver == "sqlite" && cfg.CacheDriver == "db" {
 		cfg.CacheDriver = "memory"
 		logger.Warning(`使用 DBDriver 为 "sqlite" 时，CacheDriver,Locker 只能使用 "memory"!`)

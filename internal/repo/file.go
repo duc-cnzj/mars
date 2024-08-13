@@ -108,7 +108,7 @@ func NewFileRepo(
 	return &fileRepo{
 		eventRepo:     eventRepo,
 		crRepo:        crRepo,
-		logger:        logger,
+		logger:        logger.WithModule("repo/file"),
 		uploader:      uploader,
 		timer:         timer,
 		data:          data,

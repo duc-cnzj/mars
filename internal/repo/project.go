@@ -138,7 +138,7 @@ type projectRepo struct {
 
 func NewProjectRepo(logger mlog.Logger, data data.Data) ProjectRepo {
 	return &projectRepo{
-		logger:     logger,
+		logger:     logger.WithModule("repo/project"),
 		externalIp: data.Config().ExternalIp,
 		data:       data,
 	}

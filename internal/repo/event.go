@@ -77,7 +77,7 @@ type eventRepo struct {
 }
 
 func NewEventRepo(projectRepo ProjectRepo, k8sRepo K8sRepo, pl application.PluginManger, clRepo ChangelogRepo, logger mlog.Logger, data data.Data, eventer event.Dispatcher) EventRepo {
-	r := &eventRepo{projectRepo: projectRepo, k8sRepo: k8sRepo, clRepo: clRepo, logger: logger, eventer: eventer, data: data, pl: pl}
+	r := &eventRepo{projectRepo: projectRepo, k8sRepo: k8sRepo, clRepo: clRepo, logger: logger.WithModule("repo/event"), eventer: eventer, data: data, pl: pl}
 	eventer.Listen(AuditLogEvent, r.HandleAuditLog)
 	eventer.Listen(EventNamespaceCreated, r.HandleInjectTlsSecret)
 	eventer.Listen(EventNamespaceDeleted, r.HandleNamespaceDeleted)

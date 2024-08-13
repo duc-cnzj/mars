@@ -89,7 +89,7 @@ func NewWebsocketManager(
 		jobManager:         jobManager,
 		fileRepo:           fileRepo,
 		healthTickDuration: 15 * time.Second,
-		logger:             logger,
+		logger:             logger.WithModule("socket/websocket"),
 		pl:                 pl,
 		auth:               auth,
 		uploader:           uploader,

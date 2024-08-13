@@ -17,7 +17,7 @@ type pprofRunner struct {
 
 func NewPprofRunner(logger mlog.Logger) application.Server {
 	return &pprofRunner{
-		logger: logger,
+		logger: logger.WithModule("server/pprofRunner"),
 		server: &http.Server{
 			Addr:              "localhost:6060",
 			ReadHeaderTimeout: 5 * time.Second,

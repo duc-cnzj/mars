@@ -28,7 +28,12 @@ type repoSvc struct {
 }
 
 func NewRepoSvc(logger mlog.Logger, eventRepo repo.EventRepo, gitRepo repo.GitRepo, repoRepo repo.RepoRepo) reposerver.RepoServer {
-	return &repoSvc{logger: logger, repoRepo: repoRepo, gitRepo: gitRepo, eventRepo: eventRepo}
+	return &repoSvc{
+		gitRepo:   gitRepo,
+		logger:    logger.WithModule("services/repo"),
+		repoRepo:  repoRepo,
+		eventRepo: eventRepo,
+	}
 }
 
 func (r *repoSvc) List(ctx context.Context, request *reposerver.ListRequest) (*reposerver.ListResponse, error) {

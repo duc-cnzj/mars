@@ -4,6 +4,8 @@ import (
 	"context"
 	"net"
 
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	marsauthorizor "github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/server/middlewares"
@@ -24,17 +26,18 @@ type grpcRunner struct {
 	server   grpcServerImp
 	endpoint string
 	app      application.App
+	logger   mlog.Logger
 }
 
 func NewGrpcRunner(
 	endpoint string,
 	app application.App,
 ) application.Server {
-	return &grpcRunner{endpoint: endpoint, app: app}
+	return &grpcRunner{endpoint: endpoint, app: app, logger: app.Logger().WithModule("server/grpcRunner")}
 }
 
 func (g *grpcRunner) Shutdown(ctx context.Context) error {
-	defer g.app.Logger().Info("[Server]: shutdown grpcRunner runner.")
+	defer g.logger.Info("[Server]: shutdown grpcRunner runner.")
 	if g.server == nil {
 		return nil
 	}
@@ -54,7 +57,7 @@ func (g *grpcRunner) Shutdown(ctx context.Context) error {
 }
 
 func (g *grpcRunner) Run(ctx context.Context) error {
-	g.app.Logger().Infof("[Server]: start grpcRunner runner at %s.", g.endpoint)
+	g.logger.Infof("[Server]: start grpcRunner runner at %s.", g.endpoint)
 	listen, err := net.Listen("tcp", g.endpoint)
 	if err != nil {
 		return err
@@ -62,7 +65,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	g.server = g.initServer()
 	go func(server grpcServerImp) {
 		if err := server.Serve(listen); err != nil {
-			g.app.Logger().Error(err)
+			g.logger.Error(err)
 		}
 	}(g.server)
 
@@ -80,12 +83,12 @@ func (g *grpcRunner) initServer() *grpc.Server {
 			marsauthorizor.StreamServerInterceptor(),
 			middlewares.StreamServerInterceptor(),
 			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(g.recoveryHandler)),
-			middlewares.MetricsStreamServerInterceptor(g.app.Logger()),
+			middlewares.MetricsStreamServerInterceptor(g.logger),
 		),
 		grpc.ChainUnaryInterceptor(
-			middlewares.LoggerUnaryServerInterceptor(g.app.Logger()),
+			middlewares.LoggerUnaryServerInterceptor(g.logger),
 			grpc_auth.UnaryServerInterceptor(authFn),
-			middlewares.MetricsServerInterceptor(g.app.Logger()),
+			middlewares.MetricsServerInterceptor(g.logger),
 			marsauthorizor.UnaryServerInterceptor(),
 			middlewares.UnaryServerInterceptor(),
 			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(g.recoveryHandler)),
@@ -98,7 +101,7 @@ func (g *grpcRunner) initServer() *grpc.Server {
 }
 
 func (g *grpcRunner) recoveryHandler(p any) error {
-	g.app.Logger().Errorf("[Grpc]: recovery error: \n%v", p)
+	g.logger.Errorf("[Grpc]: recovery error: \n%v", p)
 	return nil
 }
 

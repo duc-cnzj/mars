@@ -50,7 +50,18 @@ func NewProjectSvc(
 	helmer repo.HelmerRepo,
 	nsRepo repo.NamespaceRepo,
 ) project.ProjectServer {
-	return &projectSvc{plMgr: plMgr, repoRepo: repoRepo, jobManager: jobManager, projRepo: projRepo, gitRepo: gitRepo, k8sRepo: k8sRepo, eventRepo: eventRepo, logger: logger, helmer: helmer, nsRepo: nsRepo}
+	return &projectSvc{
+		jobManager: jobManager,
+		projRepo:   projRepo,
+		gitRepo:    gitRepo,
+		k8sRepo:    k8sRepo,
+		eventRepo:  eventRepo,
+		logger:     logger.WithModule("services/project"),
+		helmer:     helmer,
+		nsRepo:     nsRepo,
+		repoRepo:   repoRepo,
+		plMgr:      plMgr,
+	}
 }
 
 func (p *projectSvc) List(ctx context.Context, request *project.ListRequest) (*project.ListResponse, error) {
@@ -92,7 +103,7 @@ func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyReques
 		}
 	}
 
-	p.logger.Debug("WebApply..")
+	p.logger.DebugCtx(ctx, "WebApply..")
 	user := MustGetUser(ctx)
 	jobInput := &socket.JobInput{
 		Type:        websocket.Type_ApplyProject,
@@ -115,7 +126,7 @@ func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyReques
 	go func() {
 		select {
 		case <-ctx.Done():
-			p.logger.Warning("WebApply ctx done", ctx.Err())
+			p.logger.WarningCtx(ctx, "WebApply ctx done", ctx.Err())
 			job.Stop(ctx.Err())
 		case <-ch:
 		}

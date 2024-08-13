@@ -18,7 +18,7 @@ type endpointSvc struct {
 }
 
 func NewEndpointSvc(logger mlog.Logger, epRepo repo.EndpointRepo) endpoint.EndpointServer {
-	return &endpointSvc{logger: logger, epRepo: epRepo}
+	return &endpointSvc{logger: logger.WithModule("services/endpoint"), epRepo: epRepo}
 }
 
 func (e *endpointSvc) InNamespace(ctx context.Context, request *endpoint.InNamespaceRequest) (*endpoint.InNamespaceResponse, error) {

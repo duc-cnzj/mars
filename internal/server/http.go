@@ -53,12 +53,18 @@ type apiGateway struct {
 	endpoint string
 	server   httpServer
 	app      application.App
+	logger   mlog.Logger
 
 	newServerFunc func(ctx context.Context, a *apiGateway) (httpServer, error)
 }
 
 func NewApiGateway(endpoint string, app application.App) application.Server {
-	return &apiGateway{endpoint: endpoint, app: app, newServerFunc: initServer}
+	return &apiGateway{
+		endpoint:      endpoint,
+		app:           app,
+		logger:        app.Logger().WithModule("server/apiGateway"),
+		newServerFunc: initServer,
+	}
 }
 
 func (a *apiGateway) Run(ctx context.Context) error {

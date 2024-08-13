@@ -8,6 +8,8 @@ import (
 )
 
 type Logger interface {
+	WithModule(module string) Logger
+
 	Debug(v ...any)
 	Debugf(format string, v ...any)
 
@@ -62,6 +64,10 @@ func NewLogger(cfg *config.Config) Logger {
 var _ Logger = (*emptyLogger)(nil)
 
 type emptyLogger struct{}
+
+func (e *emptyLogger) WithModule(module string) Logger {
+	return e
+}
 
 func (e *emptyLogger) FatalCtx(ctx context.Context, v ...any) {
 }

@@ -96,7 +96,7 @@ type namespaceRepo struct {
 
 func NewNamespaceRepo(logger mlog.Logger, data data.Data) NamespaceRepo {
 	return &namespaceRepo{
-		logger:   logger,
+		logger:   logger.WithModule("repo/namespace"),
 		data:     data,
 		NsPrefix: data.Config().NsPrefix,
 	}

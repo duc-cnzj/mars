@@ -59,7 +59,11 @@ type repoImpl struct {
 }
 
 func NewRepo(logger mlog.Logger, data data.Data, gitRepo GitRepo) RepoRepo {
-	return &repoImpl{logger: logger, data: data, gitRepo: gitRepo}
+	return &repoImpl{
+		logger:  logger.WithModule("repo/repo"),
+		data:    data,
+		gitRepo: gitRepo,
+	}
 }
 
 type AllRepoRequest struct {

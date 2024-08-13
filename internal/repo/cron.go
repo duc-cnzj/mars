@@ -56,7 +56,7 @@ type cronRepo struct {
 }
 
 func NewCronRepo(logger mlog.Logger, repoRepo RepoRepo, nsRepo NamespaceRepo, k8sRepo K8sRepo, pluginMgr application.PluginManger, event EventRepo, data data.Data, up uploader.Uploader, helm HelmerRepo, gitRepo GitRepo, cronManager cron.Manager) CronRepo {
-	cr := &cronRepo{logger: logger, repoRepo: repoRepo, nsRepo: nsRepo, k8sRepo: k8sRepo, event: event, pluginMgr: pluginMgr, data: data, up: up, helm: helm, gitRepo: gitRepo, cronManager: cronManager}
+	cr := &cronRepo{logger: logger.WithModule("repo/cron"), repoRepo: repoRepo, nsRepo: nsRepo, k8sRepo: k8sRepo, event: event, pluginMgr: pluginMgr, data: data, up: up, helm: helm, gitRepo: gitRepo, cronManager: cronManager}
 
 	cronManager.NewCommand("clean_upload_files", cr.CleanUploadFiles).DailyAt("2:00")
 	cronManager.NewCommand("disk_info", func() error {

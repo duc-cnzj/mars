@@ -155,7 +155,7 @@ func (j *jobManager) NewJob(input *JobInput) Job {
 	}
 	jb := &jobRunner{
 		installer:       j.releaseInstaller,
-		logger:          j.logger,
+		logger:          j.logger.WithModule("socket/job"),
 		nsRepo:          j.nsRepo,
 		projRepo:        j.projRepo,
 		repoRepo:        j.repoRepo,

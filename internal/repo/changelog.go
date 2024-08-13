@@ -81,7 +81,7 @@ type changelogRepo struct {
 }
 
 func NewChangelogRepo(logger mlog.Logger, data data.Data) ChangelogRepo {
-	return &changelogRepo{logger: logger, data: data}
+	return &changelogRepo{logger: logger.WithModule("repo/changelog"), data: data}
 }
 
 type CreateChangeLogInput struct {

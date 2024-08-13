@@ -33,7 +33,7 @@ type namespaceSvc struct {
 }
 
 func NewNamespaceSvc(helmer repo.HelmerRepo, nsRepo repo.NamespaceRepo, k8sRepo repo.K8sRepo, logger mlog.Logger, eventRepo repo.EventRepo) namespace.NamespaceServer {
-	return &namespaceSvc{helmer: helmer, nsRepo: nsRepo, k8sRepo: k8sRepo, logger: logger, eventRepo: eventRepo}
+	return &namespaceSvc{helmer: helmer, nsRepo: nsRepo, k8sRepo: k8sRepo, eventRepo: eventRepo, logger: logger.WithModule("services/namespace")}
 }
 
 func (n *namespaceSvc) All(ctx context.Context, request *namespace.AllRequest) (*namespace.AllResponse, error) {
@@ -144,18 +144,18 @@ func (n *namespaceSvc) Delete(ctx context.Context, input *namespace.DeleteReques
 				defer n.logger.HandlePanic("namespaceSvc.Delete")
 				n.logger.Debugf("delete release %s namespace %s", releaseName, namespace)
 				if err := n.helmer.Uninstall(releaseName, namespace, n.logger.Debugf); err != nil {
-					n.logger.Error(err)
+					n.logger.ErrorCtx(ctx, err)
 					return
 				}
 			}(project.Name, ns.Name)
 		}
 		wg.Wait()
 		for _, secret := range ns.ImagePullSecrets {
-			n.logger.Debugf("delete ns %s secret %s", ns.Name, secret)
+			n.logger.DebugCtxf(ctx, "delete ns %s secret %s", ns.Name, secret)
 			n.k8sRepo.DeleteSecret(context.Background(), ns.Name, secret)
 		}
 		if err := n.k8sRepo.DeleteNamespace(context.Background(), ns.Name); err != nil {
-			n.logger.Error("删除 namespace 出现错误: ", err)
+			n.logger.ErrorCtx(ctx, "删除 namespace 出现错误: ", err)
 		}
 		n.nsRepo.Delete(context.TODO(), ns.ID)
 	}

@@ -36,6 +36,8 @@ type cacheImpl struct {
 }
 
 func NewCacheImpl(cfg *config.Config, data data.Data, logger mlog.Logger, sf *singleflight.Group) (ca Cache) {
+	logger = logger.WithModule("cache/cacheImpl")
+
 	switch cfg.CacheDriver {
 	case "memory":
 		ca = newCache(

@@ -70,7 +70,7 @@ func (ms *memorySender) Initialize(app application.App, args map[string]any) err
 	ms.conns = map[string]*Conn{}
 	ms.idRooms = make(map[string]map[int32]struct{})
 	ms.roomIDs = make(map[int32]map[int32]map[string][]labels.Selector)
-	ms.logger = app.Logger()
+	ms.logger = app.Logger().WithModule("plugins/ws_sender_memory")
 	ms.db = app.DB()
 	ms.logger.Info("[Plugin]: " + ms.Name() + " plugin Initialize...")
 	return nil

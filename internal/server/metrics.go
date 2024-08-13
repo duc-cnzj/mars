@@ -24,7 +24,11 @@ type metricsRunner struct {
 }
 
 func NewMetricsRunner(port string, logger mlog.Logger, reg *prometheus.Registry) application.Server {
-	return &metricsRunner{port: port, logger: logger, reg: reg}
+	return &metricsRunner{
+		port:   port,
+		logger: logger.WithModule("server/metricsRunner"),
+		reg:    reg,
+	}
 }
 
 func (m *metricsRunner) Run(ctx context.Context) error {

@@ -43,7 +43,7 @@ type containerSvc struct {
 }
 
 func NewContainerSvc(eventRepo repo.EventRepo, k8sRepo repo.K8sRepo, fileRepo repo.FileRepo, logger mlog.Logger) container.ContainerServer {
-	return &containerSvc{eventRepo: eventRepo, k8sRepo: k8sRepo, fileRepo: fileRepo, logger: logger}
+	return &containerSvc{eventRepo: eventRepo, k8sRepo: k8sRepo, fileRepo: fileRepo, logger: logger.WithModule("services/container")}
 }
 
 func (c *containerSvc) IsPodRunning(_ context.Context, request *container.IsPodRunningRequest) (*container.IsPodRunningResponse, error) {
@@ -150,6 +150,7 @@ func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToP
 }
 
 func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server container.Container_StreamContainerLogServer) error {
+	c.logger.DebugCtxf(server.Context(), "StreamContainerLog: %v", request)
 	podInfo, _ := c.k8sRepo.GetPod(request.Namespace, request.Pod)
 	if podInfo == nil || (!request.ShowEvents && podInfo != nil && podInfo.Status.Phase == v1.PodPending) {
 		return status.Error(codes.NotFound, "未找到日志")

@@ -32,7 +32,12 @@ type cronManager struct {
 }
 
 func NewManager(runner Runner, locker locker.Locker, logger mlog.Logger) Manager {
-	return &cronManager{commands: make(map[string]*command), runner: runner, Locker: locker, logger: logger}
+	return &cronManager{
+		runner:   runner,
+		Locker:   locker,
+		logger:   logger.WithModule("cron/cronManager"),
+		commands: make(map[string]*command),
+	}
 }
 
 func (m *cronManager) List() []Command {

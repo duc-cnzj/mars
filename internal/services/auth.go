@@ -38,7 +38,7 @@ type authSvc struct {
 
 func NewAuthSvc(eventRepo repo.EventRepo, logger mlog.Logger, authsvc auth2.Auth, data data.Data) auth.AuthServer {
 	return &authSvc{
-		logger:    logger,
+		logger:    logger.WithModule("services/auth"),
 		eventRepo: eventRepo,
 		data:      data,
 		adminPwd:  data.Config().AdminPassword,

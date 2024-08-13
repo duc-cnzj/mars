@@ -12,6 +12,8 @@ func NewUploader(cfg *config.Config, logger mlog.Logger, data data.Data, cache c
 		up  Uploader
 		err error
 	)
+
+	logger = logger.WithModule("uploader/uploader")
 	up, err = NewDiskUploader(cfg, logger)
 	if err != nil {
 		return nil, err

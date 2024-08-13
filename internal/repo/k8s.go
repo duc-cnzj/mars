@@ -115,7 +115,7 @@ func NewK8sRepo(
 ) K8sRepo {
 	return &k8sRepo{
 		data:          data,
-		logger:        logger,
+		logger:        logger.WithModule("repo/k8s"),
 		uploader:      uploader,
 		maxUploadSize: data.Config().MaxUploadSize(),
 		archiver:      archiver,

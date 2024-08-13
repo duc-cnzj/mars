@@ -62,7 +62,7 @@ func NewDefaultHelmer(k8sRepo K8sRepo, data data.Data, cfg *config.Config, logge
 	return &DefaultHelmer{
 		k8sRepo:    k8sRepo,
 		Debug:      cfg.Debug,
-		logger:     logger,
+		logger:     logger.WithModule("repo/helmer"),
 		DockerAuth: cfg.ImagePullSecrets,
 		KubeConfig: cfg.KubeConfig,
 		data:       data,

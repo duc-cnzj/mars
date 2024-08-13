@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-
 	"github.com/duc-cnzj/mars/api/v4/token"
 	"github.com/duc-cnzj/mars/api/v4/types"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
@@ -30,7 +29,7 @@ type accessTokenSvc struct {
 
 func NewAccessTokenSvc(logger mlog.Logger, eventRepo repo.EventRepo, timer timer.Timer, repo repo.AccessTokenRepo) token.AccessTokenServer {
 	return &accessTokenSvc{
-		logger:    logger,
+		logger:    logger.WithModule("services/accessToken"),
 		eventRepo: eventRepo,
 		timer:     timer,
 		repo:      repo,

@@ -14,6 +14,7 @@ import (
 type logrusLogger struct {
 	logrus *logrus.Logger
 	debug  bool
+	module string
 }
 
 var _ Logger = (*logrusLogger)(nil)
@@ -38,6 +39,14 @@ func NewLogrusLogger(debug bool) Logger {
 	return &logrusLogger{
 		debug:  debug,
 		logrus: logger,
+	}
+}
+
+func (z *logrusLogger) WithModule(module string) Logger {
+	return &logrusLogger{
+		debug:  z.debug,
+		module: module,
+		logrus: z.logrus,
 	}
 }
 
@@ -81,101 +90,107 @@ func (z *logrusLogger) Flush() error {
 
 // Debug print debug msg
 func (z *logrusLogger) Debug(v ...any) {
-	z.logrus.WithField(callerField()).Debug(v...)
+	z.logrus.WithFields(z.fields()).Debug(v...)
 }
 
 // Debugf printf debug msg
 func (z *logrusLogger) Debugf(format string, v ...any) {
-	z.logrus.WithField(callerField()).Debugf(format, v...)
+	z.logrus.WithFields(z.fields()).Debugf(format, v...)
 }
 
 func (z *logrusLogger) DebugCtx(ctx context.Context, v ...any) {
-	z.logWithContext(ctx).WithField(callerField()).Debug(v...)
+	z.logWithContext(ctx).WithFields(z.fields()).Debug(v...)
 }
 
 func (z *logrusLogger) DebugCtxf(ctx context.Context, format string, v ...any) {
-	z.logWithContext(ctx).WithField(callerField()).Debugf(format, v...)
+	z.logWithContext(ctx).WithFields(z.fields()).Debugf(format, v...)
 }
 
 // Warning print Warning msg
 func (z *logrusLogger) Warning(v ...any) {
-	z.logrus.WithField(callerField()).Warn(v...)
+	z.logrus.WithFields(z.fields()).Warn(v...)
 }
 
 // Warningf prints Warning msg
 func (z *logrusLogger) Warningf(format string, v ...any) {
-	z.logrus.WithField(callerField()).Warnf(format, v...)
+	z.logrus.WithFields(z.fields()).Warnf(format, v...)
 }
 
 func (z *logrusLogger) WarningCtx(ctx context.Context, v ...any) {
-	z.logWithContext(ctx).WithField(callerField()).Warn(v...)
+	z.logWithContext(ctx).WithFields(z.fields()).Warn(v...)
 }
 
 func (z *logrusLogger) WarningCtxf(ctx context.Context, format string, v ...any) {
-	z.logWithContext(ctx).WithField(callerField()).Warnf(format, v...)
+	z.logWithContext(ctx).WithFields(z.fields()).Warnf(format, v...)
 }
 
 // Info print info msg
 func (z *logrusLogger) Info(v ...any) {
-	z.logrus.WithField(callerField()).Info(v...)
+	z.logrus.WithFields(z.fields()).Info(v...)
 }
 
 // Infof printf info msg
 func (z *logrusLogger) Infof(format string, v ...any) {
-	z.logrus.WithField(callerField()).Infof(format, v...)
+	z.logrus.WithFields(z.fields()).Infof(format, v...)
 }
 
 func (z *logrusLogger) InfoCtx(ctx context.Context, v ...any) {
-	z.logWithContext(ctx).WithField(callerField()).Info(v...)
+	z.logWithContext(ctx).WithFields(z.fields()).Info(v...)
 }
 
 func (z *logrusLogger) InfoCtxf(ctx context.Context, format string, v ...any) {
-	z.logWithContext(ctx).WithField(callerField()).Infof(format, v...)
+	z.logWithContext(ctx).WithFields(z.fields()).Infof(format, v...)
 
 }
 
 // Error print err msg
 func (z *logrusLogger) Error(v ...any) {
-	z.logrus.WithField(callerField()).Error(v...)
+	z.logrus.WithFields(z.fields()).Error(v...)
 }
 
 // Errorf printf err msg
 func (z *logrusLogger) Errorf(format string, v ...any) {
-	z.logrus.WithField(callerField()).Errorf(format, v...)
+	z.logrus.WithFields(z.fields()).Errorf(format, v...)
 }
 
 func (z *logrusLogger) ErrorCtx(ctx context.Context, v ...any) {
-	z.logWithContext(ctx).WithField(callerField()).Error(v...)
+	z.logWithContext(ctx).WithFields(z.fields()).Error(v...)
 }
 
 func (z *logrusLogger) ErrorCtxf(ctx context.Context, format string, v ...any) {
-	z.logWithContext(ctx).WithField(callerField()).Errorf(format, v...)
+	z.logWithContext(ctx).WithFields(z.fields()).Errorf(format, v...)
 }
 
 // Fatal fatal err.
 func (z *logrusLogger) Fatal(v ...any) {
-	z.logrus.WithField(callerField()).Fatal(v...)
+	z.logrus.WithFields(z.fields()).Fatal(v...)
 }
 
 // Fatalf fatalf err.
 func (z *logrusLogger) Fatalf(format string, v ...any) {
-	z.logrus.WithField(callerField()).Fatalf(format, v...)
+	z.logrus.WithFields(z.fields()).Fatalf(format, v...)
 }
 
 func (z *logrusLogger) FatalCtx(ctx context.Context, v ...any) {
-	z.logWithContext(ctx).WithField(callerField()).Fatal(v...)
+	z.logWithContext(ctx).WithFields(z.fields()).Fatal(v...)
 }
 
 func (z *logrusLogger) FatalCtxf(ctx context.Context, format string, v ...any) {
-	z.logWithContext(ctx).WithField(callerField()).Fatalf(format, v...)
+	z.logWithContext(ctx).WithFields(z.fields()).Fatalf(format, v...)
 }
 
-// callerField return caller key and file line.
-func callerField() (string, string) {
+// fields return caller key and file line.
+func (z *logrusLogger) fields() logrus.Fields {
 	pc, _, _, _ := runtime.Caller(2)
 	file, line := runtime.FuncForPC(pc).FileLine(pc)
 
-	return "file", fmt.Sprintf("%s:%d.", file, line)
+	f := map[string]any{
+		"file": fmt.Sprintf("%s:%d.", file, line),
+	}
+	if z.module != "" {
+		f["module"] = z.module
+	}
+	return f
 }
 
 func (z *logrusLogger) logWithContext(ctx context.Context) *logrus.Entry {

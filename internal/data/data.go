@@ -95,7 +95,10 @@ func NewDataImpl(input *DataImplInput) Data {
 }
 
 func NewData(cfg *config.Config, logger mlog.Logger) (Data, error) {
-	return NewDataImpl(&DataImplInput{Cfg: cfg, Logger: logger}), nil
+	return NewDataImpl(&DataImplInput{
+		Cfg:    cfg,
+		Logger: logger.WithModule("data/data"),
+	}), nil
 }
 
 func (data *dataImpl) Config() *config.Config {

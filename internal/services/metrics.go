@@ -25,7 +25,7 @@ type metricsSvc struct {
 }
 
 func NewMetricsSvc(k8sRepo repo.K8sRepo, logger mlog.Logger, projRepo repo.ProjectRepo, nsRepo repo.NamespaceRepo) metrics.MetricsServer {
-	return &metricsSvc{k8sRepo: k8sRepo, logger: logger, projRepo: projRepo, nsRepo: nsRepo}
+	return &metricsSvc{k8sRepo: k8sRepo, projRepo: projRepo, nsRepo: nsRepo, logger: logger.WithModule("services/metrics")}
 }
 
 var (
@@ -54,7 +54,7 @@ func (m *metricsSvc) TopPod(ctx context.Context, request *metrics.TopPodRequest)
 func (m *metricsSvc) StreamTopPod(request *metrics.TopPodRequest, server metrics.Metrics_StreamTopPodServer) error {
 	ticker := time.NewTicker(tickDuration)
 	defer ticker.Stop()
-	defer m.logger.Debug("ProjectByID exit")
+	defer m.logger.DebugCtxf(server.Context(), "ProjectByID exit")
 
 	fn := func() error {
 		podMetrics, err := m.k8sRepo.GetPodMetrics(server.Context(), request.Namespace, request.Pod)

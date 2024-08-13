@@ -36,12 +36,13 @@ type gitSvc struct {
 }
 
 func NewGitSvc(repoRepo repo.RepoRepo, eventRepo repo.EventRepo, logger mlog.Logger, gitRepo repo.GitRepo, cache cache.Cache) git.GitServer {
-	return &gitSvc{repoRepo: repoRepo, eventRepo: eventRepo, logger: logger, gitRepo: gitRepo, cache: cache}
+	return &gitSvc{repoRepo: repoRepo, eventRepo: eventRepo, logger: logger.WithModule("services/git"), gitRepo: gitRepo, cache: cache}
 }
 
 func (g *gitSvc) AllRepos(ctx context.Context, req *git.AllReposRequest) (*git.AllReposResponse, error) {
 	projects, err := g.gitRepo.AllProjects(ctx)
 	if err != nil {
+		g.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 	return &git.AllReposResponse{
@@ -58,6 +59,7 @@ func (g *gitSvc) AllRepos(ctx context.Context, req *git.AllReposRequest) (*git.A
 func (g *gitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptionsRequest) (*git.ProjectOptionsResponse, error) {
 	all, err := g.repoRepo.All(context.TODO(), &repo.AllRepoRequest{Enabled: lo.ToPtr(true)})
 	if err != nil {
+		g.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 	var gitOptions []*git.Option
@@ -79,6 +81,7 @@ func (g *gitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptions
 func (g *gitSvc) BranchOptions(ctx context.Context, request *git.BranchOptionsRequest) (*git.BranchOptionsResponse, error) {
 	branches, err := g.gitRepo.AllBranches(ctx, cast.ToInt(request.GitProjectId))
 	if err != nil {
+		g.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 	res := make([]*git.Option, 0, len(branches))
@@ -109,6 +112,7 @@ func (g *gitSvc) BranchOptions(ctx context.Context, request *git.BranchOptionsRe
 func (g *gitSvc) CommitOptions(ctx context.Context, request *git.CommitOptionsRequest) (*git.CommitOptionsResponse, error) {
 	commits, err := g.gitRepo.ListCommits(ctx, cast.ToInt(request.GitProjectId), request.Branch)
 	if err != nil {
+		g.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 	res := make([]*git.Option, 0, len(commits))
@@ -129,6 +133,7 @@ func (g *gitSvc) CommitOptions(ctx context.Context, request *git.CommitOptionsRe
 func (g *gitSvc) Commit(ctx context.Context, request *git.CommitRequest) (*git.CommitResponse, error) {
 	commit, err := g.gitRepo.GetCommit(ctx, cast.ToInt(request.GitProjectId), request.Commit)
 	if err != nil {
+		g.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 	return &git.CommitResponse{

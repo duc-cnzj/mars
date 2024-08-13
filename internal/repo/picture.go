@@ -19,7 +19,10 @@ type pictureRepo struct {
 var _ PictureRepo = (*pictureRepo)(nil)
 
 func NewPictureRepo(logger mlog.Logger, pl application.PluginManger) PictureRepo {
-	return &pictureRepo{logger: logger, pl: pl}
+	return &pictureRepo{
+		logger: logger.WithModule("repo/picture"),
+		pl:     pl,
+	}
 }
 
 func (p *pictureRepo) Get(ctx context.Context, random bool) (*application.PictureItem, error) {

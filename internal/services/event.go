@@ -5,6 +5,7 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v4/event"
 	"github.com/duc-cnzj/mars/api/v4/types"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
@@ -18,11 +19,12 @@ var _ event.EventServer = (*eventSvc)(nil)
 type eventSvc struct {
 	event.UnimplementedEventServer
 
+	logger    mlog.Logger
 	eventRepo repo.EventRepo
 }
 
-func NewEventSvc(eventRepo repo.EventRepo) event.EventServer {
-	return &eventSvc{eventRepo: eventRepo}
+func NewEventSvc(logger mlog.Logger, eventRepo repo.EventRepo) event.EventServer {
+	return &eventSvc{eventRepo: eventRepo, logger: logger.WithModule("services/event")}
 }
 
 func (e *eventSvc) List(ctx context.Context, request *event.ListRequest) (*event.ListResponse, error) {
@@ -35,6 +37,7 @@ func (e *eventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 		OrderIDDesc: lo.ToPtr(true),
 	})
 	if err != nil {
+		e.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 	res := make([]*types.EventModel, 0, len(events))
@@ -52,6 +55,7 @@ func (e *eventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 func (e *eventSvc) Show(ctx context.Context, request *event.ShowRequest) (*event.ShowResponse, error) {
 	show, err := e.eventRepo.Show(ctx, int(request.Id))
 	if err != nil {
+		e.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 

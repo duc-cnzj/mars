@@ -28,7 +28,7 @@ type robfigCronV3Runner struct {
 // NewRobfigCronV3Runner return contracts.Runner
 func NewRobfigCronV3Runner(logger mlog.Logger) Runner {
 	return &robfigCronV3Runner{
-		logger: logger,
+		logger: logger.WithModule("cron/robfigCronV3Runner"),
 		c: cron.New(
 			cron.WithLocation(time.Local),
 			cron.WithSeconds(),

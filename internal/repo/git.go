@@ -49,7 +49,7 @@ type GitProject struct {
 
 func NewGitRepo(logger mlog.Logger, cache cache.Cache, pl application.PluginManger, data data.Data) GitRepo {
 	return &gitRepo{
-		logger: logger,
+		logger: logger.WithModule("repo/git"),
 		pl:     pl,
 		cache:  cache,
 		data:   data,

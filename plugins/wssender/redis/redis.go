@@ -70,7 +70,7 @@ func (p *redisSender) New(uid, id string) application.PubSub {
 	ch := make(chan []byte, wssender.MessageChSize)
 
 	pem := &podEventManagers{
-		logger:       p.logger,
+		logger:       p.logger.WithModule("plugins/ws_sender_redis"),
 		db:           p.db,
 		ch:           ch,
 		id:           id,

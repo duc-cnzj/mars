@@ -27,7 +27,7 @@ type endpointRepo struct {
 }
 
 func NewEndpointRepo(logger mlog.Logger, data data.Data, projRepo ProjectRepo) EndpointRepo {
-	return &endpointRepo{logger: logger, data: data, projRepo: projRepo}
+	return &endpointRepo{logger: logger.WithModule("repo/endpoint"), data: data, projRepo: projRepo}
 }
 
 func (repo *endpointRepo) InProject(ctx context.Context, projectID int) (res []*types.ServiceEndpoint, err error) {

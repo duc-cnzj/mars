@@ -119,7 +119,7 @@ func NewApp(
 		hooksMu:            sync.RWMutex{},
 		hooks:              map[hook][]Callback{},
 		config:             config,
-		logger:             logger,
+		logger:             logger.WithModule("app/app"),
 		uploader:           uploader,
 		localUploader:      uploader.LocalUploader(),
 		auth:               auth,

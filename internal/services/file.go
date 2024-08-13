@@ -29,7 +29,7 @@ type fileSvc struct {
 }
 
 func NewFileSvc(eventRepo repo.EventRepo, fileRepo repo.FileRepo, logger mlog.Logger) file.FileServer {
-	return &fileSvc{eventRepo: eventRepo, fileRepo: fileRepo, logger: logger}
+	return &fileSvc{eventRepo: eventRepo, fileRepo: fileRepo, logger: logger.WithModule("services/file")}
 }
 
 func (m *fileSvc) List(ctx context.Context, request *file.ListRequest) (*file.ListResponse, error) {
@@ -41,6 +41,7 @@ func (m *fileSvc) List(ctx context.Context, request *file.ListRequest) (*file.Li
 		WithSoftDelete: request.WithoutDeleted,
 	})
 	if err != nil {
+		m.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 	var res = make([]*types.FileModel, 0, len(files))
@@ -59,6 +60,7 @@ func (m *fileSvc) List(ctx context.Context, request *file.ListRequest) (*file.Li
 func (m *fileSvc) DiskInfo(ctx context.Context, request *file.DiskInfoRequest) (*file.DiskInfoResponse, error) {
 	size, err := m.fileRepo.DiskInfo()
 	if err != nil {
+		m.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 	return &file.DiskInfoResponse{
@@ -70,6 +72,7 @@ func (m *fileSvc) DiskInfo(ctx context.Context, request *file.DiskInfoRequest) (
 func (m *fileSvc) ShowRecords(ctx context.Context, request *file.ShowRecordsRequest) (*file.ShowRecordsResponse, error) {
 	records, err := m.fileRepo.ShowRecords(ctx, int(request.Id))
 	if err != nil {
+		m.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 	defer records.Close()
@@ -114,6 +117,7 @@ func (m *fileSvc) Delete(ctx context.Context, request *file.DeleteRequest) (*fil
 		return nil, err
 	}
 	if err := m.fileRepo.Delete(ctx, int(request.Id)); err != nil {
+		m.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 	m.eventRepo.FileAuditLog(

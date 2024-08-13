@@ -175,3 +175,10 @@ func (z *zapLogger) logWithContext(ctx context.Context) *zap.SugaredLogger {
 		zap.Any("TraceID", spanCtx.TraceID()),
 	)
 }
+
+func (z *zapLogger) WithModule(module string) Logger {
+	return &zapLogger{
+		sugar: z.sugar.With("module", module),
+		debug: z.debug,
+	}
+}
