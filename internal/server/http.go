@@ -50,19 +50,20 @@ var defaultMiddlewares = middlewareList{
 }
 
 type apiGateway struct {
-	endpoint string
-	server   httpServer
-	app      application.App
-	logger   mlog.Logger
-
+	endpoint      string
+	port          string
+	server        httpServer
+	logger        mlog.Logger
+	grpcRegistry  *application.GrpcRegistry
 	newServerFunc func(ctx context.Context, a *apiGateway) (httpServer, error)
 }
 
 func NewApiGateway(endpoint string, app application.App) application.Server {
 	return &apiGateway{
+		port:          app.Config().AppPort,
 		endpoint:      endpoint,
-		app:           app,
 		logger:        app.Logger().WithModule("server/apiGateway"),
+		grpcRegistry:  app.GrpcRegistry(),
 		newServerFunc: initServer,
 	}
 }
@@ -76,9 +77,9 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	a.server = s
 
 	go func(s httpServer) {
-		a.app.Logger().Infof("[Server]: start apiGateway runner at :%s.", a.app.Config().AppPort)
+		a.logger.Infof("[Server]: start apiGateway runner at :%s.", a.port)
 		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			a.app.Logger().Error(err)
+			a.logger.Error(err)
 		}
 	}(s)
 
@@ -86,7 +87,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 }
 
 func (a *apiGateway) Shutdown(ctx context.Context) error {
-	defer a.app.Logger().Info("[Server]: shutdown api-gateway runner.")
+	defer a.logger.Info("[Server]: shutdown api-gateway runner.")
 	if a.server == nil {
 		return nil
 	}
@@ -125,7 +126,7 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
-	for _, f := range a.app.GrpcRegistry().EndpointFuncs {
+	for _, f := range a.grpcRegistry.EndpointFuncs {
 		if err := f(ctx, gmux, a.endpoint, opts); err != nil {
 			return nil, err
 		}
@@ -137,8 +138,7 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 	})
 
 	h := &handler{
-		app:      a.app,
-		logger:   a.app.Logger(),
+		logger:   a.logger,
 		ServeMux: gmux,
 	}
 	h.handFile()
@@ -149,8 +149,8 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 	router.PathPrefix("/").Handler(gmux)
 
 	s := &http.Server{
-		Addr:              ":" + a.app.Config().AppPort,
-		Handler:           defaultMiddlewares.Wrap(a.app.Logger(), router),
+		Addr:              ":" + a.port,
+		Handler:           defaultMiddlewares.Wrap(a.logger, router),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

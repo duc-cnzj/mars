@@ -23,17 +23,23 @@ type grpcServerImp interface {
 }
 
 type grpcRunner struct {
-	server   grpcServerImp
-	endpoint string
-	app      application.App
-	logger   mlog.Logger
+	server       grpcServerImp
+	endpoint     string
+	logger       mlog.Logger
+	auth         marsauthorizor.Auth
+	grpcRegistry *application.GrpcRegistry
 }
 
 func NewGrpcRunner(
 	endpoint string,
 	app application.App,
 ) application.Server {
-	return &grpcRunner{endpoint: endpoint, app: app, logger: app.Logger().WithModule("server/grpcRunner")}
+	return &grpcRunner{
+		grpcRegistry: app.GrpcRegistry(),
+		endpoint:     endpoint,
+		logger:       app.Logger().WithModule("server/grpcRunner"),
+		auth:         app.Auth(),
+	}
 }
 
 func (g *grpcRunner) Shutdown(ctx context.Context) error {
@@ -74,7 +80,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 
 func (g *grpcRunner) initServer() *grpc.Server {
 	authFn := func(ctx context.Context) (context.Context, error) {
-		return authenticate(ctx, g.app.Auth())
+		return authenticate(ctx, g.auth)
 	}
 	server := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
@@ -95,7 +101,7 @@ func (g *grpcRunner) initServer() *grpc.Server {
 		),
 	)
 
-	g.app.GrpcRegistry().RegistryFunc(server)
+	g.grpcRegistry.RegistryFunc(server)
 
 	return server
 }
