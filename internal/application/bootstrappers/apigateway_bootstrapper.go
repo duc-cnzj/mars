@@ -24,6 +24,9 @@ func (a *ApiGatewayBootstrapper) Bootstrap(appli application.App) error {
 			app.Logger().Warning("shutdown ws server error: ", err.Error())
 		}
 	})
+	appli.BeforeServerRunHooks(func(app application.App) {
+		go app.WsServer().TickClusterHealth(app.Done())
+	})
 
 	return nil
 }

@@ -3,6 +3,7 @@ package bootstrappers
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/version"
@@ -79,7 +80,12 @@ func setupOTelSDK(ctx context.Context, grpcEndpoint string, promReg *prometheus2
 	prop := newPropagator()
 	otel.SetTextMapPropagator(prop)
 
-	exporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithEndpoint(grpcEndpoint), otlptracegrpc.WithInsecure())
+	exporter, err := otlptracegrpc.New(
+		ctx,
+		otlptracegrpc.WithEndpoint(grpcEndpoint),
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithReconnectionPeriod(time.Second*5),
+	)
 	if err != nil {
 		panic(err)
 	}

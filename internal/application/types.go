@@ -19,7 +19,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/grpc"
 )
@@ -130,9 +129,6 @@ type App interface {
 
 	// Locker return locker
 	Locker() locker.Locker
-
-	// GetTracer return tracer
-	GetTracer() trace.Tracer
 
 	// CronManager return cron manager
 	CronManager() cron.Manager

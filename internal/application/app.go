@@ -22,7 +22,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -58,7 +57,6 @@ type app struct {
 	cronManager        mcron.Manager
 	cache              cache.Cache
 	cacheLock          locker.Locker
-	tracer             trace.Tracer
 	sf                 *singleflight.Group
 	data               data.Data
 	pluginManager      PluginManger
@@ -101,7 +99,6 @@ func NewApp(
 	cronManager mcron.Manager,
 	cache cache.Cache,
 	cacheLock locker.Locker,
-	//tracer trace.Tracer,
 	sf *singleflight.Group,
 	pm PluginManger,
 	reg *GrpcRegistry,
@@ -127,13 +124,11 @@ func NewApp(
 		cronManager:        cronManager,
 		cache:              cache,
 		cacheLock:          cacheLock,
-		tracer:             nil,
-		//tracer:        tracer,
-		sf:            sf,
-		data:          data,
-		pluginManager: pm,
-		reg:           reg,
-		ws:            ws,
+		sf:                 sf,
+		data:               data,
+		pluginManager:      pm,
+		reg:                reg,
+		ws:                 ws,
 	}
 
 	for _, opt := range opts {
@@ -294,11 +289,6 @@ func (app *app) Bootstrap() error {
 // Config impl App Config.
 func (app *app) Config() *config.Config {
 	return app.config
-}
-
-// GetTracer impl App GetTracer.
-func (app *app) GetTracer() trace.Tracer {
-	return app.tracer
 }
 
 // DB impl App DB.

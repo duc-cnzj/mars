@@ -184,6 +184,7 @@ const MyLogUtil: React.FC<{
       selectableLines
       captureHotkeys
       formatPart={(text: string) => {
+        console.log(text);
         let res = JSON.parse(text);
         if (res.error) {
           if (onError?.praseJsonError) {
