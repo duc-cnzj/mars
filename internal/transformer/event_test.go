@@ -21,6 +21,8 @@ func TestFromEvent_ValidInput(t *testing.T) {
 	now := time.Now()
 	e := &repo.Event{
 		ID:        1,
+		CreatedAt: now,
+		UpdatedAt: now,
 		Action:    types.EventActionType_Delete,
 		Username:  "testUsername",
 		Message:   "testMessage",
@@ -28,9 +30,8 @@ func TestFromEvent_ValidInput(t *testing.T) {
 		New:       "testNew",
 		Duration:  "testDuration",
 		FileID:    nil,
+		HasDiff:   true,
 		File:      nil,
-		CreatedAt: now,
-		UpdatedAt: now,
 	}
 	result := transformer.FromEvent(e)
 	assert.NotNil(t, result)

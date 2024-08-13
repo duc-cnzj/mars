@@ -39,9 +39,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 		return nil, err
 	}
 	manager := cron.NewManager(runner, lockerLocker, logger)
-	group := NewSingleflight()
-	cacheCache := cache.NewCacheImpl(configConfig, dataData, logger, group)
-	uploaderUploader, err := uploader.NewUploader(configConfig, logger, dataData, cacheCache)
+	uploaderUploader, err := uploader.NewUploader(configConfig, logger, dataData)
 	if err != nil {
 		return nil, err
 	}
@@ -50,6 +48,8 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 		return nil, err
 	}
 	dispatcher := event.NewDispatcher(logger)
+	group := NewSingleflight()
+	cacheCache := cache.NewCacheImpl(configConfig, dataData, logger, group)
 	pluginManger, err := application.NewPluginManager(configConfig, logger)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	namespaceServer := services.NewNamespaceSvc(helmerRepo, namespaceRepo, k8sRepo, logger, eventRepo)
 	metricsServer := services.NewMetricsSvc(timerTimer, k8sRepo, logger, projectRepo, namespaceRepo)
 	gitServer := services.NewGitSvc(repoRepo, eventRepo, logger, gitRepo, cacheCache)
-	cronRepo := repo.NewCronRepo(logger, repoRepo, namespaceRepo, k8sRepo, pluginManger, eventRepo, dataData, uploaderUploader, helmerRepo, gitRepo, manager)
+	cronRepo := repo.NewCronRepo(logger, cacheCache, repoRepo, namespaceRepo, k8sRepo, pluginManger, eventRepo, dataData, uploaderUploader, helmerRepo, gitRepo, manager)
 	fileRepo := repo.NewFileRepo(cronRepo, logger, dataData, uploaderUploader, timerTimer, eventRepo)
 	fileServer := services.NewFileSvc(eventRepo, fileRepo, logger)
 	eventServer := services.NewEventSvc(logger, eventRepo)

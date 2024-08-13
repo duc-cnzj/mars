@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"reflect"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v4/internal/cache"
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/cron"
 	"github.com/duc-cnzj/mars/v4/internal/data"
@@ -53,10 +56,24 @@ type cronRepo struct {
 	k8sRepo     K8sRepo
 	nsRepo      NamespaceRepo
 	repoRepo    RepoRepo
+	cache       cache.Cache
 }
 
-func NewCronRepo(logger mlog.Logger, repoRepo RepoRepo, nsRepo NamespaceRepo, k8sRepo K8sRepo, pluginMgr application.PluginManger, event EventRepo, data data.Data, up uploader.Uploader, helm HelmerRepo, gitRepo GitRepo, cronManager cron.Manager) CronRepo {
-	cr := &cronRepo{logger: logger.WithModule("repo/cron"), repoRepo: repoRepo, nsRepo: nsRepo, k8sRepo: k8sRepo, event: event, pluginMgr: pluginMgr, data: data, up: up, helm: helm, gitRepo: gitRepo, cronManager: cronManager}
+func NewCronRepo(logger mlog.Logger, cache cache.Cache, repoRepo RepoRepo, nsRepo NamespaceRepo, k8sRepo K8sRepo, pluginMgr application.PluginManger, event EventRepo, data data.Data, up uploader.Uploader, helm HelmerRepo, gitRepo GitRepo, cronManager cron.Manager) CronRepo {
+	cr := &cronRepo{
+		logger:      logger.WithModule("repo/cron"),
+		event:       event,
+		data:        data,
+		up:          up,
+		helm:        helm,
+		gitRepo:     gitRepo,
+		cronManager: cronManager,
+		pluginMgr:   pluginMgr,
+		k8sRepo:     k8sRepo,
+		nsRepo:      nsRepo,
+		repoRepo:    repoRepo,
+		cache:       cache,
+	}
 
 	cronManager.NewCommand("clean_upload_files", cr.CleanUploadFiles).DailyAt("2:00")
 	cronManager.NewCommand("disk_info", func() error {
@@ -303,8 +320,24 @@ func (repo *cronRepo) FixDeployStatus() error {
 	return nil
 }
 
+var DirSizeCacheSeconds = int((15 * time.Minute).Seconds())
+
 func (repo *cronRepo) DiskInfo() (int64, error) {
-	return repo.up.DirSize()
+	remember, err := repo.cache.Remember(cache.NewKey("dir-size"), DirSizeCacheSeconds, func() ([]byte, error) {
+		size, err := repo.up.DirSize()
+		return int64ToByte(size), err
+	})
+
+	return byteToInt64(remember), err
+}
+
+func int64ToByte(i int64) []byte {
+	return []byte(fmt.Sprintf("%d", i))
+}
+
+func byteToInt64(remember []byte) int64 {
+	atoi, _ := strconv.Atoi(string(remember))
+	return int64(atoi)
 }
 
 // CleanUploadFiles
