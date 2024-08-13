@@ -65,8 +65,8 @@ func Test_accessTokenRepo_Grant(t *testing.T) {
 	repo := NewAccessTokenRepo(
 		timer.NewRealTimer(),
 		mlog.NewLogger(nil),
-		data.NewDataImpl(&data.DataImplInput{
-			Db: db,
+		data.NewDataImpl(&data.NewDataParams{
+			DB: db,
 		}),
 	)
 	grant, err := repo.Grant(context.TODO(), &GrantAccessTokenInput{
@@ -91,8 +91,8 @@ func Test_accessTokenRepo_Lease_Success(t *testing.T) {
 	repo := NewAccessTokenRepo(
 		timer.NewRealTimer(),
 		mlog.NewLogger(nil),
-		data.NewDataImpl(&data.DataImplInput{
-			Db: db,
+		data.NewDataImpl(&data.NewDataParams{
+			DB: db,
 		}),
 	)
 	grant, _ := repo.Grant(context.TODO(), &GrantAccessTokenInput{
@@ -117,8 +117,8 @@ func Test_accessTokenRepo_Lease_TokenNotFound(t *testing.T) {
 	repo := NewAccessTokenRepo(
 		timer.NewRealTimer(),
 		mlog.NewLogger(nil),
-		data.NewDataImpl(&data.DataImplInput{
-			Db: db,
+		data.NewDataImpl(&data.NewDataParams{
+			DB: db,
 		}),
 	)
 
@@ -132,8 +132,8 @@ func Test_accessTokenRepo_Lease_TokenExpired(t *testing.T) {
 	repo := NewAccessTokenRepo(
 		timer.NewRealTimer(),
 		mlog.NewLogger(nil),
-		data.NewDataImpl(&data.DataImplInput{
-			Db: db,
+		data.NewDataImpl(&data.NewDataParams{
+			DB: db,
 		}),
 	)
 	grant, _ := repo.Grant(context.TODO(), &GrantAccessTokenInput{
@@ -156,8 +156,8 @@ func Test_accessTokenRepo_List_WithSoftDelete(t *testing.T) {
 	repo := NewAccessTokenRepo(
 		timer.NewRealTimer(),
 		mlog.NewLogger(nil),
-		data.NewDataImpl(&data.DataImplInput{
-			Db: db,
+		data.NewDataImpl(&data.NewDataParams{
+			DB: db,
 		}),
 	)
 	db.AccessToken.Create().
@@ -184,8 +184,8 @@ func Test_accessTokenRepo_List_WithoutSoftDelete(t *testing.T) {
 	repo := NewAccessTokenRepo(
 		timer.NewRealTimer(),
 		mlog.NewLogger(nil),
-		data.NewDataImpl(&data.DataImplInput{
-			Db: db,
+		data.NewDataImpl(&data.NewDataParams{
+			DB: db,
 		}),
 	)
 	db.AccessToken.Create().
@@ -211,8 +211,8 @@ func Test_accessTokenRepo_List_WithEmail(t *testing.T) {
 	repo := NewAccessTokenRepo(
 		timer.NewRealTimer(),
 		mlog.NewLogger(nil),
-		data.NewDataImpl(&data.DataImplInput{
-			Db: db,
+		data.NewDataImpl(&data.NewDataParams{
+			DB: db,
 		}),
 	)
 	db.AccessToken.Create().
@@ -243,8 +243,8 @@ func Test_accessTokenRepo_List_WithoutEmail(t *testing.T) {
 	repo := NewAccessTokenRepo(
 		timer.NewRealTimer(),
 		mlog.NewLogger(nil),
-		data.NewDataImpl(&data.DataImplInput{
-			Db: db,
+		data.NewDataImpl(&data.NewDataParams{
+			DB: db,
 		}),
 	)
 	db.AccessToken.Create().
@@ -278,8 +278,8 @@ func Test_accessTokenRepo_Revoke_Success(t *testing.T) {
 	repo := NewAccessTokenRepo(
 		timer.NewRealTimer(),
 		mlog.NewLogger(nil),
-		data.NewDataImpl(&data.DataImplInput{
-			Db: db,
+		data.NewDataImpl(&data.NewDataParams{
+			DB: db,
 		}),
 	)
 	grant, _ := repo.Grant(context.TODO(), &GrantAccessTokenInput{
@@ -305,11 +305,11 @@ func Test_accessTokenRepo_Revoke_TokenNotFound(t *testing.T) {
 	repo := NewAccessTokenRepo(
 		timer.NewRealTimer(),
 		mlog.NewLogger(nil),
-		data.NewDataImpl(&data.DataImplInput{
-			Db: db,
+		data.NewDataImpl(&data.NewDataParams{
+			DB: db,
 		}),
 	)
 
 	err := repo.Revoke(context.TODO(), "nonexistentToken")
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 }

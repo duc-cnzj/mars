@@ -3,8 +3,9 @@ package services
 import (
 	"context"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+
 	"github.com/duc-cnzj/mars/api/v4/event"
-	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
@@ -40,15 +41,11 @@ func (e *eventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 		e.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
-	res := make([]*types.EventModel, 0, len(events))
-	for _, m := range events {
-		res = append(res, transformer.FromEvent(m))
-	}
 
 	return &event.ListResponse{
 		Page:     pag.Page,
 		PageSize: pag.PageSize,
-		Items:    res,
+		Items:    serialize.Serialize(events, transformer.FromEvent),
 	}, nil
 }
 

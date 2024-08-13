@@ -124,6 +124,11 @@ build_web:
 test:
 	go test ./... -race -count=1 -cover -coverprofile=cover.out
 
+.PHONY: cover-web
+# go tool cover -html cover.out
+cover-web:
+	go tool cover -html cover.out
+
 .PHONY: build_linux_amd64
 build_linux_amd64:
 	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o app-linux-amd64 main.go

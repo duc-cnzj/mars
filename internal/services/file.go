@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+
 	"github.com/duc-cnzj/mars/api/v4/file"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
@@ -44,15 +46,11 @@ func (m *fileSvc) List(ctx context.Context, request *file.ListRequest) (*file.Li
 		m.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
-	var res = make([]*types.FileModel, 0, len(files))
-	for _, ff := range files {
-		res = append(res, transformer.FromFile(ff))
-	}
 
 	return &file.ListResponse{
 		Page:     pag.Page,
 		PageSize: pag.PageSize,
-		Items:    res,
+		Items:    serialize.Serialize(files, transformer.FromFile),
 		Count:    pag.Count,
 	}, nil
 }

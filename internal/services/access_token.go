@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+
 	"github.com/duc-cnzj/mars/api/v4/token"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
@@ -20,9 +22,8 @@ var _ token.AccessTokenServer = (*accessTokenSvc)(nil)
 type accessTokenSvc struct {
 	token.UnimplementedAccessTokenServer
 
-	timer  timer.Timer
-	logger mlog.Logger
-
+	timer     timer.Timer
+	logger    mlog.Logger
 	repo      repo.AccessTokenRepo
 	eventRepo repo.EventRepo
 }
@@ -48,14 +49,11 @@ func (a *accessTokenSvc) List(ctx context.Context, request *token.ListRequest) (
 		a.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
-	var res = make([]*types.AccessTokenModel, 0, len(tokens))
-	for _, accessToken := range tokens {
-		res = append(res, transformer.FromAccessToken(accessToken))
-	}
+
 	return &token.ListResponse{
 		Page:     p.Page,
 		PageSize: p.PageSize,
-		Items:    res,
+		Items:    serialize.Serialize(tokens, transformer.FromAccessToken),
 		Count:    p.Count,
 	}, nil
 }

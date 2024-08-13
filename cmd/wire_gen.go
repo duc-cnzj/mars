@@ -71,7 +71,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	pictureRepo := repo.NewPictureRepo(logger, pluginManger)
 	pictureServer := services.NewPictureSvc(pictureRepo)
 	namespaceServer := services.NewNamespaceSvc(helmerRepo, namespaceRepo, k8sRepo, logger, eventRepo)
-	metricsServer := services.NewMetricsSvc(k8sRepo, logger, projectRepo, namespaceRepo)
+	metricsServer := services.NewMetricsSvc(timerTimer, k8sRepo, logger, projectRepo, namespaceRepo)
 	gitServer := services.NewGitSvc(repoRepo, eventRepo, logger, gitRepo, cacheCache)
 	cronRepo := repo.NewCronRepo(logger, repoRepo, namespaceRepo, k8sRepo, pluginManger, eventRepo, dataData, uploaderUploader, helmerRepo, gitRepo, manager)
 	fileRepo := repo.NewFileRepo(cronRepo, logger, dataData, uploaderUploader, timerTimer, eventRepo)

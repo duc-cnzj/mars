@@ -3,8 +3,9 @@ package services
 import (
 	"context"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+
 	"github.com/duc-cnzj/mars/api/v4/changelog"
-	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/samber/lo"
@@ -32,10 +33,8 @@ func (c *changelogSvc) FindLastChangelogsByProjectID(ctx context.Context, reques
 	if err != nil {
 		return nil, err
 	}
-	items := make([]*types.ChangelogModel, 0, len(logs))
-	for _, log := range logs {
-		items = append(items, transformer.FromChangeLog(log))
-	}
 
-	return &changelog.FindLastChangelogsByProjectIDResponse{Items: items}, nil
+	return &changelog.FindLastChangelogsByProjectIDResponse{
+		Items: serialize.Serialize(logs, transformer.FromChangeLog),
+	}, nil
 }

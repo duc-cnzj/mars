@@ -74,20 +74,20 @@ type dataImpl struct {
 	oidcOnce    sync.Once
 }
 
-type DataImplInput struct {
+type NewDataParams struct {
 	Cfg       *config.Config
 	Oidc      OidcConfig
-	Db        *ent.Client
+	DB        *ent.Client
 	MinioCli  *minio.Client
 	K8sClient *K8sClient
 	Logger    mlog.Logger
 }
 
-func NewDataImpl(input *DataImplInput) Data {
+func NewDataImpl(input *NewDataParams) Data {
 	return &dataImpl{
 		cfg:       input.Cfg,
 		oidc:      input.Oidc,
-		db:        input.Db,
+		db:        input.DB,
 		minioCli:  input.MinioCli,
 		k8sClient: input.K8sClient,
 		logger:    input.Logger,
@@ -95,7 +95,7 @@ func NewDataImpl(input *DataImplInput) Data {
 }
 
 func NewData(cfg *config.Config, logger mlog.Logger) (Data, error) {
-	return NewDataImpl(&DataImplInput{
+	return NewDataImpl(&NewDataParams{
 		Cfg:    cfg,
 		Logger: logger.WithModule("data/data"),
 	}), nil

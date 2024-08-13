@@ -12,10 +12,11 @@ import (
 var _ cluster.ClusterServer = (*clusterSvc)(nil)
 
 type clusterSvc struct {
+	cluster.UnimplementedClusterServer
+
 	guest
 	repo   repo.K8sRepo
 	logger mlog.Logger
-	cluster.UnimplementedClusterServer
 }
 
 func NewClusterSvc(repo repo.K8sRepo, logger mlog.Logger) cluster.ClusterServer {
@@ -23,9 +24,7 @@ func NewClusterSvc(repo repo.K8sRepo, logger mlog.Logger) cluster.ClusterServer 
 }
 
 func (c *clusterSvc) ClusterInfo(ctx context.Context, req *cluster.InfoRequest) (*cluster.InfoResponse, error) {
-	info := c.repo.ClusterInfo()
-
 	return &cluster.InfoResponse{
-		Item: transformer.FromClusterInfo(info),
+		Item: transformer.FromClusterInfo(c.repo.ClusterInfo()),
 	}, nil
 }

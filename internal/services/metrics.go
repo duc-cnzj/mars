@@ -8,6 +8,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/metrics"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
+	"github.com/duc-cnzj/mars/v4/internal/util/timer"
 	"github.com/dustin/go-humanize"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -20,12 +21,19 @@ type metricsSvc struct {
 	metrics.UnimplementedMetricsServer
 	k8sRepo  repo.K8sRepo
 	logger   mlog.Logger
+	timer    timer.Timer
 	projRepo repo.ProjectRepo
 	nsRepo   repo.NamespaceRepo
 }
 
-func NewMetricsSvc(k8sRepo repo.K8sRepo, logger mlog.Logger, projRepo repo.ProjectRepo, nsRepo repo.NamespaceRepo) metrics.MetricsServer {
-	return &metricsSvc{k8sRepo: k8sRepo, projRepo: projRepo, nsRepo: nsRepo, logger: logger.WithModule("services/metrics")}
+func NewMetricsSvc(timer timer.Timer, k8sRepo repo.K8sRepo, logger mlog.Logger, projRepo repo.ProjectRepo, nsRepo repo.NamespaceRepo) metrics.MetricsServer {
+	return &metricsSvc{
+		k8sRepo:  k8sRepo,
+		logger:   logger.WithModule("services/metrics"),
+		timer:    timer,
+		projRepo: projRepo,
+		nsRepo:   nsRepo,
+	}
 }
 
 var (
@@ -33,10 +41,6 @@ var (
 	timeSpan     = 5 * time.Second * 30
 	length       = timeSpan / tickDuration
 )
-
-var now = func() string {
-	return time.Now().Format("15:04:05")
-}
 
 func (m *metricsSvc) TopPod(ctx context.Context, request *metrics.TopPodRequest) (*metrics.TopPodResponse, error) {
 	podMetrics, err := m.k8sRepo.GetPodMetrics(ctx, request.Namespace, request.Pod)
@@ -129,7 +133,7 @@ func (m *metricsSvc) metrics(podMetrics *v1beta1.PodMetrics) *metrics.TopPodResp
 		Memory:         float64(memory.ScaledValue(3)),
 		HumanizeCpu:    HumanizeCpu,
 		HumanizeMemory: humanize.Bytes(uint64(asInt64)),
-		Time:           now(),
+		Time:           m.timer.Now().Format("15:04:05"),
 		Length:         int32(length),
 	}
 }

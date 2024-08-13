@@ -27,8 +27,8 @@ func Test_endpointRepo_InNamespace_HappyPath(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	proj := NewMockProjectRepo(m)
-	repo := NewEndpointRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.DataImplInput{
-		Db: db,
+	repo := NewEndpointRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+		DB: db,
 	}), proj)
 
 	ns := createNamespace(db)
@@ -68,8 +68,8 @@ func Test_endpointRepo_InNamespace_NonExistentNamespace(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewEndpointRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.DataImplInput{
-		Db: db,
+	repo := NewEndpointRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+		DB: db,
 	}), NewMockProjectRepo(m))
 
 	// Assuming namespace with ID 999 does not exist
@@ -84,8 +84,8 @@ func TestInProject_HappyPath(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	proj := NewMockProjectRepo(m)
-	repo := NewEndpointRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.DataImplInput{
-		Db: db,
+	repo := NewEndpointRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+		DB: db,
 	}), proj)
 
 	ns := createNamespace(db)
@@ -125,8 +125,8 @@ func TestInProject_NonExistentProject(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewEndpointRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.DataImplInput{
-		Db: db,
+	repo := NewEndpointRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+		DB: db,
 	}), NewMockProjectRepo(m))
 
 	// Assuming project with ID 999 does not exist

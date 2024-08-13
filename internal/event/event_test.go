@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -58,8 +59,11 @@ func TestDispatcher_RunAndShutdown(t *testing.T) {
 	dispatcher := NewDispatcher(logger)
 
 	eventName := Event("testEvent")
+	mu := sync.RWMutex{}
 	called := 0
 	listener := func(any any, e Event) error {
+		mu.Lock()
+		defer mu.Unlock()
 		called++
 		return errors.New("error")
 	}
@@ -70,5 +74,7 @@ func TestDispatcher_RunAndShutdown(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	dispatcher.Shutdown(context.Background())
 
+	mu.Lock()
+	defer mu.Unlock()
 	assert.Equal(t, 1, called)
 }

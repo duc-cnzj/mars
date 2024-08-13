@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+
 	"github.com/duc-cnzj/mars/api/v4/project"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/api/v4/websocket"
@@ -74,16 +76,12 @@ func (p *projectSvc) List(ctx context.Context, request *project.ListRequest) (*p
 	if err != nil {
 		return nil, err
 	}
-	res := make([]*types.ProjectModel, 0, len(list))
-	for _, p := range list {
-		res = append(res, transformer.FromProject(p))
-	}
 
 	return &project.ListResponse{
 		Page:     pag.Page,
 		PageSize: pag.PageSize,
 		Count:    pag.Count,
-		Items:    res,
+		Items:    serialize.Serialize(list, transformer.FromProject),
 	}, nil
 }
 
