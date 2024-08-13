@@ -231,7 +231,6 @@ func (p *projectSvc) getBranchAndCommitIfMissing(inBranch, inCommit string, show
 }
 
 func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest) (*project.DeleteResponse, error) {
-	//var event = p.eventer
 	projectModel, err := p.projRepo.Show(ctx, int(request.Id))
 	if err != nil {
 		return nil, err
