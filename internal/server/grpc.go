@@ -86,7 +86,7 @@ func (g *grpcRunner) initServer() *grpc.Server {
 		grpc.ChainStreamInterceptor(
 			grpc_auth.StreamServerInterceptor(authFn),
 			marsauthorizor.StreamServerInterceptor(),
-			middlewares.StreamServerInterceptor(),
+			middlewares.ValidatorStreamServerInterceptor(),
 			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(g.recoveryHandler)),
 			middlewares.MetricsStreamServerInterceptor(g.logger),
 		),
@@ -95,7 +95,7 @@ func (g *grpcRunner) initServer() *grpc.Server {
 			grpc_auth.UnaryServerInterceptor(authFn),
 			middlewares.MetricsServerInterceptor(g.logger),
 			marsauthorizor.UnaryServerInterceptor(),
-			middlewares.UnaryServerInterceptor(),
+			middlewares.ValidatorUnaryServerInterceptor(),
 			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(g.recoveryHandler)),
 		),
 	)

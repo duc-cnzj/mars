@@ -1,6 +1,6 @@
 package repo
 
-//go:generate mockgen -destination ./mock_repo.go -package repo github.com/duc-cnzj/mars/v4/internal/repo ProjectRepo
+//go:generate mockgen -destination ./mock_repo.go -package repo github.com/duc-cnzj/mars/v4/internal/repo ProjectRepo,GitRepo
 
 import (
 	"github.com/duc-cnzj/mars/v4/internal/util/timer"

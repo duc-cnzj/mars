@@ -161,7 +161,7 @@ func (r *repoImpl) Create(ctx context.Context, in *CreateRepoInput) (*Repo, erro
 
 func (r *repoImpl) Show(ctx context.Context, id int) (*Repo, error) {
 	get, err := r.data.DB().Repo.Get(ctx, id)
-	return ToRepo(get), err
+	return ToRepo(get), ToError(404, err)
 }
 
 type UpdateRepoInput struct {
@@ -222,6 +222,18 @@ func (r *repoImpl) ToggleEnabled(ctx context.Context, id int, enabled bool) (*Re
 	if err != nil {
 		return nil, err
 	}
+
+	// 禁用时，需要检查是否有关联的项目
+	if !enabled && get.Enabled {
+		count, err := get.QueryProjects().Count(ctx)
+		if err != nil {
+			return nil, ToError(404, err)
+		}
+		if count > 0 {
+			return nil, ToError(400, "repo has projects, can't disable")
+		}
+	}
+
 	save, err := get.Update().SetEnabled(enabled).Save(ctx)
 	return ToRepo(save), err
 }
@@ -245,5 +257,4 @@ func ToRepo(data *ent.Repo) *Repo {
 		Description:    data.Description,
 		Projects:       serialize.Serialize(data.Edges.Projects, ToProject),
 	}
-
 }

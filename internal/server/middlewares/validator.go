@@ -12,7 +12,7 @@ type Validator interface {
 	Validate() error
 }
 
-func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
+func ValidatorUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		if validator, ok := req.(Validator); ok {
 			if err := validator.Validate(); err != nil {
@@ -24,7 +24,7 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-func StreamServerInterceptor() grpc.StreamServerInterceptor {
+func ValidatorStreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv any, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		wrapper := &recvWrapper{stream}
 		return handler(srv, wrapper)

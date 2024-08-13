@@ -12,8 +12,11 @@ func ToError(code uint32, err any) error {
 
 	var errMessage string
 	var co codes.Code
-	switch e := any(err).(type) {
+	switch e := err.(type) {
 	case error:
+		if s, ok := status.FromError(e); ok {
+			return s.Err()
+		}
 		errMessage = e.Error()
 	case string:
 		errMessage = e
