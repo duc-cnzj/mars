@@ -9,6 +9,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/server/middlewares"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -73,18 +74,18 @@ func (g *grpcRunner) initServer() *grpc.Server {
 		return authenticate(ctx, g.app.Auth())
 	}
 	server := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainStreamInterceptor(
 			grpc_auth.StreamServerInterceptor(authFn),
 			marsauthorizor.StreamServerInterceptor(),
 			middlewares.StreamServerInterceptor(),
 			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(g.recoveryHandler)),
-			middlewares.MetricsStreamServerInterceptor,
+			middlewares.MetricsStreamServerInterceptor(g.app.Logger()),
 		),
 		grpc.ChainUnaryInterceptor(
 			middlewares.LoggerUnaryServerInterceptor(g.app.Logger()),
 			grpc_auth.UnaryServerInterceptor(authFn),
-			middlewares.MetricsServerInterceptor,
-			middlewares.TraceUnaryServerInterceptor,
+			middlewares.MetricsServerInterceptor(g.app.Logger()),
 			marsauthorizor.UnaryServerInterceptor(),
 			middlewares.UnaryServerInterceptor(),
 			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(g.recoveryHandler)),

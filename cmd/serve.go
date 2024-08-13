@@ -15,6 +15,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/locker"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/singleflight"
@@ -78,6 +79,7 @@ func newApp(
 	pm application.PluginManger,
 	reg *application.GrpcRegistry,
 	ws application.WsServer,
+	pr *prometheus.Registry,
 ) application.App {
 	return application.NewApp(
 		cfg,
@@ -94,6 +96,7 @@ func newApp(
 		pm,
 		reg,
 		ws,
+		pr,
 		application.WithBootstrappers(bootstrappers...),
 	)
 }

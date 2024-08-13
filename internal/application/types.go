@@ -7,21 +7,21 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/duc-cnzj/mars/v4/internal/cron"
-	"github.com/duc-cnzj/mars/v4/internal/event"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"google.golang.org/grpc"
-
 	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/cache"
 	"github.com/duc-cnzj/mars/v4/internal/config"
+	"github.com/duc-cnzj/mars/v4/internal/cron"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/event"
 	"github.com/duc-cnzj/mars/v4/internal/locker"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/singleflight"
+	"google.golang.org/grpc"
 )
 
 type EndpointFunc func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error)
@@ -79,6 +79,9 @@ type App interface {
 
 	// Oidc return oidc config.
 	Oidc() data.OidcConfig
+
+	// PrometheusRegistry return prometheus.
+	PrometheusRegistry() *prometheus.Registry
 
 	// Uploader getter
 	Uploader() uploader.Uploader

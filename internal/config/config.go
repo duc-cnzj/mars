@@ -130,7 +130,7 @@ type Config struct {
 	NsPrefix   string `mapstructure:"ns_prefix"`
 	ExternalIp string `mapstructure:"external_ip"`
 
-	JaegerAgentHostPort string `mapstructure:"jaeger_agent_host_port"`
+	TracingEndpoint string `mapstructure:"tracing_endpoint"`
 
 	// mysql
 	DBDriver           string        `mapstructure:"db_driver"`

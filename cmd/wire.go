@@ -12,6 +12,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/event"
 	"github.com/duc-cnzj/mars/v4/internal/locker"
+	"github.com/duc-cnzj/mars/v4/internal/metrics"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/services"
@@ -29,6 +30,7 @@ func InitializeApp(*config.Config, mlog.Logger, []application.Bootstrapper) (app
 			data.WireData,
 			cache.WireCache,
 			socket.WireSocket,
+			metrics.WireMetrics,
 			application.WireApp,
 			event.WireEvent,
 			repo.WireRepoSet,

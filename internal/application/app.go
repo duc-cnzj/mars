@@ -49,25 +49,22 @@ type app struct {
 	hooksMu sync.RWMutex
 	hooks   map[hook][]Callback
 
-	config        *config.Config
-	logger        mlog.Logger
-	uploader      uploader.Uploader
-	localUploader uploader.Uploader
-	auth          auth.Auth
-	dispatcher    event.Dispatcher
-	cronManager   mcron.Manager
-	cache         cache.Cache
-	cacheLock     locker.Locker
-	tracer        trace.Tracer
-	sf            *singleflight.Group
-	data          data.Data
-	pluginManager PluginManger
-	reg           *GrpcRegistry
-	ws            WsServer
-}
-
-func (app *app) WsServer() WsServer {
-	return app.ws
+	config             *config.Config
+	logger             mlog.Logger
+	uploader           uploader.Uploader
+	localUploader      uploader.Uploader
+	auth               auth.Auth
+	dispatcher         event.Dispatcher
+	cronManager        mcron.Manager
+	cache              cache.Cache
+	cacheLock          locker.Locker
+	tracer             trace.Tracer
+	sf                 *singleflight.Group
+	data               data.Data
+	pluginManager      PluginManger
+	reg                *GrpcRegistry
+	ws                 WsServer
+	prometheusRegistry *prometheus.Registry
 }
 
 type Option func(*app)
@@ -109,26 +106,28 @@ func NewApp(
 	pm PluginManger,
 	reg *GrpcRegistry,
 	ws WsServer,
+	pr *prometheus.Registry,
 	opts ...Option,
 ) App {
 	doneCtx, cancelFunc := context.WithCancel(context.TODO())
 	appli := &app{
-		done:          doneCtx,
-		doneFunc:      cancelFunc,
-		servers:       []Server{},
-		excludeTags:   config.ExcludeServer.List(),
-		hooksMu:       sync.RWMutex{},
-		hooks:         map[hook][]Callback{},
-		config:        config,
-		logger:        logger,
-		uploader:      uploader,
-		localUploader: uploader.LocalUploader(),
-		auth:          auth,
-		dispatcher:    dispatcher,
-		cronManager:   cronManager,
-		cache:         cache,
-		cacheLock:     cacheLock,
-		tracer:        nil,
+		done:               doneCtx,
+		prometheusRegistry: pr,
+		doneFunc:           cancelFunc,
+		servers:            []Server{},
+		excludeTags:        config.ExcludeServer.List(),
+		hooksMu:            sync.RWMutex{},
+		hooks:              map[hook][]Callback{},
+		config:             config,
+		logger:             logger,
+		uploader:           uploader,
+		localUploader:      uploader.LocalUploader(),
+		auth:               auth,
+		dispatcher:         dispatcher,
+		cronManager:        cronManager,
+		cache:              cache,
+		cacheLock:          cacheLock,
+		tracer:             nil,
 		//tracer:        tracer,
 		sf:            sf,
 		data:          data,
@@ -172,6 +171,10 @@ func (app *app) Oidc() data.OidcConfig {
 	return app.data.OidcConfig()
 }
 
+func (app *app) PrometheusRegistry() *prometheus.Registry {
+	return app.prometheusRegistry
+}
+
 // PluginMgr impl App PluginMgr.
 func (app *app) PluginMgr() PluginManger {
 	return app.pluginManager
@@ -184,6 +187,10 @@ func (app *app) Data() data.Data {
 
 func (app *app) Logger() mlog.Logger {
 	return app.logger
+}
+
+func (app *app) WsServer() WsServer {
+	return app.ws
 }
 
 // Locker impl App CacheLock.

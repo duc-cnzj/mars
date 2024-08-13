@@ -8,7 +8,6 @@ import "websocket/websocket.proto";
 import "validate/validate.proto";
 import "openapi/v3/annotations.proto";
 import "types/types.proto";
-import "mars/mars.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/project;project";
 

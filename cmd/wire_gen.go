@@ -15,6 +15,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/event"
 	"github.com/duc-cnzj/mars/v4/internal/locker"
+	"github.com/duc-cnzj/mars/v4/internal/metrics"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/services"
@@ -88,6 +89,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	grpcRegistry := services.NewGrpcRegistry(versionServer, projectServer, pictureServer, namespaceServer, metricsServer, gitServer, fileServer, eventServer, endpointServer, containerServer, clusterServer, changelogServer, authServer, accessTokenServer, repoServer)
 	counterCounter := counter.NewCounter()
 	wsServer := socket.NewWebsocketManager(logger, counterCounter, projectRepo, repoRepo, namespaceRepo, jobManager, dataData, pluginManger, authAuth, uploaderUploader, lockerLocker, k8sRepo, eventRepo, executorManager, fileRepo)
-	app := newApp(configConfig, dataData, manager, arg, logger, uploaderUploader, authAuth, dispatcher, cacheCache, lockerLocker, group, pluginManger, grpcRegistry, wsServer)
+	registry := metrics.NewRegistry()
+	app := newApp(configConfig, dataData, manager, arg, logger, uploaderUploader, authAuth, dispatcher, cacheCache, lockerLocker, group, pluginManger, grpcRegistry, wsServer, registry)
 	return app, nil
 }

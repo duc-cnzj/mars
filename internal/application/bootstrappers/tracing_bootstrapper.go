@@ -1,6 +1,22 @@
 package bootstrappers
 
-import "github.com/duc-cnzj/mars/v4/internal/application"
+import (
+	"context"
+	"errors"
+
+	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v4/version"
+	prometheus2 "github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/propagation"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+)
 
 const serviceName = "mars"
 
@@ -10,68 +26,125 @@ func (t *TracingBootstrapper) Tags() []string {
 	return []string{"trace"}
 }
 
-func (t *TracingBootstrapper) Bootstrap(appli application.App) error {
-	//cfg := appli.Config()
-	//if cfg.JaegerAgentHostPort != "" {
-	//	host, port, err := net.SplitHostPort(cfg.JaegerAgentHostPort)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	jaeexp, err := newJaegerExporter(host, port)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	opts := []trace.TracerProviderOption{
-	//		trace.WithBatcher(jaeexp),
-	//		trace.WithResource(newResource()),
-	//	}
-	//	if !appli.IsDebug() {
-	//		// [采样器参考](https://github.com/open-telemetry/docs-cn/blob/main/specification/trace/sdk.md)
-	//		opts = append(opts, trace.WithSampler(trace.ParentBased(trace.TraceIDRatioBased(0.3))))
-	//	}
-	//	tp := trace.NewTracerProvider(opts...)
-	//	otel.SetTracerProvider(tp)
-	//	appli.RegisterAfterShutdownFunc(func(app app.App) {
-	//		appli.Logger().Info("shutdown tracer")
-	//		timeout, cancelFunc := context.WithTimeout(context.TODO(), 3*time.Second)
-	//		defer cancelFunc()
-	//		if err := tp.Remove(timeout); err != nil {
-	//			appli.Logger().Error(err)
-	//		}
-	//	})
-	//}
-	//otel.SetErrorHandler(&errorHandler{})
-	//tracer := otel.Tracer("mars")
+func (t *TracingBootstrapper) Bootstrap(app application.App) error {
 
+	shutdownFuncs, err := setupOTelSDK(context.Background(), app.Config().TracingEndpoint, app.PrometheusRegistry())
+	if err != nil {
+		return err
+	}
+	app.RegisterAfterShutdownFunc(func(app application.App) {
+		if err := shutdownFuncs(context.TODO()); err != nil {
+			app.Logger().Warning(err)
+		}
+	})
 	return nil
 }
 
-//
-//type errorHandler struct{}
-//
-//func (e *errorHandler) Handle(err error) {
-//	mlog.Warning(err)
+// setupOTelSDK bootstraps the OpenTelemetry pipeline.
+// If it does not return an error, make sure to call shutdown for proper cleanup.
+func setupOTelSDK(ctx context.Context, grpcEndpoint string, promReg *prometheus2.Registry) (shutdown func(ctx2 context.Context) error, err error) {
+	v := version.GetVersion()
+	r, err := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceName(serviceName),
+			semconv.ServiceVersionKey.String(v.String()),
+		),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	var shutdownFuncs []func(context.Context) error
+
+	// shutdown calls cleanup functions registered via shutdownFuncs.
+	// The errors from the calls are joined.
+	// Each registered cleanup will be invoked once.
+	shutdown = func(ctx context.Context) error {
+		var err error
+		for _, fn := range shutdownFuncs {
+			err = errors.Join(err, fn(ctx))
+		}
+		shutdownFuncs = nil
+		return err
+	}
+
+	// handleErr calls shutdown for cleanup and makes sure that all errors are returned.
+	handleErr := func(inErr error) {
+		err = errors.Join(inErr, shutdown(ctx))
+	}
+
+	// Set up propagator.
+	prop := newPropagator()
+	otel.SetTextMapPropagator(prop)
+
+	exporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithEndpoint(grpcEndpoint), otlptracegrpc.WithInsecure())
+	if err != nil {
+		panic(err)
+	}
+
+	// Set up trace provider.
+	tracerProvider, err := newTraceProvider(r, exporter)
+	if err != nil {
+		handleErr(err)
+		return
+	}
+	shutdownFuncs = append(shutdownFuncs, tracerProvider.Shutdown)
+	otel.SetTracerProvider(tracerProvider)
+
+	e, err := prometheus.New(prometheus.WithRegisterer(promReg))
+	meterProvider, err := newMeterProvider(r, e)
+	if err != nil {
+		handleErr(err)
+		return
+	}
+	shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
+	otel.SetMeterProvider(meterProvider)
+
+	// Set up logger provider.
+	//loggerProvider, err := newLoggerProvider()
+	//if err != nil {
+	//	handleErr(err)
+	//	return
+	//}
+	//shutdownFuncs = append(shutdownFuncs, loggerProvider.Shutdown)
+	//global.SetLoggerProvider(loggerProvider)
+
+	return
+}
+
+func newPropagator() propagation.TextMapPropagator {
+	return propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	)
+}
+
+func newTraceProvider(r *resource.Resource, exp sdktrace.SpanExporter) (*trace.TracerProvider, error) {
+	traceProvider := trace.NewTracerProvider(
+		trace.WithSampler(trace.AlwaysSample()),
+		trace.WithResource(r),
+		trace.WithBatcher(exp),
+	)
+	return traceProvider, nil
+}
+
+func newMeterProvider(res *resource.Resource, reader sdkmetric.Reader) (*sdkmetric.MeterProvider, error) {
+	meterProvider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
+		sdkmetric.WithReader(reader),
+	)
+	return meterProvider, nil
+}
+
+//func newLoggerProvider() (*log.LoggerProvider, error) {
+//logExporter, err := stdoutlog.New()
+//if err != nil {
+//	return nil, err
 //}
-//
-//func newResource() *resource.Resource {
-//	v := version.GetVersion()
-//	return resource.NewWithAttributes(
-//		semconv.SchemaURL,
-//		semconv.ServiceNameKey.String(serviceName),
-//		semconv.ServiceVersionKey.String(v.String()),
-//		attribute.String("system.build_date", v.BuildDate),
-//		attribute.String("system.git_commit", v.GitCommit),
-//		attribute.String("system.git_branch", v.GitBranch),
-//		attribute.String("system.go_version", v.GoVersion),
-//		attribute.String("system.platform", v.Platform),
-//	)
-//}
-//
-//func newJaegerExporter(host, port string) (trace.SpanExporter, error) {
-//	return jaeger.New(
-//		jaeger.WithAgentEndpoint(
-//			jaeger.WithAgentHost(host),
-//			jaeger.WithAgentPort(port),
-//		),
-//	)
+//loggerProvider := log.NewLoggerProvider(
+//	log.WithProcessor(log.NewBatchProcessor(logExporter)),
+//)
+//return loggerProvider, nil
 //}

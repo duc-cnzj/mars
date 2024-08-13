@@ -5,7 +5,6 @@ package git;
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "validate/validate.proto";
-import "mars/mars.proto";
 import "openapi/v3/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/git;git";
