@@ -8,6 +8,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+type Authorize interface {
+	Authorize(ctx context.Context, fullMethodName string) (context.Context, error)
+}
+
 func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		if authorizeInterface, ok := info.Server.(Authorize); ok {

@@ -1,8 +1,5 @@
 package application
 
-//go:generate mockgen -destination ../mock/mock_app.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts ApplicationInterface
-//go:generate mockgen -destination ../mock/mock_tracer.go -package mock go.opentelemetry.io/otel/trace Tracer
-
 import (
 	"context"
 	"net/http"

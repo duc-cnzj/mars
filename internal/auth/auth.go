@@ -22,9 +22,6 @@ type Auth interface {
 	Authenticator
 	Sign(*UserInfo) (*SignData, error)
 }
-type Authorize interface {
-	Authorize(ctx context.Context, fullMethodName string) (context.Context, error)
-}
 
 type JwtClaims struct {
 	*jwt.StandardClaims
