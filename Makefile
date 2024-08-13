@@ -105,7 +105,7 @@ fmt:
 
 .PHONY: serve
 serve:
-	go run main.go serve --debug
+	go run main.go serve
 #	go run -race main.go serve --debug
 
 .PHONY: build_race

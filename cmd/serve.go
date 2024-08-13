@@ -29,7 +29,7 @@ var serverBootstrappers = []application.Bootstrapper{
 	&bootstrappers.PprofBootstrapper{},
 	&bootstrappers.GrpcBootstrapper{},
 	&bootstrappers.MetricsBootstrapper{},
-	//&bootstrappers.TracingBootstrapper{},
+	&bootstrappers.TracingBootstrapper{},
 	&bootstrappers.CronBootstrapper{},
 	&bootstrappers.PluginBootstrapper{},
 	&bootstrappers.SSOBootstrapper{},

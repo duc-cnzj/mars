@@ -1,12 +1,14 @@
 package mlog
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"runtime"
 
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type logrusLogger struct {
@@ -87,6 +89,14 @@ func (z *logrusLogger) Debugf(format string, v ...any) {
 	z.logrus.WithField(callerField()).Debugf(format, v...)
 }
 
+func (z *logrusLogger) DebugCtx(ctx context.Context, v ...any) {
+	z.logWithContext(ctx).WithField(callerField()).Debug(v...)
+}
+
+func (z *logrusLogger) DebugCtxf(ctx context.Context, format string, v ...any) {
+	z.logWithContext(ctx).WithField(callerField()).Debugf(format, v...)
+}
+
 // Warning print Warning msg
 func (z *logrusLogger) Warning(v ...any) {
 	z.logrus.WithField(callerField()).Warn(v...)
@@ -95,6 +105,14 @@ func (z *logrusLogger) Warning(v ...any) {
 // Warningf prints Warning msg
 func (z *logrusLogger) Warningf(format string, v ...any) {
 	z.logrus.WithField(callerField()).Warnf(format, v...)
+}
+
+func (z *logrusLogger) WarningCtx(ctx context.Context, v ...any) {
+	z.logWithContext(ctx).WithField(callerField()).Warn(v...)
+}
+
+func (z *logrusLogger) WarningCtxf(ctx context.Context, format string, v ...any) {
+	z.logWithContext(ctx).WithField(callerField()).Warnf(format, v...)
 }
 
 // Info print info msg
@@ -107,6 +125,15 @@ func (z *logrusLogger) Infof(format string, v ...any) {
 	z.logrus.WithField(callerField()).Infof(format, v...)
 }
 
+func (z *logrusLogger) InfoCtx(ctx context.Context, v ...any) {
+	z.logWithContext(ctx).WithField(callerField()).Info(v...)
+}
+
+func (z *logrusLogger) InfoCtxf(ctx context.Context, format string, v ...any) {
+	z.logWithContext(ctx).WithField(callerField()).Infof(format, v...)
+
+}
+
 // Error print err msg
 func (z *logrusLogger) Error(v ...any) {
 	z.logrus.WithField(callerField()).Error(v...)
@@ -115,6 +142,14 @@ func (z *logrusLogger) Error(v ...any) {
 // Errorf printf err msg
 func (z *logrusLogger) Errorf(format string, v ...any) {
 	z.logrus.WithField(callerField()).Errorf(format, v...)
+}
+
+func (z *logrusLogger) ErrorCtx(ctx context.Context, v ...any) {
+	z.logWithContext(ctx).WithField(callerField()).Error(v...)
+}
+
+func (z *logrusLogger) ErrorCtxf(ctx context.Context, format string, v ...any) {
+	z.logWithContext(ctx).WithField(callerField()).Errorf(format, v...)
 }
 
 // Fatal fatal err.
@@ -127,10 +162,23 @@ func (z *logrusLogger) Fatalf(format string, v ...any) {
 	z.logrus.WithField(callerField()).Fatalf(format, v...)
 }
 
+func (z *logrusLogger) FatalCtx(ctx context.Context, v ...any) {
+	z.logWithContext(ctx).WithField(callerField()).Fatal(v...)
+}
+
+func (z *logrusLogger) FatalCtxf(ctx context.Context, format string, v ...any) {
+	z.logWithContext(ctx).WithField(callerField()).Fatalf(format, v...)
+}
+
 // callerField return caller key and file line.
 func callerField() (string, string) {
-	pc, _, _, _ := runtime.Caller(3)
+	pc, _, _, _ := runtime.Caller(2)
 	file, line := runtime.FuncForPC(pc).FileLine(pc)
 
 	return "file", fmt.Sprintf("%s:%d.", file, line)
+}
+
+func (z *logrusLogger) logWithContext(ctx context.Context) *logrus.Entry {
+	spanContext := trace.SpanContextFromContext(ctx)
+	return z.logrus.WithField("SpanID", spanContext.SpanID()).WithField("TraceID", spanContext.TraceID())
 }

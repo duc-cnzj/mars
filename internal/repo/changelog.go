@@ -128,6 +128,7 @@ type FindLastChangelogsByProjectIDChangeLogInput struct {
 	OnlyChanged        bool
 	ProjectID          int
 	OrderByVersionDesc *bool
+	Limit              int
 }
 
 func (c *changelogRepo) FindLastChangelogsByProjectID(ctx context.Context, input *FindLastChangelogsByProjectIDChangeLogInput) ([]*Changelog, error) {
@@ -143,7 +144,7 @@ func (c *changelogRepo) FindLastChangelogsByProjectID(ctx context.Context, input
 			changelog.ProjectID(input.ProjectID),
 			filters.IfOrderByDesc("version")(input.OrderByVersionDesc),
 		).
-		Limit(5).
+		Limit(input.Limit).
 		All(ctx)
 	return serialize.Serialize(all, ToChangeLog), err
 }

@@ -27,6 +27,7 @@ func (c *changelogSvc) FindLastChangelogsByProjectID(ctx context.Context, reques
 		OnlyChanged:        request.OnlyChanged,
 		ProjectID:          int(request.ProjectId),
 		OrderByVersionDesc: lo.ToPtr(true),
+		Limit:              5,
 	})
 	if err != nil {
 		return nil, err

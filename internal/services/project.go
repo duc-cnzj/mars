@@ -30,7 +30,6 @@ type projectSvc struct {
 	projRepo   repo.ProjectRepo
 	gitRepo    repo.GitRepo
 	k8sRepo    repo.K8sRepo
-	dm         repo.DomainRepo
 	eventRepo  repo.EventRepo
 	logger     mlog.Logger
 	helmer     repo.HelmerRepo

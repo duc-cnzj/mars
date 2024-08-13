@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+
 	"github.com/duc-cnzj/mars/api/v4/token"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
@@ -19,14 +21,16 @@ var _ token.AccessTokenServer = (*accessTokenSvc)(nil)
 type accessTokenSvc struct {
 	token.UnimplementedAccessTokenServer
 
-	timer timer.Timer
+	timer  timer.Timer
+	logger mlog.Logger
 
 	repo      repo.AccessTokenRepo
 	eventRepo repo.EventRepo
 }
 
-func NewAccessTokenSvc(eventRepo repo.EventRepo, timer timer.Timer, repo repo.AccessTokenRepo) token.AccessTokenServer {
+func NewAccessTokenSvc(logger mlog.Logger, eventRepo repo.EventRepo, timer timer.Timer, repo repo.AccessTokenRepo) token.AccessTokenServer {
 	return &accessTokenSvc{
+		logger:    logger,
 		eventRepo: eventRepo,
 		timer:     timer,
 		repo:      repo,
@@ -42,6 +46,7 @@ func (a *accessTokenSvc) List(ctx context.Context, request *token.ListRequest) (
 		WithSoftDelete: true,
 	})
 	if err != nil {
+		a.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 	var res = make([]*types.AccessTokenModel, 0, len(tokens))
@@ -64,6 +69,7 @@ func (a *accessTokenSvc) Grant(ctx context.Context, request *token.GrantRequest)
 		User:          user,
 	})
 	if err != nil {
+		a.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 
@@ -77,6 +83,7 @@ func (a *accessTokenSvc) Lease(ctx context.Context, request *token.LeaseRequest)
 
 	at, err := a.repo.Lease(ctx, request.Token, request.ExpireSeconds)
 	if err != nil {
+		a.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 	a.eventRepo.AuditLog(
@@ -91,6 +98,7 @@ func (a *accessTokenSvc) Lease(ctx context.Context, request *token.LeaseRequest)
 func (a *accessTokenSvc) Revoke(ctx context.Context, request *token.RevokeRequest) (*token.RevokeResponse, error) {
 	var user = MustGetUser(ctx)
 	if err := a.repo.Revoke(ctx, request.Token); err != nil {
+		a.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 	a.eventRepo.AuditLog(types.EventActionType_Delete, user.Name, fmt.Sprintf(`[accessTokenSvc]: 用户 "%s" 删除 token "%s".`, user.Name, request.Token))

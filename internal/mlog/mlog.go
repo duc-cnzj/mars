@@ -1,6 +1,7 @@
 package mlog
 
 import (
+	"context"
 	"log"
 
 	"github.com/duc-cnzj/mars/v4/internal/config"
@@ -9,14 +10,34 @@ import (
 type Logger interface {
 	Debug(v ...any)
 	Debugf(format string, v ...any)
+
+	DebugCtx(ctx context.Context, v ...any)
+	DebugCtxf(ctx context.Context, format string, v ...any)
+
 	Warning(v ...any)
 	Warningf(format string, v ...any)
+
+	WarningCtx(ctx context.Context, v ...any)
+	WarningCtxf(ctx context.Context, format string, v ...any)
+
 	Info(v ...any)
 	Infof(format string, v ...any)
+
+	InfoCtx(ctx context.Context, v ...any)
+	InfoCtxf(ctx context.Context, format string, v ...any)
+
 	Error(v ...any)
 	Errorf(format string, v ...any)
+
+	ErrorCtx(ctx context.Context, v ...any)
+	ErrorCtxf(ctx context.Context, format string, v ...any)
+
 	Fatal(v ...any)
 	Fatalf(format string, v ...any)
+
+	FatalCtx(ctx context.Context, v ...any)
+	FatalCtxf(ctx context.Context, format string, v ...any)
+
 	Flush() error
 
 	HandlePanic(title string)
@@ -24,7 +45,11 @@ type Logger interface {
 }
 
 func NewLogger(cfg *config.Config) Logger {
-	switch cfg.LogChannel {
+	var channel string
+	if cfg != nil {
+		channel = cfg.LogChannel
+	}
+	switch channel {
 	case "logrus":
 		return NewLogrusLogger(cfg.Debug)
 	case "zap":
@@ -37,6 +62,36 @@ func NewLogger(cfg *config.Config) Logger {
 var _ Logger = (*emptyLogger)(nil)
 
 type emptyLogger struct{}
+
+func (e *emptyLogger) FatalCtx(ctx context.Context, v ...any) {
+}
+
+func (e *emptyLogger) FatalCtxf(ctx context.Context, format string, v ...any) {
+}
+
+func (e *emptyLogger) DebugCtx(ctx context.Context, v ...any) {
+}
+
+func (e *emptyLogger) DebugCtxf(ctx context.Context, format string, v ...any) {
+}
+
+func (e *emptyLogger) WarningCtx(ctx context.Context, v ...any) {
+}
+
+func (e *emptyLogger) WarningCtxf(ctx context.Context, format string, v ...any) {
+}
+
+func (e *emptyLogger) InfoCtx(ctx context.Context, v ...any) {
+}
+
+func (e *emptyLogger) InfoCtxf(ctx context.Context, format string, v ...any) {
+}
+
+func (e *emptyLogger) ErrorCtx(ctx context.Context, v ...any) {
+}
+
+func (e *emptyLogger) ErrorCtxf(ctx context.Context, format string, v ...any) {
+}
 
 // NewEmptyLogger return contracts.LoggerInterface
 func NewEmptyLogger() Logger {

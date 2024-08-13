@@ -94,6 +94,7 @@ func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogR
 
 	logs, err := c.k8sRepo.GetPodLogs(request.Namespace, request.Pod, opt)
 	if err != nil {
+		c.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 
@@ -112,11 +113,13 @@ func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToP
 
 	file, err := c.fileRepo.GetByID(ctx, int(request.FileId))
 	if err != nil {
+		c.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 
 	result, err := c.k8sRepo.Copy(ctx, request.Namespace, request.Pod, request.Container, file.Path, "")
 	if err != nil {
+		c.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 
@@ -155,6 +158,7 @@ func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server 
 	if podInfo.Status.Phase == v1.PodSucceeded || podInfo.Status.Phase == v1.PodFailed || podInfo.Status.Phase == v1.PodPending {
 		log, err := c.ContainerLog(server.Context(), request)
 		if err != nil {
+			c.logger.ErrorCtx(server.Context(), err)
 			return err
 		}
 
@@ -170,11 +174,12 @@ func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server 
 
 	stream, err := c.k8sRepo.LogStream(context.TODO(), request.Namespace, request.Pod, request.Container)
 	if err != nil {
+		c.logger.ErrorCtx(server.Context(), err)
 		return err
 	}
 	bf := bufio.NewReader(stream)
 
-	ch := make(chan []byte, 100)
+	ch := make(chan []byte, 1000)
 	wg := sync.WaitGroup{}
 	defer wg.Wait()
 	wg.Add(1)
@@ -189,7 +194,7 @@ func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server 
 		for {
 			bytes, err := bf.ReadBytes('\n')
 			if err != nil {
-				c.logger.Debugf("[LogStream]: %v", err)
+				c.logger.DebugCtxf(server.Context(), "[LogStream]: %v", err)
 				return
 			}
 			select {

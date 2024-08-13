@@ -85,7 +85,7 @@ db_slow_log_enabled: true
 # "ns", "us" (or "µs"), "ms", "s", "m", "h"
 db_slow_log_threshold: 200ms
 
-jaeger_agent_host_port: ""
+tracing_endpoint: ""
 
 # 集群外网访问 ip
 external_ip: "127.0.0.1"

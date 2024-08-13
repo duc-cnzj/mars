@@ -40,6 +40,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+//go:generate mockgen -destination ./mock_data.go -package data github.com/duc-cnzj/mars/v4/internal/data Data
+
 type Data interface {
 	Config() *config.Config
 	DB() *ent.Client
@@ -59,7 +61,7 @@ var _ Data = (*dataImpl)(nil)
 
 type dataImpl struct {
 	cfg       *config.Config
-	Oidc      OidcConfig
+	oidc      OidcConfig
 	db        *ent.Client
 	minioCli  *minio.Client
 	k8sClient *K8sClient
@@ -72,8 +74,28 @@ type dataImpl struct {
 	oidcOnce    sync.Once
 }
 
+type DataImplInput struct {
+	Cfg       *config.Config
+	Oidc      OidcConfig
+	Db        *ent.Client
+	MinioCli  *minio.Client
+	K8sClient *K8sClient
+	Logger    mlog.Logger
+}
+
+func NewDataImpl(input *DataImplInput) Data {
+	return &dataImpl{
+		cfg:       input.Cfg,
+		oidc:      input.Oidc,
+		db:        input.Db,
+		minioCli:  input.MinioCli,
+		k8sClient: input.K8sClient,
+		logger:    input.Logger,
+	}
+}
+
 func NewData(cfg *config.Config, logger mlog.Logger) (Data, error) {
-	return &dataImpl{cfg: cfg, logger: logger}, nil
+	return NewDataImpl(&DataImplInput{Cfg: cfg, Logger: logger}), nil
 }
 
 func (data *dataImpl) Config() *config.Config {
@@ -93,7 +115,7 @@ func (data *dataImpl) K8sClient() *K8sClient {
 }
 
 func (data *dataImpl) OidcConfig() OidcConfig {
-	return data.Oidc
+	return data.oidc
 }
 
 func (data *dataImpl) InitDB() (func() error, error) {
