@@ -59,7 +59,11 @@ func (a *authSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.
 		if err != nil {
 			return nil, status.Errorf(codes.Unauthenticated, err.Error())
 		}
-		a.eventRepo.AuditLog(types.EventActionType_Login, userinfo.Name, fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", userinfo.Name, userinfo.Email))
+		a.eventRepo.AuditLog(
+			types.EventActionType_Login,
+			userinfo.Name,
+			fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", userinfo.Name, userinfo.Email),
+		)
 
 		return &auth.LoginResponse{
 			Token:     data.Token,

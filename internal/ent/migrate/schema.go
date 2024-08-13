@@ -115,6 +115,7 @@ var (
 		{Name: "message", Type: field.TypeString, Size: 255, Default: ""},
 		{Name: "old", Type: field.TypeString, SchemaType: map[string]string{"mysql": "longtext"}},
 		{Name: "new", Type: field.TypeString, SchemaType: map[string]string{"mysql": "longtext"}},
+		{Name: "has_diff", Type: field.TypeBool, Default: false},
 		{Name: "duration", Type: field.TypeString, Default: ""},
 		{Name: "file_id", Type: field.TypeInt, Nullable: true},
 	}
@@ -126,7 +127,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "events_files_events",
-				Columns:    []*schema.Column{EventsColumns[10]},
+				Columns:    []*schema.Column{EventsColumns[11]},
 				RefColumns: []*schema.Column{FilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

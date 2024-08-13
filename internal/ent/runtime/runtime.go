@@ -166,8 +166,12 @@ func init() {
 	event.DefaultMessage = eventDescMessage.Default.(string)
 	// event.MessageValidator is a validator for the "message" field. It is called by the builders before save.
 	event.MessageValidator = eventDescMessage.Validators[0].(func(string) error)
+	// eventDescHasDiff is the schema descriptor for has_diff field.
+	eventDescHasDiff := eventFields[5].Descriptor()
+	// event.DefaultHasDiff holds the default value on creation for the has_diff field.
+	event.DefaultHasDiff = eventDescHasDiff.Default.(bool)
 	// eventDescDuration is the schema descriptor for duration field.
-	eventDescDuration := eventFields[5].Descriptor()
+	eventDescDuration := eventFields[6].Descriptor()
 	// event.DefaultDuration holds the default value on creation for the duration field.
 	event.DefaultDuration = eventDescDuration.Default.(string)
 	fileMixin := schema.File{}.Mixin()

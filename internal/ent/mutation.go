@@ -3484,6 +3484,7 @@ type EventMutation struct {
 	message       *string
 	old           *string
 	new           *string
+	has_diff      *bool
 	duration      *string
 	clearedFields map[string]struct{}
 	file          *int
@@ -3912,6 +3913,42 @@ func (m *EventMutation) ResetNew() {
 	m.new = nil
 }
 
+// SetHasDiff sets the "has_diff" field.
+func (m *EventMutation) SetHasDiff(b bool) {
+	m.has_diff = &b
+}
+
+// HasDiff returns the value of the "has_diff" field in the mutation.
+func (m *EventMutation) HasDiff() (r bool, exists bool) {
+	v := m.has_diff
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHasDiff returns the old "has_diff" field's value of the Event entity.
+// If the Event object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventMutation) OldHasDiff(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHasDiff is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHasDiff requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHasDiff: %w", err)
+	}
+	return oldValue.HasDiff, nil
+}
+
+// ResetHasDiff resets all changes to the "has_diff" field.
+func (m *EventMutation) ResetHasDiff() {
+	m.has_diff = nil
+}
+
 // SetDuration sets the "duration" field.
 func (m *EventMutation) SetDuration(s string) {
 	m.duration = &s
@@ -4058,7 +4095,7 @@ func (m *EventMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, event.FieldCreatedAt)
 	}
@@ -4082,6 +4119,9 @@ func (m *EventMutation) Fields() []string {
 	}
 	if m.new != nil {
 		fields = append(fields, event.FieldNew)
+	}
+	if m.has_diff != nil {
+		fields = append(fields, event.FieldHasDiff)
 	}
 	if m.duration != nil {
 		fields = append(fields, event.FieldDuration)
@@ -4113,6 +4153,8 @@ func (m *EventMutation) Field(name string) (ent.Value, bool) {
 		return m.Old()
 	case event.FieldNew:
 		return m.New()
+	case event.FieldHasDiff:
+		return m.HasDiff()
 	case event.FieldDuration:
 		return m.Duration()
 	case event.FieldFileID:
@@ -4142,6 +4184,8 @@ func (m *EventMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldOld(ctx)
 	case event.FieldNew:
 		return m.OldNew(ctx)
+	case event.FieldHasDiff:
+		return m.OldHasDiff(ctx)
 	case event.FieldDuration:
 		return m.OldDuration(ctx)
 	case event.FieldFileID:
@@ -4210,6 +4254,13 @@ func (m *EventMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetNew(v)
+		return nil
+	case event.FieldHasDiff:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHasDiff(v)
 		return nil
 	case event.FieldDuration:
 		v, ok := value.(string)
@@ -4327,6 +4378,9 @@ func (m *EventMutation) ResetField(name string) error {
 		return nil
 	case event.FieldNew:
 		m.ResetNew()
+		return nil
+	case event.FieldHasDiff:
+		m.ResetHasDiff()
 		return nil
 	case event.FieldDuration:
 		m.ResetDuration()

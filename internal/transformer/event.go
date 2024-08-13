@@ -22,7 +22,7 @@ func FromEvent(e *repo.Event) *types.EventModel {
 		Duration:  e.Duration,
 		FileId:    int32(lo.FromPtr(e.FileID)),
 		File:      FromFile(e.File),
-		HasDiff:   e.Old != e.New,
+		HasDiff:   e.HasDiff,
 		EventAt:   date.ToHumanizeDatetimeString(&e.CreatedAt),
 		CreatedAt: date.ToRFC3339DatetimeString(&e.CreatedAt),
 		UpdatedAt: date.ToRFC3339DatetimeString(&e.UpdatedAt),

@@ -133,6 +133,20 @@ func (eu *EventUpdate) SetNillableNew(s *string) *EventUpdate {
 	return eu
 }
 
+// SetHasDiff sets the "has_diff" field.
+func (eu *EventUpdate) SetHasDiff(b bool) *EventUpdate {
+	eu.mutation.SetHasDiff(b)
+	return eu
+}
+
+// SetNillableHasDiff sets the "has_diff" field if the given value is not nil.
+func (eu *EventUpdate) SetNillableHasDiff(b *bool) *EventUpdate {
+	if b != nil {
+		eu.SetHasDiff(*b)
+	}
+	return eu
+}
+
 // SetDuration sets the "duration" field.
 func (eu *EventUpdate) SetDuration(s string) *EventUpdate {
 	eu.mutation.SetDuration(s)
@@ -278,6 +292,9 @@ func (eu *EventUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := eu.mutation.New(); ok {
 		_spec.SetField(event.FieldNew, field.TypeString, value)
+	}
+	if value, ok := eu.mutation.HasDiff(); ok {
+		_spec.SetField(event.FieldHasDiff, field.TypeBool, value)
 	}
 	if value, ok := eu.mutation.Duration(); ok {
 		_spec.SetField(event.FieldDuration, field.TypeString, value)
@@ -430,6 +447,20 @@ func (euo *EventUpdateOne) SetNew(s string) *EventUpdateOne {
 func (euo *EventUpdateOne) SetNillableNew(s *string) *EventUpdateOne {
 	if s != nil {
 		euo.SetNew(*s)
+	}
+	return euo
+}
+
+// SetHasDiff sets the "has_diff" field.
+func (euo *EventUpdateOne) SetHasDiff(b bool) *EventUpdateOne {
+	euo.mutation.SetHasDiff(b)
+	return euo
+}
+
+// SetNillableHasDiff sets the "has_diff" field if the given value is not nil.
+func (euo *EventUpdateOne) SetNillableHasDiff(b *bool) *EventUpdateOne {
+	if b != nil {
+		euo.SetHasDiff(*b)
 	}
 	return euo
 }
@@ -609,6 +640,9 @@ func (euo *EventUpdateOne) sqlSave(ctx context.Context) (_node *Event, err error
 	}
 	if value, ok := euo.mutation.New(); ok {
 		_spec.SetField(event.FieldNew, field.TypeString, value)
+	}
+	if value, ok := euo.mutation.HasDiff(); ok {
+		_spec.SetField(event.FieldHasDiff, field.TypeBool, value)
 	}
 	if value, ok := euo.mutation.Duration(); ok {
 		_spec.SetField(event.FieldDuration, field.TypeString, value)

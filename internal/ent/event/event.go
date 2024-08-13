@@ -32,6 +32,8 @@ const (
 	FieldOld = "old"
 	// FieldNew holds the string denoting the new field in the database.
 	FieldNew = "new"
+	// FieldHasDiff holds the string denoting the has_diff field in the database.
+	FieldHasDiff = "has_diff"
 	// FieldDuration holds the string denoting the duration field in the database.
 	FieldDuration = "duration"
 	// FieldFileID holds the string denoting the file_id field in the database.
@@ -60,6 +62,7 @@ var Columns = []string{
 	FieldMessage,
 	FieldOld,
 	FieldNew,
+	FieldHasDiff,
 	FieldDuration,
 	FieldFileID,
 }
@@ -98,6 +101,8 @@ var (
 	DefaultMessage string
 	// MessageValidator is a validator for the "message" field. It is called by the builders before save.
 	MessageValidator func(string) error
+	// DefaultHasDiff holds the default value on creation for the "has_diff" field.
+	DefaultHasDiff bool
 	// DefaultDuration holds the default value on creation for the "duration" field.
 	DefaultDuration string
 )
@@ -148,6 +153,11 @@ func ByOld(opts ...sql.OrderTermOption) OrderOption {
 // ByNew orders the results by the new field.
 func ByNew(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNew, opts...).ToFunc()
+}
+
+// ByHasDiff orders the results by the has_diff field.
+func ByHasDiff(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHasDiff, opts...).ToFunc()
 }
 
 // ByDuration orders the results by the duration field.

@@ -120,6 +120,20 @@ func (ec *EventCreate) SetNew(s string) *EventCreate {
 	return ec
 }
 
+// SetHasDiff sets the "has_diff" field.
+func (ec *EventCreate) SetHasDiff(b bool) *EventCreate {
+	ec.mutation.SetHasDiff(b)
+	return ec
+}
+
+// SetNillableHasDiff sets the "has_diff" field if the given value is not nil.
+func (ec *EventCreate) SetNillableHasDiff(b *bool) *EventCreate {
+	if b != nil {
+		ec.SetHasDiff(*b)
+	}
+	return ec
+}
+
 // SetDuration sets the "duration" field.
 func (ec *EventCreate) SetDuration(s string) *EventCreate {
 	ec.mutation.SetDuration(s)
@@ -216,6 +230,10 @@ func (ec *EventCreate) defaults() error {
 		v := event.DefaultMessage
 		ec.mutation.SetMessage(v)
 	}
+	if _, ok := ec.mutation.HasDiff(); !ok {
+		v := event.DefaultHasDiff
+		ec.mutation.SetHasDiff(v)
+	}
 	if _, ok := ec.mutation.Duration(); !ok {
 		v := event.DefaultDuration
 		ec.mutation.SetDuration(v)
@@ -255,6 +273,9 @@ func (ec *EventCreate) check() error {
 	}
 	if _, ok := ec.mutation.New(); !ok {
 		return &ValidationError{Name: "new", err: errors.New(`ent: missing required field "Event.new"`)}
+	}
+	if _, ok := ec.mutation.HasDiff(); !ok {
+		return &ValidationError{Name: "has_diff", err: errors.New(`ent: missing required field "Event.has_diff"`)}
 	}
 	if _, ok := ec.mutation.Duration(); !ok {
 		return &ValidationError{Name: "duration", err: errors.New(`ent: missing required field "Event.duration"`)}
@@ -317,6 +338,10 @@ func (ec *EventCreate) createSpec() (*Event, *sqlgraph.CreateSpec) {
 	if value, ok := ec.mutation.New(); ok {
 		_spec.SetField(event.FieldNew, field.TypeString, value)
 		_node.New = value
+	}
+	if value, ok := ec.mutation.HasDiff(); ok {
+		_spec.SetField(event.FieldHasDiff, field.TypeBool, value)
+		_node.HasDiff = value
 	}
 	if value, ok := ec.mutation.Duration(); ok {
 		_spec.SetField(event.FieldDuration, field.TypeString, value)
@@ -484,6 +509,18 @@ func (u *EventUpsert) SetNew(v string) *EventUpsert {
 // UpdateNew sets the "new" field to the value that was provided on create.
 func (u *EventUpsert) UpdateNew() *EventUpsert {
 	u.SetExcluded(event.FieldNew)
+	return u
+}
+
+// SetHasDiff sets the "has_diff" field.
+func (u *EventUpsert) SetHasDiff(v bool) *EventUpsert {
+	u.Set(event.FieldHasDiff, v)
+	return u
+}
+
+// UpdateHasDiff sets the "has_diff" field to the value that was provided on create.
+func (u *EventUpsert) UpdateHasDiff() *EventUpsert {
+	u.SetExcluded(event.FieldHasDiff)
 	return u
 }
 
@@ -671,6 +708,20 @@ func (u *EventUpsertOne) SetNew(v string) *EventUpsertOne {
 func (u *EventUpsertOne) UpdateNew() *EventUpsertOne {
 	return u.Update(func(s *EventUpsert) {
 		s.UpdateNew()
+	})
+}
+
+// SetHasDiff sets the "has_diff" field.
+func (u *EventUpsertOne) SetHasDiff(v bool) *EventUpsertOne {
+	return u.Update(func(s *EventUpsert) {
+		s.SetHasDiff(v)
+	})
+}
+
+// UpdateHasDiff sets the "has_diff" field to the value that was provided on create.
+func (u *EventUpsertOne) UpdateHasDiff() *EventUpsertOne {
+	return u.Update(func(s *EventUpsert) {
+		s.UpdateHasDiff()
 	})
 }
 
@@ -1029,6 +1080,20 @@ func (u *EventUpsertBulk) SetNew(v string) *EventUpsertBulk {
 func (u *EventUpsertBulk) UpdateNew() *EventUpsertBulk {
 	return u.Update(func(s *EventUpsert) {
 		s.UpdateNew()
+	})
+}
+
+// SetHasDiff sets the "has_diff" field.
+func (u *EventUpsertBulk) SetHasDiff(v bool) *EventUpsertBulk {
+	return u.Update(func(s *EventUpsert) {
+		s.SetHasDiff(v)
+	})
+}
+
+// UpdateHasDiff sets the "has_diff" field to the value that was provided on create.
+func (u *EventUpsertBulk) UpdateHasDiff() *EventUpsertBulk {
+	return u.Update(func(s *EventUpsert) {
+		s.UpdateHasDiff()
 	})
 }
 

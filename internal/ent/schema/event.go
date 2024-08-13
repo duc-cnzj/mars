@@ -29,6 +29,7 @@ func (Event) Fields() []ent.Field {
 			SchemaType(map[string]string{
 				dialect.MySQL: "longtext",
 			}),
+		field.Bool("has_diff").Default(false),
 		field.String("duration").Default(""),
 		field.Int("file_id").Optional().Nillable(),
 	}

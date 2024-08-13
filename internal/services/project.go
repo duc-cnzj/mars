@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
-
 	"github.com/duc-cnzj/mars/api/v4/project"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/api/v4/websocket"
@@ -19,6 +17,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/util"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	"github.com/samber/lo"
 	v1 "k8s.io/api/core/v1"
 )
@@ -243,10 +242,11 @@ func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 	p.projRepo.Delete(ctx, int(request.Id))
 	p.eventRepo.Dispatch(repo.EventProjectDeleted, projectModel)
 
-	p.eventRepo.AuditLog(
+	p.eventRepo.AuditLogWithRequest(
 		types.EventActionType_Delete,
 		MustGetUser(ctx).Name,
 		fmt.Sprintf("删除项目: %d: %s/%s ", projectModel.ID, projectModel.Namespace.Name, projectModel.Name),
+		request,
 	)
 
 	return &project.DeleteResponse{}, nil

@@ -74,14 +74,12 @@ func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*r
 	if err != nil {
 		return nil, err
 	}
-	out, _ := yaml2.PrettyMarshal(create)
-	r.eventRepo.AuditLogWithChange(
+	r.eventRepo.AuditLogWithRequest(
 		types.EventActionType_Create,
 		user.Name,
 		fmt.Sprintf("创建仓库: %d: %s", create.ID, create.Name),
-		nil, &repo.StringYamlPrettier{
-			Str: string(out),
-		})
+		req,
+	)
 	return &reposerver.CreateResponse{
 		Item: transformer.FromRepo(create),
 	}, nil
@@ -143,7 +141,12 @@ func (r *repoSvc) ToggleEnabled(ctx context.Context, request *reposerver.ToggleE
 	if err != nil {
 		return nil, err
 	}
-	r.eventRepo.AuditLog(types.EventActionType_Update, user.Name, fmt.Sprintf("打开/关闭仓库 %s 的状态: %t", toggle.Name, request.Enabled))
+	r.eventRepo.AuditLogWithRequest(
+		types.EventActionType_Update,
+		user.Name,
+		fmt.Sprintf("打开/关闭仓库 %s 的状态: %t", toggle.Name, request.Enabled),
+		request,
+	)
 
 	return &reposerver.ToggleEnabledResponse{
 		Item: transformer.FromRepo(toggle),

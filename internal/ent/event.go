@@ -35,6 +35,8 @@ type Event struct {
 	Old string `json:"old,omitempty"`
 	// New holds the value of the "new" field.
 	New string `json:"new,omitempty"`
+	// HasDiff holds the value of the "has_diff" field.
+	HasDiff bool `json:"has_diff,omitempty"`
 	// Duration holds the value of the "duration" field.
 	Duration string `json:"duration,omitempty"`
 	// FileID holds the value of the "file_id" field.
@@ -70,6 +72,8 @@ func (*Event) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case event.FieldHasDiff:
+			values[i] = new(sql.NullBool)
 		case event.FieldID, event.FieldAction, event.FieldFileID:
 			values[i] = new(sql.NullInt64)
 		case event.FieldUsername, event.FieldMessage, event.FieldOld, event.FieldNew, event.FieldDuration:
@@ -145,6 +149,12 @@ func (e *Event) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field new", values[i])
 			} else if value.Valid {
 				e.New = value.String
+			}
+		case event.FieldHasDiff:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field has_diff", values[i])
+			} else if value.Valid {
+				e.HasDiff = value.Bool
 			}
 		case event.FieldDuration:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -225,6 +235,9 @@ func (e *Event) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("new=")
 	builder.WriteString(e.New)
+	builder.WriteString(", ")
+	builder.WriteString("has_diff=")
+	builder.WriteString(fmt.Sprintf("%v", e.HasDiff))
 	builder.WriteString(", ")
 	builder.WriteString("duration=")
 	builder.WriteString(e.Duration)

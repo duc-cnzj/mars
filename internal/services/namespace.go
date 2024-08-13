@@ -114,7 +114,11 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 		NsK8sObj: create,
 	})
 
-	n.eventRepo.AuditLog(types.EventActionType_Create, MustGetUser(ctx).Name, fmt.Sprintf("创建项目空间: %d: %s", ns.ID, ns.Name))
+	n.eventRepo.AuditLogWithRequest(
+		types.EventActionType_Create,
+		MustGetUser(ctx).Name, fmt.Sprintf("创建项目空间: %d: %s", ns.ID, ns.Name),
+		request,
+	)
 
 	return &namespace.CreateResponse{
 		Item:   transformer.FromNamespace(ns),
@@ -177,7 +181,12 @@ loop:
 
 	n.eventRepo.Dispatch(repo.EventNamespaceDeleted, repo.NamespaceDeletedData{NsModel: ns})
 
-	n.eventRepo.AuditLog(types.EventActionType_Delete, MustGetUser(ctx).Name, fmt.Sprintf("删除项目空间: id: '%d' '%s', 删除的项目有: '%s'", ns.ID, ns.Name, strings.Join(deletedProjectNames, ", ")))
+	n.eventRepo.AuditLogWithRequest(
+		types.EventActionType_Delete,
+		MustGetUser(ctx).Name,
+		fmt.Sprintf("删除项目空间: id: '%d' '%s', 删除的项目有: '%s'", ns.ID, ns.Name, strings.Join(deletedProjectNames, ", ")),
+		input,
+	)
 
 	return &namespace.DeleteResponse{}, nil
 }

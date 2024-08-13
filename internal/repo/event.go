@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/yaml"
+
 	"entgo.io/ent/dialect/sql"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
@@ -40,6 +42,7 @@ type Event struct {
 	New       string
 	Duration  string
 	FileID    *int
+	HasDiff   bool
 
 	File *File
 }
@@ -54,6 +57,9 @@ type EventRepo interface {
 
 	// AuditLog 记录审计日志
 	AuditLog(action types.EventActionType, username string, msg string)
+
+	// AuditLogWithRequest grpc审计日志
+	AuditLogWithRequest(action types.EventActionType, username string, msg string, req any)
 
 	// FileAuditLog 记录文件审计日志
 	FileAuditLog(action types.EventActionType, username string, msg string, fileId int)
@@ -100,6 +106,7 @@ func (repo *eventRepo) HandleAuditLog(data any, e event.Event) error {
 		SetOld(logData.GetOldStr()).
 		SetNew(logData.GetNewStr()).
 		SetDuration(logData.GetDuration()).
+		SetHasDiff(logData.GetOldStr() != logData.GetNewStr()).
 		SetNillableFileID(fid).
 		Save(context.TODO())
 
@@ -138,6 +145,7 @@ func (repo *eventRepo) List(ctx context.Context, input *ListEventInput) (events 
 			entevent.FieldMessage,
 			entevent.FieldDuration,
 			entevent.FieldFileID,
+			entevent.FieldHasDiff,
 			entevent.FieldCreatedAt,
 			entevent.FieldUpdatedAt,
 		).
@@ -165,6 +173,11 @@ func (repo *eventRepo) FileAuditLog(action types.EventActionType, username strin
 
 func (repo *eventRepo) FileAuditLogWithDuration(action types.EventActionType, username string, msg string, fileId int, d time.Duration) {
 	repo.eventer.Dispatch(AuditLogEvent, NewEventAuditLog(username, action, msg, AuditWithFileID(fileId), AuditWithDuration(date.HumanDuration(d))))
+}
+
+func (repo *eventRepo) AuditLogWithRequest(action types.EventActionType, username string, msg string, req any) {
+	marshal, _ := yaml.PrettyMarshal(req)
+	repo.eventer.Dispatch(AuditLogEvent, NewEventAuditLog(username, action, msg, AuditWithOldNewStr("", string(marshal))))
 }
 
 func (repo *eventRepo) AuditLogWithChange(action types.EventActionType, username string, msg string, oldS, newS YamlPrettier) {
@@ -397,6 +410,7 @@ func ToEvent(data *ent.Event) *Event {
 		New:       data.New,
 		Duration:  data.Duration,
 		FileID:    data.FileID,
+		HasDiff:   data.HasDiff,
 		File:      ToFile(data.Edges.File),
 	}
 }

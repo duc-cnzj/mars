@@ -97,6 +97,11 @@ func New(v string) predicate.Event {
 	return predicate.Event(sql.FieldEQ(FieldNew, v))
 }
 
+// HasDiff applies equality check predicate on the "has_diff" field. It's identical to HasDiffEQ.
+func HasDiff(v bool) predicate.Event {
+	return predicate.Event(sql.FieldEQ(FieldHasDiff, v))
+}
+
 // Duration applies equality check predicate on the "duration" field. It's identical to DurationEQ.
 func Duration(v string) predicate.Event {
 	return predicate.Event(sql.FieldEQ(FieldDuration, v))
@@ -549,6 +554,16 @@ func NewEqualFold(v string) predicate.Event {
 // NewContainsFold applies the ContainsFold predicate on the "new" field.
 func NewContainsFold(v string) predicate.Event {
 	return predicate.Event(sql.FieldContainsFold(FieldNew, v))
+}
+
+// HasDiffEQ applies the EQ predicate on the "has_diff" field.
+func HasDiffEQ(v bool) predicate.Event {
+	return predicate.Event(sql.FieldEQ(FieldHasDiff, v))
+}
+
+// HasDiffNEQ applies the NEQ predicate on the "has_diff" field.
+func HasDiffNEQ(v bool) predicate.Event {
+	return predicate.Event(sql.FieldNEQ(FieldHasDiff, v))
 }
 
 // DurationEQ applies the EQ predicate on the "duration" field.
