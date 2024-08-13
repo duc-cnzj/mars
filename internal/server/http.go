@@ -26,7 +26,6 @@ const maxRecvMsgSize = 1 << 20 * 20 // 20 MiB
 
 var defaultMiddlewares = middlewareList{
 	middlewares.Recovery,
-	middlewares.DeletePatternHeader,
 	middlewares.RouteLogger,
 	middlewares.AllowCORS,
 }
@@ -87,10 +86,6 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 		runtime.WithIncomingHeaderMatcher(headerMatcher),
 		runtime.WithForwardResponseOption(func(ctx context.Context, writer http.ResponseWriter, message proto.Message) error {
 			writer.Header().Set("X-Content-Type-Options", "nosniff")
-			pattern, ok := runtime.HTTPPathPattern(ctx)
-			if ok {
-				middlewares.SetPatternHeader(writer, pattern)
-			}
 
 			return nil
 		}),
@@ -140,6 +135,12 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 			otelhttp.NewHandler(
 				router,
 				"grpc-gateway",
+				otelhttp.WithFilter(func(request *http.Request) bool {
+					return strings.HasPrefix(request.URL.Path, "/api")
+				}),
+				otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+					return r.URL.Path
+				}),
 			),
 		),
 		ReadHeaderTimeout: 5 * time.Second,

@@ -4,10 +4,9 @@ import (
 	"context"
 	"net"
 
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	marsauthorizor "github.com/duc-cnzj/mars/v4/internal/auth"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/server/middlewares"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"

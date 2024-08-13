@@ -25,7 +25,9 @@ func (a *ApiGatewayBootstrapper) Bootstrap(appli application.App) error {
 		}
 	})
 	appli.BeforeServerRunHooks(func(app application.App) {
-		go app.WsServer().TickClusterHealth(app.Done())
+		if app.Config().KubeConfig != "" {
+			go app.WsServer().TickClusterHealth(app.Done())
+		}
 	})
 
 	return nil
