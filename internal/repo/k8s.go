@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
@@ -75,7 +76,7 @@ type K8sRepo interface {
 	CreateDockerSecrets(ctx context.Context, namespace string) (*corev1.Secret, error)
 	GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 	CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
-	LogStream(ctx context.Context, namespace, pod, container string) (io.ReadCloser, error)
+	LogStream(ctx context.Context, namespace, pod, container string) (chan []byte, error)
 	GetPodLogs(namespace, podName string, options *corev1.PodLogOptions) (string, error)
 	FindDefaultContainer(pod *corev1.Pod) string
 	GetPod(namespace, podName string) (*corev1.Pod, error)
@@ -664,17 +665,64 @@ func (repo *k8sRepo) LogStream(
 	namespace,
 	pod,
 	container string,
-) (io.ReadCloser, error) {
+) (chan []byte, error) {
+	tailLines := 1000
 	logs := repo.data.K8sClient().Client.
 		CoreV1().
 		Pods(namespace).
 		GetLogs(pod, &corev1.PodLogOptions{
 			Follow:    true,
 			Container: container,
-			TailLines: lo.ToPtr(int64(1000)),
+			TailLines: lo.ToPtr(int64(tailLines)),
 		})
 
-	return logs.Stream(ctx)
+	stream, err := logs.Stream(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	bf := bufio.NewReader(stream)
+	ctx, cancelFunc := context.WithCancel(ctx)
+	ch := make(chan []byte, tailLines)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer func() {
+			close(ch)
+			cancelFunc()
+			wg.Done()
+		}()
+		defer repo.logger.HandlePanic("StreamContainerLog")
+
+		for {
+			bytes, err := bf.ReadBytes('\n')
+			if err != nil {
+				repo.logger.DebugCtxf(ctx, "[LogStream]: %v", err)
+				return
+			}
+			select {
+			case ch <- bytes:
+			default:
+				repo.logger.DebugCtx(ctx, "[LogStream]:  drop line!")
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		select {
+		case <-ctx.Done():
+			stream.Close()
+			repo.logger.DebugCtx(ctx, "[LogStream]:  ctx done!")
+		}
+	}()
+	go func() {
+		wg.Wait()
+		repo.logger.DebugCtx(ctx, "[LogStream]:  exit!")
+	}()
+
+	return ch, nil
 }
 
 type Archiver interface {

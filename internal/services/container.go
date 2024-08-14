@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -25,7 +24,6 @@ import (
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
 	clientgoexec "k8s.io/client-go/util/exec"
 )
@@ -52,9 +50,10 @@ func (c *containerSvc) IsPodRunning(_ context.Context, request *container.IsPodR
 	return &container.IsPodRunningResponse{Running: running, Reason: reason}, nil
 }
 
-func (c *containerSvc) IsPodExists(_ context.Context, request *container.IsPodExistsRequest) (*container.IsPodExistsResponse, error) {
+func (c *containerSvc) IsPodExists(ctx context.Context, request *container.IsPodExistsRequest) (*container.IsPodExistsResponse, error) {
 	_, err := c.k8sRepo.GetPod(request.GetNamespace(), request.GetPod())
-	if err != nil && apierrors.IsNotFound(err) {
+	if err != nil {
+		c.logger.ErrorCtx(ctx, err)
 		return &container.IsPodExistsResponse{Exists: false}, nil
 	}
 
@@ -69,11 +68,13 @@ func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogR
 
 	if podInfo.Status.Phase == v1.PodPending {
 		var logs []string
-		ret, _ := c.k8sRepo.ListEvents(request.Namespace)
-		sort.Sort(sortEvents(ret))
-		for _, event := range ret {
-			if event.Regarding.Kind == "Pod" && event.Regarding.Name == request.Pod {
-				logs = append(logs, event.Note)
+		if request.ShowEvents {
+			ret, _ := c.k8sRepo.ListEvents(request.Namespace)
+			sort.Sort(sortEvents(ret))
+			for _, event := range ret {
+				if event.Regarding.Kind == "Pod" && event.Regarding.Name == request.Pod {
+					logs = append(logs, event.Note)
+				}
 			}
 		}
 		return &container.LogResponse{
@@ -175,65 +176,27 @@ func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server 
 		})
 	}
 
-	stream, err := c.k8sRepo.LogStream(context.TODO(), request.Namespace, request.Pod, request.Container)
+	ch, err := c.k8sRepo.LogStream(server.Context(), request.Namespace, request.Pod, request.Container)
 	if err != nil {
 		c.logger.ErrorCtx(server.Context(), err)
 		return err
 	}
-	bf := bufio.NewReader(stream)
-
-	ch := make(chan []byte, tailLines)
-	wg := sync.WaitGroup{}
-	defer wg.Wait()
-	wg.Add(1)
-	go func() {
-		defer func() {
-			c.logger.Debug("[LogStream]:  read exit!")
-			close(ch)
-			wg.Done()
-		}()
-		defer c.logger.HandlePanic("StreamContainerLog")
-
-		for {
-			bytes, err := bf.ReadBytes('\n')
-			if err != nil {
-				c.logger.DebugCtxf(server.Context(), "[LogStream]: %v", err)
-				return
-			}
-			select {
-			case ch <- bytes:
-			default:
-				c.logger.Debug("[LogStream]:  drop line!")
-			}
-		}
-	}()
 
 	for {
 		select {
-		// TODO
-		//case <-c.app.Done():
-		//	stream.Close()
-		//	err := errors.New("server shutdown")
-		//	c.logger.Debug("[LogStream]: client exit with: ", err)
-		//	return err
-		case <-server.Context().Done():
-			stream.Close()
-			c.logger.Debug("[LogStream]: client exit with: ", server.Context().Err())
-			return nil
 		case msg, ok := <-ch:
 			if !ok {
-				stream.Close()
 				c.logger.Debug("[LogStream]: channel close")
 				return nil
 			}
 
-			if err := server.Send(&container.LogResponse{
+			if err = server.Send(&container.LogResponse{
 				Namespace:     request.Namespace,
 				PodName:       request.Pod,
 				ContainerName: request.Container,
 				Log:           string(msg),
 			}); err != nil {
-				stream.Close()
+				c.logger.ErrorCtx(server.Context(), err)
 				return err
 			}
 		}

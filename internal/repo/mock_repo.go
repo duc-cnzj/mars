@@ -1138,10 +1138,10 @@ func (mr *MockK8sRepoMockRecorder) ListEvents(arg0 any) *gomock.Call {
 }
 
 // LogStream mocks base method.
-func (m *MockK8sRepo) LogStream(arg0 context.Context, arg1, arg2, arg3 string) (io.ReadCloser, error) {
+func (m *MockK8sRepo) LogStream(arg0 context.Context, arg1, arg2, arg3 string) (chan []byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LogStream", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(io.ReadCloser)
+	ret0, _ := ret[0].(chan []byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

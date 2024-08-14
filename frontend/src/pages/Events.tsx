@@ -7,6 +7,7 @@ import React, {
   useMemo,
 } from "react";
 import { debounce } from "lodash";
+import JsFileDownloader from "js-file-downloader";
 import {
   Card,
   Spin,
@@ -25,7 +26,6 @@ import {
 import theme from "../styles/theme";
 import AsciinemaPlayer from "../components/Player";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { downloadFile } from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
 import DiffViewer from "../components/DiffViewer";
 import { css } from "@emotion/css";
@@ -39,6 +39,7 @@ import styled from "@emotion/styled";
 import ajax from "../api/ajax";
 import { components } from "../api/schema";
 import { TypesEventModelAction } from "../api/schema.d";
+import { getToken } from "../utils/token";
 
 const defaultPageSize = 15;
 const { Option } = Select;
@@ -448,7 +449,15 @@ const EventList: React.FC = () => {
                         type="dashed"
                         style={{ marginRight: 5 }}
                         onClick={() => {
-                          downloadFile(item.fileId);
+                          new JsFileDownloader({
+                            url: `${process.env.REACT_APP_BASE_URL}/api/download_file/${item.fileId}`,
+                            method: "GET",
+                            headers: [
+                              { name: "Authorization", value: getToken() },
+                            ],
+                          }).then(function () {
+                            message.success("下载成功");
+                          });
                         }}
                       >
                         下载文件
