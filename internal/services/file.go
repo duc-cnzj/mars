@@ -1,7 +1,6 @@
 package services
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -73,39 +72,9 @@ func (m *fileSvc) ShowRecords(ctx context.Context, request *file.ShowRecordsRequ
 		return nil, err
 	}
 	defer records.Close()
+	all, _ := io.ReadAll(records)
 
-	return &file.ShowRecordsResponse{Items: m.transformToRecords(records)}, nil
-}
-
-func (m *fileSvc) transformToRecords(rd io.Reader) []string {
-	var (
-		data   []string
-		lists  []string
-		reader = bufio.NewReader(rd)
-	)
-	for {
-		line, err := reader.ReadString('\n')
-		line = strings.Trim(line, "\n")
-		if err != nil {
-			if err == io.EOF {
-				data = append(data, line)
-				lists = append(lists, strings.Join(data, "\n"))
-			}
-			m.logger.Debug(err)
-			break
-		}
-		if line != "" {
-			if strings.HasPrefix(line, `{"version": 2,`) {
-				if len(data) > 0 {
-					lists = append(lists, strings.Join(data, "\n"))
-				}
-				data = []string{line}
-			} else {
-				data = append(data, line)
-			}
-		}
-	}
-	return lists
+	return &file.ShowRecordsResponse{Items: []string{string(all)}}, nil
 }
 
 func (m *fileSvc) Delete(ctx context.Context, request *file.DeleteRequest) (*file.DeleteResponse, error) {

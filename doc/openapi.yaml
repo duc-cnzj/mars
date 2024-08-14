@@ -1364,11 +1364,36 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+    /api/repos/clone:
+        post:
+            tags:
+                - Repo
+            summary: 克隆 repo
+            operationId: Repo_Clone
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/repo.CloneRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.CloneResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/repos/toggle_enabled:
         post:
             tags:
                 - Repo
-            summary: 开启/关闭
+            summary: 开启/关闭 repo
             operationId: Repo_ToggleEnabled
             requestBody:
                 content:
@@ -1440,6 +1465,31 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/repo.UpdateResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+        delete:
+            tags:
+                - Repo
+            summary: 删除 repo
+            operationId: Repo_Delete
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.DeleteResponse'
                 default:
                     description: Default error response
                     content:
@@ -2079,6 +2129,22 @@ components:
                     $ref: '#/components/schemas/types.ProjectModel'
                 dryRun:
                     type: boolean
+        repo.CloneRequest:
+            required:
+                - id
+                - name
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+        repo.CloneResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.RepoModel'
         repo.CreateRequest:
             required:
                 - name
@@ -2100,6 +2166,9 @@ components:
             properties:
                 item:
                     $ref: '#/components/schemas/types.RepoModel'
+        repo.DeleteResponse:
+            type: object
+            properties: {}
         repo.ListResponse:
             type: object
             properties:

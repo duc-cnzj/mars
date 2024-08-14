@@ -760,6 +760,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/repos/clone": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 克隆 repo */
+    post: operations["Repo_Clone"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/repos/toggle_enabled": {
     parameters: {
       query?: never;
@@ -769,7 +786,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** 开启/关闭 */
+    /** 开启/关闭 repo */
     post: operations["Repo_ToggleEnabled"];
     delete?: never;
     options?: never;
@@ -789,7 +806,8 @@ export interface paths {
     /** 更新 repo */
     put: operations["Repo_Update"];
     post?: never;
-    delete?: never;
+    /** 删除 repo */
+    delete: operations["Repo_Delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -1135,6 +1153,14 @@ export interface components {
       project: components["schemas"]["types.ProjectModel"];
       dryRun: boolean;
     };
+    "repo.CloneRequest": {
+      /** Format: int32 */
+      id: number;
+      name: string;
+    };
+    "repo.CloneResponse": {
+      item: components["schemas"]["types.RepoModel"];
+    };
     "repo.CreateRequest": {
       name: string;
       /** Format: int32 */
@@ -1146,6 +1172,7 @@ export interface components {
     "repo.CreateResponse": {
       item: components["schemas"]["types.RepoModel"];
     };
+    "repo.DeleteResponse": Record<string, never>;
     "repo.ListResponse": {
       /** Format: int32 */
       page: number;
@@ -3014,6 +3041,39 @@ export interface operations {
       };
     };
   };
+  Repo_Clone: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["repo.CloneRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["repo.CloneResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
+    };
+  };
   Repo_ToggleEnabled: {
     parameters: {
       query?: never;
@@ -3100,6 +3160,37 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["repo.UpdateResponse"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["google.rpc.Status"];
+        };
+      };
+    };
+  };
+  Repo_Delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["repo.DeleteResponse"];
         };
       };
       /** @description Default error response */

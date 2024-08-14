@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -139,7 +140,7 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 					return strings.HasPrefix(request.URL.Path, "/api")
 				}),
 				otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
-					return r.URL.Path
+					return fmt.Sprintf("grpc-gateway [%s] %s", r.Method, r.URL.Path)
 				}),
 			),
 		),

@@ -1,5 +1,16 @@
 import React, { memo, useCallback, useEffect, useState } from "react";
-import { Button, Card, Divider, Input, message, Spin } from "antd";
+import {
+  Button,
+  Card,
+  Divider,
+  Form,
+  Input,
+  message,
+  Modal,
+  Popconfirm,
+  Popover,
+  Spin,
+} from "antd";
 import theme from "../styles/theme";
 import { List } from "antd";
 import { css } from "@emotion/css";
@@ -28,7 +39,10 @@ const RepoPage: React.FC = () => {
     items: {},
   });
 
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState({
+    add: false,
+    clone: false,
+  });
   const [editItem, setEditItem] =
     useState<components["schemas"]["types.RepoModel"]>();
 
@@ -57,22 +71,61 @@ const RepoPage: React.FC = () => {
     fetch(1, defaultPageSize, "");
   }, [fetch]);
 
+  const [cloneInput, setCloneInput] = useState<
+    components["schemas"]["repo.CloneRequest"]
+  >({ id: 0, name: "" });
+
   return (
     <>
       <AddRepoModal
         editItem={editItem}
-        visible={visible}
+        visible={visible.add}
         onSuccess={() => {
-          setVisible(false);
+          setVisible((v) => ({ ...v, add: false }));
           fetch(1, defaultPageSize, searchInput.name, true);
           setEditItem(undefined);
         }}
         onCancel={() => {
           console.log("cancel");
           setEditItem(undefined);
-          setVisible(false);
+          setVisible((v) => ({ ...v, add: false }));
         }}
       />
+      <Modal
+        title="克隆项目"
+        open={visible.clone}
+        okText={"确定"}
+        cancelText={"取消"}
+        onOk={() => {
+          if (cloneInput.id <= 0 || !cloneInput.name) {
+            message.error("克隆数据不能为空");
+            return;
+          }
+          ajax
+            .POST("/api/repos/clone", { body: cloneInput })
+            .then(({ error }) => {
+              if (error) {
+                message.error(error.message);
+                return;
+              }
+              message.success("克隆成功");
+              setVisible((v) => ({ ...v, clone: false }));
+              fetch(1, defaultPageSize, searchInput.name, true);
+            });
+        }}
+        onCancel={() => {
+          setVisible((v) => ({ ...v, clone: false }));
+          setCloneInput({ id: 0, name: "" });
+        }}
+      >
+        <Input
+          placeholder="请输入 clone 后的项目名称"
+          value={cloneInput.name}
+          onChange={(v) => {
+            setCloneInput((input) => ({ ...input, name: v.target.value }));
+          }}
+        />
+      </Modal>
       <Card
         className="git"
         title={
@@ -80,7 +133,7 @@ const RepoPage: React.FC = () => {
             <div>Repo 管理</div>
             <Button
               style={{ fontSize: 12 }}
-              onClick={() => setVisible(true)}
+              onClick={() => setVisible((v) => ({ ...v, add: true }))}
               type="default"
               size="small"
             >
@@ -145,6 +198,15 @@ const RepoPage: React.FC = () => {
                 key={item.id}
                 actions={[
                   <Button
+                    type="dashed"
+                    onClick={() => {
+                      setCloneInput((v) => ({ ...v, id: item.id }));
+                      setVisible((v) => ({ ...v, clone: true }));
+                    }}
+                  >
+                    克隆
+                  </Button>,
+                  <Button
                     onClick={async () => {
                       const { data, error } = await ajax.GET(
                         "/api/repos/{id}",
@@ -155,7 +217,7 @@ const RepoPage: React.FC = () => {
                         return;
                       }
                       setEditItem(data.item);
-                      setVisible(true);
+                      setVisible((v) => ({ ...v, add: true }));
                     }}
                   >
                     编辑配置
@@ -175,26 +237,56 @@ const RepoPage: React.FC = () => {
                           body: { id: item.id, enabled: !item.enabled },
                         }
                       );
-                      if (!error) {
+                      if (error) {
                         setTimeout(() => {
-                          setData((items) =>
-                            items.map((v) =>
-                              v.id === item.id
-                                ? { ...v, enabled: !item.enabled }
-                                : v
-                            )
-                          );
-                          message.success("操作成功");
                           setLoading((lo) => ({
                             ...lo,
                             items: { ...lo.items, [item.id]: false },
                           }));
                         }, 1000);
+                        message.error(error.message);
+                        return;
                       }
+                      setTimeout(() => {
+                        setData((items) =>
+                          items.map((v) =>
+                            v.id === item.id
+                              ? { ...v, enabled: !item.enabled }
+                              : v
+                          )
+                        );
+                        setLoading((lo) => ({
+                          ...lo,
+                          items: { ...lo.items, [item.id]: false },
+                        }));
+                        message.success("操作成功");
+                      }, 1000);
                     }}
                   >
                     {item.enabled ? "禁用" : "启用"}
                   </Button>,
+                  <Popconfirm
+                    title={`确定删除 ${item.name} ?`}
+                    description="下面有关联 project 时无法删除"
+                    onConfirm={() => {
+                      ajax
+                        .DELETE("/api/repos/{id}", {
+                          params: { path: { id: item.id } },
+                        })
+                        .then(({ error }) => {
+                          if (error) {
+                            message.error(error.message);
+                            return;
+                          }
+                          message.success("删除成功");
+                          fetch(1, defaultPageSize, searchInput.name, true);
+                        });
+                    }}
+                    okText="确定"
+                    cancelText="取消"
+                  >
+                    <Button danger>删除 repo</Button>
+                  </Popconfirm>,
                 ]}
               >
                 <List.Item.Meta

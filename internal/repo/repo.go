@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/duc-cnzj/mars/api/v4/mars"
@@ -43,10 +44,12 @@ func (r *Repo) GetMarsConfig() (cfg *mars.Config) {
 type RepoRepo interface {
 	All(ctx context.Context, in *AllRepoRequest) ([]*Repo, error)
 	List(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error)
-	Show(ctx context.Context, id int) (*Repo, error)
-	ToggleEnabled(ctx context.Context, id int, enabled bool) (*Repo, error)
 	Create(ctx context.Context, in *CreateRepoInput) (*Repo, error)
+	Show(ctx context.Context, id int) (*Repo, error)
 	Update(ctx context.Context, in *UpdateRepoInput) (*Repo, error)
+	Delete(ctx context.Context, id int) error
+	Clone(ctx context.Context, input *CloneRepoInput) (*Repo, error)
+	ToggleEnabled(ctx context.Context, id int, enabled bool) (*Repo, error)
 }
 
 var _ RepoRepo = (*repoImpl)(nil)
@@ -202,6 +205,17 @@ func (r *repoImpl) Update(ctx context.Context, in *UpdateRepoInput) (*Repo, erro
 	return ToRepo(save), err
 }
 
+func (r *repoImpl) Delete(ctx context.Context, id int) error {
+	only, err := r.data.DB().Repo.Query().WithProjects().Where(repo.ID(id)).Only(ctx)
+	if err != nil {
+		return err
+	}
+	if len(only.Edges.Projects) > 0 {
+		return ToError(400, fmt.Sprintf("repo 下面还有 %d 个项目，不能删除", len(only.Edges.Projects)))
+	}
+	return r.data.DB().Repo.DeleteOneID(id).Exec(ctx)
+}
+
 func (r *repoImpl) GetProjNameAndBranch(ctx context.Context, projID int) (*string, *string, error) {
 	var (
 		defaultBranch *string
@@ -230,12 +244,45 @@ func (r *repoImpl) ToggleEnabled(ctx context.Context, id int, enabled bool) (*Re
 			return nil, ToError(404, err)
 		}
 		if count > 0 {
-			return nil, ToError(400, "repo has projects, can't disable")
+			return nil, ToError(400, "repo 下面还有项目，不能禁用")
 		}
 	}
 
 	save, err := get.Update().SetEnabled(enabled).Save(ctx)
 	return ToRepo(save), err
+}
+
+type CloneRepoInput struct {
+	ID   int
+	Name string
+}
+
+func (r *repoImpl) Clone(ctx context.Context, input *CloneRepoInput) (*Repo, error) {
+	get, err := r.data.DB().Repo.Get(ctx, input.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	exist, err := r.data.DB().Repo.Query().Where(repo.Name(input.Name)).Exist(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if exist {
+		return nil, ToError(400, "repo 名称已经存在")
+	}
+	create, err := r.Create(ctx, &CreateRepoInput{
+		Name:         input.Name,
+		Enabled:      get.Enabled,
+		NeedGitRepo:  get.NeedGitRepo,
+		GitProjectID: lo.ToPtr(get.GitProjectID),
+		MarsConfig:   get.MarsConfig,
+		Description:  get.Description,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return create, nil
 }
 
 func ToRepo(data *ent.Repo) *Repo {

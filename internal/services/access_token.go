@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
-
 	"github.com/duc-cnzj/mars/api/v4/token"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
@@ -14,6 +12,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	"github.com/duc-cnzj/mars/v4/internal/util/timer"
 )
 

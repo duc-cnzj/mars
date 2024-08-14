@@ -24,7 +24,9 @@ const (
 	Repo_Create_FullMethodName        = "/repo.Repo/Create"
 	Repo_Show_FullMethodName          = "/repo.Repo/Show"
 	Repo_Update_FullMethodName        = "/repo.Repo/Update"
+	Repo_Delete_FullMethodName        = "/repo.Repo/Delete"
 	Repo_ToggleEnabled_FullMethodName = "/repo.Repo/ToggleEnabled"
+	Repo_Clone_FullMethodName         = "/repo.Repo/Clone"
 )
 
 // RepoClient is the client API for Repo service.
@@ -35,7 +37,9 @@ type RepoClient interface {
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
 	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
+	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	ToggleEnabled(ctx context.Context, in *ToggleEnabledRequest, opts ...grpc.CallOption) (*ToggleEnabledResponse, error)
+	Clone(ctx context.Context, in *CloneRequest, opts ...grpc.CallOption) (*CloneResponse, error)
 }
 
 type repoClient struct {
@@ -82,9 +86,27 @@ func (c *repoClient) Update(ctx context.Context, in *UpdateRequest, opts ...grpc
 	return out, nil
 }
 
+func (c *repoClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
+	out := new(DeleteResponse)
+	err := c.cc.Invoke(ctx, Repo_Delete_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *repoClient) ToggleEnabled(ctx context.Context, in *ToggleEnabledRequest, opts ...grpc.CallOption) (*ToggleEnabledResponse, error) {
 	out := new(ToggleEnabledResponse)
 	err := c.cc.Invoke(ctx, Repo_ToggleEnabled_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *repoClient) Clone(ctx context.Context, in *CloneRequest, opts ...grpc.CallOption) (*CloneResponse, error) {
+	out := new(CloneResponse)
+	err := c.cc.Invoke(ctx, Repo_Clone_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +121,9 @@ type RepoServer interface {
 	Create(context.Context, *CreateRequest) (*CreateResponse, error)
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
 	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
+	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	ToggleEnabled(context.Context, *ToggleEnabledRequest) (*ToggleEnabledResponse, error)
+	Clone(context.Context, *CloneRequest) (*CloneResponse, error)
 	mustEmbedUnimplementedRepoServer()
 }
 
@@ -119,8 +143,14 @@ func (UnimplementedRepoServer) Show(context.Context, *ShowRequest) (*ShowRespons
 func (UnimplementedRepoServer) Update(context.Context, *UpdateRequest) (*UpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
+func (UnimplementedRepoServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
 func (UnimplementedRepoServer) ToggleEnabled(context.Context, *ToggleEnabledRequest) (*ToggleEnabledResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ToggleEnabled not implemented")
+}
+func (UnimplementedRepoServer) Clone(context.Context, *CloneRequest) (*CloneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Clone not implemented")
 }
 func (UnimplementedRepoServer) mustEmbedUnimplementedRepoServer() {}
 
@@ -207,6 +237,24 @@ func _Repo_Update_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Repo_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RepoServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Repo_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RepoServer).Delete(ctx, req.(*DeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Repo_ToggleEnabled_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ToggleEnabledRequest)
 	if err := dec(in); err != nil {
@@ -221,6 +269,24 @@ func _Repo_ToggleEnabled_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RepoServer).ToggleEnabled(ctx, req.(*ToggleEnabledRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Repo_Clone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CloneRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RepoServer).Clone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Repo_Clone_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RepoServer).Clone(ctx, req.(*CloneRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -249,8 +315,16 @@ var Repo_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Repo_Update_Handler,
 		},
 		{
+			MethodName: "Delete",
+			Handler:    _Repo_Delete_Handler,
+		},
+		{
 			MethodName: "ToggleEnabled",
 			Handler:    _Repo_ToggleEnabled_Handler,
+		},
+		{
+			MethodName: "Clone",
+			Handler:    _Repo_Clone_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

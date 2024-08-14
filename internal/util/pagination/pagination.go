@@ -8,11 +8,11 @@ func InitByDefault[T ~int32 | ~int64 | ~int](inPage *T, inPageSize *T) (page, pa
 	page, pageSize = 1, 15
 
 	var zero T
-	if inPage != nil && *inPage != zero {
+	if inPage != nil && *inPage != zero && *inPage > 0 {
 		page = *inPage
 	}
 
-	if inPageSize != nil && *inPageSize != zero {
+	if inPageSize != nil && *inPageSize != zero && *inPageSize > 0 {
 		pageSize = *inPageSize
 	}
 

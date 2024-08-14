@@ -108,6 +108,14 @@ service Repo {
     };
   }
 
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
+    option (google.api.http)      = {
+      delete: "/api/repos/{id}",
+    };
+    option (openapi.v3.operation) = {
+      summary: "删除 repo",
+    };
+  }
 
   rpc ToggleEnabled(ToggleEnabledRequest) returns (ToggleEnabledResponse) {
     option (google.api.http)      = {
@@ -115,7 +123,31 @@ service Repo {
       body: "*"
     };
     option (openapi.v3.operation) = {
-      summary: "开启/关闭",
+      summary: "开启/关闭 repo",
     };
   }
+
+  rpc Clone(CloneRequest) returns (CloneResponse) {
+    option (google.api.http)      = {
+      post: "/api/repos/clone"
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "克隆 repo",
+    };
+  }
+}
+
+message DeleteRequest{
+  int32  id   = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
+message DeleteResponse{}
+
+message CloneRequest{
+  int32  id   = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  string name = 2 [(validate.rules).string = {min_bytes: 1, pattern: "^[a-zA-Z0-9_-]+$"}, (google.api.field_behavior) = REQUIRED];
+}
+
+message CloneResponse{
+  types.RepoModel item = 1;
 }

@@ -25,6 +25,7 @@ var WireServiceSet = wire.NewSet(
 	NewAccessTokenSvc,
 	NewAuthSvc,
 	NewChangelogSvc,
+	NewDefaultAuthProvider,
 	NewClusterSvc,
 	NewRepoSvc,
 	NewContainerSvc,

@@ -1,6 +1,6 @@
 package repo
 
-//go:generate mockgen -destination ./mock_repo.go -package repo github.com/duc-cnzj/mars/v4/internal/repo ProjectRepo,GitRepo
+//go:generate mockgen -destination ./mock_repo.go -package repo github.com/duc-cnzj/mars/v4/internal/repo ProjectRepo,GitRepo,AccessTokenRepo,EventRepo,AuthRepo,ChangelogRepo,K8sRepo,EndpointRepo,FileRepo
 
 import (
 	"github.com/duc-cnzj/mars/v4/internal/util/timer"
@@ -9,6 +9,7 @@ import (
 
 var WireRepoSet = wire.NewSet(
 	NewCronRepo,
+	NewAuthRepo,
 	NewK8sRepo,
 	NewDefaultHelmer,
 	NewRepo,
