@@ -8,6 +8,7 @@ import {
   Progress,
   Row,
   Select,
+  Skeleton,
   Space,
 } from "antd";
 import { css } from "@emotion/css";
@@ -103,7 +104,6 @@ const DeployProjectForm: React.FC<{
         }
       : defaultCurr;
   }, [options.project, repoId, namespaceId, project]);
-
   const [loading, setLoading] = useState({
     project: false,
     branch: false,
@@ -113,62 +113,41 @@ const DeployProjectForm: React.FC<{
 
   const [needGitRepo, setNeedGitRepo] = useState(true);
 
-  const onProjectVisibleChange = useCallback((open: boolean) => {
-    if (!open) {
-      return;
-    }
-    setLoading((l) => ({ ...l, project: true }));
-    ajax
-      .GET("/api/git/project_options")
-      .then(
-        ({ data }) =>
-          data && setOptions({ project: data.items, branch: [], commit: [] })
-      )
-      .finally(() => setLoading((l) => ({ ...l, project: false })));
-  }, []);
-
-  useEffect(() => {
-    if (isEdit) {
-      onProjectVisibleChange(true);
-    }
-  }, [isEdit, onProjectVisibleChange]);
-
-  useEffect(() => {
-    setNeedGitRepo(curr.needGitRepo);
-  }, [repoId, options.project, curr]);
-
-  useEffect(() => {
-    if (curr.gitProjectId > 0 && branch) {
-      setLoading((v) => ({ ...v, commit: true }));
-      form.setFieldValue("commit", "");
+  const onProjectVisibleChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        return;
+      }
+      setLoading((l) => ({ ...l, project: true }));
       ajax
-        .GET(
-          "/api/git/projects/{gitProjectId}/branches/{branch}/commit_options",
-          {
-            params: {
-              path: { gitProjectId: curr.gitProjectId, branch: branch },
-            },
+        .GET("/api/git/project_options")
+        .then(({ data, error }) => {
+          if (error) {
+            return;
           }
-        )
-        .then(
-          ({ data }) =>
-            data && setOptions((opt) => ({ ...opt, commit: data.items }))
-        )
-        .finally(() => {
-          setLoading((v) => ({ ...v, commit: false }));
-        });
-    }
-  }, [branch, curr.gitProjectId, curr.slug, form]);
-
-  useEffect(() => {
-    if (curr.gitProjectId && repoId) {
+          setOptions({
+            project: isEdit
+              ? data.items.filter((v) => Number(v.value) === project?.repoId)
+              : data.items,
+            branch: [],
+            commit: [],
+          });
+        })
+        .finally(() => setLoading((l) => ({ ...l, project: false })));
+    },
+    [isEdit, project?.repoId]
+  );
+  const fetchBranches = useCallback(
+    (gitProjectId: number, repoId: number, isEdit?: boolean) => {
       setLoading((v) => ({ ...v, branch: true }));
-      form.setFieldValue("branch", "");
-      form.setFieldValue("commit", "");
+      if (!isEdit) {
+        form.setFieldValue("branch", "");
+        form.setFieldValue("commit", "");
+      }
       ajax
         .GET("/api/git/projects/{gitProjectId}/branch_options", {
           params: {
-            path: { gitProjectId: curr.gitProjectId },
+            path: { gitProjectId: gitProjectId },
             query: { repoId: repoId },
           },
         })
@@ -182,8 +161,59 @@ const DeployProjectForm: React.FC<{
         .finally(() => {
           setLoading((v) => ({ ...v, branch: false }));
         });
+    },
+    [form]
+  );
+  const fetchCommits = useCallback(
+    (gitProjectId: number, branch: string, isEdit?: boolean) => {
+      setLoading((v) => ({ ...v, commit: true }));
+      if (!isEdit) {
+        form.setFieldValue("commit", "");
+      }
+      ajax
+        .GET(
+          "/api/git/projects/{gitProjectId}/branches/{branch}/commit_options",
+          {
+            params: {
+              path: { gitProjectId: gitProjectId, branch: branch },
+            },
+          }
+        )
+        .then(
+          ({ data }) =>
+            data && setOptions((opt) => ({ ...opt, commit: data.items }))
+        )
+        .finally(() => {
+          setLoading((v) => ({ ...v, commit: false }));
+        });
+    },
+    [form]
+  );
+  useEffect(() => {
+    if (isEdit) {
+      onProjectVisibleChange(true);
+      if (project && project.repo.needGitRepo) {
+        fetchBranches(project.repo.gitProjectId, project.repoId, isEdit);
+        fetchCommits(project.repo.gitProjectId, project.gitBranch, isEdit);
+      }
     }
-  }, [curr, form, repoId]);
+  }, [isEdit, onProjectVisibleChange, fetchCommits, project, fetchBranches]);
+
+  useEffect(() => {
+    setNeedGitRepo(curr.needGitRepo);
+  }, [repoId, options.project, curr]);
+
+  useEffect(() => {
+    if (curr.gitProjectId > 0 && branch) {
+      fetchCommits(curr.gitProjectId, branch, isEdit);
+    }
+  }, [branch, curr.gitProjectId, fetchCommits, isEdit]);
+
+  useEffect(() => {
+    if (curr.gitProjectId && repoId) {
+      fetchBranches(curr.gitProjectId, repoId, isEdit);
+    }
+  }, [curr.gitProjectId, fetchBranches, repoId, isEdit]);
 
   const isBiggerScreen = useMemo(() => {
     return screens.md || screens.lg || screens.xl || screens.xxl;
@@ -399,12 +429,25 @@ const DeployProjectForm: React.FC<{
                         onBlur={() => setFocusIdx(null)}
                         focus={focusIdx === 2 ? 1 : 0}
                       >
-                        <Form.Item name={"branch"}>
+                        {loading.branch && (
+                          <Skeleton.Input
+                            block
+                            active
+                            className={
+                              isBiggerScreen
+                                ? css`
+                                    border-radius: 0 !important;
+                                  `
+                                : ""
+                            }
+                          />
+                        )}
+                        <Form.Item name={"branch"} hidden={loading.branch}>
                           <Select
                             loading={loading.branch}
                             showSearch
                             className={
-                              needGitRepo && isBiggerScreen
+                              isBiggerScreen
                                 ? css`
                                     .ant-select-selector {
                                       border-radius: 0 !important;
@@ -430,12 +473,26 @@ const DeployProjectForm: React.FC<{
                         onBlur={() => setFocusIdx(null)}
                         focus={focusIdx === 3 ? 1 : 0}
                       >
-                        <Form.Item name={"commit"}>
+                        {loading.commit && (
+                          <Skeleton.Input
+                            block
+                            active
+                            className={
+                              isBiggerScreen
+                                ? css`
+                                    border-top-left-radius: 0 !important;
+                                    border-bottom-left-radius: 0 !important;
+                                  `
+                                : ""
+                            }
+                          />
+                        )}
+                        <Form.Item name={"commit"} hidden={loading.commit}>
                           <Select
                             showSearch
                             loading={loading.commit}
                             className={
-                              needGitRepo && isBiggerScreen
+                              isBiggerScreen
                                 ? css`
                                     .ant-select-selector {
                                       border-top-left-radius: 0 !important;

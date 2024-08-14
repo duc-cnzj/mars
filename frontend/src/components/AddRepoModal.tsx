@@ -370,7 +370,7 @@ const AddRepoModal: React.FC<{
               </Col>
               <Col span={16}>
                 <Form.Item<FieldType> label="项目描述" name="description">
-                  <TextArea />
+                  <TextArea rows={1} />
                 </Form.Item>
               </Col>
             </Row>
