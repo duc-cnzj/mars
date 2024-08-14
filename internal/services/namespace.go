@@ -33,7 +33,13 @@ type namespaceSvc struct {
 }
 
 func NewNamespaceSvc(helmer repo.HelmerRepo, nsRepo repo.NamespaceRepo, k8sRepo repo.K8sRepo, logger mlog.Logger, eventRepo repo.EventRepo) namespace.NamespaceServer {
-	return &namespaceSvc{helmer: helmer, nsRepo: nsRepo, k8sRepo: k8sRepo, eventRepo: eventRepo, logger: logger.WithModule("services/namespace")}
+	return &namespaceSvc{
+		helmer:    helmer,
+		nsRepo:    nsRepo,
+		k8sRepo:   k8sRepo,
+		logger:    logger.WithModule("services/namespace"),
+		eventRepo: eventRepo,
+	}
 }
 
 func (n *namespaceSvc) All(ctx context.Context, request *namespace.AllRequest) (*namespace.AllResponse, error) {
@@ -166,11 +172,15 @@ func (n *namespaceSvc) Delete(ctx context.Context, input *namespace.DeleteReques
 
 	timer := time.NewTimer(5 * time.Second)
 	defer timer.Stop()
+
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+
 loop:
 	for {
 		select {
-		case <-time.After(500 * time.Millisecond):
-			if _, err := n.k8sRepo.GetNamespace(context.Background(), ns.Name); err != nil {
+		case <-ticker.C:
+			if _, err := n.k8sRepo.GetNamespace(context.TODO(), ns.Name); err != nil {
 				n.logger.Error(err)
 				break loop
 			}
@@ -179,7 +189,7 @@ loop:
 		}
 	}
 
-	n.eventRepo.Dispatch(repo.EventNamespaceDeleted, repo.NamespaceDeletedData{NsModel: ns})
+	n.eventRepo.Dispatch(repo.EventNamespaceDeleted, repo.NamespaceDeletedData{ID: ns.ID})
 
 	n.eventRepo.AuditLogWithRequest(
 		types.EventActionType_Delete,

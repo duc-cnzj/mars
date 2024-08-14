@@ -36,7 +36,13 @@ type gitSvc struct {
 }
 
 func NewGitSvc(repoRepo repo.RepoRepo, eventRepo repo.EventRepo, logger mlog.Logger, gitRepo repo.GitRepo, cache cache.Cache) git.GitServer {
-	return &gitSvc{repoRepo: repoRepo, eventRepo: eventRepo, logger: logger.WithModule("services/git"), gitRepo: gitRepo, cache: cache}
+	return &gitSvc{
+		eventRepo: eventRepo,
+		logger:    logger.WithModule("services/git"),
+		gitRepo:   gitRepo,
+		cache:     cache,
+		repoRepo:  repoRepo,
+	}
 }
 
 func (g *gitSvc) AllRepos(ctx context.Context, req *git.AllReposRequest) (*git.AllReposResponse, error) {
@@ -47,6 +53,9 @@ func (g *gitSvc) AllRepos(ctx context.Context, req *git.AllReposRequest) (*git.A
 	}
 	return &git.AllReposResponse{
 		Items: serialize.Serialize(projects, func(v *repo.GitProject) *git.AllReposResponse_Item {
+			if v == nil {
+				return nil
+			}
 			return &git.AllReposResponse_Item{
 				Id:          int32(v.ID),
 				Name:        v.Name,
@@ -118,9 +127,9 @@ func (g *gitSvc) CommitOptions(ctx context.Context, request *git.CommitOptionsRe
 	res := make([]*git.Option, 0, len(commits))
 	for _, commit := range commits {
 		res = append(res, &git.Option{
-			Value:        commit.GetID(),
+			Value:        commit.ID,
 			IsLeaf:       true,
-			Label:        fmt.Sprintf("[%s]: %s", date.ToHumanizeDatetimeString(commit.GetCommittedDate()), commit.GetTitle()),
+			Label:        fmt.Sprintf("[%s]: %s", date.ToHumanizeDatetimeString(commit.CommittedDate), commit.Title),
 			Type:         OptionTypeCommit,
 			GitProjectId: request.GitProjectId,
 			Branch:       request.Branch,
@@ -137,20 +146,20 @@ func (g *gitSvc) Commit(ctx context.Context, request *git.CommitRequest) (*git.C
 		return nil, err
 	}
 	return &git.CommitResponse{
-		Id:             commit.GetID(),
-		ShortId:        commit.GetShortID(),
+		Id:             commit.ID,
+		ShortId:        commit.ShortID,
 		GitProjectId:   request.GitProjectId,
-		Label:          fmt.Sprintf("[%s]: %s", date.ToHumanizeDatetimeString(commit.GetCommittedDate()), commit.GetTitle()),
-		Title:          commit.GetTitle(),
+		Label:          fmt.Sprintf("[%s]: %s", date.ToHumanizeDatetimeString(commit.CommittedDate), commit.Title),
+		Title:          commit.Title,
 		Branch:         request.Branch,
-		AuthorName:     commit.GetAuthorName(),
-		AuthorEmail:    commit.GetAuthorEmail(),
-		CommitterName:  commit.GetCommitterName(),
-		CommitterEmail: commit.GetCommitterEmail(),
-		WebUrl:         commit.GetWebURL(),
-		Message:        commit.GetMessage(),
-		CommittedDate:  date.ToRFC3339DatetimeString(commit.GetCommittedDate()),
-		CreatedAt:      date.ToRFC3339DatetimeString(commit.GetCreatedAt()),
+		AuthorName:     commit.AuthorName,
+		AuthorEmail:    commit.AuthorEmail,
+		CommitterName:  commit.CommitterName,
+		CommitterEmail: commit.CommitterEmail,
+		WebUrl:         commit.WebURL,
+		Message:        commit.Message,
+		CommittedDate:  date.ToRFC3339DatetimeString(commit.CommittedDate),
+		CreatedAt:      date.ToRFC3339DatetimeString(commit.CreatedAt),
 	}, nil
 }
 
@@ -161,8 +170,8 @@ func (g *gitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequ
 	}
 
 	return &git.PipelineInfoResponse{
-		Status: pipeline.GetStatus(),
-		WebUrl: pipeline.GetWebURL(),
+		Status: pipeline.Status,
+		WebUrl: pipeline.WebURL,
 	}, nil
 }
 
@@ -172,9 +181,6 @@ func (g *gitSvc) GetChartValuesYaml(ctx context.Context, req *git.GetChartValues
 	}
 
 	split := strings.Split(req.GetInput(), "|")
-	if len(split) != 3 {
-		return nil, fmt.Errorf("invalid input: %s", req.GetInput())
-	}
 	pid := split[0]
 	branch := split[1]
 	filename := gopath.Join(split[2], "values.yaml")

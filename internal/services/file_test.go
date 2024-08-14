@@ -3,6 +3,10 @@ package services
 import (
 	"context"
 	"errors"
+	"io"
+	"strings"
+	"testing"
+
 	"github.com/duc-cnzj/mars/api/v4/file"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
@@ -13,9 +17,6 @@ import (
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"io"
-	"strings"
-	"testing"
 )
 
 func TestNewFileSvc(t *testing.T) {

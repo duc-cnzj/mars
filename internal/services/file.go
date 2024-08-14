@@ -105,7 +105,7 @@ func (m *fileSvc) MaxUploadSize(ctx context.Context, request *file.MaxUploadSize
 }
 
 func (m *fileSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
-	if strings.Contains(fullMethodName, "MaxUploadSize") {
+	if strings.EqualFold(fullMethodName, "MaxUploadSize") {
 		return ctx, nil
 	}
 

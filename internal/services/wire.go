@@ -1,5 +1,6 @@
 package services
 
+//go:generate mockgen -destination ./mock_svc.go -package services github.com/duc-cnzj/mars/api/v4/metrics Metrics_StreamTopPodServer
 import (
 	"github.com/duc-cnzj/mars/api/v4/auth"
 	"github.com/duc-cnzj/mars/api/v4/changelog"

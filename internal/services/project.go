@@ -224,8 +224,8 @@ func (p *projectSvc) getBranchAndCommitIfMissing(inBranch, inCommit string, show
 			return "", "", errors.New("没有可用的 commit")
 		}
 		lastCommit := commits[0]
-		commit = lastCommit.GetID()
-		msger.SendMsg(fmt.Sprintf("未传入commit，使用最新的commit [%s](%s)", lastCommit.GetTitle(), lastCommit.GetWebURL()))
+		commit = lastCommit.ID
+		msger.SendMsg(fmt.Sprintf("未传入commit，使用最新的commit [%s](%s)", lastCommit.Title, lastCommit.WebURL))
 	}
 	return
 }

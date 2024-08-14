@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	reposerver "github.com/duc-cnzj/mars/api/v4/repo"
 	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
@@ -14,6 +14,8 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	yaml2 "github.com/duc-cnzj/mars/v4/internal/util/yaml"
 	"github.com/samber/lo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var _ reposerver.RepoServer = (*repoSvc)(nil)
@@ -58,11 +60,6 @@ func (r *repoSvc) List(ctx context.Context, request *reposerver.ListRequest) (*r
 }
 
 func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*reposerver.CreateResponse, error) {
-	user := auth.MustGetUser(ctx)
-	if !user.IsAdmin() {
-		return nil, ErrorPermissionDenied
-	}
-
 	create, err := r.repoRepo.Create(ctx, &repo.CreateRepoInput{
 		Name:         req.Name,
 		Enabled:      true,
@@ -76,7 +73,7 @@ func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*r
 	}
 	r.eventRepo.AuditLogWithRequest(
 		types.EventActionType_Create,
-		user.Name,
+		MustGetUser(ctx).Name,
 		fmt.Sprintf("创建仓库: %d: %s", create.ID, create.Name),
 		req,
 	)
@@ -96,11 +93,6 @@ func (r *repoSvc) Show(ctx context.Context, request *reposerver.ShowRequest) (*r
 }
 
 func (r *repoSvc) Update(ctx context.Context, req *reposerver.UpdateRequest) (*reposerver.UpdateResponse, error) {
-	user := auth.MustGetUser(ctx)
-	if !user.IsAdmin() {
-		return nil, ErrorPermissionDenied
-	}
-
 	current, err := r.repoRepo.Show(ctx, int(req.Id))
 	if err != nil {
 		return nil, err
@@ -121,10 +113,11 @@ func (r *repoSvc) Update(ctx context.Context, req *reposerver.UpdateRequest) (*r
 	out, _ := yaml2.PrettyMarshal(create)
 	r.eventRepo.AuditLogWithChange(
 		types.EventActionType_Update,
-		user.Name,
+		MustGetUser(ctx).Name,
 		fmt.Sprintf("更新仓库: %d: %s", create.ID, create.Name),
 		&repo.StringYamlPrettier{Str: string(old)},
-		&repo.StringYamlPrettier{Str: string(out)})
+		&repo.StringYamlPrettier{Str: string(out)},
+	)
 
 	return &reposerver.UpdateResponse{
 		Item: transformer.FromRepo(create),
@@ -132,11 +125,6 @@ func (r *repoSvc) Update(ctx context.Context, req *reposerver.UpdateRequest) (*r
 }
 
 func (r *repoSvc) ToggleEnabled(ctx context.Context, request *reposerver.ToggleEnabledRequest) (*reposerver.ToggleEnabledResponse, error) {
-	user := auth.MustGetUser(ctx)
-	if !user.IsAdmin() {
-		return nil, ErrorPermissionDenied
-	}
-
 	toggle, err := r.repoRepo.ToggleEnabled(ctx, int(request.Id), request.Enabled)
 	if err != nil {
 		return nil, err
@@ -148,7 +136,7 @@ func (r *repoSvc) ToggleEnabled(ctx context.Context, request *reposerver.ToggleE
 	}
 	r.eventRepo.AuditLogWithRequest(
 		types.EventActionType_Update,
-		user.Name,
+		MustGetUser(ctx).Name,
 		fmt.Sprintf("[repo 状态变动]: %s 仓库 %s", status, toggle.Name),
 		request,
 	)
@@ -159,11 +147,17 @@ func (r *repoSvc) ToggleEnabled(ctx context.Context, request *reposerver.ToggleE
 }
 
 func (r *repoSvc) Delete(ctx context.Context, request *reposerver.DeleteRequest) (*reposerver.DeleteResponse, error) {
+
 	if err := r.repoRepo.Delete(ctx, int(request.Id)); err != nil {
 		return nil, err
 	}
 
-	r.eventRepo.AuditLogWithRequest(types.EventActionType_Delete, MustGetUser(ctx).Name, fmt.Sprintf("删除 repo: %d", request.Id), request)
+	r.eventRepo.AuditLogWithRequest(
+		types.EventActionType_Delete,
+		MustGetUser(ctx).Name,
+		fmt.Sprintf("删除 repo: %d", request.Id),
+		request,
+	)
 
 	return &reposerver.DeleteResponse{}, nil
 }
@@ -177,6 +171,7 @@ func (r *repoSvc) Clone(ctx context.Context, req *reposerver.CloneRequest) (*rep
 		return nil, err
 	}
 	show, _ := r.repoRepo.Show(ctx, int(req.Id))
+
 	r.eventRepo.AuditLogWithRequest(
 		types.EventActionType_Create,
 		MustGetUser(ctx).Name,
@@ -187,4 +182,15 @@ func (r *repoSvc) Clone(ctx context.Context, req *reposerver.CloneRequest) (*rep
 	return &reposerver.CloneResponse{
 		Item: transformer.FromRepo(clone),
 	}, nil
+}
+
+func (r *repoSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
+	if strings.EqualFold(fullMethodName, "List") {
+		return ctx, nil
+	}
+	if !MustGetUser(ctx).IsAdmin() {
+		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
+	}
+
+	return ctx, nil
 }

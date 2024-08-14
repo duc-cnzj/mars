@@ -140,7 +140,9 @@ func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToP
 			request.Container,
 			result.ContainerPath,
 			humanize.Bytes(file.Size),
-		), file.ID)
+		),
+		file.ID,
+	)
 
 	return &container.CopyToPodResponse{
 		PodFilePath: result.TargetDir,
@@ -180,7 +182,7 @@ func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server 
 	}
 	bf := bufio.NewReader(stream)
 
-	ch := make(chan []byte, 1000)
+	ch := make(chan []byte, tailLines)
 	wg := sync.WaitGroup{}
 	defer wg.Wait()
 	wg.Add(1)

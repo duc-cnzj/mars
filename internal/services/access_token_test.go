@@ -17,10 +17,12 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+var adminEmail = "1025434218@qq.com"
+
 func newAdminUserCtx() context.Context {
 	return auth.SetUser(context.TODO(), &auth.UserInfo{
 		ID:    "1",
-		Email: "1025434218@qq.com",
+		Email: adminEmail,
 		Name:  "admin",
 		Roles: []string{schematype.MarsAdmin},
 	})

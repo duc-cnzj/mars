@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/duc-cnzj/mars/api/v4/event"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
@@ -13,7 +15,6 @@ import (
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"testing"
 )
 
 func TestNewEventSvc(t *testing.T) {

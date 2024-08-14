@@ -210,7 +210,7 @@ func (repo *eventRepo) HandleInjectTlsSecret(data any, e event.Event) error {
 }
 
 type NamespaceDeletedData struct {
-	NsModel *Namespace
+	ID int
 }
 
 func (repo *eventRepo) HandleNamespaceDeleted(data any, e event.Event) error {
@@ -222,7 +222,7 @@ func (repo *eventRepo) HandleNamespaceDeleted(data any, e event.Event) error {
 	defer sub.Close()
 	sub.ToAll(&websocket_pb.WsReloadProjectsResponse{
 		Metadata:    &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects},
-		NamespaceId: int32(data.(NamespaceDeletedData).NsModel.ID),
+		NamespaceId: int32(data.(NamespaceDeletedData).ID),
 	})
 	logger.Debug("event handled: ", e.String())
 	return nil
