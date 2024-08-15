@@ -479,13 +479,12 @@ func scannerText(text string, fn func(s string)) error {
 
 // MultiWriterCloser combines multiple io.Writer and io.Closer interfaces.
 type MultiWriterCloser struct {
-	writers []io.Writer
-	closers []io.Closer
+	wc []io.WriteCloser
 }
 
 // Write writes data to all the underlying writers.
 func (mwc *MultiWriterCloser) Write(p []byte) (n int, err error) {
-	for _, w := range mwc.writers {
+	for _, w := range mwc.wc {
 		n, err = w.Write(p)
 		if err != nil {
 			return
@@ -496,7 +495,7 @@ func (mwc *MultiWriterCloser) Write(p []byte) (n int, err error) {
 
 // Close closes all the underlying closers.
 func (mwc *MultiWriterCloser) Close() error {
-	for _, c := range mwc.closers {
+	for _, c := range mwc.wc {
 		err := c.Close()
 		if err != nil {
 			return err
@@ -506,13 +505,8 @@ func (mwc *MultiWriterCloser) Close() error {
 }
 
 // NewMultiWriterCloser creates a new MultiWriterCloser.
-func NewMultiWriterCloser(writers ...io.Writer) *MultiWriterCloser {
-	mwc := &MultiWriterCloser{}
-	for _, w := range writers {
-		mwc.writers = append(mwc.writers, w)
-		if c, ok := w.(io.Closer); ok {
-			mwc.closers = append(mwc.closers, c)
-		}
+func NewMultiWriterCloser(wcs ...io.WriteCloser) *MultiWriterCloser {
+	return &MultiWriterCloser{
+		wc: wcs,
 	}
-	return mwc
 }

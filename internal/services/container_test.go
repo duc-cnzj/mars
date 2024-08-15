@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"sort"
 	"testing"
 
 	"github.com/duc-cnzj/mars/api/v4/container"
@@ -14,6 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
 	eventv1 "k8s.io/api/events/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestNewContainerSvc(t *testing.T) {
@@ -428,8 +430,7 @@ func TestContainerSvc_StreamCopyToPod_Success(t *testing.T) {
 	)
 	eventRepo.EXPECT().FileAuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodRunning}}, nil)
-	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any()).Return("c")
+	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), gomock.Any(), gomock.Any()).Return("c", nil)
 	fileRepo.EXPECT().StreamUploadFile(gomock.Any(), gomock.Any()).Return(&repo.File{
 		ID:        1,
 		Namespace: "a",
@@ -456,18 +457,61 @@ func TestContainerSvc_StreamCopyToPod_Success(t *testing.T) {
 
 func Test_containerSvc_Exec(t *testing.T) {}
 
-func Test_execWriter_Close(t *testing.T) {}
-
-func Test_execWriter_IsClosed(t *testing.T) {}
-
-func Test_execWriter_Write(t *testing.T) {}
-
-func Test_newExecWriter(t *testing.T) {}
-
 func Test_scannerText(t *testing.T) {}
 
-func Test_sortEvents_Len(t *testing.T) {}
+func TestSortEvents(t *testing.T) {
+	event1 := &eventv1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			ResourceVersion: "1",
+		},
+	}
+	event2 := &eventv1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			ResourceVersion: "2",
+		},
+	}
+	event3 := &eventv1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			ResourceVersion: "3",
+		},
+	}
 
-func Test_sortEvents_Less(t *testing.T) {}
+	events := sortEvents{event3, event1, event2}
+	sort.Sort(events)
 
-func Test_sortEvents_Swap(t *testing.T) {}
+	assert.Equal(t, "1", events[0].ResourceVersion)
+	assert.Equal(t, "2", events[1].ResourceVersion)
+	assert.Equal(t, "3", events[2].ResourceVersion)
+}
+
+func TestNewMultiWriterCloser(t *testing.T) {
+	closer1 := &wcloser{}
+	closer2 := &wcloser{}
+	mwc := NewMultiWriterCloser(closer1, closer2)
+
+	mwc.Write([]byte("hello"))
+
+	err := mwc.Close()
+	assert.Nil(t, err)
+
+	assert.True(t, closer1.closed)
+	assert.True(t, closer2.closed)
+
+	assert.Equal(t, "hello", string(closer1.w))
+	assert.Equal(t, "hello", string(closer2.w))
+}
+
+type wcloser struct {
+	closed bool
+	w      []byte
+}
+
+func (w *wcloser) Write(p []byte) (n int, err error) {
+	w.w = p
+	return 0, nil
+}
+
+func (w *wcloser) Close() error {
+	w.closed = true
+	return nil
+}
