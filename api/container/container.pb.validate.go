@@ -203,8 +203,6 @@ func (m *CopyToPodResponse) validate(all bool) error {
 
 	// no validation rules for PodFilePath
 
-	// no validation rules for Output
-
 	// no validation rules for FileName
 
 	if len(errors) > 0 {
@@ -333,32 +331,7 @@ func (m *ExecRequest) validate(all bool) error {
 
 	// no validation rules for Container
 
-	if len(m.GetCommand()) < 1 {
-		err := ExecRequestValidationError{
-			field:  "Command",
-			reason: "value must contain at least 1 item(s)",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	for idx, item := range m.GetCommand() {
-		_, _ = idx, item
-
-		if len(item) < 1 {
-			err := ExecRequestValidationError{
-				field:  fmt.Sprintf("Command[%v]", idx),
-				reason: "value length must be at least 1 bytes",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
+	// no validation rules for Message
 
 	if len(errors) > 0 {
 		return ExecRequestMultiError(errors)
@@ -436,6 +409,157 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ExecRequestValidationError{}
+
+// Validate checks the field values on ExecOnceRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ExecOnceRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExecOnceRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ExecOnceRequestMultiError, or nil if none found.
+func (m *ExecOnceRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExecOnceRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(m.GetNamespace()) < 1 {
+		err := ExecOnceRequestValidationError{
+			field:  "Namespace",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(m.GetPod()) < 1 {
+		err := ExecOnceRequestValidationError{
+			field:  "Pod",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Container
+
+	if len(m.GetCommand()) < 1 {
+		err := ExecOnceRequestValidationError{
+			field:  "Command",
+			reason: "value must contain at least 1 item(s)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	for idx, item := range m.GetCommand() {
+		_, _ = idx, item
+
+		if len(item) < 1 {
+			err := ExecOnceRequestValidationError{
+				field:  fmt.Sprintf("Command[%v]", idx),
+				reason: "value length must be at least 1 bytes",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ExecOnceRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExecOnceRequestMultiError is an error wrapping multiple validation errors
+// returned by ExecOnceRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ExecOnceRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExecOnceRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExecOnceRequestMultiError) AllErrors() []error { return m }
+
+// ExecOnceRequestValidationError is the validation error returned by
+// ExecOnceRequest.Validate if the designated constraints aren't met.
+type ExecOnceRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExecOnceRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExecOnceRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExecOnceRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExecOnceRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExecOnceRequestValidationError) ErrorName() string { return "ExecOnceRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExecOnceRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExecOnceRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExecOnceRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExecOnceRequestValidationError{}
 
 // Validate checks the field values on ExecError with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -834,8 +958,6 @@ func (m *StreamCopyToPodResponse) validate(all bool) error {
 	// no validation rules for Size
 
 	// no validation rules for PodFilePath
-
-	// no validation rules for Output
 
 	// no validation rules for Pod
 

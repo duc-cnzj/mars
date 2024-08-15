@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
+	"github.com/duc-cnzj/mars/v4/internal/cache"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/ent/file"
@@ -23,6 +25,8 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/util/rand"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	"github.com/duc-cnzj/mars/v4/internal/util/timer"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type File struct {
@@ -64,10 +68,14 @@ func ToFile(file *ent.File) *File {
 
 type Recorder interface {
 	Resize(cols, rows uint16)
-	Write(data string) (err error)
+	Write(p []byte) (n int, err error)
 	Close() error
 	SetShell(string)
 	GetShell() string
+	File() *File
+	Duration() time.Duration
+	User() *auth.UserInfo
+	Container() *Container
 }
 
 type FileRepo interface {
@@ -82,6 +90,7 @@ type FileRepo interface {
 	NewFile(fpath string) (uploader.File, error)
 	NewRecorder(action types.EventActionType, user *auth.UserInfo, container *Container) Recorder
 	Update(ctx context.Context, i *UpdateFileRequest) (*File, error)
+	StreamUploadFile(ctx context.Context, input *StreamUploadFileRequest) (*File, error)
 }
 
 var _ FileRepo = (*fileRepo)(nil)
@@ -90,24 +99,21 @@ type fileRepo struct {
 	logger   mlog.Logger
 	uploader uploader.Uploader
 	timer    timer.Timer
-	crRepo   CronRepo
 
+	cache         cache.Cache
 	maxUploadSize uint64
 	data          data.Data
-	eventRepo     EventRepo
 }
 
 func NewFileRepo(
-	crRepo CronRepo,
 	logger mlog.Logger,
 	data data.Data,
+	cache cache.Cache,
 	uploader uploader.Uploader,
 	timer timer.Timer,
-	eventRepo EventRepo,
 ) FileRepo {
 	return &fileRepo{
-		eventRepo:     eventRepo,
-		crRepo:        crRepo,
+		cache:         cache,
 		logger:        logger.WithModule("repo/file"),
 		uploader:      uploader,
 		timer:         timer,
@@ -142,6 +148,10 @@ type CreateFileInput struct {
 	Username   string
 	Size       uint64
 	UploadType schematype.UploadType
+
+	Namespace string
+	Pod       string
+	Container string
 }
 
 func (repo *fileRepo) Create(todo context.Context, input *CreateFileInput) (*File, error) {
@@ -149,6 +159,9 @@ func (repo *fileRepo) Create(todo context.Context, input *CreateFileInput) (*Fil
 	save, err := db.File.Create().
 		SetPath(input.Path).
 		SetUsername(input.Username).
+		SetNamespace(input.Namespace).
+		SetPod(input.Pod).
+		SetContainer(input.Container).
 		SetSize(input.Size).
 		SetUploadType(input.UploadType).
 		Save(todo)
@@ -213,14 +226,19 @@ func (repo *fileRepo) ShowRecords(ctx context.Context, id int) (io.ReadCloser, e
 }
 
 func (repo *fileRepo) DiskInfo() (int64, error) {
-	return repo.crRepo.DiskInfo()
+	remember, err := repo.cache.Remember(cache.NewKey("dir-size"), DirSizeCacheSeconds, func() ([]byte, error) {
+		size, err := repo.uploader.DirSize()
+		return int64ToByte(size), err
+	})
+
+	return byteToInt64(remember), err
 }
 
 func (repo *fileRepo) NewRecorder(action types.EventActionType, user *auth.UserInfo, container *Container) Recorder {
 	return &recorder{
+		fileRepo:      repo,
 		data:          repo.data,
 		logger:        repo.logger,
-		eventRepo:     repo.eventRepo,
 		action:        action,
 		timer:         repo.timer,
 		container:     container,
@@ -238,11 +256,71 @@ func (repo *fileRepo) NewDisk(disk string) uploader.Uploader {
 	return repo.uploader.Disk(disk)
 }
 
+const StreamUploadFileDisk = "grpc_upload"
+
+type StreamUploadFileRequest struct {
+	Namespace, Pod, Container string
+	Username                  string
+	FileName                  string
+	FileData                  chan []byte
+}
+
+// StreamUploadFile
+// 1. 用户上传文件
+func (repo *fileRepo) StreamUploadFile(ctx context.Context, input *StreamUploadFileRequest) (*File, error) {
+	tracer := otel.Tracer("")
+	ctx, span := tracer.Start(ctx, "fileRepo/StreamUploadFile")
+	defer span.End()
+	span.SetAttributes(
+		attribute.Key("username").String(input.Username),
+		attribute.Key("namespace").String(input.Namespace),
+		attribute.Key("pod").String(input.Pod),
+		attribute.Key("container").String(input.Container),
+		attribute.Key("file_name").String(input.FileName),
+	)
+	disk := repo.uploader.Disk(StreamUploadFileDisk)
+	// 某个用户/那天/时间/文件名称
+	// duc/2006-01-02/15-03-04-random-str/xxx.tgz
+	now := repo.timer.Now()
+	p := fmt.Sprintf("%s/%s/%s/%s",
+		input.Username,
+		now.Format("2006-01-02"),
+		fmt.Sprintf("%s-%s", now.Format("15-04-05"), rand.String(20)),
+		filepath.Base(input.FileName))
+	fpath := disk.AbsolutePath(p)
+	err := disk.MkDir(filepath.Dir(p), true)
+	if err != nil {
+		return nil, err
+	}
+	newFile, err := repo.uploader.NewFile(fpath)
+	if err != nil {
+		return nil, err
+	}
+	defer newFile.Close()
+	for data := range input.FileData {
+		if _, err := newFile.Write(data); err != nil {
+			return nil, err
+		}
+	}
+	stat, _ := newFile.Stat()
+	return repo.Create(ctx, &CreateFileInput{
+		Path:       newFile.Name(),
+		Username:   input.Username,
+		Size:       uint64(stat.Size()),
+		UploadType: disk.Type(),
+		Namespace:  input.Namespace,
+		Pod:        input.Pod,
+		Container:  input.Container,
+	})
+}
+
 type recorder struct {
 	sync.RWMutex
 
+	file     *File
+	fileRepo FileRepo
+
 	data      data.Data
-	eventRepo EventRepo
 	logger    mlog.Logger
 	action    types.EventActionType
 	timer     timer.Timer
@@ -263,6 +341,24 @@ type recorder struct {
 
 	localUploader uploader.Uploader
 	uploader      uploader.Uploader
+}
+
+func (r *recorder) Container() *Container {
+	return r.container
+}
+
+func (r *recorder) User() *auth.UserInfo {
+	return r.user
+}
+
+func (r *recorder) Duration() time.Duration {
+	return time.Since(r.startTime)
+}
+
+func (r *recorder) File() *File {
+	r.Lock()
+	defer r.Unlock()
+	return r.file
 }
 
 func max[T int | uint16 | uint64](a, b T) T {
@@ -295,7 +391,7 @@ func (r *recorder) HeadLineColRow(cols, rows uint16) {
 	r.rows = max(r.rows, rows)
 }
 
-func (r *recorder) Write(data string) (err error) {
+func (r *recorder) Write(data []byte) (n int, err error) {
 	r.Lock()
 	defer r.Unlock()
 	r.once.Do(func() {
@@ -313,11 +409,11 @@ func (r *recorder) Write(data string) (err error) {
 		r.HeadLineColRow(106, 25)
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
-	marshal, _ := json.Marshal(data)
+	marshal, _ := json.Marshal(string(data))
 	_, err = r.buffer.WriteString(fmt.Sprintf(writeLine, float64(time.Since(r.startTime).Microseconds())/1000000, string(marshal)))
-	return err
+	return len(marshal), err
 }
 
 var (
@@ -326,12 +422,11 @@ var (
 )
 
 func (r *recorder) Close() error {
-	r.RLock()
-	defer r.RUnlock()
+	r.Lock()
+	defer r.Unlock()
 	var (
 		err error
 
-		db            = r.data.DB()
 		localUploader = r.localUploader
 		uploader      = r.uploader
 	)
@@ -375,33 +470,29 @@ func (r *recorder) Close() error {
 		return e
 	}
 	var emptyFile bool = true
+	defer func() {
+		err = upFile.Close()
+		if emptyFile {
+			uploader.Delete(upFile.Name())
+		}
+	}()
+	r.logger.Warning("file size: ", stat.Size())
 	if stat.Size() > 0 {
-		file, err := db.File.Create().
-			SetUploadType(uploader.Type()).
-			SetPath(upFile.Name()).
-			SetSize(uint64(stat.Size())).
-			SetUsername(r.user.Name).
-			SetNamespace(r.container.Namespace).
-			SetPod(r.container.Pod).
-			SetContainer(r.container.Container).
-			Save(context.TODO())
+		r.file, err = r.fileRepo.Create(context.TODO(), &CreateFileInput{
+			UploadType: uploader.Type(),
+			Path:       upFile.Name(),
+			Size:       uint64(stat.Size()),
+			Username:   r.user.Name,
+			Namespace:  r.container.Namespace,
+			Pod:        r.container.Pod,
+			Container:  r.container.Container,
+		})
 		if err != nil {
 			r.logger.Error(err)
 			return err
 		}
 
-		r.eventRepo.FileAuditLogWithDuration(
-			types.EventActionType_Shell,
-			r.user.Name,
-			fmt.Sprintf("用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.container.Container, r.container.Namespace, r.container.Pod),
-			file.ID,
-			time.Since(r.startTime),
-		)
 		emptyFile = false
-	}
-	err = upFile.Close()
-	if emptyFile {
-		uploader.Delete(upFile.Name())
 	}
 	return err
 }

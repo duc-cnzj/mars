@@ -887,7 +887,6 @@ export interface components {
     };
     "container.CopyToPodResponse": {
       podFilePath: string;
-      output: string;
       fileName: string;
     };
     "container.IsPodExistsRequest": {

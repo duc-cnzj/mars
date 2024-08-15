@@ -66,7 +66,50 @@ func local_request_Container_CopyToPod_0(ctx context.Context, marshaler runtime.
 }
 
 func request_Container_Exec_0(ctx context.Context, marshaler runtime.Marshaler, client ContainerClient, req *http.Request, pathParams map[string]string) (Container_ExecClient, runtime.ServerMetadata, error) {
-	var protoReq ExecRequest
+	var metadata runtime.ServerMetadata
+	stream, err := client.Exec(ctx)
+	if err != nil {
+		grpclog.Infof("Failed to start streaming: %v", err)
+		return nil, metadata, err
+	}
+	dec := marshaler.NewDecoder(req.Body)
+	handleSend := func() error {
+		var protoReq ExecRequest
+		err := dec.Decode(&protoReq)
+		if err == io.EOF {
+			return err
+		}
+		if err != nil {
+			grpclog.Infof("Failed to decode request: %v", err)
+			return err
+		}
+		if err := stream.Send(&protoReq); err != nil {
+			grpclog.Infof("Failed to send request: %v", err)
+			return err
+		}
+		return nil
+	}
+	go func() {
+		for {
+			if err := handleSend(); err != nil {
+				break
+			}
+		}
+		if err := stream.CloseSend(); err != nil {
+			grpclog.Infof("Failed to terminate client stream: %v", err)
+		}
+	}()
+	header, err := stream.Header()
+	if err != nil {
+		grpclog.Infof("Failed to get header from client: %v", err)
+		return nil, metadata, err
+	}
+	metadata.HeaderMD = header
+	return stream, metadata, nil
+}
+
+func request_Container_ExecOnce_0(ctx context.Context, marshaler runtime.Marshaler, client ContainerClient, req *http.Request, pathParams map[string]string) (Container_ExecOnceClient, runtime.ServerMetadata, error) {
+	var protoReq ExecOnceRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -77,7 +120,7 @@ func request_Container_Exec_0(ctx context.Context, marshaler runtime.Marshaler, 
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	stream, err := client.Exec(ctx, &protoReq)
+	stream, err := client.ExecOnce(ctx, &protoReq)
 	if err != nil {
 		return nil, metadata, err
 	}
@@ -415,6 +458,13 @@ func RegisterContainerHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		return
 	})
 
+	mux.Handle("POST", pattern_Container_ExecOnce_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
+		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+		return
+	})
+
 	mux.Handle("POST", pattern_Container_StreamCopyToPod_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
 		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -589,6 +639,28 @@ func RegisterContainerHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 
 	})
 
+	mux.Handle("POST", pattern_Container_ExecOnce_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/container.Container/ExecOnce", runtime.WithHTTPPathPattern("/container.Container/ExecOnce"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Container_ExecOnce_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Container_ExecOnce_0(annotatedContext, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("POST", pattern_Container_StreamCopyToPod_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -707,6 +779,8 @@ var (
 
 	pattern_Container_Exec_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"container.Container", "Exec"}, ""))
 
+	pattern_Container_ExecOnce_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"container.Container", "ExecOnce"}, ""))
+
 	pattern_Container_StreamCopyToPod_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"container.Container", "StreamCopyToPod"}, ""))
 
 	pattern_Container_IsPodRunning_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "containers", "pod_running_status"}, ""))
@@ -722,6 +796,8 @@ var (
 	forward_Container_CopyToPod_0 = runtime.ForwardResponseMessage
 
 	forward_Container_Exec_0 = runtime.ForwardResponseStream
+
+	forward_Container_ExecOnce_0 = runtime.ForwardResponseStream
 
 	forward_Container_StreamCopyToPod_0 = runtime.ForwardResponseMessage
 

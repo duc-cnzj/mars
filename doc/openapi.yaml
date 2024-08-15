@@ -1631,8 +1631,6 @@ components:
             properties:
                 podFilePath:
                     type: string
-                output:
-                    type: string
                 fileName:
                     type: string
         container.IsPodExistsRequest:

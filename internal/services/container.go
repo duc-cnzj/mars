@@ -6,25 +6,19 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path/filepath"
 	"sort"
 	"strings"
-	"sync/atomic"
-	"time"
 
 	"github.com/duc-cnzj/mars/api/v4/container"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
-	"github.com/duc-cnzj/mars/v4/internal/uploader"
-	"github.com/duc-cnzj/mars/v4/internal/util/closeable"
 	"github.com/dustin/go-humanize"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
-	"k8s.io/apimachinery/pkg/util/rand"
 	clientgoexec "k8s.io/client-go/util/exec"
 )
 
@@ -112,25 +106,15 @@ func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToP
 		return nil, status.Error(codes.NotFound, reason)
 	}
 
-	file, err := c.fileRepo.GetByID(ctx, int(request.FileId))
-	if err != nil {
-		c.logger.ErrorCtx(ctx, err)
-		return nil, err
-	}
-
-	result, err := c.k8sRepo.Copy(ctx, request.Namespace, request.Pod, request.Container, file.Path, "")
-	if err != nil {
-		c.logger.ErrorCtx(ctx, err)
-		return nil, err
-	}
-
-	c.fileRepo.Update(ctx, &repo.UpdateFileRequest{
-		ID:            int(request.FileId),
-		ContainerPath: result.ContainerPath,
-		Namespace:     request.Namespace,
-		Pod:           request.Pod,
-		Container:     request.Container,
+	file, err := c.k8sRepo.CopyFileToPod(ctx, &repo.CopyFileToPodRequest{
+		FileId:    request.FileId,
+		Namespace: request.Namespace,
+		Pod:       request.Pod,
+		Container: request.Container,
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	c.eventRepo.FileAuditLog(
 		types.EventActionType_Upload,
@@ -139,18 +123,108 @@ func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToP
 			request.Namespace,
 			request.Pod,
 			request.Container,
-			result.ContainerPath,
+			file.ContainerPath,
 			humanize.Bytes(file.Size),
 		),
 		file.ID,
 	)
 
 	return &container.CopyToPodResponse{
-		PodFilePath: result.TargetDir,
-		Output:      result.ErrOut,
-		FileName:    result.FileName,
+		PodFilePath: file.ContainerPath,
+		FileName:    file.Path,
 	}, err
 }
+
+func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPodServer) error {
+	var (
+		ctx  = server.Context()
+		user = MustGetUser(server.Context())
+	)
+	recv, err := server.Recv()
+	if err != nil {
+		return err
+	}
+	c.logger.DebugCtx(ctx, "StreamUploadFile", recv.Namespace, recv.Pod, recv.Container, recv.FileName)
+	// 判断 pod 是否存在
+	running, reason := c.k8sRepo.IsPodRunning(recv.Namespace, recv.Pod)
+	if !running {
+		return errors.New(reason)
+	}
+	// 如果没传入 container，使用默认的
+	if recv.Container == "" {
+		recv.Container, err = c.k8sRepo.FindDefaultContainer(ctx, recv.Namespace, recv.Pod)
+		if err != nil {
+			return err
+		}
+	}
+	c.logger.DebugCtxf(ctx, "StreamUploadFile %s/%s/%s", recv.Namespace, recv.Pod, recv.Container)
+	ch := make(chan []byte, 100)
+	ch <- recv.GetData()
+	go func() {
+		defer close(ch)
+
+		for {
+			recv, err := server.Recv()
+			if err != nil {
+				if err == io.EOF {
+					c.logger.DebugCtx(ctx, "StreamUploadFile: EOF")
+					return
+				}
+				c.logger.ErrorCtx(ctx, "StreamUploadFile: error receiving data", err)
+				return
+			}
+			ch <- recv.GetData()
+		}
+	}()
+
+	file, err := c.fileRepo.StreamUploadFile(ctx, &repo.StreamUploadFileRequest{
+		Namespace: recv.Namespace,
+		Pod:       recv.Pod,
+		Container: recv.Container,
+		Username:  user.Name,
+		FileName:  recv.FileName,
+		FileData:  ch,
+	})
+	if err != nil {
+		c.logger.ErrorCtx(ctx, err)
+		return err
+	}
+
+	res, err := c.k8sRepo.CopyFileToPod(ctx, &repo.CopyFileToPodRequest{
+		FileId:    int64(file.ID),
+		Namespace: file.Namespace,
+		Pod:       file.Pod,
+		Container: file.Container,
+	})
+	if err != nil {
+		c.logger.ErrorCtx(ctx, err)
+		return err
+	}
+
+	c.eventRepo.FileAuditLog(
+		types.EventActionType_Upload,
+		MustGetUser(ctx).Name,
+		fmt.Sprintf("[StreamUploadFile]: 上传文件到 pod: %s/%s/%s, 容器路径: '%s', 大小: %s。",
+			file.Namespace,
+			file.Pod,
+			file.Container,
+			file.ContainerPath,
+			humanize.Bytes(file.Size),
+		),
+		file.ID,
+	)
+
+	return server.SendAndClose(&container.StreamCopyToPodResponse{
+		Size:        int64(file.Size),
+		PodFilePath: res.ContainerPath,
+		Pod:         file.Pod,
+		Namespace:   file.Namespace,
+		Container:   file.Container,
+		Filename:    res.Path,
+	})
+}
+
+var tailLines int64 = 1000
 
 func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server container.Container_StreamContainerLogServer) error {
 	c.logger.DebugCtxf(server.Context(), "StreamContainerLog: %v", request)
@@ -203,189 +277,182 @@ func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server 
 	}
 }
 
-func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPodServer) error {
+func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 	var (
-		fpath         string
-		namespace     string
-		pod           string
-		containerName string
-		user          = MustGetUser(server.Context())
-		f             uploader.File
-
-		disk = "grpc_upload"
+		pod       string
+		namespace string
+		co        string
+		cmd       []string
+		ctx       = server.Context()
 	)
-	defer func() {
-		f.Close()
-	}()
-	updisk := c.fileRepo.NewDisk(disk)
+	recv, err := server.Recv()
+	if err != nil {
+		return err
+	}
+	co = recv.Container
+	namespace = recv.Namespace
+	pod = recv.Pod
+	cmd = recv.Command
+	// 判断 pod 是否存在
+	running, reason := c.k8sRepo.IsPodRunning(recv.Namespace, recv.Pod)
+	if !running {
+		return errors.New(reason)
+	}
 
-	for {
-		recv, err := server.Recv()
+	if co == "" {
+		co, err = c.k8sRepo.FindDefaultContainer(ctx, namespace, pod)
 		if err != nil {
-			if f != nil {
-				stat, _ := f.Stat()
-				f.Close()
-				if err != io.EOF {
-					return err
-				}
-
-				file, _ := c.fileRepo.Create(context.TODO(), &repo.CreateFileInput{
-					Path:       f.Name(),
-					Username:   user.Name,
-					Size:       uint64(stat.Size()),
-					UploadType: updisk.Type(),
-				})
-
-				res, err := c.CopyToPod(server.Context(), &container.CopyToPodRequest{
-					FileId:    int64(file.ID),
-					Namespace: namespace,
-					Pod:       pod,
-					Container: containerName,
-				})
-				if err != nil {
-					return err
-				}
-				return server.SendAndClose(&container.StreamCopyToPodResponse{
-					Size:        stat.Size(),
-					PodFilePath: res.PodFilePath,
-					Output:      res.Output,
-					Pod:         pod,
-					Namespace:   namespace,
-					Container:   containerName,
-					Filename:    res.FileName,
-				})
-			}
-
 			return err
 		}
-		if fpath == "" {
-			pod = recv.Pod
-			namespace = recv.Namespace
-			if recv.Container == "" {
-				pod, err := c.k8sRepo.GetPod(recv.Namespace, recv.Pod)
-				if err != nil {
-					return err
-				}
-
-				recv.Container = c.k8sRepo.FindDefaultContainer(pod)
-				c.logger.Debug("使用默认的容器: ", recv.Container)
-			}
-			containerName = recv.Container
-			running, reason := c.k8sRepo.IsPodRunning(recv.Namespace, recv.Pod)
-			if !running {
-				return errors.New(reason)
-			}
-
-			// 某个用户/那天/时间/文件名称
-			// duc/2006-01-02/15-03-04-random-str/xxx.tgz
-			p := fmt.Sprintf("%s/%s/%s/%s",
-				user.Name,
-				time.Now().Format("2006-01-02"),
-				fmt.Sprintf("%s-%s", time.Now().Format("15-04-05"), rand.String(20)),
-				filepath.Base(recv.GetFileName()))
-			fpath = updisk.AbsolutePath(p)
-			err := updisk.MkDir(filepath.Dir(p), true)
-			if err != nil {
-				c.logger.Error(err)
-				return err
-			}
-			f, err = c.fileRepo.NewFile(fpath)
-			if err != nil {
-				c.logger.Error(err)
-				return err
-			}
-		}
-
-		f.Write(recv.GetData())
+		c.logger.Debug("使用默认的容器: ", co)
 	}
+
+	r := c.fileRepo.NewRecorder(
+		types.EventActionType_Exec,
+		MustGetUser(ctx),
+		&repo.Container{
+			Namespace: namespace,
+			Pod:       pod,
+			Container: co,
+		},
+	)
+
+	reader, writer := io.Pipe()
+	defer reader.Close()
+	defer writer.Close()
+	go func() {
+		c.logger.DebugCtx(ctx, "Exec: ", recv.Message)
+		writer.Write([]byte(recv.Message))
+		for {
+			request, err := server.Recv()
+			if err != nil {
+				c.logger.DebugCtx(ctx, err)
+				return
+			}
+
+			c.logger.DebugCtx(ctx, "Exec: ", request.Message)
+			writer.Write([]byte(request.Message))
+		}
+	}()
+
+	pipe, pipeWriter := io.Pipe()
+	defer pipe.Close()
+	defer pipeWriter.Close()
+	w := NewMultiWriterCloser(pipeWriter, r)
+	go func() {
+		defer c.logger.DebugCtx(ctx, "Exec close")
+		defer func() {
+			c.eventRepo.FileAuditLogWithDuration(
+				types.EventActionType_Exec,
+				r.User().Name,
+				fmt.Sprintf("[Exec]: 用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.Container().Container, r.Container().Namespace, r.Container().Pod),
+				r.File().ID,
+				r.Duration(),
+			)
+		}()
+		scanner := bufio.NewScanner(pipe)
+		scanner.Split(bufio.ScanBytes)
+		for scanner.Scan() {
+			server.Send(&container.ExecResponse{
+				Message: scanner.Text(),
+			})
+		}
+	}()
+
+	err = c.k8sRepo.ExecuteTTY(ctx, &repo.ExecuteTTYInput{
+		Container: &repo.Container{
+			Namespace: namespace,
+			Pod:       pod,
+			Container: co,
+		},
+		Reader:      reader,
+		WriteCloser: w,
+		Cmd:         cmd,
+		TTY:         true,
+	})
+	if exitError, ok := err.(clientgoexec.ExitError); ok {
+		server.Send(&container.ExecResponse{
+			Error: &container.ExecError{
+				Code:    int64(exitError.ExitStatus()),
+				Message: exitError.Error(),
+			},
+		})
+	}
+
+	return err
 }
 
-type exitCodeStatus struct {
-	message string
-	code    int
-}
-
-func (c *containerSvc) Exec(request *container.ExecRequest, server container.Container_ExecServer) error {
+func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server container.Container_ExecOnceServer) error {
+	var (
+		err error
+		ctx = server.Context()
+	)
 	running, reason := c.k8sRepo.IsPodRunning(request.Namespace, request.Pod)
 	if !running {
 		return errors.New(reason)
 	}
 
 	if request.Container == "" {
-		pod, _ := c.k8sRepo.GetPod(request.Namespace, request.Pod)
-		request.Container = c.k8sRepo.FindDefaultContainer(pod)
+		request.Container, err = c.k8sRepo.FindDefaultContainer(ctx, request.Namespace, request.Pod)
+		if err != nil {
+			return err
+		}
 		c.logger.Debug("使用默认的容器: ", request.Container)
 	}
 
-	var exitCode atomic.Value
-	r := c.fileRepo.NewRecorder(types.EventActionType_Exec, auth.MustGetUser(server.Context()), &repo.Container{
+	r := c.fileRepo.NewRecorder(types.EventActionType_Exec, auth.MustGetUser(ctx), &repo.Container{
 		Namespace: request.Namespace,
 		Pod:       request.Pod,
 		Container: request.Container,
 	})
-	r.Write(fmt.Sprintf("mars@%s:/# %s", request.Container, strings.Join(request.Command, " ")))
-	r.Write("\r\n")
-	writer := newExecWriter(r, c.logger)
-	defer writer.Close()
+	r.Write([]byte(fmt.Sprintf("mars@%s:/# %s", request.Container, strings.Join(request.Command, " "))))
+	r.Write([]byte("\r\n"))
 
+	pipe, pipeWriter := io.Pipe()
+	defer pipe.Close()
+	defer pipeWriter.Close()
+	w := NewMultiWriterCloser(pipeWriter, r)
 	go func() {
-		defer writer.Close()
-		defer c.logger.HandlePanic("Exec")
-		err := c.k8sRepo.Execute(server.Context(), &repo.Container{
-			Namespace: request.Namespace,
-			Pod:       request.Pod,
-			Container: request.Container,
-		}, &repo.ExecuteInput{
-			Stdout: writer,
-			Stderr: writer,
-			TTY:    true,
-		})
-		if err != nil {
-			if exitError, ok := err.(clientgoexec.ExitError); ok && exitError.Exited() {
-				c.logger.Debugf("[containerSvc]: exit %v, exit code: %d, err: %v", exitError.Exited(), exitError.ExitStatus(), exitError.Error())
-				exitCode.Store(&exitCodeStatus{
-					message: exitError.Error(),
-					code:    exitError.ExitStatus(),
-				})
-			} else {
-				c.logger.Error(err)
-				exitCode.Store(&exitCodeStatus{
-					message: err.Error(),
-					code:    1,
-				})
-			}
+		defer func() {
+			c.logger.DebugCtx(ctx, "ExecOnce exit")
+			c.eventRepo.FileAuditLogWithDuration(
+				types.EventActionType_Exec,
+				r.User().Name,
+				fmt.Sprintf("[ExecOnce]: 用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.Container().Container, r.Container().Namespace, r.Container().Pod),
+				r.File().ID,
+				r.Duration(),
+			)
+		}()
+		scanner := bufio.NewScanner(pipe)
+		scanner.Split(bufio.ScanBytes)
+		for scanner.Scan() {
+			server.Send(&container.ExecResponse{
+				Message: scanner.Text(),
+			})
 		}
 	}()
 
-	for {
-		select {
-		case msg, ok := <-writer.ch:
-			if !ok {
-				ec := exitCode.Load()
-				if ec != nil {
-					ecs := ec.(*exitCodeStatus)
-					server.Send(&container.ExecResponse{
-						Error: &container.ExecError{
-							Code:    int64(ecs.code),
-							Message: ecs.message,
-						},
-					})
-				}
-				return nil
-			}
-			if err := server.Send(&container.ExecResponse{
-				Message: msg,
-			}); err != nil {
-				return err
-			}
-		case <-server.Context().Done():
-			writer.Close()
-			return server.Context().Err()
-		}
+	err = c.k8sRepo.ExecuteTTY(ctx, &repo.ExecuteTTYInput{
+		Container: &repo.Container{
+			Namespace: request.Namespace,
+			Pod:       request.Pod,
+			Container: request.Container,
+		},
+		WriteCloser: w,
+		Cmd:         request.Command,
+		TTY:         false,
+	})
+	if exitError, ok := err.(clientgoexec.ExitError); ok {
+		server.Send(&container.ExecResponse{
+			Error: &container.ExecError{
+				Code:    int64(exitError.ExitStatus()),
+				Message: exitError.Error(),
+			},
+		})
 	}
-}
 
-var tailLines int64 = 1000
+	return err
+}
 
 type sortEvents []*eventsv1.Event
 
@@ -410,43 +477,42 @@ func scannerText(text string, fn func(s string)) error {
 	return scanner.Err()
 }
 
-type execWriter struct {
-	logger    mlog.Logger
-	recorder  repo.Recorder
-	closeable closeable.Closeable
-	ch        chan string
+// MultiWriterCloser combines multiple io.Writer and io.Closer interfaces.
+type MultiWriterCloser struct {
+	writers []io.Writer
+	closers []io.Closer
 }
 
-func (rw *execWriter) IsClosed() bool {
-	return rw.closeable.IsClosed()
-}
-
-func (rw *execWriter) Close() error {
-	if rw.closeable.Close() {
-		rw.recorder.Close()
-		close(rw.ch)
+// Write writes data to all the underlying writers.
+func (mwc *MultiWriterCloser) Write(p []byte) (n int, err error) {
+	for _, w := range mwc.writers {
+		n, err = w.Write(p)
+		if err != nil {
+			return
+		}
 	}
+	return
+}
 
+// Close closes all the underlying closers.
+func (mwc *MultiWriterCloser) Close() error {
+	for _, c := range mwc.closers {
+		err := c.Close()
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func newExecWriter(r repo.Recorder, logger mlog.Logger) *execWriter {
-	return &execWriter{
-		recorder: r,
-		logger:   logger,
-		ch:       make(chan string, 100),
+// NewMultiWriterCloser creates a new MultiWriterCloser.
+func NewMultiWriterCloser(writers ...io.Writer) *MultiWriterCloser {
+	mwc := &MultiWriterCloser{}
+	for _, w := range writers {
+		mwc.writers = append(mwc.writers, w)
+		if c, ok := w.(io.Closer); ok {
+			mwc.closers = append(mwc.closers, c)
+		}
 	}
-}
-
-func (rw *execWriter) Write(p []byte) (int, error) {
-	if rw.closeable.IsClosed() {
-		rw.logger.Warning("execWriter close")
-		return 0, errors.New("closed")
-	}
-	rw.ch <- string(p)
-	err := rw.recorder.Write(string(p))
-	if err != nil {
-		rw.logger.Error(err)
-	}
-	return len(p), nil
+	return mwc
 }

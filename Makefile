@@ -77,7 +77,7 @@ clear_proto:
 
 .PHONY: gen
 gen:
-	go generate ./... && make fmt
+	GOWORK=off go generate ./... && make fmt
 
 .PHONY: all
 all: api ent-generate wire fmt

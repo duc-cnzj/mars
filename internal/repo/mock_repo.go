@@ -888,6 +888,21 @@ func (mr *MockK8sRepoMockRecorder) Copy(arg0, arg1, arg2, arg3, arg4, arg5 any) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Copy", reflect.TypeOf((*MockK8sRepo)(nil).Copy), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
+// CopyFileToPod mocks base method.
+func (m *MockK8sRepo) CopyFileToPod(arg0 context.Context, arg1 *CopyFileToPodRequest) (*File, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CopyFileToPod", arg0, arg1)
+	ret0, _ := ret[0].(*File)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CopyFileToPod indicates an expected call of CopyFileToPod.
+func (mr *MockK8sRepoMockRecorder) CopyFileToPod(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyFileToPod", reflect.TypeOf((*MockK8sRepo)(nil).CopyFileToPod), arg0, arg1)
+}
+
 // CreateDockerSecrets mocks base method.
 func (m *MockK8sRepo) CreateDockerSecrets(arg0 context.Context, arg1 string) (*v1.Secret, error) {
 	m.ctrl.T.Helper()
@@ -960,18 +975,33 @@ func (mr *MockK8sRepoMockRecorder) Execute(arg0, arg1, arg2 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockK8sRepo)(nil).Execute), arg0, arg1, arg2)
 }
 
-// FindDefaultContainer mocks base method.
-func (m *MockK8sRepo) FindDefaultContainer(arg0 *v1.Pod) string {
+// ExecuteTTY mocks base method.
+func (m *MockK8sRepo) ExecuteTTY(arg0 context.Context, arg1 *ExecuteTTYInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindDefaultContainer", arg0)
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "ExecuteTTY", arg0, arg1)
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// FindDefaultContainer indicates an expected call of FindDefaultContainer.
-func (mr *MockK8sRepoMockRecorder) FindDefaultContainer(arg0 any) *gomock.Call {
+// ExecuteTTY indicates an expected call of ExecuteTTY.
+func (mr *MockK8sRepoMockRecorder) ExecuteTTY(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDefaultContainer", reflect.TypeOf((*MockK8sRepo)(nil).FindDefaultContainer), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteTTY", reflect.TypeOf((*MockK8sRepo)(nil).ExecuteTTY), arg0, arg1)
+}
+
+// FindDefaultContainer mocks base method.
+func (m *MockK8sRepo) FindDefaultContainer(arg0 context.Context, arg1, arg2 string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindDefaultContainer", arg0, arg1, arg2)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindDefaultContainer indicates an expected call of FindDefaultContainer.
+func (mr *MockK8sRepoMockRecorder) FindDefaultContainer(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDefaultContainer", reflect.TypeOf((*MockK8sRepo)(nil).FindDefaultContainer), arg0, arg1, arg2)
 }
 
 // GetAllPodMetrics mocks base method.
@@ -1387,6 +1417,21 @@ func (m *MockFileRepo) ShowRecords(arg0 context.Context, arg1 int) (io.ReadClose
 func (mr *MockFileRepoMockRecorder) ShowRecords(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShowRecords", reflect.TypeOf((*MockFileRepo)(nil).ShowRecords), arg0, arg1)
+}
+
+// StreamUploadFile mocks base method.
+func (m *MockFileRepo) StreamUploadFile(arg0 context.Context, arg1 *StreamUploadFileRequest) (*File, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StreamUploadFile", arg0, arg1)
+	ret0, _ := ret[0].(*File)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StreamUploadFile indicates an expected call of StreamUploadFile.
+func (mr *MockFileRepoMockRecorder) StreamUploadFile(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StreamUploadFile", reflect.TypeOf((*MockFileRepo)(nil).StreamUploadFile), arg0, arg1)
 }
 
 // Update mocks base method.

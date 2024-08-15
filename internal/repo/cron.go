@@ -57,10 +57,12 @@ type cronRepo struct {
 	nsRepo      NamespaceRepo
 	repoRepo    RepoRepo
 	cache       cache.Cache
+	fileRepo    FileRepo
 }
 
-func NewCronRepo(logger mlog.Logger, cache cache.Cache, repoRepo RepoRepo, nsRepo NamespaceRepo, k8sRepo K8sRepo, pluginMgr application.PluginManger, event EventRepo, data data.Data, up uploader.Uploader, helm HelmerRepo, gitRepo GitRepo, cronManager cron.Manager) CronRepo {
+func NewCronRepo(logger mlog.Logger, fileRepo FileRepo, cache cache.Cache, repoRepo RepoRepo, nsRepo NamespaceRepo, k8sRepo K8sRepo, pluginMgr application.PluginManger, event EventRepo, data data.Data, up uploader.Uploader, helm HelmerRepo, gitRepo GitRepo, cronManager cron.Manager) CronRepo {
 	cr := &cronRepo{
+		fileRepo:    fileRepo,
 		logger:      logger.WithModule("repo/cron"),
 		event:       event,
 		data:        data,
@@ -323,12 +325,7 @@ func (repo *cronRepo) FixDeployStatus() error {
 var DirSizeCacheSeconds = int((15 * time.Minute).Seconds())
 
 func (repo *cronRepo) DiskInfo() (int64, error) {
-	remember, err := repo.cache.Remember(cache.NewKey("dir-size"), DirSizeCacheSeconds, func() ([]byte, error) {
-		size, err := repo.up.DirSize()
-		return int64ToByte(size), err
-	})
-
-	return byteToInt64(remember), err
+	return repo.fileRepo.DiskInfo()
 }
 
 func int64ToByte(i int64) []byte {

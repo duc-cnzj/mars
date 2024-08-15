@@ -28,7 +28,6 @@ require (
 	github.com/minio/minio-go/v7 v7.0.34
 	github.com/nsqio/go-nsq v1.1.0
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/opentracing/opentracing-go v1.1.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_golang v1.19.1
 	github.com/pterm/pterm v0.12.69
@@ -44,6 +43,7 @@ require (
 	github.com/tidwall/gjson v1.14.4
 	github.com/xanzy/go-gitlab v0.60.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.28.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0

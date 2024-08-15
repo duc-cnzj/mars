@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/duc-cnzj/mars/api/v4/container"
@@ -174,6 +175,24 @@ func TestContainerSvc_ContainerLog_PodPending1(t *testing.T) {
 	assert.Equal(t, "aaa\nbbb", resp.Log)
 }
 
+type logStreamServer struct {
+	ctx context.Context
+	container.Container_StreamContainerLogServer
+	res []string
+}
+
+func (l *logStreamServer) Send(response *container.LogResponse) error {
+	l.res = append(l.res, response.Log)
+	return nil
+}
+
+func (l *logStreamServer) Context() context.Context {
+	if l.ctx != nil {
+		return l.ctx
+	}
+	return context.TODO()
+}
+
 func TestContainerSvc_CopyToPod_PodNotRunning(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -207,9 +226,12 @@ func TestContainerSvc_CopyToPod_Success(t *testing.T) {
 	)
 	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
 	eventRepo.EXPECT().FileAuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-	fileRepo.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(&repo.File{}, nil)
-	k8sRepo.EXPECT().Copy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&repo.CopyFileToPodResult{}, nil)
-	fileRepo.EXPECT().Update(gomock.Any(), gomock.Any())
+	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), &repo.CopyFileToPodRequest{
+		FileId:    1,
+		Namespace: "a",
+		Pod:       "b",
+		Container: "c",
+	}).Return(&repo.File{}, nil)
 	_, err := svc.CopyToPod(newAdminUserCtx(), &container.CopyToPodRequest{
 		FileId:    1,
 		Namespace: "a",
@@ -217,44 +239,6 @@ func TestContainerSvc_CopyToPod_Success(t *testing.T) {
 		Container: "c",
 	})
 	assert.Nil(t, err)
-}
-
-func TestContainerSvc_CopyToPod_FileNotFound(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	k8sRepo := repo.NewMockK8sRepo(m)
-	fileRepo := repo.NewMockFileRepo(m)
-	svc := NewContainerSvc(
-		repo.NewMockEventRepo(m),
-		k8sRepo,
-		fileRepo,
-		mlog.NewLogger(nil),
-	)
-	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
-	fileRepo.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(nil, errors.New("file not found"))
-	_, err := svc.CopyToPod(context.TODO(), &container.CopyToPodRequest{
-		Namespace: "a",
-		Pod:       "b",
-	})
-	assert.NotNil(t, err)
-}
-
-type logStreamServer struct {
-	ctx context.Context
-	container.Container_StreamContainerLogServer
-	res []string
-}
-
-func (l *logStreamServer) Send(response *container.LogResponse) error {
-	l.res = append(l.res, response.Log)
-	return nil
-}
-
-func (l *logStreamServer) Context() context.Context {
-	if l.ctx != nil {
-		return l.ctx
-	}
-	return context.TODO()
 }
 
 func TestContainerSvc_StreamContainerLog_PodNotFound(t *testing.T) {
@@ -380,7 +364,95 @@ func TestContainerSvc_StreamContainerLog_PodPending1(t *testing.T) {
 	assert.Equal(t, "未找到日志", status.Convert(err).Message())
 }
 
-func Test_containerSvc_StreamCopyToPod(t *testing.T) {}
+type streamCopyToPodServer struct {
+	ctx context.Context
+	container.Container_StreamCopyToPodServer
+	res  []string
+	idx  int
+	recv []*container.StreamCopyToPodRequest
+}
+
+func (l *streamCopyToPodServer) Send(response *container.StreamCopyToPodResponse) error {
+	return nil
+}
+
+func (l *streamCopyToPodServer) SendAndClose(response *container.StreamCopyToPodResponse) error {
+	return nil
+}
+
+func (l *streamCopyToPodServer) Recv() (*container.StreamCopyToPodRequest, error) {
+	if l.idx < len(l.recv) {
+		l.idx++
+		return l.recv[l.idx-1], nil
+	}
+	return nil, io.EOF
+}
+
+func (l *streamCopyToPodServer) Context() context.Context {
+	return newAdminUserCtx()
+}
+
+func TestContainerSvc_StreamCopyToPod_PodNotRunning(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := repo.NewMockK8sRepo(m)
+	fileRepo := repo.NewMockFileRepo(m)
+	svc := NewContainerSvc(
+		repo.NewMockEventRepo(m),
+		k8sRepo,
+		fileRepo,
+		mlog.NewLogger(nil),
+	)
+	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(false, "")
+	err := svc.StreamCopyToPod(&streamCopyToPodServer{recv: []*container.StreamCopyToPodRequest{
+		{
+			Namespace: "a",
+			Pod:       "b",
+			Container: "c",
+		},
+	}})
+	assert.NotNil(t, err)
+}
+
+func TestContainerSvc_StreamCopyToPod_Success(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := repo.NewMockK8sRepo(m)
+	fileRepo := repo.NewMockFileRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	svc := NewContainerSvc(
+		eventRepo,
+		k8sRepo,
+		fileRepo,
+		mlog.NewLogger(nil),
+	)
+	eventRepo.EXPECT().FileAuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
+	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodRunning}}, nil)
+	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any()).Return("c")
+	fileRepo.EXPECT().StreamUploadFile(gomock.Any(), gomock.Any()).Return(&repo.File{
+		ID:        1,
+		Namespace: "a",
+		Pod:       "b",
+		Container: "c",
+	}, nil)
+	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), &repo.CopyFileToPodRequest{
+		FileId:    1,
+		Namespace: "a",
+		Pod:       "b",
+		Container: "c",
+	}).Return(&repo.File{}, nil)
+	err := svc.StreamCopyToPod(&streamCopyToPodServer{recv: []*container.StreamCopyToPodRequest{
+		{
+			Namespace: "a",
+			Pod:       "b",
+			Container: "",
+			FileName:  "a.txt",
+			Data:      []byte("data"),
+		},
+	}})
+	assert.Nil(t, err)
+}
 
 func Test_containerSvc_Exec(t *testing.T) {}
 

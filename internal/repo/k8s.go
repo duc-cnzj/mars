@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -18,9 +19,12 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
 	"github.com/duc-cnzj/mars/v4/internal/util/rand"
+	"github.com/duc-cnzj/mars/v4/internal/util/timer"
 	"github.com/dustin/go-humanize"
 	"github.com/mholt/archiver/v3"
 	"github.com/samber/lo"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"helm.sh/helm/v3/pkg/releaseutil"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -70,6 +74,7 @@ type DockerConfigJSON struct {
 }
 
 type K8sRepo interface {
+	ExecuteTTY(ctx context.Context, input *ExecuteTTYInput) error
 	SplitManifests(manifest string) []string
 	AddTlsSecret(ns string, name string, key string, crt string) (*corev1.Secret, error)
 	GetPodMetrics(ctx context.Context, namespace, podName string) (*v1beta1.PodMetrics, error)
@@ -78,7 +83,7 @@ type K8sRepo interface {
 	CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 	LogStream(ctx context.Context, namespace, pod, container string) (chan []byte, error)
 	GetPodLogs(namespace, podName string, options *corev1.PodLogOptions) (string, error)
-	FindDefaultContainer(pod *corev1.Pod) string
+	FindDefaultContainer(ctx context.Context, namespace string, pod string) (string, error)
 	GetPod(namespace, podName string) (*corev1.Pod, error)
 	ListEvents(namespace string) ([]*eventv1.Event, error)
 	IsPodRunning(namespace, podName string) (running bool, notRunningReason string)
@@ -88,6 +93,7 @@ type K8sRepo interface {
 	GetCpuAndMemoryQuantity(pod v1beta1.PodMetrics) (cpu *resource.Quantity, memory *resource.Quantity)
 	Copy(ctx context.Context, namespace, pod, container, fpath, targetContainerDir string) (*CopyFileToPodResult, error)
 	ClusterInfo() *ClusterInfo
+	CopyFileToPod(ctx context.Context, input *CopyFileToPodRequest) (*File, error)
 
 	Execute(ctx context.Context, c *Container, input *ExecuteInput) error
 	DeleteSecret(ctx context.Context, namespace, secret string) error
@@ -105,16 +111,22 @@ type k8sRepo struct {
 	archiver      Archiver
 	executor      ExecutorManager
 	data          data.Data
+	fileRepo      FileRepo
+	timer         timer.Timer
 }
 
 func NewK8sRepo(
 	logger mlog.Logger,
+	timer timer.Timer,
 	data data.Data,
+	fileRepo FileRepo,
 	uploader uploader.Uploader,
 	archiver Archiver,
 	remoteExecutor ExecutorManager,
 ) K8sRepo {
 	return &k8sRepo{
+		fileRepo:      fileRepo,
+		timer:         timer,
 		data:          data,
 		logger:        logger.WithModule("repo/k8s"),
 		uploader:      uploader,
@@ -243,6 +255,44 @@ func (repo *k8sRepo) Execute(ctx context.Context, c *Container, input *ExecuteIn
 		Execute(ctx, input)
 }
 
+type ExecuteTTYInput struct {
+	Container   *Container
+	Reader      io.Reader
+	WriteCloser io.WriteCloser
+	Cmd         []string
+
+	TTY bool
+}
+
+func (repo *k8sRepo) ExecuteTTY(ctx context.Context, input *ExecuteTTYInput) error {
+	pipe, pipeWriter := io.Pipe()
+	defer pipe.Close()
+	defer pipeWriter.Close()
+	scanner := bufio.NewScanner(pipe)
+	scanner.Split(bufio.ScanBytes)
+	go func() {
+		for scanner.Scan() {
+			input.WriteCloser.Write(scanner.Bytes())
+		}
+		repo.logger.DebugCtx(ctx, "scanner exit")
+		input.WriteCloser.Close()
+		if err := scanner.Err(); err != nil {
+			repo.logger.DebugCtx(ctx, err)
+		}
+	}()
+	return repo.Execute(context.TODO(), &Container{
+		Namespace: input.Container.Namespace,
+		Pod:       input.Container.Pod,
+		Container: input.Container.Container,
+	}, &ExecuteInput{
+		Cmd:    input.Cmd,
+		Stdin:  input.Reader,
+		Stdout: pipeWriter,
+		Stderr: pipeWriter,
+		TTY:    input.TTY,
+	})
+}
+
 func (repo *k8sRepo) GetPodLogs(namespace, podName string, options *corev1.PodLogOptions) (string, error) {
 	logs := repo.data.K8sClient().Client.CoreV1().Pods(namespace).GetLogs(podName, options)
 	do := logs.Do(context.Background())
@@ -254,20 +304,24 @@ func (repo *k8sRepo) ListEvents(namespace string) ([]*eventv1.Event, error) {
 	return repo.data.K8sClient().EventLister.Events(namespace).List(labels.Everything())
 }
 
-func (repo *k8sRepo) FindDefaultContainer(pod *corev1.Pod) string {
-	if name := pod.Annotations[defaultContainerAnnotationName]; len(name) > 0 {
-		for _, co := range pod.Spec.Containers {
+func (repo *k8sRepo) FindDefaultContainer(ctx context.Context, namespace string, pod string) (string, error) {
+	corev1pod, err := repo.GetPod(namespace, pod)
+	if err != nil {
+		return "", err
+	}
+	if name := corev1pod.Annotations[defaultContainerAnnotationName]; len(name) > 0 {
+		for _, co := range corev1pod.Spec.Containers {
 			if name == co.Name {
-				return name
+				return name, nil
 			}
 		}
 	}
 
-	for _, co := range pod.Spec.Containers {
-		return co.Name
+	for _, co := range corev1pod.Spec.Containers {
+		return co.Name, nil
 	}
 
-	return ""
+	return "", errors.New("no container found")
 }
 
 func (repo *k8sRepo) GetPod(namespace, podName string) (*corev1.Pod, error) {
@@ -405,6 +459,16 @@ type CopyFileToPodResult struct {
 }
 
 func (repo *k8sRepo) Copy(ctx context.Context, namespace, pod, container, fpath, targetContainerDir string) (*CopyFileToPodResult, error) {
+	tracer := otel.Tracer("")
+	ctx, span := tracer.Start(ctx, "k8sRepo/Copy")
+	defer span.End()
+	span.SetAttributes(
+		attribute.Key("namespace").String(namespace),
+		attribute.Key("pod").String(pod),
+		attribute.Key("container").String(container),
+		attribute.Key("file").String(fpath),
+	)
+
 	var (
 		errbf, outbf      = bytes.NewBuffer([]byte{}), bytes.NewBuffer([]byte{})
 		reader, outStream = io.Pipe()
@@ -490,6 +554,35 @@ func (repo *k8sRepo) Copy(ctx context.Context, namespace, pod, container, fpath,
 		ContainerPath: filepath.Join(targetContainerDir, baseName),
 		FileName:      baseName,
 	}, err
+}
+
+type CopyFileToPodRequest struct {
+	FileId    int64
+	Namespace string
+	Pod       string
+	Container string
+}
+
+func (repo *k8sRepo) CopyFileToPod(ctx context.Context, input *CopyFileToPodRequest) (*File, error) {
+	file, err := repo.fileRepo.GetByID(ctx, int(input.FileId))
+	if err != nil {
+		repo.logger.ErrorCtx(ctx, err)
+		return nil, err
+	}
+
+	result, err := repo.Copy(ctx, input.Namespace, input.Pod, input.Container, file.Path, "")
+	if err != nil {
+		repo.logger.ErrorCtx(ctx, err)
+		return nil, err
+	}
+
+	return repo.fileRepo.Update(ctx, &UpdateFileRequest{
+		ID:            int(input.FileId),
+		ContainerPath: result.ContainerPath,
+		Namespace:     input.Namespace,
+		Pod:           input.Pod,
+		Container:     input.Container,
+	})
 }
 
 type ClusterInfo struct {

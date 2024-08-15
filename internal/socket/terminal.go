@@ -109,6 +109,7 @@ type myPtyHandler struct {
 	sessionID string
 	container *repo.Container
 	recorder  repo.Recorder
+	eventRepo repo.EventRepo
 	conn      Conn
 
 	doneChan  chan struct{}
@@ -174,7 +175,8 @@ func (t *myPtyHandler) Write(p []byte) (n int, err error) {
 	if t.IsClosed() {
 		return len(p), fmt.Errorf("[Websocket]: %v ws already closed", t.sessionID)
 	}
-	if err = t.recorder.Write(string(p)); err != nil {
+
+	if _, err = t.recorder.Write(p); err != nil {
 		t.logger.Debugf("[Websocket]: %v recorder write failed: %v", t.sessionID, err)
 	}
 	if t.sizeStore.TerminalRowColNeedReset() && t.sizeStore.Cols() != 0 {
@@ -323,6 +325,14 @@ func (t *myPtyHandler) Close(ctx context.Context, reason string) bool {
 	if err := t.Recorder().Close(); err != nil {
 		t.logger.Error(err)
 	}
+	recoder := t.Recorder()
+	t.eventRepo.FileAuditLogWithDuration(
+		types.EventActionType_Shell,
+		recoder.User().Name,
+		fmt.Sprintf("用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", recoder.Container().Container, recoder.Container().Namespace, recoder.Container().Pod),
+		recoder.File().ID,
+		recoder.Duration(),
+	)
 	close(t.doneChan)
 	return true
 }
@@ -575,6 +585,7 @@ func (wc *WebsocketManager) StartShell(ctx context.Context, input *websocket_pb.
 	pty := &myPtyHandler{
 		logger:    wc.logger,
 		sessionID: sessionID,
+		eventRepo: wc.eventRepo,
 		container: container,
 		recorder:  wc.fileRepo.NewRecorder(types.EventActionType_Shell, conn.GetUser(), container),
 		conn:      conn,

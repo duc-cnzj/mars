@@ -15,17 +15,23 @@ message CopyToPodRequest {
   string pod       = 3 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   string container = 4 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
 }
-
 message CopyToPodResponse {
   string pod_file_path = 1;
-  string output        = 2;
-  string file_name     = 3;
+  string file_name     = 2;
 }
 
 message ExecRequest {
   string          namespace = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   string          pod       = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
-  string container = 3;
+  string          container = 3;
+  repeated string command   = 4;
+  string          message   = 5;
+}
+
+message ExecOnceRequest {
+  string          namespace = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string          pod       = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string          container = 3;
   repeated string command   = 4 [(validate.rules).repeated = {min_items: 1, items: {string: {min_bytes: 1}}}, (google.api.field_behavior) = REQUIRED];
 }
 
@@ -50,11 +56,10 @@ message StreamCopyToPodRequest {
 message StreamCopyToPodResponse {
   int64  size          = 1;
   string pod_file_path = 2;
-  string output        = 3;
-  string pod           = 4;
-  string namespace     = 5;
-  string container     = 6;
-  string filename      = 7;
+  string pod           = 3;
+  string namespace     = 4;
+  string container     = 5;
+  string filename      = 6;
 }
 
 message IsPodRunningRequest {
@@ -77,10 +82,10 @@ message IsPodExistsResponse {
 }
 
 message LogRequest {
-  string        namespace   = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
-  string        pod         = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
-  string        container   = 3 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
-  bool show_events = 4;
+  string namespace   = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string pod         = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string container   = 3 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  bool   show_events = 4;
 }
 
 message LogResponse {
@@ -92,7 +97,7 @@ message LogResponse {
 
 service Container {
   rpc CopyToPod(CopyToPodRequest) returns (CopyToPodResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       post: "/api/containers/copy_to_pod",
       body: "*"
     };
@@ -101,8 +106,96 @@ service Container {
     };
   }
 
-  // Exec grpc 执行 pod 命令
-  rpc Exec(ExecRequest) returns (stream ExecResponse);
+  // Exec grpc 执行 pod 命令，交互式
+  //  exec, err := client.Container().Exec(context.TODO())
+  //  if err != nil {
+  //    log.Println(err)
+  //    return
+  //  }
+  //  defer exec.CloseSend()
+  //  go func() {
+  //    for {
+  //      recv, err := exec.Recv()
+  //      if err != nil {
+  //        return
+  //      }
+  //      if recv.Error != nil {
+  //        fmt.Printf("code=%v msg=%v", recv.Error.Code, recv.Error.Message)
+  //        return
+  //      }
+  //      fmt.Print(recv.Message)
+  //    }
+  //  }()
+  //  ns := "devops-duc"
+  //  pod := "nginx-54bff68475-k69gh"
+  //  err = exec.Send(&container.ExecRequest{
+  //    Namespace: ns,
+  //    Pod:       pod,
+  //    Command:   []string{"sh"},
+  //  })
+  //  if err != nil {
+  //    log.Println(err)
+  //    return
+  //  }
+  //
+  //  scanner := bufio.NewScanner(os.Stdin)
+  //  for {
+  //    if !scanner.Scan() {
+  //      if err := scanner.Err(); err != nil {
+  //        log.Println("Scanner error:", err)
+  //      } else {
+  //        fmt.Println("EOF detected, exiting...")
+  //        err := exec.Send(&container.ExecRequest{
+  //          Namespace: ns,
+  //          Pod:       pod,
+  //          Message:   "\x04",
+  //        })
+  //        if err != nil {
+  //          fmt.Println(err)
+  //        }
+  //      }
+  //      break
+  //    }
+  //    cmd := scanner.Text()
+  //    fmt.Println("Command:", cmd)
+  //    err := exec.Send(&container.ExecRequest{
+  //      Namespace: ns,
+  //      Pod:       pod,
+  //      Message:   cmd + "\n",
+  //    })
+  //    if err != nil {
+  //      fmt.Println(err)
+  //      return
+  //    }
+  //  }
+  //  select {}
+  rpc Exec(stream ExecRequest) returns (stream ExecResponse);
+
+  // ExecOnce grpc 执行一次 pod 命令, 非 tty 模式
+  //  ns := "devops-duc"
+  //  pod := "nginx-54bff68475-k69gh"
+  //  exec, err := client.Container().ExecOnce(context.TODO(), &container.ExecOnceRequest{
+  //    Namespace: ns,
+  //    Pod:       pod,
+  //    Command:   []string{"sh", "-c", "pwd"},
+  //  })
+  //  if err != nil {
+  //    log.Println(err)
+  //    return
+  //  }
+  //  defer exec.CloseSend()
+  //  for {
+  //    recv, err := exec.Recv()
+  //    if err != nil {
+  //      return
+  //    }
+  //    if recv.Error != nil {
+  //      fmt.Printf("code=%v msg=%v", recv.Error.Code, recv.Error.Message)
+  //      return
+  //    }
+  //    fmt.Print(recv.Message)
+  //  }
+  rpc ExecOnce(ExecOnceRequest) returns (stream ExecResponse);
 
   // StreamCopyToPod grpc 上传文件到 pod
   //  demo:
@@ -147,7 +240,7 @@ service Container {
   rpc StreamCopyToPod(stream StreamCopyToPodRequest) returns (StreamCopyToPodResponse);
 
   rpc IsPodRunning(IsPodRunningRequest) returns (IsPodRunningResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       post: "/api/containers/pod_running_status",
       body: "*"
     };
@@ -157,7 +250,7 @@ service Container {
   }
 
   rpc IsPodExists(IsPodExistsRequest) returns (IsPodExistsResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       post: "/api/containers/pod_exists",
       body: "*"
     };
@@ -169,7 +262,7 @@ service Container {
 
   // ContainerLog 查看 pod 日志
   rpc ContainerLog(LogRequest) returns (LogResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       get: "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs"
     };
 
@@ -179,7 +272,7 @@ service Container {
   }
 
   rpc StreamContainerLog(LogRequest) returns (stream LogResponse) {
-    option (google.api.http)                                               = {
+    option (google.api.http)      = {
       get: "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs"
     };
 
