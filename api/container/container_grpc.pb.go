@@ -37,60 +37,117 @@ type ContainerClient interface {
 	CopyToPod(ctx context.Context, in *CopyToPodRequest, opts ...grpc.CallOption) (*CopyToPodResponse, error)
 	// Exec grpc 执行 pod 命令，交互式
 	//
-	//	exec, err := client.Container().Exec(context.TODO())
-	//	if err != nil {
-	//	  log.Println(err)
-	//	  return
-	//	}
-	//	go func() {
-	//	  for {
-	//	    recv, err := exec.Recv()
-	//	    if err != nil {
-	//	      return
-	//	    }
-	//	    if recv.Error != nil {
-	//	      fmt.Printf("code=%v msg=%v", recv.Error.Code, recv.Error.Message)
-	//	      return
-	//	    }
-	//	    fmt.Print(recv.Message)
-	//	  }
-	//	}()
-	//	ns := "devops-duc"
-	//	pod := "nginx-54bff68475-k69gh"
-	//	err = exec.Send(&container.ExecRequest{
-	//	  Namespace: ns,
-	//	  Pod:       pod,
-	//	  Command:   []string{"sh"},
-	//	})
-	//	if err != nil {
-	//	  log.Println(err)
-	//	  return
+	//	type winsize struct {
+	//		Row    uint16
+	//		Col    uint16
+	//		Xpixel uint16
+	//		Ypixel uint16
 	//	}
 	//
-	//	scanner := bufio.NewScanner(os.Stdin)
-	//	for {
-	//	  if !scanner.Scan() {
-	//	    if err := scanner.Err(); err != nil {
-	//	      log.Println("Scanner error:", err)
-	//	    } else {
-	//	      fmt.Println("EOF detected, exiting...")
-	//	    }
-	//	    exec.CloseSend()
-	//	    break
-	//	  }
-	//	  cmd := scanner.Text()
-	//	  fmt.Println("Command:", cmd)
-	//	  err := exec.Send(&container.ExecRequest{
-	//	    Namespace: ns,
-	//	    Pod:       pod,
-	//	    Message:   cmd + "\n",
-	//	  })
-	//	  if err != nil {
-	//	    fmt.Println(err)
-	//	    return
-	//	  }
+	// // 获取终端窗口的当前尺寸
+	//
+	//	func getWinsize() (*winsize, error) {
+	//		ws := &winsize{}
+	//		retCode, _, errno := syscall.Syscall(
+	//			syscall.SYS_IOCTL,
+	//			os.Stdout.Fd(),
+	//			uintptr(syscall.TIOCGWINSZ),
+	//			uintptr(unsafe.Pointer(ws)),
+	//		)
+	//		if int(retCode) == -1 {
+	//			return nil, errno
+	//		}
+	//		return ws, nil
 	//	}
-	//	select {}
+	//
+	//	func main() {
+	//		client, _ := client.NewClient("localhost:50000", client.WithAuth("admin", "123456"))
+	//		defer client.Close()
+	//		exec, err := client.Container().Exec(context.TODO())
+	//		if err != nil {
+	//			log.Println(err)
+	//			return
+	//		}
+	//		ns := "devops-duc"
+	//		pod := "nginx-54bff68475-k69gh"
+	//		sigChan := make(chan os.Signal, 1)
+	//		// 注册 SIGWINCH 信号
+	//		signal.Notify(sigChan, syscall.SIGWINCH)
+	//
+	//		// 启动一个 goroutine 来处理信号
+	//		go func() {
+	//			for {
+	//				// 等待信号
+	//				<-sigChan
+	//				// 获取新的窗口尺寸
+	//				ws, err := getWinsize()
+	//				if err != nil {
+	//					fmt.Println("Error getting window size:", err)
+	//					continue
+	//				}
+	//
+	//				exec.Send(&container.ExecRequest{
+	//					Namespace: ns,
+	//					Pod:       pod,
+	//					SizeQueue: &container.TerminalSize{
+	//						Width:  uint32(ws.Col),
+	//						Height: uint32(ws.Row),
+	//					},
+	//				})
+	//
+	//				// 输出新的窗口尺寸
+	//				fmt.Printf("Window size changed: %d rows, %d columns\n", ws.Row, ws.Col)
+	//			}
+	//		}()
+	//
+	//		go func() {
+	//			for {
+	//				recv, err := exec.Recv()
+	//				if err != nil {
+	//					return
+	//				}
+	//				if recv.Error != nil {
+	//					fmt.Printf("code=%v msg=%v", recv.Error.Code, recv.Error.Message)
+	//					return
+	//				}
+	//				fmt.Print(recv.Message)
+	//			}
+	//		}()
+	//
+	//		err = exec.Send(&container.ExecRequest{
+	//			Namespace: ns,
+	//			Pod:       pod,
+	//			Command:   []string{"sh"},
+	//		})
+	//		if err != nil {
+	//			log.Println(err)
+	//			return
+	//		}
+	//
+	//		scanner := bufio.NewScanner(os.Stdin)
+	//		for {
+	//			if !scanner.Scan() {
+	//				if err := scanner.Err(); err != nil {
+	//					log.Println("Scanner error:", err)
+	//				} else {
+	//					fmt.Println("EOF detected, exiting...")
+	//				}
+	//				exec.CloseSend()
+	//				break
+	//			}
+	//			cmd := scanner.Text()
+	//			err := exec.Send(&container.ExecRequest{
+	//				Namespace: ns,
+	//				Pod:       pod,
+	//				Message:   cmd + "\n",
+	//			})
+	//			if err != nil {
+	//				fmt.Println(err)
+	//				return
+	//			}
+	//		}
+	//		select {}
+	//	}
 	Exec(ctx context.Context, opts ...grpc.CallOption) (Container_ExecClient, error)
 	// ExecOnce grpc 执行一次 pod 命令, 非 tty 模式
 	//
@@ -347,60 +404,117 @@ type ContainerServer interface {
 	CopyToPod(context.Context, *CopyToPodRequest) (*CopyToPodResponse, error)
 	// Exec grpc 执行 pod 命令，交互式
 	//
-	//	exec, err := client.Container().Exec(context.TODO())
-	//	if err != nil {
-	//	  log.Println(err)
-	//	  return
-	//	}
-	//	go func() {
-	//	  for {
-	//	    recv, err := exec.Recv()
-	//	    if err != nil {
-	//	      return
-	//	    }
-	//	    if recv.Error != nil {
-	//	      fmt.Printf("code=%v msg=%v", recv.Error.Code, recv.Error.Message)
-	//	      return
-	//	    }
-	//	    fmt.Print(recv.Message)
-	//	  }
-	//	}()
-	//	ns := "devops-duc"
-	//	pod := "nginx-54bff68475-k69gh"
-	//	err = exec.Send(&container.ExecRequest{
-	//	  Namespace: ns,
-	//	  Pod:       pod,
-	//	  Command:   []string{"sh"},
-	//	})
-	//	if err != nil {
-	//	  log.Println(err)
-	//	  return
+	//	type winsize struct {
+	//		Row    uint16
+	//		Col    uint16
+	//		Xpixel uint16
+	//		Ypixel uint16
 	//	}
 	//
-	//	scanner := bufio.NewScanner(os.Stdin)
-	//	for {
-	//	  if !scanner.Scan() {
-	//	    if err := scanner.Err(); err != nil {
-	//	      log.Println("Scanner error:", err)
-	//	    } else {
-	//	      fmt.Println("EOF detected, exiting...")
-	//	    }
-	//	    exec.CloseSend()
-	//	    break
-	//	  }
-	//	  cmd := scanner.Text()
-	//	  fmt.Println("Command:", cmd)
-	//	  err := exec.Send(&container.ExecRequest{
-	//	    Namespace: ns,
-	//	    Pod:       pod,
-	//	    Message:   cmd + "\n",
-	//	  })
-	//	  if err != nil {
-	//	    fmt.Println(err)
-	//	    return
-	//	  }
+	// // 获取终端窗口的当前尺寸
+	//
+	//	func getWinsize() (*winsize, error) {
+	//		ws := &winsize{}
+	//		retCode, _, errno := syscall.Syscall(
+	//			syscall.SYS_IOCTL,
+	//			os.Stdout.Fd(),
+	//			uintptr(syscall.TIOCGWINSZ),
+	//			uintptr(unsafe.Pointer(ws)),
+	//		)
+	//		if int(retCode) == -1 {
+	//			return nil, errno
+	//		}
+	//		return ws, nil
 	//	}
-	//	select {}
+	//
+	//	func main() {
+	//		client, _ := client.NewClient("localhost:50000", client.WithAuth("admin", "123456"))
+	//		defer client.Close()
+	//		exec, err := client.Container().Exec(context.TODO())
+	//		if err != nil {
+	//			log.Println(err)
+	//			return
+	//		}
+	//		ns := "devops-duc"
+	//		pod := "nginx-54bff68475-k69gh"
+	//		sigChan := make(chan os.Signal, 1)
+	//		// 注册 SIGWINCH 信号
+	//		signal.Notify(sigChan, syscall.SIGWINCH)
+	//
+	//		// 启动一个 goroutine 来处理信号
+	//		go func() {
+	//			for {
+	//				// 等待信号
+	//				<-sigChan
+	//				// 获取新的窗口尺寸
+	//				ws, err := getWinsize()
+	//				if err != nil {
+	//					fmt.Println("Error getting window size:", err)
+	//					continue
+	//				}
+	//
+	//				exec.Send(&container.ExecRequest{
+	//					Namespace: ns,
+	//					Pod:       pod,
+	//					SizeQueue: &container.TerminalSize{
+	//						Width:  uint32(ws.Col),
+	//						Height: uint32(ws.Row),
+	//					},
+	//				})
+	//
+	//				// 输出新的窗口尺寸
+	//				fmt.Printf("Window size changed: %d rows, %d columns\n", ws.Row, ws.Col)
+	//			}
+	//		}()
+	//
+	//		go func() {
+	//			for {
+	//				recv, err := exec.Recv()
+	//				if err != nil {
+	//					return
+	//				}
+	//				if recv.Error != nil {
+	//					fmt.Printf("code=%v msg=%v", recv.Error.Code, recv.Error.Message)
+	//					return
+	//				}
+	//				fmt.Print(recv.Message)
+	//			}
+	//		}()
+	//
+	//		err = exec.Send(&container.ExecRequest{
+	//			Namespace: ns,
+	//			Pod:       pod,
+	//			Command:   []string{"sh"},
+	//		})
+	//		if err != nil {
+	//			log.Println(err)
+	//			return
+	//		}
+	//
+	//		scanner := bufio.NewScanner(os.Stdin)
+	//		for {
+	//			if !scanner.Scan() {
+	//				if err := scanner.Err(); err != nil {
+	//					log.Println("Scanner error:", err)
+	//				} else {
+	//					fmt.Println("EOF detected, exiting...")
+	//				}
+	//				exec.CloseSend()
+	//				break
+	//			}
+	//			cmd := scanner.Text()
+	//			err := exec.Send(&container.ExecRequest{
+	//				Namespace: ns,
+	//				Pod:       pod,
+	//				Message:   cmd + "\n",
+	//			})
+	//			if err != nil {
+	//				fmt.Println(err)
+	//				return
+	//			}
+	//		}
+	//		select {}
+	//	}
 	Exec(Container_ExecServer) error
 	// ExecOnce grpc 执行一次 pod 命令, 非 tty 模式
 	//
