@@ -20,12 +20,19 @@ message CopyToPodResponse {
   string file_name     = 2;
 }
 
+message TerminalSize {
+  uint32 width = 1;
+  uint32 height = 2;
+}
+
 message ExecRequest {
-  string          namespace = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
-  string          pod       = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
-  string          container = 3;
-  repeated string command   = 4;
-  string          message   = 5;
+  string          namespace  = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string          pod        = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string          container  = 3;
+  repeated string command    = 4;
+  string          message    = 5;
+  // 使用 TerminalSize 修改终端窗口大小
+  TerminalSize    size_queue = 6;
 }
 
 message ExecOnceRequest {
@@ -112,7 +119,6 @@ service Container {
   //    log.Println(err)
   //    return
   //  }
-  //  defer exec.CloseSend()
   //  go func() {
   //    for {
   //      recv, err := exec.Recv()
@@ -145,15 +151,8 @@ service Container {
   //        log.Println("Scanner error:", err)
   //      } else {
   //        fmt.Println("EOF detected, exiting...")
-  //        err := exec.Send(&container.ExecRequest{
-  //          Namespace: ns,
-  //          Pod:       pod,
-  //          Message:   "\x04",
-  //        })
-  //        if err != nil {
-  //          fmt.Println(err)
-  //        }
   //      }
+  //      exec.CloseSend()
   //      break
   //    }
   //    cmd := scanner.Text()
@@ -169,6 +168,7 @@ service Container {
   //    }
   //  }
   //  select {}
+  //
   rpc Exec(stream ExecRequest) returns (stream ExecResponse);
 
   // ExecOnce grpc 执行一次 pod 命令, 非 tty 模式

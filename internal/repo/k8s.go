@@ -256,12 +256,12 @@ func (repo *k8sRepo) Execute(ctx context.Context, c *Container, input *ExecuteIn
 }
 
 type ExecuteTTYInput struct {
-	Container   *Container
-	Reader      io.Reader
-	WriteCloser io.WriteCloser
-	Cmd         []string
-
-	TTY bool
+	Container         *Container
+	Reader            io.Reader
+	WriteCloser       io.WriteCloser
+	Cmd               []string
+	TTY               bool
+	TerminalSizeQueue remotecommand.TerminalSizeQueue
 }
 
 func (repo *k8sRepo) ExecuteTTY(ctx context.Context, input *ExecuteTTYInput) error {
@@ -285,11 +285,12 @@ func (repo *k8sRepo) ExecuteTTY(ctx context.Context, input *ExecuteTTYInput) err
 		Pod:       input.Container.Pod,
 		Container: input.Container.Container,
 	}, &ExecuteInput{
-		Cmd:    input.Cmd,
-		Stdin:  input.Reader,
-		Stdout: pipeWriter,
-		Stderr: pipeWriter,
-		TTY:    input.TTY,
+		Cmd:               input.Cmd,
+		Stdin:             input.Reader,
+		Stdout:            pipeWriter,
+		Stderr:            pipeWriter,
+		TTY:               input.TTY,
+		TerminalSizeQueue: input.TerminalSizeQueue,
 	})
 }
 

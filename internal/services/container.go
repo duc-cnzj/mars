@@ -15,10 +15,12 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/dustin/go-humanize"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
+	"k8s.io/client-go/tools/remotecommand"
 	clientgoexec "k8s.io/client-go/util/exec"
 )
 
@@ -277,6 +279,23 @@ func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server 
 	}
 }
 
+type sizeQueue struct {
+	ch  chan *remotecommand.TerminalSize
+	ctx context.Context
+}
+
+func (queue *sizeQueue) Next() *remotecommand.TerminalSize {
+	select {
+	case size, ok := <-queue.ch:
+		if !ok {
+			return nil
+		}
+		return size
+	case <-queue.ctx.Done():
+		return nil
+	}
+}
+
 func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 	var (
 		pod       string
@@ -317,31 +336,51 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 		},
 	)
 
+	g, ctx := errgroup.WithContext(ctx)
+	queue := &sizeQueue{
+		ch:  make(chan *remotecommand.TerminalSize, 1),
+		ctx: ctx,
+	}
+
 	reader, writer := io.Pipe()
-	defer reader.Close()
-	defer writer.Close()
-	go func() {
-		c.logger.DebugCtx(ctx, "Exec: ", recv.Message)
+
+	g.Go(func() error {
+		defer func() {
+			reader.Close()
+			writer.Close()
+		}()
 		writer.Write([]byte(recv.Message))
 		for {
 			request, err := server.Recv()
 			if err != nil {
 				c.logger.DebugCtx(ctx, err)
-				return
+				writer.Write([]byte("\x04"))
+				writer.Write([]byte("\u0003"))
+				return err
+			}
+
+			if request.SizeQueue != nil {
+				select {
+				case queue.ch <- &remotecommand.TerminalSize{
+					Width:  uint16(request.SizeQueue.Width),
+					Height: uint16(request.SizeQueue.Height),
+				}:
+				default:
+					c.logger.DebugCtx(ctx, "Exec: size queue full")
+				}
 			}
 
 			c.logger.DebugCtx(ctx, "Exec: ", request.Message)
 			writer.Write([]byte(request.Message))
 		}
-	}()
+	})
 
 	pipe, pipeWriter := io.Pipe()
-	defer pipe.Close()
-	defer pipeWriter.Close()
 	w := NewMultiWriterCloser(pipeWriter, r)
-	go func() {
-		defer c.logger.DebugCtx(ctx, "Exec close")
+	g.Go(func() error {
 		defer func() {
+			pipe.Close()
+			pipeWriter.Close()
 			c.eventRepo.FileAuditLogWithDuration(
 				types.EventActionType_Exec,
 				r.User().Name,
@@ -357,7 +396,8 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 				Message: scanner.Text(),
 			})
 		}
-	}()
+		return scanner.Err()
+	})
 
 	err = c.k8sRepo.ExecuteTTY(ctx, &repo.ExecuteTTYInput{
 		Container: &repo.Container{
@@ -365,10 +405,11 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 			Pod:       pod,
 			Container: co,
 		},
-		Reader:      reader,
-		WriteCloser: w,
-		Cmd:         cmd,
-		TTY:         true,
+		Reader:            reader,
+		WriteCloser:       w,
+		Cmd:               cmd,
+		TTY:               true,
+		TerminalSizeQueue: queue,
 	})
 	if exitError, ok := err.(clientgoexec.ExitError); ok {
 		server.Send(&container.ExecResponse{
@@ -378,7 +419,8 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 			},
 		})
 	}
-
+	err = g.Wait()
+	c.logger.DebugCtx(ctx, "Exec: 彻底退出", err)
 	return err
 }
 

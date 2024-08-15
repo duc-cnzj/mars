@@ -42,7 +42,6 @@ type ContainerClient interface {
 	//	  log.Println(err)
 	//	  return
 	//	}
-	//	defer exec.CloseSend()
 	//	go func() {
 	//	  for {
 	//	    recv, err := exec.Recv()
@@ -75,15 +74,8 @@ type ContainerClient interface {
 	//	      log.Println("Scanner error:", err)
 	//	    } else {
 	//	      fmt.Println("EOF detected, exiting...")
-	//	      err := exec.Send(&container.ExecRequest{
-	//	        Namespace: ns,
-	//	        Pod:       pod,
-	//	        Message:   "\x04",
-	//	      })
-	//	      if err != nil {
-	//	        fmt.Println(err)
-	//	      }
 	//	    }
+	//	    exec.CloseSend()
 	//	    break
 	//	  }
 	//	  cmd := scanner.Text()
@@ -360,7 +352,6 @@ type ContainerServer interface {
 	//	  log.Println(err)
 	//	  return
 	//	}
-	//	defer exec.CloseSend()
 	//	go func() {
 	//	  for {
 	//	    recv, err := exec.Recv()
@@ -393,15 +384,8 @@ type ContainerServer interface {
 	//	      log.Println("Scanner error:", err)
 	//	    } else {
 	//	      fmt.Println("EOF detected, exiting...")
-	//	      err := exec.Send(&container.ExecRequest{
-	//	        Namespace: ns,
-	//	        Pod:       pod,
-	//	        Message:   "\x04",
-	//	      })
-	//	      if err != nil {
-	//	        fmt.Println(err)
-	//	      }
 	//	    }
+	//	    exec.CloseSend()
 	//	    break
 	//	  }
 	//	  cmd := scanner.Text()

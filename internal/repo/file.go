@@ -476,7 +476,6 @@ func (r *recorder) Close() error {
 			uploader.Delete(upFile.Name())
 		}
 	}()
-	r.logger.Warning("file size: ", stat.Size())
 	if stat.Size() > 0 {
 		r.file, err = r.fileRepo.Create(context.TODO(), &CreateFileInput{
 			UploadType: uploader.Type(),
