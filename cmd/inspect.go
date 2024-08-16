@@ -63,7 +63,7 @@ var inspectBootTagsCmd = &cobra.Command{
 
 var inspectCronJobsCmd = &cobra.Command{
 	Use:     "cronjobs",
-	Aliases: []string{"cronjob", "cron", "job", "jobs"},
+	Aliases: []string{"cronjob", "cron", "job", "jobs", "cj"},
 	Short:   "app cron jobs.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.Init(viper.GetString("config"))
