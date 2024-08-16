@@ -11,7 +11,6 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v4/container"
 	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/dustin/go-humanize"
@@ -442,7 +441,7 @@ func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server conta
 		c.logger.Debug("使用默认的容器: ", request.Container)
 	}
 
-	r := c.fileRepo.NewRecorder(types.EventActionType_Exec, auth.MustGetUser(ctx), &repo.Container{
+	r := c.fileRepo.NewRecorder(types.EventActionType_Exec, MustGetUser(ctx), &repo.Container{
 		Namespace: request.Namespace,
 		Pod:       request.Pod,
 		Container: request.Container,
