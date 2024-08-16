@@ -97,7 +97,7 @@ func Test_projectSvc_List_Success(t *testing.T) {
 		Page:          1,
 		PageSize:      11,
 		OrderByIDDesc: lo.ToPtr(true),
-	}).Return(&repo.Project{}, &pagination.Pagination{}, nil)
+	}).Return([]*repo.Project{}, &pagination.Pagination{}, nil)
 	list, err := svc.List(context.TODO(), &project.ListRequest{
 		Page:     lo.ToPtr(int32(1)),
 		PageSize: lo.ToPtr(int32(11)),

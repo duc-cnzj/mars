@@ -81,7 +81,7 @@ func TestFromProject_ValidInput(t *testing.T) {
 			Value: "v",
 		},
 	}, result.ExtraValues)
-	assert.Equal(t, "testFinalExtraValues", result.FinalExtraValues)
+	assert.Equal(t, []*websocket_pb.ExtraValue{{Path: "testExtraKey", Value: "testExtraValue"}}, result.FinalExtraValues)
 	assert.Equal(t, types.Deploy_StatusDeploying, result.DeployStatus)
 	assert.Equal(t, date.ToHumanizeDatetimeString(&now), result.HumanizeCreatedAt)
 	assert.Equal(t, date.ToHumanizeDatetimeString(&now), result.HumanizeUpdatedAt)
