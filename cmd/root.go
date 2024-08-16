@@ -9,7 +9,6 @@ import (
 )
 
 var (
-	cfgFile string
 	rootCmd = &cobra.Command{
 		Use:     "app",
 		Short:   "mars app.",
@@ -38,7 +37,7 @@ func Execute(configFile []byte, logoStr string) {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $DIR/config.yaml)")
+	rootCmd.PersistentFlags().StringP("config", "c", "", "config file (default is $DIR/config.yaml)")
 	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 	viper.SetEnvPrefix("MARS")
 	viper.BindEnv("config")
