@@ -21,7 +21,7 @@ build_tools:
 		github.com/securego/gosec/v2/cmd/gosec \
 		go.uber.org/mock/mockgen \
 		github.com/google/gnostic/cmd/protoc-gen-openapi@latest \
-		github.com/google/wire/cmd/wire@0.5.0 \
+		github.com/google/wire/cmd/wire \
 		entgo.io/ent/cmd/ent
 
 .PHONY: api
@@ -77,10 +77,10 @@ clear_proto:
 
 .PHONY: gen
 gen:
-	GOWORK=off go generate ./... && make fmt
+	GOWORK=off go generate ./...
 
 .PHONY: all
-all: api ent-generate wire fmt
+all: api gen ent-generate wire fmt
 
 .PHONY: wire
 wire:

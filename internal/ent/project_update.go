@@ -279,14 +279,14 @@ func (pu *ProjectUpdate) ClearExtraValues() *ProjectUpdate {
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (pu *ProjectUpdate) SetFinalExtraValues(s []string) *ProjectUpdate {
-	pu.mutation.SetFinalExtraValues(s)
+func (pu *ProjectUpdate) SetFinalExtraValues(wv []*websocket.ExtraValue) *ProjectUpdate {
+	pu.mutation.SetFinalExtraValues(wv)
 	return pu
 }
 
-// AppendFinalExtraValues appends s to the "final_extra_values" field.
-func (pu *ProjectUpdate) AppendFinalExtraValues(s []string) *ProjectUpdate {
-	pu.mutation.AppendFinalExtraValues(s)
+// AppendFinalExtraValues appends wv to the "final_extra_values" field.
+func (pu *ProjectUpdate) AppendFinalExtraValues(wv []*websocket.ExtraValue) *ProjectUpdate {
+	pu.mutation.AppendFinalExtraValues(wv)
 	return pu
 }
 
@@ -1120,14 +1120,14 @@ func (puo *ProjectUpdateOne) ClearExtraValues() *ProjectUpdateOne {
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (puo *ProjectUpdateOne) SetFinalExtraValues(s []string) *ProjectUpdateOne {
-	puo.mutation.SetFinalExtraValues(s)
+func (puo *ProjectUpdateOne) SetFinalExtraValues(wv []*websocket.ExtraValue) *ProjectUpdateOne {
+	puo.mutation.SetFinalExtraValues(wv)
 	return puo
 }
 
-// AppendFinalExtraValues appends s to the "final_extra_values" field.
-func (puo *ProjectUpdateOne) AppendFinalExtraValues(s []string) *ProjectUpdateOne {
-	puo.mutation.AppendFinalExtraValues(s)
+// AppendFinalExtraValues appends wv to the "final_extra_values" field.
+func (puo *ProjectUpdateOne) AppendFinalExtraValues(wv []*websocket.ExtraValue) *ProjectUpdateOne {
+	puo.mutation.AppendFinalExtraValues(wv)
 	return puo
 }
 

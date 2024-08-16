@@ -529,6 +529,40 @@ func (m *ChangelogModel) validate(all bool) error {
 
 	}
 
+	for idx, item := range m.GetFinalExtraValues() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ChangelogModelValidationError{
+						field:  fmt.Sprintf("FinalExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ChangelogModelValidationError{
+						field:  fmt.Sprintf("FinalExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ChangelogModelValidationError{
+					field:  fmt.Sprintf("FinalExtraValues[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	// no validation rules for GitCommitWebUrl
 
 	// no validation rules for GitCommitTitle
@@ -1506,7 +1540,39 @@ func (m *ProjectModel) validate(all bool) error {
 
 	}
 
-	// no validation rules for FinalExtraValues
+	for idx, item := range m.GetFinalExtraValues() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ProjectModelValidationError{
+						field:  fmt.Sprintf("FinalExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ProjectModelValidationError{
+						field:  fmt.Sprintf("FinalExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ProjectModelValidationError{
+					field:  fmt.Sprintf("FinalExtraValues[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	// no validation rules for DeployStatus
 

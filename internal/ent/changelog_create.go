@@ -148,8 +148,8 @@ func (cc *ChangelogCreate) SetExtraValues(wv []*websocket.ExtraValue) *Changelog
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (cc *ChangelogCreate) SetFinalExtraValues(s []string) *ChangelogCreate {
-	cc.mutation.SetFinalExtraValues(s)
+func (cc *ChangelogCreate) SetFinalExtraValues(wv []*websocket.ExtraValue) *ChangelogCreate {
+	cc.mutation.SetFinalExtraValues(wv)
 	return cc
 }
 
@@ -669,7 +669,7 @@ func (u *ChangelogUpsert) ClearExtraValues() *ChangelogUpsert {
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (u *ChangelogUpsert) SetFinalExtraValues(v []string) *ChangelogUpsert {
+func (u *ChangelogUpsert) SetFinalExtraValues(v []*websocket.ExtraValue) *ChangelogUpsert {
 	u.Set(changelog.FieldFinalExtraValues, v)
 	return u
 }
@@ -1030,7 +1030,7 @@ func (u *ChangelogUpsertOne) ClearExtraValues() *ChangelogUpsertOne {
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (u *ChangelogUpsertOne) SetFinalExtraValues(v []string) *ChangelogUpsertOne {
+func (u *ChangelogUpsertOne) SetFinalExtraValues(v []*websocket.ExtraValue) *ChangelogUpsertOne {
 	return u.Update(func(s *ChangelogUpsert) {
 		s.SetFinalExtraValues(v)
 	})
@@ -1577,7 +1577,7 @@ func (u *ChangelogUpsertBulk) ClearExtraValues() *ChangelogUpsertBulk {
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (u *ChangelogUpsertBulk) SetFinalExtraValues(v []string) *ChangelogUpsertBulk {
+func (u *ChangelogUpsertBulk) SetFinalExtraValues(v []*websocket.ExtraValue) *ChangelogUpsertBulk {
 	return u.Update(func(s *ChangelogUpsert) {
 		s.SetFinalExtraValues(v)
 	})

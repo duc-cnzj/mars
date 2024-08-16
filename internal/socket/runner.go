@@ -8,6 +8,7 @@ import (
 	"io"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -30,7 +31,6 @@ import (
 	mysort "github.com/duc-cnzj/mars/v4/internal/util/xsort"
 	yaml2 "github.com/duc-cnzj/mars/v4/internal/util/yaml"
 	"github.com/samber/lo"
-	"go.uber.org/config"
 	"golang.org/x/sync/errgroup"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chartutil"
@@ -261,7 +261,8 @@ type jobRunner struct {
 	userConfigYaml string
 
 	// 3. ElementsLoader(自定义配置) 时加载
-	elementValues []string
+	elementValues    []string
+	finalExtraValues []*websocket_pb.ExtraValue
 
 	// 4. SystemVariableLoader 时加载
 	// chart 的 替换完所有 <.Var> 之后的 values.yaml 内容
@@ -499,7 +500,7 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 			GitCommitAuthor:  j.Commit().GetAuthorName(),
 			GitCommitDate:    j.Commit().GetCommittedDate(),
 			ExtraValues:      j.input.ExtraValues,
-			FinalExtraValues: j.elementValues,
+			FinalExtraValues: j.finalExtraValues,
 			EnvValues:        j.vars.ToKeyValue(),
 			OverrideValues:   string(marshal),
 			Manifest:         j.manifests,
@@ -772,38 +773,25 @@ func toProjectEventYaml(p *repo.Project) repo.YamlPrettier {
 		return nil
 	}
 
-	var finalExtraValues string
-	var opts []config.YAMLOption
-	for _, item := range p.FinalExtraValues {
-		opts = append(opts, config.Source(strings.NewReader(item)))
-	}
-	if len(opts) != 0 {
-		provider, _ := config.NewYAML(opts...)
-		var merged map[string]any
-		provider.Get("").Populate(&merged)
-
-		out, _ := yaml2.PrettyMarshal(&merged)
-		finalExtraValues = string(out)
-	}
-
+	sort.Slice(p.EnvValues, func(i, j int) bool {
+		return p.EnvValues[i].Key < p.EnvValues[j].Key
+	})
+	sort.Slice(p.ExtraValues, func(i, j int) bool {
+		return p.ExtraValues[i].Path < p.ExtraValues[j].Path
+	})
+	sort.Slice(p.FinalExtraValues, func(i, j int) bool {
+		return p.FinalExtraValues[i].Path < p.FinalExtraValues[j].Path
+	})
 	out, _ := yaml2.PrettyMarshal(map[string]any{
-		"title":   p.GitCommitTitle,
-		"branch":  p.GitBranch,
-		"commit":  p.GitCommit,
-		"atomic":  p.Atomic,
-		"web_url": p.GitCommitWebURL,
-		"config":  p.Config,
-		"env_values": lo.IsSortedByKey(
-			p.EnvValues,
-			func(item *types.KeyValue) string {
-				return item.Key
-			}),
-		"extra_values": lo.IsSortedByKey(
-			p.ExtraValues,
-			func(item *websocket_pb.ExtraValue) string {
-				return item.Path
-			}),
-		"final_extra_values": finalExtraValues,
+		"title":              p.GitCommitTitle,
+		"branch":             p.GitBranch,
+		"commit":             p.GitCommit,
+		"atomic":             p.Atomic,
+		"web_url":            p.GitCommitWebURL,
+		"config":             p.Config,
+		"env_values":         p.EnvValues,
+		"extra_values":       p.ExtraValues,
+		"final_extra_values": p.FinalExtraValues,
 	})
 
 	return &repo.StringYamlPrettier{Str: string(out)}

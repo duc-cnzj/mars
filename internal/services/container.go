@@ -8,6 +8,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/duc-cnzj/mars/api/v4/container"
 	"github.com/duc-cnzj/mars/api/v4/types"
@@ -301,8 +302,11 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 		namespace string
 		co        string
 		cmd       []string
-		ctx       = server.Context()
+		once      sync.Once
+
+		ctx, cancelFunc = context.WithCancel(server.Context())
 	)
+	defer cancelFunc()
 	recv, err := server.Recv()
 	if err != nil {
 		return err
@@ -342,19 +346,42 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 	}
 
 	reader, writer := io.Pipe()
+	pipe, pipeWriter := io.Pipe()
+	w := io.MultiWriter(pipeWriter, r)
 
-	g.Go(func() error {
-		defer func() {
+	closeAll := func() {
+		once.Do(func() {
+			c.logger.DebugCtx(ctx, "closeAll")
+			defer c.logger.DebugCtx(ctx, "closeAll done")
 			reader.Close()
 			writer.Close()
-		}()
-		writer.Write([]byte(recv.Message))
+			pipe.Close()
+			pipeWriter.Close()
+			cancelFunc()
+			r.Close()
+			var fid int
+			if r.File() != nil {
+				fid = r.File().ID
+			}
+			c.eventRepo.FileAuditLogWithDuration(
+				types.EventActionType_Exec,
+				r.User().Name,
+				fmt.Sprintf("[Exec]: 用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.Container().Container, r.Container().Namespace, r.Container().Pod),
+				fid,
+				r.Duration(),
+			)
+		})
+	}
+
+	g.Go(func() error {
+		defer closeAll()
+		if len(recv.Message) > 0 {
+			writer.Write(recv.Message)
+		}
 		for {
 			request, err := server.Recv()
 			if err != nil {
 				c.logger.DebugCtx(ctx, err)
-				writer.Write([]byte("\x04"))
-				writer.Write([]byte("\u0003"))
 				return err
 			}
 
@@ -369,45 +396,44 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 				}
 			}
 
-			c.logger.DebugCtx(ctx, "Exec: ", request.Message)
-			writer.Write([]byte(request.Message))
+			c.logger.DebugCtxf(ctx, "Exec: %q", request.Message)
+			if _, err := writer.Write(request.Message); err != nil {
+				c.logger.DebugCtx(ctx, err)
+			}
 		}
 	})
 
-	pipe, pipeWriter := io.Pipe()
-	w := NewMultiWriterCloser(pipeWriter, r)
 	g.Go(func() error {
-		defer func() {
-			pipe.Close()
-			pipeWriter.Close()
-			c.eventRepo.FileAuditLogWithDuration(
-				types.EventActionType_Exec,
-				r.User().Name,
-				fmt.Sprintf("[Exec]: 用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.Container().Container, r.Container().Namespace, r.Container().Pod),
-				r.File().ID,
-				r.Duration(),
-			)
-		}()
-		scanner := bufio.NewScanner(pipe)
-		scanner.Split(bufio.ScanBytes)
-		for scanner.Scan() {
-			server.Send(&container.ExecResponse{
-				Message: scanner.Text(),
-			})
+		defer closeAll()
+		rd := bufio.NewReader(pipe)
+		for {
+			b, err := rd.ReadByte()
+			if err != nil {
+				c.logger.DebugCtx(ctx, err)
+				if err == bufio.ErrBufferFull {
+					continue
+				}
+				return err
+			}
+			if err := server.Send(&container.ExecResponse{
+				Message: []byte{b},
+			}); err != nil {
+				c.logger.ErrorCtx(ctx, err)
+				return err
+			}
 		}
-		return scanner.Err()
 	})
 
-	err = c.k8sRepo.ExecuteTTY(ctx, &repo.ExecuteTTYInput{
-		Container: &repo.Container{
-			Namespace: namespace,
-			Pod:       pod,
-			Container: co,
-		},
-		Reader:            reader,
-		WriteCloser:       w,
-		Cmd:               cmd,
+	err = c.k8sRepo.Execute(ctx, &repo.Container{
+		Namespace: namespace,
+		Pod:       pod,
+		Container: co,
+	}, &repo.ExecuteInput{
+		Stdin:             reader,
+		Stdout:            w,
+		Stderr:            w,
 		TTY:               true,
+		Cmd:               cmd,
 		TerminalSizeQueue: queue,
 	})
 	if exitError, ok := err.(clientgoexec.ExitError); ok {
@@ -418,15 +444,20 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 			},
 		})
 	}
-	err = g.Wait()
-	c.logger.DebugCtx(ctx, "Exec: 彻底退出", err)
+	closeAll()
+	c.logger.DebugCtx(ctx, "Exec: 等待彻底退出", err)
+	go func() {
+		err = g.Wait()
+		c.logger.DebugCtx(ctx, "Exec: 彻底退出", err)
+	}()
 	return err
 }
 
 func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server container.Container_ExecOnceServer) error {
 	var (
-		err error
-		ctx = server.Context()
+		err  error
+		ctx  = server.Context()
+		once = sync.Once{}
 	)
 	running, reason := c.k8sRepo.IsPodRunning(request.Namespace, request.Pod)
 	if !running {
@@ -450,12 +481,12 @@ func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server conta
 	r.Write([]byte("\r\n"))
 
 	pipe, pipeWriter := io.Pipe()
-	defer pipe.Close()
-	defer pipeWriter.Close()
-	w := NewMultiWriterCloser(pipeWriter, r)
-	go func() {
-		defer func() {
-			c.logger.DebugCtx(ctx, "ExecOnce exit")
+
+	closeAll := func() {
+		once.Do(func() {
+			pipe.Close()
+			pipeWriter.Close()
+			r.Close()
 			c.eventRepo.FileAuditLogWithDuration(
 				types.EventActionType_Exec,
 				r.User().Name,
@@ -463,25 +494,37 @@ func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server conta
 				r.File().ID,
 				r.Duration(),
 			)
-		}()
-		scanner := bufio.NewScanner(pipe)
-		scanner.Split(bufio.ScanBytes)
-		for scanner.Scan() {
-			server.Send(&container.ExecResponse{
-				Message: scanner.Text(),
-			})
+		})
+	}
+	w := io.MultiWriter(pipeWriter, r)
+	go func() {
+		defer closeAll()
+		reader := bufio.NewReader(pipe)
+		for {
+			readByte, err := reader.ReadByte()
+			if err != nil {
+				if err == bufio.ErrBufferFull {
+					continue
+				}
+				return
+			}
+			if err = server.Send(&container.ExecResponse{
+				Message: []byte{readByte},
+			}); err != nil {
+				c.logger.DebugCtx(ctx, err)
+			}
 		}
 	}()
 
-	err = c.k8sRepo.ExecuteTTY(ctx, &repo.ExecuteTTYInput{
-		Container: &repo.Container{
-			Namespace: request.Namespace,
-			Pod:       request.Pod,
-			Container: request.Container,
-		},
-		WriteCloser: w,
-		Cmd:         request.Command,
-		TTY:         false,
+	err = c.k8sRepo.Execute(ctx, &repo.Container{
+		Namespace: request.Namespace,
+		Pod:       request.Pod,
+		Container: request.Container,
+	}, &repo.ExecuteInput{
+		Stdout: w,
+		Stderr: w,
+		TTY:    false,
+		Cmd:    request.Command,
 	})
 	if exitError, ok := err.(clientgoexec.ExitError); ok {
 		server.Send(&container.ExecResponse{
@@ -492,6 +535,8 @@ func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server conta
 		})
 	}
 
+	closeAll()
+	c.logger.DebugCtx(ctx, "ExecOnce: 彻底退出", err)
 	return err
 }
 
@@ -516,38 +561,4 @@ func scannerText(text string, fn func(s string)) error {
 		fn(scanner.Text())
 	}
 	return scanner.Err()
-}
-
-// MultiWriterCloser combines multiple io.Writer and io.Closer interfaces.
-type MultiWriterCloser struct {
-	wc []io.WriteCloser
-}
-
-// Write writes data to all the underlying writers.
-func (mwc *MultiWriterCloser) Write(p []byte) (n int, err error) {
-	for _, w := range mwc.wc {
-		n, err = w.Write(p)
-		if err != nil {
-			return
-		}
-	}
-	return
-}
-
-// Close closes all the underlying closers.
-func (mwc *MultiWriterCloser) Close() error {
-	for _, c := range mwc.wc {
-		err := c.Close()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// NewMultiWriterCloser creates a new MultiWriterCloser.
-func NewMultiWriterCloser(wcs ...io.WriteCloser) *MultiWriterCloser {
-	return &MultiWriterCloser{
-		wc: wcs,
-	}
 }

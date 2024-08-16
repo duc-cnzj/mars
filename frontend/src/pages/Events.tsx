@@ -22,6 +22,7 @@ import {
   Input,
   Radio,
   RadioChangeEvent,
+  Space,
 } from "antd";
 import theme from "../styles/theme";
 import AsciinemaPlayer from "../components/Player";
@@ -32,6 +33,7 @@ import { css } from "@emotion/css";
 import {
   ClockCircleOutlined,
   PlayCircleOutlined,
+  ReloadOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -48,6 +50,7 @@ const initQuery = { action_type: TypesEventModelAction.Unknown, search: "" };
 
 const EventList: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [refreshLoading, setRefreshLoading] = useState(false);
   const [diskInfo, setDiskInfo] =
     useState<components["schemas"]["file.DiskInfoResponse"]>();
   const [paginate, setPaginate] = useState<{
@@ -329,17 +332,36 @@ const EventList: React.FC = () => {
               }}
             />
           </div>
-          <div style={{ fontSize: 12, fontWeight: "normal" }}>
-            文件占用:{" "}
-            <span style={{ color: "blue" }}>{diskInfo?.humanizeUsage}</span>
-          </div>
+          <Space>
+            <div style={{ fontSize: 12, fontWeight: "normal" }}>
+              文件占用:{" "}
+              <span style={{ color: "blue" }}>{diskInfo?.humanizeUsage}</span>
+            </div>
+            <Button
+              style={{ fontSize: 12 }}
+              icon={<ReloadOutlined />}
+              loading={refreshLoading}
+              onClick={async () => {
+                setRefreshLoading(true);
+                await fetch(queries.action_type, queries.search);
+                setTimeout(() => {
+                  setRefreshLoading(false);
+                }, 500);
+              }}
+              size="small"
+            >
+              刷新列表
+            </Button>
+          </Space>
         </div>
       }
       bordered={false}
-      bodyStyle={{
-        height: getHeight(),
-        overflowY: "auto",
-        padding: 0,
+      styles={{
+        body: {
+          height: getHeight(),
+          overflowY: "auto",
+          padding: 0,
+        },
       }}
       style={{
         marginTop: 20,

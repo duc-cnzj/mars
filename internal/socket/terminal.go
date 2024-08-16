@@ -326,11 +326,15 @@ func (t *myPtyHandler) Close(ctx context.Context, reason string) bool {
 		t.logger.Error(err)
 	}
 	recoder := t.Recorder()
+	var fid int
+	if recoder.File() != nil {
+		fid = recoder.File().ID
+	}
 	t.eventRepo.FileAuditLogWithDuration(
 		types.EventActionType_Shell,
 		recoder.User().Name,
 		fmt.Sprintf("用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", recoder.Container().Container, recoder.Container().Namespace, recoder.Container().Pod),
-		recoder.File().ID,
+		fid,
 		recoder.Duration(),
 	)
 	close(t.doneChan)

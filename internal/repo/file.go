@@ -413,7 +413,10 @@ func (r *recorder) Write(data []byte) (n int, err error) {
 	}
 	marshal, _ := json.Marshal(string(data))
 	_, err = r.buffer.WriteString(fmt.Sprintf(writeLine, float64(time.Since(r.startTime).Microseconds())/1000000, string(marshal)))
-	return len(marshal), err
+	if err != nil {
+		return 0, err
+	}
+	return len(data), nil
 }
 
 var (
@@ -424,6 +427,7 @@ var (
 func (r *recorder) Close() error {
 	r.Lock()
 	defer r.Unlock()
+	defer r.logger.Info("recorder close")
 	var (
 		err error
 

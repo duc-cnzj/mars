@@ -64,7 +64,7 @@ message ApplyRequest {
   // name 不传就使用 git 默认的 name
   string                        name                    = 2;
   int32                         repo_id                 = 3 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
-  string                        git_branch              = 4 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string                        git_branch              = 4;
   //  git_commit 不传就用最新的 commit
   string                        git_commit              = 5;
   string                        config                  = 6;

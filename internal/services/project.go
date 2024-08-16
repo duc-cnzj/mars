@@ -4,12 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/duc-cnzj/mars/api/v4/project"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/annotation"
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
@@ -19,7 +17,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	"github.com/samber/lo"
-	v1 "k8s.io/api/core/v1"
 )
 
 var _ project.ProjectServer = (*projectSvc)(nil)
@@ -157,7 +154,8 @@ func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 	}
 	defer pubsub.Close()
 	t := websocket.Type_ApplyProject
-	show, _ := p.repoRepo.Show(server.Context(), int(input.RepoId))
+	ctx := server.Context()
+	show, _ := p.repoRepo.Show(ctx, int(input.RepoId))
 	if input.Name == "" {
 		input.Name = show.Name
 	}
@@ -177,8 +175,15 @@ func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 		}
 	}
 
-	user := MustGetUser(server.Context())
+	user := MustGetUser(ctx)
 	ch := make(chan struct{})
+	var projectID int32
+	if lo.FromPtr(input.Version) > 0 {
+		proj, err := p.projRepo.FindByName(ctx, input.Name, int(input.NamespaceId))
+		if err == nil {
+			projectID = int32(proj.ID)
+		}
+	}
 
 	jobInput := &socket.JobInput{
 		Type:           t,
@@ -191,8 +196,10 @@ func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 		Atomic:         lo.ToPtr(input.Atomic),
 		ExtraValues:    input.ExtraValues,
 		Version:        input.Version,
+		ProjectID:      projectID,
 		TimeoutSeconds: input.InstallTimeoutSeconds,
 		User:           user,
+		DryRun:         false,
 		PubSub:         pubsub,
 		Messager:       msger,
 	}
@@ -200,12 +207,12 @@ func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 
 	go func() {
 		select {
-		case <-server.Context().Done():
-			job.Stop(server.Context().Err())
+		case <-ctx.Done():
+			job.Stop(ctx.Err())
 		case <-ch:
 		}
 	}()
-	err = socket.InstallProject(server.Context(), job)
+	err = socket.InstallProject(ctx, job)
 	close(ch)
 
 	return err
@@ -228,27 +235,6 @@ func (p *projectSvc) getBranchAndCommitIfMissing(inBranch, inCommit string, show
 		msger.SendMsg(fmt.Sprintf("未传入commit，使用最新的commit [%s](%s)", lastCommit.Title, lastCommit.WebURL))
 	}
 	return
-}
-
-func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest) (*project.DeleteResponse, error) {
-	projectModel, err := p.projRepo.Show(ctx, int(request.Id))
-	if err != nil {
-		return nil, err
-	}
-	if err := p.helmer.Uninstall(projectModel.Name, projectModel.Namespace.Name, p.logger.Debugf); err != nil {
-		p.logger.Error(err)
-	}
-	p.projRepo.Delete(ctx, int(request.Id))
-	p.eventRepo.Dispatch(repo.EventProjectDeleted, projectModel)
-
-	p.eventRepo.AuditLogWithRequest(
-		types.EventActionType_Delete,
-		MustGetUser(ctx).Name,
-		fmt.Sprintf("删除项目: %d: %s/%s ", projectModel.ID, projectModel.Namespace.Name, projectModel.Name),
-		request,
-	)
-
-	return &project.DeleteResponse{}, nil
 }
 
 func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*project.ShowResponse, error) {
@@ -274,6 +260,32 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 	}, nil
 }
 
+func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest) (*project.DeleteResponse, error) {
+	proj, err := p.projRepo.Show(ctx, int(request.Id))
+	if err != nil {
+		return nil, err
+	}
+	if err := p.projRepo.Delete(ctx, int(request.Id)); err != nil {
+		return nil, err
+	}
+	if err := p.helmer.Uninstall(proj.Name, proj.Namespace.Name, p.logger.Debugf); err != nil {
+		p.logger.Error(err)
+	}
+	p.eventRepo.Dispatch(repo.EventProjectDeleted, &repo.ProjectDeletedPayload{
+		NamespaceID: proj.NamespaceID,
+		ProjectID:   proj.ID,
+	})
+
+	p.eventRepo.AuditLogWithRequest(
+		types.EventActionType_Delete,
+		MustGetUser(ctx).Name,
+		fmt.Sprintf("删除项目: %d: %s/%s ", proj.ID, proj.Namespace.Name, proj.Name),
+		request,
+	)
+
+	return &project.DeleteResponse{}, nil
+}
+
 func (p *projectSvc) Version(ctx context.Context, req *project.VersionRequest) (*project.VersionResponse, error) {
 	show, _ := p.projRepo.Show(ctx, int(req.Id))
 
@@ -281,50 +293,12 @@ func (p *projectSvc) Version(ctx context.Context, req *project.VersionRequest) (
 }
 
 func (p *projectSvc) AllContainers(ctx context.Context, request *project.AllContainersRequest) (*project.AllContainersResponse, error) {
-	projectModel, err := p.projRepo.Show(ctx, int(request.Id))
+	pods, err := p.projRepo.GetAllPods(ctx, int(request.Id))
 	if err != nil {
 		return nil, err
 	}
 
-	var list = p.projRepo.GetAllPods(projectModel)
-
-	var containerList []*types.StateContainer
-	for _, item := range list {
-		var ignores = make(map[string]struct{})
-		if s, ok := item.Pod.Annotations[annotation.IgnoreContainerNames]; ok {
-			split := strings.Split(s, ",")
-			for _, sp := range split {
-				ignores[strings.TrimSpace(sp)] = struct{}{}
-			}
-		}
-		for _, c := range item.Pod.Spec.Containers {
-			if _, found := ignores[c.Name]; found {
-				continue
-			}
-			containerList = append(containerList,
-				&types.StateContainer{
-					Namespace:   projectModel.Namespace.Name,
-					Pod:         item.Pod.Name,
-					Container:   c.Name,
-					IsOld:       item.IsOld,
-					Terminating: item.Terminating,
-					Pending:     item.Pending,
-					Ready:       isContainerReady(item.Pod, c.Name),
-				},
-			)
-		}
-	}
-
-	return &project.AllContainersResponse{Items: containerList}, nil
-}
-
-func isContainerReady(pod *v1.Pod, containerName string) bool {
-	for _, containerStatus := range pod.Status.ContainerStatuses {
-		if containerStatus.Name == containerName {
-			return containerStatus.Ready
-		}
-	}
-	return false
+	return &project.AllContainersResponse{Items: pods}, nil
 }
 
 var _ socket.DeployMsger = (*emptyMessager)(nil)

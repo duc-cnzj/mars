@@ -74,7 +74,6 @@ type DockerConfigJSON struct {
 }
 
 type K8sRepo interface {
-	ExecuteTTY(ctx context.Context, input *ExecuteTTYInput) error
 	SplitManifests(manifest string) []string
 	AddTlsSecret(ns string, name string, key string, crt string) (*corev1.Secret, error)
 	GetPodMetrics(ctx context.Context, namespace, podName string) (*v1beta1.PodMetrics, error)
@@ -253,45 +252,6 @@ func (repo *k8sRepo) Execute(ctx context.Context, c *Container, input *ExecuteIn
 		WithMethod("POST").
 		WithCommand(input.Cmd).
 		Execute(ctx, input)
-}
-
-type ExecuteTTYInput struct {
-	Container         *Container
-	Reader            io.Reader
-	WriteCloser       io.WriteCloser
-	Cmd               []string
-	TTY               bool
-	TerminalSizeQueue remotecommand.TerminalSizeQueue
-}
-
-func (repo *k8sRepo) ExecuteTTY(ctx context.Context, input *ExecuteTTYInput) error {
-	pipe, pipeWriter := io.Pipe()
-	defer pipe.Close()
-	defer pipeWriter.Close()
-	scanner := bufio.NewScanner(pipe)
-	scanner.Split(bufio.ScanBytes)
-	go func() {
-		for scanner.Scan() {
-			input.WriteCloser.Write(scanner.Bytes())
-		}
-		repo.logger.DebugCtx(ctx, "scanner exit")
-		input.WriteCloser.Close()
-		if err := scanner.Err(); err != nil {
-			repo.logger.DebugCtx(ctx, err)
-		}
-	}()
-	return repo.Execute(context.TODO(), &Container{
-		Namespace: input.Container.Namespace,
-		Pod:       input.Container.Pod,
-		Container: input.Container.Container,
-	}, &ExecuteInput{
-		Cmd:               input.Cmd,
-		Stdin:             input.Reader,
-		Stdout:            pipeWriter,
-		Stderr:            pipeWriter,
-		TTY:               input.TTY,
-		TerminalSizeQueue: input.TerminalSizeQueue,
-	})
 }
 
 func (repo *k8sRepo) GetPodLogs(namespace, podName string, options *corev1.PodLogOptions) (string, error) {

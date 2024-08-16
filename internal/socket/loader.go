@@ -12,6 +12,8 @@ import (
 	"strings"
 	"text/template"
 
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
+
 	"github.com/duc-cnzj/mars/api/v4/mars"
 	mars2 "github.com/duc-cnzj/mars/v4/internal/util/mars"
 	yaml2 "github.com/duc-cnzj/mars/v4/internal/util/yaml"
@@ -260,6 +262,14 @@ func (d *ElementsLoader) Load(j *jobRunner) error {
 	}
 
 	j.elementValues = d.deepSetItems(validValuesMap)
+	var finalValues []*websocket_pb.ExtraValue
+	for key, value := range validValuesMap {
+		finalValues = append(finalValues, &websocket_pb.ExtraValue{
+			Path:  key,
+			Value: fmt.Sprintf("%v", value),
+		})
+	}
+	j.finalExtraValues = finalValues
 	var ds []string
 	for k, ok := range useDefaultMap {
 		if ok {

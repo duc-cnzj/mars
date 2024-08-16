@@ -4,8 +4,14 @@ import (
 	"context"
 	"errors"
 	"io"
+	"slices"
 	"sort"
 	"testing"
+	"time"
+
+	"github.com/duc-cnzj/mars/v4/internal/auth"
+	"k8s.io/client-go/tools/remotecommand"
+	clientgoexec "k8s.io/client-go/util/exec"
 
 	"github.com/duc-cnzj/mars/api/v4/container"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
@@ -367,9 +373,7 @@ func TestContainerSvc_StreamContainerLog_PodPending1(t *testing.T) {
 }
 
 type streamCopyToPodServer struct {
-	ctx context.Context
 	container.Container_StreamCopyToPodServer
-	res  []string
 	idx  int
 	recv []*container.StreamCopyToPodRequest
 }
@@ -455,10 +459,6 @@ func TestContainerSvc_StreamCopyToPod_Success(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func Test_containerSvc_Exec(t *testing.T) {}
-
-func Test_scannerText(t *testing.T) {}
-
 func TestSortEvents(t *testing.T) {
 	event1 := &eventv1.Event{
 		ObjectMeta: metav1.ObjectMeta{
@@ -484,34 +484,246 @@ func TestSortEvents(t *testing.T) {
 	assert.Equal(t, "3", events[2].ResourceVersion)
 }
 
-func TestNewMultiWriterCloser(t *testing.T) {
-	closer1 := &wcloser{}
-	closer2 := &wcloser{}
-	mwc := NewMultiWriterCloser(closer1, closer2)
-
-	mwc.Write([]byte("hello"))
-
-	err := mwc.Close()
-	assert.Nil(t, err)
-
-	assert.True(t, closer1.closed)
-	assert.True(t, closer2.closed)
-
-	assert.Equal(t, "hello", string(closer1.w))
-	assert.Equal(t, "hello", string(closer2.w))
+type execOnceServer struct {
+	container.Container_ExecOnceServer
+	res   []string
+	Error *container.ExecError
 }
 
-type wcloser struct {
-	closed bool
-	w      []byte
+func (l *execOnceServer) Context() context.Context {
+	return newAdminUserCtx()
 }
 
-func (w *wcloser) Write(p []byte) (n int, err error) {
-	w.w = p
-	return 0, nil
-}
-
-func (w *wcloser) Close() error {
-	w.closed = true
+func (l *execOnceServer) Send(response *container.ExecResponse) error {
+	l.res = append(l.res, string(response.Message))
+	l.Error = response.Error
 	return nil
+}
+
+func TestContainerSvc_ExecOnce_PodNotRunning(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := repo.NewMockK8sRepo(m)
+	svc := NewContainerSvc(
+		repo.NewMockEventRepo(m),
+		k8sRepo,
+		repo.NewMockFileRepo(m),
+		mlog.NewLogger(nil),
+	)
+	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(false, "")
+	err := svc.ExecOnce(&container.ExecOnceRequest{
+		Namespace: "a",
+		Pod:       "b",
+	}, &execOnceServer{})
+	assert.NotNil(t, err)
+}
+
+func TestContainerSvc_ExecOnce_Success(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := repo.NewMockK8sRepo(m)
+	fileRepo := repo.NewMockFileRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	svc := NewContainerSvc(
+		eventRepo,
+		k8sRepo,
+		fileRepo,
+		mlog.NewLogger(nil),
+	)
+	recorder := repo.NewMockRecorder(m)
+	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
+	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), gomock.Any(), gomock.Any()).Return("c", nil)
+	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any(), gomock.Any()).Return(recorder)
+	recorder.EXPECT().Write([]byte("mars@c:/# ls"))
+	recorder.EXPECT().Write([]byte("\r\n"))
+	recorder.EXPECT().Close()
+	recorder.EXPECT().Container().Return(&repo.Container{}).AnyTimes()
+	recorder.EXPECT().User().Return(&auth.UserInfo{Name: "mars"})
+	recorder.EXPECT().File().Return(&repo.File{ID: 1})
+	recorder.EXPECT().Duration().Return(time.Second)
+	eventRepo.EXPECT().FileAuditLogWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+	mac := &execOnceMatcher{
+		tty: false,
+		cmd: []string{"ls"},
+	}
+	k8sRepo.EXPECT().Execute(gomock.Any(), &repo.Container{
+		Namespace: "a",
+		Pod:       "b",
+		Container: "c",
+	}, mac).Return(clientgoexec.CodeExitError{
+		Err:  errors.New("xx"),
+		Code: 1,
+	})
+	ser := &execOnceServer{}
+	err := svc.ExecOnce(&container.ExecOnceRequest{
+		Namespace: "a",
+		Pod:       "b",
+		Command:   []string{"ls"},
+	}, ser)
+	assert.Error(t, err)
+	assert.Equal(t, int64(1), ser.Error.Code)
+	assert.Equal(t, "xx", ser.Error.Message)
+}
+
+type execOnceMatcher struct {
+	input *repo.ExecuteInput
+	tty   bool
+	cmd   []string
+}
+
+func (e *execOnceMatcher) Matches(x any) bool {
+	input, ok := x.(*repo.ExecuteInput)
+	if !ok {
+		return false
+	}
+	e.input = input
+	if e.tty != input.TTY {
+		return false
+	}
+	if !slices.Equal(e.cmd, input.Cmd) {
+		return false
+	}
+	return true
+}
+
+func (e *execOnceMatcher) String() string {
+	return ""
+}
+
+func TestContainerSvc_Exec_PodNotRunning(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := repo.NewMockK8sRepo(m)
+	fileRepo := repo.NewMockFileRepo(m)
+	svc := NewContainerSvc(
+		repo.NewMockEventRepo(m),
+		k8sRepo,
+		fileRepo,
+		mlog.NewLogger(nil),
+	)
+	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(false, "Pod not running")
+	err := svc.Exec(&execServerMock{})
+	assert.NotNil(t, err)
+}
+
+func TestContainerSvc_Exec_Success(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := repo.NewMockK8sRepo(m)
+	fileRepo := repo.NewMockFileRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	svc := NewContainerSvc(
+		eventRepo,
+		k8sRepo,
+		fileRepo,
+		mlog.NewLogger(nil),
+	)
+	eventRepo.EXPECT().FileAuditLogWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
+	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), gomock.Any(), gomock.Any()).Return("c", nil)
+	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any(), gomock.Any()).Return(&recorderMock{})
+	k8sRepo.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	err := svc.Exec(&execServerMock{})
+	assert.Nil(t, err)
+}
+
+type execServerMock struct {
+	container.Container_ExecServer
+}
+
+func (e *execServerMock) Recv() (*container.ExecRequest, error) {
+	return &container.ExecRequest{
+		Namespace: "a",
+		Pod:       "b",
+		Command:   []string{"ls"},
+	}, nil
+}
+
+func (e *execServerMock) Send(response *container.ExecResponse) error {
+	return nil
+}
+
+func (e *execServerMock) Context() context.Context {
+	return context.TODO()
+}
+
+type recorderMock struct {
+	repo.Recorder
+}
+
+func (r *recorderMock) Write(p []byte) (n int, err error) {
+	return len(p), nil
+}
+
+func (r *recorderMock) Close() error {
+	return nil
+}
+
+func (r *recorderMock) Container() *repo.Container {
+	return &repo.Container{}
+}
+
+func (r *recorderMock) User() *auth.UserInfo {
+	return &auth.UserInfo{Name: "mars"}
+}
+
+func (r *recorderMock) File() *repo.File {
+	return &repo.File{ID: 1}
+}
+
+func (r *recorderMock) Duration() time.Duration {
+	return time.Second
+}
+
+func TestScannerText_SingleLine(t *testing.T) {
+	var result string
+	err := scannerText("single line", func(s string) {
+		result = s
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, "single line", result)
+}
+
+func TestScannerText_MultipleLines(t *testing.T) {
+	var result []string
+	err := scannerText("line1\nline2\nline3", func(s string) {
+		result = append(result, s)
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"line1", "line2", "line3"}, result)
+}
+
+func TestScannerText_EmptyString(t *testing.T) {
+	var result []string
+	err := scannerText("", func(s string) {
+		result = append(result, s)
+	})
+	assert.Nil(t, err)
+	assert.Nil(t, result)
+}
+
+func TestSizeQueue_Next_ContextDone(t *testing.T) {
+	queue := &sizeQueue{
+		ch:  make(chan *remotecommand.TerminalSize, 1),
+		ctx: context.Background(),
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	queue.ctx = ctx
+	cancel()
+
+	assert.Nil(t, queue.Next())
+}
+
+func TestSizeQueue_Next_SizeReceived(t *testing.T) {
+	queue := &sizeQueue{
+		ch:  make(chan *remotecommand.TerminalSize, 1),
+		ctx: context.Background(),
+	}
+
+	expectedSize := &remotecommand.TerminalSize{Width: 10, Height: 20}
+	queue.ch <- expectedSize
+
+	assert.Equal(t, expectedSize, queue.Next())
 }

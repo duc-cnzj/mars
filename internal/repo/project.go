@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -49,7 +50,7 @@ type Project struct {
 	DeployStatus     types.Deploy
 	EnvValues        []*types.KeyValue
 	ExtraValues      []*websocket_pb.ExtraValue
-	FinalExtraValues []string
+	FinalExtraValues []*websocket_pb.ExtraValue
 	Version          int
 	ConfigType       string
 	GitCommitWebURL  string
@@ -107,7 +108,7 @@ func ToProject(project *ent.Project) *Project {
 }
 
 type ProjectRepo interface {
-	GetAllPods(project *Project) SortStatePod
+	GetAllPods(ctx context.Context, id int) ([]*types.StateContainer, error)
 	GetAllPodMetrics(project *Project) []v1beta1.PodMetrics
 	GetNodePortMappingByProjects(namespace string, projects ...*Project) EndpointMapping
 	GetLoadBalancerMappingByProjects(namespace string, projects ...*Project) EndpointMapping
@@ -210,7 +211,7 @@ type UpdateProjectInput struct {
 	GitCommitAuthor  string
 	GitCommitDate    *time.Time
 	ExtraValues      []*websocket_pb.ExtraValue
-	FinalExtraValues []string
+	FinalExtraValues []*websocket_pb.ExtraValue
 	EnvValues        []*types.KeyValue
 	OverrideValues   string
 	Manifest         []string
@@ -301,45 +302,11 @@ func (repo *projectRepo) IsPodRunning(namespace, podName string) (running bool, 
 	return false, "pod not running."
 }
 
-func (repo *projectRepo) GetNodePortMappingByProjects(namespace string, projects ...*Project) EndpointMapping {
-	var (
-		projectMap = make(projectObjectMap)
-		k8sCli     = repo.data.K8sClient()
-	)
-	for _, project := range projects {
-		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](repo.logger, project.Manifest)
+func (repo *projectRepo) GetAllPods(ctx context.Context, id int) ([]*types.StateContainer, error) {
+	project, err := repo.Show(ctx, id)
+	if err != nil {
+		return nil, err
 	}
-
-	list, _ := k8sCli.ServiceLister.Services(namespace).List(labels.Everything())
-	var m = map[string][]*types.ServiceEndpoint{}
-
-	for _, item := range list {
-		if projectName, ok := projectMap.GetProject(item); ok && item.Spec.Type == v1.ServiceTypeNodePort {
-			for _, port := range item.Spec.Ports {
-				data := m[projectName]
-
-				switch {
-				case isHttpPortName(port.Name):
-					m[projectName] = append(data, &types.ServiceEndpoint{
-						Name:     projectName,
-						PortName: port.Name,
-						Url:      fmt.Sprintf("http://%s:%d", repo.externalIp, port.NodePort),
-					})
-				default:
-					m[projectName] = append(data, &types.ServiceEndpoint{
-						Name:     projectName,
-						PortName: port.Name,
-						Url:      fmt.Sprintf("%s:%d", repo.externalIp, port.NodePort),
-					})
-				}
-			}
-		}
-	}
-
-	return m
-}
-
-func (repo *projectRepo) GetAllPods(project *Project) SortStatePod {
 	var (
 		list      = make(map[string]*corev1.Pod)
 		newList   SortStatePod
@@ -347,7 +314,7 @@ func (repo *projectRepo) GetAllPods(project *Project) SortStatePod {
 		k8sClient          = repo.data.K8sClient()
 	)
 	if len(split) == 0 {
-		return nil
+		return nil, errors.New("no pod selectors")
 	}
 	for _, ls := range split {
 		selector, _ := metav1.ParseToLabelSelector(ls)
@@ -427,9 +394,46 @@ func (repo *projectRepo) GetAllPods(project *Project) SortStatePod {
 			Pod:         pod.DeepCopy(),
 		})
 	}
+
 	sort.Sort(newList)
 
-	return newList
+	var containerList []*types.StateContainer
+	for _, item := range newList {
+		var ignores = make(map[string]struct{})
+		if s, ok := item.Pod.Annotations[annotation.IgnoreContainerNames]; ok {
+			split := strings.Split(s, ",")
+			for _, sp := range split {
+				ignores[strings.TrimSpace(sp)] = struct{}{}
+			}
+		}
+		for _, c := range item.Pod.Spec.Containers {
+			if _, found := ignores[c.Name]; found {
+				continue
+			}
+			containerList = append(containerList,
+				&types.StateContainer{
+					Namespace:   project.Namespace.Name,
+					Pod:         item.Pod.Name,
+					Container:   c.Name,
+					IsOld:       item.IsOld,
+					Terminating: item.Terminating,
+					Pending:     item.Pending,
+					Ready:       isContainerReady(item.Pod, c.Name),
+				},
+			)
+		}
+	}
+
+	return containerList, nil
+}
+
+func isContainerReady(pod *v1.Pod, containerName string) bool {
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		if containerStatus.Name == containerName {
+			return containerStatus.Ready
+		}
+	}
+	return false
 }
 
 func (repo *projectRepo) GetAllPodMetrics(project *Project) []v1beta1.PodMetrics {
@@ -454,46 +458,40 @@ func (repo *projectRepo) GetAllPodMetrics(project *Project) []v1beta1.PodMetrics
 	return list
 }
 
-func (repo *projectRepo) GetLoadBalancerMappingByProjects(namespace string, projects ...*Project) EndpointMapping {
-	var projectMap = make(projectObjectMap)
+func (repo *projectRepo) GetNodePortMappingByProjects(namespace string, projects ...*Project) EndpointMapping {
+	var (
+		projectMap = make(projectObjectMap)
+		k8sCli     = repo.data.K8sClient()
+	)
 	for _, project := range projects {
 		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](repo.logger, project.Manifest)
 	}
-	var k8sCli = repo.data.K8sClient()
+
 	list, _ := k8sCli.ServiceLister.Services(namespace).List(labels.Everything())
-	var m = EndpointMapping{}
+	var m = map[string][]*types.ServiceEndpoint{}
 
 	for _, item := range list {
-		if projectName, ok := projectMap.GetProject(item); ok && item.Spec.Type == v1.ServiceTypeLoadBalancer && len(item.Status.LoadBalancer.Ingress) > 0 {
-			lbIP := item.Status.LoadBalancer.Ingress[0].IP
+		if projectName, ok := projectMap.GetProject(item); ok && item.Spec.Type == v1.ServiceTypeNodePort {
 			for _, port := range item.Spec.Ports {
 				data := m[projectName]
 
 				switch {
 				case isHttpPortName(port.Name):
-					var url string = fmt.Sprintf("http://%s:%d", lbIP, port.Port)
-					if port.Port == 80 {
-						url = fmt.Sprintf("http://%s", lbIP)
-					}
-					if port.Port == 443 {
-						url = fmt.Sprintf("https://%s", lbIP)
-					}
 					m[projectName] = append(data, &types.ServiceEndpoint{
 						Name:     projectName,
 						PortName: port.Name,
-						Url:      url,
+						Url:      fmt.Sprintf("http://%s:%d", repo.externalIp, port.NodePort),
 					})
 				default:
 					m[projectName] = append(data, &types.ServiceEndpoint{
 						Name:     projectName,
 						PortName: port.Name,
-						Url:      fmt.Sprintf("%s:%d", lbIP, port.Port),
+						Url:      fmt.Sprintf("%s:%d", repo.externalIp, port.NodePort),
 					})
 				}
 			}
 		}
 	}
-	m.Sort()
 
 	return m
 }
@@ -541,6 +539,50 @@ func (repo *projectRepo) GetIngressMappingByProjects(namespace string, projects 
 			Name: data.projectName,
 			Url:  fmt.Sprintf("%s://%s", urlScheme, host),
 		})
+	}
+	m.Sort()
+
+	return m
+}
+
+func (repo *projectRepo) GetLoadBalancerMappingByProjects(namespace string, projects ...*Project) EndpointMapping {
+	var projectMap = make(projectObjectMap)
+	for _, project := range projects {
+		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](repo.logger, project.Manifest)
+	}
+	var k8sCli = repo.data.K8sClient()
+	list, _ := k8sCli.ServiceLister.Services(namespace).List(labels.Everything())
+	var m = EndpointMapping{}
+
+	for _, item := range list {
+		if projectName, ok := projectMap.GetProject(item); ok && item.Spec.Type == v1.ServiceTypeLoadBalancer && len(item.Status.LoadBalancer.Ingress) > 0 {
+			lbIP := item.Status.LoadBalancer.Ingress[0].IP
+			for _, port := range item.Spec.Ports {
+				data := m[projectName]
+
+				switch {
+				case isHttpPortName(port.Name):
+					var url string = fmt.Sprintf("http://%s:%d", lbIP, port.Port)
+					if port.Port == 80 {
+						url = fmt.Sprintf("http://%s", lbIP)
+					}
+					if port.Port == 443 {
+						url = fmt.Sprintf("https://%s", lbIP)
+					}
+					m[projectName] = append(data, &types.ServiceEndpoint{
+						Name:     projectName,
+						PortName: port.Name,
+						Url:      url,
+					})
+				default:
+					m[projectName] = append(data, &types.ServiceEndpoint{
+						Name:     projectName,
+						PortName: port.Name,
+						Url:      fmt.Sprintf("%s:%d", lbIP, port.Port),
+					})
+				}
+			}
+		}
 	}
 	m.Sort()
 

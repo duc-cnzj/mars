@@ -2345,7 +2345,7 @@ components:
                 finalExtraValues:
                     type: array
                     items:
-                        type: string
+                        $ref: '#/components/schemas/websocket.ExtraValue'
                 gitCommitWebUrl:
                     type: string
                 gitCommitTitle:
@@ -2526,7 +2526,9 @@ components:
                     items:
                         $ref: '#/components/schemas/websocket.ExtraValue'
                 finalExtraValues:
-                    type: string
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/websocket.ExtraValue'
                 deployStatus:
                     enum:
                         - StatusUnknown

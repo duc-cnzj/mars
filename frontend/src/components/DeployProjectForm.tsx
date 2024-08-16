@@ -58,7 +58,7 @@ const DeployProjectForm: React.FC<{
 
   const initValues = project
     ? {
-        extraValues: project.extraValues,
+        extraValues: project.finalExtraValues,
         config: project.config,
         branch: project.gitBranch,
         commit: project.gitCommit,
@@ -94,15 +94,17 @@ const DeployProjectForm: React.FC<{
     projectId: number;
   } => {
     let found = options.project.find((v) => Number(v.value) === Number(repoId));
-    return found
-      ? {
-          slug: toSlug(namespaceId, found.label),
-          appName: found.label,
-          needGitRepo: found.needGitRepo,
-          gitProjectId: found.gitProjectId,
-          projectId: project ? project.id : 0,
-        }
-      : defaultCurr;
+    if (found) {
+      let appName = project ? project.name : found.label;
+      return {
+        slug: toSlug(namespaceId, appName),
+        appName: appName,
+        needGitRepo: found.needGitRepo,
+        gitProjectId: found.gitProjectId,
+        projectId: project ? project.id : 0,
+      };
+    }
+    return defaultCurr;
   }, [options.project, repoId, namespaceId, project]);
   const [loading, setLoading] = useState({
     project: false,

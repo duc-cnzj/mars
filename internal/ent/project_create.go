@@ -180,8 +180,8 @@ func (pc *ProjectCreate) SetExtraValues(wv []*websocket.ExtraValue) *ProjectCrea
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (pc *ProjectCreate) SetFinalExtraValues(s []string) *ProjectCreate {
-	pc.mutation.SetFinalExtraValues(s)
+func (pc *ProjectCreate) SetFinalExtraValues(wv []*websocket.ExtraValue) *ProjectCreate {
+	pc.mutation.SetFinalExtraValues(wv)
 	return pc
 }
 
@@ -943,7 +943,7 @@ func (u *ProjectUpsert) ClearExtraValues() *ProjectUpsert {
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (u *ProjectUpsert) SetFinalExtraValues(v []string) *ProjectUpsert {
+func (u *ProjectUpsert) SetFinalExtraValues(v []*websocket.ExtraValue) *ProjectUpsert {
 	u.Set(project.FieldFinalExtraValues, v)
 	return u
 }
@@ -1416,7 +1416,7 @@ func (u *ProjectUpsertOne) ClearExtraValues() *ProjectUpsertOne {
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (u *ProjectUpsertOne) SetFinalExtraValues(v []string) *ProjectUpsertOne {
+func (u *ProjectUpsertOne) SetFinalExtraValues(v []*websocket.ExtraValue) *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.SetFinalExtraValues(v)
 	})
@@ -2082,7 +2082,7 @@ func (u *ProjectUpsertBulk) ClearExtraValues() *ProjectUpsertBulk {
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (u *ProjectUpsertBulk) SetFinalExtraValues(v []string) *ProjectUpsertBulk {
+func (u *ProjectUpsertBulk) SetFinalExtraValues(v []*websocket.ExtraValue) *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.SetFinalExtraValues(v)
 	})

@@ -26,7 +26,7 @@ func FromProject(project *repo.Project) *types.ProjectModel {
 		Atomic:            project.Atomic,
 		EnvValues:         project.EnvValues,
 		ExtraValues:       project.ExtraValues,
-		FinalExtraValues:  strings.Join(project.FinalExtraValues, ","),
+		FinalExtraValues:  project.FinalExtraValues,
 		DeployStatus:      project.DeployStatus,
 		HumanizeCreatedAt: date.ToHumanizeDatetimeString(&project.CreatedAt),
 		HumanizeUpdatedAt: date.ToHumanizeDatetimeString(&project.UpdatedAt),

@@ -1263,7 +1263,7 @@ export interface components {
       dockerImage: string;
       envValues: components["schemas"]["types.KeyValue"][];
       extraValues: components["schemas"]["websocket.ExtraValue"][];
-      finalExtraValues: string[];
+      finalExtraValues: components["schemas"]["websocket.ExtraValue"][];
       gitCommitWebUrl: string;
       gitCommitTitle: string;
       gitCommitAuthor: string;
@@ -1355,7 +1355,7 @@ export interface components {
       atomic: boolean;
       envValues: components["schemas"]["types.KeyValue"][];
       extraValues: components["schemas"]["websocket.ExtraValue"][];
-      finalExtraValues: string;
+      finalExtraValues: components["schemas"]["websocket.ExtraValue"][];
       /**
        * Format: enum
        * @enum {string}

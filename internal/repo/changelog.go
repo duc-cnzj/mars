@@ -28,7 +28,7 @@ type Changelog struct {
 	DockerImage      []string
 	EnvValues        []*types.KeyValue
 	ExtraValues      []*websocket_pb.ExtraValue
-	FinalExtraValues []string
+	FinalExtraValues []*websocket_pb.ExtraValue
 	GitCommitWebURL  string
 	GitCommitTitle   string
 	GitCommitAuthor  string
@@ -93,7 +93,7 @@ type CreateChangeLogInput struct {
 	DockerImage      []string
 	EnvValues        []*types.KeyValue
 	ExtraValues      []*websocket_pb.ExtraValue
-	FinalExtraValues []string
+	FinalExtraValues []*websocket_pb.ExtraValue
 	GitCommitWebURL  string
 	GitCommitTitle   string
 	GitCommitAuthor  string

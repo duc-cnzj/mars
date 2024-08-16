@@ -267,17 +267,22 @@ func (repo *eventRepo) HandleProjectChanged(data any, e event.Event) error {
 	return nil
 }
 
+type ProjectDeletedPayload struct {
+	NamespaceID int
+	ProjectID   int
+}
+
 func (repo *eventRepo) HandleProjectDeleted(data any, e event.Event) error {
 	var (
 		ws     = repo.pl.Ws()
 		logger = repo.logger
 	)
-	project := data.(*Project)
+	input := data.(*ProjectDeletedPayload)
 	sub := ws.New("", "")
 	defer sub.Close()
 	sub.ToAll(&websocket_pb.WsReloadProjectsResponse{
 		Metadata:    &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects},
-		NamespaceId: int32(project.NamespaceID),
+		NamespaceId: int32(input.NamespaceID),
 	})
 	logger.Debug("event handled: ", e.String(), data)
 	return nil

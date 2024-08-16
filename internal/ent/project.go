@@ -55,7 +55,7 @@ type Project struct {
 	// 额外值
 	ExtraValues []*websocket.ExtraValue `json:"extra_values,omitempty"`
 	// 用户表单传入的额外值 + 系统默认的额外值
-	FinalExtraValues []string `json:"final_extra_values,omitempty"`
+	FinalExtraValues []*websocket.ExtraValue `json:"final_extra_values,omitempty"`
 	// 版本
 	Version int `json:"version,omitempty"`
 	// ConfigType holds the value of the "config_type" field.

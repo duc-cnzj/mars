@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/duc-cnzj/mars/v4/internal/repo"
+
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/application/bootstrappers"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
@@ -79,7 +81,10 @@ func newApp(
 	reg *application.GrpcRegistry,
 	ws application.WsServer,
 	pr *prometheus.Registry,
+	// FIXME: 加载定时任务, 因为所有逻辑都统一在 repo 中, 所以把定时任务也定义成了一个 repo, 看看还有没有别的办法
+	cronRepo repo.CronRepo,
 ) application.App {
+	_ = cronRepo
 	return application.NewApp(
 		cfg,
 		data,

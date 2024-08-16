@@ -1363,8 +1363,8 @@ type ChangelogMutation struct {
 	appendenv_values         []*types.KeyValue
 	extra_values             *[]*websocket.ExtraValue
 	appendextra_values       []*websocket.ExtraValue
-	final_extra_values       *[]string
-	appendfinal_extra_values []string
+	final_extra_values       *[]*websocket.ExtraValue
+	appendfinal_extra_values []*websocket.ExtraValue
 	git_commit_web_url       *string
 	git_commit_title         *string
 	git_commit_author        *string
@@ -2032,13 +2032,13 @@ func (m *ChangelogMutation) ResetExtraValues() {
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (m *ChangelogMutation) SetFinalExtraValues(s []string) {
-	m.final_extra_values = &s
+func (m *ChangelogMutation) SetFinalExtraValues(wv []*websocket.ExtraValue) {
+	m.final_extra_values = &wv
 	m.appendfinal_extra_values = nil
 }
 
 // FinalExtraValues returns the value of the "final_extra_values" field in the mutation.
-func (m *ChangelogMutation) FinalExtraValues() (r []string, exists bool) {
+func (m *ChangelogMutation) FinalExtraValues() (r []*websocket.ExtraValue, exists bool) {
 	v := m.final_extra_values
 	if v == nil {
 		return
@@ -2049,7 +2049,7 @@ func (m *ChangelogMutation) FinalExtraValues() (r []string, exists bool) {
 // OldFinalExtraValues returns the old "final_extra_values" field's value of the Changelog entity.
 // If the Changelog object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ChangelogMutation) OldFinalExtraValues(ctx context.Context) (v []string, err error) {
+func (m *ChangelogMutation) OldFinalExtraValues(ctx context.Context) (v []*websocket.ExtraValue, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldFinalExtraValues is only allowed on UpdateOne operations")
 	}
@@ -2063,13 +2063,13 @@ func (m *ChangelogMutation) OldFinalExtraValues(ctx context.Context) (v []string
 	return oldValue.FinalExtraValues, nil
 }
 
-// AppendFinalExtraValues adds s to the "final_extra_values" field.
-func (m *ChangelogMutation) AppendFinalExtraValues(s []string) {
-	m.appendfinal_extra_values = append(m.appendfinal_extra_values, s...)
+// AppendFinalExtraValues adds wv to the "final_extra_values" field.
+func (m *ChangelogMutation) AppendFinalExtraValues(wv []*websocket.ExtraValue) {
+	m.appendfinal_extra_values = append(m.appendfinal_extra_values, wv...)
 }
 
 // AppendedFinalExtraValues returns the list of values that were appended to the "final_extra_values" field in this mutation.
-func (m *ChangelogMutation) AppendedFinalExtraValues() ([]string, bool) {
+func (m *ChangelogMutation) AppendedFinalExtraValues() ([]*websocket.ExtraValue, bool) {
 	if len(m.appendfinal_extra_values) == 0 {
 		return nil, false
 	}
@@ -2669,7 +2669,7 @@ func (m *ChangelogMutation) SetField(name string, value ent.Value) error {
 		m.SetExtraValues(v)
 		return nil
 	case changelog.FieldFinalExtraValues:
-		v, ok := value.([]string)
+		v, ok := value.([]*websocket.ExtraValue)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -6726,8 +6726,8 @@ type ProjectMutation struct {
 	appendenv_values         []*types.KeyValue
 	extra_values             *[]*websocket.ExtraValue
 	appendextra_values       []*websocket.ExtraValue
-	final_extra_values       *[]string
-	appendfinal_extra_values []string
+	final_extra_values       *[]*websocket.ExtraValue
+	appendfinal_extra_values []*websocket.ExtraValue
 	version                  *int
 	addversion               *int
 	config_type              *string
@@ -7607,13 +7607,13 @@ func (m *ProjectMutation) ResetExtraValues() {
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (m *ProjectMutation) SetFinalExtraValues(s []string) {
-	m.final_extra_values = &s
+func (m *ProjectMutation) SetFinalExtraValues(wv []*websocket.ExtraValue) {
+	m.final_extra_values = &wv
 	m.appendfinal_extra_values = nil
 }
 
 // FinalExtraValues returns the value of the "final_extra_values" field in the mutation.
-func (m *ProjectMutation) FinalExtraValues() (r []string, exists bool) {
+func (m *ProjectMutation) FinalExtraValues() (r []*websocket.ExtraValue, exists bool) {
 	v := m.final_extra_values
 	if v == nil {
 		return
@@ -7624,7 +7624,7 @@ func (m *ProjectMutation) FinalExtraValues() (r []string, exists bool) {
 // OldFinalExtraValues returns the old "final_extra_values" field's value of the Project entity.
 // If the Project object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProjectMutation) OldFinalExtraValues(ctx context.Context) (v []string, err error) {
+func (m *ProjectMutation) OldFinalExtraValues(ctx context.Context) (v []*websocket.ExtraValue, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldFinalExtraValues is only allowed on UpdateOne operations")
 	}
@@ -7638,13 +7638,13 @@ func (m *ProjectMutation) OldFinalExtraValues(ctx context.Context) (v []string, 
 	return oldValue.FinalExtraValues, nil
 }
 
-// AppendFinalExtraValues adds s to the "final_extra_values" field.
-func (m *ProjectMutation) AppendFinalExtraValues(s []string) {
-	m.appendfinal_extra_values = append(m.appendfinal_extra_values, s...)
+// AppendFinalExtraValues adds wv to the "final_extra_values" field.
+func (m *ProjectMutation) AppendFinalExtraValues(wv []*websocket.ExtraValue) {
+	m.appendfinal_extra_values = append(m.appendfinal_extra_values, wv...)
 }
 
 // AppendedFinalExtraValues returns the list of values that were appended to the "final_extra_values" field in this mutation.
-func (m *ProjectMutation) AppendedFinalExtraValues() ([]string, bool) {
+func (m *ProjectMutation) AppendedFinalExtraValues() ([]*websocket.ExtraValue, bool) {
 	if len(m.appendfinal_extra_values) == 0 {
 		return nil, false
 	}
@@ -8560,7 +8560,7 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 		m.SetExtraValues(v)
 		return nil
 	case project.FieldFinalExtraValues:
-		v, ok := value.([]string)
+		v, ok := value.([]*websocket.ExtraValue)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}

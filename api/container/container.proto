@@ -21,7 +21,7 @@ message CopyToPodResponse {
 }
 
 message TerminalSize {
-  uint32 width = 1;
+  uint32 width  = 1;
   uint32 height = 2;
 }
 
@@ -30,7 +30,7 @@ message ExecRequest {
   string          pod        = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   string          container  = 3;
   repeated string command    = 4;
-  string          message    = 5;
+  bytes           message    = 5;
   // 使用 TerminalSize 修改终端窗口大小
   TerminalSize    size_queue = 6;
 }
@@ -48,7 +48,7 @@ message ExecError {
 }
 
 message ExecResponse {
-  string    message = 1;
+  bytes   message = 1;
   ExecError error   = 2;
 }
 
@@ -113,185 +113,13 @@ service Container {
     };
   }
 
-  // Exec grpc 执行 pod 命令，交互式
-  //type winsize struct {
-  //	Row    uint16
-  //	Col    uint16
-  //	Xpixel uint16
-  //	Ypixel uint16
-  //}
-  //
-  //// 获取终端窗口的当前尺寸
-  //func getWinsize() (*winsize, error) {
-  //	ws := &winsize{}
-  //	retCode, _, errno := syscall.Syscall(
-  //		syscall.SYS_IOCTL,
-  //		os.Stdout.Fd(),
-  //		uintptr(syscall.TIOCGWINSZ),
-  //		uintptr(unsafe.Pointer(ws)),
-  //	)
-  //	if int(retCode) == -1 {
-  //		return nil, errno
-  //	}
-  //	return ws, nil
-  //}
-  //
-  //func main() {
-  //	client, _ := client.NewClient("localhost:50000", client.WithAuth("admin", "123456"))
-  //	defer client.Close()
-  //	exec, err := client.Container().Exec(context.TODO())
-  //	if err != nil {
-  //		log.Println(err)
-  //		return
-  //	}
-  //	ns := "devops-duc"
-  //	pod := "nginx-54bff68475-k69gh"
-  //	sigChan := make(chan os.Signal, 1)
-  //	// 注册 SIGWINCH 信号
-  //	signal.Notify(sigChan, syscall.SIGWINCH)
-  //
-  //	// 启动一个 goroutine 来处理信号
-  //	go func() {
-  //		for {
-  //			// 等待信号
-  //			<-sigChan
-  //			// 获取新的窗口尺寸
-  //			ws, err := getWinsize()
-  //			if err != nil {
-  //				fmt.Println("Error getting window size:", err)
-  //				continue
-  //			}
-  //
-  //			exec.Send(&container.ExecRequest{
-  //				Namespace: ns,
-  //				Pod:       pod,
-  //				SizeQueue: &container.TerminalSize{
-  //					Width:  uint32(ws.Col),
-  //					Height: uint32(ws.Row),
-  //				},
-  //			})
-  //
-  //			// 输出新的窗口尺寸
-  //			fmt.Printf("Window size changed: %d rows, %d columns\n", ws.Row, ws.Col)
-  //		}
-  //	}()
-  //
-  //	go func() {
-  //		for {
-  //			recv, err := exec.Recv()
-  //			if err != nil {
-  //				return
-  //			}
-  //			if recv.Error != nil {
-  //				fmt.Printf("code=%v msg=%v", recv.Error.Code, recv.Error.Message)
-  //				return
-  //			}
-  //			fmt.Print(recv.Message)
-  //		}
-  //	}()
-  //
-  //	err = exec.Send(&container.ExecRequest{
-  //		Namespace: ns,
-  //		Pod:       pod,
-  //		Command:   []string{"sh"},
-  //	})
-  //	if err != nil {
-  //		log.Println(err)
-  //		return
-  //	}
-  //
-  //	scanner := bufio.NewScanner(os.Stdin)
-  //	for {
-  //		if !scanner.Scan() {
-  //			if err := scanner.Err(); err != nil {
-  //				log.Println("Scanner error:", err)
-  //			} else {
-  //				fmt.Println("EOF detected, exiting...")
-  //			}
-  //			exec.CloseSend()
-  //			break
-  //		}
-  //		cmd := scanner.Text()
-  //		err := exec.Send(&container.ExecRequest{
-  //			Namespace: ns,
-  //			Pod:       pod,
-  //			Message:   cmd + "\n",
-  //		})
-  //		if err != nil {
-  //			fmt.Println(err)
-  //			return
-  //		}
-  //	}
-  //	select {}
-  //}
+  // Exec grpc 执行 pod 命令，交互式, 使用方法见 examples/ 目录
   rpc Exec(stream ExecRequest) returns (stream ExecResponse);
 
-  // ExecOnce grpc 执行一次 pod 命令, 非 tty 模式
-  //  ns := "devops-duc"
-  //  pod := "nginx-54bff68475-k69gh"
-  //  exec, err := client.Container().ExecOnce(context.TODO(), &container.ExecOnceRequest{
-  //    Namespace: ns,
-  //    Pod:       pod,
-  //    Command:   []string{"sh", "-c", "pwd"},
-  //  })
-  //  if err != nil {
-  //    log.Println(err)
-  //    return
-  //  }
-  //  defer exec.CloseSend()
-  //  for {
-  //    recv, err := exec.Recv()
-  //    if err != nil {
-  //      return
-  //    }
-  //    if recv.Error != nil {
-  //      fmt.Printf("code=%v msg=%v", recv.Error.Code, recv.Error.Message)
-  //      return
-  //    }
-  //    fmt.Print(recv.Message)
-  //  }
+  // ExecOnce grpc 执行一次 pod 命令, 非 tty 模式, 适合一次性脚本, 使用方法见 examples/ 目录
   rpc ExecOnce(ExecOnceRequest) returns (stream ExecResponse);
 
-  // StreamCopyToPod grpc 上传文件到 pod
-  //  demo:
-  //  cp, _ := c.Container().StreamCopyToPod(context.TODO())
-  //	open, _ := os.Open("/xxxxxx/helm-v3.8.0-rc.1-linux-arm64.tar.gz")
-  //	defer open.Close()
-  //	bf := bufio.NewReaderSize(open, 1024*1024*5)
-  //	var (
-  //		filename =  open.Name()
-  //		pod = "mars-demo-549f789f7d-sxvqm"
-  //		containerName = "demo"
-  //		namespace = "devops-a"
-  //	)
-  //	for {
-  //		bts := make([]byte, 1024*1024)
-  //		n, err := bf.Read(bts)
-  //		if err != nil {
-  //			if err == io.EOF {
-  //				cp.Send(&container.StreamCopyToPodRequest{
-  //					FileName:  filename,
-  //					Data:      bts[0:n],
-  //					Namespace: namespace,
-  //					Pod:       pod,
-  //					Container: containerName,
-  //				})
-  //				recv, err := cp.CloseAndRecv()
-  //				if err != nil {
-  //					log.Fatal(err)
-  //				}
-  //				log.Println(recv)
-  //			}
-  //			return
-  //		}
-  //		 cp.Send(&container.StreamCopyToPodRequest{
-  //			FileName:  filename,
-  //			Data:      bts[0:n],
-  //			Namespace: namespace,
-  //			Pod:       pod,
-  //			Container: containerName,
-  //		 })
-  //	}
+  // StreamCopyToPod grpc 上传文件到 pod, 使用方法见 examples/ 目录
   rpc StreamCopyToPod(stream StreamCopyToPodRequest) returns (StreamCopyToPodResponse);
 
   rpc IsPodRunning(IsPodRunningRequest) returns (IsPodRunningResponse) {

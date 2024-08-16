@@ -90,7 +90,9 @@ func NewCronRepo(logger mlog.Logger, fileRepo FileRepo, cache cache.Cache, repoR
 
 	cronManager.NewCommand("sync_domain_secret", cr.SyncDomainSecret).EveryMinute()
 
+	logger.Warning(data.Config())
 	if data.Config().KubeConfig != "" {
+		logger.Warning("k8s cron job enabled")
 		cronManager.NewCommand("sync_image_pull_secrets", cr.SyncImagePullSecrets).EveryFiveMinutes()
 		cronManager.NewCommand("project_pod_event_listener", cr.ProjectPodEventListener).EveryFiveSeconds()
 	}
@@ -448,6 +450,8 @@ func (repo *cronRepo) ProjectPodEventListener() error {
 	podFanOut := repo.data.K8sClient().PodFanOut
 	podFanOut.AddListener(listener, ch)
 
+	logger.Warning("[PodEventListener]: start pod-watcher")
+
 	defer logger.HandlePanic(listener)
 	defer podFanOut.RemoveListener(listener)
 
@@ -469,6 +473,7 @@ func (repo *cronRepo) ProjectPodEventListener() error {
 					}
 				}
 			case data.Add, data.Delete:
+				logger.Warning("[PodEventListener]: add pod", obj.Type(), obj.Current().Name, obj.Current().Namespace)
 				if ns, err := db.Namespace.Query().Where(namespace.NameEQ(mars.GetMarsNamespace(obj.Current().Namespace, cfg.NsPrefix))).Only(context.TODO()); err == nil {
 					logger.Debugf("[PodEventListener]: pod '%v': '%s' '%s' '%d' '%s'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID, obj.Current().Status.Phase)
 					if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {

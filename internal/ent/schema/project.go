@@ -55,7 +55,7 @@ func (Project) Fields() []ent.Field {
 		field.JSON("extra_values", []*websocket_pb.ExtraValue{}).
 			Optional().
 			Comment("额外值"),
-		field.Strings("final_extra_values").
+		field.JSON("final_extra_values", []*websocket_pb.ExtraValue{}).
 			Optional().
 			Comment("用户表单传入的额外值 + 系统默认的额外值"),
 		field.Int("version").

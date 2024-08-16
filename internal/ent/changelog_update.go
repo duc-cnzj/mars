@@ -208,14 +208,14 @@ func (cu *ChangelogUpdate) ClearExtraValues() *ChangelogUpdate {
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (cu *ChangelogUpdate) SetFinalExtraValues(s []string) *ChangelogUpdate {
-	cu.mutation.SetFinalExtraValues(s)
+func (cu *ChangelogUpdate) SetFinalExtraValues(wv []*websocket.ExtraValue) *ChangelogUpdate {
+	cu.mutation.SetFinalExtraValues(wv)
 	return cu
 }
 
-// AppendFinalExtraValues appends s to the "final_extra_values" field.
-func (cu *ChangelogUpdate) AppendFinalExtraValues(s []string) *ChangelogUpdate {
-	cu.mutation.AppendFinalExtraValues(s)
+// AppendFinalExtraValues appends wv to the "final_extra_values" field.
+func (cu *ChangelogUpdate) AppendFinalExtraValues(wv []*websocket.ExtraValue) *ChangelogUpdate {
+	cu.mutation.AppendFinalExtraValues(wv)
 	return cu
 }
 
@@ -761,14 +761,14 @@ func (cuo *ChangelogUpdateOne) ClearExtraValues() *ChangelogUpdateOne {
 }
 
 // SetFinalExtraValues sets the "final_extra_values" field.
-func (cuo *ChangelogUpdateOne) SetFinalExtraValues(s []string) *ChangelogUpdateOne {
-	cuo.mutation.SetFinalExtraValues(s)
+func (cuo *ChangelogUpdateOne) SetFinalExtraValues(wv []*websocket.ExtraValue) *ChangelogUpdateOne {
+	cuo.mutation.SetFinalExtraValues(wv)
 	return cuo
 }
 
-// AppendFinalExtraValues appends s to the "final_extra_values" field.
-func (cuo *ChangelogUpdateOne) AppendFinalExtraValues(s []string) *ChangelogUpdateOne {
-	cuo.mutation.AppendFinalExtraValues(s)
+// AppendFinalExtraValues appends wv to the "final_extra_values" field.
+func (cuo *ChangelogUpdateOne) AppendFinalExtraValues(wv []*websocket.ExtraValue) *ChangelogUpdateOne {
+	cuo.mutation.AppendFinalExtraValues(wv)
 	return cuo
 }
 

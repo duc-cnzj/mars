@@ -66,7 +66,7 @@ message ChangelogModel {
   string                        docker_image       = 15;
   repeated KeyValue             env_values         = 16;
   repeated websocket.ExtraValue extra_values       = 17;
-  repeated string               final_extra_values = 18;
+  repeated websocket.ExtraValue final_extra_values = 18;
   string                        git_commit_web_url = 19;
   string                        git_commit_title   = 20;
   string                        git_commit_author  = 21;
@@ -168,7 +168,7 @@ message ProjectModel {
   bool                          atomic              = 11;
   repeated KeyValue             env_values          = 12;
   repeated websocket.ExtraValue extra_values        = 13;
-  string                        final_extra_values  = 14;
+  repeated websocket.ExtraValue final_extra_values  = 14;
   Deploy                        deploy_status       = 15;
   string                        humanize_created_at = 16;
   string                        humanize_updated_at = 17;
