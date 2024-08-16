@@ -167,7 +167,10 @@ func (n *namespaceSvc) Delete(ctx context.Context, input *namespace.DeleteReques
 		if err := n.k8sRepo.DeleteNamespace(context.Background(), ns.Name); err != nil {
 			n.logger.ErrorCtx(ctx, "删除 namespace 出现错误: ", err)
 		}
-		n.nsRepo.Delete(context.TODO(), ns.ID)
+		if err := n.nsRepo.Delete(context.TODO(), ns.ID); err != nil {
+			n.logger.ErrorCtx(ctx, "删除 namespace 出现错误: ", err)
+			return nil, err
+		}
 	}
 
 	timer := time.NewTimer(5 * time.Second)
