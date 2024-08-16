@@ -18,9 +18,6 @@ import (
 
 func init() {
 	inspect.AddCommand(inspectBootTagsCmd)
-	inspect.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $DIR/config.yaml)")
-	viper.BindPFlag("config", inspect.PersistentFlags().Lookup("config"))
-
 	inspect.AddCommand(inspectAllCmd)
 	inspect.AddCommand(inspectCronJobsCmd)
 	inspect.AddCommand(inspectEventsCmd)
@@ -69,7 +66,7 @@ var inspectCronJobsCmd = &cobra.Command{
 	Aliases: []string{"cronjob", "cron", "job", "jobs"},
 	Short:   "app cron jobs.",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := config.Init(cfgFile)
+		cfg := config.Init(viper.GetString("config"))
 		cfg.LogChannel = ""
 		logger := mlog.NewLogger(cfg)
 		app, err := InitializeApp(cfg, logger, nil)
@@ -94,7 +91,7 @@ var inspectEventsCmd = &cobra.Command{
 	Aliases: []string{"event", "ev"},
 	Short:   "app events.",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := config.Init(cfgFile)
+		cfg := config.Init(viper.GetString("config"))
 		cfg.LogChannel = ""
 		logger := mlog.NewLogger(cfg)
 		app, err := InitializeApp(cfg, logger, []application.Bootstrapper{})
@@ -126,7 +123,7 @@ var inspectPluginsCmd = &cobra.Command{
 	Aliases: []string{"plugin"},
 	Short:   "app plugins.",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := config.Init(cfgFile)
+		cfg := config.Init(viper.GetString("config"))
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetRowLine(true)
 		table.SetHeader([]string{"ID", "Plugin", "Current"})
@@ -176,7 +173,7 @@ var inspectConfigCmd = &cobra.Command{
 	Aliases: []string{"cfg", "conf"},
 	Short:   "app config.",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := config.Init(cfgFile)
+		cfg := config.Init(viper.GetString("config"))
 		var c = struct {
 			*config.Config
 			InstallTimeout string

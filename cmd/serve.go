@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/duc-cnzj/mars/v4/internal/repo"
-
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/application/bootstrappers"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
@@ -16,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/event"
 	"github.com/duc-cnzj/mars/v4/internal/locker"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
@@ -47,7 +46,7 @@ var apiGatewayCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.SetFlags(log.Lshortfile)
-		cfg := config.Init(cfgFile)
+		cfg := config.Init(viper.GetString("config"))
 		logger := mlog.NewLogger(cfg)
 		app, err := InitializeApp(cfg, logger, serverBootstrappers)
 		if err != nil {
@@ -105,7 +104,6 @@ func newApp(
 }
 
 func init() {
-	apiGatewayCmd.Flags().StringVar(&cfgFile, "config", "", "config file (default is $DIR/config.yaml)")
 	apiGatewayCmd.Flags().BoolP("debug", "", true, "debug mode.")
 	apiGatewayCmd.Flags().StringP("metrics_port", "", "9091", "metrics port")
 	apiGatewayCmd.Flags().StringP("app_port", "", "6000", "app port.")
@@ -113,7 +111,6 @@ func init() {
 	apiGatewayCmd.Flags().StringP("grpc_port", "", "", "grpc port.")
 	apiGatewayCmd.Flags().StringP("exclude_server", "", "", "do not start these services(api/metrics/cron/profile), join with ','.")
 
-	viper.BindPFlag("config", apiGatewayCmd.Flags().Lookup("config"))
 	viper.BindPFlag("debug", apiGatewayCmd.Flags().Lookup("debug"))
 	viper.BindPFlag("metrics_port", apiGatewayCmd.Flags().Lookup("metrics_port"))
 	viper.BindPFlag("app_port", apiGatewayCmd.Flags().Lookup("app_port"))

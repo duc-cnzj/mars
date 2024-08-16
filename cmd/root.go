@@ -5,6 +5,7 @@ import (
 
 	"github.com/duc-cnzj/mars/v4/version"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -34,4 +35,11 @@ func Execute(configFile []byte, logoStr string) {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $DIR/config.yaml)")
+	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+	viper.SetEnvPrefix("MARS")
+	viper.BindEnv("config")
 }

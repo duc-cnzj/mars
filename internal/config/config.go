@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"strings"
 	"time"
 
@@ -166,17 +165,10 @@ func Init(cfgFile string) *Config {
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
-		dir, err := os.Getwd()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		viper.AddConfigPath(dir)
+		viper.AddConfigPath(".")
 		viper.SetConfigName("config")
 		viper.SetConfigType("yaml")
 	}
-
-	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatal(err)

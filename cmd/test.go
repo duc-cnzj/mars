@@ -6,12 +6,13 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var testCmd = &cobra.Command{
 	Use: "test",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := config.Init(cfgFile)
+		cfg := config.Init(viper.GetString("config"))
 		logger := mlog.NewLogger(cfg)
 		app, err := InitializeApp(cfg, logger, nil)
 		if err != nil {
