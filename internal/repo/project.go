@@ -440,7 +440,6 @@ func (repo *projectRepo) GetAllPodMetrics(project *Project) []v1beta1.PodMetrics
 	var (
 		metrics = repo.data.K8sClient().MetricsClient
 	)
-	//db.Preload("Namespace").First(&project)
 	metricses := metrics.MetricsV1beta1().PodMetricses(project.Namespace.Name)
 	var list []v1beta1.PodMetrics
 	var split []string = project.PodSelectors

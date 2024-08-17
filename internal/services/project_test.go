@@ -5,6 +5,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/duc-cnzj/mars/api/v4/websocket"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+
 	"github.com/duc-cnzj/mars/api/v4/project"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/application"
@@ -319,56 +323,457 @@ func Test_projectSvc_AllContainers_Fail(t *testing.T) {
 	assert.Nil(t, containers)
 }
 
-func Test_projectSvc_WebApply(t *testing.T) {}
+func TestProjectSvc_WebApply_Success(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
 
-func Test_projectSvc_Apply(t *testing.T) {}
+	projectRepo := repo.NewMockProjectRepo(m)
+	repoRepo := repo.NewMockRepoRepo(m)
+	jobManager := socket.NewMockJobManager(m)
+	gitRepo := repo.NewMockGitRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	logger := mlog.NewLogger(nil)
+	helmerRepo := repo.NewMockHelmerRepo(m)
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	plMgr := application.NewMockPluginManger(m)
 
-func TestNewMessager(t *testing.T) {}
+	svc := NewProjectSvc(
+		repoRepo,
+		plMgr,
+		jobManager,
+		projectRepo,
+		gitRepo,
+		repo.NewMockK8sRepo(m),
+		eventRepo,
+		logger,
+		helmerRepo,
+		nsRepo,
+	)
 
-func Test_emptyMessager_Add(t *testing.T) {}
+	repoRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Repo{Name: "test", NeedGitRepo: true}, nil)
+	gitRepo.EXPECT().ListCommits(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*repo.Commit{{ID: "commit-id"}}, nil)
 
-func Test_emptyMessager_Current(t *testing.T) {}
+	job := socket.NewMockJob(m)
+	jobManager.EXPECT().NewJob(gomock.Any()).Return(job)
 
-func Test_emptyMessager_SendDeployedResult(t *testing.T) {}
+	job.EXPECT().GlobalLock().Return(job)
+	job.EXPECT().Validate().Return(job)
+	job.EXPECT().LoadConfigs().Return(job)
+	job.EXPECT().Run(gomock.Any()).Return(job)
+	job.EXPECT().Finish().Return(job)
+	job.EXPECT().Error().Return(nil)
+	job.EXPECT().Manifests().Return([]string{"manifests"})
+	job.EXPECT().IsNotDryRun().Return(true)
+	job.EXPECT().Project().Return(&repo.Project{ID: 1})
 
-func Test_emptyMessager_SendEndError(t *testing.T) {}
+	projectRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Project{}, nil)
 
-func Test_emptyMessager_SendError(t *testing.T) {}
+	_, err := svc.WebApply(newAdminUserCtx(), &project.WebApplyRequest{
+		RepoId:      1,
+		NamespaceId: 1,
+	})
 
-func Test_emptyMessager_SendMsg(t *testing.T) {}
+	assert.Nil(t, err)
+}
 
-func Test_emptyMessager_SendMsgWithContainerLog(t *testing.T) {}
+func TestProjectSvc_WebApply_Failure(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
 
-func Test_emptyMessager_SendProcessPercent(t *testing.T) {}
+	projectRepo := repo.NewMockProjectRepo(m)
+	repoRepo := repo.NewMockRepoRepo(m)
+	jobManager := socket.NewMockJobManager(m)
+	gitRepo := repo.NewMockGitRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	logger := mlog.NewLogger(nil)
+	helmerRepo := repo.NewMockHelmerRepo(m)
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	plMgr := application.NewMockPluginManger(m)
 
-func Test_emptyMessager_SendProtoMsg(t *testing.T) {}
+	svc := NewProjectSvc(
+		repoRepo,
+		plMgr,
+		jobManager,
+		projectRepo,
+		gitRepo,
+		repo.NewMockK8sRepo(m),
+		eventRepo,
+		logger,
+		helmerRepo,
+		nsRepo,
+	)
 
-func Test_emptyMessager_To(t *testing.T) {}
+	repoRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
 
-func Test_isContainerReady(t *testing.T) {}
+	_, err := svc.WebApply(context.TODO(), &project.WebApplyRequest{
+		RepoId:      1,
+		NamespaceId: 1,
+		Name:        "test",
+	})
 
-func Test_messager_Add(t *testing.T) {}
+	assert.NotNil(t, err)
+	assert.Equal(t, "error", err.Error())
+}
 
-func Test_messager_Current(t *testing.T) {}
+func TestProjectSvc_Apply_Success(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
 
-func Test_messager_SendDeployedResult(t *testing.T) {}
+	projectRepo := repo.NewMockProjectRepo(m)
+	repoRepo := repo.NewMockRepoRepo(m)
+	jobManager := socket.NewMockJobManager(m)
+	gitRepo := repo.NewMockGitRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	logger := mlog.NewLogger(nil)
+	helmerRepo := repo.NewMockHelmerRepo(m)
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	plMgr := application.NewMockPluginManger(m)
 
-func Test_messager_SendEndError(t *testing.T) {}
+	svc := NewProjectSvc(
+		repoRepo,
+		plMgr,
+		jobManager,
+		projectRepo,
+		gitRepo,
+		repo.NewMockK8sRepo(m),
+		eventRepo,
+		logger,
+		helmerRepo,
+		nsRepo,
+	)
 
-func Test_messager_SendError(t *testing.T) {}
+	repoRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Repo{Name: "test", NeedGitRepo: true}, nil)
+	gitRepo.EXPECT().ListCommits(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*repo.Commit{{ID: "commit-id"}}, nil)
 
-func Test_messager_SendMsg(t *testing.T) {}
+	job := socket.NewMockJob(m)
+	jobManager.EXPECT().NewJob(gomock.Any()).Return(job)
 
-func Test_messager_SendMsgWithContainerLog(t *testing.T) {}
+	job.EXPECT().GlobalLock().Return(job)
+	job.EXPECT().Validate().Return(job)
+	job.EXPECT().LoadConfigs().Return(job)
+	job.EXPECT().Run(gomock.Any()).Return(job)
+	job.EXPECT().Finish().Return(job)
+	job.EXPECT().Error().Return(nil)
 
-func Test_messager_SendProcessPercent(t *testing.T) {}
+	mockServer := &mockProjectApplyServer{
+		Req: &project.ApplyRequest{
+			RepoId:      1,
+			NamespaceId: 1,
+			Name:        "test",
+		},
+	}
 
-func Test_messager_SendProtoMsg(t *testing.T) {}
+	applyRequest := &project.ApplyRequest{
+		RepoId:      1,
+		NamespaceId: 1,
+		Name:        "test",
+	}
 
-func Test_messager_To(t *testing.T) {}
+	err := svc.Apply(applyRequest, mockServer)
 
-func Test_messager_send(t *testing.T) {}
+	assert.Nil(t, err)
+}
 
-func Test_newEmptyMessager(t *testing.T) {}
+func TestProjectSvc_Apply_Failure(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
 
-func Test_projectSvc_getBranchAndCommitIfMissing(t *testing.T) {}
+	projectRepo := repo.NewMockProjectRepo(m)
+	repoRepo := repo.NewMockRepoRepo(m)
+	jobManager := socket.NewMockJobManager(m)
+	gitRepo := repo.NewMockGitRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	logger := mlog.NewLogger(nil)
+	helmerRepo := repo.NewMockHelmerRepo(m)
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	plMgr := application.NewMockPluginManger(m)
+
+	svc := NewProjectSvc(
+		repoRepo,
+		plMgr,
+		jobManager,
+		projectRepo,
+		gitRepo,
+		repo.NewMockK8sRepo(m),
+		eventRepo,
+		logger,
+		helmerRepo,
+		nsRepo,
+	)
+
+	repoRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
+
+	mockServer := &mockProjectApplyServer{
+		Req: &project.ApplyRequest{
+			RepoId:      1,
+			NamespaceId: 1,
+			Name:        "test",
+		},
+	}
+
+	applyRequest := &project.ApplyRequest{
+		RepoId:      1,
+		NamespaceId: 1,
+		Name:        "test",
+	}
+
+	err := svc.Apply(applyRequest, mockServer)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "error", err.Error())
+}
+
+type mockProjectApplyServer struct {
+	grpc.ServerStream
+	Req *project.ApplyRequest
+}
+
+func (x *mockProjectApplyServer) Send(m *project.ApplyResponse) error {
+	// Implement this method based on your testing needs.
+	return nil
+}
+
+func (x *mockProjectApplyServer) SetHeader(md metadata.MD) error {
+	// Implement this method based on your testing needs.
+	return nil
+}
+
+func (x *mockProjectApplyServer) SendHeader(md metadata.MD) error {
+	// Implement this method based on your testing needs.
+	return nil
+}
+
+func (x *mockProjectApplyServer) SetTrailer(md metadata.MD) {
+	// Implement this method based on your testing needs.
+}
+
+func (x *mockProjectApplyServer) Context() context.Context {
+	// Implement this method based on your testing needs.
+	return context.TODO()
+}
+
+func (x *mockProjectApplyServer) SendMsg(m any) error {
+	// Implement this method based on your testing needs.
+	return nil
+}
+
+func (x *mockProjectApplyServer) RecvMsg(m any) error {
+	// Here we're setting the request that the server should receive.
+	*m.(*project.ApplyRequest) = *x.Req
+	return nil
+}
+
+func TestEmptyMessager_Current(t *testing.T) {
+	m := newEmptyMessager()
+	current := m.Current()
+	assert.Equal(t, int64(0), current)
+}
+
+func TestEmptyMessager_Add(t *testing.T) {
+	m := newEmptyMessager()
+	m.Add()
+	current := m.Current()
+	assert.Equal(t, int64(0), current)
+}
+
+func TestEmptyMessager_To(t *testing.T) {
+	m := newEmptyMessager()
+	m.To(50)
+	current := m.Current()
+	assert.Equal(t, int64(0), current)
+}
+
+func TestEmptyMessager_SendEndError(t *testing.T) {
+	m := newEmptyMessager()
+	m.SendEndError(errors.New("test error"))
+	// As the emptyMessager does not handle errors, there's no assertion to be made here.
+}
+
+func TestEmptyMessager_SendMsg(t *testing.T) {
+	m := newEmptyMessager()
+	m.SendMsg("test message")
+	// As the emptyMessager does not handle messages, there's no assertion to be made here.
+}
+
+func TestEmptyMessager_SendProtoMsg(t *testing.T) {
+	m := newEmptyMessager()
+	m.SendProtoMsg(nil)
+	// As the emptyMessager does not handle messages, there's no assertion to be made here.
+}
+
+func TestEmptyMessager_SendProcessPercent(t *testing.T) {
+	m := newEmptyMessager()
+	m.SendProcessPercent(50)
+	// As the emptyMessager does not handle process percent, there's no assertion to be made here.
+}
+
+func TestEmptyMessager_SendMsgWithContainerLog(t *testing.T) {
+	m := newEmptyMessager()
+	m.SendMsgWithContainerLog("test message", []*websocket.Container{})
+	// As the emptyMessager does not handle container logs, there's no assertion to be made here.
+}
+
+func TestMessager_Current(t *testing.T) {
+	m := NewMessager(true, "slug", websocket.Type_ApplyProject, nil)
+	current := m.Current()
+	assert.Equal(t, int64(0), current)
+}
+
+type mockApplyServer struct {
+	project.Project_ApplyServer
+
+	response *project.ApplyResponse
+}
+
+func (m *mockApplyServer) Send(response *project.ApplyResponse) error {
+	m.response = response
+	return nil
+}
+
+func TestMessager_Add(t *testing.T) {
+	server := &mockApplyServer{}
+	m := NewMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m.Add()
+	current := m.Current()
+	assert.Equal(t, websocket.Type_ProcessPercent, server.response.Metadata.Type)
+	assert.Equal(t, int64(1), current)
+}
+
+func TestMessager_To(t *testing.T) {
+	server := &mockApplyServer{}
+	m := NewMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m.To(50)
+	current := m.Current()
+	assert.Equal(t, int32(50), server.response.Metadata.Percent)
+	assert.Equal(t, int64(50), current)
+}
+
+func TestMessager_SendEndError(t *testing.T) {
+	server := &mockApplyServer{}
+	m := NewMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m.SendEndError(errors.New("test error"))
+	assert.True(t, server.response.Metadata.End)
+	assert.Equal(t, "test error", server.response.Metadata.Message)
+}
+
+func TestMessager_SendMsg(t *testing.T) {
+	server := &mockApplyServer{}
+	m := NewMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m.SendMsg("test message")
+	assert.False(t, server.response.Metadata.End)
+	assert.Equal(t, "test message", server.response.Metadata.Message)
+}
+
+type mockWsMessage struct {
+	application.WebsocketMessage
+}
+
+func (m *mockWsMessage) GetMetadata() *websocket.Metadata {
+	return &websocket.Metadata{
+		Type: websocket.Type_ApplyProject,
+	}
+}
+
+func TestMessager_SendProtoMsg(t *testing.T) {
+	server := &mockApplyServer{}
+	m := NewMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m.SendProtoMsg(&mockWsMessage{})
+	assert.Equal(t, websocket.Type_ApplyProject, server.response.Metadata.Type)
+}
+
+func TestMessager_SendProcessPercent(t *testing.T) {
+	server := &mockApplyServer{}
+	m := NewMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m.SendProcessPercent(50)
+	assert.Equal(t, websocket.Type_ProcessPercent, server.response.Metadata.Type)
+	assert.Equal(t, int32(50), server.response.Metadata.Percent)
+}
+
+func TestMessager_SendMsgWithContainerLog(t *testing.T) {
+	server := &mockApplyServer{}
+	m := NewMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m.SendMsgWithContainerLog("test message", []*websocket.Container{})
+	assert.False(t, server.response.Metadata.End)
+	assert.Equal(t, "test message", server.response.Metadata.Message)
+	assert.Equal(t, websocket.ResultType_LogWithContainers, server.response.Metadata.Result)
+}
+
+func TestMessager_SendDeployedResult(t *testing.T) {
+	server := &mockApplyServer{}
+	m := NewMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m.SendDeployedResult(websocket.ResultType_Success, "test message", &types.ProjectModel{})
+	assert.True(t, server.response.Metadata.End)
+	assert.Equal(t, "test message", server.response.Metadata.Message)
+	assert.Equal(t, websocket.ResultType_Success, server.response.Metadata.Result)
+}
+
+func TestGetBranchAndCommitIfMissingReturnsDefaultBranchWhenBranchIsNotProvided(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	gitRepo := repo.NewMockGitRepo(m)
+	svc := NewProjectSvc(
+		repo.NewMockRepoRepo(m),
+		application.NewMockPluginManger(m),
+		socket.NewMockJobManager(m),
+		repo.NewMockProjectRepo(m),
+		gitRepo,
+		repo.NewMockK8sRepo(m),
+		repo.NewMockEventRepo(m),
+		mlog.NewLogger(nil),
+		repo.NewMockHelmerRepo(m),
+		repo.NewMockNamespaceRepo(m),
+	)
+
+	gitRepo.EXPECT().ListCommits(gomock.Any(), gomock.Any(), "default").Return([]*repo.Commit{{ID: "commit-id"}}, nil)
+
+	branch, _, _ := svc.(*projectSvc).getBranchAndCommitIfMissing("", "", &repo.Repo{DefaultBranch: "default"}, newEmptyMessager())
+	assert.Equal(t, "default", branch)
+}
+
+func TestGetBranchAndCommitIfMissingReturnsLatestCommitWhenCommitIsNotProvided(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	gitRepo := repo.NewMockGitRepo(m)
+	svc := NewProjectSvc(
+		repo.NewMockRepoRepo(m),
+		application.NewMockPluginManger(m),
+		socket.NewMockJobManager(m),
+		repo.NewMockProjectRepo(m),
+		gitRepo,
+		repo.NewMockK8sRepo(m),
+		repo.NewMockEventRepo(m),
+		mlog.NewLogger(nil),
+		repo.NewMockHelmerRepo(m),
+		repo.NewMockNamespaceRepo(m),
+	)
+
+	gitRepo.EXPECT().ListCommits(gomock.Any(), gomock.Any(), "branch").Return([]*repo.Commit{{ID: "commit-id"}}, nil)
+
+	_, commit, _ := svc.(*projectSvc).getBranchAndCommitIfMissing("branch", "", &repo.Repo{DefaultBranch: "default"}, newEmptyMessager())
+	assert.Equal(t, "commit-id", commit)
+}
+
+func TestGetBranchAndCommitIfMissingReturnsProvidedBranchAndCommit(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	gitRepo := repo.NewMockGitRepo(m)
+	svc := NewProjectSvc(
+		repo.NewMockRepoRepo(m),
+		application.NewMockPluginManger(m),
+		socket.NewMockJobManager(m),
+		repo.NewMockProjectRepo(m),
+		gitRepo,
+		repo.NewMockK8sRepo(m),
+		repo.NewMockEventRepo(m),
+		mlog.NewLogger(nil),
+		repo.NewMockHelmerRepo(m),
+		repo.NewMockNamespaceRepo(m),
+	)
+
+	branch, commit, _ := svc.(*projectSvc).getBranchAndCommitIfMissing("branch", "commit", &repo.Repo{DefaultBranch: "default"}, newEmptyMessager())
+	assert.Equal(t, "branch", branch)
+	assert.Equal(t, "commit", commit)
+}

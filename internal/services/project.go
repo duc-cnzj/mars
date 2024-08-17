@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/duc-cnzj/mars/v4/internal/auth"
+
 	"github.com/duc-cnzj/mars/api/v4/project"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/api/v4/websocket"
@@ -82,51 +84,22 @@ func (p *projectSvc) List(ctx context.Context, request *project.ListRequest) (*p
 }
 
 func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyRequest) (*project.WebApplyResponse, error) {
-	show, err := p.repoRepo.Show(ctx, int(input.RepoId))
-	if err != nil {
-		return nil, err
-	}
-	if input.Name == "" {
-		input.Name = show.Name
-	}
-	msger := newEmptyMessager()
-	if show.NeedGitRepo {
-		input.GitBranch, input.GitCommit, err = p.getBranchAndCommitIfMissing(input.GitBranch, input.GitCommit, show, msger)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	p.logger.DebugCtx(ctx, "WebApply..")
-	user := MustGetUser(ctx)
-	jobInput := &socket.JobInput{
-		Type:        websocket.Type_ApplyProject,
-		NamespaceId: input.NamespaceId,
-		Name:        input.Name,
-		RepoID:      int32(show.ID),
-		GitBranch:   input.GitBranch,
-		GitCommit:   input.GitCommit,
-		Config:      input.Config,
-		ExtraValues: input.ExtraValues,
-		Version:     input.Version,
-		User:        user,
-		DryRun:      input.DryRun,
-		PubSub:      application.NewEmptyPubSub(),
-		Messager:    msger,
-	}
-	job := p.jobManager.NewJob(jobInput)
-
-	ch := make(chan struct{})
-	go func() {
-		select {
-		case <-ctx.Done():
-			p.logger.WarningCtx(ctx, "WebApply ctx done", ctx.Err())
-			job.Stop(ctx.Err())
-		case <-ch:
-		}
-	}()
-	err = socket.InstallProject(ctx, job)
-	close(ch)
+	job, err := p.apply(
+		ctx,
+		MustGetUser(ctx),
+		newEmptyMessager(),
+		&project.ApplyRequest{
+			NamespaceId: input.NamespaceId,
+			Name:        input.Name,
+			RepoId:      input.RepoId,
+			GitBranch:   input.GitBranch,
+			GitCommit:   input.GitCommit,
+			Config:      input.Config,
+			ExtraValues: input.ExtraValues,
+			Version:     input.Version,
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -148,34 +121,51 @@ func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyReques
 }
 
 func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_ApplyServer) error {
+	msger := NewMessager(
+		input.SendPercent,
+		util.GetSlugName(input.NamespaceId, input.Name),
+		websocket.Type_ApplyProject,
+		server,
+	)
+
+	ctx := server.Context()
+	_, err := p.apply(
+		ctx,
+		MustGetUser(ctx),
+		msger,
+		input,
+	)
+
+	return err
+}
+
+func (p *projectSvc) apply(
+	ctx context.Context,
+	user *auth.UserInfo,
+	msger socket.DeployMsger,
+	input *project.ApplyRequest,
+) (socket.Job, error) {
+	var err error
 	var pubsub application.PubSub = application.NewEmptyPubSub()
 	if input.WebsocketSync {
 		pubsub = p.plMgr.Ws().New("", "")
 	}
 	defer pubsub.Close()
 	t := websocket.Type_ApplyProject
-	ctx := server.Context()
-	show, _ := p.repoRepo.Show(ctx, int(input.RepoId))
+	show, err := p.repoRepo.Show(ctx, int(input.RepoId))
+	if err != nil {
+		return nil, err
+	}
 	if input.Name == "" {
 		input.Name = show.Name
 	}
 
-	msger := NewMessager(
-		input.SendPercent,
-		util.GetSlugName(input.NamespaceId, input.Name),
-		t,
-		server,
-	)
-
-	var err error
 	if show.NeedGitRepo {
 		input.GitBranch, input.GitCommit, err = p.getBranchAndCommitIfMissing(input.GitBranch, input.GitCommit, show, msger)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-
-	user := MustGetUser(ctx)
 	ch := make(chan struct{})
 	var projectID int32
 	if lo.FromPtr(input.Version) > 0 {
@@ -215,7 +205,7 @@ func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 	err = socket.InstallProject(ctx, job)
 	close(ch)
 
-	return err
+	return job, err
 }
 
 func (p *projectSvc) getBranchAndCommitIfMissing(inBranch, inCommit string, show *repo.Repo, msger socket.DeployMsger) (branch string, commit string, err error) {
@@ -317,7 +307,6 @@ func (e *emptyMessager) Add() {
 func (e *emptyMessager) To(percent int64) {
 }
 func (e *emptyMessager) SendEndError(err error)                                                {}
-func (e *emptyMessager) SendError(err error)                                                   {}
 func (e *emptyMessager) SendMsg(s string)                                                      {}
 func (e *emptyMessager) SendProtoMsg(message application.WebsocketMessage)                     {}
 func (e *emptyMessager) SendProcessPercent(int64)                                              {}
@@ -373,16 +362,6 @@ func (m *messager) SendEndError(err error) {
 		Type:    m.t,
 		Result:  websocket.ResultType_Error,
 		End:     true,
-		Message: err.Error(),
-	}})
-}
-
-func (m *messager) SendError(err error) {
-	m.send(&project.ApplyResponse{Metadata: &websocket.Metadata{
-		Slug:    m.slugName,
-		Type:    m.t,
-		Result:  websocket.ResultType_Error,
-		End:     false,
 		Message: err.Error(),
 	}})
 }
