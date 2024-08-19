@@ -15,7 +15,8 @@ message Config {
   bool             is_simple_env      = 4;
   // config_file_type 配置文件类型，php/env/yaml...
   string           config_file_type   = 5;
-  // local_chart_path helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 "pid|branch|path"
+  // local_chart_path helm charts 目录, 格式为 "pid|branch|path",
+  // v5+ 之后不再支持本地目录
   string           local_chart_path   = 6;
   // branches 启用的分支
   repeated string  branches           = 7;

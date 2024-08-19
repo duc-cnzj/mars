@@ -1032,7 +1032,8 @@ export interface components {
       isSimpleEnv: boolean;
       /** @description config_file_type 配置文件类型，php/env/yaml... */
       configFileType: string;
-      /** @description local_chart_path helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 "pid|branch|path" */
+      /** @description local_chart_path helm charts 目录, 格式为 "pid|branch|path",
+       *      v5+ 之后不再支持本地目录 */
       localChartPath: string;
       /** @description branches 启用的分支 */
       branches: string[];

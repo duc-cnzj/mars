@@ -50,7 +50,7 @@ func HumanDuration(d time.Duration) string {
 	// inconsistence, it can be considered as almost now.
 	if seconds := int(d.Seconds()); seconds <= -1 {
 		return "<invalid>"
-	} else if seconds < 0 {
+	} else if seconds <= 0 {
 		return "0秒"
 	} else if seconds < 60*2 {
 		return fmt.Sprintf("%d秒", seconds)

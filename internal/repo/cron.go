@@ -23,7 +23,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
-	"github.com/duc-cnzj/mars/v4/internal/util"
+	"github.com/duc-cnzj/mars/v4/internal/util/k8s"
 	"github.com/duc-cnzj/mars/v4/internal/util/mars"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	"github.com/dustin/go-humanize"
@@ -155,9 +155,9 @@ func (repo *cronRepo) SyncImagePullSecrets() error {
 		db                  = repo.data.DB()
 		logger              = repo.logger
 	)
-	var serverMap = make(map[string]util.DockerConfigEntry)
+	var serverMap = make(map[string]k8s.DockerConfigEntry)
 	for _, s := range cfgImagePullSecrets {
-		serverMap[s.Server] = util.DockerConfigEntry{
+		serverMap[s.Server] = k8s.DockerConfigEntry{
 			Username: s.Username,
 			Password: s.Password,
 			Email:    s.Email,
@@ -186,13 +186,13 @@ func (repo *cronRepo) SyncImagePullSecrets() error {
 			}
 			if secret.Type == corev1.SecretTypeDockerConfigJson {
 				var dockerJsonKeyData []byte = secret.Data[corev1.DockerConfigJsonKey]
-				res, err := util.DecodeDockerConfigJSON(dockerJsonKeyData)
+				res, err := k8s.DecodeDockerConfigJSON(dockerJsonKeyData)
 				if err != nil {
 					logger.Warningf("[syncImagePullSecrets]: decode secret '%s', err %v", secretName, err)
 					continue
 				}
-				var newConfigJson = util.DockerConfigJSON{
-					Auths:       map[string]util.DockerConfigEntry{},
+				var newConfigJson = k8s.DockerConfigJSON{
+					Auths:       map[string]k8s.DockerConfigEntry{},
 					HttpHeaders: map[string]string{},
 				}
 				for server, cfg := range serverMap {
@@ -230,7 +230,7 @@ func (repo *cronRepo) SyncImagePullSecrets() error {
 		}
 
 		if len(missing) > 0 {
-			secret, err := util.CreateDockerSecrets(k8sClient.Client, ns.Name, missing)
+			secret, err := k8s.CreateDockerSecrets(k8sClient.Client, ns.Name, missing)
 			if err == nil {
 				logger.Warningf("[syncImagePullSecrets]: Missing %v", missing)
 

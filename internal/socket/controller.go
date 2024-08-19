@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/hash"
+
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/application"
@@ -19,7 +21,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
-	"github.com/duc-cnzj/mars/v4/internal/util"
 	"github.com/duc-cnzj/mars/v4/internal/util/counter"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -417,7 +418,7 @@ func (wc *WebsocketManager) HandleWsCreateProject(ctx context.Context, c Conn, t
 		ExtraValues: input.ExtraValues,
 		User:        c.GetUser(),
 		PubSub:      c.PubSub(),
-		Messager:    NewMessageSender(c, util.GetSlugName(input.NamespaceId, appName), t),
+		Messager:    NewMessageSender(c, GetSlugName(input.NamespaceId, appName), t),
 	}); err != nil {
 		wc.logger.Error(err)
 	}
@@ -453,7 +454,7 @@ func (wc *WebsocketManager) HandleWsUpdateProject(ctx context.Context, c Conn, t
 		TimeoutSeconds: int32(wc.data.Config().InstallTimeout.Seconds()),
 		User:           c.GetUser(),
 		PubSub:         c.PubSub(),
-		Messager:       NewMessageSender(c, util.GetSlugName(p.NamespaceID, p.Name), t),
+		Messager:       NewMessageSender(c, GetSlugName(p.NamespaceID, p.Name), t),
 	})
 }
 
@@ -465,7 +466,7 @@ func (wc *WebsocketManager) HandleWsCancelDeploy(ctx context.Context, c Conn, t 
 		return
 	}
 
-	var slugName = util.GetSlugName(input.NamespaceId, input.Name)
+	var slugName = GetSlugName(input.NamespaceId, input.Name)
 
 	if err := c.RunTask(slugName); err == nil {
 		ns, err := wc.nsRepo.Show(ctx, int(input.NamespaceId))
@@ -483,7 +484,7 @@ func (wc *WebsocketManager) HandleWsCancelDeploy(ctx context.Context, c Conn, t 
 func (wc *WebsocketManager) upgradeOrInstall(ctx context.Context, c Conn, input *JobInput) error {
 	indent, _ := json.MarshalIndent(input, "", "  ")
 	wc.logger.Warning(string(indent))
-	slug := util.GetSlugName(input.NamespaceId, input.Name)
+	slug := GetSlugName(input.NamespaceId, input.Name)
 	job := wc.jobManager.NewJob(input)
 
 	if input.IsNotDryRun() {
@@ -501,4 +502,8 @@ func (wc *WebsocketManager) upgradeOrInstall(ctx context.Context, c Conn, input 
 
 func InstallProject(ctx context.Context, job Job) (err error) {
 	return job.GlobalLock().Validate().LoadConfigs().Run(ctx).Finish().Error()
+}
+
+func GetSlugName[T int64 | int | int32](namespaceId T, name string) string {
+	return hash.Hash(fmt.Sprintf("%d-%s", namespaceId, name))
 }

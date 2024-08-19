@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	gopath "path"
+	"strconv"
 	"strings"
 
 	"github.com/duc-cnzj/mars/api/v4/git"
@@ -176,7 +177,7 @@ func (g *gitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequ
 }
 
 func (g *gitSvc) GetChartValuesYaml(ctx context.Context, req *git.GetChartValuesYamlRequest) (*git.GetChartValuesYamlResponse, error) {
-	if !mars2.IsRemoteLocalChartPath(req.GetInput()) {
+	if !IsRemoteLocalChartPath(req.GetInput()) {
 		return &git.GetChartValuesYamlResponse{}, nil
 	}
 
@@ -190,4 +191,17 @@ func (g *gitSvc) GetChartValuesYaml(ctx context.Context, req *git.GetChartValues
 		return nil, err
 	}
 	return &git.GetChartValuesYamlResponse{Values: content}, nil
+}
+
+func IsRemoteLocalChartPath(input string) bool {
+	split := strings.Split(input, "|")
+
+	return len(split) == 3 && intPid(split[0])
+}
+
+func intPid(pid string) bool {
+	if _, err := strconv.ParseInt(pid, 10, 64); err == nil {
+		return true
+	}
+	return false
 }

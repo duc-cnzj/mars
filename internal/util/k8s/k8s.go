@@ -1,22 +1,15 @@
-package util
+package k8s
 
 import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
-	"reflect"
-	"sort"
 	"strings"
 
-	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/config"
-	"github.com/duc-cnzj/mars/v4/internal/util/hash"
 	"github.com/duc-cnzj/mars/v4/internal/util/rand"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -70,58 +63,4 @@ func CreateDockerSecrets(client kubernetes.Interface, namespace string, auths co
 		},
 		Type: v1.SecretTypeDockerConfigJson,
 	}, metav1.CreateOptions{})
-}
-
-type Endpoint = types.ServiceEndpoint
-
-type RuntimeObjectList []runtime.Object
-
-func (l RuntimeObjectList) Has(in runtime.Object) bool {
-	inAccessor, _ := meta.Accessor(in)
-	for _, set := range l {
-		accessor, _ := meta.Accessor(set)
-		if reflect.TypeOf(set) == reflect.TypeOf(in) && accessor.GetName() == inAccessor.GetName() {
-			return true
-		}
-	}
-
-	return false
-}
-
-type sortEndpoint []*Endpoint
-
-func (s sortEndpoint) Len() int {
-	return len(s)
-}
-
-func (s sortEndpoint) Less(i, j int) bool {
-	return strings.HasPrefix(s[i].Url, "https") && !strings.HasPrefix(s[j].Url, "https")
-}
-
-func (s sortEndpoint) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-type EndpointMapping map[string][]*Endpoint
-
-func (e EndpointMapping) Sort() {
-	for _, endpoints := range e {
-		sort.Sort(sortEndpoint(endpoints))
-	}
-}
-
-func (e EndpointMapping) Get(projName string) []*Endpoint {
-	return e[projName]
-}
-
-func (e EndpointMapping) AllEndpoints() []*Endpoint {
-	var res = make([]*Endpoint, 0)
-	for _, endpoints := range e {
-		res = append(res, endpoints...)
-	}
-	return res
-}
-
-func GetSlugName[T int64 | int | int32](namespaceId T, name string) string {
-	return hash.Hash(fmt.Sprintf("%d-%s", namespaceId, name))
 }

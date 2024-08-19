@@ -12,7 +12,7 @@ import (
 )
 
 func TestDispatcher_ListenAndHasListeners(t *testing.T) {
-	logger := mlog.NewEmptyLogger()
+	logger := mlog.NewLogger(nil)
 	dispatcher := NewDispatcher(logger)
 
 	eventName := Event("testEvent")
@@ -25,7 +25,7 @@ func TestDispatcher_ListenAndHasListeners(t *testing.T) {
 }
 
 func TestDispatcher_Forget(t *testing.T) {
-	logger := mlog.NewEmptyLogger()
+	logger := mlog.NewLogger(nil)
 	dispatcher := NewDispatcher(logger)
 
 	eventName := Event("testEvent")
@@ -40,7 +40,7 @@ func TestDispatcher_Forget(t *testing.T) {
 }
 
 func TestDispatcher_GetListeners(t *testing.T) {
-	logger := mlog.NewEmptyLogger()
+	logger := mlog.NewLogger(nil)
 	dispatcher := NewDispatcher(logger)
 
 	eventName := Event("testEvent")
@@ -55,7 +55,7 @@ func TestDispatcher_GetListeners(t *testing.T) {
 }
 
 func TestDispatcher_RunAndShutdown(t *testing.T) {
-	logger := mlog.NewEmptyLogger()
+	logger := mlog.NewLogger(nil)
 	dispatcher := NewDispatcher(logger)
 
 	eventName := Event("testEvent")

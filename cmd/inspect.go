@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"runtime"
 	"strings"
 
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/util/runtime"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -108,7 +108,7 @@ var inspectEventsCmd = &cobra.Command{
 			i++
 			var listenerNames []string
 			for _, listener := range listeners {
-				s := strings.Split(runtime.GetFunctionName(listener), ".")
+				s := strings.Split(GetFunctionName(listener), ".")
 				listenerNames = append(listenerNames, s[len(s)-1])
 			}
 			table.Append([]string{fmt.Sprintf("%d", i), event.String(), strings.Join(listenerNames, " "), fmt.Sprintf("%d", len(listeners))})
@@ -184,4 +184,9 @@ var inspectConfigCmd = &cobra.Command{
 		indent, _ := json.MarshalIndent(c, "", "  ")
 		fmt.Println(string(indent))
 	},
+}
+
+// GetFunctionName return fn name
+func GetFunctionName(i any) string {
+	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }

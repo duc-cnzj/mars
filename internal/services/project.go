@@ -15,7 +15,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/socket"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
-	"github.com/duc-cnzj/mars/v4/internal/util"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 	"github.com/samber/lo"
@@ -123,7 +122,7 @@ func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyReques
 func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_ApplyServer) error {
 	msger := NewMessager(
 		input.SendPercent,
-		util.GetSlugName(input.NamespaceId, input.Name),
+		socket.GetSlugName(input.NamespaceId, input.Name),
 		websocket.Type_ApplyProject,
 		server,
 	)

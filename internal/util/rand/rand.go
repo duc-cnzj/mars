@@ -6,6 +6,9 @@ import (
 )
 
 func Intn(n int) int {
+	if n <= 0 {
+		return 0
+	}
 	b, _ := rand.Int(rand.Reader, big.NewInt(int64(n)))
 	return int(b.Int64())
 }

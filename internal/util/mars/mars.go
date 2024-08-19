@@ -2,7 +2,6 @@ package mars
 
 import (
 	"regexp"
-	"strconv"
 	"strings"
 
 	yaml2 "github.com/duc-cnzj/mars/v4/internal/util/yaml"
@@ -102,7 +101,6 @@ func ParseInputConfig(mars *mars.Config, input string) (string, error) {
 
 	if mars.IsSimpleEnv {
 		if yamlData, err = yaml2.YamlDeepSetKey(mars.ConfigField, input); err != nil {
-			//mlog.Error(err, mars.ConfigField, input)
 			return "", err
 		}
 	} else {
@@ -141,17 +139,4 @@ func ParseInputConfig(mars *mars.Config, input string) (string, error) {
 	}
 
 	return string(yamlData), nil
-}
-
-func IsRemoteLocalChartPath(input string) bool {
-	split := strings.Split(input, "|")
-
-	return len(split) == 3 && intPid(split[0])
-}
-
-func intPid(pid string) bool {
-	if _, err := strconv.ParseInt(pid, 10, 64); err == nil {
-		return true
-	}
-	return false
 }

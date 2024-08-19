@@ -102,7 +102,8 @@ type Config struct {
 	IsSimpleEnv      bool   `protobuf:"varint,4,opt,name=is_simple_env,json=isSimpleEnv,proto3" json:"is_simple_env,omitempty"`
 	// config_file_type 配置文件类型，php/env/yaml...
 	ConfigFileType string `protobuf:"bytes,5,opt,name=config_file_type,json=configFileType,proto3" json:"config_file_type,omitempty"`
-	// local_chart_path helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 "pid|branch|path"
+	// local_chart_path helm charts 目录, 格式为 "pid|branch|path",
+	// v5+ 之后不再支持本地目录
 	LocalChartPath string `protobuf:"bytes,6,opt,name=local_chart_path,json=localChartPath,proto3" json:"local_chart_path,omitempty"`
 	// branches 启用的分支
 	Branches []string `protobuf:"bytes,7,rep,name=branches,proto3" json:"branches,omitempty"`

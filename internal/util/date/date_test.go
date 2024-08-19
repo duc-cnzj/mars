@@ -44,3 +44,54 @@ func TestHumanDuration(t *testing.T) {
 	assert.Equal(t, "3年", HumanDuration(3*365*24*time.Hour))
 	assert.Equal(t, "<invalid>", HumanDuration(-1*time.Second))
 }
+func TestHumanDurationWithYearsAndDays(t *testing.T) {
+	twoYearsAndThreeDays := 2*365*24*time.Hour + 3*24*time.Hour
+	assert.Equal(t, "2年3天", HumanDuration(twoYearsAndThreeDays))
+
+	eightYears := 8 * 365 * 24 * time.Hour
+	assert.Equal(t, "8年", HumanDuration(eightYears))
+}
+
+func TestHumanDurationWithNegativeDuration(t *testing.T) {
+	negativeDuration := -1 * time.Second
+	assert.Equal(t, "<invalid>", HumanDuration(negativeDuration))
+}
+
+func TestHumanDurationWithZeroDuration(t *testing.T) {
+	zeroDuration := 0 * time.Second
+	assert.Equal(t, "0秒", HumanDuration(zeroDuration))
+}
+
+func TestHumanDurationWithSeconds(t *testing.T) {
+	twoSeconds := 2 * time.Second
+	assert.Equal(t, "2秒", HumanDuration(twoSeconds))
+}
+
+func TestHumanDurationWithMinutesAndSeconds(t *testing.T) {
+	nineMinutesAndThirtySeconds := 9*time.Minute + 30*time.Second
+	assert.Equal(t, "9分钟30秒", HumanDuration(nineMinutesAndThirtySeconds))
+}
+
+func TestHumanDurationWithHoursAndMinutes(t *testing.T) {
+	sevenHoursAndFortyFiveMinutes := 7*time.Hour + 45*time.Minute
+	assert.Equal(t, "7小时45分钟", HumanDuration(sevenHoursAndFortyFiveMinutes))
+}
+
+func TestHumanDurationWithDaysAndHours(t *testing.T) {
+	sevenDaysAndSixHours := 7*24*time.Hour + 6*time.Hour
+	assert.Equal(t, "7天6小时", HumanDuration(sevenDaysAndSixHours))
+}
+func TestHumanDurationWithNegativeSeconds(t *testing.T) {
+	negativeSeconds := 0 * time.Second
+	assert.Equal(t, "0秒", HumanDuration(negativeSeconds))
+}
+
+func TestHumanDurationWithFortyEightHours(t *testing.T) {
+	fortyEightHours := 47 * time.Hour
+	assert.Equal(t, "47小时", HumanDuration(fortyEightHours))
+}
+
+func TestHumanDurationWithTwoYears(t *testing.T) {
+	twoYears := (2 * 365 * 24 * time.Hour) - 1*time.Hour
+	assert.Equal(t, "729天", HumanDuration(twoYears))
+}
