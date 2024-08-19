@@ -94,11 +94,11 @@ func NewDataImpl(input *NewDataParams) Data {
 	}
 }
 
-func NewData(cfg *config.Config, logger mlog.Logger) (Data, error) {
+func NewData(cfg *config.Config, logger mlog.Logger) Data {
 	return NewDataImpl(&NewDataParams{
 		Cfg:    cfg,
 		Logger: logger.WithModule("data/data"),
-	}), nil
+	})
 }
 
 func (data *dataImpl) Config() *config.Config {
@@ -132,22 +132,10 @@ func (data *dataImpl) InitDB() (func() error, error) {
 		logger.Debug("connecting to mysql...")
 		defer logger.Debug("mysql connected!")
 
-		var drv *sql.Driver
-		drv, err = sql.Open("mysql", data.Config().DSN())
+		data.db, err = InitDB(data.Config().DSN(), logger)
 		if err != nil {
 			return
 		}
-		// Get the underlying sql.DB object of the driver.
-		db := drv.DB()
-		db.SetMaxIdleConns(10)
-		db.SetMaxOpenConns(100)
-		db.SetConnMaxLifetime(time.Hour)
-		data.db = ent.NewClient(
-			ent.Driver(drv),
-			ent.Log(func(a ...any) {
-				logger.Debug(fmt.Sprint(a...))
-			}),
-		)
 
 		if data.Config().DBDebug {
 			data.db = data.DB().Debug()
@@ -157,6 +145,26 @@ func (data *dataImpl) InitDB() (func() error, error) {
 		}
 	})
 	return closeFunc, nil
+}
+
+func InitDB(dsn string, logger mlog.Logger) (*ent.Client, error) {
+	var drv *sql.Driver
+	drv, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+	// Get the underlying sql.DB object of the driver.
+	db := drv.DB()
+	db.SetMaxIdleConns(10)
+	db.SetMaxOpenConns(100)
+	db.SetConnMaxLifetime(time.Hour)
+	dbCli := ent.NewClient(
+		ent.Driver(drv),
+		ent.Log(func(a ...any) {
+			logger.Debug(a...)
+		}),
+	)
+	return dbCli, nil
 }
 
 func (data *dataImpl) InitS3() error {

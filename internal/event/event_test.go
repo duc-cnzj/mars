@@ -21,7 +21,11 @@ func TestDispatcher_ListenAndHasListeners(t *testing.T) {
 	}
 
 	dispatcher.Listen(eventName, listener)
+	dispatcher.Listen(eventName, func(a any, event Event) error {
+		return nil
+	})
 	assert.True(t, dispatcher.HasListeners(eventName))
+	assert.Equal(t, 2, len(dispatcher.List()[eventName]))
 }
 
 func TestDispatcher_Forget(t *testing.T) {
@@ -77,4 +81,30 @@ func TestDispatcher_RunAndShutdown(t *testing.T) {
 	mu.Lock()
 	defer mu.Unlock()
 	assert.Equal(t, 1, called)
+}
+
+func TestEvent_String(t *testing.T) {
+	event := Event("testEvent")
+	assert.Equal(t, "testEvent", event.String())
+}
+
+func TestEvent_Is(t *testing.T) {
+	event := Event("testEvent")
+	assert.True(t, event.Is("testEvent"))
+	assert.False(t, event.Is("testEvent2"))
+}
+
+func Test_dispatcher_List(t *testing.T) {
+	logger := mlog.NewLogger(nil)
+	dispatcher := NewDispatcher(logger)
+
+	eventName := Event("testEvent")
+	listener := func(any any, e Event) error {
+		return nil
+	}
+
+	dispatcher.Listen(eventName, listener)
+	listeners := dispatcher.List()
+
+	assert.Equal(t, 1, len(listeners))
 }

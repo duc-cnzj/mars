@@ -28,10 +28,7 @@ import (
 // Injectors from wire.go:
 
 func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []application.Bootstrapper) (application.App, error) {
-	dataData, err := data.NewData(configConfig, logger)
-	if err != nil {
-		return nil, err
-	}
+	dataData := data.NewData(configConfig, logger)
 	runner := cron.NewRobfigCronV3Runner(logger)
 	timerTimer := timer.NewRealTimer()
 	lockerLocker, err := locker.NewLocker(configConfig, dataData, logger, timerTimer)

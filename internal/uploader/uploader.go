@@ -13,7 +13,7 @@ func NewUploader(cfg *config.Config, logger mlog.Logger, data data.Data) (Upload
 	)
 
 	logger = logger.WithModule("uploader/uploader")
-	up, err = NewDiskUploader(cfg, logger)
+	up, err = NewDiskUploader(cfg.UploadDir, logger)
 	if err != nil {
 		return nil, err
 	}

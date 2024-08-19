@@ -122,7 +122,8 @@ build_web:
 
 .PHONY: test
 test:
-	go test ./... -race -count=1 -cover -coverprofile=cover.out
+	go test ./internal/... -race -count=1 -cover -coverprofile=cover.out -covermode atomic && \
+	go tool cover -func cover.out
 
 .PHONY: cover-web
 # go tool cover -html cover.out

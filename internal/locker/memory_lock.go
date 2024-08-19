@@ -15,10 +15,10 @@ type MemStore struct {
 	sync.RWMutex
 }
 
-func (s *MemStore) Add(key string, i *MemItem) {
+func (s *MemStore) Add(key string, item *MemItem) {
 	s.Lock()
 	defer s.Unlock()
-	s.m[key] = i
+	s.m[key] = item
 }
 
 func (s *MemStore) Delete(key string) {
@@ -33,10 +33,10 @@ func (s *MemStore) Get(key string) *MemItem {
 	return s.m[key]
 }
 
-func (s *MemStore) Update(key string, m *MemItem) {
+func (s *MemStore) Update(key string, item *MemItem) {
 	s.Lock()
 	defer s.Unlock()
-	s.m[key] = m
+	s.m[key] = item
 }
 
 func (s *MemStore) Range(fn func(string, *MemItem, map[string]*MemItem)) {
@@ -74,8 +74,14 @@ type memoryLock struct {
 	logger  mlog.Logger
 }
 
-func NewMemoryLock(timer timer.Timer, lottery [2]int, s *MemStore, logger mlog.Logger) Locker {
-	return &memoryLock{lottery: lottery, owner: rand.String(40), timer: timer, locks: s, logger: logger}
+func NewMemoryLock(timer timer.Timer, lottery [2]int, store *MemStore, logger mlog.Logger) Locker {
+	return &memoryLock{
+		owner:   rand.String(40),
+		lottery: lottery,
+		timer:   timer,
+		locks:   store,
+		logger:  logger,
+	}
 }
 
 func (m *memoryLock) ID() string {
@@ -86,39 +92,32 @@ func (m *memoryLock) Type() string {
 	return "memory"
 }
 
+func (m *memoryLock) acquireInternal(key string, seconds int64) (bool, *MemItem) {
+	unix := m.timer.Now().Unix()
+	expiration := unix + seconds
+
+	item := m.locks.Get(key)
+	if item == nil {
+		m.locks.Add(key, &MemItem{owner: m.owner, expiresAt: expiration})
+		return true, nil
+	}
+	if item.expiresAt <= unix {
+		m.locks.Update(key, &MemItem{owner: m.owner, expiresAt: expiration})
+		return true, item
+	}
+	return false, item
+}
+
 func (m *memoryLock) Acquire(key string, seconds int64) bool {
-	var (
-		acquired bool
-		item     *MemItem
-
-		unix       = m.timer.Now().Unix()
-		expiration = unix + seconds
-	)
-
 	m.Lock()
 	defer m.Unlock()
 
-	if item = m.locks.Get(key); item == nil {
-		m.locks.Add(key, &MemItem{
-			owner:     m.owner,
-			expiresAt: expiration,
-		})
-		acquired = true
-	}
-	if !acquired {
-		if item.expiresAt <= unix {
-			m.locks.Update(key, &MemItem{
-				owner:     m.owner,
-				expiresAt: expiration,
-			})
-			acquired = true
-		}
-	}
+	acquired, _ := m.acquireInternal(key, seconds)
 
 	if rand.Intn(m.lottery[1]) < m.lottery[0] {
-		m.locks.Range(func(k string, l *MemItem, m map[string]*MemItem) {
-			if l.expiresAt < unix-60 {
-				delete(m, k)
+		m.locks.Range(func(k string, item *MemItem, store map[string]*MemItem) {
+			if item.expiresAt < m.timer.Now().Unix()-60 {
+				delete(store, k)
 			}
 		})
 	}
@@ -130,7 +129,7 @@ func (m *memoryLock) Count() int {
 	return m.locks.Count()
 }
 
-func (m *memoryLock) RenewalAcquire(key string, seconds int64, renewalSeconds int64) (releaseFn func(), acquired bool) {
+func (m *memoryLock) RenewalAcquire(key string, seconds int64, renewalSeconds int64) (func(), bool) {
 	if m.Acquire(key, seconds) {
 		ctx, cancelFunc := context.WithCancel(context.TODO())
 		go func() {
@@ -185,25 +184,14 @@ func (m *memoryLock) renewalExistKey(key string, seconds int64) bool {
 	m.Lock()
 	defer m.Unlock()
 
-	var (
-		acquired bool
-		item     *MemItem
+	unix := m.timer.Now().Unix()
+	expiration := unix + seconds
 
-		unix       = m.timer.Now().Unix()
-		expiration = unix + seconds
-	)
-
-	if item = m.locks.Get(key); item == nil {
+	item := m.locks.Get(key)
+	if item == nil || item.owner != m.owner {
 		return false
 	}
 
-	if item.owner == m.owner {
-		m.locks.Update(key, &MemItem{
-			owner:     m.owner,
-			expiresAt: expiration,
-		})
-		acquired = true
-	}
-
-	return acquired
+	m.locks.Update(key, &MemItem{owner: m.owner, expiresAt: expiration})
+	return true
 }

@@ -9,6 +9,7 @@ import (
 	"math"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -27,6 +28,7 @@ type NamespaceQuery struct {
 	predicates    []predicate.Namespace
 	withProjects  *ProjectQuery
 	withFavorites *FavoriteQuery
+	modifiers     []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -421,6 +423,9 @@ func (nq *NamespaceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Na
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(nq.modifiers) > 0 {
+		_spec.Modifiers = nq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -510,6 +515,9 @@ func (nq *NamespaceQuery) loadFavorites(ctx context.Context, query *FavoriteQuer
 
 func (nq *NamespaceQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := nq.querySpec()
+	if len(nq.modifiers) > 0 {
+		_spec.Modifiers = nq.modifiers
+	}
 	_spec.Node.Columns = nq.ctx.Fields
 	if len(nq.ctx.Fields) > 0 {
 		_spec.Unique = nq.ctx.Unique != nil && *nq.ctx.Unique
@@ -572,6 +580,9 @@ func (nq *NamespaceQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if nq.ctx.Unique != nil && *nq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range nq.modifiers {
+		m(selector)
+	}
 	for _, p := range nq.predicates {
 		p(selector)
 	}
@@ -587,6 +598,32 @@ func (nq *NamespaceQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// ForUpdate locks the selected rows against concurrent updates, and prevent them from being
+// updated, deleted or "selected ... for update" by other sessions, until the transaction is
+// either committed or rolled-back.
+func (nq *NamespaceQuery) ForUpdate(opts ...sql.LockOption) *NamespaceQuery {
+	if nq.driver.Dialect() == dialect.Postgres {
+		nq.Unique(false)
+	}
+	nq.modifiers = append(nq.modifiers, func(s *sql.Selector) {
+		s.ForUpdate(opts...)
+	})
+	return nq
+}
+
+// ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
+// on any rows that are read. Other sessions can read the rows, but cannot modify them
+// until your transaction commits.
+func (nq *NamespaceQuery) ForShare(opts ...sql.LockOption) *NamespaceQuery {
+	if nq.driver.Dialect() == dialect.Postgres {
+		nq.Unique(false)
+	}
+	nq.modifiers = append(nq.modifiers, func(s *sql.Selector) {
+		s.ForShare(opts...)
+	})
+	return nq
 }
 
 // NamespaceGroupBy is the group-by builder for Namespace entities.

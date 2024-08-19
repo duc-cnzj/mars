@@ -24,7 +24,6 @@ func NewLocker(cfg *config.Config, data data.Data, logger mlog.Logger, timer tim
 		logger.Warning(`使用 DBDriver 为 "sqlite" 时，CacheDriver,Locker 只能使用 "memory"!`)
 	}
 	driver := cfg.CacheDriver
-	logger.Infof("CacheBootstrapper booted! driver: %s", driver)
 
 	switch driver {
 	case "db":

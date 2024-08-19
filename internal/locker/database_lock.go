@@ -5,9 +5,11 @@ package locker
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/data"
+	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/ent/cachelock"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/util/rand"
@@ -23,36 +25,44 @@ type databaseLock struct {
 }
 
 func NewDatabaseLock(timer timer.Timer, lottery [2]int, data data.Data, logger mlog.Logger) Locker {
-	return &databaseLock{lottery: lottery, data: data, owner: rand.String(40), timer: timer, logger: logger}
+	return &databaseLock{
+		lottery: lottery,
+		timer:   timer,
+		owner:   rand.String(40),
+		data:    data,
+		logger:  logger,
+	}
 }
 
 func (d *databaseLock) RenewalAcquire(key string, seconds int64, renewalSeconds int64) (func(), bool) {
 	if d.Acquire(key, seconds) {
 		ctx, cancelFunc := context.WithCancel(context.TODO())
-		go func() {
-			defer d.logger.HandlePanic("[lock]: key: " + key)
-
-			ticker := time.NewTicker(time.Second * time.Duration(renewalSeconds))
-			defer ticker.Stop()
-			for {
-				select {
-				case <-ctx.Done():
-					d.logger.Debug("[lock]: canceled: " + key)
-					return
-				case <-ticker.C:
-					if !d.renewalExistKey(key, seconds) {
-						d.logger.Error("[lock]: err renewal lock: " + key)
-						return
-					}
-				}
-			}
-		}()
+		go d.renewalRoutine(ctx, key, seconds, renewalSeconds)
 		return func() {
 			cancelFunc()
 			d.Release(key)
 		}, true
 	}
 	return nil, false
+}
+
+func (d *databaseLock) renewalRoutine(ctx context.Context, key string, seconds, renewalSeconds int64) {
+	defer d.logger.HandlePanic("[lock]: key: " + key)
+	ticker := time.NewTicker(time.Second * time.Duration(renewalSeconds))
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			d.logger.Debug("[lock]: canceled: " + key)
+			return
+		case <-ticker.C:
+			if !d.renewalExistKey(key, seconds) {
+				d.logger.Error("[lock]: err renewal lock: " + key)
+				return
+			}
+		}
+	}
 }
 
 func (d *databaseLock) ID() string {
@@ -64,77 +74,94 @@ func (d *databaseLock) Type() string {
 }
 
 func (d *databaseLock) Acquire(key string, seconds int64) bool {
-	var (
-		acquired bool
+	db := d.data.DB()
+	now := d.timer.Now()
+	expiredAt := now.Add(time.Duration(seconds) * time.Second)
 
-		db        = d.data.DB()
-		now       = d.timer.Now()
-		expiredAt = now.Add(time.Duration(seconds) * time.Second)
-	)
+	var acquired bool
 
+	if d.createLock(db, key, expiredAt) {
+		acquired = true
+	}
+	if !acquired && d.updateExpiredLock(db, key, expiredAt) {
+		acquired = true
+	}
+
+	if rand.Intn(d.lottery[1]) < d.lottery[0] {
+		d.cleanupExpiredLocks(db)
+	}
+
+	return acquired
+}
+
+func (d *databaseLock) createLock(db *ent.Client, key string, expiredAt time.Time) bool {
 	_, err := db.CacheLock.Create().
 		SetKey(key).
 		SetOwner(d.owner).
 		SetExpiredAt(expiredAt).
 		Save(context.TODO())
-	if err == nil {
-		acquired = true
-	}
-	if !acquired {
-		rowsAffected, _ := db.CacheLock.
-			Update().
-			Where(cachelock.Key(key), cachelock.ExpiredAtLTE(now)).
-			SetOwner(d.owner).
-			SetExpiredAt(d.timer.Now().Add(time.Duration(seconds) * time.Second)).
-			Save(context.TODO())
-		if rowsAffected >= 1 {
-			acquired = true
-		}
-	}
+	return err == nil
+}
 
-	if rand.Intn(d.lottery[1]) < d.lottery[0] {
-		db.CacheLock.Delete().Where(cachelock.ExpiredAtLT(d.timer.Now().Add(-60 * time.Second))).Exec(context.TODO())
+func (d *databaseLock) updateExpiredLock(db *ent.Client, key string, expiredAt time.Time) bool {
+	rowsAffected, err := db.CacheLock.
+		Update().
+		Where(cachelock.Key(key), cachelock.ExpiredAtLTE(d.timer.Now())).
+		SetOwner(d.owner).
+		SetExpiredAt(expiredAt).
+		Save(context.TODO())
+	if err != nil {
+		d.logger.Error(err)
+		return false
 	}
+	return rowsAffected >= 1
+}
 
-	return acquired
+func (d *databaseLock) cleanupExpiredLocks(db *ent.Client) {
+	_, err := db.CacheLock.Delete().Where(cachelock.ExpiredAtLT(d.timer.Now().Add(-60 * time.Second))).Exec(context.TODO())
+	if err != nil {
+		d.logger.Error(err)
+	}
 }
 
 func (d *databaseLock) renewalExistKey(key string, seconds int64) bool {
-	var (
-		acquired bool
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancelFunc()
+	if err := d.data.WithTx(ctx, func(db *ent.Tx) error {
+		var (
+			err  error
+			item *ent.CacheLock
+		)
+		item, err = db.CacheLock.Query().Where(cachelock.Key(key)).ForUpdate().Only(ctx)
+		if err != nil {
+			return err
+		}
+		if item.Owner != d.owner {
+			return errors.New("not owner")
+		}
 
-		db = d.data.DB()
-	)
-
-	_, err := db.CacheLock.Query().Where(cachelock.Key(key)).Only(context.TODO())
-	if err != nil {
-		d.logger.Error(err)
-		return acquired
+		_, err = item.Update().
+			SetOwner(d.owner).
+			SetExpiredAt(d.timer.Now().Add(time.Duration(seconds) * time.Second)).
+			Save(ctx)
+		return err
+	}); err != nil {
+		return false
 	}
 
-	rowsAffected, err := db.CacheLock.Update().Where(cachelock.Key(key)).SetOwner(d.owner).SetExpiredAt(d.timer.Now().Add(time.Duration(seconds) * time.Second)).Save(context.TODO())
-	if err != nil {
-		d.logger.Error(err)
-	}
-	if rowsAffected >= 1 {
-		acquired = true
-	}
-
-	return acquired
+	return true
 }
 
 func (d *databaseLock) Release(key string) bool {
-	if d.Owner(key) == d.owner {
-		d.data.DB().CacheLock.Delete().Where(cachelock.Key(key), cachelock.Owner(d.owner)).Exec(context.TODO())
-		return true
+	if d.Owner(key) != d.owner {
+		return false
 	}
-
-	return false
+	d.data.DB().CacheLock.Delete().Where(cachelock.Key(key), cachelock.Owner(d.owner)).Exec(context.TODO())
+	return true
 }
 
 func (d *databaseLock) ForceRelease(key string) bool {
 	d.data.DB().CacheLock.Delete().Where(cachelock.Key(key)).Exec(context.TODO())
-
 	return true
 }
 
@@ -143,6 +170,5 @@ func (d *databaseLock) Owner(key string) string {
 	if err != nil {
 		return ""
 	}
-
 	return cl.Owner
 }

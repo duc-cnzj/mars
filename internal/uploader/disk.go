@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 )
@@ -59,15 +58,8 @@ type diskUploader struct {
 
 var _ Uploader = (*diskUploader)(nil)
 
-func NewDiskUploader(config *config.Config, logger mlog.Logger) (Uploader, error) {
+func NewDiskUploader(rootDir string, logger mlog.Logger) (Uploader, error) {
 	var err error
-	rootDir := config.UploadDir
-	if !dirExists(rootDir) {
-		if err := os.MkdirAll(rootDir, 0750); err != nil {
-			return nil, err
-		}
-	}
-	logger.Warningf("rootDir not defined, use temp dir '%s'", rootDir)
 
 	if rootDir, err = filepath.Abs(rootDir); err != nil {
 		return nil, err
@@ -79,7 +71,7 @@ func NewDiskUploader(config *config.Config, logger mlog.Logger) (Uploader, error
 }
 
 func (u *diskUploader) LocalUploader() Uploader {
-	return u
+	return u.localUploader
 }
 
 func (u *diskUploader) getPath(path string) string {
@@ -173,7 +165,7 @@ type fileInfo struct {
 	lastModified time.Time
 }
 
-func NewFileInfo[T uint64 | int64 | int](path string, size T, lastModified time.Time) *fileInfo {
+func NewFileInfo[T uint64 | int64 | int](path string, size T, lastModified time.Time) FileInfo {
 	return &fileInfo{path: path, size: uint64(size), lastModified: lastModified}
 }
 

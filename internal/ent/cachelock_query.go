@@ -8,6 +8,7 @@ import (
 	"math"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -22,6 +23,7 @@ type CacheLockQuery struct {
 	order      []cachelock.OrderOption
 	inters     []Interceptor
 	predicates []predicate.CacheLock
+	modifiers  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -343,6 +345,9 @@ func (clq *CacheLockQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*C
 		nodes = append(nodes, node)
 		return node.assignValues(columns, values)
 	}
+	if len(clq.modifiers) > 0 {
+		_spec.Modifiers = clq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -357,6 +362,9 @@ func (clq *CacheLockQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*C
 
 func (clq *CacheLockQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := clq.querySpec()
+	if len(clq.modifiers) > 0 {
+		_spec.Modifiers = clq.modifiers
+	}
 	_spec.Node.Columns = clq.ctx.Fields
 	if len(clq.ctx.Fields) > 0 {
 		_spec.Unique = clq.ctx.Unique != nil && *clq.ctx.Unique
@@ -419,6 +427,9 @@ func (clq *CacheLockQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if clq.ctx.Unique != nil && *clq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range clq.modifiers {
+		m(selector)
+	}
 	for _, p := range clq.predicates {
 		p(selector)
 	}
@@ -434,6 +445,32 @@ func (clq *CacheLockQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// ForUpdate locks the selected rows against concurrent updates, and prevent them from being
+// updated, deleted or "selected ... for update" by other sessions, until the transaction is
+// either committed or rolled-back.
+func (clq *CacheLockQuery) ForUpdate(opts ...sql.LockOption) *CacheLockQuery {
+	if clq.driver.Dialect() == dialect.Postgres {
+		clq.Unique(false)
+	}
+	clq.modifiers = append(clq.modifiers, func(s *sql.Selector) {
+		s.ForUpdate(opts...)
+	})
+	return clq
+}
+
+// ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
+// on any rows that are read. Other sessions can read the rows, but cannot modify them
+// until your transaction commits.
+func (clq *CacheLockQuery) ForShare(opts ...sql.LockOption) *CacheLockQuery {
+	if clq.driver.Dialect() == dialect.Postgres {
+		clq.Unique(false)
+	}
+	clq.modifiers = append(clq.modifiers, func(s *sql.Selector) {
+		s.ForShare(opts...)
+	})
+	return clq
 }
 
 // CacheLockGroupBy is the group-by builder for CacheLock entities.
