@@ -18,7 +18,7 @@ func NewDBStore(data data.Data) Store {
 }
 
 func (d *dbStore) Get(key string) (value []byte, err error) {
-	first, err := d.data.DB().DBCache.Query().Where(dbcache.Key(key), dbcache.ExpiredAtGTE(time.Now())).First(context.TODO())
+	first, err := d.data.DB().DBCache.Query().Where(dbcache.Key(key), dbcache.ExpiredAtGTE(time.Now())).Only(context.TODO())
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,8 @@ func (d *dbStore) Set(key string, value []byte, seconds int) (err error) {
 		SetValue(toString).
 		SetExpiredAt(time.Now().Add(time.Duration(seconds) * time.Second)).
 		OnConflict().
-		UpdateNewValues().
+		UpdateValue().
+		UpdateExpiredAt().
 		Exec(context.TODO())
 }
 
