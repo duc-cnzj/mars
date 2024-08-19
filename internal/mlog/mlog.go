@@ -1,5 +1,6 @@
 package mlog
 
+//go:generate mockgen -destination ./mock_logger.go -package mlog github.com/duc-cnzj/mars/v4/internal/mlog Logger
 import (
 	"context"
 
