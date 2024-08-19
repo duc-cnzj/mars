@@ -27,7 +27,7 @@ func (Repo) Fields() []ent.Field {
 			Annotations(
 				entsql.Annotation{
 					Charset:   "utf8mb4",
-					Collation: "utf8mb4_0900_ai_ci",
+					Collation: "utf8mb4_general_ci",
 				},
 			).
 			Comment("默认使用的名称: helm create {name}"),

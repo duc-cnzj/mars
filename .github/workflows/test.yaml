@@ -11,7 +11,7 @@ jobs:
         ports:
           - 6379:6379
       mysql:
-        image: mysql:8
+        image: mysql:5.7
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
           MYSQL_DATABASE: test
