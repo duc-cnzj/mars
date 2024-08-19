@@ -17,7 +17,7 @@ func main() {
 	exec, err := client.Container().ExecOnce(context.TODO(), &container.ExecOnceRequest{
 		Namespace: ns,
 		Pod:       pod,
-		Command:   []string{"bash", "-c", "tail -f /tmp/a.txt "},
+		Command:   []string{"bash", "-c", "echo 'hello world'"},
 	})
 	if err != nil {
 		log.Println(err)
