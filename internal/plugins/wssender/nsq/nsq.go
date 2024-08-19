@@ -15,7 +15,7 @@ import (
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/plugins/wssender"
+	"github.com/duc-cnzj/mars/v4/internal/plugins/wssender"
 
 	gonsq "github.com/nsqio/go-nsq"
 	v1 "k8s.io/api/core/v1"

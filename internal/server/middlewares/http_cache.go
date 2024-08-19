@@ -5,8 +5,7 @@ import (
 	"net/http"
 
 	"github.com/duc-cnzj/mars/v4/internal/util/hash"
-
-	"github.com/duc-cnzj/mars/v4/version"
+	"github.com/duc-cnzj/mars/v4/internal/version"
 )
 
 var Etag string

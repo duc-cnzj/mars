@@ -587,8 +587,6 @@ func (x *mockProjectApplyServer) SendMsg(m any) error {
 }
 
 func (x *mockProjectApplyServer) RecvMsg(m any) error {
-	// Here we're setting the request that the server should receive.
-	*m.(*project.ApplyRequest) = *x.Req
 	return nil
 }
 

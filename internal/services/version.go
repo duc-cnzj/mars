@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/duc-cnzj/mars/api/v4/version"
-	marsVersion "github.com/duc-cnzj/mars/v4/version"
+	marsVersion "github.com/duc-cnzj/mars/v4/internal/version"
 )
 
 var _ version.VersionServer = (*versionSvc)(nil)

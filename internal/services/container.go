@@ -258,25 +258,19 @@ func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server 
 		return err
 	}
 
-	for {
-		select {
-		case msg, ok := <-ch:
-			if !ok {
-				c.logger.Debug("[LogStream]: channel close")
-				return nil
-			}
-
-			if err = server.Send(&container.LogResponse{
-				Namespace:     request.Namespace,
-				PodName:       request.Pod,
-				ContainerName: request.Container,
-				Log:           string(msg),
-			}); err != nil {
-				c.logger.ErrorCtx(server.Context(), err)
-				return err
-			}
+	for msg := range ch {
+		if err = server.Send(&container.LogResponse{
+			Namespace:     request.Namespace,
+			PodName:       request.Pod,
+			ContainerName: request.Container,
+			Log:           string(msg),
+		}); err != nil {
+			c.logger.ErrorCtx(server.Context(), err)
+			return err
 		}
 	}
+
+	return nil
 }
 
 type sizeQueue struct {

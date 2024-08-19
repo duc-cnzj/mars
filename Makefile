@@ -100,7 +100,7 @@ release: build_linux_amd64 build_darwin_amd64 build_darwin_arm64
 .PHONY: fmt
 fmt:
 	gofmt -s -w ./api && \
-	gofmt -s -w -r 'interface{} -> any' ./internal ./plugins ./tools ./version ./third_party ./cmd && \
+	gofmt -s -w -r 'interface{} -> any' ./internal ./tools ./third_party ./cmd && \
 	goimports -w ./
 
 .PHONY: serve

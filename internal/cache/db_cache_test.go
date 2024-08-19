@@ -3,11 +3,12 @@ package cache
 import (
 	"context"
 	"encoding/base64"
+	"testing"
+	"time"
+
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent/dbcache"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func Test_dbStore_Get(t *testing.T) {

@@ -61,7 +61,7 @@ func TestFileSvc_Authorize_MaxUploadSize(t *testing.T) {
 
 	_, err := svc.Authorize(newOtherUserCtx(), "MaxUploadSize")
 	assert.Nil(t, err)
-	_, err = svc.Authorize(nil, "MaxUploadSize")
+	_, err = svc.Authorize(context.TODO(), "MaxUploadSize")
 	assert.Nil(t, err)
 }
 

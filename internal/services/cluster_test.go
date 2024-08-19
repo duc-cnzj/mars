@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"testing"
 
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
@@ -26,7 +27,7 @@ func Test_clusterSvc_ClusterInfo(t *testing.T) {
 
 	k8sRepo.EXPECT().ClusterInfo().Return(nil)
 
-	resp, err := svc.ClusterInfo(nil, nil)
+	resp, err := svc.ClusterInfo(context.TODO(), nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }

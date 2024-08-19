@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/application"
-	"github.com/duc-cnzj/mars/v4/version"
+	"github.com/duc-cnzj/mars/v4/internal/version"
 	prometheus2 "github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"

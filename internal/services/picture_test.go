@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"testing"
 
 	"github.com/duc-cnzj/mars/api/v4/picture"
@@ -24,10 +25,10 @@ func Test_pictureSvc_Background(t *testing.T) {
 	picRepo := repo.NewMockPictureRepo(m)
 	svc := NewPictureSvc(picRepo)
 	picRepo.EXPECT().Get(gomock.Any(), true).Return(&application.PictureItem{}, nil)
-	_, err := svc.Background(nil, &picture.BackgroundRequest{Random: true})
+	_, err := svc.Background(context.TODO(), &picture.BackgroundRequest{Random: true})
 	assert.Nil(t, err)
 
 	picRepo.EXPECT().Get(gomock.Any(), true).Return(nil, assert.AnError)
-	_, err = svc.Background(nil, &picture.BackgroundRequest{Random: true})
+	_, err = svc.Background(context.TODO(), &picture.BackgroundRequest{Random: true})
 	assert.NotNil(t, err)
 }

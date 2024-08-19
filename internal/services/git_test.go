@@ -47,7 +47,7 @@ func Test_gitSvc_AllRepos(t *testing.T) {
 	)
 
 	gitRepo.EXPECT().AllProjects(gomock.Any()).Return(nil, errors.New("error"))
-	repos, err := svc.AllRepos(nil, nil)
+	repos, err := svc.AllRepos(context.TODO(), nil)
 	assert.Nil(t, repos)
 	assert.NotNil(t, err)
 }
@@ -68,7 +68,7 @@ func Test_gitSvc_AllRepos_Success(t *testing.T) {
 		{ID: 1, Name: "a", Description: "aa"},
 		nil,
 	}, nil)
-	repos, err := svc.AllRepos(nil, nil)
+	repos, err := svc.AllRepos(context.TODO(), nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, repos)
 	assert.Equal(t, 2, len(repos.Items))
@@ -90,7 +90,7 @@ func Test_gitSvc_ProjectOptions(t *testing.T) {
 	)
 
 	repoRepo.EXPECT().All(gomock.Any(), &repo.AllRepoRequest{Enabled: lo.ToPtr(true)}).Return(nil, errors.New("error"))
-	options, err := svc.ProjectOptions(nil, nil)
+	options, err := svc.ProjectOptions(context.TODO(), nil)
 	assert.Nil(t, options)
 	assert.NotNil(t, err)
 }
@@ -116,7 +116,7 @@ func Test_gitSvc_ProjectOptions_Success(t *testing.T) {
 			Description:  "desc",
 		},
 	}, nil)
-	options, err := svc.ProjectOptions(nil, nil)
+	options, err := svc.ProjectOptions(context.TODO(), nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, options)
 	assert.Equal(t, 1, len(options.Items))
