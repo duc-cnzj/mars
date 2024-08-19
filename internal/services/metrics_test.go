@@ -246,6 +246,30 @@ func TestMetricsSvc_StreamTopPod_Success(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestMetricsSvc_StreamTopPod_Error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := repo.NewMockK8sRepo(m)
+	svc := NewMetricsSvc(timer.NewRealTimer(), k8sRepo, mlog.NewLogger(nil), repo.NewMockProjectRepo(m), repo.NewMockNamespaceRepo(m))
+
+	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), "namespace1", "pod1").Return(nil, errors.New("x"))
+	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
+
+	server := NewMockMetrics_StreamTopPodServer(m)
+	server.EXPECT().Context().Return(context.TODO()).AnyTimes()
+	server.EXPECT().Send(gomock.Any()).Return(nil).AnyTimes()
+
+	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), "namespace1", "pod1").Return(nil, errors.New("x"))
+	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(false, "")
+
+	err := svc.StreamTopPod(&metrics.TopPodRequest{
+		Namespace: "namespace1",
+		Pod:       "pod1",
+	}, server)
+
+	assert.Equal(t, "x", err.Error())
+}
+
 func TestMetricsSvc_StreamTopPod_SendError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()

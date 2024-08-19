@@ -153,6 +153,25 @@ func TestContainerSvc_ContainerLog_PodRunning(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestContainerSvc_ContainerLog_GetPodLogs_error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := repo.NewMockK8sRepo(m)
+	svc := NewContainerSvc(
+		repo.NewMockEventRepo(m),
+		k8sRepo,
+		repo.NewMockFileRepo(m),
+		mlog.NewLogger(nil),
+	)
+	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodRunning}}, nil)
+	k8sRepo.EXPECT().GetPodLogs(gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("x"))
+	_, err := svc.ContainerLog(context.TODO(), &container.LogRequest{
+		Namespace: "a",
+		Pod:       "b",
+	})
+	assert.Equal(t, "x", err.Error())
+}
+
 func TestContainerSvc_ContainerLog_PodPending1(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -248,6 +267,33 @@ func TestContainerSvc_CopyToPod_Success(t *testing.T) {
 	})
 	assert.Nil(t, err)
 }
+func TestContainerSvc_CopyToPod_Error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := repo.NewMockK8sRepo(m)
+	fileRepo := repo.NewMockFileRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	svc := NewContainerSvc(
+		eventRepo,
+		k8sRepo,
+		fileRepo,
+		mlog.NewLogger(nil),
+	)
+	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
+	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), &repo.CopyFileToPodRequest{
+		FileId:    1,
+		Namespace: "a",
+		Pod:       "b",
+		Container: "c",
+	}).Return(nil, errors.New("xx"))
+	_, err := svc.CopyToPod(newAdminUserCtx(), &container.CopyToPodRequest{
+		FileId:    1,
+		Namespace: "a",
+		Pod:       "b",
+		Container: "c",
+	})
+	assert.Equal(t, "xx", err.Error())
+}
 
 func TestContainerSvc_StreamContainerLog_PodNotFound(t *testing.T) {
 	m := gomock.NewController(t)
@@ -331,6 +377,26 @@ func TestContainerSvc_StreamContainerLog_PodSucceeded(t *testing.T) {
 	assert.Equal(t, []string{"log"}, s.res)
 }
 
+func TestContainerSvc_StreamContainerLog_Error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := repo.NewMockK8sRepo(m)
+	svc := NewContainerSvc(
+		repo.NewMockEventRepo(m),
+		k8sRepo,
+		repo.NewMockFileRepo(m),
+		mlog.NewLogger(nil),
+	)
+	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodSucceeded}}, nil).AnyTimes()
+	k8sRepo.EXPECT().GetPodLogs(gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("x"))
+	s := &logStreamServer{}
+	err := svc.StreamContainerLog(&container.LogRequest{
+		Namespace: "a",
+		Pod:       "b",
+	}, s)
+	assert.Equal(t, "x", err.Error())
+}
+
 func TestContainerSvc_StreamContainerLog_PodFailed(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -374,6 +440,7 @@ func TestContainerSvc_StreamContainerLog_PodPending1(t *testing.T) {
 
 type streamCopyToPodServer struct {
 	container.Container_StreamCopyToPodServer
+	err  error
 	idx  int
 	recv []*container.StreamCopyToPodRequest
 }
@@ -387,6 +454,9 @@ func (l *streamCopyToPodServer) SendAndClose(response *container.StreamCopyToPod
 }
 
 func (l *streamCopyToPodServer) Recv() (*container.StreamCopyToPodRequest, error) {
+	if l.err != nil {
+		return nil, l.err
+	}
 	if l.idx < len(l.recv) {
 		l.idx++
 		return l.recv[l.idx-1], nil
@@ -418,6 +488,22 @@ func TestContainerSvc_StreamCopyToPod_PodNotRunning(t *testing.T) {
 		},
 	}})
 	assert.NotNil(t, err)
+}
+
+func TestContainerSvc_StreamCopyToPod_Error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := repo.NewMockK8sRepo(m)
+	fileRepo := repo.NewMockFileRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	svc := NewContainerSvc(
+		eventRepo,
+		k8sRepo,
+		fileRepo,
+		mlog.NewLogger(nil),
+	)
+	err := svc.StreamCopyToPod(&streamCopyToPodServer{err: errors.New("xx")})
+	assert.Equal(t, "xx", err.Error())
 }
 
 func TestContainerSvc_StreamCopyToPod_Success(t *testing.T) {
@@ -712,6 +798,15 @@ func TestSizeQueue_Next_ContextDone(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	queue.ctx = ctx
 	cancel()
+
+	assert.Nil(t, queue.Next())
+}
+func TestSizeQueue_Next_NotOk(t *testing.T) {
+	queue := &sizeQueue{
+		ch:  make(chan *remotecommand.TerminalSize, 1),
+		ctx: context.Background(),
+	}
+	close(queue.ch)
 
 	assert.Nil(t, queue.Next())
 }

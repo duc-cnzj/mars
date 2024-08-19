@@ -5,6 +5,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/coreos/go-oidc/v3/oidc"
+	"golang.org/x/oauth2"
+
 	auth2 "github.com/duc-cnzj/mars/api/v4/auth"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/data"
@@ -112,4 +115,64 @@ func Test_guest_AuthFuncOverride(t *testing.T) {
 
 	_, err := svc.(*authSvc).AuthFuncOverride(context.Background(), "TestMethod")
 	assert.NoError(t, err)
+}
+
+func TestNewDefaultAuthProvider(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	provider := &oidc.Provider{}
+	cfg := oauth2.Config{
+		ClientID:     "test-client-id",
+		ClientSecret: "test-client-secret",
+		RedirectURL:  "http://localhost:8080/callback",
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "http://localhost:8080/auth",
+			TokenURL: "http://localhost:8080/token",
+		},
+	}
+
+	authProvider := NewDefaultAuthProvider(cfg, provider)
+
+	assert.NotNil(t, authProvider)
+	assert.IsType(t, &defaultAuthProvider{}, authProvider)
+}
+
+func TestAuthSvc_Settings_NoSettings(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	eventRepo := repo.NewMockEventRepo(m)
+	authRepo := repo.NewMockAuthRepo(m)
+	svc := NewAuthSvc(eventRepo, mlog.NewLogger(nil), authRepo)
+
+	authRepo.EXPECT().Settings(gomock.Any()).Return(nil, nil)
+
+	resp, err := svc.Settings(context.Background(), &auth2.SettingsRequest{})
+	assert.NoError(t, err)
+	assert.Empty(t, resp.Items)
+}
+
+func TestAuthSvc_Settings_ErrorFetchingSettings(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	eventRepo := repo.NewMockEventRepo(m)
+	authRepo := repo.NewMockAuthRepo(m)
+	svc := NewAuthSvc(eventRepo, mlog.NewLogger(nil), authRepo)
+
+	authRepo.EXPECT().Settings(gomock.Any()).Return(data.OidcConfig{
+		"b": data.OidcConfigItem{
+			Config:             oauth2.Config{},
+			EndSessionEndpoint: "",
+		},
+		"a": data.OidcConfigItem{
+			Config:             oauth2.Config{},
+			EndSessionEndpoint: "",
+		},
+	}, nil)
+
+	res, err := svc.Settings(context.Background(), &auth2.SettingsRequest{})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(res.Items))
+	assert.Equal(t, "a", res.Items[0].Name)
+	assert.Equal(t, "b", res.Items[1].Name)
 }

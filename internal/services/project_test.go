@@ -236,6 +236,34 @@ func Test_projectSvc_Delete_Fail(t *testing.T) {
 	assert.Nil(t, response)
 }
 
+func Test_projectSvc_Delete_Fail2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	projectRepo := repo.NewMockProjectRepo(m)
+	k8sRepo := repo.NewMockK8sRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	helmerRepo := repo.NewMockHelmerRepo(m)
+	svc := NewProjectSvc(
+		repo.NewMockRepoRepo(m),
+		application.NewMockPluginManger(m),
+		socket.NewMockJobManager(m),
+		projectRepo,
+		repo.NewMockGitRepo(m),
+		k8sRepo,
+		eventRepo,
+		mlog.NewLogger(nil),
+		helmerRepo,
+		repo.NewMockNamespaceRepo(m),
+	)
+	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{}, nil)
+	projectRepo.EXPECT().Delete(gomock.Any(), gomock.Any()).Return(errors.New("x"))
+	response, err := svc.Delete(newAdminUserCtx(), &project.DeleteRequest{
+		Id: 1,
+	})
+	assert.NotNil(t, err)
+	assert.Nil(t, response)
+}
+
 func Test_projectSvc_Version(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -296,6 +324,7 @@ func Test_projectSvc_AllContainers(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, containers)
 }
+
 func Test_projectSvc_AllContainers_Fail(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -753,6 +782,30 @@ func TestGetBranchAndCommitIfMissingReturnsLatestCommitWhenCommitIsNotProvided(t
 
 	_, commit, _ := svc.(*projectSvc).getBranchAndCommitIfMissing("branch", "", &repo.Repo{DefaultBranch: "default"}, newEmptyMessager())
 	assert.Equal(t, "commit-id", commit)
+}
+
+func TestGetBranchAndCommitIfMissingReturnsLatestCommitWhenCommitIsNotProvided2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	gitRepo := repo.NewMockGitRepo(m)
+	svc := NewProjectSvc(
+		repo.NewMockRepoRepo(m),
+		application.NewMockPluginManger(m),
+		socket.NewMockJobManager(m),
+		repo.NewMockProjectRepo(m),
+		gitRepo,
+		repo.NewMockK8sRepo(m),
+		repo.NewMockEventRepo(m),
+		mlog.NewLogger(nil),
+		repo.NewMockHelmerRepo(m),
+		repo.NewMockNamespaceRepo(m),
+	)
+
+	gitRepo.EXPECT().ListCommits(gomock.Any(), gomock.Any(), "branch").Return([]*repo.Commit{}, nil)
+
+	_, _, err := svc.(*projectSvc).getBranchAndCommitIfMissing("branch", "", &repo.Repo{DefaultBranch: "default"}, newEmptyMessager())
+	assert.Equal(t, "没有可用的 commit", err.Error())
 }
 
 func TestGetBranchAndCommitIfMissingReturnsProvidedBranchAndCommit(t *testing.T) {

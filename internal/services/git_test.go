@@ -66,11 +66,12 @@ func Test_gitSvc_AllRepos_Success(t *testing.T) {
 
 	gitRepo.EXPECT().AllProjects(gomock.Any()).Return([]*repo.GitProject{
 		{ID: 1, Name: "a", Description: "aa"},
+		nil,
 	}, nil)
 	repos, err := svc.AllRepos(nil, nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, repos)
-	assert.Equal(t, 1, len(repos.Items))
+	assert.Equal(t, 2, len(repos.Items))
 	assert.Equal(t, int32(1), repos.Items[0].Id)
 	assert.Equal(t, "a", repos.Items[0].Name)
 	assert.Equal(t, "aa", repos.Items[0].Description)
@@ -185,6 +186,39 @@ func Test_gitSvc_BranchOptions_Success(t *testing.T) {
 	assert.Equal(t, 1, len(options.Items))
 }
 
+func Test_gitSvc_BranchOptions_Error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	gitRepo := repo.NewMockGitRepo(m)
+	repoRepo := repo.NewMockRepoRepo(m)
+	svc := NewGitSvc(
+		repoRepo,
+		repo.NewMockEventRepo(m),
+		mlog.NewLogger(nil),
+		gitRepo,
+		cache.NewMockCache(m),
+	)
+	gitRepo.EXPECT().AllBranches(gomock.Any(), 1).Return([]*repo.Branch{
+		{
+			Name:      "br",
+			IsDefault: true,
+			WebURL:    "xxx",
+		},
+		{
+			Name:      "ccc",
+			IsDefault: true,
+			WebURL:    "xxx",
+		},
+	}, nil)
+
+	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("error"))
+	_, err := svc.BranchOptions(context.TODO(), &git.BranchOptionsRequest{
+		GitProjectId: 1,
+		RepoId:       1,
+	})
+	assert.Equal(t, "error", err.Error())
+}
+
 func Test_gitSvc_Commit(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -290,6 +324,26 @@ func Test_gitSvc_GetChartValuesYaml(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
+}
+
+func Test_gitSvc_GetChartValuesYaml_error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	gitRepo := repo.NewMockGitRepo(m)
+	svc := NewGitSvc(
+		repo.NewMockRepoRepo(m),
+		repo.NewMockEventRepo(m),
+		mlog.NewLogger(nil),
+		gitRepo,
+		cache.NewMockCache(m),
+	)
+
+	gitRepo.EXPECT().GetFileContentWithBranch(gomock.Any(), 1, "branch", "path/values.yaml").Return("", errors.New("x"))
+	resp, err := svc.GetChartValuesYaml(context.TODO(), &git.GetChartValuesYamlRequest{
+		Input: "1|branch|path",
+	})
+	assert.Nil(t, resp)
+	assert.Equal(t, "x", err.Error())
 }
 
 func Test_gitSvc_GetChartValuesYaml_Success(t *testing.T) {

@@ -319,6 +319,25 @@ func TestNamespaceSvc_Delete_Error(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
 }
+func TestNamespaceSvc_Delete_Error2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	svc := NewNamespaceSvc(
+		repo.NewMockHelmerRepo(m),
+		nsRepo,
+		repo.NewMockK8sRepo(m),
+		mlog.NewLogger(nil),
+		repo.NewMockEventRepo(m),
+	)
+
+	res, err := svc.Delete(newOtherUserCtx(), &namespace.DeleteRequest{
+		Id: 1,
+	})
+
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
 
 func TestNamespaceSvc_Favorite_Success(t *testing.T) {
 	m := gomock.NewController(t)
