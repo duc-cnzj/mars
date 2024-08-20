@@ -1,9 +1,10 @@
 package socket
 
 import (
+	"testing"
+
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSafeWriteMessageChSendWhenNotClosed(t *testing.T) {
