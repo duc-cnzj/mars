@@ -42,109 +42,6 @@ func RegisterPlugin(name string, pluginInterface Plugin) {
 	pluginSet[name] = pluginInterface
 }
 
-type PluginManger interface {
-	Load(App) error
-	Domain() DomainManager
-	Ws() WsSender
-	Git() GitServer
-	Picture() Picture
-
-	GetPlugins() map[string]Plugin
-}
-
-var _ PluginManger = (*manager)(nil)
-
-type manager struct {
-	domainFunc newFunc[DomainManager]
-	wsFunc     newFunc[WsSender]
-	gitFunc    newFunc[GitServer]
-	picFunc    newFunc[Picture]
-
-	domain DomainManager
-	ws     WsSender
-	git    GitServer
-	pic    Picture
-
-	logger mlog.Logger
-}
-
-func (m *manager) Load(app App) (err error) {
-	m.logger.Info("load plugins")
-	if m.git, err = m.gitFunc(app); err != nil {
-		return
-	}
-	if m.ws, err = m.wsFunc(app); err != nil {
-		return
-	}
-	if m.domain, err = m.domainFunc(app); err != nil {
-		return
-	}
-	m.pic, err = m.picFunc(app)
-	return
-}
-
-func (m *manager) Domain() DomainManager {
-	return m.domain
-}
-
-func (m *manager) Ws() WsSender {
-	return m.ws
-}
-
-func (m *manager) Git() GitServer {
-	return m.git
-}
-
-func (m *manager) Picture() Picture {
-	return m.pic
-}
-
-func (m *manager) GetPlugins() map[string]Plugin {
-	return GetPlugins()
-}
-
-func NewPluginManager(cfg *config.Config, logger mlog.Logger) (PluginManger, error) {
-	domain, err := GetPlugin[DomainManager](cfg.DomainManagerPlugin)
-	if err != nil {
-		return nil, err
-	}
-
-	ws, err := GetPlugin[WsSender](cfg.WsSenderPlugin)
-	if err != nil {
-		return nil, err
-	}
-
-	git, err := GetPlugin[GitServer](cfg.GitServerPlugin)
-	if err != nil {
-		return nil, err
-	}
-
-	pic, err := GetPlugin[Picture](cfg.PicturePlugin)
-	if err != nil {
-		return nil, err
-	}
-
-	ma := &manager{
-		logger:     logger,
-		domainFunc: domain,
-		wsFunc:     ws,
-		gitFunc:    git,
-		picFunc:    pic,
-	}
-	return ma, nil
-}
-
-func GetPlugin[T Plugin](p config.Plugin) (func(app App) (T, error), error) {
-	pl := GetPlugins()[p.Name]
-	return func(app App) (T, error) {
-		var res T
-		if err := pl.Initialize(app, p.Args); err != nil {
-			return res, err
-		}
-		return pl.(T), nil
-	}, nil
-}
-
 type WsSender interface {
 	Plugin
 
@@ -169,60 +66,6 @@ type PubSub interface {
 	ToOthers(WebsocketMessage) error
 	Subscribe() <-chan []byte
 	Close() error
-}
-
-type emptyPubSub struct{}
-
-func NewEmptyPubSub() PubSub {
-	return &emptyPubSub{}
-}
-
-func (e *emptyPubSub) Join(projectID int64) error {
-	return nil
-}
-
-func (e *emptyPubSub) Leave(nsID int64, projectID int64) error {
-	return nil
-}
-
-func (e *emptyPubSub) Run(ctx context.Context) error {
-	return nil
-}
-
-func (e *emptyPubSub) Publish(nsID int64, pod *corev1.Pod) error {
-	return nil
-}
-
-func (e *emptyPubSub) Info() any {
-	return nil
-}
-
-func (e *emptyPubSub) Uid() string {
-	return ""
-}
-
-func (e *emptyPubSub) ID() string {
-	return ""
-}
-
-func (e *emptyPubSub) ToSelf(message WebsocketMessage) error {
-	return nil
-}
-
-func (e *emptyPubSub) ToAll(message WebsocketMessage) error {
-	return nil
-}
-
-func (e *emptyPubSub) ToOthers(message WebsocketMessage) error {
-	return nil
-}
-
-func (e *emptyPubSub) Subscribe() <-chan []byte {
-	return nil
-}
-
-func (e *emptyPubSub) Close() error {
-	return nil
 }
 
 type ProjectPodEventSubscriber interface {
@@ -355,69 +198,105 @@ type GitServer interface {
 	GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error)
 }
 
-type commit struct {
-	ID             string     `json:"id"`
-	ShortID        string     `json:"short_id"`
-	Title          string     `json:"title"`
-	CommittedDate  *time.Time `json:"committed_date"`
-	AuthorName     string     `json:"author_name"`
-	AuthorEmail    string     `json:"author_email"`
-	CommitterName  string     `json:"committer_name"`
-	CommitterEmail string     `json:"committer_email"`
-	CreatedAt      *time.Time `json:"created_at"`
-	Message        string     `json:"message"`
-	ProjectID      int64      `json:"project_id"`
-	WebURL         string     `json:"web_url"`
+type PluginManger interface {
+	Load(App) error
+	Domain() DomainManager
+	Ws() WsSender
+	Git() GitServer
+	Picture() Picture
+
+	GetPlugins() map[string]Plugin
 }
 
-func NewEmptyCommit() Commit {
-	return &commit{}
+var _ PluginManger = (*manager)(nil)
+
+type manager struct {
+	domainFunc newFunc[DomainManager]
+	wsFunc     newFunc[WsSender]
+	gitFunc    newFunc[GitServer]
+	picFunc    newFunc[Picture]
+
+	domain DomainManager
+	ws     WsSender
+	git    GitServer
+	pic    Picture
+
+	logger mlog.Logger
 }
 
-func (c *commit) GetID() string {
-	return c.ID
+func (m *manager) Load(app App) (err error) {
+	m.logger.Info("load plugins")
+	if m.git, err = m.gitFunc(app); err != nil {
+		return
+	}
+	if m.ws, err = m.wsFunc(app); err != nil {
+		return
+	}
+	if m.domain, err = m.domainFunc(app); err != nil {
+		return
+	}
+	m.pic, err = m.picFunc(app)
+	return
 }
 
-func (c *commit) GetShortID() string {
-	return c.ShortID
+func (m *manager) Domain() DomainManager {
+	return m.domain
 }
 
-func (c *commit) GetTitle() string {
-	return c.Title
+func (m *manager) Ws() WsSender {
+	return m.ws
 }
 
-func (c *commit) GetCommittedDate() *time.Time {
-	return c.CommittedDate
+func (m *manager) Git() GitServer {
+	return m.git
 }
 
-func (c *commit) GetAuthorName() string {
-	return c.AuthorName
+func (m *manager) Picture() Picture {
+	return m.pic
 }
 
-func (c *commit) GetAuthorEmail() string {
-	return c.AuthorEmail
+func (m *manager) GetPlugins() map[string]Plugin {
+	return GetPlugins()
 }
 
-func (c *commit) GetCommitterName() string {
-	return c.CommitterName
+func NewPluginManager(cfg *config.Config, logger mlog.Logger) (PluginManger, error) {
+	domain, err := GetPlugin[DomainManager](cfg.DomainManagerPlugin)
+	if err != nil {
+		return nil, err
+	}
+
+	ws, err := GetPlugin[WsSender](cfg.WsSenderPlugin)
+	if err != nil {
+		return nil, err
+	}
+
+	git, err := GetPlugin[GitServer](cfg.GitServerPlugin)
+	if err != nil {
+		return nil, err
+	}
+
+	pic, err := GetPlugin[Picture](cfg.PicturePlugin)
+	if err != nil {
+		return nil, err
+	}
+
+	ma := &manager{
+		logger:     logger,
+		domainFunc: domain,
+		wsFunc:     ws,
+		gitFunc:    git,
+		picFunc:    pic,
+	}
+	return ma, nil
 }
 
-func (c *commit) GetCommitterEmail() string {
-	return c.CommitterEmail
-}
-
-func (c *commit) GetCreatedAt() *time.Time {
-	return c.CreatedAt
-}
-
-func (c *commit) GetMessage() string {
-	return c.Message
-}
-
-func (c *commit) GetProjectID() int64 {
-	return c.ProjectID
-}
-
-func (c *commit) GetWebURL() string {
-	return c.WebURL
+func GetPlugin[T Plugin](p config.Plugin) (func(app App) (T, error), error) {
+	pl := GetPlugins()[p.Name]
+	return func(app App) (T, error) {
+		var res T
+		if err := pl.Initialize(app, p.Args); err != nil {
+			return res, err
+		}
+		return pl.(T), nil
+	}, nil
 }

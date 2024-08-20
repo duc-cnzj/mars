@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/hash"
-
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/application"
@@ -22,6 +20,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
 	"github.com/duc-cnzj/mars/v4/internal/util/counter"
+	"github.com/duc-cnzj/mars/v4/internal/util/hash"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus"

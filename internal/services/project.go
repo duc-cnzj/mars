@@ -145,7 +145,7 @@ func (p *projectSvc) apply(
 	input *project.ApplyRequest,
 ) (socket.Job, error) {
 	var err error
-	var pubsub application.PubSub = application.NewEmptyPubSub()
+	var pubsub application.PubSub = socket.NewEmptyPubSub()
 	if input.WebsocketSync {
 		pubsub = p.plMgr.Ws().New("", "")
 	}

@@ -51,7 +51,6 @@ type app struct {
 	config             *config.Config
 	logger             mlog.Logger
 	uploader           uploader.Uploader
-	localUploader      uploader.Uploader
 	auth               auth.Auth
 	dispatcher         event.Dispatcher
 	cronManager        mcron.Manager
@@ -118,7 +117,6 @@ func NewApp(
 		config:             config,
 		logger:             logger.WithModule("app/app"),
 		uploader:           uploader,
-		localUploader:      uploader.LocalUploader(),
 		auth:               auth,
 		dispatcher:         dispatcher,
 		cronManager:        cronManager,

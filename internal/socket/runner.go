@@ -13,6 +13,8 @@ import (
 	"sync"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
@@ -398,7 +400,7 @@ func (j *jobRunner) Validate() Job {
 	if j.repo.NeedGitRepo {
 		j.commit, err = j.pluginMgr.Git().GetCommit(fmt.Sprintf("%d", j.project.GitProjectID), j.project.GitCommit)
 	} else {
-		j.commit = application.NewEmptyCommit()
+		j.commit = NewEmptyCommit()
 	}
 	if !j.isNew {
 		j.oldConf = toProjectEventYaml(j.project)
@@ -929,4 +931,125 @@ func (i *internalCloser) Close() error {
 
 func NewCloser(fn func() error) io.Closer {
 	return &internalCloser{closeFn: fn}
+}
+
+type commit struct {
+	ID             string     `json:"id"`
+	ShortID        string     `json:"short_id"`
+	Title          string     `json:"title"`
+	CommittedDate  *time.Time `json:"committed_date"`
+	AuthorName     string     `json:"author_name"`
+	AuthorEmail    string     `json:"author_email"`
+	CommitterName  string     `json:"committer_name"`
+	CommitterEmail string     `json:"committer_email"`
+	CreatedAt      *time.Time `json:"created_at"`
+	Message        string     `json:"message"`
+	ProjectID      int64      `json:"project_id"`
+	WebURL         string     `json:"web_url"`
+}
+
+func NewEmptyCommit() application.Commit {
+	return &commit{}
+}
+
+func (c *commit) GetID() string {
+	return c.ID
+}
+
+func (c *commit) GetShortID() string {
+	return c.ShortID
+}
+
+func (c *commit) GetTitle() string {
+	return c.Title
+}
+
+func (c *commit) GetCommittedDate() *time.Time {
+	return c.CommittedDate
+}
+
+func (c *commit) GetAuthorName() string {
+	return c.AuthorName
+}
+
+func (c *commit) GetAuthorEmail() string {
+	return c.AuthorEmail
+}
+
+func (c *commit) GetCommitterName() string {
+	return c.CommitterName
+}
+
+func (c *commit) GetCommitterEmail() string {
+	return c.CommitterEmail
+}
+
+func (c *commit) GetCreatedAt() *time.Time {
+	return c.CreatedAt
+}
+
+func (c *commit) GetMessage() string {
+	return c.Message
+}
+
+func (c *commit) GetProjectID() int64 {
+	return c.ProjectID
+}
+
+func (c *commit) GetWebURL() string {
+	return c.WebURL
+}
+
+type emptyPubSub struct{}
+
+func NewEmptyPubSub() application.PubSub {
+	return &emptyPubSub{}
+}
+
+func (e *emptyPubSub) Join(projectID int64) error {
+	return nil
+}
+
+func (e *emptyPubSub) Leave(nsID int64, projectID int64) error {
+	return nil
+}
+
+func (e *emptyPubSub) Run(ctx context.Context) error {
+	return nil
+}
+
+func (e *emptyPubSub) Publish(nsID int64, pod *corev1.Pod) error {
+	return nil
+}
+
+func (e *emptyPubSub) Info() any {
+	return nil
+}
+
+func (e *emptyPubSub) Uid() string {
+	return ""
+}
+
+func (e *emptyPubSub) ID() string {
+	return ""
+}
+
+func (e *emptyPubSub) ToSelf(message application.WebsocketMessage) error {
+	return nil
+}
+
+func (e *emptyPubSub) ToAll(message application.WebsocketMessage) error {
+	return nil
+}
+
+func (e *emptyPubSub) ToOthers(message application.WebsocketMessage) error {
+	return nil
+}
+
+func (e *emptyPubSub) Subscribe() <-chan []byte {
+	return nil
+}
+
+func (e *emptyPubSub) Close() error {
+	return nil
 }
