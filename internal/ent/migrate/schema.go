@@ -194,6 +194,7 @@ var (
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "name", Type: field.TypeString, Size: 100},
 		{Name: "image_pull_secrets", Type: field.TypeJSON},
+		{Name: "description", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "text"}},
 	}
 	// NamespacesTable holds the schema information for the "namespaces" table.
 	NamespacesTable = &schema.Table{

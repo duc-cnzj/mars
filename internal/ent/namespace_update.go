@@ -83,6 +83,26 @@ func (nu *NamespaceUpdate) AppendImagePullSecrets(s []string) *NamespaceUpdate {
 	return nu
 }
 
+// SetDescription sets the "description" field.
+func (nu *NamespaceUpdate) SetDescription(s string) *NamespaceUpdate {
+	nu.mutation.SetDescription(s)
+	return nu
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (nu *NamespaceUpdate) SetNillableDescription(s *string) *NamespaceUpdate {
+	if s != nil {
+		nu.SetDescription(*s)
+	}
+	return nu
+}
+
+// ClearDescription clears the value of the "description" field.
+func (nu *NamespaceUpdate) ClearDescription() *NamespaceUpdate {
+	nu.mutation.ClearDescription()
+	return nu
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
 func (nu *NamespaceUpdate) AddProjectIDs(ids ...int) *NamespaceUpdate {
 	nu.mutation.AddProjectIDs(ids...)
@@ -244,6 +264,12 @@ func (nu *NamespaceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			sqljson.Append(u, namespace.FieldImagePullSecrets, value)
 		})
 	}
+	if value, ok := nu.mutation.Description(); ok {
+		_spec.SetField(namespace.FieldDescription, field.TypeString, value)
+	}
+	if nu.mutation.DescriptionCleared() {
+		_spec.ClearField(namespace.FieldDescription, field.TypeString)
+	}
 	if nu.mutation.ProjectsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -403,6 +429,26 @@ func (nuo *NamespaceUpdateOne) SetImagePullSecrets(s []string) *NamespaceUpdateO
 // AppendImagePullSecrets appends s to the "image_pull_secrets" field.
 func (nuo *NamespaceUpdateOne) AppendImagePullSecrets(s []string) *NamespaceUpdateOne {
 	nuo.mutation.AppendImagePullSecrets(s)
+	return nuo
+}
+
+// SetDescription sets the "description" field.
+func (nuo *NamespaceUpdateOne) SetDescription(s string) *NamespaceUpdateOne {
+	nuo.mutation.SetDescription(s)
+	return nuo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (nuo *NamespaceUpdateOne) SetNillableDescription(s *string) *NamespaceUpdateOne {
+	if s != nil {
+		nuo.SetDescription(*s)
+	}
+	return nuo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (nuo *NamespaceUpdateOne) ClearDescription() *NamespaceUpdateOne {
+	nuo.mutation.ClearDescription()
 	return nuo
 }
 
@@ -596,6 +642,12 @@ func (nuo *NamespaceUpdateOne) sqlSave(ctx context.Context) (_node *Namespace, e
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, namespace.FieldImagePullSecrets, value)
 		})
+	}
+	if value, ok := nuo.mutation.Description(); ok {
+		_spec.SetField(namespace.FieldDescription, field.TypeString, value)
+	}
+	if nuo.mutation.DescriptionCleared() {
+		_spec.ClearField(namespace.FieldDescription, field.TypeString)
 	}
 	if nuo.mutation.ProjectsCleared() {
 		edge := &sqlgraph.EdgeSpec{

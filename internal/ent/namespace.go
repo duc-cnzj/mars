@@ -28,6 +28,8 @@ type Namespace struct {
 	Name string `json:"name,omitempty"`
 	// image pull secrets
 	ImagePullSecrets []string `json:"image_pull_secrets,omitempty"`
+	// 项目空间描述
+	Description string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the NamespaceQuery when eager-loading is set.
 	Edges        NamespaceEdges `json:"edges"`
@@ -72,7 +74,7 @@ func (*Namespace) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case namespace.FieldID:
 			values[i] = new(sql.NullInt64)
-		case namespace.FieldName:
+		case namespace.FieldName, namespace.FieldDescription:
 			values[i] = new(sql.NullString)
 		case namespace.FieldCreatedAt, namespace.FieldUpdatedAt, namespace.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -129,6 +131,12 @@ func (n *Namespace) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &n.ImagePullSecrets); err != nil {
 					return fmt.Errorf("unmarshal field image_pull_secrets: %w", err)
 				}
+			}
+		case namespace.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				n.Description = value.String
 			}
 		default:
 			n.selectValues.Set(columns[i], values[i])
@@ -192,6 +200,9 @@ func (n *Namespace) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("image_pull_secrets=")
 	builder.WriteString(fmt.Sprintf("%v", n.ImagePullSecrets))
+	builder.WriteString(", ")
+	builder.WriteString("description=")
+	builder.WriteString(n.Description)
 	builder.WriteByte(')')
 	return builder.String()
 }

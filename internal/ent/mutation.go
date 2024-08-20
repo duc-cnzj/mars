@@ -5954,6 +5954,7 @@ type NamespaceMutation struct {
 	name                     *string
 	image_pull_secrets       *[]string
 	appendimage_pull_secrets []string
+	description              *string
 	clearedFields            map[string]struct{}
 	projects                 map[int]struct{}
 	removedprojects          map[int]struct{}
@@ -6272,6 +6273,55 @@ func (m *NamespaceMutation) ResetImagePullSecrets() {
 	m.appendimage_pull_secrets = nil
 }
 
+// SetDescription sets the "description" field.
+func (m *NamespaceMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *NamespaceMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Namespace entity.
+// If the Namespace object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NamespaceMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *NamespaceMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[namespace.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *NamespaceMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[namespace.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *NamespaceMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, namespace.FieldDescription)
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by ids.
 func (m *NamespaceMutation) AddProjectIDs(ids ...int) {
 	if m.projects == nil {
@@ -6414,7 +6464,7 @@ func (m *NamespaceMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *NamespaceMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.created_at != nil {
 		fields = append(fields, namespace.FieldCreatedAt)
 	}
@@ -6429,6 +6479,9 @@ func (m *NamespaceMutation) Fields() []string {
 	}
 	if m.image_pull_secrets != nil {
 		fields = append(fields, namespace.FieldImagePullSecrets)
+	}
+	if m.description != nil {
+		fields = append(fields, namespace.FieldDescription)
 	}
 	return fields
 }
@@ -6448,6 +6501,8 @@ func (m *NamespaceMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case namespace.FieldImagePullSecrets:
 		return m.ImagePullSecrets()
+	case namespace.FieldDescription:
+		return m.Description()
 	}
 	return nil, false
 }
@@ -6467,6 +6522,8 @@ func (m *NamespaceMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldName(ctx)
 	case namespace.FieldImagePullSecrets:
 		return m.OldImagePullSecrets(ctx)
+	case namespace.FieldDescription:
+		return m.OldDescription(ctx)
 	}
 	return nil, fmt.Errorf("unknown Namespace field %s", name)
 }
@@ -6511,6 +6568,13 @@ func (m *NamespaceMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetImagePullSecrets(v)
 		return nil
+	case namespace.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Namespace field %s", name)
 }
@@ -6544,6 +6608,9 @@ func (m *NamespaceMutation) ClearedFields() []string {
 	if m.FieldCleared(namespace.FieldDeletedAt) {
 		fields = append(fields, namespace.FieldDeletedAt)
 	}
+	if m.FieldCleared(namespace.FieldDescription) {
+		fields = append(fields, namespace.FieldDescription)
+	}
 	return fields
 }
 
@@ -6560,6 +6627,9 @@ func (m *NamespaceMutation) ClearField(name string) error {
 	switch name {
 	case namespace.FieldDeletedAt:
 		m.ClearDeletedAt()
+		return nil
+	case namespace.FieldDescription:
+		m.ClearDescription()
 		return nil
 	}
 	return fmt.Errorf("unknown Namespace nullable field %s", name)
@@ -6583,6 +6653,9 @@ func (m *NamespaceMutation) ResetField(name string) error {
 		return nil
 	case namespace.FieldImagePullSecrets:
 		m.ResetImagePullSecrets()
+		return nil
+	case namespace.FieldDescription:
+		m.ResetDescription()
 		return nil
 	}
 	return fmt.Errorf("unknown Namespace field %s", name)

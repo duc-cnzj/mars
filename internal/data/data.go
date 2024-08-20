@@ -6,15 +6,14 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
-	"entgo.io/ent/dialect/sql"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/metrics"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/util/closeable"
+	"github.com/duc-cnzj/mars/v4/internal/util/timer"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/prometheus/client_golang/prometheus"
@@ -37,7 +36,6 @@ import (
 
 	_ "github.com/duc-cnzj/mars/v4/internal/ent/runtime"
 	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 //go:generate mockgen -destination ./mock_data.go -package data github.com/duc-cnzj/mars/v4/internal/data Data
@@ -132,12 +130,19 @@ func (data *dataImpl) InitDB() (func() error, error) {
 		logger.Debug("connecting to mysql...")
 		defer logger.Debug("mysql connected!")
 
-		data.db, err = InitDB(data.Config().DSN(), logger)
+		cfg := data.Config()
+		data.db, err = InitMysqlDB(
+			cfg.DSN(),
+			logger,
+			cfg.DBSlowLogEnabled,
+			cfg.DBSlowLogThreshold,
+			timer.NewRealTimer(),
+		)
 		if err != nil {
 			return
 		}
 
-		if data.Config().DBDebug {
+		if cfg.DBDebug {
 			data.db = data.DB().Debug()
 		}
 		closeFunc = func() error {
@@ -145,26 +150,6 @@ func (data *dataImpl) InitDB() (func() error, error) {
 		}
 	})
 	return closeFunc, nil
-}
-
-func InitDB(dsn string, logger mlog.Logger) (*ent.Client, error) {
-	var drv *sql.Driver
-	drv, err := sql.Open("mysql", dsn)
-	if err != nil {
-		return nil, err
-	}
-	// Get the underlying sql.DB object of the driver.
-	db := drv.DB()
-	db.SetMaxIdleConns(10)
-	db.SetMaxOpenConns(100)
-	db.SetConnMaxLifetime(time.Hour)
-	dbCli := ent.NewClient(
-		ent.Driver(drv),
-		ent.Log(func(a ...any) {
-			logger.Debug(a...)
-		}),
-	)
-	return dbCli, nil
 }
 
 func (data *dataImpl) InitS3() error {

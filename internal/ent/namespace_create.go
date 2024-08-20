@@ -78,6 +78,20 @@ func (nc *NamespaceCreate) SetImagePullSecrets(s []string) *NamespaceCreate {
 	return nc
 }
 
+// SetDescription sets the "description" field.
+func (nc *NamespaceCreate) SetDescription(s string) *NamespaceCreate {
+	nc.mutation.SetDescription(s)
+	return nc
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (nc *NamespaceCreate) SetNillableDescription(s *string) *NamespaceCreate {
+	if s != nil {
+		nc.SetDescription(*s)
+	}
+	return nc
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
 func (nc *NamespaceCreate) AddProjectIDs(ids ...int) *NamespaceCreate {
 	nc.mutation.AddProjectIDs(ids...)
@@ -232,6 +246,10 @@ func (nc *NamespaceCreate) createSpec() (*Namespace, *sqlgraph.CreateSpec) {
 		_spec.SetField(namespace.FieldImagePullSecrets, field.TypeJSON, value)
 		_node.ImagePullSecrets = value
 	}
+	if value, ok := nc.mutation.Description(); ok {
+		_spec.SetField(namespace.FieldDescription, field.TypeString, value)
+		_node.Description = value
+	}
 	if nodes := nc.mutation.ProjectsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -370,6 +388,24 @@ func (u *NamespaceUpsert) UpdateImagePullSecrets() *NamespaceUpsert {
 	return u
 }
 
+// SetDescription sets the "description" field.
+func (u *NamespaceUpsert) SetDescription(v string) *NamespaceUpsert {
+	u.Set(namespace.FieldDescription, v)
+	return u
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *NamespaceUpsert) UpdateDescription() *NamespaceUpsert {
+	u.SetExcluded(namespace.FieldDescription)
+	return u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *NamespaceUpsert) ClearDescription() *NamespaceUpsert {
+	u.SetNull(namespace.FieldDescription)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -475,6 +511,27 @@ func (u *NamespaceUpsertOne) SetImagePullSecrets(v []string) *NamespaceUpsertOne
 func (u *NamespaceUpsertOne) UpdateImagePullSecrets() *NamespaceUpsertOne {
 	return u.Update(func(s *NamespaceUpsert) {
 		s.UpdateImagePullSecrets()
+	})
+}
+
+// SetDescription sets the "description" field.
+func (u *NamespaceUpsertOne) SetDescription(v string) *NamespaceUpsertOne {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *NamespaceUpsertOne) UpdateDescription() *NamespaceUpsertOne {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *NamespaceUpsertOne) ClearDescription() *NamespaceUpsertOne {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.ClearDescription()
 	})
 }
 
@@ -749,6 +806,27 @@ func (u *NamespaceUpsertBulk) SetImagePullSecrets(v []string) *NamespaceUpsertBu
 func (u *NamespaceUpsertBulk) UpdateImagePullSecrets() *NamespaceUpsertBulk {
 	return u.Update(func(s *NamespaceUpsert) {
 		s.UpdateImagePullSecrets()
+	})
+}
+
+// SetDescription sets the "description" field.
+func (u *NamespaceUpsertBulk) SetDescription(v string) *NamespaceUpsertBulk {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *NamespaceUpsertBulk) UpdateDescription() *NamespaceUpsertBulk {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *NamespaceUpsertBulk) ClearDescription() *NamespaceUpsertBulk {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.ClearDescription()
 	})
 }
 

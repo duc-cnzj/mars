@@ -25,6 +25,8 @@ const (
 	FieldName = "name"
 	// FieldImagePullSecrets holds the string denoting the image_pull_secrets field in the database.
 	FieldImagePullSecrets = "image_pull_secrets"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// EdgeProjects holds the string denoting the projects edge name in mutations.
 	EdgeProjects = "projects"
 	// EdgeFavorites holds the string denoting the favorites edge name in mutations.
@@ -55,6 +57,7 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldName,
 	FieldImagePullSecrets,
+	FieldDescription,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -113,6 +116,11 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
 // ByProjectsCount orders the results by projects count.

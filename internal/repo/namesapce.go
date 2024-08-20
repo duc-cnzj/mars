@@ -29,6 +29,7 @@ type Namespace struct {
 	DeletedAt        *time.Time
 	Name             string
 	ImagePullSecrets []string
+	Description      string
 
 	Projects  []*Project
 	Favorites []*Favorite
@@ -54,6 +55,7 @@ func ToNamespace(namespace *ent.Namespace) *Namespace {
 		DeletedAt:        namespace.DeletedAt,
 		Name:             namespace.Name,
 		ImagePullSecrets: namespace.ImagePullSecrets,
+		Description:      namespace.Description,
 		Projects:         serialize.Serialize(namespace.Edges.Projects, ToProject),
 		Favorites:        serialize.Serialize(namespace.Edges.Favorites, ToFavorite),
 	}
@@ -133,6 +135,7 @@ func (repo *namespaceRepo) All(ctx context.Context, input *AllNamespaceInput) ([
 	all, err := query.Select(
 		namespace.FieldID,
 		namespace.FieldName,
+		namespace.FieldDescription,
 		namespace.FieldCreatedAt,
 		namespace.FieldUpdatedAt,
 	).All(ctx)
@@ -142,6 +145,7 @@ func (repo *namespaceRepo) All(ctx context.Context, input *AllNamespaceInput) ([
 type CreateNamespaceInput struct {
 	Name             string
 	ImagePullSecrets []string
+	Description      string
 }
 
 func (repo *namespaceRepo) Create(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error) {
@@ -149,6 +153,7 @@ func (repo *namespaceRepo) Create(ctx context.Context, input *CreateNamespaceInp
 		Create().
 		SetName(mars.GetMarsNamespace(input.Name, repo.NsPrefix)).
 		SetImagePullSecrets(input.ImagePullSecrets).
+		SetDescription(input.Description).
 		Save(ctx)
 	return ToNamespace(save), err
 }

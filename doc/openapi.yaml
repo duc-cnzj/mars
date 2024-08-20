@@ -2000,6 +2000,8 @@ components:
                 ignoreIfExists:
                     type: boolean
                     description: 已存在则忽略，不会报错
+                description:
+                    type: string
         namespace.CreateResponse:
             type: object
             properties:
@@ -2483,6 +2485,8 @@ components:
                         $ref: '#/components/schemas/types.ProjectModel'
                 favorite:
                     type: boolean
+                description:
+                    type: string
                 createdAt:
                     type: string
                 updatedAt:

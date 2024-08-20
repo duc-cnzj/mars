@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/mixin"
@@ -15,8 +16,18 @@ type Namespace struct {
 // Fields of the Namespace.
 func (Namespace) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("name").MaxLen(100).Comment("项目空间名"),
-		field.Strings("image_pull_secrets").Default([]string{}).Comment("image pull secrets"),
+		field.String("name").
+			MaxLen(100).
+			Comment("项目空间名"),
+		field.Strings("image_pull_secrets").
+			Default([]string{}).
+			Comment("image pull secrets"),
+		field.String("description").
+			SchemaType(map[string]string{
+				dialect.MySQL: "text",
+			}).
+			Optional().
+			Comment("项目空间描述"),
 	}
 }
 

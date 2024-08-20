@@ -21,6 +21,7 @@ message CreateRequest {
   string namespace        = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   // 已存在则忽略，不会报错
   bool   ignore_if_exists = 2;
+  string description = 3;
 }
 message CreateResponse {
   types.NamespaceModel item   = 1;

@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -163,7 +163,16 @@ type OidcSetting struct {
 
 func Init(cfgFile string) *Config {
 	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
+		if !filepath.IsAbs(cfgFile) {
+			viper.AddConfigPath(".")
+			abs, err := filepath.Abs(cfgFile)
+			if err != nil {
+				panic(err)
+			}
+			viper.SetConfigFile(abs)
+		} else {
+			viper.SetConfigFile(cfgFile)
+		}
 	} else {
 		viper.AddConfigPath(".")
 		viper.SetConfigName("config")
@@ -171,9 +180,10 @@ func Init(cfgFile string) *Config {
 	}
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
+	viper.SetDefault("log_channel", "zap")
 	viper.SetDefault("cache_driver", "db")
 	viper.SetDefault("git_server_cached", true)
 	viper.SetDefault("domain_manager_plugin", map[string]any{
@@ -193,7 +203,9 @@ func Init(cfgFile string) *Config {
 
 	cfg := &Config{NsPrefix: "devops-"}
 
-	viper.Unmarshal(&cfg)
+	if err := viper.Unmarshal(&cfg); err != nil {
+		panic(err)
+	}
 	for _, s := range cfg.ImagePullSecrets {
 		if s.Server == "" {
 			s.Server = "https://index.docker.io/v1/"

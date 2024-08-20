@@ -105,6 +105,7 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 	ns, err := n.nsRepo.Create(ctx, &repo.CreateNamespaceInput{
 		Name:             create.Name,
 		ImagePullSecrets: imagePullSecrets,
+		Description:      request.Description,
 	})
 	if err != nil {
 		return nil, err

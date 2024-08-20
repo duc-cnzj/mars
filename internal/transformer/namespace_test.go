@@ -17,17 +17,19 @@ func TestFromNamespace_NilInput(t *testing.T) {
 
 func TestFromNamespace_ValidInput(t *testing.T) {
 	ns := &repo.Namespace{
-		ID:        1,
-		Name:      "testNamespace",
-		Projects:  nil,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		ID:          1,
+		Name:        "testNamespace",
+		Projects:    nil,
+		Description: "x",
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 	result := transformer.FromNamespace(ns)
 	assert.NotNil(t, result)
 	assert.Equal(t, int32(1), result.Id)
 	assert.Equal(t, "testNamespace", result.Name)
 	assert.Len(t, result.Projects, 0)
+	assert.Equal(t, "x", result.Description)
 }
 
 func TestFromNamespace_DeletedNamespace(t *testing.T) {

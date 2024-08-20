@@ -9,6 +9,7 @@ import {
   Tooltip,
   Button,
   Space,
+  Popover,
 } from "antd";
 import "../pkg/DraggableModal/index.css";
 import { CloseOutlined } from "@ant-design/icons";
@@ -103,6 +104,29 @@ const Item: React.FC<{
             <TitleSubItem>
               <ServiceEndpoint namespaceId={item.id} />
             </TitleSubItem>
+            {item.description && (
+              <Popover
+                content={
+                  <div style={{ width: 300, fontSize: 12, fontWeight: "bold" }}>
+                    {item.description}
+                  </div>
+                }
+              >
+                <div
+                  style={{
+                    fontSize: 10,
+                    width: "100px",
+                    color: "gray",
+                    fontWeight: "normal",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {item.description}
+                </div>
+              </Popover>
+            )}
           </Space>
         </CardTitle>
       }

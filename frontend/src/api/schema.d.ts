@@ -1084,6 +1084,7 @@ export interface components {
       namespace: string;
       /** @description 已存在则忽略，不会报错 */
       ignoreIfExists?: boolean;
+      description?: string;
     };
     "namespace.CreateResponse": {
       item: components["schemas"]["types.NamespaceModel"];
@@ -1335,6 +1336,7 @@ export interface components {
       name: string;
       projects: components["schemas"]["types.ProjectModel"][];
       favorite: boolean;
+      description: string;
       createdAt: string;
       updatedAt: string;
       deletedAt: string;
