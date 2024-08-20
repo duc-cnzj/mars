@@ -16,13 +16,13 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type grpcServerImp interface {
+type GrpcServerImp interface {
 	GracefulStop()
 	Serve(lis net.Listener) error
 }
 
 type grpcRunner struct {
-	server       grpcServerImp
+	server       GrpcServerImp
 	endpoint     string
 	logger       mlog.Logger
 	auth         marsauthorizor.Auth
@@ -43,10 +43,6 @@ func NewGrpcRunner(
 
 func (g *grpcRunner) Shutdown(ctx context.Context) error {
 	defer g.logger.Info("[Server]: shutdown grpcRunner runner.")
-	if g.server == nil {
-		return nil
-	}
-
 	done := make(chan struct{})
 	go func() {
 		g.server.GracefulStop()
@@ -68,11 +64,11 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 		return err
 	}
 	g.server = g.initServer()
-	go func(server grpcServerImp) {
-		if err := server.Serve(listen); err != nil {
+	go func() {
+		if err := g.server.Serve(listen); err != nil {
 			g.logger.Error(err)
 		}
-	}(g.server)
+	}()
 
 	return nil
 }
@@ -85,7 +81,7 @@ func (g *grpcRunner) initServer() *grpc.Server {
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainStreamInterceptor(
 			grpc_auth.StreamServerInterceptor(authFn),
-			marsauthorizor.StreamServerInterceptor(),
+			middlewares.AuthStreamServerInterceptor(),
 			middlewares.ValidatorStreamServerInterceptor(),
 			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(g.recoveryHandler)),
 			middlewares.MetricsStreamServerInterceptor(g.logger),
@@ -94,7 +90,7 @@ func (g *grpcRunner) initServer() *grpc.Server {
 			middlewares.LoggerUnaryServerInterceptor(g.logger),
 			grpc_auth.UnaryServerInterceptor(authFn),
 			middlewares.MetricsServerInterceptor(g.logger),
-			marsauthorizor.UnaryServerInterceptor(),
+			middlewares.AuthUnaryServerInterceptor(),
 			middlewares.ValidatorUnaryServerInterceptor(),
 			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(g.recoveryHandler)),
 		),

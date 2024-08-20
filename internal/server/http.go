@@ -89,7 +89,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 
 	go func(s HttpServer) {
 		a.logger.Infof("[Server]: start apiGateway runner at :%s.", a.port)
-		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err = s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			a.logger.Error(err)
 		}
 	}(s)
@@ -98,11 +98,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 }
 
 func (a *apiGateway) Shutdown(ctx context.Context) error {
-	defer a.logger.Info("[Server]: shutdown api-gateway runner.")
-	if a.server == nil {
-		return nil
-	}
-
+	a.logger.Info("[Server]: shutdown api-gateway runner.")
 	return a.server.Shutdown(ctx)
 }
 
@@ -114,7 +110,6 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 		runtime.WithIncomingHeaderMatcher(headerMatcher),
 		runtime.WithForwardResponseOption(func(ctx context.Context, writer http.ResponseWriter, message proto.Message) error {
 			writer.Header().Set("X-Content-Type-Options", "nosniff")
-
 			return nil
 		}),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
@@ -125,7 +120,8 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 			UnmarshalOptions: protojson.UnmarshalOptions{
 				DiscardUnknown: true,
 			},
-		}))
+		}),
+	)
 
 	opts := []grpc.DialOption{
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
@@ -155,7 +151,6 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 		ServeMux:      gmux,
 	}
 	h.handFile()
-	//h.handleDownloadConfig()
 	h.serveWs(router)
 	frontend.LoadFrontendRoutes(router)
 	h.loadSwaggerUI(router)
@@ -185,6 +180,9 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 type middlewareList []func(logger mlog.Logger, handler http.Handler) http.Handler
 
 func (m middlewareList) Wrap(logger mlog.Logger, r http.Handler) (h http.Handler) {
+	if len(m) == 0 {
+		return r
+	}
 	for i := len(m) - 1; i >= 0; i-- {
 		h = m[i](logger, r)
 		r = h
@@ -192,7 +190,6 @@ func (m middlewareList) Wrap(logger mlog.Logger, r http.Handler) (h http.Handler
 	return
 }
 
-// handler is a http.Handler that handles all incoming requests.
 type handler struct {
 	ws            application.WsServer
 	logger        mlog.Logger
@@ -201,7 +198,6 @@ type handler struct {
 	uploader      uploader.Uploader
 	data          data.Data
 	event         event.Dispatcher
-
 	*runtime.ServeMux
 }
 
@@ -217,6 +213,7 @@ func (h *handler) handleDownload(w http.ResponseWriter, r *http.Request, fid int
 			http.NotFound(w, r)
 			return
 		}
+		h.logger.Error("Error querying file: ", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -235,7 +232,7 @@ func (h *handler) handleDownload(w http.ResponseWriter, r *http.Request, fid int
 			http.Error(w, "file not found", http.StatusNotFound)
 			return
 		}
-		h.logger.Error(err)
+		h.logger.Error("Error reading file: ", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -253,16 +250,8 @@ func (h *handler) download(w http.ResponseWriter, filename string, reader io.Rea
 
 	// 调用 Write 之后就会写入 200 code
 	if _, err := io.Copy(w, bufio.NewReaderSize(reader, 1024*1024*2)); err != nil {
-		h.logger.Error(err)
+		h.logger.Error("Error writing file to response: ", err)
 	}
-}
-
-func (h *handler) authenticated(r *http.Request) (*http.Request, bool) {
-	if verifyToken, b := h.auth.VerifyToken(r.Header.Get("Authorization")); b {
-		return r.WithContext(auth.SetUser(r.Context(), verifyToken.UserInfo)), true
-	}
-
-	return nil, false
 }
 
 func (h *handler) handleBinaryFileUpload(w http.ResponseWriter, r *http.Request) {
@@ -278,6 +267,9 @@ func (h *handler) handleBinaryFileUpload(w http.ResponseWriter, r *http.Request)
 	}
 	defer f.Close()
 
+	// 确保上传的文件名不会导致路径遍历攻击
+	filename := filepath.Base(fh.Filename)
+
 	info := auth.MustGetUser(r.Context())
 
 	var uploader uploader.Uploader = h.uploader
@@ -287,18 +279,23 @@ func (h *handler) handleBinaryFileUpload(w http.ResponseWriter, r *http.Request)
 			info.Name,
 			time.Now().Format("2006-01-02"),
 			fmt.Sprintf("%s-%s", time.Now().Format("15-04-05"), rand.String(20)),
-			fh.Filename), f)
+			filename), f)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to upload file %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
-	createdFile, _ := h.data.DB().File.Create().
+	createdFile, err := h.data.DB().File.Create().
 		SetPath(put.Path()).
 		SetSize(put.Size()).
 		SetUsername(info.Name).
 		SetUploadType(uploader.Type()).
 		Save(context.TODO())
+	if err != nil {
+		h.logger.Error("Error saving file metadata: ", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -307,7 +304,12 @@ func (h *handler) handleBinaryFileUpload(w http.ResponseWriter, r *http.Request)
 	}{
 		ID: createdFile.ID,
 	}
-	marshal, _ := json.Marshal(&res)
+	marshal, err := json.Marshal(&res)
+	if err != nil {
+		h.logger.Error("Error marshaling response: ", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
 	w.Write(marshal)
 }
 
@@ -364,4 +366,12 @@ func headerMatcher(key string) (string, bool) {
 	default:
 		return runtime.DefaultHeaderMatcher(key)
 	}
+}
+
+func (h *handler) authenticated(r *http.Request) (*http.Request, bool) {
+	if verifyToken, b := h.auth.VerifyToken(r.Header.Get("Authorization")); b {
+		return r.WithContext(auth.SetUser(r.Context(), verifyToken.UserInfo)), true
+	}
+
+	return nil, false
 }

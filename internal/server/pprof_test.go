@@ -2,9 +2,10 @@ package server
 
 import (
 	"context"
-	"go.uber.org/mock/gomock"
 	"testing"
 	"time"
+
+	"go.uber.org/mock/gomock"
 
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/stretchr/testify/assert"

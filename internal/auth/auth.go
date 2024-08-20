@@ -3,10 +3,10 @@ package auth
 import (
 	"context"
 	"crypto/rsa"
+	"errors"
 	"strings"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent/accesstoken"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
@@ -84,8 +84,8 @@ type Authn struct {
 	signFunc func(info *UserInfo) (*SignData, error)
 }
 
-func NewAuthn(cfg *config.Config, data data.Data) (Auth, error) {
-	pem, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(cfg.PrivateKey))
+func NewAuthn(data data.Data) (Auth, error) {
+	pem, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(data.Config().PrivateKey))
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (a *accessTokenAuth) VerifyToken(t string) (*JwtClaims, bool) {
 	if len(t) > 6 && strings.EqualFold("bearer", t[0:6]) {
 		token = strings.TrimSpace(t[6:])
 	}
-	if token == "" {
+	if token != "" {
 		if first, err := a.data.DB().AccessToken.Query().Where(accesstoken.Token(token)).First(context.TODO()); err == nil {
 			first.Update().SetLastUsedAt(time.Now()).Save(context.TODO())
 			return &JwtClaims{UserInfo: &first.UserInfo}, true
@@ -182,4 +182,23 @@ func (a *accessTokenAuth) VerifyToken(t string) (*JwtClaims, bool) {
 	}
 
 	return nil, false
+}
+
+type ctxTokenInfo struct{}
+
+func SetUser(ctx context.Context, info *UserInfo) context.Context {
+	return context.WithValue(ctx, &ctxTokenInfo{}, info)
+}
+
+func GetUser(ctx context.Context) (*UserInfo, error) {
+	if info, ok := ctx.Value(&ctxTokenInfo{}).(*UserInfo); ok {
+		return info, nil
+	}
+
+	return nil, errors.New("user not found")
+}
+
+func MustGetUser(ctx context.Context) *UserInfo {
+	info, _ := ctx.Value(&ctxTokenInfo{}).(*UserInfo)
+	return info
 }

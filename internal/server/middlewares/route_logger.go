@@ -1,10 +1,12 @@
 package middlewares
 
 import (
+	"context"
 	"net/http"
 	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"google.golang.org/grpc"
 )
 
 func RouteLogger(logger mlog.Logger, h http.Handler) http.Handler {
@@ -14,4 +16,15 @@ func RouteLogger(logger mlog.Logger, h http.Handler) http.Handler {
 		}(time.Now())
 		h.ServeHTTP(w, r)
 	})
+}
+
+func LoggerUnaryServerInterceptor(logger mlog.Logger) func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+		if request, ok := req.(interface {
+			String() string
+		}); ok {
+			logger.Debugf("[request logger]: method=%s body=%v", info.FullMethod, request.String())
+		}
+		return handler(ctx, req)
+	}
 }

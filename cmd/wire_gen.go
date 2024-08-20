@@ -40,7 +40,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	if err != nil {
 		return nil, err
 	}
-	authAuth, err := auth.NewAuthn(configConfig, dataData)
+	authAuth, err := auth.NewAuthn(dataData)
 	if err != nil {
 		return nil, err
 	}
