@@ -7,9 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/data"
-
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
+	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/util/timer"
