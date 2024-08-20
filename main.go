@@ -7,7 +7,6 @@ import (
 	_ "embed"
 
 	_ "github.com/duc-cnzj/mars/v4/internal/plugins/domainmanager"
-	_ "github.com/duc-cnzj/mars/v4/internal/plugins/gitserver/github"
 	_ "github.com/duc-cnzj/mars/v4/internal/plugins/gitserver/gitlab"
 	_ "github.com/duc-cnzj/mars/v4/internal/plugins/picture"
 	_ "github.com/duc-cnzj/mars/v4/internal/plugins/wssender/memory"

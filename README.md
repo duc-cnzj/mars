@@ -31,9 +31,10 @@
 - 插件化
   - 队列驱动: ws_sender_nsq, ws_sender_redis, ws_sender_memory
   - 证书驱动: manual_domain_manager, cert-manager_domain_manager, sync_secret_domain_manager
-  - 代码仓库支持: gitlab, github
+  - 代码仓库支持: gitlab ~~github~~
   - 背景图: picture_cartoon，picture_bing
-- sdk 接入: [go](https://github.com/duc-cnzj/mars-client)。
+- sdk 接入:
+  - [grpc-go-sdk](https://github.com/duc-cnzj/mars-client)
 
 ## 🛠️ 使用文档
 
