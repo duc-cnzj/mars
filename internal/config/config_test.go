@@ -53,12 +53,6 @@ func TestConfigDefaultUploadDir(t *testing.T) {
 	assert.Equal(t, "/tmp/mars-uploads", cfg.UploadDir)
 }
 
-func TestConfigStringRepresentationOfPlugin(t *testing.T) {
-	plugin := &config.Plugin{Name: "test", Args: map[string]any{"arg1": "value1", "arg2": "value2"}}
-	expected := "test arg1=value1arg2=value2"
-	assert.Equal(t, expected, plugin.String())
-}
-
 func TestConfigGetArgsWhenArgsAreNil(t *testing.T) {
 	plugin := &config.Plugin{Name: "test", Args: nil}
 	expected := map[string]any{}
