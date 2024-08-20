@@ -52,10 +52,10 @@ type apiGateway struct {
 	ws            application.WsServer
 	endpoint      string
 	port          string
-	server        httpServer
+	server        HttpServer
 	logger        mlog.Logger
 	grpcRegistry  *application.GrpcRegistry
-	newServerFunc func(ctx context.Context, a *apiGateway) (httpServer, error)
+	newServerFunc func(ctx context.Context, a *apiGateway) (HttpServer, error)
 	auth          auth.Auth
 	maxUploadSize uint64
 	data          data.Data
@@ -87,7 +87,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 
 	a.server = s
 
-	go func(s httpServer) {
+	go func(s HttpServer) {
 		a.logger.Infof("[Server]: start apiGateway runner at :%s.", a.port)
 		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			a.logger.Error(err)
@@ -106,7 +106,7 @@ func (a *apiGateway) Shutdown(ctx context.Context) error {
 	return a.server.Shutdown(ctx)
 }
 
-func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
+func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 	router := mux.NewRouter()
 
 	gmux := runtime.NewServeMux(
@@ -252,7 +252,7 @@ func (h *handler) download(w http.ResponseWriter, filename string, reader io.Rea
 	w.Header().Set("Access-Control-Expose-Headers", "*")
 
 	// 调用 Write 之后就会写入 200 code
-	if _, err := io.Copy(w, bufio.NewReaderSize(reader, 1024*1024*5)); err != nil {
+	if _, err := io.Copy(w, bufio.NewReaderSize(reader, 1024*1024*2)); err != nil {
 		h.logger.Error(err)
 	}
 }

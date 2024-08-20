@@ -11,14 +11,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-type httpServer interface {
+//go:generate mockgen -destination ./mock_server.go -package server github.com/duc-cnzj/mars/v4/internal/server HttpServer
+type HttpServer interface {
 	Shutdown(ctx context.Context) error
 	ListenAndServe() error
 }
 
 type metricsRunner struct {
 	port   string
-	s      httpServer
+	s      HttpServer
 	logger mlog.Logger
 	reg    *prometheus.Registry
 }

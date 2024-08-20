@@ -11,7 +11,7 @@ import (
 )
 
 type pprofRunner struct {
-	server httpServer
+	server HttpServer
 	logger mlog.Logger
 }
 
