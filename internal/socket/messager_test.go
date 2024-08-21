@@ -141,3 +141,20 @@ func TestProcessPercentToFunctionality(t *testing.T) {
 	ms := NewMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
 	ms.To(3)
 }
+
+func Test_messager_Current(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	conn := NewMockConn(m)
+	sub := application.NewMockPubSub(m)
+	conn.EXPECT().PubSub().Return(sub).AnyTimes()
+	sub.EXPECT().ToSelf(gomock.Any()).AnyTimes()
+	conn.EXPECT().UID().Return("uid").AnyTimes()
+	conn.EXPECT().ID().Return("id").AnyTimes()
+
+	ms := NewMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	assert.Equal(t, int64(0), ms.Current())
+	ms.Add()
+	assert.Equal(t, int64(1), ms.Current())
+}

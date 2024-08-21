@@ -10,7 +10,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/metrics"
-	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -28,7 +27,11 @@ type Conn interface {
 	GetPtyHandler(sessionID string) (PtyHandler, bool)
 	SetPtyHandler(sessionID string, session PtyHandler)
 	ClosePty(ctx context.Context, sessionId string, status uint32, reason string)
+	CloseAndClean(ctx context.Context) error
+	GorillaWs
+}
 
+type GorillaWs interface {
 	SetWriteDeadline(t time.Time) error
 	WriteMessage(messageType int, data []byte) error
 	SetReadLimit(limit int64)
@@ -36,13 +39,13 @@ type Conn interface {
 	SetPongHandler(h func(appData string) error)
 	ReadMessage() (messageType int, p []byte, err error)
 	NextWriter(messageType int) (io.WriteCloser, error)
-	Close(ctx context.Context) error
+	Close() error
 }
 
 var _ Conn = (*WsConn)(nil)
 
 type WsConn struct {
-	ws *websocket.Conn
+	GorillaWs
 
 	// 每个浏览器窗口的 id 是不一样的
 	id string
@@ -64,13 +67,13 @@ type WsConn struct {
 
 func (wc *WebsocketManager) newWsConn(
 	uid, id string,
-	c *websocket.Conn,
+	c GorillaWs,
 	taskManager TaskManager,
 	sm SessionMapper,
 ) Conn {
 	wc.counter.Inc()
 	return &WsConn{
-		ws:          c,
+		GorillaWs:   c,
 		id:          id,
 		uid:         uid,
 		pubSub:      wc.pl.Ws().New(uid, id),
@@ -99,10 +102,10 @@ func (c *WsConn) GetUser() *auth.UserInfo {
 	return c.user
 }
 
-func (c *WsConn) Close(ctx context.Context) error {
+func (c *WsConn) CloseAndClean(ctx context.Context) error {
 	c.taskManager.StopAll()
 	c.pubSub.Close()
-	c.ws.Close()
+	c.Close()
 	c.sm.CloseAll(ctx)
 	var username string
 	if c.GetUser() != nil {
@@ -110,34 +113,6 @@ func (c *WsConn) Close(ctx context.Context) error {
 	}
 	metrics.WebsocketConnectionsCount.With(prometheus.Labels{"username": username}).Dec()
 	return nil
-}
-
-func (c *WsConn) SetWriteDeadline(t time.Time) error {
-	return c.ws.SetWriteDeadline(t)
-}
-
-func (c *WsConn) WriteMessage(messageType int, data []byte) error {
-	return c.ws.WriteMessage(messageType, data)
-}
-
-func (c *WsConn) SetReadLimit(limit int64) {
-	c.ws.SetReadLimit(limit)
-}
-
-func (c *WsConn) SetReadDeadline(t time.Time) error {
-	return c.ws.SetReadDeadline(t)
-}
-
-func (c *WsConn) SetPongHandler(h func(appData string) error) {
-	c.ws.SetPongHandler(h)
-}
-
-func (c *WsConn) ReadMessage() (messageType int, p []byte, err error) {
-	return c.ws.ReadMessage()
-}
-
-func (c *WsConn) NextWriter(messageType int) (io.WriteCloser, error) {
-	return c.ws.NextWriter(messageType)
 }
 
 func (c *WsConn) UID() string {

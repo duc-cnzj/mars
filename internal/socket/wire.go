@@ -1,6 +1,6 @@
 package socket
 
-//go:generate mockgen -destination ./mock_socket.go -package socket github.com/duc-cnzj/mars/v4/internal/socket JobManager,Job,Percentable,Conn
+//go:generate mockgen -destination ./mock_socket.go -package socket github.com/duc-cnzj/mars/v4/internal/socket JobManager,Job,Percentable,Conn,PtyHandler
 import (
 	"github.com/duc-cnzj/mars/v4/internal/util/counter"
 	"github.com/google/wire"

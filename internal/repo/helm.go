@@ -124,6 +124,7 @@ func (d *DefaultHelmer) upgradeOrInstall(
 	client.DryRun = dryRun
 	client.DependencyUpdate = true
 	client.DisableOpenAPIValidation = true
+	client.MaxHistory = 5
 
 	if wait && !dryRun {
 		var selectorList []labels.Selector

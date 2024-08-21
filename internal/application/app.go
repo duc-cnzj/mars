@@ -60,7 +60,7 @@ type app struct {
 	data               data.Data
 	pluginManager      PluginManger
 	reg                *GrpcRegistry
-	ws                 WsServer
+	ws                 WsHttpServer
 	prometheusRegistry *prometheus.Registry
 }
 
@@ -101,7 +101,7 @@ func NewApp(
 	sf *singleflight.Group,
 	pm PluginManger,
 	reg *GrpcRegistry,
-	ws WsServer,
+	ws WsHttpServer,
 	pr *prometheus.Registry,
 	opts ...Option,
 ) App {
@@ -182,7 +182,7 @@ func (app *app) Logger() mlog.Logger {
 	return app.logger
 }
 
-func (app *app) WsServer() WsServer {
+func (app *app) WsServer() WsHttpServer {
 	return app.ws
 }
 

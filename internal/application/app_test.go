@@ -48,7 +48,7 @@ func TestNewAppWithValidConfig(t *testing.T) {
 	sf := &singleflight.Group{}
 	pm := NewMockPluginManger(m)
 	reg := &GrpcRegistry{}
-	ws := NewMockWsServer(m)
+	ws := NewMockWsHttpServer(m)
 	pr := &prometheus.Registry{}
 
 	b1 := &testBoot{
@@ -315,7 +315,7 @@ func Test_app_Uploader(t *testing.T) {
 func Test_app_WsServer(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	ws := NewMockWsServer(m)
+	ws := NewMockWsHttpServer(m)
 	a := &app{
 		ws: ws,
 	}

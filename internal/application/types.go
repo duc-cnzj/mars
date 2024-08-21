@@ -28,7 +28,7 @@ type GrpcRegistry struct {
 	RegistryFunc  RegistryFunc
 }
 
-type WsServer interface {
+type WsHttpServer interface {
 	TickClusterHealth(done <-chan struct{})
 	Info(writer http.ResponseWriter, request *http.Request)
 	Serve(w http.ResponseWriter, r *http.Request)
@@ -97,8 +97,8 @@ type App interface {
 	// Shutdown all servers.
 	Shutdown()
 
-	// WsServer return ws server.
-	WsServer() WsServer
+	// WsHttpServer return ws server.
+	WsServer() WsHttpServer
 
 	// Done return done chan.
 	Done() <-chan struct{}

@@ -35,7 +35,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-var _ application.WsServer = (*WebsocketManager)(nil)
+var _ application.WsHttpServer = (*WebsocketManager)(nil)
 
 type HandleRequestFunc func(ctx context.Context, c Conn, t websocket_pb.Type, message []byte)
 
@@ -80,7 +80,7 @@ func NewWebsocketManager(
 	eventRepo repo.EventRepo,
 	executor repo.ExecutorManager,
 	fileRepo repo.FileRepo,
-) application.WsServer {
+) application.WsHttpServer {
 	mgr := &WebsocketManager{
 		projRepo:           projRepo,
 		nsRepo:             nsRepo,
@@ -172,7 +172,7 @@ func (wc *WebsocketManager) Serve(w http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		wc.logger.Debugf("[Websocket]: Serve exit")
-		wsConn.Close(r.Context())
+		wsConn.CloseAndClean(r.Context())
 		wc.counter.Dec()
 	}()
 
@@ -240,7 +240,7 @@ func (wc *WebsocketManager) write(ctx context.Context, wsconn Conn) (err error) 
 	defer func() {
 		wc.logger.Debugf("[Websocket]: go write exit, %v", err)
 		ticker.Stop()
-		wsconn.Close(ctx)
+		wsconn.CloseAndClean(ctx)
 	}()
 	wc.logger.Debug(wsconn.PubSub().ID(), wsconn.PubSub().Uid())
 	ch := wsconn.PubSub().Subscribe()

@@ -49,7 +49,7 @@ var defaultMiddlewares = middlewareList{
 }
 
 type apiGateway struct {
-	ws            application.WsServer
+	ws            application.WsHttpServer
 	endpoint      string
 	port          string
 	server        HttpServer
@@ -191,7 +191,7 @@ func (m middlewareList) Wrap(logger mlog.Logger, r http.Handler) (h http.Handler
 }
 
 type handler struct {
-	ws            application.WsServer
+	ws            application.WsHttpServer
 	logger        mlog.Logger
 	auth          auth.Auth
 	maxUploadSize uint64

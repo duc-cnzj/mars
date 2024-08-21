@@ -85,9 +85,9 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	repoServer := services.NewRepoSvc(logger, eventRepo, gitRepo, repoRepo)
 	grpcRegistry := services.NewGrpcRegistry(versionServer, projectServer, pictureServer, namespaceServer, metricsServer, gitServer, fileServer, eventServer, endpointServer, containerServer, clusterServer, changelogServer, authServer, accessTokenServer, repoServer)
 	counterCounter := counter.NewCounter()
-	wsServer := socket.NewWebsocketManager(logger, counterCounter, projectRepo, repoRepo, namespaceRepo, jobManager, dataData, pluginManger, authAuth, uploaderUploader, lockerLocker, k8sRepo, eventRepo, executorManager, fileRepo)
+	wsHttpServer := socket.NewWebsocketManager(logger, counterCounter, projectRepo, repoRepo, namespaceRepo, jobManager, dataData, pluginManger, authAuth, uploaderUploader, lockerLocker, k8sRepo, eventRepo, executorManager, fileRepo)
 	registry := metrics.NewRegistry()
 	cronRepo := repo.NewCronRepo(logger, fileRepo, cacheCache, repoRepo, namespaceRepo, k8sRepo, pluginManger, eventRepo, dataData, uploaderUploader, helmerRepo, gitRepo, manager)
-	app := newApp(configConfig, dataData, manager, arg, logger, uploaderUploader, authAuth, dispatcher, cacheCache, lockerLocker, group, pluginManger, grpcRegistry, wsServer, registry, cronRepo)
+	app := newApp(configConfig, dataData, manager, arg, logger, uploaderUploader, authAuth, dispatcher, cacheCache, lockerLocker, group, pluginManger, grpcRegistry, wsHttpServer, registry, cronRepo)
 	return app, nil
 }

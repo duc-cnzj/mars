@@ -98,17 +98,18 @@ func (r *releaseInstaller) Run(
 		r.logger.Debug(err)
 		return re, nil
 	}
-	if !input.DryRun && !input.IsNew {
-		// 失败了，需要手动回滚
-		r.logger.Debug("rollback project")
-		if err = r.helmer.Rollback(input.ReleaseName, input.Namespace, false, wrapLogFn.UnWrap(), input.DryRun); err != nil {
-			r.logger.Debug(err)
-		}
-	}
-	if !input.DryRun && input.IsNew {
-		r.logger.Debug("uninstall project")
-		if err = r.helmer.Uninstall(input.ReleaseName, input.Namespace, wrapLogFn.UnWrap()); err != nil {
-			r.logger.Debug(err)
+	if !input.DryRun {
+		if !input.IsNew {
+			// 失败了，需要手动回滚
+			r.logger.Debug("rollback project")
+			if err = r.helmer.Rollback(input.ReleaseName, input.Namespace, false, wrapLogFn.UnWrap(), input.DryRun); err != nil {
+				r.logger.Debug(err)
+			}
+		} else {
+			r.logger.Debug("uninstall project")
+			if err = r.helmer.Uninstall(input.ReleaseName, input.Namespace, wrapLogFn.UnWrap()); err != nil {
+				r.logger.Debug(err)
+			}
 		}
 	}
 	return nil, err

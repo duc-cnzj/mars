@@ -1,6 +1,8 @@
 package socket
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -55,6 +57,8 @@ func TestTimeOrderedSetString_Concurrency(t *testing.T) {
 	tos := newTimeOrderedSetString(timer2.NewRealTimer())
 	var wg sync.WaitGroup
 
+	tos.add("duc")
+	tos.add("duc")
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func(i int) {
@@ -70,7 +74,7 @@ func TestTimeOrderedSetString_Concurrency(t *testing.T) {
 	}
 
 	items := tos.sortedItems()
-	assert.Equal(t, 100, len(items))
+	assert.Equal(t, 101, len(items))
 }
 
 func TestLoggerWrapFunctionality(t *testing.T) {
@@ -120,4 +124,98 @@ func TestLoggerWrapEdgeCase(t *testing.T) {
 
 	// Assert that the message was added to logs
 	assert.True(t, logs.has("test message 1"))
+}
+
+func Test_releaseInstaller_Run_Dry(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	helmer := repo.NewMockHelmerRepo(m)
+	ri := &releaseInstaller{
+		timer:          timer2.NewRealTimer(),
+		helmer:         helmer,
+		timeoutSeconds: 10,
+		logger:         mlog.NewLogger(nil),
+	}
+
+	ctx := context.TODO()
+	helmer.EXPECT().UpgradeOrInstall(ctx, "name", "ns", gomock.Any(), gomock.Any(), gomock.Any(), false, int64(10), true, "desc").Return(nil, errors.New("x"))
+	_, err := ri.Run(ctx, &InstallInput{
+		DryRun:      true,
+		Namespace:   "ns",
+		ReleaseName: "name",
+		Description: "desc",
+	})
+	assert.Error(t, err)
+}
+
+func Test_releaseInstaller_Run_Success(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	helmer := repo.NewMockHelmerRepo(m)
+	ri := &releaseInstaller{
+		timer:          timer2.NewRealTimer(),
+		helmer:         helmer,
+		timeoutSeconds: 10,
+		logger:         mlog.NewLogger(nil),
+	}
+
+	ctx := context.TODO()
+	helmer.EXPECT().UpgradeOrInstall(ctx, "name", "ns", gomock.Any(), gomock.Any(), gomock.Any(), false, int64(10), true, "desc").Return(nil, nil)
+	_, err := ri.Run(ctx, &InstallInput{
+		DryRun:      true,
+		Namespace:   "ns",
+		ReleaseName: "name",
+		Description: "desc",
+	})
+	assert.Nil(t, err)
+}
+
+func Test_releaseInstaller_Run(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	helmer := repo.NewMockHelmerRepo(m)
+	ri := &releaseInstaller{
+		timer:          timer2.NewRealTimer(),
+		helmer:         helmer,
+		timeoutSeconds: 10,
+		logger:         mlog.NewLogger(nil),
+	}
+
+	ctx := context.TODO()
+	helmer.EXPECT().UpgradeOrInstall(ctx, "name", "ns", gomock.Any(), gomock.Any(), gomock.Any(), false, int64(10), false, "desc").Return(nil, errors.New("x"))
+
+	helmer.EXPECT().Uninstall("name", "ns", gomock.Any()).Return(errors.New("y"))
+	_, err := ri.Run(ctx, &InstallInput{
+		IsNew:       true,
+		DryRun:      false,
+		Namespace:   "ns",
+		ReleaseName: "name",
+		Description: "desc",
+	})
+	assert.Error(t, err)
+}
+
+func Test_releaseInstaller_Run_2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	helmer := repo.NewMockHelmerRepo(m)
+	ri := &releaseInstaller{
+		timer:          timer2.NewRealTimer(),
+		helmer:         helmer,
+		timeoutSeconds: 10,
+		logger:         mlog.NewLogger(nil),
+	}
+
+	ctx := context.TODO()
+	helmer.EXPECT().UpgradeOrInstall(ctx, "name", "ns", gomock.Any(), gomock.Any(), gomock.Any(), false, int64(10), false, "desc").Return(nil, errors.New("x"))
+
+	helmer.EXPECT().Rollback("name", "ns", false, gomock.Any(), false).Return(errors.New("y"))
+	_, err := ri.Run(ctx, &InstallInput{
+		IsNew:       false,
+		DryRun:      false,
+		Namespace:   "ns",
+		ReleaseName: "name",
+		Description: "desc",
+	})
+	assert.Error(t, err)
 }

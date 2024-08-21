@@ -325,8 +325,9 @@ func (t *myPtyHandler) Close(ctx context.Context, reason string) bool {
 	}
 	recoder := t.Recorder()
 	var fid int
-	if recoder.File() != nil {
-		fid = recoder.File().ID
+	rf := recoder.File()
+	if rf != nil {
+		fid = rf.ID
 	}
 	t.eventRepo.FileAuditLogWithDuration(
 		types.EventActionType_Shell,
@@ -408,9 +409,6 @@ func (sm *sessionMap) CloseAll(ctx context.Context) {
 		sm.wg.Add(1)
 		go func(s PtyHandler) {
 			defer sm.wg.Done()
-			if s.IsClosed() {
-				return
-			}
 			s.Close(ctx, "websocket conn closed")
 		}(s)
 	}
@@ -480,7 +478,10 @@ func (wc *WebsocketManager) WaitForTerminal(ctx context.Context, conn Conn, cont
 	}()
 	var err error
 	validShells := []string{"bash", "sh", "powershell", "cmd"}
-	session, _ := conn.GetPtyHandler(sessionId)
+	session, got := conn.GetPtyHandler(sessionId)
+	if !got {
+		return
+	}
 	if isValidShell(validShells, shell) {
 		cmd := []string{shell}
 		session.SetShell(shell)
