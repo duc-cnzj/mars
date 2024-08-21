@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"context"
 	"testing"
 
 	"github.com/duc-cnzj/mars/v4/internal/application"
@@ -30,37 +31,6 @@ func TestWsConn_SetUser_GetUser(t *testing.T) {
 	assert.Equal(t, userInfo, conn.GetUser())
 }
 
-//func TestWsConn_WriteMessage(t *testing.T) {
-//	err := (&WsConn{}).WriteMessage(websocket.TextMessage, []byte("test message"))
-//	assert.Nil(t, err)
-//}
-//
-//func TestWsConn_ReadMessage(t *testing.T) {
-//	conn := &WsConn{}
-//	messageType, p, err := conn.ReadMessage()
-//	assert.Nil(t, err)
-//	assert.Equal(t, websocket.TextMessage, messageType)
-//	assert.Equal(t, []byte("test message"), p)
-//}
-//
-//func TestWsConn_SetReadDeadline(t *testing.T) {
-//	conn := &WsConn{}
-//	err := conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-//	assert.Nil(t, err)
-//}
-//
-//func TestWsConn_SetWriteDeadline(t *testing.T) {
-//	conn := &WsConn{}
-//	err := conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-//	assert.Nil(t, err)
-//}
-//
-//func TestWsConn_Close(t *testing.T) {
-//	conn := &WsConn{}
-//	err := conn.Close(context.Background())
-//	assert.Nil(t, err)
-////}
-
 func TestWsConn_AddTask_RunTask_RemoveTask(t *testing.T) {
 	conn := &WsConn{taskManager: NewTaskManager(mlog.NewLogger(nil))}
 	err := conn.AddTask("task1", func(err error) {})
@@ -85,4 +55,52 @@ func TestWebsocketManager_newWsConn(t *testing.T) {
 	pl.EXPECT().Ws().Return(ws).AnyTimes()
 	(&WebsocketManager{counter: c, pl: pl}).newWsConn("uid", "id", nil, nil, nil)
 	assert.Equal(t, 1, c.Count())
+}
+
+func TestWsConn_GetPtyHandler(t *testing.T) {
+	_, b := (&WsConn{
+		sm: NewSessionMap(mlog.NewLogger(nil)),
+	}).GetPtyHandler("sessionID")
+	assert.False(t, b)
+}
+
+func TestWsConn_SetPtyHandler(t *testing.T) {
+	w := &WsConn{
+		sm: NewSessionMap(mlog.NewLogger(nil)),
+	}
+	w.SetPtyHandler("sessionID", &testPtyHandler{})
+	h, b := w.GetPtyHandler("sessionID")
+	assert.True(t, b)
+	assert.NotNil(t, h)
+}
+
+func TestWsConn_ClosePty(t *testing.T) {
+	w := &WsConn{
+		sm: NewSessionMap(mlog.NewLogger(nil)),
+	}
+	w.SetPtyHandler("sessionID", &testPtyHandler{})
+	w.ClosePty(context.TODO(), "sessionID", uint32(2), "")
+}
+
+func TestWsConn_CloseAndClean(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	ws := NewMockGorillaWs(m)
+	sub := application.NewMockPubSub(m)
+	tm := NewMockTaskManager(m)
+	mapper := NewMockSessionMapper(m)
+	w := &WsConn{
+		GorillaWs:   ws,
+		pubSub:      sub,
+		user:        &auth.UserInfo{},
+		taskManager: tm,
+		sm:          mapper,
+	}
+
+	ws.EXPECT().Close()
+	tm.EXPECT().StopAll()
+	mapper.EXPECT().CloseAll(gomock.Any())
+	sub.EXPECT().Close()
+	assert.Nil(t, w.CloseAndClean(context.TODO()))
 }

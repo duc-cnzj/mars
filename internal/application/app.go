@@ -152,10 +152,6 @@ func NewApp(
 		}()
 	}
 
-	if appli.IsDebug() {
-		printConfig(appli)
-	}
-
 	return appli
 }
 
@@ -257,14 +253,6 @@ loop:
 		newBoots = append(newBoots, boot)
 	}
 	return newBoots, excludeBoots
-}
-
-// printConfig print config.
-func printConfig(app *app) {
-	app.logger.Debugf("imagepullsecrets %#v", app.Config().ImagePullSecrets)
-	for _, boot := range app.excludeBoots {
-		app.logger.Warningf("[BOOT]: '%s' (%s) doesn't start because of exclude tags: '%s'", bootShortName(boot), strings.Join(boot.Tags(), ","), strings.Join(app.excludeTags, ","))
-	}
 }
 
 // Bootstrap impl App Bootstrap.

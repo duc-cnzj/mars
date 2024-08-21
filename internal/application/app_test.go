@@ -338,7 +338,3 @@ func Test_excludeBootstrapperByTags(t *testing.T) {
 	assert.Len(t, b2, 1)
 	assert.Equal(t, "test1", b1[0].Tags()[0])
 }
-
-func Test_printConfig(t *testing.T) {
-	//printConfig(nil)
-}
