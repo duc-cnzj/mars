@@ -33,20 +33,18 @@ const (
 type sizeStore struct {
 	rwMu       sync.RWMutex
 	cols, rows uint16
-
-	resetMu sync.RWMutex
-	reset   bool
+	reset      bool
 }
 
 func (s *sizeStore) ResetTerminalRowCol(reset bool) {
-	s.resetMu.Lock()
-	defer s.resetMu.Unlock()
+	s.rwMu.Lock()
+	defer s.rwMu.Unlock()
 	s.reset = reset
 }
 
 func (s *sizeStore) TerminalRowColNeedReset() bool {
-	s.resetMu.RLock()
-	defer s.resetMu.RUnlock()
+	s.rwMu.RLock()
+	defer s.rwMu.RUnlock()
 	return s.reset
 }
 

@@ -28,8 +28,12 @@ func (t *TracingBootstrapper) Tags() []string {
 }
 
 func (t *TracingBootstrapper) Bootstrap(app application.App) error {
-
-	shutdownFuncs, err := setupOTelSDK(context.Background(), app.Config().TracingEndpoint, app.PrometheusRegistry())
+	config := app.Config()
+	if config.TracingEndpoint == "" {
+		app.Logger().Warning("TracingEndpoint is not set, skipping tracing bootstrapping")
+		return nil
+	}
+	shutdownFuncs, err := setupOTelSDK(context.Background(), config.TracingEndpoint, app.PrometheusRegistry())
 	if err != nil {
 		return err
 	}

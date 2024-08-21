@@ -5,8 +5,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/server"
 )
 
-type MetricsBootstrapper struct {
-}
+type MetricsBootstrapper struct{}
 
 func (m *MetricsBootstrapper) Tags() []string {
 	return []string{"metrics"}

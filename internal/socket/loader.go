@@ -12,9 +12,8 @@ import (
 	"strings"
 	"text/template"
 
-	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
-
 	"github.com/duc-cnzj/mars/api/v4/mars"
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	mars2 "github.com/duc-cnzj/mars/v4/internal/util/mars"
 	yaml2 "github.com/duc-cnzj/mars/v4/internal/util/yaml"
 	"go.uber.org/config"
