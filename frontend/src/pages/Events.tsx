@@ -346,7 +346,7 @@ const EventList: React.FC = () => {
                 await fetch(queries.action_type, queries.search);
                 setTimeout(() => {
                   setRefreshLoading(false);
-                }, 500);
+                }, 1000);
               }}
               size="small"
             >
