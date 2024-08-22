@@ -26,7 +26,7 @@ export default function shell(
   action: {
     type: string;
     data: { id: string; log: pb.websocket.TerminalMessage };
-  }
+  },
 ) {
   switch (action.type) {
     case REMOVE_SHELL:

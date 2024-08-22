@@ -43,7 +43,7 @@ const PipelineInfo: React.FC<{
                 commit,
               },
             },
-          }
+          },
         )
         .then(({ data, error }) => {
           if (error) {

@@ -43,7 +43,7 @@ const DiffViewer: React.FC<{
         }}
       />
     ),
-    [mode]
+    [mode],
   );
   return (
     <div style={{ height: "100%" }}>

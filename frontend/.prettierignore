@@ -1,4 +1,6 @@
 # Ignore artifacts:
 build
 coverage
-src/api/compiled*
+src/api/schema.d.ts
+src/api/websocket.d.ts
+src/api/websocket.js

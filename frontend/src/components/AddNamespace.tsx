@@ -25,7 +25,7 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
         form.resetFields();
       });
     },
-    [onCreated, form]
+    [onCreated, form],
   );
 
   return (
@@ -72,8 +72,8 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
                   }
                   return Promise.reject(
                     new Error(
-                      "名称空间格式有问题, (e.g. 'my-name',  or '123-abc')"
-                    )
+                      "名称空间格式有问题, (e.g. 'my-name',  or '123-abc')",
+                    ),
                   );
                 },
               }),

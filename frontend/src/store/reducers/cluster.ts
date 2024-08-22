@@ -20,7 +20,7 @@ export const selectClusterInfo = (state: {
 
 export default function cluster(
   state = initialState,
-  action: { type: string; info?: pb.websocket.ClusterInfo }
+  action: { type: string; info?: pb.websocket.ClusterInfo },
 ) {
   switch (action.type) {
     case SET_CLUSTER_INFO:

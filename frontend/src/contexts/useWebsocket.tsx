@@ -64,7 +64,7 @@ export const ProvideWebsocket: React.FC<{ children: React.ReactNode }> = ({
         pb.websocket.AuthorizeTokenInput.encode({
           token: getToken(),
           type: pb.websocket.Type.HandleAuthorize,
-        }).finish()
+        }).finish(),
       );
     };
     conn.onclose = function (evt) {
@@ -78,7 +78,7 @@ export const ProvideWebsocket: React.FC<{ children: React.ReactNode }> = ({
         handleEvents(
           data.metadata.slug,
           data.metadata,
-          new Uint8Array(evt.data)
+          new Uint8Array(evt.data),
         )(dispatch);
     };
   }, [dispatch]);

@@ -4,7 +4,7 @@ import pb from "../api/websocket";
 export default function useProjectRoom(
   namespaceID: number,
   projectID: number,
-  ws: WebSocket | null
+  ws: WebSocket | null,
 ) {
   const [online, setOnline] = useState(false);
   useEffect(() => {

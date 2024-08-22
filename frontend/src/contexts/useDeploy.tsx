@@ -73,7 +73,7 @@ export default function useDeploy({ namespaceID, slug }: DeployProps) {
 
       ws?.send(createParams);
     },
-    [ws, namespaceID, dispatch, slug]
+    [ws, namespaceID, dispatch, slug],
   );
 
   const updateProject = useCallback(
@@ -101,7 +101,7 @@ export default function useDeploy({ namespaceID, slug }: DeployProps) {
 
       ws?.send(createParams);
     },
-    [ws, dispatch, slug]
+    [ws, dispatch, slug],
   );
 
   const cancelDeploy = useCallback(
@@ -113,7 +113,7 @@ export default function useDeploy({ namespaceID, slug }: DeployProps) {
       }).finish();
       ws?.send(s);
     },
-    [ws, namespaceID]
+    [ws, namespaceID],
   );
 
   const clearProject = useCallback(() => {

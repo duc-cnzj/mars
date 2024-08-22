@@ -58,7 +58,7 @@ const EventList: React.FC = () => {
     page_size: number;
   }>({ page: 0, page_size: defaultPageSize });
   const [data, setData] = useState<components["schemas"]["types.EventModel"][]>(
-    []
+    [],
   );
   const [queries, setQueries] = useState<{
     action_type: TypesEventModelAction;
@@ -136,7 +136,7 @@ const EventList: React.FC = () => {
       debounce((action_type, search) => {
         fetch(action_type, search);
       }, 500),
-    [fetch]
+    [fetch],
   );
 
   useEffect(() => {
@@ -165,7 +165,7 @@ const EventList: React.FC = () => {
         </div>
       );
     },
-    []
+    [],
   );
 
   const getActionStyle = useCallback(
@@ -240,7 +240,7 @@ const EventList: React.FC = () => {
           );
       }
     },
-    []
+    [],
   );
 
   const [isWindowVisible, setIsWindowVisible] = useState(false);
@@ -260,7 +260,7 @@ const EventList: React.FC = () => {
           setIsWindowVisible(true);
         });
     },
-    [detail]
+    [detail],
   );
 
   const handleCancel = useCallback(() => {
@@ -453,7 +453,7 @@ const EventList: React.FC = () => {
 
                               setData((items) => {
                                 let a = items.map((v) =>
-                                  v.id === item.id ? { ...v, fileId: 0 } : v
+                                  v.id === item.id ? { ...v, fileId: 0 } : v,
                                 );
                                 return a;
                               });
@@ -497,8 +497,8 @@ const EventList: React.FC = () => {
                               }
                               setData(
                                 data.map((v) =>
-                                  v.id === item.id ? { ...v, fileId: 0 } : v
-                                )
+                                  v.id === item.id ? { ...v, fileId: 0 } : v,
+                                ),
                               );
                               message.success("删除成功");
                             });

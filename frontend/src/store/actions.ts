@@ -35,7 +35,7 @@ export const appendCreateProjectLog = (
   id: string,
   log: string,
   type: pb.websocket.ResultType,
-  containers?: pb.websocket.Container[]
+  containers?: pb.websocket.Container[],
 ) => ({
   type: APPEND_CREATE_PROJECT_LOG,
   data: {
@@ -113,7 +113,7 @@ export const setStartAt = (id: string, startAt: number) => ({
 });
 
 export const setClusterInfo = (
-  info: components["schemas"]["websocket.ClusterInfo"]
+  info: components["schemas"]["websocket.ClusterInfo"],
 ) => ({
   type: SET_CLUSTER_INFO,
   info: info,
@@ -145,7 +145,7 @@ const debounceLoadNamespace = debounce((dispatch: Dispatch, nsID: number) => {
 export const handleEvents = (
   id: string,
   data: pb.websocket.Metadata,
-  input: any
+  input: any,
 ) => {
   return function (dispatch: Dispatch) {
     console.log(data);
@@ -170,12 +170,12 @@ export const handleEvents = (
         if (data.result === pb.websocket.ResultType.LogWithContainers) {
           containers =
             pb.websocket.WsWithContainerMessageResponse.decode(
-              input
+              input,
             ).containers;
         }
 
         dispatch(
-          appendCreateProjectLog(id, data.message, data.result, containers)
+          appendCreateProjectLog(id, data.message, data.result, containers),
         );
 
         if (data.end) {
@@ -191,8 +191,8 @@ export const handleEvents = (
                   id,
                   "部署已取消",
                   data.result,
-                  containers
-                )
+                  containers,
+                ),
               );
               message.warning("部署已取消");
               break;
@@ -200,7 +200,7 @@ export const handleEvents = (
             default:
               dispatch(setDeployStatus(id, DeployStatus.DeployFailed));
               dispatch(
-                appendCreateProjectLog(id, "部署失败", data.result, containers)
+                appendCreateProjectLog(id, "部署失败", data.result, containers),
               );
               message.error("部署失败");
               break;
@@ -213,7 +213,7 @@ export const handleEvents = (
         if (data.result === pb.websocket.ResultType.LogWithContainers) {
           createContainers =
             pb.websocket.WsWithContainerMessageResponse.decode(
-              input
+              input,
             ).containers;
         }
         dispatch(
@@ -221,8 +221,8 @@ export const handleEvents = (
             id,
             data.message,
             data.result,
-            createContainers
-          )
+            createContainers,
+          ),
         );
 
         if (data.end) {
@@ -242,8 +242,8 @@ export const handleEvents = (
                   id,
                   "部署已取消",
                   data.result,
-                  createContainers
-                )
+                  createContainers,
+                ),
               );
               message.warning("部署已取消");
               break;
@@ -255,8 +255,8 @@ export const handleEvents = (
                   id,
                   "部署失败",
                   data.result,
-                  createContainers
-                )
+                  createContainers,
+                ),
               );
               message.error("部署失败");
               break;
@@ -288,8 +288,8 @@ export const handleEvents = (
           dispatch(
             setShellLog(
               logRes.terminalMessage.sessionId,
-              logRes.terminalMessage
-            )
+              logRes.terminalMessage,
+            ),
           );
         break;
       case pb.websocket.Type.HandleAuthorize:

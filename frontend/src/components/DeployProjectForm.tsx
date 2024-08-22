@@ -287,7 +287,7 @@ const DeployProjectForm: React.FC<{
       message.success("部署成功");
       setTimeout(() => {
         cheers();
-      }, 600);
+      }, 500);
       onSuccess?.();
       clearProject();
       setShowLog(false);

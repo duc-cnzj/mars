@@ -54,7 +54,7 @@ const AddRepoModal: React.FC<{
   const configField = Form.useWatch(["marsConfig", "configField"], form);
   const configFileValues = Form.useWatch(
     ["marsConfig", "configFileValues"],
-    form
+    form,
   );
 
   let isEdit = !!editItem && editItem.id > 0;
@@ -125,7 +125,7 @@ const AddRepoModal: React.FC<{
             }
           });
       }, 2000),
-    [setValuesYaml]
+    [setValuesYaml],
   );
 
   useEffect(() => {
@@ -231,7 +231,7 @@ const AddRepoModal: React.FC<{
           let data = _.get(yaml.load(valuesYaml), configField.split("->"), "");
           form.setFieldValue(
             ["marsConfig", "isSimpleEnv"],
-            typeof data === "object" ? false : true
+            typeof data === "object" ? false : true,
           );
           if (typeof data === "object") {
             data = yaml.dump(data);
@@ -475,7 +475,7 @@ const AddRepoModal: React.FC<{
                     onClick={() => {
                       form.setFieldValue(
                         ["marsConfig", "configFileValues"],
-                        String(configFileContent)
+                        String(configFileContent),
                       );
                       setConfigFileTip(false);
                       setConfigFileContent("");

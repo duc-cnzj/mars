@@ -14,7 +14,7 @@ export const modals = (state: { openedModal: modalState }) =>
 
 export default function openedModal(
   state = initialState,
-  action: { type: string; data: { modals: Pick<modalState, "modals"> } }
+  action: { type: string; data: { modals: Pick<modalState, "modals"> } },
 ) {
   switch (action.type) {
     case SET_OPENED_MODALS:

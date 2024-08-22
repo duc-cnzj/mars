@@ -64,17 +64,17 @@ function DraggableModalInnerNonMemo({
 
   const style: React.CSSProperties = useMemo(
     () => ({ ...modalStyle, top: y, left: x, height }),
-    [y, x, height]
+    [y, x, height],
   );
 
   const onFocus = useCallback(
     () => dispatch({ type: "focus", id }),
-    [id, dispatch]
+    [id, dispatch],
   );
 
   const onDragWithID = useCallback(
     (args: any) => dispatch({ type: "drag", id, ...args }),
-    [dispatch, id]
+    [dispatch, id],
   );
 
   const onResizeWithID = useCallback(
@@ -82,7 +82,7 @@ function DraggableModalInnerNonMemo({
       onResize?.();
       dispatch({ type: "resize", id, ...args });
     },
-    [onResize, dispatch, id]
+    [onResize, dispatch, id],
   );
   const onDoubleClickWithID = useCallback(() => {
     onResize?.();
@@ -103,7 +103,7 @@ function DraggableModalInnerNonMemo({
         {title}
       </div>
     ),
-    [onMouseDrag, onFocus, title]
+    [onMouseDrag, onFocus, title],
   );
 
   return (

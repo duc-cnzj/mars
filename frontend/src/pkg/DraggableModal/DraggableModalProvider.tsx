@@ -14,7 +14,7 @@ export const DraggableModalProvider = ({
 }): React.ReactElement => {
   const [state, dispatch] = useReducer(
     draggableModalReducer,
-    initialModalsState
+    initialModalsState,
   );
 
   useEffect(() => {

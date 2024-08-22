@@ -40,9 +40,9 @@ const LogOutput: React.FC<{ slug: string; pending?: React.ReactNode }> = ({
             </div>
           ),
           color: getResultColor(data.type),
-        })
+        }),
       ),
-    [getResultColor, list, slug]
+    [getResultColor, list, slug],
   );
 
   return (

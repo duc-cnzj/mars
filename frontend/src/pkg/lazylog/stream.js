@@ -10,7 +10,7 @@ const fetcher = Promise.resolve().then(() =>
         self.ReadableStream = ReadableStream;
 
         return import("fetch-readablestream");
-      })
+      }),
 );
 
 export const recurseReaderAsEvent = async (reader, emitter) => {
@@ -54,7 +54,7 @@ export default (url, options) => {
       const fetch = await fetcher;
       const response = await fetch(
         url,
-        Object.assign({ credentials: "omit" }, options)
+        Object.assign({ credentials: "omit" }, options),
       );
 
       if (!response.ok) {
@@ -63,7 +63,7 @@ export default (url, options) => {
         error.status = response.status;
         const result = await response.body.getReader().read();
         error.body = decode(
-          bufferConcat(encodedLog, new Uint8Array(result.value))
+          bufferConcat(encodedLog, new Uint8Array(result.value)),
         );
         emitter.emit("error", error);
 

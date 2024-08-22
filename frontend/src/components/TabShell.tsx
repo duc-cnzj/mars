@@ -39,7 +39,7 @@ const decoder = new TextDecoder();
 const generateSessionID = (
   namespace: string,
   pod: string,
-  container: string
+  container: string,
 ): string => {
   return `${namespace}-${pod}-${container}:${uuidv4()}`;
 };
@@ -95,7 +95,7 @@ const TabShell: React.FC<{
           setList(data.items);
           return data;
         }),
-    [id]
+    [id],
   );
 
   const setValuesByResult = useCallback(
@@ -111,7 +111,7 @@ const TabShell: React.FC<{
         setValue(null);
       }
     },
-    [namespace, setValue]
+    [namespace, setValue],
   );
 
   useEffect(() => {
@@ -195,7 +195,7 @@ const TabShell: React.FC<{
         return { pod, container, namespace };
       });
     },
-    [namespace, listContainer, setValuesByResult, resetTermMap]
+    [namespace, listContainer, setValuesByResult, resetTermMap],
   );
 
   const beforeUpload = useCallback(
@@ -211,7 +211,7 @@ const TabShell: React.FC<{
 
       return isLtMaxSize;
     },
-    [maxUploadInfo]
+    [maxUploadInfo],
   );
 
   const [loading, setLoading] = useState(false);
@@ -249,7 +249,7 @@ const TabShell: React.FC<{
             console.log(data);
             message.success(
               `文件 ${info.file.name} 已上传到容器 ${data?.podFilePath} 下`,
-              2
+              2,
             );
           });
       } else if (info.file.status === "error") {
@@ -284,7 +284,7 @@ const TabShell: React.FC<{
         return [...tmap];
       });
     },
-    [canAddTerm]
+    [canAddTerm],
   );
   const subWebTerm = useCallback((id: string) => {
     console.log("sub web term");
@@ -305,7 +305,7 @@ const TabShell: React.FC<{
   const nestedAllotment = (
     items: { type: "vertical" | "horizontal" | undefined; id: string }[],
     ws: WebSocket,
-    value: { pod: string; namespace: string; container: string }
+    value: { pod: string; namespace: string; container: string },
   ): React.ReactNode[] => {
     let idx = 0;
     let group: React.ReactNode[] = [];
@@ -325,7 +325,7 @@ const TabShell: React.FC<{
           resizeAt={resizeTime}
           forceRender={forceRender}
           onClose={subWebTerm}
-        />
+        />,
       );
       lastType = items[index].type;
       if (
@@ -340,7 +340,7 @@ const TabShell: React.FC<{
             onDragEnd={resizeShellWindow}
           >
             {group.map((v) => v)}
-          </Allotment>
+          </Allotment>,
         );
         group = [];
         idx = 0;
@@ -359,7 +359,7 @@ const TabShell: React.FC<{
             onDragEnd={resizeShellWindow}
           >
             {group.map((v) => v)}
-          </Allotment>
+          </Allotment>,
         );
       }
       group = [];
@@ -537,7 +537,7 @@ const ShellWindow: React.FC<{
           console.log(e);
         }
       },
-      [ws]
+      [ws],
     );
     const initShell = useCallback(() => {
       let ss = pb.websocket.WsHandleExecShellInput.encode({
@@ -593,7 +593,7 @@ const ShellWindow: React.FC<{
             console.log(e);
           }
         }, 300),
-      [fitAddon]
+      [fitAddon],
     );
 
     const handleConnectionMessage = useCallback(
@@ -609,13 +609,13 @@ const ShellWindow: React.FC<{
           message.error(decoder.decode(frame.data));
         }
       },
-      []
+      [],
     );
 
     const sessions = useSelector(selectSessions);
     let logCount = useMemo(
       () => sessions[sessionID]?.logCount,
-      [sessions, sessionID]
+      [sessions, sessionID],
     );
     let log = useMemo(() => sessions[sessionID]?.log, [sessions, sessionID]);
     useEffect(() => {
@@ -649,7 +649,7 @@ const ShellWindow: React.FC<{
 
         return myterm;
       },
-      [onTerminalResize, onTerminalSendString, fitAddon, debouncedFit_]
+      [onTerminalResize, onTerminalSendString, fitAddon, debouncedFit_],
     );
     const handleCloseShell = useCallback(
       (id: string) => {
@@ -661,7 +661,7 @@ const ShellWindow: React.FC<{
           sendMsg(s);
         }
       },
-      [sendMsg]
+      [sendMsg],
     );
     useEffect(() => {
       initShell();
@@ -708,7 +708,7 @@ const ShellWindow: React.FC<{
         )}
       </div>
     );
-  }
+  },
 );
 
 export default memo(TabShell);

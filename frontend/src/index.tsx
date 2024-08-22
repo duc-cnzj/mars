@@ -80,5 +80,5 @@ root.render(
         <RootElement />
       </Router>
     </Suspense>
-  </Provider>
+  </Provider>,
 );

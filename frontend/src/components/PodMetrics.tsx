@@ -62,7 +62,7 @@ const PodMetrics: React.FC<{
         setMemoryMetrics([]);
       }
     },
-    [setCpuMetrics, setMemoryMetrics]
+    [setCpuMetrics, setMemoryMetrics],
   );
   useEffect(() => {
     setCpuMetrics([]);
@@ -77,7 +77,7 @@ const PodMetrics: React.FC<{
       onNext,
       onError,
       fetchParams: { headers: { Authorization: getToken() } },
-    }
+    },
   );
 
   useEffect(() => {

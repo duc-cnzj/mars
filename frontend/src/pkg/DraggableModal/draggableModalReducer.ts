@@ -3,7 +3,7 @@ import { clamp } from "./clamp";
 
 const mapObject = <T>(
   o: { [key: string]: T },
-  f: (value: T) => T
+  f: (value: T) => T,
 ): { [key: string]: T } =>
   Object.assign({}, ...Object.keys(o).map((k) => ({ [k]: f(o[k]) })));
 
@@ -119,7 +119,7 @@ const clampDrag = (
   x: number,
   y: number,
   width: number,
-  height: number
+  height: number,
 ): { x: number; y: number } => {
   const maxX = windowWidth - width;
   const maxY = windowHeight - height;
@@ -134,7 +134,7 @@ const clampResize = (
   x: number,
   y: number,
   width: number,
-  height: number
+  height: number,
 ): { width: number; height: number } => {
   const maxWidth = windowWidth - x;
   const maxHeight = windowHeight - y;
@@ -145,7 +145,7 @@ const clampResize = (
 
 export const draggableModalReducer = (
   state: ModalsState,
-  action: Action
+  action: Action,
 ): ModalsState => {
   const removeOverflow = (exceptID: string) => {
     let hidden = true;
@@ -160,7 +160,7 @@ export const draggableModalReducer = (
     }
     if (hidden) {
       document.body.classList.remove(
-        "ant-design-draggable-modal-body-overflow"
+        "ant-design-draggable-modal-body-overflow",
       );
     }
   };
@@ -239,7 +239,7 @@ export const draggableModalReducer = (
         action.x,
         action.y,
         action.width,
-        action.height
+        action.height,
       );
       return {
         ...state,
@@ -267,7 +267,7 @@ export const draggableModalReducer = (
               action.x,
               action.y,
               state.modals[action.id].width,
-              state.modals[action.id].height
+              state.modals[action.id].height,
             ),
             zIndex: getNextZIndex(state, action.id),
           },
@@ -284,7 +284,7 @@ export const draggableModalReducer = (
         centerX,
         centerY,
         modalState.width,
-        modalState.height
+        modalState.height,
       );
       const size = clampResize(
         state.windowSize.width,
@@ -292,7 +292,7 @@ export const draggableModalReducer = (
         position.x,
         position.y,
         modalState.width,
-        modalState.height
+        modalState.height,
       );
       return {
         ...state,
@@ -374,7 +374,7 @@ export const draggableModalReducer = (
             modalState.x,
             modalState.y,
             modalState.width,
-            modalState.height
+            modalState.height,
           );
           const size = clampResize(
             state.windowSize.width,
@@ -382,7 +382,7 @@ export const draggableModalReducer = (
             position.x,
             position.y,
             modalState.width,
-            modalState.height
+            modalState.height,
           );
           return {
             ...modalState,

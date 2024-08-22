@@ -33,7 +33,7 @@ const ServiceEndpoint: React.FC<{
           });
       }
     },
-    [namespaceId, projectId]
+    [namespaceId, projectId],
   );
 
   return (

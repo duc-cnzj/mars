@@ -53,7 +53,7 @@ const Elements: React.FC<{
     (
       item: components["schemas"]["websocket.ExtraValue"],
       ele: components["schemas"]["mars.Element"][],
-      index: number
+      index: number,
     ): React.ReactNode => {
       for (let i = 0; i < ele.length; i++) {
         let ev = ele[i];
@@ -76,7 +76,7 @@ const Elements: React.FC<{
       }
       return <></>;
     },
-    [onChange, style, value]
+    [onChange, style, value],
   );
 
   console.log(value);
@@ -229,5 +229,5 @@ const Element: React.FC<{
 };
 
 export default memo(Elements, (prev, next) =>
-  omitEqual(prev, next, "onChange")
+  omitEqual(prev, next, "onChange"),
 );

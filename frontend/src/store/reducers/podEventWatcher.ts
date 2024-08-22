@@ -9,7 +9,7 @@ export const selectPodEventProjectID = (state: {
 
 export default function podEventWatcher(
   state = initialState,
-  action: { type: string; projectIDWithTimestamp: string }
+  action: { type: string; projectIDWithTimestamp: string },
 ) {
   switch (action.type) {
     case PROJECT_POD_EVENT:

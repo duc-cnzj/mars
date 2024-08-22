@@ -37,27 +37,27 @@ const DynamicElement: React.FC<{ form: FormInstance }> = ({ form }) => {
           0,
           result.source.index > result.destination.index
             ? result.destination.index
-            : result.destination.index + 1
+            : result.destination.index + 1,
         ),
         eles[result.source.index],
         ...slice(
           eles,
           result.source.index > result.destination.index
             ? result.destination.index
-            : result.destination.index + 1
+            : result.destination.index + 1,
         ),
       ];
       n.splice(
         result.source.index > result.destination.index
           ? deleteIdx + 1
           : deleteIdx,
-        1
+        1,
       );
 
       form.setFieldValue(["marsConfig", "elements"], [...n]);
       setIsDragging(false);
     },
-    [form]
+    [form],
   );
 
   return (
@@ -149,7 +149,7 @@ const DynamicElement: React.FC<{ form: FormInstance }> = ({ form }) => {
                                       });
                                       form.setFieldValue(
                                         ["marsConfig", "elements"],
-                                        eles
+                                        eles,
                                       );
                                     }}
                                   >
@@ -271,8 +271,8 @@ const DynamicElement: React.FC<{ form: FormInstance }> = ({ form }) => {
                                           }
                                           return Promise.reject(
                                             new Error(
-                                              "default 默认值必须在选择器中"
-                                            )
+                                              "default 默认值必须在选择器中",
+                                            ),
                                           );
                                         },
                                       }),

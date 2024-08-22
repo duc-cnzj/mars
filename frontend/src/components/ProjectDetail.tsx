@@ -40,7 +40,7 @@ const ItemDetailModal: React.FC<{
   const onCloseModal = useCallback(() => {
     setVisible(false);
     let pidStr = sortedUniq(
-      (params.get("pid") || "").split(",").filter((v) => v !== String(item.id))
+      (params.get("pid") || "").split(",").filter((v) => v !== String(item.id)),
     ).join(",");
     setParams(!!pidStr ? { pid: pidStr } : {});
   }, [item.id, setParams, params]);
@@ -273,7 +273,7 @@ const MyTabs: React.FC<{
         style={{ height: "100%" }}
       />
     );
-  }
+  },
 );
 
 export default memo(ItemDetailModal);

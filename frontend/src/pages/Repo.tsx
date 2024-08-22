@@ -23,7 +23,7 @@ const defaultPageSize = 15;
 
 const RepoPage: React.FC = () => {
   const [data, setData] = useState<components["schemas"]["types.RepoModel"][]>(
-    []
+    [],
   );
   const [paginate, setPaginate] = useState({
     page: 1,
@@ -60,7 +60,7 @@ const RepoPage: React.FC = () => {
           setLoading((v) => ({ ...v, list: false }));
         });
     },
-    []
+    [],
   );
 
   const [searchInput, setSearchInput] = useState({ name: "" });
@@ -208,7 +208,7 @@ const RepoPage: React.FC = () => {
                     onClick={async () => {
                       const { data, error } = await ajax.GET(
                         "/api/repos/{id}",
-                        { params: { path: { id: item.id } } }
+                        { params: { path: { id: item.id } } },
                       );
                       if (error) {
                         message.error(error.message);
@@ -233,7 +233,7 @@ const RepoPage: React.FC = () => {
                         "/api/repos/toggle_enabled",
                         {
                           body: { id: item.id, enabled: !item.enabled },
-                        }
+                        },
                       );
                       if (error) {
                         setTimeout(() => {
@@ -250,8 +250,8 @@ const RepoPage: React.FC = () => {
                           items.map((v) =>
                             v.id === item.id
                               ? { ...v, enabled: !item.enabled }
-                              : v
-                          )
+                              : v,
+                          ),
                         );
                         setLoading((lo) => ({
                           ...lo,

@@ -50,7 +50,7 @@ export default function createProject(
       deployStatus: string;
       processPercent: number;
     };
-  }
+  },
 ) {
   switch (action.type) {
     case CLEAN_PROJECT:
@@ -68,7 +68,7 @@ export default function createProject(
           ...set(
             state,
             [action.data.id, "processPercent"],
-            action.data.processPercent
+            action.data.processPercent,
           ),
         };
       }
@@ -80,7 +80,7 @@ export default function createProject(
           ...set(
             state,
             [action.data.id, "deployStatus"],
-            action.data.deployStatus
+            action.data.deployStatus,
           ),
         };
       }

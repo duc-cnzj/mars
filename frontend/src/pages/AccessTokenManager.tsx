@@ -201,7 +201,7 @@ const AccessTokenManager: React.FC = () => {
 
   const [currToken, setCurrToken] = useState("");
   const getTags = (
-    item: components["schemas"]["types.AccessTokenModel"]
+    item: components["schemas"]["types.AccessTokenModel"],
   ): React.ReactNode => {
     return (
       <>
@@ -278,7 +278,7 @@ const AccessTokenManager: React.FC = () => {
           <List
             dataSource={data}
             renderItem={(
-              item: components["schemas"]["types.AccessTokenModel"]
+              item: components["schemas"]["types.AccessTokenModel"],
             ) => (
               <AccessTokenListItem key={item.token}>
                 <List.Item.Meta

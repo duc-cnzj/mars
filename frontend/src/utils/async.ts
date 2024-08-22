@@ -10,7 +10,7 @@ export function useUnmounted() {
   return unmountedRef.current;
 }
 export function useAsyncState<S>(
-  initialState: S | (() => S)
+  initialState: S | (() => S),
 ): [S, React.Dispatch<React.SetStateAction<S>>] {
   const unmountedRef = useUnmounted();
   const [state, setState] = useState(initialState);

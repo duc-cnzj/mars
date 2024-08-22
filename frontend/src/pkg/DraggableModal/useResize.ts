@@ -20,7 +20,7 @@ export const useResize = (
     y: number;
     width: number;
     height: number;
-  }) => void
+  }) => void,
 ): ((e: React.MouseEvent) => void) => {
   const [dragging, setDragging] = useState(false);
   const [initialDragState, setInitialDragState] = useState<InitialState>({
@@ -45,7 +45,7 @@ export const useResize = (
       });
       setDragging(true);
     },
-    [width, height, setDragging, setInitialDragState, x, y]
+    [width, height, setDragging, setInitialDragState, x, y],
   );
 
   useEffect(() => {
