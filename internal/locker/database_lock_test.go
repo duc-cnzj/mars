@@ -182,11 +182,11 @@ func Test_databaseLock_renewalExistKey(t *testing.T) {
 	acquire := dbLock.Acquire(key, seconds)
 	assert.True(t, acquire, "Expected to acquire lock")
 	exist := dbLock.renewalExistKey(key, seconds)
-	assert.True(t, exist, "Expected key to exist")
+	assert.Nil(t, exist, "Expected key to exist")
 
 	dbLock.Release(key)
 	exist = dbLock.renewalExistKey(key, seconds)
-	assert.False(t, exist, "Expected key not to exist")
+	assert.NotNil(t, exist, "Expected key not to exist")
 }
 
 func Test_databaseLock_renewalExistKey_Concurrent(t *testing.T) {
@@ -208,14 +208,14 @@ func Test_databaseLock_renewalExistKey_Concurrent(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			exist := dbLock.renewalExistKey(key, seconds)
-			assert.True(t, exist, "Expected key to exist")
+			assert.Nil(t, exist, "Expected key to exist")
 		}()
 	}
 	wg.Wait()
 
 	dbLock.Release(key)
 	exist := dbLock.renewalExistKey(key, seconds)
-	assert.False(t, exist, "Expected key not to exist")
+	assert.NotNil(t, exist, "Expected key not to exist")
 }
 
 func TestDatabaseLock_ConcurrentRenewalExistKey(t *testing.T) {
@@ -245,7 +245,7 @@ func TestDatabaseLock_ConcurrentRenewalExistKey(t *testing.T) {
 			case <-stopChan:
 				return
 			default:
-				if lock.renewalExistKey(key, seconds) {
+				if err := lock.renewalExistKey(key, seconds); err == nil {
 					renewedByOwner++
 				}
 			}
@@ -259,7 +259,7 @@ func TestDatabaseLock_ConcurrentRenewalExistKey(t *testing.T) {
 			case <-stopChan:
 				return
 			default:
-				if anotherLock.renewalExistKey(key, seconds) {
+				if err := anotherLock.renewalExistKey(key, seconds); err == nil {
 					renewedByAnother++
 				}
 			}
@@ -272,7 +272,7 @@ func TestDatabaseLock_ConcurrentRenewalExistKey(t *testing.T) {
 			case <-stopChan:
 				return
 			default:
-				if anotherLock2.renewalExistKey(key, seconds) {
+				if err := anotherLock2.renewalExistKey(key, seconds); err == nil {
 					renewedByAnother2++
 				}
 			}

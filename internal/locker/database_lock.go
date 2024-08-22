@@ -57,8 +57,8 @@ func (d *databaseLock) renewalRoutine(ctx context.Context, key string, seconds, 
 			d.logger.Debug("[lock]: canceled: " + key)
 			return
 		case <-ticker.C:
-			if !d.renewalExistKey(key, seconds) {
-				d.logger.Error("[lock]: err renewal lock: " + key)
+			if err := d.renewalExistKey(key, seconds); err != nil {
+				d.logger.Errorf("[lock]: err renewal lock: %v", err)
 				return
 			}
 		}
@@ -124,10 +124,10 @@ func (d *databaseLock) cleanupExpiredLocks(db *ent.Client) {
 	}
 }
 
-func (d *databaseLock) renewalExistKey(key string, seconds int64) bool {
+func (d *databaseLock) renewalExistKey(key string, seconds int64) error {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancelFunc()
-	if err := d.data.WithTx(ctx, func(db *ent.Tx) error {
+	return d.data.WithTx(ctx, func(db *ent.Tx) error {
 		var (
 			err  error
 			item *ent.CacheLock
@@ -145,11 +145,7 @@ func (d *databaseLock) renewalExistKey(key string, seconds int64) bool {
 			SetExpiredAt(d.timer.Now().Add(time.Duration(seconds) * time.Second)).
 			Save(ctx)
 		return err
-	}); err != nil {
-		return false
-	}
-
-	return true
+	})
 }
 
 func (d *databaseLock) Release(key string) bool {

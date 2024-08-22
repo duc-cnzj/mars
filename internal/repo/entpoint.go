@@ -44,7 +44,6 @@ func (repo *endpointRepo) InProject(ctx context.Context, projectID int) (res []*
 	if err != nil {
 		return nil, ToError(404, err)
 	}
-	repo.logger.Warning("InProject", "first", first)
 	nodePortMapping := repo.projRepo.GetNodePortMappingByProjects(first.Edges.Namespace.Name, ToProject(first))
 	ingMapping := repo.projRepo.GetIngressMappingByProjects(first.Edges.Namespace.Name, ToProject(first))
 	lbMapping := repo.projRepo.GetLoadBalancerMappingByProjects(first.Edges.Namespace.Name, ToProject(first))
