@@ -108,7 +108,6 @@ func (c *ChartFileLoader) Load(j *jobRunner) error {
 		pid = split[0]
 		branch = split[1]
 		path = split[2]
-		j.logger.Warning("split", pid, branch, path, j.pluginMgr.Git())
 		files, _ = j.pluginMgr.Git().GetDirectoryFilesWithBranch(pid, branch, path, true)
 		if len(files) < 1 {
 			return errors.New("charts 文件不存在")

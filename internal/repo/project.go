@@ -253,7 +253,6 @@ func (repo *projectRepo) Delete(ctx context.Context, id int) error {
 }
 
 func (repo *projectRepo) UpdateStatusByVersion(ctx context.Context, id int, status types.Deploy, version int) (*Project, error) {
-	repo.logger.Warning("id-version: ", id, version)
 	if _, err := repo.FindByVersion(ctx, id, version); err != nil {
 		return nil, err
 	}

@@ -54,7 +54,7 @@ func (s *safeWriteMessageCh) Send(m MessageItem) {
 		return
 	}
 
-	s.logger.Warning("Send message to channel", m.Msg)
+	s.logger.Debug("Send message to channel", m.Msg)
 
 	select {
 	case s.ch <- m:
