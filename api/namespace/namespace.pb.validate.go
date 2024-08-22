@@ -1391,3 +1391,249 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = FavoriteResponseValidationError{}
+
+// Validate checks the field values on UpdateDescRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *UpdateDescRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateDescRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateDescRequestMultiError, or nil if none found.
+func (m *UpdateDescRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateDescRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetId() <= 0 {
+		err := UpdateDescRequestValidationError{
+			field:  "Id",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Desc
+
+	if len(errors) > 0 {
+		return UpdateDescRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateDescRequestMultiError is an error wrapping multiple validation errors
+// returned by UpdateDescRequest.ValidateAll() if the designated constraints
+// aren't met.
+type UpdateDescRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateDescRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateDescRequestMultiError) AllErrors() []error { return m }
+
+// UpdateDescRequestValidationError is the validation error returned by
+// UpdateDescRequest.Validate if the designated constraints aren't met.
+type UpdateDescRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateDescRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateDescRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateDescRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateDescRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateDescRequestValidationError) ErrorName() string {
+	return "UpdateDescRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateDescRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateDescRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateDescRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateDescRequestValidationError{}
+
+// Validate checks the field values on UpdateDescResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateDescResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateDescResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateDescResponseMultiError, or nil if none found.
+func (m *UpdateDescResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateDescResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetItem()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UpdateDescResponseValidationError{
+					field:  "Item",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UpdateDescResponseValidationError{
+					field:  "Item",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetItem()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateDescResponseValidationError{
+				field:  "Item",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return UpdateDescResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateDescResponseMultiError is an error wrapping multiple validation errors
+// returned by UpdateDescResponse.ValidateAll() if the designated constraints
+// aren't met.
+type UpdateDescResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateDescResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateDescResponseMultiError) AllErrors() []error { return m }
+
+// UpdateDescResponseValidationError is the validation error returned by
+// UpdateDescResponse.Validate if the designated constraints aren't met.
+type UpdateDescResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateDescResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateDescResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateDescResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateDescResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateDescResponseValidationError) ErrorName() string {
+	return "UpdateDescResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateDescResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateDescResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateDescResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateDescResponseValidationError{}

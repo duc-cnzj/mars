@@ -133,6 +133,45 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 	}, nil
 }
 
+func (n *namespaceSvc) Show(ctx context.Context, input *namespace.ShowRequest) (*namespace.ShowResponse, error) {
+	ns, err := n.nsRepo.Show(ctx, int(input.Id))
+	if err != nil {
+		return nil, err
+	}
+	return &namespace.ShowResponse{Item: transformer.FromNamespace(ns)}, nil
+}
+
+func (n *namespaceSvc) UpdateDesc(ctx context.Context, req *namespace.UpdateDescRequest) (*namespace.UpdateDescResponse, error) {
+	old, err := n.nsRepo.Show(ctx, int(req.Id))
+	if err != nil {
+		return nil, err
+	}
+
+	ns, err := n.nsRepo.Update(ctx, &repo.UpdateNamespaceInput{
+		ID:          int(req.Id),
+		Description: req.Desc,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	n.eventRepo.AuditLogWithChange(
+		types.EventActionType_Update,
+		MustGetUser(ctx).Name,
+		fmt.Sprintf("更新项目空间描述: id: '%d' '%s'", ns.ID, ns.Name),
+		&repo.AnyYamlPrettier{
+			"namespace": old.Name,
+			"desc":      old.Description,
+		},
+		&repo.AnyYamlPrettier{
+			"namespace": ns.Name,
+			"desc":      ns.Description,
+		},
+	)
+
+	return &namespace.UpdateDescResponse{Item: transformer.FromNamespace(ns)}, nil
+}
+
 func (n *namespaceSvc) Delete(ctx context.Context, input *namespace.DeleteRequest) (*namespace.DeleteResponse, error) {
 	user := auth.MustGetUser(ctx)
 	if !user.IsAdmin() {
@@ -215,14 +254,6 @@ func (n *namespaceSvc) IsExists(ctx context.Context, input *namespace.IsExistsRe
 	}
 
 	return &namespace.IsExistsResponse{Exists: true, Id: int64(ns.ID)}, nil
-}
-
-func (n *namespaceSvc) Show(ctx context.Context, input *namespace.ShowRequest) (*namespace.ShowResponse, error) {
-	ns, err := n.nsRepo.Show(ctx, int(input.Id))
-	if err != nil {
-		return nil, err
-	}
-	return &namespace.ShowResponse{Item: transformer.FromNamespace(ns)}, nil
 }
 
 func (n *namespaceSvc) Favorite(ctx context.Context, req *namespace.FavoriteRequest) (*namespace.FavoriteResponse, error) {

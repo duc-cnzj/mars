@@ -2,6 +2,9 @@ body {
   background: #f8fafc;
   margin: 0;
 }
+a:-webkit-any-link {
+  text-decoration: none;
+}
 
 .draggable-modal .ant-modal-content {
   width: 100%;

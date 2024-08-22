@@ -29,6 +29,7 @@ import useDeploy from "../contexts/useDeploy";
 import ConfigHistory from "./ConfigHistory";
 import { ReactDiffViewerStylesOverride } from "react-diff-viewer";
 import DiffViewer from "./DiffViewer";
+import useCheers from "../contexts/useCheers";
 
 const { useBreakpoint } = Grid;
 
@@ -137,7 +138,7 @@ const DeployProjectForm: React.FC<{
         })
         .finally(() => setLoading((l) => ({ ...l, project: false })));
     },
-    [isEdit, project?.repoId]
+    [isEdit, project?.repoId],
   );
   const fetchBranches = useCallback(
     (gitProjectId: number, repoId: number, isEdit?: boolean) => {
@@ -164,7 +165,7 @@ const DeployProjectForm: React.FC<{
           setLoading((v) => ({ ...v, branch: false }));
         });
     },
-    [form]
+    [form],
   );
   const fetchCommits = useCallback(
     (gitProjectId: number, branch: string, isEdit?: boolean) => {
@@ -179,17 +180,17 @@ const DeployProjectForm: React.FC<{
             params: {
               path: { gitProjectId: gitProjectId, branch: branch },
             },
-          }
+          },
         )
         .then(
           ({ data }) =>
-            data && setOptions((opt) => ({ ...opt, commit: data.items }))
+            data && setOptions((opt) => ({ ...opt, commit: data.items })),
         )
         .finally(() => {
           setLoading((v) => ({ ...v, commit: false }));
         });
     },
-    [form]
+    [form],
   );
   useEffect(() => {
     if (isEdit) {
@@ -251,7 +252,7 @@ const DeployProjectForm: React.FC<{
           }
         });
     },
-    [form, isEdit]
+    [form, isEdit],
   );
 
   useEffect(() => {
@@ -279,13 +280,19 @@ const DeployProjectForm: React.FC<{
   });
   const [showLog, setShowLog] = useState(false);
 
+  const cheers = useCheers();
+
   useEffect(() => {
     if (isSuccess) {
+      message.success("部署成功");
+      setTimeout(() => {
+        cheers();
+      }, 600);
       onSuccess?.();
       clearProject();
       setShowLog(false);
     }
-  }, [isSuccess, onSuccess, clearProject]);
+  }, [isSuccess, onSuccess, clearProject, cheers]);
 
   const onFinish = useCallback(
     (values: FormTypes) => {
@@ -323,7 +330,7 @@ const DeployProjectForm: React.FC<{
       curr.projectId,
       project?.version,
       updateProject,
-    ]
+    ],
   );
   // console.log("curr", curr, repoId);
   // console.log("initval", initValues);

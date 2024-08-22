@@ -399,6 +399,13 @@ func (s *StringYamlPrettier) PrettyYaml() string {
 	return s.Str
 }
 
+type AnyYamlPrettier map[string]any
+
+func (s *AnyYamlPrettier) PrettyYaml() string {
+	marshal, _ := yaml.PrettyMarshal(s)
+	return string(marshal)
+}
+
 func ToEvent(data *ent.Event) *Event {
 	if data == nil {
 		return nil

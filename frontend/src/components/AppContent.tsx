@@ -38,7 +38,7 @@ const AppContent: React.FC = () => {
         })
         .finally(() => setLoading(false));
     },
-    [setNamespaceItems]
+    [setNamespaceItems],
   );
 
   const [params] = useSearchParams();
@@ -59,7 +59,7 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (reloadNamespace) {
       fetchNamespaces(favorite).finally(() =>
-        dispatch(setNamespaceReload(false, 0))
+        dispatch(setNamespaceReload(false, 0)),
       );
     }
   }, [reloadNamespace, dispatch, fetchNamespaces, favorite]);
@@ -141,6 +141,7 @@ const NamespaceList: React.FC<{
           {list.map((item: components["schemas"]["types.NamespaceModel"]) => (
             <Col md={12} lg={8} sm={12} xs={24} key={item.id}>
               <ItemCard
+                reload={() => fetchNamespaces(favorite)}
                 onFavorite={(id: number, fav: boolean) => {
                   ajax
                     .POST("/api/namespaces/favorite", {

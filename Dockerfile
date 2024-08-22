@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM node:lts-alpine as web-build
+FROM --platform=$BUILDPLATFORM node:21-alpine as web-build
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ COPY ./frontend .
 RUN yarn install --registry=https://registry.npm.taobao.org && \
     yarn build
 
-FROM --platform=linux/amd64 golang:1.21 AS builder
+FROM --platform=linux/amd64 golang:1.22 AS builder
 
 ARG TARGETARCH
 ARG TARGETOS

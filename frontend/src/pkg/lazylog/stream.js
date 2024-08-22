@@ -6,7 +6,7 @@ import { decode } from "./encoding";
 const fetcher = Promise.resolve().then(() =>
   "ReadableStream" in self && "body" in self.Response.prototype
     ? self.fetch
-    : import("web-streams-polyfill/ponyfill").then(({ ReadableStream }) => {
+    : import("web-streams-polyfill").then(({ ReadableStream }) => {
         self.ReadableStream = ReadableStream;
 
         return import("fetch-readablestream");

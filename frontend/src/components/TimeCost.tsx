@@ -4,7 +4,7 @@ import { FieldTimeOutlined } from "@ant-design/icons";
 const TimeCost: React.FC<{ done: boolean }> = ({ done }) => {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [now, setNow] = useState<number>(Date.now());
-  const intervalRef = useRef<NodeJS.Timer | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleStart = useCallback(() => {
     setStartTime(Date.now());

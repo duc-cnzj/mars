@@ -182,7 +182,6 @@ export const handleEvents = (
           switch (data.result) {
             case pb.websocket.ResultType.Deployed:
               dispatch(setDeployStatus(id, DeployStatus.DeploySuccess));
-              message.success("部署成功");
               dispatch(clearCreateProjectLog(id));
               break;
             case pb.websocket.ResultType.DeployedCanceled:
@@ -232,7 +231,6 @@ export const handleEvents = (
             case pb.websocket.ResultType.Deployed:
               dispatch(setProcessPercent(id, 100));
               dispatch(setDeployStatus(id, DeployStatus.DeploySuccess));
-              message.success("部署成功");
               setTimeout(() => {
                 dispatch(clearCreateProjectLog(id));
               }, 1000);

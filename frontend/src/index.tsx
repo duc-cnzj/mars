@@ -1,5 +1,4 @@
 import React, { Suspense, lazy, useEffect } from "react";
-import reportWebVitals from "./reportWebVitals";
 import { Provider } from "react-redux";
 import store from "./store";
 import { disableReactDevTools } from "@fvilers/disable-react-devtools";
@@ -83,5 +82,3 @@ root.render(
     </Suspense>
   </Provider>
 );
-
-reportWebVitals();

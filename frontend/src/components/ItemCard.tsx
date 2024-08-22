@@ -10,9 +10,11 @@ import {
   Button,
   Space,
   Popover,
+  Form,
+  Input,
 } from "antd";
 import "../pkg/DraggableModal/index.css";
-import { CloseOutlined } from "@ant-design/icons";
+import { CloseOutlined, EditFilled } from "@ant-design/icons";
 import ServiceEndpoint from "./ServiceEndpoint";
 import ProjectDetail from "./ProjectDetail";
 import CreateProjectModal from "./CreateProjectModal";
@@ -22,16 +24,20 @@ import { useAuth } from "../contexts/auth";
 import { components } from "../api/schema";
 import ajax from "../api/ajax";
 import IconFont from "./Icon";
+import TextArea from "antd/es/input/TextArea";
 
 const Item: React.FC<{
   item: components["schemas"]["types.NamespaceModel"];
   onNamespaceDeleted: () => void;
   onFavorite: (nsID: number, favorite: boolean) => void;
   loading: boolean;
-}> = ({ item, onNamespaceDeleted, loading, onFavorite }) => {
+  reload: () => void;
+}> = ({ item, onNamespaceDeleted, loading, onFavorite, reload }) => {
   const [cpuAndMemory, setCpuAndMemory] = useState({ cpu: "", memory: "" });
   const { isAdmin } = useAuth();
   const [deleting, setDeleting] = useState<boolean>(false);
+
+  const [editDesc, setEditDesc] = useState(false);
 
   return (
     <Card
@@ -104,29 +110,96 @@ const Item: React.FC<{
             <TitleSubItem>
               <ServiceEndpoint namespaceId={item.id} />
             </TitleSubItem>
-            {item.description && (
-              <Popover
-                content={
-                  <div style={{ width: 300, fontSize: 12, fontWeight: "bold" }}>
-                    {item.description}
-                  </div>
+            <Popover
+              destroyTooltipOnHide
+              trigger="click"
+              onOpenChange={(v) => {
+                if (!v) {
+                  setEditDesc(false);
                 }
+              }}
+              content={
+                editDesc ? (
+                  <Form
+                    name="basic"
+                    style={{ width: 300 }}
+                    initialValues={{ id: item.id, desc: item.description }}
+                    autoComplete="off"
+                    onFinish={(values) => {
+                      console.log(values);
+                      ajax
+                        .POST("/api/namespaces/{id}/update_desc", {
+                          params: { path: { id: values.id } },
+                          body: values,
+                        })
+                        .then(({ error }) => {
+                          if (error) {
+                            return;
+                          }
+                          reload();
+                          setEditDesc(false);
+                          message.success("修改成功");
+                        });
+                    }}
+                  >
+                    <Form.Item<
+                      components["schemas"]["namespace.UpdateDescRequest"]
+                    >
+                      name="id"
+                      hidden
+                    >
+                      <Input />
+                    </Form.Item>
+                    <Form.Item<
+                      components["schemas"]["namespace.UpdateDescRequest"]
+                    >
+                      name="desc"
+                      style={{ marginBottom: 5 }}
+                    >
+                      <TextArea style={{ fontSize: 10 }} rows={5} />
+                    </Form.Item>
+                    <div style={{ textAlign: "right" }}>
+                      <Button
+                        style={{ fontSize: 10 }}
+                        size="small"
+                        htmlType="submit"
+                      >
+                        提交
+                      </Button>
+                    </div>
+                  </Form>
+                ) : (
+                  <div
+                    style={{
+                      width: 300,
+                      fontSize: 12,
+                      textAlign: "right",
+                    }}
+                  >
+                    <div style={{ textAlign: "left" }}>{item.description}</div>
+                    <EditFilled
+                      style={{ textAlign: "right" }}
+                      onClick={() => setEditDesc(true)}
+                    />
+                  </div>
+                )
+              }
+            >
+              <div
+                style={{
+                  fontSize: 10,
+                  width: "100px",
+                  color: "gray",
+                  fontWeight: "normal",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  cursor: "pointer",
+                }}
               >
-                <div
-                  style={{
-                    fontSize: 10,
-                    width: "100px",
-                    color: "gray",
-                    fontWeight: "normal",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {item.description}
-                </div>
-              </Popover>
-            )}
+                {item.description}
+              </div>
+            </Popover>
           </Space>
         </CardTitle>
       }

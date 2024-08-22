@@ -511,7 +511,6 @@ func (m *MergeValuesLoader) Load(j *jobRunner) error {
 	if fileData, err = yaml.Marshal(&mergedDefaultAndConfigYamlValues); err != nil {
 		return err
 	}
-	//mlog.Debug("fileData", fileData)
 	mergedFile, closer, err := j.WriteConfigYamlToTmpFile(fileData)
 	if err != nil {
 		return err

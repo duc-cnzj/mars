@@ -537,3 +537,40 @@ func TestNamespaceSvc_Show_Error(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
 }
+
+func Test_namespaceSvc_UpdateDesc(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	svc := NewNamespaceSvc(
+		repo.NewMockHelmerRepo(m),
+		nsRepo,
+		repo.NewMockK8sRepo(m),
+		mlog.NewLogger(nil),
+		eventRepo,
+	)
+
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{
+		ID:          1,
+		Name:        "namespace1",
+		Description: "old desc",
+	}, nil)
+	nsRepo.EXPECT().Update(gomock.Any(), &repo.UpdateNamespaceInput{
+		ID:          1,
+		Description: "new desc",
+	}).Return(&repo.Namespace{
+		ID:          1,
+		Name:        "namespace1",
+		Description: "new desc",
+	}, nil)
+	eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), "admin", gomock.Any(), gomock.Any(), gomock.Any())
+
+	res, err := svc.UpdateDesc(newAdminUserCtx(), &namespace.UpdateDescRequest{
+		Id:   1,
+		Desc: "new desc",
+	})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+}

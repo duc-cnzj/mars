@@ -80,12 +80,7 @@ type NamespaceRepo interface {
 	Show(ctx context.Context, id int) (*Namespace, error)
 	Create(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error)
 	Favorite(ctx context.Context, input *FavoriteNamespaceInput) error
-}
-
-type FavoriteNamespaceInput struct {
-	NamespaceID int
-	UserEmail   string
-	Favorite    bool
+	Update(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error)
 }
 
 var _ NamespaceRepo = (*namespaceRepo)(nil)
@@ -172,6 +167,20 @@ func (repo *namespaceRepo) Show(ctx context.Context, id int) (*Namespace, error)
 	return ToNamespace(first), ToError(404, err)
 }
 
+type UpdateNamespaceInput struct {
+	ID          int
+	Description string
+}
+
+func (repo *namespaceRepo) Update(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error) {
+	get, err := repo.data.DB().Namespace.Get(ctx, input.ID)
+	if err != nil {
+		return nil, ToError(404, err)
+	}
+	save, err := get.Update().SetDescription(input.Description).Save(ctx)
+	return ToNamespace(save), err
+}
+
 func (repo *namespaceRepo) GetMarsNamespace(name string) string {
 	return mars.GetMarsNamespace(name, repo.NsPrefix)
 }
@@ -201,6 +210,12 @@ func (repo *namespaceRepo) Delete(ctx context.Context, id int) error {
 		}
 		return tx.Namespace.DeleteOneID(id).Exec(ctx)
 	})
+}
+
+type FavoriteNamespaceInput struct {
+	NamespaceID int
+	UserEmail   string
+	Favorite    bool
 }
 
 func (repo *namespaceRepo) Favorite(ctx context.Context, input *FavoriteNamespaceInput) error {

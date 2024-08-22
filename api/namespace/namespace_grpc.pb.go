@@ -20,12 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Namespace_All_FullMethodName      = "/namespace.Namespace/All"
-	Namespace_Create_FullMethodName   = "/namespace.Namespace/Create"
-	Namespace_Show_FullMethodName     = "/namespace.Namespace/Show"
-	Namespace_Delete_FullMethodName   = "/namespace.Namespace/Delete"
-	Namespace_IsExists_FullMethodName = "/namespace.Namespace/IsExists"
-	Namespace_Favorite_FullMethodName = "/namespace.Namespace/Favorite"
+	Namespace_All_FullMethodName        = "/namespace.Namespace/All"
+	Namespace_Create_FullMethodName     = "/namespace.Namespace/Create"
+	Namespace_Show_FullMethodName       = "/namespace.Namespace/Show"
+	Namespace_UpdateDesc_FullMethodName = "/namespace.Namespace/UpdateDesc"
+	Namespace_Delete_FullMethodName     = "/namespace.Namespace/Delete"
+	Namespace_IsExists_FullMethodName   = "/namespace.Namespace/IsExists"
+	Namespace_Favorite_FullMethodName   = "/namespace.Namespace/Favorite"
 )
 
 // NamespaceClient is the client API for Namespace service.
@@ -35,6 +36,7 @@ type NamespaceClient interface {
 	All(ctx context.Context, in *AllRequest, opts ...grpc.CallOption) (*AllResponse, error)
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
+	UpdateDesc(ctx context.Context, in *UpdateDescRequest, opts ...grpc.CallOption) (*UpdateDescResponse, error)
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	IsExists(ctx context.Context, in *IsExistsRequest, opts ...grpc.CallOption) (*IsExistsResponse, error)
 	Favorite(ctx context.Context, in *FavoriteRequest, opts ...grpc.CallOption) (*FavoriteResponse, error)
@@ -75,6 +77,15 @@ func (c *namespaceClient) Show(ctx context.Context, in *ShowRequest, opts ...grp
 	return out, nil
 }
 
+func (c *namespaceClient) UpdateDesc(ctx context.Context, in *UpdateDescRequest, opts ...grpc.CallOption) (*UpdateDescResponse, error) {
+	out := new(UpdateDescResponse)
+	err := c.cc.Invoke(ctx, Namespace_UpdateDesc_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *namespaceClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
 	out := new(DeleteResponse)
 	err := c.cc.Invoke(ctx, Namespace_Delete_FullMethodName, in, out, opts...)
@@ -109,6 +120,7 @@ type NamespaceServer interface {
 	All(context.Context, *AllRequest) (*AllResponse, error)
 	Create(context.Context, *CreateRequest) (*CreateResponse, error)
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
+	UpdateDesc(context.Context, *UpdateDescRequest) (*UpdateDescResponse, error)
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	IsExists(context.Context, *IsExistsRequest) (*IsExistsResponse, error)
 	Favorite(context.Context, *FavoriteRequest) (*FavoriteResponse, error)
@@ -127,6 +139,9 @@ func (UnimplementedNamespaceServer) Create(context.Context, *CreateRequest) (*Cr
 }
 func (UnimplementedNamespaceServer) Show(context.Context, *ShowRequest) (*ShowResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
+}
+func (UnimplementedNamespaceServer) UpdateDesc(context.Context, *UpdateDescRequest) (*UpdateDescResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateDesc not implemented")
 }
 func (UnimplementedNamespaceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
@@ -204,6 +219,24 @@ func _Namespace_Show_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Namespace_UpdateDesc_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDescRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NamespaceServer).UpdateDesc(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Namespace_UpdateDesc_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NamespaceServer).UpdateDesc(ctx, req.(*UpdateDescRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Namespace_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteRequest)
 	if err := dec(in); err != nil {
@@ -276,6 +309,10 @@ var Namespace_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Show",
 			Handler:    _Namespace_Show_Handler,
+		},
+		{
+			MethodName: "UpdateDesc",
+			Handler:    _Namespace_UpdateDesc_Handler,
 		},
 		{
 			MethodName: "Delete",

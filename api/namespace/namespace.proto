@@ -21,7 +21,7 @@ message CreateRequest {
   string namespace        = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   // 已存在则忽略，不会报错
   bool   ignore_if_exists = 2;
-  string description = 3;
+  string description      = 3;
 }
 message CreateResponse {
   types.NamespaceModel item   = 1;
@@ -54,6 +54,14 @@ message FavoriteRequest{
 }
 message FavoriteResponse{}
 
+message UpdateDescRequest{
+  int32  id   = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  string desc = 2;
+}
+message UpdateDescResponse{
+  types.NamespaceModel item = 1;
+}
+
 service Namespace {
   rpc All(AllRequest) returns (AllResponse) {
     option (google.api.http)      = {
@@ -80,6 +88,16 @@ service Namespace {
     };
     option (openapi.v3.operation) = {
       summary: "查看名称空间详情",
+    };
+  }
+
+  rpc UpdateDesc(UpdateDescRequest) returns (UpdateDescResponse) {
+    option (google.api.http)      = {
+      post: "/api/namespaces/{id}/update_desc",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "更新空间描述信息",
     };
   }
 
