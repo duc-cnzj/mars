@@ -8,16 +8,6 @@ import (
 	"sync/atomic"
 
 	"github.com/cenkalti/backoff/v4"
-	"go.opentelemetry.io/otel/attribute"
-	otelcodes "go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
-
 	"github.com/duc-cnzj/mars/api/v4/auth"
 	"github.com/duc-cnzj/mars/api/v4/changelog"
 	"github.com/duc-cnzj/mars/api/v4/cluster"
@@ -32,6 +22,12 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/project"
 	"github.com/duc-cnzj/mars/api/v4/token"
 	"github.com/duc-cnzj/mars/api/v4/version"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type Interface interface {
@@ -70,7 +66,6 @@ type Client struct {
 
 	conn        *grpc.ClientConn
 	dialOptions []grpc.DialOption
-	tracer      trace.Tracer
 
 	auth        auth.AuthClient
 	changelog   changelog.ChangelogClient
@@ -95,7 +90,7 @@ func NewClient(addr string, opts ...Option) (Interface, error) {
 		opt(c)
 	}
 
-	dial, err := grpc.Dial(addr, c.buildDialOptions()...)
+	dial, err := grpc.NewClient(addr, c.buildDialOptions()...)
 
 	if err != nil {
 		return nil, err
@@ -214,8 +209,10 @@ func (c *Client) buildDialOptions() []grpc.DialOption {
 		c.dialOptions = append(c.dialOptions, grpc.WithPerRPCCredentials(&clientauth{c: c}))
 	}
 
-	c.dialOptions = append(c.dialOptions, grpc.WithChainUnaryInterceptor(c.UnaryClientInterceptors...))
-	c.dialOptions = append(c.dialOptions, grpc.WithChainStreamInterceptor(c.StreamClientInterceptors...))
+	c.dialOptions = append(c.dialOptions,
+		grpc.WithChainStreamInterceptor(c.StreamClientInterceptors...),
+		grpc.WithChainUnaryInterceptor(c.UnaryClientInterceptors...),
+	)
 
 	return c.dialOptions
 }
@@ -323,10 +320,9 @@ func WithStreamClientInterceptor(op grpc.StreamClientInterceptor) Option {
 	}
 }
 
-func WithTracer(tracer trace.Tracer) Option {
+func WithTracer() Option {
 	return func(c *Client) {
-		c.tracer = tracer
-		c.UnaryClientInterceptors = append(c.UnaryClientInterceptors, TraceUnaryClientInterceptor(c.tracer))
+		c.dialOptions = append(c.dialOptions, grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
 	}
 }
 
@@ -350,25 +346,4 @@ func (hc GatewayCarrier) Keys() []string {
 		keys = append(keys, k)
 	}
 	return keys
-}
-
-func TraceUnaryClientInterceptor(tracer trace.Tracer) grpc.UnaryClientInterceptor {
-	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		start, span := tracer.Start(ctx, "TraceUnaryClientInterceptor: "+method)
-		defer span.End()
-		span.SetAttributes(attribute.String("method", method))
-		ctxt := propagation.TraceContext{}
-		md := metadata.MD{}
-		if outMD, found := metadata.FromOutgoingContext(ctx); found {
-			md = outMD
-		}
-		ctxt.Inject(start, GatewayCarrier(md))
-		ctx = metadata.NewOutgoingContext(ctx, metadata.MD(md))
-
-		err := invoker(ctx, method, req, reply, cc, opts...)
-		if err != nil {
-			span.SetStatus(otelcodes.Error, err.Error())
-		}
-		return err
-	}
 }
