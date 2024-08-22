@@ -20,9 +20,9 @@ type Conn interface {
 	GetUser() *auth.UserInfo
 	PubSub() application.PubSub
 
-	AddTask(id string, fn func(error)) error
-	RunTask(id string) error
-	RemoveTask(id string)
+	AddCancelDeployTask(id string, fn func(error)) error
+	RunCancelDeployTask(id string) error
+	RemoveCancelDeployTask(id string)
 
 	GetPtyHandler(sessionID string) (PtyHandler, bool)
 	SetPtyHandler(sessionID string, session PtyHandler)
@@ -131,15 +131,15 @@ func (c *WsConn) ClosePty(ctx context.Context, sessionId string, status uint32, 
 	c.sm.Close(ctx, sessionId, status, reason)
 }
 
-func (c *WsConn) AddTask(id string, fn func(error)) error {
+func (c *WsConn) AddCancelDeployTask(id string, fn func(error)) error {
 	return c.taskManager.Register(id, fn)
 }
 
-func (c *WsConn) RemoveTask(id string) {
+func (c *WsConn) RemoveCancelDeployTask(id string) {
 	c.taskManager.Remove(id)
 }
 
-func (c *WsConn) RunTask(id string) error {
+func (c *WsConn) RunCancelDeployTask(id string) error {
 	if c.taskManager.Has(id) {
 		c.taskManager.Stop(id)
 		return nil

@@ -361,18 +361,18 @@ func (m *MockConn) EXPECT() *MockConnMockRecorder {
 	return m.recorder
 }
 
-// AddTask mocks base method.
-func (m *MockConn) AddTask(arg0 string, arg1 func(error)) error {
+// AddCancelDeployTask mocks base method.
+func (m *MockConn) AddCancelDeployTask(arg0 string, arg1 func(error)) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddTask", arg0, arg1)
+	ret := m.ctrl.Call(m, "AddCancelDeployTask", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// AddTask indicates an expected call of AddTask.
-func (mr *MockConnMockRecorder) AddTask(arg0, arg1 any) *gomock.Call {
+// AddCancelDeployTask indicates an expected call of AddCancelDeployTask.
+func (mr *MockConnMockRecorder) AddCancelDeployTask(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTask", reflect.TypeOf((*MockConn)(nil).AddTask), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCancelDeployTask", reflect.TypeOf((*MockConn)(nil).AddCancelDeployTask), arg0, arg1)
 }
 
 // Close mocks base method.
@@ -503,30 +503,30 @@ func (mr *MockConnMockRecorder) ReadMessage() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadMessage", reflect.TypeOf((*MockConn)(nil).ReadMessage))
 }
 
-// RemoveTask mocks base method.
-func (m *MockConn) RemoveTask(arg0 string) {
+// RemoveCancelDeployTask mocks base method.
+func (m *MockConn) RemoveCancelDeployTask(arg0 string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RemoveTask", arg0)
+	m.ctrl.Call(m, "RemoveCancelDeployTask", arg0)
 }
 
-// RemoveTask indicates an expected call of RemoveTask.
-func (mr *MockConnMockRecorder) RemoveTask(arg0 any) *gomock.Call {
+// RemoveCancelDeployTask indicates an expected call of RemoveCancelDeployTask.
+func (mr *MockConnMockRecorder) RemoveCancelDeployTask(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveTask", reflect.TypeOf((*MockConn)(nil).RemoveTask), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveCancelDeployTask", reflect.TypeOf((*MockConn)(nil).RemoveCancelDeployTask), arg0)
 }
 
-// RunTask mocks base method.
-func (m *MockConn) RunTask(arg0 string) error {
+// RunCancelDeployTask mocks base method.
+func (m *MockConn) RunCancelDeployTask(arg0 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RunTask", arg0)
+	ret := m.ctrl.Call(m, "RunCancelDeployTask", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// RunTask indicates an expected call of RunTask.
-func (mr *MockConnMockRecorder) RunTask(arg0 any) *gomock.Call {
+// RunCancelDeployTask indicates an expected call of RunCancelDeployTask.
+func (mr *MockConnMockRecorder) RunCancelDeployTask(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunTask", reflect.TypeOf((*MockConn)(nil).RunTask), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunCancelDeployTask", reflect.TypeOf((*MockConn)(nil).RunCancelDeployTask), arg0)
 }
 
 // SetPongHandler mocks base method.

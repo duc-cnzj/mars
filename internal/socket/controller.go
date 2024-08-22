@@ -467,7 +467,7 @@ func (wc *WebsocketManager) HandleWsCancelDeploy(ctx context.Context, c Conn, t 
 
 	var slugName = GetSlugName(input.NamespaceId, input.Name)
 
-	if err := c.RunTask(slugName); err == nil {
+	if err := c.RunCancelDeployTask(slugName); err == nil {
 		ns, err := wc.nsRepo.Show(ctx, int(input.NamespaceId))
 		if err != nil {
 			wc.logger.Error(err, input.NamespaceId)
@@ -482,17 +482,17 @@ func (wc *WebsocketManager) HandleWsCancelDeploy(ctx context.Context, c Conn, t 
 
 func (wc *WebsocketManager) upgradeOrInstall(ctx context.Context, c Conn, input *JobInput) error {
 	indent, _ := json.MarshalIndent(input, "", "  ")
-	wc.logger.Warning(string(indent))
+	wc.logger.Debug(string(indent))
 	slug := GetSlugName(input.NamespaceId, input.Name)
 	job := wc.jobManager.NewJob(input)
 
 	if input.IsNotDryRun() {
-		if err := c.AddTask(job.ID(), job.Stop); err != nil {
+		if err := c.AddCancelDeployTask(job.ID(), job.Stop); err != nil {
 			NewMessageSender(c, slug, input.Type).SendDeployedResult(ResultDeployFailed, "正在清理中，请稍后再试。", nil)
 			return nil
 		}
 		job.OnFinally(1000, func(err error, base func()) {
-			c.RemoveTask(job.ID())
+			c.RemoveCancelDeployTask(job.ID())
 			base()
 		})
 	}

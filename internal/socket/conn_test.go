@@ -33,14 +33,14 @@ func TestWsConn_SetUser_GetUser(t *testing.T) {
 
 func TestWsConn_AddTask_RunTask_RemoveTask(t *testing.T) {
 	conn := &WsConn{taskManager: NewTaskManager(mlog.NewLogger(nil))}
-	err := conn.AddTask("task1", func(err error) {})
+	err := conn.AddCancelDeployTask("task1", func(err error) {})
 	assert.Nil(t, err)
 
-	err = conn.RunTask("task1")
+	err = conn.RunCancelDeployTask("task1")
 	assert.Nil(t, err)
 
-	conn.RemoveTask("task1")
-	err = conn.RunTask("task1")
+	conn.RemoveCancelDeployTask("task1")
+	err = conn.RunCancelDeployTask("task1")
 	assert.NotNil(t, err)
 	assert.Equal(t, "task not found", err.Error())
 }

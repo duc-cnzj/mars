@@ -113,53 +113,6 @@ func TestMyPtyHandler_Read(t *testing.T) {
 	assert.Equal(t, "data", string(p))
 }
 
-func TestMyPtyHandler_Write(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	recorder := repo.NewMockRecorder(m)
-	conn := NewMockConn(m)
-	pty := &myPtyHandler{
-		sessionID: "sid",
-		conn:      conn,
-		doneChan:  make(chan struct{}),
-		sizeStore: &sizeStore{cols: 10, rows: 10},
-		recorder:  recorder,
-		container: &repo.Container{
-			Namespace: "a",
-			Pod:       "b",
-			Container: "c",
-		},
-	}
-	sub := application.NewMockPubSub(m)
-	sub.EXPECT().ToSelf(&websocket_pb.WsHandleShellResponse{
-		Metadata: &websocket_pb.Metadata{
-			Id:     "id",
-			Uid:    "uid",
-			Slug:   "sid",
-			Type:   WsHandleExecShellMsg,
-			Result: ResultSuccess,
-		},
-		TerminalMessage: &websocket_pb.TerminalMessage{
-			Op:        OpStdout,
-			Data:      []byte("data"),
-			SessionId: "sid",
-		},
-		Container: &websocket_pb.Container{
-			Namespace: "a",
-			Pod:       "b",
-			Container: "c",
-		},
-	})
-	assert.Same(t, recorder, pty.Recorder())
-	conn.EXPECT().PubSub().Return(sub)
-	conn.EXPECT().ID().Return("id")
-	conn.EXPECT().UID().Return("uid")
-	recorder.EXPECT().Write([]byte("data")).Return(4, nil)
-	n, err := pty.Write([]byte("data"))
-	assert.NoError(t, err)
-	assert.Equal(t, 4, n)
-}
-
 func TestMyPtyHandler_Toast(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -658,6 +611,54 @@ func TestMyPtyHandler_Close(t *testing.T) {
 		defaultTimes++
 	}
 	assert.Equal(t, 2, defaultTimes)
+}
+
+func TestMyPtyHandler_Write(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	recorder := repo.NewMockRecorder(m)
+	conn := NewMockConn(m)
+	pty := &myPtyHandler{
+		sessionID: "sid",
+		conn:      conn,
+		logger:    mlog.NewLogger(nil),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{cols: 10, rows: 10},
+		recorder:  recorder,
+		container: &repo.Container{
+			Namespace: "a",
+			Pod:       "b",
+			Container: "c",
+		},
+	}
+	sub := application.NewMockPubSub(m)
+	sub.EXPECT().ToSelf(&websocket_pb.WsHandleShellResponse{
+		Metadata: &websocket_pb.Metadata{
+			Id:     "id",
+			Uid:    "uid",
+			Slug:   "sid",
+			Type:   WsHandleExecShellMsg,
+			Result: ResultSuccess,
+		},
+		TerminalMessage: &websocket_pb.TerminalMessage{
+			Op:        OpStdout,
+			Data:      []byte("data"),
+			SessionId: "sid",
+		},
+		Container: &websocket_pb.Container{
+			Namespace: "a",
+			Pod:       "b",
+			Container: "c",
+		},
+	})
+	assert.Same(t, recorder, pty.Recorder())
+	conn.EXPECT().PubSub().Return(sub)
+	conn.EXPECT().ID().Return("id")
+	conn.EXPECT().UID().Return("uid")
+	recorder.EXPECT().Write([]byte("data")).Return(0, errors.New("x"))
+	n, err := pty.Write([]byte("data"))
+	assert.NoError(t, err)
+	assert.Equal(t, 4, n)
 }
 
 func TestMyPtyHandler_Write3(t *testing.T) {
