@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -20,6 +22,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
+	"github.com/duc-cnzj/mars/v4/internal/util/pipeline"
 	"github.com/duc-cnzj/mars/v4/internal/util/timer"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -935,4 +938,189 @@ func TestElementsLoader_typedValue(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestJober_GlobalLock(t *testing.T) {
+	l := locker.NewMemoryLock(timer.NewRealTimer(), [2]int{2, 100}, locker.NewMemStore(), mlog.NewLogger(nil))
+	job := &jobRunner{locker: l, input: &JobInput{NamespaceId: 1, Name: "app"}}
+	assert.Nil(t, job.GlobalLock().Error())
+	assert.Equal(t, "正在部署中，请稍后再试", (&jobRunner{locker: l, input: &JobInput{NamespaceId: 1, Name: "app"}}).GlobalLock().Error().Error())
+	assert.Len(t, job.finallyCallback.Sort(), 1)
+	called := 0
+	pipeline.New[error]().Send(nil).Through(job.finallyCallback.Sort()...).Then(func(e error) {
+		called++
+		assert.Nil(t, e)
+	})
+	assert.Equal(t, 1, called)
+	acquire := l.Acquire("id", 100)
+	assert.True(t, acquire)
+
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ml := locker.NewMockLocker(m)
+	ml.EXPECT().RenewalAcquire(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+	assert.Equal(t, "xxx", (&jobRunner{err: errors.New("xxx"), locker: ml}).GlobalLock().Error().Error())
+}
+
+type emptyLoader struct {
+	err    error
+	called bool
+	sync.Mutex
+}
+
+func (e *emptyLoader) Load(jober *jobRunner) error {
+	e.Lock()
+	defer e.Unlock()
+	e.called = true
+	return e.err
+}
+
+func (e *emptyLoader) GetCalled() bool {
+	e.Lock()
+	defer e.Unlock()
+
+	return e.called
+}
+
+func TestJober_LoadConfigs1(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	msger := NewMockDeployMsger(m)
+	ctx, fn := context.WithCancel(context.TODO())
+	fn()
+	l := &emptyLoader{}
+	msger.EXPECT().SendMsg(gomock.Any())
+	assert.Equal(t, "context canceled", (&jobRunner{
+		stopCtx:  ctx,
+		logger:   mlog.NewLogger(nil),
+		messager: msger,
+		loaders:  []Loader{l},
+	}).LoadConfigs().Error().Error())
+	assert.False(t, l.GetCalled())
+}
+
+func TestJober_LoadConfigs(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	msger := NewMockDeployMsger(m)
+	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	assert.Equal(t, "xxx", (&jobRunner{
+		err:      errors.New("xxx"),
+		loaders:  []Loader{},
+		logger:   mlog.NewLogger(nil),
+		messager: msger,
+	}).LoadConfigs().Error().Error())
+
+	l := &emptyLoader{}
+	assert.Nil(t, (&jobRunner{
+		stopCtx:  context.TODO(),
+		loaders:  []Loader{l},
+		logger:   mlog.NewLogger(nil),
+		messager: msger,
+	}).LoadConfigs().Error())
+	assert.True(t, l.GetCalled())
+
+	l2 := &emptyLoader{}
+	cancel, cancelFunc := context.WithCancel(context.TODO())
+	cancelFunc()
+	assert.Equal(t, "context canceled", (&jobRunner{
+		stopCtx:  cancel,
+		loaders:  []Loader{l2},
+		logger:   mlog.NewLogger(nil),
+		messager: msger,
+	}).LoadConfigs().Error().Error())
+	assert.False(t, l2.GetCalled())
+
+	l3 := &emptyLoader{
+		err: errors.New("xxx"),
+	}
+	assert.Equal(t, "xxx", (&jobRunner{
+		stopCtx:  context.TODO(),
+		loaders:  []Loader{l3},
+		logger:   mlog.NewLogger(nil),
+		messager: msger,
+	}).LoadConfigs().Error().Error())
+	assert.True(t, l3.GetCalled())
+}
+
+func TestJober_Stop(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	msg := NewMockDeployMsger(m)
+	msg.EXPECT().SendMsg(gomock.Any()).Times(3)
+	var called int64 = 0
+	j := &jobRunner{messager: msg, logger: mlog.NewLogger(nil), stopFn: func(err error) {
+		atomic.AddInt64(&called, 1)
+	}}
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+	for i := 0; i < 3; i++ {
+		go func() {
+			defer wg.Done()
+
+			j.Stop(nil)
+		}()
+	}
+	wg.Wait()
+	assert.Equal(t, int64(3), atomic.LoadInt64(&called))
+}
+
+func TestJober_OnError(t *testing.T) {
+	job := &jobRunner{err: errors.New("xxx")}
+	job.OnError(1, func(err error, sendResultToUser func()) {
+		assert.Equal(t, "xxx", err.Error())
+		sendResultToUser()
+	})
+	assert.Len(t, job.errorCallback.Sort(), 1)
+	called := 0
+	pipeline.New[error]().Send(job.Error()).Through(job.errorCallback.Sort()...).Then(func(err error) {
+		assert.Equal(t, "xxx", err.Error())
+		called++
+	})
+	assert.Equal(t, 1, called)
+}
+
+func TestJober_OnSuccess(t *testing.T) {
+	job := &jobRunner{}
+	job.OnSuccess(1, func(err error, sendResultToUser func()) {
+		assert.Nil(t, err)
+		sendResultToUser()
+	})
+	assert.Len(t, job.successCallback.Sort(), 1)
+	called := 0
+	pipeline.New[error]().Send(job.Error()).Through(job.finallyCallback.Sort()...).Then(func(err error) {
+		assert.Nil(t, err)
+		called++
+	})
+	assert.Equal(t, 1, called)
+}
+
+func TestJober_OnFinally(t *testing.T) {
+	var tests = []error{
+		errors.New("xxx"),
+		nil,
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+			job := &jobRunner{err: tt}
+			job.OnFinally(1, func(err error, sendResultToUser func()) {
+				assert.Equal(t, tt, err)
+				sendResultToUser()
+			})
+			assert.Len(t, job.finallyCallback.Sort(), 1)
+			called := 0
+			pipeline.New[error]().Send(job.Error()).Through(job.finallyCallback.Sort()...).Then(func(err error) {
+				assert.Equal(t, tt, err)
+				called++
+			})
+			assert.Equal(t, 1, called)
+		})
+	}
+}
+
+func Test_jobRunner_Project(t *testing.T) {
+	job := &jobRunner{project: &repo.Project{}}
+	assert.NotNil(t, job.Project())
 }
