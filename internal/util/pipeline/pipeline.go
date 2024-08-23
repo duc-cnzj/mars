@@ -11,7 +11,7 @@ type pipeline[T any] struct {
 	middlewares []func(func(T)) func(T)
 }
 
-func NewPipeline[T any]() Pipeline[T] {
+func New[T any]() Pipeline[T] {
 	return &pipeline[T]{}
 }
 

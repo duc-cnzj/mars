@@ -173,7 +173,7 @@ func (j *jobManager) NewJob(input *JobInput) Job {
 		finallyCallback: mysort.PrioritySort[func(err error, next func())]{},
 		errorCallback:   mysort.PrioritySort[func(err error, next func())]{},
 		successCallback: mysort.PrioritySort[func(err error, next func())]{},
-		deployResult:    &DeployResult{},
+		deployResult:    &deployResult{},
 		valuesOptions:   &values.Options{},
 		messageCh:       NewSafeWriteMessageCh(j.logger, 100),
 		messager:        input.Messager,
@@ -230,7 +230,7 @@ type jobRunner struct {
 	pluginMgr       application.PluginManger
 	installer       ReleaseInstaller
 	messageCh       SafeWriteMessageChan
-	deployResult    *DeployResult
+	deployResult    *deployResult
 	loaders         []Loader
 	input           *JobInput
 	finallyCallback mysort.PrioritySort[func(err error, next func())]
@@ -286,7 +286,7 @@ func (j *jobRunner) ID() string {
 }
 
 func (j *jobRunner) IsNotDryRun() bool {
-	return !j.IsDryRun()
+	return !j.dryRun
 }
 
 func (j *jobRunner) GlobalLock() Job {
@@ -314,18 +314,18 @@ func (j *jobRunner) Validate() Job {
 		return j.SetError(errors.New("type error: " + j.input.Type.String()))
 	}
 
-	j.Messager().SendMsg("[start]: 收到请求，开始创建项目")
-	j.Messager().To(5)
+	j.messager.SendMsg("[start]: 收到请求，开始创建项目")
+	j.messager.To(5)
 
-	j.Messager().SendMsg("[Check]: 校验名称空间...")
+	j.messager.SendMsg("[Check]: 校验名称空间...")
 
 	j.ns, err = j.nsRepo.Show(context.TODO(), int(j.input.NamespaceId))
 	if err != nil {
 		return j.SetError(fmt.Errorf("[FAILED]: 校验名称空间: %w", err))
 	}
 
-	j.Messager().SendMsg("[Loading]: 加载用户配置")
-	j.Messager().To(10)
+	j.messager.SendMsg("[Loading]: 加载用户配置")
+	j.messager.To(10)
 
 	j.repo, err = j.repoRepo.Show(context.TODO(), int(j.input.RepoID))
 	if err != nil {
@@ -343,14 +343,14 @@ func (j *jobRunner) Validate() Job {
 		ConfigType:   j.config.ConfigFileType,
 		NamespaceID:  j.ns.ID,
 		RepoID:       j.repo.ID,
-		Creator:      j.User().Email,
+		Creator:      j.user.Email,
 	}
 
-	j.Messager().SendMsg("[Check]: 检查项目是否存在")
+	j.messager.SendMsg("[Check]: 检查项目是否存在")
 
 	found, err := j.projRepo.FindByName(context.TODO(), createProjectInput.Name, createProjectInput.NamespaceID)
 	if err != nil {
-		j.Messager().SendMsg("[Check]: 新建项目")
+		j.messager.SendMsg("[Check]: 新建项目")
 		createProjectInput.DeployStatus = types.Deploy_StatusDeploying
 		j.isNew = true
 		if j.IsNotDryRun() {
@@ -370,7 +370,7 @@ func (j *jobRunner) Validate() Job {
 		j.project = found
 		version := j.project.Version
 		if j.IsNotDryRun() {
-			j.Messager().SendMsg(fmt.Sprintf("[Check]: 检查当前版本, version: %v", lo.FromPtr(j.input.Version)))
+			j.messager.SendMsg(fmt.Sprintf("[Check]: 检查当前版本, version: %v", lo.FromPtr(j.input.Version)))
 			j.project, err = j.projRepo.UpdateStatusByVersion(context.TODO(), int(j.input.ProjectID), types.Deploy_StatusDeploying, int(lo.FromPtr(j.input.Version)))
 			if err != nil {
 				return j.SetError(fmt.Errorf("%w: %w", ErrorVersionNotMatched, err))
@@ -385,18 +385,18 @@ func (j *jobRunner) Validate() Job {
 	if j.IsNotDryRun() {
 		reloadMessage := &websocket_pb.WsReloadProjectsResponse{
 			Metadata:    &websocket_pb.Metadata{Type: WsReloadProjects},
-			NamespaceId: int32(j.Namespace().ID),
+			NamespaceId: int32(j.ns.ID),
 		}
 		j.PubSub().ToAll(reloadMessage)
 		j.OnFinally(1, func(err error, sendResultToUser func()) {
 			// 如果状态出现问题，只有拿到锁的才能更新状态
-			j.project, _ = j.projRepo.UpdateDeployStatus(context.TODO(), j.project.ID, j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))
+			j.project, _ = j.projRepo.UpdateDeployStatus(context.TODO(), j.project.ID, j.helmer.ReleaseStatus(j.Project().Name, j.ns.Name))
 			j.PubSub().ToAll(reloadMessage)
 			sendResultToUser()
 		})
 	}
 
-	j.imagePullSecrets = j.Namespace().ImagePullSecrets
+	j.imagePullSecrets = j.ns.ImagePullSecrets
 	if j.repo.NeedGitRepo {
 		j.commit, err = j.pluginMgr.Git().GetCommit(fmt.Sprintf("%d", j.project.GitProjectID), j.project.GitCommit)
 	} else {
@@ -423,7 +423,7 @@ func (j *jobRunner) LoadConfigs() Job {
 	eg.Go(func() error {
 		defer j.logger.HandlePanic("LoadConfigs")
 		return func() error {
-			j.Messager().SendMsg("[Check]: 加载项目文件")
+			j.messager.SendMsg("[Check]: 加载项目文件")
 
 			for _, defaultLoader := range j.loaders {
 				if err := j.GetStoppedErrorIfHas(); err != nil {
@@ -458,16 +458,16 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 			err    error
 		)
 
-		j.Messager().SendMsg("worker 已就绪, 准备安装")
+		j.messager.SendMsg("worker 已就绪, 准备安装")
 		if result, err = j.installer.Run(ctx, &InstallInput{
-			IsNew:        j.IsNew(),
+			IsNew:        j.isNew,
 			Wait:         lo.FromPtr(j.input.Atomic),
 			Chart:        j.chart,
 			ValueOptions: j.valuesOptions,
-			DryRun:       j.IsDryRun(),
+			DryRun:       j.dryRun,
 			ReleaseName:  j.project.Name,
-			Namespace:    j.Namespace().Name,
-			Description:  j.Commit().GetTitle(),
+			Namespace:    j.ns.Name,
+			Description:  j.commit.GetTitle(),
 			messageChan:  NewSafeWriteMessageCh(j.logger, 100),
 			percenter:    j.messager,
 		}); err != nil {
@@ -496,10 +496,10 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 				Commit:   j.vars.MustGetString("Commit"),
 				Branch:   j.vars.MustGetString("Branch"),
 			}, result.Manifest),
-			GitCommitTitle:   j.Commit().GetTitle(),
-			GitCommitWebURL:  j.Commit().GetWebURL(),
-			GitCommitAuthor:  j.Commit().GetAuthorName(),
-			GitCommitDate:    j.Commit().GetCommittedDate(),
+			GitCommitTitle:   j.commit.GetTitle(),
+			GitCommitWebURL:  j.commit.GetWebURL(),
+			GitCommitAuthor:  j.commit.GetAuthorName(),
+			GitCommitDate:    j.commit.GetCommittedDate(),
 			ExtraValues:      j.input.ExtraValues,
 			FinalExtraValues: j.finalExtraValues,
 			EnvValues:        j.vars.ToKeyValue(),
@@ -522,23 +522,23 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 			newConf = toProjectEventYaml(j.project)
 			j.eventRepo.Dispatch(repo.EventProjectChanged, &repo.ProjectChangedData{
 				ID:       j.project.ID,
-				Username: j.User().Name,
+				Username: j.user.Name,
 			})
 		}
 
 		var act types.EventActionType = types.EventActionType_Create
-		if !j.IsNew() {
+		if !j.isNew {
 			act = types.EventActionType_Update
 		}
-		if j.IsDryRun() {
+		if j.dryRun {
 			act = types.EventActionType_DryRun
 			prettyMarshal, _ := yaml2.PrettyMarshal(j.input)
 			newConf = &repo.StringYamlPrettier{Str: string(prettyMarshal)}
 		}
-		j.eventRepo.AuditLogWithChange(act, j.User().Name,
-			fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Namespace().Name, j.Project().Name),
+		j.eventRepo.AuditLogWithChange(act, j.user.Name,
+			fmt.Sprintf("%s 项目: %s/%s", act.String(), j.ns.Name, j.Project().Name),
 			oldConf, newConf)
-		j.Messager().To(100)
+		j.messager.To(100)
 		j.messageCh.Send(MessageItem{
 			Msg:  "部署成功",
 			Type: MessageSuccess,
@@ -557,10 +557,11 @@ func (j *jobRunner) Finish() Job {
 	// Run error hooks
 	if j.HasError() {
 		func(err error) {
-			j.deployResult.Set(websocket_pb.ResultType_DeployedFailed, err.Error(), j.ProjectModel())
+			pmodel := transformer.FromProject(j.project)
+			j.deployResult.Set(websocket_pb.ResultType_DeployedFailed, err.Error(), pmodel)
 
 			if e := j.GetStoppedErrorIfHas(); e != nil {
-				j.deployResult.Set(websocket_pb.ResultType_DeployedCanceled, e.Error(), j.ProjectModel())
+				j.deployResult.Set(websocket_pb.ResultType_DeployedCanceled, e.Error(), pmodel)
 				err = e
 			}
 		}(j.Error())
@@ -575,7 +576,7 @@ func (j *jobRunner) Finish() Job {
 	// run finally hooks
 	callbacks = append(callbacks, j.finallyCallback.Sort()...)
 
-	pipeline.NewPipeline[error]().
+	pipeline.New[error]().
 		Send(j.Error()).
 		Through(callbacks...).
 		Then(func(error) {
@@ -626,35 +627,8 @@ func (j *jobRunner) HasError() bool {
 	return j.err != nil
 }
 
-func (j *jobRunner) IsNew() bool {
-	return j.isNew
-}
-
-func (j *jobRunner) IsDryRun() bool {
-	return j.dryRun
-}
-
-func (j *jobRunner) Commit() application.Commit {
-	return j.commit
-}
-
-func (j *jobRunner) User() *auth.UserInfo {
-	return j.user
-}
-
-func (j *jobRunner) ProjectModel() *types.ProjectModel {
-	if j.project == nil {
-		return nil
-	}
-	return transformer.FromProject(j.project)
-}
-
 func (j *jobRunner) Project() *repo.Project {
 	return j.project
-}
-
-func (j *jobRunner) Namespace() *repo.Namespace {
-	return j.ns
 }
 
 func (j *jobRunner) PubSub() application.PubSub {
@@ -670,6 +644,7 @@ func (j *jobRunner) IsStopped() bool {
 
 	return false
 }
+
 func (j *jobRunner) GetStoppedErrorIfHas() error {
 	if j.IsStopped() {
 		return context.Cause(j.stopCtx)
@@ -748,7 +723,7 @@ func (j *jobRunner) HandleMessage(ctx context.Context) {
 			}
 			switch s.Type {
 			case MessageText:
-				j.Messager().SendMsgWithContainerLog(s.Msg, s.Containers)
+				j.messager.SendMsgWithContainerLog(s.Msg, s.Containers)
 			case MessageError:
 				select {
 				case <-j.stopCtx.Done():
@@ -765,10 +740,6 @@ func (j *jobRunner) HandleMessage(ctx context.Context) {
 	}
 }
 
-func (j *jobRunner) Messager() DeployMsger {
-	return j.messager
-}
-
 func toProjectEventYaml(p *repo.Project) repo.YamlPrettier {
 	if p == nil {
 		return nil
@@ -783,7 +754,8 @@ func toProjectEventYaml(p *repo.Project) repo.YamlPrettier {
 	sort.Slice(p.FinalExtraValues, func(i, j int) bool {
 		return p.FinalExtraValues[i].Path < p.FinalExtraValues[j].Path
 	})
-	out, _ := yaml2.PrettyMarshal(map[string]any{
+
+	return &repo.AnyYamlPrettier{
 		"title":              p.GitCommitTitle,
 		"branch":             p.GitBranch,
 		"commit":             p.GitCommit,
@@ -793,12 +765,10 @@ func toProjectEventYaml(p *repo.Project) repo.YamlPrettier {
 		"env_values":         p.EnvValues,
 		"extra_values":       p.ExtraValues,
 		"final_extra_values": p.FinalExtraValues,
-	})
-
-	return &repo.StringYamlPrettier{Str: string(out)}
+	}
 }
 
-type DeployResult struct {
+type deployResult struct {
 	sync.RWMutex
 	result websocket_pb.ResultType
 	msg    string
@@ -806,31 +776,31 @@ type DeployResult struct {
 	set    bool
 }
 
-func (d *DeployResult) IsSet() bool {
+func (d *deployResult) IsSet() bool {
 	d.RLock()
 	defer d.RUnlock()
 	return d.set
 }
 
-func (d *DeployResult) Msg() string {
+func (d *deployResult) Msg() string {
 	d.RLock()
 	defer d.RUnlock()
 	return d.msg
 }
 
-func (d *DeployResult) Model() *types.ProjectModel {
+func (d *deployResult) Model() *types.ProjectModel {
 	d.RLock()
 	defer d.RUnlock()
 	return d.model
 }
 
-func (d *DeployResult) ResultType() websocket_pb.ResultType {
+func (d *deployResult) ResultType() websocket_pb.ResultType {
 	d.RLock()
 	defer d.RUnlock()
 	return d.result
 }
 
-func (d *DeployResult) Set(t websocket_pb.ResultType, msg string, model *types.ProjectModel) {
+func (d *deployResult) Set(t websocket_pb.ResultType, msg string, model *types.ProjectModel) {
 	d.Lock()
 	defer d.Unlock()
 	d.result = t
@@ -873,8 +843,8 @@ var matchTag = regexp.MustCompile(`image:\s+(\S+)`)
 
 func matchDockerImage(v pipelineVars, manifest string) []string {
 	var (
-		candidateImages []string
-		all             []string
+		candidateImages = make([]string, 0)
+		all             = make([]string, 0)
 		existsMap       = make(map[string]struct{})
 	)
 	submatch := matchTag.FindAllStringSubmatch(manifest, -1)
@@ -921,16 +891,14 @@ func imageUsedPipelineVars(v pipelineVars, s string) bool {
 	return false
 }
 
-type internalCloser struct {
-	closeFn func() error
-}
+type internalCloser func() error
 
-func (i *internalCloser) Close() error {
-	return i.closeFn()
+func (fn internalCloser) Close() error {
+	return fn()
 }
 
 func NewCloser(fn func() error) io.Closer {
-	return &internalCloser{closeFn: fn}
+	return internalCloser(fn)
 }
 
 type commit struct {

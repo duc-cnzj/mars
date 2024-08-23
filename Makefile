@@ -80,7 +80,7 @@ gen:
 	GOWORK=off go generate ./...
 
 .PHONY: all
-all: api gen wire fmt
+all: api gen fmt
 
 .PHONY: wire
 wire:

@@ -49,11 +49,10 @@ func (a *authSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.
 		return nil, err
 	}
 
-	a.eventRepo.AuditLogWithRequest(
+	a.eventRepo.AuditLog(
 		types.EventActionType_Login,
 		loginResp.UserInfo.Name,
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", loginResp.UserInfo.Name, loginResp.UserInfo.Email),
-		request,
 	)
 
 	return &auth.LoginResponse{

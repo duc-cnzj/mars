@@ -83,10 +83,27 @@ type ChartFileLoader struct {
 	fileOpener  fileOpener
 }
 
+func IsRemoteLocalChartPath(input string) bool {
+	split := strings.Split(input, "|")
+
+	return len(split) == 3 && intPid(split[0])
+}
+
+func intPid(pid string) bool {
+	if _, err := strconv.ParseInt(pid, 10, 64); err == nil {
+		return true
+	}
+	return false
+}
+
 func (c *ChartFileLoader) Load(j *jobRunner) error {
 	const loaderName = "[ChartFileLoader]: "
-	j.Messager().SendMsg(loaderName + "加载 helm chart 文件")
-	j.Messager().To(20)
+	j.messager.SendMsg(loaderName + "加载 helm chart 文件")
+	j.messager.To(20)
+
+	if !IsRemoteLocalChartPath(j.config.LocalChartPath) {
+		return errors.New("LocalChartPath 格式不正确")
+	}
 
 	// 下载 helm charts
 	split := strings.Split(j.config.LocalChartPath, "|")
@@ -97,38 +114,27 @@ func (c *ChartFileLoader) Load(j *jobRunner) error {
 		dir          string
 	)
 	// 如果是这个格式意味着是远程项目, 'uid|branch|path'
-	j.Messager().SendMsg(fmt.Sprintf(loaderName+"下载 helm charts path: %s", j.config.LocalChartPath))
+	j.messager.SendMsg(fmt.Sprintf(loaderName+"下载 helm charts path: %s", j.config.LocalChartPath))
 
 	var (
-		pid    string = fmt.Sprintf("%d", j.repo.GitProjectID)
-		branch string = j.input.GitBranch
-		path   string = j.config.LocalChartPath
-	)
-	if true {
-		pid = split[0]
+		pid    = split[0]
 		branch = split[1]
-		path = split[2]
-		files, _ = j.pluginMgr.Git().GetDirectoryFilesWithBranch(pid, branch, path, true)
-		if len(files) < 1 {
-			return errors.New("charts 文件不存在")
-		}
-		var err error
-		tmpChartsDir, deleteDirFn, err = j.DownloadFiles(pid, branch, files)
-		if err != nil {
-			return err
-		}
+		path   = split[2]
+	)
 
-		dir = path
-		j.Messager().SendMsg(fmt.Sprintf(loaderName+"识别为远程仓库 uid %v branch %s path %s", pid, branch, path))
-	} else {
-		var err error
-		dir = j.config.LocalChartPath
-		files, _ = j.pluginMgr.Git().GetDirectoryFilesWithSha(fmt.Sprintf("%d", j.repo.GitProjectID), j.input.GitCommit, j.config.LocalChartPath, true)
-		tmpChartsDir, deleteDirFn, err = j.DownloadFiles(j.repo.GitProjectID, j.input.GitCommit, files)
-		if err != nil {
-			return err
-		}
+	files, _ = j.pluginMgr.Git().GetDirectoryFilesWithBranch(pid, branch, path, true)
+	if len(files) < 1 {
+		return errors.New("charts 文件不存在")
 	}
+	var err error
+	tmpChartsDir, deleteDirFn, err = j.DownloadFiles(pid, branch, files)
+	if err != nil {
+		return err
+	}
+
+	dir = path
+	j.messager.SendMsg(fmt.Sprintf(loaderName+"识别为远程仓库 uid %v branch %s path %s", pid, branch, path))
+
 	j.OnFinally(1, func(err error, sendResultToUser func()) {
 		sendResultToUser()
 		deleteDirFn()
@@ -150,15 +156,15 @@ func (c *ChartFileLoader) Load(j *jobRunner) error {
 					sendResultToUser()
 					depDeleteFn()
 				})
-				j.Messager().SendMsg(fmt.Sprintf(loaderName+"下载本地依赖 %s", dependency.Name))
+				j.messager.SendMsg(fmt.Sprintf(loaderName+"下载本地依赖 %s", dependency.Name))
 			}
 		}
 	}
 
 	chartDir := filepath.Join(tmpChartsDir, dir)
 
-	j.Messager().To(30)
-	j.Messager().SendMsg(loaderName + "打包 helm charts")
+	j.messager.To(30)
+	j.messager.SendMsg(loaderName + "打包 helm charts")
 	chart, err := j.helmer.PackageChart(chartDir, chartDir)
 	if err != nil {
 		return err
@@ -187,11 +193,11 @@ type UserConfigLoader struct{}
 func (d *UserConfigLoader) Load(j *jobRunner) error {
 	const loaderName = "[UserConfigLoader]: "
 
-	j.Messager().To(50)
-	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "检查到用户传入的配置"))
+	j.messager.To(50)
+	j.messager.SendMsg(fmt.Sprintf(loaderName+"%v", "检查到用户传入的配置"))
 
 	if j.input.Config == "" {
-		j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "未发现用户自定义配置"))
+		j.messager.SendMsg(fmt.Sprintf(loaderName+"%v", "未发现用户自定义配置"))
 		return nil
 	}
 
@@ -221,11 +227,11 @@ type ElementsLoader struct{}
 func (d *ElementsLoader) Load(j *jobRunner) error {
 	const loaderName = "[ElementsLoader]: "
 
-	j.Messager().To(60)
-	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "检查项目额外的配置"))
+	j.messager.To(60)
+	j.messager.SendMsg(fmt.Sprintf(loaderName+"%v", "检查项目额外的配置"))
 
 	if len(j.input.ExtraValues) <= 0 {
-		j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "未发现项目额外的配置"))
+		j.messager.SendMsg(fmt.Sprintf(loaderName+"%v", "未发现项目额外的配置"))
 	}
 
 	var validValuesMap = make(map[string]any)
@@ -255,7 +261,7 @@ func (d *ElementsLoader) Load(j *jobRunner) error {
 			validValuesMap[value.Path] = typeValue
 		}
 		if !fieldValid {
-			j.Messager().SendMsg(fmt.Sprintf("不允许自定义字段 %s", value.Path))
+			j.messager.SendMsg(fmt.Sprintf("不允许自定义字段 %s", value.Path))
 		}
 	}
 
@@ -275,7 +281,7 @@ func (d *ElementsLoader) Load(j *jobRunner) error {
 		}
 	}
 	if len(ds) > 0 {
-		j.Messager().SendMsg(fmt.Sprintf(loaderName+"已经为 '%s' 设置系统默认值", strings.Join(ds, ",")))
+		j.messager.SendMsg(fmt.Sprintf(loaderName+"已经为 '%s' 设置系统默认值", strings.Join(ds, ",")))
 	}
 
 	return nil
@@ -369,11 +375,11 @@ func (v *SystemVariableLoader) Add(key, value string) {
 
 func (v *SystemVariableLoader) Load(j *jobRunner) error {
 	const loaderName = "[SystemVariableLoader]: "
-	j.Messager().To(40)
-	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "注入内置环境变量"))
+	j.messager.To(40)
+	j.messager.SendMsg(fmt.Sprintf(loaderName+"%v", "注入内置环境变量"))
 
 	if j.config.ValuesYaml == "" {
-		j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "未发现可用的 values.yaml"))
+		j.messager.SendMsg(fmt.Sprintf(loaderName+"%v", "未发现可用的 values.yaml"))
 		return nil
 	}
 
@@ -409,7 +415,7 @@ func (v *SystemVariableLoader) Load(j *jobRunner) error {
 	sub := j.projRepo.GetPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
 	j.logger.Debug("getPreOccupiedLenByValuesYaml: ", sub)
 	for i := 1; i <= 10; i++ {
-		v.Add(fmt.Sprintf("%s%d", VarHost, i), j.pluginMgr.Domain().GetDomainByIndex(j.project.Name, j.Namespace().Name, i, sub))
+		v.Add(fmt.Sprintf("%s%d", VarHost, i), j.pluginMgr.Domain().GetDomainByIndex(j.project.Name, j.ns.Name, i, sub))
 		v.Add(fmt.Sprintf("%s%d", VarTlsSecret, i), j.pluginMgr.Domain().GetCertSecretName(j.project.Name, i))
 	}
 
@@ -417,7 +423,7 @@ func (v *SystemVariableLoader) Load(j *jobRunner) error {
 	var (
 		pipelineID     int64
 		pipelineBranch string = j.project.GitBranch
-		pipelineCommit string = j.Commit().GetShortID()
+		pipelineCommit string = j.commit.GetShortID()
 	)
 
 	if j.repo.NeedGitRepo {
@@ -426,7 +432,7 @@ func (v *SystemVariableLoader) Load(j *jobRunner) error {
 			pipelineID = pipeline.GetID()
 			pipelineBranch = pipeline.GetRef()
 
-			j.Messager().SendMsg(fmt.Sprintf(loaderName+"镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pipelineBranch, pipelineCommit, pipelineID))
+			j.messager.SendMsg(fmt.Sprintf(loaderName+"镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pipelineBranch, pipelineCommit, pipelineID))
 		} else {
 			if tagRegex.MatchString(j.config.ValuesYaml) {
 				return errors.New("无法获取 Pipeline 信息")
@@ -459,8 +465,8 @@ type MergeValuesLoader struct{}
 // imagePullSecrets 会自动注入到 imagePullSecrets 中
 func (m *MergeValuesLoader) Load(j *jobRunner) error {
 	const loaderName = "[MergeValuesLoader]: "
-	j.Messager().To(70)
-	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "合并配置文件到 values.yaml"))
+	j.messager.To(70)
+	j.messager.SendMsg(fmt.Sprintf(loaderName+"%v", "合并配置文件到 values.yaml"))
 
 	// 自动注入 imagePullSecrets
 	var imagePullSecrets = make([]map[string]any, len(j.imagePullSecrets))

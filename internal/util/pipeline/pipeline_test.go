@@ -8,7 +8,7 @@ import (
 
 func TestMyPipeline_Send(t *testing.T) {
 	var result []string
-	NewPipeline[string]().
+	New[string]().
 		Send("xxx").
 		Through(func(msg string, next func()) {
 			assert.Equal(t, "xxx", msg)
@@ -30,7 +30,7 @@ func TestMyPipeline_Send(t *testing.T) {
 	assert.Equal(t, []string{"1", "2", "4", "5", "xxx", "6", "3"}, result)
 
 	called := false
-	NewPipeline[int]().Then(func(int) {
+	New[int]().Then(func(int) {
 		called = true
 	})
 	assert.True(t, called)
@@ -40,7 +40,7 @@ func TestMyPipeline_Send(t *testing.T) {
 	}
 
 	oo := &obj{name: "app"}
-	NewPipeline[*obj]().
+	New[*obj]().
 		Send(oo).
 		Through(func(o *obj, next func()) {
 			o.name += "1"
