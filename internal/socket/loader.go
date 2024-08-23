@@ -414,9 +414,10 @@ func (v *SystemVariableLoader) Load(j *jobRunner) error {
 	//Host1...Host10
 	sub := j.projRepo.GetPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
 	j.logger.Debug("getPreOccupiedLenByValuesYaml: ", sub)
+	dm := j.pluginMgr.Domain()
 	for i := 1; i <= 10; i++ {
-		v.Add(fmt.Sprintf("%s%d", VarHost, i), j.pluginMgr.Domain().GetDomainByIndex(j.project.Name, j.ns.Name, i, sub))
-		v.Add(fmt.Sprintf("%s%d", VarTlsSecret, i), j.pluginMgr.Domain().GetCertSecretName(j.project.Name, i))
+		v.Add(fmt.Sprintf("%s%d", VarHost, i), dm.GetDomainByIndex(j.project.Name, j.ns.Name, i, sub))
+		v.Add(fmt.Sprintf("%s%d", VarTlsSecret, i), dm.GetCertSecretName(j.project.Name, i))
 	}
 
 	//{{.Branch}}{{.Commit}}{{.Pipeline}}
@@ -445,7 +446,7 @@ func (v *SystemVariableLoader) Load(j *jobRunner) error {
 	v.Add(VarPipeline, fmt.Sprintf("%d", pipelineID))
 
 	// ingress
-	v.Add(VarClusterIssuer, j.pluginMgr.Domain().GetClusterIssuer())
+	v.Add(VarClusterIssuer, dm.GetClusterIssuer())
 
 	tpl, err := template.New("values_yaml").Delims(leftDelim, rightDelim).Parse(j.config.ValuesYaml)
 	if err != nil {

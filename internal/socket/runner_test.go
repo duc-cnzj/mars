@@ -11,6 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/yaml.v3"
+	"helm.sh/helm/v3/pkg/cli/values"
+
 	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
@@ -1123,4 +1126,178 @@ func TestJober_OnFinally(t *testing.T) {
 func Test_jobRunner_Project(t *testing.T) {
 	job := &jobRunner{project: &repo.Project{}}
 	assert.NotNil(t, job.Project())
+}
+
+type dump struct {
+	assertFn func(x any)
+}
+
+func (d *dump) Matches(x any) bool {
+	d.assertFn(x)
+	return true
+}
+
+func (d *dump) String() string {
+	return ""
+}
+
+func TestMergeValuesLoader_Load(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	up := uploader.NewMockUploader(m)
+	finfo := uploader.NewMockFileInfo(m)
+	finfo.EXPECT().Path().Return("/app/config.yaml")
+	up.EXPECT().Put(gomock.Any(), &dump{assertFn: func(x any) {
+		all, _ := io.ReadAll(x.(io.Reader))
+		result := map[string]any{}
+		yaml.Unmarshal(all, &result)
+		assert.Equal(t, 1, result["app"].(map[string]any)["one"])
+		assert.Equal(t, "two", result["app"].(map[string]any)["two"])
+		assert.Equal(t, 3, result["app"].(map[string]any)["three"])
+		assert.Equal(t, 4, result["app"].(map[string]any)["four"])
+		assert.Equal(t, []any{map[string]any{"name": "secret"}}, result["imagePullSecrets"])
+	}}).Return(finfo, nil)
+	vy := `
+app:
+  one: one
+  two: 2
+`
+	dcy := `
+app:
+  one: 1
+  two: two
+`
+	ev1 := `
+app:
+  three: 3
+`
+	ev2 := `
+app:
+  four: 4
+`
+
+	up.EXPECT().LocalUploader().Return(up)
+	msger := NewMockDeployMsger(m)
+	msger.EXPECT().To(gomock.Any()).AnyTimes()
+	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	job := &jobRunner{
+		userConfigYaml:   dcy,
+		imagePullSecrets: []string{"secret"},
+		timer:            timer.NewRealTimer(),
+		elementValues:    []string{ev1, ev2},
+		valuesOptions:    &values.Options{},
+		input:            &JobInput{GitBranch: "dev"},
+		messager:         msger,
+		systemValuesYaml: vy,
+		uploader:         up,
+	}
+	assert.Nil(t, (&MergeValuesLoader{}).Load(job))
+	assert.Equal(t, "/app/config.yaml", job.valuesOptions.ValueFiles[0])
+
+	job2 := &jobRunner{
+		systemValuesYaml: "",
+		imagePullSecrets: nil,
+		userConfigYaml:   "",
+		valuesOptions:    &values.Options{},
+		input:            &JobInput{GitBranch: "dev"},
+		messager:         msger,
+	}
+	assert.Nil(t, (&MergeValuesLoader{}).Load(job2))
+}
+
+func TestSystemVariableLoader_Load_ok(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	gitS := application.NewMockGitServer(m)
+	mockPipeline := application.NewMockPipeline(m)
+	mockPipeline.EXPECT().GetID().Return(int64(0))
+	mockPipeline.EXPECT().GetRef().Return("dev")
+	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockPipeline, nil)
+
+	projectRepo := repo.NewMockProjectRepo(m)
+	projectRepo.EXPECT().GetPreOccupiedLenByValuesYaml(gomock.Any()).Return(1)
+	pl := application.NewMockPluginManger(m)
+	pl.EXPECT().Git().Return(gitS)
+	domain := application.NewMockDomainManager(m)
+	pl.EXPECT().Domain().Return(domain).AnyTimes()
+	domain.EXPECT().GetDomainByIndex(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	domain.EXPECT().GetCertSecretName(gomock.Any(), gomock.Any()).AnyTimes()
+	domain.EXPECT().GetClusterIssuer().Return("cluster-issuer")
+	em := NewMockDeployMsger(m)
+	em.EXPECT().To(gomock.Any()).AnyTimes()
+	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	commit := application.NewMockCommit(m)
+	commit.EXPECT().GetShortID().Return("short_id").AnyTimes()
+	job := &jobRunner{
+		commit:    commit,
+		pluginMgr: pl,
+		projRepo:  projectRepo,
+		config: &mars.Config{
+			ValuesYaml: `
+VarImagePullSecrets: <.ImagePullSecrets>
+`,
+		},
+		logger: mlog.NewLogger(nil),
+		project: &repo.Project{
+			Name:      "app",
+			GitBranch: "dev",
+		},
+		ns:               &repo.Namespace{Name: "ns"},
+		imagePullSecrets: []string{"a", "b", "c"},
+		messager:         em,
+		repo:             &repo.Repo{NeedGitRepo: true, GitProjectID: 1},
+	}
+	assert.Nil(t, (&SystemVariableLoader{}).Load(job))
+	assert.Equal(t, `
+VarImagePullSecrets: [{name: a}, {name: b}, {name: c}, ]
+`,
+		job.systemValuesYaml)
+	assert.Equal(t, "dev", job.vars[VarBranch])
+	assert.Equal(t, "short_id", job.vars[VarCommit])
+	assert.Equal(t, "0", job.vars[VarPipeline])
+	assert.Equal(t, "[{name: a}, {name: b}, {name: c}, ]", job.vars[VarImagePullSecrets])
+}
+
+func TestSystemVariableLoader_Load_fail(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	gitS := application.NewMockGitServer(m)
+	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("x"))
+
+	projectRepo := repo.NewMockProjectRepo(m)
+	projectRepo.EXPECT().GetPreOccupiedLenByValuesYaml(gomock.Any()).Return(1)
+	pl := application.NewMockPluginManger(m)
+	pl.EXPECT().Git().Return(gitS)
+	domain := application.NewMockDomainManager(m)
+	pl.EXPECT().Domain().Return(domain).AnyTimes()
+	domain.EXPECT().GetDomainByIndex(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	domain.EXPECT().GetCertSecretName(gomock.Any(), gomock.Any()).AnyTimes()
+	em := NewMockDeployMsger(m)
+	em.EXPECT().To(gomock.Any()).AnyTimes()
+	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	commit := application.NewMockCommit(m)
+	commit.EXPECT().GetShortID().Return("short_id").AnyTimes()
+	job := &jobRunner{
+		commit:    commit,
+		pluginMgr: pl,
+		projRepo:  projectRepo,
+		config: &mars.Config{
+			ValuesYaml: `
+VarImagePullSecrets: <.ImagePullSecrets>
+image: <.Pipeline>-<.Branch>
+`,
+		},
+		logger: mlog.NewLogger(nil),
+		project: &repo.Project{
+			Name:      "app",
+			GitBranch: "dev",
+		},
+		ns:               &repo.Namespace{Name: "ns"},
+		imagePullSecrets: []string{"a", "b", "c"},
+		messager:         em,
+		repo:             &repo.Repo{NeedGitRepo: true, GitProjectID: 1},
+	}
+	assert.Error(t, (&SystemVariableLoader{}).Load(job))
 }
