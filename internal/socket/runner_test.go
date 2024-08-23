@@ -582,46 +582,6 @@ func (f *fakeOpener) Close() error {
 	return nil
 }
 
-func TestChartFileLoader_Load2(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	em := NewMockDeployMsger(m)
-	h := repo.NewMockHelmerRepo(m)
-	pl := application.NewMockPluginManger(m)
-	gits := application.NewMockGitServer(m)
-	up := uploader.NewMockUploader(m)
-	pl.EXPECT().Git().Return(gits).AnyTimes()
-	job := &jobRunner{
-		uploader:  up,
-		helmer:    h,
-		pluginMgr: pl,
-		input: &JobInput{
-			GitCommit: "commit",
-		},
-		messager: em,
-		config: &mars.Config{
-			LocalChartPath: "100|main|dir",
-		},
-	}
-	l := &ChartFileLoader{
-		chartLoader: &fakeChartLoader{
-			c: &chart.Chart{
-				Metadata: &chart.Metadata{},
-			},
-		},
-		fileOpener: &fakeOpener{},
-	}
-
-	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
-	em.EXPECT().To(gomock.Any())
-	gits.EXPECT().GetDirectoryFilesWithBranch("100", "main", "dir", true).Return([]string{"file1", "file2"}, nil)
-	up.EXPECT().LocalUploader().Return(up)
-	up.EXPECT().MkDir(gomock.Any(), false).Return(errors.New("mkdir err")).Times(1)
-
-	err := l.Load(job)
-	assert.Equal(t, "mkdir err", err.Error())
-}
-
 func TestUserConfigLoader_Load(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -1300,4 +1260,149 @@ image: <.Pipeline>-<.Branch>
 		repo:             &repo.Repo{NeedGitRepo: true, GitProjectID: 1},
 	}
 	assert.Error(t, (&SystemVariableLoader{}).Load(job))
+}
+
+func TestChartFileLoader_Load2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	em := NewMockDeployMsger(m)
+	h := repo.NewMockHelmerRepo(m)
+	pl := application.NewMockPluginManger(m)
+	gits := application.NewMockGitServer(m)
+	up := uploader.NewMockUploader(m)
+	pl.EXPECT().Git().Return(gits).AnyTimes()
+	job := &jobRunner{
+		uploader:  up,
+		helmer:    h,
+		pluginMgr: pl,
+		input: &JobInput{
+			GitCommit: "commit",
+		},
+		messager: em,
+		config: &mars.Config{
+			LocalChartPath: "100|main|dir",
+		},
+	}
+	l := &ChartFileLoader{
+		chartLoader: &fakeChartLoader{
+			c: &chart.Chart{
+				Metadata: &chart.Metadata{},
+			},
+		},
+		fileOpener: &fakeOpener{},
+	}
+
+	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	em.EXPECT().To(gomock.Any())
+	gits.EXPECT().GetDirectoryFilesWithBranch("100", "main", "dir", true).Return([]string{"file1", "file2"}, nil)
+	up.EXPECT().LocalUploader().Return(up)
+	up.EXPECT().MkDir(gomock.Any(), false).Return(errors.New("mkdir err")).Times(1)
+
+	err := l.Load(job)
+	assert.Equal(t, "mkdir err", err.Error())
+}
+
+func TestChartFileLoader_Load(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	em := NewMockDeployMsger(m)
+	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	em.EXPECT().To(gomock.Any()).AnyTimes()
+	h := repo.NewMockHelmerRepo(m)
+	gits := application.NewMockGitServer(m)
+	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return(nil, errors.New("xxx"))
+
+	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return([]string{"file1", "file2"}, nil)
+	gits.EXPECT().GetFileContentWithSha("9999", "master", "file1").Return("file1", nil).Times(1)
+	gits.EXPECT().GetFileContentWithSha("9999", "master", "file2").Return("file2", nil).Times(1)
+	up := uploader.NewMockUploader(m)
+	up.EXPECT().LocalUploader().Return(up).AnyTimes()
+	up.EXPECT().AbsolutePath(gomock.Any()).Return("/dir")
+	up.EXPECT().MkDir(gomock.Any(), false).Times(1)
+	up.EXPECT().Put(gomock.Any(), gomock.Any()).Times(2)
+	h.EXPECT().PackageChart(gomock.Any(), gomock.Any()).Times(1)
+	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir/xxxx", true).Return([]string{}, nil)
+
+	pl := application.NewMockPluginManger(m)
+	pl.EXPECT().Git().Return(gits).AnyTimes()
+	job := &jobRunner{
+		uploader: up,
+		logger:   mlog.NewLogger(nil),
+		helmer:   h,
+		input:    &JobInput{},
+		messager: em,
+		config: &mars.Config{
+			LocalChartPath: "9999|master|dir",
+		},
+		pluginMgr: pl,
+	}
+	l := &ChartFileLoader{
+		chartLoader: &fakeChartLoader{
+			c: &chart.Chart{
+				Metadata: &chart.Metadata{
+					Dependencies: []*chart.Dependency{
+						{
+							Repository: "file://xxxx",
+						},
+					},
+				},
+			},
+		},
+		fileOpener: &fakeOpener{},
+	}
+
+	err := l.Load(job)
+	assert.Equal(t, "charts 文件不存在", err.Error())
+	err = l.Load(job)
+	assert.Len(t, job.finallyCallback.Sort(), 2)
+	assert.Nil(t, err)
+
+	up.EXPECT().DeleteDir("/dir").Times(2)
+	called := 0
+
+	pipeline.New[error]().Send(job.Error()).Through(job.finallyCallback.Sort()...).Then(func(err error) {
+		called++
+	})
+	assert.Equal(t, 1, called)
+}
+
+func TestChartFileLoader_LoadWithChartMissing(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	em := NewMockDeployMsger(m)
+	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	em.EXPECT().To(gomock.Any()).AnyTimes()
+	h := repo.NewMockHelmerRepo(m)
+	pl := application.NewMockPluginManger(m)
+	gits := application.NewMockGitServer(m)
+	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return([]string{"file1", "file2"}, nil)
+
+	gits.EXPECT().GetFileContentWithSha("9999", "master", "file1").Return("file1", nil).Times(1)
+	gits.EXPECT().GetFileContentWithSha("9999", "master", "file2").Return("file2", nil).Times(1)
+	up := uploader.NewMockUploader(m)
+	up.EXPECT().LocalUploader().Return(up).AnyTimes()
+	up.EXPECT().AbsolutePath(gomock.Any()).Return("/dir")
+	up.EXPECT().MkDir(gomock.Any(), false).Times(1)
+	up.EXPECT().Put(gomock.Any(), gomock.Any()).Times(2)
+	pl.EXPECT().Git().Return(gits).AnyTimes()
+	job := &jobRunner{
+		helmer:    h,
+		pluginMgr: pl,
+		uploader:  up,
+		logger:    mlog.NewLogger(nil),
+		input:     &JobInput{},
+		messager:  em,
+		config: &mars.Config{
+			LocalChartPath: "9999|master|dir",
+		},
+	}
+	loadDirErr := errors.New("Chart.yaml file is missing")
+	l := &ChartFileLoader{
+		chartLoader: &fakeChartLoader{
+			loadDirErr: loadDirErr,
+		},
+	}
+
+	err := l.Load(job)
+	assert.Equal(t, loadDirErr.Error(), err.Error())
 }
