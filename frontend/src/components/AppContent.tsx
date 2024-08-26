@@ -19,6 +19,7 @@ import { SearchOutlined } from "@ant-design/icons";
 import { css } from "@emotion/css";
 
 const defaultPageSize = 12;
+
 const AppContent: React.FC = () => {
   const reloadNamespace = useSelector(selectReload);
   const reloadNsID = useSelector(selectReloadNsID);
@@ -98,8 +99,9 @@ const AppContent: React.FC = () => {
   ]);
   const onTabsClick = useCallback(
     (v: any) => {
-      setFavorite(v === "1");
-      fetchNamespaces(v === "1", 1, defaultPageSize, searchInput.name);
+      let fav = v === "1";
+      setFavorite(fav);
+      fetchNamespaces(fav, 1, defaultPageSize, searchInput.name);
       setParams({});
       dispatch(setOpenedModals({}));
     },
@@ -131,7 +133,7 @@ const AppContent: React.FC = () => {
               `}
               onFocus={() => setIsFocused(true)}
               onBlur={() => {
-                setIsFocused(false)
+                setIsFocused(false);
                 fetchNamespaces(
                   favorite,
                   pageInfo.page,

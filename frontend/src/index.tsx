@@ -17,7 +17,7 @@ import "antd/dist/reset.css";
 import "prism-themes/themes/prism-material-dark.css";
 import { useDispatch } from "react-redux";
 import { setOpenedModals } from "./store/actions";
-import zhCN from 'antd/locale/zh_CN';
+import zhCN from "antd/locale/zh_CN";
 
 const Login = lazy(() => import("./components/Login"));
 const Callback = lazy(() => import("./components/AuthCallback"));
