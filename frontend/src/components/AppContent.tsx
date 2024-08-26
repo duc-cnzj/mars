@@ -185,6 +185,7 @@ const AppContent: React.FC = () => {
         {pageInfo.count > defaultPageSize && (
           <Row style={{ marginTop: 10 }}>
             <Pagination
+              showSizeChanger={false}
               defaultCurrent={pageInfo.page}
               total={pageInfo.count}
               defaultPageSize={defaultPageSize}

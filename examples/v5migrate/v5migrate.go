@@ -132,7 +132,7 @@ func migrateProject(gdb *gorm.DB, edb *ent.Client) {
 				log.Println(repo.ID, project.ID, err)
 				return err
 			}
-			if _, err := edb.Project.Create().
+			if _, err = edb.Project.Create().
 				SetName(project.Name).
 				SetGitProjectID(project.GitProjectId).
 				SetGitBranch(project.GitBranch).
@@ -140,7 +140,7 @@ func migrateProject(gdb *gorm.DB, edb *ent.Client) {
 				SetConfig(project.Config).
 				SetOverrideValues(project.OverrideValues).
 				SetDockerImage(strings.Split(project.DockerImage, ",")).
-				SetPodSelectors(strings.Split(project.PodSelectors, ",")).
+				SetPodSelectors(strings.Split(project.PodSelectors, "|")).
 				SetNamespaceID(first.ID).
 				SetAtomic(project.Atomic).
 				SetDeployStatus(types.Deploy(project.DeployStatus)).
@@ -295,6 +295,11 @@ func migrateGitProjectToRepo(gdb *gorm.DB, edb *ent.Client) {
 			name := gpro.Name
 			if marsC.DisplayName != "" {
 				name = marsC.DisplayName
+			}
+			split := strings.Split(marsC.LocalChartPath, "|")
+			if len(split) != 3 {
+				marsC.LocalChartPath = fmt.Sprintf("%v|%v|%v", gpro.GitProjectId, gpro.DefaultBranch, marsC.LocalChartPath)
+				log.Println(marsC.DisplayName, marsC.LocalChartPath)
 			}
 			//log.Println(marsC.DisplayName, gpro.ID, gpro.Name)
 			if _, err := edb.Repo.Create().
