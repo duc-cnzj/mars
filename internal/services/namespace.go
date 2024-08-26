@@ -14,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
+	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
@@ -52,6 +53,40 @@ func (n *namespaceSvc) All(ctx context.Context, request *namespace.AllRequest) (
 		return nil, err
 	}
 	var res = &namespace.AllResponse{Items: make([]*types.NamespaceModel, 0, len(namespaces))}
+	for _, ns := range namespaces {
+		fav := false
+		for _, f := range ns.Favorites {
+			if f.Email == email {
+				fav = true
+				break
+			}
+		}
+		v := transformer.FromNamespace(ns)
+		v.Favorite = fav
+		res.Items = append(res.Items, v)
+	}
+
+	return res, nil
+}
+func (n *namespaceSvc) List(ctx context.Context, request *namespace.ListRequest) (*namespace.ListResponse, error) {
+	email := MustGetUser(ctx).Email
+	page, size := pagination.InitByDefault(request.Page, request.PageSize)
+	namespaces, pag, err := n.nsRepo.List(ctx, &repo.ListNamespaceInput{
+		Favorite: request.Favorite,
+		Name:     request.Name,
+		Email:    email,
+		Page:     page,
+		PageSize: size,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var res = &namespace.ListResponse{
+		Items:    make([]*types.NamespaceModel, 0, len(namespaces)),
+		Count:    pag.Count,
+		Page:     pag.Page,
+		PageSize: pag.PageSize,
+	}
 	for _, ns := range namespaces {
 		fav := false
 		for _, f := range ns.Favorites {

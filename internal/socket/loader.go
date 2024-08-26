@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"text/template"
@@ -237,6 +238,9 @@ func (d *ElementsLoader) Load(j *jobRunner) error {
 	var validValuesMap = make(map[string]any)
 	var useDefaultMap = make(map[string]bool)
 
+	sort.Slice(j.config.Elements, func(x, y int) bool {
+		return j.config.Elements[x].Order < j.config.Elements[y].Order
+	})
 	var configElementsMap = make(map[string]*mars.Element)
 	for _, element := range j.config.Elements {
 		configElementsMap[element.Path] = element
@@ -267,12 +271,13 @@ func (d *ElementsLoader) Load(j *jobRunner) error {
 
 	j.elementValues = d.deepSetItems(validValuesMap)
 	var finalValues []*websocket_pb.ExtraValue
-	for key, value := range validValuesMap {
+	for _, element := range j.config.Elements {
 		finalValues = append(finalValues, &websocket_pb.ExtraValue{
-			Path:  key,
-			Value: fmt.Sprintf("%v", value),
+			Path:  element.Path,
+			Value: fmt.Sprintf("%v", validValuesMap[element.Path]),
 		})
 	}
+
 	j.finalExtraValues = finalValues
 	var ds []string
 	for k, ok := range useDefaultMap {

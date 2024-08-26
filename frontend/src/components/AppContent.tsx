@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, memo } from "react";
 import { DraggableModalProvider } from "../pkg/DraggableModal/DraggableModalProvider";
 import ItemCard from "./ItemCard";
-import { Empty, Row, Col, Tabs, message } from "antd";
+import { Empty, Row, Col, Tabs, message, Pagination, Input } from "antd";
 import "../pkg/DraggableModal/index.css";
 import { useSelector, useDispatch } from "react-redux";
 import { setNamespaceReload, setOpenedModals } from "../store/actions";
@@ -15,7 +15,10 @@ import ajax from "../api/ajax";
 import { components } from "../api/schema";
 import IconFont from "./Icon";
 import { TabsProps } from "antd/lib";
+import { SearchOutlined } from "@ant-design/icons";
+import { css } from "@emotion/css";
 
+const defaultPageSize = 12;
 const AppContent: React.FC = () => {
   const reloadNamespace = useSelector(selectReload);
   const reloadNsID = useSelector(selectReloadNsID);
@@ -25,23 +28,43 @@ const AppContent: React.FC = () => {
   const [namespaceItems, setNamespaceItems] = useAsyncState<
     components["schemas"]["types.NamespaceModel"][]
   >([]);
+  const [pageInfo, setPageInfo] = useState({
+    page: 1,
+    pageSize: defaultPageSize,
+    count: 0,
+  });
+  const [searchInput, setSearchInput] = useState({ name: "" });
+
   const fetchNamespaces = useCallback(
-    (favorite: boolean) => {
+    (favorite: boolean, page: number, pageSize: number, name?: string) => {
       setLoading(true);
       return ajax
-        .GET("/api/namespaces", { params: { query: { favorite } } })
+        .GET("/api/namespaces", {
+          params: {
+            query: {
+              favorite,
+              page: page,
+              pageSize: pageSize,
+              name: name,
+            },
+          },
+        })
         .then(({ data, error }) => {
           if (error) {
             return;
           }
           setNamespaceItems(data.items);
+          setPageInfo({
+            page: data.page,
+            pageSize: data.pageSize,
+            count: data.count,
+          });
         })
         .finally(() => setLoading(false));
     },
     [setNamespaceItems],
   );
-
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   if (!!params.get("pid")) {
     let obj: { [key: number]: boolean } = {};
     sortedUniq((params.get("pid") || "").split(","))
@@ -53,17 +76,129 @@ const AppContent: React.FC = () => {
   usePreventModalBack();
 
   useEffect(() => {
-    fetchNamespaces(favorite);
-  }, [fetchNamespaces, favorite]);
+    fetchNamespaces(true, 1, defaultPageSize, "");
+  }, [fetchNamespaces]);
 
   useEffect(() => {
     if (reloadNamespace) {
-      fetchNamespaces(favorite).finally(() =>
-        dispatch(setNamespaceReload(false, 0)),
-      );
+      fetchNamespaces(
+        favorite,
+        pageInfo.page,
+        pageInfo.pageSize,
+        searchInput.name,
+      ).finally(() => dispatch(setNamespaceReload(false, 0)));
     }
-  }, [reloadNamespace, dispatch, fetchNamespaces, favorite]);
+  }, [
+    reloadNamespace,
+    dispatch,
+    fetchNamespaces,
+    favorite,
+    pageInfo,
+    searchInput.name,
+  ]);
+  const onTabsClick = useCallback(
+    (v: any) => {
+      setFavorite(v === "1");
+      fetchNamespaces(v === "1", 1, defaultPageSize, searchInput.name);
+      setParams({});
+      dispatch(setOpenedModals({}));
+    },
+    [dispatch, setParams, fetchNamespaces, searchInput.name],
+  );
+  const [isFocused, setIsFocused] = useState(false);
 
+  return (
+    <DraggableModalProvider>
+      <Content>
+        <Row justify={"space-between"}>
+          <Col span={8}>
+            <MyTabs onClick={onTabsClick} />
+          </Col>
+          <Col span={10} style={{ textAlign: "right" }}>
+            <Input
+              allowClear
+              className={css`
+                margin-left: 20px;
+                width: ${isFocused ? "60%" : "30%"};
+                margin-right: 10px;
+                transition:
+                  width 0.3s ease-in-out,
+                  background-color 0.3s ease-in-out;
+                &:focus {
+                  background-color: black;
+                  color: white; /* 使文本在黑色背景上可见 */
+                }
+              `}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => {
+                setIsFocused(false)
+                fetchNamespaces(
+                  favorite,
+                  pageInfo.page,
+                  pageInfo.pageSize,
+                  searchInput.name,
+                );
+              }}
+              suffix={<SearchOutlined />}
+              value={searchInput.name}
+              onChange={(v) => setSearchInput({ name: v.target.value })}
+              onKeyDown={(k) => {
+                if (k.code === "Enter") {
+                  fetchNamespaces(
+                    favorite,
+                    pageInfo.page,
+                    pageInfo.pageSize,
+                    searchInput.name,
+                  );
+                }
+              }}
+            />
+            <AddNamespace
+              onCreated={() => {
+                fetchNamespaces(
+                  favorite,
+                  pageInfo.page,
+                  pageInfo.pageSize,
+                  searchInput.name,
+                );
+              }}
+            />
+          </Col>
+        </Row>
+
+        <NamespaceList
+          loading={loading}
+          reloadNsID={reloadNsID}
+          list={namespaceItems}
+          fetchNamespaces={() =>
+            fetchNamespaces(
+              favorite,
+              pageInfo.page,
+              pageInfo.pageSize,
+              searchInput.name,
+            )
+          }
+          favorite={favorite}
+        />
+        {pageInfo.count > defaultPageSize && (
+          <Row style={{ marginTop: 10 }}>
+            <Pagination
+              defaultCurrent={pageInfo.page}
+              total={pageInfo.count}
+              defaultPageSize={defaultPageSize}
+              pageSize={pageInfo.pageSize}
+              onChange={(page, size) => {
+                fetchNamespaces(favorite, page, size, searchInput.name);
+              }}
+            />
+          </Row>
+        )}
+      </Content>
+    </DraggableModalProvider>
+  );
+};
+
+const MyTabs: React.FC<{ onClick: (v: any) => void }> = memo(({ onClick }) => {
   const items: TabsProps["items"] = [
     {
       key: "1",
@@ -76,31 +211,8 @@ const AppContent: React.FC = () => {
       icon: <IconFont name="#icon-kongjian" />,
     },
   ];
-
-  return (
-    <DraggableModalProvider>
-      <Content>
-        <AddNamespace
-          onCreated={() => {
-            fetchNamespaces(favorite);
-          }}
-        />
-        <Tabs
-          onTabClick={(v) => setFavorite(v === "1")}
-          defaultActiveKey="1"
-          items={items}
-        />
-        <NamespaceList
-          loading={loading}
-          reloadNsID={reloadNsID}
-          list={namespaceItems}
-          fetchNamespaces={fetchNamespaces}
-          favorite={favorite}
-        />
-      </Content>
-    </DraggableModalProvider>
-  );
-};
+  return <Tabs onTabClick={onClick} defaultActiveKey="1" items={items} />;
+});
 
 export default memo(AppContent);
 

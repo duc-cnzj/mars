@@ -7237,9 +7237,22 @@ func (m *ProjectMutation) OldConfig(ctx context.Context) (v string, err error) {
 	return oldValue.Config, nil
 }
 
+// ClearConfig clears the value of the "config" field.
+func (m *ProjectMutation) ClearConfig() {
+	m._config = nil
+	m.clearedFields[project.FieldConfig] = struct{}{}
+}
+
+// ConfigCleared returns if the "config" field was cleared in this mutation.
+func (m *ProjectMutation) ConfigCleared() bool {
+	_, ok := m.clearedFields[project.FieldConfig]
+	return ok
+}
+
 // ResetConfig resets all changes to the "config" field.
 func (m *ProjectMutation) ResetConfig() {
 	m._config = nil
+	delete(m.clearedFields, project.FieldConfig)
 }
 
 // SetCreator sets the "creator" field.
@@ -8774,6 +8787,9 @@ func (m *ProjectMutation) ClearedFields() []string {
 	if m.FieldCleared(project.FieldDeletedAt) {
 		fields = append(fields, project.FieldDeletedAt)
 	}
+	if m.FieldCleared(project.FieldConfig) {
+		fields = append(fields, project.FieldConfig)
+	}
 	if m.FieldCleared(project.FieldOverrideValues) {
 		fields = append(fields, project.FieldOverrideValues)
 	}
@@ -8823,6 +8839,9 @@ func (m *ProjectMutation) ClearField(name string) error {
 	switch name {
 	case project.FieldDeletedAt:
 		m.ClearDeletedAt()
+		return nil
+	case project.FieldConfig:
+		m.ClearConfig()
 		return nil
 	case project.FieldOverrideValues:
 		m.ClearOverrideValues()

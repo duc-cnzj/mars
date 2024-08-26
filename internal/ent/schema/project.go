@@ -30,7 +30,11 @@ func (Project) Fields() []ent.Field {
 		field.String("git_commit").
 			MaxLen(255).
 			Comment("git commit"),
-		field.String("config"),
+		field.String("config").
+			SchemaType(map[string]string{
+				dialect.MySQL: "longtext",
+			}).
+			Optional(),
 		field.String("creator"),
 		field.String("override_values").
 			SchemaType(map[string]string{

@@ -192,7 +192,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
-		{Name: "name", Type: field.TypeString, Size: 100},
+		{Name: "name", Type: field.TypeString, Size: 100, Collation: "utf8mb4_general_ci"},
 		{Name: "image_pull_secrets", Type: field.TypeJSON},
 		{Name: "description", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "text"}},
 	}
@@ -212,7 +212,7 @@ var (
 		{Name: "git_project_id", Type: field.TypeInt},
 		{Name: "git_branch", Type: field.TypeString, Size: 255},
 		{Name: "git_commit", Type: field.TypeString, Size: 255},
-		{Name: "config", Type: field.TypeString},
+		{Name: "config", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "longtext"}},
 		{Name: "creator", Type: field.TypeString},
 		{Name: "override_values", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "longtext"}},
 		{Name: "docker_image", Type: field.TypeJSON, Nullable: true},

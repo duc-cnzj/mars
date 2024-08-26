@@ -577,6 +577,16 @@ func ConfigHasSuffix(v string) predicate.Project {
 	return predicate.Project(sql.FieldHasSuffix(FieldConfig, v))
 }
 
+// ConfigIsNil applies the IsNil predicate on the "config" field.
+func ConfigIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldConfig))
+}
+
+// ConfigNotNil applies the NotNil predicate on the "config" field.
+func ConfigNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldConfig))
+}
+
 // ConfigEqualFold applies the EqualFold predicate on the "config" field.
 func ConfigEqualFold(v string) predicate.Project {
 	return predicate.Project(sql.FieldEqualFold(FieldConfig, v))

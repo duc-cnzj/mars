@@ -248,6 +248,7 @@ const DeployProjectForm: React.FC<{
               form.setFieldValue("extraValues", data.item.marsConfig.elements);
             }
             setElements(data.item.marsConfig.elements);
+            console.log(data.item.marsConfig.elements);
             setMode(getMode(data.item.marsConfig.configFileType));
           }
         });
@@ -523,7 +524,7 @@ const DeployProjectForm: React.FC<{
                     </>
                   )}
                 </Row>
-                <Row>
+                <Row style={{ backgroundColor: "white", paddingBottom: 5 }}>
                   <Space size={"small"}>
                     <Button
                       onClick={() => form.submit()}
@@ -581,23 +582,25 @@ const DeployProjectForm: React.FC<{
                 </Row>
               </div>
             </Affix>
-            <Row>
-              <Col span={showLog ? 24 : 0}>
-                <Progress
-                  strokeColor={{
-                    from: "#108ee9",
-                    to: "#87d068",
-                  }}
-                  style={{ padding: "0 3px", marginBottom: 5 }}
-                  percent={processPercent}
-                  status="active"
-                />
-                <LogOutput
-                  pending={<TimeCost done={!isLoading} />}
-                  slug={curr.slug}
-                />
-              </Col>
-            </Row>
+            {showLog && (
+              <Row>
+                <Col span={24}>
+                  <Progress
+                    strokeColor={{
+                      from: "#108ee9",
+                      to: "#87d068",
+                    }}
+                    style={{ padding: "0 3px", marginBottom: 5 }}
+                    percent={processPercent}
+                    status="active"
+                  />
+                  <LogOutput
+                    pending={<TimeCost done={!isLoading} />}
+                    slug={curr.slug}
+                  />
+                </Col>
+              </Row>
+            )}
             {!showLog && (
               <>
                 <Row>
@@ -610,6 +613,9 @@ const DeployProjectForm: React.FC<{
                           input: { fontSize: 10 },
                           label: { fontSize: 10 },
                           textarea: { fontSize: 10 },
+                          radio: { fontSize: 10 },
+                          selectOption: { fontSize: 10 },
+                          select: { fontSize: 10 },
                           formItem: {
                             marginBottom: 2,
                             marginTop: 0,

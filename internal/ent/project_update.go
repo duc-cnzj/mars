@@ -137,6 +137,12 @@ func (pu *ProjectUpdate) SetNillableConfig(s *string) *ProjectUpdate {
 	return pu
 }
 
+// ClearConfig clears the value of the "config" field.
+func (pu *ProjectUpdate) ClearConfig() *ProjectUpdate {
+	pu.mutation.ClearConfig()
+	return pu
+}
+
 // SetCreator sets the "creator" field.
 func (pu *ProjectUpdate) SetCreator(s string) *ProjectUpdate {
 	pu.mutation.SetCreator(s)
@@ -641,6 +647,9 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.Config(); ok {
 		_spec.SetField(project.FieldConfig, field.TypeString, value)
 	}
+	if pu.mutation.ConfigCleared() {
+		_spec.ClearField(project.FieldConfig, field.TypeString)
+	}
 	if value, ok := pu.mutation.Creator(); ok {
 		_spec.SetField(project.FieldCreator, field.TypeString, value)
 	}
@@ -975,6 +984,12 @@ func (puo *ProjectUpdateOne) SetNillableConfig(s *string) *ProjectUpdateOne {
 	if s != nil {
 		puo.SetConfig(*s)
 	}
+	return puo
+}
+
+// ClearConfig clears the value of the "config" field.
+func (puo *ProjectUpdateOne) ClearConfig() *ProjectUpdateOne {
+	puo.mutation.ClearConfig()
 	return puo
 }
 
@@ -1511,6 +1526,9 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 	}
 	if value, ok := puo.mutation.Config(); ok {
 		_spec.SetField(project.FieldConfig, field.TypeString, value)
+	}
+	if puo.mutation.ConfigCleared() {
+		_spec.ClearField(project.FieldConfig, field.TypeString)
 	}
 	if value, ok := puo.mutation.Creator(); ok {
 		_spec.SetField(project.FieldCreator, field.TypeString, value)

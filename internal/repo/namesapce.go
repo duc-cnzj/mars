@@ -10,9 +10,12 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/favorite"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
+	"github.com/duc-cnzj/mars/v4/internal/filters"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/util/mars"
+	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+	"github.com/samber/lo"
 )
 
 type Favorite struct {
@@ -77,6 +80,7 @@ type NamespaceRepo interface {
 	GetMarsNamespace(name string) string
 	FindByName(ctx context.Context, name string) (*Namespace, error)
 	All(ctx context.Context, input *AllNamespaceInput) ([]*Namespace, error)
+	List(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error)
 	Show(ctx context.Context, id int) (*Namespace, error)
 	Create(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error)
 	Favorite(ctx context.Context, input *FavoriteNamespaceInput) error
@@ -91,12 +95,62 @@ type namespaceRepo struct {
 	NsPrefix string
 }
 
+type ListNamespaceInput struct {
+	Favorite bool
+	Email    string
+	Page     int32
+	PageSize int32
+	Name     *string
+}
+
 func NewNamespaceRepo(logger mlog.Logger, data data.Data) NamespaceRepo {
 	return &namespaceRepo{
 		logger:   logger.WithModule("repo/namespace"),
 		data:     data,
 		NsPrefix: data.Config().NsPrefix,
 	}
+}
+
+func (repo *namespaceRepo) List(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error) {
+	query := repo.data.DB().Namespace.Query().
+		Where(filters.IfNameLike(lo.FromPtr(input.Name)))
+	if input.Favorite {
+		query = query.Where(
+			namespace.HasFavoritesWith(favorite.Email(input.Email)),
+		)
+	}
+
+	all, err := query.Clone().
+		Select(
+			namespace.FieldID,
+			namespace.FieldName,
+			namespace.FieldDescription,
+			namespace.FieldCreatedAt,
+			namespace.FieldUpdatedAt,
+		).
+		WithFavorites(func(query *ent.FavoriteQuery) {
+			query.Where(favorite.Email(input.Email))
+		}).
+		WithProjects(
+			func(query *ent.ProjectQuery) {
+				query.Select(
+					project.FieldID,
+					project.FieldName,
+					project.FieldDeployStatus,
+					project.FieldNamespaceID,
+					project.FieldCreatedAt,
+					project.FieldUpdatedAt,
+				)
+			},
+		).
+		Offset(pagination.GetPageOffset(input.Page, input.PageSize)).
+		Limit(int(input.PageSize)).
+		All(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	count := query.Clone().CountX(ctx)
+	return serialize.Serialize(all, ToNamespace), pagination.NewPagination(input.Page, input.PageSize, count), nil
 }
 
 type AllNamespaceInput struct {

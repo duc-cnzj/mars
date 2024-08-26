@@ -1,5 +1,5 @@
 import React, { useState, useCallback, memo } from "react";
-import { Affix, Button, Modal, Input, message, Form } from "antd";
+import { Button, Modal, Input, message, Form } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import ajax from "../api/ajax";
 import TextArea from "antd/es/input/TextArea";
@@ -30,16 +30,12 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
 
   return (
     <>
-      <Affix offsetTop={80} style={{ position: "absolute", right: "10px" }}>
-        <Button
-          size="large"
-          type="primary"
-          shape="circle"
-          className="add-namespace__button"
-          icon={<PlusOutlined />}
-          onClick={() => setIsVisible(true)}
-        />
-      </Affix>
+      <Button
+        type="primary"
+        shape="circle"
+        icon={<PlusOutlined />}
+        onClick={() => setIsVisible(true)}
+      />
       <Modal
         title="创建项目空间"
         open={isVisible}

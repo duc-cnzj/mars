@@ -36,6 +36,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/all_namespaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取所有的名称空间 */
+        get: operations["Namespace_All"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/exchange": {
         parameters: {
             query?: never;
@@ -556,8 +573,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 获取所有的名称空间 */
-        get: operations["Namespace_All"];
+        /** 分页获取名称空间 */
+        get: operations["Namespace_List"];
         put?: never;
         /** 创建名称空间 */
         post: operations["Namespace_Create"];
@@ -1118,6 +1135,15 @@ export interface components {
             id: string;
             exists: boolean;
         };
+        "namespace.ListResponse": {
+            items: components["schemas"]["types.NamespaceModel"][];
+            /** Format: int32 */
+            count: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+        };
         "namespace.ShowResponse": {
             item: components["schemas"]["types.NamespaceModel"];
         };
@@ -1593,6 +1619,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["token.RevokeResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Namespace_All: {
+        parameters: {
+            query?: {
+                favorite?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["namespace.AllResponse"];
                 };
             };
             /** @description Default error response */
@@ -2560,10 +2617,13 @@ export interface operations {
             };
         };
     };
-    Namespace_All: {
+    Namespace_List: {
         parameters: {
             query?: {
+                page?: number;
+                pageSize?: number;
                 favorite?: boolean;
+                name?: string;
             };
             header?: never;
             path?: never;
@@ -2577,7 +2637,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["namespace.AllResponse"];
+                    "application/json": components["schemas"]["namespace.ListResponse"];
                 };
             };
             /** @description Default error response */

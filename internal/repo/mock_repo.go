@@ -1727,6 +1727,22 @@ func (mr *MockNamespaceRepoMockRecorder) GetMarsNamespace(arg0 any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMarsNamespace", reflect.TypeOf((*MockNamespaceRepo)(nil).GetMarsNamespace), arg0)
 }
 
+// List mocks base method.
+func (m *MockNamespaceRepo) List(arg0 context.Context, arg1 *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", arg0, arg1)
+	ret0, _ := ret[0].([]*Namespace)
+	ret1, _ := ret[1].(*pagination.Pagination)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// List indicates an expected call of List.
+func (mr *MockNamespaceRepoMockRecorder) List(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockNamespaceRepo)(nil).List), arg0, arg1)
+}
+
 // Show mocks base method.
 func (m *MockNamespaceRepo) Show(arg0 context.Context, arg1 int) (*Namespace, error) {
 	m.ctrl.T.Helper()

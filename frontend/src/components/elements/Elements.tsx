@@ -1,4 +1,4 @@
-import React, { useCallback, useState, Fragment, memo } from "react";
+import React, { useCallback, useState, Fragment, memo, useMemo } from "react";
 import { Form, Input, InputNumber, Radio, Select, Switch } from "antd";
 import { omitEqual } from "../../utils/obj";
 import { css } from "@emotion/css";
@@ -79,11 +79,33 @@ const Elements: React.FC<{
     [onChange, style, value],
   );
 
-  console.log(value);
+  let initValues = useMemo(() => {
+    return elements
+      ? elements.map((item): components["schemas"]["websocket.ExtraValue"] => {
+          let itemValue: any = item.default;
+          if (!!value) {
+            for (let i = 0; i < value.length; i++) {
+              if (value[i].path === item.path) {
+                itemValue = value[i].value;
+                if (item.type === MarsElementType.ElementTypeSwitch) {
+                  itemValue = isTrue(itemValue);
+                }
+                if (item.type === MarsElementType.ElementTypeInputNumber) {
+                  itemValue = Number(itemValue);
+                }
+                break;
+              }
+            }
+          }
+          return { path: item.path, value: itemValue };
+        })
+      : [];
+  }, [elements, value]);
+
   return (
     <div style={{ width: "100%" }} id={id}>
-      {value &&
-        value.map((item, index) => (
+      {initValues &&
+        initValues.map((item, index) => (
           <Fragment key={item.path}>
             {getElement(item, elements, index)}
           </Fragment>
@@ -199,8 +221,8 @@ const Element: React.FC<{
             }}
           >
             {element.selectValues.map((i, k) => (
-              <Option value={i} key={k} style={style}>
-                {i}
+              <Option value={i} key={k}>
+                <div style={style.selectOption}>{i}</div>
               </Option>
             ))}
           </Select>

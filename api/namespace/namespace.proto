@@ -62,13 +62,34 @@ message UpdateDescResponse{
   types.NamespaceModel item = 1;
 }
 
+message ListRequest {
+  optional int32  page      = 1;
+  optional int32  page_size = 2;
+  bool            favorite  = 3;
+  optional string name      = 4;
+}
+message ListResponse {
+  repeated types.NamespaceModel items     = 1;
+  int32                         count     = 2;
+  int32                         page      = 3;
+  int32                         page_size = 4;
+}
 service Namespace {
   rpc All(AllRequest) returns (AllResponse) {
+    option (google.api.http)      = {
+      get: "/api/all_namespaces"
+    };
+    option (openapi.v3.operation) = {
+      summary: "获取所有的名称空间",
+    };
+  }
+
+  rpc List(ListRequest) returns (ListResponse) {
     option (google.api.http)      = {
       get: "/api/namespaces"
     };
     option (openapi.v3.operation) = {
-      summary: "获取所有的名称空间",
+      summary: "分页获取名称空间",
     };
   }
 

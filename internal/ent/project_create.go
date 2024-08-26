@@ -107,6 +107,14 @@ func (pc *ProjectCreate) SetConfig(s string) *ProjectCreate {
 	return pc
 }
 
+// SetNillableConfig sets the "config" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableConfig(s *string) *ProjectCreate {
+	if s != nil {
+		pc.SetConfig(*s)
+	}
+	return pc
+}
+
 // SetCreator sets the "creator" field.
 func (pc *ProjectCreate) SetCreator(s string) *ProjectCreate {
 	pc.mutation.SetCreator(s)
@@ -444,9 +452,6 @@ func (pc *ProjectCreate) check() error {
 		if err := project.GitCommitValidator(v); err != nil {
 			return &ValidationError{Name: "git_commit", err: fmt.Errorf(`ent: validator failed for field "Project.git_commit": %w`, err)}
 		}
-	}
-	if _, ok := pc.mutation.Config(); !ok {
-		return &ValidationError{Name: "config", err: errors.New(`ent: missing required field "Project.config"`)}
 	}
 	if _, ok := pc.mutation.Creator(); !ok {
 		return &ValidationError{Name: "creator", err: errors.New(`ent: missing required field "Project.creator"`)}
@@ -807,6 +812,12 @@ func (u *ProjectUpsert) SetConfig(v string) *ProjectUpsert {
 // UpdateConfig sets the "config" field to the value that was provided on create.
 func (u *ProjectUpsert) UpdateConfig() *ProjectUpsert {
 	u.SetExcluded(project.FieldConfig)
+	return u
+}
+
+// ClearConfig clears the value of the "config" field.
+func (u *ProjectUpsert) ClearConfig() *ProjectUpsert {
+	u.SetNull(project.FieldConfig)
 	return u
 }
 
@@ -1258,6 +1269,13 @@ func (u *ProjectUpsertOne) SetConfig(v string) *ProjectUpsertOne {
 func (u *ProjectUpsertOne) UpdateConfig() *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateConfig()
+	})
+}
+
+// ClearConfig clears the value of the "config" field.
+func (u *ProjectUpsertOne) ClearConfig() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearConfig()
 	})
 }
 
@@ -1924,6 +1942,13 @@ func (u *ProjectUpsertBulk) SetConfig(v string) *ProjectUpsertBulk {
 func (u *ProjectUpsertBulk) UpdateConfig() *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateConfig()
+	})
+}
+
+// ClearConfig clears the value of the "config" field.
+func (u *ProjectUpsertBulk) ClearConfig() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearConfig()
 	})
 }
 

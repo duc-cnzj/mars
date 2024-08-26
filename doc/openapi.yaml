@@ -111,6 +111,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+    /api/all_namespaces:
+        get:
+            tags:
+                - Namespace
+            summary: 获取所有的名称空间
+            operationId: Namespace_All
+            parameters:
+                - name: favorite
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.AllResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/auth/exchange:
         post:
             tags:
@@ -948,20 +972,34 @@ paths:
         get:
             tags:
                 - Namespace
-            summary: 获取所有的名称空间
-            operationId: Namespace_All
+            summary: 分页获取名称空间
+            operationId: Namespace_List
             parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
                 - name: favorite
                   in: query
                   schema:
                     type: boolean
+                - name: name
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/namespace.AllResponse'
+                                $ref: '#/components/schemas/namespace.ListResponse'
                 default:
                     description: Default error response
                     content:
@@ -2064,6 +2102,22 @@ components:
                     type: string
                 exists:
                     type: boolean
+        namespace.ListResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.NamespaceModel'
+                count:
+                    type: integer
+                    format: int32
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
         namespace.ShowResponse:
             type: object
             properties:

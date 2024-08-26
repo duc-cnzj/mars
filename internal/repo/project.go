@@ -280,27 +280,6 @@ func (repo *projectRepo) FindByName(ctx context.Context, name string, nsID int) 
 	return ToProject(first), err
 }
 
-func (repo *projectRepo) IsPodRunning(namespace, podName string) (running bool, notRunningReason string) {
-	podInfo, err := repo.data.K8sClient().PodLister.Pods(namespace).Get(podName)
-	if err != nil {
-		return false, err.Error()
-	}
-
-	if podInfo.Status.Phase == v1.PodRunning {
-		return true, ""
-	}
-
-	if podInfo.Status.Phase == v1.PodFailed && podInfo.Status.Reason == "Evicted" {
-		return false, fmt.Sprintf("po %s already evicted in namespace %s!", podName, namespace)
-	}
-
-	for _, status := range podInfo.Status.ContainerStatuses {
-		return false, fmt.Sprintf("%s %s", status.State.Waiting.Reason, status.State.Waiting.Message)
-	}
-
-	return false, "pod not running."
-}
-
 func (repo *projectRepo) GetAllPods(ctx context.Context, id int) ([]*types.StateContainer, error) {
 	project, err := repo.Show(ctx, id)
 	if err != nil {
