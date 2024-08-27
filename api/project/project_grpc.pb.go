@@ -20,13 +20,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Project_List_FullMethodName          = "/project.Project/List"
-	Project_Apply_FullMethodName         = "/project.Project/Apply"
-	Project_WebApply_FullMethodName      = "/project.Project/WebApply"
-	Project_Show_FullMethodName          = "/project.Project/Show"
-	Project_Version_FullMethodName       = "/project.Project/Version"
-	Project_Delete_FullMethodName        = "/project.Project/Delete"
-	Project_AllContainers_FullMethodName = "/project.Project/AllContainers"
+	Project_List_FullMethodName                  = "/project.Project/List"
+	Project_Apply_FullMethodName                 = "/project.Project/Apply"
+	Project_WebApply_FullMethodName              = "/project.Project/WebApply"
+	Project_Show_FullMethodName                  = "/project.Project/Show"
+	Project_MemoryCpuAndEndpoints_FullMethodName = "/project.Project/MemoryCpuAndEndpoints"
+	Project_Version_FullMethodName               = "/project.Project/Version"
+	Project_Delete_FullMethodName                = "/project.Project/Delete"
+	Project_AllContainers_FullMethodName         = "/project.Project/AllContainers"
 )
 
 // ProjectClient is the client API for Project service.
@@ -41,6 +42,7 @@ type ProjectClient interface {
 	WebApply(ctx context.Context, in *WebApplyRequest, opts ...grpc.CallOption) (*WebApplyResponse, error)
 	// Show 项目详情
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
+	MemoryCpuAndEndpoints(ctx context.Context, in *MemoryCpuAndEndpointsRequest, opts ...grpc.CallOption) (*MemoryCpuAndEndpointsResponse, error)
 	// Version 版本号, 如果不存在则返回 0
 	Version(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error)
 	// Delete 删除项目
@@ -116,6 +118,15 @@ func (c *projectClient) Show(ctx context.Context, in *ShowRequest, opts ...grpc.
 	return out, nil
 }
 
+func (c *projectClient) MemoryCpuAndEndpoints(ctx context.Context, in *MemoryCpuAndEndpointsRequest, opts ...grpc.CallOption) (*MemoryCpuAndEndpointsResponse, error) {
+	out := new(MemoryCpuAndEndpointsResponse)
+	err := c.cc.Invoke(ctx, Project_MemoryCpuAndEndpoints_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *projectClient) Version(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error) {
 	out := new(VersionResponse)
 	err := c.cc.Invoke(ctx, Project_Version_FullMethodName, in, out, opts...)
@@ -155,6 +166,7 @@ type ProjectServer interface {
 	WebApply(context.Context, *WebApplyRequest) (*WebApplyResponse, error)
 	// Show 项目详情
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
+	MemoryCpuAndEndpoints(context.Context, *MemoryCpuAndEndpointsRequest) (*MemoryCpuAndEndpointsResponse, error)
 	// Version 版本号, 如果不存在则返回 0
 	Version(context.Context, *VersionRequest) (*VersionResponse, error)
 	// Delete 删除项目
@@ -179,6 +191,9 @@ func (UnimplementedProjectServer) WebApply(context.Context, *WebApplyRequest) (*
 }
 func (UnimplementedProjectServer) Show(context.Context, *ShowRequest) (*ShowResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
+}
+func (UnimplementedProjectServer) MemoryCpuAndEndpoints(context.Context, *MemoryCpuAndEndpointsRequest) (*MemoryCpuAndEndpointsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MemoryCpuAndEndpoints not implemented")
 }
 func (UnimplementedProjectServer) Version(context.Context, *VersionRequest) (*VersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Version not implemented")
@@ -277,6 +292,24 @@ func _Project_Show_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Project_MemoryCpuAndEndpoints_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MemoryCpuAndEndpointsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).MemoryCpuAndEndpoints(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Project_MemoryCpuAndEndpoints_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).MemoryCpuAndEndpoints(ctx, req.(*MemoryCpuAndEndpointsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Project_Version_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VersionRequest)
 	if err := dec(in); err != nil {
@@ -349,6 +382,10 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Show",
 			Handler:    _Project_Show_Handler,
+		},
+		{
+			MethodName: "MemoryCpuAndEndpoints",
+			Handler:    _Project_MemoryCpuAndEndpoints_Handler,
 		},
 		{
 			MethodName: "Version",

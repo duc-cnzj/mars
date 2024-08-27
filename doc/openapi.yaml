@@ -1247,6 +1247,7 @@ paths:
         get:
             tags:
                 - Project
+            summary: 项目详情
             description: Show 项目详情
             operationId: Project_Show
             parameters:
@@ -1314,6 +1315,32 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.AllContainersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/projects/{id}/memory_cpu_and_endpoints:
+        get:
+            tags:
+                - Project
+            summary: 项目的cpu/memory/endpoints
+            operationId: Project_MemoryCpuAndEndpoints
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.MemoryCpuAndEndpointsResponse'
                 default:
                     description: Default error response
                     content:
@@ -2171,11 +2198,9 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/types.ProjectModel'
-        project.ShowResponse:
+        project.MemoryCpuAndEndpointsResponse:
             type: object
             properties:
-                item:
-                    $ref: '#/components/schemas/types.ProjectModel'
                 urls:
                     type: array
                     items:
@@ -2184,6 +2209,11 @@ components:
                     type: string
                 memory:
                     type: string
+        project.ShowResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.ProjectModel'
         project.VersionResponse:
             type: object
             properties:

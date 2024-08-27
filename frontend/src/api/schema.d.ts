@@ -714,7 +714,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Show 项目详情 */
+        /**
+         * 项目详情
+         * @description Show 项目详情
+         */
         get: operations["Project_Show"];
         put?: never;
         post?: never;
@@ -734,6 +737,23 @@ export interface paths {
         };
         /** @description AllContainers 获取项目下的所有 pod */
         get: operations["Project_AllContainers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{id}/memory_cpu_and_endpoints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 项目的cpu/memory/endpoints */
+        get: operations["Project_MemoryCpuAndEndpoints"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1172,11 +1192,13 @@ export interface components {
             count: number;
             items: components["schemas"]["types.ProjectModel"][];
         };
-        "project.ShowResponse": {
-            item: components["schemas"]["types.ProjectModel"];
+        "project.MemoryCpuAndEndpointsResponse": {
             urls: components["schemas"]["types.ServiceEndpoint"][];
             cpu: string;
             memory: string;
+        };
+        "project.ShowResponse": {
+            item: components["schemas"]["types.ProjectModel"];
         };
         "project.VersionResponse": {
             /** Format: int32 */
@@ -3021,6 +3043,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["project.AllContainersResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Project_MemoryCpuAndEndpoints: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["project.MemoryCpuAndEndpointsResponse"];
                 };
             };
             /** @description Default error response */

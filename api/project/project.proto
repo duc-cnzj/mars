@@ -27,11 +27,7 @@ message ShowRequest {
   int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 message ShowResponse {
-  types.ProjectModel             item   = 1;
-
-  repeated types.ServiceEndpoint urls   = 13;
-  string                         cpu    = 15;
-  string                         memory = 16;
+  types.ProjectModel item = 1;
 }
 
 
@@ -98,6 +94,15 @@ message  WebApplyResponse {
   bool               dry_run    = 3;
 }
 
+message MemoryCpuAndEndpointsRequest {
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
+message MemoryCpuAndEndpointsResponse {
+  repeated types.ServiceEndpoint urls   = 1;
+  string                         cpu    = 2;
+  string                         memory = 3;
+}
+
 service Project {
   //  List 获取项目列表
   rpc List(ListRequest) returns (ListResponse) {
@@ -122,8 +127,20 @@ service Project {
 
   // Show 项目详情
   rpc Show(ShowRequest) returns (ShowResponse) {
-    option (google.api.http) = {
+    option (google.api.http)      = {
       get: "/api/projects/{id}"
+    };
+    option (openapi.v3.operation) = {
+      summary: "项目详情",
+    };
+  }
+
+  rpc MemoryCpuAndEndpoints(MemoryCpuAndEndpointsRequest) returns (MemoryCpuAndEndpointsResponse) {
+    option (google.api.http)      = {
+      get: "/api/projects/{id}/memory_cpu_and_endpoints"
+    };
+    option (openapi.v3.operation) = {
+      summary: "项目的cpu/memory/endpoints",
     };
   }
 

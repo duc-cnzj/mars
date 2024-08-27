@@ -247,14 +247,12 @@ const MyTabs: React.FC<{
             <Suspense fallback={<Skeleton active />}>
               {detail?.item && (
                 <TabInfo
+                  id={detail.item.id}
                   detail={detail.item}
-                  cpu={detail.cpu}
-                  memory={detail.memory}
                   git_commit_web_url={detail.item.gitCommitWebUrl}
                   git_commit_title={detail.item.gitCommitTitle}
                   git_commit_author={detail.item.gitCommitAuthor}
                   git_commit_date={detail.item.gitCommitDate}
-                  urls={detail.urls}
                   onDeleted={onDelete}
                 />
               )}

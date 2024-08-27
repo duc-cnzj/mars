@@ -1,5 +1,5 @@
-import React, { memo, useState } from "react";
-import { Skeleton, Button, Modal, message } from "antd";
+import React, { memo, useEffect, useState } from "react";
+import { Skeleton, Button, Modal, message, Spin } from "antd";
 import {
   BranchesOutlined,
   PushpinOutlined,
@@ -20,27 +20,48 @@ SyntaxHighlighter.registerLanguage("yaml", yaml);
 const { confirm } = Modal;
 
 const DetailTab: React.FC<{
+  id: number;
   detail: components["schemas"]["types.ProjectModel"];
-  cpu: string;
   git_commit_web_url: string;
   git_commit_title: string;
   git_commit_author: string;
   git_commit_date: string;
-  memory: string;
-  urls: components["schemas"]["types.ServiceEndpoint"][];
   onDeleted: () => void;
 }> = ({
+  id,
   detail,
   onDeleted,
-  cpu,
-  memory,
-  urls,
   git_commit_web_url,
   git_commit_title,
   git_commit_author,
   git_commit_date,
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
+  const [cpuMemEndpointsLoading, setCpuMemEndpointsLoading] =
+    useState<boolean>(true);
+  const [cpuMemEndpoints, setCpuMemEndpoints] = useState<{
+    cpu: string;
+    mem: string;
+    urls: components["schemas"]["types.ServiceEndpoint"][];
+  }>({ cpu: "", mem: "", urls: [] });
+  useEffect(() => {
+    setCpuMemEndpointsLoading(true);
+    ajax
+      .GET("/api/projects/{id}/memory_cpu_and_endpoints", {
+        params: { path: { id } },
+      })
+      .then(({ data, error }) => {
+        setCpuMemEndpointsLoading(false);
+        if (error) {
+          return;
+        }
+        setCpuMemEndpoints({
+          cpu: data.cpu,
+          mem: data.memory,
+          urls: data.urls,
+        });
+      });
+  }, [id]);
 
   return detail ? (
     <div style={{ height: "100%", overflowY: "auto" }}>
@@ -86,7 +107,12 @@ const DetailTab: React.FC<{
           />
         </svg>
         <p>
-          cpu: <span className="detail-data">{cpu}</span>
+          cpu:{" "}
+          {!cpuMemEndpointsLoading ? (
+            <span className="detail-data">{cpuMemEndpoints.cpu}</span>
+          ) : (
+            <Spin />
+          )}
         </p>
       </div>
 
@@ -115,7 +141,12 @@ const DetailTab: React.FC<{
           />
         </svg>
         <p>
-          memory: <span className="detail-data">{memory}</span>
+          memory:{" "}
+          {!cpuMemEndpointsLoading ? (
+            <span className="detail-data">{cpuMemEndpoints.mem}</span>
+          ) : (
+            <Spin />
+          )}
         </p>
       </div>
 
@@ -156,47 +187,48 @@ const DetailTab: React.FC<{
           <p>地址:</p>
         </div>
         <ul style={{ listStyle: "none", padding: "0 0 0 1.5em", margin: 0 }}>
-          {urls.map((item, index) => (
-            <li key={index}>
-              {index + 1}.
-              {item.url.startsWith("http") ? (
-                <a href={item.url} target="_blank" className="detail-data">
-                  {item.url}
-                  {item.portName ? `(${item.portName})` : ""}
-                </a>
-              ) : (
-                <span>
-                  {item.url}
-                  {item.portName ? `(${item.portName})` : ""}
-                </span>
-              )}
-            </li>
-          ))}
+          {!cpuMemEndpointsLoading
+            ? cpuMemEndpoints.urls.map((item, index) => (
+                <li key={index}>
+                  {index + 1}.
+                  {item.url.startsWith("http") ? (
+                    <a href={item.url} target="_blank" className="detail-data">
+                      {item.url}
+                      {item.portName ? `(${item.portName})` : ""}
+                    </a>
+                  ) : (
+                    <span>
+                      {item.url}
+                      {item.portName ? `(${item.portName})` : ""}
+                    </span>
+                  )}
+                </li>
+              ))
+            : <Spin size={"small"} />}
         </ul>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <SettingOutlined
+      <div>
+        <div
           style={{
-            width: 20,
-            height: 20,
-            marginRight: 4,
-            fontSize: 16,
+            display: "flex",
+            alignItems: "center",
           }}
-        />
-        <p>
-          容器镜像:
-          <ul className="detail-data">
-            {detail.dockerImage?.map((v, idx) => <li key={idx}>{v}</li>)}
-          </ul>
-        </p>
+        >
+          <SettingOutlined
+            style={{
+              width: 20,
+              height: 20,
+              marginRight: 4,
+              fontSize: 16,
+            }}
+          />
+          <p>容器镜像:</p>
+        </div>
+        <div style={{ marginLeft: 20 }}>
+          {detail.dockerImage?.map((v, idx) => <div key={idx}>{v}</div>)}
+        </div>
       </div>
-
       <div
         style={{
           display: "flex",

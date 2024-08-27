@@ -231,6 +231,14 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 	if err != nil {
 		return nil, err
 	}
+
+	return &project.ShowResponse{
+		Item: transformer.FromProject(projectModel),
+	}, nil
+}
+
+func (p *projectSvc) MemoryCpuAndEndpoints(ctx context.Context, req *project.MemoryCpuAndEndpointsRequest) (*project.MemoryCpuAndEndpointsResponse, error) {
+	projectModel, _ := p.projRepo.Show(ctx, int(req.Id))
 	cpu, memory := p.k8sRepo.GetCpuAndMemory(ctx, p.k8sRepo.GetAllPodMetrics(ctx, projectModel))
 	nodePortMapping := p.projRepo.GetNodePortMappingByProjects(ctx, projectModel.Namespace.Name, projectModel)
 	ingMapping := p.projRepo.GetIngressMappingByProjects(ctx, projectModel.Namespace.Name, projectModel)
@@ -241,8 +249,7 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 	urls = append(urls, nodePortMapping.Get(projectModel.Name)...)
 	urls = append(urls, lbMapping.Get(projectModel.Name)...)
 
-	return &project.ShowResponse{
-		Item:   transformer.FromProject(projectModel),
+	return &project.MemoryCpuAndEndpointsResponse{
 		Urls:   urls,
 		Cpu:    cpu,
 		Memory: memory,

@@ -442,44 +442,6 @@ func (m *ShowResponse) validate(all bool) error {
 		}
 	}
 
-	for idx, item := range m.GetUrls() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ShowResponseValidationError{
-						field:  fmt.Sprintf("Urls[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ShowResponseValidationError{
-						field:  fmt.Sprintf("Urls[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ShowResponseValidationError{
-					field:  fmt.Sprintf("Urls[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	// no validation rules for Cpu
-
-	// no validation rules for Memory
-
 	if len(errors) > 0 {
 		return ShowResponseMultiError(errors)
 	}
@@ -1883,3 +1845,258 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = WebApplyResponseValidationError{}
+
+// Validate checks the field values on MemoryCpuAndEndpointsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MemoryCpuAndEndpointsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MemoryCpuAndEndpointsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MemoryCpuAndEndpointsRequestMultiError, or nil if none found.
+func (m *MemoryCpuAndEndpointsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MemoryCpuAndEndpointsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetId() <= 0 {
+		err := MemoryCpuAndEndpointsRequestValidationError{
+			field:  "Id",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return MemoryCpuAndEndpointsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// MemoryCpuAndEndpointsRequestMultiError is an error wrapping multiple
+// validation errors returned by MemoryCpuAndEndpointsRequest.ValidateAll() if
+// the designated constraints aren't met.
+type MemoryCpuAndEndpointsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MemoryCpuAndEndpointsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MemoryCpuAndEndpointsRequestMultiError) AllErrors() []error { return m }
+
+// MemoryCpuAndEndpointsRequestValidationError is the validation error returned
+// by MemoryCpuAndEndpointsRequest.Validate if the designated constraints
+// aren't met.
+type MemoryCpuAndEndpointsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MemoryCpuAndEndpointsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MemoryCpuAndEndpointsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MemoryCpuAndEndpointsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MemoryCpuAndEndpointsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MemoryCpuAndEndpointsRequestValidationError) ErrorName() string {
+	return "MemoryCpuAndEndpointsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MemoryCpuAndEndpointsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMemoryCpuAndEndpointsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MemoryCpuAndEndpointsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MemoryCpuAndEndpointsRequestValidationError{}
+
+// Validate checks the field values on MemoryCpuAndEndpointsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MemoryCpuAndEndpointsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MemoryCpuAndEndpointsResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// MemoryCpuAndEndpointsResponseMultiError, or nil if none found.
+func (m *MemoryCpuAndEndpointsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MemoryCpuAndEndpointsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetUrls() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MemoryCpuAndEndpointsResponseValidationError{
+						field:  fmt.Sprintf("Urls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MemoryCpuAndEndpointsResponseValidationError{
+						field:  fmt.Sprintf("Urls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MemoryCpuAndEndpointsResponseValidationError{
+					field:  fmt.Sprintf("Urls[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for Cpu
+
+	// no validation rules for Memory
+
+	if len(errors) > 0 {
+		return MemoryCpuAndEndpointsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// MemoryCpuAndEndpointsResponseMultiError is an error wrapping multiple
+// validation errors returned by MemoryCpuAndEndpointsResponse.ValidateAll()
+// if the designated constraints aren't met.
+type MemoryCpuAndEndpointsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MemoryCpuAndEndpointsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MemoryCpuAndEndpointsResponseMultiError) AllErrors() []error { return m }
+
+// MemoryCpuAndEndpointsResponseValidationError is the validation error
+// returned by MemoryCpuAndEndpointsResponse.Validate if the designated
+// constraints aren't met.
+type MemoryCpuAndEndpointsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MemoryCpuAndEndpointsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MemoryCpuAndEndpointsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MemoryCpuAndEndpointsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MemoryCpuAndEndpointsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MemoryCpuAndEndpointsResponseValidationError) ErrorName() string {
+	return "MemoryCpuAndEndpointsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MemoryCpuAndEndpointsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMemoryCpuAndEndpointsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MemoryCpuAndEndpointsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MemoryCpuAndEndpointsResponseValidationError{}
