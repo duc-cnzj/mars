@@ -52,7 +52,7 @@ func (d *slowLogDriver) Query(ctx context.Context, query string, args, v any) er
 func OpenDB(config *config.Config) (*sql.Driver, error) {
 	switch config.DBDriver {
 	case "sqlite":
-		return sql.Open("sqlite3", config.DBDatabase)
+		return sql.Open("sqlite3", fmt.Sprintf("file:%v?cache=shared&_fk=1", config.DBDatabase))
 	case "mysql":
 		return sql.Open("mysql", config.DSN())
 	}
