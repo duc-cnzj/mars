@@ -160,7 +160,7 @@ const AppContent: React.FC = () => {
                   setIsFocused(false);
                   fetchNamespaces(
                     favorite,
-                    pageInfo.page,
+                    1,
                     pageInfo.pageSize,
                     searchInput.name,
                   );
@@ -172,7 +172,7 @@ const AppContent: React.FC = () => {
                   if (k.code === "Enter") {
                     fetchNamespaces(
                       favorite,
-                      pageInfo.page,
+                      1,
                       pageInfo.pageSize,
                       searchInput.name,
                     );
