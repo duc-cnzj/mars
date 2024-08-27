@@ -545,9 +545,11 @@ func (wc *WebsocketManager) resetSession(session PtyHandler) PtyHandler {
 	var newSession PtyHandler = session
 	if spty.CloseDoneChan() {
 		newSession = &myPtyHandler{
+			logger:    spty.logger,
+			sessionID: spty.sessionID,
 			container: spty.container,
 			recorder:  spty.recorder,
-			sessionID: spty.sessionID,
+			eventRepo: spty.eventRepo,
 			conn:      spty.conn,
 			doneChan:  make(chan struct{}),
 			sizeChan:  make(chan remotecommand.TerminalSize, 1),
