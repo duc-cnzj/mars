@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel"
+
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/annotation"
@@ -110,9 +112,9 @@ func ToProject(project *ent.Project) *Project {
 type ProjectRepo interface {
 	GetAllPods(ctx context.Context, id int) ([]*types.StateContainer, error)
 	GetAllPodMetrics(project *Project) []v1beta1.PodMetrics
-	GetNodePortMappingByProjects(namespace string, projects ...*Project) EndpointMapping
-	GetLoadBalancerMappingByProjects(namespace string, projects ...*Project) EndpointMapping
-	GetIngressMappingByProjects(namespace string, projects ...*Project) EndpointMapping
+	GetNodePortMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
+	GetLoadBalancerMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
+	GetIngressMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
 	GetPreOccupiedLenByValuesYaml(values string) int
 
 	List(ctx context.Context, input *ListProjectInput) ([]*Project, *pagination.Pagination, error)
@@ -244,6 +246,8 @@ func (repo *projectRepo) UpdateProject(ctx context.Context, input *UpdateProject
 }
 
 func (repo *projectRepo) Show(ctx context.Context, id int) (*Project, error) {
+	_, span := otel.Tracer("").Start(ctx, "repo/project/Show")
+	defer span.End()
 	first, err := repo.data.DB().Project.Query().WithRepo().WithNamespace().Where(project.ID(id)).First(ctx)
 	return ToProject(first), err
 }
@@ -435,7 +439,9 @@ func (repo *projectRepo) GetAllPodMetrics(project *Project) []v1beta1.PodMetrics
 	return list
 }
 
-func (repo *projectRepo) GetNodePortMappingByProjects(namespace string, projects ...*Project) EndpointMapping {
+func (repo *projectRepo) GetNodePortMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping {
+	_, span := otel.Tracer("").Start(ctx, "GetNodePortMappingByProjects")
+	defer span.End()
 	var (
 		projectMap = make(projectObjectMap)
 		k8sCli     = repo.data.K8sClient()
@@ -473,7 +479,9 @@ func (repo *projectRepo) GetNodePortMappingByProjects(namespace string, projects
 	return m
 }
 
-func (repo *projectRepo) GetIngressMappingByProjects(namespace string, projects ...*Project) EndpointMapping {
+func (repo *projectRepo) GetIngressMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping {
+	_, span := otel.Tracer("").Start(ctx, "GetIngressMappingByProjects")
+	defer span.End()
 	var projectMap = make(projectObjectMap)
 	for _, project := range projects {
 		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*networkingv1.Ingress](repo.logger, project.Manifest)
@@ -522,7 +530,9 @@ func (repo *projectRepo) GetIngressMappingByProjects(namespace string, projects 
 	return m
 }
 
-func (repo *projectRepo) GetLoadBalancerMappingByProjects(namespace string, projects ...*Project) EndpointMapping {
+func (repo *projectRepo) GetLoadBalancerMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping {
+	_, span := otel.Tracer("").Start(ctx, "GetLoadBalancerMappingByProjects")
+	defer span.End()
 	var projectMap = make(projectObjectMap)
 	for _, project := range projects {
 		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](repo.logger, project.Manifest)

@@ -97,7 +97,7 @@ func (m *metricsSvc) CpuMemoryInProject(ctx context.Context, request *metrics.Cp
 	if err != nil {
 		return nil, err
 	}
-	cpu, memory := m.k8sRepo.GetCpuAndMemory(m.projRepo.GetAllPodMetrics(p))
+	cpu, memory := m.k8sRepo.GetCpuAndMemory(ctx, m.projRepo.GetAllPodMetrics(p))
 
 	return &metrics.CpuMemoryInProjectResponse{
 		Cpu:    cpu,
@@ -111,7 +111,7 @@ func (m *metricsSvc) CpuMemoryInNamespace(ctx context.Context, request *metrics.
 		return nil, err
 	}
 
-	cpu, memory := m.k8sRepo.GetCpuAndMemoryInNamespace(ns.Name)
+	cpu, memory := m.k8sRepo.GetCpuAndMemoryInNamespace(ctx, ns.Name)
 
 	return &metrics.CpuMemoryInNamespaceResponse{
 		Cpu:    cpu,

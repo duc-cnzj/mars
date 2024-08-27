@@ -1402,7 +1402,7 @@ export interface components {
             gitCommit: string;
             config: string;
             overrideValues: string;
-            dockerImage: string;
+            dockerImage: string[];
             podSelectors: string[];
             /** Format: int32 */
             namespaceId: number;

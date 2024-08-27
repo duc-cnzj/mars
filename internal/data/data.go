@@ -192,13 +192,13 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 			eventFanOutObj = &fanOut[*eventsv1.Event]{
 				logger:    logger,
 				name:      "event",
-				ch:        make(chan Obj[*eventsv1.Event], 100),
+				ch:        make(chan Obj[*eventsv1.Event], 10000),
 				listeners: make(map[string]chan<- Obj[*eventsv1.Event]),
 			}
 
 			podFanOutObj = &fanOut[*corev1.Pod]{
 				name:      "pod",
-				ch:        make(chan Obj[*corev1.Pod], 100),
+				ch:        make(chan Obj[*corev1.Pod], 10000),
 				logger:    logger,
 				listeners: make(map[string]chan<- Obj[*corev1.Pod]),
 			}
@@ -238,7 +238,6 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 		if err != nil {
 			return
 		}
-
 		inf := informers.NewSharedInformerFactory(clientset, 0)
 		svcLister := inf.Core().V1().Services().Lister()
 		ingLister := inf.Networking().V1().Ingresses().Lister()

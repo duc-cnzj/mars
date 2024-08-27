@@ -144,10 +144,10 @@ func (mr *MockProjectRepoMockRecorder) GetAllPods(arg0, arg1 any) *gomock.Call {
 }
 
 // GetIngressMappingByProjects mocks base method.
-func (m *MockProjectRepo) GetIngressMappingByProjects(arg0 string, arg1 ...*Project) EndpointMapping {
+func (m *MockProjectRepo) GetIngressMappingByProjects(arg0 context.Context, arg1 string, arg2 ...*Project) EndpointMapping {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0}
-	for _, a := range arg1 {
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetIngressMappingByProjects", varargs...)
@@ -156,17 +156,17 @@ func (m *MockProjectRepo) GetIngressMappingByProjects(arg0 string, arg1 ...*Proj
 }
 
 // GetIngressMappingByProjects indicates an expected call of GetIngressMappingByProjects.
-func (mr *MockProjectRepoMockRecorder) GetIngressMappingByProjects(arg0 any, arg1 ...any) *gomock.Call {
+func (mr *MockProjectRepoMockRecorder) GetIngressMappingByProjects(arg0, arg1 any, arg2 ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0}, arg1...)
+	varargs := append([]any{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIngressMappingByProjects", reflect.TypeOf((*MockProjectRepo)(nil).GetIngressMappingByProjects), varargs...)
 }
 
 // GetLoadBalancerMappingByProjects mocks base method.
-func (m *MockProjectRepo) GetLoadBalancerMappingByProjects(arg0 string, arg1 ...*Project) EndpointMapping {
+func (m *MockProjectRepo) GetLoadBalancerMappingByProjects(arg0 context.Context, arg1 string, arg2 ...*Project) EndpointMapping {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0}
-	for _, a := range arg1 {
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetLoadBalancerMappingByProjects", varargs...)
@@ -175,17 +175,17 @@ func (m *MockProjectRepo) GetLoadBalancerMappingByProjects(arg0 string, arg1 ...
 }
 
 // GetLoadBalancerMappingByProjects indicates an expected call of GetLoadBalancerMappingByProjects.
-func (mr *MockProjectRepoMockRecorder) GetLoadBalancerMappingByProjects(arg0 any, arg1 ...any) *gomock.Call {
+func (mr *MockProjectRepoMockRecorder) GetLoadBalancerMappingByProjects(arg0, arg1 any, arg2 ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0}, arg1...)
+	varargs := append([]any{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLoadBalancerMappingByProjects", reflect.TypeOf((*MockProjectRepo)(nil).GetLoadBalancerMappingByProjects), varargs...)
 }
 
 // GetNodePortMappingByProjects mocks base method.
-func (m *MockProjectRepo) GetNodePortMappingByProjects(arg0 string, arg1 ...*Project) EndpointMapping {
+func (m *MockProjectRepo) GetNodePortMappingByProjects(arg0 context.Context, arg1 string, arg2 ...*Project) EndpointMapping {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0}
-	for _, a := range arg1 {
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetNodePortMappingByProjects", varargs...)
@@ -194,9 +194,9 @@ func (m *MockProjectRepo) GetNodePortMappingByProjects(arg0 string, arg1 ...*Pro
 }
 
 // GetNodePortMappingByProjects indicates an expected call of GetNodePortMappingByProjects.
-func (mr *MockProjectRepoMockRecorder) GetNodePortMappingByProjects(arg0 any, arg1 ...any) *gomock.Call {
+func (mr *MockProjectRepoMockRecorder) GetNodePortMappingByProjects(arg0, arg1 any, arg2 ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0}, arg1...)
+	varargs := append([]any{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodePortMappingByProjects", reflect.TypeOf((*MockProjectRepo)(nil).GetNodePortMappingByProjects), varargs...)
 }
 
@@ -992,47 +992,47 @@ func (mr *MockK8sRepoMockRecorder) FindDefaultContainer(arg0, arg1, arg2 any) *g
 }
 
 // GetAllPodMetrics mocks base method.
-func (m *MockK8sRepo) GetAllPodMetrics(arg0 *Project) []v1beta1.PodMetrics {
+func (m *MockK8sRepo) GetAllPodMetrics(arg0 context.Context, arg1 *Project) []v1beta1.PodMetrics {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllPodMetrics", arg0)
+	ret := m.ctrl.Call(m, "GetAllPodMetrics", arg0, arg1)
 	ret0, _ := ret[0].([]v1beta1.PodMetrics)
 	return ret0
 }
 
 // GetAllPodMetrics indicates an expected call of GetAllPodMetrics.
-func (mr *MockK8sRepoMockRecorder) GetAllPodMetrics(arg0 any) *gomock.Call {
+func (mr *MockK8sRepoMockRecorder) GetAllPodMetrics(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllPodMetrics", reflect.TypeOf((*MockK8sRepo)(nil).GetAllPodMetrics), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllPodMetrics", reflect.TypeOf((*MockK8sRepo)(nil).GetAllPodMetrics), arg0, arg1)
 }
 
 // GetCpuAndMemory mocks base method.
-func (m *MockK8sRepo) GetCpuAndMemory(arg0 []v1beta1.PodMetrics) (string, string) {
+func (m *MockK8sRepo) GetCpuAndMemory(arg0 context.Context, arg1 []v1beta1.PodMetrics) (string, string) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCpuAndMemory", arg0)
+	ret := m.ctrl.Call(m, "GetCpuAndMemory", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(string)
 	return ret0, ret1
 }
 
 // GetCpuAndMemory indicates an expected call of GetCpuAndMemory.
-func (mr *MockK8sRepoMockRecorder) GetCpuAndMemory(arg0 any) *gomock.Call {
+func (mr *MockK8sRepoMockRecorder) GetCpuAndMemory(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCpuAndMemory", reflect.TypeOf((*MockK8sRepo)(nil).GetCpuAndMemory), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCpuAndMemory", reflect.TypeOf((*MockK8sRepo)(nil).GetCpuAndMemory), arg0, arg1)
 }
 
 // GetCpuAndMemoryInNamespace mocks base method.
-func (m *MockK8sRepo) GetCpuAndMemoryInNamespace(arg0 string) (string, string) {
+func (m *MockK8sRepo) GetCpuAndMemoryInNamespace(arg0 context.Context, arg1 string) (string, string) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCpuAndMemoryInNamespace", arg0)
+	ret := m.ctrl.Call(m, "GetCpuAndMemoryInNamespace", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(string)
 	return ret0, ret1
 }
 
 // GetCpuAndMemoryInNamespace indicates an expected call of GetCpuAndMemoryInNamespace.
-func (mr *MockK8sRepoMockRecorder) GetCpuAndMemoryInNamespace(arg0 any) *gomock.Call {
+func (mr *MockK8sRepoMockRecorder) GetCpuAndMemoryInNamespace(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCpuAndMemoryInNamespace", reflect.TypeOf((*MockK8sRepo)(nil).GetCpuAndMemoryInNamespace), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCpuAndMemoryInNamespace", reflect.TypeOf((*MockK8sRepo)(nil).GetCpuAndMemoryInNamespace), arg0, arg1)
 }
 
 // GetCpuAndMemoryQuantity mocks base method.

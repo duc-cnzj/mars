@@ -1,8 +1,6 @@
 package transformer
 
 import (
-	"strings"
-
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
@@ -20,7 +18,7 @@ func FromProject(project *repo.Project) *types.ProjectModel {
 		GitCommit:         project.GitCommit,
 		Config:            project.Config,
 		OverrideValues:    project.OverrideValues,
-		DockerImage:       strings.Join(project.DockerImage, ","),
+		DockerImage:       project.DockerImage,
 		PodSelectors:      project.PodSelectors,
 		NamespaceId:       int32(project.NamespaceID),
 		Atomic:            project.Atomic,

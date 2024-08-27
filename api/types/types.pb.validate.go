@@ -1468,8 +1468,6 @@ func (m *ProjectModel) validate(all bool) error {
 
 	// no validation rules for OverrideValues
 
-	// no validation rules for DockerImage
-
 	// no validation rules for NamespaceId
 
 	// no validation rules for Atomic

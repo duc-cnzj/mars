@@ -139,7 +139,7 @@ func migrateProject(gdb *gorm.DB, edb *ent.Client) {
 				SetGitCommit(project.GitCommit).
 				SetConfig(project.Config).
 				SetOverrideValues(project.OverrideValues).
-				SetDockerImage(strings.Split(project.DockerImage, ",")).
+				SetDockerImage(strings.Split(project.DockerImage, " ")).
 				SetPodSelectors(strings.Split(project.PodSelectors, "|")).
 				SetNamespaceID(first.ID).
 				SetAtomic(project.Atomic).

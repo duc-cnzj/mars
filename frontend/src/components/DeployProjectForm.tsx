@@ -1,4 +1,11 @@
-import React, { useState, memo, useCallback, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import {
   Affix,
   Button,
@@ -57,15 +64,17 @@ const DeployProjectForm: React.FC<{
 }> = ({ namespaceId, project, isEdit, onSuccess }) => {
   const [form] = Form.useForm();
 
-  const initValues = project
-    ? {
-        extraValues: project.finalExtraValues,
-        config: project.config,
-        branch: project.gitBranch,
-        commit: project.gitCommit,
-        repoId: String(project.repoId),
-      }
-    : { extraValues: [], config: "", branch: "", commit: "", repoId: "" };
+  const initValues = useRef(
+    project
+      ? {
+          extraValues: project.finalExtraValues,
+          config: project.config,
+          branch: project.gitBranch,
+          commit: project.gitCommit,
+          repoId: String(project.repoId),
+        }
+      : { extraValues: [], config: "", branch: "", commit: "", repoId: "" },
+  );
 
   const formRepoId = Form.useWatch("repoId", form);
   const branch = Form.useWatch("branch", form);
@@ -343,7 +352,7 @@ const DeployProjectForm: React.FC<{
       autoComplete="off"
       onFinish={onFinish}
       clearOnDestroy
-      initialValues={project ? initValues : {}}
+      initialValues={project ? initValues.current : {}}
       style={{ height: "100%" }}
     >
       <div

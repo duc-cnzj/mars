@@ -47,16 +47,19 @@ export default function useCheers() {
       ...defaults,
       shapes: [pumpkin],
       colors: ["#ff9a00", "#ff7400", "#ff4d00"],
+      zIndex: 9999,
     });
     confetti({
       ...defaults,
       shapes: [tree],
       colors: ["#8d960f", "#be0f10", "#445404"],
+      zIndex: 9999,
     });
     confetti({
       ...defaults,
       shapes: [heart],
       colors: ["#f93963", "#a10864", "#ee0b93"],
+      zIndex: 9999,
     });
   }, []);
 

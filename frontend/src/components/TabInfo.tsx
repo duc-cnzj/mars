@@ -191,7 +191,9 @@ const DetailTab: React.FC<{
         />
         <p>
           容器镜像:
-          <span className="detail-data">{detail.dockerImage}</span>
+          <ul className="detail-data">
+            {detail.dockerImage?.map((v, idx) => <li key={idx}>{v}</li>)}
+          </ul>
         </p>
       </div>
 

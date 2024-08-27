@@ -163,7 +163,7 @@ message ProjectModel {
   string                        git_commit          = 5;
   string                        config              = 6;
   string                        override_values     = 7;
-  string                        docker_image        = 8;
+  repeated string               docker_image        = 8;
   repeated string               pod_selectors       = 9;
   int32                         namespace_id        = 10;
   bool                          atomic              = 11;

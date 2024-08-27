@@ -87,8 +87,8 @@ type K8sRepo interface {
 	ListEvents(namespace string) ([]*eventv1.Event, error)
 	IsPodRunning(namespace, podName string) (running bool, notRunningReason string)
 	GetPodSelectorsByManifest(manifests []string) []string
-	GetCpuAndMemoryInNamespace(namespace string) (string, string)
-	GetCpuAndMemory(list []v1beta1.PodMetrics) (string, string)
+	GetCpuAndMemoryInNamespace(ctx context.Context, namespace string) (string, string)
+	GetCpuAndMemory(ctx context.Context, list []v1beta1.PodMetrics) (string, string)
 	GetCpuAndMemoryQuantity(pod v1beta1.PodMetrics) (cpu *resource.Quantity, memory *resource.Quantity)
 	Copy(ctx context.Context, namespace, pod, container, fpath, targetContainerDir string) (*CopyFileToPodResult, error)
 	ClusterInfo() *ClusterInfo
@@ -98,7 +98,7 @@ type K8sRepo interface {
 	DeleteSecret(ctx context.Context, namespace, secret string) error
 	DeleteNamespace(ctx context.Context, name string) error
 
-	GetAllPodMetrics(proj *Project) []v1beta1.PodMetrics
+	GetAllPodMetrics(ctx context.Context, proj *Project) []v1beta1.PodMetrics
 }
 
 var _ K8sRepo = (*k8sRepo)(nil)
@@ -171,7 +171,9 @@ func (repo *k8sRepo) GetPodMetrics(ctx context.Context, namespace, podName strin
 	return repo.data.K8sClient().MetricsClient.MetricsV1beta1().PodMetricses(namespace).Get(ctx, podName, metav1.GetOptions{})
 }
 
-func (repo *k8sRepo) GetAllPodMetrics(proj *Project) []v1beta1.PodMetrics {
+func (repo *k8sRepo) GetAllPodMetrics(ctx context.Context, proj *Project) []v1beta1.PodMetrics {
+	_, span := otel.Tracer("").Start(ctx, "GetAllPodMetrics")
+	defer span.End()
 	metricses := repo.data.K8sClient().MetricsClient.MetricsV1beta1().PodMetricses(proj.Namespace.Name)
 	var list []v1beta1.PodMetrics
 	if len(proj.PodSelectors) == 0 {
@@ -181,6 +183,7 @@ func (repo *k8sRepo) GetAllPodMetrics(proj *Project) []v1beta1.PodMetrics {
 		l, _ := metricses.List(context.Background(), metav1.ListOptions{
 			LabelSelector: labels,
 		})
+		repo.logger.DebugCtx(ctx, labels, " ", len(l.Items))
 
 		list = append(list, l.Items...)
 	}
@@ -351,13 +354,15 @@ func (repo *k8sRepo) GetPodSelectorsByManifest(manifests []string) []string {
 	return selectors
 }
 
-func (repo *k8sRepo) GetCpuAndMemoryInNamespace(namespace string) (string, string) {
+func (repo *k8sRepo) GetCpuAndMemoryInNamespace(ctx context.Context, namespace string) (string, string) {
 	metricses := repo.data.K8sClient().MetricsClient.MetricsV1beta1().PodMetricses(namespace)
-	list, _ := metricses.List(context.Background(), metav1.ListOptions{})
-	return repo.GetCpuAndMemory(list.Items)
+	list, _ := metricses.List(ctx, metav1.ListOptions{})
+	return repo.GetCpuAndMemory(ctx, list.Items)
 }
 
-func (repo *k8sRepo) GetCpuAndMemory(list []v1beta1.PodMetrics) (string, string) {
+func (repo *k8sRepo) GetCpuAndMemory(ctx context.Context, list []v1beta1.PodMetrics) (string, string) {
+	_, span := otel.Tracer("").Start(ctx, "GetCpuAndMemory")
+	defer span.End()
 	return repo.analyseMetricsToCpuAndMemory(list)
 }
 

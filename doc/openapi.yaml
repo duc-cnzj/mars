@@ -2614,7 +2614,9 @@ components:
                 overrideValues:
                     type: string
                 dockerImage:
-                    type: string
+                    type: array
+                    items:
+                        type: string
                 podSelectors:
                     type: array
                     items:

@@ -47,13 +47,7 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
           form.resetFields();
         }}
       >
-        <Form
-          name="basic"
-          form={form}
-          initialValues={{ remember: true }}
-          onFinish={submit}
-          autoComplete="off"
-        >
+        <Form name="basic" form={form} onFinish={submit} autoComplete="off">
           <Form.Item<components["schemas"]["namespace.CreateRequest"]>
             name="namespace"
             rules={[

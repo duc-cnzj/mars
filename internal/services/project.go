@@ -231,10 +231,10 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 	if err != nil {
 		return nil, err
 	}
-	cpu, memory := p.k8sRepo.GetCpuAndMemory(p.k8sRepo.GetAllPodMetrics(projectModel))
-	nodePortMapping := p.projRepo.GetNodePortMappingByProjects(projectModel.Namespace.Name, projectModel)
-	ingMapping := p.projRepo.GetIngressMappingByProjects(projectModel.Namespace.Name, projectModel)
-	lbMapping := p.projRepo.GetLoadBalancerMappingByProjects(projectModel.Namespace.Name, projectModel)
+	cpu, memory := p.k8sRepo.GetCpuAndMemory(ctx, p.k8sRepo.GetAllPodMetrics(ctx, projectModel))
+	nodePortMapping := p.projRepo.GetNodePortMappingByProjects(ctx, projectModel.Namespace.Name, projectModel)
+	ingMapping := p.projRepo.GetIngressMappingByProjects(ctx, projectModel.Namespace.Name, projectModel)
+	lbMapping := p.projRepo.GetLoadBalancerMappingByProjects(ctx, projectModel.Namespace.Name, projectModel)
 
 	var urls = make([]*types.ServiceEndpoint, 0)
 	urls = append(urls, ingMapping.Get(projectModel.Name)...)

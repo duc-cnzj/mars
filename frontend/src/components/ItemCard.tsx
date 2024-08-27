@@ -25,6 +25,7 @@ import { components } from "../api/schema";
 import ajax from "../api/ajax";
 import IconFont from "./Icon";
 import TextArea from "antd/es/input/TextArea";
+import { css } from "@emotion/css";
 
 const Item: React.FC<{
   item: components["schemas"]["types.NamespaceModel"];
@@ -38,6 +39,7 @@ const Item: React.FC<{
   const [deleting, setDeleting] = useState<boolean>(false);
 
   const [editDesc, setEditDesc] = useState(false);
+  const [popoverVisible, setPopoverVisible] = useState(false);
 
   return (
     <Card
@@ -114,6 +116,7 @@ const Item: React.FC<{
               destroyTooltipOnHide
               trigger="click"
               onOpenChange={(v) => {
+                setPopoverVisible(v);
                 if (!v) {
                   setEditDesc(false);
                 }
@@ -197,7 +200,21 @@ const Item: React.FC<{
                   cursor: "pointer",
                 }}
               >
-                {item.description}
+                {item.description ? (
+                  <div>{item.description}</div>
+                ) : (
+                  <div
+                    className={css`
+                      opacity: ${popoverVisible ? 1 : 0};
+                      transition: all 0.2s ease;
+                      &:hover {
+                        opacity: 1;
+                      }
+                    `}
+                  >
+                    暂无描述，点击添加
+                  </div>
+                )}
               </div>
             </Popover>
           </Space>

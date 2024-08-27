@@ -44,9 +44,9 @@ func (repo *endpointRepo) InProject(ctx context.Context, projectID int) (res []*
 	if err != nil {
 		return nil, ToError(404, err)
 	}
-	nodePortMapping := repo.projRepo.GetNodePortMappingByProjects(first.Edges.Namespace.Name, ToProject(first))
-	ingMapping := repo.projRepo.GetIngressMappingByProjects(first.Edges.Namespace.Name, ToProject(first))
-	lbMapping := repo.projRepo.GetLoadBalancerMappingByProjects(first.Edges.Namespace.Name, ToProject(first))
+	nodePortMapping := repo.projRepo.GetNodePortMappingByProjects(ctx, first.Edges.Namespace.Name, ToProject(first))
+	ingMapping := repo.projRepo.GetIngressMappingByProjects(ctx, first.Edges.Namespace.Name, ToProject(first))
+	lbMapping := repo.projRepo.GetLoadBalancerMappingByProjects(ctx, first.Edges.Namespace.Name, ToProject(first))
 	res = append(res, ingMapping.AllEndpoints()...)
 	res = append(res, lbMapping.AllEndpoints()...)
 	res = append(res, nodePortMapping.AllEndpoints()...)
@@ -69,9 +69,9 @@ func (repo *endpointRepo) InNamespace(ctx context.Context, namespaceID int) (res
 		return nil, ToError(404, err)
 	}
 
-	nodePortMapping := repo.projRepo.GetNodePortMappingByProjects(first.Name, serialize.Serialize(first.Edges.Projects, ToProject)...)
-	ingMapping := repo.projRepo.GetIngressMappingByProjects(first.Name, serialize.Serialize(first.Edges.Projects, ToProject)...)
-	lbMapping := repo.projRepo.GetLoadBalancerMappingByProjects(first.Name, serialize.Serialize(first.Edges.Projects, ToProject)...)
+	nodePortMapping := repo.projRepo.GetNodePortMappingByProjects(ctx, first.Name, serialize.Serialize(first.Edges.Projects, ToProject)...)
+	ingMapping := repo.projRepo.GetIngressMappingByProjects(ctx, first.Name, serialize.Serialize(first.Edges.Projects, ToProject)...)
+	lbMapping := repo.projRepo.GetLoadBalancerMappingByProjects(ctx, first.Name, serialize.Serialize(first.Edges.Projects, ToProject)...)
 	res = append(res, ingMapping.AllEndpoints()...)
 	res = append(res, lbMapping.AllEndpoints()...)
 	res = append(res, nodePortMapping.AllEndpoints()...)

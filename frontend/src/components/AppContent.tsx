@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback, memo } from "react";
+import React, { useEffect, useState, useCallback, memo, useRef } from "react";
 import { DraggableModalProvider } from "../pkg/DraggableModal/DraggableModalProvider";
 import ItemCard from "./ItemCard";
-import { Empty, Row, Col, Tabs, message, Pagination, Input } from "antd";
+import { Empty, Row, Col, Tabs, message, Pagination, Input, Space } from "antd";
 import "../pkg/DraggableModal/index.css";
 import { useSelector, useDispatch } from "react-redux";
 import { setNamespaceReload, setOpenedModals } from "../store/actions";
@@ -17,14 +17,22 @@ import IconFont from "./Icon";
 import { TabsProps } from "antd/lib";
 import { SearchOutlined } from "@ant-design/icons";
 import { css } from "@emotion/css";
+import useLocalStorage from "../contexts/useLocalstorage";
 
 const defaultPageSize = 12;
 
+const isFavorite = (v: string) => {
+  return v === "2";
+};
+
 const AppContent: React.FC = () => {
+  const { store, setStore } = useLocalStorage("active-tabs", "1");
+  const init = useRef(store);
   const reloadNamespace = useSelector(selectReload);
   const reloadNsID = useSelector(selectReloadNsID);
   const dispatch = useDispatch();
-  const [favorite, setFavorite] = useState(true);
+  const [params, setParams] = useSearchParams();
+  const [favorite, setFavorite] = useState(isFavorite(init.current));
   const [loading, setLoading] = useState(false);
   const [namespaceItems, setNamespaceItems] = useAsyncState<
     components["schemas"]["types.NamespaceModel"][]
@@ -65,8 +73,7 @@ const AppContent: React.FC = () => {
     },
     [setNamespaceItems],
   );
-  const [params, setParams] = useSearchParams();
-  if (!!params.get("pid")) {
+  if (!!params.get("pid") && !favorite) {
     let obj: { [key: number]: boolean } = {};
     sortedUniq((params.get("pid") || "").split(","))
       .filter((v) => isNumber(Number(v)))
@@ -77,7 +84,7 @@ const AppContent: React.FC = () => {
   usePreventModalBack();
 
   useEffect(() => {
-    fetchNamespaces(true, 1, defaultPageSize, "");
+    fetchNamespaces(isFavorite(init.current), 1, defaultPageSize, "");
   }, [fetchNamespaces]);
 
   useEffect(() => {
@@ -97,74 +104,104 @@ const AppContent: React.FC = () => {
     pageInfo,
     searchInput.name,
   ]);
-  const onTabsClick = useCallback(
-    (v: any) => {
-      let fav = v === "1";
-      setFavorite(fav);
-      fetchNamespaces(fav, 1, defaultPageSize, searchInput.name);
-      setParams({});
-      dispatch(setOpenedModals({}));
-    },
-    [dispatch, setParams, fetchNamespaces, searchInput.name],
-  );
   const [isFocused, setIsFocused] = useState(false);
+  const items: TabsProps["items"] = [
+    {
+      key: "1",
+      label: "全部项目",
+      icon: <IconFont name="#icon-kongjian" />,
+    },
+    {
+      key: "2",
+      label: "我的关注",
+      icon: <IconFont name="#icon-wodeguanzhu" color="#a78bfa" />,
+    },
+  ];
 
   return (
     <DraggableModalProvider>
       <Content>
         <Row justify={"space-between"}>
           <Col span={8}>
-            <MyTabs onClick={onTabsClick} />
-          </Col>
-          <Col span={10} style={{ textAlign: "right" }}>
-            <Input
-              allowClear
-              className={css`
-                margin-left: 20px;
-                width: ${isFocused ? "60%" : "30%"};
-                margin-right: 10px;
-                transition:
-                  width 0.3s ease-in-out,
-                  background-color 0.3s ease-in-out;
-                &:focus {
-                  background-color: black;
-                  color: white; /* 使文本在黑色背景上可见 */
+            <Tabs
+              onTabClick={(v) => {
+                let fav = isFavorite(v);
+                setStore(v);
+                setFavorite(fav);
+                fetchNamespaces(fav, 1, defaultPageSize, searchInput.name);
+                if (fav) {
+                  setParams({});
+                  dispatch(setOpenedModals({}));
                 }
-              `}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => {
-                setIsFocused(false);
-                fetchNamespaces(
-                  favorite,
-                  pageInfo.page,
-                  pageInfo.pageSize,
-                  searchInput.name,
-                );
               }}
-              suffix={<SearchOutlined />}
-              value={searchInput.name}
-              onChange={(v) => setSearchInput({ name: v.target.value })}
-              onKeyDown={(k) => {
-                if (k.code === "Enter") {
+              defaultActiveKey={store}
+              items={items}
+            />
+          </Col>
+          <Col span={16} style={{ textAlign: "right" }}>
+            <Space>
+              <Input
+                allowClear
+                placeholder="搜索空间名称"
+                className={css`
+                  font-size: 12px;
+                  width: ${isFocused ? "80%" : "50%"};
+                  margin-right: 10px;
+                  transition:
+                    width 0.3s ease-in-out,
+                    background-color 0.3s ease-in-out;
+                  &:focus {
+                    background-color: black;
+                    color: white; /* 使文本在黑色背景上可见 */
+                  }
+                `}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => {
+                  setIsFocused(false);
                   fetchNamespaces(
                     favorite,
                     pageInfo.page,
                     pageInfo.pageSize,
                     searchInput.name,
                   );
-                }
-              }}
-            />
-            <AddNamespace
-              onCreated={() => {
-                fetchNamespaces(
-                  favorite,
-                  pageInfo.page,
-                  pageInfo.pageSize,
-                  searchInput.name,
-                );
-              }}
-            />
+                }}
+                suffix={<SearchOutlined />}
+                value={searchInput.name}
+                onChange={(v) => setSearchInput({ name: v.target.value })}
+                onKeyDown={(k) => {
+                  if (k.code === "Enter") {
+                    fetchNamespaces(
+                      favorite,
+                      pageInfo.page,
+                      pageInfo.pageSize,
+                      searchInput.name,
+                    );
+                  }
+                }}
+              />
+              <Pagination
+                simple
+                showSizeChanger={false}
+                style={{ fontSize: 12 }}
+                defaultCurrent={pageInfo.page}
+                total={pageInfo.count}
+                defaultPageSize={defaultPageSize}
+                pageSize={pageInfo.pageSize}
+                onChange={(page, size) => {
+                  fetchNamespaces(favorite, page, size, searchInput.name);
+                }}
+              />
+              <AddNamespace
+                onCreated={() => {
+                  fetchNamespaces(
+                    favorite,
+                    pageInfo.page,
+                    pageInfo.pageSize,
+                    searchInput.name,
+                  );
+                }}
+              />
+            </Space>
           </Col>
         </Row>
 
@@ -182,40 +219,10 @@ const AppContent: React.FC = () => {
           }
           favorite={favorite}
         />
-        {pageInfo.count > defaultPageSize && (
-          <Row style={{ marginTop: 10 }}>
-            <Pagination
-              showSizeChanger={false}
-              defaultCurrent={pageInfo.page}
-              total={pageInfo.count}
-              defaultPageSize={defaultPageSize}
-              pageSize={pageInfo.pageSize}
-              onChange={(page, size) => {
-                fetchNamespaces(favorite, page, size, searchInput.name);
-              }}
-            />
-          </Row>
-        )}
       </Content>
     </DraggableModalProvider>
   );
 };
-
-const MyTabs: React.FC<{ onClick: (v: any) => void }> = memo(({ onClick }) => {
-  const items: TabsProps["items"] = [
-    {
-      key: "1",
-      label: "我的关注",
-      icon: <IconFont name="#icon-wodeguanzhu" color="#a78bfa" />,
-    },
-    {
-      key: "2",
-      label: "全部项目",
-      icon: <IconFont name="#icon-kongjian" />,
-    },
-  ];
-  return <Tabs onTabClick={onClick} defaultActiveKey="1" items={items} />;
-});
 
 export default memo(AppContent);
 
