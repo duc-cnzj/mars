@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"helm.sh/helm/v3/pkg/release"
+
 	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/cli/values"
 
@@ -1635,4 +1637,76 @@ func Test_jobRunner_Run_Fail(t *testing.T) {
 	assert.Error(t, (&jobRunner{
 		err: errors.New("x"),
 	}).Run(context.TODO()).Error())
+}
+
+func Test_jobRunner_Run_Fail_2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	installer := NewMockReleaseInstaller(m)
+	msger := NewMockDeployMsger(m)
+	k8sRepo := repo.NewMockK8sRepo(m)
+	projRepo := repo.NewMockProjectRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	messageChan := NewMockSafeWriteMessageChan(m)
+	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	installer.EXPECT().Run(gomock.Any(), gomock.Any()).Return(nil, errors.New("xx"))
+	messageChan.EXPECT().Send(gomock.Any())
+	messageChan.EXPECT().Chan().Return(make(chan MessageItem, 1))
+	jb := &jobRunner{
+		logger:       mlog.NewLogger(nil),
+		projRepo:     projRepo,
+		k8sRepo:      k8sRepo,
+		eventRepo:    eventRepo,
+		messager:     msger,
+		installer:    installer,
+		ns:           &repo.Namespace{},
+		project:      &repo.Project{},
+		deployResult: &deployResult{},
+		input:        &JobInput{},
+		commit:       NewEmptyCommit(),
+		messageCh:    messageChan,
+	}
+	assert.Error(t, jb.Run(context.TODO()).Error())
+}
+
+func Test_jobRunner_Run_Success(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	installer := NewMockReleaseInstaller(m)
+	msger := NewMockDeployMsger(m)
+	k8sRepo := repo.NewMockK8sRepo(m)
+	projRepo := repo.NewMockProjectRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	installer.EXPECT().Run(gomock.Any(), gomock.Any()).Return(&release.Release{
+		Config: map[string]any{},
+	}, nil)
+	ch := NewSafeWriteMessageCh(mlog.NewLogger(nil), 10)
+	projRepo.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Return(&repo.Project{}, nil)
+	eventRepo.EXPECT().Dispatch(repo.EventProjectChanged, gomock.Any())
+	eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	msger.EXPECT().To(gomock.Any()).AnyTimes()
+	k8sRepo.EXPECT().SplitManifests(gomock.Any())
+	k8sRepo.EXPECT().GetPodSelectorsByManifest(gomock.Any())
+
+	jb := &jobRunner{
+		logger:    mlog.NewLogger(nil),
+		projRepo:  projRepo,
+		k8sRepo:   k8sRepo,
+		eventRepo: eventRepo,
+		messager:  msger,
+		installer: installer,
+		config:    &mars.Config{},
+		chart: &chart.Chart{
+			Metadata: &chart.Metadata{},
+		},
+		ns:           &repo.Namespace{},
+		project:      &repo.Project{},
+		deployResult: &deployResult{},
+		input:        &JobInput{},
+		user:         &auth.UserInfo{},
+		commit:       NewEmptyCommit(),
+		messageCh:    ch,
+	}
+	assert.Nil(t, jb.Run(context.TODO()).Error())
 }
