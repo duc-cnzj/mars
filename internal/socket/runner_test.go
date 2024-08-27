@@ -1406,3 +1406,24 @@ func TestChartFileLoader_LoadWithChartMissing(t *testing.T) {
 	err := l.Load(job)
 	assert.Equal(t, loadDirErr.Error(), err.Error())
 }
+
+func Test_jobRunner_WriteConfigYamlToTmpFile(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockUploader := uploader.NewMockUploader(m)
+	mockUploader.EXPECT().LocalUploader().Return(mockUploader).Times(2)
+	job := &jobRunner{
+		timer:    timer.NewRealTimer(),
+		uploader: mockUploader,
+		logger:   mlog.NewLogger(nil),
+	}
+	info := uploader.NewMockFileInfo(m)
+	mockUploader.EXPECT().Put(gomock.Any(), gomock.Any()).Return(info, nil)
+	info.EXPECT().Path().Return("/path")
+	path, closer, err := job.WriteConfigYamlToTmpFile([]byte("xxx"))
+	assert.Equal(t, "/path", path)
+	assert.Nil(t, err)
+	mockUploader.EXPECT().Delete("/path").Return(errors.New("x"))
+	err = closer.Close()
+	assert.Equal(t, "x", err.Error())
+}
