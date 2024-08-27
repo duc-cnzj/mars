@@ -23,6 +23,7 @@ import (
 	_ "github.com/duc-cnzj/mars/v4/internal/ent/runtime"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/samber/lo"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -82,6 +83,12 @@ func main() {
 	migrateProject(v4DB, v5DB)
 }
 
+func splitFn(value string, sep string) []string {
+	return lo.Filter(strings.Split(value, sep), func(item string, index int) bool {
+		return item != ""
+	})
+}
+
 func migrateProject(gdb *gorm.DB, edb *ent.Client) {
 	var projects []gorm2.Project
 	gdb.Model(&gorm2.Project{}).Preload("Namespace").Find(&projects)
@@ -116,13 +123,6 @@ func migrateProject(gdb *gorm.DB, edb *ent.Client) {
 					return err
 				}
 			}
-			//if project.FinalExtraValues != "" {
-			//	var finExtraValues []*websocket_pb.ExtraValue
-			//	if err := json.Unmarshal([]byte(project.FinalExtraValues), &finExtraValues); err != nil {
-			//		log.Println("finExtraValues err:", err, project.FinalExtraValues)
-			//		return err
-			//	}
-			//}
 			repo, err := edb.Repo.Query().Where(repo.GitProjectID(int32(project.GitProjectId))).First(context.TODO())
 			if err != nil {
 				return err
@@ -139,8 +139,8 @@ func migrateProject(gdb *gorm.DB, edb *ent.Client) {
 				SetGitCommit(project.GitCommit).
 				SetConfig(project.Config).
 				SetOverrideValues(project.OverrideValues).
-				SetDockerImage(strings.Split(project.DockerImage, " ")).
-				SetPodSelectors(strings.Split(project.PodSelectors, "|")).
+				SetDockerImage(splitFn(project.DockerImage, " ")).
+				SetPodSelectors(splitFn(project.PodSelectors, "|")).
 				SetNamespaceID(first.ID).
 				SetAtomic(project.Atomic).
 				SetDeployStatus(types.Deploy(project.DeployStatus)).
@@ -328,7 +328,7 @@ func migrateNamespace(gdb *gorm.DB, edb *ent.Client) {
 	}
 	err := WithTx(context.TODO(), edb, func(edb *ent.Tx) error {
 		for _, gns := range gormNamespaces {
-			split := strings.Split(gns.ImagePullSecrets, ",")
+			split := splitFn(gns.ImagePullSecrets, ",")
 			_, err := edb.Namespace.Create().SetName(gns.Name).SetImagePullSecrets(split).Save(context.TODO())
 			if err != nil {
 				return err
