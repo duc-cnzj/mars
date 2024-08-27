@@ -40,7 +40,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const maxRecvMsgSize = 1 << 20 * 20 // 20 MiB
+const maxRecvMsgSize = 1 << 20 * 100 // 100 MiB
 
 var defaultMiddlewares = middlewareList{
 	middlewares.Recovery,
