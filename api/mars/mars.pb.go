@@ -113,6 +113,7 @@ type Config struct {
 	Elements []*Element `protobuf:"bytes,9,rep,name=elements,proto3" json:"elements,omitempty"`
 	// 显示的名称 (helm app name), 不填就使用 git server project name
 	// 以字母开头结尾，中间可以有 '_' '-'
+	// Deprecated: v5+ 不再使用这个字段
 	DisplayName string `protobuf:"bytes,10,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 }
 

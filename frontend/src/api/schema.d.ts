@@ -1096,7 +1096,8 @@ export interface components {
             /** @description elements 自定义字段 */
             elements: components["schemas"]["mars.Element"][];
             /** @description 显示的名称 (helm app name), 不填就使用 git server project name
-             *      以字母开头结尾，中间可以有 '_' '-' */
+             *      以字母开头结尾，中间可以有 '_' '-'
+             *      Deprecated: v5+ 不再使用这个字段 */
             displayName: string;
         };
         "mars.Element": {

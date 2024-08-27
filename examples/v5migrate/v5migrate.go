@@ -64,6 +64,7 @@ var cfg Config = Config{
 }
 
 func main() {
+	log.SetFlags(log.Lshortfile)
 	v4DB, err := connGorm(cfg.V4)
 	logFatal(err)
 
@@ -125,6 +126,7 @@ func migrateProject(gdb *gorm.DB, edb *ent.Client) {
 			}
 			repo, err := edb.Repo.Query().Where(repo.GitProjectID(int32(project.GitProjectId))).First(context.TODO())
 			if err != nil {
+				log.Println("repo err:", err, project.GitProjectId, project.Name)
 				return err
 			}
 			values, err := finalExtraValues(repo.MarsConfig, extraValues)
