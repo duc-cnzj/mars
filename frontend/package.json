@@ -24,6 +24,7 @@
     "antd": "^5.20.2",
     "assert": "^2.1.0",
     "canvas-confetti": "^1.9.3",
+    "classnames": "^2.5.1",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.13",
     "escape-html": "^1.0.3",

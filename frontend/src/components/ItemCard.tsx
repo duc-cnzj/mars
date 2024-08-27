@@ -50,6 +50,12 @@ const Item: React.FC<{
             <IconFont
               onClick={() => onFavorite(item.id, !item.favorite)}
               name="#icon-wodeguanzhu"
+              className={css`
+                transition: all 0.3s ease;
+                &:hover{
+                  transform: scale(1.2);
+                }
+              `}
               style={{
                 color: !item.favorite ? "gray" : "#a78bfa",
                 cursor: "pointer",
