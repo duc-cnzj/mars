@@ -179,3 +179,92 @@ func TestRepoImpl_GetProjNameAndBranch_WithNonExistingProject(t *testing.T) {
 	assert.Nil(t, projName)
 	assert.Nil(t, defaultBranch)
 }
+
+func TestCloneRepoWithValidInput(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	db, _ := data.NewSqliteDB()
+	defer db.Close()
+
+	mockGitRepo := NewMockGitRepo(m)
+	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), mockGitRepo)
+
+	create, _ := repo.Create(context.TODO(), &CreateRepoInput{
+		Name: "app",
+	})
+
+	_, err := repo.Clone(context.TODO(), &CloneRepoInput{
+		ID:   create.ID,
+		Name: "clone",
+	})
+
+	assert.Nil(t, err)
+}
+
+func TestCloneRepoWithExistingName(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	db, _ := data.NewSqliteDB()
+	defer db.Close()
+
+	mockGitRepo := NewMockGitRepo(m)
+	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), mockGitRepo)
+
+	create, _ := repo.Create(context.TODO(), &CreateRepoInput{
+		Name: "app",
+	})
+
+	_, err := repo.Clone(context.TODO(), &CloneRepoInput{
+		ID:   create.ID,
+		Name: "app",
+	})
+
+	assert.NotNil(t, err)
+}
+
+func TestRepoImpl_Delete_WithExistingRepo(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	db, _ := data.NewSqliteDB()
+	defer db.Close()
+	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+
+	create, _ := repo.Create(context.TODO(), &CreateRepoInput{
+		Name: "app",
+	})
+
+	err := repo.Delete(context.TODO(), create.ID)
+	assert.Nil(t, err)
+}
+
+func TestRepoImpl_Delete_WithNonExistingRepo(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	db, _ := data.NewSqliteDB()
+	defer db.Close()
+	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+
+	err := repo.Delete(context.TODO(), 9999)
+	assert.NotNil(t, err)
+}
+
+func TestRepoImpl_Delete_WithRepoHavingProjects(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	db, _ := data.NewSqliteDB()
+	defer db.Close()
+	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+
+	create, _ := repo.Create(context.TODO(), &CreateRepoInput{
+		Name: "app",
+	})
+
+	ns := createNamespace(db)
+	project := createProject(db, ns.ID)
+	project.Update().SetRepoID(create.ID).SaveX(context.Background())
+
+	err := repo.Delete(context.TODO(), create.ID)
+	assert.NotNil(t, err)
+}
