@@ -17,12 +17,12 @@ func newMetricsForCache(c Cache) Cache {
 }
 
 // Remember TODO.
-func (m *MetricsForCache) Remember(key CacheKey, seconds int, fn func() ([]byte, error)) ([]byte, error) {
+func (m *MetricsForCache) Remember(key CacheKey, seconds int, fn func() ([]byte, error), force bool) ([]byte, error) {
 	labels := prometheus.Labels{"key": key.Slug()}
 	defer func(t time.Time) {
 		metrics.CacheRememberDuration.With(labels).Observe(time.Since(t).Seconds())
 	}(time.Now())
-	bytes, err := m.Cache.Remember(key, seconds, fn)
+	bytes, err := m.Cache.Remember(key, seconds, fn, force)
 	if err == nil {
 		metrics.CacheBytesGauge.With(labels).Set(float64(len(bytes)))
 	}

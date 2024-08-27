@@ -68,7 +68,7 @@ func (c *cartoon) Get(ctx context.Context, random bool) (*application.PictureIte
 		}
 
 		return []byte(response.Header.Get("Location")), nil
-	})
+	}, false)
 
 	return &application.PictureItem{
 		Url:       string(bg),

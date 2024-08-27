@@ -3,7 +3,7 @@ package cache
 type NoCache struct{}
 
 // Remember TODO.
-func (n *NoCache) Remember(key CacheKey, seconds int, fn func() ([]byte, error)) ([]byte, error) {
+func (n *NoCache) Remember(key CacheKey, seconds int, fn func() ([]byte, error), force bool) ([]byte, error) {
 	return fn()
 }
 

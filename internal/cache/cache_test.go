@@ -21,7 +21,7 @@ func TestCache_Remember(t *testing.T) {
 		cache.Remember(NewKey("duc"), 10, func() ([]byte, error) {
 			i++
 			return []byte("duccc"), nil
-		})
+		}, false)
 	}
 	fn()
 	fn()
@@ -33,7 +33,7 @@ func TestCache_Remember(t *testing.T) {
 		cache.Remember(NewKey("cache-y"), 1, func() ([]byte, error) {
 			y++
 			return []byte("duccc"), nil
-		})
+		}, false)
 	}
 	fn2()
 	time.Sleep(2 * time.Second)
@@ -45,7 +45,7 @@ func TestCache_Remember(t *testing.T) {
 		cache.Remember(NewKey("cache-z"), 1, func() ([]byte, error) {
 			z++
 			return nil, errors.New("error fn3")
-		})
+		}, false)
 	}
 	fn3()
 	fn3()
@@ -56,11 +56,11 @@ func TestCache_Remember(t *testing.T) {
 	cache.Remember(NewKey("cache-nocache"), 10, func() ([]byte, error) {
 		nocacheCalled++
 		return nil, nil
-	})
+	}, false)
 	cache.Remember(NewKey("cache-nocache"), 0, func() ([]byte, error) {
 		nocacheCalled++
 		return nil, nil
-	})
+	}, false)
 	assert.Equal(t, 2, nocacheCalled)
 }
 
@@ -87,7 +87,7 @@ func TestCache_RememberErrorStore(t *testing.T) {
 		return cache.Remember(NewKey("duc"), 10, func() ([]byte, error) {
 			i++
 			return []byte("duccc"), nil
-		})
+		}, false)
 	}
 	data, err := fn()
 	assert.Equal(t, []byte("duccc"), data)
@@ -105,15 +105,17 @@ func TestCache_Clear(t *testing.T) {
 		return []byte("aaa"), nil
 	}
 	// +1
-	cache.Remember(NewKey("aaa"), 100, fn)
+	cache.Remember(NewKey("aaa"), 100, fn, false)
 	// +0
-	cache.Remember(NewKey("aaa"), 100, fn)
+	cache.Remember(NewKey("aaa"), 100, fn, false)
 	assert.Nil(t, cache.Clear(NewKey("aaa")))
 	// +1
-	cache.Remember(NewKey("aaa"), 100, fn)
+	cache.Remember(NewKey("aaa"), 100, fn, false)
 	assert.Equal(t, 2, called)
-	cache.Remember(NewKey("aaa"), 100, fn)
+	cache.Remember(NewKey("aaa"), 100, fn, false)
 	assert.Equal(t, 2, called)
+	cache.Remember(NewKey("aaa"), 100, fn, true)
+	assert.Equal(t, 3, called)
 }
 
 func TestCache_SetWithTTL(t *testing.T) {

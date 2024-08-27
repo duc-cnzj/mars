@@ -54,7 +54,7 @@ func (m *fileSvc) List(ctx context.Context, request *file.ListRequest) (*file.Li
 }
 
 func (m *fileSvc) DiskInfo(ctx context.Context, request *file.DiskInfoRequest) (*file.DiskInfoResponse, error) {
-	size, err := m.fileRepo.DiskInfo()
+	size, err := m.fileRepo.DiskInfo(false)
 	if err != nil {
 		m.logger.ErrorCtx(ctx, err)
 		return nil, err

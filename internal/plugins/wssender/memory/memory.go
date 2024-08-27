@@ -149,7 +149,7 @@ func (p *memoryPubSub) Join(projectID int64) error {
 	}
 	p.manager.roomMu.Lock()
 	defer p.manager.roomMu.Unlock()
-	p.logger.Warningf("Join to: (%d---%d)", pmodel.NamespaceID, projectID)
+	p.logger.Debugf("Join to: (%d---%d)", pmodel.NamespaceID, projectID)
 	var (
 		nsID = int64(pmodel.Edges.Namespace.ID)
 	)

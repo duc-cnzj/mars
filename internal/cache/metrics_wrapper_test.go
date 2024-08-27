@@ -24,9 +24,9 @@ func TestMetricsForCache_Remember(t *testing.T) {
 	fn := func() ([]byte, error) {
 		return bytesRet, nil
 	}
-	c.EXPECT().Remember(NewKey("a"), int(10), gomock.Any()).Times(1).Return(bytesRet, nil)
+	c.EXPECT().Remember(NewKey("a"), int(10), gomock.Any(), false).Times(1).Return(bytesRet, nil)
 	mc := &MetricsForCache{Cache: c}
-	remember, err := mc.Remember(NewKey("a"), 10, fn)
+	remember, err := mc.Remember(NewKey("a"), 10, fn, false)
 	assert.Equal(t, bytesRet, remember)
 	assert.Nil(t, err)
 }

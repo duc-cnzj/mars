@@ -114,20 +114,6 @@ func (mr *MockProjectRepoMockRecorder) FindByVersion(arg0, arg1, arg2 any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByVersion", reflect.TypeOf((*MockProjectRepo)(nil).FindByVersion), arg0, arg1, arg2)
 }
 
-// GetAllPodMetrics mocks base method.
-func (m *MockProjectRepo) GetAllPodMetrics(arg0 *Project) []v1beta1.PodMetrics {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllPodMetrics", arg0)
-	ret0, _ := ret[0].([]v1beta1.PodMetrics)
-	return ret0
-}
-
-// GetAllPodMetrics indicates an expected call of GetAllPodMetrics.
-func (mr *MockProjectRepoMockRecorder) GetAllPodMetrics(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllPodMetrics", reflect.TypeOf((*MockProjectRepo)(nil).GetAllPodMetrics), arg0)
-}
-
 // GetAllPods mocks base method.
 func (m *MockProjectRepo) GetAllPods(arg0 context.Context, arg1 int) ([]*types.StateContainer, error) {
 	m.ctrl.T.Helper()
@@ -329,33 +315,33 @@ func (m *MockGitRepo) EXPECT() *MockGitRepoMockRecorder {
 }
 
 // AllBranches mocks base method.
-func (m *MockGitRepo) AllBranches(arg0 context.Context, arg1 int) ([]*Branch, error) {
+func (m *MockGitRepo) AllBranches(arg0 context.Context, arg1 int, arg2 bool) ([]*Branch, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AllBranches", arg0, arg1)
+	ret := m.ctrl.Call(m, "AllBranches", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]*Branch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AllBranches indicates an expected call of AllBranches.
-func (mr *MockGitRepoMockRecorder) AllBranches(arg0, arg1 any) *gomock.Call {
+func (mr *MockGitRepoMockRecorder) AllBranches(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllBranches", reflect.TypeOf((*MockGitRepo)(nil).AllBranches), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllBranches", reflect.TypeOf((*MockGitRepo)(nil).AllBranches), arg0, arg1, arg2)
 }
 
 // AllProjects mocks base method.
-func (m *MockGitRepo) AllProjects(arg0 context.Context) ([]*GitProject, error) {
+func (m *MockGitRepo) AllProjects(arg0 context.Context, arg1 bool) ([]*GitProject, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AllProjects", arg0)
+	ret := m.ctrl.Call(m, "AllProjects", arg0, arg1)
 	ret0, _ := ret[0].([]*GitProject)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AllProjects indicates an expected call of AllProjects.
-func (mr *MockGitRepoMockRecorder) AllProjects(arg0 any) *gomock.Call {
+func (mr *MockGitRepoMockRecorder) AllProjects(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllProjects", reflect.TypeOf((*MockGitRepo)(nil).AllProjects), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllProjects", reflect.TypeOf((*MockGitRepo)(nil).AllProjects), arg0, arg1)
 }
 
 // GetByProjectID mocks base method.
@@ -1289,18 +1275,18 @@ func (mr *MockFileRepoMockRecorder) Delete(arg0, arg1 any) *gomock.Call {
 }
 
 // DiskInfo mocks base method.
-func (m *MockFileRepo) DiskInfo() (int64, error) {
+func (m *MockFileRepo) DiskInfo(arg0 bool) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DiskInfo")
+	ret := m.ctrl.Call(m, "DiskInfo", arg0)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DiskInfo indicates an expected call of DiskInfo.
-func (mr *MockFileRepoMockRecorder) DiskInfo() *gomock.Call {
+func (mr *MockFileRepoMockRecorder) DiskInfo(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiskInfo", reflect.TypeOf((*MockFileRepo)(nil).DiskInfo))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiskInfo", reflect.TypeOf((*MockFileRepo)(nil).DiskInfo), arg0)
 }
 
 // GetByID mocks base method.

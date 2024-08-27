@@ -14,8 +14,8 @@ import (
 )
 
 type GitRepo interface {
-	AllProjects(ctx context.Context) (projects []*GitProject, err error)
-	AllBranches(ctx context.Context, projectID int) (branches []*Branch, err error)
+	AllProjects(ctx context.Context, forceFresh bool) (projects []*GitProject, err error)
+	AllBranches(ctx context.Context, projectID int, forceFresh bool) (branches []*Branch, err error)
 	ListCommits(ctx context.Context, projectID int, branch string) ([]*Commit, error)
 	GetCommit(ctx context.Context, projectID int, sha string) (*Commit, error)
 	GetCommitPipeline(ctx context.Context, projectID int, branch, sha string) (*Pipeline, error)
@@ -77,7 +77,7 @@ func NewGitRepo(logger mlog.Logger, cache cache.Cache, pl application.PluginMang
 	}
 }
 
-func (g *gitRepo) AllProjects(ctx context.Context) ([]*GitProject, error) {
+func (g *gitRepo) AllProjects(ctx context.Context, forceFresh bool) ([]*GitProject, error) {
 	fn := func() (projects []*GitProject, err error) {
 		allProjects, err := g.pl.Git().AllProjects()
 		if err != nil {
@@ -105,7 +105,7 @@ func (g *gitRepo) AllProjects(ctx context.Context) ([]*GitProject, error) {
 			return nil, err
 		}
 		return json.Marshal(projects)
-	})
+	}, forceFresh)
 	var projects []*GitProject
 	if err == nil {
 		err = json.Unmarshal(remember, &projects)
@@ -113,7 +113,7 @@ func (g *gitRepo) AllProjects(ctx context.Context) ([]*GitProject, error) {
 	return projects, err
 }
 
-func (g *gitRepo) AllBranches(ctx context.Context, projectID int) ([]*Branch, error) {
+func (g *gitRepo) AllBranches(ctx context.Context, projectID int, forceFresh bool) ([]*Branch, error) {
 	fn := func() (branches []*Branch, err error) {
 		res, err := g.pl.Git().AllBranches(fmt.Sprintf("%d", projectID))
 		if err != nil {
@@ -137,7 +137,7 @@ func (g *gitRepo) AllBranches(ctx context.Context, projectID int) ([]*Branch, er
 			return nil, err
 		}
 		return json.Marshal(branches)
-	})
+	}, forceFresh)
 	var branches []*Branch
 	if err == nil {
 		err = json.Unmarshal(remember, &branches)

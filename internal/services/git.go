@@ -47,7 +47,7 @@ func NewGitSvc(repoRepo repo.RepoRepo, eventRepo repo.EventRepo, logger mlog.Log
 }
 
 func (g *gitSvc) AllRepos(ctx context.Context, req *git.AllReposRequest) (*git.AllReposResponse, error) {
-	projects, err := g.gitRepo.AllProjects(ctx)
+	projects, err := g.gitRepo.AllProjects(ctx, false)
 	if err != nil {
 		g.logger.ErrorCtx(ctx, err)
 		return nil, err
@@ -89,7 +89,7 @@ func (g *gitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptions
 }
 
 func (g *gitSvc) BranchOptions(ctx context.Context, request *git.BranchOptionsRequest) (*git.BranchOptionsResponse, error) {
-	branches, err := g.gitRepo.AllBranches(ctx, cast.ToInt(request.GitProjectId))
+	branches, err := g.gitRepo.AllBranches(ctx, cast.ToInt(request.GitProjectId), false)
 	if err != nil {
 		g.logger.ErrorCtx(ctx, err)
 		return nil, err

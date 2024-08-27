@@ -13,7 +13,7 @@ func TestCache_RememberNoCache(t *testing.T) {
 		cache.Remember(NewKey("duc"), 10, func() ([]byte, error) {
 			i++
 			return []byte("duccc"), nil
-		})
+		}, false)
 	}
 	fn()
 	fn()

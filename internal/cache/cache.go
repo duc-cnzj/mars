@@ -24,7 +24,7 @@ type CacheKey interface {
 
 type Cache interface {
 	SetWithTTL(key CacheKey, value []byte, seconds int) error
-	Remember(key CacheKey, seconds int, fn func() ([]byte, error)) ([]byte, error)
+	Remember(key CacheKey, seconds int, fn func() ([]byte, error), force bool) ([]byte, error)
 	Clear(key CacheKey) error
 	Store() Store
 }
@@ -60,7 +60,7 @@ func newCache(store Store, logger mlog.Logger, sf *singleflight.Group) Cache {
 }
 
 // Remember TODO
-func (c *cacheImpl) Remember(key CacheKey, seconds int, fn func() ([]byte, error)) ([]byte, error) {
+func (c *cacheImpl) Remember(key CacheKey, seconds int, fn func() ([]byte, error), force bool) ([]byte, error) {
 	do, err, _ := c.sf.Do("CacheRemember:"+key.String(), func() (any, error) {
 		if seconds <= 0 {
 			return fn()
@@ -68,7 +68,7 @@ func (c *cacheImpl) Remember(key CacheKey, seconds int, fn func() ([]byte, error
 
 		res, err := c.store.Get(key.String())
 		c.logger.Debugf("CacheRemember: %s, from cacheImpl: %t", key, err == nil)
-		if err == nil {
+		if err == nil && !force {
 			return res, nil
 		}
 		res, err = fn()

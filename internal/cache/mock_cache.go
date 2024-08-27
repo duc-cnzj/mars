@@ -53,18 +53,18 @@ func (mr *MockCacheMockRecorder) Clear(arg0 any) *gomock.Call {
 }
 
 // Remember mocks base method.
-func (m *MockCache) Remember(arg0 CacheKey, arg1 int, arg2 func() ([]byte, error)) ([]byte, error) {
+func (m *MockCache) Remember(arg0 CacheKey, arg1 int, arg2 func() ([]byte, error), arg3 bool) ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Remember", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Remember", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Remember indicates an expected call of Remember.
-func (mr *MockCacheMockRecorder) Remember(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockCacheMockRecorder) Remember(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remember", reflect.TypeOf((*MockCache)(nil).Remember), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remember", reflect.TypeOf((*MockCache)(nil).Remember), arg0, arg1, arg2, arg3)
 }
 
 // SetWithTTL mocks base method.

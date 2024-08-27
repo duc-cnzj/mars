@@ -81,12 +81,12 @@ func NewCronRepo(logger mlog.Logger, fileRepo FileRepo, cache cache.Cache, repoR
 	cronManager.NewCommand("disk_info", func() error {
 		_, err := cr.DiskInfo()
 		return err
-	}).EveryFifteenMinutes()
+	}).EveryTenMinutes()
 	cronManager.NewCommand("fix_project_deploy_status", cr.FixDeployStatus).EveryTwoMinutes()
 
 	if data.Config().GitServerCached {
 		cronManager.NewCommand("all_branch_cache", cr.CacheAllBranches).EveryTwoMinutes()
-		cronManager.NewCommand("all_project_cache", cr.CacheAllProjects).EveryTwoMinutes()
+		cronManager.NewCommand("all_project_cache", cr.CacheAllProjects).EveryFiveMinutes()
 	}
 
 	cronManager.NewCommand("sync_domain_secret", cr.SyncDomainSecret).EveryMinute()
@@ -124,7 +124,7 @@ func (repo *cronRepo) CacheAllBranches() error {
 					if !ok {
 						return
 					}
-					repo.gitRepo.AllBranches(context.TODO(), int(id))
+					repo.gitRepo.AllBranches(context.TODO(), int(id), true)
 				}
 			}
 		}()
@@ -326,7 +326,7 @@ func (repo *cronRepo) FixDeployStatus() error {
 var DirSizeCacheSeconds = int((15 * time.Minute).Seconds())
 
 func (repo *cronRepo) DiskInfo() (int64, error) {
-	return repo.fileRepo.DiskInfo()
+	return repo.fileRepo.DiskInfo(true)
 }
 
 func int64ToByte(i int64) []byte {
@@ -487,7 +487,7 @@ func (repo *cronRepo) ProjectPodEventListener() error {
 
 func (repo *cronRepo) CacheAllProjects() error {
 	repo.logger.Info("CacheAllProjects")
-	_, err := repo.gitRepo.AllProjects(context.TODO())
+	_, err := repo.gitRepo.AllProjects(context.TODO(), true)
 	return err
 }
 

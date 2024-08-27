@@ -82,7 +82,7 @@ type FileRepo interface {
 	MaxUploadSize() uint64
 	Delete(ctx context.Context, id int) error
 	ShowRecords(ctx context.Context, id int) (io.ReadCloser, error)
-	DiskInfo() (int64, error)
+	DiskInfo(force bool) (int64, error)
 	List(ctx context.Context, input *ListFileInput) ([]*File, *pagination.Pagination, error)
 	GetByID(ctx context.Context, id int) (*File, error)
 	Create(todo context.Context, input *CreateFileInput) (*File, error)
@@ -225,11 +225,11 @@ func (repo *fileRepo) ShowRecords(ctx context.Context, id int) (io.ReadCloser, e
 	return up.Read(file.Path)
 }
 
-func (repo *fileRepo) DiskInfo() (int64, error) {
+func (repo *fileRepo) DiskInfo(force bool) (int64, error) {
 	remember, err := repo.cache.Remember(cache.NewKey("dir-size"), DirSizeCacheSeconds, func() ([]byte, error) {
 		size, err := repo.uploader.DirSize()
 		return int64ToByte(size), err
-	})
+	}, force)
 
 	return byteToInt64(remember), err
 }
