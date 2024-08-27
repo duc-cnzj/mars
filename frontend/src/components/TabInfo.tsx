@@ -20,22 +20,9 @@ SyntaxHighlighter.registerLanguage("yaml", yaml);
 const { confirm } = Modal;
 
 const DetailTab: React.FC<{
-  id: number;
   detail: components["schemas"]["types.ProjectModel"];
-  git_commit_web_url: string;
-  git_commit_title: string;
-  git_commit_author: string;
-  git_commit_date: string;
   onDeleted: () => void;
-}> = ({
-  id,
-  detail,
-  onDeleted,
-  git_commit_web_url,
-  git_commit_title,
-  git_commit_author,
-  git_commit_date,
-}) => {
+}> = ({ detail, onDeleted }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [cpuMemEndpointsLoading, setCpuMemEndpointsLoading] =
     useState<boolean>(true);
@@ -48,7 +35,7 @@ const DetailTab: React.FC<{
     setCpuMemEndpointsLoading(true);
     ajax
       .GET("/api/projects/{id}/memory_cpu_and_endpoints", {
-        params: { path: { id } },
+        params: { path: { id: detail.id } },
       })
       .then(({ data, error }) => {
         setCpuMemEndpointsLoading(false);
@@ -61,7 +48,7 @@ const DetailTab: React.FC<{
           urls: data.urls,
         });
       });
-  }, [id]);
+  }, [detail.id]);
 
   return detail ? (
     <div style={{ height: "100%", overflowY: "auto" }}>
@@ -187,24 +174,26 @@ const DetailTab: React.FC<{
           <p>地址:</p>
         </div>
         <ul style={{ listStyle: "none", padding: "0 0 0 1.5em", margin: 0 }}>
-          {!cpuMemEndpointsLoading
-            ? cpuMemEndpoints.urls.map((item, index) => (
-                <li key={index}>
-                  {index + 1}.
-                  {item.url.startsWith("http") ? (
-                    <a href={item.url} target="_blank" className="detail-data">
-                      {item.url}
-                      {item.portName ? `(${item.portName})` : ""}
-                    </a>
-                  ) : (
-                    <span>
-                      {item.url}
-                      {item.portName ? `(${item.portName})` : ""}
-                    </span>
-                  )}
-                </li>
-              ))
-            : <Spin size={"small"} />}
+          {!cpuMemEndpointsLoading ? (
+            cpuMemEndpoints.urls.map((item, index) => (
+              <li key={index}>
+                {index + 1}.
+                {item.url.startsWith("http") ? (
+                  <a href={item.url} target="_blank" className="detail-data">
+                    {item.url}
+                    {item.portName ? `(${item.portName})` : ""}
+                  </a>
+                ) : (
+                  <span>
+                    {item.url}
+                    {item.portName ? `(${item.portName})` : ""}
+                  </span>
+                )}
+              </li>
+            ))
+          ) : (
+            <Spin size={"small"} />
+          )}
         </ul>
       </div>
 
@@ -246,10 +235,10 @@ const DetailTab: React.FC<{
         <p>
           提交:
           <span className="detail-data">
-            <a href={git_commit_web_url} target="_blank">
-              {git_commit_title}
+            <a href={detail.gitCommitWebUrl} target="_blank">
+              {detail.gitCommitTitle}
             </a>
-            by {git_commit_author} 于 {git_commit_date}
+            by {detail.gitCommitAuthor} 于 {detail.gitCommitDate}
           </span>
         </p>
       </div>

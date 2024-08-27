@@ -246,15 +246,7 @@ const MyTabs: React.FC<{
           <div className="detail-tab">
             <Suspense fallback={<Skeleton active />}>
               {detail?.item && (
-                <TabInfo
-                  id={detail.item.id}
-                  detail={detail.item}
-                  git_commit_web_url={detail.item.gitCommitWebUrl}
-                  git_commit_title={detail.item.gitCommitTitle}
-                  git_commit_author={detail.item.gitCommitAuthor}
-                  git_commit_date={detail.item.gitCommitDate}
-                  onDeleted={onDelete}
-                />
+                <TabInfo detail={detail.item} onDeleted={onDelete} />
               )}
             </Suspense>
           </div>
