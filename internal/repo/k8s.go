@@ -179,11 +179,16 @@ func (repo *k8sRepo) GetAllPodMetrics(ctx context.Context, proj *Project) []v1be
 	if len(proj.PodSelectors) == 0 {
 		return nil
 	}
-	for _, labels := range proj.PodSelectors {
+	for _, podlabels := range proj.PodSelectors {
+		labelsMap, _ := labels.ConvertSelectorToLabelsMap(podlabels)
+		ret, _ := repo.data.K8sClient().PodLister.Pods(proj.Namespace.Name).List(labelsMap.AsSelector())
+		if len(ret) == 0 {
+			continue
+		}
 		l, _ := metricses.List(context.Background(), metav1.ListOptions{
-			LabelSelector: labels,
+			LabelSelector: podlabels,
 		})
-		repo.logger.DebugCtx(ctx, "[GetAllPodMetrics]", labels, " ", len(l.Items))
+		repo.logger.DebugCtx(ctx, "[GetAllPodMetrics]: ", podlabels, " ", len(l.Items))
 
 		list = append(list, l.Items...)
 	}

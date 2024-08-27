@@ -86,13 +86,12 @@ func NewCronRepo(logger mlog.Logger, fileRepo FileRepo, cache cache.Cache, repoR
 
 	if data.Config().GitServerCached {
 		cronManager.NewCommand("all_branch_cache", cr.CacheAllBranches).EveryTwoMinutes()
+		cronManager.NewCommand("all_project_cache", cr.CacheAllProjects).EveryTwoMinutes()
 	}
 
 	cronManager.NewCommand("sync_domain_secret", cr.SyncDomainSecret).EveryMinute()
 
-	logger.Warning(data.Config())
 	if data.Config().KubeConfig != "" {
-		logger.Warning("k8s cron job enabled")
 		cronManager.NewCommand("sync_image_pull_secrets", cr.SyncImagePullSecrets).EveryFiveMinutes()
 		cronManager.NewCommand("project_pod_event_listener", cr.ProjectPodEventListener).EveryFiveSeconds()
 	}
@@ -484,6 +483,12 @@ func (repo *cronRepo) ProjectPodEventListener() error {
 			}
 		}
 	}
+}
+
+func (repo *cronRepo) CacheAllProjects() error {
+	repo.logger.Info("CacheAllProjects")
+	_, err := repo.gitRepo.AllProjects(context.TODO())
+	return err
 }
 
 type watchContainerStatus struct {

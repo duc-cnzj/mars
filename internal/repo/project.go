@@ -11,8 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/otel"
-
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/annotation"
@@ -23,6 +21,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+	"go.opentelemetry.io/otel"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -32,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 type Project struct {
@@ -111,7 +109,6 @@ func ToProject(project *ent.Project) *Project {
 
 type ProjectRepo interface {
 	GetAllPods(ctx context.Context, id int) ([]*types.StateContainer, error)
-	GetAllPodMetrics(project *Project) []v1beta1.PodMetrics
 	GetNodePortMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
 	GetLoadBalancerMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
 	GetIngressMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
@@ -416,27 +413,6 @@ func isContainerReady(pod *v1.Pod, containerName string) bool {
 		}
 	}
 	return false
-}
-
-func (repo *projectRepo) GetAllPodMetrics(project *Project) []v1beta1.PodMetrics {
-	var (
-		metrics = repo.data.K8sClient().MetricsClient
-	)
-	metricses := metrics.MetricsV1beta1().PodMetricses(project.Namespace.Name)
-	var list []v1beta1.PodMetrics
-	var split []string = project.PodSelectors
-	if len(split) == 0 {
-		return nil
-	}
-	for _, labels := range split {
-		l, _ := metricses.List(context.TODO(), metav1.ListOptions{
-			LabelSelector: labels,
-		})
-
-		list = append(list, l.Items...)
-	}
-
-	return list
 }
 
 func (repo *projectRepo) GetNodePortMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping {

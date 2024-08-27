@@ -6,12 +6,11 @@ import (
 	gopath "path"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v4/internal/socket"
-
 	"github.com/duc-cnzj/mars/api/v4/git"
 	"github.com/duc-cnzj/mars/v4/internal/cache"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
+	"github.com/duc-cnzj/mars/v4/internal/socket"
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
 	mars2 "github.com/duc-cnzj/mars/v4/internal/util/mars"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"

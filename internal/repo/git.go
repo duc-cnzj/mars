@@ -131,7 +131,7 @@ func (g *gitRepo) AllBranches(ctx context.Context, projectID int) ([]*Branch, er
 	if !g.data.Config().GitServerCached {
 		return fn()
 	}
-	remember, err := g.cache.Remember(cache.NewKey(fmt.Sprintf("all_branches_%d", projectID)), 300, func() ([]byte, error) {
+	remember, err := g.cache.Remember(cache.NewKey(fmt.Sprintf("all_branches_%d", projectID)), 600, func() ([]byte, error) {
 		branches, err := fn()
 		if err != nil {
 			return nil, err
