@@ -46,7 +46,7 @@ func Test_gitSvc_AllRepos(t *testing.T) {
 		cache.NewMockCache(m),
 	)
 
-	gitRepo.EXPECT().AllProjects(gomock.Any()).Return(nil, errors.New("error"))
+	gitRepo.EXPECT().AllProjects(gomock.Any(), false).Return(nil, errors.New("error"))
 	repos, err := svc.AllRepos(context.TODO(), nil)
 	assert.Nil(t, repos)
 	assert.NotNil(t, err)
@@ -64,7 +64,7 @@ func Test_gitSvc_AllRepos_Success(t *testing.T) {
 		cache.NewMockCache(m),
 	)
 
-	gitRepo.EXPECT().AllProjects(gomock.Any()).Return([]*repo.GitProject{
+	gitRepo.EXPECT().AllProjects(gomock.Any(), false).Return([]*repo.GitProject{
 		{ID: 1, Name: "a", Description: "aa"},
 		nil,
 	}, nil)
@@ -140,7 +140,7 @@ func Test_gitSvc_BranchOptions(t *testing.T) {
 		gitRepo,
 		cache.NewMockCache(m),
 	)
-	gitRepo.EXPECT().AllBranches(gomock.Any(), 1).Return(nil, errors.New("error"))
+	gitRepo.EXPECT().AllBranches(gomock.Any(), 1, false).Return(nil, errors.New("error"))
 	options, err := svc.BranchOptions(context.TODO(), &git.BranchOptionsRequest{
 		GitProjectId: 1,
 		RepoId:       1,
@@ -161,7 +161,7 @@ func Test_gitSvc_BranchOptions_Success(t *testing.T) {
 		gitRepo,
 		cache.NewMockCache(m),
 	)
-	gitRepo.EXPECT().AllBranches(gomock.Any(), 1).Return([]*repo.Branch{
+	gitRepo.EXPECT().AllBranches(gomock.Any(), 1, false).Return([]*repo.Branch{
 		{
 			Name:      "br",
 			IsDefault: true,
@@ -198,7 +198,7 @@ func Test_gitSvc_BranchOptions_Error(t *testing.T) {
 		gitRepo,
 		cache.NewMockCache(m),
 	)
-	gitRepo.EXPECT().AllBranches(gomock.Any(), 1).Return([]*repo.Branch{
+	gitRepo.EXPECT().AllBranches(gomock.Any(), 1, false).Return([]*repo.Branch{
 		{
 			Name:      "br",
 			IsDefault: true,

@@ -128,7 +128,7 @@ func TestFileSvc_DiskInfo_Success(t *testing.T) {
 	fileRepo := repo.NewMockFileRepo(m)
 	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil))
 
-	fileRepo.EXPECT().DiskInfo().Return(int64(10000), nil)
+	fileRepo.EXPECT().DiskInfo(false).Return(int64(10000), nil)
 
 	resp, err := svc.DiskInfo(context.Background(), &file.DiskInfoRequest{})
 	assert.NoError(t, err)
@@ -144,7 +144,7 @@ func TestFileSvc_DiskInfo_Failure(t *testing.T) {
 	fileRepo := repo.NewMockFileRepo(m)
 	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil))
 
-	fileRepo.EXPECT().DiskInfo().Return(int64(0), errors.New("error"))
+	fileRepo.EXPECT().DiskInfo(false).Return(int64(0), errors.New("error"))
 
 	_, err := svc.DiskInfo(context.Background(), &file.DiskInfoRequest{})
 	assert.Error(t, err)

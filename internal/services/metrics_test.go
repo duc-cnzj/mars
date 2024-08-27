@@ -143,7 +143,7 @@ func TestMetricsSvc_CpuMemoryInProject_Success(t *testing.T) {
 
 	projRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{}, nil)
 	k8sRepo.EXPECT().GetCpuAndMemory(gomock.Any(), gomock.Any()).Return("cpu", "memory")
-	projRepo.EXPECT().GetAllPodMetrics(gomock.Any()).Return([]v1beta1.PodMetrics{})
+	k8sRepo.EXPECT().GetAllPodMetrics(gomock.Any(), gomock.Any()).Return([]v1beta1.PodMetrics{})
 
 	res, err := svc.CpuMemoryInProject(context.TODO(), &metrics.CpuMemoryInProjectRequest{
 		ProjectId: 1,
