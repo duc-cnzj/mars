@@ -306,10 +306,6 @@ func (j *jobRunner) GlobalLock() Job {
 
 func (j *jobRunner) Validate() Job {
 	var err error
-	if j.HasError() {
-		return j
-	}
-
 	if !j.typeValidated() {
 		return j.SetError(errors.New("type error: " + j.input.Type.String()))
 	}
@@ -397,10 +393,9 @@ func (j *jobRunner) Validate() Job {
 	}
 
 	j.imagePullSecrets = j.ns.ImagePullSecrets
+	j.commit = NewEmptyCommit()
 	if j.repo.NeedGitRepo {
 		j.commit, err = j.pluginMgr.Git().GetCommit(fmt.Sprintf("%d", j.project.GitProjectID), j.project.GitCommit)
-	} else {
-		j.commit = NewEmptyCommit()
 	}
 	if !j.isNew {
 		j.oldConf = toProjectEventYaml(j.project)

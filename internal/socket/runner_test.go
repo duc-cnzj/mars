@@ -1427,3 +1427,212 @@ func Test_jobRunner_WriteConfigYamlToTmpFile(t *testing.T) {
 	err = closer.Close()
 	assert.Equal(t, "x", err.Error())
 }
+
+func Test_jobRunner_Validate_Fail(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	msger := NewMockDeployMsger(m)
+	repoRepo := repo.NewMockRepoRepo(m)
+	projectRepo := repo.NewMockProjectRepo(m)
+
+	var job *jobRunner
+	job = &jobRunner{
+		input: &JobInput{Type: websocket_pb.Type_HandleAuthorize},
+	}
+	assert.Error(t, job.Validate().Error())
+
+	msger.EXPECT().To(gomock.Any()).AnyTimes()
+	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("xxx"))
+	job = &jobRunner{
+		messager: msger,
+		nsRepo:   nsRepo,
+		input:    &JobInput{Type: websocket_pb.Type_CreateProject, NamespaceId: 1},
+	}
+	assert.Error(t, job.Validate().Error())
+
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{}, nil)
+	repoRepo.EXPECT().Show(gomock.Any(), 12).Return(nil, errors.New("xxx"))
+	job = &jobRunner{
+		messager: msger,
+		nsRepo:   nsRepo,
+		repoRepo: repoRepo,
+		input:    &JobInput{Type: websocket_pb.Type_CreateProject, NamespaceId: 1, RepoID: 12},
+	}
+	assert.Error(t, job.Validate().Error())
+
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{ID: 1}, nil)
+	repoRepo.EXPECT().Show(gomock.Any(), 12).Return(&repo.Repo{
+		MarsConfig: &mars.Config{},
+	}, nil)
+	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(nil, errors.New("xxx"))
+	projectRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxxa"))
+	job = &jobRunner{
+		logger:   mlog.NewLogger(nil),
+		messager: msger,
+		nsRepo:   nsRepo,
+		projRepo: projectRepo,
+		repoRepo: repoRepo,
+		user:     &auth.UserInfo{},
+		input: &JobInput{
+			Type:        websocket_pb.Type_CreateProject,
+			NamespaceId: 1,
+			Name:        "xx",
+			RepoID:      12,
+			DryRun:      false,
+		},
+	}
+	assert.Error(t, job.Validate().Error())
+
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{ID: 1}, nil)
+	repoRepo.EXPECT().Show(gomock.Any(), 12).Return(&repo.Repo{
+		MarsConfig: &mars.Config{},
+	}, nil)
+	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(&repo.Project{}, nil)
+	projectRepo.EXPECT().UpdateStatusByVersion(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
+	job = &jobRunner{
+		logger:   mlog.NewLogger(nil),
+		messager: msger,
+		nsRepo:   nsRepo,
+		projRepo: projectRepo,
+		repoRepo: repoRepo,
+		user:     &auth.UserInfo{},
+		input: &JobInput{
+			Type:        websocket_pb.Type_CreateProject,
+			NamespaceId: 1,
+			Name:        "xx",
+			RepoID:      12,
+			DryRun:      false,
+		},
+	}
+	assert.Error(t, job.Validate().Error())
+}
+
+func Test_jobRunner_Validate_Success(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	msger := NewMockDeployMsger(m)
+	repoRepo := repo.NewMockRepoRepo(m)
+	projectRepo := repo.NewMockProjectRepo(m)
+	msger.EXPECT().To(gomock.Any()).AnyTimes()
+	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+
+	var job *jobRunner
+
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{ID: 1}, nil)
+	repoRepo.EXPECT().Show(gomock.Any(), 12).Return(&repo.Repo{
+		MarsConfig:  &mars.Config{},
+		NeedGitRepo: false,
+	}, nil)
+	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(&repo.Project{}, nil)
+	projectRepo.EXPECT().UpdateStatusByVersion(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&repo.Project{}, nil)
+	sub := application.NewMockPubSub(m)
+	sub.EXPECT().ToAll(gomock.Any())
+	job = &jobRunner{
+		logger:   mlog.NewLogger(nil),
+		messager: msger,
+		nsRepo:   nsRepo,
+		projRepo: projectRepo,
+		repoRepo: repoRepo,
+		user:     &auth.UserInfo{},
+		input: &JobInput{
+			Type:        websocket_pb.Type_CreateProject,
+			NamespaceId: 1,
+			Name:        "xx",
+			RepoID:      12,
+			DryRun:      false,
+			PubSub:      sub,
+		},
+	}
+
+	assert.Nil(t, job.Validate().Error())
+	assert.NotNil(t, job.commit)
+}
+
+func TestJober_Finish_WhenError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	msger := NewMockDeployMsger(m)
+	stopCtx, stopFn := context.WithCancelCause(context.TODO())
+	stopFn(errors.New("stopped"))
+	job := &jobRunner{
+		deployResult: &deployResult{},
+		logger:       mlog.NewLogger(nil),
+		err:          errors.New("xxx"),
+		messager:     msger,
+		stopCtx:      stopCtx,
+		stopFn:       stopFn,
+	}
+	successCalled := 0
+	job.OnSuccess(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		successCalled++
+	})
+	errorCalled := 0
+	job.OnError(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		errorCalled++
+	})
+	finallyCalled := 0
+	job.OnFinally(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		finallyCalled++
+	})
+	msger.EXPECT().SendDeployedResult(websocket_pb.ResultType_DeployedCanceled, "stopped", nil).Times(1)
+	// canceled
+	assert.Equal(t, "xxx", job.Finish().Error().Error())
+	assert.Equal(t, 1, finallyCalled)
+	assert.Equal(t, 0, successCalled)
+	assert.Equal(t, 1, errorCalled)
+
+	// failed
+	job2 := &jobRunner{
+		deployResult: &deployResult{},
+		logger:       mlog.NewLogger(nil),
+		err:          errors.New("xxx"),
+		messager:     msger,
+		stopCtx:      context.TODO(),
+	}
+	msger.EXPECT().SendDeployedResult(websocket_pb.ResultType_DeployedFailed, "xxx", nil).Times(1)
+	job2.Finish()
+}
+
+func TestJober_Finish_WhenSuccess(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	msger := NewMockDeployMsger(m)
+	job := &jobRunner{
+		deployResult: &deployResult{},
+		messager:     msger, logger: mlog.NewLogger(nil),
+	}
+	successCalled := 0
+	job.OnSuccess(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		successCalled++
+	})
+	errorCalled := 0
+	job.OnError(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		errorCalled++
+	})
+	finallyCalled := 0
+	job.OnFinally(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		finallyCalled++
+	})
+	msger.EXPECT().SendDeployedResult(websocket_pb.ResultType_Deployed, "ok", nil).Times(1)
+	job.deployResult.Set(websocket_pb.ResultType_Deployed, "ok", nil)
+	// success
+	assert.Nil(t, job.Finish().Error())
+	assert.Equal(t, 1, finallyCalled)
+	assert.Equal(t, 1, successCalled)
+	assert.Equal(t, 0, errorCalled)
+}
+
+func Test_jobRunner_Run_Fail(t *testing.T) {
+	assert.Error(t, (&jobRunner{
+		err: errors.New("x"),
+	}).Run(context.TODO()).Error())
+}
