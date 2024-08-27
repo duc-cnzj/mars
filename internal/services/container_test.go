@@ -709,13 +709,19 @@ func TestContainerSvc_Exec_Success(t *testing.T) {
 	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
 	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), gomock.Any(), gomock.Any()).Return("c", nil)
 	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any(), gomock.Any()).Return(&recorderMock{})
-	k8sRepo.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-	err := svc.Exec(&execServerMock{})
-	assert.Nil(t, err)
+	k8sRepo.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Return(&clientgoexec.CodeExitError{
+		Err:  errors.New("xx"),
+		Code: 2,
+	})
+	mock := &execServerMock{}
+	err := svc.Exec(mock)
+	assert.Equal(t, int64(2), mock.err.Code)
+	assert.NotNil(t, err)
 }
 
 type execServerMock struct {
 	container.Container_ExecServer
+	err *container.ExecError
 }
 
 func (e *execServerMock) Recv() (*container.ExecRequest, error) {
@@ -727,6 +733,9 @@ func (e *execServerMock) Recv() (*container.ExecRequest, error) {
 }
 
 func (e *execServerMock) Send(response *container.ExecResponse) error {
+	if response.Error != nil {
+		e.err = response.Error
+	}
 	return nil
 }
 

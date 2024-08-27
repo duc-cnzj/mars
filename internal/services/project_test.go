@@ -821,3 +821,56 @@ func TestGetBranchAndCommitIfMissingReturnsProvidedBranchAndCommit(t *testing.T)
 	assert.Equal(t, "branch", branch)
 	assert.Equal(t, "commit", commit)
 }
+
+func Test_projectSvc_MemoryCpuAndEndpoints(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	projectRepo := repo.NewMockProjectRepo(m)
+	k8sRepo := repo.NewMockK8sRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	helmerRepo := repo.NewMockHelmerRepo(m)
+	svc := NewProjectSvc(
+		repo.NewMockRepoRepo(m),
+		application.NewMockPluginManger(m),
+		socket.NewMockJobManager(m),
+		projectRepo,
+		repo.NewMockGitRepo(m),
+		k8sRepo,
+		eventRepo,
+		mlog.NewLogger(nil),
+		helmerRepo,
+		repo.NewMockNamespaceRepo(m),
+	)
+
+	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{
+		ID:          2,
+		Name:        "app",
+		NamespaceID: 1,
+		Namespace: &repo.Namespace{
+			Name: "ns",
+		},
+		Version: 100,
+	}, nil)
+	k8sRepo.EXPECT().GetAllPodMetrics(gomock.Any(), gomock.Any())
+	k8sRepo.EXPECT().GetCpuAndMemory(gomock.Any(), gomock.Any()).Return("1", "2Gi")
+	projectRepo.EXPECT().GetNodePortMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(repo.EndpointMapping{
+		"app": []*types.ServiceEndpoint{
+			{Name: "app"},
+		},
+	})
+	projectRepo.EXPECT().GetIngressMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(repo.EndpointMapping{
+		"app": []*types.ServiceEndpoint{
+			{Name: "app1"},
+		},
+	})
+	projectRepo.EXPECT().GetLoadBalancerMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(repo.EndpointMapping{
+		"app": []*types.ServiceEndpoint{
+			{Name: "app2"},
+		},
+	})
+	endpoints, err := svc.MemoryCpuAndEndpoints(context.TODO(), &project.MemoryCpuAndEndpointsRequest{Id: 1})
+	assert.Nil(t, err)
+	assert.Equal(t, "1", endpoints.Cpu)
+	assert.Equal(t, "2Gi", endpoints.Memory)
+	assert.Equal(t, 3, len(endpoints.Urls))
+}

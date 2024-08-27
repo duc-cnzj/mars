@@ -5,6 +5,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
+	"github.com/samber/lo"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	errors2 "k8s.io/apimachinery/pkg/api/errors"
@@ -629,4 +632,51 @@ func Test_namespaceSvc_UpdateDesc_fail2(t *testing.T) {
 
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
+}
+
+func Test_namespaceSvc_List(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	svc := NewNamespaceSvc(
+		repo.NewMockHelmerRepo(m),
+		nsRepo,
+		repo.NewMockK8sRepo(m),
+		mlog.NewLogger(nil),
+		repo.NewMockEventRepo(m),
+	)
+
+	nsRepo.EXPECT().List(gomock.Any(), &repo.ListNamespaceInput{
+		Favorite: false,
+		Email:    adminEmail,
+		Name:     lo.ToPtr("name"),
+		PageSize: 15,
+		Page:     1,
+	}).Return([]*repo.Namespace{
+		{
+			ID:   1,
+			Name: "namespace1",
+			Favorites: []*repo.Favorite{
+				{Email: adminEmail},
+			},
+		},
+		{
+			ID:   2,
+			Name: "namespace2",
+		},
+	}, &pagination.Pagination{}, nil)
+
+	res, err := svc.List(newAdminUserCtx(), &namespace.ListRequest{
+		Favorite: false,
+		Name:     lo.ToPtr("name"),
+	})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 2, len(res.Items))
+	assert.Equal(t, int32(1), res.Items[0].Id)
+	assert.Equal(t, "namespace1", res.Items[0].Name)
+	assert.Equal(t, int32(2), res.Items[1].Id)
+	assert.Equal(t, "namespace2", res.Items[1].Name)
+	assert.True(t, res.Items[0].Favorite)
 }
