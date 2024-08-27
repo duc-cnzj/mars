@@ -58,7 +58,7 @@ func TestAuthSvc_Login_Success(t *testing.T) {
 	authRepo := repo.NewMockAuthRepo(m)
 	svc := NewAuthSvc(eventRepo, mlog.NewLogger(nil), authRepo)
 
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLog(gomock.Any(), gomock.Any(), gomock.Any())
 	authRepo.EXPECT().Login(gomock.Any(), &repo.LoginInput{
 		Username: "test",
 		Password: "password",

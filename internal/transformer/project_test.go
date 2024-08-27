@@ -65,7 +65,7 @@ func TestFromProject_ValidInput(t *testing.T) {
 	assert.Equal(t, "testCommit", result.GitCommit)
 	assert.Equal(t, "testConfig", result.Config)
 	assert.Equal(t, "testOverrideValues", result.OverrideValues)
-	assert.Equal(t, "testDockerImage", result.DockerImage)
+	assert.Equal(t, []string{"testDockerImage"}, result.DockerImage)
 	assert.Equal(t, []string{"testPodSelectors"}, result.PodSelectors)
 	assert.Equal(t, int32(1), result.NamespaceId)
 	assert.Equal(t, true, result.Atomic)

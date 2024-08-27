@@ -34,21 +34,21 @@ func Test_endpointRepo_InNamespace_HappyPath(t *testing.T) {
 	ns := createNamespace(db)
 	createProject(db, ns.ID)
 
-	proj.EXPECT().GetNodePortMappingByProjects(gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
+	proj.EXPECT().GetNodePortMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
 		{
 			Name:     "a1",
 			Url:      "b1",
 			PortName: "c1",
 		},
 	}})
-	proj.EXPECT().GetIngressMappingByProjects(gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
+	proj.EXPECT().GetIngressMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
 		{
 			Name:     "a2",
 			Url:      "b2",
 			PortName: "c2",
 		},
 	}})
-	proj.EXPECT().GetLoadBalancerMappingByProjects(gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
+	proj.EXPECT().GetLoadBalancerMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
 		{
 			Name:     "a3",
 			Url:      "b3",
@@ -91,21 +91,21 @@ func TestInProject_HappyPath(t *testing.T) {
 	ns := createNamespace(db)
 	pr := createProject(db, ns.ID)
 
-	proj.EXPECT().GetNodePortMappingByProjects(gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
+	proj.EXPECT().GetNodePortMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
 		{
 			Name:     "a1",
 			Url:      "b1",
 			PortName: "c1",
 		},
 	}})
-	proj.EXPECT().GetIngressMappingByProjects(gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
+	proj.EXPECT().GetIngressMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
 		{
 			Name:     "a2",
 			Url:      "b2",
 			PortName: "c2",
 		},
 	}})
-	proj.EXPECT().GetLoadBalancerMappingByProjects(gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
+	proj.EXPECT().GetLoadBalancerMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
 		{
 			Name:     "a3",
 			Url:      "b3",

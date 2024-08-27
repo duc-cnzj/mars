@@ -90,7 +90,7 @@ func TestMetricsSvc_CpuMemoryInNamespace_Success(t *testing.T) {
 	svc := NewMetricsSvc(timer.NewRealTimer(), k8sRepo, mlog.NewLogger(nil), repo.NewMockProjectRepo(m), nsRepo)
 
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{}, nil)
-	k8sRepo.EXPECT().GetCpuAndMemoryInNamespace(gomock.Any()).Return("cpu", "memory")
+	k8sRepo.EXPECT().GetCpuAndMemoryInNamespace(gomock.Any(), gomock.Any()).Return("cpu", "memory")
 
 	res, err := svc.CpuMemoryInNamespace(context.TODO(), &metrics.CpuMemoryInNamespaceRequest{
 		NamespaceId: 1,
@@ -142,7 +142,7 @@ func TestMetricsSvc_CpuMemoryInProject_Success(t *testing.T) {
 	svc := NewMetricsSvc(timer.NewRealTimer(), k8sRepo, mlog.NewLogger(nil), projRepo, repo.NewMockNamespaceRepo(m))
 
 	projRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{}, nil)
-	k8sRepo.EXPECT().GetCpuAndMemory(gomock.Any()).Return("cpu", "memory")
+	k8sRepo.EXPECT().GetCpuAndMemory(gomock.Any(), gomock.Any()).Return("cpu", "memory")
 	projRepo.EXPECT().GetAllPodMetrics(gomock.Any()).Return([]v1beta1.PodMetrics{})
 
 	res, err := svc.CpuMemoryInProject(context.TODO(), &metrics.CpuMemoryInProjectRequest{

@@ -19,7 +19,6 @@ import (
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 func TestNewProjectSvc(t *testing.T) {
@@ -127,12 +126,6 @@ func TestProjectSvc_Show_Success(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		repo.NewMockNamespaceRepo(m),
 	)
-
-	k8sRepo.EXPECT().GetAllPodMetrics(gomock.Any()).Return([]v1beta1.PodMetrics{})
-	k8sRepo.EXPECT().GetCpuAndMemory(gomock.Any()).Return("", "")
-	projectRepo.EXPECT().GetNodePortMappingByProjects(gomock.Any(), gomock.Any()).Return(repo.EndpointMapping{})
-	projectRepo.EXPECT().GetIngressMappingByProjects(gomock.Any(), gomock.Any()).Return(repo.EndpointMapping{})
-	projectRepo.EXPECT().GetLoadBalancerMappingByProjects(gomock.Any(), gomock.Any()).Return(repo.EndpointMapping{})
 
 	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{
 		Namespace: &repo.Namespace{},
