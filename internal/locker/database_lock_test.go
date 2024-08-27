@@ -2,6 +2,7 @@ package locker
 
 import (
 	"context"
+	"entgo.io/ent/dialect/sql"
 	"fmt"
 	"log"
 	"os"
@@ -40,7 +41,8 @@ func TestMain(t *testing.M) {
 	setDefault(&dbhost, "127.0.0.1")
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%v)/%s?charset=utf8mb4&parseTime=True&loc=Local", user, dbpwd, dbhost, port, dbname)
 	var err error
-	db, err = data.InitMysqlDB(dsn, mlog.NewLogger(nil), false, 0, timer.NewRealTimer())
+	open, _ := sql.Open("mysql", dsn)
+	db, err = data.InitDB(open, mlog.NewLogger(nil), false, 0, timer.NewRealTimer())
 	if err == nil {
 		prepared = true
 		err = db.Schema.Create(

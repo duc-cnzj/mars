@@ -2,10 +2,12 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/util/timer"
@@ -47,16 +49,17 @@ func (d *slowLogDriver) Query(ctx context.Context, query string, args, v any) er
 	return err
 }
 
-func InitMysqlDB(dsn string, logger mlog.Logger, slogLogEnabled bool, slowLogThreshold time.Duration, timer timer.Timer) (*ent.Client, error) {
-	var (
-		drv dialect.Driver
-		err error
-	)
-	drv, err = sql.Open("mysql", dsn)
-	if err != nil {
-		return nil, err
+func OpenDB(config *config.Config) (*sql.Driver, error) {
+	switch config.DBDriver {
+	case "sqlite":
+		return sql.Open("sqlite3", config.DBDatabase)
+	case "mysql":
+		return sql.Open("mysql", config.DSN())
 	}
-	// Get the underlying sql.DB object of the driver.
+	return nil, fmt.Errorf("unsupported database driver %v", config.DBDriver)
+}
+
+func InitDB(drv dialect.Driver, logger mlog.Logger, slogLogEnabled bool, slowLogThreshold time.Duration, timer timer.Timer) (*ent.Client, error) {
 	db := drv.(*sql.Driver).DB()
 	db.SetMaxIdleConns(10)
 	db.SetMaxOpenConns(100)

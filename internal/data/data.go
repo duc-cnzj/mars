@@ -120,10 +120,7 @@ func (data *dataImpl) OidcConfig() OidcConfig {
 }
 
 func (data *dataImpl) InitDB() (func() error, error) {
-	var (
-		closeFunc func() error
-		err       error
-	)
+	var closeFunc func() error
 
 	data.initDBOnce.Do(func() {
 		var logger = data.logger
@@ -131,8 +128,13 @@ func (data *dataImpl) InitDB() (func() error, error) {
 		defer logger.Debug("mysql connected!")
 
 		cfg := data.Config()
-		data.db, err = InitMysqlDB(
-			cfg.DSN(),
+
+		drv, err := OpenDB(cfg)
+		if err != nil {
+			return
+		}
+		data.db, err = InitDB(
+			drv,
 			logger,
 			cfg.DBSlowLogEnabled,
 			cfg.DBSlowLogThreshold,
