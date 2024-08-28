@@ -481,6 +481,16 @@ func OldHasSuffix(v string) predicate.Event {
 	return predicate.Event(sql.FieldHasSuffix(FieldOld, v))
 }
 
+// OldIsNil applies the IsNil predicate on the "old" field.
+func OldIsNil() predicate.Event {
+	return predicate.Event(sql.FieldIsNull(FieldOld))
+}
+
+// OldNotNil applies the NotNil predicate on the "old" field.
+func OldNotNil() predicate.Event {
+	return predicate.Event(sql.FieldNotNull(FieldOld))
+}
+
 // OldEqualFold applies the EqualFold predicate on the "old" field.
 func OldEqualFold(v string) predicate.Event {
 	return predicate.Event(sql.FieldEqualFold(FieldOld, v))
@@ -544,6 +554,16 @@ func NewHasPrefix(v string) predicate.Event {
 // NewHasSuffix applies the HasSuffix predicate on the "new" field.
 func NewHasSuffix(v string) predicate.Event {
 	return predicate.Event(sql.FieldHasSuffix(FieldNew, v))
+}
+
+// NewIsNil applies the IsNil predicate on the "new" field.
+func NewIsNil() predicate.Event {
+	return predicate.Event(sql.FieldIsNull(FieldNew))
+}
+
+// NewNotNil applies the NotNil predicate on the "new" field.
+func NewNotNil() predicate.Event {
+	return predicate.Event(sql.FieldNotNull(FieldNew))
 }
 
 // NewEqualFold applies the EqualFold predicate on the "new" field.

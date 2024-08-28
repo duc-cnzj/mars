@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/yaml"
-
 	"entgo.io/ent/dialect/sql"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
@@ -19,6 +17,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/util/date"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+	"github.com/duc-cnzj/mars/v4/internal/util/yaml"
 	corev1 "k8s.io/api/core/v1"
 )
 

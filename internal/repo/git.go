@@ -19,9 +19,9 @@ type GitRepo interface {
 	ListCommits(ctx context.Context, projectID int, branch string) ([]*Commit, error)
 	GetCommit(ctx context.Context, projectID int, sha string) (*Commit, error)
 	GetCommitPipeline(ctx context.Context, projectID int, branch, sha string) (*Pipeline, error)
-	GetByProjectID(ctx context.Context, id int) (project application.Project, err error)
+	GetByProjectID(ctx context.Context, id int) (project *GitProject, err error)
 	GetFileContentWithBranch(ctx context.Context, projectID int, branch, path string) (string, error)
-	GetProject(ctx context.Context, id int) (project application.Project, err error)
+	GetProject(ctx context.Context, id int) (project *GitProject, err error)
 }
 
 var _ GitRepo = (*gitRepo)(nil)
@@ -84,15 +84,7 @@ func (g *gitRepo) AllProjects(ctx context.Context, forceFresh bool) ([]*GitProje
 			return nil, ToError(400, err)
 		}
 		for _, gp := range allProjects {
-			projects = append(projects, &GitProject{
-				ID:            gp.GetID(),
-				Name:          gp.GetName(),
-				DefaultBranch: gp.GetDefaultBranch(),
-				WebURL:        gp.GetWebURL(),
-				Path:          gp.GetPath(),
-				AvatarURL:     gp.GetAvatarURL(),
-				Description:   gp.GetDescription(),
-			})
+			projects = append(projects, ToGitProject(gp))
 		}
 		return
 	}
@@ -111,6 +103,18 @@ func (g *gitRepo) AllProjects(ctx context.Context, forceFresh bool) ([]*GitProje
 		err = json.Unmarshal(remember, &projects)
 	}
 	return projects, err
+}
+
+func ToGitProject(gp application.Project) *GitProject {
+	return &GitProject{
+		ID:            gp.GetID(),
+		Name:          gp.GetName(),
+		DefaultBranch: gp.GetDefaultBranch(),
+		WebURL:        gp.GetWebURL(),
+		Path:          gp.GetPath(),
+		AvatarURL:     gp.GetAvatarURL(),
+		Description:   gp.GetDescription(),
+	}
 }
 
 func (g *gitRepo) AllBranches(ctx context.Context, projectID int, forceFresh bool) ([]*Branch, error) {
@@ -153,9 +157,9 @@ func (g *gitRepo) ListCommits(ctx context.Context, projectID int, branch string)
 	return serialize.Serialize(commits, ToCommit), nil
 }
 
-func (g *gitRepo) GetProject(ctx context.Context, id int) (project application.Project, err error) {
+func (g *gitRepo) GetProject(ctx context.Context, id int) (project *GitProject, err error) {
 	getProject, err := g.pl.Git().GetProject(fmt.Sprintf("%d", id))
-	return getProject, ToError(404, err)
+	return ToGitProject(getProject), ToError(404, err)
 }
 
 func (g *gitRepo) GetFileContentWithBranch(ctx context.Context, projectID int, branch, path string) (string, error) {
@@ -182,9 +186,9 @@ func (g *gitRepo) GetCommitPipeline(ctx context.Context, projectID int, branch, 
 	}, nil
 }
 
-func (g *gitRepo) GetByProjectID(ctx context.Context, id int) (project application.Project, err error) {
+func (g *gitRepo) GetByProjectID(ctx context.Context, id int) (project *GitProject, err error) {
 	getProject, err := g.pl.Git().GetProject(fmt.Sprintf("%d", id))
-	return getProject, ToError(404, err)
+	return ToGitProject(getProject), ToError(404, err)
 }
 
 func ToCommit(v application.Commit) *Commit {

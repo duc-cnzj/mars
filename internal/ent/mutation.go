@@ -3872,9 +3872,22 @@ func (m *EventMutation) OldOld(ctx context.Context) (v string, err error) {
 	return oldValue.Old, nil
 }
 
+// ClearOld clears the value of the "old" field.
+func (m *EventMutation) ClearOld() {
+	m.old = nil
+	m.clearedFields[event.FieldOld] = struct{}{}
+}
+
+// OldCleared returns if the "old" field was cleared in this mutation.
+func (m *EventMutation) OldCleared() bool {
+	_, ok := m.clearedFields[event.FieldOld]
+	return ok
+}
+
 // ResetOld resets all changes to the "old" field.
 func (m *EventMutation) ResetOld() {
 	m.old = nil
+	delete(m.clearedFields, event.FieldOld)
 }
 
 // SetNew sets the "new" field.
@@ -3908,9 +3921,22 @@ func (m *EventMutation) OldNew(ctx context.Context) (v string, err error) {
 	return oldValue.New, nil
 }
 
+// ClearNew clears the value of the "new" field.
+func (m *EventMutation) ClearNew() {
+	m.new = nil
+	m.clearedFields[event.FieldNew] = struct{}{}
+}
+
+// NewCleared returns if the "new" field was cleared in this mutation.
+func (m *EventMutation) NewCleared() bool {
+	_, ok := m.clearedFields[event.FieldNew]
+	return ok
+}
+
 // ResetNew resets all changes to the "new" field.
 func (m *EventMutation) ResetNew() {
 	m.new = nil
+	delete(m.clearedFields, event.FieldNew)
 }
 
 // SetHasDiff sets the "has_diff" field.
@@ -4324,6 +4350,12 @@ func (m *EventMutation) ClearedFields() []string {
 	if m.FieldCleared(event.FieldDeletedAt) {
 		fields = append(fields, event.FieldDeletedAt)
 	}
+	if m.FieldCleared(event.FieldOld) {
+		fields = append(fields, event.FieldOld)
+	}
+	if m.FieldCleared(event.FieldNew) {
+		fields = append(fields, event.FieldNew)
+	}
 	if m.FieldCleared(event.FieldFileID) {
 		fields = append(fields, event.FieldFileID)
 	}
@@ -4343,6 +4375,12 @@ func (m *EventMutation) ClearField(name string) error {
 	switch name {
 	case event.FieldDeletedAt:
 		m.ClearDeletedAt()
+		return nil
+	case event.FieldOld:
+		m.ClearOld()
+		return nil
+	case event.FieldNew:
+		m.ClearNew()
 		return nil
 	case event.FieldFileID:
 		m.ClearFileID()

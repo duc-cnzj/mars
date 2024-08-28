@@ -114,9 +114,25 @@ func (ec *EventCreate) SetOld(s string) *EventCreate {
 	return ec
 }
 
+// SetNillableOld sets the "old" field if the given value is not nil.
+func (ec *EventCreate) SetNillableOld(s *string) *EventCreate {
+	if s != nil {
+		ec.SetOld(*s)
+	}
+	return ec
+}
+
 // SetNew sets the "new" field.
 func (ec *EventCreate) SetNew(s string) *EventCreate {
 	ec.mutation.SetNew(s)
+	return ec
+}
+
+// SetNillableNew sets the "new" field if the given value is not nil.
+func (ec *EventCreate) SetNillableNew(s *string) *EventCreate {
+	if s != nil {
+		ec.SetNew(*s)
+	}
 	return ec
 }
 
@@ -267,12 +283,6 @@ func (ec *EventCreate) check() error {
 		if err := event.MessageValidator(v); err != nil {
 			return &ValidationError{Name: "message", err: fmt.Errorf(`ent: validator failed for field "Event.message": %w`, err)}
 		}
-	}
-	if _, ok := ec.mutation.Old(); !ok {
-		return &ValidationError{Name: "old", err: errors.New(`ent: missing required field "Event.old"`)}
-	}
-	if _, ok := ec.mutation.New(); !ok {
-		return &ValidationError{Name: "new", err: errors.New(`ent: missing required field "Event.new"`)}
 	}
 	if _, ok := ec.mutation.HasDiff(); !ok {
 		return &ValidationError{Name: "has_diff", err: errors.New(`ent: missing required field "Event.has_diff"`)}
@@ -500,6 +510,12 @@ func (u *EventUpsert) UpdateOld() *EventUpsert {
 	return u
 }
 
+// ClearOld clears the value of the "old" field.
+func (u *EventUpsert) ClearOld() *EventUpsert {
+	u.SetNull(event.FieldOld)
+	return u
+}
+
 // SetNew sets the "new" field.
 func (u *EventUpsert) SetNew(v string) *EventUpsert {
 	u.Set(event.FieldNew, v)
@@ -509,6 +525,12 @@ func (u *EventUpsert) SetNew(v string) *EventUpsert {
 // UpdateNew sets the "new" field to the value that was provided on create.
 func (u *EventUpsert) UpdateNew() *EventUpsert {
 	u.SetExcluded(event.FieldNew)
+	return u
+}
+
+// ClearNew clears the value of the "new" field.
+func (u *EventUpsert) ClearNew() *EventUpsert {
+	u.SetNull(event.FieldNew)
 	return u
 }
 
@@ -697,6 +719,13 @@ func (u *EventUpsertOne) UpdateOld() *EventUpsertOne {
 	})
 }
 
+// ClearOld clears the value of the "old" field.
+func (u *EventUpsertOne) ClearOld() *EventUpsertOne {
+	return u.Update(func(s *EventUpsert) {
+		s.ClearOld()
+	})
+}
+
 // SetNew sets the "new" field.
 func (u *EventUpsertOne) SetNew(v string) *EventUpsertOne {
 	return u.Update(func(s *EventUpsert) {
@@ -708,6 +737,13 @@ func (u *EventUpsertOne) SetNew(v string) *EventUpsertOne {
 func (u *EventUpsertOne) UpdateNew() *EventUpsertOne {
 	return u.Update(func(s *EventUpsert) {
 		s.UpdateNew()
+	})
+}
+
+// ClearNew clears the value of the "new" field.
+func (u *EventUpsertOne) ClearNew() *EventUpsertOne {
+	return u.Update(func(s *EventUpsert) {
+		s.ClearNew()
 	})
 }
 
@@ -1069,6 +1105,13 @@ func (u *EventUpsertBulk) UpdateOld() *EventUpsertBulk {
 	})
 }
 
+// ClearOld clears the value of the "old" field.
+func (u *EventUpsertBulk) ClearOld() *EventUpsertBulk {
+	return u.Update(func(s *EventUpsert) {
+		s.ClearOld()
+	})
+}
+
 // SetNew sets the "new" field.
 func (u *EventUpsertBulk) SetNew(v string) *EventUpsertBulk {
 	return u.Update(func(s *EventUpsert) {
@@ -1080,6 +1123,13 @@ func (u *EventUpsertBulk) SetNew(v string) *EventUpsertBulk {
 func (u *EventUpsertBulk) UpdateNew() *EventUpsertBulk {
 	return u.Update(func(s *EventUpsert) {
 		s.UpdateNew()
+	})
+}
+
+// ClearNew clears the value of the "new" field.
+func (u *EventUpsertBulk) ClearNew() *EventUpsertBulk {
+	return u.Update(func(s *EventUpsert) {
+		s.ClearNew()
 	})
 }
 

@@ -119,6 +119,12 @@ func (eu *EventUpdate) SetNillableOld(s *string) *EventUpdate {
 	return eu
 }
 
+// ClearOld clears the value of the "old" field.
+func (eu *EventUpdate) ClearOld() *EventUpdate {
+	eu.mutation.ClearOld()
+	return eu
+}
+
 // SetNew sets the "new" field.
 func (eu *EventUpdate) SetNew(s string) *EventUpdate {
 	eu.mutation.SetNew(s)
@@ -130,6 +136,12 @@ func (eu *EventUpdate) SetNillableNew(s *string) *EventUpdate {
 	if s != nil {
 		eu.SetNew(*s)
 	}
+	return eu
+}
+
+// ClearNew clears the value of the "new" field.
+func (eu *EventUpdate) ClearNew() *EventUpdate {
+	eu.mutation.ClearNew()
 	return eu
 }
 
@@ -290,8 +302,14 @@ func (eu *EventUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := eu.mutation.Old(); ok {
 		_spec.SetField(event.FieldOld, field.TypeString, value)
 	}
+	if eu.mutation.OldCleared() {
+		_spec.ClearField(event.FieldOld, field.TypeString)
+	}
 	if value, ok := eu.mutation.New(); ok {
 		_spec.SetField(event.FieldNew, field.TypeString, value)
+	}
+	if eu.mutation.NewCleared() {
+		_spec.ClearField(event.FieldNew, field.TypeString)
 	}
 	if value, ok := eu.mutation.HasDiff(); ok {
 		_spec.SetField(event.FieldHasDiff, field.TypeBool, value)
@@ -437,6 +455,12 @@ func (euo *EventUpdateOne) SetNillableOld(s *string) *EventUpdateOne {
 	return euo
 }
 
+// ClearOld clears the value of the "old" field.
+func (euo *EventUpdateOne) ClearOld() *EventUpdateOne {
+	euo.mutation.ClearOld()
+	return euo
+}
+
 // SetNew sets the "new" field.
 func (euo *EventUpdateOne) SetNew(s string) *EventUpdateOne {
 	euo.mutation.SetNew(s)
@@ -448,6 +472,12 @@ func (euo *EventUpdateOne) SetNillableNew(s *string) *EventUpdateOne {
 	if s != nil {
 		euo.SetNew(*s)
 	}
+	return euo
+}
+
+// ClearNew clears the value of the "new" field.
+func (euo *EventUpdateOne) ClearNew() *EventUpdateOne {
+	euo.mutation.ClearNew()
 	return euo
 }
 
@@ -638,8 +668,14 @@ func (euo *EventUpdateOne) sqlSave(ctx context.Context) (_node *Event, err error
 	if value, ok := euo.mutation.Old(); ok {
 		_spec.SetField(event.FieldOld, field.TypeString, value)
 	}
+	if euo.mutation.OldCleared() {
+		_spec.ClearField(event.FieldOld, field.TypeString)
+	}
 	if value, ok := euo.mutation.New(); ok {
 		_spec.SetField(event.FieldNew, field.TypeString, value)
+	}
+	if euo.mutation.NewCleared() {
+		_spec.ClearField(event.FieldNew, field.TypeString)
 	}
 	if value, ok := euo.mutation.HasDiff(); ok {
 		_spec.SetField(event.FieldHasDiff, field.TypeBool, value)

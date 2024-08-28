@@ -4,8 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/samber/lo"
+
 	"github.com/duc-cnzj/mars/api/v4/mars"
-	"github.com/duc-cnzj/mars/v4/internal/application"
 	"google.golang.org/grpc/status"
 
 	"github.com/duc-cnzj/mars/v4/internal/data"
@@ -54,17 +55,20 @@ func TestRepoImpl_Create(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+	mockGitRepo := NewMockGitRepo(m)
+	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), mockGitRepo)
+	mockGitRepo.EXPECT().GetByProjectID(gomock.Any(), 100).Return(&GitProject{}, nil)
 	res, err := repo.Create(context.TODO(), &CreateRepoInput{
 		Name:         "app",
 		Enabled:      true,
-		NeedGitRepo:  false,
-		GitProjectID: nil,
+		NeedGitRepo:  true,
+		GitProjectID: lo.ToPtr(int32(100)),
 		MarsConfig:   &mars.Config{ConfigField: "config"},
 		Description:  "desc",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
+	assert.NotEmpty(t, res.GitProjectID)
 }
 
 func TestRepoImpl_Update(t *testing.T) {
@@ -72,25 +76,35 @@ func TestRepoImpl_Update(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+	mockGitRepo := NewMockGitRepo(m)
+	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), mockGitRepo)
 
 	create, err := repo.Create(context.TODO(), &CreateRepoInput{
 		Name: "app",
 	})
 	assert.Nil(t, err)
+
+	mockGitRepo.EXPECT().GetByProjectID(gomock.Any(), 100).Return(&GitProject{
+		DefaultBranch: "dev",
+		Name:          "a",
+	}, nil)
 	res, err := repo.Update(context.TODO(), &UpdateRepoInput{
-		ID:          int32(create.ID),
-		Name:        "abc",
-		NeedGitRepo: false,
-		MarsConfig:  &mars.Config{ConfigField: "config"},
-		Description: "dex",
+		ID:           int32(create.ID),
+		Name:         "abc",
+		NeedGitRepo:  true,
+		GitProjectID: lo.ToPtr(int32(100)),
+		MarsConfig:   &mars.Config{ConfigField: "config"},
+		Description:  "dex",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, "abc", res.Name)
 	assert.Equal(t, "dex", res.Description)
-	assert.Equal(t, false, res.NeedGitRepo)
+	assert.Equal(t, true, res.NeedGitRepo)
 	assert.Equal(t, "config", res.MarsConfig.ConfigField)
+	assert.Equal(t, "dev", res.DefaultBranch)
+	assert.Equal(t, "a", res.GitProjectName)
+	assert.Equal(t, int32(100), res.GitProjectID)
 }
 
 func TestRepoImpl_ToggleEnabled(t *testing.T) {
@@ -156,10 +170,10 @@ func TestRepoImpl_GetProjNameAndBranch_WithExistingProject(t *testing.T) {
 	defer m.Finish()
 	mockGitRepo := NewMockGitRepo(m)
 	repo := NewRepo(mlog.NewLogger(nil), data.NewMockData(m), mockGitRepo)
-	project := application.NewMockProject(m)
-	mockGitRepo.EXPECT().GetByProjectID(gomock.Any(), gomock.Any()).Return(project, nil)
-	project.EXPECT().GetDefaultBranch().Return("main")
-	project.EXPECT().GetName().Return("projName")
+	mockGitRepo.EXPECT().GetByProjectID(gomock.Any(), gomock.Any()).Return(&GitProject{
+		DefaultBranch: "main",
+		Name:          "projName",
+	}, nil)
 	projName, defaultBranch, err := repo.(*repoImpl).GetProjNameAndBranch(context.TODO(), 1)
 	assert.Nil(t, err)
 	assert.NotNil(t, projName)

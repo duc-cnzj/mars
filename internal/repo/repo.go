@@ -139,9 +139,7 @@ func (r *repoImpl) Create(ctx context.Context, in *CreateRepoInput) (*Repo, erro
 		defaultBranch *string
 		err           error
 	)
-	if !in.NeedGitRepo {
-		in.GitProjectID = nil
-	} else {
+	if in.NeedGitRepo {
 		projName, defaultBranch, err = r.GetProjNameAndBranch(ctx, int(lo.FromPtr(in.GitProjectID)))
 		if err != nil {
 			return nil, err
@@ -152,11 +150,14 @@ func (r *repoImpl) Create(ctx context.Context, in *CreateRepoInput) (*Repo, erro
 		SetNeedGitRepo(in.NeedGitRepo).
 		SetNillableGitProjectName(projName).
 		SetNillableDefaultBranch(defaultBranch).
+		SetNillableGitProjectID(in.GitProjectID).
 		SetEnabled(in.Enabled).
 		SetDescription(in.Description).
 		SetMarsConfig(in.MarsConfig)
-	if in.NeedGitRepo {
-		cr.SetNillableGitProjectID(in.GitProjectID)
+	if !in.NeedGitRepo {
+		cr.SetNillableGitProjectID(nil).
+			SetNillableDefaultBranch(nil).
+			SetNillableGitProjectName(nil)
 	}
 	save, err := cr.Save(ctx)
 	return ToRepo(save), err
@@ -226,8 +227,8 @@ func (r *repoImpl) GetProjNameAndBranch(ctx context.Context, projID int) (*strin
 	if err != nil {
 		return nil, nil, err
 	}
-	defaultBranch = lo.ToPtr(project.GetDefaultBranch())
-	projName = lo.ToPtr(project.GetName())
+	defaultBranch = lo.ToPtr(project.DefaultBranch)
+	projName = lo.ToPtr(project.Name)
 	return projName, defaultBranch, nil
 }
 

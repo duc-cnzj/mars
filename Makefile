@@ -159,3 +159,8 @@ ent-new:
 # go generate ./internal/...
 ent-generate:
 	go generate ./internal/ent/...
+
+.PHONY: ent-diff
+# ent-diff generate diff schema sql
+ent-diff:
+	atlas migrate diff $(NAME) --env local

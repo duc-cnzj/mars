@@ -2,13 +2,14 @@ package locker
 
 import (
 	"context"
-	"entgo.io/ent/dialect/sql"
 	"fmt"
 	"log"
 	"os"
 	"sync"
 	"testing"
 	"time"
+
+	"entgo.io/ent/dialect/sql"
 
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"

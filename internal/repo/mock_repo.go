@@ -345,10 +345,10 @@ func (mr *MockGitRepoMockRecorder) AllProjects(arg0, arg1 any) *gomock.Call {
 }
 
 // GetByProjectID mocks base method.
-func (m *MockGitRepo) GetByProjectID(arg0 context.Context, arg1 int) (application.Project, error) {
+func (m *MockGitRepo) GetByProjectID(arg0 context.Context, arg1 int) (*GitProject, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByProjectID", arg0, arg1)
-	ret0, _ := ret[0].(application.Project)
+	ret0, _ := ret[0].(*GitProject)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -405,10 +405,10 @@ func (mr *MockGitRepoMockRecorder) GetFileContentWithBranch(arg0, arg1, arg2, ar
 }
 
 // GetProject mocks base method.
-func (m *MockGitRepo) GetProject(arg0 context.Context, arg1 int) (application.Project, error) {
+func (m *MockGitRepo) GetProject(arg0 context.Context, arg1 int) (*GitProject, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetProject", arg0, arg1)
-	ret0, _ := ret[0].(application.Project)
+	ret0, _ := ret[0].(*GitProject)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
