@@ -9,13 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/ent"
-	"github.com/duc-cnzj/mars/v4/internal/ent/project"
+	"github.com/duc-cnzj/mars/v5/internal/ent"
+	"github.com/duc-cnzj/mars/v5/internal/ent/project"
 
-	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/application"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/plugins/wssender"
+	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/v5/internal/application"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/plugins/wssender"
 
 	gonsq "github.com/nsqio/go-nsq"
 	v1 "k8s.io/api/core/v1"

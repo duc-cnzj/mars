@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/duc-cnzj/mars/v4/internal/ent/favorite"
-	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
+	"github.com/duc-cnzj/mars/v5/internal/ent/favorite"
+	"github.com/duc-cnzj/mars/v5/internal/ent/predicate"
 )
 
 // FavoriteDelete is the builder for deleting a Favorite entity.

@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/duc-cnzj/mars/v4/internal/ent/cachelock"
+	"github.com/duc-cnzj/mars/v5/internal/ent/cachelock"
 )
 
 // CacheLockCreate is the builder for creating a CacheLock entity.

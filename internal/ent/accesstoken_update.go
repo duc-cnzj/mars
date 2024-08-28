@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/duc-cnzj/mars/v4/internal/ent/accesstoken"
-	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
+	"github.com/duc-cnzj/mars/v5/internal/ent/accesstoken"
+	"github.com/duc-cnzj/mars/v5/internal/ent/predicate"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 )
 
 // AccessTokenUpdate is the builder for updating AccessToken entities.

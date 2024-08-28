@@ -5,18 +5,18 @@ package runtime
 import (
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/ent/accesstoken"
-	"github.com/duc-cnzj/mars/v4/internal/ent/cachelock"
-	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
-	"github.com/duc-cnzj/mars/v4/internal/ent/dbcache"
-	"github.com/duc-cnzj/mars/v4/internal/ent/event"
-	"github.com/duc-cnzj/mars/v4/internal/ent/file"
-	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
-	"github.com/duc-cnzj/mars/v4/internal/ent/project"
-	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema"
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
+	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/v5/internal/ent/accesstoken"
+	"github.com/duc-cnzj/mars/v5/internal/ent/cachelock"
+	"github.com/duc-cnzj/mars/v5/internal/ent/changelog"
+	"github.com/duc-cnzj/mars/v5/internal/ent/dbcache"
+	"github.com/duc-cnzj/mars/v5/internal/ent/event"
+	"github.com/duc-cnzj/mars/v5/internal/ent/file"
+	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
+	"github.com/duc-cnzj/mars/v5/internal/ent/project"
+	"github.com/duc-cnzj/mars/v5/internal/ent/repo"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 )
 
 // The init function reads all schema descriptors with runtime code

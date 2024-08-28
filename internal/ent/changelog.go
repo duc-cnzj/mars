@@ -10,10 +10,10 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
-	"github.com/duc-cnzj/mars/v4/internal/ent/project"
+	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/v5/internal/ent/changelog"
+	"github.com/duc-cnzj/mars/v5/internal/ent/project"
 )
 
 // Changelog is the model entity for the Changelog schema.

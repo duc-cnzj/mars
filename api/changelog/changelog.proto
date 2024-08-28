@@ -8,7 +8,7 @@ import "google/api/field_behavior.proto";
 import "validate/validate.proto";
 import "types/types.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/changelog;changelog";
+option go_package = "github.com/duc-cnzj/mars/api/v5/changelog;changelog";
 
 message FindLastChangelogsByProjectIDRequest {
   int32 project_id   = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];

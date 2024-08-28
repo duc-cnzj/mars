@@ -3,8 +3,8 @@ package repo
 import (
 	"context"
 
-	"github.com/duc-cnzj/mars/v4/internal/application"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/application"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 )
 
 type PictureRepo interface {

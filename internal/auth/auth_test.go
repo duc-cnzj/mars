@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/config"
-	"github.com/duc-cnzj/mars/v4/internal/data"
-	"github.com/duc-cnzj/mars/v4/internal/ent/accesstoken"
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
+	"github.com/duc-cnzj/mars/v5/internal/config"
+	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/ent/accesstoken"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )

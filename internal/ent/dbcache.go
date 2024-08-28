@@ -9,7 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/duc-cnzj/mars/v4/internal/ent/dbcache"
+	"github.com/duc-cnzj/mars/v5/internal/ent/dbcache"
 )
 
 // DBCache is the model entity for the DBCache schema.

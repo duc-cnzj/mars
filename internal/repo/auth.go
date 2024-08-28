@@ -3,10 +3,10 @@ package repo
 import (
 	"context"
 
-	auth2 "github.com/duc-cnzj/mars/v4/internal/auth"
-	"github.com/duc-cnzj/mars/v4/internal/data"
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	auth2 "github.com/duc-cnzj/mars/v5/internal/auth"
+	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

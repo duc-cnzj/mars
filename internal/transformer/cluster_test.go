@@ -3,7 +3,7 @@ package transformer
 import (
 	"testing"
 
-	"github.com/duc-cnzj/mars/v4/internal/repo"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/stretchr/testify/assert"
 )
 

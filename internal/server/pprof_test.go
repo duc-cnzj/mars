@@ -7,7 +7,7 @@ import (
 
 	"go.uber.org/mock/gomock"
 
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/stretchr/testify/assert"
 )
 

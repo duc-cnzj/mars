@@ -3,9 +3,9 @@ package wssender
 import (
 	"encoding/json"
 
-	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v5/internal/application"
 
-	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
+	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
 	"google.golang.org/protobuf/proto"
 )
 

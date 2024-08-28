@@ -3,7 +3,7 @@ package rand_test
 import (
 	"testing"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/rand"
+	"github.com/duc-cnzj/mars/v5/internal/util/rand"
 	"github.com/stretchr/testify/assert"
 )
 

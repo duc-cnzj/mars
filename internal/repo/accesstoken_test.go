@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/auth"
-	"github.com/duc-cnzj/mars/v4/internal/data"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/util/timer"
+	"github.com/duc-cnzj/mars/v5/internal/auth"
+	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/ent"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )

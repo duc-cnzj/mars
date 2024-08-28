@@ -18,7 +18,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/anypb"
 
-	types "github.com/duc-cnzj/mars/api/v4/types"
+	types "github.com/duc-cnzj/mars/api/v5/types"
 )
 
 // ensure the imports are used

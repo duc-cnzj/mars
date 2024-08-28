@@ -1,8 +1,6 @@
-module github.com/duc-cnzj/mars/api/v4
+module github.com/duc-cnzj/mars/api/v5
 
 go 1.21
-
-toolchain go1.22.5
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2

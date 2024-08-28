@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/duc-cnzj/mars/api/v4/picture"
-	"github.com/duc-cnzj/mars/v4/internal/application"
-	"github.com/duc-cnzj/mars/v4/internal/repo"
+	"github.com/duc-cnzj/mars/api/v5/picture"
+	"github.com/duc-cnzj/mars/v5/internal/application"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )

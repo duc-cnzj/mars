@@ -3,8 +3,8 @@ package socket
 import (
 	"sync"
 
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/util/closeable"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/util/closeable"
 )
 
 type SafeWriteMessageChan interface {

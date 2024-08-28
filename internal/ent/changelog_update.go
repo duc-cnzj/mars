@@ -12,11 +12,11 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
-	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
-	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
-	"github.com/duc-cnzj/mars/v4/internal/ent/project"
+	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/v5/internal/ent/changelog"
+	"github.com/duc-cnzj/mars/v5/internal/ent/predicate"
+	"github.com/duc-cnzj/mars/v5/internal/ent/project"
 )
 
 // ChangelogUpdate is the builder for updating Changelog entities.

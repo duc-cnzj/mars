@@ -9,8 +9,8 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
-	"github.com/duc-cnzj/mars/api/v4/mars"
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema/mixin"
+	"github.com/duc-cnzj/mars/api/v5/mars"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/mixin"
 )
 
 // Repo holds the schema definition for the Repo entity.

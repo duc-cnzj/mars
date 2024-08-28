@@ -4,9 +4,9 @@ import (
 	"regexp"
 	"strings"
 
-	yaml2 "github.com/duc-cnzj/mars/v4/internal/util/yaml"
+	yaml2 "github.com/duc-cnzj/mars/v5/internal/util/yaml"
 
-	"github.com/duc-cnzj/mars/api/v4/mars"
+	"github.com/duc-cnzj/mars/api/v5/mars"
 	"gopkg.in/yaml.v3"
 )
 

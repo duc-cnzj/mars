@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"time"
 
-	ent2 "github.com/duc-cnzj/mars/v4/internal/ent"
+	ent2 "github.com/duc-cnzj/mars/v5/internal/ent"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
-	"github.com/duc-cnzj/mars/v4/internal/ent/hook"
-	"github.com/duc-cnzj/mars/v4/internal/ent/intercept"
+	"github.com/duc-cnzj/mars/v5/internal/ent/hook"
+	"github.com/duc-cnzj/mars/v5/internal/ent/intercept"
 )
 
 // SoftDeleteMixin implements the soft delete pattern for schemas.

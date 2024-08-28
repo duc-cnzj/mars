@@ -8,7 +8,7 @@ import "validate/validate.proto";
 import "types/types.proto";
 import "openapi/v3/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/file;file";
+option go_package = "github.com/duc-cnzj/mars/api/v5/file;file";
 
 message DeleteRequest {
   int32 id = 1 [(validate.rules).int32.gte = 1, (google.api.field_behavior) = REQUIRED];

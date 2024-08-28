@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/annotation"
-	"github.com/duc-cnzj/mars/v4/internal/config"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
-	"github.com/duc-cnzj/mars/v4/internal/util/rand"
+	"github.com/duc-cnzj/mars/v5/internal/annotation"
+	"github.com/duc-cnzj/mars/v5/internal/config"
+	"github.com/duc-cnzj/mars/v5/internal/ent"
+	"github.com/duc-cnzj/mars/v5/internal/util/rand"
 	"github.com/samber/lo"
 	"go.uber.org/mock/gomock"
 	appsv1 "k8s.io/api/apps/v1"
@@ -22,9 +22,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kubectl/pkg/util/deployment"
 
-	"github.com/duc-cnzj/mars/api/v4/types"
-	data2 "github.com/duc-cnzj/mars/v4/internal/data"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/api/v5/types"
+	data2 "github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 
 	appsv1lister "k8s.io/client-go/listers/apps/v1"
 	corev1lister "k8s.io/client-go/listers/core/v1"

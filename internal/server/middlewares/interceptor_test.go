@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/v4/internal/auth"
+	"github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 )

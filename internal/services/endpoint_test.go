@@ -5,10 +5,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/api/v4/endpoint"
-	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/repo"
+	"github.com/duc-cnzj/mars/api/v5/endpoint"
+	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )

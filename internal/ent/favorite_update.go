@@ -10,9 +10,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/duc-cnzj/mars/v4/internal/ent/favorite"
-	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
-	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
+	"github.com/duc-cnzj/mars/v5/internal/ent/favorite"
+	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
+	"github.com/duc-cnzj/mars/v5/internal/ent/predicate"
 )
 
 // FavoriteUpdate is the builder for updating Favorite entities.

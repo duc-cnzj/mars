@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/data"
-	"github.com/duc-cnzj/mars/v4/internal/ent/dbcache"
+	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/ent/dbcache"
 )
 
 type dbStore struct {

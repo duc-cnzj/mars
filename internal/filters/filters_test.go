@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/duc-cnzj/mars/v4/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )

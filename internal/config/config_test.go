@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/duc-cnzj/mars/v4/internal/config"
+	"github.com/duc-cnzj/mars/v5/internal/config"
 	"github.com/stretchr/testify/assert"
 )
 

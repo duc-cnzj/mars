@@ -7,7 +7,7 @@ import "google/api/field_behavior.proto";
 import "validate/validate.proto";
 import "openapi/v3/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/git;git";
+option go_package = "github.com/duc-cnzj/mars/api/v5/git;git";
 
 message Option {
   string value          = 1;

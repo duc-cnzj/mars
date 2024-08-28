@@ -6,7 +6,7 @@ import "google/api/annotations.proto";
 import "validate/validate.proto";
 import "types/types.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/token;token";
+option go_package = "github.com/duc-cnzj/mars/api/v5/token;token";
 
 message ListRequest {
   optional int32 page      = 1;

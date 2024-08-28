@@ -5,8 +5,8 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema/mixin"
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/mixin"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 )
 
 // AccessToken holds the schema definition for the AccessToken entity.

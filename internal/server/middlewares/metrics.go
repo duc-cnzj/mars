@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	marsauthorizor "github.com/duc-cnzj/mars/v4/internal/auth"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	marsauthorizor "github.com/duc-cnzj/mars/v5/internal/auth"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 
-	"github.com/duc-cnzj/mars/v4/internal/metrics"
+	"github.com/duc-cnzj/mars/v5/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
 )

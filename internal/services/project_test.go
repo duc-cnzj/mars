@@ -5,17 +5,17 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/api/v4/websocket"
+	"github.com/duc-cnzj/mars/api/v5/websocket"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/duc-cnzj/mars/api/v4/project"
-	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/application"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/repo"
-	"github.com/duc-cnzj/mars/v4/internal/socket"
-	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
+	"github.com/duc-cnzj/mars/api/v5/project"
+	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/v5/internal/application"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
+	"github.com/duc-cnzj/mars/v5/internal/socket"
+	"github.com/duc-cnzj/mars/v5/internal/util/pagination"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -310,7 +310,7 @@ func Test_projectSvc_AllContainers(t *testing.T) {
 		helmerRepo,
 		repo.NewMockNamespaceRepo(m),
 	)
-	projectRepo.EXPECT().GetAllPods(gomock.Any(), 1).Return([]*types.StateContainer{}, nil)
+	projectRepo.EXPECT().GetAllActiveContainers(gomock.Any(), 1).Return([]*types.StateContainer{}, nil)
 	containers, err := svc.AllContainers(context.TODO(), &project.AllContainersRequest{
 		Id: 1,
 	})
@@ -337,7 +337,7 @@ func Test_projectSvc_AllContainers_Fail(t *testing.T) {
 		helmerRepo,
 		repo.NewMockNamespaceRepo(m),
 	)
-	projectRepo.EXPECT().GetAllPods(gomock.Any(), 1).Return(nil, errors.New("x"))
+	projectRepo.EXPECT().GetAllActiveContainers(gomock.Any(), 1).Return(nil, errors.New("x"))
 	containers, err := svc.AllContainers(context.TODO(), &project.AllContainersRequest{
 		Id: 1,
 	})

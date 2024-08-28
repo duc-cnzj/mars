@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/duc-cnzj/mars/api/v4"
-	"github.com/duc-cnzj/mars/api/v4/container"
+	"github.com/duc-cnzj/mars/api/v5"
+	"github.com/duc-cnzj/mars/api/v5/container"
 	"golang.org/x/crypto/ssh/terminal"
 )
 

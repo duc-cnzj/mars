@@ -3,13 +3,13 @@ package repo
 import (
 	"context"
 
-	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/data"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
-	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
-	"github.com/duc-cnzj/mars/v4/internal/ent/project"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/ent"
+	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
+	"github.com/duc-cnzj/mars/v5/internal/ent/project"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
 )
 
 type EndpointRepo interface {

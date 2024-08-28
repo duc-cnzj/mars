@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v4/types"
-	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/repo"
-	"github.com/duc-cnzj/mars/v4/internal/transformer"
-	"github.com/duc-cnzj/mars/v4/internal/util/date"
+	"github.com/duc-cnzj/mars/api/v5/types"
+	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
+	"github.com/duc-cnzj/mars/v5/internal/transformer"
+	"github.com/duc-cnzj/mars/v5/internal/util/date"
 	"github.com/stretchr/testify/assert"
 )
 

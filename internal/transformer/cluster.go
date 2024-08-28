@@ -1,8 +1,8 @@
 package transformer
 
 import (
-	"github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/repo"
+	"github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
 )
 
 func FromClusterInfo(info *repo.ClusterInfo) *websocket.ClusterInfo {

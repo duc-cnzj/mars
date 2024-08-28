@@ -6,10 +6,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v4"
-	"github.com/duc-cnzj/mars/api/v4/project"
-	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/api/v4/websocket"
+	"github.com/duc-cnzj/mars/api/v5"
+	"github.com/duc-cnzj/mars/api/v5/project"
+	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/api/v5/websocket"
 	"github.com/samber/lo"
 )
 

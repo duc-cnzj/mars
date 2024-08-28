@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v5/internal/application"
 
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 )
 
 const ManualCertSecretName = "mars-external-tls-secret" // #nosec G101

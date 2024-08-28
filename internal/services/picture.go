@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 
-	"github.com/duc-cnzj/mars/api/v4/picture"
-	"github.com/duc-cnzj/mars/v4/internal/repo"
+	"github.com/duc-cnzj/mars/api/v5/picture"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
 )
 
 var _ picture.PictureServer = (*pictureSvc)(nil)

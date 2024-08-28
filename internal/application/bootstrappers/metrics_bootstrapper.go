@@ -1,8 +1,8 @@
 package bootstrappers
 
 import (
-	"github.com/duc-cnzj/mars/v4/internal/application"
-	"github.com/duc-cnzj/mars/v4/internal/server"
+	"github.com/duc-cnzj/mars/v5/internal/application"
+	"github.com/duc-cnzj/mars/v5/internal/server"
 )
 
 type MetricsBootstrapper struct{}

@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 
-	"github.com/duc-cnzj/mars/api/v4/version"
-	marsVersion "github.com/duc-cnzj/mars/v4/internal/version"
+	"github.com/duc-cnzj/mars/api/v5/version"
+	marsVersion "github.com/duc-cnzj/mars/v5/internal/version"
 )
 
 var _ version.VersionServer = (*versionSvc)(nil)

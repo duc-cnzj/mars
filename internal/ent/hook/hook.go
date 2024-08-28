@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v5/internal/ent"
 )
 
 // The AccessTokenFunc type is an adapter to allow the use of ordinary

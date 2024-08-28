@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 )
 
 type File interface {

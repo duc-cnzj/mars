@@ -9,22 +9,22 @@ import (
 	"log"
 	"reflect"
 
-	"github.com/duc-cnzj/mars/v4/internal/ent/migrate"
+	"github.com/duc-cnzj/mars/v5/internal/ent/migrate"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/duc-cnzj/mars/v4/internal/ent/accesstoken"
-	"github.com/duc-cnzj/mars/v4/internal/ent/cachelock"
-	"github.com/duc-cnzj/mars/v4/internal/ent/changelog"
-	"github.com/duc-cnzj/mars/v4/internal/ent/dbcache"
-	"github.com/duc-cnzj/mars/v4/internal/ent/event"
-	"github.com/duc-cnzj/mars/v4/internal/ent/favorite"
-	"github.com/duc-cnzj/mars/v4/internal/ent/file"
-	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
-	"github.com/duc-cnzj/mars/v4/internal/ent/project"
-	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
+	"github.com/duc-cnzj/mars/v5/internal/ent/accesstoken"
+	"github.com/duc-cnzj/mars/v5/internal/ent/cachelock"
+	"github.com/duc-cnzj/mars/v5/internal/ent/changelog"
+	"github.com/duc-cnzj/mars/v5/internal/ent/dbcache"
+	"github.com/duc-cnzj/mars/v5/internal/ent/event"
+	"github.com/duc-cnzj/mars/v5/internal/ent/favorite"
+	"github.com/duc-cnzj/mars/v5/internal/ent/file"
+	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
+	"github.com/duc-cnzj/mars/v5/internal/ent/project"
+	"github.com/duc-cnzj/mars/v5/internal/ent/repo"
 )
 
 // Client is the client that holds all ent builders.

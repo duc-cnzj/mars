@@ -10,8 +10,8 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/duc-cnzj/mars/v4/internal/ent/accesstoken"
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
+	"github.com/duc-cnzj/mars/v5/internal/ent/accesstoken"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 )
 
 // AccessToken is the model entity for the AccessToken schema.

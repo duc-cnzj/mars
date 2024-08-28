@@ -7,7 +7,7 @@ import "google/api/field_behavior.proto";
 import "validate/validate.proto";
 import "openapi/v3/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/auth;auth";
+option go_package = "github.com/duc-cnzj/mars/api/v5/auth;auth";
 
 option (openapi.v3.document) = {
   security: {

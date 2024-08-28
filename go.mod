@@ -1,16 +1,14 @@
-module github.com/duc-cnzj/mars/v4
+module github.com/duc-cnzj/mars/v5
 
-go 1.22.0
+go 1.22
 
-toolchain go1.22.5
-
-replace github.com/duc-cnzj/mars/api/v4 => ./api
+replace github.com/duc-cnzj/mars/api/v5 => ./api
 
 require (
 	entgo.io/ent v0.14.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/coreos/go-oidc/v3 v3.1.0
-	github.com/duc-cnzj/mars/api/v4 v4.26.1
+	github.com/duc-cnzj/mars/api/v5 v5.0.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/envoyproxy/protoc-gen-validate v1.0.4
 	github.com/go-redis/redis/v8 v8.11.5
@@ -71,6 +69,7 @@ require (
 	k8s.io/apimachinery v0.30.3
 	k8s.io/cli-runtime v0.30.3
 	k8s.io/client-go v0.30.3
+	k8s.io/kubectl v0.30.3
 	k8s.io/metrics v0.30.3
 )
 
@@ -357,7 +356,6 @@ require (
 	k8s.io/component-base v0.30.3 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
-	k8s.io/kubectl v0.30.3 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 	mvdan.cc/gofumpt v0.5.0 // indirect
 	mvdan.cc/interfacer v0.0.0-20180901003855-c20040233aed // indirect

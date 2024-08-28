@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v4/mars"
-	"github.com/duc-cnzj/mars/v4/internal/repo"
-	"github.com/duc-cnzj/mars/v4/internal/transformer"
+	"github.com/duc-cnzj/mars/api/v5/mars"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
+	"github.com/duc-cnzj/mars/v5/internal/transformer"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -3,8 +3,8 @@ package bootstrappers
 import (
 	"context"
 
-	"github.com/duc-cnzj/mars/v4/internal/application"
-	"github.com/duc-cnzj/mars/v4/internal/ent/migrate"
+	"github.com/duc-cnzj/mars/v5/internal/application"
+	"github.com/duc-cnzj/mars/v5/internal/ent/migrate"
 )
 
 type DBBootstrapper struct{}

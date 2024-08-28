@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v4/mars"
-	"github.com/duc-cnzj/mars/v4/internal/data"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
-	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
-	"github.com/duc-cnzj/mars/v4/internal/filters"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
-	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+	"github.com/duc-cnzj/mars/api/v5/mars"
+	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/ent"
+	"github.com/duc-cnzj/mars/v5/internal/ent/repo"
+	"github.com/duc-cnzj/mars/v5/internal/filters"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/util/pagination"
+	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
 	"github.com/samber/lo"
 )
 

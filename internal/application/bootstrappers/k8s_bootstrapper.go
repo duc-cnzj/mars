@@ -1,6 +1,6 @@
 package bootstrappers
 
-import "github.com/duc-cnzj/mars/v4/internal/application"
+import "github.com/duc-cnzj/mars/v5/internal/application"
 
 type K8sBootstrapper struct{}
 

@@ -12,8 +12,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/duc-cnzj/mars/v4/internal/ent/dbcache"
-	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
+	"github.com/duc-cnzj/mars/v5/internal/ent/dbcache"
+	"github.com/duc-cnzj/mars/v5/internal/ent/predicate"
 )
 
 // DBCacheQuery is the builder for querying DBCache entities.

@@ -9,7 +9,7 @@ import "validate/validate.proto";
 import "openapi/v3/annotations.proto";
 import "types/types.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/project;project";
+option go_package = "github.com/duc-cnzj/mars/api/v5/project;project";
 
 message ListRequest {
   optional int32 page      = 1;

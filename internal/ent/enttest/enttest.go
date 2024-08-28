@@ -5,12 +5,12 @@ package enttest
 import (
 	"context"
 
-	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v5/internal/ent"
 	// required by schema hooks.
-	_ "github.com/duc-cnzj/mars/v4/internal/ent/runtime"
+	_ "github.com/duc-cnzj/mars/v5/internal/ent/runtime"
 
 	"entgo.io/ent/dialect/sql/schema"
-	"github.com/duc-cnzj/mars/v4/internal/ent/migrate"
+	"github.com/duc-cnzj/mars/v5/internal/ent/migrate"
 )
 
 type (

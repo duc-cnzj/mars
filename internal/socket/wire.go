@@ -1,8 +1,8 @@
 package socket
 
-//go:generate mockgen -destination ./mock_socket.go -package socket github.com/duc-cnzj/mars/v4/internal/socket JobManager,Job,Percentable,Conn,PtyHandler,TaskManager,GorillaWs,SessionMapper,ReleaseInstaller,DeployMsger,SafeWriteMessageChan
+//go:generate mockgen -destination ./mock_socket.go -package socket github.com/duc-cnzj/mars/v5/internal/socket JobManager,Job,Percentable,Conn,PtyHandler,TaskManager,GorillaWs,SessionMapper,ReleaseInstaller,DeployMsger,SafeWriteMessageChan
 import (
-	"github.com/duc-cnzj/mars/v4/internal/util/counter"
+	"github.com/duc-cnzj/mars/v5/internal/util/counter"
 	"github.com/google/wire"
 )
 

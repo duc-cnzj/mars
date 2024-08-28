@@ -6,11 +6,11 @@ import (
 
 	"github.com/samber/lo"
 
-	"github.com/duc-cnzj/mars/api/v4/mars"
+	"github.com/duc-cnzj/mars/api/v5/mars"
 	"google.golang.org/grpc/status"
 
-	"github.com/duc-cnzj/mars/v4/internal/data"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )

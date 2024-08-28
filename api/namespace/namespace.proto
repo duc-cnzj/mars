@@ -8,7 +8,7 @@ import "types/types.proto";
 import "validate/validate.proto";
 import "openapi/v3/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/namespace;namespace";
+option go_package = "github.com/duc-cnzj/mars/api/v5/namespace;namespace";
 
 message CreateRequest {
   string namespace        = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];

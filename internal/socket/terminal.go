@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v4/types"
-	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/repo"
-	"github.com/duc-cnzj/mars/v4/internal/util/closeable"
+	"github.com/duc-cnzj/mars/api/v5/types"
+	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
+	"github.com/duc-cnzj/mars/v5/internal/util/closeable"
 	"k8s.io/client-go/tools/remotecommand"
 )
 

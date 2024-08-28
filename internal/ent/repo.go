@@ -10,8 +10,8 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/duc-cnzj/mars/api/v4/mars"
-	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
+	"github.com/duc-cnzj/mars/api/v5/mars"
+	"github.com/duc-cnzj/mars/v5/internal/ent/repo"
 )
 
 // Repo is the model entity for the Repo schema.

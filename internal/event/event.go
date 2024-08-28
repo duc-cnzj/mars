@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 )
 
 type Event string

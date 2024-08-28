@@ -4,7 +4,7 @@ package mars;
 
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/mars";
+option go_package = "github.com/duc-cnzj/mars/api/v5/mars";
 
 message Config {
   // config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename"

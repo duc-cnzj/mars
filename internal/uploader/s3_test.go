@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/stretchr/testify/assert"

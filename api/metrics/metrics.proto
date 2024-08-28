@@ -8,7 +8,7 @@ import "validate/validate.proto";
 import "openapi/v3/annotations.proto";
 
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/metrics;metrics";
+option go_package = "github.com/duc-cnzj/mars/api/v5/metrics;metrics";
 
 message TopPodRequest {
   string namespace = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];

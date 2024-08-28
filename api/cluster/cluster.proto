@@ -6,7 +6,7 @@ import "google/api/annotations.proto";
 import "openapi/v3/annotations.proto";
 import "websocket/websocket.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/cluster;cluster";
+option go_package = "github.com/duc-cnzj/mars/api/v5/cluster;cluster";
 
 enum Status {
   StatusUnknown = 0;

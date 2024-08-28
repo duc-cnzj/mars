@@ -5,7 +5,7 @@ package picture;
 import "google/api/annotations.proto";
 import "openapi/v3/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/picture;picture";
+option go_package = "github.com/duc-cnzj/mars/api/v5/picture;picture";
 
 message BackgroundRequest {
   bool random = 1;

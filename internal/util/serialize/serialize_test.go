@@ -3,7 +3,7 @@ package serialize_test
 import (
 	"testing"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
 	"github.com/stretchr/testify/assert"
 )
 

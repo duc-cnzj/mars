@@ -2,4 +2,4 @@
 
 package ent
 
-// The schema-stitching logic is generated in github.com/duc-cnzj/mars/v4/internal/ent/runtime/runtime.go
+// The schema-stitching logic is generated in github.com/duc-cnzj/mars/v5/internal/ent/runtime/runtime.go

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 )
 
 func preflightHandler(w http.ResponseWriter, r *http.Request) {

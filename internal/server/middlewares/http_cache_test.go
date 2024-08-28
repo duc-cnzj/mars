@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/hash"
-	"github.com/duc-cnzj/mars/v4/internal/version"
+	"github.com/duc-cnzj/mars/v5/internal/util/hash"
+	"github.com/duc-cnzj/mars/v5/internal/version"
 	"github.com/stretchr/testify/assert"
 )
 

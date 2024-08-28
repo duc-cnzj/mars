@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/util/rand"
-	"github.com/duc-cnzj/mars/v4/internal/util/timer"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/util/rand"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 )
 
 type MemStore struct {

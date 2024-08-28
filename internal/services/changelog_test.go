@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/api/v4/changelog"
-	"github.com/duc-cnzj/mars/v4/internal/repo"
+	"github.com/duc-cnzj/mars/api/v5/changelog"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"

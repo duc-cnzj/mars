@@ -4,10 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	mars2 "github.com/duc-cnzj/mars/api/v4/mars"
+	mars2 "github.com/duc-cnzj/mars/api/v5/mars"
 	"github.com/lithammer/dedent"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/mars"
+	"github.com/duc-cnzj/mars/v5/internal/util/mars"
 	"github.com/stretchr/testify/assert"
 )
 

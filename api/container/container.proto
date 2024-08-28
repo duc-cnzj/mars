@@ -7,7 +7,7 @@ import "google/api/field_behavior.proto";
 import "validate/validate.proto";
 import "openapi/v3/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/container;container";
+option go_package = "github.com/duc-cnzj/mars/api/v5/container;container";
 
 message CopyToPodRequest {
   int64  file_id   = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];

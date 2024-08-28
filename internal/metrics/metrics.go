@@ -24,7 +24,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/version"
+	"github.com/duc-cnzj/mars/v5/internal/version"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 )

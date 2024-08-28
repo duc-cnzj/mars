@@ -1,6 +1,6 @@
 package cron
 
-//go:generate mockgen -destination ./mock_cron.go -package cron github.com/duc-cnzj/mars/v4/internal/cron Runner,Manager
+//go:generate mockgen -destination ./mock_cron.go -package cron github.com/duc-cnzj/mars/v5/internal/cron Runner,Manager
 import (
 	"github.com/google/wire"
 )

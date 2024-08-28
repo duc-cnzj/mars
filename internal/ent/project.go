@@ -10,11 +10,11 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
-	"github.com/duc-cnzj/mars/v4/internal/ent/project"
-	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
+	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
+	"github.com/duc-cnzj/mars/v5/internal/ent/project"
+	"github.com/duc-cnzj/mars/v5/internal/ent/repo"
 )
 
 // Project is the model entity for the Project schema.

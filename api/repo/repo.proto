@@ -9,7 +9,7 @@ import "validate/validate.proto";
 import "types/types.proto";
 import "mars/mars.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/repo;repo";
+option go_package = "github.com/duc-cnzj/mars/api/v5/repo;repo";
 
 message ListRequest {
   optional int32 page      = 1;

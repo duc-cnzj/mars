@@ -8,12 +8,12 @@ import (
 	"sync"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/duc-cnzj/mars/v4/internal/config"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
-	"github.com/duc-cnzj/mars/v4/internal/metrics"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/util/closeable"
-	"github.com/duc-cnzj/mars/v4/internal/util/timer"
+	"github.com/duc-cnzj/mars/v5/internal/config"
+	"github.com/duc-cnzj/mars/v5/internal/ent"
+	"github.com/duc-cnzj/mars/v5/internal/metrics"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/util/closeable"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/prometheus/client_golang/prometheus"
@@ -34,11 +34,11 @@ import (
 	"k8s.io/metrics/pkg/client/clientset/versioned"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 
-	_ "github.com/duc-cnzj/mars/v4/internal/ent/runtime"
+	_ "github.com/duc-cnzj/mars/v5/internal/ent/runtime"
 	_ "github.com/go-sql-driver/mysql"
 )
 
-//go:generate mockgen -destination ./mock_data.go -package data github.com/duc-cnzj/mars/v4/internal/data Data
+//go:generate mockgen -destination ./mock_data.go -package data github.com/duc-cnzj/mars/v5/internal/data Data
 
 type Data interface {
 	Config() *config.Config

@@ -1,9 +1,9 @@
 package uploader
 
 import (
-	"github.com/duc-cnzj/mars/v4/internal/config"
-	"github.com/duc-cnzj/mars/v4/internal/data"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/config"
+	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 )
 
 func NewUploader(cfg *config.Config, logger mlog.Logger, data data.Data) (Uploader, error) {

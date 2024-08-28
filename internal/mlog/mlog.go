@@ -1,10 +1,10 @@
 package mlog
 
-//go:generate mockgen -destination ./mock_logger.go -package mlog github.com/duc-cnzj/mars/v4/internal/mlog Logger
+//go:generate mockgen -destination ./mock_logger.go -package mlog github.com/duc-cnzj/mars/v5/internal/mlog Logger
 import (
 	"context"
 
-	"github.com/duc-cnzj/mars/v4/internal/config"
+	"github.com/duc-cnzj/mars/v5/internal/config"
 )
 
 type Logger interface {

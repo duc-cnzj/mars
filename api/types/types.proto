@@ -5,7 +5,7 @@ package types;
 import "mars/mars.proto";
 import "websocket/websocket.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/types;types";
+option go_package = "github.com/duc-cnzj/mars/api/v5/types;types";
 
 enum EventActionType {
   Unknown      = 0;

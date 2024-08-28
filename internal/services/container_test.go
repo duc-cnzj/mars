@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/auth"
+	"github.com/duc-cnzj/mars/v5/internal/auth"
 	"k8s.io/client-go/tools/remotecommand"
 	clientgoexec "k8s.io/client-go/util/exec"
 
-	"github.com/duc-cnzj/mars/api/v4/container"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/repo"
+	"github.com/duc-cnzj/mars/api/v5/container"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/status"

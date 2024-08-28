@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package websocket;
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/websocket;websocket";
+option go_package = "github.com/duc-cnzj/mars/api/v5/websocket;websocket";
 
 enum Type {
   TypeUnknown        = 0;

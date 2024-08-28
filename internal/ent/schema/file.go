@@ -5,8 +5,8 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema/mixin"
-	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/mixin"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 )
 
 // File holds the schema definition for the File entity.

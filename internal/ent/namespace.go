@@ -10,7 +10,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
+	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
 )
 
 // Namespace is the model entity for the Namespace schema.

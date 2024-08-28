@@ -3,7 +3,7 @@ package middlewares
 import (
 	"net/http"
 
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 )
 
 func Recovery(logger mlog.Logger, h http.Handler) http.Handler {
