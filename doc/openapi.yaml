@@ -111,30 +111,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
-    /api/all_namespaces:
-        get:
-            tags:
-                - Namespace
-            summary: 获取所有的名称空间
-            operationId: Namespace_All
-            parameters:
-                - name: favorite
-                  in: query
-                  schema:
-                    type: boolean
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/namespace.AllResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/google.rpc.Status'
     /api/auth/exchange:
         post:
             tags:
@@ -2081,13 +2057,6 @@ components:
                 length:
                     type: integer
                     format: int32
-        namespace.AllResponse:
-            type: object
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/types.NamespaceModel'
         namespace.CreateRequest:
             required:
                 - namespace

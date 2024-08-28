@@ -5,20 +5,18 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
-	"github.com/samber/lo"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	errors2 "k8s.io/apimachinery/pkg/api/errors"
-
 	"github.com/duc-cnzj/mars/api/v4/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
+	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
+	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -39,74 +37,6 @@ func TestNewNamespaceSvc_Creation(t *testing.T) {
 	assert.NotNil(t, svc.(*namespaceSvc).k8sRepo)
 	assert.NotNil(t, svc.(*namespaceSvc).logger)
 	assert.NotNil(t, svc.(*namespaceSvc).eventRepo)
-}
-
-func TestNamespaceSvc_All_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	nsRepo := repo.NewMockNamespaceRepo(m)
-	svc := NewNamespaceSvc(
-		repo.NewMockHelmerRepo(m),
-		nsRepo,
-		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
-		repo.NewMockEventRepo(m),
-	)
-
-	nsRepo.EXPECT().All(gomock.Any(), &repo.AllNamespaceInput{
-		Favorite: false,
-		Email:    adminEmail,
-	}).Return([]*repo.Namespace{
-		{
-			ID:   1,
-			Name: "namespace1",
-			Favorites: []*repo.Favorite{
-				{Email: adminEmail},
-			},
-		},
-		{
-			ID:   2,
-			Name: "namespace2",
-		},
-	}, nil)
-
-	res, err := svc.All(newAdminUserCtx(), &namespace.AllRequest{
-		Favorite: false,
-	})
-
-	assert.Nil(t, err)
-	assert.NotNil(t, res)
-	assert.Equal(t, 2, len(res.Items))
-	assert.Equal(t, int32(1), res.Items[0].Id)
-	assert.Equal(t, "namespace1", res.Items[0].Name)
-	assert.Equal(t, int32(2), res.Items[1].Id)
-	assert.Equal(t, "namespace2", res.Items[1].Name)
-	assert.True(t, res.Items[0].Favorite)
-}
-
-func TestNamespaceSvc_All_Error(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	nsRepo := repo.NewMockNamespaceRepo(m)
-	svc := NewNamespaceSvc(
-		repo.NewMockHelmerRepo(m),
-		nsRepo,
-		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
-		repo.NewMockEventRepo(m),
-	)
-
-	nsRepo.EXPECT().All(gomock.Any(), &repo.AllNamespaceInput{
-		Favorite: false,
-		Email:    adminEmail,
-	}).Return(nil, errors.New("error"))
-
-	res, err := svc.All(newAdminUserCtx(), &namespace.AllRequest{
-		Favorite: false,
-	})
-
-	assert.NotNil(t, err)
-	assert.Nil(t, res)
 }
 
 func TestNamespaceSvc_Create_NamespaceTerminating(t *testing.T) {
@@ -322,6 +252,7 @@ func TestNamespaceSvc_Delete_Error(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
 }
+
 func TestNamespaceSvc_Delete_Error2(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()

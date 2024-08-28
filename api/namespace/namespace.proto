@@ -10,13 +10,6 @@ import "openapi/v3/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/namespace;namespace";
 
-message AllRequest {
-  bool favorite = 1;
-}
-message AllResponse {
-  repeated types.NamespaceModel items = 1;
-}
-
 message CreateRequest {
   string namespace        = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   // 已存在则忽略，不会报错
@@ -75,15 +68,6 @@ message ListResponse {
   int32                         page_size = 4;
 }
 service Namespace {
-  rpc All(AllRequest) returns (AllResponse) {
-    option (google.api.http)      = {
-      get: "/api/all_namespaces"
-    };
-    option (openapi.v3.operation) = {
-      summary: "获取所有的名称空间",
-    };
-  }
-
   rpc List(ListRequest) returns (ListResponse) {
     option (google.api.http)      = {
       get: "/api/namespaces"

@@ -99,7 +99,7 @@ func (repo *eventRepo) HandleAuditLog(data any, e event.Event) error {
 		fid = &ffid
 	}
 	var db = repo.data.DB()
-	db.Event.Create().SetAction(logData.GetAction()).
+	if _, err := db.Event.Create().SetAction(logData.GetAction()).
 		SetUsername(logData.GetUsername()).
 		SetMessage(logData.GetMsg()).
 		SetOld(logData.GetOldStr()).
@@ -107,7 +107,9 @@ func (repo *eventRepo) HandleAuditLog(data any, e event.Event) error {
 		SetDuration(logData.GetDuration()).
 		SetHasDiff(logData.GetOldStr() != logData.GetNewStr()).
 		SetNillableFileID(fid).
-		Save(context.TODO())
+		Save(context.TODO()); err != nil {
+		return err
+	}
 
 	return nil
 }

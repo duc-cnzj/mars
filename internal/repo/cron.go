@@ -265,12 +265,11 @@ func (repo *cronRepo) SyncDomainSecret() error {
 	)
 	secretName, tlsKey, tlsCrt := repo.pluginMgr.Domain().GetCerts()
 	if secretName != "" && tlsKey != "" && tlsCrt != "" {
-		all, err := repo.nsRepo.All(context.TODO(), &AllNamespaceInput{})
+		allNamespaces, err := repo.allNamespaces(30)
 		if err != nil {
-			repo.logger.Error(err)
 			return err
 		}
-		for _, n := range all {
+		for _, n := range allNamespaces {
 			secret, err := k8sCli.SecretLister.Secrets(n.Name).Get(secretName)
 			if err == nil {
 				if apierrors.IsNotFound(err) {
@@ -303,6 +302,27 @@ func (repo *cronRepo) SyncDomainSecret() error {
 		}
 	}
 	return nil
+}
+
+func (repo *cronRepo) allNamespaces(pageSize int32) ([]*Namespace, error) {
+	var currentPage int32 = 1
+	var allNamespaces []*Namespace
+	for {
+		all, _, err := repo.nsRepo.List(context.TODO(), &ListNamespaceInput{
+			Page:     currentPage,
+			PageSize: pageSize,
+		})
+		if err != nil {
+			repo.logger.Error(err)
+			return nil, err
+		}
+		allNamespaces = append(allNamespaces, all...)
+		if len(all) < int(pageSize) {
+			break
+		}
+		currentPage++
+	}
+	return allNamespaces, nil
 }
 
 // FixDeployStatus 当 project helm 状态为异常的时候，自动去查询状态并且修复它(当人工手动把 helm 恢复时)

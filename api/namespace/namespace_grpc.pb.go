@@ -20,7 +20,6 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Namespace_All_FullMethodName        = "/namespace.Namespace/All"
 	Namespace_List_FullMethodName       = "/namespace.Namespace/List"
 	Namespace_Create_FullMethodName     = "/namespace.Namespace/Create"
 	Namespace_Show_FullMethodName       = "/namespace.Namespace/Show"
@@ -34,7 +33,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NamespaceClient interface {
-	All(ctx context.Context, in *AllRequest, opts ...grpc.CallOption) (*AllResponse, error)
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
@@ -50,15 +48,6 @@ type namespaceClient struct {
 
 func NewNamespaceClient(cc grpc.ClientConnInterface) NamespaceClient {
 	return &namespaceClient{cc}
-}
-
-func (c *namespaceClient) All(ctx context.Context, in *AllRequest, opts ...grpc.CallOption) (*AllResponse, error) {
-	out := new(AllResponse)
-	err := c.cc.Invoke(ctx, Namespace_All_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *namespaceClient) List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error) {
@@ -128,7 +117,6 @@ func (c *namespaceClient) Favorite(ctx context.Context, in *FavoriteRequest, opt
 // All implementations must embed UnimplementedNamespaceServer
 // for forward compatibility
 type NamespaceServer interface {
-	All(context.Context, *AllRequest) (*AllResponse, error)
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	Create(context.Context, *CreateRequest) (*CreateResponse, error)
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
@@ -143,9 +131,6 @@ type NamespaceServer interface {
 type UnimplementedNamespaceServer struct {
 }
 
-func (UnimplementedNamespaceServer) All(context.Context, *AllRequest) (*AllResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method All not implemented")
-}
 func (UnimplementedNamespaceServer) List(context.Context, *ListRequest) (*ListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
@@ -178,24 +163,6 @@ type UnsafeNamespaceServer interface {
 
 func RegisterNamespaceServer(s grpc.ServiceRegistrar, srv NamespaceServer) {
 	s.RegisterService(&Namespace_ServiceDesc, srv)
-}
-
-func _Namespace_All_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AllRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NamespaceServer).All(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Namespace_All_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NamespaceServer).All(ctx, req.(*AllRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _Namespace_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -331,10 +298,6 @@ var Namespace_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "namespace.Namespace",
 	HandlerType: (*NamespaceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "All",
-			Handler:    _Namespace_All_Handler,
-		},
 		{
 			MethodName: "List",
 			Handler:    _Namespace_List_Handler,

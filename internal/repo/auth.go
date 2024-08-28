@@ -55,7 +55,7 @@ func (a *authRepo) Login(ctx context.Context, input *LoginInput) (*LoginResponse
 	}
 	signData, err := a.authsvc.Sign(userinfo)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, err.Error())
+		return nil, ToError(401, err)
 	}
 
 	return &LoginResponse{
@@ -68,7 +68,7 @@ func (a *authRepo) Login(ctx context.Context, input *LoginInput) (*LoginResponse
 func (a *authRepo) VerifyToken(ctx context.Context, token string) (*auth2.UserInfo, error) {
 	verifyToken, b := a.authsvc.VerifyToken(token)
 	if !b {
-		return nil, status.Errorf(codes.Unauthenticated, "token验证失败")
+		return nil, ToError(401, "token验证失败")
 	}
 	return verifyToken.UserInfo, nil
 }

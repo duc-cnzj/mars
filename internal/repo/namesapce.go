@@ -76,15 +76,14 @@ func ToFavorite(v *ent.Favorite) *Favorite {
 }
 
 type NamespaceRepo interface {
+	List(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error)
+	Create(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error)
+	Show(ctx context.Context, id int) (*Namespace, error)
+	Update(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error)
 	Delete(ctx context.Context, id int) error
 	GetMarsNamespace(name string) string
 	FindByName(ctx context.Context, name string) (*Namespace, error)
-	All(ctx context.Context, input *AllNamespaceInput) ([]*Namespace, error)
-	List(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error)
-	Show(ctx context.Context, id int) (*Namespace, error)
-	Create(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error)
 	Favorite(ctx context.Context, input *FavoriteNamespaceInput) error
-	Update(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error)
 }
 
 var _ NamespaceRepo = (*namespaceRepo)(nil)
@@ -153,44 +152,6 @@ func (repo *namespaceRepo) List(ctx context.Context, input *ListNamespaceInput) 
 	return serialize.Serialize(all, ToNamespace), pagination.NewPagination(input.Page, input.PageSize, count), nil
 }
 
-type AllNamespaceInput struct {
-	Favorite bool
-	Email    string
-}
-
-func (repo *namespaceRepo) All(ctx context.Context, input *AllNamespaceInput) ([]*Namespace, error) {
-	query := repo.data.DB().Namespace.Query().
-		WithFavorites(func(query *ent.FavoriteQuery) {
-			query.Where(favorite.Email(input.Email))
-		}).
-		WithProjects(
-			func(query *ent.ProjectQuery) {
-				query.Select(
-					project.FieldID,
-					project.FieldName,
-					project.FieldDeployStatus,
-					project.FieldNamespaceID,
-					project.FieldCreatedAt,
-					project.FieldUpdatedAt,
-				)
-			},
-		)
-	if input.Favorite {
-		query = query.Where(
-			namespace.HasFavoritesWith(favorite.Email(input.Email)),
-		)
-	}
-
-	all, err := query.Select(
-		namespace.FieldID,
-		namespace.FieldName,
-		namespace.FieldDescription,
-		namespace.FieldCreatedAt,
-		namespace.FieldUpdatedAt,
-	).All(ctx)
-	return serialize.Serialize(all, ToNamespace), err
-}
-
 type CreateNamespaceInput struct {
 	Name             string
 	ImagePullSecrets []string
@@ -253,12 +214,8 @@ func (repo *namespaceRepo) Delete(ctx context.Context, id int) error {
 		if len(first.Edges.Projects) > 0 {
 			if _, err := tx.Project.
 				Delete().
-				Where(
-					project.IDIn(
-						serialize.Serialize(first.Edges.Projects, func(v *ent.Project) int {
-							return v.ID
-						})...),
-				).Exec(ctx); err != nil {
+				Where(project.HasNamespaceWith(namespace.ID(id))).
+				Exec(ctx); err != nil {
 				return err
 			}
 		}

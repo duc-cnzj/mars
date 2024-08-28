@@ -36,23 +36,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/all_namespaces": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 获取所有的名称空间 */
-        get: operations["Namespace_All"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/auth/exchange": {
         parameters: {
             query?: never;
@@ -1132,9 +1115,6 @@ export interface components {
             /** Format: int32 */
             length: number;
         };
-        "namespace.AllResponse": {
-            items: components["schemas"]["types.NamespaceModel"][];
-        };
         "namespace.CreateRequest": {
             namespace: string;
             /** @description 已存在则忽略，不会报错 */
@@ -1642,37 +1622,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["token.RevokeResponse"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["google.rpc.Status"];
-                };
-            };
-        };
-    };
-    Namespace_All: {
-        parameters: {
-            query?: {
-                favorite?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["namespace.AllResponse"];
                 };
             };
             /** @description Default error response */
