@@ -163,4 +163,4 @@ ent-generate:
 .PHONY: ent-diff
 # ent-diff generate diff schema sql
 ent-diff:
-	atlas migrate diff $(NAME) --env local
+	atlas migrate diff $(NAME) --env local --format '{{ sql . "  " }}'
