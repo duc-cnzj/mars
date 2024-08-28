@@ -129,7 +129,7 @@ func (repo *cronRepo) CacheAllBranches() error {
 			}
 		}()
 	}
-	for _, it := range all {
+	for _, it := range lo.UniqBy(all, func(item *Repo) int32 { return item.GitProjectID }) {
 		ch <- it.GitProjectID
 	}
 	close(ch)
@@ -322,8 +322,6 @@ func (repo *cronRepo) FixDeployStatus() error {
 	}
 	return nil
 }
-
-var DirSizeCacheSeconds = int((15 * time.Minute).Seconds())
 
 func (repo *cronRepo) DiskInfo() (int64, error) {
 	return repo.fileRepo.DiskInfo(true)

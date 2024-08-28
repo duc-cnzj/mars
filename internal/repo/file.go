@@ -225,6 +225,8 @@ func (repo *fileRepo) ShowRecords(ctx context.Context, id int) (io.ReadCloser, e
 	return up.Read(file.Path)
 }
 
+var DirSizeCacheSeconds = int((15 * time.Minute).Seconds())
+
 func (repo *fileRepo) DiskInfo(force bool) (int64, error) {
 	remember, err := repo.cache.Remember(cache.NewKey("dir-size"), DirSizeCacheSeconds, func() ([]byte, error) {
 		size, err := repo.uploader.DirSize()
