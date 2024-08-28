@@ -2,6 +2,8 @@ package cache
 
 import (
 	"errors"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -62,6 +64,57 @@ func TestCache_Remember(t *testing.T) {
 		return nil, nil
 	}, false)
 	assert.Equal(t, 2, nocacheCalled)
+}
+
+func TestCache_RememberV2(t *testing.T) {
+	cache := newCache(NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), mlog.NewLogger(nil), &singleflight.Group{})
+	v := atomic.Int64{}
+	v2 := atomic.Int64{}
+
+	fn := func() {
+		cache.Remember(NewKey("duc"), 10, func() ([]byte, error) {
+			v.Add(1)
+			time.Sleep(2 * time.Second)
+			return []byte("duccc"), nil
+		}, false)
+	}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(5)
+	go func() {
+		defer wg.Done()
+		fn()
+	}()
+	go func() {
+		defer wg.Done()
+		fn()
+	}()
+	go func() {
+		defer wg.Done()
+		fn()
+	}()
+
+	v2Fn := func() ([]byte, error) {
+		time.Sleep(2 * time.Second)
+		v2.Add(1)
+		return []byte("duccc"), nil
+	}
+
+	go func() {
+		defer wg.Done()
+		func() {
+			cache.Remember(NewKey("duc"), 10, v2Fn, true)
+		}()
+	}()
+	go func() {
+		defer wg.Done()
+		func() {
+			cache.Remember(NewKey("duc"), 10, v2Fn, true)
+		}()
+	}()
+	wg.Wait()
+	assert.Equal(t, int64(1), v.Load())
+	assert.Equal(t, int64(1), v2.Load())
 }
 
 type errorstore struct{}

@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/duc-cnzj/mars/v5/internal/config"
@@ -61,7 +62,8 @@ func newCache(store Store, logger mlog.Logger, sf *singleflight.Group) Cache {
 
 // Remember TODO
 func (c *cacheImpl) Remember(key CacheKey, seconds int, fn func() ([]byte, error), force bool) ([]byte, error) {
-	do, err, _ := c.sf.Do("CacheRemember:"+key.String(), func() (any, error) {
+	sfKey := fmt.Sprintf("CacheRemember:%v-%v", key.String(), force)
+	do, err, _ := c.sf.Do(sfKey, func() (any, error) {
 		if seconds <= 0 {
 			return fn()
 		}
