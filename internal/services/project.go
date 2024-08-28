@@ -289,7 +289,7 @@ func (p *projectSvc) Version(ctx context.Context, req *project.VersionRequest) (
 }
 
 func (p *projectSvc) AllContainers(ctx context.Context, request *project.AllContainersRequest) (*project.AllContainersResponse, error) {
-	pods, err := p.projRepo.GetAllPods(ctx, int(request.Id))
+	pods, err := p.projRepo.GetAllActiveContainers(ctx, int(request.Id))
 	if err != nil {
 		return nil, err
 	}

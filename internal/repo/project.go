@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+	"github.com/spf13/cast"
 	"go.opentelemetry.io/otel"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -108,7 +108,7 @@ func ToProject(project *ent.Project) *Project {
 }
 
 type ProjectRepo interface {
-	GetAllPods(ctx context.Context, id int) ([]*types.StateContainer, error)
+	GetAllActiveContainers(ctx context.Context, id int) ([]*types.StateContainer, error)
 	GetNodePortMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
 	GetLoadBalancerMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
 	GetIngressMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
@@ -245,7 +245,12 @@ func (repo *projectRepo) UpdateProject(ctx context.Context, input *UpdateProject
 func (repo *projectRepo) Show(ctx context.Context, id int) (*Project, error) {
 	_, span := otel.Tracer("").Start(ctx, "repo/project/Show")
 	defer span.End()
-	first, err := repo.data.DB().Project.Query().WithRepo().WithNamespace().Where(project.ID(id)).First(ctx)
+	first, err := repo.data.DB().Project.
+		Query().
+		WithRepo().
+		WithNamespace().
+		Where(project.ID(id)).
+		First(ctx)
 	return ToProject(first), err
 }
 
@@ -281,7 +286,7 @@ func (repo *projectRepo) FindByName(ctx context.Context, name string, nsID int) 
 	return ToProject(first), err
 }
 
-func (repo *projectRepo) GetAllPods(ctx context.Context, id int) ([]*types.StateContainer, error) {
+func (repo *projectRepo) GetAllActiveContainers(ctx context.Context, id int) ([]*types.StateContainer, error) {
 	project, err := repo.Show(ctx, id)
 	if err != nil {
 		return nil, err
@@ -369,7 +374,7 @@ func (repo *projectRepo) GetAllPods(ctx context.Context, id int) ([]*types.State
 			IsOld:       isOld,
 			Terminating: pod.DeletionTimestamp != nil,
 			Pending:     pod.Status.Phase == corev1.PodPending,
-			OrderIndex:  mustInt(idx),
+			OrderIndex:  cast.ToInt(idx),
 			Pod:         pod.DeepCopy(),
 		})
 	}
@@ -620,15 +625,6 @@ func (s SortStatePod) Swap(i, j int) {
 }
 
 const RevisionAnnotation = "deployment.kubernetes.io/revision"
-
-func mustInt(num string) (res int) {
-	var err error
-	res, err = strconv.Atoi(num)
-	if err != nil {
-		res = 0
-	}
-	return
-}
 
 func FilterRuntimeObjectFromManifests[T runtime.Object](logger mlog.Logger, manifests []string) RuntimeObjectList {
 	var m = make(RuntimeObjectList, 0)
