@@ -290,7 +290,7 @@ func (repo *fileRepo) StreamUploadFile(ctx context.Context, input *StreamUploadF
 		fmt.Sprintf("%s-%s", now.Format("15-04-05"), rand.String(20)),
 		filepath.Base(input.FileName))
 	fpath := disk.AbsolutePath(p)
-	err := disk.MkDir(filepath.Dir(p), true)
+	err := disk.MkDir(filepath.Dir(fpath), true)
 	if err != nil {
 		return nil, err
 	}
