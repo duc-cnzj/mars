@@ -19,6 +19,6 @@ module.exports = {
     }
   },
   babel: {
-    plugins: [...plugins, "@emotion"],
+    plugins: ["@emotion", ...plugins],
   },
 };
