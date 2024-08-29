@@ -7166,10 +7166,24 @@ func (m *ProjectMutation) AddedGitProjectID() (r int, exists bool) {
 	return *v, true
 }
 
+// ClearGitProjectID clears the value of the "git_project_id" field.
+func (m *ProjectMutation) ClearGitProjectID() {
+	m.git_project_id = nil
+	m.addgit_project_id = nil
+	m.clearedFields[project.FieldGitProjectID] = struct{}{}
+}
+
+// GitProjectIDCleared returns if the "git_project_id" field was cleared in this mutation.
+func (m *ProjectMutation) GitProjectIDCleared() bool {
+	_, ok := m.clearedFields[project.FieldGitProjectID]
+	return ok
+}
+
 // ResetGitProjectID resets all changes to the "git_project_id" field.
 func (m *ProjectMutation) ResetGitProjectID() {
 	m.git_project_id = nil
 	m.addgit_project_id = nil
+	delete(m.clearedFields, project.FieldGitProjectID)
 }
 
 // SetGitBranch sets the "git_branch" field.
@@ -7203,9 +7217,22 @@ func (m *ProjectMutation) OldGitBranch(ctx context.Context) (v string, err error
 	return oldValue.GitBranch, nil
 }
 
+// ClearGitBranch clears the value of the "git_branch" field.
+func (m *ProjectMutation) ClearGitBranch() {
+	m.git_branch = nil
+	m.clearedFields[project.FieldGitBranch] = struct{}{}
+}
+
+// GitBranchCleared returns if the "git_branch" field was cleared in this mutation.
+func (m *ProjectMutation) GitBranchCleared() bool {
+	_, ok := m.clearedFields[project.FieldGitBranch]
+	return ok
+}
+
 // ResetGitBranch resets all changes to the "git_branch" field.
 func (m *ProjectMutation) ResetGitBranch() {
 	m.git_branch = nil
+	delete(m.clearedFields, project.FieldGitBranch)
 }
 
 // SetGitCommit sets the "git_commit" field.
@@ -7239,9 +7266,22 @@ func (m *ProjectMutation) OldGitCommit(ctx context.Context) (v string, err error
 	return oldValue.GitCommit, nil
 }
 
+// ClearGitCommit clears the value of the "git_commit" field.
+func (m *ProjectMutation) ClearGitCommit() {
+	m.git_commit = nil
+	m.clearedFields[project.FieldGitCommit] = struct{}{}
+}
+
+// GitCommitCleared returns if the "git_commit" field was cleared in this mutation.
+func (m *ProjectMutation) GitCommitCleared() bool {
+	_, ok := m.clearedFields[project.FieldGitCommit]
+	return ok
+}
+
 // ResetGitCommit resets all changes to the "git_commit" field.
 func (m *ProjectMutation) ResetGitCommit() {
 	m.git_commit = nil
+	delete(m.clearedFields, project.FieldGitCommit)
 }
 
 // SetConfig sets the "config" field.
@@ -8825,6 +8865,15 @@ func (m *ProjectMutation) ClearedFields() []string {
 	if m.FieldCleared(project.FieldDeletedAt) {
 		fields = append(fields, project.FieldDeletedAt)
 	}
+	if m.FieldCleared(project.FieldGitProjectID) {
+		fields = append(fields, project.FieldGitProjectID)
+	}
+	if m.FieldCleared(project.FieldGitBranch) {
+		fields = append(fields, project.FieldGitBranch)
+	}
+	if m.FieldCleared(project.FieldGitCommit) {
+		fields = append(fields, project.FieldGitCommit)
+	}
 	if m.FieldCleared(project.FieldConfig) {
 		fields = append(fields, project.FieldConfig)
 	}
@@ -8877,6 +8926,15 @@ func (m *ProjectMutation) ClearField(name string) error {
 	switch name {
 	case project.FieldDeletedAt:
 		m.ClearDeletedAt()
+		return nil
+	case project.FieldGitProjectID:
+		m.ClearGitProjectID()
+		return nil
+	case project.FieldGitBranch:
+		m.ClearGitBranch()
+		return nil
+	case project.FieldGitCommit:
+		m.ClearGitCommit()
 		return nil
 	case project.FieldConfig:
 		m.ClearConfig()

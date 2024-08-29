@@ -1,10 +1,18 @@
 package repo
 
 import (
+	"bytes"
 	"context"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
+	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
+	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
+	networkingv1lister "k8s.io/client-go/listers/networking/v1"
 
 	"github.com/duc-cnzj/mars/v5/internal/annotation"
 	"github.com/duc-cnzj/mars/v5/internal/config"
@@ -14,11 +22,8 @@ import (
 	"go.uber.org/mock/gomock"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	eventsv1 "k8s.io/api/events/v1"
-	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	eventsv1lister "k8s.io/client-go/listers/events/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kubectl/pkg/util/deployment"
 
@@ -26,11 +31,9 @@ import (
 	data2 "github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 
+	"github.com/stretchr/testify/assert"
 	appsv1lister "k8s.io/client-go/listers/apps/v1"
 	corev1lister "k8s.io/client-go/listers/core/v1"
-	networkingv1lister "k8s.io/client-go/listers/networking/v1"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func createRepo(db *ent.Client) *ent.Repo {
@@ -830,36 +833,362 @@ func Test_projectRepo_GetAllPods(t *testing.T) {
 	assert.Equal(t, 3, oldCount)
 }
 
-func NewPodLister(pods ...*corev1.Pod) corev1lister.PodLister {
-	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
-	for _, po := range pods {
-		idxer.Add(po)
-	}
-	return corev1lister.NewPodLister(idxer)
+func Test_projectRepo_UpdateStatusByVersion(t *testing.T) {
+	logger := mlog.NewLogger(nil)
+	db, _ := data2.NewSqliteDB()
+	defer db.Close()
+	data := data2.NewDataImpl(&data2.NewDataParams{DB: db, Cfg: &config.Config{}})
+	r := NewProjectRepo(logger, data)
+
+	project := createProject(db, createNamespace(db).ID)
+	project.Update().SetDeployStatus(types.Deploy_StatusDeployed).Save(context.Background())
+
+	version, err := r.UpdateStatusByVersion(context.TODO(), project.ID, types.Deploy_StatusFailed, 2)
+	assert.Error(t, err)
+	assert.Nil(t, version)
+	version, err = r.UpdateStatusByVersion(context.TODO(), project.ID, types.Deploy_StatusFailed, 1)
+	assert.Nil(t, err)
+	assert.NotNil(t, version)
 }
 
-func NewEventLister(events ...*eventsv1.Event) eventsv1lister.EventLister {
-	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
-	for _, po := range events {
-		idxer.Add(po)
+func encodeToYaml(objs ...runtime.Object) []string {
+	var results []string
+	for _, obj := range objs {
+		bf := bytes.Buffer{}
+		info, _ := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
+		info.Serializer.Encode(obj, &bf)
+		results = append(results, bf.String())
 	}
-	return eventsv1lister.NewEventLister(idxer)
+	return results
 }
 
-func NewRsLister(rs ...*appsv1.ReplicaSet) appsv1lister.ReplicaSetLister {
-	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
-	for _, po := range rs {
-		idxer.Add(po)
+func Test_projectRepo_GetLoadBalancerMappingByProjects(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	svc1 := corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "duc",
+			Name:      "svc1",
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeLoadBalancer,
+			Ports: []corev1.ServicePort{
+				{
+					Name:     "http",
+					Protocol: "tcp",
+					Port:     80,
+					NodePort: 30000,
+				},
+				{
+					Name:     "https",
+					Protocol: "tcp",
+					Port:     443,
+					NodePort: 30001,
+				},
+				{
+					Name:     "xxxx",
+					Protocol: "tcp",
+					Port:     8080,
+					NodePort: 30005,
+				},
+				{
+					Name:     "httpx",
+					Protocol: "tcp",
+					Port:     8080,
+					NodePort: 30006,
+				},
+			},
+		},
+		Status: corev1.ServiceStatus{
+			LoadBalancer: corev1.LoadBalancerStatus{
+				Ingress: []corev1.LoadBalancerIngress{
+					{
+						IP: "111.111.111.111",
+					},
+				},
+			},
+		},
 	}
-	return appsv1lister.NewReplicaSetLister(idxer)
+	lister := NewServiceLister(&svc1)
+
+	data := data2.NewMockData(m)
+	repo := &projectRepo{
+		logger: mlog.NewLogger(nil),
+		data:   data,
+	}
+	data.EXPECT().K8sClient().Return(&data2.K8sClient{
+		ServiceLister: lister,
+	})
+	db, err := data2.NewSqliteDB()
+	assert.Nil(t, err)
+	defer db.Close()
+	namespace := createNamespace(db)
+	namespace.Update().SetName("duc").Save(context.TODO())
+	project := createProject(db, namespace.ID)
+	project = project.Update().SetName("svc1").
+		SetManifest(encodeToYaml(&svc1)).
+		SaveX(context.TODO())
+	mapping := repo.GetLoadBalancerMappingByProjects(context.TODO(), "duc", ToProject(project))
+	for _, endpoints := range mapping {
+		for _, endpoint := range endpoints {
+			if endpoint.Name == "http" {
+				assert.Equal(t, "http://111.111.111.111", endpoint.Url)
+			}
+			if endpoint.Name == "https" {
+				assert.Equal(t, "https://111.111.111.111", endpoint.Url)
+			}
+			if endpoint.Name == "xxxx" {
+				assert.Equal(t, "111.111.111.111:8080", endpoint.Url)
+			}
+			if endpoint.Name == "httpx" {
+				assert.Equal(t, "http://111.111.111.111:8080", endpoint.Url)
+			}
+		}
+	}
 }
 
-func NewSecretLister(rs ...*corev1.Secret) corev1lister.SecretLister {
-	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
-	for _, po := range rs {
-		idxer.Add(po)
+func Test_projectRepo_GetIngressMappingByNamespace(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ing1 := networkingv1.Ingress{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Ingress",
+			APIVersion: "networking.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "duc",
+			Name:      "ing1",
+		},
+		Spec: networkingv1.IngressSpec{
+			TLS: []networkingv1.IngressTLS{
+				{
+					Hosts:      []string{"app1.com", "app1.io"},
+					SecretName: "sec1",
+				},
+				{
+					Hosts:      []string{"app1.org"},
+					SecretName: "sec2",
+				},
+			},
+		},
 	}
-	return corev1lister.NewSecretLister(idxer)
+	ing2 := networkingv1.Ingress{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Ingress",
+			APIVersion: "networking.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "duc",
+			Name:      "ing2",
+		},
+		Spec: networkingv1.IngressSpec{
+			TLS: []networkingv1.IngressTLS{
+				{
+					Hosts:      []string{"app2.org"},
+					SecretName: "sec2",
+				},
+			},
+			Rules: []networkingv1.IngressRule{
+				{
+					Host: "http.com",
+				},
+				{
+					Host: "app2.org",
+				},
+			},
+		},
+	}
+	ing3 := networkingv1.Ingress{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Ingress",
+			APIVersion: "networking.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "duc",
+			Name:      "xxx",
+		},
+		Spec: networkingv1.IngressSpec{
+			TLS: []networkingv1.IngressTLS{
+				{
+					Hosts:      []string{"xxx.org"},
+					SecretName: "sec2",
+				},
+			},
+		},
+	}
+	ing4 := networkingv1.Ingress{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Ingress",
+			APIVersion: "networking.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "duc",
+			Name:      "yyy",
+		},
+		Spec: networkingv1.IngressSpec{
+			Rules: []networkingv1.IngressRule{
+				{
+					Host: "yyy.com",
+				},
+				{
+					Host: "zzz.com",
+				},
+			},
+		},
+	}
+	db, _ := data2.NewSqliteDB()
+	defer db.Close()
+	save, _ := db.Namespace.Create().SetName("duc").Save(context.Background())
+	p1, _ := db.Project.Create().SetName("app1").
+		SetManifest(encodeToYaml(&ing1)).
+		SetNamespaceID(save.ID).
+		SetCreator("").
+		Save(context.Background())
+	p2, _ := db.Project.Create().SetName("app2").
+		SetManifest(encodeToYaml(&ing2)).
+		SetNamespaceID(save.ID).
+		SetCreator("").
+		Save(context.Background())
+	p3, _ := db.Project.Create().SetName("xxx").
+		SetNamespaceID(save.ID).
+		SetCreator("").
+		Save(context.Background())
+	p4 := db.Project.Create().SetName("yyy").
+		SetManifest(encodeToYaml(&ing4)).
+		SetNamespaceID(save.ID).
+		SetCreator("").
+		SaveX(context.Background())
+	data := data2.NewMockData(m)
+	repo := &projectRepo{
+		logger: mlog.NewLogger(nil),
+		data:   data,
+	}
+	fk := fake.NewSimpleClientset(
+		&networkingv1.IngressList{
+			Items: []networkingv1.Ingress{
+				ing1,
+				ing2,
+				ing3,
+				ing4,
+			},
+		},
+	)
+	var (
+		_ = p1
+		_ = p2
+		_ = p3
+		_ = p4
+	)
+	data.EXPECT().K8sClient().Return(&data2.K8sClient{
+		IngressLister: NewIngressLister(&ing1, &ing2, &ing3, &ing4),
+		Client:        fk,
+	})
+
+	only, _ := db.Namespace.Query().Where(namespace.ID(save.ID)).WithProjects().Only(context.TODO())
+	mapping := repo.GetIngressMappingByProjects(context.TODO(), save.Name, serialize.Serialize(only.Edges.Projects, ToProject)...)
+
+	assert.Len(t, mapping["app1"], 3)
+	assert.Len(t, mapping["app2"], 2)
+	assert.Equal(t, "https://app2.org", mapping["app2"][0].Url)
+	assert.Equal(t, "http://http.com", mapping["app2"][1].Url)
+	assert.Len(t, mapping["xxx"], 0)
+	assert.Len(t, mapping["yyy"], 2)
+	for _, endpoint := range mapping["yyy"] {
+		assert.True(t, strings.HasPrefix(endpoint.Url, "http://"))
+	}
+}
+
+func Test_projectRepo_GetNodePortMappingByProjects(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	svc1 := corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "duc",
+			Name:      "svc1",
+		},
+		Spec: corev1.ServiceSpec{
+			Type: "NodePort",
+			Ports: []corev1.ServicePort{
+				{
+					Name:     "http",
+					Protocol: "tcp",
+					Port:     80,
+					NodePort: 30000,
+				},
+				{
+					Name:     "ui",
+					Protocol: "tcp",
+					Port:     80,
+					NodePort: 30001,
+				},
+				{
+					Name:     "web",
+					Protocol: "tcp",
+					Port:     80,
+					NodePort: 30002,
+				},
+				{
+					Name:     "api",
+					Protocol: "tcp",
+					Port:     80,
+					NodePort: 30003,
+				},
+				{
+					Name:     "grpc",
+					Protocol: "tcp",
+					Port:     80,
+					NodePort: 30004,
+				},
+				{
+					Name:     "xxxx",
+					Protocol: "tcp",
+					Port:     80,
+					NodePort: 30005,
+				},
+			},
+		},
+	}
+	lister := NewServiceLister(&svc1)
+	data := data2.NewMockData(m)
+	repo := &projectRepo{
+		logger:     mlog.NewLogger(nil),
+		data:       data,
+		externalIp: "127.0.0.1",
+	}
+	data.EXPECT().K8sClient().Return(&data2.K8sClient{
+		ServiceLister: lister,
+	})
+	db, _ := data2.NewSqliteDB()
+	defer db.Close()
+	ns, _ := db.Namespace.Create().SetName("duc").Save(context.Background())
+	p1 := db.Project.Create().SetName("svc1").
+		SetManifest(encodeToYaml(&svc1)).
+		SetNamespaceID(ns.ID).
+		SetCreator("").
+		SaveX(context.Background())
+	_ = p1
+	only, _ := db.Namespace.Query().Where(namespace.ID(ns.ID)).WithProjects().Only(context.Background())
+	mapping := repo.GetNodePortMappingByProjects(context.TODO(), ns.Name, serialize.Serialize(only.Edges.Projects, ToProject)...)
+	httpCount := 0
+	total := 0
+	for _, endpoints := range mapping {
+		for _, endpoint := range endpoints {
+			total++
+			if strings.HasPrefix(endpoint.Url, "http") {
+				httpCount++
+			}
+		}
+	}
+	assert.Equal(t, 4, httpCount)
+	assert.Equal(t, 6, total)
 }
 
 func NewServiceLister(svcs ...*corev1.Service) corev1lister.ServiceLister {
@@ -876,4 +1205,20 @@ func NewIngressLister(svcs ...*networkingv1.Ingress) networkingv1lister.IngressL
 		idxer.Add(po)
 	}
 	return networkingv1lister.NewIngressLister(idxer)
+}
+
+func NewPodLister(pods ...*corev1.Pod) corev1lister.PodLister {
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	for _, po := range pods {
+		idxer.Add(po)
+	}
+	return corev1lister.NewPodLister(idxer)
+}
+
+func NewRsLister(rs ...*appsv1.ReplicaSet) appsv1lister.ReplicaSetLister {
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	for _, po := range rs {
+		idxer.Add(po)
+	}
+	return appsv1lister.NewReplicaSetLister(idxer)
 }

@@ -392,6 +392,16 @@ func GitProjectIDLTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldLTE(FieldGitProjectID, v))
 }
 
+// GitProjectIDIsNil applies the IsNil predicate on the "git_project_id" field.
+func GitProjectIDIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldGitProjectID))
+}
+
+// GitProjectIDNotNil applies the NotNil predicate on the "git_project_id" field.
+func GitProjectIDNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldGitProjectID))
+}
+
 // GitBranchEQ applies the EQ predicate on the "git_branch" field.
 func GitBranchEQ(v string) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldGitBranch, v))
@@ -445,6 +455,16 @@ func GitBranchHasPrefix(v string) predicate.Project {
 // GitBranchHasSuffix applies the HasSuffix predicate on the "git_branch" field.
 func GitBranchHasSuffix(v string) predicate.Project {
 	return predicate.Project(sql.FieldHasSuffix(FieldGitBranch, v))
+}
+
+// GitBranchIsNil applies the IsNil predicate on the "git_branch" field.
+func GitBranchIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldGitBranch))
+}
+
+// GitBranchNotNil applies the NotNil predicate on the "git_branch" field.
+func GitBranchNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldGitBranch))
 }
 
 // GitBranchEqualFold applies the EqualFold predicate on the "git_branch" field.
@@ -510,6 +530,16 @@ func GitCommitHasPrefix(v string) predicate.Project {
 // GitCommitHasSuffix applies the HasSuffix predicate on the "git_commit" field.
 func GitCommitHasSuffix(v string) predicate.Project {
 	return predicate.Project(sql.FieldHasSuffix(FieldGitCommit, v))
+}
+
+// GitCommitIsNil applies the IsNil predicate on the "git_commit" field.
+func GitCommitIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldGitCommit))
+}
+
+// GitCommitNotNil applies the NotNil predicate on the "git_commit" field.
+func GitCommitNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldGitCommit))
 }
 
 // GitCommitEqualFold applies the EqualFold predicate on the "git_commit" field.

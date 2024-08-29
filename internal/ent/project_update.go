@@ -95,6 +95,12 @@ func (pu *ProjectUpdate) AddGitProjectID(i int) *ProjectUpdate {
 	return pu
 }
 
+// ClearGitProjectID clears the value of the "git_project_id" field.
+func (pu *ProjectUpdate) ClearGitProjectID() *ProjectUpdate {
+	pu.mutation.ClearGitProjectID()
+	return pu
+}
+
 // SetGitBranch sets the "git_branch" field.
 func (pu *ProjectUpdate) SetGitBranch(s string) *ProjectUpdate {
 	pu.mutation.SetGitBranch(s)
@@ -109,6 +115,12 @@ func (pu *ProjectUpdate) SetNillableGitBranch(s *string) *ProjectUpdate {
 	return pu
 }
 
+// ClearGitBranch clears the value of the "git_branch" field.
+func (pu *ProjectUpdate) ClearGitBranch() *ProjectUpdate {
+	pu.mutation.ClearGitBranch()
+	return pu
+}
+
 // SetGitCommit sets the "git_commit" field.
 func (pu *ProjectUpdate) SetGitCommit(s string) *ProjectUpdate {
 	pu.mutation.SetGitCommit(s)
@@ -120,6 +132,12 @@ func (pu *ProjectUpdate) SetNillableGitCommit(s *string) *ProjectUpdate {
 	if s != nil {
 		pu.SetGitCommit(*s)
 	}
+	return pu
+}
+
+// ClearGitCommit clears the value of the "git_commit" field.
+func (pu *ProjectUpdate) ClearGitCommit() *ProjectUpdate {
+	pu.mutation.ClearGitCommit()
 	return pu
 }
 
@@ -638,11 +656,20 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.AddedGitProjectID(); ok {
 		_spec.AddField(project.FieldGitProjectID, field.TypeInt, value)
 	}
+	if pu.mutation.GitProjectIDCleared() {
+		_spec.ClearField(project.FieldGitProjectID, field.TypeInt)
+	}
 	if value, ok := pu.mutation.GitBranch(); ok {
 		_spec.SetField(project.FieldGitBranch, field.TypeString, value)
 	}
+	if pu.mutation.GitBranchCleared() {
+		_spec.ClearField(project.FieldGitBranch, field.TypeString)
+	}
 	if value, ok := pu.mutation.GitCommit(); ok {
 		_spec.SetField(project.FieldGitCommit, field.TypeString, value)
+	}
+	if pu.mutation.GitCommitCleared() {
+		_spec.ClearField(project.FieldGitCommit, field.TypeString)
 	}
 	if value, ok := pu.mutation.Config(); ok {
 		_spec.SetField(project.FieldConfig, field.TypeString, value)
@@ -945,6 +972,12 @@ func (puo *ProjectUpdateOne) AddGitProjectID(i int) *ProjectUpdateOne {
 	return puo
 }
 
+// ClearGitProjectID clears the value of the "git_project_id" field.
+func (puo *ProjectUpdateOne) ClearGitProjectID() *ProjectUpdateOne {
+	puo.mutation.ClearGitProjectID()
+	return puo
+}
+
 // SetGitBranch sets the "git_branch" field.
 func (puo *ProjectUpdateOne) SetGitBranch(s string) *ProjectUpdateOne {
 	puo.mutation.SetGitBranch(s)
@@ -959,6 +992,12 @@ func (puo *ProjectUpdateOne) SetNillableGitBranch(s *string) *ProjectUpdateOne {
 	return puo
 }
 
+// ClearGitBranch clears the value of the "git_branch" field.
+func (puo *ProjectUpdateOne) ClearGitBranch() *ProjectUpdateOne {
+	puo.mutation.ClearGitBranch()
+	return puo
+}
+
 // SetGitCommit sets the "git_commit" field.
 func (puo *ProjectUpdateOne) SetGitCommit(s string) *ProjectUpdateOne {
 	puo.mutation.SetGitCommit(s)
@@ -970,6 +1009,12 @@ func (puo *ProjectUpdateOne) SetNillableGitCommit(s *string) *ProjectUpdateOne {
 	if s != nil {
 		puo.SetGitCommit(*s)
 	}
+	return puo
+}
+
+// ClearGitCommit clears the value of the "git_commit" field.
+func (puo *ProjectUpdateOne) ClearGitCommit() *ProjectUpdateOne {
+	puo.mutation.ClearGitCommit()
 	return puo
 }
 
@@ -1518,11 +1563,20 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 	if value, ok := puo.mutation.AddedGitProjectID(); ok {
 		_spec.AddField(project.FieldGitProjectID, field.TypeInt, value)
 	}
+	if puo.mutation.GitProjectIDCleared() {
+		_spec.ClearField(project.FieldGitProjectID, field.TypeInt)
+	}
 	if value, ok := puo.mutation.GitBranch(); ok {
 		_spec.SetField(project.FieldGitBranch, field.TypeString, value)
 	}
+	if puo.mutation.GitBranchCleared() {
+		_spec.ClearField(project.FieldGitBranch, field.TypeString)
+	}
 	if value, ok := puo.mutation.GitCommit(); ok {
 		_spec.SetField(project.FieldGitCommit, field.TypeString, value)
+	}
+	if puo.mutation.GitCommitCleared() {
+		_spec.ClearField(project.FieldGitCommit, field.TypeString)
 	}
 	if value, ok := puo.mutation.Config(); ok {
 		_spec.SetField(project.FieldConfig, field.TypeString, value)

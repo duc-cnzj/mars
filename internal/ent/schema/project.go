@@ -23,12 +23,15 @@ func (Project) Fields() []ent.Field {
 			MaxLen(100).
 			Default("").
 			Comment("项目名"),
-		field.Int("git_project_id"),
+		field.Int("git_project_id").
+			Optional(),
 		field.String("git_branch").
 			MaxLen(255).
+			Optional().
 			Comment("git 分支"),
 		field.String("git_commit").
 			MaxLen(255).
+			Optional().
 			Comment("git commit"),
 		field.String("config").
 			SchemaType(map[string]string{

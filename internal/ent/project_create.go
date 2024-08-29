@@ -89,15 +89,39 @@ func (pc *ProjectCreate) SetGitProjectID(i int) *ProjectCreate {
 	return pc
 }
 
+// SetNillableGitProjectID sets the "git_project_id" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableGitProjectID(i *int) *ProjectCreate {
+	if i != nil {
+		pc.SetGitProjectID(*i)
+	}
+	return pc
+}
+
 // SetGitBranch sets the "git_branch" field.
 func (pc *ProjectCreate) SetGitBranch(s string) *ProjectCreate {
 	pc.mutation.SetGitBranch(s)
 	return pc
 }
 
+// SetNillableGitBranch sets the "git_branch" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableGitBranch(s *string) *ProjectCreate {
+	if s != nil {
+		pc.SetGitBranch(*s)
+	}
+	return pc
+}
+
 // SetGitCommit sets the "git_commit" field.
 func (pc *ProjectCreate) SetGitCommit(s string) *ProjectCreate {
 	pc.mutation.SetGitCommit(s)
+	return pc
+}
+
+// SetNillableGitCommit sets the "git_commit" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableGitCommit(s *string) *ProjectCreate {
+	if s != nil {
+		pc.SetGitCommit(*s)
+	}
 	return pc
 }
 
@@ -434,19 +458,10 @@ func (pc *ProjectCreate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Project.name": %w`, err)}
 		}
 	}
-	if _, ok := pc.mutation.GitProjectID(); !ok {
-		return &ValidationError{Name: "git_project_id", err: errors.New(`ent: missing required field "Project.git_project_id"`)}
-	}
-	if _, ok := pc.mutation.GitBranch(); !ok {
-		return &ValidationError{Name: "git_branch", err: errors.New(`ent: missing required field "Project.git_branch"`)}
-	}
 	if v, ok := pc.mutation.GitBranch(); ok {
 		if err := project.GitBranchValidator(v); err != nil {
 			return &ValidationError{Name: "git_branch", err: fmt.Errorf(`ent: validator failed for field "Project.git_branch": %w`, err)}
 		}
-	}
-	if _, ok := pc.mutation.GitCommit(); !ok {
-		return &ValidationError{Name: "git_commit", err: errors.New(`ent: missing required field "Project.git_commit"`)}
 	}
 	if v, ok := pc.mutation.GitCommit(); ok {
 		if err := project.GitCommitValidator(v); err != nil {
@@ -779,6 +794,12 @@ func (u *ProjectUpsert) AddGitProjectID(v int) *ProjectUpsert {
 	return u
 }
 
+// ClearGitProjectID clears the value of the "git_project_id" field.
+func (u *ProjectUpsert) ClearGitProjectID() *ProjectUpsert {
+	u.SetNull(project.FieldGitProjectID)
+	return u
+}
+
 // SetGitBranch sets the "git_branch" field.
 func (u *ProjectUpsert) SetGitBranch(v string) *ProjectUpsert {
 	u.Set(project.FieldGitBranch, v)
@@ -791,6 +812,12 @@ func (u *ProjectUpsert) UpdateGitBranch() *ProjectUpsert {
 	return u
 }
 
+// ClearGitBranch clears the value of the "git_branch" field.
+func (u *ProjectUpsert) ClearGitBranch() *ProjectUpsert {
+	u.SetNull(project.FieldGitBranch)
+	return u
+}
+
 // SetGitCommit sets the "git_commit" field.
 func (u *ProjectUpsert) SetGitCommit(v string) *ProjectUpsert {
 	u.Set(project.FieldGitCommit, v)
@@ -800,6 +827,12 @@ func (u *ProjectUpsert) SetGitCommit(v string) *ProjectUpsert {
 // UpdateGitCommit sets the "git_commit" field to the value that was provided on create.
 func (u *ProjectUpsert) UpdateGitCommit() *ProjectUpsert {
 	u.SetExcluded(project.FieldGitCommit)
+	return u
+}
+
+// ClearGitCommit clears the value of the "git_commit" field.
+func (u *ProjectUpsert) ClearGitCommit() *ProjectUpsert {
+	u.SetNull(project.FieldGitCommit)
 	return u
 }
 
@@ -1230,6 +1263,13 @@ func (u *ProjectUpsertOne) UpdateGitProjectID() *ProjectUpsertOne {
 	})
 }
 
+// ClearGitProjectID clears the value of the "git_project_id" field.
+func (u *ProjectUpsertOne) ClearGitProjectID() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearGitProjectID()
+	})
+}
+
 // SetGitBranch sets the "git_branch" field.
 func (u *ProjectUpsertOne) SetGitBranch(v string) *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
@@ -1244,6 +1284,13 @@ func (u *ProjectUpsertOne) UpdateGitBranch() *ProjectUpsertOne {
 	})
 }
 
+// ClearGitBranch clears the value of the "git_branch" field.
+func (u *ProjectUpsertOne) ClearGitBranch() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearGitBranch()
+	})
+}
+
 // SetGitCommit sets the "git_commit" field.
 func (u *ProjectUpsertOne) SetGitCommit(v string) *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
@@ -1255,6 +1302,13 @@ func (u *ProjectUpsertOne) SetGitCommit(v string) *ProjectUpsertOne {
 func (u *ProjectUpsertOne) UpdateGitCommit() *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateGitCommit()
+	})
+}
+
+// ClearGitCommit clears the value of the "git_commit" field.
+func (u *ProjectUpsertOne) ClearGitCommit() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearGitCommit()
 	})
 }
 
@@ -1903,6 +1957,13 @@ func (u *ProjectUpsertBulk) UpdateGitProjectID() *ProjectUpsertBulk {
 	})
 }
 
+// ClearGitProjectID clears the value of the "git_project_id" field.
+func (u *ProjectUpsertBulk) ClearGitProjectID() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearGitProjectID()
+	})
+}
+
 // SetGitBranch sets the "git_branch" field.
 func (u *ProjectUpsertBulk) SetGitBranch(v string) *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
@@ -1917,6 +1978,13 @@ func (u *ProjectUpsertBulk) UpdateGitBranch() *ProjectUpsertBulk {
 	})
 }
 
+// ClearGitBranch clears the value of the "git_branch" field.
+func (u *ProjectUpsertBulk) ClearGitBranch() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearGitBranch()
+	})
+}
+
 // SetGitCommit sets the "git_commit" field.
 func (u *ProjectUpsertBulk) SetGitCommit(v string) *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
@@ -1928,6 +1996,13 @@ func (u *ProjectUpsertBulk) SetGitCommit(v string) *ProjectUpsertBulk {
 func (u *ProjectUpsertBulk) UpdateGitCommit() *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateGitCommit()
+	})
+}
+
+// ClearGitCommit clears the value of the "git_commit" field.
+func (u *ProjectUpsertBulk) ClearGitCommit() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearGitCommit()
 	})
 }
 
