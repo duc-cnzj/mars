@@ -101,7 +101,7 @@ func (r *releaseInstaller) Run(
 		r.logger.Debug(err)
 		return re, nil
 	}
-	wrapLogFn(nil, "Failed: %s", err)
+	wrapLogFn(nil, "部署出现问题: %s", err)
 	if !input.DryRun {
 		if !input.IsNew {
 			// 失败了，需要手动回滚

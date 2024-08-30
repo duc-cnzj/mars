@@ -139,11 +139,21 @@ func Test_releaseInstaller_Run_Dry(t *testing.T) {
 
 	ctx := context.TODO()
 	helmer.EXPECT().UpgradeOrInstall(ctx, "name", "ns", gomock.Any(), gomock.Any(), gomock.Any(), false, int64(10), true, "desc").Return(nil, errors.New("x"))
+	percentable := NewMockPercentable(m)
+	percentable.EXPECT().Add().AnyTimes()
+	percentable.EXPECT().Current().AnyTimes()
+	messageChan := NewMockSafeWriteMessageChan(m)
+	messageChan.EXPECT().Send(MessageItem{
+		Msg:  "部署出现问题: x",
+		Type: MessageText,
+	})
 	_, err := ri.Run(ctx, &InstallInput{
 		DryRun:      true,
 		Namespace:   "ns",
 		ReleaseName: "name",
 		Description: "desc",
+		messageChan: messageChan,
+		percenter:   percentable,
 	})
 	assert.Error(t, err)
 }
@@ -185,12 +195,19 @@ func Test_releaseInstaller_Run(t *testing.T) {
 	helmer.EXPECT().UpgradeOrInstall(ctx, "name", "ns", gomock.Any(), gomock.Any(), gomock.Any(), false, int64(10), false, "desc").Return(nil, errors.New("x"))
 
 	helmer.EXPECT().Uninstall("name", "ns", gomock.Any()).Return(errors.New("y"))
+	percentable := NewMockPercentable(m)
+	percentable.EXPECT().Add().AnyTimes()
+	percentable.EXPECT().Current().AnyTimes()
+	messageChan := NewMockSafeWriteMessageChan(m)
+	messageChan.EXPECT().Send(gomock.Any()).AnyTimes()
 	_, err := ri.Run(ctx, &InstallInput{
 		IsNew:       true,
 		DryRun:      false,
 		Namespace:   "ns",
 		ReleaseName: "name",
 		Description: "desc",
+		percenter:   percentable,
+		messageChan: messageChan,
 	})
 	assert.Error(t, err)
 }
@@ -210,12 +227,19 @@ func Test_releaseInstaller_Run_2(t *testing.T) {
 	helmer.EXPECT().UpgradeOrInstall(ctx, "name", "ns", gomock.Any(), gomock.Any(), gomock.Any(), false, int64(10), false, "desc").Return(nil, errors.New("x"))
 
 	helmer.EXPECT().Rollback("name", "ns", false, gomock.Any(), false).Return(errors.New("y"))
+	percentable := NewMockPercentable(m)
+	percentable.EXPECT().Add().AnyTimes()
+	percentable.EXPECT().Current().AnyTimes()
+	messageChan := NewMockSafeWriteMessageChan(m)
+	messageChan.EXPECT().Send(gomock.Any()).AnyTimes()
 	_, err := ri.Run(ctx, &InstallInput{
 		IsNew:       false,
 		DryRun:      false,
 		Namespace:   "ns",
 		ReleaseName: "name",
 		Description: "desc",
+		percenter:   percentable,
+		messageChan: messageChan,
 	})
 	assert.Error(t, err)
 }

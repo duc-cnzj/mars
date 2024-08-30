@@ -123,6 +123,16 @@ func TestRepoImpl_Update(t *testing.T) {
 
 	s, _ := status.FromError(err)
 	assert.Equal(t, "repo 名称已经存在", s.Message())
+
+	project := createProject(db, createNamespace(db).ID)
+	project.Update().SetRepoID(create.ID).SaveX(context.Background())
+	_, err = repo.Update(context.TODO(), &UpdateRepoInput{
+		ID:          int32(create.ID),
+		Name:        "abcd",
+		NeedGitRepo: false,
+	})
+	s, _ = status.FromError(err)
+	assert.Equal(t, "repo 下面还有 1 个项目，不能修改名称", s.Message())
 }
 
 func TestRepoImpl_ToggleEnabled(t *testing.T) {

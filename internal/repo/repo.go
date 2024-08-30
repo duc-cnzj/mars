@@ -168,7 +168,7 @@ func (r *repoImpl) Create(ctx context.Context, in *CreateRepoInput) (*Repo, erro
 }
 
 func (r *repoImpl) Show(ctx context.Context, id int) (*Repo, error) {
-	get, err := r.data.DB().Repo.Get(ctx, id)
+	get, err := r.data.DB().Repo.Query().Where(repo.ID(id)).WithProjects().Only(ctx)
 	return ToRepo(get), ToError(404, err)
 }
 
@@ -191,6 +191,10 @@ func (r *repoImpl) Update(ctx context.Context, in *UpdateRepoInput) (*Repo, erro
 	re, err := r.data.DB().Repo.Query().Where(repo.Name(in.Name)).First(ctx)
 	if err == nil && re.ID != int(in.ID) {
 		return nil, ToError(400, "repo 名称已经存在")
+	}
+	show, _ := r.Show(ctx, int(in.ID))
+	if show.Name != in.Name && len(show.Projects) > 0 {
+		return nil, ToError(400, fmt.Sprintf("repo 下面还有 %d 个项目，不能修改名称", len(show.Projects)))
 	}
 
 	if in.NeedGitRepo {
