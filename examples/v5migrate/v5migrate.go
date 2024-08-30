@@ -176,18 +176,9 @@ func finalExtraValues(cfg *mars.Config, ExtraValues []*websocket_pb.ExtraValue) 
 	var useDefaultMap = make(map[string]bool)
 
 	var configElementsMap = make(map[string]*mars.Element)
-	//indent, _ := json.MarshalIndent(cfg.Elements, " ", "    ")
-	//log.Println(string(indent))
-	//log.Println("before sort")
 	sort.Slice(cfg.Elements, func(x, y int) bool {
 		return cfg.Elements[x].Order < cfg.Elements[y].Order
 	})
-	//indent2, _ := json.MarshalIndent(cfg.Elements, " ", "    ")
-	//log.Println("after sort")
-	//log.Println(string(indent2))
-	//if len(ExtraValues) > 2 {
-	//	os.Exit(1)
-	//}
 	for _, element := range cfg.Elements {
 		configElementsMap[element.Path] = element
 		defaultValue, e := typedValue(element, element.Default)
