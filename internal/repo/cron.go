@@ -5,10 +5,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"reflect"
+	"maps"
 	"strconv"
 	"sync"
 	"time"
+
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/duc-cnzj/mars/api/v5/types"
 	"github.com/duc-cnzj/mars/v5/internal/application"
@@ -60,7 +62,21 @@ type cronRepo struct {
 	fileRepo    FileRepo
 }
 
-func NewCronRepo(logger mlog.Logger, fileRepo FileRepo, cache cache.Cache, repoRepo RepoRepo, nsRepo NamespaceRepo, k8sRepo K8sRepo, pluginMgr application.PluginManger, event EventRepo, data data.Data, up uploader.Uploader, helm HelmerRepo, gitRepo GitRepo, cronManager cron.Manager) CronRepo {
+func NewCronRepo(
+	logger mlog.Logger,
+	fileRepo FileRepo,
+	cache cache.Cache,
+	repoRepo RepoRepo,
+	nsRepo NamespaceRepo,
+	k8sRepo K8sRepo,
+	pluginMgr application.PluginManger,
+	event EventRepo,
+	data data.Data,
+	up uploader.Uploader,
+	helm HelmerRepo,
+	gitRepo GitRepo,
+	cronManager cron.Manager,
+) CronRepo {
 	cr := &cronRepo{
 		fileRepo:    fileRepo,
 		logger:      logger.WithModule("repo/cron"),
@@ -76,6 +92,7 @@ func NewCronRepo(logger mlog.Logger, fileRepo FileRepo, cache cache.Cache, repoR
 		repoRepo:    repoRepo,
 		cache:       cache,
 	}
+	cfg := data.Config()
 
 	cronManager.NewCommand("clean_upload_files", cr.CleanUploadFiles).DailyAt("2:00")
 	cronManager.NewCommand("disk_info", func() error {
@@ -83,15 +100,14 @@ func NewCronRepo(logger mlog.Logger, fileRepo FileRepo, cache cache.Cache, repoR
 		return err
 	}).EveryTenMinutes()
 	cronManager.NewCommand("fix_project_deploy_status", cr.FixDeployStatus).EveryTwoMinutes()
+	cronManager.NewCommand("sync_domain_secret", cr.SyncDomainSecret).EveryMinute()
 
-	if data.Config().GitServerCached {
+	if cfg.GitServerCached {
 		cronManager.NewCommand("all_branch_cache", cr.CacheAllBranches).EveryTwoMinutes()
 		cronManager.NewCommand("all_project_cache", cr.CacheAllProjects).EveryFiveMinutes()
 	}
 
-	cronManager.NewCommand("sync_domain_secret", cr.SyncDomainSecret).EveryMinute()
-
-	if data.Config().KubeConfig != "" {
+	if cfg.KubeConfig != "" {
 		cronManager.NewCommand("sync_image_pull_secrets", cr.SyncImagePullSecrets).EveryFiveMinutes()
 		cronManager.NewCommand("project_pod_event_listener", cr.ProjectPodEventListener).EveryFiveSeconds()
 	}
@@ -179,7 +195,7 @@ func (repo *cronRepo) SyncImagePullSecrets() error {
 			if err != nil {
 				logger.Warningf("[syncImagePullSecrets]: error get secret '%s', err %v", secretName, err)
 				if apierrors.IsNotFound(err) {
-					repo.deleteSecret(ns, secretName)
+					ns = repo.deleteSecret(k8sClient.Client, ns, secretName)
 				}
 				continue
 			}
@@ -204,11 +220,11 @@ func (repo *cronRepo) SyncImagePullSecrets() error {
 					}
 				}
 				if len(newConfigJson.Auths) == 0 {
-					repo.deleteSecret(ns, secretName)
+					ns = repo.deleteSecret(k8sClient.Client, ns, secretName)
 					continue
 				}
 
-				if !reflect.DeepEqual(newConfigJson.Auths, res.Auths) {
+				if !maps.Equal(newConfigJson.Auths, res.Auths) {
 					logger.Warningf("[syncImagePullSecrets]: Find Diff, Auto Sync: '%s'", secretName)
 					marshal, _ := json.Marshal(&newConfigJson)
 					secret.Data[corev1.DockerConfigJsonKey] = marshal
@@ -240,19 +256,18 @@ func (repo *cronRepo) SyncImagePullSecrets() error {
 	return nil
 }
 
-func (repo *cronRepo) deleteSecret(ns *ent.Namespace, secretName string) {
+func (repo *cronRepo) deleteSecret(cli kubernetes.Interface, ns *ent.Namespace, secretName string) *ent.Namespace {
 	logger := repo.logger
-	client := repo.data.K8sClient().Client
 	logger.Warningf("[syncImagePullSecrets]: DELETE: %s", secretName)
 
-	client.CoreV1().Secrets(ns.Name).Delete(context.TODO(), secretName, metav1.DeleteOptions{})
+	cli.CoreV1().Secrets(ns.Name).Delete(context.TODO(), secretName, metav1.DeleteOptions{})
 	var newNsArray []string
 	for _, name := range ns.ImagePullSecrets {
 		if name != secretName {
 			newNsArray = append(newNsArray, name)
 		}
 	}
-	ns.Update().SetImagePullSecrets(newNsArray).SaveX(context.TODO())
+	return ns.Update().SetImagePullSecrets(newNsArray).SaveX(context.TODO())
 }
 
 // SyncDomainSecret 定期同步域名证书，比如配置文件发生变更，或者源证书发生变更
@@ -271,7 +286,7 @@ func (repo *cronRepo) SyncDomainSecret() error {
 		}
 		for _, n := range allNamespaces {
 			secret, err := k8sCli.SecretLister.Secrets(n.Name).Get(secretName)
-			if err == nil {
+			if err != nil {
 				if apierrors.IsNotFound(err) {
 					repo.logger.Infof("[TLS]: Register secret namespace: %s, name %s.", n.Name, secretName)
 					if _, err := repo.k8sRepo.AddTlsSecret(n.Name, secretName, tlsKey, tlsCrt); err != nil {
@@ -328,9 +343,12 @@ func (repo *cronRepo) allNamespaces(pageSize int32) ([]*Namespace, error) {
 // FixDeployStatus 当 project helm 状态为异常的时候，自动去查询状态并且修复它(当人工手动把 helm 恢复时)
 func (repo *cronRepo) FixDeployStatus() error {
 	var db = repo.data.DB()
-	projects := db.Project.Query().WithNamespace(func(query *ent.NamespaceQuery) {
-		query.Select(namespace.FieldID, namespace.FieldName)
-	}).Where(project.DeployStatusIn(types.Deploy_StatusFailed, types.Deploy_StatusUnknown)).AllX(context.TODO())
+	projects := db.Project.Query().
+		WithNamespace(func(query *ent.NamespaceQuery) {
+			query.Select(namespace.FieldID, namespace.FieldName)
+		}).
+		Where(project.DeployStatusIn(types.Deploy_StatusFailed, types.Deploy_StatusUnknown)).
+		AllX(context.TODO())
 
 	var status types.Deploy
 	for _, project := range projects {

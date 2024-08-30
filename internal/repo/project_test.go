@@ -423,8 +423,8 @@ func TestEndpointMapping_AllEndpoints(t *testing.T) {
 	t.Run("returns all endpoints", func(t *testing.T) {
 		endpoints := mapping.AllEndpoints()
 		assert.Equal(t, 2, len(endpoints))
-		assert.Equal(t, "Endpoint1", endpoints[0].Name)
-		assert.Equal(t, "Endpoint2", endpoints[1].Name)
+		assert.Equal(t, "Endpoint2", endpoints[0].Name)
+		assert.Equal(t, "Endpoint1", endpoints[1].Name)
 	})
 }
 

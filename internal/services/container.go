@@ -324,7 +324,6 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 	}
 
 	r := c.fileRepo.NewRecorder(
-		types.EventActionType_Exec,
 		MustGetUser(ctx),
 		&repo.Container{
 			Namespace: namespace,
@@ -466,7 +465,7 @@ func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server conta
 		c.logger.Debug("使用默认的容器: ", request.Container)
 	}
 
-	r := c.fileRepo.NewRecorder(types.EventActionType_Exec, MustGetUser(ctx), &repo.Container{
+	r := c.fileRepo.NewRecorder(MustGetUser(ctx), &repo.Container{
 		Namespace: request.Namespace,
 		Pod:       request.Pod,
 		Container: request.Container,

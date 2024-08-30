@@ -1364,17 +1364,17 @@ func (mr *MockFileRepoMockRecorder) NewFile(arg0 any) *gomock.Call {
 }
 
 // NewRecorder mocks base method.
-func (m *MockFileRepo) NewRecorder(arg0 types.EventActionType, arg1 *schematype.UserInfo, arg2 *Container) Recorder {
+func (m *MockFileRepo) NewRecorder(arg0 *schematype.UserInfo, arg1 *Container) Recorder {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewRecorder", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "NewRecorder", arg0, arg1)
 	ret0, _ := ret[0].(Recorder)
 	return ret0
 }
 
 // NewRecorder indicates an expected call of NewRecorder.
-func (mr *MockFileRepoMockRecorder) NewRecorder(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockFileRepoMockRecorder) NewRecorder(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewRecorder", reflect.TypeOf((*MockFileRepo)(nil).NewRecorder), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewRecorder", reflect.TypeOf((*MockFileRepo)(nil).NewRecorder), arg0, arg1)
 }
 
 // ShowRecords mocks base method.

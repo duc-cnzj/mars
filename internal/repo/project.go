@@ -715,5 +715,6 @@ func (e EndpointMapping) AllEndpoints() []*types.ServiceEndpoint {
 	for _, endpoints := range e {
 		res = append(res, endpoints...)
 	}
+	sort.Sort(sortEndpoint(res))
 	return res
 }

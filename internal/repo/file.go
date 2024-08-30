@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v5/types"
 	"github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/duc-cnzj/mars/v5/internal/cache"
 	"github.com/duc-cnzj/mars/v5/internal/data"
@@ -88,7 +87,7 @@ type FileRepo interface {
 	Create(todo context.Context, input *CreateFileInput) (*File, error)
 	NewDisk(disk string) uploader.Uploader
 	NewFile(fpath string) (uploader.File, error)
-	NewRecorder(action types.EventActionType, user *auth.UserInfo, container *Container) Recorder
+	NewRecorder(user *auth.UserInfo, container *Container) Recorder
 	Update(ctx context.Context, i *UpdateFileRequest) (*File, error)
 	StreamUploadFile(ctx context.Context, input *StreamUploadFileRequest) (*File, error)
 }
@@ -130,15 +129,18 @@ type ListFileInput struct {
 
 func (repo *fileRepo) List(ctx context.Context, input *ListFileInput) ([]*File, *pagination.Pagination, error) {
 	var db = repo.data.DB()
-	queryCtx := context.TODO()
+	queryCtx := ctx
 	if input.WithSoftDelete {
 		queryCtx = mixin.SkipSoftDelete(queryCtx)
 	}
-	query := db.File.Query().Where(filters.IfOrderByDesc("id")(input.OrderIDDesc))
+	query := db.File.Query().
+		Where(filters.IfOrderByIDDesc(input.OrderIDDesc))
 	files := query.Clone().
 		Offset(pagination.GetPageOffset(input.Page, input.PageSize)).
-		Limit(int(input.PageSize)).AllX(queryCtx)
-	count := query.Clone().CountX(queryCtx)
+		Limit(int(input.PageSize)).
+		AllX(queryCtx)
+	count := query.Clone().
+		CountX(queryCtx)
 
 	return serialize.Serialize(files, ToFile), pagination.NewPagination(input.Page, input.PageSize, count), nil
 }
@@ -236,12 +238,10 @@ func (repo *fileRepo) DiskInfo(force bool) (int64, error) {
 	return byteToInt64(remember), err
 }
 
-func (repo *fileRepo) NewRecorder(action types.EventActionType, user *auth.UserInfo, container *Container) Recorder {
+func (repo *fileRepo) NewRecorder(user *auth.UserInfo, container *Container) Recorder {
 	return &recorder{
 		fileRepo:      repo,
-		data:          repo.data,
 		logger:        repo.logger,
-		action:        action,
 		timer:         repo.timer,
 		container:     container,
 		user:          user,
@@ -322,9 +322,7 @@ type recorder struct {
 	file     *File
 	fileRepo FileRepo
 
-	data      data.Data
 	logger    mlog.Logger
-	action    types.EventActionType
 	timer     timer.Timer
 	container *Container
 	f         uploader.File

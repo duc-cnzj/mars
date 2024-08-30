@@ -592,7 +592,7 @@ func (wc *WebsocketManager) StartShell(ctx context.Context, input *websocket_pb.
 		sessionID: sessionID,
 		eventRepo: wc.eventRepo,
 		container: container,
-		recorder:  wc.fileRepo.NewRecorder(types.EventActionType_Shell, conn.GetUser(), container),
+		recorder:  wc.fileRepo.NewRecorder(conn.GetUser(), container),
 		conn:      conn,
 		doneChan:  make(chan struct{}),
 		sizeStore: &sizeStore{},
