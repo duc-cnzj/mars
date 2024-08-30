@@ -415,10 +415,11 @@ const DeployProjectForm: React.FC<{
                             : ""
                         }
                         placeholder="选择项目"
-                        optionFilterProp="label"
+                        optionFilterProp="search"
                         defaultActiveFirstOption={false}
                         onDropdownVisibleChange={onProjectVisibleChange}
                         options={options.project.map((v) => ({
+                          search: `${v.label} ${v.description}`,
                           label: (
                             <div>
                               {v.label}

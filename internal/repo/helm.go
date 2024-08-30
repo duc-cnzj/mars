@@ -72,7 +72,7 @@ func NewDefaultHelmer(k8sRepo K8sRepo, data data.Data, cfg *config.Config, logge
 func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, desc string) (*release.Release, error) {
 	var podSelectors []string
 	if wait && !dryRun {
-		re, err := d.upgradeOrInstall(context.TODO(), releaseName, namespace, ch, valueOpts, func(container []*websocket_pb.Container, format string, v ...any) {}, false, timeoutSeconds, true, nil, desc, d.KubeConfig, d.data.K8sClient())
+		re, err := d.upgradeOrInstall(context.TODO(), releaseName, namespace, ch, valueOpts, fn, false, timeoutSeconds, true, nil, desc, d.KubeConfig, d.data.K8sClient())
 		if err != nil {
 			return nil, err
 		}

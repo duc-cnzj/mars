@@ -463,7 +463,7 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 			ReleaseName:  j.project.Name,
 			Namespace:    j.ns.Name,
 			Description:  j.commit.GetTitle(),
-			messageChan:  NewSafeWriteMessageCh(j.logger, 100),
+			messageChan:  j.messageCh,
 			percenter:    j.messager,
 		}); err != nil {
 			j.logger.Errorf("[Websocket]: %v", err)

@@ -82,7 +82,10 @@ func (r *releaseInstaller) Run(
 
 	var logger = newTimeOrderedSetString(r.timer)
 	wrapLogFn := r.loggerWrap(input.messageChan, input.percenter, logger)
-	re, err := r.helmer.UpgradeOrInstall(
+	var re *release.Release
+	var err error
+
+	re, err = r.helmer.UpgradeOrInstall(
 		ctx,
 		input.ReleaseName,
 		input.Namespace,
@@ -98,6 +101,7 @@ func (r *releaseInstaller) Run(
 		r.logger.Debug(err)
 		return re, nil
 	}
+	wrapLogFn(nil, "Failed: %s", err)
 	if !input.DryRun {
 		if !input.IsNew {
 			// 失败了，需要手动回滚

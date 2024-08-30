@@ -4,15 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/samber/lo"
-
 	"github.com/duc-cnzj/mars/api/v5/mars"
-	"google.golang.org/grpc/status"
-
 	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/grpc/status"
 )
 
 func TestRepoImpl_All(t *testing.T) {
@@ -69,6 +67,13 @@ func TestRepoImpl_Create(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.NotEmpty(t, res.GitProjectID)
+
+	_, err = repo.Create(context.TODO(), &CreateRepoInput{
+		Name: "app",
+	})
+
+	s, _ := status.FromError(err)
+	assert.Equal(t, "repo 名称已经存在", s.Message())
 }
 
 func TestRepoImpl_Update(t *testing.T) {
@@ -105,6 +110,19 @@ func TestRepoImpl_Update(t *testing.T) {
 	assert.Equal(t, "dev", res.DefaultBranch)
 	assert.Equal(t, "a", res.GitProjectName)
 	assert.Equal(t, int32(100), res.GitProjectID)
+
+	db.Repo.Create().SetName("uuu").SaveX(context.TODO())
+	_, err = repo.Update(context.TODO(), &UpdateRepoInput{
+		ID:           int32(create.ID),
+		Name:         "uuu",
+		NeedGitRepo:  true,
+		GitProjectID: lo.ToPtr(int32(100)),
+		MarsConfig:   &mars.Config{ConfigField: "config"},
+		Description:  "dex",
+	})
+
+	s, _ := status.FromError(err)
+	assert.Equal(t, "repo 名称已经存在", s.Message())
 }
 
 func TestRepoImpl_ToggleEnabled(t *testing.T) {

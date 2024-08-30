@@ -139,6 +139,10 @@ func (r *repoImpl) Create(ctx context.Context, in *CreateRepoInput) (*Repo, erro
 		defaultBranch *string
 		err           error
 	)
+	exist, _ := r.data.DB().Repo.Query().Where(repo.Name(in.Name)).Exist(ctx)
+	if exist {
+		return nil, ToError(400, "repo 名称已经存在")
+	}
 	if in.NeedGitRepo {
 		projName, defaultBranch, err = r.GetProjNameAndBranch(ctx, int(lo.FromPtr(in.GitProjectID)))
 		if err != nil {
@@ -183,6 +187,12 @@ func (r *repoImpl) Update(ctx context.Context, in *UpdateRepoInput) (*Repo, erro
 		defaultBranch *string
 		err           error
 	)
+
+	re, err := r.data.DB().Repo.Query().Where(repo.Name(in.Name)).First(ctx)
+	if err == nil && re.ID != int(in.ID) {
+		return nil, ToError(400, "repo 名称已经存在")
+	}
+
 	if in.NeedGitRepo {
 		projName, defaultBranch, err = r.GetProjNameAndBranch(ctx, int(*in.GitProjectID))
 		if err != nil {

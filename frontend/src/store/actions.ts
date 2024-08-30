@@ -148,7 +148,7 @@ export const handleEvents = (
   input: any,
 ) => {
   return function (dispatch: Dispatch) {
-    console.log(data);
+    console.log(data.message);
     switch (data.type.valueOf()) {
       case pb.websocket.Type.ProjectPodEvent:
         let nsEvent = pb.websocket.WsProjectPodEventResponse.decode(input);
