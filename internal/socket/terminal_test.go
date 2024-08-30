@@ -734,7 +734,7 @@ func TestStartShell_WithValidSessionID(t *testing.T) {
 
 	conn := NewMockConn(m)
 	fileRepo := repo.NewMockFileRepo(m)
-	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any(), gomock.Any())
+	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any())
 	conn.EXPECT().GetUser().Return(&auth.UserInfo{})
 	ws := &WebsocketManager{
 		logger:   mlog.NewLogger(nil),

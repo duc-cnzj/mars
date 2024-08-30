@@ -184,7 +184,6 @@ func TestWebsocketManager_HandleWsCancelDeploy(t *testing.T) {
 	called := false
 	conn.taskManager.Register(GetSlugName(input.NamespaceId, input.Name), func(err error) {
 		called = true
-		return
 	})
 	marshal, _ := proto.Marshal(input)
 	nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Namespace{}, nil)

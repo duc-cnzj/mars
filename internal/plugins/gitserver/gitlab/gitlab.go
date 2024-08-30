@@ -418,9 +418,6 @@ func getRawFile(client *gitlab.Client, pid string, shaOrBranch string, filename 
 		opt.Ref = gitlab.String(shaOrBranch)
 	}
 	raw, _, err := client.RepositoryFiles.GetRawFile(pid, filename, &opt)
-	if err != nil {
-		//mlog.Warning(err)
-	}
 	return string(raw), err
 }
 

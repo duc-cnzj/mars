@@ -500,6 +500,15 @@ type fanOut[T runtime2.Object] struct {
 	listeners  map[string]chan<- Obj[T]
 }
 
+func NewFanOut[T runtime2.Object](
+	logger mlog.Logger,
+	name string,
+	ch chan Obj[T],
+	listeners map[string]chan<- Obj[T],
+) FanOutInterface[T] {
+	return &fanOut[T]{name: name, ch: ch, logger: logger, listeners: listeners}
+}
+
 func (f *fanOut[T]) AddListener(key string, ch chan Obj[T]) {
 	f.listenerMu.Lock()
 	defer f.listenerMu.Unlock()

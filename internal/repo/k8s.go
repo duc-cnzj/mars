@@ -775,11 +775,9 @@ func (repo *k8sRepo) LogStream(
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		select {
-		case <-ctx.Done():
-			stream.Close()
-			repo.logger.DebugCtx(ctx, "[LogStream]:  ctx done!")
-		}
+		<-ctx.Done()
+		stream.Close()
+		repo.logger.DebugCtx(ctx, "[LogStream]:  ctx done!")
 	}()
 	go func() {
 		wg.Wait()

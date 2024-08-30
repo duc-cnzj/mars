@@ -26,7 +26,6 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/uploader"
 	"github.com/duc-cnzj/mars/v5/internal/util/k8s"
-	"github.com/duc-cnzj/mars/v5/internal/util/mars"
 	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
@@ -134,14 +133,8 @@ func (repo *cronRepo) CacheAllBranches() error {
 	for i := 0; i < goroutineNum; i++ {
 		go func() {
 			defer wg.Done()
-			for {
-				select {
-				case id, ok := <-ch:
-					if !ok {
-						return
-					}
-					repo.gitRepo.AllBranches(context.TODO(), int(id), true)
-				}
+			for id := range ch {
+				repo.gitRepo.AllBranches(context.TODO(), int(id), true)
 			}
 		}()
 	}
@@ -475,9 +468,7 @@ func (l listFiles) PrettyYaml() string {
 }
 
 func (repo *cronRepo) ProjectPodEventListener() error {
-	var cfg = repo.data.Config()
 	var ws = repo.pluginMgr.Ws()
-	db := repo.data.DB()
 	logger := repo.logger
 	ch := make(chan data.Obj[*corev1.Pod], 100)
 	listener := "pod-watcher"
@@ -490,35 +481,29 @@ func (repo *cronRepo) ProjectPodEventListener() error {
 	defer logger.HandlePanic(listener)
 	defer podFanOut.RemoveListener(listener)
 
-	for {
-		select {
-		case obj, ok := <-ch:
-			if !ok {
-				repo.logger.Warning("[PodEventListener]: pod-watcher channel closed")
-				return nil
-			}
-			switch obj.Type() {
-			case data.Update:
-				if obj.Old().Status.Phase != obj.Current().Status.Phase || containerStatusChanged(logger, obj.Old(), obj.Current()) {
-					logger.Debugf("old: '%s' new '%s'", obj.Old().Status.Phase, obj.Current().Status.Phase)
-					if ns, err := db.Namespace.Query().Where(namespace.NameEQ(mars.GetMarsNamespace(obj.Current().Namespace, cfg.NsPrefix))).Only(context.TODO()); err == nil {
-						if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
-							logger.Errorf("[PodEventListener]: %v", err)
-						}
-					}
-				}
-			case data.Add, data.Delete:
-				logger.Warning("[PodEventListener]: add pod", obj.Type(), obj.Current().Name, obj.Current().Namespace)
-				if ns, err := db.Namespace.Query().Where(namespace.NameEQ(mars.GetMarsNamespace(obj.Current().Namespace, cfg.NsPrefix))).Only(context.TODO()); err == nil {
-					logger.Debugf("[PodEventListener]: pod '%v': '%s' '%s' '%d' '%s'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID, obj.Current().Status.Phase)
+	for obj := range ch {
+		switch obj.Type() {
+		case data.Update:
+			if obj.Old().Status.Phase != obj.Current().Status.Phase || containerStatusChanged(logger, obj.Old(), obj.Current()) {
+				logger.Debugf("old: '%s' new '%s'", obj.Old().Status.Phase, obj.Current().Status.Phase)
+				if ns, err := repo.nsRepo.FindByName(context.TODO(), obj.Current().Namespace); err == nil {
 					if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
 						logger.Errorf("[PodEventListener]: %v", err)
 					}
 				}
-			default:
 			}
+		case data.Add, data.Delete:
+			logger.Warning("[PodEventListener]: add pod", obj.Type(), obj.Current().Name, obj.Current().Namespace)
+			if ns, err := repo.nsRepo.FindByName(context.TODO(), obj.Current().Namespace); err == nil {
+				logger.Debugf("[PodEventListener]: pod '%v': '%s' '%s' '%d' '%s'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID, obj.Current().Status.Phase)
+				if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
+					logger.Errorf("[PodEventListener]: %v", err)
+				}
+			}
+		default:
 		}
 	}
+	return nil
 }
 
 func (repo *cronRepo) CacheAllProjects() error {

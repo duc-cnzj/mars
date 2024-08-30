@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -554,4 +555,112 @@ func Test_cronRepo_DiskInfo(t *testing.T) {
 	info, err := (&cronRepo{fileRepo: repo}).DiskInfo()
 	assert.Nil(t, err)
 	assert.NotNil(t, info)
+}
+
+func TestProjectPodEventListener(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	pch1 := make(chan data.Obj[*corev1.Pod], 100)
+	podFanOutObj := data.NewFanOut[*corev1.Pod](
+		mlog.NewLogger(nil),
+		"pod",
+		pch1,
+		make(map[string]chan<- data.Obj[*corev1.Pod]),
+	)
+
+	client := &data.K8sClient{
+		PodFanOut: podFanOutObj,
+	}
+	ch := make(chan struct{})
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	mockData := data.NewMockData(m)
+	mockData.EXPECT().K8sClient().Return(client).AnyTimes()
+
+	mockData.EXPECT().Config().Return(&config.Config{
+		NsPrefix:       "devtest-",
+		WsSenderPlugin: config.Plugin{Name: "test_wssender"},
+	}).AnyTimes()
+
+	ws := application.NewMockWsSender(m)
+
+	pl := application.NewMockPluginManger(m)
+	pl.EXPECT().Ws().Return(ws)
+
+	db, _ := data.NewSqliteDB()
+	defer db.Close()
+
+	nsModel := db.Namespace.Create().SetName("devtest-ns").SaveX(context.TODO())
+
+	pubsub := application.NewMockPubSub(m)
+	ws.EXPECT().New("", "").Return(pubsub).Times(1)
+
+	go (&cronRepo{
+		pluginMgr: pl,
+		logger:    mlog.NewLogger(nil),
+		data:      mockData,
+		nsRepo: &namespaceRepo{
+			logger: mlog.NewLogger(nil),
+			data:   data.NewDataImpl(&data.NewDataParams{DB: db}),
+		},
+		k8sRepo: &k8sRepo{
+			data: mockData,
+		},
+	}).ProjectPodEventListener()
+	time.Sleep(1 * time.Second)
+	go func() {
+		defer wg.Done()
+		podFanOutObj.Distribute(ch)
+	}()
+	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Any()).Times(1)
+	pch1 <- data.NewObj(nil, &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: "devtest-ns",
+			Name:      "p1",
+		},
+	}, data.Add)
+	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Any()).Times(1).Return(errors.New("xxx"))
+	pch1 <- data.NewObj(nil, &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: "devtest-ns",
+			Name:      "p2",
+		},
+	}, data.Delete)
+	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Any()).Times(1).Return(errors.New("xxx"))
+	pch1 <- data.NewObj(&corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: "devtest-ns",
+			Name:      "p3",
+		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodPending,
+		},
+	}, &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: "devtest-ns",
+			Name:      "p4",
+		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+		},
+	}, data.Update)
+
+	pch1 <- data.NewObj[*corev1.Pod](nil, nil, data.FanOutType(999))
+	time.Sleep(1 * time.Second)
+	close(ch)
+	wg.Wait()
+
+	pch := make(chan data.Obj[*corev1.Pod], 100)
+	podFanOutObj2 := data.NewFanOut[*corev1.Pod](
+		mlog.NewLogger(nil),
+		"pod-2",
+		pch,
+		make(map[string]chan<- data.Obj[*corev1.Pod]),
+	)
+
+	close(pch)
+	podFanOutObj2.Distribute(nil)
+	assert.True(t, true)
 }

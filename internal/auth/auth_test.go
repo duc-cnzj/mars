@@ -123,12 +123,6 @@ func TestAccessTokenAuth_VerifyToken(t *testing.T) {
 	assert.True(t, bb)
 }
 
-type autha struct{}
-
-func (a *autha) VerifyToken(s string) (*JwtClaims, bool) {
-	return nil, false
-}
-
 func TestNewAuthn(t *testing.T) {
 	authn, _ := NewAuthn(data.NewDataImpl(&data.NewDataParams{Cfg: &config.Config{PrivateKey: `-----BEGIN RSA PRIVATE KEY-----
 MIICWwIBAAKBgQCdx5ZBeL3P3lH2fU/8yd4E1L880DjaKCnnnQkya+kOE7kkJNtP

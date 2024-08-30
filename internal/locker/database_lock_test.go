@@ -343,5 +343,5 @@ func Test_databaseLock_renewalRoutine(t *testing.T) {
 	wg.Wait()
 	defer dbLock.Release(key)
 	first, _ := db.CacheLock.Query().Where(cachelock.Key(key)).First(context.TODO())
-	assert.Greater(t, int(first.ExpiredAt.Sub(time.Now()).Seconds()), 3)
+	assert.Greater(t, int(time.Since(first.ExpiredAt).Seconds()), 3)
 }

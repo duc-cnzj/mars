@@ -820,7 +820,7 @@ func Test_projectRepo_GetAllPods(t *testing.T) {
 	assert.Error(t, err)
 
 	project.Update().SetPodSelectors([]string{"a=a", "b=b"}).Save(context.TODO())
-	pods, err := r.GetAllActiveContainers(context.TODO(), project.ID)
+	pods, _ := r.GetAllActiveContainers(context.TODO(), project.ID)
 	assert.Len(t, pods, 5)
 	var oldCount int
 	for _, po := range pods {

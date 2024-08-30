@@ -619,7 +619,7 @@ func TestContainerSvc_ExecOnce_Success(t *testing.T) {
 	recorder := repo.NewMockRecorder(m)
 	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
 	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), gomock.Any(), gomock.Any()).Return("c", nil)
-	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any(), gomock.Any()).Return(recorder)
+	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any()).Return(recorder)
 	recorder.EXPECT().Write([]byte("mars@c:/# ls"))
 	recorder.EXPECT().Write([]byte("\r\n"))
 	recorder.EXPECT().Close()
@@ -708,7 +708,7 @@ func TestContainerSvc_Exec_Success(t *testing.T) {
 	eventRepo.EXPECT().FileAuditLogWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
 	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), gomock.Any(), gomock.Any()).Return("c", nil)
-	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any(), gomock.Any()).Return(&recorderMock{})
+	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any()).Return(&recorderMock{})
 	k8sRepo.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Return(&clientgoexec.CodeExitError{
 		Err:  errors.New("xx"),
 		Code: 2,
