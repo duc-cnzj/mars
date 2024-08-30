@@ -129,6 +129,25 @@ func (mr *MockProjectRepoMockRecorder) GetAllActiveContainers(arg0, arg1 any) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllActiveContainers", reflect.TypeOf((*MockProjectRepo)(nil).GetAllActiveContainers), arg0, arg1)
 }
 
+// GetGatewayHTTPRouteMappingByProjects mocks base method.
+func (m *MockProjectRepo) GetGatewayHTTPRouteMappingByProjects(arg0 context.Context, arg1 string, arg2 ...*Project) EndpointMapping {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetGatewayHTTPRouteMappingByProjects", varargs...)
+	ret0, _ := ret[0].(EndpointMapping)
+	return ret0
+}
+
+// GetGatewayHTTPRouteMappingByProjects indicates an expected call of GetGatewayHTTPRouteMappingByProjects.
+func (mr *MockProjectRepoMockRecorder) GetGatewayHTTPRouteMappingByProjects(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGatewayHTTPRouteMappingByProjects", reflect.TypeOf((*MockProjectRepo)(nil).GetGatewayHTTPRouteMappingByProjects), varargs...)
+}
+
 // GetIngressMappingByProjects mocks base method.
 func (m *MockProjectRepo) GetIngressMappingByProjects(arg0 context.Context, arg1 string, arg2 ...*Project) EndpointMapping {
 	m.ctrl.T.Helper()

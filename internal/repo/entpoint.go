@@ -47,9 +47,11 @@ func (repo *endpointRepo) InProject(ctx context.Context, projectID int) (res []*
 	nodePortMapping := repo.projRepo.GetNodePortMappingByProjects(ctx, first.Edges.Namespace.Name, ToProject(first))
 	ingMapping := repo.projRepo.GetIngressMappingByProjects(ctx, first.Edges.Namespace.Name, ToProject(first))
 	lbMapping := repo.projRepo.GetLoadBalancerMappingByProjects(ctx, first.Edges.Namespace.Name, ToProject(first))
+	httpRouteMapping := repo.projRepo.GetGatewayHTTPRouteMappingByProjects(ctx, first.Edges.Namespace.Name, ToProject(first))
 	res = append(res, ingMapping.AllEndpoints()...)
 	res = append(res, lbMapping.AllEndpoints()...)
 	res = append(res, nodePortMapping.AllEndpoints()...)
+	res = append(res, httpRouteMapping.AllEndpoints()...)
 	return
 }
 

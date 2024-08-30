@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type Project struct {
@@ -109,6 +110,7 @@ func ToProject(project *ent.Project) *Project {
 
 type ProjectRepo interface {
 	GetAllActiveContainers(ctx context.Context, id int) ([]*types.StateContainer, error)
+	GetGatewayHTTPRouteMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
 	GetNodePortMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
 	GetLoadBalancerMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
 	GetIngressMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
@@ -420,6 +422,42 @@ func isContainerReady(pod *v1.Pod, containerName string) bool {
 	return false
 }
 
+func (repo *projectRepo) GetGatewayHTTPRouteMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping {
+	_, span := otel.Tracer("").Start(ctx, "GetGatewayHTTPRouteMappingByProjects")
+	defer span.End()
+	var (
+		projectMap = make(projectObjectMap)
+		k8sCli     = repo.data.K8sClient()
+	)
+
+	if !k8sCli.GatewayApiInstalled {
+		return nil
+	}
+
+	for _, project := range projects {
+		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*gatewayv1.HTTPRoute](repo.logger, project.Manifest)
+	}
+
+	list, _ := k8sCli.HTTPRouteLister.HTTPRoutes(namespace).List(labels.Everything())
+
+	var m = map[string][]*types.ServiceEndpoint{}
+
+	for idx := range list {
+		item := list[idx]
+		if projectName, ok := projectMap.GetProject(item); ok && len(item.Spec.Hostnames) > 0 {
+			for _, hostname := range item.Spec.Hostnames {
+				data := m[projectName]
+				m[projectName] = append(data, &types.ServiceEndpoint{
+					Name: projectName,
+					Url:  fmt.Sprintf("%s:%s", "https", hostname),
+				})
+			}
+		}
+	}
+
+	return m
+}
+
 func (repo *projectRepo) GetNodePortMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping {
 	_, span := otel.Tracer("").Start(ctx, "GetNodePortMappingByProjects")
 	defer span.End()
@@ -625,6 +663,12 @@ func (s SortStatePod) Swap(i, j int) {
 }
 
 const RevisionAnnotation = "deployment.kubernetes.io/revision"
+
+func init() {
+	if err := gatewayv1.Install(scheme.Scheme); err != nil {
+		panic(err)
+	}
+}
 
 func FilterRuntimeObjectFromManifests[T runtime.Object](logger mlog.Logger, manifests []string) RuntimeObjectList {
 	var m = make(RuntimeObjectList, 0)

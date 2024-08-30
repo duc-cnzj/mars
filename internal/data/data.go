@@ -20,6 +20,8 @@ import (
 	"golang.org/x/oauth2"
 	corev1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime2 "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/informers"
@@ -33,6 +35,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
+	gwclientset "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+	"sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
+	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
+	gatewaylisterv1 "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1"
 
 	_ "github.com/duc-cnzj/mars/v5/internal/ent/runtime"
 	_ "github.com/go-sql-driver/mysql"
@@ -235,12 +241,37 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 			return
 		}
 
+		var gwinstalled bool
+		apiextensionsClient, err := apiextensionsv1.NewForConfig(config)
+		crdList, err := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(context.TODO(), metav1.ListOptions{})
+		for _, crd := range crdList.Items {
+			if crd.Name == "httproutes.gateway.networking.k8s.io" {
+				gwinstalled = true
+				break
+			}
+		}
+
 		var metrics versioned.Interface
 		metrics, err = metricsv.NewForConfig(config)
 		if err != nil {
 			return
 		}
 		inf := informers.NewSharedInformerFactory(clientset, 0)
+
+		var httpRouteLister gatewaylisterv1.HTTPRouteLister
+		var gwhttprouteinformer externalversions.SharedInformerFactory
+		if gwinstalled {
+			logger.Info("gateway api installed")
+			forConfig, err := gwclientset.NewForConfig(config)
+			if err != nil {
+				return
+			}
+			gwhttprouteinformer = externalversions.NewSharedInformerFactoryWithOptions(forConfig, 0)
+			httpRouteLister = gwinformers.New(gwhttprouteinformer, corev1.NamespaceAll, nil).
+				HTTPRoutes().
+				Lister()
+		}
+
 		svcLister := inf.Core().V1().Services().Lister()
 		ingLister := inf.Networking().V1().Ingresses().Lister()
 		rsLister := inf.Apps().V1().ReplicaSets().Lister()
@@ -294,22 +325,25 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 		})
 		eventLister := inf.Events().V1().Events().Lister()
 		data.k8sClient = &K8sClient{
-			logger:           logger,
-			factory:          inf,
-			Client:           clientset,
-			MetricsClient:    metrics,
-			RestConfig:       config,
-			PodInformer:      podInf,
-			PodLister:        podLister,
-			SecretInformer:   secretInf,
-			SecretLister:     secretLister,
-			ReplicaSetLister: rsLister,
-			ServiceLister:    svcLister,
-			IngressLister:    ingLister,
-			EventInformer:    eventInf,
-			EventFanOut:      eventFanOutObj,
-			PodFanOut:        podFanOutObj,
-			EventLister:      eventLister,
+			GatewayApiInstalled: gwinstalled,
+			HTTPRouteLister:     httpRouteLister,
+			gwFactory:           gwhttprouteinformer,
+			logger:              logger,
+			factory:             inf,
+			Client:              clientset,
+			MetricsClient:       metrics,
+			RestConfig:          config,
+			PodInformer:         podInf,
+			PodLister:           podLister,
+			SecretInformer:      secretInf,
+			SecretLister:        secretLister,
+			ReplicaSetLister:    rsLister,
+			ServiceLister:       svcLister,
+			IngressLister:       ingLister,
+			EventInformer:       eventInf,
+			EventFanOut:         eventFanOutObj,
+			PodFanOut:           podFanOutObj,
+			EventLister:         eventLister,
 		}
 		data.k8sClient.start(ch)
 	})
@@ -403,6 +437,10 @@ func addOidcCfg(provider *oidc.Provider, extraValues extraValues, setting config
 }
 
 type K8sClient struct {
+	GatewayApiInstalled bool
+	HTTPRouteLister     gatewaylisterv1.HTTPRouteLister
+	gwFactory           externalversions.SharedInformerFactory
+
 	logger        mlog.Logger
 	factory       informers.SharedInformerFactory
 	Client        kubernetes.Interface
@@ -438,6 +476,9 @@ func (k *K8sClient) start(done <-chan struct{}) {
 		k.PodFanOut.Distribute(done)
 	}()
 	k.factory.Start(done)
+	if k.GatewayApiInstalled {
+		k.gwFactory.Start(done)
+	}
 	cache.WaitForCacheSync(done, k.EventInformer.HasSynced, k.PodInformer.HasSynced, k.SecretInformer.HasSynced)
 }
 

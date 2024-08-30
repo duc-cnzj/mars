@@ -91,6 +91,13 @@ func TestInProject_HappyPath(t *testing.T) {
 	ns := createNamespace(db)
 	pr := createProject(db, ns.ID)
 
+	proj.EXPECT().GetGatewayHTTPRouteMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
+		{
+			Name:     "ra1",
+			Url:      "rb1",
+			PortName: "rc1",
+		},
+	}})
 	proj.EXPECT().GetNodePortMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(EndpointMapping{"test": []*types.ServiceEndpoint{
 		{
 			Name:     "a1",
@@ -117,7 +124,7 @@ func TestInProject_HappyPath(t *testing.T) {
 	res, err := repo.InProject(context.TODO(), pr.ID)
 	assert.NotNil(t, res)
 	assert.Nil(t, err)
-	assert.Len(t, res, 3)
+	assert.Len(t, res, 4)
 }
 
 func TestInProject_NonExistentProject(t *testing.T) {

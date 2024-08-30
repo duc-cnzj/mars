@@ -7,25 +7,26 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
-	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
-	networkingv1 "k8s.io/api/networking/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
-	networkingv1lister "k8s.io/client-go/listers/networking/v1"
-
 	"github.com/duc-cnzj/mars/v5/internal/annotation"
 	"github.com/duc-cnzj/mars/v5/internal/config"
 	"github.com/duc-cnzj/mars/v5/internal/ent"
+	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v5/internal/util/rand"
+	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
 	"github.com/samber/lo"
 	"go.uber.org/mock/gomock"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/kubernetes/scheme"
+	networkingv1lister "k8s.io/client-go/listers/networking/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kubectl/pkg/util/deployment"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
+	httproutev1 "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1"
 
 	"github.com/duc-cnzj/mars/api/v5/types"
 	data2 "github.com/duc-cnzj/mars/v5/internal/data"
@@ -1191,12 +1192,61 @@ func Test_projectRepo_GetNodePortMappingByProjects(t *testing.T) {
 	assert.Equal(t, 6, total)
 }
 
+func Test_projectRepo_GetGatewayHTTPRouteMappingByProjects(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	route1 := gatewayv1.HTTPRoute{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "HTTPRoute",
+			APIVersion: "gateway.networking.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "duc",
+			Name:      "r1",
+		},
+		Spec: gatewayv1.HTTPRouteSpec{
+			Hostnames: []gatewayv1.Hostname{"app1.com", "app1.io"},
+		},
+	}
+	lister := NewHTTPRouteLister(&route1)
+	data := data2.NewMockData(m)
+	repo := &projectRepo{
+		logger: mlog.NewLogger(nil),
+		data:   data,
+	}
+	data.EXPECT().K8sClient().Return(&data2.K8sClient{
+		HTTPRouteLister:     lister,
+		GatewayApiInstalled: true,
+	})
+	db, _ := data2.NewSqliteDB()
+	defer db.Close()
+	ns, _ := db.Namespace.Create().SetName("duc").Save(context.Background())
+	p1 := db.Project.Create().SetName("r1").
+		SetManifest(encodeToYaml(&route1)).
+		SetNamespaceID(ns.ID).
+		SetCreator("").
+		SaveX(context.Background())
+	_ = p1
+	only, _ := db.Namespace.Query().Where(namespace.ID(ns.ID)).WithProjects().Only(context.Background())
+	mapping := repo.GetGatewayHTTPRouteMappingByProjects(context.TODO(), ns.Name, serialize.Serialize(only.Edges.Projects, ToProject)...)
+	assert.Len(t, mapping["r1"], 2)
+}
+
 func NewServiceLister(svcs ...*corev1.Service) corev1lister.ServiceLister {
 	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	for _, po := range svcs {
 		idxer.Add(po)
 	}
 	return corev1lister.NewServiceLister(idxer)
+}
+
+func NewHTTPRouteLister(svcs ...*gatewayv1.HTTPRoute) httproutev1.HTTPRouteLister {
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	for _, po := range svcs {
+		idxer.Add(po)
+	}
+	return httproutev1.NewHTTPRouteLister(idxer)
 }
 
 func NewIngressLister(svcs ...*networkingv1.Ingress) networkingv1lister.IngressLister {
