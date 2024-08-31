@@ -11,7 +11,7 @@ import (
 func TestGetVersion(t *testing.T) {
 	assert.Equal(t, Version{
 		GitRepo:        gitRepo,
-		Version:        unknown,
+		Version:        "dev",
 		BuildDate:      buildDate,
 		GitBranch:      gitBranch,
 		GitCommit:      gitCommit,

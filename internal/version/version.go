@@ -14,7 +14,7 @@ const (
 var (
 	gitBranch      string = unknown     // `git rev-parse --abbrev-ref HEAD`
 	gitCommit      string = unknown     // output from `git rev-parse --short HEAD`
-	gitTag         string = unknown     // output from `git describe --exact-match --tags HEAD` (if clean tree state)
+	gitTag         string = "dev"       // output from `git describe --exact-match --tags HEAD` (if clean tree state)
 	kubectlVersion string = unknown     // determined from go.mod file `go list -m all | grep k8s.io/client-go | cut -d " " -f2`
 	helmVersion    string = unknown     // determined from go.mod file `go list -m all | grep helm.sh/helm/v3 | cut -d " " -f2`
 	buildDate      string = defaultDate // output from `date -u +'%Y-%m-%dT%H:%M:%SZ'`
@@ -47,10 +47,7 @@ func (v Version) HasBuildInfo() bool {
 
 // GetVersion returns the version information
 func GetVersion() Version {
-	var versionStr string = "dev"
-	if gitTag != unknown {
-		versionStr = gitTag
-	}
+	var versionStr string = gitTag
 
 	if versionStr == "" && gitBranch != "" && gitCommit != "" {
 		versionStr = fmt.Sprintf("%s-%s", gitBranch, gitCommit)
