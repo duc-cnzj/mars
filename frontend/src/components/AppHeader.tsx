@@ -129,7 +129,7 @@ const AppHeader: React.FC = () => {
       >
         <img
           src={logo}
-          style={{ width: 28, height: 28, marginRight: 5 }}
+          style={{ width: 24, height: 24, marginRight: 10 }}
           alt="logo"
         />
         <div style={{ fontFamily: "dank mono" }}>Mars</div>
