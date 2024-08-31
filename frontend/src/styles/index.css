@@ -2,6 +2,14 @@ body {
   background: #f8fafc;
   margin: 0;
 }
+
+@font-face {
+  font-family: "dank mono";
+  src: url("../assets/dankmono.ttf");
+  font-weight: normal;
+  font-style: normal;
+}
+
 a:-webkit-any-link {
   text-decoration: none;
 }

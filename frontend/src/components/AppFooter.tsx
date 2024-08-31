@@ -1,20 +1,14 @@
-import React, { memo, useEffect, useState } from "react";
+import React, { memo } from "react";
 import dayjs from "dayjs";
 import { Popover } from "antd";
 import Coffee from "./Coffee";
-import ajax from "../api/ajax";
-import { components } from "../api/schema";
 import IconFont from "./Icon";
+import useVersion from "../contexts/useVersion";
 
 require("dayjs/locale/zh-cn");
 
 const AppFooter: React.FC = () => {
-  const [version, setVersion] =
-    useState<components["schemas"]["version.Response"]>();
-
-  useEffect(() => {
-    ajax.GET("/api/version").then(({ data }) => setVersion(data));
-  }, []);
+  const version = useVersion();
 
   return (
     <div className="copyright">

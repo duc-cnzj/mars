@@ -52,7 +52,7 @@ const Item: React.FC<{
               name="#icon-wodeguanzhu"
               className={css`
                 transition: all 0.3s ease;
-                &:hover{
+                &:hover {
                   transform: scale(1.2);
                 }
               `}

@@ -17,10 +17,13 @@ import {
   NotificationOutlined,
 } from "@ant-design/icons";
 import { ItemType } from "rc-menu/lib/interface";
+import useVersion from "../contexts/useVersion";
+import logo from "../assets/marslogo.png";
 
 const AppHeader: React.FC = () => {
   const h = useNavigate();
   const { user, isAdmin } = useAuth();
+  const version = useVersion();
 
   let items: ItemType[] = [
     {
@@ -119,10 +122,20 @@ const AppHeader: React.FC = () => {
         className={css`
           color: ${theme.mainFontColor};
           font-size: 18px;
+          display: flex;
+          align-items: center;
         `}
         style={{ color: useWsReady() ? "white" : "red" }}
       >
-        Mars
+        <img
+          src={logo}
+          style={{ width: 28, height: 28, marginRight: 5 }}
+          alt="logo"
+        />
+        <div style={{ fontFamily: "dank mono" }}>Mars</div>
+        <span style={{ fontSize: 10, marginLeft: "5px", marginTop: -9 }}>
+          {version?.version}
+        </span>
       </Link>
       <div
         style={{

@@ -47,7 +47,10 @@ func (v Version) HasBuildInfo() bool {
 
 // GetVersion returns the version information
 func GetVersion() Version {
-	var versionStr string = gitTag
+	var versionStr string = "dev"
+	if gitTag != unknown {
+		versionStr = gitTag
+	}
 
 	if versionStr == "" && gitBranch != "" && gitCommit != "" {
 		versionStr = fmt.Sprintf("%s-%s", gitBranch, gitCommit)

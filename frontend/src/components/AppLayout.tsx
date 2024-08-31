@@ -48,8 +48,7 @@ const AppLayout: React.FC = () => {
             padding: 8px 50px 2px !important;
             text-align: center;
             .copyright {
-              font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS",
-                sans-serif;
+              font-family: "dank mono";
               color: ${appTheme.mainFontColor};
             }
           `}

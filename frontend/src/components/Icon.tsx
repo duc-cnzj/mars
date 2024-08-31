@@ -9,7 +9,11 @@ interface IconFontProps extends React.ComponentPropsWithoutRef<"svg"> {
 const IconFont: React.FC<IconFontProps> = ({ name, className, ...props }) => {
   return (
     <span className="anticon anticon-money-collect ant-menu-item-icon">
-      <svg className={classNames("icon", className)} aria-hidden="true" {...props}>
+      <svg
+        className={classNames("icon", className)}
+        aria-hidden="true"
+        {...props}
+      >
         <use fill="currentColor" xlinkHref={name} />
       </svg>
     </span>
