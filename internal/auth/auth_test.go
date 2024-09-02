@@ -142,3 +142,76 @@ cSE/4A4yfzTjN2r5GuJr8rTU7gU4Su9C8dLC0htWCA==
 `}}))
 	assert.Implements(t, (*Auth)(nil), authn)
 }
+
+func TestOidcClaims_ToUserInfo(t *testing.T) {
+	c := OidcClaims{
+		LogoutUrl: "aaa.com",
+		OpenIDClaims: OpenIDClaims{
+			Sub:   "1",
+			Name:  "duc",
+			Email: "1@q.c",
+			Roles: []string{"admin"},
+		},
+	}
+	info := c.ToUserInfo()
+	assert.Equal(t, "1", info.ID)
+	assert.Equal(t, "duc", info.Name)
+	assert.Equal(t, "1@q.c", info.Email)
+	assert.Equal(t, []string{"admin"}, info.Roles)
+	assert.Equal(t, "aaa.com", info.LogoutUrl)
+}
+
+func TestContextWithUser(t *testing.T) {
+	ctx := context.Background()
+	userInfo := &UserInfo{
+		ID:    "1",
+		Name:  "Test User",
+		Email: "test@example.com",
+	}
+
+	ctxWithUser := SetUser(ctx, userInfo)
+
+	retrievedUser, err := GetUser(ctxWithUser)
+	assert.Nil(t, err)
+	assert.Equal(t, userInfo, retrievedUser)
+
+	retrievedUser = MustGetUser(ctxWithUser)
+	assert.Equal(t, userInfo, retrievedUser)
+}
+
+func TestContextWithoutUser(t *testing.T) {
+	ctx := context.Background()
+
+	_, err := GetUser(ctx)
+	assert.NotNil(t, err)
+
+	retrievedUser := MustGetUser(ctx)
+	assert.Nil(t, retrievedUser)
+}
+
+func TestAuthn_VerifyToken(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	auth := NewMockAuth(m)
+	a := &Authn{Authns: []Authenticator{auth}}
+	auth.EXPECT().VerifyToken("a").Return(nil, true)
+	_, b := a.VerifyToken("a")
+	assert.True(t, b)
+
+	auth.EXPECT().VerifyToken("a").Return(nil, false)
+
+	_, bb := a.VerifyToken("a")
+	assert.False(t, bb)
+}
+
+func TestAuthn_Sign(t *testing.T) {
+	called := false
+	a := &Authn{signFunc: func(info *UserInfo) (*SignData, error) {
+		called = true
+		return nil, nil
+	}}
+	sign, err := a.Sign(nil)
+	assert.Nil(t, sign)
+	assert.Nil(t, err)
+	assert.True(t, called)
+}
