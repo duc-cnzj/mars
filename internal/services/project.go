@@ -5,12 +5,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/duc-cnzj/mars/v5/internal/auth"
-
 	"github.com/duc-cnzj/mars/api/v5/project"
 	"github.com/duc-cnzj/mars/api/v5/types"
 	"github.com/duc-cnzj/mars/api/v5/websocket"
 	"github.com/duc-cnzj/mars/v5/internal/application"
+	"github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/duc-cnzj/mars/v5/internal/socket"
@@ -145,6 +144,11 @@ func (p *projectSvc) apply(
 	input *project.ApplyRequest,
 ) (socket.Job, error) {
 	var err error
+
+	if can := p.nsRepo.CanAccess(ctx, int(input.NamespaceId), MustGetUser(ctx)); !can {
+		return nil, repo.ToError(403, "没有权限")
+	}
+
 	var pubsub application.PubSub = socket.NewEmptyPubSub()
 	if input.WebsocketSync {
 		pubsub = p.plMgr.Ws().New("", "")
@@ -231,6 +235,9 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 	if err != nil {
 		return nil, err
 	}
+	if can := p.nsRepo.CanAccess(ctx, projectModel.NamespaceID, MustGetUser(ctx)); !can {
+		return nil, repo.ToError(403, "没有权限")
+	}
 
 	return &project.ShowResponse{
 		Item: transformer.FromProject(projectModel),
@@ -261,6 +268,10 @@ func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 	if err != nil {
 		return nil, err
 	}
+	if can := p.nsRepo.CanAccess(ctx, proj.NamespaceID, MustGetUser(ctx)); !can {
+		return nil, repo.ToError(403, "没有权限")
+	}
+
 	if err := p.projRepo.Delete(ctx, int(request.Id)); err != nil {
 		return nil, err
 	}

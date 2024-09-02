@@ -25,12 +25,18 @@ const (
 	FieldName = "name"
 	// FieldImagePullSecrets holds the string denoting the image_pull_secrets field in the database.
 	FieldImagePullSecrets = "image_pull_secrets"
+	// FieldPrivate holds the string denoting the private field in the database.
+	FieldPrivate = "private"
+	// FieldCreatorEmail holds the string denoting the creator_email field in the database.
+	FieldCreatorEmail = "creator_email"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
 	// EdgeProjects holds the string denoting the projects edge name in mutations.
 	EdgeProjects = "projects"
 	// EdgeFavorites holds the string denoting the favorites edge name in mutations.
 	EdgeFavorites = "favorites"
+	// EdgeMembers holds the string denoting the members edge name in mutations.
+	EdgeMembers = "members"
 	// Table holds the table name of the namespace in the database.
 	Table = "namespaces"
 	// ProjectsTable is the table that holds the projects relation/edge.
@@ -47,6 +53,13 @@ const (
 	FavoritesInverseTable = "favorites"
 	// FavoritesColumn is the table column denoting the favorites relation/edge.
 	FavoritesColumn = "namespace_id"
+	// MembersTable is the table that holds the members relation/edge.
+	MembersTable = "members"
+	// MembersInverseTable is the table name for the Member entity.
+	// It exists in this package in order to avoid circular dependency with the "member" package.
+	MembersInverseTable = "members"
+	// MembersColumn is the table column denoting the members relation/edge.
+	MembersColumn = "namespace_id"
 )
 
 // Columns holds all SQL columns for namespace fields.
@@ -57,6 +70,8 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldName,
 	FieldImagePullSecrets,
+	FieldPrivate,
+	FieldCreatorEmail,
 	FieldDescription,
 }
 
@@ -88,6 +103,10 @@ var (
 	NameValidator func(string) error
 	// DefaultImagePullSecrets holds the default value on creation for the "image_pull_secrets" field.
 	DefaultImagePullSecrets []string
+	// DefaultPrivate holds the default value on creation for the "private" field.
+	DefaultPrivate bool
+	// CreatorEmailValidator is a validator for the "creator_email" field. It is called by the builders before save.
+	CreatorEmailValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the Namespace queries.
@@ -116,6 +135,16 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByPrivate orders the results by the private field.
+func ByPrivate(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPrivate, opts...).ToFunc()
+}
+
+// ByCreatorEmail orders the results by the creator_email field.
+func ByCreatorEmail(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatorEmail, opts...).ToFunc()
 }
 
 // ByDescription orders the results by the description field.
@@ -150,6 +179,20 @@ func ByFavorites(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newFavoritesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByMembersCount orders the results by members count.
+func ByMembersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMembersStep(), opts...)
+	}
+}
+
+// ByMembers orders the results by members terms.
+func ByMembers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMembersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newProjectsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -162,5 +205,12 @@ func newFavoritesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(FavoritesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, FavoritesTable, FavoritesColumn),
+	)
+}
+func newMembersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MembersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MembersTable, MembersColumn),
 	)
 }

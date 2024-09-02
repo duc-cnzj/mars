@@ -47,6 +47,12 @@ jobs:
           NSQ_LOOKUPD_ADDR: localhost:4161
         run: |
           mkdir frontend/build && touch frontend/build/dummy
-          go test ./... -race -coverprofile=coverage.txt -covermode=atomic
-      - name: Upload coverage to Codecov
-        run: bash <(curl -s https://codecov.io/bash)
+          make test
+      - uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: true
+          files: ./coverage.txt
+          flags: unittests
+          name: codecov
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true

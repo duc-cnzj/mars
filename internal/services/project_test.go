@@ -114,6 +114,7 @@ func TestProjectSvc_Show_Success(t *testing.T) {
 	defer m.Finish()
 	projectRepo := repo.NewMockProjectRepo(m)
 	k8sRepo := repo.NewMockK8sRepo(m)
+	nsRepo := repo.NewMockNamespaceRepo(m)
 	svc := NewProjectSvc(
 		repo.NewMockRepoRepo(m),
 		application.NewMockPluginManger(m),
@@ -124,9 +125,9 @@ func TestProjectSvc_Show_Success(t *testing.T) {
 		repo.NewMockEventRepo(m),
 		mlog.NewLogger(nil),
 		repo.NewMockHelmerRepo(m),
-		repo.NewMockNamespaceRepo(m),
+		nsRepo,
 	)
-
+	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
 	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{
 		Namespace: &repo.Namespace{},
 	}, nil)
@@ -169,6 +170,7 @@ func Test_projectSvc_Delete(t *testing.T) {
 	k8sRepo := repo.NewMockK8sRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	helmerRepo := repo.NewMockHelmerRepo(m)
+	nsRepo := repo.NewMockNamespaceRepo(m)
 	svc := NewProjectSvc(
 		repo.NewMockRepoRepo(m),
 		application.NewMockPluginManger(m),
@@ -179,8 +181,9 @@ func Test_projectSvc_Delete(t *testing.T) {
 		eventRepo,
 		mlog.NewLogger(nil),
 		helmerRepo,
-		repo.NewMockNamespaceRepo(m),
+		nsRepo,
 	)
+	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
 	helmerRepo.EXPECT().Uninstall("app", "ns", gomock.Any()).Return(errors.New("x"))
 	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{
 		ID:          2,
@@ -236,6 +239,7 @@ func Test_projectSvc_Delete_Fail2(t *testing.T) {
 	k8sRepo := repo.NewMockK8sRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	helmerRepo := repo.NewMockHelmerRepo(m)
+	nsRepo := repo.NewMockNamespaceRepo(m)
 	svc := NewProjectSvc(
 		repo.NewMockRepoRepo(m),
 		application.NewMockPluginManger(m),
@@ -246,8 +250,9 @@ func Test_projectSvc_Delete_Fail2(t *testing.T) {
 		eventRepo,
 		mlog.NewLogger(nil),
 		helmerRepo,
-		repo.NewMockNamespaceRepo(m),
+		nsRepo,
 	)
+	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
 	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{}, nil)
 	projectRepo.EXPECT().Delete(gomock.Any(), gomock.Any()).Return(errors.New("x"))
 	response, err := svc.Delete(newAdminUserCtx(), &project.DeleteRequest{
@@ -372,6 +377,7 @@ func TestProjectSvc_WebApply_Success(t *testing.T) {
 		nsRepo,
 	)
 
+	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
 	repoRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Repo{Name: "test", NeedGitRepo: true}, nil)
 	gitRepo.EXPECT().ListCommits(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*repo.Commit{{ID: "commit-id"}}, nil)
 
@@ -425,6 +431,7 @@ func TestProjectSvc_WebApply_Failure(t *testing.T) {
 		nsRepo,
 	)
 
+	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
 	repoRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
 
 	_, err := svc.WebApply(context.TODO(), &project.WebApplyRequest{
@@ -464,6 +471,7 @@ func TestProjectSvc_Apply_Success(t *testing.T) {
 		nsRepo,
 	)
 
+	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
 	repoRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Repo{Name: "test", NeedGitRepo: true}, nil)
 	gitRepo.EXPECT().ListCommits(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*repo.Commit{{ID: "commit-id"}}, nil)
 
@@ -523,6 +531,7 @@ func TestProjectSvc_Apply_Failure(t *testing.T) {
 		nsRepo,
 	)
 
+	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
 	repoRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
 
 	mockServer := &mockProjectApplyServer{

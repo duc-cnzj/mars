@@ -1645,6 +1645,20 @@ func (m *MockNamespaceRepo) EXPECT() *MockNamespaceRepoMockRecorder {
 	return m.recorder
 }
 
+// CanAccess mocks base method.
+func (m *MockNamespaceRepo) CanAccess(arg0 context.Context, arg1 int, arg2 *schematype.UserInfo) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanAccess", arg0, arg1, arg2)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// CanAccess indicates an expected call of CanAccess.
+func (mr *MockNamespaceRepoMockRecorder) CanAccess(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanAccess", reflect.TypeOf((*MockNamespaceRepo)(nil).CanAccess), arg0, arg1, arg2)
+}
+
 // Create mocks base method.
 func (m *MockNamespaceRepo) Create(arg0 context.Context, arg1 *CreateNamespaceInput) (*Namespace, error) {
 	m.ctrl.T.Helper()
@@ -1717,6 +1731,21 @@ func (mr *MockNamespaceRepoMockRecorder) GetMarsNamespace(arg0 any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMarsNamespace", reflect.TypeOf((*MockNamespaceRepo)(nil).GetMarsNamespace), arg0)
 }
 
+// IsOwner mocks base method.
+func (m *MockNamespaceRepo) IsOwner(arg0 context.Context, arg1 int, arg2 *schematype.UserInfo) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsOwner", arg0, arg1, arg2)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsOwner indicates an expected call of IsOwner.
+func (mr *MockNamespaceRepoMockRecorder) IsOwner(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsOwner", reflect.TypeOf((*MockNamespaceRepo)(nil).IsOwner), arg0, arg1, arg2)
+}
+
 // List mocks base method.
 func (m *MockNamespaceRepo) List(arg0 context.Context, arg1 *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error) {
 	m.ctrl.T.Helper()
@@ -1748,6 +1777,21 @@ func (mr *MockNamespaceRepoMockRecorder) Show(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Show", reflect.TypeOf((*MockNamespaceRepo)(nil).Show), arg0, arg1)
 }
 
+// SyncMembers mocks base method.
+func (m *MockNamespaceRepo) SyncMembers(arg0 context.Context, arg1 int, arg2 []string) (*Namespace, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SyncMembers", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*Namespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SyncMembers indicates an expected call of SyncMembers.
+func (mr *MockNamespaceRepoMockRecorder) SyncMembers(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncMembers", reflect.TypeOf((*MockNamespaceRepo)(nil).SyncMembers), arg0, arg1, arg2)
+}
+
 // Update mocks base method.
 func (m *MockNamespaceRepo) Update(arg0 context.Context, arg1 *UpdateNamespaceInput) (*Namespace, error) {
 	m.ctrl.T.Helper()
@@ -1761,6 +1805,21 @@ func (m *MockNamespaceRepo) Update(arg0 context.Context, arg1 *UpdateNamespaceIn
 func (mr *MockNamespaceRepoMockRecorder) Update(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockNamespaceRepo)(nil).Update), arg0, arg1)
+}
+
+// UpdatePrivate mocks base method.
+func (m *MockNamespaceRepo) UpdatePrivate(arg0 context.Context, arg1 int, arg2 bool) (*Namespace, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePrivate", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*Namespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdatePrivate indicates an expected call of UpdatePrivate.
+func (mr *MockNamespaceRepoMockRecorder) UpdatePrivate(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePrivate", reflect.TypeOf((*MockNamespaceRepo)(nil).UpdatePrivate), arg0, arg1, arg2)
 }
 
 // MockHelmerRepo is a mock of HelmerRepo interface.

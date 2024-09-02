@@ -1,4 +1,4 @@
-import React, { useState, memo } from "react";
+import React, { useState, memo, useCallback } from "react";
 import {
   Card,
   Popconfirm,
@@ -12,9 +12,16 @@ import {
   Popover,
   Form,
   Input,
+  Modal,
+  Select,
 } from "antd";
 import "../pkg/DraggableModal/index.css";
-import { CloseOutlined, EditFilled } from "@ant-design/icons";
+import {
+  CloseOutlined,
+  EditFilled,
+  LockOutlined,
+  UnlockOutlined,
+} from "@ant-design/icons";
 import ServiceEndpoint from "./ServiceEndpoint";
 import ProjectDetail from "./ProjectDetail";
 import CreateProjectModal from "./CreateProjectModal";
@@ -26,6 +33,7 @@ import ajax from "../api/ajax";
 import IconFont from "./Icon";
 import TextArea from "antd/es/input/TextArea";
 import { css } from "@emotion/css";
+import { SelectProps } from "antd/lib";
 
 const Item: React.FC<{
   item: components["schemas"]["types.NamespaceModel"];
@@ -68,6 +76,7 @@ const Item: React.FC<{
                 项目空间: <TitleNamespaceName>{item.name}</TitleNamespaceName>
               </TitleNamespace>
             </Tooltip>
+            <NamespacePrivate reload={reload} item={item} />
             <TitleSubItem>
               <Tooltip
                 onOpenChange={(visible: boolean) => {
@@ -301,3 +310,96 @@ const TitleSubItem = styled.div`
   align-items: center;
   justify-content: center;
 `;
+
+const NamespacePrivate: React.FC<{
+  item: components["schemas"]["types.NamespaceModel"];
+  reload: () => void;
+}> = ({ item, reload }) => {
+  const { user, isAdmin } = useAuth();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [options, setOptions] = useState<SelectProps["options"]>(
+    item.members.map((v) => ({
+      value: v.email,
+      label: v.email,
+    })),
+  );
+
+  const isOwned = useCallback(() => {
+    return isAdmin() || item.creatorEmail === user.email;
+  }, [isAdmin, item.creatorEmail, user.email]);
+
+  if (!isOwned()) {
+    return <div>{!item.private ? <UnlockOutlined /> : <LockOutlined />}</div>;
+  }
+
+  return (
+    <Space>
+      <Modal
+        destroyOnClose
+        title="修改空间成员"
+        open={isModalOpen}
+        onOk={() => {
+          ajax
+            .POST("/api/namespaces/sync_members", {
+              body: {
+                id: item.id,
+                emails: options
+                  ? options.map((v): string => String(v.value))
+                  : [],
+              },
+            })
+            .then(() => {
+              message.success("修改成功");
+              reload();
+              setIsModalOpen(false);
+            });
+        }}
+        onCancel={() => {
+          setIsModalOpen(false);
+        }}
+      >
+        <Select
+          mode="tags"
+          style={{ width: "100%" }}
+          placeholder="添加成员邮箱"
+          onChange={(options) => {
+            setOptions(options.map((v: any) => ({ label: v, value: v })));
+          }}
+          defaultValue={options?.map((v) => v.value)}
+          options={options}
+        />
+      </Modal>
+      <Tooltip overlayStyle={{ fontSize: 12 }} title="你是此空间管理员">
+        <IconFont name="#icon-crown" />
+      </Tooltip>
+      <Popconfirm
+        title="修改访问权限"
+        description={`确定要修改成 ${item.private ? "public" : "private"} 吗`}
+        onConfirm={() => {
+          ajax
+            .POST("/api/namespaces/update_private", {
+              body: { id: item.id, private: !item.private },
+            })
+            .then(() => {
+              message.success("修改成功");
+              reload();
+            });
+        }}
+        okText="Yes"
+        cancelText="No"
+      >
+        {!item.private ? <UnlockOutlined /> : <LockOutlined />}
+      </Popconfirm>
+      {item.private && (
+        <Tooltip overlayStyle={{ fontSize: 12 }} title="成员管理">
+          <IconFont
+            name="#icon-chengyuanguanli_huaban1"
+            style={{ cursor: "pointer" }}
+            onClick={() => setIsModalOpen(true)}
+          />
+        </Tooltip>
+      )}
+    </Space>
+  );
+};

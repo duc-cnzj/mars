@@ -122,6 +122,7 @@ func TestNamespaceSvc_Create_Success(t *testing.T) {
 	nsRepo.EXPECT().Create(gomock.Any(), &repo.CreateNamespaceInput{
 		Name:             "namespace1",
 		ImagePullSecrets: []string{"docker-secret"},
+		CreatorEmail:     adminEmail,
 	}).Return(&repo.Namespace{}, nil)
 	nsRepo.EXPECT().Favorite(gomock.Any(), gomock.Any()).Return(nil)
 	eventRepo.EXPECT().Dispatch(repo.EventNamespaceCreated, gomock.Any())
@@ -417,6 +418,7 @@ func TestNamespaceSvc_Show_Success(t *testing.T) {
 		ID:   1,
 		Name: "namespace1",
 	}, nil)
+	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
 
 	res, err := svc.Show(context.TODO(), &namespace.ShowRequest{
 		Id: 1,
@@ -484,7 +486,7 @@ func Test_namespaceSvc_UpdateDesc(t *testing.T) {
 		mlog.NewLogger(nil),
 		eventRepo,
 	)
-
+	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{
 		ID:          1,
 		Name:        "namespace1",
@@ -545,7 +547,7 @@ func Test_namespaceSvc_UpdateDesc_fail2(t *testing.T) {
 		mlog.NewLogger(nil),
 		eventRepo,
 	)
-
+	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{
 		ID:          1,
 		Name:        "namespace1",
@@ -579,16 +581,17 @@ func Test_namespaceSvc_List(t *testing.T) {
 
 	nsRepo.EXPECT().List(gomock.Any(), &repo.ListNamespaceInput{
 		Favorite: false,
-		Email:    adminEmail,
+		Email:    "user@mars.com",
 		Name:     lo.ToPtr("name"),
 		PageSize: 15,
 		Page:     1,
+		IsAdmin:  false,
 	}).Return([]*repo.Namespace{
 		{
 			ID:   1,
 			Name: "namespace1",
 			Favorites: []*repo.Favorite{
-				{Email: adminEmail},
+				{Email: "user@mars.com"},
 			},
 		},
 		{
@@ -597,7 +600,7 @@ func Test_namespaceSvc_List(t *testing.T) {
 		},
 	}, &pagination.Pagination{}, nil)
 
-	res, err := svc.List(newAdminUserCtx(), &namespace.ListRequest{
+	res, err := svc.List(newOtherUserCtx(), &namespace.ListRequest{
 		Favorite: false,
 		Name:     lo.ToPtr("name"),
 	})
@@ -610,4 +613,90 @@ func Test_namespaceSvc_List(t *testing.T) {
 	assert.Equal(t, int32(2), res.Items[1].Id)
 	assert.Equal(t, "namespace2", res.Items[1].Name)
 	assert.True(t, res.Items[0].Favorite)
+}
+
+func Test_namespaceSvc_SyncMembers(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	svc := NewNamespaceSvc(
+		repo.NewMockHelmerRepo(m),
+		nsRepo,
+		repo.NewMockK8sRepo(m),
+		mlog.NewLogger(nil),
+		eventRepo,
+	)
+
+	nsRepo.EXPECT().IsOwner(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil)
+
+	_, err := svc.SyncMembers(newOtherUserCtx(), &namespace.SyncMembersRequest{
+		Id:     1,
+		Emails: []string{"a"},
+	})
+	assert.Error(t, err)
+
+	nsRepo.EXPECT().IsOwner(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+	nsRepo.EXPECT().SyncMembers(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("x"))
+
+	nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Namespace{}, nil)
+	ns, err := svc.SyncMembers(newOtherUserCtx(), &namespace.SyncMembersRequest{
+		Id:     1,
+		Emails: []string{"a"},
+	})
+	assert.Equal(t, "x", err.Error())
+	assert.Nil(t, ns)
+
+	nsRepo.EXPECT().IsOwner(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+	nsRepo.EXPECT().SyncMembers(gomock.Any(), gomock.Any(), gomock.Any()).Return(&repo.Namespace{}, nil)
+
+	nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Namespace{}, nil)
+	eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	ns, err = svc.SyncMembers(newOtherUserCtx(), &namespace.SyncMembersRequest{
+		Id:     1,
+		Emails: []string{"a"},
+	})
+	assert.NotNil(t, ns)
+	assert.Nil(t, err)
+}
+
+func Test_namespaceSvc_UpdatePrivate(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	svc := NewNamespaceSvc(
+		repo.NewMockHelmerRepo(m),
+		nsRepo,
+		repo.NewMockK8sRepo(m),
+		mlog.NewLogger(nil),
+		eventRepo,
+	)
+
+	nsRepo.EXPECT().IsOwner(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil)
+
+	_, err := svc.UpdatePrivate(newOtherUserCtx(), &namespace.UpdatePrivateRequest{
+		Id:      1,
+		Private: true,
+	})
+	assert.Error(t, err)
+
+	nsRepo.EXPECT().IsOwner(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+	nsRepo.EXPECT().UpdatePrivate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("x"))
+	ns, err := svc.UpdatePrivate(newOtherUserCtx(), &namespace.UpdatePrivateRequest{
+		Id:      1,
+		Private: true,
+	})
+	assert.Nil(t, ns)
+	assert.Error(t, err)
+
+	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	nsRepo.EXPECT().IsOwner(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+	nsRepo.EXPECT().UpdatePrivate(gomock.Any(), gomock.Any(), gomock.Any()).Return(&repo.Namespace{}, nil)
+	ns, err = svc.UpdatePrivate(newOtherUserCtx(), &namespace.UpdatePrivateRequest{
+		Id:      1,
+		Private: true,
+	})
+	assert.NotNil(t, ns)
+	assert.Nil(t, err)
 }

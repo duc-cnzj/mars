@@ -27,6 +27,9 @@ type Favorite func(*sql.Selector)
 // File is the predicate function for file builders.
 type File func(*sql.Selector)
 
+// Member is the predicate function for member builders.
+type Member func(*sql.Selector)
+
 // Namespace is the predicate function for namespace builders.
 type Namespace func(*sql.Selector)
 

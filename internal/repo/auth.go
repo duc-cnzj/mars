@@ -5,7 +5,6 @@ import (
 
 	auth2 "github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/duc-cnzj/mars/v5/internal/data"
-	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -48,10 +47,10 @@ func (a *authRepo) Login(ctx context.Context, input *LoginInput) (*LoginResponse
 	}
 	userinfo := &auth2.UserInfo{
 		LogoutUrl: "",
-		Roles:     []string{schematype.MarsAdmin},
-		ID:        "1",
-		Name:      "管理员",
-		Email:     "1025434218@qq.com",
+		//Roles:     []string{schematype.MarsAdmin},
+		ID:    "1",
+		Name:  "管理员",
+		Email: "1025434218@qq.com",
 	}
 	signData, err := a.authsvc.Sign(userinfo)
 	if err != nil {

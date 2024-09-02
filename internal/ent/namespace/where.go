@@ -75,6 +75,16 @@ func Name(v string) predicate.Namespace {
 	return predicate.Namespace(sql.FieldEQ(FieldName, v))
 }
 
+// Private applies equality check predicate on the "private" field. It's identical to PrivateEQ.
+func Private(v bool) predicate.Namespace {
+	return predicate.Namespace(sql.FieldEQ(FieldPrivate, v))
+}
+
+// CreatorEmail applies equality check predicate on the "creator_email" field. It's identical to CreatorEmailEQ.
+func CreatorEmail(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldEQ(FieldCreatorEmail, v))
+}
+
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
 func Description(v string) predicate.Namespace {
 	return predicate.Namespace(sql.FieldEQ(FieldDescription, v))
@@ -275,6 +285,81 @@ func NameContainsFold(v string) predicate.Namespace {
 	return predicate.Namespace(sql.FieldContainsFold(FieldName, v))
 }
 
+// PrivateEQ applies the EQ predicate on the "private" field.
+func PrivateEQ(v bool) predicate.Namespace {
+	return predicate.Namespace(sql.FieldEQ(FieldPrivate, v))
+}
+
+// PrivateNEQ applies the NEQ predicate on the "private" field.
+func PrivateNEQ(v bool) predicate.Namespace {
+	return predicate.Namespace(sql.FieldNEQ(FieldPrivate, v))
+}
+
+// CreatorEmailEQ applies the EQ predicate on the "creator_email" field.
+func CreatorEmailEQ(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldEQ(FieldCreatorEmail, v))
+}
+
+// CreatorEmailNEQ applies the NEQ predicate on the "creator_email" field.
+func CreatorEmailNEQ(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldNEQ(FieldCreatorEmail, v))
+}
+
+// CreatorEmailIn applies the In predicate on the "creator_email" field.
+func CreatorEmailIn(vs ...string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldIn(FieldCreatorEmail, vs...))
+}
+
+// CreatorEmailNotIn applies the NotIn predicate on the "creator_email" field.
+func CreatorEmailNotIn(vs ...string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldNotIn(FieldCreatorEmail, vs...))
+}
+
+// CreatorEmailGT applies the GT predicate on the "creator_email" field.
+func CreatorEmailGT(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldGT(FieldCreatorEmail, v))
+}
+
+// CreatorEmailGTE applies the GTE predicate on the "creator_email" field.
+func CreatorEmailGTE(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldGTE(FieldCreatorEmail, v))
+}
+
+// CreatorEmailLT applies the LT predicate on the "creator_email" field.
+func CreatorEmailLT(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldLT(FieldCreatorEmail, v))
+}
+
+// CreatorEmailLTE applies the LTE predicate on the "creator_email" field.
+func CreatorEmailLTE(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldLTE(FieldCreatorEmail, v))
+}
+
+// CreatorEmailContains applies the Contains predicate on the "creator_email" field.
+func CreatorEmailContains(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldContains(FieldCreatorEmail, v))
+}
+
+// CreatorEmailHasPrefix applies the HasPrefix predicate on the "creator_email" field.
+func CreatorEmailHasPrefix(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldHasPrefix(FieldCreatorEmail, v))
+}
+
+// CreatorEmailHasSuffix applies the HasSuffix predicate on the "creator_email" field.
+func CreatorEmailHasSuffix(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldHasSuffix(FieldCreatorEmail, v))
+}
+
+// CreatorEmailEqualFold applies the EqualFold predicate on the "creator_email" field.
+func CreatorEmailEqualFold(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldEqualFold(FieldCreatorEmail, v))
+}
+
+// CreatorEmailContainsFold applies the ContainsFold predicate on the "creator_email" field.
+func CreatorEmailContainsFold(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldContainsFold(FieldCreatorEmail, v))
+}
+
 // DescriptionEQ applies the EQ predicate on the "description" field.
 func DescriptionEQ(v string) predicate.Namespace {
 	return predicate.Namespace(sql.FieldEQ(FieldDescription, v))
@@ -388,6 +473,29 @@ func HasFavorites() predicate.Namespace {
 func HasFavoritesWith(preds ...predicate.Favorite) predicate.Namespace {
 	return predicate.Namespace(func(s *sql.Selector) {
 		step := newFavoritesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasMembers applies the HasEdge predicate on the "members" edge.
+func HasMembers() predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MembersTable, MembersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMembersWith applies the HasEdge predicate on the "members" edge with a given conditions (other predicates).
+func HasMembersWith(preds ...predicate.Member) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		step := newMembersStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -2,4 +2,4 @@ config.yaml
 gosec-results.json
 app
 !app*/
-cover.out
+coverage.txt

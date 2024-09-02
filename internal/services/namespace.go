@@ -44,14 +44,15 @@ func NewNamespaceSvc(helmer repo.HelmerRepo, nsRepo repo.NamespaceRepo, k8sRepo 
 }
 
 func (n *namespaceSvc) List(ctx context.Context, request *namespace.ListRequest) (*namespace.ListResponse, error) {
-	email := MustGetUser(ctx).Email
+	user := MustGetUser(ctx)
 	page, size := pagination.InitByDefault(request.Page, request.PageSize)
 	namespaces, pag, err := n.nsRepo.List(ctx, &repo.ListNamespaceInput{
 		Favorite: request.Favorite,
-		Name:     request.Name,
-		Email:    email,
+		Email:    user.Email,
 		Page:     page,
 		PageSize: size,
+		Name:     request.Name,
+		IsAdmin:  user.IsAdmin(),
 	})
 	if err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func (n *namespaceSvc) List(ctx context.Context, request *namespace.ListRequest)
 	for _, ns := range namespaces {
 		fav := false
 		for _, f := range ns.Favorites {
-			if f.Email == email {
+			if f.Email == user.Email {
 				fav = true
 				break
 			}
@@ -79,6 +80,7 @@ func (n *namespaceSvc) List(ctx context.Context, request *namespace.ListRequest)
 }
 
 func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequest) (*namespace.CreateResponse, error) {
+	user := MustGetUser(ctx)
 	nsName := n.nsRepo.GetMarsNamespace(request.Namespace)
 	preCheckNs, err := n.nsRepo.FindByName(ctx, nsName)
 	if err == nil {
@@ -116,13 +118,14 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 		Name:             create.Name,
 		ImagePullSecrets: imagePullSecrets,
 		Description:      request.Description,
+		CreatorEmail:     user.Email,
 	})
 	if err != nil {
 		return nil, err
 	}
 	n.nsRepo.Favorite(ctx, &repo.FavoriteNamespaceInput{
 		NamespaceID: ns.ID,
-		UserEmail:   MustGetUser(ctx).Email,
+		UserEmail:   user.Email,
 		Favorite:    true,
 	})
 
@@ -133,7 +136,7 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 
 	n.eventRepo.AuditLogWithRequest(
 		types.EventActionType_Create,
-		MustGetUser(ctx).Name, fmt.Sprintf("创建项目空间: %d: %s", ns.ID, ns.Name),
+		user.Name, fmt.Sprintf("创建项目空间: %d: %s", ns.ID, ns.Name),
 		request,
 	)
 
@@ -148,6 +151,9 @@ func (n *namespaceSvc) Show(ctx context.Context, input *namespace.ShowRequest) (
 	if err != nil {
 		return nil, err
 	}
+	if access := n.nsRepo.CanAccess(ctx, int(input.Id), MustGetUser(ctx)); !access {
+		return nil, repo.ToError(403, "没有权限")
+	}
 	return &namespace.ShowResponse{Item: transformer.FromNamespace(ns)}, nil
 }
 
@@ -155,6 +161,9 @@ func (n *namespaceSvc) UpdateDesc(ctx context.Context, req *namespace.UpdateDesc
 	old, err := n.nsRepo.Show(ctx, int(req.Id))
 	if err != nil {
 		return nil, err
+	}
+	if access := n.nsRepo.CanAccess(ctx, int(req.Id), MustGetUser(ctx)); !access {
+		return nil, repo.ToError(403, "没有权限")
 	}
 
 	ns, err := n.nsRepo.Update(ctx, &repo.UpdateNamespaceInput{
@@ -277,4 +286,61 @@ func (n *namespaceSvc) Favorite(ctx context.Context, req *namespace.FavoriteRequ
 		return nil, err
 	}
 	return &namespace.FavoriteResponse{}, nil
+}
+
+func (n *namespaceSvc) UpdatePrivate(ctx context.Context, req *namespace.UpdatePrivateRequest) (*namespace.UpdatePrivateResponse, error) {
+	user := MustGetUser(ctx)
+	isOwner, err := n.nsRepo.IsOwner(ctx, int(req.Id), user)
+	if err != nil {
+		return nil, err
+	}
+	if !isOwner {
+		return nil, repo.ToError(403, "没有权限")
+	}
+
+	private, err := n.nsRepo.UpdatePrivate(ctx, int(req.Id), req.Private)
+	if err != nil {
+		return nil, err
+	}
+	n.eventRepo.AuditLogWithRequest(
+		types.EventActionType_Delete,
+		MustGetUser(ctx).Name,
+		fmt.Sprintf("[更新空间访问权限] id: %v private: %t", req.Id, req.GetPrivate()),
+		req,
+	)
+	return &namespace.UpdatePrivateResponse{Item: transformer.FromNamespace(private)}, nil
+}
+
+func (n *namespaceSvc) SyncMembers(ctx context.Context, req *namespace.SyncMembersRequest) (*namespace.SyncMembersResponse, error) {
+	user := MustGetUser(ctx)
+	isOwner, err := n.nsRepo.IsOwner(ctx, int(req.Id), user)
+	if err != nil {
+		return nil, err
+	}
+	if !isOwner {
+		return nil, repo.ToError(403, "没有权限")
+	}
+	show, err := n.nsRepo.Show(ctx, int(req.Id))
+	if err != nil {
+		return nil, err
+	}
+
+	ns, err := n.nsRepo.SyncMembers(ctx, int(req.Id), req.Emails)
+	if err != nil {
+		return nil, err
+	}
+
+	n.eventRepo.AuditLogWithChange(
+		types.EventActionType_Delete,
+		MustGetUser(ctx).Name,
+		fmt.Sprintf("[同步空间成员] id: %v name: %v", show.ID, show.Name),
+		&repo.AnyYamlPrettier{
+			"members": show.Members,
+		},
+		&repo.AnyYamlPrettier{
+			"members": ns.Members,
+		},
+	)
+
+	return &namespace.SyncMembersResponse{Item: transformer.FromNamespace(ns)}, nil
 }

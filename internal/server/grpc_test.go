@@ -94,10 +94,10 @@ func TestGrpcRunner_Shutdown(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Test case: Shutdown does not complete before context deadline
-	ctx, cancel = context.WithTimeout(context.Background(), time.Nanosecond)
-	defer cancel()
+	ctx, cancel = context.WithCancel(context.Background())
+	cancel()
 
 	err = runner.Shutdown(ctx)
 	assert.NotNil(t, err)
-	time.Sleep(1 * time.Second)
+	time.Sleep(time.Second)
 }

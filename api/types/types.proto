@@ -131,16 +131,24 @@ message ImagePullSecret {
   string name = 1;
 }
 
-message NamespaceModel {
-  int32                 id          = 1;
-  string                name        = 2;
-  repeated ProjectModel projects    = 3;
-  bool                  favorite    = 4;
-  string                description = 5;
+message MemberModel {
+  int32  id    = 1;
+  string email = 2;
+}
 
-  string                created_at  = 100;
-  string                updated_at  = 101;
-  string                deleted_at  = 102;
+message NamespaceModel {
+  int32                 id            = 1;
+  string                name          = 2;
+  repeated ProjectModel projects      = 3;
+  bool                  favorite      = 4;
+  string                description   = 5;
+  repeated MemberModel  members       = 6;
+  bool                  private       = 7;
+  string                creator_email = 8;
+
+  string                created_at    = 100;
+  string                updated_at    = 101;
+  string                deleted_at    = 102;
 }
 
 enum Deploy {

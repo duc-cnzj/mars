@@ -144,13 +144,13 @@ test:
         ./internal/uploader/... \
         ./internal/util/... \
         ./internal/version/... \
-		-race -count=1 -cover -coverprofile=cover.out -covermode atomic && \
-	go tool cover -func cover.out
+		-race -count=1 -cover -coverprofile=coverage.txt -covermode atomic && \
+	go tool cover -func coverage.txt
 
 .PHONY: cover-web
-# go tool cover -html cover.out
+# go tool cover -html coverage.txt
 cover-web:
-	go tool cover -html cover.out
+	go tool cover -html coverage.txt
 
 .PHONY: build_linux_amd64
 build_linux_amd64:
@@ -181,6 +181,11 @@ ent-new:
 # go generate ./internal/...
 ent-generate:
 	go generate ./internal/ent/...
+
+.PHONY: ent-hash
+# db schema hash
+ent-hash:
+	atlas migrate hash --env local
 
 .PHONY: ent-diff
 # ent-diff generate diff schema sql

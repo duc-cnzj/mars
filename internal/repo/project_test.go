@@ -1043,7 +1043,7 @@ func Test_projectRepo_GetIngressMappingByNamespace(t *testing.T) {
 	}
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
-	save, _ := db.Namespace.Create().SetName("duc").Save(context.Background())
+	save, _ := db.Namespace.Create().SetCreatorEmail("a").SetName("duc").Save(context.Background())
 	p1, _ := db.Project.Create().SetName("app1").
 		SetManifest(encodeToYaml(&ing1)).
 		SetNamespaceID(save.ID).
@@ -1169,7 +1169,7 @@ func Test_projectRepo_GetNodePortMappingByProjects(t *testing.T) {
 	})
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
-	ns, _ := db.Namespace.Create().SetName("duc").Save(context.Background())
+	ns, _ := db.Namespace.Create().SetCreatorEmail("a").SetName("duc").Save(context.Background())
 	p1 := db.Project.Create().SetName("svc1").
 		SetManifest(encodeToYaml(&svc1)).
 		SetNamespaceID(ns.ID).
@@ -1221,7 +1221,7 @@ func Test_projectRepo_GetGatewayHTTPRouteMappingByProjects(t *testing.T) {
 	})
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
-	ns, _ := db.Namespace.Create().SetName("duc").Save(context.Background())
+	ns, _ := db.Namespace.Create().SetCreatorEmail("a").SetName("duc").Save(context.Background())
 	p1 := db.Project.Create().SetName("r1").
 		SetManifest(encodeToYaml(&route1)).
 		SetNamespaceID(ns.ID).

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/duc-cnzj/mars/v5/internal/ent/favorite"
+	"github.com/duc-cnzj/mars/v5/internal/ent/member"
 	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v5/internal/ent/project"
 )
@@ -78,6 +79,26 @@ func (nc *NamespaceCreate) SetImagePullSecrets(s []string) *NamespaceCreate {
 	return nc
 }
 
+// SetPrivate sets the "private" field.
+func (nc *NamespaceCreate) SetPrivate(b bool) *NamespaceCreate {
+	nc.mutation.SetPrivate(b)
+	return nc
+}
+
+// SetNillablePrivate sets the "private" field if the given value is not nil.
+func (nc *NamespaceCreate) SetNillablePrivate(b *bool) *NamespaceCreate {
+	if b != nil {
+		nc.SetPrivate(*b)
+	}
+	return nc
+}
+
+// SetCreatorEmail sets the "creator_email" field.
+func (nc *NamespaceCreate) SetCreatorEmail(s string) *NamespaceCreate {
+	nc.mutation.SetCreatorEmail(s)
+	return nc
+}
+
 // SetDescription sets the "description" field.
 func (nc *NamespaceCreate) SetDescription(s string) *NamespaceCreate {
 	nc.mutation.SetDescription(s)
@@ -120,6 +141,21 @@ func (nc *NamespaceCreate) AddFavorites(f ...*Favorite) *NamespaceCreate {
 		ids[i] = f[i].ID
 	}
 	return nc.AddFavoriteIDs(ids...)
+}
+
+// AddMemberIDs adds the "members" edge to the Member entity by IDs.
+func (nc *NamespaceCreate) AddMemberIDs(ids ...int) *NamespaceCreate {
+	nc.mutation.AddMemberIDs(ids...)
+	return nc
+}
+
+// AddMembers adds the "members" edges to the Member entity.
+func (nc *NamespaceCreate) AddMembers(m ...*Member) *NamespaceCreate {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return nc.AddMemberIDs(ids...)
 }
 
 // Mutation returns the NamespaceMutation object of the builder.
@@ -177,6 +213,10 @@ func (nc *NamespaceCreate) defaults() error {
 		v := namespace.DefaultImagePullSecrets
 		nc.mutation.SetImagePullSecrets(v)
 	}
+	if _, ok := nc.mutation.Private(); !ok {
+		v := namespace.DefaultPrivate
+		nc.mutation.SetPrivate(v)
+	}
 	return nil
 }
 
@@ -198,6 +238,17 @@ func (nc *NamespaceCreate) check() error {
 	}
 	if _, ok := nc.mutation.ImagePullSecrets(); !ok {
 		return &ValidationError{Name: "image_pull_secrets", err: errors.New(`ent: missing required field "Namespace.image_pull_secrets"`)}
+	}
+	if _, ok := nc.mutation.Private(); !ok {
+		return &ValidationError{Name: "private", err: errors.New(`ent: missing required field "Namespace.private"`)}
+	}
+	if _, ok := nc.mutation.CreatorEmail(); !ok {
+		return &ValidationError{Name: "creator_email", err: errors.New(`ent: missing required field "Namespace.creator_email"`)}
+	}
+	if v, ok := nc.mutation.CreatorEmail(); ok {
+		if err := namespace.CreatorEmailValidator(v); err != nil {
+			return &ValidationError{Name: "creator_email", err: fmt.Errorf(`ent: validator failed for field "Namespace.creator_email": %w`, err)}
+		}
 	}
 	return nil
 }
@@ -246,6 +297,14 @@ func (nc *NamespaceCreate) createSpec() (*Namespace, *sqlgraph.CreateSpec) {
 		_spec.SetField(namespace.FieldImagePullSecrets, field.TypeJSON, value)
 		_node.ImagePullSecrets = value
 	}
+	if value, ok := nc.mutation.Private(); ok {
+		_spec.SetField(namespace.FieldPrivate, field.TypeBool, value)
+		_node.Private = value
+	}
+	if value, ok := nc.mutation.CreatorEmail(); ok {
+		_spec.SetField(namespace.FieldCreatorEmail, field.TypeString, value)
+		_node.CreatorEmail = value
+	}
 	if value, ok := nc.mutation.Description(); ok {
 		_spec.SetField(namespace.FieldDescription, field.TypeString, value)
 		_node.Description = value
@@ -275,6 +334,22 @@ func (nc *NamespaceCreate) createSpec() (*Namespace, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(favorite.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := nc.mutation.MembersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.MembersTable,
+			Columns: []string{namespace.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -385,6 +460,30 @@ func (u *NamespaceUpsert) SetImagePullSecrets(v []string) *NamespaceUpsert {
 // UpdateImagePullSecrets sets the "image_pull_secrets" field to the value that was provided on create.
 func (u *NamespaceUpsert) UpdateImagePullSecrets() *NamespaceUpsert {
 	u.SetExcluded(namespace.FieldImagePullSecrets)
+	return u
+}
+
+// SetPrivate sets the "private" field.
+func (u *NamespaceUpsert) SetPrivate(v bool) *NamespaceUpsert {
+	u.Set(namespace.FieldPrivate, v)
+	return u
+}
+
+// UpdatePrivate sets the "private" field to the value that was provided on create.
+func (u *NamespaceUpsert) UpdatePrivate() *NamespaceUpsert {
+	u.SetExcluded(namespace.FieldPrivate)
+	return u
+}
+
+// SetCreatorEmail sets the "creator_email" field.
+func (u *NamespaceUpsert) SetCreatorEmail(v string) *NamespaceUpsert {
+	u.Set(namespace.FieldCreatorEmail, v)
+	return u
+}
+
+// UpdateCreatorEmail sets the "creator_email" field to the value that was provided on create.
+func (u *NamespaceUpsert) UpdateCreatorEmail() *NamespaceUpsert {
+	u.SetExcluded(namespace.FieldCreatorEmail)
 	return u
 }
 
@@ -511,6 +610,34 @@ func (u *NamespaceUpsertOne) SetImagePullSecrets(v []string) *NamespaceUpsertOne
 func (u *NamespaceUpsertOne) UpdateImagePullSecrets() *NamespaceUpsertOne {
 	return u.Update(func(s *NamespaceUpsert) {
 		s.UpdateImagePullSecrets()
+	})
+}
+
+// SetPrivate sets the "private" field.
+func (u *NamespaceUpsertOne) SetPrivate(v bool) *NamespaceUpsertOne {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.SetPrivate(v)
+	})
+}
+
+// UpdatePrivate sets the "private" field to the value that was provided on create.
+func (u *NamespaceUpsertOne) UpdatePrivate() *NamespaceUpsertOne {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.UpdatePrivate()
+	})
+}
+
+// SetCreatorEmail sets the "creator_email" field.
+func (u *NamespaceUpsertOne) SetCreatorEmail(v string) *NamespaceUpsertOne {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.SetCreatorEmail(v)
+	})
+}
+
+// UpdateCreatorEmail sets the "creator_email" field to the value that was provided on create.
+func (u *NamespaceUpsertOne) UpdateCreatorEmail() *NamespaceUpsertOne {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.UpdateCreatorEmail()
 	})
 }
 
@@ -806,6 +933,34 @@ func (u *NamespaceUpsertBulk) SetImagePullSecrets(v []string) *NamespaceUpsertBu
 func (u *NamespaceUpsertBulk) UpdateImagePullSecrets() *NamespaceUpsertBulk {
 	return u.Update(func(s *NamespaceUpsert) {
 		s.UpdateImagePullSecrets()
+	})
+}
+
+// SetPrivate sets the "private" field.
+func (u *NamespaceUpsertBulk) SetPrivate(v bool) *NamespaceUpsertBulk {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.SetPrivate(v)
+	})
+}
+
+// UpdatePrivate sets the "private" field to the value that was provided on create.
+func (u *NamespaceUpsertBulk) UpdatePrivate() *NamespaceUpsertBulk {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.UpdatePrivate()
+	})
+}
+
+// SetCreatorEmail sets the "creator_email" field.
+func (u *NamespaceUpsertBulk) SetCreatorEmail(v string) *NamespaceUpsertBulk {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.SetCreatorEmail(v)
+	})
+}
+
+// UpdateCreatorEmail sets the "creator_email" field to the value that was provided on create.
+func (u *NamespaceUpsertBulk) UpdateCreatorEmail() *NamespaceUpsertBulk {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.UpdateCreatorEmail()
 	})
 }
 

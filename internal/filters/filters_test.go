@@ -12,8 +12,8 @@ import (
 func TestIfStrEQ(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	db.Namespace.Create().SetName("test").SaveX(context.TODO())
-	db.Namespace.Create().SetName("test2").SaveX(context.TODO())
+	db.Namespace.Create().SetName("test").SetCreatorEmail("a").SaveX(context.TODO())
+	db.Namespace.Create().SetName("test2").SetCreatorEmail("a").SaveX(context.TODO())
 	x := db.Namespace.Query().Where(IfStrEQ("name")("test")).AllX(context.Background())
 	assert.Equal(t, 1, len(x))
 	assert.Equal(t, "test", x[0].Name)
@@ -30,8 +30,8 @@ func TestIfStrEQ(t *testing.T) {
 func TestIfIntEQ(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	save1 := db.Namespace.Create().SetName("test").SaveX(context.TODO())
-	db.Namespace.Create().SetName("test2").SaveX(context.TODO())
+	save1 := db.Namespace.Create().SetCreatorEmail("a").SetName("test").SaveX(context.TODO())
+	db.Namespace.Create().SetCreatorEmail("a").SetName("test2").SaveX(context.TODO())
 	x := db.Namespace.Query().Where(IfIntEQ[int]("id")(save1.ID)).AllX(context.Background())
 	assert.Equal(t, 1, len(x))
 	assert.Equal(t, "test", x[0].Name)
@@ -42,8 +42,8 @@ func TestIfIntEQ(t *testing.T) {
 func TestIfOrderByDesc(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	db.Namespace.Create().SetName("test").SaveX(context.TODO())
-	db.Namespace.Create().SetName("test2").SaveX(context.TODO())
+	db.Namespace.Create().SetCreatorEmail("a").SetName("test").SaveX(context.TODO())
+	db.Namespace.Create().SetCreatorEmail("a").SetName("test2").SaveX(context.TODO())
 	x := db.Namespace.Query().Where(IfOrderByDesc("id")(lo.ToPtr(false))).AllX(context.Background())
 	assert.Equal(t, 2, len(x))
 	assert.Equal(t, "test", x[0].Name)
