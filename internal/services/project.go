@@ -146,7 +146,7 @@ func (p *projectSvc) apply(
 	var err error
 
 	if can := p.nsRepo.CanAccess(ctx, int(input.NamespaceId), MustGetUser(ctx)); !can {
-		return nil, repo.ToError(401, "没有权限")
+		return nil, repo.ToError(403, "没有权限")
 	}
 
 	var pubsub application.PubSub = socket.NewEmptyPubSub()
@@ -236,7 +236,7 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 		return nil, err
 	}
 	if can := p.nsRepo.CanAccess(ctx, projectModel.NamespaceID, MustGetUser(ctx)); !can {
-		return nil, repo.ToError(401, "没有权限")
+		return nil, repo.ToError(403, "没有权限")
 	}
 
 	return &project.ShowResponse{
@@ -269,7 +269,7 @@ func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 		return nil, err
 	}
 	if can := p.nsRepo.CanAccess(ctx, proj.NamespaceID, MustGetUser(ctx)); !can {
-		return nil, repo.ToError(401, "没有权限")
+		return nil, repo.ToError(403, "没有权限")
 	}
 
 	if err := p.projRepo.Delete(ctx, int(request.Id)); err != nil {

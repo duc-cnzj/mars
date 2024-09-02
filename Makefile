@@ -145,12 +145,12 @@ test:
         ./internal/util/... \
         ./internal/version/... \
 		-race -count=1 -cover -coverprofile=coverage.txt -covermode atomic && \
-	go tool cover -func cover.out
+	go tool cover -func coverage.txt
 
 .PHONY: cover-web
-# go tool cover -html cover.out
+# go tool cover -html coverage.txt
 cover-web:
-	go tool cover -html cover.out
+	go tool cover -html coverage.txt
 
 .PHONY: build_linux_amd64
 build_linux_amd64:

@@ -151,6 +151,9 @@ func (n *namespaceSvc) Show(ctx context.Context, input *namespace.ShowRequest) (
 	if err != nil {
 		return nil, err
 	}
+	if access := n.nsRepo.CanAccess(ctx, int(input.Id), MustGetUser(ctx)); !access {
+		return nil, repo.ToError(403, "没有权限")
+	}
 	return &namespace.ShowResponse{Item: transformer.FromNamespace(ns)}, nil
 }
 
@@ -158,6 +161,9 @@ func (n *namespaceSvc) UpdateDesc(ctx context.Context, req *namespace.UpdateDesc
 	old, err := n.nsRepo.Show(ctx, int(req.Id))
 	if err != nil {
 		return nil, err
+	}
+	if access := n.nsRepo.CanAccess(ctx, int(req.Id), MustGetUser(ctx)); !access {
+		return nil, repo.ToError(403, "没有权限")
 	}
 
 	ns, err := n.nsRepo.Update(ctx, &repo.UpdateNamespaceInput{
