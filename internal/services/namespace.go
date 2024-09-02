@@ -305,7 +305,7 @@ func (n *namespaceSvc) UpdatePrivate(ctx context.Context, req *namespace.UpdateP
 	n.eventRepo.AuditLogWithRequest(
 		types.EventActionType_Delete,
 		MustGetUser(ctx).Name,
-		fmt.Sprintf("[更新空间可见行] id: %v private: %t", req.Id, req.GetPrivate()),
+		fmt.Sprintf("[更新空间访问权限] id: %v private: %t", req.Id, req.GetPrivate()),
 		req,
 	)
 	return &namespace.UpdatePrivateResponse{Item: transformer.FromNamespace(private)}, nil
