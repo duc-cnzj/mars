@@ -479,7 +479,7 @@ func (k *K8sClient) start(done <-chan struct{}) {
 	if k.GatewayApiInstalled {
 		k.gwFactory.Start(done)
 	}
-	cache.WaitForCacheSync(done, k.EventInformer.HasSynced, k.PodInformer.HasSynced, k.SecretInformer.HasSynced)
+	//cache.WaitForCacheSync(done, k.EventInformer.HasSynced, k.PodInformer.HasSynced, k.SecretInformer.HasSynced)
 }
 
 type FanOutType int

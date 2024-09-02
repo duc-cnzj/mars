@@ -449,7 +449,7 @@ func (repo *projectRepo) GetGatewayHTTPRouteMappingByProjects(ctx context.Contex
 				data := m[projectName]
 				m[projectName] = append(data, &types.ServiceEndpoint{
 					Name: projectName,
-					Url:  fmt.Sprintf("%s:%s", "https", hostname),
+					Url:  "https://" + string(hostname),
 				})
 			}
 		}

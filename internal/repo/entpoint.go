@@ -38,6 +38,7 @@ func (repo *endpointRepo) InProject(ctx context.Context, projectID int) (res []*
 			project.FieldID,
 			project.FieldName,
 			project.FieldNamespaceID,
+			project.FieldManifest,
 		).
 		Where(project.ID(projectID)).
 		First(ctx)

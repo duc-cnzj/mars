@@ -10,10 +10,7 @@ func (d *K8sBootstrapper) Tags() []string {
 
 func (d *K8sBootstrapper) Bootstrap(appli application.App) error {
 	if appli.Config().KubeConfig != "" {
-		go func() {
-			appli.Data().InitK8s(appli.Done())
-		}()
-		return nil
+		return appli.Data().InitK8s(appli.Done())
 	}
 	return nil
 }

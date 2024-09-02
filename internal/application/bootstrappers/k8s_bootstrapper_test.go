@@ -1,14 +1,12 @@
 package bootstrappers
 
 import (
-	"testing"
-	"time"
-
 	"github.com/duc-cnzj/mars/v5/internal/application"
 	"github.com/duc-cnzj/mars/v5/internal/config"
 	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	"testing"
 )
 
 func TestK8sBootstrapper_Bootstrap(t *testing.T) {
@@ -21,7 +19,6 @@ func TestK8sBootstrapper_Bootstrap(t *testing.T) {
 	app.EXPECT().Done()
 	mockData.EXPECT().InitK8s(gomock.Any())
 	assert.Nil(t, (&K8sBootstrapper{}).Bootstrap(app))
-	time.Sleep(1 * time.Second)
 }
 
 func TestK8sBootstrapper_Tags(t *testing.T) {
