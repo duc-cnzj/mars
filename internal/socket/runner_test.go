@@ -1651,6 +1651,7 @@ func Test_jobRunner_Run_Fail_2(t *testing.T) {
 	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
 	installer.EXPECT().Run(gomock.Any(), gomock.Any()).Return(nil, errors.New("xx"))
 	messageChan.EXPECT().Send(gomock.Any())
+	messageChan.EXPECT().Close()
 	messageChan.EXPECT().Chan().Return(make(chan MessageItem, 1))
 	jb := &jobRunner{
 		logger:       mlog.NewLogger(nil),

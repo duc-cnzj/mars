@@ -20,9 +20,6 @@ git_server_plugin:
   args:
     token: ""
     baseurl: "https://gitlab.com/api/v4"
-#  name: github
-#  args:
-#    token: ""
 ws_sender_plugin:
   name: ws_sender_memory
 #  name: ws_sender_nsq
@@ -52,14 +49,14 @@ domain_manager_plugin:
 #    wildcard_domain: "*.mars.local"
 #    cluster_issuer: "letsencrypt-mars"
 picture_plugin:
-  name: picture_cartoon
-#  name: picture_bing
+  name: picture_bing
+#  name: picture_cartoon
 
 # kubeconfig 如果在集群外部，则需要配置，否则不用
 kubeconfig: ""
 
 # upload_dir 默认是 /tmp/mars-uploads
-upload_dir: ""
+#upload_dir: ""
 
 # 默认 50m, 使用 MB,Gi,m,g这样的写法
 #upload_max_size: "50m"

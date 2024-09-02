@@ -122,7 +122,29 @@ build_web:
 
 .PHONY: test
 test:
-	go test ./internal/... -race -count=1 -cover -coverprofile=cover.out -covermode atomic && \
+	go test \
+        ./internal/annotation/... \
+        ./internal/application/... \
+        ./internal/auth/... \
+        ./internal/cache/... \
+        ./internal/config/... \
+        ./internal/cron/... \
+        ./internal/data/... \
+        ./internal/event/... \
+        ./internal/filters/... \
+        ./internal/locker/... \
+        ./internal/logo/... \
+        ./internal/metrics/... \
+        ./internal/mlog/... \
+        ./internal/repo/... \
+        ./internal/server/... \
+        ./internal/services/... \
+        ./internal/socket/... \
+        ./internal/transformer/... \
+        ./internal/uploader/... \
+        ./internal/util/... \
+        ./internal/version/... \
+		-race -count=1 -cover -coverprofile=cover.out -covermode atomic && \
 	go tool cover -func cover.out
 
 .PHONY: cover-web

@@ -443,6 +443,7 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
 		defer j.logger.HandlePanic("[Websocket]: jobRunner Run")
+		defer j.messageCh.Close()
 		j.HandleMessage(ctx)
 		return nil
 	})
