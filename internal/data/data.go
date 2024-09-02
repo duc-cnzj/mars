@@ -39,9 +39,6 @@ import (
 	"sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 	gatewaylisterv1 "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1"
-
-	_ "github.com/duc-cnzj/mars/v5/internal/ent/runtime"
-	_ "github.com/go-sql-driver/mysql"
 )
 
 //go:generate mockgen -destination ./mock_data.go -package data github.com/duc-cnzj/mars/v5/internal/data Data

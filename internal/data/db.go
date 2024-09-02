@@ -12,6 +12,8 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 
+	_ "github.com/duc-cnzj/mars/v5/internal/ent/runtime"
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
 )
 
