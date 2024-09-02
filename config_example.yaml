@@ -12,6 +12,10 @@ debug: false
 # 开启 git 请求缓存，默认开启，因为 git 请求比较慢，需要缓存
 git_server_cached: true
 
+# db_auto_migrate 默认是 false
+# v4->v5 因为表结构发生改动(不兼容)，所以需要设置为 false, 防止自动迁移数据库表结构
+db_auto_migrate: false
+
 # 'db' or 'memory'
 cache_driver: "memory"
 

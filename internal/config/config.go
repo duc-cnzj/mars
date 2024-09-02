@@ -141,6 +141,7 @@ type Config struct {
 	DBSlowLogEnabled   bool          `mapstructure:"db_slow_log_enabled"`
 	DBSlowLogThreshold time.Duration `mapstructure:"db_slow_log_threshold"`
 	DBDebug            bool          `mapstructure:"db_debug"`
+	DBAutoMigrate      bool          `mapstructure:"db_auto_migrate"`
 
 	ImagePullSecrets DockerAuths `mapstructure:"imagepullsecrets"`
 

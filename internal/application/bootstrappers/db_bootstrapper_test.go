@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/duc-cnzj/mars/v5/internal/config"
+
 	"github.com/duc-cnzj/mars/v5/internal/application"
 	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
@@ -18,6 +20,7 @@ func TestDBBootstrapper_Bootstrap(t *testing.T) {
 	app := application.NewMockApp(m)
 	app.EXPECT().Data().Return(mockData).AnyTimes()
 	mockData.EXPECT().InitDB().Return(func() error { return nil }, nil)
+	app.EXPECT().Config().Return(&config.Config{DBAutoMigrate: true})
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any())
 	app.EXPECT().Logger().Return(mlog.NewLogger(nil))
 	db, _ := data.NewSqliteDB()

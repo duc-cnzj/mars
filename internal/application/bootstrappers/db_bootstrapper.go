@@ -22,9 +22,14 @@ func (d *DBBootstrapper) Bootstrap(app application.App) error {
 		closeFunc()
 	})
 	app.Logger().Info("[DB]: auto migrate database")
-	return app.Data().DB().Schema.Create(
-		context.TODO(),
-		migrate.WithDropIndex(true),
-		migrate.WithDropColumn(true),
-	)
+	if app.Config().DBAutoMigrate {
+		return app.Data().DB().
+			Schema.
+			Create(
+				context.TODO(),
+				migrate.WithDropIndex(true),
+				migrate.WithDropColumn(true),
+			)
+	}
+	return nil
 }
