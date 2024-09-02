@@ -4,9 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
-	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -109,7 +108,7 @@ type Config struct {
 	MetricsPort string `mapstructure:"metrics_port"`
 
 	AdminPassword string `mapstructure:"admin_password"`
-	PrivateKey    string `mapstructure:"private_key"`
+	PrivateKey    string `mapstructure:"private_key"  json:"-"`
 
 	DomainManagerPlugin Plugin `mapstructure:"domain_manager_plugin"`
 	WsSenderPlugin      Plugin `mapstructure:"ws_sender_plugin"`
@@ -119,6 +118,7 @@ type Config struct {
 	UploadDir     string `mapstructure:"upload_dir"`
 	UploadMaxSize string `mapstructure:"upload_max_size"`
 
+	S3Enabled         bool   `mapstructure:"s3_enabled"`
 	S3Endpoint        string `mapstructure:"s3_endpoint"`
 	S3AccessKeyID     string `mapstructure:"s3_access_key_id"`
 	S3SecretAccessKey string `mapstructure:"s3_secret_access_key"`
@@ -129,7 +129,7 @@ type Config struct {
 	NsPrefix   string `mapstructure:"ns_prefix"`
 	ExternalIp string `mapstructure:"external_ip"`
 
-	JaegerAgentHostPort string `mapstructure:"jaeger_agent_host_port"`
+	TracingEndpoint string `mapstructure:"tracing_endpoint"`
 
 	// mysql
 	DBDriver           string        `mapstructure:"db_driver"`
@@ -140,11 +140,17 @@ type Config struct {
 	DBDatabase         string        `mapstructure:"db_database"`
 	DBSlowLogEnabled   bool          `mapstructure:"db_slow_log_enabled"`
 	DBSlowLogThreshold time.Duration `mapstructure:"db_slow_log_threshold"`
+	DBDebug            bool          `mapstructure:"db_debug"`
+	DBAutoMigrate      bool          `mapstructure:"db_auto_migrate"`
 
 	ImagePullSecrets DockerAuths `mapstructure:"imagepullsecrets"`
 
-	InstallTimeout time.Duration `mapstructure:"install_timeout"`
+	InstallTimeout time.Duration `mapstructure:"install_timeout" json:"-"`
 	Oidc           []OidcSetting `mapstructure:"oidc"`
+}
+
+func (c *Config) DSN() string {
+	return fmt.Sprintf("%s:%s@tcp(%s:%v)/%s?charset=utf8mb4&parseTime=True&loc=Local", c.DBUsername, c.DBPassword, c.DBHost, c.DBPort, c.DBDatabase)
 }
 
 type OidcSetting struct {
@@ -158,24 +164,27 @@ type OidcSetting struct {
 
 func Init(cfgFile string) *Config {
 	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
-	} else {
-		dir, err := os.Getwd()
-		if err != nil {
-			log.Fatal(err)
+		if !filepath.IsAbs(cfgFile) {
+			viper.AddConfigPath(".")
+			abs, err := filepath.Abs(cfgFile)
+			if err != nil {
+				panic(err)
+			}
+			viper.SetConfigFile(abs)
+		} else {
+			viper.SetConfigFile(cfgFile)
 		}
-
-		viper.AddConfigPath(dir)
+	} else {
+		viper.AddConfigPath(".")
 		viper.SetConfigName("config")
 		viper.SetConfigType("yaml")
 	}
 
-	viper.AutomaticEnv()
-
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
+	viper.SetDefault("log_channel", "zap")
 	viper.SetDefault("cache_driver", "db")
 	viper.SetDefault("git_server_cached", true)
 	viper.SetDefault("domain_manager_plugin", map[string]any{
@@ -195,7 +204,9 @@ func Init(cfgFile string) *Config {
 
 	cfg := &Config{NsPrefix: "devops-"}
 
-	viper.Unmarshal(&cfg)
+	if err := viper.Unmarshal(&cfg); err != nil {
+		panic(err)
+	}
 	for _, s := range cfg.ImagePullSecrets {
 		if s.Server == "" {
 			s.Server = "https://index.docker.io/v1/"
@@ -213,8 +224,14 @@ func Init(cfgFile string) *Config {
 		cfg.UploadMaxSize = DefaultMaxUploadSize
 	}
 
+	if cfg.UploadDir == "" {
+		cfg.UploadDir = DefaultRootDir
+	}
+
 	return cfg
 }
+
+const DefaultRootDir = "/tmp/mars-uploads"
 
 func (c *Config) MaxUploadSize() uint64 {
 	bytes, err := humanize.ParseBytes(c.UploadMaxSize)

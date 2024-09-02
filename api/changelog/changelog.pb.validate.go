@@ -35,22 +35,23 @@ var (
 	_ = sort.Sort
 )
 
-// Validate checks the field values on ShowRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *ShowRequest) Validate() error {
+// Validate checks the field values on FindLastChangelogsByProjectIDRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *FindLastChangelogsByProjectIDRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ShowRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ShowRequestMultiError, or
-// nil if none found.
-func (m *ShowRequest) ValidateAll() error {
+// ValidateAll checks the field values on FindLastChangelogsByProjectIDRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// FindLastChangelogsByProjectIDRequestMultiError, or nil if none found.
+func (m *FindLastChangelogsByProjectIDRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ShowRequest) validate(all bool) error {
+func (m *FindLastChangelogsByProjectIDRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -58,7 +59,7 @@ func (m *ShowRequest) validate(all bool) error {
 	var errors []error
 
 	if m.GetProjectId() <= 0 {
-		err := ShowRequestValidationError{
+		err := FindLastChangelogsByProjectIDRequestValidationError{
 			field:  "ProjectId",
 			reason: "value must be greater than 0",
 		}
@@ -71,18 +72,20 @@ func (m *ShowRequest) validate(all bool) error {
 	// no validation rules for OnlyChanged
 
 	if len(errors) > 0 {
-		return ShowRequestMultiError(errors)
+		return FindLastChangelogsByProjectIDRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ShowRequestMultiError is an error wrapping multiple validation errors
-// returned by ShowRequest.ValidateAll() if the designated constraints aren't met.
-type ShowRequestMultiError []error
+// FindLastChangelogsByProjectIDRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// FindLastChangelogsByProjectIDRequest.ValidateAll() if the designated
+// constraints aren't met.
+type FindLastChangelogsByProjectIDRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ShowRequestMultiError) Error() string {
+func (m FindLastChangelogsByProjectIDRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -91,11 +94,12 @@ func (m ShowRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ShowRequestMultiError) AllErrors() []error { return m }
+func (m FindLastChangelogsByProjectIDRequestMultiError) AllErrors() []error { return m }
 
-// ShowRequestValidationError is the validation error returned by
-// ShowRequest.Validate if the designated constraints aren't met.
-type ShowRequestValidationError struct {
+// FindLastChangelogsByProjectIDRequestValidationError is the validation error
+// returned by FindLastChangelogsByProjectIDRequest.Validate if the designated
+// constraints aren't met.
+type FindLastChangelogsByProjectIDRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -103,22 +107,24 @@ type ShowRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ShowRequestValidationError) Field() string { return e.field }
+func (e FindLastChangelogsByProjectIDRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ShowRequestValidationError) Reason() string { return e.reason }
+func (e FindLastChangelogsByProjectIDRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ShowRequestValidationError) Cause() error { return e.cause }
+func (e FindLastChangelogsByProjectIDRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ShowRequestValidationError) Key() bool { return e.key }
+func (e FindLastChangelogsByProjectIDRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ShowRequestValidationError) ErrorName() string { return "ShowRequestValidationError" }
+func (e FindLastChangelogsByProjectIDRequestValidationError) ErrorName() string {
+	return "FindLastChangelogsByProjectIDRequestValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e ShowRequestValidationError) Error() string {
+func (e FindLastChangelogsByProjectIDRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -130,14 +136,14 @@ func (e ShowRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sShowRequest.%s: %s%s",
+		"invalid %sFindLastChangelogsByProjectIDRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ShowRequestValidationError{}
+var _ error = FindLastChangelogsByProjectIDRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -145,24 +151,25 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ShowRequestValidationError{}
+} = FindLastChangelogsByProjectIDRequestValidationError{}
 
-// Validate checks the field values on ShowResponse with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *ShowResponse) Validate() error {
+// Validate checks the field values on FindLastChangelogsByProjectIDResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *FindLastChangelogsByProjectIDResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ShowResponse with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ShowResponseMultiError, or
-// nil if none found.
-func (m *ShowResponse) ValidateAll() error {
+// ValidateAll checks the field values on FindLastChangelogsByProjectIDResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// FindLastChangelogsByProjectIDResponseMultiError, or nil if none found.
+func (m *FindLastChangelogsByProjectIDResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ShowResponse) validate(all bool) error {
+func (m *FindLastChangelogsByProjectIDResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -176,7 +183,7 @@ func (m *ShowResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ShowResponseValidationError{
+					errors = append(errors, FindLastChangelogsByProjectIDResponseValidationError{
 						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -184,7 +191,7 @@ func (m *ShowResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, ShowResponseValidationError{
+					errors = append(errors, FindLastChangelogsByProjectIDResponseValidationError{
 						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -193,7 +200,7 @@ func (m *ShowResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return ShowResponseValidationError{
+				return FindLastChangelogsByProjectIDResponseValidationError{
 					field:  fmt.Sprintf("Items[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -204,18 +211,20 @@ func (m *ShowResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ShowResponseMultiError(errors)
+		return FindLastChangelogsByProjectIDResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ShowResponseMultiError is an error wrapping multiple validation errors
-// returned by ShowResponse.ValidateAll() if the designated constraints aren't met.
-type ShowResponseMultiError []error
+// FindLastChangelogsByProjectIDResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// FindLastChangelogsByProjectIDResponse.ValidateAll() if the designated
+// constraints aren't met.
+type FindLastChangelogsByProjectIDResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ShowResponseMultiError) Error() string {
+func (m FindLastChangelogsByProjectIDResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -224,11 +233,12 @@ func (m ShowResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ShowResponseMultiError) AllErrors() []error { return m }
+func (m FindLastChangelogsByProjectIDResponseMultiError) AllErrors() []error { return m }
 
-// ShowResponseValidationError is the validation error returned by
-// ShowResponse.Validate if the designated constraints aren't met.
-type ShowResponseValidationError struct {
+// FindLastChangelogsByProjectIDResponseValidationError is the validation error
+// returned by FindLastChangelogsByProjectIDResponse.Validate if the
+// designated constraints aren't met.
+type FindLastChangelogsByProjectIDResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -236,22 +246,24 @@ type ShowResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ShowResponseValidationError) Field() string { return e.field }
+func (e FindLastChangelogsByProjectIDResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ShowResponseValidationError) Reason() string { return e.reason }
+func (e FindLastChangelogsByProjectIDResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ShowResponseValidationError) Cause() error { return e.cause }
+func (e FindLastChangelogsByProjectIDResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ShowResponseValidationError) Key() bool { return e.key }
+func (e FindLastChangelogsByProjectIDResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ShowResponseValidationError) ErrorName() string { return "ShowResponseValidationError" }
+func (e FindLastChangelogsByProjectIDResponseValidationError) ErrorName() string {
+	return "FindLastChangelogsByProjectIDResponseValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e ShowResponseValidationError) Error() string {
+func (e FindLastChangelogsByProjectIDResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -263,14 +275,14 @@ func (e ShowResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sShowResponse.%s: %s%s",
+		"invalid %sFindLastChangelogsByProjectIDResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ShowResponseValidationError{}
+var _ error = FindLastChangelogsByProjectIDResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -278,4 +290,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ShowResponseValidationError{}
+} = FindLastChangelogsByProjectIDResponseValidationError{}

@@ -2,45 +2,69 @@ syntax = "proto3";
 
 package websocket;
 
-import "cluster/cluster.proto";
-import "types/types.proto";
-
-option go_package = "github.com/duc-cnzj/mars/api/v4/websocket;websocket";
+option go_package = "github.com/duc-cnzj/mars/api/v5/websocket;websocket";
 
 enum Type {
-  TypeUnknown = 0;
-  SetUid = 1;
-  ReloadProjects = 2;
-  CancelProject = 3;
-  CreateProject = 4;
-  UpdateProject = 5;
-  ProcessPercent = 6;
-  ClusterInfoSync = 7;
-  InternalError = 8;
-  ApplyProject = 9;
-  ProjectPodEvent = 10;
+  TypeUnknown        = 0;
+  SetUid             = 1;
+  ReloadProjects     = 2;
+  CancelProject      = 3;
+  CreateProject      = 4;
+  UpdateProject      = 5;
+  ProcessPercent     = 6;
+  ClusterInfoSync    = 7;
+  InternalError      = 8;
+  ApplyProject       = 9;
+  ProjectPodEvent    = 10;
 
-  HandleExecShell = 50;
+  HandleExecShell    = 50;
   HandleExecShellMsg = 51;
-  HandleCloseShell = 52;
-  HandleAuthorize = 53;
+  HandleCloseShell   = 52;
+  HandleAuthorize    = 53;
 }
 
 enum ResultType {
-  ResultUnknown = 0;
-  Error = 1;
-  Success = 2;
-  Deployed = 3;
-  DeployedFailed = 4;
-  DeployedCanceled = 5;
+  ResultUnknown     = 0;
+  Error             = 1;
+  Success           = 2;
+  Deployed          = 3;
+  DeployedFailed    = 4;
+  DeployedCanceled  = 5;
   LogWithContainers = 6;
 }
 
 enum To {
-  ToSelf = 0;
-  ToAll = 1;
+  ToSelf   = 0;
+  ToAll    = 1;
   ToOthers = 2;
 }
+
+message ClusterInfo {
+  string status              = 1;
+  string free_memory         = 2;
+  string free_cpu            = 3;
+  string free_request_memory = 4;
+  string free_request_cpu    = 5;
+  string total_memory        = 6;
+  string total_cpu           = 7;
+  string usage_memory_rate   = 8;
+  string usage_cpu_rate      = 9;
+  string request_memory_rate = 10;
+  string request_cpu_rate    = 11;
+}
+
+
+message ExtraValue {
+  string path  = 1;
+  string value = 2;
+}
+
+message Container {
+  string namespace = 1;
+  string pod       = 2;
+  string container = 3;
+}
+
 
 // Request
 message WsRequestMetadata {
@@ -48,7 +72,7 @@ message WsRequestMetadata {
 }
 
 message AuthorizeTokenInput {
-  Type type = 1;
+  Type   type  = 1;
 
   string token = 2;
 }
@@ -63,79 +87,79 @@ message AuthorizeTokenInput {
 // stdout  be->fe     Data           Output from the process
 // toast   be->fe     Data           OOB message to be shown to the user
 message TerminalMessage {
-  string op = 1;
-  bytes data = 2;
+  string op         = 1;
+  bytes  data       = 2;
   string session_id = 3;
-  uint32 rows = 4;
-  uint32 cols = 5;
+  uint32 rows       = 4;
+  uint32 cols       = 5;
 }
 
 message ProjectPodEventJoinInput {
-  Type type = 1;
+  Type  type         = 1;
 
-  bool join = 2;
-  int64 project_id = 3;
-  int64 namespace_id = 4;
+  bool  join         = 2;
+  int32 project_id   = 3;
+  int32 namespace_id = 4;
 }
 
 message TerminalMessageInput {
-  Type type = 1;
+  Type            type    = 1;
 
   TerminalMessage message = 2;
 }
 
 message WsHandleExecShellInput {
-  Type type = 1;
+  Type      type       = 1;
 
-  types.Container container = 2;
+  Container container  = 2;
   // format: "<namespace>-<pod>-<container>:<randomID>"
-  string session_id = 3;
+  string    session_id = 3;
 }
 
 message CancelInput {
-  Type type = 1;
+  Type   type         = 1;
 
-  int64 namespace_id = 2;
-  string name = 3;
+  int32  namespace_id = 2;
+  string name         = 3;
 }
 
-
 message CreateProjectInput {
-  Type type = 1;
+  Type                type         = 1;
 
-  int64 namespace_id = 2;
-  string name = 3;
-  int64 git_project_id = 4;
-  string git_branch = 5;
-  string git_commit = 6;
-  string config = 7;
-  bool atomic = 8;
-  repeated types.ExtraValue extra_values = 9;
+  // Create!
+  int32               namespace_id = 2;
+  optional string     name         = 3;
+  int32               repo_id      = 4;
+  string              git_branch   = 5;
+  string              git_commit   = 6;
+  string              config       = 7;
+  repeated ExtraValue extra_values = 8;
+  optional bool       atomic       = 9;
 }
 
 message UpdateProjectInput {
-  Type type = 1;
+  Type                type         = 1;
 
-  int64 project_id = 2;
-  string git_branch = 3;
-  string git_commit = 4;
-  string config = 5;
-  bool atomic = 6;
-  repeated types.ExtraValue extra_values = 7;
-  int64 version = 8;
+  int32               project_id   = 2;
+  string              git_branch   = 3;
+  string              git_commit   = 4;
+  string              config       = 5;
+  repeated ExtraValue extra_values = 6;
+  int32               version      = 7;
+  optional bool       atomic       = 8;
 }
 
 // Response
 message Metadata {
-  string id = 1;
-  string uid = 2;
-  string slug = 3;
-  Type type = 4;
-  bool end = 5;
-  ResultType result = 6;
-  To to = 7;
-  string message = 8;
-  int64 percent = 9;
+  string     id      = 1;
+  string     uid     = 2;
+  string     slug    = 3;
+  Type       type    = 4;
+  bool       end     = 5;
+  ResultType result  = 6;
+  To         to      = 7;
+  string     message = 8;
+  int32      percent = 9;
 }
 
 message WsMetadataResponse {
@@ -143,33 +167,33 @@ message WsMetadataResponse {
 }
 
 message WsHandleShellResponse {
-  Metadata metadata = 1;
+  Metadata        metadata         = 1;
 
   TerminalMessage terminal_message = 2;
-  types.Container container = 3;
+  Container       container        = 3;
 }
 
 message WsHandleClusterResponse {
-  Metadata metadata = 1;
+  Metadata    metadata = 1;
 
-  cluster.InfoResponse info = 2;
+  ClusterInfo info     = 2;
 }
 
 // WsWithContainerMessageResponse 部署时容器起不来，需要查看带容器信息的日志时使用
 message WsWithContainerMessageResponse {
-  Metadata metadata = 1;
+  Metadata           metadata   = 1;
 
-  repeated types.Container containers = 2;
+  repeated Container containers = 2;
 }
 
 message WsProjectPodEventResponse {
-  Metadata metadata = 1;
+  Metadata metadata   = 1;
 
-  int64 project_id = 2;
+  int32    project_id = 2;
 }
 
 message WsReloadProjectsResponse {
-  Metadata metadata = 1;
+  Metadata metadata     = 1;
 
-  int64 namespace_id = 2;
+  int32    namespace_id = 2;
 }

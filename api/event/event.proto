@@ -2,46 +2,53 @@ syntax = "proto3";
 
 package event;
 
+import "google/api/field_behavior.proto";
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 import "types/types.proto";
+import "openapi/v3/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/event;event";
+option go_package = "github.com/duc-cnzj/mars/api/v5/event;event";
 
 message ListRequest {
-  int64 page = 1 [(validate.rules).int64.gte = 1];
-  int64 page_size = 2 [(validate.rules).int64.gte = 1];
+  optional int32                 page        = 1;
+  optional int32                 page_size   = 2;
   types.EventActionType action_type = 3;
   // 模糊搜索 message 和 username
-  string search = 4;
+  string                         search      = 4;
 }
 
 message ListResponse {
-  int64 page = 1;
-  int64 page_size = 2;
-  repeated types.EventModel items = 3;
+  int32                     page      = 1;
+  int32                     page_size = 2;
+  repeated types.EventModel items     = 3;
 }
 
 message ShowRequest {
-  int64 id = 1 [(validate.rules).int64.gt = 0];
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 
 message ShowResponse {
-  types.EventModel event = 1;
+  types.EventModel item = 1;
 }
 
 service Event {
-  // List 用户操作事件列表, 不包含 old, new
   rpc List(ListRequest) returns (ListResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/events"
+    };
+    option (openapi.v3.operation) = {
+      summary: "用户操作事件列表",
     };
   }
 
-  //  Show 查看事件详情, 包含 old, new
   rpc Show(ShowRequest) returns (ShowResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/events/{id}"
+    };
+
+    option (openapi.v3.operation) = {
+      summary: "查看事件详情, 包含 old, new",
     };
   }
 }

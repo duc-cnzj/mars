@@ -3,27 +3,27 @@ syntax = "proto3";
 package picture;
 
 import "google/api/annotations.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
+import "openapi/v3/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/picture;picture";
+option go_package = "github.com/duc-cnzj/mars/api/v5/picture;picture";
 
 message BackgroundRequest {
   bool random = 1;
 }
 
 message BackgroundResponse {
-  string url = 1;
+  string url       = 1;
   string copyright = 2;
 }
 
 service Picture {
   // Background 获取背景图片
   rpc Background(BackgroundRequest) returns (BackgroundResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/picture/background"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      security: { } // Disable security key
+    option (openapi.v3.operation) = {
+      security: {} // Disable security key
     };
   }
 }

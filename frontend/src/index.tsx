@@ -1,5 +1,4 @@
 import React, { Suspense, lazy, useEffect } from "react";
-import reportWebVitals from "./reportWebVitals";
 import { Provider } from "react-redux";
 import store from "./store";
 import { disableReactDevTools } from "@fvilers/disable-react-devtools";
@@ -18,6 +17,7 @@ import "antd/dist/reset.css";
 import "prism-themes/themes/prism-material-dark.css";
 import { useDispatch } from "react-redux";
 import { setOpenedModals } from "./store/actions";
+import zhCN from "antd/locale/zh_CN";
 
 const Login = lazy(() => import("./components/Login"));
 const Callback = lazy(() => import("./components/AuthCallback"));
@@ -42,7 +42,7 @@ const RootElement: React.FC = () => {
 
   return (
     <ProvideAuth>
-      <ConfigProvider theme={{ token: theme }}>
+      <ConfigProvider theme={{ token: theme }} locale={zhCN}>
         <Routes>
           <Route
             path="/auth/callback"
@@ -81,7 +81,5 @@ root.render(
         <RootElement />
       </Router>
     </Suspense>
-  </Provider>
+  </Provider>,
 );
-
-reportWebVitals();

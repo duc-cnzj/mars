@@ -17,10 +17,13 @@ import {
   NotificationOutlined,
 } from "@ant-design/icons";
 import { ItemType } from "rc-menu/lib/interface";
+import useVersion from "../contexts/useVersion";
+import logo from "../assets/marslogo.png";
 
 const AppHeader: React.FC = () => {
   const h = useNavigate();
   const { user, isAdmin } = useAuth();
+  const version = useVersion();
 
   let items: ItemType[] = [
     {
@@ -41,10 +44,10 @@ const AppHeader: React.FC = () => {
             href="javascript(0);"
             onClick={(e) => {
               e.preventDefault();
-              h("/git_project_manager");
+              h("/repos");
             }}
           >
-            <SettingOutlined /> 项目配置
+            <SettingOutlined /> 仓库管理
           </a>
         ),
         key: "1",
@@ -91,8 +94,8 @@ const AppHeader: React.FC = () => {
           onClick={(e) => {
             e.preventDefault();
             removeToken();
-            if (user.logout_url) {
-              window.location.href = user.logout_url;
+            if (user.logoutUrl) {
+              window.location.href = user.logoutUrl;
             } else {
               h("/login");
             }
@@ -119,10 +122,20 @@ const AppHeader: React.FC = () => {
         className={css`
           color: ${theme.mainFontColor};
           font-size: 18px;
+          display: flex;
+          align-items: center;
         `}
         style={{ color: useWsReady() ? "white" : "red" }}
       >
-        Mars
+        <img
+          src={logo}
+          style={{ width: 24, height: 24, marginRight: 10 }}
+          alt="logo"
+        />
+        <div style={{ fontFamily: "dank mono" }}>Mars</div>
+        <span style={{ fontSize: 10, marginLeft: "5px", marginTop: -9 }}>
+          {version?.version}
+        </span>
       </Link>
       <div
         style={{

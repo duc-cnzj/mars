@@ -43,7 +43,7 @@ const DiffViewer: React.FC<{
         }}
       />
     ),
-    [mode]
+    [mode],
   );
   return (
     <div style={{ height: "100%" }}>
@@ -56,17 +56,19 @@ const DiffViewer: React.FC<{
             justify-content: ${splitView ? "space-between" : "flex-start"};
           `}
         >
-          <Button
-            size="small"
-            type="dashed"
-            className={css`
-              margin-right: ${!splitView ? "5px" : "0"};
-            `}
-            onClick={() => copy(oldValue)}
-            danger
-          >
-            copy old
-          </Button>
+          {oldValue && (
+            <Button
+              size="small"
+              type="dashed"
+              className={css`
+                margin-right: ${!splitView ? "5px" : "0"};
+              `}
+              onClick={() => copy(oldValue)}
+              danger
+            >
+              copy old
+            </Button>
+          )}
           <Button size="small" type="dashed" onClick={() => copy(newValue)}>
             copy new
           </Button>

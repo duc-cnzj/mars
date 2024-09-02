@@ -3,13 +3,12 @@ package cmd
 import (
 	"os"
 
-	"github.com/duc-cnzj/mars/v4/version"
-
+	"github.com/duc-cnzj/mars/v5/internal/version"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
-	cfgFile string
 	rootCmd = &cobra.Command{
 		Use:     "app",
 		Short:   "mars app.",
@@ -30,9 +29,16 @@ func Execute(configFile []byte, logoStr string) {
 	}
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(apiGatewayCmd)
-	rootCmd.AddCommand(showCmd)
+	rootCmd.AddCommand(inspect)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringP("config", "c", "", "config file (default is $DIR/config.yaml)")
+	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+	viper.SetEnvPrefix("MARS")
+	viper.BindEnv("config")
 }

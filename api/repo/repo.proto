@@ -1,0 +1,153 @@
+syntax = "proto3";
+
+package repo;
+
+import "openapi/v3/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+import "types/types.proto";
+import "mars/mars.proto";
+
+option go_package = "github.com/duc-cnzj/mars/api/v5/repo;repo";
+
+message ListRequest {
+  optional int32 page      = 1;
+  optional int32 page_size = 2;
+  optional bool  enabled   = 3;
+  string         name      = 4;
+}
+
+message ListResponse {
+  int32                    page      = 1;
+  int32                    page_size = 2;
+  int32                    count     = 3;
+  repeated types.RepoModel items     = 4;
+}
+
+message ShowRequest {
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
+
+message ShowResponse {
+  types.RepoModel item = 1;
+}
+message ToggleEnabledRequest{
+  int32 id      = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  bool  enabled = 2 [(google.api.field_behavior) = REQUIRED];
+}
+message ToggleEnabledResponse{
+  types.RepoModel item = 1;
+}
+
+message CreateRequest{
+  string         name           = 1 [(validate.rules).string = {min_bytes: 1, pattern: "^[a-zA-Z0-9_-]+$"}, (google.api.field_behavior) = REQUIRED];
+  optional int32 git_project_id = 2;
+  mars.Config    mars_config    = 3;
+  bool           need_git_repo  = 4;
+  string         description    = 5;
+}
+message CreateResponse{
+  types.RepoModel item = 1;
+}
+message UpdateRequest{
+  int32          id             = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  string         name           = 2 [(validate.rules).string = {min_bytes: 1, pattern: "^[a-zA-Z0-9_-]+$"}, (google.api.field_behavior) = REQUIRED];
+  optional int32 git_project_id = 3;
+  mars.Config    mars_config    = 4;
+  bool           need_git_repo  = 5;
+  string         description    = 6;
+}
+message UpdateResponse{
+  types.RepoModel item = 1;
+}
+
+message AllRequest {
+  optional bool enabled = 1;
+}
+message AllResponse{
+  repeated types.RepoModel items = 1;
+}
+
+service Repo {
+  rpc List(ListRequest) returns (ListResponse) {
+    option (google.api.http)      = {
+      get: "/api/repos"
+    };
+    option (openapi.v3.operation) = {
+      summary: "获取 repo 列表",
+    };
+  }
+
+  rpc Create(CreateRequest) returns (CreateResponse) {
+    option (google.api.http)      = {
+      post: "/api/repos",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "创建 repo",
+    };
+  }
+
+  rpc Show(ShowRequest) returns (ShowResponse) {
+    option (google.api.http)      = {
+      get: "/api/repos/{id}"
+    };
+    option (openapi.v3.operation) = {
+      summary: "获取 repo 详情",
+    };
+  }
+
+  rpc Update(UpdateRequest) returns (UpdateResponse) {
+    option (google.api.http)      = {
+      put: "/api/repos/{id}",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "更新 repo",
+    };
+  }
+
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
+    option (google.api.http)      = {
+      delete: "/api/repos/{id}",
+    };
+    option (openapi.v3.operation) = {
+      summary: "删除 repo",
+    };
+  }
+
+  rpc ToggleEnabled(ToggleEnabledRequest) returns (ToggleEnabledResponse) {
+    option (google.api.http)      = {
+      post: "/api/repos/toggle_enabled"
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "开启/关闭 repo",
+    };
+  }
+
+  rpc Clone(CloneRequest) returns (CloneResponse) {
+    option (google.api.http)      = {
+      post: "/api/repos/clone"
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "克隆 repo",
+    };
+  }
+}
+
+message DeleteRequest{
+  int32  id   = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
+message DeleteResponse{}
+
+message CloneRequest{
+  int32  id   = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  string name = 2 [(validate.rules).string = {min_bytes: 1, pattern: "^[a-zA-Z0-9_-]+$"}, (google.api.field_behavior) = REQUIRED];
+}
+
+message CloneResponse{
+  types.RepoModel item = 1;
+}

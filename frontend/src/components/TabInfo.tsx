@@ -1,6 +1,5 @@
-import React, { memo, useState } from "react";
-import { deleteProject } from "../api/project";
-import { Skeleton, Button, Modal, message } from "antd";
+import React, { memo, useEffect, useState } from "react";
+import { Skeleton, Button, Modal, message, Spin } from "antd";
 import {
   BranchesOutlined,
   PushpinOutlined,
@@ -10,37 +9,46 @@ import {
   FieldNumberOutlined,
   LinkOutlined,
 } from "@ant-design/icons";
-import pb from "../api/compiled";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
+import { components } from "../api/schema";
+import ajax from "../api/ajax";
 
 SyntaxHighlighter.registerLanguage("yaml", yaml);
 
 const { confirm } = Modal;
 
 const DetailTab: React.FC<{
-  detail: pb.types.ProjectModel;
-  cpu: string;
-  git_commit_web_url: string;
-  git_commit_title: string;
-  git_commit_author: string;
-  git_commit_date: string;
-  memory: string;
-  urls: pb.types.ServiceEndpoint[];
+  detail: components["schemas"]["types.ProjectModel"];
   onDeleted: () => void;
-}> = ({
-  detail,
-  onDeleted,
-  cpu,
-  memory,
-  urls,
-  git_commit_web_url,
-  git_commit_title,
-  git_commit_author,
-  git_commit_date,
-}) => {
+}> = ({ detail, onDeleted }) => {
   const [loading, setLoading] = useState<boolean>(false);
+  const [cpuMemEndpointsLoading, setCpuMemEndpointsLoading] =
+    useState<boolean>(true);
+  const [cpuMemEndpoints, setCpuMemEndpoints] = useState<{
+    cpu: string;
+    mem: string;
+    urls: components["schemas"]["types.ServiceEndpoint"][];
+  }>({ cpu: "", mem: "", urls: [] });
+  useEffect(() => {
+    setCpuMemEndpointsLoading(true);
+    ajax
+      .GET("/api/projects/{id}/memory_cpu_and_endpoints", {
+        params: { path: { id: detail.id } },
+      })
+      .then(({ data, error }) => {
+        setCpuMemEndpointsLoading(false);
+        if (error) {
+          return;
+        }
+        setCpuMemEndpoints({
+          cpu: data.cpu,
+          mem: data.memory,
+          urls: data.urls,
+        });
+      });
+  }, [detail.id]);
 
   return detail ? (
     <div style={{ height: "100%", overflowY: "auto" }}>
@@ -86,7 +94,12 @@ const DetailTab: React.FC<{
           />
         </svg>
         <p>
-          cpu: <span className="detail-data">{cpu}</span>
+          cpu:{" "}
+          {!cpuMemEndpointsLoading ? (
+            <span className="detail-data">{cpuMemEndpoints.cpu}</span>
+          ) : (
+            <Spin />
+          )}
         </p>
       </div>
 
@@ -115,7 +128,12 @@ const DetailTab: React.FC<{
           />
         </svg>
         <p>
-          memory: <span className="detail-data">{memory}</span>
+          memory:{" "}
+          {!cpuMemEndpointsLoading ? (
+            <span className="detail-data">{cpuMemEndpoints.mem}</span>
+          ) : (
+            <Spin />
+          )}
         </p>
       </div>
 
@@ -134,7 +152,7 @@ const DetailTab: React.FC<{
           }}
         />
         <p>
-          分支: <span className="detail-data">{detail.git_branch}</span>
+          分支: <span className="detail-data">{detail.gitBranch}</span>
         </p>
       </div>
 
@@ -156,45 +174,50 @@ const DetailTab: React.FC<{
           <p>地址:</p>
         </div>
         <ul style={{ listStyle: "none", padding: "0 0 0 1.5em", margin: 0 }}>
-          {urls.map((item, index) => (
-            <li key={index}>
-              {index + 1}.
-              {item.url.startsWith("http") ? (
-                <a href={item.url} target="_blank" className="detail-data">
-                  {item.url}
-                  {item.port_name ? `(${item.port_name})` : ""}
-                </a>
-              ) : (
-                <span>
-                  {item.url}
-                  {item.port_name ? `(${item.port_name})` : ""}
-                </span>
-              )}
-            </li>
-          ))}
+          {!cpuMemEndpointsLoading ? (
+            cpuMemEndpoints.urls.map((item, index) => (
+              <li key={index}>
+                {index + 1}.
+                {item.url.startsWith("http") ? (
+                  <a href={item.url} target="_blank" className="detail-data">
+                    {item.url}
+                    {item.portName ? `(${item.portName})` : ""}
+                  </a>
+                ) : (
+                  <span>
+                    {item.url}
+                    {item.portName ? `(${item.portName})` : ""}
+                  </span>
+                )}
+              </li>
+            ))
+          ) : (
+            <Spin size={"small"} />
+          )}
         </ul>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <SettingOutlined
+      <div>
+        <div
           style={{
-            width: 20,
-            height: 20,
-            marginRight: 4,
-            fontSize: 16,
+            display: "flex",
+            alignItems: "center",
           }}
-        />
-        <p>
-          容器镜像:
-          <span className="detail-data">{detail.docker_image}</span>
-        </p>
+        >
+          <SettingOutlined
+            style={{
+              width: 20,
+              height: 20,
+              marginRight: 4,
+              fontSize: 16,
+            }}
+          />
+          <p>容器镜像:</p>
+        </div>
+        <div style={{ marginLeft: 20 }}>
+          {detail.dockerImage?.map((v, idx) => <div key={idx}>{v}</div>)}
+        </div>
       </div>
-
       <div
         style={{
           display: "flex",
@@ -212,10 +235,10 @@ const DetailTab: React.FC<{
         <p>
           提交:
           <span className="detail-data">
-            <a href={git_commit_web_url} target="_blank">
-              {git_commit_title}
+            <a href={detail.gitCommitWebUrl} target="_blank">
+              {detail.gitCommitTitle}
             </a>
-            by {git_commit_author} 于 {git_commit_date}
+            by {detail.gitCommitAuthor} 于 {detail.gitCommitDate}
           </span>
         </p>
       </div>
@@ -247,7 +270,7 @@ const DetailTab: React.FC<{
         </svg>
         <p>
           部署日期:{" "}
-          <span className="detail-data">{detail.humanize_created_at}</span>
+          <span className="detail-data">{detail.humanizeCreatedAt}</span>
         </p>
       </div>
       <div
@@ -277,7 +300,7 @@ const DetailTab: React.FC<{
         </svg>
         <p>
           更新日期:{" "}
-          <span className="detail-data">{detail.humanize_updated_at}</span>
+          <span className="detail-data">{detail.humanizeUpdatedAt}</span>
         </p>
       </div>
 
@@ -303,7 +326,7 @@ const DetailTab: React.FC<{
               fontSize: 12,
             }}
           >
-            {detail.override_values}
+            {detail.overrideValues}
           </SyntaxHighlighter>
         </details>
       </div>
@@ -323,8 +346,11 @@ const DetailTab: React.FC<{
             icon: <ExclamationCircleOutlined />,
             onOk() {
               setLoading(true);
-              deleteProject(detail.id)
-                .then((res) => {
+              ajax
+                .DELETE("/api/projects/{id}", {
+                  params: { path: { id: detail.id } },
+                })
+                .then(() => {
                   message.success("删除成功");
                   setLoading(false);
                   onDeleted();
@@ -341,7 +367,7 @@ const DetailTab: React.FC<{
         disabled={loading}
         loading={loading}
         type="primary"
-        style={{ marginTop: 20 }}
+        style={{ marginTop: 10, marginBottom: 40 }}
         size="middle"
         danger
       >

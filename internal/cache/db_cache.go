@@ -1,48 +1,45 @@
 package cache
 
 import (
+	"context"
 	"encoding/base64"
 	"time"
 
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
-
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
-	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/ent/dbcache"
 )
 
 type dbStore struct {
-	db func() *gorm.DB
+	data data.Data
 }
 
-func NewDBStore(db func() *gorm.DB) contracts.Store {
-	return &dbStore{db: db}
+func NewDBStore(data data.Data) Store {
+	return &dbStore{data: data}
 }
 
 func (d *dbStore) Get(key string) (value []byte, err error) {
-	var cache models.DBCache
-	err = d.db().Where("`key` = ? and `expired_at` >= ?", key, time.Now()).First(&cache).Error
+	first, err := d.data.DB().DBCache.Query().Where(dbcache.Key(key), dbcache.ExpiredAtGTE(time.Now())).Only(context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
-	return base64.StdEncoding.DecodeString(cache.Value)
+	return base64.StdEncoding.DecodeString(first.Value)
 }
 
 func (d *dbStore) Set(key string, value []byte, seconds int) (err error) {
 	toString := base64.StdEncoding.EncodeToString(value)
-	cache := models.DBCache{
-		Key:       key,
-		Value:     toString,
-		ExpiredAt: time.Now().Add(time.Duration(seconds) * time.Second),
-	}
 
-	return d.db().Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "key"}},
-		DoUpdates: clause.AssignmentColumns([]string{"value", "expired_at"}),
-	}).Create(&cache).Error
+	return d.data.DB().DBCache.Create().
+		SetKey(key).
+		SetValue(toString).
+		SetExpiredAt(time.Now().Add(time.Duration(seconds) * time.Second)).
+		OnConflict().
+		UpdateValue().
+		UpdateExpiredAt().
+		Exec(context.TODO())
 }
 
 func (d *dbStore) Delete(key string) error {
-	return d.db().Where("`key` = ?", key).Delete(&models.DBCache{}).Error
+	_, err := d.data.DB().DBCache.Delete().Where(dbcache.Key(key)).Exec(context.TODO())
+	return err
 }

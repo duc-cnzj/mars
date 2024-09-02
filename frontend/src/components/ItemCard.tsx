@@ -8,33 +8,59 @@ import {
   message,
   Tooltip,
   Button,
+  Space,
+  Popover,
+  Form,
+  Input,
 } from "antd";
 import "../pkg/DraggableModal/index.css";
-import { CloseOutlined } from "@ant-design/icons";
-import { deleteNamespace, getNamespaceCpuMemory } from "../api/namespace";
+import { CloseOutlined, EditFilled } from "@ant-design/icons";
 import ServiceEndpoint from "./ServiceEndpoint";
 import ProjectDetail from "./ProjectDetail";
 import CreateProjectModal from "./CreateProjectModal";
-import pb from "../api/compiled";
 import { copy } from "../utils/copy";
 import styled from "@emotion/styled";
 import { useAuth } from "../contexts/auth";
+import { components } from "../api/schema";
+import ajax from "../api/ajax";
+import IconFont from "./Icon";
+import TextArea from "antd/es/input/TextArea";
+import { css } from "@emotion/css";
 
 const Item: React.FC<{
-  item: pb.types.NamespaceModel;
+  item: components["schemas"]["types.NamespaceModel"];
   onNamespaceDeleted: () => void;
+  onFavorite: (nsID: number, favorite: boolean) => void;
   loading: boolean;
-}> = ({ item, onNamespaceDeleted, loading }) => {
+  reload: () => void;
+}> = ({ item, onNamespaceDeleted, loading, onFavorite, reload }) => {
   const [cpuAndMemory, setCpuAndMemory] = useState({ cpu: "", memory: "" });
   const { isAdmin } = useAuth();
   const [deleting, setDeleting] = useState<boolean>(false);
+
+  const [editDesc, setEditDesc] = useState(false);
+  const [popoverVisible, setPopoverVisible] = useState(false);
 
   return (
     <Card
       style={{ height: "100%" }}
       title={
         <CardTitle>
-          <CardTitleBody>
+          <Space size={"small"}>
+            <IconFont
+              onClick={() => onFavorite(item.id, !item.favorite)}
+              name="#icon-wodeguanzhu"
+              className={css`
+                transition: all 0.3s ease;
+                &:hover {
+                  transform: scale(1.2);
+                }
+              `}
+              style={{
+                color: !item.favorite ? "gray" : "#a78bfa",
+                cursor: "pointer",
+              }}
+            />
             <Tooltip
               title={<span style={{ fontSize: 10 }}>id: {item.id}</span>}
             >
@@ -42,18 +68,21 @@ const Item: React.FC<{
                 项目空间: <TitleNamespaceName>{item.name}</TitleNamespaceName>
               </TitleNamespace>
             </Tooltip>
-            <TitleSubItem style={{ marginRight: 5 }}>
+            <TitleSubItem>
               <Tooltip
                 onOpenChange={(visible: boolean) => {
                   if (visible) {
-                    getNamespaceCpuMemory({ namespace_id: item.id }).then(
-                      (res) => {
-                        setCpuAndMemory({
-                          cpu: res.data.cpu,
-                          memory: res.data.memory,
-                        });
-                      }
-                    );
+                    ajax
+                      .GET("/api/metrics/namespace/{namespaceId}/cpu_memory", {
+                        params: { path: { namespaceId: item.id } },
+                      })
+                      .then(({ data }) => {
+                        data &&
+                          setCpuAndMemory({
+                            cpu: data.cpu,
+                            memory: data.memory,
+                          });
+                      });
                   }
                 }}
                 title={
@@ -89,7 +118,112 @@ const Item: React.FC<{
             <TitleSubItem>
               <ServiceEndpoint namespaceId={item.id} />
             </TitleSubItem>
-          </CardTitleBody>
+            <Popover
+              destroyTooltipOnHide
+              trigger="click"
+              onOpenChange={(v) => {
+                setPopoverVisible(v);
+                if (!v) {
+                  setEditDesc(false);
+                }
+              }}
+              content={
+                editDesc ? (
+                  <Form
+                    name="basic"
+                    style={{ width: 300 }}
+                    initialValues={{ id: item.id, desc: item.description }}
+                    autoComplete="off"
+                    onFinish={(values) => {
+                      console.log(values);
+                      ajax
+                        .POST("/api/namespaces/{id}/update_desc", {
+                          params: { path: { id: values.id } },
+                          body: values,
+                        })
+                        .then(({ error }) => {
+                          if (error) {
+                            return;
+                          }
+                          reload();
+                          setEditDesc(false);
+                          message.success("修改成功");
+                        });
+                    }}
+                  >
+                    <Form.Item<
+                      components["schemas"]["namespace.UpdateDescRequest"]
+                    >
+                      name="id"
+                      hidden
+                    >
+                      <Input />
+                    </Form.Item>
+                    <Form.Item<
+                      components["schemas"]["namespace.UpdateDescRequest"]
+                    >
+                      name="desc"
+                      style={{ marginBottom: 5 }}
+                    >
+                      <TextArea style={{ fontSize: 10 }} rows={5} />
+                    </Form.Item>
+                    <div style={{ textAlign: "right" }}>
+                      <Button
+                        style={{ fontSize: 10 }}
+                        size="small"
+                        htmlType="submit"
+                      >
+                        提交
+                      </Button>
+                    </div>
+                  </Form>
+                ) : (
+                  <div
+                    style={{
+                      width: 300,
+                      fontSize: 12,
+                      textAlign: "right",
+                    }}
+                  >
+                    <div style={{ textAlign: "left" }}>{item.description}</div>
+                    <EditFilled
+                      style={{ textAlign: "right" }}
+                      onClick={() => setEditDesc(true)}
+                    />
+                  </div>
+                )
+              }
+            >
+              <div
+                style={{
+                  fontSize: 10,
+                  width: "100px",
+                  color: "gray",
+                  fontWeight: "normal",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  cursor: "pointer",
+                }}
+              >
+                {item.description ? (
+                  <div>{item.description}</div>
+                ) : (
+                  <div
+                    className={css`
+                      opacity: ${popoverVisible ? 1 : 0};
+                      transition: all 0.2s ease;
+                      &:hover {
+                        opacity: 1;
+                      }
+                    `}
+                  >
+                    暂无描述，点击添加
+                  </div>
+                )}
+              </div>
+            </Popover>
+          </Space>
         </CardTitle>
       }
       extra={
@@ -100,12 +234,18 @@ const Item: React.FC<{
             cancelText="No"
             onConfirm={() => {
               setDeleting(true);
-              deleteNamespace({ namespace_id: item.id })
-                .then((res) => {
+              ajax
+                .DELETE("/api/namespaces/{id}", {
+                  params: { path: { id: item.id } },
+                })
+                .then(({ error }) => {
+                  if (error) {
+                    message.error(error.message);
+                    return;
+                  }
                   message.success("删除成功");
                   onNamespaceDeleted();
-                })
-                .catch((e) => message.error(e.response.data.message));
+                });
             }}
           >
             <Button type="link" size="middle" icon={<CloseOutlined />} />
@@ -144,13 +284,8 @@ const CardTitle = styled.div`
   align-items: center;
   justify-content: space-between;
 `;
-const CardTitleBody = styled.div`
-  display: flex;
-  align-items: center;
-`;
 
 const TitleNamespace = styled.div`
-  margin-right: 10px;
   font-size: 12px;
   font-weight: normal;
 `;

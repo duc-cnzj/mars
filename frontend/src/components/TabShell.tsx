@@ -7,7 +7,6 @@ import React, {
   memo,
 } from "react";
 import { useSelector } from "react-redux";
-import { allPodContainers, isPodRunning } from "../api/project";
 import { message, Radio, Upload, Button, Empty } from "antd";
 import { selectSessions } from "../store/reducers/shell";
 import { debounce } from "lodash";
@@ -20,11 +19,9 @@ import {
   MinusOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
-import pb from "../api/compiled";
-import { copyToPod } from "../api/cp";
+import pb from "../api/websocket";
 import PodMetrics from "./PodMetrics";
 import { getToken } from "../utils/token";
-import { maxUploadSize } from "../api/file";
 import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
 import PodStateTag from "./PodStateTag";
 import { v4 as uuidv4 } from "uuid";
@@ -33,6 +30,8 @@ import "allotment/dist/style.css";
 import { css } from "@emotion/css";
 import "../styles/allotment-overwrite.css";
 import _ from "lodash";
+import ajax from "../api/ajax";
+import { components } from "../api/schema";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -40,7 +39,7 @@ const decoder = new TextDecoder();
 const generateSessionID = (
   namespace: string,
   pod: string,
-  container: string
+  container: string,
 ): string => {
   return `${namespace}-${pod}-${container}:${uuidv4()}`;
 };
@@ -59,7 +58,9 @@ const TabShell: React.FC<{
   updatedAt: any;
 }> = ({ namespaceID, namespace, id, resizeAt, updatedAt }) => {
   console.log("render: TabShell");
-  const [list, setList] = useState<pb.types.StateContainer[]>([]);
+  const [list, setList] = useState<
+    components["schemas"]["types.StateContainer"][]
+  >([]);
   const [value, setValue] = useState<NPC | null>();
   const [timestamp, setTimestamp] = useState(new Date().getTime());
   const [maxUploadInfo, setMaxUploadInfo] = useState({
@@ -85,17 +86,20 @@ const TabShell: React.FC<{
 
   const listContainer = useCallback(
     () =>
-      allPodContainers({
-        project_id: id,
-      }).then((res) => {
-        setList(res.data.items);
-        return res;
-      }),
-    [id]
+      ajax
+        .GET("/api/projects/{id}/containers", { params: { path: { id: id } } })
+        .then(({ data, error }) => {
+          if (error) {
+            return;
+          }
+          setList(data.items);
+          return data;
+        }),
+    [id],
   );
 
   const setValuesByResult = useCallback(
-    (items: pb.types.StateContainer[]) => {
+    (items: components["schemas"]["types.StateContainer"][]) => {
       if (items.length > 0) {
         let first = items[0];
         setValue({
@@ -107,7 +111,7 @@ const TabShell: React.FC<{
         setValue(null);
       }
     },
-    [namespace, setValue]
+    [namespace, setValue],
   );
 
   useEffect(() => {
@@ -145,17 +149,18 @@ const TabShell: React.FC<{
   }, [list, value, namespace]);
 
   useEffect(() => {
-    maxUploadSize().then(({ data }) => {
-      setMaxUploadInfo({
-        bytes: data.bytes,
-        humanizeSize: data.humanize_size,
-      });
+    ajax.GET("/api/files/max_upload_size").then(({ data }) => {
+      data &&
+        setMaxUploadInfo({
+          bytes: data.bytes,
+          humanizeSize: data.humanizeSize,
+        });
     });
   }, []);
 
   useEffect(() => {
-    listContainer().then((res) => {
-      setValuesByResult(res.data.items);
+    listContainer().then((data) => {
+      data && setValuesByResult(data.items);
     });
   }, [listContainer, setValuesByResult, updatedAt]);
 
@@ -167,23 +172,30 @@ const TabShell: React.FC<{
       setValue((v) => {
         let [pod, container] = (e.target.value as string).split("|");
         if (v?.pod === pod && v.container === container) {
-          isPodRunning({
-            namespace: namespace,
-            pod: pod,
-          }).then((res) => {
-            if (res.data.running) {
-              setForceRender(new Date().getTime());
-            } else {
-              listContainer().then((res) => {
-                setValuesByResult(res.data.items);
-              });
-            }
-          });
+          ajax
+            .POST("/api/containers/pod_running_status", {
+              body: {
+                namespace,
+                pod,
+              },
+            })
+            .then(({ data, error }) => {
+              if (error) {
+                return;
+              }
+              if (data.running) {
+                setForceRender(new Date().getTime());
+              } else {
+                listContainer().then((data) => {
+                  data && setValuesByResult(data.items);
+                });
+              }
+            });
         }
         return { pod, container, namespace };
       });
     },
-    [namespace, listContainer, setValuesByResult, resetTermMap]
+    [namespace, listContainer, setValuesByResult, resetTermMap],
   );
 
   const beforeUpload = useCallback(
@@ -199,7 +211,7 @@ const TabShell: React.FC<{
 
       return isLtMaxSize;
     },
-    [maxUploadInfo]
+    [maxUploadInfo],
   );
 
   const [loading, setLoading] = useState(false);
@@ -219,24 +231,26 @@ const TabShell: React.FC<{
       if (!!value && info.file.status === "done") {
         let pod = value.pod;
         let container = value.container;
-        copyToPod({
-          pod: pod,
-          container: container,
-          namespace: namespace,
-          file_id: info.file.response.id,
-        })
-          .then((res) => {
-            console.log(res);
-            message.success(
-              `文件 ${info.file.name} 已上传到容器 ${res.data.pod_file_path} 下`,
-              2
-            );
+        ajax
+          .POST("/api/containers/copy_to_pod", {
+            body: {
+              pod: pod,
+              container: container,
+              namespace: namespace,
+              fileId: info.file.response.id,
+            },
           })
-          .catch((e) => {
-            message.error(`文件 ${info.file.name} 上传到容器失败`);
-          })
-          .finally(() => {
+          .then(({ data, error }) => {
             setLoading(false);
+            if (error) {
+              message.error(`文件 ${info.file.name} 上传到容器失败`);
+              return;
+            }
+            console.log(data);
+            message.success(
+              `文件 ${info.file.name} 已上传到容器 ${data?.podFilePath} 下`,
+              2,
+            );
           });
       } else if (info.file.status === "error") {
         message.error(`文件 ${info.file.name} 上传失败`);
@@ -270,7 +284,7 @@ const TabShell: React.FC<{
         return [...tmap];
       });
     },
-    [canAddTerm]
+    [canAddTerm],
   );
   const subWebTerm = useCallback((id: string) => {
     console.log("sub web term");
@@ -291,7 +305,7 @@ const TabShell: React.FC<{
   const nestedAllotment = (
     items: { type: "vertical" | "horizontal" | undefined; id: string }[],
     ws: WebSocket,
-    value: { pod: string; namespace: string; container: string }
+    value: { pod: string; namespace: string; container: string },
   ): React.ReactNode[] => {
     let idx = 0;
     let group: React.ReactNode[] = [];
@@ -311,7 +325,7 @@ const TabShell: React.FC<{
           resizeAt={resizeTime}
           forceRender={forceRender}
           onClose={subWebTerm}
-        />
+        />,
       );
       lastType = items[index].type;
       if (
@@ -326,7 +340,7 @@ const TabShell: React.FC<{
             onDragEnd={resizeShellWindow}
           >
             {group.map((v) => v)}
-          </Allotment>
+          </Allotment>,
         );
         group = [];
         idx = 0;
@@ -345,7 +359,7 @@ const TabShell: React.FC<{
             onDragEnd={resizeShellWindow}
           >
             {group.map((v) => v)}
-          </Allotment>
+          </Allotment>,
         );
       }
       group = [];
@@ -523,7 +537,7 @@ const ShellWindow: React.FC<{
           console.log(e);
         }
       },
-      [ws]
+      [ws],
     );
     const initShell = useCallback(() => {
       let ss = pb.websocket.WsHandleExecShellInput.encode({
@@ -533,7 +547,7 @@ const ShellWindow: React.FC<{
           pod: pod,
           container: container,
         },
-        session_id: sessionID,
+        sessionId: sessionID,
       }).finish();
       sendMsg(ss);
     }, [namespace, pod, container, sendMsg, sessionID]);
@@ -544,7 +558,7 @@ const ShellWindow: React.FC<{
         let s = pb.websocket.TerminalMessageInput.encode({
           type: pb.websocket.Type.HandleExecShellMsg,
           message: new pb.websocket.TerminalMessage({
-            session_id: id,
+            sessionId: id,
             op: "resize",
             cols: cols,
             rows: rows,
@@ -559,7 +573,7 @@ const ShellWindow: React.FC<{
         let s = pb.websocket.TerminalMessageInput.encode({
           type: pb.websocket.Type.HandleExecShellMsg,
           message: {
-            session_id: id,
+            sessionId: id,
             op: "stdin",
             data: encoder.encode(str),
             cols: 0,
@@ -579,7 +593,7 @@ const ShellWindow: React.FC<{
             console.log(e);
           }
         }, 300),
-      [fitAddon]
+      [fitAddon],
     );
 
     const handleConnectionMessage = useCallback(
@@ -595,13 +609,13 @@ const ShellWindow: React.FC<{
           message.error(decoder.decode(frame.data));
         }
       },
-      []
+      [],
     );
 
     const sessions = useSelector(selectSessions);
     let logCount = useMemo(
       () => sessions[sessionID]?.logCount,
-      [sessions, sessionID]
+      [sessions, sessionID],
     );
     let log = useMemo(() => sessions[sessionID]?.log, [sessions, sessionID]);
     useEffect(() => {
@@ -635,19 +649,19 @@ const ShellWindow: React.FC<{
 
         return myterm;
       },
-      [onTerminalResize, onTerminalSendString, fitAddon, debouncedFit_]
+      [onTerminalResize, onTerminalSendString, fitAddon, debouncedFit_],
     );
     const handleCloseShell = useCallback(
       (id: string) => {
         if (id) {
           let s = pb.websocket.TerminalMessageInput.encode({
             type: pb.websocket.Type.HandleCloseShell,
-            message: new pb.websocket.TerminalMessage({ session_id: id }),
+            message: new pb.websocket.TerminalMessage({ sessionId: id }),
           }).finish();
           sendMsg(s);
         }
       },
-      [sendMsg]
+      [sendMsg],
     );
     useEffect(() => {
       initShell();
@@ -694,7 +708,7 @@ const ShellWindow: React.FC<{
         )}
       </div>
     );
-  }
+  },
 );
 
 export default memo(TabShell);

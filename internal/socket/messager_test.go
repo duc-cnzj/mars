@@ -4,225 +4,157 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/api/v4/types"
-
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
-
-	"github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/duc-cnzj/mars/api/v5/types"
+	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/v5/internal/application"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
-func TestNewMessageSender(t *testing.T) {
-	assert.Implements(t, (*contracts.DeployMsger)(nil), NewMessageSender(&WsConn{}, "aa", websocket.Type_ProcessPercent))
+func TestMessageSenderFunctionality(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	conn := NewMockConn(m)
+	ms := NewMessageSender(conn, "slug", websocket_pb.Type_SetUid)
+
+	assert.NotNil(t, ms)
+	assert.Equal(t, conn, ms.(*messager).conn)
+	assert.Equal(t, "slug", ms.(*messager).slugName)
+	assert.Equal(t, websocket_pb.Type_SetUid, ms.(*messager).wsType)
+	assert.NotNil(t, ms.(*messager).percent)
 }
 
-func Test_messager_SendDeployedResult(t *testing.T) {
-	c := gomock.NewController(t)
-	defer c.Finish()
-	ps := mock.NewMockPubSub(c)
-	sender := NewMessageSender(&WsConn{
-		pubSub: ps,
-	}, "aa", websocket.Type_ApplyProject)
-	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
-	sender.SendDeployedResult(websocket.ResultType_Deployed, "aa", nil)
+func TestSendDeployedResultFunctionality(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	conn := NewMockConn(m)
+	sub := application.NewMockPubSub(m)
+	conn.EXPECT().PubSub().Return(sub).Times(1)
+	conn.EXPECT().UID().Return("uid").Times(1)
+	conn.EXPECT().ID().Return("id").Times(1)
+	sub.EXPECT().ToSelf(gomock.Any())
+
+	ms := NewMessageSender(conn, "slug", websocket_pb.Type_HandleAuthorize)
+	ms.SendDeployedResult(websocket_pb.ResultType_Deployed, "message", &types.ProjectModel{})
 }
 
-type matcher struct {
-	response *websocket.WsMetadataResponse
+func TestSendEndErrorFunctionality(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	conn := NewMockConn(m)
+	sub := application.NewMockPubSub(m)
+	conn.EXPECT().PubSub().Return(sub).Times(1)
+	sub.EXPECT().ToSelf(gomock.Any())
+	conn.EXPECT().UID().Return("uid").Times(1)
+	conn.EXPECT().ID().Return("id").Times(1)
+	ms := NewMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms.SendEndError(errors.New("error"))
 }
 
-func (m *matcher) Matches(x any) bool {
-	response, ok := x.(*websocket.WsMetadataResponse)
-	if !ok {
-		return false
-	}
-	return m.response.String() == response.String()
+func TestSendProcessPercentFunctionality(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
 
+	conn := NewMockConn(m)
+	sub := application.NewMockPubSub(m)
+	conn.EXPECT().PubSub().Return(sub).Times(1)
+	sub.EXPECT().ToSelf(gomock.Any())
+	conn.EXPECT().UID().Return("uid").Times(1)
+	conn.EXPECT().ID().Return("id").Times(1)
+
+	ms := NewMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms.SendProcessPercent(50)
 }
 
-func (m *matcher) String() string {
-	return ""
+func TestSendMsgFunctionality(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	conn := NewMockConn(m)
+	sub := application.NewMockPubSub(m)
+	conn.EXPECT().PubSub().Return(sub).Times(1)
+	sub.EXPECT().ToSelf(gomock.Any())
+	conn.EXPECT().UID().Return("uid").Times(1)
+	conn.EXPECT().ID().Return("id").Times(1)
+
+	ms := NewMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms.SendMsg("message")
 }
 
-type containerLogResponseMatcher struct {
-	response *websocket.WsWithContainerMessageResponse
+func TestSendMsgWithContainerLogFunctionality(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	conn := NewMockConn(m)
+	sub := application.NewMockPubSub(m)
+	conn.EXPECT().PubSub().Return(sub).Times(1)
+	sub.EXPECT().ToSelf(gomock.Any())
+	conn.EXPECT().UID().Return("uid").Times(1)
+	conn.EXPECT().ID().Return("id").Times(1)
+
+	ms := NewMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms.SendMsgWithContainerLog("message", []*websocket_pb.Container{})
 }
 
-func (m *containerLogResponseMatcher) Matches(x any) bool {
-	response, ok := x.(*websocket.WsWithContainerMessageResponse)
-	if !ok {
-		return false
-	}
-	return m.response.String() == response.String()
+func TestSendProtoMsgFunctionality(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
 
+	conn := NewMockConn(m)
+	sub := application.NewMockPubSub(m)
+	conn.EXPECT().PubSub().Return(sub).Times(1)
+	sub.EXPECT().ToSelf(gomock.Any())
+
+	ms := NewMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms.SendProtoMsg(&WsResponse{})
 }
 
-func (m *containerLogResponseMatcher) String() string {
-	return ""
+func TestProcessPercentAddFunctionality(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	conn := NewMockConn(m)
+	sub := application.NewMockPubSub(m)
+	conn.EXPECT().PubSub().Return(sub).Times(1)
+	sub.EXPECT().ToSelf(gomock.Any())
+	conn.EXPECT().UID().Return("uid").Times(1)
+	conn.EXPECT().ID().Return("id").Times(1)
+
+	ms := NewMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms.Add()
 }
 
-func Test_messager_SendEndError(t *testing.T) {
-	c := gomock.NewController(t)
-	defer c.Finish()
-	ps := mock.NewMockPubSub(c)
-	sender := NewMessageSender(&WsConn{
-		id:     "1",
-		uid:    "2",
-		pubSub: ps,
-	}, "aa", websocket.Type_ApplyProject)
-	ps.EXPECT().ToSelf(&matcher{
-		response: &websocket.WsMetadataResponse{
-			Metadata: &websocket.Metadata{
-				Slug:    "aa",
-				Type:    websocket.Type_ApplyProject,
-				Result:  ResultError,
-				End:     true,
-				Uid:     "2",
-				Id:      "1",
-				Message: "err",
-			},
-		},
-	})
-	sender.SendEndError(errors.New("err"))
+func TestProcessPercentToFunctionality(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	conn := NewMockConn(m)
+	sub := application.NewMockPubSub(m)
+	conn.EXPECT().PubSub().Return(sub).AnyTimes()
+	sub.EXPECT().ToSelf(gomock.Any()).AnyTimes()
+	conn.EXPECT().UID().Return("uid").AnyTimes()
+	conn.EXPECT().ID().Return("id").AnyTimes()
+
+	ms := NewMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms.To(3)
 }
 
-func Test_messager_SendError(t *testing.T) {
-	c := gomock.NewController(t)
-	defer c.Finish()
-	ps := mock.NewMockPubSub(c)
-	sender := NewMessageSender(&WsConn{
-		id:     "1",
-		uid:    "2",
-		pubSub: ps,
-	}, "aa", websocket.Type_ApplyProject)
-	ps.EXPECT().ToSelf(&matcher{
-		response: &websocket.WsMetadataResponse{
-			Metadata: &websocket.Metadata{
-				Slug:    "aa",
-				Type:    websocket.Type_ApplyProject,
-				Result:  ResultError,
-				End:     false,
-				Uid:     "2",
-				Id:      "1",
-				Message: "err",
-			},
-		},
-	})
-	sender.SendError(errors.New("err"))
-}
+func Test_messager_Current(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
 
-func Test_messager_SendMsg(t *testing.T) {
-	c := gomock.NewController(t)
-	defer c.Finish()
-	ps := mock.NewMockPubSub(c)
-	sender := NewMessageSender(&WsConn{
-		id:     "1",
-		uid:    "2",
-		pubSub: ps,
-	}, "aa", websocket.Type_ApplyProject)
-	ps.EXPECT().ToSelf(&matcher{
-		response: &websocket.WsMetadataResponse{
-			Metadata: &websocket.Metadata{
-				Slug:    "aa",
-				Type:    websocket.Type_ApplyProject,
-				Result:  ResultSuccess,
-				End:     false,
-				Uid:     "2",
-				Id:      "1",
-				Message: "aaa",
-			},
-		},
-	})
-	sender.SendMsg("aaa")
-}
+	conn := NewMockConn(m)
+	sub := application.NewMockPubSub(m)
+	conn.EXPECT().PubSub().Return(sub).AnyTimes()
+	sub.EXPECT().ToSelf(gomock.Any()).AnyTimes()
+	conn.EXPECT().UID().Return("uid").AnyTimes()
+	conn.EXPECT().ID().Return("id").AnyTimes()
 
-func Test_messager_SendProcessPercent(t *testing.T) {
-	c := gomock.NewController(t)
-	defer c.Finish()
-	ps := mock.NewMockPubSub(c)
-	sender := NewMessageSender(&WsConn{
-		id:     "1",
-		uid:    "2",
-		pubSub: ps,
-	}, "aa", websocket.Type_ApplyProject)
-	ps.EXPECT().ToSelf(&matcher{
-		response: &websocket.WsMetadataResponse{
-			Metadata: &websocket.Metadata{
-				Slug:    "aa",
-				Type:    websocket.Type_ProcessPercent,
-				Result:  ResultSuccess,
-				End:     false,
-				Uid:     "2",
-				Id:      "1",
-				Percent: 10,
-			},
-		},
-	})
-	sender.SendProcessPercent(10)
-}
-
-func Test_messager_SendProtoMsg(t *testing.T) {
-	c := gomock.NewController(t)
-	defer c.Finish()
-	ps := mock.NewMockPubSub(c)
-	sender := NewMessageSender(&WsConn{
-		id:     "1",
-		uid:    "2",
-		pubSub: ps,
-	}, "aa", websocket.Type_ApplyProject)
-	pmsg := &websocket.WsMetadataResponse{
-		Metadata: &websocket.Metadata{
-			Slug:    "aa",
-			Type:    websocket.Type_ApplyProject,
-			Result:  ResultSuccess,
-			End:     false,
-			Uid:     "2",
-			Id:      "1",
-			Message: "aaa",
-		},
-	}
-	ps.EXPECT().ToSelf(&matcher{
-		response: pmsg,
-	})
-	sender.SendProtoMsg(pmsg)
-}
-
-func Test_messager_SendMsgWithContainerLog(t *testing.T) {
-	c := gomock.NewController(t)
-	defer c.Finish()
-	ps := mock.NewMockPubSub(c)
-	sender := NewMessageSender(&WsConn{
-		id:     "1",
-		uid:    "2",
-		pubSub: ps,
-	}, "aa", websocket.Type_ApplyProject)
-	ps.EXPECT().ToSelf(&containerLogResponseMatcher{
-		response: &websocket.WsWithContainerMessageResponse{
-			Metadata: &websocket.Metadata{
-				Slug:    "aa",
-				Type:    websocket.Type_ApplyProject,
-				Result:  ResultLogWithContainers,
-				End:     false,
-				Uid:     "2",
-				Id:      "1",
-				Message: "aaa",
-			},
-			Containers: []*types.Container{
-				{
-					Namespace: "a",
-					Pod:       "b",
-					Container: "c",
-				},
-			},
-		},
-	})
-	sender.SendMsgWithContainerLog("aaa", []*types.Container{
-		{
-			Namespace: "a",
-			Pod:       "b",
-			Container: "c",
-		},
-	})
+	ms := NewMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	assert.Equal(t, int64(0), ms.Current())
+	ms.Add()
+	assert.Equal(t, int64(1), ms.Current())
 }

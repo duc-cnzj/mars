@@ -20,14 +20,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Project_List_FullMethodName          = "/project.Project/List"
-	Project_Apply_FullMethodName         = "/project.Project/Apply"
-	Project_ApplyDryRun_FullMethodName   = "/project.Project/ApplyDryRun"
-	Project_Show_FullMethodName          = "/project.Project/Show"
-	Project_Version_FullMethodName       = "/project.Project/Version"
-	Project_Delete_FullMethodName        = "/project.Project/Delete"
-	Project_AllContainers_FullMethodName = "/project.Project/AllContainers"
-	Project_HostVariables_FullMethodName = "/project.Project/HostVariables"
+	Project_List_FullMethodName                  = "/project.Project/List"
+	Project_Apply_FullMethodName                 = "/project.Project/Apply"
+	Project_WebApply_FullMethodName              = "/project.Project/WebApply"
+	Project_Show_FullMethodName                  = "/project.Project/Show"
+	Project_MemoryCpuAndEndpoints_FullMethodName = "/project.Project/MemoryCpuAndEndpoints"
+	Project_Version_FullMethodName               = "/project.Project/Version"
+	Project_Delete_FullMethodName                = "/project.Project/Delete"
+	Project_AllContainers_FullMethodName         = "/project.Project/AllContainers"
 )
 
 // ProjectClient is the client API for Project service.
@@ -38,18 +38,17 @@ type ProjectClient interface {
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	// Apply grpc 创建/更新项目
 	Apply(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error)
-	// ApplyDryRun 创建/更新项目 '--dry-run' mode
-	ApplyDryRun(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (*DryRunApplyResponse, error)
+	// WebApply 创建/更新/DryRun 项目
+	WebApply(ctx context.Context, in *WebApplyRequest, opts ...grpc.CallOption) (*WebApplyResponse, error)
 	// Show 项目详情
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
+	MemoryCpuAndEndpoints(ctx context.Context, in *MemoryCpuAndEndpointsRequest, opts ...grpc.CallOption) (*MemoryCpuAndEndpointsResponse, error)
 	// Version 版本号, 如果不存在则返回 0
 	Version(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error)
 	// Delete 删除项目
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	// AllContainers 获取项目下的所有 pod
 	AllContainers(ctx context.Context, in *AllContainersRequest, opts ...grpc.CallOption) (*AllContainersResponse, error)
-	// HostVariables 获取 hosts 变量
-	HostVariables(ctx context.Context, in *HostVariablesRequest, opts ...grpc.CallOption) (*HostVariablesResponse, error)
 }
 
 type projectClient struct {
@@ -101,9 +100,9 @@ func (x *projectApplyClient) Recv() (*ApplyResponse, error) {
 	return m, nil
 }
 
-func (c *projectClient) ApplyDryRun(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (*DryRunApplyResponse, error) {
-	out := new(DryRunApplyResponse)
-	err := c.cc.Invoke(ctx, Project_ApplyDryRun_FullMethodName, in, out, opts...)
+func (c *projectClient) WebApply(ctx context.Context, in *WebApplyRequest, opts ...grpc.CallOption) (*WebApplyResponse, error) {
+	out := new(WebApplyResponse)
+	err := c.cc.Invoke(ctx, Project_WebApply_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -113,6 +112,15 @@ func (c *projectClient) ApplyDryRun(ctx context.Context, in *ApplyRequest, opts 
 func (c *projectClient) Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error) {
 	out := new(ShowResponse)
 	err := c.cc.Invoke(ctx, Project_Show_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectClient) MemoryCpuAndEndpoints(ctx context.Context, in *MemoryCpuAndEndpointsRequest, opts ...grpc.CallOption) (*MemoryCpuAndEndpointsResponse, error) {
+	out := new(MemoryCpuAndEndpointsResponse)
+	err := c.cc.Invoke(ctx, Project_MemoryCpuAndEndpoints_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -146,15 +154,6 @@ func (c *projectClient) AllContainers(ctx context.Context, in *AllContainersRequ
 	return out, nil
 }
 
-func (c *projectClient) HostVariables(ctx context.Context, in *HostVariablesRequest, opts ...grpc.CallOption) (*HostVariablesResponse, error) {
-	out := new(HostVariablesResponse)
-	err := c.cc.Invoke(ctx, Project_HostVariables_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ProjectServer is the server API for Project service.
 // All implementations must embed UnimplementedProjectServer
 // for forward compatibility
@@ -163,18 +162,17 @@ type ProjectServer interface {
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	// Apply grpc 创建/更新项目
 	Apply(*ApplyRequest, Project_ApplyServer) error
-	// ApplyDryRun 创建/更新项目 '--dry-run' mode
-	ApplyDryRun(context.Context, *ApplyRequest) (*DryRunApplyResponse, error)
+	// WebApply 创建/更新/DryRun 项目
+	WebApply(context.Context, *WebApplyRequest) (*WebApplyResponse, error)
 	// Show 项目详情
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
+	MemoryCpuAndEndpoints(context.Context, *MemoryCpuAndEndpointsRequest) (*MemoryCpuAndEndpointsResponse, error)
 	// Version 版本号, 如果不存在则返回 0
 	Version(context.Context, *VersionRequest) (*VersionResponse, error)
 	// Delete 删除项目
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	// AllContainers 获取项目下的所有 pod
 	AllContainers(context.Context, *AllContainersRequest) (*AllContainersResponse, error)
-	// HostVariables 获取 hosts 变量
-	HostVariables(context.Context, *HostVariablesRequest) (*HostVariablesResponse, error)
 	mustEmbedUnimplementedProjectServer()
 }
 
@@ -188,11 +186,14 @@ func (UnimplementedProjectServer) List(context.Context, *ListRequest) (*ListResp
 func (UnimplementedProjectServer) Apply(*ApplyRequest, Project_ApplyServer) error {
 	return status.Errorf(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedProjectServer) ApplyDryRun(context.Context, *ApplyRequest) (*DryRunApplyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ApplyDryRun not implemented")
+func (UnimplementedProjectServer) WebApply(context.Context, *WebApplyRequest) (*WebApplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WebApply not implemented")
 }
 func (UnimplementedProjectServer) Show(context.Context, *ShowRequest) (*ShowResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
+}
+func (UnimplementedProjectServer) MemoryCpuAndEndpoints(context.Context, *MemoryCpuAndEndpointsRequest) (*MemoryCpuAndEndpointsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MemoryCpuAndEndpoints not implemented")
 }
 func (UnimplementedProjectServer) Version(context.Context, *VersionRequest) (*VersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Version not implemented")
@@ -202,9 +203,6 @@ func (UnimplementedProjectServer) Delete(context.Context, *DeleteRequest) (*Dele
 }
 func (UnimplementedProjectServer) AllContainers(context.Context, *AllContainersRequest) (*AllContainersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AllContainers not implemented")
-}
-func (UnimplementedProjectServer) HostVariables(context.Context, *HostVariablesRequest) (*HostVariablesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method HostVariables not implemented")
 }
 func (UnimplementedProjectServer) mustEmbedUnimplementedProjectServer() {}
 
@@ -258,20 +256,20 @@ func (x *projectApplyServer) Send(m *ApplyResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Project_ApplyDryRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ApplyRequest)
+func _Project_WebApply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WebApplyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ProjectServer).ApplyDryRun(ctx, in)
+		return srv.(ProjectServer).WebApply(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Project_ApplyDryRun_FullMethodName,
+		FullMethod: Project_WebApply_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServer).ApplyDryRun(ctx, req.(*ApplyRequest))
+		return srv.(ProjectServer).WebApply(ctx, req.(*WebApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -290,6 +288,24 @@ func _Project_Show_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProjectServer).Show(ctx, req.(*ShowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Project_MemoryCpuAndEndpoints_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MemoryCpuAndEndpointsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).MemoryCpuAndEndpoints(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Project_MemoryCpuAndEndpoints_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).MemoryCpuAndEndpoints(ctx, req.(*MemoryCpuAndEndpointsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -348,24 +364,6 @@ func _Project_AllContainers_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Project_HostVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HostVariablesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServer).HostVariables(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Project_HostVariables_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServer).HostVariables(ctx, req.(*HostVariablesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // Project_ServiceDesc is the grpc.ServiceDesc for Project service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -378,12 +376,16 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Project_List_Handler,
 		},
 		{
-			MethodName: "ApplyDryRun",
-			Handler:    _Project_ApplyDryRun_Handler,
+			MethodName: "WebApply",
+			Handler:    _Project_WebApply_Handler,
 		},
 		{
 			MethodName: "Show",
 			Handler:    _Project_Show_Handler,
+		},
+		{
+			MethodName: "MemoryCpuAndEndpoints",
+			Handler:    _Project_MemoryCpuAndEndpoints_Handler,
 		},
 		{
 			MethodName: "Version",
@@ -396,10 +398,6 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AllContainers",
 			Handler:    _Project_AllContainers_Handler,
-		},
-		{
-			MethodName: "HostVariables",
-			Handler:    _Project_HostVariables_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

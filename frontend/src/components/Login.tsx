@@ -1,25 +1,30 @@
 import React, { useState, useEffect, memo } from "react";
-import { bg } from "../api/background";
-import pb from "../api/compiled";
 import { Form, Button, Input, Divider } from "antd";
 import { useAuth } from "../contexts/auth";
 import { useLocation, useNavigate } from "react-router-dom";
 import { PushpinFilled, PushpinOutlined } from "@ant-design/icons";
-import { settings as settingsApi } from "../api/auth";
 import { setState, isRandomBg, toggleRandomBg } from "../utils/token";
 import { css } from "@emotion/css";
 import theme from "../styles/theme";
 import styled from "@emotion/styled";
+import ajax from "../api/ajax";
+import { components } from "../api/schema";
 
 const Login: React.FC = () => {
-  const [bgInfo, setBgInfo] = useState<pb.picture.BackgroundResponse>();
-  const [settings, setSettings] = useState<pb.auth.SettingsResponse>();
+  const [bgInfo, setBgInfo] =
+    useState<components["schemas"]["picture.BackgroundResponse"]>();
+  const [settings, setSettings] =
+    useState<components["schemas"]["auth.SettingsResponse"]>();
   const [random, setRandom] = useState(isRandomBg());
 
   useEffect(() => {
-    bg({ random: isRandomBg() }).then((res) => setBgInfo(res.data));
-    settingsApi().then((res) => {
-      setSettings(res.data);
+    ajax
+      .GET("/api/picture/background", {
+        params: { query: { random: isRandomBg() } },
+      })
+      .then((res) => setBgInfo(res.data));
+    ajax.GET("/api/auth/settings").then(({ data }) => {
+      data && setSettings(data);
     });
   }, []);
 

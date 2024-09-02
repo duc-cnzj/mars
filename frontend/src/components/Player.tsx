@@ -126,6 +126,7 @@ const AsciinemaPlayer: React.FC<AsciinemaPlayerProps> = ({
           <Radio value={2}>2x</Radio>
           <Radio value={2.5}>2.5x</Radio>
           <Radio value={3}>3x</Radio>
+          <Radio value={6}>6x</Radio>
         </Radio.Group>
       </div>
       <div ref={ref} />

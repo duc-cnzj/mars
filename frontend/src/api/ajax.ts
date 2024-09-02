@@ -5,43 +5,33 @@ import {
   getLogoutUrl,
   removeLogoutUrl,
 } from "./../utils/token";
-import axios from "axios";
+import createClient, { Middleware } from "openapi-fetch";
+import { paths } from "./schema";
+import _ from "lodash";
 
-const ajax = axios.create({
-  baseURL: process.env.REACT_APP_BASE_URL,
-  //   timeout: 1000,
+const login401alert = _.debounce(() => {
+  message.error("登录过期，请重新登录");
+}, 500);
+
+const ajax = createClient<paths>({
+  baseUrl: process.env.REACT_APP_BASE_URL,
   headers: {
     "X-Requested-With": "XMLHttpRequest",
     "Accept-Language": "zh",
   },
 });
 
-// 添加请求拦截器
-ajax.interceptors.request.use(
-  (config) => {
-    if (config.headers) {
-      config.headers["Authorization"] = getToken();
-    }
-
-    return config;
+const myMiddleware: Middleware = {
+  async onRequest({ request, options }) {
+    request.headers.set("Authorization", getToken());
+    return request;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// 添加响应拦截器
-ajax.interceptors.response.use(
-  (response) => {
-    // 对响应数据做点什么
-    return response;
-  },
-  (error) => {
+  async onResponse({ request, response, options }) {
     // 对响应错误做点什么
-    if (error.response.status === 401) {
+    if (response.status === 401) {
       if (getToken()) {
         removeToken();
-        message.error("登录过期，请重新登录");
+        login401alert();
       }
       setTimeout(() => {
         if (window.location.pathname !== "/login") {
@@ -51,8 +41,10 @@ ajax.interceptors.response.use(
         }
       }, 1000);
     }
-    return Promise.reject(error);
-  }
-);
+    return response;
+  },
+};
+
+ajax.use(myMiddleware);
 
 export default ajax;

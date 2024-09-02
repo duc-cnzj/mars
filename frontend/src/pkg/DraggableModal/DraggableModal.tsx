@@ -13,7 +13,7 @@ export interface DraggableModalProps extends ModalProps {
 }
 
 export const DraggableModal: FunctionComponent<DraggableModalProps> = (
-  props: DraggableModalProps
+  props: DraggableModalProps,
 ): ReactElement => {
   // Get the unique ID of this modal.
   const id = useUID();

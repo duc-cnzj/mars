@@ -63,8 +63,8 @@ export const MyCodeMirror: React.FC<{
         extensions.push(
           yamlLinter,
           autocompletion(
-            completionValues ? { override: [yamlCompletions] } : undefined
-          )
+            completionValues ? { override: [yamlCompletions] } : undefined,
+          ),
         );
         break;
       case "json":
@@ -103,7 +103,7 @@ export const MyCodeMirror: React.FC<{
       />
     );
   },
-  (prevProps, nextProps) => omitEqual(prevProps, nextProps, "onChange")
+  (prevProps, nextProps) => omitEqual(prevProps, nextProps, "onChange"),
 );
 
 const theme = EditorView.theme(
@@ -128,7 +128,7 @@ const theme = EditorView.theme(
       padding: "1px 0",
     },
   },
-  {}
+  {},
 );
 
 function yamlCompletions(context: CompletionContext) {

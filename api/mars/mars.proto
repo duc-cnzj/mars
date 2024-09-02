@@ -4,30 +4,32 @@ package mars;
 
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/mars";
+option go_package = "github.com/duc-cnzj/mars/api/v5/mars";
 
 message Config {
   // config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename"
-  string config_file = 1;
+  string           config_file        = 1;
   // config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个
-  string config_file_values = 2;
-  string config_field = 3;
-  bool is_simple_env = 4;
+  string           config_file_values = 2;
+  string           config_field       = 3;
+  bool             is_simple_env      = 4;
   // config_file_type 配置文件类型，php/env/yaml...
-  string config_file_type = 5;
-  // local_chart_path helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 "pid|branch|path"
-  string local_chart_path = 6;
+  string           config_file_type   = 5;
+  // local_chart_path helm charts 目录, 格式为 "pid|branch|path",
+  // v5+ 之后不再支持本地目录
+  string           local_chart_path   = 6;
   // branches 启用的分支
-  repeated string branches = 7;
+  repeated string  branches           = 7;
   // values_yaml 和 values.yaml 一样
-  string values_yaml = 8;
+  string           values_yaml        = 8;
 
   // elements 自定义字段
-  repeated Element elements = 9;
+  repeated Element elements           = 9;
 
   // 显示的名称 (helm app name), 不填就使用 git server project name
   // 以字母开头结尾，中间可以有 '_' '-'
-  string display_name = 10 [(validate.rules).string = {
+  // Deprecated: v5+ 不再使用这个字段
+  string           display_name       = 10 [(validate.rules).string = {
     pattern:   "^[A-Za-z]([A-Z-_a-z]*[^_-])*$",
     max_bytes: 64,
     ignore_empty: true,
@@ -35,22 +37,22 @@ message Config {
 }
 
 enum ElementType {
-  ElementTypeUnknown = 0;
-  ElementTypeInput = 1;
-  ElementTypeInputNumber = 2;
-  ElementTypeSelect = 3;
-  ElementTypeRadio = 4;
-  ElementTypeSwitch = 5;
-  ElementTypeTextArea = 6;
+  ElementTypeUnknown      = 0;
+  ElementTypeInput        = 1;
+  ElementTypeInputNumber  = 2;
+  ElementTypeSelect       = 3;
+  ElementTypeRadio        = 4;
+  ElementTypeSwitch       = 5;
+  ElementTypeTextArea     = 6;
   ElementTypeNumberSelect = 7;
-  ElementTypeNumberRadio = 8;
+  ElementTypeNumberRadio  = 8;
 }
 
 message Element {
-  string path = 1 [(validate.rules).string.min_bytes = 1];
-  ElementType type = 2 [(validate.rules).enum.defined_only = true];
-  string default = 3;
-  string description = 4;
+  string          path          = 1 [(validate.rules).string.min_bytes = 1];
+  ElementType     type          = 2 [(validate.rules).enum.defined_only = true];
+  string          default       = 3;
+  string          description   = 4;
   repeated string select_values = 6;
-  uint32 order = 7;
+  uint32          order         = 7;
 }

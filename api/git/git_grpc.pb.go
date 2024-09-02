@@ -20,39 +20,26 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Git_EnableProject_FullMethodName  = "/git.Git/EnableProject"
-	Git_DisableProject_FullMethodName = "/git.Git/DisableProject"
-	Git_All_FullMethodName            = "/git.Git/All"
-	Git_ProjectOptions_FullMethodName = "/git.Git/ProjectOptions"
-	Git_BranchOptions_FullMethodName  = "/git.Git/BranchOptions"
-	Git_CommitOptions_FullMethodName  = "/git.Git/CommitOptions"
-	Git_Commit_FullMethodName         = "/git.Git/Commit"
-	Git_PipelineInfo_FullMethodName   = "/git.Git/PipelineInfo"
-	Git_MarsConfigFile_FullMethodName = "/git.Git/MarsConfigFile"
+	Git_AllRepos_FullMethodName           = "/git.Git/AllRepos"
+	Git_ProjectOptions_FullMethodName     = "/git.Git/ProjectOptions"
+	Git_BranchOptions_FullMethodName      = "/git.Git/BranchOptions"
+	Git_CommitOptions_FullMethodName      = "/git.Git/CommitOptions"
+	Git_Commit_FullMethodName             = "/git.Git/Commit"
+	Git_PipelineInfo_FullMethodName       = "/git.Git/PipelineInfo"
+	Git_GetChartValuesYaml_FullMethodName = "/git.Git/GetChartValuesYaml"
 )
 
 // GitClient is the client API for Git service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GitClient interface {
-	// EnableProject 开启项目，开启后可以在项目列表看到
-	EnableProject(ctx context.Context, in *EnableProjectRequest, opts ...grpc.CallOption) (*EnableProjectResponse, error)
-	// DisableProject 关闭项目
-	DisableProject(ctx context.Context, in *DisableProjectRequest, opts ...grpc.CallOption) (*DisableProjectResponse, error)
-	// All 获取所有的 git 项目
-	All(ctx context.Context, in *AllRequest, opts ...grpc.CallOption) (*AllResponse, error)
-	// ProjectOptions 获取项目信息， 用在级联列表
+	AllRepos(ctx context.Context, in *AllReposRequest, opts ...grpc.CallOption) (*AllReposResponse, error)
 	ProjectOptions(ctx context.Context, in *ProjectOptionsRequest, opts ...grpc.CallOption) (*ProjectOptionsResponse, error)
-	// BranchOptions 获取分支信息， 用在级联列表
 	BranchOptions(ctx context.Context, in *BranchOptionsRequest, opts ...grpc.CallOption) (*BranchOptionsResponse, error)
-	// CommitOptions 获取commit信息， 用在级联列表
 	CommitOptions(ctx context.Context, in *CommitOptionsRequest, opts ...grpc.CallOption) (*CommitOptionsResponse, error)
-	// Commit 获取 commit 详情
 	Commit(ctx context.Context, in *CommitRequest, opts ...grpc.CallOption) (*CommitResponse, error)
-	// PipelineInfo 获取 pipeline 详情
 	PipelineInfo(ctx context.Context, in *PipelineInfoRequest, opts ...grpc.CallOption) (*PipelineInfoResponse, error)
-	// MarsConfigFile 获取项目 mars 配置详情
-	MarsConfigFile(ctx context.Context, in *MarsConfigFileRequest, opts ...grpc.CallOption) (*MarsConfigFileResponse, error)
+	GetChartValuesYaml(ctx context.Context, in *GetChartValuesYamlRequest, opts ...grpc.CallOption) (*GetChartValuesYamlResponse, error)
 }
 
 type gitClient struct {
@@ -63,27 +50,9 @@ func NewGitClient(cc grpc.ClientConnInterface) GitClient {
 	return &gitClient{cc}
 }
 
-func (c *gitClient) EnableProject(ctx context.Context, in *EnableProjectRequest, opts ...grpc.CallOption) (*EnableProjectResponse, error) {
-	out := new(EnableProjectResponse)
-	err := c.cc.Invoke(ctx, Git_EnableProject_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gitClient) DisableProject(ctx context.Context, in *DisableProjectRequest, opts ...grpc.CallOption) (*DisableProjectResponse, error) {
-	out := new(DisableProjectResponse)
-	err := c.cc.Invoke(ctx, Git_DisableProject_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gitClient) All(ctx context.Context, in *AllRequest, opts ...grpc.CallOption) (*AllResponse, error) {
-	out := new(AllResponse)
-	err := c.cc.Invoke(ctx, Git_All_FullMethodName, in, out, opts...)
+func (c *gitClient) AllRepos(ctx context.Context, in *AllReposRequest, opts ...grpc.CallOption) (*AllReposResponse, error) {
+	out := new(AllReposResponse)
+	err := c.cc.Invoke(ctx, Git_AllRepos_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +104,9 @@ func (c *gitClient) PipelineInfo(ctx context.Context, in *PipelineInfoRequest, o
 	return out, nil
 }
 
-func (c *gitClient) MarsConfigFile(ctx context.Context, in *MarsConfigFileRequest, opts ...grpc.CallOption) (*MarsConfigFileResponse, error) {
-	out := new(MarsConfigFileResponse)
-	err := c.cc.Invoke(ctx, Git_MarsConfigFile_FullMethodName, in, out, opts...)
+func (c *gitClient) GetChartValuesYaml(ctx context.Context, in *GetChartValuesYamlRequest, opts ...grpc.CallOption) (*GetChartValuesYamlResponse, error) {
+	out := new(GetChartValuesYamlResponse)
+	err := c.cc.Invoke(ctx, Git_GetChartValuesYaml_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -148,24 +117,13 @@ func (c *gitClient) MarsConfigFile(ctx context.Context, in *MarsConfigFileReques
 // All implementations must embed UnimplementedGitServer
 // for forward compatibility
 type GitServer interface {
-	// EnableProject 开启项目，开启后可以在项目列表看到
-	EnableProject(context.Context, *EnableProjectRequest) (*EnableProjectResponse, error)
-	// DisableProject 关闭项目
-	DisableProject(context.Context, *DisableProjectRequest) (*DisableProjectResponse, error)
-	// All 获取所有的 git 项目
-	All(context.Context, *AllRequest) (*AllResponse, error)
-	// ProjectOptions 获取项目信息， 用在级联列表
+	AllRepos(context.Context, *AllReposRequest) (*AllReposResponse, error)
 	ProjectOptions(context.Context, *ProjectOptionsRequest) (*ProjectOptionsResponse, error)
-	// BranchOptions 获取分支信息， 用在级联列表
 	BranchOptions(context.Context, *BranchOptionsRequest) (*BranchOptionsResponse, error)
-	// CommitOptions 获取commit信息， 用在级联列表
 	CommitOptions(context.Context, *CommitOptionsRequest) (*CommitOptionsResponse, error)
-	// Commit 获取 commit 详情
 	Commit(context.Context, *CommitRequest) (*CommitResponse, error)
-	// PipelineInfo 获取 pipeline 详情
 	PipelineInfo(context.Context, *PipelineInfoRequest) (*PipelineInfoResponse, error)
-	// MarsConfigFile 获取项目 mars 配置详情
-	MarsConfigFile(context.Context, *MarsConfigFileRequest) (*MarsConfigFileResponse, error)
+	GetChartValuesYaml(context.Context, *GetChartValuesYamlRequest) (*GetChartValuesYamlResponse, error)
 	mustEmbedUnimplementedGitServer()
 }
 
@@ -173,14 +131,8 @@ type GitServer interface {
 type UnimplementedGitServer struct {
 }
 
-func (UnimplementedGitServer) EnableProject(context.Context, *EnableProjectRequest) (*EnableProjectResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method EnableProject not implemented")
-}
-func (UnimplementedGitServer) DisableProject(context.Context, *DisableProjectRequest) (*DisableProjectResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DisableProject not implemented")
-}
-func (UnimplementedGitServer) All(context.Context, *AllRequest) (*AllResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method All not implemented")
+func (UnimplementedGitServer) AllRepos(context.Context, *AllReposRequest) (*AllReposResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AllRepos not implemented")
 }
 func (UnimplementedGitServer) ProjectOptions(context.Context, *ProjectOptionsRequest) (*ProjectOptionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProjectOptions not implemented")
@@ -197,8 +149,8 @@ func (UnimplementedGitServer) Commit(context.Context, *CommitRequest) (*CommitRe
 func (UnimplementedGitServer) PipelineInfo(context.Context, *PipelineInfoRequest) (*PipelineInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PipelineInfo not implemented")
 }
-func (UnimplementedGitServer) MarsConfigFile(context.Context, *MarsConfigFileRequest) (*MarsConfigFileResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MarsConfigFile not implemented")
+func (UnimplementedGitServer) GetChartValuesYaml(context.Context, *GetChartValuesYamlRequest) (*GetChartValuesYamlResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetChartValuesYaml not implemented")
 }
 func (UnimplementedGitServer) mustEmbedUnimplementedGitServer() {}
 
@@ -213,56 +165,20 @@ func RegisterGitServer(s grpc.ServiceRegistrar, srv GitServer) {
 	s.RegisterService(&Git_ServiceDesc, srv)
 }
 
-func _Git_EnableProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EnableProjectRequest)
+func _Git_AllRepos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AllReposRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GitServer).EnableProject(ctx, in)
+		return srv.(GitServer).AllRepos(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Git_EnableProject_FullMethodName,
+		FullMethod: Git_AllRepos_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).EnableProject(ctx, req.(*EnableProjectRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Git_DisableProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DisableProjectRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GitServer).DisableProject(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Git_DisableProject_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).DisableProject(ctx, req.(*DisableProjectRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Git_All_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AllRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GitServer).All(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Git_All_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).All(ctx, req.(*AllRequest))
+		return srv.(GitServer).AllRepos(ctx, req.(*AllReposRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -357,20 +273,20 @@ func _Git_PipelineInfo_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Git_MarsConfigFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MarsConfigFileRequest)
+func _Git_GetChartValuesYaml_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetChartValuesYamlRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GitServer).MarsConfigFile(ctx, in)
+		return srv.(GitServer).GetChartValuesYaml(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Git_MarsConfigFile_FullMethodName,
+		FullMethod: Git_GetChartValuesYaml_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).MarsConfigFile(ctx, req.(*MarsConfigFileRequest))
+		return srv.(GitServer).GetChartValuesYaml(ctx, req.(*GetChartValuesYamlRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -383,16 +299,8 @@ var Git_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*GitServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "EnableProject",
-			Handler:    _Git_EnableProject_Handler,
-		},
-		{
-			MethodName: "DisableProject",
-			Handler:    _Git_DisableProject_Handler,
-		},
-		{
-			MethodName: "All",
-			Handler:    _Git_All_Handler,
+			MethodName: "AllRepos",
+			Handler:    _Git_AllRepos_Handler,
 		},
 		{
 			MethodName: "ProjectOptions",
@@ -415,8 +323,8 @@ var Git_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Git_PipelineInfo_Handler,
 		},
 		{
-			MethodName: "MarsConfigFile",
-			Handler:    _Git_MarsConfigFile_Handler,
+			MethodName: "GetChartValuesYaml",
+			Handler:    _Git_GetChartValuesYaml_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

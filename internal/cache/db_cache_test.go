@@ -1,185 +1,69 @@
 package cache
 
 import (
+	"context"
 	"encoding/base64"
-	"errors"
-	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
-	"gorm.io/gorm"
-
-	"github.com/duc-cnzj/mars/v4/internal/app/instance"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
-	"github.com/duc-cnzj/mars/v4/internal/mock"
-	"github.com/duc-cnzj/mars/v4/internal/models"
-	"github.com/duc-cnzj/mars/v4/internal/testutil"
-	"golang.org/x/sync/singleflight"
-
+	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/ent/dbcache"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
 )
 
-func newCacheByApp(app contracts.ApplicationInterface) contracts.CacheInterface {
-	return NewCache(NewDBStore(func() *gorm.DB {
-		return app.DB()
-	}), app.Singleflight())
-}
+func Test_dbStore_Get(t *testing.T) {
+	db, _ := data.NewSqliteDB()
+	defer db.Close()
 
-func TestDBCache_Remember(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	app := mock.NewMockApplicationInterface(ctrl)
-	defer ctrl.Finish()
-	instance.SetInstance(app)
-	db, closeFn := testutil.SetGormDB(ctrl, app)
-	defer closeFn()
-	sf := singleflight.Group{}
-	app.EXPECT().Singleflight().Return(&sf).AnyTimes()
-	db.AutoMigrate(&models.DBCache{})
-	var called int64
-	fn := func() ([]byte, error) {
-		atomic.AddInt64(&called, 1)
-		time.Sleep(2 * time.Second)
-		return []byte("data"), nil
+	s := &dbStore{
+		data: data.NewDataImpl(&data.NewDataParams{DB: db}),
 	}
-	wg := sync.WaitGroup{}
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			newCacheByApp(app).Remember(NewKey("key"), 1000, fn)
-		}()
+	_, err := s.Get("test")
+	assert.Error(t, err)
+
+	db.DBCache.Create().SetKey("test").SetValue("test").SetExpiredAt(time.Now().Add(10 * time.Second)).Exec(context.TODO())
+
+	v, err := s.Get("test")
+	assert.Nil(t, err)
+	decodeString, _ := base64.StdEncoding.DecodeString("test")
+	assert.Equal(t, decodeString, v)
+}
+
+func Test_dbStore_Set(t *testing.T) {
+	db, _ := data.NewSqliteDB()
+	defer db.Close()
+
+	s := &dbStore{
+		data: data.NewDataImpl(&data.NewDataParams{DB: db}),
 	}
-	wg.Wait()
-	c := models.DBCache{}
-	db.First(&c)
-	var count int64
-	db.Model(&models.DBCache{}).Count(&count)
-	assert.Equal(t, int64(1), count)
-	assert.Equal(t, "key", c.Key)
-	assert.Equal(t, base64.StdEncoding.EncodeToString([]byte("data")), c.Value)
-	// 手动修改 value 让 b64 报错，会走 fn 的让 called + 1
-	db.Model(c).Update("value", "xxx")
-	newCacheByApp(app).Remember(NewKey("key"), 1000, fn)
-
-	assert.Equal(t, int64(2), atomic.LoadInt64(&called))
-	newCacheByApp(app).Remember(NewKey("key"), 1000, fn)
-	assert.Equal(t, int64(2), atomic.LoadInt64(&called))
-	newCacheByApp(app).Remember(NewKey("key"), 1000, fn)
-	assert.Equal(t, int64(2), atomic.LoadInt64(&called))
-
-	_, err := newCacheByApp(app).Remember(NewKey("key-err"), 1000, func() ([]byte, error) {
-		return nil, errors.New("aaa")
-	})
-	assert.Equal(t, "aaa", err.Error())
-
-	nocacheCalled := 0
-	_, err = newCacheByApp(app).Remember(NewKey("no-cache-0-second"), 10, func() ([]byte, error) {
-		nocacheCalled++
-		return nil, nil
-	})
+	err := s.Set("test", []byte("test"), 10)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, nocacheCalled)
-
-	_, err = newCacheByApp(app).Remember(NewKey("no-cache-0-second"), 0, func() ([]byte, error) {
-		nocacheCalled++
-		return nil, nil
-	})
+	only1, _ := db.DBCache.Query().Where(dbcache.Key("test")).Only(context.TODO())
+	assert.Equal(t, "test", B64toStr(only1.Value))
+	err = s.Set("test", []byte("testxxx"), 10)
 	assert.Nil(t, err)
-	assert.Equal(t, 2, nocacheCalled)
+	only2, _ := db.DBCache.Query().Where(dbcache.Key("test")).Only(context.TODO())
+	assert.Equal(t, "testxxx", B64toStr(only2.Value))
+	assert.NotEqual(t, only1.ExpiredAt, only2.ExpiredAt)
 }
 
-func TestName(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	app := mock.NewMockApplicationInterface(ctrl)
-	defer ctrl.Finish()
-	instance.SetInstance(app)
-	db, closeFn := testutil.SetGormDB(ctrl, app)
-	defer closeFn()
-	sf := singleflight.Group{}
-	app.EXPECT().Singleflight().Return(&sf).AnyTimes()
-	db.AutoMigrate(&models.DBCache{})
-	called := 0
-	NewCache(NewDBStore(func() *gorm.DB {
-		if called > 0 {
-			db.Migrator().DropTable(&models.DBCache{})
-			assert.False(t, db.Migrator().HasTable(&models.DBCache{}))
-			return db
-		}
-		called++
-		return db
-	}), app.Singleflight()).Remember(NewKey("aaaa-xx"), 1, func() ([]byte, error) {
-		return []byte("xxx"), nil
-	})
+func B64toStr(v string) string {
+	decodeString, _ := base64.StdEncoding.DecodeString(v)
+	return string(decodeString)
 }
 
-func TestNewDBCache(t *testing.T) {
-	assert.Implements(t, (*contracts.CacheInterface)(nil), NewCache(NewDBStore(nil), nil))
-}
+func Test_dbStore_Delete(t *testing.T) {
+	db, _ := data.NewSqliteDB()
+	defer db.Close()
 
-func TestDBCache_Clear(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	app := mock.NewMockApplicationInterface(ctrl)
-	defer ctrl.Finish()
-	instance.SetInstance(app)
-	db, closeFn := testutil.SetGormDB(ctrl, app)
-	defer closeFn()
-	sf := singleflight.Group{}
-	app.EXPECT().Singleflight().Return(&sf).AnyTimes()
-	db.AutoMigrate(&models.DBCache{})
-
-	var count int64
-	db.Model(&models.DBCache{}).Count(&count)
-	assert.Equal(t, int64(0), count)
-
-	newCacheByApp(app).Remember(NewKey("key-1"), 100, func() ([]byte, error) {
-		return []byte("a-1"), nil
-	})
-	newCacheByApp(app).Remember(NewKey("key-2"), 100, func() ([]byte, error) {
-		return []byte("a-2"), nil
-	})
-	db.Model(&models.DBCache{}).Count(&count)
-	assert.Equal(t, int64(2), count)
-
-	assert.Nil(t, newCacheByApp(app).Clear(NewKey("key-1")))
-
-	var caches []*models.DBCache
-	db.Model(&models.DBCache{}).Find(&caches)
-	assert.Len(t, caches, 1)
-	assert.Equal(t, base64.StdEncoding.EncodeToString([]byte("a-2")), caches[0].Value)
-}
-
-func TestDBCache_SetWithTTL(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	app := mock.NewMockApplicationInterface(ctrl)
-	defer ctrl.Finish()
-	instance.SetInstance(app)
-	db, closeFn := testutil.SetGormDB(ctrl, app)
-	defer closeFn()
-	sf := singleflight.Group{}
-	app.EXPECT().Singleflight().Return(&sf).AnyTimes()
-	db.AutoMigrate(&models.DBCache{})
-
-	var (
-		count  int64
-		keyOne models.DBCache
-	)
-
-	db.Model(&models.DBCache{}).Count(&count)
-	assert.Equal(t, int64(0), count)
-
-	assert.Nil(t, newCacheByApp(app).SetWithTTL(NewKey("key-1"), []byte("aa"), 100))
-	db.Model(&models.DBCache{}).Count(&count)
-	assert.Nil(t, db.First(&keyOne).Error)
-	decodeString, _ := base64.StdEncoding.DecodeString(keyOne.Value)
-	assert.Equal(t, "aa", string(decodeString))
-	assert.Equal(t, int64(1), count)
-
-	assert.Nil(t, newCacheByApp(app).SetWithTTL(NewKey("key-1"), []byte("bb"), 100))
-	db.Model(&models.DBCache{}).Count(&count)
-	assert.Equal(t, int64(1), count)
-	assert.Nil(t, db.First(&keyOne).Error)
-	decodeString, _ = base64.StdEncoding.DecodeString(keyOne.Value)
-	assert.Equal(t, "bb", string(decodeString))
+	s := &dbStore{
+		data: data.NewDataImpl(&data.NewDataParams{DB: db}),
+	}
+	err := s.Delete("test")
+	assert.Nil(t, err)
+	db.DBCache.Create().SetKey("test").SetValue("test").SetExpiredAt(time.Now().Add(10 * time.Second)).Exec(context.TODO())
+	err = s.Delete("test")
+	assert.Nil(t, err)
+	_, err = db.DBCache.Query().Where(dbcache.Key("test")).Only(context.TODO())
+	assert.Error(t, err)
 }

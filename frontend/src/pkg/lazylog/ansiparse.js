@@ -37,7 +37,7 @@ const eraseChar = (matchingText, result) => {
         : result.map((item, i) =>
             index === i
               ? { ...item, text: text.substr(0, text.length - 1) }
-              : item
+              : item,
           );
 
     return [matchingText, newResult];

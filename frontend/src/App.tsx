@@ -5,11 +5,9 @@ import "mac-scrollbar/dist/mac-scrollbar.css";
 import AppLayout from "./components/AppLayout";
 import { Button, Result } from "antd";
 
-const GitProjectManager = lazy(() => import("./components/GitProjectManager"));
-const Events = lazy(() => import("./components/Events"));
-const AccessTokenManager = lazy(
-  () => import("./components/AccessTokenManager")
-);
+const Events = lazy(() => import("./pages/Events"));
+const RepoPage = lazy(() => import("./pages/Repo"));
+const AccessTokenManager = lazy(() => import("./pages/AccessTokenManager"));
 
 const App: FC = () => {
   const navigate = useNavigate();
@@ -19,10 +17,10 @@ const App: FC = () => {
       <Route path="/" element={<AppLayout />}>
         <Route index element={<AppContent />} />
         <Route
-          path="git_project_manager"
+          path="repos"
           element={
             <Suspense fallback={null}>
-              <GitProjectManager />
+              <RepoPage />
             </Suspense>
           }
         />

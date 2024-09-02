@@ -1,36 +1,39 @@
 import React, { memo, MouseEvent, useCallback, useState } from "react";
-import {
-  getNamespaceServiceEndpoints,
-  getProjectServiceEndpoints,
-} from "../api/namespace";
+
 import { Popover } from "antd";
 import { CopyOutlined } from "@ant-design/icons";
 import CopyToClipboard from "./CopyToClipboard";
-import pb from "../api/compiled";
+import ajax from "../api/ajax";
+import { components } from "../api/schema";
 
 const ServiceEndpoint: React.FC<{
   namespaceId?: number;
   projectId?: number;
 }> = ({ namespaceId, projectId }) => {
-  const [endpoints, setEndpoints] = useState<pb.types.ServiceEndpoint[]>();
+  const [endpoints, setEndpoints] =
+    useState<components["schemas"]["types.ServiceEndpoint"][]>();
   const enterFn = useCallback(
     (e: MouseEvent<SVGElement>) => {
       if (namespaceId) {
-        getNamespaceServiceEndpoints({
-          namespace_id: namespaceId,
-        }).then((res) => {
-          setEndpoints(res.data.items);
-        });
+        ajax
+          .GET("/api/endpoints/namespaces/{namespaceId}", {
+            params: { path: { namespaceId } },
+          })
+          .then(({ data }) => {
+            data && setEndpoints(data.items);
+          });
       }
       if (projectId) {
-        getProjectServiceEndpoints({
-          project_id: projectId,
-        }).then((res) => {
-          setEndpoints(res.data.items);
-        });
+        ajax
+          .GET("/api/endpoints/projects/{projectId}", {
+            params: { path: { projectId: projectId } },
+          })
+          .then(({ data }) => {
+            data && setEndpoints(data.items);
+          });
       }
     },
-    [namespaceId, projectId]
+    [namespaceId, projectId],
   );
 
   return (
@@ -41,7 +44,7 @@ const ServiceEndpoint: React.FC<{
         <div key={v.url} onClick={(e) => e.stopPropagation()}>
           <span style={{ marginRight: 5 }}>
             {v.name}
-            {v.port_name ? `(${v.port_name})` : ""}:
+            {v.portName ? `(${v.portName})` : ""}:
           </span>
           {v.url.startsWith("http") ? (
             <a href={v.url} target="_blank" style={{ marginRight: 10 }}>

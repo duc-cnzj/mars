@@ -1,10 +1,11 @@
 VERSION_PATH=$(shell go list -m -f "{{.Path}}" | grep -v api)/version
 PROTO_FILES=$(shell find api -name *.proto)
+VERSION=$(shell git describe --exact-match --tags HEAD 2> /dev/null || echo "")
 LDFLAGS=-w -s  \
  -X ${VERSION_PATH}.gitBranch=$(shell git rev-parse --abbrev-ref HEAD) \
  -X ${VERSION_PATH}.buildDate=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ') \
  -X ${VERSION_PATH}.gitCommit=$(shell git rev-parse --short HEAD) \
- -X ${VERSION_PATH}.gitTag=$(shell git describe --exact-match --tags HEAD 2> /dev/null || echo "") \
+ -X ${VERSION_PATH}.gitTag=${VERSION} \
  -X ${VERSION_PATH}.kubectlVersion=$(shell go list -m -f "{{.Path}} {{.Version}}" all | grep k8s.io/client-go | cut -d " " -f2) \
  -X ${VERSION_PATH}.helmVersion=$(shell go list -m -f "{{.Path}} {{.Version}}" all | grep helm.sh/helm/v3 | cut -d " " -f2)
 
@@ -13,40 +14,41 @@ build_tools:
 	go install \
 		github.com/envoyproxy/protoc-gen-validate \
 		github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway \
-		github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2 \
 		google.golang.org/grpc/cmd/protoc-gen-go-grpc \
 		google.golang.org/protobuf/cmd/protoc-gen-go \
 		github.com/golangci/golangci-lint/cmd/golangci-lint \
 		golang.org/x/tools/cmd/goimports \
 		github.com/securego/gosec/v2/cmd/gosec \
-		github.com/golang/mock/mockgen
+		go.uber.org/mock/mockgen \
+		github.com/google/gnostic/cmd/protoc-gen-openapi@latest \
+		github.com/google/wire/cmd/wire \
+		entgo.io/ent/cmd/ent
 
-
-.PHONY: gen_proto
-gen_proto:
+.PHONY: api
+api:
 	protoc \
         --proto_path=./api \
 		--proto_path ./third_party/protos \
 		--go_out=paths=source_relative:./api \
 		--go-grpc_out=paths=source_relative:./api \
-		--openapiv2_out=./doc \
-		--openapiv2_opt logtostderr=true \
-		--openapiv2_opt json_names_for_fields=false \
 		--grpc-gateway_out=paths=source_relative:./api \
 		--grpc-gateway_opt logtostderr=true \
 		--grpc-gateway_opt paths=source_relative \
 		--grpc-gateway_opt generate_unbound_methods=true \
 		--validate_out=lang=go,paths=source_relative:./api \
+	    --openapi_out=enum_type=string,fq_schema_naming=true,default_response=true,version="$(VERSION)",title="mars api.":./doc \
 		$(PROTO_FILES)
 
-	./frontend/node_modules/.bin/pbjs -t static-module -o ./frontend/src/api/compiled.js -w es6  ./api/**/*.proto \
-      --keep-case \
+	npx openapi-typescript ./doc/openapi.yaml --enum --enum-values --properties-required-by-default -o ./frontend/src/api/schema.d.ts
+
+	./frontend/node_modules/.bin/pbjs -t static-module -o ./frontend/src/api/websocket.js -w es6  ./api/websocket/websocket.proto  \
       --no-verify \
       --no-convert \
       --no-create \
       --force-number \
       --force-message \
       --no-delimited
+#      --keep-case \
     #  --no-encode \
     #  --no-decode \
 
@@ -67,9 +69,7 @@ gen_proto:
     #  --force-number   Enforces the use of 'number' for s-/u-/int64 and s-/fixed64 fields.
     #  --force-message  Enforces the use of message instances instead of plain objects.
 
-	./frontend/node_modules/.bin/pbts -o ./frontend/src/api/compiled.d.ts ./frontend/src/api/compiled.js --keep-case
-
-	swagger mixin --ignore-conflicts ./third_party/doc/data/api.json ./doc/**/*.json > ./third_party/doc/data/swagger.json
+	./frontend/node_modules/.bin/pbts -o ./frontend/src/api/websocket.d.ts ./frontend/src/api/websocket.js --keep-case
 
 .PHONY: clear_proto
 clear_proto:
@@ -77,7 +77,14 @@ clear_proto:
 
 .PHONY: gen
 gen:
-	go generate ./... && make fmt
+	GOWORK=off go generate ./...
+
+.PHONY: all
+all: api gen fmt
+
+.PHONY: wire
+wire:
+	cd ./cmd && wire
 
 .PHONY: sec
 sec:
@@ -93,12 +100,13 @@ release: build_linux_amd64 build_darwin_amd64 build_darwin_arm64
 .PHONY: fmt
 fmt:
 	gofmt -s -w ./api && \
-	gofmt -s -w -r 'interface{} -> any' ./internal ./plugins ./tools ./version ./third_party ./cmd && \
+	gofmt -s -w -r 'interface{} -> any' ./internal ./tools ./third_party ./cmd && \
 	goimports -w ./
 
 .PHONY: serve
 serve:
-	go run -race main.go serve --debug --app_port 4000 # --grpc_port 50000
+	go run main.go serve
+#	go run -race main.go serve --debug
 
 .PHONY: build_race
 build_race:
@@ -114,7 +122,35 @@ build_web:
 
 .PHONY: test
 test:
-	go test ./... -race -count=1 -cover -coverprofile=cover.out
+	go test \
+        ./internal/annotation/... \
+        ./internal/application/... \
+        ./internal/auth/... \
+        ./internal/cache/... \
+        ./internal/config/... \
+        ./internal/cron/... \
+        ./internal/data/... \
+        ./internal/event/... \
+        ./internal/filters/... \
+        ./internal/locker/... \
+        ./internal/logo/... \
+        ./internal/metrics/... \
+        ./internal/mlog/... \
+        ./internal/repo/... \
+        ./internal/server/... \
+        ./internal/services/... \
+        ./internal/socket/... \
+        ./internal/transformer/... \
+        ./internal/uploader/... \
+        ./internal/util/... \
+        ./internal/version/... \
+		-race -count=1 -cover -coverprofile=cover.out -covermode atomic && \
+	go tool cover -func cover.out
+
+.PHONY: cover-web
+# go tool cover -html cover.out
+cover-web:
+	go tool cover -html cover.out
 
 .PHONY: build_linux_amd64
 build_linux_amd64:
@@ -135,3 +171,18 @@ build_darwin_arm64:
 .PHONY: build_windows
 build_windows:
 	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o app.exe main.go
+
+.PHONY: ent-new
+# make ent-new NAME=User
+ent-new:
+	ent new --target internal/ent/schema $(NAME)
+
+.PHONY: ent-generate
+# go generate ./internal/...
+ent-generate:
+	go generate ./internal/ent/...
+
+.PHONY: ent-diff
+# ent-diff generate diff schema sql
+ent-diff:
+	atlas migrate diff $(NAME) --env local --format '{{ sql . "  " }}'

@@ -1,7 +1,5 @@
 import React, { memo, useEffect, useState, useCallback, useMemo } from "react";
-import { allPodContainers } from "../api/project";
 import { Radio, Skeleton, Button, message, Empty } from "antd";
-import pb from "../api/compiled";
 import LazyLog from "../pkg/lazylog/components/LazyLog";
 import { getToken } from "./../utils/token";
 import { useSelector } from "react-redux";
@@ -9,6 +7,8 @@ import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
 import { debounce } from "lodash";
 import PodStateTag from "./PodStateTag";
 import { css } from "@emotion/css";
+import ajax from "../api/ajax";
+import { components } from "../api/schema";
 
 const ProjectContainerLogs: React.FC<{
   updatedAt: any;
@@ -17,13 +17,20 @@ const ProjectContainerLogs: React.FC<{
   namespaceID: number;
 }> = ({ id, namespace, updatedAt, namespaceID }) => {
   const [value, setValue] = useState<string>("");
-  const [list, setList] = useState<pb.types.StateContainer[]>([]);
+  const [list, setList] = useState<
+    components["schemas"]["types.StateContainer"][]
+  >([]);
 
   const listContainer = useCallback(async () => {
-    return allPodContainers({ project_id: id }).then((res) => {
-      setList(res.data.items);
-      return res;
-    });
+    return ajax
+      .GET("/api/projects/{id}/containers", { params: { path: { id: id } } })
+      .then(({ data, error }) => {
+        if (error) {
+          return;
+        }
+        setList(data.items);
+        return data;
+      });
   }, [id]);
   useEffect(() => {
     if (
@@ -51,9 +58,12 @@ const ProjectContainerLogs: React.FC<{
   }, [projectIDStr, listContainer, id]);
 
   useEffect(() => {
-    listContainer().then((res) => {
-      if (res.data.items.length > 0) {
-        let first = res.data.items[0];
+    listContainer().then((data) => {
+      if (!data) {
+        return;
+      }
+      if (data.items.length > 0) {
+        let first = data.items[0];
         setValue(first.pod + "|" + first.container);
       }
     });
@@ -118,9 +128,12 @@ const ProjectContainerLogs: React.FC<{
                     );
                   },
                   on404Error: (e) => {
-                    listContainer().then((res) => {
-                      if (res.data.items.length > 0) {
-                        let first = res.data.items[0];
+                    listContainer().then((data) => {
+                      if (!data) {
+                        return;
+                      }
+                      if (data.items.length > 0) {
+                        let first = data.items[0];
                         setValue(first.pod + "|" + first.container);
                       }
                     });
@@ -171,6 +184,7 @@ const MyLogUtil: React.FC<{
       selectableLines
       captureHotkeys
       formatPart={(text: string) => {
+        console.log(text);
         let res = JSON.parse(text);
         if (res.error) {
           if (onError?.praseJsonError) {

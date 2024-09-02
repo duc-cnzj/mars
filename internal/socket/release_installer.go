@@ -3,96 +3,207 @@ package socket
 import (
 	"context"
 	"fmt"
+	"sort"
+	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/release"
 )
 
-type releaseInstaller struct {
-	helmer         contracts.Helmer
-	dryRun         bool
-	chart          *chart.Chart
-	timeoutSeconds int64
-	releaseName    string
-	namespace      string
-	percenter      contracts.Percentable
-	startTime      time.Time
-	wait           bool
-	valueOpts      *values.Options
-	logs           *timeOrderedSetString
-	messageCh      contracts.SafeWriteMessageChInterface
+type MessageItem struct {
+	Msg  string
+	Type MessageType
+
+	Containers []*websocket_pb.Container
 }
 
-func newReleaseInstaller(helmer contracts.Helmer, releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, wait bool, timeoutSeconds int64, dryRun bool) *releaseInstaller {
+type MessageType uint8
+
+const (
+	_ MessageType = iota
+	MessageSuccess
+	MessageError
+	MessageText
+)
+
+type ReleaseInstaller interface {
+	Run(ctx context.Context, input *InstallInput) (*release.Release, error)
+}
+
+var _ ReleaseInstaller = (*releaseInstaller)(nil)
+
+type releaseInstaller struct {
+	logger         mlog.Logger
+	helmer         repo.HelmerRepo
+	timeoutSeconds int64
+	timer          timer.Timer
+}
+
+func NewReleaseInstaller(
+	logger mlog.Logger,
+	helmer repo.HelmerRepo,
+	data data.Data,
+	timer timer.Timer,
+) ReleaseInstaller {
 	return &releaseInstaller{
+		timer:          timer,
+		logger:         logger,
 		helmer:         helmer,
-		dryRun:         dryRun,
-		chart:          chart,
-		valueOpts:      valueOpts,
-		releaseName:    releaseName,
-		wait:           wait,
-		namespace:      namespace,
-		logs:           newTimeOrderedSetString(time.Now),
-		timeoutSeconds: timeoutSeconds,
+		timeoutSeconds: int64(data.Config().InstallTimeout.Seconds()),
 	}
 }
 
-func (r *releaseInstaller) Chart() *chart.Chart {
-	return r.chart
+type InstallInput struct {
+	IsNew        bool
+	Wait         bool
+	Chart        *chart.Chart
+	ValueOptions *values.Options
+	DryRun       bool
+	ReleaseName  string
+	Namespace    string
+	Description  string
+
+	messageChan SafeWriteMessageChan
+	percenter   Percentable
 }
 
-func (r *releaseInstaller) Run(stopCtx context.Context, messageCh contracts.SafeWriteMessageChInterface, percenter contracts.Percentable, isNew bool, desc string) (*release.Release, error) {
-	defer mlog.Debug("releaseInstaller exit")
+func (r *releaseInstaller) Run(
+	ctx context.Context,
+	input *InstallInput,
+) (*release.Release, error) {
+	defer r.logger.Debug("releaseInstaller exit")
 
-	r.messageCh = messageCh
-	r.percenter = percenter
-	r.startTime = time.Now()
+	var logger = newTimeOrderedSetString(r.timer)
+	wrapLogFn := r.loggerWrap(input.messageChan, input.percenter, logger)
+	var re *release.Release
+	var err error
 
-	re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.wait, r.timeoutSeconds, r.dryRun, desc)
+	re, err = r.helmer.UpgradeOrInstall(
+		ctx,
+		input.ReleaseName,
+		input.Namespace,
+		input.Chart,
+		input.ValueOptions,
+		wrapLogFn,
+		input.Wait,
+		r.timeoutSeconds,
+		input.DryRun,
+		input.Description,
+	)
 	if err == nil {
+		r.logger.Debug(err)
 		return re, nil
 	}
-	mlog.Debug(err)
-	if !r.dryRun && !isNew {
-		// 失败了，需要手动回滚
-		mlog.Debug("rollback project")
-		if err := r.helmer.Rollback(r.releaseName, r.namespace, false, r.logger().UnWrap(), r.dryRun); err != nil {
-			mlog.Debug(err)
-		}
-	}
-	if !r.dryRun && isNew {
-		mlog.Debug("uninstall project")
-		if err := r.helmer.Uninstall(r.releaseName, r.namespace, r.logger().UnWrap()); err != nil {
-			mlog.Debug(err)
+	wrapLogFn(nil, "部署出现问题: %s", err)
+	if !input.DryRun {
+		if !input.IsNew {
+			// 失败了，需要手动回滚
+			r.logger.Debug("rollback project")
+			if err = r.helmer.Rollback(input.ReleaseName, input.Namespace, false, wrapLogFn.UnWrap(), input.DryRun); err != nil {
+				r.logger.Debug(err)
+			}
+		} else {
+			r.logger.Debug("uninstall project")
+			if err = r.helmer.Uninstall(input.ReleaseName, input.Namespace, wrapLogFn.UnWrap()); err != nil {
+				r.logger.Debug(err)
+			}
 		}
 	}
 	return nil, err
 }
 
-func (r *releaseInstaller) Logs() []string {
-	return r.logs.sortedItems()
-}
-
-func (r *releaseInstaller) logger() contracts.WrapLogFn {
-	return func(containers []*types.Container, format string, v ...any) {
-		if r.percenter.Current() < 99 {
-			r.percenter.Add()
+func (r *releaseInstaller) loggerWrap(messageChan SafeWriteMessageChan, percenter Percentable, logs *timeOrderedSetString) repo.WrapLogFn {
+	return func(containers []*websocket_pb.Container, format string, v ...any) {
+		if percenter.Current() < 99 {
+			percenter.Add()
 		}
 
 		msg := fmt.Sprintf(format, v...)
 
-		if !r.logs.has(msg) {
-			r.logs.add(msg)
-			r.messageCh.Send(contracts.MessageItem{
+		if !logs.has(msg) {
+			logs.add(msg)
+			messageChan.Send(MessageItem{
 				Msg:        msg,
 				Containers: containers,
-				Type:       contracts.MessageText,
+				Type:       MessageText,
 			})
 		}
 	}
+}
+
+type timeOrderedSetStringItem struct {
+	t    time.Time
+	data string
+}
+
+type orderedItemList []*timeOrderedSetStringItem
+
+func (o orderedItemList) Len() int {
+	return len(o)
+}
+
+func (o orderedItemList) Less(i, j int) bool {
+	return o[i].t.Before(o[j].t)
+}
+
+func (o orderedItemList) Swap(i, j int) {
+	o[i], o[j] = o[j], o[i]
+}
+
+func (o orderedItemList) List() []string {
+	res := make([]string, len(o))
+	for i, item := range o {
+		res[i] = item.data
+	}
+	return res
+}
+
+type timeOrderedSetString struct {
+	mu    sync.RWMutex
+	items map[string]time.Time
+	timer timer.Timer
+}
+
+func newTimeOrderedSetString(timer timer.Timer) *timeOrderedSetString {
+	return &timeOrderedSetString{
+		items: make(map[string]time.Time),
+		timer: timer,
+	}
+}
+
+func (o *timeOrderedSetString) add(s string) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if _, ok := o.items[s]; ok {
+		return
+	}
+	o.items[s] = o.timer.Now()
+}
+
+func (o *timeOrderedSetString) has(s string) bool {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+	_, ok := o.items[s]
+	return ok
+}
+
+func (o *timeOrderedSetString) sortedItems() []string {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+	oslist := make(orderedItemList, 0, len(o.items))
+	for s, t := range o.items {
+		oslist = append(oslist, &timeOrderedSetStringItem{
+			t:    t,
+			data: s,
+		})
+	}
+	sort.Sort(oslist)
+	return oslist.List()
 }

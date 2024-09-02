@@ -30,13 +30,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsClient interface {
-	// CpuMemoryInNamespace 名称空间总共使用的 cpu memory
 	CpuMemoryInNamespace(ctx context.Context, in *CpuMemoryInNamespaceRequest, opts ...grpc.CallOption) (*CpuMemoryInNamespaceResponse, error)
-	// CpuMemoryInProject 项目空间总共使用的 cpu memory
 	CpuMemoryInProject(ctx context.Context, in *CpuMemoryInProjectRequest, opts ...grpc.CallOption) (*CpuMemoryInProjectResponse, error)
-	// TopPod 获取 pod 的 cpu memory 信息
 	TopPod(ctx context.Context, in *TopPodRequest, opts ...grpc.CallOption) (*TopPodResponse, error)
-	// StreamTopPod stream 的方式获取 pod 的 cpu memory 信息
 	StreamTopPod(ctx context.Context, in *TopPodRequest, opts ...grpc.CallOption) (Metrics_StreamTopPodClient, error)
 }
 
@@ -111,13 +107,9 @@ func (x *metricsStreamTopPodClient) Recv() (*TopPodResponse, error) {
 // All implementations must embed UnimplementedMetricsServer
 // for forward compatibility
 type MetricsServer interface {
-	// CpuMemoryInNamespace 名称空间总共使用的 cpu memory
 	CpuMemoryInNamespace(context.Context, *CpuMemoryInNamespaceRequest) (*CpuMemoryInNamespaceResponse, error)
-	// CpuMemoryInProject 项目空间总共使用的 cpu memory
 	CpuMemoryInProject(context.Context, *CpuMemoryInProjectRequest) (*CpuMemoryInProjectResponse, error)
-	// TopPod 获取 pod 的 cpu memory 信息
 	TopPod(context.Context, *TopPodRequest) (*TopPodResponse, error)
-	// StreamTopPod stream 的方式获取 pod 的 cpu memory 信息
 	StreamTopPod(*TopPodRequest, Metrics_StreamTopPodServer) error
 	mustEmbedUnimplementedMetricsServer()
 }

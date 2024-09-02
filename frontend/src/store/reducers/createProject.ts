@@ -2,16 +2,13 @@ import {
   CLEAR_CREATE_PROJECT_LOG,
   SET_DEPLOY_STATUS,
   SET_PROCESS_PERCENT,
-} from "./../actionTypes";
-import {
-  CREATE_PROJECT_LOADING,
-  CREATE_PROJECT_LOADING_DONE,
   APPEND_CREATE_PROJECT_LOG,
   SET_CREATE_PROJECT_LOADING,
+  CLEAN_PROJECT,
 } from "../actionTypes";
 
 import { set, get } from "lodash";
-import pb from "../../api/compiled";
+import pb from "../../api/websocket";
 
 export enum DeployStatus {
   DeployUnknown = "unknown",
@@ -23,7 +20,7 @@ export enum DeployStatus {
 export interface Output {
   type: pb.websocket.ResultType;
   log: string;
-  containers?: pb.types.Container[];
+  containers?: pb.websocket.Container[];
 }
 
 export interface CreateProjectItem {
@@ -53,16 +50,25 @@ export default function createProject(
       deployStatus: string;
       processPercent: number;
     };
-  }
+  },
 ) {
   switch (action.type) {
+    case CLEAN_PROJECT:
+      if (action.data) {
+        delete state[action.data.id];
+        return {
+          ...state,
+        };
+      }
+
+      return state;
     case SET_PROCESS_PERCENT:
       if (action.data) {
         return {
           ...set(
             state,
             [action.data.id, "processPercent"],
-            action.data.processPercent
+            action.data.processPercent,
           ),
         };
       }
@@ -74,7 +80,7 @@ export default function createProject(
           ...set(
             state,
             [action.data.id, "deployStatus"],
-            action.data.deployStatus
+            action.data.deployStatus,
           ),
         };
       }
@@ -82,21 +88,10 @@ export default function createProject(
       return state;
     case SET_CREATE_PROJECT_LOADING:
       if (action.data) {
+        console.log("action.data.isLoading", action.data.isLoading);
         return {
           ...set(state, [action.data.id, "isLoading"], action.data.isLoading),
         };
-      }
-
-      return state;
-    case CREATE_PROJECT_LOADING:
-      if (action.data) {
-        return { ...set(state, [action.data.id, "isLoading"], true) };
-      }
-
-      return state;
-    case CREATE_PROJECT_LOADING_DONE:
-      if (action.data) {
-        return { ...set(state, [action.data.id, "isLoading"], false) };
       }
 
       return state;

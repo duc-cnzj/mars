@@ -1,37 +1,130 @@
 package event
 
 import (
+	"context"
 	"sync"
 
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
 )
+
+type Event string
+
+func (e Event) String() string {
+	return string(e)
+}
+
+func (e Event) Is(event Event) bool {
+	return e.String() == event.String()
+}
+
+type Listener func(any, Event) error
+
+type Dispatcher interface {
+	// Listen Register an event listener with the dispatcher.
+	Listen(Event, Listener)
+
+	// HasListeners Determine if a given event has listeners.
+	HasListeners(Event) bool
+
+	// Dispatch Fire an event and call the listeners.
+	Dispatch(Event, any) error
+
+	// Forget Shutdown a set of listeners from the dispatcher.
+	Forget(Event)
+
+	// GetListeners get all listeners by
+	GetListeners(Event) []Listener
+
+	// Run server.
+	Run(context.Context) error
+
+	// Shutdown server.
+	Shutdown(context.Context) error
+
+	List() map[Event][]Listener
+}
+
+type eventBody struct {
+	event   Event
+	Payload any
+}
 
 type dispatcher struct {
 	sync.RWMutex
 
-	app       contracts.ApplicationInterface
-	listeners map[contracts.Event][]contracts.Listener
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	ch        chan *eventBody
+	logger    mlog.Logger
+	listeners map[Event][]Listener
 }
 
-// NewDispatcher return contracts.DispatcherInterface.
-func NewDispatcher(app contracts.ApplicationInterface) contracts.DispatcherInterface {
-	return &dispatcher{listeners: map[contracts.Event][]contracts.Listener{}, app: app}
+var _ Dispatcher = (*dispatcher)(nil)
+
+// NewDispatcher return Dispatcher.
+func NewDispatcher(logger mlog.Logger) Dispatcher {
+	ctx, cancelFunc := context.WithCancel(context.TODO())
+
+	return &dispatcher{
+		ctx:       ctx,
+		cancel:    cancelFunc,
+		ch:        make(chan *eventBody, 1000),
+		logger:    logger.WithModule("event/dispatcher"),
+		listeners: map[Event][]Listener{},
+	}
+}
+
+func (d *dispatcher) Run(ctx context.Context) error {
+	d.logger.Info("[Event]: dispatcher running")
+	go func() {
+		for {
+			select {
+			case <-d.ctx.Done():
+				d.logger.Warning("[Shutdown]: event dispatcher context done")
+				return
+			case <-ctx.Done():
+				d.logger.Warning("event dispatcher context done")
+				return
+			case obj, ok := <-d.ch:
+				if !ok {
+					d.logger.Warning("event dispatcher channel closed")
+					return
+				}
+				go func() {
+					defer d.logger.HandlePanic("event dispatcher")
+					for _, fn := range d.GetListeners(obj.event) {
+						if err := fn(obj.Payload, obj.event); err != nil {
+							d.logger.Error(err)
+						}
+					}
+				}()
+			}
+		}
+	}()
+	return nil
+}
+
+func (d *dispatcher) Shutdown(ctx context.Context) error {
+	d.logger.Info("[Event]: dispatcher shutdown")
+	d.cancel()
+	return nil
 }
 
 // Listen Register an event listener with the dispatcher.
-func (d *dispatcher) Listen(event contracts.Event, listener contracts.Listener) {
+func (d *dispatcher) Listen(event Event, listener Listener) {
 	d.Lock()
 	defer d.Unlock()
 
 	if listeners, ok := d.listeners[event]; ok {
 		d.listeners[event] = append(listeners, listener)
 	} else {
-		d.listeners[event] = []contracts.Listener{listener}
+		d.listeners[event] = []Listener{listener}
 	}
 }
 
 // HasListeners Determine if a given event has listeners.
-func (d *dispatcher) HasListeners(event contracts.Event) bool {
+func (d *dispatcher) HasListeners(event Event) bool {
 	d.RLock()
 	defer d.RUnlock()
 
@@ -43,31 +136,35 @@ func (d *dispatcher) HasListeners(event contracts.Event) bool {
 }
 
 // Dispatch Fire an event and call the listeners.
-func (d *dispatcher) Dispatch(event contracts.Event, payload any) error {
-	d.RLock()
-	defer d.RUnlock()
-	if listeners, ok := d.listeners[event]; ok {
-		for _, listener := range listeners {
-			if err := listener(payload, event); err != nil {
-				return err
-			}
-		}
+func (d *dispatcher) Dispatch(event Event, payload any) error {
+	select {
+	case d.ch <- &eventBody{
+		event:   event,
+		Payload: payload,
+	}:
+	default:
 	}
 
 	return nil
 }
 
-// Forget Remove a set of listeners from the dispatcher.
-func (d *dispatcher) Forget(event contracts.Event) {
+// Forget Shutdown a set of listeners from the dispatcher.
+func (d *dispatcher) Forget(event Event) {
 	d.Lock()
 	defer d.Unlock()
 	delete(d.listeners, event)
 }
 
-// GetListeners get all listeners by event.
-func (d *dispatcher) GetListeners(event contracts.Event) []contracts.Listener {
+// GetListeners get all listeners by
+func (d *dispatcher) GetListeners(event Event) []Listener {
 	d.RLock()
 	defer d.RUnlock()
 
 	return d.listeners[event]
+}
+
+func (d *dispatcher) List() map[Event][]Listener {
+	d.RLock()
+	defer d.RUnlock()
+	return d.listeners
 }

@@ -3,8 +3,25 @@ body {
   margin: 0;
 }
 
+@font-face {
+  font-family: "dank mono";
+  src: url("../assets/dankmono.ttf");
+  font-weight: normal;
+  font-style: normal;
+}
+
+a:-webkit-any-link {
+  text-decoration: none;
+}
+
 .draggable-modal .ant-modal-content {
-  width: 200px !important;
+  width: 100%;
+  height: 100%;
+}
+
+.ant-modal[role="dialog"] div[tabindex="-1"] {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .draggable-modal .ant-tabs-content {

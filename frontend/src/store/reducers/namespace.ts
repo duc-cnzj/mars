@@ -15,7 +15,7 @@ export const selectReloadNsID = (state: { namespace: namespaceState }) =>
 
 export default function namespace(
   state = initialState,
-  action: { type: string; data?: { reload: boolean; nsID: number } }
+  action: { type: string; data?: { reload: boolean; nsID: number } },
 ) {
   switch (action.type) {
     case SET_NAMESPACE_RELOAD:

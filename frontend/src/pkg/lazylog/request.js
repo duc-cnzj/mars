@@ -2,7 +2,7 @@ import mitt from "mitt";
 import { convertBufferToLines } from "./utils";
 
 const fetcher = Promise.resolve().then(() =>
-  "fetch" in self ? self.fetch : import("whatwg-fetch").then(() => self.fetch)
+  "fetch" in self ? self.fetch : import("whatwg-fetch").then(() => self.fetch),
 );
 
 export default (url, options) => {
@@ -13,7 +13,7 @@ export default (url, options) => {
       const fetch = await fetcher;
       const response = await fetch(
         url,
-        Object.assign({ credentials: "omit" }, options)
+        Object.assign({ credentials: "omit" }, options),
       );
 
       if (!response.ok) {

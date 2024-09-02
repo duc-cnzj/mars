@@ -1,65 +1,63 @@
 import React, { useState, useEffect, memo, useCallback } from "react";
 import { Form, Input, Button, Select, SelectProps, InputNumber } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
-import pb from "../../api/compiled";
 import TextArea from "antd/lib/input/TextArea";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { slice } from "lodash";
 import { css } from "@emotion/css";
+import { FormInstance } from "antd/lib";
+import { MarsElementType } from "../../api/schema.d";
 
-function isDefaultRequired(t: pb.mars.ElementType): boolean {
+function isDefaultRequired(t: MarsElementType): boolean {
   switch (t) {
-    case pb.mars.ElementType.ElementTypeInputNumber:
-    case pb.mars.ElementType.ElementTypeRadio:
-    case pb.mars.ElementType.ElementTypeNumberRadio:
-    case pb.mars.ElementType.ElementTypeSelect:
-    case pb.mars.ElementType.ElementTypeNumberSelect:
-    case pb.mars.ElementType.ElementTypeSwitch:
+    case MarsElementType.ElementTypeInputNumber:
+    case MarsElementType.ElementTypeRadio:
+    case MarsElementType.ElementTypeNumberRadio:
+    case MarsElementType.ElementTypeSelect:
+    case MarsElementType.ElementTypeNumberSelect:
+    case MarsElementType.ElementTypeSwitch:
       return true;
   }
   return false;
 }
 
-const DynamicElement: React.FC<{
-  disabled: boolean;
-}> = ({ disabled }) => {
-  const form = Form.useFormInstance();
+const DynamicElement: React.FC<{ form: FormInstance }> = ({ form }) => {
   const [isDragging, setIsDragging] = useState(false);
   const onDragEnd = useCallback(
     (result: any) => {
-      if (result.destination.index === result.source.index || disabled) {
+      if (result.destination.index === result.source.index) {
         return;
       }
 
       let deleteIdx = result.source.index;
-      let eles = form.getFieldValue("elements") as any[];
+      let eles = form.getFieldValue(["marsConfig", "elements"]) as any[];
       let n = [
         ...slice(
           eles,
           0,
           result.source.index > result.destination.index
             ? result.destination.index
-            : result.destination.index + 1
+            : result.destination.index + 1,
         ),
         eles[result.source.index],
         ...slice(
           eles,
           result.source.index > result.destination.index
             ? result.destination.index
-            : result.destination.index + 1
+            : result.destination.index + 1,
         ),
       ];
       n.splice(
         result.source.index > result.destination.index
           ? deleteIdx + 1
           : deleteIdx,
-        1
+        1,
       );
 
-      form.setFieldValue("elements", [...n]);
+      form.setFieldValue(["marsConfig", "elements"], [...n]);
       setIsDragging(false);
     },
-    [disabled, form]
+    [form],
   );
 
   return (
@@ -70,13 +68,16 @@ const DynamicElement: React.FC<{
       <Droppable droppableId="dynamic-elements">
         {(provided) => (
           <div ref={provided.innerRef} {...provided.droppableProps}>
-            <Form.List name="elements">
+            <Form.List name={["marsConfig", "elements"]}>
               {(fields, { add, remove }) => (
                 <>
                   {fields.map((field, index) => {
-                    const type = Number(
-                      form.getFieldValue(["elements", field.name, "type"])
-                    );
+                    const type = form.getFieldValue([
+                      "marsConfig",
+                      "elements",
+                      field.name,
+                      "type",
+                    ]);
                     return (
                       <Draggable
                         draggableId={String(field.name)}
@@ -116,10 +117,7 @@ const DynamicElement: React.FC<{
                                   label={"字段顺序"}
                                   name={[field.name, "order"]}
                                 >
-                                  <InputNumber
-                                    disabled={disabled}
-                                    placeholder="字段顺序"
-                                  />
+                                  <InputNumber placeholder="字段顺序" />
                                 </Form.Item>
                                 <Form.Item
                                   style={{ width: "100%" }}
@@ -129,10 +127,7 @@ const DynamicElement: React.FC<{
                                     { required: true, message: "字段路径必填" },
                                   ]}
                                 >
-                                  <Input
-                                    disabled={disabled}
-                                    placeholder="字段路径"
-                                  />
+                                  <Input placeholder="字段路径" />
                                 </Form.Item>
                                 <Form.Item
                                   style={{ width: "100%" }}
@@ -144,78 +139,70 @@ const DynamicElement: React.FC<{
                                 >
                                   <Select
                                     placeholder="选择类型"
-                                    disabled={disabled}
                                     onChange={(v) => {
-                                      let eles = form.getFieldValue("elements");
+                                      let eles = form.getFieldValue([
+                                        "marsConfig",
+                                        "elements",
+                                      ]);
                                       Object.assign(eles[field.name], {
                                         type: v,
                                       });
-                                      form.setFieldsValue({ elements: eles });
+                                      form.setFieldValue(
+                                        ["marsConfig", "elements"],
+                                        eles,
+                                      );
                                     }}
                                   >
                                     <Select.Option
-                                      value={
-                                        pb.mars.ElementType.ElementTypeUnknown
-                                      }
+                                      value={MarsElementType.ElementTypeUnknown}
                                     >
                                       未设置
                                     </Select.Option>
                                     <Select.Option
-                                      value={
-                                        pb.mars.ElementType.ElementTypeInput
-                                      }
+                                      value={MarsElementType.ElementTypeInput}
                                     >
                                       Input
                                     </Select.Option>
                                     <Select.Option
                                       value={
-                                        pb.mars.ElementType
-                                          .ElementTypeInputNumber
+                                        MarsElementType.ElementTypeInputNumber
                                       }
                                     >
                                       InputNumber
                                     </Select.Option>
                                     <Select.Option
                                       value={
-                                        pb.mars.ElementType.ElementTypeTextArea
+                                        MarsElementType.ElementTypeTextArea
                                       }
                                     >
                                       TextArea
                                     </Select.Option>
                                     <Select.Option
-                                      value={
-                                        pb.mars.ElementType.ElementTypeRadio
-                                      }
+                                      value={MarsElementType.ElementTypeRadio}
                                     >
                                       Radio
                                     </Select.Option>
                                     <Select.Option
                                       value={
-                                        pb.mars.ElementType
-                                          .ElementTypeNumberRadio
+                                        MarsElementType.ElementTypeNumberRadio
                                       }
                                     >
                                       Number Radio
                                     </Select.Option>
                                     <Select.Option
-                                      value={
-                                        pb.mars.ElementType.ElementTypeSelect
-                                      }
+                                      value={MarsElementType.ElementTypeSelect}
                                     >
                                       Select
                                     </Select.Option>
                                     <Select.Option
                                       value={
-                                        pb.mars.ElementType
-                                          .ElementTypeNumberSelect
+                                        MarsElementType.ElementTypeNumberSelect
                                       }
                                     >
                                       Number Select
                                     </Select.Option>
                                     <Select.Option
-                                      value={
-                                        pb.mars.ElementType.ElementTypeSwitch
-                                      }
+                                      value={MarsElementType.ElementTypeSwitch}
                                     >
                                       Switch
                                     </Select.Option>
@@ -223,13 +210,21 @@ const DynamicElement: React.FC<{
                                 </Form.Item>
 
                                 {type !==
-                                  pb.mars.ElementType.ElementTypeTextArea && (
+                                  MarsElementType.ElementTypeTextArea && (
                                   <Form.Item
                                     style={{ width: "100%" }}
                                     label="默认值"
                                     dependencies={[
-                                      ["elements", field.name, "type"],
-                                      ["elements", field.name, "select_values"],
+                                      [
+                                        ["marsConfig", "elements"],
+                                        field.name,
+                                        "type",
+                                      ],
+                                      [
+                                        ["marsConfig", "elements"],
+                                        field.name,
+                                        "selectValues",
+                                      ],
                                     ]}
                                     name={[field.name, "default"]}
                                     rules={[
@@ -240,26 +235,22 @@ const DynamicElement: React.FC<{
                                       ({ getFieldValue }) => ({
                                         validator(_, value) {
                                           const fieldType = getFieldValue([
-                                            "elements",
+                                            ["marsConfig", "elements"],
                                             field.name,
                                             "type",
                                           ]);
                                           const selectValues = getFieldValue([
-                                            "elements",
+                                            ["marsConfig", "elements"],
                                             field.name,
-                                            "select_values",
+                                            "selectValues",
                                           ]);
                                           let flag = false;
 
                                           switch (fieldType) {
-                                            case pb.mars.ElementType
-                                              .ElementTypeSelect:
-                                            case pb.mars.ElementType
-                                              .ElementTypeNumberSelect:
-                                            case pb.mars.ElementType
-                                              .ElementTypeRadio:
-                                            case pb.mars.ElementType
-                                              .ElementTypeNumberRadio:
+                                            case MarsElementType.ElementTypeSelect:
+                                            case MarsElementType.ElementTypeNumberSelect:
+                                            case MarsElementType.ElementTypeRadio:
+                                            case MarsElementType.ElementTypeNumberRadio:
                                               if (Array.isArray(selectValues)) {
                                                 for (const key in selectValues) {
                                                   if (
@@ -280,17 +271,14 @@ const DynamicElement: React.FC<{
                                           }
                                           return Promise.reject(
                                             new Error(
-                                              "default 默认值必须在选择器中"
-                                            )
+                                              "default 默认值必须在选择器中",
+                                            ),
                                           );
                                         },
                                       }),
                                     ]}
                                   >
-                                    <DefaultValueElement
-                                      disabled={disabled}
-                                      type={type}
-                                    />
+                                    <DefaultValueElement type={type} />
                                   </Form.Item>
                                 )}
                               </div>
@@ -303,10 +291,7 @@ const DynamicElement: React.FC<{
                                     { required: true, message: "字段描述必填" },
                                   ]}
                                 >
-                                  <Input
-                                    disabled={disabled}
-                                    placeholder="字段描述"
-                                  />
+                                  <Input placeholder="字段描述" />
                                 </Form.Item>
 
                                 <Form.Item
@@ -314,49 +299,48 @@ const DynamicElement: React.FC<{
                                     !(
                                       type &&
                                       (type ===
-                                        pb.mars.ElementType
-                                          .ElementTypeNumberSelect ||
+                                        MarsElementType.ElementTypeNumberSelect ||
                                         type ===
-                                          pb.mars.ElementType
-                                            .ElementTypeSelect ||
+                                          MarsElementType.ElementTypeSelect ||
                                         type ===
-                                          pb.mars.ElementType
-                                            .ElementTypeNumberRadio ||
+                                          MarsElementType.ElementTypeNumberRadio ||
                                         type ===
-                                          pb.mars.ElementType.ElementTypeRadio)
+                                          MarsElementType.ElementTypeRadio)
                                     )
                                   }
                                   style={{ width: "100%" }}
                                   label="选择器"
-                                  name={[field.name, "select_values"]}
+                                  name={[field.name, "selectValues"]}
                                 >
-                                  <MySelect disabled={disabled} />
+                                  <MySelect />
                                 </Form.Item>
                               </div>
-                              {type ===
-                                pb.mars.ElementType.ElementTypeTextArea && (
+                              {type === MarsElementType.ElementTypeTextArea && (
                                 <div style={{ display: "flex" }}>
                                   <Form.Item
                                     style={{ width: "100%" }}
                                     label="默认值"
                                     dependencies={[
-                                      ["elements", field.name, "type"],
-                                      ["elements", field.name, "select_values"],
+                                      [
+                                        ["marsConfig", "elements"],
+                                        field.name,
+                                        "type",
+                                      ],
+                                      [
+                                        ["marsConfig", "elements"],
+                                        field.name,
+                                        "selectValues",
+                                      ],
                                     ]}
                                     name={[field.name, "default"]}
                                   >
-                                    <DefaultValueElement
-                                      disabled={disabled}
-                                      type={type}
-                                    />
+                                    <DefaultValueElement type={type} />
                                   </Form.Item>
                                 </div>
                               )}
-                              {!disabled && (
-                                <MinusCircleOutlined
-                                  onClick={() => remove(field.name)}
-                                />
-                              )}
+                              <MinusCircleOutlined
+                                onClick={() => remove(field.name)}
+                              />
                             </div>
                           </div>
                         )}
@@ -366,7 +350,7 @@ const DynamicElement: React.FC<{
                   <Form.Item>
                     <Button
                       hidden={isDragging}
-                      disabled={disabled || isDragging}
+                      disabled={isDragging}
                       type="dashed"
                       onClick={() => add()}
                       block
@@ -406,20 +390,19 @@ const MySelect: React.FC<
 const DefaultValueElement: React.FC<{
   value?: any;
   onChange?: (v: any) => void;
-  type: pb.mars.ElementType;
-  disabled: boolean;
-}> = ({ type, disabled, value, onChange }) => {
+  type: MarsElementType;
+}> = ({ type, value, onChange }) => {
   const [t, setT] = useState(type);
   useEffect(() => {
     setT(type);
     if (t !== type) {
       switch (type) {
-        case pb.mars.ElementType.ElementTypeSwitch:
+        case MarsElementType.ElementTypeSwitch:
           if (value !== "false" || value !== "true") {
             onChange?.("false");
           }
           break;
-        case pb.mars.ElementType.ElementTypeInputNumber:
+        case MarsElementType.ElementTypeInputNumber:
           if (isNaN(Number(value))) {
             onChange?.("0");
           }
@@ -431,44 +414,27 @@ const DefaultValueElement: React.FC<{
   }, [type, t, value, onChange]);
 
   switch (t) {
-    case pb.mars.ElementType.ElementTypeInputNumber:
+    case MarsElementType.ElementTypeInputNumber:
       return (
         <InputNumber
-          disabled={disabled}
           value={value}
           onChange={(v) => onChange?.(String(v))}
           placeholder="默认值"
         />
       );
-    case pb.mars.ElementType.ElementTypeSwitch:
+    case MarsElementType.ElementTypeSwitch:
       return (
-        <Select
-          disabled={disabled}
-          value={value}
-          onChange={(v) => onChange?.(String(v))}
-        >
+        <Select value={value} onChange={(v) => onChange?.(String(v))}>
           <Select.Option value={"false"}>false</Select.Option>
           <Select.Option value={"true"}>true</Select.Option>
         </Select>
       );
-    case pb.mars.ElementType.ElementTypeTextArea:
+    case MarsElementType.ElementTypeTextArea:
       return (
-        <TextArea
-          disabled={disabled}
-          value={value}
-          onChange={onChange}
-          placeholder="默认值"
-        />
+        <TextArea value={value} onChange={onChange} placeholder="默认值" />
       );
     default:
-      return (
-        <Input
-          disabled={disabled}
-          value={value}
-          onChange={onChange}
-          placeholder="默认值"
-        />
-      );
+      return <Input value={value} onChange={onChange} placeholder="默认值" />;
   }
 };
 

@@ -47,7 +47,7 @@ func request_Endpoint_InNamespace_0(ctx context.Context, marshaler runtime.Marsh
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace_id")
 	}
 
-	protoReq.NamespaceId, err = runtime.Int64(val)
+	protoReq.NamespaceId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace_id", err)
 	}
@@ -73,7 +73,7 @@ func local_request_Endpoint_InNamespace_0(ctx context.Context, marshaler runtime
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace_id")
 	}
 
-	protoReq.NamespaceId, err = runtime.Int64(val)
+	protoReq.NamespaceId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace_id", err)
 	}
@@ -99,7 +99,7 @@ func request_Endpoint_InProject_0(ctx context.Context, marshaler runtime.Marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_id")
 	}
 
-	protoReq.ProjectId, err = runtime.Int64(val)
+	protoReq.ProjectId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}
@@ -125,7 +125,7 @@ func local_request_Endpoint_InProject_0(ctx context.Context, marshaler runtime.M
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_id")
 	}
 
-	protoReq.ProjectId, err = runtime.Int64(val)
+	protoReq.ProjectId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}

@@ -3,68 +3,79 @@ syntax = "proto3";
 package metrics;
 
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
 import "validate/validate.proto";
+import "openapi/v3/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/metrics;metrics";
+
+option go_package = "github.com/duc-cnzj/mars/api/v5/metrics;metrics";
 
 message TopPodRequest {
-  string namespace = 1 [(validate.rules).string.min_bytes = 1];
-  string pod = 2 [(validate.rules).string.min_bytes = 1];
+  string namespace = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string pod       = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
 }
 
 message TopPodResponse {
-  double cpu = 1;
-  double memory = 2;
-  string humanize_cpu = 3;
+  double cpu             = 1;
+  double memory          = 2;
+  string humanize_cpu    = 3;
   string humanize_memory = 4;
-  string time = 5;
-  int64 length = 6;
+  string time            = 5;
+  int32  length          = 6;
 }
 
 message CpuMemoryInNamespaceRequest {
-  int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
+  int32 namespace_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 
 message CpuMemoryInNamespaceResponse {
-  string cpu = 1;
+  string cpu    = 1;
   string memory = 2;
 }
 
 message CpuMemoryInProjectRequest {
-  int64 project_id = 1 [(validate.rules).int64.gt = 0];
+  int32 project_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 
 message CpuMemoryInProjectResponse {
-  string cpu = 1;
+  string cpu    = 1;
   string memory = 2;
 }
 
 service Metrics {
-  // CpuMemoryInNamespace 名称空间总共使用的 cpu memory
   rpc CpuMemoryInNamespace(CpuMemoryInNamespaceRequest) returns (CpuMemoryInNamespaceResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/metrics/namespace/{namespace_id}/cpu_memory"
     };
+    option (openapi.v3.operation) = {
+      summary: "名称空间总共使用的 cpu memory",
+    };
   }
 
-  // CpuMemoryInProject 项目空间总共使用的 cpu memory
   rpc CpuMemoryInProject(CpuMemoryInProjectRequest) returns (CpuMemoryInProjectResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/metrics/projects/{project_id}/cpu_memory"
     };
-  }
-
-  //  TopPod 获取 pod 的 cpu memory 信息
-  rpc TopPod(TopPodRequest) returns (TopPodResponse) {
-    option (google.api.http) = {
-      get: "/api/metrics/namespace/{namespace}/pods/{pod}",
+    option (openapi.v3.operation) = {
+      summary: "项目空间总共使用的 cpu memory",
     };
   }
 
-  //  StreamTopPod stream 的方式获取 pod 的 cpu memory 信息
+  rpc TopPod(TopPodRequest) returns (TopPodResponse) {
+    option (google.api.http)                                               = {
+      get: "/api/metrics/namespace/{namespace}/pods/{pod}",
+    };
+    option (openapi.v3.operation) = {
+      summary: "获取 pod 的 cpu memory 信息",
+    };
+  }
+
   rpc StreamTopPod(TopPodRequest) returns (stream TopPodResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/metrics/namespace/{namespace}/pods/{pod}/stream",
+    };
+    option (openapi.v3.operation) = {
+      summary: "stream 的方式获取 pod 的 cpu memory 信息",
     };
   }
 }

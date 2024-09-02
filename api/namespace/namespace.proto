@@ -2,84 +2,136 @@ syntax = "proto3";
 
 package namespace;
 
+import "google/api/field_behavior.proto";
 import "google/api/annotations.proto";
 import "types/types.proto";
 import "validate/validate.proto";
+import "openapi/v3/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/namespace;namespace";
+option go_package = "github.com/duc-cnzj/mars/api/v5/namespace;namespace";
 
 message CreateRequest {
-  string namespace = 1 [(validate.rules).string.min_bytes = 1];
+  string namespace        = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   // 已存在则忽略，不会报错
-  bool ignore_if_exists = 2;
+  bool   ignore_if_exists = 2;
+  string description      = 3;
+}
+message CreateResponse {
+  types.NamespaceModel item   = 1;
+  bool                 exists = 2;
 }
 
 message ShowRequest {
-  int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
+  int64 id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
-
-message DeleteRequest {
-  int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
+message ShowResponse {
+  types.NamespaceModel item = 1;
 }
 
 message IsExistsRequest {
-  string name = 1 [(validate.rules).string.min_bytes = 1];
+  string name = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
 }
-
-message AllResponse {
-  repeated types.NamespaceModel items = 1;
-}
-
-message CreateResponse {
-  types.NamespaceModel namespace = 1;
-  bool exists = 2;
-}
-
-message ShowResponse {
-  types.NamespaceModel namespace = 1;
-}
-
 message IsExistsResponse {
-  bool exists = 1;
-  int64 id = 2;
+  int64 id     = 1;
+  bool  exists = 2;
 }
-message AllRequest {}
+
+message DeleteRequest {
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
 message DeleteResponse {}
 
+message FavoriteRequest{
+  int32 id       = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  bool  favorite = 2;
+}
+message FavoriteResponse{}
+
+message UpdateDescRequest{
+  int32  id   = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  string desc = 2;
+}
+message UpdateDescResponse{
+  types.NamespaceModel item = 1;
+}
+
+message ListRequest {
+  optional int32  page      = 1;
+  optional int32  page_size = 2;
+  bool            favorite  = 3;
+  optional string name      = 4;
+}
+message ListResponse {
+  repeated types.NamespaceModel items     = 1;
+  int32                         count     = 2;
+  int32                         page      = 3;
+  int32                         page_size = 4;
+}
 service Namespace {
-  // All 获取所有的名称空间
-  rpc All(AllRequest) returns (AllResponse) {
-    option (google.api.http) = {
+  rpc List(ListRequest) returns (ListResponse) {
+    option (google.api.http)      = {
       get: "/api/namespaces"
+    };
+    option (openapi.v3.operation) = {
+      summary: "分页获取名称空间",
     };
   }
 
-  // Create 创建名称空间
   rpc Create(CreateRequest) returns (CreateResponse) {
-    option (google.api.http) = {
+    option (google.api.http)      = {
       post: "/api/namespaces",
       body: "*"
     };
+    option (openapi.v3.operation) = {
+      summary: "创建名称空间",
+    };
   }
 
-  // Show 查看名称空间详情
   rpc Show(ShowRequest) returns (ShowResponse) {
-    option (google.api.http) = {
-      get: "/api/namespaces/{namespace_id}"
+    option (google.api.http)      = {
+      get: "/api/namespaces/{id}"
+    };
+    option (openapi.v3.operation) = {
+      summary: "查看名称空间详情",
     };
   }
 
-  // Delete 删除名称空间
+  rpc UpdateDesc(UpdateDescRequest) returns (UpdateDescResponse) {
+    option (google.api.http)      = {
+      post: "/api/namespaces/{id}/update_desc",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "更新空间描述信息",
+    };
+  }
+
   rpc Delete(DeleteRequest) returns (DeleteResponse) {
-    option (google.api.http) = {
-      delete: "/api/namespaces/{namespace_id}"
+    option (google.api.http)      = {
+      delete: "/api/namespaces/{id}"
+    };
+    option (openapi.v3.operation) = {
+      summary: "删除名称空间",
     };
   }
 
-  // IsExists 名称空间是否存在
   rpc IsExists(IsExistsRequest) returns (IsExistsResponse) {
-    option (google.api.http) = {
+    option (google.api.http)      = {
       post: "/api/namespaces/exists"
+    };
+    option (openapi.v3.operation) = {
+      summary: "IsExists 名称空间是否存在",
+    };
+  }
+
+  rpc Favorite(FavoriteRequest) returns (FavoriteResponse) {
+    option (google.api.http)      = {
+      post: "/api/namespaces/favorite",
+      body: "*"
+    };
+
+    option (openapi.v3.operation) = {
+      summary: "关注/取消关注",
     };
   }
 }

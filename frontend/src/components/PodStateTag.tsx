@@ -1,11 +1,13 @@
 import React, { memo } from "react";
-import pb from "../api/compiled";
 import { Tag } from "antd";
 import { SyncOutlined, LoadingOutlined } from "@ant-design/icons";
 import { css } from "@emotion/css";
 import theme from "../styles/theme";
-const PodStateTag: React.FC<{ pod: pb.types.StateContainer }> = ({ pod }) => {
-  if (pod.is_old) {
+import { components } from "../api/schema";
+const PodStateTag: React.FC<{
+  pod: components["schemas"]["types.StateContainer"];
+}> = ({ pod }) => {
+  if (pod.isOld) {
     return (
       <Tag
         icon={<SyncOutlined spin />}
@@ -41,7 +43,7 @@ const PodStateTag: React.FC<{ pod: pb.types.StateContainer }> = ({ pod }) => {
     );
   }
 
-  if (!pod.is_old && !pod.ready) {
+  if (!pod.isOld && !pod.ready) {
     return (
       <Tag
         icon={<SyncOutlined spin />}

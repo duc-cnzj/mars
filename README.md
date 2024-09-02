@@ -5,7 +5,7 @@
 
 <div align="center">
 
-[![codecov](https://codecov.io/gh/duc-cnzj/mars/branch/master/graph/badge.svg?token=EUSLRBT6NN)](https://codecov.io/gh/duc-cnzj/mars) [![unittest](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml/badge.svg)](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml) [![Release](https://img.shields.io/github/release/duc-cnzj/mars.svg)](https://github.com/duc-cnzj/mars/releases/latest) [![GitHub license](https://img.shields.io/github/license/duc-cnzj/mars)](https://github.com/duc-cnzj/mars/blob/master/LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/duc-cnzj/mars/v4)](https://goreportcard.com/report/github.com/duc-cnzj/mars/v4)
+[![codecov](https://codecov.io/gh/duc-cnzj/mars/branch/master/graph/badge.svg?token=EUSLRBT6NN)](https://codecov.io/gh/duc-cnzj/mars) [![unittest](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml/badge.svg)](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml) [![Release](https://img.shields.io/github/release/duc-cnzj/mars.svg)](https://github.com/duc-cnzj/mars/releases/latest) [![GitHub license](https://img.shields.io/github/license/duc-cnzj/mars)](https://github.com/duc-cnzj/mars/blob/master/LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/duc-cnzj/mars/v5)](https://goreportcard.com/report/github.com/duc-cnzj/mars/v5)
 
 </div>
 
@@ -31,9 +31,10 @@
 - 插件化
   - 队列驱动: ws_sender_nsq, ws_sender_redis, ws_sender_memory
   - 证书驱动: manual_domain_manager, cert-manager_domain_manager, sync_secret_domain_manager
-  - 代码仓库支持: gitlab, github
+  - 代码仓库支持: gitlab ~~github~~
   - 背景图: picture_cartoon，picture_bing
-- sdk 接入: [go](https://github.com/duc-cnzj/mars-client)。
+- sdk 接入:
+  - [grpc-go-sdk](https://github.com/duc-cnzj/mars-client)
 
 ## 🛠️ 使用文档
 
@@ -67,14 +68,14 @@ web 页面配置项目，开启全局配置。
 ## 🍀 go-sdk 接入
 
 ```
-go get -u github.com/duc-cnzj/mars/api/v4
+go get -u github.com/duc-cnzj/mars/api/v5
 ```
 
 ```golang
 package main
 
 import (
-  client "github.com/duc-cnzj/mars/api/v4"
+  client "github.com/duc-cnzj/mars/api/v5"
 )
 
 func main()  {

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 export const useDrag = (
   x: number,
   y: number,
-  onDrag: (args: { x: number; y: number }) => void
+  onDrag: (args: { x: number; y: number }) => void,
 ): ((e: React.MouseEvent) => void) => {
   const [dragging, setDragging] = useState(false);
   const [initialDragState, setInitialDragState] = useState({
@@ -25,7 +25,7 @@ export const useDrag = (
       });
       setDragging(true);
     },
-    [x, y, setDragging, setInitialDragState]
+    [x, y, setDragging, setInitialDragState],
   );
 
   useEffect(() => {

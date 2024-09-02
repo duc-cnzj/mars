@@ -6,12 +6,14 @@ import {
   ClockCircleTwoTone,
 } from "@ant-design/icons";
 import { Tooltip } from "antd";
-import pb from "../api/compiled";
+import { TypesProjectModelDeployStatus } from "../api/schema.d";
 
-const DeployStatus: React.FC<{ status: pb.types.Deploy }> = ({ status }) => {
+const DeployStatus: React.FC<{ status: TypesProjectModelDeployStatus }> = ({
+  status,
+}) => {
   return (
     <>
-      {status === pb.types.Deploy.StatusUnknown && (
+      {status === TypesProjectModelDeployStatus.StatusUnknown && (
         <Tooltip
           placement="top"
           overlayStyle={{ fontSize: "10px" }}
@@ -27,7 +29,7 @@ const DeployStatus: React.FC<{ status: pb.types.Deploy }> = ({ status }) => {
           />
         </Tooltip>
       )}
-      {status === pb.types.Deploy.StatusDeployed && (
+      {status === TypesProjectModelDeployStatus.StatusDeployed && (
         <CheckCircleTwoTone
           twoToneColor="#52c41a"
           style={{
@@ -38,7 +40,7 @@ const DeployStatus: React.FC<{ status: pb.types.Deploy }> = ({ status }) => {
         />
       )}
 
-      {status === pb.types.Deploy.StatusDeploying && (
+      {status === TypesProjectModelDeployStatus.StatusDeploying && (
         <Tooltip
           placement="top"
           overlayStyle={{ fontSize: "10px" }}
@@ -55,7 +57,7 @@ const DeployStatus: React.FC<{ status: pb.types.Deploy }> = ({ status }) => {
         </Tooltip>
       )}
 
-      {status === pb.types.Deploy.StatusFailed && (
+      {status === TypesProjectModelDeployStatus.StatusFailed && (
         <CloseCircleTwoTone
           twoToneColor="#eb4d4b"
           style={{

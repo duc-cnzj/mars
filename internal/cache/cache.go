@@ -1,31 +1,76 @@
 package cache
 
 import (
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"fmt"
+	"time"
+
+	"github.com/duc-cnzj/mars/v5/internal/config"
+	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	gocache "github.com/patrickmn/go-cache"
 
 	"golang.org/x/sync/singleflight"
 )
 
-type Cache struct {
-	store contracts.Store
-	sf    *singleflight.Group
+type Store interface {
+	Get(key string) (value []byte, err error)
+	Set(key string, value []byte, expireSeconds int) (err error)
+	Delete(key string) error
 }
 
-func NewCache(store contracts.Store, sf *singleflight.Group) contracts.CacheInterface {
-	return &Cache{store: store, sf: sf}
+type CacheKey interface {
+	String() string
+	Slug() string
+}
+
+type Cache interface {
+	SetWithTTL(key CacheKey, value []byte, seconds int) error
+	Remember(key CacheKey, seconds int, fn func() ([]byte, error), force bool) ([]byte, error)
+	Clear(key CacheKey) error
+	Store() Store
+}
+
+type cacheImpl struct {
+	store  Store
+	sf     *singleflight.Group
+	logger mlog.Logger
+}
+
+func NewCacheImpl(cfg *config.Config, data data.Data, logger mlog.Logger, sf *singleflight.Group) (ca Cache) {
+	logger = logger.WithModule("cache/cacheImpl")
+
+	switch cfg.CacheDriver {
+	case "memory":
+		ca = newCache(
+			NewGoCacheAdapter(
+				gocache.New(5*time.Minute, 10*time.Minute),
+			),
+			logger,
+			sf,
+		)
+	case "db":
+		ca = newCache(NewDBStore(data), logger, sf)
+	default:
+		ca = &NoCache{}
+	}
+	return newMetricsForCache(ca)
+}
+
+func newCache(store Store, logger mlog.Logger, sf *singleflight.Group) Cache {
+	return &cacheImpl{store: store, sf: sf, logger: logger}
 }
 
 // Remember TODO
-func (c *Cache) Remember(key contracts.CacheKeyInterface, seconds int, fn func() ([]byte, error)) ([]byte, error) {
-	do, err, _ := c.sf.Do("CacheRemember:"+key.String(), func() (any, error) {
+func (c *cacheImpl) Remember(key CacheKey, seconds int, fn func() ([]byte, error), force bool) ([]byte, error) {
+	sfKey := fmt.Sprintf("CacheRemember:%v-%v", key.String(), force)
+	do, err, _ := c.sf.Do(sfKey, func() (any, error) {
 		if seconds <= 0 {
 			return fn()
 		}
 
 		res, err := c.store.Get(key.String())
-		mlog.Debugf("CacheRemember: %s, from cache: %t", key, err == nil)
-		if err == nil {
+		c.logger.Debugf("CacheRemember: %s, from cacheImpl: %t", key, err == nil)
+		if err == nil && !force {
 			return res, nil
 		}
 		res, err = fn()
@@ -35,7 +80,7 @@ func (c *Cache) Remember(key contracts.CacheKeyInterface, seconds int, fn func()
 		// 设置缓存阶段不管它有没有成功，我 fn() 都是成功的，所以需要返回
 		err = c.SetWithTTL(key, res, seconds)
 		if err != nil {
-			mlog.Errorf("[CACHE MISSING]: key %s err %v", key, err)
+			c.logger.Errorf("[CACHE MISSING]: key %s err %v", key, err)
 		}
 		return res, nil
 	})
@@ -48,16 +93,16 @@ func (c *Cache) Remember(key contracts.CacheKeyInterface, seconds int, fn func()
 }
 
 // SetWithTTL TODO
-func (c *Cache) SetWithTTL(key contracts.CacheKeyInterface, value []byte, seconds int) error {
+func (c *cacheImpl) SetWithTTL(key CacheKey, value []byte, seconds int) error {
 	return c.store.Set(key.String(), value, seconds)
 }
 
 // Clear TODO
-func (c *Cache) Clear(key contracts.CacheKeyInterface) error {
+func (c *cacheImpl) Clear(key CacheKey) error {
 	return c.store.Delete(key.String())
 }
 
 // Store TODO
-func (c *Cache) Store() contracts.Store {
+func (c *cacheImpl) Store() Store {
 	return c.store
 }

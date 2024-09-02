@@ -1,0 +1,6 @@
+app_port: 6000
+debug: false
+imagepullsecrets:
+  - username: "jack"
+    password: "12345"
+    email: "jack@example.com"

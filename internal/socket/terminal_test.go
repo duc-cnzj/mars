@@ -3,144 +3,417 @@ package socket
 import (
 	"context"
 	"errors"
-	"sync"
 	"testing"
 	"time"
 
+	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/v5/internal/application"
+	"github.com/duc-cnzj/mars/v5/internal/auth"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-
-	"github.com/duc-cnzj/mars/api/v4/types"
-	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
-	"github.com/duc-cnzj/mars/v4/internal/mock"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
-	"github.com/duc-cnzj/mars/v4/internal/testutil"
 )
 
-func TestHandleExecShell(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := testutil.MockApp(m)
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
-		Client:     nil,
-		RestConfig: nil,
-	}).AnyTimes()
+func TestIsValidShell(t *testing.T) {
+	validShells := []string{"bash", "sh", "powershell", "cmd"}
 
-	sess := mock.NewMockSessionMapper(m)
-	c := &WsConn{
-		newExecutorFunc: func() contracts.RemoteExecutor {
-			return nil
-		},
-		user:   contracts.UserInfo{Name: "duc"},
-		pubSub: &plugins.EmptyPubSub{},
+	assert.True(t, isValidShell(validShells, "bash"))
+	assert.True(t, isValidShell(validShells, "sh"))
+	assert.True(t, isValidShell(validShells, "powershell"))
+	assert.True(t, isValidShell(validShells, "cmd"))
+	assert.False(t, isValidShell(validShells, "invalidShell"))
+}
+
+func TestSilence(t *testing.T) {
+	assert.True(t, silence(errors.New("command terminated with exit code 126")))
+	assert.True(t, silence(errors.New("command terminated with exit code 130")))
+	assert.False(t, silence(errors.New("command terminated with exit code 131")))
+}
+
+func TestCheckSessionID(t *testing.T) {
+	container := &websocket_pb.Container{
+		Namespace: "namespace",
+		Pod:       "pod",
+		Container: "container",
 	}
-	c.terminalSessions = sess
-	pty := mock.NewMockPtyHandler(m)
-	sess.EXPECT().Set(gomock.Any(), gomock.Any()).Times(1)
-	sess.EXPECT().Get(gomock.Any()).Return(pty, true).AnyTimes()
-	pty.EXPECT().IsClosed().Return(true).AnyTimes()
-	sess.EXPECT().Close(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
-	shell, e := HandleExecShell(&websocket_pb.WsHandleExecShellInput{
-		Type: 0,
-		Container: &types.Container{
-			Namespace: "ns",
-			Pod:       "pod",
-			Container: "c",
-		},
-		SessionId: "ns-pod-c:xxxx",
-	}, c)
-	assert.Nil(t, e)
-	assert.NotEmpty(t, shell)
-	time.Sleep(1 * time.Second)
-
-	_, err := HandleExecShell(&websocket_pb.WsHandleExecShellInput{
-		Type: 0,
-		Container: &types.Container{
-			Namespace: "ns",
-			Pod:       "pod",
-			Container: "c",
-		},
-		SessionId: "xxxx",
-	}, c)
-	assert.Equal(t, "invalid session id, must format: '<namespace>-<pod>-<container>:<randomID>', input: 'xxxx'", err.Error())
+	assert.True(t, checkSessionID(container, "namespace-pod-container:randomID"))
+	assert.False(t, checkSessionID(container, "invalidSessionID"))
 }
 
-type closeEqualMatcher struct {
-	gomock.Matcher
+func TestSizeStore(t *testing.T) {
+	s := &sizeStore{}
+
+	s.Set(10, 20)
+	assert.Equal(t, uint16(10), s.Cols())
+	assert.Equal(t, uint16(20), s.Rows())
+	assert.True(t, s.Changed(11, 20))
+	assert.False(t, s.Changed(10, 20))
+
+	s.ResetTerminalRowCol(true)
+	assert.True(t, s.TerminalRowColNeedReset())
+	s.ResetTerminalRowCol(false)
+	assert.False(t, s.TerminalRowColNeedReset())
 }
 
-func (c closeEqualMatcher) Matches(x any) bool {
-	response := x.(*websocket_pb.WsHandleShellResponse)
-	return response.Metadata.Type == WsHandleCloseShell
+func TestContainer(t *testing.T) {
+	container := &repo.Container{
+		Namespace: "namespace",
+		Pod:       "pod",
+		Container: "container",
+	}
+	pty := &myPtyHandler{
+		container: container,
+	}
+	assert.Equal(t, container, pty.Container())
 }
 
-func TestMyPtyHandler_Close(t *testing.T) {
+func TestMyPtyHandler_SetShell(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := testutil.MockApp(m)
-	app.EXPECT().Uploader().Return(nil).AnyTimes()
-	app.EXPECT().LocalUploader().Return(nil).AnyTimes()
-	ps := mock.NewMockPubSub(m)
+	recorder := repo.NewMockRecorder(m)
+	pty := &myPtyHandler{
+		recorder: recorder,
+	}
+	recorder.EXPECT().SetShell("bash")
+	pty.SetShell("bash")
+}
+
+func TestMyPtyHandler_IsClosed(t *testing.T) {
+	pty := &myPtyHandler{}
+	assert.False(t, pty.IsClosed())
+	pty.Closeable.Close()
+	assert.True(t, pty.IsClosed())
+}
+
+func TestMyPtyHandler_sizeStore(t *testing.T) {
+	pty := &myPtyHandler{
+		sizeStore: &sizeStore{},
+	}
+	pty.ResetTerminalRowCol(true)
+	assert.True(t, pty.sizeStore.TerminalRowColNeedReset())
+	pty.ResetTerminalRowCol(false)
+	assert.False(t, pty.sizeStore.TerminalRowColNeedReset())
+	assert.Equal(t, uint16(0), pty.sizeStore.Cols())
+	assert.Equal(t, uint16(0), pty.sizeStore.Rows())
+}
+
+func TestMyPtyHandler_Read(t *testing.T) {
+	pty := &myPtyHandler{
+		doneChan: make(chan struct{}),
+		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
+	}
+	pty.shellCh <- &websocket_pb.TerminalMessage{Op: OpStdin, Data: []byte("data")}
+	p := make([]byte, 4)
+	n, err := pty.Read(p)
+	assert.NoError(t, err)
+	assert.Equal(t, 4, n)
+	assert.Equal(t, "data", string(p))
+}
+
+func TestMyPtyHandler_Toast(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	conn := NewMockConn(m)
+	pty := &myPtyHandler{
+		conn:      conn,
+		container: &repo.Container{},
+	}
+	conn.EXPECT().ID().Return("id")
+	conn.EXPECT().UID().Return("uid")
+	sub := application.NewMockPubSub(m)
+	conn.EXPECT().PubSub().Return(sub)
+	sub.EXPECT().ToSelf(gomock.Any())
+
+	assert.NoError(t, pty.Toast("message"))
+}
+
+func TestSessionMap_Get(t *testing.T) {
+	logger := mlog.NewLogger(nil)
+	sm := NewSessionMap(logger)
+	session := &myPtyHandler{}
+	sm.Set("testSession", session)
+
+	retrievedSession, ok := sm.Get("testSession")
+	assert.True(t, ok)
+	assert.Equal(t, session, retrievedSession)
+
+	_, ok = sm.Get("nonExistentSession")
+	assert.False(t, ok)
+}
+
+func TestSessionMap_Set(t *testing.T) {
+	logger := mlog.NewLogger(nil)
+	sm := NewSessionMap(logger)
+	session := &myPtyHandler{}
+
+	sm.Set("testSession", session)
+	retrievedSession, ok := sm.Get("testSession")
+
+	assert.True(t, ok)
+	assert.Equal(t, session, retrievedSession)
+}
+
+type testPtyHandler struct {
+	PtyHandler
+}
+
+func (*testPtyHandler) Close(context.Context, string) bool {
+	return true
+}
+
+func (*testPtyHandler) IsClosed() bool {
+	return false
+}
+
+func TestSessionMap_CloseAll(t *testing.T) {
+	logger := mlog.NewLogger(nil)
+	sm := NewSessionMap(logger)
+	session1 := &testPtyHandler{}
+	session2 := &testPtyHandler{}
+
+	sm.Set("session1", session1)
+	sm.Set("session2", session2)
+
+	sm.CloseAll(context.TODO())
+
+	_, ok := sm.Get("session1")
+	assert.False(t, ok)
+
+	_, ok = sm.Get("session2")
+	assert.False(t, ok)
+}
+
+func TestSessionMap_Close(t *testing.T) {
+	logger := mlog.NewLogger(nil)
+	sm := NewSessionMap(logger)
+	session := &testPtyHandler{}
+
+	sm.Set("testSession", session)
+	sm.Close(context.TODO(), "testSession", 0, "testReason")
+
+	_, ok := sm.Get("testSession")
+	assert.False(t, ok)
+}
+
+func TestWebsocketManager_startProcess(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	sRepo := repo.NewMockK8sRepo(m)
+	ws := &WebsocketManager{
+		k8sRepo: sRepo,
+	}
+	c := &repo.Container{}
+	h := &testPtyHandler{}
+	sRepo.EXPECT().Execute(gomock.Any(), c, &repo.ExecuteInput{
+		Stdin:             h,
+		Stdout:            h,
+		Stderr:            h,
+		TTY:               true,
+		Cmd:               []string{},
+		TerminalSizeQueue: h,
+	})
+	ws.startProcess(context.TODO(), c, []string{}, h)
+}
+
+func TestWebsocketManager_WaitForTerminal(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	sRepo := repo.NewMockK8sRepo(m)
+	conn := NewMockConn(m)
+	ws := &WebsocketManager{
+		k8sRepo: sRepo,
+		logger:  mlog.NewLogger(nil),
+	}
+	c := &repo.Container{}
+	handler := NewMockPtyHandler(m)
+	handler.EXPECT().Toast(gomock.Any())
+	conn.EXPECT().ClosePty(gomock.Any(), "sid", uint32(2), "x")
+	conn.EXPECT().GetPtyHandler("sid").Return(handler, true)
+	handler.EXPECT().SetShell("sh")
+	sRepo.EXPECT().Execute(gomock.Any(), c, gomock.Any()).Return(errors.New("x"))
+	ws.WaitForTerminal(context.TODO(), conn, c, "sh", "sid")
+}
+
+func TestWebsocketManager_WaitForTerminal2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	sRepo := repo.NewMockK8sRepo(m)
+	conn := NewMockConn(m)
+	ws := &WebsocketManager{
+		k8sRepo: sRepo,
+		logger:  mlog.NewLogger(nil),
+	}
+	c := &repo.Container{}
+	handler := NewMockPtyHandler(m)
+	conn.EXPECT().ClosePty(gomock.Any(), "sid", uint32(1), "Process exited")
+	conn.EXPECT().GetPtyHandler("sid").Return(handler, true)
+	handler.EXPECT().SetShell("bash")
+	handler.EXPECT().IsClosed().Return(false)
+	sRepo.EXPECT().Execute(gomock.Any(), c, gomock.Any()).Return(nil)
+	ws.WaitForTerminal(context.TODO(), conn, c, "xsh", "sid")
+}
+
+func TestWebsocketManager_WaitForTerminal3(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	sRepo := repo.NewMockK8sRepo(m)
+	conn := NewMockConn(m)
+	ws := &WebsocketManager{
+		k8sRepo: sRepo,
+		logger:  mlog.NewLogger(nil),
+	}
+	c := &repo.Container{}
+	handler := NewMockPtyHandler(m)
+	conn.EXPECT().ClosePty(gomock.Any(), "sid", uint32(1), "Process exited")
+	conn.EXPECT().GetPtyHandler("sid").Return(handler, true)
+	handler.EXPECT().IsClosed().Return(true)
+	ws.WaitForTerminal(context.TODO(), conn, c, "xsh", "sid")
+}
+
+type testRecorder struct {
+	repo.Recorder
+}
+
+func Test_resetSession(t *testing.T) {
+	t.Parallel()
+	old := &myPtyHandler{
+		container: &repo.Container{
+			Namespace: "a",
+			Pod:       "b",
+			Container: "c",
+		},
+		recorder:  &testRecorder{},
+		sessionID: "id",
+		conn:      &WsConn{},
+		doneChan:  make(chan struct{}, 1),
+		sizeChan:  make(chan remotecommand.TerminalSize, 10),
+		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
+		sizeStore: &sizeStore{cols: 10, rows: 10},
+	}
+	session := (&WebsocketManager{
+		logger: mlog.NewLogger(nil),
+	}).resetSession(old).(*myPtyHandler)
+
+	assert.Equal(t, old.sessionID, session.sessionID)
+	assert.Equal(t, old.container, session.container)
+	assert.Same(t, old.recorder, session.recorder)
+	assert.Same(t, old.conn, session.conn)
+
+	assert.Equal(t, old.sizeStore.Cols(), session.sizeStore.Cols())
+	assert.Equal(t, old.sizeStore.Rows(), session.sizeStore.Rows())
+	assert.True(t, session.sizeStore.TerminalRowColNeedReset())
+
+	assert.NotEqual(t, old.shellCh, session.shellCh)
+	assert.NotEqual(t, old.sizeChan, session.sizeChan)
+	assert.NotEqual(t, old.doneChan, session.doneChan)
+}
+
+func Test_resetSession4(t *testing.T) {
+	t.Parallel()
+	old := &myPtyHandler{
+		container: &repo.Container{
+			Namespace: "a",
+			Pod:       "b",
+			Container: "c",
+		},
+		recorder:  &testRecorder{},
+		sessionID: "id",
+		conn:      &WsConn{},
+		doneChan:  make(chan struct{}, 1),
+		sizeChan:  make(chan remotecommand.TerminalSize, 10),
+		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
+		sizeStore: &sizeStore{cols: 10, rows: 10},
+	}
+	session := (&WebsocketManager{
+		logger: mlog.NewLogger(nil),
+	}).resetSession(old).(*myPtyHandler)
+	assert.NotSame(t, session, old)
+	old.CloseDoneChan()
+	session = (&WebsocketManager{
+		logger: mlog.NewLogger(nil),
+	}).resetSession(old).(*myPtyHandler)
+	assert.Same(t, session, old)
+}
+
+func Test_resetSession1(t *testing.T) {
+	t.Parallel()
+	old := &myPtyHandler{
+		container: &repo.Container{
+			Namespace: "a",
+			Pod:       "b",
+			Container: "c",
+		},
+		recorder:  &testRecorder{},
+		sessionID: "id",
+		conn:      &WsConn{},
+		doneChan:  make(chan struct{}, 1),
+		sizeChan:  make(chan remotecommand.TerminalSize, 10),
+		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
+		sizeStore: &sizeStore{},
+	}
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		old.sizeStore.Set(100, 100)
+	}()
+	session := (&WebsocketManager{
+		logger: mlog.NewLogger(nil),
+	}).resetSession(old).(*myPtyHandler)
+
+	assert.Equal(t, uint16(100), session.sizeStore.Cols())
+	assert.Equal(t, uint16(100), session.sizeStore.Rows())
+}
+
+func Test_resetSession2(t *testing.T) {
+	t.Parallel()
+	old := &myPtyHandler{
+		container: &repo.Container{
+			Namespace: "a",
+			Pod:       "b",
+			Container: "c",
+		},
+		recorder:  &testRecorder{},
+		sessionID: "id",
+		conn:      &WsConn{},
+		doneChan:  make(chan struct{}, 1),
+		sizeChan:  make(chan remotecommand.TerminalSize, 10),
+		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
+		sizeStore: &sizeStore{},
+	}
+	go func() {
+		time.Sleep(4 * time.Second)
+		old.sizeStore.Set(100, 100)
+	}()
+	session := (&WebsocketManager{
+		logger: mlog.NewLogger(nil),
+	}).resetSession(old).(*myPtyHandler)
+
+	assert.Equal(t, uint16(106), session.sizeStore.Cols())
+	assert.Equal(t, uint16(25), session.sizeStore.Rows())
+}
+
+func TestMyPtyHandler_Next_DoneChan(t *testing.T) {
 	p := &myPtyHandler{
-		id:       "duc",
-		conn:     &WsConn{pubSub: ps},
-		recorder: &recorder{},
+		recorder: &testRecorder{},
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
-		shellCh:  make(chan *websocket_pb.TerminalMessage, 2),
 		doneChan: make(chan struct{}),
 	}
-	assert.False(t, p.IsClosed())
-	assert.Len(t, p.shellCh, 0)
-	ps.EXPECT().ToSelf(&closeEqualMatcher{}).Times(1)
-	p.Close("aaaa")
-	assert.True(t, p.IsClosed())
-	p.Close("aaaa")
-	assert.Len(t, p.shellCh, 2)
-	a := <-p.shellCh
-	assert.Equal(t, ETX, a.Data)
-	b := <-p.shellCh
-	assert.Equal(t, END_OF_TRANSMISSION, b.Data)
-	defaultTimes := 0
-	select {
-	case <-p.shellCh:
-	default:
-		defaultTimes++
-	}
-	select {
-	case <-p.sizeChan:
-	default:
-		defaultTimes++
-	}
-	assert.Equal(t, 2, defaultTimes)
-	_, ok := <-p.doneChan
-	assert.False(t, ok)
-	p.Send(nil)
-	p.Resize(remotecommand.TerminalSize{Width: 1, Height: 1})
-	select {
-	case <-p.shellCh:
-	default:
-		defaultTimes++
-	}
-	select {
-	case <-p.sizeChan:
-	default:
-		defaultTimes++
-	}
-	assert.Equal(t, 2, defaultTimes)
+
+	close(p.doneChan)
+	assert.Nil(t, p.Next())
 }
 
 func TestMyPtyHandler_Next(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	r := mock.NewMockRecorderInterface(m)
+	r := repo.NewMockRecorder(m)
 	p := &myPtyHandler{
-		recorder: r,
-		sizeChan: make(chan remotecommand.TerminalSize, 1),
-		doneChan: make(chan struct{}),
+		recorder:  r,
+		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
 	}
 	r.EXPECT().Resize(uint16(10), uint16(20)).Times(1)
 	p.Resize(remotecommand.TerminalSize{
@@ -167,16 +440,18 @@ func TestMyPtyHandler_Next(t *testing.T) {
 	assert.Equal(t, uint16(200), p.sizeStore.Rows())
 
 	p2 := &myPtyHandler{
-		sizeChan: make(chan remotecommand.TerminalSize, 1),
-		doneChan: make(chan struct{}),
+		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
 	}
 	close(p2.doneChan)
 	p2.Resize(remotecommand.TerminalSize{})
 	assert.Len(t, p2.sizeChan, 0)
 
 	p3 := &myPtyHandler{
-		sizeChan: make(chan remotecommand.TerminalSize, 1),
-		doneChan: make(chan struct{}),
+		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
 	}
 	assert.Nil(t, p3.Resize(remotecommand.TerminalSize{}))
 	assert.Equal(t, "sizeChan chan full", p3.Resize(remotecommand.TerminalSize{}).Error())
@@ -185,39 +460,30 @@ func TestMyPtyHandler_Next(t *testing.T) {
 	assert.Len(t, p3.sizeChan, 1)
 }
 
-func TestMyPtyHandler_Next_DoneChan(t *testing.T) {
+func TestMyPtyHandler_Read2(t *testing.T) {
 	p := &myPtyHandler{
-		recorder: &recorder{},
-		sizeChan: make(chan remotecommand.TerminalSize, 1),
-		doneChan: make(chan struct{}),
-	}
-
-	close(p.doneChan)
-	assert.Nil(t, p.Next())
-}
-
-func TestMyPtyHandler_Read(t *testing.T) {
-	p := &myPtyHandler{
-		id:       "duc",
-		recorder: &recorder{},
-		sizeChan: make(chan remotecommand.TerminalSize, 1),
-		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
-		doneChan: make(chan struct{}),
+		sessionID: "duc",
+		recorder:  &testRecorder{},
+		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		shellCh:   make(chan *websocket_pb.TerminalMessage, 1),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
+		logger:    mlog.NewLogger(nil),
 	}
 	b := make([]byte, 1024)
-	p.Send(&websocket_pb.TerminalMessage{
+	p.Send(context.TODO(), &websocket_pb.TerminalMessage{
 		Op:   OpStdin,
 		Data: []byte("hello duc"),
 	})
 	n, _ := p.Read(b)
 	assert.Equal(t, "hello duc", string(b[0:n]))
-	p.Send(&websocket_pb.TerminalMessage{
+	p.Send(context.TODO(), &websocket_pb.TerminalMessage{
 		Op:   OpResize,
 		Rows: 10,
 		Cols: 20,
 	})
 	p.Read(b)
-	p.Send(&websocket_pb.TerminalMessage{
+	p.Send(context.TODO(), &websocket_pb.TerminalMessage{
 		Op:   OpResize,
 		Rows: 10,
 		Cols: 20,
@@ -225,7 +491,7 @@ func TestMyPtyHandler_Read(t *testing.T) {
 	n, _ = p.Read(b)
 	assert.Equal(t, 0, n)
 	assert.Len(t, p.sizeChan, 1)
-	p.Send(&websocket_pb.TerminalMessage{
+	p.Send(context.TODO(), &websocket_pb.TerminalMessage{
 		Op: "xxxx",
 	})
 	n, err := p.Read(b)
@@ -240,11 +506,13 @@ func TestMyPtyHandler_Read(t *testing.T) {
 	assert.Greater(t, n, 0)
 
 	p2 := &myPtyHandler{
-		id:       "duc",
-		recorder: &recorder{},
-		sizeChan: make(chan remotecommand.TerminalSize, 1),
-		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
-		doneChan: make(chan struct{}),
+		sessionID: "duc",
+		recorder:  &testRecorder{},
+		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		shellCh:   make(chan *websocket_pb.TerminalMessage, 1),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
+		logger:    mlog.NewLogger(nil),
 	}
 	close(p2.doneChan)
 	bv := make([]byte, 100)
@@ -253,71 +521,171 @@ func TestMyPtyHandler_Read(t *testing.T) {
 	assert.Equal(t, END_OF_TRANSMISSION, bv[:i])
 
 	p3 := &myPtyHandler{
-		id:       "duc",
-		recorder: &recorder{},
-		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
-		doneChan: make(chan struct{}),
+		sessionID: "duc",
+		recorder:  &testRecorder{},
+		shellCh:   make(chan *websocket_pb.TerminalMessage, 1),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
+		logger:    mlog.NewLogger(nil),
 	}
 	assert.Len(t, p3.shellCh, 0)
-	assert.Nil(t, p3.Send(nil))
-	assert.Equal(t, "shellCh chan full", p3.Send(nil).Error())
+	assert.Nil(t, p3.Send(context.TODO(), nil))
+	assert.Nil(t, p3.Send(context.TODO(), nil))
 	close(p3.doneChan)
-	assert.Equal(t, "doneChan closed", p3.Send(nil).Error())
+	assert.Equal(t, "doneChan closed", p3.Send(context.TODO(), nil).Error())
 	assert.Len(t, p3.shellCh, 1)
 }
 
-func TestMyPtyHandler_Recorder(t *testing.T) {
-	p := &myPtyHandler{
-		recorder: &recorder{},
+func Test_sizeStore_Changed(t *testing.T) {
+	t.Parallel()
+	ss := sizeStore{
+		cols:  0,
+		rows:  0,
+		reset: false,
 	}
-	assert.Implements(t, (*contracts.RecorderInterface)(nil), p.Recorder())
+	assert.True(t, ss.Changed(100, 100))
+	ss.Set(100, 100)
+	assert.False(t, ss.Changed(100, 100))
+	assert.True(t, ss.Changed(100, 0))
+	assert.True(t, ss.Changed(0, 100))
 }
 
-func TestMyPtyHandler_SetShell(t *testing.T) {
-	p := &myPtyHandler{
-		recorder: &recorder{},
-	}
-	p.SetShell("xxx")
-	assert.Equal(t, "xxx", p.recorder.GetShell())
-}
-
-func TestMyPtyHandler_Toast(t *testing.T) {
+func TestMyPtyHandler_Close(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	ps := mock.NewMockPubSub(m)
+	recorder := repo.NewMockRecorder(m)
+	ps := application.NewMockPubSub(m)
+	eventRepo := repo.NewMockEventRepo(m)
 	p := &myPtyHandler{
-		conn: &WsConn{pubSub: ps},
-		id:   "aaa",
+		sessionID: "duc",
+		conn:      &WsConn{pubSub: ps},
+		recorder:  recorder,
+		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		shellCh:   make(chan *websocket_pb.TerminalMessage, 2),
+		doneChan:  make(chan struct{}),
+		container: &repo.Container{},
+		eventRepo: eventRepo,
+		logger:    mlog.NewLogger(nil),
 	}
+	eventRepo.EXPECT().FileAuditLogWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	recorder.EXPECT().User().Return(&auth.UserInfo{})
+	recorder.EXPECT().Duration().Return(time.Second)
+	recorder.EXPECT().Container().Return(&repo.Container{}).AnyTimes()
+	recorder.EXPECT().File().Return(&repo.File{ID: 1})
+	recorder.EXPECT().Close().Return(errors.New("x"))
+	assert.False(t, p.IsClosed())
+	assert.Len(t, p.shellCh, 0)
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
-	p.Toast("xxx")
+	p.Close(context.TODO(), "aaaa")
+	assert.True(t, p.IsClosed())
+	p.Close(context.TODO(), "aaaa")
+	assert.Len(t, p.shellCh, 2)
+	a := <-p.shellCh
+	assert.Equal(t, ETX, a.Data)
+	b := <-p.shellCh
+	assert.Equal(t, END_OF_TRANSMISSION, b.Data)
+	defaultTimes := 0
+	select {
+	case <-p.shellCh:
+	default:
+		defaultTimes++
+	}
+	select {
+	case <-p.sizeChan:
+	default:
+		defaultTimes++
+	}
+	assert.Equal(t, 2, defaultTimes)
+	_, ok := <-p.doneChan
+	assert.False(t, ok)
+	p.Send(context.TODO(), nil)
+	p.Resize(remotecommand.TerminalSize{Width: 1, Height: 1})
+	select {
+	case <-p.shellCh:
+	default:
+		defaultTimes++
+	}
+	select {
+	case <-p.sizeChan:
+	default:
+		defaultTimes++
+	}
+	assert.Equal(t, 2, defaultTimes)
 }
 
 func TestMyPtyHandler_Write(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	ps := mock.NewMockPubSub(m)
-	r := mock.NewMockRecorderInterface(m)
+	recorder := repo.NewMockRecorder(m)
+	conn := NewMockConn(m)
+	pty := &myPtyHandler{
+		sessionID: "sid",
+		conn:      conn,
+		logger:    mlog.NewLogger(nil),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{cols: 10, rows: 10},
+		recorder:  recorder,
+		container: &repo.Container{
+			Namespace: "a",
+			Pod:       "b",
+			Container: "c",
+		},
+	}
+	sub := application.NewMockPubSub(m)
+	sub.EXPECT().ToSelf(&websocket_pb.WsHandleShellResponse{
+		Metadata: &websocket_pb.Metadata{
+			Id:     "id",
+			Uid:    "uid",
+			Slug:   "sid",
+			Type:   WsHandleExecShellMsg,
+			Result: ResultSuccess,
+		},
+		TerminalMessage: &websocket_pb.TerminalMessage{
+			Op:        OpStdout,
+			Data:      []byte("data"),
+			SessionId: "sid",
+		},
+		Container: &websocket_pb.Container{
+			Namespace: "a",
+			Pod:       "b",
+			Container: "c",
+		},
+	})
+	assert.Same(t, recorder, pty.Recorder())
+	conn.EXPECT().PubSub().Return(sub)
+	conn.EXPECT().ID().Return("id")
+	conn.EXPECT().UID().Return("uid")
+	recorder.EXPECT().Write([]byte("data")).Return(0, errors.New("x"))
+	n, err := pty.Write([]byte("data"))
+	assert.NoError(t, err)
+	assert.Equal(t, 4, n)
+}
+
+func TestMyPtyHandler_Write3(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := application.NewMockPubSub(m)
+	r := repo.NewMockRecorder(m)
 	p := &myPtyHandler{
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
-		sizeStore: sizeStore{
+		sizeStore: &sizeStore{
 			cols:  106,
 			rows:  25,
 			reset: true,
 		},
-		id:       "duc",
-		conn:     &WsConn{pubSub: ps},
-		recorder: r,
-		doneChan: make(chan struct{}),
+		sessionID: "duc",
+		container: &repo.Container{},
+		logger:    mlog.NewLogger(nil),
+		conn:      &WsConn{pubSub: ps},
+		recorder:  r,
+		doneChan:  make(chan struct{}),
 	}
-	r.EXPECT().Write("aaa").Times(1)
+	r.EXPECT().Write([]byte("aaa")).Times(1)
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
 	n, err := p.Write([]byte("aaa"))
 	assert.Nil(t, err)
 	assert.Equal(t, 3, n)
-	p.closeMu.Lock()
-	p.closed = true
-	p.closeMu.Unlock()
+	p.Closeable.Close()
 	n, err = p.Write([]byte("aaa"))
 	assert.Equal(t, "[Websocket]: duc ws already closed", err.Error())
 	assert.Equal(t, 3, n)
@@ -335,21 +703,23 @@ func TestMyPtyHandler_Write(t *testing.T) {
 func TestMyPtyHandler_Write_with_chan_full(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	ps := mock.NewMockPubSub(m)
-	r := mock.NewMockRecorderInterface(m)
+	ps := application.NewMockPubSub(m)
+	r := repo.NewMockRecorder(m)
 	p := &myPtyHandler{
 		sizeChan: make(chan remotecommand.TerminalSize),
-		sizeStore: sizeStore{
+		sizeStore: &sizeStore{
 			cols:  106,
 			rows:  25,
 			reset: true,
 		},
-		id:       "duc",
-		conn:     &WsConn{pubSub: ps},
-		recorder: r,
-		doneChan: make(chan struct{}),
+		container: &repo.Container{},
+		sessionID: "duc",
+		logger:    mlog.NewLogger(nil),
+		conn:      &WsConn{pubSub: ps},
+		recorder:  r,
+		doneChan:  make(chan struct{}),
 	}
-	r.EXPECT().Write("aaa").Times(1)
+	r.EXPECT().Write([]byte("aaa")).Times(1)
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
 	// 会走 default，没有 select 会卡住
 	n, err := p.Write([]byte("aaa"))
@@ -358,455 +728,63 @@ func TestMyPtyHandler_Write_with_chan_full(t *testing.T) {
 	assert.Equal(t, 3, n)
 }
 
-func TestSessionMap_Close(t *testing.T) {
-	t.Parallel()
+func TestStartShell_WithValidSessionID(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	p1 := mock.NewMockPtyHandler(m)
-	p2 := mock.NewMockPtyHandler(m)
-	sm := sessionMap{
-		sessLock: sync.RWMutex{},
-		Sessions: map[string]contracts.PtyHandler{},
+
+	conn := NewMockConn(m)
+	fileRepo := repo.NewMockFileRepo(m)
+	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any())
+	conn.EXPECT().GetUser().Return(&auth.UserInfo{})
+	ws := &WebsocketManager{
+		logger:   mlog.NewLogger(nil),
+		fileRepo: fileRepo,
 	}
-	sm.Set("p1", p1)
-	sm.Set("p2", p2)
-	p1.EXPECT().Close("err")
-	sm.Close("p1", 0, "err")
+
+	input := &websocket_pb.WsHandleExecShellInput{
+		Container: &websocket_pb.Container{
+			Namespace: "namespace",
+			Pod:       "pod",
+			Container: "container",
+		},
+		SessionId: "namespace-pod-container:randomID",
+	}
+
+	conn.EXPECT().SetPtyHandler(input.SessionId, gomock.Any())
+	conn.EXPECT().GetPtyHandler(input.SessionId).Return(nil, false)
+
+	sessionID, err := ws.StartShell(context.Background(), input, conn)
 	time.Sleep(1 * time.Second)
+	assert.NoError(t, err)
+	assert.Equal(t, input.SessionId, sessionID)
 }
 
-func TestSessionMap_CloseAll(t *testing.T) {
-	t.Parallel()
+func TestStartShell_WithInvalidSessionID(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	p1 := mock.NewMockPtyHandler(m)
-	p2 := mock.NewMockPtyHandler(m)
-	sm := sessionMap{
-		sessLock: sync.RWMutex{},
-		Sessions: map[string]contracts.PtyHandler{},
-	}
-	sm.Set("p1", p1)
-	sm.Set("p2", p2)
-	assert.Len(t, sm.Sessions, 2)
-	p1.EXPECT().Close("websocket conn closed")
-	p2.EXPECT().Close("websocket conn closed")
-	sm.CloseAll()
-	assert.Len(t, sm.Sessions, 0)
-}
 
-func TestSessionMap_Send(t *testing.T) {
-	t.Parallel()
-	sm := sessionMap{
-		sessLock: sync.RWMutex{},
-		Sessions: map[string]contracts.PtyHandler{},
+	conn := NewMockConn(m)
+	ws := &WebsocketManager{
+		logger: mlog.NewLogger(nil),
 	}
-	ch := make(chan *websocket_pb.TerminalMessage, 1)
-	sm.Set("a", &myPtyHandler{
-		shellCh: ch,
-	})
-	assert.Len(t, ch, 0)
-	sm.Send(&websocket_pb.TerminalMessage{
-		Data:      []byte("aa"),
-		SessionId: "a",
-	})
-	assert.Len(t, ch, 1)
-	sm.Send(&websocket_pb.TerminalMessage{
-		Data:      []byte("aa"),
-		SessionId: "a",
-	})
-	assert.Len(t, ch, 1)
-}
 
-func TestSessionMap_Set(t *testing.T) {
-	t.Parallel()
-	sm := sessionMap{
-		sessLock: sync.RWMutex{},
-		Sessions: map[string]contracts.PtyHandler{},
-	}
-	p := &myPtyHandler{}
-	sm.Set("a", p)
-	get, _ := sm.Get("a")
-	assert.Same(t, p, get)
-}
-
-func TestWaitForTerminal(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	r := mock.NewMockRemoteExecutor(m)
-	r.EXPECT().WithContainer(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(r)
-	r.EXPECT().WithCommand(gomock.Any()).Times(1).Return(r)
-	r.EXPECT().WithMethod(gomock.Any()).Times(1).Return(r)
-	r.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-	c := &WsConn{
-		newExecutorFunc: func() contracts.RemoteExecutor {
-			return r
+	input := &websocket_pb.WsHandleExecShellInput{
+		Container: &websocket_pb.Container{
+			Namespace: "namespace",
+			Pod:       "pod",
+			Container: "container",
 		},
+		SessionId: "invalidSessionID",
 	}
-	c.terminalSessions = NewSessionMap(c)
-	pty := mock.NewMockPtyHandler(m)
-	pty.EXPECT().SetShell("bash").Times(1)
-	pty.EXPECT().Close("Process exited").Times(1)
-	c.terminalSessions.Set("session_id", pty)
-	WaitForTerminal(c, nil, nil, &contracts.Container{}, "bash", "session_id")
-	assert.Len(t, c.terminalSessions.(*sessionMap).Sessions, 0)
-	c.terminalSessions.CloseAll()
+
+	_, err := ws.StartShell(context.Background(), input, conn)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid session sessionID")
 }
 
-func TestWaitForTerminalUnsetShell(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	r := mock.NewMockRemoteExecutor(m)
-	c := &WsConn{
-		newExecutorFunc: func() contracts.RemoteExecutor {
-			return r
-		},
-	}
-	c.terminalSessions = NewSessionMap(c)
-	pty := mock.NewMockPtyHandler(m)
-	pty.EXPECT().SetShell(gomock.Any()).Times(0)
-	pty.EXPECT().IsClosed().Return(true)
-	pty.EXPECT().Close("Process exited").Times(1)
-	c.terminalSessions.Set("session_id", pty)
-	WaitForTerminal(c, nil, nil, &contracts.Container{}, "", "session_id")
-	assert.Len(t, c.terminalSessions.(*sessionMap).Sessions, 0)
-	c.terminalSessions.CloseAll()
-}
-
-func TestWaitForTerminalUnsetShell2(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	r := mock.NewMockRemoteExecutor(m)
-	r.EXPECT().WithContainer(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(r)
-	r.EXPECT().WithCommand(gomock.Any()).Times(1).Return(r)
-	r.EXPECT().WithMethod(gomock.Any()).Times(1).Return(r)
-	r.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-	c := &WsConn{
-		newExecutorFunc: func() contracts.RemoteExecutor {
-			return r
-		},
-	}
-	c.terminalSessions = NewSessionMap(c)
-	pty := mock.NewMockPtyHandler(m)
-	pty.EXPECT().IsClosed().Return(false).Times(1)
-	pty.EXPECT().SetShell("bash").Times(1)
-	pty.EXPECT().Close("Process exited").Times(1)
-	c.terminalSessions.Set("session_id", pty)
-	WaitForTerminal(c, nil, nil, &contracts.Container{}, "", "session_id")
-	assert.Len(t, c.terminalSessions.(*sessionMap).Sessions, 0)
-	c.terminalSessions.CloseAll()
-}
-
-func TestWaitForTerminalReturnError(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	r := mock.NewMockRemoteExecutor(m)
-	r.EXPECT().WithContainer(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(r)
-	r.EXPECT().WithCommand(gomock.Any()).Times(1).Return(r)
-	r.EXPECT().WithMethod(gomock.Any()).Times(1).Return(r)
-	r.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("xxx"))
-	c := &WsConn{
-		newExecutorFunc: func() contracts.RemoteExecutor {
-			return r
-		},
-	}
-	c.terminalSessions = NewSessionMap(c)
-	pty := mock.NewMockPtyHandler(m)
-	pty.EXPECT().SetShell("bash").Times(1)
-	pty.EXPECT().Toast("xxx").Times(1)
-	pty.EXPECT().Close("xxx").Times(1)
-	c.terminalSessions.Set("session_id", pty)
-	WaitForTerminal(c, nil, nil, &contracts.Container{}, "bash", "session_id")
-	assert.Len(t, c.terminalSessions.(*sessionMap).Sessions, 0)
-	c.terminalSessions.CloseAll()
-}
-
-func TestWaitForTerminalReturnErrorSilence(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	r := mock.NewMockRemoteExecutor(m)
-	r.EXPECT().WithContainer(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(r)
-	r.EXPECT().WithCommand(gomock.Any()).Times(1).Return(r)
-	r.EXPECT().WithMethod(gomock.Any()).Times(1).Return(r)
-	r.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("command terminated with exit code 126"))
-	c := &WsConn{
-		newExecutorFunc: func() contracts.RemoteExecutor {
-			return r
-		},
-	}
-	c.terminalSessions = NewSessionMap(c)
-	pty := mock.NewMockPtyHandler(m)
-	pty.EXPECT().SetShell("bash").Times(1)
-	pty.EXPECT().Toast(gomock.Any()).Times(0)
-	pty.EXPECT().Close("command terminated with exit code 126").Times(1)
-	c.terminalSessions.Set("session_id", pty)
-	WaitForTerminal(c, nil, nil, &contracts.Container{}, "bash", "session_id")
-	assert.Len(t, c.terminalSessions.(*sessionMap).Sessions, 0)
-	c.terminalSessions.CloseAll()
-}
-
-func Test_isValidShell(t *testing.T) {
-	t.Parallel()
-	assert.False(t, isValidShell([]string{"bash"}, "sh"))
-	assert.True(t, isValidShell([]string{"bash", "sh"}, "sh"))
-}
-
-func Test_silence(t *testing.T) {
-	t.Parallel()
-	assert.True(t, silence(errors.New("command terminated with exit code 126")))
-	assert.False(t, silence(errors.New("command terminated with exit code 127")))
-}
-
-func Test_startProcess(t *testing.T) {}
-
-func Test_sizeStore_Changed(t *testing.T) {
-	t.Parallel()
-	ss := sizeStore{
-		cols:  0,
-		rows:  0,
-		reset: false,
-	}
-	assert.True(t, ss.Changed(100, 100))
-	ss.Set(100, 100)
-	assert.False(t, ss.Changed(100, 100))
-	assert.True(t, ss.Changed(100, 0))
-	assert.True(t, ss.Changed(0, 100))
-}
-
-func TestMyPtyHandler_Rows(t *testing.T) {
-	t.Parallel()
-	assert.Equal(t, uint16(0), (&myPtyHandler{}).Rows())
-	assert.Equal(t, uint16(100), (&myPtyHandler{sizeStore: sizeStore{rows: 100}}).Rows())
-}
-
-func TestMyPtyHandler_Cols(t *testing.T) {
-	t.Parallel()
-	assert.Equal(t, uint16(0), (&myPtyHandler{}).Cols())
-	assert.Equal(t, uint16(100), (&myPtyHandler{sizeStore: sizeStore{cols: 100}}).Cols())
-}
-
-func Test_resetSession(t *testing.T) {
-	t.Parallel()
-	old := &myPtyHandler{
-		container: contracts.Container{
-			Namespace: "a",
-			Pod:       "b",
-			Container: "c",
-		},
-		recorder:  &recorder{},
-		id:        "id",
-		conn:      &WsConn{},
-		doneChan:  make(chan struct{}, 1),
-		sizeChan:  make(chan remotecommand.TerminalSize, 10),
-		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
-		sizeStore: sizeStore{cols: 10, rows: 10},
-	}
-	session := resetSession(old).(*myPtyHandler)
-
-	assert.Equal(t, old.id, session.id)
-	assert.Equal(t, old.container, session.container)
-	assert.Same(t, old.recorder, session.recorder)
-	assert.Same(t, old.conn, session.conn)
-
-	assert.Equal(t, old.sizeStore.Cols(), session.sizeStore.Cols())
-	assert.Equal(t, old.sizeStore.Rows(), session.sizeStore.Rows())
-	assert.True(t, session.sizeStore.TerminalRowColNeedReset())
-
-	assert.NotEqual(t, old.shellCh, session.shellCh)
-	assert.NotEqual(t, old.sizeChan, session.sizeChan)
-	assert.NotEqual(t, old.doneChan, session.doneChan)
-}
-func Test_resetSession4(t *testing.T) {
-	t.Parallel()
-	old := &myPtyHandler{
-		container: contracts.Container{
-			Namespace: "a",
-			Pod:       "b",
-			Container: "c",
-		},
-		recorder:  &recorder{},
-		id:        "id",
-		conn:      &WsConn{},
-		doneChan:  make(chan struct{}, 1),
-		sizeChan:  make(chan remotecommand.TerminalSize, 10),
-		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
-		sizeStore: sizeStore{cols: 10, rows: 10},
-	}
-	session := resetSession(old).(*myPtyHandler)
-	assert.NotSame(t, session, old)
-	old.CloseDoneChan()
-	session = resetSession(old).(*myPtyHandler)
-	assert.Same(t, session, old)
-}
-
-func Test_resetSession1(t *testing.T) {
-	t.Parallel()
-	old := &myPtyHandler{
-		container: contracts.Container{
-			Namespace: "a",
-			Pod:       "b",
-			Container: "c",
-		},
-		recorder: &recorder{},
-		id:       "id",
-		conn:     &WsConn{},
-		doneChan: make(chan struct{}, 1),
-		sizeChan: make(chan remotecommand.TerminalSize, 10),
-		shellCh:  make(chan *websocket_pb.TerminalMessage, 10),
-	}
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		old.sizeStore.Set(100, 100)
-	}()
-	session := resetSession(old).(*myPtyHandler)
-
-	assert.Equal(t, uint16(100), session.sizeStore.Cols())
-	assert.Equal(t, uint16(100), session.sizeStore.Rows())
-}
-
-func Test_resetSession2(t *testing.T) {
-	t.Parallel()
-	old := &myPtyHandler{
-		container: contracts.Container{
-			Namespace: "a",
-			Pod:       "b",
-			Container: "c",
-		},
-		recorder: &recorder{},
-		id:       "id",
-		conn:     &WsConn{},
-		doneChan: make(chan struct{}, 1),
-		sizeChan: make(chan remotecommand.TerminalSize, 10),
-		shellCh:  make(chan *websocket_pb.TerminalMessage, 10),
-	}
-	go func() {
-		time.Sleep(4 * time.Second)
-		old.sizeStore.Set(100, 100)
-	}()
-	session := resetSession(old).(*myPtyHandler)
-
-	assert.Equal(t, uint16(106), session.sizeStore.Cols())
-	assert.Equal(t, uint16(25), session.sizeStore.Rows())
-}
-
-func TestMyPtyHandler_ResetTerminalRowCol(t *testing.T) {
-	pty := &myPtyHandler{}
-	pty.ResetTerminalRowCol(true)
-	assert.True(t, pty.sizeStore.TerminalRowColNeedReset())
-	pty.ResetTerminalRowCol(false)
-	assert.False(t, pty.sizeStore.TerminalRowColNeedReset())
-}
-
-func TestMyPtyHandler_ClosePreviousChannels(t *testing.T) {
-	pty := &myPtyHandler{
-		sizeChan: make(chan remotecommand.TerminalSize, 1),
-		doneChan: make(chan struct{}, 1),
-		shellCh:  make(chan *websocket_pb.TerminalMessage),
-	}
-	assert.True(t, pty.CloseDoneChan())
-	assert.False(t, pty.CloseDoneChan())
-	assert.True(t, pty.IsClosed())
-	defaultTimes := 0
-	select {
-	case <-pty.shellCh:
-	default:
-		defaultTimes++
-	}
-	select {
-	case <-pty.sizeChan:
-	default:
-		defaultTimes++
-	}
-	assert.Equal(t, 2, defaultTimes)
-	_, ok := <-pty.doneChan
-	assert.False(t, ok)
-	pty.Send(nil)
-	pty.Resize(remotecommand.TerminalSize{Width: 1, Height: 1})
-	select {
-	case <-pty.shellCh:
-	default:
-		defaultTimes++
-	}
-	select {
-	case <-pty.sizeChan:
-	default:
-		defaultTimes++
-	}
-	assert.Equal(t, 2, defaultTimes)
-}
-
-func Test_startProcess1(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	e := mock.NewMockRemoteExecutor(m)
-	pty := &myPtyHandler{}
-	cfg := &rest.Config{}
-	e.EXPECT().WithMethod("POST").Return(e)
-	e.EXPECT().WithCommand([]string{"ls"}).Return(e)
-	e.EXPECT().WithContainer("ns", "pod", "c").Return(e)
-	e.EXPECT().Execute(context.TODO(), nil, cfg, pty, pty, pty, true, pty).Return(nil)
-	assert.Nil(t, startProcess(e, nil, cfg, &contracts.Container{
-		Namespace: "ns",
-		Pod:       "pod",
-		Container: "c",
-	}, []string{"ls"}, pty))
-}
-
-func Test_checkSessionID(t *testing.T) {
-	var tests = []struct {
-		c     *types.Container
-		id    string
-		wants bool
-	}{
-		{
-			c: &types.Container{
-				Namespace: "ns",
-				Pod:       "pod",
-				Container: "c",
-			},
-			id:    "xxxx",
-			wants: false,
-		},
-		{
-			c: &types.Container{
-				Namespace: "ns",
-				Pod:       "pod",
-				Container: "c",
-			},
-			id:    "ns-pod-c:xx",
-			wants: true,
-		},
-		{
-			c: &types.Container{
-				Namespace: "ns",
-				Pod:       "pod",
-				Container: "c",
-			},
-			id:    "ns-pod-c:",
-			wants: true,
-		},
-		{
-			c: &types.Container{
-				Namespace: "ns",
-				Pod:       "pod",
-				Container: "c",
-			},
-			id:    "ns-pod-c",
-			wants: false,
-		},
-		{
-			c: &types.Container{
-				Namespace: "ns",
-				Pod:       "pod",
-				Container: "c",
-			},
-			id:    "ns-c-pod",
-			wants: false,
-		},
-	}
-	for _, test := range tests {
-		tt := test
-		t.Run("", func(t *testing.T) {
-			assert.Equal(t, tt.wants, checkSessionID(tt.c, tt.id))
-		})
-	}
+func Test_myPtyHandler_Send(t *testing.T) {
+	ctx, cancelFunc := context.WithCancel(context.TODO())
+	cancelFunc()
+	assert.Equal(t, context.Canceled, (&myPtyHandler{}).Send(ctx, nil))
 }

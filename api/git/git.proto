@@ -3,53 +3,33 @@ syntax = "proto3";
 package git;
 
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
 import "validate/validate.proto";
-import "mars/mars.proto";
+import "openapi/v3/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/api/v4/git;git";
-
-message EnableProjectRequest {
-  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
-}
-
-message DisableProjectRequest {
-  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
-}
-
-message ProjectItem {
-  int64 id = 1;
-  string name = 2;
-  string path = 3;
-  string web_url = 4;
-  string avatar_url = 5;
-  string description = 6;
-  bool enabled = 7;
-  bool global_enabled = 8;
-  string display_name = 9;
-}
-
-message AllResponse {
-  repeated ProjectItem items = 1;
-}
+option go_package = "github.com/duc-cnzj/mars/api/v5/git;git";
 
 message Option {
-  string value = 1;
-  string label = 2;
-  string type = 3;
-  // isLeaf 兼容 antd
-  bool isLeaf = 4;
-  string gitProjectId = 5;
-  string branch = 6;
-  string display_name = 7;
+  string value          = 1;
+  string label          = 2;
+  string type           = 3;
+  bool   is_leaf        = 4;
+  int32  git_project_id = 5;
+  string branch         = 6;
+  bool   need_git_repo  = 7;
+  string description    = 8;
 }
 
+message ProjectOptionsRequest {}
 message ProjectOptionsResponse {
   repeated Option items = 1;
 }
 
 message BranchOptionsRequest {
-  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
-  bool all = 2;
+  int32 git_project_id = 1 [(validate.rules).int32.gt = 0];
+
+  // 如果传入 repo_id, 就会根据 mars 配置过滤分支
+  int32 repo_id        = 2;
 }
 
 message BranchOptionsResponse {
@@ -57,8 +37,8 @@ message BranchOptionsResponse {
 }
 
 message CommitOptionsRequest {
-  string git_project_id = 1;
-  string branch = 2;
+  int32  git_project_id = 1 [(validate.rules).int32.gt = 0];
+  string branch         = 2;
 }
 
 message CommitOptionsResponse {
@@ -66,120 +46,121 @@ message CommitOptionsResponse {
 }
 
 message CommitRequest {
-  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
-  string branch = 2 [(validate.rules).string.min_bytes = 1];
-  string commit = 3 [(validate.rules).string.min_bytes = 1];
+  int32  git_project_id = 1 [(validate.rules).int32.gt = 0];
+  string branch         = 2 [(validate.rules).string.min_bytes = 1];
+  string commit         = 3 [(validate.rules).string.min_bytes = 1];
 }
 
 message CommitResponse {
-  string id = 1;
-  string short_id = 2;
-  string git_project_id = 3;
+  string id              = 1;
+  string short_id        = 2;
+  int32  git_project_id  = 3;
 
-  string label = 4;
-  string title = 5;
-  string branch = 6;
-  string author_name = 7;
-  string author_email = 8;
-  string committer_name = 9;
+  string label           = 4;
+  string title           = 5;
+  string branch          = 6;
+  string author_name     = 7;
+  string author_email    = 8;
+  string committer_name  = 9;
   string committer_email = 10;
-  string web_url = 11;
-  string message = 12;
+  string web_url         = 11;
+  string message         = 12;
 
-  string committed_date = 13;
-  string created_at = 14;
+  string committed_date  = 13;
+  string created_at      = 14;
 }
 
 message PipelineInfoRequest {
   string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
-  string branch = 2 [(validate.rules).string.min_bytes = 1];
-  string commit = 3 [(validate.rules).string.min_bytes = 1];
+  string branch         = 2 [(validate.rules).string.min_bytes = 1];
+  string commit         = 3 [(validate.rules).string.min_bytes = 1];
 }
 
 message PipelineInfoResponse {
-  string status = 1;
+  string status  = 1;
   string web_url = 2;
 }
 
-message MarsConfigFileRequest {
-  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
-  string branch = 2 [(validate.rules).string.min_bytes = 1];
-}
+message AllReposRequest{}
+message AllReposResponse{
+  message Item {
+    int32  id          = 1;
+    string name        = 2;
+    string description = 3;
+  }
 
-message MarsConfigFileResponse {
-  string data = 1;
-  string type = 2;
-  repeated mars.Element elements = 3;
+  repeated Item items = 1;
 }
-
-message EnableProjectResponse {}
-message DisableProjectResponse {}
-message AllRequest {}
-message ProjectOptionsRequest {}
 
 service Git {
-  // EnableProject 开启项目，开启后可以在项目列表看到
-  rpc EnableProject(EnableProjectRequest) returns (EnableProjectResponse) {
-    option (google.api.http) = {
-      post: "/api/git/projects/enable",
-      body: "*"
+  rpc AllRepos(AllReposRequest) returns(AllReposResponse) {
+    option (google.api.http)      = {
+      get: "/api/git/all_repos",
+    };
+    option (openapi.v3.operation) = {
+      summary: "获取所有 git 仓库列表",
     };
   }
 
-  // DisableProject 关闭项目
-  rpc DisableProject(DisableProjectRequest) returns (DisableProjectResponse) {
-    option (google.api.http) = {
-      post: "/api/git/projects/disable",
-      body: "*"
-    };
-  }
-
-  // All 获取所有的 git 项目
-  rpc All(AllRequest) returns (AllResponse) {
-    option (google.api.http) = {
-      get: "/api/git/projects",
-    };
-  }
-
-  // ProjectOptions 获取项目信息， 用在级联列表
   rpc ProjectOptions(ProjectOptionsRequest) returns (ProjectOptionsResponse) {
-    option (google.api.http) = {
+    option (google.api.http)      = {
       get: "/api/git/project_options",
     };
+    option (openapi.v3.operation) = {
+      summary: "获取项目信息， 用在级联列表",
+    };
   }
 
-  // BranchOptions 获取分支信息， 用在级联列表
   rpc BranchOptions(BranchOptionsRequest) returns (BranchOptionsResponse) {
-    option (google.api.http) = {
+    option (google.api.http)      = {
       get: "/api/git/projects/{git_project_id}/branch_options",
     };
+    option (openapi.v3.operation) = {
+      summary: "获取分支信息， 用在级联列表",
+    };
   }
 
-  // CommitOptions 获取commit信息， 用在级联列表
   rpc CommitOptions(CommitOptionsRequest) returns (CommitOptionsResponse) {
-    option (google.api.http) = {
+    option (google.api.http)      = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/commit_options",
     };
+    option (openapi.v3.operation) = {
+      summary: "获取commit信息， 用在级联列表",
+    };
   }
 
-  // Commit 获取 commit 详情
   rpc Commit(CommitRequest) returns (CommitResponse) {
-    option (google.api.http) = {
+    option (google.api.http)      = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}",
     };
+    option (openapi.v3.operation) = {
+      summary: "获取 commit 详情",
+    };
   }
 
-  // PipelineInfo 获取 pipeline 详情
   rpc PipelineInfo(PipelineInfoRequest) returns (PipelineInfoResponse) {
-    option (google.api.http) = {
+    option (google.api.http)      = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info",
     };
-  }
-
-  // MarsConfigFile 获取项目 mars 配置详情
-  rpc MarsConfigFile(MarsConfigFileRequest) returns (MarsConfigFileResponse) {
-    option (google.api.http) = {
-      get: "/api/git/projects/{git_project_id}/branches/{branch}/config_file",
+    option (openapi.v3.operation) = {
+      summary: "获取 pipeline 详情",
     };
   }
+
+  rpc GetChartValuesYaml(GetChartValuesYamlRequest) returns (GetChartValuesYamlResponse) {
+    option (google.api.http)      = {
+      post: "/api/git/get_chart_values_yaml",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "获取 helm charts 的 values.yaml",
+    };
+  }
+}
+message GetChartValuesYamlRequest {
+  // "pid|branch|path" or "path"
+  string input = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+}
+message GetChartValuesYamlResponse {
+  string values = 1;
 }

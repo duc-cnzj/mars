@@ -13,13 +13,15 @@ import {
   PROJECT_POD_EVENT,
   REMOVE_SHELL,
   SET_OPENED_MODALS,
+  CLEAN_PROJECT,
 } from "./actionTypes";
 import { DeployStatus } from "./reducers/createProject";
 import { Dispatch } from "redux";
 import { message } from "antd";
 import { setUid } from "../utils/uid";
-import pb from "../api/compiled";
+import pb from "../api/websocket";
 import { debounce } from "lodash";
+import { components } from "../api/schema";
 
 export const setCreateProjectLoading = (id: string, loading: boolean) => ({
   type: SET_CREATE_PROJECT_LOADING,
@@ -33,7 +35,7 @@ export const appendCreateProjectLog = (
   id: string,
   log: string,
   type: pb.websocket.ResultType,
-  containers?: pb.types.Container[]
+  containers?: pb.websocket.Container[],
 ) => ({
   type: APPEND_CREATE_PROJECT_LOG,
   data: {
@@ -43,6 +45,12 @@ export const appendCreateProjectLog = (
       log,
       containers,
     },
+  },
+});
+export const cleanProject = (id: string) => ({
+  type: CLEAN_PROJECT,
+  data: {
+    id,
   },
 });
 
@@ -104,7 +112,9 @@ export const setStartAt = (id: string, startAt: number) => ({
   },
 });
 
-export const setClusterInfo = (info: pb.cluster.InfoResponse) => ({
+export const setClusterInfo = (
+  info: components["schemas"]["websocket.ClusterInfo"],
+) => ({
   type: SET_CLUSTER_INFO,
   info: info,
 });
@@ -135,13 +145,14 @@ const debounceLoadNamespace = debounce((dispatch: Dispatch, nsID: number) => {
 export const handleEvents = (
   id: string,
   data: pb.websocket.Metadata,
-  input: any
+  input: any,
 ) => {
   return function (dispatch: Dispatch) {
+    console.log(data.message);
     switch (data.type.valueOf()) {
       case pb.websocket.Type.ProjectPodEvent:
         let nsEvent = pb.websocket.WsProjectPodEventResponse.decode(input);
-        dispatch(setPodEventPID(nsEvent.project_id));
+        dispatch(setPodEventPID(nsEvent.projectId));
         break;
       case pb.websocket.Type.SetUid:
         setUid(data.message);
@@ -152,26 +163,25 @@ export const handleEvents = (
         break;
       case pb.websocket.Type.ReloadProjects:
         let nsReload = pb.websocket.WsReloadProjectsResponse.decode(input);
-        debounceLoadNamespace(dispatch, nsReload.namespace_id);
+        debounceLoadNamespace(dispatch, nsReload.namespaceId);
         break;
       case pb.websocket.Type.UpdateProject:
-        let containers: pb.types.Container[] = [];
+        let containers: pb.websocket.Container[] = [];
         if (data.result === pb.websocket.ResultType.LogWithContainers) {
           containers =
             pb.websocket.WsWithContainerMessageResponse.decode(
-              input
+              input,
             ).containers;
         }
 
         dispatch(
-          appendCreateProjectLog(id, data.message, data.result, containers)
+          appendCreateProjectLog(id, data.message, data.result, containers),
         );
 
         if (data.end) {
           switch (data.result) {
             case pb.websocket.ResultType.Deployed:
               dispatch(setDeployStatus(id, DeployStatus.DeploySuccess));
-              message.success("部署成功");
               dispatch(clearCreateProjectLog(id));
               break;
             case pb.websocket.ResultType.DeployedCanceled:
@@ -181,8 +191,8 @@ export const handleEvents = (
                   id,
                   "部署已取消",
                   data.result,
-                  containers
-                )
+                  containers,
+                ),
               );
               message.warning("部署已取消");
               break;
@@ -190,7 +200,7 @@ export const handleEvents = (
             default:
               dispatch(setDeployStatus(id, DeployStatus.DeployFailed));
               dispatch(
-                appendCreateProjectLog(id, "部署失败", data.result, containers)
+                appendCreateProjectLog(id, "部署失败", data.result, containers),
               );
               message.error("部署失败");
               break;
@@ -199,11 +209,11 @@ export const handleEvents = (
         }
         break;
       case pb.websocket.Type.CreateProject:
-        let createContainers: pb.types.Container[] = [];
+        let createContainers: pb.websocket.Container[] = [];
         if (data.result === pb.websocket.ResultType.LogWithContainers) {
           createContainers =
             pb.websocket.WsWithContainerMessageResponse.decode(
-              input
+              input,
             ).containers;
         }
         dispatch(
@@ -211,16 +221,19 @@ export const handleEvents = (
             id,
             data.message,
             data.result,
-            createContainers
-          )
+            createContainers,
+          ),
         );
 
         if (data.end) {
+          dispatch(setCreateProjectLoading(id, false));
           switch (data.result) {
             case pb.websocket.ResultType.Deployed:
+              dispatch(setProcessPercent(id, 100));
               dispatch(setDeployStatus(id, DeployStatus.DeploySuccess));
-              message.success("部署成功");
-              dispatch(clearCreateProjectLog(id));
+              setTimeout(() => {
+                dispatch(clearCreateProjectLog(id));
+              }, 1000);
               break;
             case pb.websocket.ResultType.DeployedCanceled:
               dispatch(setDeployStatus(id, DeployStatus.DeployCanceled));
@@ -229,8 +242,8 @@ export const handleEvents = (
                   id,
                   "部署已取消",
                   data.result,
-                  createContainers
-                )
+                  createContainers,
+                ),
               );
               message.warning("部署已取消");
               break;
@@ -242,13 +255,12 @@ export const handleEvents = (
                   id,
                   "部署失败",
                   data.result,
-                  createContainers
-                )
+                  createContainers,
+                ),
               );
               message.error("部署失败");
               break;
           }
-          dispatch(setCreateProjectLoading(id, false));
         }
         break;
       case pb.websocket.Type.ProcessPercent:
@@ -262,22 +274,22 @@ export const handleEvents = (
         }
         let res = pb.websocket.WsHandleShellResponse.decode(input);
 
-        if (res.container && res.terminal_message) {
-          dispatch(setShellSessionId(res.terminal_message.session_id));
+        if (res.container && res.terminalMessage) {
+          dispatch(setShellSessionId(res.terminalMessage.sessionId));
           if (data.type.valueOf() === pb.websocket.Type.HandleCloseShell) {
-            dispatch(removeShell(res.terminal_message.session_id));
+            dispatch(removeShell(res.terminalMessage.sessionId));
           }
         }
         break;
       case pb.websocket.Type.HandleExecShellMsg:
         let logRes = pb.websocket.WsHandleShellResponse.decode(input);
         logRes.container &&
-          logRes.terminal_message &&
+          logRes.terminalMessage &&
           dispatch(
             setShellLog(
-              logRes.terminal_message.session_id,
-              logRes.terminal_message
-            )
+              logRes.terminalMessage.sessionId,
+              logRes.terminalMessage,
+            ),
           );
         break;
       case pb.websocket.Type.HandleAuthorize:

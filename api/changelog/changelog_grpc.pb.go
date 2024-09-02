@@ -20,15 +20,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Changelog_Show_FullMethodName = "/changelog.Changelog/Show"
+	Changelog_FindLastChangelogsByProjectID_FullMethodName = "/changelog.Changelog/FindLastChangelogsByProjectID"
 )
 
 // ChangelogClient is the client API for Changelog service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChangelogClient interface {
-	// Show 查看项目修改的版本差异
-	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
+	FindLastChangelogsByProjectID(ctx context.Context, in *FindLastChangelogsByProjectIDRequest, opts ...grpc.CallOption) (*FindLastChangelogsByProjectIDResponse, error)
 }
 
 type changelogClient struct {
@@ -39,9 +38,9 @@ func NewChangelogClient(cc grpc.ClientConnInterface) ChangelogClient {
 	return &changelogClient{cc}
 }
 
-func (c *changelogClient) Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error) {
-	out := new(ShowResponse)
-	err := c.cc.Invoke(ctx, Changelog_Show_FullMethodName, in, out, opts...)
+func (c *changelogClient) FindLastChangelogsByProjectID(ctx context.Context, in *FindLastChangelogsByProjectIDRequest, opts ...grpc.CallOption) (*FindLastChangelogsByProjectIDResponse, error) {
+	out := new(FindLastChangelogsByProjectIDResponse)
+	err := c.cc.Invoke(ctx, Changelog_FindLastChangelogsByProjectID_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -52,8 +51,7 @@ func (c *changelogClient) Show(ctx context.Context, in *ShowRequest, opts ...grp
 // All implementations must embed UnimplementedChangelogServer
 // for forward compatibility
 type ChangelogServer interface {
-	// Show 查看项目修改的版本差异
-	Show(context.Context, *ShowRequest) (*ShowResponse, error)
+	FindLastChangelogsByProjectID(context.Context, *FindLastChangelogsByProjectIDRequest) (*FindLastChangelogsByProjectIDResponse, error)
 	mustEmbedUnimplementedChangelogServer()
 }
 
@@ -61,8 +59,8 @@ type ChangelogServer interface {
 type UnimplementedChangelogServer struct {
 }
 
-func (UnimplementedChangelogServer) Show(context.Context, *ShowRequest) (*ShowResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
+func (UnimplementedChangelogServer) FindLastChangelogsByProjectID(context.Context, *FindLastChangelogsByProjectIDRequest) (*FindLastChangelogsByProjectIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FindLastChangelogsByProjectID not implemented")
 }
 func (UnimplementedChangelogServer) mustEmbedUnimplementedChangelogServer() {}
 
@@ -77,20 +75,20 @@ func RegisterChangelogServer(s grpc.ServiceRegistrar, srv ChangelogServer) {
 	s.RegisterService(&Changelog_ServiceDesc, srv)
 }
 
-func _Changelog_Show_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ShowRequest)
+func _Changelog_FindLastChangelogsByProjectID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FindLastChangelogsByProjectIDRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ChangelogServer).Show(ctx, in)
+		return srv.(ChangelogServer).FindLastChangelogsByProjectID(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Changelog_Show_FullMethodName,
+		FullMethod: Changelog_FindLastChangelogsByProjectID_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChangelogServer).Show(ctx, req.(*ShowRequest))
+		return srv.(ChangelogServer).FindLastChangelogsByProjectID(ctx, req.(*FindLastChangelogsByProjectIDRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -103,8 +101,8 @@ var Changelog_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ChangelogServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Show",
-			Handler:    _Changelog_Show_Handler,
+			MethodName: "FindLastChangelogsByProjectID",
+			Handler:    _Changelog_FindLastChangelogsByProjectID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

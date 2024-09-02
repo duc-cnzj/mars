@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useState } from "react";
-import { pipelineInfo } from "../api/git";
 import { Alert } from "antd";
+import ajax from "../api/ajax";
 
 const pipelines: {
   [status: string]: { type: "error" | "success" | "warning"; message: string };
@@ -28,27 +28,40 @@ const PipelineInfo: React.FC<{
     message: string;
     web_url: string;
     type: "success" | "warning" | "error";
-  }>();
+  } | null>();
 
   useEffect(() => {
     if (projectId && branch && commit) {
-      pipelineInfo({ git_project_id: String(projectId), branch, commit })
-        .then((res) => {
-          let p = pipelines[res.data.status];
+      ajax
+        .GET(
+          "/api/git/projects/{gitProjectId}/branches/{branch}/commits/{commit}/pipeline_info",
+          {
+            params: {
+              path: {
+                gitProjectId: String(projectId),
+                branch,
+                commit,
+              },
+            },
+          },
+        )
+        .then(({ data, error }) => {
+          if (error) {
+            setInfo(null);
+            return;
+          }
+          let p = pipelines[data.status];
           if (p) {
             setInfo({
               type: p.type,
               message: p.message,
-              web_url: res.data.web_url,
+              web_url: data.webUrl,
             });
           }
-        })
-        .catch((e) => {
-          setInfo(undefined);
         });
       return;
     }
-    setInfo(undefined);
+    setInfo(null);
   }, [projectId, branch, commit]);
 
   return (

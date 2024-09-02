@@ -14,7 +14,7 @@ export default function deployTimer(
   action: {
     type: string;
     data: { id: string; start?: boolean; startAt?: number };
-  }
+  },
 ) {
   switch (action.type) {
     case SET_TIMER_START:

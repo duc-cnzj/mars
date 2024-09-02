@@ -75,7 +75,7 @@ export function useStream(url: string, params: any) {
  */
 async function startStream(
   url: string,
-  { onNext, onError, onDone, fetchParams }: any
+  { onNext, onError, onDone, fetchParams }: any,
 ) {
   const errCb = (err: any) => {
     if (typeof onError.current === "function") {
@@ -98,7 +98,7 @@ async function startStream(
         {
           once: true,
           passive: true,
-        }
+        },
       );
     }
 

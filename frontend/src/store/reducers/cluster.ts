@@ -1,26 +1,26 @@
-import pb from "./../../api/compiled.d";
+import pb from "./../../api/websocket";
 import { SET_CLUSTER_INFO } from "../actionTypes";
-const initialState: pb.cluster.InfoResponse = {
+const initialState: pb.websocket.ClusterInfo = {
   status: "",
-  free_memory: "",
-  free_cpu: "",
-  total_memory: "",
-  free_request_cpu: "",
-  free_request_memory: "",
-  total_cpu: "",
-  usage_memory_rate: "",
-  usage_cpu_rate: "",
-  request_memory_rate: "",
-  request_cpu_rate: "",
+  freeMemory: "",
+  freeCpu: "",
+  totalMemory: "",
+  freeRequestCpu: "",
+  freeRequestMemory: "",
+  totalCpu: "",
+  usageMemoryRate: "",
+  usageCpuRate: "",
+  requestMemoryRate: "",
+  requestCpuRate: "",
 };
 
 export const selectClusterInfo = (state: {
-  cluster: pb.cluster.InfoResponse;
+  cluster: pb.websocket.ClusterInfo;
 }) => state.cluster;
 
 export default function cluster(
   state = initialState,
-  action: { type: string; info?: pb.cluster.InfoResponse }
+  action: { type: string; info?: pb.websocket.ClusterInfo },
 ) {
   switch (action.type) {
     case SET_CLUSTER_INFO:

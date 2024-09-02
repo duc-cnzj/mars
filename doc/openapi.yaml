@@ -1,0 +1,2812 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: mars api.
+    version: ""
+paths:
+    /api/access_tokens:
+        get:
+            tags:
+                - AccessToken
+            operationId: AccessToken_List
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/token.ListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+        post:
+            tags:
+                - AccessToken
+            operationId: AccessToken_Grant
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/token.GrantRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/token.GrantResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/access_tokens/{token}:
+        put:
+            tags:
+                - AccessToken
+            operationId: AccessToken_Lease
+            parameters:
+                - name: token
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/token.LeaseRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/token.LeaseResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+        delete:
+            tags:
+                - AccessToken
+            operationId: AccessToken_Revoke
+            parameters:
+                - name: token
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/token.RevokeResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/auth/exchange:
+        post:
+            tags:
+                - Auth
+            summary: sso code 换取 token
+            operationId: Auth_Exchange
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/auth.ExchangeRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/auth.ExchangeResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
+    /api/auth/info:
+        get:
+            tags:
+                - Auth
+            summary: 获取当前登录的用户信息
+            operationId: Auth_Info
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/auth.InfoResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/auth/login:
+        post:
+            tags:
+                - Auth
+            summary: 登录接口
+            operationId: Auth_Login
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/auth.LoginRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/auth.LoginResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
+    /api/auth/settings:
+        get:
+            tags:
+                - Auth
+            summary: 获取 sso 配置以及跳转 url
+            operationId: Auth_Settings
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/auth.SettingsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
+    /api/changelogs/find_last_changelogs_by_project_id:
+        post:
+            tags:
+                - Changelog
+            summary: 查看项目改动日志
+            operationId: Changelog_FindLastChangelogsByProjectID
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/changelog.FindLastChangelogsByProjectIDRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/changelog.FindLastChangelogsByProjectIDResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/cluster_info:
+        get:
+            tags:
+                - Cluster
+            summary: 查看集群信息
+            operationId: Cluster_ClusterInfo
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.InfoResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
+    /api/containers/copy_to_pod:
+        post:
+            tags:
+                - Container
+            summary: 上传文件到 pod
+            operationId: Container_CopyToPod
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/container.CopyToPodRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/container.CopyToPodResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs:
+        get:
+            tags:
+                - Container
+            summary: 查看 pod 日志
+            description: ContainerLog 查看 pod 日志
+            operationId: Container_ContainerLog
+            parameters:
+                - name: namespace
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pod
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: container
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: showEvents
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/container.LogResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs:
+        get:
+            tags:
+                - Container
+            summary: stream 方式查看 pod 日志
+            operationId: Container_StreamContainerLog
+            parameters:
+                - name: namespace
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pod
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: container
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: showEvents
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/container.LogResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/containers/pod_exists:
+        post:
+            tags:
+                - Container
+            summary: pod 是否存在
+            operationId: Container_IsPodExists
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/container.IsPodExistsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/container.IsPodExistsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/containers/pod_running_status:
+        post:
+            tags:
+                - Container
+            summary: pod 是否 running
+            operationId: Container_IsPodRunning
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/container.IsPodRunningRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/container.IsPodRunningResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/endpoints/namespaces/{namespaceId}:
+        get:
+            tags:
+                - Endpoint
+            summary: 获取名称空间下所有的 endpoints
+            operationId: Endpoint_InNamespace
+            parameters:
+                - name: namespaceId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/endpoint.InNamespaceResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/endpoints/projects/{projectId}:
+        get:
+            tags:
+                - Endpoint
+            summary: 获取项目下所有的 endpoints
+            operationId: Endpoint_InProject
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/endpoint.InProjectResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/events:
+        get:
+            tags:
+                - Event
+            summary: 用户操作事件列表
+            operationId: Event_List
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: actionType
+                  in: query
+                  schema:
+                    enum:
+                        - Unknown
+                        - Create
+                        - Update
+                        - Delete
+                        - Upload
+                        - Download
+                        - DryRun
+                        - Shell
+                        - Login
+                        - CancelDeploy
+                        - Exec
+                    type: string
+                    format: enum
+                - name: search
+                  in: query
+                  description: 模糊搜索 message 和 username
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/event.ListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/events/{id}:
+        get:
+            tags:
+                - Event
+            summary: 查看事件详情, 包含 old, new
+            operationId: Event_Show
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/event.ShowResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/files:
+        get:
+            tags:
+                - File
+            summary: 文件列表
+            operationId: File_List
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: withoutDeleted
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/file.ListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/files/disk_info:
+        get:
+            tags:
+                - File
+            summary: 查看文件目录大小
+            operationId: File_DiskInfo
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/file.DiskInfoResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/files/max_upload_size:
+        get:
+            tags:
+                - File
+            summary: 获取最大上传大小
+            operationId: File_MaxUploadSize
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/file.MaxUploadSizeResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
+    /api/files/{id}:
+        delete:
+            tags:
+                - File
+            summary: 删除文件
+            operationId: File_Delete
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/file.DeleteResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/git/all_repos:
+        get:
+            tags:
+                - Git
+            summary: 获取所有 git 仓库列表
+            operationId: Git_AllRepos
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.AllReposResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/git/get_chart_values_yaml:
+        post:
+            tags:
+                - Git
+            summary: 获取 helm charts 的 values.yaml
+            operationId: Git_GetChartValuesYaml
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/git.GetChartValuesYamlRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.GetChartValuesYamlResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/git/project_options:
+        get:
+            tags:
+                - Git
+            summary: 获取项目信息， 用在级联列表
+            operationId: Git_ProjectOptions
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.ProjectOptionsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/git/projects/{gitProjectId}/branch_options:
+        get:
+            tags:
+                - Git
+            summary: 获取分支信息， 用在级联列表
+            operationId: Git_BranchOptions
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+                - name: repoId
+                  in: query
+                  description: 如果传入 repo_id, 就会根据 mars 配置过滤分支
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.BranchOptionsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/git/projects/{gitProjectId}/branches/{branch}/commit_options:
+        get:
+            tags:
+                - Git
+            summary: 获取commit信息， 用在级联列表
+            operationId: Git_CommitOptions
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+                - name: branch
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.CommitOptionsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/git/projects/{gitProjectId}/branches/{branch}/commits/{commit}:
+        get:
+            tags:
+                - Git
+            summary: 获取 commit 详情
+            operationId: Git_Commit
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+                - name: branch
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: commit
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.CommitResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/git/projects/{gitProjectId}/branches/{branch}/commits/{commit}/pipeline_info:
+        get:
+            tags:
+                - Git
+            summary: 获取 pipeline 详情
+            operationId: Git_PipelineInfo
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: branch
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: commit
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.PipelineInfoResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/metrics/namespace/{namespaceId}/cpu_memory:
+        get:
+            tags:
+                - Metrics
+            summary: 名称空间总共使用的 cpu memory
+            operationId: Metrics_CpuMemoryInNamespace
+            parameters:
+                - name: namespaceId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/metrics.CpuMemoryInNamespaceResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/metrics/namespace/{namespace}/pods/{pod}:
+        get:
+            tags:
+                - Metrics
+            summary: 获取 pod 的 cpu memory 信息
+            operationId: Metrics_TopPod
+            parameters:
+                - name: namespace
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pod
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/metrics.TopPodResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/metrics/namespace/{namespace}/pods/{pod}/stream:
+        get:
+            tags:
+                - Metrics
+            summary: stream 的方式获取 pod 的 cpu memory 信息
+            operationId: Metrics_StreamTopPod
+            parameters:
+                - name: namespace
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pod
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/metrics.TopPodResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/metrics/projects/{projectId}/cpu_memory:
+        get:
+            tags:
+                - Metrics
+            summary: 项目空间总共使用的 cpu memory
+            operationId: Metrics_CpuMemoryInProject
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/metrics.CpuMemoryInProjectResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/namespaces:
+        get:
+            tags:
+                - Namespace
+            summary: 分页获取名称空间
+            operationId: Namespace_List
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: favorite
+                  in: query
+                  schema:
+                    type: boolean
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.ListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+        post:
+            tags:
+                - Namespace
+            summary: 创建名称空间
+            operationId: Namespace_Create
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/namespace.CreateRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.CreateResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/namespaces/exists:
+        post:
+            tags:
+                - Namespace
+            summary: IsExists 名称空间是否存在
+            operationId: Namespace_IsExists
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.IsExistsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/namespaces/favorite:
+        post:
+            tags:
+                - Namespace
+            summary: 关注/取消关注
+            operationId: Namespace_Favorite
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/namespace.FavoriteRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.FavoriteResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/namespaces/{id}:
+        get:
+            tags:
+                - Namespace
+            summary: 查看名称空间详情
+            operationId: Namespace_Show
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.ShowResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+        delete:
+            tags:
+                - Namespace
+            summary: 删除名称空间
+            operationId: Namespace_Delete
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.DeleteResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/namespaces/{id}/update_desc:
+        post:
+            tags:
+                - Namespace
+            summary: 更新空间描述信息
+            operationId: Namespace_UpdateDesc
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/namespace.UpdateDescRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.UpdateDescResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/picture/background:
+        get:
+            tags:
+                - Picture
+            description: Background 获取背景图片
+            operationId: Picture_Background
+            parameters:
+                - name: random
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/picture.BackgroundResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
+    /api/projects:
+        get:
+            tags:
+                - Project
+            description: List 获取项目列表
+            operationId: Project_List
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.ListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/projects/apply:
+        post:
+            tags:
+                - Project
+            summary: WebApply 创建/更新/DryRun 项目
+            description: WebApply 创建/更新/DryRun 项目
+            operationId: Project_WebApply
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/project.WebApplyRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.WebApplyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/projects/{id}:
+        get:
+            tags:
+                - Project
+            summary: 项目详情
+            description: Show 项目详情
+            operationId: Project_Show
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.ShowResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+        delete:
+            tags:
+                - Project
+            description: Delete 删除项目
+            operationId: Project_Delete
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.DeleteResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/projects/{id}/containers:
+        get:
+            tags:
+                - Project
+            description: AllContainers 获取项目下的所有 pod
+            operationId: Project_AllContainers
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.AllContainersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/projects/{id}/memory_cpu_and_endpoints:
+        get:
+            tags:
+                - Project
+            summary: 项目的cpu/memory/endpoints
+            operationId: Project_MemoryCpuAndEndpoints
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.MemoryCpuAndEndpointsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/projects/{id}/version:
+        get:
+            tags:
+                - Project
+            description: Version 版本号, 如果不存在则返回 0
+            operationId: Project_Version
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.VersionResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/record_files/{id}:
+        get:
+            tags:
+                - File
+            summary: 文件详情
+            operationId: File_ShowRecords
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/file.ShowRecordsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/repos:
+        get:
+            tags:
+                - Repo
+            summary: 获取 repo 列表
+            operationId: Repo_List
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: enabled
+                  in: query
+                  schema:
+                    type: boolean
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.ListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+        post:
+            tags:
+                - Repo
+            summary: 创建 repo
+            operationId: Repo_Create
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/repo.CreateRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.CreateResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/repos/clone:
+        post:
+            tags:
+                - Repo
+            summary: 克隆 repo
+            operationId: Repo_Clone
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/repo.CloneRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.CloneResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/repos/toggle_enabled:
+        post:
+            tags:
+                - Repo
+            summary: 开启/关闭 repo
+            operationId: Repo_ToggleEnabled
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/repo.ToggleEnabledRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.ToggleEnabledResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/repos/{id}:
+        get:
+            tags:
+                - Repo
+            summary: 获取 repo 详情
+            operationId: Repo_Show
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.ShowResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+        put:
+            tags:
+                - Repo
+            summary: 更新 repo
+            operationId: Repo_Update
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/repo.UpdateRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.UpdateResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+        delete:
+            tags:
+                - Repo
+            summary: 删除 repo
+            operationId: Repo_Delete
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.DeleteResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/version:
+        get:
+            tags:
+                - Version
+            description: Version 获取当前版本信息
+            operationId: Version_Version
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/version.Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+            security:
+                - {}
+components:
+    schemas:
+        auth.ExchangeRequest:
+            required:
+                - code
+            type: object
+            properties:
+                code:
+                    type: string
+        auth.ExchangeResponse:
+            type: object
+            properties:
+                token:
+                    type: string
+                expiresIn:
+                    type: string
+        auth.InfoResponse:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                avatar:
+                    type: string
+                name:
+                    type: string
+                email:
+                    type: string
+                logoutUrl:
+                    type: string
+                roles:
+                    type: array
+                    items:
+                        type: string
+        auth.LoginRequest:
+            required:
+                - username
+                - password
+            type: object
+            properties:
+                username:
+                    type: string
+                password:
+                    type: string
+        auth.LoginResponse:
+            type: object
+            properties:
+                token:
+                    type: string
+                expiresIn:
+                    type: string
+        auth.SettingsResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/auth.SettingsResponse_OidcSetting'
+        auth.SettingsResponse_OidcSetting:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                name:
+                    type: string
+                url:
+                    type: string
+                endSessionEndpoint:
+                    type: string
+                state:
+                    type: string
+        changelog.FindLastChangelogsByProjectIDRequest:
+            required:
+                - projectId
+            type: object
+            properties:
+                projectId:
+                    type: integer
+                    format: int32
+                onlyChanged:
+                    type: boolean
+        changelog.FindLastChangelogsByProjectIDResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ChangelogModel'
+        cluster.InfoResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/websocket.ClusterInfo'
+        container.CopyToPodRequest:
+            required:
+                - fileId
+                - namespace
+                - pod
+                - container
+            type: object
+            properties:
+                fileId:
+                    type: string
+                namespace:
+                    type: string
+                pod:
+                    type: string
+                container:
+                    type: string
+        container.CopyToPodResponse:
+            type: object
+            properties:
+                podFilePath:
+                    type: string
+                fileName:
+                    type: string
+        container.IsPodExistsRequest:
+            required:
+                - namespace
+                - pod
+            type: object
+            properties:
+                namespace:
+                    type: string
+                pod:
+                    type: string
+        container.IsPodExistsResponse:
+            type: object
+            properties:
+                exists:
+                    type: boolean
+        container.IsPodRunningRequest:
+            required:
+                - namespace
+                - pod
+            type: object
+            properties:
+                namespace:
+                    type: string
+                pod:
+                    type: string
+        container.IsPodRunningResponse:
+            type: object
+            properties:
+                running:
+                    type: boolean
+                reason:
+                    type: string
+        container.LogResponse:
+            type: object
+            properties:
+                namespace:
+                    type: string
+                podName:
+                    type: string
+                containerName:
+                    type: string
+                log:
+                    type: string
+        endpoint.InNamespaceResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ServiceEndpoint'
+        endpoint.InProjectResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ServiceEndpoint'
+        event.ListResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.EventModel'
+        event.ShowResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.EventModel'
+        file.DeleteResponse:
+            type: object
+            properties: {}
+        file.DiskInfoResponse:
+            type: object
+            properties:
+                usage:
+                    type: string
+                humanizeUsage:
+                    type: string
+        file.ListResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.FileModel'
+                count:
+                    type: integer
+                    format: int32
+        file.MaxUploadSizeResponse:
+            type: object
+            properties:
+                humanizeSize:
+                    type: string
+                bytes:
+                    type: integer
+                    format: uint32
+        file.ShowRecordsResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        type: string
+        git.AllReposResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/git.AllReposResponse_Item'
+        git.AllReposResponse_Item:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                description:
+                    type: string
+        git.BranchOptionsResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/git.Option'
+        git.CommitOptionsResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/git.Option'
+        git.CommitResponse:
+            type: object
+            properties:
+                id:
+                    type: string
+                shortId:
+                    type: string
+                gitProjectId:
+                    type: integer
+                    format: int32
+                label:
+                    type: string
+                title:
+                    type: string
+                branch:
+                    type: string
+                authorName:
+                    type: string
+                authorEmail:
+                    type: string
+                committerName:
+                    type: string
+                committerEmail:
+                    type: string
+                webUrl:
+                    type: string
+                message:
+                    type: string
+                committedDate:
+                    type: string
+                createdAt:
+                    type: string
+        git.GetChartValuesYamlRequest:
+            required:
+                - input
+            type: object
+            properties:
+                input:
+                    type: string
+                    description: '"pid|branch|path" or "path"'
+        git.GetChartValuesYamlResponse:
+            type: object
+            properties:
+                values:
+                    type: string
+        git.Option:
+            type: object
+            properties:
+                value:
+                    type: string
+                label:
+                    type: string
+                type:
+                    type: string
+                isLeaf:
+                    type: boolean
+                gitProjectId:
+                    type: integer
+                    format: int32
+                branch:
+                    type: string
+                needGitRepo:
+                    type: boolean
+                description:
+                    type: string
+        git.PipelineInfoResponse:
+            type: object
+            properties:
+                status:
+                    type: string
+                webUrl:
+                    type: string
+        git.ProjectOptionsResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/git.Option'
+        google.protobuf.Any:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        google.rpc.Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/google.protobuf.Any'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+        mars.Config:
+            type: object
+            properties:
+                configFile:
+                    type: string
+                    description: config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename"
+                configFileValues:
+                    type: string
+                    description: config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个
+                configField:
+                    type: string
+                isSimpleEnv:
+                    type: boolean
+                configFileType:
+                    type: string
+                    description: config_file_type 配置文件类型，php/env/yaml...
+                localChartPath:
+                    type: string
+                    description: |-
+                        local_chart_path helm charts 目录, 格式为 "pid|branch|path",
+                         v5+ 之后不再支持本地目录
+                branches:
+                    type: array
+                    items:
+                        type: string
+                    description: branches 启用的分支
+                valuesYaml:
+                    type: string
+                    description: values_yaml 和 values.yaml 一样
+                elements:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/mars.Element'
+                    description: elements 自定义字段
+                displayName:
+                    type: string
+                    description: |-
+                        显示的名称 (helm app name), 不填就使用 git server project name
+                         以字母开头结尾，中间可以有 '_' '-'
+                         Deprecated: v5+ 不再使用这个字段
+        mars.Element:
+            type: object
+            properties:
+                path:
+                    type: string
+                type:
+                    enum:
+                        - ElementTypeUnknown
+                        - ElementTypeInput
+                        - ElementTypeInputNumber
+                        - ElementTypeSelect
+                        - ElementTypeRadio
+                        - ElementTypeSwitch
+                        - ElementTypeTextArea
+                        - ElementTypeNumberSelect
+                        - ElementTypeNumberRadio
+                    type: string
+                    format: enum
+                default:
+                    type: string
+                description:
+                    type: string
+                selectValues:
+                    type: array
+                    items:
+                        type: string
+                order:
+                    type: integer
+                    format: uint32
+        metrics.CpuMemoryInNamespaceResponse:
+            type: object
+            properties:
+                cpu:
+                    type: string
+                memory:
+                    type: string
+        metrics.CpuMemoryInProjectResponse:
+            type: object
+            properties:
+                cpu:
+                    type: string
+                memory:
+                    type: string
+        metrics.TopPodResponse:
+            type: object
+            properties:
+                cpu:
+                    type: number
+                    format: double
+                memory:
+                    type: number
+                    format: double
+                humanizeCpu:
+                    type: string
+                humanizeMemory:
+                    type: string
+                time:
+                    type: string
+                length:
+                    type: integer
+                    format: int32
+        namespace.CreateRequest:
+            required:
+                - namespace
+            type: object
+            properties:
+                namespace:
+                    type: string
+                ignoreIfExists:
+                    type: boolean
+                    description: 已存在则忽略，不会报错
+                description:
+                    type: string
+        namespace.CreateResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.NamespaceModel'
+                exists:
+                    type: boolean
+        namespace.DeleteResponse:
+            type: object
+            properties: {}
+        namespace.FavoriteRequest:
+            required:
+                - id
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                favorite:
+                    type: boolean
+        namespace.FavoriteResponse:
+            type: object
+            properties: {}
+        namespace.IsExistsResponse:
+            type: object
+            properties:
+                id:
+                    type: string
+                exists:
+                    type: boolean
+        namespace.ListResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.NamespaceModel'
+                count:
+                    type: integer
+                    format: int32
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+        namespace.ShowResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.NamespaceModel'
+        namespace.UpdateDescRequest:
+            required:
+                - id
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                desc:
+                    type: string
+        namespace.UpdateDescResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.NamespaceModel'
+        picture.BackgroundResponse:
+            type: object
+            properties:
+                url:
+                    type: string
+                copyright:
+                    type: string
+        project.AllContainersResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.StateContainer'
+        project.DeleteResponse:
+            type: object
+            properties: {}
+        project.ListResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                count:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ProjectModel'
+        project.MemoryCpuAndEndpointsResponse:
+            type: object
+            properties:
+                urls:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ServiceEndpoint'
+                cpu:
+                    type: string
+                memory:
+                    type: string
+        project.ShowResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.ProjectModel'
+        project.VersionResponse:
+            type: object
+            properties:
+                version:
+                    type: integer
+                    format: int32
+        project.WebApplyRequest:
+            required:
+                - namespaceId
+                - repoId
+            type: object
+            properties:
+                namespaceId:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                repoId:
+                    type: integer
+                    format: int32
+                gitBranch:
+                    type: string
+                gitCommit:
+                    type: string
+                    description: git_commit 不传就用最新的 commit
+                config:
+                    type: string
+                extraValues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/websocket.ExtraValue'
+                version:
+                    type: integer
+                    description: 版本号, dryRun 时可以不传
+                    format: int32
+                dryRun:
+                    type: boolean
+        project.WebApplyResponse:
+            type: object
+            properties:
+                yamlFiles:
+                    type: array
+                    items:
+                        type: string
+                project:
+                    $ref: '#/components/schemas/types.ProjectModel'
+                dryRun:
+                    type: boolean
+        repo.CloneRequest:
+            required:
+                - id
+                - name
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+        repo.CloneResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.RepoModel'
+        repo.CreateRequest:
+            required:
+                - name
+            type: object
+            properties:
+                name:
+                    type: string
+                gitProjectId:
+                    type: integer
+                    format: int32
+                marsConfig:
+                    $ref: '#/components/schemas/mars.Config'
+                needGitRepo:
+                    type: boolean
+                description:
+                    type: string
+        repo.CreateResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.RepoModel'
+        repo.DeleteResponse:
+            type: object
+            properties: {}
+        repo.ListResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                count:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.RepoModel'
+        repo.ShowResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.RepoModel'
+        repo.ToggleEnabledRequest:
+            required:
+                - id
+                - enabled
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                enabled:
+                    type: boolean
+        repo.ToggleEnabledResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.RepoModel'
+        repo.UpdateRequest:
+            required:
+                - id
+                - name
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                gitProjectId:
+                    type: integer
+                    format: int32
+                marsConfig:
+                    $ref: '#/components/schemas/mars.Config'
+                needGitRepo:
+                    type: boolean
+                description:
+                    type: string
+        repo.UpdateResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.RepoModel'
+        token.GrantRequest:
+            type: object
+            properties:
+                expireSeconds:
+                    type: integer
+                    format: int32
+                usage:
+                    type: string
+        token.GrantResponse:
+            type: object
+            properties:
+                token:
+                    $ref: '#/components/schemas/types.AccessTokenModel'
+        token.LeaseRequest:
+            type: object
+            properties:
+                token:
+                    type: string
+                expireSeconds:
+                    type: integer
+                    format: int32
+        token.LeaseResponse:
+            type: object
+            properties:
+                token:
+                    $ref: '#/components/schemas/types.AccessTokenModel'
+        token.ListResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.AccessTokenModel'
+                count:
+                    type: integer
+                    format: int32
+        token.RevokeResponse:
+            type: object
+            properties: {}
+        types.AccessTokenModel:
+            type: object
+            properties:
+                token:
+                    type: string
+                email:
+                    type: string
+                expiredAt:
+                    type: string
+                usage:
+                    type: string
+                lastUsedAt:
+                    type: string
+                isDeleted:
+                    type: boolean
+                isExpired:
+                    type: boolean
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.ChangelogModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                version:
+                    type: integer
+                    format: int32
+                username:
+                    type: string
+                manifest:
+                    type: array
+                    items:
+                        type: string
+                config:
+                    type: string
+                configChanged:
+                    type: boolean
+                projectId:
+                    type: string
+                gitProjectId:
+                    type: string
+                project:
+                    $ref: '#/components/schemas/types.ProjectModel'
+                gitProject:
+                    $ref: '#/components/schemas/types.GitProjectModel'
+                date:
+                    type: string
+                configType:
+                    type: string
+                gitBranch:
+                    type: string
+                gitCommit:
+                    type: string
+                dockerImage:
+                    type: string
+                envValues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.KeyValue'
+                extraValues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/websocket.ExtraValue'
+                finalExtraValues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/websocket.ExtraValue'
+                gitCommitWebUrl:
+                    type: string
+                gitCommitTitle:
+                    type: string
+                gitCommitAuthor:
+                    type: string
+                gitCommitDate:
+                    type: string
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.EventModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                action:
+                    enum:
+                        - Unknown
+                        - Create
+                        - Update
+                        - Delete
+                        - Upload
+                        - Download
+                        - DryRun
+                        - Shell
+                        - Login
+                        - CancelDeploy
+                        - Exec
+                    type: string
+                    format: enum
+                username:
+                    type: string
+                message:
+                    type: string
+                old:
+                    type: string
+                new:
+                    type: string
+                duration:
+                    type: string
+                fileId:
+                    type: integer
+                    format: int32
+                file:
+                    $ref: '#/components/schemas/types.FileModel'
+                eventAt:
+                    type: string
+                hasDiff:
+                    type: boolean
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.FileModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                path:
+                    type: string
+                size:
+                    type: integer
+                    format: int32
+                username:
+                    type: string
+                namespace:
+                    type: string
+                pod:
+                    type: string
+                container:
+                    type: string
+                containerPath:
+                    type: string
+                humanizeSize:
+                    type: string
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.GitProjectModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                defaultBranch:
+                    type: string
+                name:
+                    type: string
+                gitProjectId:
+                    type: integer
+                    format: int32
+                enabled:
+                    type: boolean
+                globalEnabled:
+                    type: boolean
+                globalConfig:
+                    $ref: '#/components/schemas/mars.Config'
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.KeyValue:
+            type: object
+            properties:
+                key:
+                    type: string
+                value:
+                    type: string
+        types.NamespaceModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                projects:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ProjectModel'
+                favorite:
+                    type: boolean
+                description:
+                    type: string
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.ProjectModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                gitProjectId:
+                    type: integer
+                    format: int32
+                gitBranch:
+                    type: string
+                gitCommit:
+                    type: string
+                config:
+                    type: string
+                overrideValues:
+                    type: string
+                dockerImage:
+                    type: array
+                    items:
+                        type: string
+                podSelectors:
+                    type: array
+                    items:
+                        type: string
+                namespaceId:
+                    type: integer
+                    format: int32
+                atomic:
+                    type: boolean
+                envValues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.KeyValue'
+                extraValues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/websocket.ExtraValue'
+                finalExtraValues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/websocket.ExtraValue'
+                deployStatus:
+                    enum:
+                        - StatusUnknown
+                        - StatusDeploying
+                        - StatusDeployed
+                        - StatusFailed
+                    type: string
+                    format: enum
+                humanizeCreatedAt:
+                    type: string
+                humanizeUpdatedAt:
+                    type: string
+                configType:
+                    type: string
+                gitCommitWebUrl:
+                    type: string
+                gitCommitTitle:
+                    type: string
+                gitCommitAuthor:
+                    type: string
+                gitCommitDate:
+                    type: string
+                version:
+                    type: integer
+                    format: int32
+                repoId:
+                    type: integer
+                    format: int32
+                repo:
+                    $ref: '#/components/schemas/types.RepoModel'
+                namespace:
+                    $ref: '#/components/schemas/types.NamespaceModel'
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.RepoModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                gitProjectId:
+                    type: integer
+                    format: int32
+                gitProjectName:
+                    type: string
+                enabled:
+                    type: boolean
+                marsConfig:
+                    $ref: '#/components/schemas/mars.Config'
+                needGitRepo:
+                    type: boolean
+                description:
+                    type: string
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.ServiceEndpoint:
+            type: object
+            properties:
+                name:
+                    type: string
+                url:
+                    type: string
+                portName:
+                    type: string
+        types.StateContainer:
+            type: object
+            properties:
+                namespace:
+                    type: string
+                pod:
+                    type: string
+                container:
+                    type: string
+                isOld:
+                    type: boolean
+                    description: 在滚动更新的时候会出现新旧 pod，is_old 用来标识旧的即将被删除的 pod
+                terminating:
+                    type: boolean
+                pending:
+                    type: boolean
+                ready:
+                    type: boolean
+        version.Response:
+            type: object
+            properties:
+                version:
+                    type: string
+                buildDate:
+                    type: string
+                gitBranch:
+                    type: string
+                gitCommit:
+                    type: string
+                gitTag:
+                    type: string
+                goVersion:
+                    type: string
+                compiler:
+                    type: string
+                platform:
+                    type: string
+                kubectlVersion:
+                    type: string
+                helmVersion:
+                    type: string
+                gitRepo:
+                    type: string
+        websocket.ClusterInfo:
+            type: object
+            properties:
+                status:
+                    type: string
+                freeMemory:
+                    type: string
+                freeCpu:
+                    type: string
+                freeRequestMemory:
+                    type: string
+                freeRequestCpu:
+                    type: string
+                totalMemory:
+                    type: string
+                totalCpu:
+                    type: string
+                usageMemoryRate:
+                    type: string
+                usageCpuRate:
+                    type: string
+                requestMemoryRate:
+                    type: string
+                requestCpuRate:
+                    type: string
+        websocket.ExtraValue:
+            type: object
+            properties:
+                path:
+                    type: string
+                value:
+                    type: string
+    securitySchemes:
+        BearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+security:
+    - BearerAuth: []
+tags:
+    - name: AccessToken
+    - name: Auth
+    - name: Changelog
+    - name: Cluster
+    - name: Container
+    - name: Endpoint
+    - name: Event
+    - name: File
+    - name: Git
+    - name: Metrics
+    - name: Namespace
+    - name: Picture
+    - name: Project
+    - name: Repo
+    - name: Version

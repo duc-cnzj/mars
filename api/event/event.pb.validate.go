@@ -18,7 +18,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/anypb"
 
-	types "github.com/duc-cnzj/mars/api/v4/types"
+	types "github.com/duc-cnzj/mars/api/v5/types"
 )
 
 // ensure the imports are used
@@ -61,31 +61,17 @@ func (m *ListRequest) validate(all bool) error {
 
 	var errors []error
 
-	if m.GetPage() < 1 {
-		err := ListRequestValidationError{
-			field:  "Page",
-			reason: "value must be greater than or equal to 1",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if m.GetPageSize() < 1 {
-		err := ListRequestValidationError{
-			field:  "PageSize",
-			reason: "value must be greater than or equal to 1",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
 	// no validation rules for ActionType
 
 	// no validation rules for Search
+
+	if m.Page != nil {
+		// no validation rules for Page
+	}
+
+	if m.PageSize != nil {
+		// no validation rules for PageSize
+	}
 
 	if len(errors) > 0 {
 		return ListRequestMultiError(errors)
@@ -434,11 +420,11 @@ func (m *ShowResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetEvent()).(type) {
+		switch v := interface{}(m.GetItem()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, ShowResponseValidationError{
-					field:  "Event",
+					field:  "Item",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -446,16 +432,16 @@ func (m *ShowResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, ShowResponseValidationError{
-					field:  "Event",
+					field:  "Item",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetEvent()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetItem()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ShowResponseValidationError{
-				field:  "Event",
+				field:  "Item",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
