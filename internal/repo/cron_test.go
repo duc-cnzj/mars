@@ -37,15 +37,12 @@ func Test_cronRepo_allNamespaces(t *testing.T) {
 	defer db.Close()
 	cr := &cronRepo{
 		logger: mlog.NewLogger(nil),
-		nsRepo: &namespaceRepo{
-			logger: mlog.NewLogger(nil),
-			data:   data.NewDataImpl(&data.NewDataParams{DB: db}),
-		},
+		data:   data.NewDataImpl(&data.NewDataParams{DB: db}),
 	}
 	for i := 0; i < 10; i++ {
-		db.Namespace.Create().SetName(fmt.Sprintf("test%d", i)).SaveX(context.TODO())
+		db.Namespace.Create().SetCreatorEmail("a").SetName(fmt.Sprintf("test%d", i)).SaveX(context.TODO())
 	}
-	namespaces, err := cr.allNamespaces(3)
+	namespaces, err := cr.allNamespaces()
 	assert.Nil(t, err)
 	assert.Len(t, namespaces, 10)
 	for i, namespace := range namespaces {
@@ -388,7 +385,7 @@ func TestSyncImagePullSecretsWithBadSecret(t *testing.T) {
 		SecretLister: getLister(fk),
 	}).Times(1)
 
-	db.Namespace.Create().SetName("test").SetImagePullSecrets([]string{secret.Name}).SaveX(context.Background())
+	db.Namespace.Create().SetCreatorEmail("a").SetName("test").SetImagePullSecrets([]string{secret.Name}).SaveX(context.Background())
 	cr.SyncImagePullSecrets()
 	get, _ := fk.CoreV1().Secrets("test").Get(context.TODO(), secret.Name, v1.GetOptions{})
 	dockerConfig, _ := k8s.DecodeDockerConfigJSON(get.Data[corev1.DockerConfigJsonKey])
@@ -497,9 +494,9 @@ func TestUpdateCertTls(t *testing.T) {
 
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	db.Namespace.Create().SetName("ns").SaveX(context.Background())
-	db.Namespace.Create().SetName("ns-2").SaveX(context.Background())
-	db.Namespace.Create().SetName("ns-3").SaveX(context.Background())
+	db.Namespace.Create().SetCreatorEmail("a").SetName("ns").SaveX(context.Background())
+	db.Namespace.Create().SetCreatorEmail("a").SetName("ns-2").SaveX(context.Background())
+	db.Namespace.Create().SetCreatorEmail("a").SetName("ns-3").SaveX(context.Background())
 
 	sec := &corev1.Secret{
 		TypeMeta: v1.TypeMeta{
@@ -520,6 +517,7 @@ func TestUpdateCertTls(t *testing.T) {
 		SecretLister: NewSecretLister(sec),
 		Client:       fk,
 	}).AnyTimes()
+	mockData.EXPECT().DB().Return(db).AnyTimes()
 	pl := application.NewMockPluginManger(m)
 	domainManager := application.NewMockDomainManager(m)
 	pl.EXPECT().Domain().Return(domainManager)
@@ -592,7 +590,7 @@ func TestProjectPodEventListener(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 
-	nsModel := db.Namespace.Create().SetName("devtest-ns").SaveX(context.TODO())
+	nsModel := db.Namespace.Create().SetCreatorEmail("a").SetName("devtest-ns").SaveX(context.TODO())
 
 	pubsub := application.NewMockPubSub(m)
 	ws.EXPECT().New("", "").Return(pubsub).Times(1)

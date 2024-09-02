@@ -28,6 +28,10 @@ type Namespace struct {
 	Name string `json:"name,omitempty"`
 	// image pull secrets
 	ImagePullSecrets []string `json:"image_pull_secrets,omitempty"`
+	// 是否私有, 默认公开
+	Private bool `json:"private,omitempty"`
+	// 创建者 email
+	CreatorEmail string `json:"creator_email,omitempty"`
 	// 项目空间描述
 	Description string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -42,9 +46,11 @@ type NamespaceEdges struct {
 	Projects []*Project `json:"projects,omitempty"`
 	// Favorites holds the value of the favorites edge.
 	Favorites []*Favorite `json:"favorites,omitempty"`
+	// Members holds the value of the members edge.
+	Members []*Member `json:"members,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // ProjectsOrErr returns the Projects value or an error if the edge
@@ -65,6 +71,15 @@ func (e NamespaceEdges) FavoritesOrErr() ([]*Favorite, error) {
 	return nil, &NotLoadedError{edge: "favorites"}
 }
 
+// MembersOrErr returns the Members value or an error if the edge
+// was not loaded in eager-loading.
+func (e NamespaceEdges) MembersOrErr() ([]*Member, error) {
+	if e.loadedTypes[2] {
+		return e.Members, nil
+	}
+	return nil, &NotLoadedError{edge: "members"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Namespace) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -72,9 +87,11 @@ func (*Namespace) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case namespace.FieldImagePullSecrets:
 			values[i] = new([]byte)
+		case namespace.FieldPrivate:
+			values[i] = new(sql.NullBool)
 		case namespace.FieldID:
 			values[i] = new(sql.NullInt64)
-		case namespace.FieldName, namespace.FieldDescription:
+		case namespace.FieldName, namespace.FieldCreatorEmail, namespace.FieldDescription:
 			values[i] = new(sql.NullString)
 		case namespace.FieldCreatedAt, namespace.FieldUpdatedAt, namespace.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -132,6 +149,18 @@ func (n *Namespace) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field image_pull_secrets: %w", err)
 				}
 			}
+		case namespace.FieldPrivate:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field private", values[i])
+			} else if value.Valid {
+				n.Private = value.Bool
+			}
+		case namespace.FieldCreatorEmail:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field creator_email", values[i])
+			} else if value.Valid {
+				n.CreatorEmail = value.String
+			}
 		case namespace.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
@@ -159,6 +188,11 @@ func (n *Namespace) QueryProjects() *ProjectQuery {
 // QueryFavorites queries the "favorites" edge of the Namespace entity.
 func (n *Namespace) QueryFavorites() *FavoriteQuery {
 	return NewNamespaceClient(n.config).QueryFavorites(n)
+}
+
+// QueryMembers queries the "members" edge of the Namespace entity.
+func (n *Namespace) QueryMembers() *MemberQuery {
+	return NewNamespaceClient(n.config).QueryMembers(n)
 }
 
 // Update returns a builder for updating this Namespace.
@@ -200,6 +234,12 @@ func (n *Namespace) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("image_pull_secrets=")
 	builder.WriteString(fmt.Sprintf("%v", n.ImagePullSecrets))
+	builder.WriteString(", ")
+	builder.WriteString("private=")
+	builder.WriteString(fmt.Sprintf("%v", n.Private))
+	builder.WriteString(", ")
+	builder.WriteString("creator_email=")
+	builder.WriteString(n.CreatorEmail)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(n.Description)

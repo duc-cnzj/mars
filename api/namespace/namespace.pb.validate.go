@@ -1655,3 +1655,493 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListResponseValidationError{}
+
+// Validate checks the field values on UpdatePrivateRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdatePrivateRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdatePrivateRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdatePrivateRequestMultiError, or nil if none found.
+func (m *UpdatePrivateRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdatePrivateRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetId() <= 0 {
+		err := UpdatePrivateRequestValidationError{
+			field:  "Id",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Private
+
+	if len(errors) > 0 {
+		return UpdatePrivateRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdatePrivateRequestMultiError is an error wrapping multiple validation
+// errors returned by UpdatePrivateRequest.ValidateAll() if the designated
+// constraints aren't met.
+type UpdatePrivateRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdatePrivateRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdatePrivateRequestMultiError) AllErrors() []error { return m }
+
+// UpdatePrivateRequestValidationError is the validation error returned by
+// UpdatePrivateRequest.Validate if the designated constraints aren't met.
+type UpdatePrivateRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdatePrivateRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdatePrivateRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdatePrivateRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdatePrivateRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdatePrivateRequestValidationError) ErrorName() string {
+	return "UpdatePrivateRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdatePrivateRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdatePrivateRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdatePrivateRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdatePrivateRequestValidationError{}
+
+// Validate checks the field values on UpdatePrivateResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdatePrivateResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdatePrivateResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdatePrivateResponseMultiError, or nil if none found.
+func (m *UpdatePrivateResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdatePrivateResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetItem()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UpdatePrivateResponseValidationError{
+					field:  "Item",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UpdatePrivateResponseValidationError{
+					field:  "Item",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetItem()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdatePrivateResponseValidationError{
+				field:  "Item",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return UpdatePrivateResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdatePrivateResponseMultiError is an error wrapping multiple validation
+// errors returned by UpdatePrivateResponse.ValidateAll() if the designated
+// constraints aren't met.
+type UpdatePrivateResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdatePrivateResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdatePrivateResponseMultiError) AllErrors() []error { return m }
+
+// UpdatePrivateResponseValidationError is the validation error returned by
+// UpdatePrivateResponse.Validate if the designated constraints aren't met.
+type UpdatePrivateResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdatePrivateResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdatePrivateResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdatePrivateResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdatePrivateResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdatePrivateResponseValidationError) ErrorName() string {
+	return "UpdatePrivateResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdatePrivateResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdatePrivateResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdatePrivateResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdatePrivateResponseValidationError{}
+
+// Validate checks the field values on SyncMembersRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SyncMembersRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SyncMembersRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SyncMembersRequestMultiError, or nil if none found.
+func (m *SyncMembersRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SyncMembersRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetId() <= 0 {
+		err := SyncMembersRequestValidationError{
+			field:  "Id",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return SyncMembersRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SyncMembersRequestMultiError is an error wrapping multiple validation errors
+// returned by SyncMembersRequest.ValidateAll() if the designated constraints
+// aren't met.
+type SyncMembersRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SyncMembersRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SyncMembersRequestMultiError) AllErrors() []error { return m }
+
+// SyncMembersRequestValidationError is the validation error returned by
+// SyncMembersRequest.Validate if the designated constraints aren't met.
+type SyncMembersRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SyncMembersRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SyncMembersRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SyncMembersRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SyncMembersRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SyncMembersRequestValidationError) ErrorName() string {
+	return "SyncMembersRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SyncMembersRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSyncMembersRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SyncMembersRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SyncMembersRequestValidationError{}
+
+// Validate checks the field values on SyncMembersResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SyncMembersResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SyncMembersResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SyncMembersResponseMultiError, or nil if none found.
+func (m *SyncMembersResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SyncMembersResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetItem()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SyncMembersResponseValidationError{
+					field:  "Item",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SyncMembersResponseValidationError{
+					field:  "Item",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetItem()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SyncMembersResponseValidationError{
+				field:  "Item",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return SyncMembersResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SyncMembersResponseMultiError is an error wrapping multiple validation
+// errors returned by SyncMembersResponse.ValidateAll() if the designated
+// constraints aren't met.
+type SyncMembersResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SyncMembersResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SyncMembersResponseMultiError) AllErrors() []error { return m }
+
+// SyncMembersResponseValidationError is the validation error returned by
+// SyncMembersResponse.Validate if the designated constraints aren't met.
+type SyncMembersResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SyncMembersResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SyncMembersResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SyncMembersResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SyncMembersResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SyncMembersResponseValidationError) ErrorName() string {
+	return "SyncMembersResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SyncMembersResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSyncMembersResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SyncMembersResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SyncMembersResponseValidationError{}

@@ -12,12 +12,15 @@ func FromNamespace(ns *repo.Namespace) *types.NamespaceModel {
 		return nil
 	}
 	return &types.NamespaceModel{
-		Id:          int32(ns.ID),
-		Name:        ns.Name,
-		Projects:    serialize.Serialize(ns.Projects, FromProject),
-		Description: ns.Description,
-		CreatedAt:   date.ToRFC3339DatetimeString(&ns.CreatedAt),
-		UpdatedAt:   date.ToRFC3339DatetimeString(&ns.UpdatedAt),
-		DeletedAt:   date.ToRFC3339DatetimeString(ns.DeletedAt),
+		Id:           int32(ns.ID),
+		Name:         ns.Name,
+		Projects:     serialize.Serialize(ns.Projects, FromProject),
+		Description:  ns.Description,
+		Members:      serialize.Serialize(ns.Members, FromMember),
+		Private:      ns.Private,
+		CreatorEmail: ns.CreatorEmail,
+		CreatedAt:    date.ToRFC3339DatetimeString(&ns.CreatedAt),
+		UpdatedAt:    date.ToRFC3339DatetimeString(&ns.UpdatedAt),
+		DeletedAt:    date.ToRFC3339DatetimeString(ns.DeletedAt),
 	}
 }

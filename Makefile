@@ -182,6 +182,11 @@ ent-new:
 ent-generate:
 	go generate ./internal/ent/...
 
+.PHONY: ent-hash
+# db schema hash
+ent-hash:
+	atlas migrate hash --env local
+
 .PHONY: ent-diff
 # ent-diff generate diff schema sql
 ent-diff:

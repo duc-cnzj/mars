@@ -601,6 +601,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/namespaces/sync_members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 修改空间的成员 */
+        post: operations["Namespace_SyncMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/namespaces/update_private": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 修改空间的访问权限 */
+        post: operations["Namespace_UpdatePrivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/namespaces/{id}": {
         parameters: {
             query?: never;
@@ -1148,12 +1182,28 @@ export interface components {
         "namespace.ShowResponse": {
             item: components["schemas"]["types.NamespaceModel"];
         };
+        "namespace.SyncMembersRequest": {
+            /** Format: int32 */
+            id: number;
+            emails?: string[];
+        };
+        "namespace.SyncMembersResponse": {
+            item: components["schemas"]["types.NamespaceModel"];
+        };
         "namespace.UpdateDescRequest": {
             /** Format: int32 */
             id: number;
             desc?: string;
         };
         "namespace.UpdateDescResponse": {
+            item: components["schemas"]["types.NamespaceModel"];
+        };
+        "namespace.UpdatePrivateRequest": {
+            /** Format: int32 */
+            id: number;
+            private?: boolean;
+        };
+        "namespace.UpdatePrivateResponse": {
             item: components["schemas"]["types.NamespaceModel"];
         };
         "picture.BackgroundResponse": {
@@ -1384,6 +1434,11 @@ export interface components {
             key: string;
             value: string;
         };
+        "types.MemberModel": {
+            /** Format: int32 */
+            id: number;
+            email: string;
+        };
         "types.NamespaceModel": {
             /** Format: int32 */
             id: number;
@@ -1391,6 +1446,9 @@ export interface components {
             projects: components["schemas"]["types.ProjectModel"][];
             favorite: boolean;
             description: string;
+            members: components["schemas"]["types.MemberModel"][];
+            private: boolean;
+            creatorEmail: string;
             createdAt: string;
             updatedAt: string;
             deletedAt: string;
@@ -2707,6 +2765,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["namespace.FavoriteResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Namespace_SyncMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["namespace.SyncMembersRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["namespace.SyncMembersResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Namespace_UpdatePrivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["namespace.UpdatePrivateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["namespace.UpdatePrivateResponse"];
                 };
             };
             /** @description Default error response */

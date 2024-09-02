@@ -29,6 +29,12 @@ func (Namespace) Fields() []ent.Field {
 		field.Strings("image_pull_secrets").
 			Default([]string{}).
 			Comment("image pull secrets"),
+		field.Bool("private").
+			Default(false).
+			Comment("是否私有, 默认公开"),
+		field.String("creator_email").
+			MaxLen(50).
+			Comment("创建者 email"),
 		field.String("description").
 			SchemaType(map[string]string{
 				dialect.MySQL: "text",
@@ -43,6 +49,7 @@ func (Namespace) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("projects", Project.Type),
 		edge.To("favorites", Favorite.Type),
+		edge.To("members", Member.Type),
 	}
 }
 

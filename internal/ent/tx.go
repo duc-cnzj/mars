@@ -26,6 +26,8 @@ type Tx struct {
 	Favorite *FavoriteClient
 	// File is the client for interacting with the File builders.
 	File *FileClient
+	// Member is the client for interacting with the Member builders.
+	Member *MemberClient
 	// Namespace is the client for interacting with the Namespace builders.
 	Namespace *NamespaceClient
 	// Project is the client for interacting with the Project builders.
@@ -170,6 +172,7 @@ func (tx *Tx) init() {
 	tx.Event = NewEventClient(tx.config)
 	tx.Favorite = NewFavoriteClient(tx.config)
 	tx.File = NewFileClient(tx.config)
+	tx.Member = NewMemberClient(tx.config)
 	tx.Namespace = NewNamespaceClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)
 	tx.Repo = NewRepoClient(tx.config)

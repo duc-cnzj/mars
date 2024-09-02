@@ -186,6 +186,36 @@ var (
 		Columns:    FilesColumns,
 		PrimaryKey: []*schema.Column{FilesColumns[0]},
 	}
+	// MembersColumns holds the columns for the "members" table.
+	MembersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "email", Type: field.TypeString},
+		{Name: "namespace_id", Type: field.TypeInt, Nullable: true},
+	}
+	// MembersTable holds the schema information for the "members" table.
+	MembersTable = &schema.Table{
+		Name:       "members",
+		Columns:    MembersColumns,
+		PrimaryKey: []*schema.Column{MembersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "members_namespaces_members",
+				Columns:    []*schema.Column{MembersColumns[5]},
+				RefColumns: []*schema.Column{NamespacesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "member_email",
+				Unique:  false,
+				Columns: []*schema.Column{MembersColumns[4]},
+			},
+		},
+	}
 	// NamespacesColumns holds the columns for the "namespaces" table.
 	NamespacesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -194,6 +224,8 @@ var (
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "name", Type: field.TypeString, Size: 100, Collation: "utf8mb4_general_ci"},
 		{Name: "image_pull_secrets", Type: field.TypeJSON},
+		{Name: "private", Type: field.TypeBool, Default: false},
+		{Name: "creator_email", Type: field.TypeString, Size: 50},
 		{Name: "description", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "text"}},
 	}
 	// NamespacesTable holds the schema information for the "namespaces" table.
@@ -289,6 +321,7 @@ var (
 		EventsTable,
 		FavoritesTable,
 		FilesTable,
+		MembersTable,
 		NamespacesTable,
 		ProjectsTable,
 		ReposTable,
@@ -302,6 +335,7 @@ func init() {
 	}
 	EventsTable.ForeignKeys[0].RefTable = FilesTable
 	FavoritesTable.ForeignKeys[0].RefTable = NamespacesTable
+	MembersTable.ForeignKeys[0].RefTable = NamespacesTable
 	ProjectsTable.ForeignKeys[0].RefTable = NamespacesTable
 	ProjectsTable.ForeignKeys[1].RefTable = ReposTable
 }

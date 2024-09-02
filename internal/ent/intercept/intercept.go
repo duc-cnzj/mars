@@ -15,6 +15,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/ent/event"
 	"github.com/duc-cnzj/mars/v5/internal/ent/favorite"
 	"github.com/duc-cnzj/mars/v5/internal/ent/file"
+	"github.com/duc-cnzj/mars/v5/internal/ent/member"
 	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v5/internal/ent/predicate"
 	"github.com/duc-cnzj/mars/v5/internal/ent/project"
@@ -266,6 +267,33 @@ func (f TraverseFile) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.FileQuery", q)
 }
 
+// The MemberFunc type is an adapter to allow the use of ordinary function as a Querier.
+type MemberFunc func(context.Context, *ent.MemberQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f MemberFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.MemberQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.MemberQuery", q)
+}
+
+// The TraverseMember type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseMember func(context.Context, *ent.MemberQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseMember) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseMember) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.MemberQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.MemberQuery", q)
+}
+
 // The NamespaceFunc type is an adapter to allow the use of ordinary function as a Querier.
 type NamespaceFunc func(context.Context, *ent.NamespaceQuery) (ent.Value, error)
 
@@ -364,6 +392,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.FavoriteQuery, predicate.Favorite, favorite.OrderOption]{typ: ent.TypeFavorite, tq: q}, nil
 	case *ent.FileQuery:
 		return &query[*ent.FileQuery, predicate.File, file.OrderOption]{typ: ent.TypeFile, tq: q}, nil
+	case *ent.MemberQuery:
+		return &query[*ent.MemberQuery, predicate.Member, member.OrderOption]{typ: ent.TypeMember, tq: q}, nil
 	case *ent.NamespaceQuery:
 		return &query[*ent.NamespaceQuery, predicate.Namespace, namespace.OrderOption]{typ: ent.TypeNamespace, tq: q}, nil
 	case *ent.ProjectQuery:

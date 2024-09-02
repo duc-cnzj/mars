@@ -10,6 +10,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/ent"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/util/rand"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
@@ -289,5 +290,5 @@ func createProject(db *ent.Client, nsID int) *ent.Project {
 }
 
 func createNamespace(db *ent.Client) *ent.Namespace {
-	return db.Namespace.Create().SetName("testns").SaveX(context.TODO())
+	return db.Namespace.Create().SetName(rand.String(10)).SetCreatorEmail(rand.String(20) + "@q.c").SaveX(context.TODO())
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/ent/event"
 	"github.com/duc-cnzj/mars/v5/internal/ent/favorite"
 	"github.com/duc-cnzj/mars/v5/internal/ent/file"
+	"github.com/duc-cnzj/mars/v5/internal/ent/member"
 	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v5/internal/ent/project"
 	"github.com/duc-cnzj/mars/v5/internal/ent/repo"
@@ -89,6 +90,7 @@ func checkColumn(table, column string) error {
 			event.Table:       event.ValidColumn,
 			favorite.Table:    favorite.ValidColumn,
 			file.Table:        file.ValidColumn,
+			member.Table:      member.ValidColumn,
 			namespace.Table:   namespace.ValidColumn,
 			project.Table:     project.ValidColumn,
 			repo.Table:        repo.ValidColumn,

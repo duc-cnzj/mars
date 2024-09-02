@@ -1181,6 +1181,109 @@ var _ interface {
 	ErrorName() string
 } = ImagePullSecretValidationError{}
 
+// Validate checks the field values on MemberModel with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *MemberModel) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MemberModel with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in MemberModelMultiError, or
+// nil if none found.
+func (m *MemberModel) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MemberModel) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for Email
+
+	if len(errors) > 0 {
+		return MemberModelMultiError(errors)
+	}
+
+	return nil
+}
+
+// MemberModelMultiError is an error wrapping multiple validation errors
+// returned by MemberModel.ValidateAll() if the designated constraints aren't met.
+type MemberModelMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MemberModelMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MemberModelMultiError) AllErrors() []error { return m }
+
+// MemberModelValidationError is the validation error returned by
+// MemberModel.Validate if the designated constraints aren't met.
+type MemberModelValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MemberModelValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MemberModelValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MemberModelValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MemberModelValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MemberModelValidationError) ErrorName() string { return "MemberModelValidationError" }
+
+// Error satisfies the builtin error interface
+func (e MemberModelValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMemberModel.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MemberModelValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MemberModelValidationError{}
+
 // Validate checks the field values on NamespaceModel with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -1244,6 +1347,44 @@ func (m *NamespaceModel) validate(all bool) error {
 	// no validation rules for Favorite
 
 	// no validation rules for Description
+
+	for idx, item := range m.GetMembers() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, NamespaceModelValidationError{
+						field:  fmt.Sprintf("Members[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, NamespaceModelValidationError{
+						field:  fmt.Sprintf("Members[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return NamespaceModelValidationError{
+					field:  fmt.Sprintf("Members[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for Private
+
+	// no validation rules for CreatorEmail
 
 	// no validation rules for CreatedAt
 

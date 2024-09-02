@@ -5,9 +5,11 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/ent"
 	"github.com/duc-cnzj/mars/v5/internal/ent/favorite"
+	"github.com/duc-cnzj/mars/v5/internal/ent/member"
 	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v5/internal/ent/project"
 	"github.com/duc-cnzj/mars/v5/internal/filters"
@@ -24,6 +26,12 @@ type Favorite struct {
 	Email       string
 }
 
+type Member struct {
+	ID          int
+	NamespaceID int
+	Email       string
+}
+
 // Namespace is the model entity for the Namespace schema.
 type Namespace struct {
 	ID               int
@@ -33,9 +41,12 @@ type Namespace struct {
 	Name             string
 	ImagePullSecrets []string
 	Description      string
+	Private          bool
+	CreatorEmail     string
 
 	Projects  []*Project
 	Favorites []*Favorite
+	Members   []*Member
 }
 
 func (ns *Namespace) GetImagePullSecrets() []*types.ImagePullSecret {
@@ -59,8 +70,22 @@ func ToNamespace(namespace *ent.Namespace) *Namespace {
 		Name:             namespace.Name,
 		ImagePullSecrets: namespace.ImagePullSecrets,
 		Description:      namespace.Description,
+		Private:          namespace.Private,
+		CreatorEmail:     namespace.CreatorEmail,
 		Projects:         serialize.Serialize(namespace.Edges.Projects, ToProject),
 		Favorites:        serialize.Serialize(namespace.Edges.Favorites, ToFavorite),
+		Members:          serialize.Serialize(namespace.Edges.Members, ToMember),
+	}
+}
+
+func ToMember(v *ent.Member) *Member {
+	if v == nil {
+		return nil
+	}
+	return &Member{
+		ID:          v.ID,
+		NamespaceID: v.NamespaceID,
+		Email:       v.Email,
 	}
 }
 
@@ -84,6 +109,9 @@ type NamespaceRepo interface {
 	GetMarsNamespace(name string) string
 	FindByName(ctx context.Context, name string) (*Namespace, error)
 	Favorite(ctx context.Context, input *FavoriteNamespaceInput) error
+	SyncMembers(ctx context.Context, namespaceID int, memberEmails []string) (*Namespace, error)
+	UpdatePrivate(ctx context.Context, namespaceID int, private bool) (*Namespace, error)
+	IsOwner(ctx context.Context, namespaceID int, user *auth.UserInfo) (bool, error)
 }
 
 var _ NamespaceRepo = (*namespaceRepo)(nil)
@@ -94,12 +122,82 @@ type namespaceRepo struct {
 	NsPrefix string
 }
 
+func (repo *namespaceRepo) IsOwner(ctx context.Context, namespaceID int, user *auth.UserInfo) (bool, error) {
+	show, err := repo.Show(ctx, namespaceID)
+	if err != nil {
+		return false, err
+	}
+	if user.IsAdmin() || show.CreatorEmail == user.Email {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (repo *namespaceRepo) SyncMembers(ctx context.Context, namespaceID int, memberEmails []string) (*Namespace, error) {
+	if err := repo.data.WithTx(ctx, func(tx *ent.Tx) error {
+		var (
+			mc  []*ent.MemberCreate
+			err error
+		)
+		get, err := tx.Namespace.Query().WithMembers().Where(namespace.ID(namespaceID)).First(ctx)
+		if err != nil {
+			return err
+		}
+		del, add := lo.Difference(serialize.Serialize(get.Edges.Members, func(v *ent.Member) string { return v.Email }), memberEmails)
+		for _, addEmail := range add {
+			mc = append(mc, tx.Member.Create().SetEmail(addEmail).SetNamespaceID(namespaceID))
+		}
+		if _, err = tx.Member.CreateBulk(mc...).Save(ctx); err != nil {
+			return err
+		}
+		ids, err := tx.Member.Query().Where(member.EmailIn(del...)).IDs(ctx)
+		if err != nil {
+			return err
+		}
+
+		if _, err := get.Update().RemoveMemberIDs(ids...).Save(ctx); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return repo.Show(ctx, namespaceID)
+}
+
+func (repo *namespaceRepo) UpdatePrivate(ctx context.Context, namespaceID int, private bool) (*Namespace, error) {
+	if err := repo.data.WithTx(ctx, func(tx *ent.Tx) error {
+		get, err := tx.Namespace.Get(ctx, namespaceID)
+		if err != nil {
+			return err
+		}
+		up := get.Update().
+			SetPrivate(private)
+		if !private {
+			up.ClearMembers()
+			if _, err = tx.Member.Delete().Where(member.NamespaceID(namespaceID)).Exec(ctx); err != nil {
+				return err
+			}
+		}
+		_, err = up.Save(ctx)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return repo.Show(ctx, namespaceID)
+}
+
 type ListNamespaceInput struct {
 	Favorite bool
 	Email    string
 	Page     int32
 	PageSize int32
 	Name     *string
+	IsAdmin  bool
 }
 
 func NewNamespaceRepo(logger mlog.Logger, data data.Data) NamespaceRepo {
@@ -112,7 +210,21 @@ func NewNamespaceRepo(logger mlog.Logger, data data.Data) NamespaceRepo {
 
 func (repo *namespaceRepo) List(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error) {
 	query := repo.data.DB().Namespace.Query().
-		Where(filters.IfNameLike(lo.FromPtr(input.Name)))
+		Where(
+			filters.IfNameLike(lo.FromPtr(input.Name)),
+		)
+	if !input.IsAdmin {
+		query = query.Where(
+			namespace.Or(
+				namespace.And(
+					namespace.HasMembersWith(member.Email(input.Email)),
+					namespace.Private(true),
+				),
+				namespace.Private(false),
+			),
+		)
+	}
+
 	if input.Favorite {
 		query = query.Where(
 			namespace.HasFavoritesWith(favorite.Email(input.Email)),
@@ -126,9 +238,14 @@ func (repo *namespaceRepo) List(ctx context.Context, input *ListNamespaceInput) 
 			namespace.FieldDescription,
 			namespace.FieldCreatedAt,
 			namespace.FieldUpdatedAt,
+			namespace.FieldCreatorEmail,
+			namespace.FieldPrivate,
 		).
 		WithFavorites(func(query *ent.FavoriteQuery) {
 			query.Where(favorite.Email(input.Email))
+		}).
+		WithMembers(func(query *ent.MemberQuery) {
+			query.Select(member.FieldID, member.FieldEmail)
 		}).
 		WithProjects(
 			func(query *ent.ProjectQuery) {
@@ -177,6 +294,7 @@ func (repo *namespaceRepo) Show(ctx context.Context, id int) (*Namespace, error)
 				project.FieldNamespaceID,
 			)
 		}).
+		WithMembers().
 		Where(namespace.ID(id)).
 		First(ctx)
 	return ToNamespace(first), ToError(404, err)

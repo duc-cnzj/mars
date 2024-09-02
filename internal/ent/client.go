@@ -22,6 +22,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/ent/event"
 	"github.com/duc-cnzj/mars/v5/internal/ent/favorite"
 	"github.com/duc-cnzj/mars/v5/internal/ent/file"
+	"github.com/duc-cnzj/mars/v5/internal/ent/member"
 	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v5/internal/ent/project"
 	"github.com/duc-cnzj/mars/v5/internal/ent/repo"
@@ -46,6 +47,8 @@ type Client struct {
 	Favorite *FavoriteClient
 	// File is the client for interacting with the File builders.
 	File *FileClient
+	// Member is the client for interacting with the Member builders.
+	Member *MemberClient
 	// Namespace is the client for interacting with the Namespace builders.
 	Namespace *NamespaceClient
 	// Project is the client for interacting with the Project builders.
@@ -70,6 +73,7 @@ func (c *Client) init() {
 	c.Event = NewEventClient(c.config)
 	c.Favorite = NewFavoriteClient(c.config)
 	c.File = NewFileClient(c.config)
+	c.Member = NewMemberClient(c.config)
 	c.Namespace = NewNamespaceClient(c.config)
 	c.Project = NewProjectClient(c.config)
 	c.Repo = NewRepoClient(c.config)
@@ -172,6 +176,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Event:       NewEventClient(cfg),
 		Favorite:    NewFavoriteClient(cfg),
 		File:        NewFileClient(cfg),
+		Member:      NewMemberClient(cfg),
 		Namespace:   NewNamespaceClient(cfg),
 		Project:     NewProjectClient(cfg),
 		Repo:        NewRepoClient(cfg),
@@ -201,6 +206,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Event:       NewEventClient(cfg),
 		Favorite:    NewFavoriteClient(cfg),
 		File:        NewFileClient(cfg),
+		Member:      NewMemberClient(cfg),
 		Namespace:   NewNamespaceClient(cfg),
 		Project:     NewProjectClient(cfg),
 		Repo:        NewRepoClient(cfg),
@@ -234,7 +240,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.AccessToken, c.CacheLock, c.Changelog, c.DBCache, c.Event, c.Favorite, c.File,
-		c.Namespace, c.Project, c.Repo,
+		c.Member, c.Namespace, c.Project, c.Repo,
 	} {
 		n.Use(hooks...)
 	}
@@ -245,7 +251,7 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.AccessToken, c.CacheLock, c.Changelog, c.DBCache, c.Event, c.Favorite, c.File,
-		c.Namespace, c.Project, c.Repo,
+		c.Member, c.Namespace, c.Project, c.Repo,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -268,6 +274,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Favorite.mutate(ctx, m)
 	case *FileMutation:
 		return c.File.mutate(ctx, m)
+	case *MemberMutation:
+		return c.Member.mutate(ctx, m)
 	case *NamespaceMutation:
 		return c.Namespace.mutate(ctx, m)
 	case *ProjectMutation:
@@ -1282,6 +1290,157 @@ func (c *FileClient) mutate(ctx context.Context, m *FileMutation) (Value, error)
 	}
 }
 
+// MemberClient is a client for the Member schema.
+type MemberClient struct {
+	config
+}
+
+// NewMemberClient returns a client for the Member from the given config.
+func NewMemberClient(c config) *MemberClient {
+	return &MemberClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `member.Hooks(f(g(h())))`.
+func (c *MemberClient) Use(hooks ...Hook) {
+	c.hooks.Member = append(c.hooks.Member, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `member.Intercept(f(g(h())))`.
+func (c *MemberClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Member = append(c.inters.Member, interceptors...)
+}
+
+// Create returns a builder for creating a Member entity.
+func (c *MemberClient) Create() *MemberCreate {
+	mutation := newMemberMutation(c.config, OpCreate)
+	return &MemberCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Member entities.
+func (c *MemberClient) CreateBulk(builders ...*MemberCreate) *MemberCreateBulk {
+	return &MemberCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MemberClient) MapCreateBulk(slice any, setFunc func(*MemberCreate, int)) *MemberCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MemberCreateBulk{err: fmt.Errorf("calling to MemberClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MemberCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MemberCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Member.
+func (c *MemberClient) Update() *MemberUpdate {
+	mutation := newMemberMutation(c.config, OpUpdate)
+	return &MemberUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MemberClient) UpdateOne(m *Member) *MemberUpdateOne {
+	mutation := newMemberMutation(c.config, OpUpdateOne, withMember(m))
+	return &MemberUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MemberClient) UpdateOneID(id int) *MemberUpdateOne {
+	mutation := newMemberMutation(c.config, OpUpdateOne, withMemberID(id))
+	return &MemberUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Member.
+func (c *MemberClient) Delete() *MemberDelete {
+	mutation := newMemberMutation(c.config, OpDelete)
+	return &MemberDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MemberClient) DeleteOne(m *Member) *MemberDeleteOne {
+	return c.DeleteOneID(m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MemberClient) DeleteOneID(id int) *MemberDeleteOne {
+	builder := c.Delete().Where(member.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MemberDeleteOne{builder}
+}
+
+// Query returns a query builder for Member.
+func (c *MemberClient) Query() *MemberQuery {
+	return &MemberQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMember},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Member entity by its id.
+func (c *MemberClient) Get(ctx context.Context, id int) (*Member, error) {
+	return c.Query().Where(member.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MemberClient) GetX(ctx context.Context, id int) *Member {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryNamespace queries the namespace edge of a Member.
+func (c *MemberClient) QueryNamespace(m *Member) *NamespaceQuery {
+	query := (&NamespaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(member.Table, member.FieldID, id),
+			sqlgraph.To(namespace.Table, namespace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, member.NamespaceTable, member.NamespaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MemberClient) Hooks() []Hook {
+	hooks := c.hooks.Member
+	return append(hooks[:len(hooks):len(hooks)], member.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *MemberClient) Interceptors() []Interceptor {
+	inters := c.inters.Member
+	return append(inters[:len(inters):len(inters)], member.Interceptors[:]...)
+}
+
+func (c *MemberClient) mutate(ctx context.Context, m *MemberMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MemberCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MemberUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MemberUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MemberDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Member mutation op: %q", m.Op())
+	}
+}
+
 // NamespaceClient is a client for the Namespace schema.
 type NamespaceClient struct {
 	config
@@ -1415,6 +1574,22 @@ func (c *NamespaceClient) QueryFavorites(n *Namespace) *FavoriteQuery {
 			sqlgraph.From(namespace.Table, namespace.FieldID, id),
 			sqlgraph.To(favorite.Table, favorite.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, namespace.FavoritesTable, namespace.FavoritesColumn),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMembers queries the members edge of a Namespace.
+func (c *NamespaceClient) QueryMembers(n *Namespace) *MemberQuery {
+	query := (&MemberClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(namespace.Table, namespace.FieldID, id),
+			sqlgraph.To(member.Table, member.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, namespace.MembersTable, namespace.MembersColumn),
 		)
 		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil
@@ -1786,11 +1961,11 @@ func (c *RepoClient) mutate(ctx context.Context, m *RepoMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		AccessToken, CacheLock, Changelog, DBCache, Event, Favorite, File, Namespace,
-		Project, Repo []ent.Hook
+		AccessToken, CacheLock, Changelog, DBCache, Event, Favorite, File, Member,
+		Namespace, Project, Repo []ent.Hook
 	}
 	inters struct {
-		AccessToken, CacheLock, Changelog, DBCache, Event, Favorite, File, Namespace,
-		Project, Repo []ent.Interceptor
+		AccessToken, CacheLock, Changelog, DBCache, Event, Favorite, File, Member,
+		Namespace, Project, Repo []ent.Interceptor
 	}
 )

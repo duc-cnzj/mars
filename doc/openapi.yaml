@@ -1055,6 +1055,56 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+    /api/namespaces/sync_members:
+        post:
+            tags:
+                - Namespace
+            summary: 修改空间的成员
+            operationId: Namespace_SyncMembers
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/namespace.SyncMembersRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.SyncMembersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/namespaces/update_private:
+        post:
+            tags:
+                - Namespace
+            summary: 修改空间的访问权限
+            operationId: Namespace_UpdatePrivate
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/namespace.UpdatePrivateRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.UpdatePrivateResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/namespaces/{id}:
         get:
             tags:
@@ -2120,6 +2170,23 @@ components:
             properties:
                 item:
                     $ref: '#/components/schemas/types.NamespaceModel'
+        namespace.SyncMembersRequest:
+            required:
+                - id
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                emails:
+                    type: array
+                    items:
+                        type: string
+        namespace.SyncMembersResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.NamespaceModel'
         namespace.UpdateDescRequest:
             required:
                 - id
@@ -2131,6 +2198,21 @@ components:
                 desc:
                     type: string
         namespace.UpdateDescResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.NamespaceModel'
+        namespace.UpdatePrivateRequest:
+            required:
+                - id
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                private:
+                    type: boolean
+        namespace.UpdatePrivateResponse:
             type: object
             properties:
                 item:
@@ -2572,6 +2654,14 @@ components:
                     type: string
                 value:
                     type: string
+        types.MemberModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                email:
+                    type: string
         types.NamespaceModel:
             type: object
             properties:
@@ -2587,6 +2677,14 @@ components:
                 favorite:
                     type: boolean
                 description:
+                    type: string
+                members:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.MemberModel'
+                private:
+                    type: boolean
+                creatorEmail:
                     type: string
                 createdAt:
                     type: string

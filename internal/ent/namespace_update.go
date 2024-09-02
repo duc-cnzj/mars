@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/duc-cnzj/mars/v5/internal/ent/favorite"
+	"github.com/duc-cnzj/mars/v5/internal/ent/member"
 	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v5/internal/ent/predicate"
 	"github.com/duc-cnzj/mars/v5/internal/ent/project"
@@ -83,6 +84,34 @@ func (nu *NamespaceUpdate) AppendImagePullSecrets(s []string) *NamespaceUpdate {
 	return nu
 }
 
+// SetPrivate sets the "private" field.
+func (nu *NamespaceUpdate) SetPrivate(b bool) *NamespaceUpdate {
+	nu.mutation.SetPrivate(b)
+	return nu
+}
+
+// SetNillablePrivate sets the "private" field if the given value is not nil.
+func (nu *NamespaceUpdate) SetNillablePrivate(b *bool) *NamespaceUpdate {
+	if b != nil {
+		nu.SetPrivate(*b)
+	}
+	return nu
+}
+
+// SetCreatorEmail sets the "creator_email" field.
+func (nu *NamespaceUpdate) SetCreatorEmail(s string) *NamespaceUpdate {
+	nu.mutation.SetCreatorEmail(s)
+	return nu
+}
+
+// SetNillableCreatorEmail sets the "creator_email" field if the given value is not nil.
+func (nu *NamespaceUpdate) SetNillableCreatorEmail(s *string) *NamespaceUpdate {
+	if s != nil {
+		nu.SetCreatorEmail(*s)
+	}
+	return nu
+}
+
 // SetDescription sets the "description" field.
 func (nu *NamespaceUpdate) SetDescription(s string) *NamespaceUpdate {
 	nu.mutation.SetDescription(s)
@@ -133,6 +162,21 @@ func (nu *NamespaceUpdate) AddFavorites(f ...*Favorite) *NamespaceUpdate {
 	return nu.AddFavoriteIDs(ids...)
 }
 
+// AddMemberIDs adds the "members" edge to the Member entity by IDs.
+func (nu *NamespaceUpdate) AddMemberIDs(ids ...int) *NamespaceUpdate {
+	nu.mutation.AddMemberIDs(ids...)
+	return nu
+}
+
+// AddMembers adds the "members" edges to the Member entity.
+func (nu *NamespaceUpdate) AddMembers(m ...*Member) *NamespaceUpdate {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return nu.AddMemberIDs(ids...)
+}
+
 // Mutation returns the NamespaceMutation object of the builder.
 func (nu *NamespaceUpdate) Mutation() *NamespaceMutation {
 	return nu.mutation
@@ -178,6 +222,27 @@ func (nu *NamespaceUpdate) RemoveFavorites(f ...*Favorite) *NamespaceUpdate {
 		ids[i] = f[i].ID
 	}
 	return nu.RemoveFavoriteIDs(ids...)
+}
+
+// ClearMembers clears all "members" edges to the Member entity.
+func (nu *NamespaceUpdate) ClearMembers() *NamespaceUpdate {
+	nu.mutation.ClearMembers()
+	return nu
+}
+
+// RemoveMemberIDs removes the "members" edge to Member entities by IDs.
+func (nu *NamespaceUpdate) RemoveMemberIDs(ids ...int) *NamespaceUpdate {
+	nu.mutation.RemoveMemberIDs(ids...)
+	return nu
+}
+
+// RemoveMembers removes "members" edges to Member entities.
+func (nu *NamespaceUpdate) RemoveMembers(m ...*Member) *NamespaceUpdate {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return nu.RemoveMemberIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -229,6 +294,11 @@ func (nu *NamespaceUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Namespace.name": %w`, err)}
 		}
 	}
+	if v, ok := nu.mutation.CreatorEmail(); ok {
+		if err := namespace.CreatorEmailValidator(v); err != nil {
+			return &ValidationError{Name: "creator_email", err: fmt.Errorf(`ent: validator failed for field "Namespace.creator_email": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -263,6 +333,12 @@ func (nu *NamespaceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, namespace.FieldImagePullSecrets, value)
 		})
+	}
+	if value, ok := nu.mutation.Private(); ok {
+		_spec.SetField(namespace.FieldPrivate, field.TypeBool, value)
+	}
+	if value, ok := nu.mutation.CreatorEmail(); ok {
+		_spec.SetField(namespace.FieldCreatorEmail, field.TypeString, value)
 	}
 	if value, ok := nu.mutation.Description(); ok {
 		_spec.SetField(namespace.FieldDescription, field.TypeString, value)
@@ -360,6 +436,51 @@ func (nu *NamespaceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if nu.mutation.MembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.MembersTable,
+			Columns: []string{namespace.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.RemovedMembersIDs(); len(nodes) > 0 && !nu.mutation.MembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.MembersTable,
+			Columns: []string{namespace.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.MembersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.MembersTable,
+			Columns: []string{namespace.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, nu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{namespace.Label}
@@ -432,6 +553,34 @@ func (nuo *NamespaceUpdateOne) AppendImagePullSecrets(s []string) *NamespaceUpda
 	return nuo
 }
 
+// SetPrivate sets the "private" field.
+func (nuo *NamespaceUpdateOne) SetPrivate(b bool) *NamespaceUpdateOne {
+	nuo.mutation.SetPrivate(b)
+	return nuo
+}
+
+// SetNillablePrivate sets the "private" field if the given value is not nil.
+func (nuo *NamespaceUpdateOne) SetNillablePrivate(b *bool) *NamespaceUpdateOne {
+	if b != nil {
+		nuo.SetPrivate(*b)
+	}
+	return nuo
+}
+
+// SetCreatorEmail sets the "creator_email" field.
+func (nuo *NamespaceUpdateOne) SetCreatorEmail(s string) *NamespaceUpdateOne {
+	nuo.mutation.SetCreatorEmail(s)
+	return nuo
+}
+
+// SetNillableCreatorEmail sets the "creator_email" field if the given value is not nil.
+func (nuo *NamespaceUpdateOne) SetNillableCreatorEmail(s *string) *NamespaceUpdateOne {
+	if s != nil {
+		nuo.SetCreatorEmail(*s)
+	}
+	return nuo
+}
+
 // SetDescription sets the "description" field.
 func (nuo *NamespaceUpdateOne) SetDescription(s string) *NamespaceUpdateOne {
 	nuo.mutation.SetDescription(s)
@@ -482,6 +631,21 @@ func (nuo *NamespaceUpdateOne) AddFavorites(f ...*Favorite) *NamespaceUpdateOne 
 	return nuo.AddFavoriteIDs(ids...)
 }
 
+// AddMemberIDs adds the "members" edge to the Member entity by IDs.
+func (nuo *NamespaceUpdateOne) AddMemberIDs(ids ...int) *NamespaceUpdateOne {
+	nuo.mutation.AddMemberIDs(ids...)
+	return nuo
+}
+
+// AddMembers adds the "members" edges to the Member entity.
+func (nuo *NamespaceUpdateOne) AddMembers(m ...*Member) *NamespaceUpdateOne {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return nuo.AddMemberIDs(ids...)
+}
+
 // Mutation returns the NamespaceMutation object of the builder.
 func (nuo *NamespaceUpdateOne) Mutation() *NamespaceMutation {
 	return nuo.mutation
@@ -527,6 +691,27 @@ func (nuo *NamespaceUpdateOne) RemoveFavorites(f ...*Favorite) *NamespaceUpdateO
 		ids[i] = f[i].ID
 	}
 	return nuo.RemoveFavoriteIDs(ids...)
+}
+
+// ClearMembers clears all "members" edges to the Member entity.
+func (nuo *NamespaceUpdateOne) ClearMembers() *NamespaceUpdateOne {
+	nuo.mutation.ClearMembers()
+	return nuo
+}
+
+// RemoveMemberIDs removes the "members" edge to Member entities by IDs.
+func (nuo *NamespaceUpdateOne) RemoveMemberIDs(ids ...int) *NamespaceUpdateOne {
+	nuo.mutation.RemoveMemberIDs(ids...)
+	return nuo
+}
+
+// RemoveMembers removes "members" edges to Member entities.
+func (nuo *NamespaceUpdateOne) RemoveMembers(m ...*Member) *NamespaceUpdateOne {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return nuo.RemoveMemberIDs(ids...)
 }
 
 // Where appends a list predicates to the NamespaceUpdate builder.
@@ -591,6 +776,11 @@ func (nuo *NamespaceUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Namespace.name": %w`, err)}
 		}
 	}
+	if v, ok := nuo.mutation.CreatorEmail(); ok {
+		if err := namespace.CreatorEmailValidator(v); err != nil {
+			return &ValidationError{Name: "creator_email", err: fmt.Errorf(`ent: validator failed for field "Namespace.creator_email": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -642,6 +832,12 @@ func (nuo *NamespaceUpdateOne) sqlSave(ctx context.Context) (_node *Namespace, e
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, namespace.FieldImagePullSecrets, value)
 		})
+	}
+	if value, ok := nuo.mutation.Private(); ok {
+		_spec.SetField(namespace.FieldPrivate, field.TypeBool, value)
+	}
+	if value, ok := nuo.mutation.CreatorEmail(); ok {
+		_spec.SetField(namespace.FieldCreatorEmail, field.TypeString, value)
 	}
 	if value, ok := nuo.mutation.Description(); ok {
 		_spec.SetField(namespace.FieldDescription, field.TypeString, value)
@@ -732,6 +928,51 @@ func (nuo *NamespaceUpdateOne) sqlSave(ctx context.Context) (_node *Namespace, e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(favorite.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nuo.mutation.MembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.MembersTable,
+			Columns: []string{namespace.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.RemovedMembersIDs(); len(nodes) > 0 && !nuo.mutation.MembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.MembersTable,
+			Columns: []string{namespace.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.MembersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.MembersTable,
+			Columns: []string{namespace.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

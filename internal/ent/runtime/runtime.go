@@ -12,6 +12,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/ent/dbcache"
 	"github.com/duc-cnzj/mars/v5/internal/ent/event"
 	"github.com/duc-cnzj/mars/v5/internal/ent/file"
+	"github.com/duc-cnzj/mars/v5/internal/ent/member"
 	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v5/internal/ent/project"
 	"github.com/duc-cnzj/mars/v5/internal/ent/repo"
@@ -239,6 +240,27 @@ func init() {
 	file.DefaultContainerPath = fileDescContainerPath.Default.(string)
 	// file.ContainerPathValidator is a validator for the "container_path" field. It is called by the builders before save.
 	file.ContainerPathValidator = fileDescContainerPath.Validators[0].(func(string) error)
+	memberMixin := schema.Member{}.Mixin()
+	memberMixinHooks2 := memberMixin[2].Hooks()
+	member.Hooks[0] = memberMixinHooks2[0]
+	memberMixinInters2 := memberMixin[2].Interceptors()
+	member.Interceptors[0] = memberMixinInters2[0]
+	memberMixinFields0 := memberMixin[0].Fields()
+	_ = memberMixinFields0
+	memberMixinFields1 := memberMixin[1].Fields()
+	_ = memberMixinFields1
+	memberFields := schema.Member{}.Fields()
+	_ = memberFields
+	// memberDescCreatedAt is the schema descriptor for created_at field.
+	memberDescCreatedAt := memberMixinFields0[0].Descriptor()
+	// member.DefaultCreatedAt holds the default value on creation for the created_at field.
+	member.DefaultCreatedAt = memberDescCreatedAt.Default.(func() time.Time)
+	// memberDescUpdatedAt is the schema descriptor for updated_at field.
+	memberDescUpdatedAt := memberMixinFields1[0].Descriptor()
+	// member.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	member.DefaultUpdatedAt = memberDescUpdatedAt.Default.(func() time.Time)
+	// member.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	member.UpdateDefaultUpdatedAt = memberDescUpdatedAt.UpdateDefault.(func() time.Time)
 	namespaceMixin := schema.Namespace{}.Mixin()
 	namespaceMixinHooks2 := namespaceMixin[2].Hooks()
 	namespace.Hooks[0] = namespaceMixinHooks2[0]
@@ -268,6 +290,14 @@ func init() {
 	namespaceDescImagePullSecrets := namespaceFields[1].Descriptor()
 	// namespace.DefaultImagePullSecrets holds the default value on creation for the image_pull_secrets field.
 	namespace.DefaultImagePullSecrets = namespaceDescImagePullSecrets.Default.([]string)
+	// namespaceDescPrivate is the schema descriptor for private field.
+	namespaceDescPrivate := namespaceFields[2].Descriptor()
+	// namespace.DefaultPrivate holds the default value on creation for the private field.
+	namespace.DefaultPrivate = namespaceDescPrivate.Default.(bool)
+	// namespaceDescCreatorEmail is the schema descriptor for creator_email field.
+	namespaceDescCreatorEmail := namespaceFields[3].Descriptor()
+	// namespace.CreatorEmailValidator is a validator for the "creator_email" field. It is called by the builders before save.
+	namespace.CreatorEmailValidator = namespaceDescCreatorEmail.Validators[0].(func(string) error)
 	projectMixin := schema.Project{}.Mixin()
 	projectMixinHooks2 := projectMixin[2].Hooks()
 	project.Hooks[0] = projectMixinHooks2[0]

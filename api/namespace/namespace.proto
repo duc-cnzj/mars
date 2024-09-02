@@ -67,6 +67,23 @@ message ListResponse {
   int32                         page      = 3;
   int32                         page_size = 4;
 }
+
+message UpdatePrivateRequest{
+  int32 id      = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  bool  private = 2;
+}
+message UpdatePrivateResponse{
+  types.NamespaceModel item = 1;
+}
+
+message SyncMembersRequest{
+  int32           id     = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  repeated string emails = 2;
+}
+message SyncMembersResponse{
+  types.NamespaceModel item = 1;
+}
+
 service Namespace {
   rpc List(ListRequest) returns (ListResponse) {
     option (google.api.http)      = {
@@ -74,6 +91,26 @@ service Namespace {
     };
     option (openapi.v3.operation) = {
       summary: "分页获取名称空间",
+    };
+  }
+
+  rpc UpdatePrivate(UpdatePrivateRequest) returns (UpdatePrivateResponse) {
+    option (google.api.http)      = {
+      post: "/api/namespaces/update_private",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "修改空间的访问权限",
+    };
+  }
+
+  rpc SyncMembers(SyncMembersRequest) returns (SyncMembersResponse) {
+    option (google.api.http)      = {
+      post: "/api/namespaces/sync_members",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "修改空间的成员",
     };
   }
 
