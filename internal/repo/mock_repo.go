@@ -1645,6 +1645,20 @@ func (m *MockNamespaceRepo) EXPECT() *MockNamespaceRepoMockRecorder {
 	return m.recorder
 }
 
+// CanAccess mocks base method.
+func (m *MockNamespaceRepo) CanAccess(arg0 context.Context, arg1 int, arg2 *schematype.UserInfo) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanAccess", arg0, arg1, arg2)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// CanAccess indicates an expected call of CanAccess.
+func (mr *MockNamespaceRepoMockRecorder) CanAccess(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanAccess", reflect.TypeOf((*MockNamespaceRepo)(nil).CanAccess), arg0, arg1, arg2)
+}
+
 // Create mocks base method.
 func (m *MockNamespaceRepo) Create(arg0 context.Context, arg1 *CreateNamespaceInput) (*Namespace, error) {
 	m.ctrl.T.Helper()

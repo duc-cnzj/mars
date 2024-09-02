@@ -155,6 +155,11 @@ func (mc *MemberCreate) check() error {
 	if _, ok := mc.mutation.Email(); !ok {
 		return &ValidationError{Name: "email", err: errors.New(`ent: missing required field "Member.email"`)}
 	}
+	if v, ok := mc.mutation.Email(); ok {
+		if err := member.EmailValidator(v); err != nil {
+			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "Member.email": %w`, err)}
+		}
+	}
 	return nil
 }
 

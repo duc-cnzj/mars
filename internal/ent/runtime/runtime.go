@@ -261,6 +261,10 @@ func init() {
 	member.DefaultUpdatedAt = memberDescUpdatedAt.Default.(func() time.Time)
 	// member.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	member.UpdateDefaultUpdatedAt = memberDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// memberDescEmail is the schema descriptor for email field.
+	memberDescEmail := memberFields[0].Descriptor()
+	// member.EmailValidator is a validator for the "email" field. It is called by the builders before save.
+	member.EmailValidator = memberDescEmail.Validators[0].(func(string) error)
 	namespaceMixin := schema.Namespace{}.Mixin()
 	namespaceMixinHooks2 := namespaceMixin[2].Hooks()
 	namespace.Hooks[0] = namespaceMixinHooks2[0]

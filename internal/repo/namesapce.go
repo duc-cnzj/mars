@@ -112,6 +112,7 @@ type NamespaceRepo interface {
 	SyncMembers(ctx context.Context, namespaceID int, memberEmails []string) (*Namespace, error)
 	UpdatePrivate(ctx context.Context, namespaceID int, private bool) (*Namespace, error)
 	IsOwner(ctx context.Context, namespaceID int, user *auth.UserInfo) (bool, error)
+	CanAccess(ctx context.Context, namespaceID int, user *auth.UserInfo) bool
 }
 
 var _ NamespaceRepo = (*namespaceRepo)(nil)
@@ -120,6 +121,29 @@ type namespaceRepo struct {
 	logger   mlog.Logger
 	data     data.Data
 	NsPrefix string
+}
+
+func (repo *namespaceRepo) CanAccess(ctx context.Context, namespaceID int, user *auth.UserInfo) bool {
+	if user.IsAdmin() {
+		return true
+	}
+	show, err := repo.Show(ctx, namespaceID)
+	if err != nil {
+		repo.logger.ErrorCtx(ctx, err, "namespaceRepo.CanAccess")
+		return false
+	}
+	if show.Private {
+		if show.CreatorEmail == user.Email {
+			return true
+		}
+		for _, m := range show.Members {
+			if m.Email == user.Email {
+				return true
+			}
+		}
+		return false
+	}
+	return true
 }
 
 func (repo *namespaceRepo) IsOwner(ctx context.Context, namespaceID int, user *auth.UserInfo) (bool, error) {

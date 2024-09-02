@@ -192,7 +192,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
-		{Name: "email", Type: field.TypeString},
+		{Name: "email", Type: field.TypeString, Size: 50},
 		{Name: "namespace_id", Type: field.TypeInt, Nullable: true},
 	}
 	// MembersTable holds the schema information for the "members" table.

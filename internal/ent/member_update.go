@@ -147,7 +147,20 @@ func (mu *MemberUpdate) defaults() error {
 	return nil
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (mu *MemberUpdate) check() error {
+	if v, ok := mu.mutation.Email(); ok {
+		if err := member.EmailValidator(v); err != nil {
+			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "Member.email": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (mu *MemberUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := mu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(member.Table, member.Columns, sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt))
 	if ps := mu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -348,7 +361,20 @@ func (muo *MemberUpdateOne) defaults() error {
 	return nil
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (muo *MemberUpdateOne) check() error {
+	if v, ok := muo.mutation.Email(); ok {
+		if err := member.EmailValidator(v); err != nil {
+			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "Member.email": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (muo *MemberUpdateOne) sqlSave(ctx context.Context) (_node *Member, err error) {
+	if err := muo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(member.Table, member.Columns, sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt))
 	id, ok := muo.mutation.ID()
 	if !ok {

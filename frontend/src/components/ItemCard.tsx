@@ -330,7 +330,7 @@ const NamespacePrivate: React.FC<{
   }, [isAdmin, item.creatorEmail, user.email]);
 
   if (!isOwned()) {
-    return <div>{item.private ? <UnlockOutlined /> : <LockOutlined />}</div>;
+    return <div>{!item.private ? <UnlockOutlined /> : <LockOutlined />}</div>;
   }
 
   return (
@@ -362,7 +362,7 @@ const NamespacePrivate: React.FC<{
         <Select
           mode="tags"
           style={{ width: "100%" }}
-          placeholder="添加成员"
+          placeholder="添加成员邮箱"
           onChange={(options) => {
             setOptions(options.map((v: any) => ({ label: v, value: v })));
           }}
