@@ -322,7 +322,7 @@ func migrateNamespace(gdb *gorm.DB, edb *ent.Client) {
 	err := WithTx(context.TODO(), edb, func(edb *ent.Tx) error {
 		for _, gns := range gormNamespaces {
 			split := splitFn(gns.ImagePullSecrets, ",")
-			_, err := edb.Namespace.Create().SetName(gns.Name).SetImagePullSecrets(split).Save(context.TODO())
+			_, err := edb.Namespace.Create().SetCreatorEmail("1025434218@qq.com").SetName(gns.Name).SetImagePullSecrets(split).Save(context.TODO())
 			if err != nil {
 				return err
 			}

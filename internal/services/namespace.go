@@ -80,6 +80,7 @@ func (n *namespaceSvc) List(ctx context.Context, request *namespace.ListRequest)
 }
 
 func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequest) (*namespace.CreateResponse, error) {
+	user := MustGetUser(ctx)
 	nsName := n.nsRepo.GetMarsNamespace(request.Namespace)
 	preCheckNs, err := n.nsRepo.FindByName(ctx, nsName)
 	if err == nil {
@@ -117,13 +118,14 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 		Name:             create.Name,
 		ImagePullSecrets: imagePullSecrets,
 		Description:      request.Description,
+		CreatorEmail:     user.Email,
 	})
 	if err != nil {
 		return nil, err
 	}
 	n.nsRepo.Favorite(ctx, &repo.FavoriteNamespaceInput{
 		NamespaceID: ns.ID,
-		UserEmail:   MustGetUser(ctx).Email,
+		UserEmail:   user.Email,
 		Favorite:    true,
 	})
 
@@ -134,7 +136,7 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 
 	n.eventRepo.AuditLogWithRequest(
 		types.EventActionType_Create,
-		MustGetUser(ctx).Name, fmt.Sprintf("创建项目空间: %d: %s", ns.ID, ns.Name),
+		user.Name, fmt.Sprintf("创建项目空间: %d: %s", ns.ID, ns.Name),
 		request,
 	)
 

@@ -30,13 +30,13 @@ func TestNamespaceRepo_List_Success(t *testing.T) {
 	}))
 
 	// seed data
-	ns1 := db.Namespace.Create().SetName("test").SaveX(ctx)
+	ns1 := db.Namespace.Create().SetCreatorEmail("a").SetName("test").SaveX(ctx)
 	db.Favorite.Create().SetNamespaceID(ns1.ID).SetEmail("test@example.com").Save(context.TODO())
-	db.Namespace.Create().SetName("tes2").SaveX(ctx)
-	db.Namespace.Create().SetName("tes3").SaveX(ctx)
-	pri1 := db.Namespace.Create().SetName("pri1").SetPrivate(true).SaveX(ctx)
+	db.Namespace.Create().SetCreatorEmail("a").SetName("tes2").SaveX(ctx)
+	db.Namespace.Create().SetCreatorEmail("a").SetName("tes3").SaveX(ctx)
+	pri1 := db.Namespace.Create().SetCreatorEmail("a").SetName("pri1").SetPrivate(true).SaveX(ctx)
 	db.Member.Create().SetEmail("user@mars.com").SetNamespaceID(pri1.ID).SaveX(ctx)
-	db.Namespace.Create().SetName("pri2").SetPrivate(true).SaveX(ctx)
+	db.Namespace.Create().SetCreatorEmail("a").SetName("pri2").SetPrivate(true).SaveX(ctx)
 
 	input := &ListNamespaceInput{
 		Favorite: true,
@@ -117,9 +117,11 @@ func Test_namespaceRepo_Create(t *testing.T) {
 		Name:             "aaa",
 		ImagePullSecrets: []string{"a", "b"},
 		Description:      "desc",
+		CreatorEmail:     "aa",
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, "abc-aaa", create.Name)
+	assert.Equal(t, "aa", create.CreatorEmail)
 }
 
 func Test_namespaceRepo_Show(t *testing.T) {
@@ -138,6 +140,7 @@ func Test_namespaceRepo_Show(t *testing.T) {
 		Name:             "aaa",
 		ImagePullSecrets: []string{"a", "b"},
 		Description:      "desc",
+		CreatorEmail:     "aa",
 	})
 	createProject(db, create.ID)
 	assert.Nil(t, err)
@@ -162,6 +165,7 @@ func Test_namespaceRepo_Update(t *testing.T) {
 		Name:             "aaa",
 		ImagePullSecrets: []string{"a", "b"},
 		Description:      "desc",
+		CreatorEmail:     "aa",
 	})
 	assert.Nil(t, err)
 	update, err := repo.Update(context.TODO(), &UpdateNamespaceInput{
@@ -200,6 +204,7 @@ func Test_namespaceRepo_Delete(t *testing.T) {
 		Name:             "aaa",
 		ImagePullSecrets: []string{"a", "b"},
 		Description:      "desc",
+		CreatorEmail:     "aa",
 	})
 	assert.Nil(t, err)
 
@@ -207,6 +212,7 @@ func Test_namespaceRepo_Delete(t *testing.T) {
 		Name:             "aaa",
 		ImagePullSecrets: []string{"a", "b"},
 		Description:      "desc",
+		CreatorEmail:     "aa",
 	})
 	assert.Nil(t, err)
 
@@ -242,7 +248,7 @@ func Test_namespaceRepo_Favorite_Success(t *testing.T) {
 		DB:  db,
 	}))
 
-	ns := db.Namespace.Create().SetName("test").SaveX(context.TODO())
+	ns := db.Namespace.Create().SetCreatorEmail("a").SetName("test").SaveX(context.TODO())
 	input := &FavoriteNamespaceInput{
 		NamespaceID: ns.ID,
 		UserEmail:   "test@example.com",
@@ -266,7 +272,7 @@ func Test_namespaceRepo_Favorite_AlreadyExists(t *testing.T) {
 		DB:  db,
 	}))
 
-	ns := db.Namespace.Create().SetName("test").SaveX(context.TODO())
+	ns := db.Namespace.Create().SetCreatorEmail("a").SetName("test").SaveX(context.TODO())
 	db.Favorite.Create().SetNamespaceID(ns.ID).SetEmail("test@example.com").Save(context.TODO())
 	input := &FavoriteNamespaceInput{
 		NamespaceID: ns.ID,
@@ -288,7 +294,7 @@ func Test_namespaceRepo_Favorite_Unfavorite(t *testing.T) {
 		DB:  db,
 	}))
 
-	ns := db.Namespace.Create().SetName("test").SaveX(context.TODO())
+	ns := db.Namespace.Create().SetCreatorEmail("a").SetName("test").SaveX(context.TODO())
 	db.Favorite.Create().SetNamespaceID(ns.ID).SetEmail("test@example.com").Save(context.TODO())
 	input := &FavoriteNamespaceInput{
 		NamespaceID: ns.ID,
@@ -319,6 +325,7 @@ func Test_namespaceRepo_FindByName(t *testing.T) {
 		Name:             "aaa",
 		ImagePullSecrets: []string{"a", "b"},
 		Description:      "desc",
+		CreatorEmail:     "aa",
 	})
 	name, _ := repo.FindByName(context.TODO(), "aaa")
 	assert.NotNil(t, name)

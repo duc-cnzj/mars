@@ -273,6 +273,7 @@ type CreateNamespaceInput struct {
 	Name             string
 	ImagePullSecrets []string
 	Description      string
+	CreatorEmail     string
 }
 
 func (repo *namespaceRepo) Create(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error) {
@@ -280,6 +281,7 @@ func (repo *namespaceRepo) Create(ctx context.Context, input *CreateNamespaceInp
 		Create().
 		SetName(mars.GetMarsNamespace(input.Name, repo.NsPrefix)).
 		SetImagePullSecrets(input.ImagePullSecrets).
+		SetCreatorEmail(input.CreatorEmail).
 		SetDescription(input.Description).
 		Save(ctx)
 	return ToNamespace(save), err

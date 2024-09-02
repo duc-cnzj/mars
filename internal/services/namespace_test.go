@@ -122,6 +122,7 @@ func TestNamespaceSvc_Create_Success(t *testing.T) {
 	nsRepo.EXPECT().Create(gomock.Any(), &repo.CreateNamespaceInput{
 		Name:             "namespace1",
 		ImagePullSecrets: []string{"docker-secret"},
+		CreatorEmail:     adminEmail,
 	}).Return(&repo.Namespace{}, nil)
 	nsRepo.EXPECT().Favorite(gomock.Any(), gomock.Any()).Return(nil)
 	eventRepo.EXPECT().Dispatch(repo.EventNamespaceCreated, gomock.Any())
