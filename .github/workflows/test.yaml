@@ -47,6 +47,6 @@ jobs:
           NSQ_LOOKUPD_ADDR: localhost:4161
         run: |
           mkdir frontend/build && touch frontend/build/dummy
-          go test ./... -race -coverprofile=coverage.txt -covermode=atomic
+          make test
       - name: Upload coverage to Codecov
         run: bash <(curl -s https://codecov.io/bash)
