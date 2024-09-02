@@ -144,7 +144,7 @@ test:
         ./internal/uploader/... \
         ./internal/util/... \
         ./internal/version/... \
-		-race -count=1 -cover -coverprofile=cover.out -covermode atomic && \
+		-race -count=1 -cover -coverprofile=coverage.txt -covermode atomic && \
 	go tool cover -func cover.out
 
 .PHONY: cover-web
