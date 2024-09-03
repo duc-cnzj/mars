@@ -55,9 +55,17 @@ func TestEventSvc_List_Failure(t *testing.T) {
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo)
 
-	eventRepo.EXPECT().List(gomock.Any(), gomock.Any()).Return(nil, nil, errors.New("error"))
+	req := &event.ListRequest{}
 
-	_, err := svc.List(context.Background(), &event.ListRequest{})
+	eventRepo.EXPECT().List(gomock.Any(), &repo.ListEventInput{
+		Page:        1,
+		PageSize:    15,
+		ActionType:  req.ActionType,
+		Search:      req.Search,
+		OrderIDDesc: lo.ToPtr(true),
+	}).Return(nil, nil, errors.New("error"))
+
+	_, err := svc.List(context.Background(), req)
 	assert.Error(t, err)
 }
 

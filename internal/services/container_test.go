@@ -9,11 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/auth"
-	"k8s.io/client-go/tools/remotecommand"
-	clientgoexec "k8s.io/client-go/util/exec"
+	"github.com/duc-cnzj/mars/api/v5/types"
 
 	"github.com/duc-cnzj/mars/api/v5/container"
+	"github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/stretchr/testify/assert"
@@ -22,6 +21,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	eventv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/remotecommand"
+	clientgoexec "k8s.io/client-go/util/exec"
 )
 
 func TestNewContainerSvc(t *testing.T) {
@@ -51,7 +52,7 @@ func Test_containerSvc_IsPodRunning(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(false, "")
+	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(false, "")
 	running, err := svc.IsPodRunning(context.TODO(), &container.IsPodRunningRequest{
 		Namespace: "a",
 		Pod:       "b",
@@ -70,7 +71,7 @@ func Test_containerSvc_IsPodExists(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(nil, nil)
+	k8sRepo.EXPECT().GetPod("a", "b").Return(nil, nil)
 	running, err := svc.IsPodExists(context.TODO(), &container.IsPodExistsRequest{
 		Namespace: "a",
 		Pod:       "b",
@@ -89,7 +90,7 @@ func Test_containerSvc_IsPodExists_Fail(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(nil, errors.New("X"))
+	k8sRepo.EXPECT().GetPod("a", "b").Return(nil, errors.New("X"))
 	running, err := svc.IsPodExists(context.TODO(), &container.IsPodExistsRequest{
 		Namespace: "a",
 		Pod:       "b",
@@ -108,7 +109,7 @@ func TestContainerSvc_ContainerLog_PodNotFound(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(nil, nil)
+	k8sRepo.EXPECT().GetPod("a", "b").Return(nil, nil)
 	_, err := svc.ContainerLog(context.TODO(), &container.LogRequest{
 		Namespace: "a",
 		Pod:       "b",
@@ -126,7 +127,7 @@ func TestContainerSvc_ContainerLog_PodPending(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodPending}}, nil)
+	k8sRepo.EXPECT().GetPod("a", "b").Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodPending}}, nil)
 	_, err := svc.ContainerLog(context.TODO(), &container.LogRequest{
 		Namespace: "a",
 		Pod:       "b",
@@ -144,11 +145,15 @@ func TestContainerSvc_ContainerLog_PodRunning(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodRunning}}, nil)
-	k8sRepo.EXPECT().GetPodLogs(gomock.Any(), gomock.Any(), gomock.Any()).Return("log", nil)
+	k8sRepo.EXPECT().GetPod("a", "b").Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodRunning}}, nil)
+	k8sRepo.EXPECT().GetPodLogs("a", "b", &v1.PodLogOptions{
+		TailLines: &tailLines,
+		Container: "c",
+	}).Return("log", nil)
 	_, err := svc.ContainerLog(context.TODO(), &container.LogRequest{
 		Namespace: "a",
 		Pod:       "b",
+		Container: "c",
 	})
 	assert.Nil(t, err)
 }
@@ -163,8 +168,8 @@ func TestContainerSvc_ContainerLog_GetPodLogs_error(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodRunning}}, nil)
-	k8sRepo.EXPECT().GetPodLogs(gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("x"))
+	k8sRepo.EXPECT().GetPod("a", "b").Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodRunning}}, nil)
+	k8sRepo.EXPECT().GetPodLogs("a", "b", gomock.Any()).Return("", errors.New("x"))
 	_, err := svc.ContainerLog(context.TODO(), &container.LogRequest{
 		Namespace: "a",
 		Pod:       "b",
@@ -182,7 +187,7 @@ func TestContainerSvc_ContainerLog_PodPending1(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodPending}}, nil)
+	k8sRepo.EXPECT().GetPod("a", "b").Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodPending}}, nil)
 	k8sRepo.EXPECT().ListEvents(gomock.Any()).Return([]*eventv1.Event{
 		{
 			Regarding: v1.ObjectReference{Kind: "Pod", Name: "b"},
@@ -231,7 +236,7 @@ func TestContainerSvc_CopyToPod_PodNotRunning(t *testing.T) {
 		fileRepo,
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(false, "")
+	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(false, "")
 	_, err := svc.CopyToPod(context.TODO(), &container.CopyToPodRequest{
 		Namespace: "a",
 		Pod:       "b",
@@ -251,14 +256,19 @@ func TestContainerSvc_CopyToPod_Success(t *testing.T) {
 		fileRepo,
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
-	eventRepo.EXPECT().FileAuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
+	eventRepo.EXPECT().FileAuditLog(
+		types.EventActionType_Upload,
+		MustGetUser(newAdminUserCtx()).Name,
+		gomock.Any(),
+		11,
+	)
 	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), &repo.CopyFileToPodRequest{
 		FileId:    1,
 		Namespace: "a",
 		Pod:       "b",
 		Container: "c",
-	}).Return(&repo.File{}, nil)
+	}).Return(&repo.File{ID: 11}, nil)
 	_, err := svc.CopyToPod(newAdminUserCtx(), &container.CopyToPodRequest{
 		FileId:    1,
 		Namespace: "a",
@@ -279,7 +289,7 @@ func TestContainerSvc_CopyToPod_Error(t *testing.T) {
 		fileRepo,
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
+	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
 	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), &repo.CopyFileToPodRequest{
 		FileId:    1,
 		Namespace: "a",
@@ -305,7 +315,7 @@ func TestContainerSvc_StreamContainerLog_PodNotFound(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(nil, nil)
+	k8sRepo.EXPECT().GetPod("a", "b").Return(nil, nil)
 	err := svc.StreamContainerLog(&container.LogRequest{
 		Namespace: "a",
 		Pod:       "b",
@@ -323,7 +333,7 @@ func TestContainerSvc_StreamContainerLog_PodPending(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodPending}}, nil)
+	k8sRepo.EXPECT().GetPod("a", "b").Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodPending}}, nil)
 	err := svc.StreamContainerLog(&container.LogRequest{
 		Namespace: "a",
 		Pod:       "b",
@@ -341,16 +351,17 @@ func TestContainerSvc_StreamContainerLog_PodRunning(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodRunning}}, nil)
+	k8sRepo.EXPECT().GetPod("a", "b").Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodRunning}}, nil)
 	ch := make(chan []byte, 2)
 	ch <- []byte("log1")
 	ch <- []byte("log2")
 	close(ch)
-	k8sRepo.EXPECT().LogStream(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(ch, nil)
+	k8sRepo.EXPECT().LogStream(gomock.Any(), "a", "b", "c").Return(ch, nil)
 	s := &logStreamServer{}
 	err := svc.StreamContainerLog(&container.LogRequest{
 		Namespace: "a",
 		Pod:       "b",
+		Container: "c",
 	}, s)
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"log1", "log2"}, s.res)
@@ -366,8 +377,8 @@ func TestContainerSvc_StreamContainerLog_PodSucceeded(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodSucceeded}}, nil).AnyTimes()
-	k8sRepo.EXPECT().GetPodLogs(gomock.Any(), gomock.Any(), gomock.Any()).Return("log", nil)
+	k8sRepo.EXPECT().GetPod("a", "b").Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodSucceeded}}, nil).AnyTimes()
+	k8sRepo.EXPECT().GetPodLogs("a", "b", gomock.Any()).Return("log", nil)
 	s := &logStreamServer{}
 	err := svc.StreamContainerLog(&container.LogRequest{
 		Namespace: "a",
@@ -387,8 +398,8 @@ func TestContainerSvc_StreamContainerLog_Error(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodSucceeded}}, nil).AnyTimes()
-	k8sRepo.EXPECT().GetPodLogs(gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("x"))
+	k8sRepo.EXPECT().GetPod("a", "b").Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodSucceeded}}, nil).AnyTimes()
+	k8sRepo.EXPECT().GetPodLogs("a", "b", gomock.Any()).Return("", errors.New("x"))
 	s := &logStreamServer{}
 	err := svc.StreamContainerLog(&container.LogRequest{
 		Namespace: "a",
@@ -407,8 +418,8 @@ func TestContainerSvc_StreamContainerLog_PodFailed(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodFailed}}, nil).AnyTimes()
-	k8sRepo.EXPECT().GetPodLogs(gomock.Any(), gomock.Any(), gomock.Any()).Return("log", nil)
+	k8sRepo.EXPECT().GetPod("a", "b").Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodFailed}}, nil).AnyTimes()
+	k8sRepo.EXPECT().GetPodLogs("a", "b", gomock.Any()).Return("log", nil)
 	s := &logStreamServer{}
 	err := svc.StreamContainerLog(&container.LogRequest{
 		Namespace: "a",
@@ -428,7 +439,7 @@ func TestContainerSvc_StreamContainerLog_PodPending1(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().GetPod(gomock.Any(), gomock.Any()).Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodPending}}, nil).AnyTimes()
+	k8sRepo.EXPECT().GetPod("a", "b").Return(&v1.Pod{Status: v1.PodStatus{Phase: v1.PodPending}}, nil).AnyTimes()
 	s := &logStreamServer{}
 	err := svc.StreamContainerLog(&container.LogRequest{
 		Namespace: "a",
@@ -479,7 +490,7 @@ func TestContainerSvc_StreamCopyToPod_PodNotRunning(t *testing.T) {
 		fileRepo,
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(false, "")
+	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(false, "")
 	err := svc.StreamCopyToPod(&streamCopyToPodServer{recv: []*container.StreamCopyToPodRequest{
 		{
 			Namespace: "a",
@@ -518,10 +529,22 @@ func TestContainerSvc_StreamCopyToPod_Success(t *testing.T) {
 		fileRepo,
 		mlog.NewForConfig(nil),
 	)
-	eventRepo.EXPECT().FileAuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
-	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), gomock.Any(), gomock.Any()).Return("c", nil)
-	fileRepo.EXPECT().StreamUploadFile(gomock.Any(), gomock.Any()).Return(&repo.File{
+	eventRepo.EXPECT().FileAuditLog(
+		types.EventActionType_Upload,
+		MustGetUser(newAdminUserCtx()).Name,
+		gomock.Any(),
+		1,
+	)
+	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
+	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), "a", "b").Return("c", nil)
+	fileRepo.EXPECT().StreamUploadFile(gomock.Any(), gomock.Cond(func(x any) bool {
+		v := x.(*repo.StreamUploadFileRequest)
+		return v.Namespace == "a" &&
+			v.Pod == "b" &&
+			v.Container == "c" &&
+			v.Username == MustGetUser(newAdminUserCtx()).Name &&
+			v.FileName == "a.txt"
+	})).Return(&repo.File{
 		ID:        1,
 		Namespace: "a",
 		Pod:       "b",
@@ -596,7 +619,7 @@ func TestContainerSvc_ExecOnce_PodNotRunning(t *testing.T) {
 		repo.NewMockFileRepo(m),
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(false, "")
+	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(false, "")
 	err := svc.ExecOnce(&container.ExecOnceRequest{
 		Namespace: "a",
 		Pod:       "b",
@@ -617,8 +640,8 @@ func TestContainerSvc_ExecOnce_Success(t *testing.T) {
 		mlog.NewForConfig(nil),
 	)
 	recorder := repo.NewMockRecorder(m)
-	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
-	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), gomock.Any(), gomock.Any()).Return("c", nil)
+	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
+	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), "a", "b").Return("c", nil)
 	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any()).Return(recorder)
 	recorder.EXPECT().Write([]byte("mars@c:/# ls"))
 	recorder.EXPECT().Write([]byte("\r\n"))
@@ -627,7 +650,13 @@ func TestContainerSvc_ExecOnce_Success(t *testing.T) {
 	recorder.EXPECT().User().Return(&auth.UserInfo{Name: "mars"})
 	recorder.EXPECT().File().Return(&repo.File{ID: 1})
 	recorder.EXPECT().Duration().Return(time.Second)
-	eventRepo.EXPECT().FileAuditLogWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().FileAuditLogWithDuration(
+		types.EventActionType_Exec,
+		"mars",
+		gomock.Any(),
+		1,
+		time.Second,
+	)
 
 	mac := &execOnceMatcher{
 		tty: false,
@@ -688,7 +717,7 @@ func TestContainerSvc_Exec_PodNotRunning(t *testing.T) {
 		fileRepo,
 		mlog.NewForConfig(nil),
 	)
-	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(false, "Pod not running")
+	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(false, "Pod not running")
 	err := svc.Exec(&execServerMock{})
 	assert.NotNil(t, err)
 }
@@ -705,11 +734,33 @@ func TestContainerSvc_Exec_Success(t *testing.T) {
 		fileRepo,
 		mlog.NewForConfig(nil),
 	)
-	eventRepo.EXPECT().FileAuditLogWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
-	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), gomock.Any(), gomock.Any()).Return("c", nil)
-	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any()).Return(&recorderMock{})
-	k8sRepo.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Return(&clientgoexec.CodeExitError{
+	eventRepo.EXPECT().FileAuditLogWithDuration(
+		types.EventActionType_Exec,
+		"mars",
+		gomock.Any(),
+		1,
+		time.Second,
+	)
+	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
+	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), "a", "b").Return("c", nil)
+	fileRepo.EXPECT().NewRecorder(gomock.Any(), &repo.Container{
+		Namespace: "a",
+		Pod:       "b",
+		Container: "c",
+	}).Return(&recorderMock{})
+	k8sRepo.EXPECT().Execute(gomock.Any(), &repo.Container{
+		Namespace: "a",
+		Pod:       "b",
+		Container: "c",
+	}, gomock.Cond(func(x any) bool {
+		v := x.(*repo.ExecuteInput)
+		return v.TTY &&
+			slices.Equal(v.Cmd, []string{"ls"}) &&
+			v.Stdin != nil &&
+			v.Stdout != nil &&
+			v.Stderr != nil &&
+			v.TerminalSizeQueue != nil
+	})).Return(&clientgoexec.CodeExitError{
 		Err:  errors.New("xx"),
 		Code: 2,
 	})

@@ -3,11 +3,12 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
-	"github.com/coreos/go-oidc/v3/oidc"
-	"golang.org/x/oauth2"
+	"github.com/duc-cnzj/mars/api/v5/types"
 
+	"github.com/coreos/go-oidc/v3/oidc"
 	auth2 "github.com/duc-cnzj/mars/api/v5/auth"
 	"github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/duc-cnzj/mars/v5/internal/data"
@@ -15,6 +16,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -58,22 +60,30 @@ func TestAuthSvc_Login_Success(t *testing.T) {
 	authRepo := repo.NewMockAuthRepo(m)
 	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
 
-	eventRepo.EXPECT().AuditLog(gomock.Any(), gomock.Any(), gomock.Any())
+	resp := &repo.LoginResponse{
+		Token:     "test-token",
+		ExpiredIn: 100,
+		UserInfo: &auth.UserInfo{
+			Name: "duc",
+		},
+	}
+	eventRepo.EXPECT().AuditLog(
+		types.EventActionType_Login,
+		resp.UserInfo.Name,
+		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", resp.UserInfo.Name, resp.UserInfo.Email),
+	)
+
 	authRepo.EXPECT().Login(gomock.Any(), &repo.LoginInput{
 		Username: "test",
 		Password: "password",
-	}).Return(&repo.LoginResponse{
-		Token:     "test-token",
-		ExpiredIn: 100,
-		UserInfo:  &auth.UserInfo{},
-	}, nil)
+	}).Return(resp, nil)
 
-	resp, err := svc.Login(context.TODO(), &auth2.LoginRequest{
+	res, err := svc.Login(context.TODO(), &auth2.LoginRequest{
 		Username: "test",
 		Password: "password",
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "test-token", resp.Token)
+	assert.Equal(t, "test-token", res.Token)
 }
 
 func TestAuthSvc_Login_Failure(t *testing.T) {
