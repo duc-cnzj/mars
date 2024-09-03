@@ -99,6 +99,17 @@ func TestNamespaceRepo_List_Success(t *testing.T) {
 	res, pag, _ = repo.List(ctx, input)
 	assert.Len(t, res, 5)
 	assert.Equal(t, int32(5), pag.Count)
+
+	input = &ListNamespaceInput{
+		Email:    "a",
+		Page:     1,
+		PageSize: 10,
+		IsAdmin:  false,
+	}
+
+	res, pag, _ = repo.List(ctx, input)
+	assert.Len(t, res, 5)
+	assert.Equal(t, int32(5), pag.Count)
 }
 
 func Test_namespaceRepo_Create(t *testing.T) {

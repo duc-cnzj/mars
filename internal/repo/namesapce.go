@@ -245,6 +245,7 @@ func (repo *namespaceRepo) List(ctx context.Context, input *ListNamespaceInput) 
 					namespace.Private(true),
 				),
 				namespace.Private(false),
+				namespace.CreatorEmail(input.Email),
 			),
 		)
 	}
