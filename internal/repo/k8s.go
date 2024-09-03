@@ -188,7 +188,7 @@ func (repo *k8sRepo) GetAllPodMetrics(ctx context.Context, proj *Project) []v1be
 		if len(ret) == 0 {
 			continue
 		}
-		l, _ := metricses.List(context.Background(), metav1.ListOptions{
+		l, _ := metricses.List(ctx, metav1.ListOptions{
 			LabelSelector: podlabels,
 		})
 		repo.logger.DebugCtx(ctx, "[GetAllPodMetrics]: ", podlabels, " ", len(l.Items))
