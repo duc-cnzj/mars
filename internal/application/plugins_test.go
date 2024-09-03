@@ -43,7 +43,7 @@ func TestPluginManagerLoad(t *testing.T) {
 		PicturePlugin:       config.Plugin{Name: "test"},
 	}
 
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 
 	manager, err := application.NewPluginManager(cfg, logger)
 	assert.NoError(t, err)

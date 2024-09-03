@@ -20,7 +20,7 @@ import (
 func TestNewReleaseInstaller(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	helmer := repo.NewMockHelmerRepo(m)
 	data := data.NewMockData(m)
 	timer := timer2.NewRealTimer()
@@ -81,7 +81,7 @@ func TestLoggerWrapFunctionality(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	messageChan := NewSafeWriteMessageCh(mlog.NewLogger(nil), 100)
+	messageChan := NewSafeWriteMessageCh(mlog.NewForConfig(nil), 100)
 	percenter := NewMockPercentable(m)
 	logs := newTimeOrderedSetString(timer2.NewRealTimer())
 
@@ -107,7 +107,7 @@ func TestLoggerWrapEdgeCase(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	messageChan := NewSafeWriteMessageCh(mlog.NewLogger(nil), 100)
+	messageChan := NewSafeWriteMessageCh(mlog.NewForConfig(nil), 100)
 	percenter := NewMockPercentable(m)
 	logs := newTimeOrderedSetString(timer2.NewRealTimer())
 
@@ -134,7 +134,7 @@ func Test_releaseInstaller_Run_Dry(t *testing.T) {
 		timer:          timer2.NewRealTimer(),
 		helmer:         helmer,
 		timeoutSeconds: 10,
-		logger:         mlog.NewLogger(nil),
+		logger:         mlog.NewForConfig(nil),
 	}
 
 	ctx := context.TODO()
@@ -166,7 +166,7 @@ func Test_releaseInstaller_Run_Success(t *testing.T) {
 		timer:          timer2.NewRealTimer(),
 		helmer:         helmer,
 		timeoutSeconds: 10,
-		logger:         mlog.NewLogger(nil),
+		logger:         mlog.NewForConfig(nil),
 	}
 
 	ctx := context.TODO()
@@ -188,7 +188,7 @@ func Test_releaseInstaller_Run(t *testing.T) {
 		timer:          timer2.NewRealTimer(),
 		helmer:         helmer,
 		timeoutSeconds: 10,
-		logger:         mlog.NewLogger(nil),
+		logger:         mlog.NewForConfig(nil),
 	}
 
 	ctx := context.TODO()
@@ -220,7 +220,7 @@ func Test_releaseInstaller_Run_2(t *testing.T) {
 		timer:          timer2.NewRealTimer(),
 		helmer:         helmer,
 		timeoutSeconds: 10,
-		logger:         mlog.NewLogger(nil),
+		logger:         mlog.NewForConfig(nil),
 	}
 
 	ctx := context.TODO()

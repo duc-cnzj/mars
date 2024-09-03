@@ -28,7 +28,7 @@ func TestNewApiGateway(t *testing.T) {
 	defer m.Finish()
 	app := application.NewMockApp(m)
 
-	app.EXPECT().Logger().Return(mlog.NewLogger(nil)).Times(1)
+	app.EXPECT().Logger().Return(mlog.NewForConfig(nil)).Times(1)
 	app.EXPECT().Auth().Return(nil).Times(1)
 	app.EXPECT().GrpcRegistry().Return(nil).Times(1)
 	app.EXPECT().Config().Return(&config.Config{}).Times(2)
@@ -79,7 +79,7 @@ func Test_apiGateway_Shutdown(t *testing.T) {
 }
 
 func TestMiddlewareList_Wrap(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("test"))
 	})
@@ -105,7 +105,7 @@ func TestMiddlewareList_Wrap(t *testing.T) {
 }
 
 func TestMiddlewareList_Wrap_Empty(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("test"))
 	})
@@ -183,7 +183,7 @@ func Test_handleBinaryFileUpload(t *testing.T) {
 	}
 	up := uploader.NewMockUploader(m)
 	h := &handler{
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 		auth:     auth.NewMockAuth(m),
 		uploader: up,
 		data:     data.NewDataImpl(&data.NewDataParams{DB: db}),
@@ -234,7 +234,7 @@ func Test_download(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	h := &handler{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 	}
 
 	recorder := httptest.NewRecorder()

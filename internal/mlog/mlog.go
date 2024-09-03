@@ -46,7 +46,7 @@ type Logger interface {
 	HandlePanicWithCallback(title string, callback func(error))
 }
 
-func NewLogger(cfg *config.Config) Logger {
+func NewForConfig(cfg *config.Config) Logger {
 	var (
 		channel string
 		debug   bool

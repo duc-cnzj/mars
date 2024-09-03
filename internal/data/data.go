@@ -220,11 +220,13 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 		if cfg.KubeConfig != "" {
 			config, err = clientcmd.BuildConfigFromFlags("", cfg.KubeConfig)
 			if err != nil {
+				logger.Error(err)
 				return
 			}
 		} else {
 			config, err = restclient.InClusterConfig()
 			if err != nil {
+				logger.Error(err)
 				return
 			}
 		}
@@ -235,12 +237,21 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 		var clientset kubernetes.Interface
 		clientset, err = kubernetes.NewForConfig(config)
 		if err != nil {
+			logger.Error(err)
 			return
 		}
 
 		var gwinstalled bool
 		apiextensionsClient, err := apiextensionsv1.NewForConfig(config)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
 		crdList, err := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			logger.Error(err)
+			return
+		}
 		for _, crd := range crdList.Items {
 			if crd.Name == "httproutes.gateway.networking.k8s.io" {
 				gwinstalled = true
@@ -251,6 +262,7 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 		var metrics versioned.Interface
 		metrics, err = metricsv.NewForConfig(config)
 		if err != nil {
+			logger.Error(err)
 			return
 		}
 		inf := informers.NewSharedInformerFactory(clientset, 0)
@@ -261,6 +273,7 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 			logger.Info("gateway api installed")
 			forConfig, err := gwclientset.NewForConfig(config)
 			if err != nil {
+				logger.Error(err)
 				return
 			}
 			gwhttprouteinformer = externalversions.NewSharedInformerFactoryWithOptions(forConfig, 0)

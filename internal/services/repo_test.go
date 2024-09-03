@@ -20,7 +20,7 @@ import (
 func TestNewRepoSvc(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	svc := NewRepoSvc(mlog.NewLogger(nil), repo.NewMockEventRepo(m), repo.NewMockGitRepo(m), repo.NewMockRepoRepo(m))
+	svc := NewRepoSvc(mlog.NewForConfig(nil), repo.NewMockEventRepo(m), repo.NewMockGitRepo(m), repo.NewMockRepoRepo(m))
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.(*repoSvc).eventRepo)
 	assert.NotNil(t, svc.(*repoSvc).gitRepo)
@@ -34,7 +34,7 @@ func Test_repoSvc_Clone_Success(t *testing.T) {
 	repoRepo := repo.NewMockRepoRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		eventRepo,
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -66,7 +66,7 @@ func Test_repoSvc_Clone_Error(t *testing.T) {
 	defer m.Finish()
 	repoRepo := repo.NewMockRepoRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -92,7 +92,7 @@ func TestRepoSvc_Create_Success(t *testing.T) {
 	repoRepo := repo.NewMockRepoRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		eventRepo,
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -131,7 +131,7 @@ func TestRepoSvc_Create_Error(t *testing.T) {
 	defer m.Finish()
 	repoRepo := repo.NewMockRepoRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -164,7 +164,7 @@ func TestRepoSvc_Delete_Success(t *testing.T) {
 	repoRepo := repo.NewMockRepoRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		eventRepo,
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -186,7 +186,7 @@ func TestRepoSvc_Delete_Error(t *testing.T) {
 	defer m.Finish()
 	repoRepo := repo.NewMockRepoRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -207,7 +207,7 @@ func TestRepoSvc_List_Success(t *testing.T) {
 	defer m.Finish()
 	repoRepo := repo.NewMockRepoRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -251,7 +251,7 @@ func TestRepoSvc_List_Error(t *testing.T) {
 	defer m.Finish()
 	repoRepo := repo.NewMockRepoRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -281,7 +281,7 @@ func TestRepoSvc_Show_Success(t *testing.T) {
 	defer m.Finish()
 	repoRepo := repo.NewMockRepoRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -307,7 +307,7 @@ func TestRepoSvc_Show_Error(t *testing.T) {
 	defer m.Finish()
 	repoRepo := repo.NewMockRepoRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -329,7 +329,7 @@ func TestRepoSvc_ToggleEnabled_Success(t *testing.T) {
 	repoRepo := repo.NewMockRepoRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		eventRepo,
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -360,7 +360,7 @@ func TestRepoSvc_ToggleEnabled_Error(t *testing.T) {
 	defer m.Finish()
 	repoRepo := repo.NewMockRepoRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -383,7 +383,7 @@ func TestRepoSvc_Update_Success(t *testing.T) {
 	repoRepo := repo.NewMockRepoRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		eventRepo,
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -428,7 +428,7 @@ func TestRepoSvc_Update_Error(t *testing.T) {
 	defer m.Finish()
 	repoRepo := repo.NewMockRepoRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -454,7 +454,7 @@ func TestRepoSvc_Update_Error2(t *testing.T) {
 	defer m.Finish()
 	repoRepo := repo.NewMockRepoRepo(m)
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repoRepo,
@@ -479,7 +479,7 @@ func TestRepoSvc_Authorize_AdminUser(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repo.NewMockRepoRepo(m),
@@ -495,7 +495,7 @@ func TestRepoSvc_Authorize_AdminUser2(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repo.NewMockRepoRepo(m),
@@ -511,7 +511,7 @@ func TestRepoSvc_Authorize_ListMethod(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repo.NewMockRepoRepo(m),
@@ -527,7 +527,7 @@ func TestRepoSvc_Authorize_NonListMethod(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	svc := NewRepoSvc(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 		repo.NewMockGitRepo(m),
 		repo.NewMockRepoRepo(m),

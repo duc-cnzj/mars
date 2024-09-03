@@ -66,7 +66,7 @@ func TestNewGrpcRunner(t *testing.T) {
 
 	appMock := application.NewMockApp(m)
 	appMock.EXPECT().GrpcRegistry().Return(nil).Times(1)
-	appMock.EXPECT().Logger().Return(mlog.NewLogger(nil)).Times(1)
+	appMock.EXPECT().Logger().Return(mlog.NewForConfig(nil)).Times(1)
 	appMock.EXPECT().Auth().Return(auth.NewMockAuth(m)).Times(1)
 
 	runner := NewGrpcRunner("test-endpoint", appMock)
@@ -81,7 +81,7 @@ func TestGrpcRunner_Shutdown(t *testing.T) {
 
 	server := NewMockGrpcServerImp(m)
 	runner := &grpcRunner{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		server: server,
 	}
 

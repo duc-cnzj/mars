@@ -22,7 +22,7 @@ func TestPictureRepo_Get(t *testing.T) {
 	mockPicture.EXPECT().Get(context.Background(), true).Return(&application.PictureItem{}, nil).Times(1)
 	mockPicture.EXPECT().Get(context.Background(), false).Return(&application.PictureItem{}, nil).Times(1)
 
-	repo := NewPictureRepo(mlog.NewLogger(nil), mockPluginManager)
+	repo := NewPictureRepo(mlog.NewForConfig(nil), mockPluginManager)
 
 	_, err := repo.Get(context.Background(), true)
 	assert.Nil(t, err)
@@ -42,7 +42,7 @@ func TestPictureRepo_Get_Error(t *testing.T) {
 
 	mockPicture.EXPECT().Get(context.Background(), true).Return(nil, assert.AnError).Times(1)
 
-	repo := NewPictureRepo(mlog.NewLogger(nil), mockPluginManager)
+	repo := NewPictureRepo(mlog.NewForConfig(nil), mockPluginManager)
 
 	_, err := repo.Get(context.Background(), true)
 	assert.NotNil(t, err)

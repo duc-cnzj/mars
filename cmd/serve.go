@@ -47,7 +47,7 @@ var apiGatewayCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.SetFlags(log.Lshortfile)
 		cfg := config.Init(viper.GetString("config"))
-		logger := mlog.NewLogger(cfg)
+		logger := mlog.NewForConfig(cfg)
 		app, err := InitializeApp(cfg, logger, serverBootstrappers)
 		if err != nil {
 			logger.Fatal(err)

@@ -38,7 +38,7 @@ func TestNewAppWithValidConfig(t *testing.T) {
 		Debug: true,
 	}
 	data := data2.NewMockData(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	uploader := uploader2.NewMockUploader(m)
 	auth := auth2.NewMockAuth(m)
 	dispatcher := event.NewMockDispatcher(m)
@@ -104,12 +104,6 @@ func TestWithExcludeTags(t *testing.T) {
 	a := &app{}
 	WithExcludeTags("cron")(a)
 	assert.Len(t, a.excludeTags, 1)
-}
-
-func TestWithMustBootedBootstrappers(t *testing.T) {
-	a := &app{}
-	WithMustBootedBootstrappers(&testBoot{})(a)
-	assert.Len(t, a.mustBooted, 1)
 }
 
 type testServer struct {
@@ -237,7 +231,7 @@ func Test_app_Locker(t *testing.T) {
 func Test_app_Logger(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	a := &app{
 		logger: logger,
 	}
@@ -278,23 +272,44 @@ func Test_app_RegisterBeforeShutdownFunc(t *testing.T) {
 	assert.Len(t, a.hooks[beforeDownHook], 1)
 }
 
-func Test_app_Run(t *testing.T) {
-	//a := &app{}
-	//assert.NotNil(t, a.Run())
+func Test_app_RunServerHooks(t *testing.T) {
+	called := false
+	a := &app{
+		logger: mlog.NewForConfig(nil),
+		hooks: map[hook][]Callback{
+			afterDownHook: {func(App) {
+				called = true
+			}},
+		},
+	}
+	a.RunServerHooks(afterDownHook)
+	assert.True(t, called)
 }
 
-func Test_app_RunServerHooks(t *testing.T) {
-	a := &app{hooks: map[hook][]Callback{}}
-	a.RunServerHooks(afterDownHook)
+type mockServer struct {
+	Server
+	called bool
+}
+
+func (m *mockServer) Shutdown(context.Context) error {
+	m.called = true
+	return nil
 }
 
 func Test_app_Shutdown(t *testing.T) {
 	called := false
-	a := &app{hooks: map[hook][]Callback{}, logger: mlog.NewLogger(nil), doneFunc: func() {
-		called = true
-	}}
+	a := &app{
+		hooks:  map[hook][]Callback{},
+		logger: mlog.NewForConfig(nil), doneFunc: func() {
+			called = true
+		},
+		servers: []Server{&mockServer{}, &mockServer{}},
+	}
 	a.Shutdown()
 	assert.True(t, called)
+	for _, server := range a.servers {
+		assert.True(t, server.(*mockServer).called)
+	}
 }
 
 func Test_app_Singleflight(t *testing.T) {
@@ -323,6 +338,7 @@ func Test_app_WsServer(t *testing.T) {
 }
 
 func Test_bootShortName(t *testing.T) {
+	assert.Empty(t, bootShortName(nil))
 	assert.Equal(t, "testBoot", bootShortName(&testBoot{}))
 }
 

@@ -42,7 +42,7 @@ func createRepo(db *ent.Client) *ent.Repo {
 }
 func TestProjectRepoCreate(t *testing.T) {
 	ctx := context.Background()
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
 	data := data2.NewDataImpl(&data2.NewDataParams{DB: db, Cfg: &config.Config{}})
@@ -80,7 +80,7 @@ func TestProjectRepoCreate(t *testing.T) {
 
 func TestProjectRepoUpdateProject(t *testing.T) {
 	ctx := context.Background()
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
 	data := data2.NewDataImpl(&data2.NewDataParams{DB: db, Cfg: &config.Config{}})
@@ -113,7 +113,7 @@ func TestProjectRepoUpdateProject(t *testing.T) {
 
 func TestProjectRepoDelete(t *testing.T) {
 	ctx := context.Background()
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
 	data := data2.NewDataImpl(&data2.NewDataParams{DB: db, Cfg: &config.Config{}})
@@ -129,7 +129,7 @@ func TestProjectRepoDelete(t *testing.T) {
 
 func TestProjectRepoFindByName(t *testing.T) {
 	ctx := context.Background()
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
 	data := data2.NewDataImpl(&data2.NewDataParams{DB: db, Cfg: &config.Config{}})
@@ -145,7 +145,7 @@ func TestProjectRepoFindByName(t *testing.T) {
 
 func TestProjectRepoUpdateDeployStatus(t *testing.T) {
 	ctx := context.Background()
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
 	data := data2.NewDataImpl(&data2.NewDataParams{DB: db, Cfg: &config.Config{}})
@@ -160,7 +160,7 @@ func TestProjectRepoUpdateDeployStatus(t *testing.T) {
 
 func TestProjectRepoUpdateVersion(t *testing.T) {
 	ctx := context.Background()
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
 	data := data2.NewDataImpl(&data2.NewDataParams{DB: db, Cfg: &config.Config{}})
@@ -497,17 +497,17 @@ spec:
         cpu: 10m
         memory: 10Mi
 `}
-	res := FilterRuntimeObjectFromManifests[*corev1.Service](mlog.NewLogger(nil), data)
+	res := FilterRuntimeObjectFromManifests[*corev1.Service](mlog.NewForConfig(nil), data)
 	assert.Len(t, res, 1)
-	res1 := FilterRuntimeObjectFromManifests[*corev1.Pod](mlog.NewLogger(nil), data)
+	res1 := FilterRuntimeObjectFromManifests[*corev1.Pod](mlog.NewForConfig(nil), data)
 	assert.Len(t, res1, 1)
-	res2 := FilterRuntimeObjectFromManifests[*corev1.Namespace](mlog.NewLogger(nil), data)
+	res2 := FilterRuntimeObjectFromManifests[*corev1.Namespace](mlog.NewForConfig(nil), data)
 	assert.Len(t, res2, 0)
 }
 
 func TestProjectRepoList(t *testing.T) {
 	ctx := context.Background()
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
 	data := data2.NewDataImpl(&data2.NewDataParams{DB: db, Cfg: &config.Config{}})
@@ -547,7 +547,7 @@ func TestProjectRepoList(t *testing.T) {
 
 func TestProjectRepoList_Empty(t *testing.T) {
 	ctx := context.Background()
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
 	data := data2.NewDataImpl(&data2.NewDataParams{DB: db, Cfg: &config.Config{}})
@@ -567,7 +567,7 @@ func TestProjectRepoList_Empty(t *testing.T) {
 }
 
 func Test_projectRepo_Show(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
 	data := data2.NewDataImpl(&data2.NewDataParams{DB: db, Cfg: &config.Config{}})
@@ -585,7 +585,7 @@ func Test_projectRepo_Show(t *testing.T) {
 }
 
 func Test_projectRepo_FindByVersion(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
 	data := data2.NewDataImpl(&data2.NewDataParams{DB: db, Cfg: &config.Config{}})
@@ -603,7 +603,7 @@ func Test_projectRepo_GetAllPods(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
 
@@ -835,7 +835,7 @@ func Test_projectRepo_GetAllPods(t *testing.T) {
 }
 
 func Test_projectRepo_UpdateStatusByVersion(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
 	data := data2.NewDataImpl(&data2.NewDataParams{DB: db, Cfg: &config.Config{}})
@@ -918,7 +918,7 @@ func Test_projectRepo_GetLoadBalancerMappingByProjects(t *testing.T) {
 
 	data := data2.NewMockData(m)
 	repo := &projectRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   data,
 	}
 	data.EXPECT().K8sClient().Return(&data2.K8sClient{
@@ -1065,7 +1065,7 @@ func Test_projectRepo_GetIngressMappingByNamespace(t *testing.T) {
 		SaveX(context.Background())
 	data := data2.NewMockData(m)
 	repo := &projectRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   data,
 	}
 	fk := fake.NewSimpleClientset(
@@ -1160,7 +1160,7 @@ func Test_projectRepo_GetNodePortMappingByProjects(t *testing.T) {
 	lister := NewServiceLister(&svc1)
 	data := data2.NewMockData(m)
 	repo := &projectRepo{
-		logger:     mlog.NewLogger(nil),
+		logger:     mlog.NewForConfig(nil),
 		data:       data,
 		externalIp: "127.0.0.1",
 	}
@@ -1212,7 +1212,7 @@ func Test_projectRepo_GetGatewayHTTPRouteMappingByProjects(t *testing.T) {
 	lister := NewHTTPRouteLister(&route1)
 	data := data2.NewMockData(m)
 	repo := &projectRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   data,
 	}
 	data.EXPECT().K8sClient().Return(&data2.K8sClient{

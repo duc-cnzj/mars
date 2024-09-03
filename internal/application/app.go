@@ -41,7 +41,6 @@ type app struct {
 	doneFunc      func()
 	servers       []Server
 	bootstrappers []Bootstrapper
-	mustBooted    []Bootstrapper
 	excludeBoots  []Bootstrapper
 	excludeTags   []string
 
@@ -70,13 +69,6 @@ type Option func(*app)
 func WithBootstrappers(bootstrappers ...Bootstrapper) Option {
 	return func(app *app) {
 		app.bootstrappers = bootstrappers
-	}
-}
-
-// WithMustBootedBootstrappers set mustBooted.
-func WithMustBootedBootstrappers(bootstrappers ...Bootstrapper) Option {
-	return func(app *app) {
-		app.mustBooted = bootstrappers
 	}
 }
 
@@ -133,23 +125,10 @@ func NewApp(
 		opt(appli)
 	}
 
-	var mustBootExcludeBoots, excludeBoots []Bootstrapper
+	var excludeBoots []Bootstrapper
 	if len(appli.excludeTags) > 0 {
-		appli.mustBooted, mustBootExcludeBoots = excludeBootstrapperByTags(appli.excludeTags, appli.mustBooted)
 		appli.bootstrappers, excludeBoots = excludeBootstrapperByTags(appli.excludeTags, appli.bootstrappers)
-		appli.excludeBoots = append(appli.excludeBoots, mustBootExcludeBoots...)
 		appli.excludeBoots = append(appli.excludeBoots, excludeBoots...)
-	}
-
-	for _, bootstrapper := range appli.mustBooted {
-		func() {
-			defer func(t time.Time) {
-				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": bootShortName(bootstrapper)}).Set(time.Since(t).Seconds())
-			}(time.Now())
-			if err := bootstrapper.Bootstrap(appli); err != nil {
-				appli.logger.Fatal(err)
-			}
-		}()
 	}
 
 	return appli

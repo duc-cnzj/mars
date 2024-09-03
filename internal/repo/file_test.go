@@ -33,7 +33,7 @@ func TestFileRepo_Create(t *testing.T) {
 	defer db.Close()
 	mockData.EXPECT().DB().Return(db).AnyTimes()
 	mockData.EXPECT().Config().Return(&config.Config{UploadMaxSize: "10m"})
-	repo := NewFileRepo(mlog.NewLogger(nil), mockData, nil, nil, timer.NewRealTimer())
+	repo := NewFileRepo(mlog.NewForConfig(nil), mockData, nil, nil, timer.NewRealTimer())
 	input := &CreateFileInput{
 		Path:       "testPath",
 		Username:   "testUser",
@@ -63,7 +63,7 @@ func TestFileRepo_GetByID(t *testing.T) {
 	defer db.Close()
 	mockData.EXPECT().DB().Return(db).AnyTimes()
 	mockData.EXPECT().Config().Return(&config.Config{UploadMaxSize: "10m"})
-	repo := NewFileRepo(mlog.NewLogger(nil), mockData, nil, nil, timer.NewRealTimer())
+	repo := NewFileRepo(mlog.NewForConfig(nil), mockData, nil, nil, timer.NewRealTimer())
 	create, _ := repo.Create(context.TODO(), &CreateFileInput{
 		Path:       "/",
 		Username:   "aa",
@@ -86,7 +86,7 @@ func TestFileRepo_Update(t *testing.T) {
 	defer db.Close()
 	mockData.EXPECT().DB().Return(db).AnyTimes()
 	mockData.EXPECT().Config().Return(&config.Config{UploadMaxSize: "10m"})
-	repo := NewFileRepo(mlog.NewLogger(nil), mockData, nil, nil, timer.NewRealTimer())
+	repo := NewFileRepo(mlog.NewForConfig(nil), mockData, nil, nil, timer.NewRealTimer())
 
 	create, _ := repo.Create(context.TODO(), &CreateFileInput{
 		Path:       "/",
@@ -123,7 +123,7 @@ func TestFileRepo_Delete(t *testing.T) {
 	mockData.EXPECT().DB().Return(db).AnyTimes()
 	mockUploader := uploader.NewMockUploader(m)
 	mockData.EXPECT().Config().Return(&config.Config{UploadMaxSize: "10m"})
-	repo := NewFileRepo(mlog.NewLogger(nil), mockData, nil, mockUploader, timer.NewRealTimer())
+	repo := NewFileRepo(mlog.NewForConfig(nil), mockData, nil, mockUploader, timer.NewRealTimer())
 	create, _ := repo.Create(context.TODO(), &CreateFileInput{
 		Path:       "/",
 		Username:   "aa",
@@ -148,7 +148,7 @@ func TestFileRepo_ShowRecords(t *testing.T) {
 	mockData.EXPECT().Config().Return(&config.Config{UploadMaxSize: "10m"})
 	mockUploader := uploader.NewMockUploader(m)
 
-	repo := NewFileRepo(mlog.NewLogger(nil), mockData, nil, mockUploader, timer.NewRealTimer())
+	repo := NewFileRepo(mlog.NewForConfig(nil), mockData, nil, mockUploader, timer.NewRealTimer())
 
 	create, _ := repo.Create(context.TODO(), &CreateFileInput{
 		Path:       "/",
@@ -182,7 +182,7 @@ func TestFileRepo_DiskInfo(t *testing.T) {
 	mockUploader := uploader.NewMockUploader(m)
 
 	mockData.EXPECT().Config().Return(&config.Config{UploadMaxSize: "10m"})
-	repo := NewFileRepo(mlog.NewLogger(nil), mockData, &cache.NoCache{}, mockUploader, timer.NewRealTimer())
+	repo := NewFileRepo(mlog.NewForConfig(nil), mockData, &cache.NoCache{}, mockUploader, timer.NewRealTimer())
 	mockUploader.EXPECT().DirSize().Return(int64(100), nil)
 	_, err := repo.DiskInfo(true)
 	assert.Nil(t, err)
@@ -207,7 +207,7 @@ func TestFileRepo_StreamUploadFile(t *testing.T) {
 	mockFile.EXPECT().Stat().Return(&fakeOsFileInfo{}, nil)
 	mockFile.EXPECT().Name().Return("testFile")
 	mockUploader.EXPECT().Type().Return(schematype.UploadType("aa"))
-	repo := NewFileRepo(mlog.NewLogger(nil), mockData, nil, mockUploader, timer.NewRealTimer())
+	repo := NewFileRepo(mlog.NewForConfig(nil), mockData, nil, mockUploader, timer.NewRealTimer())
 	input := &StreamUploadFileRequest{
 		Namespace: "testNamespace",
 		Pod:       "testPod",
@@ -252,7 +252,7 @@ func TestFileRepo_List_HappyPath(t *testing.T) {
 
 	mockData.EXPECT().DB().Return(db).AnyTimes()
 	repo := &fileRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 	input := &ListFileInput{
@@ -280,7 +280,7 @@ func TestFileRepo_List_WithSoftDelete(t *testing.T) {
 
 	mockData.EXPECT().DB().Return(db).AnyTimes()
 	repo := &fileRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 	input := &ListFileInput{
@@ -308,7 +308,7 @@ func TestFileRepo_List_OrderIDDesc(t *testing.T) {
 
 	mockData.EXPECT().DB().Return(db).AnyTimes()
 	repo := &fileRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 	orderIDDesc := true
@@ -336,7 +336,7 @@ func Test_fileRepo_NewRecorder(t *testing.T) {
 	mockUploader := uploader.NewMockUploader(m)
 	mockUploader.EXPECT().LocalUploader().Return(mockUploader)
 	newRecorder := (&fileRepo{
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 		timer:    timer.NewRealTimer(),
 		uploader: mockUploader,
 	}).NewRecorder(&auth.UserInfo{}, &Container{})
@@ -516,7 +516,7 @@ func TestRecorder_Close(t *testing.T) {
 	r := &recorder{
 		user:   &auth.UserInfo{Name: "duc"},
 		timer:  timer.NewRealTimer(),
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		container: &Container{
 			Namespace: "ns",
 			Pod:       "po",

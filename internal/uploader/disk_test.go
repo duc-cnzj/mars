@@ -18,7 +18,7 @@ import (
 
 func TestNewUploader(t *testing.T) {
 	cfg := &config.Config{UploadDir: testDir}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, err := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	assert.Nil(t, err)
 	assert.Equal(t, testDir, up.(*diskUploader).rootDir)
@@ -27,7 +27,7 @@ func TestNewUploader(t *testing.T) {
 
 func TestFileInfo_Path(t *testing.T) {
 	cfg := &config.Config{UploadDir: "/disk"}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	assert.Equal(t, "/disk/aaa", up.(*diskUploader).getPath("aaa"))
 	assert.Equal(t, "/disk/aaa", up.(*diskUploader).getPath("/disk/aaa"))
@@ -35,14 +35,14 @@ func TestFileInfo_Path(t *testing.T) {
 
 func TestUploader_AbsolutePath(t *testing.T) {
 	cfg := &config.Config{UploadDir: "/disk"}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	assert.Equal(t, "/disk/aaa", up.AbsolutePath("aaa"))
 }
 
 func TestUploader_Disk(t *testing.T) {
 	cfg := &config.Config{UploadDir: "/disk"}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	assert.Equal(t, "/disk/aa", up.Disk("/aa").AbsolutePath("/"))
 	disk := up.Disk("1").Disk("2").Disk("3")
@@ -53,7 +53,7 @@ func TestUploader_Disk(t *testing.T) {
 
 func TestUploader_root(t *testing.T) {
 	cfg := &config.Config{UploadDir: "/disk"}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	assert.Equal(t, "/disk", up.(*diskUploader).rootDir)
 
@@ -69,7 +69,7 @@ func TestFileInfo(t *testing.T) {
 
 func TestUploader_DeleteDir(t *testing.T) {
 	cfg := &config.Config{UploadDir: testDir}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	assert.Error(t, up.DeleteDir("aaa"))
 	assert.Nil(t, up.MkDir("aaa", true))
@@ -78,7 +78,7 @@ func TestUploader_DeleteDir(t *testing.T) {
 
 func TestUploader_Delete(t *testing.T) {
 	cfg := &config.Config{UploadDir: testDir}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	assert.Error(t, up.Delete("a.txt"))
 	_, err := up.Put("a.txt", strings.NewReader("aaa"))
@@ -88,7 +88,7 @@ func TestUploader_Delete(t *testing.T) {
 
 func TestUploader_DirSize(t *testing.T) {
 	cfg := &config.Config{UploadDir: testDir}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	size, _ := up.DirSize()
 	assert.Equal(t, int64(0), size)
@@ -104,7 +104,7 @@ func TestUploader_DirSize(t *testing.T) {
 
 func TestUploader_MkDir(t *testing.T) {
 	cfg := &config.Config{UploadDir: testDir}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	assert.Nil(t, up.MkDir("/b/c", true))
 	assert.Nil(t, up.MkDir("/d", false))
@@ -112,7 +112,7 @@ func TestUploader_MkDir(t *testing.T) {
 
 func TestUploader_DirExists(t *testing.T) {
 	cfg := &config.Config{UploadDir: testDir}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	assert.Nil(t, up.MkDir("/b/c", true))
 
@@ -125,7 +125,7 @@ func TestUploader_DirExists(t *testing.T) {
 
 func TestUploader_RemoveEmptyDir(t *testing.T) {
 	cfg := &config.Config{UploadDir: testDir}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	assert.Nil(t, up.MkDir("/b/c", true))
 
@@ -137,7 +137,7 @@ func TestUploader_RemoveEmptyDir(t *testing.T) {
 
 func TestUploader_AllDirectoryFiles(t *testing.T) {
 	cfg := &config.Config{UploadDir: testDir}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 
 	up.DeleteDir("/")
@@ -153,7 +153,7 @@ func TestUploader_AllDirectoryFiles(t *testing.T) {
 
 func TestUploader_Put(t *testing.T) {
 	cfg := &config.Config{UploadDir: testDir}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	put, err := up.Put("/aa/bb/cc/c.txt", strings.NewReader("aaa"))
 	assert.Nil(t, err)
@@ -163,7 +163,7 @@ func TestUploader_Put(t *testing.T) {
 
 func TestUploader_NewFile(t *testing.T) {
 	cfg := &config.Config{UploadDir: testDir}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	file, err := up.NewFile("/a/a/a/aaa.txt")
 	assert.Nil(t, err)
@@ -175,14 +175,14 @@ func TestUploader_NewFile(t *testing.T) {
 
 func TestUploader_Type(t *testing.T) {
 	cfg := &config.Config{UploadDir: testDir}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	assert.Equal(t, schematype.Local, up.Type())
 }
 
 func TestUploader_Read(t *testing.T) {
 	cfg := &config.Config{UploadDir: testDir}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	put, err := up.Put("/aa/bb/cc/read.txt", strings.NewReader("aaa"))
 	assert.Nil(t, err)
@@ -197,7 +197,7 @@ func TestUploader_Read(t *testing.T) {
 
 func TestUploader_Stat(t *testing.T) {
 	cfg := &config.Config{UploadDir: testDir}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, data.NewData(cfg, logger))
 	put, err := up.Put("/aa/bb/cc/stat.txt", strings.NewReader("aaa"))
 	assert.Nil(t, err)

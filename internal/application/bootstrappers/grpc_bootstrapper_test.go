@@ -18,7 +18,7 @@ func TestGrpcBootstrapper_Bootstrap(t *testing.T) {
 	app.EXPECT().AddServer(gomock.Any())
 	app.EXPECT().GrpcRegistry()
 	app.EXPECT().Auth()
-	app.EXPECT().Logger().Return(mlog.NewLogger(nil))
+	app.EXPECT().Logger().Return(mlog.NewForConfig(nil))
 	assert.Nil(t, (&GrpcBootstrapper{}).Bootstrap(app))
 }
 

@@ -39,7 +39,7 @@ func TestNewK8sRepo(t *testing.T) {
 	mockUploader := uploader.NewMockUploader(m)
 	mockData.EXPECT().Config().Return(&config.Config{})
 	repo := NewK8sRepo(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		timer.NewRealTimer(),
 		mockData,
 		fileRepo,
@@ -65,7 +65,7 @@ func TestSplitManifests(t *testing.T) {
 	mockUploader := uploader.NewMockUploader(m)
 	mockData.EXPECT().Config().Return(&config.Config{})
 	repo := NewK8sRepo(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		timer.NewRealTimer(),
 		mockData,
 		fileRepo,
@@ -119,7 +119,7 @@ func Test_k8sRepo_CreateDockerSecrets(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	mockData.EXPECT().K8sClient().Return(&data.K8sClient{Client: clientset})
 	kr := &k8sRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 	secret, err := kr.CreateDockerSecret(context.TODO(), "a")
@@ -140,7 +140,7 @@ func Test_k8sRepo_GetNamespace(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	mockData.EXPECT().K8sClient().Return(&data.K8sClient{Client: clientset}).AnyTimes()
 	kr := &k8sRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 	namespace, err := kr.GetNamespace(context.TODO(), "a")
@@ -172,7 +172,7 @@ func Test_k8sRepo_ListEvents(t *testing.T) {
 		},
 	})}).AnyTimes()
 	kr := &k8sRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 	events, err := kr.ListEvents("a")
@@ -191,7 +191,7 @@ func TestGetPod(t *testing.T) {
 		},
 	})}).AnyTimes()
 	kr := &k8sRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 	pod, err := kr.GetPod("a", "po")
@@ -204,7 +204,7 @@ func TestFindDefaultContainer(t *testing.T) {
 	defer m.Finish()
 	mockData := data.NewMockData(m)
 	kr := &k8sRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 	mockData.EXPECT().K8sClient().Return(&data.K8sClient{PodLister: NewPodLister(&corev1.Pod{
@@ -259,7 +259,7 @@ func TestIsPodRunning(t *testing.T) {
 	defer m.Finish()
 	mockData := data.NewMockData(m)
 	kr := &k8sRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 	mockData.EXPECT().K8sClient().Return(&data.K8sClient{PodLister: NewPodLister(
@@ -323,7 +323,7 @@ func TestGetCpuAndMemoryQuantity(t *testing.T) {
 	defer m.Finish()
 	mockData := data.NewMockData(m)
 	kr := &k8sRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 
@@ -368,7 +368,7 @@ func TestAnalyseMetricsToCpuAndMemory(t *testing.T) {
 	defer m.Finish()
 	mockData := data.NewMockData(m)
 	kr := &k8sRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 
@@ -597,7 +597,7 @@ func TestClusterInfo(t *testing.T) {
 	})
 	mockData := data.NewMockData(m)
 	kr := &k8sRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 	mockData.EXPECT().K8sClient().Return(&data.K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
@@ -917,7 +917,7 @@ func TestDeleteNamespace(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	mockData.EXPECT().K8sClient().Return(&data.K8sClient{Client: clientset}).AnyTimes()
 	kr := &k8sRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 	err := kr.DeleteNamespace(context.TODO(), "a")
@@ -934,7 +934,7 @@ func TestDeleteSecret(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	mockData.EXPECT().K8sClient().Return(&data.K8sClient{Client: clientset}).AnyTimes()
 	kr := &k8sRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 	err := kr.DeleteSecret(context.TODO(), "a", "s")

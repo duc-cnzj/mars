@@ -15,6 +15,6 @@ func TestRecovery(t *testing.T) {
 			panic("err")
 		},
 	}
-	Recovery(mlog.NewLogger(nil), m).ServeHTTP(rw, &http.Request{})
+	Recovery(mlog.NewForConfig(nil), m).ServeHTTP(rw, &http.Request{})
 	assert.True(t, true)
 }

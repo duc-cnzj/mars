@@ -91,7 +91,7 @@ func TestWebsocketManager_HandleStartShell(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	wm := &WebsocketManager{logger: mlog.NewLogger(nil)}
+	wm := &WebsocketManager{logger: mlog.NewForConfig(nil)}
 	sub := application.NewMockPubSub(m)
 	conn := &WsConn{pubSub: sub, id: "testConnID", uid: "testConnUID"}
 
@@ -122,7 +122,7 @@ func TestWebsocketManager_HandleShellMessage(t *testing.T) {
 	defer m.Finish()
 
 	wm := &WebsocketManager{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 	}
 	conn := &WsConn{
 		sm: NewSessionMap(wm.logger),
@@ -146,7 +146,7 @@ func TestWebsocketManager_HandleCloseShell(t *testing.T) {
 	defer m.Finish()
 
 	wm := &WebsocketManager{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 	}
 	conn := &WsConn{
 		sm: NewSessionMap(wm.logger),
@@ -171,7 +171,7 @@ func TestWebsocketManager_HandleWsCancelDeploy(t *testing.T) {
 
 	nsRepo := repo.NewMockNamespaceRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
-	wm := &WebsocketManager{nsRepo: nsRepo, logger: mlog.NewLogger(nil), eventRepo: eventRepo}
+	wm := &WebsocketManager{nsRepo: nsRepo, logger: mlog.NewForConfig(nil), eventRepo: eventRepo}
 	conn := &WsConn{
 		taskManager: NewTaskManager(wm.logger),
 		user:        &auth.UserInfo{},
@@ -202,7 +202,7 @@ func TestWebsocketManager_HandleWsCreateProject(t *testing.T) {
 	jb := NewMockJobManager(m)
 	wm := &WebsocketManager{
 		nsRepo:     nsRepo,
-		logger:     mlog.NewLogger(nil),
+		logger:     mlog.NewForConfig(nil),
 		eventRepo:  eventRepo,
 		jobManager: jb,
 		repoRepo:   repoRepo,
@@ -265,7 +265,7 @@ func TestWebsocketManager_HandleWsUpdateProject(t *testing.T) {
 	jb := NewMockJobManager(m)
 	wm := &WebsocketManager{
 		nsRepo:     nsRepo,
-		logger:     mlog.NewLogger(nil),
+		logger:     mlog.NewForConfig(nil),
 		eventRepo:  eventRepo,
 		jobManager: jb,
 		repoRepo:   repoRepo,
@@ -322,7 +322,7 @@ func TestWebsocketManager_HandleWsUpdateProject(t *testing.T) {
 func TestNewWebsocketManager(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	counter := counter.NewCounter()
 	projRepo := repo.NewMockProjectRepo(m)
 	repoRepo := repo.NewMockRepoRepo(m)
@@ -366,7 +366,7 @@ func TestWebsocketManager_TickClusterHealth(t *testing.T) {
 	plMock := application.NewMockPluginManger(m)
 	wsMock := application.NewMockWsSender(m)
 	k8sRepoMock := repo.NewMockK8sRepo(m)
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 
 	lockerMock.EXPECT().Acquire("TickClusterHealth", int64(5)).Return(true)
 	lockerMock.EXPECT().Release("TickClusterHealth")
@@ -436,7 +436,7 @@ func TestWebsocketManager_dispatchEvent(t *testing.T) {
 	defer m.Finish()
 
 	wm := &WebsocketManager{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 	}
 
 	conn := &WsConn{

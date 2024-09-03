@@ -14,7 +14,7 @@ func TestPprofBootstrapper_Bootstrap(t *testing.T) {
 	defer m.Finish()
 	app := application.NewMockApp(m)
 	app.EXPECT().AddServer(gomock.Any())
-	app.EXPECT().Logger().Return(mlog.NewLogger(nil))
+	app.EXPECT().Logger().Return(mlog.NewForConfig(nil))
 	assert.Nil(t, (&PprofBootstrapper{}).Bootstrap(app))
 }
 

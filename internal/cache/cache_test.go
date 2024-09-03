@@ -18,7 +18,7 @@ import (
 
 func TestCache_Remember(t *testing.T) {
 	var i int
-	cache := newCache(NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), mlog.NewLogger(nil), &singleflight.Group{})
+	cache := newCache(NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), mlog.NewForConfig(nil), &singleflight.Group{})
 	fn := func() {
 		cache.Remember(NewKey("duc"), 10, func() ([]byte, error) {
 			i++
@@ -67,7 +67,7 @@ func TestCache_Remember(t *testing.T) {
 }
 
 func TestCache_RememberV2(t *testing.T) {
-	cache := newCache(NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), mlog.NewLogger(nil), &singleflight.Group{})
+	cache := newCache(NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), mlog.NewForConfig(nil), &singleflight.Group{})
 	v := atomic.Int64{}
 	v2 := atomic.Int64{}
 
@@ -135,7 +135,7 @@ func (e *errorstore) Delete(key string) error {
 
 func TestCache_RememberErrorStore(t *testing.T) {
 	var i int
-	cache := newCache(&errorstore{}, mlog.NewLogger(nil), &singleflight.Group{})
+	cache := newCache(&errorstore{}, mlog.NewForConfig(nil), &singleflight.Group{})
 	fn := func() ([]byte, error) {
 		return cache.Remember(NewKey("duc"), 10, func() ([]byte, error) {
 			i++
@@ -151,7 +151,7 @@ func TestCache_RememberErrorStore(t *testing.T) {
 }
 
 func TestCache_Clear(t *testing.T) {
-	cache := newCache(NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), mlog.NewLogger(nil), &singleflight.Group{})
+	cache := newCache(NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), mlog.NewForConfig(nil), &singleflight.Group{})
 	called := 0
 	fn := func() ([]byte, error) {
 		called++
@@ -172,7 +172,7 @@ func TestCache_Clear(t *testing.T) {
 }
 
 func TestCache_SetWithTTL(t *testing.T) {
-	cache := newCache(NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), mlog.NewLogger(nil), &singleflight.Group{})
+	cache := newCache(NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), mlog.NewForConfig(nil), &singleflight.Group{})
 	cache.SetWithTTL(NewKey("aaa"), []byte("aa"), 100)
 	get, _ := cache.(*cacheImpl).store.Get(NewKey("aaa").String())
 	assert.Equal(t, "aa", string(get))
@@ -180,7 +180,7 @@ func TestCache_SetWithTTL(t *testing.T) {
 
 func TestNewCacheImpl_MemoryDriver(t *testing.T) {
 	cfg := &config.Config{CacheDriver: "memory"}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	data := data.NewData(cfg, logger)
 	sf := &singleflight.Group{}
 
@@ -194,7 +194,7 @@ func TestNewCacheImpl_MemoryDriver(t *testing.T) {
 
 func TestNewCacheImpl_DbDriver(t *testing.T) {
 	cfg := &config.Config{CacheDriver: "db"}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	data := data.NewData(cfg, logger)
 	sf := &singleflight.Group{}
 
@@ -208,7 +208,7 @@ func TestNewCacheImpl_DbDriver(t *testing.T) {
 
 func TestNewCacheImpl_UnknownDriver(t *testing.T) {
 	cfg := &config.Config{CacheDriver: "unknown"}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	data := data.NewData(cfg, logger)
 	sf := &singleflight.Group{}
 

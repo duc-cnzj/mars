@@ -40,7 +40,7 @@ func TestNewAccessTokenSvc(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	tokenRepo := repo.NewMockAccessTokenRepo(m)
-	svc := NewAccessTokenSvc(mlog.NewLogger(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
+	svc := NewAccessTokenSvc(mlog.NewForConfig(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.(*accessTokenSvc).logger)
 	assert.NotNil(t, svc.(*accessTokenSvc).eventRepo)
@@ -53,7 +53,7 @@ func Test_accessTokenSvc_Grant(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	tokenRepo := repo.NewMockAccessTokenRepo(m)
-	svc := NewAccessTokenSvc(mlog.NewLogger(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
+	svc := NewAccessTokenSvc(mlog.NewForConfig(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
 
 	tokenRepo.EXPECT().Grant(gomock.Any(), &repo.GrantAccessTokenInput{
 		ExpireSeconds: 100,
@@ -72,7 +72,7 @@ func TestAccessTokenSvc_Grant_Success(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	tokenRepo := repo.NewMockAccessTokenRepo(m)
-	svc := NewAccessTokenSvc(mlog.NewLogger(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
+	svc := NewAccessTokenSvc(mlog.NewForConfig(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
 
 	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", gomock.Any(), gomock.Any())
 
@@ -94,7 +94,7 @@ func TestAccessTokenSvc_Lease_Success(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	tokenRepo := repo.NewMockAccessTokenRepo(m)
-	svc := NewAccessTokenSvc(mlog.NewLogger(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
+	svc := NewAccessTokenSvc(mlog.NewForConfig(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
 
 	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", gomock.Any(), gomock.Any())
 
@@ -112,7 +112,7 @@ func TestAccessTokenSvc_Lease_Failure(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	tokenRepo := repo.NewMockAccessTokenRepo(m)
-	svc := NewAccessTokenSvc(mlog.NewLogger(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
+	svc := NewAccessTokenSvc(mlog.NewForConfig(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
 
 	tokenRepo.EXPECT().Lease(gomock.Any(), "token", int32(100)).Return(nil, errors.New("error"))
 
@@ -128,7 +128,7 @@ func TestAccessTokenSvc_Revoke_Success(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	tokenRepo := repo.NewMockAccessTokenRepo(m)
-	svc := NewAccessTokenSvc(mlog.NewLogger(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
+	svc := NewAccessTokenSvc(mlog.NewForConfig(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
 
 	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", gomock.Any(), gomock.Any())
 	tokenRepo.EXPECT().Revoke(gomock.Any(), "token").Return(nil)
@@ -144,7 +144,7 @@ func TestAccessTokenSvc_Revoke_Failure(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	tokenRepo := repo.NewMockAccessTokenRepo(m)
-	svc := NewAccessTokenSvc(mlog.NewLogger(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
+	svc := NewAccessTokenSvc(mlog.NewForConfig(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
 
 	tokenRepo.EXPECT().Revoke(gomock.Any(), "token").Return(errors.New("error"))
 
@@ -159,7 +159,7 @@ func TestAccessTokenSvc_List_Success(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	tokenRepo := repo.NewMockAccessTokenRepo(m)
-	svc := NewAccessTokenSvc(mlog.NewLogger(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
+	svc := NewAccessTokenSvc(mlog.NewForConfig(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
 
 	tokenRepo.EXPECT().List(gomock.Any(), &repo.ListAccessTokenInput{
 		Page:           1,
@@ -180,7 +180,7 @@ func TestAccessTokenSvc_List_Failure(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	tokenRepo := repo.NewMockAccessTokenRepo(m)
-	svc := NewAccessTokenSvc(mlog.NewLogger(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
+	svc := NewAccessTokenSvc(mlog.NewForConfig(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
 
 	tokenRepo.EXPECT().List(gomock.Any(), &repo.ListAccessTokenInput{
 		Page:           1,

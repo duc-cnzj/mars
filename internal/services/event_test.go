@@ -20,7 +20,7 @@ import (
 func TestNewEventSvc(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	svc := NewEventSvc(mlog.NewLogger(nil), repo.NewMockEventRepo(m))
+	svc := NewEventSvc(mlog.NewForConfig(nil), repo.NewMockEventRepo(m))
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.(*eventSvc).eventRepo)
 }
@@ -29,7 +29,7 @@ func TestEventSvc_List_Success(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewEventSvc(mlog.NewLogger(nil), eventRepo)
+	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo)
 
 	eventRepo.EXPECT().List(gomock.Any(), &repo.ListEventInput{
 		Page:        1,
@@ -53,7 +53,7 @@ func TestEventSvc_List_Failure(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewEventSvc(mlog.NewLogger(nil), eventRepo)
+	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo)
 
 	eventRepo.EXPECT().List(gomock.Any(), gomock.Any()).Return(nil, nil, errors.New("error"))
 
@@ -65,7 +65,7 @@ func Test_eventSvc_Show(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewEventSvc(mlog.NewLogger(nil), eventRepo)
+	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo)
 
 	eventRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("x"))
 
@@ -78,7 +78,7 @@ func Test_eventSvc_Show_Success(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewEventSvc(mlog.NewLogger(nil), eventRepo)
+	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo)
 
 	eventRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Event{}, nil)
 
@@ -91,7 +91,7 @@ func TestEventSvc_Authorize_AdminUser(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewEventSvc(mlog.NewLogger(nil), eventRepo).(*eventSvc)
+	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo).(*eventSvc)
 
 	_, err := svc.Authorize(newAdminUserCtx(), "TestMethod")
 	assert.Nil(t, err)
@@ -101,7 +101,7 @@ func TestEventSvc_Authorize_NonAdminUser(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewEventSvc(mlog.NewLogger(nil), eventRepo).(*eventSvc)
+	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo).(*eventSvc)
 
 	_, err := svc.Authorize(newOtherUserCtx(), "TestMethod")
 	s, _ := status.FromError(err)

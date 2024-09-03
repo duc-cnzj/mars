@@ -8,7 +8,7 @@ import (
 )
 
 func TestTaskManagerRegister(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	taskManager := NewTaskManager(logger)
 
 	err := taskManager.Register("task1", func(err error) {})
@@ -19,7 +19,7 @@ func TestTaskManagerRegister(t *testing.T) {
 }
 
 func TestTaskManagerHas(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	taskManager := NewTaskManager(logger)
 
 	taskManager.Register("task1", func(err error) {})
@@ -28,7 +28,7 @@ func TestTaskManagerHas(t *testing.T) {
 }
 
 func TestTaskManagerRemove(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	taskManager := NewTaskManager(logger)
 
 	taskManager.Register("task1", func(err error) {})
@@ -37,7 +37,7 @@ func TestTaskManagerRemove(t *testing.T) {
 }
 
 func TestTaskManagerStop(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	taskManager := NewTaskManager(logger)
 
 	stopped := false
@@ -52,7 +52,7 @@ func TestTaskManagerStop(t *testing.T) {
 }
 
 func TestTaskManagerStopAll(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	taskManager := NewTaskManager(logger)
 
 	stopped1 := false

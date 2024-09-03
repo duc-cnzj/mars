@@ -131,7 +131,7 @@ func TestMyPtyHandler_Toast(t *testing.T) {
 }
 
 func TestSessionMap_Get(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	sm := NewSessionMap(logger)
 	session := &myPtyHandler{}
 	sm.Set("testSession", session)
@@ -145,7 +145,7 @@ func TestSessionMap_Get(t *testing.T) {
 }
 
 func TestSessionMap_Set(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	sm := NewSessionMap(logger)
 	session := &myPtyHandler{}
 
@@ -169,7 +169,7 @@ func (*testPtyHandler) IsClosed() bool {
 }
 
 func TestSessionMap_CloseAll(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	sm := NewSessionMap(logger)
 	session1 := &testPtyHandler{}
 	session2 := &testPtyHandler{}
@@ -187,7 +187,7 @@ func TestSessionMap_CloseAll(t *testing.T) {
 }
 
 func TestSessionMap_Close(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	sm := NewSessionMap(logger)
 	session := &testPtyHandler{}
 
@@ -225,7 +225,7 @@ func TestWebsocketManager_WaitForTerminal(t *testing.T) {
 	conn := NewMockConn(m)
 	ws := &WebsocketManager{
 		k8sRepo: sRepo,
-		logger:  mlog.NewLogger(nil),
+		logger:  mlog.NewForConfig(nil),
 	}
 	c := &repo.Container{}
 	handler := NewMockPtyHandler(m)
@@ -244,7 +244,7 @@ func TestWebsocketManager_WaitForTerminal2(t *testing.T) {
 	conn := NewMockConn(m)
 	ws := &WebsocketManager{
 		k8sRepo: sRepo,
-		logger:  mlog.NewLogger(nil),
+		logger:  mlog.NewForConfig(nil),
 	}
 	c := &repo.Container{}
 	handler := NewMockPtyHandler(m)
@@ -263,7 +263,7 @@ func TestWebsocketManager_WaitForTerminal3(t *testing.T) {
 	conn := NewMockConn(m)
 	ws := &WebsocketManager{
 		k8sRepo: sRepo,
-		logger:  mlog.NewLogger(nil),
+		logger:  mlog.NewForConfig(nil),
 	}
 	c := &repo.Container{}
 	handler := NewMockPtyHandler(m)
@@ -294,7 +294,7 @@ func Test_resetSession(t *testing.T) {
 		sizeStore: &sizeStore{cols: 10, rows: 10},
 	}
 	session := (&WebsocketManager{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 	}).resetSession(old).(*myPtyHandler)
 
 	assert.Equal(t, old.sessionID, session.sessionID)
@@ -328,12 +328,12 @@ func Test_resetSession4(t *testing.T) {
 		sizeStore: &sizeStore{cols: 10, rows: 10},
 	}
 	session := (&WebsocketManager{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 	}).resetSession(old).(*myPtyHandler)
 	assert.NotSame(t, session, old)
 	old.CloseDoneChan()
 	session = (&WebsocketManager{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 	}).resetSession(old).(*myPtyHandler)
 	assert.Same(t, session, old)
 }
@@ -359,7 +359,7 @@ func Test_resetSession1(t *testing.T) {
 		old.sizeStore.Set(100, 100)
 	}()
 	session := (&WebsocketManager{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 	}).resetSession(old).(*myPtyHandler)
 
 	assert.Equal(t, uint16(100), session.sizeStore.Cols())
@@ -387,7 +387,7 @@ func Test_resetSession2(t *testing.T) {
 		old.sizeStore.Set(100, 100)
 	}()
 	session := (&WebsocketManager{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 	}).resetSession(old).(*myPtyHandler)
 
 	assert.Equal(t, uint16(106), session.sizeStore.Cols())
@@ -468,7 +468,7 @@ func TestMyPtyHandler_Read2(t *testing.T) {
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 1),
 		doneChan:  make(chan struct{}),
 		sizeStore: &sizeStore{},
-		logger:    mlog.NewLogger(nil),
+		logger:    mlog.NewForConfig(nil),
 	}
 	b := make([]byte, 1024)
 	p.Send(context.TODO(), &websocket_pb.TerminalMessage{
@@ -512,7 +512,7 @@ func TestMyPtyHandler_Read2(t *testing.T) {
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 1),
 		doneChan:  make(chan struct{}),
 		sizeStore: &sizeStore{},
-		logger:    mlog.NewLogger(nil),
+		logger:    mlog.NewForConfig(nil),
 	}
 	close(p2.doneChan)
 	bv := make([]byte, 100)
@@ -526,7 +526,7 @@ func TestMyPtyHandler_Read2(t *testing.T) {
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 1),
 		doneChan:  make(chan struct{}),
 		sizeStore: &sizeStore{},
-		logger:    mlog.NewLogger(nil),
+		logger:    mlog.NewForConfig(nil),
 	}
 	assert.Len(t, p3.shellCh, 0)
 	assert.Nil(t, p3.Send(context.TODO(), nil))
@@ -565,7 +565,7 @@ func TestMyPtyHandler_Close(t *testing.T) {
 		doneChan:  make(chan struct{}),
 		container: &repo.Container{},
 		eventRepo: eventRepo,
-		logger:    mlog.NewLogger(nil),
+		logger:    mlog.NewForConfig(nil),
 	}
 	eventRepo.EXPECT().FileAuditLogWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	recorder.EXPECT().User().Return(&auth.UserInfo{})
@@ -621,7 +621,7 @@ func TestMyPtyHandler_Write(t *testing.T) {
 	pty := &myPtyHandler{
 		sessionID: "sid",
 		conn:      conn,
-		logger:    mlog.NewLogger(nil),
+		logger:    mlog.NewForConfig(nil),
 		doneChan:  make(chan struct{}),
 		sizeStore: &sizeStore{cols: 10, rows: 10},
 		recorder:  recorder,
@@ -675,7 +675,7 @@ func TestMyPtyHandler_Write3(t *testing.T) {
 		},
 		sessionID: "duc",
 		container: &repo.Container{},
-		logger:    mlog.NewLogger(nil),
+		logger:    mlog.NewForConfig(nil),
 		conn:      &WsConn{pubSub: ps},
 		recorder:  r,
 		doneChan:  make(chan struct{}),
@@ -714,7 +714,7 @@ func TestMyPtyHandler_Write_with_chan_full(t *testing.T) {
 		},
 		container: &repo.Container{},
 		sessionID: "duc",
-		logger:    mlog.NewLogger(nil),
+		logger:    mlog.NewForConfig(nil),
 		conn:      &WsConn{pubSub: ps},
 		recorder:  r,
 		doneChan:  make(chan struct{}),
@@ -737,7 +737,7 @@ func TestStartShell_WithValidSessionID(t *testing.T) {
 	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any())
 	conn.EXPECT().GetUser().Return(&auth.UserInfo{})
 	ws := &WebsocketManager{
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 		fileRepo: fileRepo,
 	}
 
@@ -765,7 +765,7 @@ func TestStartShell_WithInvalidSessionID(t *testing.T) {
 
 	conn := NewMockConn(m)
 	ws := &WebsocketManager{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 	}
 
 	input := &websocket_pb.WsHandleExecShellInput{

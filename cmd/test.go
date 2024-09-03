@@ -13,7 +13,7 @@ var testCmd = &cobra.Command{
 	Use: "test",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.Init(viper.GetString("config"))
-		logger := mlog.NewLogger(cfg)
+		logger := mlog.NewForConfig(cfg)
 		app, err := InitializeApp(cfg, logger, nil)
 		if err != nil {
 			logger.Fatal(err)

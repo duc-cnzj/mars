@@ -32,7 +32,7 @@ func TestNewProjectSvc(t *testing.T) {
 		repo.NewMockGitRepo(m),
 		repo.NewMockK8sRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockHelmerRepo(m),
 		repo.NewMockNamespaceRepo(m),
 	)
@@ -61,7 +61,7 @@ func Test_projectSvc_List(t *testing.T) {
 		repo.NewMockGitRepo(m),
 		repo.NewMockK8sRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockHelmerRepo(m),
 		repo.NewMockNamespaceRepo(m),
 	)
@@ -91,7 +91,7 @@ func Test_projectSvc_List_Success(t *testing.T) {
 		repo.NewMockGitRepo(m),
 		repo.NewMockK8sRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockHelmerRepo(m),
 		repo.NewMockNamespaceRepo(m),
 	)
@@ -123,7 +123,7 @@ func TestProjectSvc_Show_Success(t *testing.T) {
 		repo.NewMockGitRepo(m),
 		k8sRepo,
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 	)
@@ -150,7 +150,7 @@ func TestProjectSvc_Show_Failure(t *testing.T) {
 		repo.NewMockGitRepo(m),
 		repo.NewMockK8sRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockHelmerRepo(m),
 		repo.NewMockNamespaceRepo(m),
 	)
@@ -179,7 +179,7 @@ func Test_projectSvc_Delete(t *testing.T) {
 		repo.NewMockGitRepo(m),
 		k8sRepo,
 		eventRepo,
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		helmerRepo,
 		nsRepo,
 	)
@@ -220,7 +220,7 @@ func Test_projectSvc_Delete_Fail(t *testing.T) {
 		repo.NewMockGitRepo(m),
 		k8sRepo,
 		eventRepo,
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		helmerRepo,
 		repo.NewMockNamespaceRepo(m),
 	)
@@ -248,7 +248,7 @@ func Test_projectSvc_Delete_Fail2(t *testing.T) {
 		repo.NewMockGitRepo(m),
 		k8sRepo,
 		eventRepo,
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		helmerRepo,
 		nsRepo,
 	)
@@ -277,7 +277,7 @@ func Test_projectSvc_Version(t *testing.T) {
 		repo.NewMockGitRepo(m),
 		k8sRepo,
 		eventRepo,
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		helmerRepo,
 		repo.NewMockNamespaceRepo(m),
 	)
@@ -311,7 +311,7 @@ func Test_projectSvc_AllContainers(t *testing.T) {
 		repo.NewMockGitRepo(m),
 		k8sRepo,
 		eventRepo,
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		helmerRepo,
 		repo.NewMockNamespaceRepo(m),
 	)
@@ -338,7 +338,7 @@ func Test_projectSvc_AllContainers_Fail(t *testing.T) {
 		repo.NewMockGitRepo(m),
 		k8sRepo,
 		eventRepo,
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		helmerRepo,
 		repo.NewMockNamespaceRepo(m),
 	)
@@ -359,7 +359,7 @@ func TestProjectSvc_WebApply_Success(t *testing.T) {
 	jobManager := socket.NewMockJobManager(m)
 	gitRepo := repo.NewMockGitRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	helmerRepo := repo.NewMockHelmerRepo(m)
 	nsRepo := repo.NewMockNamespaceRepo(m)
 	plMgr := application.NewMockPluginManger(m)
@@ -413,7 +413,7 @@ func TestProjectSvc_WebApply_Failure(t *testing.T) {
 	jobManager := socket.NewMockJobManager(m)
 	gitRepo := repo.NewMockGitRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	helmerRepo := repo.NewMockHelmerRepo(m)
 	nsRepo := repo.NewMockNamespaceRepo(m)
 	plMgr := application.NewMockPluginManger(m)
@@ -453,7 +453,7 @@ func TestProjectSvc_Apply_Success(t *testing.T) {
 	jobManager := socket.NewMockJobManager(m)
 	gitRepo := repo.NewMockGitRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	helmerRepo := repo.NewMockHelmerRepo(m)
 	nsRepo := repo.NewMockNamespaceRepo(m)
 	plMgr := application.NewMockPluginManger(m)
@@ -513,7 +513,7 @@ func TestProjectSvc_Apply_Failure(t *testing.T) {
 	jobManager := socket.NewMockJobManager(m)
 	gitRepo := repo.NewMockGitRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	helmerRepo := repo.NewMockHelmerRepo(m)
 	nsRepo := repo.NewMockNamespaceRepo(m)
 	plMgr := application.NewMockPluginManger(m)
@@ -749,7 +749,7 @@ func TestGetBranchAndCommitIfMissingReturnsDefaultBranchWhenBranchIsNotProvided(
 		gitRepo,
 		repo.NewMockK8sRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockHelmerRepo(m),
 		repo.NewMockNamespaceRepo(m),
 	)
@@ -773,7 +773,7 @@ func TestGetBranchAndCommitIfMissingReturnsLatestCommitWhenCommitIsNotProvided(t
 		gitRepo,
 		repo.NewMockK8sRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockHelmerRepo(m),
 		repo.NewMockNamespaceRepo(m),
 	)
@@ -797,7 +797,7 @@ func TestGetBranchAndCommitIfMissingReturnsLatestCommitWhenCommitIsNotProvided2(
 		gitRepo,
 		repo.NewMockK8sRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockHelmerRepo(m),
 		repo.NewMockNamespaceRepo(m),
 	)
@@ -821,7 +821,7 @@ func TestGetBranchAndCommitIfMissingReturnsProvidedBranchAndCommit(t *testing.T)
 		gitRepo,
 		repo.NewMockK8sRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockHelmerRepo(m),
 		repo.NewMockNamespaceRepo(m),
 	)
@@ -846,7 +846,7 @@ func Test_projectSvc_MemoryCpuAndEndpoints(t *testing.T) {
 		repo.NewMockGitRepo(m),
 		k8sRepo,
 		eventRepo,
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		helmerRepo,
 		repo.NewMockNamespaceRepo(m),
 	)

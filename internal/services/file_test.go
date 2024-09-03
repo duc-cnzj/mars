@@ -22,7 +22,7 @@ import (
 func TestNewFileSvc(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	svc := NewFileSvc(repo.NewMockEventRepo(m), repo.NewMockFileRepo(m), mlog.NewLogger(nil))
+	svc := NewFileSvc(repo.NewMockEventRepo(m), repo.NewMockFileRepo(m), mlog.NewForConfig(nil))
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.(*fileSvc).logger)
 	assert.NotNil(t, svc.(*fileSvc).eventRepo)
@@ -34,7 +34,7 @@ func TestFileSvc_Authorize_AdminUser(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	fileRepo := repo.NewMockFileRepo(m)
-	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil)).(*fileSvc)
+	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil)).(*fileSvc)
 
 	_, err := svc.Authorize(newAdminUserCtx(), "TestMethod")
 	assert.NoError(t, err)
@@ -45,7 +45,7 @@ func TestFileSvc_Authorize_NonAdminUser(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	fileRepo := repo.NewMockFileRepo(m)
-	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil)).(*fileSvc)
+	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil)).(*fileSvc)
 
 	_, err := svc.Authorize(newOtherUserCtx(), "TestMethod")
 	assert.Error(t, err)
@@ -57,7 +57,7 @@ func TestFileSvc_Authorize_MaxUploadSize(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	fileRepo := repo.NewMockFileRepo(m)
-	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil)).(*fileSvc)
+	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil)).(*fileSvc)
 
 	_, err := svc.Authorize(newOtherUserCtx(), "MaxUploadSize")
 	assert.Nil(t, err)
@@ -70,7 +70,7 @@ func Test_fileSvc_Delete(t *testing.T) {
 	defer m.Finish()
 	fileRepo := repo.NewMockFileRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil))
+	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
 	fileRepo.EXPECT().GetByID(gomock.Any(), int(1)).Return(nil, errors.New("xx"))
 
@@ -84,7 +84,7 @@ func Test_fileSvc_Delete2(t *testing.T) {
 	defer m.Finish()
 	fileRepo := repo.NewMockFileRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil))
+	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
 	fileRepo.EXPECT().GetByID(gomock.Any(), int(1)).Return(&repo.File{}, nil)
 	fileRepo.EXPECT().Delete(gomock.Any(), int(1)).Return(errors.New("xx"))
@@ -98,7 +98,7 @@ func Test_fileSvc_Delete3(t *testing.T) {
 	defer m.Finish()
 	fileRepo := repo.NewMockFileRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil))
+	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
 	eventRepo.EXPECT().FileAuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	fileRepo.EXPECT().GetByID(gomock.Any(), int(1)).Return(&repo.File{}, nil)
@@ -113,7 +113,7 @@ func Test_fileSvc_MaxUploadSize(t *testing.T) {
 	defer m.Finish()
 	fileRepo := repo.NewMockFileRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil))
+	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
 	fileRepo.EXPECT().MaxUploadSize().Return(uint64(10000))
 	size, err := svc.MaxUploadSize(newAdminUserCtx(), &file.MaxUploadSizeRequest{})
@@ -126,7 +126,7 @@ func TestFileSvc_DiskInfo_Success(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	fileRepo := repo.NewMockFileRepo(m)
-	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil))
+	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
 	fileRepo.EXPECT().DiskInfo(false).Return(int64(10000), nil)
 
@@ -142,7 +142,7 @@ func TestFileSvc_DiskInfo_Failure(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	fileRepo := repo.NewMockFileRepo(m)
-	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil))
+	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
 	fileRepo.EXPECT().DiskInfo(false).Return(int64(0), errors.New("error"))
 
@@ -155,7 +155,7 @@ func TestFileSvc_List_Success(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	fileRepo := repo.NewMockFileRepo(m)
-	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil))
+	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
 	fileRepo.EXPECT().List(gomock.Any(), &repo.ListFileInput{
 		Page:           1,
@@ -178,7 +178,7 @@ func TestFileSvc_List_Failure(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	fileRepo := repo.NewMockFileRepo(m)
-	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil))
+	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
 	fileRepo.EXPECT().List(gomock.Any(), gomock.Any()).Return(nil, nil, errors.New("error"))
 
@@ -191,7 +191,7 @@ func TestFileSvc_ShowRecords_Success(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	fileRepo := repo.NewMockFileRepo(m)
-	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil))
+	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
 	fileRepo.EXPECT().ShowRecords(gomock.Any(), gomock.Any()).Return(io.NopCloser(strings.NewReader("record1\nrecord2\n")), nil)
 
@@ -206,7 +206,7 @@ func TestFileSvc_ShowRecords_Failure(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	fileRepo := repo.NewMockFileRepo(m)
-	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewLogger(nil))
+	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
 	fileRepo.EXPECT().ShowRecords(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
 
