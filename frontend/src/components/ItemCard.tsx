@@ -395,6 +395,7 @@ const NamespacePrivate: React.FC<{
                   gutter: { padding: "0 5px", minWidth: 20 },
                   marker: { padding: "0 6px" },
                   diffContainer: {
+                    height: "100%",
                     display: "block",
                     width: "100%",
                     overflowX: "auto",

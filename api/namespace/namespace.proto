@@ -78,7 +78,7 @@ message UpdatePrivateResponse{
 
 message SyncMembersRequest{
   int32           id     = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
-  repeated string emails = 2;
+  repeated string emails = 2 [(validate.rules).repeated.items.string.email = true];
 }
 message SyncMembersResponse{
   types.NamespaceModel item = 1;
