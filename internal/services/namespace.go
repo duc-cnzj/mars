@@ -107,7 +107,7 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 	n.logger.Debug("成功创建namespace: ", create.Name)
 
 	var imagePullSecrets []string
-	secret, err := n.k8sRepo.CreateDockerSecrets(ctx, create.Name)
+	secret, err := n.k8sRepo.CreateDockerSecret(ctx, create.Name)
 	if err == nil {
 		imagePullSecrets = append(imagePullSecrets, secret.Name)
 	} else {

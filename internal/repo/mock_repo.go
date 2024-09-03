@@ -910,9 +910,9 @@ func (mr *MockK8sRepoMockRecorder) CopyFileToPod(arg0, arg1 any) *gomock.Call {
 }
 
 // CreateDockerSecrets mocks base method.
-func (m *MockK8sRepo) CreateDockerSecrets(arg0 context.Context, arg1 string) (*v1.Secret, error) {
+func (m *MockK8sRepo) CreateDockerSecret(arg0 context.Context, arg1 string) (*v1.Secret, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateDockerSecrets", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateDockerSecret", arg0, arg1)
 	ret0, _ := ret[0].(*v1.Secret)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -921,7 +921,7 @@ func (m *MockK8sRepo) CreateDockerSecrets(arg0 context.Context, arg1 string) (*v
 // CreateDockerSecrets indicates an expected call of CreateDockerSecrets.
 func (mr *MockK8sRepoMockRecorder) CreateDockerSecrets(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDockerSecrets", reflect.TypeOf((*MockK8sRepo)(nil).CreateDockerSecrets), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDockerSecret", reflect.TypeOf((*MockK8sRepo)(nil).CreateDockerSecret), arg0, arg1)
 }
 
 // CreateNamespace mocks base method.
