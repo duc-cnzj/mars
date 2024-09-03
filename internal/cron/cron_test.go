@@ -121,3 +121,26 @@ func Test_sortCommand(t *testing.T) {
 	assert.Equal(t, "b", cmds[1].Name())
 	assert.Equal(t, "c", cmds[2].Name())
 }
+
+func Test_cronManager_wrap(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	runner := NewMockRunner(m)
+	l := locker.NewMockLocker(m)
+	called := false
+	l.EXPECT().ID().Return("1").AnyTimes()
+	l.EXPECT().RenewalAcquire(gomock.Any(), gomock.Any(), gomock.Any()).Return(func() {
+		called = true
+	}, true).Times(2)
+	manager := NewManager(runner, l, mlog.NewForConfig(nil)).(*cronManager)
+	manager.wrap("a", func() error {
+		return errors.New("x")
+	})()
+	assert.True(t, called)
+
+	assert.NotPanics(t, func() {
+		manager.wrap("a", func() error {
+			panic("err")
+		})()
+	})
+}

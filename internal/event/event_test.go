@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/mock/gomock"
+
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/stretchr/testify/assert"
 )
@@ -81,6 +83,34 @@ func TestDispatcher_RunAndShutdown(t *testing.T) {
 	mu.Lock()
 	defer mu.Unlock()
 	assert.Equal(t, 1, called)
+}
+
+func TestDispatcher_Run_Error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	logger := mlog.NewMockLogger(m)
+	dispatcher := &dispatcher{logger: logger, ctx: context.Background(), ch: make(chan *eventBody)}
+
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	cancelFunc()
+	logger.EXPECT().Info("[Event]: dispatcher running")
+	logger.EXPECT().Warning("event dispatcher context done")
+	dispatcher.Run(ctx)
+	time.Sleep(1 * time.Second)
+}
+
+func TestDispatcher_Run_Error2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	logger := mlog.NewMockLogger(m)
+	ch := make(chan *eventBody)
+	close(ch)
+	dispatcher := &dispatcher{logger: logger, ctx: context.Background(), ch: ch}
+
+	logger.EXPECT().Info("[Event]: dispatcher running")
+	logger.EXPECT().Warning("event dispatcher channel closed")
+	dispatcher.Run(context.Background())
+	time.Sleep(1 * time.Second)
 }
 
 func TestEvent_String(t *testing.T) {
