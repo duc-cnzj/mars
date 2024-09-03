@@ -31,14 +31,14 @@ func TestCronLogger_Info(t *testing.T) {
 
 func TestNewRobfigCronV3Runner(t *testing.T) {
 	t.Parallel()
-	runner := NewRobfigCronV3Runner(mlog.NewLogger(nil)).(*robfigCronV3Runner)
+	runner := NewRobfigCronV3Runner(mlog.NewForConfig(nil)).(*robfigCronV3Runner)
 	assert.NotNil(t, runner.entryMap)
 	assert.IsType(t, (*cron.Cron)(nil), runner.c)
 }
 
 func TestRobfigCronV3Runner_AddCommand(t *testing.T) {
 	t.Parallel()
-	runner := NewRobfigCronV3Runner(mlog.NewLogger(nil)).(*robfigCronV3Runner)
+	runner := NewRobfigCronV3Runner(mlog.NewForConfig(nil)).(*robfigCronV3Runner)
 	assert.Error(t, runner.AddCommand("a", "", func() {}))
 	assert.Nil(t, runner.AddCommand("a", "* * * * * *", func() {}))
 	runner.Lock()
@@ -48,21 +48,21 @@ func TestRobfigCronV3Runner_AddCommand(t *testing.T) {
 
 func TestRobfigCronV3Runner_Run(t *testing.T) {
 	t.Parallel()
-	runner := NewRobfigCronV3Runner(mlog.NewLogger(nil)).(*robfigCronV3Runner)
+	runner := NewRobfigCronV3Runner(mlog.NewForConfig(nil)).(*robfigCronV3Runner)
 	assert.Nil(t, runner.Run(context.TODO()))
 	<-runner.c.Stop().Done()
 }
 
 func TestRobfigCronV3Runner_Shutdown(t *testing.T) {
 	t.Parallel()
-	runner := NewRobfigCronV3Runner(mlog.NewLogger(nil))
+	runner := NewRobfigCronV3Runner(mlog.NewForConfig(nil))
 	err := runner.Shutdown(context.TODO())
 	assert.Nil(t, err)
 }
 
 func TestRobfigCronV3Runner_Shutdown2(t *testing.T) {
 	t.Parallel()
-	runner := NewRobfigCronV3Runner(mlog.NewLogger(nil))
+	runner := NewRobfigCronV3Runner(mlog.NewForConfig(nil))
 	runner.AddCommand("test", "* * * * * *", func() {
 		time.Sleep(100 * time.Second)
 	})

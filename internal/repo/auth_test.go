@@ -22,7 +22,7 @@ func TestAuthRepo_Login_Success(t *testing.T) {
 
 	authsvc := auth.NewMockAuth(m)
 	data := data.NewMockData(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 
 	repo := NewAuthRepo(authsvc, logger, data)
 
@@ -46,7 +46,7 @@ func TestAuthRepo_Login_Failure(t *testing.T) {
 
 	authsvc := auth.NewMockAuth(m)
 	data := data.NewMockData(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 
 	repo := NewAuthRepo(authsvc, logger, data)
 
@@ -68,7 +68,7 @@ func TestAuthRepo_Login_Failure2(t *testing.T) {
 
 	authsvc := auth.NewMockAuth(m)
 	data := data.NewMockData(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 
 	repo := NewAuthRepo(authsvc, logger, data)
 
@@ -91,7 +91,7 @@ func TestAuthRepo_VerifyToken_Success(t *testing.T) {
 
 	authsvc := auth.NewMockAuth(m)
 	data := data.NewMockData(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 
 	repo := NewAuthRepo(authsvc, logger, data)
 
@@ -112,7 +112,7 @@ func TestAuthRepo_VerifyToken_Failure(t *testing.T) {
 
 	authsvc := auth.NewMockAuth(m)
 	data := data.NewMockData(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 
 	repo := NewAuthRepo(authsvc, logger, data)
 
@@ -131,7 +131,7 @@ func TestAuthRepo_Settings(t *testing.T) {
 
 	authsvc := auth.NewMockAuth(m)
 	data2 := data.NewMockData(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 
 	repo := NewAuthRepo(authsvc, logger, data2)
 
@@ -151,7 +151,7 @@ func TestAuthRepo_Sign_Success(t *testing.T) {
 
 	authsvc := auth.NewMockAuth(m)
 	data := data.NewMockData(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 
 	repo := NewAuthRepo(authsvc, logger, data)
 
@@ -183,7 +183,7 @@ func TestAuthRepo_Sign_Failure(t *testing.T) {
 
 	authsvc := auth.NewMockAuth(m)
 	data := data.NewMockData(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 
 	repo := NewAuthRepo(authsvc, logger, data)
 

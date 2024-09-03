@@ -18,7 +18,7 @@ func TestRepoImpl_All(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
 	res, err := repo.All(context.TODO(), &AllRepoRequest{})
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -29,7 +29,7 @@ func TestRepoImpl_List(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
 	res, pag, err := repo.List(context.TODO(), &ListRepoRequest{})
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -41,7 +41,7 @@ func TestRepoImpl_Show(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
 	_, err := repo.Show(context.TODO(), 1)
 	s, _ := status.FromError(err)
 
@@ -54,7 +54,7 @@ func TestRepoImpl_Create(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	mockGitRepo := NewMockGitRepo(m)
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), mockGitRepo)
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), mockGitRepo)
 	mockGitRepo.EXPECT().GetByProjectID(gomock.Any(), 100).Return(&GitProject{}, nil)
 	res, err := repo.Create(context.TODO(), &CreateRepoInput{
 		Name:         "app",
@@ -82,7 +82,7 @@ func TestRepoImpl_Update(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	mockGitRepo := NewMockGitRepo(m)
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), mockGitRepo)
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), mockGitRepo)
 
 	create, err := repo.Create(context.TODO(), &CreateRepoInput{
 		Name: "app",
@@ -140,7 +140,7 @@ func TestRepoImpl_ToggleEnabled(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
 
 	create, err := repo.Create(context.TODO(), &CreateRepoInput{
 		Name: "app",
@@ -159,7 +159,7 @@ func TestRepoImpl_ToggleEnabled_WithProjects(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
 
 	create, err := repo.Create(context.TODO(), &CreateRepoInput{
 		Name:    "app",
@@ -197,7 +197,7 @@ func TestRepoImpl_GetProjNameAndBranch_WithExistingProject(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockGitRepo := NewMockGitRepo(m)
-	repo := NewRepo(mlog.NewLogger(nil), data.NewMockData(m), mockGitRepo)
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewMockData(m), mockGitRepo)
 	mockGitRepo.EXPECT().GetByProjectID(gomock.Any(), gomock.Any()).Return(&GitProject{
 		DefaultBranch: "main",
 		Name:          "projName",
@@ -212,7 +212,7 @@ func TestRepoImpl_GetProjNameAndBranch_WithNonExistingProject(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockGitRepo := NewMockGitRepo(m)
-	repo := NewRepo(mlog.NewLogger(nil), data.NewMockData(m), mockGitRepo)
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewMockData(m), mockGitRepo)
 	mockGitRepo.EXPECT().GetByProjectID(gomock.Any(), gomock.Any()).Return(nil, assert.AnError)
 
 	projName, defaultBranch, err := repo.(*repoImpl).GetProjNameAndBranch(context.TODO(), 1)
@@ -230,7 +230,7 @@ func TestCloneRepoWithValidInput(t *testing.T) {
 	defer db.Close()
 
 	mockGitRepo := NewMockGitRepo(m)
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), mockGitRepo)
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), mockGitRepo)
 
 	create, _ := repo.Create(context.TODO(), &CreateRepoInput{
 		Name: "app",
@@ -252,7 +252,7 @@ func TestCloneRepoWithExistingName(t *testing.T) {
 	defer db.Close()
 
 	mockGitRepo := NewMockGitRepo(m)
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), mockGitRepo)
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), mockGitRepo)
 
 	create, _ := repo.Create(context.TODO(), &CreateRepoInput{
 		Name: "app",
@@ -271,7 +271,7 @@ func TestRepoImpl_Delete_WithExistingRepo(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
 
 	create, _ := repo.Create(context.TODO(), &CreateRepoInput{
 		Name: "app",
@@ -286,7 +286,7 @@ func TestRepoImpl_Delete_WithNonExistingRepo(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
 
 	err := repo.Delete(context.TODO(), 9999)
 	assert.NotNil(t, err)
@@ -297,7 +297,7 @@ func TestRepoImpl_Delete_WithRepoHavingProjects(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
 
 	create, _ := repo.Create(context.TODO(), &CreateRepoInput{
 		Name: "app",

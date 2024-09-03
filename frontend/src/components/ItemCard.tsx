@@ -13,8 +13,9 @@ import {
   Form,
   Input,
   Modal,
-  Select,
+  Alert,
 } from "antd";
+import yaml from "js-yaml";
 import "../pkg/DraggableModal/index.css";
 import {
   CloseOutlined,
@@ -33,7 +34,8 @@ import ajax from "../api/ajax";
 import IconFont from "./Icon";
 import TextArea from "antd/es/input/TextArea";
 import { css } from "@emotion/css";
-import { SelectProps } from "antd/lib";
+import { MyCodeMirror } from "./MyCodeMirror";
+import DiffViewer from "./DiffViewer";
 
 const Item: React.FC<{
   item: components["schemas"]["types.NamespaceModel"];
@@ -318,13 +320,8 @@ const NamespacePrivate: React.FC<{
   const { user, isAdmin } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [options, setOptions] = useState<SelectProps["options"]>(
-    item.members.map((v) => ({
-      value: v.email,
-      label: v.email,
-    })),
-  );
-
+  const initValues = yaml.dump(item.members.map((v) => v.email));
+  const [value, setValue] = useState(initValues);
   const isOwned = useCallback(() => {
     return isAdmin() || item.creatorEmail === user.email;
   }, [isAdmin, item.creatorEmail, user.email]);
@@ -336,39 +333,82 @@ const NamespacePrivate: React.FC<{
   return (
     <Space>
       <Modal
+        width={"100%"}
         destroyOnClose
         title="修改空间成员"
         open={isModalOpen}
         onOk={() => {
-          ajax
-            .POST("/api/namespaces/sync_members", {
-              body: {
-                id: item.id,
-                emails: options
-                  ? options.map((v): string => String(v.value))
-                  : [],
-              },
-            })
-            .then(() => {
-              message.success("修改成功");
-              reload();
-              setIsModalOpen(false);
-            });
+          try {
+            let v = yaml.load(value);
+            ajax
+              .POST("/api/namespaces/sync_members", {
+                body: {
+                  id: item.id,
+                  emails: (v as string[]) || [],
+                },
+              })
+              .then(({ error }) => {
+                if (error) {
+                  message.error(error.message);
+                  return;
+                }
+                message.success("修改成功");
+                reload();
+                setIsModalOpen(false);
+              });
+          } catch (e) {
+            message.error("yaml 格式不正确");
+          }
         }}
         onCancel={() => {
           setIsModalOpen(false);
         }}
       >
-        <Select
-          mode="tags"
-          style={{ width: "100%" }}
-          placeholder="添加成员邮箱"
-          onChange={(options) => {
-            setOptions(options.map((v: any) => ({ label: v, value: v })));
-          }}
-          defaultValue={options?.map((v) => v.value)}
-          options={options}
-        />
+        <Form>
+          <Row style={{ marginBottom: 5 }}>
+            <Col span={24}>
+              <Alert
+                message={
+                  <div>
+                    <div>参考下面格式👇，自行修改，输入用户邮箱</div>
+                    <div>- a@qq.com</div>
+                    <div>- v@qq.com</div>
+                  </div>
+                }
+                type="success"
+              />
+            </Col>
+          </Row>
+          <Row>
+            <Col span={12}>
+              <MyCodeMirror
+                value={value}
+                onChange={(v) => setValue(v)}
+                mode="yaml"
+              />
+            </Col>
+            <Col span={12}>
+              <DiffViewer
+                mode={"yaml"}
+                styles={{
+                  line: { fontSize: 12, lineHeight: 10 },
+                  gutter: { padding: "0 5px", minWidth: 20 },
+                  marker: { padding: "0 6px" },
+                  diffContainer: {
+                    height: "100%",
+                    display: "block",
+                    width: "100%",
+                    overflowX: "auto",
+                  },
+                }}
+                showDiffOnly={false}
+                oldValue={initValues}
+                newValue={value}
+                splitView={false}
+              />
+            </Col>
+          </Row>
+        </Form>
       </Modal>
       <Tooltip overlayStyle={{ fontSize: 12 }} title="你是此空间管理员">
         <IconFont name="#icon-crown" />

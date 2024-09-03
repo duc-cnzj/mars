@@ -16,7 +16,7 @@ func TestMetricsBootstrapper_Bootstrap(t *testing.T) {
 	app := application.NewMockApp(m)
 	app.EXPECT().AddServer(gomock.Any())
 	app.EXPECT().Config().Return(&config.Config{})
-	app.EXPECT().Logger().Return(mlog.NewLogger(nil))
+	app.EXPECT().Logger().Return(mlog.NewForConfig(nil))
 	app.EXPECT().PrometheusRegistry()
 	assert.Nil(t, (&MetricsBootstrapper{}).Bootstrap(app))
 }

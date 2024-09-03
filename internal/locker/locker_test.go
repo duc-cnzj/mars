@@ -14,7 +14,7 @@ func TestNewLocker_WithDBDriver(t *testing.T) {
 	t.Parallel()
 
 	cfg := &config.Config{DBDriver: "db", CacheDriver: "db"}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	data := data.NewData(nil, logger)
 	timer := timer.NewRealTimer()
 
@@ -28,7 +28,7 @@ func TestNewLocker_WithSQLiteDriver(t *testing.T) {
 	t.Parallel()
 
 	cfg := &config.Config{DBDriver: "sqlite", CacheDriver: "db"}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	data := data.NewData(nil, logger)
 	timer := timer.NewRealTimer()
 
@@ -42,7 +42,7 @@ func TestNewLocker_WithMemoryDriver(t *testing.T) {
 	t.Parallel()
 
 	cfg := &config.Config{DBDriver: "db", CacheDriver: "memory"}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	data := data.NewData(nil, logger)
 	timer := timer.NewRealTimer()
 	locker, err := NewLocker(cfg, data, logger, timer)
@@ -55,7 +55,7 @@ func TestNewLocker_WithUnknownDriver(t *testing.T) {
 	t.Parallel()
 
 	cfg := &config.Config{DBDriver: "db", CacheDriver: "unknown"}
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	data := data.NewData(nil, logger)
 	timer := timer.NewRealTimer()
 	locker, err := NewLocker(cfg, data, logger, timer)

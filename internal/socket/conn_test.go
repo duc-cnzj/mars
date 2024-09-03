@@ -32,7 +32,7 @@ func TestWsConn_SetUser_GetUser(t *testing.T) {
 }
 
 func TestWsConn_AddTask_RunTask_RemoveTask(t *testing.T) {
-	conn := &WsConn{taskManager: NewTaskManager(mlog.NewLogger(nil))}
+	conn := &WsConn{taskManager: NewTaskManager(mlog.NewForConfig(nil))}
 	err := conn.AddCancelDeployTask("task1", func(err error) {})
 	assert.Nil(t, err)
 
@@ -59,14 +59,14 @@ func TestWebsocketManager_newWsConn(t *testing.T) {
 
 func TestWsConn_GetPtyHandler(t *testing.T) {
 	_, b := (&WsConn{
-		sm: NewSessionMap(mlog.NewLogger(nil)),
+		sm: NewSessionMap(mlog.NewForConfig(nil)),
 	}).GetPtyHandler("sessionID")
 	assert.False(t, b)
 }
 
 func TestWsConn_SetPtyHandler(t *testing.T) {
 	w := &WsConn{
-		sm: NewSessionMap(mlog.NewLogger(nil)),
+		sm: NewSessionMap(mlog.NewForConfig(nil)),
 	}
 	w.SetPtyHandler("sessionID", &testPtyHandler{})
 	h, b := w.GetPtyHandler("sessionID")
@@ -76,7 +76,7 @@ func TestWsConn_SetPtyHandler(t *testing.T) {
 
 func TestWsConn_ClosePty(t *testing.T) {
 	w := &WsConn{
-		sm: NewSessionMap(mlog.NewLogger(nil)),
+		sm: NewSessionMap(mlog.NewForConfig(nil)),
 	}
 	w.SetPtyHandler("sessionID", &testPtyHandler{})
 	w.ClosePty(context.TODO(), "sessionID", uint32(2), "")

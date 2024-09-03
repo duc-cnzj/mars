@@ -8,7 +8,7 @@ import (
 )
 
 func TestSafeWriteMessageChSendWhenNotClosed(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	ch := NewSafeWriteMessageCh(logger, 1)
 
 	ch.Send(MessageItem{Msg: "test", Type: MessageSuccess})
@@ -23,7 +23,7 @@ func TestSafeWriteMessageChSendWhenNotClosed(t *testing.T) {
 }
 
 func TestSafeWriteMessageChSendWhenClosed(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	ch := NewSafeWriteMessageCh(logger, 1)
 
 	ch.Close()
@@ -39,7 +39,7 @@ func TestSafeWriteMessageChSendWhenClosed(t *testing.T) {
 }
 
 func TestSafeWriteMessageChSendWhenFull(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	ch := NewSafeWriteMessageCh(logger, 1)
 
 	ch.Send(MessageItem{Msg: "test1", Type: MessageError})

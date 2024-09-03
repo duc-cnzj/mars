@@ -68,7 +68,7 @@ var inspectCronJobsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.Init(viper.GetString("config"))
 		cfg.LogChannel = ""
-		logger := mlog.NewLogger(cfg)
+		logger := mlog.NewForConfig(cfg)
 		app, err := InitializeApp(cfg, logger, nil)
 		if err != nil {
 			logger.Fatal(err)
@@ -93,7 +93,7 @@ var inspectEventsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.Init(viper.GetString("config"))
 		cfg.LogChannel = ""
-		logger := mlog.NewLogger(cfg)
+		logger := mlog.NewForConfig(cfg)
 		app, err := InitializeApp(cfg, logger, []application.Bootstrapper{})
 		if err != nil {
 			logger.Fatal(err)
@@ -136,7 +136,7 @@ var inspectPluginsCmd = &cobra.Command{
 		}
 
 		cfg.LogChannel = ""
-		logger := mlog.NewLogger(cfg)
+		logger := mlog.NewForConfig(cfg)
 		app, err := InitializeApp(cfg, logger, []application.Bootstrapper{})
 		if err != nil {
 			logger.Fatal(err)

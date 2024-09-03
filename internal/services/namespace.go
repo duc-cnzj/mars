@@ -107,7 +107,7 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 	n.logger.Debug("成功创建namespace: ", create.Name)
 
 	var imagePullSecrets []string
-	secret, err := n.k8sRepo.CreateDockerSecrets(ctx, create.Name)
+	secret, err := n.k8sRepo.CreateDockerSecret(ctx, create.Name)
 	if err == nil {
 		imagePullSecrets = append(imagePullSecrets, secret.Name)
 	} else {
@@ -303,7 +303,7 @@ func (n *namespaceSvc) UpdatePrivate(ctx context.Context, req *namespace.UpdateP
 		return nil, err
 	}
 	n.eventRepo.AuditLogWithRequest(
-		types.EventActionType_Delete,
+		types.EventActionType_Update,
 		MustGetUser(ctx).Name,
 		fmt.Sprintf("[更新空间访问权限] id: %v private: %t", req.Id, req.GetPrivate()),
 		req,
@@ -331,7 +331,7 @@ func (n *namespaceSvc) SyncMembers(ctx context.Context, req *namespace.SyncMembe
 	}
 
 	n.eventRepo.AuditLogWithChange(
-		types.EventActionType_Delete,
+		types.EventActionType_Update,
 		MustGetUser(ctx).Name,
 		fmt.Sprintf("[同步空间成员] id: %v name: %v", show.ID, show.Name),
 		&repo.AnyYamlPrettier{

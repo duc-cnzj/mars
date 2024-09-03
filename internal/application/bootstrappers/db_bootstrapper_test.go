@@ -22,7 +22,7 @@ func TestDBBootstrapper_Bootstrap(t *testing.T) {
 	mockData.EXPECT().InitDB().Return(func() error { return nil }, nil)
 	app.EXPECT().Config().Return(&config.Config{DBAutoMigrate: true})
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any())
-	app.EXPECT().Logger().Return(mlog.NewLogger(nil))
+	app.EXPECT().Logger().Return(mlog.NewForConfig(nil))
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	mockData.EXPECT().DB().Return(db)

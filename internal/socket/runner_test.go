@@ -40,7 +40,7 @@ func TestNewJobManager(t *testing.T) {
 	manager := NewJobManager(
 		data.NewMockData(m),
 		timer.NewRealTimer(),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		NewMockReleaseInstaller(m),
 		repo.NewMockRepoRepo(m),
 		repo.NewMockNamespaceRepo(m),
@@ -74,7 +74,7 @@ func TestNewJob(t *testing.T) {
 
 	data := data.NewMockData(m)
 	timer := timer.NewRealTimer()
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	releaseInstaller := NewMockReleaseInstaller(m)
 	repoRepo := repo.NewMockRepoRepo(m)
 	nsRepo := repo.NewMockNamespaceRepo(m)
@@ -459,8 +459,8 @@ func TestNewEmptyCommit(t *testing.T) {
 
 func TestHandleMessage(t *testing.T) {
 	jr := &jobRunner{
-		logger:    mlog.NewLogger(nil),
-		messageCh: NewSafeWriteMessageCh(mlog.NewLogger(nil), 1),
+		logger:    mlog.NewForConfig(nil),
+		messageCh: NewSafeWriteMessageCh(mlog.NewForConfig(nil), 1),
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	cancelFunc()
@@ -468,9 +468,9 @@ func TestHandleMessage(t *testing.T) {
 }
 
 func TestHandleMessage_2(t *testing.T) {
-	ch := NewSafeWriteMessageCh(mlog.NewLogger(nil), 1)
+	ch := NewSafeWriteMessageCh(mlog.NewForConfig(nil), 1)
 	jr := &jobRunner{
-		logger:    mlog.NewLogger(nil),
+		logger:    mlog.NewForConfig(nil),
 		messageCh: ch,
 	}
 	ch.Close()
@@ -481,9 +481,9 @@ func TestHandleMessage_3(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
-	ch := NewSafeWriteMessageCh(mlog.NewLogger(nil), 10)
+	ch := NewSafeWriteMessageCh(mlog.NewForConfig(nil), 10)
 	jr := &jobRunner{
-		logger:       mlog.NewLogger(nil),
+		logger:       mlog.NewForConfig(nil),
 		messageCh:    ch,
 		messager:     msger,
 		deployResult: &deployResult{},
@@ -515,9 +515,9 @@ func TestHandleMessage_4(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
-	ch := NewSafeWriteMessageCh(mlog.NewLogger(nil), 10)
+	ch := NewSafeWriteMessageCh(mlog.NewForConfig(nil), 10)
 	jr := &jobRunner{
-		logger:       mlog.NewLogger(nil),
+		logger:       mlog.NewForConfig(nil),
 		messageCh:    ch,
 		messager:     msger,
 		deployResult: &deployResult{},
@@ -540,9 +540,9 @@ func TestHandleMessage_5(t *testing.T) {
 	msger := NewMockDeployMsger(m)
 	ctx, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
-	ch := NewSafeWriteMessageCh(mlog.NewLogger(nil), 10)
+	ch := NewSafeWriteMessageCh(mlog.NewForConfig(nil), 10)
 	jr := &jobRunner{
-		logger:       mlog.NewLogger(nil),
+		logger:       mlog.NewForConfig(nil),
 		messageCh:    ch,
 		messager:     msger,
 		deployResult: &deployResult{},
@@ -906,7 +906,7 @@ func TestElementsLoader_typedValue(t *testing.T) {
 }
 
 func TestJober_GlobalLock(t *testing.T) {
-	l := locker.NewMemoryLock(timer.NewRealTimer(), [2]int{2, 100}, locker.NewMemStore(), mlog.NewLogger(nil))
+	l := locker.NewMemoryLock(timer.NewRealTimer(), [2]int{2, 100}, locker.NewMemStore(), mlog.NewForConfig(nil))
 	job := &jobRunner{locker: l, input: &JobInput{NamespaceId: 1, Name: "app"}}
 	assert.Nil(t, job.GlobalLock().Error())
 	assert.Equal(t, "正在部署中，请稍后再试", (&jobRunner{locker: l, input: &JobInput{NamespaceId: 1, Name: "app"}}).GlobalLock().Error().Error())
@@ -957,7 +957,7 @@ func TestJober_LoadConfigs1(t *testing.T) {
 	msger.EXPECT().SendMsg(gomock.Any())
 	assert.Equal(t, "context canceled", (&jobRunner{
 		stopCtx:  ctx,
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 		messager: msger,
 		loaders:  []Loader{l},
 	}).LoadConfigs().Error().Error())
@@ -972,7 +972,7 @@ func TestJober_LoadConfigs(t *testing.T) {
 	assert.Equal(t, "xxx", (&jobRunner{
 		err:      errors.New("xxx"),
 		loaders:  []Loader{},
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 		messager: msger,
 	}).LoadConfigs().Error().Error())
 
@@ -980,7 +980,7 @@ func TestJober_LoadConfigs(t *testing.T) {
 	assert.Nil(t, (&jobRunner{
 		stopCtx:  context.TODO(),
 		loaders:  []Loader{l},
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 		messager: msger,
 	}).LoadConfigs().Error())
 	assert.True(t, l.GetCalled())
@@ -991,7 +991,7 @@ func TestJober_LoadConfigs(t *testing.T) {
 	assert.Equal(t, "context canceled", (&jobRunner{
 		stopCtx:  cancel,
 		loaders:  []Loader{l2},
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 		messager: msger,
 	}).LoadConfigs().Error().Error())
 	assert.False(t, l2.GetCalled())
@@ -1002,7 +1002,7 @@ func TestJober_LoadConfigs(t *testing.T) {
 	assert.Equal(t, "xxx", (&jobRunner{
 		stopCtx:  context.TODO(),
 		loaders:  []Loader{l3},
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 		messager: msger,
 	}).LoadConfigs().Error().Error())
 	assert.True(t, l3.GetCalled())
@@ -1014,7 +1014,7 @@ func TestJober_Stop(t *testing.T) {
 	msg := NewMockDeployMsger(m)
 	msg.EXPECT().SendMsg(gomock.Any()).Times(3)
 	var called int64 = 0
-	j := &jobRunner{messager: msg, logger: mlog.NewLogger(nil), stopFn: func(err error) {
+	j := &jobRunner{messager: msg, logger: mlog.NewForConfig(nil), stopFn: func(err error) {
 		atomic.AddInt64(&called, 1)
 	}}
 	wg := sync.WaitGroup{}
@@ -1200,7 +1200,7 @@ func TestSystemVariableLoader_Load_ok(t *testing.T) {
 VarImagePullSecrets: <.ImagePullSecrets>
 `,
 		},
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		project: &repo.Project{
 			Name:      "app",
 			GitBranch: "dev",
@@ -1251,7 +1251,7 @@ VarImagePullSecrets: <.ImagePullSecrets>
 image: <.Pipeline>-<.Branch>
 `,
 		},
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		project: &repo.Project{
 			Name:      "app",
 			GitBranch: "dev",
@@ -1329,7 +1329,7 @@ func TestChartFileLoader_Load(t *testing.T) {
 	pl.EXPECT().Git().Return(gits).AnyTimes()
 	job := &jobRunner{
 		uploader: up,
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 		helmer:   h,
 		input:    &JobInput{},
 		messager: em,
@@ -1391,7 +1391,7 @@ func TestChartFileLoader_LoadWithChartMissing(t *testing.T) {
 		helmer:    h,
 		pluginMgr: pl,
 		uploader:  up,
-		logger:    mlog.NewLogger(nil),
+		logger:    mlog.NewForConfig(nil),
 		input:     &JobInput{},
 		messager:  em,
 		config: &mars.Config{
@@ -1417,7 +1417,7 @@ func Test_jobRunner_WriteConfigYamlToTmpFile(t *testing.T) {
 	job := &jobRunner{
 		timer:    timer.NewRealTimer(),
 		uploader: mockUploader,
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 	}
 	info := uploader.NewMockFileInfo(m)
 	mockUploader.EXPECT().Put(gomock.Any(), gomock.Any()).Return(info, nil)
@@ -1471,7 +1471,7 @@ func Test_jobRunner_Validate_Fail(t *testing.T) {
 	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(nil, errors.New("xxx"))
 	projectRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxxa"))
 	job = &jobRunner{
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 		messager: msger,
 		nsRepo:   nsRepo,
 		projRepo: projectRepo,
@@ -1494,7 +1494,7 @@ func Test_jobRunner_Validate_Fail(t *testing.T) {
 	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(&repo.Project{}, nil)
 	projectRepo.EXPECT().UpdateStatusByVersion(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
 	job = &jobRunner{
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 		messager: msger,
 		nsRepo:   nsRepo,
 		projRepo: projectRepo,
@@ -1533,7 +1533,7 @@ func Test_jobRunner_Validate_Success(t *testing.T) {
 	sub := application.NewMockPubSub(m)
 	sub.EXPECT().ToAll(gomock.Any())
 	job = &jobRunner{
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 		messager: msger,
 		nsRepo:   nsRepo,
 		projRepo: projectRepo,
@@ -1561,7 +1561,7 @@ func TestJober_Finish_WhenError(t *testing.T) {
 	stopFn(errors.New("stopped"))
 	job := &jobRunner{
 		deployResult: &deployResult{},
-		logger:       mlog.NewLogger(nil),
+		logger:       mlog.NewForConfig(nil),
 		err:          errors.New("xxx"),
 		messager:     msger,
 		stopCtx:      stopCtx,
@@ -1592,7 +1592,7 @@ func TestJober_Finish_WhenError(t *testing.T) {
 	// failed
 	job2 := &jobRunner{
 		deployResult: &deployResult{},
-		logger:       mlog.NewLogger(nil),
+		logger:       mlog.NewForConfig(nil),
 		err:          errors.New("xxx"),
 		messager:     msger,
 		stopCtx:      context.TODO(),
@@ -1607,7 +1607,7 @@ func TestJober_Finish_WhenSuccess(t *testing.T) {
 	msger := NewMockDeployMsger(m)
 	job := &jobRunner{
 		deployResult: &deployResult{},
-		messager:     msger, logger: mlog.NewLogger(nil),
+		messager:     msger, logger: mlog.NewForConfig(nil),
 	}
 	successCalled := 0
 	job.OnSuccess(1, func(err error, sendResultToUser func()) {
@@ -1654,7 +1654,7 @@ func Test_jobRunner_Run_Fail_2(t *testing.T) {
 	messageChan.EXPECT().Close()
 	messageChan.EXPECT().Chan().Return(make(chan MessageItem, 1))
 	jb := &jobRunner{
-		logger:       mlog.NewLogger(nil),
+		logger:       mlog.NewForConfig(nil),
 		projRepo:     projRepo,
 		k8sRepo:      k8sRepo,
 		eventRepo:    eventRepo,
@@ -1682,7 +1682,7 @@ func Test_jobRunner_Run_Success(t *testing.T) {
 	installer.EXPECT().Run(gomock.Any(), gomock.Any()).Return(&release.Release{
 		Config: map[string]any{},
 	}, nil)
-	ch := NewSafeWriteMessageCh(mlog.NewLogger(nil), 10)
+	ch := NewSafeWriteMessageCh(mlog.NewForConfig(nil), 10)
 	projRepo.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Return(&repo.Project{}, nil)
 	eventRepo.EXPECT().Dispatch(repo.EventProjectChanged, gomock.Any())
 	eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -1691,7 +1691,7 @@ func Test_jobRunner_Run_Success(t *testing.T) {
 	k8sRepo.EXPECT().GetPodSelectorsByManifest(gomock.Any())
 
 	jb := &jobRunner{
-		logger:    mlog.NewLogger(nil),
+		logger:    mlog.NewForConfig(nil),
 		projRepo:  projRepo,
 		k8sRepo:   k8sRepo,
 		eventRepo: eventRepo,

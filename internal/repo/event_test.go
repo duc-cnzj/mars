@@ -28,7 +28,7 @@ func TestEventRepo_List(t *testing.T) {
 
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -83,7 +83,7 @@ func TestEventRepo_Show(t *testing.T) {
 
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -100,7 +100,7 @@ func TestEventRepo_AuditLog(t *testing.T) {
 	defer m.Finish()
 
 	dataMock := data.NewMockData(m)
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -115,7 +115,7 @@ func TestEventRepo_FileAuditLog(t *testing.T) {
 	defer m.Finish()
 
 	dataMock := data.NewMockData(m)
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -130,7 +130,7 @@ func TestEventRepo_FileAuditLogWithDuration(t *testing.T) {
 	defer m.Finish()
 
 	dataMock := data.NewMockData(m)
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -145,7 +145,7 @@ func TestEventRepo_AuditLogWithRequest(t *testing.T) {
 	defer m.Finish()
 
 	dataMock := data.NewMockData(m)
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -166,7 +166,7 @@ func TestEventRepo_AuditLogWithChange(t *testing.T) {
 	defer m.Finish()
 
 	dataMock := data.NewMockData(m)
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 	repo := NewEventRepo(nil, nil, nil, nil, loggerMock, dataMock, eventDispatcherMock)
@@ -182,7 +182,7 @@ func TestEventRepo_HandleAuditLog(t *testing.T) {
 
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -219,7 +219,7 @@ func Test_eventRepo_Dispatch(t *testing.T) {
 
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -289,7 +289,7 @@ func Test_eventRepo_HandleProjectDeleted(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -313,7 +313,7 @@ func Test_eventRepo_HandleProjectChanged(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -347,7 +347,7 @@ func Test_eventRepo_HandleNamespaceDeleted(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -372,7 +372,7 @@ func TestEventRepo_HandleInjectTlsSecret(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -401,7 +401,7 @@ func TestEventRepo_HandleInjectTlsSecret_NoCerts(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -427,7 +427,7 @@ func TestEventRepo_HandleInjectTlsSecret_AddTlsSecretError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	loggerMock := mlog.NewLogger(nil)
+	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 

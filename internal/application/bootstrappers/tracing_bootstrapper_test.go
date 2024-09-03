@@ -15,7 +15,7 @@ func TestTracingBootstrapper_Bootstrap(t *testing.T) {
 	defer m.Finish()
 	app := application.NewMockApp(m)
 	app.EXPECT().Config().Return(&config.Config{})
-	app.EXPECT().Logger().Return(mlog.NewLogger(nil))
+	app.EXPECT().Logger().Return(mlog.NewForConfig(nil))
 	assert.Nil(t, (&TracingBootstrapper{}).Bootstrap(app))
 }
 

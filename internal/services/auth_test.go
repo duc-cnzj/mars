@@ -21,7 +21,7 @@ import (
 func TestNewAuthSvc(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	svc := NewAuthSvc(repo.NewMockEventRepo(m), mlog.NewLogger(nil), repo.NewMockAuthRepo(m))
+	svc := NewAuthSvc(repo.NewMockEventRepo(m), mlog.NewForConfig(nil), repo.NewMockAuthRepo(m))
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.(*authSvc).logger)
 	assert.NotNil(t, svc.(*authSvc).eventRepo)
@@ -33,7 +33,7 @@ func Test_authSvc_Info(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewLogger(nil), authRepo)
+	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
 	authRepo.EXPECT().VerifyToken(gomock.Any(), "token").Return(&auth.UserInfo{}, nil)
 	resp, err := svc.Info(metadata.NewIncomingContext(context.TODO(), metadata.Pairs("Authorization", "token")), nil)
 	assert.Nil(t, err)
@@ -45,7 +45,7 @@ func Test_authSvc_Info_Fail(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewLogger(nil), authRepo)
+	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
 	resp, err := svc.Info(context.TODO(), nil)
 	assert.Error(t, err)
 	assert.Nil(t, resp)
@@ -56,7 +56,7 @@ func TestAuthSvc_Login_Success(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewLogger(nil), authRepo)
+	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
 
 	eventRepo.EXPECT().AuditLog(gomock.Any(), gomock.Any(), gomock.Any())
 	authRepo.EXPECT().Login(gomock.Any(), &repo.LoginInput{
@@ -81,7 +81,7 @@ func TestAuthSvc_Login_Failure(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewLogger(nil), authRepo)
+	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
 
 	authRepo.EXPECT().Login(gomock.Any(), &repo.LoginInput{
 		Username: "test",
@@ -100,7 +100,7 @@ func TestAuthSvc_Settings_Success(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewLogger(nil), authRepo)
+	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
 
 	authRepo.EXPECT().Settings(gomock.Any()).Return(data.OidcConfig{}, nil)
 
@@ -111,7 +111,7 @@ func TestAuthSvc_Settings_Success(t *testing.T) {
 func Test_guest_AuthFuncOverride(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	svc := NewAuthSvc(repo.NewMockEventRepo(m), mlog.NewLogger(nil), repo.NewMockAuthRepo(m))
+	svc := NewAuthSvc(repo.NewMockEventRepo(m), mlog.NewForConfig(nil), repo.NewMockAuthRepo(m))
 
 	_, err := svc.(*authSvc).AuthFuncOverride(context.Background(), "TestMethod")
 	assert.NoError(t, err)
@@ -143,7 +143,7 @@ func TestAuthSvc_Settings_NoSettings(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewLogger(nil), authRepo)
+	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
 
 	authRepo.EXPECT().Settings(gomock.Any()).Return(nil, nil)
 
@@ -157,7 +157,7 @@ func TestAuthSvc_Settings_ErrorFetchingSettings(t *testing.T) {
 	defer m.Finish()
 	eventRepo := repo.NewMockEventRepo(m)
 	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewLogger(nil), authRepo)
+	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
 
 	authRepo.EXPECT().Settings(gomock.Any()).Return(data.OidcConfig{
 		"b": data.OidcConfigItem{

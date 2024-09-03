@@ -16,7 +16,7 @@ func TestApiGatewayBootstrapper_Bootstrap(t *testing.T) {
 
 	app := application.NewMockApp(m)
 	app.EXPECT().WsServer().Return(nil)
-	app.EXPECT().Logger().Return(mlog.NewLogger(nil))
+	app.EXPECT().Logger().Return(mlog.NewForConfig(nil))
 	app.EXPECT().GrpcRegistry()
 	app.EXPECT().Auth()
 	app.EXPECT().Data()

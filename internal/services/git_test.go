@@ -21,7 +21,7 @@ func TestNewGitSvc(t *testing.T) {
 	svc := NewGitSvc(
 		repo.NewMockRepoRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockGitRepo(m),
 		cache.NewMockCache(m),
 	)
@@ -41,7 +41,7 @@ func Test_gitSvc_AllRepos(t *testing.T) {
 	svc := NewGitSvc(
 		repo.NewMockRepoRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)
@@ -59,7 +59,7 @@ func Test_gitSvc_AllRepos_Success(t *testing.T) {
 	svc := NewGitSvc(
 		repo.NewMockRepoRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)
@@ -84,7 +84,7 @@ func Test_gitSvc_ProjectOptions(t *testing.T) {
 	svc := NewGitSvc(
 		repoRepo,
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockGitRepo(m),
 		cache.NewMockCache(m),
 	)
@@ -102,7 +102,7 @@ func Test_gitSvc_ProjectOptions_Success(t *testing.T) {
 	svc := NewGitSvc(
 		repoRepo,
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockGitRepo(m),
 		cache.NewMockCache(m),
 	)
@@ -136,7 +136,7 @@ func Test_gitSvc_BranchOptions(t *testing.T) {
 	svc := NewGitSvc(
 		repo.NewMockRepoRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)
@@ -157,7 +157,7 @@ func Test_gitSvc_BranchOptions_Success(t *testing.T) {
 	svc := NewGitSvc(
 		repoRepo,
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)
@@ -194,7 +194,7 @@ func Test_gitSvc_BranchOptions_Error(t *testing.T) {
 	svc := NewGitSvc(
 		repoRepo,
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)
@@ -226,7 +226,7 @@ func Test_gitSvc_Commit(t *testing.T) {
 	svc := NewGitSvc(
 		repo.NewMockRepoRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)
@@ -247,7 +247,7 @@ func Test_gitSvc_Commit_Success(t *testing.T) {
 	svc := NewGitSvc(
 		repo.NewMockRepoRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)
@@ -268,7 +268,7 @@ func Test_gitSvc_CommitOptions(t *testing.T) {
 	svc := NewGitSvc(
 		repo.NewMockRepoRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)
@@ -288,7 +288,7 @@ func Test_gitSvc_CommitOptions_Success(t *testing.T) {
 	svc := NewGitSvc(
 		repo.NewMockRepoRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)
@@ -314,7 +314,7 @@ func Test_gitSvc_GetChartValuesYaml(t *testing.T) {
 	svc := NewGitSvc(
 		repo.NewMockRepoRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)
@@ -333,7 +333,7 @@ func Test_gitSvc_GetChartValuesYaml_error(t *testing.T) {
 	svc := NewGitSvc(
 		repo.NewMockRepoRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)
@@ -353,7 +353,7 @@ func Test_gitSvc_GetChartValuesYaml_Success(t *testing.T) {
 	svc := NewGitSvc(
 		repo.NewMockRepoRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)
@@ -374,7 +374,7 @@ func Test_gitSvc_PipelineInfo_Success(t *testing.T) {
 	svc := NewGitSvc(
 		repo.NewMockRepoRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)
@@ -403,7 +403,7 @@ func Test_gitSvc_PipelineInfo_Error(t *testing.T) {
 	svc := NewGitSvc(
 		repo.NewMockRepoRepo(m),
 		repo.NewMockEventRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		gitRepo,
 		cache.NewMockCache(m),
 	)

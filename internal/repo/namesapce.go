@@ -127,7 +127,7 @@ func (repo *namespaceRepo) CanAccess(ctx context.Context, namespaceID int, user 
 	if user.IsAdmin() {
 		return true
 	}
-	show, err := repo.Show(ctx, namespaceID)
+	show, err := repo.data.DB().Namespace.Get(ctx, namespaceID)
 	if err != nil {
 		repo.logger.ErrorCtx(ctx, err, "namespaceRepo.CanAccess")
 		return false
@@ -136,7 +136,7 @@ func (repo *namespaceRepo) CanAccess(ctx context.Context, namespaceID int, user 
 		if show.CreatorEmail == user.Email {
 			return true
 		}
-		for _, m := range show.Members {
+		for _, m := range show.QueryMembers().AllX(ctx) {
 			if m.Email == user.Email {
 				return true
 			}
@@ -147,7 +147,7 @@ func (repo *namespaceRepo) CanAccess(ctx context.Context, namespaceID int, user 
 }
 
 func (repo *namespaceRepo) IsOwner(ctx context.Context, namespaceID int, user *auth.UserInfo) (bool, error) {
-	show, err := repo.Show(ctx, namespaceID)
+	show, err := repo.data.DB().Namespace.Get(ctx, namespaceID)
 	if err != nil {
 		return false, err
 	}
@@ -245,6 +245,7 @@ func (repo *namespaceRepo) List(ctx context.Context, input *ListNamespaceInput) 
 					namespace.Private(true),
 				),
 				namespace.Private(false),
+				namespace.CreatorEmail(input.Email),
 			),
 		)
 	}

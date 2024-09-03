@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -77,7 +78,7 @@ type K8sRepo interface {
 	SplitManifests(manifest string) []string
 	AddTlsSecret(ns string, name string, key string, crt string) (*corev1.Secret, error)
 	GetPodMetrics(ctx context.Context, namespace, podName string) (*v1beta1.PodMetrics, error)
-	CreateDockerSecrets(ctx context.Context, namespace string) (*corev1.Secret, error)
+	CreateDockerSecret(ctx context.Context, namespace string) (*corev1.Secret, error)
 	GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 	CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 	LogStream(ctx context.Context, namespace, pod, container string) (chan []byte, error)
@@ -139,10 +140,12 @@ func NewK8sRepo(
 // 因为有些 secret 自带 --- 的值，导致 spilt "---" 解析异常
 func (repo *k8sRepo) SplitManifests(manifest string) []string {
 	mapManifests := releaseutil.SplitManifests(manifest)
-	var manifests []string
+	var manifests = make([]string, 0, len(mapManifests))
 	for _, s := range mapManifests {
 		manifests = append(manifests, s)
 	}
+	sort.Strings(manifests)
+
 	return manifests
 }
 
@@ -185,7 +188,7 @@ func (repo *k8sRepo) GetAllPodMetrics(ctx context.Context, proj *Project) []v1be
 		if len(ret) == 0 {
 			continue
 		}
-		l, _ := metricses.List(context.Background(), metav1.ListOptions{
+		l, _ := metricses.List(ctx, metav1.ListOptions{
 			LabelSelector: podlabels,
 		})
 		repo.logger.DebugCtx(ctx, "[GetAllPodMetrics]: ", podlabels, " ", len(l.Items))
@@ -204,7 +207,7 @@ func (repo *k8sRepo) DeleteSecret(ctx context.Context, namespace, secret string)
 	return repo.data.K8sClient().Client.CoreV1().Secrets(namespace).Delete(ctx, secret, metav1.DeleteOptions{})
 }
 
-func (repo *k8sRepo) CreateDockerSecrets(ctx context.Context, namespace string) (*corev1.Secret, error) {
+func (repo *k8sRepo) CreateDockerSecret(ctx context.Context, namespace string) (*corev1.Secret, error) {
 	var entries = make(map[string]DockerConfigEntry)
 	for _, auth := range repo.data.Config().ImagePullSecrets {
 		entries[auth.Server] = DockerConfigEntry{
@@ -221,7 +224,7 @@ func (repo *k8sRepo) CreateDockerSecrets(ctx context.Context, namespace string) 
 
 	marshal, _ := json.Marshal(dockerCfgJSON)
 
-	return repo.data.K8sClient().Client.CoreV1().Secrets(namespace).Create(context.Background(), &corev1.Secret{
+	return repo.data.K8sClient().Client.CoreV1().Secrets(namespace).Create(ctx, &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: corev1.SchemeGroupVersion.String(),
 			Kind:       "Secret",

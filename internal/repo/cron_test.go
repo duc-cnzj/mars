@@ -36,7 +36,7 @@ func Test_cronRepo_allNamespaces(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	cr := &cronRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   data.NewDataImpl(&data.NewDataParams{DB: db}),
 	}
 	for i := 0; i < 10; i++ {
@@ -80,7 +80,7 @@ func TestNewCronRepo(t *testing.T) {
 	command.EXPECT().EveryFiveSeconds()
 
 	cronRepo := NewCronRepo(
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		fRepo,
 		mockCache,
 		mockRepoRepo,
@@ -117,7 +117,7 @@ func Test_cronRepo_CacheAllBranches(t *testing.T) {
 	mockrepo := NewMockRepoRepo(m)
 	gRepo := NewMockGitRepo(m)
 	cr := &cronRepo{
-		logger:   mlog.NewLogger(nil),
+		logger:   mlog.NewForConfig(nil),
 		repoRepo: mockrepo,
 		gitRepo:  gRepo,
 	}
@@ -140,7 +140,7 @@ func Test_cronRepo_FixDeployStatus(t *testing.T) {
 	mockData := data.NewMockData(m)
 	helmrepo := NewMockHelmerRepo(m)
 	cr := &cronRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 		helm:   helmrepo,
 	}
@@ -169,7 +169,7 @@ func Test_cronRepo_CacheAllProjects(t *testing.T) {
 	defer m.Finish()
 	gRepo := NewMockGitRepo(m)
 	cr := &cronRepo{
-		logger:  mlog.NewLogger(nil),
+		logger:  mlog.NewForConfig(nil),
 		gitRepo: gRepo,
 	}
 	gRepo.EXPECT().AllProjects(context.TODO(), true)
@@ -177,7 +177,7 @@ func Test_cronRepo_CacheAllProjects(t *testing.T) {
 }
 
 func TestContainerStatusChanged(t *testing.T) {
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 
 	t.Run("returns true when container statuses length differ", func(t *testing.T) {
 		oldPod := &corev1.Pod{
@@ -280,7 +280,7 @@ func TestCleanUploadFiles(t *testing.T) {
 	up.EXPECT().LocalUploader().Return(localUp).AnyTimes()
 	cr := &cronRepo{
 		up:     up,
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 		event:  mockEvent,
 	}
@@ -355,7 +355,7 @@ func TestSyncImagePullSecretsWithBadSecret(t *testing.T) {
 	mockData := data.NewMockData(m)
 	mockData.EXPECT().DB().Return(db).AnyTimes()
 	cr := &cronRepo{
-		logger: mlog.NewLogger(nil),
+		logger: mlog.NewForConfig(nil),
 		data:   mockData,
 	}
 
@@ -523,11 +523,11 @@ func TestUpdateCertTls(t *testing.T) {
 	pl.EXPECT().Domain().Return(domainManager)
 	domainManager.EXPECT().GetCerts().Return("cert", "key", "crt")
 	(&cronRepo{
-		logger:    mlog.NewLogger(nil),
+		logger:    mlog.NewForConfig(nil),
 		data:      mockData,
 		pluginMgr: pl,
 		nsRepo: &namespaceRepo{
-			logger: mlog.NewLogger(nil),
+			logger: mlog.NewForConfig(nil),
 			data:   data.NewDataImpl(&data.NewDataParams{DB: db}),
 		},
 		k8sRepo: &k8sRepo{
@@ -561,7 +561,7 @@ func TestProjectPodEventListener(t *testing.T) {
 
 	pch1 := make(chan data.Obj[*corev1.Pod], 100)
 	podFanOutObj := data.NewFanOut[*corev1.Pod](
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		"pod",
 		pch1,
 		make(map[string]chan<- data.Obj[*corev1.Pod]),
@@ -597,10 +597,10 @@ func TestProjectPodEventListener(t *testing.T) {
 
 	go (&cronRepo{
 		pluginMgr: pl,
-		logger:    mlog.NewLogger(nil),
+		logger:    mlog.NewForConfig(nil),
 		data:      mockData,
 		nsRepo: &namespaceRepo{
-			logger: mlog.NewLogger(nil),
+			logger: mlog.NewForConfig(nil),
 			data:   data.NewDataImpl(&data.NewDataParams{DB: db}),
 		},
 		k8sRepo: &k8sRepo{
@@ -652,7 +652,7 @@ func TestProjectPodEventListener(t *testing.T) {
 
 	pch := make(chan data.Obj[*corev1.Pod], 100)
 	podFanOutObj2 := data.NewFanOut[*corev1.Pod](
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		"pod-2",
 		pch,
 		make(map[string]chan<- data.Obj[*corev1.Pod]),

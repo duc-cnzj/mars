@@ -24,7 +24,7 @@ func TestNamespaceRepo_List_Success(t *testing.T) {
 	ctx := context.TODO()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewNamespaceRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		Cfg: &config.Config{},
 		DB:  db,
 	}))
@@ -99,6 +99,17 @@ func TestNamespaceRepo_List_Success(t *testing.T) {
 	res, pag, _ = repo.List(ctx, input)
 	assert.Len(t, res, 5)
 	assert.Equal(t, int32(5), pag.Count)
+
+	input = &ListNamespaceInput{
+		Email:    "a",
+		Page:     1,
+		PageSize: 10,
+		IsAdmin:  false,
+	}
+
+	res, pag, _ = repo.List(ctx, input)
+	assert.Len(t, res, 5)
+	assert.Equal(t, int32(5), pag.Count)
 }
 
 func Test_namespaceRepo_Create(t *testing.T) {
@@ -106,7 +117,7 @@ func Test_namespaceRepo_Create(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewNamespaceRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		Cfg: &config.Config{
 			NsPrefix: "abc-",
 		},
@@ -129,7 +140,7 @@ func Test_namespaceRepo_Show(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewNamespaceRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		Cfg: &config.Config{
 			NsPrefix: "abc",
 		},
@@ -154,7 +165,7 @@ func Test_namespaceRepo_Update(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewNamespaceRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		Cfg: &config.Config{
 			NsPrefix: "abc",
 		},
@@ -177,7 +188,7 @@ func Test_namespaceRepo_Update(t *testing.T) {
 }
 
 func Test_namespaceRepo_GetMarsNamespace(t *testing.T) {
-	repo := NewNamespaceRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		Cfg: &config.Config{
 			NsPrefix: "abc-",
 		},
@@ -193,7 +204,7 @@ func Test_namespaceRepo_Delete(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewNamespaceRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		Cfg: &config.Config{
 			NsPrefix: "abc",
 		},
@@ -243,7 +254,7 @@ func Test_namespaceRepo_Favorite_Success(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewNamespaceRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		Cfg: &config.Config{},
 		DB:  db,
 	}))
@@ -267,7 +278,7 @@ func Test_namespaceRepo_Favorite_AlreadyExists(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewNamespaceRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		Cfg: &config.Config{},
 		DB:  db,
 	}))
@@ -289,7 +300,7 @@ func Test_namespaceRepo_Favorite_Unfavorite(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewNamespaceRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		Cfg: &config.Config{},
 		DB:  db,
 	}))
@@ -314,7 +325,7 @@ func Test_namespaceRepo_FindByName(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewNamespaceRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		Cfg: &config.Config{
 			NsPrefix: "abc-",
 		},
@@ -347,7 +358,7 @@ func Test_namespaceRepo_SyncMembers(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewNamespaceRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		Cfg: &config.Config{
 			NsPrefix: "abc-",
 		},
@@ -375,7 +386,7 @@ func Test_namespaceRepo_UpdatePrivate(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewNamespaceRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		Cfg: &config.Config{
 			NsPrefix: "abc-",
 		},
@@ -404,7 +415,7 @@ func Test_namespaceRepo_IsOwner(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewNamespaceRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		Cfg: &config.Config{
 			NsPrefix: "abc-",
 		},

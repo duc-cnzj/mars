@@ -74,7 +74,7 @@ func TestS3_AllDirectoryFiles(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	up, _ := NewDiskUploader(testDir, mlog.NewLogger(nil))
+	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
 	s3Cli := NewS3(s3Client, testBucketName, up, "AllDirectoryFiles").Disk("sub")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("aaa", strings.NewReader("aaa"))
@@ -98,7 +98,7 @@ func TestS3_Delete(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	up, _ := NewDiskUploader(testDir, mlog.NewLogger(nil))
+	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
 	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("aaa", strings.NewReader("aaa"))
@@ -111,7 +111,7 @@ func TestS3_DeleteDir(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	up, _ := NewDiskUploader(testDir, mlog.NewLogger(nil))
+	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
 	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("cc/c.txt", strings.NewReader("aaa"))
@@ -124,7 +124,7 @@ func TestS3_DirSize(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	up, _ := NewDiskUploader(testDir, mlog.NewLogger(nil))
+	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
 	s3Cli := NewS3(s3Client, testBucketName, up, "dirsize")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("dirsize/cc/c.txt", strings.NewReader("aaa"))
@@ -136,7 +136,7 @@ func TestS3_Exists(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	up, _ := NewDiskUploader(testDir, mlog.NewLogger(nil))
+	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
 	s3Cli := NewS3(s3Client, testBucketName, up, "data")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("cc/c.txt", strings.NewReader("aaa"))
@@ -157,7 +157,7 @@ func TestS3_NewFile(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	up, _ := NewDiskUploader(testDir, mlog.NewLogger(nil))
+	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
 	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	_, err := s3Cli.Put("aaa", strings.NewReader("aaa"))
@@ -177,7 +177,7 @@ func TestS3_Put(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	up, _ := NewDiskUploader(testDir, mlog.NewLogger(nil))
+	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
 	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	put, err := s3Cli.Put("aaa", strings.NewReader("aaa"))
@@ -197,7 +197,7 @@ func TestS3_Read(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	up, _ := NewDiskUploader(testDir, mlog.NewLogger(nil))
+	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
 	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	_, err := s3Cli.Read("aaa")
@@ -215,7 +215,7 @@ func TestS3_RemoveEmptyDir(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	up, _ := NewDiskUploader(testDir, mlog.NewLogger(nil))
+	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
 	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	_, err := s3Cli.Put("aaa", strings.NewReader("aaa"))
@@ -227,7 +227,7 @@ func TestS3_Stat(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	up, _ := NewDiskUploader(testDir, mlog.NewLogger(nil))
+	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
 	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	_, err := s3Cli.Put("aaa", strings.NewReader("aaa"))
@@ -343,7 +343,7 @@ func Test_s3File_Close(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	up, _ := NewDiskUploader(testDir, mlog.NewLogger(nil))
+	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
 	s3Cli := NewS3(s3Client, testBucketName, up, "data")
 	s3Cli.DeleteDir("")
 	file, err := s3Cli.NewFile("s3file_close.txt")

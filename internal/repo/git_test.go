@@ -18,7 +18,7 @@ func TestGitRepo_AllProjects(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	mockLogger := mlog.NewLogger(nil)
+	mockLogger := mlog.NewForConfig(nil)
 	mockCache := cache.NewMockCache(m)
 	mockPluginManager := application.NewMockPluginManger(m)
 	mockData := data.NewMockData(m)
@@ -49,7 +49,7 @@ func TestGitRepo_AllProjects_Cache(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	mockLogger := mlog.NewLogger(nil)
+	mockLogger := mlog.NewForConfig(nil)
 	mockPluginManager := application.NewMockPluginManger(m)
 	mockData := data.NewMockData(m)
 	mockData.EXPECT().Config().Return(&config.Config{GitServerCached: true})
@@ -79,7 +79,7 @@ func TestGitRepo_AllBranches(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	mockLogger := mlog.NewLogger(nil)
+	mockLogger := mlog.NewForConfig(nil)
 	mockCache := cache.NewMockCache(m)
 	mockPluginManager := application.NewMockPluginManger(m)
 	mockData := data.NewMockData(m)
@@ -104,7 +104,7 @@ func TestGitRepo_AllBranches_Cache(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	mockLogger := mlog.NewLogger(nil)
+	mockLogger := mlog.NewForConfig(nil)
 	mockPluginManager := application.NewMockPluginManger(m)
 	mockData := data.NewMockData(m)
 	mockData.EXPECT().Config().Return(&config.Config{GitServerCached: true})
@@ -128,7 +128,7 @@ func TestGitRepo_ListCommits(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	mockLogger := mlog.NewLogger(nil)
+	mockLogger := mlog.NewForConfig(nil)
 	mockCache := cache.NewMockCache(m)
 	mockPluginManager := application.NewMockPluginManger(m)
 	mockData := data.NewMockData(m)
@@ -148,7 +148,7 @@ func TestGitRepo_GetProject(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	mockLogger := mlog.NewLogger(nil)
+	mockLogger := mlog.NewForConfig(nil)
 	mockCache := cache.NewMockCache(m)
 	mockPluginManager := application.NewMockPluginManger(m)
 	mockData := data.NewMockData(m)
@@ -175,7 +175,7 @@ func TestGitRepo_GetFileContentWithBranch(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	mockLogger := mlog.NewLogger(nil)
+	mockLogger := mlog.NewForConfig(nil)
 	mockCache := cache.NewMockCache(m)
 	mockPluginManager := application.NewMockPluginManger(m)
 	mockData := data.NewMockData(m)
@@ -196,7 +196,7 @@ func TestGitRepo_GetCommit(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	mockLogger := mlog.NewLogger(nil)
+	mockLogger := mlog.NewForConfig(nil)
 	mockCache := cache.NewMockCache(m)
 	mockPluginManager := application.NewMockPluginManger(m)
 	mockData := data.NewMockData(m)
@@ -228,7 +228,7 @@ func TestGitRepo_GetCommitPipeline(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	mockLogger := mlog.NewLogger(nil)
+	mockLogger := mlog.NewForConfig(nil)
 	mockCache := cache.NewMockCache(m)
 	mockPluginManager := application.NewMockPluginManger(m)
 	mockData := data.NewMockData(m)
@@ -252,7 +252,7 @@ func TestGitRepo_GetByProjectID(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	mockLogger := mlog.NewLogger(nil)
+	mockLogger := mlog.NewForConfig(nil)
 	mockCache := cache.NewMockCache(m)
 	mockPluginManager := application.NewMockPluginManger(m)
 	mockData := data.NewMockData(m)

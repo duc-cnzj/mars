@@ -26,7 +26,7 @@ func TestNewNamespaceSvc_Creation(t *testing.T) {
 	helmer := repo.NewMockHelmerRepo(m)
 	nsRepo := repo.NewMockNamespaceRepo(m)
 	k8sRepo := repo.NewMockK8sRepo(m)
-	logger := mlog.NewLogger(nil)
+	logger := mlog.NewForConfig(nil)
 	eventRepo := repo.NewMockEventRepo(m)
 
 	svc := NewNamespaceSvc(helmer, nsRepo, k8sRepo, logger, eventRepo)
@@ -44,7 +44,7 @@ func TestNamespaceSvc_Create_NamespaceTerminating(t *testing.T) {
 	defer m.Finish()
 	nsRepo := repo.NewMockNamespaceRepo(m)
 	k8sRepo := repo.NewMockK8sRepo(m)
-	svc := NewNamespaceSvc(repo.NewMockHelmerRepo(m), nsRepo, k8sRepo, mlog.NewLogger(nil), repo.NewMockEventRepo(m))
+	svc := NewNamespaceSvc(repo.NewMockHelmerRepo(m), nsRepo, k8sRepo, mlog.NewForConfig(nil), repo.NewMockEventRepo(m))
 
 	nsRepo.EXPECT().GetMarsNamespace("test").Return("test")
 	nsRepo.EXPECT().FindByName(gomock.Any(), gomock.Any()).Return(nil, &ent.NotFoundError{})
@@ -79,7 +79,7 @@ func TestNamespaceSvc_Create_Exists(t *testing.T) {
 	defer m.Finish()
 	nsRepo := repo.NewMockNamespaceRepo(m)
 	k8sRepo := repo.NewMockK8sRepo(m)
-	svc := NewNamespaceSvc(repo.NewMockHelmerRepo(m), nsRepo, k8sRepo, mlog.NewLogger(nil), repo.NewMockEventRepo(m))
+	svc := NewNamespaceSvc(repo.NewMockHelmerRepo(m), nsRepo, k8sRepo, mlog.NewForConfig(nil), repo.NewMockEventRepo(m))
 
 	nsRepo.EXPECT().GetMarsNamespace("test").Return("test")
 	nsRepo.EXPECT().FindByName(gomock.Any(), gomock.Any()).Return(&repo.Namespace{}, nil)
@@ -104,7 +104,7 @@ func TestNamespaceSvc_Create_Success(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		k8sRepo,
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		eventRepo,
 	)
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
@@ -114,7 +114,7 @@ func TestNamespaceSvc_Create_Success(t *testing.T) {
 			Name: "namespace1",
 		},
 	}, nil)
-	k8sRepo.EXPECT().CreateDockerSecrets(gomock.Any(), "namespace1").Return(&corev1.Secret{
+	k8sRepo.EXPECT().CreateDockerSecret(gomock.Any(), "namespace1").Return(&corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "docker-secret",
 		},
@@ -144,7 +144,7 @@ func TestNamespaceSvc_Create_AlreadyExists(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		k8sRepo,
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 	)
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
@@ -167,7 +167,7 @@ func TestNamespaceSvc_Create_Error(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		k8sRepo,
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 	)
 
@@ -194,7 +194,7 @@ func TestNamespaceSvc_Delete_Success(t *testing.T) {
 		helmerRepo,
 		nsRepo,
 		k8sRepo,
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		eventRepo,
 	)
 
@@ -240,7 +240,7 @@ func TestNamespaceSvc_Delete_Error(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 	)
 
@@ -262,7 +262,7 @@ func TestNamespaceSvc_Delete_Error2(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 	)
 
@@ -282,7 +282,7 @@ func TestNamespaceSvc_Favorite_Success(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 	)
 
@@ -309,7 +309,7 @@ func TestNamespaceSvc_Favorite_Error(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 	)
 
@@ -336,7 +336,7 @@ func TestNamespaceSvc_IsExists_Success(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 	)
 
@@ -364,7 +364,7 @@ func TestNamespaceSvc_IsExists_NotFound(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 	)
 
@@ -388,7 +388,7 @@ func TestNamespaceSvc_IsExists_Error(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 	)
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
@@ -410,7 +410,7 @@ func TestNamespaceSvc_Show_Success(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 	)
 
@@ -438,7 +438,7 @@ func TestNamespaceSvc_Show_NotFound(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 	)
 
@@ -460,7 +460,7 @@ func TestNamespaceSvc_Show_Error(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 	)
 
@@ -483,7 +483,7 @@ func Test_namespaceSvc_UpdateDesc(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		eventRepo,
 	)
 	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
@@ -520,7 +520,7 @@ func Test_namespaceSvc_UpdateDesc_fail(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		eventRepo,
 	)
 
@@ -544,7 +544,7 @@ func Test_namespaceSvc_UpdateDesc_fail2(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		eventRepo,
 	)
 	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
@@ -575,7 +575,7 @@ func Test_namespaceSvc_List(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		repo.NewMockEventRepo(m),
 	)
 
@@ -624,7 +624,7 @@ func Test_namespaceSvc_SyncMembers(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		eventRepo,
 	)
 
@@ -669,7 +669,7 @@ func Test_namespaceSvc_UpdatePrivate(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
-		mlog.NewLogger(nil),
+		mlog.NewForConfig(nil),
 		eventRepo,
 	)
 

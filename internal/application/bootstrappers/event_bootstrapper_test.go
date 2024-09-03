@@ -15,7 +15,7 @@ func TestEventBootstrapper_Bootstrap(t *testing.T) {
 	app := application.NewMockApp(m)
 	eb := &EventBootstrapper{}
 	app.EXPECT().Dispatcher()
-	app.EXPECT().Logger().Return(mlog.NewLogger(nil))
+	app.EXPECT().Logger().Return(mlog.NewForConfig(nil))
 	app.EXPECT().AddServer(gomock.Any())
 	assert.Nil(t, eb.Bootstrap(app))
 }

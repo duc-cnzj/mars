@@ -18,7 +18,7 @@ import (
 func TestChangelogRepo_Create(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewChangelogRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		DB: db,
 	}))
 
@@ -64,7 +64,7 @@ func TestChangelogRepo_Create(t *testing.T) {
 func TestChangelogRepo_FindLastChangelogsByProjectID(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewChangelogRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		DB: db,
 	}))
 
@@ -111,7 +111,7 @@ func TestChangelogRepo_FindLastChangelogsByProjectID(t *testing.T) {
 func TestChangelogRepo_FindLastChangeByProjectID_WithValidProjectID(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewChangelogRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		DB: db,
 	}))
 
@@ -135,7 +135,7 @@ func TestChangelogRepo_FindLastChangeByProjectID_WithValidProjectID(t *testing.T
 func TestChangelogRepo_FindLastChangeByProjectID_WithInvalidProjectID(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewChangelogRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		DB: db,
 	}))
 
@@ -147,7 +147,7 @@ func TestChangelogRepo_FindLastChangeByProjectID_WithInvalidProjectID(t *testing
 func TestChangelogRepo_FindLastChangeByProjectID_WithNoChangelog(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewChangelogRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		DB: db,
 	}))
 
@@ -160,7 +160,7 @@ func TestChangelogRepo_FindLastChangeByProjectID_WithNoChangelog(t *testing.T) {
 }
 
 func TestNewChangelogRepo(t *testing.T) {
-	repo := NewChangelogRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{}))
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{}))
 	assert.NotNil(t, repo)
 	assert.NotNil(t, repo.(*changelogRepo).logger)
 	assert.NotNil(t, repo.(*changelogRepo).data)
@@ -219,7 +219,7 @@ func TestToChangeLog_WithNilChangelog(t *testing.T) {
 func TestChangelogRepoCreate_WithValidInput(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewChangelogRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		DB: db,
 	}))
 
@@ -251,7 +251,7 @@ func TestChangelogRepoCreate_WithValidInput(t *testing.T) {
 func TestChangelogRepoCreate_WithInvalidInput(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewChangelogRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		DB: db,
 	}))
 

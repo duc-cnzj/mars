@@ -14,7 +14,7 @@ import (
 func TestNewEndpointRepo(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	repo := NewEndpointRepo(mlog.NewLogger(nil), data.NewMockData(m), NewMockProjectRepo(m))
+	repo := NewEndpointRepo(mlog.NewForConfig(nil), data.NewMockData(m), NewMockProjectRepo(m))
 	assert.NotNil(t, repo)
 	assert.NotNil(t, repo.(*endpointRepo).logger)
 	assert.NotNil(t, repo.(*endpointRepo).data)
@@ -27,7 +27,7 @@ func Test_endpointRepo_InNamespace_HappyPath(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	proj := NewMockProjectRepo(m)
-	repo := NewEndpointRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewEndpointRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		DB: db,
 	}), proj)
 
@@ -68,7 +68,7 @@ func Test_endpointRepo_InNamespace_NonExistentNamespace(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewEndpointRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewEndpointRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		DB: db,
 	}), NewMockProjectRepo(m))
 
@@ -84,7 +84,7 @@ func TestInProject_HappyPath(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	proj := NewMockProjectRepo(m)
-	repo := NewEndpointRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewEndpointRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		DB: db,
 	}), proj)
 
@@ -132,7 +132,7 @@ func TestInProject_NonExistentProject(t *testing.T) {
 	defer m.Finish()
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	repo := NewEndpointRepo(mlog.NewLogger(nil), data.NewDataImpl(&data.NewDataParams{
+	repo := NewEndpointRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
 		DB: db,
 	}), NewMockProjectRepo(m))
 

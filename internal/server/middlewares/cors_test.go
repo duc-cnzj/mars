@@ -40,12 +40,12 @@ func (m *mockResponseWriter) WriteHeader(statusCode int) {
 func TestAllowCORS(t *testing.T) {
 	m := &mockHandler{}
 	rw := &mockResponseWriter{h: map[string][]string{}}
-	AllowCORS(mlog.NewLogger(nil), m).ServeHTTP(rw, &http.Request{Header: map[string][]string{"Origin": {"https://mars.com"}, "Access-Control-Request-Method": {"GET"}}, Method: "OPTIONS"})
+	AllowCORS(mlog.NewForConfig(nil), m).ServeHTTP(rw, &http.Request{Header: map[string][]string{"Origin": {"https://mars.com"}, "Access-Control-Request-Method": {"GET"}}, Method: "OPTIONS"})
 	assert.Equal(t, "https://mars.com", rw.h["Access-Control-Allow-Origin"][0])
 	assert.Equal(t, "Content-Type,Accept,X-Requested-With,Authorization,Accept-Language", rw.h["Access-Control-Allow-Headers"][0])
 	assert.Equal(t, "GET,HEAD,POST,PUT,PATCH,DELETE", rw.h["Access-Control-Allow-Methods"][0])
 
 	m2 := &mockHandler{}
-	AllowCORS(mlog.NewLogger(nil), m2).ServeHTTP(rw, &http.Request{Header: map[string][]string{"Origin": {"https://mars.com"}}, Method: "GET"})
+	AllowCORS(mlog.NewForConfig(nil), m2).ServeHTTP(rw, &http.Request{Header: map[string][]string{"Origin": {"https://mars.com"}}, Method: "GET"})
 	assert.Equal(t, 1, m2.serverCalled)
 }
