@@ -3,6 +3,7 @@ package socket
 import (
 	"context"
 	"errors"
+	"github.com/duc-cnzj/mars/api/v5/types"
 	"testing"
 	"time"
 
@@ -567,8 +568,11 @@ func TestMyPtyHandler_Close(t *testing.T) {
 		eventRepo: eventRepo,
 		logger:    mlog.NewForConfig(nil),
 	}
-	eventRepo.EXPECT().FileAuditLogWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-	recorder.EXPECT().User().Return(&auth.UserInfo{})
+	eventRepo.EXPECT().FileAuditLogWithDuration(
+		types.EventActionType_Shell, "duc",
+		gomock.Not(nil), 1,
+		time.Second)
+	recorder.EXPECT().User().Return(&auth.UserInfo{Name: "duc"})
 	recorder.EXPECT().Duration().Return(time.Second)
 	recorder.EXPECT().Container().Return(&repo.Container{}).AnyTimes()
 	recorder.EXPECT().File().Return(&repo.File{ID: 1})
