@@ -30,7 +30,7 @@ func TestCounterDoesNotDecrementBelowZero(t *testing.T) {
 
 func TestCounterWaitReturnsWhenCountIsZero(t *testing.T) {
 	counter := NewCounter()
-	err := counter.Wait(context.Background())
+	err := counter.Wait(context.TODO())
 	assert.Nil(t, err)
 }
 
@@ -38,7 +38,7 @@ func TestCounterWaitReturnsOnError(t *testing.T) {
 	counter := NewCounter()
 	counter.Inc()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.TODO(), 1*time.Second)
 	defer cancel()
 
 	err := counter.Wait(ctx)

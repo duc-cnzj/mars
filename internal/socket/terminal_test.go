@@ -753,7 +753,7 @@ func TestStartShell_WithValidSessionID(t *testing.T) {
 	conn.EXPECT().SetPtyHandler(input.SessionId, gomock.Any())
 	conn.EXPECT().GetPtyHandler(input.SessionId).Return(nil, false)
 
-	sessionID, err := ws.StartShell(context.Background(), input, conn)
+	sessionID, err := ws.StartShell(context.TODO(), input, conn)
 	time.Sleep(1 * time.Second)
 	assert.NoError(t, err)
 	assert.Equal(t, input.SessionId, sessionID)
@@ -777,7 +777,7 @@ func TestStartShell_WithInvalidSessionID(t *testing.T) {
 		SessionId: "invalidSessionID",
 	}
 
-	_, err := ws.StartShell(context.Background(), input, conn)
+	_, err := ws.StartShell(context.TODO(), input, conn)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid session sessionID")

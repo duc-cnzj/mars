@@ -196,7 +196,7 @@ func Test_app_Dispatcher(t *testing.T) {
 }
 
 func Test_app_Done(t *testing.T) {
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
 	a := &app{done: ctx}
 	assert.NotNil(t, a.Done())

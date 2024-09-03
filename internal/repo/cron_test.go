@@ -8,13 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/util/k8s"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
-	corev1lister "k8s.io/client-go/listers/core/v1"
-	cache2 "k8s.io/client-go/tools/cache"
-
 	"github.com/duc-cnzj/mars/api/v5/types"
 	"github.com/duc-cnzj/mars/v5/internal/application"
 	"github.com/duc-cnzj/mars/v5/internal/cache"
@@ -22,9 +15,15 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/cron"
 	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v5/internal/uploader"
+	"github.com/duc-cnzj/mars/v5/internal/util/k8s"
 	"github.com/samber/lo"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
+	corev1lister "k8s.io/client-go/listers/core/v1"
+	cache2 "k8s.io/client-go/tools/cache"
 
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 
@@ -285,7 +284,13 @@ func TestCleanUploadFiles(t *testing.T) {
 		event:  mockEvent,
 	}
 
-	mockEvent.EXPECT().AuditLogWithChange(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	mockEvent.EXPECT().AuditLogWithChange(
+		types.EventActionType_Delete,
+		"system",
+		"删除未被记录的文件",
+		gomock.Any(),
+		nil,
+	)
 	var files = []*File{
 		{
 			UploadType: schematype.Local,
@@ -385,7 +390,7 @@ func TestSyncImagePullSecretsWithBadSecret(t *testing.T) {
 		SecretLister: getLister(fk),
 	}).Times(1)
 
-	db.Namespace.Create().SetCreatorEmail("a").SetName("test").SetImagePullSecrets([]string{secret.Name}).SaveX(context.Background())
+	db.Namespace.Create().SetCreatorEmail("a").SetName("test").SetImagePullSecrets([]string{secret.Name}).SaveX(context.TODO())
 	cr.SyncImagePullSecrets()
 	get, _ := fk.CoreV1().Secrets("test").Get(context.TODO(), secret.Name, v1.GetOptions{})
 	dockerConfig, _ := k8s.DecodeDockerConfigJSON(get.Data[corev1.DockerConfigJsonKey])
@@ -416,7 +421,7 @@ func TestSyncImagePullSecretsWithBadSecret(t *testing.T) {
 		SecretLister: getLister(fk),
 	}).Times(1)
 	cr.SyncImagePullSecrets()
-	newNs, _ := db.Namespace.Query().First(context.Background())
+	newNs, _ := db.Namespace.Query().First(context.TODO())
 	assert.Len(t, newNs.ImagePullSecrets, 2)
 	list, err := fk.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
 	assert.Nil(t, err)
@@ -439,7 +444,7 @@ func TestSyncImagePullSecretsWithBadSecret(t *testing.T) {
 		SecretLister: getLister(fk),
 	}).Times(1)
 	cr.SyncImagePullSecrets()
-	newNs2, _ := db.Namespace.Query().First(context.Background())
+	newNs2, _ := db.Namespace.Query().First(context.TODO())
 	assert.Len(t, newNs2.ImagePullSecrets, 1)
 	list, err = fk.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
 	assert.Nil(t, err)
@@ -467,7 +472,7 @@ func TestSyncImagePullSecretsWithBadSecret(t *testing.T) {
 		SecretLister: getLister(fk),
 	}).Times(1)
 	cr.SyncImagePullSecrets()
-	newNs3, _ := db.Namespace.Query().First(context.Background())
+	newNs3, _ := db.Namespace.Query().First(context.TODO())
 	assert.Len(t, newNs3.ImagePullSecrets, 1)
 }
 
@@ -494,9 +499,9 @@ func TestUpdateCertTls(t *testing.T) {
 
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
-	db.Namespace.Create().SetCreatorEmail("a").SetName("ns").SaveX(context.Background())
-	db.Namespace.Create().SetCreatorEmail("a").SetName("ns-2").SaveX(context.Background())
-	db.Namespace.Create().SetCreatorEmail("a").SetName("ns-3").SaveX(context.Background())
+	db.Namespace.Create().SetCreatorEmail("a").SetName("ns").SaveX(context.TODO())
+	db.Namespace.Create().SetCreatorEmail("a").SetName("ns-2").SaveX(context.TODO())
+	db.Namespace.Create().SetCreatorEmail("a").SetName("ns-3").SaveX(context.TODO())
 
 	sec := &corev1.Secret{
 		TypeMeta: v1.TypeMeta{
@@ -612,21 +617,21 @@ func TestProjectPodEventListener(t *testing.T) {
 		defer wg.Done()
 		podFanOutObj.Distribute(ch)
 	}()
-	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Any()).Times(1)
+	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Not(nil)).Times(1)
 	pch1 <- data.NewObj(nil, &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "devtest-ns",
 			Name:      "p1",
 		},
 	}, data.Add)
-	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Any()).Times(1).Return(errors.New("xxx"))
+	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Not(nil)).Times(1).Return(errors.New("xxx"))
 	pch1 <- data.NewObj(nil, &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "devtest-ns",
 			Name:      "p2",
 		},
 	}, data.Delete)
-	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Any()).Times(1).Return(errors.New("xxx"))
+	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Not(nil)).Times(1).Return(errors.New("xxx"))
 	pch1 <- data.NewObj(&corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "devtest-ns",

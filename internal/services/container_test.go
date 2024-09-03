@@ -852,10 +852,10 @@ func TestScannerText_EmptyString(t *testing.T) {
 func TestSizeQueue_Next_ContextDone(t *testing.T) {
 	queue := &sizeQueue{
 		ch:  make(chan *remotecommand.TerminalSize, 1),
-		ctx: context.Background(),
+		ctx: context.TODO(),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	queue.ctx = ctx
 	cancel()
 
@@ -864,7 +864,7 @@ func TestSizeQueue_Next_ContextDone(t *testing.T) {
 func TestSizeQueue_Next_NotOk(t *testing.T) {
 	queue := &sizeQueue{
 		ch:  make(chan *remotecommand.TerminalSize, 1),
-		ctx: context.Background(),
+		ctx: context.TODO(),
 	}
 	close(queue.ch)
 
@@ -874,7 +874,7 @@ func TestSizeQueue_Next_NotOk(t *testing.T) {
 func TestSizeQueue_Next_SizeReceived(t *testing.T) {
 	queue := &sizeQueue{
 		ch:  make(chan *remotecommand.TerminalSize, 1),
-		ctx: context.Background(),
+		ctx: context.TODO(),
 	}
 
 	expectedSize := &remotecommand.TerminalSize{Width: 10, Height: 20}

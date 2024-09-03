@@ -100,7 +100,8 @@ func TestWsConn_CloseAndClean(t *testing.T) {
 
 	ws.EXPECT().Close()
 	tm.EXPECT().StopAll()
-	mapper.EXPECT().CloseAll(gomock.Any())
+	ctx := context.TODO()
+	mapper.EXPECT().CloseAll(ctx)
 	sub.EXPECT().Close()
-	assert.Nil(t, w.CloseAndClean(context.TODO()))
+	assert.Nil(t, w.CloseAndClean(ctx))
 }

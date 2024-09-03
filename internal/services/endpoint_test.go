@@ -53,7 +53,7 @@ func TestEndpointSvc_InProject_Success(t *testing.T) {
 
 	epRepo.EXPECT().InProject(gomock.Any(), 1).Return([]*types.ServiceEndpoint{}, nil)
 
-	_, err := svc.InProject(context.Background(), &endpoint.InProjectRequest{
+	_, err := svc.InProject(context.TODO(), &endpoint.InProjectRequest{
 		ProjectId: 1,
 	})
 	assert.NoError(t, err)
@@ -67,7 +67,7 @@ func TestEndpointSvc_InProject_Failure(t *testing.T) {
 
 	epRepo.EXPECT().InProject(gomock.Any(), 1).Return(nil, errors.New("error"))
 
-	_, err := svc.InProject(context.Background(), &endpoint.InProjectRequest{
+	_, err := svc.InProject(context.TODO(), &endpoint.InProjectRequest{
 		ProjectId: 1,
 	})
 	assert.Error(t, err)

@@ -39,7 +39,7 @@ func TestEventSvc_List_Success(t *testing.T) {
 		OrderIDDesc: lo.ToPtr(true),
 	}).Return([]*repo.Event{}, &pagination.Pagination{}, nil)
 
-	resp, err := svc.List(context.Background(), &event.ListRequest{
+	resp, err := svc.List(context.TODO(), &event.ListRequest{
 		Page:       lo.ToPtr(int32(1)),
 		PageSize:   lo.ToPtr(int32(12)),
 		ActionType: types.EventActionType_Delete,
@@ -65,7 +65,7 @@ func TestEventSvc_List_Failure(t *testing.T) {
 		OrderIDDesc: lo.ToPtr(true),
 	}).Return(nil, nil, errors.New("error"))
 
-	_, err := svc.List(context.Background(), req)
+	_, err := svc.List(context.TODO(), req)
 	assert.Error(t, err)
 }
 

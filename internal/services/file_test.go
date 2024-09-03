@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/duc-cnzj/mars/api/v5/types"
+
 	"github.com/duc-cnzj/mars/api/v5/file"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/repo"
@@ -72,7 +74,7 @@ func Test_fileSvc_Delete(t *testing.T) {
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
-	fileRepo.EXPECT().GetByID(gomock.Any(), int(1)).Return(nil, errors.New("xx"))
+	fileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(nil, errors.New("xx"))
 
 	response, err := svc.Delete(context.TODO(), &file.DeleteRequest{Id: 1})
 	assert.Nil(t, response)
@@ -86,8 +88,8 @@ func Test_fileSvc_Delete2(t *testing.T) {
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
-	fileRepo.EXPECT().GetByID(gomock.Any(), int(1)).Return(&repo.File{}, nil)
-	fileRepo.EXPECT().Delete(gomock.Any(), int(1)).Return(errors.New("xx"))
+	fileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&repo.File{}, nil)
+	fileRepo.EXPECT().Delete(gomock.Any(), 1).Return(errors.New("xx"))
 	response, err := svc.Delete(context.TODO(), &file.DeleteRequest{Id: 1})
 	assert.Nil(t, response)
 	assert.Error(t, err)
@@ -100,9 +102,14 @@ func Test_fileSvc_Delete3(t *testing.T) {
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
-	eventRepo.EXPECT().FileAuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-	fileRepo.EXPECT().GetByID(gomock.Any(), int(1)).Return(&repo.File{}, nil)
-	fileRepo.EXPECT().Delete(gomock.Any(), int(1)).Return(nil)
+	eventRepo.EXPECT().FileAuditLog(
+		types.EventActionType_Delete,
+		MustGetUser(newAdminUserCtx()).Name,
+		gomock.Any(),
+		999,
+	)
+	fileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&repo.File{ID: 999}, nil)
+	fileRepo.EXPECT().Delete(gomock.Any(), 1).Return(nil)
 	response, err := svc.Delete(newAdminUserCtx(), &file.DeleteRequest{Id: 1})
 	assert.NotNil(t, response)
 	assert.Nil(t, err)
@@ -130,7 +137,7 @@ func TestFileSvc_DiskInfo_Success(t *testing.T) {
 
 	fileRepo.EXPECT().DiskInfo(false).Return(int64(10000), nil)
 
-	resp, err := svc.DiskInfo(context.Background(), &file.DiskInfoRequest{})
+	resp, err := svc.DiskInfo(context.TODO(), &file.DiskInfoRequest{})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, int64(10000), resp.Usage)
@@ -146,7 +153,7 @@ func TestFileSvc_DiskInfo_Failure(t *testing.T) {
 
 	fileRepo.EXPECT().DiskInfo(false).Return(int64(0), errors.New("error"))
 
-	_, err := svc.DiskInfo(context.Background(), &file.DiskInfoRequest{})
+	_, err := svc.DiskInfo(context.TODO(), &file.DiskInfoRequest{})
 	assert.Error(t, err)
 }
 
@@ -164,7 +171,7 @@ func TestFileSvc_List_Success(t *testing.T) {
 		WithSoftDelete: true,
 	}).Return([]*repo.File{}, &pagination.Pagination{}, nil)
 
-	resp, err := svc.List(context.Background(), &file.ListRequest{
+	resp, err := svc.List(context.TODO(), &file.ListRequest{
 		Page:           lo.ToPtr(int32(1)),
 		PageSize:       lo.ToPtr(int32(11)),
 		WithoutDeleted: true,
@@ -182,7 +189,7 @@ func TestFileSvc_List_Failure(t *testing.T) {
 
 	fileRepo.EXPECT().List(gomock.Any(), gomock.Any()).Return(nil, nil, errors.New("error"))
 
-	_, err := svc.List(context.Background(), &file.ListRequest{})
+	_, err := svc.List(context.TODO(), &file.ListRequest{})
 	assert.Error(t, err)
 }
 
@@ -193,9 +200,9 @@ func TestFileSvc_ShowRecords_Success(t *testing.T) {
 	fileRepo := repo.NewMockFileRepo(m)
 	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil))
 
-	fileRepo.EXPECT().ShowRecords(gomock.Any(), gomock.Any()).Return(io.NopCloser(strings.NewReader("record1\nrecord2\n")), nil)
+	fileRepo.EXPECT().ShowRecords(gomock.Any(), 1).Return(io.NopCloser(strings.NewReader("record1\nrecord2\n")), nil)
 
-	resp, err := svc.ShowRecords(context.Background(), &file.ShowRecordsRequest{Id: 1})
+	resp, err := svc.ShowRecords(context.TODO(), &file.ShowRecordsRequest{Id: 1})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, []string{"record1\nrecord2\n"}, resp.Items)
@@ -210,6 +217,6 @@ func TestFileSvc_ShowRecords_Failure(t *testing.T) {
 
 	fileRepo.EXPECT().ShowRecords(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
 
-	_, err := svc.ShowRecords(context.Background(), &file.ShowRecordsRequest{Id: 1})
+	_, err := svc.ShowRecords(context.TODO(), &file.ShowRecordsRequest{Id: 1})
 	assert.Error(t, err)
 }

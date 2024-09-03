@@ -162,7 +162,7 @@ func TestNewJob(t *testing.T) {
 
 	assert.False(t, job.(*jobRunner).HasError())
 
-	ctx, cancelFunc := context.WithCancelCause(context.Background())
+	ctx, cancelFunc := context.WithCancelCause(context.TODO())
 	job.(*jobRunner).stopCtx = ctx
 	job.(*jobRunner).stopFn = cancelFunc
 	assert.False(t, job.(*jobRunner).IsStopped())
@@ -462,7 +462,7 @@ func TestHandleMessage(t *testing.T) {
 		logger:    mlog.NewForConfig(nil),
 		messageCh: NewSafeWriteMessageCh(mlog.NewForConfig(nil), 1),
 	}
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
 	jr.HandleMessage(ctx)
 }

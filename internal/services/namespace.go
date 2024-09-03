@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"github.com/samber/lo"
 	"strings"
 	"sync"
 	"time"
@@ -136,7 +137,8 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 
 	n.eventRepo.AuditLogWithRequest(
 		types.EventActionType_Create,
-		user.Name, fmt.Sprintf("创建项目空间: %d: %s", ns.ID, ns.Name),
+		user.Name,
+		fmt.Sprintf("创建项目空间: %d: %s", ns.ID, ns.Name),
 		request,
 	)
 
@@ -221,9 +223,9 @@ func (n *namespaceSvc) Delete(ctx context.Context, input *namespace.DeleteReques
 		wg.Wait()
 		for _, secret := range ns.ImagePullSecrets {
 			n.logger.DebugCtxf(ctx, "delete ns %s secret %s", ns.Name, secret)
-			n.k8sRepo.DeleteSecret(context.Background(), ns.Name, secret)
+			n.k8sRepo.DeleteSecret(context.TODO(), ns.Name, secret)
 		}
-		if err := n.k8sRepo.DeleteNamespace(context.Background(), ns.Name); err != nil {
+		if err := n.k8sRepo.DeleteNamespace(context.TODO(), ns.Name); err != nil {
 			n.logger.ErrorCtx(ctx, "删除 namespace 出现错误: ", err)
 		}
 		if err := n.nsRepo.Delete(context.TODO(), ns.ID); err != nil {
@@ -325,7 +327,7 @@ func (n *namespaceSvc) SyncMembers(ctx context.Context, req *namespace.SyncMembe
 		return nil, err
 	}
 
-	ns, err := n.nsRepo.SyncMembers(ctx, int(req.Id), req.Emails)
+	ns, err := n.nsRepo.SyncMembers(ctx, int(req.Id), lo.Uniq(req.Emails))
 	if err != nil {
 		return nil, err
 	}

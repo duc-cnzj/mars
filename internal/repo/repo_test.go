@@ -125,7 +125,7 @@ func TestRepoImpl_Update(t *testing.T) {
 	assert.Equal(t, "repo 名称已经存在", s.Message())
 
 	project := createProject(db, createNamespace(db).ID)
-	project.Update().SetRepoID(create.ID).SaveX(context.Background())
+	project.Update().SetRepoID(create.ID).SaveX(context.TODO())
 	_, err = repo.Update(context.TODO(), &UpdateRepoInput{
 		ID:          int32(create.ID),
 		Name:        "abcd",
@@ -170,7 +170,7 @@ func TestRepoImpl_ToggleEnabled_WithProjects(t *testing.T) {
 
 	ns := createNamespace(db)
 	project := createProject(db, ns.ID)
-	project.Update().SetRepoID(create.ID).SaveX(context.Background())
+	project.Update().SetRepoID(create.ID).SaveX(context.TODO())
 
 	// Attempt to disable the repo, should fail because it has projects
 	_, err = repo.ToggleEnabled(context.TODO(), create.ID, false)
@@ -305,7 +305,7 @@ func TestRepoImpl_Delete_WithRepoHavingProjects(t *testing.T) {
 
 	ns := createNamespace(db)
 	project := createProject(db, ns.ID)
-	project.Update().SetRepoID(create.ID).SaveX(context.Background())
+	project.Update().SetRepoID(create.ID).SaveX(context.TODO())
 
 	err := repo.Delete(context.TODO(), create.ID)
 	assert.NotNil(t, err)

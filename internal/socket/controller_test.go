@@ -9,6 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/api/v5/types"
+
+	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/v5/internal/application"
+	"github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/duc-cnzj/mars/v5/internal/config"
 	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/locker"
@@ -16,10 +21,6 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/duc-cnzj/mars/v5/internal/uploader"
 	"github.com/duc-cnzj/mars/v5/internal/util/counter"
-
-	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
-	"github.com/duc-cnzj/mars/v5/internal/application"
-	"github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -43,7 +44,7 @@ func TestWebsocketManager_HandleAuthorize(t *testing.T) {
 		Token: "validToken",
 	}
 	marshalv, _ := proto.Marshal(&inputv)
-	wm.HandleAuthorize(context.Background(), conn, WsAuthorize, marshalv)
+	wm.HandleAuthorize(context.TODO(), conn, WsAuthorize, marshalv)
 	assert.Equal(t, "testUser", conn.GetUser().Name)
 
 	conn = &WsConn{}
@@ -51,7 +52,7 @@ func TestWebsocketManager_HandleAuthorize(t *testing.T) {
 		Token: "invalidToken",
 	}
 	marshal, _ := proto.Marshal(&input)
-	wm.HandleAuthorize(context.Background(), conn, WsAuthorize, marshal)
+	wm.HandleAuthorize(context.TODO(), conn, WsAuthorize, marshal)
 	assert.Nil(t, conn.GetUser())
 }
 
@@ -82,9 +83,9 @@ func TestWebsocketManager_HandleJoinRoom(t *testing.T) {
 	marshal2, _ := proto.Marshal(&linput)
 
 	wm := &WebsocketManager{}
-	wm.HandleJoinRoom(context.Background(), conn, ProjectPodEvent, marshal)
+	wm.HandleJoinRoom(context.TODO(), conn, ProjectPodEvent, marshal)
 
-	wm.HandleJoinRoom(context.Background(), conn, ProjectPodEvent, marshal2)
+	wm.HandleJoinRoom(context.TODO(), conn, ProjectPodEvent, marshal2)
 }
 
 func TestWebsocketManager_HandleStartShell(t *testing.T) {
@@ -135,10 +136,13 @@ func TestWebsocketManager_HandleShellMessage(t *testing.T) {
 		},
 	}
 	handler := NewMockPtyHandler(m)
-	handler.EXPECT().Send(gomock.Any(), gomock.Any()).Return(errors.New("x"))
+	handler.EXPECT().Send(gomock.Not(nil), &websocket_pb.TerminalMessage{
+		SessionId: "testSession",
+		Data:      []byte("testData"),
+	}).Return(errors.New("x"))
 	conn.sm.Set("testSession", handler)
 	marshal, _ := proto.Marshal(input)
-	wm.HandleShellMessage(context.Background(), conn, WsHandleExecShellMsg, marshal)
+	wm.HandleShellMessage(context.TODO(), conn, WsHandleExecShellMsg, marshal)
 }
 
 func TestWebsocketManager_HandleCloseShell(t *testing.T) {
@@ -158,10 +162,10 @@ func TestWebsocketManager_HandleCloseShell(t *testing.T) {
 		},
 	}
 	handler := NewMockPtyHandler(m)
-	handler.EXPECT().Close(gomock.Any(), gomock.Any())
+	handler.EXPECT().Close(gomock.Not(nil), gomock.Any())
 	conn.sm.Set("testSession", handler)
 	marshal, _ := proto.Marshal(input)
-	wm.HandleCloseShell(context.Background(), conn, WsHandleCloseShell, marshal)
+	wm.HandleCloseShell(context.TODO(), conn, WsHandleCloseShell, marshal)
 	time.Sleep(1 * time.Second)
 }
 
@@ -186,8 +190,8 @@ func TestWebsocketManager_HandleWsCancelDeploy(t *testing.T) {
 		called = true
 	})
 	marshal, _ := proto.Marshal(input)
-	nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Namespace{}, nil)
-	eventRepo.EXPECT().AuditLog(gomock.Any(), gomock.Any(), gomock.Any())
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{}, nil)
+	eventRepo.EXPECT().AuditLog(types.EventActionType_CancelDeploy, "", gomock.Any())
 	wm.HandleWsCancelDeploy(context.TODO(), conn, WsCancel, marshal)
 	assert.True(t, called)
 }
@@ -223,17 +227,17 @@ func TestWebsocketManager_HandleWsCreateProject(t *testing.T) {
 		ExtraValues: []*websocket_pb.ExtraValue{},
 		Atomic:      lo.ToPtr(true),
 	}
-	repoRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Repo{
+	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Repo{
 		Name: "app",
 		ID:   2,
 	}, nil)
 	marshal, _ := proto.Marshal(input)
-	job.EXPECT().OnFinally(gomock.Any(), gomock.Any())
+	job.EXPECT().OnFinally(gomock.Not(nil), gomock.Not(nil))
 	job.EXPECT().GlobalLock().Return(job)
 	job.EXPECT().ID().Return("testID")
 	job.EXPECT().Validate().Return(job)
 	job.EXPECT().LoadConfigs().Return(job)
-	job.EXPECT().Run(gomock.Any()).Return(job)
+	job.EXPECT().Run(gomock.Not(nil)).Return(job)
 	job.EXPECT().Finish().Return(job)
 	job.EXPECT().Error().Return(nil)
 	jb.EXPECT().NewJob(gomock.Cond(func(x any) bool {
@@ -250,7 +254,7 @@ func TestWebsocketManager_HandleWsCreateProject(t *testing.T) {
 			jobInput.PubSub == conn.pubSub &&
 			jobInput.Messager != nil
 	})).Return(job)
-	wm.HandleWsCreateProject(context.Background(), conn, WsCreateProject, marshal)
+	wm.HandleWsCreateProject(context.TODO(), conn, WsCreateProject, marshal)
 }
 
 func TestWebsocketManager_HandleWsUpdateProject(t *testing.T) {
@@ -287,7 +291,7 @@ func TestWebsocketManager_HandleWsUpdateProject(t *testing.T) {
 		ExtraValues: []*websocket_pb.ExtraValue{},
 		Atomic:      lo.ToPtr(true),
 	}
-	proj.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Project{
+	proj.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{
 		Name:        "appa",
 		NamespaceID: 1,
 		RepoID:      1,
@@ -316,7 +320,7 @@ func TestWebsocketManager_HandleWsUpdateProject(t *testing.T) {
 			jobInput.PubSub == conn.pubSub &&
 			jobInput.Messager != nil
 	})).Return(job)
-	wm.HandleWsUpdateProject(context.Background(), conn, WsUpdateProject, marshal)
+	wm.HandleWsUpdateProject(context.TODO(), conn, WsUpdateProject, marshal)
 }
 
 func TestNewWebsocketManager(t *testing.T) {
@@ -423,7 +427,7 @@ func TestWebsocketManager_Shutdown(t *testing.T) {
 	defer m.Finish()
 
 	c := counter.NewCounter()
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	wm := &WebsocketManager{
 		counter: c,
@@ -455,18 +459,18 @@ func TestWebsocketManager_dispatchEvent(t *testing.T) {
 			assert.Equal(t, message, message)
 		},
 	}
-	wm.dispatchEvent(context.Background(), conn, wsRequest, message)
+	wm.dispatchEvent(context.TODO(), conn, wsRequest, message)
 
 	// Test case: invalid event type
 	wsRequest = &websocket_pb.WsRequestMetadata{
 		Type: websocket_pb.Type(-1),
 	}
-	wm.dispatchEvent(context.Background(), conn, wsRequest, message)
+	wm.dispatchEvent(context.TODO(), conn, wsRequest, message)
 
 	// Test case: event type exists but user is not authorized
 	wsRequest = &websocket_pb.WsRequestMetadata{
 		Type: websocket_pb.Type_HandleAuthorize,
 	}
 	conn.user = nil
-	wm.dispatchEvent(context.Background(), conn, wsRequest, message)
+	wm.dispatchEvent(context.TODO(), conn, wsRequest, message)
 }

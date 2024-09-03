@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/duc-cnzj/mars/api/v5/types"
+
 	"github.com/duc-cnzj/mars/api/v5/mars"
 	reposerver "github.com/duc-cnzj/mars/api/v5/repo"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
@@ -40,8 +42,13 @@ func Test_repoSvc_Clone_Success(t *testing.T) {
 		repoRepo,
 	)
 
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-	repoRepo.EXPECT().Show(gomock.Any(), int(1)).Return(&repo.Repo{}, nil)
+	eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Create,
+		MustGetUser(newAdminUserCtx()).Name,
+		gomock.Any(),
+		gomock.Not(nil),
+	)
+	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Repo{}, nil)
 	repoRepo.EXPECT().Clone(gomock.Any(), &repo.CloneRepoInput{
 		ID:   1,
 		Name: "clone",
@@ -110,7 +117,12 @@ func TestRepoSvc_Create_Success(t *testing.T) {
 		Name: "newRepo",
 	}, nil)
 
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Create,
+		MustGetUser(newAdminUserCtx()).Name,
+		gomock.Any(),
+		gomock.Not(nil),
+	)
 
 	res, err := svc.Create(newAdminUserCtx(), &reposerver.CreateRequest{
 		Name:         "newRepo",
@@ -171,11 +183,16 @@ func TestRepoSvc_Delete_Success(t *testing.T) {
 	)
 
 	repoRepo.EXPECT().Delete(gomock.Any(), 1).Return(nil)
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-
-	res, err := svc.Delete(newAdminUserCtx(), &reposerver.DeleteRequest{
+	req := &reposerver.DeleteRequest{
 		Id: 1,
-	})
+	}
+	eventRepo.EXPECT().AuditLogWithRequest(types.EventActionType_Delete,
+		MustGetUser(newAdminUserCtx()).Name,
+		gomock.Any(),
+		req,
+	)
+
+	res, err := svc.Delete(newAdminUserCtx(), req)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -341,12 +358,17 @@ func TestRepoSvc_ToggleEnabled_Success(t *testing.T) {
 		Enabled: true,
 	}, nil)
 
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-
-	res, err := svc.ToggleEnabled(newAdminUserCtx(), &reposerver.ToggleEnabledRequest{
+	req := &reposerver.ToggleEnabledRequest{
 		Id:      1,
 		Enabled: true,
-	})
+	}
+	eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Update,
+		MustGetUser(newAdminUserCtx()).Name,
+		gomock.Any(),
+		req,
+	)
+	res, err := svc.ToggleEnabled(newAdminUserCtx(), req)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -406,7 +428,12 @@ func TestRepoSvc_Update_Success(t *testing.T) {
 		Name: "updated",
 	}, nil)
 
-	eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLogWithChange(types.EventActionType_Update,
+		MustGetUser(newAdminUserCtx()).Name,
+		gomock.Any(),
+		gomock.Not(nil),
+		gomock.Not(nil),
+	)
 
 	res, err := svc.Update(newAdminUserCtx(), &reposerver.UpdateRequest{
 		Id:           1,

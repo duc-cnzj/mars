@@ -332,7 +332,7 @@ func Test_databaseLock_renewalRoutine(t *testing.T) {
 	key := "testKey"
 	dbLock.Acquire(key, 2)
 
-	timeout, cancelFunc := context.WithTimeout(context.Background(), 5*time.Second)
+	timeout, cancelFunc := context.WithTimeout(context.TODO(), 5*time.Second)
 	defer cancelFunc()
 	var wg sync.WaitGroup
 	wg.Add(1)

@@ -98,7 +98,7 @@ func TestAuthSvc_Login_Failure(t *testing.T) {
 		Password: "password",
 	}).Return(nil, errors.New("error"))
 
-	_, err := svc.Login(context.Background(), &auth2.LoginRequest{
+	_, err := svc.Login(context.TODO(), &auth2.LoginRequest{
 		Username: "test",
 		Password: "password",
 	})
@@ -114,7 +114,7 @@ func TestAuthSvc_Settings_Success(t *testing.T) {
 
 	authRepo.EXPECT().Settings(gomock.Any()).Return(data.OidcConfig{}, nil)
 
-	_, err := svc.Settings(context.Background(), &auth2.SettingsRequest{})
+	_, err := svc.Settings(context.TODO(), &auth2.SettingsRequest{})
 	assert.NoError(t, err)
 }
 
@@ -123,7 +123,7 @@ func Test_guest_AuthFuncOverride(t *testing.T) {
 	defer m.Finish()
 	svc := NewAuthSvc(repo.NewMockEventRepo(m), mlog.NewForConfig(nil), repo.NewMockAuthRepo(m))
 
-	_, err := svc.(*authSvc).AuthFuncOverride(context.Background(), "TestMethod")
+	_, err := svc.(*authSvc).AuthFuncOverride(context.TODO(), "TestMethod")
 	assert.NoError(t, err)
 }
 
@@ -157,7 +157,7 @@ func TestAuthSvc_Settings_NoSettings(t *testing.T) {
 
 	authRepo.EXPECT().Settings(gomock.Any()).Return(nil, nil)
 
-	resp, err := svc.Settings(context.Background(), &auth2.SettingsRequest{})
+	resp, err := svc.Settings(context.TODO(), &auth2.SettingsRequest{})
 	assert.NoError(t, err)
 	assert.Empty(t, resp.Items)
 }
@@ -180,7 +180,7 @@ func TestAuthSvc_Settings_ErrorFetchingSettings(t *testing.T) {
 		},
 	}, nil)
 
-	res, err := svc.Settings(context.Background(), &auth2.SettingsRequest{})
+	res, err := svc.Settings(context.TODO(), &auth2.SettingsRequest{})
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(res.Items))
 	assert.Equal(t, "a", res.Items[0].Name)

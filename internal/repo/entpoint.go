@@ -64,6 +64,7 @@ func (repo *endpointRepo) InNamespace(ctx context.Context, namespaceID int) (res
 				project.FieldID,
 				project.FieldName,
 				project.FieldNamespaceID,
+				project.FieldManifest,
 			)
 		}).
 		Where(namespace.ID(namespaceID)).

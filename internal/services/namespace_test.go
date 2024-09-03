@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/duc-cnzj/mars/api/v5/types"
+
 	"github.com/duc-cnzj/mars/api/v5/namespace"
 	"github.com/duc-cnzj/mars/v5/internal/ent"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
@@ -47,7 +49,7 @@ func TestNamespaceSvc_Create_NamespaceTerminating(t *testing.T) {
 	svc := NewNamespaceSvc(repo.NewMockHelmerRepo(m), nsRepo, k8sRepo, mlog.NewForConfig(nil), repo.NewMockEventRepo(m))
 
 	nsRepo.EXPECT().GetMarsNamespace("test").Return("test")
-	nsRepo.EXPECT().FindByName(gomock.Any(), gomock.Any()).Return(nil, &ent.NotFoundError{})
+	nsRepo.EXPECT().FindByName(gomock.Any(), "test").Return(nil, &ent.NotFoundError{})
 	k8sRepo.EXPECT().CreateNamespace(gomock.Any(), "test").Return(nil, &errors2.StatusError{
 		ErrStatus: metav1.Status{
 			Reason: metav1.StatusReasonAlreadyExists,
@@ -82,7 +84,7 @@ func TestNamespaceSvc_Create_Exists(t *testing.T) {
 	svc := NewNamespaceSvc(repo.NewMockHelmerRepo(m), nsRepo, k8sRepo, mlog.NewForConfig(nil), repo.NewMockEventRepo(m))
 
 	nsRepo.EXPECT().GetMarsNamespace("test").Return("test")
-	nsRepo.EXPECT().FindByName(gomock.Any(), gomock.Any()).Return(&repo.Namespace{}, nil)
+	nsRepo.EXPECT().FindByName(gomock.Any(), "test").Return(&repo.Namespace{}, nil)
 
 	res, err := svc.Create(context.TODO(), &namespace.CreateRequest{
 		Namespace:      "test",
@@ -123,13 +125,23 @@ func TestNamespaceSvc_Create_Success(t *testing.T) {
 		Name:             "namespace1",
 		ImagePullSecrets: []string{"docker-secret"},
 		CreatorEmail:     adminEmail,
-	}).Return(&repo.Namespace{}, nil)
-	nsRepo.EXPECT().Favorite(gomock.Any(), gomock.Any()).Return(nil)
+	}).Return(&repo.Namespace{ID: 1}, nil)
+	nsRepo.EXPECT().Favorite(gomock.Any(), &repo.FavoriteNamespaceInput{
+		NamespaceID: 1,
+		UserEmail:   adminEmail,
+		Favorite:    true,
+	}).Return(nil)
 	eventRepo.EXPECT().Dispatch(repo.EventNamespaceCreated, gomock.Any())
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", gomock.Any(), gomock.Any())
-	res, err := svc.Create(newAdminUserCtx(), &namespace.CreateRequest{
+	req := &namespace.CreateRequest{
 		Namespace: "namespace1",
-	})
+	}
+	eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Create,
+		"admin",
+		gomock.Any(),
+		req,
+	)
+	res, err := svc.Create(newAdminUserCtx(), req)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, res)

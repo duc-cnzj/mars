@@ -5,12 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/api/v5/websocket"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
-
 	"github.com/duc-cnzj/mars/api/v5/project"
 	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/api/v5/websocket"
 	"github.com/duc-cnzj/mars/v5/internal/application"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/repo"
@@ -19,6 +16,8 @@ import (
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func TestNewProjectSvc(t *testing.T) {
@@ -127,11 +126,12 @@ func TestProjectSvc_Show_Success(t *testing.T) {
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 	)
-	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
+	nsRepo.EXPECT().CanAccess(gomock.Any(), 1, MustGetUser(newAdminUserCtx())).Return(true)
 	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{
-		Namespace: &repo.Namespace{},
+		Namespace:   &repo.Namespace{ID: 1},
+		NamespaceID: 1,
 	}, nil)
-	res, err := svc.Show(context.TODO(), &project.ShowRequest{
+	res, err := svc.Show(newAdminUserCtx(), &project.ShowRequest{
 		Id: 1,
 	})
 	assert.Nil(t, err)
@@ -183,7 +183,7 @@ func Test_projectSvc_Delete(t *testing.T) {
 		helmerRepo,
 		nsRepo,
 	)
-	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
+	nsRepo.EXPECT().CanAccess(gomock.Any(), 1, MustGetUser(newAdminUserCtx())).Return(true)
 	helmerRepo.EXPECT().Uninstall("app", "ns", gomock.Any()).Return(errors.New("x"))
 	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{
 		ID:          2,
@@ -193,15 +193,17 @@ func Test_projectSvc_Delete(t *testing.T) {
 			Name: "ns",
 		},
 	}, nil)
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	req := &project.DeleteRequest{
+		Id: 1,
+	}
+	eventRepo.EXPECT().AuditLogWithRequest(types.EventActionType_Delete, MustGetUser(newAdminUserCtx()).Name, gomock.Any(), req)
 	eventRepo.EXPECT().Dispatch(repo.EventProjectDeleted, &repo.ProjectDeletedPayload{
 		NamespaceID: 1,
 		ProjectID:   2,
 	})
 	projectRepo.EXPECT().Delete(gomock.Any(), 1).Return(nil)
-	response, err := svc.Delete(newAdminUserCtx(), &project.DeleteRequest{
-		Id: 1,
-	})
+
+	response, err := svc.Delete(newAdminUserCtx(), req)
 	assert.Nil(t, err)
 	assert.NotNil(t, response)
 }
@@ -290,7 +292,7 @@ func Test_projectSvc_Version(t *testing.T) {
 		},
 		Version: 100,
 	}, nil)
-	version, err := svc.Version(context.Background(), &project.VersionRequest{Id: 1})
+	version, err := svc.Version(context.TODO(), &project.VersionRequest{Id: 1})
 	assert.Nil(t, err)
 	assert.NotNil(t, version)
 	assert.Equal(t, int32(100), version.Version)
@@ -377,9 +379,9 @@ func TestProjectSvc_WebApply_Success(t *testing.T) {
 		nsRepo,
 	)
 
-	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
-	repoRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Repo{Name: "test", NeedGitRepo: true}, nil)
-	gitRepo.EXPECT().ListCommits(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*repo.Commit{{ID: "commit-id"}}, nil)
+	nsRepo.EXPECT().CanAccess(gomock.Any(), 1, MustGetUser(newAdminUserCtx())).Return(true)
+	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Repo{Name: "test", NeedGitRepo: true, GitProjectID: 100}, nil)
+	gitRepo.EXPECT().ListCommits(gomock.Any(), 100, "dev").Return([]*repo.Commit{{ID: "commit-id"}}, nil)
 
 	job := socket.NewMockJob(m)
 	jobManager.EXPECT().NewJob(gomock.Any()).Return(job)
@@ -394,11 +396,12 @@ func TestProjectSvc_WebApply_Success(t *testing.T) {
 	job.EXPECT().IsNotDryRun().Return(true)
 	job.EXPECT().Project().Return(&repo.Project{ID: 1})
 
-	projectRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Project{}, nil)
+	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{}, nil)
 
 	_, err := svc.WebApply(newAdminUserCtx(), &project.WebApplyRequest{
 		RepoId:      1,
 		NamespaceId: 1,
+		GitBranch:   "dev",
 	})
 
 	assert.Nil(t, err)
@@ -754,9 +757,9 @@ func TestGetBranchAndCommitIfMissingReturnsDefaultBranchWhenBranchIsNotProvided(
 		repo.NewMockNamespaceRepo(m),
 	)
 
-	gitRepo.EXPECT().ListCommits(gomock.Any(), gomock.Any(), "default").Return([]*repo.Commit{{ID: "commit-id"}}, nil)
+	gitRepo.EXPECT().ListCommits(gomock.Any(), 10, "default").Return([]*repo.Commit{{ID: "commit-id"}}, nil)
 
-	branch, _, _ := svc.(*projectSvc).getBranchAndCommitIfMissing("", "", &repo.Repo{DefaultBranch: "default"}, newEmptyMessager())
+	branch, _, _ := svc.(*projectSvc).getBranchAndCommitIfMissing("", "", &repo.Repo{DefaultBranch: "default", GitProjectID: 10}, newEmptyMessager())
 	assert.Equal(t, "default", branch)
 }
 
@@ -778,9 +781,9 @@ func TestGetBranchAndCommitIfMissingReturnsLatestCommitWhenCommitIsNotProvided(t
 		repo.NewMockNamespaceRepo(m),
 	)
 
-	gitRepo.EXPECT().ListCommits(gomock.Any(), gomock.Any(), "branch").Return([]*repo.Commit{{ID: "commit-id"}}, nil)
+	gitRepo.EXPECT().ListCommits(gomock.Any(), 10, "branch").Return([]*repo.Commit{{ID: "commit-id"}}, nil)
 
-	_, commit, _ := svc.(*projectSvc).getBranchAndCommitIfMissing("branch", "", &repo.Repo{DefaultBranch: "default"}, newEmptyMessager())
+	_, commit, _ := svc.(*projectSvc).getBranchAndCommitIfMissing("branch", "", &repo.Repo{DefaultBranch: "default", GitProjectID: 10}, newEmptyMessager())
 	assert.Equal(t, "commit-id", commit)
 }
 
@@ -802,9 +805,9 @@ func TestGetBranchAndCommitIfMissingReturnsLatestCommitWhenCommitIsNotProvided2(
 		repo.NewMockNamespaceRepo(m),
 	)
 
-	gitRepo.EXPECT().ListCommits(gomock.Any(), gomock.Any(), "branch").Return([]*repo.Commit{}, nil)
+	gitRepo.EXPECT().ListCommits(gomock.Not(nil), 10, "branch").Return([]*repo.Commit{}, nil)
 
-	_, _, err := svc.(*projectSvc).getBranchAndCommitIfMissing("branch", "", &repo.Repo{DefaultBranch: "default"}, newEmptyMessager())
+	_, _, err := svc.(*projectSvc).getBranchAndCommitIfMissing("branch", "", &repo.Repo{DefaultBranch: "default", GitProjectID: 10}, newEmptyMessager())
 	assert.Equal(t, "没有可用的 commit", err.Error())
 }
 
@@ -851,7 +854,7 @@ func Test_projectSvc_MemoryCpuAndEndpoints(t *testing.T) {
 		repo.NewMockNamespaceRepo(m),
 	)
 
-	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{
+	projModel := &repo.Project{
 		ID:          2,
 		Name:        "app",
 		NamespaceID: 1,
@@ -859,20 +862,21 @@ func Test_projectSvc_MemoryCpuAndEndpoints(t *testing.T) {
 			Name: "ns",
 		},
 		Version: 100,
-	}, nil)
-	k8sRepo.EXPECT().GetAllPodMetrics(gomock.Any(), gomock.Any())
+	}
+	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(projModel, nil)
+	k8sRepo.EXPECT().GetAllPodMetrics(gomock.Any(), projModel)
 	k8sRepo.EXPECT().GetCpuAndMemory(gomock.Any(), gomock.Any()).Return("1", "2Gi")
-	projectRepo.EXPECT().GetNodePortMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(repo.EndpointMapping{
+	projectRepo.EXPECT().GetNodePortMappingByProjects(gomock.Any(), projModel.Namespace.Name, projModel).Return(repo.EndpointMapping{
 		"app": []*types.ServiceEndpoint{
 			{Name: "app"},
 		},
 	})
-	projectRepo.EXPECT().GetIngressMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(repo.EndpointMapping{
+	projectRepo.EXPECT().GetIngressMappingByProjects(gomock.Any(), projModel.Namespace.Name, projModel).Return(repo.EndpointMapping{
 		"app": []*types.ServiceEndpoint{
 			{Name: "app1"},
 		},
 	})
-	projectRepo.EXPECT().GetLoadBalancerMappingByProjects(gomock.Any(), gomock.Any(), gomock.Any()).Return(repo.EndpointMapping{
+	projectRepo.EXPECT().GetLoadBalancerMappingByProjects(gomock.Any(), projModel.Namespace.Name, projModel).Return(repo.EndpointMapping{
 		"app": []*types.ServiceEndpoint{
 			{Name: "app2"},
 		},

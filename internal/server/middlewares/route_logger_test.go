@@ -36,6 +36,6 @@ func TestLoggerUnaryServerInterceptor(t *testing.T) {
 	req := &namespace.CreateRequest{}
 	logger.EXPECT().Debugf("[request logger]: method=%s body=%v", "/test.method", req.String()).Times(1)
 	interceptor := LoggerUnaryServerInterceptor(logger)
-	_, err := interceptor(context.Background(), req, &grpc.UnaryServerInfo{FullMethod: "/test.method"}, handler)
+	_, err := interceptor(context.TODO(), req, &grpc.UnaryServerInfo{FullMethod: "/test.method"}, handler)
 	assert.Nil(t, err)
 }

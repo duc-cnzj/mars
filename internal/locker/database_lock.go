@@ -125,7 +125,7 @@ func (d *databaseLock) cleanupExpiredLocks(db *ent.Client) {
 }
 
 func (d *databaseLock) renewalExistKey(key string, seconds int64) error {
-	ctx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancelFunc := context.WithTimeout(context.TODO(), 15*time.Second)
 	defer cancelFunc()
 	return d.data.WithTx(ctx, func(db *ent.Tx) error {
 		var (
