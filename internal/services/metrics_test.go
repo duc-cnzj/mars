@@ -89,8 +89,8 @@ func TestMetricsSvc_CpuMemoryInNamespace_Success(t *testing.T) {
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewMetricsSvc(timer.NewRealTimer(), k8sRepo, mlog.NewForConfig(nil), repo.NewMockProjectRepo(m), nsRepo)
 
-	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{}, nil)
-	k8sRepo.EXPECT().GetCpuAndMemoryInNamespace(gomock.Any(), gomock.Any()).Return("cpu", "memory")
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{Name: "a"}, nil)
+	k8sRepo.EXPECT().GetCpuAndMemoryInNamespace(gomock.Any(), "a").Return("cpu", "memory")
 
 	res, err := svc.CpuMemoryInNamespace(context.TODO(), &metrics.CpuMemoryInNamespaceRequest{
 		NamespaceId: 1,
@@ -141,9 +141,11 @@ func TestMetricsSvc_CpuMemoryInProject_Success(t *testing.T) {
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewMetricsSvc(timer.NewRealTimer(), k8sRepo, mlog.NewForConfig(nil), projRepo, repo.NewMockNamespaceRepo(m))
 
-	projRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{}, nil)
-	k8sRepo.EXPECT().GetCpuAndMemory(gomock.Any(), gomock.Any()).Return("cpu", "memory")
-	k8sRepo.EXPECT().GetAllPodMetrics(gomock.Any(), gomock.Any()).Return([]v1beta1.PodMetrics{})
+	p := &repo.Project{}
+	projRepo.EXPECT().Show(gomock.Any(), 1).Return(p, nil)
+	me := []v1beta1.PodMetrics{}
+	k8sRepo.EXPECT().GetAllPodMetrics(gomock.Any(), p).Return(me)
+	k8sRepo.EXPECT().GetCpuAndMemory(gomock.Any(), me).Return("cpu", "memory")
 
 	res, err := svc.CpuMemoryInProject(context.TODO(), &metrics.CpuMemoryInProjectRequest{
 		ProjectId: 1,
@@ -253,14 +255,14 @@ func TestMetricsSvc_StreamTopPod_Error(t *testing.T) {
 	svc := NewMetricsSvc(timer.NewRealTimer(), k8sRepo, mlog.NewForConfig(nil), repo.NewMockProjectRepo(m), repo.NewMockNamespaceRepo(m))
 
 	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), "namespace1", "pod1").Return(nil, errors.New("x"))
-	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(true, "")
+	k8sRepo.EXPECT().IsPodRunning("namespace1", "pod1").Return(true, "")
 
 	server := NewMockMetrics_StreamTopPodServer(m)
 	server.EXPECT().Context().Return(context.TODO()).AnyTimes()
 	server.EXPECT().Send(gomock.Any()).Return(nil).AnyTimes()
 
 	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), "namespace1", "pod1").Return(nil, errors.New("x"))
-	k8sRepo.EXPECT().IsPodRunning(gomock.Any(), gomock.Any()).Return(false, "")
+	k8sRepo.EXPECT().IsPodRunning("namespace1", "pod1").Return(false, "")
 
 	err := svc.StreamTopPod(&metrics.TopPodRequest{
 		Namespace: "namespace1",
@@ -280,7 +282,7 @@ func TestMetricsSvc_StreamTopPod_SendError(t *testing.T) {
 	k8sRepo.EXPECT().GetCpuAndMemoryQuantity(gomock.Any()).Return(&resource.Quantity{}, &resource.Quantity{}).AnyTimes()
 
 	server := NewMockMetrics_StreamTopPodServer(m)
-	server.EXPECT().Context().Return(context.Background()).AnyTimes()
+	server.EXPECT().Context().Return(context.TODO()).AnyTimes()
 	server.EXPECT().Send(gomock.Any()).Return(errors.New("send error")).AnyTimes()
 
 	err := svc.StreamTopPod(&metrics.TopPodRequest{

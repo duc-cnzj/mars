@@ -20,6 +20,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v5/namespace"
 	"github.com/duc-cnzj/mars/api/v5/picture"
 	"github.com/duc-cnzj/mars/api/v5/project"
+	"github.com/duc-cnzj/mars/api/v5/repo"
 	"github.com/duc-cnzj/mars/api/v5/token"
 	"github.com/duc-cnzj/mars/api/v5/version"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -40,18 +41,15 @@ type Interface interface {
 	Cluster() cluster.ClusterClient
 	Changelog() changelog.ChangelogClient
 	Event() event.EventClient
-
 	Container() container.ContainerClient
 	File() file.FileClient
-
 	Git() git.GitClient
-
 	Namespace() namespace.NamespaceClient
 	Project() project.ProjectClient
 	Endpoint() endpoint.EndpointClient
 	Metrics() metrics.MetricsClient
-
 	AccessToken() token.AccessTokenClient
+	Repo() repo.RepoClient
 }
 
 type Client struct {
@@ -71,17 +69,20 @@ type Client struct {
 	changelog   changelog.ChangelogClient
 	cluster     cluster.ClusterClient
 	container   container.ContainerClient
+	endpoint    endpoint.EndpointClient
 	event       event.EventClient
+	file        file.FileClient
 	git         git.GitClient
 	metrics     metrics.MetricsClient
 	namespace   namespace.NamespaceClient
 	picture     picture.PictureClient
 	project     project.ProjectClient
-	version     version.VersionClient
-	file        file.FileClient
-	endpoint    endpoint.EndpointClient
+	repo        repo.RepoClient
 	accessToken token.AccessTokenClient
+	version     version.VersionClient
 }
+
+var _ Interface = (*Client)(nil)
 
 func NewClient(addr string, opts ...Option) (Interface, error) {
 	c := &Client{}
@@ -111,6 +112,7 @@ func NewClient(addr string, opts ...Option) (Interface, error) {
 	c.file = file.NewFileClient(dial)
 	c.endpoint = endpoint.NewEndpointClient(dial)
 	c.accessToken = token.NewAccessTokenClient(dial)
+	c.repo = repo.NewRepoClient(dial)
 
 	if c.password != "" || c.username != "" {
 		if err := c.getToken(); err != nil {
@@ -139,6 +141,10 @@ func (c *Client) Close() error {
 
 func (c *Client) Auth() auth.AuthClient {
 	return c.auth
+}
+
+func (c *Client) Repo() repo.RepoClient {
+	return c.repo
 }
 
 func (c *Client) Changelog() changelog.ChangelogClient {

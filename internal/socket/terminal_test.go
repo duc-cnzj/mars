@@ -3,6 +3,7 @@ package socket
 import (
 	"context"
 	"errors"
+	"github.com/duc-cnzj/mars/api/v5/types"
 	"testing"
 	"time"
 
@@ -567,8 +568,11 @@ func TestMyPtyHandler_Close(t *testing.T) {
 		eventRepo: eventRepo,
 		logger:    mlog.NewForConfig(nil),
 	}
-	eventRepo.EXPECT().FileAuditLogWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-	recorder.EXPECT().User().Return(&auth.UserInfo{})
+	eventRepo.EXPECT().FileAuditLogWithDuration(
+		types.EventActionType_Shell, "duc",
+		gomock.Not(nil), 1,
+		time.Second)
+	recorder.EXPECT().User().Return(&auth.UserInfo{Name: "duc"})
 	recorder.EXPECT().Duration().Return(time.Second)
 	recorder.EXPECT().Container().Return(&repo.Container{}).AnyTimes()
 	recorder.EXPECT().File().Return(&repo.File{ID: 1})
@@ -753,7 +757,7 @@ func TestStartShell_WithValidSessionID(t *testing.T) {
 	conn.EXPECT().SetPtyHandler(input.SessionId, gomock.Any())
 	conn.EXPECT().GetPtyHandler(input.SessionId).Return(nil, false)
 
-	sessionID, err := ws.StartShell(context.Background(), input, conn)
+	sessionID, err := ws.StartShell(context.TODO(), input, conn)
 	time.Sleep(1 * time.Second)
 	assert.NoError(t, err)
 	assert.Equal(t, input.SessionId, sessionID)
@@ -777,7 +781,7 @@ func TestStartShell_WithInvalidSessionID(t *testing.T) {
 		SessionId: "invalidSessionID",
 	}
 
-	_, err := ws.StartShell(context.Background(), input, conn)
+	_, err := ws.StartShell(context.TODO(), input, conn)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid session sessionID")

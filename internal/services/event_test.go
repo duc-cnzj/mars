@@ -39,7 +39,7 @@ func TestEventSvc_List_Success(t *testing.T) {
 		OrderIDDesc: lo.ToPtr(true),
 	}).Return([]*repo.Event{}, &pagination.Pagination{}, nil)
 
-	resp, err := svc.List(context.Background(), &event.ListRequest{
+	resp, err := svc.List(context.TODO(), &event.ListRequest{
 		Page:       lo.ToPtr(int32(1)),
 		PageSize:   lo.ToPtr(int32(12)),
 		ActionType: types.EventActionType_Delete,
@@ -55,9 +55,17 @@ func TestEventSvc_List_Failure(t *testing.T) {
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo)
 
-	eventRepo.EXPECT().List(gomock.Any(), gomock.Any()).Return(nil, nil, errors.New("error"))
+	req := &event.ListRequest{}
 
-	_, err := svc.List(context.Background(), &event.ListRequest{})
+	eventRepo.EXPECT().List(gomock.Any(), &repo.ListEventInput{
+		Page:        1,
+		PageSize:    15,
+		ActionType:  req.ActionType,
+		Search:      req.Search,
+		OrderIDDesc: lo.ToPtr(true),
+	}).Return(nil, nil, errors.New("error"))
+
+	_, err := svc.List(context.TODO(), req)
 	assert.Error(t, err)
 }
 

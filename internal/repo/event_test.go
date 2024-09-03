@@ -6,12 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/api/v5/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
 	"github.com/duc-cnzj/mars/v5/internal/application"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/duc-cnzj/mars/api/v5/types"
 	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/event"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
@@ -20,6 +17,8 @@ import (
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestEventRepo_List(t *testing.T) {
@@ -30,7 +29,7 @@ func TestEventRepo_List(t *testing.T) {
 	defer db.Close()
 	loggerMock := mlog.NewForConfig(nil)
 	eventDispatcherMock := event.NewMockDispatcher(m)
-	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
+	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Not(nil)).AnyTimes()
 
 	repo := NewEventRepo(nil, nil, nil, nil, loggerMock, data.NewDataImpl(&data.NewDataParams{DB: db}), eventDispatcherMock)
 
@@ -39,7 +38,6 @@ func TestEventRepo_List(t *testing.T) {
 		SetAction(types.EventActionType(1)).
 		SetUsername("ducaaaa").
 		SetMessage("qwerty").
-		//SetFileID(1).
 		SetDuration("2s").
 		SetHasDiff(true).
 		SaveX(context.TODO())

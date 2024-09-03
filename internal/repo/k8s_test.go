@@ -242,14 +242,14 @@ func TestFindDefaultContainer(t *testing.T) {
 		},
 	})}).AnyTimes()
 
-	_, err := kr.FindDefaultContainer(context.Background(), "a", "c")
+	_, err := kr.FindDefaultContainer(context.TODO(), "a", "c")
 	assert.Error(t, err)
 
-	container, err := kr.FindDefaultContainer(context.Background(), "a", "pod")
+	container, err := kr.FindDefaultContainer(context.TODO(), "a", "pod")
 	assert.Nil(t, err)
 	assert.Equal(t, "second-container", container)
 
-	container, err = kr.FindDefaultContainer(context.Background(), "a", "pod-b")
+	container, err = kr.FindDefaultContainer(context.TODO(), "a", "pod-b")
 	assert.Nil(t, err)
 	assert.Equal(t, "first-container", container)
 }

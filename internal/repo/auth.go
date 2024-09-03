@@ -42,18 +42,19 @@ type LoginResponse struct {
 	UserInfo *auth2.UserInfo
 }
 
+var adminUserInfo = &auth2.UserInfo{
+	LogoutUrl: "",
+	Roles:     []string{schematype.MarsAdmin},
+	ID:        "1",
+	Name:      "管理员",
+	Email:     "1025434218@qq.com",
+}
+
 func (a *authRepo) Login(ctx context.Context, input *LoginInput) (*LoginResponse, error) {
 	if input.Username != "admin" && a.data.Config().AdminPassword != input.Password {
 		return nil, status.Errorf(codes.Unauthenticated, "用户名或密码错误")
 	}
-	userinfo := &auth2.UserInfo{
-		LogoutUrl: "",
-		Roles:     []string{schematype.MarsAdmin},
-		ID:        "1",
-		Name:      "管理员",
-		Email:     "1025434218@qq.com",
-	}
-	signData, err := a.authsvc.Sign(userinfo)
+	signData, err := a.authsvc.Sign(adminUserInfo)
 	if err != nil {
 		return nil, ToError(401, err)
 	}
@@ -61,7 +62,7 @@ func (a *authRepo) Login(ctx context.Context, input *LoginInput) (*LoginResponse
 	return &LoginResponse{
 		Token:     signData.Token,
 		ExpiredIn: signData.ExpiredIn,
-		UserInfo:  userinfo,
+		UserInfo:  adminUserInfo,
 	}, nil
 }
 

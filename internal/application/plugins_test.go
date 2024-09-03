@@ -1,9 +1,8 @@
-package application_test
+package application
 
 import (
 	"testing"
 
-	"github.com/duc-cnzj/mars/v5/internal/application"
 	"github.com/duc-cnzj/mars/v5/internal/config"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/stretchr/testify/assert"
@@ -11,13 +10,13 @@ import (
 )
 
 type testPlugin struct {
-	application.GitServer
-	application.WsSender
-	application.Picture
-	application.DomainManager
+	GitServer
+	WsSender
+	Picture
+	DomainManager
 }
 
-func (tp *testPlugin) Initialize(app application.App, args map[string]any) error {
+func (tp *testPlugin) Initialize(app App, args map[string]any) error {
 	return nil
 }
 
@@ -33,9 +32,9 @@ func TestPluginManagerLoad(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	application.RegisterPlugin("test", &testPlugin{})
+	RegisterPlugin("test", &testPlugin{})
 
-	app := application.NewMockApp(m)
+	app := NewMockApp(m)
 	cfg := &config.Config{
 		DomainManagerPlugin: config.Plugin{Name: "test"},
 		WsSenderPlugin:      config.Plugin{Name: "test"},
@@ -45,7 +44,7 @@ func TestPluginManagerLoad(t *testing.T) {
 
 	logger := mlog.NewForConfig(nil)
 
-	manager, err := application.NewPluginManager(cfg, logger)
+	manager, err := NewPluginManager(cfg, logger)
 	assert.NoError(t, err)
 
 	err = manager.Load(app)
@@ -55,4 +54,9 @@ func TestPluginManagerLoad(t *testing.T) {
 	assert.NotNil(t, manager.Ws())
 	assert.NotNil(t, manager.Git())
 	assert.NotNil(t, manager.Picture())
+}
+
+func TestGetPlugins(t *testing.T) {
+	assert.Equal(t, pluginSet, (&manager{}).GetPlugins())
+	assert.NotNil(t, (&manager{}).GetPlugins())
 }

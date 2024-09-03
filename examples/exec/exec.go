@@ -55,7 +55,7 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGWINCH)
 
 	// 创建上下文和取消函数
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
 	// 获取当前终端的状态

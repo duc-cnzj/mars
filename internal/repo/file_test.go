@@ -12,14 +12,12 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/v5/internal/auth"
-
 	"github.com/duc-cnzj/mars/v5/internal/cache"
-	"github.com/duc-cnzj/mars/v5/internal/uploader"
-
 	"github.com/duc-cnzj/mars/v5/internal/config"
 	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/uploader"
 	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -438,8 +436,8 @@ func TestRecorderWrite_WhenCalled_WritesDataToBuffer(t *testing.T) {
 	mockFile := uploader.NewMockFile(m)
 	mockUploader.EXPECT().LocalUploader().Return(mockUploader)
 	mockUploader.EXPECT().NewFile(gomock.Any()).Return(mockFile, nil)
-	mockUploader.EXPECT().Disk(gomock.Any()).Return(mockUploader)
-	mockFile.EXPECT().Write(gomock.Any())
+	mockUploader.EXPECT().Disk("tmp").Return(mockUploader)
+	mockFile.EXPECT().Write(gomock.Not(nil))
 
 	repo := &fileRepo{
 		uploader: mockUploader,
@@ -538,7 +536,7 @@ func TestRecorder_Close(t *testing.T) {
 	up.EXPECT().Disk("shell").Return(up)
 	upf := uploader.NewMockFile(m)
 	up.EXPECT().NewFile(gomock.Any()).Return(upf, nil)
-	f.EXPECT().Seek(int64(0), int(0)).Times(1)
+	f.EXPECT().Seek(int64(0), 0).Times(1)
 	upf.EXPECT().WriteString(fmt.Sprintf("{\"version\": 2, \"width\": 106, \"height\": 120, \"timestamp\": %d, \"env\": {\"SHELL\": \"bash-x\", \"TERM\": \"xterm-256color\"}}\n", r.startTime.Unix()))
 	upf.EXPECT().Write(gomock.Any()).AnyTimes()
 	f.EXPECT().Read(gomock.Any()).Times(1).Return(0, io.EOF)

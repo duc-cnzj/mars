@@ -531,7 +531,9 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 			prettyMarshal, _ := yaml2.PrettyMarshal(j.input)
 			newConf = &repo.StringYamlPrettier{Str: string(prettyMarshal)}
 		}
-		j.eventRepo.AuditLogWithChange(act, j.user.Name,
+		j.eventRepo.AuditLogWithChange(
+			act,
+			j.user.Name,
 			fmt.Sprintf("%s 项目: %s/%s", act.String(), j.ns.Name, j.Project().Name),
 			oldConf, newConf)
 		j.messager.To(100)

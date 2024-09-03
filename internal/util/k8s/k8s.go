@@ -49,7 +49,7 @@ func CreateDockerSecrets(client kubernetes.Interface, namespace string, auths co
 
 	marshal, _ := json.Marshal(dockerCfgJSON)
 
-	return client.CoreV1().Secrets(namespace).Create(context.Background(), &v1.Secret{
+	return client.CoreV1().Secrets(namespace).Create(context.TODO(), &v1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1.SchemeGroupVersion.String(),
 			Kind:       "Secret",

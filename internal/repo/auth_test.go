@@ -31,9 +31,9 @@ func TestAuthRepo_Login_Success(t *testing.T) {
 		Password: "password",
 	}
 
-	authsvc.EXPECT().Sign(gomock.Any()).Return(&auth.SignData{Token: "token", ExpiredIn: 3600}, nil).Times(1)
+	authsvc.EXPECT().Sign(adminUserInfo).Return(&auth.SignData{Token: "token", ExpiredIn: 3600}, nil).Times(1)
 
-	resp, err := repo.Login(context.Background(), input)
+	resp, err := repo.Login(context.TODO(), input)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
@@ -56,7 +56,7 @@ func TestAuthRepo_Login_Failure(t *testing.T) {
 	}
 	data.EXPECT().Config().Return(&config.Config{AdminPassword: "password"}).Times(1)
 
-	resp, err := repo.Login(context.Background(), input)
+	resp, err := repo.Login(context.TODO(), input)
 
 	assert.NotNil(t, err)
 	assert.Nil(t, resp)
@@ -76,9 +76,9 @@ func TestAuthRepo_Login_Failure2(t *testing.T) {
 		Username: "admin",
 		Password: "wrongpassword",
 	}
-	authsvc.EXPECT().Sign(gomock.Any()).Return(nil, errors.New("x"))
+	authsvc.EXPECT().Sign(adminUserInfo).Return(nil, errors.New("x"))
 
-	_, err := repo.Login(context.Background(), input)
+	_, err := repo.Login(context.TODO(), input)
 
 	assert.Error(t, err)
 	s, _ := status.FromError(err)
@@ -99,7 +99,7 @@ func TestAuthRepo_VerifyToken_Success(t *testing.T) {
 
 	authsvc.EXPECT().VerifyToken(token).Return(&auth.JwtClaims{UserInfo: &auth.UserInfo{ID: "1"}}, true).Times(1)
 
-	userInfo, err := repo.VerifyToken(context.Background(), token)
+	userInfo, err := repo.VerifyToken(context.TODO(), token)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, userInfo)
@@ -120,7 +120,7 @@ func TestAuthRepo_VerifyToken_Failure(t *testing.T) {
 
 	authsvc.EXPECT().VerifyToken(token).Return(nil, false).Times(1)
 
-	userInfo, err := repo.VerifyToken(context.Background(), token)
+	userInfo, err := repo.VerifyToken(context.TODO(), token)
 
 	assert.NotNil(t, err)
 	assert.Nil(t, userInfo)
@@ -139,7 +139,7 @@ func TestAuthRepo_Settings(t *testing.T) {
 
 	data2.EXPECT().OidcConfig().Return(oidcConfig).Times(1)
 
-	config, err := repo.Settings(context.Background())
+	config, err := repo.Settings(context.TODO())
 
 	assert.Nil(t, err)
 	assert.Equal(t, oidcConfig, config)
@@ -168,7 +168,7 @@ func TestAuthRepo_Sign_Success(t *testing.T) {
 
 	authsvc.EXPECT().Sign(userInfo).Return(signData, nil).Times(1)
 
-	resp, err := repo.Sign(context.Background(), userInfo)
+	resp, err := repo.Sign(context.TODO(), userInfo)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
@@ -195,7 +195,7 @@ func TestAuthRepo_Sign_Failure(t *testing.T) {
 
 	authsvc.EXPECT().Sign(userInfo).Return(nil, errors.New("sign error")).Times(1)
 
-	resp, err := repo.Sign(context.Background(), userInfo)
+	resp, err := repo.Sign(context.TODO(), userInfo)
 
 	assert.NotNil(t, err)
 	assert.Nil(t, resp)

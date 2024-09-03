@@ -39,7 +39,7 @@ func TestGitRepo_AllProjects(t *testing.T) {
 	git.EXPECT().AllProjects().Return([]application.Project{
 		mockProject,
 	}, nil)
-	projects, err := repo.AllProjects(context.Background(), true)
+	projects, err := repo.AllProjects(context.TODO(), true)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, projects)
@@ -69,7 +69,7 @@ func TestGitRepo_AllProjects_Cache(t *testing.T) {
 	git.EXPECT().AllProjects().Return([]application.Project{
 		mockProject,
 	}, nil)
-	projects, err := repo.AllProjects(context.Background(), true)
+	projects, err := repo.AllProjects(context.TODO(), true)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, projects)
@@ -94,7 +94,7 @@ func TestGitRepo_AllBranches(t *testing.T) {
 	git.EXPECT().AllBranches("1").Return([]application.Branch{branch}, nil)
 	repo := NewGitRepo(mockLogger, mockCache, mockPluginManager, mockData)
 
-	branches, err := repo.AllBranches(context.Background(), 1, true)
+	branches, err := repo.AllBranches(context.TODO(), 1, true)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, branches)
@@ -118,7 +118,7 @@ func TestGitRepo_AllBranches_Cache(t *testing.T) {
 	git.EXPECT().AllBranches("1").Return([]application.Branch{branch}, nil)
 	repo := NewGitRepo(mockLogger, &cache.NoCache{}, mockPluginManager, mockData)
 
-	branches, err := repo.AllBranches(context.Background(), 1, true)
+	branches, err := repo.AllBranches(context.TODO(), 1, true)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, branches)
@@ -138,7 +138,7 @@ func TestGitRepo_ListCommits(t *testing.T) {
 	git.EXPECT().ListCommits("1", "main").Return([]application.Commit{}, nil)
 	repo := NewGitRepo(mockLogger, mockCache, mockPluginManager, mockData)
 
-	commits, err := repo.ListCommits(context.Background(), 1, "main")
+	commits, err := repo.ListCommits(context.TODO(), 1, "main")
 
 	assert.Nil(t, err)
 	assert.NotNil(t, commits)
@@ -165,7 +165,7 @@ func TestGitRepo_GetProject(t *testing.T) {
 	mockProject.EXPECT().GetDescription()
 	repo := NewGitRepo(mockLogger, mockCache, mockPluginManager, mockData)
 
-	project, err := repo.GetProject(context.Background(), 1)
+	project, err := repo.GetProject(context.TODO(), 1)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, project)
@@ -186,7 +186,7 @@ func TestGitRepo_GetFileContentWithBranch(t *testing.T) {
 
 	repo := NewGitRepo(mockLogger, mockCache, mockPluginManager, mockData)
 
-	content, err := repo.GetFileContentWithBranch(context.Background(), 1, "main", "README.md")
+	content, err := repo.GetFileContentWithBranch(context.TODO(), 1, "main", "README.md")
 
 	assert.Nil(t, err)
 	assert.Equal(t, "aa", content)
@@ -218,7 +218,7 @@ func TestGitRepo_GetCommit(t *testing.T) {
 
 	repo := NewGitRepo(mockLogger, mockCache, mockPluginManager, mockData)
 
-	commit, err := repo.GetCommit(context.Background(), 1, "abc123")
+	commit, err := repo.GetCommit(context.TODO(), 1, "abc123")
 
 	assert.Nil(t, err)
 	assert.NotNil(t, commit)
@@ -242,7 +242,7 @@ func TestGitRepo_GetCommitPipeline(t *testing.T) {
 	mockPipeline.EXPECT().GetWebURL()
 	repo := NewGitRepo(mockLogger, mockCache, mockPluginManager, mockData)
 
-	pipeline, err := repo.GetCommitPipeline(context.Background(), 1, "main", "abc123")
+	pipeline, err := repo.GetCommitPipeline(context.TODO(), 1, "main", "abc123")
 
 	assert.Nil(t, err)
 	assert.NotNil(t, pipeline)
@@ -270,7 +270,7 @@ func TestGitRepo_GetByProjectID(t *testing.T) {
 	mockProject.EXPECT().GetDescription()
 	repo := NewGitRepo(mockLogger, mockCache, mockPluginManager, mockData)
 
-	project, err := repo.GetByProjectID(context.Background(), 1)
+	project, err := repo.GetByProjectID(context.TODO(), 1)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, project)

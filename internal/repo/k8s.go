@@ -267,7 +267,7 @@ func (repo *k8sRepo) Execute(ctx context.Context, c *Container, input *ExecuteIn
 
 func (repo *k8sRepo) GetPodLogs(namespace, podName string, options *corev1.PodLogOptions) (string, error) {
 	logs := repo.data.K8sClient().Client.CoreV1().Pods(namespace).GetLogs(podName, options)
-	do := logs.Do(context.Background())
+	do := logs.Do(context.TODO())
 	raw, err := do.Raw()
 	return string(raw), err
 }
@@ -594,7 +594,7 @@ func (repo *k8sRepo) ClusterInfo() *ClusterInfo {
 	var nodes []corev1.Node
 
 	// 获取已经使用的 cpu, memory
-	nodeList, _ := repo.data.K8sClient().Client.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{
+	nodeList, _ := repo.data.K8sClient().Client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector.String(),
 	})
 	nodes = append(nodes, nodeList.Items...)

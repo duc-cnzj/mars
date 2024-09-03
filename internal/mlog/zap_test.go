@@ -84,7 +84,7 @@ func TestZapLoggerDebug(t *testing.T) {
 
 func TestZapLoggerDebugCtx(t *testing.T) {
 	logger := NewZapLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.DebugCtx(ctx, "debug message with context")
 }
 
@@ -95,7 +95,7 @@ func TestZapLoggerWarning(t *testing.T) {
 
 func TestZapLoggerWarningCtx(t *testing.T) {
 	logger := NewZapLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.WarningCtx(ctx, "warning message with context")
 }
 
@@ -106,7 +106,7 @@ func TestZapLoggerInfo(t *testing.T) {
 
 func TestZapLoggerInfoCtx(t *testing.T) {
 	logger := NewZapLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.InfoCtx(ctx, "info message with context")
 }
 
@@ -117,31 +117,31 @@ func TestZapLoggerError(t *testing.T) {
 
 func TestZapLoggerErrorCtx(t *testing.T) {
 	logger := NewZapLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.ErrorCtx(ctx, "error message with context")
 }
 
 func Test_zapLogger_DebugCtxf(t *testing.T) {
 	logger := NewZapLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.DebugCtxf(ctx, "debugf message with context %s", "test")
 }
 
 func Test_zapLogger_WarningCtxf(t *testing.T) {
 	logger := NewZapLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.WarningCtxf(ctx, "warningf message with context %s", "test")
 }
 
 func Test_zapLogger_InfoCtxf(t *testing.T) {
 	logger := NewZapLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.InfoCtxf(ctx, "infof message with context %s", "test")
 }
 
 func Test_zapLogger_ErrorCtxf(t *testing.T) {
 	logger := NewZapLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.ErrorCtxf(ctx, "errorf message with context %s", "test")
 }
 

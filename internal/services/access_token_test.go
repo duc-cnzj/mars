@@ -3,7 +3,12 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
+	"time"
+
+	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/v5/internal/util/date"
 
 	"github.com/duc-cnzj/mars/api/v5/token"
 	"github.com/duc-cnzj/mars/v5/internal/auth"
@@ -27,6 +32,7 @@ func newAdminUserCtx() context.Context {
 		Roles: []string{schematype.MarsAdmin},
 	})
 }
+
 func newOtherUserCtx() context.Context {
 	return auth.SetUser(context.TODO(), &auth.UserInfo{
 		ID:    "2",
@@ -74,18 +80,26 @@ func TestAccessTokenSvc_Grant_Success(t *testing.T) {
 	tokenRepo := repo.NewMockAccessTokenRepo(m)
 	svc := NewAccessTokenSvc(mlog.NewForConfig(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
 
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", gomock.Any(), gomock.Any())
+	req := &token.GrantRequest{
+		ExpireSeconds: 100,
+		Usage:         "usage",
+	}
 
+	resp := &repo.AccessToken{}
+	user := MustGetUser(newAdminUserCtx())
+	eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Create,
+		"admin",
+		fmt.Sprintf(`[accessTokenSvc]: 用户 "%s" 创建了一个 token "%s", 过期时间是 "%s".`, user.Name, resp.Token, resp.ExpiredAt.Format("2006-01-02 15:04:05")),
+		req,
+	)
 	tokenRepo.EXPECT().Grant(gomock.Any(), &repo.GrantAccessTokenInput{
 		ExpireSeconds: 100,
 		Usage:         "usage",
-		User:          MustGetUser(newAdminUserCtx()),
-	}).Return(&repo.AccessToken{}, nil)
+		User:          user,
+	}).Return(resp, nil)
 
-	_, err := svc.Grant(newAdminUserCtx(), &token.GrantRequest{
-		ExpireSeconds: 100,
-		Usage:         "usage",
-	})
+	_, err := svc.Grant(newAdminUserCtx(), req)
 	assert.NoError(t, err)
 }
 
@@ -96,14 +110,21 @@ func TestAccessTokenSvc_Lease_Success(t *testing.T) {
 	tokenRepo := repo.NewMockAccessTokenRepo(m)
 	svc := NewAccessTokenSvc(mlog.NewForConfig(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
 
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", gomock.Any(), gomock.Any())
-
-	tokenRepo.EXPECT().Lease(gomock.Any(), "token", int32(100)).Return(&repo.AccessToken{}, nil)
-
-	_, err := svc.Lease(newAdminUserCtx(), &token.LeaseRequest{
+	req := &token.LeaseRequest{
 		Token:         "token",
 		ExpireSeconds: 100,
-	})
+	}
+	resp := &repo.AccessToken{}
+
+	eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Update,
+		"admin",
+		fmt.Sprintf(`[accessTokenSvc]: 用户 "%s" 续租了 token "%s", 增加了 "%s", 过期时间是 "%s".`, MustGetUser(newAdminUserCtx()).Name, resp.Token, date.HumanDuration(time.Second*time.Duration(req.ExpireSeconds)), resp.ExpiredAt.Format("2006-01-02 15:04:05")),
+		req,
+	)
+
+	tokenRepo.EXPECT().Lease(gomock.Any(), "token", int32(100)).Return(resp, nil)
+	_, err := svc.Lease(newAdminUserCtx(), req)
 	assert.NoError(t, err)
 }
 
@@ -130,12 +151,18 @@ func TestAccessTokenSvc_Revoke_Success(t *testing.T) {
 	tokenRepo := repo.NewMockAccessTokenRepo(m)
 	svc := NewAccessTokenSvc(mlog.NewForConfig(nil), eventRepo, timer.NewRealTimer(), tokenRepo)
 
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", gomock.Any(), gomock.Any())
+	req := &token.RevokeRequest{
+		Token: "token",
+	}
+	eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Delete,
+		"admin",
+		fmt.Sprintf(`[accessTokenSvc]: 用户 "%s" 删除 token "%s".`, MustGetUser(newAdminUserCtx()).Name, req.Token),
+		req,
+	)
 	tokenRepo.EXPECT().Revoke(gomock.Any(), "token").Return(nil)
 
-	_, err := svc.Revoke(newAdminUserCtx(), &token.RevokeRequest{
-		Token: "token",
-	})
+	_, err := svc.Revoke(newAdminUserCtx(), req)
 	assert.NoError(t, err)
 }
 

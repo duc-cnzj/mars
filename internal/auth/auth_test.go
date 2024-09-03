@@ -116,7 +116,7 @@ func TestAccessTokenAuth_VerifyToken(t *testing.T) {
 	assert.Equal(t, []string{schematype.MarsAdmin}, u.UserInfo.Roles)
 	assert.Equal(t, "https://xxx", u.UserInfo.LogoutUrl)
 
-	first, _ := db.AccessToken.Query().Where(accesstoken.Token(at.Token)).First(context.Background())
+	first, _ := db.AccessToken.Query().Where(accesstoken.Token(at.Token)).First(context.TODO())
 
 	assert.NotZero(t, first.LastUsedAt)
 	_, bb := NewAccessTokenAuth(dd).VerifyToken("bearer " + at.Token)
@@ -162,7 +162,7 @@ func TestOidcClaims_ToUserInfo(t *testing.T) {
 }
 
 func TestContextWithUser(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	userInfo := &UserInfo{
 		ID:    "1",
 		Name:  "Test User",
@@ -180,7 +180,7 @@ func TestContextWithUser(t *testing.T) {
 }
 
 func TestContextWithoutUser(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	_, err := GetUser(ctx)
 	assert.NotNil(t, err)

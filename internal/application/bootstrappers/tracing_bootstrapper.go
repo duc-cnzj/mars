@@ -33,7 +33,7 @@ func (t *TracingBootstrapper) Bootstrap(app application.App) error {
 		app.Logger().Warning("TracingEndpoint is not set, skipping tracing bootstrapping")
 		return nil
 	}
-	shutdownFuncs, err := setupOTelSDK(context.Background(), config.TracingEndpoint, app.PrometheusRegistry())
+	shutdownFuncs, err := setupOTelSDK(context.TODO(), config.TracingEndpoint, app.PrometheusRegistry())
 	if err != nil {
 		return err
 	}

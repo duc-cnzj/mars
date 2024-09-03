@@ -31,13 +31,13 @@ func TestLogrusLoggerDebugf(t *testing.T) {
 
 func TestLogrusLoggerDebugCtx(t *testing.T) {
 	logger := NewLogrusLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.DebugCtx(ctx, "debug message with context")
 }
 
 func TestLogrusLoggerDebugCtxf(t *testing.T) {
 	logger := NewLogrusLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.DebugCtxf(ctx, "debugf message with context %s", "test")
 }
 
@@ -53,13 +53,13 @@ func TestLogrusLoggerInfof(t *testing.T) {
 
 func TestLogrusLoggerInfoCtx(t *testing.T) {
 	logger := NewLogrusLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.InfoCtx(ctx, "info message with context")
 }
 
 func TestLogrusLoggerInfoCtxf(t *testing.T) {
 	logger := NewLogrusLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.InfoCtxf(ctx, "infof message with context %s", "test")
 }
 
@@ -75,13 +75,13 @@ func TestLogrusLoggerWarningf(t *testing.T) {
 
 func TestLogrusLoggerWarningCtx(t *testing.T) {
 	logger := NewLogrusLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.WarningCtx(ctx, "warning message with context")
 }
 
 func TestLogrusLoggerWarningCtxf(t *testing.T) {
 	logger := NewLogrusLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.WarningCtxf(ctx, "warningf message with context %s", "test")
 }
 
@@ -97,13 +97,13 @@ func TestLogrusLoggerErrorf(t *testing.T) {
 
 func TestLogrusLoggerErrorCtx(t *testing.T) {
 	logger := NewLogrusLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.ErrorCtx(ctx, "error message with context")
 }
 
 func TestLogrusLoggerErrorCtxf(t *testing.T) {
 	logger := NewLogrusLogger(true)
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger.ErrorCtxf(ctx, "errorf message with context %s", "test")
 }
 

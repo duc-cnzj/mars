@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	auth2 "github.com/duc-cnzj/mars/v5/internal/auth"
@@ -195,7 +196,7 @@ func Test_app_Dispatcher(t *testing.T) {
 }
 
 func Test_app_Done(t *testing.T) {
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
 	a := &app{done: ctx}
 	assert.NotNil(t, a.Done())
@@ -289,11 +290,12 @@ func Test_app_RunServerHooks(t *testing.T) {
 type mockServer struct {
 	Server
 	called bool
+	err    error
 }
 
 func (m *mockServer) Shutdown(context.Context) error {
 	m.called = true
-	return nil
+	return m.err
 }
 
 func Test_app_Shutdown(t *testing.T) {
@@ -303,7 +305,7 @@ func Test_app_Shutdown(t *testing.T) {
 		logger: mlog.NewForConfig(nil), doneFunc: func() {
 			called = true
 		},
-		servers: []Server{&mockServer{}, &mockServer{}},
+		servers: []Server{&mockServer{}, &mockServer{err: errors.New("x")}},
 	}
 	a.Shutdown()
 	assert.True(t, called)

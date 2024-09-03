@@ -1,9 +1,11 @@
 package socket
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/samber/lo"
 	"io"
 	"sort"
 	"sync"
@@ -162,7 +164,7 @@ func TestNewJob(t *testing.T) {
 
 	assert.False(t, job.(*jobRunner).HasError())
 
-	ctx, cancelFunc := context.WithCancelCause(context.Background())
+	ctx, cancelFunc := context.WithCancelCause(context.TODO())
 	job.(*jobRunner).stopCtx = ctx
 	job.(*jobRunner).stopFn = cancelFunc
 	assert.False(t, job.(*jobRunner).IsStopped())
@@ -462,7 +464,7 @@ func TestHandleMessage(t *testing.T) {
 		logger:    mlog.NewForConfig(nil),
 		messageCh: NewSafeWriteMessageCh(mlog.NewForConfig(nil), 1),
 	}
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
 	jr.HandleMessage(ctx)
 }
@@ -923,7 +925,7 @@ func TestJober_GlobalLock(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	ml := locker.NewMockLocker(m)
-	ml.EXPECT().RenewalAcquire(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+	ml.EXPECT().RenewalAcquire(GetSlugName(1, "app"), 30, 20).Times(0)
 	assert.Equal(t, "xxx", (&jobRunner{err: errors.New("xxx"), locker: ml}).GlobalLock().Error().Error())
 }
 
@@ -1175,7 +1177,7 @@ func TestSystemVariableLoader_Load_ok(t *testing.T) {
 	mockPipeline := application.NewMockPipeline(m)
 	mockPipeline.EXPECT().GetID().Return(int64(0))
 	mockPipeline.EXPECT().GetRef().Return("dev")
-	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockPipeline, nil)
+	gitS.EXPECT().GetCommitPipeline("10", "dev", "c").Return(mockPipeline, nil)
 
 	projectRepo := repo.NewMockProjectRepo(m)
 	projectRepo.EXPECT().GetPreOccupiedLenByValuesYaml(gomock.Any()).Return(1)
@@ -1184,7 +1186,7 @@ func TestSystemVariableLoader_Load_ok(t *testing.T) {
 	domain := application.NewMockDomainManager(m)
 	pl.EXPECT().Domain().Return(domain).AnyTimes()
 	domain.EXPECT().GetDomainByIndex(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	domain.EXPECT().GetCertSecretName(gomock.Any(), gomock.Any()).AnyTimes()
+	domain.EXPECT().GetCertSecretName("app", gomock.Any()).AnyTimes()
 	domain.EXPECT().GetClusterIssuer().Return("cluster-issuer")
 	em := NewMockDeployMsger(m)
 	em.EXPECT().To(gomock.Any()).AnyTimes()
@@ -1202,8 +1204,10 @@ VarImagePullSecrets: <.ImagePullSecrets>
 		},
 		logger: mlog.NewForConfig(nil),
 		project: &repo.Project{
-			Name:      "app",
-			GitBranch: "dev",
+			Name:         "app",
+			GitBranch:    "dev",
+			GitProjectID: 10,
+			GitCommit:    "c",
 		},
 		ns:               &repo.Namespace{Name: "ns"},
 		imagePullSecrets: []string{"a", "b", "c"},
@@ -1420,7 +1424,7 @@ func Test_jobRunner_WriteConfigYamlToTmpFile(t *testing.T) {
 		logger:   mlog.NewForConfig(nil),
 	}
 	info := uploader.NewMockFileInfo(m)
-	mockUploader.EXPECT().Put(gomock.Any(), gomock.Any()).Return(info, nil)
+	mockUploader.EXPECT().Put(gomock.Not(nil), bytes.NewReader([]byte("xxx"))).Return(info, nil)
 	info.EXPECT().Path().Return("/path")
 	path, closer, err := job.WriteConfigYamlToTmpFile([]byte("xxx"))
 	assert.Equal(t, "/path", path)
@@ -1529,7 +1533,7 @@ func Test_jobRunner_Validate_Success(t *testing.T) {
 		NeedGitRepo: false,
 	}, nil)
 	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(&repo.Project{}, nil)
-	projectRepo.EXPECT().UpdateStatusByVersion(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&repo.Project{}, nil)
+	projectRepo.EXPECT().UpdateStatusByVersion(gomock.Any(), 100, types.Deploy_StatusDeploying, 10).Return(&repo.Project{}, nil)
 	sub := application.NewMockPubSub(m)
 	sub.EXPECT().ToAll(gomock.Any())
 	job = &jobRunner{
@@ -1546,6 +1550,8 @@ func Test_jobRunner_Validate_Success(t *testing.T) {
 			RepoID:      12,
 			DryRun:      false,
 			PubSub:      sub,
+			ProjectID:   100,
+			Version:     lo.ToPtr(int32(10)),
 		},
 	}
 
@@ -1685,7 +1691,10 @@ func Test_jobRunner_Run_Success(t *testing.T) {
 	ch := NewSafeWriteMessageCh(mlog.NewForConfig(nil), 10)
 	projRepo.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Return(&repo.Project{}, nil)
 	eventRepo.EXPECT().Dispatch(repo.EventProjectChanged, gomock.Any())
-	eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLogWithChange(
+		types.EventActionType_Update, "duc",
+		gomock.Any(), gomock.Any(),
+		gomock.Any())
 	msger.EXPECT().To(gomock.Any()).AnyTimes()
 	k8sRepo.EXPECT().SplitManifests(gomock.Any())
 	k8sRepo.EXPECT().GetPodSelectorsByManifest(gomock.Any())
@@ -1705,7 +1714,7 @@ func Test_jobRunner_Run_Success(t *testing.T) {
 		project:      &repo.Project{},
 		deployResult: &deployResult{},
 		input:        &JobInput{},
-		user:         &auth.UserInfo{},
+		user:         &auth.UserInfo{Name: "duc"},
 		commit:       NewEmptyCommit(),
 		messageCh:    ch,
 	}

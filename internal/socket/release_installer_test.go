@@ -138,7 +138,12 @@ func Test_releaseInstaller_Run_Dry(t *testing.T) {
 	}
 
 	ctx := context.TODO()
-	helmer.EXPECT().UpgradeOrInstall(ctx, "name", "ns", gomock.Any(), gomock.Any(), gomock.Any(), false, int64(10), true, "desc").Return(nil, errors.New("x"))
+	helmer.EXPECT().UpgradeOrInstall(ctx,
+		"name", "ns",
+		gomock.Not(nil), gomock.Not(nil),
+		gomock.Not(nil), false,
+		int64(10), true, "desc",
+	).Return(nil, errors.New("x"))
 	percentable := NewMockPercentable(m)
 	percentable.EXPECT().Add().AnyTimes()
 	percentable.EXPECT().Current().AnyTimes()

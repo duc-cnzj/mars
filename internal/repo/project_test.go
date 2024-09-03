@@ -38,10 +38,10 @@ import (
 )
 
 func createRepo(db *ent.Client) *ent.Repo {
-	return db.Repo.Create().SetName(rand.String(10)).SaveX(context.Background())
+	return db.Repo.Create().SetName(rand.String(10)).SaveX(context.TODO())
 }
 func TestProjectRepoCreate(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
@@ -79,7 +79,7 @@ func TestProjectRepoCreate(t *testing.T) {
 }
 
 func TestProjectRepoUpdateProject(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
@@ -112,7 +112,7 @@ func TestProjectRepoUpdateProject(t *testing.T) {
 }
 
 func TestProjectRepoDelete(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
@@ -128,7 +128,7 @@ func TestProjectRepoDelete(t *testing.T) {
 }
 
 func TestProjectRepoFindByName(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
@@ -144,7 +144,7 @@ func TestProjectRepoFindByName(t *testing.T) {
 }
 
 func TestProjectRepoUpdateDeployStatus(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
@@ -159,7 +159,7 @@ func TestProjectRepoUpdateDeployStatus(t *testing.T) {
 }
 
 func TestProjectRepoUpdateVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
@@ -506,7 +506,7 @@ spec:
 }
 
 func TestProjectRepoList(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
@@ -546,7 +546,7 @@ func TestProjectRepoList(t *testing.T) {
 }
 
 func TestProjectRepoList_Empty(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	logger := mlog.NewForConfig(nil)
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
@@ -575,7 +575,7 @@ func Test_projectRepo_Show(t *testing.T) {
 
 	repo := createRepo(db)
 	project := createProject(db, createNamespace(db).ID)
-	project.Update().SetRepo(repo).SaveX(context.Background())
+	project.Update().SetRepo(repo).SaveX(context.TODO())
 
 	show, err := r.Show(context.TODO(), project.ID)
 	assert.Nil(t, err)
@@ -842,7 +842,7 @@ func Test_projectRepo_UpdateStatusByVersion(t *testing.T) {
 	r := NewProjectRepo(logger, data)
 
 	project := createProject(db, createNamespace(db).ID)
-	project.Update().SetDeployStatus(types.Deploy_StatusDeployed).Save(context.Background())
+	project.Update().SetDeployStatus(types.Deploy_StatusDeployed).Save(context.TODO())
 
 	version, err := r.UpdateStatusByVersion(context.TODO(), project.ID, types.Deploy_StatusFailed, 2)
 	assert.Error(t, err)
@@ -1043,26 +1043,26 @@ func Test_projectRepo_GetIngressMappingByNamespace(t *testing.T) {
 	}
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
-	save, _ := db.Namespace.Create().SetCreatorEmail("a").SetName("duc").Save(context.Background())
+	save, _ := db.Namespace.Create().SetCreatorEmail("a").SetName("duc").Save(context.TODO())
 	p1, _ := db.Project.Create().SetName("app1").
 		SetManifest(encodeToYaml(&ing1)).
 		SetNamespaceID(save.ID).
 		SetCreator("").
-		Save(context.Background())
+		Save(context.TODO())
 	p2, _ := db.Project.Create().SetName("app2").
 		SetManifest(encodeToYaml(&ing2)).
 		SetNamespaceID(save.ID).
 		SetCreator("").
-		Save(context.Background())
+		Save(context.TODO())
 	p3, _ := db.Project.Create().SetName("xxx").
 		SetNamespaceID(save.ID).
 		SetCreator("").
-		Save(context.Background())
+		Save(context.TODO())
 	p4 := db.Project.Create().SetName("yyy").
 		SetManifest(encodeToYaml(&ing4)).
 		SetNamespaceID(save.ID).
 		SetCreator("").
-		SaveX(context.Background())
+		SaveX(context.TODO())
 	data := data2.NewMockData(m)
 	repo := &projectRepo{
 		logger: mlog.NewForConfig(nil),
@@ -1169,14 +1169,14 @@ func Test_projectRepo_GetNodePortMappingByProjects(t *testing.T) {
 	})
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
-	ns, _ := db.Namespace.Create().SetCreatorEmail("a").SetName("duc").Save(context.Background())
+	ns, _ := db.Namespace.Create().SetCreatorEmail("a").SetName("duc").Save(context.TODO())
 	p1 := db.Project.Create().SetName("svc1").
 		SetManifest(encodeToYaml(&svc1)).
 		SetNamespaceID(ns.ID).
 		SetCreator("").
-		SaveX(context.Background())
+		SaveX(context.TODO())
 	_ = p1
-	only, _ := db.Namespace.Query().Where(namespace.ID(ns.ID)).WithProjects().Only(context.Background())
+	only, _ := db.Namespace.Query().Where(namespace.ID(ns.ID)).WithProjects().Only(context.TODO())
 	mapping := repo.GetNodePortMappingByProjects(context.TODO(), ns.Name, serialize.Serialize(only.Edges.Projects, ToProject)...)
 	httpCount := 0
 	total := 0
@@ -1221,14 +1221,14 @@ func Test_projectRepo_GetGatewayHTTPRouteMappingByProjects(t *testing.T) {
 	})
 	db, _ := data2.NewSqliteDB()
 	defer db.Close()
-	ns, _ := db.Namespace.Create().SetCreatorEmail("a").SetName("duc").Save(context.Background())
+	ns, _ := db.Namespace.Create().SetCreatorEmail("a").SetName("duc").Save(context.TODO())
 	p1 := db.Project.Create().SetName("r1").
 		SetManifest(encodeToYaml(&route1)).
 		SetNamespaceID(ns.ID).
 		SetCreator("").
-		SaveX(context.Background())
+		SaveX(context.TODO())
 	_ = p1
-	only, _ := db.Namespace.Query().Where(namespace.ID(ns.ID)).WithProjects().Only(context.Background())
+	only, _ := db.Namespace.Query().Where(namespace.ID(ns.ID)).WithProjects().Only(context.TODO())
 	mapping := repo.GetGatewayHTTPRouteMappingByProjects(context.TODO(), ns.Name, serialize.Serialize(only.Edges.Projects, ToProject)...)
 	assert.Len(t, mapping["r1"], 2)
 }

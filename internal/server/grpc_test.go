@@ -87,14 +87,14 @@ func TestGrpcRunner_Shutdown(t *testing.T) {
 
 	server.EXPECT().GracefulStop().Times(2)
 	// Test case: Shutdown completes before context deadline
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second)
 	defer cancel()
 
 	err := runner.Shutdown(ctx)
 	assert.Nil(t, err)
 
 	// Test case: Shutdown does not complete before context deadline
-	ctx, cancel = context.WithCancel(context.Background())
+	ctx, cancel = context.WithCancel(context.TODO())
 	cancel()
 
 	err = runner.Shutdown(ctx)

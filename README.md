@@ -5,7 +5,12 @@
 
 <div align="center">
 
-[![codecov](https://codecov.io/gh/duc-cnzj/mars/branch/master/graph/badge.svg?token=EUSLRBT6NN)](https://codecov.io/gh/duc-cnzj/mars) [![unittest](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml/badge.svg)](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml) [![Release](https://img.shields.io/github/release/duc-cnzj/mars.svg)](https://github.com/duc-cnzj/mars/releases/latest) [![GitHub license](https://img.shields.io/github/license/duc-cnzj/mars)](https://github.com/duc-cnzj/mars/blob/master/LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/duc-cnzj/mars/v5)](https://goreportcard.com/report/github.com/duc-cnzj/mars/v5)
+[![codecov](https://codecov.io/gh/duc-cnzj/mars/branch/master/graph/badge.svg?token=EUSLRBT6NN)](https://codecov.io/gh/duc-cnzj/mars)
+[![unittest](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml/badge.svg)](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml)
+[![Release](https://img.shields.io/github/release/duc-cnzj/mars.svg)](https://github.com/duc-cnzj/mars/releases/latest)
+[![GitHub license](https://img.shields.io/github/license/duc-cnzj/mars)](https://github.com/duc-cnzj/mars/blob/master/LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/duc-cnzj/mars/v5)](https://goreportcard.com/report/github.com/duc-cnzj/mars/v5)
+[![Documentation](https://godoc.org/github.com/duc-cnzj/mars/api/v5?status.svg)](https://pkg.go.dev/github.com/duc-cnzj/mars/api/v5)
 
 </div>
 
@@ -34,36 +39,7 @@
   - 代码仓库支持: gitlab ~~github~~
   - 背景图: picture_cartoon，picture_bing
 - sdk 接入:
-  - [grpc-go-sdk](https://github.com/duc-cnzj/mars-client)
-
-## 🛠️ 使用文档
-
-1. 直接去 [release page](https://github.com/duc-cnzj/mars/releases) 下载二进制包
-
-初始化配置
-
-```bash
-mars init
-```
-
-2. 在 kubernetes 内部署（推荐）
-
-```bash
-helm repo add mars-charts https://duc-cnzj.github.io/mars-charts/
-# 这里需要自行配置相关参数
-helm show values mars-charts/mars > mars-values.yaml
-helm upgrade --install mars mars-charts/mars -f mars-values.yaml
-```
-
-## 🔍 configuration
-
-web 页面配置项目，开启全局配置。
-
-## 🏗 preview
-
-> [demo source code](https://gitlab.com/duc-cnzj/mars-demo)
-
-[视频教程](https://www.bilibili.com/video/BV19b4y1r7iY/)
+  - [grpc-go-sdk](https://github.com/duc-cnzj/mars/tree/master/api)
 
 ## 🍀 go-sdk 接入
 
@@ -75,13 +51,13 @@ go get -u github.com/duc-cnzj/mars/api/v5
 package main
 
 import (
-  client "github.com/duc-cnzj/mars/api/v5"
+  api "github.com/duc-cnzj/mars/api/v5"
 )
 
 func main()  {
-  c, _ := client.NewClient("127.0.0.1:50000",
-    client.WithAuth("admin", "123456"),
-    client.WithTokenAutoRefresh(),
+  c, _ := api.NewClient("127.0.0.1:50000",
+    api.WithAuth("admin", "123456"),
+    api.WithTokenAutoRefresh(),
   )
   defer c.Close()
 
