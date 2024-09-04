@@ -61,6 +61,10 @@ func ToNamespace(namespace *ent.Namespace) *Namespace {
 	if namespace == nil {
 		return nil
 	}
+	cemail := namespace.CreatorEmail
+	if cemail == superAdminEmail {
+		cemail = "超级管理员"
+	}
 
 	return &Namespace{
 		ID:               namespace.ID,
@@ -71,7 +75,7 @@ func ToNamespace(namespace *ent.Namespace) *Namespace {
 		ImagePullSecrets: namespace.ImagePullSecrets,
 		Description:      namespace.Description,
 		Private:          namespace.Private,
-		CreatorEmail:     namespace.CreatorEmail,
+		CreatorEmail:     cemail,
 		Projects:         serialize.Serialize(namespace.Edges.Projects, ToProject),
 		Favorites:        serialize.Serialize(namespace.Edges.Favorites, ToFavorite),
 		Members:          serialize.Serialize(namespace.Edges.Members, ToMember),

@@ -42,12 +42,14 @@ type LoginResponse struct {
 	UserInfo *auth2.UserInfo
 }
 
+var superAdminEmail = "1025434218@qq.com"
+
 var adminUserInfo = &auth2.UserInfo{
 	LogoutUrl: "",
 	Roles:     []string{schematype.MarsAdmin},
 	ID:        "1",
-	Name:      "管理员",
-	Email:     "1025434218@qq.com",
+	Name:      "超级管理员",
+	Email:     superAdminEmail,
 }
 
 func (a *authRepo) Login(ctx context.Context, input *LoginInput) (*LoginResponse, error) {

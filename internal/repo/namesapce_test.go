@@ -7,6 +7,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/duc-cnzj/mars/v5/internal/config"
 	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/ent"
 	"github.com/duc-cnzj/mars/v5/internal/ent/favorite"
 	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v5/internal/ent/project"
@@ -435,4 +436,17 @@ func Test_namespaceRepo_IsOwner(t *testing.T) {
 	owner, err = repo.IsOwner(context.TODO(), ns.ID, &auth.UserInfo{Email: "cccc", Roles: []string{schematype.MarsAdmin}})
 	assert.Nil(t, err)
 	assert.True(t, owner)
+}
+
+func TestToNamespace(t *testing.T) {
+	toNamespace := ToNamespace(&ent.Namespace{
+		CreatorEmail: superAdminEmail,
+	})
+
+	assert.Equal(t, "超级管理员", toNamespace.CreatorEmail)
+	toNamespace = ToNamespace(&ent.Namespace{
+		CreatorEmail: "abc@qq.com",
+	})
+
+	assert.Equal(t, "abc@qq.com", toNamespace.CreatorEmail)
 }
