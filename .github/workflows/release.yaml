@@ -9,12 +9,12 @@ jobs:
     name: build-frontend
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           cache: "yarn"
           cache-dependency-path: frontend/yarn.lock
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         id: yarn-cache
         with:
           path: |
@@ -22,14 +22,16 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('frontend/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
-      - uses: borales/actions-yarn@v3.0.0
+      - uses: borales/actions-yarn@v4
         with:
-          cmd: --cwd frontend install
-      - uses: borales/actions-yarn@v3.0.0
+          dir: "frontend"
+          cmd: install
+      - uses: borales/actions-yarn@v4
         with:
-          cmd: --cwd frontend build
+          dir: "frontend"
+          cmd: build
       - name: upload build files
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend_dist_files
           path: |
@@ -40,19 +42,19 @@ jobs:
     name: Build Go Binary linux amd64
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download frontend files
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: frontend_dist_files
           path: frontend/build
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.22'
       - run: |
@@ -60,13 +62,13 @@ jobs:
           make build_linux_amd64
           make build_linux_arm64
       - name: upload app-linux-amd64
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: app-linux-amd64
           path: |
             app-linux-amd64
       - name: upload app-linux-arm64
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: app-linux-arm64
           path: |
@@ -77,32 +79,32 @@ jobs:
     name: Build Go Binary macos amd64
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download frontend files
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: frontend_dist_files
           path: frontend/build
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.22'
       - run: |
           make build_darwin_arm64
           make build_darwin_amd64
       - name: upload app-darwin-arm64
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: app-darwin-arm64
           path: |
             app-darwin-arm64
       - name: upload app-darwin-amd64
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: app-darwin-amd64
           path: |
@@ -114,24 +116,24 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Download linux arm64 app
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: app-linux-arm64
         path: /tmp
     - name: Download linux amd64 app
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: app-linux-amd64
         path: /tmp
     - name: Download darwin amd64 app
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: app-darwin-amd64
         path: /tmp
     - name: Download darwin arm64 app
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: app-darwin-arm64
         path: /tmp
@@ -149,10 +151,10 @@ jobs:
       - name: Set output
         id: vars
         run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: tag sdk
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TAG_GITHUB_TOKEN }}
         run: |
           git config --global user.email "1025434218@qq.com"
           git config --global user.name "duc"
