@@ -1,6 +1,6 @@
 module github.com/duc-cnzj/mars/api/v5
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2
