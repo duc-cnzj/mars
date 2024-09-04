@@ -225,7 +225,7 @@ const AddRepoModal: React.FC<{
     return opt;
   };
   useEffect(() => {
-    if (isEdit && visible) {
+    if (visible) {
       let d = _.debounce(() => {
         if (configField && valuesYaml) {
           let data = _.get(yaml.load(valuesYaml), configField.split("->"), "");
@@ -504,7 +504,7 @@ const AddRepoModal: React.FC<{
                   ></Button>
                 </div>
               }
-              trigger="focus"
+              trigger="hover"
               open={
                 configFileTip &&
                 configFileValues !== configFileContent &&
