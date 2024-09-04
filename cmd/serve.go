@@ -32,7 +32,6 @@ var serverBootstrappers = []application.Bootstrapper{
 	&bootstrappers.MetricsBootstrapper{},
 	&bootstrappers.TracingBootstrapper{},
 	&bootstrappers.CronBootstrapper{},
-	&bootstrappers.PluginBootstrapper{},
 	&bootstrappers.SSOBootstrapper{},
 	&bootstrappers.S3Bootstrapper{},
 	&bootstrappers.PluginBootstrapper{},

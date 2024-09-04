@@ -29,7 +29,7 @@ COPY --from=web-build /app/build /app/frontend/build
 RUN go mod download
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu && EXTRA_FLAGS='-extldflags "-static"'; fi && \
-    VERSION_PATH=$(go list -m -f "{{.Path}}" | grep -v api)/version && LDFLAGS="-w -s  \
+    VERSION_PATH=$(go list -m -f "{{.Path}}" | grep -v api)/internal/version && LDFLAGS="-w -s  \
      -X ${VERSION_PATH}.gitBranch=$(git rev-parse --abbrev-ref HEAD) \
      -X ${VERSION_PATH}.buildDate=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
      -X ${VERSION_PATH}.gitCommit=$(git rev-parse --short HEAD) \

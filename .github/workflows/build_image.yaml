@@ -12,6 +12,9 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v4
+      - name: Set output
+        id: vars
+        run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - uses: paulhatch/semantic-version@v5.0.2
         id: get_version
         with:
@@ -28,9 +31,9 @@ jobs:
           docker login -u ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }}
           docker build --platform linux/arm64,linux/amd64 \
              -t duccnzj/mars \
-             -t duccnzj/mars:${{ steps.get_version.outputs.version_tag }} \
+             -t duccnzj/mars:$tag \
              -t duccnzj/mars:v${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }} \
-             -t registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars:${{ steps.get_version.outputs.version_tag }} \
+             -t registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars:$tag \
              -t registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars:v${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }} \
              -t registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars \
              --push .

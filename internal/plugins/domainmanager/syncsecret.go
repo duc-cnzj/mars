@@ -4,10 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v5/internal/ent"
-
 	"github.com/duc-cnzj/mars/v5/internal/application"
 	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/ent"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -30,7 +29,7 @@ type syncSecretDomainManager struct {
 	secretNamespace string
 	secretName      string
 
-	k8sCli *data.K8sClient
+	data   data.Data
 	db     *ent.Client
 	logger mlog.Logger
 }
@@ -42,6 +41,10 @@ func (d *syncSecretDomainManager) Name() string {
 }
 
 func (d *syncSecretDomainManager) Initialize(app application.App, args map[string]any) error {
+	d.data = app.Data()
+	d.db = app.DB()
+	d.logger = app.Logger()
+
 	if p, ok := args["ns_prefix"]; ok {
 		d.nsPrefix = p.(string)
 	}
@@ -63,7 +66,7 @@ func (d *syncSecretDomainManager) Initialize(app application.App, args map[strin
 		return errors.New("secret_namespace, secret_name, wildcard_domain required")
 	}
 
-	secret, err := d.k8sCli.SecretLister.Secrets(d.secretNamespace).Get(d.secretName)
+	secret, err := d.data.K8sClient().SecretLister.Secrets(d.secretNamespace).Get(d.secretName)
 	if err != nil {
 		return err
 	}
@@ -80,10 +83,6 @@ func (d *syncSecretDomainManager) Initialize(app application.App, args map[strin
 	if err != nil {
 		return err
 	}
-
-	d.k8sCli = app.Data().K8sClient()
-	d.db = app.DB()
-	d.logger = app.Logger()
 
 	d.logger.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
 
@@ -126,7 +125,7 @@ func (d *syncSecretDomainManager) GetClusterIssuer() string {
 }
 
 func (d *syncSecretDomainManager) GetCerts() (name, key, crt string) {
-	sec, err := d.k8sCli.SecretLister.Secrets(d.secretNamespace).Get(d.secretName)
+	sec, err := d.data.K8sClient().SecretLister.Secrets(d.secretNamespace).Get(d.secretName)
 	if err != nil {
 		d.logger.Error("[TLS]: get secret error: ", err)
 		return "", "", ""

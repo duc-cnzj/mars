@@ -9,14 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/ent"
-	"github.com/duc-cnzj/mars/v5/internal/ent/project"
-
 	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
 	"github.com/duc-cnzj/mars/v5/internal/application"
+	"github.com/duc-cnzj/mars/v5/internal/ent"
+	"github.com/duc-cnzj/mars/v5/internal/ent/project"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/plugins/wssender"
-
 	gonsq "github.com/nsqio/go-nsq"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -49,6 +47,7 @@ func (n *nsqSender) Name() string {
 }
 
 func (n *nsqSender) Initialize(app application.App, args map[string]any) (err error) {
+	n.db = app.DB()
 	n.cfg = gonsq.NewConfig()
 	// 坑:
 	// 当多个nsqd服务都有相同的topic的时候，consumer要修改默认设置config.MaxInFlight才能连接
@@ -73,7 +72,6 @@ func (n *nsqSender) Initialize(app application.App, args map[string]any) (err er
 	if err != nil {
 		return err
 	}
-	n.db = app.DB()
 	n.producer = p
 	n.logger.Info("[Plugin]: " + n.Name() + " plugin Initialize...")
 	return

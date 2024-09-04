@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/duc-cnzj/mars/v5/internal/application"
-
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 )
 
@@ -33,6 +32,8 @@ func (m *manualDomainManager) Name() string {
 }
 
 func (m *manualDomainManager) Initialize(app application.App, args map[string]any) error {
+	m.logger = app.Logger()
+
 	if p, ok := args["ns_prefix"]; ok {
 		m.nsPrefix = p.(string)
 	}
@@ -54,7 +55,7 @@ func (m *manualDomainManager) Initialize(app application.App, args map[string]an
 	if err := validateTelsWildcardDomain(m.tlsKey, m.tlsCrt, m.wildcardDomain); err != nil {
 		return err
 	}
-	m.logger = app.Logger()
+
 	m.logger.Info("[Plugin]: " + m.Name() + " plugin Initialize...")
 	return nil
 }

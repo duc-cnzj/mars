@@ -1,4 +1,4 @@
-VERSION_PATH=$(shell go list -m -f "{{.Path}}" | grep -v api)/version
+VERSION_PATH=$(shell go list -m -f "{{.Path}}" | grep -v api)/internal/version
 PROTO_FILES=$(shell find api -name *.proto)
 VERSION=$(shell git describe --exact-match --tags HEAD 2> /dev/null || echo "")
 LDFLAGS=-w -s  \

@@ -39,6 +39,7 @@ func (p *redisSender) Initialize(app application.App, args map[string]any) error
 	addr := args["addr"]
 	pwd := args["password"]
 	db := args["db"]
+	p.db = app.DB()
 
 	if addr == nil || pwd == nil || db == nil {
 		return errors.New("redisSender need addr, password, db args")
@@ -52,7 +53,7 @@ func (p *redisSender) Initialize(app application.App, args map[string]any) error
 	if err := rdb.Ping(context.TODO()).Err(); err != nil {
 		return err
 	}
-	p.db = app.DB()
+
 	p.rds = rdb
 	p.logger.Info("[Plugin]: " + p.Name() + " plugin Initialize...")
 	return nil

@@ -37,6 +37,8 @@ func (d *certManager) Name() string {
 }
 
 func (d *certManager) Initialize(app application.App, args map[string]any) error {
+	d.logger = app.Logger()
+
 	if p, ok := args["ns_prefix"]; ok {
 		d.nsPrefix = p.(string)
 	}
@@ -53,7 +55,6 @@ func (d *certManager) Initialize(app application.App, args map[string]any) error
 	if d.clusterIssuer == "" || d.wildcardDomain == "" {
 		return errors.New("cluster_issuer, wildcard_domain required")
 	}
-	d.logger = app.Logger()
 
 	d.logger.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
 	return nil
