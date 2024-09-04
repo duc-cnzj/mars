@@ -3,9 +3,10 @@ package socket
 import (
 	"context"
 	"errors"
-	"github.com/duc-cnzj/mars/api/v5/types"
 	"testing"
 	"time"
+
+	"github.com/duc-cnzj/mars/api/v5/types"
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
 	"github.com/duc-cnzj/mars/v5/internal/application"

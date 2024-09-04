@@ -327,7 +327,15 @@ const NamespacePrivate: React.FC<{
   }, [isAdmin, item.creatorEmail, user.email]);
 
   if (!isOwned()) {
-    return <div>{!item.private ? <UnlockOutlined /> : <LockOutlined />}</div>;
+    return (
+      <Tooltip
+        placement="top"
+        overlayStyle={{ fontSize: 12 }}
+        title={`此项目管理员是: ${item.creatorEmail}`}
+      >
+        {!item.private ? <UnlockOutlined /> : <LockOutlined />}
+      </Tooltip>
+    );
   }
 
   return (
@@ -429,7 +437,9 @@ const NamespacePrivate: React.FC<{
         okText="Yes"
         cancelText="No"
       >
-        {!item.private ? <UnlockOutlined /> : <LockOutlined />}
+        <Tooltip overlayStyle={{ fontSize: 12 }} title="修改空间访问权限">
+          {!item.private ? <UnlockOutlined /> : <LockOutlined />}
+        </Tooltip>
       </Popconfirm>
       {item.private && (
         <Tooltip overlayStyle={{ fontSize: 12 }} title="成员管理">

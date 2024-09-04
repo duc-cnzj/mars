@@ -73,7 +73,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	gitServer := services.NewGitSvc(repoRepo, eventRepo, logger, gitRepo, cacheCache)
 	fileServer := services.NewFileSvc(eventRepo, fileRepo, logger)
 	eventServer := services.NewEventSvc(logger, eventRepo)
-	endpointRepo := repo.NewEndpointRepo(logger, dataData, projectRepo)
+	endpointRepo := repo.NewEndpointRepo(logger, dataData, projectRepo, namespaceRepo)
 	endpointServer := services.NewEndpointSvc(logger, endpointRepo)
 	containerServer := services.NewContainerSvc(eventRepo, k8sRepo, fileRepo, logger)
 	clusterServer := services.NewClusterSvc(k8sRepo, logger)

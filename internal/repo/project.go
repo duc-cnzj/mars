@@ -110,12 +110,8 @@ func ToProject(project *ent.Project) *Project {
 
 type ProjectRepo interface {
 	GetAllActiveContainers(ctx context.Context, id int) ([]*types.StateContainer, error)
-	GetGatewayHTTPRouteMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
-	GetNodePortMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
-	GetLoadBalancerMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
-	GetIngressMappingByProjects(ctx context.Context, namespace string, projects ...*Project) EndpointMapping
+	GetProjectEndpointsInNamespace(ctx context.Context, namespace string, projectIDs ...int) ([]*types.ServiceEndpoint, error)
 	GetPreOccupiedLenByValuesYaml(values string) int
-
 	List(ctx context.Context, input *ListProjectInput) ([]*Project, *pagination.Pagination, error)
 	Create(ctx context.Context, project *CreateProjectInput) (*Project, error)
 	Show(ctx context.Context, id int) (*Project, error)
@@ -125,7 +121,6 @@ type ProjectRepo interface {
 	UpdateVersion(ctx context.Context, id int, version int) (*Project, error)
 	FindByVersion(ctx context.Context, id, version int) (*Project, error)
 	UpdateStatusByVersion(ctx context.Context, id int, status types.Deploy, version int) (*Project, error)
-
 	UpdateProject(ctx context.Context, input *UpdateProjectInput) (*Project, error)
 }
 
@@ -593,6 +588,28 @@ func (repo *projectRepo) GetLoadBalancerMappingByProjects(ctx context.Context, n
 	m.Sort()
 
 	return m
+}
+
+func (repo *projectRepo) GetProjectEndpointsInNamespace(ctx context.Context, namespace string, projectIDs ...int) ([]*types.ServiceEndpoint, error) {
+	all, err := repo.data.DB().Project.Query().
+		WithNamespace().
+		Select(project.FieldID, project.FieldManifest, project.FieldNamespaceID, project.FieldName).
+		Where(project.IDIn(projectIDs...)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	projs := serialize.Serialize(all, ToProject)
+	var res []*types.ServiceEndpoint
+	nodePortMapping := repo.GetNodePortMappingByProjects(ctx, namespace, projs...)
+	ingMapping := repo.GetIngressMappingByProjects(ctx, namespace, projs...)
+	lbMapping := repo.GetLoadBalancerMappingByProjects(ctx, namespace, projs...)
+	httpRouteMapping := repo.GetGatewayHTTPRouteMappingByProjects(ctx, namespace, projs...)
+	res = append(res, ingMapping.AllEndpoints()...)
+	res = append(res, lbMapping.AllEndpoints()...)
+	res = append(res, nodePortMapping.AllEndpoints()...)
+	res = append(res, httpRouteMapping.AllEndpoints()...)
+	return res, nil
 }
 
 var hostMatch = regexp.MustCompile(`\s+([\w-_]*)<\s*.Host\d+\s*>`)

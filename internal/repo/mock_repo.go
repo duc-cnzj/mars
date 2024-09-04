@@ -129,82 +129,6 @@ func (mr *MockProjectRepoMockRecorder) GetAllActiveContainers(arg0, arg1 any) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllActiveContainers", reflect.TypeOf((*MockProjectRepo)(nil).GetAllActiveContainers), arg0, arg1)
 }
 
-// GetGatewayHTTPRouteMappingByProjects mocks base method.
-func (m *MockProjectRepo) GetGatewayHTTPRouteMappingByProjects(arg0 context.Context, arg1 string, arg2 ...*Project) EndpointMapping {
-	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetGatewayHTTPRouteMappingByProjects", varargs...)
-	ret0, _ := ret[0].(EndpointMapping)
-	return ret0
-}
-
-// GetGatewayHTTPRouteMappingByProjects indicates an expected call of GetGatewayHTTPRouteMappingByProjects.
-func (mr *MockProjectRepoMockRecorder) GetGatewayHTTPRouteMappingByProjects(arg0, arg1 any, arg2 ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGatewayHTTPRouteMappingByProjects", reflect.TypeOf((*MockProjectRepo)(nil).GetGatewayHTTPRouteMappingByProjects), varargs...)
-}
-
-// GetIngressMappingByProjects mocks base method.
-func (m *MockProjectRepo) GetIngressMappingByProjects(arg0 context.Context, arg1 string, arg2 ...*Project) EndpointMapping {
-	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetIngressMappingByProjects", varargs...)
-	ret0, _ := ret[0].(EndpointMapping)
-	return ret0
-}
-
-// GetIngressMappingByProjects indicates an expected call of GetIngressMappingByProjects.
-func (mr *MockProjectRepoMockRecorder) GetIngressMappingByProjects(arg0, arg1 any, arg2 ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIngressMappingByProjects", reflect.TypeOf((*MockProjectRepo)(nil).GetIngressMappingByProjects), varargs...)
-}
-
-// GetLoadBalancerMappingByProjects mocks base method.
-func (m *MockProjectRepo) GetLoadBalancerMappingByProjects(arg0 context.Context, arg1 string, arg2 ...*Project) EndpointMapping {
-	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetLoadBalancerMappingByProjects", varargs...)
-	ret0, _ := ret[0].(EndpointMapping)
-	return ret0
-}
-
-// GetLoadBalancerMappingByProjects indicates an expected call of GetLoadBalancerMappingByProjects.
-func (mr *MockProjectRepoMockRecorder) GetLoadBalancerMappingByProjects(arg0, arg1 any, arg2 ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLoadBalancerMappingByProjects", reflect.TypeOf((*MockProjectRepo)(nil).GetLoadBalancerMappingByProjects), varargs...)
-}
-
-// GetNodePortMappingByProjects mocks base method.
-func (m *MockProjectRepo) GetNodePortMappingByProjects(arg0 context.Context, arg1 string, arg2 ...*Project) EndpointMapping {
-	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetNodePortMappingByProjects", varargs...)
-	ret0, _ := ret[0].(EndpointMapping)
-	return ret0
-}
-
-// GetNodePortMappingByProjects indicates an expected call of GetNodePortMappingByProjects.
-func (mr *MockProjectRepoMockRecorder) GetNodePortMappingByProjects(arg0, arg1 any, arg2 ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodePortMappingByProjects", reflect.TypeOf((*MockProjectRepo)(nil).GetNodePortMappingByProjects), varargs...)
-}
-
 // GetPreOccupiedLenByValuesYaml mocks base method.
 func (m *MockProjectRepo) GetPreOccupiedLenByValuesYaml(arg0 string) int {
 	m.ctrl.T.Helper()
@@ -217,6 +141,26 @@ func (m *MockProjectRepo) GetPreOccupiedLenByValuesYaml(arg0 string) int {
 func (mr *MockProjectRepoMockRecorder) GetPreOccupiedLenByValuesYaml(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPreOccupiedLenByValuesYaml", reflect.TypeOf((*MockProjectRepo)(nil).GetPreOccupiedLenByValuesYaml), arg0)
+}
+
+// GetProjectEndpointsInNamespace mocks base method.
+func (m *MockProjectRepo) GetProjectEndpointsInNamespace(arg0 context.Context, arg1 string, arg2 ...int) ([]*types.ServiceEndpoint, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetProjectEndpointsInNamespace", varargs...)
+	ret0, _ := ret[0].([]*types.ServiceEndpoint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProjectEndpointsInNamespace indicates an expected call of GetProjectEndpointsInNamespace.
+func (mr *MockProjectRepoMockRecorder) GetProjectEndpointsInNamespace(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProjectEndpointsInNamespace", reflect.TypeOf((*MockProjectRepo)(nil).GetProjectEndpointsInNamespace), varargs...)
 }
 
 // List mocks base method.

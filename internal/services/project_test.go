@@ -866,21 +866,11 @@ func Test_projectSvc_MemoryCpuAndEndpoints(t *testing.T) {
 	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(projModel, nil)
 	k8sRepo.EXPECT().GetAllPodMetrics(gomock.Any(), projModel)
 	k8sRepo.EXPECT().GetCpuAndMemory(gomock.Any(), gomock.Any()).Return("1", "2Gi")
-	projectRepo.EXPECT().GetNodePortMappingByProjects(gomock.Any(), projModel.Namespace.Name, projModel).Return(repo.EndpointMapping{
-		"app": []*types.ServiceEndpoint{
-			{Name: "app"},
-		},
-	})
-	projectRepo.EXPECT().GetIngressMappingByProjects(gomock.Any(), projModel.Namespace.Name, projModel).Return(repo.EndpointMapping{
-		"app": []*types.ServiceEndpoint{
-			{Name: "app1"},
-		},
-	})
-	projectRepo.EXPECT().GetLoadBalancerMappingByProjects(gomock.Any(), projModel.Namespace.Name, projModel).Return(repo.EndpointMapping{
-		"app": []*types.ServiceEndpoint{
-			{Name: "app2"},
-		},
-	})
+	projectRepo.EXPECT().GetProjectEndpointsInNamespace(gomock.Any(), projModel.Namespace.Name, projModel.ID).Return([]*types.ServiceEndpoint{
+		{Name: "app"},
+		{Name: "app1"},
+		{Name: "app2"},
+	}, nil)
 	endpoints, err := svc.MemoryCpuAndEndpoints(context.TODO(), &project.MemoryCpuAndEndpointsRequest{Id: 1})
 	assert.Nil(t, err)
 	assert.Equal(t, "1", endpoints.Cpu)
