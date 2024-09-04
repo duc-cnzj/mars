@@ -30,7 +30,6 @@ message ShowResponse {
   types.ProjectModel item = 1;
 }
 
-
 message DeleteRequest {
   int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }

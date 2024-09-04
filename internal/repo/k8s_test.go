@@ -974,3 +974,38 @@ func TestExecutor(t *testing.T) {
 	assert.True(t, option.Stdout)
 	assert.True(t, option.Stderr)
 }
+
+func Test_defaultRemoteExecutor_New(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockData.EXPECT().K8sClient().Return(&data.K8sClient{}).Times(2)
+	v := &defaultRemoteExecutor{data: mockData}
+	v.New()
+	assert.NotNil(t, v)
+}
+
+func Test_k8sRepo_Execute(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	manager := NewMockExecutorManager(m)
+	r := &k8sRepo{
+		executor: manager,
+	}
+	ec := NewMockExecutor(m)
+	manager.EXPECT().New().Return(ec)
+	c := &Container{
+		Namespace: "a",
+		Pod:       "v",
+		Container: "c",
+	}
+	ec.EXPECT().WithContainer(c.Namespace, c.Pod, c.Container).Return(ec)
+	ec.EXPECT().WithMethod("POST").Return(ec)
+	ec.EXPECT().WithCommand([]string{"ls"}).Return(ec)
+	input := &ExecuteInput{
+		Cmd:               []string{"ls"},
+		TerminalSizeQueue: nil,
+	}
+	ec.EXPECT().Execute(gomock.Any(), input)
+	assert.Nil(t, r.Execute(context.TODO(), c, input))
+}

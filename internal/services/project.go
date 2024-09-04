@@ -245,17 +245,15 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 }
 
 func (p *projectSvc) MemoryCpuAndEndpoints(ctx context.Context, req *project.MemoryCpuAndEndpointsRequest) (*project.MemoryCpuAndEndpointsResponse, error) {
-	projectModel, _ := p.projRepo.Show(ctx, int(req.Id))
+	projectModel, err := p.projRepo.Show(ctx, int(req.Id))
+	if err != nil {
+		return nil, err
+	}
 	cpu, memory := p.k8sRepo.GetCpuAndMemory(ctx, p.k8sRepo.GetAllPodMetrics(ctx, projectModel))
-	nodePortMapping := p.projRepo.GetNodePortMappingByProjects(ctx, projectModel.Namespace.Name, projectModel)
-	ingMapping := p.projRepo.GetIngressMappingByProjects(ctx, projectModel.Namespace.Name, projectModel)
-	lbMapping := p.projRepo.GetLoadBalancerMappingByProjects(ctx, projectModel.Namespace.Name, projectModel)
-
-	var urls = make([]*types.ServiceEndpoint, 0)
-	urls = append(urls, ingMapping.Get(projectModel.Name)...)
-	urls = append(urls, nodePortMapping.Get(projectModel.Name)...)
-	urls = append(urls, lbMapping.Get(projectModel.Name)...)
-
+	urls, err := p.projRepo.GetProjectEndpointsInNamespace(ctx, projectModel.Namespace.Name, projectModel.ID)
+	if err != nil {
+		return nil, err
+	}
 	return &project.MemoryCpuAndEndpointsResponse{
 		Urls:   urls,
 		Cpu:    cpu,
