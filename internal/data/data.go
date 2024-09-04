@@ -377,15 +377,18 @@ func (data *dataImpl) InitOidcProvider() {
 				provider *oidc.Provider
 			)
 			if provider, err = oidc.NewProvider(context.TODO(), setting.ProviderUrl); err != nil {
+				logger.Warning(setting.ProviderUrl, err)
 				return
 			}
 
 			var ev extraValues
 			if err = provider.Claims(&ev); err != nil {
+				logger.Warning(setting.ProviderUrl, err)
 				return
 			}
 			addOidcCfg(provider, ev, setting, oidcConfig)
 		}
+		data.oidc = oidcConfig
 	})
 }
 
