@@ -210,6 +210,7 @@ const LoginTitle = styled.div`
   color: transparent;
   margin: 10px 0 20px;
   font-size: 50px;
+  line-height: 1.5;
 `;
 
 const LoginCard = styled.div`
