@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/api/v5/types"
-
 	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
 	"github.com/duc-cnzj/mars/v5/internal/application"
 	"github.com/duc-cnzj/mars/v5/internal/auth"

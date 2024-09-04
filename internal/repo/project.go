@@ -432,6 +432,9 @@ func (repo *projectRepo) GetGatewayHTTPRouteMappingByProjects(ctx context.Contex
 	for _, project := range projects {
 		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*gatewayv1.HTTPRoute](repo.logger, project.Manifest)
 	}
+	if len(projectMap) == 0 {
+		return nil
+	}
 
 	list, _ := k8sCli.HTTPRouteLister.HTTPRoutes(namespace).List(labels.Everything())
 
@@ -462,6 +465,9 @@ func (repo *projectRepo) GetNodePortMappingByProjects(ctx context.Context, names
 	)
 	for _, project := range projects {
 		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](repo.logger, project.Manifest)
+	}
+	if len(projectMap) == 0 {
+		return nil
 	}
 
 	list, _ := k8sCli.ServiceLister.Services(namespace).List(labels.Everything())
@@ -499,6 +505,9 @@ func (repo *projectRepo) GetIngressMappingByProjects(ctx context.Context, namesp
 	var projectMap = make(projectObjectMap)
 	for _, project := range projects {
 		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*networkingv1.Ingress](repo.logger, project.Manifest)
+	}
+	if len(projectMap) == 0 {
+		return nil
 	}
 
 	var m = EndpointMapping{}
@@ -550,6 +559,9 @@ func (repo *projectRepo) GetLoadBalancerMappingByProjects(ctx context.Context, n
 	var projectMap = make(projectObjectMap)
 	for _, project := range projects {
 		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](repo.logger, project.Manifest)
+	}
+	if len(projectMap) == 0 {
+		return nil
 	}
 	var k8sCli = repo.data.K8sClient()
 	list, _ := k8sCli.ServiceLister.Services(namespace).List(labels.Everything())

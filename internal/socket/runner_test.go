@@ -12,13 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/samber/lo"
-
-	"helm.sh/helm/v3/pkg/release"
-
-	"gopkg.in/yaml.v3"
-	"helm.sh/helm/v3/pkg/cli/values"
-
 	"github.com/duc-cnzj/mars/api/v5/mars"
 	"github.com/duc-cnzj/mars/api/v5/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
@@ -32,9 +25,13 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/uploader"
 	"github.com/duc-cnzj/mars/v5/internal/util/pipeline"
 	"github.com/duc-cnzj/mars/v5/internal/util/timer"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/cli/values"
+	"helm.sh/helm/v3/pkg/release"
 )
 
 func TestNewJobManager(t *testing.T) {

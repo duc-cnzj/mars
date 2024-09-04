@@ -1272,3 +1272,19 @@ func NewRsLister(rs ...*appsv1.ReplicaSet) appsv1lister.ReplicaSetLister {
 	}
 	return appsv1lister.NewReplicaSetLister(idxer)
 }
+
+func Test_projectRepo_GetProjectEndpointsInNamespace(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	db, _ := data2.NewSqliteDB()
+	defer db.Close()
+	mockData := data2.NewMockData(m)
+	repo := &projectRepo{
+		logger: mlog.NewForConfig(nil),
+		data:   mockData,
+	}
+	mockData.EXPECT().K8sClient().Return(&data2.K8sClient{}).AnyTimes()
+	mockData.EXPECT().DB().Return(db)
+	_, err := repo.GetProjectEndpointsInNamespace(context.TODO(), "duc", 1)
+	assert.Nil(t, err)
+}
