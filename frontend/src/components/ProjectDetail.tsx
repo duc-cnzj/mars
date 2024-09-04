@@ -101,7 +101,6 @@ const ItemDetailModal: React.FC<{
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
             overflow: "hidden",
-            marginRight: 5,
           }}
         >
           {item.name}

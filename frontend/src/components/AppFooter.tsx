@@ -4,6 +4,7 @@ import { Popover } from "antd";
 import Coffee from "./Coffee";
 import IconFont from "./Icon";
 import useVersion from "../contexts/useVersion";
+import { css } from "@emotion/css";
 
 require("dayjs/locale/zh-cn");
 
@@ -31,14 +32,19 @@ const AppFooter: React.FC = () => {
           trigger="click"
         >
           <IconFont
-            style={{
-              margin: 7,
-              width: 18,
-              height: 18,
-              cursor: "pointer",
-              marginLeft: 10,
-            }}
-            name="#icon-dashang"
+            className={css`
+              margin: 3px;
+              width: 26px;
+              height: 26px;
+              cursor: pointer;
+              margin-left: 10px;
+              transform: scaleX(-1);
+              transition: all 0.3s;
+              &:hover {
+                scale: 1.3;
+              }
+            `}
+            name="#icon-naicha"
           />
         </Popover>
       </div>
