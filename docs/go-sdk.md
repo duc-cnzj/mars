@@ -8,21 +8,23 @@ lang: zh-cn
 ## 🍀 go-sdk 接入
 
 ```bash
-go get -u github.com/duc-cnzj/mars/api/v4
+go get -u github.com/duc-cnzj/mars/api/v5
 ```
 
 ```go
 package main
 
 import (
-  client "github.com/duc-cnzj/mars/api/v4"
+  api "github.com/duc-cnzj/mars/api/v5"
 )
 
 func main()  {
-  c, err := client.NewClient("127.0.0.1:50000",
-    client.WithAuth("admin", "123456"),
-    client.WithTokenAutoRefresh(),
+  c, _ := api.NewClient("127.0.0.1:50000",
+    api.WithAuth("admin", "123456"),
+    api.WithTokenAutoRefresh(),
   )
   defer c.Close()
+
+  // ...
 }
 ```

@@ -15,7 +15,7 @@ git_server_plugin:
     baseurl: "https://gitlab.com/api/v4"
 ```
 
-## github
+## ~~github~~ v5+ 废弃
 
 > github 接口不太好用，集成较差，无法使用 `pipeline` 变量
 
