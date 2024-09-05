@@ -290,12 +290,13 @@ func TestNamespaceSvc_Favorite_Success(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := repo.NewMockNamespaceRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewNamespaceSvc(
 		repo.NewMockHelmerRepo(m),
 		nsRepo,
 		repo.NewMockK8sRepo(m),
 		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
+		eventRepo,
 	)
 
 	nsRepo.EXPECT().Favorite(gomock.Any(), &repo.FavoriteNamespaceInput{
@@ -304,10 +305,22 @@ func TestNamespaceSvc_Favorite_Success(t *testing.T) {
 		Favorite:    true,
 	}).Return(nil)
 
-	res, err := svc.Favorite(newAdminUserCtx(), &namespace.FavoriteRequest{
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{
+		Name: "namespace1",
+	}, nil)
+
+	req := &namespace.FavoriteRequest{
 		Id:       1,
 		Favorite: true,
-	})
+	}
+	eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Update,
+		MustGetUser(newAdminUserCtx()).Name,
+		"用户关注项目空间: namespace1",
+		req,
+	)
+
+	res, err := svc.Favorite(newAdminUserCtx(), req)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, res)

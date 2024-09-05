@@ -63,33 +63,31 @@ const Item: React.FC<{
               style={{
                 display: "flex",
                 justifyContent: "center",
-                alignItems: "center",
               }}
             >
-              <Space size={"small"} align="center" style={{ gap: 4 }}>
-                <IconFont
-                  onClick={() => onFavorite(item.id, !item.favorite)}
-                  name="#icon-wodeguanzhu"
-                  className={css`
-                    transition: all 0.3s ease;
-                    &:hover {
-                      transform: scale(1.2);
-                    }
-                  `}
-                  style={{
-                    color: !item.favorite ? "gray" : "#a78bfa",
-                    cursor: "pointer",
-                  }}
-                />
-                <Tooltip
-                  title={<span style={{ fontSize: 10 }}>id: {item.id}</span>}
-                >
-                  <TitleNamespace onClick={() => copy(item.id, "已复制 id")}>
-                    项目空间:{" "}
-                    <TitleNamespaceName>{item.name}</TitleNamespaceName>
-                  </TitleNamespace>
-                </Tooltip>
-              </Space>
+              <IconFont
+                onClick={() => onFavorite(item.id, !item.favorite)}
+                name="#icon-wodeguanzhu"
+                className={css`
+                  margin-right: 3px;
+                  margin-top: 3px;
+                  transition: all 0.3s ease;
+                  &:hover {
+                    transform: scale(1.2);
+                  }
+                `}
+                style={{
+                  color: !item.favorite ? "gray" : "#a78bfa",
+                  cursor: "pointer",
+                }}
+              />
+              <Tooltip
+                title={<span style={{ fontSize: 10 }}>id: {item.id}</span>}
+              >
+                <TitleNamespace onClick={() => copy(item.id, "已复制 id")}>
+                  项目空间: <TitleNamespaceName>{item.name}</TitleNamespaceName>
+                </TitleNamespace>
+              </Tooltip>
             </Col>
             <Col span={3} style={{ textAlign: "right" }}>
               {isAdmin() && (
@@ -315,8 +313,6 @@ const Item: React.FC<{
 export default memo(Item);
 
 const TitleNamespace = styled.div`
-  display: flex;
-  align-items: center;
   font-size: 12px;
   font-weight: normal;
 `;
@@ -356,7 +352,7 @@ const NamespacePrivate: React.FC<{
   return (
     <Space>
       <Modal
-        width={"100%"}
+        width={"60%"}
         destroyOnClose
         title="修改空间成员"
         open={isModalOpen}

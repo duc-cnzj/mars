@@ -287,6 +287,17 @@ func (n *namespaceSvc) Favorite(ctx context.Context, req *namespace.FavoriteRequ
 	if err != nil {
 		return nil, err
 	}
+	str := "取消关注"
+	if req.Favorite {
+		str = "关注"
+	}
+	ns, _ := n.nsRepo.Show(ctx, int(req.Id))
+	n.eventRepo.AuditLogWithRequest(
+		types.EventActionType_Update,
+		user.Name,
+		fmt.Sprintf("用户%s项目空间: %s", str, ns.Name),
+		req,
+	)
 	return &namespace.FavoriteResponse{}, nil
 }
 
