@@ -66,7 +66,7 @@ const Item: React.FC<{
                 alignItems: "center",
               }}
             >
-              <Space size={"small"} align="center">
+              <Space size={"small"} align="center" style={{ gap: 4 }}>
                 <IconFont
                   onClick={() => onFavorite(item.id, !item.favorite)}
                   name="#icon-wodeguanzhu"
@@ -315,15 +315,17 @@ const Item: React.FC<{
 export default memo(Item);
 
 const TitleNamespace = styled.div`
+  display: flex;
+  align-items: center;
   font-size: 12px;
   font-weight: normal;
-  font-size: 10;
 `;
 
 const TitleNamespaceName = styled.span`
   font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
   font-weight: 500;
   font-size: 18px;
+  margin-left: 3px;
 `;
 
 const NamespacePrivate: React.FC<{

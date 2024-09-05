@@ -672,7 +672,7 @@ func (j *jobRunner) WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, er
 func (j *jobRunner) DownloadFiles(pid any, commit string, files []string) (string, func(), error) {
 	id := fmt.Sprintf("%v", pid)
 	dir := fmt.Sprintf("mars_tmp_%s", rand.String(10))
-	if err := j.uploader.LocalUploader().MkDir(dir, false); err != nil {
+	if err := j.uploader.LocalUploader().MkDir(dir, true); err != nil {
 		return "", nil, err
 	}
 

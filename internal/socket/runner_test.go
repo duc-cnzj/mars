@@ -1300,7 +1300,7 @@ func TestChartFileLoader_Load2(t *testing.T) {
 	em.EXPECT().To(gomock.Any())
 	gits.EXPECT().GetDirectoryFilesWithBranch("100", "main", "dir", true).Return([]string{"file1", "file2"}, nil)
 	up.EXPECT().LocalUploader().Return(up)
-	up.EXPECT().MkDir(gomock.Any(), false).Return(errors.New("mkdir err")).Times(1)
+	up.EXPECT().MkDir(gomock.Any(), true).Return(errors.New("mkdir err")).Times(1)
 
 	err := l.Load(job)
 	assert.Equal(t, "mkdir err", err.Error())
@@ -1322,7 +1322,7 @@ func TestChartFileLoader_Load(t *testing.T) {
 	up := uploader.NewMockUploader(m)
 	up.EXPECT().LocalUploader().Return(up).AnyTimes()
 	up.EXPECT().AbsolutePath(gomock.Any()).Return("/dir")
-	up.EXPECT().MkDir(gomock.Any(), false).Times(1)
+	up.EXPECT().MkDir(gomock.Any(), true).Times(1)
 	up.EXPECT().Put(gomock.Any(), gomock.Any()).Times(2)
 	h.EXPECT().PackageChart(gomock.Any(), gomock.Any()).Times(1)
 	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir/xxxx", true).Return([]string{}, nil)
@@ -1386,7 +1386,7 @@ func TestChartFileLoader_LoadWithChartMissing(t *testing.T) {
 	up := uploader.NewMockUploader(m)
 	up.EXPECT().LocalUploader().Return(up).AnyTimes()
 	up.EXPECT().AbsolutePath(gomock.Any()).Return("/dir")
-	up.EXPECT().MkDir(gomock.Any(), false).Times(1)
+	up.EXPECT().MkDir(gomock.Any(), true).Times(1)
 	up.EXPECT().Put(gomock.Any(), gomock.Any()).Times(2)
 	pl.EXPECT().Git().Return(gits).AnyTimes()
 	job := &jobRunner{
@@ -1494,7 +1494,7 @@ func Test_jobRunner_Validate_Fail(t *testing.T) {
 		MarsConfig: &mars.Config{},
 	}, nil)
 	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(&repo.Project{}, nil)
-	projectRepo.EXPECT().UpdateStatusByVersion(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
+	projectRepo.EXPECT().UpdateStatusByVersion(gomock.Any(), 1, types.Deploy_StatusDeploying, gomock.Any()).Return(nil, errors.New("xxx"))
 	job = &jobRunner{
 		logger:   mlog.NewForConfig(nil),
 		messager: msger,
@@ -1508,6 +1508,7 @@ func Test_jobRunner_Validate_Fail(t *testing.T) {
 			Name:        "xx",
 			RepoID:      12,
 			DryRun:      false,
+			ProjectID:   1,
 		},
 	}
 	assert.Error(t, job.Validate().Error())
@@ -1683,19 +1684,7 @@ func Test_jobRunner_Run_Success(t *testing.T) {
 	projRepo := repo.NewMockProjectRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
-	installer.EXPECT().Run(gomock.Any(), gomock.Any()).Return(&release.Release{
-		Config: map[string]any{},
-	}, nil)
 	ch := NewSafeWriteMessageCh(mlog.NewForConfig(nil), 10)
-	projRepo.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Return(&repo.Project{}, nil)
-	eventRepo.EXPECT().Dispatch(repo.EventProjectChanged, gomock.Any())
-	eventRepo.EXPECT().AuditLogWithChange(
-		types.EventActionType_Update, "duc",
-		gomock.Any(), gomock.Any(),
-		gomock.Any())
-	msger.EXPECT().To(gomock.Any()).AnyTimes()
-	k8sRepo.EXPECT().SplitManifests(gomock.Any())
-	k8sRepo.EXPECT().GetPodSelectorsByManifest(gomock.Any())
 
 	jb := &jobRunner{
 		logger:    mlog.NewForConfig(nil),
@@ -1716,5 +1705,30 @@ func Test_jobRunner_Run_Success(t *testing.T) {
 		commit:       NewEmptyCommit(),
 		messageCh:    ch,
 	}
+
+	installer.EXPECT().Run(gomock.Any(), &InstallInput{
+		IsNew:        jb.isNew,
+		Wait:         lo.FromPtr(jb.input.Atomic),
+		Chart:        jb.chart,
+		ValueOptions: jb.valuesOptions,
+		DryRun:       jb.dryRun,
+		ReleaseName:  jb.project.Name,
+		Namespace:    jb.ns.Name,
+		Description:  jb.commit.GetTitle(),
+		messageChan:  jb.messageCh,
+		percenter:    jb.messager,
+	}).Return(&release.Release{
+		Config: map[string]any{},
+	}, nil)
+	projRepo.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Return(&repo.Project{}, nil)
+	eventRepo.EXPECT().Dispatch(repo.EventProjectChanged, gomock.Any())
+	eventRepo.EXPECT().AuditLogWithChange(
+		types.EventActionType_Update, "duc",
+		gomock.Any(), gomock.Any(),
+		gomock.Any())
+	msger.EXPECT().To(gomock.Any()).AnyTimes()
+	k8sRepo.EXPECT().SplitManifests(gomock.Any())
+	k8sRepo.EXPECT().GetPodSelectorsByManifest(gomock.Any())
+
 	assert.Nil(t, jb.Run(context.TODO()).Error())
 }
