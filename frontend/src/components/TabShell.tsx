@@ -455,7 +455,9 @@ const TabShell: React.FC<{
                     }).then(function () {
                       message.success("下载成功");
                       setIsModalOpen(false);
-                    });
+                    }).catch(function(r) {
+                      message.error("下载失败，请检查路径是否正确")
+                    })
                   }}
                   onCancel={() => {
                     setIsModalOpen(false);

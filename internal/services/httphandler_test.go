@@ -3,6 +3,8 @@ package services
 import (
 	"errors"
 	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -170,4 +172,22 @@ func Test_httpHandlerImpl_handleDownload(t *testing.T) {
 	assert.Equal(t, "*", rr.Header().Get("Access-Control-Expose-Headers"))
 	assert.Equal(t, "aaa", rr.Body.String())
 	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+func Test_toHttpError(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	err := status.Error(codes.InvalidArgument, "invalid argument")
+	toHttpError(recorder, err)
+
+	assert.Equal(t, http.StatusBadRequest, recorder.Code)
+	assert.Equal(t, "invalid argument\n", recorder.Body.String())
+}
+
+func Test_toHttpError2(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	err := errors.New("x")
+	toHttpError(recorder, err)
+
+	assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+	assert.Equal(t, "x\n", recorder.Body.String())
 }

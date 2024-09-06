@@ -136,6 +136,22 @@ func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *CopyFromPodInput) (
 		err  error
 	)
 
+	lsbf := &bytes.Buffer{}
+
+	err = repo.Execute(ctx, &Container{
+		Namespace: input.Namespace,
+		Pod:       input.Pod,
+		Container: input.Container,
+	}, &ExecuteInput{
+		Stderr: lsbf,
+		TTY:    false,
+		Cmd:    []string{"sh", "-c", "ls -l " + input.FilePath},
+	})
+	lsErrStr := strings.Trim(lsbf.String(), "\n")
+	if lsErrStr != "" {
+		return nil, ToError(400, lsErrStr)
+	}
+
 	pwdbf := &bytes.Buffer{}
 	err = repo.Execute(ctx, &Container{
 		Namespace: input.Namespace,

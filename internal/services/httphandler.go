@@ -26,6 +26,7 @@ import (
 	swagger_ui "github.com/duc-cnzj/mars/v5/third_party/swagger-ui"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc/status"
 )
 
 var _ application.HttpHandler = (*httpHandlerImpl)(nil)
@@ -132,7 +133,7 @@ func (h *httpHandlerImpl) RegisterFileRoute(mux *runtime.ServeMux) {
 			})
 			if err != nil {
 				h.logger.Error("Error copying file from pod: ", err)
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				toHttpError(w, err)
 				return
 			}
 			h.eventRepo.FileAuditLog(
@@ -146,6 +147,15 @@ func (h *httpHandlerImpl) RegisterFileRoute(mux *runtime.ServeMux) {
 		}
 		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
 	})
+}
+
+func toHttpError(w http.ResponseWriter, err error) {
+	s, ok := status.FromError(err)
+	if ok {
+		http.Error(w, s.Message(), runtime.HTTPStatusFromCode(s.Code()))
+		return
+	}
+	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
 
 type CopyFromPodRequest struct {
@@ -177,7 +187,7 @@ func (h *httpHandlerImpl) authenticated(r *http.Request) (*http.Request, bool) {
 func (h *httpHandlerImpl) handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
 	fil, err := h.fileRepo.GetByID(r.Context(), fid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		toHttpError(w, err)
 		return
 	}
 	fileName := filepath.Base(fil.Path)
@@ -254,8 +264,8 @@ func (h *httpHandlerImpl) handleBinaryFileUpload(w http.ResponseWriter, r *http.
 		UploadType: uploader.Type(),
 	})
 	if err != nil {
+		toHttpError(w, err)
 		h.logger.Error("Error saving file metadata: ", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
