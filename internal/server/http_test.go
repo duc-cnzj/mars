@@ -2,11 +2,12 @@ package server
 
 import (
 	"context"
-	"github.com/duc-cnzj/mars/v5/internal/config"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/duc-cnzj/mars/v5/internal/config"
 
 	"github.com/duc-cnzj/mars/v5/internal/application"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
@@ -113,4 +114,26 @@ func TestMiddlewareList_Wrap_Empty(t *testing.T) {
 
 	assert.Equal(t, "", rr.Header().Get("X-Test"))
 	assert.Equal(t, "test", rr.Body.String())
+}
+
+func TestHeaderMatcher(t *testing.T) {
+	// Test case: tracestate key
+	key, ok := headerMatcher("tracestate")
+	assert.True(t, ok)
+	assert.Equal(t, "tracestate", key)
+
+	// Test case: traceparent key
+	key, ok = headerMatcher("traceparent")
+	assert.True(t, ok)
+	assert.Equal(t, "traceparent", key)
+
+	// Test case: other key
+	key, ok = headerMatcher("other")
+	assert.False(t, ok)
+	assert.Equal(t, "", key)
+
+	// Test case: empty key
+	key, ok = headerMatcher("")
+	assert.False(t, ok)
+	assert.Equal(t, "", key)
 }

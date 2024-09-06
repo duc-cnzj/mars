@@ -1,127 +1,173 @@
 package services
 
-//
-//func TestHandler_Authenticated(t *testing.T) {
-//	m := gomock.NewController(t)
-//	defer m.Finish()
-//
-//	authMock := auth.NewMockAuth(m)
-//	logger := mlog.NewMockLogger(m)
-//
-//	h := &handler{
-//		logger: logger,
-//		auth:   authMock,
-//	}
-//
-//	// Test case: valid token
-//	authMock.EXPECT().VerifyToken("valid-token").Return(&auth.JwtClaims{UserInfo: &auth.UserInfo{Name: "test-user"}}, true).Times(1)
-//	req, _ := http.NewRequest("GET", "/", nil)
-//	req.Header.Add("Authorization", "valid-token")
-//	newReq, ok := h.authenticated(req)
-//	assert.True(t, ok)
-//	assert.Equal(t, "test-user", auth.MustGetUser(newReq.Context()).Name)
-//
-//	// Test case: invalid token
-//	authMock.EXPECT().VerifyToken("invalid-token").Return(nil, false).Times(1)
-//	req2, _ := http.NewRequest("GET", "/", nil)
-//	req2.Header.Set("Authorization", "invalid-token")
-//	_, ok = h.authenticated(req2)
-//	assert.False(t, ok)
-//}
-//
-//func TestHeaderMatcher(t *testing.T) {
-//	// Test case: tracestate key
-//	key, ok := headerMatcher("tracestate")
-//	assert.True(t, ok)
-//	assert.Equal(t, "tracestate", key)
-//
-//	// Test case: traceparent key
-//	key, ok = headerMatcher("traceparent")
-//	assert.True(t, ok)
-//	assert.Equal(t, "traceparent", key)
-//
-//	// Test case: other key
-//	key, ok = headerMatcher("other")
-//	assert.False(t, ok)
-//	assert.Equal(t, "", key)
-//
-//	// Test case: empty key
-//	key, ok = headerMatcher("")
-//	assert.False(t, ok)
-//	assert.Equal(t, "", key)
-//}
-//
-//func Test_handleBinaryFileUpload(t *testing.T) {
-//	m := gomock.NewController(t)
-//	defer m.Finish()
-//	db, _ := data.NewSqliteDB()
-//	defer db.Close()
-//	req := &http.Request{
-//		Form: map[string][]string{},
-//	}
-//	up := uploader.NewMockUploader(m)
-//	h := &handler{
-//		logger:   mlog.NewForConfig(nil),
-//		auth:     auth.NewMockAuth(m),
-//		uploader: up,
-//		data:     data.NewDataImpl(&data.NewDataParams{DB: db}),
-//	}
-//
-//	rr := httptest.NewRecorder()
-//	h.handleBinaryFileUpload(rr, req)
-//	assert.Equal(t, 400, rr.Code)
-//
-//	postData :=
-//		`value2
-//--xxx
-//Content-Disposition: form-data; name="file"; filename="a.txt"
-//Content-Type: application/octet-stream
-//Content-Transfer-Encoding: binary
-//
-//binary data
-//--xxx--
-//	`
-//	req2 := &http.Request{
-//		Method: "POST",
-//		Header: http.Header{"Content-Type": {`multipart/form-data; boundary=xxx`}},
-//		Body:   io.NopCloser(strings.NewReader(postData)),
-//	}
-//
-//	req2.Form = make(url.Values)
-//	req2 = req2.WithContext(auth.SetUser(req2.Context(), &auth.UserInfo{Name: "duc"}))
-//	rr2 := httptest.NewRecorder()
-//
-//	up.EXPECT().Type().Return(schematype.Local)
-//	up.EXPECT().Disk("users").Return(up)
-//	finfo := uploader.NewMockFileInfo(m)
-//	up.EXPECT().Put(gomock.Any(), gomock.Any()).Return(finfo, nil)
-//	finfo.EXPECT().Path().Return("/app.txt")
-//	finfo.EXPECT().Size().Return(uint64(1000))
-//	h.handleBinaryFileUpload(rr2, req2)
-//	assert.Equal(t, 201, rr2.Code)
-//	f, _ := db.File.Query().First(context.TODO())
-//	assert.Equal(t, "application/json", rr2.Header().Get("Content-Type"))
-//	assert.Equal(t, "/app.txt", f.Path)
-//	assert.Equal(t, uint64(1000), f.Size)
-//	assert.Equal(t, "duc", f.Username)
-//}
-//
-//func Test_download(t *testing.T) {
-//	m := gomock.NewController(t)
-//	defer m.Finish()
-//	db, _ := data.NewSqliteDB()
-//	defer db.Close()
-//	h := &handler{
-//		logger: mlog.NewForConfig(nil),
-//	}
-//
-//	recorder := httptest.NewRecorder()
-//	h.download(recorder, "f.txt", strings.NewReader("aaa"))
-//	assert.Equal(t, "application/octet-stream", recorder.Header().Get("Content-Type"))
-//	assert.Equal(t, fmt.Sprintf(`attachment; filename="%s"`, url.QueryEscape("f.txt")), recorder.Header().Get("Content-Disposition"))
-//	assert.Equal(t, "0", recorder.Header().Get("Expires"))
-//	assert.Equal(t, "binary", recorder.Header().Get("Content-Transfer-Encoding"))
-//	assert.Equal(t, "*", recorder.Header().Get("Access-Control-Expose-Headers"))
-//	assert.Equal(t, "aaa", recorder.Body.String())
-//	assert.Equal(t, http.StatusOK, recorder.Code)
-//}
+import (
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+
+	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/v5/internal/auth"
+	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
+	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
+	"github.com/duc-cnzj/mars/v5/internal/uploader"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
+)
+
+func TestHandler_Authenticated(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	logger := mlog.NewMockLogger(m)
+	authRepo := repo.NewMockAuthRepo(m)
+	h := &httpHandlerImpl{
+		logger:   logger,
+		authRepo: authRepo,
+	}
+
+	// Test case: valid token
+	authRepo.EXPECT().VerifyToken(gomock.Any(), "valid-token").Return(&auth.UserInfo{Name: "test-user"}, nil).Times(1)
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Add("Authorization", "valid-token")
+	newReq, ok := h.authenticated(req)
+	assert.True(t, ok)
+	assert.Equal(t, "test-user", auth.MustGetUser(newReq.Context()).Name)
+
+	// Test case: invalid token
+	authRepo.EXPECT().VerifyToken(gomock.Any(), "invalid-token").Return(nil, errors.New("x")).Times(1)
+	req2, _ := http.NewRequest("GET", "/", nil)
+	req2.Header.Set("Authorization", "invalid-token")
+	_, ok = h.authenticated(req2)
+	assert.False(t, ok)
+}
+
+func Test_handleBinaryFileUpload(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	db, _ := data.NewSqliteDB()
+	defer db.Close()
+	req := &http.Request{
+		Form: map[string][]string{},
+	}
+	up := uploader.NewMockUploader(m)
+	fileRepo := repo.NewMockFileRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	logger := mlog.NewMockLogger(m)
+	authRepo := repo.NewMockAuthRepo(m)
+	h := &httpHandlerImpl{
+		fileRepo:  fileRepo,
+		logger:    logger,
+		uploader:  up,
+		eventRepo: eventRepo,
+		authRepo:  authRepo,
+		timer:     timer.NewRealTimer(),
+	}
+
+	fileRepo.EXPECT().MaxUploadSize().Return(uint64(10000)).AnyTimes()
+	rr := httptest.NewRecorder()
+	h.handleBinaryFileUpload(rr, req)
+	assert.Equal(t, 400, rr.Code)
+
+	postData :=
+		`value2
+--xxx
+Content-Disposition: form-data; name="file"; filename="a.txt"
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: binary
+
+binary data
+--xxx--
+	`
+	req2 := &http.Request{
+		Method: "POST",
+		Header: http.Header{"Content-Type": {`multipart/form-data; boundary=xxx`}},
+		Body:   io.NopCloser(strings.NewReader(postData)),
+	}
+
+	req2.Form = make(url.Values)
+	req2 = req2.WithContext(auth.SetUser(req2.Context(), &auth.UserInfo{Name: "duc"}))
+	rr2 := httptest.NewRecorder()
+
+	fileRepo.EXPECT().Create(gomock.Any(), &repo.CreateFileInput{
+		Path:       "/app.txt",
+		Username:   "duc",
+		Size:       1000,
+		UploadType: schematype.Local,
+	}).Return(&repo.File{
+		ID:       1,
+		Path:     "/app.txt",
+		Size:     1000,
+		Username: "duc",
+	}, nil)
+
+	eventRepo.EXPECT().FileAuditLog(
+		types.EventActionType_Upload,
+		"duc",
+		gomock.Any(),
+		1,
+	)
+	up.EXPECT().Type().Return(schematype.Local)
+	up.EXPECT().Disk("users").Return(up)
+	finfo := uploader.NewMockFileInfo(m)
+	up.EXPECT().Put(gomock.Any(), gomock.Any()).Return(finfo, nil)
+	finfo.EXPECT().Path().Return("/app.txt")
+	finfo.EXPECT().Size().Return(uint64(1000))
+	h.handleBinaryFileUpload(rr2, req2)
+	assert.Equal(t, 201, rr2.Code)
+	assert.Equal(t, "application/json", rr2.Header().Get("Content-Type"))
+}
+
+func Test_httpHandlerImpl_handleDownload(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	logger := mlog.NewMockLogger(m)
+	authRepo := repo.NewMockAuthRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	fileRepo := repo.NewMockFileRepo(m)
+	mockUploader := uploader.NewMockUploader(m)
+	h := &httpHandlerImpl{
+		logger:    logger,
+		eventRepo: eventRepo,
+		authRepo:  authRepo,
+		fileRepo:  fileRepo,
+		uploader:  mockUploader,
+	}
+
+	req := &http.Request{
+		Form: map[string][]string{},
+	}
+	req.Form = make(url.Values)
+	rr := httptest.NewRecorder()
+	req = req.WithContext(auth.SetUser(req.Context(), &auth.UserInfo{Name: "duc"}))
+
+	fileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&repo.File{
+		ID:   1,
+		Path: "/aaa/b.txt",
+	}, nil)
+	eventRepo.EXPECT().FileAuditLog(
+		types.EventActionType_Download,
+		"duc",
+		gomock.Any(),
+		1,
+	)
+	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil)
+
+	h.handleDownload(rr, req, 1)
+
+	assert.Equal(t, "application/octet-stream", rr.Header().Get("Content-Type"))
+	assert.Equal(t, fmt.Sprintf(`attachment; filename="%s"`, url.QueryEscape("b.txt")), rr.Header().Get("Content-Disposition"))
+	assert.Equal(t, "0", rr.Header().Get("Expires"))
+	assert.Equal(t, "binary", rr.Header().Get("Content-Transfer-Encoding"))
+	assert.Equal(t, "*", rr.Header().Get("Access-Control-Expose-Headers"))
+	assert.Equal(t, "aaa", rr.Body.String())
+	assert.Equal(t, http.StatusOK, rr.Code)
+}

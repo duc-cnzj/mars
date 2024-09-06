@@ -426,7 +426,7 @@ const TabShell: React.FC<{
                 </Upload>
                 <Popconfirm
                   overlayClassName="copyfrompod"
-                  title="下载文件(输入相对初始目录的路径)"
+                  title="下载文件(绝对路径)"
                   open={isModalOpen}
                   description={
                     <Input
@@ -435,7 +435,7 @@ const TabShell: React.FC<{
                         setPodfilepath(v.target.value);
                       }}
                       style={{ width: "80%", fontSize: 12 }}
-                      placeholder="输入相对初始目录的路径"
+                      placeholder="绝对路径"
                     />
                   }
                   onConfirm={() => {

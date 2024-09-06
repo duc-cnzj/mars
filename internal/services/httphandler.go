@@ -17,7 +17,6 @@ import (
 	"github.com/duc-cnzj/mars/v5/doc"
 	"github.com/duc-cnzj/mars/v5/internal/application"
 	"github.com/duc-cnzj/mars/v5/internal/auth"
-	"github.com/duc-cnzj/mars/v5/internal/ent"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/duc-cnzj/mars/v5/internal/server/middlewares"
@@ -25,7 +24,6 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/util/rand"
 	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	swagger_ui "github.com/duc-cnzj/mars/v5/third_party/swagger-ui"
-	"github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 )
@@ -179,22 +177,20 @@ func (h *httpHandlerImpl) authenticated(r *http.Request) (*http.Request, bool) {
 func (h *httpHandlerImpl) handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
 	fil, err := h.fileRepo.GetByID(r.Context(), fid)
 	if err != nil {
-		if ent.IsNotFound(err) {
-			http.NotFound(w, r)
-			return
-		}
-		h.logger.Error("Error querying file: ", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	fileName := filepath.Base(fil.Path)
 
 	user := auth.MustGetUser(r.Context())
-	h.eventRepo.AuditLog(
+	h.eventRepo.FileAuditLog(
 		types.EventActionType_Download,
 		user.Name,
 		fmt.Sprintf("下载文件 '%s', 大小 %s",
-			fil.Path, humanize.Bytes(fil.Size)),
+			fil.Path,
+			fil.HumanizeSize,
+		),
+		fil.ID,
 	)
 	read, err := h.uploader.Read(fil.Path)
 	if err != nil {
@@ -262,6 +258,13 @@ func (h *httpHandlerImpl) handleBinaryFileUpload(w http.ResponseWriter, r *http.
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
+
+	h.eventRepo.FileAuditLog(
+		types.EventActionType_Upload,
+		info.Name,
+		fmt.Sprintf("上传文件 '%s', 大小 %s", createdFile.Path, createdFile.HumanizeSize),
+		createdFile.ID,
+	)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

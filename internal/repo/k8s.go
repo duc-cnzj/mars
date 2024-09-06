@@ -160,7 +160,7 @@ func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *CopyFromPodInput) (
 		}
 	}()
 
-	if err = fileCopy.CopyFromPod(k8s.CopyFileSpec{
+	if err = fileCopy.CopyFromPod(ctx, k8s.CopyFileSpec{
 		PodName:       input.Pod,
 		PodNamespace:  input.Namespace,
 		ContainerName: input.Container,

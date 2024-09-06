@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"path"
@@ -16,7 +17,7 @@ import (
 )
 
 type FileCopy interface {
-	CopyFromPod(src CopyFileSpec, file uploader.File) error
+	CopyFromPod(ctx context.Context, src CopyFileSpec, file uploader.File) error
 }
 
 // CopyOptions have the data required to perform the copy operation
@@ -49,8 +50,8 @@ func NewCopyOptions(
 	}
 }
 
-func (o *CopyOptions) CopyFromPod(src CopyFileSpec, destFile uploader.File) error {
-	reader := newTarPipe(src, o)
+func (o *CopyOptions) CopyFromPod(ctx context.Context, src CopyFileSpec, destFile uploader.File) error {
+	reader := newTarPipe(ctx, src, o)
 	o.Namespace = src.PodNamespace
 	o.Container = src.ContainerName
 	if _, err := io.Copy(destFile, reader); err != nil {
@@ -68,12 +69,14 @@ type TarPipe struct {
 	outStream *io.PipeWriter
 	bytesRead uint64
 	retries   int
+	ctx       context.Context
 }
 
-func newTarPipe(src CopyFileSpec, o *CopyOptions) *TarPipe {
+func newTarPipe(ctx context.Context, src CopyFileSpec, o *CopyOptions) *TarPipe {
 	t := new(TarPipe)
 	t.src = src
 	t.o = o
+	t.ctx = ctx
 	t.initReadFrom(0)
 	return t
 }
@@ -101,41 +104,39 @@ func (t *TarPipe) initReadFrom(n uint64) {
 
 	go func() {
 		defer t.outStream.Close()
-		if err := t.o.execute(options); err != nil {
+		if err := t.o.execute(t.ctx, options); err != nil {
 			t.o.logger.Error(err)
 		}
 	}()
 }
 
 func (t *TarPipe) Read(p []byte) (n int, err error) {
-	n, err = t.reader.Read(p)
-	if err != nil {
-		if err == io.EOF {
-			// 处理读取到文件末尾的情况
-			return n, io.EOF
-		}
-		if t.o.MaxTries < 0 || t.retries < t.o.MaxTries {
-			t.retries++
-			t.o.logger.Warningf("Resuming copy at %d bytes, retry %d/%d\n", t.bytesRead, t.retries, t.o.MaxTries)
-			t.initReadFrom(t.bytesRead + 1)
-			err = nil
+	select {
+	case <-t.ctx.Done():
+		return 0, t.ctx.Err()
+	default:
+		n, err = t.reader.Read(p)
+		if err != nil {
+			if err == io.EOF {
+				// 处理读取到文件末尾的情况
+				return n, io.EOF
+			}
+			if t.o.MaxTries < 0 || t.retries < t.o.MaxTries {
+				t.retries++
+				t.o.logger.Warningf("Resuming copy at %d bytes, retry %d/%d\n", t.bytesRead, t.retries, t.o.MaxTries)
+				t.initReadFrom(t.bytesRead + 1)
+				err = nil
+			} else {
+				t.o.logger.Warningf("Dropping out copy after %d retries err: %v\n", t.retries, err)
+			}
 		} else {
-			t.o.logger.Warningf("Dropping out copy after %d retries err: %v\n", t.retries, err)
+			t.bytesRead += uint64(n)
 		}
-	} else {
-		t.bytesRead += uint64(n)
+		return n, err
 	}
-	return
 }
 
-func (o *CopyOptions) untarAll(ns, pod string, prefix string, src RemotePath, dest uploader.File, reader io.Reader) error {
-	if _, err := io.Copy(dest, reader); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (o *CopyOptions) execute(options *exec.ExecOptions) error {
+func (o *CopyOptions) execute(ctx context.Context, options *exec.ExecOptions) error {
 	if len(options.Namespace) == 0 {
 		options.Namespace = o.Namespace
 	}
