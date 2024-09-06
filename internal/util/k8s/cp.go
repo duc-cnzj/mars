@@ -104,7 +104,7 @@ func (t *TarPipe) initReadFrom(n uint64) {
 
 	go func() {
 		defer t.outStream.Close()
-		if err := t.o.execute(t.ctx, options); err != nil {
+		if err := t.o.execute(options); err != nil {
 			t.o.logger.Error(err)
 		}
 	}()
@@ -136,7 +136,7 @@ func (t *TarPipe) Read(p []byte) (n int, err error) {
 	}
 }
 
-func (o *CopyOptions) execute(ctx context.Context, options *exec.ExecOptions) error {
+func (o *CopyOptions) execute(options *exec.ExecOptions) error {
 	if len(options.Namespace) == 0 {
 		options.Namespace = o.Namespace
 	}
