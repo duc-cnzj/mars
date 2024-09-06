@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v5/internal/util/closeable"
 	"github.com/minio/minio-go/v7"
@@ -14,19 +15,19 @@ import (
 
 type s3Uploader struct {
 	localUploader Uploader
-	client        *minio.Client
 	bucket        string
 	rootDir       string
 	disk          string
+	data          data.Data
 }
 
 // NewS3 creates a new S3 uploader with the specified parameters.
-func NewS3(client *minio.Client, bucket string, uploader Uploader, rootDir string) Uploader {
+func NewS3(data data.Data, bucket string, uploader Uploader, rootDir string) Uploader {
 	if rootDir == "" {
 		rootDir = "data"
 	}
 	return &s3Uploader{
-		client:        client,
+		data:          data,
 		bucket:        bucket,
 		localUploader: uploader,
 		rootDir:       rootDir,
@@ -40,7 +41,7 @@ func (s *s3Uploader) Type() schematype.UploadType {
 func (s *s3Uploader) Disk(disk string) Uploader {
 	return &s3Uploader{
 		localUploader: s.localUploader.Disk(disk),
-		client:        s.client,
+		data:          s.data,
 		bucket:        s.bucket,
 		rootDir:       s.root(),
 		disk:          disk,
@@ -55,7 +56,7 @@ func (s *s3Uploader) DeleteDir(dir string) error {
 
 func (s *s3Uploader) DirSize() (int64, error) {
 	dir := s.root()
-	objects := s.client.ListObjects(context.TODO(), s.bucket, minio.ListObjectsOptions{
+	objects := s.data.MinioCli().ListObjects(context.TODO(), s.bucket, minio.ListObjectsOptions{
 		Prefix:    dir,
 		Recursive: true,
 	})
@@ -72,14 +73,14 @@ func (s *s3Uploader) DirSize() (int64, error) {
 func (s *s3Uploader) Delete(path string) error {
 	path = s.getPath(path)
 	s.localUploader.Delete(path)
-	return s.client.RemoveObject(context.TODO(), s.bucket, path, minio.RemoveObjectOptions{
+	return s.data.MinioCli().RemoveObject(context.TODO(), s.bucket, path, minio.RemoveObjectOptions{
 		ForceDelete: true,
 	})
 }
 
 func (s *s3Uploader) Exists(path string) bool {
 	path = s.getPath(path)
-	_, err := s.client.StatObject(context.TODO(), s.bucket, path, minio.GetObjectOptions{})
+	_, err := s.data.MinioCli().StatObject(context.TODO(), s.bucket, path, minio.GetObjectOptions{})
 	return err == nil
 }
 
@@ -93,7 +94,7 @@ func (s *s3Uploader) Read(path string) (io.ReadCloser, error) {
 		return nil, os.ErrNotExist
 	}
 	path = s.getPath(path)
-	return s.client.GetObject(context.TODO(), s.bucket, path, minio.GetObjectOptions{})
+	return s.data.MinioCli().GetObject(context.TODO(), s.bucket, path, minio.GetObjectOptions{})
 }
 
 func (s *s3Uploader) AbsolutePath(path string) string {
@@ -102,7 +103,7 @@ func (s *s3Uploader) AbsolutePath(path string) string {
 
 func (s *s3Uploader) Stat(file string) (FileInfo, error) {
 	path := s.getPath(file)
-	object, err := s.client.StatObject(context.TODO(), s.bucket, path, minio.StatObjectOptions{})
+	object, err := s.data.MinioCli().StatObject(context.TODO(), s.bucket, path, minio.StatObjectOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +121,7 @@ func (s *s3Uploader) Put(path string, content io.Reader) (FileInfo, error) {
 }
 
 func (s *s3Uploader) uploadToS3(path, localPath string) (FileInfo, error) {
-	object, err := s.client.FPutObject(context.TODO(), s.bucket, path, localPath, minio.PutObjectOptions{})
+	object, err := s.data.MinioCli().FPutObject(context.TODO(), s.bucket, path, localPath, minio.PutObjectOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +130,7 @@ func (s *s3Uploader) uploadToS3(path, localPath string) (FileInfo, error) {
 
 func (s *s3Uploader) AllDirectoryFiles(dir string) ([]FileInfo, error) {
 	dir = s.getPath(dir)
-	objects := s.client.ListObjects(context.TODO(), s.bucket, minio.ListObjectsOptions{
+	objects := s.data.MinioCli().ListObjects(context.TODO(), s.bucket, minio.ListObjectsOptions{
 		Prefix:    dir,
 		Recursive: true,
 	})

@@ -20,7 +20,7 @@ func NewUploader(cfg *config.Config, logger mlog.Logger, data data.Data) (Upload
 
 	rootDir := "mars"
 	if cfg.S3Enabled {
-		up = NewS3(data.MinioCli(), cfg.S3Bucket, up, rootDir)
+		up = NewS3(data, cfg.S3Bucket, up, rootDir)
 	}
 
 	return up, nil
