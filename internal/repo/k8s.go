@@ -131,6 +131,33 @@ func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *CopyFromPodInput) (
 	ctx, span := otel.Tracer("").Start(ctx, "CopyFromPod")
 	defer span.End()
 
+	var (
+		file uploader.File
+		err  error
+	)
+
+	pwdbf := &bytes.Buffer{}
+	err = repo.Execute(ctx, &Container{
+		Namespace: input.Namespace,
+		Pod:       input.Pod,
+		Container: input.Container,
+	}, &ExecuteInput{
+		Stdout: pwdbf,
+		TTY:    false,
+		Cmd:    []string{"sh", "-c", "pwd"},
+	})
+	if err != nil {
+		return nil, err
+	}
+	base := strings.Trim(pwdbf.String(), "\n")
+
+	rel, err := filepath.Rel(base, input.FilePath)
+	if err != nil {
+		return nil, err
+	}
+	input.FilePath = rel
+	repo.logger.Debugf("[CopyFromPod]: rel: %q base: %q", rel, base)
+
 	bf := &bytes.Buffer{}
 	fileCopy := repo.executor.NewFileCopy(5, bf)
 
@@ -139,10 +166,7 @@ func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *CopyFromPodInput) (
 	filename := fmt.Sprintf("%s-%s.tar", input.Pod, rand.String(10))
 
 	up := repo.uploader.Disk("podfile")
-	var (
-		file uploader.File
-		err  error
-	)
+
 	file, err = up.NewFile(
 		fmt.Sprintf("%s/%s/%s/%s",
 			input.UserName,
