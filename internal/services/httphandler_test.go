@@ -1,16 +1,21 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/duc-cnzj/mars/v5/internal/application"
+	"github.com/gorilla/mux"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/duc-cnzj/mars/api/v5/types"
 	"github.com/duc-cnzj/mars/v5/internal/auth"
@@ -190,4 +195,36 @@ func Test_toHttpError2(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, recorder.Code)
 	assert.Equal(t, "x\n", recorder.Body.String())
+}
+
+func TestNewHttpHandler(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	httpHandler := application.NewMockHttpHandler(m)
+	handler := NewHttpHandler(
+		httpHandler,
+		mlog.NewForConfig(nil),
+		uploader.NewMockUploader(m),
+		repo.NewMockAuthRepo(m),
+		repo.NewMockEventRepo(m),
+		repo.NewMockFileRepo(m),
+		timer.NewRealTimer(),
+		repo.NewMockK8sRepo(m),
+	).(*httpHandlerImpl)
+	assert.NotNil(t, handler)
+	assert.NotNil(t, handler.logger)
+	assert.NotNil(t, handler.uploader)
+	assert.NotNil(t, handler.authRepo)
+	assert.NotNil(t, handler.eventRepo)
+	assert.NotNil(t, handler.fileRepo)
+	assert.NotNil(t, handler.timer)
+	assert.NotNil(t, handler.k8sRepo)
+
+	router := mux.NewRouter()
+	handler.RegisterWsRoute(router)
+	handler.RegisterSwaggerUIRoute(router)
+	handler.RegisterFileRoute(runtime.NewServeMux())
+
+	httpHandler.EXPECT().Shutdown(gomock.Not(nil)).Times(1)
+	handler.Shutdown(context.TODO())
 }
