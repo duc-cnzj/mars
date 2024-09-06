@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/minio/minio-go/v7"
@@ -74,8 +75,12 @@ func TestS3_AllDirectoryFiles(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockData.EXPECT().MinioCli().Return(s3Client).AnyTimes()
 	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
-	s3Cli := NewS3(s3Client, testBucketName, up, "AllDirectoryFiles").Disk("sub")
+	s3Cli := NewS3(mockData, testBucketName, up, "AllDirectoryFiles").Disk("sub")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("aaa", strings.NewReader("aaa"))
 	s3Cli.Put("bbb/bbb", strings.NewReader("bbb"))
@@ -98,8 +103,12 @@ func TestS3_Delete(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockData.EXPECT().MinioCli().Return(s3Client).AnyTimes()
 	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
-	s3Cli := NewS3(s3Client, testBucketName, up, "")
+	s3Cli := NewS3(mockData, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("aaa", strings.NewReader("aaa"))
 	assert.True(t, s3Cli.Exists("aaa"))
@@ -111,8 +120,12 @@ func TestS3_DeleteDir(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockData.EXPECT().MinioCli().Return(s3Client).AnyTimes()
 	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
-	s3Cli := NewS3(s3Client, testBucketName, up, "")
+	s3Cli := NewS3(mockData, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("cc/c.txt", strings.NewReader("aaa"))
 	assert.True(t, s3Cli.Exists("cc/c.txt"))
@@ -124,8 +137,12 @@ func TestS3_DirSize(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockData.EXPECT().MinioCli().Return(s3Client).AnyTimes()
 	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
-	s3Cli := NewS3(s3Client, testBucketName, up, "dirsize")
+	s3Cli := NewS3(mockData, testBucketName, up, "dirsize")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("dirsize/cc/c.txt", strings.NewReader("aaa"))
 	size, _ := s3Cli.DirSize()
@@ -136,8 +153,12 @@ func TestS3_Exists(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockData.EXPECT().MinioCli().Return(s3Client).AnyTimes()
 	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
-	s3Cli := NewS3(s3Client, testBucketName, up, "data")
+	s3Cli := NewS3(mockData, testBucketName, up, "data")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("cc/c.txt", strings.NewReader("aaa"))
 	assert.True(t, s3Cli.Exists("cc/c.txt"))
@@ -157,8 +178,12 @@ func TestS3_NewFile(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockData.EXPECT().MinioCli().Return(s3Client).AnyTimes()
 	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
-	s3Cli := NewS3(s3Client, testBucketName, up, "")
+	s3Cli := NewS3(mockData, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	_, err := s3Cli.Put("aaa", strings.NewReader("aaa"))
 	assert.Nil(t, err)
@@ -177,8 +202,12 @@ func TestS3_Put(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockData.EXPECT().MinioCli().Return(s3Client).AnyTimes()
 	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
-	s3Cli := NewS3(s3Client, testBucketName, up, "")
+	s3Cli := NewS3(mockData, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	put, err := s3Cli.Put("aaa", strings.NewReader("aaa"))
 	assert.Nil(t, err)
@@ -197,8 +226,12 @@ func TestS3_Read(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockData.EXPECT().MinioCli().Return(s3Client).AnyTimes()
 	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
-	s3Cli := NewS3(s3Client, testBucketName, up, "")
+	s3Cli := NewS3(mockData, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	_, err := s3Cli.Read("aaa")
 	assert.Error(t, err)
@@ -215,8 +248,12 @@ func TestS3_RemoveEmptyDir(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockData.EXPECT().MinioCli().Return(s3Client).AnyTimes()
 	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
-	s3Cli := NewS3(s3Client, testBucketName, up, "")
+	s3Cli := NewS3(mockData, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	_, err := s3Cli.Put("aaa", strings.NewReader("aaa"))
 	assert.Nil(t, err)
@@ -227,8 +264,12 @@ func TestS3_Stat(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockData.EXPECT().MinioCli().Return(s3Client).AnyTimes()
 	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
-	s3Cli := NewS3(s3Client, testBucketName, up, "")
+	s3Cli := NewS3(mockData, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	_, err := s3Cli.Put("aaa", strings.NewReader("aaa"))
 	assert.Nil(t, err)
@@ -343,8 +384,12 @@ func Test_s3File_Close(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockData.EXPECT().MinioCli().Return(s3Client).AnyTimes()
 	up, _ := NewDiskUploader(testDir, mlog.NewForConfig(nil))
-	s3Cli := NewS3(s3Client, testBucketName, up, "data")
+	s3Cli := NewS3(mockData, testBucketName, up, "data")
 	s3Cli.DeleteDir("")
 	file, err := s3Cli.NewFile("s3file_close.txt")
 	assert.Nil(t, err)
