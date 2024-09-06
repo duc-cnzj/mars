@@ -263,7 +263,7 @@ func TestContainerSvc_CopyToPod_Success(t *testing.T) {
 		gomock.Any(),
 		11,
 	)
-	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), &repo.CopyFileToPodRequest{
+	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), &repo.CopyFileToPodInput{
 		FileId:    1,
 		Namespace: "a",
 		Pod:       "b",
@@ -290,7 +290,7 @@ func TestContainerSvc_CopyToPod_Error(t *testing.T) {
 		mlog.NewForConfig(nil),
 	)
 	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
-	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), &repo.CopyFileToPodRequest{
+	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), &repo.CopyFileToPodInput{
 		FileId:    1,
 		Namespace: "a",
 		Pod:       "b",
@@ -550,7 +550,7 @@ func TestContainerSvc_StreamCopyToPod_Success(t *testing.T) {
 		Pod:       "b",
 		Container: "c",
 	}, nil)
-	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), &repo.CopyFileToPodRequest{
+	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), &repo.CopyFileToPodInput{
 		FileId:    1,
 		Namespace: "a",
 		Pod:       "b",

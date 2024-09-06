@@ -45,7 +45,7 @@ func TestNewK8sRepo(t *testing.T) {
 		fileRepo,
 		mockUploader,
 		NewDefaultArchiver(),
-		NewExecutorManager(mockData),
+		NewExecutorManager(mockData, mlog.NewForConfig(nil)),
 	).(*k8sRepo)
 	assert.NotNil(t, repo)
 	assert.NotNil(t, repo.logger)
@@ -71,7 +71,7 @@ func TestSplitManifests(t *testing.T) {
 		fileRepo,
 		mockUploader,
 		NewDefaultArchiver(),
-		NewExecutorManager(mockData),
+		NewExecutorManager(mockData, mlog.NewForConfig(nil)),
 	).(*k8sRepo)
 
 	t.Run("should split manifest string correctly", func(t *testing.T) {

@@ -33,6 +33,7 @@ var WireServiceSet = wire.NewSet(
 	NewEndpointSvc,
 	NewEventSvc,
 	NewFileSvc,
+	NewHttpHandler,
 	NewGitSvc,
 	NewMetricsSvc,
 	NewNamespaceSvc,

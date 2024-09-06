@@ -1,35 +1,16 @@
 package server
 
 import (
-	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
-	"os"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v5/types"
-	"github.com/duc-cnzj/mars/v5/doc"
 	"github.com/duc-cnzj/mars/v5/frontend"
 	"github.com/duc-cnzj/mars/v5/internal/application"
-	"github.com/duc-cnzj/mars/v5/internal/auth"
-	"github.com/duc-cnzj/mars/v5/internal/data"
-	"github.com/duc-cnzj/mars/v5/internal/ent"
-	"github.com/duc-cnzj/mars/v5/internal/ent/file"
-	"github.com/duc-cnzj/mars/v5/internal/event"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/duc-cnzj/mars/v5/internal/server/middlewares"
-	"github.com/duc-cnzj/mars/v5/internal/uploader"
-	"github.com/duc-cnzj/mars/v5/internal/util/rand"
-	swagger_ui "github.com/duc-cnzj/mars/v5/third_party/swagger-ui"
-	"github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -49,33 +30,23 @@ var defaultMiddlewares = middlewareList{
 }
 
 type apiGateway struct {
-	ws            application.WsHttpServer
 	endpoint      string
 	port          string
 	server        HttpServer
 	logger        mlog.Logger
 	grpcRegistry  *application.GrpcRegistry
+	handler       application.HttpHandler
 	newServerFunc func(ctx context.Context, a *apiGateway) (HttpServer, error)
-	auth          auth.Auth
-	maxUploadSize uint64
-	data          data.Data
-	uploader      uploader.Uploader
-	event         event.Dispatcher
 }
 
 func NewApiGateway(endpoint string, app application.App) application.Server {
 	return &apiGateway{
-		ws:            app.WsServer(),
 		endpoint:      endpoint,
 		port:          app.Config().AppPort,
 		logger:        app.Logger().WithModule("server/apiGateway"),
 		grpcRegistry:  app.GrpcRegistry(),
+		handler:       app.HttpHandler(),
 		newServerFunc: initServer,
-		auth:          app.Auth(),
-		maxUploadSize: app.Config().MaxUploadSize(),
-		data:          app.Data(),
-		uploader:      app.Uploader(),
-		event:         app.Dispatcher(),
 	}
 }
 
@@ -86,6 +57,8 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	}
 
 	a.server = s
+
+	go a.handler.TickClusterHealth(ctx.Done())
 
 	go func(s HttpServer) {
 		a.logger.Infof("[Server]: start apiGateway runner at :%s.", a.port)
@@ -99,6 +72,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 
 func (a *apiGateway) Shutdown(ctx context.Context) error {
 	a.logger.Info("[Server]: shutdown api-gateway runner.")
+	a.handler.Shutdown(ctx)
 	return a.server.Shutdown(ctx)
 }
 
@@ -140,20 +114,10 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 		writer.Write([]byte("pong"))
 	})
 
-	h := &handler{
-		ws:            a.ws,
-		logger:        a.logger,
-		auth:          a.auth,
-		maxUploadSize: a.maxUploadSize,
-		uploader:      a.uploader,
-		data:          a.data,
-		event:         a.event,
-		ServeMux:      gmux,
-	}
-	h.handFile()
-	h.serveWs(router)
+	a.handler.RegisterFileRoute(gmux)
+	a.handler.RegisterWsRoute(router)
 	frontend.LoadFrontendRoutes(router)
-	h.loadSwaggerUI(router)
+	a.handler.RegisterSwaggerUIRoute(router)
 	router.PathPrefix("/").Handler(gmux)
 
 	s := &http.Server{
@@ -190,172 +154,6 @@ func (m middlewareList) Wrap(logger mlog.Logger, r http.Handler) (h http.Handler
 	return
 }
 
-type handler struct {
-	ws            application.WsHttpServer
-	logger        mlog.Logger
-	auth          auth.Auth
-	maxUploadSize uint64
-	uploader      uploader.Uploader
-	data          data.Data
-	event         event.Dispatcher
-	*runtime.ServeMux
-}
-
-func (h *handler) serveWs(mux *mux.Router) {
-	mux.HandleFunc("/api/ws_info", h.ws.Info).Name("ws_info")
-	mux.HandleFunc("/ws", h.ws.Serve).Name("ws")
-}
-
-func (h *handler) handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
-	fil, err := h.data.DB().File.Query().Where(file.ID(fid)).Only(context.TODO())
-	if err != nil {
-		if ent.IsNotFound(err) {
-			http.NotFound(w, r)
-			return
-		}
-		h.logger.Error("Error querying file: ", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-	fileName := filepath.Base(fil.Path)
-
-	user := auth.MustGetUser(r.Context())
-	h.event.Dispatch(repo.AuditLogEvent, repo.NewEventAuditLog(
-		user.Name,
-		types.EventActionType_Download,
-		fmt.Sprintf("下载文件 '%s', 大小 %s",
-			fil.Path, humanize.Bytes(fil.Size)),
-	))
-	read, err := h.uploader.Read(fil.Path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			http.Error(w, "file not found", http.StatusNotFound)
-			return
-		}
-		h.logger.Error("Error reading file: ", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-	defer read.Close()
-
-	h.download(w, fileName, read)
-}
-
-func (h *handler) download(w http.ResponseWriter, filename string, reader io.Reader) {
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, url.QueryEscape(filename)))
-	w.Header().Set("Expires", "0")
-	w.Header().Set("Content-Transfer-Encoding", "binary")
-	w.Header().Set("Access-Control-Expose-Headers", "*")
-
-	// 调用 Write 之后就会写入 200 code
-	if _, err := io.Copy(w, bufio.NewReaderSize(reader, 1024*1024*2)); err != nil {
-		h.logger.Error("Error writing file to response: ", err)
-	}
-}
-
-func (h *handler) handleBinaryFileUpload(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(int64(h.maxUploadSize)); err != nil {
-		http.Error(w, fmt.Sprintf("failed to parse form: %s", err.Error()), http.StatusBadRequest)
-		return
-	}
-
-	f, fh, err := r.FormFile("file")
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get file 'attachment': %s", err.Error()), http.StatusBadRequest)
-		return
-	}
-	defer f.Close()
-
-	// 确保上传的文件名不会导致路径遍历攻击
-	filename := filepath.Base(fh.Filename)
-
-	info := auth.MustGetUser(r.Context())
-
-	var uploader uploader.Uploader = h.uploader
-	// 某个用户/那天/时间/文件名称
-	put, err := uploader.Disk("users").Put(
-		fmt.Sprintf("%s/%s/%s/%s",
-			info.Name,
-			time.Now().Format("2006-01-02"),
-			fmt.Sprintf("%s-%s", time.Now().Format("15-04-05"), rand.String(20)),
-			filename), f)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to upload file %s", err.Error()), http.StatusInternalServerError)
-		return
-	}
-
-	createdFile, err := h.data.DB().File.Create().
-		SetPath(put.Path()).
-		SetSize(put.Size()).
-		SetUsername(info.Name).
-		SetUploadType(uploader.Type()).
-		Save(context.TODO())
-	if err != nil {
-		h.logger.Error("Error saving file metadata: ", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	var res = struct {
-		ID int `json:"id"`
-	}{
-		ID: createdFile.ID,
-	}
-	marshal, err := json.Marshal(&res)
-	if err != nil {
-		h.logger.Error("Error marshaling response: ", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-	w.Write(marshal)
-}
-
-func (h *handler) handFile() {
-	h.HandlePath("POST", "/api/files", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-		if req, ok := h.authenticated(r); ok {
-			h.handleBinaryFileUpload(w, req)
-			return
-		}
-		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
-	})
-	h.HandlePath("GET", "/api/download_file/{id}", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-		idstr, ok := pathParams["id"]
-		if !ok {
-			http.Error(w, "missing id", http.StatusBadRequest)
-			return
-		}
-		id, err := strconv.Atoi(idstr)
-		if err != nil {
-			http.Error(w, "bad id", http.StatusBadRequest)
-			return
-		}
-		if req, ok := h.authenticated(r); ok {
-			h.handleDownload(w, req, id)
-			return
-		}
-		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
-	})
-}
-
-func (h *handler) loadSwaggerUI(mux *mux.Router) {
-	subrouter := mux.PathPrefix("").Subrouter()
-	subrouter.Use(middlewares.HttpCache)
-
-	subrouter.Handle("/doc/swagger.json",
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(doc.SwaggerJson)
-		}),
-	)
-
-	subrouter.PathPrefix("/docs/").Handler(
-		http.StripPrefix("/docs/", http.FileServer(http.FS(swagger_ui.SwaggerUI))),
-	)
-}
-
 func headerMatcher(key string) (string, bool) {
 	key = strings.ToLower(key)
 	switch key {
@@ -366,12 +164,4 @@ func headerMatcher(key string) (string, bool) {
 	default:
 		return runtime.DefaultHeaderMatcher(key)
 	}
-}
-
-func (h *handler) authenticated(r *http.Request) (*http.Request, bool) {
-	if verifyToken, b := h.auth.VerifyToken(r.Header.Get("Authorization")); b {
-		return r.WithContext(auth.SetUser(r.Context(), verifyToken.UserInfo)), true
-	}
-
-	return nil, false
 }

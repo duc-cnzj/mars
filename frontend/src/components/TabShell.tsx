@@ -7,7 +7,7 @@ import React, {
   memo,
 } from "react";
 import { useSelector } from "react-redux";
-import { message, Radio, Upload, Button, Empty } from "antd";
+import { message, Radio, Upload, Button, Empty, Input, Popconfirm } from "antd";
 import { selectSessions } from "../store/reducers/shell";
 import { debounce } from "lodash";
 import { Terminal } from "xterm";
@@ -32,6 +32,7 @@ import "../styles/allotment-overwrite.css";
 import _ from "lodash";
 import ajax from "../api/ajax";
 import { components } from "../api/schema";
+import JsFileDownloader from "js-file-downloader";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -367,6 +368,9 @@ const TabShell: React.FC<{
     return [...groups];
   };
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [podfilepath, setPodfilepath] = useState("");
+
   return (
     <div
       style={{
@@ -420,6 +424,55 @@ const TabShell: React.FC<{
                     {loading ? "上传中" : "上传到容器"}
                   </Button>
                 </Upload>
+                <Popconfirm
+                  overlayClassName="copyfrompod"
+                  title="下载文件(输入相对初始目录的路径)"
+                  open={isModalOpen}
+                  description={
+                    <Input
+                      value={podfilepath}
+                      onChange={(v) => {
+                        setPodfilepath(v.target.value);
+                      }}
+                      style={{ width: "80%", fontSize: 12 }}
+                      placeholder="输入相对初始目录的路径"
+                    />
+                  }
+                  onConfirm={() => {
+                    new JsFileDownloader({
+                      url: `${process.env.REACT_APP_BASE_URL}/api/copy_from_pod`,
+                      method: "POST",
+                      headers: [
+                        { name: "Authorization", value: getToken() },
+                        { name: "Content-Type", value: "application/json" },
+                      ],
+                      body: JSON.stringify({
+                        namespace: value.namespace,
+                        pod: value.pod,
+                        container: value.container,
+                        filepath: podfilepath,
+                      }),
+                    }).then(function () {
+                      message.success("下载成功");
+                      setIsModalOpen(false);
+                    });
+                  }}
+                  onCancel={() => {
+                    setIsModalOpen(false);
+                    setPodfilepath("");
+                  }}
+                  overlayInnerStyle={{ width: 500 }}
+                  okText="下载"
+                  cancelText="取消"
+                >
+                  <Button
+                    onClick={() => setIsModalOpen(true)}
+                    style={{ fontSize: 12, marginRight: 2 }}
+                    size="small"
+                  >
+                    下载文件
+                  </Button>
+                </Popconfirm>
                 <div
                   style={{
                     height: "100%",

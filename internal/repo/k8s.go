@@ -19,6 +19,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/uploader"
+	"github.com/duc-cnzj/mars/v5/internal/util/k8s"
 	"github.com/duc-cnzj/mars/v5/internal/util/rand"
 	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/dustin/go-humanize"
@@ -37,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
@@ -91,15 +93,16 @@ type K8sRepo interface {
 	GetCpuAndMemoryInNamespace(ctx context.Context, namespace string) (string, string)
 	GetCpuAndMemory(ctx context.Context, list []v1beta1.PodMetrics) (string, string)
 	GetCpuAndMemoryQuantity(pod v1beta1.PodMetrics) (cpu *resource.Quantity, memory *resource.Quantity)
-	Copy(ctx context.Context, namespace, pod, container, fpath, targetContainerDir string) (*CopyFileToPodResult, error)
 	ClusterInfo() *ClusterInfo
-	CopyFileToPod(ctx context.Context, input *CopyFileToPodRequest) (*File, error)
 
 	Execute(ctx context.Context, c *Container, input *ExecuteInput) error
 	DeleteSecret(ctx context.Context, namespace, secret string) error
 	DeleteNamespace(ctx context.Context, name string) error
 
 	GetAllPodMetrics(ctx context.Context, proj *Project) []v1beta1.PodMetrics
+
+	CopyFileToPod(ctx context.Context, input *CopyFileToPodInput) (*File, error)
+	CopyFromPod(ctx context.Context, input *CopyFromPodInput) (*File, error)
 }
 
 var _ K8sRepo = (*k8sRepo)(nil)
@@ -113,6 +116,74 @@ type k8sRepo struct {
 	data          data.Data
 	fileRepo      FileRepo
 	timer         timer.Timer
+}
+
+type CopyFromPodInput struct {
+	Namespace string
+	Pod       string
+	Container string
+	// pod 内的绝对路径
+	FilePath string
+	UserName string
+}
+
+func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *CopyFromPodInput) (*File, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "CopyFromPod")
+	defer span.End()
+
+	bf := &bytes.Buffer{}
+	fileCopy := repo.executor.NewFileCopy(5, bf)
+
+	remotePath := input.FilePath
+
+	filename := fmt.Sprintf("%s-%s.tar", input.Pod, rand.String(10))
+
+	up := repo.uploader.Disk("podfile")
+	var (
+		file uploader.File
+		err  error
+	)
+	file, err = up.NewFile(
+		fmt.Sprintf("%s/%s/%s/%s",
+			input.UserName,
+			repo.timer.Now().Format("2006-01-02"),
+			fmt.Sprintf("%s-%s", repo.timer.Now().Format("15-04-05"), rand.String(20)),
+			filename),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		file.Close()
+		if err != nil {
+			up.Delete(file.Name())
+		}
+	}()
+
+	if err = fileCopy.CopyFromPod(k8s.CopyFileSpec{
+		PodName:       input.Pod,
+		PodNamespace:  input.Namespace,
+		ContainerName: input.Container,
+		File:          k8s.NewRemotePath(remotePath),
+	}, file); err != nil {
+		return nil, fmt.Errorf("copy from pod error: %w, %v", err, bf.String())
+	}
+
+	var stat os.FileInfo
+	stat, err = file.Stat()
+	if err != nil {
+		repo.logger.Error(err)
+		return nil, err
+	}
+	return repo.fileRepo.Create(ctx, &CreateFileInput{
+		Path:       file.Name(),
+		Username:   input.UserName,
+		Size:       uint64(stat.Size()),
+		UploadType: up.Type(),
+		Namespace:  input.Namespace,
+		Pod:        input.Pod,
+		Container:  input.Container,
+	})
 }
 
 func NewK8sRepo(
@@ -424,7 +495,7 @@ func (repo *k8sRepo) analyseMetricsToCpuAndMemory(list []v1beta1.PodMetrics) (st
 	return cpuStr, memoryStr
 }
 
-type CopyFileToPodResult struct {
+type copyToPodResult struct {
 	TargetDir     string
 	ErrOut        string
 	StdOut        string
@@ -432,9 +503,9 @@ type CopyFileToPodResult struct {
 	FileName      string
 }
 
-func (repo *k8sRepo) Copy(ctx context.Context, namespace, pod, container, fpath, targetContainerDir string) (*CopyFileToPodResult, error) {
+func (repo *k8sRepo) copyToPod(ctx context.Context, namespace, pod, container, fpath, targetContainerDir string) (*copyToPodResult, error) {
 	tracer := otel.Tracer("")
-	ctx, span := tracer.Start(ctx, "k8sRepo/Copy")
+	ctx, span := tracer.Start(ctx, "k8sRepo/copyToPod")
 	defer span.End()
 	span.SetAttributes(
 		attribute.Key("namespace").String(namespace),
@@ -521,7 +592,7 @@ func (repo *k8sRepo) Copy(ctx context.Context, namespace, pod, container, fpath,
 			},
 		)
 
-	return &CopyFileToPodResult{
+	return &copyToPodResult{
 		TargetDir:     targetContainerDir,
 		ErrOut:        errbf.String(),
 		StdOut:        outbf.String(),
@@ -530,21 +601,21 @@ func (repo *k8sRepo) Copy(ctx context.Context, namespace, pod, container, fpath,
 	}, err
 }
 
-type CopyFileToPodRequest struct {
+type CopyFileToPodInput struct {
 	FileId    int64
 	Namespace string
 	Pod       string
 	Container string
 }
 
-func (repo *k8sRepo) CopyFileToPod(ctx context.Context, input *CopyFileToPodRequest) (*File, error) {
+func (repo *k8sRepo) CopyFileToPod(ctx context.Context, input *CopyFileToPodInput) (*File, error) {
 	file, err := repo.fileRepo.GetByID(ctx, int(input.FileId))
 	if err != nil {
 		repo.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 
-	result, err := repo.Copy(ctx, input.Namespace, input.Pod, input.Container, file.Path, "")
+	result, err := repo.copyToPod(ctx, input.Namespace, input.Pod, input.Container, file.Path, "")
 	if err != nil {
 		repo.logger.ErrorCtx(ctx, err)
 		return nil, err
@@ -816,6 +887,7 @@ func (m *defaultArchiver) Remove(path string) error {
 
 type ExecutorManager interface {
 	New() Executor
+	NewFileCopy(maxTries int, errOut io.Writer) k8s.FileCopy
 }
 
 type ExecuteInput struct {
@@ -834,13 +906,33 @@ type Executor interface {
 }
 
 type defaultRemoteExecutor struct {
-	data data.Data
+	data   data.Data
+	logger mlog.Logger
 }
 
-func NewExecutorManager(data data.Data) ExecutorManager {
+func NewExecutorManager(data data.Data, logger mlog.Logger) ExecutorManager {
 	return &defaultRemoteExecutor{
-		data: data,
+		data:   data,
+		logger: logger.WithModule("ExecutorManager"),
 	}
+}
+
+func (e *defaultRemoteExecutor) NewFileCopy(
+	maxTries int,
+	errOut io.Writer,
+) k8s.FileCopy {
+	restCfg := e.data.K8sClient().RestConfig
+	restCfg.GroupVersion = &schema.GroupVersion{Group: "", Version: "v1"}
+	restCfg.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	restCfg.APIPath = "/api"
+
+	return k8s.NewCopyOptions(
+		e.logger,
+		restCfg,
+		e.data.K8sClient().Client,
+		maxTries,
+		errOut,
+	)
 }
 
 func (e *defaultRemoteExecutor) New() Executor {
