@@ -21,7 +21,6 @@ Package metrics
 package metrics
 
 import (
-	"math"
 	"time"
 
 	"github.com/duc-cnzj/mars/v5/internal/version"
@@ -140,16 +139,6 @@ var (
 		Buckets:     prometheus.ExponentialBucketsRange(0.5, (1 * time.Hour).Seconds(), 20),
 	}, []string{"cron_name"})
 
-	// HttpResponseSize
-	// buckets: 5 B 25 B 125 B 625 B 3.1 kB 16 kB 78 kB 391 kB 2.0 MB 9.8 MB 49 MB 244 MB
-	HttpResponseSize = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Subsystem:   system,
-		Name:        "http_response_size",
-		Help:        "http response 响应大小",
-		ConstLabels: prometheus.Labels{"version": appVersion},
-		Buckets:     append(prometheus.ExponentialBucketsRange(500, 20*1000*1000, 15), math.Inf(+1)),
-	}, []string{"path"})
-
 	K8sInformerFanOutListenerCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Subsystem:   system,
 		Name:        "fanout_listener_count",
@@ -177,7 +166,6 @@ func NewRegistry() *prometheus.Registry {
 		CronDuration,
 		CronCommandCount,
 		CronErrorCount,
-		HttpResponseSize,
 		K8sInformerFanOutListenerCount,
 	)
 
