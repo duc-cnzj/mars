@@ -449,3 +449,11 @@ func Test_newDefaultRegistryClient(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, client)
 }
+
+func TestWrapLogFn_UnWrap(t *testing.T) {
+	called := false
+	WrapLogFn(func(container []*websocket_pb.Container, format string, v ...any) {
+		called = true
+	})(nil, "", "")
+	assert.True(t, called)
+}

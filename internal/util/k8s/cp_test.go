@@ -35,89 +35,12 @@ func TestLocalPathString(t *testing.T) {
 	assert.Equal(t, "/test/path", path.String())
 }
 
-func TestLocalPathDir(t *testing.T) {
-	path := NewLocalPath("/test/path")
-	assert.Equal(t, "/test", path.Dir().String())
-}
-
-func TestLocalPathBase(t *testing.T) {
-	path := NewLocalPath("/test/path")
-	assert.Equal(t, "path", path.Base().String())
-}
-
-func TestLocalPathClean(t *testing.T) {
-	path := NewLocalPath("/test/../path")
-	assert.Equal(t, "/path", path.Clean().String())
-}
-
-func TestLocalPathJoin(t *testing.T) {
-	path := NewLocalPath("/test")
-	joinedPath := path.Join(NewLocalPath("path"))
-	assert.Equal(t, "/test/path", joinedPath.String())
-}
-
-func TestLocalPathStripSlashes(t *testing.T) {
-	path := NewLocalPath("/test/path/")
-	assert.Equal(t, "test/path", path.StripSlashes().String())
-}
-
 func TestRemotePathString(t *testing.T) {
 	path := NewRemotePath("/test/path")
 	assert.Equal(t, "/test/path", path.String())
 }
 
-func TestRemotePathDir(t *testing.T) {
-	path := NewRemotePath("/test/path")
-	assert.Equal(t, "/test", path.Dir().String())
-}
-
-func TestRemotePathBase(t *testing.T) {
-	path := NewRemotePath("/test/path")
-	assert.Equal(t, "path", path.Base().String())
-}
-
-func TestRemotePathClean(t *testing.T) {
-	path := NewRemotePath("/test/../path")
-	assert.Equal(t, "/path", path.Clean().String())
-}
-
-func TestRemotePathJoin(t *testing.T) {
-	path := NewRemotePath("/test")
-	joinedPath := path.Join(NewRemotePath("path"))
-	assert.Equal(t, "/test/path", joinedPath.String())
-}
-
-func TestRemotePathStripShortcuts(t *testing.T) {
-	path := NewRemotePath("/../test/path")
-	assert.Equal(t, "test/path", path.StripShortcuts().String())
-}
-
-func TestRemotePathStripSlashes(t *testing.T) {
-	path := NewRemotePath("/test/path/")
-	assert.Equal(t, "test/path", path.StripSlashes().String())
-}
-
-func TestIsRelative(t *testing.T) {
-	base := NewLocalPath("/test")
-	target := NewLocalPath("/test/path")
-	assert.True(t, isRelative(base, target))
-
-	base = NewLocalPath("/test")
-	target = NewLocalPath("/another/path")
-	assert.False(t, isRelative(base, target))
-}
-
 func TestStripTrailingSlash(t *testing.T) {
 	assert.Equal(t, "/test/path", stripTrailingSlash("/test/path/"))
 	assert.Equal(t, "/test/path", stripTrailingSlash("/test/path"))
-}
-
-func TestStripLeadingSlash(t *testing.T) {
-	assert.Equal(t, "test/path", stripLeadingSlash("/test/path"))
-	assert.Equal(t, "test/path", stripLeadingSlash("test/path"))
-}
-
-func TestStripPathShortcuts(t *testing.T) {
-	assert.Equal(t, "test/path", stripPathShortcuts("../test/path"))
-	assert.Equal(t, "test/path", stripPathShortcuts("test/path"))
 }

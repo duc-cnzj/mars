@@ -84,7 +84,7 @@ type K8sRepo interface {
 	GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 	CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 	LogStream(ctx context.Context, namespace, pod, container string) (chan []byte, error)
-	GetPodLogs(namespace, podName string, options *corev1.PodLogOptions) (string, error)
+	GetPodLogs(ctx context.Context, namespace, podName string, options *corev1.PodLogOptions) (string, error)
 	FindDefaultContainer(ctx context.Context, namespace string, pod string) (string, error)
 	GetPod(namespace, podName string) (*corev1.Pod, error)
 	ListEvents(namespace string) ([]*eventv1.Event, error)
@@ -116,6 +116,27 @@ type k8sRepo struct {
 	data          data.Data
 	fileRepo      FileRepo
 	timer         timer.Timer
+}
+
+func NewK8sRepo(
+	logger mlog.Logger,
+	timer timer.Timer,
+	data data.Data,
+	fileRepo FileRepo,
+	uploader uploader.Uploader,
+	archiver Archiver,
+	remoteExecutor ExecutorManager,
+) K8sRepo {
+	return &k8sRepo{
+		fileRepo:      fileRepo,
+		timer:         timer,
+		data:          data,
+		logger:        logger.WithModule("repo/k8s"),
+		uploader:      uploader,
+		maxUploadSize: data.Config().MaxUploadSize(),
+		archiver:      archiver,
+		executor:      remoteExecutor,
+	}
 }
 
 type CopyFromPodInput struct {
@@ -168,7 +189,7 @@ func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *CopyFromPodInput) (
 	base := strings.Trim(pwdbf.String(), "\n")
 
 	if !strings.HasPrefix(input.FilePath, base) {
-		return nil, errors.New("invalid file path")
+		return nil, ToError(400, "invalid file path")
 	}
 
 	rel, err := filepath.Rel(base, input.FilePath)
@@ -228,27 +249,6 @@ func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *CopyFromPodInput) (
 		Pod:        input.Pod,
 		Container:  input.Container,
 	})
-}
-
-func NewK8sRepo(
-	logger mlog.Logger,
-	timer timer.Timer,
-	data data.Data,
-	fileRepo FileRepo,
-	uploader uploader.Uploader,
-	archiver Archiver,
-	remoteExecutor ExecutorManager,
-) K8sRepo {
-	return &k8sRepo{
-		fileRepo:      fileRepo,
-		timer:         timer,
-		data:          data,
-		logger:        logger.WithModule("repo/k8s"),
-		uploader:      uploader,
-		maxUploadSize: data.Config().MaxUploadSize(),
-		archiver:      archiver,
-		executor:      remoteExecutor,
-	}
 }
 
 // SplitManifests
@@ -380,9 +380,9 @@ func (repo *k8sRepo) Execute(ctx context.Context, c *Container, input *ExecuteIn
 		Execute(ctx, input)
 }
 
-func (repo *k8sRepo) GetPodLogs(namespace, podName string, options *corev1.PodLogOptions) (string, error) {
+func (repo *k8sRepo) GetPodLogs(ctx context.Context, namespace, podName string, options *corev1.PodLogOptions) (string, error) {
 	logs := repo.data.K8sClient().Client.CoreV1().Pods(namespace).GetLogs(podName, options)
-	do := logs.Do(context.TODO())
+	do := logs.Do(ctx)
 	raw, err := do.Raw()
 	return string(raw), err
 }
@@ -827,11 +827,11 @@ func (repo *k8sRepo) getNodeRequestCpuAndMemory(noExecuteNodes []corev1.Node) (*
 		nodeSelector = append(nodeSelector, "spec.nodeName!="+node.Name)
 	}
 	fieldSelector, _ := fields.ParseSelector(strings.Join(nodeSelector, ","))
-	nodeNonTerminatedPodsList, err := repo.data.K8sClient().Client.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{FieldSelector: fieldSelector.String()})
-	if err != nil {
-		//mlog.Error(err)
-		return requestCpu, requestMemory
-	}
+	nodeNonTerminatedPodsList, _ := repo.data.K8sClient().
+		Client.
+		CoreV1().
+		Pods("").
+		List(context.TODO(), metav1.ListOptions{FieldSelector: fieldSelector.String()})
 	for _, item := range nodeNonTerminatedPodsList.Items {
 		for _, container := range item.Spec.Containers {
 			requestCpu.Add(container.Resources.Requests.Cpu().DeepCopy())

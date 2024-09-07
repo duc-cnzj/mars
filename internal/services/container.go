@@ -89,7 +89,7 @@ func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogR
 		opt.TailLines = &tailLines
 	}
 
-	logs, err := c.k8sRepo.GetPodLogs(request.Namespace, request.Pod, opt)
+	logs, err := c.k8sRepo.GetPodLogs(ctx, request.Namespace, request.Pod, opt)
 	if err != nil {
 		c.logger.ErrorCtx(ctx, err)
 		return nil, err

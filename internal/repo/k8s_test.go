@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	restclient "k8s.io/client-go/rest"
+
 	"github.com/lithammer/dedent"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -1008,4 +1010,19 @@ func Test_k8sRepo_Execute(t *testing.T) {
 	}
 	ec.EXPECT().Execute(gomock.Any(), input)
 	assert.Nil(t, r.Execute(context.TODO(), c, input))
+}
+
+func Test_defaultRemoteExecutor_NewFileCopy(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	d := &defaultRemoteExecutor{
+		data:   mockData,
+		logger: mlog.NewForConfig(nil),
+	}
+	mockData.EXPECT().K8sClient().Return(&data.K8sClient{
+		RestConfig: &restclient.Config{},
+	}).Times(2)
+	fileCopy := d.NewFileCopy(1, &bytes.Buffer{})
+	assert.NotNil(t, fileCopy)
 }

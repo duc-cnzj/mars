@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
@@ -183,38 +181,6 @@ func (p LocalPath) String() string {
 	return p.file
 }
 
-func (p LocalPath) Dir() LocalPath {
-	return NewLocalPath(filepath.Dir(p.file))
-}
-
-func (p LocalPath) Base() LocalPath {
-	return NewLocalPath(filepath.Base(p.file))
-}
-
-func (p LocalPath) Clean() LocalPath {
-	return NewLocalPath(filepath.Clean(p.file))
-}
-
-func (p LocalPath) Join(elem PathSpec) LocalPath {
-	return NewLocalPath(filepath.Join(p.file, elem.String()))
-}
-
-func (p LocalPath) Glob() (matches []string, err error) {
-	return filepath.Glob(p.file)
-}
-
-func (p LocalPath) StripSlashes() LocalPath {
-	return NewLocalPath(stripLeadingSlash(p.file))
-}
-
-func isRelative(base, target LocalPath) bool {
-	relative, err := filepath.Rel(base.String(), target.String())
-	if err != nil {
-		return false
-	}
-	return relative == "." || relative == stripPathShortcuts(relative)
-}
-
 // RemotePath represents always UNIX path, its methods will use path
 // package which is always using `/`
 type RemotePath struct {
@@ -232,31 +198,6 @@ func (p RemotePath) String() string {
 	return p.file
 }
 
-func (p RemotePath) Dir() RemotePath {
-	return NewRemotePath(path.Dir(p.file))
-}
-
-func (p RemotePath) Base() RemotePath {
-	return NewRemotePath(path.Base(p.file))
-}
-
-func (p RemotePath) Clean() RemotePath {
-	return NewRemotePath(path.Clean(p.file))
-}
-
-func (p RemotePath) Join(elem PathSpec) RemotePath {
-	return NewRemotePath(path.Join(p.file, elem.String()))
-}
-
-func (p RemotePath) StripShortcuts() RemotePath {
-	p = p.Clean()
-	return NewRemotePath(stripPathShortcuts(p.file))
-}
-
-func (p RemotePath) StripSlashes() RemotePath {
-	return NewRemotePath(stripLeadingSlash(p.file))
-}
-
 // strips trailing slash (if any) both unix and windows style
 func stripTrailingSlash(file string) string {
 	if len(file) == 0 {
@@ -266,31 +207,4 @@ func stripTrailingSlash(file string) string {
 		return file[:len(file)-1]
 	}
 	return file
-}
-
-func stripLeadingSlash(file string) string {
-	// tar strips the leading '/' and '\' if it's there, so we will too
-	return strings.TrimLeft(file, `/\`)
-}
-
-// stripPathShortcuts removes any leading or trailing "../" from a given path
-func stripPathShortcuts(p string) string {
-	newPath := p
-	trimmed := strings.TrimPrefix(newPath, "../")
-
-	for trimmed != newPath {
-		newPath = trimmed
-		trimmed = strings.TrimPrefix(newPath, "../")
-	}
-
-	// trim leftover {".", ".."}
-	if newPath == "." || newPath == ".." {
-		newPath = ""
-	}
-
-	if len(newPath) > 0 && string(newPath[0]) == "/" {
-		return newPath[1:]
-	}
-
-	return newPath
 }

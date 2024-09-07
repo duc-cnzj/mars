@@ -1031,18 +1031,18 @@ func (mr *MockK8sRepoMockRecorder) GetPod(arg0, arg1 any) *gomock.Call {
 }
 
 // GetPodLogs mocks base method.
-func (m *MockK8sRepo) GetPodLogs(arg0, arg1 string, arg2 *v1.PodLogOptions) (string, error) {
+func (m *MockK8sRepo) GetPodLogs(arg0 context.Context, arg1, arg2 string, arg3 *v1.PodLogOptions) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPodLogs", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetPodLogs", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPodLogs indicates an expected call of GetPodLogs.
-func (mr *MockK8sRepoMockRecorder) GetPodLogs(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockK8sRepoMockRecorder) GetPodLogs(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodLogs", reflect.TypeOf((*MockK8sRepo)(nil).GetPodLogs), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodLogs", reflect.TypeOf((*MockK8sRepo)(nil).GetPodLogs), arg0, arg1, arg2, arg3)
 }
 
 // GetPodMetrics mocks base method.
