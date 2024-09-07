@@ -167,6 +167,10 @@ func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *CopyFromPodInput) (
 	}
 	base := strings.Trim(pwdbf.String(), "\n")
 
+	if !strings.HasPrefix(input.FilePath, base) {
+		return nil, errors.New("invalid file path")
+	}
+
 	rel, err := filepath.Rel(base, input.FilePath)
 	if err != nil {
 		return nil, err
