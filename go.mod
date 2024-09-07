@@ -1,6 +1,6 @@
 module github.com/duc-cnzj/mars/v5
 
-go 1.23.0
+go 1.23.1
 
 replace github.com/duc-cnzj/mars/api/v5 => ./api
 
