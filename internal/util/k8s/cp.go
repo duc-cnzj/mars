@@ -165,22 +165,6 @@ type PathSpec interface {
 	String() string
 }
 
-// LocalPath represents a client-native path, which will differ based
-// on the client OS, its methods will use path/filepath package which
-// is OS dependant
-type LocalPath struct {
-	file string
-}
-
-func NewLocalPath(fileName string) LocalPath {
-	file := stripTrailingSlash(fileName)
-	return LocalPath{file: file}
-}
-
-func (p LocalPath) String() string {
-	return p.file
-}
-
 // RemotePath represents always UNIX path, its methods will use path
 // package which is always using `/`
 type RemotePath struct {
