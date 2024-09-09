@@ -906,7 +906,9 @@ func Test_getPodSelectorsInDeploymentAndStatefulSetByManifest(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run("", func(t *testing.T) {
-			labels := (&k8sRepo{}).GetPodSelectorsByManifest([]string{tt.in})
+			labels := (&k8sRepo{
+				logger: mlog.NewForConfig(nil),
+			}).GetPodSelectorsByManifest([]string{tt.in})
 			if len(labels) > 0 {
 				assert.Equal(t, tt.out, labels[0])
 			} else {
