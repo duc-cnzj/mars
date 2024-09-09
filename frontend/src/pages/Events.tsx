@@ -465,7 +465,8 @@ const EventList: React.FC = () => {
                   )}
                 {!!item.file &&
                   item.fileId > 0 &&
-                  item.action === TypesEventModelAction.Upload && (
+                  (item.action === TypesEventModelAction.Upload ||
+                    item.action === TypesEventModelAction.Download) && (
                     <>
                       <Button
                         type="dashed"

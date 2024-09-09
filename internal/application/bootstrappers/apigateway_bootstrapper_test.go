@@ -15,16 +15,10 @@ func TestApiGatewayBootstrapper_Bootstrap(t *testing.T) {
 	defer m.Finish()
 
 	app := application.NewMockApp(m)
-	app.EXPECT().WsServer().Return(nil)
+	app.EXPECT().HttpHandler().Return(nil)
 	app.EXPECT().Logger().Return(mlog.NewForConfig(nil))
 	app.EXPECT().GrpcRegistry()
-	app.EXPECT().Auth()
-	app.EXPECT().Data()
-	app.EXPECT().Uploader()
-	app.EXPECT().Dispatcher()
 	app.EXPECT().Config().Return(&config.Config{}).AnyTimes()
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any())
-	app.EXPECT().BeforeServerRunHooks(gomock.Any())
 	app.EXPECT().AddServer(gomock.Any())
 	a := &ApiGatewayBootstrapper{}
 	assert.Nil(t, a.Bootstrap(app))

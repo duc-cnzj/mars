@@ -59,8 +59,8 @@ type app struct {
 	data               data.Data
 	pluginManager      PluginManger
 	reg                *GrpcRegistry
-	ws                 WsHttpServer
 	prometheusRegistry *prometheus.Registry
+	httpHandler        HttpHandler
 }
 
 type Option func(*app)
@@ -93,12 +93,13 @@ func NewApp(
 	sf *singleflight.Group,
 	pm PluginManger,
 	reg *GrpcRegistry,
-	ws WsHttpServer,
 	pr *prometheus.Registry,
+	httpHandler HttpHandler,
 	opts ...Option,
 ) App {
 	doneCtx, cancelFunc := context.WithCancel(context.TODO())
 	appli := &app{
+		httpHandler:        httpHandler,
 		done:               doneCtx,
 		prometheusRegistry: pr,
 		doneFunc:           cancelFunc,
@@ -118,7 +119,6 @@ func NewApp(
 		data:               data,
 		pluginManager:      pm,
 		reg:                reg,
-		ws:                 ws,
 	}
 
 	for _, opt := range opts {
@@ -157,10 +157,6 @@ func (app *app) Logger() mlog.Logger {
 	return app.logger
 }
 
-func (app *app) WsServer() WsHttpServer {
-	return app.ws
-}
-
 // Locker impl App CacheLock.
 func (app *app) Locker() locker.Locker {
 	return app.cacheLock
@@ -169,6 +165,10 @@ func (app *app) Locker() locker.Locker {
 // Cache impl App Cache.
 func (app *app) Cache() cache.Cache {
 	return app.cache
+}
+
+func (app *app) HttpHandler() HttpHandler {
+	return app.httpHandler
 }
 
 // Auth impl App Auth.
@@ -289,7 +289,7 @@ func (app *app) Run() context.Context {
 	app.RunServerHooks(beforeRunHook)
 
 	for _, server := range app.servers {
-		if err := server.Run(context.TODO()); err != nil {
+		if err := server.Run(app.done); err != nil {
 			app.logger.Fatal(err)
 		}
 	}

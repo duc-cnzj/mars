@@ -20,7 +20,7 @@ build_tools:
 		golang.org/x/tools/cmd/goimports \
 		github.com/securego/gosec/v2/cmd/gosec \
 		go.uber.org/mock/mockgen \
-		github.com/google/gnostic/cmd/protoc-gen-openapi@latest \
+		github.com/google/gnostic/cmd/protoc-gen-openapi \
 		github.com/google/wire/cmd/wire \
 		entgo.io/ent/cmd/ent
 
@@ -144,8 +144,7 @@ test:
         ./internal/uploader/... \
         ./internal/util/... \
         ./internal/version/... \
-		-race -count=1 -cover -coverprofile=coverage.txt -covermode atomic && \
-	go tool cover -func coverage.txt
+		-race -count=1 -cover -coverprofile=coverage.txt -covermode atomic
 
 .PHONY: cover-web
 # go tool cover -html coverage.txt

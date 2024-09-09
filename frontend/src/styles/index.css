@@ -3,6 +3,10 @@ body {
   margin: 0;
 }
 
+.copyfrompod .ant-popconfirm-message-text {
+  width: 100%;
+}
+
 @font-face {
   font-family: "dank mono";
   src: url("../assets/dankmono.ttf");

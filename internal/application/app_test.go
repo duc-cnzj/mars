@@ -49,7 +49,7 @@ func TestNewAppWithValidConfig(t *testing.T) {
 	sf := &singleflight.Group{}
 	pm := NewMockPluginManger(m)
 	reg := &GrpcRegistry{}
-	ws := NewMockWsHttpServer(m)
+	httpHandler := NewMockHttpHandler(m)
 	pr := &prometheus.Registry{}
 
 	b1 := &testBoot{
@@ -68,8 +68,8 @@ func TestNewAppWithValidConfig(t *testing.T) {
 		sf,
 		pm,
 		reg,
-		ws,
 		pr,
+		httpHandler,
 		WithBootstrappers(b1, &testBoot{}),
 		WithExcludeTags("cron"),
 	)
@@ -86,7 +86,7 @@ func TestNewAppWithValidConfig(t *testing.T) {
 	assert.NotNil(t, appli.Singleflight())
 	assert.NotNil(t, appli.PluginMgr())
 	assert.NotNil(t, appli.GrpcRegistry())
-	assert.NotNil(t, appli.WsServer())
+	assert.NotNil(t, appli.HttpHandler())
 	assert.NotNil(t, appli.PrometheusRegistry())
 	assert.True(t, appli.IsDebug())
 
@@ -329,14 +329,14 @@ func Test_app_Uploader(t *testing.T) {
 	assert.NotNil(t, a.Uploader())
 }
 
-func Test_app_WsServer(t *testing.T) {
+func Test_app_HttpHandler(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	ws := NewMockWsHttpServer(m)
+	httpHandler := NewMockHttpHandler(m)
 	a := &app{
-		ws: ws,
+		httpHandler: httpHandler,
 	}
-	assert.NotNil(t, a.WsServer())
+	assert.NotNil(t, a.HttpHandler())
 }
 
 func Test_bootShortName(t *testing.T) {

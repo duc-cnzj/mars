@@ -89,7 +89,7 @@ func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogR
 		opt.TailLines = &tailLines
 	}
 
-	logs, err := c.k8sRepo.GetPodLogs(request.Namespace, request.Pod, opt)
+	logs, err := c.k8sRepo.GetPodLogs(ctx, request.Namespace, request.Pod, opt)
 	if err != nil {
 		c.logger.ErrorCtx(ctx, err)
 		return nil, err
@@ -108,7 +108,7 @@ func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToP
 		return nil, status.Error(codes.NotFound, reason)
 	}
 
-	file, err := c.k8sRepo.CopyFileToPod(ctx, &repo.CopyFileToPodRequest{
+	file, err := c.k8sRepo.CopyFileToPod(ctx, &repo.CopyFileToPodInput{
 		FileId:    request.FileId,
 		Namespace: request.Namespace,
 		Pod:       request.Pod,
@@ -192,7 +192,7 @@ func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPo
 		return err
 	}
 
-	res, err := c.k8sRepo.CopyFileToPod(ctx, &repo.CopyFileToPodRequest{
+	res, err := c.k8sRepo.CopyFileToPod(ctx, &repo.CopyFileToPodInput{
 		FileId:    int64(file.ID),
 		Namespace: file.Namespace,
 		Pod:       file.Pod,

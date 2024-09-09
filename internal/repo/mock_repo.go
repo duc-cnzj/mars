@@ -21,6 +21,7 @@ import (
 	schematype "github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 	event "github.com/duc-cnzj/mars/v5/internal/event"
 	uploader "github.com/duc-cnzj/mars/v5/internal/uploader"
+	k8s "github.com/duc-cnzj/mars/v5/internal/util/k8s"
 	pagination "github.com/duc-cnzj/mars/v5/internal/util/pagination"
 	gomock "go.uber.org/mock/gomock"
 	chart "helm.sh/helm/v3/pkg/chart"
@@ -823,23 +824,8 @@ func (mr *MockK8sRepoMockRecorder) ClusterInfo() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterInfo", reflect.TypeOf((*MockK8sRepo)(nil).ClusterInfo))
 }
 
-// Copy mocks base method.
-func (m *MockK8sRepo) Copy(arg0 context.Context, arg1, arg2, arg3, arg4, arg5 string) (*CopyFileToPodResult, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Copy", arg0, arg1, arg2, arg3, arg4, arg5)
-	ret0, _ := ret[0].(*CopyFileToPodResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Copy indicates an expected call of Copy.
-func (mr *MockK8sRepoMockRecorder) Copy(arg0, arg1, arg2, arg3, arg4, arg5 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Copy", reflect.TypeOf((*MockK8sRepo)(nil).Copy), arg0, arg1, arg2, arg3, arg4, arg5)
-}
-
 // CopyFileToPod mocks base method.
-func (m *MockK8sRepo) CopyFileToPod(arg0 context.Context, arg1 *CopyFileToPodRequest) (*File, error) {
+func (m *MockK8sRepo) CopyFileToPod(arg0 context.Context, arg1 *CopyFileToPodInput) (*File, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CopyFileToPod", arg0, arg1)
 	ret0, _ := ret[0].(*File)
@@ -851,6 +837,21 @@ func (m *MockK8sRepo) CopyFileToPod(arg0 context.Context, arg1 *CopyFileToPodReq
 func (mr *MockK8sRepoMockRecorder) CopyFileToPod(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyFileToPod", reflect.TypeOf((*MockK8sRepo)(nil).CopyFileToPod), arg0, arg1)
+}
+
+// CopyFromPod mocks base method.
+func (m *MockK8sRepo) CopyFromPod(arg0 context.Context, arg1 *CopyFromPodInput) (*File, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CopyFromPod", arg0, arg1)
+	ret0, _ := ret[0].(*File)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CopyFromPod indicates an expected call of CopyFromPod.
+func (mr *MockK8sRepoMockRecorder) CopyFromPod(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyFromPod", reflect.TypeOf((*MockK8sRepo)(nil).CopyFromPod), arg0, arg1)
 }
 
 // CreateDockerSecret mocks base method.
@@ -1030,18 +1031,18 @@ func (mr *MockK8sRepoMockRecorder) GetPod(arg0, arg1 any) *gomock.Call {
 }
 
 // GetPodLogs mocks base method.
-func (m *MockK8sRepo) GetPodLogs(arg0, arg1 string, arg2 *v1.PodLogOptions) (string, error) {
+func (m *MockK8sRepo) GetPodLogs(arg0 context.Context, arg1, arg2 string, arg3 *v1.PodLogOptions) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPodLogs", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetPodLogs", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPodLogs indicates an expected call of GetPodLogs.
-func (mr *MockK8sRepoMockRecorder) GetPodLogs(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockK8sRepoMockRecorder) GetPodLogs(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodLogs", reflect.TypeOf((*MockK8sRepo)(nil).GetPodLogs), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodLogs", reflect.TypeOf((*MockK8sRepo)(nil).GetPodLogs), arg0, arg1, arg2, arg3)
 }
 
 // GetPodMetrics mocks base method.
@@ -2042,6 +2043,20 @@ func (m *MockExecutorManager) New() Executor {
 func (mr *MockExecutorManagerMockRecorder) New() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "New", reflect.TypeOf((*MockExecutorManager)(nil).New))
+}
+
+// NewFileCopy mocks base method.
+func (m *MockExecutorManager) NewFileCopy(arg0 int, arg1 io.Writer) k8s.FileCopy {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewFileCopy", arg0, arg1)
+	ret0, _ := ret[0].(k8s.FileCopy)
+	return ret0
+}
+
+// NewFileCopy indicates an expected call of NewFileCopy.
+func (mr *MockExecutorManagerMockRecorder) NewFileCopy(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewFileCopy", reflect.TypeOf((*MockExecutorManager)(nil).NewFileCopy), arg0, arg1)
 }
 
 // MockExecutor is a mock of Executor interface.

@@ -56,7 +56,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	repoRepo := repo.NewRepo(logger, dataData, gitRepo)
 	fileRepo := repo.NewFileRepo(logger, dataData, cacheCache, uploaderUploader, timerTimer)
 	archiver := repo.NewDefaultArchiver()
-	executorManager := repo.NewExecutorManager(dataData)
+	executorManager := repo.NewExecutorManager(dataData, logger)
 	k8sRepo := repo.NewK8sRepo(logger, timerTimer, dataData, fileRepo, uploaderUploader, archiver, executorManager)
 	helmerRepo := repo.NewDefaultHelmer(k8sRepo, dataData, configConfig, logger)
 	releaseInstaller := socket.NewReleaseInstaller(logger, helmerRepo, dataData, timerTimer)
@@ -84,10 +84,11 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	accessTokenServer := services.NewAccessTokenSvc(logger, eventRepo, timerTimer, accessTokenRepo)
 	repoServer := services.NewRepoSvc(logger, eventRepo, gitRepo, repoRepo)
 	grpcRegistry := services.NewGrpcRegistry(versionServer, projectServer, pictureServer, namespaceServer, metricsServer, gitServer, fileServer, eventServer, endpointServer, containerServer, clusterServer, changelogServer, authServer, accessTokenServer, repoServer)
-	counterCounter := counter.NewCounter()
-	wsHttpServer := socket.NewWebsocketManager(logger, counterCounter, projectRepo, repoRepo, namespaceRepo, jobManager, dataData, pluginManger, authAuth, uploaderUploader, lockerLocker, k8sRepo, eventRepo, executorManager, fileRepo)
 	registry := metrics.NewRegistry()
 	cronRepo := repo.NewCronRepo(logger, fileRepo, cacheCache, repoRepo, namespaceRepo, k8sRepo, pluginManger, eventRepo, dataData, uploaderUploader, helmerRepo, gitRepo, manager)
-	app := newApp(configConfig, dataData, manager, arg, logger, uploaderUploader, authAuth, dispatcher, cacheCache, lockerLocker, group, pluginManger, grpcRegistry, wsHttpServer, registry, cronRepo)
+	counterCounter := counter.NewCounter()
+	wsHttpServer := socket.NewWebsocketManager(logger, counterCounter, projectRepo, repoRepo, namespaceRepo, jobManager, dataData, pluginManger, authAuth, uploaderUploader, lockerLocker, k8sRepo, eventRepo, executorManager, fileRepo)
+	httpHandler := services.NewHttpHandler(wsHttpServer, logger, uploaderUploader, authRepo, eventRepo, fileRepo, timerTimer, k8sRepo)
+	app := newApp(configConfig, dataData, manager, arg, logger, uploaderUploader, authAuth, dispatcher, cacheCache, lockerLocker, group, pluginManger, grpcRegistry, registry, cronRepo, httpHandler)
 	return app, nil
 }

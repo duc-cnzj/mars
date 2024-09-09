@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/grpc"
+
 	"github.com/duc-cnzj/mars/v5/internal/application"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -100,4 +102,17 @@ func TestGrpcRunner_Shutdown(t *testing.T) {
 	err = runner.Shutdown(ctx)
 	assert.NotNil(t, err)
 	time.Sleep(time.Second)
+}
+
+func Test_grpcRunner_initServer(t *testing.T) {
+	var ss any
+	(&grpcRunner{
+		grpcRegistry: &application.GrpcRegistry{
+			RegistryFunc: func(s grpc.ServiceRegistrar) {
+				ss = s
+			},
+		},
+	}).initServer()
+
+	assert.NotNil(t, ss)
 }

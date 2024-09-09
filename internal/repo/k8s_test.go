@@ -4,31 +4,37 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/lithammer/dedent"
-	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/runtime"
-	testing2 "k8s.io/client-go/testing"
-	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
-	fake2 "k8s.io/metrics/pkg/client/clientset/versioned/fake"
-
 	"github.com/duc-cnzj/mars/v5/internal/config"
 	"github.com/duc-cnzj/mars/v5/internal/data"
+	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/uploader"
+	"github.com/duc-cnzj/mars/v5/internal/util/k8s"
 	"github.com/duc-cnzj/mars/v5/internal/util/timer"
+	"github.com/lithammer/dedent"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	eventsv1lister "k8s.io/client-go/listers/events/v1"
+	restclient "k8s.io/client-go/rest"
+	testing2 "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
+	fake2 "k8s.io/metrics/pkg/client/clientset/versioned/fake"
 )
 
 func TestNewK8sRepo(t *testing.T) {
@@ -45,7 +51,7 @@ func TestNewK8sRepo(t *testing.T) {
 		fileRepo,
 		mockUploader,
 		NewDefaultArchiver(),
-		NewExecutorManager(mockData),
+		NewExecutorManager(mockData, mlog.NewForConfig(nil)),
 	).(*k8sRepo)
 	assert.NotNil(t, repo)
 	assert.NotNil(t, repo.logger)
@@ -71,7 +77,7 @@ func TestSplitManifests(t *testing.T) {
 		fileRepo,
 		mockUploader,
 		NewDefaultArchiver(),
-		NewExecutorManager(mockData),
+		NewExecutorManager(mockData, mlog.NewForConfig(nil)),
 	).(*k8sRepo)
 
 	t.Run("should split manifest string correctly", func(t *testing.T) {
@@ -392,7 +398,7 @@ func TestAnalyseMetricsToCpuAndMemory(t *testing.T) {
 			},
 		}
 
-		cpuStr, memoryStr := kr.analyseMetricsToCpuAndMemory(list)
+		cpuStr, memoryStr := kr.GetCpuAndMemory(context.TODO(), list)
 
 		assert.Equal(t, "300 m", cpuStr)
 		assert.Equal(t, "300 MB", memoryStr)
@@ -401,7 +407,7 @@ func TestAnalyseMetricsToCpuAndMemory(t *testing.T) {
 	t.Run("should return zero cpu and memory when list is empty", func(t *testing.T) {
 		list := []v1beta1.PodMetrics{}
 
-		cpuStr, memoryStr := kr.analyseMetricsToCpuAndMemory(list)
+		cpuStr, memoryStr := kr.GetCpuAndMemory(context.TODO(), list)
 
 		assert.Equal(t, "0 m", cpuStr)
 		assert.Equal(t, "0 MB", memoryStr)
@@ -414,7 +420,7 @@ func TestAnalyseMetricsToCpuAndMemory(t *testing.T) {
 			},
 		}
 
-		cpuStr, memoryStr := kr.analyseMetricsToCpuAndMemory(list)
+		cpuStr, memoryStr := kr.GetCpuAndMemory(context.TODO(), list)
 
 		assert.Equal(t, "0 m", cpuStr)
 		assert.Equal(t, "0 MB", memoryStr)
@@ -900,7 +906,9 @@ func Test_getPodSelectorsInDeploymentAndStatefulSetByManifest(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run("", func(t *testing.T) {
-			labels := (&k8sRepo{}).GetPodSelectorsByManifest([]string{tt.in})
+			labels := (&k8sRepo{
+				logger: mlog.NewForConfig(nil),
+			}).GetPodSelectorsByManifest([]string{tt.in})
 			if len(labels) > 0 {
 				assert.Equal(t, tt.out, labels[0])
 			} else {
@@ -1008,4 +1016,194 @@ func Test_k8sRepo_Execute(t *testing.T) {
 	}
 	ec.EXPECT().Execute(gomock.Any(), input)
 	assert.Nil(t, r.Execute(context.TODO(), c, input))
+}
+
+func Test_defaultRemoteExecutor_NewFileCopy(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	d := &defaultRemoteExecutor{
+		data:   mockData,
+		logger: mlog.NewForConfig(nil),
+	}
+	mockData.EXPECT().K8sClient().Return(&data.K8sClient{
+		RestConfig: &restclient.Config{},
+	}).Times(2)
+	fileCopy := d.NewFileCopy(1, &bytes.Buffer{})
+	assert.NotNil(t, fileCopy)
+}
+func TestGetPodLogs(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	clientset := fake.NewSimpleClientset()
+	mockData.EXPECT().K8sClient().Return(&data.K8sClient{Client: clientset}).AnyTimes()
+	kr := &k8sRepo{
+		logger: mlog.NewForConfig(nil),
+		data:   mockData,
+	}
+
+	t.Run("should return logs when pod exists", func(t *testing.T) {
+		pod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-pod",
+				Namespace: "test-namespace",
+			},
+		}
+		clientset.CoreV1().Pods("test-namespace").Create(context.TODO(), pod, metav1.CreateOptions{})
+		clientset.CoreV1().Pods("test-namespace").UpdateStatus(context.TODO(), pod, metav1.UpdateOptions{})
+		clientset.CoreV1().Pods(pod.Namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
+		_, err := kr.GetPodLogs(context.TODO(), "test-namespace", "test-pod", &corev1.PodLogOptions{})
+		assert.Nil(t, err)
+	})
+}
+func TestCopyFromPod(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockUploader := uploader.NewMockUploader(m)
+	mockFileRepo := NewMockFileRepo(m)
+	manager := NewMockExecutorManager(m)
+	mockExecutor := NewMockExecutor(m)
+	manager.EXPECT().New().Return(mockExecutor).AnyTimes()
+	mockExecutor.EXPECT().WithCommand(gomock.Any()).Return(mockExecutor).AnyTimes()
+	mockExecutor.EXPECT().WithContainer("test-namespace", "test-pod", "").Return(mockExecutor).AnyTimes()
+	mockExecutor.EXPECT().WithMethod(gomock.Any()).Return(mockExecutor).AnyTimes()
+	mockExecutor.EXPECT().Execute(gomock.Any(), gomock.Cond(func(x any) bool {
+		input := x.(*ExecuteInput)
+		input.Stderr.Write([]byte("xxx"))
+		return slices.Equal(input.Cmd, []string{"sh", "-c", "ls -l " + "/test/file/path"})
+	})).Return(nil).AnyTimes()
+	kr := &k8sRepo{
+		logger:   mlog.NewForConfig(nil),
+		data:     mockData,
+		uploader: mockUploader,
+		fileRepo: mockFileRepo,
+		executor: manager,
+	}
+
+	_, err := kr.CopyFromPod(context.TODO(), &CopyFromPodInput{
+		Namespace: "test-namespace",
+		Pod:       "test-pod",
+		FilePath:  "/test/file/path",
+		UserName:  "test-user",
+	})
+	s, _ := status.FromError(err)
+	assert.Equal(t, "xxx", s.Message())
+	assert.Equal(t, codes.InvalidArgument, s.Code())
+}
+
+func TestCopyFromPod1(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockUploader := uploader.NewMockUploader(m)
+	mockFileRepo := NewMockFileRepo(m)
+	manager := NewMockExecutorManager(m)
+	mockExecutor := NewMockExecutor(m)
+	manager.EXPECT().New().Return(mockExecutor).AnyTimes()
+	mockExecutor.EXPECT().WithCommand(gomock.Any()).Return(mockExecutor).AnyTimes()
+	mockExecutor.EXPECT().WithContainer("test-namespace", "test-pod", "").Return(mockExecutor).AnyTimes()
+	mockExecutor.EXPECT().WithMethod(gomock.Any()).Return(mockExecutor).AnyTimes()
+	mockExecutor.EXPECT().Execute(gomock.Any(), gomock.Cond(func(x any) bool {
+		input := x.(*ExecuteInput)
+		return slices.Equal(input.Cmd, []string{"sh", "-c", "ls -l " + "/test/file/path"})
+	})).Return(nil)
+	kr := &k8sRepo{
+		logger:   mlog.NewForConfig(nil),
+		data:     mockData,
+		uploader: mockUploader,
+		timer:    timer.NewRealTimer(),
+		fileRepo: mockFileRepo,
+		executor: manager,
+	}
+
+	manager.EXPECT().NewFileCopy(5, gomock.Any()).Return(nil)
+	mockUploader.EXPECT().Disk("podfile").Return(mockUploader)
+	mockUploader.EXPECT().NewFile(gomock.Any()).Return(nil, errors.New("x"))
+
+	mockExecutor.EXPECT().Execute(gomock.Any(), gomock.Cond(func(x any) bool {
+		input := x.(*ExecuteInput)
+		input.Stdout.Write([]byte("/"))
+		return slices.Equal(input.Cmd, []string{"sh", "-c", "pwd"})
+	})).Return(nil)
+
+	_, err := kr.CopyFromPod(context.TODO(), &CopyFromPodInput{
+		Namespace: "test-namespace",
+		Pod:       "test-pod",
+		FilePath:  "/test/file/path",
+		UserName:  "test-user",
+	})
+	assert.Equal(t, "x", err.Error())
+}
+
+func TestCopyFromPod_success(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	mockUploader := uploader.NewMockUploader(m)
+	mockFileRepo := NewMockFileRepo(m)
+	manager := NewMockExecutorManager(m)
+	mockExecutor := NewMockExecutor(m)
+	manager.EXPECT().New().Return(mockExecutor).AnyTimes()
+	mockExecutor.EXPECT().WithCommand(gomock.Any()).Return(mockExecutor).AnyTimes()
+	mockExecutor.EXPECT().WithContainer("test-namespace", "test-pod", "").Return(mockExecutor).AnyTimes()
+	mockExecutor.EXPECT().WithMethod(gomock.Any()).Return(mockExecutor).AnyTimes()
+	mockExecutor.EXPECT().Execute(gomock.Any(), gomock.Cond(func(x any) bool {
+		input := x.(*ExecuteInput)
+		return slices.Equal(input.Cmd, []string{"sh", "-c", "ls -l " + "/test/file/path"})
+	})).Return(nil)
+	kr := &k8sRepo{
+		logger:   mlog.NewForConfig(nil),
+		data:     mockData,
+		uploader: mockUploader,
+		timer:    timer.NewRealTimer(),
+		fileRepo: mockFileRepo,
+		executor: manager,
+	}
+
+	manager.EXPECT().NewFileCopy(5, gomock.Any()).Return(&mockFileCopy{})
+	mockUploader.EXPECT().Disk("podfile").Return(mockUploader)
+	file := uploader.NewMockFile(m)
+	mockUploader.EXPECT().NewFile(gomock.Any()).Return(file, nil)
+
+	mockExecutor.EXPECT().Execute(gomock.Any(), gomock.Cond(func(x any) bool {
+		input := x.(*ExecuteInput)
+		input.Stdout.Write([]byte("/"))
+		return slices.Equal(input.Cmd, []string{"sh", "-c", "pwd"})
+	})).Return(nil)
+
+	info := &mockFileInfo{
+		size: 1,
+	}
+	file.EXPECT().Stat().Return(info, nil)
+	file.EXPECT().Close()
+	file.EXPECT().Name().Return("fname")
+
+	mockFileRepo.EXPECT().Create(gomock.Any(), &CreateFileInput{
+		Path:       "fname",
+		Username:   "test-user",
+		Size:       uint64(1),
+		UploadType: schematype.Local,
+		Namespace:  "test-namespace",
+		Pod:        "test-pod",
+		Container:  "",
+	})
+
+	mockUploader.EXPECT().Type().Return(schematype.Local)
+	_, err := kr.CopyFromPod(context.TODO(), &CopyFromPodInput{
+		Namespace: "test-namespace",
+		Pod:       "test-pod",
+		FilePath:  "/test/file/path",
+		UserName:  "test-user",
+	})
+	assert.Nil(t, err)
+}
+
+var _ k8s.FileCopy = (*mockFileCopy)(nil)
+
+type mockFileCopy struct{}
+
+func (m *mockFileCopy) CopyFromPod(ctx context.Context, src k8s.CopyFileSpec, file uploader.File) error {
+	return nil
 }

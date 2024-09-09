@@ -14,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/locker"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/uploader"
+	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/singleflight"
@@ -26,13 +27,6 @@ type RegistryFunc = func(s grpc.ServiceRegistrar)
 type GrpcRegistry struct {
 	EndpointFuncs []EndpointFunc
 	RegistryFunc  RegistryFunc
-}
-
-type WsHttpServer interface {
-	TickClusterHealth(done <-chan struct{})
-	Info(writer http.ResponseWriter, request *http.Request)
-	Serve(w http.ResponseWriter, r *http.Request)
-	Shutdown(ctx context.Context) error
 }
 
 type Callback func(App)
@@ -97,9 +91,6 @@ type App interface {
 	// Shutdown all servers.
 	Shutdown()
 
-	// WsHttpServer return ws server.
-	WsServer() WsHttpServer
-
 	// Done return done chan.
 	Done() <-chan struct{}
 
@@ -129,4 +120,21 @@ type App interface {
 
 	// CronManager return cron manager
 	CronManager() cron.Manager
+
+	HttpHandler() HttpHandler
+}
+
+type WsHttpServer interface {
+	TickClusterHealth(done <-chan struct{})
+	Info(writer http.ResponseWriter, request *http.Request)
+	Serve(w http.ResponseWriter, r *http.Request)
+	Shutdown(ctx context.Context) error
+}
+
+type HttpHandler interface {
+	WsHttpServer
+
+	RegisterWsRoute(mux *mux.Router)
+	RegisterSwaggerUIRoute(mux *mux.Router)
+	RegisterFileRoute(mux *runtime.ServeMux)
 }
