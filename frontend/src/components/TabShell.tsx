@@ -216,6 +216,7 @@ const TabShell: React.FC<{
   );
 
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const props = {
     name: "file",
@@ -439,6 +440,7 @@ const TabShell: React.FC<{
                     />
                   }
                   onConfirm={() => {
+                    setDownloading(true);
                     new JsFileDownloader({
                       url: `${process.env.REACT_APP_BASE_URL}/api/copy_from_pod`,
                       method: "POST",
@@ -452,12 +454,16 @@ const TabShell: React.FC<{
                         container: value.container,
                         filepath: podfilepath,
                       }),
-                    }).then(function () {
-                      message.success("下载成功");
-                      setIsModalOpen(false);
-                    }).catch(function(r) {
-                      message.error("下载失败，请检查路径是否正确")
                     })
+                      .then(function () {
+                        setDownloading(false);
+                        message.success("下载成功");
+                        setIsModalOpen(false);
+                      })
+                      .catch(function (r) {
+                        setDownloading(false);
+                        message.error("下载失败，请检查路径是否正确");
+                      });
                   }}
                   onCancel={() => {
                     setIsModalOpen(false);
@@ -468,6 +474,7 @@ const TabShell: React.FC<{
                   cancelText="取消"
                 >
                   <Button
+                    loading={downloading}
                     onClick={() => setIsModalOpen(true)}
                     style={{ fontSize: 12, marginRight: 2 }}
                     size="small"
