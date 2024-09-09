@@ -168,6 +168,9 @@ func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *CopyFromPodInput) (
 		TTY:    false,
 		Cmd:    []string{"sh", "-c", "ls -l " + input.FilePath},
 	})
+	if err != nil {
+		return nil, err
+	}
 	lsErrStr := strings.Trim(lsbf.String(), "\n")
 	if lsErrStr != "" {
 		return nil, ToError(400, lsErrStr)
@@ -470,7 +473,7 @@ func (repo *k8sRepo) GetPodSelectorsByManifest(manifests []string) []string {
 				selectors = append(selectors, labels.SelectorFromSet(jobPodLabels).String())
 			}
 		default:
-			//mlog.Debugf("未知: %#v", a)
+			repo.logger.Debugf("未知: %#v", a)
 		}
 	}
 
@@ -486,28 +489,6 @@ func (repo *k8sRepo) GetCpuAndMemoryInNamespace(ctx context.Context, namespace s
 func (repo *k8sRepo) GetCpuAndMemory(ctx context.Context, list []v1beta1.PodMetrics) (string, string) {
 	_, span := otel.Tracer("").Start(ctx, "GetCpuAndMemory")
 	defer span.End()
-	return repo.analyseMetricsToCpuAndMemory(list)
-}
-
-func (repo *k8sRepo) GetCpuAndMemoryQuantity(pod v1beta1.PodMetrics) (cpu *resource.Quantity, memory *resource.Quantity) {
-	for _, container := range pod.Containers {
-		if cpu == nil {
-			cpu = container.Usage.Cpu()
-		} else {
-			cpu.Add(*container.Usage.Cpu())
-		}
-
-		if memory == nil {
-			memory = container.Usage.Memory()
-		} else {
-			memory.Add(*container.Usage.Memory())
-		}
-	}
-
-	return cpu, memory
-}
-
-func (repo *k8sRepo) analyseMetricsToCpuAndMemory(list []v1beta1.PodMetrics) (string, string) {
 	var cpu, memory *resource.Quantity
 
 	for _, item := range list {
@@ -537,6 +518,24 @@ func (repo *k8sRepo) analyseMetricsToCpuAndMemory(list []v1beta1.PodMetrics) (st
 	}
 
 	return cpuStr, memoryStr
+}
+
+func (repo *k8sRepo) GetCpuAndMemoryQuantity(pod v1beta1.PodMetrics) (cpu *resource.Quantity, memory *resource.Quantity) {
+	for _, container := range pod.Containers {
+		if cpu == nil {
+			cpu = container.Usage.Cpu()
+		} else {
+			cpu.Add(*container.Usage.Cpu())
+		}
+
+		if memory == nil {
+			memory = container.Usage.Memory()
+		} else {
+			memory.Add(*container.Usage.Memory())
+		}
+	}
+
+	return cpu, memory
 }
 
 type copyToPodResult struct {
