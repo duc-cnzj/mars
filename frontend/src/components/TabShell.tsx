@@ -470,6 +470,7 @@ const TabShell: React.FC<{
                     setPodfilepath("");
                   }}
                   overlayInnerStyle={{ width: 500 }}
+                  okButtonProps={{ loading: downloading }}
                   okText="下载"
                   cancelText="取消"
                 >
