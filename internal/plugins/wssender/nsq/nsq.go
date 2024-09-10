@@ -85,12 +85,13 @@ func (n *nsqSender) Destroy() error {
 
 func (n *nsqSender) New(uid, id string) application.PubSub {
 	return &nsq{
-		db:           n.db,
+		logger:       n.logger,
 		addr:         n.addr,
 		lookupdAddr:  n.lookupdAddr,
 		cfg:          n.cfg,
 		uid:          uid,
 		id:           id,
+		db:           n.db,
 		consumers:    map[string]*gonsq.Consumer{},
 		producer:     n.producer,
 		msgCh:        make(chan []byte, wssender.MessageChSize),

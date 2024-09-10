@@ -14,7 +14,7 @@ func (g *GrpcBootstrapper) Tags() []string {
 }
 
 func (g *GrpcBootstrapper) Bootstrap(app application.App) error {
-	app.AddServer(server.NewGrpcRunner(fmt.Sprintf("localhost:%v", app.Config().GrpcPort), app))
+	app.AddServer(server.NewGrpcRunner(fmt.Sprintf("0.0.0.0:%v", app.Config().GrpcPort), app))
 
 	return nil
 }
