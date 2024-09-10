@@ -436,7 +436,7 @@ const TabShell: React.FC<{
                         setPodfilepath(v.target.value);
                       }}
                       style={{ width: "80%", fontSize: 12 }}
-                      placeholder="绝对路径"
+                      placeholder="绝对路径, 不能为目录"
                     />
                   }
                   onConfirm={() => {

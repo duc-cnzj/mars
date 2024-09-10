@@ -1071,8 +1071,8 @@ func TestCopyFromPod(t *testing.T) {
 	mockExecutor.EXPECT().WithMethod(gomock.Any()).Return(mockExecutor).AnyTimes()
 	mockExecutor.EXPECT().Execute(gomock.Any(), gomock.Cond(func(x any) bool {
 		input := x.(*ExecuteInput)
-		input.Stderr.Write([]byte("xxx"))
-		return slices.Equal(input.Cmd, []string{"sh", "-c", "ls -l " + "/test/file/path"})
+		input.Stdout.Write([]byte("0"))
+		return slices.Equal(input.Cmd, []string{"sh", "-c", "test -f /test/file/path && echo 1 || echo 0"})
 	})).Return(nil).AnyTimes()
 	kr := &k8sRepo{
 		logger:   mlog.NewForConfig(nil),
@@ -1089,7 +1089,7 @@ func TestCopyFromPod(t *testing.T) {
 		UserName:  "test-user",
 	})
 	s, _ := status.FromError(err)
-	assert.Equal(t, "xxx", s.Message())
+	assert.Equal(t, "下文内容必须是文件", s.Message())
 	assert.Equal(t, codes.InvalidArgument, s.Code())
 }
 
@@ -1107,7 +1107,8 @@ func TestCopyFromPod1(t *testing.T) {
 	mockExecutor.EXPECT().WithMethod(gomock.Any()).Return(mockExecutor).AnyTimes()
 	mockExecutor.EXPECT().Execute(gomock.Any(), gomock.Cond(func(x any) bool {
 		input := x.(*ExecuteInput)
-		return slices.Equal(input.Cmd, []string{"sh", "-c", "ls -l " + "/test/file/path"})
+		input.Stdout.Write([]byte("1"))
+		return slices.Equal(input.Cmd, []string{"sh", "-c", "test -f /test/file/path && echo 1 || echo 0"})
 	})).Return(nil)
 	kr := &k8sRepo{
 		logger:   mlog.NewForConfig(nil),
@@ -1151,7 +1152,8 @@ func TestCopyFromPod_success(t *testing.T) {
 	mockExecutor.EXPECT().WithMethod(gomock.Any()).Return(mockExecutor).AnyTimes()
 	mockExecutor.EXPECT().Execute(gomock.Any(), gomock.Cond(func(x any) bool {
 		input := x.(*ExecuteInput)
-		return slices.Equal(input.Cmd, []string{"sh", "-c", "ls -l " + "/test/file/path"})
+		input.Stdout.Write([]byte("1"))
+		return slices.Equal(input.Cmd, []string{"sh", "-c", "test -f /test/file/path && echo 1 || echo 0"})
 	})).Return(nil)
 	kr := &k8sRepo{
 		logger:   mlog.NewForConfig(nil),

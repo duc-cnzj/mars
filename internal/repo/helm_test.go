@@ -2,7 +2,6 @@ package repo
 
 import (
 	"context"
-	"github.com/duc-cnzj/mars/v5/internal/config"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v5/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/v5/internal/config"
 	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/stretchr/testify/assert"
