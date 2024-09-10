@@ -329,23 +329,22 @@ func (j *jobRunner) Validate() Job {
 	}
 	j.config = j.repo.MarsConfig
 
-	createProjectInput := &repo.CreateProjectInput{
-		Name:         j.input.Name,
-		GitProjectID: int(j.repo.GitProjectID),
-		GitBranch:    j.input.GitBranch,
-		GitCommit:    j.input.GitCommit,
-		Config:       j.input.Config,
-		Atomic:       j.input.Atomic,
-		ConfigType:   j.config.ConfigFileType,
-		NamespaceID:  j.ns.ID,
-		RepoID:       j.repo.ID,
-		Creator:      j.user.Email,
-	}
-
 	j.messager.SendMsg("[Check]: 检查项目是否存在")
 
-	found, err := j.projRepo.FindByName(context.TODO(), createProjectInput.Name, createProjectInput.NamespaceID)
+	found, err := j.projRepo.FindByName(context.TODO(), j.input.Name, j.ns.ID)
 	if err != nil {
+		createProjectInput := &repo.CreateProjectInput{
+			Name:         j.input.Name,
+			GitProjectID: int(j.repo.GitProjectID),
+			GitBranch:    j.input.GitBranch,
+			GitCommit:    j.input.GitCommit,
+			Config:       j.input.Config,
+			Atomic:       j.input.Atomic,
+			ConfigType:   j.config.ConfigFileType,
+			NamespaceID:  j.ns.ID,
+			RepoID:       j.repo.ID,
+			Creator:      j.user.Email,
+		}
 		j.messager.SendMsg("[Check]: 新建项目")
 		createProjectInput.DeployStatus = types.Deploy_StatusDeploying
 		j.isNew = true
@@ -395,7 +394,7 @@ func (j *jobRunner) Validate() Job {
 	j.imagePullSecrets = j.ns.ImagePullSecrets
 	j.commit = NewEmptyCommit()
 	if j.repo.NeedGitRepo {
-		j.commit, err = j.pluginMgr.Git().GetCommit(fmt.Sprintf("%d", j.project.GitProjectID), j.project.GitCommit)
+		j.commit, err = j.pluginMgr.Git().GetCommit(fmt.Sprintf("%d", j.repo.GitProjectID), j.input.GitCommit)
 	}
 	if !j.isNew {
 		j.oldConf = toProjectEventYaml(j.project)

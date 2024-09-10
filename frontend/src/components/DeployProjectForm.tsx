@@ -117,9 +117,9 @@ const DeployProjectForm: React.FC<{
     return defaultCurr;
   }, [options.project, repoId, namespaceId, project]);
   const [loading, setLoading] = useState({
-    project: false,
-    branch: false,
-    commit: false,
+    project: isEdit,
+    branch: isEdit,
+    commit: isEdit,
   });
   const screens = useBreakpoint();
 
@@ -191,10 +191,17 @@ const DeployProjectForm: React.FC<{
             },
           },
         )
-        .then(
-          ({ data }) =>
-            data && setOptions((opt) => ({ ...opt, commit: data.items })),
-        )
+        .then(({ data }) => {
+          if (data) {
+            setOptions((opt) => ({ ...opt, commit: data.items }));
+            let c = data.items.find(
+              (v) => v.value === form.getFieldValue("commit"),
+            );
+            if (!c) {
+              form.setFieldValue("commit", "");
+            }
+          }
+        })
         .finally(() => {
           setLoading((v) => ({ ...v, commit: false }));
         });
@@ -204,12 +211,8 @@ const DeployProjectForm: React.FC<{
   useEffect(() => {
     if (isEdit) {
       onProjectVisibleChange(true);
-      if (project && project.repo.needGitRepo) {
-        fetchBranches(project.repo.gitProjectId, project.repoId, isEdit);
-        fetchCommits(project.repo.gitProjectId, project.gitBranch, isEdit);
-      }
     }
-  }, [isEdit, onProjectVisibleChange, fetchCommits, project, fetchBranches]);
+  }, [isEdit, onProjectVisibleChange]);
 
   useEffect(() => {
     setNeedGitRepo(curr.needGitRepo);
