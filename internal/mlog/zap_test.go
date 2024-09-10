@@ -146,6 +146,8 @@ func Test_zapLogger_ErrorCtxf(t *testing.T) {
 }
 
 func Test_zapLogger_WithModule(t *testing.T) {
-	logger := NewZapLogger(true)
-	assert.NotNil(t, logger.WithModule("test"))
+	logger := NewZapLogger(true).(*zapLogger)
+	module := logger.WithModule("test").(*zapLogger)
+	assert.NotNil(t, module)
+	assert.Same(t, logger.logger, module.logger)
 }

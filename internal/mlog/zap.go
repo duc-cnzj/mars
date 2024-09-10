@@ -13,8 +13,9 @@ import (
 var _ Logger = (*zapLogger)(nil)
 
 type zapLogger struct {
-	sugar *zap.SugaredLogger
-	debug bool
+	logger *zap.Logger
+	sugar  *zap.SugaredLogger
+	debug  bool
 }
 
 // NewZapLogger impl contracts.Logger.
@@ -35,7 +36,7 @@ func NewZapLogger(debug bool) Logger {
 	cfg.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000")
 	logger, _ = cfg.Build(opts...)
 
-	return &zapLogger{sugar: logger.Sugar(), debug: debug}
+	return &zapLogger{sugar: logger.Sugar(), debug: debug, logger: logger}
 }
 
 func (z *zapLogger) HandlePanic(title string) {
@@ -177,7 +178,8 @@ func (z *zapLogger) logWithContext(ctx context.Context) *zap.SugaredLogger {
 
 func (z *zapLogger) WithModule(module string) Logger {
 	return &zapLogger{
-		sugar: z.sugar.With("module", module),
-		debug: z.debug,
+		debug:  z.debug,
+		logger: z.logger,
+		sugar:  z.logger.Sugar().With(zap.String("module", module)),
 	}
 }
