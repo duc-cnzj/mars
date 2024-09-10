@@ -1089,7 +1089,7 @@ func TestCopyFromPod(t *testing.T) {
 		UserName:  "test-user",
 	})
 	s, _ := status.FromError(err)
-	assert.Equal(t, "下文内容必须是文件", s.Message())
+	assert.Equal(t, "下载内容必须是文件", s.Message())
 	assert.Equal(t, codes.InvalidArgument, s.Code())
 }
 

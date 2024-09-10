@@ -170,7 +170,7 @@ func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *CopyFromPodInput) (
 	})
 	isFile := strings.Trim(lsbf.String(), "\n") == "1"
 	if !isFile {
-		return nil, ToError(400, "下文内容必须是文件")
+		return nil, ToError(400, "下载内容必须是文件")
 	}
 
 	pwdbf := &bytes.Buffer{}
