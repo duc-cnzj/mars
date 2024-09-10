@@ -171,4 +171,24 @@ service Namespace {
       summary: "关注/取消关注",
     };
   }
+
+  rpc Transfer(TransferRequest) returns (TransferResponse){
+    option (google.api.http)      = {
+      post: "/api/namespaces/transfer",
+      body: "*"
+    };
+
+    option (openapi.v3.operation) = {
+      summary: "转让自己的空间给别人",
+    };
+  }
+}
+
+message TransferRequest{
+  int32  id              = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  // 新管理员的邮箱
+  string new_admin_email = 2 [(validate.rules).string = {min_bytes: 1, email: true}, (google.api.field_behavior) = REQUIRED];
+}
+message TransferResponse{
+  types.NamespaceModel item = 1;
 }

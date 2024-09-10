@@ -725,3 +725,50 @@ func Test_namespaceSvc_UpdatePrivate(t *testing.T) {
 	assert.NotNil(t, ns)
 	assert.Nil(t, err)
 }
+
+func Test_namespaceSvc_Transfer(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	svc := NewNamespaceSvc(
+		repo.NewMockHelmerRepo(m),
+		nsRepo,
+		repo.NewMockK8sRepo(m),
+		mlog.NewForConfig(nil),
+		eventRepo,
+	)
+
+	nsRepo.EXPECT().IsOwner(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil)
+
+	_, err := svc.Transfer(newOtherUserCtx(), &namespace.TransferRequest{
+		Id:            1,
+		NewAdminEmail: "a",
+	})
+	assert.Error(t, err)
+
+	nsRepo.EXPECT().IsOwner(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+	nsRepo.EXPECT().Transfer(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("x"))
+	ns, err := svc.Transfer(newOtherUserCtx(), &namespace.TransferRequest{
+		Id:            1,
+		NewAdminEmail: "a",
+	})
+	assert.Nil(t, ns)
+	assert.Error(t, err)
+
+	req := &namespace.TransferRequest{
+		Id:            1,
+		NewAdminEmail: "a",
+	}
+	eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Update,
+		MustGetUser(newOtherUserCtx()).Name,
+		"转让项目空间给: a",
+		req,
+	)
+	nsRepo.EXPECT().IsOwner(gomock.Any(), int(req.Id), MustGetUser(newOtherUserCtx())).Return(true, nil)
+	nsRepo.EXPECT().Transfer(gomock.Any(), int(req.Id), req.NewAdminEmail).Return(&repo.Namespace{}, nil)
+	ns, err = svc.Transfer(newOtherUserCtx(), req)
+	assert.NotNil(t, ns)
+	assert.Nil(t, err)
+}

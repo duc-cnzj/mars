@@ -4,7 +4,7 @@ import { css } from "@emotion/css";
 import theme from "../styles/theme";
 import { Button, Tabs, Skeleton, Badge, Spin } from "antd";
 import DeployStatus from "./DeployStatus";
-import { setNamespaceReload } from "../store/actions";
+import { setNamespaceReload, setOpenedModals } from "../store/actions";
 import ErrorBoundary from "./ErrorBoundary";
 import ServiceEndpoint from "./ServiceEndpoint";
 import { useDispatch } from "react-redux";
@@ -43,7 +43,8 @@ const ItemDetailModal: React.FC<{
       (params.get("pid") || "").split(",").filter((v) => v !== String(item.id)),
     ).join(",");
     setParams(!!pidStr ? { pid: pidStr } : {});
-  }, [item.id, setParams, params]);
+    dispatch(setOpenedModals({ [item.id]: false }));
+  }, [item.id, setParams, params, dispatch]);
 
   const [detail, setDetail] = useState<
     components["schemas"]["project.ShowResponse"] | undefined

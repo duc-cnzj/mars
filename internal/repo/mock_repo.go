@@ -1737,6 +1737,21 @@ func (mr *MockNamespaceRepoMockRecorder) SyncMembers(arg0, arg1, arg2 any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncMembers", reflect.TypeOf((*MockNamespaceRepo)(nil).SyncMembers), arg0, arg1, arg2)
 }
 
+// Transfer mocks base method.
+func (m *MockNamespaceRepo) Transfer(arg0 context.Context, arg1 int, arg2 string) (*Namespace, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Transfer", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*Namespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Transfer indicates an expected call of Transfer.
+func (mr *MockNamespaceRepoMockRecorder) Transfer(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Transfer", reflect.TypeOf((*MockNamespaceRepo)(nil).Transfer), arg0, arg1, arg2)
+}
+
 // Update mocks base method.
 func (m *MockNamespaceRepo) Update(arg0 context.Context, arg1 *UpdateNamespaceInput) (*Namespace, error) {
 	m.ctrl.T.Helper()

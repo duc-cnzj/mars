@@ -330,6 +330,8 @@ const NamespacePrivate: React.FC<{
 }> = ({ item, reload }) => {
   const { user, isAdmin } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [transferEmail, setTransferEmail] = useState("");
 
   const initValues = yaml.dump(item.members.map((v) => v.email));
   const [value, setValue] = useState(initValues);
@@ -429,9 +431,60 @@ const NamespacePrivate: React.FC<{
           </Row>
         </Form>
       </Modal>
-      <Tooltip overlayStyle={{ fontSize: 12 }} title="你是此空间管理员">
+      <Tooltip
+        overlayStyle={{ fontSize: 12 }}
+        trigger={["hover"]}
+        title={<div>空间管理员邮箱: {item.creatorEmail}</div>}
+      >
         <IconFont style={{ cursor: "pointer" }} name="#icon-crown" />
       </Tooltip>
+      <Popconfirm
+        overlayClassName="fullwidthpop"
+        title="转让空间"
+        open={isTransferOpen}
+        description={
+          <Input
+            type="email"
+            value={transferEmail}
+            onChange={(v) => {
+              setTransferEmail(v.target.value);
+            }}
+            style={{ width: "80%", fontSize: 12 }}
+            placeholder="新空间管理员邮箱"
+          />
+        }
+        onConfirm={() => {
+          ajax
+            .POST("/api/namespaces/transfer", {
+              body: { newAdminEmail: transferEmail, id: item.id },
+            })
+            .then(({ error }) => {
+              if (error) {
+                message.error(error.message);
+                return;
+              }
+              message.success("操作成功");
+              setIsTransferOpen(false);
+              reload();
+              setTransferEmail("");
+            });
+        }}
+        onCancel={() => {
+          setIsTransferOpen(false);
+          setTransferEmail("");
+        }}
+        overlayInnerStyle={{ width: 500 }}
+        okText="确定"
+        cancelText="取消"
+      >
+        <Tooltip overlayStyle={{ fontSize: 12 }} title="转让空间">
+          <IconFont
+            style={{ cursor: "pointer" }}
+            onClick={() => setIsTransferOpen(true)}
+            name="#icon-zhuanyi"
+          />
+        </Tooltip>
+      </Popconfirm>
       <Popconfirm
         title="修改访问权限"
         description={`确定要修改成 ${item.private ? "public" : "private"} 吗`}

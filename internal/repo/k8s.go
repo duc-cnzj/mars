@@ -164,13 +164,13 @@ func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *CopyFromPodInput) (
 		Pod:       input.Pod,
 		Container: input.Container,
 	}, &ExecuteInput{
-		Stderr: lsbf,
+		Stdout: lsbf,
 		TTY:    false,
-		Cmd:    []string{"sh", "-c", "ls -l " + input.FilePath},
+		Cmd:    []string{"sh", "-c", fmt.Sprintf("test -f " + input.FilePath + " && echo 1 || echo 0")},
 	})
-	lsErrStr := strings.Trim(lsbf.String(), "\n")
-	if lsErrStr != "" {
-		return nil, ToError(400, lsErrStr)
+	isFile := strings.Trim(lsbf.String(), "\n") == "1"
+	if !isFile {
+		return nil, ToError(400, "下文内容必须是文件")
 	}
 
 	pwdbf := &bytes.Buffer{}

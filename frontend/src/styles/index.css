@@ -3,7 +3,7 @@ body {
   margin: 0;
 }
 
-.copyfrompod .ant-popconfirm-message-text {
+.fullwidthpop .ant-popconfirm-message-text {
   width: 100%;
 }
 

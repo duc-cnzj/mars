@@ -618,6 +618,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/namespaces/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 转让自己的空间给别人 */
+        post: operations["Namespace_Transfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/namespaces/update_private": {
         parameters: {
             query?: never;
@@ -1188,6 +1205,15 @@ export interface components {
             emails?: string[];
         };
         "namespace.SyncMembersResponse": {
+            item: components["schemas"]["types.NamespaceModel"];
+        };
+        "namespace.TransferRequest": {
+            /** Format: int32 */
+            id: number;
+            /** @description 新管理员的邮箱 */
+            newAdminEmail: string;
+        };
+        "namespace.TransferResponse": {
             item: components["schemas"]["types.NamespaceModel"];
         };
         "namespace.UpdateDescRequest": {
@@ -2798,6 +2824,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["namespace.SyncMembersResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Namespace_Transfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["namespace.TransferRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["namespace.TransferResponse"];
                 };
             };
             /** @description Default error response */

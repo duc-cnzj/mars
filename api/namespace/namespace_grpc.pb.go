@@ -29,6 +29,7 @@ const (
 	Namespace_Delete_FullMethodName        = "/namespace.Namespace/Delete"
 	Namespace_IsExists_FullMethodName      = "/namespace.Namespace/IsExists"
 	Namespace_Favorite_FullMethodName      = "/namespace.Namespace/Favorite"
+	Namespace_Transfer_FullMethodName      = "/namespace.Namespace/Transfer"
 )
 
 // NamespaceClient is the client API for Namespace service.
@@ -44,6 +45,7 @@ type NamespaceClient interface {
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	IsExists(ctx context.Context, in *IsExistsRequest, opts ...grpc.CallOption) (*IsExistsResponse, error)
 	Favorite(ctx context.Context, in *FavoriteRequest, opts ...grpc.CallOption) (*FavoriteResponse, error)
+	Transfer(ctx context.Context, in *TransferRequest, opts ...grpc.CallOption) (*TransferResponse, error)
 }
 
 type namespaceClient struct {
@@ -135,6 +137,15 @@ func (c *namespaceClient) Favorite(ctx context.Context, in *FavoriteRequest, opt
 	return out, nil
 }
 
+func (c *namespaceClient) Transfer(ctx context.Context, in *TransferRequest, opts ...grpc.CallOption) (*TransferResponse, error) {
+	out := new(TransferResponse)
+	err := c.cc.Invoke(ctx, Namespace_Transfer_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NamespaceServer is the server API for Namespace service.
 // All implementations must embed UnimplementedNamespaceServer
 // for forward compatibility
@@ -148,6 +159,7 @@ type NamespaceServer interface {
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	IsExists(context.Context, *IsExistsRequest) (*IsExistsResponse, error)
 	Favorite(context.Context, *FavoriteRequest) (*FavoriteResponse, error)
+	Transfer(context.Context, *TransferRequest) (*TransferResponse, error)
 	mustEmbedUnimplementedNamespaceServer()
 }
 
@@ -181,6 +193,9 @@ func (UnimplementedNamespaceServer) IsExists(context.Context, *IsExistsRequest) 
 }
 func (UnimplementedNamespaceServer) Favorite(context.Context, *FavoriteRequest) (*FavoriteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Favorite not implemented")
+}
+func (UnimplementedNamespaceServer) Transfer(context.Context, *TransferRequest) (*TransferResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Transfer not implemented")
 }
 func (UnimplementedNamespaceServer) mustEmbedUnimplementedNamespaceServer() {}
 
@@ -357,6 +372,24 @@ func _Namespace_Favorite_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Namespace_Transfer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TransferRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NamespaceServer).Transfer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Namespace_Transfer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NamespaceServer).Transfer(ctx, req.(*TransferRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Namespace_ServiceDesc is the grpc.ServiceDesc for Namespace service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -399,6 +432,10 @@ var Namespace_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Favorite",
 			Handler:    _Namespace_Favorite_Handler,
+		},
+		{
+			MethodName: "Transfer",
+			Handler:    _Namespace_Transfer_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
