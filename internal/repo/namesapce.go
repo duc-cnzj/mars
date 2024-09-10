@@ -117,6 +117,7 @@ type NamespaceRepo interface {
 	UpdatePrivate(ctx context.Context, namespaceID int, private bool) (*Namespace, error)
 	IsOwner(ctx context.Context, namespaceID int, user *auth.UserInfo) (bool, error)
 	CanAccess(ctx context.Context, namespaceID int, user *auth.UserInfo) bool
+	Transfer(ctx context.Context, id int, email string) (*Namespace, error)
 }
 
 var _ NamespaceRepo = (*namespaceRepo)(nil)
@@ -125,6 +126,20 @@ type namespaceRepo struct {
 	logger   mlog.Logger
 	data     data.Data
 	NsPrefix string
+}
+
+func (repo *namespaceRepo) Transfer(ctx context.Context, id int, email string) (*Namespace, error) {
+	ns, err := repo.data.DB().Namespace.Get(ctx, id)
+	if err != nil {
+		return nil, ToError(404, err)
+	}
+	if ns.CreatorEmail != email {
+		ns, err = ns.Update().SetCreatorEmail(email).Save(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return ToNamespace(ns), nil
 }
 
 func (repo *namespaceRepo) CanAccess(ctx context.Context, namespaceID int, user *auth.UserInfo) bool {

@@ -426,7 +426,7 @@ const TabShell: React.FC<{
                   </Button>
                 </Upload>
                 <Popconfirm
-                  overlayClassName="copyfrompod"
+                  overlayClassName="fullwidthpop"
                   title="下载文件(绝对路径)"
                   open={isModalOpen}
                   description={

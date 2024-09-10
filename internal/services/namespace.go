@@ -44,6 +44,24 @@ func NewNamespaceSvc(helmer repo.HelmerRepo, nsRepo repo.NamespaceRepo, k8sRepo 
 	}
 }
 
+func (n *namespaceSvc) Transfer(ctx context.Context, request *namespace.TransferRequest) (*namespace.TransferResponse, error) {
+	owner, _ := n.nsRepo.IsOwner(ctx, int(request.Id), MustGetUser(ctx))
+	if !owner {
+		return nil, repo.ToError(403, "没有权限")
+	}
+	transfer, err := n.nsRepo.Transfer(ctx, int(request.Id), request.NewAdminEmail)
+	if err != nil {
+		return nil, err
+	}
+	n.eventRepo.AuditLogWithRequest(
+		types.EventActionType_Update,
+		MustGetUser(ctx).Name,
+		"转让项目空间给: "+request.NewAdminEmail,
+		request,
+	)
+	return &namespace.TransferResponse{Item: transformer.FromNamespace(transfer)}, nil
+}
+
 func (n *namespaceSvc) List(ctx context.Context, request *namespace.ListRequest) (*namespace.ListResponse, error) {
 	user := MustGetUser(ctx)
 	page, size := pagination.InitByDefault(request.Page, request.PageSize)

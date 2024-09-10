@@ -450,3 +450,25 @@ func TestToNamespace(t *testing.T) {
 
 	assert.Equal(t, "abc@qq.com", toNamespace.CreatorEmail)
 }
+
+func Test_namespaceRepo_Transfer(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	db, _ := data.NewSqliteDB()
+	defer db.Close()
+	repo := NewNamespaceRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{
+		Cfg: &config.Config{
+			NsPrefix: "abc-",
+		},
+		DB: db,
+	}))
+	ns := createNamespace(db)
+	ns.Update().SetPrivate(true).SetCreatorEmail("bbb").SaveX(context.TODO())
+
+	res, err := repo.Transfer(context.TODO(), ns.ID, "aaa")
+	assert.Nil(t, err)
+	assert.Equal(t, "aaa", res.CreatorEmail)
+
+	_, err = repo.Transfer(context.TODO(), 9999999, "aaa")
+	assert.Error(t, err)
+}
