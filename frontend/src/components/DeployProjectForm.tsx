@@ -83,7 +83,7 @@ const DeployProjectForm: React.FC<{
 
   const [repoId, setRepoId] = useState(project ? project.repoId : 0);
   useEffect(() => {
-    setRepoId(formRepoId);
+    formRepoId > 0 && setRepoId(Number(formRepoId));
   }, [formRepoId]);
 
   const [options, setOptions] = useState<{
@@ -266,7 +266,7 @@ const DeployProjectForm: React.FC<{
   );
 
   useEffect(() => {
-    if (repoId) {
+    if (repoId && repoId > 0) {
       !isEdit && form.setFieldValue("extraValues", []);
       loadConfigFile(repoId);
     }
