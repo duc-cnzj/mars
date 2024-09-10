@@ -61,9 +61,9 @@ func TestFileSvc_Authorize_MaxUploadSize(t *testing.T) {
 	fileRepo := repo.NewMockFileRepo(m)
 	svc := NewFileSvc(eventRepo, fileRepo, mlog.NewForConfig(nil)).(*fileSvc)
 
-	_, err := svc.Authorize(newOtherUserCtx(), "MaxUploadSize")
+	_, err := svc.Authorize(newOtherUserCtx(), "/file.File/MaxUploadSize")
 	assert.Nil(t, err)
-	_, err = svc.Authorize(context.TODO(), "MaxUploadSize")
+	_, err = svc.Authorize(context.TODO(), "/file.File/MaxUploadSize")
 	assert.Nil(t, err)
 }
 

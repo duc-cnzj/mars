@@ -185,7 +185,10 @@ func (r *repoSvc) Clone(ctx context.Context, req *reposerver.CloneRequest) (*rep
 }
 
 func (r *repoSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
-	if strings.EqualFold(fullMethodName, "List") {
+	if strings.EqualFold(fullMethodName, "/repo.Repo/List") {
+		return ctx, nil
+	}
+	if strings.EqualFold(fullMethodName, "/repo.Repo/Show") {
 		return ctx, nil
 	}
 	if !MustGetUser(ctx).IsAdmin() {

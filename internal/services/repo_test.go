@@ -545,8 +545,9 @@ func TestRepoSvc_Authorize_ListMethod(t *testing.T) {
 	).(*repoSvc)
 
 	ctx := newOtherUserCtx()
-	_, err := svc.Authorize(ctx, "List")
-
+	_, err := svc.Authorize(ctx, "/repo.Repo/List")
+	assert.Nil(t, err)
+	_, err = svc.Authorize(ctx, "/repo.Repo/Show")
 	assert.Nil(t, err)
 }
 

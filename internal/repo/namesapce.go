@@ -151,18 +151,18 @@ func (repo *namespaceRepo) CanAccess(ctx context.Context, namespaceID int, user 
 		repo.logger.ErrorCtx(ctx, err, "namespaceRepo.CanAccess")
 		return false
 	}
-	if show.Private {
-		if show.CreatorEmail == user.Email {
+	if !show.Private {
+		return true
+	}
+	if show.CreatorEmail == user.Email {
+		return true
+	}
+	for _, m := range show.QueryMembers().AllX(ctx) {
+		if m.Email == user.Email {
 			return true
 		}
-		for _, m := range show.QueryMembers().AllX(ctx) {
-			if m.Email == user.Email {
-				return true
-			}
-		}
-		return false
 	}
-	return true
+	return false
 }
 
 func (repo *namespaceRepo) IsOwner(ctx context.Context, namespaceID int, user *auth.UserInfo) (bool, error) {
