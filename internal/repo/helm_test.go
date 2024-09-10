@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"github.com/duc-cnzj/mars/v5/internal/config"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -456,4 +457,15 @@ func TestWrapLogFn_UnWrap(t *testing.T) {
 		called = true
 	})(nil, "", "")
 	assert.True(t, called)
+}
+
+func TestNewDefaultHelmer(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := data.NewMockData(m)
+	k8sRepo := NewMockK8sRepo(m)
+	helmer := NewDefaultHelmer(k8sRepo, mockData, &config.Config{}, mlog.NewForConfig(nil)).(*DefaultHelmer)
+	assert.NotNil(t, helmer.data)
+	assert.NotNil(t, helmer.logger)
+	assert.NotNil(t, helmer.k8sRepo)
 }

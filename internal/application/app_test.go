@@ -22,10 +22,11 @@ import (
 
 type testBoot struct {
 	tags []string
+	err  error
 }
 
 func (t *testBoot) Bootstrap(a App) error {
-	return nil
+	return t.err
 }
 
 func (t *testBoot) Tags() []string {
@@ -355,4 +356,13 @@ func Test_excludeBootstrapperByTags(t *testing.T) {
 	assert.Len(t, b1, 1)
 	assert.Len(t, b2, 1)
 	assert.Equal(t, "test1", b1[0].Tags()[0])
+}
+
+func Test_app_Bootstrap1(t *testing.T) {
+	a := &app{
+		bootstrappers: []Bootstrapper{&testBoot{
+			err: errors.New("x"),
+		}},
+	}
+	assert.Error(t, a.Bootstrap())
 }
