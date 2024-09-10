@@ -429,7 +429,14 @@ const NamespacePrivate: React.FC<{
           </Row>
         </Form>
       </Modal>
-      <Tooltip overlayStyle={{ fontSize: 12 }} title="你是此空间管理员">
+      <Tooltip
+        overlayStyle={{ fontSize: 12 }}
+        title={
+          user.email !== item.creatorEmail
+            ? `空间管理员邮箱: ${item.creatorEmail}`
+            : "你是此空间管理员"
+        }
+      >
         <IconFont style={{ cursor: "pointer" }} name="#icon-crown" />
       </Tooltip>
       <Popconfirm
