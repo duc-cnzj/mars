@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useState } from "react";
-import { Skeleton, Button, Modal, message, Spin } from "antd";
+import { Skeleton, Button, Modal, message, Spin, Space } from "antd";
 import {
   BranchesOutlined,
   PushpinOutlined,
@@ -14,6 +14,7 @@ import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
 import { components } from "../api/schema";
 import ajax from "../api/ajax";
+import styled from "@emotion/styled";
 
 SyntaxHighlighter.registerLanguage("yaml", yaml);
 
@@ -51,7 +52,7 @@ const DetailTab: React.FC<{
   }, [detail.id]);
 
   return detail ? (
-    <div style={{ height: "100%", overflowY: "auto" }}>
+    <Space direction="vertical" style={{ width: "100%" }}>
       <div
         style={{
           display: "flex",
@@ -93,14 +94,14 @@ const DetailTab: React.FC<{
             clipRule="evenodd"
           />
         </svg>
-        <div style={{ fontWeight: 700 }}>
+        <Label>
           cpu:{" "}
           {!cpuMemEndpointsLoading ? (
             <span className="detail-data">{cpuMemEndpoints.cpu}</span>
           ) : (
             <Spin />
           )}
-        </div>
+        </Label>
       </div>
 
       <div
@@ -127,14 +128,14 @@ const DetailTab: React.FC<{
             clipRule="evenodd"
           />
         </svg>
-        <div style={{ fontWeight: 700 }}>
+        <Label>
           memory:{" "}
           {!cpuMemEndpointsLoading ? (
             <span className="detail-data">{cpuMemEndpoints.mem}</span>
           ) : (
             <Spin />
           )}
-        </div>
+        </Label>
       </div>
 
       <div
@@ -151,9 +152,9 @@ const DetailTab: React.FC<{
             fontSize: 16,
           }}
         />
-        <div style={{ fontWeight: 700 }}>
+        <Label>
           分支: <span className="detail-data">{detail.gitBranch}</span>
-        </div>
+        </Label>
       </div>
 
       <div>
@@ -171,7 +172,7 @@ const DetailTab: React.FC<{
               fontSize: 16,
             }}
           />
-          <div style={{ fontWeight: 700 }}>地址:</div>
+          <Label>地址:</Label>
         </div>
         <ul style={{ listStyle: "none", padding: "0 0 0 1.5em", margin: 0 }}>
           {!cpuMemEndpointsLoading ? (
@@ -212,7 +213,7 @@ const DetailTab: React.FC<{
               fontSize: 16,
             }}
           />
-          <div style={{ fontWeight: 700 }}>容器镜像:</div>
+          <Label>容器镜像:</Label>
         </div>
         <div style={{ marginLeft: 20 }}>
           {detail.dockerImage?.map((v, idx) => <div key={idx}>{v}</div>)}
@@ -232,7 +233,7 @@ const DetailTab: React.FC<{
             fontSize: 16,
           }}
         />
-        <div style={{ fontWeight: 700 }}>
+        <Label>
           提交:
           <span className="detail-data">
             <a href={detail.gitCommitWebUrl} target="_blank">
@@ -240,7 +241,7 @@ const DetailTab: React.FC<{
             </a>
             by {detail.gitCommitAuthor} 于 {detail.gitCommitDate}
           </span>
-        </div>
+        </Label>
       </div>
 
       <div
@@ -268,10 +269,10 @@ const DetailTab: React.FC<{
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
           />
         </svg>
-        <div style={{ fontWeight: 700 }}>
+        <Label>
           部署日期:{" "}
           <span className="detail-data">{detail.humanizeCreatedAt}</span>
-        </div>
+        </Label>
       </div>
       <div
         style={{
@@ -298,14 +299,14 @@ const DetailTab: React.FC<{
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
           />
         </svg>
-        <div style={{ fontWeight: 700 }}>
+        <Label>
           更新日期:{" "}
           <span className="detail-data">{detail.humanizeUpdatedAt}</span>
-        </div>
+        </Label>
       </div>
 
       <div>
-        <div style={{ fontWeight: 700 }}>
+        <Label>
           <FireOutlined
             style={{
               width: 20,
@@ -315,8 +316,8 @@ const DetailTab: React.FC<{
             }}
           />
           相关配置
-        </div>
-        <details>
+        </Label>
+        <details style={{ marginTop: 3, marginLeft: 3 }}>
           <summary style={{ cursor: "pointer" }}>展开查看</summary>
           <SyntaxHighlighter
             language="yaml"
@@ -373,10 +374,14 @@ const DetailTab: React.FC<{
       >
         删除项目
       </Button>
-    </div>
+    </Space>
   ) : (
     <Skeleton />
   );
 };
 
 export default memo(DetailTab);
+
+const Label = styled.div`
+  font-weight: 700;
+`;

@@ -2,7 +2,6 @@ package repo
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -295,7 +294,7 @@ func (repo *projectRepo) GetAllActiveContainers(ctx context.Context, id int) ([]
 		k8sClient          = repo.data.K8sClient()
 	)
 	if len(split) == 0 {
-		return nil, errors.New("no pod selectors")
+		return nil, nil
 	}
 	for _, ls := range split {
 		selector, _ := metav1.ParseToLabelSelector(ls)
