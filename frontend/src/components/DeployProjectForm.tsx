@@ -478,6 +478,29 @@ const DeployProjectForm: React.FC<{
                                   `
                                 : ""
                             }
+                            onDropdownVisibleChange={(open) => {
+                              if (!open) {
+                                return;
+                              }
+                              ajax
+                                .GET(
+                                  "/api/git/projects/{gitProjectId}/branch_options",
+                                  {
+                                    params: {
+                                      path: { gitProjectId: curr.gitProjectId },
+                                      query: { repoId: repoId },
+                                    },
+                                  },
+                                )
+                                .then(({ data }) => {
+                                  if (data) {
+                                    setOptions((opt) => ({
+                                      ...opt,
+                                      branch: data.items,
+                                    }));
+                                  }
+                                });
+                            }}
                             placeholder="选择分支"
                             optionFilterProp="label"
                             defaultActiveFirstOption={false}
@@ -526,6 +549,31 @@ const DeployProjectForm: React.FC<{
                             }
                             placeholder="选择 commit"
                             optionFilterProp="label"
+                            onDropdownVisibleChange={(open) => {
+                              if (!open) {
+                                return;
+                              }
+                              ajax
+                                .GET(
+                                  "/api/git/projects/{gitProjectId}/branches/{branch}/commit_options",
+                                  {
+                                    params: {
+                                      path: {
+                                        gitProjectId: curr.gitProjectId,
+                                        branch: branch,
+                                      },
+                                    },
+                                  },
+                                )
+                                .then(({ data }) => {
+                                  if (data) {
+                                    setOptions((opt) => ({
+                                      ...opt,
+                                      commit: data.items,
+                                    }));
+                                  }
+                                });
+                            }}
                             defaultActiveFirstOption={false}
                             options={options.commit.map((v) => ({
                               label: v.label,

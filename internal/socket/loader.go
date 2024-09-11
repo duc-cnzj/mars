@@ -416,20 +416,20 @@ func (v *SystemVariableLoader) Load(j *jobRunner) error {
 	//{{.Branch}}{{.Commit}}{{.Pipeline}}
 	var (
 		pipelineID     int64
-		pipelineBranch string = j.project.GitBranch
+		pipelineBranch string = j.input.GitBranch
 		pipelineCommit string = j.commit.GetShortID()
 	)
 
 	if j.repo.NeedGitRepo {
 		// 如果存在需要传变量的，则必须有流水线信息
-		if pipeline, e := j.pluginMgr.Git().GetCommitPipeline(fmt.Sprintf("%d", j.project.GitProjectID), j.project.GitBranch, j.project.GitCommit); e == nil {
+		if pipeline, e := j.pluginMgr.Git().GetCommitPipeline(fmt.Sprintf("%d", j.repo.GitProjectID), pipelineBranch, pipelineCommit); e == nil {
 			pipelineID = pipeline.GetID()
 			pipelineBranch = pipeline.GetRef()
 
 			j.messager.SendMsg(fmt.Sprintf(loaderName+"镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pipelineBranch, pipelineCommit, pipelineID))
 		} else {
 			if tagRegex.MatchString(j.config.ValuesYaml) {
-				return errors.New("无法获取 Pipeline 信息")
+				return fmt.Errorf("无法获取 Pipeline 信息, branch: %s, commit: %s", pipelineBranch, pipelineCommit)
 			}
 		}
 	}

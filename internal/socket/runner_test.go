@@ -1175,7 +1175,7 @@ func TestSystemVariableLoader_Load_ok(t *testing.T) {
 	mockPipeline := application.NewMockPipeline(m)
 	mockPipeline.EXPECT().GetID().Return(int64(0))
 	mockPipeline.EXPECT().GetRef().Return("dev")
-	gitS.EXPECT().GetCommitPipeline("10", "dev", "c").Return(mockPipeline, nil)
+	gitS.EXPECT().GetCommitPipeline("10", "dev", "short_id").Return(mockPipeline, nil)
 
 	projectRepo := repo.NewMockProjectRepo(m)
 	projectRepo.EXPECT().GetPreOccupiedLenByValuesYaml(gomock.Any()).Return(1)
@@ -1200,17 +1200,18 @@ func TestSystemVariableLoader_Load_ok(t *testing.T) {
 VarImagePullSecrets: <.ImagePullSecrets>
 `,
 		},
+		input: &JobInput{
+			GitBranch: "dev",
+			GitCommit: "c",
+		},
 		logger: mlog.NewForConfig(nil),
 		project: &repo.Project{
-			Name:         "app",
-			GitBranch:    "dev",
-			GitProjectID: 10,
-			GitCommit:    "c",
+			Name: "app",
 		},
 		ns:               &repo.Namespace{Name: "ns"},
 		imagePullSecrets: []string{"a", "b", "c"},
 		messager:         em,
-		repo:             &repo.Repo{NeedGitRepo: true, GitProjectID: 1},
+		repo:             &repo.Repo{NeedGitRepo: true, GitProjectID: 10},
 	}
 	assert.Nil(t, (&SystemVariableLoader{}).Load(job))
 	assert.Equal(t, `
@@ -1247,6 +1248,9 @@ func TestSystemVariableLoader_Load_fail(t *testing.T) {
 		commit:    commit,
 		pluginMgr: pl,
 		projRepo:  projectRepo,
+		input: &JobInput{
+			GitBranch: "dev",
+		},
 		config: &mars.Config{
 			ValuesYaml: `
 VarImagePullSecrets: <.ImagePullSecrets>
@@ -1255,8 +1259,7 @@ image: <.Pipeline>-<.Branch>
 		},
 		logger: mlog.NewForConfig(nil),
 		project: &repo.Project{
-			Name:      "app",
-			GitBranch: "dev",
+			Name: "app",
 		},
 		ns:               &repo.Namespace{Name: "ns"},
 		imagePullSecrets: []string{"a", "b", "c"},
