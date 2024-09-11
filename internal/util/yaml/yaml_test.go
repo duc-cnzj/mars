@@ -204,3 +204,27 @@ content: x
   content: x
 `, string(marshal))
 }
+
+func TestIsSimpleEnv(t *testing.T) {
+	yamlData := `data: |
+  name: duc
+data2: 
+  name: duc
+data3:
+  duc:
+    age: 18
+    aa: b
+`
+	isSimple, _ := IsSimpleEnv("data", yamlData)
+	assert.True(t, isSimple)
+	isSimple, _ = IsSimpleEnv("data2", yamlData)
+	assert.False(t, isSimple)
+	isSimple, _ = IsSimpleEnv("data3->duc", yamlData)
+	assert.False(t, isSimple)
+	isSimple, _ = IsSimpleEnv("data3->duc->age", yamlData)
+	assert.True(t, isSimple)
+	isSimple, _ = IsSimpleEnv("data3->duc->aa", yamlData)
+	assert.True(t, isSimple)
+	isSimple, _ = IsSimpleEnv("not-exists", yamlData)
+	assert.False(t, isSimple)
+}

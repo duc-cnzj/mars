@@ -231,10 +231,6 @@ const AddRepoModal: React.FC<{
       let d = _.debounce(() => {
         if (configField && valuesYaml) {
           let data = _.get(yaml.load(valuesYaml), configField.split("->"), "");
-          form.setFieldValue(
-            ["marsConfig", "isSimpleEnv"],
-            typeof data === "object" ? false : true,
-          );
           if (typeof data === "object") {
             data = yaml.dump(data);
           }
@@ -437,17 +433,6 @@ const AddRepoModal: React.FC<{
                 </Form.Item>
               </Col>
             </Row>
-
-            <Col>
-              <Form.Item
-                label="单字段"
-                tooltip="配置文件是不是一个整体的value值"
-                name={["marsConfig", "isSimpleEnv"]}
-                valuePropName="checked"
-              >
-                <Switch defaultChecked />
-              </Form.Item>
-            </Col>
 
             <Popover
               overlayInnerStyle={{

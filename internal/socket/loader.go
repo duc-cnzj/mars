@@ -15,6 +15,7 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v5/mars"
 	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/v5/internal/repo"
 	mars2 "github.com/duc-cnzj/mars/v5/internal/util/mars"
 	yaml2 "github.com/duc-cnzj/mars/v5/internal/util/yaml"
 	"go.uber.org/config"
@@ -84,25 +85,12 @@ type ChartFileLoader struct {
 	fileOpener  fileOpener
 }
 
-func IsRemoteLocalChartPath(input string) bool {
-	split := strings.Split(input, "|")
-
-	return len(split) == 3 && intPid(split[0])
-}
-
-func intPid(pid string) bool {
-	if _, err := strconv.ParseInt(pid, 10, 64); err == nil {
-		return true
-	}
-	return false
-}
-
 func (c *ChartFileLoader) Load(j *jobRunner) error {
 	const loaderName = "[ChartFileLoader]: "
 	j.messager.SendMsg(loaderName + "加载 helm chart 文件")
 	j.messager.To(20)
 
-	if !IsRemoteLocalChartPath(j.config.LocalChartPath) {
+	if !repo.IsRemoteLocalChartPath(j.config.LocalChartPath) {
 		return errors.New("LocalChartPath 格式不正确")
 	}
 

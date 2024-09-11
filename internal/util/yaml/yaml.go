@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	goyaml "github.com/goccy/go-yaml"
 	"github.com/tidwall/gjson"
 )
@@ -27,6 +29,22 @@ func deepSet(key string, data any) map[string]any {
 	}
 
 	return res
+}
+
+func IsSimpleEnv(key string, yamlData string) (bool, error) {
+	var m map[string]any
+	if err := yaml.Unmarshal([]byte(yamlData), &m); err != nil {
+		return false, err
+	}
+	if res, got := DeepGet(key, m); got {
+		switch res.(type) {
+		case map[string]any:
+			return false, nil
+		default:
+			return true, nil
+		}
+	}
+	return false, errors.New("key not found")
 }
 
 /*

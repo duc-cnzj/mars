@@ -13,6 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
+	"github.com/duc-cnzj/mars/v5/internal/util/yaml"
 	"github.com/samber/lo"
 )
 
@@ -149,6 +150,16 @@ func (r *repoImpl) Create(ctx context.Context, in *CreateRepoInput) (*Repo, erro
 			return nil, err
 		}
 	}
+
+	if in.MarsConfig != nil {
+		isSimple, err := r.isSimpleEnv(ctx, in.MarsConfig)
+		if err != nil {
+			r.logger.ErrorCtx(ctx, err)
+			return nil, err
+		}
+		in.MarsConfig.IsSimpleEnv = isSimple
+	}
+
 	cr := r.data.DB().Repo.Create().
 		SetName(in.Name).
 		SetNeedGitRepo(in.NeedGitRepo).
@@ -165,6 +176,21 @@ func (r *repoImpl) Create(ctx context.Context, in *CreateRepoInput) (*Repo, erro
 	}
 	save, err := cr.Save(ctx)
 	return ToRepo(save), err
+}
+
+func (r *repoImpl) isSimpleEnv(ctx context.Context, config *mars.Config) (bool, error) {
+	if config != nil && config.ConfigField != "" && config.LocalChartPath != "" {
+		isSimple, err := yaml.IsSimpleEnv(config.ConfigField, config.ValuesYaml)
+		if err == nil {
+			return isSimple, nil
+		}
+		yamlData, err := r.gitRepo.GetChartValuesYaml(ctx, config.LocalChartPath)
+		if err != nil {
+			return false, err
+		}
+		return yaml.IsSimpleEnv(config.ConfigField, yamlData)
+	}
+	return false, nil
 }
 
 func (r *repoImpl) Show(ctx context.Context, id int) (*Repo, error) {
@@ -202,6 +228,15 @@ func (r *repoImpl) Update(ctx context.Context, in *UpdateRepoInput) (*Repo, erro
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if in.MarsConfig != nil {
+		isSimple, err := r.isSimpleEnv(ctx, in.MarsConfig)
+		if err != nil {
+			r.logger.ErrorCtx(ctx, err)
+			return nil, err
+		}
+		in.MarsConfig.IsSimpleEnv = isSimple
 	}
 
 	up := r.data.DB().Repo.

@@ -275,3 +275,26 @@ func TestGitRepo_GetByProjectID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, project)
 }
+
+func Test_gitRepo_GetChartValuesYaml(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockPluginManager := application.NewMockPluginManger(m)
+	git := application.NewMockGitServer(m)
+
+	repo := NewGitRepo(mlog.NewForConfig(nil), nil, mockPluginManager, nil)
+	mockPluginManager.EXPECT().Git().Return(git)
+	git.EXPECT().GetFileContentWithBranch("1", "main", "charts/abc/values.yaml").Return("aa", nil)
+	yaml, err := repo.GetChartValuesYaml(context.TODO(), "1|main|charts/abc")
+	assert.Nil(t, err)
+	assert.Equal(t, "aa", yaml)
+}
+
+func Test_gitRepo_GetChartValuesYamlError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	repo := NewGitRepo(mlog.NewForConfig(nil), nil, nil, nil)
+	_, err := repo.GetChartValuesYaml(context.TODO(), "1|")
+	assert.Nil(t, err)
+}

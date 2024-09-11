@@ -323,6 +323,21 @@ func (mr *MockGitRepoMockRecorder) GetByProjectID(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByProjectID", reflect.TypeOf((*MockGitRepo)(nil).GetByProjectID), arg0, arg1)
 }
 
+// GetChartValuesYaml mocks base method.
+func (m *MockGitRepo) GetChartValuesYaml(arg0 context.Context, arg1 string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetChartValuesYaml", arg0, arg1)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetChartValuesYaml indicates an expected call of GetChartValuesYaml.
+func (mr *MockGitRepoMockRecorder) GetChartValuesYaml(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChartValuesYaml", reflect.TypeOf((*MockGitRepo)(nil).GetChartValuesYaml), arg0, arg1)
+}
+
 // GetCommit mocks base method.
 func (m *MockGitRepo) GetCommit(arg0 context.Context, arg1 int, arg2 string) (*Commit, error) {
 	m.ctrl.T.Helper()

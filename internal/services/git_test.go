@@ -318,7 +318,7 @@ func Test_gitSvc_GetChartValuesYaml(t *testing.T) {
 		gitRepo,
 		cache.NewMockCache(m),
 	)
-
+	gitRepo.EXPECT().GetChartValuesYaml(gomock.Any(), "").Return("", nil)
 	resp, err := svc.GetChartValuesYaml(context.TODO(), &git.GetChartValuesYamlRequest{
 		Input: "",
 	})
@@ -337,34 +337,12 @@ func Test_gitSvc_GetChartValuesYaml_error(t *testing.T) {
 		gitRepo,
 		cache.NewMockCache(m),
 	)
-
-	gitRepo.EXPECT().GetFileContentWithBranch(gomock.Any(), 1, "branch", "path/values.yaml").Return("", errors.New("x"))
+	gitRepo.EXPECT().GetChartValuesYaml(gomock.Any(), "").Return("", errors.New("x"))
 	resp, err := svc.GetChartValuesYaml(context.TODO(), &git.GetChartValuesYamlRequest{
-		Input: "1|branch|path",
+		Input: "",
 	})
+	assert.Error(t, err)
 	assert.Nil(t, resp)
-	assert.Equal(t, "x", err.Error())
-}
-
-func Test_gitSvc_GetChartValuesYaml_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	svc := NewGitSvc(
-		repo.NewMockRepoRepo(m),
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
-
-	gitRepo.EXPECT().GetFileContentWithBranch(gomock.Any(), 1, "branch", "path/values.yaml").Return("content", nil)
-	resp, err := svc.GetChartValuesYaml(context.TODO(), &git.GetChartValuesYamlRequest{
-		Input: "1|branch|path",
-	})
-	assert.Nil(t, err)
-	assert.NotNil(t, resp)
-	assert.Equal(t, "content", resp.Values)
 }
 
 func Test_gitSvc_PipelineInfo_Success(t *testing.T) {

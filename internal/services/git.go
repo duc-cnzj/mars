@@ -3,14 +3,11 @@ package services
 import (
 	"context"
 	"fmt"
-	gopath "path"
-	"strings"
 
 	"github.com/duc-cnzj/mars/api/v5/git"
 	"github.com/duc-cnzj/mars/v5/internal/cache"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/socket"
 	"github.com/duc-cnzj/mars/v5/internal/util/date"
 	mars2 "github.com/duc-cnzj/mars/v5/internal/util/mars"
 	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
@@ -177,18 +174,9 @@ func (g *gitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequ
 }
 
 func (g *gitSvc) GetChartValuesYaml(ctx context.Context, req *git.GetChartValuesYamlRequest) (*git.GetChartValuesYamlResponse, error) {
-	if !socket.IsRemoteLocalChartPath(req.GetInput()) {
-		return &git.GetChartValuesYamlResponse{}, nil
-	}
-
-	split := strings.Split(req.GetInput(), "|")
-	pid := split[0]
-	branch := split[1]
-	filename := gopath.Join(split[2], "values.yaml")
-
-	content, err := g.gitRepo.GetFileContentWithBranch(ctx, cast.ToInt(pid), branch, filename)
+	yaml, err := g.gitRepo.GetChartValuesYaml(ctx, req.GetInput())
 	if err != nil {
 		return nil, err
 	}
-	return &git.GetChartValuesYamlResponse{Values: content}, nil
+	return &git.GetChartValuesYamlResponse{Values: yaml}, nil
 }

@@ -56,17 +56,21 @@ func TestRepoImpl_Create(t *testing.T) {
 	mockGitRepo := NewMockGitRepo(m)
 	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), mockGitRepo)
 	mockGitRepo.EXPECT().GetByProjectID(gomock.Any(), 100).Return(&GitProject{}, nil)
+
+	mockGitRepo.EXPECT().GetChartValuesYaml(gomock.Any(), "100|main|chart").Return(`config: config`, nil)
+
 	res, err := repo.Create(context.TODO(), &CreateRepoInput{
 		Name:         "app",
 		Enabled:      true,
 		NeedGitRepo:  true,
 		GitProjectID: lo.ToPtr(int32(100)),
-		MarsConfig:   &mars.Config{ConfigField: "config"},
+		MarsConfig:   &mars.Config{ConfigField: "config", LocalChartPath: "100|main|chart"},
 		Description:  "desc",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.NotEmpty(t, res.GitProjectID)
+	assert.True(t, res.MarsConfig.IsSimpleEnv)
 
 	_, err = repo.Create(context.TODO(), &CreateRepoInput{
 		Name: "app",
@@ -93,16 +97,19 @@ func TestRepoImpl_Update(t *testing.T) {
 		DefaultBranch: "dev",
 		Name:          "a",
 	}, nil)
+	mockGitRepo.EXPECT().GetChartValuesYaml(gomock.Any(), "100|main|chart").Return(`config: config`, nil)
+
 	res, err := repo.Update(context.TODO(), &UpdateRepoInput{
 		ID:           int32(create.ID),
 		Name:         "abc",
 		NeedGitRepo:  true,
 		GitProjectID: lo.ToPtr(int32(100)),
-		MarsConfig:   &mars.Config{ConfigField: "config"},
+		MarsConfig:   &mars.Config{ConfigField: "config", LocalChartPath: "100|main|chart"},
 		Description:  "dex",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
+	assert.True(t, res.MarsConfig.IsSimpleEnv)
 	assert.Equal(t, "abc", res.Name)
 	assert.Equal(t, "dex", res.Description)
 	assert.Equal(t, true, res.NeedGitRepo)

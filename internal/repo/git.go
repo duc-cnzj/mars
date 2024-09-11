@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	gopath "path"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/duc-cnzj/mars/v5/internal/application"
@@ -11,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
+	"github.com/spf13/cast"
 )
 
 type GitRepo interface {
@@ -22,6 +26,7 @@ type GitRepo interface {
 	GetByProjectID(ctx context.Context, id int) (project *GitProject, err error)
 	GetFileContentWithBranch(ctx context.Context, projectID int, branch, path string) (string, error)
 	GetProject(ctx context.Context, id int) (project *GitProject, err error)
+	GetChartValuesYaml(ctx context.Context, localChartPath string) (string, error)
 }
 
 var _ GitRepo = (*gitRepo)(nil)
@@ -103,6 +108,17 @@ func (g *gitRepo) AllProjects(ctx context.Context, forceFresh bool) ([]*GitProje
 		err = json.Unmarshal(remember, &projects)
 	}
 	return projects, err
+}
+
+func (g *gitRepo) GetChartValuesYaml(ctx context.Context, localChartPath string) (string, error) {
+	if !IsRemoteLocalChartPath(localChartPath) {
+		return "", nil
+	}
+	split := strings.Split(localChartPath, "|")
+	pid := split[0]
+	branch := split[1]
+	filename := gopath.Join(split[2], "values.yaml")
+	return g.GetFileContentWithBranch(ctx, cast.ToInt(pid), branch, filename)
 }
 
 func ToGitProject(gp application.Project) *GitProject {
@@ -208,4 +224,17 @@ func ToCommit(v application.Commit) *Commit {
 		CreatedAt:      v.GetCreatedAt(),
 		CommittedDate:  v.GetCommittedDate(),
 	}
+}
+
+func IsRemoteLocalChartPath(input string) bool {
+	split := strings.Split(input, "|")
+
+	return len(split) == 3 && intPid(split[0])
+}
+
+func intPid(pid string) bool {
+	if _, err := strconv.ParseInt(pid, 10, 64); err == nil {
+		return true
+	}
+	return false
 }
