@@ -118,7 +118,7 @@ const TabShell: React.FC<{
   useEffect(() => {
     let d = debounce(() => {
       listContainer();
-    }, 2000);
+    }, 1000);
     console.log("ns event: ", projectIDStr, id);
     if (projectIDStr.split("-").length === 2) {
       let pid = Number(projectIDStr.split("-")[1]);

@@ -256,7 +256,6 @@ const MyTabs: React.FC<{
     useProjectRoom(namespaceId, projectID, useWs());
     return (
       <Tabs
-        destroyInactiveTabPane
         defaultActiveKey="1"
         centered
         items={items}

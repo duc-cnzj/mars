@@ -345,8 +345,7 @@ const DeployProjectForm: React.FC<{
       updateProject,
     ],
   );
-  // console.log("curr", curr, repoId);
-  // console.log("initval", initValues);
+
   return (
     <Form
       layout="horizontal"

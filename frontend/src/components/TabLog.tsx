@@ -44,7 +44,7 @@ const ProjectContainerLogs: React.FC<{
   useEffect(() => {
     let d = debounce(() => {
       listContainer();
-    }, 2000);
+    }, 1000);
     console.log("ns event: ", projectIDStr);
     if (projectIDStr.split("-").length === 2) {
       let pid = Number(projectIDStr.split("-")[1]);
@@ -184,7 +184,7 @@ const MyLogUtil: React.FC<{
       selectableLines
       captureHotkeys
       formatPart={(text: string) => {
-        console.log(text);
+        // console.log(text);
         let res = JSON.parse(text);
         if (res.error) {
           if (onError?.praseJsonError) {

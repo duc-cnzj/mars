@@ -73,7 +73,7 @@ const AppContent: React.FC = () => {
     },
     [setNamespaceItems],
   );
-  if (!!params.get("pid") && !favorite) {
+  if (!!params.get("pid")) {
     let obj: { [key: number]: boolean } = {};
     sortedUniq((params.get("pid") || "").split(","))
       .filter((v) => isNumber(Number(v)))

@@ -36,7 +36,7 @@ api:
 		--grpc-gateway_opt paths=source_relative \
 		--grpc-gateway_opt generate_unbound_methods=true \
 		--validate_out=lang=go,paths=source_relative:./api \
-	    --openapi_out=enum_type=string,fq_schema_naming=true,default_response=true,version="$(VERSION)",title="mars api.":./doc \
+	    --openapi_out=enum_type=string,fq_schema_naming=true,default_response=true,version="$(TAG)",title="mars api.":./doc \
 		$(PROTO_FILES)
 
 	npx openapi-typescript ./doc/openapi.yaml --enum --enum-values --properties-required-by-default -o ./frontend/src/api/schema.d.ts

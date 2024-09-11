@@ -3,6 +3,7 @@ import { Form, Input, InputNumber, Radio, Select, Switch } from "antd";
 import { omitEqual } from "../../utils/obj";
 import { css } from "@emotion/css";
 import { components, MarsElementType } from "../../api/schema.d";
+import { set } from "lodash";
 
 const Option = Select.Option;
 const { TextArea } = Input;
@@ -63,8 +64,7 @@ const Elements: React.FC<{
               value={item.value}
               onChange={(changeValue) => {
                 let tmp: any = value;
-                tmp[index].value = String(changeValue);
-                console.log("Element onChange ", tmp);
+                set(tmp, index, {path: item.path, value: String(changeValue)})
                 onChange?.(tmp);
                 return tmp;
               }}
