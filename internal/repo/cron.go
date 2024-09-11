@@ -467,7 +467,7 @@ func (repo *cronRepo) ProjectPodEventListener() error {
 	defer logger.HandlePanic(listener)
 	defer podFanOut.RemoveListener(listener)
 
-	repo.logger.Infof("[PodEventListener]: started")
+	repo.logger.Info("[PodEventListener]: started")
 	for obj := range ch {
 		switch obj.Type() {
 		case data.Update:

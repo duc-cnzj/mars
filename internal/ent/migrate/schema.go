@@ -56,7 +56,7 @@ var (
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "version", Type: field.TypeInt, Default: 1},
 		{Name: "username", Type: field.TypeString, Size: 100},
-		{Name: "config", Type: field.TypeString, Nullable: true},
+		{Name: "config", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "longtext"}},
 		{Name: "git_branch", Type: field.TypeString, Nullable: true},
 		{Name: "git_commit", Type: field.TypeString, Nullable: true},
 		{Name: "docker_image", Type: field.TypeJSON, Nullable: true},

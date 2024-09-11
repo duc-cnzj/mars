@@ -143,6 +143,7 @@ func (d *dispatcher) Dispatch(event Event, payload any) error {
 		Payload: payload,
 	}:
 	default:
+		d.logger.Warningf("event dispatcher channel full drop event %v %v", event.String(), payload)
 	}
 
 	return nil

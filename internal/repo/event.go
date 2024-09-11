@@ -247,7 +247,7 @@ func (repo *eventRepo) HandleProjectChanged(data any, e event.Event) error {
 			repo.logger.Debug(lastChange, "lastChange")
 			configChanged = lastChange.Config != proj.Config || lastChange.GitCommit != proj.GitCommit
 		}
-		repo.clRepo.Create(context.TODO(), &CreateChangeLogInput{
+		if _, err := repo.clRepo.Create(context.TODO(), &CreateChangeLogInput{
 			Version:          proj.Version,
 			Username:         changedData.Username,
 			Config:           proj.Config,
@@ -263,7 +263,9 @@ func (repo *eventRepo) HandleProjectChanged(data any, e event.Event) error {
 			GitCommitDate:    proj.GitCommitDate,
 			ConfigChanged:    configChanged,
 			ProjectID:        changedData.ID,
-		})
+		}); err != nil {
+			repo.logger.Error(err)
+		}
 	}
 	return nil
 }

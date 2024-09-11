@@ -1,3 +1,4 @@
-h1:1pstMzeD8ckaooh/kQpZFd1alEz+jQpuWkF1HQNdhgw=
+h1:mryZBq3Rh2wtD6+DJqnsmNCk5UutSBDkh/uEriCTivM=
 20240830070729_init_table.sql h1:MpFJpzgZTlpydgXSrQ16Lx/VXCwM4HOeCnv8BGylyy8=
 20240902102428_add_namespace_rbac.sql h1:J8aI8b1/C0Cti8c2/naluS3dCUDZ1mGvPzz+SAsa6bE=
+20240911141124_change_config_longtext_to_changelogs_table.sql h1:7Pt3DN0d4e4Z9UG1+KDrKjAqarJ/omTRaX8f1I+58d4=

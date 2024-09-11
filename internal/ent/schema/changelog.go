@@ -25,6 +25,9 @@ func (Changelog) Fields() []ent.Field {
 			MaxLen(100).
 			Comment("修改人"),
 		field.String("config").
+			SchemaType(map[string]string{
+				dialect.MySQL: "longtext",
+			}).
 			Optional().
 			Comment("用户提交的配置"),
 		field.String("git_branch").
