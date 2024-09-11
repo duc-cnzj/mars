@@ -226,5 +226,5 @@ data3:
 	isSimple, _ = IsSimpleEnv("data3->duc->aa", yamlData)
 	assert.True(t, isSimple)
 	isSimple, _ = IsSimpleEnv("not-exists", yamlData)
-	assert.False(t, isSimple)
+	assert.True(t, isSimple)
 }

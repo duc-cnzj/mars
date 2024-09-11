@@ -155,7 +155,6 @@ func (r *repoImpl) Create(ctx context.Context, in *CreateRepoInput) (*Repo, erro
 		isSimple, err := r.isSimpleEnv(ctx, in.MarsConfig)
 		if err != nil {
 			r.logger.ErrorCtx(ctx, err)
-			return nil, err
 		}
 		in.MarsConfig.IsSimpleEnv = isSimple
 	}
@@ -184,13 +183,10 @@ func (r *repoImpl) isSimpleEnv(ctx context.Context, config *mars.Config) (bool, 
 		if err == nil {
 			return isSimple, nil
 		}
-		yamlData, err := r.gitRepo.GetChartValuesYaml(ctx, config.LocalChartPath)
-		if err != nil {
-			return false, err
-		}
+		yamlData, _ := r.gitRepo.GetChartValuesYaml(ctx, config.LocalChartPath)
 		return yaml.IsSimpleEnv(config.ConfigField, yamlData)
 	}
-	return false, nil
+	return true, nil
 }
 
 func (r *repoImpl) Show(ctx context.Context, id int) (*Repo, error) {
@@ -234,7 +230,6 @@ func (r *repoImpl) Update(ctx context.Context, in *UpdateRepoInput) (*Repo, erro
 		isSimple, err := r.isSimpleEnv(ctx, in.MarsConfig)
 		if err != nil {
 			r.logger.ErrorCtx(ctx, err)
-			return nil, err
 		}
 		in.MarsConfig.IsSimpleEnv = isSimple
 	}

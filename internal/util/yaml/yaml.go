@@ -34,7 +34,7 @@ func deepSet(key string, data any) map[string]any {
 func IsSimpleEnv(key string, yamlData string) (bool, error) {
 	var m map[string]any
 	if err := yaml.Unmarshal([]byte(yamlData), &m); err != nil {
-		return false, err
+		return true, err
 	}
 	if res, got := DeepGet(key, m); got {
 		switch res.(type) {
@@ -44,7 +44,7 @@ func IsSimpleEnv(key string, yamlData string) (bool, error) {
 			return true, nil
 		}
 	}
-	return false, errors.New("key not found")
+	return true, fmt.Errorf("key '%v' not found", key)
 }
 
 /*
