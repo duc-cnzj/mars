@@ -166,7 +166,7 @@ func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *CopyFromPodInput) (
 	}, &ExecuteInput{
 		Stdout: lsbf,
 		TTY:    false,
-		Cmd:    []string{"sh", "-c", fmt.Sprintf("test -f " + input.FilePath + " && echo 1 || echo 0")},
+		Cmd:    []string{"sh", "-c", fmt.Sprintf("test -f %s && echo 1 || echo 0", input.FilePath)},
 	})
 	isFile := strings.Trim(lsbf.String(), "\n") == "1"
 	if !isFile {

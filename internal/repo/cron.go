@@ -467,39 +467,31 @@ func (repo *cronRepo) ProjectPodEventListener() error {
 	defer logger.HandlePanic(listener)
 	defer podFanOut.RemoveListener(listener)
 
-	var worker = 8
-	wg := &sync.WaitGroup{}
-	wg.Add(worker)
-	for i := 0; i < worker; i++ {
-		go func(i int) {
-			defer wg.Done()
-			repo.logger.Infof("[PodEventListener]: worker %d started", i)
-			for obj := range ch {
-				switch obj.Type() {
-				case data.Update:
-					repo.logger.Debug("[#### PodEventListener]: update pod", obj.Current().Name, obj.Current().Namespace)
-					if obj.Old().Status.Phase != obj.Current().Status.Phase || containerStatusChanged(logger, obj.Old(), obj.Current()) {
-						logger.Debugf("old: '%s' new '%s'", obj.Old().Status.Phase, obj.Current().Status.Phase)
-						if ns, err := repo.nsRepo.FindByName(context.TODO(), obj.Current().Namespace); err == nil {
-							if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
-								logger.Errorf("[PodEventListener]: %v", err)
-							}
-						}
+	repo.logger.Infof("[PodEventListener]: started")
+	for obj := range ch {
+		switch obj.Type() {
+		case data.Update:
+			repo.logger.Debug("[#### PodEventListener]: update pod", obj.Current().Name, obj.Current().Namespace)
+			if obj.Old().Status.Phase != obj.Current().Status.Phase || containerStatusChanged(logger, obj.Old(), obj.Current()) {
+				logger.Debugf("old: '%s' new '%s'", obj.Old().Status.Phase, obj.Current().Status.Phase)
+				if ns, err := repo.nsRepo.FindByName(context.TODO(), obj.Current().Namespace); err == nil {
+					if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
+						logger.Errorf("[PodEventListener]: %v", err)
 					}
-				case data.Add, data.Delete:
-					logger.Debug("[PodEventListener]: add/del pod", obj.Type(), obj.Current().Name, obj.Current().Namespace)
-					if ns, err := repo.nsRepo.FindByName(context.TODO(), obj.Current().Namespace); err == nil {
-						logger.Debugf("[PodEventListener]: pod '%v': '%s' '%s' '%d' '%s'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID, obj.Current().Status.Phase)
-						if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
-							logger.Errorf("[PodEventListener]: %v", err)
-						}
-					}
-				default:
 				}
 			}
-		}(i)
+		case data.Add, data.Delete:
+			logger.Debug("[PodEventListener]: add/del pod", obj.Type(), obj.Current().Name, obj.Current().Namespace)
+			if ns, err := repo.nsRepo.FindByName(context.TODO(), obj.Current().Namespace); err == nil {
+				logger.Debugf("[PodEventListener]: pod '%v': '%s' '%s' '%d' '%s'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID, obj.Current().Status.Phase)
+				if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
+					logger.Errorf("[PodEventListener]: %v", err)
+				}
+			}
+		default:
+		}
 	}
-	wg.Wait()
+
 	return nil
 }
 
