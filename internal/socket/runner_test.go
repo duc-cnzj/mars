@@ -1175,7 +1175,7 @@ func TestSystemVariableLoader_Load_ok(t *testing.T) {
 	mockPipeline := application.NewMockPipeline(m)
 	mockPipeline.EXPECT().GetID().Return(int64(0))
 	mockPipeline.EXPECT().GetRef().Return("dev")
-	gitS.EXPECT().GetCommitPipeline("10", "dev", "short_id").Return(mockPipeline, nil)
+	gitS.EXPECT().GetCommitPipeline("10", "dev", "c").Return(mockPipeline, nil)
 
 	projectRepo := repo.NewMockProjectRepo(m)
 	projectRepo.EXPECT().GetPreOccupiedLenByValuesYaml(gomock.Any()).Return(1)
