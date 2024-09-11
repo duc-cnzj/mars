@@ -69,7 +69,7 @@ func NewDispatcher(logger mlog.Logger) Dispatcher {
 	return &dispatcher{
 		ctx:       ctx,
 		cancel:    cancelFunc,
-		ch:        make(chan *eventBody, 1000),
+		ch:        make(chan *eventBody, 800),
 		logger:    logger.WithModule("event/dispatcher"),
 		listeners: map[Event][]Listener{},
 	}

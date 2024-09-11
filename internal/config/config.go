@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -147,6 +148,10 @@ type Config struct {
 
 	InstallTimeout time.Duration `mapstructure:"install_timeout" json:"-"`
 	Oidc           []OidcSetting `mapstructure:"oidc"`
+}
+
+func (c *Config) IsK8sEnv() bool {
+	return c.KubeConfig != "" || (os.Getenv("KUBERNETES_SERVICE_HOST") != "" && os.Getenv("KUBERNETES_SERVICE_PORT") != "")
 }
 
 func (c *Config) DSN() string {

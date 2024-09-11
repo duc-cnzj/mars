@@ -1,8 +1,6 @@
 package bootstrappers
 
 import (
-	"os"
-
 	"github.com/duc-cnzj/mars/v5/internal/application"
 )
 
@@ -13,8 +11,7 @@ func (d *K8sBootstrapper) Tags() []string {
 }
 
 func (d *K8sBootstrapper) Bootstrap(appli application.App) error {
-	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
-	if appli.Config().KubeConfig != "" || (host != "" && port != "") {
+	if appli.Config().IsK8sEnv() {
 		return appli.Data().InitK8s(appli.Done())
 	}
 	return nil

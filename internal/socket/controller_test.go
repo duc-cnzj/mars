@@ -82,7 +82,9 @@ func TestWebsocketManager_HandleJoinRoom(t *testing.T) {
 	}
 	marshal2, _ := proto.Marshal(&linput)
 
-	wm := &WebsocketManager{}
+	wm := &WebsocketManager{
+		logger: mlog.NewForConfig(nil),
+	}
 	wm.HandleJoinRoom(context.TODO(), conn, ProjectPodEvent, marshal)
 
 	wm.HandleJoinRoom(context.TODO(), conn, ProjectPodEvent, marshal2)

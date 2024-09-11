@@ -197,13 +197,13 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 			eventFanOutObj = &fanOut[*eventsv1.Event]{
 				logger:    logger,
 				name:      "event",
-				ch:        make(chan Obj[*eventsv1.Event], 50000),
+				ch:        make(chan Obj[*eventsv1.Event], 1000),
 				listeners: make(map[string]chan<- Obj[*eventsv1.Event]),
 			}
 
 			podFanOutObj = &fanOut[*corev1.Pod]{
 				name:      "pod",
-				ch:        make(chan Obj[*corev1.Pod], 50000),
+				ch:        make(chan Obj[*corev1.Pod], 1000),
 				logger:    logger,
 				listeners: make(map[string]chan<- Obj[*corev1.Pod]),
 			}

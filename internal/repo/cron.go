@@ -105,7 +105,7 @@ func NewCronRepo(
 		cronManager.NewCommand("all_project_cache", cr.CacheAllProjects).EveryFiveMinutes()
 	}
 
-	if cfg.KubeConfig != "" {
+	if cfg.IsK8sEnv() {
 		cronManager.NewCommand("sync_image_pull_secrets", cr.SyncImagePullSecrets).EveryFiveMinutes()
 		cronManager.NewCommand("project_pod_event_listener", cr.ProjectPodEventListener).EveryFiveSeconds()
 	}
@@ -456,7 +456,7 @@ func (l listFiles) PrettyYaml() string {
 func (repo *cronRepo) ProjectPodEventListener() error {
 	var ws = repo.pluginMgr.Ws()
 	logger := repo.logger
-	ch := make(chan data.Obj[*corev1.Pod], 50000)
+	ch := make(chan data.Obj[*corev1.Pod], 500)
 	listener := "pod-watcher"
 	namespacePublisher := ws.New("", "").(application.ProjectPodEventPublisher)
 	podFanOut := repo.data.K8sClient().PodFanOut

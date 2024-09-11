@@ -323,6 +323,7 @@ func (wc *WebsocketManager) HandleJoinRoom(ctx context.Context, c Conn, t websoc
 
 		return
 	}
+	wc.logger.Debug("HandleJoinRoom: ", input.String())
 	if input.Join {
 		if err := c.PubSub().(application.ProjectPodEventSubscriber).Join(int64(input.GetProjectId())); err != nil {
 			wc.logger.Error("join: ", err, input.String())

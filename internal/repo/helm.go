@@ -135,8 +135,8 @@ func (d *DefaultHelmer) upgradeOrInstall(
 		}
 		fanOutCtx, cancelFn := context.WithCancel(context.TODO())
 		key := fmt.Sprintf("%s-%s", namespace, releaseName)
-		podCh := make(chan data.Obj[*corev1.Pod], 1000)
-		evCh := make(chan data.Obj[*eventsv1.Event], 1000)
+		podCh := make(chan data.Obj[*corev1.Pod], 200)
+		evCh := make(chan data.Obj[*eventsv1.Event], 200)
 		defer func() {
 			cancelFn()
 			k8sClient.PodFanOut.RemoveListener(key)
