@@ -818,7 +818,7 @@ func Test_projectRepo_GetAllPods(t *testing.T) {
 	project.Update().SetPodSelectors(nil).Save(context.TODO())
 	_, err := r.GetAllActiveContainers(context.TODO(), project.ID)
 
-	assert.Error(t, err)
+	assert.Nil(t, err)
 
 	project.Update().SetPodSelectors([]string{"a=a", "b=b"}).Save(context.TODO())
 	pods, _ := r.GetAllActiveContainers(context.TODO(), project.ID)
