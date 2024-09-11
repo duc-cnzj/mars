@@ -415,27 +415,28 @@ func (v *SystemVariableLoader) Load(j *jobRunner) error {
 
 	//{{.Branch}}{{.Commit}}{{.Pipeline}}
 	var (
-		pipelineID     int64
-		pipelineBranch string = j.input.GitBranch
-		pipelineCommit string = j.commit.GetShortID()
+		pipelineID          int64
+		pipelineBranch      string = j.input.GitBranch
+		pipelineShortCommit string = j.commit.GetShortID()
+		pipelineLongCommit  string = j.input.GitCommit
 	)
 
 	if j.repo.NeedGitRepo {
 		// 如果存在需要传变量的，则必须有流水线信息
-		if pipeline, e := j.pluginMgr.Git().GetCommitPipeline(fmt.Sprintf("%d", j.repo.GitProjectID), pipelineBranch, pipelineCommit); e == nil {
+		if pipeline, e := j.pluginMgr.Git().GetCommitPipeline(fmt.Sprintf("%d", j.repo.GitProjectID), pipelineBranch, pipelineLongCommit); e == nil {
 			pipelineID = pipeline.GetID()
 			pipelineBranch = pipeline.GetRef()
 
-			j.messager.SendMsg(fmt.Sprintf(loaderName+"镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pipelineBranch, pipelineCommit, pipelineID))
+			j.messager.SendMsg(fmt.Sprintf(loaderName+"镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pipelineBranch, pipelineShortCommit, pipelineID))
 		} else {
 			if tagRegex.MatchString(j.config.ValuesYaml) {
-				return fmt.Errorf("无法获取 Pipeline 信息, branch: %s, commit: %s", pipelineBranch, pipelineCommit)
+				return fmt.Errorf("无法获取 Pipeline 信息, branch: %s, commit: %s", pipelineBranch, pipelineShortCommit)
 			}
 		}
 	}
 
 	v.Add(VarBranch, pipelineBranch)
-	v.Add(VarCommit, pipelineCommit)
+	v.Add(VarCommit, pipelineShortCommit)
 	v.Add(VarPipeline, fmt.Sprintf("%d", pipelineID))
 
 	// ingress
