@@ -11,11 +11,10 @@ import ajax from "../api/ajax";
 import { components } from "../api/schema";
 
 const ProjectContainerLogs: React.FC<{
-  updatedAt: any;
   id: number;
   namespace: string;
-  namespaceID: number;
-}> = ({ id, namespace, updatedAt, namespaceID }) => {
+}> = ({ id, namespace }) => {
+  console.log("render: TabLog");
   const [value, setValue] = useState<string>("");
   const [list, setList] = useState<
     components["schemas"]["types.StateContainer"][]
@@ -67,7 +66,7 @@ const ProjectContainerLogs: React.FC<{
         setValue(first.pod + "|" + first.container);
       }
     });
-  }, [setList, id, namespace, updatedAt, listContainer]);
+  }, [setList, id, namespace, listContainer]);
 
   const [timestamp, setTimestamp] = useState(new Date().getTime());
   let [pod, container] = useMemo(() => (value as string).split("|"), [value]);

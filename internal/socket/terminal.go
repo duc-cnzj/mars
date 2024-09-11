@@ -553,7 +553,7 @@ func (wc *WebsocketManager) resetSession(session PtyHandler) PtyHandler {
 			conn:      spty.conn,
 			doneChan:  make(chan struct{}),
 			sizeChan:  make(chan remotecommand.TerminalSize, 1),
-			shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
+			shellCh:   make(chan *websocket_pb.TerminalMessage, 2000),
 			sizeStore: &sizeStore{
 				cols:  cols,
 				rows:  rows,
@@ -596,7 +596,7 @@ func (wc *WebsocketManager) StartShell(ctx context.Context, input *websocket_pb.
 		conn:      conn,
 		doneChan:  make(chan struct{}),
 		sizeStore: &sizeStore{},
-		shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
+		shellCh:   make(chan *websocket_pb.TerminalMessage, 2000),
 		sizeChan:  make(chan remotecommand.TerminalSize, 1),
 	}
 	conn.SetPtyHandler(sessionID, pty)

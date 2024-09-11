@@ -56,8 +56,7 @@ const TabShell: React.FC<{
   namespace: string;
   id: number;
   resizeAt: number;
-  updatedAt: any;
-}> = ({ namespaceID, namespace, id, resizeAt, updatedAt }) => {
+}> = ({ namespaceID, namespace, id, resizeAt }) => {
   console.log("render: TabShell");
   const [list, setList] = useState<
     components["schemas"]["types.StateContainer"][]
@@ -163,7 +162,7 @@ const TabShell: React.FC<{
     listContainer().then((data) => {
       data && setValuesByResult(data.items);
     });
-  }, [listContainer, setValuesByResult, updatedAt]);
+  }, [listContainer, setValuesByResult]);
 
   const [forceRender, setForceRender] = useState<any>(null);
   const reconnect = useCallback(

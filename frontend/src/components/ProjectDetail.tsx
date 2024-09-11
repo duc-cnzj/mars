@@ -180,14 +180,13 @@ const MyTabs: React.FC<{
       {
         key: "container-logs",
         label: "容器日志",
+        destroyInactiveTabPane: true,
         children: (
           <>
             {detail?.item && detail.item.namespace ? (
               <TabLog
-                updatedAt={detail.item.updatedAt}
                 id={detail.item.id}
                 namespace={detail.item.namespace.name}
-                namespaceID={detail.item.namespace.id}
               />
             ) : (
               <Skeleton active />
@@ -198,6 +197,7 @@ const MyTabs: React.FC<{
       {
         key: "shell",
         label: "命令行",
+        destroyInactiveTabPane: true,
         children: (
           <div style={{ height: "100%" }}>
             <Suspense fallback={<Skeleton active />}>
@@ -207,7 +207,6 @@ const MyTabs: React.FC<{
                     namespaceID={detail.item.namespace.id}
                     namespace={detail.item.namespace.name}
                     id={detail.item.id}
-                    updatedAt={detail.item.updatedAt}
                     resizeAt={resizeAt}
                   />
                 )}
@@ -242,6 +241,7 @@ const MyTabs: React.FC<{
       {
         key: "detail",
         label: "详细信息",
+        destroyInactiveTabPane: true,
         children: (
           <div className="detail-tab">
             <Suspense fallback={<Skeleton active />}>

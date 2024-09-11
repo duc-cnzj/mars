@@ -145,6 +145,13 @@ var (
 		Help:        "k8s fanout listener count",
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"type"})
+
+	FanOutChannelLength = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Subsystem:   system,
+		Name:        "fan_out_channel_length",
+		Help:        "fan out channel length",
+		ConstLabels: prometheus.Labels{"version": appVersion},
+	}, []string{"name"})
 )
 
 func NewRegistry() *prometheus.Registry {
@@ -157,6 +164,7 @@ func NewRegistry() *prometheus.Registry {
 		GrpcLatency,
 		GrpcErrorCount,
 		GrpcRequestTotal,
+		FanOutChannelLength,
 		WebsocketRequestLatency,
 		WebsocketPanicCount,
 		WebsocketRequestTotal,

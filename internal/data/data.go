@@ -197,13 +197,13 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 			eventFanOutObj = &fanOut[*eventsv1.Event]{
 				logger:    logger,
 				name:      "event",
-				ch:        make(chan Obj[*eventsv1.Event], 10000),
+				ch:        make(chan Obj[*eventsv1.Event], 50000),
 				listeners: make(map[string]chan<- Obj[*eventsv1.Event]),
 			}
 
 			podFanOutObj = &fanOut[*corev1.Pod]{
 				name:      "pod",
-				ch:        make(chan Obj[*corev1.Pod], 10000),
+				ch:        make(chan Obj[*corev1.Pod], 50000),
 				logger:    logger,
 				listeners: make(map[string]chan<- Obj[*corev1.Pod]),
 			}
@@ -605,6 +605,7 @@ func (f *fanOut[T]) Distribute(done <-chan struct{}) {
 				f.logger.Warningf("[FANOUT]: '%s' Exit!", f.name)
 				return
 			}
+			metrics.FanOutChannelLength.With(prometheus.Labels{"name": f.name}).Set(float64(len(f.ch)))
 			func() {
 				f.listenerMu.Lock()
 				defer f.listenerMu.Unlock()

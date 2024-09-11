@@ -324,9 +324,13 @@ func (wc *WebsocketManager) HandleJoinRoom(ctx context.Context, c Conn, t websoc
 		return
 	}
 	if input.Join {
-		c.PubSub().(application.ProjectPodEventSubscriber).Join(int64(input.GetProjectId()))
-	} else {
-		c.PubSub().(application.ProjectPodEventSubscriber).Leave(int64(input.GetNamespaceId()), int64(input.GetProjectId()))
+		if err := c.PubSub().(application.ProjectPodEventSubscriber).Join(int64(input.GetProjectId())); err != nil {
+			wc.logger.Error("join: ", err, input.String())
+		}
+		return
+	}
+	if err := c.PubSub().(application.ProjectPodEventSubscriber).Leave(int64(input.GetNamespaceId()), int64(input.GetProjectId())); err != nil {
+		wc.logger.Error("leave: ", err, input.String())
 	}
 }
 

@@ -470,7 +470,7 @@ func (repo *k8sRepo) GetPodSelectorsByManifest(manifests []string) []string {
 				selectors = append(selectors, labels.SelectorFromSet(jobPodLabels).String())
 			}
 		default:
-			repo.logger.Debugf("未知: %#v", a)
+			repo.logger.Debugf("GetPodSelectorsByManifest Default: %#v", a)
 		}
 	}
 

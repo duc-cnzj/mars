@@ -64,7 +64,10 @@ const Elements: React.FC<{
               value={item.value}
               onChange={(changeValue) => {
                 let tmp: any = value;
-                set(tmp, index, {path: item.path, value: String(changeValue)})
+                set(tmp, index, {
+                  path: item.path,
+                  value: String(changeValue),
+                });
                 onChange?.(tmp);
                 return tmp;
               }}

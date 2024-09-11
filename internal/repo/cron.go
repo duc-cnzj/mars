@@ -456,7 +456,7 @@ func (l listFiles) PrettyYaml() string {
 func (repo *cronRepo) ProjectPodEventListener() error {
 	var ws = repo.pluginMgr.Ws()
 	logger := repo.logger
-	ch := make(chan data.Obj[*corev1.Pod], 100)
+	ch := make(chan data.Obj[*corev1.Pod], 50000)
 	listener := "pod-watcher"
 	namespacePublisher := ws.New("", "").(application.ProjectPodEventPublisher)
 	podFanOut := repo.data.K8sClient().PodFanOut
@@ -467,29 +467,39 @@ func (repo *cronRepo) ProjectPodEventListener() error {
 	defer logger.HandlePanic(listener)
 	defer podFanOut.RemoveListener(listener)
 
-	for obj := range ch {
-		switch obj.Type() {
-		case data.Update:
-			repo.logger.Debug("[#### PodEventListener]: update pod", obj.Current().Name, obj.Current().Namespace)
-			if obj.Old().Status.Phase != obj.Current().Status.Phase || containerStatusChanged(logger, obj.Old(), obj.Current()) {
-				logger.Debugf("old: '%s' new '%s'", obj.Old().Status.Phase, obj.Current().Status.Phase)
-				if ns, err := repo.nsRepo.FindByName(context.TODO(), obj.Current().Namespace); err == nil {
-					if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
-						logger.Errorf("[PodEventListener]: %v", err)
+	var worker = 8
+	wg := &sync.WaitGroup{}
+	wg.Add(worker)
+	for i := 0; i < worker; i++ {
+		go func(i int) {
+			defer wg.Done()
+			repo.logger.Infof("[PodEventListener]: worker %d started", i)
+			for obj := range ch {
+				switch obj.Type() {
+				case data.Update:
+					repo.logger.Debug("[#### PodEventListener]: update pod", obj.Current().Name, obj.Current().Namespace)
+					if obj.Old().Status.Phase != obj.Current().Status.Phase || containerStatusChanged(logger, obj.Old(), obj.Current()) {
+						logger.Debugf("old: '%s' new '%s'", obj.Old().Status.Phase, obj.Current().Status.Phase)
+						if ns, err := repo.nsRepo.FindByName(context.TODO(), obj.Current().Namespace); err == nil {
+							if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
+								logger.Errorf("[PodEventListener]: %v", err)
+							}
+						}
 					}
+				case data.Add, data.Delete:
+					logger.Debug("[PodEventListener]: add/del pod", obj.Type(), obj.Current().Name, obj.Current().Namespace)
+					if ns, err := repo.nsRepo.FindByName(context.TODO(), obj.Current().Namespace); err == nil {
+						logger.Debugf("[PodEventListener]: pod '%v': '%s' '%s' '%d' '%s'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID, obj.Current().Status.Phase)
+						if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
+							logger.Errorf("[PodEventListener]: %v", err)
+						}
+					}
+				default:
 				}
 			}
-		case data.Add, data.Delete:
-			logger.Debug("[PodEventListener]: add/del pod", obj.Type(), obj.Current().Name, obj.Current().Namespace)
-			if ns, err := repo.nsRepo.FindByName(context.TODO(), obj.Current().Namespace); err == nil {
-				logger.Debugf("[PodEventListener]: pod '%v': '%s' '%s' '%d' '%s'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID, obj.Current().Status.Phase)
-				if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
-					logger.Errorf("[PodEventListener]: %v", err)
-				}
-			}
-		default:
-		}
+		}(i)
 	}
+	wg.Wait()
 	return nil
 }
 

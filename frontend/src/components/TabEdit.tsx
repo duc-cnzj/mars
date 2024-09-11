@@ -8,6 +8,7 @@ const EditProject: React.FC<{
   detail: components["schemas"]["types.ProjectModel"];
   onSuccess: () => void;
 }> = ({ detail, onSuccess, namespaceId }) => {
+  console.log("render edit..");
   return (
     <div
       className={css`

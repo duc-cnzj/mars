@@ -93,14 +93,14 @@ const DetailTab: React.FC<{
             clipRule="evenodd"
           />
         </svg>
-        <p>
+        <div style={{ fontWeight: 700 }}>
           cpu:{" "}
           {!cpuMemEndpointsLoading ? (
             <span className="detail-data">{cpuMemEndpoints.cpu}</span>
           ) : (
             <Spin />
           )}
-        </p>
+        </div>
       </div>
 
       <div
@@ -127,14 +127,14 @@ const DetailTab: React.FC<{
             clipRule="evenodd"
           />
         </svg>
-        <p>
+        <div style={{ fontWeight: 700 }}>
           memory:{" "}
           {!cpuMemEndpointsLoading ? (
             <span className="detail-data">{cpuMemEndpoints.mem}</span>
           ) : (
             <Spin />
           )}
-        </p>
+        </div>
       </div>
 
       <div
@@ -151,9 +151,9 @@ const DetailTab: React.FC<{
             fontSize: 16,
           }}
         />
-        <p>
+        <div style={{ fontWeight: 700 }}>
           分支: <span className="detail-data">{detail.gitBranch}</span>
-        </p>
+        </div>
       </div>
 
       <div>
@@ -171,7 +171,7 @@ const DetailTab: React.FC<{
               fontSize: 16,
             }}
           />
-          <p>地址:</p>
+          <div style={{ fontWeight: 700 }}>地址:</div>
         </div>
         <ul style={{ listStyle: "none", padding: "0 0 0 1.5em", margin: 0 }}>
           {!cpuMemEndpointsLoading ? (
@@ -212,7 +212,7 @@ const DetailTab: React.FC<{
               fontSize: 16,
             }}
           />
-          <p>容器镜像:</p>
+          <div style={{ fontWeight: 700 }}>容器镜像:</div>
         </div>
         <div style={{ marginLeft: 20 }}>
           {detail.dockerImage?.map((v, idx) => <div key={idx}>{v}</div>)}
@@ -232,7 +232,7 @@ const DetailTab: React.FC<{
             fontSize: 16,
           }}
         />
-        <p>
+        <div style={{ fontWeight: 700 }}>
           提交:
           <span className="detail-data">
             <a href={detail.gitCommitWebUrl} target="_blank">
@@ -240,7 +240,7 @@ const DetailTab: React.FC<{
             </a>
             by {detail.gitCommitAuthor} 于 {detail.gitCommitDate}
           </span>
-        </p>
+        </div>
       </div>
 
       <div
@@ -268,10 +268,10 @@ const DetailTab: React.FC<{
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
           />
         </svg>
-        <p>
+        <div style={{ fontWeight: 700 }}>
           部署日期:{" "}
           <span className="detail-data">{detail.humanizeCreatedAt}</span>
-        </p>
+        </div>
       </div>
       <div
         style={{
@@ -298,14 +298,14 @@ const DetailTab: React.FC<{
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
           />
         </svg>
-        <p>
+        <div style={{ fontWeight: 700 }}>
           更新日期:{" "}
           <span className="detail-data">{detail.humanizeUpdatedAt}</span>
-        </p>
+        </div>
       </div>
 
       <div>
-        <p>
+        <div style={{ fontWeight: 700 }}>
           <FireOutlined
             style={{
               width: 20,
@@ -315,7 +315,7 @@ const DetailTab: React.FC<{
             }}
           />
           相关配置
-        </p>
+        </div>
         <details>
           <summary style={{ cursor: "pointer" }}>展开查看</summary>
           <SyntaxHighlighter
