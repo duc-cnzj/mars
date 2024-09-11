@@ -45,9 +45,7 @@ const Item: React.FC<{
   reload: () => void;
 }> = ({ item, onNamespaceDeleted, loading, onFavorite, reload }) => {
   const [cpuAndMemory, setCpuAndMemory] = useState({ cpu: "", memory: "" });
-  const { isAdmin } = useAuth();
   const [deleting, setDeleting] = useState<boolean>(false);
-
   const [editDesc, setEditDesc] = useState(false);
   const [popoverVisible, setPopoverVisible] = useState(false);
 
@@ -90,7 +88,7 @@ const Item: React.FC<{
               </Tooltip>
             </Col>
             <Col span={3} style={{ textAlign: "right" }}>
-              {isAdmin() && (
+              {useIsOwned(item) && (
                 <Popconfirm
                   title={`确定要删除 '${item.name}' 这个名称空间吗？`}
                   okText="Yes"
@@ -200,7 +198,13 @@ const Item: React.FC<{
                         textAlign: "right",
                       }}
                     >
-                      <div style={{ textAlign: "left" }}>
+                      <div
+                        style={{
+                          textAlign: "left",
+                          whiteSpace: "pre-wrap",
+                          fontSize: 12,
+                        }}
+                      >
                         {item.description}
                       </div>
                       <EditFilled
@@ -324,22 +328,27 @@ const TitleNamespaceName = styled.span`
   margin-left: 3px;
 `;
 
+const useIsOwned = (item: components["schemas"]["types.NamespaceModel"]) => {
+  const { user, isAdmin } = useAuth();
+  const isOwned = useCallback(() => {
+    return isAdmin() || item.creatorEmail === user.email;
+  }, [isAdmin, item.creatorEmail, user.email]);
+
+  return isOwned();
+};
+
 const NamespacePrivate: React.FC<{
   item: components["schemas"]["types.NamespaceModel"];
   reload: () => void;
 }> = ({ item, reload }) => {
-  const { user, isAdmin } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [transferEmail, setTransferEmail] = useState("");
 
   const initValues = yaml.dump(item.members.map((v) => v.email));
   const [value, setValue] = useState(initValues);
-  const isOwned = useCallback(() => {
-    return isAdmin() || item.creatorEmail === user.email;
-  }, [isAdmin, item.creatorEmail, user.email]);
 
-  if (!isOwned()) {
+  if (!useIsOwned(item)) {
     return (
       <Tooltip
         placement="top"

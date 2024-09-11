@@ -210,6 +210,7 @@ func TestNamespaceSvc_Delete_Success(t *testing.T) {
 		eventRepo,
 	)
 
+	nsRepo.EXPECT().IsOwner(gomock.Any(), 1, MustGetUser(newAdminUserCtx())).Return(true, nil)
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{
 		ID:               1,
 		Name:             "namespace1",
@@ -256,6 +257,7 @@ func TestNamespaceSvc_Delete_Error(t *testing.T) {
 		repo.NewMockEventRepo(m),
 	)
 
+	nsRepo.EXPECT().IsOwner(gomock.Any(), 1, MustGetUser(newAdminUserCtx())).Return(true, nil)
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("error"))
 
 	res, err := svc.Delete(newAdminUserCtx(), &namespace.DeleteRequest{
@@ -278,6 +280,7 @@ func TestNamespaceSvc_Delete_Error2(t *testing.T) {
 		repo.NewMockEventRepo(m),
 	)
 
+	nsRepo.EXPECT().IsOwner(gomock.Any(), 1, MustGetUser(newOtherUserCtx())).Return(false, nil)
 	res, err := svc.Delete(newOtherUserCtx(), &namespace.DeleteRequest{
 		Id: 1,
 	})

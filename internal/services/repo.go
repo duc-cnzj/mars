@@ -14,8 +14,6 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
 	yaml2 "github.com/duc-cnzj/mars/v5/internal/util/yaml"
 	"github.com/samber/lo"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 var _ reposerver.RepoServer = (*repoSvc)(nil)
@@ -192,7 +190,7 @@ func (r *repoSvc) Authorize(ctx context.Context, fullMethodName string) (context
 		return ctx, nil
 	}
 	if !MustGetUser(ctx).IsAdmin() {
-		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
+		return nil, ErrorPermissionDenied
 	}
 
 	return ctx, nil

@@ -10,8 +10,6 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
 	"github.com/samber/lo"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 var _ event.EventServer = (*eventSvc)(nil)
@@ -60,7 +58,7 @@ func (e *eventSvc) Show(ctx context.Context, request *event.ShowRequest) (*event
 
 func (e *eventSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
 	if !MustGetUser(ctx).IsAdmin() {
-		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
+		return nil, ErrorPermissionDenied
 	}
 
 	return ctx, nil

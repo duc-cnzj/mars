@@ -15,8 +15,6 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 var _ file.FileServer = (*fileSvc)(nil)
@@ -110,7 +108,7 @@ func (m *fileSvc) Authorize(ctx context.Context, fullMethodName string) (context
 	}
 
 	if !MustGetUser(ctx).IsAdmin() {
-		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
+		return nil, ErrorPermissionDenied
 	}
 
 	return ctx, nil

@@ -9,7 +9,6 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v5/namespace"
 	"github.com/duc-cnzj/mars/api/v5/types"
-	"github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/duc-cnzj/mars/v5/internal/ent"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/repo"
@@ -47,7 +46,7 @@ func NewNamespaceSvc(helmer repo.HelmerRepo, nsRepo repo.NamespaceRepo, k8sRepo 
 func (n *namespaceSvc) Transfer(ctx context.Context, request *namespace.TransferRequest) (*namespace.TransferResponse, error) {
 	owner, _ := n.nsRepo.IsOwner(ctx, int(request.Id), MustGetUser(ctx))
 	if !owner {
-		return nil, repo.ToError(403, "没有权限")
+		return nil, ErrorPermissionDenied
 	}
 	transfer, err := n.nsRepo.Transfer(ctx, int(request.Id), request.NewAdminEmail)
 	if err != nil {
@@ -172,7 +171,7 @@ func (n *namespaceSvc) Show(ctx context.Context, input *namespace.ShowRequest) (
 		return nil, err
 	}
 	if access := n.nsRepo.CanAccess(ctx, int(input.Id), MustGetUser(ctx)); !access {
-		return nil, repo.ToError(403, "没有权限")
+		return nil, ErrorPermissionDenied
 	}
 	return &namespace.ShowResponse{Item: transformer.FromNamespace(ns)}, nil
 }
@@ -183,7 +182,7 @@ func (n *namespaceSvc) UpdateDesc(ctx context.Context, req *namespace.UpdateDesc
 		return nil, err
 	}
 	if access := n.nsRepo.CanAccess(ctx, int(req.Id), MustGetUser(ctx)); !access {
-		return nil, repo.ToError(403, "没有权限")
+		return nil, ErrorPermissionDenied
 	}
 
 	ns, err := n.nsRepo.Update(ctx, &repo.UpdateNamespaceInput{
@@ -212,8 +211,8 @@ func (n *namespaceSvc) UpdateDesc(ctx context.Context, req *namespace.UpdateDesc
 }
 
 func (n *namespaceSvc) Delete(ctx context.Context, input *namespace.DeleteRequest) (*namespace.DeleteResponse, error) {
-	user := auth.MustGetUser(ctx)
-	if !user.IsAdmin() {
+	owner, _ := n.nsRepo.IsOwner(ctx, int(input.Id), MustGetUser(ctx))
+	if !owner {
 		return nil, ErrorPermissionDenied
 	}
 
@@ -326,7 +325,7 @@ func (n *namespaceSvc) UpdatePrivate(ctx context.Context, req *namespace.UpdateP
 		return nil, err
 	}
 	if !isOwner {
-		return nil, repo.ToError(403, "没有权限")
+		return nil, ErrorPermissionDenied
 	}
 
 	private, err := n.nsRepo.UpdatePrivate(ctx, int(req.Id), req.Private)
@@ -349,7 +348,7 @@ func (n *namespaceSvc) SyncMembers(ctx context.Context, req *namespace.SyncMembe
 		return nil, err
 	}
 	if !isOwner {
-		return nil, repo.ToError(403, "没有权限")
+		return nil, ErrorPermissionDenied
 	}
 	show, err := n.nsRepo.Show(ctx, int(req.Id))
 	if err != nil {

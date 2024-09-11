@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 
@@ -195,7 +194,7 @@ func (d *defaultAuthProvider) Verify(ctx context.Context, token string) (idToken
 	return d.provider.Verifier(&oidc.Config{ClientID: d.cfg.ClientID}).Verify(ctx, token)
 }
 
-var ErrorPermissionDenied = errors.New("没有权限执行该操作")
+var ErrorPermissionDenied = repo.ToError(403, "没有权限执行该操作")
 
 var MustGetUser = auth2.MustGetUser
 

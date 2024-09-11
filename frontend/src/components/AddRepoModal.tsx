@@ -97,8 +97,10 @@ const AddRepoModal: React.FC<{
         return;
       }
       message.success("更新成功！");
-      onDestroy();
       onSuccess?.();
+      setTimeout(() => {
+        onDestroy();
+      }, 200);
       return;
     }
     const { error } = await ajax.POST("/api/repos", { body: values });
