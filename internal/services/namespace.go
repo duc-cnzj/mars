@@ -181,9 +181,6 @@ func (n *namespaceSvc) UpdateDesc(ctx context.Context, req *namespace.UpdateDesc
 	if err != nil {
 		return nil, err
 	}
-	if access := n.nsRepo.CanAccess(ctx, int(req.Id), MustGetUser(ctx)); !access {
-		return nil, ErrorPermissionDenied
-	}
 
 	ns, err := n.nsRepo.Update(ctx, &repo.UpdateNamespaceInput{
 		ID:          int(req.Id),

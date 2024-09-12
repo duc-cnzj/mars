@@ -163,6 +163,32 @@ func TestProjectSvc_Show_Failure(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+func TestProjectSvc_Show_Failure2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	projectRepo := repo.NewMockProjectRepo(m)
+	namespaceRepo := repo.NewMockNamespaceRepo(m)
+	svc := NewProjectSvc(
+		repo.NewMockRepoRepo(m),
+		application.NewMockPluginManger(m),
+		socket.NewMockJobManager(m),
+		projectRepo,
+		repo.NewMockGitRepo(m),
+		repo.NewMockK8sRepo(m),
+		repo.NewMockEventRepo(m),
+		mlog.NewForConfig(nil),
+		repo.NewMockHelmerRepo(m),
+		namespaceRepo,
+	)
+
+	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{NamespaceID: 1}, nil)
+	namespaceRepo.EXPECT().CanAccess(gomock.Any(), 1, gomock.Any()).Return(false)
+	_, err := svc.Show(context.TODO(), &project.ShowRequest{
+		Id: 1,
+	})
+	assert.ErrorIs(t, err, ErrorPermissionDenied)
+}
+
 func Test_projectSvc_Delete(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -207,6 +233,7 @@ func Test_projectSvc_Delete(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, response)
 }
+
 func Test_projectSvc_Delete_Fail(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -262,6 +289,34 @@ func Test_projectSvc_Delete_Fail2(t *testing.T) {
 	})
 	assert.NotNil(t, err)
 	assert.Nil(t, response)
+}
+
+func Test_projectSvc_Delete_Fail3(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	projectRepo := repo.NewMockProjectRepo(m)
+	k8sRepo := repo.NewMockK8sRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	helmerRepo := repo.NewMockHelmerRepo(m)
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	svc := NewProjectSvc(
+		repo.NewMockRepoRepo(m),
+		application.NewMockPluginManger(m),
+		socket.NewMockJobManager(m),
+		projectRepo,
+		repo.NewMockGitRepo(m),
+		k8sRepo,
+		eventRepo,
+		mlog.NewForConfig(nil),
+		helmerRepo,
+		nsRepo,
+	)
+	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(false)
+	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{}, nil)
+	_, err := svc.Delete(newAdminUserCtx(), &project.DeleteRequest{
+		Id: 1,
+	})
+	assert.ErrorIs(t, err, ErrorPermissionDenied)
 }
 
 func Test_projectSvc_Version(t *testing.T) {
@@ -555,6 +610,54 @@ func TestProjectSvc_Apply_Failure(t *testing.T) {
 
 	assert.NotNil(t, err)
 	assert.Equal(t, "error", err.Error())
+}
+
+func TestProjectSvc_Apply_Failure2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	projectRepo := repo.NewMockProjectRepo(m)
+	repoRepo := repo.NewMockRepoRepo(m)
+	jobManager := socket.NewMockJobManager(m)
+	gitRepo := repo.NewMockGitRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	logger := mlog.NewForConfig(nil)
+	helmerRepo := repo.NewMockHelmerRepo(m)
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	plMgr := application.NewMockPluginManger(m)
+
+	svc := NewProjectSvc(
+		repoRepo,
+		plMgr,
+		jobManager,
+		projectRepo,
+		gitRepo,
+		repo.NewMockK8sRepo(m),
+		eventRepo,
+		logger,
+		helmerRepo,
+		nsRepo,
+	)
+
+	nsRepo.EXPECT().CanAccess(gomock.Any(), 1, gomock.Any()).Return(false)
+
+	mockServer := &mockProjectApplyServer{
+		Req: &project.ApplyRequest{
+			RepoId:      1,
+			NamespaceId: 1,
+			Name:        "test",
+		},
+	}
+
+	applyRequest := &project.ApplyRequest{
+		RepoId:      1,
+		NamespaceId: 1,
+		Name:        "test",
+	}
+
+	err := svc.Apply(applyRequest, mockServer)
+
+	assert.ErrorIs(t, err, ErrorPermissionDenied)
 }
 
 type mockProjectApplyServer struct {
@@ -876,4 +979,67 @@ func Test_projectSvc_MemoryCpuAndEndpoints(t *testing.T) {
 	assert.Equal(t, "1", endpoints.Cpu)
 	assert.Equal(t, "2Gi", endpoints.Memory)
 	assert.Equal(t, 3, len(endpoints.Urls))
+}
+
+func Test_projectSvc_MemoryCpuAndEndpoints_Fail(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	projectRepo := repo.NewMockProjectRepo(m)
+	k8sRepo := repo.NewMockK8sRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	helmerRepo := repo.NewMockHelmerRepo(m)
+	svc := NewProjectSvc(
+		repo.NewMockRepoRepo(m),
+		application.NewMockPluginManger(m),
+		socket.NewMockJobManager(m),
+		projectRepo,
+		repo.NewMockGitRepo(m),
+		k8sRepo,
+		eventRepo,
+		mlog.NewForConfig(nil),
+		helmerRepo,
+		repo.NewMockNamespaceRepo(m),
+	)
+
+	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("x"))
+	_, err := svc.MemoryCpuAndEndpoints(context.TODO(), &project.MemoryCpuAndEndpointsRequest{Id: 1})
+	assert.Error(t, err)
+}
+
+func Test_projectSvc_MemoryCpuAndEndpoints_fail2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	projectRepo := repo.NewMockProjectRepo(m)
+	k8sRepo := repo.NewMockK8sRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	helmerRepo := repo.NewMockHelmerRepo(m)
+	svc := NewProjectSvc(
+		repo.NewMockRepoRepo(m),
+		application.NewMockPluginManger(m),
+		socket.NewMockJobManager(m),
+		projectRepo,
+		repo.NewMockGitRepo(m),
+		k8sRepo,
+		eventRepo,
+		mlog.NewForConfig(nil),
+		helmerRepo,
+		repo.NewMockNamespaceRepo(m),
+	)
+
+	projModel := &repo.Project{
+		ID:          2,
+		Name:        "app",
+		NamespaceID: 1,
+		Namespace: &repo.Namespace{
+			Name: "ns",
+		},
+		Version: 100,
+	}
+	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(projModel, nil)
+	k8sRepo.EXPECT().GetAllPodMetrics(gomock.Any(), projModel)
+	k8sRepo.EXPECT().GetCpuAndMemory(gomock.Any(), gomock.Any()).Return("1", "2Gi")
+	projectRepo.EXPECT().GetProjectEndpointsInNamespace(gomock.Any(), projModel.Namespace.Name, projModel.ID).Return(nil, errors.New("x"))
+	endpoints, err := svc.MemoryCpuAndEndpoints(context.TODO(), &project.MemoryCpuAndEndpointsRequest{Id: 1})
+	assert.Error(t, err)
+	assert.Nil(t, endpoints)
 }

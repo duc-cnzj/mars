@@ -5,9 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/api/v5/types"
-
 	"github.com/duc-cnzj/mars/api/v5/namespace"
+	"github.com/duc-cnzj/mars/api/v5/types"
 	"github.com/duc-cnzj/mars/v5/internal/ent"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/repo"
@@ -502,6 +501,28 @@ func TestNamespaceSvc_Show_Error(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+func TestNamespaceSvc_Show_Error2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	nsRepo := repo.NewMockNamespaceRepo(m)
+	svc := NewNamespaceSvc(
+		repo.NewMockHelmerRepo(m),
+		nsRepo,
+		repo.NewMockK8sRepo(m),
+		mlog.NewForConfig(nil),
+		repo.NewMockEventRepo(m),
+	)
+
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{}, nil)
+	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(false)
+
+	_, err := svc.Show(context.TODO(), &namespace.ShowRequest{
+		Id: 1,
+	})
+
+	assert.ErrorIs(t, err, ErrorPermissionDenied)
+}
+
 func Test_namespaceSvc_UpdateDesc(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -641,6 +662,21 @@ func Test_namespaceSvc_List(t *testing.T) {
 	assert.Equal(t, int32(2), res.Items[1].Id)
 	assert.Equal(t, "namespace2", res.Items[1].Name)
 	assert.True(t, res.Items[0].Favorite)
+
+	nsRepo.EXPECT().List(gomock.Any(), &repo.ListNamespaceInput{
+		Favorite: false,
+		Email:    "user@mars.com",
+		Name:     lo.ToPtr("name"),
+		PageSize: 15,
+		Page:     1,
+		IsAdmin:  false,
+	}).Return(nil, nil, errors.New("x"))
+
+	_, err = svc.List(newOtherUserCtx(), &namespace.ListRequest{
+		Favorite: false,
+		Name:     lo.ToPtr("name"),
+	})
+	assert.Error(t, err)
 }
 
 func Test_namespaceSvc_SyncMembers(t *testing.T) {

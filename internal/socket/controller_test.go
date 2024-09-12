@@ -56,6 +56,10 @@ func TestWebsocketManager_HandleAuthorize(t *testing.T) {
 	assert.Nil(t, conn.GetUser())
 }
 
+func TestUpgrader(t *testing.T) {
+	assert.True(t, upgrader.CheckOrigin(nil))
+}
+
 func TestWebsocketManager_HandleJoinRoom(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -475,4 +479,30 @@ func TestWebsocketManager_dispatchEvent(t *testing.T) {
 	}
 	conn.user = nil
 	wm.dispatchEvent(context.TODO(), conn, wsRequest, message)
+}
+
+func TestWebsocketManager_Input_error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	sub := application.NewMockPubSub(m)
+
+	wm := &WebsocketManager{
+		logger: mlog.NewForConfig(nil),
+	}
+
+	conn := &WsConn{
+		pubSub: sub,
+		user:   &auth.UserInfo{},
+	}
+
+	sub.EXPECT().ToSelf(gomock.Any()).MinTimes(1)
+	wm.HandleAuthorize(context.TODO(), conn, WsAuthorize, []byte("invalid"))
+	wm.HandleJoinRoom(context.TODO(), conn, ProjectPodEvent, []byte("invalid"))
+	wm.HandleStartShell(context.TODO(), conn, websocket_pb.Type(0), []byte("invalid"))
+	wm.HandleShellMessage(context.TODO(), conn, websocket_pb.Type(0), []byte("invalid"))
+	wm.HandleCloseShell(context.TODO(), conn, websocket_pb.Type(0), []byte("invalid"))
+	wm.HandleWsCancelDeploy(context.TODO(), conn, websocket_pb.Type(0), []byte("invalid"))
+	wm.HandleWsCreateProject(context.TODO(), conn, websocket_pb.Type(0), []byte("invalid"))
+	wm.HandleWsUpdateProject(context.TODO(), conn, websocket_pb.Type(0), []byte("invalid"))
 }

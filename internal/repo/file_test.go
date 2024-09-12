@@ -562,3 +562,10 @@ func TestRecorder_Close(t *testing.T) {
 	assert.Equal(t, "c", fmodel.Container)
 	assert.Equal(t, "po", fmodel.Pod)
 }
+
+func Test_recorder_Duration(t *testing.T) {
+	r := &recorder{
+		startTime: time.Now().Add(-2 * time.Second),
+	}
+	assert.NotEmpty(t, r.Duration().String())
+}

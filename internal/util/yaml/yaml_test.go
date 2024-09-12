@@ -227,4 +227,8 @@ data3:
 	assert.True(t, isSimple)
 	isSimple, _ = IsSimpleEnv("not-exists", yamlData)
 	assert.True(t, isSimple)
+
+	isSimple, err := IsSimpleEnv("not-exists", "not-yaml")
+	assert.True(t, isSimple)
+	assert.Error(t, err)
 }

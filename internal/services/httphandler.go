@@ -10,8 +10,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
+
+	"github.com/spf13/cast"
 
 	"github.com/duc-cnzj/mars/api/v5/types"
 	"github.com/duc-cnzj/mars/v5/doc"
@@ -74,15 +75,17 @@ func (h *httpHandlerImpl) RegisterSwaggerUIRoute(mux *mux.Router) {
 	subrouter.Use(middlewares.HttpCache)
 
 	subrouter.Handle("/doc/swagger.json",
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(doc.SwaggerJson)
-		}),
+		http.HandlerFunc(h.SwaggerJson),
 	)
 
 	subrouter.PathPrefix("/docs/").Handler(
 		http.StripPrefix("/docs/", http.FileServer(http.FS(swagger_ui.SwaggerUI))),
 	)
+}
+
+func (h *httpHandlerImpl) SwaggerJson(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(doc.SwaggerJson)
 }
 
 func (h *httpHandlerImpl) RegisterFileRoute(mux *runtime.ServeMux) {
@@ -93,60 +96,74 @@ func (h *httpHandlerImpl) RegisterFileRoute(mux *runtime.ServeMux) {
 		}
 		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
 	})
-	mux.HandlePath("GET", "/api/download_file/{id}", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-		idstr, ok := pathParams["id"]
-		if !ok {
-			http.Error(w, "missing id", http.StatusBadRequest)
-			return
-		}
-		id, err := strconv.Atoi(idstr)
-		if err != nil {
-			http.Error(w, "bad id", http.StatusBadRequest)
-			return
-		}
-		if req, ok := h.authenticated(r); ok {
-			h.handleDownload(w, req, id)
-			return
-		}
-		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
-	})
-	mux.HandlePath("POST", "/api/copy_from_pod", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-		var input CopyFromPodRequest
-		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-			http.Error(w, "bad request", http.StatusBadRequest)
-			return
-		}
-		if input.Namespace == "" || input.Pod == "" || input.Container == "" || input.FilePath == "" {
-			http.Error(w, "missing namespace, pod or container", http.StatusBadRequest)
-			return
-		}
+	mux.HandlePath("GET", "/api/download_file/{id}", h.HttpDownload)
+	mux.HandlePath("POST", "/api/copy_from_pod", h.CopyFromPod)
+}
 
-		if req, ok := h.authenticated(r); ok {
-			ctx := req.Context()
-			info := auth.MustGetUser(ctx)
-			fromPod, err := h.k8sRepo.CopyFromPod(ctx, &repo.CopyFromPodInput{
-				Namespace: input.Namespace,
-				Pod:       input.Pod,
-				Container: input.Container,
-				FilePath:  input.FilePath,
-				UserName:  info.Name,
-			})
-			if err != nil {
-				h.logger.Error("Error copying file from pod: ", err)
-				toHttpError(w, err)
-				return
-			}
-			h.eventRepo.FileAuditLog(
-				types.EventActionType_Download,
-				info.Name,
-				fmt.Sprintf("从 Pod '%s' 复制文件 '%s' 到本地", input.Pod, input.FilePath),
-				fromPod.ID,
-			)
-			h.handleDownload(w, req, fromPod.ID)
+func (h *httpHandlerImpl) HttpDownload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	id := cast.ToInt(pathParams["id"])
+	if id < 1 {
+		http.Error(w, "missing id", http.StatusBadRequest)
+		return
+	}
+	if req, ok := h.authenticated(r); ok {
+		fil, err := h.fileRepo.GetByID(r.Context(), id)
+		if err != nil {
+			toHttpError(w, err)
 			return
 		}
-		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
-	})
+		user := auth.MustGetUser(req.Context())
+		h.eventRepo.FileAuditLog(
+			types.EventActionType_Download,
+			user.Name,
+			fmt.Sprintf("下载文件 '%s', 大小 %s",
+				fil.Path,
+				fil.HumanizeSize,
+			),
+			fil.ID,
+		)
+		h.handleDownload(w, fil)
+		return
+	}
+	http.Error(w, "Unauthenticated", http.StatusUnauthorized)
+}
+
+func (h *httpHandlerImpl) CopyFromPod(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	var input CopyFromPodRequest
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	if input.Namespace == "" || input.Pod == "" || input.Container == "" || input.FilePath == "" {
+		http.Error(w, "missing namespace, pod or container", http.StatusBadRequest)
+		return
+	}
+
+	if req, ok := h.authenticated(r); ok {
+		ctx := req.Context()
+		info := auth.MustGetUser(ctx)
+		fromPod, err := h.k8sRepo.CopyFromPod(ctx, &repo.CopyFromPodInput{
+			Namespace: input.Namespace,
+			Pod:       input.Pod,
+			Container: input.Container,
+			FilePath:  input.FilePath,
+			UserName:  info.Name,
+		})
+		if err != nil {
+			h.logger.Error("Error copying file from pod: ", err)
+			toHttpError(w, err)
+			return
+		}
+		h.eventRepo.FileAuditLog(
+			types.EventActionType_Download,
+			info.Name,
+			fmt.Sprintf("从 Pod '%s' 复制文件 '%s' 到本地", input.Pod, input.FilePath),
+			fromPod.ID,
+		)
+		h.handleDownload(w, fromPod)
+		return
+	}
+	http.Error(w, "Unauthenticated", http.StatusUnauthorized)
 }
 
 func toHttpError(w http.ResponseWriter, err error) {
@@ -184,24 +201,8 @@ func (h *httpHandlerImpl) authenticated(r *http.Request) (*http.Request, bool) {
 	return nil, false
 }
 
-func (h *httpHandlerImpl) handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
-	fil, err := h.fileRepo.GetByID(r.Context(), fid)
-	if err != nil {
-		toHttpError(w, err)
-		return
-	}
+func (h *httpHandlerImpl) handleDownload(w http.ResponseWriter, fil *repo.File) {
 	fileName := filepath.Base(fil.Path)
-
-	user := auth.MustGetUser(r.Context())
-	h.eventRepo.FileAuditLog(
-		types.EventActionType_Download,
-		user.Name,
-		fmt.Sprintf("下载文件 '%s', 大小 %s",
-			fil.Path,
-			fil.HumanizeSize,
-		),
-		fil.ID,
-	)
 	read, err := h.uploader.Read(fil.Path)
 	if err != nil {
 		if os.IsNotExist(err) {
