@@ -1167,6 +1167,17 @@ app:
 	assert.Nil(t, (&MergeValuesLoader{}).Load(job2))
 }
 
+func TestSystemVariableLoader_Load_ok1(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	msger := NewMockDeployMsger(m)
+	msger.EXPECT().To(gomock.Any()).Times(1)
+	msger.EXPECT().SendMsg(gomock.Any()).Times(2)
+	assert.Nil(t, (&SystemVariableLoader{}).Load(&jobRunner{
+		config:   &mars.Config{ValuesYaml: ""},
+		messager: msger,
+	}))
+}
 func TestSystemVariableLoader_Load_ok(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -1412,6 +1423,10 @@ func TestChartFileLoader_LoadWithChartMissing(t *testing.T) {
 
 	err := l.Load(job)
 	assert.Equal(t, loadDirErr.Error(), err.Error())
+
+	job.config.LocalChartPath = "xxx"
+	err = l.Load(job)
+	assert.Equal(t, "LocalChartPath 格式不正确", err.Error())
 }
 
 func Test_jobRunner_WriteConfigYamlToTmpFile(t *testing.T) {

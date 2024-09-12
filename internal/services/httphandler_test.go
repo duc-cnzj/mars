@@ -1,7 +1,9 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -156,19 +158,12 @@ func Test_httpHandlerImpl_handleDownload(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req = req.WithContext(auth.SetUser(req.Context(), &auth.UserInfo{Name: "duc"}))
 
-	fileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&repo.File{
-		ID:   1,
-		Path: "/aaa/b.txt",
-	}, nil)
-	eventRepo.EXPECT().FileAuditLog(
-		types.EventActionType_Download,
-		"duc",
-		gomock.Any(),
-		1,
-	)
 	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil)
 
-	h.handleDownload(rr, req, 1)
+	h.handleDownload(rr, &repo.File{
+		ID:   1,
+		Path: "/aaa/b.txt",
+	})
 
 	assert.Equal(t, "application/octet-stream", rr.Header().Get("Content-Type"))
 	assert.Equal(t, fmt.Sprintf(`attachment; filename="%s"`, url.QueryEscape("b.txt")), rr.Header().Get("Content-Disposition"))
@@ -227,4 +222,135 @@ func TestNewHttpHandler(t *testing.T) {
 
 	httpHandler.EXPECT().Shutdown(gomock.Not(nil)).Times(1)
 	handler.Shutdown(context.TODO())
+}
+
+func Test_httpHandlerImpl_CopyFromPod_Fail(t *testing.T) {
+	handler := &httpHandlerImpl{}
+	w := httptest.NewRecorder()
+	r := &http.Request{
+		Body: io.NopCloser(strings.NewReader("")),
+	}
+	handler.CopyFromPod(w, r, map[string]string{})
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func Test_httpHandlerImpl_CopyFromPod_Fail2(t *testing.T) {
+	handler := &httpHandlerImpl{}
+	w := httptest.NewRecorder()
+	marshal, _ := json.Marshal(&CopyFromPodRequest{
+		Namespace: "",
+		Pod:       "",
+		Container: "",
+		FilePath:  "",
+	})
+	r := &http.Request{
+		Body: io.NopCloser(bytes.NewReader(marshal)),
+	}
+	handler.CopyFromPod(w, r, map[string]string{})
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func Test_httpHandlerImpl_CopyFromPod_Fail3(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	authRepo := repo.NewMockAuthRepo(m)
+	handler := &httpHandlerImpl{authRepo: authRepo}
+	w := httptest.NewRecorder()
+	marshal, _ := json.Marshal(&CopyFromPodRequest{
+		Namespace: "a",
+		Pod:       "b",
+		Container: "c",
+		FilePath:  "d",
+	})
+	r := &http.Request{
+		Body: io.NopCloser(bytes.NewReader(marshal)),
+	}
+	authRepo.EXPECT().VerifyToken(gomock.Any(), "").Return(nil, nil)
+	handler.CopyFromPod(w, r, map[string]string{})
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func Test_httpHandlerImpl_CopyFromPod_Success(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	authRepo := repo.NewMockAuthRepo(m)
+	k8sRepo := repo.NewMockK8sRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	fileRepo := repo.NewMockFileRepo(m)
+	mockUploader := uploader.NewMockUploader(m)
+	handler := &httpHandlerImpl{
+		uploader: mockUploader,
+		fileRepo: fileRepo, authRepo: authRepo, k8sRepo: k8sRepo, eventRepo: eventRepo}
+	w := httptest.NewRecorder()
+	marshal, _ := json.Marshal(&CopyFromPodRequest{
+		Namespace: "a",
+		Pod:       "b",
+		Container: "c",
+		FilePath:  "d",
+	})
+	r := &http.Request{
+		Body: io.NopCloser(bytes.NewReader(marshal)),
+	}
+	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil)
+
+	authRepo.EXPECT().VerifyToken(gomock.Any(), "").Return(&auth.UserInfo{Name: "duc"}, nil)
+	k8sRepo.EXPECT().CopyFromPod(gomock.Any(), &repo.CopyFromPodInput{
+		Namespace: "a",
+		Pod:       "b",
+		Container: "c",
+		FilePath:  "d",
+		UserName:  "duc",
+	}).Return(&repo.File{ID: 1, Path: "/aaa/b.txt"}, nil)
+	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Download, "duc", gomock.Any(), 1)
+	handler.CopyFromPod(w, r, map[string]string{})
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func Test_httpHandlerImpl_HttpDownload_Fail(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	authRepo := repo.NewMockAuthRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	fileRepo := repo.NewMockFileRepo(m)
+	mockUploader := uploader.NewMockUploader(m)
+	handler := &httpHandlerImpl{
+		uploader: mockUploader,
+		fileRepo: fileRepo, authRepo: authRepo, eventRepo: eventRepo}
+	w := httptest.NewRecorder()
+	r := &http.Request{
+		Body: io.NopCloser(strings.NewReader("")),
+	}
+	handler.HttpDownload(w, r, map[string]string{})
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func Test_httpHandlerImpl_HttpDownload_Ok(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	authRepo := repo.NewMockAuthRepo(m)
+	eventRepo := repo.NewMockEventRepo(m)
+	fileRepo := repo.NewMockFileRepo(m)
+	mockUploader := uploader.NewMockUploader(m)
+	handler := &httpHandlerImpl{
+		uploader: mockUploader,
+		fileRepo: fileRepo, authRepo: authRepo, eventRepo: eventRepo}
+	authRepo.EXPECT().VerifyToken(gomock.Any(), "").Return(&auth.UserInfo{Name: "duc"}, nil)
+	fileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&repo.File{ID: 1, Path: "/aaa/b.txt"}, nil)
+	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Download, "duc", gomock.Any(), 1)
+	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil)
+
+	w := httptest.NewRecorder()
+	r := &http.Request{}
+	handler.HttpDownload(w, r, map[string]string{
+		"id": "1",
+	})
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func Test_httpHandlerImpl_SwaggerJson(t *testing.T) {
+	handler := &httpHandlerImpl{}
+	w := httptest.NewRecorder()
+	r := &http.Request{}
+	handler.SwaggerJson(w, r)
+	assert.Equal(t, http.StatusOK, w.Code)
 }
