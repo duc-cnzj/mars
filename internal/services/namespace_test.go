@@ -535,7 +535,6 @@ func Test_namespaceSvc_UpdateDesc(t *testing.T) {
 		mlog.NewForConfig(nil),
 		eventRepo,
 	)
-	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{
 		ID:          1,
 		Name:        "namespace1",
@@ -596,7 +595,6 @@ func Test_namespaceSvc_UpdateDesc_fail2(t *testing.T) {
 		mlog.NewForConfig(nil),
 		eventRepo,
 	)
-	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{
 		ID:          1,
 		Name:        "namespace1",
