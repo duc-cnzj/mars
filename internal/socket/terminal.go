@@ -31,9 +31,9 @@ const (
 )
 
 type sizeStore struct {
-	rwMu       sync.RWMutex
-	cols, rows uint16
-	reset      bool
+	rwMu          sync.RWMutex
+	width, height uint16
+	reset         bool
 }
 
 func (s *sizeStore) ResetTerminalRowCol(reset bool) {
@@ -48,36 +48,36 @@ func (s *sizeStore) TerminalRowColNeedReset() bool {
 	return s.reset
 }
 
-func (s *sizeStore) Set(cols, rows uint16) {
+func (s *sizeStore) Set(width, height uint16) {
 	s.rwMu.Lock()
 	defer s.rwMu.Unlock()
-	s.rows = rows
-	s.cols = cols
+	s.height = height
+	s.width = width
 }
 
-func (s *sizeStore) Changed(cols, rows uint16) bool {
+func (s *sizeStore) Changed(width, height uint16) bool {
 	s.rwMu.RLock()
 	defer s.rwMu.RUnlock()
-	if s.rows != rows {
+	if s.height != height {
 		return true
 	}
-	if s.cols != cols {
+	if s.width != width {
 		return true
 	}
 
 	return false
 }
 
-func (s *sizeStore) Cols() uint16 {
+func (s *sizeStore) Width() uint16 {
 	s.rwMu.RLock()
 	defer s.rwMu.RUnlock()
-	return s.cols
+	return s.width
 }
 
-func (s *sizeStore) Rows() uint16 {
+func (s *sizeStore) Height() uint16 {
 	s.rwMu.RLock()
 	defer s.rwMu.RUnlock()
-	return s.rows
+	return s.height
 }
 
 type PtyHandler interface {
@@ -95,8 +95,8 @@ type PtyHandler interface {
 	Recorder() repo.Recorder
 
 	ResetTerminalRowCol(bool)
-	Rows() uint16
-	Cols() uint16
+	Height() uint16
+	Width() uint16
 
 	Close(context.Context, string) bool
 	IsClosed() bool
@@ -130,12 +130,12 @@ func (t *myPtyHandler) Container() *repo.Container {
 	return t.container
 }
 
-func (t *myPtyHandler) Rows() uint16 {
-	return t.sizeStore.Rows()
+func (t *myPtyHandler) Height() uint16 {
+	return t.sizeStore.Height()
 }
 
-func (t *myPtyHandler) Cols() uint16 {
-	return t.sizeStore.Cols()
+func (t *myPtyHandler) Width() uint16 {
+	return t.sizeStore.Width()
 }
 
 func (t *myPtyHandler) Read(p []byte) (n int, err error) {
@@ -156,8 +156,8 @@ func (t *myPtyHandler) Read(p []byte) (n int, err error) {
 	case OpStdin:
 		return copy(p, msg.Data), nil
 	case OpResize:
-		t.logger.Debugf("[Websocket]: resize cols: %v  rows: %v", msg.Cols, msg.Rows)
-		t.Resize(remotecommand.TerminalSize{Width: uint16(msg.Cols), Height: uint16(msg.Rows)})
+		t.logger.Debugf("[Websocket]: resize width: %v  height: %v", msg.Width, msg.Height)
+		t.Resize(remotecommand.TerminalSize{Width: uint16(msg.Width), Height: uint16(msg.Height)})
 		return 0, nil
 	default:
 		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("unknown message type '%s'", msg.Op)
@@ -177,10 +177,10 @@ func (t *myPtyHandler) Write(p []byte) (n int, err error) {
 	if _, err = t.recorder.Write(p); err != nil {
 		t.logger.Debugf("[Websocket]: %v recorder write failed: %v", t.sessionID, err)
 	}
-	if t.sizeStore.TerminalRowColNeedReset() && t.sizeStore.Cols() != 0 {
-		t.logger.Debugf("reset shell size rows: %d, cols: %d", t.sizeStore.Rows(), t.sizeStore.Cols())
+	if t.sizeStore.TerminalRowColNeedReset() && t.sizeStore.Width() != 0 {
+		t.logger.Debugf("reset shell size height: %d, width: %d", t.sizeStore.Height(), t.sizeStore.Width())
 		t.sizeStore.ResetTerminalRowCol(false)
-		if err = t.Resize(remotecommand.TerminalSize{Width: t.sizeStore.Cols(), Height: t.sizeStore.Rows()}); err != nil {
+		if err = t.Resize(remotecommand.TerminalSize{Width: t.sizeStore.Width(), Height: t.sizeStore.Height()}); err != nil {
 			t.logger.Debugf("resize shell size failed: %v", err)
 		}
 	}
@@ -500,8 +500,8 @@ func (wc *WebsocketManager) WaitForTerminal(ctx context.Context, conn Conn, cont
 			if err = wc.startProcess(ctx, container, cmd, session); err == nil {
 				break
 			}
-			// 当出现 bash 回退的时候，需要注意，resize 不会触发，导致，新的 'sh', cols, rows 和用户端不一致，所以需要重置，
-			// 通过 sizeStore 记录上次用户的 rows, cols, 当 bash 回退时，在用户输入时应用到新的 sh 中
+			// 当出现 bash 回退的时候，需要注意，resize 不会触发，导致，新的 'sh', width, height 和用户端不一致，所以需要重置，
+			// 通过 sizeStore 记录上次用户的 height, width, 当 bash 回退时，在用户输入时应用到新的 sh 中
 			session = wc.resetSession(session)
 			conn.SetPtyHandler(sessionId, session)
 		}
@@ -520,24 +520,24 @@ func (wc *WebsocketManager) WaitForTerminal(ctx context.Context, conn Conn, cont
 }
 
 func (wc *WebsocketManager) resetSession(session PtyHandler) PtyHandler {
-	var cols, rows uint16 = 106, 25
+	var width, height uint16 = 106, 25
 	func() {
 		ticker := time.NewTicker(200 * time.Millisecond)
 		af := time.NewTimer(3 * time.Second)
 		defer ticker.Stop()
 		defer af.Stop()
-		for session.Cols() == 0 {
+		for session.Width() == 0 {
 			select {
 			case <-ticker.C:
 				wc.logger.Debug("sleep....")
 				break
 			case <-af.C:
-				wc.logger.Warningf("can't get previous cols,rows, use default rows: 25, cols: 106.")
+				wc.logger.Warningf("can't get previous width,height, use default height: 25, width: 106.")
 				return
 			}
 		}
-		cols = session.Cols()
-		rows = session.Rows()
+		width = session.Width()
+		height = session.Height()
 	}()
 	wc.logger.Debug("done....")
 
@@ -555,9 +555,9 @@ func (wc *WebsocketManager) resetSession(session PtyHandler) PtyHandler {
 			sizeChan:  make(chan remotecommand.TerminalSize, 1),
 			shellCh:   make(chan *websocket_pb.TerminalMessage, 500),
 			sizeStore: &sizeStore{
-				cols:  cols,
-				rows:  rows,
-				reset: true,
+				width:  width,
+				height: height,
+				reset:  true,
 			},
 		}
 	}

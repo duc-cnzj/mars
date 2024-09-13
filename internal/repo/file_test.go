@@ -417,16 +417,16 @@ func Test_recorder_GetShell(t *testing.T) {
 
 func Test_recorder_Resize(t *testing.T) {
 	r := &recorder{
-		rows: 1,
-		cols: 1,
+		height: 1,
+		width:  1,
 	}
 	r.Resize(2, 2)
-	assert.Equal(t, uint16(2), r.rows)
-	assert.Equal(t, uint16(2), r.cols)
+	assert.Equal(t, uint16(2), r.height)
+	assert.Equal(t, uint16(2), r.width)
 
 	r.HeadLineColRow(1, 2)
-	assert.Equal(t, uint16(2), r.rows)
-	assert.Equal(t, uint16(2), r.cols)
+	assert.Equal(t, uint16(2), r.height)
+	assert.Equal(t, uint16(2), r.width)
 }
 
 func TestRecorderWrite_WhenCalled_WritesDataToBuffer(t *testing.T) {
@@ -522,8 +522,8 @@ func TestRecorder_Close(t *testing.T) {
 		},
 		f:             f,
 		buffer:        bufio.NewWriter(f),
-		rows:          25,
-		cols:          106,
+		height:        25,
+		width:         106,
 		shell:         "bash-x",
 		fileRepo:      &fileRepo{data: mockData},
 		uploader:      up,

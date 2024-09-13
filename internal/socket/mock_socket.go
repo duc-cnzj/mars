@@ -672,20 +672,6 @@ func (mr *MockPtyHandlerMockRecorder) Close(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockPtyHandler)(nil).Close), arg0, arg1)
 }
 
-// Cols mocks base method.
-func (m *MockPtyHandler) Cols() uint16 {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Cols")
-	ret0, _ := ret[0].(uint16)
-	return ret0
-}
-
-// Cols indicates an expected call of Cols.
-func (mr *MockPtyHandlerMockRecorder) Cols() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cols", reflect.TypeOf((*MockPtyHandler)(nil).Cols))
-}
-
 // Container mocks base method.
 func (m *MockPtyHandler) Container() *repo.Container {
 	m.ctrl.T.Helper()
@@ -698,6 +684,20 @@ func (m *MockPtyHandler) Container() *repo.Container {
 func (mr *MockPtyHandlerMockRecorder) Container() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Container", reflect.TypeOf((*MockPtyHandler)(nil).Container))
+}
+
+// Height mocks base method.
+func (m *MockPtyHandler) Height() uint16 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Height")
+	ret0, _ := ret[0].(uint16)
+	return ret0
+}
+
+// Height indicates an expected call of Height.
+func (mr *MockPtyHandlerMockRecorder) Height() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Height", reflect.TypeOf((*MockPtyHandler)(nil).Height))
 }
 
 // IsClosed mocks base method.
@@ -783,20 +783,6 @@ func (mr *MockPtyHandlerMockRecorder) Resize(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resize", reflect.TypeOf((*MockPtyHandler)(nil).Resize), arg0)
 }
 
-// Rows mocks base method.
-func (m *MockPtyHandler) Rows() uint16 {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Rows")
-	ret0, _ := ret[0].(uint16)
-	return ret0
-}
-
-// Rows indicates an expected call of Rows.
-func (mr *MockPtyHandlerMockRecorder) Rows() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rows", reflect.TypeOf((*MockPtyHandler)(nil).Rows))
-}
-
 // Send mocks base method.
 func (m *MockPtyHandler) Send(arg0 context.Context, arg1 *websocket.TerminalMessage) error {
 	m.ctrl.T.Helper()
@@ -835,6 +821,20 @@ func (m *MockPtyHandler) Toast(arg0 string) error {
 func (mr *MockPtyHandlerMockRecorder) Toast(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Toast", reflect.TypeOf((*MockPtyHandler)(nil).Toast), arg0)
+}
+
+// Width mocks base method.
+func (m *MockPtyHandler) Width() uint16 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Width")
+	ret0, _ := ret[0].(uint16)
+	return ret0
+}
+
+// Width indicates an expected call of Width.
+func (mr *MockPtyHandlerMockRecorder) Width() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Width", reflect.TypeOf((*MockPtyHandler)(nil).Width))
 }
 
 // Write mocks base method.

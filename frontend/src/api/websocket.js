@@ -800,8 +800,8 @@ export const websocket = $root.websocket = (() => {
          * @property {string|null} [op] TerminalMessage op
          * @property {Uint8Array|null} [data] TerminalMessage data
          * @property {string|null} [sessionId] TerminalMessage sessionId
-         * @property {number|null} [rows] TerminalMessage rows
-         * @property {number|null} [cols] TerminalMessage cols
+         * @property {number|null} [height] TerminalMessage height
+         * @property {number|null} [width] TerminalMessage width
          */
 
         /**
@@ -844,20 +844,20 @@ export const websocket = $root.websocket = (() => {
         TerminalMessage.prototype.sessionId = "";
 
         /**
-         * TerminalMessage rows.
-         * @member {number} rows
+         * TerminalMessage height.
+         * @member {number} height
          * @memberof websocket.TerminalMessage
          * @instance
          */
-        TerminalMessage.prototype.rows = 0;
+        TerminalMessage.prototype.height = 0;
 
         /**
-         * TerminalMessage cols.
-         * @member {number} cols
+         * TerminalMessage width.
+         * @member {number} width
          * @memberof websocket.TerminalMessage
          * @instance
          */
-        TerminalMessage.prototype.cols = 0;
+        TerminalMessage.prototype.width = 0;
 
         /**
          * Encodes the specified TerminalMessage message. Does not implicitly {@link websocket.TerminalMessage.verify|verify} messages.
@@ -877,10 +877,10 @@ export const websocket = $root.websocket = (() => {
                 writer.uint32(/* id 2, wireType 2 =*/18).bytes(message.data);
             if (message.sessionId != null && Object.hasOwnProperty.call(message, "sessionId"))
                 writer.uint32(/* id 3, wireType 2 =*/26).string(message.sessionId);
-            if (message.rows != null && Object.hasOwnProperty.call(message, "rows"))
-                writer.uint32(/* id 4, wireType 0 =*/32).uint32(message.rows);
-            if (message.cols != null && Object.hasOwnProperty.call(message, "cols"))
-                writer.uint32(/* id 5, wireType 0 =*/40).uint32(message.cols);
+            if (message.height != null && Object.hasOwnProperty.call(message, "height"))
+                writer.uint32(/* id 4, wireType 0 =*/32).uint32(message.height);
+            if (message.width != null && Object.hasOwnProperty.call(message, "width"))
+                writer.uint32(/* id 5, wireType 0 =*/40).uint32(message.width);
             return writer;
         };
 
@@ -915,11 +915,11 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 case 4: {
-                        message.rows = reader.uint32();
+                        message.height = reader.uint32();
                         break;
                     }
                 case 5: {
-                        message.cols = reader.uint32();
+                        message.width = reader.uint32();
                         break;
                     }
                 default:

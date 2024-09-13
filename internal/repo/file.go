@@ -66,7 +66,7 @@ func ToFile(file *ent.File) *File {
 }
 
 type Recorder interface {
-	Resize(cols, rows uint16)
+	Resize(width, height uint16)
 	Write(p []byte) (n int, err error)
 	Close() error
 	SetShell(string)
@@ -336,8 +336,8 @@ type recorder struct {
 	shellMu sync.RWMutex
 	shell   string
 
-	rcMu       sync.RWMutex
-	cols, rows uint16
+	rcMu          sync.RWMutex
+	width, height uint16
 
 	localUploader uploader.Uploader
 	uploader      uploader.Uploader
@@ -380,15 +380,15 @@ func (r *recorder) SetShell(sh string) {
 	r.shell = sh
 }
 
-func (r *recorder) Resize(cols, rows uint16) {
-	r.HeadLineColRow(cols, rows)
+func (r *recorder) Resize(width, height uint16) {
+	r.HeadLineColRow(width, height)
 }
 
-func (r *recorder) HeadLineColRow(cols, rows uint16) {
+func (r *recorder) HeadLineColRow(width, height uint16) {
 	r.rcMu.Lock()
 	defer r.rcMu.Unlock()
-	r.cols = max(r.cols, cols)
-	r.rows = max(r.rows, rows)
+	r.width = max(r.width, width)
+	r.height = max(r.height, height)
 }
 
 func (r *recorder) Write(data []byte) (n int, err error) {
@@ -459,7 +459,7 @@ func (r *recorder) Close() error {
 		func() {
 			r.rcMu.RLock()
 			defer r.rcMu.RUnlock()
-			upFile.WriteString(fmt.Sprintf(startLine, r.cols, r.rows, r.startTime.Unix(), r.shell))
+			upFile.WriteString(fmt.Sprintf(startLine, r.width, r.height, r.startTime.Unix(), r.shell))
 		}()
 		if _, err := io.Copy(upFile, r.f); err != nil {
 			r.logger.Error(err)

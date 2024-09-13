@@ -83,15 +83,15 @@ message AuthorizeTokenInput {
 // ---------------------------------------------------------------------
 // bind    fe->be     SessionID      ID sent back from TerminalResponse
 // stdin   fe->be     Data           Keystrokes/paste buffer
-// resize  fe->be     Rows, Cols     New terminal size
+// resize  fe->be     height, width  New terminal size
 // stdout  be->fe     Data           Output from the process
 // toast   be->fe     Data           OOB message to be shown to the user
 message TerminalMessage {
   string op         = 1;
   bytes  data       = 2;
   string session_id = 3;
-  uint32 rows       = 4;
-  uint32 cols       = 5;
+  uint32 height     = 4;
+  uint32 width      = 5;
 }
 
 message ProjectPodEventJoinInput {

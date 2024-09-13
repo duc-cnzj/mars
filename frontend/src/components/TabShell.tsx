@@ -615,19 +615,22 @@ const ShellWindow: React.FC<{
     }, [namespace, pod, container, sendMsg, sessionID]);
 
     const onTerminalResize = useCallback((id: string, ws: WebSocket) => {
-      return debounce(({ cols, rows }: { cols: number; rows: number }) => {
-        console.log("cols, rows. onTerminalResize");
-        let s = pb.websocket.TerminalMessageInput.encode({
-          type: pb.websocket.Type.HandleExecShellMsg,
-          message: new pb.websocket.TerminalMessage({
-            sessionId: id,
-            op: "resize",
-            cols: cols,
-            rows: rows,
-          }),
-        }).finish();
-        ws?.send(s);
-      }, 200);
+      return debounce(
+        ({ cols: width, rows: height }: { cols: number; rows: number }) => {
+          console.log("width, height. onTerminalResize");
+          let s = pb.websocket.TerminalMessageInput.encode({
+            type: pb.websocket.Type.HandleExecShellMsg,
+            message: new pb.websocket.TerminalMessage({
+              sessionId: id,
+              op: "resize",
+              width: width,
+              height: height,
+            }),
+          }).finish();
+          ws?.send(s);
+        },
+        200,
+      );
     }, []);
 
     const onTerminalSendString = useCallback((id: string, ws: WebSocket) => {
@@ -638,8 +641,8 @@ const ShellWindow: React.FC<{
             sessionId: id,
             op: "stdin",
             data: encoder.encode(str),
-            cols: 0,
-            rows: 0,
+            width: 0,
+            height: 0,
           },
         }).finish();
         ws?.send(s);
@@ -698,7 +701,7 @@ const ShellWindow: React.FC<{
           fontSize: 14,
           fontFamily: '"Fira code", "Fira Mono", monospace',
           cursorBlink: true,
-          // cols: 106,
+          // width: 106,
           rows: 25,
         });
 

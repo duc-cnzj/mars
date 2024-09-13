@@ -48,8 +48,8 @@ func TestSizeStore(t *testing.T) {
 	s := &sizeStore{}
 
 	s.Set(10, 20)
-	assert.Equal(t, uint16(10), s.Cols())
-	assert.Equal(t, uint16(20), s.Rows())
+	assert.Equal(t, uint16(10), s.Width())
+	assert.Equal(t, uint16(20), s.Height())
 	assert.True(t, s.Changed(11, 20))
 	assert.False(t, s.Changed(10, 20))
 
@@ -97,8 +97,8 @@ func TestMyPtyHandler_sizeStore(t *testing.T) {
 	assert.True(t, pty.sizeStore.TerminalRowColNeedReset())
 	pty.ResetTerminalRowCol(false)
 	assert.False(t, pty.sizeStore.TerminalRowColNeedReset())
-	assert.Equal(t, uint16(0), pty.sizeStore.Cols())
-	assert.Equal(t, uint16(0), pty.sizeStore.Rows())
+	assert.Equal(t, uint16(0), pty.sizeStore.Width())
+	assert.Equal(t, uint16(0), pty.sizeStore.Height())
 }
 
 func TestMyPtyHandler_Read(t *testing.T) {
@@ -292,7 +292,7 @@ func Test_resetSession(t *testing.T) {
 		doneChan:  make(chan struct{}, 1),
 		sizeChan:  make(chan remotecommand.TerminalSize, 10),
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
-		sizeStore: &sizeStore{cols: 10, rows: 10},
+		sizeStore: &sizeStore{width: 10, height: 10},
 	}
 	session := (&WebsocketManager{
 		logger: mlog.NewForConfig(nil),
@@ -303,8 +303,8 @@ func Test_resetSession(t *testing.T) {
 	assert.Same(t, old.recorder, session.recorder)
 	assert.Same(t, old.conn, session.conn)
 
-	assert.Equal(t, old.sizeStore.Cols(), session.sizeStore.Cols())
-	assert.Equal(t, old.sizeStore.Rows(), session.sizeStore.Rows())
+	assert.Equal(t, old.sizeStore.Width(), session.sizeStore.Width())
+	assert.Equal(t, old.sizeStore.Height(), session.sizeStore.Height())
 	assert.True(t, session.sizeStore.TerminalRowColNeedReset())
 
 	assert.NotEqual(t, old.shellCh, session.shellCh)
@@ -326,7 +326,7 @@ func Test_resetSession4(t *testing.T) {
 		doneChan:  make(chan struct{}, 1),
 		sizeChan:  make(chan remotecommand.TerminalSize, 10),
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
-		sizeStore: &sizeStore{cols: 10, rows: 10},
+		sizeStore: &sizeStore{width: 10, height: 10},
 	}
 	session := (&WebsocketManager{
 		logger: mlog.NewForConfig(nil),
@@ -363,8 +363,8 @@ func Test_resetSession1(t *testing.T) {
 		logger: mlog.NewForConfig(nil),
 	}).resetSession(old).(*myPtyHandler)
 
-	assert.Equal(t, uint16(100), session.sizeStore.Cols())
-	assert.Equal(t, uint16(100), session.sizeStore.Rows())
+	assert.Equal(t, uint16(100), session.sizeStore.Width())
+	assert.Equal(t, uint16(100), session.sizeStore.Height())
 }
 
 func Test_resetSession2(t *testing.T) {
@@ -391,8 +391,8 @@ func Test_resetSession2(t *testing.T) {
 		logger: mlog.NewForConfig(nil),
 	}).resetSession(old).(*myPtyHandler)
 
-	assert.Equal(t, uint16(106), session.sizeStore.Cols())
-	assert.Equal(t, uint16(25), session.sizeStore.Rows())
+	assert.Equal(t, uint16(106), session.sizeStore.Width())
+	assert.Equal(t, uint16(25), session.sizeStore.Height())
 }
 
 func TestMyPtyHandler_Next_DoneChan(t *testing.T) {
@@ -432,13 +432,13 @@ func TestMyPtyHandler_Next(t *testing.T) {
 	next = p.Next()
 	assert.Equal(t, uint16(100), next.Width)
 	assert.Equal(t, uint16(200), next.Height)
-	assert.Equal(t, uint16(100), p.sizeStore.Cols())
-	assert.Equal(t, uint16(200), p.sizeStore.Rows())
+	assert.Equal(t, uint16(100), p.sizeStore.Width())
+	assert.Equal(t, uint16(200), p.sizeStore.Height())
 
 	close(p.sizeChan)
 	assert.Nil(t, p.Next())
-	assert.Equal(t, uint16(100), p.sizeStore.Cols())
-	assert.Equal(t, uint16(200), p.sizeStore.Rows())
+	assert.Equal(t, uint16(100), p.sizeStore.Width())
+	assert.Equal(t, uint16(200), p.sizeStore.Height())
 
 	p2 := &myPtyHandler{
 		sizeChan:  make(chan remotecommand.TerminalSize, 1),
@@ -479,15 +479,15 @@ func TestMyPtyHandler_Read2(t *testing.T) {
 	n, _ := p.Read(b)
 	assert.Equal(t, "hello duc", string(b[0:n]))
 	p.Send(context.TODO(), &websocket_pb.TerminalMessage{
-		Op:   OpResize,
-		Rows: 10,
-		Cols: 20,
+		Op:     OpResize,
+		Height: 10,
+		Width:  20,
 	})
 	p.Read(b)
 	p.Send(context.TODO(), &websocket_pb.TerminalMessage{
-		Op:   OpResize,
-		Rows: 10,
-		Cols: 20,
+		Op:     OpResize,
+		Height: 10,
+		Width:  20,
 	})
 	n, _ = p.Read(b)
 	assert.Equal(t, 0, n)
@@ -540,9 +540,9 @@ func TestMyPtyHandler_Read2(t *testing.T) {
 func Test_sizeStore_Changed(t *testing.T) {
 	t.Parallel()
 	ss := sizeStore{
-		cols:  0,
-		rows:  0,
-		reset: false,
+		width:  0,
+		height: 0,
+		reset:  false,
 	}
 	assert.True(t, ss.Changed(100, 100))
 	ss.Set(100, 100)
@@ -627,7 +627,7 @@ func TestMyPtyHandler_Write(t *testing.T) {
 		conn:      conn,
 		logger:    mlog.NewForConfig(nil),
 		doneChan:  make(chan struct{}),
-		sizeStore: &sizeStore{cols: 10, rows: 10},
+		sizeStore: &sizeStore{width: 10, height: 10},
 		recorder:  recorder,
 		container: &repo.Container{
 			Namespace: "a",
@@ -673,9 +673,9 @@ func TestMyPtyHandler_Write3(t *testing.T) {
 	p := &myPtyHandler{
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
 		sizeStore: &sizeStore{
-			cols:  106,
-			rows:  25,
-			reset: true,
+			width:  106,
+			height: 25,
+			reset:  true,
 		},
 		sessionID: "duc",
 		container: &repo.Container{},
@@ -712,9 +712,9 @@ func TestMyPtyHandler_Write_with_chan_full(t *testing.T) {
 	p := &myPtyHandler{
 		sizeChan: make(chan remotecommand.TerminalSize),
 		sizeStore: &sizeStore{
-			cols:  106,
-			rows:  25,
-			reset: true,
+			width:  106,
+			height: 25,
+			reset:  true,
 		},
 		container: &repo.Container{},
 		sessionID: "duc",

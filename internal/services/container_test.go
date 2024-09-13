@@ -743,11 +743,12 @@ func TestContainerSvc_Exec_Success(t *testing.T) {
 	)
 	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
 	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), "a", "b").Return("c", nil)
+	reco := &recorderMock{}
 	fileRepo.EXPECT().NewRecorder(gomock.Any(), &repo.Container{
 		Namespace: "a",
 		Pod:       "b",
 		Container: "c",
-	}).Return(&recorderMock{})
+	}).Return(reco)
 	k8sRepo.EXPECT().Execute(gomock.Any(), &repo.Container{
 		Namespace: "a",
 		Pod:       "b",
@@ -768,6 +769,8 @@ func TestContainerSvc_Exec_Success(t *testing.T) {
 	err := svc.Exec(mock)
 	assert.Equal(t, int64(2), mock.err.Code)
 	assert.NotNil(t, err)
+	assert.Equal(t, uint16(10), reco.w)
+	assert.Equal(t, uint16(20), reco.h)
 }
 
 type execServerMock struct {
@@ -780,6 +783,10 @@ func (e *execServerMock) Recv() (*container.ExecRequest, error) {
 		Namespace: "a",
 		Pod:       "b",
 		Command:   []string{"ls"},
+		SizeQueue: &container.TerminalSize{
+			Width:  10,
+			Height: 20,
+		},
 	}, nil
 }
 
@@ -796,10 +803,17 @@ func (e *execServerMock) Context() context.Context {
 
 type recorderMock struct {
 	repo.Recorder
+	w uint16
+	h uint16
 }
 
 func (r *recorderMock) Write(p []byte) (n int, err error) {
 	return len(p), nil
+}
+
+func (r *recorderMock) Resize(width, height uint16) {
+	r.h = height
+	r.w = width
 }
 
 func (r *recorderMock) Close() error {
@@ -872,13 +886,18 @@ func TestSizeQueue_Next_NotOk(t *testing.T) {
 }
 
 func TestSizeQueue_Next_SizeReceived(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	recorder := repo.NewMockRecorder(m)
 	queue := &sizeQueue{
 		ch:  make(chan *remotecommand.TerminalSize, 1),
 		ctx: context.TODO(),
+		r:   recorder,
 	}
 
 	expectedSize := &remotecommand.TerminalSize{Width: 10, Height: 20}
 	queue.ch <- expectedSize
 
+	recorder.EXPECT().Resize(uint16(expectedSize.Width), uint16(expectedSize.Height))
 	assert.Equal(t, expectedSize, queue.Next())
 }

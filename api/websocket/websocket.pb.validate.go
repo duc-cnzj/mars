@@ -602,9 +602,9 @@ func (m *TerminalMessage) validate(all bool) error {
 
 	// no validation rules for SessionId
 
-	// no validation rules for Rows
+	// no validation rules for Height
 
-	// no validation rules for Cols
+	// no validation rules for Width
 
 	if len(errors) > 0 {
 		return TerminalMessageMultiError(errors)

@@ -276,6 +276,11 @@ func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server 
 type sizeQueue struct {
 	ch  chan *remotecommand.TerminalSize
 	ctx context.Context
+	r   repo.Recorder
+}
+
+func newSizeQueue(ctx context.Context, ch chan *remotecommand.TerminalSize, r repo.Recorder) remotecommand.TerminalSizeQueue {
+	return &sizeQueue{ch: ch, ctx: ctx, r: r}
 }
 
 func (queue *sizeQueue) Next() *remotecommand.TerminalSize {
@@ -283,6 +288,9 @@ func (queue *sizeQueue) Next() *remotecommand.TerminalSize {
 	case size, ok := <-queue.ch:
 		if !ok {
 			return nil
+		}
+		if size.Width > 0 && size.Height > 0 {
+			queue.r.Resize(size.Width, size.Height)
 		}
 		return size
 	case <-queue.ctx.Done():
@@ -332,11 +340,13 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 		},
 	)
 
-	g, ctx := errgroup.WithContext(ctx)
-	queue := &sizeQueue{
-		ch:  make(chan *remotecommand.TerminalSize, 1),
-		ctx: ctx,
+	if recv.SizeQueue != nil {
+		r.Resize(uint16(recv.SizeQueue.Width), uint16(recv.SizeQueue.Height))
 	}
+
+	g, ctx := errgroup.WithContext(ctx)
+	sizeCh := make(chan *remotecommand.TerminalSize, 1)
+	queue := newSizeQueue(ctx, sizeCh, r)
 
 	reader, writer := io.Pipe()
 	pipe, pipeWriter := io.Pipe()
@@ -379,8 +389,9 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 			}
 
 			if request.SizeQueue != nil {
+				c.logger.DebugCtxf(ctx, "Exec: resize w: %d, h: %d", request.SizeQueue.Width, request.SizeQueue.Height)
 				select {
-				case queue.ch <- &remotecommand.TerminalSize{
+				case sizeCh <- &remotecommand.TerminalSize{
 					Width:  uint16(request.SizeQueue.Width),
 					Height: uint16(request.SizeQueue.Height),
 				}:

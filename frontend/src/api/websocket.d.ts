@@ -361,11 +361,11 @@ export namespace websocket {
         /** TerminalMessage sessionId */
         sessionId?: (string|null);
 
-        /** TerminalMessage rows */
-        rows?: (number|null);
+        /** TerminalMessage height */
+        height?: (number|null);
 
-        /** TerminalMessage cols */
-        cols?: (number|null);
+        /** TerminalMessage width */
+        width?: (number|null);
     }
 
     /** Represents a TerminalMessage. */
@@ -386,11 +386,11 @@ export namespace websocket {
         /** TerminalMessage sessionId. */
         public sessionId: string;
 
-        /** TerminalMessage rows. */
-        public rows: number;
+        /** TerminalMessage height. */
+        public height: number;
 
-        /** TerminalMessage cols. */
-        public cols: number;
+        /** TerminalMessage width. */
+        public width: number;
 
         /**
          * Encodes the specified TerminalMessage message. Does not implicitly {@link websocket.TerminalMessage.verify|verify} messages.
