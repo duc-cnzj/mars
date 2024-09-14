@@ -16,6 +16,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v5/internal/uploader"
 	"github.com/duc-cnzj/mars/v5/internal/util/k8s"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/samber/lo"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
@@ -79,6 +80,7 @@ func TestNewCronRepo(t *testing.T) {
 	command.EXPECT().EveryFiveSeconds()
 
 	cronRepo := NewCronRepo(
+		timer.NewReal(),
 		mlog.NewForConfig(nil),
 		fRepo,
 		mockCache,
@@ -108,6 +110,7 @@ func TestNewCronRepo(t *testing.T) {
 	assert.NotNil(t, cronRepo.helm)
 	assert.NotNil(t, cronRepo.gitRepo)
 	assert.NotNil(t, cronRepo.cronManager)
+	assert.NotNil(t, cronRepo.timer)
 }
 
 func Test_cronRepo_CacheAllBranches(t *testing.T) {
@@ -116,6 +119,7 @@ func Test_cronRepo_CacheAllBranches(t *testing.T) {
 	mockrepo := NewMockRepoRepo(m)
 	gRepo := NewMockGitRepo(m)
 	cr := &cronRepo{
+		timer:    timer.NewReal(),
 		logger:   mlog.NewForConfig(nil),
 		repoRepo: mockrepo,
 		gitRepo:  gRepo,
@@ -278,6 +282,7 @@ func TestCleanUploadFiles(t *testing.T) {
 	localUp := uploader.NewMockUploader(m)
 	up.EXPECT().LocalUploader().Return(localUp).AnyTimes()
 	cr := &cronRepo{
+		timer:  timer.NewReal(),
 		up:     up,
 		logger: mlog.NewForConfig(nil),
 		data:   mockData,

@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/duc-cnzj/mars/api/v5/container"
 	"github.com/duc-cnzj/mars/api/v5/types"
@@ -542,7 +541,7 @@ func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server conta
 			"command":   request.Command,
 			"result":    bf.String(),
 			"error":     toErrStr(err),
-			"duration":  time.Since(startTime).String(),
+			"duration":  c.timer.Since(startTime).String(),
 		},
 	)
 	c.logger.DebugCtx(ctx, "ExecOnce: 彻底退出", err)

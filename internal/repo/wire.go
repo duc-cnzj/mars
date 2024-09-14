@@ -17,7 +17,7 @@ var WireRepoSet = wire.NewSet(
 	NewExecutorManager,
 	NewFileRepo,
 	NewEndpointRepo,
-	timer.NewRealTimer,
+	timer.NewReal,
 	NewNamespaceRepo,
 	NewEventRepo,
 	NewPictureRepo,

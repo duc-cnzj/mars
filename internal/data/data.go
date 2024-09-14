@@ -141,7 +141,7 @@ func (data *dataImpl) InitDB() (func() error, error) {
 			logger,
 			cfg.DBSlowLogEnabled,
 			cfg.DBSlowLogThreshold,
-			timer.NewRealTimer(),
+			timer.NewReal(),
 		)
 		if err != nil {
 			return

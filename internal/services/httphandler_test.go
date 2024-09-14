@@ -77,7 +77,7 @@ func Test_handleBinaryFileUpload(t *testing.T) {
 		uploader:  up,
 		eventRepo: eventRepo,
 		authRepo:  authRepo,
-		timer:     timer.NewRealTimer(),
+		timer:     timer.NewReal(),
 	}
 
 	fileRepo.EXPECT().MaxUploadSize().Return(uint64(10000)).AnyTimes()
@@ -151,12 +151,7 @@ func Test_httpHandlerImpl_handleDownload(t *testing.T) {
 		uploader:  mockUploader,
 	}
 
-	req := &http.Request{
-		Form: map[string][]string{},
-	}
-	req.Form = make(url.Values)
 	rr := httptest.NewRecorder()
-	req = req.WithContext(auth.SetUser(req.Context(), &auth.UserInfo{Name: "duc"}))
 
 	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil)
 
@@ -203,7 +198,7 @@ func TestNewHttpHandler(t *testing.T) {
 		repo.NewMockAuthRepo(m),
 		repo.NewMockEventRepo(m),
 		repo.NewMockFileRepo(m),
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		repo.NewMockK8sRepo(m),
 	).(*httpHandlerImpl)
 	assert.NotNil(t, handler)

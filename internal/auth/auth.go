@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
+
 	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/ent/accesstoken"
 	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
@@ -84,17 +86,17 @@ type Authn struct {
 	signFunc func(info *UserInfo) (*SignData, error)
 }
 
-func NewAuthn(data data.Data) (Auth, error) {
+func NewAuthn(data data.Data, timer timer.Timer) (Auth, error) {
 	pem, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(data.Config().PrivateKey))
 	if err != nil {
 		return nil, err
 	}
-	auth := NewJwtAuth(pem, pem.Public().(*rsa.PublicKey))
+	auth := NewJwtAuth(pem, pem.Public().(*rsa.PublicKey), timer)
 
 	return &Authn{
 		Authns: []Authenticator{
 			auth,
-			NewAccessTokenAuth(data),
+			NewAccessTokenAuth(data, timer),
 		},
 		signFunc: auth.Sign,
 	}, nil
@@ -117,10 +119,11 @@ func (a *Authn) Sign(info *UserInfo) (*SignData, error) {
 type jwtAuth struct {
 	priKey *rsa.PrivateKey
 	pubKey *rsa.PublicKey
+	timer  timer.Timer
 }
 
-func NewJwtAuth(priKey *rsa.PrivateKey, pubKey *rsa.PublicKey) Auth {
-	return &jwtAuth{priKey: priKey, pubKey: pubKey}
+func NewJwtAuth(priKey *rsa.PrivateKey, pubKey *rsa.PublicKey, timer timer.Timer) Auth {
+	return &jwtAuth{priKey: priKey, pubKey: pubKey, timer: timer}
 }
 
 func (a *jwtAuth) VerifyToken(t string) (*JwtClaims, bool) {
@@ -143,9 +146,9 @@ func (a *jwtAuth) VerifyToken(t string) (*JwtClaims, bool) {
 func (a *jwtAuth) Sign(info *UserInfo) (*SignData, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, &JwtClaims{
 		StandardClaims: &jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(Expired).Unix(),
+			ExpiresAt: a.timer.Now().Add(Expired).Unix(),
 			Issuer:    "mars",
-			IssuedAt:  time.Now().Unix(),
+			IssuedAt:  a.timer.Now().Unix(),
 			Subject:   info.Email,
 		},
 		UserInfo: info,
@@ -162,11 +165,12 @@ func (a *jwtAuth) Sign(info *UserInfo) (*SignData, error) {
 }
 
 type accessTokenAuth struct {
-	data data.Data
+	data  data.Data
+	timer timer.Timer
 }
 
-func NewAccessTokenAuth(data data.Data) Authenticator {
-	return &accessTokenAuth{data: data}
+func NewAccessTokenAuth(data data.Data, timer timer.Timer) Authenticator {
+	return &accessTokenAuth{data: data, timer: timer}
 }
 
 func (a *accessTokenAuth) VerifyToken(t string) (*JwtClaims, bool) {
@@ -176,7 +180,7 @@ func (a *accessTokenAuth) VerifyToken(t string) (*JwtClaims, bool) {
 	}
 	if token != "" {
 		if first, err := a.data.DB().AccessToken.Query().Where(accesstoken.Token(token)).First(context.TODO()); err == nil {
-			first.Update().SetLastUsedAt(time.Now()).Save(context.TODO())
+			first.Update().SetLastUsedAt(a.timer.Now()).Save(context.TODO())
 			return &JwtClaims{UserInfo: &first.UserInfo}, true
 		}
 	}

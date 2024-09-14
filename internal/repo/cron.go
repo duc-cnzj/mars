@@ -25,6 +25,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/uploader"
 	"github.com/duc-cnzj/mars/v5/internal/util/k8s"
 	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
@@ -45,6 +46,7 @@ type CronRepo interface {
 var _ CronRepo = (*cronRepo)(nil)
 
 type cronRepo struct {
+	timer       timer.Timer
 	logger      mlog.Logger
 	event       EventRepo
 	data        data.Data
@@ -61,6 +63,7 @@ type cronRepo struct {
 }
 
 func NewCronRepo(
+	timer timer.Timer,
 	logger mlog.Logger,
 	fileRepo FileRepo,
 	cache cache.Cache,
@@ -76,6 +79,7 @@ func NewCronRepo(
 	cronManager cron.Manager,
 ) CronRepo {
 	cr := &cronRepo{
+		timer:       timer,
 		fileRepo:    fileRepo,
 		logger:      logger.WithModule("repo/cron"),
 		event:       event,
@@ -115,8 +119,8 @@ func NewCronRepo(
 
 func (repo *cronRepo) CacheAllBranches() error {
 	defer func(t time.Time) {
-		repo.logger.Debug("CacheAllBranches done", time.Since(t))
-	}(time.Now())
+		repo.logger.Debug("CacheAllBranches done", repo.timer.Since(t))
+	}(repo.timer.Now())
 
 	var wg = &sync.WaitGroup{}
 	all, err := repo.repoRepo.All(context.TODO(), &AllRepoRequest{Enabled: lo.ToPtr(true), NeedGitRepo: lo.ToPtr(true)})
@@ -369,7 +373,7 @@ func (repo *cronRepo) CleanUploadFiles() error {
 		localUploader = repo.up.LocalUploader()
 
 		// 因为执行时间是凌晨 2:00 所以清除的前一天的文件
-		yesterday  = time.Now().Add(-24 * time.Hour)
+		yesterday  = repo.timer.Now().Add(-24 * time.Hour)
 		startOfDay = time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, time.Local)
 		endOfDay   = time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 23, 59, 59, 0, time.Local)
 

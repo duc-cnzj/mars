@@ -39,7 +39,7 @@ func TestNewJobManager(t *testing.T) {
 	defer m.Finish()
 	manager := NewJobManager(
 		data.NewMockData(m),
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		mlog.NewForConfig(nil),
 		NewMockReleaseInstaller(m),
 		repo.NewMockRepoRepo(m),
@@ -73,7 +73,7 @@ func TestNewJob(t *testing.T) {
 	defer m.Finish()
 
 	data := data.NewMockData(m)
-	timer := timer.NewRealTimer()
+	timer := timer.NewReal()
 	logger := mlog.NewForConfig(nil)
 	releaseInstaller := NewMockReleaseInstaller(m)
 	repoRepo := repo.NewMockRepoRepo(m)
@@ -906,7 +906,7 @@ func TestElementsLoader_typedValue(t *testing.T) {
 }
 
 func TestJober_GlobalLock(t *testing.T) {
-	l := locker.NewMemoryLock(timer.NewRealTimer(), [2]int{2, 100}, locker.NewMemStore(), mlog.NewForConfig(nil))
+	l := locker.NewMemoryLock(timer.NewReal(), [2]int{2, 100}, locker.NewMemStore(), mlog.NewForConfig(nil))
 	job := &jobRunner{locker: l, input: &JobInput{NamespaceId: 1, Name: "app"}}
 	assert.Nil(t, job.GlobalLock().Error())
 	assert.Equal(t, "正在部署中，请稍后再试", (&jobRunner{locker: l, input: &JobInput{NamespaceId: 1, Name: "app"}}).GlobalLock().Error().Error())
@@ -1145,7 +1145,7 @@ app:
 	job := &jobRunner{
 		userConfigYaml:   dcy,
 		imagePullSecrets: []string{"secret"},
-		timer:            timer.NewRealTimer(),
+		timer:            timer.NewReal(),
 		elementValues:    []string{ev1, ev2},
 		valuesOptions:    &values.Options{},
 		input:            &JobInput{GitBranch: "dev"},
@@ -1435,7 +1435,7 @@ func Test_jobRunner_WriteConfigYamlToTmpFile(t *testing.T) {
 	mockUploader := uploader.NewMockUploader(m)
 	mockUploader.EXPECT().LocalUploader().Return(mockUploader).Times(2)
 	job := &jobRunner{
-		timer:    timer.NewRealTimer(),
+		timer:    timer.NewReal(),
 		uploader: mockUploader,
 		logger:   mlog.NewForConfig(nil),
 	}

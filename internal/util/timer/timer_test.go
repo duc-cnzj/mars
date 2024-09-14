@@ -8,7 +8,7 @@ import (
 )
 
 func TestRealTimerNow(t *testing.T) {
-	realTimer := NewRealTimer()
+	realTimer := NewReal()
 	now := realTimer.Now()
 	assert.WithinDuration(t, time.Now(), now, time.Second, "The time returned by realTimer.Now() should be within a second of the current time")
 }

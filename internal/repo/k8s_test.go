@@ -46,7 +46,7 @@ func TestNewK8sRepo(t *testing.T) {
 	mockData.EXPECT().Config().Return(&config.Config{})
 	repo := NewK8sRepo(
 		mlog.NewForConfig(nil),
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		mockData,
 		fileRepo,
 		mockUploader,
@@ -72,7 +72,7 @@ func TestSplitManifests(t *testing.T) {
 	mockData.EXPECT().Config().Return(&config.Config{})
 	repo := NewK8sRepo(
 		mlog.NewForConfig(nil),
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		mockData,
 		fileRepo,
 		mockUploader,
@@ -1114,7 +1114,7 @@ func TestCopyFromPod1(t *testing.T) {
 		logger:   mlog.NewForConfig(nil),
 		data:     mockData,
 		uploader: mockUploader,
-		timer:    timer.NewRealTimer(),
+		timer:    timer.NewReal(),
 		fileRepo: mockFileRepo,
 		executor: manager,
 	}
@@ -1159,7 +1159,7 @@ func TestCopyFromPod_success(t *testing.T) {
 		logger:   mlog.NewForConfig(nil),
 		data:     mockData,
 		uploader: mockUploader,
-		timer:    timer.NewRealTimer(),
+		timer:    timer.NewReal(),
 		fileRepo: mockFileRepo,
 		executor: manager,
 	}

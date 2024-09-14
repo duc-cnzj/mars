@@ -6,6 +6,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
+
 	"github.com/duc-cnzj/mars/v5/internal/locker"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/stretchr/testify/assert"
@@ -13,7 +15,7 @@ import (
 )
 
 func TestManager_List(t *testing.T) {
-	m := NewManager(nil, nil, mlog.NewForConfig(nil))
+	m := NewManager(nil, nil, nil, mlog.NewForConfig(nil))
 	m.NewCommand("a", func() error {
 		return nil
 	})
@@ -34,7 +36,7 @@ func TestManager_NewCommand(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	runner := NewMockRunner(m)
-	cm := NewManager(runner, nil, mlog.NewForConfig(nil))
+	cm := NewManager(timer.NewReal(), runner, nil, mlog.NewForConfig(nil))
 	cmd := cm.NewCommand("duc", func() error {
 		return nil
 	})
@@ -49,7 +51,7 @@ func TestManager_NewCommand(t *testing.T) {
 	l := locker.NewMockLocker(m)
 	l.EXPECT().ID().Return("1").AnyTimes()
 	l.EXPECT().RenewalAcquire(lockKey("aaaa"), defaultLockSeconds, defaultRenewSeconds).Return(func() {}, true)
-	NewManager(nil, l, mlog.NewForConfig(nil)).NewCommand("aaaa", func() error {
+	NewManager(timer.NewReal(), nil, l, mlog.NewForConfig(nil)).NewCommand("aaaa", func() error {
 		called = true
 		return nil
 	}).Func()()
@@ -60,7 +62,7 @@ func TestManager_Run(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	runner := NewMockRunner(m)
-	cm := NewManager(runner, nil, mlog.NewForConfig(nil))
+	cm := NewManager(nil, runner, nil, mlog.NewForConfig(nil))
 	cm.NewCommand("duc", func() error { return nil }).EveryTwoSeconds()
 	ctx := context.TODO()
 	runner.EXPECT().Run(ctx).Times(1)
@@ -73,7 +75,7 @@ func TestManager_Run_err(t *testing.T) {
 	defer m.Finish()
 	runner := NewMockRunner(m)
 
-	cm := NewManager(runner, nil, mlog.NewForConfig(nil))
+	cm := NewManager(nil, runner, nil, mlog.NewForConfig(nil))
 	runner.EXPECT().AddCommand("a", expression, gomock.Any()).Times(1).Return(errors.New("xxx"))
 	cm.NewCommand("a", func() error {
 		return nil
@@ -87,7 +89,7 @@ func TestManager_Shutdown(t *testing.T) {
 	runner := NewMockRunner(m)
 	ctx := context.TODO()
 	runner.EXPECT().Shutdown(ctx).Times(1)
-	cm := NewManager(runner, nil, mlog.NewForConfig(nil))
+	cm := NewManager(nil, runner, nil, mlog.NewForConfig(nil))
 	cm.Shutdown(ctx)
 }
 
@@ -96,7 +98,7 @@ func TestNewManager(t *testing.T) {
 	defer m.Finish()
 	runner := NewMockRunner(m)
 	l := locker.NewMockLocker(m)
-	manager := NewManager(runner, l, mlog.NewForConfig(nil))
+	manager := NewManager(nil, runner, l, mlog.NewForConfig(nil))
 	assert.NotNil(t, manager.(*cronManager).commands)
 	assert.Implements(t, (*Manager)(nil), manager)
 	assert.NotNil(t, manager.(*cronManager).Locker)
@@ -132,7 +134,7 @@ func Test_cronManager_wrap(t *testing.T) {
 	l.EXPECT().RenewalAcquire(gomock.Any(), gomock.Any(), gomock.Any()).Return(func() {
 		called = true
 	}, true).Times(2)
-	manager := NewManager(runner, l, mlog.NewForConfig(nil)).(*cronManager)
+	manager := NewManager(timer.NewReal(), runner, l, mlog.NewForConfig(nil)).(*cronManager)
 	manager.wrap("a", func() error {
 		return errors.New("x")
 	})()

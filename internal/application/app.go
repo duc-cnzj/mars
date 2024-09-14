@@ -21,6 +21,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/metrics"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/uploader"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/singleflight"
 )
@@ -47,6 +48,7 @@ type app struct {
 	hooksMu sync.RWMutex
 	hooks   map[hook][]Callback
 
+	timer              timer.Timer
 	config             *config.Config
 	logger             mlog.Logger
 	uploader           uploader.Uploader
@@ -95,10 +97,12 @@ func NewApp(
 	reg *GrpcRegistry,
 	pr *prometheus.Registry,
 	httpHandler HttpHandler,
+	timer timer.Timer,
 	opts ...Option,
 ) App {
 	doneCtx, cancelFunc := context.WithCancel(context.TODO())
 	appli := &app{
+		timer:              timer,
 		httpHandler:        httpHandler,
 		done:               doneCtx,
 		prometheusRegistry: pr,
@@ -239,8 +243,8 @@ func (app *app) Bootstrap() error {
 	for _, bootstrapper := range app.bootstrappers {
 		err := func() error {
 			defer func(t time.Time) {
-				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": bootShortName(bootstrapper)}).Set(time.Since(t).Seconds())
-			}(time.Now())
+				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": bootShortName(bootstrapper)}).Set(app.timer.Since(t).Seconds())
+			}(app.timer.Now())
 			return bootstrapper.Bootstrap(app)
 		}()
 		if err != nil {

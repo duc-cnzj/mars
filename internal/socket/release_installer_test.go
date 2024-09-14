@@ -23,7 +23,7 @@ func TestNewReleaseInstaller(t *testing.T) {
 	logger := mlog.NewForConfig(nil)
 	helmer := repo.NewMockHelmerRepo(m)
 	data := data.NewMockData(m)
-	timer := timer2.NewRealTimer()
+	timer := timer2.NewReal()
 	data.EXPECT().Config().Return(&config.Config{
 		InstallTimeout: 100 * time.Second,
 	})
@@ -38,7 +38,7 @@ func TestNewReleaseInstaller(t *testing.T) {
 }
 
 func TestTimeOrderedSetString(t *testing.T) {
-	tos := newTimeOrderedSetString(timer2.NewRealTimer())
+	tos := newTimeOrderedSetString(timer2.NewReal())
 
 	tos.add("test1")
 	assert.True(t, tos.has("test1"))
@@ -54,7 +54,7 @@ func TestTimeOrderedSetString(t *testing.T) {
 }
 
 func TestTimeOrderedSetString_Concurrency(t *testing.T) {
-	tos := newTimeOrderedSetString(timer2.NewRealTimer())
+	tos := newTimeOrderedSetString(timer2.NewReal())
 	var wg sync.WaitGroup
 
 	tos.add("duc")
@@ -83,7 +83,7 @@ func TestLoggerWrapFunctionality(t *testing.T) {
 
 	messageChan := NewSafeWriteMessageCh(mlog.NewForConfig(nil), 100)
 	percenter := NewMockPercentable(m)
-	logs := newTimeOrderedSetString(timer2.NewRealTimer())
+	logs := newTimeOrderedSetString(timer2.NewReal())
 
 	// Mock expectations
 	percenter.EXPECT().Current().Return(int64(98)).Times(1)
@@ -109,7 +109,7 @@ func TestLoggerWrapEdgeCase(t *testing.T) {
 
 	messageChan := NewSafeWriteMessageCh(mlog.NewForConfig(nil), 100)
 	percenter := NewMockPercentable(m)
-	logs := newTimeOrderedSetString(timer2.NewRealTimer())
+	logs := newTimeOrderedSetString(timer2.NewReal())
 
 	// Mock expectations
 	percenter.EXPECT().Current().Return(int64(99)).Times(1)
@@ -131,7 +131,7 @@ func Test_releaseInstaller_Run_Dry(t *testing.T) {
 	defer m.Finish()
 	helmer := repo.NewMockHelmerRepo(m)
 	ri := &releaseInstaller{
-		timer:          timer2.NewRealTimer(),
+		timer:          timer2.NewReal(),
 		helmer:         helmer,
 		timeoutSeconds: 10,
 		logger:         mlog.NewForConfig(nil),
@@ -168,7 +168,7 @@ func Test_releaseInstaller_Run_Success(t *testing.T) {
 	defer m.Finish()
 	helmer := repo.NewMockHelmerRepo(m)
 	ri := &releaseInstaller{
-		timer:          timer2.NewRealTimer(),
+		timer:          timer2.NewReal(),
 		helmer:         helmer,
 		timeoutSeconds: 10,
 		logger:         mlog.NewForConfig(nil),
@@ -190,7 +190,7 @@ func Test_releaseInstaller_Run(t *testing.T) {
 	defer m.Finish()
 	helmer := repo.NewMockHelmerRepo(m)
 	ri := &releaseInstaller{
-		timer:          timer2.NewRealTimer(),
+		timer:          timer2.NewReal(),
 		helmer:         helmer,
 		timeoutSeconds: 10,
 		logger:         mlog.NewForConfig(nil),
@@ -222,7 +222,7 @@ func Test_releaseInstaller_Run_2(t *testing.T) {
 	defer m.Finish()
 	helmer := repo.NewMockHelmerRepo(m)
 	ri := &releaseInstaller{
-		timer:          timer2.NewRealTimer(),
+		timer:          timer2.NewReal(),
 		helmer:         helmer,
 		timeoutSeconds: 10,
 		logger:         mlog.NewForConfig(nil),
