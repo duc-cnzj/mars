@@ -169,9 +169,9 @@ func TestEventRepo_AuditLogWithChange(t *testing.T) {
 	eventDispatcherMock.EXPECT().Listen(gomock.Any(), gomock.Any()).AnyTimes()
 	repo := NewEventRepo(nil, nil, nil, nil, loggerMock, dataMock, eventDispatcherMock)
 
-	eventDispatcherMock.EXPECT().Dispatch(AuditLogEvent, NewEventAuditLog("testUser", types.EventActionType(1), "testMessage", AuditWithOldNew(&AnyYamlPrettier{}, &emptyYamlPrettier{})))
+	eventDispatcherMock.EXPECT().Dispatch(AuditLogEvent, NewEventAuditLog("testUser", types.EventActionType(1), "testMessage", AuditWithOldNew(AnyYamlPrettier{}, &emptyYamlPrettier{})))
 
-	repo.AuditLogWithChange(types.EventActionType(1), "testUser", "testMessage", &AnyYamlPrettier{}, nil)
+	repo.AuditLogWithChange(types.EventActionType(1), "testUser", "testMessage", AnyYamlPrettier{}, nil)
 }
 
 func TestEventRepo_HandleAuditLog(t *testing.T) {

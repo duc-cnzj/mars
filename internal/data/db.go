@@ -34,7 +34,7 @@ type slowLogDriver struct {
 func (d *slowLogDriver) Exec(ctx context.Context, query string, args, v any) error {
 	start := d.timer.Now()
 	err := d.Driver.Exec(ctx, query, args, v)
-	elapsed := time.Since(start)
+	elapsed := d.timer.Since(start)
 	if elapsed > d.slowThreshold {
 		d.logger.Infof("slow query: %s, args: %v, took: %s", query, args, elapsed)
 	}
@@ -44,7 +44,7 @@ func (d *slowLogDriver) Exec(ctx context.Context, query string, args, v any) err
 func (d *slowLogDriver) Query(ctx context.Context, query string, args, v any) error {
 	start := d.timer.Now()
 	err := d.Driver.Query(ctx, query, args, v)
-	elapsed := time.Since(start)
+	elapsed := d.timer.Since(start)
 	if elapsed > d.slowThreshold {
 		d.logger.Infof("slow query: %s, args: %v, took: %s", query, args, elapsed)
 	}

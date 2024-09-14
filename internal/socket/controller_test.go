@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/api/v5/types"
-
 	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
 	"github.com/duc-cnzj/mars/v5/internal/application"
 	"github.com/duc-cnzj/mars/v5/internal/auth"
@@ -21,6 +20,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/duc-cnzj/mars/v5/internal/uploader"
 	"github.com/duc-cnzj/mars/v5/internal/util/counter"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -348,7 +348,7 @@ func TestNewWebsocketManager(t *testing.T) {
 	executor := repo.NewMockExecutorManager(m)
 	fileRepo := repo.NewMockFileRepo(m)
 
-	wm := NewWebsocketManager(logger, counter, projRepo, repoRepo, nsRepo, jobManager, data, pl, auth, uploader, locker, clusterRepo, eventRepo, executor, fileRepo).(*WebsocketManager)
+	wm := NewWebsocketManager(timer.NewReal(), logger, counter, projRepo, repoRepo, nsRepo, jobManager, data, pl, auth, uploader, locker, clusterRepo, eventRepo, executor, fileRepo).(*WebsocketManager)
 
 	assert.NotNil(t, wm)
 	assert.Equal(t, logger.WithModule("socket/websocket"), wm.logger)
@@ -366,6 +366,7 @@ func TestNewWebsocketManager(t *testing.T) {
 	assert.Equal(t, clusterRepo, wm.k8sRepo)
 	assert.Equal(t, eventRepo, wm.eventRepo)
 	assert.Equal(t, executor, wm.executor)
+	assert.NotNil(t, wm.timer)
 	assert.Len(t, wm.handlers, 8)
 }
 func TestWebsocketManager_TickClusterHealth(t *testing.T) {

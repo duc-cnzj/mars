@@ -3,6 +3,7 @@ import CodeMirror from "@uiw/react-codemirror";
 import { dracula } from "@uiw/codemirror-theme-dracula";
 import { langs } from "../utils/langs";
 import {
+  Completion,
   CompletionContext,
   autocompletion,
   startCompletion,
@@ -142,11 +143,31 @@ function yamlCompletions(context: CompletionContext) {
 }
 
 const list = [
-  { apply: "<.ImagePullSecrets>", label: "<.ImagePullSecrets>", type: "text" },
+  {
+    apply: "<.ImagePullSecrets>",
+    label: "<.ImagePullSecrets>",
+    type: "text",
+    info: (completion: Completion) => {
+      const div = document.createElement("div");
+      div.textContent = `- name: secret1
+- name: secret2
+- name: secret3
+`;
+      return div;
+    },
+  },
   {
     apply: "<.ImagePullSecretsNoName>",
     label: "<.ImagePullSecretsNoName>",
     type: "text",
+    info: (completion: Completion) => {
+      const div = document.createElement("div");
+      div.textContent = `- secret1
+- secret2
+- secret3
+`;
+      return div;
+    },
   },
   { apply: "<.Branch>", label: "<.Branch>", type: "text" },
   { apply: "<.Commit>", label: "<.Commit>", type: "text" },
@@ -177,19 +198,29 @@ const list = [
     label: "certManager",
   },
   {
-    apply: "<.Branch>-<.Pipeline>",
+    apply: `"<.Branch>-<.Pipeline>"`,
     label: "imageTag",
     detail: "<.Branch>-<.Pipeline>",
   },
   {
-    apply: "mars.duc-cnzj.github.io/ignore-containers: ",
+    apply: `mars.duc-cnzj.github.io/ignore-containers: "app1,app2" # 自行修改 app1,app2 的值`,
     label: "annotationIgnoreContainerNames",
     detail: `# 过滤容器`,
+    info: (completion: Completion) => {
+      const div = document.createElement("div");
+      div.textContent = `mars.duc-cnzj.github.io/ignore-containers: "app1,app2"`;
+      return div;
+    },
   },
   {
-    apply: "mars.duc-cnzj.github.io/order-index: ",
+    apply: `mars.duc-cnzj.github.io/order-index: "10" # 值为字符串类型, 数值越大越靠前`,
     label: "annotationPodOrderIndex",
-    detail: `# 排序，数值越大越前面`,
+    detail: `# 排序，数值越大越靠前`,
+    info: (completion: Completion) => {
+      const div = document.createElement("div");
+      div.textContent = `mars.duc-cnzj.github.io/order-index: "10"`;
+      return div;
+    },
   },
 ];
 

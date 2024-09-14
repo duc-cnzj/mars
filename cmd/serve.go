@@ -16,6 +16,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/repo"
 	"github.com/duc-cnzj/mars/v5/internal/uploader"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -81,6 +82,7 @@ func newApp(
 	// FIXME: 加载定时任务, 因为所有逻辑都统一在 repo 中, 所以把定时任务也定义成了一个 repo, 看看还有没有别的办法
 	cronRepo repo.CronRepo,
 	httpHandler application.HttpHandler,
+	timer timer.Timer,
 ) application.App {
 	_ = cronRepo
 	return application.NewApp(
@@ -98,6 +100,7 @@ func newApp(
 		reg,
 		pr,
 		httpHandler,
+		timer,
 		application.WithBootstrappers(bootstrappers...),
 	)
 }

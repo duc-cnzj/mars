@@ -11,6 +11,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/metrics"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/util/rand"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -24,6 +25,7 @@ type Manager interface {
 var _ Manager = (*cronManager)(nil)
 
 type cronManager struct {
+	timer  timer.Timer
 	runner Runner
 	Locker locker.Locker
 	logger mlog.Logger
@@ -31,8 +33,9 @@ type cronManager struct {
 	commands map[string]*command
 }
 
-func NewManager(runner Runner, locker locker.Locker, logger mlog.Logger) Manager {
+func NewManager(timer timer.Timer, runner Runner, locker locker.Locker, logger mlog.Logger) Manager {
 	return &cronManager{
+		timer:    timer,
 		runner:   runner,
 		Locker:   locker,
 		logger:   logger.WithModule("cron/cronManager"),
@@ -112,10 +115,10 @@ func (m *cronManager) wrap(name string, fn func() error) func() {
 		time.Sleep(time.Duration(rand.Intn(150)) * time.Millisecond)
 		releaseFn, acquired := m.Locker.RenewalAcquire(lockKey(name), defaultLockSeconds, defaultRenewSeconds)
 		if acquired {
-			now := time.Now()
+			now := m.timer.Now()
 			defer func(t time.Time) {
-				m.logger.Infof("[CRON-DONE: %s]: '%s' done, use %s.", m.Locker.ID(), name, time.Since(t))
-				metrics.CronDuration.With(label).Observe(time.Since(t).Seconds())
+				m.logger.Infof("[CRON-DONE: %s]: '%s' done, use %s.", m.Locker.ID(), name, m.timer.Since(t))
+				metrics.CronDuration.With(label).Observe(m.timer.Since(t).Seconds())
 				metrics.CronCommandCount.With(label).Inc()
 			}(now)
 			m.logger.Infof("[CRON-START: %s]: '%s' start at %s.", m.Locker.ID(), name, now.Format("2006-01-02 15:04:05.000"))

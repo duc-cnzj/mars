@@ -352,7 +352,7 @@ func (r *recorder) User() *auth.UserInfo {
 }
 
 func (r *recorder) Duration() time.Duration {
-	return time.Since(r.startTime)
+	return r.timer.Since(r.startTime)
 }
 
 func (r *recorder) File() *File {
@@ -412,7 +412,7 @@ func (r *recorder) Write(data []byte) (n int, err error) {
 		return 0, err
 	}
 	marshal, _ := json.Marshal(string(data))
-	_, err = r.buffer.WriteString(fmt.Sprintf(writeLine, float64(time.Since(r.startTime).Microseconds())/1000000, string(marshal)))
+	_, err = r.buffer.WriteString(fmt.Sprintf(writeLine, float64(r.timer.Since(r.startTime).Microseconds())/1000000, string(marshal)))
 	if err != nil {
 		return 0, err
 	}

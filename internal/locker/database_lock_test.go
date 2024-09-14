@@ -44,7 +44,7 @@ func TestMain(t *testing.M) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%v)/%s?charset=utf8mb4&parseTime=True&loc=Local", user, dbpwd, dbhost, port, dbname)
 	var err error
 	open, _ := sql.Open("mysql", dsn)
-	db, err = data.InitDB(open, mlog.NewForConfig(nil), false, 0, timer.NewRealTimer())
+	db, err = data.InitDB(open, mlog.NewForConfig(nil), false, 0, timer.NewReal())
 	if err == nil {
 		prepared = true
 		err = db.Schema.Create(
@@ -142,7 +142,7 @@ func TestDatabaseLockRenewalAcquire(t *testing.T) {
 
 func setupDatabaseLock() *databaseLock {
 	deleteAllTestKey()
-	return NewDatabaseLock(timer.NewRealTimer(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
+	return NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
 }
 
 func Test_databaseLock_Type(t *testing.T) {
@@ -178,7 +178,7 @@ func Test_databaseLock_renewalExistKey(t *testing.T) {
 		t.Skip("Database not prepared")
 	}
 
-	dbLock := NewDatabaseLock(timer.NewRealTimer(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
+	dbLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
 
 	key := "testKey"
 	seconds := int64(60)
@@ -198,7 +198,7 @@ func Test_databaseLock_renewalExistKey_Concurrent(t *testing.T) {
 		t.Skip("Database not prepared")
 	}
 
-	dbLock := NewDatabaseLock(timer.NewRealTimer(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
+	dbLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
 
 	key := "testKey"
 	seconds := int64(60)
@@ -226,9 +226,9 @@ func TestDatabaseLock_ConcurrentRenewalExistKey(t *testing.T) {
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
-	lock := NewDatabaseLock(timer.NewRealTimer(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
-	anotherLock := NewDatabaseLock(timer.NewRealTimer(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
-	anotherLock2 := NewDatabaseLock(timer.NewRealTimer(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
+	lock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
+	anotherLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
+	anotherLock2 := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
 	key := "test_key"
 	seconds := int64(10)
 

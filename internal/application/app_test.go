@@ -14,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/locker"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	uploader2 "github.com/duc-cnzj/mars/v5/internal/uploader"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -71,6 +72,7 @@ func TestNewAppWithValidConfig(t *testing.T) {
 		reg,
 		pr,
 		httpHandler,
+		timer.NewReal(),
 		WithBootstrappers(b1, &testBoot{}),
 		WithExcludeTags("cron"),
 	)
@@ -91,6 +93,7 @@ func TestNewAppWithValidConfig(t *testing.T) {
 	assert.NotNil(t, appli.PrometheusRegistry())
 	assert.True(t, appli.IsDebug())
 
+	assert.NotNil(t, appli.(*app).timer)
 	assert.Len(t, appli.(*app).bootstrappers, 1)
 	assert.Len(t, appli.(*app).excludeBoots, 1)
 	assert.Equal(t, b1, appli.(*app).excludeBoots[0])
@@ -135,7 +138,7 @@ func Test_app_BeforeServerRunHooks(t *testing.T) {
 }
 
 func Test_app_Bootstrap(t *testing.T) {
-	a := &app{bootstrappers: []Bootstrapper{&testBoot{}}}
+	a := &app{bootstrappers: []Bootstrapper{&testBoot{}}, timer: timer.NewReal()}
 	assert.Nil(t, a.Bootstrap())
 }
 
@@ -360,6 +363,7 @@ func Test_excludeBootstrapperByTags(t *testing.T) {
 
 func Test_app_Bootstrap1(t *testing.T) {
 	a := &app{
+		timer: timer.NewReal(),
 		bootstrappers: []Bootstrapper{&testBoot{
 			err: errors.New("x"),
 		}},

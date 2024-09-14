@@ -16,7 +16,7 @@ func TestNewLocker_WithDBDriver(t *testing.T) {
 	cfg := &config.Config{DBDriver: "db", CacheDriver: "db"}
 	logger := mlog.NewForConfig(nil)
 	data := data.NewData(nil, logger)
-	timer := timer.NewRealTimer()
+	timer := timer.NewReal()
 
 	locker, err := NewLocker(cfg, data, logger, timer)
 
@@ -30,7 +30,7 @@ func TestNewLocker_WithSQLiteDriver(t *testing.T) {
 	cfg := &config.Config{DBDriver: "sqlite", CacheDriver: "db"}
 	logger := mlog.NewForConfig(nil)
 	data := data.NewData(nil, logger)
-	timer := timer.NewRealTimer()
+	timer := timer.NewReal()
 
 	locker, err := NewLocker(cfg, data, logger, timer)
 
@@ -44,7 +44,7 @@ func TestNewLocker_WithMemoryDriver(t *testing.T) {
 	cfg := &config.Config{DBDriver: "db", CacheDriver: "memory"}
 	logger := mlog.NewForConfig(nil)
 	data := data.NewData(nil, logger)
-	timer := timer.NewRealTimer()
+	timer := timer.NewReal()
 	locker, err := NewLocker(cfg, data, logger, timer)
 
 	assert.NoError(t, err)
@@ -57,7 +57,7 @@ func TestNewLocker_WithUnknownDriver(t *testing.T) {
 	cfg := &config.Config{DBDriver: "db", CacheDriver: "unknown"}
 	logger := mlog.NewForConfig(nil)
 	data := data.NewData(nil, logger)
-	timer := timer.NewRealTimer()
+	timer := timer.NewReal()
 	locker, err := NewLocker(cfg, data, logger, timer)
 
 	assert.NoError(t, err)

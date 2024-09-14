@@ -268,6 +268,7 @@ const Item: React.FC<{
                   }}
                   title={
                     <div style={{ fontSize: "10px" }}>
+                      <div>空间资源总使用量</div>
                       <div>
                         <span>cpu: </span>
                         <span>{cpuAndMemory.cpu}</span>

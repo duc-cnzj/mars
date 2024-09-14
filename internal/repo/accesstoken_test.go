@@ -25,7 +25,7 @@ func TestAccessToken_Expired(t *testing.T) {
 func TestNewAccessTokenRepo(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	repo := NewAccessTokenRepo(timer.NewRealTimer(), mlog.NewForConfig(nil), data.NewMockData(m))
+	repo := NewAccessTokenRepo(timer.NewReal(), mlog.NewForConfig(nil), data.NewMockData(m))
 	assert.NotNil(t, repo)
 	assert.NotNil(t, repo.(*accessTokenRepo).logger)
 	assert.NotNil(t, repo.(*accessTokenRepo).data)
@@ -63,7 +63,7 @@ func Test_accessTokenRepo_Grant(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	repo := NewAccessTokenRepo(
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		mlog.NewForConfig(nil),
 		data.NewDataImpl(&data.NewDataParams{
 			DB: db,
@@ -89,7 +89,7 @@ func Test_accessTokenRepo_Lease_Success(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	repo := NewAccessTokenRepo(
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		mlog.NewForConfig(nil),
 		data.NewDataImpl(&data.NewDataParams{
 			DB: db,
@@ -115,7 +115,7 @@ func Test_accessTokenRepo_Lease_TokenNotFound(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	repo := NewAccessTokenRepo(
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		mlog.NewForConfig(nil),
 		data.NewDataImpl(&data.NewDataParams{
 			DB: db,
@@ -130,7 +130,7 @@ func Test_accessTokenRepo_Lease_TokenExpired(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	repo := NewAccessTokenRepo(
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		mlog.NewForConfig(nil),
 		data.NewDataImpl(&data.NewDataParams{
 			DB: db,
@@ -154,7 +154,7 @@ func Test_accessTokenRepo_List_WithSoftDelete(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	repo := NewAccessTokenRepo(
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		mlog.NewForConfig(nil),
 		data.NewDataImpl(&data.NewDataParams{
 			DB: db,
@@ -182,7 +182,7 @@ func Test_accessTokenRepo_List_WithoutSoftDelete(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	repo := NewAccessTokenRepo(
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		mlog.NewForConfig(nil),
 		data.NewDataImpl(&data.NewDataParams{
 			DB: db,
@@ -209,7 +209,7 @@ func Test_accessTokenRepo_List_WithEmail(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	repo := NewAccessTokenRepo(
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		mlog.NewForConfig(nil),
 		data.NewDataImpl(&data.NewDataParams{
 			DB: db,
@@ -241,7 +241,7 @@ func Test_accessTokenRepo_List_WithoutEmail(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	repo := NewAccessTokenRepo(
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		mlog.NewForConfig(nil),
 		data.NewDataImpl(&data.NewDataParams{
 			DB: db,
@@ -276,7 +276,7 @@ func Test_accessTokenRepo_Revoke_Success(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	repo := NewAccessTokenRepo(
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		mlog.NewForConfig(nil),
 		data.NewDataImpl(&data.NewDataParams{
 			DB: db,
@@ -303,7 +303,7 @@ func Test_accessTokenRepo_Revoke_TokenNotFound(t *testing.T) {
 	db, _ := data.NewSqliteDB()
 	defer db.Close()
 	repo := NewAccessTokenRepo(
-		timer.NewRealTimer(),
+		timer.NewReal(),
 		mlog.NewForConfig(nil),
 		data.NewDataImpl(&data.NewDataParams{
 			DB: db,

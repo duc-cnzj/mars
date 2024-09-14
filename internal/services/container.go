@@ -2,6 +2,7 @@ package services
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v5/types"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/repo"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/dustin/go-humanize"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
@@ -30,14 +32,15 @@ type containerSvc struct {
 	k8sRepo  repo.K8sRepo
 	fileRepo repo.FileRepo
 	logger   mlog.Logger
+	timer    timer.Timer
 
 	eventRepo repo.EventRepo
 
 	container.UnimplementedContainerServer
 }
 
-func NewContainerSvc(eventRepo repo.EventRepo, k8sRepo repo.K8sRepo, fileRepo repo.FileRepo, logger mlog.Logger) container.ContainerServer {
-	return &containerSvc{eventRepo: eventRepo, k8sRepo: k8sRepo, fileRepo: fileRepo, logger: logger.WithModule("services/container")}
+func NewContainerSvc(timer timer.Timer, eventRepo repo.EventRepo, k8sRepo repo.K8sRepo, fileRepo repo.FileRepo, logger mlog.Logger) container.ContainerServer {
+	return &containerSvc{timer: timer, eventRepo: eventRepo, k8sRepo: k8sRepo, fileRepo: fileRepo, logger: logger.WithModule("services/container")}
 }
 
 func (c *containerSvc) IsPodRunning(_ context.Context, request *container.IsPodRunningRequest) (*container.IsPodRunningResponse, error) {
@@ -476,31 +479,16 @@ func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server conta
 		c.logger.Debug("使用默认的容器: ", request.Container)
 	}
 
-	r := c.fileRepo.NewRecorder(MustGetUser(ctx), &repo.Container{
-		Namespace: request.Namespace,
-		Pod:       request.Pod,
-		Container: request.Container,
-	})
-	r.Write([]byte(fmt.Sprintf("mars@%s:/# %s", request.Container, strings.Join(request.Command, " "))))
-	r.Write([]byte("\r\n"))
-
+	bf := bytes.NewBuffer(nil)
 	pipe, pipeWriter := io.Pipe()
 
 	closeAll := func() {
 		once.Do(func() {
 			pipe.Close()
 			pipeWriter.Close()
-			r.Close()
-			c.eventRepo.FileAuditLogWithDuration(
-				types.EventActionType_Exec,
-				r.User().Name,
-				fmt.Sprintf("[ExecOnce]: 用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.Container().Container, r.Container().Namespace, r.Container().Pod),
-				r.File().ID,
-				r.Duration(),
-			)
 		})
 	}
-	w := io.MultiWriter(pipeWriter, r)
+	w := io.MultiWriter(pipeWriter, bf)
 	go func() {
 		defer closeAll()
 		reader := bufio.NewReader(pipe)
@@ -519,6 +507,7 @@ func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server conta
 			}
 		}
 	}()
+	startTime := c.timer.Now()
 
 	err = c.k8sRepo.Execute(ctx, &repo.Container{
 		Namespace: request.Namespace,
@@ -540,8 +529,30 @@ func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server conta
 	}
 
 	closeAll()
+	c.eventRepo.AuditLogWithChange(
+		types.EventActionType_Exec,
+		MustGetUser(ctx).Name,
+		fmt.Sprintf("[ExecOnce]: 用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", request.Container, request.Namespace, request.Pod),
+		nil,
+		repo.AnyYamlPrettier{
+			"namespace": request.Namespace,
+			"pod":       request.Pod,
+			"container": request.Container,
+			"command":   request.Command,
+			"result":    bf.String(),
+			"error":     toErrStr(err),
+			"duration":  c.timer.Since(startTime).String(),
+		},
+	)
 	c.logger.DebugCtx(ctx, "ExecOnce: 彻底退出", err)
 	return err
+}
+
+func toErrStr(e error) string {
+	if e == nil {
+		return ""
+	}
+	return e.Error()
 }
 
 type sortEvents []*eventsv1.Event

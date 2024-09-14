@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
+
 	"github.com/duc-cnzj/mars/v5/internal/config"
 	"github.com/duc-cnzj/mars/v5/internal/data"
 	"github.com/duc-cnzj/mars/v5/internal/ent/accesstoken"
@@ -22,7 +24,7 @@ var (
 )
 
 func TestAuth_Sign(t *testing.T) {
-	auth := NewJwtAuth(priKey, publicKey)
+	auth := NewJwtAuth(priKey, publicKey, timer.NewReal())
 	sign, err := auth.Sign(&UserInfo{
 		LogoutUrl: "xxx",
 		Roles:     []string{schematype.MarsAdmin},
@@ -45,7 +47,7 @@ func TestAuth_Sign(t *testing.T) {
 		},
 	}
 	assert.Less(t, pk.Size(), 11)
-	authError := NewJwtAuth(pk, nil)
+	authError := NewJwtAuth(pk, nil, timer.NewReal())
 	_, err = authError.Sign(&UserInfo{
 		LogoutUrl: "xxx",
 		Roles:     []string{schematype.MarsAdmin},
@@ -57,7 +59,7 @@ func TestAuth_Sign(t *testing.T) {
 }
 
 func TestAuth_VerifyToken(t *testing.T) {
-	auth := NewJwtAuth(priKey, publicKey)
+	auth := NewJwtAuth(priKey, publicKey, timer.NewReal())
 	sign, _ := auth.Sign(&UserInfo{
 		LogoutUrl: "xxx",
 		Roles:     []string{schematype.MarsAdmin},
@@ -77,17 +79,17 @@ func TestAuth_VerifyToken(t *testing.T) {
 }
 
 func TestNewAuth(t *testing.T) {
-	assert.Implements(t, (*Auth)(nil), NewJwtAuth(nil, nil))
+	assert.Implements(t, (*Auth)(nil), NewJwtAuth(nil, nil, timer.NewReal()))
 }
 
 func TestNewAccessTokenAuth(t *testing.T) {
-	assert.Implements(t, (*Authenticator)(nil), NewAccessTokenAuth(nil))
+	assert.Implements(t, (*Authenticator)(nil), NewAccessTokenAuth(nil, timer.NewReal()))
 }
 
 func TestAccessTokenAuth_VerifyToken(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	_, b := NewAccessTokenAuth(nil).VerifyToken("")
+	_, b := NewAccessTokenAuth(nil, timer.NewReal()).VerifyToken("")
 	assert.False(t, b)
 
 	db, _ := data.NewSqliteDB()
@@ -106,7 +108,7 @@ func TestAccessTokenAuth_VerifyToken(t *testing.T) {
 		}).SaveX(context.TODO())
 	assert.Nil(t, at.LastUsedAt)
 	dd := data.NewDataImpl(&data.NewDataParams{DB: db})
-	u, b := NewAccessTokenAuth(dd).
+	u, b := NewAccessTokenAuth(dd, timer.NewReal()).
 		VerifyToken(at.Token)
 	assert.True(t, b)
 	assert.Equal(t, "xx", u.UserInfo.ID)
@@ -119,7 +121,7 @@ func TestAccessTokenAuth_VerifyToken(t *testing.T) {
 	first, _ := db.AccessToken.Query().Where(accesstoken.Token(at.Token)).First(context.TODO())
 
 	assert.NotZero(t, first.LastUsedAt)
-	_, bb := NewAccessTokenAuth(dd).VerifyToken("bearer " + at.Token)
+	_, bb := NewAccessTokenAuth(dd, timer.NewReal()).VerifyToken("bearer " + at.Token)
 	assert.True(t, bb)
 }
 
@@ -139,7 +141,7 @@ d7S3iRu2XM6sofijaCAQpBV9EItX6dLUHqz4Av0cxmlZ33ljiYKr3CngD/SqS+cQ
 CGwt91H68MXh40TeuwJARxz1VMLq7hKo8J4scAW/YrBTE4N6malYjYoR2HFs+YwL
 cSE/4A4yfzTjN2r5GuJr8rTU7gU4Su9C8dLC0htWCA==
 -----END RSA PRIVATE KEY-----
-`}}))
+`}}), timer.NewReal())
 	assert.Implements(t, (*Auth)(nil), authn)
 }
 

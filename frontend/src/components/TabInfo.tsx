@@ -8,12 +8,16 @@ import {
   FireOutlined,
   FieldNumberOutlined,
   LinkOutlined,
+  ScheduleOutlined,
+  DotChartOutlined,
+  PieChartOutlined,
 } from "@ant-design/icons";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
 import { components } from "../api/schema";
 import ajax from "../api/ajax";
+import { IconBaseProps } from "@ant-design/icons/lib/components/Icon";
 import styled from "@emotion/styled";
 
 SyntaxHighlighter.registerLanguage("yaml", yaml);
@@ -53,128 +57,32 @@ const DetailTab: React.FC<{
 
   return detail ? (
     <Space direction="vertical" style={{ width: "100%" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <FieldNumberOutlined
-          style={{
-            display: "flex",
-            alignItems: "center",
-            height: 30,
-            marginRight: 4,
-            fontSize: 20,
-          }}
-        />
-        {detail.id}
-      </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          style={{
-            width: 20,
-            height: 20,
-            marginRight: 4,
-          }}
-        >
-          <path d="M13 7H7v6h6V7z" />
-          <path
-            fillRule="evenodd"
-            d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z"
-            clipRule="evenodd"
-          />
-        </svg>
-        <Label>
-          cpu:{" "}
-          {!cpuMemEndpointsLoading ? (
+      <LineItem icon={FieldNumberOutlined} title={detail.id} />
+      <LineItem
+        icon={DotChartOutlined}
+        title={"此项目 cpu"}
+        children={
+          !cpuMemEndpointsLoading ? (
             <span className="detail-data">{cpuMemEndpoints.cpu}</span>
           ) : (
             <Spin />
-          )}
-        </Label>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          style={{
-            width: 20,
-            height: 20,
-            marginRight: 4,
-          }}
-        >
-          <path d="M13 7H7v6h6V7z" />
-          <path
-            fillRule="evenodd"
-            d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z"
-            clipRule="evenodd"
-          />
-        </svg>
-        <Label>
-          memory:{" "}
-          {!cpuMemEndpointsLoading ? (
+          )
+        }
+      />
+      <LineItem
+        icon={PieChartOutlined}
+        title={"此项目 memory"}
+        children={
+          !cpuMemEndpointsLoading ? (
             <span className="detail-data">{cpuMemEndpoints.mem}</span>
           ) : (
             <Spin />
-          )}
-        </Label>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <BranchesOutlined
-          style={{
-            width: 20,
-            height: 20,
-            marginRight: 4,
-            fontSize: 16,
-          }}
-        />
-        <Label>
-          分支: <span className="detail-data">{detail.gitBranch}</span>
-        </Label>
-      </div>
-
+          )
+        }
+      />
       <div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          <LinkOutlined
-            style={{
-              width: 20,
-              height: 20,
-              marginRight: 4,
-              fontSize: 16,
-            }}
-          />
-          <Label>地址:</Label>
-        </div>
-        <ul style={{ listStyle: "none", padding: "0 0 0 1.5em", margin: 0 }}>
+        <LineItem icon={LinkOutlined} title={"地址"} />
+        <ul style={{ listStyle: "none", padding: "0 0 0 1.5rem", margin: 0 }}>
           {!cpuMemEndpointsLoading ? (
             cpuMemEndpoints.urls.map((item, index) => (
               <li key={index}>
@@ -198,126 +106,58 @@ const DetailTab: React.FC<{
         </ul>
       </div>
 
-      <div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          <SettingOutlined
-            style={{
-              width: 20,
-              height: 20,
-              marginRight: 4,
-              fontSize: 16,
-            }}
+      {detail.repo.needGitRepo && (
+        <>
+          <LineItem
+            icon={BranchesOutlined}
+            title={"分支"}
+            children={<span className="detail-data">{detail.gitBranch}</span>}
           />
-          <Label>容器镜像:</Label>
-        </div>
-        <div style={{ marginLeft: 20 }}>
+
+          <LineItem
+            icon={PushpinOutlined}
+            title={"提交"}
+            children={
+              <span className="detail-data">
+                <a href={detail.gitCommitWebUrl} target="_blank">
+                  {detail.gitCommitTitle}
+                </a>
+                by {detail.gitCommitAuthor} 于 {detail.gitCommitDate}
+              </span>
+            }
+          />
+        </>
+      )}
+
+      <div>
+        <LineItem icon={SettingOutlined} title={"容器镜像"} />
+        <div style={{ marginLeft: "1.5rem" }}>
           {detail.dockerImage?.map((v, idx) => <div key={idx}>{v}</div>)}
         </div>
       </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <PushpinOutlined
-          style={{
-            width: 20,
-            height: 20,
-            marginRight: 4,
-            fontSize: 16,
-          }}
-        />
-        <Label>
-          提交:
-          <span className="detail-data">
-            <a href={detail.gitCommitWebUrl} target="_blank">
-              {detail.gitCommitTitle}
-            </a>
-            by {detail.gitCommitAuthor} 于 {detail.gitCommitDate}
-          </span>
-        </Label>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          style={{
-            width: 20,
-            height: 20,
-            marginRight: 4,
-          }}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-          />
-        </svg>
-        <Label>
-          部署日期:{" "}
+      <LineItem
+        icon={ScheduleOutlined}
+        title={"部署日期"}
+        children={
           <span className="detail-data">{detail.humanizeCreatedAt}</span>
-        </Label>
-      </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          style={{
-            width: 20,
-            height: 20,
-            marginRight: 4,
-          }}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-          />
-        </svg>
-        <Label>
-          更新日期:{" "}
+        }
+      />
+      <LineItem
+        icon={ScheduleOutlined}
+        title={"更新日期"}
+        children={
           <span className="detail-data">{detail.humanizeUpdatedAt}</span>
-        </Label>
-      </div>
-
+        }
+      />
       <div>
-        <Label>
-          <FireOutlined
-            style={{
-              width: 20,
-              height: 20,
-              marginRight: 4,
-              fontSize: 16,
-            }}
-          />
-          相关配置
-        </Label>
-        <details style={{ marginTop: 3, marginLeft: 3 }}>
+        <LineItem
+          icon={FireOutlined}
+          title={"相关配置"}
+          children={
+            <span className="detail-data">{detail.humanizeUpdatedAt}</span>
+          }
+        />
+        <details style={{ marginTop: 3, marginLeft: "1.5rem" }}>
           <summary style={{ cursor: "pointer" }}>展开查看</summary>
           <SyntaxHighlighter
             language="yaml"
@@ -385,3 +225,39 @@ export default memo(DetailTab);
 const Label = styled.div`
   font-weight: 700;
 `;
+
+const LineItem: React.FC<{
+  icon: React.ComponentType<IconBaseProps>;
+  title: string | number;
+  children?: React.ReactNode;
+}> = ({ icon, title, children }) => {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+      }}
+    >
+      <IconWithStyle IconComponent={icon} />
+      <Label>
+        {title}
+        {children && <>: {children}</>}
+      </Label>
+    </div>
+  );
+};
+
+const IconWithStyle: React.FC<{
+  IconComponent: React.ComponentType<IconBaseProps>;
+}> = ({ IconComponent }) => {
+  return (
+    <IconComponent
+      style={{
+        width: 20,
+        height: 20,
+        marginRight: 4,
+        fontSize: 16,
+      }}
+    />
+  );
+};

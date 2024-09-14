@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v5/types"
-
 	"github.com/duc-cnzj/mars/api/v5/container"
+	"github.com/duc-cnzj/mars/api/v5/types"
 	"github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/duc-cnzj/mars/v5/internal/mlog"
 	"github.com/duc-cnzj/mars/v5/internal/repo"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/status"
@@ -29,6 +29,7 @@ func TestNewContainerSvc(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		repo.NewMockK8sRepo(m),
 		repo.NewMockFileRepo(m),
@@ -47,6 +48,7 @@ func Test_containerSvc_IsPodRunning(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -66,6 +68,7 @@ func Test_containerSvc_IsPodExists(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -85,6 +88,7 @@ func Test_containerSvc_IsPodExists_Fail(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -104,6 +108,7 @@ func TestContainerSvc_ContainerLog_PodNotFound(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -122,6 +127,7 @@ func TestContainerSvc_ContainerLog_PodPending(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -140,6 +146,7 @@ func TestContainerSvc_ContainerLog_PodRunning(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -163,6 +170,7 @@ func TestContainerSvc_ContainerLog_GetPodLogs_error(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -182,6 +190,7 @@ func TestContainerSvc_ContainerLog_PodPending1(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -231,6 +240,7 @@ func TestContainerSvc_CopyToPod_PodNotRunning(t *testing.T) {
 	k8sRepo := repo.NewMockK8sRepo(m)
 	fileRepo := repo.NewMockFileRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		fileRepo,
@@ -251,6 +261,7 @@ func TestContainerSvc_CopyToPod_Success(t *testing.T) {
 	fileRepo := repo.NewMockFileRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		eventRepo,
 		k8sRepo,
 		fileRepo,
@@ -284,6 +295,7 @@ func TestContainerSvc_CopyToPod_Error(t *testing.T) {
 	fileRepo := repo.NewMockFileRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		eventRepo,
 		k8sRepo,
 		fileRepo,
@@ -310,6 +322,7 @@ func TestContainerSvc_StreamContainerLog_PodNotFound(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -328,6 +341,7 @@ func TestContainerSvc_StreamContainerLog_PodPending(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -346,6 +360,7 @@ func TestContainerSvc_StreamContainerLog_PodRunning(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -372,6 +387,7 @@ func TestContainerSvc_StreamContainerLog_PodSucceeded(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -393,6 +409,7 @@ func TestContainerSvc_StreamContainerLog_Error(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -413,6 +430,7 @@ func TestContainerSvc_StreamContainerLog_PodFailed(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -434,6 +452,7 @@ func TestContainerSvc_StreamContainerLog_PodPending1(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -485,6 +504,7 @@ func TestContainerSvc_StreamCopyToPod_PodNotRunning(t *testing.T) {
 	k8sRepo := repo.NewMockK8sRepo(m)
 	fileRepo := repo.NewMockFileRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		fileRepo,
@@ -508,6 +528,7 @@ func TestContainerSvc_StreamCopyToPod_Error(t *testing.T) {
 	fileRepo := repo.NewMockFileRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		eventRepo,
 		k8sRepo,
 		fileRepo,
@@ -524,6 +545,7 @@ func TestContainerSvc_StreamCopyToPod_Success(t *testing.T) {
 	fileRepo := repo.NewMockFileRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		eventRepo,
 		k8sRepo,
 		fileRepo,
@@ -614,6 +636,7 @@ func TestContainerSvc_ExecOnce_PodNotRunning(t *testing.T) {
 	defer m.Finish()
 	k8sRepo := repo.NewMockK8sRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		repo.NewMockFileRepo(m),
@@ -634,28 +657,28 @@ func TestContainerSvc_ExecOnce_Success(t *testing.T) {
 	fileRepo := repo.NewMockFileRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		eventRepo,
 		k8sRepo,
 		fileRepo,
 		mlog.NewForConfig(nil),
 	)
-	recorder := repo.NewMockRecorder(m)
 	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
 	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), "a", "b").Return("c", nil)
-	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any()).Return(recorder)
-	recorder.EXPECT().Write([]byte("mars@c:/# ls"))
-	recorder.EXPECT().Write([]byte("\r\n"))
-	recorder.EXPECT().Close()
-	recorder.EXPECT().Container().Return(&repo.Container{}).AnyTimes()
-	recorder.EXPECT().User().Return(&auth.UserInfo{Name: "mars"})
-	recorder.EXPECT().File().Return(&repo.File{ID: 1})
-	recorder.EXPECT().Duration().Return(time.Second)
-	eventRepo.EXPECT().FileAuditLogWithDuration(
+	eventRepo.EXPECT().AuditLogWithChange(
 		types.EventActionType_Exec,
-		"mars",
+		"admin",
 		gomock.Any(),
-		1,
-		time.Second,
+		nil,
+		gomock.Cond(func(x any) bool {
+			v := x.(repo.AnyYamlPrettier)
+			return v["namespace"].(string) == "a" &&
+				v["pod"].(string) == "b" &&
+				v["container"].(string) == "c" &&
+				slices.Equal(v["command"].([]string), []string{"ls"}) &&
+				v["error"] == "xx" &&
+				v["result"] == ""
+		}),
 	)
 
 	mac := &execOnceMatcher{
@@ -712,6 +735,7 @@ func TestContainerSvc_Exec_PodNotRunning(t *testing.T) {
 	k8sRepo := repo.NewMockK8sRepo(m)
 	fileRepo := repo.NewMockFileRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		repo.NewMockEventRepo(m),
 		k8sRepo,
 		fileRepo,
@@ -729,6 +753,7 @@ func TestContainerSvc_Exec_Success(t *testing.T) {
 	fileRepo := repo.NewMockFileRepo(m)
 	eventRepo := repo.NewMockEventRepo(m)
 	svc := NewContainerSvc(
+		timer.NewReal(),
 		eventRepo,
 		k8sRepo,
 		fileRepo,
@@ -900,4 +925,9 @@ func TestSizeQueue_Next_SizeReceived(t *testing.T) {
 
 	recorder.EXPECT().Resize(uint16(expectedSize.Width), uint16(expectedSize.Height))
 	assert.Equal(t, expectedSize, queue.Next())
+}
+
+func Test_toErrStr(t *testing.T) {
+	assert.Equal(t, "", toErrStr(nil))
+	assert.Equal(t, "error", toErrStr(errors.New("error")))
 }

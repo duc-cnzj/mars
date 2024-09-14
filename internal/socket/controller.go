@@ -21,6 +21,7 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/uploader"
 	"github.com/duc-cnzj/mars/v5/internal/util/counter"
 	"github.com/duc-cnzj/mars/v5/internal/util/hash"
+	"github.com/duc-cnzj/mars/v5/internal/util/timer"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus"
@@ -42,6 +43,7 @@ type HandleRequestFunc func(ctx context.Context, c Conn, t websocket_pb.Type, me
 type WebsocketManager struct {
 	healthTickDuration time.Duration
 
+	timer      timer.Timer
 	data       data.Data
 	logger     mlog.Logger
 	pl         application.PluginManger
@@ -65,6 +67,7 @@ type WebsocketManager struct {
 }
 
 func NewWebsocketManager(
+	timer timer.Timer,
 	logger mlog.Logger,
 	counter counter.Counter,
 	projRepo repo.ProjectRepo,
@@ -82,6 +85,7 @@ func NewWebsocketManager(
 	fileRepo repo.FileRepo,
 ) application.WsHttpServer {
 	mgr := &WebsocketManager{
+		timer:              timer,
 		projRepo:           projRepo,
 		nsRepo:             nsRepo,
 		counter:            counter,
@@ -213,9 +217,9 @@ func (wc *WebsocketManager) Shutdown(ctx context.Context) error {
 
 func (wc *WebsocketManager) read(ctx context.Context, wsconn Conn) error {
 	wsconn.SetReadLimit(maxMessageSize)
-	wsconn.SetReadDeadline(time.Now().Add(pongWait))
+	wsconn.SetReadDeadline(wc.timer.Now().Add(pongWait))
 	wsconn.SetPongHandler(func(string) error {
-		wsconn.SetReadDeadline(time.Now().Add(pongWait))
+		wsconn.SetReadDeadline(wc.timer.Now().Add(pongWait))
 		return nil
 	})
 	for {
@@ -254,7 +258,7 @@ func (wc *WebsocketManager) write(ctx context.Context, wsconn Conn) (err error) 
 				return wsconn.WriteMessage(websocket.CloseMessage, []byte{})
 			}
 
-			wsconn.SetWriteDeadline(time.Now().Add(writeWait))
+			wsconn.SetWriteDeadline(wc.timer.Now().Add(writeWait))
 			w, err = wsconn.NextWriter(websocket.BinaryMessage)
 			if err != nil {
 				return err
@@ -265,7 +269,7 @@ func (wc *WebsocketManager) write(ctx context.Context, wsconn Conn) (err error) 
 				return err
 			}
 		case <-ticker.C:
-			wsconn.SetWriteDeadline(time.Now().Add(writeWait))
+			wsconn.SetWriteDeadline(wc.timer.Now().Add(writeWait))
 			if err = wsconn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return err
 			}
@@ -279,7 +283,7 @@ func (wc *WebsocketManager) dispatchEvent(ctx context.Context, wsconn Conn, wsRe
 			metrics.WebsocketPanicCount.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
 		})
 		defer func(t time.Time) {
-			metrics.WebsocketRequestLatency.With(prometheus.Labels{"method": wsRequest.Type.String()}).Observe(time.Since(t).Seconds())
+			metrics.WebsocketRequestLatency.With(prometheus.Labels{"method": wsRequest.Type.String()}).Observe(wc.timer.Since(t).Seconds())
 			e := recover()
 			if e == nil {
 				metrics.WebsocketRequestTotalSuccess.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
@@ -287,7 +291,7 @@ func (wc *WebsocketManager) dispatchEvent(ctx context.Context, wsconn Conn, wsRe
 				metrics.WebsocketRequestTotalFail.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
 				panic(e)
 			}
-		}(time.Now())
+		}(wc.timer.Now())
 
 		wc.logger.Debugf("wsType: %v, message: %v", wsRequest.Type.String(), string(message))
 
