@@ -926,3 +926,8 @@ func TestSizeQueue_Next_SizeReceived(t *testing.T) {
 	recorder.EXPECT().Resize(uint16(expectedSize.Width), uint16(expectedSize.Height))
 	assert.Equal(t, expectedSize, queue.Next())
 }
+
+func Test_toErrStr(t *testing.T) {
+	assert.Equal(t, "", toErrStr(nil))
+	assert.Equal(t, "error", toErrStr(errors.New("error")))
+}

@@ -541,12 +541,19 @@ func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server conta
 			"container": request.Container,
 			"command":   request.Command,
 			"result":    bf.String(),
-			"error":     fmt.Sprintf("%v", err),
+			"error":     toErrStr(err),
 			"duration":  time.Since(startTime).String(),
 		},
 	)
 	c.logger.DebugCtx(ctx, "ExecOnce: 彻底退出", err)
 	return err
+}
+
+func toErrStr(e error) string {
+	if e == nil {
+		return ""
+	}
+	return e.Error()
 }
 
 type sortEvents []*eventsv1.Event
