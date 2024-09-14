@@ -75,7 +75,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	eventServer := services.NewEventSvc(logger, eventRepo)
 	endpointRepo := repo.NewEndpointRepo(logger, dataData, projectRepo, namespaceRepo)
 	endpointServer := services.NewEndpointSvc(logger, endpointRepo)
-	containerServer := services.NewContainerSvc(eventRepo, k8sRepo, fileRepo, logger)
+	containerServer := services.NewContainerSvc(timerTimer, eventRepo, k8sRepo, fileRepo, logger)
 	clusterServer := services.NewClusterSvc(k8sRepo, logger)
 	changelogServer := services.NewChangelogSvc(changelogRepo)
 	authRepo := repo.NewAuthRepo(authAuth, logger, dataData)

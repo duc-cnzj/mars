@@ -404,7 +404,7 @@ func (s *StringYamlPrettier) PrettyYaml() string {
 
 type AnyYamlPrettier map[string]any
 
-func (s *AnyYamlPrettier) PrettyYaml() string {
+func (s AnyYamlPrettier) PrettyYaml() string {
 	marshal, _ := yaml.PrettyMarshal(s)
 	return string(marshal)
 }

@@ -422,7 +422,7 @@ func TestToProjectEventYaml(t *testing.T) {
 					{Path: "path1", Value: "value1"},
 				},
 			},
-			expected: &repo.AnyYamlPrettier{
+			expected: repo.AnyYamlPrettier{
 				"title":   "Initial commit",
 				"branch":  "main",
 				"commit":  "abc123",

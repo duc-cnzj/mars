@@ -752,7 +752,7 @@ func toProjectEventYaml(p *repo.Project) repo.YamlPrettier {
 		return p.FinalExtraValues[i].Path < p.FinalExtraValues[j].Path
 	})
 
-	return &repo.AnyYamlPrettier{
+	return repo.AnyYamlPrettier{
 		"title":              p.GitCommitTitle,
 		"branch":             p.GitBranch,
 		"commit":             p.GitCommit,

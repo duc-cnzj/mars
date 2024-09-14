@@ -194,11 +194,11 @@ func (n *namespaceSvc) UpdateDesc(ctx context.Context, req *namespace.UpdateDesc
 		types.EventActionType_Update,
 		MustGetUser(ctx).Name,
 		fmt.Sprintf("更新项目空间描述: id: '%d' '%s'", ns.ID, ns.Name),
-		&repo.AnyYamlPrettier{
+		repo.AnyYamlPrettier{
 			"namespace": old.Name,
 			"desc":      old.Description,
 		},
-		&repo.AnyYamlPrettier{
+		repo.AnyYamlPrettier{
 			"namespace": ns.Name,
 			"desc":      ns.Description,
 		},
@@ -361,10 +361,10 @@ func (n *namespaceSvc) SyncMembers(ctx context.Context, req *namespace.SyncMembe
 		types.EventActionType_Update,
 		MustGetUser(ctx).Name,
 		fmt.Sprintf("[同步空间成员] id: %v name: %v", show.ID, show.Name),
-		&repo.AnyYamlPrettier{
+		repo.AnyYamlPrettier{
 			"members": show.Members,
 		},
-		&repo.AnyYamlPrettier{
+		repo.AnyYamlPrettier{
 			"members": ns.Members,
 		},
 	)
