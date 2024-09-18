@@ -232,7 +232,12 @@ const AddRepoModal: React.FC<{
         if (configField && valuesYaml) {
           let data = _.get(yaml.load(valuesYaml), configField.split("->"), "");
           if (typeof data === "object") {
-            data = yaml.dump(data);
+            if (Array.isArray(data)) {
+              let key = _.last(configField.split("->"));
+              data = yaml.dump({ [String(key)]: data });
+            } else {
+              data = yaml.dump(data);
+            }
           }
           setConfigFileTip(true);
           setConfigFileContent(String(data));

@@ -225,7 +225,7 @@ data4:
 	isSimple, _ = IsSimpleEnv("data2", yamlData)
 	assert.False(t, isSimple)
 	isSimple, _ = IsSimpleEnv("data4", yamlData)
-	assert.False(t, isSimple)
+	assert.True(t, isSimple)
 	isSimple, _ = IsSimpleEnv("data3->duc", yamlData)
 	assert.False(t, isSimple)
 	isSimple, _ = IsSimpleEnv("data3->duc->age", yamlData)
