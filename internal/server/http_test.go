@@ -137,3 +137,25 @@ func TestHeaderMatcher(t *testing.T) {
 	assert.False(t, ok)
 	assert.Equal(t, "", key)
 }
+
+func Test_initServer(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	server := NewMockHttpServer(m)
+	handler := application.NewMockHttpHandler(m)
+	handler.EXPECT().RegisterSwaggerUIRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterWsRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterFileRoute(gomock.Not(nil)).Times(1)
+	httpServer, err := initServer(context.TODO(), &apiGateway{
+		endpoint:     "x",
+		port:         "1000",
+		server:       server,
+		logger:       mlog.NewForConfig(nil),
+		grpcRegistry: &application.GrpcRegistry{},
+		handler:      handler,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, httpServer)
+	assert.Equal(t, httpServer.(*http.Server).Addr, ":1000")
+	assert.Equal(t, httpServer.(*http.Server).ReadHeaderTimeout, 5*time.Second)
+}
