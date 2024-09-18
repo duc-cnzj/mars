@@ -214,10 +214,17 @@ data3:
   duc:
     age: 18
     aa: b
+data4:
+  - name: duc
+    age: 18
+  - name: bbc
+    age: 18
 `
 	isSimple, _ := IsSimpleEnv("data", yamlData)
 	assert.True(t, isSimple)
 	isSimple, _ = IsSimpleEnv("data2", yamlData)
+	assert.False(t, isSimple)
+	isSimple, _ = IsSimpleEnv("data4", yamlData)
 	assert.False(t, isSimple)
 	isSimple, _ = IsSimpleEnv("data3->duc", yamlData)
 	assert.False(t, isSimple)

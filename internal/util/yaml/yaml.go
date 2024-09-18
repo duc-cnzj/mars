@@ -38,7 +38,7 @@ func IsSimpleEnv(key string, yamlData string) (bool, error) {
 	}
 	if res, got := DeepGet(key, m); got {
 		switch res.(type) {
-		case map[string]any:
+		case []any, map[string]any:
 			return false, nil
 		default:
 			return true, nil
