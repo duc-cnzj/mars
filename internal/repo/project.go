@@ -114,6 +114,7 @@ type ProjectRepo interface {
 	List(ctx context.Context, input *ListProjectInput) ([]*Project, *pagination.Pagination, error)
 	Create(ctx context.Context, project *CreateProjectInput) (*Project, error)
 	Show(ctx context.Context, id int) (*Project, error)
+	Version(ctx context.Context, id int) (int, error)
 	Delete(ctx context.Context, id int) error
 	FindByName(ctx context.Context, name string, nsID int) (*Project, error)
 	UpdateDeployStatus(ctx context.Context, id int, status types.Deploy) (*Project, error)
@@ -138,6 +139,17 @@ func NewProjectRepo(logger mlog.Logger, data data.Data) ProjectRepo {
 		externalIp: data.Config().ExternalIp,
 		data:       data,
 	}
+}
+
+func (repo *projectRepo) Version(ctx context.Context, id int) (int, error) {
+	get, err := repo.data.DB().Project.Query().Select(
+		project.FieldID,
+		project.FieldVersion,
+	).Where(project.ID(id)).Only(ctx)
+	if err != nil {
+		return 0, ToError(404, err)
+	}
+	return get.Version, nil
 }
 
 type ListProjectInput struct {

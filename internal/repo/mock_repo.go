@@ -255,6 +255,21 @@ func (mr *MockProjectRepoMockRecorder) UpdateVersion(arg0, arg1, arg2 any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVersion", reflect.TypeOf((*MockProjectRepo)(nil).UpdateVersion), arg0, arg1, arg2)
 }
 
+// Version mocks base method.
+func (m *MockProjectRepo) Version(arg0 context.Context, arg1 int) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Version", arg0, arg1)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Version indicates an expected call of Version.
+func (mr *MockProjectRepoMockRecorder) Version(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Version", reflect.TypeOf((*MockProjectRepo)(nil).Version), arg0, arg1)
+}
+
 // MockGitRepo is a mock of GitRepo interface.
 type MockGitRepo struct {
 	ctrl     *gomock.Controller

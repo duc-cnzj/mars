@@ -338,19 +338,15 @@ func Test_projectSvc_Version(t *testing.T) {
 		helmerRepo,
 		repo.NewMockNamespaceRepo(m),
 	)
-	projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Project{
-		ID:          2,
-		Name:        "app",
-		NamespaceID: 1,
-		Namespace: &repo.Namespace{
-			Name: "ns",
-		},
-		Version: 100,
-	}, nil)
+	projectRepo.EXPECT().Version(gomock.Any(), 1).Return(100, nil)
 	version, err := svc.Version(context.TODO(), &project.VersionRequest{Id: 1})
 	assert.Nil(t, err)
 	assert.NotNil(t, version)
 	assert.Equal(t, int32(100), version.Version)
+
+	projectRepo.EXPECT().Version(gomock.Any(), 1).Return(0, errors.New("x"))
+	_, err = svc.Version(context.TODO(), &project.VersionRequest{Id: 1})
+	assert.Error(t, err)
 }
 
 func Test_projectSvc_AllContainers(t *testing.T) {
