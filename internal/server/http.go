@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/stats"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -76,6 +77,13 @@ func (a *apiGateway) Shutdown(ctx context.Context) error {
 	return a.server.Shutdown(ctx)
 }
 
+// FilterMethods
+// 不会记录metadata(错误之类的)，但是有一条记录
+var FilterMethods = map[string]struct{}{
+	"/metrics.Metrics/StreamTopPod":           {},
+	"/container.Container/StreamContainerLog": {},
+}
+
 func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 	router := mux.NewRouter()
 
@@ -98,7 +106,13 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 	)
 
 	opts := []grpc.DialOption{
-		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler(
+			otelgrpc.WithFilter(func(info *stats.RPCTagInfo) bool {
+				_, ok := FilterMethods[info.FullMethodName]
+				a.logger.Debugf("%v\t%v", info.FullMethodName, !ok)
+				return !ok
+			}),
+		)),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxRecvMsgSize)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}

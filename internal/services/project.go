@@ -292,9 +292,12 @@ func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 }
 
 func (p *projectSvc) Version(ctx context.Context, req *project.VersionRequest) (*project.VersionResponse, error) {
-	show, _ := p.projRepo.Show(ctx, int(req.Id))
+	v, err := p.projRepo.Version(ctx, int(req.Id))
+	if err != nil {
+		return nil, err
+	}
 
-	return &project.VersionResponse{Version: int32(show.Version)}, nil
+	return &project.VersionResponse{Version: int32(v)}, nil
 }
 
 func (p *projectSvc) AllContainers(ctx context.Context, request *project.AllContainersRequest) (*project.AllContainersResponse, error) {

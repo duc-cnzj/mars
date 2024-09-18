@@ -1,7 +1,17 @@
 import React, { useEffect, useState, useCallback, memo, useRef } from "react";
 import { DraggableModalProvider } from "../pkg/DraggableModal/DraggableModalProvider";
 import ItemCard from "./ItemCard";
-import { Empty, Row, Col, Tabs, message, Pagination, Input, Space } from "antd";
+import {
+  Empty,
+  Row,
+  Col,
+  Tabs,
+  message,
+  Pagination,
+  Input,
+  Space,
+  InputRef,
+} from "antd";
 import "../pkg/DraggableModal/index.css";
 import { useSelector, useDispatch } from "react-redux";
 import { setNamespaceReload, setOpenedModals } from "../store/actions";
@@ -18,6 +28,7 @@ import { TabsProps } from "antd/lib";
 import { SearchOutlined } from "@ant-design/icons";
 import { css } from "@emotion/css";
 import useLocalStorage from "../contexts/useLocalstorage";
+import { useHotkeys } from "react-hotkeys-hook";
 
 const defaultPageSize = 12;
 
@@ -117,6 +128,12 @@ const AppContent: React.FC = () => {
       icon: <IconFont name="#icon-wodeguanzhu" color="#a78bfa" />,
     },
   ];
+  const searchRef = useRef<InputRef>(null);
+  useHotkeys(
+    ["ctrl+k", "meta+k"],
+    () => searchRef.current && searchRef.current.focus(),
+    [],
+  );
 
   return (
     <DraggableModalProvider>
@@ -141,6 +158,7 @@ const AppContent: React.FC = () => {
           <Col span={16} style={{ textAlign: "right" }}>
             <Space>
               <Input
+                ref={searchRef}
                 allowClear
                 placeholder="搜索空间名称"
                 className={css`

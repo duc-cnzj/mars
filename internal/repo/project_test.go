@@ -7,6 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/duc-cnzj/mars/v5/internal/annotation"
 	"github.com/duc-cnzj/mars/v5/internal/config"
 	"github.com/duc-cnzj/mars/v5/internal/ent"
@@ -1287,4 +1290,27 @@ func Test_projectRepo_GetProjectEndpointsInNamespace(t *testing.T) {
 	mockData.EXPECT().DB().Return(db)
 	_, err := repo.GetProjectEndpointsInNamespace(context.TODO(), "duc", 1)
 	assert.Nil(t, err)
+}
+
+func Test_projectRepo_Version(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	db, _ := data2.NewSqliteDB()
+	defer db.Close()
+	mockData := data2.NewMockData(m)
+	repo := &projectRepo{
+		logger: mlog.NewForConfig(nil),
+		data:   mockData,
+	}
+	mockData.EXPECT().DB().Return(db).AnyTimes()
+	_, err := repo.Version(context.TODO(), 1)
+	s, ok := status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, codes.NotFound, s.Code())
+
+	e := createNamespace(db)
+	project := createProject(db, e.ID)
+	project.Update().SetVersion(100).SaveX(context.TODO())
+	res, _ := repo.Version(context.TODO(), project.ID)
+	assert.Equal(t, 100, res)
 }
