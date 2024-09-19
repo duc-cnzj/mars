@@ -14,6 +14,7 @@ const ConfigHistory: React.FC<{
     components["schemas"]["types.ChangelogModel"][]
   >([]);
 
+  const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
   return (
     <Popover
@@ -22,6 +23,7 @@ const ConfigHistory: React.FC<{
       destroyTooltipOnHide
       onOpenChange={(v) => {
         if (v) {
+          setLoading(true);
           ajax
             .POST("/api/changelogs/find_last_changelogs_by_project_id", {
               body: {
@@ -31,10 +33,13 @@ const ConfigHistory: React.FC<{
             })
             .then(({ data }) => {
               data && setList(data.items);
+              setLoading(false);
             });
         }
       }}
-      content={<Content list={list} configType={configType} />}
+      content={
+        <Content loading={loading} list={list} configType={configType} />
+      }
       trigger="click"
       title={
         <div
@@ -69,7 +74,8 @@ const ConfigHistory: React.FC<{
 const Content: React.FC<{
   list: components["schemas"]["types.ChangelogModel"][];
   configType: string;
-}> = ({ configType, list }) => {
+  loading: boolean;
+}> = ({ configType, list, loading }) => {
   return (
     <div
       style={{
@@ -80,7 +86,7 @@ const Content: React.FC<{
       }}
     >
       <Collapse accordion bordered={false}>
-        {list.length > 0 ? (
+        {!loading ? (
           list.map((item, idx) => (
             <Panel
               key={item.version}
