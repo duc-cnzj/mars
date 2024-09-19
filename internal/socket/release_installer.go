@@ -103,17 +103,18 @@ func (r *releaseInstaller) Run(
 	}
 	wrapLogFn(nil, "部署出现问题: %s", err)
 	if !input.DryRun {
+		var rollbackErr error
 		if !input.IsNew {
 			// 失败了，需要手动回滚
 			r.logger.Debug("rollback project")
-			if err = r.helmer.Rollback(input.ReleaseName, input.Namespace, false, wrapLogFn.UnWrap(), input.DryRun); err != nil {
-				r.logger.Debug(err)
-			}
+			rollbackErr = r.helmer.Rollback(input.ReleaseName, input.Namespace, false, wrapLogFn.UnWrap(), input.DryRun)
 		} else {
 			r.logger.Debug("uninstall project")
-			if err = r.helmer.Uninstall(input.ReleaseName, input.Namespace, wrapLogFn.UnWrap()); err != nil {
-				r.logger.Debug(err)
-			}
+			rollbackErr = r.helmer.Uninstall(input.ReleaseName, input.Namespace, wrapLogFn.UnWrap())
+		}
+		if rollbackErr != nil {
+			wrapLogFn(nil, "回滚出现问题: %s", rollbackErr)
+			r.logger.Debug(rollbackErr)
 		}
 	}
 	return nil, err

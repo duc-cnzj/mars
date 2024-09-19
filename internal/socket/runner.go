@@ -448,6 +448,7 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 	})
 
 	eg.Go(func() error {
+		defer j.logger.HandlePanic("[Websocket]: jobRunner Run")
 		var (
 			result *release.Release
 			err    error
