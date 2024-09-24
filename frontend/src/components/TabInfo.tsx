@@ -150,13 +150,7 @@ const DetailTab: React.FC<{
         }
       />
       <div>
-        <LineItem
-          icon={FireOutlined}
-          title={"相关配置"}
-          children={
-            <span className="detail-data">{detail.humanizeUpdatedAt}</span>
-          }
-        />
+        <LineItem icon={FireOutlined} title={"相关配置"} />
         <details style={{ marginTop: 3, marginLeft: "1.5rem" }}>
           <summary style={{ cursor: "pointer" }}>展开查看</summary>
           <SyntaxHighlighter
