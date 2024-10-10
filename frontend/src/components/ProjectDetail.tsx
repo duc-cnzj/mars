@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, memo, Suspense } from "react";
 import { DraggableModal } from "../pkg/DraggableModal";
 import { css } from "@emotion/css";
 import theme from "../styles/theme";
-import { Button, Tabs, Skeleton, Badge, Spin } from "antd";
+import { Button, Tabs, Skeleton, Badge, Spin, Space } from "antd";
 import DeployStatus from "./DeployStatus";
 import { setNamespaceReload, setOpenedModals } from "../store/actions";
 import ErrorBoundary from "./ErrorBoundary";
@@ -21,6 +21,7 @@ import { useSearchParams } from "react-router-dom";
 import { sortedUniq } from "lodash";
 import { TypesProjectModelDeployStatus, components } from "../api/schema.d";
 import ajax from "../api/ajax";
+import CpuMemory from "./CpuMemory";
 
 const ItemDetailModal: React.FC<{
   item: components["schemas"]["types.ProjectModel"];
@@ -107,7 +108,14 @@ const ItemDetailModal: React.FC<{
           {item.name}
         </span>
         {item.deployStatus === TypesProjectModelDeployStatus.StatusDeployed && (
-          <ServiceEndpoint projectId={item.id} />
+          <Space size={"small"}>
+            <ServiceEndpoint projectId={item.id} />
+            <CpuMemory
+              namespaceID={namespaceId}
+              projectID={item.id}
+              title="项目资源使用量"
+            />
+          </Space>
         )}
       </Button>
       <DraggableModal

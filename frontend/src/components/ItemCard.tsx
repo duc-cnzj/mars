@@ -36,6 +36,7 @@ import TextArea from "antd/es/input/TextArea";
 import { css } from "@emotion/css";
 import { MyCodeMirror } from "./MyCodeMirror";
 import DiffViewer from "./DiffViewer";
+import CpuMemory from "./CpuMemory";
 
 const Item: React.FC<{
   item: components["schemas"]["types.NamespaceModel"];
@@ -44,7 +45,6 @@ const Item: React.FC<{
   loading: boolean;
   reload: () => void;
 }> = ({ item, onNamespaceDeleted, loading, onFavorite, reload }) => {
-  const [cpuAndMemory, setCpuAndMemory] = useState({ cpu: "", memory: "" });
   const [deleting, setDeleting] = useState<boolean>(false);
   const [editDesc, setEditDesc] = useState(false);
   const [popoverVisible, setPopoverVisible] = useState(false);
@@ -247,45 +247,7 @@ const Item: React.FC<{
             <Col span={8} style={{ textAlign: "right" }}>
               <Space style={{ marginRight: 4 }}>
                 <NamespacePrivate reload={reload} item={item} />
-                <Tooltip
-                  onOpenChange={(visible: boolean) => {
-                    if (visible) {
-                      ajax
-                        .GET(
-                          "/api/metrics/namespace/{namespaceId}/cpu_memory",
-                          {
-                            params: { path: { namespaceId: item.id } },
-                          },
-                        )
-                        .then(({ data }) => {
-                          data &&
-                            setCpuAndMemory({
-                              cpu: data.cpu,
-                              memory: data.memory,
-                            });
-                        });
-                    }
-                  }}
-                  title={
-                    <div style={{ fontSize: "10px" }}>
-                      <div>空间资源总使用量</div>
-                      <div>
-                        <span>cpu: </span>
-                        <span>{cpuAndMemory.cpu}</span>
-                      </div>
-                      <div>
-                        <span>memory: </span>
-                        <span>{cpuAndMemory.memory}</span>
-                      </div>
-                    </div>
-                  }
-                  trigger="hover"
-                >
-                  <IconFont
-                    style={{ cursor: "pointer" }}
-                    name="#icon-dianboxindiantu"
-                  />
-                </Tooltip>
+                <CpuMemory title="空间资源总使用量" namespaceID={item.id} />
                 <ServiceEndpoint namespaceId={item.id} />
               </Space>
             </Col>
