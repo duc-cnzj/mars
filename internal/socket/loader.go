@@ -352,6 +352,8 @@ const (
 	VarClusterIssuer          = "ClusterIssuer"
 	VarHost                   = "Host"
 	VarTlsSecret              = "TlsSecret"
+	VarNamespace              = "Namespace"
+	VarLongCommit             = "LongCommit"
 )
 
 var tagRegex = regexp.MustCompile(leftDelim + `\s*(\.Branch|\.Commit|\.Pipeline)\s*` + rightDelim)
@@ -403,6 +405,7 @@ func (v *SystemVariableLoader) Load(j *jobRunner) error {
 
 	v.Add(VarImagePullSecrets, renderResult.String())
 	v.Add(VarImagePullSecretsNoName, renderResultNoName.String())
+	v.Add(VarNamespace, j.ns.Name)
 
 	//Host1...Host10
 	sub := j.projRepo.GetPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
@@ -420,6 +423,8 @@ func (v *SystemVariableLoader) Load(j *jobRunner) error {
 		pipelineShortCommit string = j.commit.GetShortID()
 		pipelineLongCommit  string = j.input.GitCommit
 	)
+
+	v.Add(VarLongCommit, pipelineLongCommit)
 
 	if j.repo.NeedGitRepo {
 		// 如果存在需要传变量的，则必须有流水线信息

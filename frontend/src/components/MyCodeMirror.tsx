@@ -173,6 +173,13 @@ const list = [
   { apply: "<.Commit>", label: "<.Commit>", type: "text" },
   { apply: "<.Pipeline>", label: "<.Pipeline>", type: "text" },
   { apply: "<.ClusterIssuer>", label: "<.ClusterIssuer>", type: "text" },
+  { apply: "<.Namespace>", label: "<.Namespace>", type: "text" },
+  {
+    apply: "<.LongCommit>",
+    label: "<.LongCommit>",
+    type: "text",
+    detail: `# 完整的 commit sha`,
+  },
   { apply: "<.Host1>", label: "<.Host1>", type: "text" },
   { apply: "<.Host2>", label: "<.Host2>", type: "text" },
   { apply: "<.Host3>", label: "<.Host3>", type: "text" },

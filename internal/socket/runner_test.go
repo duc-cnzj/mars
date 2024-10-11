@@ -1232,6 +1232,8 @@ VarImagePullSecrets: [{name: a}, {name: b}, {name: c}, ]
 	assert.Equal(t, "dev", job.vars[VarBranch])
 	assert.Equal(t, "short_id", job.vars[VarCommit])
 	assert.Equal(t, "0", job.vars[VarPipeline])
+	assert.Equal(t, "c", job.vars[VarLongCommit])
+	assert.Equal(t, "ns", job.vars[VarNamespace])
 	assert.Equal(t, "[{name: a}, {name: b}, {name: c}, ]", job.vars[VarImagePullSecrets])
 }
 
