@@ -252,7 +252,15 @@ const DeployProjectForm: React.FC<{
               form.setFieldsValue({
                 config: data.item.marsConfig.configFileValues,
               });
-              form.setFieldValue("extraValues", data.item.marsConfig.elements);
+              form.setFieldValue(
+                "extraValues",
+                data.item.marsConfig.elements.map(
+                  (v): components["schemas"]["websocket.ExtraValue"] => ({
+                    path: v.path,
+                    value: v.default,
+                  }),
+                ),
+              );
             }
             setElements(data.item.marsConfig.elements);
             console.log(data.item.marsConfig.elements);
@@ -304,6 +312,7 @@ const DeployProjectForm: React.FC<{
 
   const onFinish = useCallback(
     (values: FormTypes) => {
+      console.log(values);
       if (curr.needGitRepo && (!values.branch || !values.commit)) {
         message.warning("请先选择分支/commit");
         return;
