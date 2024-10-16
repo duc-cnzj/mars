@@ -45,11 +45,12 @@ const initStyle = {
 
 const Elements: React.FC<{
   value?: components["schemas"]["websocket.ExtraValue"][];
+  isEdit?: boolean;
   onChange?: (value: components["schemas"]["websocket.ExtraValue"][]) => void;
   elements: components["schemas"]["mars.Element"][];
   style?: st;
   id?: string;
-}> = ({ elements, style, value, onChange, id }) => {
+}> = ({ isEdit, elements, style, value, onChange, id }) => {
   const getElement = useCallback(
     (
       item: components["schemas"]["websocket.ExtraValue"],
@@ -81,14 +82,16 @@ const Elements: React.FC<{
     },
     [onChange, style, value],
   );
+  // console.log("value", value, "elements", elements);
 
   let initValues = useMemo(() => {
     return elements
       ? elements.map((item): components["schemas"]["websocket.ExtraValue"] => {
           let itemValue: any = item.default;
+          // console.log(itemValue, "itemValue");
           if (!!value) {
             for (let i = 0; i < value.length; i++) {
-              if (value[i].path === item.path) {
+              if (value[i].path === item.path && !!value[i].value) {
                 itemValue = value[i].value;
                 if (item.type === MarsElementType.ElementTypeSwitch) {
                   itemValue = isTrue(itemValue);
@@ -104,6 +107,11 @@ const Elements: React.FC<{
         })
       : [];
   }, [elements, value]);
+  // console.log(initValues, "init", isEdit, "isEdit");
+
+  if (!isEdit) {
+    onChange?.(initValues);
+  }
 
   return (
     <div style={{ width: "100%" }} id={id}>
