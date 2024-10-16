@@ -662,7 +662,6 @@ const DeployProjectForm: React.FC<{
                   <Col span={24}>
                     <Form.Item name="extraValues" noStyle>
                       <Elements
-                        isEdit={isEdit}
                         elements={elements}
                         style={{
                           inputNumber: { fontSize: 10, width: "100%" },
