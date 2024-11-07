@@ -233,7 +233,7 @@ func TestWebsocketManager_HandleWsCreateProject(t *testing.T) {
 		ExtraValues: []*websocket_pb.ExtraValue{},
 		Atomic:      lo.ToPtr(true),
 	}
-	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Repo{
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&repo.Repo{
 		Name: "app",
 		ID:   2,
 	}, nil)

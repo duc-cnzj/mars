@@ -1477,7 +1477,7 @@ func Test_jobRunner_Validate_Fail(t *testing.T) {
 	assert.Error(t, job.Validate().Error())
 
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{}, nil)
-	repoRepo.EXPECT().Show(gomock.Any(), 12).Return(nil, errors.New("xxx"))
+	repoRepo.EXPECT().Get(gomock.Any(), 12).Return(nil, errors.New("xxx"))
 	job = &jobRunner{
 		messager: msger,
 		nsRepo:   nsRepo,
@@ -1487,7 +1487,7 @@ func Test_jobRunner_Validate_Fail(t *testing.T) {
 	assert.Error(t, job.Validate().Error())
 
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{ID: 1}, nil)
-	repoRepo.EXPECT().Show(gomock.Any(), 12).Return(&repo.Repo{
+	repoRepo.EXPECT().Get(gomock.Any(), 12).Return(&repo.Repo{
 		MarsConfig: &mars.Config{},
 	}, nil)
 	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(nil, errors.New("xxx"))
@@ -1510,7 +1510,7 @@ func Test_jobRunner_Validate_Fail(t *testing.T) {
 	assert.Error(t, job.Validate().Error())
 
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{ID: 1}, nil)
-	repoRepo.EXPECT().Show(gomock.Any(), 12).Return(&repo.Repo{
+	repoRepo.EXPECT().Get(gomock.Any(), 12).Return(&repo.Repo{
 		MarsConfig: &mars.Config{},
 	}, nil)
 	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(&repo.Project{}, nil)
@@ -1547,7 +1547,7 @@ func Test_jobRunner_Validate_Success(t *testing.T) {
 	var job *jobRunner
 
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Namespace{ID: 1}, nil)
-	repoRepo.EXPECT().Show(gomock.Any(), 12).Return(&repo.Repo{
+	repoRepo.EXPECT().Get(gomock.Any(), 12).Return(&repo.Repo{
 		MarsConfig:  &mars.Config{},
 		NeedGitRepo: false,
 	}, nil)

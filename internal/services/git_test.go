@@ -174,7 +174,7 @@ func Test_gitSvc_BranchOptions_Success(t *testing.T) {
 		},
 	}, nil)
 
-	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Repo{
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&repo.Repo{
 		MarsConfig: &mars.Config{Branches: []string{"ccc"}},
 	}, nil)
 	options, err := svc.BranchOptions(context.TODO(), &git.BranchOptionsRequest{
@@ -211,7 +211,7 @@ func Test_gitSvc_BranchOptions_Error(t *testing.T) {
 		},
 	}, nil)
 
-	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("error"))
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(nil, errors.New("error"))
 	_, err := svc.BranchOptions(context.TODO(), &git.BranchOptionsRequest{
 		GitProjectId: 1,
 		RepoId:       1,

@@ -431,7 +431,7 @@ func TestProjectSvc_WebApply_Success(t *testing.T) {
 	)
 
 	nsRepo.EXPECT().CanAccess(gomock.Any(), 1, MustGetUser(newAdminUserCtx())).Return(true)
-	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Repo{Name: "test", NeedGitRepo: true, GitProjectID: 100}, nil)
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&repo.Repo{Name: "test", NeedGitRepo: true, GitProjectID: 100}, nil)
 	gitRepo.EXPECT().ListCommits(gomock.Any(), 100, "dev").Return([]*repo.Commit{{ID: "commit-id"}}, nil)
 
 	job := socket.NewMockJob(m)
@@ -486,7 +486,7 @@ func TestProjectSvc_WebApply_Failure(t *testing.T) {
 	)
 
 	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
-	repoRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
+	repoRepo.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
 
 	_, err := svc.WebApply(context.TODO(), &project.WebApplyRequest{
 		RepoId:      1,
@@ -526,7 +526,7 @@ func TestProjectSvc_Apply_Success(t *testing.T) {
 	)
 
 	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
-	repoRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&repo.Repo{Name: "test", NeedGitRepo: true}, nil)
+	repoRepo.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&repo.Repo{Name: "test", NeedGitRepo: true}, nil)
 	gitRepo.EXPECT().ListCommits(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*repo.Commit{{ID: "commit-id"}}, nil)
 
 	job := socket.NewMockJob(m)
@@ -586,7 +586,7 @@ func TestProjectSvc_Apply_Failure(t *testing.T) {
 	)
 
 	nsRepo.EXPECT().CanAccess(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
-	repoRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
+	repoRepo.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
 
 	mockServer := &mockProjectApplyServer{
 		Req: &project.ApplyRequest{

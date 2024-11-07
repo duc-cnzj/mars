@@ -46,6 +46,7 @@ type RepoRepo interface {
 	All(ctx context.Context, in *AllRepoRequest) ([]*Repo, error)
 	List(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error)
 	Create(ctx context.Context, in *CreateRepoInput) (*Repo, error)
+	Get(ctx context.Context, id int) (*Repo, error)
 	Show(ctx context.Context, id int) (*Repo, error)
 	Update(ctx context.Context, in *UpdateRepoInput) (*Repo, error)
 	Delete(ctx context.Context, id int) error
@@ -60,6 +61,11 @@ type repoImpl struct {
 	data   data.Data
 
 	gitRepo GitRepo
+}
+
+func (r *repoImpl) Get(ctx context.Context, id int) (*Repo, error) {
+	get, err := r.data.DB().Repo.Get(ctx, id)
+	return ToRepo(get), ToError(404, err)
 }
 
 func NewRepo(logger mlog.Logger, data data.Data, gitRepo GitRepo) RepoRepo {

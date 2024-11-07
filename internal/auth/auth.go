@@ -15,7 +15,7 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-const Expired = 8 * time.Hour
+const Expired = 12 * time.Hour
 
 type Authenticator interface {
 	VerifyToken(string) (*JwtClaims, bool)

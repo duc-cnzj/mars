@@ -48,7 +48,7 @@ func Test_repoSvc_Clone_Success(t *testing.T) {
 		gomock.Any(),
 		gomock.Not(nil),
 	)
-	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Repo{}, nil)
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&repo.Repo{}, nil)
 	repoRepo.EXPECT().Clone(gomock.Any(), &repo.CloneRepoInput{
 		ID:   1,
 		Name: "clone",
@@ -411,7 +411,7 @@ func TestRepoSvc_Update_Success(t *testing.T) {
 		repoRepo,
 	)
 
-	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Repo{
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&repo.Repo{
 		ID:   1,
 		Name: "update",
 	}, nil)
@@ -461,7 +461,7 @@ func TestRepoSvc_Update_Error(t *testing.T) {
 		repoRepo,
 	)
 
-	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("error"))
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(nil, errors.New("error"))
 
 	res, err := svc.Update(newAdminUserCtx(), &reposerver.UpdateRequest{
 		Id:           1,
@@ -487,7 +487,7 @@ func TestRepoSvc_Update_Error2(t *testing.T) {
 		repoRepo,
 	)
 
-	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Repo{}, nil)
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&repo.Repo{}, nil)
 	repoRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
 	res, err := svc.Update(newAdminUserCtx(), &reposerver.UpdateRequest{
 		Id:           1,

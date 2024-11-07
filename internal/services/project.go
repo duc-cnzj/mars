@@ -155,7 +155,7 @@ func (p *projectSvc) apply(
 	}
 	defer pubsub.Close()
 	t := websocket.Type_ApplyProject
-	show, err := p.repoRepo.Show(ctx, int(input.RepoId))
+	show, err := p.repoRepo.Get(ctx, int(input.RepoId))
 	if err != nil {
 		return nil, err
 	}

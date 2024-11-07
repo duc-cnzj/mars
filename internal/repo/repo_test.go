@@ -317,3 +317,25 @@ func TestRepoImpl_Delete_WithRepoHavingProjects(t *testing.T) {
 	err := repo.Delete(context.TODO(), create.ID)
 	assert.NotNil(t, err)
 }
+
+func Test_repoImpl_Get(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	db, _ := data.NewSqliteDB()
+	defer db.Close()
+	repo := NewRepo(mlog.NewForConfig(nil), data.NewDataImpl(&data.NewDataParams{DB: db}), NewMockGitRepo(m))
+
+	create, _ := repo.Create(context.TODO(), &CreateRepoInput{
+		Name: "app",
+	})
+	ns := createNamespace(db)
+	project := createProject(db, ns.ID)
+	project.Update().SetRepoID(create.ID).SaveX(context.TODO())
+
+	get, err := repo.Get(context.TODO(), create.ID)
+	assert.Nil(t, err)
+	assert.Len(t, get.Projects, 0)
+	s, err := repo.Show(context.TODO(), create.ID)
+	assert.Nil(t, err)
+	assert.Len(t, s.Projects, 1)
+}

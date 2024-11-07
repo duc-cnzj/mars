@@ -3,7 +3,7 @@ import { Form, Input, InputNumber, Radio, Select, Switch } from "antd";
 import { omitEqual } from "../../utils/obj";
 import { css } from "@emotion/css";
 import { components, MarsElementType } from "../../api/schema.d";
-import { set } from "lodash";
+import { set, findIndex } from "lodash";
 
 const Option = Select.Option;
 const { TextArea } = Input;
@@ -54,7 +54,6 @@ const Elements: React.FC<{
     (
       item: components["schemas"]["websocket.ExtraValue"],
       ele: components["schemas"]["mars.Element"][],
-      index: number,
     ): React.ReactNode => {
       for (let i = 0; i < ele.length; i++) {
         let ev = ele[i];
@@ -63,8 +62,10 @@ const Elements: React.FC<{
             <Element
               value={item.value}
               onChange={(changeValue) => {
-                let tmp: any = value;
-                set(tmp, index, {
+                let tmp: components["schemas"]["websocket.ExtraValue"][] =
+                  value || [];
+                let idx = findIndex(tmp, (v) => v.path === item.path);
+                set(tmp, idx, {
                   path: item.path,
                   value: String(changeValue),
                 });
@@ -108,10 +109,8 @@ const Elements: React.FC<{
   return (
     <div style={{ width: "100%" }} id={id}>
       {initValues &&
-        initValues.map((item, index) => (
-          <Fragment key={item.path}>
-            {getElement(item, elements, index)}
-          </Fragment>
+        initValues.map((item) => (
+          <Fragment key={item.path}>{getElement(item, elements)}</Fragment>
         ))}
     </div>
   );

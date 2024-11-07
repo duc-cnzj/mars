@@ -323,7 +323,7 @@ func (j *jobRunner) Validate() Job {
 	j.messager.SendMsg("[Loading]: 加载用户配置")
 	j.messager.To(10)
 
-	j.repo, err = j.repoRepo.Show(context.TODO(), int(j.input.RepoID))
+	j.repo, err = j.repoRepo.Get(context.TODO(), int(j.input.RepoID))
 	if err != nil {
 		return j.SetError(err)
 	}

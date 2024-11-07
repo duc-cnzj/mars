@@ -410,7 +410,7 @@ func (wc *WebsocketManager) HandleWsCreateProject(ctx context.Context, c Conn, t
 
 	appName := lo.FromPtr(input.Name)
 	if appName == "" {
-		show, _ := wc.repoRepo.Show(ctx, int(input.RepoId))
+		show, _ := wc.repoRepo.Get(ctx, int(input.RepoId))
 		appName = show.Name
 	}
 

@@ -312,7 +312,8 @@ const DeployProjectForm: React.FC<{
 
   const onFinish = useCallback(
     (values: FormTypes) => {
-      console.log(values);
+      console.log(values.extraValues, "values.extraValues");
+      // console.log(values);
       if (curr.needGitRepo && (!values.branch || !values.commit)) {
         message.warning("请先选择分支/commit");
         return;

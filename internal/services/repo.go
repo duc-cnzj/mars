@@ -91,7 +91,7 @@ func (r *repoSvc) Show(ctx context.Context, request *reposerver.ShowRequest) (*r
 }
 
 func (r *repoSvc) Update(ctx context.Context, req *reposerver.UpdateRequest) (*reposerver.UpdateResponse, error) {
-	current, err := r.repoRepo.Show(ctx, int(req.Id))
+	current, err := r.repoRepo.Get(ctx, int(req.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (r *repoSvc) Clone(ctx context.Context, req *reposerver.CloneRequest) (*rep
 	if err != nil {
 		return nil, err
 	}
-	show, _ := r.repoRepo.Show(ctx, int(req.Id))
+	show, _ := r.repoRepo.Get(ctx, int(req.Id))
 
 	r.eventRepo.AuditLogWithRequest(
 		types.EventActionType_Create,

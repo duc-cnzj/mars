@@ -104,7 +104,7 @@ func (g *gitSvc) BranchOptions(ctx context.Context, request *git.BranchOptionsRe
 		})
 	}
 	if request.RepoId > 0 {
-		show, err := g.repoRepo.Show(ctx, int(request.RepoId))
+		show, err := g.repoRepo.Get(ctx, int(request.RepoId))
 		if err != nil {
 			return nil, err
 		}
