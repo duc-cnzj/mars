@@ -152,7 +152,7 @@ export const draggableModalReducer = (
     for (const key in state.modals) {
       if (Object.prototype.hasOwnProperty.call(state.modals, key)) {
         const element = state.modals[key];
-        if (element.visible && exceptID != key) {
+        if (element.visible && exceptID !== key) {
           hidden = false;
           break;
         }

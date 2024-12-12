@@ -37,7 +37,7 @@ const TimeCost: React.FC<{ done: boolean }> = ({ done }) => {
   }, [done, handleStart, handleStop]);
 
   let secondsPassed = 0;
-  if (startTime != null) {
+  if (!!startTime) {
     secondsPassed = (now - startTime) / 1000;
   }
 
