@@ -16,7 +16,6 @@ import {
   Alert,
 } from "antd";
 import yaml from "js-yaml";
-import "../pkg/DraggableModal/index.css";
 import {
   CloseOutlined,
   EditFilled,

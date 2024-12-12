@@ -2,12 +2,14 @@
   overflow: auto !important;
 }
 
+.ant-design-draggable-modal div div[tabindex="-1"] {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .ant-design-draggable-modal {
   pointer-events: none;
   overflow: hidden !important;
-}
-.ant-design-draggable-modal .ant-modal-content {
-  padding: 0;
 }
 
 .ant-design-draggable-modal .ant-modal {
@@ -18,8 +20,10 @@
 
 .ant-design-draggable-modal .ant-modal-content {
   flex: 1;
+  padding: 0;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .ant-design-draggable-modal .ant-modal-header {
