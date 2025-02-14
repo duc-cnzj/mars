@@ -11,7 +11,6 @@ import (
 	"github.com/duc-cnzj/mars/v5/internal/ent/changelog"
 	"github.com/duc-cnzj/mars/v5/internal/ent/dbcache"
 	"github.com/duc-cnzj/mars/v5/internal/ent/event"
-	"github.com/duc-cnzj/mars/v5/internal/ent/favorite"
 	"github.com/duc-cnzj/mars/v5/internal/ent/file"
 	"github.com/duc-cnzj/mars/v5/internal/ent/member"
 	"github.com/duc-cnzj/mars/v5/internal/ent/namespace"
@@ -34,8 +33,6 @@ func init() {
 	_ = accesstokenMixinFields0
 	accesstokenMixinFields1 := accesstokenMixin[1].Fields()
 	_ = accesstokenMixinFields1
-	accesstokenMixinFields3 := accesstokenMixin[3].Fields()
-	_ = accesstokenMixinFields3
 	accesstokenFields := schema.AccessToken{}.Fields()
 	_ = accesstokenFields
 	// accesstokenDescCreatedAt is the schema descriptor for created_at field.
@@ -48,10 +45,6 @@ func init() {
 	accesstoken.DefaultUpdatedAt = accesstokenDescUpdatedAt.Default.(func() time.Time)
 	// accesstoken.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	accesstoken.UpdateDefaultUpdatedAt = accesstokenDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// accesstokenDescEmail is the schema descriptor for email field.
-	accesstokenDescEmail := accesstokenMixinFields3[0].Descriptor()
-	// accesstoken.EmailValidator is a validator for the "email" field. It is called by the builders before save.
-	accesstoken.EmailValidator = accesstokenDescEmail.Validators[0].(func(string) error)
 	// accesstokenDescToken is the schema descriptor for token field.
 	accesstokenDescToken := accesstokenFields[0].Descriptor()
 	// accesstoken.TokenValidator is a validator for the "token" field. It is called by the builders before save.
@@ -74,6 +67,12 @@ func init() {
 	accesstokenDescUsage := accesstokenFields[1].Descriptor()
 	// accesstoken.UsageValidator is a validator for the "usage" field. It is called by the builders before save.
 	accesstoken.UsageValidator = accesstokenDescUsage.Validators[0].(func(string) error)
+	// accesstokenDescEmail is the schema descriptor for email field.
+	accesstokenDescEmail := accesstokenFields[2].Descriptor()
+	// accesstoken.DefaultEmail holds the default value on creation for the email field.
+	accesstoken.DefaultEmail = accesstokenDescEmail.Default.(string)
+	// accesstoken.EmailValidator is a validator for the "email" field. It is called by the builders before save.
+	accesstoken.EmailValidator = accesstokenDescEmail.Validators[0].(func(string) error)
 	cachelockFields := schema.CacheLock{}.Fields()
 	_ = cachelockFields
 	// cachelockDescKey is the schema descriptor for key field.
@@ -176,15 +175,6 @@ func init() {
 	eventDescDuration := eventFields[6].Descriptor()
 	// event.DefaultDuration holds the default value on creation for the duration field.
 	event.DefaultDuration = eventDescDuration.Default.(string)
-	favoriteMixin := schema.Favorite{}.Mixin()
-	favoriteMixinFields0 := favoriteMixin[0].Fields()
-	_ = favoriteMixinFields0
-	favoriteFields := schema.Favorite{}.Fields()
-	_ = favoriteFields
-	// favoriteDescEmail is the schema descriptor for email field.
-	favoriteDescEmail := favoriteMixinFields0[0].Descriptor()
-	// favorite.EmailValidator is a validator for the "email" field. It is called by the builders before save.
-	favorite.EmailValidator = favoriteDescEmail.Validators[0].(func(string) error)
 	fileMixin := schema.File{}.Mixin()
 	fileMixinHooks2 := fileMixin[2].Hooks()
 	file.Hooks[0] = fileMixinHooks2[0]
@@ -259,8 +249,6 @@ func init() {
 	_ = memberMixinFields0
 	memberMixinFields1 := memberMixin[1].Fields()
 	_ = memberMixinFields1
-	memberMixinFields3 := memberMixin[3].Fields()
-	_ = memberMixinFields3
 	memberFields := schema.Member{}.Fields()
 	_ = memberFields
 	// memberDescCreatedAt is the schema descriptor for created_at field.
@@ -274,20 +262,18 @@ func init() {
 	// member.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	member.UpdateDefaultUpdatedAt = memberDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// memberDescEmail is the schema descriptor for email field.
-	memberDescEmail := memberMixinFields3[0].Descriptor()
+	memberDescEmail := memberFields[0].Descriptor()
 	// member.EmailValidator is a validator for the "email" field. It is called by the builders before save.
 	member.EmailValidator = memberDescEmail.Validators[0].(func(string) error)
 	namespaceMixin := schema.Namespace{}.Mixin()
-	namespaceMixinHooks3 := namespaceMixin[3].Hooks()
-	namespace.Hooks[0] = namespaceMixinHooks3[0]
-	namespaceMixinInters3 := namespaceMixin[3].Interceptors()
-	namespace.Interceptors[0] = namespaceMixinInters3[0]
+	namespaceMixinHooks2 := namespaceMixin[2].Hooks()
+	namespace.Hooks[0] = namespaceMixinHooks2[0]
+	namespaceMixinInters2 := namespaceMixin[2].Interceptors()
+	namespace.Interceptors[0] = namespaceMixinInters2[0]
 	namespaceMixinFields0 := namespaceMixin[0].Fields()
 	_ = namespaceMixinFields0
 	namespaceMixinFields1 := namespaceMixin[1].Fields()
 	_ = namespaceMixinFields1
-	namespaceMixinFields2 := namespaceMixin[2].Fields()
-	_ = namespaceMixinFields2
 	namespaceFields := schema.Namespace{}.Fields()
 	_ = namespaceFields
 	// namespaceDescCreatedAt is the schema descriptor for created_at field.
@@ -300,10 +286,6 @@ func init() {
 	namespace.DefaultUpdatedAt = namespaceDescUpdatedAt.Default.(func() time.Time)
 	// namespace.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	namespace.UpdateDefaultUpdatedAt = namespaceDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// namespaceDescCreatorEmail is the schema descriptor for creator_email field.
-	namespaceDescCreatorEmail := namespaceMixinFields2[0].Descriptor()
-	// namespace.CreatorEmailValidator is a validator for the "creator_email" field. It is called by the builders before save.
-	namespace.CreatorEmailValidator = namespaceDescCreatorEmail.Validators[0].(func(string) error)
 	// namespaceDescName is the schema descriptor for name field.
 	namespaceDescName := namespaceFields[0].Descriptor()
 	// namespace.NameValidator is a validator for the "name" field. It is called by the builders before save.
@@ -316,6 +298,10 @@ func init() {
 	namespaceDescPrivate := namespaceFields[2].Descriptor()
 	// namespace.DefaultPrivate holds the default value on creation for the private field.
 	namespace.DefaultPrivate = namespaceDescPrivate.Default.(bool)
+	// namespaceDescCreatorEmail is the schema descriptor for creator_email field.
+	namespaceDescCreatorEmail := namespaceFields[3].Descriptor()
+	// namespace.CreatorEmailValidator is a validator for the "creator_email" field. It is called by the builders before save.
+	namespace.CreatorEmailValidator = namespaceDescCreatorEmail.Validators[0].(func(string) error)
 	projectMixin := schema.Project{}.Mixin()
 	projectMixinHooks2 := projectMixin[2].Hooks()
 	project.Hooks[0] = projectMixinHooks2[0]

@@ -4,7 +4,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/duc-cnzj/mars/v5/internal/ent/schema/mixin"
 )
 
 // Favorite holds the schema definition for the Favorite entity.
@@ -15,6 +14,7 @@ type Favorite struct {
 // Fields of the Favorite.
 func (Favorite) Fields() []ent.Field {
 	return []ent.Field{
+		field.String("email"),
 		field.Int("namespace_id").
 			Optional(),
 	}
@@ -27,11 +27,5 @@ func (Favorite) Edges() []ent.Edge {
 			Ref("favorites").
 			Unique().
 			Field("namespace_id"),
-	}
-}
-
-func (Favorite) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		mixin.NewEmail(),
 	}
 }

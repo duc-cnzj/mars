@@ -22,8 +22,6 @@ type Namespace struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
-	// 创建者 email
-	CreatorEmail string `json:"creator_email,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 	// 项目空间名
@@ -32,6 +30,8 @@ type Namespace struct {
 	ImagePullSecrets []string `json:"image_pull_secrets,omitempty"`
 	// 是否私有, 默认公开
 	Private bool `json:"private,omitempty"`
+	// 创建者 email
+	CreatorEmail string `json:"creator_email,omitempty"`
 	// 项目空间描述
 	Description string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -91,7 +91,7 @@ func (*Namespace) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case namespace.FieldID:
 			values[i] = new(sql.NullInt64)
-		case namespace.FieldCreatorEmail, namespace.FieldName, namespace.FieldDescription:
+		case namespace.FieldName, namespace.FieldCreatorEmail, namespace.FieldDescription:
 			values[i] = new(sql.NullString)
 		case namespace.FieldCreatedAt, namespace.FieldUpdatedAt, namespace.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -128,12 +128,6 @@ func (n *Namespace) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				n.UpdatedAt = value.Time
 			}
-		case namespace.FieldCreatorEmail:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field creator_email", values[i])
-			} else if value.Valid {
-				n.CreatorEmail = value.String
-			}
 		case namespace.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
@@ -160,6 +154,12 @@ func (n *Namespace) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field private", values[i])
 			} else if value.Valid {
 				n.Private = value.Bool
+			}
+		case namespace.FieldCreatorEmail:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field creator_email", values[i])
+			} else if value.Valid {
+				n.CreatorEmail = value.String
 			}
 		case namespace.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -224,9 +224,6 @@ func (n *Namespace) String() string {
 	builder.WriteString("updated_at=")
 	builder.WriteString(n.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("creator_email=")
-	builder.WriteString(n.CreatorEmail)
-	builder.WriteString(", ")
 	if v := n.DeletedAt; v != nil {
 		builder.WriteString("deleted_at=")
 		builder.WriteString(v.Format(time.ANSIC))
@@ -240,6 +237,9 @@ func (n *Namespace) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("private=")
 	builder.WriteString(fmt.Sprintf("%v", n.Private))
+	builder.WriteString(", ")
+	builder.WriteString("creator_email=")
+	builder.WriteString(n.CreatorEmail)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(n.Description)

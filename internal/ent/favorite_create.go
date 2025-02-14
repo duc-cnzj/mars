@@ -84,11 +84,6 @@ func (fc *FavoriteCreate) check() error {
 	if _, ok := fc.mutation.Email(); !ok {
 		return &ValidationError{Name: "email", err: errors.New(`ent: missing required field "Favorite.email"`)}
 	}
-	if v, ok := fc.mutation.Email(); ok {
-		if err := favorite.EmailValidator(v); err != nil {
-			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "Favorite.email": %w`, err)}
-		}
-	}
 	return nil
 }
 

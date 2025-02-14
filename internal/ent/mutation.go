@@ -60,9 +60,9 @@ type AccessTokenMutation struct {
 	created_at    *time.Time
 	updated_at    *time.Time
 	deleted_at    *time.Time
-	email         *string
 	token         *string
 	usage         *string
+	email         *string
 	expired_at    *time.Time
 	last_used_at  *time.Time
 	user_info     *schematype.UserInfo
@@ -291,42 +291,6 @@ func (m *AccessTokenMutation) ResetDeletedAt() {
 	delete(m.clearedFields, accesstoken.FieldDeletedAt)
 }
 
-// SetEmail sets the "email" field.
-func (m *AccessTokenMutation) SetEmail(s string) {
-	m.email = &s
-}
-
-// Email returns the value of the "email" field in the mutation.
-func (m *AccessTokenMutation) Email() (r string, exists bool) {
-	v := m.email
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldEmail returns the old "email" field's value of the AccessToken entity.
-// If the AccessToken object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AccessTokenMutation) OldEmail(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldEmail is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldEmail requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEmail: %w", err)
-	}
-	return oldValue.Email, nil
-}
-
-// ResetEmail resets all changes to the "email" field.
-func (m *AccessTokenMutation) ResetEmail() {
-	m.email = nil
-}
-
 // SetToken sets the "token" field.
 func (m *AccessTokenMutation) SetToken(s string) {
 	m.token = &s
@@ -397,6 +361,42 @@ func (m *AccessTokenMutation) OldUsage(ctx context.Context) (v string, err error
 // ResetUsage resets all changes to the "usage" field.
 func (m *AccessTokenMutation) ResetUsage() {
 	m.usage = nil
+}
+
+// SetEmail sets the "email" field.
+func (m *AccessTokenMutation) SetEmail(s string) {
+	m.email = &s
+}
+
+// Email returns the value of the "email" field in the mutation.
+func (m *AccessTokenMutation) Email() (r string, exists bool) {
+	v := m.email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEmail returns the old "email" field's value of the AccessToken entity.
+// If the AccessToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccessTokenMutation) OldEmail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmail: %w", err)
+	}
+	return oldValue.Email, nil
+}
+
+// ResetEmail resets all changes to the "email" field.
+func (m *AccessTokenMutation) ResetEmail() {
+	m.email = nil
 }
 
 // SetExpiredAt sets the "expired_at" field.
@@ -590,14 +590,14 @@ func (m *AccessTokenMutation) Fields() []string {
 	if m.deleted_at != nil {
 		fields = append(fields, accesstoken.FieldDeletedAt)
 	}
-	if m.email != nil {
-		fields = append(fields, accesstoken.FieldEmail)
-	}
 	if m.token != nil {
 		fields = append(fields, accesstoken.FieldToken)
 	}
 	if m.usage != nil {
 		fields = append(fields, accesstoken.FieldUsage)
+	}
+	if m.email != nil {
+		fields = append(fields, accesstoken.FieldEmail)
 	}
 	if m.expired_at != nil {
 		fields = append(fields, accesstoken.FieldExpiredAt)
@@ -622,12 +622,12 @@ func (m *AccessTokenMutation) Field(name string) (ent.Value, bool) {
 		return m.UpdatedAt()
 	case accesstoken.FieldDeletedAt:
 		return m.DeletedAt()
-	case accesstoken.FieldEmail:
-		return m.Email()
 	case accesstoken.FieldToken:
 		return m.Token()
 	case accesstoken.FieldUsage:
 		return m.Usage()
+	case accesstoken.FieldEmail:
+		return m.Email()
 	case accesstoken.FieldExpiredAt:
 		return m.ExpiredAt()
 	case accesstoken.FieldLastUsedAt:
@@ -649,12 +649,12 @@ func (m *AccessTokenMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldUpdatedAt(ctx)
 	case accesstoken.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
-	case accesstoken.FieldEmail:
-		return m.OldEmail(ctx)
 	case accesstoken.FieldToken:
 		return m.OldToken(ctx)
 	case accesstoken.FieldUsage:
 		return m.OldUsage(ctx)
+	case accesstoken.FieldEmail:
+		return m.OldEmail(ctx)
 	case accesstoken.FieldExpiredAt:
 		return m.OldExpiredAt(ctx)
 	case accesstoken.FieldLastUsedAt:
@@ -691,13 +691,6 @@ func (m *AccessTokenMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDeletedAt(v)
 		return nil
-	case accesstoken.FieldEmail:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetEmail(v)
-		return nil
 	case accesstoken.FieldToken:
 		v, ok := value.(string)
 		if !ok {
@@ -711,6 +704,13 @@ func (m *AccessTokenMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUsage(v)
+		return nil
+	case accesstoken.FieldEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmail(v)
 		return nil
 	case accesstoken.FieldExpiredAt:
 		v, ok := value.(time.Time)
@@ -818,14 +818,14 @@ func (m *AccessTokenMutation) ResetField(name string) error {
 	case accesstoken.FieldDeletedAt:
 		m.ResetDeletedAt()
 		return nil
-	case accesstoken.FieldEmail:
-		m.ResetEmail()
-		return nil
 	case accesstoken.FieldToken:
 		m.ResetToken()
 		return nil
 	case accesstoken.FieldUsage:
 		m.ResetUsage()
+		return nil
+	case accesstoken.FieldEmail:
+		m.ResetEmail()
 		return nil
 	case accesstoken.FieldExpiredAt:
 		m.ResetExpiredAt()
@@ -6630,12 +6630,12 @@ type NamespaceMutation struct {
 	id                       *int
 	created_at               *time.Time
 	updated_at               *time.Time
-	creator_email            *string
 	deleted_at               *time.Time
 	name                     *string
 	image_pull_secrets       *[]string
 	appendimage_pull_secrets []string
 	private                  *bool
+	creator_email            *string
 	description              *string
 	clearedFields            map[string]struct{}
 	projects                 map[int]struct{}
@@ -6822,42 +6822,6 @@ func (m *NamespaceMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
-// SetCreatorEmail sets the "creator_email" field.
-func (m *NamespaceMutation) SetCreatorEmail(s string) {
-	m.creator_email = &s
-}
-
-// CreatorEmail returns the value of the "creator_email" field in the mutation.
-func (m *NamespaceMutation) CreatorEmail() (r string, exists bool) {
-	v := m.creator_email
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatorEmail returns the old "creator_email" field's value of the Namespace entity.
-// If the Namespace object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *NamespaceMutation) OldCreatorEmail(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatorEmail is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatorEmail requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatorEmail: %w", err)
-	}
-	return oldValue.CreatorEmail, nil
-}
-
-// ResetCreatorEmail resets all changes to the "creator_email" field.
-func (m *NamespaceMutation) ResetCreatorEmail() {
-	m.creator_email = nil
-}
-
 // SetDeletedAt sets the "deleted_at" field.
 func (m *NamespaceMutation) SetDeletedAt(t time.Time) {
 	m.deleted_at = &t
@@ -7028,6 +6992,42 @@ func (m *NamespaceMutation) OldPrivate(ctx context.Context) (v bool, err error) 
 // ResetPrivate resets all changes to the "private" field.
 func (m *NamespaceMutation) ResetPrivate() {
 	m.private = nil
+}
+
+// SetCreatorEmail sets the "creator_email" field.
+func (m *NamespaceMutation) SetCreatorEmail(s string) {
+	m.creator_email = &s
+}
+
+// CreatorEmail returns the value of the "creator_email" field in the mutation.
+func (m *NamespaceMutation) CreatorEmail() (r string, exists bool) {
+	v := m.creator_email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatorEmail returns the old "creator_email" field's value of the Namespace entity.
+// If the Namespace object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NamespaceMutation) OldCreatorEmail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatorEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatorEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatorEmail: %w", err)
+	}
+	return oldValue.CreatorEmail, nil
+}
+
+// ResetCreatorEmail resets all changes to the "creator_email" field.
+func (m *NamespaceMutation) ResetCreatorEmail() {
+	m.creator_email = nil
 }
 
 // SetDescription sets the "description" field.
@@ -7282,9 +7282,6 @@ func (m *NamespaceMutation) Fields() []string {
 	if m.updated_at != nil {
 		fields = append(fields, namespace.FieldUpdatedAt)
 	}
-	if m.creator_email != nil {
-		fields = append(fields, namespace.FieldCreatorEmail)
-	}
 	if m.deleted_at != nil {
 		fields = append(fields, namespace.FieldDeletedAt)
 	}
@@ -7296,6 +7293,9 @@ func (m *NamespaceMutation) Fields() []string {
 	}
 	if m.private != nil {
 		fields = append(fields, namespace.FieldPrivate)
+	}
+	if m.creator_email != nil {
+		fields = append(fields, namespace.FieldCreatorEmail)
 	}
 	if m.description != nil {
 		fields = append(fields, namespace.FieldDescription)
@@ -7312,8 +7312,6 @@ func (m *NamespaceMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case namespace.FieldUpdatedAt:
 		return m.UpdatedAt()
-	case namespace.FieldCreatorEmail:
-		return m.CreatorEmail()
 	case namespace.FieldDeletedAt:
 		return m.DeletedAt()
 	case namespace.FieldName:
@@ -7322,6 +7320,8 @@ func (m *NamespaceMutation) Field(name string) (ent.Value, bool) {
 		return m.ImagePullSecrets()
 	case namespace.FieldPrivate:
 		return m.Private()
+	case namespace.FieldCreatorEmail:
+		return m.CreatorEmail()
 	case namespace.FieldDescription:
 		return m.Description()
 	}
@@ -7337,8 +7337,6 @@ func (m *NamespaceMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldCreatedAt(ctx)
 	case namespace.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
-	case namespace.FieldCreatorEmail:
-		return m.OldCreatorEmail(ctx)
 	case namespace.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
 	case namespace.FieldName:
@@ -7347,6 +7345,8 @@ func (m *NamespaceMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldImagePullSecrets(ctx)
 	case namespace.FieldPrivate:
 		return m.OldPrivate(ctx)
+	case namespace.FieldCreatorEmail:
+		return m.OldCreatorEmail(ctx)
 	case namespace.FieldDescription:
 		return m.OldDescription(ctx)
 	}
@@ -7371,13 +7371,6 @@ func (m *NamespaceMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdatedAt(v)
-		return nil
-	case namespace.FieldCreatorEmail:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatorEmail(v)
 		return nil
 	case namespace.FieldDeletedAt:
 		v, ok := value.(time.Time)
@@ -7406,6 +7399,13 @@ func (m *NamespaceMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPrivate(v)
+		return nil
+	case namespace.FieldCreatorEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatorEmail(v)
 		return nil
 	case namespace.FieldDescription:
 		v, ok := value.(string)
@@ -7484,9 +7484,6 @@ func (m *NamespaceMutation) ResetField(name string) error {
 	case namespace.FieldUpdatedAt:
 		m.ResetUpdatedAt()
 		return nil
-	case namespace.FieldCreatorEmail:
-		m.ResetCreatorEmail()
-		return nil
 	case namespace.FieldDeletedAt:
 		m.ResetDeletedAt()
 		return nil
@@ -7498,6 +7495,9 @@ func (m *NamespaceMutation) ResetField(name string) error {
 		return nil
 	case namespace.FieldPrivate:
 		m.ResetPrivate()
+		return nil
+	case namespace.FieldCreatorEmail:
+		m.ResetCreatorEmail()
 		return nil
 	case namespace.FieldDescription:
 		m.ResetDescription()

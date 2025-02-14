@@ -16,6 +16,8 @@ type Member struct {
 // Fields of the Member.
 func (Member) Fields() []ent.Field {
 	return []ent.Field{
+		field.String("email").
+			MaxLen(50),
 		field.Int("namespace_id").
 			Optional(),
 	}
@@ -42,6 +44,5 @@ func (Member) Mixin() []ent.Mixin {
 		mixin.CreateAt{},
 		mixin.UpdateAt{},
 		mixin.SoftDeleteMixin{},
-		mixin.NewEmail(),
 	}
 }

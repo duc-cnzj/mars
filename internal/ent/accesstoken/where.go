@@ -69,11 +69,6 @@ func DeletedAt(v time.Time) predicate.AccessToken {
 	return predicate.AccessToken(sql.FieldEQ(FieldDeletedAt, v))
 }
 
-// Email applies equality check predicate on the "email" field. It's identical to EmailEQ.
-func Email(v string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldEQ(FieldEmail, v))
-}
-
 // Token applies equality check predicate on the "token" field. It's identical to TokenEQ.
 func Token(v string) predicate.AccessToken {
 	return predicate.AccessToken(sql.FieldEQ(FieldToken, v))
@@ -82,6 +77,11 @@ func Token(v string) predicate.AccessToken {
 // Usage applies equality check predicate on the "usage" field. It's identical to UsageEQ.
 func Usage(v string) predicate.AccessToken {
 	return predicate.AccessToken(sql.FieldEQ(FieldUsage, v))
+}
+
+// Email applies equality check predicate on the "email" field. It's identical to EmailEQ.
+func Email(v string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldEQ(FieldEmail, v))
 }
 
 // ExpiredAt applies equality check predicate on the "expired_at" field. It's identical to ExpiredAtEQ.
@@ -224,71 +224,6 @@ func DeletedAtNotNil() predicate.AccessToken {
 	return predicate.AccessToken(sql.FieldNotNull(FieldDeletedAt))
 }
 
-// EmailEQ applies the EQ predicate on the "email" field.
-func EmailEQ(v string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldEQ(FieldEmail, v))
-}
-
-// EmailNEQ applies the NEQ predicate on the "email" field.
-func EmailNEQ(v string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldNEQ(FieldEmail, v))
-}
-
-// EmailIn applies the In predicate on the "email" field.
-func EmailIn(vs ...string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldIn(FieldEmail, vs...))
-}
-
-// EmailNotIn applies the NotIn predicate on the "email" field.
-func EmailNotIn(vs ...string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldNotIn(FieldEmail, vs...))
-}
-
-// EmailGT applies the GT predicate on the "email" field.
-func EmailGT(v string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldGT(FieldEmail, v))
-}
-
-// EmailGTE applies the GTE predicate on the "email" field.
-func EmailGTE(v string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldGTE(FieldEmail, v))
-}
-
-// EmailLT applies the LT predicate on the "email" field.
-func EmailLT(v string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldLT(FieldEmail, v))
-}
-
-// EmailLTE applies the LTE predicate on the "email" field.
-func EmailLTE(v string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldLTE(FieldEmail, v))
-}
-
-// EmailContains applies the Contains predicate on the "email" field.
-func EmailContains(v string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldContains(FieldEmail, v))
-}
-
-// EmailHasPrefix applies the HasPrefix predicate on the "email" field.
-func EmailHasPrefix(v string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldHasPrefix(FieldEmail, v))
-}
-
-// EmailHasSuffix applies the HasSuffix predicate on the "email" field.
-func EmailHasSuffix(v string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldHasSuffix(FieldEmail, v))
-}
-
-// EmailEqualFold applies the EqualFold predicate on the "email" field.
-func EmailEqualFold(v string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldEqualFold(FieldEmail, v))
-}
-
-// EmailContainsFold applies the ContainsFold predicate on the "email" field.
-func EmailContainsFold(v string) predicate.AccessToken {
-	return predicate.AccessToken(sql.FieldContainsFold(FieldEmail, v))
-}
-
 // TokenEQ applies the EQ predicate on the "token" field.
 func TokenEQ(v string) predicate.AccessToken {
 	return predicate.AccessToken(sql.FieldEQ(FieldToken, v))
@@ -417,6 +352,71 @@ func UsageEqualFold(v string) predicate.AccessToken {
 // UsageContainsFold applies the ContainsFold predicate on the "usage" field.
 func UsageContainsFold(v string) predicate.AccessToken {
 	return predicate.AccessToken(sql.FieldContainsFold(FieldUsage, v))
+}
+
+// EmailEQ applies the EQ predicate on the "email" field.
+func EmailEQ(v string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldEQ(FieldEmail, v))
+}
+
+// EmailNEQ applies the NEQ predicate on the "email" field.
+func EmailNEQ(v string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldNEQ(FieldEmail, v))
+}
+
+// EmailIn applies the In predicate on the "email" field.
+func EmailIn(vs ...string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldIn(FieldEmail, vs...))
+}
+
+// EmailNotIn applies the NotIn predicate on the "email" field.
+func EmailNotIn(vs ...string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldNotIn(FieldEmail, vs...))
+}
+
+// EmailGT applies the GT predicate on the "email" field.
+func EmailGT(v string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldGT(FieldEmail, v))
+}
+
+// EmailGTE applies the GTE predicate on the "email" field.
+func EmailGTE(v string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldGTE(FieldEmail, v))
+}
+
+// EmailLT applies the LT predicate on the "email" field.
+func EmailLT(v string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldLT(FieldEmail, v))
+}
+
+// EmailLTE applies the LTE predicate on the "email" field.
+func EmailLTE(v string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldLTE(FieldEmail, v))
+}
+
+// EmailContains applies the Contains predicate on the "email" field.
+func EmailContains(v string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldContains(FieldEmail, v))
+}
+
+// EmailHasPrefix applies the HasPrefix predicate on the "email" field.
+func EmailHasPrefix(v string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldHasPrefix(FieldEmail, v))
+}
+
+// EmailHasSuffix applies the HasSuffix predicate on the "email" field.
+func EmailHasSuffix(v string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldHasSuffix(FieldEmail, v))
+}
+
+// EmailEqualFold applies the EqualFold predicate on the "email" field.
+func EmailEqualFold(v string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldEqualFold(FieldEmail, v))
+}
+
+// EmailContainsFold applies the ContainsFold predicate on the "email" field.
+func EmailContainsFold(v string) predicate.AccessToken {
+	return predicate.AccessToken(sql.FieldContainsFold(FieldEmail, v))
 }
 
 // ExpiredAtEQ applies the EQ predicate on the "expired_at" field.

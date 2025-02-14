@@ -65,12 +65,6 @@ func (atc *AccessTokenCreate) SetNillableDeletedAt(t *time.Time) *AccessTokenCre
 	return atc
 }
 
-// SetEmail sets the "email" field.
-func (atc *AccessTokenCreate) SetEmail(s string) *AccessTokenCreate {
-	atc.mutation.SetEmail(s)
-	return atc
-}
-
 // SetToken sets the "token" field.
 func (atc *AccessTokenCreate) SetToken(s string) *AccessTokenCreate {
 	atc.mutation.SetToken(s)
@@ -80,6 +74,20 @@ func (atc *AccessTokenCreate) SetToken(s string) *AccessTokenCreate {
 // SetUsage sets the "usage" field.
 func (atc *AccessTokenCreate) SetUsage(s string) *AccessTokenCreate {
 	atc.mutation.SetUsage(s)
+	return atc
+}
+
+// SetEmail sets the "email" field.
+func (atc *AccessTokenCreate) SetEmail(s string) *AccessTokenCreate {
+	atc.mutation.SetEmail(s)
+	return atc
+}
+
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (atc *AccessTokenCreate) SetNillableEmail(s *string) *AccessTokenCreate {
+	if s != nil {
+		atc.SetEmail(*s)
+	}
 	return atc
 }
 
@@ -176,6 +184,10 @@ func (atc *AccessTokenCreate) defaults() error {
 		v := accesstoken.DefaultUpdatedAt()
 		atc.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := atc.mutation.Email(); !ok {
+		v := accesstoken.DefaultEmail
+		atc.mutation.SetEmail(v)
+	}
 	return nil
 }
 
@@ -186,14 +198,6 @@ func (atc *AccessTokenCreate) check() error {
 	}
 	if _, ok := atc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "AccessToken.updated_at"`)}
-	}
-	if _, ok := atc.mutation.Email(); !ok {
-		return &ValidationError{Name: "email", err: errors.New(`ent: missing required field "AccessToken.email"`)}
-	}
-	if v, ok := atc.mutation.Email(); ok {
-		if err := accesstoken.EmailValidator(v); err != nil {
-			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "AccessToken.email": %w`, err)}
-		}
 	}
 	if _, ok := atc.mutation.Token(); !ok {
 		return &ValidationError{Name: "token", err: errors.New(`ent: missing required field "AccessToken.token"`)}
@@ -209,6 +213,14 @@ func (atc *AccessTokenCreate) check() error {
 	if v, ok := atc.mutation.Usage(); ok {
 		if err := accesstoken.UsageValidator(v); err != nil {
 			return &ValidationError{Name: "usage", err: fmt.Errorf(`ent: validator failed for field "AccessToken.usage": %w`, err)}
+		}
+	}
+	if _, ok := atc.mutation.Email(); !ok {
+		return &ValidationError{Name: "email", err: errors.New(`ent: missing required field "AccessToken.email"`)}
+	}
+	if v, ok := atc.mutation.Email(); ok {
+		if err := accesstoken.EmailValidator(v); err != nil {
+			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "AccessToken.email": %w`, err)}
 		}
 	}
 	return nil
@@ -250,10 +262,6 @@ func (atc *AccessTokenCreate) createSpec() (*AccessToken, *sqlgraph.CreateSpec) 
 		_spec.SetField(accesstoken.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = &value
 	}
-	if value, ok := atc.mutation.Email(); ok {
-		_spec.SetField(accesstoken.FieldEmail, field.TypeString, value)
-		_node.Email = value
-	}
 	if value, ok := atc.mutation.Token(); ok {
 		_spec.SetField(accesstoken.FieldToken, field.TypeString, value)
 		_node.Token = value
@@ -261,6 +269,10 @@ func (atc *AccessTokenCreate) createSpec() (*AccessToken, *sqlgraph.CreateSpec) 
 	if value, ok := atc.mutation.Usage(); ok {
 		_spec.SetField(accesstoken.FieldUsage, field.TypeString, value)
 		_node.Usage = value
+	}
+	if value, ok := atc.mutation.Email(); ok {
+		_spec.SetField(accesstoken.FieldEmail, field.TypeString, value)
+		_node.Email = value
 	}
 	if value, ok := atc.mutation.ExpiredAt(); ok {
 		_spec.SetField(accesstoken.FieldExpiredAt, field.TypeTime, value)
@@ -356,18 +368,6 @@ func (u *AccessTokenUpsert) ClearDeletedAt() *AccessTokenUpsert {
 	return u
 }
 
-// SetEmail sets the "email" field.
-func (u *AccessTokenUpsert) SetEmail(v string) *AccessTokenUpsert {
-	u.Set(accesstoken.FieldEmail, v)
-	return u
-}
-
-// UpdateEmail sets the "email" field to the value that was provided on create.
-func (u *AccessTokenUpsert) UpdateEmail() *AccessTokenUpsert {
-	u.SetExcluded(accesstoken.FieldEmail)
-	return u
-}
-
 // SetToken sets the "token" field.
 func (u *AccessTokenUpsert) SetToken(v string) *AccessTokenUpsert {
 	u.Set(accesstoken.FieldToken, v)
@@ -389,6 +389,18 @@ func (u *AccessTokenUpsert) SetUsage(v string) *AccessTokenUpsert {
 // UpdateUsage sets the "usage" field to the value that was provided on create.
 func (u *AccessTokenUpsert) UpdateUsage() *AccessTokenUpsert {
 	u.SetExcluded(accesstoken.FieldUsage)
+	return u
+}
+
+// SetEmail sets the "email" field.
+func (u *AccessTokenUpsert) SetEmail(v string) *AccessTokenUpsert {
+	u.Set(accesstoken.FieldEmail, v)
+	return u
+}
+
+// UpdateEmail sets the "email" field to the value that was provided on create.
+func (u *AccessTokenUpsert) UpdateEmail() *AccessTokenUpsert {
+	u.SetExcluded(accesstoken.FieldEmail)
 	return u
 }
 
@@ -526,20 +538,6 @@ func (u *AccessTokenUpsertOne) ClearDeletedAt() *AccessTokenUpsertOne {
 	})
 }
 
-// SetEmail sets the "email" field.
-func (u *AccessTokenUpsertOne) SetEmail(v string) *AccessTokenUpsertOne {
-	return u.Update(func(s *AccessTokenUpsert) {
-		s.SetEmail(v)
-	})
-}
-
-// UpdateEmail sets the "email" field to the value that was provided on create.
-func (u *AccessTokenUpsertOne) UpdateEmail() *AccessTokenUpsertOne {
-	return u.Update(func(s *AccessTokenUpsert) {
-		s.UpdateEmail()
-	})
-}
-
 // SetToken sets the "token" field.
 func (u *AccessTokenUpsertOne) SetToken(v string) *AccessTokenUpsertOne {
 	return u.Update(func(s *AccessTokenUpsert) {
@@ -565,6 +563,20 @@ func (u *AccessTokenUpsertOne) SetUsage(v string) *AccessTokenUpsertOne {
 func (u *AccessTokenUpsertOne) UpdateUsage() *AccessTokenUpsertOne {
 	return u.Update(func(s *AccessTokenUpsert) {
 		s.UpdateUsage()
+	})
+}
+
+// SetEmail sets the "email" field.
+func (u *AccessTokenUpsertOne) SetEmail(v string) *AccessTokenUpsertOne {
+	return u.Update(func(s *AccessTokenUpsert) {
+		s.SetEmail(v)
+	})
+}
+
+// UpdateEmail sets the "email" field to the value that was provided on create.
+func (u *AccessTokenUpsertOne) UpdateEmail() *AccessTokenUpsertOne {
+	return u.Update(func(s *AccessTokenUpsert) {
+		s.UpdateEmail()
 	})
 }
 
@@ -877,20 +889,6 @@ func (u *AccessTokenUpsertBulk) ClearDeletedAt() *AccessTokenUpsertBulk {
 	})
 }
 
-// SetEmail sets the "email" field.
-func (u *AccessTokenUpsertBulk) SetEmail(v string) *AccessTokenUpsertBulk {
-	return u.Update(func(s *AccessTokenUpsert) {
-		s.SetEmail(v)
-	})
-}
-
-// UpdateEmail sets the "email" field to the value that was provided on create.
-func (u *AccessTokenUpsertBulk) UpdateEmail() *AccessTokenUpsertBulk {
-	return u.Update(func(s *AccessTokenUpsert) {
-		s.UpdateEmail()
-	})
-}
-
 // SetToken sets the "token" field.
 func (u *AccessTokenUpsertBulk) SetToken(v string) *AccessTokenUpsertBulk {
 	return u.Update(func(s *AccessTokenUpsert) {
@@ -916,6 +914,20 @@ func (u *AccessTokenUpsertBulk) SetUsage(v string) *AccessTokenUpsertBulk {
 func (u *AccessTokenUpsertBulk) UpdateUsage() *AccessTokenUpsertBulk {
 	return u.Update(func(s *AccessTokenUpsert) {
 		s.UpdateUsage()
+	})
+}
+
+// SetEmail sets the "email" field.
+func (u *AccessTokenUpsertBulk) SetEmail(v string) *AccessTokenUpsertBulk {
+	return u.Update(func(s *AccessTokenUpsert) {
+		s.SetEmail(v)
+	})
+}
+
+// UpdateEmail sets the "email" field to the value that was provided on create.
+func (u *AccessTokenUpsertBulk) UpdateEmail() *AccessTokenUpsertBulk {
+	return u.Update(func(s *AccessTokenUpsert) {
+		s.UpdateEmail()
 	})
 }
 

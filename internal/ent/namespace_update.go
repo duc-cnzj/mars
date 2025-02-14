@@ -38,20 +38,6 @@ func (nu *NamespaceUpdate) SetUpdatedAt(t time.Time) *NamespaceUpdate {
 	return nu
 }
 
-// SetCreatorEmail sets the "creator_email" field.
-func (nu *NamespaceUpdate) SetCreatorEmail(s string) *NamespaceUpdate {
-	nu.mutation.SetCreatorEmail(s)
-	return nu
-}
-
-// SetNillableCreatorEmail sets the "creator_email" field if the given value is not nil.
-func (nu *NamespaceUpdate) SetNillableCreatorEmail(s *string) *NamespaceUpdate {
-	if s != nil {
-		nu.SetCreatorEmail(*s)
-	}
-	return nu
-}
-
 // SetDeletedAt sets the "deleted_at" field.
 func (nu *NamespaceUpdate) SetDeletedAt(t time.Time) *NamespaceUpdate {
 	nu.mutation.SetDeletedAt(t)
@@ -108,6 +94,20 @@ func (nu *NamespaceUpdate) SetPrivate(b bool) *NamespaceUpdate {
 func (nu *NamespaceUpdate) SetNillablePrivate(b *bool) *NamespaceUpdate {
 	if b != nil {
 		nu.SetPrivate(*b)
+	}
+	return nu
+}
+
+// SetCreatorEmail sets the "creator_email" field.
+func (nu *NamespaceUpdate) SetCreatorEmail(s string) *NamespaceUpdate {
+	nu.mutation.SetCreatorEmail(s)
+	return nu
+}
+
+// SetNillableCreatorEmail sets the "creator_email" field if the given value is not nil.
+func (nu *NamespaceUpdate) SetNillableCreatorEmail(s *string) *NamespaceUpdate {
+	if s != nil {
+		nu.SetCreatorEmail(*s)
 	}
 	return nu
 }
@@ -289,14 +289,14 @@ func (nu *NamespaceUpdate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (nu *NamespaceUpdate) check() error {
-	if v, ok := nu.mutation.CreatorEmail(); ok {
-		if err := namespace.CreatorEmailValidator(v); err != nil {
-			return &ValidationError{Name: "creator_email", err: fmt.Errorf(`ent: validator failed for field "Namespace.creator_email": %w`, err)}
-		}
-	}
 	if v, ok := nu.mutation.Name(); ok {
 		if err := namespace.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Namespace.name": %w`, err)}
+		}
+	}
+	if v, ok := nu.mutation.CreatorEmail(); ok {
+		if err := namespace.CreatorEmailValidator(v); err != nil {
+			return &ValidationError{Name: "creator_email", err: fmt.Errorf(`ent: validator failed for field "Namespace.creator_email": %w`, err)}
 		}
 	}
 	return nil
@@ -317,9 +317,6 @@ func (nu *NamespaceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := nu.mutation.UpdatedAt(); ok {
 		_spec.SetField(namespace.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := nu.mutation.CreatorEmail(); ok {
-		_spec.SetField(namespace.FieldCreatorEmail, field.TypeString, value)
-	}
 	if value, ok := nu.mutation.DeletedAt(); ok {
 		_spec.SetField(namespace.FieldDeletedAt, field.TypeTime, value)
 	}
@@ -339,6 +336,9 @@ func (nu *NamespaceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := nu.mutation.Private(); ok {
 		_spec.SetField(namespace.FieldPrivate, field.TypeBool, value)
+	}
+	if value, ok := nu.mutation.CreatorEmail(); ok {
+		_spec.SetField(namespace.FieldCreatorEmail, field.TypeString, value)
 	}
 	if value, ok := nu.mutation.Description(); ok {
 		_spec.SetField(namespace.FieldDescription, field.TypeString, value)
@@ -507,20 +507,6 @@ func (nuo *NamespaceUpdateOne) SetUpdatedAt(t time.Time) *NamespaceUpdateOne {
 	return nuo
 }
 
-// SetCreatorEmail sets the "creator_email" field.
-func (nuo *NamespaceUpdateOne) SetCreatorEmail(s string) *NamespaceUpdateOne {
-	nuo.mutation.SetCreatorEmail(s)
-	return nuo
-}
-
-// SetNillableCreatorEmail sets the "creator_email" field if the given value is not nil.
-func (nuo *NamespaceUpdateOne) SetNillableCreatorEmail(s *string) *NamespaceUpdateOne {
-	if s != nil {
-		nuo.SetCreatorEmail(*s)
-	}
-	return nuo
-}
-
 // SetDeletedAt sets the "deleted_at" field.
 func (nuo *NamespaceUpdateOne) SetDeletedAt(t time.Time) *NamespaceUpdateOne {
 	nuo.mutation.SetDeletedAt(t)
@@ -577,6 +563,20 @@ func (nuo *NamespaceUpdateOne) SetPrivate(b bool) *NamespaceUpdateOne {
 func (nuo *NamespaceUpdateOne) SetNillablePrivate(b *bool) *NamespaceUpdateOne {
 	if b != nil {
 		nuo.SetPrivate(*b)
+	}
+	return nuo
+}
+
+// SetCreatorEmail sets the "creator_email" field.
+func (nuo *NamespaceUpdateOne) SetCreatorEmail(s string) *NamespaceUpdateOne {
+	nuo.mutation.SetCreatorEmail(s)
+	return nuo
+}
+
+// SetNillableCreatorEmail sets the "creator_email" field if the given value is not nil.
+func (nuo *NamespaceUpdateOne) SetNillableCreatorEmail(s *string) *NamespaceUpdateOne {
+	if s != nil {
+		nuo.SetCreatorEmail(*s)
 	}
 	return nuo
 }
@@ -771,14 +771,14 @@ func (nuo *NamespaceUpdateOne) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (nuo *NamespaceUpdateOne) check() error {
-	if v, ok := nuo.mutation.CreatorEmail(); ok {
-		if err := namespace.CreatorEmailValidator(v); err != nil {
-			return &ValidationError{Name: "creator_email", err: fmt.Errorf(`ent: validator failed for field "Namespace.creator_email": %w`, err)}
-		}
-	}
 	if v, ok := nuo.mutation.Name(); ok {
 		if err := namespace.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Namespace.name": %w`, err)}
+		}
+	}
+	if v, ok := nuo.mutation.CreatorEmail(); ok {
+		if err := namespace.CreatorEmailValidator(v); err != nil {
+			return &ValidationError{Name: "creator_email", err: fmt.Errorf(`ent: validator failed for field "Namespace.creator_email": %w`, err)}
 		}
 	}
 	return nil
@@ -816,9 +816,6 @@ func (nuo *NamespaceUpdateOne) sqlSave(ctx context.Context) (_node *Namespace, e
 	if value, ok := nuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(namespace.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := nuo.mutation.CreatorEmail(); ok {
-		_spec.SetField(namespace.FieldCreatorEmail, field.TypeString, value)
-	}
 	if value, ok := nuo.mutation.DeletedAt(); ok {
 		_spec.SetField(namespace.FieldDeletedAt, field.TypeTime, value)
 	}
@@ -838,6 +835,9 @@ func (nuo *NamespaceUpdateOne) sqlSave(ctx context.Context) (_node *Namespace, e
 	}
 	if value, ok := nuo.mutation.Private(); ok {
 		_spec.SetField(namespace.FieldPrivate, field.TypeBool, value)
+	}
+	if value, ok := nuo.mutation.CreatorEmail(); ok {
+		_spec.SetField(namespace.FieldCreatorEmail, field.TypeString, value)
 	}
 	if value, ok := nuo.mutation.Description(); ok {
 		_spec.SetField(namespace.FieldDescription, field.TypeString, value)

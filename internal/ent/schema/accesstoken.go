@@ -23,6 +23,9 @@ func (AccessToken) Fields() []ent.Field {
 			NotEmpty(),
 		field.String("usage").
 			MaxLen(50),
+		field.String("email").
+			Default("").
+			MaxLen(255),
 		field.Time("expired_at").
 			SchemaType(map[string]string{
 				dialect.MySQL: "datetime",
@@ -55,6 +58,5 @@ func (AccessToken) Mixin() []ent.Mixin {
 		mixin.CreateAt{},
 		mixin.UpdateAt{},
 		mixin.SoftDeleteMixin{},
-		mixin.NewEmail(),
 	}
 }

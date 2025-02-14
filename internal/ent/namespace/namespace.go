@@ -19,8 +19,6 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// FieldCreatorEmail holds the string denoting the creator_email field in the database.
-	FieldCreatorEmail = "creator_email"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
 	// FieldName holds the string denoting the name field in the database.
@@ -29,6 +27,8 @@ const (
 	FieldImagePullSecrets = "image_pull_secrets"
 	// FieldPrivate holds the string denoting the private field in the database.
 	FieldPrivate = "private"
+	// FieldCreatorEmail holds the string denoting the creator_email field in the database.
+	FieldCreatorEmail = "creator_email"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
 	// EdgeProjects holds the string denoting the projects edge name in mutations.
@@ -67,11 +67,11 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldUpdatedAt,
-	FieldCreatorEmail,
 	FieldDeletedAt,
 	FieldName,
 	FieldImagePullSecrets,
 	FieldPrivate,
+	FieldCreatorEmail,
 	FieldDescription,
 }
 
@@ -99,14 +99,14 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
-	// CreatorEmailValidator is a validator for the "creator_email" field. It is called by the builders before save.
-	CreatorEmailValidator func(string) error
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
 	// DefaultImagePullSecrets holds the default value on creation for the "image_pull_secrets" field.
 	DefaultImagePullSecrets []string
 	// DefaultPrivate holds the default value on creation for the "private" field.
 	DefaultPrivate bool
+	// CreatorEmailValidator is a validator for the "creator_email" field. It is called by the builders before save.
+	CreatorEmailValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the Namespace queries.
@@ -127,11 +127,6 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
-// ByCreatorEmail orders the results by the creator_email field.
-func ByCreatorEmail(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCreatorEmail, opts...).ToFunc()
-}
-
 // ByDeletedAt orders the results by the deleted_at field.
 func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
@@ -145,6 +140,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByPrivate orders the results by the private field.
 func ByPrivate(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrivate, opts...).ToFunc()
+}
+
+// ByCreatorEmail orders the results by the creator_email field.
+func ByCreatorEmail(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatorEmail, opts...).ToFunc()
 }
 
 // ByDescription orders the results by the description field.

@@ -105,20 +105,7 @@ func (fu *FavoriteUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (fu *FavoriteUpdate) check() error {
-	if v, ok := fu.mutation.Email(); ok {
-		if err := favorite.EmailValidator(v); err != nil {
-			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "Favorite.email": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (fu *FavoriteUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := fu.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(favorite.Table, favorite.Columns, sqlgraph.NewFieldSpec(favorite.FieldID, field.TypeInt))
 	if ps := fu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -269,20 +256,7 @@ func (fuo *FavoriteUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (fuo *FavoriteUpdateOne) check() error {
-	if v, ok := fuo.mutation.Email(); ok {
-		if err := favorite.EmailValidator(v); err != nil {
-			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "Favorite.email": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (fuo *FavoriteUpdateOne) sqlSave(ctx context.Context) (_node *Favorite, err error) {
-	if err := fuo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(favorite.Table, favorite.Columns, sqlgraph.NewFieldSpec(favorite.FieldID, field.TypeInt))
 	id, ok := fuo.mutation.ID()
 	if !ok {
