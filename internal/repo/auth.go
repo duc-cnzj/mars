@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"strings"
 
 	auth2 "github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/duc-cnzj/mars/v5/internal/data"
@@ -73,6 +74,8 @@ func (a *authRepo) VerifyToken(ctx context.Context, token string) (*auth2.UserIn
 	if !b {
 		return nil, ToError(401, "token验证失败")
 	}
+	// email 统一小写
+	verifyToken.UserInfo.Email = strings.ToLower(verifyToken.UserInfo.Email)
 	return verifyToken.UserInfo, nil
 }
 

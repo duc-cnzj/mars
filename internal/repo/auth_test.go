@@ -97,13 +97,17 @@ func TestAuthRepo_VerifyToken_Success(t *testing.T) {
 
 	token := "validtoken"
 
-	authsvc.EXPECT().VerifyToken(token).Return(&auth.JwtClaims{UserInfo: &auth.UserInfo{ID: "1"}}, true).Times(1)
+	authsvc.EXPECT().VerifyToken(token).Return(&auth.JwtClaims{UserInfo: &auth.UserInfo{
+		ID:    "1",
+		Email: "Duc@qq.com",
+	}}, true).Times(1)
 
 	userInfo, err := repo.VerifyToken(context.TODO(), token)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, userInfo)
 	assert.Equal(t, "1", userInfo.ID)
+	assert.Equal(t, "duc@qq.com", userInfo.Email)
 }
 
 func TestAuthRepo_VerifyToken_Failure(t *testing.T) {
