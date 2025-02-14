@@ -25,12 +25,12 @@ type AccessToken struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	// Email holds the value of the "email" field.
+	Email string `json:"email,omitempty"`
 	// Token holds the value of the "token" field.
 	Token string `json:"token,omitempty"`
 	// Usage holds the value of the "usage" field.
 	Usage string `json:"usage,omitempty"`
-	// Email holds the value of the "email" field.
-	Email string `json:"email,omitempty"`
 	// ExpiredAt holds the value of the "expired_at" field.
 	ExpiredAt time.Time `json:"expired_at,omitempty"`
 	// LastUsedAt holds the value of the "last_used_at" field.
@@ -49,7 +49,7 @@ func (*AccessToken) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case accesstoken.FieldID:
 			values[i] = new(sql.NullInt64)
-		case accesstoken.FieldToken, accesstoken.FieldUsage, accesstoken.FieldEmail:
+		case accesstoken.FieldEmail, accesstoken.FieldToken, accesstoken.FieldUsage:
 			values[i] = new(sql.NullString)
 		case accesstoken.FieldCreatedAt, accesstoken.FieldUpdatedAt, accesstoken.FieldDeletedAt, accesstoken.FieldExpiredAt, accesstoken.FieldLastUsedAt:
 			values[i] = new(sql.NullTime)
@@ -93,6 +93,12 @@ func (at *AccessToken) assignValues(columns []string, values []any) error {
 				at.DeletedAt = new(time.Time)
 				*at.DeletedAt = value.Time
 			}
+		case accesstoken.FieldEmail:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field email", values[i])
+			} else if value.Valid {
+				at.Email = value.String
+			}
 		case accesstoken.FieldToken:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field token", values[i])
@@ -104,12 +110,6 @@ func (at *AccessToken) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field usage", values[i])
 			} else if value.Valid {
 				at.Usage = value.String
-			}
-		case accesstoken.FieldEmail:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field email", values[i])
-			} else if value.Valid {
-				at.Email = value.String
 			}
 		case accesstoken.FieldExpiredAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -179,14 +179,14 @@ func (at *AccessToken) String() string {
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
+	builder.WriteString("email=")
+	builder.WriteString(at.Email)
+	builder.WriteString(", ")
 	builder.WriteString("token=")
 	builder.WriteString(at.Token)
 	builder.WriteString(", ")
 	builder.WriteString("usage=")
 	builder.WriteString(at.Usage)
-	builder.WriteString(", ")
-	builder.WriteString("email=")
-	builder.WriteString(at.Email)
 	builder.WriteString(", ")
 	builder.WriteString("expired_at=")
 	builder.WriteString(at.ExpiredAt.Format(time.ANSIC))

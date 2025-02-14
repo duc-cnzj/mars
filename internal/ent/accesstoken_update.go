@@ -55,6 +55,20 @@ func (atu *AccessTokenUpdate) ClearDeletedAt() *AccessTokenUpdate {
 	return atu
 }
 
+// SetEmail sets the "email" field.
+func (atu *AccessTokenUpdate) SetEmail(s string) *AccessTokenUpdate {
+	atu.mutation.SetEmail(s)
+	return atu
+}
+
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (atu *AccessTokenUpdate) SetNillableEmail(s *string) *AccessTokenUpdate {
+	if s != nil {
+		atu.SetEmail(*s)
+	}
+	return atu
+}
+
 // SetToken sets the "token" field.
 func (atu *AccessTokenUpdate) SetToken(s string) *AccessTokenUpdate {
 	atu.mutation.SetToken(s)
@@ -79,20 +93,6 @@ func (atu *AccessTokenUpdate) SetUsage(s string) *AccessTokenUpdate {
 func (atu *AccessTokenUpdate) SetNillableUsage(s *string) *AccessTokenUpdate {
 	if s != nil {
 		atu.SetUsage(*s)
-	}
-	return atu
-}
-
-// SetEmail sets the "email" field.
-func (atu *AccessTokenUpdate) SetEmail(s string) *AccessTokenUpdate {
-	atu.mutation.SetEmail(s)
-	return atu
-}
-
-// SetNillableEmail sets the "email" field if the given value is not nil.
-func (atu *AccessTokenUpdate) SetNillableEmail(s *string) *AccessTokenUpdate {
-	if s != nil {
-		atu.SetEmail(*s)
 	}
 	return atu
 }
@@ -206,6 +206,11 @@ func (atu *AccessTokenUpdate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (atu *AccessTokenUpdate) check() error {
+	if v, ok := atu.mutation.Email(); ok {
+		if err := accesstoken.EmailValidator(v); err != nil {
+			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "AccessToken.email": %w`, err)}
+		}
+	}
 	if v, ok := atu.mutation.Token(); ok {
 		if err := accesstoken.TokenValidator(v); err != nil {
 			return &ValidationError{Name: "token", err: fmt.Errorf(`ent: validator failed for field "AccessToken.token": %w`, err)}
@@ -214,11 +219,6 @@ func (atu *AccessTokenUpdate) check() error {
 	if v, ok := atu.mutation.Usage(); ok {
 		if err := accesstoken.UsageValidator(v); err != nil {
 			return &ValidationError{Name: "usage", err: fmt.Errorf(`ent: validator failed for field "AccessToken.usage": %w`, err)}
-		}
-	}
-	if v, ok := atu.mutation.Email(); ok {
-		if err := accesstoken.EmailValidator(v); err != nil {
-			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "AccessToken.email": %w`, err)}
 		}
 	}
 	return nil
@@ -245,14 +245,14 @@ func (atu *AccessTokenUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if atu.mutation.DeletedAtCleared() {
 		_spec.ClearField(accesstoken.FieldDeletedAt, field.TypeTime)
 	}
+	if value, ok := atu.mutation.Email(); ok {
+		_spec.SetField(accesstoken.FieldEmail, field.TypeString, value)
+	}
 	if value, ok := atu.mutation.Token(); ok {
 		_spec.SetField(accesstoken.FieldToken, field.TypeString, value)
 	}
 	if value, ok := atu.mutation.Usage(); ok {
 		_spec.SetField(accesstoken.FieldUsage, field.TypeString, value)
-	}
-	if value, ok := atu.mutation.Email(); ok {
-		_spec.SetField(accesstoken.FieldEmail, field.TypeString, value)
 	}
 	if value, ok := atu.mutation.ExpiredAt(); ok {
 		_spec.SetField(accesstoken.FieldExpiredAt, field.TypeTime, value)
@@ -318,6 +318,20 @@ func (atuo *AccessTokenUpdateOne) ClearDeletedAt() *AccessTokenUpdateOne {
 	return atuo
 }
 
+// SetEmail sets the "email" field.
+func (atuo *AccessTokenUpdateOne) SetEmail(s string) *AccessTokenUpdateOne {
+	atuo.mutation.SetEmail(s)
+	return atuo
+}
+
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (atuo *AccessTokenUpdateOne) SetNillableEmail(s *string) *AccessTokenUpdateOne {
+	if s != nil {
+		atuo.SetEmail(*s)
+	}
+	return atuo
+}
+
 // SetToken sets the "token" field.
 func (atuo *AccessTokenUpdateOne) SetToken(s string) *AccessTokenUpdateOne {
 	atuo.mutation.SetToken(s)
@@ -342,20 +356,6 @@ func (atuo *AccessTokenUpdateOne) SetUsage(s string) *AccessTokenUpdateOne {
 func (atuo *AccessTokenUpdateOne) SetNillableUsage(s *string) *AccessTokenUpdateOne {
 	if s != nil {
 		atuo.SetUsage(*s)
-	}
-	return atuo
-}
-
-// SetEmail sets the "email" field.
-func (atuo *AccessTokenUpdateOne) SetEmail(s string) *AccessTokenUpdateOne {
-	atuo.mutation.SetEmail(s)
-	return atuo
-}
-
-// SetNillableEmail sets the "email" field if the given value is not nil.
-func (atuo *AccessTokenUpdateOne) SetNillableEmail(s *string) *AccessTokenUpdateOne {
-	if s != nil {
-		atuo.SetEmail(*s)
 	}
 	return atuo
 }
@@ -482,6 +482,11 @@ func (atuo *AccessTokenUpdateOne) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (atuo *AccessTokenUpdateOne) check() error {
+	if v, ok := atuo.mutation.Email(); ok {
+		if err := accesstoken.EmailValidator(v); err != nil {
+			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "AccessToken.email": %w`, err)}
+		}
+	}
 	if v, ok := atuo.mutation.Token(); ok {
 		if err := accesstoken.TokenValidator(v); err != nil {
 			return &ValidationError{Name: "token", err: fmt.Errorf(`ent: validator failed for field "AccessToken.token": %w`, err)}
@@ -490,11 +495,6 @@ func (atuo *AccessTokenUpdateOne) check() error {
 	if v, ok := atuo.mutation.Usage(); ok {
 		if err := accesstoken.UsageValidator(v); err != nil {
 			return &ValidationError{Name: "usage", err: fmt.Errorf(`ent: validator failed for field "AccessToken.usage": %w`, err)}
-		}
-	}
-	if v, ok := atuo.mutation.Email(); ok {
-		if err := accesstoken.EmailValidator(v); err != nil {
-			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "AccessToken.email": %w`, err)}
 		}
 	}
 	return nil
@@ -538,14 +538,14 @@ func (atuo *AccessTokenUpdateOne) sqlSave(ctx context.Context) (_node *AccessTok
 	if atuo.mutation.DeletedAtCleared() {
 		_spec.ClearField(accesstoken.FieldDeletedAt, field.TypeTime)
 	}
+	if value, ok := atuo.mutation.Email(); ok {
+		_spec.SetField(accesstoken.FieldEmail, field.TypeString, value)
+	}
 	if value, ok := atuo.mutation.Token(); ok {
 		_spec.SetField(accesstoken.FieldToken, field.TypeString, value)
 	}
 	if value, ok := atuo.mutation.Usage(); ok {
 		_spec.SetField(accesstoken.FieldUsage, field.TypeString, value)
-	}
-	if value, ok := atuo.mutation.Email(); ok {
-		_spec.SetField(accesstoken.FieldEmail, field.TypeString, value)
 	}
 	if value, ok := atuo.mutation.ExpiredAt(); ok {
 		_spec.SetField(accesstoken.FieldExpiredAt, field.TypeTime, value)

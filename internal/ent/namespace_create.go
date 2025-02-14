@@ -53,6 +53,12 @@ func (nc *NamespaceCreate) SetNillableUpdatedAt(t *time.Time) *NamespaceCreate {
 	return nc
 }
 
+// SetCreatorEmail sets the "creator_email" field.
+func (nc *NamespaceCreate) SetCreatorEmail(s string) *NamespaceCreate {
+	nc.mutation.SetCreatorEmail(s)
+	return nc
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (nc *NamespaceCreate) SetDeletedAt(t time.Time) *NamespaceCreate {
 	nc.mutation.SetDeletedAt(t)
@@ -90,12 +96,6 @@ func (nc *NamespaceCreate) SetNillablePrivate(b *bool) *NamespaceCreate {
 	if b != nil {
 		nc.SetPrivate(*b)
 	}
-	return nc
-}
-
-// SetCreatorEmail sets the "creator_email" field.
-func (nc *NamespaceCreate) SetCreatorEmail(s string) *NamespaceCreate {
-	nc.mutation.SetCreatorEmail(s)
 	return nc
 }
 
@@ -228,6 +228,14 @@ func (nc *NamespaceCreate) check() error {
 	if _, ok := nc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Namespace.updated_at"`)}
 	}
+	if _, ok := nc.mutation.CreatorEmail(); !ok {
+		return &ValidationError{Name: "creator_email", err: errors.New(`ent: missing required field "Namespace.creator_email"`)}
+	}
+	if v, ok := nc.mutation.CreatorEmail(); ok {
+		if err := namespace.CreatorEmailValidator(v); err != nil {
+			return &ValidationError{Name: "creator_email", err: fmt.Errorf(`ent: validator failed for field "Namespace.creator_email": %w`, err)}
+		}
+	}
 	if _, ok := nc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Namespace.name"`)}
 	}
@@ -241,14 +249,6 @@ func (nc *NamespaceCreate) check() error {
 	}
 	if _, ok := nc.mutation.Private(); !ok {
 		return &ValidationError{Name: "private", err: errors.New(`ent: missing required field "Namespace.private"`)}
-	}
-	if _, ok := nc.mutation.CreatorEmail(); !ok {
-		return &ValidationError{Name: "creator_email", err: errors.New(`ent: missing required field "Namespace.creator_email"`)}
-	}
-	if v, ok := nc.mutation.CreatorEmail(); ok {
-		if err := namespace.CreatorEmailValidator(v); err != nil {
-			return &ValidationError{Name: "creator_email", err: fmt.Errorf(`ent: validator failed for field "Namespace.creator_email": %w`, err)}
-		}
 	}
 	return nil
 }
@@ -285,6 +285,10 @@ func (nc *NamespaceCreate) createSpec() (*Namespace, *sqlgraph.CreateSpec) {
 		_spec.SetField(namespace.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
+	if value, ok := nc.mutation.CreatorEmail(); ok {
+		_spec.SetField(namespace.FieldCreatorEmail, field.TypeString, value)
+		_node.CreatorEmail = value
+	}
 	if value, ok := nc.mutation.DeletedAt(); ok {
 		_spec.SetField(namespace.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = &value
@@ -300,10 +304,6 @@ func (nc *NamespaceCreate) createSpec() (*Namespace, *sqlgraph.CreateSpec) {
 	if value, ok := nc.mutation.Private(); ok {
 		_spec.SetField(namespace.FieldPrivate, field.TypeBool, value)
 		_node.Private = value
-	}
-	if value, ok := nc.mutation.CreatorEmail(); ok {
-		_spec.SetField(namespace.FieldCreatorEmail, field.TypeString, value)
-		_node.CreatorEmail = value
 	}
 	if value, ok := nc.mutation.Description(); ok {
 		_spec.SetField(namespace.FieldDescription, field.TypeString, value)
@@ -421,6 +421,18 @@ func (u *NamespaceUpsert) UpdateUpdatedAt() *NamespaceUpsert {
 	return u
 }
 
+// SetCreatorEmail sets the "creator_email" field.
+func (u *NamespaceUpsert) SetCreatorEmail(v string) *NamespaceUpsert {
+	u.Set(namespace.FieldCreatorEmail, v)
+	return u
+}
+
+// UpdateCreatorEmail sets the "creator_email" field to the value that was provided on create.
+func (u *NamespaceUpsert) UpdateCreatorEmail() *NamespaceUpsert {
+	u.SetExcluded(namespace.FieldCreatorEmail)
+	return u
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (u *NamespaceUpsert) SetDeletedAt(v time.Time) *NamespaceUpsert {
 	u.Set(namespace.FieldDeletedAt, v)
@@ -472,18 +484,6 @@ func (u *NamespaceUpsert) SetPrivate(v bool) *NamespaceUpsert {
 // UpdatePrivate sets the "private" field to the value that was provided on create.
 func (u *NamespaceUpsert) UpdatePrivate() *NamespaceUpsert {
 	u.SetExcluded(namespace.FieldPrivate)
-	return u
-}
-
-// SetCreatorEmail sets the "creator_email" field.
-func (u *NamespaceUpsert) SetCreatorEmail(v string) *NamespaceUpsert {
-	u.Set(namespace.FieldCreatorEmail, v)
-	return u
-}
-
-// UpdateCreatorEmail sets the "creator_email" field to the value that was provided on create.
-func (u *NamespaceUpsert) UpdateCreatorEmail() *NamespaceUpsert {
-	u.SetExcluded(namespace.FieldCreatorEmail)
 	return u
 }
 
@@ -564,6 +564,20 @@ func (u *NamespaceUpsertOne) UpdateUpdatedAt() *NamespaceUpsertOne {
 	})
 }
 
+// SetCreatorEmail sets the "creator_email" field.
+func (u *NamespaceUpsertOne) SetCreatorEmail(v string) *NamespaceUpsertOne {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.SetCreatorEmail(v)
+	})
+}
+
+// UpdateCreatorEmail sets the "creator_email" field to the value that was provided on create.
+func (u *NamespaceUpsertOne) UpdateCreatorEmail() *NamespaceUpsertOne {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.UpdateCreatorEmail()
+	})
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (u *NamespaceUpsertOne) SetDeletedAt(v time.Time) *NamespaceUpsertOne {
 	return u.Update(func(s *NamespaceUpsert) {
@@ -624,20 +638,6 @@ func (u *NamespaceUpsertOne) SetPrivate(v bool) *NamespaceUpsertOne {
 func (u *NamespaceUpsertOne) UpdatePrivate() *NamespaceUpsertOne {
 	return u.Update(func(s *NamespaceUpsert) {
 		s.UpdatePrivate()
-	})
-}
-
-// SetCreatorEmail sets the "creator_email" field.
-func (u *NamespaceUpsertOne) SetCreatorEmail(v string) *NamespaceUpsertOne {
-	return u.Update(func(s *NamespaceUpsert) {
-		s.SetCreatorEmail(v)
-	})
-}
-
-// UpdateCreatorEmail sets the "creator_email" field to the value that was provided on create.
-func (u *NamespaceUpsertOne) UpdateCreatorEmail() *NamespaceUpsertOne {
-	return u.Update(func(s *NamespaceUpsert) {
-		s.UpdateCreatorEmail()
 	})
 }
 
@@ -887,6 +887,20 @@ func (u *NamespaceUpsertBulk) UpdateUpdatedAt() *NamespaceUpsertBulk {
 	})
 }
 
+// SetCreatorEmail sets the "creator_email" field.
+func (u *NamespaceUpsertBulk) SetCreatorEmail(v string) *NamespaceUpsertBulk {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.SetCreatorEmail(v)
+	})
+}
+
+// UpdateCreatorEmail sets the "creator_email" field to the value that was provided on create.
+func (u *NamespaceUpsertBulk) UpdateCreatorEmail() *NamespaceUpsertBulk {
+	return u.Update(func(s *NamespaceUpsert) {
+		s.UpdateCreatorEmail()
+	})
+}
+
 // SetDeletedAt sets the "deleted_at" field.
 func (u *NamespaceUpsertBulk) SetDeletedAt(v time.Time) *NamespaceUpsertBulk {
 	return u.Update(func(s *NamespaceUpsert) {
@@ -947,20 +961,6 @@ func (u *NamespaceUpsertBulk) SetPrivate(v bool) *NamespaceUpsertBulk {
 func (u *NamespaceUpsertBulk) UpdatePrivate() *NamespaceUpsertBulk {
 	return u.Update(func(s *NamespaceUpsert) {
 		s.UpdatePrivate()
-	})
-}
-
-// SetCreatorEmail sets the "creator_email" field.
-func (u *NamespaceUpsertBulk) SetCreatorEmail(v string) *NamespaceUpsertBulk {
-	return u.Update(func(s *NamespaceUpsert) {
-		s.SetCreatorEmail(v)
-	})
-}
-
-// UpdateCreatorEmail sets the "creator_email" field to the value that was provided on create.
-func (u *NamespaceUpsertBulk) UpdateCreatorEmail() *NamespaceUpsertBulk {
-	return u.Update(func(s *NamespaceUpsert) {
-		s.UpdateCreatorEmail()
 	})
 }
 

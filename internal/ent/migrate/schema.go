@@ -15,9 +15,9 @@ var (
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "email", Type: field.TypeString, Size: 50, Collation: "utf8mb4_general_ci"},
 		{Name: "token", Type: field.TypeString, Unique: true, Size: 100},
 		{Name: "usage", Type: field.TypeString, Size: 50},
-		{Name: "email", Type: field.TypeString, Size: 255, Default: ""},
 		{Name: "expired_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "last_used_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "user_info", Type: field.TypeJSON, Nullable: true},
@@ -31,7 +31,7 @@ var (
 			{
 				Name:    "accesstoken_email",
 				Unique:  false,
-				Columns: []*schema.Column{AccessTokensColumns[6]},
+				Columns: []*schema.Column{AccessTokensColumns[4]},
 			},
 		},
 	}
@@ -148,7 +148,7 @@ var (
 	// FavoritesColumns holds the columns for the "favorites" table.
 	FavoritesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "email", Type: field.TypeString},
+		{Name: "email", Type: field.TypeString, Size: 50, Collation: "utf8mb4_general_ci"},
 		{Name: "namespace_id", Type: field.TypeInt, Nullable: true},
 	}
 	// FavoritesTable holds the schema information for the "favorites" table.
@@ -192,7 +192,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
-		{Name: "email", Type: field.TypeString, Size: 50},
+		{Name: "email", Type: field.TypeString, Size: 50, Collation: "utf8mb4_general_ci"},
 		{Name: "namespace_id", Type: field.TypeInt, Nullable: true},
 	}
 	// MembersTable holds the schema information for the "members" table.
@@ -221,11 +221,11 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "creator_email", Type: field.TypeString, Size: 50, Collation: "utf8mb4_general_ci"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "name", Type: field.TypeString, Size: 100, Collation: "utf8mb4_general_ci"},
 		{Name: "image_pull_secrets", Type: field.TypeJSON},
 		{Name: "private", Type: field.TypeBool, Default: false},
-		{Name: "creator_email", Type: field.TypeString, Size: 50},
 		{Name: "description", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "text"}},
 	}
 	// NamespacesTable holds the schema information for the "namespaces" table.

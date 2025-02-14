@@ -32,9 +32,6 @@ func (Namespace) Fields() []ent.Field {
 		field.Bool("private").
 			Default(false).
 			Comment("是否私有, 默认公开"),
-		field.String("creator_email").
-			MaxLen(50).
-			Comment("创建者 email"),
 		field.String("description").
 			SchemaType(map[string]string{
 				dialect.MySQL: "text",
@@ -57,6 +54,10 @@ func (Namespace) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		mixin.CreateAt{},
 		mixin.UpdateAt{},
+		mixin.NewEmail(
+			mixin.WithEmailFieldComment("创建者 email"),
+			mixin.WithEmailFieldName("creator_email"),
+		),
 		mixin.SoftDeleteMixin{},
 	}
 }

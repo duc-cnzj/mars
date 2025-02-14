@@ -20,12 +20,12 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
+	// FieldEmail holds the string denoting the email field in the database.
+	FieldEmail = "email"
 	// FieldToken holds the string denoting the token field in the database.
 	FieldToken = "token"
 	// FieldUsage holds the string denoting the usage field in the database.
 	FieldUsage = "usage"
-	// FieldEmail holds the string denoting the email field in the database.
-	FieldEmail = "email"
 	// FieldExpiredAt holds the string denoting the expired_at field in the database.
 	FieldExpiredAt = "expired_at"
 	// FieldLastUsedAt holds the string denoting the last_used_at field in the database.
@@ -42,9 +42,9 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldDeletedAt,
+	FieldEmail,
 	FieldToken,
 	FieldUsage,
-	FieldEmail,
 	FieldExpiredAt,
 	FieldLastUsedAt,
 	FieldUserInfo,
@@ -74,14 +74,12 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// EmailValidator is a validator for the "email" field. It is called by the builders before save.
+	EmailValidator func(string) error
 	// TokenValidator is a validator for the "token" field. It is called by the builders before save.
 	TokenValidator func(string) error
 	// UsageValidator is a validator for the "usage" field. It is called by the builders before save.
 	UsageValidator func(string) error
-	// DefaultEmail holds the default value on creation for the "email" field.
-	DefaultEmail string
-	// EmailValidator is a validator for the "email" field. It is called by the builders before save.
-	EmailValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the AccessToken queries.
@@ -107,6 +105,11 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
 }
 
+// ByEmail orders the results by the email field.
+func ByEmail(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEmail, opts...).ToFunc()
+}
+
 // ByToken orders the results by the token field.
 func ByToken(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldToken, opts...).ToFunc()
@@ -115,11 +118,6 @@ func ByToken(opts ...sql.OrderTermOption) OrderOption {
 // ByUsage orders the results by the usage field.
 func ByUsage(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUsage, opts...).ToFunc()
-}
-
-// ByEmail orders the results by the email field.
-func ByEmail(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldEmail, opts...).ToFunc()
 }
 
 // ByExpiredAt orders the results by the expired_at field.

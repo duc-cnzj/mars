@@ -65,6 +65,11 @@ func UpdatedAt(v time.Time) predicate.Namespace {
 	return predicate.Namespace(sql.FieldEQ(FieldUpdatedAt, v))
 }
 
+// CreatorEmail applies equality check predicate on the "creator_email" field. It's identical to CreatorEmailEQ.
+func CreatorEmail(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldEQ(FieldCreatorEmail, v))
+}
+
 // DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
 func DeletedAt(v time.Time) predicate.Namespace {
 	return predicate.Namespace(sql.FieldEQ(FieldDeletedAt, v))
@@ -78,11 +83,6 @@ func Name(v string) predicate.Namespace {
 // Private applies equality check predicate on the "private" field. It's identical to PrivateEQ.
 func Private(v bool) predicate.Namespace {
 	return predicate.Namespace(sql.FieldEQ(FieldPrivate, v))
-}
-
-// CreatorEmail applies equality check predicate on the "creator_email" field. It's identical to CreatorEmailEQ.
-func CreatorEmail(v string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldEQ(FieldCreatorEmail, v))
 }
 
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
@@ -168,6 +168,71 @@ func UpdatedAtLT(v time.Time) predicate.Namespace {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.Namespace {
 	return predicate.Namespace(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// CreatorEmailEQ applies the EQ predicate on the "creator_email" field.
+func CreatorEmailEQ(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldEQ(FieldCreatorEmail, v))
+}
+
+// CreatorEmailNEQ applies the NEQ predicate on the "creator_email" field.
+func CreatorEmailNEQ(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldNEQ(FieldCreatorEmail, v))
+}
+
+// CreatorEmailIn applies the In predicate on the "creator_email" field.
+func CreatorEmailIn(vs ...string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldIn(FieldCreatorEmail, vs...))
+}
+
+// CreatorEmailNotIn applies the NotIn predicate on the "creator_email" field.
+func CreatorEmailNotIn(vs ...string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldNotIn(FieldCreatorEmail, vs...))
+}
+
+// CreatorEmailGT applies the GT predicate on the "creator_email" field.
+func CreatorEmailGT(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldGT(FieldCreatorEmail, v))
+}
+
+// CreatorEmailGTE applies the GTE predicate on the "creator_email" field.
+func CreatorEmailGTE(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldGTE(FieldCreatorEmail, v))
+}
+
+// CreatorEmailLT applies the LT predicate on the "creator_email" field.
+func CreatorEmailLT(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldLT(FieldCreatorEmail, v))
+}
+
+// CreatorEmailLTE applies the LTE predicate on the "creator_email" field.
+func CreatorEmailLTE(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldLTE(FieldCreatorEmail, v))
+}
+
+// CreatorEmailContains applies the Contains predicate on the "creator_email" field.
+func CreatorEmailContains(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldContains(FieldCreatorEmail, v))
+}
+
+// CreatorEmailHasPrefix applies the HasPrefix predicate on the "creator_email" field.
+func CreatorEmailHasPrefix(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldHasPrefix(FieldCreatorEmail, v))
+}
+
+// CreatorEmailHasSuffix applies the HasSuffix predicate on the "creator_email" field.
+func CreatorEmailHasSuffix(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldHasSuffix(FieldCreatorEmail, v))
+}
+
+// CreatorEmailEqualFold applies the EqualFold predicate on the "creator_email" field.
+func CreatorEmailEqualFold(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldEqualFold(FieldCreatorEmail, v))
+}
+
+// CreatorEmailContainsFold applies the ContainsFold predicate on the "creator_email" field.
+func CreatorEmailContainsFold(v string) predicate.Namespace {
+	return predicate.Namespace(sql.FieldContainsFold(FieldCreatorEmail, v))
 }
 
 // DeletedAtEQ applies the EQ predicate on the "deleted_at" field.
@@ -293,71 +358,6 @@ func PrivateEQ(v bool) predicate.Namespace {
 // PrivateNEQ applies the NEQ predicate on the "private" field.
 func PrivateNEQ(v bool) predicate.Namespace {
 	return predicate.Namespace(sql.FieldNEQ(FieldPrivate, v))
-}
-
-// CreatorEmailEQ applies the EQ predicate on the "creator_email" field.
-func CreatorEmailEQ(v string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldEQ(FieldCreatorEmail, v))
-}
-
-// CreatorEmailNEQ applies the NEQ predicate on the "creator_email" field.
-func CreatorEmailNEQ(v string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldNEQ(FieldCreatorEmail, v))
-}
-
-// CreatorEmailIn applies the In predicate on the "creator_email" field.
-func CreatorEmailIn(vs ...string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldIn(FieldCreatorEmail, vs...))
-}
-
-// CreatorEmailNotIn applies the NotIn predicate on the "creator_email" field.
-func CreatorEmailNotIn(vs ...string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldNotIn(FieldCreatorEmail, vs...))
-}
-
-// CreatorEmailGT applies the GT predicate on the "creator_email" field.
-func CreatorEmailGT(v string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldGT(FieldCreatorEmail, v))
-}
-
-// CreatorEmailGTE applies the GTE predicate on the "creator_email" field.
-func CreatorEmailGTE(v string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldGTE(FieldCreatorEmail, v))
-}
-
-// CreatorEmailLT applies the LT predicate on the "creator_email" field.
-func CreatorEmailLT(v string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldLT(FieldCreatorEmail, v))
-}
-
-// CreatorEmailLTE applies the LTE predicate on the "creator_email" field.
-func CreatorEmailLTE(v string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldLTE(FieldCreatorEmail, v))
-}
-
-// CreatorEmailContains applies the Contains predicate on the "creator_email" field.
-func CreatorEmailContains(v string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldContains(FieldCreatorEmail, v))
-}
-
-// CreatorEmailHasPrefix applies the HasPrefix predicate on the "creator_email" field.
-func CreatorEmailHasPrefix(v string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldHasPrefix(FieldCreatorEmail, v))
-}
-
-// CreatorEmailHasSuffix applies the HasSuffix predicate on the "creator_email" field.
-func CreatorEmailHasSuffix(v string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldHasSuffix(FieldCreatorEmail, v))
-}
-
-// CreatorEmailEqualFold applies the EqualFold predicate on the "creator_email" field.
-func CreatorEmailEqualFold(v string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldEqualFold(FieldCreatorEmail, v))
-}
-
-// CreatorEmailContainsFold applies the ContainsFold predicate on the "creator_email" field.
-func CreatorEmailContainsFold(v string) predicate.Namespace {
-	return predicate.Namespace(sql.FieldContainsFold(FieldCreatorEmail, v))
 }
 
 // DescriptionEQ applies the EQ predicate on the "description" field.
