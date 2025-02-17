@@ -40,7 +40,7 @@ func (c OidcClaims) ToUserInfo() *UserInfo {
 		LogoutUrl: c.LogoutUrl,
 		Roles:     c.Roles,
 		ID:        c.Sub,
-		Email:     c.Email,
+		Email:     strings.ToLower(c.Email),
 		Name:      c.Name,
 		Picture:   c.Picture,
 	}

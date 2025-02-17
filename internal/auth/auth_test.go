@@ -151,16 +151,28 @@ func TestOidcClaims_ToUserInfo(t *testing.T) {
 		OpenIDClaims: OpenIDClaims{
 			Sub:   "1",
 			Name:  "duc",
-			Email: "1@q.c",
+			Email: "Duc@q.c",
 			Roles: []string{"admin"},
 		},
 	}
 	info := c.ToUserInfo()
 	assert.Equal(t, "1", info.ID)
 	assert.Equal(t, "duc", info.Name)
-	assert.Equal(t, "1@q.c", info.Email)
+	assert.Equal(t, "duc@q.c", info.Email)
 	assert.Equal(t, []string{"admin"}, info.Roles)
 	assert.Equal(t, "aaa.com", info.LogoutUrl)
+
+	c2 := OidcClaims{
+		LogoutUrl: "aaa.com",
+		OpenIDClaims: OpenIDClaims{
+			Sub:   "1",
+			Name:  "duc",
+			Email: "123adb@q.c",
+			Roles: []string{"admin"},
+		},
+	}
+	info2 := c2.ToUserInfo()
+	assert.Equal(t, "123adb@q.c", info2.Email)
 }
 
 func TestContextWithUser(t *testing.T) {
