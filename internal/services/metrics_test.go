@@ -234,7 +234,7 @@ func TestMetricsSvc_StreamTopPod_Success(t *testing.T) {
 	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), "namespace1", "pod1").Return(&v1beta1.PodMetrics{}, nil).AnyTimes()
 	k8sRepo.EXPECT().GetCpuAndMemoryQuantity(gomock.Any()).Return(&resource.Quantity{}, &resource.Quantity{}).AnyTimes()
 
-	server := NewMockMetrics_StreamTopPodServer(m)
+	server := NewMockMetrics_StreamTopPodServer[metrics.TopPodResponse](m)
 	timeout, cancelFunc := context.WithTimeout(context.TODO(), 3*time.Second)
 	defer cancelFunc()
 	server.EXPECT().Context().Return(timeout).AnyTimes()
@@ -257,7 +257,7 @@ func TestMetricsSvc_StreamTopPod_Error(t *testing.T) {
 	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), "namespace1", "pod1").Return(nil, errors.New("x"))
 	k8sRepo.EXPECT().IsPodRunning("namespace1", "pod1").Return(true, "")
 
-	server := NewMockMetrics_StreamTopPodServer(m)
+	server := NewMockMetrics_StreamTopPodServer[metrics.TopPodResponse](m)
 	server.EXPECT().Context().Return(context.TODO()).AnyTimes()
 	server.EXPECT().Send(gomock.Any()).Return(nil).AnyTimes()
 
@@ -281,7 +281,7 @@ func TestMetricsSvc_StreamTopPod_SendError(t *testing.T) {
 	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), "namespace1", "pod1").Return(&v1beta1.PodMetrics{}, nil).AnyTimes()
 	k8sRepo.EXPECT().GetCpuAndMemoryQuantity(gomock.Any()).Return(&resource.Quantity{}, &resource.Quantity{}).AnyTimes()
 
-	server := NewMockMetrics_StreamTopPodServer(m)
+	server := NewMockMetrics_StreamTopPodServer[metrics.TopPodResponse](m)
 	server.EXPECT().Context().Return(context.TODO()).AnyTimes()
 	server.EXPECT().Send(gomock.Any()).Return(errors.New("send error")).AnyTimes()
 
@@ -302,7 +302,7 @@ func TestMetricsSvc_StreamTopPod_PodNotRunning(t *testing.T) {
 	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), "namespace1", "pod1").Return(nil, errors.New("error")).AnyTimes()
 	k8sRepo.EXPECT().IsPodRunning("namespace1", "pod1").Return(false, "pod not running").AnyTimes()
 
-	server := NewMockMetrics_StreamTopPodServer(m)
+	server := NewMockMetrics_StreamTopPodServer[metrics.TopPodResponse](m)
 	timeout, cancelFunc := context.WithTimeout(context.TODO(), 3*time.Second)
 	defer cancelFunc()
 	server.EXPECT().Context().Return(timeout).AnyTimes()

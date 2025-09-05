@@ -23,6 +23,7 @@ import (
 type MockData struct {
 	ctrl     *gomock.Controller
 	recorder *MockDataMockRecorder
+	isgomock struct{}
 }
 
 // MockDataMockRecorder is the mock recorder for MockData.
@@ -86,17 +87,17 @@ func (mr *MockDataMockRecorder) InitDB() *gomock.Call {
 }
 
 // InitK8s mocks base method.
-func (m *MockData) InitK8s(arg0 <-chan struct{}) error {
+func (m *MockData) InitK8s(ch <-chan struct{}) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InitK8s", arg0)
+	ret := m.ctrl.Call(m, "InitK8s", ch)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // InitK8s indicates an expected call of InitK8s.
-func (mr *MockDataMockRecorder) InitK8s(arg0 any) *gomock.Call {
+func (mr *MockDataMockRecorder) InitK8s(ch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitK8s", reflect.TypeOf((*MockData)(nil).InitK8s), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitK8s", reflect.TypeOf((*MockData)(nil).InitK8s), ch)
 }
 
 // InitOidcProvider mocks base method.
@@ -168,15 +169,15 @@ func (mr *MockDataMockRecorder) OidcConfig() *gomock.Call {
 }
 
 // WithTx mocks base method.
-func (m *MockData) WithTx(arg0 context.Context, arg1 func(*ent.Tx) error) error {
+func (m *MockData) WithTx(ctx context.Context, fn func(*ent.Tx) error) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithTx", arg0, arg1)
+	ret := m.ctrl.Call(m, "WithTx", ctx, fn)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // WithTx indicates an expected call of WithTx.
-func (mr *MockDataMockRecorder) WithTx(arg0, arg1 any) *gomock.Call {
+func (mr *MockDataMockRecorder) WithTx(ctx, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockData)(nil).WithTx), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockData)(nil).WithTx), ctx, fn)
 }

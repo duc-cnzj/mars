@@ -19,6 +19,7 @@ import (
 type MockLocker struct {
 	ctrl     *gomock.Controller
 	recorder *MockLockerMockRecorder
+	isgomock struct{}
 }
 
 // MockLockerMockRecorder is the mock recorder for MockLocker.
@@ -39,31 +40,31 @@ func (m *MockLocker) EXPECT() *MockLockerMockRecorder {
 }
 
 // Acquire mocks base method.
-func (m *MockLocker) Acquire(arg0 string, arg1 int64) bool {
+func (m *MockLocker) Acquire(key string, seconds int64) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Acquire", arg0, arg1)
+	ret := m.ctrl.Call(m, "Acquire", key, seconds)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // Acquire indicates an expected call of Acquire.
-func (mr *MockLockerMockRecorder) Acquire(arg0, arg1 any) *gomock.Call {
+func (mr *MockLockerMockRecorder) Acquire(key, seconds any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Acquire", reflect.TypeOf((*MockLocker)(nil).Acquire), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Acquire", reflect.TypeOf((*MockLocker)(nil).Acquire), key, seconds)
 }
 
 // ForceRelease mocks base method.
-func (m *MockLocker) ForceRelease(arg0 string) bool {
+func (m *MockLocker) ForceRelease(key string) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ForceRelease", arg0)
+	ret := m.ctrl.Call(m, "ForceRelease", key)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // ForceRelease indicates an expected call of ForceRelease.
-func (mr *MockLockerMockRecorder) ForceRelease(arg0 any) *gomock.Call {
+func (mr *MockLockerMockRecorder) ForceRelease(key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForceRelease", reflect.TypeOf((*MockLocker)(nil).ForceRelease), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForceRelease", reflect.TypeOf((*MockLocker)(nil).ForceRelease), key)
 }
 
 // ID mocks base method.
@@ -81,46 +82,46 @@ func (mr *MockLockerMockRecorder) ID() *gomock.Call {
 }
 
 // Owner mocks base method.
-func (m *MockLocker) Owner(arg0 string) string {
+func (m *MockLocker) Owner(key string) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Owner", arg0)
+	ret := m.ctrl.Call(m, "Owner", key)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // Owner indicates an expected call of Owner.
-func (mr *MockLockerMockRecorder) Owner(arg0 any) *gomock.Call {
+func (mr *MockLockerMockRecorder) Owner(key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Owner", reflect.TypeOf((*MockLocker)(nil).Owner), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Owner", reflect.TypeOf((*MockLocker)(nil).Owner), key)
 }
 
 // Release mocks base method.
-func (m *MockLocker) Release(arg0 string) bool {
+func (m *MockLocker) Release(key string) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Release", arg0)
+	ret := m.ctrl.Call(m, "Release", key)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // Release indicates an expected call of Release.
-func (mr *MockLockerMockRecorder) Release(arg0 any) *gomock.Call {
+func (mr *MockLockerMockRecorder) Release(key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Release", reflect.TypeOf((*MockLocker)(nil).Release), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Release", reflect.TypeOf((*MockLocker)(nil).Release), key)
 }
 
 // RenewalAcquire mocks base method.
-func (m *MockLocker) RenewalAcquire(arg0 string, arg1, arg2 int64) (func(), bool) {
+func (m *MockLocker) RenewalAcquire(key string, seconds, renewalSeconds int64) (func(), bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RenewalAcquire", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "RenewalAcquire", key, seconds, renewalSeconds)
 	ret0, _ := ret[0].(func())
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
 // RenewalAcquire indicates an expected call of RenewalAcquire.
-func (mr *MockLockerMockRecorder) RenewalAcquire(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockLockerMockRecorder) RenewalAcquire(key, seconds, renewalSeconds any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenewalAcquire", reflect.TypeOf((*MockLocker)(nil).RenewalAcquire), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenewalAcquire", reflect.TypeOf((*MockLocker)(nil).RenewalAcquire), key, seconds, renewalSeconds)
 }
 
 // Type mocks base method.

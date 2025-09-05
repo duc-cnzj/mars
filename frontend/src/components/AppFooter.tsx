@@ -25,7 +25,7 @@ const AppFooter: React.FC = () => {
         }}
       >
         version: {version?.version}, build at{" "}
-        {dayjs(version?.buildDate).format("YYYY-MM-DD HH:mm:ss")}
+        {dayjs(version?.buildDate).format("YYYY-MM-DD")}
         <Popover
           content={<Coffee />}
           overlayInnerStyle={{ padding: 0, margin: 0, borderRadius: 5 }}

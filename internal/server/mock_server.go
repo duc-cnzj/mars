@@ -21,6 +21,7 @@ import (
 type MockHttpServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockHttpServerMockRecorder
+	isgomock struct{}
 }
 
 // MockHttpServerMockRecorder is the mock recorder for MockHttpServer.
@@ -55,23 +56,24 @@ func (mr *MockHttpServerMockRecorder) ListenAndServe() *gomock.Call {
 }
 
 // Shutdown mocks base method.
-func (m *MockHttpServer) Shutdown(arg0 context.Context) error {
+func (m *MockHttpServer) Shutdown(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Shutdown", arg0)
+	ret := m.ctrl.Call(m, "Shutdown", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Shutdown indicates an expected call of Shutdown.
-func (mr *MockHttpServerMockRecorder) Shutdown(arg0 any) *gomock.Call {
+func (mr *MockHttpServerMockRecorder) Shutdown(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockHttpServer)(nil).Shutdown), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockHttpServer)(nil).Shutdown), ctx)
 }
 
 // MockGrpcServerImp is a mock of GrpcServerImp interface.
 type MockGrpcServerImp struct {
 	ctrl     *gomock.Controller
 	recorder *MockGrpcServerImpMockRecorder
+	isgomock struct{}
 }
 
 // MockGrpcServerImpMockRecorder is the mock recorder for MockGrpcServerImp.
@@ -104,15 +106,15 @@ func (mr *MockGrpcServerImpMockRecorder) GracefulStop() *gomock.Call {
 }
 
 // Serve mocks base method.
-func (m *MockGrpcServerImp) Serve(arg0 net.Listener) error {
+func (m *MockGrpcServerImp) Serve(lis net.Listener) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Serve", arg0)
+	ret := m.ctrl.Call(m, "Serve", lis)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Serve indicates an expected call of Serve.
-func (mr *MockGrpcServerImpMockRecorder) Serve(arg0 any) *gomock.Call {
+func (mr *MockGrpcServerImpMockRecorder) Serve(lis any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serve", reflect.TypeOf((*MockGrpcServerImp)(nil).Serve), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serve", reflect.TypeOf((*MockGrpcServerImp)(nil).Serve), lis)
 }

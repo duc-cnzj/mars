@@ -12,7 +12,6 @@ package auth
 import (
 	reflect "reflect"
 
-	schematype "github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -20,6 +19,7 @@ import (
 type MockAuth struct {
 	ctrl     *gomock.Controller
 	recorder *MockAuthMockRecorder
+	isgomock struct{}
 }
 
 // MockAuthMockRecorder is the mock recorder for MockAuth.
@@ -40,7 +40,7 @@ func (m *MockAuth) EXPECT() *MockAuthMockRecorder {
 }
 
 // Sign mocks base method.
-func (m *MockAuth) Sign(arg0 *schematype.UserInfo) (*SignData, error) {
+func (m *MockAuth) Sign(arg0 *UserInfo) (*SignData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Sign", arg0)
 	ret0, _ := ret[0].(*SignData)

@@ -20,6 +20,7 @@ import (
 type MockRunner struct {
 	ctrl     *gomock.Controller
 	recorder *MockRunnerMockRecorder
+	isgomock struct{}
 }
 
 // MockRunnerMockRecorder is the mock recorder for MockRunner.
@@ -40,17 +41,17 @@ func (m *MockRunner) EXPECT() *MockRunnerMockRecorder {
 }
 
 // AddCommand mocks base method.
-func (m *MockRunner) AddCommand(arg0, arg1 string, arg2 func()) error {
+func (m *MockRunner) AddCommand(name, expression string, fn func()) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddCommand", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "AddCommand", name, expression, fn)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddCommand indicates an expected call of AddCommand.
-func (mr *MockRunnerMockRecorder) AddCommand(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockRunnerMockRecorder) AddCommand(name, expression, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCommand", reflect.TypeOf((*MockRunner)(nil).AddCommand), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCommand", reflect.TypeOf((*MockRunner)(nil).AddCommand), name, expression, fn)
 }
 
 // Run mocks base method.
@@ -85,6 +86,7 @@ func (mr *MockRunnerMockRecorder) Shutdown(arg0 any) *gomock.Call {
 type MockManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockManagerMockRecorder is the mock recorder for MockManager.
@@ -119,17 +121,17 @@ func (mr *MockManagerMockRecorder) List() *gomock.Call {
 }
 
 // NewCommand mocks base method.
-func (m *MockManager) NewCommand(arg0 string, arg1 func() error) Command {
+func (m *MockManager) NewCommand(name string, fn func() error) Command {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewCommand", arg0, arg1)
+	ret := m.ctrl.Call(m, "NewCommand", name, fn)
 	ret0, _ := ret[0].(Command)
 	return ret0
 }
 
 // NewCommand indicates an expected call of NewCommand.
-func (mr *MockManagerMockRecorder) NewCommand(arg0, arg1 any) *gomock.Call {
+func (mr *MockManagerMockRecorder) NewCommand(name, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewCommand", reflect.TypeOf((*MockManager)(nil).NewCommand), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewCommand", reflect.TypeOf((*MockManager)(nil).NewCommand), name, fn)
 }
 
 // Run mocks base method.
@@ -164,6 +166,7 @@ func (mr *MockManagerMockRecorder) Shutdown(arg0 any) *gomock.Call {
 type MockCommand struct {
 	ctrl     *gomock.Controller
 	recorder *MockCommandMockRecorder
+	isgomock struct{}
 }
 
 // MockCommandMockRecorder is the mock recorder for MockCommand.
@@ -198,17 +201,17 @@ func (mr *MockCommandMockRecorder) At(arg0 any) *gomock.Call {
 }
 
 // Cron mocks base method.
-func (m *MockCommand) Cron(arg0 string) Command {
+func (m *MockCommand) Cron(expression string) Command {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Cron", arg0)
+	ret := m.ctrl.Call(m, "Cron", expression)
 	ret0, _ := ret[0].(Command)
 	return ret0
 }
 
 // Cron indicates an expected call of Cron.
-func (mr *MockCommandMockRecorder) Cron(arg0 any) *gomock.Call {
+func (mr *MockCommandMockRecorder) Cron(expression any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cron", reflect.TypeOf((*MockCommand)(nil).Cron), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cron", reflect.TypeOf((*MockCommand)(nil).Cron), expression)
 }
 
 // Daily mocks base method.
@@ -226,17 +229,17 @@ func (mr *MockCommandMockRecorder) Daily() *gomock.Call {
 }
 
 // DailyAt mocks base method.
-func (m *MockCommand) DailyAt(arg0 string) Command {
+func (m *MockCommand) DailyAt(time string) Command {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DailyAt", arg0)
+	ret := m.ctrl.Call(m, "DailyAt", time)
 	ret0, _ := ret[0].(Command)
 	return ret0
 }
 
 // DailyAt indicates an expected call of DailyAt.
-func (mr *MockCommandMockRecorder) DailyAt(arg0 any) *gomock.Call {
+func (mr *MockCommandMockRecorder) DailyAt(time any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DailyAt", reflect.TypeOf((*MockCommand)(nil).DailyAt), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DailyAt", reflect.TypeOf((*MockCommand)(nil).DailyAt), time)
 }
 
 // Days mocks base method.
@@ -604,17 +607,17 @@ func (mr *MockCommandMockRecorder) HourlyAt(arg0 any) *gomock.Call {
 }
 
 // LastDayOfMonth mocks base method.
-func (m *MockCommand) LastDayOfMonth(arg0 string) Command {
+func (m *MockCommand) LastDayOfMonth(time string) Command {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LastDayOfMonth", arg0)
+	ret := m.ctrl.Call(m, "LastDayOfMonth", time)
 	ret0, _ := ret[0].(Command)
 	return ret0
 }
 
 // LastDayOfMonth indicates an expected call of LastDayOfMonth.
-func (mr *MockCommandMockRecorder) LastDayOfMonth(arg0 any) *gomock.Call {
+func (mr *MockCommandMockRecorder) LastDayOfMonth(time any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LastDayOfMonth", reflect.TypeOf((*MockCommand)(nil).LastDayOfMonth), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LastDayOfMonth", reflect.TypeOf((*MockCommand)(nil).LastDayOfMonth), time)
 }
 
 // Mondays mocks base method.
@@ -646,17 +649,17 @@ func (mr *MockCommandMockRecorder) Monthly() *gomock.Call {
 }
 
 // MonthlyOn mocks base method.
-func (m *MockCommand) MonthlyOn(arg0, arg1 string) Command {
+func (m *MockCommand) MonthlyOn(dayOfMonth, time string) Command {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MonthlyOn", arg0, arg1)
+	ret := m.ctrl.Call(m, "MonthlyOn", dayOfMonth, time)
 	ret0, _ := ret[0].(Command)
 	return ret0
 }
 
 // MonthlyOn indicates an expected call of MonthlyOn.
-func (mr *MockCommandMockRecorder) MonthlyOn(arg0, arg1 any) *gomock.Call {
+func (mr *MockCommandMockRecorder) MonthlyOn(dayOfMonth, time any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MonthlyOn", reflect.TypeOf((*MockCommand)(nil).MonthlyOn), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MonthlyOn", reflect.TypeOf((*MockCommand)(nil).MonthlyOn), dayOfMonth, time)
 }
 
 // Name mocks base method.
@@ -688,17 +691,17 @@ func (mr *MockCommandMockRecorder) Quarterly() *gomock.Call {
 }
 
 // QuarterlyOn mocks base method.
-func (m *MockCommand) QuarterlyOn(arg0, arg1 string) Command {
+func (m *MockCommand) QuarterlyOn(dayOfQuarter, time string) Command {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "QuarterlyOn", arg0, arg1)
+	ret := m.ctrl.Call(m, "QuarterlyOn", dayOfQuarter, time)
 	ret0, _ := ret[0].(Command)
 	return ret0
 }
 
 // QuarterlyOn indicates an expected call of QuarterlyOn.
-func (mr *MockCommandMockRecorder) QuarterlyOn(arg0, arg1 any) *gomock.Call {
+func (mr *MockCommandMockRecorder) QuarterlyOn(dayOfQuarter, time any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QuarterlyOn", reflect.TypeOf((*MockCommand)(nil).QuarterlyOn), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QuarterlyOn", reflect.TypeOf((*MockCommand)(nil).QuarterlyOn), dayOfQuarter, time)
 }
 
 // Saturdays mocks base method.
@@ -814,17 +817,17 @@ func (mr *MockCommandMockRecorder) Weekly() *gomock.Call {
 }
 
 // WeeklyOn mocks base method.
-func (m *MockCommand) WeeklyOn(arg0 int, arg1 string) Command {
+func (m *MockCommand) WeeklyOn(day int, time string) Command {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WeeklyOn", arg0, arg1)
+	ret := m.ctrl.Call(m, "WeeklyOn", day, time)
 	ret0, _ := ret[0].(Command)
 	return ret0
 }
 
 // WeeklyOn indicates an expected call of WeeklyOn.
-func (mr *MockCommandMockRecorder) WeeklyOn(arg0, arg1 any) *gomock.Call {
+func (mr *MockCommandMockRecorder) WeeklyOn(day, time any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WeeklyOn", reflect.TypeOf((*MockCommand)(nil).WeeklyOn), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WeeklyOn", reflect.TypeOf((*MockCommand)(nil).WeeklyOn), day, time)
 }
 
 // Yearly mocks base method.
@@ -842,15 +845,15 @@ func (mr *MockCommandMockRecorder) Yearly() *gomock.Call {
 }
 
 // YearlyOn mocks base method.
-func (m *MockCommand) YearlyOn(arg0, arg1, arg2 string) Command {
+func (m *MockCommand) YearlyOn(month, dayOfMonth, time string) Command {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "YearlyOn", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "YearlyOn", month, dayOfMonth, time)
 	ret0, _ := ret[0].(Command)
 	return ret0
 }
 
 // YearlyOn indicates an expected call of YearlyOn.
-func (mr *MockCommandMockRecorder) YearlyOn(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockCommandMockRecorder) YearlyOn(month, dayOfMonth, time any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "YearlyOn", reflect.TypeOf((*MockCommand)(nil).YearlyOn), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "YearlyOn", reflect.TypeOf((*MockCommand)(nil).YearlyOn), month, dayOfMonth, time)
 }

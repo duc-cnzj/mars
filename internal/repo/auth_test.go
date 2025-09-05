@@ -30,6 +30,7 @@ func TestAuthRepo_Login_Success(t *testing.T) {
 		Username: "admin",
 		Password: "password",
 	}
+	data.EXPECT().Config().Return(&config.Config{AdminPassword: "password"}).Times(1)
 
 	authsvc.EXPECT().Sign(adminUserInfo).Return(&auth.SignData{Token: "token", ExpiredIn: 3600}, nil).Times(1)
 
@@ -52,9 +53,8 @@ func TestAuthRepo_Login_Failure(t *testing.T) {
 
 	input := &LoginInput{
 		Username: "xadmin",
-		Password: "wrongpassword",
+		Password: "password",
 	}
-	data.EXPECT().Config().Return(&config.Config{AdminPassword: "password"}).Times(1)
 
 	resp, err := repo.Login(context.TODO(), input)
 
@@ -76,7 +76,7 @@ func TestAuthRepo_Login_Failure2(t *testing.T) {
 		Username: "admin",
 		Password: "wrongpassword",
 	}
-	authsvc.EXPECT().Sign(adminUserInfo).Return(nil, errors.New("x"))
+	data.EXPECT().Config().Return(&config.Config{AdminPassword: "password"}).Times(1)
 
 	_, err := repo.Login(context.TODO(), input)
 

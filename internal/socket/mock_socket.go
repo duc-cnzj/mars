@@ -18,7 +18,7 @@ import (
 	types "github.com/duc-cnzj/mars/api/v5/types"
 	websocket "github.com/duc-cnzj/mars/api/v5/websocket"
 	application "github.com/duc-cnzj/mars/v5/internal/application"
-	schematype "github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
+	auth "github.com/duc-cnzj/mars/v5/internal/auth"
 	repo "github.com/duc-cnzj/mars/v5/internal/repo"
 	gomock "go.uber.org/mock/gomock"
 	release "helm.sh/helm/v3/pkg/release"
@@ -29,6 +29,7 @@ import (
 type MockJobManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockJobManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockJobManagerMockRecorder is the mock recorder for MockJobManager.
@@ -49,23 +50,24 @@ func (m *MockJobManager) EXPECT() *MockJobManagerMockRecorder {
 }
 
 // NewJob mocks base method.
-func (m *MockJobManager) NewJob(arg0 *JobInput) Job {
+func (m *MockJobManager) NewJob(input *JobInput) Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewJob", arg0)
+	ret := m.ctrl.Call(m, "NewJob", input)
 	ret0, _ := ret[0].(Job)
 	return ret0
 }
 
 // NewJob indicates an expected call of NewJob.
-func (mr *MockJobManagerMockRecorder) NewJob(arg0 any) *gomock.Call {
+func (mr *MockJobManagerMockRecorder) NewJob(input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewJob", reflect.TypeOf((*MockJobManager)(nil).NewJob), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewJob", reflect.TypeOf((*MockJobManager)(nil).NewJob), input)
 }
 
 // MockJob is a mock of Job interface.
 type MockJob struct {
 	ctrl     *gomock.Controller
 	recorder *MockJobMockRecorder
+	isgomock struct{}
 }
 
 // MockJobMockRecorder is the mock recorder for MockJob.
@@ -184,45 +186,45 @@ func (mr *MockJobMockRecorder) Manifests() *gomock.Call {
 }
 
 // OnError mocks base method.
-func (m *MockJob) OnError(arg0 int, arg1 func(error, func())) Job {
+func (m *MockJob) OnError(p int, fn func(error, func())) Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OnError", arg0, arg1)
+	ret := m.ctrl.Call(m, "OnError", p, fn)
 	ret0, _ := ret[0].(Job)
 	return ret0
 }
 
 // OnError indicates an expected call of OnError.
-func (mr *MockJobMockRecorder) OnError(arg0, arg1 any) *gomock.Call {
+func (mr *MockJobMockRecorder) OnError(p, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnError", reflect.TypeOf((*MockJob)(nil).OnError), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnError", reflect.TypeOf((*MockJob)(nil).OnError), p, fn)
 }
 
 // OnFinally mocks base method.
-func (m *MockJob) OnFinally(arg0 int, arg1 func(error, func())) Job {
+func (m *MockJob) OnFinally(p int, fn func(error, func())) Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OnFinally", arg0, arg1)
+	ret := m.ctrl.Call(m, "OnFinally", p, fn)
 	ret0, _ := ret[0].(Job)
 	return ret0
 }
 
 // OnFinally indicates an expected call of OnFinally.
-func (mr *MockJobMockRecorder) OnFinally(arg0, arg1 any) *gomock.Call {
+func (mr *MockJobMockRecorder) OnFinally(p, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnFinally", reflect.TypeOf((*MockJob)(nil).OnFinally), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnFinally", reflect.TypeOf((*MockJob)(nil).OnFinally), p, fn)
 }
 
 // OnSuccess mocks base method.
-func (m *MockJob) OnSuccess(arg0 int, arg1 func(error, func())) Job {
+func (m *MockJob) OnSuccess(p int, fn func(error, func())) Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OnSuccess", arg0, arg1)
+	ret := m.ctrl.Call(m, "OnSuccess", p, fn)
 	ret0, _ := ret[0].(Job)
 	return ret0
 }
 
 // OnSuccess indicates an expected call of OnSuccess.
-func (mr *MockJobMockRecorder) OnSuccess(arg0, arg1 any) *gomock.Call {
+func (mr *MockJobMockRecorder) OnSuccess(p, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnSuccess", reflect.TypeOf((*MockJob)(nil).OnSuccess), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnSuccess", reflect.TypeOf((*MockJob)(nil).OnSuccess), p, fn)
 }
 
 // Project mocks base method.
@@ -240,17 +242,17 @@ func (mr *MockJobMockRecorder) Project() *gomock.Call {
 }
 
 // Run mocks base method.
-func (m *MockJob) Run(arg0 context.Context) Job {
+func (m *MockJob) Run(ctx context.Context) Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Run", arg0)
+	ret := m.ctrl.Call(m, "Run", ctx)
 	ret0, _ := ret[0].(Job)
 	return ret0
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockJobMockRecorder) Run(arg0 any) *gomock.Call {
+func (mr *MockJobMockRecorder) Run(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockJob)(nil).Run), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockJob)(nil).Run), ctx)
 }
 
 // Stop mocks base method.
@@ -283,6 +285,7 @@ func (mr *MockJobMockRecorder) Validate() *gomock.Call {
 type MockPercentable struct {
 	ctrl     *gomock.Controller
 	recorder *MockPercentableMockRecorder
+	isgomock struct{}
 }
 
 // MockPercentableMockRecorder is the mock recorder for MockPercentable.
@@ -329,21 +332,22 @@ func (mr *MockPercentableMockRecorder) Current() *gomock.Call {
 }
 
 // To mocks base method.
-func (m *MockPercentable) To(arg0 int64) {
+func (m *MockPercentable) To(percent int64) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "To", arg0)
+	m.ctrl.Call(m, "To", percent)
 }
 
 // To indicates an expected call of To.
-func (mr *MockPercentableMockRecorder) To(arg0 any) *gomock.Call {
+func (mr *MockPercentableMockRecorder) To(percent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "To", reflect.TypeOf((*MockPercentable)(nil).To), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "To", reflect.TypeOf((*MockPercentable)(nil).To), percent)
 }
 
 // MockConn is a mock of Conn interface.
 type MockConn struct {
 	ctrl     *gomock.Controller
 	recorder *MockConnMockRecorder
+	isgomock struct{}
 }
 
 // MockConnMockRecorder is the mock recorder for MockConn.
@@ -364,17 +368,17 @@ func (m *MockConn) EXPECT() *MockConnMockRecorder {
 }
 
 // AddCancelDeployTask mocks base method.
-func (m *MockConn) AddCancelDeployTask(arg0 string, arg1 func(error)) error {
+func (m *MockConn) AddCancelDeployTask(id string, fn func(error)) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddCancelDeployTask", arg0, arg1)
+	ret := m.ctrl.Call(m, "AddCancelDeployTask", id, fn)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddCancelDeployTask indicates an expected call of AddCancelDeployTask.
-func (mr *MockConnMockRecorder) AddCancelDeployTask(arg0, arg1 any) *gomock.Call {
+func (mr *MockConnMockRecorder) AddCancelDeployTask(id, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCancelDeployTask", reflect.TypeOf((*MockConn)(nil).AddCancelDeployTask), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCancelDeployTask", reflect.TypeOf((*MockConn)(nil).AddCancelDeployTask), id, fn)
 }
 
 // Close mocks base method.
@@ -392,51 +396,51 @@ func (mr *MockConnMockRecorder) Close() *gomock.Call {
 }
 
 // CloseAndClean mocks base method.
-func (m *MockConn) CloseAndClean(arg0 context.Context) error {
+func (m *MockConn) CloseAndClean(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CloseAndClean", arg0)
+	ret := m.ctrl.Call(m, "CloseAndClean", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CloseAndClean indicates an expected call of CloseAndClean.
-func (mr *MockConnMockRecorder) CloseAndClean(arg0 any) *gomock.Call {
+func (mr *MockConnMockRecorder) CloseAndClean(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseAndClean", reflect.TypeOf((*MockConn)(nil).CloseAndClean), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseAndClean", reflect.TypeOf((*MockConn)(nil).CloseAndClean), ctx)
 }
 
 // ClosePty mocks base method.
-func (m *MockConn) ClosePty(arg0 context.Context, arg1 string, arg2 uint32, arg3 string) {
+func (m *MockConn) ClosePty(ctx context.Context, sessionId string, status uint32, reason string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ClosePty", arg0, arg1, arg2, arg3)
+	m.ctrl.Call(m, "ClosePty", ctx, sessionId, status, reason)
 }
 
 // ClosePty indicates an expected call of ClosePty.
-func (mr *MockConnMockRecorder) ClosePty(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockConnMockRecorder) ClosePty(ctx, sessionId, status, reason any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClosePty", reflect.TypeOf((*MockConn)(nil).ClosePty), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClosePty", reflect.TypeOf((*MockConn)(nil).ClosePty), ctx, sessionId, status, reason)
 }
 
 // GetPtyHandler mocks base method.
-func (m *MockConn) GetPtyHandler(arg0 string) (PtyHandler, bool) {
+func (m *MockConn) GetPtyHandler(sessionID string) (PtyHandler, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPtyHandler", arg0)
+	ret := m.ctrl.Call(m, "GetPtyHandler", sessionID)
 	ret0, _ := ret[0].(PtyHandler)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
 // GetPtyHandler indicates an expected call of GetPtyHandler.
-func (mr *MockConnMockRecorder) GetPtyHandler(arg0 any) *gomock.Call {
+func (mr *MockConnMockRecorder) GetPtyHandler(sessionID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPtyHandler", reflect.TypeOf((*MockConn)(nil).GetPtyHandler), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPtyHandler", reflect.TypeOf((*MockConn)(nil).GetPtyHandler), sessionID)
 }
 
 // GetUser mocks base method.
-func (m *MockConn) GetUser() *schematype.UserInfo {
+func (m *MockConn) GetUser() *auth.UserInfo {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUser")
-	ret0, _ := ret[0].(*schematype.UserInfo)
+	ret0, _ := ret[0].(*auth.UserInfo)
 	return ret0
 }
 
@@ -461,18 +465,18 @@ func (mr *MockConnMockRecorder) ID() *gomock.Call {
 }
 
 // NextWriter mocks base method.
-func (m *MockConn) NextWriter(arg0 int) (io.WriteCloser, error) {
+func (m *MockConn) NextWriter(messageType int) (io.WriteCloser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NextWriter", arg0)
+	ret := m.ctrl.Call(m, "NextWriter", messageType)
 	ret0, _ := ret[0].(io.WriteCloser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NextWriter indicates an expected call of NextWriter.
-func (mr *MockConnMockRecorder) NextWriter(arg0 any) *gomock.Call {
+func (mr *MockConnMockRecorder) NextWriter(messageType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NextWriter", reflect.TypeOf((*MockConn)(nil).NextWriter), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NextWriter", reflect.TypeOf((*MockConn)(nil).NextWriter), messageType)
 }
 
 // PubSub mocks base method.
@@ -506,105 +510,105 @@ func (mr *MockConnMockRecorder) ReadMessage() *gomock.Call {
 }
 
 // RemoveCancelDeployTask mocks base method.
-func (m *MockConn) RemoveCancelDeployTask(arg0 string) {
+func (m *MockConn) RemoveCancelDeployTask(id string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RemoveCancelDeployTask", arg0)
+	m.ctrl.Call(m, "RemoveCancelDeployTask", id)
 }
 
 // RemoveCancelDeployTask indicates an expected call of RemoveCancelDeployTask.
-func (mr *MockConnMockRecorder) RemoveCancelDeployTask(arg0 any) *gomock.Call {
+func (mr *MockConnMockRecorder) RemoveCancelDeployTask(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveCancelDeployTask", reflect.TypeOf((*MockConn)(nil).RemoveCancelDeployTask), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveCancelDeployTask", reflect.TypeOf((*MockConn)(nil).RemoveCancelDeployTask), id)
 }
 
 // RunCancelDeployTask mocks base method.
-func (m *MockConn) RunCancelDeployTask(arg0 string) error {
+func (m *MockConn) RunCancelDeployTask(id string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RunCancelDeployTask", arg0)
+	ret := m.ctrl.Call(m, "RunCancelDeployTask", id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RunCancelDeployTask indicates an expected call of RunCancelDeployTask.
-func (mr *MockConnMockRecorder) RunCancelDeployTask(arg0 any) *gomock.Call {
+func (mr *MockConnMockRecorder) RunCancelDeployTask(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunCancelDeployTask", reflect.TypeOf((*MockConn)(nil).RunCancelDeployTask), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunCancelDeployTask", reflect.TypeOf((*MockConn)(nil).RunCancelDeployTask), id)
 }
 
 // SetPongHandler mocks base method.
-func (m *MockConn) SetPongHandler(arg0 func(string) error) {
+func (m *MockConn) SetPongHandler(h func(string) error) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetPongHandler", arg0)
+	m.ctrl.Call(m, "SetPongHandler", h)
 }
 
 // SetPongHandler indicates an expected call of SetPongHandler.
-func (mr *MockConnMockRecorder) SetPongHandler(arg0 any) *gomock.Call {
+func (mr *MockConnMockRecorder) SetPongHandler(h any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPongHandler", reflect.TypeOf((*MockConn)(nil).SetPongHandler), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPongHandler", reflect.TypeOf((*MockConn)(nil).SetPongHandler), h)
 }
 
 // SetPtyHandler mocks base method.
-func (m *MockConn) SetPtyHandler(arg0 string, arg1 PtyHandler) {
+func (m *MockConn) SetPtyHandler(sessionID string, session PtyHandler) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetPtyHandler", arg0, arg1)
+	m.ctrl.Call(m, "SetPtyHandler", sessionID, session)
 }
 
 // SetPtyHandler indicates an expected call of SetPtyHandler.
-func (mr *MockConnMockRecorder) SetPtyHandler(arg0, arg1 any) *gomock.Call {
+func (mr *MockConnMockRecorder) SetPtyHandler(sessionID, session any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPtyHandler", reflect.TypeOf((*MockConn)(nil).SetPtyHandler), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPtyHandler", reflect.TypeOf((*MockConn)(nil).SetPtyHandler), sessionID, session)
 }
 
 // SetReadDeadline mocks base method.
-func (m *MockConn) SetReadDeadline(arg0 time.Time) error {
+func (m *MockConn) SetReadDeadline(t time.Time) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetReadDeadline", arg0)
+	ret := m.ctrl.Call(m, "SetReadDeadline", t)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetReadDeadline indicates an expected call of SetReadDeadline.
-func (mr *MockConnMockRecorder) SetReadDeadline(arg0 any) *gomock.Call {
+func (mr *MockConnMockRecorder) SetReadDeadline(t any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetReadDeadline", reflect.TypeOf((*MockConn)(nil).SetReadDeadline), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetReadDeadline", reflect.TypeOf((*MockConn)(nil).SetReadDeadline), t)
 }
 
 // SetReadLimit mocks base method.
-func (m *MockConn) SetReadLimit(arg0 int64) {
+func (m *MockConn) SetReadLimit(limit int64) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetReadLimit", arg0)
+	m.ctrl.Call(m, "SetReadLimit", limit)
 }
 
 // SetReadLimit indicates an expected call of SetReadLimit.
-func (mr *MockConnMockRecorder) SetReadLimit(arg0 any) *gomock.Call {
+func (mr *MockConnMockRecorder) SetReadLimit(limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetReadLimit", reflect.TypeOf((*MockConn)(nil).SetReadLimit), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetReadLimit", reflect.TypeOf((*MockConn)(nil).SetReadLimit), limit)
 }
 
 // SetUser mocks base method.
-func (m *MockConn) SetUser(arg0 *schematype.UserInfo) {
+func (m *MockConn) SetUser(info *auth.UserInfo) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetUser", arg0)
+	m.ctrl.Call(m, "SetUser", info)
 }
 
 // SetUser indicates an expected call of SetUser.
-func (mr *MockConnMockRecorder) SetUser(arg0 any) *gomock.Call {
+func (mr *MockConnMockRecorder) SetUser(info any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUser", reflect.TypeOf((*MockConn)(nil).SetUser), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUser", reflect.TypeOf((*MockConn)(nil).SetUser), info)
 }
 
 // SetWriteDeadline mocks base method.
-func (m *MockConn) SetWriteDeadline(arg0 time.Time) error {
+func (m *MockConn) SetWriteDeadline(t time.Time) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetWriteDeadline", arg0)
+	ret := m.ctrl.Call(m, "SetWriteDeadline", t)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetWriteDeadline indicates an expected call of SetWriteDeadline.
-func (mr *MockConnMockRecorder) SetWriteDeadline(arg0 any) *gomock.Call {
+func (mr *MockConnMockRecorder) SetWriteDeadline(t any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWriteDeadline", reflect.TypeOf((*MockConn)(nil).SetWriteDeadline), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWriteDeadline", reflect.TypeOf((*MockConn)(nil).SetWriteDeadline), t)
 }
 
 // UID mocks base method.
@@ -622,23 +626,24 @@ func (mr *MockConnMockRecorder) UID() *gomock.Call {
 }
 
 // WriteMessage mocks base method.
-func (m *MockConn) WriteMessage(arg0 int, arg1 []byte) error {
+func (m *MockConn) WriteMessage(messageType int, data []byte) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteMessage", arg0, arg1)
+	ret := m.ctrl.Call(m, "WriteMessage", messageType, data)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // WriteMessage indicates an expected call of WriteMessage.
-func (mr *MockConnMockRecorder) WriteMessage(arg0, arg1 any) *gomock.Call {
+func (mr *MockConnMockRecorder) WriteMessage(messageType, data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMessage", reflect.TypeOf((*MockConn)(nil).WriteMessage), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMessage", reflect.TypeOf((*MockConn)(nil).WriteMessage), messageType, data)
 }
 
 // MockPtyHandler is a mock of PtyHandler interface.
 type MockPtyHandler struct {
 	ctrl     *gomock.Controller
 	recorder *MockPtyHandlerMockRecorder
+	isgomock struct{}
 }
 
 // MockPtyHandlerMockRecorder is the mock recorder for MockPtyHandler.
@@ -729,18 +734,18 @@ func (mr *MockPtyHandlerMockRecorder) Next() *gomock.Call {
 }
 
 // Read mocks base method.
-func (m *MockPtyHandler) Read(arg0 []byte) (int, error) {
+func (m *MockPtyHandler) Read(p []byte) (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Read", arg0)
+	ret := m.ctrl.Call(m, "Read", p)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Read indicates an expected call of Read.
-func (mr *MockPtyHandlerMockRecorder) Read(arg0 any) *gomock.Call {
+func (mr *MockPtyHandlerMockRecorder) Read(p any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockPtyHandler)(nil).Read), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockPtyHandler)(nil).Read), p)
 }
 
 // Recorder mocks base method.
@@ -784,17 +789,17 @@ func (mr *MockPtyHandlerMockRecorder) Resize(arg0 any) *gomock.Call {
 }
 
 // Send mocks base method.
-func (m *MockPtyHandler) Send(arg0 context.Context, arg1 *websocket.TerminalMessage) error {
+func (m *MockPtyHandler) Send(ctx context.Context, message *websocket.TerminalMessage) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Send", arg0, arg1)
+	ret := m.ctrl.Call(m, "Send", ctx, message)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Send indicates an expected call of Send.
-func (mr *MockPtyHandlerMockRecorder) Send(arg0, arg1 any) *gomock.Call {
+func (mr *MockPtyHandlerMockRecorder) Send(ctx, message any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockPtyHandler)(nil).Send), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockPtyHandler)(nil).Send), ctx, message)
 }
 
 // SetShell mocks base method.
@@ -838,24 +843,25 @@ func (mr *MockPtyHandlerMockRecorder) Width() *gomock.Call {
 }
 
 // Write mocks base method.
-func (m *MockPtyHandler) Write(arg0 []byte) (int, error) {
+func (m *MockPtyHandler) Write(p []byte) (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Write", arg0)
+	ret := m.ctrl.Call(m, "Write", p)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Write indicates an expected call of Write.
-func (mr *MockPtyHandlerMockRecorder) Write(arg0 any) *gomock.Call {
+func (mr *MockPtyHandlerMockRecorder) Write(p any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockPtyHandler)(nil).Write), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockPtyHandler)(nil).Write), p)
 }
 
 // MockTaskManager is a mock of TaskManager interface.
 type MockTaskManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockTaskManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockTaskManagerMockRecorder is the mock recorder for MockTaskManager.
@@ -876,55 +882,55 @@ func (m *MockTaskManager) EXPECT() *MockTaskManagerMockRecorder {
 }
 
 // Has mocks base method.
-func (m *MockTaskManager) Has(arg0 string) bool {
+func (m *MockTaskManager) Has(id string) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Has", arg0)
+	ret := m.ctrl.Call(m, "Has", id)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // Has indicates an expected call of Has.
-func (mr *MockTaskManagerMockRecorder) Has(arg0 any) *gomock.Call {
+func (mr *MockTaskManagerMockRecorder) Has(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*MockTaskManager)(nil).Has), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*MockTaskManager)(nil).Has), id)
 }
 
 // Register mocks base method.
-func (m *MockTaskManager) Register(arg0 string, arg1 func(error)) error {
+func (m *MockTaskManager) Register(id string, fn func(error)) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Register", arg0, arg1)
+	ret := m.ctrl.Call(m, "Register", id, fn)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Register indicates an expected call of Register.
-func (mr *MockTaskManagerMockRecorder) Register(arg0, arg1 any) *gomock.Call {
+func (mr *MockTaskManagerMockRecorder) Register(id, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockTaskManager)(nil).Register), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockTaskManager)(nil).Register), id, fn)
 }
 
 // Remove mocks base method.
-func (m *MockTaskManager) Remove(arg0 string) {
+func (m *MockTaskManager) Remove(id string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Remove", arg0)
+	m.ctrl.Call(m, "Remove", id)
 }
 
 // Remove indicates an expected call of Remove.
-func (mr *MockTaskManagerMockRecorder) Remove(arg0 any) *gomock.Call {
+func (mr *MockTaskManagerMockRecorder) Remove(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockTaskManager)(nil).Remove), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockTaskManager)(nil).Remove), id)
 }
 
 // Stop mocks base method.
-func (m *MockTaskManager) Stop(arg0 string) {
+func (m *MockTaskManager) Stop(id string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Stop", arg0)
+	m.ctrl.Call(m, "Stop", id)
 }
 
 // Stop indicates an expected call of Stop.
-func (mr *MockTaskManagerMockRecorder) Stop(arg0 any) *gomock.Call {
+func (mr *MockTaskManagerMockRecorder) Stop(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockTaskManager)(nil).Stop), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockTaskManager)(nil).Stop), id)
 }
 
 // StopAll mocks base method.
@@ -943,6 +949,7 @@ func (mr *MockTaskManagerMockRecorder) StopAll() *gomock.Call {
 type MockGorillaWs struct {
 	ctrl     *gomock.Controller
 	recorder *MockGorillaWsMockRecorder
+	isgomock struct{}
 }
 
 // MockGorillaWsMockRecorder is the mock recorder for MockGorillaWs.
@@ -977,18 +984,18 @@ func (mr *MockGorillaWsMockRecorder) Close() *gomock.Call {
 }
 
 // NextWriter mocks base method.
-func (m *MockGorillaWs) NextWriter(arg0 int) (io.WriteCloser, error) {
+func (m *MockGorillaWs) NextWriter(messageType int) (io.WriteCloser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NextWriter", arg0)
+	ret := m.ctrl.Call(m, "NextWriter", messageType)
 	ret0, _ := ret[0].(io.WriteCloser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NextWriter indicates an expected call of NextWriter.
-func (mr *MockGorillaWsMockRecorder) NextWriter(arg0 any) *gomock.Call {
+func (mr *MockGorillaWsMockRecorder) NextWriter(messageType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NextWriter", reflect.TypeOf((*MockGorillaWs)(nil).NextWriter), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NextWriter", reflect.TypeOf((*MockGorillaWs)(nil).NextWriter), messageType)
 }
 
 // ReadMessage mocks base method.
@@ -1008,75 +1015,76 @@ func (mr *MockGorillaWsMockRecorder) ReadMessage() *gomock.Call {
 }
 
 // SetPongHandler mocks base method.
-func (m *MockGorillaWs) SetPongHandler(arg0 func(string) error) {
+func (m *MockGorillaWs) SetPongHandler(h func(string) error) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetPongHandler", arg0)
+	m.ctrl.Call(m, "SetPongHandler", h)
 }
 
 // SetPongHandler indicates an expected call of SetPongHandler.
-func (mr *MockGorillaWsMockRecorder) SetPongHandler(arg0 any) *gomock.Call {
+func (mr *MockGorillaWsMockRecorder) SetPongHandler(h any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPongHandler", reflect.TypeOf((*MockGorillaWs)(nil).SetPongHandler), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPongHandler", reflect.TypeOf((*MockGorillaWs)(nil).SetPongHandler), h)
 }
 
 // SetReadDeadline mocks base method.
-func (m *MockGorillaWs) SetReadDeadline(arg0 time.Time) error {
+func (m *MockGorillaWs) SetReadDeadline(t time.Time) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetReadDeadline", arg0)
+	ret := m.ctrl.Call(m, "SetReadDeadline", t)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetReadDeadline indicates an expected call of SetReadDeadline.
-func (mr *MockGorillaWsMockRecorder) SetReadDeadline(arg0 any) *gomock.Call {
+func (mr *MockGorillaWsMockRecorder) SetReadDeadline(t any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetReadDeadline", reflect.TypeOf((*MockGorillaWs)(nil).SetReadDeadline), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetReadDeadline", reflect.TypeOf((*MockGorillaWs)(nil).SetReadDeadline), t)
 }
 
 // SetReadLimit mocks base method.
-func (m *MockGorillaWs) SetReadLimit(arg0 int64) {
+func (m *MockGorillaWs) SetReadLimit(limit int64) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetReadLimit", arg0)
+	m.ctrl.Call(m, "SetReadLimit", limit)
 }
 
 // SetReadLimit indicates an expected call of SetReadLimit.
-func (mr *MockGorillaWsMockRecorder) SetReadLimit(arg0 any) *gomock.Call {
+func (mr *MockGorillaWsMockRecorder) SetReadLimit(limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetReadLimit", reflect.TypeOf((*MockGorillaWs)(nil).SetReadLimit), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetReadLimit", reflect.TypeOf((*MockGorillaWs)(nil).SetReadLimit), limit)
 }
 
 // SetWriteDeadline mocks base method.
-func (m *MockGorillaWs) SetWriteDeadline(arg0 time.Time) error {
+func (m *MockGorillaWs) SetWriteDeadline(t time.Time) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetWriteDeadline", arg0)
+	ret := m.ctrl.Call(m, "SetWriteDeadline", t)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetWriteDeadline indicates an expected call of SetWriteDeadline.
-func (mr *MockGorillaWsMockRecorder) SetWriteDeadline(arg0 any) *gomock.Call {
+func (mr *MockGorillaWsMockRecorder) SetWriteDeadline(t any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWriteDeadline", reflect.TypeOf((*MockGorillaWs)(nil).SetWriteDeadline), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWriteDeadline", reflect.TypeOf((*MockGorillaWs)(nil).SetWriteDeadline), t)
 }
 
 // WriteMessage mocks base method.
-func (m *MockGorillaWs) WriteMessage(arg0 int, arg1 []byte) error {
+func (m *MockGorillaWs) WriteMessage(messageType int, data []byte) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteMessage", arg0, arg1)
+	ret := m.ctrl.Call(m, "WriteMessage", messageType, data)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // WriteMessage indicates an expected call of WriteMessage.
-func (mr *MockGorillaWsMockRecorder) WriteMessage(arg0, arg1 any) *gomock.Call {
+func (mr *MockGorillaWsMockRecorder) WriteMessage(messageType, data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMessage", reflect.TypeOf((*MockGorillaWs)(nil).WriteMessage), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMessage", reflect.TypeOf((*MockGorillaWs)(nil).WriteMessage), messageType, data)
 }
 
 // MockSessionMapper is a mock of SessionMapper interface.
 type MockSessionMapper struct {
 	ctrl     *gomock.Controller
 	recorder *MockSessionMapperMockRecorder
+	isgomock struct{}
 }
 
 // MockSessionMapperMockRecorder is the mock recorder for MockSessionMapper.
@@ -1097,60 +1105,61 @@ func (m *MockSessionMapper) EXPECT() *MockSessionMapperMockRecorder {
 }
 
 // Close mocks base method.
-func (m *MockSessionMapper) Close(arg0 context.Context, arg1 string, arg2 uint32, arg3 string) {
+func (m *MockSessionMapper) Close(ctx context.Context, sessionId string, status uint32, reason string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Close", arg0, arg1, arg2, arg3)
+	m.ctrl.Call(m, "Close", ctx, sessionId, status, reason)
 }
 
 // Close indicates an expected call of Close.
-func (mr *MockSessionMapperMockRecorder) Close(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockSessionMapperMockRecorder) Close(ctx, sessionId, status, reason any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockSessionMapper)(nil).Close), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockSessionMapper)(nil).Close), ctx, sessionId, status, reason)
 }
 
 // CloseAll mocks base method.
-func (m *MockSessionMapper) CloseAll(arg0 context.Context) {
+func (m *MockSessionMapper) CloseAll(ctx context.Context) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "CloseAll", arg0)
+	m.ctrl.Call(m, "CloseAll", ctx)
 }
 
 // CloseAll indicates an expected call of CloseAll.
-func (mr *MockSessionMapperMockRecorder) CloseAll(arg0 any) *gomock.Call {
+func (mr *MockSessionMapperMockRecorder) CloseAll(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseAll", reflect.TypeOf((*MockSessionMapper)(nil).CloseAll), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseAll", reflect.TypeOf((*MockSessionMapper)(nil).CloseAll), ctx)
 }
 
 // Get mocks base method.
-func (m *MockSessionMapper) Get(arg0 string) (PtyHandler, bool) {
+func (m *MockSessionMapper) Get(sessionId string) (PtyHandler, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0)
+	ret := m.ctrl.Call(m, "Get", sessionId)
 	ret0, _ := ret[0].(PtyHandler)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockSessionMapperMockRecorder) Get(arg0 any) *gomock.Call {
+func (mr *MockSessionMapperMockRecorder) Get(sessionId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockSessionMapper)(nil).Get), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockSessionMapper)(nil).Get), sessionId)
 }
 
 // Set mocks base method.
-func (m *MockSessionMapper) Set(arg0 string, arg1 PtyHandler) {
+func (m *MockSessionMapper) Set(sessionId string, session PtyHandler) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Set", arg0, arg1)
+	m.ctrl.Call(m, "Set", sessionId, session)
 }
 
 // Set indicates an expected call of Set.
-func (mr *MockSessionMapperMockRecorder) Set(arg0, arg1 any) *gomock.Call {
+func (mr *MockSessionMapperMockRecorder) Set(sessionId, session any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockSessionMapper)(nil).Set), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockSessionMapper)(nil).Set), sessionId, session)
 }
 
 // MockReleaseInstaller is a mock of ReleaseInstaller interface.
 type MockReleaseInstaller struct {
 	ctrl     *gomock.Controller
 	recorder *MockReleaseInstallerMockRecorder
+	isgomock struct{}
 }
 
 // MockReleaseInstallerMockRecorder is the mock recorder for MockReleaseInstaller.
@@ -1171,24 +1180,25 @@ func (m *MockReleaseInstaller) EXPECT() *MockReleaseInstallerMockRecorder {
 }
 
 // Run mocks base method.
-func (m *MockReleaseInstaller) Run(arg0 context.Context, arg1 *InstallInput) (*release.Release, error) {
+func (m *MockReleaseInstaller) Run(ctx context.Context, input *InstallInput) (*release.Release, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Run", arg0, arg1)
+	ret := m.ctrl.Call(m, "Run", ctx, input)
 	ret0, _ := ret[0].(*release.Release)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockReleaseInstallerMockRecorder) Run(arg0, arg1 any) *gomock.Call {
+func (mr *MockReleaseInstallerMockRecorder) Run(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockReleaseInstaller)(nil).Run), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockReleaseInstaller)(nil).Run), ctx, input)
 }
 
 // MockDeployMsger is a mock of DeployMsger interface.
 type MockDeployMsger struct {
 	ctrl     *gomock.Controller
 	recorder *MockDeployMsgerMockRecorder
+	isgomock struct{}
 }
 
 // MockDeployMsgerMockRecorder is the mock recorder for MockDeployMsger.
@@ -1235,15 +1245,15 @@ func (mr *MockDeployMsgerMockRecorder) Current() *gomock.Call {
 }
 
 // SendDeployedResult mocks base method.
-func (m *MockDeployMsger) SendDeployedResult(arg0 websocket.ResultType, arg1 string, arg2 *types.ProjectModel) {
+func (m *MockDeployMsger) SendDeployedResult(t websocket.ResultType, msg string, p *types.ProjectModel) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SendDeployedResult", arg0, arg1, arg2)
+	m.ctrl.Call(m, "SendDeployedResult", t, msg, p)
 }
 
 // SendDeployedResult indicates an expected call of SendDeployedResult.
-func (mr *MockDeployMsgerMockRecorder) SendDeployedResult(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) SendDeployedResult(t, msg, p any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendDeployedResult", reflect.TypeOf((*MockDeployMsger)(nil).SendDeployedResult), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendDeployedResult", reflect.TypeOf((*MockDeployMsger)(nil).SendDeployedResult), t, msg, p)
 }
 
 // SendEndError mocks base method.
@@ -1271,15 +1281,15 @@ func (mr *MockDeployMsgerMockRecorder) SendMsg(arg0 any) *gomock.Call {
 }
 
 // SendMsgWithContainerLog mocks base method.
-func (m *MockDeployMsger) SendMsgWithContainerLog(arg0 string, arg1 []*websocket.Container) {
+func (m *MockDeployMsger) SendMsgWithContainerLog(msg string, containers []*websocket.Container) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SendMsgWithContainerLog", arg0, arg1)
+	m.ctrl.Call(m, "SendMsgWithContainerLog", msg, containers)
 }
 
 // SendMsgWithContainerLog indicates an expected call of SendMsgWithContainerLog.
-func (mr *MockDeployMsgerMockRecorder) SendMsgWithContainerLog(arg0, arg1 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) SendMsgWithContainerLog(msg, containers any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsgWithContainerLog", reflect.TypeOf((*MockDeployMsger)(nil).SendMsgWithContainerLog), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsgWithContainerLog", reflect.TypeOf((*MockDeployMsger)(nil).SendMsgWithContainerLog), msg, containers)
 }
 
 // SendProcessPercent mocks base method.
@@ -1307,21 +1317,22 @@ func (mr *MockDeployMsgerMockRecorder) SendProtoMsg(arg0 any) *gomock.Call {
 }
 
 // To mocks base method.
-func (m *MockDeployMsger) To(arg0 int64) {
+func (m *MockDeployMsger) To(percent int64) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "To", arg0)
+	m.ctrl.Call(m, "To", percent)
 }
 
 // To indicates an expected call of To.
-func (mr *MockDeployMsgerMockRecorder) To(arg0 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) To(percent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "To", reflect.TypeOf((*MockDeployMsger)(nil).To), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "To", reflect.TypeOf((*MockDeployMsger)(nil).To), percent)
 }
 
 // MockSafeWriteMessageChan is a mock of SafeWriteMessageChan interface.
 type MockSafeWriteMessageChan struct {
 	ctrl     *gomock.Controller
 	recorder *MockSafeWriteMessageChanMockRecorder
+	isgomock struct{}
 }
 
 // MockSafeWriteMessageChanMockRecorder is the mock recorder for MockSafeWriteMessageChan.
@@ -1368,13 +1379,13 @@ func (mr *MockSafeWriteMessageChanMockRecorder) Close() *gomock.Call {
 }
 
 // Send mocks base method.
-func (m *MockSafeWriteMessageChan) Send(arg0 MessageItem) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Send", arg0)
+func (m_2 *MockSafeWriteMessageChan) Send(m MessageItem) {
+	m_2.ctrl.T.Helper()
+	m_2.ctrl.Call(m_2, "Send", m)
 }
 
 // Send indicates an expected call of Send.
-func (mr *MockSafeWriteMessageChanMockRecorder) Send(arg0 any) *gomock.Call {
+func (mr *MockSafeWriteMessageChanMockRecorder) Send(m any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockSafeWriteMessageChan)(nil).Send), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockSafeWriteMessageChan)(nil).Send), m)
 }

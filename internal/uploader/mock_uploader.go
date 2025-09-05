@@ -11,7 +11,7 @@ package uploader
 
 import (
 	io "io"
-	fs "io/fs"
+	os "os"
 	reflect "reflect"
 	time "time"
 
@@ -23,6 +23,7 @@ import (
 type MockUploader struct {
 	ctrl     *gomock.Controller
 	recorder *MockUploaderMockRecorder
+	isgomock struct{}
 }
 
 // MockUploaderMockRecorder is the mock recorder for MockUploader.
@@ -43,60 +44,60 @@ func (m *MockUploader) EXPECT() *MockUploaderMockRecorder {
 }
 
 // AbsolutePath mocks base method.
-func (m *MockUploader) AbsolutePath(arg0 string) string {
+func (m *MockUploader) AbsolutePath(path string) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AbsolutePath", arg0)
+	ret := m.ctrl.Call(m, "AbsolutePath", path)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // AbsolutePath indicates an expected call of AbsolutePath.
-func (mr *MockUploaderMockRecorder) AbsolutePath(arg0 any) *gomock.Call {
+func (mr *MockUploaderMockRecorder) AbsolutePath(path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AbsolutePath", reflect.TypeOf((*MockUploader)(nil).AbsolutePath), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AbsolutePath", reflect.TypeOf((*MockUploader)(nil).AbsolutePath), path)
 }
 
 // AllDirectoryFiles mocks base method.
-func (m *MockUploader) AllDirectoryFiles(arg0 string) ([]FileInfo, error) {
+func (m *MockUploader) AllDirectoryFiles(dir string) ([]FileInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AllDirectoryFiles", arg0)
+	ret := m.ctrl.Call(m, "AllDirectoryFiles", dir)
 	ret0, _ := ret[0].([]FileInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AllDirectoryFiles indicates an expected call of AllDirectoryFiles.
-func (mr *MockUploaderMockRecorder) AllDirectoryFiles(arg0 any) *gomock.Call {
+func (mr *MockUploaderMockRecorder) AllDirectoryFiles(dir any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllDirectoryFiles", reflect.TypeOf((*MockUploader)(nil).AllDirectoryFiles), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllDirectoryFiles", reflect.TypeOf((*MockUploader)(nil).AllDirectoryFiles), dir)
 }
 
 // Delete mocks base method.
-func (m *MockUploader) Delete(arg0 string) error {
+func (m *MockUploader) Delete(path string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", arg0)
+	ret := m.ctrl.Call(m, "Delete", path)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockUploaderMockRecorder) Delete(arg0 any) *gomock.Call {
+func (mr *MockUploaderMockRecorder) Delete(path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUploader)(nil).Delete), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUploader)(nil).Delete), path)
 }
 
 // DeleteDir mocks base method.
-func (m *MockUploader) DeleteDir(arg0 string) error {
+func (m *MockUploader) DeleteDir(dir string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteDir", arg0)
+	ret := m.ctrl.Call(m, "DeleteDir", dir)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteDir indicates an expected call of DeleteDir.
-func (mr *MockUploaderMockRecorder) DeleteDir(arg0 any) *gomock.Call {
+func (mr *MockUploaderMockRecorder) DeleteDir(dir any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDir", reflect.TypeOf((*MockUploader)(nil).DeleteDir), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDir", reflect.TypeOf((*MockUploader)(nil).DeleteDir), dir)
 }
 
 // DirSize mocks base method.
@@ -129,17 +130,17 @@ func (mr *MockUploaderMockRecorder) Disk(arg0 any) *gomock.Call {
 }
 
 // Exists mocks base method.
-func (m *MockUploader) Exists(arg0 string) bool {
+func (m *MockUploader) Exists(path string) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Exists", arg0)
+	ret := m.ctrl.Call(m, "Exists", path)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // Exists indicates an expected call of Exists.
-func (mr *MockUploaderMockRecorder) Exists(arg0 any) *gomock.Call {
+func (mr *MockUploaderMockRecorder) Exists(path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockUploader)(nil).Exists), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockUploader)(nil).Exists), path)
 }
 
 // LocalUploader mocks base method.
@@ -157,62 +158,62 @@ func (mr *MockUploaderMockRecorder) LocalUploader() *gomock.Call {
 }
 
 // MkDir mocks base method.
-func (m *MockUploader) MkDir(arg0 string, arg1 bool) error {
+func (m *MockUploader) MkDir(path string, recursive bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MkDir", arg0, arg1)
+	ret := m.ctrl.Call(m, "MkDir", path, recursive)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // MkDir indicates an expected call of MkDir.
-func (mr *MockUploaderMockRecorder) MkDir(arg0, arg1 any) *gomock.Call {
+func (mr *MockUploaderMockRecorder) MkDir(path, recursive any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MkDir", reflect.TypeOf((*MockUploader)(nil).MkDir), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MkDir", reflect.TypeOf((*MockUploader)(nil).MkDir), path, recursive)
 }
 
 // NewFile mocks base method.
-func (m *MockUploader) NewFile(arg0 string) (File, error) {
+func (m *MockUploader) NewFile(path string) (File, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewFile", arg0)
+	ret := m.ctrl.Call(m, "NewFile", path)
 	ret0, _ := ret[0].(File)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NewFile indicates an expected call of NewFile.
-func (mr *MockUploaderMockRecorder) NewFile(arg0 any) *gomock.Call {
+func (mr *MockUploaderMockRecorder) NewFile(path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewFile", reflect.TypeOf((*MockUploader)(nil).NewFile), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewFile", reflect.TypeOf((*MockUploader)(nil).NewFile), path)
 }
 
 // Put mocks base method.
-func (m *MockUploader) Put(arg0 string, arg1 io.Reader) (FileInfo, error) {
+func (m *MockUploader) Put(path string, content io.Reader) (FileInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Put", arg0, arg1)
+	ret := m.ctrl.Call(m, "Put", path, content)
 	ret0, _ := ret[0].(FileInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Put indicates an expected call of Put.
-func (mr *MockUploaderMockRecorder) Put(arg0, arg1 any) *gomock.Call {
+func (mr *MockUploaderMockRecorder) Put(path, content any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockUploader)(nil).Put), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockUploader)(nil).Put), path, content)
 }
 
 // Read mocks base method.
-func (m *MockUploader) Read(arg0 string) (io.ReadCloser, error) {
+func (m *MockUploader) Read(string string) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Read", arg0)
+	ret := m.ctrl.Call(m, "Read", string)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Read indicates an expected call of Read.
-func (mr *MockUploaderMockRecorder) Read(arg0 any) *gomock.Call {
+func (mr *MockUploaderMockRecorder) Read(string any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockUploader)(nil).Read), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockUploader)(nil).Read), string)
 }
 
 // RemoveEmptyDir mocks base method.
@@ -230,18 +231,18 @@ func (mr *MockUploaderMockRecorder) RemoveEmptyDir() *gomock.Call {
 }
 
 // Stat mocks base method.
-func (m *MockUploader) Stat(arg0 string) (FileInfo, error) {
+func (m *MockUploader) Stat(file string) (FileInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Stat", arg0)
+	ret := m.ctrl.Call(m, "Stat", file)
 	ret0, _ := ret[0].(FileInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Stat indicates an expected call of Stat.
-func (mr *MockUploaderMockRecorder) Stat(arg0 any) *gomock.Call {
+func (mr *MockUploaderMockRecorder) Stat(file any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stat", reflect.TypeOf((*MockUploader)(nil).Stat), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stat", reflect.TypeOf((*MockUploader)(nil).Stat), file)
 }
 
 // Type mocks base method.
@@ -276,6 +277,7 @@ func (mr *MockUploaderMockRecorder) UnWrap() *gomock.Call {
 type MockFile struct {
 	ctrl     *gomock.Controller
 	recorder *MockFileMockRecorder
+	isgomock struct{}
 }
 
 // MockFileMockRecorder is the mock recorder for MockFile.
@@ -324,40 +326,40 @@ func (mr *MockFileMockRecorder) Name() *gomock.Call {
 }
 
 // Read mocks base method.
-func (m *MockFile) Read(arg0 []byte) (int, error) {
+func (m *MockFile) Read(p []byte) (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Read", arg0)
+	ret := m.ctrl.Call(m, "Read", p)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Read indicates an expected call of Read.
-func (mr *MockFileMockRecorder) Read(arg0 any) *gomock.Call {
+func (mr *MockFileMockRecorder) Read(p any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockFile)(nil).Read), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockFile)(nil).Read), p)
 }
 
 // Seek mocks base method.
-func (m *MockFile) Seek(arg0 int64, arg1 int) (int64, error) {
+func (m *MockFile) Seek(offset int64, whence int) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Seek", arg0, arg1)
+	ret := m.ctrl.Call(m, "Seek", offset, whence)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Seek indicates an expected call of Seek.
-func (mr *MockFileMockRecorder) Seek(arg0, arg1 any) *gomock.Call {
+func (mr *MockFileMockRecorder) Seek(offset, whence any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Seek", reflect.TypeOf((*MockFile)(nil).Seek), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Seek", reflect.TypeOf((*MockFile)(nil).Seek), offset, whence)
 }
 
 // Stat mocks base method.
-func (m *MockFile) Stat() (fs.FileInfo, error) {
+func (m *MockFile) Stat() (os.FileInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Stat")
-	ret0, _ := ret[0].(fs.FileInfo)
+	ret0, _ := ret[0].(os.FileInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -369,39 +371,40 @@ func (mr *MockFileMockRecorder) Stat() *gomock.Call {
 }
 
 // Write mocks base method.
-func (m *MockFile) Write(arg0 []byte) (int, error) {
+func (m *MockFile) Write(p []byte) (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Write", arg0)
+	ret := m.ctrl.Call(m, "Write", p)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Write indicates an expected call of Write.
-func (mr *MockFileMockRecorder) Write(arg0 any) *gomock.Call {
+func (mr *MockFileMockRecorder) Write(p any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockFile)(nil).Write), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockFile)(nil).Write), p)
 }
 
 // WriteString mocks base method.
-func (m *MockFile) WriteString(arg0 string) (int, error) {
+func (m *MockFile) WriteString(s string) (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteString", arg0)
+	ret := m.ctrl.Call(m, "WriteString", s)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // WriteString indicates an expected call of WriteString.
-func (mr *MockFileMockRecorder) WriteString(arg0 any) *gomock.Call {
+func (mr *MockFileMockRecorder) WriteString(s any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteString", reflect.TypeOf((*MockFile)(nil).WriteString), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteString", reflect.TypeOf((*MockFile)(nil).WriteString), s)
 }
 
 // MockFileInfo is a mock of FileInfo interface.
 type MockFileInfo struct {
 	ctrl     *gomock.Controller
 	recorder *MockFileInfoMockRecorder
+	isgomock struct{}
 }
 
 // MockFileInfoMockRecorder is the mock recorder for MockFileInfo.

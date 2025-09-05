@@ -54,7 +54,7 @@ var adminUserInfo = &auth2.UserInfo{
 }
 
 func (a *authRepo) Login(ctx context.Context, input *LoginInput) (*LoginResponse, error) {
-	if input.Username != "admin" && a.data.Config().AdminPassword != input.Password {
+	if !(input.Username == "admin" && a.data.Config().AdminPassword == input.Password) {
 		return nil, status.Errorf(codes.Unauthenticated, "用户名或密码错误")
 	}
 	signData, err := a.authsvc.Sign(adminUserInfo)

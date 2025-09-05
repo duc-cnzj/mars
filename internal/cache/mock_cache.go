@@ -19,6 +19,7 @@ import (
 type MockCache struct {
 	ctrl     *gomock.Controller
 	recorder *MockCacheMockRecorder
+	isgomock struct{}
 }
 
 // MockCacheMockRecorder is the mock recorder for MockCache.
@@ -39,46 +40,46 @@ func (m *MockCache) EXPECT() *MockCacheMockRecorder {
 }
 
 // Clear mocks base method.
-func (m *MockCache) Clear(arg0 CacheKey) error {
+func (m *MockCache) Clear(key CacheKey) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Clear", arg0)
+	ret := m.ctrl.Call(m, "Clear", key)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Clear indicates an expected call of Clear.
-func (mr *MockCacheMockRecorder) Clear(arg0 any) *gomock.Call {
+func (mr *MockCacheMockRecorder) Clear(key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clear", reflect.TypeOf((*MockCache)(nil).Clear), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clear", reflect.TypeOf((*MockCache)(nil).Clear), key)
 }
 
 // Remember mocks base method.
-func (m *MockCache) Remember(arg0 CacheKey, arg1 int, arg2 func() ([]byte, error), arg3 bool) ([]byte, error) {
+func (m *MockCache) Remember(key CacheKey, seconds int, fn func() ([]byte, error), force bool) ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Remember", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "Remember", key, seconds, fn, force)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Remember indicates an expected call of Remember.
-func (mr *MockCacheMockRecorder) Remember(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockCacheMockRecorder) Remember(key, seconds, fn, force any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remember", reflect.TypeOf((*MockCache)(nil).Remember), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remember", reflect.TypeOf((*MockCache)(nil).Remember), key, seconds, fn, force)
 }
 
 // SetWithTTL mocks base method.
-func (m *MockCache) SetWithTTL(arg0 CacheKey, arg1 []byte, arg2 int) error {
+func (m *MockCache) SetWithTTL(key CacheKey, value []byte, seconds int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetWithTTL", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "SetWithTTL", key, value, seconds)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetWithTTL indicates an expected call of SetWithTTL.
-func (mr *MockCacheMockRecorder) SetWithTTL(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockCacheMockRecorder) SetWithTTL(key, value, seconds any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWithTTL", reflect.TypeOf((*MockCache)(nil).SetWithTTL), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWithTTL", reflect.TypeOf((*MockCache)(nil).SetWithTTL), key, value, seconds)
 }
 
 // Store mocks base method.
