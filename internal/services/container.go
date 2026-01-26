@@ -61,7 +61,7 @@ func (c *containerSvc) IsPodExists(ctx context.Context, request *container.IsPod
 
 func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogRequest) (*container.LogResponse, error) {
 	podInfo, _ := c.k8sRepo.GetPod(request.Namespace, request.Pod)
-	if podInfo == nil || (!request.ShowEvents && podInfo != nil && podInfo.Status.Phase == v1.PodPending) {
+	if podInfo == nil || (!request.ShowEvents && podInfo.Status.Phase == v1.PodPending) {
 		return nil, status.Error(codes.NotFound, "未找到日志")
 	}
 
