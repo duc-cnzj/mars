@@ -54,6 +54,34 @@ func (n *nsqSender) Initialize(app application.App, args map[string]any) (err er
 	// 本地 k8s 搭建 nsq 集群时，访问 lookupd 返回的是集群内部的 ip，不通的
 	n.cfg.MaxInFlight = 1000
 	n.cfg.LookupdPollInterval = 3 * time.Second
+
+	// 超时配置
+	if v, ok := args["msg_timeout"]; ok {
+		if timeout, ok := v.(int); ok && timeout > 0 {
+			n.cfg.MsgTimeout = time.Duration(timeout) * time.Second
+		}
+	}
+	if v, ok := args["dial_timeout"]; ok {
+		if timeout, ok := v.(int); ok && timeout > 0 {
+			n.cfg.DialTimeout = time.Duration(timeout) * time.Second
+		}
+	}
+	if v, ok := args["read_timeout"]; ok {
+		if timeout, ok := v.(int); ok && timeout > 0 {
+			n.cfg.ReadTimeout = time.Duration(timeout) * time.Second
+		}
+	}
+	if v, ok := args["write_timeout"]; ok {
+		if timeout, ok := v.(int); ok && timeout > 0 {
+			n.cfg.WriteTimeout = time.Duration(timeout) * time.Second
+		}
+	}
+	if v, ok := args["heartbeat_interval"]; ok {
+		if interval, ok := v.(int); ok && interval > 0 {
+			n.cfg.HeartbeatInterval = time.Duration(interval) * time.Second
+		}
+	}
+
 	n.logger = app.Logger().WithModule("plugins/ws_sender_nsq")
 	if s, ok := args["addr"]; ok {
 		n.logger.Debugf("[NSQ]: addr '%v'", s)

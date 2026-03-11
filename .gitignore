@@ -3,3 +3,4 @@ gosec-results.json
 app
 !app*/
 coverage.txt
+.claude/
