@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/duc-cnzj/mars/api/v5/container"
 	"github.com/duc-cnzj/mars/api/v5/types"
@@ -61,7 +62,7 @@ func (c *containerSvc) IsPodExists(ctx context.Context, request *container.IsPod
 
 func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogRequest) (*container.LogResponse, error) {
 	podInfo, _ := c.k8sRepo.GetPod(request.Namespace, request.Pod)
-	if podInfo == nil || (!request.ShowEvents && podInfo != nil && podInfo.Status.Phase == v1.PodPending) {
+	if podInfo == nil || (!request.ShowEvents && podInfo.Status.Phase == v1.PodPending) {
 		return nil, status.Error(codes.NotFound, "未找到日志")
 	}
 
@@ -102,7 +103,7 @@ func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogR
 		Namespace:     request.Namespace,
 		PodName:       request.Pod,
 		ContainerName: request.Container,
-		Log:           logs,
+		Log:           toValidUTF8String([]byte(logs)),
 	}, nil
 }
 
@@ -266,7 +267,7 @@ func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server 
 			Namespace:     request.Namespace,
 			PodName:       request.Pod,
 			ContainerName: request.Container,
-			Log:           string(msg),
+			Log:           toValidUTF8String(msg),
 		}); err != nil {
 			c.logger.ErrorCtx(server.Context(), err)
 			return err
@@ -576,4 +577,12 @@ func scannerText(text string, fn func(s string)) error {
 		fn(scanner.Text())
 	}
 	return scanner.Err()
+}
+
+// toValidUTF8String 过滤无效 UTF-8 字符，防止 gRPC 序列化失败
+func toValidUTF8String(b []byte) string {
+	if utf8.Valid(b) {
+		return string(b)
+	}
+	return strings.ToValidUTF8(string(b), "")
 }

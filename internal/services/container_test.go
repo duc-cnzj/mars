@@ -931,3 +931,27 @@ func Test_toErrStr(t *testing.T) {
 	assert.Equal(t, "", toErrStr(nil))
 	assert.Equal(t, "error", toErrStr(errors.New("error")))
 }
+
+func Test_toValidUTF8String(t *testing.T) {
+	// 测试有效的 UTF-8 字符串
+	validUTF8 := []byte("hello, 世界")
+	assert.Equal(t, "hello, 世界", toValidUTF8String(validUTF8))
+
+	// 测试空字节
+	assert.Equal(t, "", toValidUTF8String([]byte{}))
+
+	// 测试包含无效 UTF-8 字符的字节
+	// 0xff 是无效的 UTF-8 字节
+	invalidUTF8 := []byte{0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xff, 0xfe}
+	result := toValidUTF8String(invalidUTF8)
+	assert.Equal(t, "hello", result) // 无效字符被移除
+
+	// 测试混合有效和无效 UTF-8
+	mixed := []byte("valid\x80\x81string")
+	result = toValidUTF8String(mixed)
+	assert.Equal(t, "validstring", result)
+
+	// 测试纯 ASCII
+	ascii := []byte("pure ascii text")
+	assert.Equal(t, "pure ascii text", toValidUTF8String(ascii))
+}
