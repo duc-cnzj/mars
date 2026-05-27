@@ -88,6 +88,7 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 	router := mux.NewRouter()
 
 	gmux := runtime.NewServeMux(
+		runtime.WithUnescapingMode(runtime.UnescapingModeAllExceptSlash),
 		runtime.WithOutgoingHeaderMatcher(headerMatcher),
 		runtime.WithIncomingHeaderMatcher(headerMatcher),
 		runtime.WithForwardResponseOption(func(ctx context.Context, writer http.ResponseWriter, message proto.Message) error {
