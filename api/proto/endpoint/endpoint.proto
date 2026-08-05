@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package endpoint;
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "validate/validate.proto";
+import "proto/types/types.proto";
+import "openapi/v3/annotations.proto";
+
+option go_package = "github.com/duc-cnzj/mars/api/v6/proto/endpoint;endpoint";
+
+message InNamespaceRequest {
+  int32 namespace_id = 1[(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
+
+message InNamespaceResponse {
+  repeated types.ServiceEndpoint items = 1;
+}
+
+message InProjectRequest {
+  int32 project_id = 1[(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
+
+message InProjectResponse {
+  repeated types.ServiceEndpoint items = 1;
+}
+
+service Endpoint {
+  rpc InNamespace(InNamespaceRequest) returns (InNamespaceResponse) {
+    option (google.api.http)                                               = {
+      get: "/api/endpoints/namespaces/{namespace_id}"
+    };
+
+    option (openapi.v3.operation) = {
+      summary: "获取名称空间下所有的 endpoints",
+    };
+  }
+
+  rpc InProject(InProjectRequest) returns (InProjectResponse) {
+    option (google.api.http)                                               = {
+      get: "/api/endpoints/projects/{project_id}"
+    };
+
+    option (openapi.v3.operation) = {
+      summary: "获取项目下所有的 endpoints",
+    };
+  }
+}
