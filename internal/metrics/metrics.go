@@ -23,7 +23,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/version"
+	"github.com/duc-cnzj/mars/v6/internal/version"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 )
@@ -33,6 +33,7 @@ const system = "mars"
 var appVersion = version.GetVersion().String()
 
 var (
+	// BootstrapperStartMetrics 记录系统启动各阶段的耗时，标签 bootstrapper 为阶段名。
 	BootstrapperStartMetrics = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Subsystem:   system,
 		Name:        "bootstrapper_duration_seconds",
@@ -40,6 +41,7 @@ var (
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"bootstrapper"})
 
+	// WebsocketConnectionsCount 记录当前 websocket 连接数，标签 username 为连接用户名。
 	WebsocketConnectionsCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Subsystem:   system,
 		Name:        "websocket_connections",
@@ -47,6 +49,7 @@ var (
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"username"})
 
+	// GrpcLatency 记录 grpc 调用延迟直方图，标签 method 为完整方法名。
 	GrpcLatency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   system,
 		Name:        "grpc_duration_seconds",
@@ -55,15 +58,18 @@ var (
 		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 17),
 	}, []string{"method"})
 
+	// GrpcRequestTotal 记录 grpc 请求总数，result 维度区分 fail/success。
 	GrpcRequestTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "grpc_request_total",
 		Help:        "grpc 请求总数",
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"method", "result"})
+	// GrpcRequestTotalFail / Success 是 GrpcRequestTotal 预 curry result 的便捷句柄。
 	GrpcRequestTotalFail    = GrpcRequestTotal.MustCurryWith(prometheus.Labels{"result": "fail"})
 	GrpcRequestTotalSuccess = GrpcRequestTotal.MustCurryWith(prometheus.Labels{"result": "success"})
 
+	// GrpcErrorCount 记录 grpc 错误数量。
 	GrpcErrorCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "grpc_errors_total",
@@ -71,6 +77,7 @@ var (
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"method"})
 
+	// WebsocketRequestLatency 记录 websocket 调用延迟直方图。
 	WebsocketRequestLatency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   system,
 		Name:        "websocket_request_duration_seconds",
@@ -79,6 +86,7 @@ var (
 		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 17),
 	}, []string{"method"})
 
+	// WebsocketPanicCount 记录 websocket 请求 panic 错误数量。
 	WebsocketPanicCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "websocket_request_panic_total",
@@ -86,15 +94,21 @@ var (
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"method"})
 
+	// WebsocketRequestTotal 记录 websocket 请求总数，result 维度区分 panic/success。
+	// 与 grpc 侧 result=fail 不同：websocket 只把 recover 到的 panic 视为失败
+	// （见 internal/services/websocket/controller.go 的 dispatchEvent），
+	// 因此 Fail 用 "panic" 标签精确描述其触发时机，这是有意的语义差异。
 	WebsocketRequestTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "websocket_request_total",
 		Help:        "websocket 请求总数",
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"method", "result"})
+	// WebsocketRequestTotalFail / Success 是 WebsocketRequestTotal 预 curry result 的便捷句柄。
 	WebsocketRequestTotalFail    = WebsocketRequestTotal.MustCurryWith(prometheus.Labels{"result": "panic"})
 	WebsocketRequestTotalSuccess = WebsocketRequestTotal.MustCurryWith(prometheus.Labels{"result": "success"})
 
+	// CacheBytesGauge 记录 cache 字节数统计。
 	CacheBytesGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Subsystem:   system,
 		Name:        "cache_bytes",
@@ -102,6 +116,7 @@ var (
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"key"})
 
+	// CacheRememberDuration 记录 cache Remember 调用耗时。
 	CacheRememberDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   system,
 		Name:        "cache_remember_duration_seconds",
@@ -110,6 +125,7 @@ var (
 		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 17),
 	}, []string{"key"})
 
+	// CronPanicCount 记录 cron 任务 panic 错误数量。
 	CronPanicCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "cron_panic_total",
@@ -117,6 +133,7 @@ var (
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"cron_name"})
 
+	// CronErrorCount 记录 cron 任务错误数量。
 	CronErrorCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "cron_error_total",
@@ -124,6 +141,7 @@ var (
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"cron_name"})
 
+	// CronCommandCount 记录 cron 命令执行总数。
 	CronCommandCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "cron_command_total",
@@ -131,6 +149,7 @@ var (
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"cron_name"})
 
+	// CronDuration 记录 cron 任务执行时长直方图。
 	CronDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   system,
 		Name:        "cron_duration_seconds",
@@ -139,21 +158,24 @@ var (
 		Buckets:     prometheus.ExponentialBucketsRange(0.5, (1 * time.Hour).Seconds(), 20),
 	}, []string{"cron_name"})
 
+	// K8sInformerFanOutListenerCount 记录 k8s fanout 各类型监听者数量。
 	K8sInformerFanOutListenerCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Subsystem:   system,
 		Name:        "fanout_listener_count",
-		Help:        "k8s fanout listener count",
+		Help:        "k8s fanout 各类型监听者数量",
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"type"})
 
+	// FanOutChannelLength 记录各 fanout 通道当前积压长度。
 	FanOutChannelLength = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Subsystem:   system,
-		Name:        "fan_out_channel_length",
-		Help:        "fan out channel length",
+		Name:        "fanout_channel_length",
+		Help:        "fanout 通道当前积压长度",
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"name"})
 )
 
+// NewRegistry 构造并注册全部应用指标 + Go/进程运行时收集器，返回可用的 prometheus.Registry。
 func NewRegistry() *prometheus.Registry {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(
