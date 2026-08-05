@@ -1,12 +1,13 @@
 package transformer
 
 import (
-	"github.com/duc-cnzj/mars/api/v5/types"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/util/date"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/util/date"
 )
 
-func FromProject(project *repo.Project) *types.ProjectModel {
+// FromProject transform biz.Project to proto ProjectModel.
+func FromProject(project *biz.Project) *types.ProjectModel {
 	if project == nil {
 		return nil
 	}
@@ -26,19 +27,19 @@ func FromProject(project *repo.Project) *types.ProjectModel {
 		ExtraValues:       project.ExtraValues,
 		FinalExtraValues:  project.FinalExtraValues,
 		DeployStatus:      project.DeployStatus,
-		HumanizeCreatedAt: date.ToHumanizeDatetimeString(&project.CreatedAt),
-		HumanizeUpdatedAt: date.ToHumanizeDatetimeString(&project.UpdatedAt),
+		HumanizeCreatedAt: date.ToHumanizeDateTime(&project.CreatedAt),
+		HumanizeUpdatedAt: date.ToHumanizeDateTime(&project.UpdatedAt),
 		ConfigType:        project.ConfigType,
 		GitCommitWebUrl:   project.GitCommitWebURL,
 		GitCommitTitle:    project.GitCommitTitle,
 		GitCommitAuthor:   project.GitCommitAuthor,
-		GitCommitDate:     date.ToHumanizeDatetimeString(project.GitCommitDate),
+		GitCommitDate:     date.ToHumanizeDateTime(project.GitCommitDate),
 		Version:           int32(project.Version),
 		RepoId:            int32(project.RepoID),
 		Repo:              FromRepo(project.Repo),
 		Namespace:         FromNamespace(project.Namespace),
-		CreatedAt:         date.ToRFC3339DatetimeString(&project.CreatedAt),
-		UpdatedAt:         date.ToRFC3339DatetimeString(&project.UpdatedAt),
-		DeletedAt:         date.ToRFC3339DatetimeString(project.DeletedAt),
+		CreatedAt:         date.ToRFC3339(&project.CreatedAt),
+		UpdatedAt:         date.ToRFC3339(&project.UpdatedAt),
+		DeletedAt:         date.ToRFC3339(project.DeletedAt),
 	}
 }

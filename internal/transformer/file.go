@@ -1,13 +1,14 @@
 package transformer
 
 import (
-	"github.com/duc-cnzj/mars/api/v5/types"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/util/date"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/util/date"
 	"github.com/dustin/go-humanize"
 )
 
-func FromFile(f *repo.File) *types.FileModel {
+// FromFile transform biz.File to proto FileModel.
+func FromFile(f *biz.File) *types.FileModel {
 	if f == nil {
 		return nil
 	}
@@ -21,8 +22,8 @@ func FromFile(f *repo.File) *types.FileModel {
 		Container:      f.Container,
 		Container_Path: f.ContainerPath,
 		HumanizeSize:   humanize.Bytes(f.Size),
-		CreatedAt:      date.ToRFC3339DatetimeString(&f.CreatedAt),
-		UpdatedAt:      date.ToRFC3339DatetimeString(&f.UpdatedAt),
-		DeletedAt:      date.ToRFC3339DatetimeString(f.DeletedAt),
+		CreatedAt:      date.ToRFC3339(&f.CreatedAt),
+		UpdatedAt:      date.ToRFC3339(&f.UpdatedAt),
+		DeletedAt:      date.ToRFC3339(f.DeletedAt),
 	}
 }

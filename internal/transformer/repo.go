@@ -1,12 +1,13 @@
 package transformer
 
 import (
-	"github.com/duc-cnzj/mars/api/v5/types"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/util/date"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/util/date"
 )
 
-func FromRepo(repo *repo.Repo) *types.RepoModel {
+// FromRepo transform biz.Repo to proto RepoModel.
+func FromRepo(repo *biz.Repo) *types.RepoModel {
 	if repo == nil {
 		return nil
 	}
@@ -19,8 +20,8 @@ func FromRepo(repo *repo.Repo) *types.RepoModel {
 		MarsConfig:     repo.GetMarsConfig(),
 		NeedGitRepo:    repo.NeedGitRepo,
 		Description:    repo.Description,
-		CreatedAt:      date.ToHumanizeDatetimeString(&repo.CreatedAt),
-		UpdatedAt:      date.ToHumanizeDatetimeString(&repo.UpdatedAt),
-		DeletedAt:      date.ToHumanizeDatetimeString(repo.DeletedAt),
+		CreatedAt:      date.ToHumanizeDateTime(&repo.CreatedAt),
+		UpdatedAt:      date.ToHumanizeDateTime(&repo.UpdatedAt),
+		DeletedAt:      date.ToHumanizeDateTime(repo.DeletedAt),
 	}
 }

@@ -5,30 +5,30 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v5/types"
-	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/transformer"
-	"github.com/duc-cnzj/mars/v5/internal/util/date"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
+	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/transformer"
+	"github.com/duc-cnzj/mars/v6/internal/util/date"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFromChangeLog_NilInput(t *testing.T) {
-	var c *repo.Changelog
-	result := transformer.FromChangeLog(c)
+func TestFromChangelog_NilInput(t *testing.T) {
+	var c *biz.Changelog
+	result := transformer.FromChangelog(c)
 	assert.Nil(t, result)
 }
 
-func TestFromChangeLog_ValidInput(t *testing.T) {
+func TestFromChangelog_ValidInput(t *testing.T) {
 	now := time.Now()
-	c := &repo.Changelog{
+	c := &biz.Changelog{
 		ID:            1,
 		Version:       1,
 		Username:      "testUser",
 		Config:        "testConfig",
 		ConfigChanged: true,
 		ProjectID:     1,
-		Project:       &repo.Project{},
+		Project:       &biz.Project{},
 		CreatedAt:     now,
 		UpdatedAt:     now,
 		GitBranch:     "testBranch",
@@ -53,7 +53,7 @@ func TestFromChangeLog_ValidInput(t *testing.T) {
 		GitCommitDate:    &now,
 		DeletedAt:        nil,
 	}
-	result := transformer.FromChangeLog(c)
+	result := transformer.FromChangelog(c)
 	assert.NotNil(t, result)
 	assert.Equal(t, int32(c.ID), result.Id)
 	assert.Equal(t, int32(c.Version), result.Version)
@@ -62,7 +62,7 @@ func TestFromChangeLog_ValidInput(t *testing.T) {
 	assert.Equal(t, c.ConfigChanged, result.ConfigChanged)
 	assert.Equal(t, int64(c.ProjectID), result.ProjectId)
 	assert.Equal(t, transformer.FromProject(c.Project), result.Project)
-	assert.Equal(t, date.ToHumanizeDatetimeString(&c.CreatedAt), result.Date)
+	assert.Equal(t, date.ToHumanizeDateTime(&c.CreatedAt), result.Date)
 	assert.Equal(t, c.GitBranch, result.GitBranch)
 	assert.Equal(t, c.GitCommit, result.GitCommit)
 	assert.Equal(t, strings.Join(c.DockerImage, ","), result.DockerImage)
@@ -72,22 +72,22 @@ func TestFromChangeLog_ValidInput(t *testing.T) {
 	assert.Equal(t, c.GitCommitWebURL, result.GitCommitWebUrl)
 	assert.Equal(t, c.GitCommitTitle, result.GitCommitTitle)
 	assert.Equal(t, c.GitCommitAuthor, result.GitCommitAuthor)
-	assert.Equal(t, date.ToHumanizeDatetimeString(c.GitCommitDate), result.GitCommitDate)
-	assert.Equal(t, date.ToRFC3339DatetimeString(&c.CreatedAt), result.CreatedAt)
-	assert.Equal(t, date.ToRFC3339DatetimeString(&c.UpdatedAt), result.UpdatedAt)
+	assert.Equal(t, date.ToHumanizeDateTime(c.GitCommitDate), result.GitCommitDate)
+	assert.Equal(t, date.ToRFC3339(&c.CreatedAt), result.CreatedAt)
+	assert.Equal(t, date.ToRFC3339(&c.UpdatedAt), result.UpdatedAt)
 	assert.Empty(t, result.DeletedAt)
 }
 
-func TestFromChangeLog_DeletedChangelog(t *testing.T) {
+func TestFromChangelog_DeletedChangelog(t *testing.T) {
 	now := time.Now()
-	c := &repo.Changelog{
+	c := &biz.Changelog{
 		ID:            1,
 		Version:       1,
 		Username:      "testUser",
 		Config:        "testConfig",
 		ConfigChanged: true,
 		ProjectID:     1,
-		Project:       &repo.Project{},
+		Project:       &biz.Project{},
 		CreatedAt:     now,
 		UpdatedAt:     now,
 		GitBranch:     "testBranch",
@@ -112,7 +112,20 @@ func TestFromChangeLog_DeletedChangelog(t *testing.T) {
 		GitCommitDate:    &now,
 		DeletedAt:        &now,
 	}
-	result := transformer.FromChangeLog(c)
+	result := transformer.FromChangelog(c)
 	assert.NotNil(t, result)
-	assert.Equal(t, date.ToRFC3339DatetimeString(c.DeletedAt), result.DeletedAt)
+	assert.Equal(t, date.ToRFC3339(c.DeletedAt), result.DeletedAt)
+}
+
+func TestFromChangelog_ZeroValues(t *testing.T) {
+	c := &biz.Changelog{
+		ID:        1,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	result := transformer.FromChangelog(c)
+	assert.NotNil(t, result)
+	assert.False(t, result.ConfigChanged)
+	assert.Empty(t, result.GitCommitDate)
+	assert.Empty(t, result.DockerImage)
 }
