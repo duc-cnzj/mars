@@ -2,182 +2,16 @@ package auth
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"math/big"
 	"testing"
-	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/util/timer"
-
-	"github.com/duc-cnzj/mars/v5/internal/config"
-	"github.com/duc-cnzj/mars/v5/internal/data"
-	"github.com/duc-cnzj/mars/v5/internal/ent/accesstoken"
-	"github.com/duc-cnzj/mars/v5/internal/ent/schema/schematype"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
 )
 
-var (
-	priKey, _ = rsa.GenerateKey(rand.Reader, 2048)
-	publicKey = &priKey.PublicKey
-)
-
-func TestAuth_Sign(t *testing.T) {
-	auth := NewJwtAuth(priKey, publicKey, timer.NewReal())
-	sign, err := auth.Sign(&UserInfo{
-		LogoutUrl: "xxx",
-		Roles:     []string{schematype.MarsAdmin},
-		ID:        "1",
-		Email:     "1025434218@qq.com",
-		Name:      "duc",
-	})
-	assert.Nil(t, err)
-	token, b := auth.VerifyToken(sign.Token)
-	assert.True(t, b)
-	assert.Equal(t, "mars", token.StandardClaims.Issuer)
-	assert.Equal(t, "duc", token.UserInfo.Name)
-	assert.Equal(t, "1025434218@qq.com", token.StandardClaims.Subject)
-	assert.Equal(t, []string{schematype.MarsAdmin}, token.UserInfo.Roles)
-	assert.Equal(t, "xxx", token.UserInfo.LogoutUrl)
-
-	pk := &rsa.PrivateKey{
-		PublicKey: rsa.PublicKey{
-			N: big.NewInt(1),
-		},
-	}
-	assert.Less(t, pk.Size(), 11)
-	authError := NewJwtAuth(pk, nil, timer.NewReal())
-	_, err = authError.Sign(&UserInfo{
-		LogoutUrl: "xxx",
-		Roles:     []string{schematype.MarsAdmin},
-		ID:        "1",
-		Email:     "1025434218@qq.com",
-		Name:      "duc",
-	})
-	assert.Error(t, err)
-}
-
-func TestAuth_VerifyToken(t *testing.T) {
-	auth := NewJwtAuth(priKey, publicKey, timer.NewReal())
-	sign, _ := auth.Sign(&UserInfo{
-		LogoutUrl: "xxx",
-		Roles:     []string{schematype.MarsAdmin},
-		ID:        "1",
-		Name:      "duc",
-	})
-	_, b := auth.VerifyToken(sign.Token)
-	assert.True(t, b)
-	_, b = auth.VerifyToken("Bearer " + sign.Token)
-	assert.True(t, b)
-	_, b = auth.VerifyToken("bearer " + sign.Token)
-	assert.True(t, b)
-	_, b = auth.VerifyToken("bearer" + sign.Token)
-	assert.True(t, b)
-	_, b = auth.VerifyToken("")
-	assert.False(t, b)
-}
-
-func TestNewAuth(t *testing.T) {
-	assert.Implements(t, (*Auth)(nil), NewJwtAuth(nil, nil, timer.NewReal()))
-}
-
-func TestNewAccessTokenAuth(t *testing.T) {
-	assert.Implements(t, (*Authenticator)(nil), NewAccessTokenAuth(nil, timer.NewReal()))
-}
-
-func TestAccessTokenAuth_VerifyToken(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	_, b := NewAccessTokenAuth(nil, timer.NewReal()).VerifyToken("")
-	assert.False(t, b)
-
-	db, _ := data.NewSqliteDB()
-	defer db.Close()
-	at := db.AccessToken.Create().
-		SetToken("my token").
-		SetUsage("x").
-		SetExpiredAt(time.Now().Add(10 * time.Second)).
-		SetUserInfo(schematype.UserInfo{
-			ID:        "xx",
-			Email:     "admin@admin.com",
-			Name:      "duc",
-			Picture:   "xx",
-			Roles:     []string{schematype.MarsAdmin},
-			LogoutUrl: "https://xxx",
-		}).SaveX(context.TODO())
-	assert.Nil(t, at.LastUsedAt)
-	dd := data.NewDataImpl(&data.NewDataParams{DB: db})
-	u, b := NewAccessTokenAuth(dd, timer.NewReal()).
-		VerifyToken(at.Token)
-	assert.True(t, b)
-	assert.Equal(t, "xx", u.UserInfo.ID)
-	assert.Equal(t, "admin@admin.com", u.UserInfo.Email)
-	assert.Equal(t, "duc", u.UserInfo.Name)
-	assert.Equal(t, "xx", u.UserInfo.Picture)
-	assert.Equal(t, []string{schematype.MarsAdmin}, u.UserInfo.Roles)
-	assert.Equal(t, "https://xxx", u.UserInfo.LogoutUrl)
-
-	first, _ := db.AccessToken.Query().Where(accesstoken.Token(at.Token)).First(context.TODO())
-
-	assert.NotZero(t, first.LastUsedAt)
-	_, bb := NewAccessTokenAuth(dd, timer.NewReal()).VerifyToken("bearer " + at.Token)
-	assert.True(t, bb)
-}
-
-func TestNewAuthn(t *testing.T) {
-	authn, _ := NewAuthn(data.NewDataImpl(&data.NewDataParams{Cfg: &config.Config{PrivateKey: `-----BEGIN RSA PRIVATE KEY-----
-MIICWwIBAAKBgQCdx5ZBeL3P3lH2fU/8yd4E1L880DjaKCnnnQkya+kOE7kkJNtP
-xW4WIKsBgXUPtXUYk/uA5AkklJ/1ssiTbkM/G5J54ThsACarhiNijUznD81c7g0Q
-6pbHYGAHU91wQgpcIv39cOKZVpFkEfIwgBMIKUvupBpGyXMU4YALVV23CQIDAQAB
-AoGARo+kzeDumlDlvONr6zRoOybd45eHZWEC5JchLtB9qJL/gH+PKQy1X+X6NDEu
-JflTxcsgdhMFV7u0EdCDzRNJtPKP/cU8hww0J2l3ZKTGzbbQnLIBFD3In8sEc9xe
-3ikEjqs0EgSh3uY5XEq8qzuX3cI+FNlGyOwzM+ZcN7nWfPUCQQDOURX82COQIfAT
-RjTshDQ55J/DUPPHyzpTER9OZNXYKp0IBBNzYyhJ6SHQHSuxHfL8W1FVHhmIsIBW
-GQWo0y7zAkEAw8ZPJ4QH5otMsIgIfwMuPX0rO+QxwmJ6eg9ADuFr5zv6HizjAVVP
-dKXuUU0gnemD4DncgiV2jZ0v2RzHK1aZEwJAR6G7gpgAcPB3jBmaEmwsPdV06rlW
-io2y6FhPiEZWQME62CeiITPSLyc0SC94lfwR+zAxYt4ae2zcgggaAO2hpQJAecA5
-d7S3iRu2XM6sofijaCAQpBV9EItX6dLUHqz4Av0cxmlZ33ljiYKr3CngD/SqS+cQ
-CGwt91H68MXh40TeuwJARxz1VMLq7hKo8J4scAW/YrBTE4N6malYjYoR2HFs+YwL
-cSE/4A4yfzTjN2r5GuJr8rTU7gU4Su9C8dLC0htWCA==
------END RSA PRIVATE KEY-----
-`}}), timer.NewReal())
-	assert.Implements(t, (*Auth)(nil), authn)
-}
-
-func TestOidcClaims_ToUserInfo(t *testing.T) {
-	c := OidcClaims{
-		LogoutUrl: "aaa.com",
-		OpenIDClaims: OpenIDClaims{
-			Sub:   "1",
-			Name:  "duc",
-			Email: "Duc@q.c",
-			Roles: []string{"admin"},
-		},
-	}
-	info := c.ToUserInfo()
-	assert.Equal(t, "1", info.ID)
-	assert.Equal(t, "duc", info.Name)
-	assert.Equal(t, "duc@q.c", info.Email)
-	assert.Equal(t, []string{"admin"}, info.Roles)
-	assert.Equal(t, "aaa.com", info.LogoutUrl)
-
-	c2 := OidcClaims{
-		LogoutUrl: "aaa.com",
-		OpenIDClaims: OpenIDClaims{
-			Sub:   "1",
-			Name:  "duc",
-			Email: "123adb@q.c",
-			Roles: []string{"admin"},
-		},
-	}
-	info2 := c2.ToUserInfo()
-	assert.Equal(t, "123adb@q.c", info2.Email)
-}
-
+// TestContextWithUser 验证 SetUser 注入用户后，GetUser / MustGetUser 能取回同一用户。
 func TestContextWithUser(t *testing.T) {
 	ctx := context.TODO()
-	userInfo := &UserInfo{
+	userInfo := &biz.UserInfo{
 		ID:    "1",
 		Name:  "Test User",
 		Email: "test@example.com",
@@ -193,39 +27,36 @@ func TestContextWithUser(t *testing.T) {
 	assert.Equal(t, userInfo, retrievedUser)
 }
 
+// TestContextWithoutUser 验证未注入用户的 context 上 GetUser 返回错误、
+// MustGetUser 必须 panic——用户缺失是编程错误，不能返回 nil 向下游传递。
 func TestContextWithoutUser(t *testing.T) {
 	ctx := context.TODO()
 
 	_, err := GetUser(ctx)
 	assert.NotNil(t, err)
 
-	retrievedUser := MustGetUser(ctx)
-	assert.Nil(t, retrievedUser)
+	assert.Panics(t, func() { MustGetUser(ctx) })
 }
 
-func TestAuthn_VerifyToken(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	auth := NewMockAuth(m)
-	a := &Authn{Authns: []Authenticator{auth}}
-	auth.EXPECT().VerifyToken("a").Return(nil, true)
-	_, b := a.VerifyToken("a")
-	assert.True(t, b)
+// TestContextWithNilUser 验证 SetUser 注入 nil 用户（上游编程错误）时：
+// GetUser 不 panic 而是返回错误，MustGetUser 因用户缺失而 panic。
+func TestContextWithNilUser(t *testing.T) {
+	ctx := SetUser(context.TODO(), nil)
 
-	auth.EXPECT().VerifyToken("a").Return(nil, false)
+	_, err := GetUser(ctx)
+	assert.Error(t, err)
 
-	_, bb := a.VerifyToken("a")
-	assert.False(t, bb)
+	assert.Panics(t, func() { MustGetUser(ctx) })
 }
 
-func TestAuthn_Sign(t *testing.T) {
-	called := false
-	a := &Authn{signFunc: func(info *UserInfo) (*SignData, error) {
-		called = true
-		return nil, nil
-	}}
-	sign, err := a.Sign(nil)
-	assert.Nil(t, sign)
-	assert.Nil(t, err)
-	assert.True(t, called)
+// TestContextKeyIsolation 验证 key 类型隔离：用其他类型作 key 塞入的值，
+// GetUser 必须拿不到——context key 依赖的是类型唯一性而非值内容。
+func TestContextKeyIsolation(t *testing.T) {
+	// 用一个与本包 ctxTokenInfo 无关的私有 key 类型注入假用户。
+	type unrelatedKey struct{}
+	ctx := context.WithValue(context.TODO(), unrelatedKey{}, &biz.UserInfo{ID: "1"})
+
+	_, err := GetUser(ctx)
+	assert.Error(t, err)
+	assert.Panics(t, func() { MustGetUser(ctx) })
 }
