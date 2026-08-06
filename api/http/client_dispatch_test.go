@@ -193,7 +193,7 @@ func Test_scalarString(t *testing.T) {
 
 // protojson.Marshal 失败：proto3 string 字段含非法 UTF-8 → Marshal 返回 ErrInvalidUTF8。
 func TestDoReq_MarshalError(t *testing.T) {
-	cli, err := NewHTTPClient("http://example.com")
+	cli, err := NewClient("http://example.com")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,7 +210,7 @@ func TestDoReq_NilResponse(t *testing.T) {
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{}`))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +223,7 @@ func TestDoReq_NilResponse(t *testing.T) {
 
 // 2xx 但读 body 失败：io.ReadAll error。
 func TestDoReq_ReadBodyError(t *testing.T) {
-	cli, err := NewHTTPClient("http://example.com", WithHTTPClient(&http.Client{Transport: bodyErrTransport{}}))
+	cli, err := NewClient("http://example.com", WithHTTPClient(&http.Client{Transport: bodyErrTransport{}}))
 	if err != nil {
 		t.Fatal(err)
 	}

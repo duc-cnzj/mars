@@ -25,7 +25,7 @@ func (r errReader) Read([]byte) (int, error) { return 0, r.err }
 // badBaseClient 返回 baseURL 含空格的客户端：URL 构造必然失败（NewRequestWithContext error）。
 func badBaseClient(t *testing.T) *Client {
 	t.Helper()
-	cli, err := NewHTTPClient("http://exa mple.com")
+	cli, err := NewClient("http://exa mple.com")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func badBaseClient(t *testing.T) *Client {
 // netErrClient 返回 hc.Do 必然失败的客户端（自定义 RoundTripper 返回错误）。
 func netErrClient(t *testing.T) *Client {
 	t.Helper()
-	cli, err := NewHTTPClient("http://example.com",
+	cli, err := NewClient("http://example.com",
 		WithHTTPClient(&http.Client{Transport: errTransport{err: errors.New("boom")}}))
 	if err != nil {
 		t.Fatal(err)
@@ -68,7 +68,7 @@ func TestFileSvc_UploadFile_CopyError(t *testing.T) {
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		t.Error("不应到达服务端")
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +88,7 @@ func TestFileSvc_UploadFile_WithToken(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte(`{"id":1}`))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +106,7 @@ func TestFileSvc_UploadFile_NonCreated(t *testing.T) {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = w.Write([]byte(`{"code":5,"message":"not found"}`))
 		})
-		cli, err := NewHTTPClient(srv.URL)
+		cli, err := NewClient(srv.URL)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -123,7 +123,7 @@ func TestFileSvc_UploadFile_NonCreated(t *testing.T) {
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte(`{"code":0,"message":"boom"}`))
 		})
-		cli, err := NewHTTPClient(srv.URL)
+		cli, err := NewClient(srv.URL)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -141,7 +141,7 @@ func TestFileSvc_UploadFile_200(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"id":42}`))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +161,7 @@ func TestFileSvc_UploadFile_BadJSON(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte(`not-json`))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +193,7 @@ func TestFileSvc_DownloadFile_ServerError(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"code":5,"message":"no such file"}`))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -211,7 +211,7 @@ func TestFileSvc_DownloadFile_WithToken(t *testing.T) {
 		}
 		_, _ = w.Write([]byte("data"))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ func TestFileSvc_CopyFromPod_ServerError(t *testing.T) {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(`{"code":3,"message":"bad req"}`))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,7 +267,7 @@ func TestFileSvc_CopyFromPod_WithToken(t *testing.T) {
 		}
 		_, _ = w.Write([]byte("data"))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -287,7 +287,7 @@ func TestFileSvc_CopyFromPod_ContentDisposition(t *testing.T) {
 		w.Header().Set("Content-Disposition", `attachment; filename="b.txt"`)
 		_, _ = w.Write([]byte("data"))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -308,7 +308,7 @@ func TestFileSvc_DownloadFile_NoContentDisposition(t *testing.T) {
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("data"))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -10,8 +10,8 @@
 //
 // 用法：
 //
-//	cli, err := http.NewHTTPClient(
-//	    "http://localhost:6000",
+//	cli, err := http.NewClient(
+//	    "http://localhost:4000",
 //	    http.WithAuth("admin", "password"),
 //	    http.WithTokenAutoRefresh(),
 //	)
@@ -103,10 +103,10 @@ func WithTracer() Option {
 	return func(c *Client) { c.tracing = true }
 }
 
-// NewHTTPClient 创建一个指向 grpc-gateway 的 HTTP 客户端。
-// baseURL 形如 "http://localhost:6000"，末尾可带斜杠。
+// NewClient 创建一个指向 grpc-gateway 的 HTTP 客户端。
+// baseURL 形如 "http://localhost:4000"，末尾可带斜杠。
 // 配置了 WithAuth 时会在构造阶段完成登录，登录失败会返回错误。
-func NewHTTPClient(baseURL string, opts ...Option) (*Client, error) {
+func NewClient(baseURL string, opts ...Option) (*Client, error) {
 	c := &Client{baseURL: strings.TrimRight(baseURL, "/"), flights: &flight.Group{}}
 	for _, o := range opts {
 		o(c)

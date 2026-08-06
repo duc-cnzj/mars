@@ -524,10 +524,12 @@ func render(sd *serviceData, outDir string) error {
 		return fmt.Errorf("format %s: %w\n%s", sd.Name, err, buf.String())
 	}
 	dir := filepath.Join(outDir, "rest")
+	// #nosec G301 -- 生成器产出源码目录，0755 为 Go 源码标准权限
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 	fname := filepath.Join(dir, snakeCase(sd.Name)+".gen.http.go")
+	// #nosec G306 -- 生成源码文件，0644 为标准权限
 	if err := os.WriteFile(fname, src, 0o644); err != nil {
 		return err
 	}

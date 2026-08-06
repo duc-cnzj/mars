@@ -255,6 +255,7 @@ func request_Metrics_StreamTopPod_0(ctx context.Context, marshaler runtime.Marsh
 // UnaryRPC     :call MetricsServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterMetricsHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterMetricsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server MetricsServer) error {
 
 	mux.Handle("GET", pattern_Metrics_CpuMemoryInNamespace_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -345,21 +346,21 @@ func RegisterMetricsHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 // RegisterMetricsHandlerFromEndpoint is same as RegisterMetricsHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterMetricsHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.DialContext(ctx, endpoint, opts...)
+	conn, err := grpc.NewClient(endpoint, opts...)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if err != nil {
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 			return
 		}
 		go func() {
 			<-ctx.Done()
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 		}()
 	}()
@@ -377,7 +378,7 @@ func RegisterMetricsHandler(ctx context.Context, mux *runtime.ServeMux, conn *gr
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "MetricsClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "MetricsClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "MetricsClient" to call the correct interceptors.
+// "MetricsClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterMetricsHandlerClient(ctx context.Context, mux *runtime.ServeMux, client MetricsClient) error {
 
 	mux.Handle("GET", pattern_Metrics_CpuMemoryInNamespace_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {

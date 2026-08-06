@@ -17,7 +17,7 @@ import (
 func TestOptions_Apply(t *testing.T) {
 	custom := &http.Client{Timeout: 30 * time.Second}
 
-	c, err := NewHTTPClient("http://localhost:1/", // 末尾斜杠应被 trim
+	c, err := NewClient("http://localhost:1/", // 末尾斜杠应被 trim
 		WithBearerToken("abc"),
 		WithHTTPClient(custom),
 		WithTimeout(15*time.Second),
@@ -44,7 +44,7 @@ func TestOptions_Apply(t *testing.T) {
 }
 
 func TestWithTimeout_CreatesClient(t *testing.T) {
-	c, err := NewHTTPClient("http://localhost:1", WithTimeout(5*time.Second))
+	c, err := NewClient("http://localhost:1", WithTimeout(5*time.Second))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestWithTimeout_CreatesClient(t *testing.T) {
 }
 
 func TestSetBearerToken_Runtime(t *testing.T) {
-	c, err := NewHTTPClient("http://localhost:1")
+	c, err := NewClient("http://localhost:1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) { r
 
 // WithTracer 应把默认 transport 与自定义 transport 都包成 otelhttp.Transport。
 func TestWithTracer_WrapsTransport(t *testing.T) {
-	c, err := NewHTTPClient("http://localhost:1", WithTracer())
+	c, err := NewClient("http://localhost:1", WithTracer())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestWithTracer_WrapsTransport(t *testing.T) {
 	custom := roundTripperFunc(func(*http.Request) (*http.Response, error) {
 		return &http.Response{StatusCode: http.StatusNoContent}, nil
 	})
-	c2, err := NewHTTPClient("http://localhost:1", WithTracer(), WithHTTPClient(&http.Client{Transport: custom}))
+	c2, err := NewClient("http://localhost:1", WithTracer(), WithHTTPClient(&http.Client{Transport: custom}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +107,7 @@ func TestWithTracer_PropagatesTraceContext(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c, err := NewHTTPClient(srv.URL, WithTracer())
+	c, err := NewClient(srv.URL, WithTracer())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +124,7 @@ func TestWithTracer_PropagatesTraceContext(t *testing.T) {
 
 // 全部 15 个 service 访问器都应返回非 nil 客户端（与 gRPC SDK 对齐）。
 func TestServiceAccessors_AllWired(t *testing.T) {
-	c, err := NewHTTPClient("http://localhost:1")
+	c, err := NewClient("http://localhost:1")
 	if err != nil {
 		t.Fatal(err)
 	}

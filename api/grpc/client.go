@@ -10,7 +10,6 @@ package grpc
 import (
 	"context"
 	"crypto/tls"
-	"io"
 	"strings"
 	"sync/atomic"
 
@@ -39,30 +38,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Interface 是 mars gRPC 客户端的门面：一个连接暴露全部 15 个 service 客户端，
-// 并支持 Close 与运行期替换 token。
-type Interface interface {
-	io.Closer
-	SetBearerToken(string)
-
-	Auth() auth.AuthClient
-	Picture() picture.PictureClient
-	Version() version.VersionClient
-	Cluster() cluster.ClusterClient
-	Changelog() changelog.ChangelogClient
-	Event() event.EventClient
-	Container() container.ContainerClient
-	File() file.FileClient
-	Git() git.GitClient
-	Namespace() namespace.NamespaceClient
-	Project() project.ProjectClient
-	Endpoint() endpoint.EndpointClient
-	Metrics() metrics.MetricsClient
-	AccessToken() token.AccessTokenClient
-	Repo() repo.RepoClient
-}
-
-// Client 是 Interface 的默认实现。内部状态字段不导出，行为由 Option 配置；
+// Client 是 mars gRPC 客户端的具体实现。内部状态字段不导出，行为由 Option 配置；
 // UnaryClientInterceptors/StreamClientInterceptors 两个导出切片仅便于测试注入，
 // 运行期仍只经 Option 追加。
 type Client struct {
@@ -95,8 +71,6 @@ type Client struct {
 	version     version.VersionClient
 }
 
-var _ Interface = (*Client)(nil)
-
 // noAutoRefreshMethods 是禁止自动刷新重试的方法全集：这些方法自身的 401 表示凭据错误，
 // 刷新 token 无济于事，且会递归触发 getToken → singleflight.Do 形成自我死锁。
 var noAutoRefreshMethods = map[string]struct{}{
@@ -106,7 +80,7 @@ var noAutoRefreshMethods = map[string]struct{}{
 
 // NewClient 建立到 addr（host:port）的 gRPC 连接并返回门面客户端。
 // 配置了 WithAuth 时会在构造阶段完成登录换取 token，失败返回错误。
-func NewClient(addr string, opts ...Option) (Interface, error) {
+func NewClient(addr string, opts ...Option) (*Client, error) {
 	c := &Client{}
 
 	for _, opt := range opts {

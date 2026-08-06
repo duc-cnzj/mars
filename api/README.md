@@ -7,10 +7,10 @@ mars 的客户端 SDK 模块（`github.com/duc-cnzj/mars/api/v6`）。提供 **g
 | 维度 | gRPC SDK (`api/grpc`) | HTTP SDK (`api/http`) |
 |---|---|---|
 | 传输 | HTTP/2 gRPC | HTTP/1.1 JSON（grpc-gateway） |
-| 客户端 | `grpc.NewClient(addr, opts...)` | `http.NewHTTPClient(baseURL, opts...)` |
+| 客户端 | `grpc.NewClient(addr, opts...)` | `http.NewClient(baseURL, opts...)` |
 | 访问器 | `cli.Namespace().List(ctx, req)` | `cli.Namespace().List(ctx, req)` |
 | 流式 | 原生 gRPC stream | server-streaming → SSE/NDJSON |
-| 需要服务端 | mars gRPC 端口（如 `:50000`） | mars gateway 端口（如 `:6000`） |
+| 需要服务端 | mars gRPC 端口（如 `:50000`） | mars gateway 端口（如 `:4000`） |
 
 两个包都暴露同一批 15 个 service 访问器：`Auth/Repo/Changelog/Cluster/Container/Event/AccessToken/File/Git/Metrics/Namespace/Picture/Project/Version/Endpoint`。
 
@@ -104,7 +104,7 @@ import (
 )
 
 func main() {
-	c, err := http.NewHTTPClient("http://127.0.0.1:6000",
+	c, err := http.NewClient("http://127.0.0.1:4000",
 		http.WithAuth("admin", "123456"),
 		http.WithTokenAutoRefresh(),
 		http.WithTimeout(30*time.Second),
@@ -123,7 +123,8 @@ func main() {
 ```
 
 > 完整可运行示例见仓库根 [`examples/http`](../examples/http)：覆盖 unary 调用、错误码对齐、
-> server-streaming（SSE）、以及 HTTP 特有能力（multipart 上传 / 二进制下载）。示例连接 gateway 端口（默认 `:6000`）。
+> server-streaming（SSE）、以及 HTTP 特有能力（multipart 上传 / 二进制下载）。示例默认连接 gateway `:4000`；
+> 服务器端 `mars serve` 的 `app_port` 默认 `:6000`，`:4000` 常见于本地 port-forward / docker 端口映射。
 
 ### HTTP Option
 

@@ -85,7 +85,7 @@ func newTestClient(t *testing.T, lis *bufconn.Listener, opts ...Option) *Client 
 		t.Fatalf("NewClient: %v", err)
 	}
 	t.Cleanup(func() { _ = cli.Close() })
-	return cli.(*Client)
+	return cli
 }
 
 func TestNewClient_WithAuth_IssuesToken(t *testing.T) {

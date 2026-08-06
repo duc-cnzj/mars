@@ -68,7 +68,7 @@ func local_request_Git_ProjectOptions_0(ctx context.Context, marshaler runtime.M
 }
 
 var (
-	filter_Git_BranchOptions_0 = &utilities.DoubleArray{Encoding: map[string]int{"git_project_id": 0, "gitProjectId": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_Git_BranchOptions_0 = &utilities.DoubleArray{Encoding: map[string]int{"git_project_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_Git_BranchOptions_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -397,11 +397,7 @@ func request_Git_GetChartValuesYaml_0(ctx context.Context, marshaler runtime.Mar
 	var protoReq GetChartValuesYamlRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -414,11 +410,7 @@ func local_request_Git_GetChartValuesYaml_0(ctx context.Context, marshaler runti
 	var protoReq GetChartValuesYamlRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -431,6 +423,7 @@ func local_request_Git_GetChartValuesYaml_0(ctx context.Context, marshaler runti
 // UnaryRPC     :call GitServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterGitHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterGitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server GitServer) error {
 
 	mux.Handle("GET", pattern_Git_AllRepos_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -614,21 +607,21 @@ func RegisterGitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server
 // RegisterGitHandlerFromEndpoint is same as RegisterGitHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterGitHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.DialContext(ctx, endpoint, opts...)
+	conn, err := grpc.NewClient(endpoint, opts...)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if err != nil {
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 			return
 		}
 		go func() {
 			<-ctx.Done()
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 		}()
 	}()
@@ -646,7 +639,7 @@ func RegisterGitHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.C
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "GitClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "GitClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "GitClient" to call the correct interceptors.
+// "GitClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterGitHandlerClient(ctx context.Context, mux *runtime.ServeMux, client GitClient) error {
 
 	mux.Handle("GET", pattern_Git_AllRepos_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {

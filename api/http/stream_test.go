@@ -18,7 +18,7 @@ import (
 
 // 非 GET/DELETE 方法 + 非 nil 请求：直接报错（当前只支持 query 绑定）。
 func TestOpenStream_UnsupportedMethod(t *testing.T) {
-	cli, err := NewHTTPClient("http://example.com")
+	cli, err := NewClient("http://example.com")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func TestOpenStream_PostNilReq(t *testing.T) {
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("{}"))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func TestOpenStream_WithToken(t *testing.T) {
 		}
 		_, _ = w.Write([]byte("{}"))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +143,7 @@ func TestOpenStream_401_AutoRefreshRetries(t *testing.T) {
 			_, _ = w.Write([]byte("{}"))
 		}
 	})
-	cli, err := NewHTTPClient(srv.URL, WithAuth("admin", "123456"), WithTokenAutoRefresh())
+	cli, err := NewClient(srv.URL, WithAuth("admin", "123456"), WithTokenAutoRefresh())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,7 +177,7 @@ func TestOpenStream_401_RefreshLoginFails(t *testing.T) {
 			_, _ = w.Write([]byte(`{"code":16,"message":"token expired"}`))
 		}
 	})
-	cli, err := NewHTTPClient(srv.URL, WithAuth("admin", "123456"), WithTokenAutoRefresh())
+	cli, err := NewClient(srv.URL, WithAuth("admin", "123456"), WithTokenAutoRefresh())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -201,7 +201,7 @@ func TestOpenStream_401_NoAutoRefresh_ReturnsError(t *testing.T) {
 			_, _ = w.Write([]byte(`{"code":16,"message":"token expired"}`))
 		}
 	})
-	cli, err := NewHTTPClient(srv.URL, WithAuth("admin", "123456"))
+	cli, err := NewClient(srv.URL, WithAuth("admin", "123456"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +218,7 @@ func TestOpenStream_404_ReturnsError(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"code":5,"message":"no such stream"}`))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}

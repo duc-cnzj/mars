@@ -34,7 +34,7 @@ func newTestServer(t *testing.T, h http.HandlerFunc) *httptest.Server {
 
 // SetBearerToken：运行期替换 token，自动补 Bearer 前缀。
 func TestClient_SetBearerToken(t *testing.T) {
-	cli, err := NewHTTPClient("http://example.com")
+	cli, err := NewClient("http://example.com")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +92,7 @@ func TestClient_refresh_singleflight(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"token":"t"}`))
 	})
-	cli, err := NewHTTPClient(srv.URL, WithAuth("a", "b")) // 构造登录 1 次
+	cli, err := NewClient(srv.URL, WithAuth("a", "b")) // 构造登录 1 次
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,8 +132,8 @@ func TestClient_refresh_singleflight(t *testing.T) {
 	}
 }
 
-// 构造：WithAuth 在 NewHTTPClient 阶段自动登录并注入 token。
-func TestNewHTTPClient_login(t *testing.T) {
+// 构造：WithAuth 在 NewClient 阶段自动登录并注入 token。
+func TestNewClient_login(t *testing.T) {
 	var loginCalled bool
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/auth/login" && r.Method == http.MethodPost {
@@ -151,7 +151,7 @@ func TestNewHTTPClient_login(t *testing.T) {
 		}
 		w.WriteHeader(http.StatusNotFound)
 	})
-	cli, err := NewHTTPClient(srv.URL, WithAuth("admin", "pwd"))
+	cli, err := NewClient(srv.URL, WithAuth("admin", "pwd"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +175,7 @@ func TestClient_GET_query(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"items":[],"count":0,"page":1,"pageSize":10}`))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +202,7 @@ func TestClient_POST_body(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"item":{"id":1},"exists":false}`))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,7 +226,7 @@ func TestClient_error_mapping(t *testing.T) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte(`{"code":7,"message":"没有权限"}`))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -266,7 +266,7 @@ func TestClient_auto_refresh(t *testing.T) {
 			w.WriteHeader(http.StatusNotFound)
 		}
 	})
-	cli, err := NewHTTPClient(srv.URL, WithAuth("a", "b"), WithTokenAutoRefresh())
+	cli, err := NewClient(srv.URL, WithAuth("a", "b"), WithTokenAutoRefresh())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +301,7 @@ func TestFileSvc_UploadFile(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte(`{"id":42}`))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -331,7 +331,7 @@ func TestFileSvc_DownloadFile(t *testing.T) {
 		w.Header().Set("Content-Disposition", `attachment; filename="a.txt"`)
 		_, _ = w.Write([]byte("hello"))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +362,7 @@ func TestFileSvc_CopyFromPod(t *testing.T) {
 		gotBody = string(b)
 		_, _ = w.Write([]byte("pod-file-content"))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -406,7 +406,7 @@ func TestClient_path_templates(t *testing.T) {
 			_, _ = w.Write([]byte(`{}`))
 		}
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -434,7 +434,7 @@ func TestClient_path_percent_encoding(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{}`))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -490,7 +490,7 @@ func TestClient_StreamContainerLog_NDJSON(t *testing.T) {
 			fl.Flush()
 		}
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -541,7 +541,7 @@ func TestClient_StreamContainerLog_SSE(t *testing.T) {
 			fl.Flush()
 		}
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -590,7 +590,7 @@ func TestClient_StreamContainerLog_gateway_envelope(t *testing.T) {
 			fl.Flush()
 		}
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -634,7 +634,7 @@ func TestClient_StreamContainerLog_stream_error(t *testing.T) {
 		_, _ = w.Write([]byte("{\"error\":{\"code\":13,\"message\":\"容器退出\"}}\n"))
 		fl.Flush()
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -668,7 +668,7 @@ func TestClient_StreamContainerLog_error(t *testing.T) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte(`{"code":13,"message":"内部错误"}`))
 	})
-	cli, err := NewHTTPClient(srv.URL)
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -727,7 +727,7 @@ func TestDo_RefreshLoginFails_ReturnsError(t *testing.T) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte(`{"code":16,"message":"unauthenticated"}`))
 	})
-	cli, err := NewHTTPClient(srv.URL, WithAuth("a", "b"), WithTokenAutoRefresh())
+	cli, err := NewClient(srv.URL, WithAuth("a", "b"), WithTokenAutoRefresh())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -743,7 +743,7 @@ func TestDo_RefreshLoginFails_ReturnsError(t *testing.T) {
 
 // 底层 hc.Do 网络错误（连接拒绝）应原样返回。
 func TestDo_NetworkError(t *testing.T) {
-	cli, err := NewHTTPClient("http://127.0.0.1:1", WithBearerToken("t")) // 端口 1 无服务
+	cli, err := NewClient("http://127.0.0.1:1", WithBearerToken("t")) // 端口 1 无服务
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -759,7 +759,7 @@ func TestDo_UnexpectedStatus(t *testing.T) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("boom")) // 不是 {"code":..} 错误体
 	})
-	cli, err := NewHTTPClient(srv.URL, WithBearerToken("t"))
+	cli, err := NewClient(srv.URL, WithBearerToken("t"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -778,15 +778,15 @@ func TestDo_InvalidURL(t *testing.T) {
 	}
 }
 
-// 构造期 WithAuth 登录失败：NewHTTPClient 应返回 error，而非静默继续。
-func TestNewHTTPClient_LoginFails_ReturnsError(t *testing.T) {
+// 构造期 WithAuth 登录失败：NewClient 应返回 error，而非静默继续。
+func TestNewClient_LoginFails_ReturnsError(t *testing.T) {
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte(`{"code":16,"message":"bad credentials"}`))
 	})
-	cli, err := NewHTTPClient(srv.URL, WithAuth("admin", "bad"))
+	cli, err := NewClient(srv.URL, WithAuth("admin", "bad"))
 	if err == nil {
-		t.Fatal("构造期登录失败 NewHTTPClient 应返回 error")
+		t.Fatal("构造期登录失败 NewClient 应返回 error")
 	}
 	if cli != nil {
 		_ = cli.Close()
