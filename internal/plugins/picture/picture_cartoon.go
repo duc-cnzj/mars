@@ -7,15 +7,17 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/duc-cnzj/mars/v5/internal/application"
-	"github.com/duc-cnzj/mars/v5/internal/cache"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/util/rand"
+	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/util/rand"
 )
 
 var (
-	nameCartoon          = "picture_cartoon"
-	urls        []string = []string{
+	// nameCartoon 插件注册名。
+	nameCartoon = "picture_cartoon"
+	// urls 候选图片源，随机挑选一个请求。
+	urls = []string{
 		"https://api.btstu.cn/sjbz/?lx=dongman",
 		"https://www.dmoe.cc/random.php",
 	}
@@ -28,24 +30,30 @@ func init() {
 	application.RegisterPlugin(p.Name(), p)
 }
 
+// cartoon 从随机图源请求一张二次元图片，图片地址按天缓存。
 type cartoon struct {
-	cache  cache.Cache
+	cache  data.Cache
 	logger mlog.Logger
 }
 
+// client 不跟随重定向，通过响应头 Location 拿到最终图片地址。
 var client = http.Client{
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	},
 }
 
+// newBackOff 默认指数退避；测试可替换为短超时版本，避免失败路径重试 15 分钟。
+var newBackOff = func() backoff.BackOff { return backoff.NewExponentialBackOff() }
+
+// Get 随机请求一个图源并返回图片地址；非 random 时结果缓存 24 小时，random 时不缓存。
 func (c *cartoon) Get(ctx context.Context, random bool) (*application.PictureItem, error) {
 	day := time.Now().Format("2006-01-02")
 	seconds := 0
 	if !random {
 		seconds = 24 * 60 * 60
 	}
-	bg, _ := c.cache.Remember(cache.NewKey("picture-%s-%d", day, seconds), seconds, func() ([]byte, error) {
+	bg, err := c.cache.Remember(data.NewKey("picture-%s-%d", day, seconds), seconds, func() ([]byte, error) {
 		var (
 			response *http.Response
 			err      error
@@ -63,12 +71,15 @@ func (c *cartoon) Get(ctx context.Context, random bool) (*application.PictureIte
 				return errors.New(weburl + ": status code > 400")
 			}
 			return nil
-		}, backoff.NewExponentialBackOff()); err != nil {
+		}, newBackOff()); err != nil {
 			return nil, err
 		}
 
 		return []byte(response.Header.Get("Location")), nil
 	}, false)
+	if err != nil {
+		return nil, err
+	}
 
 	return &application.PictureItem{
 		Url:       string(bg),
@@ -76,16 +87,20 @@ func (c *cartoon) Get(ctx context.Context, random bool) (*application.PictureIte
 	}, nil
 }
 
+// Name 返回插件名 picture_cartoon。
 func (c *cartoon) Name() string {
 	return nameCartoon
 }
 
-func (c *cartoon) Initialize(app application.App, args map[string]any) error {
+// Initialize 从 PluginApp 注入 cache 与 logger 并输出初始化日志。
+func (c *cartoon) Initialize(app application.PluginApp, args map[string]any) error {
+	c.cache = app.Cache()
 	c.logger = app.Logger()
 	c.logger.Info("[Plugin]: " + c.Name() + " plugin Initialize...")
 	return nil
 }
 
+// Destroy 输出销毁日志。
 func (c *cartoon) Destroy() error {
 	c.logger.Info("[Plugin]: " + c.Name() + " plugin Destroy...")
 	return nil

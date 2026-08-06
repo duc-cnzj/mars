@@ -6,18 +6,25 @@ import (
 	"errors"
 	"sync"
 
-	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
-	"github.com/duc-cnzj/mars/v5/internal/application"
-	"github.com/duc-cnzj/mars/v5/internal/ent"
-	"github.com/duc-cnzj/mars/v5/internal/ent/project"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/plugins/wssender"
+	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
+	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender"
 	"github.com/go-redis/redis/v8"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+// redisSenderName 插件注册名。
 var redisSenderName = "ws_sender_redis"
+
+// wsSubscribe 是 Initialize 订阅广播房间的测试缝：默认走 go-redis 真实订阅，
+// 测试可注入返回失败的实现以覆盖订阅错误分支。
+var wsSubscribe = func(ps *redis.PubSub, ctx context.Context, channel string) error {
+	return ps.Subscribe(ctx, channel)
+}
 
 func init() {
 	dr := &redisSender{}
@@ -25,15 +32,16 @@ func init() {
 }
 
 // ---------------------------------------------------------------------------
-// Shared-subscriber redisSender (1 Redis PubSub connection for ALL ws messages)
+// 共享订阅 redisSender（全部 ws 消息共用一条 Redis PubSub 连接）
 // ---------------------------------------------------------------------------
 
+// redisSender 是 Redis PubSub 版 WsSender：全实例共享一条订阅连接，经 dispatcher 扇出到本地订阅者。
 type redisSender struct {
 	rds    *redis.Client
 	logger mlog.Logger
 	db     *ent.Client
 
-	// One shared PubSub connection — not N connections.
+	// 一条共享 PubSub 连接，而非每个连接一条。
 	wsPubSub *redis.PubSub
 	msgCh    <-chan *redis.Message
 
@@ -44,17 +52,21 @@ type redisSender struct {
 	cancel context.CancelFunc
 }
 
+// subEntry 是 dispatcher 的本地订阅项：ch 为消息缓冲通道，uid/id 标识连接。
 type subEntry struct {
 	ch  chan []byte
 	uid string
 	id  string
 }
 
+// Name 返回插件名 ws_sender_redis。
 func (p *redisSender) Name() string {
 	return redisSenderName
 }
 
-func (p *redisSender) Initialize(app application.App, args map[string]any) error {
+// Initialize 从 args 读取 addr/password/db 建立 Redis 客户端，
+// 订阅广播房间并启动 dispatcher 扇出 goroutine。
+func (p *redisSender) Initialize(app application.PluginApp, args map[string]any) error {
 	addr, ok := args["addr"].(string)
 	if !ok || addr == "" {
 		return errors.New("redisSender need valid addr")
@@ -62,7 +74,8 @@ func (p *redisSender) Initialize(app application.App, args map[string]any) error
 	pwd, _ := args["password"].(string)
 	db, _ := args["db"].(int)
 
-	p.db = app.DB()
+	p.db = app.Data().DB()
+	p.logger = app.Logger()
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     addr,
@@ -77,9 +90,9 @@ func (p *redisSender) Initialize(app application.App, args map[string]any) error
 	p.ctx, p.cancel = context.WithCancel(context.TODO())
 	p.subs = make(map[string]*subEntry)
 
-	// One shared PubSub subscribes to the broadcast room.
+	// 一条共享 PubSub 订阅广播房间。
 	p.wsPubSub = p.rds.Subscribe(context.TODO())
-	if err := p.wsPubSub.Subscribe(context.TODO(), wssender.BroadcastRoom); err != nil {
+	if err := wsSubscribe(p.wsPubSub, context.TODO(), wssender.BroadcastRoom); err != nil {
 		return err
 	}
 	p.msgCh = p.wsPubSub.Channel()
@@ -89,6 +102,7 @@ func (p *redisSender) Initialize(app application.App, args map[string]any) error
 	return nil
 }
 
+// Destroy 取消 dispatcher 并关闭订阅与客户端连接。
 func (p *redisSender) Destroy() error {
 	p.cancel()
 	p.wsPubSub.Close()
@@ -97,8 +111,8 @@ func (p *redisSender) Destroy() error {
 	return nil
 }
 
-// dispatcher reads from the shared PubSub channel and fans out to local subscribers.
-// One goroutine for ALL connections instead of one goroutine PER connection.
+// dispatcher 从共享 PubSub 通道读取消息并扇出到本地订阅者。
+// 全部连接共用一个 goroutine，而非每连接一个 goroutine。
 func (p *redisSender) dispatcher() {
 	defer p.logger.HandlePanic("[PubSub]: dispatcher")
 	for {
@@ -125,6 +139,8 @@ func (p *redisSender) dispatcher() {
 				for _, sub := range p.subs {
 					wssender.SendOrDrop(sub.ch, message.Data, p.logger, sub.id)
 				}
+			// To_ToOthers：跳过消息来源连接。ToOthers 方法已删除（无生产调用方），
+			// 此分支保留为防御代码，供未来投递语义复用，仍需测试覆盖。
 			case websocket_pb.To_ToOthers:
 				for _, sub := range p.subs {
 					if sub.id != message.ID {
@@ -137,16 +153,16 @@ func (p *redisSender) dispatcher() {
 	}
 }
 
+// New 注册本地订阅项与用户直连频道，返回 rdsPubSub 实例。
 func (p *redisSender) New(uid, id string) application.PubSub {
-	ctx, cancel := context.WithCancel(context.TODO())
 	ch := make(chan []byte, wssender.MessageChSize)
 
-	// Register with shared dispatcher.
+	// 注册到共享 dispatcher。
 	p.mu.Lock()
 	p.subs[id] = &subEntry{ch: ch, uid: uid, id: id}
 	p.mu.Unlock()
 
-	// Subscribe shared connection to this user's direct channel (for cross-instance ToSelf).
+	// 共享连接订阅该用户的直连频道（供跨实例 ToSelf 使用）。
 	p.wsPubSub.Subscribe(context.TODO(), id)
 
 	pem := &podEventManagers{
@@ -162,45 +178,44 @@ func (p *redisSender) New(uid, id string) application.PubSub {
 	}
 
 	return &rdsPubSub{
-		logger:   p.logger,
-		done:     ctx,
-		doneFunc: cancel,
-		ch:       ch,
-		rds:      p.rds,
-		uid:      uid,
-		id:       id,
-		manager:  p,
+		logger:                    p.logger,
+		ch:                        ch,
+		rds:                       p.rds,
+		uid:                       uid,
+		id:                        id,
+		manager:                   p,
 		ProjectPodEventSubscriber: pem,
 		ProjectPodEventPublisher:  pem,
 	}
 }
 
 // ---------------------------------------------------------------------------
-// rdsPubSub — thin wrapper, no per-connection Redis subscription
+// rdsPubSub —— 薄包装，无每连接独立的 Redis 订阅
 // ---------------------------------------------------------------------------
 
 type rdsPubSub struct {
-	logger   mlog.Logger
-	rds      *redis.Client
-	manager  *redisSender
-	uid, id  string
-	ch       chan []byte
-	done     context.Context
-	doneFunc func()
+	logger    mlog.Logger
+	rds       *redis.Client
+	manager   *redisSender
+	uid, id   string
+	ch        chan []byte
 	closeOnce sync.Once
 
 	application.ProjectPodEventSubscriber
 	application.ProjectPodEventPublisher
 }
 
+// ID 返回连接标识。
 func (p *rdsPubSub) ID() string {
 	return p.id
 }
 
+// Uid 返回连接对应用户标识。
 func (p *rdsPubSub) Uid() string {
 	return p.uid
 }
 
+// Info 返回订阅者数量与当前连接 id。
 func (p *rdsPubSub) Info() any {
 	p.manager.mu.RLock()
 	defer p.manager.mu.RUnlock()
@@ -210,36 +225,36 @@ func (p *rdsPubSub) Info() any {
 	}
 }
 
+// Close 将当前连接从 dispatcher 移除并退订用户直连频道，保证只执行一次。
 func (p *rdsPubSub) Close() error {
 	p.logger.Debugf("[Websocket]: Closed, uid: %v id: %v", p.uid, p.id)
 
 	p.closeOnce.Do(func() {
-		// Remove from shared dispatcher first, so no more messages arrive.
+		// 先从共享 dispatcher 移除，保证不再有新消息路由到本连接。
 		p.manager.mu.Lock()
 		delete(p.manager.subs, p.id)
 		p.manager.mu.Unlock()
 
 		p.manager.wsPubSub.Unsubscribe(context.TODO(), p.id)
-		p.doneFunc()
-		close(p.ch)
+
+		// 不要 close(p.ch)：dispatcher 与 podEventManagers.Run 两个 goroutine 都可能
+		// 向 p.ch 发送，send-on-closed-channel 会 panic；消费者（websocket write）已
+		// 监听 ctx.Done() 退出，不依赖 channel 关闭信号。写者全部退出后 channel 由 GC 回收。
 	})
 	return nil
 }
 
+// ToSelf 发布到用户直连频道，仅当前连接可收到。
 func (p *rdsPubSub) ToSelf(wsResponse application.WebsocketMessage) error {
 	return p.to(wsResponse, websocket_pb.To_ToSelf)
 }
 
+// ToAll 发布到广播频道，全部订阅者均可收到。
 func (p *rdsPubSub) ToAll(wsResponse application.WebsocketMessage) error {
 	return p.to(wsResponse, websocket_pb.To_ToAll)
 }
 
-func (p *rdsPubSub) ToOthers(wsResponse application.WebsocketMessage) error {
-	return p.to(wsResponse, websocket_pb.To_ToOthers)
-}
-
-// to publishes to Redis. The shared dispatcher in redisSender handles fan-out.
-// Does NOT mutate wsResponse.
+// to 发布消息到 Redis：共享 dispatcher 负责扇出。不修改 wsResponse。
 func (p *rdsPubSub) to(response application.WebsocketMessage, to websocket_pb.To) error {
 	room := wssender.BroadcastRoom
 	if to == websocket_pb.To_ToSelf {
@@ -248,15 +263,16 @@ func (p *rdsPubSub) to(response application.WebsocketMessage, to websocket_pb.To
 	return p.rds.Publish(context.TODO(), room, wssender.ProtoToMessage(response, p.id, to).Marshal()).Err()
 }
 
-// Subscribe returns the local channel. No per-connection Redis subscription.
+// Subscribe 返回本地通道，无每连接的 Redis 订阅。
 func (p *rdsPubSub) Subscribe() <-chan []byte {
 	return p.ch
 }
 
 // ---------------------------------------------------------------------------
-// Pod event types (unchanged, still per-connection Redis subscription)
+// Pod 事件类型（保持不变，仍是每连接独立的 Redis 订阅）
 // ---------------------------------------------------------------------------
 
+// podEventManagers 管理项目 pod 事件的订阅与发布：每个连接独立的 PubSub 订阅对应命名空间频道。
 type podEventManagers struct {
 	db     *ent.Client
 	logger mlog.Logger
@@ -274,19 +290,19 @@ type podEventManagers struct {
 	pidSelectors map[int32][]labels.Selector
 }
 
+// Publish 将 pod 事件序列化后发布到对应命名空间频道。
 func (p *podEventManagers) Publish(nsID int64, pod *v1.Pod) error {
 	channel := wssender.GetProjectPodEventRoom(nsID)
-	marshal, err := json.Marshal(&wssender.ProjectPodEventObj{
+	// ProjectPodEventObj 的字段全部可序列化（nil Pod 序列化为 null），Marshal 恒不失败。
+	marshal, _ := json.Marshal(&wssender.ProjectPodEventObj{
 		Channel:     channel,
 		NamespaceID: nsID,
 		Pod:         pod,
 	})
-	if err != nil {
-		return err
-	}
 	return p.rds.Publish(context.TODO(), channel, marshal).Err()
 }
 
+// Join 订阅项目所在命名空间频道（首个引用时），并登记该项目的 pod 选择器。
 func (p *podEventManagers) Join(projectID int64) error {
 	pmodel, err := p.db.Project.Query().WithNamespace().Where(project.ID(int(projectID))).Only(context.TODO())
 	if err != nil {
@@ -298,7 +314,7 @@ func (p *podEventManagers) Join(projectID int64) error {
 	p.mu.Lock()
 	p.channelRefs[channel]++
 	if p.channelRefs[channel] == 1 {
-		// First reference: actually subscribe.
+		// 首个引用才真正订阅。
 		if err := p.pubSub.Subscribe(context.TODO(), channel); err != nil {
 			p.channelRefs[channel]--
 			p.mu.Unlock()
@@ -323,6 +339,7 @@ func (p *podEventManagers) Join(projectID int64) error {
 	return nil
 }
 
+// Leave 退订命名空间频道（引用计数归零时），并移除项目选择器。
 func (p *podEventManagers) Leave(nsID int64, projectID int64) error {
 	channel := wssender.GetProjectPodEventRoom(nsID)
 
@@ -344,6 +361,7 @@ func (p *podEventManagers) Leave(nsID int64, projectID int64) error {
 	return nil
 }
 
+// Run 消费 pod 事件频道，按订阅选择器匹配并投递到连接通道；ctx 取消时退出。
 func (p *podEventManagers) Run(ctx context.Context) error {
 	defer p.pubSub.Close()
 	ch := p.pubSub.Channel()

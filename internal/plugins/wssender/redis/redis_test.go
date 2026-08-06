@@ -3,57 +3,38 @@ package redis
 import (
 	"context"
 	"fmt"
-	"os"
 	"runtime"
 	"sync"
 	"testing"
 	"time"
 
-	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/plugins/wssender"
+	"github.com/alicebob/miniredis/v2"
+	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 )
 
-var (
-	testRedisAddr = "localhost:6379"
-	testRedisDB   = 1
-)
-
-func init() {
-	if host := os.Getenv("REDIS_HOST"); host != "" {
-		port := os.Getenv("REDIS_PORT")
-		if port == "" {
-			port = "6379"
-		}
-		testRedisAddr = host + ":" + port
-	}
-}
-
 // ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
 
-func redisAvailable() bool {
-	rdb := redis.NewClient(&redis.Options{Addr: testRedisAddr, DB: testRedisDB})
-	defer rdb.Close()
-	return rdb.Ping(context.TODO()).Err() == nil
-}
-
-// newTestSender creates a redisSender connected to a local Redis instance (DB 1).
+// newTestSender creates a redisSender connected to an in-memory miniredis (DB 1).
 // It flushes DB before use and cleans up on test completion.
 func newTestSender(tb testing.TB) *redisSender {
 	tb.Helper()
-	if !redisAvailable() {
-		tb.Skipf("Redis not available at %s", testRedisAddr)
-	}
+	return newTestSenderOn(tb, miniredis.RunT(tb))
+}
 
+// newTestSenderOn 在指定 miniredis 上建 sender，供跨实例测试共享同一 Redis。
+func newTestSenderOn(tb testing.TB, mr *miniredis.Miniredis) *redisSender {
+	tb.Helper()
 	rdb := redis.NewClient(&redis.Options{
-		Addr: testRedisAddr,
-		DB:   testRedisDB,
+		Addr: mr.Addr(),
+		DB:   1,
 	})
 	require.NoError(tb, rdb.FlushDB(context.TODO()).Err())
 
@@ -116,6 +97,28 @@ func mustRead(t *testing.T, ch <-chan []byte, timeout time.Duration) []byte {
 	}
 }
 
+// deliver 发送消息并等待投递，超时未到则重试。
+// 背景：go-redis PubSub.Subscribe 只写 SUBSCRIBE 命令、不等待服务端确认（_subscribe
+// 仅 writeCmd），而 Publish 走独立连接，可能先于直连频道的订阅生效而丢消息（Redis
+// PubSub 无排队）。ToSelf 依赖 New 里异步订阅的用户直连频道，故须在 deadline 内重试
+// 发布直到收到。ToAll 走 setup 时就绪的广播频道，首投即达，不会触发重试。
+func deliver(t *testing.T, send func() error, ch <-chan []byte, timeout time.Duration) []byte {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for {
+		require.NoError(t, send())
+		select {
+		case data, ok := <-ch:
+			require.True(t, ok, "channel closed unexpectedly")
+			return data
+		case <-time.After(50 * time.Millisecond):
+			if time.Now().After(deadline) {
+				t.Fatal("timeout waiting for message delivery")
+			}
+		}
+	}
+}
+
 // expectNoRead asserts that nothing arrives on ch within the timeout.
 func expectNoRead(t *testing.T, ch <-chan []byte, timeout time.Duration) {
 	t.Helper()
@@ -169,9 +172,7 @@ func TestToSelf(t *testing.T) {
 	pub := newPubSub(t, s, "u1", "id1")
 	ch := pub.Subscribe()
 
-	require.NoError(t, pub.ToSelf(testMsg()))
-
-	data := mustRead(t, ch, time.Second)
+	data := deliver(t, func() error { return pub.ToSelf(testMsg()) }, ch, 3*time.Second)
 	var resp websocket_pb.WsProjectPodEventResponse
 	require.NoError(t, proto.Unmarshal(data, &resp))
 	assert.Equal(t, int32(42), resp.ProjectId)
@@ -190,14 +191,18 @@ func TestToAll(t *testing.T) {
 	mustRead(t, ch2, time.Second)
 }
 
-func TestToOthers(t *testing.T) {
+// TestDispatcher_ToToOthers_skips_source 直接向广播频道投递 To_ToOthers 消息，
+// 断言 dispatcher 跳过来源连接 id1。ToOthers 方法已删除（无生产调用方），
+// 该路由分支保留为防御代码，仍须测试覆盖。
+func TestDispatcher_ToToOthers_skips_source(t *testing.T) {
 	s := newTestSender(t)
 	pub1 := newPubSub(t, s, "u1", "id1")
 	pub2 := newPubSub(t, s, "u2", "id2")
 	ch1 := pub1.Subscribe()
 	ch2 := pub2.Subscribe()
 
-	require.NoError(t, pub1.ToOthers(testMsg()))
+	msg := wssender.ProtoToMessage(testMsg(), "id1", websocket_pb.To_ToOthers).Marshal()
+	require.NoError(t, s.rds.Publish(context.TODO(), wssender.BroadcastRoom, msg).Err())
 
 	expectNoRead(t, ch1, 500*time.Millisecond)
 	mustRead(t, ch2, time.Second)
@@ -210,9 +215,7 @@ func TestToSelf_routed_only_to_target(t *testing.T) {
 	ch1 := pub1.Subscribe()
 	ch2 := pub2.Subscribe()
 
-	require.NoError(t, pub1.ToSelf(testMsg()))
-
-	mustRead(t, ch1, time.Second)
+	deliver(t, func() error { return pub1.ToSelf(testMsg()) }, ch1, 3*time.Second)
 	expectNoRead(t, ch2, 500*time.Millisecond)
 }
 
@@ -318,18 +321,17 @@ done:
 // ---------------------------------------------------------------------------
 
 func TestCrossInstanceToSelf(t *testing.T) {
-	s1 := newTestSender(t)
-	s2 := newTestSender(t)
+	mr := miniredis.RunT(t)
+	s1 := newTestSenderOn(t, mr)
+	s2 := newTestSenderOn(t, mr)
 
 	pub1 := newPubSub(t, s1, "u1", "x-id1")
 	pub2 := newPubSub(t, s2, "u2", "x-id2")
 	ch1 := pub1.Subscribe()
 	ch2 := pub2.Subscribe()
 
-	require.NoError(t, pub1.ToSelf(testMsg()))
-
 	// Only pub1 should receive it.
-	mustRead(t, ch1, time.Second)
+	deliver(t, func() error { return pub1.ToSelf(testMsg()) }, ch1, 3*time.Second)
 	expectNoRead(t, ch2, 500*time.Millisecond)
 
 	pub1.Close()
@@ -337,8 +339,9 @@ func TestCrossInstanceToSelf(t *testing.T) {
 }
 
 func TestCrossInstanceToAll(t *testing.T) {
-	s1 := newTestSender(t)
-	s2 := newTestSender(t)
+	mr := miniredis.RunT(t)
+	s1 := newTestSenderOn(t, mr)
+	s2 := newTestSenderOn(t, mr)
 
 	pub1 := newPubSub(t, s1, "u1", "x-id1")
 	pub2 := newPubSub(t, s2, "u2", "x-id2")
@@ -348,24 +351,6 @@ func TestCrossInstanceToAll(t *testing.T) {
 	require.NoError(t, pub1.ToAll(testMsg()))
 
 	mustRead(t, ch1, time.Second)
-	mustRead(t, ch2, time.Second)
-
-	pub1.Close()
-	pub2.Close()
-}
-
-func TestCrossInstanceToOthers(t *testing.T) {
-	s1 := newTestSender(t)
-	s2 := newTestSender(t)
-
-	pub1 := newPubSub(t, s1, "u1", "x-id1")
-	pub2 := newPubSub(t, s2, "u2", "x-id2")
-	ch1 := pub1.Subscribe()
-	ch2 := pub2.Subscribe()
-
-	require.NoError(t, pub1.ToOthers(testMsg()))
-
-	expectNoRead(t, ch1, 500*time.Millisecond)
 	mustRead(t, ch2, time.Second)
 
 	pub1.Close()
@@ -566,8 +551,9 @@ func TestNoGoroutineLeakAfterDestroy(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	after := runtime.NumGoroutine()
-	// Allow room for go-redis internal goroutines (pool reaper, pubsub reader, health check).
-	assert.LessOrEqual(t, after, baseline+10,
+	// Allow room for go-redis internal goroutines (pool reaper, pubsub reader, health check)
+	// and miniredis server goroutines that may still be winding down.
+	assert.LessOrEqual(t, after, baseline+15,
 		"goroutine count should not grow significantly after creating/closing PubSubs")
 }
 

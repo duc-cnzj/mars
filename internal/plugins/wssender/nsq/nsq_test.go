@@ -2,89 +2,201 @@ package nsq
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"runtime"
+	"encoding/json"
+	"errors"
 	"sync"
 	"testing"
 	"time"
 
-	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/plugins/wssender"
+	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
+	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender"
 	gonsq "github.com/nsqio/go-nsq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
+	"go.uber.org/mock/gomock"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
-var (
-	testNSQDAddr    = "127.0.0.1:4150"
-	testLookupdAddr = "127.0.0.1:4161"
-)
+// ---------------------------------------------------------------------------
+// fakes
+// ---------------------------------------------------------------------------
 
-func init() {
-	if addr := os.Getenv("NSQ_NSQD_ADDR"); addr != "" {
-		testNSQDAddr = addr
+// fakeProducer 实现 nsqProducer：记录发布的 topic/body，可注入 Ping/Publish 错误。
+type fakeProducer struct {
+	mu      sync.Mutex
+	topics  []string
+	bodies  [][]byte
+	pingErr error
+	pubErr  error
+	stopped bool
+}
+
+func newFakeProducer() *fakeProducer { return &fakeProducer{} }
+
+func (f *fakeProducer) Ping() error { return f.pingErr }
+
+func (f *fakeProducer) Stop() { f.stopped = true }
+
+// Publish 记录本次发布并返回注入的 pubErr（nil 表示成功）。
+func (f *fakeProducer) Publish(topic string, body []byte) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.pubErr != nil {
+		return f.pubErr
 	}
-	if addr := os.Getenv("NSQ_LOOKUPD_ADDR"); addr != "" {
-		testLookupdAddr = addr
+	f.topics = append(f.topics, topic)
+	f.bodies = append(f.bodies, body)
+	return nil
+}
+
+// publishedTopics 返回已发布 topic 的拷贝，避免与测试读取竞态。
+func (f *fakeProducer) publishedTopics() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]string(nil), f.topics...)
+}
+
+// publishedBodies 返回已发布 body 的拷贝，避免与测试读取竞态。
+func (f *fakeProducer) publishedBodies() [][]byte {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([][]byte(nil), f.bodies...)
+}
+
+// fakeConsumer 实现 nsqConsumer：记录 handler/停止状态，可注入连接错误。
+type fakeConsumer struct {
+	mu         sync.Mutex
+	handler    gonsq.Handler
+	stopped    bool
+	usedLookup bool
+	connectErr error
+	stopCh     chan int
+}
+
+func newFakeConsumer() *fakeConsumer {
+	return &fakeConsumer{stopCh: make(chan int, 1)}
+}
+
+// AddHandler 记录注册的 handler。
+func (f *fakeConsumer) AddHandler(h gonsq.Handler) {
+	f.mu.Lock()
+	f.handler = h
+	f.mu.Unlock()
+}
+
+// ConnectToNSQD 直连 nsqd，返回注入的连接错误。
+func (f *fakeConsumer) ConnectToNSQD(addr string) error { return f.connectErr }
+
+// ConnectToNSQLookupd 走 nsqlookupd，返回注入的连接错误。
+func (f *fakeConsumer) ConnectToNSQLookupd(addr string) error {
+	f.mu.Lock()
+	f.usedLookup = true
+	f.mu.Unlock()
+	return f.connectErr
+}
+
+// Stop 标记停止并唤醒 StopChan（多次调用幂等）。
+func (f *fakeConsumer) Stop() {
+	f.mu.Lock()
+	f.stopped = true
+	f.mu.Unlock()
+	select {
+	case f.stopCh <- 1:
+	default:
 	}
+}
+
+// StopChan 返回停止通知通道。
+func (f *fakeConsumer) StopChan() <-chan int { return f.stopCh }
+
+func (f *fakeConsumer) isStopped() bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.stopped
 }
 
 // ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
 
-func nsqAvailable() bool {
-	cfg := gonsq.NewConfig()
-	p, err := gonsq.NewProducer(testNSQDAddr, cfg)
-	if err != nil {
-		return false
-	}
-	defer p.Stop()
-	return p.Ping() == nil
+// fakeApp 是 PluginApp 的最小 stub，供 Initialize 测试使用。
+type fakeApp struct {
+	data   data.Data
+	logger mlog.Logger
 }
 
-// newTestSender creates a nsqSender connected to a local NSQD instance.
-func newTestSender(tb testing.TB) *nsqSender {
-	tb.Helper()
-	if !nsqAvailable() {
-		tb.Skipf("NSQ not available at %s (set NSQ_NSQD_ADDR/NSQ_LOOKUPD_ADDR)", testNSQDAddr)
-	}
+func (f fakeApp) Logger() mlog.Logger { return f.logger }
+func (f fakeApp) Data() data.Data     { return f.data }
+func (f fakeApp) Cache() data.Cache   { return nil }
 
-	cfg := gonsq.NewConfig()
-	cfg.MaxInFlight = 1000
-	// Short poll interval for faster test consumer registration.
-	cfg.LookupdPollInterval = 200 * time.Millisecond
-
-	producer, err := gonsq.NewProducer(testNSQDAddr, cfg)
-	require.NoError(tb, err)
-	require.NoError(tb, producer.Ping())
-
-	// Intentionally leave lookupdAddr empty so consumers connect directly to NSQD
-	// instead of via lookupd.  When NSQ runs in Docker the lookupd returns container
-	// hostnames that are not resolvable from the host.
-	s := &nsqSender{
-		producer:    producer,
-		cfg:         cfg,
-		addr:        testNSQDAddr,
-		lookupdAddr: "",
-		logger:      mlog.NewForConfig(nil),
-	}
-
-	tb.Cleanup(func() {
-		producer.Stop()
-	})
-
-	return s
+func newDB(t *testing.T) *ent.Client {
+	t.Helper()
+	db, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1&loc=Local")
+	require.NoError(t, err)
+	require.NoError(t, db.Schema.Create(context.TODO()))
+	t.Cleanup(func() { _ = db.Close() })
+	return db
 }
 
-func newNSQ(tb testing.TB, s *nsqSender, uid, id string) *nsq {
-	tb.Helper()
-	return s.New(uid, id).(*nsq)
+// seedProject 创建 namespace + project 并返回 nsID、pid。
+func seedProject(t *testing.T, db *ent.Client, selectors []string) (nsID, pid int) {
+	t.Helper()
+	ns := db.Namespace.Create().SetName("devops-test").SetCreatorEmail("a@b.c").SaveX(context.TODO())
+	proj := db.Project.Create().SetName("my-app").SetCreator("tester").
+		SetNamespaceID(ns.ID).SetPodSelectors(selectors).SaveX(context.TODO())
+	return ns.ID, proj.ID
 }
 
+// newApp 构造带真实 ent DB 的 PluginApp stub。
+func newApp(t *testing.T) (application.PluginApp, *ent.Client) {
+	t.Helper()
+	db := newDB(t)
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+	md := data.NewMockData(ctrl)
+	md.EXPECT().DB().Return(db)
+	return fakeApp{data: md, logger: mlog.NewForConfig(nil)}, db
+}
+
+// setProducer 覆盖 newProducer 测试缝，测试结束自动还原。
+func setProducer(t *testing.T, fn func(addr string, cfg *gonsq.Config) (nsqProducer, error)) {
+	t.Helper()
+	orig := newProducer
+	newProducer = fn
+	t.Cleanup(func() { newProducer = orig })
+}
+
+// setConsumer 覆盖 newConsumer 测试缝，测试结束自动还原。
+func setConsumer(t *testing.T, fn func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error)) {
+	t.Helper()
+	orig := newConsumer
+	newConsumer = fn
+	t.Cleanup(func() { newConsumer = orig })
+}
+
+// newTestNSQ 构造直接注入 fakeProducer 的 *nsq，供单元测试使用。
+func newTestNSQ(fp *fakeProducer, uid, id string) *nsq {
+	return &nsq{
+		logger:       mlog.NewForConfig(nil),
+		cfg:          gonsq.NewConfig(),
+		uid:          uid,
+		id:           id,
+		producer:     fp,
+		msgCh:        make(chan []byte, wssender.MessageChSize),
+		eventMsgCh:   make(chan []byte, wssender.MessageChSize),
+		consumers:    map[string]nsqConsumer{},
+		channelRefs:  map[string]int{},
+		pidSelectors: map[int32][]labels.Selector{},
+	}
+}
+
+// testMsg 构造一个最小可序列化的 websocket 消息。
 func testMsg() *websocket_pb.WsProjectPodEventResponse {
 	return &websocket_pb.WsProjectPodEventResponse{
 		Metadata: &websocket_pb.Metadata{
@@ -98,601 +210,779 @@ func testMsg() *websocket_pb.WsProjectPodEventResponse {
 	}
 }
 
-// mustRead reads from ch within the timeout and returns the data.
-func mustRead(t *testing.T, ch <-chan []byte, timeout time.Duration) []byte {
-	t.Helper()
-	select {
-	case data, ok := <-ch:
-		require.True(t, ok, "channel closed unexpectedly")
-		return data
-	case <-time.After(timeout):
-		t.Fatal("timeout waiting for message")
-		return nil
+// testPod 构造带选择器匹配标签的测试 Pod。
+func testPod() *v1.Pod {
+	return &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod-1",
+			Namespace: "devops-test",
+			Labels:    map[string]string{"app": "test"},
+		},
 	}
 }
 
-// expectNoRead asserts that nothing arrives on ch within the timeout.
-func expectNoRead(t *testing.T, ch <-chan []byte, timeout time.Duration) {
-	t.Helper()
-	select {
-	case data, ok := <-ch:
-		if ok {
-			t.Fatalf("unexpected message: %v", data)
-		}
-	case <-time.After(timeout):
+// podEventObj 构造发布到 eventMsgCh 的 pod 事件 JSON。
+func podEventObj(channel string, nsID int64) []byte {
+	data, _ := json.Marshal(&wssender.ProjectPodEventObj{
+		Channel:     channel,
+		NamespaceID: nsID,
+		Pod:         testPod(),
+	})
+	return data
+}
+
+// runInBackground 启动 Run 并等 50ms 让其就绪，返回取消函数。
+func runInBackground(n *nsq) context.CancelFunc {
+	ctx, cancel := context.WithCancel(context.TODO())
+	go func() { _ = n.Run(ctx) }()
+	time.Sleep(50 * time.Millisecond)
+	return cancel
+}
+
+// ---------------------------------------------------------------------------
+// Name / Initialize / Destroy
+// ---------------------------------------------------------------------------
+
+func TestNsqName(t *testing.T) {
+	assert.Equal(t, "ws_sender_nsq", (&nsqSender{}).Name())
+}
+
+func TestNsqInitialize_success(t *testing.T) {
+	app, db := newApp(t)
+	fp := newFakeProducer()
+	setProducer(t, func(addr string, cfg *gonsq.Config) (nsqProducer, error) {
+		return fp, nil
+	})
+
+	s := &nsqSender{}
+	err := s.Initialize(app, map[string]any{
+		"addr":               "127.0.0.1:4150",
+		"lookupd_addr":       "127.0.0.1:4161",
+		"msg_timeout":        10,
+		"dial_timeout":       5,
+		"read_timeout":       5,
+		"write_timeout":      5,
+		"heartbeat_interval": 30,
+	})
+	require.NoError(t, err)
+	assert.Same(t, fp, s.producer)
+	assert.Equal(t, "127.0.0.1:4150", s.addr)
+	assert.Equal(t, "127.0.0.1:4161", s.lookupdAddr)
+	assert.Same(t, db, s.db)
+	require.NotNil(t, s.cfg)
+	assert.Equal(t, 10*time.Second, s.cfg.MsgTimeout)
+	assert.Equal(t, 5*time.Second, s.cfg.DialTimeout)
+	assert.Equal(t, 5*time.Second, s.cfg.ReadTimeout)
+	assert.Equal(t, 5*time.Second, s.cfg.WriteTimeout)
+	assert.Equal(t, 30*time.Second, s.cfg.HeartbeatInterval)
+	require.NoError(t, s.Destroy())
+}
+
+func TestNsqInitialize_missing_addr(t *testing.T) {
+	app, _ := newApp(t)
+	s := &nsqSender{}
+	err := s.Initialize(app, nil)
+	assert.ErrorContains(t, err, "add not exits")
+}
+
+func TestNsqInitialize_producer_error(t *testing.T) {
+	app, _ := newApp(t)
+	setProducer(t, func(addr string, cfg *gonsq.Config) (nsqProducer, error) {
+		return nil, errors.New("boom")
+	})
+	s := &nsqSender{}
+	err := s.Initialize(app, map[string]any{"addr": "127.0.0.1:4150"})
+	assert.ErrorContains(t, err, "boom")
+}
+
+func TestNsqInitialize_ping_error(t *testing.T) {
+	app, _ := newApp(t)
+	fp := newFakeProducer()
+	fp.pingErr = errors.New("ping failed")
+	setProducer(t, func(addr string, cfg *gonsq.Config) (nsqProducer, error) {
+		return fp, nil
+	})
+	s := &nsqSender{}
+	err := s.Initialize(app, map[string]any{"addr": "127.0.0.1:4150"})
+	assert.ErrorContains(t, err, "ping failed")
+	assert.True(t, fp.stopped, "Ping 失败后必须 Stop 释放连接")
+}
+
+func TestNsqInitialize_invalid_timeout_args(t *testing.T) {
+	app, _ := newApp(t)
+	fp := newFakeProducer()
+	setProducer(t, func(addr string, cfg *gonsq.Config) (nsqProducer, error) {
+		return fp, nil
+	})
+	s := &nsqSender{}
+	// 非法超时参数（<=0）应被忽略，保持默认值。
+	err := s.Initialize(app, map[string]any{
+		"addr":         "127.0.0.1:4150",
+		"msg_timeout":  -1,
+		"dial_timeout": 0,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, gonsq.NewConfig().MsgTimeout, s.cfg.MsgTimeout)
+	assert.Equal(t, gonsq.NewConfig().DialTimeout, s.cfg.DialTimeout)
+}
+
+func TestNsqDestroy(t *testing.T) {
+	app, _ := newApp(t)
+	fp := newFakeProducer()
+	setProducer(t, func(addr string, cfg *gonsq.Config) (nsqProducer, error) {
+		return fp, nil
+	})
+	s := &nsqSender{}
+	require.NoError(t, s.Initialize(app, map[string]any{"addr": "127.0.0.1:4150"}))
+	require.NoError(t, s.Destroy())
+	assert.True(t, fp.stopped)
+}
+
+// ---------------------------------------------------------------------------
+// New / Uid / ID / Info
+// ---------------------------------------------------------------------------
+
+func TestNsqNew(t *testing.T) {
+	fp := newFakeProducer()
+	s := &nsqSender{
+		logger:   mlog.NewForConfig(nil),
+		cfg:      gonsq.NewConfig(),
+		producer: fp,
 	}
-}
-
-// waitForSubscription pauses briefly to allow NSQ consumer registration.
-// NSQ subscriptions are asynchronous; this gives the consumer time to
-// negotiate the connection and register with the topic before we publish.
-func waitForSubscription() {
-	time.Sleep(300 * time.Millisecond)
-}
-
-// ---------------------------------------------------------------------------
-// 1. Basic lifecycle
-// ---------------------------------------------------------------------------
-
-func TestNewNSQ(t *testing.T) {
-	s := newTestSender(t)
-	n := newNSQ(t, s, "uid-1", "id-1")
-
+	n := s.New("uid-1", "id-1").(*nsq)
 	assert.Equal(t, "id-1", n.ID())
 	assert.Equal(t, "uid-1", n.Uid())
+	assert.Equal(t, "id-1#ephemeral", n.ephemeralID())
+	assert.Same(t, fp, n.producer)
+	assert.Same(t, s.logger, n.logger)
+	require.NotNil(t, n.msgCh)
+	require.NotNil(t, n.eventMsgCh)
+	assert.Empty(t, n.consumers)
+	assert.Empty(t, n.channelRefs)
+	assert.Empty(t, n.pidSelectors)
 }
 
-func TestSubscribe_returns_open_channel(t *testing.T) {
-	s := newTestSender(t)
-	n := newNSQ(t, s, "u", "x")
-	ch := n.Subscribe()
-	defer n.Close()
-	require.NotNil(t, ch)
-
-	// Non-blocking check: channel is open and empty.
-	select {
-	case _, ok := <-ch:
-		if !ok {
-			t.Fatal("channel should be open, not closed")
-		}
-		t.Fatal("unexpected message on empty channel")
-	default:
-		// expected — channel is open and empty
-	}
-}
-
-// ---------------------------------------------------------------------------
-// 2. Message routing
-// ---------------------------------------------------------------------------
-
-func TestToSelf(t *testing.T) {
-	s := newTestSender(t)
-	n := newNSQ(t, s, "u1", "id1")
-	ch := n.Subscribe()
-	defer n.Close()
-	waitForSubscription()
-
-	require.NoError(t, n.ToSelf(testMsg()))
-
-	data := mustRead(t, ch, 3*time.Second)
-	var resp websocket_pb.WsProjectPodEventResponse
-	require.NoError(t, proto.Unmarshal(data, &resp))
-	assert.Equal(t, int32(42), resp.ProjectId)
-}
-
-func TestToAll(t *testing.T) {
-	s := newTestSender(t)
-	n1 := newNSQ(t, s, "u1", "id1")
-	n2 := newNSQ(t, s, "u2", "id2")
-	ch1 := n1.Subscribe()
-	ch2 := n2.Subscribe()
-	defer n1.Close()
-	defer n2.Close()
-	waitForSubscription()
-
-	require.NoError(t, n1.ToAll(testMsg()))
-
-	mustRead(t, ch1, 3*time.Second)
-	mustRead(t, ch2, 3*time.Second)
-}
-
-func TestToOthers(t *testing.T) {
-	s := newTestSender(t)
-	n1 := newNSQ(t, s, "u1", "id1")
-	n2 := newNSQ(t, s, "u2", "id2")
-	ch1 := n1.Subscribe()
-	ch2 := n2.Subscribe()
-	defer n1.Close()
-	defer n2.Close()
-	waitForSubscription()
-
-	require.NoError(t, n1.ToOthers(testMsg()))
-
-	// n1 should NOT receive its own ToOthers message.
-	expectNoRead(t, ch1, 1*time.Second)
-	mustRead(t, ch2, 3*time.Second)
-}
-
-func TestToSelf_routed_only_to_target(t *testing.T) {
-	s := newTestSender(t)
-	n1 := newNSQ(t, s, "u1", "id1")
-	n2 := newNSQ(t, s, "u2", "id2")
-	ch1 := n1.Subscribe()
-	ch2 := n2.Subscribe()
-	defer n1.Close()
-	defer n2.Close()
-	waitForSubscription()
-
-	require.NoError(t, n1.ToSelf(testMsg()))
-
-	// Only pub1 (id1) should receive it.
-	mustRead(t, ch1, 3*time.Second)
-	expectNoRead(t, ch2, 1*time.Second)
-}
-
-func TestToSelf_on_closed_PubSub_is_noop(t *testing.T) {
-	s := newTestSender(t)
-	n := newNSQ(t, s, "u", "id")
-	n.Close()
-
-	// Must not panic — publish is still possible on the shared producer,
-	// but there's no consumer to receive it.
-	err := n.ToSelf(testMsg())
-	assert.NoError(t, err)
-}
-
-// ---------------------------------------------------------------------------
-// 3. Info / Close
-// ---------------------------------------------------------------------------
-
-func TestInfo_returns_nil(t *testing.T) {
-	s := newTestSender(t)
-	n := newNSQ(t, s, "u", "id")
+func TestUidIDInfo(t *testing.T) {
+	n := newTestNSQ(newFakeProducer(), "uid", "id")
+	assert.Equal(t, "uid", n.Uid())
+	assert.Equal(t, "id", n.ID())
 	assert.Nil(t, n.Info())
 }
 
-func TestClose_closes_msgCh(t *testing.T) {
-	s := newTestSender(t)
-	n := newNSQ(t, s, "u", "id")
-	ch := n.Subscribe()
+// ---------------------------------------------------------------------------
+// ToSelf / ToAll / Publish
+// ---------------------------------------------------------------------------
 
-	n.Close()
+func TestToSelf_publishes_to_direct_channel(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u1", "id1")
 
-	// Close() closes msgCh, but the channel buffer may contain data
-	// that was enqueued by handlers before Close() was called.
-	// Drain the buffer; the range loop exits only after the closed
-	// channel has been fully drained.
-	for range ch {
-	}
+	require.NoError(t, n.ToSelf(testMsg()))
+
+	topics := fp.publishedTopics()
+	require.Len(t, topics, 1)
+	assert.Equal(t, "id1#ephemeral", topics[0])
+
+	bodies := fp.publishedBodies()
+	msg, err := wssender.DecodeMessage(bodies[0])
+	require.NoError(t, err)
+	assert.Equal(t, websocket_pb.To_ToSelf, msg.To)
+	assert.Equal(t, "id1", msg.ID)
+	assert.NotEmpty(t, msg.Data)
 }
 
-func TestClose_stops_consumers(t *testing.T) {
-	s := newTestSender(t)
-	n := newNSQ(t, s, "u", "id")
-	ch := n.Subscribe()
+func TestToAll_publishes_to_broadcast_channel(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u1", "id1")
+	require.NoError(t, n.ToAll(testMsg()))
+	assert.Equal(t, []string{ephemeralBroadcastRoom}, fp.publishedTopics())
+}
+
+func TestTo_publish_error(t *testing.T) {
+	fp := newFakeProducer()
+	fp.pubErr = errors.New("publish failed")
+	n := newTestNSQ(fp, "u", "id")
+	assert.Error(t, n.ToSelf(testMsg()))
+	assert.Error(t, n.ToAll(testMsg()))
+}
+
+func TestPublish(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+
+	require.NoError(t, n.Publish(7, testPod()))
+
+	topics := fp.publishedTopics()
+	require.Len(t, topics, 1)
+	assert.Equal(t, getNsqProjectEventRoom(int64(7)), topics[0])
+
+	bodies := fp.publishedBodies()
+	var obj wssender.ProjectPodEventObj
+	require.NoError(t, json.Unmarshal(bodies[0], &obj))
+	assert.Equal(t, int64(7), obj.NamespaceID)
+	assert.Equal(t, topics[0], obj.Channel)
+	require.NotNil(t, obj.Pod)
+	assert.Equal(t, "pod-1", obj.Pod.Name)
+}
+
+func TestPublish_error(t *testing.T) {
+	fp := newFakeProducer()
+	fp.pubErr = errors.New("boom")
+	n := newTestNSQ(fp, "u", "id")
+	assert.Error(t, n.Publish(7, testPod()))
+}
+
+// ---------------------------------------------------------------------------
+// Join / Leave
+// ---------------------------------------------------------------------------
+
+func TestJoin(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+	n.db = newDB(t)
+	nsID, pid := seedProject(t, n.db, []string{"app=test"})
+
+	var topics []string
+	fc := newFakeConsumer()
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		topics = append(topics, topic)
+		return fc, nil
+	})
+
+	require.NoError(t, n.Join(int64(pid)))
+
+	channel := getNsqProjectEventRoom(int64(nsID))
+	assert.Equal(t, []string{channel}, topics)
+	n.consumersMu.RLock()
+	assert.Equal(t, 1, n.channelRefs[channel])
+	assert.Same(t, fc, n.consumers[channel])
+	n.consumersMu.RUnlock()
+
+	n.pMu.RLock()
+	sels := n.pidSelectors[int32(pid)]
+	n.pMu.RUnlock()
+	require.Len(t, sels, 1)
+	assert.True(t, sels[0].Matches(labels.Set(map[string]string{"app": "test"})))
+}
+
+func TestJoin_reuses_consumer_for_same_channel(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+	n.db = newDB(t)
+	nsID, pid := seedProject(t, n.db, []string{"app=test"})
+
+	var created int
+	fc := newFakeConsumer()
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		created++
+		return fc, nil
+	})
+
+	require.NoError(t, n.Join(int64(pid)))
+	require.NoError(t, n.Join(int64(pid)))
+	assert.Equal(t, 1, created, "同一 namespace 复用同一 consumer")
+
+	channel := getNsqProjectEventRoom(int64(nsID))
+	n.consumersMu.RLock()
+	assert.Equal(t, 2, n.channelRefs[channel])
+	n.consumersMu.RUnlock()
+}
+
+func TestJoin_unknown_project(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+	n.db = newDB(t)
+	assert.Error(t, n.Join(99999))
+}
+
+func TestJoin_consumer_create_error(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+	n.db = newDB(t)
+	_, pid := seedProject(t, n.db, []string{"app=test"})
+
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		return nil, errors.New("create failed")
+	})
+	assert.Error(t, n.Join(int64(pid)))
 
 	n.consumersMu.RLock()
-	consumerCount := len(n.consumers)
+	assert.Empty(t, n.channelRefs, "失败时不应登记引用计数")
 	n.consumersMu.RUnlock()
-	assert.Equal(t, 2, consumerCount, "Subscribe should create 2 consumers (broadcast + direct)")
-
-	n.Close()
-
-	// The channel from Subscribe() should be closed after Close().
-	_, ok := <-ch
-	assert.False(t, ok, "channel should be closed after Close()")
 }
 
-func TestMultipleClose_no_panic(t *testing.T) {
-	s := newTestSender(t)
-	n := newNSQ(t, s, "u", "id")
-	n.Close()
+func TestJoin_connect_error(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+	n.db = newDB(t)
+	_, pid := seedProject(t, n.db, []string{"app=test"})
 
-	assert.NotPanics(t, func() {
-		n.Close()
+	fc := newFakeConsumer()
+	fc.connectErr = errors.New("connect failed")
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		return fc, nil
 	})
+	assert.Error(t, n.Join(int64(pid)))
+	assert.True(t, fc.isStopped(), "连接失败必须 Stop 释放")
+
+	n.consumersMu.RLock()
+	assert.Empty(t, n.consumers)
+	n.consumersMu.RUnlock()
 }
 
-// ---------------------------------------------------------------------------
-// 4. sendOrDrop behavior (non-blocking send on full channel)
-// ---------------------------------------------------------------------------
+func TestJoin_invalid_selector_skipped(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+	n.db = newDB(t)
+	_, pid := seedProject(t, n.db, []string{"!!!!bad"})
 
-func TestSendOrDrop_does_not_block_when_channel_full(t *testing.T) {
-	s := newTestSender(t)
-	n := newNSQ(t, s, "u", "id")
-	ch := n.Subscribe()
-	defer n.Close()
-	waitForSubscription()
-
-	// Publish more messages than the buffer can hold.
-	msgCount := wssender.MessageChSize * 2
-	for i := 0; i < msgCount; i++ {
-		require.NoError(t, n.ToAll(testMsg()))
-	}
-
-	// Give the consumer time to process all messages.
-	time.Sleep(2 * time.Second)
-
-	// Read whatever made it into the channel (bounded by buffer size).
-	var received int
-	for {
-		select {
-		case <-ch:
-			received++
-		default:
-			goto done
-		}
-	}
-done:
-	assert.LessOrEqual(t, received, wssender.MessageChSize,
-		"channel buffer bounds the max receivable messages")
-	assert.GreaterOrEqual(t, received, 1,
-		"at least some messages should have arrived")
-}
-
-// ---------------------------------------------------------------------------
-// 5. Message ordering (covers the production out-of-order bug)
-// ---------------------------------------------------------------------------
-
-func TestMessageOrdering(t *testing.T) {
-	s := newTestSender(t)
-	n := newNSQ(t, s, "u", "order-id")
-	ch := n.Subscribe()
-	defer n.Close()
-	waitForSubscription()
-
-	// Drain any stale data from the shared "all#ephemeral" topic that may
-	// have been left by a previous test.  The 500ms window allows NSQ to
-	// deliver in-flight messages before we start the ordering check.
-	time.Sleep(500 * time.Millisecond)
-drain:
-	for {
-		select {
-		case <-ch:
-		default:
-			break drain
-		}
-	}
-	const count = 100
-	for i := range count {
-		msg := &websocket_pb.WsProjectPodEventResponse{
-			Metadata: &websocket_pb.Metadata{
-				Id:   fmt.Sprintf("order-id"),
-				Type: websocket_pb.Type_ProjectPodEvent,
-				End:  true,
-				To:   websocket_pb.To_ToSelf,
-			},
-			ProjectId: int32(i),
-		}
-		require.NoError(t, n.ToSelf(msg))
-	}
-
-	time.Sleep(3 * time.Second)
-
-	var ids []int32
-	for {
-		select {
-		case data := <-ch:
-			var resp websocket_pb.WsProjectPodEventResponse
-			if err := proto.Unmarshal(data, &resp); err == nil {
-				ids = append(ids, resp.ProjectId)
-			}
-			if len(ids) >= count {
-				goto checkOrder
-			}
-		default:
-			goto checkOrder
-		}
-	}
-checkOrder:
-	assert.Len(t, ids, count, "should receive all %d messages", count)
-	for i := 1; i < len(ids); i++ {
-		assert.Greater(t, ids[i], ids[i-1],
-			"messages should arrive in order at index %d (got %d after %d)", i, ids[i], ids[i-1])
-	}
-}
-
-// ---------------------------------------------------------------------------
-// 6. Concurrency  (run: go test -race)
-// ---------------------------------------------------------------------------
-
-func TestConcurrentToAll(t *testing.T) {
-	const n = 5
-	s := newTestSender(t)
-	nsqs := make([]*nsq, n)
-	chans := make([]<-chan []byte, n)
-	for i := range n {
-		nq := newNSQ(t, s, fmt.Sprintf("uid%d", i), fmt.Sprintf("id%d", i))
-		nsqs[i] = nq
-		chans[i] = nq.Subscribe()
-	}
-	// Cleanup all after test.
-	t.Cleanup(func() {
-		for _, nq := range nsqs {
-			nq.Close()
-		}
+	fc := newFakeConsumer()
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		return fc, nil
 	})
-	waitForSubscription()
-
-	// Drainers with ctx-based exit.
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
-	var drainWg sync.WaitGroup
-	for _, ch := range chans {
-		drainWg.Add(1)
-		go func(c <-chan []byte) {
-			defer drainWg.Done()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case _, ok := <-c:
-					if !ok {
-						return
-					}
-				}
-			}
-		}(ch)
-	}
-
-	var prodWg sync.WaitGroup
-	for _, nq := range nsqs {
-		prodWg.Add(1)
-		go func(nq *nsq) {
-			defer prodWg.Done()
-			for j := 0; j < 20; j++ {
-				_ = nq.ToAll(testMsg())
-			}
-		}(nq)
-	}
-
-	prodWg.Wait()
-	cancel() // signal drainers to stop
-	drainWg.Wait()
+	require.NoError(t, n.Join(int64(pid)))
+	n.pMu.RLock()
+	assert.Empty(t, n.pidSelectors[int32(pid)])
+	n.pMu.RUnlock()
 }
 
-func TestConcurrentToSelf(t *testing.T) {
-	s := newTestSender(t)
-	n := newNSQ(t, s, "u", "id")
-	ch := n.Subscribe()
-	defer n.Close()
-	waitForSubscription()
+func TestLeave(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+	n.db = newDB(t)
+	nsID, pid := seedProject(t, n.db, []string{"app=test"})
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	fc := newFakeConsumer()
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		return fc, nil
+	})
+	require.NoError(t, n.Join(int64(pid)))
+
+	channel := getNsqProjectEventRoom(int64(nsID))
+	require.NoError(t, n.Leave(int64(nsID), int64(pid)))
+	n.consumersMu.RLock()
+	_, ok := n.channelRefs[channel]
+	assert.False(t, ok)
+	_, ok = n.consumers[channel]
+	assert.False(t, ok)
+	n.consumersMu.RUnlock()
+	assert.True(t, fc.isStopped())
+
+	n.pMu.RLock()
+	_, ok = n.pidSelectors[int32(pid)]
+	assert.False(t, ok)
+	n.pMu.RUnlock()
+}
+
+func TestLeave_decrements_refcount(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+	n.db = newDB(t)
+	nsID, pid := seedProject(t, n.db, []string{"app=test"})
+
+	fc := newFakeConsumer()
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		return fc, nil
+	})
+	require.NoError(t, n.Join(int64(pid)))
+	require.NoError(t, n.Join(int64(pid)))
+
+	require.NoError(t, n.Leave(int64(nsID), int64(pid)))
+	channel := getNsqProjectEventRoom(int64(nsID))
+	n.consumersMu.RLock()
+	assert.Equal(t, 1, n.channelRefs[channel])
+	assert.Same(t, fc, n.consumers[channel])
+	n.consumersMu.RUnlock()
+	assert.False(t, fc.isStopped())
+}
+
+// ---------------------------------------------------------------------------
+// Run
+// ---------------------------------------------------------------------------
+
+func TestRun_dispatches_matching_pod_event(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+	n.db = newDB(t)
+	nsID, pid := seedProject(t, n.db, []string{"app=test"})
+	sel, err := labels.Parse("app=test")
+	require.NoError(t, err)
+	channel := getNsqProjectEventRoom(int64(nsID))
+	n.channelRefs[channel] = 1
+	n.pidSelectors[int32(pid)] = []labels.Selector{sel}
+
+	cancel := runInBackground(n)
 	defer cancel()
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case _, ok := <-ch:
-				if !ok {
-					return
-				}
-			}
-		}
-	}()
 
-	var wg sync.WaitGroup
-	for range 10 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for j := 0; j < 10; j++ {
-				_ = n.ToSelf(testMsg())
-			}
-		}()
+	n.eventMsgCh <- podEventObj(channel, int64(nsID))
+
+	select {
+	case out := <-n.msgCh:
+		assert.NotEmpty(t, out)
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for pod event dispatch")
 	}
+}
 
-	wg.Wait()
+func TestRun_skips_unsubscribed_channel(t *testing.T) {
+	n := newTestNSQ(newFakeProducer(), "u", "id")
+
+	cancel := runInBackground(n)
+	defer cancel()
+
+	n.eventMsgCh <- podEventObj("some-other-channel", 7)
+	time.Sleep(100 * time.Millisecond)
+	select {
+	case <-n.msgCh:
+		t.Fatal("should not dispatch unsubscribed channel")
+	default:
+	}
+}
+
+func TestRun_malformed_json(t *testing.T) {
+	n := newTestNSQ(newFakeProducer(), "u", "id")
+
+	cancel := runInBackground(n)
+	defer cancel()
+
+	n.eventMsgCh <- []byte("not-json")
+	time.Sleep(100 * time.Millisecond)
+	// 解码失败仅记日志，不 panic。
+}
+
+func TestRun_cancel(t *testing.T) {
+	n := newTestNSQ(newFakeProducer(), "u", "id")
+	ctx, cancel := context.WithCancel(context.TODO())
+
+	done := make(chan error, 1)
+	go func() { done <- n.Run(ctx) }()
+	time.Sleep(50 * time.Millisecond)
 	cancel()
-}
 
-func TestConcurrentSendAndClose(t *testing.T) {
-	s := newTestSender(t)
-	n := newNSQ(t, s, "u", "id")
-	_ = n.Subscribe()
-	waitForSubscription()
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		for i := 0; i < 20; i++ {
-			_ = n.ToAll(testMsg())
-		}
-	}()
-	go func() {
-		defer wg.Done()
-		n.Close()
-	}()
-
-	wg.Wait()
-}
-
-func TestConcurrentNewAndClose(t *testing.T) {
-	s := newTestSender(t)
-	var wg sync.WaitGroup
-
-	for i := range 10 {
-		wg.Add(1)
-		go func(n int) {
-			defer wg.Done()
-			id := fmt.Sprintf("id%d", n)
-			nq := newNSQ(t, s, fmt.Sprintf("u%d", n), id)
-			nq.Close()
-		}(i)
+	select {
+	case err := <-done:
+		assert.Error(t, err)
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run did not return after cancel")
 	}
-	wg.Wait()
 }
 
-func TestConcurrentPublishWithoutDrainers(t *testing.T) {
-	// Many publishers concurrently, no drainers — sendOrDrop prevents blocking.
-	s := newTestSender(t)
-	var wg sync.WaitGroup
+func TestRun_ch_closed(t *testing.T) {
+	n := newTestNSQ(newFakeProducer(), "u", "id")
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
 
-	for i := range 5 {
-		wg.Add(1)
-		go func(n int) {
-			defer wg.Done()
-			id := fmt.Sprintf("cid%d", n)
-			nq := newNSQ(t, s, fmt.Sprintf("cu%d", n), id)
-			defer nq.Close()
-			_ = nq.Subscribe()
-			for j := 0; j < 10; j++ {
-				_ = nq.ToAll(testMsg())
-			}
-		}(i)
+	done := make(chan error, 1)
+	go func() { done <- n.Run(ctx) }()
+	time.Sleep(50 * time.Millisecond)
+	close(n.eventMsgCh)
+
+	select {
+	case err := <-done:
+		assert.ErrorContains(t, err, "closed")
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run did not return after eventMsgCh closed")
 	}
-	wg.Wait()
-}
-
-func TestConcurrentAddDeleteSubs(t *testing.T) {
-	s := newTestSender(t)
-	var wg sync.WaitGroup
-
-	for i := range 10 {
-		wg.Add(1)
-		go func(n int) {
-			defer wg.Done()
-			id := fmt.Sprintf("cid%d", n)
-			nq := newNSQ(t, s, fmt.Sprintf("cu%d", n), id)
-			_ = nq.Subscribe()
-			nq.Close()
-		}(i)
-	}
-	wg.Wait()
 }
 
 // ---------------------------------------------------------------------------
-// 7. Goroutine leak detection
+// handler / directHandler
 // ---------------------------------------------------------------------------
 
-func TestNoGoroutineLeakAfterDestroy(t *testing.T) {
-	s := newTestSender(t)
-
-	// Take baseline AFTER sender creation (producer goroutines are stable).
-	baseline := runtime.NumGoroutine()
-
-	nsqs := make([]*nsq, 5)
-	for i := range 5 {
-		nq := newNSQ(t, s, fmt.Sprintf("u%d", i), fmt.Sprintf("id%d", i))
-		nsqs[i] = nq
-		_ = nq.Subscribe()
-	}
-	waitForSubscription()
-
-	for _, nq := range nsqs {
-		nq.Close()
+func TestHandler_HandleMessage(t *testing.T) {
+	ch := make(chan []byte, 8)
+	h := &handler{id: "id1", msgCh: ch, logger: mlog.NewForConfig(nil)}
+	send := func(to websocket_pb.To, from string) {
+		require.NoError(t, h.HandleMessage(&gonsq.Message{
+			Body: wssender.ProtoToMessage(testMsg(), from, to).Marshal(),
+		}))
 	}
 
-	runtime.GC()
-	time.Sleep(500 * time.Millisecond)
+	// ToSelf → 投递。
+	send(websocket_pb.To_ToSelf, "id1")
+	assert.Len(t, ch, 1)
 
-	after := runtime.NumGoroutine()
-	// NSQ consumers spin up internal I/O goroutines that should
-	// be fully cleaned up by Stop().  Allow a small headroom for
-	// goroutines that may still be winding down.
-	assert.LessOrEqual(t, after, baseline+10,
-		"goroutine count should not grow significantly after creating/closing PubSubs")
+	// ToAll → 投递。
+	send(websocket_pb.To_ToAll, "any")
+	assert.Len(t, ch, 2)
+
+	// ToOthers + 来源非本连接 → 投递。
+	send(websocket_pb.To_ToOthers, "other")
+	assert.Len(t, ch, 3)
+
+	// ToOthers + 来源为本连接 → 跳过。
+	send(websocket_pb.To_ToOthers, "id1")
+	assert.Len(t, ch, 3)
+
+	// nil / 空 body → 直接确认，不投递。
+	require.NoError(t, h.HandleMessage(nil))
+	require.NoError(t, h.HandleMessage(&gonsq.Message{}))
+	assert.Len(t, ch, 3)
+
+	// 解码失败 → 记日志并确认，不投递。
+	require.NoError(t, h.HandleMessage(&gonsq.Message{Body: []byte("not-json")}))
+	assert.Len(t, ch, 3)
+}
+
+func TestDirectHandler_HandleMessage(t *testing.T) {
+	ch := make(chan []byte, 8)
+	d := &directHandler{ch: ch, log: mlog.NewForConfig(nil)}
+
+	require.NoError(t, d.HandleMessage(&gonsq.Message{Body: []byte("payload")}))
+	assert.Equal(t, []byte("payload"), <-ch)
+
+	// nil / 空 body → 直接确认，不投递。
+	require.NoError(t, d.HandleMessage(nil))
+	require.NoError(t, d.HandleMessage(&gonsq.Message{}))
+	assert.Empty(t, ch)
 }
 
 // ---------------------------------------------------------------------------
-// Benchmarks
+// Subscribe / connect / Close
 // ---------------------------------------------------------------------------
 
-func BenchmarkToAll(b *testing.B) {
-	s := newTestSender(b)
-	n := newNSQ(b, s, "pub", "pub")
-	_ = n.Subscribe()
-	defer n.Close()
-	waitForSubscription()
+func TestSubscribe_success(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
 
-	// Add slow subscribers that never read — sendOrDrop prevents blocking.
-	for i := range 5 {
-		nq := newNSQ(b, s, fmt.Sprintf("slow%d", i), fmt.Sprintf("slow%d", i))
-		_ = nq.Subscribe()
-		defer nq.Close()
-	}
-
-	msg := testMsg()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		_ = n.ToAll(msg)
-	}
-}
-
-func BenchmarkToAll_with_drainers(b *testing.B) {
-	s := newTestSender(b)
-	n := newNSQ(b, s, "pub", "pub")
-	_ = n.Subscribe()
-	defer n.Close()
-	waitForSubscription()
-
-	// Draining subscribers.
-	for i := range 5 {
-		nq := newNSQ(b, s, fmt.Sprintf("u%d", i), fmt.Sprintf("id%d", i))
-		ch := nq.Subscribe()
-		defer nq.Close()
-		go func() {
-			for range ch {
-			}
-		}()
-	}
-
-	msg := testMsg()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		_ = n.ToAll(msg)
-	}
-}
-
-func BenchmarkToAll_parallel(b *testing.B) {
-	s := newTestSender(b)
-	n := newNSQ(b, s, "pub", "pub")
-	_ = n.Subscribe()
-	defer n.Close()
-	waitForSubscription()
-
-	for i := range 5 {
-		nq := newNSQ(b, s, fmt.Sprintf("u%d", i), fmt.Sprintf("id%d", i))
-		ch := nq.Subscribe()
-		defer nq.Close()
-		go func() {
-			for range ch {
-			}
-		}()
-	}
-
-	msg := testMsg()
-	b.ResetTimer()
-
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			_ = n.ToAll(msg)
-		}
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		return newFakeConsumer(), nil
 	})
+
+	ch := n.Subscribe()
+	assert.Equal(t, (<-chan []byte)(n.msgCh), ch)
+
+	n.consumersMu.RLock()
+	require.Len(t, n.consumers, 2, "Subscribe 应创建广播 + 直连两个 consumer")
+	for _, c := range n.consumers {
+		f, ok := c.(*fakeConsumer)
+		require.True(t, ok)
+		_, ok = f.handler.(*handler)
+		assert.True(t, ok, "consumer 必须注册 *handler")
+	}
+	n.consumersMu.RUnlock()
 }
 
-func BenchmarkToSelf(b *testing.B) {
-	s := newTestSender(b)
-	n := newNSQ(b, s, "u", "id")
+func TestSubscribe_with_lookupd_uses_lookupd_addr(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+	n.lookupdAddr = "127.0.0.1:4161"
+
+	fc := newFakeConsumer()
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		return fc, nil
+	})
+	_ = n.Subscribe()
+	assert.True(t, fc.usedLookup)
+}
+
+func TestSubscribe_consumer_create_error(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		return nil, errors.New("create failed")
+	})
 	ch := n.Subscribe()
-	defer n.Close()
-	waitForSubscription()
+	_, ok := <-ch
+	assert.False(t, ok, "广播 consumer 创建失败应返回已关闭通道")
+}
 
-	go func() {
-		for range ch {
+func TestSubscribe_direct_consumer_create_error(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+
+	var calls int
+	fc := newFakeConsumer()
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		calls++
+		if calls == 1 {
+			return fc, nil
 		}
-	}()
+		return nil, errors.New("create failed")
+	})
+	ch := n.Subscribe()
+	_, ok := <-ch
+	assert.False(t, ok)
+	assert.True(t, fc.isStopped(), "直连 consumer 创建失败时广播 consumer 必须 Stop")
+}
 
-	msg := testMsg()
-	b.ResetTimer()
+func TestSubscribe_direct_connect_error(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
 
-	for i := 0; i < b.N; i++ {
-		_ = n.ToSelf(msg)
+	fc := newFakeConsumer()
+	fc.connectErr = errors.New("connect failed")
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		return fc, nil
+	})
+	ch := n.Subscribe()
+	_, ok := <-ch
+	assert.False(t, ok)
+	assert.True(t, fc.isStopped())
+}
+
+func TestSubscribe_broadcast_connect_error(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+
+	fcDirect := newFakeConsumer()
+	fcBroadcast := newFakeConsumer()
+	fcBroadcast.connectErr = errors.New("connect failed")
+	calls := 0
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		calls++
+		if calls == 1 {
+			return fcBroadcast, nil
+		}
+		return fcDirect, nil
+	})
+	ch := n.Subscribe()
+	_, ok := <-ch
+	assert.False(t, ok)
+	assert.True(t, fcDirect.isStopped())
+	assert.True(t, fcBroadcast.isStopped())
+}
+
+func TestClose(t *testing.T) {
+	fp := newFakeProducer()
+	n := newTestNSQ(fp, "u", "id")
+
+	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
+		return newFakeConsumer(), nil
+	})
+	_ = n.Subscribe()
+
+	n.consumersMu.RLock()
+	cs := make([]nsqConsumer, 0, len(n.consumers))
+	for _, c := range n.consumers {
+		cs = append(cs, c)
 	}
+	n.consumersMu.RUnlock()
+	require.Len(t, cs, 2)
+
+	require.NoError(t, n.Close())
+	for _, c := range cs {
+		assert.True(t, c.(*fakeConsumer).isStopped(), "Close 必须停止全部 consumer")
+	}
+
+	// 重复 Close 幂等，不 panic。
+	require.NoError(t, n.Close())
+}
+
+func TestConsumerWrapper_StopChan(t *testing.T) {
+	c, err := gonsq.NewConsumer("topic", "channel", gonsq.NewConfig())
+	require.NoError(t, err)
+	// 必须注册 handler：go-nsq 仅在 handlerLoop 退出时触发 exit() 关闭 StopChan，
+	// 无 handler 时 Stop() 后 StopChan 永闭（生产代码 connect 中总是先 AddHandler）。
+	c.AddHandler(gonsq.HandlerFunc(func(m *gonsq.Message) error { return nil }))
+	w := &consumerWrapper{Consumer: c}
+
+	c.Stop()
+	select {
+	case <-w.StopChan():
+	case <-time.After(2 * time.Second):
+		t.Fatal("StopChan 应在 Stop 后关闭")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// setLogLevel / NsqLoggerAdapter
+// ---------------------------------------------------------------------------
+
+func TestSetLogLevel(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	logger := mlog.NewMockLogger(ctrl)
+	// gonsq 后台 goroutine 可能在 setLogLevel 与 Stop 之间写入，允许任意调用；
+	// 适配器路由行为由 TestNsqLoggerAdapter_Output 单独严格断言。
+	logger.EXPECT().Error(gomock.Any()).AnyTimes()
+	logger.EXPECT().Errorf(gomock.Any(), gomock.Any()).AnyTimes()
+	logger.EXPECT().Debug(gomock.Any()).AnyTimes()
+	logger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
+
+	c, err := gonsq.NewConsumer("topic", "channel", gonsq.NewConfig())
+	require.NoError(t, err)
+
+	// *consumerWrapper 分支：解开后递归设置底层真实 consumer。
+	w := &consumerWrapper{Consumer: c}
+	assert.NotPanics(t, func() { setLogLevel(logger, w) })
+
+	// *gonsq.Consumer 分支。注册 handler 保证 Stop() 能触发 exit() 关闭 StopChan，
+	// 避免 rdyLoop goroutine 泄漏（StopChan 的关闭语义见 TestConsumerWrapper_StopChan）。
+	c.AddHandler(gonsq.HandlerFunc(func(m *gonsq.Message) error { return nil }))
+	assert.NotPanics(t, func() { setLogLevel(logger, c) })
+	c.Stop()
+
+	// *gonsq.Producer 分支。
+	p, err := gonsq.NewProducer("127.0.0.1:1", gonsq.NewConfig())
+	require.NoError(t, err)
+	assert.NotPanics(t, func() { setLogLevel(logger, p) })
+	p.Stop()
+
+	// 未知类型：no-op，不 panic。
+	assert.NotPanics(t, func() { setLogLevel(logger, "unknown") })
+}
+
+// ---------------------------------------------------------------------------
+// 默认测试缝直测（不覆写 newProducer/newConsumer）：消除 97.5% 覆盖缺口
+// ---------------------------------------------------------------------------
+
+// TestDefaultNewProducer_success 直接调用默认 newProducer 缝，验证 go-nsq 真实构造成功。
+// 背景：其余测试全部覆写该缝注入 fake，默认闭包从未执行，拉低包覆盖至 97.5%。
+func TestDefaultNewProducer_success(t *testing.T) {
+	p, err := newProducer("127.0.0.1:1", gonsq.NewConfig())
+	require.NoError(t, err)
+	assert.NotNil(t, p)
+	p.Stop() // NewProducer 仅分配结构体、不发起连接，Stop 安全。
+}
+
+// TestDefaultNewProducer_invalid_config 验证默认缝透传 go-nsq 配置校验错误。
+func TestDefaultNewProducer_invalid_config(t *testing.T) {
+	cfg := gonsq.NewConfig()
+	cfg.MaxInFlight = -1 // 小于 min=0 → config.Validate() 失败
+	_, err := newProducer("127.0.0.1:1", cfg)
+	assert.Error(t, err)
+}
+
+// TestDefaultNewConsumer_success 直接调用默认 newConsumer 缝，验证真实 consumer 包装成功。
+func TestDefaultNewConsumer_success(t *testing.T) {
+	c, err := newConsumer("topic", "channel", gonsq.NewConfig())
+	require.NoError(t, err)
+	// 必须先注册 handler：go-nsq 仅在 handlerLoop 退出时关闭 StopChan，
+	// 无 handler 时 Stop() 后 rdyLoop 泄漏（语义见 TestConsumerWrapper_StopChan）。
+	c.AddHandler(gonsq.HandlerFunc(func(m *gonsq.Message) error { return nil }))
+	c.Stop()
+	select {
+	case <-c.StopChan():
+	case <-time.After(2 * time.Second):
+		t.Fatal("StopChan 应在 Stop 后关闭")
+	}
+}
+
+// TestDefaultNewConsumer_invalid_topic 验证默认缝透传非法 topic 的错误。
+func TestDefaultNewConsumer_invalid_topic(t *testing.T) {
+	_, err := newConsumer("", "channel", gonsq.NewConfig()) // 空 topic 不合法
+	assert.Error(t, err)
+}
+
+func TestNsqLoggerAdapter_Output(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	logger := mlog.NewMockLogger(ctrl)
+	logger.EXPECT().Debug("TOPIC_NOT_FOUND something").Times(1)
+	logger.EXPECT().Error("some error").Times(1)
+
+	adapter := NewNsqLoggerAdapter(logger)
+	require.NoError(t, adapter.Output(2, "TOPIC_NOT_FOUND something"))
+	require.NoError(t, adapter.Output(2, "some error"))
+}
+
+// ---------------------------------------------------------------------------
+// misc
+// ---------------------------------------------------------------------------
+
+func TestGetNsqProjectEventRoom(t *testing.T) {
+	assert.Equal(t, "project-pod-events:7#ephemeral", getNsqProjectEventRoom[int64](7))
+	assert.Equal(t, "project-pod-events:7#ephemeral", getNsqProjectEventRoom(7))
 }

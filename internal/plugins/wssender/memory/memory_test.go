@@ -1,16 +1,20 @@
 package memory
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 	"sync"
 	"testing"
 	"time"
 
-	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
+	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -52,19 +56,6 @@ func mustRead(t *testing.T, ch <-chan []byte, timeout time.Duration) []byte {
 	case <-time.After(timeout):
 		t.Fatal("timeout waiting for message")
 		return nil
-	}
-}
-
-// expectNoRead asserts that nothing arrives on ch within the timeout.
-func expectNoRead(t *testing.T, ch <-chan []byte, timeout time.Duration) {
-	t.Helper()
-	select {
-	case data, ok := <-ch:
-		if ok {
-			t.Fatalf("unexpected message: %v", data)
-		}
-		// channel closed — also acceptable for "no message" scenarios
-	case <-time.After(timeout):
 	}
 }
 
@@ -123,19 +114,6 @@ func TestToAll(t *testing.T) {
 	require.NoError(t, pub1.ToAll(testMsg()))
 
 	mustRead(t, ch1, time.Second)
-	mustRead(t, ch2, time.Second)
-}
-
-func TestToOthers(t *testing.T) {
-	ms := newTestSender()
-	pub1 := ms.New("u1", "id1").(*memoryPubSub)
-	pub2 := ms.New("u2", "id2").(*memoryPubSub)
-	ch1 := pub1.Subscribe()
-	ch2 := pub2.Subscribe()
-
-	require.NoError(t, pub1.ToOthers(testMsg()))
-
-	expectNoRead(t, ch1, 200*time.Millisecond)
 	mustRead(t, ch2, time.Second)
 }
 
@@ -575,6 +553,204 @@ func TestInitRegistration(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// 10. DB-backed paths (in-memory sqlite): Initialize / Join / Publish / Close
+// ---------------------------------------------------------------------------
+
+// fakeApp 是 PluginApp 的最小手写 stub，供 Initialize 测试使用。
+type fakeApp struct {
+	data   data.Data
+	logger mlog.Logger
+}
+
+func (f fakeApp) Logger() mlog.Logger { return f.logger }
+func (f fakeApp) Data() data.Data     { return f.data }
+func (f fakeApp) Cache() data.Cache   { return nil }
+
+// newDB 打开一个内存 sqlite ent 客户端，并在测试结束时关闭。
+func newDB(t *testing.T) *ent.Client {
+	t.Helper()
+	db, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1&loc=Local")
+	require.NoError(t, err)
+	require.NoError(t, db.Schema.Create(context.TODO()))
+	t.Cleanup(func() { _ = db.Close() })
+	return db
+}
+
+// seedProject 创建 namespace + project 并返回 projectID。
+func seedProject(t *testing.T, db *ent.Client, selectors []string) int {
+	t.Helper()
+	ns := db.Namespace.Create().SetName("devops-test").SetCreatorEmail("a@b.c").SaveX(context.TODO())
+	proj := db.Project.Create().SetName("my-app").SetCreator("tester").
+		SetNamespaceID(ns.ID).SetPodSelectors(selectors).SaveX(context.TODO())
+	return proj.ID
+}
+
+func TestInitialize_sets_maps_and_db(t *testing.T) {
+	db := newDB(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	md := data.NewMockData(ctrl)
+	md.EXPECT().DB().Return(db)
+
+	ms := &memorySender{}
+	err := ms.Initialize(fakeApp{data: md, logger: mlog.NewForConfig(nil)}, nil)
+	require.NoError(t, err)
+
+	assert.NotNil(t, ms.conns)
+	assert.NotNil(t, ms.idRooms)
+	assert.NotNil(t, ms.rooms)
+	assert.Same(t, db, ms.db)
+	assert.NotNil(t, ms.logger)
+}
+
+func TestDestroy_returns_nil(t *testing.T) {
+	ms := newTestSender()
+	assert.NoError(t, ms.Destroy())
+}
+
+func TestRun_returns_nil(t *testing.T) {
+	ms := newTestSender()
+	pub := ms.New("u", "id").(*memoryPubSub)
+	assert.NoError(t, pub.Run(context.TODO()))
+}
+
+func TestJoin_registers_room_and_selectors(t *testing.T) {
+	db := newDB(t)
+	pid := seedProject(t, db, []string{"app=test"})
+
+	ms := newTestSender()
+	pub := ms.New("u", "id").(*memoryPubSub)
+	pub.db = db
+
+	require.NoError(t, pub.Join(int64(pid)))
+
+	pub.manager.roomMu.RLock()
+	defer pub.manager.roomMu.RUnlock()
+	nsRoom, ok := pub.manager.rooms[1] // seedProject 创建的 nsID 为 1
+	require.True(t, ok)
+	subs, ok := nsRoom[int32(pid)]
+	require.True(t, ok)
+	require.Len(t, subs["id"], 1)
+	assert.True(t, subs["id"][0].Matches(labels.Set(map[string]string{"app": "test"})))
+}
+
+func TestJoin_invalid_selector_is_skipped(t *testing.T) {
+	db := newDB(t)
+	pid := seedProject(t, db, []string{"!!!!not-a-selector"})
+
+	ms := newTestSender()
+	pub := ms.New("u", "id").(*memoryPubSub)
+	pub.db = db
+
+	// 非法 selector 被跳过、不报错，房间仍以空选择器登记。
+	require.NoError(t, pub.Join(int64(pid)))
+
+	pub.manager.roomMu.RLock()
+	defer pub.manager.roomMu.RUnlock()
+	subs := pub.manager.rooms[1][int32(pid)]["id"]
+	assert.Empty(t, subs)
+}
+
+func TestJoin_unknown_project_returns_error(t *testing.T) {
+	db := newDB(t)
+	ms := newTestSender()
+	pub := ms.New("u", "id").(*memoryPubSub)
+	pub.db = db
+
+	assert.Error(t, pub.Join(99999))
+}
+
+func TestPublish_delivers_to_matching_conn(t *testing.T) {
+	ms := newTestSender()
+	pub := ms.New("u", "id").(*memoryPubSub)
+	ch := pub.Subscribe()
+
+	sel, err := labels.Parse("app=test")
+	require.NoError(t, err)
+	pub.manager.roomMu.Lock()
+	pub.manager.rooms[1] = make(projectSubscriptions)
+	pub.manager.rooms[1][100] = make(socketSubscriptions)
+	pub.manager.rooms[1][100]["id"] = []labels.Selector{sel}
+	pub.manager.idRooms["id"] = map[int32]struct{}{1: {}}
+	pub.manager.roomMu.Unlock()
+
+	pod := &corev1.Pod{}
+	pod.Labels = map[string]string{"app": "test"}
+	require.NoError(t, pub.Publish(1, pod))
+
+	data := mustRead(t, ch, time.Second)
+	var resp websocket_pb.WsProjectPodEventResponse
+	require.NoError(t, proto.Unmarshal(data, &resp))
+	assert.Equal(t, int32(100), resp.ProjectId)
+}
+
+func TestPublish_skips_conn_not_in_conns(t *testing.T) {
+	ms := newTestSender()
+	pub := ms.New("u", "id").(*memoryPubSub)
+
+	sel, err := labels.Parse("app=test")
+	require.NoError(t, err)
+	pub.manager.roomMu.Lock()
+	pub.manager.rooms[1] = make(projectSubscriptions)
+	pub.manager.rooms[1][100] = make(socketSubscriptions)
+	pub.manager.rooms[1][100]["ghost"] = []labels.Selector{sel} // conn 未注册
+	pub.manager.roomMu.Unlock()
+
+	pod := &corev1.Pod{}
+	pod.Labels = map[string]string{"app": "test"}
+	// 不应 panic，返回 nil。
+	assert.NoError(t, pub.Publish(1, pod))
+}
+
+func TestClose_cleans_up_rooms(t *testing.T) {
+	ms := newTestSender()
+	pub := ms.New("u", "id").(*memoryPubSub)
+
+	sel, err := labels.Parse("app=test")
+	require.NoError(t, err)
+	pub.manager.roomMu.Lock()
+	pub.manager.rooms[1] = make(projectSubscriptions)
+	pub.manager.rooms[1][100] = make(socketSubscriptions)
+	pub.manager.rooms[1][100]["id"] = []labels.Selector{sel}
+	pub.manager.idRooms["id"] = map[int32]struct{}{1: {}}
+	pub.manager.roomMu.Unlock()
+
+	require.NoError(t, pub.Close())
+
+	pub.manager.roomMu.RLock()
+	defer pub.manager.roomMu.RUnlock()
+	_, nsOk := pub.manager.rooms[1]
+	_, roomOk := pub.manager.idRooms["id"]
+	assert.False(t, nsOk, "empty namespace room must be removed")
+	assert.False(t, roomOk, "idRooms entry must be removed")
+}
+
+func TestClose_keeps_room_when_other_sockets_remain(t *testing.T) {
+	ms := newTestSender()
+	pub := ms.New("u", "id").(*memoryPubSub)
+
+	sel, err := labels.Parse("app=test")
+	require.NoError(t, err)
+	pub.manager.roomMu.Lock()
+	pub.manager.rooms[1] = make(projectSubscriptions)
+	pub.manager.rooms[1][100] = make(socketSubscriptions)
+	pub.manager.rooms[1][100]["id"] = []labels.Selector{sel}
+	pub.manager.rooms[1][100]["other"] = []labels.Selector{sel}
+	pub.manager.idRooms["id"] = map[int32]struct{}{1: {}}
+	pub.manager.idRooms["other"] = map[int32]struct{}{1: {}}
+	pub.manager.roomMu.Unlock()
+
+	require.NoError(t, pub.Close())
+
+	pub.manager.roomMu.RLock()
+	defer pub.manager.roomMu.RUnlock()
+	subs, ok := pub.manager.rooms[1][100]
+	require.True(t, ok, "room with remaining sockets must stay")
+	assert.Contains(t, subs, "other")
+	assert.NotContains(t, subs, "id")
+}
+
+// ---------------------------------------------------------------------------
 // Benchmarks
 // ---------------------------------------------------------------------------
 
@@ -637,7 +813,10 @@ func BenchmarkPublish(b *testing.B) {
 
 	// Drain
 	ch := pub.Subscribe()
-	go func() { for range ch { } }()
+	go func() {
+		for range ch {
+		}
+	}()
 
 	pod := &corev1.Pod{}
 	pod.Labels = map[string]string{"app": "test"}
