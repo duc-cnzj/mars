@@ -12,16 +12,16 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 
-	"github.com/duc-cnzj/mars/v5/internal/data"
-	"github.com/duc-cnzj/mars/v5/internal/ent"
-	"github.com/duc-cnzj/mars/v5/internal/ent/cachelock"
-	"github.com/duc-cnzj/mars/v5/internal/ent/migrate"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/util/timer"
+	dbpkg "github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/cachelock"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/migrate"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	"github.com/stretchr/testify/assert"
 )
 
-var db *ent.Client
+var entClient *ent.Client
 var prepared bool
 
 func TestMain(t *testing.M) {
@@ -44,10 +44,12 @@ func TestMain(t *testing.M) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%v)/%s?charset=utf8mb4&parseTime=True&loc=Local", user, dbpwd, dbhost, port, dbname)
 	var err error
 	open, _ := sql.Open("mysql", dsn)
-	db, err = data.InitDB(open, mlog.NewForConfig(nil), false, 0, timer.NewReal())
-	if err == nil {
+	entClient, err = dbpkg.InitDB(open, mlog.NewForConfig(nil), false, 0, timer.NewReal())
+	// InitDB 恒返回 nil error，这里显式 Ping 确认连接可用：
+	// 连不上真实 MySQL 时跳过 DB 集成测试，避免 Schema.Create 直接 Fatal 崩溃。
+	if err == nil && open.DB().Ping() == nil {
 		prepared = true
-		err = db.Schema.Create(
+		err = entClient.Schema.Create(
 			context.TODO(),
 			migrate.WithDropIndex(true),
 			migrate.WithDropColumn(true),
@@ -142,7 +144,7 @@ func TestDatabaseLockRenewalAcquire(t *testing.T) {
 
 func setupDatabaseLock() *databaseLock {
 	deleteAllTestKey()
-	return NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
+	return NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, dbpkg.NewDataImpl(&dbpkg.NewDataParams{DB: entClient}), mlog.NewForConfig(nil)).(*databaseLock)
 }
 
 func Test_databaseLock_Type(t *testing.T) {
@@ -151,7 +153,7 @@ func Test_databaseLock_Type(t *testing.T) {
 	}
 	dbLock := setupDatabaseLock()
 
-	assert.Equal(t, "database", dbLock.Type())
+	assert.Equal(t, "db", dbLock.Type())
 }
 
 func Test_databaseLock_Release(t *testing.T) {
@@ -178,7 +180,7 @@ func Test_databaseLock_renewalExistKey(t *testing.T) {
 		t.Skip("Database not prepared")
 	}
 
-	dbLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
+	dbLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, dbpkg.NewDataImpl(&dbpkg.NewDataParams{DB: entClient}), mlog.NewForConfig(nil)).(*databaseLock)
 
 	key := "testKey"
 	seconds := int64(60)
@@ -198,7 +200,7 @@ func Test_databaseLock_renewalExistKey_Concurrent(t *testing.T) {
 		t.Skip("Database not prepared")
 	}
 
-	dbLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
+	dbLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, dbpkg.NewDataImpl(&dbpkg.NewDataParams{DB: entClient}), mlog.NewForConfig(nil)).(*databaseLock)
 
 	key := "testKey"
 	seconds := int64(60)
@@ -226,9 +228,9 @@ func TestDatabaseLock_ConcurrentRenewalExistKey(t *testing.T) {
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
-	lock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
-	anotherLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
-	anotherLock2 := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, data.NewDataImpl(&data.NewDataParams{DB: db}), mlog.NewForConfig(nil)).(*databaseLock)
+	lock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, dbpkg.NewDataImpl(&dbpkg.NewDataParams{DB: entClient}), mlog.NewForConfig(nil)).(*databaseLock)
+	anotherLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, dbpkg.NewDataImpl(&dbpkg.NewDataParams{DB: entClient}), mlog.NewForConfig(nil)).(*databaseLock)
+	anotherLock2 := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, dbpkg.NewDataImpl(&dbpkg.NewDataParams{DB: entClient}), mlog.NewForConfig(nil)).(*databaseLock)
 	key := "test_key"
 	seconds := int64(10)
 
@@ -301,7 +303,7 @@ func Test_databaseLock_Acquire(t *testing.T) {
 	}
 	dbLock := setupDatabaseLock()
 
-	_, err := db.CacheLock.Create().SetOwner("xxx").SetKey("testKey").SetExpiredAt(time.Now().Add(-time.Second * 60)).Save(context.TODO())
+	_, err := entClient.CacheLock.Create().SetOwner("xxx").SetKey("testKey").SetExpiredAt(time.Now().Add(-time.Second * 60)).Save(context.TODO())
 	assert.Nil(t, err)
 
 	acquire := dbLock.Acquire("testKey", 60)
@@ -313,7 +315,7 @@ func Test_databaseLock_RenewalAcquire(t *testing.T) {
 		t.Skip("Database not prepared")
 	}
 	dbLock := setupDatabaseLock()
-	_, err := db.CacheLock.Create().SetOwner("xxx").SetKey("testKey").SetExpiredAt(time.Now().Add(time.Second * 60)).Save(context.TODO())
+	_, err := entClient.CacheLock.Create().SetOwner("xxx").SetKey("testKey").SetExpiredAt(time.Now().Add(time.Second * 60)).Save(context.TODO())
 	assert.Nil(t, err)
 	renewalAcquire, b := dbLock.RenewalAcquire("testKey", 60, 100)
 	assert.False(t, b, "Expected not to acquire lock")
@@ -321,7 +323,7 @@ func Test_databaseLock_RenewalAcquire(t *testing.T) {
 }
 
 func deleteAllTestKey() {
-	db.CacheLock.Delete().Where(cachelock.IDGT(0)).Exec(context.TODO())
+	entClient.CacheLock.Delete().Where(cachelock.IDGT(0)).Exec(context.TODO())
 }
 
 func Test_databaseLock_renewalRoutine(t *testing.T) {
@@ -343,6 +345,6 @@ func Test_databaseLock_renewalRoutine(t *testing.T) {
 
 	wg.Wait()
 	defer dbLock.Release(key)
-	first, _ := db.CacheLock.Query().Where(cachelock.Key(key)).First(context.TODO())
+	first, _ := entClient.CacheLock.Query().Where(cachelock.Key(key)).First(context.TODO())
 	assert.Greater(t, int(math.Abs(time.Since(first.ExpiredAt).Seconds())), 3)
 }

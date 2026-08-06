@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/util/timer"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -67,15 +67,17 @@ func TestMemoryLock_AcquireLottery(t *testing.T) {
 	key2 := "AcquireLottery2"
 
 	lock := NewMemoryLock(&mockTimer{n: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)}, [2]int{100, 1}, NewMemStore(), mlog.NewForConfig(nil)).(*memoryLock)
-	acquire := lock.Acquire(key, 1)
+	assert.True(t, lock.Acquire(key, 1))
 	defer lock.Release(key)
-	assert.True(t, acquire)
-	assert.Equal(t, 1, lock.Count())
+	assert.Equal(t, lock.owner, lock.Owner(key))
 
+	// 将时钟拨到未来使 key 过期超过 60s，
+	// 触发 Acquire 内 lottery 概率性的过期清理，验证 Range 已删除过期锁。
 	lock.timer = &mockTimer{n: time.Date(2029, 1, 1, 0, 0, 0, 0, time.UTC)}
-	lock.Acquire(key2, 1000)
+	assert.True(t, lock.Acquire(key2, 1000))
 	defer lock.Release(key2)
-	assert.Equal(t, 1, lock.Count())
+	assert.Empty(t, lock.Owner(key))
+	assert.Equal(t, lock.owner, lock.Owner(key2))
 }
 
 func TestMemoryLock_ForceRelease(t *testing.T) {
@@ -195,42 +197,13 @@ func TestMemoryLock_RenewalAcquire3(t *testing.T) {
 	wg.Wait()
 }
 
-type emptyLogger struct{}
-
-func NewEmptyLogger() *emptyLogger {
-	return &emptyLogger{}
-}
-
-func (e *emptyLogger) Debug(v ...any) {}
-
-func (e *emptyLogger) Debugf(format string, v ...any) {}
-
-func (e *emptyLogger) Warning(v ...any) {}
-
-func (e *emptyLogger) Warningf(format string, v ...any) {}
-
-func (e *emptyLogger) Info(v ...any) {}
-
-func (e *emptyLogger) Infof(format string, v ...any) {}
-
-func (e *emptyLogger) Error(v ...any) {}
-
-func (e *emptyLogger) Errorf(format string, v ...any) {}
-
-func (e *emptyLogger) Fatal(v ...any) {}
-
-func (e *emptyLogger) Fatalf(format string, v ...any) {}
-
 func BenchmarkMemoryLock_RenewalAcquire(b *testing.B) {
 	lock := NewMemoryLock(timer.NewReal(), [2]int{1, 2}, NewMemStore(), mlog.NewForConfig(nil)).(*memoryLock)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key-%v", i)
 		if release, ok := lock.RenewalAcquire(key, 3, 2); ok {
-			_ = func() {
-				release()
-			}
-			//lock.Release(key)
+			release()
 		}
 	}
 }
