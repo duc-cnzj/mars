@@ -107,20 +107,20 @@ func (m *memoryLock) Type() string {
 
 // acquireInternal 尝试以当前 owner 获取 key 锁：
 // key 不存在则直接写入；已存在但过期则接管；未过期则获取失败。
-func (m *memoryLock) acquireInternal(key string, seconds int64) (bool, *MemItem) {
+func (m *memoryLock) acquireInternal(key string, seconds int64) bool {
 	unix := m.timer.Now().Unix()
 	expiration := unix + seconds
 
 	item := m.locks.Get(key)
 	if item == nil {
 		m.locks.Add(key, &MemItem{owner: m.owner, expiresAt: expiration})
-		return true, nil
+		return true
 	}
 	if item.expiresAt <= unix {
 		m.locks.Update(key, &MemItem{owner: m.owner, expiresAt: expiration})
-		return true, item
+		return true
 	}
-	return false, item
+	return false
 }
 
 // Acquire 尝试获取 key 锁并返回是否成功。
@@ -130,7 +130,7 @@ func (m *memoryLock) Acquire(key string, seconds int64) bool {
 	m.Lock()
 	defer m.Unlock()
 
-	acquired, _ := m.acquireInternal(key, seconds)
+	acquired := m.acquireInternal(key, seconds)
 
 	if rand.Intn(m.lottery[1]) < m.lottery[0] {
 		m.locks.CleanupExpired(m.timer.Now().Unix(), staleWindow)

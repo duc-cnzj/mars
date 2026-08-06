@@ -165,8 +165,9 @@ func TestMemoryLock_RenewalAcquire2(t *testing.T) {
 	assert.False(t, lock.renewalExistKey("not-exists", 10))
 	key := "RenewalAcquire2"
 	fn, ok := lock.RenewalAcquire(key, 3, 2)
-	defer fn()
 	assert.True(t, ok)
+	assert.NotNil(t, fn)
+	defer fn()
 	_, ok2 := lock.RenewalAcquire(key, 3, 2)
 	assert.False(t, ok2)
 }

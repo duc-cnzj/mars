@@ -11,12 +11,10 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/DATA-DOG/go-sqlmock"
 
-	dbpkg "github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
 )
 
 // newMockEntClient 构造一个由 go-sqlmock 驱动的 ent client，
@@ -37,12 +35,11 @@ func newMockEntClient(t *testing.T) (*ent.Client, sqlmock.Sqlmock) {
 func newMockDatabaseLock(t *testing.T, lottery ...[2]int) (*databaseLock, *ent.Client, sqlmock.Sqlmock) {
 	t.Helper()
 	client, mock := newMockEntClient(t)
-	md := dbpkg.NewDataImpl(&dbpkg.NewDataParams{DB: client})
 	l := [2]int{0, 1}
 	if len(lottery) > 0 {
 		l = lottery[0]
 	}
-	lock := NewDatabaseLock(timer.NewReal(), l, md, mlog.NewForConfig(nil)).(*databaseLock)
+	lock := NewDatabaseLock(timer.NewReal(), l, func() *ent.Client { return client }, mlog.NewForConfig(nil)).(*databaseLock)
 	return lock, client, mock
 }
 
@@ -186,6 +183,14 @@ func Test_databaseLock_ForceRelease(t *testing.T) {
 	assert.True(t, lock.ForceRelease("key"))
 }
 
+// Test_databaseLock_ForceRelease_DeleteError 覆盖 ForceRelease 中 DELETE 失败时返回 false 的分支。
+func Test_databaseLock_ForceRelease_DeleteError(t *testing.T) {
+	lock, _, mock := newMockDatabaseLock(t)
+	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM `cache_locks`")).
+		WillReturnError(errors.New("delete boom"))
+	assert.False(t, lock.ForceRelease("key"))
+}
+
 func Test_databaseLock_RenewalAcquire_Success(t *testing.T) {
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `cache_locks`")).
@@ -251,18 +256,10 @@ func Test_databaseLock_renewalExistKey_NotOwner(t *testing.T) {
 	assert.ErrorContains(t, lock.renewalExistKey("key", 60), "not owner")
 }
 
-// Test_databaseLock_renewalRoutine_WithTxError 覆盖续期查询出错时打印日志并退出 goroutine 的分支。
-func Test_databaseLock_renewalRoutine_WithTxError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockData := dbpkg.NewMockData(ctrl)
-	mockData.EXPECT().
-		WithTx(gomock.Any(), gomock.Any()).
-		Return(errors.New("db error")).
-		AnyTimes()
-
-	lock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, mockData, mlog.NewForConfig(nil)).(*databaseLock)
+// Test_databaseLock_renewalRoutine_RenewError 覆盖续期出错（DB 未就绪，getDB 返回 nil）时
+// 打印日志并退出 goroutine 的分支。
+func Test_databaseLock_renewalRoutine_RenewError(t *testing.T) {
+	lock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, func() *ent.Client { return nil }, mlog.NewForConfig(nil)).(*databaseLock)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -274,38 +271,79 @@ func Test_databaseLock_renewalRoutine_WithTxError(t *testing.T) {
 
 	select {
 	case <-done:
-		// renewalSeconds=1，ticker 触发一次后因 WithTx 错误退出。
+		// renewalSeconds=1，ticker 触发一次后因续期失败退出。
 	case <-time.After(3 * time.Second):
-		t.Fatal("renewalRoutine 未在 WithTx 报错后退出")
+		t.Fatal("renewalRoutine 未在续期失败后退出")
 	}
 }
 
-// Test_databaseLock_renewalRoutine_RenewOK 覆盖续期成功（WithTx 返回 nil）后继续循环，再由 ctx 取消退出。
-func Test_databaseLock_renewalRoutine_RenewOK(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockData := dbpkg.NewMockData(ctrl)
-	mockData.EXPECT().
-		WithTx(gomock.Any(), gomock.Any()).
-		Return(nil).
-		AnyTimes()
-
-	lock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, mockData, mlog.NewForConfig(nil)).(*databaseLock)
+// Test_databaseLock_renewalRoutine_Cancel 覆盖 ctx 取消后 goroutine 退出且不再续期的分支。
+// renewalSeconds=60 使 ticker 在测试窗口内不触发，纯靠 ctx 取消驱动退出，确定性无 flake。
+func Test_databaseLock_renewalRoutine_Cancel(t *testing.T) {
+	lock, _, _ := newMockDatabaseLock(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		lock.renewalRoutine(ctx, "key", 10, 1)
+		lock.renewalRoutine(ctx, "key", 10, 60)
 	}()
 
-	// 等待一次 ticker 续期成功，再取消退出。
-	time.Sleep(1200 * time.Millisecond)
 	cancel()
 	select {
 	case <-done:
 	case <-time.After(2 * time.Second):
 		t.Fatal("renewalRoutine 未在 ctx 取消后退出")
 	}
+}
+
+// Test_databaseLock_NilDB 覆盖 DB 未初始化（getDB 返回 nil）时所有 DB 方法
+// 优雅降级而不 panic 的分支：Acquire=false / Owner="" / Release=false /
+// ForceRelease=false / renewalExistKey=error。这是 wire 构造期早于 InitDB
+// 场景下的安全兜底。
+func Test_databaseLock_NilDB(t *testing.T) {
+	lock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, func() *ent.Client { return nil }, mlog.NewForConfig(nil)).(*databaseLock)
+
+	assert.False(t, lock.Acquire("key", 60))
+	assert.Empty(t, lock.Owner("key"))
+	assert.False(t, lock.Release("key"))
+	assert.False(t, lock.ForceRelease("key"))
+	assert.ErrorContains(t, lock.renewalExistKey("key", 60), "db not initialized")
+}
+
+// Test_databaseLock_Release_QueryError 覆盖 Release 中持有者查询失败的错误分支。
+func Test_databaseLock_Release_QueryError(t *testing.T) {
+	lock, _, mock := newMockDatabaseLock(t)
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT `cache_locks`")).
+		WillReturnError(errors.New("not found"))
+	assert.False(t, lock.Release("key"))
+}
+
+// Test_databaseLock_Release_DeleteError 覆盖 Release 中 DELETE 失败时返回 false 的分支。
+func Test_databaseLock_Release_DeleteError(t *testing.T) {
+	lock, _, mock := newMockDatabaseLock(t)
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT `cache_locks`")).
+		WillReturnRows(lockRows(lock))
+	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM `cache_locks`")).
+		WillReturnError(errors.New("delete boom"))
+	assert.False(t, lock.Release("key"))
+}
+
+// Test_databaseLock_renewalExistKey_BeginError 覆盖 db.Tx 启动事务失败的错误分支。
+func Test_databaseLock_renewalExistKey_BeginError(t *testing.T) {
+	lock, _, mock := newMockDatabaseLock(t)
+	mock.ExpectBegin().WillReturnError(errors.New("begin error"))
+	assert.Error(t, lock.renewalExistKey("key", 60))
+}
+
+// Test_databaseLock_renewalExistKey_UpdateError 覆盖续期 UPDATE 失败的错误分支。
+func Test_databaseLock_renewalExistKey_UpdateError(t *testing.T) {
+	lock, _, mock := newMockDatabaseLock(t)
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT `cache_locks`")).
+		WillReturnRows(lockRows(lock))
+	mock.ExpectExec(regexp.QuoteMeta("UPDATE `cache_locks`")).
+		WillReturnError(errors.New("update boom"))
+	mock.ExpectRollback()
+	assert.Error(t, lock.renewalExistKey("key", 60))
 }

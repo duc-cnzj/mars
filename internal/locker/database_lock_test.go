@@ -144,7 +144,7 @@ func TestDatabaseLockRenewalAcquire(t *testing.T) {
 
 func setupDatabaseLock() *databaseLock {
 	deleteAllTestKey()
-	return NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, dbpkg.NewDataImpl(&dbpkg.NewDataParams{DB: entClient}), mlog.NewForConfig(nil)).(*databaseLock)
+	return NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, func() *ent.Client { return entClient }, mlog.NewForConfig(nil)).(*databaseLock)
 }
 
 func Test_databaseLock_Type(t *testing.T) {
@@ -180,7 +180,7 @@ func Test_databaseLock_renewalExistKey(t *testing.T) {
 		t.Skip("Database not prepared")
 	}
 
-	dbLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, dbpkg.NewDataImpl(&dbpkg.NewDataParams{DB: entClient}), mlog.NewForConfig(nil)).(*databaseLock)
+	dbLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, func() *ent.Client { return entClient }, mlog.NewForConfig(nil)).(*databaseLock)
 
 	key := "testKey"
 	seconds := int64(60)
@@ -200,7 +200,7 @@ func Test_databaseLock_renewalExistKey_Concurrent(t *testing.T) {
 		t.Skip("Database not prepared")
 	}
 
-	dbLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, dbpkg.NewDataImpl(&dbpkg.NewDataParams{DB: entClient}), mlog.NewForConfig(nil)).(*databaseLock)
+	dbLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, func() *ent.Client { return entClient }, mlog.NewForConfig(nil)).(*databaseLock)
 
 	key := "testKey"
 	seconds := int64(60)
@@ -228,9 +228,9 @@ func TestDatabaseLock_ConcurrentRenewalExistKey(t *testing.T) {
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
-	lock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, dbpkg.NewDataImpl(&dbpkg.NewDataParams{DB: entClient}), mlog.NewForConfig(nil)).(*databaseLock)
-	anotherLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, dbpkg.NewDataImpl(&dbpkg.NewDataParams{DB: entClient}), mlog.NewForConfig(nil)).(*databaseLock)
-	anotherLock2 := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, dbpkg.NewDataImpl(&dbpkg.NewDataParams{DB: entClient}), mlog.NewForConfig(nil)).(*databaseLock)
+	lock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, func() *ent.Client { return entClient }, mlog.NewForConfig(nil)).(*databaseLock)
+	anotherLock := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, func() *ent.Client { return entClient }, mlog.NewForConfig(nil)).(*databaseLock)
+	anotherLock2 := NewDatabaseLock(timer.NewReal(), [2]int{1, 2}, func() *ent.Client { return entClient }, mlog.NewForConfig(nil)).(*databaseLock)
 	key := "test_key"
 	seconds := int64(10)
 
