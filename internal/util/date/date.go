@@ -8,8 +8,7 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-var nowFunc = time.Now
-
+// magnitudes 是 humanize 相对时间的中文展示刻度表。
 var magnitudes = []humanize.RelTimeMagnitude{
 	{D: time.Second, Format: "现在", DivBy: time.Second},
 	{D: 2 * time.Second, Format: "1 秒%s", DivBy: 1},
@@ -30,21 +29,23 @@ var magnitudes = []humanize.RelTimeMagnitude{
 	{D: math.MaxInt64, Format: "很久%s", DivBy: 1},
 }
 
-func ToHumanizeDatetimeString(t *time.Time) string {
+// ToHumanizeDateTime 返回相对当前时间的可读中文描述（如"3 分钟前"）；t 为 nil 时返回空串。
+func ToHumanizeDateTime(t *time.Time) string {
 	if t == nil {
 		return ""
 	}
-	return humanize.CustomRelTime(*t, nowFunc(), "以前", "以后", magnitudes)
+	return humanize.CustomRelTime(*t, time.Now(), "以前", "以后", magnitudes)
 }
 
-// ToRFC3339DatetimeString "2006-01-02T15:04:05Z07:00"
-func ToRFC3339DatetimeString(t *time.Time) string {
+// ToRFC3339 "2006-01-02T15:04:05Z07:00"
+func ToRFC3339(t *time.Time) string {
 	if t == nil || t.IsZero() {
 		return ""
 	}
 	return t.Format(time.RFC3339)
 }
 
+// HumanDuration 将时长格式化为中文"x天x小时"描述，容忍 2 秒内的时钟偏差视为"0秒"。
 func HumanDuration(d time.Duration) string {
 	// Allow deviation no more than 2 seconds(excluded) to tolerate machine time
 	// inconsistence, it can be considered as almost now.

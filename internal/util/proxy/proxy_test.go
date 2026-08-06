@@ -8,25 +8,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewHttpProxyClient(t *testing.T) {
-	client := NewHttpProxyClient("http://localhost:8080")
+func TestNewHTTPProxyClient(t *testing.T) {
+	client := NewHTTPProxyClient("http://localhost:8080")
 	assert.NotNil(t, client)
 	assert.Equal(t, 2*time.Minute, client.Timeout)
 }
 
-func Test_proxyFunc(t *testing.T) {
-	proxyUrl := "http://localhost:8080"
-	f := proxyFunc(proxyUrl)
+func TestProxyFunc(t *testing.T) {
+	proxyURL := "http://localhost:8080"
+	f := proxyFunc(proxyURL)
 	req := &http.Request{}
 	u, err := f(req)
 	assert.NoError(t, err)
 	assert.NotNil(t, u)
-	assert.Equal(t, proxyUrl, u.String())
+	assert.Equal(t, proxyURL, u.String())
 }
 
-func Test_proxyFunc2(t *testing.T) {
-	proxyUrl := ""
-	f := proxyFunc(proxyUrl)
+func TestProxyFuncEmpty(t *testing.T) {
+	f := proxyFunc("")
 	req := &http.Request{}
 	u, err := f(req)
 	assert.Nil(t, u)

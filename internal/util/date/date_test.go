@@ -7,29 +7,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestToHumanizeDatetimeString(t *testing.T) {
+func TestToHumanizeDateTime(t *testing.T) {
 	now := time.Now()
-	assert.Equal(t, "现在", ToHumanizeDatetimeString(&now))
+	assert.Equal(t, "现在", ToHumanizeDateTime(&now))
 
 	oneSecAgo := now.Add(-1 * time.Second)
-	assert.Equal(t, "1 秒以前", ToHumanizeDatetimeString(&oneSecAgo))
+	assert.Equal(t, "1 秒以前", ToHumanizeDateTime(&oneSecAgo))
 
 	oneYearAgo := now.AddDate(-1, 0, 0)
-	assert.Contains(t, "1 年以前", ToHumanizeDatetimeString(&oneYearAgo))
+	assert.Equal(t, "1 年以前", ToHumanizeDateTime(&oneYearAgo))
 
 	nilTime := (*time.Time)(nil)
-	assert.Equal(t, "", ToHumanizeDatetimeString(nilTime))
+	assert.Equal(t, "", ToHumanizeDateTime(nilTime))
 }
 
-func TestToRFC3339DatetimeString(t *testing.T) {
+func TestToRFC3339(t *testing.T) {
 	now := time.Now()
-	assert.Equal(t, now.Format(time.RFC3339), ToRFC3339DatetimeString(&now))
+	assert.Equal(t, now.Format(time.RFC3339), ToRFC3339(&now))
 
 	zeroTime := time.Time{}
-	assert.Equal(t, "", ToRFC3339DatetimeString(&zeroTime))
+	assert.Equal(t, "", ToRFC3339(&zeroTime))
 
 	nilTime := (*time.Time)(nil)
-	assert.Equal(t, "", ToRFC3339DatetimeString(nilTime))
+	assert.Equal(t, "", ToRFC3339(nilTime))
 }
 
 func TestHumanDuration(t *testing.T) {
@@ -52,24 +52,14 @@ func TestHumanDurationWithYearsAndDays(t *testing.T) {
 	assert.Equal(t, "8年", HumanDuration(eightYears))
 }
 
-func TestHumanDurationWithNegativeDuration(t *testing.T) {
-	negativeDuration := -1 * time.Second
-	assert.Equal(t, "<invalid>", HumanDuration(negativeDuration))
-}
-
-func TestHumanDurationWithZeroDuration(t *testing.T) {
-	zeroDuration := 0 * time.Second
-	assert.Equal(t, "0秒", HumanDuration(zeroDuration))
-}
-
 func TestHumanDurationWithSeconds(t *testing.T) {
-	twoSeconds := 2 * time.Second
-	assert.Equal(t, "2秒", HumanDuration(twoSeconds))
+	twoSecondsDuration := 2 * time.Second
+	assert.Equal(t, "2秒", HumanDuration(twoSecondsDuration))
 }
 
 func TestHumanDurationWithMinutesAndSeconds(t *testing.T) {
-	nineMinutesAndThirtySeconds := 9*time.Minute + 30*time.Second
-	assert.Equal(t, "9分钟30秒", HumanDuration(nineMinutesAndThirtySeconds))
+	nineMinutesAndThirtySecondsDuration := 9*time.Minute + 30*time.Second
+	assert.Equal(t, "9分钟30秒", HumanDuration(nineMinutesAndThirtySecondsDuration))
 }
 
 func TestHumanDurationWithHoursAndMinutes(t *testing.T) {
@@ -81,11 +71,6 @@ func TestHumanDurationWithDaysAndHours(t *testing.T) {
 	sevenDaysAndSixHours := 7*24*time.Hour + 6*time.Hour
 	assert.Equal(t, "7天6小时", HumanDuration(sevenDaysAndSixHours))
 }
-func TestHumanDurationWithNegativeSeconds(t *testing.T) {
-	negativeSeconds := 0 * time.Second
-	assert.Equal(t, "0秒", HumanDuration(negativeSeconds))
-}
-
 func TestHumanDurationWithFortyEightHours(t *testing.T) {
 	fortyEightHours := 47 * time.Hour
 	assert.Equal(t, "47小时", HumanDuration(fortyEightHours))

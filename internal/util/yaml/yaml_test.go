@@ -7,7 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestYamlDeepSetKey(t *testing.T) {
+func TestDeepSetKey(t *testing.T) {
 	strPtr := func(s string) *string { return &s }
 	type args struct {
 		field string
@@ -110,7 +110,7 @@ content: x
 			t.Helper()
 			out, _ := yaml.Marshal(tt.want)
 			want := string(out)
-			got, err := YamlDeepSetKey(tt.args.field, tt.args.data)
+			got, err := DeepSetKey(tt.args.field, tt.args.data)
 			if tt.wantGotStr != nil {
 				assert.Equal(t, *tt.wantGotStr, string(got))
 			}
@@ -122,7 +122,7 @@ content: x
 	}
 }
 
-func Test_deepGet(t *testing.T) {
+func TestDeepGet(t *testing.T) {
 	var tests = []struct {
 		input   map[string]any
 		key     string
