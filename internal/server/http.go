@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	containerpb "github.com/duc-cnzj/mars/api/v6/proto/container"
+	metricspb "github.com/duc-cnzj/mars/api/v6/proto/metrics"
 	"github.com/duc-cnzj/mars/v6/frontend"
 	"github.com/duc-cnzj/mars/v6/internal/application"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -82,18 +84,20 @@ func (a *apiGateway) Shutdown(ctx context.Context) error {
 	return a.server.Shutdown(ctx)
 }
 
-// FilterMethods 是跳过指标追踪的 gRPC 流方法白名单：这些长连接方法不记录 metadata
+// filterMethods 是跳过指标追踪的 gRPC 流方法白名单：这些长连接方法不记录 metadata
 // （错误之类），但保有一条访问日志，避免 Trace/指标被高频流冲刷。
-var FilterMethods = map[string]struct{}{
-	"/metrics.Metrics/StreamTopPod":           {},
-	"/container.Container/StreamContainerLog": {},
+// 未导出：仅本包 shouldTagRPC 消费；直接引用 proto 生成的 *_FullMethodName 常量，
+// 方法名写错即编译失败（与 biz.publicMethods 同理，不手写 "/pkg.Svc/Method" 路径）。
+var filterMethods = map[string]struct{}{
+	metricspb.Metrics_StreamTopPod_FullMethodName:           {},
+	containerpb.Container_StreamContainerLog_FullMethodName: {},
 }
 
-// shouldTagRPC 决定 gRPC 调用是否计入 OpenTelemetry 统计：命中 FilterMethods 白名单的
+// shouldTagRPC 决定 gRPC 调用是否计入 OpenTelemetry 统计：命中 filterMethods 白名单的
 // 长连接流方法不计入（避免高频流冲刷 metrics/trace），其余返回 true。false 分支打一条
 // Debugf 便于观测该调用为何被跳过。
 func (a *apiGateway) shouldTagRPC(info *stats.RPCTagInfo) bool {
-	_, ok := FilterMethods[info.FullMethodName]
+	_, ok := filterMethods[info.FullMethodName]
 	a.logger.Debugf("%v\t%v", info.FullMethodName, !ok)
 	return !ok
 }

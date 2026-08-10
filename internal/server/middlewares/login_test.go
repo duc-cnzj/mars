@@ -3,47 +3,14 @@ package middlewares
 import (
 	"context"
 	"errors"
-	"reflect"
-	"sort"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 )
-
-// TestPublicMethods_AlignsWithAccessControlDoc 是公开白名单的契约测试：断言白名单与
-// doc/access_control.md §4.1「免登录服务」清单逐行一致。新增免登录方法必须同时更新
-// 本测试、PublicMethods 与文档三处，任何一处漏改都会在此失败（防契约与实现漂移）。
-func TestPublicMethods_AlignsWithAccessControlDoc(t *testing.T) {
-	want := []string{
-		"/auth.Auth/Exchange",
-		"/auth.Auth/Info",
-		"/auth.Auth/Login",
-		"/auth.Auth/Settings",
-		"/cluster.Cluster/ClusterInfo",
-		"/picture.Picture/Background",
-		"/version.Version/Version",
-	}
-	// 白名单全 key 排序后与文档清单比对（排序逻辑内联于此，生产代码不为此保留导出函数）。
-	got := make([]string, 0, len(PublicMethods))
-	for name := range PublicMethods {
-		got = append(got, name)
-	}
-	sort.Strings(got)
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("PublicMethods 与 doc §4.1 漂移\n got: %v\nwant: %v", got, want)
-	}
-	for _, name := range want {
-		if !IsPublicMethod(name) {
-			t.Errorf("白名单缺少公开方法: %s", name)
-		}
-	}
-	// 非白名单方法（如私有服务的命名空间级方法）一律不命中，防止误放行。
-	if IsPublicMethod("/namespace.Namespace/List") {
-		t.Errorf("私有方法不应命中白名单")
-	}
-}
 
 // TestLoginUnaryServerInterceptor 覆盖 Unary 登录拦截器的三分支：公开方法跳过校验、
 // 私有方法 authenticate 成功注入用户后放行、私有方法 authenticate 失败不进 handler。
@@ -142,4 +109,53 @@ func TestLoginStreamServerInterceptor(t *testing.T) {
 	})
 	assert.Error(t, err)
 	assert.Equal(t, 0, handled)
+}
+
+// TestLoginHTTP_Success 验证校验通过时中间件放行，且 next 收到携带注入用户的新 ctx。
+func TestLoginHTTP_Success(t *testing.T) {
+	type ctxKey struct{}
+	user := "duc"
+	verify := func(ctx context.Context, token string) (context.Context, error) {
+		return context.WithValue(ctx, ctxKey{}, user), nil
+	}
+
+	called := false
+	LoginHTTP(verify)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		assert.Equal(t, user, r.Context().Value(ctxKey{}))
+	})).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/x", nil))
+
+	assert.True(t, called, "next 必须被调用")
+}
+
+// TestLoginHTTP_Unauthorized 验证校验失败时中间件写 401，且不进入业务 handler。
+func TestLoginHTTP_Unauthorized(t *testing.T) {
+	verify := func(ctx context.Context, token string) (context.Context, error) {
+		return nil, errors.New("invalid token")
+	}
+
+	called := false
+	rec := httptest.NewRecorder()
+	LoginHTTP(verify)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+	})).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/x", nil))
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.False(t, called, "校验失败时 next 不得被调用")
+}
+
+// TestLoginHTTP_TokenFromHeader 验证 verify 收到的是请求头 Authorization 的原始值。
+func TestLoginHTTP_TokenFromHeader(t *testing.T) {
+	var gotToken string
+	verify := func(ctx context.Context, token string) (context.Context, error) {
+		gotToken = token
+		return ctx, nil
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/x", nil)
+	req.Header.Set("Authorization", "Bearer abc123")
+	LoginHTTP(verify)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})).
+		ServeHTTP(httptest.NewRecorder(), req)
+
+	assert.Equal(t, "Bearer abc123", gotToken)
 }

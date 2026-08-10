@@ -15,37 +15,41 @@ type metricsRunner struct {
 	port   string
 	s      HttpServer
 	logger mlog.Logger
-	reg    *prometheus.Registry
 }
 
 // NewMetricsRunner 构建 metrics 传输层启动器：在指定端口暴露 /metrics 端点
-// （OpenMetrics 格式，promhttp 从 prometheus.Registry 拉取）。返回 application.Server。
+// （OpenMetrics 格式，promhttp 从 prometheus.Registry 拉取），server 在构造时装配
+// （Handler 经 metricsHandler 构建），与 pprofRunner 的装配时机对齐。返回 application.Server。
 func NewMetricsRunner(port string, logger mlog.Logger, reg *prometheus.Registry) application.Server {
 	return &metricsRunner{
 		port:   port,
 		logger: logger.WithModule("server/metricsRunner"),
-		reg:    reg,
+		s: &http.Server{
+			Addr:              ":" + port,
+			Handler:           metricsHandler(reg),
+			ReadHeaderTimeout: 5 * time.Second,
+		},
 	}
 }
 
-// Run 启动 metrics 服务：注册 /metrics 处理器并 goroutine 内 ListenAndServe。
+// Run 启动 metrics 服务：goroutine 内 ListenAndServe，非 ErrServerClosed 的启动错误
+// 记录日志（与 apiGateway/pprofRunner 行为一致，避免端口冲突时指标服务静默下线）。
 func (m *metricsRunner) Run(ctx context.Context) error {
-	mux := http.NewServeMux()
 	m.logger.Infof("[Server]: metrics running at :%s/metrics", m.port)
-
-	mux.Handle(
-		"/metrics", promhttp.HandlerFor(
-			m.reg,
-			promhttp.HandlerOpts{
-				EnableOpenMetrics: true,
-			}),
-	)
-
-	m.s = &http.Server{Addr: ":" + m.port, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 	go func() {
-		m.s.ListenAndServe()
+		if err := m.s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			m.logger.Error(err)
+		}
 	}()
 	return nil
+}
+
+// metricsHandler 装配 /metrics 处理器：promhttp 从 registry 拉取指标并以 OpenMetrics
+// 格式输出。独立成函数便于 httptest 直测端点行为，避免测试绑定真实端口。
+func metricsHandler(reg *prometheus.Registry) http.Handler {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{EnableOpenMetrics: true}))
+	return mux
 }
 
 // Shutdown 优雅停止 metrics 服务。

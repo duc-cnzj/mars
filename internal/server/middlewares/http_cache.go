@@ -8,7 +8,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/version"
 )
 
-var Etag string
+var etag string
 
 func init() {
 	setEtag(version.GetVersion())
@@ -18,7 +18,7 @@ func init() {
 // 保证版本化资源的缓存指纹与发布一致。
 func setEtag(v version.Version) {
 	if v.HasBuildInfo() {
-		Etag = hasher.Hash(fmt.Sprintf("%s-%s", v.GitCommit, v.BuildDate))
+		etag = hasher.Hash(fmt.Sprintf("%s-%s", v.GitCommit, v.BuildDate))
 	}
 }
 
@@ -26,12 +26,12 @@ func setEtag(v version.Version) {
 // 否则回写 Etag 头后透传下游 handler（前端静态资源的浏览器缓存协调）。
 func HttpCache(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if Etag != "" {
-			if r.Header.Get("If-None-Match") == Etag {
+		if etag != "" {
+			if r.Header.Get("If-None-Match") == etag {
 				w.WriteHeader(http.StatusNotModified)
 				return
 			}
-			w.Header().Set("Etag", Etag)
+			w.Header().Set("Etag", etag)
 		}
 
 		h.ServeHTTP(w, r)

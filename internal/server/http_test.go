@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	authpb "github.com/duc-cnzj/mars/api/v6/proto/auth"
+	metricspb "github.com/duc-cnzj/mars/api/v6/proto/metrics"
 	"github.com/duc-cnzj/mars/v6/internal/application"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -254,11 +256,11 @@ func Test_apiGateway_shouldTagRPC(t *testing.T) {
 	logger := mlog.NewMockLogger(m)
 	gw := &apiGateway{logger: logger}
 
-	logger.EXPECT().Debugf("%v\t%v", "/metrics.Metrics/StreamTopPod", false).Times(1)
-	assert.False(t, gw.shouldTagRPC(&stats.RPCTagInfo{FullMethodName: "/metrics.Metrics/StreamTopPod"}))
+	logger.EXPECT().Debugf("%v\t%v", metricspb.Metrics_StreamTopPod_FullMethodName, false).Times(1)
+	assert.False(t, gw.shouldTagRPC(&stats.RPCTagInfo{FullMethodName: metricspb.Metrics_StreamTopPod_FullMethodName}))
 
-	logger.EXPECT().Debugf("%v\t%v", "/auth.Auth/Login", true).Times(1)
-	assert.True(t, gw.shouldTagRPC(&stats.RPCTagInfo{FullMethodName: "/auth.Auth/Login"}))
+	logger.EXPECT().Debugf("%v\t%v", authpb.Auth_Login_FullMethodName, true).Times(1)
+	assert.True(t, gw.shouldTagRPC(&stats.RPCTagInfo{FullMethodName: authpb.Auth_Login_FullMethodName}))
 }
 
 // Test_apiGateway_setNosniff 覆盖 ForwardResponseOption：REST 响应补 X-Content-Type-Options:

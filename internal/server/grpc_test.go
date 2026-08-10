@@ -36,11 +36,14 @@ func TestGrpcRunner_RecoveryHandler(t *testing.T) {
 		authBiz: auth,
 	}
 
-	// Test case: recoveryHandler logs the error
+	// Test case: recoveryHandler 记录 panic 值并返回 Internal 错误，
+	// 客户端收到明确失败而非成功空响应。
 	err := errors.New("test error")
 	logger.EXPECT().Errorf("[Grpc]: recovery error: \n%v", err).Times(1)
 
-	assert.Nil(t, runner.recoveryHandler(err))
+	got := runner.recoveryHandler(err)
+	assert.Error(t, got)
+	assert.Equal(t, codes.Internal, status.Code(got))
 }
 
 func TestAuthenticate(t *testing.T) {
@@ -158,6 +161,20 @@ var echoTestServiceDesc = grpc.ServiceDesc{
 	Metadata: "echo.proto",
 }
 
+// panickingAuthorizeService 是授权阶段抛 panic 的测试服务：Authorize 直接 panic，
+// 用于验证「Recovery 在最外层能捕获外层拦截器（Auth）的 panic 并返回 Internal」。
+// 若 Recovery 被挪回最内层，Auth 的 panic 会穿透所有无 recover 的拦截器——grpc-go
+// 自身无内置 recover，进程会被击穿；此测试即为这个链序不变量兜底。
+type panickingAuthorizeService struct{}
+
+func (panickingAuthorizeService) Echo(_ context.Context, _ *emptypb.Empty) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+
+func (panickingAuthorizeService) Authorize(_ context.Context, _ string) (context.Context, error) {
+	panic("authorize panic")
+}
+
 // newBufconnGRPCRunner 构造一个挂在 bufconn 监听器上的 grpcRunner：服务经 initServer
 // 装配，客户端经 bufconn dialer 直连，不需要真实端口。
 func newBufconnGRPCRunner(m *gomock.Controller) (*grpcRunner, *bufconn.Listener) {
@@ -209,6 +226,53 @@ func Test_grpcRunner_initServer_UnaryRPC(t *testing.T) {
 	err = conn.Invoke(ctx, "/echo.Test/Echo", &emptypb.Empty{}, &resp)
 	assert.NotNil(t, err)
 	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+// Test_grpcRunner_initServer_InterceptorPanicRecovered 驱动真实链上的拦截器 panic：
+// 服务实现 middlewares.Authorize（AuthUnaryServerInterceptor 的类型断言目标）且 Authorize
+// 直接 panic，panic 从 Auth 拦截器冒出，被最外层 Recovery 捕获并转为 Internal 返回客户端。
+// 此前只有 recoveryHandler 的单元测试，链上 panic 无任何断言——变异（Recovery 挪回最内）
+// 时全部测试仍绿，本测试为「Recovery 必须最外层」的链序不变量补上承重断言。
+func Test_grpcRunner_initServer_InterceptorPanicRecovered(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	authBiz := biz.NewMockAuthBiz(m)
+	authBiz.EXPECT().VerifyToken(gomock.Any(), "tok").Return(&biz.UserInfo{Name: "duc"}, nil).AnyTimes()
+
+	runner := &grpcRunner{
+		logger:  mlog.NewForConfig(nil),
+		authBiz: authBiz,
+		grpcRegistry: &application.GrpcRegistry{
+			RegistryFunc: func(s grpc.ServiceRegistrar) {
+				s.RegisterService(&echoTestServiceDesc, panickingAuthorizeService{})
+			},
+		},
+	}
+	lis := bufconn.Listen(1024 * 1024)
+	defer lis.Close()
+
+	srv := runner.initServer()
+	go func() { _ = srv.Serve(lis) }()
+	defer srv.Stop()
+
+	conn, err := grpc.NewClient("passthrough:///bufnet",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
+			return lis.DialContext(ctx)
+		}),
+	)
+	assert.Nil(t, err)
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+	defer cancel()
+
+	authCtx := metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer tok"))
+	var resp emptypb.Empty
+	err = conn.Invoke(authCtx, "/echo.Test/Echo", &emptypb.Empty{}, &resp)
+	// 服务端 Auth 拦截器 panic → 最外层 Recovery 捕获 → 客户端收到 Internal（进程未击穿）。
+	assert.Equal(t, codes.Internal, status.Code(err))
 }
 
 // Test_grpcRunner_Run_SuccessAndServe 覆盖 Run 的成功路径：真实端口上 net.Listen、
