@@ -16,7 +16,6 @@ import (
 	"go.uber.org/mock/gomock"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -28,18 +27,19 @@ func TestNewAuthSvc(t *testing.T) {
 	assert.NotNil(t, svc.authBiz)
 }
 
+// Test_authSvc_Info 覆盖 Info 成功路径：用户由鉴权拦截器经 biz.SetUser 注入 ctx，
+// Info 不再自行验签，仅做「取 ctx 用户 → 映射响应」。
 func Test_authSvc_Info(t *testing.T) {
-	svc, mocks := newAuthSvcWithMocks(t)
-	authBizMock := mocks.authBiz
-	authBizMock.EXPECT().VerifyToken(gomock.Any(), "token").Return(&biz.UserInfo{
+	svc, _ := newAuthSvcWithMocks(t)
+	user := &biz.UserInfo{
 		ID:        "123",
 		Email:     "duc@example.com",
 		Name:      "duc",
 		Picture:   "https://example.com/avatar.png",
 		Roles:     []string{"admin", "dev"},
 		LogoutUrl: "https://logout.example",
-	}, nil)
-	resp, err := svc.Info(metadata.NewIncomingContext(context.TODO(), metadata.Pairs("Authorization", "token")), nil)
+	}
+	resp, err := svc.Info(biz.SetUser(context.TODO(), user), nil)
 	assert.Nil(t, err)
 	if assert.NotNil(t, resp) {
 		assert.Equal(t, int32(123), resp.Id)
@@ -49,23 +49,6 @@ func Test_authSvc_Info(t *testing.T) {
 		assert.Equal(t, "https://logout.example", resp.LogoutUrl)
 		assert.Equal(t, []string{"admin", "dev"}, resp.Roles)
 	}
-}
-
-func Test_authSvc_Info_Fail(t *testing.T) {
-	svc, _ := newAuthSvcWithMocks(t)
-	resp, err := svc.Info(context.TODO(), nil)
-	assert.Error(t, err)
-	assert.Nil(t, resp)
-}
-
-func Test_authSvc_Info_InvalidToken(t *testing.T) {
-	svc, mocks := newAuthSvcWithMocks(t)
-	authBizMock := mocks.authBiz
-	authBizMock.EXPECT().VerifyToken(gomock.Any(), "bad-token").Return(nil, errors.New("token expired"))
-	resp, err := svc.Info(metadata.NewIncomingContext(context.TODO(), metadata.Pairs("Authorization", "bad-token")), nil)
-	assert.Error(t, err)
-	assert.Equal(t, codes.Unauthenticated, status.Code(err))
-	assert.Nil(t, resp)
 }
 
 func TestAuthSvc_Login_Success(t *testing.T) {

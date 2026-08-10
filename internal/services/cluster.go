@@ -30,7 +30,7 @@ func NewClusterSvc(deps ClusterSvcDeps) cluster.ClusterServer {
 	return &clusterSvc{k8sBiz: deps.K8sBiz, logger: deps.Logger.WithModule("services/cluster")}
 }
 
-// ClusterInfo 返回当前 k8s 集群的基础信息，为免登录公开接口（白名单见 middlewares.PublicMethods）。
+// ClusterInfo 返回当前 k8s 集群的基础信息，为免登录公开接口（白名单见 biz.IsPublicMethod）。
 func (c *clusterSvc) ClusterInfo(ctx context.Context, req *cluster.InfoRequest) (*cluster.InfoResponse, error) {
 	return &cluster.InfoResponse{
 		Item: transformer.FromClusterInfo(c.k8sBiz.ClusterInfo()),

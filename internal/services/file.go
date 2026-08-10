@@ -122,5 +122,5 @@ func (f *fileSvc) MaxUploadSize(ctx context.Context, request *file.MaxUploadSize
 // Authorize 是文件服务的 admin 门禁：MaxUploadSize 放行给任意登录用户，
 // 其余文件管理方法（列表/删除/详情）仅 admin 可调用。
 func (f *fileSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
-	return f.accessBiz.RequireAdmin(ctx, fullMethodName, "/file.File/MaxUploadSize")
+	return f.accessBiz.RequireAdmin(ctx, fullMethodName, file.File_MaxUploadSize_FullMethodName)
 }

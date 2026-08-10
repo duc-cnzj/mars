@@ -14,7 +14,7 @@ type versionSvc struct {
 	version.UnimplementedVersionServer
 }
 
-// NewVersionSvc 构造版本信息服务，无外部依赖，为免登录公开接口（白名单见 middlewares.PublicMethods）。
+// NewVersionSvc 构造版本信息服务，无外部依赖，为免登录公开接口（白名单见 biz.IsPublicMethod）。
 func NewVersionSvc() version.VersionServer {
 	return &versionSvc{}
 }

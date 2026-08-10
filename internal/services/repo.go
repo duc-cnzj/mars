@@ -206,5 +206,5 @@ func (r *repoSvc) Clone(ctx context.Context, req *reposerver.CloneRequest) (*rep
 // Authorize 是 repo 服务的 admin 门禁：List/Show 放行给任意登录用户，
 // 其余仓库管理方法（创建/更新/启停/删除/克隆）仅 admin 可调用。
 func (r *repoSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
-	return r.accessBiz.RequireAdmin(ctx, fullMethodName, "/repo.Repo/List", "/repo.Repo/Show")
+	return r.accessBiz.RequireAdmin(ctx, fullMethodName, reposerver.Repo_List_FullMethodName, reposerver.Repo_Show_FullMethodName)
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/rand"
 	"github.com/spf13/cast"
-	"google.golang.org/grpc/metadata"
 )
 
 var _ apiauth.AuthServer = (*authSvc)(nil)
@@ -64,34 +63,21 @@ func (a *authSvc) Login(ctx context.Context, request *apiauth.LoginRequest) (*ap
 	}, nil
 }
 
-// Info 返回当前登录用户信息：校验请求头 Authorization 中的 token，
-// 有效则返回用户资料；未携带 token 或校验失败统一返回 Unauthenticated。
+// Info 返回当前登录用户信息：用户由鉴权拦截器（middlewares.Login*ServerInterceptor）
+// 统一验签后经 biz.SetUser 注入 ctx，本方法只做「取 ctx 用户 → 映射响应」，不再自行验签
+// （消除与拦截器的双重验签）。取用户用 biz.MustGetUser（与 AccessBiz/services 全仓惯例
+// 一致）：双链路（gRPC 拦截器 + HTTP gateway 经 RegisterAuthHandlerFromEndpoint 回环 dial
+// 到同一 gRPC server）必注入用户，ctx 无用户即编程错误（panic，由 grpc_recovery 兜底）。
 func (a *authSvc) Info(ctx context.Context, req *apiauth.InfoRequest) (*apiauth.InfoResponse, error) {
-	incomingContext, ok := metadata.FromIncomingContext(ctx)
-	if ok {
-		tokenSlice := incomingContext.Get("Authorization")
-		if len(tokenSlice) == 1 {
-			c, err := a.authBiz.VerifyToken(ctx, tokenSlice[0])
-			if err == nil {
-				return &apiauth.InfoResponse{
-					Id:        cast.ToInt32(c.ID),
-					Avatar:    c.Picture,
-					Name:      c.Name,
-					Email:     c.Email,
-					LogoutUrl: c.LogoutUrl,
-					Roles:     c.Roles,
-				}, nil
-			}
-			// 带了 token 但校验失败：记录根因（过期/篡改/用户被删），
-			// 便于区分"没带 token"和"token 无效"两种未授权场景。
-			a.logger.DebugCtx(ctx, "auth info: verify token failed", err)
-		}
-	}
-
-	a.logger.WarningCtx(ctx, "auth info: unauthorized")
-	// 无凭证/凭证无效的兜底返回 Unauthenticated——状态码由 biz 工厂（ToError 401）构造，
-	// transport 不再散落 status 构造（协议映射收口 biz）。
-	return nil, biz.ToError(401, "Unauthenticated.")
+	user := biz.MustGetUser(ctx)
+	return &apiauth.InfoResponse{
+		Id:        cast.ToInt32(user.ID),
+		Avatar:    user.Picture,
+		Name:      user.Name,
+		Email:     user.Email,
+		LogoutUrl: user.LogoutUrl,
+		Roles:     user.Roles,
+	}, nil
 }
 
 // Settings 返回可用的 OIDC 登录方式：为每个 provider 生成一次性 state 拼出
