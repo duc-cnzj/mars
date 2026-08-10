@@ -2,6 +2,7 @@ package picture
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
@@ -23,9 +25,9 @@ type pictureApp struct {
 	logger mlog.Logger
 }
 
-func (p pictureApp) Logger() mlog.Logger { return p.logger }
-func (p pictureApp) Data() data.Data     { return nil }
-func (p pictureApp) Cache() data.Cache   { return p.cache }
+func (p pictureApp) Logger() mlog.Logger          { return p.logger }
+func (p pictureApp) Cache() data.Cache            { return p.cache }
+func (p pictureApp) ProjectRepo() biz.ProjectRepo { return nil }
 
 // restore 记录并恢复包级测试缝。
 func restore[B any](t *testing.T, target *B, old B) {
@@ -283,6 +285,36 @@ func TestBingGet_http_error(t *testing.T) {
 
 	_, err := b.Get(context.TODO(), false)
 	assert.Error(t, err)
+}
+
+// errReadCloser 读取即失败，用于触发 io.ReadAll 错误分支。
+type errReadCloser struct{}
+
+func (errReadCloser) Read([]byte) (int, error) { return 0, errors.New("read boom") }
+func (errReadCloser) Close() error             { return nil }
+
+// failBodyRT 返回 HTTP 200 但 body 读取失败的响应。
+type failBodyRT struct{}
+
+func (failBodyRT) RoundTrip(*http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       errReadCloser{},
+		Header:     make(http.Header),
+	}, nil
+}
+
+func TestBingGet_read_all_error(t *testing.T) {
+	// Get 成功但 io.ReadAll 失败：应透传错误，而非吞掉后用空 body 继续。
+	oldClient := bingClient
+	bingClient = http.Client{Transport: failBodyRT{}}
+	restore(t, &bingClient, oldClient)
+
+	b := &bing{}
+	require.NoError(t, b.Initialize(pictureApp{logger: mlog.NewForConfig(nil)}, nil))
+
+	_, err := b.Get(context.TODO(), false)
+	assert.ErrorContains(t, err, "read boom")
 }
 
 func TestBingGet_key_out_of_range_resets_to_zero(t *testing.T) {

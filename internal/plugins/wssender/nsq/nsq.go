@@ -10,8 +10,7 @@ import (
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/application"
-	"github.com/duc-cnzj/mars/v6/internal/data/ent"
-	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender"
 	gonsq "github.com/nsqio/go-nsq"
@@ -83,7 +82,7 @@ type nsqSender struct {
 	lookupdAddr string
 	addr        string
 	logger      mlog.Logger
-	db          *ent.Client
+	projectRepo biz.ProjectRepo
 }
 
 // Name 返回插件名 ws_sender_nsq。
@@ -93,7 +92,7 @@ func (n *nsqSender) Name() string {
 
 // Initialize 从 args 读取 nsq 地址与超时配置，创建 producer 并 Ping 验证连通性。
 func (n *nsqSender) Initialize(app application.PluginApp, args map[string]any) (err error) {
-	n.db = app.Data().DB()
+	n.projectRepo = app.ProjectRepo()
 	n.cfg = gonsq.NewConfig()
 	// 坑:
 	// 当多个nsqd服务都有相同的topic的时候，consumer要修改默认设置config.MaxInFlight才能连接
@@ -171,7 +170,7 @@ func (n *nsqSender) New(uid, id string) application.PubSub {
 		cfg:          n.cfg,
 		uid:          uid,
 		id:           id,
-		db:           n.db,
+		projectRepo:  n.projectRepo,
 		consumers:    map[string]nsqConsumer{},
 		channelRefs:  map[string]int{},
 		producer:     n.producer,
@@ -187,7 +186,7 @@ type nsq struct {
 	addr, lookupdAddr string
 	cfg               *gonsq.Config
 	uid, id           string
-	db                *ent.Client
+	projectRepo       biz.ProjectRepo
 
 	consumersMu sync.RWMutex
 	consumers   map[string]nsqConsumer
@@ -220,11 +219,11 @@ func (j *directHandler) HandleMessage(m *gonsq.Message) error {
 
 // Join 订阅项目所在命名空间的 ephemeral 频道（首个引用时创建 consumer），并登记选择器。
 func (n *nsq) Join(projectID int64) error {
-	pmodel, err := n.db.Project.Query().WithNamespace().Where(project.ID(int(projectID))).Only(context.TODO())
+	pmodel, err := n.projectRepo.Show(context.TODO(), int(projectID))
 	if err != nil {
 		return err
 	}
-	channel := getNsqProjectEventRoom(pmodel.Edges.Namespace.ID)
+	channel := getNsqProjectEventRoom(pmodel.Namespace.ID)
 
 	// 同一 namespace 下多个项目共享同一个 channel：consumer 只在首个引用时创建，
 	// 后续 Join 复用，避免覆盖旧 consumer 造成连接泄漏（与 redis channelRefs 同款引用计数）。

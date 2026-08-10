@@ -8,8 +8,7 @@ import (
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/application"
-	"github.com/duc-cnzj/mars/v6/internal/data/ent"
-	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender"
 	"github.com/go-redis/redis/v8"
@@ -37,9 +36,9 @@ func init() {
 
 // redisSender 是 Redis PubSub 版 WsSender：全实例共享一条订阅连接，经 dispatcher 扇出到本地订阅者。
 type redisSender struct {
-	rds    *redis.Client
-	logger mlog.Logger
-	db     *ent.Client
+	rds         *redis.Client
+	logger      mlog.Logger
+	projectRepo biz.ProjectRepo
 
 	// 一条共享 PubSub 连接，而非每个连接一条。
 	wsPubSub *redis.PubSub
@@ -74,7 +73,7 @@ func (p *redisSender) Initialize(app application.PluginApp, args map[string]any)
 	pwd, _ := args["password"].(string)
 	db, _ := args["db"].(int)
 
-	p.db = app.Data().DB()
+	p.projectRepo = app.ProjectRepo()
 	p.logger = app.Logger()
 
 	rdb := redis.NewClient(&redis.Options{
@@ -167,7 +166,7 @@ func (p *redisSender) New(uid, id string) application.PubSub {
 
 	pem := &podEventManagers{
 		logger:       p.logger.WithModule("plugins/ws_sender_redis"),
-		db:           p.db,
+		projectRepo:  p.projectRepo,
 		ch:           ch,
 		id:           id,
 		uid:          uid,
@@ -274,12 +273,12 @@ func (p *rdsPubSub) Subscribe() <-chan []byte {
 
 // podEventManagers 管理项目 pod 事件的订阅与发布：每个连接独立的 PubSub 订阅对应命名空间频道。
 type podEventManagers struct {
-	db     *ent.Client
-	logger mlog.Logger
-	id     string
-	uid    string
-	rds    *redis.Client
-	pubSub *redis.PubSub
+	projectRepo biz.ProjectRepo
+	logger      mlog.Logger
+	id          string
+	uid         string
+	rds         *redis.Client
+	pubSub      *redis.PubSub
 
 	ch chan []byte
 
@@ -304,12 +303,12 @@ func (p *podEventManagers) Publish(nsID int64, pod *v1.Pod) error {
 
 // Join 订阅项目所在命名空间频道（首个引用时），并登记该项目的 pod 选择器。
 func (p *podEventManagers) Join(projectID int64) error {
-	pmodel, err := p.db.Project.Query().WithNamespace().Where(project.ID(int(projectID))).Only(context.TODO())
+	pmodel, err := p.projectRepo.Show(context.TODO(), int(projectID))
 	if err != nil {
 		return err
 	}
 
-	channel := wssender.GetProjectPodEventRoom(pmodel.Edges.Namespace.ID)
+	channel := wssender.GetProjectPodEventRoom(pmodel.Namespace.ID)
 
 	p.mu.Lock()
 	p.channelRefs[channel]++
@@ -384,6 +383,11 @@ func (p *podEventManagers) Run(ctx context.Context) error {
 			var obj wssender.ProjectPodEventObj
 			if err := json.Unmarshal([]byte(data.Payload), &obj); err != nil {
 				p.logger.Error(err)
+				continue
+			}
+			// nil Pod 没有 labels 可匹配；payload 来自 Redis 外部边界，需防御性跳过。
+			if obj.Pod == nil {
+				p.logger.Debugf("[Redis] pod event without pod, skip: %s", data.Channel)
 				continue
 			}
 

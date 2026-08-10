@@ -5,8 +5,7 @@ import (
 	"sync"
 
 	"github.com/duc-cnzj/mars/v6/internal/application"
-	"github.com/duc-cnzj/mars/v6/internal/data/ent"
-	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender"
 	corev1 "k8s.io/api/core/v1"
@@ -21,8 +20,8 @@ func init() {
 	application.RegisterPlugin(dr.Name(), dr)
 }
 
-// Conn 表示一个已注册的 websocket 连接：id 为连接标识，uid 为用户标识，ch 为消息缓冲通道。
-type Conn struct {
+// conn 表示一个已注册的 websocket 连接：id 为连接标识，uid 为用户标识，ch 为消息缓冲通道。
+type conn struct {
 	id  string
 	uid string
 	ch  chan []byte
@@ -38,14 +37,14 @@ type (
 // memorySender 是内存版 WsSender：维护连接表与订阅房间，同一进程内广播消息。
 type memorySender struct {
 	connMu sync.RWMutex
-	conns  map[string]*Conn
+	conns  map[string]*conn
 
 	roomMu  sync.RWMutex
 	rooms   namespaceRooms                // nsID -> projectID -> socketID -> selectors
 	idRooms map[string]map[int32]struct{} // socketID -> set of nsIDs
 
-	logger mlog.Logger
-	db     *ent.Client
+	logger      mlog.Logger
+	projectRepo biz.ProjectRepo
 }
 
 // Add 注册一个连接；uid 或 id 为空或已存在时静默忽略。
@@ -60,7 +59,7 @@ func (ms *memorySender) Add(uid, id string) {
 	if _, ok := ms.conns[id]; ok {
 		return
 	}
-	ms.conns[id] = &Conn{id: id, uid: uid, ch: make(chan []byte, wssender.MessageChSize)}
+	ms.conns[id] = &conn{id: id, uid: uid, ch: make(chan []byte, wssender.MessageChSize)}
 }
 
 // Delete 移除并关闭指定连接的通道。
@@ -80,8 +79,8 @@ func (ms *memorySender) Name() string {
 
 // Initialize 初始化连接表、房间表与日志器。
 func (ms *memorySender) Initialize(app application.PluginApp, args map[string]any) error {
-	ms.db = app.Data().DB()
-	ms.conns = make(map[string]*Conn)
+	ms.projectRepo = app.ProjectRepo()
+	ms.conns = make(map[string]*conn)
 	ms.idRooms = make(map[string]map[int32]struct{})
 	ms.rooms = make(namespaceRooms)
 	ms.logger = app.Logger().WithModule("plugins/ws_sender_memory")
@@ -99,21 +98,21 @@ func (ms *memorySender) Destroy() error {
 func (ms *memorySender) New(uid, id string) application.PubSub {
 	ms.Add(uid, id)
 	return &memoryPubSub{
-		db:      ms.db,
-		manager: ms,
-		uid:     uid,
-		id:      id,
-		logger:  ms.logger,
+		projectRepo: ms.projectRepo,
+		manager:     ms,
+		uid:         uid,
+		id:          id,
+		logger:      ms.logger,
 	}
 }
 
 // memoryPubSub 是单个连接对应的 PubSub：消息经 sender 的连接表在进程内分发。
 type memoryPubSub struct {
-	db      *ent.Client
-	manager *memorySender
-	uid     string
-	id      string
-	logger  mlog.Logger
+	projectRepo biz.ProjectRepo
+	manager     *memorySender
+	uid         string
+	id          string
+	logger      mlog.Logger
 
 	closeOnce sync.Once
 }
@@ -125,6 +124,10 @@ func (p *memoryPubSub) Run(ctx context.Context) error {
 
 // Publish 将 pod 事件按订阅选择器匹配并投递到对应连接通道。
 func (p *memoryPubSub) Publish(nsID int64, pod *corev1.Pod) error {
+	// nil Pod 没有 labels 可匹配，直接返回；接口契约允许 nil（runner_test 用 nil 验证 nil-safe）。
+	if pod == nil {
+		return nil
+	}
 	// 第一阶段：在 roomMu 下收集每个 socket 的 pidSelectors（只读，快）。
 	p.manager.roomMu.RLock()
 	projectMap, ok := p.manager.rooms[int32(nsID)]
@@ -162,7 +165,7 @@ func (p *memoryPubSub) Publish(nsID int64, pod *corev1.Pod) error {
 
 // Join 将当前连接加入项目对应的房间并登记其 pod 选择器。
 func (p *memoryPubSub) Join(projectID int64) error {
-	pmodel, err := p.db.Project.Query().WithNamespace().Where(project.ID(int(projectID))).Only(context.TODO())
+	pmodel, err := p.projectRepo.Show(context.TODO(), int(projectID))
 	if err != nil {
 		return err
 	}
@@ -177,7 +180,7 @@ func (p *memoryPubSub) Join(projectID int64) error {
 		selectors = append(selectors, parse)
 	}
 
-	nsID := int64(pmodel.Edges.Namespace.ID)
+	nsID := int64(pmodel.Namespace.ID)
 
 	p.manager.roomMu.Lock()
 	defer p.manager.roomMu.Unlock()

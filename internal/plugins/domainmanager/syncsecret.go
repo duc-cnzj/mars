@@ -1,11 +1,12 @@
 package domainmanager
 
 import (
+	"context"
 	"errors"
 	"strings"
 
 	"github.com/duc-cnzj/mars/v6/internal/application"
-	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -14,6 +15,13 @@ var _ application.DomainManager = (*syncSecretDomainManager)(nil)
 
 // SyncSecretSecretName 和 manual 方式保持名称一致，避免两种方式之间切换时需要手动部署才能生效的问题
 const SyncSecretSecretName = ManualCertSecretName
+
+// syncDeps 是 sync_secret 插件的依赖视图：只用 Logger 与 K8sRepo。
+// K8sRepo 是单插件独有能力，不在 PluginApp 公共接口里，经 Resolve 断言取用。
+type syncDeps interface {
+	Logger() mlog.Logger
+	K8sRepo() biz.K8sRepo
+}
 
 func init() {
 	dr := &syncSecretDomainManager{}
@@ -29,8 +37,8 @@ type syncSecretDomainManager struct {
 	secretNamespace string
 	secretName      string
 
-	data   data.Data
-	logger mlog.Logger
+	k8sRepo biz.K8sRepo
+	logger  mlog.Logger
 }
 
 // SyncSecretDomainManager 插件注册名。
@@ -44,47 +52,40 @@ func (d *syncSecretDomainManager) Name() string {
 // Initialize 从 args 读取 ns_prefix/secret_namespace/secret_name/wildcard_domain，
 // 拉取并校验 TLS secret：必须是 TLS 类型且 DNSNames 覆盖通配域名。
 func (d *syncSecretDomainManager) Initialize(app application.PluginApp, args map[string]any) error {
-	d.data = app.Data()
-	d.logger = app.Logger()
+	dep := application.Resolve[syncDeps](app)
+	d.k8sRepo = dep.K8sRepo()
+	d.logger = dep.Logger()
 
-	if p, ok := args["ns_prefix"]; ok {
-		s, ok := p.(string)
-		if !ok {
-			return errors.New("ns_prefix must be string")
-		}
-		d.nsPrefix = s
+	nsPrefix, err := stringArg(args, "ns_prefix")
+	if err != nil {
+		return err
 	}
+	d.nsPrefix = nsPrefix
 
-	if p, ok := args["secret_namespace"]; ok {
-		s, ok := p.(string)
-		if !ok {
-			return errors.New("secret_namespace must be string")
-		}
-		d.secretNamespace = s
+	secretNamespace, err := stringArg(args, "secret_namespace")
+	if err != nil {
+		return err
 	}
+	d.secretNamespace = secretNamespace
 
-	if p, ok := args["secret_name"]; ok {
-		s, ok := p.(string)
-		if !ok {
-			return errors.New("secret_name must be string")
-		}
-		d.secretName = s
+	secretName, err := stringArg(args, "secret_name")
+	if err != nil {
+		return err
 	}
+	d.secretName = secretName
 
-	if wd, ok := args["wildcard_domain"]; ok {
-		s, ok := wd.(string)
-		if !ok {
-			return errors.New("wildcard_domain must be string")
-		}
-		d.wildcardDomain = s
-		d.domainSuffix = strings.TrimLeft(s, "*.")
+	wildcardDomain, err := stringArg(args, "wildcard_domain")
+	if err != nil {
+		return err
 	}
+	d.wildcardDomain = wildcardDomain
+	d.domainSuffix = strings.TrimLeft(wildcardDomain, "*.")
 
 	if d.secretNamespace == "" || d.secretName == "" || d.wildcardDomain == "" {
 		return errors.New("secret_namespace, secret_name, wildcard_domain required")
 	}
 
-	secret, err := d.data.K8sClient().SecretLister.Secrets(d.secretNamespace).Get(d.secretName)
+	secret, err := d.k8sRepo.GetSecret(context.TODO(), d.secretNamespace, d.secretName)
 	if err != nil {
 		return err
 	}
@@ -137,7 +138,7 @@ func (d *syncSecretDomainManager) GetClusterIssuer() string {
 
 // GetCerts 从 k8s secret 实时读取 tls.key/tls.crt；读取失败时返回空三元组并记录错误。
 func (d *syncSecretDomainManager) GetCerts() (name, key, crt string) {
-	sec, err := d.data.K8sClient().SecretLister.Secrets(d.secretNamespace).Get(d.secretName)
+	sec, err := d.k8sRepo.GetSecret(context.TODO(), d.secretNamespace, d.secretName)
 	if err != nil {
 		d.logger.Error("[TLS]: get secret error: ", err)
 		return "", "", ""

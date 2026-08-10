@@ -10,6 +10,8 @@ import (
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -127,13 +129,12 @@ func (f *fakeConsumer) isStopped() bool {
 
 // fakeApp 是 PluginApp 的最小 stub，供 Initialize 测试使用。
 type fakeApp struct {
-	data   data.Data
-	logger mlog.Logger
+	projectRepo biz.ProjectRepo
+	logger      mlog.Logger
 }
 
-func (f fakeApp) Logger() mlog.Logger { return f.logger }
-func (f fakeApp) Data() data.Data     { return f.data }
-func (f fakeApp) Cache() data.Cache   { return nil }
+func (f fakeApp) Logger() mlog.Logger          { return f.logger }
+func (f fakeApp) ProjectRepo() biz.ProjectRepo { return f.projectRepo }
 
 func newDB(t *testing.T) *ent.Client {
 	t.Helper()
@@ -153,15 +154,28 @@ func seedProject(t *testing.T, db *ent.Client, selectors []string) (nsID, pid in
 	return ns.ID, proj.ID
 }
 
-// newApp 构造带真实 ent DB 的 PluginApp stub。
-func newApp(t *testing.T) (application.PluginApp, *ent.Client) {
+// newTestRepo 构造绑定指定 ent DB 的真实 ProjectRepo。
+func newTestRepo(t *testing.T, db *ent.Client) biz.ProjectRepo {
+	t.Helper()
+	impl := data.NewDataImpl(&data.NewDataParams{Cfg: &config.Config{}, DB: db})
+	return data.NewProjectRepo(mlog.NewForConfig(nil), impl)
+}
+
+// newApp 构造带真实 ent DB + ProjectRepo 的 PluginApp stub。
+func newApp(t *testing.T) (application.PluginApp, biz.ProjectRepo, *ent.Client) {
 	t.Helper()
 	db := newDB(t)
-	ctrl := gomock.NewController(t)
-	t.Cleanup(ctrl.Finish)
-	md := data.NewMockData(ctrl)
-	md.EXPECT().DB().Return(db)
-	return fakeApp{data: md, logger: mlog.NewForConfig(nil)}, db
+	pr := newTestRepo(t, db)
+	return fakeApp{projectRepo: pr, logger: mlog.NewForConfig(nil)}, pr, db
+}
+
+// newTestNSQWithDB 构造带真实 ent DB + ProjectRepo 的 *nsq，供 Join/Leave 测试使用。
+func newTestNSQWithDB(t *testing.T, fp *fakeProducer, uid, id string) (*nsq, *ent.Client) {
+	t.Helper()
+	n := newTestNSQ(fp, uid, id)
+	db := newDB(t)
+	n.projectRepo = newTestRepo(t, db)
+	return n, db
 }
 
 // setProducer 覆盖 newProducer 测试缝，测试结束自动还原。
@@ -248,7 +262,7 @@ func TestNsqName(t *testing.T) {
 }
 
 func TestNsqInitialize_success(t *testing.T) {
-	app, db := newApp(t)
+	app, pr, _ := newApp(t)
 	fp := newFakeProducer()
 	setProducer(t, func(addr string, cfg *gonsq.Config) (nsqProducer, error) {
 		return fp, nil
@@ -268,7 +282,7 @@ func TestNsqInitialize_success(t *testing.T) {
 	assert.Same(t, fp, s.producer)
 	assert.Equal(t, "127.0.0.1:4150", s.addr)
 	assert.Equal(t, "127.0.0.1:4161", s.lookupdAddr)
-	assert.Same(t, db, s.db)
+	assert.Same(t, pr, s.projectRepo)
 	require.NotNil(t, s.cfg)
 	assert.Equal(t, 10*time.Second, s.cfg.MsgTimeout)
 	assert.Equal(t, 5*time.Second, s.cfg.DialTimeout)
@@ -279,14 +293,14 @@ func TestNsqInitialize_success(t *testing.T) {
 }
 
 func TestNsqInitialize_missing_addr(t *testing.T) {
-	app, _ := newApp(t)
+	app, _, _ := newApp(t)
 	s := &nsqSender{}
 	err := s.Initialize(app, nil)
 	assert.ErrorContains(t, err, "add not exits")
 }
 
 func TestNsqInitialize_producer_error(t *testing.T) {
-	app, _ := newApp(t)
+	app, _, _ := newApp(t)
 	setProducer(t, func(addr string, cfg *gonsq.Config) (nsqProducer, error) {
 		return nil, errors.New("boom")
 	})
@@ -296,7 +310,7 @@ func TestNsqInitialize_producer_error(t *testing.T) {
 }
 
 func TestNsqInitialize_ping_error(t *testing.T) {
-	app, _ := newApp(t)
+	app, _, _ := newApp(t)
 	fp := newFakeProducer()
 	fp.pingErr = errors.New("ping failed")
 	setProducer(t, func(addr string, cfg *gonsq.Config) (nsqProducer, error) {
@@ -309,7 +323,7 @@ func TestNsqInitialize_ping_error(t *testing.T) {
 }
 
 func TestNsqInitialize_invalid_timeout_args(t *testing.T) {
-	app, _ := newApp(t)
+	app, _, _ := newApp(t)
 	fp := newFakeProducer()
 	setProducer(t, func(addr string, cfg *gonsq.Config) (nsqProducer, error) {
 		return fp, nil
@@ -327,7 +341,7 @@ func TestNsqInitialize_invalid_timeout_args(t *testing.T) {
 }
 
 func TestNsqDestroy(t *testing.T) {
-	app, _ := newApp(t)
+	app, _, _ := newApp(t)
 	fp := newFakeProducer()
 	setProducer(t, func(addr string, cfg *gonsq.Config) (nsqProducer, error) {
 		return fp, nil
@@ -438,9 +452,8 @@ func TestPublish_error(t *testing.T) {
 
 func TestJoin(t *testing.T) {
 	fp := newFakeProducer()
-	n := newTestNSQ(fp, "u", "id")
-	n.db = newDB(t)
-	nsID, pid := seedProject(t, n.db, []string{"app=test"})
+	n, db := newTestNSQWithDB(t, fp, "u", "id")
+	nsID, pid := seedProject(t, db, []string{"app=test"})
 
 	var topics []string
 	fc := newFakeConsumer()
@@ -467,9 +480,8 @@ func TestJoin(t *testing.T) {
 
 func TestJoin_reuses_consumer_for_same_channel(t *testing.T) {
 	fp := newFakeProducer()
-	n := newTestNSQ(fp, "u", "id")
-	n.db = newDB(t)
-	nsID, pid := seedProject(t, n.db, []string{"app=test"})
+	n, db := newTestNSQWithDB(t, fp, "u", "id")
+	nsID, pid := seedProject(t, db, []string{"app=test"})
 
 	var created int
 	fc := newFakeConsumer()
@@ -490,16 +502,14 @@ func TestJoin_reuses_consumer_for_same_channel(t *testing.T) {
 
 func TestJoin_unknown_project(t *testing.T) {
 	fp := newFakeProducer()
-	n := newTestNSQ(fp, "u", "id")
-	n.db = newDB(t)
+	n, _ := newTestNSQWithDB(t, fp, "u", "id")
 	assert.Error(t, n.Join(99999))
 }
 
 func TestJoin_consumer_create_error(t *testing.T) {
 	fp := newFakeProducer()
-	n := newTestNSQ(fp, "u", "id")
-	n.db = newDB(t)
-	_, pid := seedProject(t, n.db, []string{"app=test"})
+	n, db := newTestNSQWithDB(t, fp, "u", "id")
+	_, pid := seedProject(t, db, []string{"app=test"})
 
 	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
 		return nil, errors.New("create failed")
@@ -513,9 +523,8 @@ func TestJoin_consumer_create_error(t *testing.T) {
 
 func TestJoin_connect_error(t *testing.T) {
 	fp := newFakeProducer()
-	n := newTestNSQ(fp, "u", "id")
-	n.db = newDB(t)
-	_, pid := seedProject(t, n.db, []string{"app=test"})
+	n, db := newTestNSQWithDB(t, fp, "u", "id")
+	_, pid := seedProject(t, db, []string{"app=test"})
 
 	fc := newFakeConsumer()
 	fc.connectErr = errors.New("connect failed")
@@ -532,9 +541,8 @@ func TestJoin_connect_error(t *testing.T) {
 
 func TestJoin_invalid_selector_skipped(t *testing.T) {
 	fp := newFakeProducer()
-	n := newTestNSQ(fp, "u", "id")
-	n.db = newDB(t)
-	_, pid := seedProject(t, n.db, []string{"!!!!bad"})
+	n, db := newTestNSQWithDB(t, fp, "u", "id")
+	_, pid := seedProject(t, db, []string{"!!!!bad"})
 
 	fc := newFakeConsumer()
 	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
@@ -548,9 +556,8 @@ func TestJoin_invalid_selector_skipped(t *testing.T) {
 
 func TestLeave(t *testing.T) {
 	fp := newFakeProducer()
-	n := newTestNSQ(fp, "u", "id")
-	n.db = newDB(t)
-	nsID, pid := seedProject(t, n.db, []string{"app=test"})
+	n, db := newTestNSQWithDB(t, fp, "u", "id")
+	nsID, pid := seedProject(t, db, []string{"app=test"})
 
 	fc := newFakeConsumer()
 	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
@@ -576,9 +583,8 @@ func TestLeave(t *testing.T) {
 
 func TestLeave_decrements_refcount(t *testing.T) {
 	fp := newFakeProducer()
-	n := newTestNSQ(fp, "u", "id")
-	n.db = newDB(t)
-	nsID, pid := seedProject(t, n.db, []string{"app=test"})
+	n, db := newTestNSQWithDB(t, fp, "u", "id")
+	nsID, pid := seedProject(t, db, []string{"app=test"})
 
 	fc := newFakeConsumer()
 	setConsumer(t, func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
@@ -602,9 +608,8 @@ func TestLeave_decrements_refcount(t *testing.T) {
 
 func TestRun_dispatches_matching_pod_event(t *testing.T) {
 	fp := newFakeProducer()
-	n := newTestNSQ(fp, "u", "id")
-	n.db = newDB(t)
-	nsID, pid := seedProject(t, n.db, []string{"app=test"})
+	n, db := newTestNSQWithDB(t, fp, "u", "id")
+	nsID, pid := seedProject(t, db, []string{"app=test"})
 	sel, err := labels.Parse("app=test")
 	require.NoError(t, err)
 	channel := getNsqProjectEventRoom(int64(nsID))

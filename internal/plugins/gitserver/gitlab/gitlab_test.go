@@ -9,7 +9,6 @@ import (
 
 	"github.com/duc-cnzj/mars/v6/internal/application"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
-	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,9 +20,8 @@ type gitApp struct {
 	logger mlog.Logger
 }
 
-func (g gitApp) Logger() mlog.Logger { return g.logger }
-func (g gitApp) Data() data.Data     { return nil }
-func (g gitApp) Cache() data.Cache   { return nil }
+func (g gitApp) Logger() mlog.Logger          { return g.logger }
+func (g gitApp) ProjectRepo() biz.ProjectRepo { return nil }
 
 // apiHandler 过滤 go-gitlab 首次 Do 时对 /api/v4/ 发送的速率限制探测请求，
 // 确保断言只看到真实的业务 API 调用。

@@ -18,12 +18,18 @@ var (
 	nameCartoon = "picture_cartoon"
 	// urls 候选图片源，随机挑选一个请求。
 	urls = []string{
-		"https://api.btstu.cn/sjbz/?lx=dongman",
 		"https://www.dmoe.cc/random.php",
 	}
 )
 
 var _ application.Picture = (*cartoon)(nil)
+
+// cartoonDeps 是 cartoon 插件的依赖视图：只用 Logger 与 Cache。
+// Cache 是单插件独有能力，不在 PluginApp 公共接口里，经 Resolve 断言取用。
+type cartoonDeps interface {
+	Logger() mlog.Logger
+	Cache() data.Cache
+}
 
 func init() {
 	p := &cartoon{}
@@ -36,11 +42,12 @@ type cartoon struct {
 	logger mlog.Logger
 }
 
-// client 不跟随重定向，通过响应头 Location 拿到最终图片地址。
+// client 不跟随重定向，通过响应头 Location 拿到最终图片地址；带超时避免图源挂起时无限阻塞。
 var client = http.Client{
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	},
+	Timeout: 10 * time.Second,
 }
 
 // newBackOff 默认指数退避；测试可替换为短超时版本，避免失败路径重试 15 分钟。
@@ -92,10 +99,11 @@ func (c *cartoon) Name() string {
 	return nameCartoon
 }
 
-// Initialize 从 PluginApp 注入 cache 与 logger 并输出初始化日志。
+// Initialize 从宽入口 Resolve 出窄依赖视图，注入 cache 与 logger 并输出初始化日志。
 func (c *cartoon) Initialize(app application.PluginApp, args map[string]any) error {
-	c.cache = app.Cache()
-	c.logger = app.Logger()
+	d := application.Resolve[cartoonDeps](app)
+	c.cache = d.Cache()
+	c.logger = d.Logger()
 	c.logger.Info("[Plugin]: " + c.Name() + " plugin Initialize...")
 	return nil
 }

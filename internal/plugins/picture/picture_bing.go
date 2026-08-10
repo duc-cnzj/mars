@@ -111,7 +111,10 @@ func (b *bing) Get(ctx context.Context, random bool) (*application.PictureItem, 
 		}
 		defer get.Body.Close()
 		var response Res
-		all, _ := io.ReadAll(get.Body)
+		all, err := io.ReadAll(get.Body)
+		if err != nil {
+			return nil, err
+		}
 		err = json.Unmarshal(all, &response)
 		if err != nil {
 			return nil, err

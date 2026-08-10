@@ -16,11 +16,6 @@ type defaultDomainManager struct {
 	logger mlog.Logger
 }
 
-// NewDefaultDomainManager 构造一个不接入真实证书/域名的默认实现。
-func NewDefaultDomainManager() application.DomainManager {
-	return &defaultDomainManager{}
-}
-
 // Name 返回插件名 default_domain_manager。
 func (d *defaultDomainManager) Name() string {
 	return "default_domain_manager"

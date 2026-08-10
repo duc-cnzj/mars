@@ -10,8 +10,8 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/util/hasher"
 )
 
-// name 插件注册名。
-var name = "cert-manager_domain_manager"
+// certManagerName 插件注册名。
+const certManagerName = "cert-manager_domain_manager"
 
 var _ application.DomainManager = (*certManager)(nil)
 
@@ -32,37 +32,31 @@ type certManager struct {
 
 // Name 返回插件名 cert-manager_domain_manager。
 func (d *certManager) Name() string {
-	return name
+	return certManagerName
 }
 
 // Initialize 从 args 读取 ns_prefix/cluster_issuer/wildcard_domain，校验必填项后保存。
 func (d *certManager) Initialize(app application.PluginApp, args map[string]any) error {
 	d.logger = app.Logger()
 
-	if p, ok := args["ns_prefix"]; ok {
-		s, ok := p.(string)
-		if !ok {
-			return errors.New("ns_prefix must be string")
-		}
-		d.nsPrefix = s
+	nsPrefix, err := stringArg(args, "ns_prefix")
+	if err != nil {
+		return err
 	}
+	d.nsPrefix = nsPrefix
 
-	if issuer, ok := args["cluster_issuer"]; ok {
-		s, ok := issuer.(string)
-		if !ok {
-			return errors.New("cluster_issuer must be string")
-		}
-		d.clusterIssuer = s
+	clusterIssuer, err := stringArg(args, "cluster_issuer")
+	if err != nil {
+		return err
 	}
+	d.clusterIssuer = clusterIssuer
 
-	if wd, ok := args["wildcard_domain"]; ok {
-		s, ok := wd.(string)
-		if !ok {
-			return errors.New("wildcard_domain must be string")
-		}
-		d.wildcardDomain = s
-		d.domainSuffix = strings.TrimLeft(s, "*.")
+	wildcardDomain, err := stringArg(args, "wildcard_domain")
+	if err != nil {
+		return err
 	}
+	d.wildcardDomain = wildcardDomain
+	d.domainSuffix = strings.TrimLeft(wildcardDomain, "*.")
 
 	if d.clusterIssuer == "" || d.wildcardDomain == "" {
 		return errors.New("cluster_issuer, wildcard_domain required")

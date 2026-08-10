@@ -1,18 +1,19 @@
 package domainmanager
 
 import (
-	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"math/big"
 	"testing"
 	"time"
 
 	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
@@ -20,21 +21,27 @@ import (
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes/fake"
-	corelistersv1 "k8s.io/client-go/listers/core/v1"
 )
 
 // dmApp 是 PluginApp 的最小手写 stub。
 type dmApp struct {
-	data   data.Data
-	logger mlog.Logger
+	k8sRepo biz.K8sRepo
+	logger  mlog.Logger
 }
 
-func (d dmApp) Logger() mlog.Logger { return d.logger }
-func (d dmApp) Data() data.Data     { return d.data }
-func (d dmApp) Cache() data.Cache   { return nil }
+func (d dmApp) Logger() mlog.Logger          { return d.logger }
+func (d dmApp) K8sRepo() biz.K8sRepo         { return d.k8sRepo }
+func (d dmApp) ProjectRepo() biz.ProjectRepo { return nil }
+
+// newSecretRepo 构造 GetSecret 固定返回指定 secret/error 的 MockK8sRepo（命名空间固定 default）。
+func newSecretRepo(t *testing.T, name string, secret *corev1.Secret, err error) *data.MockK8sRepo {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+	kr := data.NewMockK8sRepo(ctrl)
+	kr.EXPECT().GetSecret(gomock.Any(), "default", name).Return(secret, err)
+	return kr
+}
 
 // genCert 生成一个 DNSNames 匹配给定列表的自签名证书，返回 PEM 格式 crt/key。
 func genCert(t *testing.T, dnsNames []string) (crt, key []byte) {
@@ -57,23 +64,6 @@ func genCert(t *testing.T, dnsNames []string) (crt, key []byte) {
 	require.NoError(t, err)
 	key = pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER})
 	return crt, key
-}
-
-// newFakeSecretLister 用 fake clientset + informer 构建一个包含给定 secret 的 SecretLister。
-func newFakeSecretLister(t *testing.T, secret *corev1.Secret) corelistersv1.SecretLister {
-	t.Helper()
-	var objs []runtime.Object
-	if secret != nil {
-		objs = append(objs, secret)
-	}
-	client := fake.NewSimpleClientset(objs...)
-	factory := informers.NewSharedInformerFactory(client, 0)
-	lister := factory.Core().V1().Secrets().Lister()
-	ctx, cancel := context.WithCancel(context.Background())
-	factory.Start(ctx.Done())
-	factory.WaitForCacheSync(ctx.Done())
-	cancel()
-	return lister
 }
 
 // tlsSecret 构造一个 TLS 类型的 k8s secret。
@@ -273,11 +263,6 @@ func TestDefault_Initialize_and_Destroy(t *testing.T) {
 	assert.NoError(t, d.Destroy())
 }
 
-func TestDefault_NewDefaultDomainManager(t *testing.T) {
-	dm := NewDefaultDomainManager()
-	assert.Equal(t, "default_domain_manager", dm.Name())
-}
-
 func TestDefault_GetDomainByIndex(t *testing.T) {
 	d := &defaultDomainManager{}
 	assert.Contains(t, d.GetDomainByIndex("app", "devops-prod", 1, 0), "faker-domain.local")
@@ -391,15 +376,9 @@ func syncSecretArgs() map[string]any {
 func TestSyncSecret_Initialize_valid(t *testing.T) {
 	crt, key := genCert(t, []string{"*.example.com"})
 	secret := tlsSecret("tls-secret", "default", crt, key)
-	lister := newFakeSecretLister(t, secret)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	md := data.NewMockData(ctrl)
-	md.EXPECT().K8sClient().Return(&data.K8sClient{SecretLister: lister})
 
 	d := &syncSecretDomainManager{}
-	err := d.Initialize(dmApp{data: md, logger: mlog.NewForConfig(nil)}, syncSecretArgs())
+	err := d.Initialize(dmApp{k8sRepo: newSecretRepo(t, "tls-secret", secret, nil), logger: mlog.NewForConfig(nil)}, syncSecretArgs())
 	require.NoError(t, err)
 	assert.Equal(t, "devops-", d.nsPrefix)
 	assert.Equal(t, "default", d.secretNamespace)
@@ -409,19 +388,13 @@ func TestSyncSecret_Initialize_valid(t *testing.T) {
 
 func TestSyncSecret_Initialize_missing_required(t *testing.T) {
 	d := &syncSecretDomainManager{}
-	err := d.Initialize(dmApp{data: data.NewMockData(gomock.NewController(t)), logger: mlog.NewForConfig(nil)}, map[string]any{})
+	err := d.Initialize(dmApp{logger: mlog.NewForConfig(nil)}, map[string]any{})
 	assert.ErrorContains(t, err, "secret_namespace, secret_name, wildcard_domain required")
 }
 
 func TestSyncSecret_Initialize_secret_not_found(t *testing.T) {
-	lister := newFakeSecretLister(t, nil)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	md := data.NewMockData(ctrl)
-	md.EXPECT().K8sClient().Return(&data.K8sClient{SecretLister: lister})
-
 	d := &syncSecretDomainManager{}
-	err := d.Initialize(dmApp{data: md, logger: mlog.NewForConfig(nil)}, syncSecretArgs())
+	err := d.Initialize(dmApp{k8sRepo: newSecretRepo(t, "tls-secret", nil, errors.New("secret not found")), logger: mlog.NewForConfig(nil)}, syncSecretArgs())
 	assert.Error(t, err)
 }
 
@@ -435,41 +408,28 @@ func TestSyncSecret_Initialize_wrong_secret_type(t *testing.T) {
 			"tls.key": key,
 		},
 	}
-	lister := newFakeSecretLister(t, secret)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	md := data.NewMockData(ctrl)
-	md.EXPECT().K8sClient().Return(&data.K8sClient{SecretLister: lister})
 
 	d := &syncSecretDomainManager{}
-	err := d.Initialize(dmApp{data: md, logger: mlog.NewForConfig(nil)}, syncSecretArgs())
+	err := d.Initialize(dmApp{k8sRepo: newSecretRepo(t, "tls-secret", secret, nil), logger: mlog.NewForConfig(nil)}, syncSecretArgs())
 	assert.ErrorContains(t, err, "secret not verified")
 }
 
 func TestSyncSecret_Initialize_cert_mismatch(t *testing.T) {
 	crt, key := genCert(t, []string{"*.other.com"})
 	secret := tlsSecret("tls-secret", "default", crt, key)
-	lister := newFakeSecretLister(t, secret)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	md := data.NewMockData(ctrl)
-	md.EXPECT().K8sClient().Return(&data.K8sClient{SecretLister: lister})
 
 	d := &syncSecretDomainManager{}
-	err := d.Initialize(dmApp{data: md, logger: mlog.NewForConfig(nil)}, syncSecretArgs())
+	err := d.Initialize(dmApp{k8sRepo: newSecretRepo(t, "tls-secret", secret, nil), logger: mlog.NewForConfig(nil)}, syncSecretArgs())
 	assert.ErrorContains(t, err, "域名和证书不匹配")
 }
 
 func TestSyncSecret_Initialize_bad_type(t *testing.T) {
-	// 类型校验发生在 K8sClient 调用之前，故无需设置 K8sClient 期望。
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	md := data.NewMockData(ctrl)
+	// 类型校验发生在 GetSecret 调用之前，故无需设置 GetSecret 期望。
+	d := &syncSecretDomainManager{}
 
 	for k, v := range map[string]any{"ns_prefix": 1, "secret_namespace": 2, "secret_name": 3, "wildcard_domain": 4} {
-		d := &syncSecretDomainManager{}
 		args := map[string]any{"secret_namespace": "default", "secret_name": "tls-secret", "wildcard_domain": "*.example.com", k: v}
-		err := d.Initialize(dmApp{data: md, logger: mlog.NewForConfig(nil)}, args)
+		err := d.Initialize(dmApp{logger: mlog.NewForConfig(nil)}, args)
 		assert.ErrorContains(t, err, "must be string")
 	}
 }
@@ -494,15 +454,9 @@ func TestSyncSecret_GetCertSecretName_and_issuer(t *testing.T) {
 func TestSyncSecret_GetCerts_success(t *testing.T) {
 	crt, key := genCert(t, []string{"*.example.com"})
 	secret := tlsSecret("tls-secret", "default", crt, key)
-	lister := newFakeSecretLister(t, secret)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	md := data.NewMockData(ctrl)
-	md.EXPECT().K8sClient().Return(&data.K8sClient{SecretLister: lister})
 
 	d := &syncSecretDomainManager{
-		data:            md,
+		k8sRepo:         newSecretRepo(t, "tls-secret", secret, nil),
 		secretNamespace: "default",
 		secretName:      "tls-secret",
 		logger:          mlog.NewForConfig(nil),
@@ -515,15 +469,9 @@ func TestSyncSecret_GetCerts_success(t *testing.T) {
 }
 
 func TestSyncSecret_GetCerts_read_error(t *testing.T) {
-	// 空 lister：Get 失败 → 返回空三元组。
-	lister := newFakeSecretLister(t, nil)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	md := data.NewMockData(ctrl)
-	md.EXPECT().K8sClient().Return(&data.K8sClient{SecretLister: lister})
-
+	// GetSecret 失败 → 返回空三元组。
 	d := &syncSecretDomainManager{
-		data:            md,
+		k8sRepo:         newSecretRepo(t, "missing", nil, errors.New("secret not found")),
 		secretNamespace: "default",
 		secretName:      "missing",
 		logger:          mlog.NewForConfig(nil),

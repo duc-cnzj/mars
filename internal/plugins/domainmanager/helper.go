@@ -6,6 +6,21 @@ import (
 	"fmt"
 )
 
+// stringArg 从 args 读取 key 对应的字符串参数；key 缺失返回空串与 nil，
+// 存在但类型不符返回错误。manual/certmanager/syncsecret 三个插件共用。
+// 缺失与空串赋值等价（调用方结构体字段初始即零值），故无需返回 ok 布尔。
+func stringArg(args map[string]any, key string) (string, error) {
+	v, ok := args[key]
+	if !ok {
+		return "", nil
+	}
+	s, ok := v.(string)
+	if !ok {
+		return "", fmt.Errorf("%s must be string", key)
+	}
+	return s, nil
+}
+
 // validateTLSWildcardDomain 校验 tlsKey/tlsCrt 组成的证书里，DNSNames 是否包含 wildcardDomain。
 func validateTLSWildcardDomain[T []byte | string](tlsKey T, tlsCrt T, wildcardDomain string) error {
 	var (

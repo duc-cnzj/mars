@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -14,7 +16,6 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -22,13 +23,12 @@ import (
 
 // fakeApp 是 PluginApp 的最小 stub，供 Initialize 测试使用。
 type fakeApp struct {
-	data   data.Data
-	logger mlog.Logger
+	projectRepo biz.ProjectRepo
+	logger      mlog.Logger
 }
 
-func (f fakeApp) Logger() mlog.Logger { return f.logger }
-func (f fakeApp) Data() data.Data     { return f.data }
-func (f fakeApp) Cache() data.Cache   { return nil }
+func (f fakeApp) Logger() mlog.Logger          { return f.logger }
+func (f fakeApp) ProjectRepo() biz.ProjectRepo { return f.projectRepo }
 
 func newDB(t *testing.T) *ent.Client {
 	t.Helper()
@@ -59,13 +59,20 @@ func testPod() *v1.Pod {
 	}
 }
 
+// newTestRepo 构造绑定指定 ent DB 的真实 ProjectRepo。
+func newTestRepo(t *testing.T, db *ent.Client) biz.ProjectRepo {
+	t.Helper()
+	impl := data.NewDataImpl(&data.NewDataParams{Cfg: &config.Config{}, DB: db})
+	return data.NewProjectRepo(mlog.NewForConfig(nil), impl)
+}
+
 // newPEM 构造连接 miniredis 的 podEventManagers，测试结束自动关闭。
 func newPEM(t *testing.T, mr *miniredis.Miniredis, db *ent.Client) *podEventManagers {
 	t.Helper()
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr(), DB: 1})
 	t.Cleanup(func() { _ = rdb.Close() })
 	return &podEventManagers{
-		db:           db,
+		projectRepo:  newTestRepo(t, db),
 		logger:       mlog.NewForConfig(nil),
 		id:           "id-1",
 		uid:          "u-1",
@@ -87,14 +94,10 @@ func TestRedisName(t *testing.T) {
 
 func TestRedisInitialize_success(t *testing.T) {
 	mr := miniredis.RunT(t)
-	db := newDB(t)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	md := data.NewMockData(ctrl)
-	md.EXPECT().DB().Return(db)
+	pr := newTestRepo(t, newDB(t))
 
 	s := &redisSender{}
-	err := s.Initialize(fakeApp{data: md, logger: mlog.NewForConfig(nil)}, map[string]any{
+	err := s.Initialize(fakeApp{projectRepo: pr, logger: mlog.NewForConfig(nil)}, map[string]any{
 		"addr":     mr.Addr(),
 		"password": "",
 		"db":       1,
@@ -104,7 +107,7 @@ func TestRedisInitialize_success(t *testing.T) {
 	assert.NotNil(t, s.subs)
 	assert.NotNil(t, s.wsPubSub)
 	assert.NotNil(t, s.msgCh)
-	assert.Same(t, db, s.db)
+	assert.Same(t, pr, s.projectRepo)
 	require.NoError(t, s.Destroy())
 }
 
@@ -115,14 +118,8 @@ func TestRedisInitialize_missing_addr(t *testing.T) {
 }
 
 func TestRedisInitialize_bad_addr(t *testing.T) {
-	db := newDB(t)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	md := data.NewMockData(ctrl)
-	md.EXPECT().DB().Return(db)
-
 	s := &redisSender{}
-	err := s.Initialize(fakeApp{data: md, logger: mlog.NewForConfig(nil)}, map[string]any{
+	err := s.Initialize(fakeApp{logger: mlog.NewForConfig(nil)}, map[string]any{
 		"addr": "127.0.0.1:1", // 连接拒绝 → Ping 失败
 	})
 	assert.Error(t, err)
@@ -130,11 +127,6 @@ func TestRedisInitialize_bad_addr(t *testing.T) {
 
 func TestRedisInitialize_subscribe_error(t *testing.T) {
 	mr := miniredis.RunT(t)
-	db := newDB(t)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	md := data.NewMockData(ctrl)
-	md.EXPECT().DB().Return(db)
 
 	orig := wsSubscribe
 	wsSubscribe = func(*redis.PubSub, context.Context, string) error {
@@ -143,7 +135,7 @@ func TestRedisInitialize_subscribe_error(t *testing.T) {
 	t.Cleanup(func() { wsSubscribe = orig })
 
 	s := &redisSender{}
-	err := s.Initialize(fakeApp{data: md, logger: mlog.NewForConfig(nil)}, map[string]any{"addr": mr.Addr()})
+	err := s.Initialize(fakeApp{logger: mlog.NewForConfig(nil)}, map[string]any{"addr": mr.Addr()})
 	assert.Error(t, err)
 }
 
@@ -361,6 +353,24 @@ func TestPodEventRun_malformed_json(t *testing.T) {
 
 	// 合法频道但 payload 非法 JSON：Run 记日志后继续，不 panic。
 	require.NoError(t, pem.rds.Publish(context.TODO(), channel, "not-json").Err())
+	time.Sleep(100 * time.Millisecond)
+}
+
+func TestPodEventRun_nil_pod_skipped(t *testing.T) {
+	mr := miniredis.RunT(t)
+	db := newDB(t)
+	nsID, pid := seedProject(t, db, []string{"app=test"})
+	pem := newPEM(t, mr, db)
+	channel := wssender.GetProjectPodEventRoom(nsID)
+	require.NoError(t, pem.Join(int64(pid)))
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+	go func() { _ = pem.Run(ctx) }()
+	time.Sleep(100 * time.Millisecond)
+
+	// 合法 JSON 但缺 pod 字段（反序列化为 nil Pod）：Run 应跳过不 panic。
+	require.NoError(t, pem.rds.Publish(context.TODO(), channel, `{"channel":""}`).Err())
 	time.Sleep(100 * time.Millisecond)
 }
 

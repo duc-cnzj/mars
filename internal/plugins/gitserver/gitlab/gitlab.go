@@ -12,8 +12,8 @@ import (
 
 var _ application.GitServer = (*server)(nil)
 
-// name 插件注册名。
-var name = "gitlab"
+// gitlabName 插件注册名。
+const gitlabName = "gitlab"
 
 func init() {
 	dr := &server{}
@@ -109,7 +109,7 @@ type server struct {
 
 // Name 返回插件名 gitlab。
 func (g *server) Name() string {
-	return name
+	return gitlabName
 }
 
 // Initialize 从 args 读取 token/baseurl/http_proxy，校验必填项后创建 go-gitlab 客户端。
@@ -297,7 +297,7 @@ func (g *server) GetFileContentWithBranch(pid string, branch string, filename st
 }
 
 // getDirectoryFiles 分页遍历仓库目录树，收集所有 blob 类型文件路径。
-func getDirectoryFiles(g *gitlab.Client, pid any, commit string, path string, recursive bool) ([]string, error) {
+func getDirectoryFiles(g *gitlab.Client, pid string, commit string, path string, recursive bool) ([]string, error) {
 	var files []string
 
 	opt := &gitlab.ListTreeOptions{

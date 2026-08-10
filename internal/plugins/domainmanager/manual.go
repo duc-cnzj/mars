@@ -39,37 +39,30 @@ func (m *manualDomainManager) Name() string {
 func (m *manualDomainManager) Initialize(app application.PluginApp, args map[string]any) error {
 	m.logger = app.Logger()
 
-	if p, ok := args["ns_prefix"]; ok {
-		s, ok := p.(string)
-		if !ok {
-			return errors.New("ns_prefix must be string")
-		}
-		m.nsPrefix = s
+	nsPrefix, err := stringArg(args, "ns_prefix")
+	if err != nil {
+		return err
 	}
+	m.nsPrefix = nsPrefix
 
-	if p, ok := args["tls_crt"]; ok {
-		s, ok := p.(string)
-		if !ok {
-			return errors.New("tls_crt must be string")
-		}
-		m.tlsCrt = s
+	tlsCrt, err := stringArg(args, "tls_crt")
+	if err != nil {
+		return err
 	}
+	m.tlsCrt = tlsCrt
 
-	if p, ok := args["tls_key"]; ok {
-		s, ok := p.(string)
-		if !ok {
-			return errors.New("tls_key must be string")
-		}
-		m.tlsKey = s
+	tlsKey, err := stringArg(args, "tls_key")
+	if err != nil {
+		return err
 	}
-	if wd, ok := args["wildcard_domain"]; ok {
-		s, ok := wd.(string)
-		if !ok {
-			return errors.New("wildcard_domain must be string")
-		}
-		m.wildcardDomain = s
-		m.domainSuffix = strings.TrimLeft(s, "*.")
+	m.tlsKey = tlsKey
+
+	wildcardDomain, err := stringArg(args, "wildcard_domain")
+	if err != nil {
+		return err
 	}
+	m.wildcardDomain = wildcardDomain
+	m.domainSuffix = strings.TrimLeft(wildcardDomain, "*.")
 	if m.tlsKey == "" || m.tlsCrt == "" || m.wildcardDomain == "" {
 		return errors.New("tls_crt, tls_key, wildcard_domain required")
 	}

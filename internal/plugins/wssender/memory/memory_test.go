@@ -9,12 +9,13 @@ import (
 	"time"
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -26,7 +27,7 @@ import (
 
 func newTestSender() *memorySender {
 	return &memorySender{
-		conns:   make(map[string]*Conn),
+		conns:   make(map[string]*conn),
 		idRooms: make(map[string]map[int32]struct{}),
 		rooms:   make(namespaceRooms),
 		logger:  mlog.NewForConfig(nil),
@@ -558,13 +559,12 @@ func TestInitRegistration(t *testing.T) {
 
 // fakeApp 是 PluginApp 的最小手写 stub，供 Initialize 测试使用。
 type fakeApp struct {
-	data   data.Data
-	logger mlog.Logger
+	projectRepo biz.ProjectRepo
+	logger      mlog.Logger
 }
 
-func (f fakeApp) Logger() mlog.Logger { return f.logger }
-func (f fakeApp) Data() data.Data     { return f.data }
-func (f fakeApp) Cache() data.Cache   { return nil }
+func (f fakeApp) Logger() mlog.Logger          { return f.logger }
+func (f fakeApp) ProjectRepo() biz.ProjectRepo { return f.projectRepo }
 
 // newDB 打开一个内存 sqlite ent 客户端，并在测试结束时关闭。
 func newDB(t *testing.T) *ent.Client {
@@ -574,6 +574,13 @@ func newDB(t *testing.T) *ent.Client {
 	require.NoError(t, db.Schema.Create(context.TODO()))
 	t.Cleanup(func() { _ = db.Close() })
 	return db
+}
+
+// newTestRepo 构造绑定指定 ent DB 的真实 ProjectRepo。
+func newTestRepo(t *testing.T, db *ent.Client) biz.ProjectRepo {
+	t.Helper()
+	impl := data.NewDataImpl(&data.NewDataParams{Cfg: &config.Config{}, DB: db})
+	return data.NewProjectRepo(mlog.NewForConfig(nil), impl)
 }
 
 // seedProject 创建 namespace + project 并返回 projectID。
@@ -587,19 +594,16 @@ func seedProject(t *testing.T, db *ent.Client, selectors []string) int {
 
 func TestInitialize_sets_maps_and_db(t *testing.T) {
 	db := newDB(t)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	md := data.NewMockData(ctrl)
-	md.EXPECT().DB().Return(db)
+	pr := newTestRepo(t, db)
 
 	ms := &memorySender{}
-	err := ms.Initialize(fakeApp{data: md, logger: mlog.NewForConfig(nil)}, nil)
+	err := ms.Initialize(fakeApp{projectRepo: pr, logger: mlog.NewForConfig(nil)}, nil)
 	require.NoError(t, err)
 
 	assert.NotNil(t, ms.conns)
 	assert.NotNil(t, ms.idRooms)
 	assert.NotNil(t, ms.rooms)
-	assert.Same(t, db, ms.db)
+	assert.Same(t, pr, ms.projectRepo)
 	assert.NotNil(t, ms.logger)
 }
 
@@ -620,7 +624,7 @@ func TestJoin_registers_room_and_selectors(t *testing.T) {
 
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
-	pub.db = db
+	pub.projectRepo = newTestRepo(t, db)
 
 	require.NoError(t, pub.Join(int64(pid)))
 
@@ -640,7 +644,7 @@ func TestJoin_invalid_selector_is_skipped(t *testing.T) {
 
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
-	pub.db = db
+	pub.projectRepo = newTestRepo(t, db)
 
 	// 非法 selector 被跳过、不报错，房间仍以空选择器登记。
 	require.NoError(t, pub.Join(int64(pid)))
@@ -655,7 +659,7 @@ func TestJoin_unknown_project_returns_error(t *testing.T) {
 	db := newDB(t)
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
-	pub.db = db
+	pub.projectRepo = newTestRepo(t, db)
 
 	assert.Error(t, pub.Join(99999))
 }
@@ -700,6 +704,13 @@ func TestPublish_skips_conn_not_in_conns(t *testing.T) {
 	pod.Labels = map[string]string{"app": "test"}
 	// 不应 panic，返回 nil。
 	assert.NoError(t, pub.Publish(1, pod))
+}
+
+func TestPublish_nil_pod_returns_nil(t *testing.T) {
+	ms := newTestSender()
+	pub := ms.New("u", "id").(*memoryPubSub)
+	// 契约允许 nil Pod（runner_test 验证 nil-safe），应直接返回 nil 而非解引用 panic。
+	assert.NoError(t, pub.Publish(1, nil))
 }
 
 func TestClose_cleans_up_rooms(t *testing.T) {
