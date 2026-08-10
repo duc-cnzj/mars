@@ -58,7 +58,11 @@ func TestNewForConfigNilConfig(t *testing.T) {
 }
 
 // TestNewForConfigErrorStack 端到端断言：NewForConfig 返回的包裹实例
-// 打 pkg/errors 栈错误时，输出包含完整起源栈（%+v 展开 root/outer）。
+// 打 pkg/errors 栈错误时，输出包含完整起源栈（%+v 展开）。
+// 断言分两层：消息链（root/outer）是 err.Error() 也能满足的弱断言；
+// 调用函数名 TestNewForConfigErrorStack 只出现在 %+v 栈帧（zap 的 file 字段
+// 是 文件:行、不含函数名）——去掉 formatError 的 fmt.Formatter 分支后此断言
+// 必失败，锁死"错误日志带完整栈"的回归。
 func TestNewForConfigErrorStack(t *testing.T) {
 	out := captureZapOutput(t, func(logger Logger) {
 		NewForConfig(&config.Config{LogChannel: "zap", Debug: true}).
@@ -66,6 +70,7 @@ func TestNewForConfigErrorStack(t *testing.T) {
 	})
 	assert.Contains(t, out, "root")
 	assert.Contains(t, out, "outer")
+	assert.Contains(t, out, "TestNewForConfigErrorStack", "%+v 完整起源栈应含调用函数名，而非仅 Error() 消息")
 }
 
 // captureOutput 在 logger 构造窗口内重定向 stdout/stderr，返回捕获的日志输出。
@@ -112,12 +117,17 @@ func TestNewLogWrapper_CallerPointsToCallSite(t *testing.T) {
 }
 
 // formatError 对 pkg/errors（fmt.Formatter）用 %+v 打出完整堆栈。
+// 栈帧断言（函数名 TestErrorLogWrapper_Error_PkgErrorsStack）验证 %+v 真实生效：
+// 只查 root/outer 消息子串时，即使 formatError 退化为 err.Error() 测试也通过
+// （两者都含这俩子串）；函数名只出现在 %+v 栈帧，不出现于 zap 的 file 字段
+// （file 字段是调用点 文件:行，无函数名），故是栈存在的唯一可断言签名。
 func TestErrorLogWrapper_Error_PkgErrorsStack(t *testing.T) {
 	out := captureZapOutput(t, func(logger Logger) {
 		NewLogWrapper(logger).Error("boom", pkgErrors.Wrap(errors.New("root"), "outer"))
 	})
 	assert.Contains(t, out, "outer")
 	assert.Contains(t, out, "root")
+	assert.Contains(t, out, "TestErrorLogWrapper_Error_PkgErrorsStack", "完整起源栈应包含调用函数栈帧（%+v），而非仅错误消息")
 }
 
 // formatError 对标准库 error（非 Formatter）退回 Error()，不丢信息也不崩溃。
@@ -167,6 +177,7 @@ func TestErrorLogWrapper_NoZapDuplicateStacktrace(t *testing.T) {
 	})
 	assert.Contains(t, out, "root", "pkg/errors 完整起源栈应打印")
 	assert.Contains(t, out, "outer")
+	assert.Contains(t, out, "TestErrorLogWrapper_NoZapDuplicateStacktrace", "pkg/errors 完整起源栈应含调用函数栈帧（%+v 生效）")
 	assert.NotContains(t, out, `"stacktrace"`, "不得附加 zap 自动运行时栈（与 %+v 重复）")
 }
 
@@ -379,6 +390,13 @@ func TestEvalValuers(t *testing.T) {
 	assert.Equal(t, map[string]any{"static": "v", "named": "n", "inline": "i"}, fields)
 }
 
+// TestEvalValuers_OddLengthDropsDanglingKey 锁定奇数长度 kvs 的边界：最后的悬空
+// key 无配对 value 时静默丢弃，不 panic 不落字段（约定调用方传偶数 kvs）。
+func TestEvalValuers_OddLengthDropsDanglingKey(t *testing.T) {
+	fields := evalValuers([]any{"a", 1, "b", 2, "dangling"}, context.Background())
+	assert.Equal(t, map[string]any{"a": 1, "b": 2}, fields, "悬空 key 应静默丢弃")
+}
+
 // With 包住不实现 CallerSkipAdjuster 的 logger（如 mock）：静默跳过补偿，返回 wrapper。
 func TestWith_BareLoggerNoCallerSkipAdjuster(t *testing.T) {
 	m := gomock.NewController(t)
@@ -436,6 +454,9 @@ func TestHandlePanic_InterfaceDeferRecovers(t *testing.T) {
 // TestPanicStackGrowth 制造深栈触发 panicStack 的"截断→倍增"分支：起始缓冲仅
 // 5KB，深递归 goroutine 栈远超此量，runtime.Stack 首次必然截断，panicStack 必须
 // 翻倍缓冲直至抓全（P0：深层 goroutine 的 panic 日志不能因缓冲不足丢栈）。
+// 承重断言在栈底帧 testing.tRunner：runtime.Stack 从栈顶（最内层帧）写起，5KB
+// 截断只切栈底，panicStack/TestPanicStackGrowth 两帧在栈顶 5KB 内必在——只查它俩
+// 时去掉倍增逻辑测试仍通过（实锤变异可存活）；tRunner 是最外层帧，仅完整缓冲才有。
 func TestPanicStackGrowth(t *testing.T) {
 	var deep func(n int) []byte
 	deep = func(n int) []byte {
@@ -447,4 +468,5 @@ func TestPanicStackGrowth(t *testing.T) {
 	out := string(deep(20000)) // 约数 MB 栈，远超 5KB 起始缓冲
 	assert.Contains(t, out, "panicStack")
 	assert.Contains(t, out, "TestPanicStackGrowth")
+	assert.Contains(t, out, "testing.tRunner", "倍增必须抓全深栈到最外层 tRunner 帧，而非只留栈顶 5KB")
 }

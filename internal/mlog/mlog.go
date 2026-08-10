@@ -126,6 +126,7 @@ func SpanID() Valuer {
 // 同时接受未命名闭包 func(context.Context) any（main 里内联写的字段来源）：
 // 定义类型 Valuer 与未命名函数字面量非同一类型，val.(Valuer) 断言不到内联闭包，
 // 必须再兜底一层 func(ctx)any 断言（实测验证：named assert OK / unnamed FAIL）。
+// kvs 为奇数长度时，最后悬空的 key 无配对 value，静默丢弃（约定调用方传偶数 kvs）。
 func evalValuers(kvs []any, ctx context.Context) map[string]any {
 	var fields map[string]any
 	for i := 0; i+1 < len(kvs); i += 2 {
