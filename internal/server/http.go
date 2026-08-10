@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/duc-cnzj/mars/v5/frontend"
-	"github.com/duc-cnzj/mars/v5/internal/application"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/server/middlewares"
+	"github.com/duc-cnzj/mars/v6/frontend"
+	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/server/middlewares"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -40,7 +40,9 @@ type apiGateway struct {
 	newServerFunc func(ctx context.Context, a *apiGateway) (HttpServer, error)
 }
 
-func NewApiGateway(endpoint string, app application.App) application.Server {
+// NewApiGateway 构建 HTTP api-gateway 启动器：grpc-gateway 承载 API、gorilla/mux 承载
+// 前端与 websocket 路由，端口取自 app.Config().AppPort。返回实现 application.Server。
+func NewApiGateway(endpoint string, app application.ServerDeps) application.Server {
 	return &apiGateway{
 		endpoint:      endpoint,
 		port:          app.Config().AppPort,
@@ -51,6 +53,8 @@ func NewApiGateway(endpoint string, app application.App) application.Server {
 	}
 }
 
+// Run 启动 HTTP 网关：先装配服务（initServer），再启动集群健康检查协程与
+// ListenAndServe 协程（后者遇非 ErrServerClosed 错误时打 Error 日志，正常关闭不报错）。
 func (a *apiGateway) Run(ctx context.Context) error {
 	s, err := a.newServerFunc(ctx, a)
 	if err != nil {
@@ -71,19 +75,39 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	return nil
 }
 
+// Shutdown 优雅停止 HTTP 网关：先停业务 handler（含 websocket 面），再停底层 http server。
 func (a *apiGateway) Shutdown(ctx context.Context) error {
 	a.logger.Info("[Server]: shutdown api-gateway runner.")
 	a.handler.Shutdown(ctx)
 	return a.server.Shutdown(ctx)
 }
 
-// FilterMethods
-// 不会记录metadata(错误之类的)，但是有一条记录
+// FilterMethods 是跳过指标追踪的 gRPC 流方法白名单：这些长连接方法不记录 metadata
+// （错误之类），但保有一条访问日志，避免 Trace/指标被高频流冲刷。
 var FilterMethods = map[string]struct{}{
 	"/metrics.Metrics/StreamTopPod":           {},
 	"/container.Container/StreamContainerLog": {},
 }
 
+// shouldTagRPC 决定 gRPC 调用是否计入 OpenTelemetry 统计：命中 FilterMethods 白名单的
+// 长连接流方法不计入（避免高频流冲刷 metrics/trace），其余返回 true。false 分支打一条
+// Debugf 便于观测该调用为何被跳过。
+func (a *apiGateway) shouldTagRPC(info *stats.RPCTagInfo) bool {
+	_, ok := FilterMethods[info.FullMethodName]
+	a.logger.Debugf("%v\t%v", info.FullMethodName, !ok)
+	return !ok
+}
+
+// setNosniff 是 grpc-gateway 的 ForwardResponseOption：每个 REST 响应补上
+// X-Content-Type-Options: nosniff，禁止浏览器嗅探响应类型（防内容类型混淆）。
+func (a *apiGateway) setNosniff(ctx context.Context, writer http.ResponseWriter, message proto.Message) error {
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
+	return nil
+}
+
+// initServer 装配 HTTP 网关：构建 grpc-gateway ServeMux（headers/forward/JSON 编解码）、
+// grpc 拨号选项（OpenTelemetry 过滤、最大接收消息）、注册 API 路由/文件/ws/swagger/前端路由，
+// 最终用中间件链 + otelhttp 包裹返回可启动的 http.Server。
 func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 	router := mux.NewRouter()
 
@@ -91,10 +115,7 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 		runtime.WithUnescapingMode(runtime.UnescapingModeAllExceptSlash),
 		runtime.WithOutgoingHeaderMatcher(headerMatcher),
 		runtime.WithIncomingHeaderMatcher(headerMatcher),
-		runtime.WithForwardResponseOption(func(ctx context.Context, writer http.ResponseWriter, message proto.Message) error {
-			writer.Header().Set("X-Content-Type-Options", "nosniff")
-			return nil
-		}),
+		runtime.WithForwardResponseOption(a.setNosniff),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
 				UseEnumNumbers:  false,
@@ -108,11 +129,7 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 
 	opts := []grpc.DialOption{
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler(
-			otelgrpc.WithFilter(func(info *stats.RPCTagInfo) bool {
-				_, ok := FilterMethods[info.FullMethodName]
-				a.logger.Debugf("%v\t%v", info.FullMethodName, !ok)
-				return !ok
-			}),
+			otelgrpc.WithFilter(a.shouldTagRPC),
 		)),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxRecvMsgSize)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -158,6 +175,7 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 
 type middlewareList []func(logger mlog.Logger, handler http.Handler) http.Handler
 
+// Wrap 把中间件列表按逆序套在外层（最后一个先执行）：空列表直接返回原 handler。
 func (m middlewareList) Wrap(logger mlog.Logger, r http.Handler) (h http.Handler) {
 	if len(m) == 0 {
 		return r
@@ -169,6 +187,8 @@ func (m middlewareList) Wrap(logger mlog.Logger, r http.Handler) (h http.Handler
 	return
 }
 
+// headerMatcher 决定 gRPC-gateway 出入站 header 映射：trace 相关 header（traceparent/
+// tracestate）白名单放行，其余回落到 runtime.DefaultHeaderMatcher 默认行为。
 func headerMatcher(key string) (string, bool) {
 	key = strings.ToLower(key)
 	switch key {

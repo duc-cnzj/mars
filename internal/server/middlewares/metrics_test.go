@@ -5,14 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/v5/internal/auth"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 )
 
 func TestMetricsServerInterceptor(t *testing.T) {
-	ctx := auth.SetUser(context.TODO(), &auth.UserInfo{
+	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{
 		Name: "duc",
 	})
 	res, err := MetricsServerInterceptor(mlog.NewForConfig(nil))(ctx, nil, &grpc.UnaryServerInfo{FullMethod: "/api/xxx"}, func(ctx context.Context, req any) (any, error) {
@@ -37,7 +37,7 @@ func (s *sstream) Context() context.Context {
 }
 
 func TestMetricsStreamServerInterceptor(t *testing.T) {
-	ctx := auth.SetUser(context.TODO(), &auth.UserInfo{
+	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{
 		Name: "duc",
 	})
 	err := MetricsStreamServerInterceptor(mlog.NewForConfig(nil))(nil, &sstream{ctx: ctx}, &grpc.StreamServerInfo{FullMethod: "/api/xx"}, func(srv any, stream grpc.ServerStream) error {

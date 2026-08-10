@@ -5,30 +5,29 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/v5/internal/auth"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 )
 
 func TestGetUser(t *testing.T) {
-	_, err := auth.GetUser(context.TODO())
+	_, err := biz.GetUser(context.TODO())
 	assert.Error(t, err)
 
-	ctx := auth.SetUser(context.TODO(), &auth.UserInfo{
+	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{
 		Name: "duc",
 	})
-	user, err := auth.GetUser(ctx)
+	user, err := biz.GetUser(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, "duc", user.Name)
 }
 
 func TestMustGetUser(t *testing.T) {
-	user := auth.MustGetUser(context.TODO())
-	assert.Nil(t, user)
-	ctx := auth.SetUser(context.TODO(), &auth.UserInfo{
+	assert.Panics(t, func() { biz.MustGetUser(context.TODO()) })
+	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{
 		Name: "duc",
 	})
-	user = auth.MustGetUser(ctx)
+	user := biz.MustGetUser(ctx)
 	assert.Equal(t, "duc", user.Name)
 }
 

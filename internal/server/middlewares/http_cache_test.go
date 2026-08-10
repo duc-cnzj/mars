@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/util/hash"
-	"github.com/duc-cnzj/mars/v5/internal/version"
+	"github.com/duc-cnzj/mars/v6/internal/util/hasher"
+	"github.com/duc-cnzj/mars/v6/internal/version"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,5 +41,5 @@ func Test_setEtag(t *testing.T) {
 		BuildDate: time.Now().Format("2006-01-02T15:04:05Z"),
 	}
 	setEtag(v)
-	assert.Equal(t, hash.Hash(fmt.Sprintf("%s-%s", v.GitCommit, v.BuildDate)), Etag)
+	assert.Equal(t, hasher.Hash(fmt.Sprintf("%s-%s", v.GitCommit, v.BuildDate)), Etag)
 }

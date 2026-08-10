@@ -65,7 +65,7 @@ func (s *ss) SetTrailer(md metadata.MD) {
 }
 
 func (s *ss) Context() context.Context {
-	return nil
+	return context.TODO()
 }
 
 func (s *ss) SendMsg(m any) error {

@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/duc-cnzj/mars/api/v5/namespace"
+	"github.com/duc-cnzj/mars/api/v6/proto/namespace"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"go.uber.org/mock/gomock"
 )
 

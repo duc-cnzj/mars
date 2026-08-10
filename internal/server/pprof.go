@@ -6,8 +6,8 @@ import (
 	"net/http/pprof"
 	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/application"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 )
 
 type pprofRunner struct {
@@ -15,6 +15,8 @@ type pprofRunner struct {
 	logger mlog.Logger
 }
 
+// NewPprofRunner 构建 pprof 传输层启动器：在 localhost:6060 暴露 Go 性能剖析端点，
+// 仅本机可访问，用于生产定位 CPU/内存/阻塞问题。返回 application.Server。
 func NewPprofRunner(logger mlog.Logger) application.Server {
 	return &pprofRunner{
 		logger: logger.WithModule("server/pprofRunner"),
@@ -25,6 +27,7 @@ func NewPprofRunner(logger mlog.Logger) application.Server {
 		}}
 }
 
+// Run 启动 pprof 服务：goroutine 内 ListenAndServe，非正常关闭的错误才记录。
 func (p *pprofRunner) Run(ctx context.Context) error {
 	p.logger.Info("[Server]: start pprofRunner runner.")
 	go func() {
@@ -37,6 +40,7 @@ func (p *pprofRunner) Run(ctx context.Context) error {
 	return nil
 }
 
+// pprofMux 装配 /debug/pprof 系列剖析端点（Index/Cmdline/Profile/Symbol/Trace）。
 func pprofMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/debug/pprof/", pprof.Index)
@@ -47,6 +51,7 @@ func pprofMux() *http.ServeMux {
 	return mux
 }
 
+// Shutdown 优雅停止 pprof 服务。
 func (p *pprofRunner) Shutdown(ctx context.Context) error {
 	p.logger.Info("[Server]: shutdown pprofRunner runner.")
 	return p.server.Shutdown(ctx)

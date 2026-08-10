@@ -5,16 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/application"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
-
-type HttpServer interface {
-	Shutdown(ctx context.Context) error
-	ListenAndServe() error
-}
 
 type metricsRunner struct {
 	port   string
@@ -23,6 +18,8 @@ type metricsRunner struct {
 	reg    *prometheus.Registry
 }
 
+// NewMetricsRunner 构建 metrics 传输层启动器：在指定端口暴露 /metrics 端点
+// （OpenMetrics 格式，promhttp 从 prometheus.Registry 拉取）。返回 application.Server。
 func NewMetricsRunner(port string, logger mlog.Logger, reg *prometheus.Registry) application.Server {
 	return &metricsRunner{
 		port:   port,
@@ -31,6 +28,7 @@ func NewMetricsRunner(port string, logger mlog.Logger, reg *prometheus.Registry)
 	}
 }
 
+// Run 启动 metrics 服务：注册 /metrics 处理器并 goroutine 内 ListenAndServe。
 func (m *metricsRunner) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
 	m.logger.Infof("[Server]: metrics running at :%s/metrics", m.port)
@@ -50,6 +48,7 @@ func (m *metricsRunner) Run(ctx context.Context) error {
 	return nil
 }
 
+// Shutdown 优雅停止 metrics 服务。
 func (m *metricsRunner) Shutdown(ctx context.Context) error {
 	return m.s.Shutdown(ctx)
 }
