@@ -6,64 +6,77 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
 
-	"github.com/coreos/go-oidc/v3/oidc"
-	auth2 "github.com/duc-cnzj/mars/api/v5/auth"
-	"github.com/duc-cnzj/mars/v5/internal/auth"
-	"github.com/duc-cnzj/mars/v5/internal/data"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
+	apiauth "github.com/duc-cnzj/mars/api/v6/proto/auth"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"golang.org/x/oauth2"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 func TestNewAuthSvc(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	svc := NewAuthSvc(repo.NewMockEventRepo(m), mlog.NewForConfig(nil), repo.NewMockAuthRepo(m))
+	svc, _ := newAuthSvcWithMocks(t)
 	assert.NotNil(t, svc)
-	assert.NotNil(t, svc.(*authSvc).logger)
-	assert.NotNil(t, svc.(*authSvc).eventRepo)
-	assert.NotNil(t, svc.(*authSvc).authRepo)
+	assert.NotNil(t, svc.logger)
+	assert.NotNil(t, svc.eventBiz)
+	assert.NotNil(t, svc.authBiz)
 }
 
 func Test_authSvc_Info(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	eventRepo := repo.NewMockEventRepo(m)
-	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
-	authRepo.EXPECT().VerifyToken(gomock.Any(), "token").Return(&auth.UserInfo{}, nil)
+	svc, mocks := newAuthSvcWithMocks(t)
+	authBizMock := mocks.authBiz
+	authBizMock.EXPECT().VerifyToken(gomock.Any(), "token").Return(&biz.UserInfo{
+		ID:        "123",
+		Email:     "duc@example.com",
+		Name:      "duc",
+		Picture:   "https://example.com/avatar.png",
+		Roles:     []string{"admin", "dev"},
+		LogoutUrl: "https://logout.example",
+	}, nil)
 	resp, err := svc.Info(metadata.NewIncomingContext(context.TODO(), metadata.Pairs("Authorization", "token")), nil)
 	assert.Nil(t, err)
-	assert.NotNil(t, resp)
+	if assert.NotNil(t, resp) {
+		assert.Equal(t, int32(123), resp.Id)
+		assert.Equal(t, "https://example.com/avatar.png", resp.Avatar)
+		assert.Equal(t, "duc", resp.Name)
+		assert.Equal(t, "duc@example.com", resp.Email)
+		assert.Equal(t, "https://logout.example", resp.LogoutUrl)
+		assert.Equal(t, []string{"admin", "dev"}, resp.Roles)
+	}
 }
 
 func Test_authSvc_Info_Fail(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	eventRepo := repo.NewMockEventRepo(m)
-	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
+	svc, _ := newAuthSvcWithMocks(t)
 	resp, err := svc.Info(context.TODO(), nil)
 	assert.Error(t, err)
 	assert.Nil(t, resp)
 }
 
-func TestAuthSvc_Login_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	eventRepo := repo.NewMockEventRepo(m)
-	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
+func Test_authSvc_Info_InvalidToken(t *testing.T) {
+	svc, mocks := newAuthSvcWithMocks(t)
+	authBizMock := mocks.authBiz
+	authBizMock.EXPECT().VerifyToken(gomock.Any(), "bad-token").Return(nil, errors.New("token expired"))
+	resp, err := svc.Info(metadata.NewIncomingContext(context.TODO(), metadata.Pairs("Authorization", "bad-token")), nil)
+	assert.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+	assert.Nil(t, resp)
+}
 
-	resp := &repo.LoginResponse{
+func TestAuthSvc_Login_Success(t *testing.T) {
+	svc, mocks := newAuthSvcWithMocks(t)
+	eventRepo := mocks.eventRepo
+	authBizMock := mocks.authBiz
+
+	resp := &biz.LoginResponse{
 		Token:     "test-token",
 		ExpiredIn: 100,
-		UserInfo: &auth.UserInfo{
+		UserInfo: &biz.UserInfo{
 			Name: "duc",
 		},
 	}
@@ -73,12 +86,12 @@ func TestAuthSvc_Login_Success(t *testing.T) {
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", resp.UserInfo.Name, resp.UserInfo.Email),
 	)
 
-	authRepo.EXPECT().Login(gomock.Any(), &repo.LoginInput{
+	authBizMock.EXPECT().Login(gomock.Any(), &biz.LoginInput{
 		Username: "test",
 		Password: "password",
 	}).Return(resp, nil)
 
-	res, err := svc.Login(context.TODO(), &auth2.LoginRequest{
+	res, err := svc.Login(context.TODO(), &apiauth.LoginRequest{
 		Username: "test",
 		Password: "password",
 	})
@@ -87,18 +100,15 @@ func TestAuthSvc_Login_Success(t *testing.T) {
 }
 
 func TestAuthSvc_Login_Failure(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	eventRepo := repo.NewMockEventRepo(m)
-	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
+	svc, mocks := newAuthSvcWithMocks(t)
+	authBizMock := mocks.authBiz
 
-	authRepo.EXPECT().Login(gomock.Any(), &repo.LoginInput{
+	authBizMock.EXPECT().Login(gomock.Any(), &biz.LoginInput{
 		Username: "test",
 		Password: "password",
 	}).Return(nil, errors.New("error"))
 
-	_, err := svc.Login(context.TODO(), &auth2.LoginRequest{
+	_, err := svc.Login(context.TODO(), &apiauth.LoginRequest{
 		Username: "test",
 		Password: "password",
 	})
@@ -106,83 +116,138 @@ func TestAuthSvc_Login_Failure(t *testing.T) {
 }
 
 func TestAuthSvc_Settings_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	eventRepo := repo.NewMockEventRepo(m)
-	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
+	svc, mocks := newAuthSvcWithMocks(t)
+	authBizMock := mocks.authBiz
 
-	authRepo.EXPECT().Settings(gomock.Any()).Return(data.OidcConfig{}, nil)
+	authBizMock.EXPECT().Settings(gomock.Any()).Return(biz.OidcConfig{}, nil)
 
-	_, err := svc.Settings(context.TODO(), &auth2.SettingsRequest{})
+	_, err := svc.Settings(context.TODO(), &apiauth.SettingsRequest{})
 	assert.NoError(t, err)
 }
 
-func Test_guest_AuthFuncOverride(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	svc := NewAuthSvc(repo.NewMockEventRepo(m), mlog.NewForConfig(nil), repo.NewMockAuthRepo(m))
+func TestAuthSvc_Exchange_Success(t *testing.T) {
+	svc, mocks := newAuthSvcWithMocks(t)
+	authBizMock := mocks.authBiz
+	eventRepo := mocks.eventRepo
 
-	_, err := svc.(*authSvc).AuthFuncOverride(context.TODO(), "TestMethod")
+	userinfo := &biz.UserInfo{Name: "duc", Email: "DUC@example.com"}
+	authBizMock.EXPECT().Exchange(gomock.Any(), "code").Return(userinfo, nil)
+	authBizMock.EXPECT().Sign(gomock.Any(), userinfo).Return(&biz.LoginResponse{Token: "signed", ExpiredIn: 3600}, nil)
+	eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Login,
+		userinfo.Name,
+		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", userinfo.Name, userinfo.Email),
+		gomock.Any(),
+	)
+
+	resp, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: "code"})
 	assert.NoError(t, err)
+	assert.Equal(t, "signed", resp.Token)
+	assert.Equal(t, int64(3600), resp.ExpiresIn)
 }
 
-func TestNewDefaultAuthProvider(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
+func TestAuthSvc_Exchange_Error(t *testing.T) {
+	svc, mocks := newAuthSvcWithMocks(t)
+	authBizMock := mocks.authBiz
 
-	provider := &oidc.Provider{}
-	cfg := oauth2.Config{
-		ClientID:     "test-client-id",
-		ClientSecret: "test-client-secret",
-		RedirectURL:  "http://localhost:8080/callback",
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  "http://localhost:8080/auth",
-			TokenURL: "http://localhost:8080/token",
-		},
-	}
+	authBizMock.EXPECT().Exchange(gomock.Any(), "code").Return(nil, errors.New("boom"))
 
-	authProvider := NewDefaultAuthProvider(cfg, provider)
+	_, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: "code"})
+	assert.Error(t, err)
+	assert.Equal(t, "boom", err.Error())
+}
 
-	assert.NotNil(t, authProvider)
-	assert.IsType(t, &defaultAuthProvider{}, authProvider)
+func TestAuthSvc_Exchange_CodeNotEchoed(t *testing.T) {
+	svc, mocks := newAuthSvcWithMocks(t)
+	authBizMock := mocks.authBiz
+
+	// 换发编排失败（biz 侧）返回 InvalidArgument，且错误信息不回显一次性 code。
+	code := "auth-code-SECRET-abc123"
+	authBizMock.EXPECT().Exchange(gomock.Any(), code).Return(nil, status.Errorf(codes.InvalidArgument, "invalid code"))
+
+	_, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: code})
+	assert.Error(t, err)
+	assert.NotContains(t, err.Error(), code)
+}
+
+func TestAuthSvc_Exchange_SignError(t *testing.T) {
+	svc, mocks := newAuthSvcWithMocks(t)
+	authBizMock := mocks.authBiz
+
+	userinfo := &biz.UserInfo{Name: "duc"}
+	authBizMock.EXPECT().Exchange(gomock.Any(), "code").Return(userinfo, nil)
+	authBizMock.EXPECT().Sign(gomock.Any(), userinfo).Return(nil, errors.New("sign boom"))
+
+	_, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: "code"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "sign boom")
 }
 
 func TestAuthSvc_Settings_NoSettings(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	eventRepo := repo.NewMockEventRepo(m)
-	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
+	svc, mocks := newAuthSvcWithMocks(t)
+	authBizMock := mocks.authBiz
 
-	authRepo.EXPECT().Settings(gomock.Any()).Return(nil, nil)
+	authBizMock.EXPECT().Settings(gomock.Any()).Return(nil, nil)
 
-	resp, err := svc.Settings(context.TODO(), &auth2.SettingsRequest{})
+	resp, err := svc.Settings(context.TODO(), &apiauth.SettingsRequest{})
 	assert.NoError(t, err)
 	assert.Empty(t, resp.Items)
 }
 
 func TestAuthSvc_Settings_ErrorFetchingSettings(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	eventRepo := repo.NewMockEventRepo(m)
-	authRepo := repo.NewMockAuthRepo(m)
-	svc := NewAuthSvc(eventRepo, mlog.NewForConfig(nil), authRepo)
+	svc, mocks := newAuthSvcWithMocks(t)
+	authBizMock := mocks.authBiz
 
-	authRepo.EXPECT().Settings(gomock.Any()).Return(data.OidcConfig{
-		"b": data.OidcConfigItem{
+	authBizMock.EXPECT().Settings(gomock.Any()).Return(biz.OidcConfig{
+		"b": biz.OidcConfigItem{
 			Config:             oauth2.Config{},
 			EndSessionEndpoint: "",
 		},
-		"a": data.OidcConfigItem{
+		"a": biz.OidcConfigItem{
 			Config:             oauth2.Config{},
 			EndSessionEndpoint: "",
 		},
 	}, nil)
 
-	res, err := svc.Settings(context.TODO(), &auth2.SettingsRequest{})
+	res, err := svc.Settings(context.TODO(), &apiauth.SettingsRequest{})
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(res.Items))
 	assert.Equal(t, "a", res.Items[0].Name)
 	assert.Equal(t, "b", res.Items[1].Name)
+}
+
+func TestAuthSvc_Settings_Error(t *testing.T) {
+	svc, mocks := newAuthSvcWithMocks(t)
+	authBizMock := mocks.authBiz
+
+	authBizMock.EXPECT().Settings(gomock.Any()).Return(nil, errors.New("boom"))
+
+	resp, err := svc.Settings(context.TODO(), &apiauth.SettingsRequest{})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+type authSvcMocks struct {
+	ctrl      *gomock.Controller
+	eventRepo *data.MockEventRepo
+	authBiz   *biz.MockAuthBiz
+}
+
+func newAuthSvcWithMocks(t *testing.T) (*authSvc, *authSvcMocks) {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	mocks := &authSvcMocks{
+		ctrl:      ctrl,
+		eventRepo: data.NewMockEventRepo(ctrl),
+		authBiz:   biz.NewMockAuthBiz(ctrl),
+	}
+	s, ok := NewAuthSvc(AuthSvcDeps{
+		EventBiz: biz.NewEventBiz(mocks.eventRepo),
+		Logger:   mlog.NewForConfig(nil),
+		AuthBiz:  mocks.authBiz,
+	}).(*authSvc)
+	if !ok {
+		panic("NewAuthSvc returned unexpected type")
+	}
+	return s, mocks
 }

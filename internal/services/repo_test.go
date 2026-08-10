@@ -5,13 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/api/v5/types"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
 
-	"github.com/duc-cnzj/mars/api/v5/mars"
-	reposerver "github.com/duc-cnzj/mars/api/v5/repo"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/util/pagination"
+	"github.com/duc-cnzj/mars/api/v6/proto/mars"
+	reposerver "github.com/duc-cnzj/mars/api/v6/proto/repo"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -20,39 +21,29 @@ import (
 )
 
 func TestNewRepoSvc(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	svc := NewRepoSvc(mlog.NewForConfig(nil), repo.NewMockEventRepo(m), repo.NewMockGitRepo(m), repo.NewMockRepoRepo(m))
+	svc, _ := newRepoSvcWithMocks(t)
 	assert.NotNil(t, svc)
-	assert.NotNil(t, svc.(*repoSvc).eventRepo)
-	assert.NotNil(t, svc.(*repoSvc).gitRepo)
-	assert.NotNil(t, svc.(*repoSvc).repoRepo)
-	assert.NotNil(t, svc.(*repoSvc).logger)
+	assert.NotNil(t, svc.eventBiz)
+	assert.NotNil(t, svc.repoBiz)
+	assert.NotNil(t, svc.logger)
 }
 
 func Test_repoSvc_Clone_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		eventRepo,
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+	eventRepo := mocks.eventRepo
 
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Create,
-		MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Name,
 		gomock.Any(),
 		gomock.Not(nil),
 	)
-	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&repo.Repo{}, nil)
-	repoRepo.EXPECT().Clone(gomock.Any(), &repo.CloneRepoInput{
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{}, nil)
+	repoRepo.EXPECT().Clone(gomock.Any(), &biz.CloneRepoInput{
 		ID:   1,
 		Name: "clone",
-	}).Return(&repo.Repo{
+	}).Return(&biz.Repo{
 		ID:   2,
 		Name: "clone",
 	}, nil)
@@ -69,17 +60,12 @@ func Test_repoSvc_Clone_Success(t *testing.T) {
 }
 
 func Test_repoSvc_Clone_Error(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
 
-	repoRepo.EXPECT().Clone(gomock.Any(), &repo.CloneRepoInput{
+	// 修复后 Get 先于 Clone；Get 成功后才可能走到 Clone 失败分支
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{}, nil)
+	repoRepo.EXPECT().Clone(gomock.Any(), &biz.CloneRepoInput{
 		ID:   1,
 		Name: "clone",
 	}).Return(nil, errors.New("error"))
@@ -93,33 +79,45 @@ func Test_repoSvc_Clone_Error(t *testing.T) {
 	assert.Nil(t, res)
 }
 
-func TestRepoSvc_Create_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		eventRepo,
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+func Test_repoSvc_Clone_GetError(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
 
-	repoRepo.EXPECT().Create(gomock.Any(), &repo.CreateRepoInput{
+	// 回归防护：Get（查询源仓库）失败必须 fail-fast，Clone 副作用不得发生。
+	// 否则会出现"克隆已成功但 Get 失败返回错误"→ 客户端重试产生重复克隆。
+	// 改坏实现（先 Clone 后 Get / Get 失败仍继续）时此测试 FAIL（未期望 Clone 调用）。
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(nil, errors.New("x"))
+	// 不设置 Clone 期望：若实现先执行克隆，gomock 会以"未期望调用"中止
+
+	res, err := svc.Clone(newAdminUserCtx(), &reposerver.CloneRequest{
+		Id:   1,
+		Name: "clone",
+	})
+
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestRepoSvc_Create_Success(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+	eventRepo := mocks.eventRepo
+
+	repoRepo.EXPECT().Create(gomock.Any(), &biz.CreateRepoInput{
 		Name:         "newRepo",
 		Enabled:      true,
 		NeedGitRepo:  true,
 		GitProjectID: lo.ToPtr(int32(1)),
 		MarsConfig:   &mars.Config{},
 		Description:  "description",
-	}).Return(&repo.Repo{
+	}).Return(&biz.Repo{
 		ID:   1,
 		Name: "newRepo",
 	}, nil)
 
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Create,
-		MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Name,
 		gomock.Any(),
 		gomock.Not(nil),
 	)
@@ -139,17 +137,10 @@ func TestRepoSvc_Create_Success(t *testing.T) {
 }
 
 func TestRepoSvc_Create_Error(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
 
-	repoRepo.EXPECT().Create(gomock.Any(), &repo.CreateRepoInput{
+	repoRepo.EXPECT().Create(gomock.Any(), &biz.CreateRepoInput{
 		Name:         "newRepo",
 		Enabled:      true,
 		NeedGitRepo:  true,
@@ -171,23 +162,17 @@ func TestRepoSvc_Create_Error(t *testing.T) {
 }
 
 func TestRepoSvc_Delete_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		eventRepo,
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+	eventRepo := mocks.eventRepo
 
+	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Repo{ID: 1}, nil)
 	repoRepo.EXPECT().Delete(gomock.Any(), 1).Return(nil)
 	req := &reposerver.DeleteRequest{
 		Id: 1,
 	}
 	eventRepo.EXPECT().AuditLogWithRequest(types.EventActionType_Delete,
-		MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Name,
 		gomock.Any(),
 		req,
 	)
@@ -199,16 +184,10 @@ func TestRepoSvc_Delete_Success(t *testing.T) {
 }
 
 func TestRepoSvc_Delete_Error(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
 
+	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Repo{ID: 1}, nil)
 	repoRepo.EXPECT().Delete(gomock.Any(), 1).Return(errors.New("error"))
 
 	res, err := svc.Delete(newAdminUserCtx(), &reposerver.DeleteRequest{
@@ -220,23 +199,16 @@ func TestRepoSvc_Delete_Error(t *testing.T) {
 }
 
 func TestRepoSvc_List_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
 
-	repoRepo.EXPECT().List(gomock.Any(), &repo.ListRepoRequest{
+	repoRepo.EXPECT().List(gomock.Any(), &biz.ListRepoRequest{
 		Page:          1,
 		PageSize:      10,
 		Enabled:       lo.ToPtr(true),
 		OrderByIDDesc: lo.ToPtr(true),
 		Name:          "test",
-	}).Return([]*repo.Repo{
+	}).Return([]*biz.Repo{
 		{
 			ID:   1,
 			Name: "test",
@@ -264,17 +236,10 @@ func TestRepoSvc_List_Success(t *testing.T) {
 }
 
 func TestRepoSvc_List_Error(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
 
-	repoRepo.EXPECT().List(gomock.Any(), &repo.ListRepoRequest{
+	repoRepo.EXPECT().List(gomock.Any(), &biz.ListRepoRequest{
 		Page:          1,
 		PageSize:      10,
 		Enabled:       lo.ToPtr(true),
@@ -294,17 +259,10 @@ func TestRepoSvc_List_Error(t *testing.T) {
 }
 
 func TestRepoSvc_Show_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
 
-	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Repo{
+	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Repo{
 		ID:   1,
 		Name: "show",
 	}, nil)
@@ -320,15 +278,8 @@ func TestRepoSvc_Show_Success(t *testing.T) {
 }
 
 func TestRepoSvc_Show_Error(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
 
 	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("error"))
 
@@ -341,18 +292,12 @@ func TestRepoSvc_Show_Error(t *testing.T) {
 }
 
 func TestRepoSvc_ToggleEnabled_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		eventRepo,
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+	eventRepo := mocks.eventRepo
 
-	repoRepo.EXPECT().ToggleEnabled(gomock.Any(), 1, true).Return(&repo.Repo{
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{ID: 1, Enabled: false}, nil)
+	repoRepo.EXPECT().ToggleEnabled(gomock.Any(), 1, true).Return(&biz.Repo{
 		ID:      1,
 		Name:    "toggle",
 		Enabled: true,
@@ -364,7 +309,7 @@ func TestRepoSvc_ToggleEnabled_Success(t *testing.T) {
 	}
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Update,
-		MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Name,
 		gomock.Any(),
 		req,
 	)
@@ -378,16 +323,10 @@ func TestRepoSvc_ToggleEnabled_Success(t *testing.T) {
 }
 
 func TestRepoSvc_ToggleEnabled_Error(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
 
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{ID: 1, Enabled: false}, nil)
 	repoRepo.EXPECT().ToggleEnabled(gomock.Any(), 1, true).Return(nil, errors.New("error"))
 
 	res, err := svc.ToggleEnabled(newAdminUserCtx(), &reposerver.ToggleEnabledRequest{
@@ -400,36 +339,29 @@ func TestRepoSvc_ToggleEnabled_Error(t *testing.T) {
 }
 
 func TestRepoSvc_Update_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		eventRepo,
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+	eventRepo := mocks.eventRepo
 
-	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&repo.Repo{
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{
 		ID:   1,
 		Name: "update",
 	}, nil)
 
-	repoRepo.EXPECT().Update(gomock.Any(), &repo.UpdateRepoInput{
+	repoRepo.EXPECT().Update(gomock.Any(), &biz.UpdateRepoInput{
 		ID:           1,
 		Name:         "updated",
 		NeedGitRepo:  true,
 		GitProjectID: lo.ToPtr(int32(1)),
 		MarsConfig:   &mars.Config{},
 		Description:  "updated description",
-	}).Return(&repo.Repo{
+	}).Return(&biz.Repo{
 		ID:   1,
 		Name: "updated",
 	}, nil)
 
 	eventRepo.EXPECT().AuditLogWithChange(types.EventActionType_Update,
-		MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Name,
 		gomock.Any(),
 		gomock.Not(nil),
 		gomock.Not(nil),
@@ -451,15 +383,8 @@ func TestRepoSvc_Update_Success(t *testing.T) {
 }
 
 func TestRepoSvc_Update_Error(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
 
 	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(nil, errors.New("error"))
 
@@ -477,17 +402,10 @@ func TestRepoSvc_Update_Error(t *testing.T) {
 }
 
 func TestRepoSvc_Update_Error2(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repoRepo,
-	)
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
 
-	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&repo.Repo{}, nil)
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{}, nil)
 	repoRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
 	res, err := svc.Update(newAdminUserCtx(), &reposerver.UpdateRequest{
 		Id:           1,
@@ -503,14 +421,7 @@ func TestRepoSvc_Update_Error2(t *testing.T) {
 }
 
 func TestRepoSvc_Authorize_AdminUser(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repo.NewMockRepoRepo(m),
-	).(*repoSvc)
+	svc, _ := newRepoSvcWithMocks(t)
 
 	ctx := newAdminUserCtx()
 	_, err := svc.Authorize(ctx, "List")
@@ -519,14 +430,7 @@ func TestRepoSvc_Authorize_AdminUser(t *testing.T) {
 }
 
 func TestRepoSvc_Authorize_AdminUser2(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repo.NewMockRepoRepo(m),
-	).(*repoSvc)
+	svc, _ := newRepoSvcWithMocks(t)
 
 	ctx := newAdminUserCtx()
 	_, err := svc.Authorize(ctx, "XX")
@@ -535,14 +439,7 @@ func TestRepoSvc_Authorize_AdminUser2(t *testing.T) {
 }
 
 func TestRepoSvc_Authorize_ListMethod(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repo.NewMockRepoRepo(m),
-	).(*repoSvc)
+	svc, _ := newRepoSvcWithMocks(t)
 
 	ctx := newOtherUserCtx()
 	_, err := svc.Authorize(ctx, "/repo.Repo/List")
@@ -552,18 +449,38 @@ func TestRepoSvc_Authorize_ListMethod(t *testing.T) {
 }
 
 func TestRepoSvc_Authorize_NonListMethod(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	svc := NewRepoSvc(
-		mlog.NewForConfig(nil),
-		repo.NewMockEventRepo(m),
-		repo.NewMockGitRepo(m),
-		repo.NewMockRepoRepo(m),
-	).(*repoSvc)
+	svc, _ := newRepoSvcWithMocks(t)
 
 	ctx := newOtherUserCtx()
 	_, err := svc.Authorize(ctx, "NonList")
 
 	assert.NotNil(t, err)
 	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
+type repoSvcMocks struct {
+	ctrl      *gomock.Controller
+	eventRepo *data.MockEventRepo
+	repoRepo  *data.MockRepoRepo
+}
+
+func newRepoSvcWithMocks(t *testing.T) (*repoSvc, *repoSvcMocks) {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	mocks := &repoSvcMocks{
+		ctrl:      ctrl,
+		eventRepo: data.NewMockEventRepo(ctrl),
+		repoRepo:  data.NewMockRepoRepo(ctrl),
+	}
+	logger := mlog.NewForConfig(nil)
+	s, ok := NewRepoSvc(RepoSvcDeps{
+		Logger:    logger,
+		EventBiz:  biz.NewEventBiz(mocks.eventRepo),
+		RepoBiz:   biz.NewRepoBiz(mocks.repoRepo),
+		AccessBiz: biz.NewAccessBiz(logger, nil, nil),
+	}).(*repoSvc)
+	if !ok {
+		panic("NewRepoSvc returned unexpected type")
+	}
+	return s, mocks
 }

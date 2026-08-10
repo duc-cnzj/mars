@@ -2,56 +2,75 @@ package services
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
-	"sort"
 	"strings"
-	"sync"
 	"unicode/utf8"
 
-	"github.com/duc-cnzj/mars/api/v5/container"
-	"github.com/duc-cnzj/mars/api/v5/types"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/util/timer"
+	"github.com/duc-cnzj/mars/api/v6/proto/container"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/dustin/go-humanize"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	v1 "k8s.io/api/core/v1"
-	eventsv1 "k8s.io/api/events/v1"
-	"k8s.io/client-go/tools/remotecommand"
-	clientgoexec "k8s.io/client-go/util/exec"
 )
 
 var _ container.ContainerServer = (*containerSvc)(nil)
 
+// containerSvc 是 container.ContainerServer 的 gRPC 实现：提供 Pod 状态查询、日志流式读取、
+// 文件拷入拷出与 exec/exec-once 终端交互，经 access 校验访问权限，由 NewContainerSvc 构造。
 type containerSvc struct {
-	k8sRepo  repo.K8sRepo
-	fileRepo repo.FileRepo
-	logger   mlog.Logger
-	timer    timer.Timer
+	k8sBiz       biz.K8sBiz
+	fileBiz      biz.FileBiz
+	logger       mlog.Logger
+	containerBiz biz.ContainerBiz
+	accessBiz    biz.AccessBiz
 
-	eventRepo repo.EventRepo
+	eventBiz biz.EventBiz
 
 	container.UnimplementedContainerServer
 }
 
-func NewContainerSvc(timer timer.Timer, eventRepo repo.EventRepo, k8sRepo repo.K8sRepo, fileRepo repo.FileRepo, logger mlog.Logger) container.ContainerServer {
-	return &containerSvc{timer: timer, eventRepo: eventRepo, k8sRepo: k8sRepo, fileRepo: fileRepo, logger: logger.WithModule("services/container")}
+// ContainerSvcDeps 收口 NewContainerSvc 的构造依赖，由 wire 按字段注入。
+type ContainerSvcDeps struct {
+	ContainerBiz biz.ContainerBiz
+	EventBiz     biz.EventBiz
+	K8sBiz       biz.K8sBiz
+	FileBiz      biz.FileBiz
+	AccessBiz    biz.AccessBiz
+	Logger       mlog.Logger
 }
 
-func (c *containerSvc) IsPodRunning(_ context.Context, request *container.IsPodRunningRequest) (*container.IsPodRunningResponse, error) {
-	running, reason := c.k8sRepo.IsPodRunning(request.GetNamespace(), request.GetPod())
+// NewContainerSvc 收口容器服务的构造依赖，由 wire 按字段注入。
+func NewContainerSvc(deps ContainerSvcDeps) container.ContainerServer {
+	logger := deps.Logger.WithModule("services/container")
+	return &containerSvc{
+		containerBiz: deps.ContainerBiz,
+		eventBiz:     deps.EventBiz,
+		k8sBiz:       deps.K8sBiz,
+		fileBiz:      deps.FileBiz,
+		logger:       logger,
+		accessBiz:    deps.AccessBiz,
+	}
+}
+
+// IsPodRunning 查询指定 pod 是否处于 Running 状态（含原因），响应前做命名空间级访问控制。
+func (c *containerSvc) IsPodRunning(ctx context.Context, request *container.IsPodRunningRequest) (*container.IsPodRunningResponse, error) {
+	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.GetNamespace()); err != nil {
+		return nil, err
+	}
+	running, reason := c.k8sBiz.IsPodRunning(request.GetNamespace(), request.GetPod())
 
 	return &container.IsPodRunningResponse{Running: running, Reason: reason}, nil
 }
 
+// IsPodExists 查询指定 pod 是否存在：Get 失败即视为不存在（响应前做命名空间级访问控制）。
 func (c *containerSvc) IsPodExists(ctx context.Context, request *container.IsPodExistsRequest) (*container.IsPodExistsResponse, error) {
-	_, err := c.k8sRepo.GetPod(request.GetNamespace(), request.GetPod())
+	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.GetNamespace()); err != nil {
+		return nil, err
+	}
+	_, err := c.k8sBiz.GetPod(request.GetNamespace(), request.GetPod())
 	if err != nil {
 		c.logger.ErrorCtx(ctx, err)
 		return &container.IsPodExistsResponse{Exists: false}, nil
@@ -60,42 +79,19 @@ func (c *containerSvc) IsPodExists(ctx context.Context, request *container.IsPod
 	return &container.IsPodExistsResponse{Exists: true}, nil
 }
 
+// ContainerLog 返回一次性容器日志：守卫、Pending 事件聚合、尾部日志策略均下沉
+// containerBiz.Log，transport 只做鉴权与 UTF-8 序列化卫生。
 func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogRequest) (*container.LogResponse, error) {
-	podInfo, _ := c.k8sRepo.GetPod(request.Namespace, request.Pod)
-	if podInfo == nil || (!request.ShowEvents && podInfo.Status.Phase == v1.PodPending) {
-		return nil, status.Error(codes.NotFound, "未找到日志")
+	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.Namespace); err != nil {
+		return nil, err
 	}
-
-	if podInfo.Status.Phase == v1.PodPending {
-		var logs []string
-		if request.ShowEvents {
-			ret, _ := c.k8sRepo.ListEvents(request.Namespace)
-			sort.Sort(sortEvents(ret))
-			for _, event := range ret {
-				if event.Regarding.Kind == "Pod" && event.Regarding.Name == request.Pod {
-					logs = append(logs, event.Note)
-				}
-			}
-		}
-		return &container.LogResponse{
-			Namespace:     request.Namespace,
-			PodName:       request.Pod,
-			ContainerName: request.Container,
-			Log:           strings.Join(logs, "\n"),
-		}, nil
-	}
-
-	var opt = &v1.PodLogOptions{
-		Container: request.Container,
-	}
-
-	if podInfo.Status.Phase == v1.PodRunning {
-		opt.TailLines = &tailLines
-	}
-
-	logs, err := c.k8sRepo.GetPodLogs(ctx, request.Namespace, request.Pod, opt)
+	res, err := c.containerBiz.Log(ctx, &biz.LogInput{
+		Namespace:  request.Namespace,
+		Pod:        request.Pod,
+		Container:  request.Container,
+		ShowEvents: request.ShowEvents,
+	})
 	if err != nil {
-		c.logger.ErrorCtx(ctx, err)
 		return nil, err
 	}
 
@@ -103,87 +99,100 @@ func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogR
 		Namespace:     request.Namespace,
 		PodName:       request.Pod,
 		ContainerName: request.Container,
-		Log:           toValidUTF8String([]byte(logs)),
+		Log:           toValidUTF8String([]byte(res.Content)),
 	}, nil
 }
 
+// CopyToPod 把已上传的文件写入指定 pod 容器路径：先校验 pod 运行态，落上传审计日志。
 func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToPodRequest) (*container.CopyToPodResponse, error) {
-	if running, reason := c.k8sRepo.IsPodRunning(request.Namespace, request.Pod); !running {
-		return nil, status.Error(codes.NotFound, reason)
+	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.Namespace); err != nil {
+		return nil, err
 	}
+	// 运行态前置校验与"空则找默认容器"统一走 biz：与 StreamCopyToPod/Exec 的
+	// "pod 未运行 → 404"和 ResolveContainer 语义对齐。此前 CopyToPod 直接把
+	// 未解析的 Container 透传给 data 层（CopyFileToPod 不兜底空 container），
+	// 用户不传 container 时行为与流式入口不一致。
+	if err := c.containerBiz.EnsurePodRunning(ctx, request.Namespace, request.Pod); err != nil {
+		return nil, err
+	}
+	resolved, err := c.containerBiz.ResolveContainer(ctx, request.Namespace, request.Pod, request.Container)
+	if err != nil {
+		return nil, err
+	}
+	request.Container = resolved
 
-	file, err := c.k8sRepo.CopyFileToPod(ctx, &repo.CopyFileToPodInput{
+	file, err := c.k8sBiz.CopyFileToPod(ctx, &biz.CopyFileToPodInput{
 		FileId:    request.FileId,
 		Namespace: request.Namespace,
 		Pod:       request.Pod,
 		Container: request.Container,
 	})
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, c.logger, err)
 	}
 
-	c.eventRepo.FileAuditLog(
+	c.eventBiz.FileAuditLog(
 		types.EventActionType_Upload,
-		MustGetUser(ctx).Name,
-		fmt.Sprintf("上传文件到 pod: %s/%s/%s, 容器路径: '%s', 大小: %s。",
-			request.Namespace,
-			request.Pod,
-			request.Container,
-			file.ContainerPath,
-			humanize.Bytes(file.Size),
-		),
+		biz.MustGetUser(ctx).Name,
+		copyToPodAuditMsg("", request.Namespace, request.Pod, request.Container, file),
 		file.ID,
 	)
 
 	return &container.CopyToPodResponse{
 		PodFilePath: file.ContainerPath,
 		FileName:    file.Path,
-	}, err
+	}, nil
 }
 
+// StreamCopyToPod 流式上传文件到 pod：接收分帧数据落盘后拷贝进容器，落上传审计日志。
 func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPodServer) error {
 	var (
 		ctx  = server.Context()
-		user = MustGetUser(server.Context())
+		user = biz.MustGetUser(server.Context())
 	)
 	recv, err := server.Recv()
 	if err != nil {
 		return err
 	}
+	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, recv.Namespace); err != nil {
+		return err
+	}
 	c.logger.DebugCtx(ctx, "StreamUploadFile", recv.Namespace, recv.Pod, recv.Container, recv.FileName)
-	// 判断 pod 是否存在
-	running, reason := c.k8sRepo.IsPodRunning(recv.Namespace, recv.Pod)
-	if !running {
-		return errors.New(reason)
+	// 运行态前置校验统一走 biz.EnsurePodRunning，与 CopyToPod/Exec 共用 404 映射。
+	if err := c.containerBiz.EnsurePodRunning(ctx, recv.Namespace, recv.Pod); err != nil {
+		return err
 	}
 	// 如果没传入 container，使用默认的
-	if recv.Container == "" {
-		recv.Container, err = c.k8sRepo.FindDefaultContainer(ctx, recv.Namespace, recv.Pod)
-		if err != nil {
-			return err
-		}
+	recv.Container, err = c.containerBiz.ResolveContainer(ctx, recv.Namespace, recv.Pod, recv.Container)
+	if err != nil {
+		return err
 	}
 	c.logger.DebugCtxf(ctx, "StreamUploadFile %s/%s/%s", recv.Namespace, recv.Pod, recv.Container)
 	ch := make(chan []byte, 100)
 	ch <- recv.GetData()
 	go func() {
 		defer close(ch)
+		defer c.logger.HandlePanic("StreamUploadFile: recv loop")
 
 		for {
 			recv, err := server.Recv()
 			if err != nil {
-				if err == io.EOF {
+				if errors.Is(err, io.EOF) {
 					c.logger.DebugCtx(ctx, "StreamUploadFile: EOF")
 					return
 				}
 				c.logger.ErrorCtx(ctx, "StreamUploadFile: error receiving data", err)
 				return
 			}
-			ch <- recv.GetData()
+			select {
+			case ch <- recv.GetData():
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 
-	file, err := c.fileRepo.StreamUploadFile(ctx, &repo.StreamUploadFileRequest{
+	file, err := c.fileBiz.StreamUploadFile(ctx, &biz.StreamUploadFileRequest{
 		Namespace: recv.Namespace,
 		Pod:       recv.Pod,
 		Container: recv.Container,
@@ -192,31 +201,23 @@ func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPo
 		FileData:  ch,
 	})
 	if err != nil {
-		c.logger.ErrorCtx(ctx, err)
-		return err
+		return logError(ctx, c.logger, err)
 	}
 
-	res, err := c.k8sRepo.CopyFileToPod(ctx, &repo.CopyFileToPodInput{
+	res, err := c.k8sBiz.CopyFileToPod(ctx, &biz.CopyFileToPodInput{
 		FileId:    int64(file.ID),
 		Namespace: file.Namespace,
 		Pod:       file.Pod,
 		Container: file.Container,
 	})
 	if err != nil {
-		c.logger.ErrorCtx(ctx, err)
-		return err
+		return logError(ctx, c.logger, err)
 	}
 
-	c.eventRepo.FileAuditLog(
+	c.eventBiz.FileAuditLog(
 		types.EventActionType_Upload,
-		MustGetUser(ctx).Name,
-		fmt.Sprintf("[StreamUploadFile]: 上传文件到 pod: %s/%s/%s, 容器路径: '%s', 大小: %s。",
-			file.Namespace,
-			file.Pod,
-			file.Container,
-			file.ContainerPath,
-			humanize.Bytes(file.Size),
-		),
+		biz.MustGetUser(ctx).Name,
+		copyToPodAuditMsg("[StreamUploadFile]: ", file.Namespace, file.Pod, file.Container, file),
 		file.ID,
 	)
 
@@ -230,349 +231,93 @@ func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPo
 	})
 }
 
-var tailLines int64 = 1000
-
+// StreamContainerLog 流式返回容器日志：实时流/一次性文本的策略选择下沉 containerBiz.LogStream，
+// transport 只做鉴权与帧下发（Running 逐帧转发，其余阶段逐行切分）。
 func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server container.Container_StreamContainerLogServer) error {
+	if _, err := c.accessBiz.RequireNamespaceAccessByName(server.Context(), request.Namespace); err != nil {
+		return err
+	}
 	c.logger.DebugCtxf(server.Context(), "StreamContainerLog: %v", request)
-	podInfo, _ := c.k8sRepo.GetPod(request.Namespace, request.Pod)
-	if podInfo == nil || (!request.ShowEvents && podInfo != nil && podInfo.Status.Phase == v1.PodPending) {
-		return status.Error(codes.NotFound, "未找到日志")
-	}
-
-	if podInfo.Status.Phase == v1.PodSucceeded || podInfo.Status.Phase == v1.PodFailed || podInfo.Status.Phase == v1.PodPending {
-		log, err := c.ContainerLog(server.Context(), request)
-		if err != nil {
-			c.logger.ErrorCtx(server.Context(), err)
-			return err
-		}
-
-		return scannerText(log.Log, func(s string) {
-			server.Send(&container.LogResponse{
-				Namespace:     request.Namespace,
-				PodName:       request.Pod,
-				ContainerName: request.Container,
-				Log:           s,
-			})
-		})
-	}
-
-	ch, err := c.k8sRepo.LogStream(server.Context(), request.Namespace, request.Pod, request.Container)
+	res, err := c.containerBiz.LogStream(server.Context(), &biz.LogInput{
+		Namespace:  request.Namespace,
+		Pod:        request.Pod,
+		Container:  request.Container,
+		ShowEvents: request.ShowEvents,
+	})
 	if err != nil {
-		c.logger.ErrorCtx(server.Context(), err)
 		return err
 	}
 
-	for msg := range ch {
-		if err = server.Send(&container.LogResponse{
+	if res.Source == biz.LogSourceLive {
+		for msg := range res.Stream {
+			if err = server.Send(&container.LogResponse{
+				Namespace:     request.Namespace,
+				PodName:       request.Pod,
+				ContainerName: request.Container,
+				Log:           toValidUTF8String(msg),
+			}); err != nil {
+				c.logger.ErrorCtx(server.Context(), err)
+				return err
+			}
+		}
+		return nil
+	}
+
+	// 一次性文本同样先做 UTF-8 卫生再逐行下发，与 ContainerLog 对齐。
+	return scannerText(toValidUTF8String([]byte(res.Content)), func(s string) {
+		if err := server.Send(&container.LogResponse{
 			Namespace:     request.Namespace,
 			PodName:       request.Pod,
 			ContainerName: request.Container,
-			Log:           toValidUTF8String(msg),
+			Log:           s,
 		}); err != nil {
-			c.logger.ErrorCtx(server.Context(), err)
-			return err
+			// 客户端断连时 Send 失败是常态，记录日志并继续消费剩余行。
+			c.logger.DebugCtx(server.Context(), err)
 		}
-	}
-
-	return nil
+	})
 }
 
-type sizeQueue struct {
-	ch  chan *remotecommand.TerminalSize
-	ctx context.Context
-	r   repo.Recorder
-}
-
-func newSizeQueue(ctx context.Context, ch chan *remotecommand.TerminalSize, r repo.Recorder) remotecommand.TerminalSizeQueue {
-	return &sizeQueue{ch: ch, ctx: ctx, r: r}
-}
-
-func (queue *sizeQueue) Next() *remotecommand.TerminalSize {
-	select {
-	case size, ok := <-queue.ch:
-		if !ok {
-			return nil
-		}
-		if size.Width > 0 && size.Height > 0 {
-			queue.r.Resize(size.Width, size.Height)
-		}
-		return size
-	case <-queue.ctx.Done():
-		return nil
-	}
-}
-
+// Exec 建立双向流交互式终端会话（首帧携带命令/首屏输入/窗口尺寸），透传给 containerBiz.Exec。
 func (c *containerSvc) Exec(server container.Container_ExecServer) error {
-	var (
-		pod       string
-		namespace string
-		co        string
-		cmd       []string
-		once      sync.Once
-
-		ctx, cancelFunc = context.WithCancel(server.Context())
-	)
-	defer cancelFunc()
 	recv, err := server.Recv()
 	if err != nil {
 		return err
 	}
-	co = recv.Container
-	namespace = recv.Namespace
-	pod = recv.Pod
-	cmd = recv.Command
-	// 判断 pod 是否存在
-	running, reason := c.k8sRepo.IsPodRunning(recv.Namespace, recv.Pod)
-	if !running {
-		return errors.New(reason)
+	if _, err := c.accessBiz.RequireNamespaceAccessByName(server.Context(), recv.Namespace); err != nil {
+		return err
 	}
-
-	if co == "" {
-		co, err = c.k8sRepo.FindDefaultContainer(ctx, namespace, pod)
-		if err != nil {
-			return err
-		}
-		c.logger.Debug("使用默认的容器: ", co)
-	}
-
-	r := c.fileRepo.NewRecorder(
-		MustGetUser(ctx),
-		&repo.Container{
-			Namespace: namespace,
-			Pod:       pod,
-			Container: co,
-		},
-	)
-
-	if recv.SizeQueue != nil {
-		r.Resize(uint16(recv.SizeQueue.Width), uint16(recv.SizeQueue.Height))
-	}
-
-	g, ctx := errgroup.WithContext(ctx)
-	sizeCh := make(chan *remotecommand.TerminalSize, 1)
-	queue := newSizeQueue(ctx, sizeCh, r)
-
-	reader, writer := io.Pipe()
-	pipe, pipeWriter := io.Pipe()
-	w := io.MultiWriter(pipeWriter, r)
-
-	closeAll := func() {
-		once.Do(func() {
-			c.logger.DebugCtx(ctx, "closeAll")
-			defer c.logger.DebugCtx(ctx, "closeAll done")
-			reader.Close()
-			writer.Close()
-			pipe.Close()
-			pipeWriter.Close()
-			cancelFunc()
-			r.Close()
-			var fid int
-			if r.File() != nil {
-				fid = r.File().ID
-			}
-			c.eventRepo.FileAuditLogWithDuration(
-				types.EventActionType_Exec,
-				r.User().Name,
-				fmt.Sprintf("[Exec]: 用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.Container().Container, r.Container().Namespace, r.Container().Pod),
-				fid,
-				r.Duration(),
-			)
-		})
-	}
-
-	g.Go(func() error {
-		defer closeAll()
-		if len(recv.Message) > 0 {
-			writer.Write(recv.Message)
-		}
-		for {
-			request, err := server.Recv()
-			if err != nil {
-				c.logger.DebugCtx(ctx, err)
-				return err
-			}
-
-			if request.SizeQueue != nil {
-				c.logger.DebugCtxf(ctx, "Exec: resize w: %d, h: %d", request.SizeQueue.Width, request.SizeQueue.Height)
-				select {
-				case sizeCh <- &remotecommand.TerminalSize{
-					Width:  uint16(request.SizeQueue.Width),
-					Height: uint16(request.SizeQueue.Height),
-				}:
-				default:
-					c.logger.DebugCtx(ctx, "Exec: size queue full")
-				}
-			}
-
-			c.logger.DebugCtxf(ctx, "Exec: %q", request.Message)
-			if _, err := writer.Write(request.Message); err != nil {
-				c.logger.DebugCtx(ctx, err)
-			}
-		}
+	// 首帧携带的 Message/SizeQueue 一并传给 biz：Message 作为终端首屏输入，
+	// SizeQueue 作为会话初始终端窗口（在 recorder 上预先应用）。
+	return c.containerBiz.Exec(server.Context(), server, biz.MustGetUser(server.Context()), &biz.ExecInput{
+		Namespace:    recv.Namespace,
+		Pod:          recv.Pod,
+		Container:    recv.Container,
+		Command:      recv.Command,
+		FirstMessage: recv.Message,
+		InitialSize:  recv.SizeQueue,
 	})
-
-	g.Go(func() error {
-		defer closeAll()
-		rd := bufio.NewReader(pipe)
-		for {
-			b, err := rd.ReadByte()
-			if err != nil {
-				c.logger.DebugCtx(ctx, err)
-				if err == bufio.ErrBufferFull {
-					continue
-				}
-				return err
-			}
-			if err := server.Send(&container.ExecResponse{
-				Message: []byte{b},
-			}); err != nil {
-				c.logger.ErrorCtx(ctx, err)
-				return err
-			}
-		}
-	})
-
-	err = c.k8sRepo.Execute(ctx, &repo.Container{
-		Namespace: namespace,
-		Pod:       pod,
-		Container: co,
-	}, &repo.ExecuteInput{
-		Stdin:             reader,
-		Stdout:            w,
-		Stderr:            w,
-		TTY:               true,
-		Cmd:               cmd,
-		TerminalSizeQueue: queue,
-	})
-	if exitError, ok := err.(clientgoexec.ExitError); ok {
-		server.Send(&container.ExecResponse{
-			Error: &container.ExecError{
-				Code:    int64(exitError.ExitStatus()),
-				Message: exitError.Error(),
-			},
-		})
-	}
-	closeAll()
-	c.logger.DebugCtx(ctx, "Exec: 等待彻底退出", err)
-	go func() {
-		err = g.Wait()
-		c.logger.DebugCtx(ctx, "Exec: 彻底退出", err)
-	}()
-	return err
 }
 
+// ExecOnce 执行单次命令并把结果流回客户端，透传给 containerBiz.ExecOnce。
 func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server container.Container_ExecOnceServer) error {
-	var (
-		err  error
-		ctx  = server.Context()
-		once = sync.Once{}
-	)
-	running, reason := c.k8sRepo.IsPodRunning(request.Namespace, request.Pod)
-	if !running {
-		return errors.New(reason)
+	if _, err := c.accessBiz.RequireNamespaceAccessByName(server.Context(), request.Namespace); err != nil {
+		return err
 	}
-
-	if request.Container == "" {
-		request.Container, err = c.k8sRepo.FindDefaultContainer(ctx, request.Namespace, request.Pod)
-		if err != nil {
-			return err
-		}
-		c.logger.Debug("使用默认的容器: ", request.Container)
-	}
-
-	bf := bytes.NewBuffer(nil)
-	pipe, pipeWriter := io.Pipe()
-
-	closeAll := func() {
-		once.Do(func() {
-			pipe.Close()
-			pipeWriter.Close()
-		})
-	}
-	w := io.MultiWriter(pipeWriter, bf)
-	go func() {
-		defer closeAll()
-		reader := bufio.NewReader(pipe)
-		for {
-			readByte, err := reader.ReadByte()
-			if err != nil {
-				if err == bufio.ErrBufferFull {
-					continue
-				}
-				return
-			}
-			if err = server.Send(&container.ExecResponse{
-				Message: []byte{readByte},
-			}); err != nil {
-				c.logger.DebugCtx(ctx, err)
-			}
-		}
-	}()
-	startTime := c.timer.Now()
-
-	err = c.k8sRepo.Execute(ctx, &repo.Container{
+	return c.containerBiz.ExecOnce(server.Context(), server, biz.MustGetUser(server.Context()), &biz.ExecOnceInput{
 		Namespace: request.Namespace,
 		Pod:       request.Pod,
 		Container: request.Container,
-	}, &repo.ExecuteInput{
-		Stdout: w,
-		Stderr: w,
-		TTY:    false,
-		Cmd:    request.Command,
+		Command:   request.Command,
 	})
-	if exitError, ok := err.(clientgoexec.ExitError); ok {
-		server.Send(&container.ExecResponse{
-			Error: &container.ExecError{
-				Code:    int64(exitError.ExitStatus()),
-				Message: exitError.Error(),
-			},
-		})
-	}
-
-	closeAll()
-	c.eventRepo.AuditLogWithChange(
-		types.EventActionType_Exec,
-		MustGetUser(ctx).Name,
-		fmt.Sprintf("[ExecOnce]: 用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", request.Container, request.Namespace, request.Pod),
-		nil,
-		repo.AnyYamlPrettier{
-			"namespace": request.Namespace,
-			"pod":       request.Pod,
-			"container": request.Container,
-			"command":   request.Command,
-			"result":    bf.String(),
-			"error":     toErrStr(err),
-			"duration":  c.timer.Since(startTime).String(),
-		},
-	)
-	c.logger.DebugCtx(ctx, "ExecOnce: 彻底退出", err)
-	return err
 }
 
-func toErrStr(e error) string {
-	if e == nil {
-		return ""
-	}
-	return e.Error()
-}
-
-type sortEvents []*eventsv1.Event
-
-func (s sortEvents) Len() int {
-	return len(s)
-}
-
-func (s sortEvents) Less(i, j int) bool {
-	return s[i].ResourceVersion < s[j].ResourceVersion
-}
-
-func (s sortEvents) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
+// scannerText 按行切分文本并回调 fn；放大 Scanner 缓冲以容纳超长日志行。
 func scannerText(text string, fn func(s string)) error {
 	scanner := bufio.NewScanner(strings.NewReader(text))
 	scanner.Split(bufio.ScanLines)
+	// 默认 max token 仅 64KB，容器日志单行常见超长（栈回溯、超大 JSON、base64），
+	// 不调大会让整段日志因 bufio.ErrTooLong 而流式失败。
+	scanner.Buffer(make([]byte, 64*1024), 8*1024*1024)
 	for scanner.Scan() {
 		fn(scanner.Text())
 	}
@@ -585,4 +330,12 @@ func toValidUTF8String(b []byte) string {
 		return string(b)
 	}
 	return strings.ToValidUTF8(string(b), "")
+}
+
+// copyToPodAuditMsg 构造"上传文件到 pod"审计消息：CopyToPod/StreamCopyToPod 两入口
+// 共用同一消息结构，仅 prefix 区分入口（流式带 [StreamUploadFile] 标识），避免文案
+// 与 humanize 单位在两处各写一遍导致漂移。
+func copyToPodAuditMsg(prefix, namespace, pod, container string, fil *biz.File) string {
+	return fmt.Sprintf("%s上传文件到 pod: %s/%s/%s, 容器路径: '%s', 大小: %s。",
+		prefix, namespace, pod, container, fil.ContainerPath, humanize.Bytes(fil.Size))
 }

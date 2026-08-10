@@ -5,11 +5,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/api/v5/event"
-	"github.com/duc-cnzj/mars/api/v5/types"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/util/pagination"
+	"github.com/duc-cnzj/mars/api/v6/proto/event"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -18,26 +19,22 @@ import (
 )
 
 func TestNewEventSvc(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	svc := NewEventSvc(mlog.NewForConfig(nil), repo.NewMockEventRepo(m))
+	svc, _ := newEventSvcWithMocks(t)
 	assert.NotNil(t, svc)
-	assert.NotNil(t, svc.(*eventSvc).eventRepo)
+	assert.NotNil(t, svc.eventBiz)
 }
 
 func TestEventSvc_List_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo)
+	svc, mocks := newEventSvcWithMocks(t)
+	eventRepo := mocks.eventRepo
 
-	eventRepo.EXPECT().List(gomock.Any(), &repo.ListEventInput{
+	eventRepo.EXPECT().List(gomock.Any(), &biz.ListEventInput{
 		Page:        1,
 		PageSize:    12,
 		ActionType:  types.EventActionType_Delete,
 		Search:      "x",
 		OrderIDDesc: lo.ToPtr(true),
-	}).Return([]*repo.Event{}, &pagination.Pagination{}, nil)
+	}).Return([]*biz.Event{}, &pagination.Pagination{}, nil)
 
 	resp, err := svc.List(context.TODO(), &event.ListRequest{
 		Page:       lo.ToPtr(int32(1)),
@@ -50,14 +47,12 @@ func TestEventSvc_List_Success(t *testing.T) {
 }
 
 func TestEventSvc_List_Failure(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo)
+	svc, mocks := newEventSvcWithMocks(t)
+	eventRepo := mocks.eventRepo
 
 	req := &event.ListRequest{}
 
-	eventRepo.EXPECT().List(gomock.Any(), &repo.ListEventInput{
+	eventRepo.EXPECT().List(gomock.Any(), &biz.ListEventInput{
 		Page:        1,
 		PageSize:    15,
 		ActionType:  req.ActionType,
@@ -70,10 +65,8 @@ func TestEventSvc_List_Failure(t *testing.T) {
 }
 
 func Test_eventSvc_Show(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo)
+	svc, mocks := newEventSvcWithMocks(t)
+	eventRepo := mocks.eventRepo
 
 	eventRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("x"))
 
@@ -83,35 +76,61 @@ func Test_eventSvc_Show(t *testing.T) {
 }
 
 func Test_eventSvc_Show_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo)
+	svc, mocks := newEventSvcWithMocks(t)
+	eventRepo := mocks.eventRepo
 
-	eventRepo.EXPECT().Show(gomock.Any(), 1).Return(&repo.Event{}, nil)
+	eventRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Event{
+		ID:       42,
+		Action:   types.EventActionType_Create,
+		Username: "duc",
+		Message:  "deployed",
+	}, nil)
 
 	show, err := svc.Show(context.TODO(), &event.ShowRequest{Id: 1})
-	assert.NotNil(t, show)
 	assert.Nil(t, err)
+	if assert.NotNil(t, show) && assert.NotNil(t, show.Item) {
+		assert.Equal(t, int32(42), show.Item.Id)
+		assert.Equal(t, types.EventActionType_Create, show.Item.Action)
+		assert.Equal(t, "duc", show.Item.Username)
+		assert.Equal(t, "deployed", show.Item.Message)
+	}
 }
 
 func TestEventSvc_Authorize_AdminUser(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo).(*eventSvc)
+	svc, _ := newEventSvcWithMocks(t)
 
 	_, err := svc.Authorize(newAdminUserCtx(), "TestMethod")
 	assert.Nil(t, err)
 }
 
 func TestEventSvc_Authorize_NonAdminUser(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	eventRepo := repo.NewMockEventRepo(m)
-	svc := NewEventSvc(mlog.NewForConfig(nil), eventRepo).(*eventSvc)
+	svc, _ := newEventSvcWithMocks(t)
 
 	_, err := svc.Authorize(newOtherUserCtx(), "TestMethod")
 	s, _ := status.FromError(err)
 	assert.Equal(t, codes.PermissionDenied, s.Code())
+}
+
+type eventSvcMocks struct {
+	ctrl      *gomock.Controller
+	eventRepo *data.MockEventRepo
+}
+
+func newEventSvcWithMocks(t *testing.T) (*eventSvc, *eventSvcMocks) {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	mocks := &eventSvcMocks{
+		ctrl:      ctrl,
+		eventRepo: data.NewMockEventRepo(ctrl),
+	}
+	logger := mlog.NewForConfig(nil)
+	s, ok := NewEventSvc(EventSvcDeps{
+		Logger:    logger,
+		EventBiz:  biz.NewEventBiz(mocks.eventRepo),
+		AccessBiz: biz.NewAccessBiz(logger, nil, nil),
+	}).(*eventSvc)
+	if !ok {
+		panic("NewEventSvc returned unexpected type")
+	}
+	return s, mocks
 }

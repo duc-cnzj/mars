@@ -4,47 +4,30 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
-	"github.com/duc-cnzj/mars/api/v5/git"
-	"github.com/duc-cnzj/mars/api/v5/mars"
-	"github.com/duc-cnzj/mars/v5/internal/cache"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
+	"github.com/duc-cnzj/mars/api/v6/proto/git"
+	"github.com/duc-cnzj/mars/api/v6/proto/mars"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
 func TestNewGitSvc(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	svc := NewGitSvc(
-		repo.NewMockRepoRepo(m),
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		repo.NewMockGitRepo(m),
-		cache.NewMockCache(m),
-	)
+	svc, _ := newGitSvcWithMocks(t)
 
 	assert.NotNil(t, svc)
-	assert.NotNil(t, svc.(*gitSvc).eventRepo)
-	assert.NotNil(t, svc.(*gitSvc).logger)
-	assert.NotNil(t, svc.(*gitSvc).gitRepo)
-	assert.NotNil(t, svc.(*gitSvc).cache)
-	assert.NotNil(t, svc.(*gitSvc).repoRepo)
+	assert.NotNil(t, svc.logger)
+	assert.NotNil(t, svc.gitBiz)
+	assert.NotNil(t, svc.repoBiz)
 }
 
 func Test_gitSvc_AllRepos(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	svc := NewGitSvc(
-		repo.NewMockRepoRepo(m),
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
+	svc, mocks := newGitSvcWithMocks(t)
+	gitRepo := mocks.gitRepo
 
 	gitRepo.EXPECT().AllProjects(gomock.Any(), false).Return(nil, errors.New("error"))
 	repos, err := svc.AllRepos(context.TODO(), nil)
@@ -53,18 +36,10 @@ func Test_gitSvc_AllRepos(t *testing.T) {
 }
 
 func Test_gitSvc_AllRepos_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	svc := NewGitSvc(
-		repo.NewMockRepoRepo(m),
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
+	svc, mocks := newGitSvcWithMocks(t)
+	gitRepo := mocks.gitRepo
 
-	gitRepo.EXPECT().AllProjects(gomock.Any(), false).Return([]*repo.GitProject{
+	gitRepo.EXPECT().AllProjects(gomock.Any(), false).Return([]*biz.GitProject{
 		{ID: 1, Name: "a", Description: "aa"},
 		nil,
 	}, nil)
@@ -78,36 +53,20 @@ func Test_gitSvc_AllRepos_Success(t *testing.T) {
 }
 
 func Test_gitSvc_ProjectOptions(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewGitSvc(
-		repoRepo,
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		repo.NewMockGitRepo(m),
-		cache.NewMockCache(m),
-	)
+	svc, mocks := newGitSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
 
-	repoRepo.EXPECT().All(gomock.Any(), &repo.AllRepoRequest{Enabled: lo.ToPtr(true)}).Return(nil, errors.New("error"))
+	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{Enabled: lo.ToPtr(true)}).Return(nil, errors.New("error"))
 	options, err := svc.ProjectOptions(context.TODO(), nil)
 	assert.Nil(t, options)
 	assert.NotNil(t, err)
 }
 
 func Test_gitSvc_ProjectOptions_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewGitSvc(
-		repoRepo,
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		repo.NewMockGitRepo(m),
-		cache.NewMockCache(m),
-	)
+	svc, mocks := newGitSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
 
-	repoRepo.EXPECT().All(gomock.Any(), &repo.AllRepoRequest{Enabled: lo.ToPtr(true)}).Return([]*repo.Repo{
+	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{Enabled: lo.ToPtr(true)}).Return([]*biz.Repo{
 		{
 			ID:           1,
 			Name:         "a",
@@ -122,7 +81,7 @@ func Test_gitSvc_ProjectOptions_Success(t *testing.T) {
 	assert.Equal(t, 1, len(options.Items))
 	assert.Equal(t, "1", options.Items[0].Value)
 	assert.Equal(t, "a", options.Items[0].Label)
-	assert.Equal(t, OptionTypeProject, options.Items[0].Type)
+	assert.Equal(t, optionTypeProject, options.Items[0].Type)
 	assert.Equal(t, false, options.Items[0].IsLeaf)
 	assert.Equal(t, int32(11), options.Items[0].GitProjectId)
 	assert.Equal(t, true, options.Items[0].NeedGitRepo)
@@ -130,16 +89,8 @@ func Test_gitSvc_ProjectOptions_Success(t *testing.T) {
 }
 
 func Test_gitSvc_BranchOptions(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	svc := NewGitSvc(
-		repo.NewMockRepoRepo(m),
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
+	svc, mocks := newGitSvcWithMocks(t)
+	gitRepo := mocks.gitRepo
 	gitRepo.EXPECT().AllBranches(gomock.Any(), 1, false).Return(nil, errors.New("error"))
 	options, err := svc.BranchOptions(context.TODO(), &git.BranchOptionsRequest{
 		GitProjectId: 1,
@@ -150,18 +101,10 @@ func Test_gitSvc_BranchOptions(t *testing.T) {
 }
 
 func Test_gitSvc_BranchOptions_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewGitSvc(
-		repoRepo,
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
-	gitRepo.EXPECT().AllBranches(gomock.Any(), 1, false).Return([]*repo.Branch{
+	svc, mocks := newGitSvcWithMocks(t)
+	gitRepo := mocks.gitRepo
+	repoRepo := mocks.repoRepo
+	gitRepo.EXPECT().AllBranches(gomock.Any(), 1, false).Return([]*biz.Branch{
 		{
 			Name:      "br",
 			IsDefault: true,
@@ -174,7 +117,7 @@ func Test_gitSvc_BranchOptions_Success(t *testing.T) {
 		},
 	}, nil)
 
-	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&repo.Repo{
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{
 		MarsConfig: &mars.Config{Branches: []string{"ccc"}},
 	}, nil)
 	options, err := svc.BranchOptions(context.TODO(), &git.BranchOptionsRequest{
@@ -187,18 +130,10 @@ func Test_gitSvc_BranchOptions_Success(t *testing.T) {
 }
 
 func Test_gitSvc_BranchOptions_Error(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	repoRepo := repo.NewMockRepoRepo(m)
-	svc := NewGitSvc(
-		repoRepo,
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
-	gitRepo.EXPECT().AllBranches(gomock.Any(), 1, false).Return([]*repo.Branch{
+	svc, mocks := newGitSvcWithMocks(t)
+	gitRepo := mocks.gitRepo
+	repoRepo := mocks.repoRepo
+	gitRepo.EXPECT().AllBranches(gomock.Any(), 1, false).Return([]*biz.Branch{
 		{
 			Name:      "br",
 			IsDefault: true,
@@ -219,17 +154,29 @@ func Test_gitSvc_BranchOptions_Error(t *testing.T) {
 	assert.Equal(t, "error", err.Error())
 }
 
+func Test_gitSvc_BranchOptions_NoRepo(t *testing.T) {
+	// 回归防护：RepoId=0（表单未选仓库）时跳过分支白名单过滤，直接返回全部分支。
+	// 改坏实现（>0 写成 >=0 或去掉守卫）会误调用 repoRepo.Get(0)，
+	// 下方未设置该期望，gomock 遇到意外调用必然 FAIL。
+	svc, mocks := newGitSvcWithMocks(t)
+	mocks.gitRepo.EXPECT().AllBranches(gomock.Any(), 1, false).Return([]*biz.Branch{
+		{Name: "br", IsDefault: true, WebURL: "xxx"},
+		{Name: "ccc", IsDefault: true, WebURL: "xxx"},
+	}, nil)
+
+	options, err := svc.BranchOptions(context.TODO(), &git.BranchOptionsRequest{
+		GitProjectId: 1,
+		RepoId:       0,
+	})
+	assert.Nil(t, err)
+	if assert.NotNil(t, options) {
+		assert.Equal(t, 2, len(options.Items), "未选仓库时应返回全部分支，不做白名单过滤")
+	}
+}
+
 func Test_gitSvc_Commit(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	svc := NewGitSvc(
-		repo.NewMockRepoRepo(m),
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
+	svc, mocks := newGitSvcWithMocks(t)
+	gitRepo := mocks.gitRepo
 	gitRepo.EXPECT().GetCommit(gomock.Any(), 1, "commit").Return(nil, errors.New("error"))
 	commit, err := svc.Commit(context.TODO(), &git.CommitRequest{
 		GitProjectId: 1,
@@ -241,37 +188,45 @@ func Test_gitSvc_Commit(t *testing.T) {
 }
 
 func Test_gitSvc_Commit_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	svc := NewGitSvc(
-		repo.NewMockRepoRepo(m),
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
-	gitRepo.EXPECT().GetCommit(gomock.Any(), 1, "commit").Return(&repo.Commit{}, nil)
+	svc, mocks := newGitSvcWithMocks(t)
+	gitRepo := mocks.gitRepo
+	gitRepo.EXPECT().GetCommit(gomock.Any(), 1, "commit").Return(&biz.Commit{
+		ID:             "abc123",
+		ShortID:        "abc",
+		Title:          "fix bug",
+		AuthorName:     "duc",
+		AuthorEmail:    "duc@example.com",
+		CommitterName:  "duc",
+		CommitterEmail: "duc@example.com",
+		WebURL:         "http://git/abc123",
+		Message:        "fix the bug",
+		CommittedDate:  &time.Time{},
+		CreatedAt:      &time.Time{},
+	}, nil)
 	commit, err := svc.Commit(context.TODO(), &git.CommitRequest{
 		GitProjectId: 1,
 		Branch:       "branch",
 		Commit:       "commit",
 	})
 	assert.Nil(t, err)
-	assert.NotNil(t, commit)
+	if assert.NotNil(t, commit) {
+		assert.Equal(t, "abc123", commit.Id)
+		assert.Equal(t, "abc", commit.ShortId)
+		assert.Equal(t, int32(1), commit.GitProjectId)
+		assert.Equal(t, "fix bug", commit.Title)
+		assert.Equal(t, "branch", commit.Branch)
+		assert.Equal(t, "duc", commit.AuthorName)
+		assert.Equal(t, "duc@example.com", commit.AuthorEmail)
+		assert.Equal(t, "duc", commit.CommitterName)
+		assert.Equal(t, "duc@example.com", commit.CommitterEmail)
+		assert.Equal(t, "http://git/abc123", commit.WebUrl)
+		assert.Equal(t, "fix the bug", commit.Message)
+	}
 }
 
 func Test_gitSvc_CommitOptions(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	svc := NewGitSvc(
-		repo.NewMockRepoRepo(m),
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
+	svc, mocks := newGitSvcWithMocks(t)
+	gitRepo := mocks.gitRepo
 	gitRepo.EXPECT().ListCommits(gomock.Any(), 1, "xxx").Return(nil, errors.New("error"))
 	options, err := svc.CommitOptions(context.TODO(), &git.CommitOptionsRequest{
 		GitProjectId: 1,
@@ -282,17 +237,9 @@ func Test_gitSvc_CommitOptions(t *testing.T) {
 }
 
 func Test_gitSvc_CommitOptions_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	svc := NewGitSvc(
-		repo.NewMockRepoRepo(m),
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
-	gitRepo.EXPECT().ListCommits(gomock.Any(), 1, "xxx").Return([]*repo.Commit{
+	svc, mocks := newGitSvcWithMocks(t)
+	gitRepo := mocks.gitRepo
+	gitRepo.EXPECT().ListCommits(gomock.Any(), 1, "xxx").Return([]*biz.Commit{
 		{
 			ID:         "x",
 			ShortID:    "aaa",
@@ -308,35 +255,21 @@ func Test_gitSvc_CommitOptions_Success(t *testing.T) {
 }
 
 func Test_gitSvc_GetChartValuesYaml(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	svc := NewGitSvc(
-		repo.NewMockRepoRepo(m),
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
-	gitRepo.EXPECT().GetChartValuesYaml(gomock.Any(), "").Return("", nil)
+	svc, mocks := newGitSvcWithMocks(t)
+	gitRepo := mocks.gitRepo
+	gitRepo.EXPECT().GetChartValuesYaml(gomock.Any(), "chart-values").Return("image: nginx:latest", nil)
 	resp, err := svc.GetChartValuesYaml(context.TODO(), &git.GetChartValuesYamlRequest{
-		Input: "",
+		Input: "chart-values",
 	})
 	assert.Nil(t, err)
-	assert.NotNil(t, resp)
+	if assert.NotNil(t, resp) {
+		assert.Equal(t, "image: nginx:latest", resp.Values)
+	}
 }
 
 func Test_gitSvc_GetChartValuesYaml_error(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	svc := NewGitSvc(
-		repo.NewMockRepoRepo(m),
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
+	svc, mocks := newGitSvcWithMocks(t)
+	gitRepo := mocks.gitRepo
 	gitRepo.EXPECT().GetChartValuesYaml(gomock.Any(), "").Return("", errors.New("x"))
 	resp, err := svc.GetChartValuesYaml(context.TODO(), &git.GetChartValuesYamlRequest{
 		Input: "",
@@ -346,18 +279,10 @@ func Test_gitSvc_GetChartValuesYaml_error(t *testing.T) {
 }
 
 func Test_gitSvc_PipelineInfo_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	svc := NewGitSvc(
-		repo.NewMockRepoRepo(m),
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
+	svc, mocks := newGitSvcWithMocks(t)
+	gitRepo := mocks.gitRepo
 
-	gitRepo.EXPECT().GetCommitPipeline(gomock.Any(), 1, "main", "commit").Return(&repo.Pipeline{
+	gitRepo.EXPECT().GetCommitPipeline(gomock.Any(), 1, "main", "commit").Return(&biz.Pipeline{
 		Status: "success",
 		WebURL: "https://example.com",
 	}, nil)
@@ -375,16 +300,8 @@ func Test_gitSvc_PipelineInfo_Success(t *testing.T) {
 }
 
 func Test_gitSvc_PipelineInfo_Error(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	gitRepo := repo.NewMockGitRepo(m)
-	svc := NewGitSvc(
-		repo.NewMockRepoRepo(m),
-		repo.NewMockEventRepo(m),
-		mlog.NewForConfig(nil),
-		gitRepo,
-		cache.NewMockCache(m),
-	)
+	svc, mocks := newGitSvcWithMocks(t)
+	gitRepo := mocks.gitRepo
 
 	gitRepo.EXPECT().GetCommitPipeline(gomock.Any(), 1, "main", "commit").Return(nil, errors.New("error"))
 
@@ -396,4 +313,29 @@ func Test_gitSvc_PipelineInfo_Error(t *testing.T) {
 
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
+}
+
+type gitSvcMocks struct {
+	ctrl     *gomock.Controller
+	gitRepo  *data.MockGitRepo
+	repoRepo *data.MockRepoRepo
+}
+
+func newGitSvcWithMocks(t *testing.T) (*gitSvc, *gitSvcMocks) {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	mocks := &gitSvcMocks{
+		ctrl:     ctrl,
+		gitRepo:  data.NewMockGitRepo(ctrl),
+		repoRepo: data.NewMockRepoRepo(ctrl),
+	}
+	s, ok := NewGitSvc(GitSvcDeps{
+		RepoBiz: biz.NewRepoBiz(mocks.repoRepo),
+		Logger:  mlog.NewForConfig(nil),
+		GitBiz:  biz.NewGitBiz(mocks.gitRepo),
+	}).(*gitSvc)
+	if !ok {
+		panic("NewGitSvc returned unexpected type")
+	}
+	return s, mocks
 }

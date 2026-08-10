@@ -1,59 +1,133 @@
 package services
 
 import (
-	"context"
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/api/v5/changelog"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
+	"github.com/duc-cnzj/mars/api/v6/proto/changelog"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
-func TestNewChangelogSvc(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	svc := NewChangelogSvc(repo.NewMockChangelogRepo(m))
-	assert.NotNil(t, svc)
-	assert.NotNil(t, svc.(*changelogSvc).repo)
+// changelogSvcMocks 聚合 changelogSvc 的全部下游 mock，由 newChangelogSvcWithMocks 统一构造。
+type changelogSvcMocks struct {
+	ctrl     *gomock.Controller
+	clRepo   *data.MockChangelogRepo
+	projRepo *data.MockProjectRepo
+	nsRepo   *data.MockNamespaceRepo
 }
 
-func Test_changelogSvc_FindLastChangelogsByProjectID(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	changelogRepo := repo.NewMockChangelogRepo(m)
-	svc := NewChangelogSvc(changelogRepo)
+func newChangelogSvcWithMocks(t *testing.T) (*changelogSvc, *changelogSvcMocks) {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	mocks := &changelogSvcMocks{
+		ctrl:     ctrl,
+		clRepo:   data.NewMockChangelogRepo(ctrl),
+		projRepo: data.NewMockProjectRepo(ctrl),
+		nsRepo:   data.NewMockNamespaceRepo(ctrl),
+	}
+	logger := mlog.NewForConfig(nil)
+	s, ok := NewChangelogSvc(ChangelogSvcDeps{
+		ClBiz:     biz.NewChangelogBiz(mocks.clRepo),
+		Logger:    logger,
+		AccessBiz: biz.NewAccessBiz(logger, biz.NewNsRepoBiz(mocks.nsRepo), biz.NewProjectBiz(logger, mocks.projRepo, nil)),
+	}).(*changelogSvc)
+	if !ok {
+		panic("NewChangelogSvc returned unexpected type")
+	}
+	return s, mocks
+}
 
-	changelogRepo.EXPECT().FindLastChangelogsByProjectID(gomock.Any(), &repo.FindLastChangelogsByProjectIDChangeLogInput{
+func TestNewChangelogSvc(t *testing.T) {
+	svc, _ := newChangelogSvcWithMocks(t)
+	assert.NotNil(t, svc)
+	assert.NotNil(t, svc.clBiz)
+	assert.NotNil(t, svc.accessBiz)
+}
+
+func Test_changelogSvc_FindLastChangelogsByProjectID_RepoError(t *testing.T) {
+	svc, mocks := newChangelogSvcWithMocks(t)
+	clRepo, projRepo, nsRepo := mocks.clRepo, mocks.projRepo, mocks.nsRepo
+
+	projRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "a"}, nil)
+	clRepo.EXPECT().FindLastChangelogsByProjectID(gomock.Any(), &biz.FindLastChangelogsByProjectIDChangeLogInput{
 		OnlyChanged:        true,
 		ProjectID:          1,
 		OrderByVersionDesc: lo.ToPtr(true),
 		Limit:              5,
 	}).Return(nil, errors.New("x"))
 
-	_, err := svc.FindLastChangelogsByProjectID(context.TODO(), &changelog.FindLastChangelogsByProjectIDRequest{
+	_, err := svc.FindLastChangelogsByProjectID(newAdminUserCtx(), &changelog.FindLastChangelogsByProjectIDRequest{
 		ProjectId:   1,
 		OnlyChanged: true,
 	})
 	assert.Error(t, err)
 }
 
-func Test_changelogSvc_FindLastChangelogsByProjectID_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	changelogRepo := repo.NewMockChangelogRepo(m)
-	svc := NewChangelogSvc(changelogRepo)
+func Test_changelogSvc_FindLastChangelogsByProjectID_ProjectShowError(t *testing.T) {
+	svc, mocks := newChangelogSvcWithMocks(t)
+	projRepo := mocks.projRepo
 
-	changelogRepo.EXPECT().FindLastChangelogsByProjectID(gomock.Any(), &repo.FindLastChangelogsByProjectIDChangeLogInput{
+	projRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("project error"))
+
+	_, err := svc.FindLastChangelogsByProjectID(newAdminUserCtx(), &changelog.FindLastChangelogsByProjectIDRequest{
+		ProjectId:   1,
+		OnlyChanged: true,
+	})
+	assert.Error(t, err)
+}
+
+func Test_changelogSvc_FindLastChangelogsByProjectID_NamespaceShowError(t *testing.T) {
+	svc, mocks := newChangelogSvcWithMocks(t)
+	projRepo, nsRepo := mocks.projRepo, mocks.nsRepo
+
+	projRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("namespace error"))
+
+	_, err := svc.FindLastChangelogsByProjectID(newAdminUserCtx(), &changelog.FindLastChangelogsByProjectIDRequest{
+		ProjectId:   1,
+		OnlyChanged: true,
+	})
+	assert.Error(t, err)
+}
+
+// 回归防护：私有命名空间项目的 changelog（含部署配置 + 环境变量）不允许被
+// 非 admin / 非创建者 / 非成员读取。去掉 FindLastChangelogsByProjectID 里的
+// CanAccess 检查，本测试必须失败。
+func Test_changelogSvc_FindLastChangelogsByProjectID_AccessDenied(t *testing.T) {
+	svc, mocks := newChangelogSvcWithMocks(t)
+	projRepo, nsRepo := mocks.projRepo, mocks.nsRepo
+
+	projRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true, CreatorEmail: "other@x.com"}, nil)
+
+	resp, err := svc.FindLastChangelogsByProjectID(newOtherUserCtx(), &changelog.FindLastChangelogsByProjectIDRequest{
+		ProjectId:   1,
+		OnlyChanged: true,
+	})
+	assert.Nil(t, resp)
+	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+}
+
+func Test_changelogSvc_FindLastChangelogsByProjectID_Success(t *testing.T) {
+	svc, mocks := newChangelogSvcWithMocks(t)
+	clRepo, projRepo, nsRepo := mocks.clRepo, mocks.projRepo, mocks.nsRepo
+
+	projRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "a"}, nil)
+	clRepo.EXPECT().FindLastChangelogsByProjectID(gomock.Any(), &biz.FindLastChangelogsByProjectIDChangeLogInput{
 		OnlyChanged:        true,
 		ProjectID:          1,
 		OrderByVersionDesc: lo.ToPtr(true),
 		Limit:              5,
-	}).Return([]*repo.Changelog{}, nil)
+	}).Return([]*biz.Changelog{}, nil)
 
-	resp, err := svc.FindLastChangelogsByProjectID(context.TODO(), &changelog.FindLastChangelogsByProjectIDRequest{
+	resp, err := svc.FindLastChangelogsByProjectID(newAdminUserCtx(), &changelog.FindLastChangelogsByProjectIDRequest{
 		ProjectId:   1,
 		OnlyChanged: true,
 	})
