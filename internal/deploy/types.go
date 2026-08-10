@@ -214,11 +214,6 @@ func (e *emptyPubSub) ToAll(message application.WebsocketMessage) error {
 	return nil
 }
 
-// ToOthers 空实现。
-func (e *emptyPubSub) ToOthers(message application.WebsocketMessage) error {
-	return nil
-}
-
 // Subscribe 空实现，恒返回 nil channel。
 func (e *emptyPubSub) Subscribe() <-chan []byte {
 	return nil

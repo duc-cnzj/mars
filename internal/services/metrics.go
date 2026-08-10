@@ -62,7 +62,7 @@ func (m *metricsSvc) TopPod(ctx context.Context, request *metrics.TopPodRequest)
 	// 与 CpuMemoryInProject/Namespace 对齐：原始 k8s namespace 名必须过访问控制，
 	// 否则任意登录用户可枚举任意命名空间内 pod 的资源用量。
 	if _, err := m.accessBiz.RequireNamespaceAccessByName(ctx, request.Namespace); err != nil {
-		return nil, err
+		return nil, logError(ctx, m.logger, err)
 	}
 	sample, err := m.metricsBiz.PodSample(ctx, request.Namespace, request.Pod)
 	if err != nil {
@@ -82,7 +82,7 @@ func (m *metricsSvc) TopPod(ctx context.Context, request *metrics.TopPodRequest)
 func (m *metricsSvc) StreamTopPod(request *metrics.TopPodRequest, server metrics.Metrics_StreamTopPodServer) error {
 	// 与 TopPod 一致：流式场景同样要求命名空间访问控制，防止未授权用户订阅任意 pod 资源用量。
 	if _, err := m.accessBiz.RequireNamespaceAccessByName(server.Context(), request.Namespace); err != nil {
-		return err
+		return logError(server.Context(), m.logger, err)
 	}
 	ticker := time.NewTicker(tickDuration)
 	defer ticker.Stop()
@@ -126,7 +126,7 @@ func (m *metricsSvc) StreamTopPod(request *metrics.TopPodRequest, server metrics
 func (m *metricsSvc) CpuMemoryInProject(ctx context.Context, request *metrics.CpuMemoryInProjectRequest) (*metrics.CpuMemoryInProjectResponse, error) {
 	p, err := m.accessBiz.RequireProjectAccess(ctx, int(request.ProjectId))
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, m.logger, err)
 	}
 	cpu, memory := biz.ProjectCpuMemory(ctx, m.k8sBiz, p)
 
@@ -142,7 +142,7 @@ func (m *metricsSvc) CpuMemoryInNamespace(ctx context.Context, request *metrics.
 	// 与 CpuMemoryInProject 一致：私有命名空间的资源用量只对 admin/创建者/成员可见。
 	ns, nerr := m.accessBiz.RequireNamespaceAccessByID(ctx, int(request.NamespaceId))
 	if nerr != nil {
-		return nil, nerr
+		return nil, logError(ctx, m.logger, nerr)
 	}
 
 	cpu, memory := m.k8sBiz.GetCpuAndMemoryInNamespace(ctx, ns.Name)

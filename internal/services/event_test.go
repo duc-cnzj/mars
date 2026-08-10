@@ -127,7 +127,7 @@ func newEventSvcWithMocks(t *testing.T) (*eventSvc, *eventSvcMocks) {
 	s, ok := NewEventSvc(EventSvcDeps{
 		Logger:    logger,
 		EventBiz:  biz.NewEventBiz(mocks.eventRepo),
-		AccessBiz: biz.NewAccessBiz(logger, nil, nil),
+		AccessBiz: biz.NewAccessBiz(nil, nil),
 	}).(*eventSvc)
 	if !ok {
 		panic("NewEventSvc returned unexpected type")

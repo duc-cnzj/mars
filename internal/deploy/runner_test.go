@@ -17,6 +17,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/application"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/locker"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/uploader"
@@ -187,7 +188,6 @@ func TestEmptyPubSubMethods(t *testing.T) {
 	assert.Equal(t, "", e.ID(), "ID should return an empty string")
 	assert.NoError(t, e.ToSelf(nil), "ToSelf should not return an error")
 	assert.NoError(t, e.ToAll(nil), "ToAll should not return an error")
-	assert.NoError(t, e.ToOthers(nil), "ToOthers should not return an error")
 	assert.Nil(t, e.Subscribe(), "Subscribe should return nil")
 	assert.NoError(t, e.Close(), "Close should not return an error")
 }
@@ -1533,14 +1533,14 @@ func Test_jobRunner_Validate_FindByName_NotFound_CreatesProject(t *testing.T) {
 	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
 
 	// 只有确切的 NotFound 才走"新建项目"分支；data 边界将 ent.NotFoundError 转成
-	// gRPC NotFound，mock 里用 biz.WrapToError(404) 构造等价的 NotFound，断言错误
+	// gRPC NotFound，mock 里用 errs.WrapNotFound() 构造等价的 NotFound，断言错误
 	// 源自 Create 而非 FindByName，与 Test_jobRunner_Validate_Fail 里的非 NotFound
 	// fail-fast 用例形成判别对。
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{ID: 1}, nil)
 	repoRepo.EXPECT().Get(gomock.Any(), 12).Return(&biz.Repo{
 		MarsConfig: &mars.Config{},
 	}, nil)
-	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(nil, biz.WrapToError(404, errors.New("not found"), "find project by name"))
+	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(nil, errs.WrapNotFound(errors.New("not found"), "find project by name"))
 	projectRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, errors.New("create failed"))
 
 	job := &jobRunner{
@@ -1581,7 +1581,7 @@ func Test_jobRunner_Validate_FindByName_NotFound_CreatesProject_Success(t *testi
 		MarsConfig:  &mars.Config{},
 		NeedGitRepo: false,
 	}, nil)
-	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(nil, biz.WrapToError(404, errors.New("not found"), "find project by name"))
+	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(nil, errs.WrapNotFound(errors.New("not found"), "find project by name"))
 	projectRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&biz.Project{ID: 7}, nil)
 
 	job := &jobRunner{
@@ -1843,7 +1843,7 @@ func Test_jobRunner_Validate_CreatePath_OnErrorOnFinally(t *testing.T) {
 		MarsConfig:  &mars.Config{},
 		NeedGitRepo: false,
 	}, nil)
-	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(nil, biz.WrapToError(404, errors.New("not found"), "find project by name"))
+	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(nil, errs.WrapNotFound(errors.New("not found"), "find project by name"))
 	projectRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&biz.Project{ID: 7}, nil)
 	// OnError 清理回调：删除刚创建的项目
 	projectRepo.EXPECT().Delete(gomock.Any(), 7).Return(nil)

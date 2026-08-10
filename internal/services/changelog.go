@@ -47,7 +47,7 @@ func (c *changelogSvc) FindLastChangelogsByProjectID(ctx context.Context, reques
 	// 完整部署配置(Config)与环境变量(EnvValues)，属于私有命名空间的项目必须做
 	// 命名空间级访问控制，否则任意登录用户可枚举 ProjectID 读到私有项目的密钥。
 	if _, err := c.accessBiz.RequireProjectAccess(ctx, int(request.ProjectId)); err != nil {
-		return nil, err
+		return nil, logError(ctx, c.logger, err)
 	}
 
 	logs, err := c.clBiz.FindLastChangelogsByProjectID(ctx, &biz.FindLastChangelogsByProjectIDChangeLogInput{

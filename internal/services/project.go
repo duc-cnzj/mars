@@ -114,7 +114,7 @@ func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyReques
 		input.GetDryRun(),
 	)
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, p.logger, err)
 	}
 
 	var projectModel *types.ProjectModel
@@ -152,7 +152,7 @@ func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 		false,
 	)
 
-	return err
+	return logError(ctx, p.logger, err)
 }
 
 // apply 是 Apply/WebApply 共用的部署编排入口：按需创建 websocket pubsub，
@@ -205,7 +205,7 @@ func (p *projectSvc) apply(
 func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*project.ShowResponse, error) {
 	projectModel, err := p.accessBiz.RequireProjectAccess(ctx, int(request.Id))
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, p.logger, err)
 	}
 
 	return &project.ShowResponse{
@@ -217,7 +217,7 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 func (p *projectSvc) MemoryCpuAndEndpoints(ctx context.Context, req *project.MemoryCpuAndEndpointsRequest) (*project.MemoryCpuAndEndpointsResponse, error) {
 	projectModel, err := p.accessBiz.RequireProjectAccess(ctx, int(req.Id))
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, p.logger, err)
 	}
 	cpu, memory := biz.ProjectCpuMemory(ctx, p.k8sBiz, projectModel)
 	urls, err := p.projBiz.GetProjectEndpointsInNamespace(ctx, projectModel.Namespace.Name, projectModel.ID)
@@ -235,7 +235,7 @@ func (p *projectSvc) MemoryCpuAndEndpoints(ctx context.Context, req *project.Mem
 func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest) (*project.DeleteResponse, error) {
 	proj, err := p.accessBiz.RequireProjectAccess(ctx, int(request.Id))
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, p.logger, err)
 	}
 
 	// 卸载顺序不变式（先卸载 release 成功才删 DB，失败保留记录可重试）已收敛到 biz.DeployBiz。
@@ -259,7 +259,7 @@ func (p *projectSvc) Version(ctx context.Context, req *project.VersionRequest) (
 	// 与 Show/MemoryCpuAndEndpoints/Delete/AllContainers 对齐：Version 也按 ProjectID
 	// 解析资源，私有命名空间的项目版本（反映部署频率/活跃度）不允许被非授权用户探测。
 	if _, err := p.accessBiz.RequireProjectAccess(ctx, int(req.Id)); err != nil {
-		return nil, err
+		return nil, logError(ctx, p.logger, err)
 	}
 
 	v, err := p.projBiz.Version(ctx, int(req.Id))
@@ -273,7 +273,7 @@ func (p *projectSvc) Version(ctx context.Context, req *project.VersionRequest) (
 // AllContainers 返回项目下全部活跃容器，响应前做项目级访问控制。
 func (p *projectSvc) AllContainers(ctx context.Context, request *project.AllContainersRequest) (*project.AllContainersResponse, error) {
 	if _, err := p.accessBiz.RequireProjectAccess(ctx, int(request.Id)); err != nil {
-		return nil, err
+		return nil, logError(ctx, p.logger, err)
 	}
 	pods, err := p.projBiz.GetAllActiveContainers(ctx, int(request.Id))
 	if err != nil {

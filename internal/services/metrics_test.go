@@ -9,6 +9,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/metrics"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	"github.com/stretchr/testify/assert"
@@ -102,7 +103,7 @@ func TestMetricsSvc_TopPod_AccessDenied(t *testing.T) {
 	})
 
 	assert.Nil(t, res)
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func TestMetricsSvc_TopPod_FindByNameError(t *testing.T) {
@@ -248,7 +249,7 @@ func TestMetricsSvc_CpuMemoryInProject_AccessDenied(t *testing.T) {
 	})
 
 	assert.Nil(t, res)
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 // 回归防护：私有命名空间资源用量不允许被非授权用户读取。
@@ -264,7 +265,7 @@ func TestMetricsSvc_CpuMemoryInNamespace_AccessDenied(t *testing.T) {
 	})
 
 	assert.Nil(t, res)
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func TestMetricsSvc_Metrics_Success(t *testing.T) {
@@ -437,7 +438,7 @@ func TestMetricsSvc_StreamTopPod_AccessDenied(t *testing.T) {
 		Pod:       "pod1",
 	}, server)
 
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 // metricsSvcMocks 聚合 metricsSvc 的全部下游 mock，由 newMetricsSvcWithMocks 统一构造。
@@ -465,7 +466,7 @@ func newMetricsSvcWithMocks(t *testing.T) (*metricsSvc, *metricsSvcMocks) {
 		K8sBiz:     biz.NewK8sBiz(mocks.k8sRepo),
 		MetricsBiz: biz.NewMetricsBiz(biz.NewK8sBiz(mocks.k8sRepo)),
 		Logger:     logger,
-		AccessBiz:  biz.NewAccessBiz(logger, biz.NewNsRepoBiz(mocks.nsRepo), biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo)),
+		AccessBiz:  biz.NewAccessBiz(biz.NewNsRepoBiz(mocks.nsRepo), biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo)),
 	}).(*metricsSvc)
 	if !ok {
 		panic("NewMetricsSvc returned unexpected type")

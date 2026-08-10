@@ -94,7 +94,7 @@ func buildHttpHandlerDeps(t *testing.T, mocks *httpHandlerMocks) HttpHandlerDeps
 		K8sBiz:       biz.NewK8sBiz(mocks.k8sRepo),
 		// copyFromPod 的容器解析走真实 ContainerBiz：非空 container 直返，不触达 k8sRepo。
 		ContainerBiz: biz.NewContainerBiz(logger, biz.NewK8sBiz(mocks.k8sRepo), biz.NewFileBiz(mocks.fileRepo), biz.NewEventBiz(mocks.eventRepo), timer.NewReal()),
-		AccessBiz:    biz.NewAccessBiz(logger, biz.NewNsRepoBiz(mocks.nsRepo), nil),
+		AccessBiz:    biz.NewAccessBiz(biz.NewNsRepoBiz(mocks.nsRepo), nil),
 	}
 }
 

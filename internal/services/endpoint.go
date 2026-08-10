@@ -40,7 +40,7 @@ func NewEndpointSvc(deps EndpointSvcDeps) endpoint.EndpointServer {
 // InNamespace 返回命名空间下全部可用端点，响应前做命名空间级访问控制。
 func (e *endpointSvc) InNamespace(ctx context.Context, request *endpoint.InNamespaceRequest) (*endpoint.InNamespaceResponse, error) {
 	if _, nserr := e.accessBiz.RequireNamespaceAccessByID(ctx, int(request.NamespaceId)); nserr != nil {
-		return nil, nserr
+		return nil, logError(ctx, e.logger, nserr)
 	}
 
 	res, err := e.epBiz.InNamespace(ctx, int(request.NamespaceId))
@@ -53,7 +53,7 @@ func (e *endpointSvc) InNamespace(ctx context.Context, request *endpoint.InNames
 // InProject 返回项目关联的全部端点，响应前做项目级访问控制。
 func (e *endpointSvc) InProject(ctx context.Context, request *endpoint.InProjectRequest) (*endpoint.InProjectResponse, error) {
 	if _, err := e.accessBiz.RequireProjectAccess(ctx, int(request.ProjectId)); err != nil {
-		return nil, err
+		return nil, logError(ctx, e.logger, err)
 	}
 
 	res, err := e.epBiz.InProject(ctx, int(request.ProjectId))

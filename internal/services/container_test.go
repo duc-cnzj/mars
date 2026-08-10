@@ -14,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	"github.com/stretchr/testify/assert"
@@ -57,7 +58,7 @@ func Test_containerSvc_IsPodRunning_PermissionDenied(t *testing.T) {
 		Namespace: "a",
 		Pod:       "b",
 	})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func Test_containerSvc_IsPodExists(t *testing.T) {
@@ -745,7 +746,7 @@ func TestContainerSvc_ContainerLog_PermissionDenied(t *testing.T) {
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
 
 	_, err := svc.ContainerLog(newOtherUserCtx(), &container.LogRequest{Namespace: "a", Pod: "b"})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func TestContainerSvc_ContainerLog_GetPodError(t *testing.T) {
@@ -778,7 +779,7 @@ func TestContainerSvc_CopyToPod_PermissionDenied(t *testing.T) {
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
 
 	_, err := svc.CopyToPod(newOtherUserCtx(), &container.CopyToPodRequest{Namespace: "a", Pod: "b"})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func TestContainerSvc_StreamCopyToPod_PermissionDenied(t *testing.T) {
@@ -789,7 +790,7 @@ func TestContainerSvc_StreamCopyToPod_PermissionDenied(t *testing.T) {
 	err := svc.StreamCopyToPod(&streamCopyToPodServer{ctx: newOtherUserCtx(), recv: []*container.StreamCopyToPodRequest{
 		{Namespace: "a", Pod: "b", Container: "c"},
 	}})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func TestContainerSvc_StreamCopyToPod_FindDefaultContainerError(t *testing.T) {
@@ -843,7 +844,7 @@ func TestContainerSvc_StreamContainerLog_PermissionDenied(t *testing.T) {
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
 
 	err := svc.StreamContainerLog(&container.LogRequest{Namespace: "a", Pod: "b"}, &logStreamServer{ctx: newOtherUserCtx()})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func TestContainerSvc_StreamContainerLog_GetPodError(t *testing.T) {
@@ -902,7 +903,7 @@ func TestContainerSvc_ExecOnce_PermissionDenied(t *testing.T) {
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
 
 	err := svc.ExecOnce(&container.ExecOnceRequest{Namespace: "a", Pod: "b"}, &execOnceServer{ctx: newOtherUserCtx()})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func TestContainerSvc_ExecOnce_FindDefaultContainerError(t *testing.T) {
@@ -932,7 +933,7 @@ func TestContainerSvc_Exec_PermissionDenied(t *testing.T) {
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
 
 	err := svc.Exec(&execServerMock{})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func TestContainerSvc_Exec_FindDefaultContainerError(t *testing.T) {
@@ -953,7 +954,7 @@ func Test_containerSvc_IsPodExists_PermissionDenied(t *testing.T) {
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
 
 	_, err := svc.IsPodExists(newOtherUserCtx(), &container.IsPodExistsRequest{Namespace: "a", Pod: "b"})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func TestContainerSvc_StreamCopyToPod_MultipleMessages(t *testing.T) {
@@ -1524,7 +1525,7 @@ func newContainerSvcWithMocks(t *testing.T) (*containerSvc, *containerSvcMocks) 
 		EventBiz:     biz.NewEventBiz(mocks.eventRepo),
 		K8sBiz:       biz.NewK8sBiz(mocks.k8sRepo),
 		FileBiz:      biz.NewFileBiz(mocks.fileRepo),
-		AccessBiz:    biz.NewAccessBiz(mlog.NewForConfig(nil), biz.NewNsRepoBiz(mocks.nsRepo), nil),
+		AccessBiz:    biz.NewAccessBiz(biz.NewNsRepoBiz(mocks.nsRepo), nil),
 		Logger:       mlog.NewForConfig(nil),
 	}).(*containerSvc)
 	if !ok {

@@ -8,6 +8,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -49,7 +50,7 @@ func TestEndpointSvc_InProject_PermissionDenied(t *testing.T) {
 	projRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
 	_, err := svc.InProject(newOtherUserCtx(), &endpoint.InProjectRequest{ProjectId: 1})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func TestNewEndpointSvc(t *testing.T) {
@@ -77,7 +78,7 @@ func Test_endpointSvc_InNamespace_PermissionDenied(t *testing.T) {
 	_, err := svc.InNamespace(newOtherUserCtx(), &endpoint.InNamespaceRequest{
 		NamespaceId: 1,
 	})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func Test_endpointSvc_InNamespace_Fail(t *testing.T) {
@@ -145,7 +146,7 @@ func newEndpointSvcWithMocks(t *testing.T) (*endpointSvc, *endpointSvcMocks) {
 	s, ok := NewEndpointSvc(EndpointSvcDeps{
 		Logger:    logger,
 		EpBiz:     mocks.epBiz,
-		AccessBiz: biz.NewAccessBiz(logger, biz.NewNsRepoBiz(mocks.nsRepo), biz.NewProjectBiz(logger, mocks.projRepo, nil)),
+		AccessBiz: biz.NewAccessBiz(biz.NewNsRepoBiz(mocks.nsRepo), biz.NewProjectBiz(logger, mocks.projRepo, nil)),
 	}).(*endpointSvc)
 	if !ok {
 		panic("NewEndpointSvc returned unexpected type")

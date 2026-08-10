@@ -96,7 +96,7 @@ func TestWebsocketManager_HandleJoinRoom(t *testing.T) {
 
 	wm := &websocketManager{
 		logger:    mlog.NewForConfig(nil),
-		accessBiz: biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, projBiz),
+		accessBiz: biz.NewAccessBiz(nsRepoBiz, projBiz),
 	}
 	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{ID: "1", Name: "u", Email: "u@mars.com"})
 	wm.HandleJoinRoom(ctx, conn, ProjectPodEvent, marshal)
@@ -115,7 +115,7 @@ func TestWebsocketManager_HandleStartShell(t *testing.T) {
 
 	wm := &websocketManager{
 		logger:    mlog.NewForConfig(nil),
-		accessBiz: biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, nil),
+		accessBiz: biz.NewAccessBiz(nsRepoBiz, nil),
 	}
 	sub := application.NewMockPubSub(m)
 	conn := &wsConn{pubSub: sub, id: "testConnID", uid: "testConnUID"}
@@ -233,7 +233,7 @@ func TestWebsocketManager_HandleCreateProject(t *testing.T) {
 	jb := deploy.NewMockJobManager(m)
 	wm := &websocketManager{
 		logger:     mlog.NewForConfig(nil),
-		accessBiz:  biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, nil),
+		accessBiz:  biz.NewAccessBiz(nsRepoBiz, nil),
 		eventRepo:  eventRepo,
 		jobManager: jb,
 		repoBiz:    repoBiz,
@@ -302,7 +302,7 @@ func TestWebsocketManager_HandleUpdateProject(t *testing.T) {
 	jb := deploy.NewMockJobManager(m)
 	wm := &websocketManager{
 		logger:     mlog.NewForConfig(nil),
-		accessBiz:  biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, projBiz),
+		accessBiz:  biz.NewAccessBiz(nsRepoBiz, projBiz),
 		eventRepo:  eventRepo,
 		jobManager: jb,
 		repoBiz:    repoBiz,
@@ -370,7 +370,7 @@ func TestNewWebsocketManager(t *testing.T) {
 	repoBiz := biz.NewMockRepoBiz(m)
 	gitBiz := biz.NewMockGitBiz(m)
 	nsRepoBiz := biz.NewMockNsRepoBiz(m)
-	accessBiz := biz.NewAccessBiz(logger, nsRepoBiz, nil)
+	accessBiz := biz.NewAccessBiz(nsRepoBiz, nil)
 	nsRepo := data.NewMockNamespaceRepo(m)
 	jobManager := deploy.NewMockJobManager(m)
 	pl := application.NewMockPluginManager(m)

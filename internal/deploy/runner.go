@@ -11,6 +11,7 @@ import (
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/application"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/locker"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/transformer"
@@ -35,7 +36,7 @@ var ErrCancel = errors.New("取消本次部署，自动回滚到上一个版本�
 
 // Result* 是部署结果状态（websocket_pb.ResultType 的语义别名），
 // 由 deployResult 记录并由 DeployMsger 上报，故保留在部署侧。
-// Ws* 协议类型标签与连接调优常量属于 ws 传输层，见 internal/services/websocket/const.go。
+// Ws* 协议类型标签与连接调优常量属于 ws 传输层，见 internal/services/websocket/conn.go。
 const (
 	ResultError             = websocket_pb.ResultType_Error
 	ResultSuccess           = websocket_pb.ResultType_Success
@@ -309,7 +310,7 @@ func (j *jobRunner) Validate() Job {
 		// 只有确切的"记录不存在"才走新建分支。DB 抖动/网络错误等非 NotFound
 		// 一律直接失败：否则会把"查询失败"误判为"项目不存在"，
 		// 客户端重试时会对同一项目反复创建，产生重复项目行。
-		if !biz.IsNotFound(err) {
+		if !errs.IsNotFound(err) {
 			return j.SetError(err)
 		}
 		createProjectInput := &biz.CreateProjectInput{
@@ -330,7 +331,6 @@ func (j *jobRunner) Validate() Job {
 		if j.IsNotDryRun() {
 			j.project, err = j.projRepo.Create(context.TODO(), createProjectInput)
 			if err != nil {
-				j.logger.Warning(err)
 				return j.SetError(err)
 			}
 			createdID := j.project.ID
@@ -494,7 +494,8 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 			messageChan:    j.messageCh,
 			percenter:      j.messager,
 		}); err != nil {
-			j.logger.Errorf("[Websocket]: %v", err)
+			// 失败帧照常下发给客户端（进度流以 MessageError 收尾），错误本身交由上层
+			// services logError 统一打印，避免同一错误在 deploy 层双留痕。
 			j.messageCh.Send(MessageItem{
 				Msg:  err.Error(),
 				Type: MessageError,
@@ -538,7 +539,6 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 		if j.IsNotDryRun() {
 			j.project, err = j.projRepo.UpdateProject(context.TODO(), updateProjectInput)
 			if err != nil {
-				j.logger.Warning(err)
 				return err
 			}
 

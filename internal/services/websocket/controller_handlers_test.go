@@ -38,7 +38,7 @@ func TestWebsocketManager_HandleJoinRoom_errors(t *testing.T) {
 
 	wm := &websocketManager{
 		logger:    mlog.NewForConfig(nil),
-		accessBiz: biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, projBiz),
+		accessBiz: biz.NewAccessBiz(nsRepoBiz, projBiz),
 	}
 	conn := &wsConn{pubSub: wsMock}
 	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{ID: "1", Name: "u", Email: "u@mars.com"})
@@ -70,7 +70,7 @@ func TestWebsocketManager_HandleJoinRoom_denied(t *testing.T) {
 	conn := &wsConn{pubSub: sub, user: &biz.UserInfo{Name: "u"}}
 	wm := &websocketManager{
 		logger:    mlog.NewForConfig(nil),
-		accessBiz: biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, projBiz),
+		accessBiz: biz.NewAccessBiz(nsRepoBiz, projBiz),
 	}
 	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{ID: "2", Name: "u", Email: "u@mars.com"})
 	joinMsg, _ := proto.Marshal(&websocket_pb.ProjectPodEventJoinInput{Type: ProjectPodEvent, Join: true, ProjectId: 2})
@@ -112,7 +112,7 @@ func TestWebsocketManager_HandleStartShell_success(t *testing.T) {
 	// HandleStartShell 成功帧 WsHandleShellResponse → ToSelf。
 	sub.EXPECT().ToSelf(gomock.Any())
 
-	wm := &websocketManager{logger: mlog.NewForConfig(nil), fileRepo: fileRepo, k8sRepo: k8sRepo, accessBiz: biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, nil)}
+	wm := &websocketManager{logger: mlog.NewForConfig(nil), fileRepo: fileRepo, k8sRepo: k8sRepo, accessBiz: biz.NewAccessBiz(nsRepoBiz, nil)}
 	conn := &wsConn{
 		pubSub:   sub,
 		id:       "connID",
@@ -156,7 +156,7 @@ func TestWebsocketManager_HandleStartShell_denied(t *testing.T) {
 	conn := &wsConn{pubSub: sub, id: "connID", uid: "connUID"}
 	wm := &websocketManager{
 		logger:    mlog.NewForConfig(nil),
-		accessBiz: biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, nil),
+		accessBiz: biz.NewAccessBiz(nsRepoBiz, nil),
 	}
 	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{ID: "2", Name: "u", Email: "u@mars.com"})
 	input := &websocket_pb.WsHandleExecShellInput{
@@ -176,7 +176,7 @@ func TestWebsocketManager_HandleCreateProject_installError(t *testing.T) {
 	gitBiz := biz.NewMockGitBiz(m)
 	projBiz := biz.NewMockProjectBiz(m)
 	jb := deploy.NewMockJobManager(m)
-	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, nil), jobManager: jb, repoBiz: repoBiz, gitBiz: gitBiz, projBiz: projBiz}
+	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nsRepoBiz, nil), jobManager: jb, repoBiz: repoBiz, gitBiz: gitBiz, projBiz: projBiz}
 
 	job := deploy.NewMockJob(m)
 	conn := &wsConn{taskManager: NewTaskManager(wm.logger), user: &biz.UserInfo{}}
@@ -211,7 +211,7 @@ func TestWebsocketManager_HandleUpdateProject_showError(t *testing.T) {
 	sub.EXPECT().ToSelf(gomock.Any())
 
 	// RequireProjectAccess 先经 projBiz.Show 加载项目，失败即回错误帧（未触达 nsRepo）。
-	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(mlog.NewForConfig(nil), nil, projBiz), projBiz: projBiz}
+	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nil, projBiz), projBiz: projBiz}
 	conn := &wsConn{pubSub: sub, user: &biz.UserInfo{}}
 
 	input := &websocket_pb.UpdateProjectInput{ProjectId: 1}
@@ -239,7 +239,7 @@ func TestWebsocketManager_HandleUpdateProject_denied(t *testing.T) {
 	conn := &wsConn{pubSub: sub, user: &biz.UserInfo{}}
 	wm := &websocketManager{
 		logger:    mlog.NewForConfig(nil),
-		accessBiz: biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, projBiz),
+		accessBiz: biz.NewAccessBiz(nsRepoBiz, projBiz),
 		projBiz:   projBiz,
 	}
 	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{ID: "2", Name: "u", Email: "u@mars.com"})
@@ -274,7 +274,7 @@ func TestWebsocketManager_HandleUpdateProject_installError(t *testing.T) {
 	nsRepoBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil).Times(2)
 	repoBiz.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{Name: "app", ID: 2, NeedGitRepo: false}, nil)
 
-	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, projBiz), projBiz: projBiz, jobManager: jb, config: &config.Config{InstallTimeout: 30 * time.Second}, repoBiz: repoBiz, gitBiz: gitBiz}
+	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nsRepoBiz, projBiz), projBiz: projBiz, jobManager: jb, config: &config.Config{InstallTimeout: 30 * time.Second}, repoBiz: repoBiz, gitBiz: gitBiz}
 	conn := &wsConn{taskManager: NewTaskManager(wm.logger), user: &biz.UserInfo{}}
 
 	input := &websocket_pb.UpdateProjectInput{ProjectId: 1}
@@ -326,7 +326,7 @@ func TestWebsocketManager_installProject_addCancelDeployTaskError(t *testing.T) 
 			resp.Metadata.Message == "正在清理中，请稍后再试。"
 	}))
 
-	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, nil), jobManager: jb, repoBiz: repoBiz, gitBiz: gitBiz, projBiz: projBiz}
+	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nsRepoBiz, nil), jobManager: jb, repoBiz: repoBiz, gitBiz: gitBiz, projBiz: projBiz}
 	conn := &wsConn{taskManager: NewTaskManager(wm.logger), pubSub: sub}
 	// 预注册同名任务 → AddCancelDeployTask 返回 errSignalExists → 失败帧 + 提前返回。
 	assert.NoError(t, conn.taskManager.Register("dupID", func(error) {}))
@@ -366,7 +366,7 @@ func TestWebsocketManager_installProject_onFinallyCallback(t *testing.T) {
 	nsRepoBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil)
 	repoBiz.EXPECT().Get(gomock.Any(), 0).Return(&biz.Repo{Name: "app", NeedGitRepo: false}, nil).AnyTimes()
 
-	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, nil), jobManager: jb, repoBiz: repoBiz, gitBiz: gitBiz, projBiz: projBiz}
+	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nsRepoBiz, nil), jobManager: jb, repoBiz: repoBiz, gitBiz: gitBiz, projBiz: projBiz}
 	conn := &wsConn{taskManager: NewTaskManager(wm.logger)}
 
 	err := wm.installProject(context.TODO(), conn, &deploy.JobInput{

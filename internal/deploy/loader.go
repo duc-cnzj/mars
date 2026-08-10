@@ -18,9 +18,9 @@ import (
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/application"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
-	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/uploader"
+	"github.com/duc-cnzj/mars/v6/internal/util/chartpath"
 	"github.com/duc-cnzj/mars/v6/internal/util/rand"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	yaml2 "github.com/duc-cnzj/mars/v6/internal/util/yaml"
@@ -197,7 +197,7 @@ func (c *ChartFileLoader) Load(ctx *LoadContext) error {
 	ctx.Messager.SendMsg(loaderName + "加载 helm chart 文件")
 	ctx.Messager.To(20)
 
-	if !data.IsRemoteLocalChartPath(ctx.Config.LocalChartPath) {
+	if !chartpath.IsRemoteLocalChartPath(ctx.Config.LocalChartPath) {
 		return errors.New("LocalChartPath 格式不正确")
 	}
 
@@ -292,7 +292,6 @@ func (d *UserConfigLoader) Load(ctx *LoadContext) error {
 
 	userConfigYaml, err := biz.ParseInputConfig(ctx.Config, ctx.Input.Config)
 	if err != nil && !errors.Is(err, io.EOF) {
-		ctx.Logger.Error(err)
 		return err
 	}
 	ctx.UserConfigYaml = userConfigYaml
@@ -609,8 +608,6 @@ func (m *MergeValuesLoader) Load(ctx *LoadContext) error {
 	// 5. 用用户传入的yaml配置去合并 `default_values`
 	provider, err := config.NewYAML(opts...)
 	if err != nil {
-		ctx.Logger.Error(loaderName, err, ctx.SystemValuesYaml, ctx.UserConfigYaml)
-
 		return err
 	}
 	var mergedDefaultAndConfigYamlValues map[string]any

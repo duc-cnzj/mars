@@ -7,6 +7,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/changelog"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +35,7 @@ func newChangelogSvcWithMocks(t *testing.T) (*changelogSvc, *changelogSvcMocks) 
 	s, ok := NewChangelogSvc(ChangelogSvcDeps{
 		ClBiz:     biz.NewChangelogBiz(mocks.clRepo),
 		Logger:    logger,
-		AccessBiz: biz.NewAccessBiz(logger, biz.NewNsRepoBiz(mocks.nsRepo), biz.NewProjectBiz(logger, mocks.projRepo, nil)),
+		AccessBiz: biz.NewAccessBiz(biz.NewNsRepoBiz(mocks.nsRepo), biz.NewProjectBiz(logger, mocks.projRepo, nil)),
 	}).(*changelogSvc)
 	if !ok {
 		panic("NewChangelogSvc returned unexpected type")
@@ -111,7 +112,7 @@ func Test_changelogSvc_FindLastChangelogsByProjectID_AccessDenied(t *testing.T) 
 		OnlyChanged: true,
 	})
 	assert.Nil(t, resp)
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func Test_changelogSvc_FindLastChangelogsByProjectID_Success(t *testing.T) {

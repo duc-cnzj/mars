@@ -5,7 +5,7 @@ import (
 
 	"github.com/duc-cnzj/mars/v6/internal/application"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
-	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 )
@@ -58,7 +58,7 @@ func Test_NewGrpcRegistry_RegistersAllServices(t *testing.T) {
 // MustGetUser 从 ctx 提取——admin 上下文过 admin 门禁、非 admin 拒绝。
 // repo 传 nil 即可（RequireAdmin 不触达实体加载，符合 NewAccessBiz 的"repo 懒加载"约定）。
 func Test_AccessGetUserBinding(t *testing.T) {
-	ab := biz.NewAccessBiz(mlog.NewForConfig(nil), nil, nil)
+	ab := biz.NewAccessBiz(nil, nil)
 	// 编译期断言返回类型满足 AccessBiz 接口。
 	var _ biz.AccessBiz = ab
 
@@ -69,5 +69,5 @@ func Test_AccessGetUserBinding(t *testing.T) {
 
 	// 非 admin 上下文且未命中 allowlist 时拒绝。
 	_, err = ab.RequireAdmin(newOtherUserCtx(), "/api/v1/file/List")
-	assert.Equal(t, biz.ErrorPermissionDenied, err)
+	assert.Equal(t, errs.ErrorPermissionDenied, err)
 }

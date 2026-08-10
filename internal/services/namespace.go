@@ -8,6 +8,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/namespace"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/transformer"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
@@ -60,7 +61,7 @@ func (n *namespaceSvc) showNsAndCheckOwner(ctx context.Context, id int) (*biz.Na
 		return nil, logError(ctx, n.logger, err)
 	}
 	if err := n.accessBiz.RequireNamespaceOwner(ctx, show); err != nil {
-		return nil, err
+		return nil, logError(ctx, n.logger, err)
 	}
 	return show, nil
 }
@@ -129,8 +130,8 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 	ns, exists, err := n.nsBiz.Create(ctx, request.Namespace, request.Description, user.Email)
 	if err != nil {
 		// Terminating 已是 biz 携带 AlreadyExists status 的领域错误（ErrNamespaceTerminating），
-		// 其余错误（k8s/DB 故障）原样上抛（biz 内已记录日志）——协议映射收口 biz，此处只透传。
-		return nil, err
+		// 其余错误（k8s/DB 故障）原样上抛——协议映射收口 biz，错误日志统一由本层 logError 打印。
+		return nil, logError(ctx, n.logger, err)
 	}
 	if exists {
 		// 命名空间已存在：按 IgnoreIfExists 策略放行（携带已存在的空间）或拒绝。
@@ -139,14 +140,14 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 			// FindByName（不感知权限），若当前用户无权访问直接 403，与 IsExists
 			// "私有空间视同不存在"的隐藏语义对齐，闭合元数据泄露面。
 			if !n.accessBiz.CanAccessNamespace(ctx, ns) {
-				n.logger.ErrorCtx(ctx, biz.ErrorPermissionDenied)
-				return nil, biz.ErrorPermissionDenied
+				n.logger.ErrorCtx(ctx, errs.ErrorPermissionDenied)
+				return nil, errs.ErrorPermissionDenied
 			}
 			return &namespace.CreateResponse{Item: transformer.FromNamespace(ns), Exists: true}, nil
 		}
 		// exists 且非 IgnoreIfExists：拒绝并返回 AlreadyExists——状态码由 biz 工厂提供，
 		// transport 不再散落 status.Error 构造（协议映射收口 biz）。
-		return nil, biz.ErrorAlreadyExists("名称空间已存在")
+		return nil, errs.ErrorAlreadyExists("名称空间已存在")
 	}
 
 	n.eventBiz.AuditLogWithRequest(
@@ -166,7 +167,7 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 func (n *namespaceSvc) Show(ctx context.Context, input *namespace.ShowRequest) (*namespace.ShowResponse, error) {
 	ns, nerr := n.accessBiz.RequireNamespaceAccessByID(ctx, int(input.Id))
 	if nerr != nil {
-		return nil, nerr
+		return nil, logError(ctx, n.logger, nerr)
 	}
 	return &namespace.ShowResponse{Item: transformer.FromNamespace(ns)}, nil
 }
@@ -213,8 +214,9 @@ func (n *namespaceSvc) Delete(ctx context.Context, input *namespace.DeleteReques
 
 	deletedProjectNames, err := n.nsBiz.Delete(ctx, ns)
 	if err != nil {
-		// 删除编排（并发卸载/删 secret/删 k8s/删 DB/轮询确认）已下沉 biz，错误原样上抛。
-		return nil, err
+		// 删除编排（并发卸载/删 secret/删 k8s/删 DB/轮询确认）已下沉 biz，错误原样上抛——
+		// 错误日志统一由本层 logError 打印。
+		return nil, logError(ctx, n.logger, err)
 	}
 
 	n.eventBiz.AuditLogWithRequest(
@@ -231,7 +233,7 @@ func (n *namespaceSvc) Delete(ctx context.Context, input *namespace.DeleteReques
 func (n *namespaceSvc) IsExists(ctx context.Context, input *namespace.IsExistsRequest) (*namespace.IsExistsResponse, error) {
 	ns, err := n.nsRepoBiz.FindByName(ctx, n.nsRepoBiz.GetMarsNamespace(input.Name))
 	if err != nil {
-		if biz.IsNotFound(err) {
+		if errs.IsNotFound(err) {
 			return &namespace.IsExistsResponse{Exists: false}, nil
 		}
 		// 与其他 service 一致：非 NotFound 直接返回原始错误，不额外包装 codes.Internal。

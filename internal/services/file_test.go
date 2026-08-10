@@ -221,7 +221,7 @@ func newFileSvcWithMocks(t *testing.T) (*fileSvc, *fileSvcMocks) {
 		EventBiz:  biz.NewEventBiz(mocks.eventRepo),
 		FileBiz:   biz.NewFileBiz(mocks.fileRepo),
 		Logger:    logger,
-		AccessBiz: biz.NewAccessBiz(logger, nil, nil),
+		AccessBiz: biz.NewAccessBiz(nil, nil),
 	}).(*fileSvc)
 	if !ok {
 		panic("NewFileSvc returned unexpected type")

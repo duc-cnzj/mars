@@ -84,6 +84,7 @@ func (wc *websocketManager) HandleStartShell(ctx context.Context, c Conn, t webs
 	// 与 gRPC container.Exec 对齐（containerSvc.Exec 首行 RequireNamespaceAccessByName），
 	// 防止任意已认证用户枚举 namespace/pod/container 进入私有命名空间的容器 shell（RCE）。
 	if _, err := wc.accessBiz.RequireNamespaceAccessByName(ctx, input.Container.GetNamespace()); err != nil {
+		wc.logger.Error("[Websocket]: start shell permission denied: ", err)
 		newMessageSender(c, "", t).SendEndError(err)
 		return
 	}
@@ -193,6 +194,7 @@ func (wc *websocketManager) HandleUpdateProject(ctx context.Context, c Conn, t w
 	// 未授权用户不得通过"更新失败帧 vs 部署静默拒绝"的可观测差异探测项目 ID 存在性（IDOR）。
 	p, err := wc.accessBiz.RequireProjectAccess(ctx, int(input.ProjectId))
 	if err != nil {
+		wc.logger.Error("[Websocket]: update project permission denied: ", err)
 		newMessageSender(c, "", t).SendEndError(err)
 		return
 	}

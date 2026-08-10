@@ -58,7 +58,7 @@ func NewContainerSvc(deps ContainerSvcDeps) container.ContainerServer {
 // IsPodRunning 查询指定 pod 是否处于 Running 状态（含原因），响应前做命名空间级访问控制。
 func (c *containerSvc) IsPodRunning(ctx context.Context, request *container.IsPodRunningRequest) (*container.IsPodRunningResponse, error) {
 	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.GetNamespace()); err != nil {
-		return nil, err
+		return nil, logError(ctx, c.logger, err)
 	}
 	running, reason := c.k8sBiz.IsPodRunning(request.GetNamespace(), request.GetPod())
 
@@ -68,7 +68,7 @@ func (c *containerSvc) IsPodRunning(ctx context.Context, request *container.IsPo
 // IsPodExists 查询指定 pod 是否存在：Get 失败即视为不存在（响应前做命名空间级访问控制）。
 func (c *containerSvc) IsPodExists(ctx context.Context, request *container.IsPodExistsRequest) (*container.IsPodExistsResponse, error) {
 	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.GetNamespace()); err != nil {
-		return nil, err
+		return nil, logError(ctx, c.logger, err)
 	}
 	_, err := c.k8sBiz.GetPod(request.GetNamespace(), request.GetPod())
 	if err != nil {
@@ -83,7 +83,7 @@ func (c *containerSvc) IsPodExists(ctx context.Context, request *container.IsPod
 // containerBiz.Log，transport 只做鉴权与 UTF-8 序列化卫生。
 func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogRequest) (*container.LogResponse, error) {
 	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.Namespace); err != nil {
-		return nil, err
+		return nil, logError(ctx, c.logger, err)
 	}
 	res, err := c.containerBiz.Log(ctx, &biz.LogInput{
 		Namespace:  request.Namespace,
@@ -92,7 +92,7 @@ func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogR
 		ShowEvents: request.ShowEvents,
 	})
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, c.logger, err)
 	}
 
 	return &container.LogResponse{
@@ -106,7 +106,7 @@ func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogR
 // CopyToPod 把已上传的文件写入指定 pod 容器路径：先校验 pod 运行态，落上传审计日志。
 func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToPodRequest) (*container.CopyToPodResponse, error) {
 	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.Namespace); err != nil {
-		return nil, err
+		return nil, logError(ctx, c.logger, err)
 	}
 	// 运行态前置校验与"空则找默认容器"统一走 biz：与 StreamCopyToPod/Exec 的
 	// "pod 未运行 → 404"和 ResolveContainer 语义对齐。此前 CopyToPod 直接把
@@ -117,7 +117,7 @@ func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToP
 	}
 	resolved, err := c.containerBiz.ResolveContainer(ctx, request.Namespace, request.Pod, request.Container)
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, c.logger, err)
 	}
 	request.Container = resolved
 
@@ -155,7 +155,7 @@ func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPo
 		return err
 	}
 	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, recv.Namespace); err != nil {
-		return err
+		return logError(ctx, c.logger, err)
 	}
 	c.logger.DebugCtx(ctx, "StreamUploadFile", recv.Namespace, recv.Pod, recv.Container, recv.FileName)
 	// 运行态前置校验统一走 biz.EnsurePodRunning，与 CopyToPod/Exec 共用 404 映射。
@@ -165,7 +165,7 @@ func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPo
 	// 如果没传入 container，使用默认的
 	recv.Container, err = c.containerBiz.ResolveContainer(ctx, recv.Namespace, recv.Pod, recv.Container)
 	if err != nil {
-		return err
+		return logError(ctx, c.logger, err)
 	}
 	c.logger.DebugCtxf(ctx, "StreamUploadFile %s/%s/%s", recv.Namespace, recv.Pod, recv.Container)
 	ch := make(chan []byte, 100)
@@ -235,7 +235,7 @@ func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPo
 // transport 只做鉴权与帧下发（Running 逐帧转发，其余阶段逐行切分）。
 func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server container.Container_StreamContainerLogServer) error {
 	if _, err := c.accessBiz.RequireNamespaceAccessByName(server.Context(), request.Namespace); err != nil {
-		return err
+		return logError(server.Context(), c.logger, err)
 	}
 	c.logger.DebugCtxf(server.Context(), "StreamContainerLog: %v", request)
 	res, err := c.containerBiz.LogStream(server.Context(), &biz.LogInput{
@@ -245,7 +245,7 @@ func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server 
 		ShowEvents: request.ShowEvents,
 	})
 	if err != nil {
-		return err
+		return logError(server.Context(), c.logger, err)
 	}
 
 	if res.Source == biz.LogSourceLive {
@@ -284,7 +284,7 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 		return err
 	}
 	if _, err := c.accessBiz.RequireNamespaceAccessByName(server.Context(), recv.Namespace); err != nil {
-		return err
+		return logError(server.Context(), c.logger, err)
 	}
 	// 首帧携带的 Message/SizeQueue 一并传给 biz：Message 作为终端首屏输入，
 	// SizeQueue 作为会话初始终端窗口（在 recorder 上预先应用）。
@@ -301,7 +301,7 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 // ExecOnce 执行单次命令并把结果流回客户端，透传给 containerBiz.ExecOnce。
 func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server container.Container_ExecOnceServer) error {
 	if _, err := c.accessBiz.RequireNamespaceAccessByName(server.Context(), request.Namespace); err != nil {
-		return err
+		return logError(server.Context(), c.logger, err)
 	}
 	return c.containerBiz.ExecOnce(server.Context(), server, biz.MustGetUser(server.Context()), &biz.ExecOnceInput{
 		Namespace: request.Namespace,

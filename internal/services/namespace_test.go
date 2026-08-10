@@ -10,6 +10,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	"github.com/samber/lo"
@@ -38,7 +39,7 @@ func TestNamespaceSvc_Create_NamespaceTerminating(t *testing.T) {
 	k8sRepo := mocks.k8sRepo
 
 	nsRepo.EXPECT().GetMarsNamespace("test").Return("test")
-	nsRepo.EXPECT().FindByName(gomock.Any(), "test").Return(nil, biz.WrapToError(404, errors.New("not found"), "not found"))
+	nsRepo.EXPECT().FindByName(gomock.Any(), "test").Return(nil, errs.WrapNotFound(errors.New("not found"), "not found"))
 	k8sRepo.EXPECT().CreateNamespace(gomock.Any(), "test").Return(nil, &k8sapierrors.StatusError{
 		ErrStatus: metav1.Status{
 			Reason: metav1.StatusReasonAlreadyExists,
@@ -103,7 +104,7 @@ func TestNamespaceSvc_Create_IgnoreIfExists_PrivateDenied(t *testing.T) {
 	})
 
 	assert.Nil(t, res)
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func TestNamespaceSvc_Create_Success(t *testing.T) {
@@ -112,7 +113,7 @@ func TestNamespaceSvc_Create_Success(t *testing.T) {
 	k8sRepo := mocks.k8sRepo
 	eventRepo := mocks.eventRepo
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
-	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, biz.WrapToError(404, errors.New("not found"), "not found"))
+	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, errs.WrapNotFound(errors.New("not found"), "not found"))
 	k8sRepo.EXPECT().CreateNamespace(gomock.Any(), "namespace1").Return(&corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "namespace1",
@@ -156,7 +157,7 @@ func TestNamespaceSvc_Create_FavoriteError(t *testing.T) {
 	k8sRepo := mocks.k8sRepo
 	eventRepo := mocks.eventRepo
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
-	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, biz.WrapToError(404, errors.New("not found"), "not found"))
+	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, errs.WrapNotFound(errors.New("not found"), "not found"))
 	k8sRepo.EXPECT().CreateNamespace(gomock.Any(), "namespace1").Return(&corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: "namespace1"},
 	}, nil)
@@ -180,7 +181,7 @@ func TestNamespaceSvc_Create_RollbackOnDbError(t *testing.T) {
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
-	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, biz.WrapToError(404, errors.New("not found"), "not found"))
+	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, errs.WrapNotFound(errors.New("not found"), "not found"))
 	k8sRepo.EXPECT().CreateNamespace(gomock.Any(), "namespace1").Return(&corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: "namespace1"},
 	}, nil)
@@ -201,7 +202,7 @@ func TestNamespaceSvc_Create_RollbackDeleteError(t *testing.T) {
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
-	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, biz.WrapToError(404, errors.New("not found"), "not found"))
+	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, errs.WrapNotFound(errors.New("not found"), "not found"))
 	k8sRepo.EXPECT().CreateNamespace(gomock.Any(), "namespace1").Return(&corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: "namespace1"},
 	}, nil)
@@ -237,7 +238,7 @@ func TestNamespaceSvc_Create_AlreadyExists_Adopt(t *testing.T) {
 	k8sRepo := mocks.k8sRepo
 	eventRepo := mocks.eventRepo
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
-	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, biz.WrapToError(404, errors.New("not found"), "not found"))
+	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, errs.WrapNotFound(errors.New("not found"), "not found"))
 	k8sRepo.EXPECT().CreateNamespace(gomock.Any(), "namespace1").Return(nil, &k8sapierrors.StatusError{
 		ErrStatus: metav1.Status{
 			Reason: metav1.StatusReasonAlreadyExists,
@@ -306,7 +307,7 @@ func TestNamespaceSvc_Create_K8sCreateError(t *testing.T) {
 	k8sRepo := mocks.k8sRepo
 
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
-	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, biz.WrapToError(404, errors.New("not found"), "not found"))
+	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, errs.WrapNotFound(errors.New("not found"), "not found"))
 	k8sRepo.EXPECT().CreateNamespace(gomock.Any(), "namespace1").Return(nil, errors.New("error"))
 
 	res, err := svc.Create(newAdminUserCtx(), &namespace.CreateRequest{
@@ -515,7 +516,7 @@ func TestNamespaceSvc_IsExists_NotFound(t *testing.T) {
 	nsRepo := mocks.nsRepo
 
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
-	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, biz.WrapToError(404, errors.New("not found"), "not found"))
+	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, errs.WrapNotFound(errors.New("not found"), "not found"))
 
 	res, err := svc.IsExists(context.TODO(), &namespace.IsExistsRequest{
 		Name: "namespace1",
@@ -563,7 +564,7 @@ func TestNamespaceSvc_Show_NotFound(t *testing.T) {
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
-	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, biz.WrapToError(404, errors.New("not found"), "not found"))
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errs.WrapNotFound(errors.New("not found"), "not found"))
 
 	res, err := svc.Show(newAdminUserCtx(), &namespace.ShowRequest{
 		Id: 1,
@@ -599,7 +600,7 @@ func TestNamespaceSvc_Show_Error2(t *testing.T) {
 		Id: 1,
 	})
 
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func Test_namespaceSvc_UpdateDesc(t *testing.T) {
@@ -845,7 +846,7 @@ func TestNamespaceSvc_Create_GetNamespaceError(t *testing.T) {
 	k8sRepo := mocks.k8sRepo
 
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
-	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, biz.WrapToError(404, errors.New("not found"), "not found"))
+	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, errs.WrapNotFound(errors.New("not found"), "not found"))
 	// CreateNamespace 报 AlreadyExists → 收养路径，但 GetNamespace 也失败
 	k8sRepo.EXPECT().CreateNamespace(gomock.Any(), "namespace1").Return(nil, &k8sapierrors.StatusError{
 		ErrStatus: metav1.Status{Reason: metav1.StatusReasonAlreadyExists},
@@ -864,7 +865,7 @@ func TestNamespaceSvc_Create_CreateDockerSecretError(t *testing.T) {
 	eventRepo := mocks.eventRepo
 
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
-	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, biz.WrapToError(404, errors.New("not found"), "not found"))
+	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, errs.WrapNotFound(errors.New("not found"), "not found"))
 	k8sRepo.EXPECT().CreateNamespace(gomock.Any(), "namespace1").Return(&corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: "namespace1"},
 	}, nil)
@@ -892,7 +893,7 @@ func TestNamespaceSvc_Create_RepoCreateError(t *testing.T) {
 	k8sRepo := mocks.k8sRepo
 
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
-	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, biz.WrapToError(404, errors.New("not found"), "not found"))
+	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(nil, errs.WrapNotFound(errors.New("not found"), "not found"))
 	k8sRepo.EXPECT().CreateNamespace(gomock.Any(), "namespace1").Return(&corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: "namespace1"},
 	}, nil)
@@ -1128,7 +1129,7 @@ func newNamespaceSvcWithMocks(t *testing.T) (*namespaceSvc, *namespaceSvcMocks) 
 		),
 		Logger:    logger,
 		EventBiz:  biz.NewEventBiz(mocks.eventRepo),
-		AccessBiz: biz.NewAccessBiz(logger, biz.NewNsRepoBiz(mocks.nsRepo), nil),
+		AccessBiz: biz.NewAccessBiz(biz.NewNsRepoBiz(mocks.nsRepo), nil),
 	}).(*namespaceSvc)
 	if !ok {
 		panic("NewNamespaceSvc returned unexpected type")

@@ -14,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/deploy"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	"github.com/samber/lo"
@@ -141,7 +142,7 @@ func TestProjectSvc_Show_Failure2(t *testing.T) {
 	_, err := svc.Show(newOtherUserCtx(), &project.ShowRequest{
 		Id: 1,
 	})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func Test_projectSvc_Delete(t *testing.T) {
@@ -251,7 +252,7 @@ func Test_projectSvc_Delete_Fail3(t *testing.T) {
 	_, err := svc.Delete(newOtherUserCtx(), &project.DeleteRequest{
 		Id: 1,
 	})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func Test_projectSvc_Version(t *testing.T) {
@@ -278,12 +279,12 @@ func Test_projectSvc_Version_AccessDenied(t *testing.T) {
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true, CreatorEmail: "other@x.com"}, nil)
-	// 若访问控制被删除，请求会继续走到 Version → 返回 100，而非 biz.ErrorPermissionDenied
+	// 若访问控制被删除，请求会继续走到 Version → 返回 100，而非 errs.ErrorPermissionDenied
 	mocks.projectRepo.EXPECT().Version(gomock.Any(), 1).Return(100, nil).AnyTimes()
 
 	resp, err := svc.Version(newOtherUserCtx(), &project.VersionRequest{Id: 1})
 	assert.Nil(t, resp)
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 // 回归防护：Version 的 Show/nsRepo 门禁分支（项目或命名空间不存在/DB 故障）。
@@ -504,7 +505,7 @@ func TestProjectSvc_Apply_Failure2(t *testing.T) {
 
 	err := svc.Apply(applyRequest, mockServer)
 
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func TestProjectSvc_Apply_InstallError(t *testing.T) {
@@ -798,7 +799,7 @@ func newProjectSvcWithMocks(t *testing.T) (*projectSvc, *projectSvcMocks) {
 		EventBiz:   biz.NewEventBiz(mocks.eventRepo),
 		Logger:     logger,
 		DeployBiz:  biz.NewDeployBiz(logger, mocks.projectRepo, mocks.helmerRepo, mocks.eventRepo),
-		AccessBiz:  biz.NewAccessBiz(logger, biz.NewNsRepoBiz(mocks.nsRepo), biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo)),
+		AccessBiz:  biz.NewAccessBiz(biz.NewNsRepoBiz(mocks.nsRepo), biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo)),
 	}).(*projectSvc)
 	if !ok {
 		panic("NewProjectSvc returned unexpected type")
@@ -907,8 +908,8 @@ func TestProjectSvc_Apply_VersionFindError(t *testing.T) {
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: false}, nil)
 	mocks.repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{Name: "test"}, nil)
 	// Version > 0 但 FindByName 找不到（真 NotFound）→ 放行，projectID 保持 0；
-	// data 边界把 ent 的 NotFound 转成 gRPC NotFound，mock 用 biz.WrapToError(404) 模拟。
-	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "test", 1).Return(nil, biz.WrapToError(404, errors.New("not found"), "find project by name"))
+	// data 边界把 ent 的 NotFound 转成 gRPC NotFound，mock 用 errs.WrapNotFound() 模拟。
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "test", 1).Return(nil, errs.WrapNotFound(errors.New("not found"), "find project by name"))
 	job := deploy.NewMockJob(mocks.ctrl)
 	mocks.jobManager.EXPECT().NewJob(gomock.Any()).Return(job)
 	mockInstallProjectChain(job)
@@ -1041,7 +1042,7 @@ func Test_projectSvc_MemoryCpuAndEndpoints_PermissionDenied(t *testing.T) {
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
 	_, err := svc.MemoryCpuAndEndpoints(newOtherUserCtx(), &project.MemoryCpuAndEndpointsRequest{Id: 1})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 func Test_projectSvc_Delete_NsShowError(t *testing.T) {
@@ -1076,7 +1077,7 @@ func Test_projectSvc_AllContainers_PermissionDenied(t *testing.T) {
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
 	_, err := svc.AllContainers(newOtherUserCtx(), &project.AllContainersRequest{Id: 1})
-	assert.ErrorIs(t, err, biz.ErrorPermissionDenied)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
 // TestEmptyMessager 覆盖 WebApply 场景下空 messager 的全部 no-op 方法：

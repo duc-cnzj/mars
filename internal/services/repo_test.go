@@ -477,7 +477,7 @@ func newRepoSvcWithMocks(t *testing.T) (*repoSvc, *repoSvcMocks) {
 		Logger:    logger,
 		EventBiz:  biz.NewEventBiz(mocks.eventRepo),
 		RepoBiz:   biz.NewRepoBiz(mocks.repoRepo),
-		AccessBiz: biz.NewAccessBiz(logger, nil, nil),
+		AccessBiz: biz.NewAccessBiz(nil, nil),
 	}).(*repoSvc)
 	if !ok {
 		panic("NewRepoSvc returned unexpected type")

@@ -330,7 +330,7 @@ func TestWebsocketManager_Serve(t *testing.T) {
 		pluginManager: pl,
 		authBiz:       authMock,
 		counter:       counter.NewCounter(),
-		accessBiz:     biz.NewAccessBiz(mlog.NewForConfig(nil), nsRepoBiz, projBiz),
+		accessBiz:     biz.NewAccessBiz(nsRepoBiz, projBiz),
 	}
 	wm.handlers = map[websocket_pb.Type]HandleRequestFunc{
 		WsAuthorize:     wm.HandleAuthorize,
