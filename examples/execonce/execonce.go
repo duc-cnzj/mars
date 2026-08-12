@@ -6,12 +6,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v5"
-	"github.com/duc-cnzj/mars/api/v5/container"
+	"github.com/duc-cnzj/mars/api/v6/grpc"
+	"github.com/duc-cnzj/mars/api/v6/proto/container"
 )
 
 func main() {
-	client, _ := api.NewClient("localhost:50000", api.WithAuth("admin", "123456"))
+	client, _ := grpc.NewClient("localhost:50000", grpc.WithAuth("admin", "123456"))
 	defer client.Close()
 	ns := "duc-abc"
 	pod := "ng-nginx-594b65865-g975j"
