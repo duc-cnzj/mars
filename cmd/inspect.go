@@ -8,10 +8,11 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v5/internal/application"
-	"github.com/duc-cnzj/mars/v5/internal/config"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/app"
+	"github.com/duc-cnzj/mars/v6/internal/config"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -47,17 +48,15 @@ var inspectBootTagsCmd = &cobra.Command{
 	Use:   "tags",
 	Short: "app boot tags.",
 	Run: func(cmd *cobra.Command, args []string) {
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"ID", "Name", "Tags"})
-		table.SetRowLine(true)
+		table := newInspectTable([]string{"ID", "Name", "Tags"})
 
 		for i, boot := range serverBootstrappers {
 			s := strings.Split(reflect.TypeOf(boot).String(), ".")
 			name := s[len(s)-1]
 			tags := strings.Join(boot.Tags(), ",")
-			table.Append([]string{fmt.Sprintf("%d", i+1), name, tags})
+			_ = table.Append([]string{fmt.Sprintf("%d", i+1), name, tags})
 		}
-		table.Render()
+		_ = table.Render()
 	},
 }
 
@@ -73,16 +72,16 @@ var inspectCronJobsCmd = &cobra.Command{
 		if err != nil {
 			logger.Fatal(err)
 		}
+		// Flush 注册于 Shutdown 之前：defer LIFO 先执行 Shutdown，再冲刷日志，关闭期日志不丢。
+		defer logger.Flush()
 		defer app.Shutdown()
 
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetRowLine(true)
-		table.SetHeader([]string{"ID", "Name", "Expression"})
+		table := newInspectTable([]string{"ID", "Name", "Expression"})
 		for i, command := range app.CronManager().List() {
-			table.Append([]string{fmt.Sprintf("%d", i+1), command.Name(), command.Expression()})
+			_ = table.Append([]string{fmt.Sprintf("%d", i+1), command.Name(), command.Expression()})
 		}
 
-		table.Render()
+		_ = table.Render()
 	},
 }
 
@@ -94,15 +93,15 @@ var inspectEventsCmd = &cobra.Command{
 		cfg := config.Init(viper.GetString("config"))
 		cfg.LogChannel = ""
 		logger := mlog.NewForConfig(cfg)
-		app, err := InitializeApp(cfg, logger, []application.Bootstrapper{})
+		app, err := InitializeApp(cfg, logger, []app.Bootstrapper{})
 		if err != nil {
 			logger.Fatal(err)
 		}
+		// Flush 注册于 Shutdown 之前：defer LIFO 先执行 Shutdown，再冲刷日志，关闭期日志不丢。
+		defer logger.Flush()
 		defer app.Shutdown()
 
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetRowLine(true)
-		table.SetHeader([]string{"ID", "Event Name", "Listener Names", "Listener Count"})
+		table := newInspectTable([]string{"ID", "Event Name", "Listener Names", "Listener Count"})
 		i := 0
 		for event, listeners := range app.Dispatcher().List() {
 			i++
@@ -111,10 +110,10 @@ var inspectEventsCmd = &cobra.Command{
 				s := strings.Split(GetFunctionName(listener), ".")
 				listenerNames = append(listenerNames, s[len(s)-1])
 			}
-			table.Append([]string{fmt.Sprintf("%d", i), event.String(), strings.Join(listenerNames, " "), fmt.Sprintf("%d", len(listeners))})
+			_ = table.Append([]string{fmt.Sprintf("%d", i), event.String(), strings.Join(listenerNames, " "), fmt.Sprintf("%d", len(listeners))})
 		}
 
-		table.Render()
+		_ = table.Render()
 	},
 }
 
@@ -124,9 +123,7 @@ var inspectPluginsCmd = &cobra.Command{
 	Short:   "app plugins.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.Init(viper.GetString("config"))
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetRowLine(true)
-		table.SetHeader([]string{"ID", "Plugin", "Current"})
+		table := newInspectTable([]string{"ID", "Plugin", "Current"})
 
 		usedPlugins := []string{
 			cfg.PicturePlugin.Name,
@@ -137,15 +134,17 @@ var inspectPluginsCmd = &cobra.Command{
 
 		cfg.LogChannel = ""
 		logger := mlog.NewForConfig(cfg)
-		app, err := InitializeApp(cfg, logger, []application.Bootstrapper{})
+		app, err := InitializeApp(cfg, logger, []app.Bootstrapper{})
 		if err != nil {
 			logger.Fatal(err)
 		}
+		// Flush 注册于 Shutdown 之前：defer LIFO 先执行 Shutdown，再冲刷日志，关闭期日志不丢。
+		defer logger.Flush()
 		defer app.Shutdown()
 
 		var others [][]string
 		i := 0
-		for name := range app.PluginMgr().GetPlugins() {
+		for name := range app.PluginManager().GetPlugins() {
 			i++
 			used := false
 			for _, plugin := range usedPlugins {
@@ -155,16 +154,16 @@ var inspectPluginsCmd = &cobra.Command{
 				}
 			}
 			if used {
-				table.Append([]string{fmt.Sprintf("%d", i), name, "⭐︎"})
+				_ = table.Append([]string{fmt.Sprintf("%d", i), name, "⭐︎"})
 			} else {
 				others = append(others, []string{fmt.Sprintf("%d", i), name, ""})
 			}
 		}
 		for _, other := range others {
-			table.Append(other)
+			_ = table.Append(other)
 		}
 
-		table.Render()
+		_ = table.Render()
 	},
 }
 
@@ -186,7 +185,21 @@ var inspectConfigCmd = &cobra.Command{
 	},
 }
 
-// GetFunctionName return fn name
+// GetFunctionName 返回函数指针 i 对应的函数名。
 func GetFunctionName(i any) string {
 	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+}
+
+// newInspectTable 创建带表头与行分隔线的 CLI 输出表格。
+// tablewriter v1.x 用 builder 配置取代了 v0.0.5 的 SetHeader/SetRowLine，
+// 此处收敛为单一出口，4 个 inspect 子命令共用。
+func newInspectTable(header []string) *tablewriter.Table {
+	return tablewriter.NewTable(os.Stdout,
+		tablewriter.WithHeader(header),
+		tablewriter.WithRendition(tw.Rendition{
+			Settings: tw.Settings{
+				Separators: tw.Separators{BetweenRows: tw.Success},
+			},
+		}),
+	)
 }

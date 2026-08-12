@@ -7,88 +7,253 @@
 package cmd
 
 import (
-	"github.com/duc-cnzj/mars/v5/internal/application"
-	"github.com/duc-cnzj/mars/v5/internal/auth"
-	"github.com/duc-cnzj/mars/v5/internal/cache"
-	"github.com/duc-cnzj/mars/v5/internal/config"
-	"github.com/duc-cnzj/mars/v5/internal/cron"
-	"github.com/duc-cnzj/mars/v5/internal/data"
-	"github.com/duc-cnzj/mars/v5/internal/event"
-	"github.com/duc-cnzj/mars/v5/internal/locker"
-	"github.com/duc-cnzj/mars/v5/internal/metrics"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/services"
-	"github.com/duc-cnzj/mars/v5/internal/socket"
-	"github.com/duc-cnzj/mars/v5/internal/uploader"
-	"github.com/duc-cnzj/mars/v5/internal/util/counter"
-	"github.com/duc-cnzj/mars/v5/internal/util/timer"
+	"github.com/duc-cnzj/mars/v6/internal/app"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/config"
+	"github.com/duc-cnzj/mars/v6/internal/cron"
+	"github.com/duc-cnzj/mars/v6/internal/cronjob"
+	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/deploy"
+	"github.com/duc-cnzj/mars/v6/internal/event"
+	"github.com/duc-cnzj/mars/v6/internal/eventhandler"
+	"github.com/duc-cnzj/mars/v6/internal/locker"
+	"github.com/duc-cnzj/mars/v6/internal/metrics"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/services"
+	"github.com/duc-cnzj/mars/v6/internal/services/websocket"
+	"github.com/duc-cnzj/mars/v6/internal/uploader"
+	"github.com/duc-cnzj/mars/v6/internal/util/counter"
+	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 )
 
 // Injectors from wire.go:
 
-func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []application.Bootstrapper) (application.App, error) {
-	dataData := data.NewData(configConfig, logger)
+// InitializeApp 是 wire 注入入口：按 provider set 装配 App 依赖图，由 wire 生成器消费。
+func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bootstrapper) (app.App, error) {
+	dataImpl := data.NewData(configConfig, logger)
 	timerTimer := timer.NewReal()
 	runner := cron.NewRobfigCronV3Runner(logger)
-	lockerLocker, err := locker.NewLocker(configConfig, dataData, logger, timerTimer)
-	if err != nil {
-		return nil, err
-	}
+	driver := provideCacheDriver(configConfig, logger)
+	v := provideDBGetter(dataImpl)
+	lockerLocker := locker.NewLocker(driver, v, logger, timerTimer)
 	manager := cron.NewManager(timerTimer, runner, lockerLocker, logger)
-	uploaderUploader, err := uploader.NewUploader(configConfig, logger, dataData)
+	accessTokenRepo := data.NewAccessTokenRepo(dataImpl, timerTimer)
+	accessTokenBiz := biz.NewAccessTokenBiz(logger, timerTimer, accessTokenRepo)
+	tokenManager := biz.NewAccessTokenManager(accessTokenBiz, timerTimer, logger)
+	auth, err := data.NewAuthn(tokenManager, configConfig, timerTimer)
 	if err != nil {
 		return nil, err
 	}
-	authAuth, err := auth.NewAuthn(dataData, timerTimer)
-	if err != nil {
-		return nil, err
-	}
+	authBiz := biz.NewAuthBiz(auth, dataImpl, logger)
 	dispatcher := event.NewDispatcher(logger)
-	group := NewSingleflight()
-	cacheCache := cache.NewCacheImpl(configConfig, dataData, logger, group)
-	pluginManger, err := application.NewPluginManager(configConfig, logger)
+	cache := data.NewCacheImpl(configConfig, dataImpl, logger)
+	pluginManager, err := app.NewPluginManager(configConfig, logger)
 	if err != nil {
 		return nil, err
 	}
 	versionServer := services.NewVersionSvc()
-	gitRepo := repo.NewGitRepo(logger, cacheCache, pluginManger, dataData)
-	repoRepo := repo.NewRepo(logger, dataData, gitRepo)
-	fileRepo := repo.NewFileRepo(logger, dataData, cacheCache, uploaderUploader, timerTimer)
-	archiver := repo.NewDefaultArchiver()
-	executorManager := repo.NewExecutorManager(dataData, logger)
-	k8sRepo := repo.NewK8sRepo(logger, timerTimer, dataData, fileRepo, uploaderUploader, archiver, executorManager)
-	helmerRepo := repo.NewDefaultHelmer(k8sRepo, dataData, configConfig, logger)
-	releaseInstaller := socket.NewReleaseInstaller(logger, helmerRepo, dataData, timerTimer)
-	namespaceRepo := repo.NewNamespaceRepo(logger, dataData)
-	projectRepo := repo.NewProjectRepo(logger, dataData)
-	changelogRepo := repo.NewChangelogRepo(logger, dataData)
-	eventRepo := repo.NewEventRepo(projectRepo, k8sRepo, pluginManger, changelogRepo, logger, dataData, dispatcher)
-	jobManager := socket.NewJobManager(dataData, timerTimer, logger, releaseInstaller, repoRepo, namespaceRepo, projectRepo, helmerRepo, uploaderUploader, lockerLocker, k8sRepo, eventRepo, pluginManger)
-	projectServer := services.NewProjectSvc(repoRepo, pluginManger, jobManager, projectRepo, gitRepo, k8sRepo, eventRepo, logger, helmerRepo, namespaceRepo)
-	pictureRepo := repo.NewPictureRepo(logger, pluginManger)
-	pictureServer := services.NewPictureSvc(pictureRepo)
-	namespaceServer := services.NewNamespaceSvc(helmerRepo, namespaceRepo, k8sRepo, logger, eventRepo)
-	metricsServer := services.NewMetricsSvc(timerTimer, k8sRepo, logger, projectRepo, namespaceRepo)
-	gitServer := services.NewGitSvc(repoRepo, eventRepo, logger, gitRepo, cacheCache)
-	fileServer := services.NewFileSvc(eventRepo, fileRepo, logger)
-	eventServer := services.NewEventSvc(logger, eventRepo)
-	endpointRepo := repo.NewEndpointRepo(logger, dataData, projectRepo, namespaceRepo)
-	endpointServer := services.NewEndpointSvc(logger, endpointRepo)
-	containerServer := services.NewContainerSvc(timerTimer, eventRepo, k8sRepo, fileRepo, logger)
-	clusterServer := services.NewClusterSvc(k8sRepo, logger)
-	changelogServer := services.NewChangelogSvc(changelogRepo)
-	authRepo := repo.NewAuthRepo(authAuth, logger, dataData)
-	authServer := services.NewAuthSvc(eventRepo, logger, authRepo)
-	accessTokenRepo := repo.NewAccessTokenRepo(timerTimer, logger, dataData)
-	accessTokenServer := services.NewAccessTokenSvc(logger, eventRepo, timerTimer, accessTokenRepo)
-	repoServer := services.NewRepoSvc(logger, eventRepo, gitRepo, repoRepo)
-	grpcRegistry := services.NewGrpcRegistry(versionServer, projectServer, pictureServer, namespaceServer, metricsServer, gitServer, fileServer, eventServer, endpointServer, containerServer, clusterServer, changelogServer, authServer, accessTokenServer, repoServer)
+	v2 := provideGitServer(pluginManager)
+	gitRepo := data.NewGitRepo(logger, cache, v2, configConfig)
+	repoRepo := data.NewRepo(dataImpl, gitRepo)
+	repoBiz := biz.NewRepoBiz(repoRepo)
+	v3 := provideMinioClient(dataImpl)
+	uploaderUploader, err := uploader.NewUploader(configConfig, logger, v3)
+	if err != nil {
+		return nil, err
+	}
+	fileRepo := data.NewFileRepo(logger, dataImpl, cache, uploaderUploader, timerTimer)
+	archiver := data.NewDefaultArchiver()
+	executorManager := data.NewExecutorManager(dataImpl, logger)
+	k8sRepo := data.NewK8sRepo(logger, timerTimer, dataImpl, fileRepo, uploaderUploader, archiver, executorManager)
+	helmerRepo := data.NewDefaultHelmer(k8sRepo, dataImpl, configConfig, logger)
+	releaseInstaller := deploy.NewReleaseInstaller(logger, helmerRepo, configConfig, timerTimer)
+	namespaceRepo := data.NewNamespaceRepo(dataImpl)
+	projectRepo := data.NewProjectRepo(logger, dataImpl)
+	eventRepo := data.NewEventRepo(logger, dataImpl, dispatcher)
+	jobManagerDeps := deploy.JobManagerDeps{
+		Timer:            timerTimer,
+		Logger:           logger,
+		ReleaseInstaller: releaseInstaller,
+		RepoRepo:         repoRepo,
+		NsRepo:           namespaceRepo,
+		ProjRepo:         projectRepo,
+		Helmer:           helmerRepo,
+		Uploader:         uploaderUploader,
+		Locker:           lockerLocker,
+		K8sRepo:          k8sRepo,
+		EventRepo:        eventRepo,
+		PluginManager:    pluginManager,
+	}
+	jobManager := deploy.NewJobManager(jobManagerDeps)
+	projectBiz := biz.NewProjectBiz(logger, projectRepo, k8sRepo)
+	gitBiz := biz.NewGitBiz(gitRepo)
+	k8sBiz := biz.NewK8sBiz(k8sRepo)
+	eventBiz := biz.NewEventBiz(eventRepo)
+	deployBiz := biz.NewDeployBiz(logger, projectRepo, helmerRepo, eventRepo)
+	namespaceBiz := biz.NewNamespaceBiz(logger, namespaceRepo, k8sRepo, helmerRepo, eventRepo)
+	accessBiz := biz.NewAccessBiz(namespaceBiz, projectBiz)
+	projectSvcDeps := services.ProjectSvcDeps{
+		RepoBiz:    repoBiz,
+		PluginMgr:  pluginManager,
+		JobManager: jobManager,
+		ProjBiz:    projectBiz,
+		GitBiz:     gitBiz,
+		K8sBiz:     k8sBiz,
+		EventBiz:   eventBiz,
+		Logger:     logger,
+		DeployBiz:  deployBiz,
+		AccessBiz:  accessBiz,
+	}
+	projectServer := services.NewProjectSvc(projectSvcDeps)
+	pictureBiz := biz.NewPictureBiz(logger, pluginManager)
+	pictureSvcDeps := services.PictureSvcDeps{
+		PicBiz: pictureBiz,
+		Logger: logger,
+	}
+	pictureServer := services.NewPictureSvc(pictureSvcDeps)
+	namespaceSvcDeps := services.NamespaceSvcDeps{
+		NsBiz:     namespaceBiz,
+		Logger:    logger,
+		EventBiz:  eventBiz,
+		AccessBiz: accessBiz,
+	}
+	namespaceServer := services.NewNamespaceSvc(namespaceSvcDeps)
+	metricsBiz := biz.NewMetricsBiz(k8sBiz)
+	metricsSvcDeps := services.MetricsSvcDeps{
+		Timer:      timerTimer,
+		K8sBiz:     k8sBiz,
+		MetricsBiz: metricsBiz,
+		Logger:     logger,
+		AccessBiz:  accessBiz,
+	}
+	metricsServer := services.NewMetricsSvc(metricsSvcDeps)
+	gitSvcDeps := services.GitSvcDeps{
+		RepoBiz: repoBiz,
+		Logger:  logger,
+		GitBiz:  gitBiz,
+	}
+	gitServer := services.NewGitSvc(gitSvcDeps)
+	fileBiz := biz.NewFileBiz(fileRepo)
+	fileSvcDeps := services.FileSvcDeps{
+		EventBiz:  eventBiz,
+		FileBiz:   fileBiz,
+		Logger:    logger,
+		AccessBiz: accessBiz,
+	}
+	fileServer := services.NewFileSvc(fileSvcDeps)
+	eventSvcDeps := services.EventSvcDeps{
+		Logger:    logger,
+		EventBiz:  eventBiz,
+		AccessBiz: accessBiz,
+	}
+	eventServer := services.NewEventSvc(eventSvcDeps)
+	endpointBiz := biz.NewEndpointBiz(logger, projectBiz, namespaceRepo)
+	endpointSvcDeps := services.EndpointSvcDeps{
+		Logger:    logger,
+		EpBiz:     endpointBiz,
+		AccessBiz: accessBiz,
+	}
+	endpointServer := services.NewEndpointSvc(endpointSvcDeps)
+	containerBiz := biz.NewContainerBiz(logger, k8sBiz, fileBiz, eventBiz, timerTimer)
+	containerSvcDeps := services.ContainerSvcDeps{
+		ContainerBiz: containerBiz,
+		EventBiz:     eventBiz,
+		K8sBiz:       k8sBiz,
+		FileBiz:      fileBiz,
+		AccessBiz:    accessBiz,
+		Logger:       logger,
+	}
+	containerServer := services.NewContainerSvc(containerSvcDeps)
+	clusterSvcDeps := services.ClusterSvcDeps{
+		K8sBiz: k8sBiz,
+		Logger: logger,
+	}
+	clusterServer := services.NewClusterSvc(clusterSvcDeps)
+	changelogRepo := data.NewChangelogRepo(logger, dataImpl)
+	changelogBiz := biz.NewChangelogBiz(changelogRepo)
+	changelogSvcDeps := services.ChangelogSvcDeps{
+		ClBiz:     changelogBiz,
+		Logger:    logger,
+		AccessBiz: accessBiz,
+	}
+	changelogServer := services.NewChangelogSvc(changelogSvcDeps)
+	authSvcDeps := services.AuthSvcDeps{
+		EventBiz: eventBiz,
+		Logger:   logger,
+		AuthBiz:  authBiz,
+	}
+	authServer := services.NewAuthSvc(authSvcDeps)
+	accessTokenSvcDeps := services.AccessTokenSvcDeps{
+		Logger:   logger,
+		EventBiz: eventBiz,
+		Repo:     accessTokenBiz,
+	}
+	accessTokenServer := services.NewAccessTokenSvc(accessTokenSvcDeps)
+	repoSvcDeps := services.RepoSvcDeps{
+		Logger:    logger,
+		EventBiz:  eventBiz,
+		RepoBiz:   repoBiz,
+		AccessBiz: accessBiz,
+	}
+	repoServer := services.NewRepoSvc(repoSvcDeps)
+	newGrpcRegistryDeps := services.NewGrpcRegistryDeps{
+		Version:     versionServer,
+		Project:     projectServer,
+		Picture:     pictureServer,
+		Namespace:   namespaceServer,
+		Metrics:     metricsServer,
+		Git:         gitServer,
+		File:        fileServer,
+		Event:       eventServer,
+		Endpoint:    endpointServer,
+		Container:   containerServer,
+		Cluster:     clusterServer,
+		Changelog:   changelogServer,
+		Auth:        authServer,
+		AccessToken: accessTokenServer,
+		Repo:        repoServer,
+	}
+	grpcRegistry := services.NewGrpcRegistry(newGrpcRegistryDeps)
 	registry := metrics.NewRegistry()
-	cronRepo := repo.NewCronRepo(timerTimer, logger, fileRepo, cacheCache, repoRepo, namespaceRepo, k8sRepo, pluginManger, eventRepo, dataData, uploaderUploader, helmerRepo, gitRepo, manager)
+	pluginDeps := provideCronDeps(pluginManager)
+	tasks := cronjob.NewTasks(timerTimer, logger, configConfig, fileRepo, projectRepo, repoRepo, namespaceRepo, k8sRepo, eventRepo, uploaderUploader, helmerRepo, gitRepo, pluginDeps)
 	counterCounter := counter.NewCounter()
-	wsHttpServer := socket.NewWebsocketManager(timerTimer, logger, counterCounter, projectRepo, repoRepo, namespaceRepo, jobManager, dataData, pluginManger, authAuth, uploaderUploader, lockerLocker, k8sRepo, eventRepo, executorManager, fileRepo)
-	httpHandler := services.NewHttpHandler(wsHttpServer, logger, uploaderUploader, authRepo, eventRepo, fileRepo, timerTimer, k8sRepo)
-	app := newApp(configConfig, dataData, manager, arg, logger, uploaderUploader, authAuth, dispatcher, cacheCache, lockerLocker, group, pluginManger, grpcRegistry, registry, cronRepo, httpHandler, timerTimer)
-	return app, nil
+	websocketManagerDeps := websocket.WebsocketManagerDeps{
+		Timer:         timerTimer,
+		Logger:        logger,
+		Counter:       counterCounter,
+		ProjBiz:       projectBiz,
+		RepoBiz:       repoBiz,
+		GitBiz:        gitBiz,
+		NsRepo:        namespaceRepo,
+		AccessBiz:     accessBiz,
+		JobManager:    jobManager,
+		Config:        configConfig,
+		PluginManager: pluginManager,
+		AuthBiz:       authBiz,
+		Locker:        lockerLocker,
+		ClusterRepo:   k8sRepo,
+		EventRepo:     eventRepo,
+		FileRepo:      fileRepo,
+	}
+	wsHttpServer := websocket.NewWebsocketManager(websocketManagerDeps)
+	httpHandlerDeps := services.HttpHandlerDeps{
+		WsHttpServer: wsHttpServer,
+		Logger:       logger,
+		Uploader:     uploaderUploader,
+		AuthBiz:      authBiz,
+		EventBiz:     eventBiz,
+		FileBiz:      fileBiz,
+		Timer:        timerTimer,
+		K8sBiz:       k8sBiz,
+		ContainerBiz: containerBiz,
+		AccessBiz:    accessBiz,
+	}
+	httpHandler := services.NewHttpHandler(httpHandlerDeps)
+	eventhandlerPluginDeps := provideEventDeps(pluginManager)
+	eventCoordinator := eventhandler.NewEventCoordinator(logger, dispatcher, projectRepo, k8sRepo, changelogRepo, eventRepo, eventhandlerPluginDeps)
+	podEventPublisher := providePodEventPublisher(pluginManager)
+	podEventListener := eventhandler.NewPodEventListener(logger, k8sRepo, namespaceRepo, podEventPublisher)
+	appApp := newApp(configConfig, dataImpl, manager, arg, logger, authBiz, dispatcher, cache, pluginManager, grpcRegistry, registry, tasks, httpHandler, timerTimer, projectRepo, k8sRepo, eventCoordinator, podEventListener)
+	return appApp, nil
 }
