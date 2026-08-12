@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender"
@@ -27,7 +27,7 @@ var wsSubscribe = func(ps *redis.PubSub, ctx context.Context, channel string) er
 
 func init() {
 	dr := &redisSender{}
-	application.RegisterPlugin(dr.Name(), dr)
+	app.RegisterPlugin(dr.Name(), dr)
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +65,7 @@ func (p *redisSender) Name() string {
 
 // Initialize 从 args 读取 addr/password/db 建立 Redis 客户端，
 // 订阅广播房间并启动 dispatcher 扇出 goroutine。
-func (p *redisSender) Initialize(app application.PluginApp, args map[string]any) error {
+func (p *redisSender) Initialize(pluginApp app.PluginApp, args map[string]any) error {
 	addr, ok := args["addr"].(string)
 	if !ok || addr == "" {
 		return errors.New("redisSender need valid addr")
@@ -73,25 +73,25 @@ func (p *redisSender) Initialize(app application.PluginApp, args map[string]any)
 	pwd, _ := args["password"].(string)
 	db, _ := args["db"].(int)
 
-	p.projectRepo = app.ProjectRepo()
-	p.logger = app.Logger()
+	p.projectRepo = pluginApp.ProjectRepo()
+	p.logger = pluginApp.Logger()
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: pwd,
 		DB:       db,
 	})
-	if err := rdb.Ping(context.TODO()).Err(); err != nil {
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
 		return err
 	}
 	p.rds = rdb
 
-	p.ctx, p.cancel = context.WithCancel(context.TODO())
+	p.ctx, p.cancel = context.WithCancel(context.Background())
 	p.subs = make(map[string]*subEntry)
 
-	// 一条共享 PubSub 订阅广播房间。
-	p.wsPubSub = p.rds.Subscribe(context.TODO())
-	if err := wsSubscribe(p.wsPubSub, context.TODO(), wssender.BroadcastRoom); err != nil {
+	// 一条共享 PubSub 订阅广播房间。绑定 p.ctx：Destroy 取消时订阅随之关闭，不再飘在空里。
+	p.wsPubSub = p.rds.Subscribe(p.ctx)
+	if err := wsSubscribe(p.wsPubSub, p.ctx, wssender.BroadcastRoom); err != nil {
 		return err
 	}
 	p.msgCh = p.wsPubSub.Channel()
@@ -153,7 +153,7 @@ func (p *redisSender) dispatcher() {
 }
 
 // New 注册本地订阅项与用户直连频道，返回 rdsPubSub 实例。
-func (p *redisSender) New(uid, id string) application.PubSub {
+func (p *redisSender) New(uid, id string) app.PubSub {
 	ch := make(chan []byte, wssender.MessageChSize)
 
 	// 注册到共享 dispatcher。
@@ -162,9 +162,10 @@ func (p *redisSender) New(uid, id string) application.PubSub {
 	p.mu.Unlock()
 
 	// 共享连接订阅该用户的直连频道（供跨实例 ToSelf 使用）。
-	p.wsPubSub.Subscribe(context.TODO(), id)
+	p.wsPubSub.Subscribe(p.ctx, id)
 
 	pem := &podEventManagers{
+		ctx:          p.ctx,
 		logger:       p.logger.WithModule("plugins/ws_sender_redis"),
 		projectRepo:  p.projectRepo,
 		ch:           ch,
@@ -172,7 +173,7 @@ func (p *redisSender) New(uid, id string) application.PubSub {
 		uid:          uid,
 		rds:          p.rds,
 		channelRefs:  make(map[string]int),
-		pubSub:       p.rds.Subscribe(context.TODO()),
+		pubSub:       p.rds.Subscribe(p.ctx),
 		pidSelectors: make(map[int32][]labels.Selector),
 	}
 
@@ -200,8 +201,8 @@ type rdsPubSub struct {
 	ch        chan []byte
 	closeOnce sync.Once
 
-	application.ProjectPodEventSubscriber
-	application.ProjectPodEventPublisher
+	app.ProjectPodEventSubscriber
+	app.ProjectPodEventPublisher
 }
 
 // ID 返回连接标识。
@@ -234,7 +235,7 @@ func (p *rdsPubSub) Close() error {
 		delete(p.manager.subs, p.id)
 		p.manager.mu.Unlock()
 
-		p.manager.wsPubSub.Unsubscribe(context.TODO(), p.id)
+		p.manager.wsPubSub.Unsubscribe(p.manager.ctx, p.id)
 
 		// 不要 close(p.ch)：dispatcher 与 podEventManagers.Run 两个 goroutine 都可能
 		// 向 p.ch 发送，send-on-closed-channel 会 panic；消费者（websocket write）已
@@ -244,22 +245,22 @@ func (p *rdsPubSub) Close() error {
 }
 
 // ToSelf 发布到用户直连频道，仅当前连接可收到。
-func (p *rdsPubSub) ToSelf(wsResponse application.WebsocketMessage) error {
+func (p *rdsPubSub) ToSelf(wsResponse app.WebsocketMessage) error {
 	return p.to(wsResponse, websocket_pb.To_ToSelf)
 }
 
 // ToAll 发布到广播频道，全部订阅者均可收到。
-func (p *rdsPubSub) ToAll(wsResponse application.WebsocketMessage) error {
+func (p *rdsPubSub) ToAll(wsResponse app.WebsocketMessage) error {
 	return p.to(wsResponse, websocket_pb.To_ToAll)
 }
 
 // to 发布消息到 Redis：共享 dispatcher 负责扇出。不修改 wsResponse。
-func (p *rdsPubSub) to(response application.WebsocketMessage, to websocket_pb.To) error {
+func (p *rdsPubSub) to(response app.WebsocketMessage, to websocket_pb.To) error {
 	room := wssender.BroadcastRoom
 	if to == websocket_pb.To_ToSelf {
 		room = p.id
 	}
-	return p.rds.Publish(context.TODO(), room, wssender.ProtoToMessage(response, p.id, to).Marshal()).Err()
+	return p.rds.Publish(context.Background(), room, wssender.ProtoToMessage(response, p.id, to).Marshal()).Err()
 }
 
 // Subscribe 返回本地通道，无每连接的 Redis 订阅。
@@ -273,6 +274,10 @@ func (p *rdsPubSub) Subscribe() <-chan []byte {
 
 // podEventManagers 管理项目 pod 事件的订阅与发布：每个连接独立的 PubSub 订阅对应命名空间频道。
 type podEventManagers struct {
+	// ctx 是插件生命周期 ctx（New 时从 redisSender 注入）：订阅/退订绑它，
+	// 插件 Destroy 时这些 Redis 操作可取消，而非飘在空里的 TODO。
+	// Publish 是 fire-and-forget 广播，不绑 ctx（见 to()/Publish 注释）。
+	ctx         context.Context
 	projectRepo biz.ProjectRepo
 	logger      mlog.Logger
 	id          string
@@ -298,7 +303,7 @@ func (p *podEventManagers) Publish(nsID int64, pod *v1.Pod) error {
 		NamespaceID: nsID,
 		Pod:         pod,
 	})
-	return p.rds.Publish(context.TODO(), channel, marshal).Err()
+	return p.rds.Publish(context.Background(), channel, marshal).Err()
 }
 
 // Join 订阅项目所在命名空间频道（首个引用时），并登记该项目的 pod 选择器。
@@ -314,7 +319,7 @@ func (p *podEventManagers) Join(projectID int64) error {
 	p.channelRefs[channel]++
 	if p.channelRefs[channel] == 1 {
 		// 首个引用才真正订阅。
-		if err := p.pubSub.Subscribe(context.TODO(), channel); err != nil {
+		if err := p.pubSub.Subscribe(p.ctx, channel); err != nil {
 			p.channelRefs[channel]--
 			p.mu.Unlock()
 			return err
@@ -346,7 +351,7 @@ func (p *podEventManagers) Leave(nsID int64, projectID int64) error {
 	p.channelRefs[channel]--
 	if p.channelRefs[channel] <= 0 {
 		delete(p.channelRefs, channel)
-		if err := p.pubSub.Unsubscribe(context.TODO(), channel); err != nil {
+		if err := p.pubSub.Unsubscribe(p.ctx, channel); err != nil {
 			p.mu.Unlock()
 			return err
 		}

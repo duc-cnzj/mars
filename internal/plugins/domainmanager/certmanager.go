@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/hasher"
 )
@@ -13,11 +13,11 @@ import (
 // certManagerName 插件注册名。
 const certManagerName = "cert-manager_domain_manager"
 
-var _ application.DomainManager = (*certManager)(nil)
+var _ app.DomainManager = (*certManager)(nil)
 
 func init() {
 	dr := &certManager{}
-	application.RegisterPlugin(dr.Name(), dr)
+	app.RegisterPlugin(dr.Name(), dr)
 }
 
 // certManager 基于 cert-manager + lets encrypt 签发证书；lets encrypt 对 subdomain 长度要求为 64。
@@ -36,8 +36,8 @@ func (d *certManager) Name() string {
 }
 
 // Initialize 从 args 读取 ns_prefix/cluster_issuer/wildcard_domain，校验必填项后保存。
-func (d *certManager) Initialize(app application.PluginApp, args map[string]any) error {
-	d.logger = app.Logger()
+func (d *certManager) Initialize(pluginApp app.PluginApp, args map[string]any) error {
+	d.logger = pluginApp.Logger()
 
 	nsPrefix, err := stringArg(args, "ns_prefix")
 	if err != nil {

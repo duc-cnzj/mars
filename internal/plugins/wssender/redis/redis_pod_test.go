@@ -72,6 +72,7 @@ func newPEM(t *testing.T, mr *miniredis.Miniredis, db *ent.Client) *podEventMana
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr(), DB: 1})
 	t.Cleanup(func() { _ = rdb.Close() })
 	return &podEventManagers{
+		ctx:          context.Background(),
 		projectRepo:  newTestRepo(t, db),
 		logger:       mlog.NewForConfig(nil),
 		id:           "id-1",
@@ -197,7 +198,7 @@ func TestPodEventPublish_error(t *testing.T) {
 	mr := miniredis.RunT(t)
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	_ = rdb.Close() // 关闭客户端 → Publish 失败
-	pem := &podEventManagers{rds: rdb, logger: mlog.NewForConfig(nil), ch: make(chan []byte, 8)}
+	pem := &podEventManagers{ctx: context.Background(), rds: rdb, logger: mlog.NewForConfig(nil), ch: make(chan []byte, 8)}
 
 	err := pem.Publish(7, testPod())
 	assert.Error(t, err)

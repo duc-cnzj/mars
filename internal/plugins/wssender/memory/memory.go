@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender"
@@ -17,7 +17,7 @@ var memorySenderName = "ws_sender_memory"
 
 func init() {
 	dr := &memorySender{}
-	application.RegisterPlugin(dr.Name(), dr)
+	app.RegisterPlugin(dr.Name(), dr)
 }
 
 // conn 表示一个已注册的 websocket 连接：id 为连接标识，uid 为用户标识，ch 为消息缓冲通道。
@@ -78,12 +78,12 @@ func (ms *memorySender) Name() string {
 }
 
 // Initialize 初始化连接表、房间表与日志器。
-func (ms *memorySender) Initialize(app application.PluginApp, args map[string]any) error {
-	ms.projectRepo = app.ProjectRepo()
+func (ms *memorySender) Initialize(pluginApp app.PluginApp, args map[string]any) error {
+	ms.projectRepo = pluginApp.ProjectRepo()
 	ms.conns = make(map[string]*conn)
 	ms.idRooms = make(map[string]map[int32]struct{})
 	ms.rooms = make(namespaceRooms)
-	ms.logger = app.Logger().WithModule("plugins/ws_sender_memory")
+	ms.logger = pluginApp.Logger().WithModule("plugins/ws_sender_memory")
 	ms.logger.Info("[Plugin]: " + ms.Name() + " plugin Initialize...")
 	return nil
 }
@@ -95,7 +95,7 @@ func (ms *memorySender) Destroy() error {
 }
 
 // New 注册连接并返回对应的 memoryPubSub 实例。
-func (ms *memorySender) New(uid, id string) application.PubSub {
+func (ms *memorySender) New(uid, id string) app.PubSub {
 	ms.Add(uid, id)
 	return &memoryPubSub{
 		projectRepo: ms.projectRepo,
@@ -254,7 +254,7 @@ func (p *memoryPubSub) ID() string {
 }
 
 // ToSelf 只向当前连接发送消息。
-func (p *memoryPubSub) ToSelf(wsResponse application.WebsocketMessage) error {
+func (p *memoryPubSub) ToSelf(wsResponse app.WebsocketMessage) error {
 	p.manager.connMu.RLock()
 	defer p.manager.connMu.RUnlock()
 	conn, ok := p.manager.conns[p.id]
@@ -265,7 +265,7 @@ func (p *memoryPubSub) ToSelf(wsResponse application.WebsocketMessage) error {
 }
 
 // ToAll 向全部连接广播消息。
-func (p *memoryPubSub) ToAll(wsResponse application.WebsocketMessage) error {
+func (p *memoryPubSub) ToAll(wsResponse app.WebsocketMessage) error {
 	p.manager.connMu.RLock()
 	defer p.manager.connMu.RUnlock()
 

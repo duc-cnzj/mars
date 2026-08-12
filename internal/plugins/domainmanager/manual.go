@@ -4,18 +4,18 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 )
 
 // ManualCertSecretName 手动证书方式使用的 secret 名。
 const ManualCertSecretName = "mars-external-tls-secret" // #nosec G101
 
-var _ application.DomainManager = (*manualDomainManager)(nil)
+var _ app.DomainManager = (*manualDomainManager)(nil)
 
 func init() {
 	dr := &manualDomainManager{}
-	application.RegisterPlugin(dr.Name(), dr)
+	app.RegisterPlugin(dr.Name(), dr)
 }
 
 // manualDomainManager 使用用户手动配置的证书与通配域名。
@@ -36,8 +36,8 @@ func (m *manualDomainManager) Name() string {
 
 // Initialize 从 args 读取 ns_prefix/tls_crt/tls_key/wildcard_domain，
 // 校验三项必填参数并通过 validateTLSWildcardDomain 验证证书域名匹配。
-func (m *manualDomainManager) Initialize(app application.PluginApp, args map[string]any) error {
-	m.logger = app.Logger()
+func (m *manualDomainManager) Initialize(pluginApp app.PluginApp, args map[string]any) error {
+	m.logger = pluginApp.Logger()
 
 	nsPrefix, err := stringArg(args, "ns_prefix")
 	if err != nil {

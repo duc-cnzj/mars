@@ -5,13 +5,13 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ application.DomainManager = (*syncSecretDomainManager)(nil)
+var _ app.DomainManager = (*syncSecretDomainManager)(nil)
 
 // SyncSecretSecretName 和 manual 方式保持名称一致，避免两种方式之间切换时需要手动部署才能生效的问题
 const SyncSecretSecretName = ManualCertSecretName
@@ -25,7 +25,7 @@ type syncDeps interface {
 
 func init() {
 	dr := &syncSecretDomainManager{}
-	application.RegisterPlugin(dr.Name(), dr)
+	app.RegisterPlugin(dr.Name(), dr)
 }
 
 // syncSecretDomainManager 从 k8s secret 同步 TLS 证书，校验通过后作为证书来源。
@@ -51,8 +51,8 @@ func (d *syncSecretDomainManager) Name() string {
 
 // Initialize 从 args 读取 ns_prefix/secret_namespace/secret_name/wildcard_domain，
 // 拉取并校验 TLS secret：必须是 TLS 类型且 DNSNames 覆盖通配域名。
-func (d *syncSecretDomainManager) Initialize(app application.PluginApp, args map[string]any) error {
-	dep := application.Resolve[syncDeps](app)
+func (d *syncSecretDomainManager) Initialize(pluginApp app.PluginApp, args map[string]any) error {
+	dep := app.Resolve[syncDeps](pluginApp)
 	d.k8sRepo = dep.K8sRepo()
 	d.logger = dep.Logger()
 

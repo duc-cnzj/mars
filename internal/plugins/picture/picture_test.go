@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -345,8 +345,8 @@ func TestBingGet_copyright_without_paren_stays(t *testing.T) {
 	assert.Equal(t, "Plain copyright text", item.Copyright)
 }
 
-// TestRegister_interface ensures the plugin satisfies application.Picture.
+// TestRegister_interface ensures the plugin satisfies app.Picture.
 func TestRegister_interface(t *testing.T) {
-	var _ application.Picture = (*cartoon)(nil)
-	var _ application.Picture = (*bing)(nil)
+	var _ app.Picture = (*cartoon)(nil)
+	var _ app.Picture = (*bing)(nil)
 }

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/rand"
@@ -22,7 +22,7 @@ var (
 	}
 )
 
-var _ application.Picture = (*cartoon)(nil)
+var _ app.Picture = (*cartoon)(nil)
 
 // cartoonDeps 是 cartoon 插件的依赖视图：只用 Logger 与 Cache。
 // Cache 是单插件独有能力，不在 PluginApp 公共接口里，经 Resolve 断言取用。
@@ -33,7 +33,7 @@ type cartoonDeps interface {
 
 func init() {
 	p := &cartoon{}
-	application.RegisterPlugin(p.Name(), p)
+	app.RegisterPlugin(p.Name(), p)
 }
 
 // cartoon 从随机图源请求一张二次元图片，图片地址按天缓存。
@@ -54,7 +54,7 @@ var client = http.Client{
 var newBackOff = func() backoff.BackOff { return backoff.NewExponentialBackOff() }
 
 // Get 随机请求一个图源并返回图片地址；非 random 时结果缓存 24 小时，random 时不缓存。
-func (c *cartoon) Get(ctx context.Context, random bool) (*application.PictureItem, error) {
+func (c *cartoon) Get(ctx context.Context, random bool) (*app.PictureItem, error) {
 	day := time.Now().Format("2006-01-02")
 	seconds := 0
 	if !random {
@@ -88,7 +88,7 @@ func (c *cartoon) Get(ctx context.Context, random bool) (*application.PictureIte
 		return nil, err
 	}
 
-	return &application.PictureItem{
+	return &app.PictureItem{
 		Url:       string(bg),
 		Copyright: "",
 	}, nil
@@ -100,8 +100,8 @@ func (c *cartoon) Name() string {
 }
 
 // Initialize 从宽入口 Resolve 出窄依赖视图，注入 cache 与 logger 并输出初始化日志。
-func (c *cartoon) Initialize(app application.PluginApp, args map[string]any) error {
-	d := application.Resolve[cartoonDeps](app)
+func (c *cartoon) Initialize(pluginApp app.PluginApp, args map[string]any) error {
+	d := app.Resolve[cartoonDeps](pluginApp)
 	c.cache = d.Cache()
 	c.logger = d.Logger()
 	c.logger.Info("[Plugin]: " + c.Name() + " plugin Initialize...")

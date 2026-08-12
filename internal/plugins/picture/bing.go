@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/rand"
 )
@@ -27,11 +27,11 @@ var (
 	randIntn = rand.Intn
 )
 
-var _ application.Picture = (*bing)(nil)
+var _ app.Picture = (*bing)(nil)
 
 func init() {
 	p := &bing{}
-	application.RegisterPlugin(p.Name(), p)
+	app.RegisterPlugin(p.Name(), p)
 }
 
 // Item Bing 接口返回的单张图片字段。
@@ -71,9 +71,9 @@ func (b *bing) Name() string {
 	return bingname
 }
 
-// Initialize 保存 app.Logger 并输出初始化日志。
-func (b *bing) Initialize(app application.PluginApp, args map[string]any) error {
-	b.logger = app.Logger()
+// Initialize 保存 pluginApp.Logger 并输出初始化日志。
+func (b *bing) Initialize(pluginApp app.PluginApp, args map[string]any) error {
+	b.logger = pluginApp.Logger()
 	b.logger.Info("[Plugin]: " + b.Name() + " plugin Initialize...")
 	return nil
 }
@@ -85,7 +85,7 @@ func (b *bing) Destroy() error {
 }
 
 // Get 返回一张 Bing 壁纸；random 为 true 时随机选一张，否则取当天第一张。当天结果按天缓存。
-func (b *bing) Get(ctx context.Context, random bool) (*application.PictureItem, error) {
+func (b *bing) Get(ctx context.Context, random bool) (*app.PictureItem, error) {
 	key, n := 0, 8
 	if random {
 		key = randIntn(n)
@@ -137,7 +137,7 @@ func (b *bing) Get(ctx context.Context, random bool) (*application.PictureItem, 
 	if idx := strings.Index(copyright, "(©"); idx > 0 {
 		copyright = copyright[:idx]
 	}
-	return &application.PictureItem{
+	return &app.PictureItem{
 		Url:       "https://cn.bing.com/" + strings.TrimLeft(item.URL, "/"),
 		Copyright: copyright,
 	}, nil

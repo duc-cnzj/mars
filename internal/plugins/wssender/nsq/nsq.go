@@ -9,7 +9,7 @@ import (
 	"time"
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender"
@@ -67,7 +67,7 @@ var newConsumer = func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, e
 
 func init() {
 	dr := &nsqSender{}
-	application.RegisterPlugin(dr.Name(), dr)
+	app.RegisterPlugin(dr.Name(), dr)
 }
 
 // getNsqProjectEventRoom 返回命名空间 pod 事件频道的 NSQ ephemeral 通道名。
@@ -91,8 +91,8 @@ func (n *nsqSender) Name() string {
 }
 
 // Initialize 从 args 读取 nsq 地址与超时配置，创建 producer 并 Ping 验证连通性。
-func (n *nsqSender) Initialize(app application.PluginApp, args map[string]any) (err error) {
-	n.projectRepo = app.ProjectRepo()
+func (n *nsqSender) Initialize(pluginApp app.PluginApp, args map[string]any) (err error) {
+	n.projectRepo = pluginApp.ProjectRepo()
 	n.cfg = gonsq.NewConfig()
 	// 坑:
 	// 当多个nsqd服务都有相同的topic的时候，consumer要修改默认设置config.MaxInFlight才能连接
@@ -128,7 +128,7 @@ func (n *nsqSender) Initialize(app application.PluginApp, args map[string]any) (
 		}
 	}
 
-	n.logger = app.Logger().WithModule("plugins/ws_sender_nsq")
+	n.logger = pluginApp.Logger().WithModule("plugins/ws_sender_nsq")
 	if s, ok := args["addr"]; ok {
 		n.logger.Debugf("[NSQ]: addr '%v'", s)
 		n.addr = s.(string)
@@ -162,7 +162,7 @@ func (n *nsqSender) Destroy() error {
 }
 
 // New 返回一个携带独立 consumer 集合与消息通道的 nsq 实例。
-func (n *nsqSender) New(uid, id string) application.PubSub {
+func (n *nsqSender) New(uid, id string) app.PubSub {
 	return &nsq{
 		logger:       n.logger,
 		addr:         n.addr,
@@ -343,17 +343,17 @@ func (n *nsq) ID() string {
 }
 
 // ToSelf 发布到用户直连 ephemeral 通道，仅当前连接可收到。
-func (n *nsq) ToSelf(response application.WebsocketMessage) error {
+func (n *nsq) ToSelf(response app.WebsocketMessage) error {
 	return n.to(response, websocket_pb.To_ToSelf)
 }
 
 // ToAll 发布到广播 ephemeral 通道，全部订阅者均可收到。
-func (n *nsq) ToAll(response application.WebsocketMessage) error {
+func (n *nsq) ToAll(response app.WebsocketMessage) error {
 	return n.to(response, websocket_pb.To_ToAll)
 }
 
 // to 按投递目标选择广播或直连频道，发布序列化后的 Message。
-func (n *nsq) to(response application.WebsocketMessage, to websocket_pb.To) error {
+func (n *nsq) to(response app.WebsocketMessage, to websocket_pb.To) error {
 	room := ephemeralBroadcastRoom
 	if to == websocket_pb.To_ToSelf {
 		room = n.ephemeralID()

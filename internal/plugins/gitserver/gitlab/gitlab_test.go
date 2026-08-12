@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
@@ -516,7 +516,7 @@ func TestToPipeline_maps_fields(t *testing.T) {
 	assert.Equal(t, "w", p.WebURL)
 }
 
-// TestRegister_interface ensures the plugin satisfies application.GitServer.
+// TestRegister_interface ensures the plugin satisfies app.GitServer.
 func TestRegister_interface(t *testing.T) {
-	var _ application.GitServer = (*server)(nil)
+	var _ app.GitServer = (*server)(nil)
 }

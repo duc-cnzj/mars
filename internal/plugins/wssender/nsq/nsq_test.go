@@ -9,7 +9,7 @@ import (
 	"time"
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/data"
@@ -162,7 +162,7 @@ func newTestRepo(t *testing.T, db *ent.Client) biz.ProjectRepo {
 }
 
 // newApp 构造带真实 ent DB + ProjectRepo 的 PluginApp stub。
-func newApp(t *testing.T) (application.PluginApp, biz.ProjectRepo, *ent.Client) {
+func newApp(t *testing.T) (app.PluginApp, biz.ProjectRepo, *ent.Client) {
 	t.Helper()
 	db := newDB(t)
 	pr := newTestRepo(t, db)

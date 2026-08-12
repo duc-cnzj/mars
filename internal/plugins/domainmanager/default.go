@@ -1,15 +1,15 @@
 package domainmanager
 
 import (
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 )
 
-var _ application.DomainManager = (*defaultDomainManager)(nil)
+var _ app.DomainManager = (*defaultDomainManager)(nil)
 
 func init() {
 	dr := &defaultDomainManager{}
-	application.RegisterPlugin(dr.Name(), dr)
+	app.RegisterPlugin(dr.Name(), dr)
 }
 
 type defaultDomainManager struct {
@@ -21,9 +21,9 @@ func (d *defaultDomainManager) Name() string {
 	return "default_domain_manager"
 }
 
-// Initialize 保存 app.Logger 并输出初始化日志。
-func (d *defaultDomainManager) Initialize(app application.PluginApp, args map[string]any) error {
-	d.logger = app.Logger()
+// Initialize 保存 pluginApp.Logger 并输出初始化日志。
+func (d *defaultDomainManager) Initialize(pluginApp app.PluginApp, args map[string]any) error {
+	d.logger = pluginApp.Logger()
 	d.logger.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
 	return nil
 }

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -483,10 +483,10 @@ func TestSyncSecret_GetCerts_read_error(t *testing.T) {
 	assert.Empty(t, c)
 }
 
-// TestRegister_interface ensures implementations satisfy application.DomainManager.
+// TestRegister_interface ensures implementations satisfy app.DomainManager.
 func TestRegister_interface(t *testing.T) {
-	var _ application.DomainManager = (*certManager)(nil)
-	var _ application.DomainManager = (*defaultDomainManager)(nil)
-	var _ application.DomainManager = (*manualDomainManager)(nil)
-	var _ application.DomainManager = (*syncSecretDomainManager)(nil)
+	var _ app.DomainManager = (*certManager)(nil)
+	var _ app.DomainManager = (*defaultDomainManager)(nil)
+	var _ app.DomainManager = (*manualDomainManager)(nil)
+	var _ app.DomainManager = (*syncSecretDomainManager)(nil)
 }

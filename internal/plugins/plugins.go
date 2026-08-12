@@ -1,8 +1,8 @@
 // Package plugins 是插件装配清单：单一事实来源。
 //
 // 新增插件在此加一行 blank import 并注明注册名，main 只需 import 本包。
-// 每个插件包的 init() 负责自注册到 application 注册表——装配层开放封闭：
-// 新增插件不改任何现有代码（main.go 与 application 包均不动）。
+// 每个插件包的 init() 负责自注册到 app 注册表——装配层开放封闭：
+// 新增插件不改任何现有代码（main.go 与 app 包均不动）。
 package plugins
 
 import (

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
@@ -51,7 +51,7 @@ func DecodeMessage(data []byte) (msg Message, err error) {
 }
 
 // ProtoToMessage 把 websocket proto 消息转成带目标与归属的 Message。
-func ProtoToMessage(m application.WebsocketMessage, id string, to websocket_pb.To) Message {
+func ProtoToMessage(m app.WebsocketMessage, id string, to websocket_pb.To) Message {
 	return Message{
 		Data: TransformToResponse(m),
 		To:   to,

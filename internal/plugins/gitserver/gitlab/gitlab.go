@@ -3,21 +3,21 @@ package gitlab
 import (
 	"errors"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/proxy"
 	"github.com/xanzy/go-gitlab"
 )
 
-var _ application.GitServer = (*server)(nil)
+var _ app.GitServer = (*server)(nil)
 
 // gitlabName 插件注册名。
 const gitlabName = "gitlab"
 
 func init() {
 	dr := &server{}
-	application.RegisterPlugin(dr.Name(), dr)
+	app.RegisterPlugin(dr.Name(), dr)
 }
 
 // toGitProject 将 go-gitlab 的 Project 转成业务层 GitProject；nil 输入返回 nil。
@@ -101,7 +101,7 @@ func toPipeline(p *gitlab.PipelineInfo) *biz.Pipeline {
 	}
 }
 
-// server 是 gitlab 插件实现：持有 go-gitlab 客户端与日志器，实现 application.GitServer。
+// server 是 gitlab 插件实现：持有 go-gitlab 客户端与日志器，实现 app.GitServer。
 type server struct {
 	client *gitlab.Client
 	logger mlog.Logger
@@ -113,7 +113,7 @@ func (g *server) Name() string {
 }
 
 // Initialize 从 args 读取 token/baseurl/http_proxy，校验必填项后创建 go-gitlab 客户端。
-func (g *server) Initialize(app application.PluginApp, args map[string]any) error {
+func (g *server) Initialize(pluginApp app.PluginApp, args map[string]any) error {
 	token, ok := args["token"].(string)
 	if !ok || token == "" {
 		return errors.New("gitlab: token required")
@@ -138,7 +138,7 @@ func (g *server) Initialize(app application.PluginApp, args map[string]any) erro
 		return err
 	}
 	g.client = client
-	g.logger = app.Logger()
+	g.logger = pluginApp.Logger()
 	g.logger.Info("[Plugin]: " + g.Name() + " plugin Initialize...")
 	return nil
 }
