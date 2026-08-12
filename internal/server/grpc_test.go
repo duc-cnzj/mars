@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -70,7 +70,7 @@ func TestNewGrpcRunner(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	appMock := application.NewMockApp(m)
+	appMock := app.NewMockApp(m)
 	appMock.EXPECT().GrpcRegistry().Return(nil).Times(1)
 	appMock.EXPECT().Logger().Return(mlog.NewForConfig(nil)).Times(1)
 	appMock.EXPECT().AuthBiz().Return(biz.NewMockAuthBiz(m)).Times(1)
@@ -111,7 +111,7 @@ func TestGrpcRunner_Shutdown(t *testing.T) {
 func Test_grpcRunner_initServer(t *testing.T) {
 	var ss any
 	(&grpcRunner{
-		grpcRegistry: &application.GrpcRegistry{
+		grpcRegistry: &app.GrpcRegistry{
 			RegistryFunc: func(s grpc.ServiceRegistrar) {
 				ss = s
 			},
@@ -183,7 +183,7 @@ func newBufconnGRPCRunner(m *gomock.Controller) (*grpcRunner, *bufconn.Listener)
 	return &grpcRunner{
 		logger:  mlog.NewForConfig(nil),
 		authBiz: authBiz,
-		grpcRegistry: &application.GrpcRegistry{
+		grpcRegistry: &app.GrpcRegistry{
 			RegistryFunc: func(s grpc.ServiceRegistrar) {
 				s.RegisterService(&echoTestServiceDesc, echoTestService{})
 			},
@@ -243,7 +243,7 @@ func Test_grpcRunner_initServer_InterceptorPanicRecovered(t *testing.T) {
 	runner := &grpcRunner{
 		logger:  mlog.NewForConfig(nil),
 		authBiz: authBiz,
-		grpcRegistry: &application.GrpcRegistry{
+		grpcRegistry: &app.GrpcRegistry{
 			RegistryFunc: func(s grpc.ServiceRegistrar) {
 				s.RegisterService(&echoTestServiceDesc, panickingAuthorizeService{})
 			},
@@ -291,7 +291,7 @@ func Test_grpcRunner_Run_SuccessAndServe(t *testing.T) {
 		endpoint: fmt.Sprintf("127.0.0.1:%d", port),
 		logger:   mlog.NewForConfig(nil),
 		authBiz:  authBiz,
-		grpcRegistry: &application.GrpcRegistry{
+		grpcRegistry: &app.GrpcRegistry{
 			RegistryFunc: func(s grpc.ServiceRegistrar) {},
 		},
 	}
@@ -309,7 +309,7 @@ func Test_grpcRunner_Run_ListenError(t *testing.T) {
 		endpoint: "not-a-valid-address",
 		logger:   mlog.NewForConfig(nil),
 		authBiz:  biz.NewMockAuthBiz(m),
-		grpcRegistry: &application.GrpcRegistry{
+		grpcRegistry: &app.GrpcRegistry{
 			RegistryFunc: func(s grpc.ServiceRegistrar) {},
 		},
 	}

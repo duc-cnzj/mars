@@ -10,7 +10,7 @@ import (
 	containerpb "github.com/duc-cnzj/mars/api/v6/proto/container"
 	metricspb "github.com/duc-cnzj/mars/api/v6/proto/metrics"
 	"github.com/duc-cnzj/mars/v6/frontend"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/server/middlewares"
 	"github.com/gorilla/mux"
@@ -37,14 +37,14 @@ type apiGateway struct {
 	port          string
 	server        HttpServer
 	logger        mlog.Logger
-	grpcRegistry  *application.GrpcRegistry
-	handler       application.HttpHandler
+	grpcRegistry  *app.GrpcRegistry
+	handler       app.HttpHandler
 	newServerFunc func(ctx context.Context, a *apiGateway) (HttpServer, error)
 }
 
 // NewApiGateway 构建 HTTP api-gateway 启动器：grpc-gateway 承载 API、gorilla/mux 承载
-// 前端与 websocket 路由，端口取自 app.Config().AppPort。返回实现 application.Server。
-func NewApiGateway(endpoint string, app application.ServerDeps) application.Server {
+// 前端与 websocket 路由，端口取自 app.Config().AppPort。返回实现 app.Server。
+func NewApiGateway(endpoint string, app app.ServerDeps) app.Server {
 	return &apiGateway{
 		endpoint:      endpoint,
 		port:          app.Config().AppPort,

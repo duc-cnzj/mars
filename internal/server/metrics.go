@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -19,8 +19,8 @@ type metricsRunner struct {
 
 // NewMetricsRunner 构建 metrics 传输层启动器：在指定端口暴露 /metrics 端点
 // （OpenMetrics 格式，promhttp 从 prometheus.Registry 拉取），server 在构造时装配
-// （Handler 经 metricsHandler 构建），与 pprofRunner 的装配时机对齐。返回 application.Server。
-func NewMetricsRunner(port string, logger mlog.Logger, reg *prometheus.Registry) application.Server {
+// （Handler 经 metricsHandler 构建），与 pprofRunner 的装配时机对齐。返回 app.Server。
+func NewMetricsRunner(port string, logger mlog.Logger, reg *prometheus.Registry) app.Server {
 	return &metricsRunner{
 		port:   port,
 		logger: logger.WithModule("server/metricsRunner"),

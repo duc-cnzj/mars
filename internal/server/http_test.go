@@ -10,7 +10,7 @@ import (
 
 	authpb "github.com/duc-cnzj/mars/api/v6/proto/auth"
 	metricspb "github.com/duc-cnzj/mars/api/v6/proto/metrics"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -24,7 +24,7 @@ import (
 func TestNewApiGateway(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := application.NewMockApp(m)
+	app := app.NewMockApp(m)
 
 	app.EXPECT().Logger().Return(mlog.NewForConfig(nil)).Times(1)
 	app.EXPECT().GrpcRegistry().Return(nil).Times(1)
@@ -39,7 +39,7 @@ func Test_apiGateway_Run(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	server := NewMockHttpServer(m)
-	handler := application.NewMockHttpHandler(m)
+	handler := app.NewMockHttpHandler(m)
 	logger := mlog.NewMockLogger(m)
 	gw := &apiGateway{
 		handler: handler,
@@ -65,7 +65,7 @@ func Test_apiGateway_Shutdown(t *testing.T) {
 	server := NewMockHttpServer(m)
 	logger := mlog.NewMockLogger(m)
 
-	handler := application.NewMockHttpHandler(m)
+	handler := app.NewMockHttpHandler(m)
 	gw := &apiGateway{
 		handler: handler,
 		server:  server,
@@ -148,7 +148,7 @@ func Test_initServer(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	server := NewMockHttpServer(m)
-	handler := application.NewMockHttpHandler(m)
+	handler := app.NewMockHttpHandler(m)
 	handler.EXPECT().RegisterSwaggerUIRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterWsRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterFileRoute(gomock.Not(nil)).Times(1)
@@ -157,7 +157,7 @@ func Test_initServer(t *testing.T) {
 		port:         "1000",
 		server:       server,
 		logger:       mlog.NewForConfig(nil),
-		grpcRegistry: &application.GrpcRegistry{},
+		grpcRegistry: &app.GrpcRegistry{},
 		handler:      handler,
 	})
 	assert.Nil(t, err)
@@ -187,14 +187,14 @@ func Test_initServer_EndpointFuncError(t *testing.T) {
 		endpoint: "x",
 		port:     "1000",
 		logger:   mlog.NewForConfig(nil),
-		grpcRegistry: &application.GrpcRegistry{
-			EndpointFuncs: []application.EndpointFunc{
+		grpcRegistry: &app.GrpcRegistry{
+			EndpointFuncs: []app.EndpointFunc{
 				func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error {
 					return errors.New("boom")
 				},
 			},
 		},
-		handler: application.NewMockHttpHandler(m),
+		handler: app.NewMockHttpHandler(m),
 	})
 	assert.Error(t, err)
 }
@@ -205,13 +205,13 @@ func Test_initServer_EndpointFuncError(t *testing.T) {
 func Test_initServer_RoutesAndClosures(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	handler := application.NewMockHttpHandler(m)
+	handler := app.NewMockHttpHandler(m)
 	handler.EXPECT().RegisterSwaggerUIRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterWsRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterFileRoute(gomock.Not(nil)).Times(1)
 
-	grpcRegistry := &application.GrpcRegistry{
-		EndpointFuncs: []application.EndpointFunc{
+	grpcRegistry := &app.GrpcRegistry{
+		EndpointFuncs: []app.EndpointFunc{
 			func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error {
 				return mux.HandlePath("GET", "/test/{name}",
 					func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {

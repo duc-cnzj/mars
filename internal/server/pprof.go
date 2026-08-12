@@ -6,7 +6,7 @@ import (
 	"net/http/pprof"
 	"time"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 )
 
@@ -16,8 +16,8 @@ type pprofRunner struct {
 }
 
 // NewPprofRunner 构建 pprof 传输层启动器：在 localhost:6060 暴露 Go 性能剖析端点，
-// 仅本机可访问，用于生产定位 CPU/内存/阻塞问题。返回 application.Server。
-func NewPprofRunner(logger mlog.Logger) application.Server {
+// 仅本机可访问，用于生产定位 CPU/内存/阻塞问题。返回 app.Server。
+func NewPprofRunner(logger mlog.Logger) app.Server {
 	return &pprofRunner{
 		logger: logger.WithModule("server/pprofRunner"),
 		server: &http.Server{

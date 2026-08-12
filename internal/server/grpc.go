@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/server/middlewares"
@@ -28,15 +28,15 @@ type grpcRunner struct {
 	endpoint     string
 	logger       mlog.Logger
 	authBiz      biz.AuthBiz
-	grpcRegistry *application.GrpcRegistry
+	grpcRegistry *app.GrpcRegistry
 }
 
 // NewGrpcRunner 构建 gRPC 传输层启动器：从 app 取 GrpcRegistry 用于注册服务、
-// AuthBiz 用于鉴权，endpoint 为监听地址。返回实现 application.Server 生命周期。
+// AuthBiz 用于鉴权，endpoint 为监听地址。返回实现 app.Server 生命周期。
 func NewGrpcRunner(
 	endpoint string,
-	app application.ServerDeps,
-) application.Server {
+	app app.ServerDeps,
+) app.Server {
 	return &grpcRunner{
 		grpcRegistry: app.GrpcRegistry(),
 		endpoint:     endpoint,
