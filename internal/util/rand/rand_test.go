@@ -3,7 +3,7 @@ package rand_test
 import (
 	"testing"
 
-	"github.com/duc-cnzj/mars/v5/internal/util/rand"
+	"github.com/duc-cnzj/mars/v6/internal/util/rand"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,9 +19,19 @@ func TestIntnReturnsZeroForZeroInput(t *testing.T) {
 	assert.Equal(t, 0, result)
 }
 
+func TestIntnReturnsZeroForNegativeInput(t *testing.T) {
+	result := rand.Intn(-1)
+	assert.Equal(t, 0, result)
+}
+
 func TestStringReturnsEmptyStringForZeroLength(t *testing.T) {
 	length := 0
 	result := rand.String(length)
+	assert.Equal(t, "", result)
+}
+
+func TestStringReturnsEmptyStringForNegativeLength(t *testing.T) {
+	result := rand.String(-1)
 	assert.Equal(t, "", result)
 }
 

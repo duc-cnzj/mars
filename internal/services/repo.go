@@ -3,43 +3,54 @@ package services
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	reposerver "github.com/duc-cnzj/mars/api/v5/repo"
-	"github.com/duc-cnzj/mars/api/v5/types"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/transformer"
-	"github.com/duc-cnzj/mars/v5/internal/util/pagination"
-	"github.com/duc-cnzj/mars/v5/internal/util/serialize"
-	yaml2 "github.com/duc-cnzj/mars/v5/internal/util/yaml"
+	reposerver "github.com/duc-cnzj/mars/api/v6/proto/repo"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/transformer"
+	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
+	"github.com/duc-cnzj/mars/v6/internal/util/slice"
+	"github.com/duc-cnzj/mars/v6/internal/util/yaml"
 	"github.com/samber/lo"
 )
 
 var _ reposerver.RepoServer = (*repoSvc)(nil)
 
+// repoSvc 是 repo.RepoServer 的 gRPC 实现：管理仓库源全生命周期（增删改查/启停/克隆），
+// 经 access 校验访问权限，由 NewRepoSvc 构造。
 type repoSvc struct {
-	gitRepo   repo.GitRepo
 	logger    mlog.Logger
-	repoRepo  repo.RepoRepo
-	eventRepo repo.EventRepo
+	repoBiz   biz.RepoBiz
+	eventBiz  biz.EventBiz
+	accessBiz biz.AccessBiz
 
 	reposerver.UnimplementedRepoServer
 }
 
-func NewRepoSvc(logger mlog.Logger, eventRepo repo.EventRepo, gitRepo repo.GitRepo, repoRepo repo.RepoRepo) reposerver.RepoServer {
+// RepoSvcDeps 收口 NewRepoSvc 的构造依赖，由 wire 按字段注入。
+type RepoSvcDeps struct {
+	Logger    mlog.Logger
+	EventBiz  biz.EventBiz
+	RepoBiz   biz.RepoBiz
+	AccessBiz biz.AccessBiz
+}
+
+// NewRepoSvc 收口 repo 服务的构造依赖，由 wire 按字段注入。
+func NewRepoSvc(deps RepoSvcDeps) reposerver.RepoServer {
 	return &repoSvc{
-		gitRepo:   gitRepo,
-		logger:    logger.WithModule("services/repo"),
-		repoRepo:  repoRepo,
-		eventRepo: eventRepo,
+		logger:    deps.Logger.WithModule("services/repo"),
+		repoBiz:   deps.RepoBiz,
+		eventBiz:  deps.EventBiz,
+		accessBiz: deps.AccessBiz,
 	}
 }
 
+// List 分页列出仓库，支持按名称与启用状态过滤，按 id 倒序返回。
 func (r *repoSvc) List(ctx context.Context, request *reposerver.ListRequest) (*reposerver.ListResponse, error) {
 	page, pageSize := pagination.InitByDefault(request.Page, request.PageSize)
 
-	list, pag, err := r.repoRepo.List(ctx, &repo.ListRepoRequest{
+	list, pag, err := r.repoBiz.List(ctx, &biz.ListRepoRequest{
 		Page:          page,
 		PageSize:      pageSize,
 		Enabled:       request.Enabled,
@@ -47,18 +58,19 @@ func (r *repoSvc) List(ctx context.Context, request *reposerver.ListRequest) (*r
 		Name:          request.Name,
 	})
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, r.logger, err)
 	}
 	return &reposerver.ListResponse{
 		Page:     pag.Page,
 		PageSize: pag.PageSize,
 		Count:    pag.Count,
-		Items:    serialize.Serialize(list, transformer.FromRepo),
+		Items:    slice.Map(list, transformer.FromRepo),
 	}, nil
 }
 
+// Create 创建仓库（默认启用），落创建审计日志。
 func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*reposerver.CreateResponse, error) {
-	create, err := r.repoRepo.Create(ctx, &repo.CreateRepoInput{
+	create, err := r.repoBiz.Create(ctx, &biz.CreateRepoInput{
 		Name:         req.Name,
 		Enabled:      true,
 		NeedGitRepo:  req.NeedGitRepo,
@@ -67,11 +79,11 @@ func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*r
 		Description:  req.Description,
 	})
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, r.logger, err)
 	}
-	r.eventRepo.AuditLogWithRequest(
+	r.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Create,
-		MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Name,
 		fmt.Sprintf("创建仓库: %d: %s", create.ID, create.Name),
 		req,
 	)
@@ -80,23 +92,25 @@ func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*r
 	}, nil
 }
 
+// Show 返回仓库详情。
 func (r *repoSvc) Show(ctx context.Context, request *reposerver.ShowRequest) (*reposerver.ShowResponse, error) {
-	show, err := r.repoRepo.Show(ctx, int(request.Id))
+	show, err := r.repoBiz.Show(ctx, int(request.Id))
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, r.logger, err)
 	}
 	return &reposerver.ShowResponse{
 		Item: transformer.FromRepo(show),
 	}, nil
 }
 
+// Update 更新仓库配置，落变更审计日志（含前后 yaml diff）。
 func (r *repoSvc) Update(ctx context.Context, req *reposerver.UpdateRequest) (*reposerver.UpdateResponse, error) {
-	current, err := r.repoRepo.Get(ctx, int(req.Id))
+	current, err := r.repoBiz.Get(ctx, int(req.Id))
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, r.logger, err)
 	}
 
-	create, err := r.repoRepo.Update(ctx, &repo.UpdateRepoInput{
+	create, err := r.repoBiz.Update(ctx, &biz.UpdateRepoInput{
 		ID:           req.Id,
 		Name:         req.Name,
 		NeedGitRepo:  req.NeedGitRepo,
@@ -105,16 +119,16 @@ func (r *repoSvc) Update(ctx context.Context, req *reposerver.UpdateRequest) (*r
 		Description:  req.Description,
 	})
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, r.logger, err)
 	}
-	old, _ := yaml2.PrettyMarshal(current)
-	out, _ := yaml2.PrettyMarshal(create)
-	r.eventRepo.AuditLogWithChange(
+	old, _ := yaml.PrettyMarshal(current)
+	out, _ := yaml.PrettyMarshal(create)
+	r.eventBiz.AuditLogWithChange(
 		types.EventActionType_Update,
-		MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Name,
 		fmt.Sprintf("更新仓库: %d: %s", create.ID, create.Name),
-		&repo.StringYamlPrettier{Str: string(old)},
-		&repo.StringYamlPrettier{Str: string(out)},
+		&biz.StringYamlPrettier{Str: string(old)},
+		&biz.StringYamlPrettier{Str: string(out)},
 	)
 
 	return &reposerver.UpdateResponse{
@@ -122,19 +136,20 @@ func (r *repoSvc) Update(ctx context.Context, req *reposerver.UpdateRequest) (*r
 	}, nil
 }
 
+// ToggleEnabled 启用/禁用仓库，落更新审计日志。
 func (r *repoSvc) ToggleEnabled(ctx context.Context, request *reposerver.ToggleEnabledRequest) (*reposerver.ToggleEnabledResponse, error) {
-	toggle, err := r.repoRepo.ToggleEnabled(ctx, int(request.Id), request.Enabled)
+	toggle, err := r.repoBiz.ToggleEnabled(ctx, int(request.Id), request.Enabled)
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, r.logger, err)
 	}
 
 	status := "禁用"
 	if request.Enabled {
 		status = "启用"
 	}
-	r.eventRepo.AuditLogWithRequest(
+	r.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Update,
-		MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Name,
 		fmt.Sprintf("[repo 状态变动]: %s 仓库 %s", status, toggle.Name),
 		request,
 	)
@@ -144,15 +159,15 @@ func (r *repoSvc) ToggleEnabled(ctx context.Context, request *reposerver.ToggleE
 	}, nil
 }
 
+// Delete 删除仓库，落删除审计日志。
 func (r *repoSvc) Delete(ctx context.Context, request *reposerver.DeleteRequest) (*reposerver.DeleteResponse, error) {
-
-	if err := r.repoRepo.Delete(ctx, int(request.Id)); err != nil {
-		return nil, err
+	if err := r.repoBiz.Delete(ctx, int(request.Id)); err != nil {
+		return nil, logError(ctx, r.logger, err)
 	}
 
-	r.eventRepo.AuditLogWithRequest(
+	r.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Delete,
-		MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Name,
 		fmt.Sprintf("删除 repo: %d", request.Id),
 		request,
 	)
@@ -160,19 +175,25 @@ func (r *repoSvc) Delete(ctx context.Context, request *reposerver.DeleteRequest)
 	return &reposerver.DeleteResponse{}, nil
 }
 
+// Clone 克隆仓库：先取源仓库记录用于审计，再执行克隆，落创建审计日志。
 func (r *repoSvc) Clone(ctx context.Context, req *reposerver.CloneRequest) (*reposerver.CloneResponse, error) {
-	clone, err := r.repoRepo.Clone(ctx, &repo.CloneRepoInput{
+	// 先查源仓库（用于审计日志），再执行克隆副作用：源不存在/DB 故障时 fail-fast，
+	// 避免"克隆已发生但 Get 失败返回错误"→ 客户端重试产生重复克隆。
+	show, err := r.repoBiz.Get(ctx, int(req.Id))
+	if err != nil {
+		return nil, logError(ctx, r.logger, err)
+	}
+	clone, err := r.repoBiz.Clone(ctx, &biz.CloneRepoInput{
 		ID:   int(req.Id),
 		Name: req.Name,
 	})
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, r.logger, err)
 	}
-	show, _ := r.repoRepo.Get(ctx, int(req.Id))
 
-	r.eventRepo.AuditLogWithRequest(
+	r.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Create,
-		MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Name,
 		fmt.Sprintf("克隆 repo: (id: %d, name: %s) -> (id: %d, name: %s)", show.ID, show.Name, clone.ID, clone.Name),
 		req,
 	)
@@ -182,16 +203,8 @@ func (r *repoSvc) Clone(ctx context.Context, req *reposerver.CloneRequest) (*rep
 	}, nil
 }
 
+// Authorize 是 repo 服务的 admin 门禁：List/Show 放行给任意登录用户，
+// 其余仓库管理方法（创建/更新/启停/删除/克隆）仅 admin 可调用。
 func (r *repoSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
-	if strings.EqualFold(fullMethodName, "/repo.Repo/List") {
-		return ctx, nil
-	}
-	if strings.EqualFold(fullMethodName, "/repo.Repo/Show") {
-		return ctx, nil
-	}
-	if !MustGetUser(ctx).IsAdmin() {
-		return nil, ErrorPermissionDenied
-	}
-
-	return ctx, nil
+	return r.accessBiz.RequireAdmin(ctx, fullMethodName, reposerver.Repo_List_FullMethodName, reposerver.Repo_Show_FullMethodName)
 }

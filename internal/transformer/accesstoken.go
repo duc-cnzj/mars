@@ -1,26 +1,28 @@
 package transformer
 
 import (
-	"github.com/duc-cnzj/mars/api/v5/types"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/util/date"
+	"time"
+
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/util/date"
 )
 
-// FromAccessToken transform to proto model.
-func FromAccessToken(at *repo.AccessToken) *types.AccessTokenModel {
+// FromAccessToken 把 biz.AccessToken 转换为 proto AccessTokenModel。
+func FromAccessToken(at *biz.AccessToken) *types.AccessTokenModel {
 	if at == nil {
 		return nil
 	}
 	return &types.AccessTokenModel{
 		Token:      at.Token,
 		Email:      at.Email,
-		ExpiredAt:  date.ToRFC3339DatetimeString(&at.ExpiredAt),
+		ExpiredAt:  date.ToRFC3339(&at.ExpiredAt),
 		Usage:      at.Usage,
-		LastUsedAt: date.ToHumanizeDatetimeString(at.LastUsedAt),
+		LastUsedAt: date.ToHumanizeDateTime(at.LastUsedAt),
 		IsDeleted:  at.DeletedAt != nil,
-		IsExpired:  at.Expired(),
-		CreatedAt:  date.ToRFC3339DatetimeString(&at.CreatedAt),
-		UpdatedAt:  date.ToRFC3339DatetimeString(&at.UpdatedAt),
-		DeletedAt:  date.ToRFC3339DatetimeString(at.DeletedAt),
+		IsExpired:  at.IsExpired(time.Now()),
+		CreatedAt:  date.ToRFC3339(&at.CreatedAt),
+		UpdatedAt:  date.ToRFC3339(&at.UpdatedAt),
+		DeletedAt:  date.ToRFC3339(at.DeletedAt),
 	}
 }

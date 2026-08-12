@@ -7,14 +7,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/locker"
-	"github.com/duc-cnzj/mars/v5/internal/metrics"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/util/rand"
-	"github.com/duc-cnzj/mars/v5/internal/util/timer"
+	"github.com/duc-cnzj/mars/v6/internal/locker"
+	"github.com/duc-cnzj/mars/v6/internal/metrics"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/util/rand"
+	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// Manager 收口 cron 任务的生命周期：注册命令、启动调度、关闭回收。
 type Manager interface {
 	NewCommand(name string, fn func() error) Command
 	Run(context.Context) error
@@ -33,6 +34,7 @@ type cronManager struct {
 	commands map[string]*command
 }
 
+// NewManager 构造 cronManager，注入 timer/runner/locker/logger。
 func NewManager(timer timer.Timer, runner Runner, locker locker.Locker, logger mlog.Logger) Manager {
 	return &cronManager{
 		timer:    timer,
@@ -43,6 +45,7 @@ func NewManager(timer timer.Timer, runner Runner, locker locker.Locker, logger m
 	}
 }
 
+// List 返回全部命令的拷贝（按名字排序），避免调用方直接改内部命令。
 func (m *cronManager) List() []Command {
 	m.RLock()
 	defer m.RUnlock()
@@ -59,6 +62,7 @@ func (m *cronManager) List() []Command {
 	return cmds
 }
 
+// NewCommand 注册并返回新命令；任务名重复时 panic（装配期错误尽早暴露）。
 func (m *cronManager) NewCommand(name string, fn func() error) Command {
 	m.Lock()
 	defer m.Unlock()
@@ -70,6 +74,7 @@ func (m *cronManager) NewCommand(name string, fn func() error) Command {
 	return cmd
 }
 
+// Run 把所有命令注册进 runner 并启动，任一注册失败立即返回。
 func (m *cronManager) Run(ctx context.Context) error {
 	m.logger.Info("[Server]: start cron.")
 	for _, cmd := range m.List() {
@@ -81,6 +86,7 @@ func (m *cronManager) Run(ctx context.Context) error {
 	return m.runner.Run(ctx)
 }
 
+// Shutdown 关闭 cron runner。
 func (m *cronManager) Shutdown(ctx context.Context) error {
 	m.logger.Info("[Server]: shutdown cron manager.")
 	return m.runner.Shutdown(ctx)
@@ -88,14 +94,17 @@ func (m *cronManager) Shutdown(ctx context.Context) error {
 
 type sortCommand []Command
 
+// Len 返回命令个数，sort.Interface 实现。
 func (s sortCommand) Len() int {
 	return len(s)
 }
 
+// Less 按名字升序比较，sort.Interface 实现。
 func (s sortCommand) Less(i, j int) bool {
 	return s[i].Name() < s[j].Name()
 }
 
+// Swap 交换两个命令位置，sort.Interface 实现。
 func (s sortCommand) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }

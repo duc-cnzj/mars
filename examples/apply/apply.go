@@ -6,15 +6,15 @@ import (
 	"log"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v5"
-	"github.com/duc-cnzj/mars/api/v5/project"
-	"github.com/duc-cnzj/mars/api/v5/types"
-	"github.com/duc-cnzj/mars/api/v5/websocket"
+	"github.com/duc-cnzj/mars/api/v6/grpc"
+	"github.com/duc-cnzj/mars/api/v6/proto/project"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
+	"github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/samber/lo"
 )
 
 func main() {
-	client, _ := api.NewClient("localhost:50000", api.WithAuth("admin", "123456"))
+	client, _ := grpc.NewClient("localhost:50000", grpc.WithAuth("admin", "123456"))
 	defer client.Close()
 	// 创建一个 app
 	model, err := create(client, "app1")
@@ -27,7 +27,7 @@ func main() {
 	update(client, int(model.Id))
 }
 
-func create(client api.Interface, name string) (*types.ProjectModel, error) {
+func create(client *grpc.Client, name string) (*types.ProjectModel, error) {
 	input := &project.ApplyRequest{
 		// 项目空间 id, 鼠标移动到项目空间名称上会显示 id
 		NamespaceId: 20,
@@ -70,7 +70,7 @@ func create(client api.Interface, name string) (*types.ProjectModel, error) {
 	}
 }
 
-func update(client api.Interface, id int) {
+func update(client *grpc.Client, id int) {
 	show, err := client.Project().Show(context.TODO(), &project.ShowRequest{Id: int32(id)})
 	if err != nil {
 		log.Fatal(err)

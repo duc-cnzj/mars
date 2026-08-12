@@ -6,10 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/robfig/cron/v3"
 )
 
+// Runner 抽象本地 cron 调度器：注册命令、启动、关闭。
 type Runner interface {
 	AddCommand(name string, expression string, fn func()) error
 	Run(context.Context) error
@@ -25,7 +26,7 @@ type robfigCronV3Runner struct {
 	entryMap map[string]int64
 }
 
-// NewRobfigCronV3Runner return contracts.Runner
+// NewRobfigCronV3Runner 构造基于 robfig/cron 的本地 Runner 实现。
 func NewRobfigCronV3Runner(logger mlog.Logger) Runner {
 	return &robfigCronV3Runner{
 		logger: logger.WithModule("cron/robfigCronV3Runner"),
@@ -42,7 +43,7 @@ func NewRobfigCronV3Runner(logger mlog.Logger) Runner {
 	}
 }
 
-// AddCommand add cron cmd.
+// AddCommand 注册一个定时任务，name 为任务名、expression 为 cron 表达式。
 func (c *robfigCronV3Runner) AddCommand(name string, expression string, fn func()) error {
 	c.Lock()
 	defer c.Unlock()
@@ -55,7 +56,7 @@ func (c *robfigCronV3Runner) AddCommand(name string, expression string, fn func(
 	return nil
 }
 
-// Run cron.
+// Run 在后台 goroutine 启动调度器并立即返回。
 func (c *robfigCronV3Runner) Run(ctx context.Context) error {
 	go func() {
 		defer c.logger.HandlePanic("[CRON]: robfig/cron/v3 Run")
@@ -64,7 +65,7 @@ func (c *robfigCronV3Runner) Run(ctx context.Context) error {
 	return nil
 }
 
-// Shutdown cron.
+// Shutdown 停止调度器并等待其退出。
 func (c *robfigCronV3Runner) Shutdown(ctx context.Context) error {
 	stopCtx := c.c.Stop()
 	select {
@@ -79,12 +80,12 @@ type cronLogger struct {
 	logger mlog.Logger
 }
 
-// Info msg.
+// Info 打印 robfig/cron 的 Info 级消息。
 func (c *cronLogger) Info(msg string, keysAndValues ...any) {
 	c.logger.Infof(formatString(len(keysAndValues)), append([]any{msg}, keysAndValues...)...)
 }
 
-// Error msg.
+// Error 打印 robfig/cron 的错误消息。
 func (c *cronLogger) Error(err error, msg string, keysAndValues ...any) {
 	c.logger.Errorf("[CRON]: %v", err)
 }

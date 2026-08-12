@@ -11,9 +11,9 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/duc-cnzj/mars/api/v5"
-	"github.com/duc-cnzj/mars/api/v5/container"
-	"golang.org/x/crypto/ssh/terminal"
+	"github.com/duc-cnzj/mars/api/v6/grpc"
+	"github.com/duc-cnzj/mars/api/v6/proto/container"
+	"golang.org/x/term"
 )
 
 // 定义一个结构体来存储窗口尺寸
@@ -31,7 +31,7 @@ func getWinsize() (*winsize, error) {
 		syscall.SYS_IOCTL,
 		os.Stdout.Fd(),
 		uintptr(syscall.TIOCGWINSZ),
-		uintptr(unsafe.Pointer(ws)),
+		uintptr(unsafe.Pointer(ws)), // #nosec G103 -- 标准 ioctl 获取终端尺寸，无安全替代
 	)
 	if int(retCode) == -1 {
 		return nil, errno
@@ -40,7 +40,7 @@ func getWinsize() (*winsize, error) {
 }
 
 func main() {
-	client, _ := api.NewClient("localhost:50000", api.WithAuth("admin", "123456"))
+	client, _ := grpc.NewClient("localhost:50000", grpc.WithAuth("admin", "123456"))
 	defer client.Close()
 	exec, err := client.Container().Exec(context.TODO())
 	if err != nil {
@@ -59,12 +59,12 @@ func main() {
 	defer cancel()
 
 	// 获取当前终端的状态
-	oldState, err := terminal.MakeRaw(int(os.Stdin.Fd()))
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		log.Fatalf("failed to set terminal to raw mode: %v", err)
 	}
 	// 确保在程序退出时恢复终端状态
-	defer terminal.Restore(int(os.Stdin.Fd()), oldState)
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
 
 	// 启动一个 goroutine 来处理信号
 	go func() {

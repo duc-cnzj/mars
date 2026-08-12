@@ -8,8 +8,7 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-var nowFunc = time.Now
-
+// magnitudes 是 humanize 相对时间的中文展示刻度表。
 var magnitudes = []humanize.RelTimeMagnitude{
 	{D: time.Second, Format: "现在", DivBy: time.Second},
 	{D: 2 * time.Second, Format: "1 秒%s", DivBy: 1},
@@ -30,31 +29,34 @@ var magnitudes = []humanize.RelTimeMagnitude{
 	{D: math.MaxInt64, Format: "很久%s", DivBy: 1},
 }
 
-func ToHumanizeDatetimeString(t *time.Time) string {
+// ToHumanizeDateTime 返回相对当前时间的可读中文描述（如"3 分钟前"）；t 为 nil 时返回空串。
+func ToHumanizeDateTime(t *time.Time) string {
 	if t == nil {
 		return ""
 	}
-	return humanize.CustomRelTime(*t, nowFunc(), "以前", "以后", magnitudes)
+	return humanize.CustomRelTime(*t, time.Now(), "以前", "以后", magnitudes)
 }
 
-// ToRFC3339DatetimeString "2006-01-02T15:04:05Z07:00"
-func ToRFC3339DatetimeString(t *time.Time) string {
+// ToRFC3339 将时间转换为 RFC3339 字符串（如 "2006-01-02T15:04:05Z07:00"）；nil 或零值返回空串。
+func ToRFC3339(t *time.Time) string {
 	if t == nil || t.IsZero() {
 		return ""
 	}
 	return t.Format(time.RFC3339)
 }
 
+// HumanDuration 将时长格式化为中文"x天x小时"描述，容忍 2 秒内的时钟偏差视为"0秒"。
 func HumanDuration(d time.Duration) string {
-	// Allow deviation no more than 2 seconds(excluded) to tolerate machine time
-	// inconsistence, it can be considered as almost now.
-	if seconds := int(d.Seconds()); seconds <= -1 {
+	// 容忍 2 秒（不含）内的时钟偏差，偏差在这个量级可视为"几乎现在"。
+	switch seconds := int(d.Seconds()); {
+	case seconds <= -1:
 		return "<invalid>"
-	} else if seconds <= 0 {
+	case seconds <= 0:
 		return "0秒"
-	} else if seconds < 60*2 {
+	case seconds < 60*2:
 		return fmt.Sprintf("%d秒", seconds)
 	}
+
 	minutes := int(d / time.Minute)
 	if minutes < 10 {
 		s := int(d/time.Second) % 60
@@ -62,9 +64,11 @@ func HumanDuration(d time.Duration) string {
 			return fmt.Sprintf("%d分钟", minutes)
 		}
 		return fmt.Sprintf("%d分钟%d秒", minutes, s)
-	} else if minutes < 60*3 {
+	}
+	if minutes < 60*3 {
 		return fmt.Sprintf("%d分钟", minutes)
 	}
+
 	hours := int(d / time.Hour)
 	if hours < 8 {
 		m := int(d/time.Minute) % 60
@@ -72,17 +76,21 @@ func HumanDuration(d time.Duration) string {
 			return fmt.Sprintf("%d小时", hours)
 		}
 		return fmt.Sprintf("%d小时%d分钟", hours, m)
-	} else if hours < 48 {
+	}
+	if hours < 48 {
 		return fmt.Sprintf("%d小时", hours)
-	} else if hours < 24*8 {
+	}
+	if hours < 24*8 {
 		h := hours % 24
 		if h == 0 {
 			return fmt.Sprintf("%d天", hours/24)
 		}
 		return fmt.Sprintf("%d天%d小时", hours/24, h)
-	} else if hours < 24*365*2 {
+	}
+	if hours < 24*365*2 {
 		return fmt.Sprintf("%d天", hours/24)
-	} else if hours < 24*365*8 {
+	}
+	if hours < 24*365*8 {
 		dy := int(hours/24) % 365
 		if dy == 0 {
 			return fmt.Sprintf("%d年", hours/24/365)

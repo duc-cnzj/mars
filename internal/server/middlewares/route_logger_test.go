@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/duc-cnzj/mars/api/v5/namespace"
+	"github.com/duc-cnzj/mars/api/v6/proto/namespace"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"go.uber.org/mock/gomock"
 )
 
@@ -38,4 +38,13 @@ func TestLoggerUnaryServerInterceptor(t *testing.T) {
 	interceptor := LoggerUnaryServerInterceptor(logger)
 	_, err := interceptor(context.TODO(), req, &grpc.UnaryServerInfo{FullMethod: "/test.method"}, handler)
 	assert.Nil(t, err)
+
+	// Test case: request without String() 方法——不打印日志，直接透传 handler。
+	called := 0
+	_, err = interceptor(context.TODO(), "plain-string", &grpc.UnaryServerInfo{FullMethod: "/plain.method"}, func(ctx context.Context, req any) (any, error) {
+		called++
+		return nil, nil
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, called)
 }

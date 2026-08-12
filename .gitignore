@@ -1,6 +1,7 @@
 config.yaml
 gosec-results.json
-app
-!app*/
+/bin/
 coverage.txt
 .claude/
+# mockgen -source 反射模式的工作目录残留，go list ./... 会误收为包
+gomock_reflect_*/

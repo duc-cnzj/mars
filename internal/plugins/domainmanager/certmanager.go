@@ -5,24 +5,22 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v5/internal/application"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/util/hash"
+	"github.com/duc-cnzj/mars/v6/internal/app"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/util/hasher"
 )
 
-var (
-	name            = "cert-manager_domain_manager"
-	maxDomainLength = 64
-)
+// certManagerName 插件注册名。
+const certManagerName = "cert-manager_domain_manager"
 
-var _ application.DomainManager = (*certManager)(nil)
+var _ app.DomainManager = (*certManager)(nil)
 
 func init() {
 	dr := &certManager{}
-	application.RegisterPlugin(dr.Name(), dr)
+	app.RegisterPlugin(dr.Name(), dr)
 }
 
-// certManager 因为 lets encrypt 对 subdomain 长度要求为 64，所以需要处理。
+// certManager 基于 cert-manager + lets encrypt 签发证书；lets encrypt 对 subdomain 长度要求为 64。
 type certManager struct {
 	nsPrefix       string
 	clusterIssuer  string
@@ -32,25 +30,33 @@ type certManager struct {
 	logger mlog.Logger
 }
 
+// Name 返回插件名 cert-manager_domain_manager。
 func (d *certManager) Name() string {
-	return name
+	return certManagerName
 }
 
-func (d *certManager) Initialize(app application.App, args map[string]any) error {
-	d.logger = app.Logger()
+// Initialize 从 args 读取 ns_prefix/cluster_issuer/wildcard_domain，校验必填项后保存。
+func (d *certManager) Initialize(pluginApp app.PluginApp, args map[string]any) error {
+	d.logger = pluginApp.Logger()
 
-	if p, ok := args["ns_prefix"]; ok {
-		d.nsPrefix = p.(string)
+	nsPrefix, err := stringArg(args, "ns_prefix")
+	if err != nil {
+		return err
 	}
+	d.nsPrefix = nsPrefix
 
-	if issuer, ok := args["cluster_issuer"]; ok {
-		d.clusterIssuer = issuer.(string)
+	clusterIssuer, err := stringArg(args, "cluster_issuer")
+	if err != nil {
+		return err
 	}
+	d.clusterIssuer = clusterIssuer
 
-	if wd, ok := args["wildcard_domain"]; ok {
-		d.wildcardDomain = wd.(string)
-		d.domainSuffix = strings.TrimLeft(d.wildcardDomain, "*.")
+	wildcardDomain, err := stringArg(args, "wildcard_domain")
+	if err != nil {
+		return err
 	}
+	d.wildcardDomain = wildcardDomain
+	d.domainSuffix = strings.TrimLeft(wildcardDomain, "*.")
 
 	if d.clusterIssuer == "" || d.wildcardDomain == "" {
 		return errors.New("cluster_issuer, wildcard_domain required")
@@ -60,19 +66,23 @@ func (d *certManager) Initialize(app application.App, args map[string]any) error
 	return nil
 }
 
+// Destroy 输出销毁日志。
 func (d *certManager) Destroy() error {
 	d.logger.Info("[Plugin]: " + d.Name() + " plugin Destroy...")
 	return nil
 }
 
+// GetCertSecretName 用 projectName+index 的哈希生成 cert-manager secret 名。
 func (d *certManager) GetCertSecretName(projectName string, index int) string {
-	return fmt.Sprintf("mars-tls-%s", hash.Hash(fmt.Sprintf("%s-%d", projectName, index)))
+	return fmt.Sprintf("mars-tls-%s", hasher.Hash(fmt.Sprintf("%s-%d", projectName, index)))
 }
 
+// GetClusterIssuer 返回配置的 cert-manager clusterIssuer。
 func (d *certManager) GetClusterIssuer() string {
 	return d.clusterIssuer
 }
 
+// GetDomainByIndex 用通配域名生成带 index 的完整子域名。
 func (d *certManager) GetDomainByIndex(projectName, namespace string, index, preOccupiedLen int) string {
 	return Subdomain{
 		maxLen:       maxDomainLength - preOccupiedLen,
@@ -84,88 +94,7 @@ func (d *certManager) GetDomainByIndex(projectName, namespace string, index, pre
 	}.SubStr()
 }
 
-func (d *certManager) GetDomain(projectName, namespace string, preOccupiedLen int) string {
-	return Subdomain{
-		maxLen:       maxDomainLength - preOccupiedLen,
-		projectName:  projectName,
-		namespace:    namespace,
-		index:        -1,
-		nsPrefix:     d.nsPrefix,
-		domainSuffix: d.domainSuffix,
-	}.SubStr()
-}
-
+// GetCerts 证书由 cert-manager 管理，运行时不注入证书，返回空三元组。
 func (d *certManager) GetCerts() (name, key, crt string) {
 	return "", "", ""
-}
-
-type Subdomain struct {
-	maxLen       int
-	projectName  string
-	namespace    string
-	index        int
-	nsPrefix     string
-	domainSuffix string
-}
-
-func (s Subdomain) SubStr() string {
-	if s.maxLen == 0 {
-		return s.CompleteSubdomain()
-	}
-
-	if len(s.CompleteSubdomain()) <= s.maxLen {
-		return s.CompleteSubdomain()
-	}
-
-	if len(s.MediumSubdomain()) <= s.maxLen {
-		return s.MediumSubdomain()
-	}
-
-	return s.SimpleSubdomain()
-}
-
-func (s Subdomain) HasIndex() bool {
-	return s.index != -1
-}
-
-// CompleteSubdomain 获取完整的名称 mars-devops-test-default.test.com
-func (s Subdomain) CompleteSubdomain() string {
-	if s.HasIndex() {
-		return fmt.Sprintf("%s-%s-%d.%s", s.projectName, s.namespace, s.index, s.domainSuffix)
-	}
-
-	return fmt.Sprintf("%s-%s.%s", s.projectName, s.namespace, s.domainSuffix)
-}
-
-// MediumSubdomain 中等版本, 去掉了 ns "devops-" 前缀
-func (s Subdomain) MediumSubdomain() string {
-	nname := strings.TrimLeft(s.namespace, s.nsPrefix)
-	if s.HasIndex() {
-		return fmt.Sprintf("%s-%s-%d.%s", s.projectName, nname, s.index, s.domainSuffix)
-	}
-
-	return fmt.Sprintf("%s-%s.%s", s.projectName, nname, s.domainSuffix)
-}
-
-// SimpleSubdomain 简单版本
-func (s Subdomain) SimpleSubdomain() string {
-	leftLen := s.maxLen - len(s.domainSuffix) - 1
-	if leftLen <= 0 {
-		panic(fmt.Errorf("substr error: max len: %d, left len: %d, domainSuffix: %s, project: %s, ns: %s, index: %d", s.maxLen, leftLen, s.domainSuffix, s.projectName, s.namespace, s.index))
-	}
-	var str = fmt.Sprintf("%s-%s", s.projectName, s.namespace)
-	if s.HasIndex() {
-		str = fmt.Sprintf("%s-%s-%d", s.projectName, s.namespace, s.index)
-	}
-	ss := substr(hash.Hash(str), leftLen)
-
-	return fmt.Sprintf("%s.%s", ss, s.domainSuffix)
-}
-
-func substr(s string, length int) string {
-	if len(s) < length {
-		return s
-	}
-
-	return s[0:length]
 }

@@ -1,14 +1,20 @@
-package transformer
+package transformer_test
 
 import (
 	"testing"
 
-	"github.com/duc-cnzj/mars/v5/internal/repo"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/transformer"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFromClusterInfoWithValidInfo(t *testing.T) {
-	info := &repo.ClusterInfo{
+func TestFromClusterInfo_NilInput(t *testing.T) {
+	result := transformer.FromClusterInfo(nil)
+	assert.Nil(t, result)
+}
+
+func TestFromClusterInfo_ValidInput(t *testing.T) {
+	info := &biz.ClusterInfo{
 		Status:            "Running",
 		FreeMemory:        "1024",
 		FreeCpu:           "2",
@@ -22,7 +28,7 @@ func TestFromClusterInfoWithValidInfo(t *testing.T) {
 		RequestCpuRate:    "0.25",
 	}
 
-	result := FromClusterInfo(info)
+	result := transformer.FromClusterInfo(info)
 
 	assert.Equal(t, info.Status, result.Status)
 	assert.Equal(t, info.FreeMemory, result.FreeMemory)
@@ -35,9 +41,4 @@ func TestFromClusterInfoWithValidInfo(t *testing.T) {
 	assert.Equal(t, info.UsageCpuRate, result.UsageCpuRate)
 	assert.Equal(t, info.RequestMemoryRate, result.RequestMemoryRate)
 	assert.Equal(t, info.RequestCpuRate, result.RequestCpuRate)
-}
-
-func TestFromClusterInfoWithNilInfo(t *testing.T) {
-	result := FromClusterInfo(nil)
-	assert.Nil(t, result)
 }

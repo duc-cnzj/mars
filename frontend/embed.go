@@ -5,7 +5,7 @@ import (
 	"io/fs"
 	"net/http"
 
-	"github.com/duc-cnzj/mars/v5/internal/server/middlewares"
+	"github.com/duc-cnzj/mars/v6/internal/server/middlewares"
 	"github.com/gorilla/mux"
 )
 

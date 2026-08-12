@@ -47,6 +47,16 @@ func TestUnaryServerInterceptor(t *testing.T) {
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, 1, called)
 	assert.Equal(t, "xxx", fromError.Message())
+
+	// 请求未实现 Validator：不校验，直接透传 handler。
+	called = 0
+	resp, err := ValidatorUnaryServerInterceptor()(context.TODO(), "plain-string", nil, func(ctx context.Context, req any) (any, error) {
+		called++
+		return "ok", nil
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, "ok", resp)
+	assert.Equal(t, 1, called)
 }
 
 type ss struct {
@@ -65,7 +75,7 @@ func (s *ss) SetTrailer(md metadata.MD) {
 }
 
 func (s *ss) Context() context.Context {
-	return nil
+	return context.TODO()
 }
 
 func (s *ss) SendMsg(m any) error {

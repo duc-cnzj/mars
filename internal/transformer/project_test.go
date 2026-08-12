@@ -4,23 +4,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v5/types"
-	websocket_pb "github.com/duc-cnzj/mars/api/v5/websocket"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/transformer"
-	"github.com/duc-cnzj/mars/v5/internal/util/date"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
+	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/transformer"
+	"github.com/duc-cnzj/mars/v6/internal/util/date"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFromProject_NilInput(t *testing.T) {
-	var p *repo.Project
+	var p *biz.Project
 	result := transformer.FromProject(p)
 	assert.Nil(t, result)
 }
 
 func TestFromProject_ValidInput(t *testing.T) {
 	now := time.Now()
-	p := &repo.Project{
+	p := &biz.Project{
 		ID:             1,
 		Name:           "testProject",
 		GitProjectID:   1,
@@ -53,6 +53,8 @@ func TestFromProject_ValidInput(t *testing.T) {
 		GitCommitDate:    &now,
 		Version:          1,
 		RepoID:           1,
+		Repo:             &biz.Repo{ID: 1, Name: "testRepo"},
+		Namespace:        &biz.Namespace{ID: 1, Name: "testNs"},
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
@@ -83,23 +85,27 @@ func TestFromProject_ValidInput(t *testing.T) {
 	}, result.ExtraValues)
 	assert.Equal(t, []*websocket_pb.ExtraValue{{Path: "testExtraKey", Value: "testExtraValue"}}, result.FinalExtraValues)
 	assert.Equal(t, types.Deploy_StatusDeploying, result.DeployStatus)
-	assert.Equal(t, date.ToHumanizeDatetimeString(&now), result.HumanizeCreatedAt)
-	assert.Equal(t, date.ToHumanizeDatetimeString(&now), result.HumanizeUpdatedAt)
+	assert.Equal(t, date.ToHumanizeDateTime(&now), result.HumanizeCreatedAt)
+	assert.Equal(t, date.ToHumanizeDateTime(&now), result.HumanizeUpdatedAt)
 	assert.Equal(t, "testConfigType", result.ConfigType)
 	assert.Equal(t, "testGitCommitWebURL", result.GitCommitWebUrl)
 	assert.Equal(t, "testGitCommitTitle", result.GitCommitTitle)
 	assert.Equal(t, "testGitCommitAuthor", result.GitCommitAuthor)
-	assert.Equal(t, date.ToHumanizeDatetimeString(&now), result.GitCommitDate)
+	assert.Equal(t, date.ToHumanizeDateTime(&now), result.GitCommitDate)
 	assert.Equal(t, int32(1), result.Version)
 	assert.Equal(t, int32(1), result.RepoId)
-	assert.Equal(t, date.ToRFC3339DatetimeString(&now), result.CreatedAt)
-	assert.Equal(t, date.ToRFC3339DatetimeString(&now), result.UpdatedAt)
+	assert.Equal(t, date.ToRFC3339(&now), result.CreatedAt)
+	assert.Equal(t, date.ToRFC3339(&now), result.UpdatedAt)
 	assert.Empty(t, result.DeletedAt)
+	assert.Equal(t, int32(1), result.Repo.Id)
+	assert.Equal(t, "testRepo", result.Repo.Name)
+	assert.Equal(t, int32(1), result.Namespace.Id)
+	assert.Equal(t, "testNs", result.Namespace.Name)
 }
 
 func TestFromProject_DeletedProject(t *testing.T) {
 	now := time.Now()
-	p := &repo.Project{
+	p := &biz.Project{
 		ID:             1,
 		Name:           "testProject",
 		GitProjectID:   1,
@@ -139,4 +145,19 @@ func TestFromProject_DeletedProject(t *testing.T) {
 	result := transformer.FromProject(p)
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.DeletedAt)
+	assert.Nil(t, result.Repo)
+	assert.Nil(t, result.Namespace)
+}
+
+func TestFromProject_AtomicFalse(t *testing.T) {
+	now := time.Now()
+	p := &biz.Project{
+		ID:        1,
+		Name:      "testProject",
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	result := transformer.FromProject(p)
+	assert.NotNil(t, result)
+	assert.False(t, result.Atomic)
 }

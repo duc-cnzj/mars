@@ -1,13 +1,14 @@
 package transformer
 
 import (
-	"github.com/duc-cnzj/mars/api/v5/types"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/util/date"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/util/date"
 	"github.com/samber/lo"
 )
 
-func FromEvent(e *repo.Event) *types.EventModel {
+// FromEvent 把 biz.Event 转换为 proto EventModel。
+func FromEvent(e *biz.Event) *types.EventModel {
 	if e == nil {
 		return nil
 	}
@@ -23,9 +24,9 @@ func FromEvent(e *repo.Event) *types.EventModel {
 		FileId:    int32(lo.FromPtr(e.FileID)),
 		File:      FromFile(e.File),
 		HasDiff:   e.HasDiff,
-		EventAt:   date.ToHumanizeDatetimeString(&e.CreatedAt),
-		CreatedAt: date.ToRFC3339DatetimeString(&e.CreatedAt),
-		UpdatedAt: date.ToRFC3339DatetimeString(&e.UpdatedAt),
-		DeletedAt: date.ToRFC3339DatetimeString(e.DeletedAt),
+		EventAt:   date.ToHumanizeDateTime(&e.CreatedAt),
+		CreatedAt: date.ToRFC3339(&e.CreatedAt),
+		UpdatedAt: date.ToRFC3339(&e.UpdatedAt),
+		DeletedAt: date.ToRFC3339(e.DeletedAt),
 	}
 }

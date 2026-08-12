@@ -1,7 +1,8 @@
 package locker
 
-//go:generate mockgen -destination ./mock_locker.go -package locker github.com/duc-cnzj/mars/v5/internal/locker Locker
+//go:generate go tool mockgen -destination ./mock_locker.go -package locker github.com/duc-cnzj/mars/v6/internal/locker Locker
 
 import "github.com/google/wire"
 
+// WireLocker 提供 locker.Locker 的装配集。
 var WireLocker = wire.NewSet(NewLocker)

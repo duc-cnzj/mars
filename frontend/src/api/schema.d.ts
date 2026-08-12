@@ -1097,6 +1097,7 @@ export interface components {
         "google.protobuf.Any": {
             /** @description The type of the serialized message. */
             "@type": string;
+        } & {
             [key: string]: unknown;
         };
         /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
@@ -1120,8 +1121,10 @@ export interface components {
             isSimpleEnv: boolean;
             /** @description config_file_type 配置文件类型，php/env/yaml... */
             configFileType: string;
-            /** @description local_chart_path helm charts 目录, 格式为 "pid|branch|path",
-             *      v5+ 之后不再支持本地目录 */
+            /**
+             * @description local_chart_path helm charts 目录, 格式为 "pid|branch|path",
+             *      v5+ 之后不再支持本地目录
+             */
             localChartPath: string;
             /** @description branches 启用的分支 */
             branches: string[];
@@ -1129,9 +1132,11 @@ export interface components {
             valuesYaml: string;
             /** @description elements 自定义字段 */
             elements: components["schemas"]["mars.Element"][];
-            /** @description 显示的名称 (helm app name), 不填就使用 git server project name
+            /**
+             * @description 显示的名称 (helm app name), 不填就使用 git server project name
              *      以字母开头结尾，中间可以有 '_' '-'
-             *      Deprecated: v5+ 不再使用这个字段 */
+             *      Deprecated: v5+ 不再使用这个字段
+             */
             displayName: string;
         };
         "mars.Element": {
@@ -2207,7 +2212,6 @@ export interface operations {
             query?: {
                 page?: number;
                 pageSize?: number;
-                withoutDeleted?: boolean;
             };
             header?: never;
             path?: never;

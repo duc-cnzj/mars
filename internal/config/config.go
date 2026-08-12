@@ -14,43 +14,48 @@ import (
 	"github.com/spf13/viper"
 )
 
-const DefaultMaxUploadSize = "50M"
+// defaultMaxUploadSize 是未显式配置时上传体积上限的默认值（humanize 可解析格式）。
+const defaultMaxUploadSize = "50M"
 
+// defaultRootDir 是未显式配置时本地上传目录的默认值。
+const defaultRootDir = "/tmp/mars-uploads"
+
+// Plugin 描述一个可加载插件的名称与构造参数，对应配置文件的 *_plugin 段。
 type Plugin struct {
 	Name string         `mapstructure:"name"`
 	Args map[string]any `mapstructure:"args"`
 }
 
-func (p Plugin) String() string {
-	var args = ""
-	for k, v := range p.Args {
-		args += fmt.Sprintf("%s=%v", k, v)
-	}
-	return fmt.Sprintf("%s %s", p.Name, args)
-}
-
-func (p Plugin) GetArgs() map[string]any {
-	if p.Args == nil {
-		return map[string]any{}
-	}
-
-	return p.Args
-}
-
+// DockerAuths 是多个 Docker 仓库登录凭据的列表。
 type DockerAuths []*DockerAuth
 
-func (a DockerAuths) String() string {
-	var strs []string
-	for _, auth := range a {
-		strs = append(strs, fmt.Sprintf("[%v]", auth))
-	}
-	return strings.Join(strs, " ")
+// dockerConfigJSON 是写入 docker config.json 的序列化结构。
+type dockerConfigJSON struct {
+	Auths map[string]dockerConfigEntry `json:"auths"`
 }
 
+// dockerConfigEntry 对应 docker config.json 中单个仓库的凭据条目。
+type dockerConfigEntry struct {
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	Email    string `json:"email,omitempty"`
+	Auth     string `json:"auth,omitempty"`
+}
+
+// DockerAuth 描述一个 Docker 仓库的登录凭据。
+type DockerAuth struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Email    string `mapstructure:"email"`
+	Server   string `mapstructure:"server"`
+}
+
+// FormatDockerCfg 把凭据列表序列化成 docker config.json 字节串，
+// 每个仓库生成 base64 编码的 Auth 字段（username:password）。
 func (a DockerAuths) FormatDockerCfg() []byte {
-	var cfg = DockerConfigJSON{Auths: map[string]DockerConfigEntry{}}
+	var cfg = dockerConfigJSON{Auths: map[string]dockerConfigEntry{}}
 	for _, auth := range a {
-		cfg.Auths[auth.Server] = DockerConfigEntry{
+		cfg.Auths[auth.Server] = dockerConfigEntry{
 			Username: auth.Username,
 			Password: auth.Password,
 			Email:    auth.Email,
@@ -62,30 +67,10 @@ func (a DockerAuths) FormatDockerCfg() []byte {
 	return marshal
 }
 
-type DockerConfigJSON struct {
-	Auths map[string]DockerConfigEntry `json:"auths"`
-}
-
-type DockerConfigEntry struct {
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
-	Email    string `json:"email,omitempty"`
-	Auth     string `json:"auth,omitempty"`
-}
-
-type DockerAuth struct {
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	Email    string `mapstructure:"email"`
-	Server   string `mapstructure:"server"`
-}
-
-func (a DockerAuth) String() string {
-	return fmt.Sprintf("username='%s' password='%s' email='%s' server='%s'", a.Username, a.Password, a.Email, a.Server)
-}
-
+// ExcludeServerTags 是以 ',' 分隔的启动排除服务标签列表。
 type ExcludeServerTags string
 
+// List 把标签串按 ',' 拆分，逐项去空白并过滤空项。
 func (est ExcludeServerTags) List() (res []string) {
 	for _, s := range strings.Split(string(est), ",") {
 		trims := strings.TrimSpace(s)
@@ -96,6 +81,7 @@ func (est ExcludeServerTags) List() (res []string) {
 	return
 }
 
+// Config 汇总服务运行所需的全部配置，字段与配置文件 key 一一对应。
 type Config struct {
 	AppPort         string `mapstructure:"app_port"`
 	GrpcPort        string `mapstructure:"grpc_port"`
@@ -150,14 +136,18 @@ type Config struct {
 	Oidc           []OidcSetting `mapstructure:"oidc"`
 }
 
+// IsK8sEnv 判断是否运行在 Kubernetes 环境：显式配置了 kubeconfig，
+// 或容器内注入了 KUBERNETES_SERVICE_HOST/PORT 环境变量。
 func (c *Config) IsK8sEnv() bool {
 	return c.KubeConfig != "" || (os.Getenv("KUBERNETES_SERVICE_HOST") != "" && os.Getenv("KUBERNETES_SERVICE_PORT") != "")
 }
 
+// DSN 拼出 MySQL 连接串。
 func (c *Config) DSN() string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%v)/%s?charset=utf8mb4&parseTime=True&loc=Local", c.DBUsername, c.DBPassword, c.DBHost, c.DBPort, c.DBDatabase)
 }
 
+// OidcSetting 描述一个 OIDC 提供方的配置。
 type OidcSetting struct {
 	Name         string `mapstructure:"name"`
 	Enabled      bool   `mapstructure:"enabled"`
@@ -167,6 +157,8 @@ type OidcSetting struct {
 	RedirectUrl  string `mapstructure:"redirect_url"`
 }
 
+// Init 依据配置文件构造 Config：路径缺省时读取当前目录下的 config.yaml，
+// 读取或解码失败即 panic（fail-fast）。随后补齐插件、端口、上传等默认值。
 func Init(cfgFile string) *Config {
 	if cfgFile != "" {
 		if !filepath.IsAbs(cfgFile) {
@@ -220,45 +212,45 @@ func Init(cfgFile string) *Config {
 	if cfg.GrpcPort == "" {
 		port, err := GetFreePort()
 		if err != nil {
-			return nil
+			// 与 Init 其余报错路径一致的 fail-fast：绝不静默返回 nil
+			//（cmd 调用方不判 nil，静默 nil 会直接 nil-deref）。
+			panic(err)
 		}
 		cfg.GrpcPort = fmt.Sprintf("%d", port)
 	}
 
 	if cfg.UploadMaxSize == "" {
-		cfg.UploadMaxSize = DefaultMaxUploadSize
+		cfg.UploadMaxSize = defaultMaxUploadSize
 	}
 
 	if cfg.UploadDir == "" {
-		cfg.UploadDir = DefaultRootDir
+		cfg.UploadDir = defaultRootDir
 	}
 
 	return cfg
 }
 
-const DefaultRootDir = "/tmp/mars-uploads"
-
+// MaxUploadSize 把 UploadMaxSize 解析为字节数，解析失败回退到默认上限。
 func (c *Config) MaxUploadSize() uint64 {
 	bytes, err := humanize.ParseBytes(c.UploadMaxSize)
 	if err != nil {
-		parseBytes, _ := humanize.ParseBytes(DefaultMaxUploadSize)
+		parseBytes, _ := humanize.ParseBytes(defaultMaxUploadSize)
 		return parseBytes
 	}
 	return bytes
 }
 
+// listenTCP 是 GetFreePort 分配端口用的监听探针：测试可整体替换它以
+// 确定性覆盖 net.Listen 失败的错误分支（真实网络层无法稳定触发）。
+var listenTCP = net.Listen
+
+// GetFreePort 监听回环地址的临时端口并返回内核分配的端口号。
 func GetFreePort() (int, error) {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := listenTCP("tcp", "127.0.0.1:0")
 	if err != nil {
 		return 0, err
 	}
 	defer ln.Close()
 
-	// get port
-	tcpAddr, ok := ln.Addr().(*net.TCPAddr)
-	if !ok {
-		return 0, fmt.Errorf("invalid listen address: %q", ln.Addr().String())
-	}
-
-	return tcpAddr.Port, nil
+	return ln.Addr().(*net.TCPAddr).Port, nil
 }

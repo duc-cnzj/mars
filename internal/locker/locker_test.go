@@ -3,63 +3,49 @@ package locker
 import (
 	"testing"
 
-	"github.com/duc-cnzj/mars/v5/internal/config"
-	"github.com/duc-cnzj/mars/v5/internal/data"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/util/timer"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestResolveDriver_DB(t *testing.T) {
+	assert.Equal(t, DriverDB, ResolveDriver("mysql", "db", mlog.NewForConfig(nil)))
+}
+
+func TestResolveDriver_Memory(t *testing.T) {
+	assert.Equal(t, DriverMemory, ResolveDriver("mysql", "memory", mlog.NewForConfig(nil)))
+}
+
+func TestResolveDriver_Unknown(t *testing.T) {
+	assert.Equal(t, Driver("unknown"), ResolveDriver("mysql", "unknown", mlog.NewForConfig(nil)))
+}
+
+// TestResolveDriver_SQLiteFallback 覆盖 sqlite + db 组合强制回退内存锁的规则。
+func TestResolveDriver_SQLiteFallback(t *testing.T) {
+	assert.Equal(t, DriverMemory, ResolveDriver("sqlite", "db", mlog.NewForConfig(nil)))
+}
 
 func TestNewLocker_WithDBDriver(t *testing.T) {
 	t.Parallel()
 
-	cfg := &config.Config{DBDriver: "db", CacheDriver: "db"}
-	logger := mlog.NewForConfig(nil)
-	data := data.NewData(nil, logger)
-	timer := timer.NewReal()
+	locker := NewLocker(DriverDB, func() *ent.Client { return nil }, mlog.NewForConfig(nil), timer.NewReal())
 
-	locker, err := NewLocker(cfg, data, logger, timer)
-
-	assert.NoError(t, err)
 	assert.IsType(t, &databaseLock{}, locker)
-}
-
-func TestNewLocker_WithSQLiteDriver(t *testing.T) {
-	t.Parallel()
-
-	cfg := &config.Config{DBDriver: "sqlite", CacheDriver: "db"}
-	logger := mlog.NewForConfig(nil)
-	data := data.NewData(nil, logger)
-	timer := timer.NewReal()
-
-	locker, err := NewLocker(cfg, data, logger, timer)
-
-	assert.NoError(t, err)
-	assert.IsType(t, &memoryLock{}, locker)
 }
 
 func TestNewLocker_WithMemoryDriver(t *testing.T) {
 	t.Parallel()
 
-	cfg := &config.Config{DBDriver: "db", CacheDriver: "memory"}
-	logger := mlog.NewForConfig(nil)
-	data := data.NewData(nil, logger)
-	timer := timer.NewReal()
-	locker, err := NewLocker(cfg, data, logger, timer)
+	locker := NewLocker(DriverMemory, func() *ent.Client { return nil }, mlog.NewForConfig(nil), timer.NewReal())
 
-	assert.NoError(t, err)
 	assert.IsType(t, &memoryLock{}, locker)
 }
 
 func TestNewLocker_WithUnknownDriver(t *testing.T) {
 	t.Parallel()
 
-	cfg := &config.Config{DBDriver: "db", CacheDriver: "unknown"}
-	logger := mlog.NewForConfig(nil)
-	data := data.NewData(nil, logger)
-	timer := timer.NewReal()
-	locker, err := NewLocker(cfg, data, logger, timer)
+	locker := NewLocker(Driver("unknown"), func() *ent.Client { return nil }, mlog.NewForConfig(nil), timer.NewReal())
 
-	assert.NoError(t, err)
 	assert.IsType(t, &memoryLock{}, locker)
 }

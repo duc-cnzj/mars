@@ -1,0 +1,2 @@
+# 类型错配：debug 期望 bool，给不可解析的字符串 → viper.Unmarshal 解码必然失败 → Init panic
+debug: notabool

@@ -9,12 +9,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/duc-cnzj/mars/api/v5"
-	"github.com/duc-cnzj/mars/api/v5/container"
+	"github.com/duc-cnzj/mars/api/v6/grpc"
+	"github.com/duc-cnzj/mars/api/v6/proto/container"
 )
 
 func main() {
-	c, _ := api.NewClient("localhost:50000", api.WithAuth("admin", "123456"))
+	c, _ := grpc.NewClient("localhost:50000", grpc.WithAuth("admin", "123456"))
 	defer c.Close()
 	cp, _ := c.Container().StreamCopyToPod(context.TODO())
 	open, _ := os.Open("/Users/duc/Downloads/ducc.xlsx")

@@ -12,12 +12,15 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// Separator 是字段路径的分隔符。
 const Separator = "->"
 
 var (
+	// ErrorInvalidSeparator 表示字段路径以分隔符开头或结尾。
 	ErrorInvalidSeparator = errors.New("error invalid Separator")
 )
 
+// deepSet 将 key 按分隔符展开为嵌套 map，叶子值为 data。
 func deepSet(key string, data any) map[string]any {
 	res := map[string]any{}
 
@@ -31,6 +34,8 @@ func deepSet(key string, data any) map[string]any {
 	return res
 }
 
+// IsSimpleEnv 判断 key 在 yamlData 中是否是简单标量值（非 map）；
+// key 缺失时返回 (true, 错误)。
 func IsSimpleEnv(key string, yamlData string) (bool, error) {
 	var m map[string]any
 	if err := yaml.Unmarshal([]byte(yamlData), &m); err != nil {
@@ -47,15 +52,13 @@ func IsSimpleEnv(key string, yamlData string) (bool, error) {
 	return true, fmt.Errorf("key '%v' not found", key)
 }
 
-/*
-DeepGet: get val
-
-	a:
-	  b:
-	    c: d
-
-	a->b->c => d
-*/
+// DeepGet 按 `a->b->c` 分隔路径从嵌套 map 中取值：
+//
+//	a:
+//	  b:
+//	    c: d
+//
+// a->b->c => d
 func DeepGet(key string, data map[string]any) (res any, got bool) {
 	keys := strings.Split(key, "->")
 
@@ -68,11 +71,11 @@ func DeepGet(key string, data map[string]any) (res any, got bool) {
 	return value.Value(), value.Exists()
 }
 
-// YamlDeepSetKey 把 'user->name: duc' 设置成
+// DeepSetKey 把 'user->name: duc' 设置成
 //
 //	user:
 //	  name: duc
-func YamlDeepSetKey(field string, data any) ([]byte, error) {
+func DeepSetKey(field string, data any) ([]byte, error) {
 	if strings.HasPrefix(field, Separator) || strings.HasSuffix(field, Separator) {
 		return nil, fmt.Errorf("%w: %s", ErrorInvalidSeparator, field)
 	}

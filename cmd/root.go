@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/duc-cnzj/mars/v5/internal/version"
+	"github.com/duc-cnzj/mars/v6/internal/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -20,13 +20,10 @@ var (
 	logo string
 )
 
-// Execute root cmd.
+// Execute 装配全部子命令并执行根命令；任一命令返回错误时退出进程。
 func Execute(configFile []byte, logoStr string) {
 	configExampleFile = configFile
 	logo = logoStr
-	if !version.GetVersion().HasBuildInfo() {
-		rootCmd.AddCommand(testCmd)
-	}
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(apiGatewayCmd)
 	rootCmd.AddCommand(inspect)

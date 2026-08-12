@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package cluster;
+
+import "google/api/annotations.proto";
+import "openapi/v3/annotations.proto";
+import "proto/websocket/websocket.proto";
+
+option go_package = "github.com/duc-cnzj/mars/api/v6/proto/cluster;cluster";
+
+enum Status {
+  StatusUnknown = 0;
+  StatusBad     = 1;
+  StatusNotGood = 2;
+  StatusHealth  = 3;
+}
+
+message InfoResponse {
+  websocket.ClusterInfo item = 1;
+}
+
+message InfoRequest {}
+
+service Cluster {
+  rpc ClusterInfo(InfoRequest) returns (InfoResponse) {
+    option (google.api.http)      = {
+      get: "/api/cluster_info"
+    };
+
+    option (openapi.v3.operation) = {
+      security: {},
+      summary: "查看集群信息",
+    };
+  }
+}

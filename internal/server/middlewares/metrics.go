@@ -4,54 +4,43 @@ import (
 	"context"
 	"time"
 
-	marsauthorizor "github.com/duc-cnzj/mars/v5/internal/auth"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-
-	"github.com/duc-cnzj/mars/v5/internal/metrics"
+	"github.com/duc-cnzj/mars/v6/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
 )
 
-func MetricsServerInterceptor(logger mlog.Logger) func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+// MetricsUnaryServerInterceptor 是 Unary 指标拦截器：记录请求耗时（GrpcLatency），
+// 并按成败累加 GrpcRequestTotalFail/Success 与 GrpcErrorCount 指标。
+func MetricsUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		defer func(t time.Time) {
-			user := &marsauthorizor.UserInfo{}
-			if u, err := marsauthorizor.GetUser(ctx); err == nil {
-				user = u
-			}
-			logger.Infof("[Grpc]: user: %v, visit: %v, use: %s.", user.Name, info.FullMethod, time.Since(t))
 			metrics.GrpcLatency.With(prometheus.Labels{"method": info.FullMethod}).Observe(time.Since(t).Seconds())
 		}(time.Now())
 
-		i, err := handler(ctx, req)
-		if err != nil {
-			metrics.GrpcRequestTotalFail.With(prometheus.Labels{"method": info.FullMethod}).Inc()
-			metrics.GrpcErrorCount.With(prometheus.Labels{"method": info.FullMethod}).Inc()
-		} else {
-			metrics.GrpcRequestTotalSuccess.With(prometheus.Labels{"method": info.FullMethod}).Inc()
-		}
-
-		return i, err
+		resp, err = handler(ctx, req)
+		accountGrpcResult(info.FullMethod, err)
+		return resp, err
 	}
 }
 
-func MetricsStreamServerInterceptor(logger mlog.Logger) func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+// MetricsStreamServerInterceptor 是 Stream 指标拦截器：按成败累加
+// GrpcRequestTotalFail/Success 与 GrpcErrorCount。与 Unary 版差异是不观测
+// GrpcLatency——长连接流（如日志流）持续秒级，按请求计耗时无意义。
+func MetricsStreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		defer func(t time.Time) {
-			user, e := marsauthorizor.GetUser(ss.Context())
-			if e == nil {
-				logger.Infof("[Grpc]: user: %v, visit: %v, use: %s.", user.Name, info.FullMethod, time.Since(t))
-			}
-		}(time.Now())
+		err := handler(srv, ss)
+		accountGrpcResult(info.FullMethod, err)
+		return err
+	}
+}
 
-		e := handler(srv, ss)
-		if e != nil {
-			metrics.GrpcRequestTotalFail.With(prometheus.Labels{"method": info.FullMethod}).Inc()
-			metrics.GrpcErrorCount.With(prometheus.Labels{"method": info.FullMethod}).Inc()
-		} else {
-			metrics.GrpcRequestTotalSuccess.With(prometheus.Labels{"method": info.FullMethod}).Inc()
-		}
-
-		return e
+// accountGrpcResult 按成败累加 gRPC 指标：成功 +GrpcRequestTotalSuccess，
+// 失败 +GrpcRequestTotalFail 与 +GrpcErrorCount，method 标签取 fullMethodName。
+func accountGrpcResult(fullMethodName string, err error) {
+	if err != nil {
+		metrics.GrpcRequestTotalFail.With(prometheus.Labels{"method": fullMethodName}).Inc()
+		metrics.GrpcErrorCount.With(prometheus.Labels{"method": fullMethodName}).Inc()
+	} else {
+		metrics.GrpcRequestTotalSuccess.With(prometheus.Labels{"method": fullMethodName}).Inc()
 	}
 }

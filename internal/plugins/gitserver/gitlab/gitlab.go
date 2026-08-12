@@ -2,178 +2,253 @@ package gitlab
 
 import (
 	"errors"
-	"strconv"
-	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/util/proxy"
-
-	"github.com/duc-cnzj/mars/v5/internal/application"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/app"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/util/proxy"
 	"github.com/xanzy/go-gitlab"
 )
 
-var _ application.GitServer = (*server)(nil)
+var _ app.GitServer = (*server)(nil)
 
-var name = "gitlab"
+// gitlabName 插件注册名。
+const gitlabName = "gitlab"
 
 func init() {
 	dr := &server{}
-	application.RegisterPlugin(dr.Name(), dr)
+	app.RegisterPlugin(dr.Name(), dr)
 }
 
-type project struct {
-	p *gitlab.Project
-}
-
-func (p *project) GetID() int64 {
-	return int64(p.p.ID)
-}
-
-func (p *project) GetName() string {
-	return p.p.Name
-}
-
-func (p *project) GetDefaultBranch() string {
-	return p.p.DefaultBranch
-}
-
-func (p *project) GetPath() string {
-	return p.p.Path
-}
-
-func (p *project) GetWebURL() string {
-	return p.p.WebURL
-}
-
-func (p *project) GetAvatarURL() string {
-	return p.p.AvatarURL
-}
-
-func (p *project) GetDescription() string {
-	return p.p.Description
-}
-
-type branch struct {
-	b *gitlab.Branch
-}
-
-func (b *branch) GetName() string {
-	return b.b.Name
-}
-
-func (b *branch) IsDefault() bool {
-	return b.b.Default
-}
-
-func (b *branch) GetWebURL() string {
-	return b.b.WebURL
-}
-
-type commit struct {
-	c *gitlab.Commit
-}
-
-func (c *commit) GetID() string {
-	return c.c.ID
-}
-
-func (c *commit) GetShortID() string {
-	return c.c.ShortID
-}
-
-func (c *commit) GetCommittedDate() *time.Time {
-	return c.c.CommittedDate
-}
-
-func (c *commit) GetTitle() string {
-	return c.c.Title
-}
-
-func (c *commit) GetAuthorName() string {
-	return c.c.AuthorName
-}
-
-func (c *commit) GetAuthorEmail() string {
-	return c.c.AuthorEmail
-}
-
-func (c *commit) GetCommitterName() string {
-	return c.c.CommitterName
-}
-
-func (c *commit) GetCommitterEmail() string {
-	return c.c.CommitterEmail
-}
-
-func (c *commit) GetCreatedAt() *time.Time {
-	return c.c.CreatedAt
-}
-
-func (c *commit) GetMessage() string {
-	return c.c.Message
-}
-
-func (c *commit) GetProjectID() int64 {
-	return int64(c.c.ProjectID)
-}
-
-func (c *commit) GetWebURL() string {
-	return c.c.WebURL
-}
-
-type pipeline struct {
-	p *gitlab.PipelineInfo
-}
-
-func (p *pipeline) GetID() int64 {
-	return int64(p.p.ID)
-}
-
-func (p *pipeline) GetProjectID() int64 {
-	return int64(p.p.ProjectID)
-}
-
-// GetStatus
-// created, waiting_for_resource, preparing, pending, running, success, failed, canceled, skipped, manual, scheduled
-func (p *pipeline) GetStatus() application.Status {
-	switch p.p.Status {
-	case "failed":
-		return application.StatusFailed
-	case "running":
-		return application.StatusRunning
-	case "success", "manual":
-		return application.StatusSuccess
-	default:
-		return application.StatusUnknown
+// toGitProject 将 go-gitlab 的 Project 转成业务层 GitProject；nil 输入返回 nil。
+func toGitProject(p *gitlab.Project) *biz.GitProject {
+	if p == nil {
+		return nil
+	}
+	return &biz.GitProject{
+		ID:            int64(p.ID),
+		Name:          p.Name,
+		DefaultBranch: p.DefaultBranch,
+		WebURL:        p.WebURL,
+		Path:          p.Path,
+		AvatarURL:     p.AvatarURL,
+		Description:   p.Description,
 	}
 }
 
-func (p *pipeline) GetRef() string {
-	return p.p.Ref
+// toBranch 将 go-gitlab 的 Branch 转成业务层 Branch；nil 输入返回 nil。
+func toBranch(b *gitlab.Branch) *biz.Branch {
+	if b == nil {
+		return nil
+	}
+	return &biz.Branch{
+		Name:      b.Name,
+		IsDefault: b.Default,
+		WebURL:    b.WebURL,
+	}
 }
 
-func (p *pipeline) GetSHA() string {
-	return p.p.SHA
+// toCommit 将 go-gitlab 的 Commit 转成业务层 Commit；nil 输入返回 nil。
+func toCommit(c *gitlab.Commit) *biz.Commit {
+	if c == nil {
+		return nil
+	}
+	return &biz.Commit{
+		ID:             c.ID,
+		ShortID:        c.ShortID,
+		Title:          c.Title,
+		CommittedDate:  c.CommittedDate,
+		AuthorName:     c.AuthorName,
+		AuthorEmail:    c.AuthorEmail,
+		CommitterName:  c.CommitterName,
+		CommitterEmail: c.CommitterEmail,
+		CreatedAt:      c.CreatedAt,
+		Message:        c.Message,
+		WebURL:         c.WebURL,
+	}
 }
 
-func (p *pipeline) GetWebURL() string {
-	return p.p.WebURL
+// pipelineStatus 将 GitLab pipeline 状态字符串映射为业务层 Status。
+// 可能值：created, waiting_for_resource, preparing, pending, running, success,
+// failed, canceled, skipped, manual, scheduled。
+func pipelineStatus(s string) biz.Status {
+	switch s {
+	case "failed":
+		return biz.StatusFailed
+	case "running":
+		return biz.StatusRunning
+	case "success", "manual":
+		return biz.StatusSuccess
+	default:
+		return biz.StatusUnknown
+	}
 }
 
-func (p *pipeline) GetUpdatedAt() *time.Time {
-	return p.p.UpdatedAt
+// toPipeline 将 go-gitlab 的 PipelineInfo 转成业务层 Pipeline；nil 输入返回 nil。
+func toPipeline(p *gitlab.PipelineInfo) *biz.Pipeline {
+	if p == nil {
+		return nil
+	}
+	return &biz.Pipeline{
+		ID:        int64(p.ID),
+		ProjectID: int64(p.ProjectID),
+		Status:    pipelineStatus(p.Status),
+		Ref:       p.Ref,
+		SHA:       p.SHA,
+		WebURL:    p.WebURL,
+		UpdatedAt: p.UpdatedAt,
+		CreatedAt: p.CreatedAt,
+	}
 }
 
-func (p *pipeline) GetCreatedAt() *time.Time {
-	return p.p.CreatedAt
-}
-
+// server 是 gitlab 插件实现：持有 go-gitlab 客户端与日志器，实现 app.GitServer。
 type server struct {
 	client *gitlab.Client
 	logger mlog.Logger
 }
 
-func (g *server) GetCommitPipeline(pid string, branch string, sha string) (application.Pipeline, error) {
+// Name 返回插件名 gitlab。
+func (g *server) Name() string {
+	return gitlabName
+}
+
+// Initialize 从 args 读取 token/baseurl/http_proxy，校验必填项后创建 go-gitlab 客户端。
+func (g *server) Initialize(pluginApp app.PluginApp, args map[string]any) error {
+	token, ok := args["token"].(string)
+	if !ok || token == "" {
+		return errors.New("gitlab: token required")
+	}
+	baseurl, ok := args["baseurl"].(string)
+	if !ok || baseurl == "" {
+		return errors.New("gitlab: baseurl required")
+	}
+	var proxyStr string
+	if found, ok := args["http_proxy"]; ok {
+		proxyStr, ok = found.(string)
+		if !ok {
+			return errors.New("gitlab: http_proxy must be string")
+		}
+	}
+	client, err := gitlab.NewClient(
+		token,
+		gitlab.WithBaseURL(baseurl),
+		gitlab.WithHTTPClient(proxy.NewHTTPProxyClient(proxyStr)),
+	)
+	if err != nil {
+		return err
+	}
+	g.client = client
+	g.logger = pluginApp.Logger()
+	g.logger.Info("[Plugin]: " + g.Name() + " plugin Initialize...")
+	return nil
+}
+
+// Destroy 输出销毁日志。
+func (g *server) Destroy() error {
+	g.logger.Info("[Plugin]: " + g.Name() + " plugin Destroy...")
+	return nil
+}
+
+// GetProject 按项目 id 返回项目信息。
+func (g *server) GetProject(pid string) (*biz.GitProject, error) {
+	p, _, err := g.client.Projects.GetProject(pid, &gitlab.GetProjectOptions{})
+	return toGitProject(p), err
+}
+
+// listProjects 是分页内部实现，供 AllProjects 迭代拉取全部项目。
+func (g *server) listProjects(page, pageSize int) ([]*biz.GitProject, error) {
+	res, _, err := g.client.Projects.ListProjects(&gitlab.ListProjectsOptions{
+		MinAccessLevel: gitlab.AccessLevel(gitlab.DeveloperPermissions),
+		ListOptions:    gitlab.ListOptions{PerPage: pageSize, Page: page},
+	})
+	if err != nil {
+		return nil, err
+	}
+	projects := make([]*biz.GitProject, 0, len(res))
+	for _, re := range res {
+		projects = append(projects, toGitProject(re))
+	}
+	return projects, nil
+}
+
+// AllProjects 分页拉取当前 token 有权限的全部项目。
+func (g *server) AllProjects() ([]*biz.GitProject, error) {
+	var ps []*biz.GitProject
+	page := 1
+	pageSize := 100
+	for page != -1 {
+		projects, err := g.listProjects(page, pageSize)
+		if err != nil {
+			return nil, err
+		}
+		if len(projects) < pageSize {
+			page = -1
+		} else {
+			page++
+		}
+		ps = append(ps, projects...)
+	}
+
+	return ps, nil
+}
+
+// listBranches 是分页内部实现，供 AllBranches 迭代拉取全部分支。
+func (g *server) listBranches(pid string, page, pageSize int) ([]*biz.Branch, error) {
+	gitlabBranches, _, e := g.client.Branches.ListBranches(pid, &gitlab.ListBranchesOptions{ListOptions: gitlab.ListOptions{PerPage: pageSize, Page: page}})
+	if e != nil {
+		return nil, e
+	}
+	branches := make([]*biz.Branch, 0, len(gitlabBranches))
+	for _, gitlabBranch := range gitlabBranches {
+		branches = append(branches, toBranch(gitlabBranch))
+	}
+	return branches, nil
+}
+
+// AllBranches 分页拉取项目全部分支，直至不足一页或取完。
+func (g *server) AllBranches(pid string) ([]*biz.Branch, error) {
+	var branches []*biz.Branch
+	page := 1
+	pageSize := 100
+	for page != -1 {
+		gitlabBranches, err := g.listBranches(pid, page, pageSize)
+		if err != nil {
+			return nil, err
+		}
+		if len(gitlabBranches) < pageSize {
+			page = -1
+		} else {
+			page++
+		}
+		branches = append(branches, gitlabBranches...)
+	}
+
+	return branches, nil
+}
+
+// GetCommit 返回指定 sha 的提交信息。
+func (g *server) GetCommit(pid string, sha string) (*biz.Commit, error) {
+	c, _, err := g.client.Commits.GetCommit(pid, sha)
+	if err != nil {
+		return nil, err
+	}
+	return toCommit(c), nil
+}
+
+// ListCommits 返回指定分支最近的提交列表。
+func (g *server) ListCommits(pid string, branch string) ([]*biz.Commit, error) {
+	commits, _, err := g.client.Commits.ListCommits(pid, &gitlab.ListCommitsOptions{RefName: gitlab.String(branch), ListOptions: gitlab.ListOptions{PerPage: 100}})
+
+	res := make([]*biz.Commit, 0, len(commits))
+	for _, c := range commits {
+		res = append(res, toCommit(c))
+	}
+
+	return res, err
+}
+
+// GetCommitPipeline 返回指定分支/提交对应的 push/web pipeline；没有则报错。
+func (g *server) GetCommitPipeline(pid string, branch string, sha string) (*biz.Pipeline, error) {
 	var p *gitlab.PipelineInfo
 	pipelines, _, err := g.client.Pipelines.ListProjectPipelines(pid, &gitlab.ListProjectPipelinesOptions{
 		ListOptions: gitlab.ListOptions{
@@ -198,220 +273,10 @@ func (g *server) GetCommitPipeline(pid string, branch string, sha string) (appli
 		return nil, errors.New("pipeline not found")
 	}
 
-	return &pipeline{p: p}, nil
+	return toPipeline(p), nil
 }
 
-func (g *server) Name() string {
-	return name
-}
-
-func (g *server) Initialize(app application.App, args map[string]any) error {
-	var proxyStr string
-	if found, ok := args["http_proxy"]; ok {
-		proxyStr = found.(string)
-	}
-	client, err := gitlab.NewClient(
-		args["token"].(string),
-		gitlab.WithBaseURL(args["baseurl"].(string)),
-		gitlab.WithHTTPClient(proxy.NewHttpProxyClient(proxyStr)),
-	)
-	if err != nil {
-		return err
-	}
-	g.client = client
-	g.logger = app.Logger()
-	g.logger.Info("[Plugin]: " + g.Name() + " plugin Initialize...")
-	return nil
-}
-
-func (g *server) Destroy() error {
-	g.logger.Info("[Plugin]: " + g.Name() + " plugin Destroy...")
-	return nil
-}
-
-func (g *server) GetProject(pid string) (application.Project, error) {
-	p, _, err := g.client.Projects.GetProject(pid, &gitlab.GetProjectOptions{})
-
-	return &project{p: p}, err
-}
-
-type listProjectResponse struct {
-	items                    []application.Project
-	page, pageSize, nextPage int
-	hasMore                  bool
-}
-
-func (l *listProjectResponse) NextPage() int {
-	return l.nextPage
-}
-
-func (l *listProjectResponse) HasMore() bool {
-	return l.hasMore
-}
-
-func (l *listProjectResponse) GetItems() []application.Project {
-	return l.items
-}
-
-func (l *listProjectResponse) Page() int {
-	return l.page
-}
-
-func (l *listProjectResponse) PageSize() int {
-	return l.pageSize
-}
-
-func (g *server) ListProjects(page, pageSize int) (application.ListProjectResponse, error) {
-	res, r, err := g.client.Projects.ListProjects(&gitlab.ListProjectsOptions{
-		MinAccessLevel: gitlab.AccessLevel(gitlab.DeveloperPermissions),
-		ListOptions:    gitlab.ListOptions{PerPage: pageSize, Page: page},
-	})
-	if err != nil {
-		return nil, err
-	}
-	nextPage := r.Header.Get("x-next-page")
-	var projects = make([]application.Project, 0, len(res))
-	for _, re := range res {
-		projects = append(projects, &project{p: re})
-	}
-
-	var next int
-	if nextPage != "" {
-		next, _ = strconv.Atoi(nextPage)
-	}
-
-	return &listProjectResponse{
-		items:    projects,
-		page:     page,
-		pageSize: pageSize,
-		nextPage: next,
-		hasMore:  nextPage != "",
-	}, err
-}
-
-func (g *server) AllProjects() ([]application.Project, error) {
-	var ps []application.Project
-	page := 1
-	pageSize := 100
-	for page != -1 {
-		projects, err := g.ListProjects(page, pageSize)
-		if err != nil {
-			return nil, err
-		}
-		if len(projects.GetItems()) < pageSize {
-			page = -1
-		} else {
-			page++
-		}
-		// gitlab 分页貌似有 bug, 有时能返回分页信息有时不能
-		//if projects.HasMore() {
-		//	page = projects.NextPage()
-		//} else {
-		//	page = -1
-		//}
-		ps = append(ps, projects.GetItems()...)
-	}
-
-	return ps, nil
-}
-
-type listBranchResponse struct {
-	items                    []application.Branch
-	page, pageSize, nextPage int
-	hasMore                  bool
-}
-
-func (l *listBranchResponse) NextPage() int {
-	return l.nextPage
-}
-
-func (l *listBranchResponse) HasMore() bool {
-	return l.hasMore
-}
-
-func (l *listBranchResponse) GetItems() []application.Branch {
-	return l.items
-}
-
-func (l *listBranchResponse) Page() int {
-	return l.page
-}
-
-func (l *listBranchResponse) PageSize() int {
-	return l.pageSize
-}
-
-func (g *server) ListBranches(pid string, page, pageSize int) (application.ListBranchResponse, error) {
-	var (
-		branches []application.Branch
-		next     int
-	)
-
-	gitlabBranches, r, e := g.client.Branches.ListBranches(pid, &gitlab.ListBranchesOptions{ListOptions: gitlab.ListOptions{PerPage: pageSize, Page: page}})
-	if e != nil {
-		return nil, e
-	}
-	nextPage := r.Header.Get("x-next-page")
-	for _, gitlabBranch := range gitlabBranches {
-		branches = append(branches, &branch{b: gitlabBranch})
-	}
-	if nextPage != "" {
-		next, _ = strconv.Atoi(nextPage)
-	}
-	return &listBranchResponse{
-		items:    branches,
-		page:     page,
-		pageSize: pageSize,
-		nextPage: next,
-		hasMore:  nextPage != "",
-	}, nil
-}
-
-func (g *server) AllBranches(pid string) ([]application.Branch, error) {
-	var branches []application.Branch
-	page := 1
-	pageSize := 100
-	for page != -1 {
-		gitlabBranches, err := g.ListBranches(pid, page, pageSize)
-		if err != nil {
-			return nil, err
-		}
-		if len(gitlabBranches.GetItems()) < pageSize {
-			page = -1
-		} else {
-			page++
-		}
-		// gitlab 分页貌似有 bug, 有时能返回分页信息有时不能
-		//if gitlabBranches.HasMore() {
-		//	page = gitlabBranches.NextPage()
-		//} else {
-		//	page = -1
-		//}
-		branches = append(branches, gitlabBranches.GetItems()...)
-	}
-
-	return branches, nil
-}
-
-func (g *server) GetCommit(pid string, sha string) (application.Commit, error) {
-	c, _, err := g.client.Commits.GetCommit(pid, sha)
-	if err != nil {
-		return nil, err
-	}
-	return &commit{c: c}, nil
-}
-
-func (g *server) ListCommits(pid string, branch string) ([]application.Commit, error) {
-	commits, _, err := g.client.Commits.ListCommits(pid, &gitlab.ListCommitsOptions{RefName: gitlab.String(branch), ListOptions: gitlab.ListOptions{PerPage: 100}})
-
-	res := make([]application.Commit, 0, len(commits))
-	for _, c := range commits {
-		res = append(res, &commit{c: c})
-	}
-
-	return res, err
-}
-
+// getRawFile 按 ref 或分支名拉取仓库文件原始内容。
 func getRawFile(client *gitlab.Client, pid string, shaOrBranch string, filename string) (string, error) {
 	opt := gitlab.GetRawFileOptions{}
 	if shaOrBranch != "" {
@@ -421,15 +286,18 @@ func getRawFile(client *gitlab.Client, pid string, shaOrBranch string, filename 
 	return string(raw), err
 }
 
+// GetFileContentWithSha 按 commit sha 返回文件内容。
 func (g *server) GetFileContentWithSha(pid string, sha string, filename string) (string, error) {
 	return getRawFile(g.client, pid, sha, filename)
 }
 
+// GetFileContentWithBranch 按分支名返回文件内容。
 func (g *server) GetFileContentWithBranch(pid string, branch string, filename string) (string, error) {
 	return getRawFile(g.client, pid, branch, filename)
 }
 
-func getDirectoryFiles(g *gitlab.Client, pid any, commit string, path string, recursive bool) ([]string, error) {
+// getDirectoryFiles 分页遍历仓库目录树，收集所有 blob 类型文件路径。
+func getDirectoryFiles(g *gitlab.Client, pid string, commit string, path string, recursive bool) ([]string, error) {
 	var files []string
 
 	opt := &gitlab.ListTreeOptions{
@@ -464,10 +332,12 @@ func getDirectoryFiles(g *gitlab.Client, pid any, commit string, path string, re
 	return files, nil
 }
 
+// GetDirectoryFilesWithBranch 按分支名返回目录下文件路径列表。
 func (g *server) GetDirectoryFilesWithBranch(pid string, branch string, path string, recursive bool) ([]string, error) {
 	return getDirectoryFiles(g.client, pid, branch, path, recursive)
 }
 
+// GetDirectoryFilesWithSha 按 commit sha 返回目录下文件路径列表。
 func (g *server) GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error) {
 	return getDirectoryFiles(g.client, pid, sha, path, recursive)
 }

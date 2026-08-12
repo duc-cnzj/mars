@@ -4,22 +4,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/transformer"
-	"github.com/duc-cnzj/mars/v5/internal/util/date"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/transformer"
+	"github.com/duc-cnzj/mars/v6/internal/util/date"
 	"github.com/dustin/go-humanize"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFromFile_NilInput(t *testing.T) {
-	var f *repo.File
+	var f *biz.File
 	result := transformer.FromFile(f)
 	assert.Nil(t, result)
 }
 
 func TestFromFile_ValidInput(t *testing.T) {
 	now := time.Now()
-	f := &repo.File{
+	f := &biz.File{
 		ID:            1,
 		Path:          "testPath",
 		Size:          1024,
@@ -42,14 +42,14 @@ func TestFromFile_ValidInput(t *testing.T) {
 	assert.Equal(t, "testContainer", result.Container)
 	assert.Equal(t, "testContainerPath", result.Container_Path)
 	assert.Equal(t, humanize.Bytes(1024), result.HumanizeSize)
-	assert.Equal(t, date.ToRFC3339DatetimeString(&now), result.CreatedAt)
-	assert.Equal(t, date.ToRFC3339DatetimeString(&now), result.UpdatedAt)
+	assert.Equal(t, date.ToRFC3339(&now), result.CreatedAt)
+	assert.Equal(t, date.ToRFC3339(&now), result.UpdatedAt)
 	assert.Equal(t, "", result.DeletedAt)
 }
 
 func TestFromFile_DeletedFile(t *testing.T) {
 	now := time.Now()
-	f := &repo.File{
+	f := &biz.File{
 		ID:            1,
 		Path:          "testPath",
 		Size:          1024,

@@ -5,89 +5,93 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/duc-cnzj/mars/api/v5/auth"
-	"github.com/duc-cnzj/mars/api/v5/types"
-	auth2 "github.com/duc-cnzj/mars/v5/internal/auth"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/util/rand"
+	apiauth "github.com/duc-cnzj/mars/api/v6/proto/auth"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/util/rand"
 	"github.com/spf13/cast"
-	"golang.org/x/oauth2"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 )
 
-var _ auth.AuthServer = (*authSvc)(nil)
+var _ apiauth.AuthServer = (*authSvc)(nil)
 
+// authSvc 是 apiauth.AuthServer 的 gRPC 实现：提供登录、用户信息、登录设置
+// 与 OIDC 授权码换取，审计事件经 eventBiz 落库，由 NewAuthSvc 构造。
 type authSvc struct {
-	auth.UnimplementedAuthServer
+	apiauth.UnimplementedAuthServer
 
-	guest
-
-	logger    mlog.Logger
-	authRepo  repo.AuthRepo
-	eventRepo repo.EventRepo
+	logger   mlog.Logger
+	authBiz  biz.AuthBiz
+	eventBiz biz.EventBiz
 }
 
-func NewAuthSvc(eventRepo repo.EventRepo, logger mlog.Logger, authRepo repo.AuthRepo) auth.AuthServer {
+// AuthSvcDeps 收口 NewAuthSvc 的构造依赖，由 wire 按字段注入。
+type AuthSvcDeps struct {
+	EventBiz biz.EventBiz
+	Logger   mlog.Logger
+	AuthBiz  biz.AuthBiz
+}
+
+// NewAuthSvc 收口认证服务的构造依赖，由 wire 按字段注入。
+func NewAuthSvc(deps AuthSvcDeps) apiauth.AuthServer {
 	return &authSvc{
-		logger:    logger.WithModule("services/auth"),
-		eventRepo: eventRepo,
-		authRepo:  authRepo,
+		logger:   deps.Logger.WithModule("services/auth"),
+		eventBiz: deps.EventBiz,
+		authBiz:  deps.AuthBiz,
 	}
 }
 
-func (a *authSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.LoginResponse, error) {
-	loginResp, err := a.authRepo.Login(ctx, &repo.LoginInput{
+// Login 处理用户名密码登录：校验凭证后签发登录凭证，并落登录审计日志。
+func (a *authSvc) Login(ctx context.Context, request *apiauth.LoginRequest) (*apiauth.LoginResponse, error) {
+	loginResp, err := a.authBiz.Login(ctx, &biz.LoginInput{
 		Username: request.Username,
 		Password: request.Password,
 	})
 	if err != nil {
-		return nil, err
+		return nil, logError(ctx, a.logger, err)
 	}
 
-	a.eventRepo.AuditLog(
+	a.eventBiz.AuditLog(
 		types.EventActionType_Login,
 		loginResp.UserInfo.Name,
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", loginResp.UserInfo.Name, loginResp.UserInfo.Email),
 	)
 
-	return &auth.LoginResponse{
+	return &apiauth.LoginResponse{
 		Token:     loginResp.Token,
 		ExpiresIn: loginResp.ExpiredIn,
 	}, nil
 }
 
-func (a *authSvc) Info(ctx context.Context, req *auth.InfoRequest) (*auth.InfoResponse, error) {
-	incomingContext, ok := metadata.FromIncomingContext(ctx)
-	if ok {
-		tokenSlice := incomingContext.Get("Authorization")
-		if len(tokenSlice) == 1 {
-			if c, err := a.authRepo.VerifyToken(ctx, tokenSlice[0]); err == nil {
-				return &auth.InfoResponse{
-					Id:        cast.ToInt32(c.ID),
-					Avatar:    c.Picture,
-					Name:      c.Name,
-					Email:     c.Email,
-					LogoutUrl: c.LogoutUrl,
-					Roles:     c.Roles,
-				}, nil
-			}
-		}
-	}
-
-	return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated.")
+// Info 返回当前登录用户信息：用户由鉴权拦截器（middlewares.Login*ServerInterceptor）
+// 统一验签后经 biz.SetUser 注入 ctx，本方法只做「取 ctx 用户 → 映射响应」，不再自行验签
+// （消除与拦截器的双重验签）。取用户用 biz.MustGetUser（与 AccessBiz/services 全仓惯例
+// 一致）：双链路（gRPC 拦截器 + HTTP gateway 经 RegisterAuthHandlerFromEndpoint 回环 dial
+// 到同一 gRPC server）必注入用户，ctx 无用户即编程错误（panic，由 grpc_recovery 兜底）。
+func (a *authSvc) Info(ctx context.Context, req *apiauth.InfoRequest) (*apiauth.InfoResponse, error) {
+	user := biz.MustGetUser(ctx)
+	return &apiauth.InfoResponse{
+		Id:        cast.ToInt32(user.ID),
+		Avatar:    user.Picture,
+		Name:      user.Name,
+		Email:     user.Email,
+		LogoutUrl: user.LogoutUrl,
+		Roles:     user.Roles,
+	}, nil
 }
 
-func (a *authSvc) Settings(ctx context.Context, request *auth.SettingsRequest) (*auth.SettingsResponse, error) {
-	settings, _ := a.authRepo.Settings(ctx)
-	var items = make([]*auth.SettingsResponse_OidcSetting, 0, len(settings))
+// Settings 返回可用的 OIDC 登录方式：为每个 provider 生成一次性 state 拼出
+// 授权码 URL，按名字排序后返回，供前端渲染登录页。
+func (a *authSvc) Settings(ctx context.Context, request *apiauth.SettingsRequest) (*apiauth.SettingsResponse, error) {
+	settings, err := a.authBiz.Settings(ctx)
+	if err != nil {
+		return nil, logError(ctx, a.logger, err)
+	}
+	var items = make([]*apiauth.SettingsResponse_OidcSetting, 0, len(settings))
 	for name, setting := range settings {
 		state := rand.String(32)
 
-		items = append(items, &auth.SettingsResponse_OidcSetting{
+		items = append(items, &apiauth.SettingsResponse_OidcSetting{
 			Enabled:            true,
 			Name:               name,
 			Url:                setting.Config.AuthCodeURL(state),
@@ -100,107 +104,31 @@ func (a *authSvc) Settings(ctx context.Context, request *auth.SettingsRequest) (
 		return items[i].Name < items[j].Name
 	})
 
-	return &auth.SettingsResponse{Items: items}, nil
+	return &apiauth.SettingsResponse{Items: items}, nil
 }
 
-func (a *authSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (*auth.ExchangeResponse, error) {
-	var (
-		logger     = a.logger
-		oidcClaims auth2.OidcClaims
-		parsed     bool
-	)
-
-	settings, _ := a.authRepo.Settings(ctx)
-	for _, item := range settings {
-		var (
-			token   string
-			err     error
-			idtoken idToken
-		)
-		p := NewDefaultAuthProvider(item.Config, item.Provider)
-		token, err = p.Exchange(context.TODO(), request.Code)
-		if err != nil {
-			logger.Error(err)
-			continue
-		}
-		if idtoken, err = p.Verify(context.TODO(), token); err != nil {
-			logger.Error(err)
-			continue
-		}
-		if err = idtoken.Claims(&oidcClaims); err != nil {
-			logger.Error(err)
-			continue
-		}
-		parsed = true
-		oidcClaims.LogoutUrl = item.EndSessionEndpoint
-	}
-
-	if !parsed {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid code: "+request.Code)
-	}
-
-	userinfo := oidcClaims.ToUserInfo()
-
-	data, err := a.authRepo.Sign(ctx, userinfo)
+// Exchange 用 OIDC 授权码换发登录凭证：换发编排（遍历 provider/验签/claims 解码）
+// 已下沉 biz.AuthBiz.Exchange，这里只做 transport 份内事——签名、审计与响应映射。
+func (a *authSvc) Exchange(ctx context.Context, request *apiauth.ExchangeRequest) (*apiauth.ExchangeResponse, error) {
+	userinfo, err := a.authBiz.Exchange(ctx, request.Code)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, logError(ctx, a.logger, err)
 	}
-	a.eventRepo.AuditLogWithRequest(
+
+	data, err := a.authBiz.Sign(ctx, userinfo)
+	if err != nil {
+		// 与其他 service 一致：直接返回原始错误，不额外包装 codes.Internal（避免丢失原始错误码）。
+		return nil, logError(ctx, a.logger, err)
+	}
+	a.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Login,
 		userinfo.Name,
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", userinfo.Name, userinfo.Email),
 		request,
 	)
 
-	return &auth.ExchangeResponse{
+	return &apiauth.ExchangeResponse{
 		Token:     data.Token,
 		ExpiresIn: data.ExpiredIn,
 	}, nil
-}
-
-type idToken interface {
-	Claims(any) error
-}
-
-type OidcAuthProvider interface {
-	Exchange(ctx context.Context, code string) (string, error)
-	Verify(ctx context.Context, token string) (idToken, error)
-}
-
-var _ OidcAuthProvider = (*defaultAuthProvider)(nil)
-
-type defaultAuthProvider struct {
-	cfg      oauth2.Config
-	provider *oidc.Provider
-}
-
-func NewDefaultAuthProvider(cfg oauth2.Config, provider *oidc.Provider) OidcAuthProvider {
-	return &defaultAuthProvider{cfg: cfg, provider: provider}
-}
-
-func (d *defaultAuthProvider) Exchange(ctx context.Context, code string) (string, error) {
-	token, err := d.cfg.Exchange(ctx, code)
-	if err != nil {
-		return "", err
-	}
-	rawIDToken, ok := token.Extra("id_token").(string)
-	if !ok {
-		return "", status.Errorf(codes.InvalidArgument, "bad code: "+code)
-	}
-	return rawIDToken, nil
-}
-
-func (d *defaultAuthProvider) Verify(ctx context.Context, token string) (idToken, error) {
-	return d.provider.Verifier(&oidc.Config{ClientID: d.cfg.ClientID}).Verify(ctx, token)
-}
-
-var ErrorPermissionDenied = repo.ToError(403, "没有权限执行该操作")
-
-var MustGetUser = auth2.MustGetUser
-
-type guest struct{}
-
-func (c guest) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
-	//mlog.Debug("client is calling method:", fullMethodName)
-	return ctx, nil
 }

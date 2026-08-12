@@ -4,20 +4,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/api/v5/mars"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
-	"github.com/duc-cnzj/mars/v5/internal/transformer"
+	"github.com/duc-cnzj/mars/api/v6/proto/mars"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/transformer"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFromRepo_NilInput(t *testing.T) {
-	var r *repo.Repo
+	var r *biz.Repo
 	result := transformer.FromRepo(r)
 	assert.Nil(t, result)
 }
 
 func TestFromRepo_ValidInput(t *testing.T) {
-	r := &repo.Repo{
+	r := &biz.Repo{
 		ID:             1,
 		Name:           "testRepo",
 		GitProjectID:   int32(1),
@@ -46,7 +46,7 @@ func TestFromRepo_ValidInput(t *testing.T) {
 
 func TestFromRepo_DeletedRepo(t *testing.T) {
 	now := time.Now()
-	r := &repo.Repo{
+	r := &biz.Repo{
 		ID:             1,
 		Name:           "testRepo",
 		GitProjectID:   int32(1),
@@ -62,4 +62,18 @@ func TestFromRepo_DeletedRepo(t *testing.T) {
 	result := transformer.FromRepo(r)
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.DeletedAt)
+}
+
+func TestFromRepo_ZeroValues(t *testing.T) {
+	r := &biz.Repo{
+		ID:        1,
+		Name:      "zeroRepo",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	result := transformer.FromRepo(r)
+	assert.NotNil(t, result)
+	assert.False(t, result.Enabled)
+	assert.False(t, result.NeedGitRepo)
+	assert.Equal(t, &mars.Config{}, result.MarsConfig)
 }

@@ -5,32 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/v5/internal/auth"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 )
-
-func TestGetUser(t *testing.T) {
-	_, err := auth.GetUser(context.TODO())
-	assert.Error(t, err)
-
-	ctx := auth.SetUser(context.TODO(), &auth.UserInfo{
-		Name: "duc",
-	})
-	user, err := auth.GetUser(ctx)
-	assert.Nil(t, err)
-	assert.Equal(t, "duc", user.Name)
-}
-
-func TestMustGetUser(t *testing.T) {
-	user := auth.MustGetUser(context.TODO())
-	assert.Nil(t, user)
-	ctx := auth.SetUser(context.TODO(), &auth.UserInfo{
-		Name: "duc",
-	})
-	user = auth.MustGetUser(ctx)
-	assert.Equal(t, "duc", user.Name)
-}
 
 func TestAuthStreamServerInterceptor(t *testing.T) {
 	err := AuthStreamServerInterceptor()(&authServer{
@@ -91,4 +68,15 @@ func TestAuthUnaryServerInterceptor(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, 1, called)
 	assert.Equal(t, 1, as.called)
+
+	// 服务未实现 Authorize（nil）：跳过授权，直接透传 handler。
+	called = 0
+	_, err = AuthUnaryServerInterceptor()(context.TODO(), nil, &grpc.UnaryServerInfo{
+		Server: nil,
+	}, func(ctx context.Context, req any) (any, error) {
+		called++
+		return nil, nil
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, called)
 }

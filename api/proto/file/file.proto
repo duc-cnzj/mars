@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package file;
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "validate/validate.proto";
+import "proto/types/types.proto";
+import "openapi/v3/annotations.proto";
+
+option go_package = "github.com/duc-cnzj/mars/api/v6/proto/file;file";
+
+message DeleteRequest {
+  int32 id = 1 [(validate.rules).int32.gte = 1, (google.api.field_behavior) = REQUIRED];
+}
+
+message DeleteResponse {}
+
+message DiskInfoRequest {}
+
+message DiskInfoResponse {
+  int64  usage          = 1;
+  string humanize_usage = 2;
+}
+
+message ListRequest {
+  optional int32 page            = 1;
+  optional int32 page_size       = 2;
+}
+
+message ListResponse{
+  int32                    page      = 1;
+  int32                    page_size = 2;
+  repeated types.FileModel items     = 3;
+  int32                    count     = 4;
+}
+
+message MaxUploadSizeRequest{}
+
+message MaxUploadSizeResponse{
+  string humanize_size = 1;
+  uint32 bytes         = 2;
+}
+
+message ShowRecordsRequest {
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
+
+message ShowRecordsResponse {
+  repeated string items = 1;
+}
+
+service File {
+  rpc List(ListRequest) returns (ListResponse) {
+    option (google.api.http)                                               = {
+      get: "/api/files",
+    };
+
+    option (openapi.v3.operation) = {
+      summary: "文件列表",
+    };
+  }
+
+  rpc ShowRecords(ShowRecordsRequest) returns (ShowRecordsResponse) {
+    option (google.api.http)                                               = {
+      get: "/api/record_files/{id}",
+    };
+    option (openapi.v3.operation) = {
+      summary: "文件详情",
+    };
+  }
+
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
+    option (google.api.http)                                               = {
+      delete: "/api/files/{id}",
+    };
+    option (openapi.v3.operation) = {
+      summary: "删除文件",
+    };
+  }
+
+  rpc DiskInfo(DiskInfoRequest) returns (DiskInfoResponse) {
+    option (google.api.http)                                               = {
+      get: "/api/files/disk_info",
+    };
+    option (openapi.v3.operation) = {
+      summary: "查看文件目录大小",
+    };
+  }
+
+  rpc MaxUploadSize(MaxUploadSizeRequest) returns (MaxUploadSizeResponse) {
+    option (google.api.http)                                               = {
+      get: "/api/files/max_upload_size",
+    };
+
+    option (openapi.v3.operation) = {
+      security: {},
+      summary: "获取最大上传大小"
+    };
+  }
+}

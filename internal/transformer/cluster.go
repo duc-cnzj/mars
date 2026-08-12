@@ -1,11 +1,12 @@
 package transformer
 
 import (
-	"github.com/duc-cnzj/mars/api/v5/websocket"
-	"github.com/duc-cnzj/mars/v5/internal/repo"
+	"github.com/duc-cnzj/mars/api/v6/proto/websocket"
+	"github.com/duc-cnzj/mars/v6/internal/biz"
 )
 
-func FromClusterInfo(info *repo.ClusterInfo) *websocket.ClusterInfo {
+// FromClusterInfo 把 biz.ClusterInfo 转换为 websocket ClusterInfo。
+func FromClusterInfo(info *biz.ClusterInfo) *websocket.ClusterInfo {
 	if info == nil {
 		return nil
 	}
