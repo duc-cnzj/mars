@@ -1,0 +1,67 @@
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - mars
+  nsqlookupd:
+    image: nsqio/nsq
+    command: /nsqlookupd
+    ports:
+      - "4160:4160"
+      - "4161:4161"
+    networks:
+      - mars
+  nsqd:
+    image: nsqio/nsq
+    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4150:4150"
+      - "4151:4151"
+    networks:
+      - mars
+  nsqadmin:
+    image: nsqio/nsq
+    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4171:4171"
+    networks:
+      - mars
+  db:
+    image: mysql:8.0
+    environment:
+      # 与 config_example.yaml 默认值对齐：root / 空密码
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: mars
+    ports:
+      - "13306:3306"
+    networks:
+      - mars
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      # 与 config_example.yaml s3_ 配置对齐：minioadmin / minioadmin
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - mars
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "4317:4317"  # OTLP gRPC，对应 config_example.yaml tracing_endpoint
+      - "16686:16686" # Jaeger UI
+    networks:
+      - mars
+
+networks:
+  mars:
+    driver: bridge
