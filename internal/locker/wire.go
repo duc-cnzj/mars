@@ -4,4 +4,5 @@ package locker
 
 import "github.com/google/wire"
 
+// WireLocker 提供 locker.Locker 的装配集。
 var WireLocker = wire.NewSet(NewLocker)

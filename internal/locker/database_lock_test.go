@@ -26,11 +26,11 @@ var prepared bool
 
 func TestMain(t *testing.M) {
 	var (
-		user   string = os.Getenv("DB_USERNAME")
-		port   string = os.Getenv("DB_PORT")
-		dbname string = os.Getenv("DB_DATABASE")
-		dbhost string = os.Getenv("DB_HOST")
-		dbpwd  string = os.Getenv("DB_PASSWORD")
+		user   = os.Getenv("DB_USERNAME")
+		port   = os.Getenv("DB_PORT")
+		dbname = os.Getenv("DB_DATABASE")
+		dbhost = os.Getenv("DB_HOST")
+		dbpwd  = os.Getenv("DB_PASSWORD")
 	)
 	setDefault := func(key *string, value string) {
 		if *key == "" {
@@ -44,10 +44,10 @@ func TestMain(t *testing.M) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%v)/%s?charset=utf8mb4&parseTime=True&loc=Local", user, dbpwd, dbhost, port, dbname)
 	var err error
 	open, _ := sql.Open("mysql", dsn)
-	entClient, err = dbpkg.InitDB(open, mlog.NewForConfig(nil), false, 0, timer.NewReal())
-	// InitDB 恒返回 nil error，这里显式 Ping 确认连接可用：
+	entClient = dbpkg.InitDB(open, mlog.NewForConfig(nil), false, 0, timer.NewReal())
+	// InitDB 已无错误返回，这里显式 Ping 确认连接可用：
 	// 连不上真实 MySQL 时跳过 DB 集成测试，避免 Schema.Create 直接 Fatal 崩溃。
-	if err == nil && open.DB().Ping() == nil {
+	if open.DB().Ping() == nil {
 		prepared = true
 		err = entClient.Schema.Create(
 			context.TODO(),

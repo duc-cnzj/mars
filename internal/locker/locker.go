@@ -11,8 +11,8 @@ import (
 var defaultLottery = [2]int{2, 100}
 
 // Driver 是锁后端驱动类型，与 CacheDriver 枚举值保持一致。
-// 定义为命名类型而非裸 string，是为了让 wire 注入时能与 provideAdminPassword
-// 之类的 string provider 区分开，避免出现多个 string provider 的注入歧义。
+// 定义为命名类型而非裸 string，是为了让 wire 注入时能按类型唯一匹配，
+// 避免与其它 string 类型的 provider 产生注入歧义。
 type Driver string
 
 const (
