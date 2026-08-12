@@ -114,10 +114,12 @@ func (z *logrusLogger) Debugf(format string, v ...any) {
 	z.l.WithFields(z.fields()).Debugf(format, v...)
 }
 
+// DebugCtx 打印 Debug 级别日志。
 func (z *logrusLogger) DebugCtx(_ context.Context, v ...any) {
 	z.l.WithFields(z.fields()).Debug(v...)
 }
 
+// DebugCtxf 格式化打印 Debug 级别日志。
 func (z *logrusLogger) DebugCtxf(_ context.Context, format string, v ...any) {
 	z.l.WithFields(z.fields()).Debugf(format, v...)
 }
@@ -132,10 +134,12 @@ func (z *logrusLogger) Warningf(format string, v ...any) {
 	z.l.WithFields(z.fields()).Warnf(format, v...)
 }
 
+// WarningCtx 打印 Warning 级别日志。
 func (z *logrusLogger) WarningCtx(_ context.Context, v ...any) {
 	z.l.WithFields(z.fields()).Warn(v...)
 }
 
+// WarningCtxf 格式化打印 Warning 级别日志。
 func (z *logrusLogger) WarningCtxf(_ context.Context, format string, v ...any) {
 	z.l.WithFields(z.fields()).Warnf(format, v...)
 }
@@ -150,10 +154,12 @@ func (z *logrusLogger) Infof(format string, v ...any) {
 	z.l.WithFields(z.fields()).Infof(format, v...)
 }
 
+// InfoCtx 打印 Info 级别日志。
 func (z *logrusLogger) InfoCtx(_ context.Context, v ...any) {
 	z.l.WithFields(z.fields()).Info(v...)
 }
 
+// InfoCtxf 格式化打印 Info 级别日志。
 func (z *logrusLogger) InfoCtxf(_ context.Context, format string, v ...any) {
 	z.l.WithFields(z.fields()).Infof(format, v...)
 
@@ -169,10 +175,12 @@ func (z *logrusLogger) Errorf(format string, v ...any) {
 	z.l.WithFields(z.fields()).Errorf(format, v...)
 }
 
+// ErrorCtx 打印 Error 级别日志。
 func (z *logrusLogger) ErrorCtx(_ context.Context, v ...any) {
 	z.l.WithFields(z.fields()).Error(v...)
 }
 
+// ErrorCtxf 格式化打印 Error 级别日志。
 func (z *logrusLogger) ErrorCtxf(_ context.Context, format string, v ...any) {
 	z.l.WithFields(z.fields()).Errorf(format, v...)
 }
@@ -187,10 +195,12 @@ func (z *logrusLogger) Fatalf(format string, v ...any) {
 	z.l.WithFields(z.fields()).Fatalf(format, v...)
 }
 
+// FatalCtx 打印 Fatal 级别日志并退出进程。
 func (z *logrusLogger) FatalCtx(_ context.Context, v ...any) {
 	z.l.WithFields(z.fields()).Fatal(v...)
 }
 
+// FatalCtxf 格式化打印 Fatal 级别日志并退出进程。
 func (z *logrusLogger) FatalCtxf(_ context.Context, format string, v ...any) {
 	z.l.WithFields(z.fields()).Fatalf(format, v...)
 }

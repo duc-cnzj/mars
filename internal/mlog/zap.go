@@ -75,6 +75,7 @@ func (z *zapLogger) Debug(v ...any) {
 	z.sugar.Debug(v...)
 }
 
+// DebugCtx 打印 Debug 级别日志。
 func (z *zapLogger) DebugCtx(_ context.Context, v ...any) {
 	z.sugar.Debug(v...)
 }
@@ -84,6 +85,7 @@ func (z *zapLogger) Debugf(format string, v ...any) {
 	z.sugar.Debugf(format, v...)
 }
 
+// DebugCtxf 格式化打印 Debug 级别日志。
 func (z *zapLogger) DebugCtxf(_ context.Context, format string, v ...any) {
 	z.sugar.Debugf(format, v...)
 }
@@ -93,6 +95,7 @@ func (z *zapLogger) Warning(v ...any) {
 	z.sugar.Warn(v...)
 }
 
+// WarningCtx 打印 Warning 级别日志。
 func (z *zapLogger) WarningCtx(_ context.Context, v ...any) {
 	z.sugar.Warn(v...)
 }
@@ -102,6 +105,7 @@ func (z *zapLogger) Warningf(format string, v ...any) {
 	z.sugar.Warnf(format, v...)
 }
 
+// WarningCtxf 格式化打印 Warning 级别日志。
 func (z *zapLogger) WarningCtxf(_ context.Context, format string, v ...any) {
 	z.sugar.Warnf(format, v...)
 }
@@ -111,6 +115,7 @@ func (z *zapLogger) Info(v ...any) {
 	z.sugar.Info(v...)
 }
 
+// InfoCtx 打印 Info 级别日志。
 func (z *zapLogger) InfoCtx(_ context.Context, v ...any) {
 	z.sugar.Info(v...)
 }
@@ -120,6 +125,7 @@ func (z *zapLogger) Infof(format string, v ...any) {
 	z.sugar.Infof(format, v...)
 }
 
+// InfoCtxf 格式化打印 Info 级别日志。
 func (z *zapLogger) InfoCtxf(_ context.Context, format string, v ...any) {
 	z.sugar.Infof(format, v...)
 }
@@ -129,6 +135,7 @@ func (z *zapLogger) Error(v ...any) {
 	z.sugar.Error(v...)
 }
 
+// ErrorCtx 打印 Error 级别日志。
 func (z *zapLogger) ErrorCtx(_ context.Context, v ...any) {
 	z.sugar.Error(v...)
 }
@@ -138,6 +145,7 @@ func (z *zapLogger) Errorf(format string, v ...any) {
 	z.sugar.Errorf(format, v...)
 }
 
+// ErrorCtxf 格式化打印 Error 级别日志。
 func (z *zapLogger) ErrorCtxf(_ context.Context, format string, v ...any) {
 	z.sugar.Errorf(format, v...)
 }
@@ -152,10 +160,12 @@ func (z *zapLogger) Fatalf(format string, v ...any) {
 	z.sugar.Fatalf(format, v...)
 }
 
+// FatalCtx 打印 Fatal 级别日志并退出进程。
 func (z *zapLogger) FatalCtx(_ context.Context, v ...any) {
 	z.sugar.Fatal(v...)
 }
 
+// FatalCtxf 格式化打印 Fatal 级别日志并退出进程。
 func (z *zapLogger) FatalCtxf(_ context.Context, format string, v ...any) {
 	z.sugar.Fatalf(format, v...)
 }

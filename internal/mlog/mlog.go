@@ -279,14 +279,15 @@ func (e *logWrapper) withFields(ctx context.Context) Logger {
 
 // 以下 20 个 level 方法均为透传：先按 ctx 求值 kvs 附加字段（非 Ctx 变体用
 // context.Background()，Ctx 变体用调用时 ctx），再转发内层 Logger；Error/Fatal
-// 系列额外把参数中的 error 展开为完整栈。注释风格与 zap/logrus 后端对齐
-// （核心方法注释，Ctx 变体不注释）。
+// 系列额外把参数中的 error 展开为完整栈。注释风格与 zap/logrus 后端对齐，
+// 全部 level 方法（含 Ctx 变体）均带中文注释。
 
 // Debug 透传内层 logger。
 func (e *logWrapper) Debug(v ...any) {
 	e.withFields(context.Background()).Debug(v...)
 }
 
+// DebugCtx 透传内层 logger（按 ctx 求值附加字段）。
 func (e *logWrapper) DebugCtx(ctx context.Context, v ...any) {
 	e.withFields(ctx).DebugCtx(ctx, v...)
 }
@@ -296,6 +297,7 @@ func (e *logWrapper) Debugf(format string, v ...any) {
 	e.withFields(context.Background()).Debugf(format, v...)
 }
 
+// DebugCtxf 透传内层 logger（按 ctx 求值附加字段）。
 func (e *logWrapper) DebugCtxf(ctx context.Context, format string, v ...any) {
 	e.withFields(ctx).DebugCtxf(ctx, format, v...)
 }
@@ -305,6 +307,7 @@ func (e *logWrapper) Warning(v ...any) {
 	e.withFields(context.Background()).Warning(v...)
 }
 
+// WarningCtx 透传内层 logger（按 ctx 求值附加字段）。
 func (e *logWrapper) WarningCtx(ctx context.Context, v ...any) {
 	e.withFields(ctx).WarningCtx(ctx, v...)
 }
@@ -314,6 +317,7 @@ func (e *logWrapper) Warningf(format string, v ...any) {
 	e.withFields(context.Background()).Warningf(format, v...)
 }
 
+// WarningCtxf 透传内层 logger（按 ctx 求值附加字段）。
 func (e *logWrapper) WarningCtxf(ctx context.Context, format string, v ...any) {
 	e.withFields(ctx).WarningCtxf(ctx, format, v...)
 }
@@ -323,6 +327,7 @@ func (e *logWrapper) Info(v ...any) {
 	e.withFields(context.Background()).Info(v...)
 }
 
+// InfoCtx 透传内层 logger（按 ctx 求值附加字段）。
 func (e *logWrapper) InfoCtx(ctx context.Context, v ...any) {
 	e.withFields(ctx).InfoCtx(ctx, v...)
 }
@@ -332,6 +337,7 @@ func (e *logWrapper) Infof(format string, v ...any) {
 	e.withFields(context.Background()).Infof(format, v...)
 }
 
+// InfoCtxf 透传内层 logger（按 ctx 求值附加字段）。
 func (e *logWrapper) InfoCtxf(ctx context.Context, format string, v ...any) {
 	e.withFields(ctx).InfoCtxf(ctx, format, v...)
 }
@@ -341,6 +347,7 @@ func (e *logWrapper) Error(v ...any) {
 	e.withFields(context.Background()).Error(wrapErrors(v)...)
 }
 
+// ErrorCtx 透传内层 logger，并把参数中的 error 展开为完整栈。
 func (e *logWrapper) ErrorCtx(ctx context.Context, v ...any) {
 	e.withFields(ctx).ErrorCtx(ctx, wrapErrors(v)...)
 }
@@ -350,6 +357,7 @@ func (e *logWrapper) Errorf(format string, v ...any) {
 	e.withFields(context.Background()).Errorf(format, wrapErrors(v)...)
 }
 
+// ErrorCtxf 透传内层 logger，并把参数中的 error 展开为完整栈。
 func (e *logWrapper) ErrorCtxf(ctx context.Context, format string, v ...any) {
 	e.withFields(ctx).ErrorCtxf(ctx, format, wrapErrors(v)...)
 }
@@ -359,6 +367,7 @@ func (e *logWrapper) Fatal(v ...any) {
 	e.withFields(context.Background()).Fatal(wrapErrors(v)...)
 }
 
+// FatalCtx 透传内层 logger，并把参数中的 error 展开为完整栈。
 func (e *logWrapper) FatalCtx(ctx context.Context, v ...any) {
 	e.withFields(ctx).FatalCtx(ctx, wrapErrors(v)...)
 }
@@ -368,6 +377,7 @@ func (e *logWrapper) Fatalf(format string, v ...any) {
 	e.withFields(context.Background()).Fatalf(format, wrapErrors(v)...)
 }
 
+// FatalCtxf 透传内层 logger，并把参数中的 error 展开为完整栈。
 func (e *logWrapper) FatalCtxf(ctx context.Context, format string, v ...any) {
 	e.withFields(ctx).FatalCtxf(ctx, format, wrapErrors(v)...)
 }
