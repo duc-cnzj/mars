@@ -1,5 +1,6 @@
-app_port: 6000
+app_port: 4000
 #grpc_port: 50000
+#metrics_port: 9090
 debug: false
 
 # use app show tags
@@ -74,8 +75,8 @@ kubeconfig: ""
 # 文件上传到 s3
 s3_enabled: false
 s3_endpoint: ""
-s3_access_key_id: ""
-s3_secret_access_key: ""
+s3_access_key_id: minioadmin
+s3_secret_access_key: minioadmin
 s3_use_ssl: false
 s3_bucket: mars
 
@@ -85,17 +86,22 @@ db_driver: "sqlite"
 db_database: /tmp/mars-sqlite.db
 # 如果是 'mysql' 以下均为必填项，如果是 'sqlite' 就不用填
 db_host: 127.0.0.1
-db_port: 3306
+db_port: 13306
 db_username: root
 db_password: ""
 db_slow_log_enabled: true
 # "ns", "us" (or "µs"), "ms", "s", "m", "h"
 db_slow_log_threshold: 200ms
+# 开启 ent 的 Debug 模式（打印 SQL），默认 false
+#db_debug: true
 
 tracing_endpoint: ""
 
 # 集群外网访问 ip
 external_ip: "127.0.0.1"
+
+# mars 管理的命名空间统一加此前缀，默认 "devops-"
+ns_prefix: "devops-"
 
 install_timeout: 90s
 

@@ -1,1 +1,9 @@
 frontend/node_modules
+.idea/
+.vscode/
+.DS_Store
+coverage.txt
+gosec-results.json
+config.yaml
+dev/
+/bin/

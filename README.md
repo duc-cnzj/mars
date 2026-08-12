@@ -1,6 +1,12 @@
+<div align="center">
+
+English | [简体中文](README_zh-CN.md)
+
+</div>
+
 <h1 align="center">Mars</h1>
 <div align="center"><img style="width: 100px;height: 100px" src="./frontend/public/logo192.png" /></div>
-<p align="center">专为devops而生，30秒内部署一个应用。</p>
+<p align="center">Built for DevOps. Deploy an application in 30 seconds.</p>
 <br><br>
 
 <div align="center">
@@ -9,58 +15,151 @@
 [![unittest](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml/badge.svg)](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml)
 [![Release](https://img.shields.io/github/release/duc-cnzj/mars.svg)](https://github.com/duc-cnzj/mars/releases/latest)
 [![GitHub license](https://img.shields.io/github/license/duc-cnzj/mars)](https://github.com/duc-cnzj/mars/blob/master/LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/duc-cnzj/mars/v5)](https://goreportcard.com/report/github.com/duc-cnzj/mars/v5)
-[![Documentation](https://godoc.org/github.com/duc-cnzj/mars/api/v5?status.svg)](https://pkg.go.dev/github.com/duc-cnzj/mars/api/v5)
+[![Go Report Card](https://goreportcard.com/badge/github.com/duc-cnzj/mars/v6)](https://goreportcard.com/report/github.com/duc-cnzj/mars/v6)
+[![Documentation](https://pkg.go.dev/badge/github.com/duc-cnzj/mars/api/v6/grpc.svg)](https://pkg.go.dev/github.com/duc-cnzj/mars/api/v6/grpc)
 
 </div>
 
-[查看文档](https://duc-cnzj.github.io/mars/)
+[Documentation](https://duc-cnzj.github.io/mars/)
 
-## 💡 简介
+## 💡 Introduction
 
-[Mars](https://github.com/duc-cnzj/mars) 是一款专门为 devops 服务的一款应用，基于 kubernetes 之上，可以在短短几秒内部署一个和生产环境一模一样的应用。它打通了 git、kubernetes、helm，通过 git ci 构建镜像，然后通过 kubernetes 部署高可用应用，一气呵成。
+[Mars](https://github.com/duc-cnzj/mars) is an application built for DevOps, running on top of Kubernetes. It deploys an application identical to your production environment within seconds. Mars connects git, Kubernetes, and Helm: images are built through Git CI, then deployed as highly-available applications on Kubernetes — all in one seamless flow.
 
-## 🗺️ 背景
+## 🗺️ Background
 
-随着 devops 概念的兴起，现在软件开发不仅要求开发效率高，而且还要求部署便捷，最好能做到流水线开发打包测试上线一条龙服务。
-[Mars](https://github.com/duc-cnzj/mars) 由此而生，它打通了打包、测试、部署，基于 git ci/cd 做到任何人不管是开发大牛，还是不懂代码的产品小白，都能在 30 秒部署一个生产级别的应用。真真做到一教即会，高效生产。
+As DevOps takes hold, software development now demands not only efficiency but also effortless deployment — ideally a one-stop pipeline from coding, building, testing, to shipping.
+[Mars](https://github.com/duc-cnzj/mars) was born for this. It ties together building, testing, and deployment with Git CI/CD, so that anyone — from senior developers to product people who don't write code — can deploy a production-grade application in 30 seconds. Teach once, ship anywhere.
 
-## ✨ 特性
+## ✨ Features
 
-- 支持基于 helm charts 开发的任何应用。
-- 支持自动配置 https 域名。
-- 支持高可用，弹性部署。
-- 支持命令行操作。
-- 支持查看容器日志。
-- 支持查看容器 cpu 和内存使用情况。
-- 插件化
-  - 队列驱动: ws_sender_nsq, ws_sender_redis, ws_sender_memory
-  - 证书驱动: manual_domain_manager, cert-manager_domain_manager, sync_secret_domain_manager
-  - 代码仓库支持: gitlab ~~github~~
-  - 背景图: picture_cartoon，picture_bing
-- sdk 接入:
-  - [grpc-go-sdk](https://github.com/duc-cnzj/mars/tree/master/api)
+- Deploy any application based on Helm charts.
+- Automatic HTTPS domain configuration.
+- High availability with elastic scaling.
+- Full CLI support.
+- View container logs.
+- View container CPU and memory usage.
+- Pluggable
+  - Message queue drivers: ws_sender_nsq, ws_sender_redis, ws_sender_memory
+  - Certificate drivers: manual_domain_manager, cert-manager_domain_manager, sync_secret_domain_manager, default_domain_manager
+  - Git server: gitlab ~~github~~
+  - Background images: picture_cartoon, picture_bing
+- SDK: [api/](api/)
 
-## 🍀 go-sdk 接入
+## 🚀 Quickstart
 
+> Default configuration (SQLite storage + in-memory message queue) has **zero external dependencies** — start it up first, then connect a real cluster.
+
+```bash
+# 1. Build
+make build                 # produces ./bin/app
+
+# 2. Generate the default config.yaml (skipped if it already exists)
+./bin/app init
+
+# 3. Start the server
+./bin/app serve -c config.yaml
+
+# 4. Open the web UI
+#    http://127.0.0.1:4000   default account admin / 123456
 ```
-go get -u github.com/duc-cnzj/mars/api/v5
+
+No Go toolchain? Run straight from source: `go run main.go serve -c config.yaml`.
+
+To actually deploy applications into a Kubernetes cluster, configure two things in `config.yaml`:
+
+- `git_server_plugin`: fill in your GitLab `token` and `baseurl`;
+- `kubeconfig`: point to your kubeconfig file when running mars outside the cluster.
+
+When you need NSQ/Redis for message queues, or MySQL for storage, [dev/docker-compose.yml](dev/docker-compose.yml) provides these dependencies (infrastructure only, not mars itself):
+
+```bash
+docker compose up -d
 ```
 
-```golang
-package main
+## ⚙️ Configuration
 
-import (
-  api "github.com/duc-cnzj/mars/api/v5"
-)
+Mars reads YAML configuration via `-c, --config`; it defaults to `config.yaml` in the current directory (generated by `./bin/app init`; see the full example in [config_example.yaml](config_example.yaml)).
 
-func main()  {
-  c, _ := api.NewClient("127.0.0.1:50000",
-    api.WithAuth("admin", "123456"),
-    api.WithTokenAutoRefresh(),
-  )
-  defer c.Close()
+| Key                         | Default                          | Description                                                    |
+| --------------------------- | -------------------------------- | -------------------------------------------------------------- |
+| `app_port`                  | `4000`                           | HTTP/JSON (gateway) port; `--app_port` flag defaults to `6000` |
+| `grpc_port`                 | `50000`                          | gRPC port                                                      |
+| `db_driver` / `db_database` | `sqlite` / `/tmp/mars-sqlite.db` | Storage driver: `sqlite` / `mysql`                             |
+| `git_server_plugin`         | gitlab                           | Git server, requires `token` + `baseurl`                       |
+| `ws_sender_plugin`          | `ws_sender_memory`               | Real-time messaging: memory / nsq / redis                      |
+| `domain_manager_plugin`     | `default_domain_manager`         | HTTPS domains: manual / sync_secret / cert-manager             |
+| `picture_plugin`            | `picture_bing`                   | Background images: bing / cartoon                              |
+| `cache_driver`              | `memory`                         | Cache: `memory` / `db`                                         |
+| `admin_password`            | `123456`                         | Admin password                                                 |
+| `kubeconfig`                | empty                            | Required when running outside the cluster                      |
 
-  // ...
-}
+## 🖥️ CLI
+
+The binary's root command is `app`:
+
+| Command       | Description                                                                         |
+| ------------- | ----------------------------------------------------------------------------------- |
+| `app serve`   | Start services (api / metrics / cron / profile)                                     |
+| `app inspect` | Inspect runtime info: `all` / `tags` / `cronjobs` / `events` / `plugins` / `config` |
+| `app init`    | Generate a default `config.yaml`                                                    |
+
+Common `app serve` flags:
+
+```bash
+app serve -c config.yaml \
+  --app_port 4000 \
+  --grpc_port 50000 \
+  --metrics_port 9091 \
+  --kubeconfig ~/.kube/config \
+  --exclude_server metrics,cron,profile
 ```
+
+## 🔨 Development
+
+```bash
+make build      # build ./bin/app
+make serve      # go run main.go serve
+make test       # full unit tests (-race -cover)
+make cover-web  # coverage report
+make api        # regenerate proto via protoc
+make gen        # go generate ./...
+make fmt        # gofmt
+make lint       # golangci-lint
+make sec        # gosec security scan
+```
+
+## 🏗️ Architecture
+
+```text
+  Developer ──git push──▶ GitLab ──CI build──▶ Image registry
+                                                  │ pulled at deploy time
+                                                  ▼
+  Web / CLI / SDK ──▶ mars ──Helm render─────▶ Kubernetes cluster
+                        │                      (HA apps + HTTPS domains)
+                        ├─ Plugins: gitlab · domain_manager · ws_sender · picture
+                        └─ Storage: SQLite | MySQL (ent) · optional S3
+```
+
+## 🧰 Tech Stack
+
+- **Language/Runtime**: Go
+- **API**: gRPC + grpc-gateway (HTTP/JSON)
+- **Orchestration**: Kubernetes · Helm v3
+- **Data**: ent (ORM) · SQLite / MySQL
+- **CLI/Config**: cobra · viper
+- **Optional dependencies**: NSQ / Redis (messaging) · MinIO / S3 (file storage)
+
+## 🤝 Contributing
+
+Pull requests are welcome. Before submitting, please make sure:
+
+- New code ships with unit tests (project standard: 100% coverage of handwritten production code, zero dead code);
+- `make test` + `make lint` + `make sec` all pass;
+- If proto changed, run `make api` to regenerate and commit the output.
+
+Docs and examples live in [doc/](doc/) (OpenAPI) and [examples/](examples/).
+
+## 📄 License
+
+[AGPL-3.0](LICENSE)
