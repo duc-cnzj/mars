@@ -6,7 +6,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/util/date"
 )
 
-// FromRepo transform biz.Repo to proto RepoModel.
+// FromRepo 把 biz.Repo 转换为 proto RepoModel。
 func FromRepo(repo *biz.Repo) *types.RepoModel {
 	if repo == nil {
 		return nil

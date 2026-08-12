@@ -7,7 +7,7 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-// FromFile transform biz.File to proto FileModel.
+// FromFile 把 biz.File 转换为 proto FileModel。
 func FromFile(f *biz.File) *types.FileModel {
 	if f == nil {
 		return nil

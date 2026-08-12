@@ -8,7 +8,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/util/date"
 )
 
-// FromChangelog transform biz.Changelog to proto ChangelogModel.
+// FromChangelog 把 biz.Changelog 转换为 proto ChangelogModel。
 func FromChangelog(c *biz.Changelog) *types.ChangelogModel {
 	if c == nil {
 		return nil

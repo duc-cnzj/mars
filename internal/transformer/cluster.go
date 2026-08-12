@@ -5,7 +5,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 )
 
-// FromClusterInfo transform biz.ClusterInfo to websocket ClusterInfo.
+// FromClusterInfo 把 biz.ClusterInfo 转换为 websocket ClusterInfo。
 func FromClusterInfo(info *biz.ClusterInfo) *websocket.ClusterInfo {
 	if info == nil {
 		return nil

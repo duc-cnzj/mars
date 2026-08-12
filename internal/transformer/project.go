@@ -6,7 +6,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/util/date"
 )
 
-// FromProject transform biz.Project to proto ProjectModel.
+// FromProject 把 biz.Project 转换为 proto ProjectModel。
 func FromProject(project *biz.Project) *types.ProjectModel {
 	if project == nil {
 		return nil

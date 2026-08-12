@@ -5,7 +5,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 )
 
-// FromMember transform biz.Member to proto MemberModel.
+// FromMember 把 biz.Member 转换为 proto MemberModel。
 func FromMember(member *biz.Member) *types.MemberModel {
 	if member == nil {
 		return nil

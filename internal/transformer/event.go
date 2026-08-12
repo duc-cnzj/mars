@@ -7,7 +7,7 @@ import (
 	"github.com/samber/lo"
 )
 
-// FromEvent transform biz.Event to proto EventModel.
+// FromEvent 把 biz.Event 转换为 proto EventModel。
 func FromEvent(e *biz.Event) *types.EventModel {
 	if e == nil {
 		return nil
