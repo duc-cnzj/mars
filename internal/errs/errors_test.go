@@ -182,7 +182,7 @@ func TestIsNotFound(t *testing.T) {
 	// 裸 ent 错误穿透识别：作为 ent.IsNotFound 的上层等价物
 	assert.True(t, IsNotFound(&ent.NotFoundError{}))
 	// 裸 ent 非 NotFound 错误不误判（errors.As 不匹配 NotFoundError 接口；
-	// 不用零值 ValidationError——其 Error() 会 nil-deref，ent.go:199）
+	// 不用零值 ValidationError——其 Error() 会 nil-deref）
 	assert.False(t, IsNotFound(&ent.ConstraintError{}))
 	// 裸 k8s apierrors.NotFound 仅在 Wrap 映射为协议码后识别（此处为未映射状态）
 	assert.False(t, IsNotFound(apierrors.NewNotFound(schema.GroupResource{Resource: "secrets"}, "my-secret")))
