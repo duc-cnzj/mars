@@ -479,7 +479,8 @@ func setLogLevel(logger mlog.Logger, s any) {
 	}
 }
 
-// NsqLoggerAdapter 把 go-nsq 日志转发到 mlog：TOPIC_NOT_FOUND 降级为 Debug。
+// NsqLoggerAdapter 把 go-nsq 日志转发到 mlog：lookupd 轮询空主题的 TOPIC_NOT_FOUND
+// 404 是高频噪音，被整体丢弃；其余错误转发到 Error。
 type NsqLoggerAdapter struct {
 	logger mlog.Logger
 }
@@ -491,9 +492,7 @@ func NewNsqLoggerAdapter(logger mlog.Logger) *NsqLoggerAdapter {
 
 // Output 实现 nsq.logger 接口，将 go-nsq 日志写入 mlog。
 func (n *NsqLoggerAdapter) Output(calldepth int, s string) error {
-	if strings.Contains(s, "TOPIC_NOT_FOUND") {
-		n.logger.Debug(s)
-	} else {
+	if !strings.Contains(s, "TOPIC_NOT_FOUND") {
 		n.logger.Error(s)
 	}
 	return nil

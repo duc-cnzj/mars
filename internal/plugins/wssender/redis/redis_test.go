@@ -516,6 +516,76 @@ func TestConcurrentAddDeleteSubs(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// 空 id 订阅者（只发不收）：New("", "") 不应注册进 dispatcher，避免其 channel
+// 被 ToAll 广播灌满后成为永久丢消息点（对齐 memory 后端 Add 的空 id 跳过）。
+// ---------------------------------------------------------------------------
+
+func TestNew_emptyID_doesNotRegisterSubscriber(t *testing.T) {
+	s := newTestSender(t)
+	pub := newPubSub(t, s, "", "")
+	defer pub.Close()
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	assert.Empty(t, s.subs, "空 id 订阅者（只发不收）不应注册进 dispatcher subs")
+}
+
+func TestClose_emptyID_noPanic(t *testing.T) {
+	s := newTestSender(t)
+	pub := newPubSub(t, s, "", "")
+	pub.Close()
+	assert.NotPanics(t, func() { pub.Close() }, "空 id 连接重复 Close 应幂等")
+}
+
+func TestToAll_emptyID_doesNotReceive(t *testing.T) {
+	s := newTestSender(t)
+	realPub := newPubSub(t, s, "u", "real-id")
+	emptyPub := newPubSub(t, s, "", "")
+	defer realPub.Close()
+	defer emptyPub.Close()
+
+	realCh := realPub.Subscribe()
+	emptyCh := emptyPub.Subscribe()
+
+	// 空 id pubsub 发布 ToAll：真实订阅者收到，空 id 自身（未注册）不应收到。
+	deliver(t, func() error { return emptyPub.ToAll(wssendertest.TestMsg()) }, realCh, 3*time.Second)
+
+	select {
+	case msg := <-emptyCh:
+		t.Fatalf("空 id 订阅者不应收到广播, got %v", msg)
+	default:
+	}
+}
+
+func TestConcurrentEmptyAndRealSubs(t *testing.T) {
+	// 空 id（只发不收）与真实订阅者混用，-race 下验证共享 PubSub 串行化无竞态。
+	s := newTestSender(t)
+	var wg sync.WaitGroup
+	for i := range 20 {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			id := fmt.Sprintf("rid%d", n)
+			pub := newPubSub(t, s, fmt.Sprintf("u%d", n), id)
+			_ = pub.Subscribe()
+			pub.Close()
+		}(i)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			empty := newPubSub(t, s, "", "")
+			_ = empty.ToAll(wssendertest.TestMsg())
+			empty.Close()
+		}()
+	}
+	wg.Wait()
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	assert.Len(t, s.subs, 0, "全部连接关闭后 subs 应清空")
+}
+
+// ---------------------------------------------------------------------------
 // 7. Goroutine / channel leak detection
 // ---------------------------------------------------------------------------
 

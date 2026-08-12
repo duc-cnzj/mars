@@ -680,7 +680,9 @@ func TestNsqLoggerAdapter_Output(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	logger := mlog.NewMockLogger(ctrl)
-	logger.EXPECT().Debug("TOPIC_NOT_FOUND something").Times(1)
+	// lookupd 轮询空主题的 TOPIC_NOT_FOUND 404 是高频噪音，被整体丢弃（不产生日志）。
+	logger.EXPECT().Debug(gomock.Any()).Times(0)
+	// 其余错误原样转发到 Error。
 	logger.EXPECT().Error("some error").Times(1)
 
 	adapter := NewNsqLoggerAdapter(logger)

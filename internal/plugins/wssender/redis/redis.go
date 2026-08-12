@@ -150,13 +150,17 @@ func (p *redisSender) dispatcher() {
 func (p *redisSender) New(uid, id string) app.PubSub {
 	ch := make(chan []byte, wssender.MessageChSize)
 
-	// 注册到共享 dispatcher。
-	p.mu.Lock()
-	p.subs[id] = &subEntry{ch: ch, uid: uid, id: id}
-	p.mu.Unlock()
-
-	// 共享连接订阅该用户的直连频道（供跨实例 ToSelf 使用）。
-	p.wsPubSub.Subscribe(p.ctx, id)
+	// 空 id 调用方（TickClusterHealth/podPubAdapter/newToAllFunc/WebsocketSync 部署）
+	// 只发不收：仅用 ToAll/Publish 发布能力，不注册订阅者、不订阅直连频道，
+	// 避免"只发不收"的 channel 被广播灌满后持续丢消息（对齐 memory 后端 Add 的空 id 跳过）。
+	// Subscribe 串行化在写锁内：go-redis PubSub 接收并发不安全（官方文档），
+	// 并发 Subscribe/Unsubscribe 会破坏 RESP 协议流导致 payload 花屏。
+	if id != "" {
+		p.mu.Lock()
+		p.subs[id] = &subEntry{ch: ch, uid: uid, id: id}
+		_ = p.wsPubSub.Subscribe(p.ctx, id)
+		p.mu.Unlock()
+	}
 
 	pem := &podEventManagers{
 		ctx:          p.ctx,
@@ -224,12 +228,15 @@ func (p *rdsPubSub) Close() error {
 	p.logger.Debugf("[Websocket]: Closed, uid: %v id: %v", p.uid, p.id)
 
 	p.closeOnce.Do(func() {
-		// 先从共享 dispatcher 移除，保证不再有新消息路由到本连接。
-		p.manager.mu.Lock()
-		delete(p.manager.subs, p.id)
-		p.manager.mu.Unlock()
-
-		p.manager.wsPubSub.Unsubscribe(p.manager.ctx, p.id)
+		// 空 id 连接（只发不收）未注册订阅者，无需退订。
+		if p.id != "" {
+			// 先从共享 dispatcher 移除，保证不再有新消息路由到本连接。
+			// Unsubscribe 与 New 对称串行化在写锁内，避免并发使用共享 PubSub。
+			p.manager.mu.Lock()
+			delete(p.manager.subs, p.id)
+			_ = p.manager.wsPubSub.Unsubscribe(p.manager.ctx, p.id)
+			p.manager.mu.Unlock()
+		}
 
 		// 不要 close(p.ch)：dispatcher 与 podEventManagers.Run 两个 goroutine 都可能
 		// 向 p.ch 发送，send-on-closed-channel 会 panic；消费者（websocket write）已

@@ -7,6 +7,9 @@ services:
       - mars
   nsqlookupd:
     image: nsqio/nsq
+    # 不设 broadcast-address（保持默认容器 hostname）：nsqd 会用它定位 nsqlookupd 的
+    # HTTP API 做频道预创建查询，若配 127.0.0.1 则 nsqd 在容器内访问 127.0.0.1:4161
+    # （指向自身）会 connection refused；消费者不 dial nsqlookupd，其广播地址无影响。
     command: /nsqlookupd
     ports:
       - "4160:4160"
@@ -15,7 +18,9 @@ services:
       - mars
   nsqd:
     image: nsqio/nsq
-    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160
+    # broadcast-address 必须显式配宿主机可达地址，否则 nsqd 向 lookupd 注册容器 hostname，
+    # consumer 经 lookupd 拿到的 nsqd 地址在宿主机无法解析（dial tcp: lookup <hostname>: no such host）
+    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160 --broadcast-address=127.0.0.1
     depends_on:
       - nsqlookupd
     ports:
@@ -25,6 +30,10 @@ services:
       - mars
   nsqadmin:
     image: nsqio/nsq
+    # 已知限制（不影响消息收发）：nsqd 广播 127.0.0.1（宿主机 mars 直连必需），
+    # nsqadmin 经 lookupd /nodes 拿到的广播地址也是 127.0.0.1，从自己容器内 dial
+    # 即连到自己 → /stats 查询报 "UPSTREAM_ERROR: failed to query any nsqd ... connection refused"。
+    # 仅看板 stats 图表受影响；mars 应用直连 127.0.0.1:4150 不受影响。不需要看板可整体注释本服务。
     command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
     depends_on:
       - nsqlookupd
