@@ -48,7 +48,7 @@
 
 每个 gRPC 方法按序经过（`internal/server/grpc.go` + `internal/server/middlewares/login.go` + `interceptor.go`）：
 
-1. **登录拦截器**（`middlewares.LoginUnaryServerInterceptor(authFn)` / Stream 版）：命中 `biz.IsPublicMethod` 白名单（与 §4.1 免登录清单逐行对应，白名单归属 biz 层）的公开方法直接放行；其余方法要求 Bearer token，校验通过后把用户注入上下文。
+1. **登录拦截器**（`middlewares.LoginUnaryServerInterceptor(authFn, logger)` / Stream 版 `LoginStreamServerInterceptor(authFn, logger)`）：命中 `biz.IsPublicMethod` 白名单（与 §4.1 免登录清单逐行对应，白名单归属 biz 层）的公开方法直接放行；其余方法要求 Bearer token，校验通过后把用户注入上下文；认证失败打 `[auth audit]` Warning 审计日志（401 兜底）。
 2. **Authorize 门禁**（`AuthUnaryServerInterceptor`）：服务实现 `Authorize` 接口（file/repo/event）→ 自动调用 `Authorize(ctx, fullMethodName)`，内部走 `RequireAdmin`。
 3. **方法内访问控制**：各服务方法体开头调用 AccessBiz 的 Require*/Can* 方法（命名空间/项目/owner 级）。
 

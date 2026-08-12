@@ -118,6 +118,34 @@ serve:
 	go run main.go serve
 #	go run -race main.go serve --debug
 
+# dev/ 基础设施一键启停（docker compose v2；dev/docker-compose.yml 只含依赖，不含 mars 本体）
+COMPOSE_CMD := docker compose -f dev/docker-compose.yml
+
+.PHONY: dev-up
+# make dev-up：整栈后台启动（redis/mysql/minio/nsq/jaeger）
+dev-up:
+	$(COMPOSE_CMD) up -d
+
+.PHONY: dev-down
+# make dev-down：整栈关闭
+dev-down:
+	$(COMPOSE_CMD) down
+
+.PHONY: dev-logs
+# make dev-logs：跟随打印整栈日志（最近 100 行）
+dev-logs:
+	$(COMPOSE_CMD) logs -f --tail=100
+
+.PHONY: dc-up
+# make dc-up SVC=redis：只启动指定依赖服务；缺省 SVC 时等价 dev-up
+dc-up:
+	$(COMPOSE_CMD) up -d $(SVC)
+
+.PHONY: dc-down
+# make dc-down SVC=redis：只停止指定依赖服务；缺省 SVC 时等价 dev-down
+dc-down:
+	$(COMPOSE_CMD) down $(SVC)
+
 .PHONY: build_race
 build_race: | $(BIN_DIR)
 	CGO_ENABLED=1 go build -ldflags="${LDFLAGS}" -race -o $(BIN_DIR)/app main.go

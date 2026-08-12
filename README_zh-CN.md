@@ -74,7 +74,8 @@ make build                 # 产物 ./bin/app
 需要 NSQ/Redis 做消息队列、或 MySQL 做存储时，[dev/docker-compose.yml](dev/docker-compose.yml) 提供这些基础设施（只含依赖，不含 mars 本体）：
 
 ```bash
-docker compose up -d
+make dev-up    # 等价 docker compose -f dev/docker-compose.yml up -d
+# 单服务：make dc-up SVC=redis；关闭：make dev-down / make dc-down SVC=redis
 ```
 
 ## ⚙️ 配置

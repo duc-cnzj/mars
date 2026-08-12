@@ -74,7 +74,8 @@ To actually deploy applications into a Kubernetes cluster, configure two things 
 When you need NSQ/Redis for message queues, or MySQL for storage, [dev/docker-compose.yml](dev/docker-compose.yml) provides these dependencies (infrastructure only, not mars itself):
 
 ```bash
-docker compose up -d
+make dev-up    # equivalent to: docker compose -f dev/docker-compose.yml up -d
+# single service: make dc-up SVC=redis; teardown: make dev-down / make dc-down SVC=redis
 ```
 
 ## ⚙️ Configuration

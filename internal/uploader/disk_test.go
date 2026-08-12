@@ -374,10 +374,17 @@ func TestUploader_RemoveEmptyDir_ReadDirError(t *testing.T) {
 }
 
 // TestNewDiskUploader_AbsError 覆盖 NewDiskUploader 中 filepath.Abs 失败的
-// 错误分支（并透传到 NewUploader）：逐级下钻到 cwd 绝对路径超过 PATH_MAX，
-// getcwd 报 ENAMETOOLONG。chdir 按路径组件解析、不受全路径长度限制，所以能
-// 走到深处；getcwd 必须缓冲完整路径，因此必然失败（macOS 删除 cwd 的旧路径
-// 会被缓存、不报错，此方案跨平台确定触发）。
+// 错误分支（并透传到 NewUploader）：把 cwd 逐级下钻到绝对路径超过 getcwd 缓冲上限，
+// getcwd 报 ENAMETOOLONG。chdir 按组件解析、不受全路径长度限制，故能走到深处；
+// getcwd 必须缓冲完整路径，路径一超限必然失败。
+//
+// 取值约束（须同时满足，否则平台差异会放跑错误）：
+//   - 路径须 > 4096：macOS PATH_MAX=1024、Linux PATH_MAX=4096，取较大的 4096。
+//     每层目录名 20 字符（含分隔符 21），400 层 ≈8400 字符，双平台都压爆 getcwd。
+//   - 深度须 > 342：os.Getwd 的 '..' 兜底重建算法在 len(parent)>=1024（约 342 层）
+//     直接返回 ENAMETOOLONG，400 层远超，兜底也必然失败。
+//     （此前 800 层单字符名仅 ≈1600 字符，压不爆 Linux 的 4096，CI 上红过；macOS 的
+//     mkdir/chdir/RemoveAll 耗时随深度近似平方增长，故用长目录名压低深度。）
 func TestNewDiskUploader_AbsError(t *testing.T) {
 	orig, err := os.Getwd()
 	assert.NoError(t, err)
@@ -389,9 +396,11 @@ func TestNewDiskUploader_AbsError(t *testing.T) {
 
 	logger := mlog.NewForConfig(nil) // 提前构造 logger，避免在 cwd 失效时初始化
 
-	for i := 0; i < 800; i++ {
-		assert.NoError(t, os.Mkdir("d", 0755))
-		assert.NoError(t, os.Chdir("d"))
+	// 20 字符目录名 × 400 层 → cwd 路径 ≈8400 字符，超过 Linux getcwd 缓冲 4096。
+	deepDir := strings.Repeat("d", 20)
+	for i := 0; i < 400; i++ {
+		assert.NoError(t, os.Mkdir(deepDir, 0755))
+		assert.NoError(t, os.Chdir(deepDir))
 	}
 
 	_, err = NewDiskUploader("relative-dir", nil)
