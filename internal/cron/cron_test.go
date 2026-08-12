@@ -6,10 +6,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/duc-cnzj/mars/v5/internal/util/timer"
+	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 
-	"github.com/duc-cnzj/mars/v5/internal/locker"
-	"github.com/duc-cnzj/mars/v5/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/locker"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
