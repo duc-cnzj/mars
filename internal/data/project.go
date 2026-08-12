@@ -15,7 +15,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v6/internal/util/slice"
-	"go.opentelemetry.io/otel"
 )
 
 // toProject 把 ent.Project 转换为 biz.Project（nil 安全），并顺带转换关联的 Namespace/Repo。
@@ -75,7 +74,9 @@ func NewProjectRepo(logger mlog.Logger, data dataStore) biz.ProjectRepo {
 }
 
 // Version 查询项目当前版本号。
-func (repo *projectRepo) Version(ctx context.Context, id int) (int, error) {
+func (repo *projectRepo) Version(ctx context.Context, id int) (version int, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/Version")
+	defer func() { endSpan(span, err) }()
 	get, err := repo.data.DB().Project.Query().Select(
 		project.FieldID,
 		project.FieldVersion,
@@ -87,7 +88,9 @@ func (repo *projectRepo) Version(ctx context.Context, id int) (int, error) {
 }
 
 // List 分页查询项目列表；非 admin 只返回其可访问命名空间下的项目，防私有内容泄漏。
-func (repo *projectRepo) List(ctx context.Context, input *biz.ListProjectInput) ([]*biz.Project, *pagination.Pagination, error) {
+func (repo *projectRepo) List(ctx context.Context, input *biz.ListProjectInput) (projects []*biz.Project, pag *pagination.Pagination, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/List")
+	defer func() { endSpan(span, err) }()
 	query := repo.data.DB().Project.Query().
 		WithNamespace().
 		Where(filters.IfOrderByDesc("id")(input.OrderByIDDesc))
@@ -117,7 +120,9 @@ func (repo *projectRepo) List(ctx context.Context, input *biz.ListProjectInput) 
 }
 
 // Create 新建项目并落库。
-func (repo *projectRepo) Create(ctx context.Context, input *biz.CreateProjectInput) (*biz.Project, error) {
+func (repo *projectRepo) Create(ctx context.Context, input *biz.CreateProjectInput) (proj *biz.Project, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/Create")
+	defer func() { endSpan(span, err) }()
 	save, err := repo.data.DB().Project.Create().
 		SetName(input.Name).
 		SetCreator(input.Creator).
@@ -136,7 +141,9 @@ func (repo *projectRepo) Create(ctx context.Context, input *biz.CreateProjectInp
 }
 
 // UpdateProject 更新项目配置/部署信息。
-func (repo *projectRepo) UpdateProject(ctx context.Context, input *biz.UpdateProjectInput) (*biz.Project, error) {
+func (repo *projectRepo) UpdateProject(ctx context.Context, input *biz.UpdateProjectInput) (proj *biz.Project, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/UpdateProject")
+	defer func() { endSpan(span, err) }()
 	first, err := repo.data.DB().Project.Query().Where(project.ID(input.ID)).First(ctx)
 	if err != nil {
 		return nil, errs.Wrap(err, "update project")
@@ -163,9 +170,9 @@ func (repo *projectRepo) UpdateProject(ctx context.Context, input *biz.UpdatePro
 }
 
 // Show 查询单个项目并预加载关联仓库与命名空间。
-func (repo *projectRepo) Show(ctx context.Context, id int) (*biz.Project, error) {
-	_, span := otel.Tracer("").Start(ctx, "repo/project/Show")
-	defer span.End()
+func (repo *projectRepo) Show(ctx context.Context, id int) (proj *biz.Project, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/Show")
+	defer func() { endSpan(span, err) }()
 	first, err := repo.data.DB().Project.
 		Query().
 		WithRepo().
@@ -179,12 +186,16 @@ func (repo *projectRepo) Show(ctx context.Context, id int) (*biz.Project, error)
 }
 
 // Delete 按 ID 删除项目。
-func (repo *projectRepo) Delete(ctx context.Context, id int) error {
+func (repo *projectRepo) Delete(ctx context.Context, id int) (err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/Delete")
+	defer func() { endSpan(span, err) }()
 	return errs.Wrap(repo.data.DB().Project.DeleteOneID(id).Exec(ctx), "delete project")
 }
 
 // UpdateStatusByVersion 校验版本匹配后更新部署状态并递增版本号（乐观锁防并发覆盖）。
-func (repo *projectRepo) UpdateStatusByVersion(ctx context.Context, id int, status types.Deploy, version int) (*biz.Project, error) {
+func (repo *projectRepo) UpdateStatusByVersion(ctx context.Context, id int, status types.Deploy, version int) (proj *biz.Project, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/UpdateStatusByVersion")
+	defer func() { endSpan(span, err) }()
 	if _, err := repo.FindByVersion(ctx, id, version); err != nil {
 		return nil, err
 	}
@@ -193,26 +204,34 @@ func (repo *projectRepo) UpdateStatusByVersion(ctx context.Context, id int, stat
 }
 
 // FindByVersion 按 ID 与版本号精确查找项目（用于乐观锁校验）。
-func (repo *projectRepo) FindByVersion(ctx context.Context, id, version int) (*biz.Project, error) {
+func (repo *projectRepo) FindByVersion(ctx context.Context, id, version int) (proj *biz.Project, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/FindByVersion")
+	defer func() { endSpan(span, err) }()
 	first, err := repo.data.DB().Project.Query().Where(project.ID(id), project.Version(version)).First(ctx)
 	return toProject(first), errs.Wrap(err, "find project by version")
 }
 
 // UpdateVersion 直接覆盖项目版本号。
-func (repo *projectRepo) UpdateVersion(ctx context.Context, id int, version int) (*biz.Project, error) {
+func (repo *projectRepo) UpdateVersion(ctx context.Context, id int, version int) (proj *biz.Project, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/UpdateVersion")
+	defer func() { endSpan(span, err) }()
 	save, err := repo.data.DB().Project.UpdateOneID(id).SetVersion(version).Save(ctx)
 	return toProject(save), errs.Wrap(err, "update project version")
 }
 
 // UpdateDeployStatus 仅更新项目的部署状态。
-func (repo *projectRepo) UpdateDeployStatus(ctx context.Context, id int, status types.Deploy) (*biz.Project, error) {
+func (repo *projectRepo) UpdateDeployStatus(ctx context.Context, id int, status types.Deploy) (proj *biz.Project, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/UpdateDeployStatus")
+	defer func() { endSpan(span, err) }()
 	save, err := repo.data.DB().Project.UpdateOneID(id).SetDeployStatus(status).Save(ctx)
 	return toProject(save), errs.Wrap(err, "update deploy status")
 }
 
 // ListByDeployStatus 按部署状态集合过滤项目并携带 namespace 信息，
 // cron FixDeployStatus 用 helm 实测状态修复失败/未知项目。
-func (repo *projectRepo) ListByDeployStatus(ctx context.Context, statuses ...types.Deploy) ([]*biz.Project, error) {
+func (repo *projectRepo) ListByDeployStatus(ctx context.Context, statuses ...types.Deploy) (projects []*biz.Project, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/ListByDeployStatus")
+	defer func() { endSpan(span, err) }()
 	all, err := repo.data.DB().Project.Query().
 		WithNamespace(func(query *ent.NamespaceQuery) {
 			query.Select(namespace.FieldID, namespace.FieldName)
@@ -226,14 +245,18 @@ func (repo *projectRepo) ListByDeployStatus(ctx context.Context, statuses ...typ
 }
 
 // FindByName 按名称与命名空间 ID 查找项目。
-func (repo *projectRepo) FindByName(ctx context.Context, name string, nsID int) (*biz.Project, error) {
+func (repo *projectRepo) FindByName(ctx context.Context, name string, nsID int) (proj *biz.Project, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/FindByName")
+	defer func() { endSpan(span, err) }()
 	first, err := repo.data.DB().Project.Query().Where(project.Name(name), project.NamespaceID(nsID)).First(ctx)
 	return toProject(first), errs.Wrap(err, "find project by name")
 }
 
 // FindProjectsByIDs 按主键批量取项目。endpoint 编排依赖项目的 Name 与 Manifest
 // 来匹配集群内对象，这是纯数据读取，不包含任何编排逻辑。
-func (repo *projectRepo) FindProjectsByIDs(ctx context.Context, ids ...int) ([]*biz.Project, error) {
+func (repo *projectRepo) FindProjectsByIDs(ctx context.Context, ids ...int) (projects []*biz.Project, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/FindProjectsByIDs")
+	defer func() { endSpan(span, err) }()
 	if len(ids) == 0 {
 		return nil, nil
 	}

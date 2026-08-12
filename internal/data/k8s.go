@@ -26,7 +26,6 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/mholt/archiver/v3"
 	"github.com/samber/lo"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"helm.sh/helm/v3/pkg/releaseutil"
 	appsv1 "k8s.io/api/apps/v1"
@@ -99,14 +98,11 @@ func NewK8sRepo(
 
 // CopyFromPod 把 Pod 内文件复制到上传存储并落一条文件记录：先经 exec 校验目标
 // 必须是文件且位于工作目录内，再 tar 打包经 SPDY 流拉回，最后转存并登记。
-func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *biz.CopyFromPodInput) (*biz.File, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "CopyFromPod")
-	defer span.End()
+func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *biz.CopyFromPodInput) (f *biz.File, err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/CopyFromPod")
+	defer func() { endSpan(span, err) }()
 
-	var (
-		file uploader.File
-		err  error
-	)
+	var file uploader.File
 
 	lsbf := &bytes.Buffer{}
 
@@ -236,15 +232,17 @@ func (repo *k8sRepo) AddTlsSecret(ns string, name string, key string, crt string
 }
 
 // GetPodMetrics 返回单个 Pod 的指标（CPU/内存用量）。
-func (repo *k8sRepo) GetPodMetrics(ctx context.Context, namespace, podName string) (*v1beta1.PodMetrics, error) {
-	metrics, err := repo.data.K8s().MetricsClient.MetricsV1beta1().PodMetricses(namespace).Get(ctx, podName, metav1.GetOptions{})
+func (repo *k8sRepo) GetPodMetrics(ctx context.Context, namespace, podName string) (metrics *v1beta1.PodMetrics, err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/GetPodMetrics")
+	defer func() { endSpan(span, err) }()
+	metrics, err = repo.data.K8s().MetricsClient.MetricsV1beta1().PodMetricses(namespace).Get(ctx, podName, metav1.GetOptions{})
 	return metrics, errs.Wrap(err, "get pod metrics")
 }
 
 // GetAllPodMetrics 汇总项目全部 Pod selector 命中的指标。单个 selector 解析/查询
 // 失败只记录日志并跳过（返回签名无 error，无法冒泡），不影响其余 selector 结果。
 func (repo *k8sRepo) GetAllPodMetrics(ctx context.Context, proj *biz.Project) []v1beta1.PodMetrics {
-	_, span := otel.Tracer("").Start(ctx, "GetAllPodMetrics")
+	ctx, span := tracer.Start(ctx, "k8sRepo/GetAllPodMetrics")
 	defer span.End()
 	metricses := repo.data.K8s().MetricsClient.MetricsV1beta1().PodMetricses(proj.Namespace.Name)
 	var list []v1beta1.PodMetrics
@@ -282,23 +280,31 @@ func (repo *k8sRepo) GetAllPodMetrics(ctx context.Context, proj *biz.Project) []
 }
 
 // DeleteNamespace 删除命名空间。
-func (repo *k8sRepo) DeleteNamespace(ctx context.Context, name string) error {
+func (repo *k8sRepo) DeleteNamespace(ctx context.Context, name string) (err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/DeleteNamespace")
+	defer func() { endSpan(span, err) }()
 	return errs.Wrap(repo.data.K8s().Client.CoreV1().Namespaces().Delete(ctx, name, metav1.DeleteOptions{}), "delete namespace")
 }
 
 // DeleteSecret 删除命名空间下的 secret。
-func (repo *k8sRepo) DeleteSecret(ctx context.Context, namespace, secret string) error {
+func (repo *k8sRepo) DeleteSecret(ctx context.Context, namespace, secret string) (err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/DeleteSecret")
+	defer func() { endSpan(span, err) }()
 	return errs.Wrap(repo.data.K8s().Client.CoreV1().Secrets(namespace).Delete(ctx, secret, metav1.DeleteOptions{}), "delete secret")
 }
 
 // GetSecret 按命名空间与名称读取 secret。
-func (repo *k8sRepo) GetSecret(ctx context.Context, namespace, name string) (*corev1.Secret, error) {
-	secret, err := repo.data.K8s().Client.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
+func (repo *k8sRepo) GetSecret(ctx context.Context, namespace, name string) (secret *corev1.Secret, err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/GetSecret")
+	defer func() { endSpan(span, err) }()
+	secret, err = repo.data.K8s().Client.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 	return secret, errs.Wrap(err, "get secret")
 }
 
 // CreateDockerSecret 为 namespace 创建包含全部已配置 registry 凭据的 docker secret。
-func (repo *k8sRepo) CreateDockerSecret(ctx context.Context, namespace string) (*corev1.Secret, error) {
+func (repo *k8sRepo) CreateDockerSecret(ctx context.Context, namespace string) (secret *corev1.Secret, err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/CreateDockerSecret")
+	defer func() { endSpan(span, err) }()
 	var servers []string
 	for _, auth := range repo.data.Config().ImagePullSecrets {
 		servers = append(servers, auth.Server)
@@ -309,7 +315,9 @@ func (repo *k8sRepo) CreateDockerSecret(ctx context.Context, namespace string) (
 // CreateDockerSecrets 为 namespace 创建 DockerConfigJson 类型 secret，凭据取
 // config.ImagePullSecrets 中 servers 命中的子集。servers 为空时生成空 auths 的 secret，
 // 与旧 CreateDockerSecret 在零配置下的行为保持一致。
-func (repo *k8sRepo) CreateDockerSecrets(ctx context.Context, namespace string, servers []string) (*corev1.Secret, error) {
+func (repo *k8sRepo) CreateDockerSecrets(ctx context.Context, namespace string, servers []string) (secret *corev1.Secret, err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/CreateDockerSecrets")
+	defer func() { endSpan(span, err) }()
 	var entries = make(map[string]biz.DockerConfigEntry)
 	for _, auth := range repo.data.Config().ImagePullSecrets {
 		if lo.Contains(servers, auth.Server) {
@@ -328,7 +336,7 @@ func (repo *k8sRepo) CreateDockerSecrets(ctx context.Context, namespace string, 
 
 	marshal, _ := json.Marshal(dockerCfgJSON)
 
-	secret, err := repo.data.K8s().Client.CoreV1().Secrets(namespace).Create(ctx, &corev1.Secret{
+	secret, err = repo.data.K8s().Client.CoreV1().Secrets(namespace).Create(ctx, &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: corev1.SchemeGroupVersion.String(),
 			Kind:       "Secret",
@@ -346,8 +354,10 @@ func (repo *k8sRepo) CreateDockerSecrets(ctx context.Context, namespace string, 
 }
 
 // UpdateSecret 更新指定命名空间下的 secret 内容，返回更新后的 secret。
-func (repo *k8sRepo) UpdateSecret(ctx context.Context, namespace, name string, secret *corev1.Secret) (*corev1.Secret, error) {
-	updated, err := repo.data.K8s().Client.CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{})
+func (repo *k8sRepo) UpdateSecret(ctx context.Context, namespace, name string, secret *corev1.Secret) (updated *corev1.Secret, err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/UpdateSecret")
+	defer func() { endSpan(span, err) }()
+	updated, err = repo.data.K8s().Client.CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	return updated, errs.Wrap(err, "update secret")
 }
 
@@ -374,14 +384,18 @@ func (repo *k8sRepo) SubscribePodEvents(listener string) (<-chan biz.PodEvent, f
 }
 
 // GetNamespace 读取命名空间。
-func (repo *k8sRepo) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
-	ns, err := repo.data.K8s().Client.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
+func (repo *k8sRepo) GetNamespace(ctx context.Context, name string) (ns *corev1.Namespace, err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/GetNamespace")
+	defer func() { endSpan(span, err) }()
+	ns, err = repo.data.K8s().Client.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
 	return ns, errs.Wrap(err, "get namespace")
 }
 
 // CreateNamespace 创建命名空间。
-func (repo *k8sRepo) CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
-	ns, err := repo.data.K8s().Client.CoreV1().
+func (repo *k8sRepo) CreateNamespace(ctx context.Context, name string) (ns *corev1.Namespace, err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/CreateNamespace")
+	defer func() { endSpan(span, err) }()
+	ns, err = repo.data.K8s().Client.CoreV1().
 		Namespaces().
 		Create(ctx,
 			&corev1.Namespace{
@@ -395,7 +409,9 @@ func (repo *k8sRepo) CreateNamespace(ctx context.Context, name string) (*corev1.
 }
 
 // Execute 在 Pod 容器内执行命令：经 executor 构造 SPDY exec 请求并透传输入输出流。
-func (repo *k8sRepo) Execute(ctx context.Context, c *biz.Container, input *biz.ExecuteInput) error {
+func (repo *k8sRepo) Execute(ctx context.Context, c *biz.Container, input *biz.ExecuteInput) (err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/Execute")
+	defer func() { endSpan(span, err) }()
 	return errs.Wrap(repo.executor.New().
 		WithContainer(c.Namespace, c.Pod, c.Container).
 		WithMethod("POST").
@@ -404,7 +420,9 @@ func (repo *k8sRepo) Execute(ctx context.Context, c *biz.Container, input *biz.E
 }
 
 // GetPodLogs 一次性拉取 Pod 日志（按 options 过滤）并以字符串返回。
-func (repo *k8sRepo) GetPodLogs(ctx context.Context, namespace, podName string, options *corev1.PodLogOptions) (string, error) {
+func (repo *k8sRepo) GetPodLogs(ctx context.Context, namespace, podName string, options *corev1.PodLogOptions) (out string, err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/GetPodLogs")
+	defer func() { endSpan(span, err) }()
 	logs := repo.data.K8s().Client.CoreV1().Pods(namespace).GetLogs(podName, options)
 	do := logs.Do(ctx)
 	raw, err := do.Raw()
@@ -419,7 +437,9 @@ func (repo *k8sRepo) ListEvents(namespace string) ([]*eventv1.Event, error) {
 
 // FindDefaultContainer 返回 Pod 的默认容器：优先命中 kubectl.kubernetes.io/
 // default-container 注解且真实存在的容器，否则取第一个容器；无容器返回 NotFound。
-func (repo *k8sRepo) FindDefaultContainer(ctx context.Context, namespace string, pod string) (string, error) {
+func (repo *k8sRepo) FindDefaultContainer(ctx context.Context, namespace string, pod string) (container string, err error) {
+	_, span := tracer.Start(ctx, "k8sRepo/FindDefaultContainer")
+	defer func() { endSpan(span, err) }()
 	corev1pod, err := repo.GetPod(namespace, pod)
 	if err != nil {
 		return "", err
@@ -511,6 +531,8 @@ func (repo *k8sRepo) GetPodSelectorsByManifest(manifests []string) []string {
 
 // GetCpuAndMemoryInNamespace 汇总命名空间内全部 Pod 的 CPU/内存用量并格式化。
 func (repo *k8sRepo) GetCpuAndMemoryInNamespace(ctx context.Context, namespace string) (string, string) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/GetCpuAndMemoryInNamespace")
+	defer span.End()
 	metricses := repo.data.K8s().MetricsClient.MetricsV1beta1().PodMetricses(namespace)
 	list, _ := metricses.List(ctx, metav1.ListOptions{})
 	return repo.GetCpuAndMemory(ctx, list.Items)
@@ -518,7 +540,7 @@ func (repo *k8sRepo) GetCpuAndMemoryInNamespace(ctx context.Context, namespace s
 
 // GetCpuAndMemory 汇总一组 PodMetrics 的 CPU/内存用量，格式化为 "N m" / 人类可读字节。
 func (repo *k8sRepo) GetCpuAndMemory(ctx context.Context, list []v1beta1.PodMetrics) (string, string) {
-	_, span := otel.Tracer("").Start(ctx, "GetCpuAndMemory")
+	_, span := tracer.Start(ctx, "k8sRepo/GetCpuAndMemory")
 	defer span.End()
 	var cpu, memory *resource.Quantity
 	for _, item := range list {
@@ -582,10 +604,9 @@ type copyToPodResult struct {
 
 // copyToPod 把上传文件打包为 tar.gz 并经 SPDY 流管道解压到容器目标目录：
 // 非 Local 类型上传先拉回本地再打包，包体经 io.Pipe 边拷贝边喂给 tar 解压命令。
-func (repo *k8sRepo) copyToPod(ctx context.Context, namespace, pod, container, fpath, targetContainerDir string) (*copyToPodResult, error) {
-	tracer := otel.Tracer("")
+func (repo *k8sRepo) copyToPod(ctx context.Context, namespace, pod, container, fpath, targetContainerDir string) (result *copyToPodResult, err error) {
 	ctx, span := tracer.Start(ctx, "k8sRepo/copyToPod")
-	defer span.End()
+	defer func() { endSpan(span, err) }()
 	span.SetAttributes(
 		attribute.Key("namespace").String(namespace),
 		attribute.Key("pod").String(pod),
@@ -683,7 +704,9 @@ func (repo *k8sRepo) copyToPod(ctx context.Context, namespace, pod, container, f
 }
 
 // CopyFileToPod 把已登记的 file 复制进 Pod 容器，并回写容器内路径到该文件记录。
-func (repo *k8sRepo) CopyFileToPod(ctx context.Context, input *biz.CopyFileToPodInput) (*biz.File, error) {
+func (repo *k8sRepo) CopyFileToPod(ctx context.Context, input *biz.CopyFileToPodInput) (f *biz.File, err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/CopyFileToPod")
+	defer func() { endSpan(span, err) }()
 	file, err := repo.fileRepo.GetByID(ctx, int(input.FileId))
 	if err != nil {
 		return nil, err
@@ -865,7 +888,9 @@ func (repo *k8sRepo) LogStream(
 	namespace,
 	pod,
 	container string,
-) (chan []byte, error) {
+) (out chan []byte, err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/LogStream")
+	defer func() { endSpan(span, err) }()
 	tailLines := 1000
 	logs := repo.data.K8s().Client.
 		CoreV1().

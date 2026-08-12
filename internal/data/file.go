@@ -23,7 +23,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/util/rand"
 	"github.com/duc-cnzj/mars/v6/internal/util/slice"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -82,7 +81,9 @@ func NewFileRepo(
 }
 
 // List 分页查询文件记录，支持按 ID 倒序与软删除可见开关。
-func (repo *fileRepo) List(ctx context.Context, input *biz.ListFileInput) ([]*biz.File, *pagination.Pagination, error) {
+func (repo *fileRepo) List(ctx context.Context, input *biz.ListFileInput) (out []*biz.File, pag *pagination.Pagination, err error) {
+	ctx, span := tracer.Start(ctx, "fileRepo/List")
+	defer func() { endSpan(span, err) }()
 	var db = repo.d.DB()
 	queryCtx := ctx
 	if input.WithSoftDelete {
@@ -101,7 +102,9 @@ func (repo *fileRepo) List(ctx context.Context, input *biz.ListFileInput) ([]*bi
 }
 
 // Create 新建一条文件记录并落库。
-func (repo *fileRepo) Create(todo context.Context, input *biz.CreateFileInput) (*biz.File, error) {
+func (repo *fileRepo) Create(todo context.Context, input *biz.CreateFileInput) (f *biz.File, err error) {
+	todo, span := tracer.Start(todo, "fileRepo/Create")
+	defer func() { endSpan(span, err) }()
 	var db = repo.d.DB()
 	save, err := db.File.Create().
 		SetPath(input.Path).
@@ -116,14 +119,18 @@ func (repo *fileRepo) Create(todo context.Context, input *biz.CreateFileInput) (
 }
 
 // GetByID 按 ID 查询单条文件记录。
-func (repo *fileRepo) GetByID(ctx context.Context, id int) (*biz.File, error) {
+func (repo *fileRepo) GetByID(ctx context.Context, id int) (f *biz.File, err error) {
+	ctx, span := tracer.Start(ctx, "fileRepo/GetByID")
+	defer func() { endSpan(span, err) }()
 	var db = repo.d.DB()
 	first, err := db.File.Query().Where(file.ID(id)).First(ctx)
 	return toFile(first), errs.Wrap(err, "get file")
 }
 
 // Update 更新文件记录的执行上下文（容器/命名空间/Pod/容器路径）。
-func (repo *fileRepo) Update(ctx context.Context, i *biz.UpdateFileRequest) (*biz.File, error) {
+func (repo *fileRepo) Update(ctx context.Context, i *biz.UpdateFileRequest) (f *biz.File, err error) {
+	ctx, span := tracer.Start(ctx, "fileRepo/Update")
+	defer func() { endSpan(span, err) }()
 	var db = repo.d.DB()
 	first, err := db.File.UpdateOneID(i.ID).
 		SetContainerPath(i.ContainerPath).
@@ -140,7 +147,9 @@ func (repo *fileRepo) MaxUploadSize() uint64 {
 }
 
 // Delete 删除文件记录并连带删除物理文件。
-func (repo *fileRepo) Delete(ctx context.Context, id int) error {
+func (repo *fileRepo) Delete(ctx context.Context, id int) (err error) {
+	ctx, span := tracer.Start(ctx, "fileRepo/Delete")
+	defer func() { endSpan(span, err) }()
 	var db = repo.d.DB()
 	f, err := db.File.Query().Where(file.ID(id)).First(ctx)
 	if err != nil {
@@ -155,13 +164,17 @@ func (repo *fileRepo) Delete(ctx context.Context, id int) error {
 // DeleteRecord 仅删除文件记录行，不触碰物理文件。cron CleanUploadFiles 对账时
 // 已确认物理文件不在存储（Exists 为 false），只需移除孤儿记录，避免 fileRepo.Delete
 // 对缺失物理文件的 os.Remove 报错。
-func (repo *fileRepo) DeleteRecord(ctx context.Context, id int) error {
+func (repo *fileRepo) DeleteRecord(ctx context.Context, id int) (err error) {
+	ctx, span := tracer.Start(ctx, "fileRepo/DeleteRecord")
+	defer func() { endSpan(span, err) }()
 	var db = repo.d.DB()
 	return errs.Wrap(db.File.DeleteOneID(id).Exec(ctx), "delete file record")
 }
 
 // ListByCreatedAtRange 按创建时间区间查询文件，cron CleanUploadFiles 取昨日文件对账。
-func (repo *fileRepo) ListByCreatedAtRange(ctx context.Context, start, end time.Time) ([]*biz.File, error) {
+func (repo *fileRepo) ListByCreatedAtRange(ctx context.Context, start, end time.Time) (files []*biz.File, err error) {
+	ctx, span := tracer.Start(ctx, "fileRepo/ListByCreatedAtRange")
+	defer func() { endSpan(span, err) }()
 	var db = repo.d.DB()
 	all, err := db.File.Query().Where(file.CreatedAtGTE(start), file.CreatedAtLTE(end)).All(ctx)
 	if err != nil {
@@ -171,7 +184,9 @@ func (repo *fileRepo) ListByCreatedAtRange(ctx context.Context, start, end time.
 }
 
 // ShowRecords 按 ID 读取文件记录的物理文件内容流（按上传类型选择本地或远端上传器）。
-func (repo *fileRepo) ShowRecords(ctx context.Context, id int) (io.ReadCloser, error) {
+func (repo *fileRepo) ShowRecords(ctx context.Context, id int) (read io.ReadCloser, err error) {
+	ctx, span := tracer.Start(ctx, "fileRepo/ShowRecords")
+	defer func() { endSpan(span, err) }()
 	var db = repo.d.DB()
 	f, err := db.File.Query().Where(file.ID(id)).First(ctx)
 	if err != nil {
@@ -184,7 +199,7 @@ func (repo *fileRepo) ShowRecords(ctx context.Context, id int) (io.ReadCloser, e
 	case repo.uploader.Type():
 		up = repo.uploader
 	}
-	read, err := up.Read(f.Path)
+	read, err = up.Read(f.Path)
 	return read, errs.Wrap(err, "read file records")
 }
 
@@ -229,10 +244,9 @@ func (repo *fileRepo) NewRecorder(user *biz.UserInfo, container *biz.Container) 
 const StreamUploadFileDisk = "grpc_upload"
 
 // StreamUploadFile 流式接收文件分片落盘为一条文件记录（grpc 上传路径）。
-func (repo *fileRepo) StreamUploadFile(ctx context.Context, input *biz.StreamUploadFileRequest) (*biz.File, error) {
-	tracer := otel.Tracer("")
+func (repo *fileRepo) StreamUploadFile(ctx context.Context, input *biz.StreamUploadFileRequest) (f *biz.File, err error) {
 	ctx, span := tracer.Start(ctx, "fileRepo/StreamUploadFile")
-	defer span.End()
+	defer func() { endSpan(span, err) }()
 	span.SetAttributes(
 		attribute.Key("username").String(input.Username),
 		attribute.Key("namespace").String(input.Namespace),
@@ -248,7 +262,7 @@ func (repo *fileRepo) StreamUploadFile(ctx context.Context, input *biz.StreamUpl
 		fmt.Sprintf("%s-%s", now.Format("15-04-05"), rand.String(20)),
 		filepath.Base(input.FileName))
 	fpath := disk.AbsolutePath(p)
-	err := disk.MkDir(filepath.Dir(fpath), true)
+	err = disk.MkDir(filepath.Dir(fpath), true)
 	if err != nil {
 		return nil, errs.Wrap(err, "stream upload mkdir")
 	}

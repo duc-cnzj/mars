@@ -61,7 +61,9 @@ func NewGitRepo(logger mlog.Logger, c Cache, gitServer func() GitServer, cfg *co
 
 // AllProjects 返回全部 git 项目：未开启缓存时透传插件调用并包装错误，开启时
 // 经缓存 Remember 合并重复读，forceFresh 强制跳过缓存。
-func (g *gitRepo) AllProjects(ctx context.Context, forceFresh bool) ([]*biz.GitProject, error) {
+func (g *gitRepo) AllProjects(ctx context.Context, forceFresh bool) (projects []*biz.GitProject, err error) {
+	_, span := tracer.Start(ctx, "gitRepo/AllProjects")
+	defer func() { endSpan(span, err) }()
 	fn := func() ([]*biz.GitProject, error) {
 		return g.gitServer().AllProjects()
 	}
@@ -76,7 +78,6 @@ func (g *gitRepo) AllProjects(ctx context.Context, forceFresh bool) ([]*biz.GitP
 		}
 		return json.Marshal(projects)
 	}, forceFresh)
-	var projects []*biz.GitProject
 	if err == nil {
 		err = json.Unmarshal(remember, &projects)
 	}
@@ -84,7 +85,9 @@ func (g *gitRepo) AllProjects(ctx context.Context, forceFresh bool) ([]*biz.GitP
 }
 
 // GetChartValuesYaml 解析"远端 chart 路径"（uid|branch|dir），非远端路径返回空串。
-func (g *gitRepo) GetChartValuesYaml(ctx context.Context, localChartPath string) (string, error) {
+func (g *gitRepo) GetChartValuesYaml(ctx context.Context, localChartPath string) (content string, err error) {
+	ctx, span := tracer.Start(ctx, "gitRepo/GetChartValuesYaml")
+	defer func() { endSpan(span, err) }()
 	if !biz.IsRemoteLocalChartPath(localChartPath) {
 		return "", nil
 	}
@@ -96,7 +99,9 @@ func (g *gitRepo) GetChartValuesYaml(ctx context.Context, localChartPath string)
 }
 
 // AllBranches 返回项目的全部分支：与 AllProjects 同款缓存/透传路径。
-func (g *gitRepo) AllBranches(ctx context.Context, projectID int, forceFresh bool) ([]*biz.Branch, error) {
+func (g *gitRepo) AllBranches(ctx context.Context, projectID int, forceFresh bool) (branches []*biz.Branch, err error) {
+	_, span := tracer.Start(ctx, "gitRepo/AllBranches")
+	defer func() { endSpan(span, err) }()
 	fn := func() ([]*biz.Branch, error) {
 		return g.gitServer().AllBranches(fmt.Sprintf("%d", projectID))
 	}
@@ -111,7 +116,6 @@ func (g *gitRepo) AllBranches(ctx context.Context, projectID int, forceFresh boo
 		}
 		return json.Marshal(branches)
 	}, forceFresh)
-	var branches []*biz.Branch
 	if err == nil {
 		err = json.Unmarshal(remember, &branches)
 	}
@@ -119,8 +123,10 @@ func (g *gitRepo) AllBranches(ctx context.Context, projectID int, forceFresh boo
 }
 
 // ListCommits 返回项目某分支的提交列表。
-func (g *gitRepo) ListCommits(ctx context.Context, projectID int, branch string) ([]*biz.Commit, error) {
-	commits, err := g.gitServer().ListCommits(fmt.Sprintf("%d", projectID), branch)
+func (g *gitRepo) ListCommits(ctx context.Context, projectID int, branch string) (commits []*biz.Commit, err error) {
+	_, span := tracer.Start(ctx, "gitRepo/ListCommits")
+	defer func() { endSpan(span, err) }()
+	commits, err = g.gitServer().ListCommits(fmt.Sprintf("%d", projectID), branch)
 	if err != nil {
 		return nil, errs.Wrap(err, "git list commits")
 	}
@@ -128,8 +134,10 @@ func (g *gitRepo) ListCommits(ctx context.Context, projectID int, branch string)
 }
 
 // GetProject 返回单个 git 项目。
-func (g *gitRepo) GetProject(ctx context.Context, id int) (*biz.GitProject, error) {
-	get, err := g.gitServer().GetProject(fmt.Sprintf("%d", id))
+func (g *gitRepo) GetProject(ctx context.Context, id int) (get *biz.GitProject, err error) {
+	_, span := tracer.Start(ctx, "gitRepo/GetProject")
+	defer func() { endSpan(span, err) }()
+	get, err = g.gitServer().GetProject(fmt.Sprintf("%d", id))
 	if err != nil {
 		return nil, errs.Wrap(err, "git get project")
 	}
@@ -137,7 +145,9 @@ func (g *gitRepo) GetProject(ctx context.Context, id int) (*biz.GitProject, erro
 }
 
 // GetFileContentWithBranch 按分支返回文件内容。
-func (g *gitRepo) GetFileContentWithBranch(ctx context.Context, projectID int, branch, path string) (string, error) {
+func (g *gitRepo) GetFileContentWithBranch(ctx context.Context, projectID int, branch, path string) (content string, err error) {
+	_, span := tracer.Start(ctx, "gitRepo/GetFileContentWithBranch")
+	defer func() { endSpan(span, err) }()
 	withBranch, err := g.gitServer().GetFileContentWithBranch(fmt.Sprintf("%d", projectID), branch, path)
 	if err != nil {
 		return "", errs.Wrap(err, "git get file content")
@@ -146,14 +156,18 @@ func (g *gitRepo) GetFileContentWithBranch(ctx context.Context, projectID int, b
 }
 
 // GetCommit 返回单个提交。
-func (g *gitRepo) GetCommit(ctx context.Context, projectID int, sha string) (*biz.Commit, error) {
-	commit, err := g.gitServer().GetCommit(fmt.Sprintf("%d", projectID), sha)
+func (g *gitRepo) GetCommit(ctx context.Context, projectID int, sha string) (commit *biz.Commit, err error) {
+	_, span := tracer.Start(ctx, "gitRepo/GetCommit")
+	defer func() { endSpan(span, err) }()
+	commit, err = g.gitServer().GetCommit(fmt.Sprintf("%d", projectID), sha)
 	return commit, errs.Wrap(err, "git get commit")
 }
 
 // GetCommitPipeline 返回某个提交的流水线。
-func (g *gitRepo) GetCommitPipeline(ctx context.Context, projectID int, branch, sha string) (*biz.Pipeline, error) {
-	pipeline, err := g.gitServer().GetCommitPipeline(fmt.Sprintf("%d", projectID), branch, sha)
+func (g *gitRepo) GetCommitPipeline(ctx context.Context, projectID int, branch, sha string) (pipeline *biz.Pipeline, err error) {
+	_, span := tracer.Start(ctx, "gitRepo/GetCommitPipeline")
+	defer func() { endSpan(span, err) }()
+	pipeline, err = g.gitServer().GetCommitPipeline(fmt.Sprintf("%d", projectID), branch, sha)
 	if err != nil {
 		return nil, errs.Wrap(err, "git get commit pipeline")
 	}
@@ -161,6 +175,8 @@ func (g *gitRepo) GetCommitPipeline(ctx context.Context, projectID int, branch, 
 }
 
 // GetByProjectID 别名 GetProject（biz.GitRepo 接口必需）。
-func (g *gitRepo) GetByProjectID(ctx context.Context, id int) (*biz.GitProject, error) {
+func (g *gitRepo) GetByProjectID(ctx context.Context, id int) (get *biz.GitProject, err error) {
+	ctx, span := tracer.Start(ctx, "gitRepo/GetByProjectID")
+	defer func() { endSpan(span, err) }()
 	return g.GetProject(ctx, id)
 }

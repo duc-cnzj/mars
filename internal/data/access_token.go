@@ -51,7 +51,9 @@ func NewAccessTokenRepo(data dataStore, timer timer.Timer) biz.AccessTokenRepo {
 
 // List 分页查询 access token 列表，支持邮箱过滤；
 // WithSoftDelete 时跳过软删除过滤，包含已删除记录。
-func (r *accessTokenRepo) List(ctx context.Context, input *biz.ListAccessTokenInput) ([]*biz.AccessToken, *pagination.Pagination, error) {
+func (r *accessTokenRepo) List(ctx context.Context, input *biz.ListAccessTokenInput) (out []*biz.AccessToken, pag *pagination.Pagination, err error) {
+	ctx, span := tracer.Start(ctx, "accessTokenRepo/List")
+	defer func() { endSpan(span, err) }()
 	db := r.data.DB()
 	if input.WithSoftDelete {
 		ctx = mixin.SkipSoftDelete(ctx)
@@ -72,7 +74,9 @@ func (r *accessTokenRepo) List(ctx context.Context, input *biz.ListAccessTokenIn
 }
 
 // Grant 签发一个新的 access token：生成随机 token，写入用户/用途/过期时间。
-func (r *accessTokenRepo) Grant(ctx context.Context, input *biz.GrantAccessTokenInput) (*biz.AccessToken, error) {
+func (r *accessTokenRepo) Grant(ctx context.Context, input *biz.GrantAccessTokenInput) (out *biz.AccessToken, err error) {
+	ctx, span := tracer.Start(ctx, "accessTokenRepo/Grant")
+	defer func() { endSpan(span, err) }()
 	db := r.data.DB()
 	save, err := db.AccessToken.Create().
 		SetToken(uuid.NewString()).
@@ -85,7 +89,9 @@ func (r *accessTokenRepo) Grant(ctx context.Context, input *biz.GrantAccessToken
 }
 
 // FindByToken 按 token 精确查询一个 access token，不存在返回 NotFound 错误。
-func (r *accessTokenRepo) FindByToken(ctx context.Context, token string) (*biz.AccessToken, error) {
+func (r *accessTokenRepo) FindByToken(ctx context.Context, token string) (out *biz.AccessToken, err error) {
+	ctx, span := tracer.Start(ctx, "accessTokenRepo/FindByToken")
+	defer func() { endSpan(span, err) }()
 	db := r.data.DB()
 	first, err := db.AccessToken.Query().Where(accesstoken.Token(token)).First(ctx)
 	if err != nil {
@@ -95,7 +101,9 @@ func (r *accessTokenRepo) FindByToken(ctx context.Context, token string) (*biz.A
 }
 
 // UpdateExpiresAt 更新指定 token 的过期时间并返回更新后的记录。
-func (r *accessTokenRepo) UpdateExpiresAt(ctx context.Context, token string, t time.Time) (*biz.AccessToken, error) {
+func (r *accessTokenRepo) UpdateExpiresAt(ctx context.Context, token string, t time.Time) (out *biz.AccessToken, err error) {
+	ctx, span := tracer.Start(ctx, "accessTokenRepo/UpdateExpiresAt")
+	defer func() { endSpan(span, err) }()
 	db := r.data.DB()
 	first, err := db.AccessToken.Query().Where(accesstoken.Token(token)).First(ctx)
 	if err != nil {
@@ -106,13 +114,17 @@ func (r *accessTokenRepo) UpdateExpiresAt(ctx context.Context, token string, t t
 }
 
 // Revoke 撤销一个 access token（软删除）。
-func (r *accessTokenRepo) Revoke(ctx context.Context, token string) error {
+func (r *accessTokenRepo) Revoke(ctx context.Context, token string) (err error) {
+	ctx, span := tracer.Start(ctx, "accessTokenRepo/Revoke")
+	defer func() { endSpan(span, err) }()
 	db := r.data.DB()
-	_, err := db.AccessToken.Delete().Where(accesstoken.Token(token)).Exec(ctx)
+	_, err = db.AccessToken.Delete().Where(accesstoken.Token(token)).Exec(ctx)
 	return errs.Wrap(err, "revoke access token")
 }
 
 // TouchLastUsedAt 回写 token 的最近使用时间。
-func (r *accessTokenRepo) TouchLastUsedAt(ctx context.Context, token string, t time.Time) error {
+func (r *accessTokenRepo) TouchLastUsedAt(ctx context.Context, token string, t time.Time) (err error) {
+	ctx, span := tracer.Start(ctx, "accessTokenRepo/TouchLastUsedAt")
+	defer func() { endSpan(span, err) }()
 	return errs.Wrap(r.data.DB().AccessToken.Update().Where(accesstoken.Token(token)).SetLastUsedAt(t).Exec(ctx), "touch access token last used")
 }

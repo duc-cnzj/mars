@@ -25,13 +25,17 @@ type repoImpl struct {
 }
 
 // Get 按 ID 查询单个仓库。
-func (r *repoImpl) Get(ctx context.Context, id int) (*biz.Repo, error) {
+func (r *repoImpl) Get(ctx context.Context, id int) (out *biz.Repo, err error) {
+	ctx, span := tracer.Start(ctx, "repoImpl/Get")
+	defer func() { endSpan(span, err) }()
 	get, err := r.data.DB().Repo.Get(ctx, id)
 	return toRepo(get), errs.Wrap(err, "get repo")
 }
 
 // GetByName 按名称查询仓库，供 biz 层做名称唯一性校验（NotFound 由 errs.Wrap 归类）。
-func (r *repoImpl) GetByName(ctx context.Context, name string) (*biz.Repo, error) {
+func (r *repoImpl) GetByName(ctx context.Context, name string) (out *biz.Repo, err error) {
+	ctx, span := tracer.Start(ctx, "repoImpl/GetByName")
+	defer func() { endSpan(span, err) }()
 	get, err := r.data.DB().Repo.Query().Where(repo.Name(name)).First(ctx)
 	return toRepo(get), errs.Wrap(err, "get repo by name")
 }
@@ -45,7 +49,9 @@ func NewRepo(data dataStore, gitRepo biz.GitRepo) biz.RepoRepo {
 }
 
 // All 按启用状态与是否需要 git 仓库过滤返回全部仓库。
-func (r *repoImpl) All(ctx context.Context, in *biz.AllRepoRequest) ([]*biz.Repo, error) {
+func (r *repoImpl) All(ctx context.Context, in *biz.AllRepoRequest) (repos []*biz.Repo, err error) {
+	ctx, span := tracer.Start(ctx, "repoImpl/All")
+	defer func() { endSpan(span, err) }()
 	query := r.data.DB().Repo.Query().Where(
 		filters.IfEnabled(in.Enabled),
 		filters.IfBool(repo.FieldNeedGitRepo)(in.NeedGitRepo),
@@ -58,7 +64,9 @@ func (r *repoImpl) All(ctx context.Context, in *biz.AllRepoRequest) ([]*biz.Repo
 }
 
 // List 分页查询仓库列表并返回分页信息。
-func (r *repoImpl) List(ctx context.Context, in *biz.ListRepoRequest) ([]*biz.Repo, *pagination.Pagination, error) {
+func (r *repoImpl) List(ctx context.Context, in *biz.ListRepoRequest) (repos []*biz.Repo, pag *pagination.Pagination, err error) {
+	ctx, span := tracer.Start(ctx, "repoImpl/List")
+	defer func() { endSpan(span, err) }()
 	query := r.data.DB().Repo.Query().
 		Where(
 			filters.IfOrderByIDDesc(in.OrderByIDDesc),
@@ -89,11 +97,12 @@ func (r *repoImpl) List(ctx context.Context, in *biz.ListRepoRequest) ([]*biz.Re
 }
 
 // Create 新建仓库：需要 git 仓库时先解析默认分支与项目名，并按需解析 IsSimpleEnv。
-func (r *repoImpl) Create(ctx context.Context, in *biz.CreateRepoInput) (*biz.Repo, error) {
+func (r *repoImpl) Create(ctx context.Context, in *biz.CreateRepoInput) (get *biz.Repo, err error) {
+	ctx, span := tracer.Start(ctx, "repoImpl/Create")
+	defer func() { endSpan(span, err) }()
 	var (
 		projName      *string
 		defaultBranch *string
-		err           error
 	)
 	if in.NeedGitRepo {
 		projName, defaultBranch, err = r.GetProjNameAndBranch(ctx, int(lo.FromPtr(in.GitProjectID)))
@@ -141,17 +150,20 @@ func (r *repoImpl) isSimpleEnv(ctx context.Context, config *mars.Config) bool {
 }
 
 // Show 查询单个仓库并预加载其关联项目。
-func (r *repoImpl) Show(ctx context.Context, id int) (*biz.Repo, error) {
+func (r *repoImpl) Show(ctx context.Context, id int) (out *biz.Repo, err error) {
+	ctx, span := tracer.Start(ctx, "repoImpl/Show")
+	defer func() { endSpan(span, err) }()
 	get, err := r.data.DB().Repo.Query().Where(repo.ID(id)).WithProjects().Only(ctx)
 	return toRepo(get), errs.Wrap(err, "show repo")
 }
 
 // Update 更新仓库：需要 git 仓库时重新解析默认分支与项目名。
-func (r *repoImpl) Update(ctx context.Context, in *biz.UpdateRepoInput) (*biz.Repo, error) {
+func (r *repoImpl) Update(ctx context.Context, in *biz.UpdateRepoInput) (get *biz.Repo, err error) {
+	ctx, span := tracer.Start(ctx, "repoImpl/Update")
+	defer func() { endSpan(span, err) }()
 	var (
 		projName      *string
 		defaultBranch *string
-		err           error
 	)
 
 	if in.NeedGitRepo {
@@ -182,17 +194,16 @@ func (r *repoImpl) Update(ctx context.Context, in *biz.UpdateRepoInput) (*biz.Re
 }
 
 // Delete 按 ID 删除仓库。
-func (r *repoImpl) Delete(ctx context.Context, id int) error {
+func (r *repoImpl) Delete(ctx context.Context, id int) (err error) {
+	ctx, span := tracer.Start(ctx, "repoImpl/Delete")
+	defer func() { endSpan(span, err) }()
 	return errs.Wrap(r.data.DB().Repo.DeleteOneID(id).Exec(ctx), "delete repo")
 }
 
 // GetProjNameAndBranch 从 git 端口取项目名与默认分支，供创建/更新前填充仓库字段。
-func (r *repoImpl) GetProjNameAndBranch(ctx context.Context, projID int) (*string, *string, error) {
-	var (
-		defaultBranch *string
-		projName      *string
-	)
-
+func (r *repoImpl) GetProjNameAndBranch(ctx context.Context, projID int) (projName, defaultBranch *string, err error) {
+	ctx, span := tracer.Start(ctx, "repoImpl/GetProjNameAndBranch")
+	defer func() { endSpan(span, err) }()
 	project, err := r.gitRepo.GetByProjectID(ctx, projID)
 	if err != nil {
 		return nil, nil, err
@@ -203,13 +214,17 @@ func (r *repoImpl) GetProjNameAndBranch(ctx context.Context, projID int) (*strin
 }
 
 // ToggleEnabled 切换仓库的启用状态。
-func (r *repoImpl) ToggleEnabled(ctx context.Context, id int, enabled bool) (*biz.Repo, error) {
+func (r *repoImpl) ToggleEnabled(ctx context.Context, id int, enabled bool) (get *biz.Repo, err error) {
+	ctx, span := tracer.Start(ctx, "repoImpl/ToggleEnabled")
+	defer func() { endSpan(span, err) }()
 	save, err := r.data.DB().Repo.UpdateOneID(id).SetEnabled(enabled).Save(ctx)
 	return toRepo(save), errs.Wrap(err, "toggle repo enabled")
 }
 
 // Clone 复制仓库：读取原仓库字段后用新名字重新创建。
-func (r *repoImpl) Clone(ctx context.Context, input *biz.CloneRepoInput) (*biz.Repo, error) {
+func (r *repoImpl) Clone(ctx context.Context, input *biz.CloneRepoInput) (out *biz.Repo, err error) {
+	ctx, span := tracer.Start(ctx, "repoImpl/Clone")
+	defer func() { endSpan(span, err) }()
 	get, err := r.data.DB().Repo.Get(ctx, input.ID)
 	if err != nil {
 		return nil, errs.Wrap(err, "get repo")

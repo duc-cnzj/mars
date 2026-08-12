@@ -68,7 +68,9 @@ func NewDefaultHelmer(k8sRepo biz.K8sRepo, data dataStore, cfg *config.Config, l
 
 // UpgradeOrInstall 安装或升级 chart：wait 场景先干跑一次取 Pod 选择器，
 // 再正式执行并附带 Pod/事件监听日志。
-func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn biz.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, desc string) (*release.Release, error) {
+func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn biz.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, desc string) (out *release.Release, err error) {
+	ctx, span := tracer.Start(ctx, "DefaultHelmer/UpgradeOrInstall")
+	defer func() { endSpan(span, err) }()
 	var podSelectors []string
 	if wait && !dryRun {
 		re, err := d.upgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, false, timeoutSeconds, true, nil, desc, d.KubeConfig, d.data.K8s())

@@ -77,7 +77,9 @@ type namespaceRepo struct {
 }
 
 // Transfer 把 namespace 的创建者/归属转交给新邮箱：创建者已相同则跳过更新。
-func (repo *namespaceRepo) Transfer(ctx context.Context, id int, email string) (*biz.Namespace, error) {
+func (repo *namespaceRepo) Transfer(ctx context.Context, id int, email string) (out *biz.Namespace, err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/Transfer")
+	defer func() { endSpan(span, err) }()
 	ns, err := repo.data.DB().Namespace.Get(ctx, id)
 	if err != nil {
 		return nil, errs.Wrap(err, "transfer namespace")
@@ -93,7 +95,9 @@ func (repo *namespaceRepo) Transfer(ctx context.Context, id int, email string) (
 
 // SyncMembers 以 memberEmails 为最终名单同步 namespace 成员：事务内差量新增缺失成员、
 // 删除已不在名单内的成员，随后返回最新 namespace。
-func (repo *namespaceRepo) SyncMembers(ctx context.Context, namespaceID int, memberEmails []string) (*biz.Namespace, error) {
+func (repo *namespaceRepo) SyncMembers(ctx context.Context, namespaceID int, memberEmails []string) (out *biz.Namespace, err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/SyncMembers")
+	defer func() { endSpan(span, err) }()
 	if err := repo.data.WithTx(ctx, func(tx *ent.Tx) error {
 		get, err := tx.Namespace.Query().WithMembers().Where(namespace.ID(namespaceID)).First(ctx)
 		if err != nil {
@@ -123,7 +127,9 @@ func (repo *namespaceRepo) SyncMembers(ctx context.Context, namespaceID int, mem
 }
 
 // UpdatePrivate 切换 namespace 私有状态；转为公开（private=false）时清空全部成员。
-func (repo *namespaceRepo) UpdatePrivate(ctx context.Context, namespaceID int, private bool) (*biz.Namespace, error) {
+func (repo *namespaceRepo) UpdatePrivate(ctx context.Context, namespaceID int, private bool) (out *biz.Namespace, err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/UpdatePrivate")
+	defer func() { endSpan(span, err) }()
 	if err := repo.data.WithTx(ctx, func(tx *ent.Tx) error {
 		get, err := tx.Namespace.Get(ctx, namespaceID)
 		if err != nil {
@@ -159,7 +165,9 @@ func NewNamespaceRepo(data dataStore) biz.NamespaceRepo {
 
 // List 按输入条件分页查询 namespace：支持名称模糊与收藏过滤；非管理员只可见
 // 公开的、自己创建的、或自己是成员的私有 namespace。
-func (repo *namespaceRepo) List(ctx context.Context, input *biz.ListNamespaceInput) ([]*biz.Namespace, *pagination.Pagination, error) {
+func (repo *namespaceRepo) List(ctx context.Context, input *biz.ListNamespaceInput) (out []*biz.Namespace, pag *pagination.Pagination, err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/List")
+	defer func() { endSpan(span, err) }()
 	query := repo.data.DB().Namespace.Query().
 		Where(
 			filters.IfNameLike(lo.FromPtr(input.Name)),
@@ -226,7 +234,9 @@ func (repo *namespaceRepo) List(ctx context.Context, input *biz.ListNamespaceInp
 }
 
 // Create 创建 namespace：名称经 biz.GetNamespace 加 nsPrefix 前缀。
-func (repo *namespaceRepo) Create(ctx context.Context, input *biz.CreateNamespaceInput) (*biz.Namespace, error) {
+func (repo *namespaceRepo) Create(ctx context.Context, input *biz.CreateNamespaceInput) (out *biz.Namespace, err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/Create")
+	defer func() { endSpan(span, err) }()
 	save, err := repo.data.DB().Namespace.
 		Create().
 		SetName(biz.GetNamespace(input.Name, repo.nsPrefix)).
@@ -238,7 +248,9 @@ func (repo *namespaceRepo) Create(ctx context.Context, input *biz.CreateNamespac
 }
 
 // Show 返回单个 namespace，附带项目（精简列）与成员列表。
-func (repo *namespaceRepo) Show(ctx context.Context, id int) (*biz.Namespace, error) {
+func (repo *namespaceRepo) Show(ctx context.Context, id int) (out *biz.Namespace, err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/Show")
+	defer func() { endSpan(span, err) }()
 	first, err := repo.data.DB().Namespace.Query().
 		WithProjects(func(query *ent.ProjectQuery) {
 			query.Select(
@@ -257,7 +269,9 @@ func (repo *namespaceRepo) Show(ctx context.Context, id int) (*biz.Namespace, er
 }
 
 // Update 更新 namespace 的描述信息。
-func (repo *namespaceRepo) Update(ctx context.Context, input *biz.UpdateNamespaceInput) (*biz.Namespace, error) {
+func (repo *namespaceRepo) Update(ctx context.Context, input *biz.UpdateNamespaceInput) (out *biz.Namespace, err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/Update")
+	defer func() { endSpan(span, err) }()
 	get, err := repo.data.DB().Namespace.Get(ctx, input.ID)
 	if err != nil {
 		return nil, errs.Wrap(err, "update namespace")
@@ -272,14 +286,18 @@ func (repo *namespaceRepo) GetMarsNamespace(name string) string {
 }
 
 // FindByName 按名称（自动加 nsPrefix 前缀）精确查找 namespace。
-func (repo *namespaceRepo) FindByName(ctx context.Context, name string) (*biz.Namespace, error) {
+func (repo *namespaceRepo) FindByName(ctx context.Context, name string) (out *biz.Namespace, err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/FindByName")
+	defer func() { endSpan(span, err) }()
 	first, err := repo.data.DB().Namespace.Query().Where(namespace.Name(biz.GetNamespace(name, repo.nsPrefix))).First(ctx)
 	return toNamespace(first), errs.Wrap(err, "find namespace by name")
 }
 
 // ListAll 返回全部 namespace（含 ImagePullSecrets 列），cron 同步 imagePullSecrets
 // 与 TLS 证书需全量遍历。
-func (repo *namespaceRepo) ListAll(ctx context.Context) ([]*biz.Namespace, error) {
+func (repo *namespaceRepo) ListAll(ctx context.Context) (out []*biz.Namespace, err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/ListAll")
+	defer func() { endSpan(span, err) }()
 	all, err := repo.data.DB().Namespace.Query().All(ctx)
 	if err != nil {
 		return nil, errs.Wrap(err, "list all namespaces")
@@ -289,12 +307,16 @@ func (repo *namespaceRepo) ListAll(ctx context.Context) ([]*biz.Namespace, error
 
 // UpdateImagePullSecrets 仅回写 namespace 的 imagePullSecrets 列表，
 // cron 对账后把新增/清理后的 secret 名单持久化。
-func (repo *namespaceRepo) UpdateImagePullSecrets(ctx context.Context, id int, secrets []string) error {
+func (repo *namespaceRepo) UpdateImagePullSecrets(ctx context.Context, id int, secrets []string) (err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/UpdateImagePullSecrets")
+	defer func() { endSpan(span, err) }()
 	return errs.Wrap(repo.data.DB().Namespace.UpdateOneID(id).SetImagePullSecrets(secrets).Exec(ctx), "update image pull secrets")
 }
 
 // Delete 删除 namespace：若关联项目非空先删除项目，再在事务内删除 namespace。
-func (repo *namespaceRepo) Delete(ctx context.Context, id int) error {
+func (repo *namespaceRepo) Delete(ctx context.Context, id int) (err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/Delete")
+	defer func() { endSpan(span, err) }()
 	first, err := repo.data.DB().Namespace.Query().WithProjects().Where(namespace.ID(id)).First(ctx)
 	if err != nil {
 		return errs.Wrap(err, "delete namespace")
@@ -313,7 +335,9 @@ func (repo *namespaceRepo) Delete(ctx context.Context, id int) error {
 }
 
 // Favorite 收藏/取消收藏 namespace：Favorite=true 幂等收藏，false 删除收藏。
-func (repo *namespaceRepo) Favorite(ctx context.Context, input *biz.FavoriteNamespaceInput) error {
+func (repo *namespaceRepo) Favorite(ctx context.Context, input *biz.FavoriteNamespaceInput) (err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/Favorite")
+	defer func() { endSpan(span, err) }()
 	if !input.Favorite {
 		_, err := repo.data.DB().Favorite.Delete().Where(favorite.NamespaceID(input.NamespaceID), favorite.Email(input.UserEmail)).Exec(ctx)
 		return errs.Wrap(err, "favorite namespace")

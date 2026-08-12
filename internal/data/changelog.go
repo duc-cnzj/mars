@@ -57,7 +57,9 @@ func NewChangelogRepo(logger mlog.Logger, data dataStore) biz.ChangelogRepo {
 }
 
 // Create 创建一条变更记录并返回转换后的领域对象。
-func (c *changelogRepo) Create(ctx context.Context, input *biz.CreateChangeLogInput) (*biz.Changelog, error) {
+func (c *changelogRepo) Create(ctx context.Context, input *biz.CreateChangeLogInput) (out *biz.Changelog, err error) {
+	ctx, span := tracer.Start(ctx, "changelogRepo/Create")
+	defer func() { endSpan(span, err) }()
 	db := c.data.DB()
 	save, err := db.Changelog.Create().
 		SetVersion(input.Version).
@@ -80,7 +82,9 @@ func (c *changelogRepo) Create(ctx context.Context, input *biz.CreateChangeLogIn
 }
 
 // FindLastChangelogsByProjectID 按项目查询最近变更记录，支持 config_changed 过滤与 version 降序。
-func (c *changelogRepo) FindLastChangelogsByProjectID(ctx context.Context, input *biz.FindLastChangelogsByProjectIDChangeLogInput) ([]*biz.Changelog, error) {
+func (c *changelogRepo) FindLastChangelogsByProjectID(ctx context.Context, input *biz.FindLastChangelogsByProjectIDChangeLogInput) (out []*biz.Changelog, err error) {
+	ctx, span := tracer.Start(ctx, "changelogRepo/FindLastChangelogsByProjectID")
+	defer func() { endSpan(span, err) }()
 	db := c.data.DB()
 	var onlyChanged *bool
 	if input.OnlyChanged {
@@ -98,7 +102,9 @@ func (c *changelogRepo) FindLastChangelogsByProjectID(ctx context.Context, input
 }
 
 // FindLastChangeByProjectID 查询项目最近的一条变更记录（按 ID 降序）。
-func (c *changelogRepo) FindLastChangeByProjectID(ctx context.Context, projectID int) (*biz.Changelog, error) {
+func (c *changelogRepo) FindLastChangeByProjectID(ctx context.Context, projectID int) (out *biz.Changelog, err error) {
+	ctx, span := tracer.Start(ctx, "changelogRepo/FindLastChangeByProjectID")
+	defer func() { endSpan(span, err) }()
 	db := c.data.DB()
 	first, err := db.Changelog.Query().Where(changelog.ProjectID(projectID)).Order(ent.Desc(changelog.FieldID)).First(ctx)
 	return toChangeLog(first), errs.Wrap(err, "find last change")

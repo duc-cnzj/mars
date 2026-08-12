@@ -83,6 +83,8 @@ func (repo *eventRepo) Dispatch(created biz.EventKey, createdData any) {
 
 // List 分页查询事件列表，支持按动作类型、搜索关键词与倒序过滤。
 func (repo *eventRepo) List(ctx context.Context, input *biz.ListEventInput) (events []*biz.Event, pag *pagination.Pagination, err error) {
+	ctx, span := tracer.Start(ctx, "eventRepo/List")
+	defer func() { endSpan(span, err) }()
 	var db = repo.d.DB()
 	items := db.Event.Query().Where(
 		filters.IfIntEQ[types.EventActionType](entevent.FieldAction)(input.ActionType),
@@ -138,7 +140,9 @@ func toEvent(e *ent.Event) *biz.Event {
 }
 
 // Show 查询单条事件记录并预加载关联文件。
-func (repo *eventRepo) Show(ctx context.Context, id int) (*biz.Event, error) {
+func (repo *eventRepo) Show(ctx context.Context, id int) (out *biz.Event, err error) {
+	ctx, span := tracer.Start(ctx, "eventRepo/Show")
+	defer func() { endSpan(span, err) }()
 	var db = repo.d.DB()
 	first, err := db.Event.Query().WithFile().Where(entevent.ID(id)).First(ctx)
 	return toEvent(first), errs.Wrap(err, "show event")
