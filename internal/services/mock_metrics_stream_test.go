@@ -19,14 +19,9 @@ import (
 )
 
 // MockMetrics_StreamTopPodServer is a mock of Metrics_StreamTopPodServer interface.
-//
-// mockgen 对嵌入泛型 grpc.ServerStreamingServer[*metrics.TopPodResponse] 的接口会
-// 误生成未被任何方法引用的 [Res any] 类型参数，导致所有调用点无法推断类型而编译失败；
-// 该参数实际无用，手工剥离（Res 不出现在任何方法签名中）。
 type MockMetrics_StreamTopPodServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockMetrics_StreamTopPodServerMockRecorder
-	isgomock struct{}
 }
 
 // MockMetrics_StreamTopPodServerMockRecorder is the mock recorder for MockMetrics_StreamTopPodServer.
@@ -61,17 +56,17 @@ func (mr *MockMetrics_StreamTopPodServerMockRecorder) Context() *gomock.Call {
 }
 
 // RecvMsg mocks base method.
-func (m_2 *MockMetrics_StreamTopPodServer) RecvMsg(m any) error {
-	m_2.ctrl.T.Helper()
-	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
+func (m *MockMetrics_StreamTopPodServer) RecvMsg(arg0 any) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RecvMsg", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RecvMsg indicates an expected call of RecvMsg.
-func (mr *MockMetrics_StreamTopPodServerMockRecorder) RecvMsg(m any) *gomock.Call {
+func (mr *MockMetrics_StreamTopPodServerMockRecorder) RecvMsg(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockMetrics_StreamTopPodServer)(nil).RecvMsg), m)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockMetrics_StreamTopPodServer)(nil).RecvMsg), arg0)
 }
 
 // Send mocks base method.
@@ -103,17 +98,17 @@ func (mr *MockMetrics_StreamTopPodServerMockRecorder) SendHeader(arg0 any) *gomo
 }
 
 // SendMsg mocks base method.
-func (m_2 *MockMetrics_StreamTopPodServer) SendMsg(m any) error {
-	m_2.ctrl.T.Helper()
-	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
+func (m *MockMetrics_StreamTopPodServer) SendMsg(arg0 any) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendMsg", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SendMsg indicates an expected call of SendMsg.
-func (mr *MockMetrics_StreamTopPodServerMockRecorder) SendMsg(m any) *gomock.Call {
+func (mr *MockMetrics_StreamTopPodServerMockRecorder) SendMsg(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockMetrics_StreamTopPodServer)(nil).SendMsg), m)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockMetrics_StreamTopPodServer)(nil).SendMsg), arg0)
 }
 
 // SetHeader mocks base method.

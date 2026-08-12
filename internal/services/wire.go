@@ -17,7 +17,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/repo"
 	"github.com/duc-cnzj/mars/api/v6/proto/token"
 	"github.com/duc-cnzj/mars/api/v6/proto/version"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/google/wire"
 	"google.golang.org/grpc"
 )
@@ -85,9 +85,9 @@ type NewGrpcRegistryDeps struct {
 // NewGrpcRegistry 组装 gRPC 网关路由表与服务器注册函数：把各服务实现注册到
 // grpc.Server（RegistryFunc）并挂载 HTTP-gateway 端点（EndpointFuncs）。
 // 由 wire 自动调用，消费方为 server 装配层。
-func NewGrpcRegistry(deps NewGrpcRegistryDeps) *application.GrpcRegistry {
-	return &application.GrpcRegistry{
-		EndpointFuncs: []application.EndpointFunc{
+func NewGrpcRegistry(deps NewGrpcRegistryDeps) *app.GrpcRegistry {
+	return &app.GrpcRegistry{
+		EndpointFuncs: []app.EndpointFunc{
 			repo.RegisterRepoHandlerFromEndpoint,
 			container.RegisterContainerHandlerFromEndpoint,
 			cluster.RegisterClusterHandlerFromEndpoint,

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/uploader"
@@ -13,13 +13,13 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 )
 
-var _ application.HttpHandler = (*httpHandlerImpl)(nil)
+var _ app.HttpHandler = (*httpHandlerImpl)(nil)
 
 // httpHandlerImpl 是 HTTP 传输层的门面：内嵌 websocket 服务器（WsHttpServer）承载
 // /ws 与 /api/ws_info，swagger 与文件路由分别委托给 swaggerHandler/fileHandler。
 // 自身只保留 ws 路由注册与优雅关闭，不再持有文件边界的任何依赖。
 type httpHandlerImpl struct {
-	application.WsHttpServer
+	app.WsHttpServer
 	logger  mlog.Logger
 	swagger *swaggerHandler
 	files   *fileHandler
@@ -27,7 +27,7 @@ type httpHandlerImpl struct {
 
 // HttpHandlerDeps 收口 NewHttpHandler 的构造依赖，由 wire 按字段注入。
 type HttpHandlerDeps struct {
-	WsHttpServer application.WsHttpServer
+	WsHttpServer app.WsHttpServer
 	Logger       mlog.Logger
 	Uploader     uploader.Uploader
 	AuthBiz      biz.AuthBiz
@@ -42,8 +42,8 @@ type HttpHandlerDeps struct {
 // NewHttpHandler 收口 HTTP 传输层的构造依赖：websocket 服务器（WsHttpServer）、
 // 上传适配器（uploader）与计时器（timer）是 HTTP 边界专属的输出端口，鉴权、
 // 文件、事件、k8s 各 biz 由 wire 注入；swagger 与文件处理器在内部按关注点拆分为
-// 独立子处理器。返回 application.HttpHandler 供服务装配。
-func NewHttpHandler(deps HttpHandlerDeps) application.HttpHandler {
+// 独立子处理器。返回 app.HttpHandler 供服务装配。
+func NewHttpHandler(deps HttpHandlerDeps) app.HttpHandler {
 	logger := deps.Logger.WithModule("services/httpHandler")
 	return &httpHandlerImpl{
 		WsHttpServer: deps.WsHttpServer,

@@ -84,8 +84,7 @@ func (f *fileSvc) ShowRecords(ctx context.Context, request *file.ShowRecordsRequ
 	defer records.Close()
 	all, readErr := io.ReadAll(records)
 	if readErr != nil {
-		f.logger.ErrorCtx(ctx, readErr)
-		return nil, readErr
+		return nil, logError(ctx, f.logger, readErr)
 	}
 
 	return &file.ShowRecordsResponse{Items: []string{string(all)}}, nil

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -55,7 +55,7 @@ func Test_httpHandlerImpl_Shutdown_Error(t *testing.T) {
 
 type httpHandlerMocks struct {
 	ctrl       *gomock.Controller
-	httpServer *application.MockHttpHandler
+	httpServer *app.MockHttpHandler
 	authBiz    *biz.MockAuthBiz
 	uploader   *uploader.MockUploader
 	fileRepo   *data.MockFileRepo
@@ -69,7 +69,7 @@ func newHttpHandlerMocks(t *testing.T) *httpHandlerMocks {
 	ctrl := gomock.NewController(t)
 	return &httpHandlerMocks{
 		ctrl:       ctrl,
-		httpServer: application.NewMockHttpHandler(ctrl),
+		httpServer: app.NewMockHttpHandler(ctrl),
 		authBiz:    biz.NewMockAuthBiz(ctrl),
 		uploader:   uploader.NewMockUploader(ctrl),
 		fileRepo:   data.NewMockFileRepo(ctrl),
@@ -94,7 +94,7 @@ func buildHttpHandlerDeps(t *testing.T, mocks *httpHandlerMocks) HttpHandlerDeps
 		K8sBiz:       biz.NewK8sBiz(mocks.k8sRepo),
 		// copyFromPod 的容器解析走真实 ContainerBiz：非空 container 直返，不触达 k8sRepo。
 		ContainerBiz: biz.NewContainerBiz(logger, biz.NewK8sBiz(mocks.k8sRepo), biz.NewFileBiz(mocks.fileRepo), biz.NewEventBiz(mocks.eventRepo), timer.NewReal()),
-		AccessBiz:    biz.NewAccessBiz(biz.NewNsRepoBiz(mocks.nsRepo), nil),
+		AccessBiz:    biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), nil),
 	}
 }
 

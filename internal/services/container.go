@@ -12,6 +12,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/container"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/dustin/go-humanize"
 )
@@ -72,7 +73,11 @@ func (c *containerSvc) IsPodExists(ctx context.Context, request *container.IsPod
 	}
 	_, err := c.k8sBiz.GetPod(request.GetNamespace(), request.GetPod())
 	if err != nil {
-		c.logger.ErrorCtx(ctx, err)
+		// 探活接口：pod 不存在是预期的否定结果（Exists:false），非真实错误，
+		// 不记 Error 日志；仅 k8s API 故障等非 NotFound 错误才留痕。
+		if !errs.IsNotFound(err) {
+			c.logger.ErrorCtx(ctx, err)
+		}
 		return &container.IsPodExistsResponse{Exists: false}, nil
 	}
 
@@ -256,8 +261,7 @@ func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server 
 				ContainerName: request.Container,
 				Log:           toValidUTF8String(msg),
 			}); err != nil {
-				c.logger.ErrorCtx(server.Context(), err)
-				return err
+				return logError(server.Context(), c.logger, err)
 			}
 		}
 		return nil

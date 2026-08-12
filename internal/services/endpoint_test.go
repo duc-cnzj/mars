@@ -146,7 +146,7 @@ func newEndpointSvcWithMocks(t *testing.T) (*endpointSvc, *endpointSvcMocks) {
 	s, ok := NewEndpointSvc(EndpointSvcDeps{
 		Logger:    logger,
 		EpBiz:     mocks.epBiz,
-		AccessBiz: biz.NewAccessBiz(biz.NewNsRepoBiz(mocks.nsRepo), biz.NewProjectBiz(logger, mocks.projRepo, nil)),
+		AccessBiz: biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), biz.NewProjectBiz(logger, mocks.projRepo, nil)),
 	}).(*endpointSvc)
 	if !ok {
 		panic("NewEndpointSvc returned unexpected type")

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/picture"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +21,7 @@ func TestNewPictureSvc(t *testing.T) {
 func Test_pictureSvc_Background(t *testing.T) {
 	svc, mocks := newPictureSvcWithMocks(t)
 	picBiz := mocks.picBiz
-	picBiz.EXPECT().Get(gomock.Any(), true).Return(&application.PictureItem{Url: "http://pic", Copyright: "© 2026"}, nil)
+	picBiz.EXPECT().Get(gomock.Any(), true).Return(&app.PictureItem{Url: "http://pic", Copyright: "© 2026"}, nil)
 	resp, err := svc.Background(context.TODO(), &picture.BackgroundRequest{Random: true})
 	assert.Nil(t, err)
 	if assert.NotNil(t, resp) {

@@ -24,7 +24,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	eventv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientgoexec "k8s.io/client-go/util/exec"
 )
 
 func TestNewContainerSvc(t *testing.T) {
@@ -81,6 +80,21 @@ func Test_containerSvc_IsPodExists_Fail(t *testing.T) {
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), gomock.Any()).Return(&biz.Namespace{}, nil).AnyTimes()
 	k8sRepo.EXPECT().GetPod("a", "b").Return(nil, errors.New("X"))
+	running, err := svc.IsPodExists(newAdminUserCtx(), &container.IsPodExistsRequest{
+		Namespace: "a",
+		Pod:       "b",
+	})
+	assert.False(t, running.Exists)
+	assert.Nil(t, err)
+}
+
+func Test_containerSvc_IsPodExists_NotFound(t *testing.T) {
+	svc, mocks := newContainerSvcWithMocks(t)
+	k8sRepo := mocks.k8sRepo
+	nsRepo := mocks.nsRepo
+	nsRepo.EXPECT().FindByName(gomock.Any(), gomock.Any()).Return(&biz.Namespace{}, nil).AnyTimes()
+	// pod 不存在（errs.NotFound）：探活接口静默返回 Exists:false，不记 Error 日志。
+	k8sRepo.EXPECT().GetPod("a", "b").Return(nil, errs.NotFound("pod not found"))
 	running, err := svc.IsPodExists(newAdminUserCtx(), &container.IsPodExistsRequest{
 		Namespace: "a",
 		Pod:       "b",
@@ -689,9 +703,9 @@ func TestContainerSvc_ExecOnce_Success(t *testing.T) {
 		Namespace: "a",
 		Pod:       "b",
 		Container: "c",
-	}, mac).Return(clientgoexec.CodeExitError{
-		Err:  errors.New("xx"),
-		Code: 1,
+	}, mac).Return(&biz.ExecExitError{
+		Code:    1,
+		Message: "xx",
 	})
 	ser := &execOnceServer{}
 	err := svc.ExecOnce(&container.ExecOnceRequest{
@@ -1087,7 +1101,7 @@ func TestContainerSvc_Exec_SendError(t *testing.T) {
 		// 写入 stdout，让 send goroutine 读到数据并触发 Send 错误
 		_, _ = v.Stdout.Write([]byte("A"))
 		return true
-	})).Return(&clientgoexec.CodeExitError{Err: errors.New("xx"), Code: 3})
+	})).Return(&biz.ExecExitError{Code: 3, Message: "xx"})
 
 	err := svc.Exec(&execServerAll{})
 	assert.Error(t, err)
@@ -1107,7 +1121,7 @@ func TestContainerSvc_Exec_FirstWriteError(t *testing.T) {
 	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
 	reco := &recorderMock{}
 	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any()).Return(reco)
-	k8sRepo.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Return(&clientgoexec.CodeExitError{Err: errors.New("xx"), Code: 4})
+	k8sRepo.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Return(&biz.ExecExitError{Code: 4, Message: "xx"})
 
 	err := svc.Exec(&execServerAll{})
 	assert.Error(t, err)
@@ -1179,7 +1193,7 @@ func TestContainerSvc_Exec_ConcurrentSend(t *testing.T) {
 		// 写入 stdout，让 send loop goroutine 读到数据并进入 Send。
 		_, _ = v.Stdout.Write([]byte("x"))
 		return true
-	})).Return(&clientgoexec.CodeExitError{Err: errors.New("xx"), Code: 4})
+	})).Return(&biz.ExecExitError{Code: 4, Message: "xx"})
 
 	server := &concurrentSendExecServer{
 		recvBlock: make(chan struct{}),
@@ -1245,7 +1259,7 @@ func TestContainerSvc_ExecOnce_ConcurrentSend(t *testing.T) {
 		}
 		_, _ = v.Stdout.Write([]byte("x"))
 		return true
-	})).Return(&clientgoexec.CodeExitError{Err: errors.New("xx"), Code: 4})
+	})).Return(&biz.ExecExitError{Code: 4, Message: "xx"})
 
 	server := &concurrentSendExecOnceServer{
 		release: make(chan struct{}),
@@ -1298,7 +1312,7 @@ func TestContainerSvc_ExecOnce_SendError(t *testing.T) {
 		// 写入 stdout 让 send goroutine 读到数据并触发 Send 错误
 		_, _ = v.Stdout.Write([]byte("A"))
 		return true
-	})).Return(&clientgoexec.CodeExitError{Err: errors.New("xx"), Code: 1})
+	})).Return(&biz.ExecExitError{Code: 1, Message: "xx"})
 
 	err := svc.ExecOnce(&container.ExecOnceRequest{Namespace: "a", Pod: "b"}, &execOnceServerErr{})
 	assert.Error(t, err)
@@ -1352,9 +1366,9 @@ func TestContainerSvc_Exec_Success(t *testing.T) {
 			v.Stdout != nil &&
 			v.Stderr != nil &&
 			v.TerminalSizeQueue != nil
-	})).Return(&clientgoexec.CodeExitError{
-		Err:  errors.New("xx"),
-		Code: 2,
+	})).Return(&biz.ExecExitError{
+		Code:    2,
+		Message: "xx",
 	})
 	mock := &execServerMock{}
 	err := svc.Exec(mock)
@@ -1525,7 +1539,7 @@ func newContainerSvcWithMocks(t *testing.T) (*containerSvc, *containerSvcMocks) 
 		EventBiz:     biz.NewEventBiz(mocks.eventRepo),
 		K8sBiz:       biz.NewK8sBiz(mocks.k8sRepo),
 		FileBiz:      biz.NewFileBiz(mocks.fileRepo),
-		AccessBiz:    biz.NewAccessBiz(biz.NewNsRepoBiz(mocks.nsRepo), nil),
+		AccessBiz:    biz.NewAccessBiz(biz.NewNamespaceBiz(mlog.NewForConfig(nil), mocks.nsRepo, nil, nil, nil), nil),
 		Logger:       mlog.NewForConfig(nil),
 	}).(*containerSvc)
 	if !ok {

@@ -7,7 +7,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/project"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/deploy"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -32,14 +32,14 @@ type projectSvc struct {
 	logger     mlog.Logger
 	repoBiz    biz.RepoBiz
 	deployBiz  biz.DeployBiz
-	plMgr      application.PluginManager
+	plMgr      app.PluginManager
 	accessBiz  biz.AccessBiz
 }
 
 // ProjectSvcDeps 收口 NewProjectSvc 的构造依赖，由 wire 按字段注入。
 type ProjectSvcDeps struct {
 	RepoBiz    biz.RepoBiz
-	PluginMgr  application.PluginManager
+	PluginMgr  app.PluginManager
 	JobManager deploy.JobManager
 	ProjBiz    biz.ProjectBiz
 	GitBiz     biz.GitBiz
@@ -167,7 +167,7 @@ func (p *projectSvc) apply(
 	// WebsocketSync 的 pubsub 属传输层关注点（来自 proto 请求字段），留在本层创建/关闭；
 	// 其余编排（鉴权、仓库取回、git ensure、版本反查、Job 装配、ctx watcher、InstallProject）
 	// 已下沉 deploy.ApplyProject，gRPC/WS 共享同一实现。
-	var pubsub application.PubSub = deploy.NewEmptyPubSub()
+	var pubsub = deploy.NewEmptyPubSub()
 	if input.WebsocketSync {
 		pubsub = p.plMgr.Ws().New("", "")
 	}
@@ -314,7 +314,7 @@ func (e *emptyMessager) SendEndError(err error) {}
 func (e *emptyMessager) SendMsg(s string) {}
 
 // SendProtoMsg 空实现。
-func (e *emptyMessager) SendProtoMsg(message application.WebsocketMessage) {}
+func (e *emptyMessager) SendProtoMsg(message app.WebsocketMessage) {}
 
 // SendProcessPercent 空实现。
 func (e *emptyMessager) SendProcessPercent(int64) {}
@@ -390,7 +390,7 @@ func (m *messager) SendMsg(s string) {
 }
 
 // SendProtoMsg 透传原始 websocket 元数据帧。
-func (m *messager) SendProtoMsg(message application.WebsocketMessage) {
+func (m *messager) SendProtoMsg(message app.WebsocketMessage) {
 	m.send(&project.ApplyResponse{Metadata: message.GetMetadata()})
 }
 

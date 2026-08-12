@@ -27,7 +27,6 @@ import (
 func TestNewNamespaceSvc_Creation(t *testing.T) {
 	svc, _ := newNamespaceSvcWithMocks(t)
 	assert.NotNil(t, svc)
-	assert.NotNil(t, svc.nsRepoBiz)
 	assert.NotNil(t, svc.nsBiz)
 	assert.NotNil(t, svc.logger)
 	assert.NotNil(t, svc.eventBiz)
@@ -996,7 +995,7 @@ func TestNamespaceSvc_Delete_RepoDeleteError(t *testing.T) {
 
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{ID: 1, Name: "namespace1"}, nil)
 	k8sRepo.EXPECT().DeleteNamespace(gomock.Any(), "namespace1").Return(nil)
-	// nsRepoBiz.Delete 失败 → 提前返回，轮询循环不会执行
+	// nsBiz.Delete 失败 → 提前返回，轮询循环不会执行
 	nsRepo.EXPECT().Delete(gomock.Any(), 1).Return(errors.New("x"))
 
 	res, err := svc.Delete(newAdminUserCtx(), &namespace.DeleteRequest{Id: 1})
@@ -1119,7 +1118,6 @@ func newNamespaceSvcWithMocks(t *testing.T) (*namespaceSvc, *namespaceSvcMocks) 
 	}
 	logger := mlog.NewForConfig(nil)
 	s, ok := NewNamespaceSvc(NamespaceSvcDeps{
-		NsRepoBiz: biz.NewNsRepoBiz(mocks.nsRepo),
 		NsBiz: biz.NewNamespaceBiz(
 			logger,
 			mocks.nsRepo,
@@ -1129,7 +1127,7 @@ func newNamespaceSvcWithMocks(t *testing.T) (*namespaceSvc, *namespaceSvcMocks) 
 		),
 		Logger:    logger,
 		EventBiz:  biz.NewEventBiz(mocks.eventRepo),
-		AccessBiz: biz.NewAccessBiz(biz.NewNsRepoBiz(mocks.nsRepo), nil),
+		AccessBiz: biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), nil),
 	}).(*namespaceSvc)
 	if !ok {
 		panic("NewNamespaceSvc returned unexpected type")

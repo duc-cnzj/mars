@@ -11,6 +11,7 @@ import (
 	reposerver "github.com/duc-cnzj/mars/api/v6/proto/repo"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	"github.com/samber/lo"
@@ -40,6 +41,8 @@ func Test_repoSvc_Clone_Success(t *testing.T) {
 		gomock.Not(nil),
 	)
 	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{}, nil)
+	// biz.Clone 前置名称唯一性校验：GetByName NotFound 视为名称空闲。
+	repoRepo.EXPECT().GetByName(gomock.Any(), "clone").Return(nil, repoNotFound())
 	repoRepo.EXPECT().Clone(gomock.Any(), &biz.CloneRepoInput{
 		ID:   1,
 		Name: "clone",
@@ -65,6 +68,7 @@ func Test_repoSvc_Clone_Error(t *testing.T) {
 
 	// 修复后 Get 先于 Clone；Get 成功后才可能走到 Clone 失败分支
 	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{}, nil)
+	repoRepo.EXPECT().GetByName(gomock.Any(), "clone").Return(nil, repoNotFound())
 	repoRepo.EXPECT().Clone(gomock.Any(), &biz.CloneRepoInput{
 		ID:   1,
 		Name: "clone",
@@ -103,6 +107,8 @@ func TestRepoSvc_Create_Success(t *testing.T) {
 	repoRepo := mocks.repoRepo
 	eventRepo := mocks.eventRepo
 
+	// biz.Create 前置名称唯一性校验：GetByName NotFound 视为名称空闲。
+	repoRepo.EXPECT().GetByName(gomock.Any(), "newRepo").Return(nil, repoNotFound())
 	repoRepo.EXPECT().Create(gomock.Any(), &biz.CreateRepoInput{
 		Name:         "newRepo",
 		Enabled:      true,
@@ -140,6 +146,7 @@ func TestRepoSvc_Create_Error(t *testing.T) {
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
+	repoRepo.EXPECT().GetByName(gomock.Any(), "newRepo").Return(nil, repoNotFound())
 	repoRepo.EXPECT().Create(gomock.Any(), &biz.CreateRepoInput{
 		Name:         "newRepo",
 		Enabled:      true,
@@ -348,6 +355,10 @@ func TestRepoSvc_Update_Success(t *testing.T) {
 		Name: "update",
 	}, nil)
 
+	// biz.Update 前置：GetByName NotFound（名称空闲）+ Show 校验有项目不可改名。
+	repoRepo.EXPECT().GetByName(gomock.Any(), "updated").Return(nil, repoNotFound())
+	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Repo{ID: 1, Name: "update"}, nil)
+
 	repoRepo.EXPECT().Update(gomock.Any(), &biz.UpdateRepoInput{
 		ID:           1,
 		Name:         "updated",
@@ -406,6 +417,9 @@ func TestRepoSvc_Update_Error2(t *testing.T) {
 	repoRepo := mocks.repoRepo
 
 	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{}, nil)
+	// biz.Update 前置：GetByName NotFound + Show（无项目）后走到 Update 失败。
+	repoRepo.EXPECT().GetByName(gomock.Any(), "updated").Return(nil, repoNotFound())
+	repoRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Repo{}, nil)
 	repoRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
 	res, err := svc.Update(newAdminUserCtx(), &reposerver.UpdateRequest{
 		Id:           1,
@@ -456,6 +470,12 @@ func TestRepoSvc_Authorize_NonListMethod(t *testing.T) {
 
 	assert.NotNil(t, err)
 	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
+// repoNotFound 返回 biz 层 errs.IsNotFound 判定的 NotFound 错误，
+// 供 repoBiz 前置 GetByName 预查"名称空闲"分支使用。
+func repoNotFound() error {
+	return errs.WrapNotFound(errors.New("not found"), "not found")
 }
 
 type repoSvcMocks struct {

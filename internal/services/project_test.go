@@ -10,7 +10,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/project"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/deploy"
@@ -581,26 +581,6 @@ func (x *mockProjectApplyServer) RecvMsg(m any) error {
 	return nil
 }
 
-func TestEmptyMessager_Current(t *testing.T) {
-	m := newEmptyMessager()
-	current := m.Current()
-	assert.Equal(t, int64(0), current)
-}
-
-func TestEmptyMessager_Add(t *testing.T) {
-	m := newEmptyMessager()
-	m.Add()
-	current := m.Current()
-	assert.Equal(t, int64(0), current)
-}
-
-func TestEmptyMessager_To(t *testing.T) {
-	m := newEmptyMessager()
-	m.To(50)
-	current := m.Current()
-	assert.Equal(t, int64(0), current)
-}
-
 func TestMessager_Current(t *testing.T) {
 	m := newMessager(true, "slug", websocket.Type_ApplyProject, nil)
 	current := m.Current()
@@ -653,7 +633,7 @@ func TestMessager_SendMsg(t *testing.T) {
 }
 
 type mockWsMessage struct {
-	application.WebsocketMessage
+	app.WebsocketMessage
 }
 
 func (m *mockWsMessage) GetMetadata() *websocket.Metadata {
@@ -767,7 +747,7 @@ type projectSvcMocks struct {
 	eventRepo   *data.MockEventRepo
 	helmerRepo  *data.MockHelmerRepo
 	nsRepo      *data.MockNamespaceRepo
-	plMgr       *application.MockPluginManager
+	plMgr       *app.MockPluginManager
 	jobManager  *deploy.MockJobManager
 }
 
@@ -785,7 +765,7 @@ func newProjectSvcWithMocks(t *testing.T) (*projectSvc, *projectSvcMocks) {
 		eventRepo:   data.NewMockEventRepo(ctrl),
 		helmerRepo:  data.NewMockHelmerRepo(ctrl),
 		nsRepo:      data.NewMockNamespaceRepo(ctrl),
-		plMgr:       application.NewMockPluginManager(ctrl),
+		plMgr:       app.NewMockPluginManager(ctrl),
 		jobManager:  deploy.NewMockJobManager(ctrl),
 	}
 	logger := mlog.NewForConfig(nil)
@@ -799,7 +779,7 @@ func newProjectSvcWithMocks(t *testing.T) (*projectSvc, *projectSvcMocks) {
 		EventBiz:   biz.NewEventBiz(mocks.eventRepo),
 		Logger:     logger,
 		DeployBiz:  biz.NewDeployBiz(logger, mocks.projectRepo, mocks.helmerRepo, mocks.eventRepo),
-		AccessBiz:  biz.NewAccessBiz(biz.NewNsRepoBiz(mocks.nsRepo), biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo)),
+		AccessBiz:  biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo)),
 	}).(*projectSvc)
 	if !ok {
 		panic("NewProjectSvc returned unexpected type")
@@ -857,8 +837,8 @@ func TestProjectSvc_Apply_WebsocketSync(t *testing.T) {
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{Private: false}, nil)
 	mocks.repoRepo.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&biz.Repo{Name: "test"}, nil)
 
-	wsSender := application.NewMockWsSender(mocks.ctrl)
-	pubsub := application.NewMockPubSub(mocks.ctrl)
+	wsSender := app.NewMockWsSender(mocks.ctrl)
+	pubsub := app.NewMockPubSub(mocks.ctrl)
 	mocks.plMgr.EXPECT().Ws().Return(wsSender)
 	wsSender.EXPECT().New("", "").Return(pubsub)
 	pubsub.EXPECT().Close()
@@ -882,7 +862,7 @@ func TestProjectSvc_Apply_NoCommits(t *testing.T) {
 	mocks.gitRepo.EXPECT().ListCommits(gomock.Any(), 10, "dev").Return([]*biz.Commit{}, nil)
 
 	_, err := svc.WebApply(newAdminUserCtx(), &project.WebApplyRequest{NamespaceId: 1, RepoId: 1})
-	assert.Equal(t, "没有可用的 commit", err.Error())
+	assert.ErrorContains(t, err, "没有可用的 commit")
 }
 
 func TestProjectSvc_Apply_VersionFindSuccess(t *testing.T) {

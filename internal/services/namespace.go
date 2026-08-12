@@ -22,7 +22,6 @@ var _ namespace.NamespaceServer = (*namespaceSvc)(nil)
 type namespaceSvc struct {
 	namespace.UnimplementedNamespaceServer
 
-	nsRepoBiz biz.NsRepoBiz
 	nsBiz     biz.NamespaceBiz
 	logger    mlog.Logger
 	eventBiz  biz.EventBiz
@@ -30,10 +29,9 @@ type namespaceSvc struct {
 }
 
 // NamespaceSvcDeps 收口 NewNamespaceSvc 的构造依赖，由 wire 按字段注入。
-// Create/Delete 的编排已下沉 biz.NamespaceBiz（K8sBiz/HelmerBiz 随之移出），
-// 传输层保留 NsRepoBiz（其余查询方法）+ EventBiz（审计日志）。
+// namespace 域单一业务接口 NamespaceBiz 承载 CRUD 门面 + Create/Delete 编排，
+// 传输层只保留鉴权、协议映射与审计日志（EventBiz）。
 type NamespaceSvcDeps struct {
-	NsRepoBiz biz.NsRepoBiz
 	NsBiz     biz.NamespaceBiz
 	Logger    mlog.Logger
 	EventBiz  biz.EventBiz
@@ -44,7 +42,6 @@ type NamespaceSvcDeps struct {
 func NewNamespaceSvc(deps NamespaceSvcDeps) namespace.NamespaceServer {
 	logger := deps.Logger.WithModule("services/namespace")
 	return &namespaceSvc{
-		nsRepoBiz: deps.NsRepoBiz,
 		nsBiz:     deps.NsBiz,
 		logger:    logger,
 		eventBiz:  deps.EventBiz,
@@ -56,7 +53,7 @@ func NewNamespaceSvc(deps NamespaceSvcDeps) namespace.NamespaceServer {
 // UpdatePrivate/SyncMembers 四个 owner 变更入口的公共前置，加载失败或非 owner
 // 直接返回错误，消除四处重复的"Show + Owner 校验"样板。
 func (n *namespaceSvc) showNsAndCheckOwner(ctx context.Context, id int) (*biz.Namespace, error) {
-	show, err := n.nsRepoBiz.Show(ctx, id)
+	show, err := n.nsBiz.Show(ctx, id)
 	if err != nil {
 		return nil, logError(ctx, n.logger, err)
 	}
@@ -73,7 +70,7 @@ func (n *namespaceSvc) Transfer(ctx context.Context, request *namespace.Transfer
 	if _, err := n.showNsAndCheckOwner(ctx, int(request.Id)); err != nil {
 		return nil, err
 	}
-	transfer, err := n.nsRepoBiz.Transfer(ctx, int(request.Id), request.NewAdminEmail)
+	transfer, err := n.nsBiz.Transfer(ctx, int(request.Id), request.NewAdminEmail)
 	if err != nil {
 		return nil, logError(ctx, n.logger, err)
 	}
@@ -90,7 +87,7 @@ func (n *namespaceSvc) Transfer(ctx context.Context, request *namespace.Transfer
 func (n *namespaceSvc) List(ctx context.Context, request *namespace.ListRequest) (*namespace.ListResponse, error) {
 	user := biz.MustGetUser(ctx)
 	page, size := pagination.InitByDefault(request.Page, request.PageSize)
-	namespaces, pag, err := n.nsRepoBiz.List(ctx, &biz.ListNamespaceInput{
+	namespaces, pag, err := n.nsBiz.List(ctx, &biz.ListNamespaceInput{
 		Favorite: request.Favorite,
 		Email:    user.Email,
 		Page:     page,
@@ -140,14 +137,13 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 			// FindByName（不感知权限），若当前用户无权访问直接 403，与 IsExists
 			// "私有空间视同不存在"的隐藏语义对齐，闭合元数据泄露面。
 			if !n.accessBiz.CanAccessNamespace(ctx, ns) {
-				n.logger.ErrorCtx(ctx, errs.ErrorPermissionDenied)
-				return nil, errs.ErrorPermissionDenied
+				return nil, logError(ctx, n.logger, errs.ErrorPermissionDenied)
 			}
 			return &namespace.CreateResponse{Item: transformer.FromNamespace(ns), Exists: true}, nil
 		}
 		// exists 且非 IgnoreIfExists：拒绝并返回 AlreadyExists——状态码由 biz 工厂提供，
 		// transport 不再散落 status.Error 构造（协议映射收口 biz）。
-		return nil, errs.ErrorAlreadyExists("名称空间已存在")
+		return nil, errs.AlreadyExists("名称空间已存在")
 	}
 
 	n.eventBiz.AuditLogWithRequest(
@@ -174,12 +170,12 @@ func (n *namespaceSvc) Show(ctx context.Context, input *namespace.ShowRequest) (
 
 // UpdateDesc 更新命名空间描述，落变更审计日志（含前后 diff）。
 func (n *namespaceSvc) UpdateDesc(ctx context.Context, req *namespace.UpdateDescRequest) (*namespace.UpdateDescResponse, error) {
-	old, err := n.nsRepoBiz.Show(ctx, int(req.Id))
+	old, err := n.nsBiz.Show(ctx, int(req.Id))
 	if err != nil {
 		return nil, logError(ctx, n.logger, err)
 	}
 
-	ns, err := n.nsRepoBiz.Update(ctx, &biz.UpdateNamespaceInput{
+	ns, err := n.nsBiz.Update(ctx, &biz.UpdateNamespaceInput{
 		ID:          int(req.Id),
 		Description: req.Desc,
 	})
@@ -231,7 +227,7 @@ func (n *namespaceSvc) Delete(ctx context.Context, input *namespace.DeleteReques
 
 // IsExists 查询命名空间是否存在：对无权限用户隐藏存在性，私有空间视同不存在。
 func (n *namespaceSvc) IsExists(ctx context.Context, input *namespace.IsExistsRequest) (*namespace.IsExistsResponse, error) {
-	ns, err := n.nsRepoBiz.FindByName(ctx, n.nsRepoBiz.GetMarsNamespace(input.Name))
+	ns, err := n.nsBiz.FindByName(ctx, n.nsBiz.GetMarsNamespace(input.Name))
 	if err != nil {
 		if errs.IsNotFound(err) {
 			return &namespace.IsExistsResponse{Exists: false}, nil
@@ -253,7 +249,7 @@ func (n *namespaceSvc) IsExists(ctx context.Context, input *namespace.IsExistsRe
 // Favorite 关注/取消关注命名空间，落更新审计日志。
 func (n *namespaceSvc) Favorite(ctx context.Context, req *namespace.FavoriteRequest) (*namespace.FavoriteResponse, error) {
 	user := biz.MustGetUser(ctx)
-	err := n.nsRepoBiz.Favorite(ctx, &biz.FavoriteNamespaceInput{
+	err := n.nsBiz.Favorite(ctx, &biz.FavoriteNamespaceInput{
 		NamespaceID: int(req.Id),
 		UserEmail:   user.Email,
 		Favorite:    req.Favorite,
@@ -265,7 +261,7 @@ func (n *namespaceSvc) Favorite(ctx context.Context, req *namespace.FavoriteRequ
 	if req.Favorite {
 		str = "关注"
 	}
-	ns, err := n.nsRepoBiz.Show(ctx, int(req.Id))
+	ns, err := n.nsBiz.Show(ctx, int(req.Id))
 	if err != nil {
 		return nil, logError(ctx, n.logger, err)
 	}
@@ -286,7 +282,7 @@ func (n *namespaceSvc) UpdatePrivate(ctx context.Context, req *namespace.UpdateP
 		return nil, err
 	}
 
-	private, err := n.nsRepoBiz.UpdatePrivate(ctx, int(req.Id), req.Private)
+	private, err := n.nsBiz.UpdatePrivate(ctx, int(req.Id), req.Private)
 	if err != nil {
 		return nil, logError(ctx, n.logger, err)
 	}
@@ -307,7 +303,7 @@ func (n *namespaceSvc) SyncMembers(ctx context.Context, req *namespace.SyncMembe
 		return nil, err
 	}
 
-	ns, err := n.nsRepoBiz.SyncMembers(ctx, int(req.Id), lo.Uniq(req.Emails))
+	ns, err := n.nsBiz.SyncMembers(ctx, int(req.Id), lo.Uniq(req.Emails))
 	if err != nil {
 		return nil, logError(ctx, n.logger, err)
 	}

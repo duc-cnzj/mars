@@ -100,9 +100,8 @@ func (m *metricsSvc) StreamTopPod(request *metrics.TopPodRequest, server metrics
 		}
 
 		if err := server.Send(m.buildTopPodResponse(sample)); err != nil {
-			// ErrorCtx 带上 stream 的 ctx（含请求元数据），与全项目 ErrorCtx 日志标准一致。
-			m.logger.ErrorCtx(server.Context(), err)
-			return err
+			// logError 带上 stream 的 ctx（含请求元数据），与全项目日志标准一致。
+			return logError(server.Context(), m.logger, err)
 		}
 		return nil
 	}

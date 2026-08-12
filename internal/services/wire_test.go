@@ -3,7 +3,7 @@ package services
 import (
 	"testing"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +23,7 @@ func (s *stubServiceRegistrar) RegisterService(sd *grpc.ServiceDesc, _ any) {
 func Test_NewGrpcRegistry_Success(t *testing.T) {
 	reg := NewGrpcRegistry(NewGrpcRegistryDeps{})
 
-	assert.IsType(t, &application.GrpcRegistry{}, reg)
+	assert.IsType(t, &app.GrpcRegistry{}, reg)
 	assert.Len(t, reg.EndpointFuncs, 15)
 	assert.NotNil(t, reg.RegistryFunc)
 }
@@ -59,7 +59,7 @@ func Test_NewGrpcRegistry_RegistersAllServices(t *testing.T) {
 // repo 传 nil 即可（RequireAdmin 不触达实体加载，符合 NewAccessBiz 的"repo 懒加载"约定）。
 func Test_AccessGetUserBinding(t *testing.T) {
 	ab := biz.NewAccessBiz(nil, nil)
-	// 编译期断言返回类型满足 AccessBiz 接口。
+	//nolint:staticcheck // 编译期断言返回类型满足 AccessBiz 接口，显式类型声明是断言意图，不可省略。
 	var _ biz.AccessBiz = ab
 
 	// admin 上下文通过 admin 门禁（allowlist 未命中时仍放行）。
