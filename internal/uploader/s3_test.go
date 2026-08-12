@@ -15,6 +15,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -30,6 +31,16 @@ func TestMain(m *testing.M) {
 	exitCode := m.Run()
 	_ = os.RemoveAll(testDir)
 	os.Exit(exitCode)
+}
+
+// resetTestDir 清空并重建共享的 testDir，让每个测试独立运行：
+// 各测试会遗留文件/目录（Put 的本地镜像、NewFile 创建的文件、MkDir 的目录），
+// 不清空的话，后续测试对"目录为空/文件不存在"的前置断言（DirSize()==0、
+// Delete 报错、DeleteDir 报错）会顺序相关地失败（-shuffle/-count 暴露）。
+func resetTestDir(t *testing.T) {
+	t.Helper()
+	require.NoError(t, os.RemoveAll(testDir))
+	require.NoError(t, os.MkdirAll(testDir, os.ModePerm))
 }
 
 // fakeMinio 是 minioAPI 的测试替身：每个方法对应一个函数字段，测试按需注入，
@@ -80,6 +91,7 @@ func newTestS3(fake *fakeMinio, root string) *s3Uploader {
 // newTestS3WithDisk 构造 root 前缀的 s3Uploader，本地镜像落到 testDir。
 func newTestS3WithDisk(t *testing.T, fake *fakeMinio, root string) (*s3Uploader, *diskUploader) {
 	t.Helper()
+	resetTestDir(t)
 	up, err := NewDiskUploader(testDir, mlog.NewForConfig(nil))
 	assert.NoError(t, err)
 	return newS3(func() minioAPI { return fake }, testBucketName, up, root).(*s3Uploader), up.(*diskUploader)
@@ -101,6 +113,7 @@ func TestS3_Type(t *testing.T) {
 }
 
 func TestS3_Disk(t *testing.T) {
+	resetTestDir(t)
 	up, err := NewDiskUploader(testDir, mlog.NewForConfig(nil))
 	assert.NoError(t, err)
 	s3u := newS3(nil, testBucketName, up, "data").(*s3Uploader)

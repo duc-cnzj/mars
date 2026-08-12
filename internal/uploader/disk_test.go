@@ -18,6 +18,7 @@ import (
 )
 
 func TestNewUploader(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, err := NewUploader(cfg, logger, nil)
@@ -69,6 +70,7 @@ func TestFileInfo(t *testing.T) {
 }
 
 func TestUploader_DeleteDir(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -78,6 +80,7 @@ func TestUploader_DeleteDir(t *testing.T) {
 }
 
 func TestUploader_Delete(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -88,6 +91,7 @@ func TestUploader_Delete(t *testing.T) {
 }
 
 func TestUploader_DirSize(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -104,6 +108,7 @@ func TestUploader_DirSize(t *testing.T) {
 }
 
 func TestUploader_MkDir(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -112,6 +117,7 @@ func TestUploader_MkDir(t *testing.T) {
 }
 
 func TestUploader_DirExists(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -125,6 +131,7 @@ func TestUploader_DirExists(t *testing.T) {
 }
 
 func TestUploader_RemoveEmptyDir(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -137,6 +144,7 @@ func TestUploader_RemoveEmptyDir(t *testing.T) {
 }
 
 func TestUploader_AllDirectoryFiles(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -153,6 +161,7 @@ func TestUploader_AllDirectoryFiles(t *testing.T) {
 }
 
 func TestUploader_Put(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -163,6 +172,7 @@ func TestUploader_Put(t *testing.T) {
 }
 
 func TestUploader_NewFile(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -175,6 +185,7 @@ func TestUploader_NewFile(t *testing.T) {
 }
 
 func TestUploader_Type(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -182,6 +193,7 @@ func TestUploader_Type(t *testing.T) {
 }
 
 func TestUploader_Read(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -197,6 +209,7 @@ func TestUploader_Read(t *testing.T) {
 }
 
 func TestUploader_Stat(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -254,6 +267,7 @@ func Test_diskUploader_AllDirectoryFiles_MissingRoot(t *testing.T) {
 
 // TestUploader_Delete_MissingFile 覆盖 Delete 对不存在文件返回错误的分支。
 func TestUploader_Delete_MissingFile(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -262,6 +276,7 @@ func TestUploader_Delete_MissingFile(t *testing.T) {
 
 // TestUploader_Put_AlreadyExists 覆盖 Put 对已存在文件拒绝覆盖的分支。
 func TestUploader_Put_AlreadyExists(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -279,6 +294,7 @@ func (errorReader) Read([]byte) (int, error) { return 0, errors.New("read boom")
 
 // TestUploader_Put_CopyError 覆盖 Put 中 io.Copy 失败的错误分支。
 func TestUploader_Put_CopyError(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -289,6 +305,7 @@ func TestUploader_Put_CopyError(t *testing.T) {
 
 // TestUploader_MkDir_NonRecursive_ExistingDir 覆盖 MkDir 非递归模式对已存在目录返回错误的分支。
 func TestUploader_MkDir_NonRecursive_ExistingDir(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -300,6 +317,7 @@ func TestUploader_MkDir_NonRecursive_ExistingDir(t *testing.T) {
 // TestUploader_Put_MkDirError 覆盖 Put 中 MkdirAll 失败的错误分支：
 // 目标目录的父级是普通文件时，MkdirAll 报 ENOTDIR。
 func TestUploader_Put_MkDirError(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -314,6 +332,7 @@ func TestUploader_Put_MkDirError(t *testing.T) {
 // 文件名超过单组件长度上限时，Create 报 ENAMETOOLONG（且父目录已存在，
 // 不会先命中 MkdirAll 分支）。
 func TestUploader_Put_CreateError(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -326,6 +345,7 @@ func TestUploader_Put_CreateError(t *testing.T) {
 // TestUploader_NewFile_MkDirError 覆盖 NewFile 中 MkdirAll 失败的错误分支：
 // 目标目录的父级是普通文件时，MkdirAll 报 ENOTDIR。
 func TestUploader_NewFile_MkDirError(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -340,6 +360,7 @@ func TestUploader_NewFile_MkDirError(t *testing.T) {
 // os.ReadDir 失败的错误分支：目录无读权限时 ReadDir 报 EACCES，
 // 该目录被记录后由错误分支跳过（不 panic、不删除）。
 func TestUploader_RemoveEmptyDir_ReadDirError(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{UploadDir: testDir}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)

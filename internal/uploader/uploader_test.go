@@ -39,6 +39,7 @@ func TestNewUploader_WithS3Enabled_ReturnsS3Uploader(t *testing.T) {
 // S3 惰性解析链路：传入的取数函数在 thunk 调用时才解析出 *minio.Client，
 // 被包成 minioClient 适配器塞进 s3Uploader.getMinioAPI。
 func TestNewUploader_WithS3EnabledAndClient_WrapsMinioClient(t *testing.T) {
+	resetTestDir(t)
 	cfg := &config.Config{S3Enabled: true, S3Bucket: "test-bucket", UploadDir: testDir}
 	logger := mlog.NewForConfig(cfg)
 
