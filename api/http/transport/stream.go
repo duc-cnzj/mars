@@ -36,6 +36,7 @@ type typedStream[T proto.Message] struct {
 	raw RawStream
 }
 
+// Recv 阻塞读取下一条消息并反序列化为类型 T；io.EOF 表示流正常结束，其余错误即流级错误。
 func (s *typedStream[T]) Recv() (T, error) {
 	var zero T
 	msg := reflect.New(reflect.TypeOf(zero).Elem()).Interface().(proto.Message)
@@ -45,4 +46,5 @@ func (s *typedStream[T]) Recv() (T, error) {
 	return msg.(T), nil
 }
 
+// Close 关闭底层原始流，释放连接资源。
 func (s *typedStream[T]) Close() error { return s.raw.Close() }

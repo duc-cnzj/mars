@@ -369,18 +369,22 @@ func scalarString(fd protoreflect.FieldDescriptor, v protoreflect.Value) string 
 // 同时保持 Client 公共 API 零膨胀。
 type ops struct{ c *Client }
 
+// Do 执行一次 unary 调用（401 自动重登重试一次），结果反序列化进 resp。
 func (o ops) Do(ctx context.Context, method, path string, req, resp proto.Message) error {
 	return o.c.do(ctx, method, path, req, resp)
 }
 
+// DoNoRefresh 执行一次 unary 调用（不触发自动重登，供登录/换 token 元请求使用），结果反序列化进 resp。
 func (o ops) DoNoRefresh(ctx context.Context, method, path string, req, resp proto.Message) error {
 	return o.c.doNoRefresh(ctx, method, path, req, resp)
 }
 
+// DoQuery 以 query 参数形式执行一次调用（401 自动重登重试一次），结果反序列化进 resp。
 func (o ops) DoQuery(ctx context.Context, method, path string, req, resp proto.Message) error {
 	return o.c.doQuery(ctx, method, path, req, resp)
 }
 
+// OpenStream 打开一条 server-streaming 流，返回底层原始流供泛型工厂包装。
 func (o ops) OpenStream(ctx context.Context, method, path string, req proto.Message) (transport.RawStream, error) {
 	return o.c.openStream(ctx, method, path, req)
 }
@@ -388,18 +392,48 @@ func (o ops) OpenStream(ctx context.Context, method, path string, req proto.Mess
 // 各 service 的访问器。调用方式与 gRPC SDK（api/grpc/client.go）对齐：cli.Namespace().List(ctx, req)。
 // File 除了生成 CRUD 还挂手写自定义路由（multipart 上传/二进制下载/copy_from_pod），
 // 通过 FileAPI 嵌入 *rest.FileSvc 实现，调用同样走 cli.File()，见 file_custom.go。
+// AccessToken 返回访问令牌(access_token)服务的 HTTP SDK 客户端。
 func (c *Client) AccessToken() *rest.AccessTokenSvc { return &rest.AccessTokenSvc{C: ops{c}} }
-func (c *Client) Auth() *rest.AuthSvc               { return &rest.AuthSvc{C: ops{c}} }
-func (c *Client) Changelog() *rest.ChangelogSvc     { return &rest.ChangelogSvc{C: ops{c}} }
-func (c *Client) Cluster() *rest.ClusterSvc         { return &rest.ClusterSvc{C: ops{c}} }
-func (c *Client) Container() *rest.ContainerSvc     { return &rest.ContainerSvc{C: ops{c}} }
-func (c *Client) Endpoint() *rest.EndpointSvc       { return &rest.EndpointSvc{C: ops{c}} }
-func (c *Client) Event() *rest.EventSvc             { return &rest.EventSvc{C: ops{c}} }
-func (c *Client) File() *FileAPI                    { return &FileAPI{FileSvc: &rest.FileSvc{C: ops{c}}, c: c} }
-func (c *Client) Git() *rest.GitSvc                 { return &rest.GitSvc{C: ops{c}} }
-func (c *Client) Metrics() *rest.MetricsSvc         { return &rest.MetricsSvc{C: ops{c}} }
-func (c *Client) Namespace() *rest.NamespaceSvc     { return &rest.NamespaceSvc{C: ops{c}} }
-func (c *Client) Picture() *rest.PictureSvc         { return &rest.PictureSvc{C: ops{c}} }
-func (c *Client) Project() *rest.ProjectSvc         { return &rest.ProjectSvc{C: ops{c}} }
-func (c *Client) Repo() *rest.RepoSvc               { return &rest.RepoSvc{C: ops{c}} }
-func (c *Client) Version() *rest.VersionSvc         { return &rest.VersionSvc{C: ops{c}} }
+
+// Auth 返回认证(auth)服务的 HTTP SDK 客户端。
+func (c *Client) Auth() *rest.AuthSvc { return &rest.AuthSvc{C: ops{c}} }
+
+// Changelog 返回变更记录(changelog)服务的 HTTP SDK 客户端。
+func (c *Client) Changelog() *rest.ChangelogSvc { return &rest.ChangelogSvc{C: ops{c}} }
+
+// Cluster 返回集群(cluster)服务的 HTTP SDK 客户端。
+func (c *Client) Cluster() *rest.ClusterSvc { return &rest.ClusterSvc{C: ops{c}} }
+
+// Container 返回容器(container)服务的 HTTP SDK 客户端。
+func (c *Client) Container() *rest.ContainerSvc { return &rest.ContainerSvc{C: ops{c}} }
+
+// Endpoint 返回端点(endpoint)服务的 HTTP SDK 客户端。
+func (c *Client) Endpoint() *rest.EndpointSvc { return &rest.EndpointSvc{C: ops{c}} }
+
+// Event 返回事件(event)服务的 HTTP SDK 客户端。
+func (c *Client) Event() *rest.EventSvc { return &rest.EventSvc{C: ops{c}} }
+
+// File 返回文件(file)服务的 HTTP SDK 客户端：除生成 CRUD 外还挂手写自定义路由
+// （multipart 上传/二进制下载/copy_from_pod），见 file_custom.go。
+func (c *Client) File() *FileAPI { return &FileAPI{FileSvc: &rest.FileSvc{C: ops{c}}, c: c} }
+
+// Git 返回 Git(git)服务的 HTTP SDK 客户端。
+func (c *Client) Git() *rest.GitSvc { return &rest.GitSvc{C: ops{c}} }
+
+// Metrics 返回指标(metrics)服务的 HTTP SDK 客户端。
+func (c *Client) Metrics() *rest.MetricsSvc { return &rest.MetricsSvc{C: ops{c}} }
+
+// Namespace 返回命名空间(namespace)服务的 HTTP SDK 客户端。
+func (c *Client) Namespace() *rest.NamespaceSvc { return &rest.NamespaceSvc{C: ops{c}} }
+
+// Picture 返回图片(picture)服务的 HTTP SDK 客户端。
+func (c *Client) Picture() *rest.PictureSvc { return &rest.PictureSvc{C: ops{c}} }
+
+// Project 返回项目(project)服务的 HTTP SDK 客户端。
+func (c *Client) Project() *rest.ProjectSvc { return &rest.ProjectSvc{C: ops{c}} }
+
+// Repo 返回仓库(repo)服务的 HTTP SDK 客户端。
+func (c *Client) Repo() *rest.RepoSvc { return &rest.RepoSvc{C: ops{c}} }
+
+// Version 返回版本(version)服务的 HTTP SDK 客户端。
+func (c *Client) Version() *rest.VersionSvc { return &rest.VersionSvc{C: ops{c}} }

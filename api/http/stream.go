@@ -147,4 +147,5 @@ func streamErrorFromEnvelope(raw json.RawMessage) error {
 	return status.Error(codes.Code(se.Code), se.Message)
 }
 
+// Close 关闭事件流的底层 HTTP 响应体，释放连接资源。
 func (s *eventStream) Close() error { return s.rc.Close() }

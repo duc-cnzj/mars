@@ -148,58 +148,72 @@ func (c *Client) Auth() auth.AuthClient {
 	return c.auth
 }
 
+// Repo 返回仓库(repo)服务的 gRPC 客户端。
 func (c *Client) Repo() repo.RepoClient {
 	return c.repo
 }
 
+// Changelog 返回变更记录(changelog)服务的 gRPC 客户端。
 func (c *Client) Changelog() changelog.ChangelogClient {
 	return c.changelog
 }
 
+// Cluster 返回集群(cluster)服务的 gRPC 客户端。
 func (c *Client) Cluster() cluster.ClusterClient {
 	return c.cluster
 }
 
+// Container 返回容器(container)服务的 gRPC 客户端。
 func (c *Client) Container() container.ContainerClient {
 	return c.container
 }
 
+// Event 返回事件(event)服务的 gRPC 客户端。
 func (c *Client) Event() event.EventClient {
 	return c.event
 }
 
+// AccessToken 返回访问令牌(token)服务的 gRPC 客户端。
 func (c *Client) AccessToken() token.AccessTokenClient {
 	return c.accessToken
 }
 
+// File 返回文件(file)服务的 gRPC 客户端。
 func (c *Client) File() file.FileClient {
 	return c.file
 }
 
+// Git 返回 Git(git)服务的 gRPC 客户端。
 func (c *Client) Git() git.GitClient {
 	return c.git
 }
 
+// Metrics 返回指标(metrics)服务的 gRPC 客户端。
 func (c *Client) Metrics() metrics.MetricsClient {
 	return c.metrics
 }
 
+// Namespace 返回命名空间(namespace)服务的 gRPC 客户端。
 func (c *Client) Namespace() namespace.NamespaceClient {
 	return c.namespace
 }
 
+// Picture 返回图片(picture)服务的 gRPC 客户端。
 func (c *Client) Picture() picture.PictureClient {
 	return c.picture
 }
 
+// Project 返回项目(project)服务的 gRPC 客户端。
 func (c *Client) Project() project.ProjectClient {
 	return c.project
 }
 
+// Version 返回版本(version)服务的 gRPC 客户端。
 func (c *Client) Version() version.VersionClient {
 	return c.version
 }
 
+// Endpoint 返回端点(endpoint)服务的 gRPC 客户端。
 func (c *Client) Endpoint() endpoint.EndpointClient {
 	return c.endpoint
 }
@@ -271,12 +285,16 @@ type clientauth struct {
 	c *Client
 }
 
+// GetRequestMetadata 返回每个 RPC 请求附带的 Authorization 元数据（当前 token），
+// 实现 credentials.PerRPCCredentials 接口。
 func (a *clientauth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
 	return map[string]string{
 		"Authorization": a.c.authToken(),
 	}, nil
 }
 
+// RequireTransportSecurity 恒返回 false：本客户端允许在非 TLS 明文连接上携带 token，
+// 是否启用传输加密由 WithTransportCredentials 决定，实现 credentials.PerRPCCredentials 接口。
 func (a *clientauth) RequireTransportSecurity() bool {
 	return false
 }
@@ -368,6 +386,9 @@ func (s *autoRefreshStream) SendMsg(m interface{}) error {
 	return s.ClientStream.SendMsg(m)
 }
 
+// RecvMsg 读取下一条消息；遇到 Unauthenticated 且本流尚未刷新过时，自动刷新 token 并
+// 重建流（用缓存的请求消息重发）后继续读取，避免 token 过期导致 server-streaming 中途断开。
+// 只刷新重试一次，防止 token 持续失效时无限循环。
 func (s *autoRefreshStream) RecvMsg(m interface{}) error {
 	err := s.ClientStream.RecvMsg(m)
 	if status.Code(err) != codes.Unauthenticated || s.refreshed {

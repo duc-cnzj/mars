@@ -23,26 +23,22 @@ type call struct {
 	chans []chan<- Result
 }
 
-// Group represents a class of work and forms a namespace in
-// which units of work can be executed with duplicate suppression.
+// Group 代表一类工作集合，构成一个命名空间：同 key 的并发工作被去重抑制（只执行一次）。
 type Group struct {
-	mu sync.Mutex       // protects m
-	m  map[string]*call // lazily initialized
+	mu sync.Mutex       // 保护 m
+	m  map[string]*call // 惰性初始化
 }
 
-// Result holds the results of Do, so they can be passed
-// on a channel.
+// Result 保存 Do 的返回结果，供通过 channel 异步接收。
 type Result struct {
 	Val    interface{}
 	Err    error
 	Shared bool
 }
 
-// Do executes and returns the results of the given function, making
-// sure that only one execution is in-flight for a given key at a
-// time. If a duplicate comes in, the duplicate caller waits for the
-// original to complete and receives the same results.
-// The return value shared indicates whether v was given to multiple callers.
+// Do 执行并返回给定函数的结果：同一 key 在任意时刻只允许一个执行在途。
+// 若 key 已存在重复调用，则等待首次执行完成后共享同一份结果。
+// 返回值 shared 表示结果是否被多个调用方共享。
 func (g *Group) Do(key string, fn func() (interface{}, error)) (v interface{}, err error, shared bool) {
 	g.mu.Lock()
 	if g.m == nil {
@@ -63,10 +59,8 @@ func (g *Group) Do(key string, fn func() (interface{}, error)) (v interface{}, e
 	return c.val, c.err, c.dups > 0
 }
 
-// DoChan is like Do but returns a channel that will receive the
-// results when they are ready. The second result is true if the function
-// will eventually be called, false if it will not (because there is
-// a pending request with this key).
+// DoChan 类似 Do，但通过返回的 channel 异步接收结果。
+// 第二个返回值 true 表示本调用将真正执行函数；false 表示已存在同 key 的挂起请求，仅共享其结果。
 func (g *Group) DoChan(key string, fn func() (interface{}, error)) (<-chan Result, bool) {
 	ch := make(chan Result, 1)
 	g.mu.Lock()
@@ -102,11 +96,9 @@ func (g *Group) doCall(c *call, key string, fn func() (interface{}, error)) {
 	g.mu.Unlock()
 }
 
-// ForgetUnshared tells the singleflight to forget about a key if it is not
-// shared with any other goroutines. Future calls to Do for a forgotten key
-// will call the function rather than waiting for an earlier call to complete.
-// Returns whether the key was forgotten or unknown--that is, whether no
-// other goroutines are waiting for the result.
+// ForgetUnshared 若 key 当前未被其他 goroutine 共享则将其从映射中遗忘：
+// 之后对该 key 的 Do 调用会重新执行函数，而非等待早前的调用完成。
+// 返回值表示该 key 是否被遗忘（或本就未知），即是否没有其他 goroutine 在等待其结果。
 func (g *Group) ForgetUnshared(key string) bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
