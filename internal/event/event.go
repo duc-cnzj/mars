@@ -7,41 +7,38 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 )
 
-// Event is a named application event dispatched through the Dispatcher.
+// Event 是经 Dispatcher 分发的具名应用事件。
 type Event string
 
-// String implements fmt.Stringer for Event.
+// String 实现 fmt.Stringer，返回事件名。
 func (e Event) String() string {
 	return string(e)
 }
 
-// Listener handles a dispatched event payload. The returned error is logged
-// by the dispatcher and does not stop the remaining listeners of the event.
+// Listener 处理分发的事件负载；返回的错误由 dispatcher 记录，不阻断同事件其余监听器。
 type Listener func(any, Event) error
 
 // eventChannelBuffer is the capacity of the dispatcher's event channel.
 const eventChannelBuffer = 800
 
-// Dispatcher is an in-process, fire-and-forget event bus.
+// Dispatcher 是进程内即发即忘（fire-and-forget）的事件总线。
 type Dispatcher interface {
-	// Listen registers a listener for the given event.
+	// Listen 为事件注册监听器。
 	Listen(Event, Listener)
 
-	// Dispatch enqueues an event asynchronously. It never blocks: when the
-	// internal buffer is full, the event is dropped and a warning is logged.
+	// Dispatch 异步入队事件，永不阻塞：内部缓冲满时丢弃事件并告警。
 	Dispatch(Event, any)
 
-	// GetListeners returns a copy of the listeners registered for the event.
+	// GetListeners 返回事件已注册监听器的拷贝。
 	GetListeners(Event) []Listener
 
-	// Run starts the dispatcher's processing loop in a background goroutine.
-	// It must be invoked exactly once.
+	// Run 在后台 goroutine 启动处理循环；必须恰好调用一次。
 	Run(context.Context) error
 
-	// Shutdown stops the dispatcher's processing loop.
+	// Shutdown 停止处理循环。
 	Shutdown(context.Context) error
 
-	// List returns a copy of all listeners, keyed by event.
+	// List 返回按事件分组的全部监听器拷贝。
 	List() map[Event][]Listener
 }
 
@@ -66,8 +63,7 @@ type dispatcher struct {
 
 var _ Dispatcher = (*dispatcher)(nil)
 
-// NewDispatcher returns a Dispatcher backed by an eventChannelBuffer-capacity
-// event channel.
+// NewDispatcher 构造基于 eventChannelBuffer 容量事件通道的 Dispatcher。
 func NewDispatcher(logger mlog.Logger) Dispatcher {
 	ctx, cancelFunc := context.WithCancel(context.TODO())
 
@@ -80,11 +76,9 @@ func NewDispatcher(logger mlog.Logger) Dispatcher {
 	}
 }
 
-// Run starts the processing loop in a background goroutine and returns nil.
-// The loop drains the event channel and runs each event's listeners; it stops
-// when the dispatcher or the caller's context is done, or the channel closes.
-// The error return satisfies application.Server: starting the loop cannot fail.
-// Callers must invoke it exactly once.
+// Run 在后台 goroutine 启动处理循环并返回 nil：循环排空事件通道、逐个执行各事件
+// 监听器；dispatcher/caller 的 ctx 结束或通道关闭时停止。错误返回值仅用于满足
+// app.Server 接口（启动不可能失败）。调用方必须恰好调用一次。
 func (d *dispatcher) Run(ctx context.Context) error {
 	d.logger.Info("[Event]: dispatcher running")
 	go func() {
@@ -115,16 +109,15 @@ func (d *dispatcher) Run(ctx context.Context) error {
 	return nil
 }
 
-// Shutdown cancels the dispatcher's internal context, stopping the processing
-// loop started by Run. Shutdown is instantaneous; the passed context is not
-// consulted (reserved for a future graceful-drain implementation).
+// Shutdown 取消 dispatcher 内部 ctx，停止 Run 启动的处理循环；立即返回，
+// 入参 ctx 暂不消费（为将来优雅排空预留）。
 func (d *dispatcher) Shutdown(ctx context.Context) error {
 	d.logger.Info("[Event]: dispatcher shutdown")
 	d.cancel()
 	return nil
 }
 
-// Listen registers a listener for the given event.
+// Listen 为事件注册监听器。
 func (d *dispatcher) Listen(event Event, listener Listener) {
 	d.Lock()
 	defer d.Unlock()
@@ -134,8 +127,7 @@ func (d *dispatcher) Listen(event Event, listener Listener) {
 	d.listeners[event] = append(d.listeners[event], listener)
 }
 
-// Dispatch enqueues an event. Non-blocking: when the buffer is full, the
-// event is dropped and a warning is logged.
+// Dispatch 入队事件，非阻塞：缓冲满时丢弃事件并告警。
 func (d *dispatcher) Dispatch(event Event, payload any) {
 	select {
 	case d.ch <- &eventBody{
@@ -147,8 +139,7 @@ func (d *dispatcher) Dispatch(event Event, payload any) {
 	}
 }
 
-// GetListeners returns a copy of the listeners registered for the event, so
-// callers cannot mutate the dispatcher's internal registration.
+// GetListeners 返回事件已注册监听器的拷贝，调用方无法改动内部注册。
 func (d *dispatcher) GetListeners(event Event) []Listener {
 	d.RLock()
 	defer d.RUnlock()
@@ -156,8 +147,7 @@ func (d *dispatcher) GetListeners(event Event) []Listener {
 	return append([]Listener(nil), d.listeners[event]...)
 }
 
-// List returns a copy of all listeners, keyed by event, so callers cannot
-// mutate the dispatcher's internal registration.
+// List 返回按事件分组的全部监听器拷贝，调用方无法改动内部注册。
 func (d *dispatcher) List() map[Event][]Listener {
 	d.RLock()
 	defer d.RUnlock()

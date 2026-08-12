@@ -48,7 +48,7 @@ func TestDispatcher_GetListeners_ReturnsCopy(t *testing.T) {
 	dispatcher.Listen(eventName, func(any, Event) error { return nil })
 
 	got := dispatcher.GetListeners(eventName)
-	got = append(got, func(any, Event) error { return nil })
+	_ = append(got, func(any, Event) error { return nil })
 	assert.Equal(t, 1, len(dispatcher.GetListeners(eventName)))
 }
 
