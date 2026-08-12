@@ -10,9 +10,10 @@ import (
 )
 
 // AccessLogUnaryServerInterceptor 是 Unary 访问日志拦截器：每个请求打一条 Info 日志，
-// 记录调用用户、方法名与耗时。须置于登录拦截器之前——登录失败（401）同样会被记录，
-// 此时 ctx 未注入用户，grpcUser 返回空 UserInfo 匿名记录（避免认证失败成为访问日志盲区，
-// 与 grpc.go 链序注释的 Metrics/AccessLog 前置约定一致）。
+// 记录调用用户、方法名与耗时。须置于登录拦截器之后——Login 验签成功把用户注入新 ctx
+// 传给内层拦截器，本拦截器收到的 ctx 已带用户，grpcUser 才能打印出调用用户；
+// 代价：401 请求（Login 失败）不产生访问日志，401 审计由 Login 拦截器内的
+// [auth audit] Warning 日志兜底、Metrics 兜住监控（见 grpc.go 链序注释）。
 func AccessLogUnaryServerInterceptor(logger mlog.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		defer func(t time.Time) {

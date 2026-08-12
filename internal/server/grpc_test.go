@@ -275,6 +275,58 @@ func Test_grpcRunner_initServer_InterceptorPanicRecovered(t *testing.T) {
 	assert.Equal(t, codes.Internal, status.Code(err))
 }
 
+// Test_grpcRunner_initServer_AccessLogPrintsUser 驱动真实 Unary RPC 验证链序不变量：
+// AccessLog 位于 Login 之后——携带 Bearer token 的请求先经 Login 注入用户再进 AccessLog，
+// 访问日志须打印出调用用户"duc"。此断言为「Login 须在 AccessLog 之前」的承重护栏：
+// 若将来有人把 AccessLog 挪回 Login 外层，defer 持原始 ctx 导致 grpcUser 返回匿名，
+// Infof 的 user 参数不再等于 "duc"，断言即失败。
+func Test_grpcRunner_initServer_AccessLogPrintsUser(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	logger := mlog.NewMockLogger(m)
+	// 请求体是 proto 消息（实现 String()），LoggerUnaryServerInterceptor 记一条 Debugf；
+	// 用 AnyTimes 容错——本测试的承重断言是下面的 Infof。
+	logger.EXPECT().Debugf("[request logger]: method=%s body=%v", "/echo.Test/Echo", gomock.Any()).AnyTimes()
+	// 核心断言：AccessLog 打印出 Login 注入的用户名。
+	logger.EXPECT().Infof("[Grpc]: user: %v, visit: %v, use: %s.", "duc", "/echo.Test/Echo", gomock.Any()).Times(1)
+
+	authBiz := biz.NewMockAuthBiz(m)
+	authBiz.EXPECT().VerifyToken(gomock.Any(), "tok").Return(&biz.UserInfo{Name: "duc"}, nil).AnyTimes()
+
+	runner := &grpcRunner{
+		logger:  logger,
+		authBiz: authBiz,
+		grpcRegistry: &app.GrpcRegistry{
+			RegistryFunc: func(s grpc.ServiceRegistrar) {
+				s.RegisterService(&echoTestServiceDesc, echoTestService{})
+			},
+		},
+	}
+	lis := bufconn.Listen(1024 * 1024)
+	defer lis.Close()
+
+	srv := runner.initServer()
+	go func() { _ = srv.Serve(lis) }()
+	defer srv.Stop()
+
+	conn, err := grpc.NewClient("passthrough:///bufnet",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
+			return lis.DialContext(ctx)
+		}),
+	)
+	assert.Nil(t, err)
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+	defer cancel()
+
+	authCtx := metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer tok"))
+	var resp emptypb.Empty
+	assert.Nil(t, conn.Invoke(authCtx, "/echo.Test/Echo", &emptypb.Empty{}, &resp))
+}
+
 // Test_grpcRunner_Run_SuccessAndServe 覆盖 Run 的成功路径：真实端口上 net.Listen、
 // initServer 装配、goroutine 内 Serve 拉起，Shutdown 触发的 GracefulStop 让 Serve 返回
 // 并被 goroutine 吞掉。此前 Run 全程零覆盖。

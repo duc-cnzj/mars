@@ -8,19 +8,22 @@ import (
 	"testing"
 
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"
 )
 
 // TestLoginUnaryServerInterceptor 覆盖 Unary 登录拦截器的三分支：公开方法跳过校验、
-// 私有方法 authenticate 成功注入用户后放行、私有方法 authenticate 失败不进 handler。
+// 私有方法 authenticate 成功注入用户后放行、私有方法 authenticate 失败不进 handler；
+// 失败分支另以 mock logger 承重断言 [auth audit] Warning 审计日志落盘（401 审计兜底）。
 func TestLoginUnaryServerInterceptor(t *testing.T) {
 	authCalled := 0
 	authFn := func(ctx context.Context) (context.Context, error) {
 		authCalled++
 		return biz.SetUser(ctx, &biz.UserInfo{Name: "duc"}), nil
 	}
-	login := LoginUnaryServerInterceptor(authFn)
+	login := LoginUnaryServerInterceptor(authFn, mlog.NewForConfig(nil))
 
 	// 公开方法：不调 authenticate，直接进 handler。
 	handled := 0
@@ -47,11 +50,15 @@ func TestLoginUnaryServerInterceptor(t *testing.T) {
 	assert.Equal(t, 1, authCalled)
 	assert.Equal(t, 1, handled)
 
-	// 私有方法：authenticate 失败，返回错误且不进 handler。
+	// 私有方法：authenticate 失败，返回错误、不进 handler，且打一条 [auth audit] 审计日志。
 	handled = 0
+	m := gomock.NewController(t)
+	defer m.Finish()
+	audit := mlog.NewMockLogger(m)
+	audit.EXPECT().Warningf("[auth audit]: method=%s auth failed: %v", "/namespace.Namespace/List", gomock.Any()).Times(1)
 	_, err = LoginUnaryServerInterceptor(func(ctx context.Context) (context.Context, error) {
 		return nil, errors.New("no token")
-	})(context.TODO(), nil, &grpc.UnaryServerInfo{
+	}, audit)(context.TODO(), nil, &grpc.UnaryServerInfo{
 		FullMethod: "/namespace.Namespace/List",
 	}, func(ctx context.Context, req any) (any, error) {
 		handled++
@@ -70,7 +77,7 @@ func TestLoginStreamServerInterceptor(t *testing.T) {
 		authCalled++
 		return biz.SetUser(ctx, &biz.UserInfo{Name: "duc"}), nil
 	}
-	login := LoginStreamServerInterceptor(authFn)
+	login := LoginStreamServerInterceptor(authFn, mlog.NewForConfig(nil))
 
 	// 公开方法：不调 authenticate，直接进 handler。
 	handled := 0
@@ -97,11 +104,15 @@ func TestLoginStreamServerInterceptor(t *testing.T) {
 	assert.Equal(t, 1, authCalled)
 	assert.Equal(t, 1, handled)
 
-	// 私有方法：authenticate 失败，返回错误且不进 handler。
+	// 私有方法：authenticate 失败，返回错误、不进 handler，且打一条 [auth audit] 审计日志。
 	handled = 0
+	m := gomock.NewController(t)
+	defer m.Finish()
+	audit := mlog.NewMockLogger(m)
+	audit.EXPECT().Warningf("[auth audit]: method=%s auth failed: %v", "/container.Container/StreamContainerLog", gomock.Any()).Times(1)
 	err = LoginStreamServerInterceptor(func(ctx context.Context) (context.Context, error) {
 		return nil, errors.New("no token")
-	})(nil, &ss{}, &grpc.StreamServerInfo{
+	}, audit)(nil, &ss{}, &grpc.StreamServerInfo{
 		FullMethod: "/container.Container/StreamContainerLog",
 	}, func(srv any, stream grpc.ServerStream) error {
 		handled++
@@ -120,7 +131,7 @@ func TestLoginHTTP_Success(t *testing.T) {
 	}
 
 	called := false
-	LoginHTTP(verify)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	LoginHTTP(verify, mlog.NewForConfig(nil))(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
 		assert.Equal(t, user, r.Context().Value(ctxKey{}))
 	})).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/x", nil))
@@ -128,15 +139,21 @@ func TestLoginHTTP_Success(t *testing.T) {
 	assert.True(t, called, "next 必须被调用")
 }
 
-// TestLoginHTTP_Unauthorized 验证校验失败时中间件写 401，且不进入业务 handler。
+// TestLoginHTTP_Unauthorized 验证校验失败时中间件写 401、不进入业务 handler，
+// 并以 mock logger 承重断言 [auth audit] Warning 审计日志落盘（401 审计兜底）。
 func TestLoginHTTP_Unauthorized(t *testing.T) {
 	verify := func(ctx context.Context, token string) (context.Context, error) {
 		return nil, errors.New("invalid token")
 	}
 
+	m := gomock.NewController(t)
+	defer m.Finish()
+	audit := mlog.NewMockLogger(m)
+	audit.EXPECT().Warningf("[auth audit]: path=%s auth failed: %v", "/x", gomock.Any()).Times(1)
+
 	called := false
 	rec := httptest.NewRecorder()
-	LoginHTTP(verify)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	LoginHTTP(verify, audit)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
 	})).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/x", nil))
 
@@ -154,7 +171,7 @@ func TestLoginHTTP_TokenFromHeader(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/x", nil)
 	req.Header.Set("Authorization", "Bearer abc123")
-	LoginHTTP(verify)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})).
+	LoginHTTP(verify, mlog.NewForConfig(nil))(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})).
 		ServeHTTP(httptest.NewRecorder(), req)
 
 	assert.Equal(t, "Bearer abc123", gotToken)

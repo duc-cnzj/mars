@@ -17,7 +17,7 @@ func (a *ApiGatewayBootstrapper) Tags() []string {
 
 // Bootstrap 实现 Bootstrapper 接口的 Bootstrap。
 func (a *ApiGatewayBootstrapper) Bootstrap(deps app.BootstrapDeps) error {
-	deps.AddServer(server.NewApiGateway(fmt.Sprintf("localhost:%s", deps.Config().GrpcPort), deps))
+	deps.AddServer(server.NewApiGateway(fmt.Sprintf("127.0.0.1:%s", deps.Config().GrpcPort), deps))
 
 	return nil
 }

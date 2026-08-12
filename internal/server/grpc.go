@@ -88,26 +88,30 @@ func (g *grpcRunner) initServer() *grpc.Server {
 	// 链序约定（从左到右 = 从外到内，最先列出者最外层）：
 	// 1. Recovery 必须在最外层——grpc-go 无内置 recover，内层任何拦截器 panic 未被
 	//    最外层 Recovery 捕获即击穿进程；Recovery 放最内层只能兜住 handler 自身 panic。
-	// 2. Metrics/AccessLog 须置于 Login 之前——Login 失败直接 return，放在后面的
-	//    拦截器对 401 请求完全不执行，导致认证失败既无访问日志也不进指标（安全盲区）。
-	//    AccessLog 的 grpcUser 对未注入用户返回空 UserInfo，本就支持匿名记录。
-	// 3. 校验顺序：Login(鉴权) → Auth(授权) → Validator(校验)，先确认身份再问权限。
+	// 2. Metrics 须置于 Login 之前——Login 失败直接 return，放在后面的拦截器对 401
+	//    请求完全不执行，Metrics 在最外层照常计数，认证失败仍进指标。
+	// 3. AccessLog 须置于 Login 之后——Login 验签成功把用户注入新 ctx 传给内层拦截器，
+	//    AccessLog 只有收到该 ctx 才能打印出调用用户（grpcUser 对无用户 ctx 返回匿名）。
+	//    401 请求（Login 失败）的访问审计由 Login 拦截器内的 [auth audit] Warning 日志兜底，
+	//    不因 AccessLog 移内而丢认证失败记录。
+	// 4. 校验顺序：Login(鉴权) → AccessLog(访问日志) → Auth(授权) → Validator(校验)，
+	//    先确认身份、再记录访问、再问权限。
 	server := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainStreamInterceptor(
 			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(g.recoveryHandler)),
 			middlewares.MetricsStreamServerInterceptor(),
+			middlewares.LoginStreamServerInterceptor(authFn, g.logger),
 			middlewares.AccessLogStreamServerInterceptor(g.logger),
-			middlewares.LoginStreamServerInterceptor(authFn),
 			middlewares.AuthStreamServerInterceptor(),
 			middlewares.ValidatorStreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
 			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(g.recoveryHandler)),
 			middlewares.MetricsUnaryServerInterceptor(),
-			middlewares.AccessLogUnaryServerInterceptor(g.logger),
 			middlewares.LoggerUnaryServerInterceptor(g.logger),
-			middlewares.LoginUnaryServerInterceptor(authFn),
+			middlewares.LoginUnaryServerInterceptor(authFn, g.logger),
+			middlewares.AccessLogUnaryServerInterceptor(g.logger),
 			middlewares.AuthUnaryServerInterceptor(),
 			middlewares.ValidatorUnaryServerInterceptor(),
 		),

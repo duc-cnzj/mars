@@ -73,7 +73,7 @@ func (f *fileHandler) RegisterFileRoute(mux *runtime.ServeMux) {
 func (f *fileHandler) authHandler(handler func(w http.ResponseWriter, r *http.Request, pathParams map[string]string)) runtime.HandlerFunc {
 	authMW := middlewares.LoginHTTP(func(ctx context.Context, token string) (context.Context, error) {
 		return biz.Authenticate(ctx, f.authBiz, token)
-	})
+	}, f.logger)
 	return func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 		authMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			handler(w, r, pathParams)
