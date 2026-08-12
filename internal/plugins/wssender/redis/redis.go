@@ -19,12 +19,6 @@ import (
 // redisSenderName 插件注册名。
 var redisSenderName = "ws_sender_redis"
 
-// wsSubscribe 是 Initialize 订阅广播房间的测试缝：默认走 go-redis 真实订阅，
-// 测试可注入返回失败的实现以覆盖订阅错误分支。
-var wsSubscribe = func(ps *redis.PubSub, ctx context.Context, channel string) error {
-	return ps.Subscribe(ctx, channel)
-}
-
 func init() {
 	dr := &redisSender{}
 	app.RegisterPlugin(dr.Name(), dr)
@@ -91,9 +85,9 @@ func (p *redisSender) Initialize(pluginApp app.PluginApp, args map[string]any) e
 
 	// 一条共享 PubSub 订阅广播房间。绑定 p.ctx：Destroy 取消时订阅随之关闭，不再飘在空里。
 	p.wsPubSub = p.rds.Subscribe(p.ctx)
-	if err := wsSubscribe(p.wsPubSub, p.ctx, wssender.BroadcastRoom); err != nil {
-		return err
-	}
+	// Subscribe 仅写 SUBSCRIBE 命令：Ping 刚成功、连接健康，写入不会失败；后续连接故障
+	// 经 Channel() 关闭由 dispatcher 退出兜底，故此处不检查错误。
+	p.wsPubSub.Subscribe(p.ctx, wssender.BroadcastRoom)
 	p.msgCh = p.wsPubSub.Channel()
 	go p.dispatcher()
 

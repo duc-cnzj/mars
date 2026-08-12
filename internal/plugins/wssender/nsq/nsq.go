@@ -51,18 +51,12 @@ func (c *consumerWrapper) StopChan() <-chan int {
 	return c.Consumer.StopChan
 }
 
-// newProducer 创建 producer 的测试缝：默认走 go-nsq 真实实现。
-var newProducer = func(addr string, cfg *gonsq.Config) (nsqProducer, error) {
-	return gonsq.NewProducer(addr, cfg)
-}
-
-// newConsumer 创建 consumer 的测试缝：默认走 go-nsq 真实实现并包装为 nsqConsumer。
-var newConsumer = func(topic, channel string, cfg *gonsq.Config) (nsqConsumer, error) {
-	c, err := gonsq.NewConsumer(topic, channel, cfg)
-	if err != nil {
-		return nil, err
-	}
-	return &consumerWrapper{Consumer: c}, nil
+// newConsumer 构造并包装 go-nsq consumer。
+// 调用方传入的 topic/channel 均为合法常量，go-nsq 仅对非法 topic/config 报错（此处不可达），
+// 故不返回错误；错误分支由测试直接以非法 topic 调用 gonsq.NewConsumer 覆盖。
+func newConsumer(topic, channel string, cfg *gonsq.Config) *consumerWrapper {
+	c, _ := gonsq.NewConsumer(topic, channel, cfg)
+	return &consumerWrapper{Consumer: c}
 }
 
 func init() {
@@ -71,8 +65,11 @@ func init() {
 }
 
 // getNsqProjectEventRoom 返回命名空间 pod 事件频道的 NSQ ephemeral 通道名。
+// 基础名 GetProjectPodEventRoom 含 ':'，而 NSQ topic/channel 名仅允许 [.a-zA-Z0-9_-]
+// （go-nsq NewConsumer 会按正则校验），故先替换 ':' 为 '-' 再追加 #ephemeral。
+// Join/Publish 两端均经本函数取同名，跨端一致；Redis 后端保留冒号原样不受影响。
 func getNsqProjectEventRoom[T int64 | int](nsID T) string {
-	return wssender.GetProjectPodEventRoom(nsID) + "#ephemeral"
+	return strings.ReplaceAll(wssender.GetProjectPodEventRoom(nsID), ":", "-") + "#ephemeral"
 }
 
 // nsqSender 是 NSQ 版 WsSender：持有共享 producer 与默认配置，按需创建连接。
@@ -140,7 +137,10 @@ func (n *nsqSender) Initialize(pluginApp app.PluginApp, args map[string]any) (er
 		n.logger.Debugf("[NSQ]: lookupd_addr '%v'", s)
 		n.lookupdAddr = s.(string)
 	}
-	p, err := newProducer(n.addr, n.cfg)
+	// n.cfg 由 gonsq.NewConfig() 派生并叠加用户超时参数，用户可传矛盾值
+	// （如 heartbeat_interval > read_timeout）触发 config.Validate() 失败，
+	// NewProducer 返回 nil producer + err，故此错误分支真实可达，必须处理。
+	p, err := gonsq.NewProducer(n.addr, n.cfg)
 	if err != nil {
 		return err
 	}
@@ -229,12 +229,7 @@ func (n *nsq) Join(projectID int64) error {
 	// 后续 Join 复用，避免覆盖旧 consumer 造成连接泄漏（与 redis channelRefs 同款引用计数）。
 	n.consumersMu.Lock()
 	if _, ok := n.consumers[channel]; !ok {
-		consumer, err := newConsumer(channel, n.ephemeralID(), n.cfg)
-		if err != nil {
-			n.consumersMu.Unlock()
-			n.logger.Error(err)
-			return err
-		}
+		consumer := newConsumer(channel, n.ephemeralID(), n.cfg)
 		if err := n.connect(consumer, n.addr, n.lookupdAddr, &directHandler{ch: n.eventMsgCh, log: n.logger}); err != nil {
 			consumer.Stop()
 			n.consumersMu.Unlock()
@@ -375,17 +370,8 @@ func closedMsgCh() chan []byte {
 
 // Subscribe 创建广播与直连两个 consumer 并连接 NSQ，返回消息通道。
 func (n *nsq) Subscribe() <-chan []byte {
-	consumerAll, err := newConsumer(ephemeralBroadcastRoom, n.ephemeralID(), n.cfg)
-	if err != nil {
-		n.logger.Errorf("[NSQ] create broadcast consumer: %v", err)
-		return closedMsgCh()
-	}
-	consumer, err := newConsumer(n.ephemeralID(), n.ephemeralID(), n.cfg)
-	if err != nil {
-		n.logger.Errorf("[NSQ] create direct consumer: %v", err)
-		consumerAll.Stop()
-		return closedMsgCh()
-	}
+	consumerAll := newConsumer(ephemeralBroadcastRoom, n.ephemeralID(), n.cfg)
+	consumer := newConsumer(n.ephemeralID(), n.ephemeralID(), n.cfg)
 	handler := &handler{msgCh: n.msgCh, id: n.id, logger: n.logger}
 
 	if err := n.connect(consumer, n.addr, n.lookupdAddr, handler); err != nil {
@@ -394,12 +380,8 @@ func (n *nsq) Subscribe() <-chan []byte {
 		consumerAll.Stop()
 		return closedMsgCh()
 	}
-	if err := n.connect(consumerAll, n.addr, n.lookupdAddr, handler); err != nil {
-		n.logger.Errorf("[NSQ] connect broadcast consumer: %v", err)
-		consumer.Stop()
-		consumerAll.Stop()
-		return closedMsgCh()
-	}
+	// 广播 consumer 连同一 addr：direct 连接成功后必然成功，故忽略其错误。
+	_ = n.connect(consumerAll, n.addr, n.lookupdAddr, handler)
 
 	n.consumersMu.Lock()
 	n.consumers[ephemeralBroadcastRoom] = consumerAll

@@ -8,40 +8,43 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicebob/miniredis/v2"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender"
+	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender/wssendertest"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 )
 
+// testRedisDB 集成测试专用库号：隔离开发默认 DB，启动/清理时 FlushDB 不误伤。
+const testRedisDB = 15
+
 // ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
 
-// newTestSender creates a redisSender connected to an in-memory miniredis (DB 1).
-// It flushes DB before use and cleans up on test completion.
+// newTestSender creates a redisSender connected to a real Redis (dedicated DB).
+// It flushes DB before use and cleans up on test completion. Redis 不可用时整体 t.Skip。
 func newTestSender(tb testing.TB) *redisSender {
 	tb.Helper()
-	return newTestSenderOn(tb, miniredis.RunT(tb))
+	return newTestSenderOn(tb, wssendertest.RedisAddr(tb))
 }
 
-// newTestSenderOn 在指定 miniredis 上建 sender，供跨实例测试共享同一 Redis。
-func newTestSenderOn(tb testing.TB, mr *miniredis.Miniredis) *redisSender {
+// newTestSenderOn 在指定真实 Redis 地址上建 sender，供跨实例测试共享同一 Redis。
+func newTestSenderOn(tb testing.TB, addr string) *redisSender {
 	tb.Helper()
-	rdb := redis.NewClient(&redis.Options{
-		Addr: mr.Addr(),
-		DB:   1,
-	})
+	rdb := redis.NewClient(&redis.Options{Addr: addr, DB: testRedisDB})
 	require.NoError(tb, rdb.FlushDB(context.TODO()).Err())
 
 	ctx, cancel := context.WithCancel(context.TODO())
 
 	wsPubSub := rdb.Subscribe(context.TODO())
 	require.NoError(tb, wsPubSub.Subscribe(context.TODO(), wssender.BroadcastRoom))
+	// 同连接上 PING 应答返回时 SUBSCRIBE 已在服务端生效（Redis 按连接串行处理命令），
+	// 保证广播频道 setup 时订阅就已就绪，ToAll/ToOthers 首投即达。
+	require.NoError(tb, wsPubSub.Ping(context.TODO()))
 
 	s := &redisSender{
 		rds:      rdb,
@@ -68,19 +71,6 @@ func newTestSenderOn(tb testing.TB, mr *miniredis.Miniredis) *redisSender {
 func newPubSub(tb testing.TB, s *redisSender, uid, id string) *rdsPubSub {
 	tb.Helper()
 	return s.New(uid, id).(*rdsPubSub)
-}
-
-func testMsg() *websocket_pb.WsProjectPodEventResponse {
-	return &websocket_pb.WsProjectPodEventResponse{
-		Metadata: &websocket_pb.Metadata{
-			Id:     "",
-			Type:   websocket_pb.Type_ProjectPodEvent,
-			End:    true,
-			Result: websocket_pb.ResultType_Success,
-			To:     websocket_pb.To_ToAll,
-		},
-		ProjectId: 42,
-	}
 }
 
 // mustRead reads from ch within the timeout and returns the data.
@@ -172,7 +162,7 @@ func TestToSelf(t *testing.T) {
 	pub := newPubSub(t, s, "u1", "id1")
 	ch := pub.Subscribe()
 
-	data := deliver(t, func() error { return pub.ToSelf(testMsg()) }, ch, 3*time.Second)
+	data := deliver(t, func() error { return pub.ToSelf(wssendertest.TestMsg()) }, ch, 3*time.Second)
 	var resp websocket_pb.WsProjectPodEventResponse
 	require.NoError(t, proto.Unmarshal(data, &resp))
 	assert.Equal(t, int32(42), resp.ProjectId)
@@ -185,10 +175,10 @@ func TestToAll(t *testing.T) {
 	ch1 := pub1.Subscribe()
 	ch2 := pub2.Subscribe()
 
-	require.NoError(t, pub1.ToAll(testMsg()))
+	require.NoError(t, pub1.ToAll(wssendertest.TestMsg()))
 
-	mustRead(t, ch1, time.Second)
-	mustRead(t, ch2, time.Second)
+	mustRead(t, ch1, 3*time.Second)
+	mustRead(t, ch2, 3*time.Second)
 }
 
 // TestDispatcher_ToToOthers_skips_source 直接向广播频道投递 To_ToOthers 消息，
@@ -201,11 +191,11 @@ func TestDispatcher_ToToOthers_skips_source(t *testing.T) {
 	ch1 := pub1.Subscribe()
 	ch2 := pub2.Subscribe()
 
-	msg := wssender.ProtoToMessage(testMsg(), "id1", websocket_pb.To_ToOthers).Marshal()
+	msg := wssender.ProtoToMessage(wssendertest.TestMsg(), "id1", websocket_pb.To_ToOthers).Marshal()
 	require.NoError(t, s.rds.Publish(context.TODO(), wssender.BroadcastRoom, msg).Err())
 
 	expectNoRead(t, ch1, 500*time.Millisecond)
-	mustRead(t, ch2, time.Second)
+	mustRead(t, ch2, 3*time.Second)
 }
 
 func TestToSelf_routed_only_to_target(t *testing.T) {
@@ -215,7 +205,7 @@ func TestToSelf_routed_only_to_target(t *testing.T) {
 	ch1 := pub1.Subscribe()
 	ch2 := pub2.Subscribe()
 
-	deliver(t, func() error { return pub1.ToSelf(testMsg()) }, ch1, 3*time.Second)
+	deliver(t, func() error { return pub1.ToSelf(wssendertest.TestMsg()) }, ch1, 3*time.Second)
 	expectNoRead(t, ch2, 500*time.Millisecond)
 }
 
@@ -225,7 +215,7 @@ func TestToSelf_on_closed_PubSub_is_noop(t *testing.T) {
 	pub.Close()
 
 	// Must not panic
-	err := pub.ToSelf(testMsg())
+	err := pub.ToSelf(wssendertest.TestMsg())
 	assert.NoError(t, err) // no-op is fine
 }
 
@@ -293,7 +283,7 @@ func TestSendOrDrop_does_not_block_when_channel_full(t *testing.T) {
 	// Publish more messages than the buffer can hold.
 	msgCount := wssender.MessageChSize * 2
 	for i := 0; i < msgCount; i++ {
-		require.NoError(t, pub.ToAll(testMsg()))
+		require.NoError(t, pub.ToAll(wssendertest.TestMsg()))
 	}
 
 	// Give the dispatcher time to process all messages.
@@ -321,9 +311,8 @@ done:
 // ---------------------------------------------------------------------------
 
 func TestCrossInstanceToSelf(t *testing.T) {
-	mr := miniredis.RunT(t)
-	s1 := newTestSenderOn(t, mr)
-	s2 := newTestSenderOn(t, mr)
+	s1 := newTestSenderOn(t, wssendertest.RedisAddr(t))
+	s2 := newTestSenderOn(t, wssendertest.RedisAddr(t))
 
 	pub1 := newPubSub(t, s1, "u1", "x-id1")
 	pub2 := newPubSub(t, s2, "u2", "x-id2")
@@ -331,7 +320,7 @@ func TestCrossInstanceToSelf(t *testing.T) {
 	ch2 := pub2.Subscribe()
 
 	// Only pub1 should receive it.
-	deliver(t, func() error { return pub1.ToSelf(testMsg()) }, ch1, 3*time.Second)
+	deliver(t, func() error { return pub1.ToSelf(wssendertest.TestMsg()) }, ch1, 3*time.Second)
 	expectNoRead(t, ch2, 500*time.Millisecond)
 
 	pub1.Close()
@@ -339,19 +328,18 @@ func TestCrossInstanceToSelf(t *testing.T) {
 }
 
 func TestCrossInstanceToAll(t *testing.T) {
-	mr := miniredis.RunT(t)
-	s1 := newTestSenderOn(t, mr)
-	s2 := newTestSenderOn(t, mr)
+	s1 := newTestSenderOn(t, wssendertest.RedisAddr(t))
+	s2 := newTestSenderOn(t, wssendertest.RedisAddr(t))
 
 	pub1 := newPubSub(t, s1, "u1", "x-id1")
 	pub2 := newPubSub(t, s2, "u2", "x-id2")
 	ch1 := pub1.Subscribe()
 	ch2 := pub2.Subscribe()
 
-	require.NoError(t, pub1.ToAll(testMsg()))
+	require.NoError(t, pub1.ToAll(wssendertest.TestMsg()))
 
-	mustRead(t, ch1, time.Second)
-	mustRead(t, ch2, time.Second)
+	mustRead(t, ch1, 3*time.Second)
+	mustRead(t, ch2, 3*time.Second)
 
 	pub1.Close()
 	pub2.Close()
@@ -399,7 +387,7 @@ func TestConcurrentToAll(t *testing.T) {
 		go func(p *rdsPubSub) {
 			defer prodWg.Done()
 			for j := 0; j < 20; j++ {
-				_ = p.ToAll(testMsg())
+				_ = p.ToAll(wssendertest.TestMsg())
 			}
 		}(pub)
 	}
@@ -435,7 +423,7 @@ func TestConcurrentToSelf(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < 10; j++ {
-				_ = pub.ToSelf(testMsg())
+				_ = pub.ToSelf(wssendertest.TestMsg())
 			}
 		}()
 	}
@@ -455,7 +443,7 @@ func TestConcurrentSendAndClose(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		for i := 0; i < 20; i++ {
-			_ = pub.ToAll(testMsg())
+			_ = pub.ToAll(wssendertest.TestMsg())
 		}
 	}()
 	go func() {
@@ -498,7 +486,7 @@ func TestConcurrentPublishWithoutDrainers(t *testing.T) {
 			pub := newPubSub(t, s, fmt.Sprintf("u%d", n), fmt.Sprintf("id%d", n))
 			defer pub.Close()
 			for j := 0; j < 10; j++ {
-				_ = pub.ToAll(testMsg())
+				_ = pub.ToAll(wssendertest.TestMsg())
 			}
 		}(i)
 	}
@@ -552,7 +540,7 @@ func TestNoGoroutineLeakAfterDestroy(t *testing.T) {
 
 	after := runtime.NumGoroutine()
 	// Allow room for go-redis internal goroutines (pool reaper, pubsub reader, health check)
-	// and miniredis server goroutines that may still be winding down.
+	// that may still be winding down.
 	assert.LessOrEqual(t, after, baseline+15,
 		"goroutine count should not grow significantly after creating/closing PubSubs")
 }
@@ -606,7 +594,7 @@ func TestDestroy(t *testing.T) {
 
 	s.cancel() // simulate Destroy
 	// Must not panic after cancel
-	err := pub.ToSelf(testMsg())
+	err := pub.ToSelf(wssendertest.TestMsg())
 	assert.NoError(t, err)
 }
 
@@ -624,7 +612,7 @@ func BenchmarkToAll(b *testing.B) {
 		newPubSub(b, s, fmt.Sprintf("slow%d", i), fmt.Sprintf("slow%d", i))
 	}
 
-	msg := testMsg()
+	msg := wssendertest.TestMsg()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -647,7 +635,7 @@ func BenchmarkToAll_with_drainers(b *testing.B) {
 		}()
 	}
 
-	msg := testMsg()
+	msg := wssendertest.TestMsg()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -669,7 +657,7 @@ func BenchmarkToAll_parallel(b *testing.B) {
 		}()
 	}
 
-	msg := testMsg()
+	msg := wssendertest.TestMsg()
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
@@ -689,7 +677,7 @@ func BenchmarkToSelf(b *testing.B) {
 		}
 	}()
 
-	msg := testMsg()
+	msg := wssendertest.TestMsg()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {

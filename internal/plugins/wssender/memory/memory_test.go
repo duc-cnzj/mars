@@ -9,11 +9,8 @@ import (
 	"time"
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/biz"
-	"github.com/duc-cnzj/mars/v6/internal/config"
-	"github.com/duc-cnzj/mars/v6/internal/data"
-	"github.com/duc-cnzj/mars/v6/internal/data/ent"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender/wssendertest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -31,18 +28,6 @@ func newTestSender() *memorySender {
 		idRooms: make(map[string]map[int32]struct{}),
 		rooms:   make(namespaceRooms),
 		logger:  mlog.NewForConfig(nil),
-	}
-}
-
-func testMsg() *websocket_pb.WsProjectPodEventResponse {
-	return &websocket_pb.WsProjectPodEventResponse{
-		Metadata: &websocket_pb.Metadata{
-			Id:   "",
-			Type: websocket_pb.Type_ProjectPodEvent,
-			End:  true,
-			To:   websocket_pb.To_ToAll,
-		},
-		ProjectId: 42,
 	}
 }
 
@@ -96,7 +81,7 @@ func TestToSelf(t *testing.T) {
 	pub := ms.New("u1", "id1").(*memoryPubSub)
 	ch := pub.Subscribe()
 
-	err := pub.ToSelf(testMsg())
+	err := pub.ToSelf(wssendertest.TestMsg())
 	require.NoError(t, err)
 
 	data := mustRead(t, ch, time.Second)
@@ -112,7 +97,7 @@ func TestToAll(t *testing.T) {
 	ch1 := pub1.Subscribe()
 	ch2 := pub2.Subscribe()
 
-	require.NoError(t, pub1.ToAll(testMsg()))
+	require.NoError(t, pub1.ToAll(wssendertest.TestMsg()))
 
 	mustRead(t, ch1, time.Second)
 	mustRead(t, ch2, time.Second)
@@ -123,7 +108,7 @@ func TestToSelf_on_PubSub_that_was_Closed(t *testing.T) {
 	pub := ms.New("u", "id").(*memoryPubSub)
 	pub.Close()
 	// Must not panic
-	err := pub.ToSelf(testMsg())
+	err := pub.ToSelf(wssendertest.TestMsg())
 	assert.NoError(t, err) // no-op is fine
 }
 
@@ -301,7 +286,7 @@ func TestConcurrentToAll(t *testing.T) {
 		go func(p *memoryPubSub) {
 			defer prodWg.Done()
 			for j := 0; j < 20; j++ {
-				_ = p.ToAll(testMsg())
+				_ = p.ToAll(wssendertest.TestMsg())
 			}
 		}(pub)
 	}
@@ -325,7 +310,7 @@ func TestConcurrentToSelf(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < 10; j++ {
-				_ = pub.ToSelf(testMsg())
+				_ = pub.ToSelf(wssendertest.TestMsg())
 			}
 		}()
 	}
@@ -354,7 +339,7 @@ func TestConcurrentSendAndClose(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		for i := 0; i < 20; i++ {
-			_ = pub.ToAll(testMsg())
+			_ = pub.ToAll(wssendertest.TestMsg())
 		}
 	}()
 	go func() {
@@ -408,7 +393,7 @@ func TestConcurrentAddAndToAll(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_ = pub.ToAll(testMsg())
+			_ = pub.ToAll(wssendertest.TestMsg())
 		}()
 	}
 
@@ -478,7 +463,7 @@ func TestToAll_does_not_panic_when_other_conn_is_closed(t *testing.T) {
 	// Close B, then A sends ToAll. B's channel is closed but A must not panic
 	pubB.Close()
 	assert.NotPanics(t, func() {
-		_ = pubA.ToAll(testMsg())
+		_ = pubA.ToAll(wssendertest.TestMsg())
 	})
 }
 
@@ -557,47 +542,12 @@ func TestInitRegistration(t *testing.T) {
 // 10. DB-backed paths (in-memory sqlite): Initialize / Join / Publish / Close
 // ---------------------------------------------------------------------------
 
-// fakeApp 是 PluginApp 的最小手写 stub，供 Initialize 测试使用。
-type fakeApp struct {
-	projectRepo biz.ProjectRepo
-	logger      mlog.Logger
-}
-
-func (f fakeApp) Logger() mlog.Logger          { return f.logger }
-func (f fakeApp) ProjectRepo() biz.ProjectRepo { return f.projectRepo }
-
-// newDB 打开一个内存 sqlite ent 客户端，并在测试结束时关闭。
-func newDB(t *testing.T) *ent.Client {
-	t.Helper()
-	db, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1&loc=Local")
-	require.NoError(t, err)
-	require.NoError(t, db.Schema.Create(context.TODO()))
-	t.Cleanup(func() { _ = db.Close() })
-	return db
-}
-
-// newTestRepo 构造绑定指定 ent DB 的真实 ProjectRepo。
-func newTestRepo(t *testing.T, db *ent.Client) biz.ProjectRepo {
-	t.Helper()
-	impl := data.NewDataImpl(&data.NewDataParams{Cfg: &config.Config{}, DB: db})
-	return data.NewProjectRepo(mlog.NewForConfig(nil), impl)
-}
-
-// seedProject 创建 namespace + project 并返回 projectID。
-func seedProject(t *testing.T, db *ent.Client, selectors []string) int {
-	t.Helper()
-	ns := db.Namespace.Create().SetName("devops-test").SetCreatorEmail("a@b.c").SaveX(context.TODO())
-	proj := db.Project.Create().SetName("my-app").SetCreator("tester").
-		SetNamespaceID(ns.ID).SetPodSelectors(selectors).SaveX(context.TODO())
-	return proj.ID
-}
-
 func TestInitialize_sets_maps_and_db(t *testing.T) {
-	db := newDB(t)
-	pr := newTestRepo(t, db)
+	db := wssendertest.NewDB(t)
+	pr := wssendertest.NewTestRepo(t, db)
 
 	ms := &memorySender{}
-	err := ms.Initialize(fakeApp{projectRepo: pr, logger: mlog.NewForConfig(nil)}, nil)
+	err := ms.Initialize(wssendertest.FakeApp{Repo: pr, Log: mlog.NewForConfig(nil)}, nil)
 	require.NoError(t, err)
 
 	assert.NotNil(t, ms.conns)
@@ -619,12 +569,12 @@ func TestRun_returns_nil(t *testing.T) {
 }
 
 func TestJoin_registers_room_and_selectors(t *testing.T) {
-	db := newDB(t)
-	pid := seedProject(t, db, []string{"app=test"})
+	db := wssendertest.NewDB(t)
+	_, pid := wssendertest.SeedProject(t, db, []string{"app=test"})
 
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
-	pub.projectRepo = newTestRepo(t, db)
+	pub.projectRepo = wssendertest.NewTestRepo(t, db)
 
 	require.NoError(t, pub.Join(int64(pid)))
 
@@ -639,12 +589,12 @@ func TestJoin_registers_room_and_selectors(t *testing.T) {
 }
 
 func TestJoin_invalid_selector_is_skipped(t *testing.T) {
-	db := newDB(t)
-	pid := seedProject(t, db, []string{"!!!!not-a-selector"})
+	db := wssendertest.NewDB(t)
+	_, pid := wssendertest.SeedProject(t, db, []string{"!!!!not-a-selector"})
 
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
-	pub.projectRepo = newTestRepo(t, db)
+	pub.projectRepo = wssendertest.NewTestRepo(t, db)
 
 	// 非法 selector 被跳过、不报错，房间仍以空选择器登记。
 	require.NoError(t, pub.Join(int64(pid)))
@@ -656,10 +606,10 @@ func TestJoin_invalid_selector_is_skipped(t *testing.T) {
 }
 
 func TestJoin_unknown_project_returns_error(t *testing.T) {
-	db := newDB(t)
+	db := wssendertest.NewDB(t)
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
-	pub.projectRepo = newTestRepo(t, db)
+	pub.projectRepo = wssendertest.NewTestRepo(t, db)
 
 	assert.Error(t, pub.Join(99999))
 }
@@ -775,7 +725,7 @@ func BenchmarkToAll(b *testing.B) {
 		ms.New(fmt.Sprintf("slow%d", i), fmt.Sprintf("slow%d", i))
 	}
 
-	msg := testMsg()
+	msg := wssendertest.TestMsg()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -798,7 +748,7 @@ func BenchmarkToAll_with_drainers(b *testing.B) {
 		}()
 	}
 
-	msg := testMsg()
+	msg := wssendertest.TestMsg()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {

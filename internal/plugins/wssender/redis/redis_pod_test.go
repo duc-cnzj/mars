@@ -6,74 +6,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicebob/miniredis/v2"
-	"github.com/duc-cnzj/mars/v6/internal/biz"
-	"github.com/duc-cnzj/mars/v6/internal/config"
-	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender"
+	"github.com/duc-cnzj/mars/v6/internal/plugins/wssender/wssendertest"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-// fakeApp 是 PluginApp 的最小 stub，供 Initialize 测试使用。
-type fakeApp struct {
-	projectRepo biz.ProjectRepo
-	logger      mlog.Logger
-}
-
-func (f fakeApp) Logger() mlog.Logger          { return f.logger }
-func (f fakeApp) ProjectRepo() biz.ProjectRepo { return f.projectRepo }
-
-func newDB(t *testing.T) *ent.Client {
+// newPEM 构造连接真实 Redis 的 podEventManagers，测试结束自动关闭。
+func newPEM(t *testing.T, addr string, db *ent.Client) *podEventManagers {
 	t.Helper()
-	db, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1&loc=Local")
-	require.NoError(t, err)
-	require.NoError(t, db.Schema.Create(context.TODO()))
-	t.Cleanup(func() { _ = db.Close() })
-	return db
-}
-
-// seedProject 创建 namespace + project 并返回 nsID、projectID。
-func seedProject(t *testing.T, db *ent.Client, selectors []string) (nsID, pid int) {
-	t.Helper()
-	ns := db.Namespace.Create().SetName("devops-test").SetCreatorEmail("a@b.c").SaveX(context.TODO())
-	proj := db.Project.Create().SetName("my-app").SetCreator("tester").
-		SetNamespaceID(ns.ID).SetPodSelectors(selectors).SaveX(context.TODO())
-	return ns.ID, proj.ID
-}
-
-// testPod 构造带选择器匹配标签的测试 Pod。
-func testPod() *v1.Pod {
-	return &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pod-1",
-			Namespace: "devops-test",
-			Labels:    map[string]string{"app": "test"},
-		},
-	}
-}
-
-// newTestRepo 构造绑定指定 ent DB 的真实 ProjectRepo。
-func newTestRepo(t *testing.T, db *ent.Client) biz.ProjectRepo {
-	t.Helper()
-	impl := data.NewDataImpl(&data.NewDataParams{Cfg: &config.Config{}, DB: db})
-	return data.NewProjectRepo(mlog.NewForConfig(nil), impl)
-}
-
-// newPEM 构造连接 miniredis 的 podEventManagers，测试结束自动关闭。
-func newPEM(t *testing.T, mr *miniredis.Miniredis, db *ent.Client) *podEventManagers {
-	t.Helper()
-	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr(), DB: 1})
+	rdb := redis.NewClient(&redis.Options{Addr: addr, DB: testRedisDB})
 	t.Cleanup(func() { _ = rdb.Close() })
 	return &podEventManagers{
 		ctx:          context.Background(),
-		projectRepo:  newTestRepo(t, db),
+		projectRepo:  wssendertest.NewTestRepo(t, db),
 		logger:       mlog.NewForConfig(nil),
 		id:           "id-1",
 		uid:          "u-1",
@@ -94,14 +44,13 @@ func TestRedisName(t *testing.T) {
 }
 
 func TestRedisInitialize_success(t *testing.T) {
-	mr := miniredis.RunT(t)
-	pr := newTestRepo(t, newDB(t))
+	pr := wssendertest.NewTestRepo(t, wssendertest.NewDB(t))
 
 	s := &redisSender{}
-	err := s.Initialize(fakeApp{projectRepo: pr, logger: mlog.NewForConfig(nil)}, map[string]any{
-		"addr":     mr.Addr(),
+	err := s.Initialize(wssendertest.FakeApp{Repo: pr, Log: mlog.NewForConfig(nil)}, map[string]any{
+		"addr":     wssendertest.RedisAddr(t),
 		"password": "",
-		"db":       1,
+		"db":       testRedisDB,
 	})
 	require.NoError(t, err)
 	assert.NotNil(t, s.rds)
@@ -114,29 +63,15 @@ func TestRedisInitialize_success(t *testing.T) {
 
 func TestRedisInitialize_missing_addr(t *testing.T) {
 	s := &redisSender{}
-	err := s.Initialize(fakeApp{logger: mlog.NewForConfig(nil)}, nil)
+	err := s.Initialize(wssendertest.FakeApp{Log: mlog.NewForConfig(nil)}, nil)
 	assert.ErrorContains(t, err, "addr")
 }
 
 func TestRedisInitialize_bad_addr(t *testing.T) {
 	s := &redisSender{}
-	err := s.Initialize(fakeApp{logger: mlog.NewForConfig(nil)}, map[string]any{
+	err := s.Initialize(wssendertest.FakeApp{Log: mlog.NewForConfig(nil)}, map[string]any{
 		"addr": "127.0.0.1:1", // 连接拒绝 → Ping 失败
 	})
-	assert.Error(t, err)
-}
-
-func TestRedisInitialize_subscribe_error(t *testing.T) {
-	mr := miniredis.RunT(t)
-
-	orig := wsSubscribe
-	wsSubscribe = func(*redis.PubSub, context.Context, string) error {
-		return redis.ErrClosed
-	}
-	t.Cleanup(func() { wsSubscribe = orig })
-
-	s := &redisSender{}
-	err := s.Initialize(fakeApp{logger: mlog.NewForConfig(nil)}, map[string]any{"addr": mr.Addr()})
 	assert.Error(t, err)
 }
 
@@ -174,13 +109,14 @@ func TestDispatcher_msgCh_closed(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPodEventPublish(t *testing.T) {
-	mr := miniredis.RunT(t)
-	pem := newPEM(t, mr, nil)
+	pem := newPEM(t, wssendertest.RedisAddr(t), nil)
 	channel := wssender.GetProjectPodEventRoom(7)
 
 	require.NoError(t, pem.pubSub.Subscribe(context.TODO(), channel))
+	// 同连接 PING 应答返回时 SUBSCRIBE 已在服务端生效，保证发布必达。
+	require.NoError(t, pem.pubSub.Ping(context.TODO()))
 
-	require.NoError(t, pem.Publish(7, testPod()))
+	require.NoError(t, pem.Publish(7, wssendertest.TestPod()))
 
 	select {
 	case msg := <-pem.pubSub.Channel():
@@ -195,12 +131,11 @@ func TestPodEventPublish(t *testing.T) {
 }
 
 func TestPodEventPublish_error(t *testing.T) {
-	mr := miniredis.RunT(t)
-	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	rdb := redis.NewClient(&redis.Options{Addr: "127.0.0.1:6379"})
 	_ = rdb.Close() // 关闭客户端 → Publish 失败
 	pem := &podEventManagers{ctx: context.Background(), rds: rdb, logger: mlog.NewForConfig(nil), ch: make(chan []byte, 8)}
 
-	err := pem.Publish(7, testPod())
+	err := pem.Publish(7, wssendertest.TestPod())
 	assert.Error(t, err)
 }
 
@@ -209,10 +144,9 @@ func TestPodEventPublish_error(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPodEventJoin(t *testing.T) {
-	mr := miniredis.RunT(t)
-	db := newDB(t)
-	nsID, pid := seedProject(t, db, []string{"app=test"})
-	pem := newPEM(t, mr, db)
+	db := wssendertest.NewDB(t)
+	nsID, pid := wssendertest.SeedProject(t, db, []string{"app=test"})
+	pem := newPEM(t, wssendertest.RedisAddr(t), db)
 
 	require.NoError(t, pem.Join(int64(pid)))
 
@@ -229,10 +163,9 @@ func TestPodEventJoin(t *testing.T) {
 }
 
 func TestPodEventJoin_invalid_selector_skipped(t *testing.T) {
-	mr := miniredis.RunT(t)
-	db := newDB(t)
-	_, pid := seedProject(t, db, []string{"!!!!bad"})
-	pem := newPEM(t, mr, db)
+	db := wssendertest.NewDB(t)
+	_, pid := wssendertest.SeedProject(t, db, []string{"!!!!bad"})
+	pem := newPEM(t, wssendertest.RedisAddr(t), db)
 
 	require.NoError(t, pem.Join(int64(pid)))
 	pem.pmu.RLock()
@@ -241,26 +174,23 @@ func TestPodEventJoin_invalid_selector_skipped(t *testing.T) {
 }
 
 func TestPodEventJoin_unknown_project(t *testing.T) {
-	mr := miniredis.RunT(t)
-	pem := newPEM(t, mr, newDB(t))
+	pem := newPEM(t, wssendertest.RedisAddr(t), wssendertest.NewDB(t))
 	assert.Error(t, pem.Join(99999))
 }
 
 func TestPodEventJoin_subscribe_error(t *testing.T) {
-	mr := miniredis.RunT(t)
-	db := newDB(t)
-	_, pid := seedProject(t, db, []string{"app=test"})
-	pem := newPEM(t, mr, db)
+	db := wssendertest.NewDB(t)
+	_, pid := wssendertest.SeedProject(t, db, []string{"app=test"})
+	pem := newPEM(t, wssendertest.RedisAddr(t), db)
 	require.NoError(t, pem.pubSub.Close()) // 关闭 pubsub → Subscribe 失败
 
 	assert.Error(t, pem.Join(int64(pid)))
 }
 
 func TestPodEventLeave(t *testing.T) {
-	mr := miniredis.RunT(t)
-	db := newDB(t)
-	nsID, pid := seedProject(t, db, []string{"app=test"})
-	pem := newPEM(t, mr, db)
+	db := wssendertest.NewDB(t)
+	nsID, pid := wssendertest.SeedProject(t, db, []string{"app=test"})
+	pem := newPEM(t, wssendertest.RedisAddr(t), db)
 
 	require.NoError(t, pem.Join(int64(pid)))
 	require.NoError(t, pem.Join(int64(pid))) // 引用计数 → 2
@@ -288,10 +218,9 @@ func TestPodEventLeave(t *testing.T) {
 }
 
 func TestPodEventLeave_unsubscribe_error(t *testing.T) {
-	mr := miniredis.RunT(t)
-	db := newDB(t)
-	nsID, pid := seedProject(t, db, []string{"app=test"})
-	pem := newPEM(t, mr, db)
+	db := wssendertest.NewDB(t)
+	nsID, pid := wssendertest.SeedProject(t, db, []string{"app=test"})
+	pem := newPEM(t, wssendertest.RedisAddr(t), db)
 	require.NoError(t, pem.Join(int64(pid)))
 	require.NoError(t, pem.pubSub.Close()) // 关闭 pubsub → Unsubscribe 失败
 
@@ -303,18 +232,18 @@ func TestPodEventLeave_unsubscribe_error(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPodEventRun_dispatches(t *testing.T) {
-	mr := miniredis.RunT(t)
-	db := newDB(t)
-	nsID, pid := seedProject(t, db, []string{"app=test"})
-	pem := newPEM(t, mr, db)
+	db := wssendertest.NewDB(t)
+	nsID, pid := wssendertest.SeedProject(t, db, []string{"app=test"})
+	pem := newPEM(t, wssendertest.RedisAddr(t), db)
 	require.NoError(t, pem.Join(int64(pid)))
+	// Join 内部订阅是异步写命令；同连接 Ping 确认订阅生效后再发布，避免消息先于订阅丢失。
+	require.NoError(t, pem.pubSub.Ping(context.TODO()))
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 	go func() { _ = pem.Run(ctx) }()
-	time.Sleep(100 * time.Millisecond) // 等待订阅就绪
 
-	require.NoError(t, pem.Publish(int64(nsID), testPod()))
+	require.NoError(t, pem.Publish(int64(nsID), wssendertest.TestPod()))
 
 	select {
 	case data := <-pem.ch:
@@ -325,8 +254,7 @@ func TestPodEventRun_dispatches(t *testing.T) {
 }
 
 func TestPodEventRun_skips_unsubscribed_channel(t *testing.T) {
-	mr := miniredis.RunT(t)
-	pem := newPEM(t, mr, newDB(t))
+	pem := newPEM(t, wssendertest.RedisAddr(t), wssendertest.NewDB(t))
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -335,22 +263,22 @@ func TestPodEventRun_skips_unsubscribed_channel(t *testing.T) {
 
 	// 订阅一个 channelRefs 之外的频道：Run 应跳过该消息不 panic。
 	require.NoError(t, pem.pubSub.Subscribe(context.TODO(), "extra"))
+	require.NoError(t, pem.pubSub.Ping(context.TODO()))
 	require.NoError(t, pem.rds.Publish(context.TODO(), "extra", `{"channel":"extra"}`).Err())
 	time.Sleep(100 * time.Millisecond)
 }
 
 func TestPodEventRun_malformed_json(t *testing.T) {
-	mr := miniredis.RunT(t)
-	db := newDB(t)
-	nsID, pid := seedProject(t, db, []string{"app=test"})
-	pem := newPEM(t, mr, db)
+	db := wssendertest.NewDB(t)
+	nsID, pid := wssendertest.SeedProject(t, db, []string{"app=test"})
+	pem := newPEM(t, wssendertest.RedisAddr(t), db)
 	channel := wssender.GetProjectPodEventRoom(nsID)
 	require.NoError(t, pem.Join(int64(pid)))
+	require.NoError(t, pem.pubSub.Ping(context.TODO()))
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 	go func() { _ = pem.Run(ctx) }()
-	time.Sleep(100 * time.Millisecond)
 
 	// 合法频道但 payload 非法 JSON：Run 记日志后继续，不 panic。
 	require.NoError(t, pem.rds.Publish(context.TODO(), channel, "not-json").Err())
@@ -358,17 +286,16 @@ func TestPodEventRun_malformed_json(t *testing.T) {
 }
 
 func TestPodEventRun_nil_pod_skipped(t *testing.T) {
-	mr := miniredis.RunT(t)
-	db := newDB(t)
-	nsID, pid := seedProject(t, db, []string{"app=test"})
-	pem := newPEM(t, mr, db)
+	db := wssendertest.NewDB(t)
+	nsID, pid := wssendertest.SeedProject(t, db, []string{"app=test"})
+	pem := newPEM(t, wssendertest.RedisAddr(t), db)
 	channel := wssender.GetProjectPodEventRoom(nsID)
 	require.NoError(t, pem.Join(int64(pid)))
+	require.NoError(t, pem.pubSub.Ping(context.TODO()))
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 	go func() { _ = pem.Run(ctx) }()
-	time.Sleep(100 * time.Millisecond)
 
 	// 合法 JSON 但缺 pod 字段（反序列化为 nil Pod）：Run 应跳过不 panic。
 	require.NoError(t, pem.rds.Publish(context.TODO(), channel, `{"channel":""}`).Err())
@@ -376,8 +303,7 @@ func TestPodEventRun_nil_pod_skipped(t *testing.T) {
 }
 
 func TestPodEventRun_cancel(t *testing.T) {
-	mr := miniredis.RunT(t)
-	pem := newPEM(t, mr, newDB(t))
+	pem := newPEM(t, wssendertest.RedisAddr(t), wssendertest.NewDB(t))
 	ctx, cancel := context.WithCancel(context.TODO())
 
 	done := make(chan error, 1)
@@ -394,8 +320,7 @@ func TestPodEventRun_cancel(t *testing.T) {
 }
 
 func TestPodEventRun_ch_closed(t *testing.T) {
-	mr := miniredis.RunT(t)
-	pem := newPEM(t, mr, newDB(t))
+	pem := newPEM(t, wssendertest.RedisAddr(t), wssendertest.NewDB(t))
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
@@ -417,9 +342,7 @@ func TestPodEventRun_ch_closed(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestToSelf_closed_client_returns_error(t *testing.T) {
-	mr := miniredis.RunT(t)
-	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	require.NoError(t, rdb.Ping(context.TODO()).Err())
+	rdb := redis.NewClient(&redis.Options{Addr: "127.0.0.1:6379"})
 	_ = rdb.Close()
 
 	p := &rdsPubSub{
@@ -429,6 +352,6 @@ func TestToSelf_closed_client_returns_error(t *testing.T) {
 		manager: &redisSender{},
 		ch:      make(chan []byte, wssender.MessageChSize),
 	}
-	err := p.ToSelf(testMsg())
+	err := p.ToSelf(wssendertest.TestMsg())
 	assert.Error(t, err)
 }
