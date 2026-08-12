@@ -7,7 +7,7 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/deploy"
 	"github.com/duc-cnzj/mars/v6/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
@@ -52,7 +52,7 @@ func (wc *websocketManager) HandleJoinRoom(ctx context.Context, c Conn, t websoc
 
 		return
 	}
-	// PubSub 接口本身就嵌入了 ProjectPodEventSubscriber（application.Plugins.go），
+	// PubSub 接口本身就嵌入了 ProjectPodEventSubscriber（plugins.go），
 	// 无需运行时断言即可直接调 Join/Leave。
 	wc.logger.Debug("HandleJoinRoom: ", input.String())
 	if input.Join {
@@ -363,12 +363,12 @@ func (ms *messageSender) metadata(wsType websocket_pb.Type, result websocket_pb.
 }
 
 // SendProtoMsg 推送任意协议消息（WebsocketMessage）。
-func (ms *messageSender) SendProtoMsg(msg application.WebsocketMessage) {
+func (ms *messageSender) SendProtoMsg(msg app.WebsocketMessage) {
 	ms.send(msg)
 }
 
 // send 把消息写入连接的发布订阅（ToSelf）。
-func (ms *messageSender) send(res application.WebsocketMessage) {
+func (ms *messageSender) send(res app.WebsocketMessage) {
 	ms.conn.PubSub().ToSelf(res)
 }
 

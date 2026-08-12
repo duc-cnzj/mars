@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/metrics"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -51,8 +51,8 @@ func TestWebsocketManager_newWsConn(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	c := counter.NewCounter()
-	pl := application.NewMockPluginManager(m)
-	ws := application.NewMockWsSender(m)
+	pl := app.NewMockPluginManager(m)
+	ws := app.NewMockWsSender(m)
 	ws.EXPECT().New("uid", "id")
 	pl.EXPECT().Ws().Return(ws).AnyTimes()
 	(&websocketManager{counter: c, pluginManager: pl}).newWsConn("uid", "id", nil, nil, nil)
@@ -82,6 +82,8 @@ func TestWsConn_ClosePty(t *testing.T) {
 	}
 	w.SetPtyHandler("sessionID", &testPtyHandler{})
 	w.ClosePty(context.TODO(), "sessionID", uint32(2), "")
+	_, ok := w.GetPtyHandler("sessionID")
+	assert.False(t, ok, "ClosePty 后会话应从注册表移除")
 }
 
 func TestWsConn_CloseAndClean(t *testing.T) {
@@ -89,7 +91,7 @@ func TestWsConn_CloseAndClean(t *testing.T) {
 	defer m.Finish()
 
 	ws := NewMockGorillaWs(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	tm := NewMockTaskManager(m)
 	mapper := NewMockSessionMapper(m)
 	w := &wsConn{
@@ -118,7 +120,7 @@ func TestWsConn_CloseAndClean_Idempotent(t *testing.T) {
 	defer m.Finish()
 
 	ws := NewMockGorillaWs(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	tm := NewMockTaskManager(m)
 	mapper := NewMockSessionMapper(m)
 	const username = "idempotent-user"

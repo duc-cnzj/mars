@@ -19,7 +19,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/deploy"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/closeable"
-	"k8s.io/client-go/tools/remotecommand"
 )
 
 // ETX 是 Ctrl-C 控制字符（\x03），用于中断容器内的前台进程。
@@ -100,10 +99,11 @@ func (s *sizeStore) Height() uint16 {
 
 // PtyHandler 是容器内终端会话的处理器接口：既是远端命令的输入输出
 // （io.Reader/io.Writer/TerminalSizeQueue），也承载尺寸、录音、关闭等生命周期。
+// TerminalSizeQueue 直接实现 biz 领域端口，数据层再适配回 client-go，传输层不触碰基础设施类型。
 type PtyHandler interface {
 	io.Reader
 	io.Writer
-	remotecommand.TerminalSizeQueue
+	biz.TerminalSizeQueue
 
 	// Container 返回该终端会话绑定的容器。
 	Container() *biz.Container
@@ -115,7 +115,7 @@ type PtyHandler interface {
 	// Send 处理一条终端消息（stdin 输入 / resize 尺寸变化）。
 	Send(ctx context.Context, message *websocket_pb.TerminalMessage) error
 	// Resize 同步远端终端尺寸。
-	Resize(remotecommand.TerminalSize) error
+	Resize(biz.TerminalSize) error
 
 	// Recorder 返回该会话的输入录制器（回放审计）。
 	Recorder() biz.Recorder
@@ -150,7 +150,7 @@ type ptyHandler struct {
 	shellCh chan *websocket_pb.TerminalMessage
 
 	sizeMu   sync.RWMutex
-	sizeChan chan remotecommand.TerminalSize
+	sizeChan chan biz.TerminalSize
 
 	closeable.Closeable
 }
@@ -196,7 +196,7 @@ func (t *ptyHandler) Read(p []byte) (n int, err error) {
 		return copy(p, msg.Data), nil
 	case OpResize:
 		t.logger.Debugf("[Websocket]: resize width: %v  height: %v", msg.Width, msg.Height)
-		t.Resize(remotecommand.TerminalSize{Width: uint16(msg.Width), Height: uint16(msg.Height)})
+		t.Resize(biz.TerminalSize{Width: uint16(msg.Width), Height: uint16(msg.Height)})
 		return 0, nil
 	default:
 		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("unknown message type '%s'", msg.Op)
@@ -244,7 +244,7 @@ func (t *ptyHandler) Write(p []byte) (n int, err error) {
 	if t.sizeStore.TerminalRowColNeedReset() && t.sizeStore.Width() != 0 {
 		t.logger.Debugf("reset shell size height: %d, width: %d", t.sizeStore.Height(), t.sizeStore.Width())
 		t.sizeStore.ResetTerminalRowCol(false)
-		if err = t.Resize(remotecommand.TerminalSize{Width: t.sizeStore.Width(), Height: t.sizeStore.Height()}); err != nil {
+		if err = t.Resize(biz.TerminalSize{Width: t.sizeStore.Width(), Height: t.sizeStore.Height()}); err != nil {
 			t.logger.Debugf("resize shell size failed: %v", err)
 		}
 	}
@@ -263,8 +263,8 @@ func (t *ptyHandler) Recorder() biz.Recorder {
 	return t.recorder
 }
 
-// Next 从尺寸队列取下一个终端尺寸（供 remotecommand 轮询）。
-func (t *ptyHandler) Next() *remotecommand.TerminalSize {
+// Next 从尺寸队列取下一个终端尺寸（供数据层适配回 remotecommand 轮询）。
+func (t *ptyHandler) Next() *biz.TerminalSize {
 	select {
 	case size, ok := <-t.sizeChan:
 		if !ok {
@@ -305,7 +305,7 @@ func (t *ptyHandler) Send(ctx context.Context, m *websocket_pb.TerminalMessage) 
 }
 
 // Resize 把终端尺寸放入尺寸队列（满则报错）。
-func (t *ptyHandler) Resize(size remotecommand.TerminalSize) error {
+func (t *ptyHandler) Resize(size biz.TerminalSize) error {
 	select {
 	case <-t.doneChan:
 		close(t.sizeChan)

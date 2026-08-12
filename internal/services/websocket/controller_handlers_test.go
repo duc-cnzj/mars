@@ -8,7 +8,7 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/data"
@@ -26,19 +26,19 @@ func TestWebsocketManager_HandleJoinRoom_errors(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	wsMock := application.NewMockPubSub(m)
+	wsMock := app.NewMockPubSub(m)
 	wsMock.EXPECT().Join(int64(2)).Return(errBoom)
 	wsMock.EXPECT().Leave(int64(1), int64(2)).Return(errBoom)
 
 	// Join 先过 RequireProjectAccess（公开命名空间放行）再触达 pubsub，pubsub 出错打日志。
 	projBiz := biz.NewMockProjectBiz(m)
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
+	nsBiz := biz.NewMockNamespaceBiz(m)
 	projBiz.EXPECT().Show(gomock.Any(), 2).Return(&biz.Project{ID: 2, NamespaceID: 1}, nil)
-	nsRepoBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns", Private: false}, nil)
+	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns", Private: false}, nil)
 
 	wm := &websocketManager{
 		logger:    mlog.NewForConfig(nil),
-		accessBiz: biz.NewAccessBiz(nsRepoBiz, projBiz),
+		accessBiz: biz.NewAccessBiz(nsBiz, projBiz),
 	}
 	conn := &wsConn{pubSub: wsMock}
 	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{ID: "1", Name: "u", Email: "u@mars.com"})
@@ -57,12 +57,12 @@ func TestWebsocketManager_HandleJoinRoom_denied(t *testing.T) {
 	defer m.Finish()
 
 	projBiz := biz.NewMockProjectBiz(m)
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
+	nsBiz := biz.NewMockNamespaceBiz(m)
 	projBiz.EXPECT().Show(gomock.Any(), 2).Return(&biz.Project{ID: 2, NamespaceID: 1}, nil)
 	// 私有命名空间：仅 admin/创建者/成员可见，普通用户 u 无权访问。
-	nsRepoBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns", Private: true, CreatorEmail: "owner@mars.com"}, nil)
+	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns", Private: true, CreatorEmail: "owner@mars.com"}, nil)
 
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	// 越权拦截 → SendEndError 回错误帧（ToSelf）；不设 Join 期望：若实现误调
 	// pubsub.Join，gomock 以"未期望调用"中止——回归防护，与 Clone 的 Get-先于-Clone 同理。
 	sub.EXPECT().ToSelf(gomock.Any())
@@ -70,7 +70,7 @@ func TestWebsocketManager_HandleJoinRoom_denied(t *testing.T) {
 	conn := &wsConn{pubSub: sub, user: &biz.UserInfo{Name: "u"}}
 	wm := &websocketManager{
 		logger:    mlog.NewForConfig(nil),
-		accessBiz: biz.NewAccessBiz(nsRepoBiz, projBiz),
+		accessBiz: biz.NewAccessBiz(nsBiz, projBiz),
 	}
 	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{ID: "2", Name: "u", Email: "u@mars.com"})
 	joinMsg, _ := proto.Marshal(&websocket_pb.ProjectPodEventJoinInput{Type: ProjectPodEvent, Join: true, ProjectId: 2})
@@ -83,8 +83,8 @@ func TestWebsocketManager_HandleStartShell_success(t *testing.T) {
 
 	// StartShell 前先过命名空间级访问门卫（RequireNamespaceAccessByName）：
 	// FindByName 返回公开命名空间放行，测试聚焦 StartShell 成功路径本身。
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
-	nsRepoBiz.EXPECT().FindByName(gomock.Any(), "testNamespace").Return(&biz.Namespace{Name: "testNamespace", Private: false}, nil)
+	nsBiz := biz.NewMockNamespaceBiz(m)
+	nsBiz.EXPECT().FindByName(gomock.Any(), "testNamespace").Return(&biz.Namespace{Name: "testNamespace", Private: false}, nil)
 
 	// StartShell 内部把真实 ptyHandler 存入 sessionMap；runTerminal 经 Get 取回。
 	// 用 MockSessionMapper 拦截：Get 返回 mock pty，ClosePty 走 mock，避免真实 ptyHandler
@@ -108,11 +108,11 @@ func TestWebsocketManager_HandleStartShell_success(t *testing.T) {
 	k8sRepo := data.NewMockK8sRepo(m)
 	k8sRepo.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	// HandleStartShell 成功帧 WsHandleShellResponse → ToSelf。
 	sub.EXPECT().ToSelf(gomock.Any())
 
-	wm := &websocketManager{logger: mlog.NewForConfig(nil), fileRepo: fileRepo, k8sRepo: k8sRepo, accessBiz: biz.NewAccessBiz(nsRepoBiz, nil)}
+	wm := &websocketManager{logger: mlog.NewForConfig(nil), fileRepo: fileRepo, k8sRepo: k8sRepo, accessBiz: biz.NewAccessBiz(nsBiz, nil)}
 	conn := &wsConn{
 		pubSub:   sub,
 		id:       "connID",
@@ -143,12 +143,12 @@ func TestWebsocketManager_HandleStartShell_denied(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
+	nsBiz := biz.NewMockNamespaceBiz(m)
 	// 私有命名空间：仅 admin/创建者/成员可见，普通用户 u 无权访问。
-	nsRepoBiz.EXPECT().FindByName(gomock.Any(), "testNamespace").
+	nsBiz.EXPECT().FindByName(gomock.Any(), "testNamespace").
 		Return(&biz.Namespace{Name: "testNamespace", Private: true, CreatorEmail: "owner@mars.com"}, nil)
 
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	// 越权拦截 → SendEndError 回错误帧（ToSelf）；不设 sessionMap/k8s 期望：
 	// 若实现误调 StartShell，gomock 以"未期望调用"中止——回归防护。
 	sub.EXPECT().ToSelf(gomock.Any())
@@ -156,7 +156,7 @@ func TestWebsocketManager_HandleStartShell_denied(t *testing.T) {
 	conn := &wsConn{pubSub: sub, id: "connID", uid: "connUID"}
 	wm := &websocketManager{
 		logger:    mlog.NewForConfig(nil),
-		accessBiz: biz.NewAccessBiz(nsRepoBiz, nil),
+		accessBiz: biz.NewAccessBiz(nsBiz, nil),
 	}
 	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{ID: "2", Name: "u", Email: "u@mars.com"})
 	input := &websocket_pb.WsHandleExecShellInput{
@@ -171,12 +171,12 @@ func TestWebsocketManager_HandleCreateProject_installError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
+	nsBiz := biz.NewMockNamespaceBiz(m)
 	repoBiz := biz.NewMockRepoBiz(m)
 	gitBiz := biz.NewMockGitBiz(m)
 	projBiz := biz.NewMockProjectBiz(m)
 	jb := deploy.NewMockJobManager(m)
-	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nsRepoBiz, nil), jobManager: jb, repoBiz: repoBiz, gitBiz: gitBiz, projBiz: projBiz}
+	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nsBiz, nil), jobManager: jb, repoBiz: repoBiz, gitBiz: gitBiz, projBiz: projBiz}
 
 	job := deploy.NewMockJob(m)
 	conn := &wsConn{taskManager: NewTaskManager(wm.logger), user: &biz.UserInfo{}}
@@ -184,7 +184,7 @@ func TestWebsocketManager_HandleCreateProject_installError(t *testing.T) {
 	input := &websocket_pb.CreateProjectInput{Type: WsCreateProject, NamespaceId: 1, RepoId: 1}
 	// 名缺省由 deploy.ApplyProject 收敛，ws 层只透传原始 name，repoBiz.Get 仅 ApplyProject 调用一次。
 	repoBiz.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{Name: "app", ID: 2}, nil).Times(1)
-	nsRepoBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil)
+	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil)
 	jb.EXPECT().NewJob(gomock.Any()).Return(job)
 	job.EXPECT().ID().Return("jobID")
 	job.EXPECT().OnFinally(gomock.Any(), gomock.Any())
@@ -207,7 +207,7 @@ func TestWebsocketManager_HandleUpdateProject_showError(t *testing.T) {
 	projBiz := biz.NewMockProjectBiz(m)
 	projBiz.EXPECT().Show(gomock.Any(), 1).Return(nil, errBoom)
 
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	sub.EXPECT().ToSelf(gomock.Any())
 
 	// RequireProjectAccess 先经 projBiz.Show 加载项目，失败即回错误帧（未触达 nsRepo）。
@@ -228,10 +228,10 @@ func TestWebsocketManager_HandleUpdateProject_denied(t *testing.T) {
 	projBiz := biz.NewMockProjectBiz(m)
 	projBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{ID: 1, NamespaceID: 1, Name: "app", RepoID: 2}, nil)
 	// 私有命名空间：仅 admin/创建者/成员可见，普通用户 u 无权访问。
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
-	nsRepoBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns", Private: true, CreatorEmail: "owner@mars.com"}, nil)
+	nsBiz := biz.NewMockNamespaceBiz(m)
+	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns", Private: true, CreatorEmail: "owner@mars.com"}, nil)
 
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	// 越权拦截 → SendEndError 回错误帧（ToSelf）；jobManager 恒 nil——若实现误触达
 	// 部署流水线会 panic，回归防护"未授权绝不下发 Job"。
 	sub.EXPECT().ToSelf(gomock.Any())
@@ -239,7 +239,7 @@ func TestWebsocketManager_HandleUpdateProject_denied(t *testing.T) {
 	conn := &wsConn{pubSub: sub, user: &biz.UserInfo{}}
 	wm := &websocketManager{
 		logger:    mlog.NewForConfig(nil),
-		accessBiz: biz.NewAccessBiz(nsRepoBiz, projBiz),
+		accessBiz: biz.NewAccessBiz(nsBiz, projBiz),
 		projBiz:   projBiz,
 	}
 	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{ID: "2", Name: "u", Email: "u@mars.com"})
@@ -255,7 +255,7 @@ func TestWebsocketManager_HandleUpdateProject_installError(t *testing.T) {
 	projBiz := biz.NewMockProjectBiz(m)
 	projBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{ID: 1, NamespaceID: 1, Name: "app", RepoID: 2}, nil)
 
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
+	nsBiz := biz.NewMockNamespaceBiz(m)
 	repoBiz := biz.NewMockRepoBiz(m)
 	gitBiz := biz.NewMockGitBiz(m)
 	jb := deploy.NewMockJobManager(m)
@@ -271,10 +271,10 @@ func TestWebsocketManager_HandleUpdateProject_installError(t *testing.T) {
 	// 流水线失败 → installProject 返回 err → HandleUpdateProject 打日志（不吞错），与 create 分支一致。
 	job.EXPECT().Error().Return(errBoom)
 	// RequireProjectAccess（projBiz.Show + 所属命名空间校验）+ ApplyProject 访问校验 + 仓库取回（NeedGitRepo=false 无需 git ensure）。
-	nsRepoBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil).Times(2)
+	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil).Times(2)
 	repoBiz.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{Name: "app", ID: 2, NeedGitRepo: false}, nil)
 
-	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nsRepoBiz, projBiz), projBiz: projBiz, jobManager: jb, config: &config.Config{InstallTimeout: 30 * time.Second}, repoBiz: repoBiz, gitBiz: gitBiz}
+	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nsBiz, projBiz), projBiz: projBiz, jobManager: jb, config: &config.Config{InstallTimeout: 30 * time.Second}, repoBiz: repoBiz, gitBiz: gitBiz}
 	conn := &wsConn{taskManager: NewTaskManager(wm.logger), user: &biz.UserInfo{}}
 
 	input := &websocket_pb.UpdateProjectInput{ProjectId: 1}
@@ -305,7 +305,7 @@ func TestWebsocketManager_installProject_addCancelDeployTaskError(t *testing.T) 
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
+	nsBiz := biz.NewMockNamespaceBiz(m)
 	repoBiz := biz.NewMockRepoBiz(m)
 	gitBiz := biz.NewMockGitBiz(m)
 	projBiz := biz.NewMockProjectBiz(m)
@@ -314,10 +314,10 @@ func TestWebsocketManager_installProject_addCancelDeployTaskError(t *testing.T) 
 	jb.EXPECT().NewJob(gomock.Any()).Return(job)
 	job.EXPECT().ID().Return("dupID").AnyTimes()
 	// ApplyProject 前置：匿名守卫放行 + 访问校验 + 仓库取回。
-	nsRepoBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil)
+	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil)
 	repoBiz.EXPECT().Get(gomock.Any(), 0).Return(&biz.Repo{Name: "app", NeedGitRepo: false}, nil).AnyTimes()
 
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	sub.EXPECT().ToSelf(gomock.Cond(func(x any) bool {
 		resp, ok := x.(*websocket_pb.WsMetadataResponse)
 		return ok &&
@@ -326,7 +326,7 @@ func TestWebsocketManager_installProject_addCancelDeployTaskError(t *testing.T) 
 			resp.Metadata.Message == "正在清理中，请稍后再试。"
 	}))
 
-	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nsRepoBiz, nil), jobManager: jb, repoBiz: repoBiz, gitBiz: gitBiz, projBiz: projBiz}
+	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nsBiz, nil), jobManager: jb, repoBiz: repoBiz, gitBiz: gitBiz, projBiz: projBiz}
 	conn := &wsConn{taskManager: NewTaskManager(wm.logger), pubSub: sub}
 	// 预注册同名任务 → AddCancelDeployTask 返回 errSignalExists → 失败帧 + 提前返回。
 	assert.NoError(t, conn.taskManager.Register("dupID", func(error) {}))
@@ -344,7 +344,7 @@ func TestWebsocketManager_installProject_onFinallyCallback(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
+	nsBiz := biz.NewMockNamespaceBiz(m)
 	repoBiz := biz.NewMockRepoBiz(m)
 	gitBiz := biz.NewMockGitBiz(m)
 	projBiz := biz.NewMockProjectBiz(m)
@@ -363,10 +363,10 @@ func TestWebsocketManager_installProject_onFinallyCallback(t *testing.T) {
 	job.EXPECT().Finish().Return(job)
 	job.EXPECT().Error().Return(nil)
 	// ApplyProject 前置：匿名守卫放行 + 访问校验 + 仓库取回。
-	nsRepoBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil)
+	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil)
 	repoBiz.EXPECT().Get(gomock.Any(), 0).Return(&biz.Repo{Name: "app", NeedGitRepo: false}, nil).AnyTimes()
 
-	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nsRepoBiz, nil), jobManager: jb, repoBiz: repoBiz, gitBiz: gitBiz, projBiz: projBiz}
+	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nsBiz, nil), jobManager: jb, repoBiz: repoBiz, gitBiz: gitBiz, projBiz: projBiz}
 	conn := &wsConn{taskManager: NewTaskManager(wm.logger)}
 
 	err := wm.installProject(context.TODO(), conn, &deploy.JobInput{
@@ -398,11 +398,20 @@ func TestSendDeployedResultFunctionality(t *testing.T) {
 	defer m.Finish()
 
 	conn := NewMockConn(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	conn.EXPECT().PubSub().Return(sub).Times(1)
 	conn.EXPECT().UID().Return("uid").Times(1)
 	conn.EXPECT().ID().Return("id").Times(1)
-	sub.EXPECT().ToSelf(gomock.Any())
+	sub.EXPECT().ToSelf(gomock.Any()).Do(func(msg app.WebsocketMessage) {
+		res := msg.(*websocket_pb.WsMetadataResponse)
+		assert.Equal(t, "slug", res.Metadata.Slug)
+		assert.Equal(t, websocket_pb.Type_HandleAuthorize, res.Metadata.Type)
+		assert.Equal(t, websocket_pb.ResultType_Deployed, res.Metadata.Result)
+		assert.True(t, res.Metadata.End)
+		assert.Equal(t, "uid", res.Metadata.Uid)
+		assert.Equal(t, "id", res.Metadata.Id)
+		assert.Equal(t, "message", res.Metadata.Message)
+	})
 
 	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleAuthorize)
 	ms.SendDeployedResult(websocket_pb.ResultType_Deployed, "message", &types.ProjectModel{})
@@ -413,9 +422,15 @@ func TestSendEndErrorFunctionality(t *testing.T) {
 	defer m.Finish()
 
 	conn := NewMockConn(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	conn.EXPECT().PubSub().Return(sub).Times(1)
-	sub.EXPECT().ToSelf(gomock.Any())
+	sub.EXPECT().ToSelf(gomock.Any()).Do(func(msg app.WebsocketMessage) {
+		res := msg.(*websocket_pb.WsMetadataResponse)
+		assert.Equal(t, websocket_pb.Type_HandleExecShellMsg, res.Metadata.Type)
+		assert.Equal(t, deploy.ResultError, res.Metadata.Result)
+		assert.True(t, res.Metadata.End)
+		assert.Equal(t, "error", res.Metadata.Message)
+	})
 	conn.EXPECT().UID().Return("uid").Times(1)
 	conn.EXPECT().ID().Return("id").Times(1)
 	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
@@ -427,9 +442,15 @@ func TestSendProcessPercentFunctionality(t *testing.T) {
 	defer m.Finish()
 
 	conn := NewMockConn(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	conn.EXPECT().PubSub().Return(sub).Times(1)
-	sub.EXPECT().ToSelf(gomock.Any())
+	sub.EXPECT().ToSelf(gomock.Any()).Do(func(msg app.WebsocketMessage) {
+		res := msg.(*websocket_pb.WsMetadataResponse)
+		assert.Equal(t, WsProcessPercent, res.Metadata.Type)
+		assert.Equal(t, deploy.ResultSuccess, res.Metadata.Result)
+		assert.False(t, res.Metadata.End)
+		assert.Equal(t, int32(50), res.Metadata.Percent)
+	})
 	conn.EXPECT().UID().Return("uid").Times(1)
 	conn.EXPECT().ID().Return("id").Times(1)
 
@@ -442,9 +463,15 @@ func TestSendMsgFunctionality(t *testing.T) {
 	defer m.Finish()
 
 	conn := NewMockConn(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	conn.EXPECT().PubSub().Return(sub).Times(1)
-	sub.EXPECT().ToSelf(gomock.Any())
+	sub.EXPECT().ToSelf(gomock.Any()).Do(func(msg app.WebsocketMessage) {
+		res := msg.(*websocket_pb.WsMetadataResponse)
+		assert.Equal(t, websocket_pb.Type_HandleExecShellMsg, res.Metadata.Type)
+		assert.Equal(t, deploy.ResultSuccess, res.Metadata.Result)
+		assert.False(t, res.Metadata.End)
+		assert.Equal(t, "message", res.Metadata.Message)
+	})
 	conn.EXPECT().UID().Return("uid").Times(1)
 	conn.EXPECT().ID().Return("id").Times(1)
 
@@ -457,14 +484,23 @@ func TestSendMsgWithContainerLogFunctionality(t *testing.T) {
 	defer m.Finish()
 
 	conn := NewMockConn(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	conn.EXPECT().PubSub().Return(sub).Times(1)
-	sub.EXPECT().ToSelf(gomock.Any())
+	containers := []*websocket_pb.Container{{Namespace: "ns", Pod: "pod-1", Container: "app"}}
+	sub.EXPECT().ToSelf(gomock.Any()).Do(func(msg app.WebsocketMessage) {
+		res := msg.(*websocket_pb.WsWithContainerMessageResponse)
+		assert.Equal(t, websocket_pb.Type_HandleExecShellMsg, res.Metadata.Type)
+		assert.Equal(t, deploy.ResultLogWithContainers, res.Metadata.Result)
+		assert.False(t, res.Metadata.End)
+		assert.Equal(t, "message", res.Metadata.Message)
+		assert.Len(t, res.Containers, 1)
+		assert.Equal(t, "app", res.Containers[0].Container)
+	})
 	conn.EXPECT().UID().Return("uid").Times(1)
 	conn.EXPECT().ID().Return("id").Times(1)
 
 	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
-	ms.SendMsgWithContainerLog("message", []*websocket_pb.Container{})
+	ms.SendMsgWithContainerLog("message", containers)
 }
 
 func TestSendProtoMsgFunctionality(t *testing.T) {
@@ -472,12 +508,15 @@ func TestSendProtoMsgFunctionality(t *testing.T) {
 	defer m.Finish()
 
 	conn := NewMockConn(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	conn.EXPECT().PubSub().Return(sub).Times(1)
-	sub.EXPECT().ToSelf(gomock.Any())
-
+	sub.EXPECT().ToSelf(gomock.Any()).Do(func(msg app.WebsocketMessage) {
+		res := msg.(*websocket_pb.WsMetadataResponse)
+		// SendProtoMsg 是直通语义：入参即出参，字段原样透传。
+		assert.Equal(t, "passthrough", res.Metadata.Message)
+	})
 	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
-	ms.SendProtoMsg(&wsResponse{})
+	ms.SendProtoMsg(&wsResponse{Metadata: &websocket_pb.Metadata{Message: "passthrough"}})
 }
 
 func TestProcessPercentAddFunctionality(t *testing.T) {
@@ -485,9 +524,14 @@ func TestProcessPercentAddFunctionality(t *testing.T) {
 	defer m.Finish()
 
 	conn := NewMockConn(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	conn.EXPECT().PubSub().Return(sub).Times(1)
-	sub.EXPECT().ToSelf(gomock.Any())
+	sub.EXPECT().ToSelf(gomock.Any()).Do(func(msg app.WebsocketMessage) {
+		res := msg.(*websocket_pb.WsMetadataResponse)
+		assert.Equal(t, WsProcessPercent, res.Metadata.Type)
+		assert.Equal(t, deploy.ResultSuccess, res.Metadata.Result)
+		assert.Equal(t, int32(1), res.Metadata.Percent)
+	})
 	conn.EXPECT().UID().Return("uid").Times(1)
 	conn.EXPECT().ID().Return("id").Times(1)
 
@@ -500,14 +544,20 @@ func TestProcessPercentToFunctionality(t *testing.T) {
 	defer m.Finish()
 
 	conn := NewMockConn(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	conn.EXPECT().PubSub().Return(sub).AnyTimes()
-	sub.EXPECT().ToSelf(gomock.Any()).AnyTimes()
+	sub.EXPECT().ToSelf(gomock.Any()).Times(2).Do(func(msg app.WebsocketMessage) {
+		res := msg.(*websocket_pb.WsMetadataResponse)
+		assert.Equal(t, WsProcessPercent, res.Metadata.Type)
+		// To(3)：0→2 步进一帧 + 末尾精确对齐一帧，两帧 Percent 均为 2。
+		assert.Equal(t, int32(2), res.Metadata.Percent)
+	})
 	conn.EXPECT().UID().Return("uid").AnyTimes()
 	conn.EXPECT().ID().Return("id").AnyTimes()
 
 	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
 	ms.To(3)
+	assert.Equal(t, int64(3), ms.Current())
 }
 
 func Test_messageSender_Current(t *testing.T) {
@@ -515,7 +565,7 @@ func Test_messageSender_Current(t *testing.T) {
 	defer m.Finish()
 
 	conn := NewMockConn(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	conn.EXPECT().PubSub().Return(sub).AnyTimes()
 	sub.EXPECT().ToSelf(gomock.Any()).AnyTimes()
 	conn.EXPECT().UID().Return("uid").AnyTimes()

@@ -11,7 +11,7 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/data"
@@ -65,16 +65,16 @@ func TestWebsocketManager_HandleJoinRoom(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	wsMock := application.NewMockPubSub(m)
+	wsMock := app.NewMockPubSub(m)
 	wsMock.EXPECT().Join(int64(2))
 	wsMock.EXPECT().Leave(int64(1), int64(2))
 
 	// Join 走 RequireProjectAccess（projBiz.Show + nsRepo.Show + CanAccessNamespace）：
 	// 公开命名空间项目任意登录用户放行；Leave 无鉴权直接退订。
 	projBiz := biz.NewMockProjectBiz(m)
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
+	nsBiz := biz.NewMockNamespaceBiz(m)
 	projBiz.EXPECT().Show(gomock.Any(), 2).Return(&biz.Project{ID: 2, NamespaceID: 1}, nil)
-	nsRepoBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns", Private: false}, nil)
+	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns", Private: false}, nil)
 
 	conn := &wsConn{
 		pubSub: wsMock,
@@ -96,7 +96,7 @@ func TestWebsocketManager_HandleJoinRoom(t *testing.T) {
 
 	wm := &websocketManager{
 		logger:    mlog.NewForConfig(nil),
-		accessBiz: biz.NewAccessBiz(nsRepoBiz, projBiz),
+		accessBiz: biz.NewAccessBiz(nsBiz, projBiz),
 	}
 	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{ID: "1", Name: "u", Email: "u@mars.com"})
 	wm.HandleJoinRoom(ctx, conn, ProjectPodEvent, marshal)
@@ -110,14 +110,14 @@ func TestWebsocketManager_HandleStartShell(t *testing.T) {
 
 	// StartShell 前先过命名空间级访问门卫（RequireNamespaceAccessByName）：
 	// FindByName 返回公开命名空间放行，随后 StartShell 才对非规范 sessionID 报错。
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
-	nsRepoBiz.EXPECT().FindByName(gomock.Any(), "testNamespace").Return(&biz.Namespace{Name: "testNamespace", Private: false}, nil)
+	nsBiz := biz.NewMockNamespaceBiz(m)
+	nsBiz.EXPECT().FindByName(gomock.Any(), "testNamespace").Return(&biz.Namespace{Name: "testNamespace", Private: false}, nil)
 
 	wm := &websocketManager{
 		logger:    mlog.NewForConfig(nil),
-		accessBiz: biz.NewAccessBiz(nsRepoBiz, nil),
+		accessBiz: biz.NewAccessBiz(nsBiz, nil),
 	}
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	conn := &wsConn{pubSub: sub, id: "testConnID", uid: "testConnUID"}
 
 	input := &websocket_pb.WsHandleExecShellInput{
@@ -226,14 +226,14 @@ func TestWebsocketManager_HandleCreateProject(t *testing.T) {
 	defer m.Finish()
 
 	eventRepo := data.NewMockEventRepo(m)
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
+	nsBiz := biz.NewMockNamespaceBiz(m)
 	repoBiz := biz.NewMockRepoBiz(m)
 	gitBiz := biz.NewMockGitBiz(m)
 	projBiz := biz.NewMockProjectBiz(m)
 	jb := deploy.NewMockJobManager(m)
 	wm := &websocketManager{
 		logger:     mlog.NewForConfig(nil),
-		accessBiz:  biz.NewAccessBiz(nsRepoBiz, nil),
+		accessBiz:  biz.NewAccessBiz(nsBiz, nil),
 		eventRepo:  eventRepo,
 		jobManager: jb,
 		repoBiz:    repoBiz,
@@ -263,7 +263,7 @@ func TestWebsocketManager_HandleCreateProject(t *testing.T) {
 		ID:   2,
 	}, nil).Times(1)
 	// ApplyProject 命名空间访问校验：公开空间放行。
-	nsRepoBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil)
+	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil)
 	marshal, _ := proto.Marshal(input)
 	job.EXPECT().OnFinally(gomock.Not(nil), gomock.Not(nil))
 	job.EXPECT().GlobalLock().Return(job)
@@ -295,14 +295,14 @@ func TestWebsocketManager_HandleUpdateProject(t *testing.T) {
 	defer m.Finish()
 
 	eventRepo := data.NewMockEventRepo(m)
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
+	nsBiz := biz.NewMockNamespaceBiz(m)
 	repoBiz := biz.NewMockRepoBiz(m)
 	gitBiz := biz.NewMockGitBiz(m)
 	projBiz := biz.NewMockProjectBiz(m)
 	jb := deploy.NewMockJobManager(m)
 	wm := &websocketManager{
 		logger:     mlog.NewForConfig(nil),
-		accessBiz:  biz.NewAccessBiz(nsRepoBiz, projBiz),
+		accessBiz:  biz.NewAccessBiz(nsBiz, projBiz),
 		eventRepo:  eventRepo,
 		jobManager: jb,
 		repoBiz:    repoBiz,
@@ -331,7 +331,7 @@ func TestWebsocketManager_HandleUpdateProject(t *testing.T) {
 		RepoID:      1,
 	}, nil)
 	// 命名空间校验两次：handler 的 RequireProjectAccess + ApplyProject 入口。
-	nsRepoBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil).Times(2)
+	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns-1", Private: false}, nil).Times(2)
 	repoBiz.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{Name: "appa", ID: 1, NeedGitRepo: false}, nil)
 	marshal, _ := proto.Marshal(input)
 	job.EXPECT().OnFinally(gomock.Any(), gomock.Any())
@@ -369,11 +369,11 @@ func TestNewWebsocketManager(t *testing.T) {
 	projBiz := biz.NewMockProjectBiz(m)
 	repoBiz := biz.NewMockRepoBiz(m)
 	gitBiz := biz.NewMockGitBiz(m)
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
-	accessBiz := biz.NewAccessBiz(nsRepoBiz, nil)
+	nsBiz := biz.NewMockNamespaceBiz(m)
+	accessBiz := biz.NewAccessBiz(nsBiz, nil)
 	nsRepo := data.NewMockNamespaceRepo(m)
 	jobManager := deploy.NewMockJobManager(m)
-	pl := application.NewMockPluginManager(m)
+	pl := app.NewMockPluginManager(m)
 	authBiz := biz.NewMockAuthBiz(m)
 	locker := locker.NewMockLocker(m)
 	clusterRepo := data.NewMockK8sRepo(m)
@@ -425,15 +425,15 @@ func TestWebsocketManager_TickClusterHealth(t *testing.T) {
 	defer m.Finish()
 
 	lockerMock := locker.NewMockLocker(m)
-	plMock := application.NewMockPluginManager(m)
-	wsMock := application.NewMockWsSender(m)
+	plMock := app.NewMockPluginManager(m)
+	wsMock := app.NewMockWsSender(m)
 	k8sRepoMock := data.NewMockK8sRepo(m)
 	loggerMock := mlog.NewForConfig(nil)
 
 	lockerMock.EXPECT().Acquire("TickClusterHealth", int64(5)).Return(true)
 	lockerMock.EXPECT().Release("TickClusterHealth")
 	plMock.EXPECT().Ws().Return(wsMock)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	wsMock.EXPECT().New(gomock.Any(), gomock.Any()).Return(sub)
 	sub.EXPECT().Close()
 	sub.EXPECT().ToAll(gomock.Any())
@@ -458,9 +458,9 @@ func TestWebsocketManager_Info(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	plMock := application.NewMockPluginManager(m)
-	wsMock := application.NewMockWsSender(m)
-	sub := application.NewMockPubSub(m)
+	plMock := app.NewMockPluginManager(m)
+	wsMock := app.NewMockWsSender(m)
+	sub := app.NewMockPubSub(m)
 
 	plMock.EXPECT().Ws().Return(wsMock)
 	wsMock.EXPECT().New(gomock.Any(), gomock.Any()).Return(sub)
@@ -524,7 +524,7 @@ func TestWebsocketManager_dispatchEvent(t *testing.T) {
 		m := gomock.NewController(t)
 		defer m.Finish()
 		wm := &websocketManager{logger: mlog.NewForConfig(nil), timer: timer.NewReal()}
-		wsMock := application.NewMockPubSub(m)
+		wsMock := app.NewMockPubSub(m)
 		// 未认证：发"认证中，请稍等~"帧，handler 不执行
 		wsMock.EXPECT().ToSelf(gomock.Any())
 		conn := &wsConn{pubSub: wsMock} // 未设置用户
@@ -557,7 +557,7 @@ func TestWebsocketManager_Input_error(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 
 	wm := &websocketManager{
 		logger: mlog.NewForConfig(nil),

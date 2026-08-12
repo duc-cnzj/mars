@@ -13,7 +13,6 @@ import (
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
-	"k8s.io/client-go/tools/remotecommand"
 )
 
 // execInContainer 在指定容器内执行 cmd，并把 stdin/stdout/stderr 及终端 resize
@@ -131,7 +130,7 @@ func (wc *websocketManager) resetSession(session PtyHandler) PtyHandler {
 	wc.logger.Debug("done....")
 
 	spty := session.(*ptyHandler)
-	var newSession PtyHandler = session
+	var newSession = session
 	if spty.CloseDoneChan() {
 		newSession = &ptyHandler{
 			logger:    spty.logger,
@@ -141,7 +140,7 @@ func (wc *websocketManager) resetSession(session PtyHandler) PtyHandler {
 			eventRepo: spty.eventRepo,
 			conn:      spty.conn,
 			doneChan:  make(chan struct{}),
-			sizeChan:  make(chan remotecommand.TerminalSize, 1),
+			sizeChan:  make(chan biz.TerminalSize, 1),
 			shellCh:   make(chan *websocket_pb.TerminalMessage, 500),
 			sizeStore: &sizeStore{
 				width:  width,
@@ -185,7 +184,7 @@ func (wc *websocketManager) StartShell(ctx context.Context, input *websocket_pb.
 		doneChan:  make(chan struct{}),
 		sizeStore: &sizeStore{},
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 500),
-		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		sizeChan:  make(chan biz.TerminalSize, 1),
 	}
 	conn.SetPtyHandler(sessionID, pty)
 

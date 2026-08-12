@@ -12,7 +12,7 @@ import (
 	"time"
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/deploy"
@@ -36,20 +36,20 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-var _ application.WsHttpServer = (*websocketManager)(nil)
+var _ app.WsHttpServer = (*websocketManager)(nil)
 
 // HandleRequestFunc 是单个协议类型的处理器签名（入站消息分发到它）。
 type HandleRequestFunc func(ctx context.Context, c Conn, t websocket_pb.Type, message []byte)
 
 // websocketManager 是 ws 传输层入口：持有业务依赖与处理器路由表（handlers），
-// 实现 application.WsHttpServer（Serve/Info/Shutdown + TickClusterHealth）。
+// 实现 app.WsHttpServer（Serve/Info/Shutdown + TickClusterHealth）。
 type websocketManager struct {
 	healthTickDuration time.Duration
 
 	timer         timer.Timer
 	config        *config.Config
 	logger        mlog.Logger
-	pluginManager application.PluginManager
+	pluginManager app.PluginManager
 	authBiz       biz.AuthBiz
 	locker        locker.Locker
 	jobManager    deploy.JobManager
@@ -81,7 +81,7 @@ type WebsocketManagerDeps struct {
 	AccessBiz     biz.AccessBiz
 	JobManager    deploy.JobManager
 	Config        *config.Config
-	PluginManager application.PluginManager
+	PluginManager app.PluginManager
 	AuthBiz       biz.AuthBiz
 	Locker        locker.Locker
 	ClusterRepo   biz.K8sRepo
@@ -90,7 +90,7 @@ type WebsocketManagerDeps struct {
 }
 
 // NewWebsocketManager 组装 WebsocketManager：注入依赖、构建协议类型→处理器路由表。
-func NewWebsocketManager(deps WebsocketManagerDeps) application.WsHttpServer {
+func NewWebsocketManager(deps WebsocketManagerDeps) app.WsHttpServer {
 	mgr := &websocketManager{
 		timer:              deps.Timer,
 		projBiz:            deps.ProjBiz,
@@ -174,8 +174,8 @@ func (wc *websocketManager) Serve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var (
-		id  string = uuid.New().String()
-		uid string = uuid.New().String()
+		id  = uuid.New().String()
+		uid = uuid.New().String()
 
 		inputUid = r.URL.Query().Get("uid")
 	)

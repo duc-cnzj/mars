@@ -13,7 +13,7 @@ import (
 	"time"
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
@@ -64,7 +64,7 @@ type Conn interface {
 	// GetUser 以读锁返回当前用户信息（未认证时为 nil）。
 	GetUser() *biz.UserInfo
 	// PubSub 返回该连接的发布订阅实例。
-	PubSub() application.PubSub
+	PubSub() app.PubSub
 
 	// AddCancelDeployTask 登记一个部署任务的取消回调。
 	AddCancelDeployTask(id string, fn func(error)) error
@@ -117,7 +117,7 @@ type wsConn struct {
 	id string
 	// 同一个浏览的 uid 是一样的
 	uid    string
-	pubSub application.PubSub
+	pubSub app.PubSub
 
 	userMu sync.RWMutex
 	user   *biz.UserInfo
@@ -166,7 +166,7 @@ func (c *wsConn) SetUser(info *biz.UserInfo) {
 }
 
 // PubSub 返回该连接的发布订阅实例。
-func (c *wsConn) PubSub() application.PubSub {
+func (c *wsConn) PubSub() app.PubSub {
 	return c.pubSub
 }
 

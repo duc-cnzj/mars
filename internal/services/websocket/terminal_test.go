@@ -8,14 +8,13 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/deploy"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"k8s.io/client-go/tools/remotecommand"
 )
 
 func TestIsValidShell(t *testing.T) {
@@ -125,7 +124,7 @@ func TestPtyHandler_Toast(t *testing.T) {
 	}
 	conn.EXPECT().ID().Return("id")
 	conn.EXPECT().UID().Return("uid")
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	conn.EXPECT().PubSub().Return(sub)
 	sub.EXPECT().ToSelf(gomock.Any())
 
@@ -291,7 +290,7 @@ func Test_resetSession(t *testing.T) {
 		sessionID: "id",
 		conn:      &wsConn{},
 		doneChan:  make(chan struct{}, 1),
-		sizeChan:  make(chan remotecommand.TerminalSize, 10),
+		sizeChan:  make(chan biz.TerminalSize, 10),
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
 		sizeStore: &sizeStore{width: 10, height: 10},
 	}
@@ -325,7 +324,7 @@ func Test_resetSession4(t *testing.T) {
 		sessionID: "id",
 		conn:      &wsConn{},
 		doneChan:  make(chan struct{}, 1),
-		sizeChan:  make(chan remotecommand.TerminalSize, 10),
+		sizeChan:  make(chan biz.TerminalSize, 10),
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
 		sizeStore: &sizeStore{width: 10, height: 10},
 	}
@@ -352,7 +351,7 @@ func Test_resetSession1(t *testing.T) {
 		sessionID: "id",
 		conn:      &wsConn{},
 		doneChan:  make(chan struct{}, 1),
-		sizeChan:  make(chan remotecommand.TerminalSize, 10),
+		sizeChan:  make(chan biz.TerminalSize, 10),
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
 		sizeStore: &sizeStore{},
 	}
@@ -380,7 +379,7 @@ func Test_resetSession2(t *testing.T) {
 		sessionID: "id",
 		conn:      &wsConn{},
 		doneChan:  make(chan struct{}, 1),
-		sizeChan:  make(chan remotecommand.TerminalSize, 10),
+		sizeChan:  make(chan biz.TerminalSize, 10),
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
 		sizeStore: &sizeStore{},
 	}
@@ -399,7 +398,7 @@ func Test_resetSession2(t *testing.T) {
 func TestPtyHandler_Next_DoneChan(t *testing.T) {
 	p := &ptyHandler{
 		recorder: &testRecorder{},
-		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		sizeChan: make(chan biz.TerminalSize, 1),
 		doneChan: make(chan struct{}),
 	}
 
@@ -413,19 +412,19 @@ func TestPtyHandler_Next(t *testing.T) {
 	r := data.NewMockRecorder(m)
 	p := &ptyHandler{
 		recorder:  r,
-		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		sizeChan:  make(chan biz.TerminalSize, 1),
 		doneChan:  make(chan struct{}),
 		sizeStore: &sizeStore{},
 	}
 	r.EXPECT().Resize(uint16(10), uint16(20)).Times(1)
-	p.Resize(remotecommand.TerminalSize{
+	p.Resize(biz.TerminalSize{
 		Width:  10,
 		Height: 20,
 	})
 	next := p.Next()
 	assert.Equal(t, uint16(10), next.Width)
 	assert.Equal(t, uint16(20), next.Height)
-	p.Resize(remotecommand.TerminalSize{
+	p.Resize(biz.TerminalSize{
 		Width:  100,
 		Height: 200,
 	})
@@ -442,23 +441,23 @@ func TestPtyHandler_Next(t *testing.T) {
 	assert.Equal(t, uint16(200), p.sizeStore.Height())
 
 	p2 := &ptyHandler{
-		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		sizeChan:  make(chan biz.TerminalSize, 1),
 		doneChan:  make(chan struct{}),
 		sizeStore: &sizeStore{},
 	}
 	close(p2.doneChan)
-	p2.Resize(remotecommand.TerminalSize{})
+	p2.Resize(biz.TerminalSize{})
 	assert.Len(t, p2.sizeChan, 0)
 
 	p3 := &ptyHandler{
-		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		sizeChan:  make(chan biz.TerminalSize, 1),
 		doneChan:  make(chan struct{}),
 		sizeStore: &sizeStore{},
 	}
-	assert.Nil(t, p3.Resize(remotecommand.TerminalSize{}))
-	assert.Equal(t, "sizeChan chan full", p3.Resize(remotecommand.TerminalSize{}).Error())
+	assert.Nil(t, p3.Resize(biz.TerminalSize{}))
+	assert.Equal(t, "sizeChan chan full", p3.Resize(biz.TerminalSize{}).Error())
 	close(p3.doneChan)
-	assert.Equal(t, "doneChan closed", p3.Resize(remotecommand.TerminalSize{}).Error())
+	assert.Equal(t, "doneChan closed", p3.Resize(biz.TerminalSize{}).Error())
 	assert.Len(t, p3.sizeChan, 1)
 }
 
@@ -466,7 +465,7 @@ func TestPtyHandler_Read2(t *testing.T) {
 	p := &ptyHandler{
 		sessionID: "duc",
 		recorder:  &testRecorder{},
-		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		sizeChan:  make(chan biz.TerminalSize, 1),
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 1),
 		doneChan:  make(chan struct{}),
 		sizeStore: &sizeStore{},
@@ -510,7 +509,7 @@ func TestPtyHandler_Read2(t *testing.T) {
 	p2 := &ptyHandler{
 		sessionID: "duc",
 		recorder:  &testRecorder{},
-		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		sizeChan:  make(chan biz.TerminalSize, 1),
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 1),
 		doneChan:  make(chan struct{}),
 		sizeStore: &sizeStore{},
@@ -556,13 +555,13 @@ func TestPtyHandler_Close(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	recorder := data.NewMockRecorder(m)
-	ps := application.NewMockPubSub(m)
+	ps := app.NewMockPubSub(m)
 	eventRepo := data.NewMockEventRepo(m)
 	p := &ptyHandler{
 		sessionID: "duc",
 		conn:      &wsConn{pubSub: ps},
 		recorder:  recorder,
-		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		sizeChan:  make(chan biz.TerminalSize, 1),
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 2),
 		doneChan:  make(chan struct{}),
 		container: &biz.Container{},
@@ -620,7 +619,7 @@ func TestPtyHandler_Close(t *testing.T) {
 
 	// 关闭后 Send/Resize 命中 doneChan 分支，分别关闭 shellCh/sizeChan。
 	p.Send(context.TODO(), nil)
-	p.Resize(remotecommand.TerminalSize{Width: 1, Height: 1})
+	p.Resize(biz.TerminalSize{Width: 1, Height: 1})
 
 	// shellCh 已关闭：接收立即得零值（ok=false），select 命中 case 而非 default。
 	select {
@@ -684,7 +683,7 @@ func TestPtyHandler_Write(t *testing.T) {
 			Container: "c",
 		},
 	}
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	sub.EXPECT().ToSelf(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
 			Id:     "id",
@@ -717,10 +716,10 @@ func TestPtyHandler_Write(t *testing.T) {
 func TestPtyHandler_Write3(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	ps := application.NewMockPubSub(m)
+	ps := app.NewMockPubSub(m)
 	r := data.NewMockRecorder(m)
 	p := &ptyHandler{
-		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		sizeChan: make(chan biz.TerminalSize, 1),
 		sizeStore: &sizeStore{
 			width:  106,
 			height: 25,
@@ -756,10 +755,10 @@ func TestPtyHandler_Write3(t *testing.T) {
 func TestPtyHandler_Write_with_chan_full(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	ps := application.NewMockPubSub(m)
+	ps := app.NewMockPubSub(m)
 	r := data.NewMockRecorder(m)
 	p := &ptyHandler{
-		sizeChan: make(chan remotecommand.TerminalSize),
+		sizeChan: make(chan biz.TerminalSize),
 		sizeStore: &sizeStore{
 			width:  106,
 			height: 25,
@@ -776,7 +775,6 @@ func TestPtyHandler_Write_with_chan_full(t *testing.T) {
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
 	// 会走 default，没有 select 会卡住
 	n, err := p.Write([]byte("aaa"))
-	assert.True(t, true)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, n)
 }
@@ -865,7 +863,7 @@ func TestWebsocketManager_runTerminal_shellRetry(t *testing.T) {
 		sessionID: "sid",
 		conn:      &wsConn{},
 		doneChan:  make(chan struct{}, 1),
-		sizeChan:  make(chan remotecommand.TerminalSize, 10),
+		sizeChan:  make(chan biz.TerminalSize, 10),
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
 		sizeStore: &sizeStore{width: 100, height: 25},
 	}

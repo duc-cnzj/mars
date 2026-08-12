@@ -11,7 +11,7 @@ import (
 	"time"
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/counter"
@@ -42,7 +42,7 @@ func (w *fakeWriteCloser) Close() error {
 	return w.closeErr
 }
 
-func newWsConnForLoop(m *gomock.Controller, mockWs *MockGorillaWs, sub application.PubSub) *wsConn {
+func newWsConnForLoop(m *gomock.Controller, mockWs *MockGorillaWs, sub app.PubSub) *wsConn {
 	return &wsConn{
 		GorillaWs:   mockWs,
 		pubSub:      sub,
@@ -77,7 +77,7 @@ func TestWebsocketManager_read_unmarshalError(t *testing.T) {
 	mockWs.EXPECT().ReadMessage().Return(1, []byte("not-a-proto"), nil)
 	mockWs.EXPECT().ReadMessage().Return(0, nil, errBoom)
 
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	sub.EXPECT().ToSelf(gomock.Any())
 
 	wm := &websocketManager{logger: mlog.NewForConfig(nil), timer: timer.NewReal()}
@@ -123,7 +123,7 @@ func TestWebsocketManager_write(t *testing.T) {
 	defer m.Finish()
 
 	ch := make(chan []byte, 1)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	sub.EXPECT().ID().Return("id").AnyTimes()
 	sub.EXPECT().Uid().Return("uid").AnyTimes()
 	sub.EXPECT().Subscribe().Return(ch)
@@ -154,7 +154,7 @@ func TestWebsocketManager_write_ctxDone(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	sub.EXPECT().ID().Return("id").AnyTimes()
 	sub.EXPECT().Uid().Return("uid").AnyTimes()
 	sub.EXPECT().Subscribe().Return(make(chan []byte))
@@ -178,7 +178,7 @@ func TestWebsocketManager_write_nextWriterError(t *testing.T) {
 	defer m.Finish()
 
 	ch := make(chan []byte, 1)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	sub.EXPECT().ID().Return("id").AnyTimes()
 	sub.EXPECT().Uid().Return("uid").AnyTimes()
 	sub.EXPECT().Subscribe().Return(ch)
@@ -203,7 +203,7 @@ func TestWebsocketManager_write_closeWriterError(t *testing.T) {
 	defer m.Finish()
 
 	ch := make(chan []byte, 1)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	sub.EXPECT().ID().Return("id").AnyTimes()
 	sub.EXPECT().Uid().Return("uid").AnyTimes()
 	sub.EXPECT().Subscribe().Return(ch)
@@ -233,7 +233,7 @@ func TestWebsocketManager_write_ping(t *testing.T) {
 	defer m.Finish()
 
 	pingCh := make(chan []byte)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	sub.EXPECT().ID().Return("id").AnyTimes()
 	sub.EXPECT().Uid().Return("uid").AnyTimes()
 	sub.EXPECT().Subscribe().Return(pingCh).AnyTimes()
@@ -265,7 +265,7 @@ func TestWebsocketManager_write_pingWriteError(t *testing.T) {
 	defer m.Finish()
 
 	pingCh := make(chan []byte)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	sub.EXPECT().ID().Return("id").AnyTimes()
 	sub.EXPECT().Uid().Return("uid").AnyTimes()
 	sub.EXPECT().Subscribe().Return(pingCh).AnyTimes()
@@ -294,9 +294,9 @@ func TestWebsocketManager_Serve(t *testing.T) {
 	var closeOnce sync.Once
 	// stop 与 mock Close 共用同一 Once：避免测试关 ch 后 mock.Close 再关导致 double-close。
 	stop := func() { closeOnce.Do(func() { close(ch) }) }
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	sub.EXPECT().Subscribe().Return(ch).AnyTimes()
-	sub.EXPECT().ToSelf(gomock.Any()).DoAndReturn(func(msg application.WebsocketMessage) error {
+	sub.EXPECT().ToSelf(gomock.Any()).DoAndReturn(func(msg app.WebsocketMessage) error {
 		b, err := proto.Marshal(msg.(proto.Message))
 		if err != nil {
 			return err
@@ -310,9 +310,9 @@ func TestWebsocketManager_Serve(t *testing.T) {
 	sub.EXPECT().Close().Do(stop).AnyTimes()
 	sub.EXPECT().Join(int64(2)).Return(nil).AnyTimes()
 
-	wsSender := application.NewMockWsSender(m)
+	wsSender := app.NewMockWsSender(m)
 	wsSender.EXPECT().New(gomock.Any(), gomock.Any()).Return(sub).AnyTimes()
-	pl := application.NewMockPluginManager(m)
+	pl := app.NewMockPluginManager(m)
 	pl.EXPECT().Ws().Return(wsSender).AnyTimes()
 
 	authMock := biz.NewMockAuthBiz(m)
@@ -321,8 +321,8 @@ func TestWebsocketManager_Serve(t *testing.T) {
 	// JoinRoom 前经 RequireProjectAccess（Show + 所属命名空间校验）：公开命名空间放行。
 	projBiz := biz.NewMockProjectBiz(m)
 	projBiz.EXPECT().Show(gomock.Any(), 2).Return(&biz.Project{ID: 2, NamespaceID: 1}, nil).AnyTimes()
-	nsRepoBiz := biz.NewMockNsRepoBiz(m)
-	nsRepoBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns", Private: false}, nil).AnyTimes()
+	nsBiz := biz.NewMockNamespaceBiz(m)
+	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns", Private: false}, nil).AnyTimes()
 
 	wm := &websocketManager{
 		timer:         timer.NewReal(),
@@ -330,7 +330,7 @@ func TestWebsocketManager_Serve(t *testing.T) {
 		pluginManager: pl,
 		authBiz:       authMock,
 		counter:       counter.NewCounter(),
-		accessBiz:     biz.NewAccessBiz(nsRepoBiz, projBiz),
+		accessBiz:     biz.NewAccessBiz(nsBiz, projBiz),
 	}
 	wm.handlers = map[websocket_pb.Type]HandleRequestFunc{
 		WsAuthorize:     wm.HandleAuthorize,
