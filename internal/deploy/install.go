@@ -3,7 +3,6 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"sort"
 	"sync"
 	"time"
 
@@ -170,37 +169,6 @@ func (r *releaseInstaller) loggerWrap(messageChan SafeWriteMessageChan, percente
 	}
 }
 
-type timeOrderedSetStringItem struct {
-	t    time.Time
-	data string
-}
-
-type orderedItemList []*timeOrderedSetStringItem
-
-// Len 实现 sort.Interface，返回元素个数。
-func (o orderedItemList) Len() int {
-	return len(o)
-}
-
-// Less 实现 sort.Interface，按时间升序排列。
-func (o orderedItemList) Less(i, j int) bool {
-	return o[i].t.Before(o[j].t)
-}
-
-// Swap 实现 sort.Interface，交换两个元素。
-func (o orderedItemList) Swap(i, j int) {
-	o[i], o[j] = o[j], o[i]
-}
-
-// List 返回按插入时间排序后的字符串列表。
-func (o orderedItemList) List() []string {
-	res := make([]string, len(o))
-	for i, item := range o {
-		res[i] = item.data
-	}
-	return res
-}
-
 type timeOrderedSetString struct {
 	mu    sync.RWMutex
 	items map[string]time.Time
@@ -231,21 +199,6 @@ func (o *timeOrderedSetString) has(s string) bool {
 	defer o.mu.RUnlock()
 	_, ok := o.items[s]
 	return ok
-}
-
-// sortedItems 返回全部已记录字符串，按插入时间升序。
-func (o *timeOrderedSetString) sortedItems() []string {
-	o.mu.RLock()
-	defer o.mu.RUnlock()
-	oslist := make(orderedItemList, 0, len(o.items))
-	for s, t := range o.items {
-		oslist = append(oslist, &timeOrderedSetStringItem{
-			t:    t,
-			data: s,
-		})
-	}
-	sort.Sort(oslist)
-	return oslist.List()
 }
 
 // SafeWriteMessageChan 是部署进度消息的线程安全投递通道，

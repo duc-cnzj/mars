@@ -16,11 +16,11 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/uploader"
-	"github.com/duc-cnzj/mars/v6/internal/util/chartpath"
 	"github.com/duc-cnzj/mars/v6/internal/util/rand"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	yaml2 "github.com/duc-cnzj/mars/v6/internal/util/yaml"
@@ -67,7 +67,7 @@ type LoadContext struct {
 
 	// 依赖：传输层/插件层端口。
 	Messager  DeployMsger
-	PluginMgr application.PluginManager
+	PluginMgr app.PluginManager
 	Helmer    biz.HelmerRepo
 	Logger    mlog.Logger
 
@@ -197,7 +197,7 @@ func (c *ChartFileLoader) Load(ctx *LoadContext) error {
 	ctx.Messager.SendMsg(loaderName + "加载 helm chart 文件")
 	ctx.Messager.To(20)
 
-	if !chartpath.IsRemoteLocalChartPath(ctx.Config.LocalChartPath) {
+	if !biz.IsRemoteLocalChartPath(ctx.Config.LocalChartPath) {
 		return errors.New("LocalChartPath 格式不正确")
 	}
 
@@ -218,11 +218,15 @@ func (c *ChartFileLoader) Load(ctx *LoadContext) error {
 		path   = split[2]
 	)
 
-	files, _ = ctx.PluginMgr.Git().GetDirectoryFilesWithBranch(pid, branch, path, true)
+	files, err := ctx.PluginMgr.Git().GetDirectoryFilesWithBranch(pid, branch, path, true)
+	if err != nil {
+		// git 故障如实上报：吞掉会误报成"charts 文件不存在"，排障误导向。
+		// 走 errs.Wrap 自动归类（git 未识别类型落 500），不散落裸 wrap。
+		return errs.Wrap(err, "获取远程 charts 文件")
+	}
 	if len(files) < 1 {
 		return errors.New("charts 文件不存在")
 	}
-	var err error
 	tmpChartsDir, deleteDirFn, err = ctx.DownloadFiles(pid, branch, files)
 	if err != nil {
 		return err
@@ -327,11 +331,14 @@ func (d *ElementsLoader) Load(ctx *LoadContext) error {
 	var validValuesMap = make(map[string]any)
 	var useDefaultMap = make(map[string]bool)
 
-	sort.Slice(ctx.Config.Elements, func(x, y int) bool {
-		return ctx.Config.Elements[x].Order < ctx.Config.Elements[y].Order
+	// 在副本上排序：ctx.Config.Elements 是共享的 repo.MarsConfig.Elements，
+	// 原地排序会让同 repo 的并发部署互相踩踏切片。
+	elements := append([]*mars.Element(nil), ctx.Config.Elements...)
+	sort.Slice(elements, func(x, y int) bool {
+		return elements[x].Order < elements[y].Order
 	})
 	var configElementsMap = make(map[string]*mars.Element)
-	for _, element := range ctx.Config.Elements {
+	for _, element := range elements {
 		configElementsMap[element.Path] = element
 		defaultValue, e := d.typedValue(element, element.Default)
 		if e != nil {
@@ -525,9 +532,9 @@ func (v *SystemVariableLoader) Load(ctx *LoadContext) error {
 	//{{.Branch}}{{.Commit}}{{.Pipeline}}
 	var (
 		pipelineID          int64
-		pipelineBranch      string = ctx.Input.GitBranch
-		pipelineShortCommit string = ctx.Commit.ShortID
-		pipelineLongCommit  string = ctx.Input.GitCommit
+		pipelineBranch      = ctx.Input.GitBranch
+		pipelineShortCommit = ctx.Commit.ShortID
+		pipelineLongCommit  = ctx.Input.GitCommit
 	)
 
 	v.Add(VarLongCommit, pipelineLongCommit)

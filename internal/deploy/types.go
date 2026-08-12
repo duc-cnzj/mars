@@ -11,7 +11,7 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 )
 
 // deployResult 是部署最终结果的线程安全容器，由 HandleMessage/Finish 写入，
@@ -165,7 +165,7 @@ func NewCloser(fn func() error) io.Closer {
 type emptyPubSub struct{}
 
 // NewEmptyPubSub 返回无操作的 PubSub 实现，供未绑定消息总线的场景占位。
-func NewEmptyPubSub() application.PubSub {
+func NewEmptyPubSub() app.PubSub {
 	return &emptyPubSub{}
 }
 
@@ -205,12 +205,12 @@ func (e *emptyPubSub) ID() string {
 }
 
 // ToSelf 空实现。
-func (e *emptyPubSub) ToSelf(message application.WebsocketMessage) error {
+func (e *emptyPubSub) ToSelf(message app.WebsocketMessage) error {
 	return nil
 }
 
 // ToAll 空实现。
-func (e *emptyPubSub) ToAll(message application.WebsocketMessage) error {
+func (e *emptyPubSub) ToAll(message app.WebsocketMessage) error {
 	return nil
 }
 

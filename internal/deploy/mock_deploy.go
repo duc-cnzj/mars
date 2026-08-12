@@ -15,7 +15,7 @@ import (
 
 	types "github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocket "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	application "github.com/duc-cnzj/mars/v6/internal/application"
+	app "github.com/duc-cnzj/mars/v6/internal/app"
 	biz "github.com/duc-cnzj/mars/v6/internal/biz"
 	gomock "go.uber.org/mock/gomock"
 	release "helm.sh/helm/v3/pkg/release"
@@ -484,7 +484,7 @@ func (mr *MockDeployMsgerMockRecorder) SendProcessPercent(arg0 any) *gomock.Call
 }
 
 // SendProtoMsg mocks base method.
-func (m *MockDeployMsger) SendProtoMsg(arg0 application.WebsocketMessage) {
+func (m *MockDeployMsger) SendProtoMsg(arg0 app.WebsocketMessage) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SendProtoMsg", arg0)
 }

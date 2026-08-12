@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/locker"
@@ -92,7 +91,7 @@ type JobManagerDeps struct {
 	Locker           locker.Locker
 	K8sRepo          biz.K8sRepo
 	EventRepo        biz.EventRepo
-	PluginManager    application.PluginManager
+	PluginManager    app.PluginManager
 }
 
 type jobManager struct {
@@ -109,7 +108,7 @@ type jobManager struct {
 
 	locker        locker.Locker
 	uploader      uploader.Uploader
-	pluginManager application.PluginManager
+	pluginManager app.PluginManager
 }
 
 // NewJobManager 构造部署任务管理器，依赖由 wire 从 JobManagerDeps 注入。
@@ -183,8 +182,8 @@ type JobInput struct {
 	User           *biz.UserInfo
 	DryRun         bool
 
-	PubSub   application.PubSub `json:"-"`
-	Messager DeployMsger        `json:"-"`
+	PubSub   app.PubSub  `json:"-"`
+	Messager DeployMsger `json:"-"`
 }
 
 // Slug 返回该输入的部署任务标识（namespace+name 哈希），用于全局锁区分。
@@ -210,7 +209,7 @@ type jobRunner struct {
 	messager        DeployMsger
 	timeoutSeconds  int64
 	uploader        uploader.Uploader
-	pluginMgr       application.PluginManager
+	pluginMgr       app.PluginManager
 	installer       ReleaseInstaller
 	messageCh       SafeWriteMessageChan
 	deployResult    *deployResult
@@ -339,6 +338,18 @@ func (j *jobRunner) Validate() Job {
 				j.projRepo.Delete(context.TODO(), createdID)
 				sendResultToUser()
 			})
+		} else {
+			// dry-run 不落库，但 Run 的 ReleaseName 与 loader 的 host 变量渲染
+			// （ctx.Project.Name）仍依赖 project 的身份字段——合成占位项目，
+			// 避免后续链路对 nil project 解引用 panic。
+			j.project = &biz.Project{
+				Name:      createProjectInput.Name,
+				GitBranch: createProjectInput.GitBranch,
+				GitCommit: createProjectInput.GitCommit,
+			}
+			// 清掉 FindByName 的 NotFound：dry-run 新建已由占位项目承接，
+			// 否则末尾 SetError 会把"预期内的不存在"误报成部署失败。
+			err = nil
 		}
 	} else {
 		j.project = found
@@ -376,7 +387,7 @@ func (j *jobRunner) Validate() Job {
 		j.commit, err = j.pluginMgr.Git().GetCommit(fmt.Sprintf("%d", j.repo.GitProjectID), j.input.GitCommit)
 	}
 	if !j.isNew {
-		j.oldConf = toProjectEventYaml(j.project)
+		j.oldConf = j.project.ToEventYaml()
 	}
 
 	return j.SetError(err)
@@ -532,7 +543,7 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 		}
 
 		var (
-			oldConf biz.YamlPrettier = j.oldConf
+			oldConf = j.oldConf
 			newConf biz.YamlPrettier
 		)
 
@@ -542,14 +553,14 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 				return err
 			}
 
-			newConf = toProjectEventYaml(j.project)
+			newConf = j.project.ToEventYaml()
 			j.eventRepo.Dispatch(biz.EventProjectChanged, &biz.ProjectChangedData{
 				ID:       j.project.ID,
 				Username: j.user.Name,
 			})
 		}
 
-		var act types.EventActionType = types.EventActionType_Create
+		var act = types.EventActionType_Create
 		if !j.isNew {
 			act = types.EventActionType_Update
 		}
@@ -667,7 +678,7 @@ func (j *jobRunner) Project() *biz.Project {
 }
 
 // PubSub 返回输入绑定的消息总线（广播 reload 等事件）。
-func (j *jobRunner) PubSub() application.PubSub {
+func (j *jobRunner) PubSub() app.PubSub {
 	return j.input.PubSub
 }
 
@@ -719,34 +730,5 @@ func (j *jobRunner) HandleMessage(ctx context.Context) {
 				return
 			}
 		}
-	}
-}
-
-// toProjectEventYaml 把项目关键字段排好序后转成 YAML 快照，供审计事件对比变更。
-func toProjectEventYaml(p *biz.Project) biz.YamlPrettier {
-	if p == nil {
-		return nil
-	}
-
-	sort.Slice(p.EnvValues, func(i, j int) bool {
-		return p.EnvValues[i].Key < p.EnvValues[j].Key
-	})
-	sort.Slice(p.ExtraValues, func(i, j int) bool {
-		return p.ExtraValues[i].Path < p.ExtraValues[j].Path
-	})
-	sort.Slice(p.FinalExtraValues, func(i, j int) bool {
-		return p.FinalExtraValues[i].Path < p.FinalExtraValues[j].Path
-	})
-
-	return biz.AnyYamlPrettier{
-		"title":              p.GitCommitTitle,
-		"branch":             p.GitBranch,
-		"commit":             p.GitCommit,
-		"atomic":             p.Atomic,
-		"web_url":            p.GitCommitWebURL,
-		"config":             p.Config,
-		"env_values":         p.EnvValues,
-		"extra_values":       p.ExtraValues,
-		"final_extra_values": p.FinalExtraValues,
 	}
 }

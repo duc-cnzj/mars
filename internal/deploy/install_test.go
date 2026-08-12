@@ -44,10 +44,9 @@ func TestTimeOrderedSetString(t *testing.T) {
 	tos.add("test2")
 	assert.True(t, tos.has("test2"))
 
-	items := tos.sortedItems()
-	assert.Equal(t, 2, len(items))
-	assert.Equal(t, "test1", items[0])
-	assert.Equal(t, "test2", items[1])
+	// 去重：重复 add 不增加集合大小。
+	tos.add("test1")
+	assert.Equal(t, 2, len(tos.items))
 }
 
 func TestTimeOrderedSetString_Concurrency(t *testing.T) {
@@ -69,9 +68,8 @@ func TestTimeOrderedSetString_Concurrency(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		assert.True(t, tos.has(fmt.Sprintf("%v", i)))
 	}
-
-	items := tos.sortedItems()
-	assert.Equal(t, 101, len(items))
+	// 并发去重后集合大小为 100 个并发字符串 + 1 个 "duc"。
+	assert.Equal(t, 101, len(tos.items))
 }
 
 func TestLoggerWrapFunctionality(t *testing.T) {

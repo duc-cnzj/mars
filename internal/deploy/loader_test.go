@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/mars"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -162,8 +162,8 @@ func TestElementsLoader_deepSetItems_error(t *testing.T) {
 func TestSystemVariableLoader_Load_templateError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	pl := application.NewMockPluginManager(m)
-	domain := application.NewMockDomainManager(m)
+	pl := app.NewMockPluginManager(m)
+	domain := app.NewMockDomainManager(m)
 	pl.EXPECT().Domain().Return(domain).AnyTimes()
 	domain.EXPECT().GetDomainByIndex(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	domain.EXPECT().GetCertSecretName(gomock.Any(), gomock.Any()).AnyTimes()
@@ -196,7 +196,7 @@ func TestChartFileLoader_PackageChartError(t *testing.T) {
 	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
 	em.EXPECT().To(gomock.Any()).AnyTimes()
 	h := data.NewMockHelmerRepo(m)
-	gits := application.NewMockGitServer(m)
+	gits := app.NewMockGitServer(m)
 	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return([]string{"file1"}, nil)
 	gits.EXPECT().GetFileContentWithSha("9999", "master", "file1").Return("file1", nil).Times(1)
 	up := uploader.NewMockUploader(m)
@@ -205,7 +205,7 @@ func TestChartFileLoader_PackageChartError(t *testing.T) {
 	up.EXPECT().MkDir(gomock.Any(), true).Times(1)
 	up.EXPECT().Put(gomock.Any(), gomock.Any()).Times(1)
 	h.EXPECT().PackageChart(gomock.Any(), gomock.Any()).Return("", errors.New("package err")).Times(1)
-	pl := application.NewMockPluginManager(m)
+	pl := app.NewMockPluginManager(m)
 	pl.EXPECT().Git().Return(gits).AnyTimes()
 	ctx := &LoadContext{
 		uploader:  up,
@@ -238,7 +238,7 @@ func TestChartFileLoader_OpenError(t *testing.T) {
 	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
 	em.EXPECT().To(gomock.Any()).AnyTimes()
 	h := data.NewMockHelmerRepo(m)
-	gits := application.NewMockGitServer(m)
+	gits := app.NewMockGitServer(m)
 	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return([]string{"file1"}, nil)
 	gits.EXPECT().GetFileContentWithSha("9999", "master", "file1").Return("file1", nil).Times(1)
 	up := uploader.NewMockUploader(m)
@@ -247,7 +247,7 @@ func TestChartFileLoader_OpenError(t *testing.T) {
 	up.EXPECT().MkDir(gomock.Any(), true).Times(1)
 	up.EXPECT().Put(gomock.Any(), gomock.Any()).Times(1)
 	h.EXPECT().PackageChart(gomock.Any(), gomock.Any()).Return("/app/chart.tgz", nil).Times(1)
-	pl := application.NewMockPluginManager(m)
+	pl := app.NewMockPluginManager(m)
 	pl.EXPECT().Git().Return(gits).AnyTimes()
 	ctx := &LoadContext{
 		uploader:  up,
@@ -263,6 +263,28 @@ func TestChartFileLoader_OpenError(t *testing.T) {
 		fileOpener:  failOpener{},
 	}
 	assert.Equal(t, "open err", l.Load(ctx).Error())
+}
+
+// TestChartFileLoader_NoFilesError 覆盖远程目录无任何文件时的错误分支：
+// GetDirectoryFilesWithBranch 返回空列表直接报"charts 文件不存在"，
+// 不进入打包流程（chartLoader/fileOpener/Helmer 均无需准备）。
+func TestChartFileLoader_NoFilesError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	em := NewMockDeployMsger(m)
+	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	em.EXPECT().To(gomock.Any()).AnyTimes()
+	gits := app.NewMockGitServer(m)
+	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return([]string{}, nil)
+	pl := app.NewMockPluginManager(m)
+	pl.EXPECT().Git().Return(gits).AnyTimes()
+	ctx := &LoadContext{
+		Logger:    mlog.NewForConfig(nil),
+		Messager:  em,
+		Config:    &mars.Config{LocalChartPath: "9999|master|dir"},
+		PluginMgr: pl,
+	}
+	assert.Equal(t, "charts 文件不存在", (&ChartFileLoader{}).Load(ctx).Error())
 }
 
 func TestMergeValuesLoader_NewYAMLError(t *testing.T) {
@@ -335,8 +357,8 @@ func TestMergeValuesLoader_OnFinallyClose(t *testing.T) {
 func TestDownloadFilesToDir(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	gits := application.NewMockGitServer(m)
-	pl := application.NewMockPluginManager(m)
+	gits := app.NewMockGitServer(m)
+	pl := app.NewMockPluginManager(m)
 	up := uploader.NewMockUploader(m)
 	pl.EXPECT().Git().Return(gits).AnyTimes()
 	up.EXPECT().LocalUploader().Return(up).AnyTimes()

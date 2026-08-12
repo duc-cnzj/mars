@@ -20,15 +20,15 @@ import (
 
 // applyTestKit 组装 ApplyProject 的最小依赖替身集合，各用例按需覆写返回值。
 func applyTestKit(t *testing.T, ctrl *gomock.Controller) (
-	nsRepo *biz.MockNsRepoBiz, repo *biz.MockRepoBiz, git *biz.MockGitBiz,
+	nsRepo *biz.MockNamespaceBiz, repo *biz.MockRepoBiz, git *biz.MockGitBiz,
 	proj *biz.MockProjectBiz, jobMgr *MockJobManager, msger *MockDeployMsger) {
-	return biz.NewMockNsRepoBiz(ctrl), biz.NewMockRepoBiz(ctrl), biz.NewMockGitBiz(ctrl),
+	return biz.NewMockNamespaceBiz(ctrl), biz.NewMockRepoBiz(ctrl), biz.NewMockGitBiz(ctrl),
 		biz.NewMockProjectBiz(ctrl), NewMockJobManager(ctrl), NewMockDeployMsger(ctrl)
 }
 
 // applyDepsOf 把替身包装成 ApplyProjectDeps：AccessBiz 用户提取内部走 MustGetUser
 // （与生产语义一致——ApplyProject 入口已把 JobInput.User 物化进 ctx，从 ctx 取值）。
-func applyDepsOf(nsRepo *biz.MockNsRepoBiz, repo *biz.MockRepoBiz, git *biz.MockGitBiz,
+func applyDepsOf(nsRepo *biz.MockNamespaceBiz, repo *biz.MockRepoBiz, git *biz.MockGitBiz,
 	proj *biz.MockProjectBiz, jobMgr *MockJobManager, msger *MockDeployMsger) ApplyProjectDeps {
 	return ApplyProjectDeps{
 		AccessBiz:  biz.NewAccessBiz(nsRepo, nil),
@@ -80,7 +80,7 @@ func TestApplyProject_AnonymousRejected(t *testing.T) {
 	defer ctrl.Finish()
 	_, repo, _, _, jobMgr, _ := applyTestKit(t, ctrl)
 
-	job, err := ApplyProject(context.Background(), applyDepsOf(biz.NewMockNsRepoBiz(ctrl), repo, biz.NewMockGitBiz(ctrl), biz.NewMockProjectBiz(ctrl), jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{
+	job, err := ApplyProject(context.Background(), applyDepsOf(biz.NewMockNamespaceBiz(ctrl), repo, biz.NewMockGitBiz(ctrl), biz.NewMockProjectBiz(ctrl), jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{
 		// User 为 nil：匿名部署直接拒绝，不触碰任何下游依赖。
 		JobInput: &JobInput{NamespaceId: 1, RepoID: 2, User: nil},
 	})

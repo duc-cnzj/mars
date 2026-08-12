@@ -14,7 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
@@ -25,6 +25,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/chart"
@@ -47,7 +48,7 @@ func TestNewJobManager(t *testing.T) {
 		Locker:           locker.NewMockLocker(m),
 		K8sRepo:          data.NewMockK8sRepo(m),
 		EventRepo:        data.NewMockEventRepo(m),
-		PluginManager:    application.NewMockPluginManager(m),
+		PluginManager:    app.NewMockPluginManager(m),
 	}).(*jobManager)
 	assert.NotNil(t, manager)
 	assert.NotNil(t, manager.timer)
@@ -79,7 +80,7 @@ func TestNewJob(t *testing.T) {
 	locker := locker.NewMockLocker(m)
 	k8sRepo := data.NewMockK8sRepo(m)
 	eventRepo := data.NewMockEventRepo(m)
-	pl := application.NewMockPluginManager(m)
+	pl := app.NewMockPluginManager(m)
 
 	manager := NewJobManager(JobManagerDeps{
 		Timer:            timer,
@@ -409,7 +410,7 @@ func TestToProjectEventYaml(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := toProjectEventYaml(tt.project)
+			result := tt.project.ToEventYaml()
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -417,22 +418,28 @@ func TestToProjectEventYaml(t *testing.T) {
 
 func TestHandleMessage(t *testing.T) {
 	jr := &jobRunner{
-		logger:    mlog.NewForConfig(nil),
-		messageCh: newSafeWriteMessageCh(mlog.NewForConfig(nil), 1),
+		logger:       mlog.NewForConfig(nil),
+		messageCh:    newSafeWriteMessageCh(mlog.NewForConfig(nil), 1),
+		deployResult: &deployResult{},
 	}
 	ctx, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
 	jr.HandleMessage(ctx)
+	// ctx 已取消且未发送任何消息：走 ctx.Done 分支直接返回，deployResult 必须保持未设置。
+	assert.False(t, jr.deployResult.IsSet(), "ctx 取消且无消息时 deployResult 不应被设置")
 }
 
 func TestHandleMessage_2(t *testing.T) {
 	ch := newSafeWriteMessageCh(mlog.NewForConfig(nil), 1)
 	jr := &jobRunner{
-		logger:    mlog.NewForConfig(nil),
-		messageCh: ch,
+		logger:       mlog.NewForConfig(nil),
+		messageCh:    ch,
+		deployResult: &deployResult{},
 	}
 	ch.Close()
 	jr.HandleMessage(context.TODO())
+	// channel 已关闭且从未发送消息：走 !ok 分支直接返回，deployResult 必须保持未设置。
+	assert.False(t, jr.deployResult.IsSet(), "channel 关闭且无消息时 deployResult 不应被设置")
 }
 
 func TestHandleMessage_3(t *testing.T) {
@@ -1185,12 +1192,12 @@ func TestSystemVariableLoader_Load_ok(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	gitS := application.NewMockGitServer(m)
+	gitS := app.NewMockGitServer(m)
 	gitS.EXPECT().GetCommitPipeline("10", "dev", "c").Return(&biz.Pipeline{Ref: "dev"}, nil)
 
-	pl := application.NewMockPluginManager(m)
+	pl := app.NewMockPluginManager(m)
 	pl.EXPECT().Git().Return(gitS)
-	domain := application.NewMockDomainManager(m)
+	domain := app.NewMockDomainManager(m)
 	pl.EXPECT().Domain().Return(domain).AnyTimes()
 	domain.EXPECT().GetDomainByIndex(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	domain.EXPECT().GetCertSecretName("app", gomock.Any()).AnyTimes()
@@ -1236,12 +1243,12 @@ func TestSystemVariableLoader_Load_fail(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	gitS := application.NewMockGitServer(m)
+	gitS := app.NewMockGitServer(m)
 	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("x"))
 
-	pl := application.NewMockPluginManager(m)
+	pl := app.NewMockPluginManager(m)
 	pl.EXPECT().Git().Return(gitS)
-	domain := application.NewMockDomainManager(m)
+	domain := app.NewMockDomainManager(m)
 	pl.EXPECT().Domain().Return(domain).AnyTimes()
 	domain.EXPECT().GetDomainByIndex(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	domain.EXPECT().GetCertSecretName(gomock.Any(), gomock.Any()).AnyTimes()
@@ -1277,8 +1284,8 @@ func TestChartFileLoader_Load2(t *testing.T) {
 	defer m.Finish()
 	em := NewMockDeployMsger(m)
 	h := data.NewMockHelmerRepo(m)
-	pl := application.NewMockPluginManager(m)
-	gits := application.NewMockGitServer(m)
+	pl := app.NewMockPluginManager(m)
+	gits := app.NewMockGitServer(m)
 	up := uploader.NewMockUploader(m)
 	pl.EXPECT().Git().Return(gits).AnyTimes()
 	ctx := &LoadContext{
@@ -1320,7 +1327,7 @@ func TestChartFileLoader_Load(t *testing.T) {
 	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
 	em.EXPECT().To(gomock.Any()).AnyTimes()
 	h := data.NewMockHelmerRepo(m)
-	gits := application.NewMockGitServer(m)
+	gits := app.NewMockGitServer(m)
 	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return(nil, errors.New("xxx"))
 
 	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return([]string{"file1", "file2"}, nil)
@@ -1334,7 +1341,7 @@ func TestChartFileLoader_Load(t *testing.T) {
 	h.EXPECT().PackageChart(gomock.Any(), gomock.Any()).Times(1)
 	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir/xxxx", true).Return([]string{}, nil)
 
-	pl := application.NewMockPluginManager(m)
+	pl := app.NewMockPluginManager(m)
 	pl.EXPECT().Git().Return(gits).AnyTimes()
 	ctx := &LoadContext{
 		uploader: up,
@@ -1363,7 +1370,8 @@ func TestChartFileLoader_Load(t *testing.T) {
 	}
 
 	err := l.Load(ctx)
-	assert.Equal(t, "charts 文件不存在", err.Error())
+	// git 故障如实上报（旧实现吞掉后误报"charts 文件不存在"）
+	assert.Equal(t, "获取远程 charts 文件: xxx", err.Error())
 	err = l.Load(ctx)
 	assert.Len(t, ctx.cleanups, 2)
 	assert.Nil(t, err)
@@ -1381,8 +1389,8 @@ func TestChartFileLoader_LoadWithChartMissing(t *testing.T) {
 	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
 	em.EXPECT().To(gomock.Any()).AnyTimes()
 	h := data.NewMockHelmerRepo(m)
-	pl := application.NewMockPluginManager(m)
-	gits := application.NewMockGitServer(m)
+	pl := app.NewMockPluginManager(m)
+	gits := app.NewMockGitServer(m)
 	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return([]string{"file1", "file2"}, nil)
 
 	gits.EXPECT().GetFileContentWithSha("9999", "master", "file1").Return("file1", nil).Times(1)
@@ -1570,7 +1578,7 @@ func Test_jobRunner_Validate_FindByName_NotFound_CreatesProject_Success(t *testi
 	msger := NewMockDeployMsger(m)
 	repoRepo := data.NewMockRepoRepo(m)
 	projectRepo := data.NewMockProjectRepo(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	msger.EXPECT().To(gomock.Any()).AnyTimes()
 	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
 	sub.EXPECT().ToAll(gomock.Any())
@@ -1605,6 +1613,49 @@ func Test_jobRunner_Validate_FindByName_NotFound_CreatesProject_Success(t *testi
 	assert.Equal(t, 7, job.project.ID)
 }
 
+// dry-run 新建项目不落库，但必须合成占位 project，否则 Run 的 ReleaseName
+// 与 loader 的 ctx.Project.Name 会对 nil 解引用 panic。
+func Test_jobRunner_Validate_FindByName_NotFound_DryRun_SynthPlaceholderProject(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	nsRepo := data.NewMockNamespaceRepo(m)
+	msger := NewMockDeployMsger(m)
+	repoRepo := data.NewMockRepoRepo(m)
+	projectRepo := data.NewMockProjectRepo(m)
+	msger.EXPECT().To(gomock.Any()).AnyTimes()
+	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{ID: 1}, nil)
+	repoRepo.EXPECT().Get(gomock.Any(), 12).Return(&biz.Repo{
+		MarsConfig:  &mars.Config{},
+		NeedGitRepo: false,
+	}, nil)
+	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(nil, errs.WrapNotFound(errors.New("not found"), "find project by name"))
+	// dry-run 不落库：不 mock Create，gomock 对意外调用即失败
+
+	job := &jobRunner{
+		logger:   mlog.NewForConfig(nil),
+		messager: msger,
+		nsRepo:   nsRepo,
+		projRepo: projectRepo,
+		repoRepo: repoRepo,
+		user:     &biz.UserInfo{},
+		input: &JobInput{
+			Type:        websocket_pb.Type_CreateProject,
+			NamespaceId: 1,
+			Name:        "xx",
+			RepoID:      12,
+			DryRun:      true,
+		},
+		dryRun: true,
+	}
+	assert.Nil(t, job.Validate().Error())
+	assert.True(t, job.isNew)
+	require.NotNil(t, job.project)
+	assert.Equal(t, "xx", job.project.Name)
+	assert.Equal(t, "xx", job.Project().Name)
+}
+
 func Test_jobRunner_Validate_Success(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -1624,7 +1675,7 @@ func Test_jobRunner_Validate_Success(t *testing.T) {
 	}, nil)
 	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(&biz.Project{}, nil)
 	projectRepo.EXPECT().UpdateStatusByVersion(gomock.Any(), 100, types.Deploy_StatusDeploying, 10).Return(&biz.Project{}, nil)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	sub.EXPECT().ToAll(gomock.Any())
 	job = &jobRunner{
 		logger:   mlog.NewForConfig(nil),
@@ -1833,7 +1884,7 @@ func Test_jobRunner_Validate_CreatePath_OnErrorOnFinally(t *testing.T) {
 	msger := NewMockDeployMsger(m)
 	repoRepo := data.NewMockRepoRepo(m)
 	projectRepo := data.NewMockProjectRepo(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	helmer := data.NewMockHelmerRepo(m)
 	msger.EXPECT().To(gomock.Any()).AnyTimes()
 	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
@@ -1887,10 +1938,10 @@ func Test_jobRunner_Validate_UpdatePath_OnErrorOnFinally(t *testing.T) {
 	msger := NewMockDeployMsger(m)
 	repoRepo := data.NewMockRepoRepo(m)
 	projectRepo := data.NewMockProjectRepo(m)
-	sub := application.NewMockPubSub(m)
+	sub := app.NewMockPubSub(m)
 	helmer := data.NewMockHelmerRepo(m)
-	gits := application.NewMockGitServer(m)
-	pluginMgr := application.NewMockPluginManager(m)
+	gits := app.NewMockGitServer(m)
+	pluginMgr := app.NewMockPluginManager(m)
 	msger.EXPECT().To(gomock.Any()).AnyTimes()
 	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
 

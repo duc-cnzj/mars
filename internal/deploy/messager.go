@@ -6,7 +6,7 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
-	"github.com/duc-cnzj/mars/v6/internal/application"
+	"github.com/duc-cnzj/mars/v6/internal/app"
 )
 
 // DeployMsger 是部署流水线向用户汇报进度的端口。实现方由传输层提供：
@@ -18,7 +18,7 @@ type DeployMsger interface {
 	SendDeployedResult(t websocket_pb.ResultType, msg string, p *types.ProjectModel)
 	SendEndError(error)
 	SendMsg(string)
-	SendProtoMsg(application.WebsocketMessage)
+	SendProtoMsg(app.WebsocketMessage)
 	SendMsgWithContainerLog(msg string, containers []*websocket_pb.Container)
 }
 
