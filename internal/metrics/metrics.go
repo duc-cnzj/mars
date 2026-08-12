@@ -65,8 +65,9 @@ var (
 		Help:        "grpc 请求总数",
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"method", "result"})
-	// GrpcRequestTotalFail / Success 是 GrpcRequestTotal 预 curry result 的便捷句柄。
-	GrpcRequestTotalFail    = GrpcRequestTotal.MustCurryWith(prometheus.Labels{"result": "fail"})
+	// GrpcRequestTotalFail 是 GrpcRequestTotal 预 curry result=fail 的便捷句柄。
+	GrpcRequestTotalFail = GrpcRequestTotal.MustCurryWith(prometheus.Labels{"result": "fail"})
+	// GrpcRequestTotalSuccess 是 GrpcRequestTotal 预 curry result=success 的便捷句柄。
 	GrpcRequestTotalSuccess = GrpcRequestTotal.MustCurryWith(prometheus.Labels{"result": "success"})
 
 	// GrpcErrorCount 记录 grpc 错误数量。
@@ -104,8 +105,9 @@ var (
 		Help:        "websocket 请求总数",
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"method", "result"})
-	// WebsocketRequestTotalFail / Success 是 WebsocketRequestTotal 预 curry result 的便捷句柄。
-	WebsocketRequestTotalFail    = WebsocketRequestTotal.MustCurryWith(prometheus.Labels{"result": "panic"})
+	// WebsocketRequestTotalFail 是 WebsocketRequestTotal 预 curry result=panic 的便捷句柄。
+	WebsocketRequestTotalFail = WebsocketRequestTotal.MustCurryWith(prometheus.Labels{"result": "panic"})
+	// WebsocketRequestTotalSuccess 是 WebsocketRequestTotal 预 curry result=success 的便捷句柄。
 	WebsocketRequestTotalSuccess = WebsocketRequestTotal.MustCurryWith(prometheus.Labels{"result": "success"})
 
 	// CacheBytesGauge 记录 cache 字节数统计。
