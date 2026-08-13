@@ -6,7 +6,7 @@ English | [简体中文](README_zh-CN.md)
 
 <h1 align="center">Mars</h1>
 <div align="center"><img style="width: 100px;height: 100px" src="./frontend/public/logo192.png" /></div>
-<p align="center">Built for DevOps. Deploy an application in 30 seconds.</p>
+<p align="center">You write the code, we ship it live. Production in 30 seconds.</p>
 <br><br>
 
 <div align="center">
@@ -15,7 +15,6 @@ English | [简体中文](README_zh-CN.md)
 [![unittest](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml/badge.svg)](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml)
 [![Release](https://img.shields.io/github/release/duc-cnzj/mars.svg)](https://github.com/duc-cnzj/mars/releases/latest)
 [![GitHub license](https://img.shields.io/github/license/duc-cnzj/mars)](https://github.com/duc-cnzj/mars/blob/master/LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/duc-cnzj/mars/v6)](https://goreportcard.com/report/github.com/duc-cnzj/mars/v6)
 [![Documentation](https://pkg.go.dev/badge/github.com/duc-cnzj/mars/api/v6/grpc.svg)](https://pkg.go.dev/github.com/duc-cnzj/mars/api/v6/grpc)
 
 </div>
