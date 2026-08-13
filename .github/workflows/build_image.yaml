@@ -30,6 +30,7 @@ jobs:
           docker login registry.cn-hangzhou.aliyuncs.com -u ${{ secrets.ALIYUN_DOCKER_USERNAME }} --password ${{ secrets.ALIYUN_DOCKER_PASSWORD }}
           docker login -u ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }}
           docker build --platform linux/arm64,linux/amd64 \
+             --provenance=false --sbom=false \
              -t duccnzj/mars \
              -t duccnzj/mars:$tag \
              -t duccnzj/mars:v${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }} \
