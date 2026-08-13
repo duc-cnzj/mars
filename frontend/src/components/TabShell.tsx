@@ -18,6 +18,7 @@ import {
   CloseOutlined,
   MinusOutlined,
   UploadOutlined,
+  PoweroffOutlined,
 } from "@ant-design/icons";
 import pb from "../api/websocket";
 import PodMetrics from "./PodMetrics";
@@ -97,6 +98,31 @@ const TabShell: React.FC<{
         }),
     [id],
   );
+
+  const forceDeletePod = useCallback(() => {
+    if (!value) {
+      return;
+    }
+    setForceDeleting(true);
+    ajax
+      .POST("/api/containers/namespaces/{namespace}/pods/{pod}/force_delete", {
+        params: { path: { namespace: value.namespace, pod: value.pod } },
+        body: {
+          namespace: value.namespace,
+          pod: value.pod,
+          gracePeriodSeconds: "0",
+        },
+      })
+      .then(({ data, error }) => {
+        setForceDeleting(false);
+        if (error) {
+          message.error(`强制删除 pod ${value.pod} 失败`);
+          return;
+        }
+        message.success(`pod ${value.pod} 已强制删除`, 2);
+        listContainer();
+      });
+  }, [value, listContainer]);
 
   const setValuesByResult = useCallback(
     (items: components["schemas"]["types.StateContainer"][]) => {
@@ -216,6 +242,7 @@ const TabShell: React.FC<{
 
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [forceDeleting, setForceDeleting] = useState(false);
 
   const props = {
     name: "file",
@@ -421,7 +448,7 @@ const TabShell: React.FC<{
                     style={{ fontSize: 12, marginRight: 2 }}
                     icon={<UploadOutlined />}
                   >
-                    {loading ? "上传中" : "上传到容器"}
+                    {loading ? "上传中" : "上传文件"}
                   </Button>
                 </Upload>
                 <Popconfirm
@@ -520,6 +547,32 @@ const TabShell: React.FC<{
                     onClick={() => addWebTerm("vertical")}
                   />
                 </div>
+                <Popconfirm
+                  title="强杀容器？"
+                  description={
+                    <span>
+                      将立即强制删除 pod「
+                      <span style={{ color: "red" }}>{value.pod}</span>
+                      」，跳过优雅终止，
+                      <span style={{ color: "red" }}>未持久化数据可能丢失</span>
+                      。
+                    </span>
+                  }
+                  okText="强杀容器"
+                  okButtonProps={{ danger: true }}
+                  cancelText="取消"
+                  onConfirm={forceDeletePod}
+                >
+                  <Button
+                    size="small"
+                    danger
+                    loading={forceDeleting}
+                    style={{ fontSize: 12, marginLeft: 2, marginRight: 2 }}
+                    icon={<PoweroffOutlined />}
+                  >
+                    强杀容器
+                  </Button>
+                </Popconfirm>
               </div>
               <PodMetrics
                 namespace={namespace}

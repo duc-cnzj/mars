@@ -103,7 +103,8 @@ func TestGetPreOccupiedLenByValuesYaml(t *testing.T) {
 // fakeK8sRepoForK8sBiz 记录各写操作是否被调用，输入校验测试中 repo 不被调用（调用即 panic）。
 type fakeK8sRepoForK8sBiz struct {
 	K8sRepo
-	addTlsCalled, createNsCalled, deleteNsCalled, deleteSecretCalled bool
+	addTlsCalled, createNsCalled, deleteNsCalled, deleteSecretCalled, deletePodCalled bool
+	deletePodOpts                                                                     metav1.DeleteOptions
 }
 
 func (f *fakeK8sRepoForK8sBiz) AddTlsSecret(ns string, name string, key string, crt string) (*corev1.Secret, error) {
@@ -123,6 +124,12 @@ func (f *fakeK8sRepoForK8sBiz) DeleteSecret(ctx context.Context, namespace, secr
 
 func (f *fakeK8sRepoForK8sBiz) DeleteNamespace(ctx context.Context, name string) error {
 	f.deleteNsCalled = true
+	return nil
+}
+
+func (f *fakeK8sRepoForK8sBiz) DeletePod(ctx context.Context, namespace, pod string, opts metav1.DeleteOptions) error {
+	f.deletePodCalled = true
+	f.deletePodOpts = opts
 	return nil
 }
 
@@ -186,6 +193,36 @@ func TestK8sBiz_DeleteSecret_Valid(t *testing.T) {
 	b := NewK8sBiz(f)
 	assert.NoError(t, b.DeleteSecret(context.TODO(), "ns", "sec"))
 	assert.True(t, f.deleteSecretCalled)
+}
+
+func TestK8sBiz_ForceDeletePod_InvalidArgs(t *testing.T) {
+	k := NewK8sBiz(&fakeK8sRepoForK8sBiz{})
+	err := k.ForceDeletePod(context.TODO(), "", "pod", 0)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Equal(t, "namespace 或 pod 名称不能为空", status.Convert(err).Message())
+	err = k.ForceDeletePod(context.TODO(), "ns", "", 0)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	err = k.ForceDeletePod(context.TODO(), "ns", "pod", -1)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Equal(t, "grace period seconds 不能为负数", status.Convert(err).Message())
+}
+
+func TestK8sBiz_ForceDeletePod_Valid(t *testing.T) {
+	f := &fakeK8sRepoForK8sBiz{}
+	b := NewK8sBiz(f)
+	assert.NoError(t, b.ForceDeletePod(context.TODO(), "ns", "pod", 0))
+	assert.True(t, f.deletePodCalled)
+	// 透传强制删除策略：grace-period=0 + 后台传播
+	assert.Equal(t, int64(0), *f.deletePodOpts.GracePeriodSeconds)
+	assert.Equal(t, metav1.DeletePropagationBackground, *f.deletePodOpts.PropagationPolicy)
+}
+
+func TestK8sBiz_ForceDeletePod_ValidNonZeroGrace(t *testing.T) {
+	f := &fakeK8sRepoForK8sBiz{}
+	b := NewK8sBiz(f)
+	assert.NoError(t, b.ForceDeletePod(context.TODO(), "ns", "pod", 30))
+	assert.True(t, f.deletePodCalled)
+	assert.Equal(t, int64(30), *f.deletePodOpts.GracePeriodSeconds)
 }
 
 // fakeK8sRepoPassthrough 覆盖 k8sBiz 全部纯透传方法，记录调用并返回罐头数据。

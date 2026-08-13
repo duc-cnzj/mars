@@ -21,6 +21,8 @@ enum EventActionType {
   CancelDeploy = 9;
   // SDK 执行命令
   Exec         = 10;
+  // 强制删除 pod
+  ForceDeletePod = 11;
 }
 
 

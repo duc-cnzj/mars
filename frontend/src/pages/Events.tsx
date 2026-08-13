@@ -202,6 +202,12 @@ const EventList: React.FC = () => {
               删除
             </Tag>
           );
+        case TypesEventModelAction.ForceDeletePod:
+          return (
+            <Tag color="#a8071a" style={style}>
+              强杀容器
+            </Tag>
+          );
         case TypesEventModelAction.Upload:
           return (
             <Tag color="#fb7185" style={style}>
@@ -319,6 +325,9 @@ const EventList: React.FC = () => {
               <Option value={TypesEventModelAction.Login}>登录</Option>
               <Option value={TypesEventModelAction.CancelDeploy}>
                 取消部署
+              </Option>
+              <Option value={TypesEventModelAction.ForceDeletePod}>
+                强杀容器
               </Option>
             </Select>
             <Input

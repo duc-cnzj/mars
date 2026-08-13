@@ -40,6 +40,8 @@ const (
 	EventActionType_CancelDeploy EventActionType = 9
 	// SDK 执行命令
 	EventActionType_Exec EventActionType = 10
+	// 强制删除 pod
+	EventActionType_ForceDeletePod EventActionType = 11
 )
 
 // Enum value maps for EventActionType.
@@ -56,19 +58,21 @@ var (
 		8:  "Login",
 		9:  "CancelDeploy",
 		10: "Exec",
+		11: "ForceDeletePod",
 	}
 	EventActionType_value = map[string]int32{
-		"Unknown":      0,
-		"Create":       1,
-		"Update":       2,
-		"Delete":       3,
-		"Upload":       4,
-		"Download":     5,
-		"DryRun":       6,
-		"Shell":        7,
-		"Login":        8,
-		"CancelDeploy": 9,
-		"Exec":         10,
+		"Unknown":        0,
+		"Create":         1,
+		"Update":         2,
+		"Delete":         3,
+		"Upload":         4,
+		"Download":       5,
+		"DryRun":         6,
+		"Shell":          7,
+		"Login":          8,
+		"CancelDeploy":   9,
+		"Exec":           10,
+		"ForceDeletePod": 11,
 	}
 )
 
@@ -1968,7 +1972,7 @@ const file_proto_types_types_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18e \x01(\tR\tupdatedAt\x12\x1d\n" +
 	"\n" +
-	"deleted_at\x18f \x01(\tR\tdeletedAt*\x9a\x01\n" +
+	"deleted_at\x18f \x01(\tR\tdeletedAt*\xae\x01\n" +
 	"\x0fEventActionType\x12\v\n" +
 	"\aUnknown\x10\x00\x12\n" +
 	"\n" +
@@ -1986,7 +1990,8 @@ const file_proto_types_types_proto_rawDesc = "" +
 	"\x05Login\x10\b\x12\x10\n" +
 	"\fCancelDeploy\x10\t\x12\b\n" +
 	"\x04Exec\x10\n" +
-	"*V\n" +
+	"\x12\x12\n" +
+	"\x0eForceDeletePod\x10\v*V\n" +
 	"\x06Deploy\x12\x11\n" +
 	"\rStatusUnknown\x10\x00\x12\x13\n" +
 	"\x0fStatusDeploying\x10\x01\x12\x12\n" +

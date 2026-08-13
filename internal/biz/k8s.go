@@ -11,6 +11,7 @@ import (
 	eventv1 "k8s.io/api/events/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -57,6 +58,10 @@ type K8sBiz interface {
 	DeleteSecret(ctx context.Context, namespace, secret string) error
 	// DeleteNamespace 校验名称后删除命名空间。
 	DeleteNamespace(ctx context.Context, name string) error
+	// ForceDeletePod 强制删除 pod：以指定宽限期与后台传播策略删除，
+	// gracePeriodSeconds=0 即不等优雅终止直接移除，等价 kubectl delete pod --force。
+	// 用于卡死/无法正常终止的 pod。
+	ForceDeletePod(ctx context.Context, namespace, pod string, gracePeriodSeconds int64) error
 	// GetAllPodMetrics 按项目 selectors 返回全部 pod 的指标列表。
 	GetAllPodMetrics(ctx context.Context, proj *Project) []v1beta1.PodMetrics
 	// CopyFileToPod 把文件拷贝进 pod 指定容器，返回落库的 File 记录。
@@ -182,6 +187,22 @@ func (k *k8sBiz) DeleteNamespace(ctx context.Context, name string) error {
 	return k.k8sRepo.DeleteNamespace(ctx, name)
 }
 
+// ForceDeletePod 强制删除 pod：空参或负宽限期返回 InvalidArgument，否则以
+// 指定宽限期 + PropagationPolicy=Background 透传 repo；gracePeriodSeconds=0 立即移除。
+func (k *k8sBiz) ForceDeletePod(ctx context.Context, namespace, pod string, gracePeriodSeconds int64) error {
+	if namespace == "" || pod == "" {
+		return errs.WrapInvalidArgument(errors.New("namespace 或 pod 名称不能为空"), "force delete pod")
+	}
+	if gracePeriodSeconds < 0 {
+		return errs.WrapInvalidArgument(errors.New("grace period seconds 不能为负数"), "force delete pod")
+	}
+	background := metav1.DeletePropagationBackground
+	return k.k8sRepo.DeletePod(ctx, namespace, pod, metav1.DeleteOptions{
+		GracePeriodSeconds: &gracePeriodSeconds,
+		PropagationPolicy:  &background,
+	})
+}
+
 // GetAllPodMetrics 按项目 PodSelectors 返回全部 pod 指标（透传 repo）。
 func (k *k8sBiz) GetAllPodMetrics(ctx context.Context, proj *Project) []v1beta1.PodMetrics {
 	return k.k8sRepo.GetAllPodMetrics(ctx, proj)
@@ -276,6 +297,8 @@ type K8sRepo interface {
 	DeleteSecret(ctx context.Context, namespace, secret string) error
 	// DeleteNamespace 删除命名空间。
 	DeleteNamespace(ctx context.Context, name string) error
+	// DeletePod 删除 pod，删除策略由 opts 决定（强制删除传 GracePeriodSeconds=0）。
+	DeletePod(ctx context.Context, namespace, pod string, opts metav1.DeleteOptions) error
 	// GetAllPodMetrics 返回项目全部 pod 的指标列表。
 	GetAllPodMetrics(ctx context.Context, proj *Project) []v1beta1.PodMetrics
 	// CopyFileToPod 把文件拷贝进 pod 指定容器。

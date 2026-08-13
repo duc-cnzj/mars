@@ -293,6 +293,14 @@ func (repo *k8sRepo) DeleteSecret(ctx context.Context, namespace, secret string)
 	return errs.Wrap(repo.data.K8s().Client.CoreV1().Secrets(namespace).Delete(ctx, secret, metav1.DeleteOptions{}), "delete secret")
 }
 
+// DeletePod 删除命名空间下的 pod，删除策略由 opts 决定（如强制删除传
+// GracePeriodSeconds=0）。仅做 k8s API 级删除，不参与业务状态机。
+func (repo *k8sRepo) DeletePod(ctx context.Context, namespace, pod string, opts metav1.DeleteOptions) (err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/DeletePod")
+	defer func() { endSpan(span, err) }()
+	return errs.Wrap(repo.data.K8s().Client.CoreV1().Pods(namespace).Delete(ctx, pod, opts), "delete pod")
+}
+
 // GetSecret 按命名空间与名称读取 secret。
 func (repo *k8sRepo) GetSecret(ctx context.Context, namespace, name string) (secret *corev1.Secret, err error) {
 	ctx, span := tracer.Start(ctx, "k8sRepo/GetSecret")

@@ -192,6 +192,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/containers/namespaces/{namespace}/pods/{pod}/force_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 强制删除 pod
+         * @description ForceDeletePod 强制删除 pod：不等优雅终止直接移除（grace-period=0），
+         *      用于卡死/无法正常终止的 pod，等价 kubectl delete pod --force --grace-period=0。
+         */
+        post: operations["Container_ForceDeletePod"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/containers/pod_exists": {
         parameters: {
             query?: never;
@@ -976,6 +997,18 @@ export interface components {
         "container.CopyToPodResponse": {
             podFilePath: string;
             fileName: string;
+        };
+        "container.ForceDeletePodRequest": {
+            namespace: string;
+            pod: string;
+            /** @description 优雅终止宽限期（秒）；0 表示立即强制删除，等价 kubectl delete --force。 */
+            gracePeriodSeconds?: string;
+        };
+        "container.ForceDeletePodResponse": {
+            deleted: boolean;
+            namespace: string;
+            pod: string;
+            message: string;
         };
         "container.IsPodExistsRequest": {
             namespace: string;
@@ -2000,6 +2033,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["container.LogResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Container_ForceDeletePod: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                namespace: string;
+                pod: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["container.ForceDeletePodRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["container.ForceDeletePodResponse"];
                 };
             };
             /** @description Default error response */
@@ -3557,7 +3626,8 @@ export enum PathsApiEventsGetParametersQueryActionType {
     Shell = "Shell",
     Login = "Login",
     CancelDeploy = "CancelDeploy",
-    Exec = "Exec"
+    Exec = "Exec",
+    ForceDeletePod = "ForceDeletePod"
 }
 export enum MarsElementType {
     ElementTypeUnknown = "ElementTypeUnknown",
@@ -3581,7 +3651,8 @@ export enum TypesEventModelAction {
     Shell = "Shell",
     Login = "Login",
     CancelDeploy = "CancelDeploy",
-    Exec = "Exec"
+    Exec = "Exec",
+    ForceDeletePod = "ForceDeletePod"
 }
 export enum TypesProjectModelDeployStatus {
     StatusUnknown = "StatusUnknown",

@@ -1877,3 +1877,239 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = LogResponseValidationError{}
+
+// Validate checks the field values on ForceDeletePodRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ForceDeletePodRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ForceDeletePodRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ForceDeletePodRequestMultiError, or nil if none found.
+func (m *ForceDeletePodRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ForceDeletePodRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(m.GetNamespace()) < 1 {
+		err := ForceDeletePodRequestValidationError{
+			field:  "Namespace",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(m.GetPod()) < 1 {
+		err := ForceDeletePodRequestValidationError{
+			field:  "Pod",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for GracePeriodSeconds
+
+	if len(errors) > 0 {
+		return ForceDeletePodRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ForceDeletePodRequestMultiError is an error wrapping multiple validation
+// errors returned by ForceDeletePodRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ForceDeletePodRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ForceDeletePodRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ForceDeletePodRequestMultiError) AllErrors() []error { return m }
+
+// ForceDeletePodRequestValidationError is the validation error returned by
+// ForceDeletePodRequest.Validate if the designated constraints aren't met.
+type ForceDeletePodRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ForceDeletePodRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ForceDeletePodRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ForceDeletePodRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ForceDeletePodRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ForceDeletePodRequestValidationError) ErrorName() string {
+	return "ForceDeletePodRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ForceDeletePodRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sForceDeletePodRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ForceDeletePodRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ForceDeletePodRequestValidationError{}
+
+// Validate checks the field values on ForceDeletePodResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ForceDeletePodResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ForceDeletePodResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ForceDeletePodResponseMultiError, or nil if none found.
+func (m *ForceDeletePodResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ForceDeletePodResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Deleted
+
+	// no validation rules for Namespace
+
+	// no validation rules for Pod
+
+	// no validation rules for Message
+
+	if len(errors) > 0 {
+		return ForceDeletePodResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ForceDeletePodResponseMultiError is an error wrapping multiple validation
+// errors returned by ForceDeletePodResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ForceDeletePodResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ForceDeletePodResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ForceDeletePodResponseMultiError) AllErrors() []error { return m }
+
+// ForceDeletePodResponseValidationError is the validation error returned by
+// ForceDeletePodResponse.Validate if the designated constraints aren't met.
+type ForceDeletePodResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ForceDeletePodResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ForceDeletePodResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ForceDeletePodResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ForceDeletePodResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ForceDeletePodResponseValidationError) ErrorName() string {
+	return "ForceDeletePodResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ForceDeletePodResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sForceDeletePodResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ForceDeletePodResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ForceDeletePodResponseValidationError{}

@@ -28,8 +28,9 @@ import (
 	v11 "k8s.io/api/events/v1"
 	v12 "k8s.io/api/networking/v1"
 	resource "k8s.io/apimachinery/pkg/api/resource"
+	v13 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
-	v13 "sigs.k8s.io/gateway-api/apis/v1"
+	v14 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // MockProjectRepo is a mock of ProjectRepo interface.
@@ -767,6 +768,20 @@ func (mr *MockK8sRepoMockRecorder) DeleteNamespace(arg0, arg1 any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespace", reflect.TypeOf((*MockK8sRepo)(nil).DeleteNamespace), arg0, arg1)
 }
 
+// DeletePod mocks base method.
+func (m *MockK8sRepo) DeletePod(arg0 context.Context, arg1, arg2 string, arg3 v13.DeleteOptions) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeletePod", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeletePod indicates an expected call of DeletePod.
+func (mr *MockK8sRepoMockRecorder) DeletePod(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePod", reflect.TypeOf((*MockK8sRepo)(nil).DeletePod), arg0, arg1, arg2, arg3)
+}
+
 // DeleteSecret mocks base method.
 func (m *MockK8sRepo) DeleteSecret(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
@@ -1032,10 +1047,10 @@ func (mr *MockK8sRepoMockRecorder) ListEvents(arg0 any) *gomock.Call {
 }
 
 // ListHTTPRoutes mocks base method.
-func (m *MockK8sRepo) ListHTTPRoutes(arg0 string) ([]*v13.HTTPRoute, error) {
+func (m *MockK8sRepo) ListHTTPRoutes(arg0 string) ([]*v14.HTTPRoute, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListHTTPRoutes", arg0)
-	ret0, _ := ret[0].([]*v13.HTTPRoute)
+	ret0, _ := ret[0].([]*v14.HTTPRoute)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
