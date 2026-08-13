@@ -28,6 +28,7 @@ const (
 	Container_IsPodExists_FullMethodName        = "/container.Container/IsPodExists"
 	Container_ContainerLog_FullMethodName       = "/container.Container/ContainerLog"
 	Container_StreamContainerLog_FullMethodName = "/container.Container/StreamContainerLog"
+	Container_ForceDeletePod_FullMethodName     = "/container.Container/ForceDeletePod"
 )
 
 // ContainerClient is the client API for Container service.
@@ -46,6 +47,9 @@ type ContainerClient interface {
 	// ContainerLog 查看 pod 日志
 	ContainerLog(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (*LogResponse, error)
 	StreamContainerLog(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogResponse], error)
+	// ForceDeletePod 强制删除 pod：不等优雅终止直接移除（grace-period=0），
+	// 用于卡死/无法正常终止的 pod，等价 kubectl delete pod --force --grace-period=0。
+	ForceDeletePod(ctx context.Context, in *ForceDeletePodRequest, opts ...grpc.CallOption) (*ForceDeletePodResponse, error)
 }
 
 type containerClient struct {
@@ -160,6 +164,16 @@ func (c *containerClient) StreamContainerLog(ctx context.Context, in *LogRequest
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Container_StreamContainerLogClient = grpc.ServerStreamingClient[LogResponse]
 
+func (c *containerClient) ForceDeletePod(ctx context.Context, in *ForceDeletePodRequest, opts ...grpc.CallOption) (*ForceDeletePodResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ForceDeletePodResponse)
+	err := c.cc.Invoke(ctx, Container_ForceDeletePod_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ContainerServer is the server API for Container service.
 // All implementations must embed UnimplementedContainerServer
 // for forward compatibility.
@@ -176,6 +190,9 @@ type ContainerServer interface {
 	// ContainerLog 查看 pod 日志
 	ContainerLog(context.Context, *LogRequest) (*LogResponse, error)
 	StreamContainerLog(*LogRequest, grpc.ServerStreamingServer[LogResponse]) error
+	// ForceDeletePod 强制删除 pod：不等优雅终止直接移除（grace-period=0），
+	// 用于卡死/无法正常终止的 pod，等价 kubectl delete pod --force --grace-period=0。
+	ForceDeletePod(context.Context, *ForceDeletePodRequest) (*ForceDeletePodResponse, error)
 	mustEmbedUnimplementedContainerServer()
 }
 
@@ -209,6 +226,9 @@ func (UnimplementedContainerServer) ContainerLog(context.Context, *LogRequest) (
 }
 func (UnimplementedContainerServer) StreamContainerLog(*LogRequest, grpc.ServerStreamingServer[LogResponse]) error {
 	return status.Error(codes.Unimplemented, "method StreamContainerLog not implemented")
+}
+func (UnimplementedContainerServer) ForceDeletePod(context.Context, *ForceDeletePodRequest) (*ForceDeletePodResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ForceDeletePod not implemented")
 }
 func (UnimplementedContainerServer) mustEmbedUnimplementedContainerServer() {}
 func (UnimplementedContainerServer) testEmbeddedByValue()                   {}
@@ -339,6 +359,24 @@ func _Container_StreamContainerLog_Handler(srv interface{}, stream grpc.ServerSt
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Container_StreamContainerLogServer = grpc.ServerStreamingServer[LogResponse]
 
+func _Container_ForceDeletePod_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ForceDeletePodRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContainerServer).ForceDeletePod(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Container_ForceDeletePod_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContainerServer).ForceDeletePod(ctx, req.(*ForceDeletePodRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Container_ServiceDesc is the grpc.ServiceDesc for Container service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -361,6 +399,10 @@ var Container_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ContainerLog",
 			Handler:    _Container_ContainerLog_Handler,
+		},
+		{
+			MethodName: "ForceDeletePod",
+			Handler:    _Container_ForceDeletePod_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

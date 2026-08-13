@@ -950,6 +950,135 @@ func (x *LogResponse) GetLog() string {
 	return ""
 }
 
+type ForceDeletePodRequest struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Namespace string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Pod       string                 `protobuf:"bytes,2,opt,name=pod,proto3" json:"pod,omitempty"`
+	// 优雅终止宽限期（秒）；0 表示立即强制删除，等价 kubectl delete --force。
+	GracePeriodSeconds int64 `protobuf:"varint,3,opt,name=grace_period_seconds,json=gracePeriodSeconds,proto3" json:"grace_period_seconds,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *ForceDeletePodRequest) Reset() {
+	*x = ForceDeletePodRequest{}
+	mi := &file_proto_container_container_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForceDeletePodRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForceDeletePodRequest) ProtoMessage() {}
+
+func (x *ForceDeletePodRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_container_container_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForceDeletePodRequest.ProtoReflect.Descriptor instead.
+func (*ForceDeletePodRequest) Descriptor() ([]byte, []int) {
+	return file_proto_container_container_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ForceDeletePodRequest) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
+func (x *ForceDeletePodRequest) GetPod() string {
+	if x != nil {
+		return x.Pod
+	}
+	return ""
+}
+
+func (x *ForceDeletePodRequest) GetGracePeriodSeconds() int64 {
+	if x != nil {
+		return x.GracePeriodSeconds
+	}
+	return 0
+}
+
+type ForceDeletePodResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Deleted       bool                   `protobuf:"varint,1,opt,name=deleted,proto3" json:"deleted,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Pod           string                 `protobuf:"bytes,3,opt,name=pod,proto3" json:"pod,omitempty"`
+	Message       string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForceDeletePodResponse) Reset() {
+	*x = ForceDeletePodResponse{}
+	mi := &file_proto_container_container_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForceDeletePodResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForceDeletePodResponse) ProtoMessage() {}
+
+func (x *ForceDeletePodResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_container_container_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForceDeletePodResponse.ProtoReflect.Descriptor instead.
+func (*ForceDeletePodResponse) Descriptor() ([]byte, []int) {
+	return file_proto_container_container_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ForceDeletePodResponse) GetDeleted() bool {
+	if x != nil {
+		return x.Deleted
+	}
+	return false
+}
+
+func (x *ForceDeletePodResponse) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
+func (x *ForceDeletePodResponse) GetPod() string {
+	if x != nil {
+		return x.Pod
+	}
+	return ""
+}
+
+func (x *ForceDeletePodResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 var File_proto_container_container_proto protoreflect.FileDescriptor
 
 const file_proto_container_container_proto_rawDesc = "" +
@@ -1020,7 +1149,16 @@ const file_proto_container_container_proto_rawDesc = "" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x19\n" +
 	"\bpod_name\x18\x02 \x01(\tR\apodName\x12%\n" +
 	"\x0econtainer_name\x18\x03 \x01(\tR\rcontainerName\x12\x10\n" +
-	"\x03log\x18\x04 \x01(\tR\x03log2\x89\b\n" +
+	"\x03log\x18\x04 \x01(\tR\x03log\"\x93\x01\n" +
+	"\x15ForceDeletePodRequest\x12)\n" +
+	"\tnamespace\x18\x01 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\tnamespace\x12\x1d\n" +
+	"\x03pod\x18\x02 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\x03pod\x120\n" +
+	"\x14grace_period_seconds\x18\x03 \x01(\x03R\x12gracePeriodSeconds\"|\n" +
+	"\x16ForceDeletePodResponse\x12\x18\n" +
+	"\adeleted\x18\x01 \x01(\bR\adeleted\x12\x1c\n" +
+	"\tnamespace\x18\x02 \x01(\tR\tnamespace\x12\x10\n" +
+	"\x03pod\x18\x03 \x01(\tR\x03pod\x12\x18\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage2\xc1\t\n" +
 	"\tContainer\x12\x86\x01\n" +
 	"\tCopyToPod\x12\x1b.container.CopyToPodRequest\x1a\x1c.container.CopyToPodResponse\">\xbaG\x15\x12\x13上传文件到 pod\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/api/containers/copy_to_pod\x12;\n" +
 	"\x04Exec\x12\x16.container.ExecRequest\x1a\x17.container.ExecResponse(\x010\x01\x12A\n" +
@@ -1029,7 +1167,8 @@ const file_proto_container_container_proto_rawDesc = "" +
 	"\fIsPodRunning\x12\x1e.container.IsPodRunningRequest\x1a\x1f.container.IsPodRunningResponse\"D\xbaG\x14\x12\x12pod 是否 running\x82\xd3\xe4\x93\x02':\x01*\"\"/api/containers/pod_running_status\x12\x88\x01\n" +
 	"\vIsPodExists\x12\x1d.container.IsPodExistsRequest\x1a\x1e.container.IsPodExistsResponse\":\xbaG\x12\x12\x10pod 是否存在\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/api/containers/pod_exists\x12\xaa\x01\n" +
 	"\fContainerLog\x12\x15.container.LogRequest\x1a\x16.container.LogResponse\"k\xbaG\x13\x12\x11查看 pod 日志\x82\xd3\xe4\x93\x02O\x12M/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs\x12\xc6\x01\n" +
-	"\x12StreamContainerLog\x12\x15.container.LogRequest\x1a\x16.container.LogResponse\"\x7f\xbaG \x12\x1estream 方式查看 pod 日志\x82\xd3\xe4\x93\x02V\x12T/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs0\x01B;Z9github.com/duc-cnzj/mars/api/v6/proto/container;containerb\x06proto3"
+	"\x12StreamContainerLog\x12\x15.container.LogRequest\x1a\x16.container.LogResponse\"\x7f\xbaG \x12\x1estream 方式查看 pod 日志\x82\xd3\xe4\x93\x02V\x12T/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs0\x01\x12\xb5\x01\n" +
+	"\x0eForceDeletePod\x12 .container.ForceDeletePodRequest\x1a!.container.ForceDeletePodResponse\"^\xbaG\x12\x12\x10强制删除 pod\x82\xd3\xe4\x93\x02C:\x01*\">/api/containers/namespaces/{namespace}/pods/{pod}/force_deleteB;Z9github.com/duc-cnzj/mars/api/v6/proto/container;containerb\x06proto3"
 
 var (
 	file_proto_container_container_proto_rawDescOnce sync.Once
@@ -1043,7 +1182,7 @@ func file_proto_container_container_proto_rawDescGZIP() []byte {
 	return file_proto_container_container_proto_rawDescData
 }
 
-var file_proto_container_container_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_proto_container_container_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_proto_container_container_proto_goTypes = []any{
 	(*CopyToPodRequest)(nil),        // 0: container.CopyToPodRequest
 	(*CopyToPodResponse)(nil),       // 1: container.CopyToPodResponse
@@ -1060,6 +1199,8 @@ var file_proto_container_container_proto_goTypes = []any{
 	(*IsPodExistsResponse)(nil),     // 12: container.IsPodExistsResponse
 	(*LogRequest)(nil),              // 13: container.LogRequest
 	(*LogResponse)(nil),             // 14: container.LogResponse
+	(*ForceDeletePodRequest)(nil),   // 15: container.ForceDeletePodRequest
+	(*ForceDeletePodResponse)(nil),  // 16: container.ForceDeletePodResponse
 }
 var file_proto_container_container_proto_depIdxs = []int32{
 	2,  // 0: container.ExecRequest.size_queue:type_name -> container.TerminalSize
@@ -1072,16 +1213,18 @@ var file_proto_container_container_proto_depIdxs = []int32{
 	11, // 7: container.Container.IsPodExists:input_type -> container.IsPodExistsRequest
 	13, // 8: container.Container.ContainerLog:input_type -> container.LogRequest
 	13, // 9: container.Container.StreamContainerLog:input_type -> container.LogRequest
-	1,  // 10: container.Container.CopyToPod:output_type -> container.CopyToPodResponse
-	6,  // 11: container.Container.Exec:output_type -> container.ExecResponse
-	6,  // 12: container.Container.ExecOnce:output_type -> container.ExecResponse
-	8,  // 13: container.Container.StreamCopyToPod:output_type -> container.StreamCopyToPodResponse
-	10, // 14: container.Container.IsPodRunning:output_type -> container.IsPodRunningResponse
-	12, // 15: container.Container.IsPodExists:output_type -> container.IsPodExistsResponse
-	14, // 16: container.Container.ContainerLog:output_type -> container.LogResponse
-	14, // 17: container.Container.StreamContainerLog:output_type -> container.LogResponse
-	10, // [10:18] is the sub-list for method output_type
-	2,  // [2:10] is the sub-list for method input_type
+	15, // 10: container.Container.ForceDeletePod:input_type -> container.ForceDeletePodRequest
+	1,  // 11: container.Container.CopyToPod:output_type -> container.CopyToPodResponse
+	6,  // 12: container.Container.Exec:output_type -> container.ExecResponse
+	6,  // 13: container.Container.ExecOnce:output_type -> container.ExecResponse
+	8,  // 14: container.Container.StreamCopyToPod:output_type -> container.StreamCopyToPodResponse
+	10, // 15: container.Container.IsPodRunning:output_type -> container.IsPodRunningResponse
+	12, // 16: container.Container.IsPodExists:output_type -> container.IsPodExistsResponse
+	14, // 17: container.Container.ContainerLog:output_type -> container.LogResponse
+	14, // 18: container.Container.StreamContainerLog:output_type -> container.LogResponse
+	16, // 19: container.Container.ForceDeletePod:output_type -> container.ForceDeletePodResponse
+	11, // [11:20] is the sub-list for method output_type
+	2,  // [2:11] is the sub-list for method input_type
 	2,  // [2:2] is the sub-list for extension type_name
 	2,  // [2:2] is the sub-list for extension extendee
 	0,  // [0:2] is the sub-list for field type_name
@@ -1098,7 +1241,7 @@ func file_proto_container_container_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_container_container_proto_rawDesc), len(file_proto_container_container_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

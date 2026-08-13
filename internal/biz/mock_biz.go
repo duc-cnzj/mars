@@ -892,6 +892,20 @@ func (mr *MockK8sBizMockRecorder) FindDefaultContainer(arg0, arg1, arg2 any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDefaultContainer", reflect.TypeOf((*MockK8sBiz)(nil).FindDefaultContainer), arg0, arg1, arg2)
 }
 
+// ForceDeletePod mocks base method.
+func (m *MockK8sBiz) ForceDeletePod(arg0 context.Context, arg1, arg2 string, arg3 int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ForceDeletePod", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ForceDeletePod indicates an expected call of ForceDeletePod.
+func (mr *MockK8sBizMockRecorder) ForceDeletePod(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForceDeletePod", reflect.TypeOf((*MockK8sBiz)(nil).ForceDeletePod), arg0, arg1, arg2, arg3)
+}
+
 // GetAllPodMetrics mocks base method.
 func (m *MockK8sBiz) GetAllPodMetrics(arg0 context.Context, arg1 *Project) []v1beta1.PodMetrics {
 	m.ctrl.T.Helper()

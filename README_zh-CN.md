@@ -6,7 +6,7 @@
 
 <h1 align="center">Mars</h1>
 <div align="center"><img style="width: 100px;height: 100px" src="./frontend/public/logo192.png" /></div>
-<p align="center">专为devops而生，30秒内部署一个应用。</p>
+<p align="center">你负责代码，上线交给我。30 秒，生产环境见。</p>
 <br><br>
 
 <div align="center">
@@ -15,7 +15,6 @@
 [![unittest](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml/badge.svg)](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml)
 [![Release](https://img.shields.io/github/release/duc-cnzj/mars.svg)](https://github.com/duc-cnzj/mars/releases/latest)
 [![GitHub license](https://img.shields.io/github/license/duc-cnzj/mars)](https://github.com/duc-cnzj/mars/blob/master/LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/duc-cnzj/mars/v6)](https://goreportcard.com/report/github.com/duc-cnzj/mars/v6)
 [![Documentation](https://pkg.go.dev/badge/github.com/duc-cnzj/mars/api/v6/grpc.svg)](https://pkg.go.dev/github.com/duc-cnzj/mars/api/v6/grpc)
 
 </div>

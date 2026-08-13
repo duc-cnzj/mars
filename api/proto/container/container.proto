@@ -102,6 +102,20 @@ message LogResponse {
   string log            = 4;
 }
 
+message ForceDeletePodRequest {
+  string namespace = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string pod       = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  // 优雅终止宽限期（秒）；0 表示立即强制删除，等价 kubectl delete --force。
+  int64  grace_period_seconds = 3;
+}
+
+message ForceDeletePodResponse {
+  bool   deleted   = 1;
+  string namespace = 2;
+  string pod       = 3;
+  string message   = 4;
+}
+
 service Container {
   rpc CopyToPod(CopyToPodRequest) returns (CopyToPodResponse) {
     option (google.api.http)      = {
@@ -161,6 +175,19 @@ service Container {
 
     option (openapi.v3.operation) = {
       summary: "stream 方式查看 pod 日志",
+    };
+  }
+
+  // ForceDeletePod 强制删除 pod：不等优雅终止直接移除（grace-period=0），
+  // 用于卡死/无法正常终止的 pod，等价 kubectl delete pod --force --grace-period=0。
+  rpc ForceDeletePod(ForceDeletePodRequest) returns (ForceDeletePodResponse) {
+    option (google.api.http)      = {
+      post: "/api/containers/namespaces/{namespace}/pods/{pod}/force_delete",
+      body: "*"
+    };
+
+    option (openapi.v3.operation) = {
+      summary: "强制删除 pod",
     };
   }
 }

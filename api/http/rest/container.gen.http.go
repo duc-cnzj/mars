@@ -59,3 +59,12 @@ func (s *ContainerSvc) ContainerLog(ctx context.Context, req *container.LogReque
 func (s *ContainerSvc) StreamContainerLog(ctx context.Context, req *container.LogRequest) (transport.Stream[*container.LogResponse], error) {
 	return transport.OpenStream[*container.LogResponse](s.C, ctx, http.MethodGet, fmt.Sprintf("/api/containers/namespaces/%s/pods/%s/containers/%s/stream_logs", url.PathEscape(req.Namespace), url.PathEscape(req.Pod), url.PathEscape(req.Container)), req)
 }
+
+// ForceDeletePod POST /api/containers/namespaces/{namespace}/pods/{pod}/force_delete。
+func (s *ContainerSvc) ForceDeletePod(ctx context.Context, req *container.ForceDeletePodRequest) (*container.ForceDeletePodResponse, error) {
+	var out container.ForceDeletePodResponse
+	if err := s.C.Do(ctx, http.MethodPost, fmt.Sprintf("/api/containers/namespaces/%s/pods/%s/force_delete", url.PathEscape(req.Namespace), url.PathEscape(req.Pod)), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

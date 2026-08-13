@@ -1515,6 +1515,45 @@ func Test_toValidUTF8String(t *testing.T) {
 	assert.Equal(t, "pure ascii text", toValidUTF8String(ascii))
 }
 
+func Test_containerSvc_ForceDeletePod_Success(t *testing.T) {
+	svc, mocks := newContainerSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{}, nil).AnyTimes()
+	mocks.k8sRepo.EXPECT().DeletePod(gomock.Any(), "a", "b", gomock.Any()).Return(nil)
+	mocks.eventRepo.EXPECT().AuditLog(types.EventActionType_ForceDeletePod, "admin", gomock.Any()).Times(1)
+	resp, err := svc.ForceDeletePod(newAdminUserCtx(), &container.ForceDeletePodRequest{
+		Namespace: "a",
+		Pod:       "b",
+	})
+	assert.Nil(t, err)
+	assert.True(t, resp.Deleted)
+	assert.Equal(t, "a", resp.Namespace)
+	assert.Equal(t, "b", resp.Pod)
+	assert.Contains(t, resp.Message, "已强制删除")
+}
+
+func Test_containerSvc_ForceDeletePod_Error(t *testing.T) {
+	svc, mocks := newContainerSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{}, nil).AnyTimes()
+	mocks.k8sRepo.EXPECT().DeletePod(gomock.Any(), "a", "b", gomock.Any()).Return(errors.New("k8s delete failed"))
+	mocks.eventRepo.EXPECT().AuditLog(types.EventActionType_ForceDeletePod, "admin", gomock.Any()).Times(1)
+	_, err := svc.ForceDeletePod(newAdminUserCtx(), &container.ForceDeletePodRequest{
+		Namespace: "a",
+		Pod:       "b",
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "k8s delete failed")
+}
+
+func Test_containerSvc_ForceDeletePod_PermissionDenied(t *testing.T) {
+	svc, mocks := newContainerSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
+	_, err := svc.ForceDeletePod(newOtherUserCtx(), &container.ForceDeletePodRequest{
+		Namespace: "a",
+		Pod:       "b",
+	})
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+}
+
 // containerSvcMocks 聚合 containerSvc 的全部下游 mock，由 newContainerSvcWithMocks 统一构造。
 type containerSvcMocks struct {
 	ctrl      *gomock.Controller

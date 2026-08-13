@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: ""
+    version: api/v6.0.0-beta
 paths:
     /api/access_tokens:
         get:
@@ -355,6 +355,45 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+    /api/containers/namespaces/{namespace}/pods/{pod}/force_delete:
+        post:
+            tags:
+                - Container
+            summary: 强制删除 pod
+            description: |-
+                ForceDeletePod 强制删除 pod：不等优雅终止直接移除（grace-period=0），
+                 用于卡死/无法正常终止的 pod，等价 kubectl delete pod --force --grace-period=0。
+            operationId: Container_ForceDeletePod
+            parameters:
+                - name: namespace
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pod
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/container.ForceDeletePodRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/container.ForceDeletePodResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/containers/pod_exists:
         post:
             tags:
@@ -489,6 +528,7 @@ paths:
                         - Login
                         - CancelDeploy
                         - Exec
+                        - ForceDeletePod
                     type: string
                     format: enum
                 - name: search
@@ -1777,6 +1817,30 @@ components:
                     type: string
                 fileName:
                     type: string
+        container.ForceDeletePodRequest:
+            required:
+                - namespace
+                - pod
+            type: object
+            properties:
+                namespace:
+                    type: string
+                pod:
+                    type: string
+                gracePeriodSeconds:
+                    type: string
+                    description: 优雅终止宽限期（秒）；0 表示立即强制删除，等价 kubectl delete --force。
+        container.ForceDeletePodResponse:
+            type: object
+            properties:
+                deleted:
+                    type: boolean
+                namespace:
+                    type: string
+                pod:
+                    type: string
+                message:
+                    type: string
         container.IsPodExistsRequest:
             required:
                 - namespace
@@ -2604,6 +2668,7 @@ components:
                         - Login
                         - CancelDeploy
                         - Exec
+                        - ForceDeletePod
                     type: string
                     format: enum
                 username:

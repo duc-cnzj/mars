@@ -1049,6 +1049,45 @@ func TestDeleteNamespace(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestDeletePod(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockData := NewMockDataStore(m)
+	clientset := fake.NewSimpleClientset()
+	mockData.EXPECT().K8s().Return(&K8sClient{Client: clientset}).AnyTimes()
+	kr := &k8sRepo{
+		logger: mlog.NewForConfig(nil),
+		data:   mockData,
+	}
+	// 捕获实际下发的 DeleteOptions，验证 opts 透传（强制删除策略由 biz 层决定）
+	var gotOpts metav1.DeleteOptions
+	clientset.PrependReactor("delete", "pods", func(action testing2.Action) (bool, runtime.Object, error) {
+		if del, ok := action.(testing2.DeleteAction); ok {
+			gotOpts = del.GetDeleteOptions()
+		}
+		return false, nil, nil
+	})
+	// 删除不存在的 pod → errs.Wrap 归类为 NotFound
+	err := kr.DeletePod(context.TODO(), "a", "p", metav1.DeleteOptions{})
+	assert.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+	// 创建后强制删除 → 成功，GracePeriodSeconds/PropagationPolicy 透传
+	clientset.CoreV1().Pods("a").Create(context.TODO(), &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "p", Namespace: "a"},
+	}, metav1.CreateOptions{})
+	zero, bg := int64(0), metav1.DeletePropagationBackground
+	err = kr.DeletePod(context.TODO(), "a", "p", metav1.DeleteOptions{
+		GracePeriodSeconds: &zero,
+		PropagationPolicy:  &bg,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, int64(0), *gotOpts.GracePeriodSeconds)
+	assert.Equal(t, metav1.DeletePropagationBackground, *gotOpts.PropagationPolicy)
+	// 删除后 pod 已从 apiserver 移除
+	_, err = clientset.CoreV1().Pods("a").Get(context.TODO(), "p", metav1.GetOptions{})
+	assert.Error(t, err)
+}
+
 func TestDeleteSecret(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()

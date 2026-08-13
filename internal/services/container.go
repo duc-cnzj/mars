@@ -315,6 +315,28 @@ func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server conta
 	})
 }
 
+// ForceDeletePod 强制删除指定 pod：先做命名空间级访问控制，再以指定宽限期执行
+// 强制删除（gracePeriodSeconds=0 即不等优雅终止）。成功与失败均落审计日志
+// （EventActionType_ForceDeletePod），错误统一经 logError 打印。
+func (c *containerSvc) ForceDeletePod(ctx context.Context, request *container.ForceDeletePodRequest) (*container.ForceDeletePodResponse, error) {
+	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.GetNamespace()); err != nil {
+		return nil, logError(ctx, c.logger, err)
+	}
+	user := biz.MustGetUser(ctx)
+	msg := fmt.Sprintf("强制删除 pod: %s/%s", request.GetNamespace(), request.GetPod())
+	if err := c.k8sBiz.ForceDeletePod(ctx, request.GetNamespace(), request.GetPod(), request.GetGracePeriodSeconds()); err != nil {
+		c.eventBiz.AuditLog(types.EventActionType_ForceDeletePod, user.Name, msg+", 失败: "+err.Error())
+		return nil, logError(ctx, c.logger, err)
+	}
+	c.eventBiz.AuditLog(types.EventActionType_ForceDeletePod, user.Name, msg)
+	return &container.ForceDeletePodResponse{
+		Deleted:   true,
+		Namespace: request.GetNamespace(),
+		Pod:       request.GetPod(),
+		Message:   fmt.Sprintf("pod %s/%s 已强制删除", request.GetNamespace(), request.GetPod()),
+	}, nil
+}
+
 // scannerText 按行切分文本并回调 fn；放大 Scanner 缓冲以容纳超长日志行。
 func scannerText(text string, fn func(s string)) error {
 	scanner := bufio.NewScanner(strings.NewReader(text))

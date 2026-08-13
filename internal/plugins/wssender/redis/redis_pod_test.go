@@ -113,8 +113,8 @@ func TestPodEventPublish(t *testing.T) {
 	channel := wssender.GetProjectPodEventRoom(7)
 
 	require.NoError(t, pem.pubSub.Subscribe(context.TODO(), channel))
-	// 同连接 PING 应答返回时 SUBSCRIBE 已在服务端生效，保证发布必达。
-	require.NoError(t, pem.pubSub.Ping(context.TODO()))
+	// go-redis Subscribe/Ping 都只写命令、不等服务端确认；显式读取确认应答确保订阅生效后发布必达。
+	assert.Equal(t, channel, mustReceiveSubscription(t, pem.pubSub).Channel)
 
 	require.NoError(t, pem.Publish(7, wssendertest.TestPod()))
 
@@ -236,8 +236,8 @@ func TestPodEventRun_dispatches(t *testing.T) {
 	nsID, pid := wssendertest.SeedProject(t, db, []string{"app=test"})
 	pem := newPEM(t, wssendertest.RedisAddr(t), db)
 	require.NoError(t, pem.Join(int64(pid)))
-	// Join 内部订阅是异步写命令；同连接 Ping 确认订阅生效后再发布，避免消息先于订阅丢失。
-	require.NoError(t, pem.pubSub.Ping(context.TODO()))
+	// Join 内部 Subscribe 是异步写命令；显式读取确认应答，确保服务端已登记频道订阅后再发布。
+	assert.Equal(t, wssender.GetProjectPodEventRoom(nsID), mustReceiveSubscription(t, pem.pubSub).Channel)
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -262,8 +262,9 @@ func TestPodEventRun_skips_unsubscribed_channel(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// 订阅一个 channelRefs 之外的频道：Run 应跳过该消息不 panic。
+	// 注意：Run 的 Channel() 已启动，此处不能用 Receive 消费确认（Receive* 与 Channel 互斥）；
+	// 无论消息先于/后于订阅到达，channelRefs 都不含 "extra"，测试结果均为"跳过"，无需同步。
 	require.NoError(t, pem.pubSub.Subscribe(context.TODO(), "extra"))
-	require.NoError(t, pem.pubSub.Ping(context.TODO()))
 	require.NoError(t, pem.rds.Publish(context.TODO(), "extra", `{"channel":"extra"}`).Err())
 	time.Sleep(100 * time.Millisecond)
 }
@@ -274,7 +275,7 @@ func TestPodEventRun_malformed_json(t *testing.T) {
 	pem := newPEM(t, wssendertest.RedisAddr(t), db)
 	channel := wssender.GetProjectPodEventRoom(nsID)
 	require.NoError(t, pem.Join(int64(pid)))
-	require.NoError(t, pem.pubSub.Ping(context.TODO()))
+	assert.Equal(t, wssender.GetProjectPodEventRoom(nsID), mustReceiveSubscription(t, pem.pubSub).Channel)
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -291,7 +292,7 @@ func TestPodEventRun_nil_pod_skipped(t *testing.T) {
 	pem := newPEM(t, wssendertest.RedisAddr(t), db)
 	channel := wssender.GetProjectPodEventRoom(nsID)
 	require.NoError(t, pem.Join(int64(pid)))
-	require.NoError(t, pem.pubSub.Ping(context.TODO()))
+	assert.Equal(t, wssender.GetProjectPodEventRoom(nsID), mustReceiveSubscription(t, pem.pubSub).Channel)
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
