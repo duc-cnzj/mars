@@ -25,6 +25,20 @@ const testRedisDB = 15
 // helpers
 // ---------------------------------------------------------------------------
 
+// mustReceiveSubscription 从 PubSub 读取一条应答并断言其为 Subscription 确认。
+// go-redis 的 Subscribe/Ping 都只写命令、不等服务端确认，此处显式消费确认应答，
+// 使"订阅已在服务端生效"这一时序假设可被证明，避免 Publish 先于订阅生效而丢消息。
+func mustReceiveSubscription(tb testing.TB, ps *redis.PubSub) *redis.Subscription {
+	tb.Helper()
+	ctx, cancel := context.WithTimeout(context.TODO(), 2*time.Second)
+	defer cancel()
+	reply, err := ps.Receive(ctx)
+	require.NoError(tb, err)
+	sub, ok := reply.(*redis.Subscription)
+	require.Truef(tb, ok, "expected *redis.Subscription, got %T", reply)
+	return sub
+}
+
 // newTestSender creates a redisSender connected to a real Redis (dedicated DB).
 // It flushes DB before use and cleans up on test completion. Redis 不可用时整体 t.Skip。
 func newTestSender(tb testing.TB) *redisSender {
@@ -42,9 +56,12 @@ func newTestSenderOn(tb testing.TB, addr string) *redisSender {
 
 	wsPubSub := rdb.Subscribe(context.TODO())
 	require.NoError(tb, wsPubSub.Subscribe(context.TODO(), wssender.BroadcastRoom))
-	// 同连接上 PING 应答返回时 SUBSCRIBE 已在服务端生效（Redis 按连接串行处理命令），
-	// 保证广播频道 setup 时订阅就已就绪，ToAll/ToOthers 首投即达。
-	require.NoError(tb, wsPubSub.Ping(context.TODO()))
+	// go-redis 的 PubSub.Subscribe 只写 SUBSCRIBE 命令、不等服务端确认（_subscribe 仅 writeCmd），
+	// PubSub.Ping 同样只写不读应答：二者都无法同步"订阅已生效"。Redis PubSub 无排队，
+	// 若 Publish 早于服务端处理 SUBSCRIBE 会直接丢消息（曾致 TestCrossInstanceToAll flake）。
+	// 故显式读取 Subscription 确认应答，确保广播频道订阅在服务端生效后 ToAll/ToOthers 首投即达。
+	sub := mustReceiveSubscription(tb, wsPubSub)
+	require.Equal(tb, wssender.BroadcastRoom, sub.Channel)
 
 	s := &redisSender{
 		rds:      rdb,
