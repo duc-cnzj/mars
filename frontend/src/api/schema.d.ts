@@ -1145,6 +1145,13 @@ export interface components {
         "git.PipelineInfoResponse": {
             status: string;
             webUrl: string;
+            /** @description jobs 是流水线各 job 的名称与状态，按执行顺序排列。 */
+            jobs: components["schemas"]["git.PipelineJob"][];
+        };
+        "git.PipelineJob": {
+            name: string;
+            status: string;
+            stageName: string;
         };
         "git.ProjectOptionsResponse": {
             items: components["schemas"]["git.Option"][];

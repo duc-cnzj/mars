@@ -13,6 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -285,6 +286,10 @@ func Test_gitSvc_PipelineInfo_Success(t *testing.T) {
 	gitRepo.EXPECT().GetCommitPipeline(gomock.Any(), 1, "main", "commit").Return(&biz.Pipeline{
 		Status: "success",
 		WebURL: "https://example.com",
+		Jobs: []biz.PipelineJob{
+			{Name: "compile", Status: "success", StageName: "build"},
+			{Name: "deploy", Status: "running", StageName: "deploy"},
+		},
 	}, nil)
 
 	res, err := svc.PipelineInfo(context.TODO(), &git.PipelineInfoRequest{
@@ -297,6 +302,13 @@ func Test_gitSvc_PipelineInfo_Success(t *testing.T) {
 	assert.NotNil(t, res)
 	assert.Equal(t, "success", res.Status)
 	assert.Equal(t, "https://example.com", res.WebUrl)
+	require.Len(t, res.Jobs, 2)
+	assert.Equal(t, "compile", res.Jobs[0].Name)
+	assert.Equal(t, "success", res.Jobs[0].Status)
+	assert.Equal(t, "build", res.Jobs[0].StageName)
+	assert.Equal(t, "deploy", res.Jobs[1].Name)
+	assert.Equal(t, "running", res.Jobs[1].Status)
+	assert.Equal(t, "deploy", res.Jobs[1].StageName)
 }
 
 func Test_gitSvc_PipelineInfo_Error(t *testing.T) {

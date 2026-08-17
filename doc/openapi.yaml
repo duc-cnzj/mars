@@ -2091,6 +2091,20 @@ components:
                     type: string
                 webUrl:
                     type: string
+                jobs:
+                    type: array
+                    description: jobs 是流水线各 job 的名称与状态，按执行顺序排列。
+                    items:
+                        $ref: '#/components/schemas/git.PipelineJob'
+        git.PipelineJob:
+            type: object
+            properties:
+                name:
+                    type: string
+                status:
+                    type: string
+                stageName:
+                    type: string
         git.ProjectOptionsResponse:
             type: object
             properties:

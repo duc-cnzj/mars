@@ -76,9 +76,18 @@ message PipelineInfoRequest {
   string commit         = 3 [(validate.rules).string.min_bytes = 1];
 }
 
+// PipelineJob 是 CI 流水线单个 job 的名称、状态与所属 stage。
+message PipelineJob {
+  string name       = 1;
+  string status     = 2;
+  string stage_name = 3;
+}
+
 message PipelineInfoResponse {
   string status  = 1;
   string web_url = 2;
+  // jobs 是流水线各 job 的名称与状态，按执行顺序排列。
+  repeated PipelineJob jobs = 3;
 }
 
 message AllReposRequest{}

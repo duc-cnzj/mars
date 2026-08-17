@@ -666,17 +666,80 @@ func (x *PipelineInfoRequest) GetCommit() string {
 	return ""
 }
 
-type PipelineInfoResponse struct {
+// PipelineJob 是 CI 流水线单个 job 的名称、状态与所属 stage。
+type PipelineJob struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	WebUrl        string                 `protobuf:"bytes,2,opt,name=web_url,json=webUrl,proto3" json:"web_url,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	StageName     string                 `protobuf:"bytes,3,opt,name=stage_name,json=stageName,proto3" json:"stage_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PipelineJob) Reset() {
+	*x = PipelineJob{}
+	mi := &file_proto_git_git_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PipelineJob) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PipelineJob) ProtoMessage() {}
+
+func (x *PipelineJob) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_git_git_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PipelineJob.ProtoReflect.Descriptor instead.
+func (*PipelineJob) Descriptor() ([]byte, []int) {
+	return file_proto_git_git_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *PipelineJob) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *PipelineJob) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *PipelineJob) GetStageName() string {
+	if x != nil {
+		return x.StageName
+	}
+	return ""
+}
+
+type PipelineInfoResponse struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Status string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	WebUrl string                 `protobuf:"bytes,2,opt,name=web_url,json=webUrl,proto3" json:"web_url,omitempty"`
+	// jobs 是流水线各 job 的名称与状态，按执行顺序排列。
+	Jobs          []*PipelineJob `protobuf:"bytes,3,rep,name=jobs,proto3" json:"jobs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PipelineInfoResponse) Reset() {
 	*x = PipelineInfoResponse{}
-	mi := &file_proto_git_git_proto_msgTypes[10]
+	mi := &file_proto_git_git_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -688,7 +751,7 @@ func (x *PipelineInfoResponse) String() string {
 func (*PipelineInfoResponse) ProtoMessage() {}
 
 func (x *PipelineInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_git_git_proto_msgTypes[10]
+	mi := &file_proto_git_git_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -701,7 +764,7 @@ func (x *PipelineInfoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PipelineInfoResponse.ProtoReflect.Descriptor instead.
 func (*PipelineInfoResponse) Descriptor() ([]byte, []int) {
-	return file_proto_git_git_proto_rawDescGZIP(), []int{10}
+	return file_proto_git_git_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *PipelineInfoResponse) GetStatus() string {
@@ -718,6 +781,13 @@ func (x *PipelineInfoResponse) GetWebUrl() string {
 	return ""
 }
 
+func (x *PipelineInfoResponse) GetJobs() []*PipelineJob {
+	if x != nil {
+		return x.Jobs
+	}
+	return nil
+}
+
 type AllReposRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -726,7 +796,7 @@ type AllReposRequest struct {
 
 func (x *AllReposRequest) Reset() {
 	*x = AllReposRequest{}
-	mi := &file_proto_git_git_proto_msgTypes[11]
+	mi := &file_proto_git_git_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -738,7 +808,7 @@ func (x *AllReposRequest) String() string {
 func (*AllReposRequest) ProtoMessage() {}
 
 func (x *AllReposRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_git_git_proto_msgTypes[11]
+	mi := &file_proto_git_git_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -751,7 +821,7 @@ func (x *AllReposRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AllReposRequest.ProtoReflect.Descriptor instead.
 func (*AllReposRequest) Descriptor() ([]byte, []int) {
-	return file_proto_git_git_proto_rawDescGZIP(), []int{11}
+	return file_proto_git_git_proto_rawDescGZIP(), []int{12}
 }
 
 type AllReposResponse struct {
@@ -763,7 +833,7 @@ type AllReposResponse struct {
 
 func (x *AllReposResponse) Reset() {
 	*x = AllReposResponse{}
-	mi := &file_proto_git_git_proto_msgTypes[12]
+	mi := &file_proto_git_git_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -775,7 +845,7 @@ func (x *AllReposResponse) String() string {
 func (*AllReposResponse) ProtoMessage() {}
 
 func (x *AllReposResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_git_git_proto_msgTypes[12]
+	mi := &file_proto_git_git_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -788,7 +858,7 @@ func (x *AllReposResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AllReposResponse.ProtoReflect.Descriptor instead.
 func (*AllReposResponse) Descriptor() ([]byte, []int) {
-	return file_proto_git_git_proto_rawDescGZIP(), []int{12}
+	return file_proto_git_git_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *AllReposResponse) GetItems() []*AllReposResponse_Item {
@@ -808,7 +878,7 @@ type GetChartValuesYamlRequest struct {
 
 func (x *GetChartValuesYamlRequest) Reset() {
 	*x = GetChartValuesYamlRequest{}
-	mi := &file_proto_git_git_proto_msgTypes[13]
+	mi := &file_proto_git_git_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -820,7 +890,7 @@ func (x *GetChartValuesYamlRequest) String() string {
 func (*GetChartValuesYamlRequest) ProtoMessage() {}
 
 func (x *GetChartValuesYamlRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_git_git_proto_msgTypes[13]
+	mi := &file_proto_git_git_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -833,7 +903,7 @@ func (x *GetChartValuesYamlRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChartValuesYamlRequest.ProtoReflect.Descriptor instead.
 func (*GetChartValuesYamlRequest) Descriptor() ([]byte, []int) {
-	return file_proto_git_git_proto_rawDescGZIP(), []int{13}
+	return file_proto_git_git_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetChartValuesYamlRequest) GetInput() string {
@@ -852,7 +922,7 @@ type GetChartValuesYamlResponse struct {
 
 func (x *GetChartValuesYamlResponse) Reset() {
 	*x = GetChartValuesYamlResponse{}
-	mi := &file_proto_git_git_proto_msgTypes[14]
+	mi := &file_proto_git_git_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -864,7 +934,7 @@ func (x *GetChartValuesYamlResponse) String() string {
 func (*GetChartValuesYamlResponse) ProtoMessage() {}
 
 func (x *GetChartValuesYamlResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_git_git_proto_msgTypes[14]
+	mi := &file_proto_git_git_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -877,7 +947,7 @@ func (x *GetChartValuesYamlResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChartValuesYamlResponse.ProtoReflect.Descriptor instead.
 func (*GetChartValuesYamlResponse) Descriptor() ([]byte, []int) {
-	return file_proto_git_git_proto_rawDescGZIP(), []int{14}
+	return file_proto_git_git_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetChartValuesYamlResponse) GetValues() string {
@@ -898,7 +968,7 @@ type AllReposResponse_Item struct {
 
 func (x *AllReposResponse_Item) Reset() {
 	*x = AllReposResponse_Item{}
-	mi := &file_proto_git_git_proto_msgTypes[15]
+	mi := &file_proto_git_git_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -910,7 +980,7 @@ func (x *AllReposResponse_Item) String() string {
 func (*AllReposResponse_Item) ProtoMessage() {}
 
 func (x *AllReposResponse_Item) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_git_git_proto_msgTypes[15]
+	mi := &file_proto_git_git_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -923,7 +993,7 @@ func (x *AllReposResponse_Item) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AllReposResponse_Item.ProtoReflect.Descriptor instead.
 func (*AllReposResponse_Item) Descriptor() ([]byte, []int) {
-	return file_proto_git_git_proto_rawDescGZIP(), []int{12, 0}
+	return file_proto_git_git_proto_rawDescGZIP(), []int{13, 0}
 }
 
 func (x *AllReposResponse_Item) GetId() int32 {
@@ -999,10 +1069,16 @@ const file_proto_git_git_proto_rawDesc = "" +
 	"\x13PipelineInfoRequest\x12-\n" +
 	"\x0egit_project_id\x18\x01 \x01(\tB\a\xfaB\x04r\x02 \x01R\fgitProjectId\x12\x1f\n" +
 	"\x06branch\x18\x02 \x01(\tB\a\xfaB\x04r\x02 \x01R\x06branch\x12\x1f\n" +
-	"\x06commit\x18\x03 \x01(\tB\a\xfaB\x04r\x02 \x01R\x06commit\"G\n" +
+	"\x06commit\x18\x03 \x01(\tB\a\xfaB\x04r\x02 \x01R\x06commit\"X\n" +
+	"\vPipelineJob\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\x12\x1d\n" +
+	"\n" +
+	"stage_name\x18\x03 \x01(\tR\tstageName\"m\n" +
 	"\x14PipelineInfoResponse\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x17\n" +
-	"\aweb_url\x18\x02 \x01(\tR\x06webUrl\"\x11\n" +
+	"\aweb_url\x18\x02 \x01(\tR\x06webUrl\x12$\n" +
+	"\x04jobs\x18\x03 \x03(\v2\x10.git.PipelineJobR\x04jobs\"\x11\n" +
 	"\x0fAllReposRequest\"\x92\x01\n" +
 	"\x10AllReposResponse\x120\n" +
 	"\x05items\x18\x01 \x03(\v2\x1a.git.AllReposResponse.ItemR\x05items\x1aL\n" +
@@ -1035,7 +1111,7 @@ func file_proto_git_git_proto_rawDescGZIP() []byte {
 	return file_proto_git_git_proto_rawDescData
 }
 
-var file_proto_git_git_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_proto_git_git_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_proto_git_git_proto_goTypes = []any{
 	(*Option)(nil),                     // 0: git.Option
 	(*ProjectOptionsRequest)(nil),      // 1: git.ProjectOptionsRequest
@@ -1047,37 +1123,39 @@ var file_proto_git_git_proto_goTypes = []any{
 	(*CommitRequest)(nil),              // 7: git.CommitRequest
 	(*CommitResponse)(nil),             // 8: git.CommitResponse
 	(*PipelineInfoRequest)(nil),        // 9: git.PipelineInfoRequest
-	(*PipelineInfoResponse)(nil),       // 10: git.PipelineInfoResponse
-	(*AllReposRequest)(nil),            // 11: git.AllReposRequest
-	(*AllReposResponse)(nil),           // 12: git.AllReposResponse
-	(*GetChartValuesYamlRequest)(nil),  // 13: git.GetChartValuesYamlRequest
-	(*GetChartValuesYamlResponse)(nil), // 14: git.GetChartValuesYamlResponse
-	(*AllReposResponse_Item)(nil),      // 15: git.AllReposResponse.Item
+	(*PipelineJob)(nil),                // 10: git.PipelineJob
+	(*PipelineInfoResponse)(nil),       // 11: git.PipelineInfoResponse
+	(*AllReposRequest)(nil),            // 12: git.AllReposRequest
+	(*AllReposResponse)(nil),           // 13: git.AllReposResponse
+	(*GetChartValuesYamlRequest)(nil),  // 14: git.GetChartValuesYamlRequest
+	(*GetChartValuesYamlResponse)(nil), // 15: git.GetChartValuesYamlResponse
+	(*AllReposResponse_Item)(nil),      // 16: git.AllReposResponse.Item
 }
 var file_proto_git_git_proto_depIdxs = []int32{
 	0,  // 0: git.ProjectOptionsResponse.items:type_name -> git.Option
 	0,  // 1: git.BranchOptionsResponse.items:type_name -> git.Option
 	0,  // 2: git.CommitOptionsResponse.items:type_name -> git.Option
-	15, // 3: git.AllReposResponse.items:type_name -> git.AllReposResponse.Item
-	11, // 4: git.Git.AllRepos:input_type -> git.AllReposRequest
-	1,  // 5: git.Git.ProjectOptions:input_type -> git.ProjectOptionsRequest
-	3,  // 6: git.Git.BranchOptions:input_type -> git.BranchOptionsRequest
-	5,  // 7: git.Git.CommitOptions:input_type -> git.CommitOptionsRequest
-	7,  // 8: git.Git.Commit:input_type -> git.CommitRequest
-	9,  // 9: git.Git.PipelineInfo:input_type -> git.PipelineInfoRequest
-	13, // 10: git.Git.GetChartValuesYaml:input_type -> git.GetChartValuesYamlRequest
-	12, // 11: git.Git.AllRepos:output_type -> git.AllReposResponse
-	2,  // 12: git.Git.ProjectOptions:output_type -> git.ProjectOptionsResponse
-	4,  // 13: git.Git.BranchOptions:output_type -> git.BranchOptionsResponse
-	6,  // 14: git.Git.CommitOptions:output_type -> git.CommitOptionsResponse
-	8,  // 15: git.Git.Commit:output_type -> git.CommitResponse
-	10, // 16: git.Git.PipelineInfo:output_type -> git.PipelineInfoResponse
-	14, // 17: git.Git.GetChartValuesYaml:output_type -> git.GetChartValuesYamlResponse
-	11, // [11:18] is the sub-list for method output_type
-	4,  // [4:11] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	10, // 3: git.PipelineInfoResponse.jobs:type_name -> git.PipelineJob
+	16, // 4: git.AllReposResponse.items:type_name -> git.AllReposResponse.Item
+	12, // 5: git.Git.AllRepos:input_type -> git.AllReposRequest
+	1,  // 6: git.Git.ProjectOptions:input_type -> git.ProjectOptionsRequest
+	3,  // 7: git.Git.BranchOptions:input_type -> git.BranchOptionsRequest
+	5,  // 8: git.Git.CommitOptions:input_type -> git.CommitOptionsRequest
+	7,  // 9: git.Git.Commit:input_type -> git.CommitRequest
+	9,  // 10: git.Git.PipelineInfo:input_type -> git.PipelineInfoRequest
+	14, // 11: git.Git.GetChartValuesYaml:input_type -> git.GetChartValuesYamlRequest
+	13, // 12: git.Git.AllRepos:output_type -> git.AllReposResponse
+	2,  // 13: git.Git.ProjectOptions:output_type -> git.ProjectOptionsResponse
+	4,  // 14: git.Git.BranchOptions:output_type -> git.BranchOptionsResponse
+	6,  // 15: git.Git.CommitOptions:output_type -> git.CommitOptionsResponse
+	8,  // 16: git.Git.Commit:output_type -> git.CommitResponse
+	11, // 17: git.Git.PipelineInfo:output_type -> git.PipelineInfoResponse
+	15, // 18: git.Git.GetChartValuesYaml:output_type -> git.GetChartValuesYamlResponse
+	12, // [12:19] is the sub-list for method output_type
+	5,  // [5:12] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_proto_git_git_proto_init() }
@@ -1091,7 +1169,7 @@ func file_proto_git_git_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_git_git_proto_rawDesc), len(file_proto_git_git_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

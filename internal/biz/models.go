@@ -586,6 +586,13 @@ type Commit struct {
 	CommittedDate  *time.Time
 }
 
+// PipelineJob 是 CI/CD 流水线单个 job 的名称、状态与所属 stage。
+type PipelineJob struct {
+	Name      string
+	Status    Status
+	StageName string
+}
+
 // Pipeline 是 git CI/CD 流水线信息。
 type Pipeline struct {
 	ID        int64
@@ -596,6 +603,8 @@ type Pipeline struct {
 	WebURL    string
 	UpdatedAt *time.Time
 	CreatedAt *time.Time
+	// Jobs 是流水线各 job 的名称与状态，按执行顺序排列。
+	Jobs []PipelineJob
 }
 
 // ---------- K8s ----------

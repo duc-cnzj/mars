@@ -52,6 +52,15 @@ func writeJSON(w http.ResponseWriter, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
+// jobsJSON 构造 n 个 id 自 startID 起递增、同一 name/status/stage 的 job，用于分页等批量场景。
+func jobsJSON(n, startID int, name, status, stage string) []map[string]any {
+	out := make([]map[string]any, 0, n)
+	for i := 0; i < n; i++ {
+		out = append(out, map[string]any{"id": startID + i, "name": name, "status": status, "stage": stage})
+	}
+	return out
+}
+
 // ---------------------------------------------------------------------------
 // lifecycle
 // ---------------------------------------------------------------------------
@@ -293,10 +302,18 @@ func TestListCommits_error_returns_empty(t *testing.T) {
 
 func TestGetCommitPipeline_success(t *testing.T) {
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/api/v4/projects/1/pipelines", r.URL.Path)
-		writeJSON(w, []map[string]any{
-			{"id": 11, "project_id": 1, "status": "success", "source": "push", "ref": "main", "sha": "s"},
-		})
+		switch r.URL.Path {
+		case "/api/v4/projects/1/pipelines":
+			writeJSON(w, []map[string]any{
+				{"id": 11, "project_id": 1, "status": "success", "source": "push", "ref": "main", "sha": "s"},
+			})
+		case "/api/v4/projects/1/pipelines/11/jobs":
+			writeJSON(w, []map[string]any{
+				{"id": 1, "name": "build", "status": "success", "stage": "compile"},
+			})
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
 	})))
 	t.Cleanup(srv.Close)
 
@@ -305,14 +322,27 @@ func TestGetCommitPipeline_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(11), p.ID)
 	assert.Equal(t, biz.StatusSuccess, p.Status)
+	require.Len(t, p.Jobs, 1)
+	assert.Equal(t, "build", p.Jobs[0].Name)
+	assert.Equal(t, biz.StatusSuccess, p.Jobs[0].Status)
+	assert.Equal(t, "compile", p.Jobs[0].StageName)
 }
 
 func TestGetCommitPipeline_skips_other_sources(t *testing.T) {
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, []map[string]any{
-			{"id": 1, "source": "schedule", "status": "failed"}, // 跳过
-			{"id": 2, "source": "web", "status": "running"},     // 命中
-		})
+		switch r.URL.Path {
+		case "/api/v4/projects/1/pipelines":
+			writeJSON(w, []map[string]any{
+				{"id": 1, "source": "schedule", "status": "failed"}, // 跳过
+				{"id": 2, "source": "web", "status": "running"},     // 命中
+			})
+		case "/api/v4/projects/1/pipelines/2/jobs":
+			writeJSON(w, []map[string]any{
+				{"id": 1, "name": "build", "status": "running", "stage": "compile"},
+			})
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
 	})))
 	t.Cleanup(srv.Close)
 
@@ -321,6 +351,8 @@ func TestGetCommitPipeline_skips_other_sources(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), p.ID)
 	assert.Equal(t, biz.StatusRunning, p.Status)
+	require.Len(t, p.Jobs, 1)
+	assert.Equal(t, "compile", p.Jobs[0].StageName)
 }
 
 func TestGetCommitPipeline_error(t *testing.T) {
@@ -344,6 +376,131 @@ func TestGetCommitPipeline_not_found(t *testing.T) {
 	g := newServer(t, srv.URL)
 	_, err := g.GetCommitPipeline("1", "main", "s")
 	assert.ErrorContains(t, err, "pipeline not found")
+}
+
+// TestGetCommitPipeline_jobs_mixed 验证每个 job 返回自己的名称与状态，空名 job 被忽略。
+func TestGetCommitPipeline_jobs_mixed(t *testing.T) {
+	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v4/projects/1/pipelines":
+			writeJSON(w, []map[string]any{
+				{"id": 11, "project_id": 1, "status": "running", "source": "web", "ref": "main", "sha": "s"},
+			})
+		case "/api/v4/projects/1/pipelines/11/jobs":
+			writeJSON(w, []map[string]any{
+				{"id": 1, "name": "compile", "status": "success", "stage": "build"},
+				{"id": 2, "name": "lint", "status": "failed", "stage": "build"},
+				{"id": 3, "name": "unit-test", "status": "running", "stage": "test"},
+				{"id": 4, "name": "deploy", "status": "skipped", "stage": "deploy"},
+				{"id": 5, "name": "", "status": "success", "stage": "deploy"},
+			})
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+	})))
+	t.Cleanup(srv.Close)
+
+	g := newServer(t, srv.URL)
+	p, err := g.GetCommitPipeline("1", "main", "s")
+	require.NoError(t, err)
+	require.Len(t, p.Jobs, 4)
+	assert.Equal(t, "compile", p.Jobs[0].Name)
+	assert.Equal(t, biz.StatusSuccess, p.Jobs[0].Status)
+	assert.Equal(t, "build", p.Jobs[0].StageName)
+	assert.Equal(t, "lint", p.Jobs[1].Name)
+	assert.Equal(t, biz.StatusFailed, p.Jobs[1].Status)
+	assert.Equal(t, "unit-test", p.Jobs[2].Name)
+	assert.Equal(t, biz.StatusRunning, p.Jobs[2].Status)
+	assert.Equal(t, "test", p.Jobs[2].StageName)
+	assert.Equal(t, "deploy", p.Jobs[3].Name)
+	assert.Equal(t, biz.StatusUnknown, p.Jobs[3].Status) // skipped → unknown
+	assert.Equal(t, "deploy", p.Jobs[3].StageName)
+}
+
+// TestGetCommitPipeline_jobs_error 验证拉 job 失败时整个请求返回错误（fail-fast）。
+func TestGetCommitPipeline_jobs_error(t *testing.T) {
+	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v4/projects/1/pipelines":
+			writeJSON(w, []map[string]any{
+				{"id": 11, "project_id": 1, "status": "success", "source": "push", "ref": "main", "sha": "s"},
+			})
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+			writeJSON(w, map[string]any{"message": "jobs boom"})
+		}
+	})))
+	t.Cleanup(srv.Close)
+
+	g := newServer(t, srv.URL)
+	_, err := g.GetCommitPipeline("1", "main", "s")
+	assert.Error(t, err)
+}
+
+// TestGetCommitPipeline_jobs_pagination 验证 job 超过一页时分页拉全。
+func TestGetCommitPipeline_jobs_pagination(t *testing.T) {
+	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v4/projects/1/pipelines":
+			writeJSON(w, []map[string]any{
+				{"id": 11, "project_id": 1, "status": "success", "source": "push", "ref": "main", "sha": "s"},
+			})
+		case "/api/v4/projects/1/pipelines/11/jobs":
+			if r.URL.Query().Get("page") == "2" {
+				writeJSON(w, jobsJSON(2, 101, "test-2", "success", "test"))
+			} else {
+				writeJSON(w, jobsJSON(100, 1, "build-1", "success", "build"))
+			}
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+	})))
+	t.Cleanup(srv.Close)
+
+	g := newServer(t, srv.URL)
+	p, err := g.GetCommitPipeline("1", "main", "s")
+	require.NoError(t, err)
+	require.Len(t, p.Jobs, 102)
+	assert.Equal(t, "build-1", p.Jobs[0].Name)
+	assert.Equal(t, "build", p.Jobs[0].StageName)
+	assert.Equal(t, "test-2", p.Jobs[101].Name)
+	assert.Equal(t, "test", p.Jobs[101].StageName)
+}
+
+// TestGetCommitPipeline_jobs_sorted_by_id 验证 job 按 id 升序（stage 执行顺序）返回：
+// 低版本 GitLab 的 pipeline 详情无 stages 数组、job 接口也不保证顺序，
+// 但 job id 按 stage 声明顺序分配，故按 id 手动排序即可还原执行顺序。
+func TestGetCommitPipeline_jobs_sorted_by_id(t *testing.T) {
+	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v4/projects/1/pipelines":
+			writeJSON(w, []map[string]any{
+				{"id": 11, "project_id": 1, "status": "success", "source": "push", "ref": "main", "sha": "s"},
+			})
+		case "/api/v4/projects/1/pipelines/11/jobs":
+			// 故意按 id 倒序返回，模拟低版本 GitLab 的 job 原始顺序。
+			writeJSON(w, []map[string]any{
+				{"id": 5, "name": "deploy", "status": "success", "stage": "deploy"},
+				{"id": 1, "name": "build", "status": "success", "stage": "build"},
+				{"id": 3, "name": "lint", "status": "success", "stage": "test"},
+				{"id": 2, "name": "unit", "status": "success", "stage": "test"},
+				{"id": 4, "name": "manual", "status": "skipped", "stage": "deploy"},
+			})
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+	})))
+	t.Cleanup(srv.Close)
+
+	g := newServer(t, srv.URL)
+	p, err := g.GetCommitPipeline("1", "main", "s")
+	require.NoError(t, err)
+	require.Len(t, p.Jobs, 5)
+	assert.Equal(t, "build", p.Jobs[0].Name)
+	assert.Equal(t, "unit", p.Jobs[1].Name)
+	assert.Equal(t, "lint", p.Jobs[2].Name)
+	assert.Equal(t, "manual", p.Jobs[3].Name, "手动/未运行 job 按所属 stage 位置排列")
+	assert.Equal(t, "deploy", p.Jobs[4].Name)
 }
 
 // ---------------------------------------------------------------------------

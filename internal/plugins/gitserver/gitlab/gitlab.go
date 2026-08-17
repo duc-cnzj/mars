@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"errors"
+	"sort"
 
 	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
@@ -248,6 +249,7 @@ func (g *server) ListCommits(pid string, branch string) ([]*biz.Commit, error) {
 }
 
 // GetCommitPipeline 返回指定分支/提交对应的 push/web pipeline；没有则报错。
+// 除流水线整体状态外，还会拉取 pipeline 的 job 列表返回每个 job 的名称与状态。
 func (g *server) GetCommitPipeline(pid string, branch string, sha string) (*biz.Pipeline, error) {
 	var p *gitlab.PipelineInfo
 	pipelines, _, err := g.client.Pipelines.ListProjectPipelines(pid, &gitlab.ListProjectPipelinesOptions{
@@ -273,7 +275,56 @@ func (g *server) GetCommitPipeline(pid string, branch string, sha string) (*biz.
 		return nil, errors.New("pipeline not found")
 	}
 
-	return toPipeline(p), nil
+	pipeline := toPipeline(p)
+	pipeline.Jobs, err = g.pipelineJobs(pid, int(p.ID))
+	if err != nil {
+		return nil, err
+	}
+	return pipeline, nil
+}
+
+// pipelineJobs 拉取 pipeline 的全部 job，按 job id 升序（即 stage 执行顺序）返回
+// 名称/状态/所属 stage 列表；空名 job 被忽略。
+func (g *server) pipelineJobs(pid string, pipelineID int) ([]biz.PipelineJob, error) {
+	jobs, err := g.listPipelineJobs(pid, pipelineID)
+	if err != nil {
+		return nil, err
+	}
+	// 部分 GitLab 实例/低版本 SDK 的 pipeline 详情不返回 stages 数组，job 接口也不保证顺序；
+	// job id 在 pipeline 创建时按 stage 声明顺序递增分配，故按 id 升序即可还原 stage 执行顺序，
+	// 且无需依赖 started_at（手动/未运行的 job 也排在所属 stage 的位置）。
+	sort.Slice(jobs, func(i, j int) bool {
+		return jobs[i].ID < jobs[j].ID
+	})
+	out := make([]biz.PipelineJob, 0, len(jobs))
+	for _, j := range jobs {
+		if j.Name == "" {
+			continue
+		}
+		out = append(out, biz.PipelineJob{Name: j.Name, Status: pipelineStatus(j.Status), StageName: j.Stage})
+	}
+	return out, nil
+}
+
+// listPipelineJobs 分页拉取 pipeline 的全部 job（每页 100，直至不足一页）。
+func (g *server) listPipelineJobs(pid string, pipelineID int) ([]*gitlab.Job, error) {
+	var jobs []*gitlab.Job
+	page := 1
+	for page != -1 {
+		batch, _, err := g.client.Jobs.ListPipelineJobs(pid, pipelineID, &gitlab.ListJobsOptions{
+			ListOptions: gitlab.ListOptions{Page: page, PerPage: 100},
+		})
+		if err != nil {
+			return nil, err
+		}
+		jobs = append(jobs, batch...)
+		if len(batch) < 100 {
+			page = -1
+		} else {
+			page++
+		}
+	}
+	return jobs, nil
 }
 
 // getRawFile 按 ref 或分支名拉取仓库文件原始内容。

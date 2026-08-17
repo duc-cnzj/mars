@@ -165,16 +165,21 @@ func (g *gitSvc) Commit(ctx context.Context, request *git.CommitRequest) (*git.C
 	}, nil
 }
 
-// PipelineInfo 返回指定提交对应 CI 流水线的状态与 URL。
+// PipelineInfo 返回指定提交对应 CI 流水线的状态、URL 与各 job 状态。
 func (g *gitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequest) (*git.PipelineInfoResponse, error) {
 	pipeline, err := g.gitBiz.GetCommitPipeline(ctx, cast.ToInt(request.GitProjectId), request.Branch, request.Commit)
 	if err != nil {
 		return nil, logError(ctx, g.logger, err)
 	}
 
+	jobs := make([]*git.PipelineJob, 0, len(pipeline.Jobs))
+	for _, j := range pipeline.Jobs {
+		jobs = append(jobs, &git.PipelineJob{Name: j.Name, Status: j.Status, StageName: j.StageName})
+	}
 	return &git.PipelineInfoResponse{
 		Status: pipeline.Status,
 		WebUrl: pipeline.WebURL,
+		Jobs:   jobs,
 	}, nil
 }
 
