@@ -94,7 +94,7 @@ func (f *fileHandler) httpDownload(w http.ResponseWriter, r *http.Request, pathP
 	ctx := r.Context()
 	fil, err := f.fileBiz.GetByID(ctx, id)
 	if err != nil {
-		f.logger.Error("Error getting file: ", err)
+		f.logger.ErrorCtx(ctx, fmt.Sprintf("Error getting file id %d: ", id), err)
 		toHttpError(w, err)
 		return
 	}

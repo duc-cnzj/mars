@@ -1424,7 +1424,7 @@ func TestChartFileLoader_LoadWithChartMissing(t *testing.T) {
 
 	ctx.Config.LocalChartPath = "xxx"
 	err = l.Load(ctx)
-	assert.Equal(t, "LocalChartPath 格式不正确", err.Error())
+	assert.Equal(t, "LocalChartPath 格式不正确: xxx", err.Error())
 }
 
 func TestLoadContext_WriteConfigYamlToTmpFile(t *testing.T) {

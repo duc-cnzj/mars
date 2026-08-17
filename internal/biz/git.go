@@ -93,23 +93,24 @@ func (g *gitBiz) EnsureBranchAndCommit(ctx context.Context, show *Repo, inBranch
 	if show == nil {
 		return "", "", nil, errs.WrapInvalidArgument(errors.New("repo 不能为空"), "ensure branch and commit")
 	}
+	projectID := int(show.GitProjectID)
 	branch = inBranch
 	commit = inCommit
 	if branch == "" {
 		branch = show.DefaultBranch
-		msgs = append(msgs, fmt.Sprintf("未传入分支，使用默认分支 %s", branch))
+		msgs = append(msgs, fmt.Sprintf("项目 %d 未传入分支，使用默认分支 %s", projectID, branch))
 	}
 	if commit == "" {
-		commits, err := g.gitRepo.ListCommits(ctx, int(show.GitProjectID), branch)
+		commits, err := g.gitRepo.ListCommits(ctx, projectID, branch)
 		if err != nil {
 			return "", "", nil, err
 		}
 		if len(commits) < 1 {
-			return "", "", nil, errs.NotFound("没有可用的 commit")
+			return "", "", nil, errs.NotFound(fmt.Sprintf("项目 %d 分支 %s 没有可用的 commit", projectID, branch))
 		}
 		lastCommit := commits[0]
 		commit = lastCommit.ID
-		msgs = append(msgs, fmt.Sprintf("未传入commit，使用最新的commit [%s](%s)", lastCommit.Title, lastCommit.WebURL))
+		msgs = append(msgs, fmt.Sprintf("项目 %d 分支 %s 未传入commit，使用最新的commit [%s](%s)", projectID, branch, lastCommit.Title, lastCommit.WebURL))
 	}
 	return branch, commit, msgs, nil
 }

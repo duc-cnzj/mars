@@ -143,7 +143,7 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 		}
 		// exists 且非 IgnoreIfExists：拒绝并返回 AlreadyExists——状态码由 biz 工厂提供，
 		// transport 不再散落 status.Error 构造（协议映射收口 biz）。
-		return nil, errs.AlreadyExists("名称空间已存在")
+		return nil, errs.AlreadyExists(fmt.Sprintf("名称空间 %s 已存在", request.Namespace))
 	}
 
 	n.eventBiz.AuditLogWithRequest(
