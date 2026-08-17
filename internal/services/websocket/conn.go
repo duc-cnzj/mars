@@ -7,7 +7,7 @@ package websocket
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -231,5 +231,5 @@ func (c *wsConn) RunCancelDeployTask(id string) error {
 		c.taskManager.Stop(id)
 		return nil
 	}
-	return errors.New("task not found")
+	return fmt.Errorf("部署任务 %s 不存在", id)
 }

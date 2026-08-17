@@ -453,7 +453,7 @@ func (r *recorder) Close() error {
 			io.WriteString(upFile, fmt.Sprintf(startLine, r.width, r.height, r.startTime.Unix(), shell))
 		}()
 		if _, err := io.Copy(upFile, r.f); err != nil {
-			r.logger.Error(err)
+			r.logger.Errorf("recorder 写入 shell 回放文件失败 %s/%s/%s: %v", r.container.Namespace, r.container.Pod, r.container.Container, err)
 		}
 	}()
 

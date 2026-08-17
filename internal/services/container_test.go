@@ -482,7 +482,7 @@ func TestContainerSvc_StreamContainerLog_PodPending1(t *testing.T) {
 		Pod:       "b",
 	}, s)
 
-	assert.Equal(t, "未找到日志", status.Convert(err).Message())
+	assert.Equal(t, "未找到日志: a/b", status.Convert(err).Message())
 }
 
 func TestContainerSvc_StreamContainerLog_PodPending_ShowEvents(t *testing.T) {

@@ -1292,7 +1292,7 @@ func TestCopyFromPod(t *testing.T) {
 		UserName:  "test-user",
 	})
 	s, _ := status.FromError(err)
-	assert.Equal(t, "下载内容必须是文件", s.Message())
+	assert.Equal(t, "下载内容必须是文件: test-pod /test/file/path", s.Message())
 	assert.Equal(t, codes.InvalidArgument, s.Code())
 }
 
@@ -1568,7 +1568,7 @@ func TestFindDefaultContainer_NoContainers(t *testing.T) {
 	assert.Error(t, err)
 	// errs.NotFound 映射为 grpc NotFound：断言状态码与消息，而非 Error() 全串（带 grpc 前缀）。
 	assert.Equal(t, codes.NotFound, status.Code(err))
-	assert.Equal(t, "未找到容器", status.Convert(err).Message())
+	assert.Equal(t, "未找到容器: a/nocontainers", status.Convert(err).Message())
 }
 
 // TestListPodsBySelectors 覆盖按 selector 列 Pod：命中、跨 selector 去重、
@@ -1946,7 +1946,7 @@ func TestCopyFromPod_invalidPath(t *testing.T) {
 	})
 	s, _ := status.FromError(err)
 	assert.Equal(t, codes.InvalidArgument, s.Code())
-	assert.Equal(t, "invalid file path", s.Message())
+	assert.Equal(t, "非法文件路径: p /p", s.Message())
 }
 
 // TestCopyFromPod_fileCopyError 覆盖归档复制失败分支：err 非 nil 触发

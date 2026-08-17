@@ -198,7 +198,7 @@ func (c *ChartFileLoader) Load(ctx *LoadContext) error {
 	ctx.Messager.To(20)
 
 	if !biz.IsRemoteLocalChartPath(ctx.Config.LocalChartPath) {
-		return errors.New("LocalChartPath 格式不正确")
+		return errors.New("LocalChartPath 格式不正确: " + ctx.Config.LocalChartPath)
 	}
 
 	// 下载 helm charts
@@ -225,7 +225,7 @@ func (c *ChartFileLoader) Load(ctx *LoadContext) error {
 		return errs.Wrap(err, "获取远程 charts 文件")
 	}
 	if len(files) < 1 {
-		return errors.New("charts 文件不存在")
+		return fmt.Errorf("charts 文件不存在: %s", ctx.Config.LocalChartPath)
 	}
 	tmpChartsDir, deleteDirFn, err = ctx.DownloadFiles(pid, branch, files)
 	if err != nil {

@@ -284,7 +284,7 @@ func TestChartFileLoader_NoFilesError(t *testing.T) {
 		Config:    &mars.Config{LocalChartPath: "9999|master|dir"},
 		PluginMgr: pl,
 	}
-	assert.Equal(t, "charts 文件不存在", (&ChartFileLoader{}).Load(ctx).Error())
+	assert.Equal(t, "charts 文件不存在: 9999|master|dir", (&ChartFileLoader{}).Load(ctx).Error())
 }
 
 func TestMergeValuesLoader_NewYAMLError(t *testing.T) {

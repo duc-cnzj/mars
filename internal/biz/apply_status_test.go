@@ -141,6 +141,41 @@ func TestJudgeDeploymentRollout_Deployed(t *testing.T) {
 	assert.Empty(t, fails)
 }
 
+// TestJudgeDeploymentRollout_NewPodNotReady 覆盖用户上报场景：滚动窗口期新 pod 已创建但
+// 未就绪（ContainerCreating），旧 pod 仍在运行撑起 AvailableReplicas——Deployment 计数
+// 满足 updated=available=desired 但新 pod 未 Ready，不得误判 Deployed。
+func TestJudgeDeploymentRollout_NewPodNotReady(t *testing.T) {
+	dep := newDepForTest(1, 1, 1) // UpdatedReplicas=1, AvailableReplicas=1, desired=1
+	dep.UID = "dep"
+	rss := []*appsv1.ReplicaSet{
+		newRSForTest("rs-old", "1", "dep"),
+		newRSForTest("rs-new", "2", "dep"),
+	}
+	newPod := rsPodForTest("pod-new", "rs-new", "")
+	newPod.Status.ContainerStatuses[0].Ready = false // 新 pod 容器未就绪
+	oldPod := rsPodForTest("pod-old", "rs-old", "")  // 旧 pod 仍 Ready
+	st, reason, fails := judgeDeploymentRollout(dep, rss, []*corev1.Pod{newPod, oldPod})
+	assert.Equal(t, types.Deploy_StatusDeploying, st)
+	assert.Contains(t, reason, "0/1")
+	assert.Empty(t, fails)
+}
+
+// TestJudgeDeploymentRollout_NewPodReady 覆盖滚动窗口收尾：新 pod 已 Ready 才判 Deployed。
+func TestJudgeDeploymentRollout_NewPodReady(t *testing.T) {
+	dep := newDepForTest(1, 1, 1)
+	dep.UID = "dep"
+	rss := []*appsv1.ReplicaSet{
+		newRSForTest("rs-old", "1", "dep"),
+		newRSForTest("rs-new", "2", "dep"),
+	}
+	newPod := rsPodForTest("pod-new", "rs-new", "") // Ready=true
+	oldPod := rsPodForTest("pod-old", "rs-old", "")
+	st, reason, fails := judgeDeploymentRollout(dep, rss, []*corev1.Pod{newPod, oldPod})
+	assert.Equal(t, types.Deploy_StatusDeployed, st)
+	assert.Empty(t, reason)
+	assert.Empty(t, fails)
+}
+
 // ---------- judgeStatefulSetRollout ----------
 
 func TestJudgeStatefulSetRollout_DesiredZero(t *testing.T) {
@@ -202,6 +237,21 @@ func TestJudgeStatefulSetRollout_Deployed(t *testing.T) {
 	assert.Empty(t, fails)
 }
 
+// TestJudgeStatefulSetRollout_NewPodNotReady 覆盖 STS 滚动窗口期最新版本 pod 未 Ready：
+// 计数满足但新 pod 未就绪，不得误判 Deployed。
+func TestJudgeStatefulSetRollout_NewPodNotReady(t *testing.T) {
+	sts := newStsForTest(1, 1, 1, "rev2")
+	newPod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "sts-new", Namespace: "ns", Labels: map[string]string{appsv1.ControllerRevisionHashLabelKey: "rev2"}},
+		Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: "web"}}},
+		Status:     corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{Name: "web", Ready: false}}},
+	}
+	st, reason, fails := judgeStatefulSetRollout(sts, []*corev1.Pod{newPod})
+	assert.Equal(t, types.Deploy_StatusDeploying, st)
+	assert.Contains(t, reason, "0/1")
+	assert.Empty(t, fails)
+}
+
 // ---------- judgeDaemonSetRollout ----------
 
 func TestJudgeDaemonSetRollout_DesiredZero(t *testing.T) {
@@ -260,6 +310,21 @@ func TestJudgeDaemonSetRollout_Deployed(t *testing.T) {
 	st, reason, fails := judgeDaemonSetRollout(newDsForTest(3, 3, 3), nil)
 	assert.Equal(t, types.Deploy_StatusDeployed, st)
 	assert.Empty(t, reason)
+	assert.Empty(t, fails)
+}
+
+// TestJudgeDaemonSetRollout_NewPodNotReady 覆盖 DS 滚动窗口期最新 hash 组 pod 未 Ready：
+// 计数满足但新 pod 未就绪，不得误判 Deployed。
+func TestJudgeDaemonSetRollout_NewPodNotReady(t *testing.T) {
+	ds := newDsForTest(1, 1, 1)
+	newPod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "ds-new", Namespace: "ns", CreationTimestamp: metav1.Time{Time: time.Now()}, Labels: map[string]string{appsv1.ControllerRevisionHashLabelKey: "hash-new"}},
+		Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: "web"}}},
+		Status:     corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{Name: "web", Ready: false}}},
+	}
+	st, reason, fails := judgeDaemonSetRollout(ds, []*corev1.Pod{newPod})
+	assert.Equal(t, types.Deploy_StatusDeploying, st)
+	assert.Contains(t, reason, "0/1")
 	assert.Empty(t, fails)
 }
 
@@ -328,6 +393,28 @@ func TestCollectPodFailures_TransientIgnored(t *testing.T) {
 		},
 	}
 	assert.Empty(t, collectPodFailures(pods))
+}
+
+// TestPodAllContainersReady 覆盖无容器状态/任一容器未就绪/全部就绪三条分支。
+func TestPodAllContainersReady(t *testing.T) {
+	assert.False(t, podAllContainersReady(&corev1.Pod{})) // 无容器状态 → 未就绪
+	assert.False(t, podAllContainersReady(&corev1.Pod{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{
+		{Name: "web", Ready: false}, {Name: "sidecar", Ready: true},
+	}}})) // 任一容器未就绪 → 未就绪
+	assert.True(t, podAllContainersReady(&corev1.Pod{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{
+		{Name: "web", Ready: true},
+	}}})) // 全部就绪
+}
+
+// TestPodReadyCount 覆盖空列表与混合就绪态的计数。
+func TestPodReadyCount(t *testing.T) {
+	pods := []*corev1.Pod{
+		{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{Name: "web", Ready: true}}}},
+		{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{Name: "web", Ready: false}}}},
+		{},
+	}
+	assert.Equal(t, 1, podReadyCount(pods))
+	assert.Equal(t, 0, podReadyCount(nil))
 }
 
 // ---------- 新版本 pod 定位辅助 ----------
@@ -708,6 +795,32 @@ func TestCheckApplyStatus_FailedChain(t *testing.T) {
 		assert.Equal(t, "CrashLoopBackOff", got.Failures[0].Reason)
 		assert.Equal(t, "crash trace", got.Failures[0].Logs)
 	}
+}
+
+// TestCheckApplyStatus_TransitionWindowNewPodNotReady 复现用户上报场景：滚动窗口期
+// Deployment 计数 updated=available=desired 已满足，但新版本 web pod 未 Ready、旧 pod
+// 仍 Ready（撑起 AvailableReplicas），整体必须判 Deploying 而非 Deployed。
+func TestCheckApplyStatus_TransitionWindowNewPodNotReady(t *testing.T) {
+	dep := newDepForTest(1, 1, 1)
+	dep.Name = "web"
+	dep.UID = "dep"
+	oldRS := newRSForTest("rs-old", "1", "dep")
+	newRS := newRSForTest("rs-new", "2", "dep")
+	newPod := rsPodForTest("pod-new", "rs-new", "")
+	newPod.Status.ContainerStatuses[0].Ready = false
+	oldPod := rsPodForTest("pod-old", "rs-old", "")
+	k := &fakeStatusK8sRepo{
+		depWorkloads: []*appsv1.Deployment{dep},
+		deployments:  map[string]*appsv1.Deployment{"web": dep},
+		replicaSets:  []*appsv1.ReplicaSet{oldRS, newRS},
+		pods:         []*corev1.Pod{newPod, oldPod},
+	}
+	proj := &Project{Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=web"}, Manifest: []string{"web deploy"}}
+	b := newStatusProjectBiz(&fakeStatusProjectRepo{project: proj}, k)
+	got, err := b.CheckApplyStatus(context.TODO(), 1)
+	assert.NoError(t, err)
+	assert.Equal(t, types.Deploy_StatusDeploying, got.Status)
+	assert.Contains(t, got.Reason, "web")
 }
 
 // ---------- judgeWorkloads 聚合 ----------

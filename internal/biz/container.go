@@ -418,7 +418,7 @@ func (cb *containerBiz) resolveLog(ctx context.Context, input *LogInput) (*v1.Po
 		return nil, err
 	}
 	if podInfo == nil || (!input.ShowEvents && podInfo.Status.Phase == v1.PodPending) {
-		return nil, errs.NotFound("未找到日志")
+		return nil, errs.NotFound(fmt.Sprintf("未找到日志: %s/%s", input.Namespace, input.Pod))
 	}
 	return podInfo, nil
 }

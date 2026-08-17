@@ -44,7 +44,7 @@ func TestWsConn_AddTask_RunTask_RemoveTask(t *testing.T) {
 	conn.RemoveCancelDeployTask("task1")
 	err = conn.RunCancelDeployTask("task1")
 	assert.NotNil(t, err)
-	assert.Equal(t, "task not found", err.Error())
+	assert.Equal(t, "部署任务 task1 不存在", err.Error())
 }
 
 func TestWebsocketManager_newWsConn(t *testing.T) {

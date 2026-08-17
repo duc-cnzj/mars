@@ -12,6 +12,7 @@ package biz
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -134,7 +135,7 @@ func (n *namespaceBiz) Create(ctx context.Context, namespace, description, creat
 		// CreateDockerSecret 失败只可能是 k8s API 错误（RBAC/网络/配额），
 		// 属于真实基建问题——namespace 创建继续（降级），但必须 Error 级可见，
 		// 否则后续私有镜像 pull 失败会以"不透明的拉取失败"浮出，排障无抓手。
-		n.logger.ErrorCtx(ctx, err)
+		n.logger.ErrorCtx(ctx, fmt.Sprintf("创建 namespace %s 的 docker secret 失败", create.Name), err)
 	}
 
 	ns, err := n.nsRepo.Create(ctx, &CreateNamespaceInput{
@@ -182,7 +183,7 @@ func (n *namespaceBiz) Delete(ctx context.Context, ns *Namespace) ([]string, err
 			defer n.logger.HandlePanic("namespaceBiz.Delete")
 			n.logger.Debugf("delete release %s namespace %s", releaseName, namespace)
 			if err := n.helmerRepo.Uninstall(releaseName, namespace, n.logger.Debugf); err != nil {
-				n.logger.ErrorCtx(ctx, err)
+				n.logger.ErrorCtx(ctx, fmt.Sprintf("卸载 release %s 于 namespace %s 失败", releaseName, namespace), err)
 				return
 			}
 		}(project.Name, ns.Name)

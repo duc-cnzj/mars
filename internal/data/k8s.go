@@ -117,7 +117,7 @@ func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *biz.CopyFromPodInpu
 	})
 	isFile := strings.Trim(lsbf.String(), "\n") == "1"
 	if !isFile {
-		return nil, errs.WrapInvalidArgument(errors.New("下载内容必须是文件"), "k8s download file")
+		return nil, errs.WrapInvalidArgument(fmt.Errorf("下载内容必须是文件: %s %s", input.Pod, input.FilePath), "k8s download file")
 	}
 
 	pwdbf := &bytes.Buffer{}
@@ -136,7 +136,7 @@ func (repo *k8sRepo) CopyFromPod(ctx context.Context, input *biz.CopyFromPodInpu
 	base := strings.Trim(pwdbf.String(), "\n")
 
 	if !strings.HasPrefix(input.FilePath, base) {
-		return nil, errs.WrapInvalidArgument(errors.New("invalid file path"), "k8s download file")
+		return nil, errs.WrapInvalidArgument(fmt.Errorf("非法文件路径: %s %s", input.Pod, input.FilePath), "k8s download file")
 	}
 
 	// base 为容器内 pwd 绝对路径，FilePath 已在上方校验以 base 为前缀，二者同为绝对路径，
@@ -464,7 +464,7 @@ func (repo *k8sRepo) FindDefaultContainer(ctx context.Context, namespace string,
 		return co.Name, nil
 	}
 
-	return "", errs.NotFound("未找到容器")
+	return "", errs.NotFound(fmt.Sprintf("未找到容器: %s/%s", namespace, pod))
 }
 
 // GetPod 经 informer lister 读取 Pod（不实时访问 apiserver）。
@@ -747,7 +747,7 @@ func (repo *k8sRepo) ClusterInfo() *biz.ClusterInfo {
 	if err != nil {
 		// List 失败时 nodeList 为 nil，直接访问 .Items 会 panic，
 		// 记录错误后按空集群返回，避免集群信息接口直接崩溃。
-		repo.logger.Error(err)
+		repo.logger.Errorf("list nodes by selector %s: %v", selector.String(), err)
 		return &biz.ClusterInfo{}
 	}
 	nodes = append(nodes, nodeList.Items...)
@@ -796,7 +796,7 @@ func (repo *k8sRepo) ClusterInfo() *biz.ClusterInfo {
 	if err != nil {
 		// metrics List 失败时 list 为 nil，range list.Items 会 panic，
 		// 记录错误后用空列表继续（节点信息仍有效，仅用量统计为空）。
-		repo.logger.Error(err)
+		repo.logger.Errorf("list node metrics by selector %s: %v", selector.String(), err)
 		list = &v1beta1.NodeMetricsList{}
 	}
 
