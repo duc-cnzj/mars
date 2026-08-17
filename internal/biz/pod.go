@@ -76,7 +76,8 @@ func isContainerReady(pod *corev1.Pod, containerName string) bool {
 }
 
 // buildStateContainers 从项目的 PodSelectors 出发推导出活跃容器的状态列表。
-// 领域逻辑：通过 ReplicaSet 的 deployment revision 注解识别滚动发布中的旧版本副本，
+// 领域逻辑：Deployment 通过 ReplicaSet 的 deployment revision 注解识别滚动发布中的
+// 旧版本副本；StatefulSet/DaemonSet 按 controller-revision-hash 识别旧版本副本；
 // 并过滤掉标注了 IgnoreContainerNames 的 sidecar 容器。
 func buildStateContainers(ctx context.Context, k8sRepo K8sRepo, proj *Project) ([]*types.StateContainer, error) {
 	if len(proj.PodSelectors) == 0 {
@@ -97,7 +98,6 @@ func buildStateContainers(ctx context.Context, k8sRepo K8sRepo, proj *Project) (
 	var objectMap = make(map[string]runtime.Object)
 	var oldReplicaMap = make(map[string]struct{})
 
-	// TODO: 兼容 sts pod
 	for _, pod := range list {
 		for _, reference := range pod.OwnerReferences {
 			if reference.Kind == "ReplicaSet" {
@@ -147,9 +147,20 @@ func buildStateContainers(ctx context.Context, k8sRepo K8sRepo, proj *Project) (
 		}
 	}
 
+	// 收集 StatefulSet/DaemonSet 的旧版本 pod：其 pod 无 ReplicaSet 属主，无法走
+	// 上面的 revision 判定，需按 controller-revision-hash 与状态值单独识别。
+	var podList []*corev1.Pod
+	for _, pod := range list {
+		podList = append(podList, pod)
+	}
+	oldPodNames := collectWorkloadOldPods(k8sRepo, podList)
+
 	var newList SortStatePod
 	for _, pod := range list {
 		var isOld bool
+		if _, ok := oldPodNames[pod.Name]; ok {
+			isOld = true
+		}
 		for _, reference := range pod.OwnerReferences {
 			if _, ok := oldReplicaMap[string(reference.UID)]; ok {
 				isOld = true
@@ -198,4 +209,50 @@ func buildStateContainers(ctx context.Context, k8sRepo K8sRepo, proj *Project) (
 	}
 
 	return containerList, nil
+}
+
+// collectWorkloadOldPods 识别 StatefulSet/DaemonSet 的旧版本 pod 名集合。
+// StatefulSet：controller-revision-hash != status.updateRevision 视为旧副本；
+// DaemonSet：状态无 revision 字段，按 controller-revision-hash 分组，取创建时间
+// 最新的一组为新版本，其余视为旧副本。读取失败或未滚动的负载不标记旧（保守不误标）。
+func collectWorkloadOldPods(k8sRepo K8sRepo, pods []*corev1.Pod) map[string]struct{} {
+	oldPods := make(map[string]struct{})
+	stsGroups := make(map[string][]*corev1.Pod)
+	dsGroups := make(map[string][]*corev1.Pod)
+	for _, pod := range pods {
+		for _, ref := range pod.OwnerReferences {
+			switch ref.Kind {
+			case "StatefulSet":
+				stsGroups[pod.Namespace+"/"+ref.Name] = append(stsGroups[pod.Namespace+"/"+ref.Name], pod)
+			case "DaemonSet":
+				dsGroups[pod.Namespace+"/"+ref.Name] = append(dsGroups[pod.Namespace+"/"+ref.Name], pod)
+			}
+		}
+	}
+	for key, group := range stsGroups {
+		parts := strings.SplitN(key, "/", 2)
+		sts, err := k8sRepo.GetStatefulSet(parts[0], parts[1])
+		if err != nil || sts.Status.UpdateRevision == "" {
+			continue
+		}
+		for _, pod := range group {
+			if pod.Labels[appsv1.ControllerRevisionHashLabelKey] != sts.Status.UpdateRevision {
+				oldPods[pod.Name] = struct{}{}
+			}
+		}
+	}
+	for _, group := range dsGroups {
+		// daemonSetNewPods 对非空 group 恒返回非空（无 hash 时兜底返回全部），无空集分支。
+		newPods := daemonSetNewPods(group)
+		newNames := make(map[string]struct{}, len(newPods))
+		for _, pod := range newPods {
+			newNames[pod.Name] = struct{}{}
+		}
+		for _, pod := range group {
+			if _, ok := newNames[pod.Name]; !ok {
+				oldPods[pod.Name] = struct{}{}
+			}
+		}
+	}
+	return oldPods
 }

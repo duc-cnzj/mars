@@ -311,6 +311,17 @@ type K8sRepo interface {
 	ListPodsBySelectors(namespace string, selectors []string) ([]*corev1.Pod, error)
 	// GetReplicaSet 查询指定 ReplicaSet。
 	GetReplicaSet(namespace, name string) (*appsv1.ReplicaSet, error)
+	// ListReplicaSets 列出命名空间下全部 ReplicaSet（定位 Deployment 最新版本 pod 用）。
+	ListReplicaSets(namespace string) ([]*appsv1.ReplicaSet, error)
+	// GetDeployment 读取 Deployment 实时对象（部署后状态判定用）。
+	GetDeployment(namespace, name string) (*appsv1.Deployment, error)
+	// GetStatefulSet 读取 StatefulSet 实时对象（部署后状态判定用）。
+	GetStatefulSet(namespace, name string) (*appsv1.StatefulSet, error)
+	// GetDaemonSet 读取 DaemonSet 实时对象（部署后状态判定用）。
+	GetDaemonSet(namespace, name string) (*appsv1.DaemonSet, error)
+	// GetWorkloadsByManifest 从 manifest 解析滚动更新工作负载对象
+	// （Deployment/StatefulSet/DaemonSet 三组，用于确定本次部署的工作负载）。
+	GetWorkloadsByManifest(manifests []string) (deployments []*appsv1.Deployment, statefulSets []*appsv1.StatefulSet, daemonSets []*appsv1.DaemonSet)
 	// ListServices 列出命名空间下全部 Service。
 	ListServices(namespace string) ([]*corev1.Service, error)
 	// ListIngresses 列出命名空间下全部 Ingress。

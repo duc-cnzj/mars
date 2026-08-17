@@ -23,6 +23,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"helm.sh/helm/v3/pkg/storage/driver"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestNewProjectSvc(t *testing.T) {
@@ -1057,6 +1060,95 @@ func Test_projectSvc_AllContainers_PermissionDenied(t *testing.T) {
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
 	_, err := svc.AllContainers(newOtherUserCtx(), &project.AllContainersRequest{Id: 1})
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+}
+
+// Test_projectSvc_CheckApplyStatus 覆盖 CheckApplyStatus 成功路径：无工作负载 → UNKNOWN，
+// 容器/失败明细空，且响应前做项目级访问控制。
+func Test_projectSvc_CheckApplyStatus(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	// Show 被调用两次：一次 svc 层 access-check，一次 biz.CheckApplyStatus 内部取项目。
+	// 项目无 PodSelectors 时 buildStateContainers 提前返回；GetWorkloadsByManifest 返回空 → UNKNOWN。
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil).Times(2)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{}, nil)
+	mocks.k8sRepo.EXPECT().GetWorkloadsByManifest(gomock.Any()).Return(nil, nil, nil)
+
+	resp, err := svc.CheckApplyStatus(newAdminUserCtx(), &project.CheckApplyStatusRequest{Id: 1})
+	assert.NoError(t, err)
+	assert.Equal(t, types.Deploy_StatusUnknown, resp.GetStatus())
+	assert.Contains(t, resp.GetReason(), "未发现")
+	assert.Empty(t, resp.GetContainers())
+	assert.Empty(t, resp.GetFailures())
+}
+
+func Test_projectSvc_CheckApplyStatus_BizError(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	// access-check 通过，biz 内部 Show 失败 → 整体报错。
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil).Times(1)
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("boom"))
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{}, nil)
+
+	resp, err := svc.CheckApplyStatus(newAdminUserCtx(), &project.CheckApplyStatusRequest{Id: 1})
+	assert.Nil(t, resp)
+	assert.ErrorContains(t, err, "boom")
+}
+
+// Test_projectSvc_CheckApplyStatus_FailedWithFailures 覆盖 FAILED 判定 + failures 映射链路：
+// Deployment 最新版本 pod CrashLoopBackOff → svc 层把领域失败诊断映射成 proto 明细并附日志。
+func Test_projectSvc_CheckApplyStatus_FailedWithFailures(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{
+		NamespaceID: 1,
+		Namespace:   &biz.Namespace{Name: "ns"},
+		Manifest:    []string{"deploy"},
+	}, nil).Times(2)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{}, nil)
+
+	dep := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{Name: "web", Namespace: "ns", Generation: 2, UID: "dep-uid"},
+		Spec:       appsv1.DeploymentSpec{Replicas: lo.ToPtr(int32(1))},
+		Status:     appsv1.DeploymentStatus{ObservedGeneration: 2, UpdatedReplicas: 1, AvailableReplicas: 0},
+	}
+	rs := &appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "rs-new", Namespace: "ns", UID: "rs-uid",
+			Annotations:     map[string]string{"deployment.kubernetes.io/revision": "2"},
+			OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", UID: "dep-uid"}},
+		},
+	}
+	failPod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "pod-fail", Namespace: "ns", OwnerReferences: []metav1.OwnerReference{{Kind: "ReplicaSet", UID: "rs-uid"}}},
+		Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: "web"}}},
+		Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{
+			Name:  "web",
+			State: corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{Reason: "CrashLoopBackOff"}},
+		}}},
+	}
+
+	mocks.k8sRepo.EXPECT().GetWorkloadsByManifest(gomock.Any()).Return([]*appsv1.Deployment{dep}, nil, nil)
+	mocks.k8sRepo.EXPECT().ListReplicaSets("ns").Return([]*appsv1.ReplicaSet{rs}, nil)
+	mocks.k8sRepo.EXPECT().GetDeployment("ns", "web").Return(dep, nil)
+	mocks.k8sRepo.EXPECT().ListPodsBySelectors(gomock.Any(), gomock.Any()).Return([]*corev1.Pod{failPod}, nil)
+	mocks.k8sRepo.EXPECT().GetPodLogs(gomock.Any(), "ns", "pod-fail", gomock.Any()).Return("crash trace", nil)
+
+	resp, err := svc.CheckApplyStatus(newAdminUserCtx(), &project.CheckApplyStatusRequest{Id: 1})
+	assert.NoError(t, err)
+	assert.Equal(t, types.Deploy_StatusFailed, resp.GetStatus())
+	assert.Contains(t, resp.GetReason(), "CrashLoopBackOff")
+	if assert.Len(t, resp.GetFailures(), 1) {
+		assert.Equal(t, "Deployment", resp.GetFailures()[0].GetKind())
+		assert.Equal(t, "web", resp.GetFailures()[0].GetWorkload())
+		assert.Equal(t, "pod-fail", resp.GetFailures()[0].GetPod())
+		assert.Equal(t, "CrashLoopBackOff", resp.GetFailures()[0].GetReason())
+		assert.Equal(t, "crash trace", resp.GetFailures()[0].GetLogs())
+	}
+}
+
+func Test_projectSvc_CheckApplyStatus_PermissionDenied(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
+	_, err := svc.CheckApplyStatus(newOtherUserCtx(), &project.CheckApplyStatusRequest{Id: 1})
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 

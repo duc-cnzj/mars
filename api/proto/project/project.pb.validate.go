@@ -17,6 +17,8 @@ import (
 	"unicode/utf8"
 
 	"google.golang.org/protobuf/types/known/anypb"
+
+	types "github.com/duc-cnzj/mars/api/v6/proto/types"
 )
 
 // ensure the imports are used
@@ -33,6 +35,8 @@ var (
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
 	_ = sort.Sort
+
+	_ = types.Deploy(0)
 )
 
 // Validate checks the field values on ListRequest with the rules defined in
@@ -1191,6 +1195,407 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = AllContainersResponseValidationError{}
+
+// Validate checks the field values on ContainerFailure with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ContainerFailure) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ContainerFailure with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ContainerFailureMultiError, or nil if none found.
+func (m *ContainerFailure) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ContainerFailure) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Kind
+
+	// no validation rules for Workload
+
+	// no validation rules for Pod
+
+	// no validation rules for Container
+
+	// no validation rules for Reason
+
+	// no validation rules for Message
+
+	// no validation rules for Logs
+
+	if len(errors) > 0 {
+		return ContainerFailureMultiError(errors)
+	}
+
+	return nil
+}
+
+// ContainerFailureMultiError is an error wrapping multiple validation errors
+// returned by ContainerFailure.ValidateAll() if the designated constraints
+// aren't met.
+type ContainerFailureMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ContainerFailureMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ContainerFailureMultiError) AllErrors() []error { return m }
+
+// ContainerFailureValidationError is the validation error returned by
+// ContainerFailure.Validate if the designated constraints aren't met.
+type ContainerFailureValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ContainerFailureValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ContainerFailureValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ContainerFailureValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ContainerFailureValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ContainerFailureValidationError) ErrorName() string { return "ContainerFailureValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ContainerFailureValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sContainerFailure.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ContainerFailureValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ContainerFailureValidationError{}
+
+// Validate checks the field values on CheckApplyStatusRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CheckApplyStatusRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CheckApplyStatusRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CheckApplyStatusRequestMultiError, or nil if none found.
+func (m *CheckApplyStatusRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CheckApplyStatusRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetId() <= 0 {
+		err := CheckApplyStatusRequestValidationError{
+			field:  "Id",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return CheckApplyStatusRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CheckApplyStatusRequestMultiError is an error wrapping multiple validation
+// errors returned by CheckApplyStatusRequest.ValidateAll() if the designated
+// constraints aren't met.
+type CheckApplyStatusRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CheckApplyStatusRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CheckApplyStatusRequestMultiError) AllErrors() []error { return m }
+
+// CheckApplyStatusRequestValidationError is the validation error returned by
+// CheckApplyStatusRequest.Validate if the designated constraints aren't met.
+type CheckApplyStatusRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CheckApplyStatusRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CheckApplyStatusRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CheckApplyStatusRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CheckApplyStatusRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CheckApplyStatusRequestValidationError) ErrorName() string {
+	return "CheckApplyStatusRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CheckApplyStatusRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCheckApplyStatusRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CheckApplyStatusRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CheckApplyStatusRequestValidationError{}
+
+// Validate checks the field values on CheckApplyStatusResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CheckApplyStatusResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CheckApplyStatusResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CheckApplyStatusResponseMultiError, or nil if none found.
+func (m *CheckApplyStatusResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CheckApplyStatusResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Status
+
+	// no validation rules for Reason
+
+	for idx, item := range m.GetContainers() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CheckApplyStatusResponseValidationError{
+						field:  fmt.Sprintf("Containers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CheckApplyStatusResponseValidationError{
+						field:  fmt.Sprintf("Containers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CheckApplyStatusResponseValidationError{
+					field:  fmt.Sprintf("Containers[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetFailures() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CheckApplyStatusResponseValidationError{
+						field:  fmt.Sprintf("Failures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CheckApplyStatusResponseValidationError{
+						field:  fmt.Sprintf("Failures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CheckApplyStatusResponseValidationError{
+					field:  fmt.Sprintf("Failures[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return CheckApplyStatusResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CheckApplyStatusResponseMultiError is an error wrapping multiple validation
+// errors returned by CheckApplyStatusResponse.ValidateAll() if the designated
+// constraints aren't met.
+type CheckApplyStatusResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CheckApplyStatusResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CheckApplyStatusResponseMultiError) AllErrors() []error { return m }
+
+// CheckApplyStatusResponseValidationError is the validation error returned by
+// CheckApplyStatusResponse.Validate if the designated constraints aren't met.
+type CheckApplyStatusResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CheckApplyStatusResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CheckApplyStatusResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CheckApplyStatusResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CheckApplyStatusResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CheckApplyStatusResponseValidationError) ErrorName() string {
+	return "CheckApplyStatusResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CheckApplyStatusResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCheckApplyStatusResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CheckApplyStatusResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CheckApplyStatusResponseValidationError{}
 
 // Validate checks the field values on ApplyResponse with the rules defined in
 // the proto definition for this message. If any rules are violated, the first

@@ -49,6 +49,32 @@ message AllContainersResponse {
   repeated types.StateContainer items = 1;
 }
 
+// ContainerFailure 描述部署判定 FAILED 时失败容器的诊断信息（含日志尾部）。
+message ContainerFailure {
+  string kind      = 1; // 工作负载类型: Deployment/StatefulSet/DaemonSet
+  string workload  = 2; // 工作负载名
+  string pod       = 3; // 失败 pod 名
+  string container = 4; // 失败容器名
+  string reason    = 5; // 失败原因: CrashLoopBackOff/ImagePullBackOff/Error/OOMKilled/Evicted
+  string message   = 6; // 容器状态 message（容器从未启动无日志时兜底展示）
+  string logs      = 7; // 容器日志尾部（CrashLoopBackOff 取上一次崩溃日志）
+}
+
+message CheckApplyStatusRequest {
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
+message CheckApplyStatusResponse {
+  // 聚合判定，复用 types.Deploy：StatusDeployed=正常 / StatusFailed=失败 /
+  // StatusDeploying=进行中 / StatusUnknown=未知（无工作负载或项目未部署）
+  types.Deploy status = 1;
+  // 汇总原因（失败/进行中时的人类可读描述）
+  string reason = 2;
+  // 项目容器明细（含 is_old 新旧标记），前端可复用 AllContainers 的渲染
+  repeated types.StateContainer containers = 3;
+  // 判定为 FAILED 时的具体失败容器列表
+  repeated ContainerFailure failures = 4;
+}
+
 message ApplyResponse {
   websocket.Metadata metadata = 1;
   types.ProjectModel project  = 2;
@@ -161,6 +187,19 @@ service Project {
   rpc AllContainers(AllContainersRequest) returns (AllContainersResponse) {
     option (google.api.http) = {
       get: "/api/projects/{id}/containers"
+    };
+  }
+
+  // CheckApplyStatus 判定项目最近一次部署后新版本容器是否正常运行。
+  // 用于非原子部署（WebApply）后判断部署成功/失败/进行中：
+  // 通过工作负载实时状态（Deployment/StatefulSet/DaemonSet 的 updated/available replicas）
+  // 与最新版本 pod 容器状态聚合判定，避免过渡窗口误报。
+  rpc CheckApplyStatus(CheckApplyStatusRequest) returns (CheckApplyStatusResponse) {
+    option (google.api.http) = {
+      get: "/api/projects/{id}/apply_status"
+    };
+    option (openapi.v3.operation) = {
+      summary: "检查项目部署后的容器运行状态",
     };
   }
 }

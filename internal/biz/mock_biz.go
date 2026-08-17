@@ -523,6 +523,21 @@ func (m *MockProjectBiz) EXPECT() *MockProjectBizMockRecorder {
 	return m.recorder
 }
 
+// CheckApplyStatus mocks base method.
+func (m *MockProjectBiz) CheckApplyStatus(arg0 context.Context, arg1 int) (*ApplyStatus, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckApplyStatus", arg0, arg1)
+	ret0, _ := ret[0].(*ApplyStatus)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckApplyStatus indicates an expected call of CheckApplyStatus.
+func (mr *MockProjectBizMockRecorder) CheckApplyStatus(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckApplyStatus", reflect.TypeOf((*MockProjectBiz)(nil).CheckApplyStatus), arg0, arg1)
+}
+
 // Create mocks base method.
 func (m *MockProjectBiz) Create(arg0 context.Context, arg1 *CreateProjectInput) (*Project, error) {
 	m.ctrl.T.Helper()

@@ -97,13 +97,16 @@ func TestSortStatePod_Less(t *testing.T) {
 	assert.True(t, pods.Less(0, 1))
 }
 
-// fakePodK8sRepo 是 buildStateContainers 的 K8sRepo 替身，只覆写容器拓扑推导用到的两个原语。
+// fakePodK8sRepo 是 buildStateContainers 的 K8sRepo 替身，覆写容器拓扑推导用到的
+// ListPodsBySelectors/GetReplicaSet/GetStatefulSet 三个原语（collectWorkloadOldPods 分类用）。
 type fakePodK8sRepo struct {
 	K8sRepo
 	pods             []*corev1.Pod
 	listPodsErr      error
 	replicaSets      map[string]*appsv1.ReplicaSet
 	getReplicaSetErr error
+	sts              *appsv1.StatefulSet
+	stsErr           error
 }
 
 func (f *fakePodK8sRepo) ListPodsBySelectors(namespace string, selectors []string) ([]*corev1.Pod, error) {
@@ -115,6 +118,13 @@ func (f *fakePodK8sRepo) GetReplicaSet(namespace, name string) (*appsv1.ReplicaS
 		return nil, f.getReplicaSetErr
 	}
 	return f.replicaSets[name], nil
+}
+
+func (f *fakePodK8sRepo) GetStatefulSet(namespace, name string) (*appsv1.StatefulSet, error) {
+	if f.stsErr != nil {
+		return nil, f.stsErr
+	}
+	return f.sts, nil
 }
 
 func TestBuildStateContainers_EmptySelectors(t *testing.T) {
@@ -346,5 +356,35 @@ func TestBuildStateContainers_RevisionCompareBothBranches(t *testing.T) {
 			assert.False(t, got[0].IsOld)
 			assert.True(t, got[1].IsOld)
 		}
+	}
+}
+
+// TestBuildStateContainers_StsOldPod 覆盖 StatefulSet 旧副本经 collectWorkloadOldPods
+// 分类后标记 IsOld：pod 的 controller-revision-hash 与 status.updateRevision 不一致即旧副本，
+// 且不依赖 ReplicaSet 属主路径（此路径此前导致 STS/DS 的 is_old 误判）。
+func TestBuildStateContainers_StsOldPod(t *testing.T) {
+	podOld := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "sts-old",
+			Namespace:       "ns",
+			Labels:          map[string]string{appsv1.ControllerRevisionHashLabelKey: "rev1"},
+			OwnerReferences: []metav1.OwnerReference{{Kind: "StatefulSet", Name: "sts", UID: "sts-uid"}},
+		},
+		Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "web"}}},
+		Status: corev1.PodStatus{
+			Phase:             corev1.PodRunning,
+			ContainerStatuses: []corev1.ContainerStatus{{Name: "web", Ready: true}},
+		},
+	}
+	sts := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{Name: "sts", Namespace: "ns", UID: "sts-uid"},
+		Status:     appsv1.StatefulSetStatus{UpdateRevision: "rev2"},
+	}
+	k := &fakePodK8sRepo{pods: []*corev1.Pod{podOld}, sts: sts}
+	got, err := buildStateContainers(context.TODO(), k, &Project{Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=a"}})
+	assert.NoError(t, err)
+	if assert.Len(t, got, 1) {
+		assert.Equal(t, "sts-old", got[0].Pod)
+		assert.True(t, got[0].IsOld)
 	}
 }

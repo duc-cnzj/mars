@@ -29,6 +29,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -36,6 +37,7 @@ import (
 	labels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	appsv1lister "k8s.io/client-go/listers/apps/v1"
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	eventsv1lister "k8s.io/client-go/listers/events/v1"
 	restclient "k8s.io/client-go/rest"
@@ -2294,3 +2296,213 @@ func TestK8sRepo_CopyFileToPod_UpdateError(t *testing.T) {
 // `_, _ =` 丢弃，随后硬编码一个恒返回 200 "fake logs" 的 HTTP client 供 Stream() 用。
 // 无论 reactor 注入错误还是内容都被吞掉：错误分支拿不到 err，
 // 正常路径读循环拿到默认 "fake logs" 且 nil-deref panic，单测无法稳定驱动。
+
+// newWorkloadIndexer 构造一个以命名空间索引的 shared indexer，供 workload lister 构造用。
+func newWorkloadIndexer() cache.Indexer {
+	return cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+}
+
+// NewDeploymentLister 构造带指定对象的 Deployment lister。
+func NewDeploymentLister(deps ...*appsv1.Deployment) appsv1lister.DeploymentLister {
+	idxer := newWorkloadIndexer()
+	for _, d := range deps {
+		_ = idxer.Add(d)
+	}
+	return appsv1lister.NewDeploymentLister(idxer)
+}
+
+// NewStatefulSetLister 构造带指定对象的 StatefulSet lister。
+func NewStatefulSetLister(stsList ...*appsv1.StatefulSet) appsv1lister.StatefulSetLister {
+	idxer := newWorkloadIndexer()
+	for _, s := range stsList {
+		_ = idxer.Add(s)
+	}
+	return appsv1lister.NewStatefulSetLister(idxer)
+}
+
+// NewDaemonSetLister 构造带指定对象的 DaemonSet lister。
+func NewDaemonSetLister(dss ...*appsv1.DaemonSet) appsv1lister.DaemonSetLister {
+	idxer := newWorkloadIndexer()
+	for _, d := range dss {
+		_ = idxer.Add(d)
+	}
+	return appsv1lister.NewDaemonSetLister(idxer)
+}
+
+// errNamespaceLister 是 List/Get 恒报错的命名空间级 workload lister 替身。
+type errNamespaceLister[T any] struct{}
+
+func (errNamespaceLister[T]) List(_ labels.Selector) ([]*T, error) {
+	return nil, errors.New("list boom")
+}
+func (errNamespaceLister[T]) Get(string) (*T, error) { return nil, errors.New("get boom") }
+
+// errDeploymentLister 是 Deployment lister 替身，Deployments 返回恒报错的命名空间级 lister。
+type errDeploymentLister struct{}
+
+func (errDeploymentLister) List(labels.Selector) ([]*appsv1.Deployment, error) {
+	return nil, errors.New("boom")
+}
+func (errDeploymentLister) Deployments(string) appsv1lister.DeploymentNamespaceLister {
+	return errNamespaceLister[appsv1.Deployment]{}
+}
+
+// errStatefulSetLister 是 StatefulSet lister 替身，StatefulSets 返回恒报错的命名空间级 lister。
+type errStatefulSetLister struct{}
+
+func (errStatefulSetLister) List(labels.Selector) ([]*appsv1.StatefulSet, error) {
+	return nil, errors.New("boom")
+}
+func (errStatefulSetLister) StatefulSets(string) appsv1lister.StatefulSetNamespaceLister {
+	return errNamespaceLister[appsv1.StatefulSet]{}
+}
+func (errStatefulSetLister) GetPodStatefulSets(*corev1.Pod) ([]*appsv1.StatefulSet, error) {
+	return nil, errors.New("boom")
+}
+
+// errDaemonSetLister 是 DaemonSet lister 替身，DaemonSets 返回恒报错的命名空间级 lister。
+type errDaemonSetLister struct{}
+
+func (errDaemonSetLister) List(labels.Selector) ([]*appsv1.DaemonSet, error) {
+	return nil, errors.New("boom")
+}
+func (errDaemonSetLister) DaemonSets(string) appsv1lister.DaemonSetNamespaceLister {
+	return errNamespaceLister[appsv1.DaemonSet]{}
+}
+func (errDaemonSetLister) GetPodDaemonSets(*corev1.Pod) ([]*appsv1.DaemonSet, error) {
+	return nil, errors.New("boom")
+}
+func (errDaemonSetLister) GetHistoryDaemonSets(*appsv1.ControllerRevision) ([]*appsv1.DaemonSet, error) {
+	return nil, errors.New("boom")
+}
+
+// errReplicaSetLister 是 ReplicaSet lister 替身，ReplicaSets 返回恒报错的命名空间级 lister。
+type errReplicaSetLister struct{}
+
+func (errReplicaSetLister) List(labels.Selector) ([]*appsv1.ReplicaSet, error) {
+	return nil, errors.New("boom")
+}
+func (errReplicaSetLister) ReplicaSets(string) appsv1lister.ReplicaSetNamespaceLister {
+	return errNamespaceLister[appsv1.ReplicaSet]{}
+}
+func (errReplicaSetLister) GetPodReplicaSets(*corev1.Pod) ([]*appsv1.ReplicaSet, error) {
+	return nil, errors.New("boom")
+}
+
+// newK8sRepoWithClient 构造包住指定 K8sClient 的 k8sRepo，供 lister 读取方法测试用。
+func newK8sRepoWithClient(mockData *MockDataStore, c *K8sClient) *k8sRepo {
+	mockData.EXPECT().K8s().Return(c).AnyTimes()
+	return &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData}
+}
+
+func TestK8sRepo_ListReplicaSets(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	rs := &appsv1.ReplicaSet{ObjectMeta: metav1.ObjectMeta{Name: "web-abc", Namespace: "ns"}}
+	kr := newK8sRepoWithClient(NewMockDataStore(m), &K8sClient{ReplicaSetLister: NewRsLister(rs)})
+
+	got, err := kr.ListReplicaSets("ns")
+	assert.NoError(t, err)
+	if assert.Len(t, got, 1) {
+		assert.Equal(t, "web-abc", got[0].Name)
+	}
+
+	// informer List 失败 → errs.Wrap 上抛。
+	krErr := newK8sRepoWithClient(NewMockDataStore(m), &K8sClient{ReplicaSetLister: errReplicaSetLister{}})
+	_, err = krErr.ListReplicaSets("ns")
+	assert.ErrorContains(t, err, "list replica sets")
+}
+
+func TestK8sRepo_GetDeployment(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	dep := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "web", Namespace: "ns"}}
+	kr := newK8sRepoWithClient(NewMockDataStore(m), &K8sClient{DeploymentLister: NewDeploymentLister(dep)})
+
+	got, err := kr.GetDeployment("ns", "web")
+	assert.NoError(t, err)
+	assert.Equal(t, "web", got.Name)
+
+	// informer Get 失败（not found）→ errs.Wrap 上抛。
+	krErr := newK8sRepoWithClient(NewMockDataStore(m), &K8sClient{DeploymentLister: errDeploymentLister{}})
+	_, err = krErr.GetDeployment("ns", "web")
+	assert.ErrorContains(t, err, "get deployment")
+}
+
+func TestK8sRepo_GetStatefulSet(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	sts := &appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "db", Namespace: "ns"}}
+	kr := newK8sRepoWithClient(NewMockDataStore(m), &K8sClient{StatefulSetLister: NewStatefulSetLister(sts)})
+
+	got, err := kr.GetStatefulSet("ns", "db")
+	assert.NoError(t, err)
+	assert.Equal(t, "db", got.Name)
+
+	krErr := newK8sRepoWithClient(NewMockDataStore(m), &K8sClient{StatefulSetLister: errStatefulSetLister{}})
+	_, err = krErr.GetStatefulSet("ns", "db")
+	assert.ErrorContains(t, err, "get statefulset")
+}
+
+func TestK8sRepo_GetDaemonSet(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ds := &appsv1.DaemonSet{ObjectMeta: metav1.ObjectMeta{Name: "agent", Namespace: "ns"}}
+	kr := newK8sRepoWithClient(NewMockDataStore(m), &K8sClient{DaemonSetLister: NewDaemonSetLister(ds)})
+
+	got, err := kr.GetDaemonSet("ns", "agent")
+	assert.NoError(t, err)
+	assert.Equal(t, "agent", got.Name)
+
+	krErr := newK8sRepoWithClient(NewMockDataStore(m), &K8sClient{DaemonSetLister: errDaemonSetLister{}})
+	_, err = krErr.GetDaemonSet("ns", "agent")
+	assert.ErrorContains(t, err, "get daemonset")
+}
+
+// TestK8sRepo_GetWorkloadsByManifest 覆盖从 manifest 解析三类工作负载：Deployment/STS/DS
+// 各识别一个，Service/无法解码片段跳过。
+func TestK8sRepo_GetWorkloadsByManifest(t *testing.T) {
+	kr := &k8sRepo{logger: mlog.NewForConfig(nil)}
+	deployments, statefulSets, daemonSets := kr.GetWorkloadsByManifest([]string{
+		dedent.Dedent(`
+			apiVersion: apps/v1
+			kind: Deployment
+			metadata:
+			  name: web
+			  namespace: ns
+		`),
+		dedent.Dedent(`
+			apiVersion: apps/v1
+			kind: StatefulSet
+			metadata:
+			  name: db
+			  namespace: ns
+		`),
+		dedent.Dedent(`
+			apiVersion: apps/v1
+			kind: DaemonSet
+			metadata:
+			  name: agent
+			  namespace: ns
+		`),
+		// Service 不属于滚动更新工作负载，跳过。
+		dedent.Dedent(`
+			apiVersion: v1
+			kind: Service
+			metadata:
+			  name: svc
+			  namespace: ns
+		`),
+		// 无法解码的片段（空对象）跳过。
+		"",
+	})
+	if assert.Len(t, deployments, 1) {
+		assert.Equal(t, "web", deployments[0].Name)
+	}
+	if assert.Len(t, statefulSets, 1) {
+		assert.Equal(t, "db", statefulSets[0].Name)
+	}
+	if assert.Len(t, daemonSets, 1) {
+		assert.Equal(t, "agent", daemonSets[0].Name)
+	}
+}

@@ -783,6 +783,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{id}/apply_status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 检查项目部署后的容器运行状态
+         * @description CheckApplyStatus 判定项目最近一次部署后新版本容器是否正常运行。
+         *      用于非原子部署（WebApply）后判断部署成功/失败/进行中：
+         *      通过工作负载实时状态（Deployment/StatefulSet/DaemonSet 的 updated/available replicas）
+         *      与最新版本 pod 容器状态聚合判定，避免过渡窗口误报。
+         */
+        get: operations["Project_CheckApplyStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{id}/containers": {
         parameters: {
             query?: never;
@@ -1276,6 +1299,31 @@ export interface components {
         };
         "project.AllContainersResponse": {
             items: components["schemas"]["types.StateContainer"][];
+        };
+        "project.CheckApplyStatusResponse": {
+            /**
+             * Format: enum
+             * @description 聚合判定，复用 types.Deploy：StatusDeployed=正常 / StatusFailed=失败 /
+             *      StatusDeploying=进行中 / StatusUnknown=未知（无工作负载或项目未部署）
+             * @enum {string}
+             */
+            status: ProjectCheckApplyStatusResponseStatus;
+            /** @description 汇总原因（失败/进行中时的人类可读描述） */
+            reason: string;
+            /** @description 项目容器明细（含 is_old 新旧标记），前端可复用 AllContainers 的渲染 */
+            containers: components["schemas"]["types.StateContainer"][];
+            /** @description 判定为 FAILED 时的具体失败容器列表 */
+            failures: components["schemas"]["project.ContainerFailure"][];
+        };
+        /** @description ContainerFailure 描述部署判定 FAILED 时失败容器的诊断信息（含日志尾部）。 */
+        "project.ContainerFailure": {
+            kind: string;
+            workload: string;
+            pod: string;
+            container: string;
+            reason: string;
+            message: string;
+            logs: string;
         };
         "project.DeleteResponse": Record<string, never>;
         "project.ListResponse": {
@@ -3231,6 +3279,37 @@ export interface operations {
             };
         };
     };
+    Project_CheckApplyStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["project.CheckApplyStatusResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
     Project_AllContainers: {
         parameters: {
             query?: never;
@@ -3639,6 +3718,12 @@ export enum MarsElementType {
     ElementTypeTextArea = "ElementTypeTextArea",
     ElementTypeNumberSelect = "ElementTypeNumberSelect",
     ElementTypeNumberRadio = "ElementTypeNumberRadio"
+}
+export enum ProjectCheckApplyStatusResponseStatus {
+    StatusUnknown = "StatusUnknown",
+    StatusDeploying = "StatusDeploying",
+    StatusDeployed = "StatusDeployed",
+    StatusFailed = "StatusFailed"
 }
 export enum TypesEventModelAction {
     Unknown = "Unknown",
