@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: api/v6.0.0-beta
+    version: v6.0.0-beta.2
 paths:
     /api/access_tokens:
         get:
@@ -1382,6 +1382,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+    /api/projects/{id}/apply_status:
+        get:
+            tags:
+                - Project
+            summary: 检查项目部署后的容器运行状态
+            description: |-
+                CheckApplyStatus 判定项目最近一次部署后新版本容器是否正常运行。
+                 用于非原子部署（WebApply）后判断部署成功/失败/进行中：
+                 通过工作负载实时状态（Deployment/StatefulSet/DaemonSet 的 updated/available replicas）
+                 与最新版本 pod 容器状态聚合判定，避免过渡窗口误报。
+            operationId: Project_CheckApplyStatus
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.CheckApplyStatusResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/projects/{id}/containers:
         get:
             tags:
@@ -2333,6 +2364,51 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/types.StateContainer'
+        project.CheckApplyStatusResponse:
+            type: object
+            properties:
+                status:
+                    enum:
+                        - StatusUnknown
+                        - StatusDeploying
+                        - StatusDeployed
+                        - StatusFailed
+                    type: string
+                    description: |-
+                        聚合判定，复用 types.Deploy：StatusDeployed=正常 / StatusFailed=失败 /
+                         StatusDeploying=进行中 / StatusUnknown=未知（无工作负载或项目未部署）
+                    format: enum
+                reason:
+                    type: string
+                    description: 汇总原因（失败/进行中时的人类可读描述）
+                containers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.StateContainer'
+                    description: 项目容器明细（含 is_old 新旧标记），前端可复用 AllContainers 的渲染
+                failures:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/project.ContainerFailure'
+                    description: 判定为 FAILED 时的具体失败容器列表
+        project.ContainerFailure:
+            type: object
+            properties:
+                kind:
+                    type: string
+                workload:
+                    type: string
+                pod:
+                    type: string
+                container:
+                    type: string
+                reason:
+                    type: string
+                message:
+                    type: string
+                logs:
+                    type: string
+            description: ContainerFailure 描述部署判定 FAILED 时失败容器的诊断信息（含日志尾部）。
         project.DeleteResponse:
             type: object
             properties: {}

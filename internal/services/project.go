@@ -283,6 +283,41 @@ func (p *projectSvc) AllContainers(ctx context.Context, request *project.AllCont
 	return &project.AllContainersResponse{Items: pods}, nil
 }
 
+// CheckApplyStatus 判定项目最近一次部署后新版本容器是否正常运行（非原子 WebApply 用），
+// 响应前做项目级访问控制，聚合状态/原因/容器明细/失败诊断一并返回。
+func (p *projectSvc) CheckApplyStatus(ctx context.Context, request *project.CheckApplyStatusRequest) (*project.CheckApplyStatusResponse, error) {
+	if _, err := p.accessBiz.RequireProjectAccess(ctx, int(request.Id)); err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+	status, err := p.projBiz.CheckApplyStatus(ctx, int(request.Id))
+	if err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+	return &project.CheckApplyStatusResponse{
+		Status:     status.Status,
+		Reason:     status.Reason,
+		Containers: status.Containers,
+		Failures:   mapDomainFailures(status.Failures),
+	}, nil
+}
+
+// mapDomainFailures 把领域 ContainerFailure 转成 proto ContainerFailure（透传全部诊断字段）。
+func mapDomainFailures(failures []*biz.ContainerFailure) []*project.ContainerFailure {
+	out := make([]*project.ContainerFailure, 0, len(failures))
+	for _, f := range failures {
+		out = append(out, &project.ContainerFailure{
+			Kind:      f.Kind,
+			Workload:  f.Workload,
+			Pod:       f.Pod,
+			Container: f.Container,
+			Reason:    f.Reason,
+			Message:   f.Message,
+			Logs:      f.Logs,
+		})
+	}
+	return out
+}
+
 var _ deploy.DeployMsger = (*emptyMessager)(nil)
 
 // emptyMessager 实现 deploy.DeployMsger 的空操作版本：所有推送方法均 no-op，

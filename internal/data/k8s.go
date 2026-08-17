@@ -998,6 +998,50 @@ func (repo *k8sRepo) GetReplicaSet(namespace, name string) (*appsv1.ReplicaSet, 
 	return rs, errs.Wrap(err, "get replica set")
 }
 
+// ListReplicaSets 经 informer lister 列出命名空间下全部 ReplicaSet
+// （部署后状态判定用：定位 Deployment 下 revision 最大的最新 ReplicaSet）。
+func (repo *k8sRepo) ListReplicaSets(namespace string) ([]*appsv1.ReplicaSet, error) {
+	list, err := repo.data.K8s().ReplicaSetLister.ReplicaSets(namespace).List(labels.Everything())
+	return list, errs.Wrap(err, "list replica sets")
+}
+
+// GetDeployment 经 informer lister 读取 Deployment（部署后状态判定用）。
+func (repo *k8sRepo) GetDeployment(namespace, name string) (*appsv1.Deployment, error) {
+	dep, err := repo.data.K8s().DeploymentLister.Deployments(namespace).Get(name)
+	return dep, errs.Wrap(err, "get deployment")
+}
+
+// GetStatefulSet 经 informer lister 读取 StatefulSet（部署后状态判定用）。
+func (repo *k8sRepo) GetStatefulSet(namespace, name string) (*appsv1.StatefulSet, error) {
+	sts, err := repo.data.K8s().StatefulSetLister.StatefulSets(namespace).Get(name)
+	return sts, errs.Wrap(err, "get statefulset")
+}
+
+// GetDaemonSet 经 informer lister 读取 DaemonSet（部署后状态判定用）。
+func (repo *k8sRepo) GetDaemonSet(namespace, name string) (*appsv1.DaemonSet, error) {
+	ds, err := repo.data.K8s().DaemonSetLister.DaemonSets(namespace).Get(name)
+	return ds, errs.Wrap(err, "get daemonset")
+}
+
+// GetWorkloadsByManifest 从 manifest 解析滚动更新类工作负载对象：
+// 返回 Deployment/StatefulSet/DaemonSet 三组对象，其余资源或无法解码的片段跳过。
+// 供部署后状态判定确定"本次部署了哪些工作负载"。
+func (repo *k8sRepo) GetWorkloadsByManifest(manifests []string) (deployments []*appsv1.Deployment, statefulSets []*appsv1.StatefulSet, daemonSets []*appsv1.DaemonSet) {
+	info, _ := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
+	for _, f := range manifests {
+		obj, _, _ := info.Serializer.Decode([]byte(f), nil, nil)
+		switch a := obj.(type) {
+		case *appsv1.Deployment:
+			deployments = append(deployments, a)
+		case *appsv1.StatefulSet:
+			statefulSets = append(statefulSets, a)
+		case *appsv1.DaemonSet:
+			daemonSets = append(daemonSets, a)
+		}
+	}
+	return deployments, statefulSets, daemonSets
+}
+
 // ListServices 列出命名空间下全部 Service。
 func (repo *k8sRepo) ListServices(namespace string) ([]*corev1.Service, error) {
 	services, err := repo.data.K8s().ServiceLister.Services(namespace).List(labels.Everything())

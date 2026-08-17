@@ -14,6 +14,8 @@ import (
 type ProjectBiz interface {
 	// GetAllActiveContainers 返回项目当前活跃容器状态。
 	GetAllActiveContainers(ctx context.Context, id int) ([]*types.StateContainer, error)
+	// CheckApplyStatus 判定项目最近一次部署后新版本容器是否正常运行。
+	CheckApplyStatus(ctx context.Context, id int) (*ApplyStatus, error)
 	// GetProjectEndpointsInNamespace 汇总命名空间内项目的服务端点。
 	GetProjectEndpointsInNamespace(ctx context.Context, namespace string, projectIDs ...int) ([]*types.ServiceEndpoint, error)
 	// List 分页列出项目。

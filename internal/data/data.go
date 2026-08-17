@@ -342,6 +342,9 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 		svcLister := inf.Core().V1().Services().Lister()
 		ingLister := inf.Networking().V1().Ingresses().Lister()
 		rsLister := inf.Apps().V1().ReplicaSets().Lister()
+		deployLister := inf.Apps().V1().Deployments().Lister()
+		stsLister := inf.Apps().V1().StatefulSets().Lister()
+		dsLister := inf.Apps().V1().DaemonSets().Lister()
 		podInf := inf.Core().V1().Pods().Informer()
 		podLister := inf.Core().V1().Pods().Lister()
 		secretInf := inf.Core().V1().Secrets().Informer()
@@ -389,6 +392,9 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 			SecretInformer:      secretInf,
 			SecretLister:        secretLister,
 			ReplicaSetLister:    rsLister,
+			DeploymentLister:    deployLister,
+			StatefulSetLister:   stsLister,
+			DaemonSetLister:     dsLister,
 			ServiceLister:       svcLister,
 			IngressLister:       ingLister,
 			eventFanOut:         eventFanOutObj,

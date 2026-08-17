@@ -912,6 +912,36 @@ func (mr *MockK8sRepoMockRecorder) GetCpuAndMemoryQuantity(arg0 any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCpuAndMemoryQuantity", reflect.TypeOf((*MockK8sRepo)(nil).GetCpuAndMemoryQuantity), arg0)
 }
 
+// GetDaemonSet mocks base method.
+func (m *MockK8sRepo) GetDaemonSet(arg0, arg1 string) (*v1.DaemonSet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDaemonSet", arg0, arg1)
+	ret0, _ := ret[0].(*v1.DaemonSet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDaemonSet indicates an expected call of GetDaemonSet.
+func (mr *MockK8sRepoMockRecorder) GetDaemonSet(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDaemonSet", reflect.TypeOf((*MockK8sRepo)(nil).GetDaemonSet), arg0, arg1)
+}
+
+// GetDeployment mocks base method.
+func (m *MockK8sRepo) GetDeployment(arg0, arg1 string) (*v1.Deployment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeployment", arg0, arg1)
+	ret0, _ := ret[0].(*v1.Deployment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDeployment indicates an expected call of GetDeployment.
+func (mr *MockK8sRepoMockRecorder) GetDeployment(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeployment", reflect.TypeOf((*MockK8sRepo)(nil).GetDeployment), arg0, arg1)
+}
+
 // GetNamespace mocks base method.
 func (m *MockK8sRepo) GetNamespace(arg0 context.Context, arg1 string) (*v10.Namespace, error) {
 	m.ctrl.T.Helper()
@@ -1016,6 +1046,37 @@ func (mr *MockK8sRepoMockRecorder) GetSecret(arg0, arg1, arg2 any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecret", reflect.TypeOf((*MockK8sRepo)(nil).GetSecret), arg0, arg1, arg2)
 }
 
+// GetStatefulSet mocks base method.
+func (m *MockK8sRepo) GetStatefulSet(arg0, arg1 string) (*v1.StatefulSet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStatefulSet", arg0, arg1)
+	ret0, _ := ret[0].(*v1.StatefulSet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStatefulSet indicates an expected call of GetStatefulSet.
+func (mr *MockK8sRepoMockRecorder) GetStatefulSet(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatefulSet", reflect.TypeOf((*MockK8sRepo)(nil).GetStatefulSet), arg0, arg1)
+}
+
+// GetWorkloadsByManifest mocks base method.
+func (m *MockK8sRepo) GetWorkloadsByManifest(arg0 []string) ([]*v1.Deployment, []*v1.StatefulSet, []*v1.DaemonSet) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWorkloadsByManifest", arg0)
+	ret0, _ := ret[0].([]*v1.Deployment)
+	ret1, _ := ret[1].([]*v1.StatefulSet)
+	ret2, _ := ret[2].([]*v1.DaemonSet)
+	return ret0, ret1, ret2
+}
+
+// GetWorkloadsByManifest indicates an expected call of GetWorkloadsByManifest.
+func (mr *MockK8sRepoMockRecorder) GetWorkloadsByManifest(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkloadsByManifest", reflect.TypeOf((*MockK8sRepo)(nil).GetWorkloadsByManifest), arg0)
+}
+
 // IsPodRunning mocks base method.
 func (m *MockK8sRepo) IsPodRunning(arg0, arg1 string) (bool, string) {
 	m.ctrl.T.Helper()
@@ -1089,6 +1150,21 @@ func (m *MockK8sRepo) ListPodsBySelectors(arg0 string, arg1 []string) ([]*v10.Po
 func (mr *MockK8sRepoMockRecorder) ListPodsBySelectors(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPodsBySelectors", reflect.TypeOf((*MockK8sRepo)(nil).ListPodsBySelectors), arg0, arg1)
+}
+
+// ListReplicaSets mocks base method.
+func (m *MockK8sRepo) ListReplicaSets(arg0 string) ([]*v1.ReplicaSet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListReplicaSets", arg0)
+	ret0, _ := ret[0].([]*v1.ReplicaSet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListReplicaSets indicates an expected call of ListReplicaSets.
+func (mr *MockK8sRepoMockRecorder) ListReplicaSets(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListReplicaSets", reflect.TypeOf((*MockK8sRepo)(nil).ListReplicaSets), arg0)
 }
 
 // ListServices mocks base method.

@@ -80,3 +80,12 @@ func (s *ProjectSvc) AllContainers(ctx context.Context, req *project.AllContaine
 	}
 	return &out, nil
 }
+
+// CheckApplyStatus GET /api/projects/{id}/apply_status。
+func (s *ProjectSvc) CheckApplyStatus(ctx context.Context, req *project.CheckApplyStatusRequest) (*project.CheckApplyStatusResponse, error) {
+	var out project.CheckApplyStatusResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, fmt.Sprintf("/api/projects/%d/apply_status", req.Id), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

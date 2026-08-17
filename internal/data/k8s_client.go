@@ -36,9 +36,12 @@ type K8sClient struct {
 	SecretInformer cache.SharedIndexInformer
 	SecretLister   v1.SecretLister
 
-	ReplicaSetLister appsv1.ReplicaSetLister
-	ServiceLister    v1.ServiceLister
-	IngressLister    networkingv1.IngressLister
+	ReplicaSetLister  appsv1.ReplicaSetLister
+	DeploymentLister  appsv1.DeploymentLister
+	StatefulSetLister appsv1.StatefulSetLister
+	DaemonSetLister   appsv1.DaemonSetLister
+	ServiceLister     v1.ServiceLister
+	IngressLister     networkingv1.IngressLister
 
 	eventFanOut fanOutInterface[*eventsv1.Event]
 	podFanOut   fanOutInterface[*corev1.Pod]
