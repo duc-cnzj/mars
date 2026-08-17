@@ -186,10 +186,16 @@ func judgeDeploymentRollout(dep *appsv1.Deployment, rss []*appsv1.ReplicaSet, po
 	if dep.Status.UpdatedReplicas == 0 {
 		return types.Deploy_StatusDeploying, "新版本 pod 尚未创建", nil
 	}
-	if fails := collectPodFailures(deploymentNewPods(dep, rss, pods)); len(fails) > 0 {
+	newPods := deploymentNewPods(dep, rss, pods)
+	if fails := collectPodFailures(newPods); len(fails) > 0 {
 		return types.Deploy_StatusFailed, formatReason(fails), fails
 	}
 	if dep.Status.UpdatedReplicas == desired && dep.Status.AvailableReplicas == desired {
+		// 滚动窗口收尾：maxUnavailable=0 时旧 pod 要等新 pod Ready 才缩容，AvailableReplicas
+		// 会被旧 pod 撑满，计数满足但新 pod 未必就绪，必须核验新版本 pod 全部 Ready 才判成功。
+		if ready := podReadyCount(newPods); len(newPods) == int(desired) && ready != int(desired) {
+			return types.Deploy_StatusDeploying, fmt.Sprintf("滚动进行中 %d/%d 就绪", ready, desired), nil
+		}
 		return types.Deploy_StatusDeployed, "", nil
 	}
 	return types.Deploy_StatusDeploying, fmt.Sprintf("滚动进行中 %d/%d 就绪", dep.Status.AvailableReplicas, desired), nil
@@ -210,10 +216,15 @@ func judgeStatefulSetRollout(sts *appsv1.StatefulSet, pods []*corev1.Pod) (types
 	if sts.Status.UpdatedReplicas == 0 {
 		return types.Deploy_StatusDeploying, "新版本 pod 尚未创建", nil
 	}
-	if fails := collectPodFailures(statefulSetNewPods(sts, pods)); len(fails) > 0 {
+	newPods := statefulSetNewPods(sts, pods)
+	if fails := collectPodFailures(newPods); len(fails) > 0 {
 		return types.Deploy_StatusFailed, formatReason(fails), fails
 	}
 	if sts.Status.UpdatedReplicas == desired && sts.Status.AvailableReplicas == desired {
+		// 与 Deployment 同一滚动窗口收尾逻辑：核验最新版本 pod 全部 Ready，避免计数满足但新 pod 未就绪误报成功。
+		if ready := podReadyCount(newPods); len(newPods) == int(desired) && ready != int(desired) {
+			return types.Deploy_StatusDeploying, fmt.Sprintf("滚动进行中 %d/%d 就绪", ready, desired), nil
+		}
 		return types.Deploy_StatusDeployed, "", nil
 	}
 	return types.Deploy_StatusDeploying, fmt.Sprintf("滚动进行中 %d/%d 就绪", sts.Status.AvailableReplicas, desired), nil
@@ -231,10 +242,15 @@ func judgeDaemonSetRollout(ds *appsv1.DaemonSet, pods []*corev1.Pod) (types.Depl
 	if ds.Status.UpdatedNumberScheduled == 0 {
 		return types.Deploy_StatusDeploying, "新版本 pod 尚未创建", nil
 	}
-	if fails := collectPodFailures(daemonSetNewPods(pods)); len(fails) > 0 {
+	newPods := daemonSetNewPods(pods)
+	if fails := collectPodFailures(newPods); len(fails) > 0 {
 		return types.Deploy_StatusFailed, formatReason(fails), fails
 	}
 	if ds.Status.UpdatedNumberScheduled == desired && ds.Status.NumberAvailable == desired {
+		// 与 Deployment 同一滚动窗口收尾逻辑：核验最新版本 pod 全部 Ready，避免计数满足但新 pod 未就绪误报成功。
+		if ready := podReadyCount(newPods); len(newPods) == int(desired) && ready != int(desired) {
+			return types.Deploy_StatusDeploying, fmt.Sprintf("滚动进行中 %d/%d 就绪", ready, desired), nil
+		}
 		return types.Deploy_StatusDeployed, "", nil
 	}
 	return types.Deploy_StatusDeploying, fmt.Sprintf("滚动进行中 %d/%d 就绪", ds.Status.NumberAvailable, desired), nil
@@ -361,6 +377,30 @@ func collectPodFailures(pods []*corev1.Pod) []failedContainerRef {
 		}
 	}
 	return refs
+}
+
+// podReadyCount 统计全部容器已 Ready 的 pod 数；新 pod 尚未就绪（无容器状态/容器未 Ready）均不计入。
+func podReadyCount(pods []*corev1.Pod) int {
+	ready := 0
+	for _, p := range pods {
+		if podAllContainersReady(p) {
+			ready++
+		}
+	}
+	return ready
+}
+
+// podAllContainersReady 判断 pod 的所有容器是否都已 Ready（容器状态为空视为未就绪）。
+func podAllContainersReady(pod *corev1.Pod) bool {
+	if len(pod.Status.ContainerStatuses) == 0 {
+		return false
+	}
+	for _, cs := range pod.Status.ContainerStatuses {
+		if !cs.Ready {
+			return false
+		}
+	}
+	return true
 }
 
 // formatReason 把失败容器汇总为人类可读原因（逐条列出，分号分隔）。
