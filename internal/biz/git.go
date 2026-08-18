@@ -20,6 +20,8 @@ type GitBiz interface {
 	GetCommit(ctx context.Context, projectID int, sha string) (*Commit, error)
 	// GetCommitPipeline 查询提交关联的 CI/CD 流水线。
 	GetCommitPipeline(ctx context.Context, projectID int, branch, sha string) (*Pipeline, error)
+	// PipelineJobOptions 返回项目流水线的 stage/job 去重选项。
+	PipelineJobOptions(ctx context.Context, projectID int, branch string) (stages []string, jobs []string, err error)
 	// GetByProjectID 按 git 项目 id 查询项目。
 	GetByProjectID(ctx context.Context, id int) (*GitProject, error)
 	// GetFileContentWithBranch 读取项目指定分支下某路径的文件内容。
@@ -65,6 +67,11 @@ func (g *gitBiz) GetCommit(ctx context.Context, projectID int, sha string) (*Com
 // GetCommitPipeline 查询提交对应的 CI 流水线（透传 repo）。
 func (g *gitBiz) GetCommitPipeline(ctx context.Context, projectID int, branch, sha string) (*Pipeline, error) {
 	return g.gitRepo.GetCommitPipeline(ctx, projectID, branch, sha)
+}
+
+// PipelineJobOptions 返回项目流水线的 stage/job 去重选项（透传 repo）。
+func (g *gitBiz) PipelineJobOptions(ctx context.Context, projectID int, branch string) (stages []string, jobs []string, err error) {
+	return g.gitRepo.PipelineJobOptions(ctx, projectID, branch)
 }
 
 // GetByProjectID 按 id 查询 git 项目（透传 repo）。
@@ -127,6 +134,8 @@ type GitRepo interface {
 	GetCommit(ctx context.Context, projectID int, sha string) (*Commit, error)
 	// GetCommitPipeline 查询提交关联的 CI/CD 流水线。
 	GetCommitPipeline(ctx context.Context, projectID int, branch, sha string) (*Pipeline, error)
+	// PipelineJobOptions 返回项目流水线的 stage/job 去重选项。
+	PipelineJobOptions(ctx context.Context, projectID int, branch string) (stages []string, jobs []string, err error)
 	// GetByProjectID 按 git 项目 id 查询项目。
 	GetByProjectID(ctx context.Context, id int) (project *GitProject, err error)
 	// GetFileContentWithBranch 读取项目指定分支下某路径的文件内容。

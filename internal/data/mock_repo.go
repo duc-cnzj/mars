@@ -374,6 +374,22 @@ func (mr *MockGitRepoMockRecorder) GetCommitPipeline(arg0, arg1, arg2, arg3 any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommitPipeline", reflect.TypeOf((*MockGitRepo)(nil).GetCommitPipeline), arg0, arg1, arg2, arg3)
 }
 
+// PipelineJobOptions mocks base method.
+func (m *MockGitRepo) PipelineJobOptions(arg0 context.Context, arg1 int, arg2 string) ([]string, []string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PipelineJobOptions", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].([]string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// PipelineJobOptions indicates an expected call of PipelineJobOptions.
+func (mr *MockGitRepoMockRecorder) PipelineJobOptions(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PipelineJobOptions", reflect.TypeOf((*MockGitRepo)(nil).PipelineJobOptions), arg0, arg1, arg2)
+}
+
 // GetFileContentWithBranch mocks base method.
 func (m *MockGitRepo) GetFileContentWithBranch(arg0 context.Context, arg1 int, arg2, arg3 string) (string, error) {
 	m.ctrl.T.Helper()

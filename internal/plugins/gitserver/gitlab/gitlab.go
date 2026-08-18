@@ -2,9 +2,12 @@ package gitlab
 
 import (
 	"errors"
+	"net/http"
+	"sort"
 
 	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/proxy"
 	"github.com/xanzy/go-gitlab"
@@ -70,15 +73,18 @@ func toCommit(c *gitlab.Commit) *biz.Commit {
 
 // pipelineStatus 将 GitLab pipeline 状态字符串映射为业务层 Status。
 // 可能值：created, waiting_for_resource, preparing, pending, running, success,
-// failed, canceled, skipped, manual, scheduled。
+// failed, canceled, skipped, manual, scheduled；其中 manual 单独映射为
+// StatusManual（区别于 success：存在手动触发的 job，等待人工确认）。
 func pipelineStatus(s string) biz.Status {
 	switch s {
 	case "failed":
 		return biz.StatusFailed
 	case "running":
 		return biz.StatusRunning
-	case "success", "manual":
+	case "success":
 		return biz.StatusSuccess
+	case "manual":
+		return biz.StatusManual
 	default:
 		return biz.StatusUnknown
 	}
@@ -149,10 +155,39 @@ func (g *server) Destroy() error {
 	return nil
 }
 
+// classifyGitlabError 把 go-gitlab 返回的 *gitlab.ErrorResponse 按其 HTTP 状态码
+// 归类为对应语义的错误：404→NotFound、400→InvalidArgument、401→Unauthenticated、
+// 403→PermissionDenied。gitlab API 的 4xx 多由请求参数/资源触发（项目/提交/分支/
+// 文件不存在、参数非法、token 无权限），直接原样上抛会被 data 层 errs.Wrap 默认落
+// 500，掩盖真实语义；归类后 data 层 errs.Wrap 经 wrapErr 对已带 status 的错误保留
+// 原码（如插件自身 errs.NotFound("pipeline not found") 的先例）。5xx 与网络错误等
+// 无法归类的错误原样返回，仍由 errs.Wrap 落 500——外部系统故障本就是内部错误。
+func classifyGitlabError(err error) error {
+	if err == nil {
+		return nil
+	}
+	var respErr *gitlab.ErrorResponse
+	if !errors.As(err, &respErr) || respErr.Response == nil {
+		return err
+	}
+	switch respErr.Response.StatusCode {
+	case http.StatusNotFound:
+		return errs.WrapNotFound(err, "gitlab 资源不存在")
+	case http.StatusBadRequest:
+		return errs.WrapInvalidArgument(err, "gitlab 请求参数错误")
+	case http.StatusUnauthorized:
+		return errs.WrapUnauthenticated(err, "gitlab 认证失败")
+	case http.StatusForbidden:
+		return errs.WrapPermissionDenied(err, "gitlab 无权限")
+	default:
+		return err
+	}
+}
+
 // GetProject 按项目 id 返回项目信息。
 func (g *server) GetProject(pid string) (*biz.GitProject, error) {
 	p, _, err := g.client.Projects.GetProject(pid, &gitlab.GetProjectOptions{})
-	return toGitProject(p), err
+	return toGitProject(p), classifyGitlabError(err)
 }
 
 // listProjects 是分页内部实现，供 AllProjects 迭代拉取全部项目。
@@ -162,7 +197,7 @@ func (g *server) listProjects(page, pageSize int) ([]*biz.GitProject, error) {
 		ListOptions:    gitlab.ListOptions{PerPage: pageSize, Page: page},
 	})
 	if err != nil {
-		return nil, err
+		return nil, classifyGitlabError(err)
 	}
 	projects := make([]*biz.GitProject, 0, len(res))
 	for _, re := range res {
@@ -196,7 +231,7 @@ func (g *server) AllProjects() ([]*biz.GitProject, error) {
 func (g *server) listBranches(pid string, page, pageSize int) ([]*biz.Branch, error) {
 	gitlabBranches, _, e := g.client.Branches.ListBranches(pid, &gitlab.ListBranchesOptions{ListOptions: gitlab.ListOptions{PerPage: pageSize, Page: page}})
 	if e != nil {
-		return nil, e
+		return nil, classifyGitlabError(e)
 	}
 	branches := make([]*biz.Branch, 0, len(gitlabBranches))
 	for _, gitlabBranch := range gitlabBranches {
@@ -230,7 +265,7 @@ func (g *server) AllBranches(pid string) ([]*biz.Branch, error) {
 func (g *server) GetCommit(pid string, sha string) (*biz.Commit, error) {
 	c, _, err := g.client.Commits.GetCommit(pid, sha)
 	if err != nil {
-		return nil, err
+		return nil, classifyGitlabError(err)
 	}
 	return toCommit(c), nil
 }
@@ -244,10 +279,11 @@ func (g *server) ListCommits(pid string, branch string) ([]*biz.Commit, error) {
 		res = append(res, toCommit(c))
 	}
 
-	return res, err
+	return res, classifyGitlabError(err)
 }
 
 // GetCommitPipeline 返回指定分支/提交对应的 push/web pipeline；没有则报错。
+// 除流水线整体状态外，还会拉取 pipeline 的 job 列表返回每个 job 的名称与状态。
 func (g *server) GetCommitPipeline(pid string, branch string, sha string) (*biz.Pipeline, error) {
 	var p *gitlab.PipelineInfo
 	pipelines, _, err := g.client.Pipelines.ListProjectPipelines(pid, &gitlab.ListProjectPipelinesOptions{
@@ -259,7 +295,7 @@ func (g *server) GetCommitPipeline(pid string, branch string, sha string) (*biz.
 		SHA: gitlab.String(sha),
 	})
 	if err != nil {
-		return nil, err
+		return nil, classifyGitlabError(err)
 	}
 	// 只拿 push/web 的 pipeline
 	for _, info := range pipelines {
@@ -270,10 +306,107 @@ func (g *server) GetCommitPipeline(pid string, branch string, sha string) (*biz.
 	}
 
 	if p == nil {
-		return nil, errors.New("pipeline not found")
+		// 确定语义：指定分支/提交没有 push/web pipeline，属"资源不存在"而非系统故障。
+		return nil, errs.NotFound("pipeline not found")
 	}
 
-	return toPipeline(p), nil
+	pipeline := toPipeline(p)
+	pipeline.Jobs, err = g.pipelineJobs(pid, int(p.ID))
+	if err != nil {
+		return nil, err
+	}
+	return pipeline, nil
+}
+
+// PipelineJobOptions 返回项目最近一条 push/web pipeline 的 stage/job 去重选项，
+// 供配置通过规则下拉选择；branch 为空时不按分支过滤（取项目最近 pipeline）。
+// stage 按出现顺序、job 按执行顺序（job id 升序）去重。
+func (g *server) PipelineJobOptions(pid string, branch string) (stages []string, jobs []string, err error) {
+	opts := &gitlab.ListProjectPipelinesOptions{
+		ListOptions: gitlab.ListOptions{Page: 1, PerPage: 100},
+	}
+	if branch != "" {
+		opts.Ref = gitlab.String(branch)
+	}
+	pipelines, _, err := g.client.Pipelines.ListProjectPipelines(pid, opts)
+	if err != nil {
+		return nil, nil, classifyGitlabError(err)
+	}
+	var p *gitlab.PipelineInfo
+	for _, info := range pipelines {
+		if info.Source == "push" || info.Source == "web" {
+			p = info
+			break
+		}
+	}
+	if p == nil {
+		return nil, nil, errs.NotFound("pipeline not found")
+	}
+	jobList, err := g.listPipelineJobs(pid, int(p.ID))
+	if err != nil {
+		return nil, nil, err
+	}
+	stageSet := make(map[string]struct{})
+	jobSet := make(map[string]struct{})
+	for _, j := range jobList {
+		if j.Stage != "" {
+			if _, ok := stageSet[j.Stage]; !ok {
+				stageSet[j.Stage] = struct{}{}
+				stages = append(stages, j.Stage)
+			}
+		}
+		if j.Name != "" {
+			if _, ok := jobSet[j.Name]; !ok {
+				jobSet[j.Name] = struct{}{}
+				jobs = append(jobs, j.Name)
+			}
+		}
+	}
+	return stages, jobs, nil
+}
+
+// pipelineJobs 拉取 pipeline 的全部 job，按 job id 升序（即 stage 执行顺序）返回
+// 名称/状态/所属 stage 列表；空名 job 被忽略。
+func (g *server) pipelineJobs(pid string, pipelineID int) ([]biz.PipelineJob, error) {
+	jobs, err := g.listPipelineJobs(pid, pipelineID)
+	if err != nil {
+		return nil, err
+	}
+	// 部分 GitLab 实例/低版本 SDK 的 pipeline 详情不返回 stages 数组，job 接口也不保证顺序；
+	// job id 在 pipeline 创建时按 stage 声明顺序递增分配，故按 id 升序即可还原 stage 执行顺序，
+	// 且无需依赖 started_at（手动/未运行的 job 也排在所属 stage 的位置）。
+	sort.Slice(jobs, func(i, j int) bool {
+		return jobs[i].ID < jobs[j].ID
+	})
+	out := make([]biz.PipelineJob, 0, len(jobs))
+	for _, j := range jobs {
+		if j.Name == "" {
+			continue
+		}
+		out = append(out, biz.PipelineJob{Name: j.Name, Status: pipelineStatus(j.Status), StageName: j.Stage})
+	}
+	return out, nil
+}
+
+// listPipelineJobs 分页拉取 pipeline 的全部 job（每页 100，直至不足一页）。
+func (g *server) listPipelineJobs(pid string, pipelineID int) ([]*gitlab.Job, error) {
+	var jobs []*gitlab.Job
+	page := 1
+	for page != -1 {
+		batch, _, err := g.client.Jobs.ListPipelineJobs(pid, pipelineID, &gitlab.ListJobsOptions{
+			ListOptions: gitlab.ListOptions{Page: page, PerPage: 100},
+		})
+		if err != nil {
+			return nil, classifyGitlabError(err)
+		}
+		jobs = append(jobs, batch...)
+		if len(batch) < 100 {
+			page = -1
+		} else {
+			page++
+		}
+	}
+	return jobs, nil
 }
 
 // getRawFile 按 ref 或分支名拉取仓库文件原始内容。
@@ -283,7 +416,7 @@ func getRawFile(client *gitlab.Client, pid string, shaOrBranch string, filename 
 		opt.Ref = gitlab.String(shaOrBranch)
 	}
 	raw, _, err := client.RepositoryFiles.GetRawFile(pid, filename, &opt)
-	return string(raw), err
+	return string(raw), classifyGitlabError(err)
 }
 
 // GetFileContentWithSha 按 commit sha 返回文件内容。
@@ -315,7 +448,7 @@ func getDirectoryFiles(g *gitlab.Client, pid string, commit string, path string,
 	for opt.Page != -1 {
 		tree, _, err := g.Repositories.ListTree(pid, opt)
 		if err != nil {
-			return nil, err
+			return nil, classifyGitlabError(err)
 		}
 		if len(tree) != opt.PerPage {
 			opt.Page = -1

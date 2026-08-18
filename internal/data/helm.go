@@ -334,12 +334,14 @@ func (d *DefaultHelmer) runInstall(ctx context.Context, releaseName string, char
 }
 
 // checkIfInstallable 校验 chart 类型可安装（空或 application 才允许）。
+// chart 类型非法是显式构造的校验失败，用语义构造器映射为 InvalidArgument(400)，
+// 上层 errs.Wrap 保留该状态码，避免客户端把"chart 不可安装"误判成服务器内部错误。
 func checkIfInstallable(ch *chart.Chart) error {
 	switch ch.Metadata.Type {
 	case "", "application":
 		return nil
 	}
-	return fmt.Errorf("%s charts are not installable", ch.Metadata.Type)
+	return errs.WrapInvalidArgument(fmt.Errorf("%s charts are not installable", ch.Metadata.Type), "check chart installable")
 }
 
 // Status* 是 release 状态字符串常量（与 helm release.Info.Status 对齐）。

@@ -93,7 +93,7 @@ type TopPodRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m TopPodRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -205,7 +205,7 @@ type TopPodResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m TopPodResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -316,7 +316,7 @@ type CpuMemoryInNamespaceRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CpuMemoryInNamespaceRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -423,7 +423,7 @@ type CpuMemoryInNamespaceResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CpuMemoryInNamespaceResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -537,7 +537,7 @@ type CpuMemoryInProjectRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CpuMemoryInProjectRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -643,7 +643,7 @@ type CpuMemoryInProjectResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CpuMemoryInProjectResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}

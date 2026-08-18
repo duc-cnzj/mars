@@ -92,7 +92,7 @@ type ClusterInfoMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ClusterInfoMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -195,7 +195,7 @@ type ExtraValueMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ExtraValueMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -300,7 +300,7 @@ type ContainerMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ContainerMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -402,7 +402,7 @@ type WsRequestMetadataMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m WsRequestMetadataMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -508,7 +508,7 @@ type AuthorizeTokenInputMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m AuthorizeTokenInputMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -620,7 +620,7 @@ type TerminalMessageMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m TerminalMessageMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -728,7 +728,7 @@ type ProjectPodEventJoinInputMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ProjectPodEventJoinInputMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -861,7 +861,7 @@ type TerminalMessageInputMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m TerminalMessageInputMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -996,7 +996,7 @@ type WsHandleExecShellInputMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m WsHandleExecShellInputMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1103,7 +1103,7 @@ type CancelInputMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CancelInputMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1257,7 +1257,7 @@ type CreateProjectInputMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CreateProjectInputMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1409,7 +1409,7 @@ type UpdateProjectInputMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m UpdateProjectInputMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1528,7 +1528,7 @@ type MetadataMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m MetadataMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1657,7 +1657,7 @@ type WsMetadataResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m WsMetadataResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1846,7 +1846,7 @@ type WsHandleShellResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m WsHandleShellResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -2006,7 +2006,7 @@ type WsHandleClusterResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m WsHandleClusterResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -2171,7 +2171,7 @@ type WsWithContainerMessageResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m WsWithContainerMessageResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -2305,7 +2305,7 @@ type WsProjectPodEventResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m WsProjectPodEventResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -2438,7 +2438,7 @@ type WsReloadProjectsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m WsReloadProjectsResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}

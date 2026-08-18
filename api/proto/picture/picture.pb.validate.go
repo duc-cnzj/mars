@@ -73,7 +73,7 @@ type BackgroundRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m BackgroundRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -179,7 +179,7 @@ type BackgroundResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m BackgroundResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}

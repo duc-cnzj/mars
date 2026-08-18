@@ -54,6 +54,7 @@ func (f *FileAPI) UploadFile(ctx context.Context, filename string, r io.Reader) 
 	if tok := f.c.authToken(); tok != "" {
 		req.Header.Set("Authorization", tok)
 	}
+	f.c.applyHeaders(req)
 
 	resp, err := f.c.hc.Do(req)
 	if err != nil {
@@ -88,6 +89,7 @@ func (f *FileAPI) DownloadFile(ctx context.Context, id int) (io.ReadCloser, *Dow
 	if tok := f.c.authToken(); tok != "" {
 		req.Header.Set("Authorization", tok)
 	}
+	f.c.applyHeaders(req)
 
 	resp, err := f.c.hc.Do(req)
 	if err != nil {
@@ -130,6 +132,7 @@ func (f *FileAPI) CopyFromPod(ctx context.Context, req *CopyFromPodRequest) (io.
 	if tok := f.c.authToken(); tok != "" {
 		httpReq.Header.Set("Authorization", tok)
 	}
+	f.c.applyHeaders(httpReq)
 
 	resp, err := f.c.hc.Do(httpReq)
 	if err != nil {

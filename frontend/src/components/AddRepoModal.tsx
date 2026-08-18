@@ -1,7 +1,7 @@
 import React, { useEffect, memo, useMemo } from "react";
 import yaml from "js-yaml";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
-import { CloseOutlined, CopyOutlined } from "@ant-design/icons";
+import { CloseOutlined, CopyOutlined, PlusOutlined } from "@ant-design/icons";
 import CopyToClipboard from "./CopyToClipboard";
 import _ from "lodash";
 import DynamicElement from "./elements/DynamicElement";
@@ -9,6 +9,7 @@ import SelectFileType from "./SelectFileType";
 import { useAsyncState } from "../utils/async";
 import { css } from "@emotion/css";
 import {
+  AutoComplete,
   Drawer,
   Switch,
   Select,
@@ -69,14 +70,25 @@ const AddRepoModal: React.FC<{
   const [loading, setLoading] = useAsyncState({
     project: false,
     branch: false,
+    pipeline: false,
     submit: false,
   });
+  const [pipelineOptions, setPipelineOptions] = useAsyncState<{
+    stages: string[];
+    jobs: string[];
+  }>({ stages: [], jobs: [] });
   const [configFileContent, setConfigFileContent] = useAsyncState("");
   const [configFileTip, setConfigFileTip] = useAsyncState(false);
   const [valuesYaml, setValuesYaml] = useAsyncState("");
 
   const onDestroy = () => {
-    setLoading({ project: false, branch: false, submit: false });
+    setLoading({
+      project: false,
+      branch: false,
+      pipeline: false,
+      submit: false,
+    });
+    setPipelineOptions({ stages: [], jobs: [] });
     setConfigFileContent("");
     setValuesYaml("");
     setConfigFileTip(false);
@@ -169,6 +181,35 @@ const AddRepoModal: React.FC<{
     visible,
     setLoading,
   ]);
+
+  // 选中 git 项目后拉取该项目的 stage/job 下拉选项（项目级最近 pipeline）。
+  useEffect(() => {
+    if (gitProjectId > 0 && visible) {
+      setPipelineOptions({ stages: [], jobs: [] });
+      setLoading((item) => ({ ...item, pipeline: true }));
+      ajax
+        .GET("/api/git/projects/{gitProjectId}/pipeline_job_options", {
+          params: {
+            path: {
+              gitProjectId,
+            },
+          },
+        })
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setPipelineOptions({
+              stages: data.stages || [],
+              jobs: data.jobs || [],
+            });
+          }
+        })
+        .finally(() => {
+          setLoading((item) => ({ ...item, pipeline: false }));
+        });
+    } else {
+      setPipelineOptions({ stages: [], jobs: [] });
+    }
+  }, [gitProjectId, visible, setPipelineOptions, setLoading]);
 
   useEffect(() => {
     if (visible) {
@@ -409,6 +450,126 @@ const AddRepoModal: React.FC<{
                   </Form.Item>
                 </Col>
               </Row>
+            )}
+
+            {needGitRepo && (
+              <Form.Item
+                label="pipeline 通过规则"
+                tooltip="配置的 (stage_name, job_name) 全部成功后该流水线才判定为通过；不配置则使用整体流水线状态"
+              >
+                <Form.List name={["marsConfig", "pipelinePassRules"]}>
+                  {(fields, { add, remove }) => (
+                    <>
+                      {fields.length > 0 && (
+                        <Row
+                          gutter={[8, 8]}
+                          align="middle"
+                          style={{ marginBottom: 4 }}
+                        >
+                          <Col span={10}>
+                            <span
+                              style={{
+                                fontSize: 12,
+                                color: "rgba(0, 0, 0, 0.45)",
+                              }}
+                            >
+                              stage_name
+                            </span>
+                          </Col>
+                          <Col span={10}>
+                            <span
+                              style={{
+                                fontSize: 12,
+                                color: "rgba(0, 0, 0, 0.45)",
+                              }}
+                            >
+                              job_name
+                            </span>
+                          </Col>
+                          <Col span={4}></Col>
+                        </Row>
+                      )}
+                      {fields.map(({ key, name, ...restField }) => (
+                        <Row
+                          key={key}
+                          gutter={[8, 8]}
+                          align="middle"
+                          style={{ marginBottom: 8 }}
+                        >
+                          <Col span={10}>
+                            {/* marginBottom 归零：Form.Item 默认下边距 24px 会让
+                                align="middle" 把删除按钮相对输入框下移，需对齐输入框中心。 */}
+                            <Form.Item
+                              {...restField}
+                              name={[name, "stageName"]}
+                              rules={[
+                                { required: true, message: "stage_name 必填" },
+                              ]}
+                              style={{ marginBottom: 0 }}
+                            >
+                              {loading.pipeline ? (
+                                <Skeleton.Input
+                                  block
+                                  style={{ width: "100%" }}
+                                  active
+                                />
+                              ) : (
+                                <AutoComplete
+                                  placeholder="如 build，可手输"
+                                  options={pipelineOptions.stages.map((s) => ({
+                                    value: s,
+                                  }))}
+                                />
+                              )}
+                            </Form.Item>
+                          </Col>
+                          <Col span={10}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, "jobName"]}
+                              rules={[
+                                { required: true, message: "job_name 必填" },
+                              ]}
+                              style={{ marginBottom: 0 }}
+                            >
+                              {loading.pipeline ? (
+                                <Skeleton.Input
+                                  block
+                                  style={{ width: "100%" }}
+                                  active
+                                />
+                              ) : (
+                                <AutoComplete
+                                  placeholder="如 build-docker，可手输"
+                                  options={pipelineOptions.jobs.map((j) => ({
+                                    value: j,
+                                  }))}
+                                />
+                              )}
+                            </Form.Item>
+                          </Col>
+                          <Col span={4}>
+                            <Button
+                              type="text"
+                              danger
+                              icon={<CloseOutlined />}
+                              onClick={() => remove(name)}
+                            />
+                          </Col>
+                        </Row>
+                      ))}
+                      <Button
+                        type="dashed"
+                        block
+                        icon={<PlusOutlined />}
+                        onClick={() => add()}
+                      >
+                        添加规则
+                      </Button>
+                    </>
+                  )}
+                </Form.List>
+              </Form.Item>
             )}
 
             <Form.Item

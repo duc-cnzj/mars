@@ -92,7 +92,7 @@ type LoginRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m LoginRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -196,7 +196,7 @@ type LoginResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m LoginResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -307,7 +307,7 @@ type ExchangeRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ExchangeRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -411,7 +411,7 @@ type ExchangeResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ExchangeResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -510,7 +510,7 @@ type InfoRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m InfoRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -619,7 +619,7 @@ type InfoResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m InfoResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -719,7 +719,7 @@ type SettingsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m SettingsRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -853,7 +853,7 @@ type SettingsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m SettingsResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -963,7 +963,7 @@ type SettingsResponse_OidcSettingMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m SettingsResponse_OidcSettingMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}

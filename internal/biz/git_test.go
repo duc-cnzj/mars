@@ -18,6 +18,7 @@ type fakeGitRepo struct {
 	allBranches        func(ctx context.Context, projectID int, forceFresh bool) ([]*Branch, error)
 	getCommit          func(ctx context.Context, projectID int, sha string) (*Commit, error)
 	getCommitPipeline  func(ctx context.Context, projectID int, branch, sha string) (*Pipeline, error)
+	pipelineJobOptions func(ctx context.Context, projectID int, branch string) ([]string, []string, error)
 	getByProjectID     func(ctx context.Context, id int) (*GitProject, error)
 	getFileContent     func(ctx context.Context, projectID int, branch, path string) (string, error)
 	getProject         func(ctx context.Context, id int) (*GitProject, error)
@@ -42,6 +43,10 @@ func (f *fakeGitRepo) GetCommit(ctx context.Context, projectID int, sha string) 
 
 func (f *fakeGitRepo) GetCommitPipeline(ctx context.Context, projectID int, branch, sha string) (*Pipeline, error) {
 	return f.getCommitPipeline(ctx, projectID, branch, sha)
+}
+
+func (f *fakeGitRepo) PipelineJobOptions(ctx context.Context, projectID int, branch string) ([]string, []string, error) {
+	return f.pipelineJobOptions(ctx, projectID, branch)
 }
 
 func (f *fakeGitRepo) GetByProjectID(ctx context.Context, id int) (*GitProject, error) {
@@ -195,6 +200,23 @@ func TestGitBiz_GetCommitPipeline_Passthrough(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, called)
 	assert.Equal(t, int64(9), got.ID)
+}
+
+func TestGitBiz_PipelineJobOptions_Passthrough(t *testing.T) {
+	var called bool
+	g := NewGitBiz(&fakeGitRepo{
+		pipelineJobOptions: func(ctx context.Context, projectID int, branch string) ([]string, []string, error) {
+			called = true
+			assert.Equal(t, 1, projectID)
+			assert.Equal(t, "main", branch)
+			return []string{"build"}, []string{"build-docker"}, nil
+		},
+	})
+	stages, jobs, err := g.PipelineJobOptions(context.TODO(), 1, "main")
+	assert.NoError(t, err)
+	assert.True(t, called)
+	assert.Equal(t, []string{"build"}, stages)
+	assert.Equal(t, []string{"build-docker"}, jobs)
 }
 
 func TestGitBiz_GetByProjectID_Passthrough(t *testing.T) {

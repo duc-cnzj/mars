@@ -134,6 +134,8 @@ func main() {
 | `WithBearerToken(token)` | 直接注入已签发 token（自动补 `Bearer` 前缀） |
 | `WithTokenAutoRefresh()` | 遇 401（且配置了 WithAuth）自动重登并重试一次；Login/Exchange 自身 401 原样返回 |
 | `WithHTTPClient(hc)` | 替换底层 `*http.Client`（可注入自定义 transport） |
+| `WithHeader(key, value)` | 为每个请求附加自定义 header（构造期注入，之后不可变）；同名可覆盖 SDK 自动设置的 `Content-Type`/`Accept`/`Authorization`（Set 语义，最后应用）；key 为空时忽略。如关联日志用 `X-Request-ID`、业务透传 header |
+| `WithHeaders(headers)` | 批量附加自定义 headers，语义同 `WithHeader` |
 | `WithTimeout(d)` | 设置底层 http.Client 整体超时 |
 | `WithTracer()` | 接入 OpenTelemetry，请求注入 trace（底层用 otelhttp 包装 Transport） |
 
@@ -146,6 +148,7 @@ func main() {
 | gRPC `WithTransportCredentials(tlsCfg)` | HTTP 侧无需该 Option（`WithHTTPClient` 换 transport 即覆盖 TLS/代理） |
 | gRPC `WithUnaryClientInterceptor` / `WithStreamClientInterceptor` | 拦截器注入是 gRPC 原生机制，HTTP 无对应 |
 | HTTP `WithHTTPClient(hc)` / `WithTimeout(d)` | 直接操控 `*http.Client`，gRPC 无对应（连接配置走 dial options） |
+| HTTP `WithHeader` / `WithHeaders` | 客户端级自定义 header，覆盖 SDK 自动 header（Set 语义），gRPC 无对应（自定义元数据走拦截器） |
 
 ## Server-streaming
 

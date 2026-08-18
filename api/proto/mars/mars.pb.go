@@ -112,9 +112,12 @@ type Config struct {
 	// 显示的名称 (helm app name), 不填就使用 git server project name
 	// 以字母开头结尾，中间可以有 '_' '-'
 	// Deprecated: v5+ 不再使用这个字段
-	DisplayName   string `protobuf:"bytes,10,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	DisplayName string `protobuf:"bytes,10,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	// pipeline_pass_rules 流水线通过规则：配置的 (stage, job) 全部成功后该流水线才判定为通过。
+	// 未配置时 PipelineInfo 返回整体流水线状态。
+	PipelinePassRules []*PipelinePassRule `protobuf:"bytes,11,rep,name=pipeline_pass_rules,json=pipelinePassRules,proto3" json:"pipeline_pass_rules,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *Config) Reset() {
@@ -217,6 +220,66 @@ func (x *Config) GetDisplayName() string {
 	return ""
 }
 
+func (x *Config) GetPipelinePassRules() []*PipelinePassRule {
+	if x != nil {
+		return x.PipelinePassRules
+	}
+	return nil
+}
+
+// PipelinePassRule 是流水线通过规则的单条匹配项：命中指定 stage 下名为 job_name 的 job。
+type PipelinePassRule struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StageName     string                 `protobuf:"bytes,1,opt,name=stage_name,json=stageName,proto3" json:"stage_name,omitempty"`
+	JobName       string                 `protobuf:"bytes,2,opt,name=job_name,json=jobName,proto3" json:"job_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PipelinePassRule) Reset() {
+	*x = PipelinePassRule{}
+	mi := &file_proto_mars_mars_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PipelinePassRule) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PipelinePassRule) ProtoMessage() {}
+
+func (x *PipelinePassRule) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mars_mars_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PipelinePassRule.ProtoReflect.Descriptor instead.
+func (*PipelinePassRule) Descriptor() ([]byte, []int) {
+	return file_proto_mars_mars_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *PipelinePassRule) GetStageName() string {
+	if x != nil {
+		return x.StageName
+	}
+	return ""
+}
+
+func (x *PipelinePassRule) GetJobName() string {
+	if x != nil {
+		return x.JobName
+	}
+	return ""
+}
+
 type Element struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
@@ -231,7 +294,7 @@ type Element struct {
 
 func (x *Element) Reset() {
 	*x = Element{}
-	mi := &file_proto_mars_mars_proto_msgTypes[1]
+	mi := &file_proto_mars_mars_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -243,7 +306,7 @@ func (x *Element) String() string {
 func (*Element) ProtoMessage() {}
 
 func (x *Element) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mars_mars_proto_msgTypes[1]
+	mi := &file_proto_mars_mars_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -256,7 +319,7 @@ func (x *Element) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Element.ProtoReflect.Descriptor instead.
 func (*Element) Descriptor() ([]byte, []int) {
-	return file_proto_mars_mars_proto_rawDescGZIP(), []int{1}
+	return file_proto_mars_mars_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Element) GetPath() string {
@@ -305,7 +368,7 @@ var File_proto_mars_mars_proto protoreflect.FileDescriptor
 
 const file_proto_mars_mars_proto_rawDesc = "" +
 	"\n" +
-	"\x15proto/mars/mars.proto\x12\x04mars\x1a\x17validate/validate.proto\"\xa8\x03\n" +
+	"\x15proto/mars/mars.proto\x12\x04mars\x1a\x17validate/validate.proto\"\xf0\x03\n" +
 	"\x06Config\x12\x1f\n" +
 	"\vconfig_file\x18\x01 \x01(\tR\n" +
 	"configFile\x12,\n" +
@@ -319,7 +382,12 @@ const file_proto_mars_mars_proto_rawDesc = "" +
 	"valuesYaml\x12)\n" +
 	"\belements\x18\t \x03(\v2\r.mars.ElementR\belements\x12L\n" +
 	"\fdisplay_name\x18\n" +
-	" \x01(\tB)\xfaB&r$(@2\x1d^[A-Za-z]([A-Z-_a-z]*[^_-])*$\xd0\x01\x01R\vdisplayName\"\xce\x01\n" +
+	" \x01(\tB)\xfaB&r$(@2\x1d^[A-Za-z]([A-Z-_a-z]*[^_-])*$\xd0\x01\x01R\vdisplayName\x12F\n" +
+	"\x13pipeline_pass_rules\x18\v \x03(\v2\x16.mars.PipelinePassRuleR\x11pipelinePassRules\"L\n" +
+	"\x10PipelinePassRule\x12\x1d\n" +
+	"\n" +
+	"stage_name\x18\x01 \x01(\tR\tstageName\x12\x19\n" +
+	"\bjob_name\x18\x02 \x01(\tR\ajobName\"\xce\x01\n" +
 	"\aElement\x12\x1b\n" +
 	"\x04path\x18\x01 \x01(\tB\a\xfaB\x04r\x02 \x01R\x04path\x12/\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.mars.ElementTypeB\b\xfaB\x05\x82\x01\x02\x10\x01R\x04type\x12\x18\n" +
@@ -351,20 +419,22 @@ func file_proto_mars_mars_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_mars_mars_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_mars_mars_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_mars_mars_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_proto_mars_mars_proto_goTypes = []any{
-	(ElementType)(0), // 0: mars.ElementType
-	(*Config)(nil),   // 1: mars.Config
-	(*Element)(nil),  // 2: mars.Element
+	(ElementType)(0),         // 0: mars.ElementType
+	(*Config)(nil),           // 1: mars.Config
+	(*PipelinePassRule)(nil), // 2: mars.PipelinePassRule
+	(*Element)(nil),          // 3: mars.Element
 }
 var file_proto_mars_mars_proto_depIdxs = []int32{
-	2, // 0: mars.Config.elements:type_name -> mars.Element
-	0, // 1: mars.Element.type:type_name -> mars.ElementType
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	3, // 0: mars.Config.elements:type_name -> mars.Element
+	2, // 1: mars.Config.pipeline_pass_rules:type_name -> mars.PipelinePassRule
+	0, // 2: mars.Element.type:type_name -> mars.ElementType
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_proto_mars_mars_proto_init() }
@@ -378,7 +448,7 @@ func file_proto_mars_mars_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_mars_mars_proto_rawDesc), len(file_proto_mars_mars_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

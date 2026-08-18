@@ -45,6 +45,7 @@ func (c *Client) openStreamRefresh(ctx context.Context, method, path string, req
 	if tok := c.authToken(); tok != "" {
 		httpReq.Header.Set("Authorization", tok)
 	}
+	c.applyHeaders(httpReq)
 
 	resp, err := c.hc.Do(httpReq)
 	if err != nil {

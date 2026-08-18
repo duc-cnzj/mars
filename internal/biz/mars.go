@@ -66,6 +66,51 @@ func MatchBranch(branches []string, name string) bool {
 	return false
 }
 
+// PipelinePassStatus 按仓库配置的流水线通过规则计算流水线状态。
+// 无规则时返回原始状态；有规则时仅当全部规则命中的 job 都成功才返回 success，
+// 任一命中 job 失败则 failed、命中 job 为 manual 则 manual（等待人工确认，优先级高于
+// running）、仍有 job 在运行或未开始（unknown：scheduled/pending 等排队态）则 running；
+// 规则指定的 job 在流水线中不存在时无法判定，回退为默认逻辑（原始整体状态）。
+// manual/running 用累积标记判定，保证优先级 failed > manual > running > success 与遍历顺序无关。
+func PipelinePassStatus(p *Pipeline, rules []*mars.PipelinePassRule) Status {
+	if len(rules) == 0 {
+		return p.Status
+	}
+	var running, manual bool
+	for _, rule := range rules {
+		matched := false
+		for _, job := range p.Jobs {
+			if job.StageName != rule.StageName || job.Name != rule.JobName {
+				continue
+			}
+			matched = true
+			if job.Status == StatusSuccess {
+				continue
+			}
+			if job.Status == StatusManual {
+				manual = true
+				continue
+			}
+			if job.Status == StatusRunning || job.Status == StatusUnknown {
+				running = true
+				continue
+			}
+			return StatusFailed
+		}
+		if !matched {
+			return p.Status
+		}
+	}
+	switch {
+	case manual:
+		return StatusManual
+	case running:
+		return StatusRunning
+	default:
+		return StatusSuccess
+	}
+}
+
 // ParseInputConfig 将用户输入 input 解析后写入 config 的 ConfigField 字段，
 // 返回深合并后的 yaml 字符串；input 为空时返回空串。
 //

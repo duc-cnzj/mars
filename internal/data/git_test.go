@@ -7,8 +7,11 @@ import (
 
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/config"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // fakeGitServer 是 data.GitServer 的替身：err 非 nil 时全部方法返回该错误，
@@ -62,6 +65,13 @@ func (f fakeGitServer) GetFileContentWithBranch(pid, branch, filename string) (s
 		return "", f.err
 	}
 	return "content", nil
+}
+
+func (f fakeGitServer) PipelineJobOptions(pid, branch string) ([]string, []string, error) {
+	if f.err != nil {
+		return nil, nil, f.err
+	}
+	return []string{"build", "test"}, []string{"build-docker"}, nil
 }
 
 // newTestGitRepo 构造 gitRepo：注入返回 fakeGitServer 的惰性取数闭包（对齐生产
@@ -170,6 +180,31 @@ func TestGitRepo_GetCommitPipeline(t *testing.T) {
 	_, err = g2.GetCommitPipeline(context.TODO(), 100, "main", "sha1")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "git get commit pipeline")
+
+	// 插件返回 errs.NotFound（无 pipeline 属资源不存在）时，Wrap 须保留 404 而非落 500。
+	g3 := newTestGitRepo(false, fakeGitServer{err: errs.NotFound("pipeline not found")})
+	_, err = g3.GetCommitPipeline(context.TODO(), 100, "main", "sha1")
+	assert.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func TestGitRepo_PipelineJobOptions(t *testing.T) {
+	g := newTestGitRepo(false, fakeGitServer{})
+	stages, jobs, err := g.PipelineJobOptions(context.TODO(), 100, "main")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"build", "test"}, stages)
+	assert.Equal(t, []string{"build-docker"}, jobs)
+
+	g2 := newTestGitRepo(false, fakeGitServer{err: errors.New("boom")})
+	_, _, err = g2.PipelineJobOptions(context.TODO(), 100, "main")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "git pipeline job options")
+
+	// 与 GetCommitPipeline 一致：errs.NotFound 经 Wrap 保留 404。
+	g3 := newTestGitRepo(false, fakeGitServer{err: errs.NotFound("pipeline not found")})
+	_, _, err = g3.PipelineJobOptions(context.TODO(), 100, "main")
+	assert.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
 }
 
 func TestGitRepo_GetByProjectID(t *testing.T) {

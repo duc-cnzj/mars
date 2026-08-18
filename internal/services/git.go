@@ -165,17 +165,66 @@ func (g *gitSvc) Commit(ctx context.Context, request *git.CommitRequest) (*git.C
 	}, nil
 }
 
-// PipelineInfo 返回指定提交对应 CI 流水线的状态与 URL。
+// PipelineInfo 返回指定提交对应 CI 流水线的状态、URL 与各 job 状态，status 即流水线整体状态，
+// 不做 pass 规则判定。需要按仓库配置的 pass 规则判定 status 时用 PipelineInfoByRepoId。
 func (g *gitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequest) (*git.PipelineInfoResponse, error) {
-	pipeline, err := g.gitBiz.GetCommitPipeline(ctx, cast.ToInt(request.GitProjectId), request.Branch, request.Commit)
+	projectID := cast.ToInt(request.GitProjectId)
+	pipeline, err := g.gitBiz.GetCommitPipeline(ctx, projectID, request.Branch, request.Commit)
 	if err != nil {
 		return nil, logError(ctx, g.logger, err)
 	}
 
+	jobs := make([]*git.PipelineJob, 0, len(pipeline.Jobs))
+	for _, j := range pipeline.Jobs {
+		jobs = append(jobs, &git.PipelineJob{Name: j.Name, Status: j.Status, StageName: j.StageName})
+	}
 	return &git.PipelineInfoResponse{
 		Status: pipeline.Status,
 		WebUrl: pipeline.WebURL,
+		Jobs:   jobs,
 	}, nil
+}
+
+// PipelineInfoByRepoId 返回指定 repo 下某提交对应 CI 流水线的状态、URL 与各 job 状态。
+// 与 PipelineInfo 的差异在入参主语：本方法按 repo_id（mars 部署仓库主键）解析出
+// git 项目 ID 与通过规则，再判定流水线状态；repo 不存在时透传 404。仓库配置 pass
+// 规则时 status 由规则判定（见 biz.PipelinePassStatus），未配置时返回整体流水线状态。
+func (g *gitSvc) PipelineInfoByRepoId(ctx context.Context, request *git.PipelineInfoByRepoIdRequest) (*git.PipelineInfoResponse, error) {
+	repoID := int(request.RepoId)
+	repo, err := g.repoBiz.Get(ctx, repoID)
+	if err != nil {
+		return nil, logError(ctx, g.logger, err)
+	}
+
+	pipeline, err := g.gitBiz.GetCommitPipeline(ctx, int(repo.GitProjectID), request.Branch, request.Commit)
+	if err != nil {
+		return nil, logError(ctx, g.logger, err)
+	}
+
+	status := pipeline.Status
+	if rules := repo.GetMarsConfig().PipelinePassRules; len(rules) > 0 {
+		status = biz.PipelinePassStatus(pipeline, rules)
+	}
+
+	jobs := make([]*git.PipelineJob, 0, len(pipeline.Jobs))
+	for _, j := range pipeline.Jobs {
+		jobs = append(jobs, &git.PipelineJob{Name: j.Name, Status: j.Status, StageName: j.StageName})
+	}
+	return &git.PipelineInfoResponse{
+		Status: status,
+		WebUrl: pipeline.WebURL,
+		Jobs:   jobs,
+	}, nil
+}
+
+// PipelineJobOptions 返回项目流水线的 stage/job 去重选项，供配置通过规则下拉选择。
+// branch 为空时取项目最近 pipeline，非空时取该分支最近 pipeline。
+func (g *gitSvc) PipelineJobOptions(ctx context.Context, request *git.PipelineJobOptionsRequest) (*git.PipelineJobOptionsResponse, error) {
+	stages, jobs, err := g.gitBiz.PipelineJobOptions(ctx, int(request.GitProjectId), request.Branch)
+	if err != nil {
+		return nil, logError(ctx, g.logger, err)
+	}
+	return &git.PipelineJobOptionsResponse{Stages: stages, Jobs: jobs}, nil
 }
 
 // GetChartValuesYaml 解析 helm chart 的 values.yaml：把前端提交的表单项映射为 values 返回。
