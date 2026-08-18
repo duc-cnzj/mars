@@ -31,16 +31,16 @@ func TestEventSvc_List_Success(t *testing.T) {
 	eventRepo.EXPECT().List(gomock.Any(), &biz.ListEventInput{
 		Page:        1,
 		PageSize:    12,
-		ActionType:  types.EventActionType_Delete,
+		ActionTypes: []types.EventActionType{types.EventActionType_Delete},
 		Search:      "x",
 		OrderIDDesc: lo.ToPtr(true),
 	}).Return([]*biz.Event{}, &pagination.Pagination{}, nil)
 
 	resp, err := svc.List(context.TODO(), &event.ListRequest{
-		Page:       lo.ToPtr(int32(1)),
-		PageSize:   lo.ToPtr(int32(12)),
-		ActionType: types.EventActionType_Delete,
-		Search:     "x",
+		Page:        lo.ToPtr(int32(1)),
+		PageSize:    lo.ToPtr(int32(12)),
+		ActionTypes: []types.EventActionType{types.EventActionType_Delete},
+		Search:      "x",
 	})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
@@ -55,13 +55,32 @@ func TestEventSvc_List_Failure(t *testing.T) {
 	eventRepo.EXPECT().List(gomock.Any(), &biz.ListEventInput{
 		Page:        1,
 		PageSize:    15,
-		ActionType:  req.ActionType,
+		ActionTypes: normalizeActionTypes(req.ActionType, req.ActionTypes),
 		Search:      req.Search,
 		OrderIDDesc: lo.ToPtr(true),
 	}).Return(nil, nil, errors.New("error"))
 
 	_, err := svc.List(context.TODO(), req)
 	assert.Error(t, err)
+}
+
+func Test_normalizeActionTypes(t *testing.T) {
+	cases := []struct {
+		name   string
+		single types.EventActionType
+		multi  []types.EventActionType
+		want   []types.EventActionType
+	}{
+		{name: "empty = all", single: types.EventActionType_Unknown, multi: nil, want: nil},
+		{name: "single fallback", single: types.EventActionType_Delete, multi: nil, want: []types.EventActionType{types.EventActionType_Delete}},
+		{name: "multi wins", single: types.EventActionType_Create, multi: []types.EventActionType{types.EventActionType_Delete}, want: []types.EventActionType{types.EventActionType_Delete}},
+		{name: "multi only", single: types.EventActionType_Unknown, multi: []types.EventActionType{types.EventActionType_Update, types.EventActionType_Shell}, want: []types.EventActionType{types.EventActionType_Update, types.EventActionType_Shell}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			assert.Equal(t, c.want, normalizeActionTypes(c.single, c.multi))
+		})
+	}
 }
 
 func Test_eventSvc_Show(t *testing.T) {

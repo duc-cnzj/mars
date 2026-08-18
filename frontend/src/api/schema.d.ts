@@ -2337,7 +2337,13 @@ export interface operations {
             query?: {
                 page?: number;
                 pageSize?: number;
+                /** @description 动作类型精确过滤（单值，兼容旧客户端）：Unknown(0) = 全部 */
                 actionType?: PathsApiEventsGetParametersQueryActionType;
+                /**
+                 * @description 动作类型多值过滤（新参数）：空 = 全部，多值 = 任一匹配（IN）；
+                 *      与 action_type 同时传入时优先取 action_types
+                 */
+                actionTypes?: PathsApiEventsGetParametersQueryActionTypes[];
                 /** @description 模糊搜索 message 和 username */
                 search?: string;
             };
@@ -3837,6 +3843,20 @@ export interface operations {
     };
 }
 export enum PathsApiEventsGetParametersQueryActionType {
+    Unknown = "Unknown",
+    Create = "Create",
+    Update = "Update",
+    Delete = "Delete",
+    Upload = "Upload",
+    Download = "Download",
+    DryRun = "DryRun",
+    Shell = "Shell",
+    Login = "Login",
+    CancelDeploy = "CancelDeploy",
+    Exec = "Exec",
+    ForceDeletePod = "ForceDeletePod"
+}
+export enum PathsApiEventsGetParametersQueryActionTypes {
     Unknown = "Unknown",
     Create = "Create",
     Update = "Update",

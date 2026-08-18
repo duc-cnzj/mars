@@ -44,15 +44,19 @@ func TestIfStrEQ(t *testing.T) {
 	assert.Equal(t, "test2", x4[0].Name)
 }
 
-func TestIfIntEQ(t *testing.T) {
+func TestIfIntsIN(t *testing.T) {
 	db := openTestDB(t)
-	save1 := db.Namespace.Create().SetCreatorEmail("a").SetName("test").SaveX(context.TODO())
-	db.Namespace.Create().SetCreatorEmail("a").SetName("test2").SaveX(context.TODO())
-	x := db.Namespace.Query().Where(IfIntEQ[int]("id")(save1.ID)).AllX(context.TODO())
-	assert.Equal(t, 1, len(x))
-	assert.Equal(t, "test", x[0].Name)
-	x2 := db.Namespace.Query().Where(IfIntEQ[int]("name")(0)).AllX(context.TODO())
-	assert.Equal(t, 2, len(x2))
+	id1 := db.Namespace.Create().SetCreatorEmail("a").SetName("test").SaveX(context.TODO()).ID
+	id2 := db.Namespace.Create().SetCreatorEmail("a").SetName("test2").SaveX(context.TODO()).ID
+	db.Namespace.Create().SetCreatorEmail("a").SetName("test3").SaveX(context.TODO())
+	x := db.Namespace.Query().Where(IfIntsIN[int]("id")([]int{id1, id2})).AllX(context.TODO())
+	assert.Equal(t, 2, len(x))
+	x2 := db.Namespace.Query().Where(IfIntsIN[int]("id")(nil)).AllX(context.TODO())
+	assert.Equal(t, 3, len(x2))
+	x2b := db.Namespace.Query().Where(IfIntsIN[int]("id")([]int{})).AllX(context.TODO())
+	assert.Equal(t, 3, len(x2b))
+	x3 := db.Namespace.Query().Where(IfIntsIN[int]("id")([]int{-999})).AllX(context.TODO())
+	assert.Equal(t, 0, len(x3))
 }
 
 func TestIfOrderByDesc(t *testing.T) {

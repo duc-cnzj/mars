@@ -27,10 +27,14 @@ const (
 )
 
 type ListRequest struct {
-	state      protoimpl.MessageState `protogen:"open.v1"`
-	Page       *int32                 `protobuf:"varint,1,opt,name=page,proto3,oneof" json:"page,omitempty"`
-	PageSize   *int32                 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3,oneof" json:"page_size,omitempty"`
-	ActionType types.EventActionType  `protobuf:"varint,3,opt,name=action_type,json=actionType,proto3,enum=types.EventActionType" json:"action_type,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Page     *int32                 `protobuf:"varint,1,opt,name=page,proto3,oneof" json:"page,omitempty"`
+	PageSize *int32                 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3,oneof" json:"page_size,omitempty"`
+	// 动作类型精确过滤（单值，兼容旧客户端）：Unknown(0) = 全部
+	ActionType types.EventActionType `protobuf:"varint,3,opt,name=action_type,json=actionType,proto3,enum=types.EventActionType" json:"action_type,omitempty"`
+	// 动作类型多值过滤（新参数）：空 = 全部，多值 = 任一匹配（IN）；
+	// 与 action_type 同时传入时优先取 action_types
+	ActionTypes []types.EventActionType `protobuf:"varint,5,rep,packed,name=action_types,json=actionTypes,proto3,enum=types.EventActionType" json:"action_types,omitempty"`
 	// 模糊搜索 message 和 username
 	Search        string `protobuf:"bytes,4,opt,name=search,proto3" json:"search,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -86,6 +90,13 @@ func (x *ListRequest) GetActionType() types.EventActionType {
 		return x.ActionType
 	}
 	return types.EventActionType(0)
+}
+
+func (x *ListRequest) GetActionTypes() []types.EventActionType {
+	if x != nil {
+		return x.ActionTypes
+	}
+	return nil
 }
 
 func (x *ListRequest) GetSearch() string {
@@ -247,12 +258,13 @@ var File_proto_event_event_proto protoreflect.FileDescriptor
 
 const file_proto_event_event_proto_rawDesc = "" +
 	"\n" +
-	"\x17proto/event/event.proto\x12\x05event\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\x1a\x17proto/types/types.proto\x1a\x1copenapi/v3/annotations.proto\"\xb0\x01\n" +
+	"\x17proto/event/event.proto\x12\x05event\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\x1a\x17proto/types/types.proto\x1a\x1copenapi/v3/annotations.proto\"\xeb\x01\n" +
 	"\vListRequest\x12\x17\n" +
 	"\x04page\x18\x01 \x01(\x05H\x00R\x04page\x88\x01\x01\x12 \n" +
 	"\tpage_size\x18\x02 \x01(\x05H\x01R\bpageSize\x88\x01\x01\x127\n" +
 	"\vaction_type\x18\x03 \x01(\x0e2\x16.types.EventActionTypeR\n" +
-	"actionType\x12\x16\n" +
+	"actionType\x129\n" +
+	"\faction_types\x18\x05 \x03(\x0e2\x16.types.EventActionTypeR\vactionTypes\x12\x16\n" +
 	"\x06search\x18\x04 \x01(\tR\x06searchB\a\n" +
 	"\x05_pageB\f\n" +
 	"\n" +
@@ -292,17 +304,18 @@ var file_proto_event_event_proto_goTypes = []any{
 }
 var file_proto_event_event_proto_depIdxs = []int32{
 	4, // 0: event.ListRequest.action_type:type_name -> types.EventActionType
-	5, // 1: event.ListResponse.items:type_name -> types.EventModel
-	5, // 2: event.ShowResponse.item:type_name -> types.EventModel
-	0, // 3: event.Event.List:input_type -> event.ListRequest
-	2, // 4: event.Event.Show:input_type -> event.ShowRequest
-	1, // 5: event.Event.List:output_type -> event.ListResponse
-	3, // 6: event.Event.Show:output_type -> event.ShowResponse
-	5, // [5:7] is the sub-list for method output_type
-	3, // [3:5] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	4, // 1: event.ListRequest.action_types:type_name -> types.EventActionType
+	5, // 2: event.ListResponse.items:type_name -> types.EventModel
+	5, // 3: event.ShowResponse.item:type_name -> types.EventModel
+	0, // 4: event.Event.List:input_type -> event.ListRequest
+	2, // 5: event.Event.Show:input_type -> event.ShowRequest
+	1, // 6: event.Event.List:output_type -> event.ListResponse
+	3, // 7: event.Event.Show:output_type -> event.ShowResponse
+	6, // [6:8] is the sub-list for method output_type
+	4, // [4:6] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_proto_event_event_proto_init() }

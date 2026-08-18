@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/event"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/transformer"
@@ -36,13 +37,24 @@ func NewEventSvc(deps EventSvcDeps) event.EventServer {
 	return &eventSvc{eventBiz: deps.EventBiz, logger: deps.Logger.WithModule("services/event"), accessBiz: deps.AccessBiz}
 }
 
+// normalizeActionTypes 归一化动作类型过滤：优先多值 action_types，否则回退单值 action_type（Unknown=全部）。
+func normalizeActionTypes(actionType types.EventActionType, actionTypes []types.EventActionType) []types.EventActionType {
+	if len(actionTypes) > 0 {
+		return actionTypes
+	}
+	if actionType != types.EventActionType_Unknown {
+		return []types.EventActionType{actionType}
+	}
+	return nil
+}
+
 // List 分页查询事件（审计日志），支持按动作类型过滤与关键字搜索，按 id 倒序返回。
 func (e *eventSvc) List(ctx context.Context, request *event.ListRequest) (*event.ListResponse, error) {
 	page, size := pagination.InitByDefault(request.Page, request.PageSize)
 	events, pag, err := e.eventBiz.List(ctx, &biz.ListEventInput{
 		Page:        page,
 		PageSize:    size,
-		ActionType:  request.ActionType,
+		ActionTypes: normalizeActionTypes(request.ActionType, request.ActionTypes),
 		Search:      request.Search,
 		OrderIDDesc: lo.ToPtr(true),
 	})
