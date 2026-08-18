@@ -56,6 +56,10 @@ type Client struct {
 	autoRefresh        bool
 	tracing            bool
 
+	// headers 是客户端级自定义 header，构造期经 WithHeader/WithHeaders 填充后只读，
+	// 每个请求最后应用（Set 语义，可覆盖 SDK 自动设置的 Content-Type/Accept/Authorization）。
+	headers map[string]string
+
 	flights *flight.Group // 合并并发 token 刷新，避免登录风暴
 }
 
@@ -83,6 +87,35 @@ func WithTokenAutoRefresh() Option {
 // WithHTTPClient 替换底层 http.Client（可注入自定义 transport）。
 func WithHTTPClient(hc *http.Client) Option {
 	return func(c *Client) { c.hc = hc }
+}
+
+// WithHeader 为每个请求附加自定义 header。同名会覆盖 SDK 自动设置的
+// Content-Type/Accept/Authorization（Set 语义，最后应用）；key 为空时忽略。
+func WithHeader(key, value string) Option {
+	return func(c *Client) {
+		if key == "" {
+			return
+		}
+		if c.headers == nil {
+			c.headers = make(map[string]string)
+		}
+		c.headers[key] = value
+	}
+}
+
+// WithHeaders 批量附加自定义 headers，语义同 WithHeader。
+func WithHeaders(headers map[string]string) Option {
+	return func(c *Client) {
+		for k, v := range headers {
+			if k == "" {
+				continue
+			}
+			if c.headers == nil {
+				c.headers = make(map[string]string)
+			}
+			c.headers[k] = v
+		}
+	}
 }
 
 // WithTimeout 设置底层 http.Client 的整体超时（含读 body）。
@@ -157,6 +190,14 @@ func (c *Client) authToken() string {
 	return ""
 }
 
+// applyHeaders 把客户端级自定义 headers 附加到请求，最后应用（Set 语义，
+// 同名可覆盖 SDK 自动设置的 Content-Type/Accept/Authorization）。
+func (c *Client) applyHeaders(req *http.Request) {
+	for k, v := range c.headers {
+		req.Header.Set(k, v)
+	}
+}
+
 // refreshToken 用用户名密码重新登录。内部走 doNoRefresh，避免刷新递归。
 // 用 flight 包（internal/flight）合并并发的 401 刷新：同一时刻只有一个 goroutine 真正打登录接口，
 // 其余等待复用结果，防止 401 风暴时登录被并发打爆。setToken 放在 fn 里保证只执行一次。
@@ -223,6 +264,7 @@ func (c *Client) doReq(ctx context.Context, method, path string, req, resp proto
 	if tok := c.authToken(); tok != "" {
 		httpReq.Header.Set("Authorization", tok)
 	}
+	c.applyHeaders(httpReq)
 
 	resp2, err := c.hc.Do(httpReq)
 	if err != nil {
