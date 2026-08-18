@@ -1,7 +1,31 @@
-import React, { memo, useEffect, useState } from "react";
-import { Alert } from "antd";
-import { ClockCircleOutlined } from "@ant-design/icons";
+import React, { memo, useCallback, useEffect, useState } from "react";
+import { Alert, Tooltip } from "antd";
+import { ClockCircleOutlined, ReloadOutlined } from "@ant-design/icons";
+import styled from "@emotion/styled";
 import ajax from "../api/ajax";
+import theme from "../styles/theme";
+
+// 刷新图标：休息态灰色，hover 变品牌色并浮现淡色圆形底，弱放大 + 过渡提升点击感
+const RefreshIcon = styled.a`
+  margin-left: auto;
+  color: #8c8c8c;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 15px;
+  padding: 4px;
+  border-radius: 50%;
+  line-height: 0;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+  &:hover {
+    color: ${theme.mainColor};
+    background-color: ${theme.lightColor};
+    transform: scale(1.12);
+  }
+`;
 
 // gray 标记 manual（等待手动触发）走灰色卡片，不用 warning 的黄色。
 const pipelines: {
@@ -46,41 +70,49 @@ const PipelineInfo: React.FC<{
     type: "success" | "warning" | "error" | "info";
     gray?: boolean;
   } | null>();
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (repoId && branch && commit) {
-      ajax
-        .GET(
-          "/api/git/repos/{repoId}/branches/{branch}/commits/{commit}/pipeline_info",
-          {
-            params: {
-              path: {
-                repoId,
-                branch,
-                commit,
-              },
-            },
-          },
-        )
-        .then(({ data, error }) => {
-          if (error) {
-            setInfo(null);
-            return;
-          }
-          let p = pipelines[data.status];
-          if (p) {
-            setInfo({
-              type: p.type,
-              message: p.message,
-              web_url: data.webUrl,
-              gray: p.gray,
-            });
-          }
-        });
+  // 拉取 pipeline 信息，供首次挂载与手动刷新共用
+  const fetchPipelineInfo = useCallback(() => {
+    if (!(repoId && branch && commit)) {
+      setInfo(null);
       return;
     }
-    setInfo(null);
+    setLoading(true);
+    ajax
+      .GET(
+        "/api/git/repos/{repoId}/branches/{branch}/commits/{commit}/pipeline_info",
+        {
+          params: {
+            path: {
+              repoId,
+              branch,
+              commit,
+            },
+          },
+        },
+      )
+      .then(({ data, error }) => {
+        setLoading(false);
+        if (error) {
+          setInfo(null);
+          return;
+        }
+        let p = pipelines[data.status];
+        if (p) {
+          setInfo({
+            type: p.type,
+            message: p.message,
+            web_url: data.webUrl,
+            gray: p.gray,
+          });
+        }
+      });
   }, [repoId, branch, commit]);
+
+  useEffect(() => {
+    fetchPipelineInfo();
+  }, [fetchPipelineInfo]);
 
   return (
     <>
@@ -122,6 +154,11 @@ const PipelineInfo: React.FC<{
                   />
                 </svg>
               </a>
+              <Tooltip title="刷新 pipeline 信息">
+                <RefreshIcon onClick={fetchPipelineInfo}>
+                  <ReloadOutlined spin={loading} />
+                </RefreshIcon>
+              </Tooltip>
             </div>
           }
           type={info.type}
