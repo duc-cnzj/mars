@@ -868,6 +868,77 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+    /api/git/projects/{gitProjectId}/pipeline_job_options:
+        get:
+            tags:
+                - Git
+            summary: 获取项目流水线的 stage/job 选项，用于配置通过规则下拉
+            operationId: Git_PipelineJobOptions
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  description: git_project_id 必填，> 0。
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+                - name: branch
+                  in: query
+                  description: branch 可选：指定分支时取该分支最近 pipeline；为空时取项目最近 pipeline。
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.PipelineJobOptionsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/git/repos/{repoId}/branches/{branch}/commits/{commit}/pipeline_info:
+        get:
+            tags:
+                - Git
+            summary: 按 repo 获取 pipeline 详情（status 按 repo 配置的通过规则判定）
+            description: |-
+                PipelineInfoByRepoId 按 repo 获取流水线详情：仓库配置 pass 规则时，
+                 status 由规则判定，否则为 CI 整体流水线状态（与 PipelineInfo 同响应）。
+            operationId: Git_PipelineInfoByRepoId
+            parameters:
+                - name: repoId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+                - name: branch
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: commit
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.PipelineInfoResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/metrics/namespace/{namespaceId}/cpu_memory:
         get:
             tags:
@@ -2116,6 +2187,20 @@ components:
                 stageName:
                     type: string
             description: PipelineJob 是 CI 流水线单个 job 的名称、状态与所属 stage。
+        git.PipelineJobOptionsResponse:
+            type: object
+            properties:
+                stages:
+                    type: array
+                    items:
+                        type: string
+                    description: stages 是 pipeline 的全部 stage 名（按出现顺序去重）。
+                jobs:
+                    type: array
+                    items:
+                        type: string
+                    description: jobs 是 pipeline 的全部 job 名（按执行顺序去重）。
+            description: PipelineJobOptionsResponse 是配置通过规则用的 stage/job 下拉选项（各自去重）。
         git.ProjectOptionsResponse:
             type: object
             properties:

@@ -101,13 +101,14 @@ func PipelinePassStatus(p *Pipeline, rules []*mars.PipelinePassRule) Status {
 			return p.Status
 		}
 	}
-	if manual {
+	switch {
+	case manual:
 		return StatusManual
-	}
-	if running {
+	case running:
 		return StatusRunning
+	default:
+		return StatusSuccess
 	}
-	return StatusSuccess
 }
 
 // ParseInputConfig 将用户输入 input 解析后写入 config 的 ConfigField 字段，

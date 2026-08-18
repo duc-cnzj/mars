@@ -7,7 +7,6 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/config"
-	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -73,33 +72,6 @@ func TestRepoImpl_Create(t *testing.T) {
 	assert.NotNil(t, res)
 	assert.NotEmpty(t, res.GitProjectID)
 	assert.True(t, res.MarsConfig.IsSimpleEnv)
-}
-
-func TestRepoImpl_GetByGitProjectID(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	entdb, _ := NewSqliteDB()
-	defer entdb.Close()
-	mockGitRepo := NewMockGitRepo(m)
-	repo := NewRepo(NewDataImpl(&NewDataParams{DB: entdb}), mockGitRepo)
-
-	// 未匹配 git 项目 → NotFound。
-	_, err := repo.GetByGitProjectID(context.TODO(), 999)
-	assert.True(t, errs.IsNotFound(err))
-
-	// 创建两个绑定同一 git 项目 100 的仓库：先建禁用的 a、再建启用的 b。
-	// 断言只取到启用的 b（enabled 过滤生效，与 id 顺序无关）。
-	mockGitRepo.EXPECT().GetByProjectID(gomock.Any(), 100).Times(2).Return(&biz.GitProject{}, nil)
-	_, err = repo.Create(context.TODO(), &biz.CreateRepoInput{Name: "a", Enabled: false, NeedGitRepo: true, GitProjectID: lo.ToPtr(int32(100))})
-	require.Nil(t, err)
-	_, err = repo.Create(context.TODO(), &biz.CreateRepoInput{Name: "b", Enabled: true, NeedGitRepo: true, GitProjectID: lo.ToPtr(int32(100))})
-	require.Nil(t, err)
-
-	got, err := repo.GetByGitProjectID(context.TODO(), 100)
-	require.Nil(t, err)
-	require.NotNil(t, got)
-	assert.Equal(t, "b", got.Name)
-	assert.True(t, got.Enabled)
 }
 
 func TestRepoImpl_Update(t *testing.T) {

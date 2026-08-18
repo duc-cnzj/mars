@@ -6,6 +6,7 @@ import (
 
 	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/proxy"
 	"github.com/xanzy/go-gitlab"
@@ -275,7 +276,8 @@ func (g *server) GetCommitPipeline(pid string, branch string, sha string) (*biz.
 	}
 
 	if p == nil {
-		return nil, errors.New("pipeline not found")
+		// 确定语义：指定分支/提交没有 push/web pipeline，属"资源不存在"而非系统故障。
+		return nil, errs.NotFound("pipeline not found")
 	}
 
 	pipeline := toPipeline(p)
@@ -284,6 +286,53 @@ func (g *server) GetCommitPipeline(pid string, branch string, sha string) (*biz.
 		return nil, err
 	}
 	return pipeline, nil
+}
+
+// PipelineJobOptions 返回项目最近一条 push/web pipeline 的 stage/job 去重选项，
+// 供配置通过规则下拉选择；branch 为空时不按分支过滤（取项目最近 pipeline）。
+// stage 按出现顺序、job 按执行顺序（job id 升序）去重。
+func (g *server) PipelineJobOptions(pid string, branch string) (stages []string, jobs []string, err error) {
+	opts := &gitlab.ListProjectPipelinesOptions{
+		ListOptions: gitlab.ListOptions{Page: 1, PerPage: 100},
+	}
+	if branch != "" {
+		opts.Ref = gitlab.String(branch)
+	}
+	pipelines, _, err := g.client.Pipelines.ListProjectPipelines(pid, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+	var p *gitlab.PipelineInfo
+	for _, info := range pipelines {
+		if info.Source == "push" || info.Source == "web" {
+			p = info
+			break
+		}
+	}
+	if p == nil {
+		return nil, nil, errs.NotFound("pipeline not found")
+	}
+	jobList, err := g.listPipelineJobs(pid, int(p.ID))
+	if err != nil {
+		return nil, nil, err
+	}
+	stageSet := make(map[string]struct{})
+	jobSet := make(map[string]struct{})
+	for _, j := range jobList {
+		if j.Stage != "" {
+			if _, ok := stageSet[j.Stage]; !ok {
+				stageSet[j.Stage] = struct{}{}
+				stages = append(stages, j.Stage)
+			}
+		}
+		if j.Name != "" {
+			if _, ok := jobSet[j.Name]; !ok {
+				jobSet[j.Name] = struct{}{}
+				jobs = append(jobs, j.Name)
+			}
+		}
+	}
+	return stages, jobs, nil
 }
 
 // pipelineJobs 拉取 pipeline 的全部 job，按 job id 升序（即 stage 执行顺序）返回

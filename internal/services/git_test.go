@@ -16,6 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestNewGitSvc(t *testing.T) {
@@ -292,8 +294,6 @@ func Test_gitSvc_PipelineInfo_Success(t *testing.T) {
 			{Name: "deploy", Status: "running", StageName: "deploy"},
 		},
 	}, nil)
-	// 仓库未配置 pass 规则 → 返回整体流水线状态。
-	mocks.repoRepo.EXPECT().GetByGitProjectID(gomock.Any(), int32(1)).Return(&biz.Repo{GitProjectID: 1}, nil)
 
 	res, err := svc.PipelineInfo(context.TODO(), &git.PipelineInfoRequest{
 		GitProjectId: "1",
@@ -314,12 +314,42 @@ func Test_gitSvc_PipelineInfo_Success(t *testing.T) {
 	assert.Equal(t, "deploy", res.Jobs[1].StageName)
 }
 
-// Test_gitSvc_PipelineInfo_WithPassRule 验证仓库配置 pass 规则后 status 由规则判定：
-// 规则命中 build@stage1 成功，忽略其他 job 失败，返回 success。
-func Test_gitSvc_PipelineInfo_WithPassRule(t *testing.T) {
+// Test_gitSvc_PipelineInfoByRepoId_Success 验证 repo 未配置 pass 规则时 status 为流水线整体状态：
+// repo 解析出 gitProjectID=100，pipeline 返回 running → status running。
+func Test_gitSvc_PipelineInfoByRepoId_Success(t *testing.T) {
 	svc, mocks := newGitSvcWithMocks(t)
 
-	mocks.gitRepo.EXPECT().GetCommitPipeline(gomock.Any(), 1, "main", "commit").Return(&biz.Pipeline{
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{ID: 1, Name: "app", GitProjectID: 100}, nil)
+	mocks.gitRepo.EXPECT().GetCommitPipeline(gomock.Any(), 100, "main", "commit").Return(&biz.Pipeline{
+		Status: biz.StatusRunning,
+		WebURL: "https://example.com",
+	}, nil)
+
+	res, err := svc.PipelineInfoByRepoId(context.TODO(), &git.PipelineInfoByRepoIdRequest{
+		RepoId: 1,
+		Branch: "main",
+		Commit: "commit",
+	})
+
+	assert.Nil(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, "running", res.Status)
+	assert.Equal(t, "https://example.com", res.WebUrl)
+}
+
+// Test_gitSvc_PipelineInfoByRepoId_WithPassRule 验证 repo 配置 pass 规则后 status 由规则判定：
+// 规则命中 build@stage1 成功，忽略其他 job 失败，返回 success。
+func Test_gitSvc_PipelineInfoByRepoId_WithPassRule(t *testing.T) {
+	svc, mocks := newGitSvcWithMocks(t)
+
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{
+		ID:           1,
+		GitProjectID: 100,
+		MarsConfig: &mars.Config{PipelinePassRules: []*mars.PipelinePassRule{
+			{StageName: "stage1", JobName: "build"},
+		}},
+	}, nil)
+	mocks.gitRepo.EXPECT().GetCommitPipeline(gomock.Any(), 100, "main", "commit").Return(&biz.Pipeline{
 		Status: biz.StatusFailed,
 		WebURL: "https://example.com",
 		Jobs: []biz.PipelineJob{
@@ -327,18 +357,11 @@ func Test_gitSvc_PipelineInfo_WithPassRule(t *testing.T) {
 			{Name: "test", Status: biz.StatusFailed, StageName: "stage2"},
 		},
 	}, nil)
-	mocks.repoRepo.EXPECT().GetByGitProjectID(gomock.Any(), int32(1)).Return(&biz.Repo{
-		ID:           1,
-		GitProjectID: 1,
-		MarsConfig: &mars.Config{PipelinePassRules: []*mars.PipelinePassRule{
-			{StageName: "stage1", JobName: "build"},
-		}},
-	}, nil)
 
-	res, err := svc.PipelineInfo(context.TODO(), &git.PipelineInfoRequest{
-		GitProjectId: "1",
-		Branch:       "main",
-		Commit:       "commit",
+	res, err := svc.PipelineInfoByRepoId(context.TODO(), &git.PipelineInfoByRepoIdRequest{
+		RepoId: 1,
+		Branch: "main",
+		Commit: "commit",
 	})
 
 	assert.Nil(t, err)
@@ -347,47 +370,54 @@ func Test_gitSvc_PipelineInfo_WithPassRule(t *testing.T) {
 	assert.Equal(t, "https://example.com", res.WebUrl)
 }
 
-// Test_gitSvc_PipelineInfo_RepoQueryError 验证仓库查询失败时降级：不打回错误，status 走整体状态。
-func Test_gitSvc_PipelineInfo_RepoQueryError(t *testing.T) {
+// Test_gitSvc_PipelineInfoByRepoId_RepoNotFound 验证 repo 不存在时透传 404（NotFound），
+// 而非被误映射成 500。
+func Test_gitSvc_PipelineInfoByRepoId_RepoNotFound(t *testing.T) {
 	svc, mocks := newGitSvcWithMocks(t)
 
-	mocks.gitRepo.EXPECT().GetCommitPipeline(gomock.Any(), 1, "main", "commit").Return(&biz.Pipeline{
-		Status: biz.StatusRunning,
-		WebURL: "https://example.com",
-	}, nil)
-	mocks.repoRepo.EXPECT().GetByGitProjectID(gomock.Any(), int32(1)).Return(nil, errors.New("db down"))
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 1).Return(nil, errs.NotFound("repo not found"))
 
-	res, err := svc.PipelineInfo(context.TODO(), &git.PipelineInfoRequest{
-		GitProjectId: "1",
-		Branch:       "main",
-		Commit:       "commit",
+	res, err := svc.PipelineInfoByRepoId(context.TODO(), &git.PipelineInfoByRepoIdRequest{
+		RepoId: 1,
+		Branch: "main",
+		Commit: "commit",
 	})
 
-	assert.Nil(t, err)
-	require.NotNil(t, res)
-	assert.Equal(t, "running", res.Status)
+	assert.Nil(t, res)
+	assert.Equal(t, codes.NotFound, status.Code(err))
 }
 
-// Test_gitSvc_PipelineInfo_RepoNotFound 验证 git 项目无对应已启用仓库（NotFound）时降级：
-// 不打回错误，status 走整体流水线状态。
-func Test_gitSvc_PipelineInfo_RepoNotFound(t *testing.T) {
+// Test_gitSvc_PipelineInfoByRepoId_RepoQueryError 验证 repo 查询失败（DB 抖动等）时透传错误。
+func Test_gitSvc_PipelineInfoByRepoId_RepoQueryError(t *testing.T) {
 	svc, mocks := newGitSvcWithMocks(t)
 
-	mocks.gitRepo.EXPECT().GetCommitPipeline(gomock.Any(), 1, "main", "commit").Return(&biz.Pipeline{
-		Status: biz.StatusRunning,
-		WebURL: "https://example.com",
-	}, nil)
-	mocks.repoRepo.EXPECT().GetByGitProjectID(gomock.Any(), int32(1)).Return(nil, errs.NotFound("repo not found"))
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 1).Return(nil, errors.New("db down"))
 
-	res, err := svc.PipelineInfo(context.TODO(), &git.PipelineInfoRequest{
-		GitProjectId: "1",
-		Branch:       "main",
-		Commit:       "commit",
+	res, err := svc.PipelineInfoByRepoId(context.TODO(), &git.PipelineInfoByRepoIdRequest{
+		RepoId: 1,
+		Branch: "main",
+		Commit: "commit",
 	})
 
-	assert.Nil(t, err)
-	require.NotNil(t, res)
-	assert.Equal(t, "running", res.Status)
+	assert.Nil(t, res)
+	assert.Equal(t, "db down", err.Error())
+}
+
+// Test_gitSvc_PipelineInfoByRepoId_PipelineError 验证流水线查询失败时透传错误。
+func Test_gitSvc_PipelineInfoByRepoId_PipelineError(t *testing.T) {
+	svc, mocks := newGitSvcWithMocks(t)
+
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{ID: 1, GitProjectID: 100}, nil)
+	mocks.gitRepo.EXPECT().GetCommitPipeline(gomock.Any(), 100, "main", "commit").Return(nil, errors.New("pipeline err"))
+
+	res, err := svc.PipelineInfoByRepoId(context.TODO(), &git.PipelineInfoByRepoIdRequest{
+		RepoId: 1,
+		Branch: "main",
+		Commit: "commit",
+	})
+
+	assert.Nil(t, res)
+	assert.Equal(t, "pipeline err", err.Error())
 }
 
 func Test_gitSvc_PipelineInfo_Error(t *testing.T) {
@@ -403,6 +433,49 @@ func Test_gitSvc_PipelineInfo_Error(t *testing.T) {
 	})
 
 	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+// Test_gitSvc_PipelineInfo_NotFound 回归防护：无 pipeline 应透传 404（NotFound），
+// 而非被误映射成 500——插件用 errs.NotFound 构造、data 层 Wrap 保留原码、handler 原样透传。
+func Test_gitSvc_PipelineInfo_NotFound(t *testing.T) {
+	svc, mocks := newGitSvcWithMocks(t)
+
+	mocks.gitRepo.EXPECT().GetCommitPipeline(gomock.Any(), 1, "main", "commit").Return(
+		nil, errs.NotFound("pipeline not found"))
+
+	res, err := svc.PipelineInfo(context.TODO(), &git.PipelineInfoRequest{
+		GitProjectId: "1",
+		Branch:       "main",
+		Commit:       "commit",
+	})
+	assert.Nil(t, res)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func Test_gitSvc_PipelineJobOptions_Success(t *testing.T) {
+	svc, mocks := newGitSvcWithMocks(t)
+
+	mocks.gitRepo.EXPECT().PipelineJobOptions(gomock.Any(), 1, "main").Return(
+		[]string{"build", "test"}, []string{"build-docker"}, nil)
+
+	res, err := svc.PipelineJobOptions(context.TODO(), &git.PipelineJobOptionsRequest{
+		GitProjectId: 1,
+		Branch:       "main",
+	})
+	assert.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, []string{"build", "test"}, res.Stages)
+	assert.Equal(t, []string{"build-docker"}, res.Jobs)
+}
+
+func Test_gitSvc_PipelineJobOptions_Error(t *testing.T) {
+	svc, mocks := newGitSvcWithMocks(t)
+
+	mocks.gitRepo.EXPECT().PipelineJobOptions(gomock.Any(), 1, "").Return(nil, nil, errors.New("boom"))
+
+	res, err := svc.PipelineJobOptions(context.TODO(), &git.PipelineJobOptionsRequest{GitProjectId: 1})
+	assert.Error(t, err)
 	assert.Nil(t, res)
 }
 

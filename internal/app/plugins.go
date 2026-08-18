@@ -161,6 +161,8 @@ type GitServer interface {
 	GetCommit(pid string, sha string) (*biz.Commit, error)
 	// GetCommitPipeline 返回某个提交的流水线。
 	GetCommitPipeline(pid string, branch string, sha string) (*biz.Pipeline, error)
+	// PipelineJobOptions 返回项目流水线的 stage/job 去重选项，供配置通过规则下拉。
+	PipelineJobOptions(pid string, branch string) (stages []string, jobs []string, err error)
 	// ListCommits 返回某个分支的提交列表。
 	ListCommits(pid string, branch string) ([]*biz.Commit, error)
 	// GetFileContentWithBranch 按分支返回文件内容。

@@ -73,6 +73,24 @@ func (s *GitSvc) PipelineInfo(ctx context.Context, req *git.PipelineInfoRequest)
 	return &out, nil
 }
 
+// PipelineInfoByRepoId GET /api/git/repos/{repo_id}/branches/{branch}/commits/{commit}/pipeline_info。
+func (s *GitSvc) PipelineInfoByRepoId(ctx context.Context, req *git.PipelineInfoByRepoIdRequest) (*git.PipelineInfoResponse, error) {
+	var out git.PipelineInfoResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, fmt.Sprintf("/api/git/repos/%d/branches/%s/commits/%s/pipeline_info", req.RepoId, url.PathEscape(req.Branch), url.PathEscape(req.Commit)), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// PipelineJobOptions GET /api/git/projects/{git_project_id}/pipeline_job_options。
+func (s *GitSvc) PipelineJobOptions(ctx context.Context, req *git.PipelineJobOptionsRequest) (*git.PipelineJobOptionsResponse, error) {
+	var out git.PipelineJobOptionsResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, fmt.Sprintf("/api/git/projects/%d/pipeline_job_options", req.GitProjectId), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // GetChartValuesYaml POST /api/git/get_chart_values_yaml。
 func (s *GitSvc) GetChartValuesYaml(ctx context.Context, req *git.GetChartValuesYamlRequest) (*git.GetChartValuesYamlResponse, error) {
 	var out git.GetChartValuesYamlResponse

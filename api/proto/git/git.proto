@@ -76,6 +76,15 @@ message PipelineInfoRequest {
   string commit         = 3 [(validate.rules).string.min_bytes = 1];
 }
 
+// PipelineInfoByRepoIdRequest 按 mars 部署仓库（repo_id）查询某提交的流水线状态。
+// 与 PipelineInfoRequest 的区别：主语是 repo 而非 git 项目——流水线状态判定
+// 会应用该 repo 配置的 pass 规则（见 service Git 的 PipelineInfoByRepoId）。
+message PipelineInfoByRepoIdRequest {
+  int32  repo_id = 1 [(validate.rules).int32.gt = 0];
+  string branch  = 2 [(validate.rules).string.min_bytes = 1];
+  string commit  = 3 [(validate.rules).string.min_bytes = 1];
+}
+
 // PipelineJob 是 CI 流水线单个 job 的名称、状态与所属 stage。
 message PipelineJob {
   string name       = 1;
@@ -97,6 +106,22 @@ message PipelineInfoResponse {
   string web_url = 2;
   // jobs 是流水线各 job 的名称与状态，按执行顺序排列。
   repeated PipelineJob jobs = 3;
+}
+
+// PipelineJobOptionsRequest 请求某项目流水线的 stage/job 下拉选项。
+message PipelineJobOptionsRequest {
+  // git_project_id 必填，> 0。
+  int32 git_project_id = 1 [(validate.rules).int32.gt = 0];
+  // branch 可选：指定分支时取该分支最近 pipeline；为空时取项目最近 pipeline。
+  string branch         = 2;
+}
+
+// PipelineJobOptionsResponse 是配置通过规则用的 stage/job 下拉选项（各自去重）。
+message PipelineJobOptionsResponse {
+  // stages 是 pipeline 的全部 stage 名（按出现顺序去重）。
+  repeated string stages = 1;
+  // jobs 是 pipeline 的全部 job 名（按执行顺序去重）。
+  repeated string jobs   = 2;
 }
 
 message AllReposRequest{}
@@ -162,6 +187,26 @@ service Git {
     };
     option (openapi.v3.operation) = {
       summary: "获取 pipeline 详情",
+    };
+  }
+
+  // PipelineInfoByRepoId 按 repo 获取流水线详情：仓库配置 pass 规则时，
+  // status 由规则判定，否则为 CI 整体流水线状态（与 PipelineInfo 同响应）。
+  rpc PipelineInfoByRepoId(PipelineInfoByRepoIdRequest) returns (PipelineInfoResponse) {
+    option (google.api.http)      = {
+      get: "/api/git/repos/{repo_id}/branches/{branch}/commits/{commit}/pipeline_info",
+    };
+    option (openapi.v3.operation) = {
+      summary: "按 repo 获取 pipeline 详情（status 按 repo 配置的通过规则判定）",
+    };
+  }
+
+  rpc PipelineJobOptions(PipelineJobOptionsRequest) returns (PipelineJobOptionsResponse) {
+    option (google.api.http)      = {
+      get: "/api/git/projects/{git_project_id}/pipeline_job_options",
+    };
+    option (openapi.v3.operation) = {
+      summary: "获取项目流水线的 stage/job 选项，用于配置通过规则下拉",
     };
   }
 

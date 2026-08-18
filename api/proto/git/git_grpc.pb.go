@@ -8,7 +8,6 @@ package git
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -20,13 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Git_AllRepos_FullMethodName           = "/git.Git/AllRepos"
-	Git_ProjectOptions_FullMethodName     = "/git.Git/ProjectOptions"
-	Git_BranchOptions_FullMethodName      = "/git.Git/BranchOptions"
-	Git_CommitOptions_FullMethodName      = "/git.Git/CommitOptions"
-	Git_Commit_FullMethodName             = "/git.Git/Commit"
-	Git_PipelineInfo_FullMethodName       = "/git.Git/PipelineInfo"
-	Git_GetChartValuesYaml_FullMethodName = "/git.Git/GetChartValuesYaml"
+	Git_AllRepos_FullMethodName             = "/git.Git/AllRepos"
+	Git_ProjectOptions_FullMethodName       = "/git.Git/ProjectOptions"
+	Git_BranchOptions_FullMethodName        = "/git.Git/BranchOptions"
+	Git_CommitOptions_FullMethodName        = "/git.Git/CommitOptions"
+	Git_Commit_FullMethodName               = "/git.Git/Commit"
+	Git_PipelineInfo_FullMethodName         = "/git.Git/PipelineInfo"
+	Git_PipelineInfoByRepoId_FullMethodName = "/git.Git/PipelineInfoByRepoId"
+	Git_PipelineJobOptions_FullMethodName   = "/git.Git/PipelineJobOptions"
+	Git_GetChartValuesYaml_FullMethodName   = "/git.Git/GetChartValuesYaml"
 )
 
 // GitClient is the client API for Git service.
@@ -39,6 +40,10 @@ type GitClient interface {
 	CommitOptions(ctx context.Context, in *CommitOptionsRequest, opts ...grpc.CallOption) (*CommitOptionsResponse, error)
 	Commit(ctx context.Context, in *CommitRequest, opts ...grpc.CallOption) (*CommitResponse, error)
 	PipelineInfo(ctx context.Context, in *PipelineInfoRequest, opts ...grpc.CallOption) (*PipelineInfoResponse, error)
+	// PipelineInfoByRepoId 按 repo 获取流水线详情：仓库配置 pass 规则时，
+	// status 由规则判定，否则为 CI 整体流水线状态（与 PipelineInfo 同响应）。
+	PipelineInfoByRepoId(ctx context.Context, in *PipelineInfoByRepoIdRequest, opts ...grpc.CallOption) (*PipelineInfoResponse, error)
+	PipelineJobOptions(ctx context.Context, in *PipelineJobOptionsRequest, opts ...grpc.CallOption) (*PipelineJobOptionsResponse, error)
 	GetChartValuesYaml(ctx context.Context, in *GetChartValuesYamlRequest, opts ...grpc.CallOption) (*GetChartValuesYamlResponse, error)
 }
 
@@ -110,6 +115,26 @@ func (c *gitClient) PipelineInfo(ctx context.Context, in *PipelineInfoRequest, o
 	return out, nil
 }
 
+func (c *gitClient) PipelineInfoByRepoId(ctx context.Context, in *PipelineInfoByRepoIdRequest, opts ...grpc.CallOption) (*PipelineInfoResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PipelineInfoResponse)
+	err := c.cc.Invoke(ctx, Git_PipelineInfoByRepoId_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gitClient) PipelineJobOptions(ctx context.Context, in *PipelineJobOptionsRequest, opts ...grpc.CallOption) (*PipelineJobOptionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PipelineJobOptionsResponse)
+	err := c.cc.Invoke(ctx, Git_PipelineJobOptions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *gitClient) GetChartValuesYaml(ctx context.Context, in *GetChartValuesYamlRequest, opts ...grpc.CallOption) (*GetChartValuesYamlResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetChartValuesYamlResponse)
@@ -130,6 +155,10 @@ type GitServer interface {
 	CommitOptions(context.Context, *CommitOptionsRequest) (*CommitOptionsResponse, error)
 	Commit(context.Context, *CommitRequest) (*CommitResponse, error)
 	PipelineInfo(context.Context, *PipelineInfoRequest) (*PipelineInfoResponse, error)
+	// PipelineInfoByRepoId 按 repo 获取流水线详情：仓库配置 pass 规则时，
+	// status 由规则判定，否则为 CI 整体流水线状态（与 PipelineInfo 同响应）。
+	PipelineInfoByRepoId(context.Context, *PipelineInfoByRepoIdRequest) (*PipelineInfoResponse, error)
+	PipelineJobOptions(context.Context, *PipelineJobOptionsRequest) (*PipelineJobOptionsResponse, error)
 	GetChartValuesYaml(context.Context, *GetChartValuesYamlRequest) (*GetChartValuesYamlResponse, error)
 	mustEmbedUnimplementedGitServer()
 }
@@ -158,6 +187,12 @@ func (UnimplementedGitServer) Commit(context.Context, *CommitRequest) (*CommitRe
 }
 func (UnimplementedGitServer) PipelineInfo(context.Context, *PipelineInfoRequest) (*PipelineInfoResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method PipelineInfo not implemented")
+}
+func (UnimplementedGitServer) PipelineInfoByRepoId(context.Context, *PipelineInfoByRepoIdRequest) (*PipelineInfoResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PipelineInfoByRepoId not implemented")
+}
+func (UnimplementedGitServer) PipelineJobOptions(context.Context, *PipelineJobOptionsRequest) (*PipelineJobOptionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PipelineJobOptions not implemented")
 }
 func (UnimplementedGitServer) GetChartValuesYaml(context.Context, *GetChartValuesYamlRequest) (*GetChartValuesYamlResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetChartValuesYaml not implemented")
@@ -291,6 +326,42 @@ func _Git_PipelineInfo_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Git_PipelineInfoByRepoId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PipelineInfoByRepoIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GitServer).PipelineInfoByRepoId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Git_PipelineInfoByRepoId_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GitServer).PipelineInfoByRepoId(ctx, req.(*PipelineInfoByRepoIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Git_PipelineJobOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PipelineJobOptionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GitServer).PipelineJobOptions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Git_PipelineJobOptions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GitServer).PipelineJobOptions(ctx, req.(*PipelineJobOptionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Git_GetChartValuesYaml_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetChartValuesYamlRequest)
 	if err := dec(in); err != nil {
@@ -339,6 +410,14 @@ var Git_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PipelineInfo",
 			Handler:    _Git_PipelineInfo_Handler,
+		},
+		{
+			MethodName: "PipelineInfoByRepoId",
+			Handler:    _Git_PipelineInfoByRepoId_Handler,
+		},
+		{
+			MethodName: "PipelineJobOptions",
+			Handler:    _Git_PipelineJobOptions_Handler,
 		},
 		{
 			MethodName: "GetChartValuesYaml",

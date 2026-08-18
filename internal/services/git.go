@@ -5,9 +5,7 @@ import (
 	"fmt"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/git"
-	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
-	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/date"
 	"github.com/duc-cnzj/mars/v6/internal/util/slice"
@@ -167,9 +165,8 @@ func (g *gitSvc) Commit(ctx context.Context, request *git.CommitRequest) (*git.C
 	}, nil
 }
 
-// PipelineInfo 返回指定提交对应 CI 流水线的状态、URL 与各 job 状态。
-// 若 git 项目对应仓库配置了 pipeline pass 规则，则 status 由规则判定（见 biz.PipelinePassStatus），
-// 未配置规则时返回整体流水线状态。
+// PipelineInfo 返回指定提交对应 CI 流水线的状态、URL 与各 job 状态，status 即流水线整体状态，
+// 不做 pass 规则判定。需要按仓库配置的 pass 规则判定 status 时用 PipelineInfoByRepoId。
 func (g *gitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequest) (*git.PipelineInfoResponse, error) {
 	projectID := cast.ToInt(request.GitProjectId)
 	pipeline, err := g.gitBiz.GetCommitPipeline(ctx, projectID, request.Branch, request.Commit)
@@ -177,8 +174,35 @@ func (g *gitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequ
 		return nil, logError(ctx, g.logger, err)
 	}
 
+	jobs := make([]*git.PipelineJob, 0, len(pipeline.Jobs))
+	for _, j := range pipeline.Jobs {
+		jobs = append(jobs, &git.PipelineJob{Name: j.Name, Status: j.Status, StageName: j.StageName})
+	}
+	return &git.PipelineInfoResponse{
+		Status: pipeline.Status,
+		WebUrl: pipeline.WebURL,
+		Jobs:   jobs,
+	}, nil
+}
+
+// PipelineInfoByRepoId 返回指定 repo 下某提交对应 CI 流水线的状态、URL 与各 job 状态。
+// 与 PipelineInfo 的差异在入参主语：本方法按 repo_id（mars 部署仓库主键）解析出
+// git 项目 ID 与通过规则，再判定流水线状态；repo 不存在时透传 404。仓库配置 pass
+// 规则时 status 由规则判定（见 biz.PipelinePassStatus），未配置时返回整体流水线状态。
+func (g *gitSvc) PipelineInfoByRepoId(ctx context.Context, request *git.PipelineInfoByRepoIdRequest) (*git.PipelineInfoResponse, error) {
+	repoID := int(request.RepoId)
+	repo, err := g.repoBiz.Get(ctx, repoID)
+	if err != nil {
+		return nil, logError(ctx, g.logger, err)
+	}
+
+	pipeline, err := g.gitBiz.GetCommitPipeline(ctx, int(repo.GitProjectID), request.Branch, request.Commit)
+	if err != nil {
+		return nil, logError(ctx, g.logger, err)
+	}
+
 	status := pipeline.Status
-	if rules := g.repoPassRules(ctx, projectID); len(rules) > 0 {
+	if rules := repo.GetMarsConfig().PipelinePassRules; len(rules) > 0 {
 		status = biz.PipelinePassStatus(pipeline, rules)
 	}
 
@@ -193,22 +217,14 @@ func (g *gitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequ
 	}, nil
 }
 
-// repoPassRules 返回 git 项目对应已启用仓库配置的流水线通过规则。
-// 无匹配仓库（NotFound）、仓库未配置规则或查询失败时返回空（调用方走默认整体状态逻辑）；
-// 查询失败属于降级场景，打日志后按"未配置规则"处理，不阻断流水线状态返回。
-func (g *gitSvc) repoPassRules(ctx context.Context, projectID int) []*mars.PipelinePassRule {
-	repo, err := g.repoBiz.GetByGitProjectID(ctx, int32(projectID))
+// PipelineJobOptions 返回项目流水线的 stage/job 去重选项，供配置通过规则下拉选择。
+// branch 为空时取项目最近 pipeline，非空时取该分支最近 pipeline。
+func (g *gitSvc) PipelineJobOptions(ctx context.Context, request *git.PipelineJobOptionsRequest) (*git.PipelineJobOptionsResponse, error) {
+	stages, jobs, err := g.gitBiz.PipelineJobOptions(ctx, int(request.GitProjectId), request.Branch)
 	if err != nil {
-		if errs.IsNotFound(err) {
-			return nil
-		}
-		g.logger.ErrorCtx(ctx, err)
-		return nil
+		return nil, logError(ctx, g.logger, err)
 	}
-	if rules := repo.GetMarsConfig().PipelinePassRules; len(rules) > 0 {
-		return rules
-	}
-	return nil
+	return &git.PipelineJobOptionsResponse{Stages: stages, Jobs: jobs}, nil
 }
 
 // GetChartValuesYaml 解析 helm chart 的 values.yaml：把前端提交的表单项映射为 values 返回。

@@ -40,17 +40,6 @@ func (r *repoImpl) GetByName(ctx context.Context, name string) (out *biz.Repo, e
 	return toRepo(get), errs.Wrap(err, "get repo by name")
 }
 
-// GetByGitProjectID 按 git 项目 ID 查询已启用的单个仓库；同项目存在多个仓库时取首个
-// （git_project_id 非唯一，repoPassRules 仅需一个匹配仓库）。NotFound 由 errs.Wrap 归类。
-func (r *repoImpl) GetByGitProjectID(ctx context.Context, projectID int32) (out *biz.Repo, err error) {
-	ctx, span := tracer.Start(ctx, "repoImpl/GetByGitProjectID")
-	defer func() { endSpan(span, err) }()
-	one, err := r.data.DB().Repo.Query().
-		Where(repo.GitProjectID(projectID), repo.Enabled(true)).
-		First(ctx)
-	return toRepo(one), errs.Wrap(err, "get repo by git project id")
-}
-
 // NewRepo 构造仓库 repo 实现，注入 git 端口供创建/更新时解析项目名与默认分支。
 func NewRepo(data dataStore, gitRepo biz.GitRepo) biz.RepoRepo {
 	return &repoImpl{

@@ -393,7 +393,7 @@ const DeployProjectForm: React.FC<{
                   <Col span={24}>
                     {needGitRepo && (
                       <PipelineInfo
-                        projectId={curr.gitProjectId}
+                        repoId={repoId}
                         branch={branch}
                         commit={commit}
                       />

@@ -502,6 +502,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/git/projects/{gitProjectId}/pipeline_job_options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取项目流水线的 stage/job 选项，用于配置通过规则下拉 */
+        get: operations["Git_PipelineJobOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/git/repos/{repoId}/branches/{branch}/commits/{commit}/pipeline_info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 按 repo 获取 pipeline 详情（status 按 repo 配置的通过规则判定）
+         * @description PipelineInfoByRepoId 按 repo 获取流水线详情：仓库配置 pass 规则时，
+         *      status 由规则判定，否则为 CI 整体流水线状态（与 PipelineInfo 同响应）。
+         */
+        get: operations["Git_PipelineInfoByRepoId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/metrics/namespace/{namespaceId}/cpu_memory": {
         parameters: {
             query?: never;
@@ -1164,6 +1202,13 @@ export interface components {
             /** @description status 是 job 的状态，取值同 PipelineInfoResponse.status。 */
             status: string;
             stageName: string;
+        };
+        /** @description PipelineJobOptionsResponse 是配置通过规则用的 stage/job 下拉选项（各自去重）。 */
+        "git.PipelineJobOptionsResponse": {
+            /** @description stages 是 pipeline 的全部 stage 名（按出现顺序去重）。 */
+            stages: string[];
+            /** @description jobs 是 pipeline 的全部 job 名（按执行顺序去重）。 */
+            jobs: string[];
         };
         "git.ProjectOptionsResponse": {
             items: components["schemas"]["git.Option"][];
@@ -2670,6 +2715,74 @@ export interface operations {
             header?: never;
             path: {
                 gitProjectId: string;
+                branch: string;
+                commit: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["git.PipelineInfoResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Git_PipelineJobOptions: {
+        parameters: {
+            query?: {
+                /** @description branch 可选：指定分支时取该分支最近 pipeline；为空时取项目最近 pipeline。 */
+                branch?: string;
+            };
+            header?: never;
+            path: {
+                /** @description git_project_id 必填，> 0。 */
+                gitProjectId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["git.PipelineJobOptionsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Git_PipelineInfoByRepoId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                repoId: number;
                 branch: string;
                 commit: string;
             };

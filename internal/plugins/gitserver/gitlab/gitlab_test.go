@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // gitApp 是 PluginApp 的最小手写 stub。
@@ -376,6 +378,8 @@ func TestGetCommitPipeline_not_found(t *testing.T) {
 	g := newServer(t, srv.URL)
 	_, err := g.GetCommitPipeline("1", "main", "s")
 	assert.ErrorContains(t, err, "pipeline not found")
+	// 无 pipeline 属"资源不存在"而非系统故障，须映射 404 而非 500。
+	assert.Equal(t, codes.NotFound, status.Code(err))
 }
 
 // TestGetCommitPipeline_jobs_mixed 验证每个 job 返回自己的名称与状态，空名 job 被忽略。
@@ -501,6 +505,164 @@ func TestGetCommitPipeline_jobs_sorted_by_id(t *testing.T) {
 	assert.Equal(t, "lint", p.Jobs[2].Name)
 	assert.Equal(t, "manual", p.Jobs[3].Name, "手动/未运行 job 按所属 stage 位置排列")
 	assert.Equal(t, "deploy", p.Jobs[4].Name)
+}
+
+// ---------------------------------------------------------------------------
+// PipelineJobOptions
+// ---------------------------------------------------------------------------
+
+// TestPipelineJobOptions_success_with_branch 验证传 branch 时带 ref 过滤，返回去重后的 stage/job。
+func TestPipelineJobOptions_success_with_branch(t *testing.T) {
+	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v4/projects/1/pipelines":
+			assert.Equal(t, "main", r.URL.Query().Get("ref"), "传 branch 时应带 ref 过滤")
+			writeJSON(w, []map[string]any{
+				{"id": 11, "project_id": 1, "status": "success", "source": "push", "ref": "main"},
+			})
+		case "/api/v4/projects/1/pipelines/11/jobs":
+			writeJSON(w, []map[string]any{
+				{"id": 1, "name": "compile", "status": "success", "stage": "build"},
+				{"id": 2, "name": "deploy", "status": "success", "stage": "deploy"},
+			})
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+	})))
+	t.Cleanup(srv.Close)
+
+	g := newServer(t, srv.URL)
+	stages, jobs, err := g.PipelineJobOptions("1", "main")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"build", "deploy"}, stages)
+	assert.Equal(t, []string{"compile", "deploy"}, jobs)
+}
+
+// TestPipelineJobOptions_success_without_branch 验证 branch 为空时不带 ref 过滤（取项目最近 pipeline）。
+func TestPipelineJobOptions_success_without_branch(t *testing.T) {
+	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v4/projects/1/pipelines":
+			assert.Empty(t, r.URL.Query().Get("ref"), "branch 为空时不应带 ref 过滤")
+			writeJSON(w, []map[string]any{
+				{"id": 11, "project_id": 1, "status": "success", "source": "push"},
+			})
+		case "/api/v4/projects/1/pipelines/11/jobs":
+			writeJSON(w, []map[string]any{
+				{"id": 1, "name": "build", "status": "success", "stage": "compile"},
+			})
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+	})))
+	t.Cleanup(srv.Close)
+
+	g := newServer(t, srv.URL)
+	stages, jobs, err := g.PipelineJobOptions("1", "")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"compile"}, stages)
+	assert.Equal(t, []string{"build"}, jobs)
+}
+
+// TestPipelineJobOptions_dedup 验证重复的 stage/job 名按出现顺序去重。
+func TestPipelineJobOptions_dedup(t *testing.T) {
+	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v4/projects/1/pipelines":
+			writeJSON(w, []map[string]any{
+				{"id": 11, "project_id": 1, "status": "success", "source": "web"},
+			})
+		case "/api/v4/projects/1/pipelines/11/jobs":
+			writeJSON(w, []map[string]any{
+				{"id": 1, "name": "build", "status": "success", "stage": "build"},
+				{"id": 2, "name": "build", "status": "success", "stage": "build"},
+				{"id": 3, "name": "lint", "status": "success", "stage": "build"},
+				{"id": 4, "name": "", "status": "success", "stage": "test"},
+				{"id": 5, "name": "deploy", "status": "success", "stage": ""},
+			})
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+	})))
+	t.Cleanup(srv.Close)
+
+	g := newServer(t, srv.URL)
+	stages, jobs, err := g.PipelineJobOptions("1", "main")
+	require.NoError(t, err)
+	// job4 空 name 不影响 stage；job5 空 stage 不影响 name。
+	assert.Equal(t, []string{"build", "test"}, stages, "重复 stage 去重，空 stage 忽略")
+	assert.Equal(t, []string{"build", "lint", "deploy"}, jobs, "重复 job 去重，空 job 忽略")
+}
+
+// TestPipelineJobOptions_skips_other_sources 验证 schedule 等非 push/web pipeline 被跳过。
+func TestPipelineJobOptions_skips_other_sources(t *testing.T) {
+	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v4/projects/1/pipelines":
+			writeJSON(w, []map[string]any{
+				{"id": 1, "source": "schedule", "status": "failed"},
+				{"id": 2, "source": "web", "status": "success"},
+			})
+		case "/api/v4/projects/1/pipelines/2/jobs":
+			writeJSON(w, []map[string]any{
+				{"id": 1, "name": "build", "status": "success", "stage": "compile"},
+			})
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+	})))
+	t.Cleanup(srv.Close)
+
+	g := newServer(t, srv.URL)
+	stages, jobs, err := g.PipelineJobOptions("1", "main")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"compile"}, stages)
+	assert.Equal(t, []string{"build"}, jobs)
+}
+
+func TestPipelineJobOptions_not_found(t *testing.T) {
+	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, []map[string]any{{"id": 1, "source": "schedule", "status": "failed"}})
+	})))
+	t.Cleanup(srv.Close)
+
+	g := newServer(t, srv.URL)
+	_, _, err := g.PipelineJobOptions("1", "main")
+	assert.ErrorContains(t, err, "pipeline not found")
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func TestPipelineJobOptions_pipelines_error(t *testing.T) {
+	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		writeJSON(w, map[string]any{"message": "forbidden"})
+	})))
+	t.Cleanup(srv.Close)
+
+	g := newServer(t, srv.URL)
+	_, _, err := g.PipelineJobOptions("1", "main")
+	assert.Error(t, err)
+}
+
+func TestPipelineJobOptions_jobs_error(t *testing.T) {
+	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v4/projects/1/pipelines":
+			writeJSON(w, []map[string]any{
+				{"id": 11, "project_id": 1, "status": "success", "source": "push"},
+			})
+		case "/api/v4/projects/1/pipelines/11/jobs":
+			w.WriteHeader(http.StatusForbidden)
+			writeJSON(w, map[string]any{"message": "forbidden"})
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+	})))
+	t.Cleanup(srv.Close)
+
+	g := newServer(t, srv.URL)
+	_, _, err := g.PipelineJobOptions("1", "main")
+	assert.Error(t, err)
 }
 
 // ---------------------------------------------------------------------------

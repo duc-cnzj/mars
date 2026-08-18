@@ -1,9 +1,15 @@
 import React, { memo, useEffect, useState } from "react";
 import { Alert } from "antd";
+import { ClockCircleOutlined } from "@ant-design/icons";
 import ajax from "../api/ajax";
 
+// gray 标记 manual（等待手动触发）走灰色卡片，不用 warning 的黄色。
 const pipelines: {
-  [status: string]: { type: "error" | "success" | "warning"; message: string };
+  [status: string]: {
+    type: "error" | "success" | "warning" | "info";
+    message: string;
+    gray?: boolean;
+  };
 } = {
   failed: {
     type: "error",
@@ -16,6 +22,12 @@ const pipelines: {
   manual: {
     type: "warning",
     message: "pipeline 等待手动触发",
+    gray: true,
+  },
+  unknown: {
+    type: "info",
+    message: "pipeline 状态未知",
+    gray: true,
   },
   success: {
     type: "success",
@@ -24,25 +36,26 @@ const pipelines: {
 };
 
 const PipelineInfo: React.FC<{
-  projectId: number;
+  repoId: number;
   branch: string;
   commit: string;
-}> = ({ projectId, branch, commit }) => {
+}> = ({ repoId, branch, commit }) => {
   const [info, setInfo] = useState<{
     message: string;
     web_url: string;
-    type: "success" | "warning" | "error";
+    type: "success" | "warning" | "error" | "info";
+    gray?: boolean;
   } | null>();
 
   useEffect(() => {
-    if (projectId && branch && commit) {
+    if (repoId && branch && commit) {
       ajax
         .GET(
-          "/api/git/projects/{gitProjectId}/branches/{branch}/commits/{commit}/pipeline_info",
+          "/api/git/repos/{repoId}/branches/{branch}/commits/{commit}/pipeline_info",
           {
             params: {
               path: {
-                gitProjectId: String(projectId),
+                repoId,
                 branch,
                 commit,
               },
@@ -60,19 +73,30 @@ const PipelineInfo: React.FC<{
               type: p.type,
               message: p.message,
               web_url: data.webUrl,
+              gray: p.gray,
             });
           }
         });
       return;
     }
     setInfo(null);
-  }, [projectId, branch, commit]);
+  }, [repoId, branch, commit]);
 
   return (
     <>
       {info ? (
         <Alert
-          style={{ marginBottom: 10 }}
+          style={{
+            marginBottom: 10,
+            ...(info.gray
+              ? { background: "#f5f5f5", borderColor: "#d9d9d9" }
+              : {}),
+          }}
+          icon={
+            info.gray ? (
+              <ClockCircleOutlined style={{ color: "#8c8c8c" }} />
+            ) : undefined
+          }
           message={
             <div style={{ display: "flex", alignItems: "center" }}>
               <span style={{ marginRight: 10 }}>{info.message}</span>

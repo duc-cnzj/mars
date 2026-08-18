@@ -30,6 +30,8 @@ type GitServer interface {
 	ListCommits(pid string, branch string) ([]*biz.Commit, error)
 	// GetCommitPipeline 返回某提交的流水线。
 	GetCommitPipeline(pid string, branch string, sha string) (*biz.Pipeline, error)
+	// PipelineJobOptions 返回项目流水线的 stage/job 去重选项。
+	PipelineJobOptions(pid string, branch string) (stages []string, jobs []string, err error)
 	// GetFileContentWithBranch 按分支返回文件内容。
 	GetFileContentWithBranch(pid string, branch, filename string) (string, error)
 }
@@ -172,6 +174,17 @@ func (g *gitRepo) GetCommitPipeline(ctx context.Context, projectID int, branch, 
 		return nil, errs.Wrap(err, "git get commit pipeline")
 	}
 	return pipeline, nil
+}
+
+// PipelineJobOptions 返回项目流水线的 stage/job 去重选项（供配置通过规则下拉）。
+func (g *gitRepo) PipelineJobOptions(ctx context.Context, projectID int, branch string) (stages []string, jobs []string, err error) {
+	ctx, span := tracer.Start(ctx, "gitRepo/PipelineJobOptions")
+	defer func() { endSpan(span, err) }()
+	stages, jobs, err = g.gitServer().PipelineJobOptions(fmt.Sprintf("%d", projectID), branch)
+	if err != nil {
+		return nil, nil, errs.Wrap(err, "git pipeline job options")
+	}
+	return stages, jobs, nil
 }
 
 // GetByProjectID 别名 GetProject（biz.GitRepo 接口必需）。
