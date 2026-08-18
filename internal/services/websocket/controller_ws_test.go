@@ -291,9 +291,12 @@ func TestWebsocketManager_Serve(t *testing.T) {
 	defer m.Finish()
 
 	ch := make(chan []byte, 100)
+	done := make(chan struct{})
 	var closeOnce sync.Once
-	// stop 与 mock Close 共用同一 Once：避免测试关 ch 后 mock.Close 再关导致 double-close。
-	stop := func() { closeOnce.Do(func() { close(ch) }) }
+	// stop 关闭 done 而非 ch：对齐真实 memory pubsub 语义（Delete 持 connMu 移除连接后
+	// ToSelf 查表失败即安全丢弃），避免 close(ch) 与并发 ToSelf 的 send 竞态——read 循环
+	// 用 go dispatchEvent 异步分发，handler 存活可超过连接拆除，裸 close(ch)+send 必撞车。
+	stop := func() { closeOnce.Do(func() { close(done) }) }
 	sub := app.NewMockPubSub(m)
 	sub.EXPECT().Subscribe().Return(ch).AnyTimes()
 	sub.EXPECT().ToSelf(gomock.Any()).DoAndReturn(func(msg app.WebsocketMessage) error {
@@ -301,7 +304,10 @@ func TestWebsocketManager_Serve(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		ch <- b
+		select {
+		case ch <- b:
+		case <-done: // 连接已关闭：丢弃，不向已关闭通道投递
+		}
 		return nil
 	}).AnyTimes()
 	sub.EXPECT().ID().Return("cid").AnyTimes()
@@ -360,7 +366,8 @@ func TestWebsocketManager_Serve(t *testing.T) {
 	joinMsg, _ := proto.Marshal(&websocket_pb.ProjectPodEventJoinInput{Type: ProjectPodEvent, Join: true, ProjectId: 2})
 	assert.NoError(t, c.WriteMessage(websocket.BinaryMessage, joinMsg))
 
-	// 4. 断开：客户端关连接 + 关 Subscribe channel 让 write 循环退出
+	// 4. 断开：客户端关连接 → read 读错 → errgroup cancel → write 经 ctx.Done 退出，
+	//   随后 CloseAndClean → pubSub.Close → stop 关 done（后续 ToSelf 安全丢弃）。
 	c.Close()
 	stop()
 	assert.Eventually(t, func() bool { return wm.counter.Count() == 0 }, 3*time.Second, 10*time.Millisecond)
