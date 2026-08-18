@@ -14,16 +14,17 @@ import (
 // fakeRepoRepoForRepoBiz 只覆盖 RepoBiz 测试用到的 RepoRepo 方法，其余由嵌入接口兜底。
 type fakeRepoRepoForRepoBiz struct {
 	RepoRepo
-	get           func(ctx context.Context, id int) (*Repo, error)
-	getByName     func(ctx context.Context, name string) (*Repo, error)
-	show          func(ctx context.Context, id int) (*Repo, error)
-	create        func(ctx context.Context, in *CreateRepoInput) (*Repo, error)
-	update        func(ctx context.Context, in *UpdateRepoInput) (*Repo, error)
-	clone         func(ctx context.Context, input *CloneRepoInput) (*Repo, error)
-	delete        func(ctx context.Context, id int) error
-	toggleEnabled func(ctx context.Context, id int, enabled bool) (*Repo, error)
-	all           func(ctx context.Context, in *AllRepoRequest) ([]*Repo, error)
-	list          func(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error)
+	get               func(ctx context.Context, id int) (*Repo, error)
+	getByGitProjectID func(ctx context.Context, projectID int32) (*Repo, error)
+	getByName         func(ctx context.Context, name string) (*Repo, error)
+	show              func(ctx context.Context, id int) (*Repo, error)
+	create            func(ctx context.Context, in *CreateRepoInput) (*Repo, error)
+	update            func(ctx context.Context, in *UpdateRepoInput) (*Repo, error)
+	clone             func(ctx context.Context, input *CloneRepoInput) (*Repo, error)
+	delete            func(ctx context.Context, id int) error
+	toggleEnabled     func(ctx context.Context, id int, enabled bool) (*Repo, error)
+	all               func(ctx context.Context, in *AllRepoRequest) ([]*Repo, error)
+	list              func(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error)
 }
 
 func (f *fakeRepoRepoForRepoBiz) All(ctx context.Context, in *AllRepoRequest) ([]*Repo, error) {
@@ -36,6 +37,10 @@ func (f *fakeRepoRepoForRepoBiz) List(ctx context.Context, in *ListRepoRequest) 
 
 func (f *fakeRepoRepoForRepoBiz) Get(ctx context.Context, id int) (*Repo, error) {
 	return f.get(ctx, id)
+}
+
+func (f *fakeRepoRepoForRepoBiz) GetByGitProjectID(ctx context.Context, projectID int32) (*Repo, error) {
+	return f.getByGitProjectID(ctx, projectID)
 }
 
 func (f *fakeRepoRepoForRepoBiz) GetByName(ctx context.Context, name string) (*Repo, error) {
@@ -517,6 +522,22 @@ func TestRepoBiz_List_Passthrough(t *testing.T) {
 	assert.True(t, listCalled)
 	assert.Len(t, got, 1)
 	assert.Equal(t, int32(1), pag.Page)
+}
+
+func TestRepoBiz_GetByGitProjectID_Passthrough(t *testing.T) {
+	var called bool
+	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+		getByGitProjectID: func(ctx context.Context, projectID int32) (*Repo, error) {
+			called = true
+			assert.Equal(t, int32(42), projectID)
+			return &Repo{ID: 1, Name: "app", GitProjectID: 42}, nil
+		},
+	})
+	got, err := b.GetByGitProjectID(context.TODO(), 42)
+	assert.NoError(t, err)
+	assert.True(t, called)
+	assert.Equal(t, "app", got.Name)
+	assert.Equal(t, int32(42), got.GitProjectID)
 }
 
 func TestRepoBiz_Get_Passthrough(t *testing.T) {
