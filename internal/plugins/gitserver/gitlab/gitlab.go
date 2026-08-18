@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"errors"
+	"net/http"
 	"sort"
 
 	"github.com/duc-cnzj/mars/v6/internal/app"
@@ -154,10 +155,39 @@ func (g *server) Destroy() error {
 	return nil
 }
 
+// classifyGitlabError 把 go-gitlab 返回的 *gitlab.ErrorResponse 按其 HTTP 状态码
+// 归类为对应语义的错误：404→NotFound、400→InvalidArgument、401→Unauthenticated、
+// 403→PermissionDenied。gitlab API 的 4xx 多由请求参数/资源触发（项目/提交/分支/
+// 文件不存在、参数非法、token 无权限），直接原样上抛会被 data 层 errs.Wrap 默认落
+// 500，掩盖真实语义；归类后 data 层 errs.Wrap 经 wrapErr 对已带 status 的错误保留
+// 原码（如插件自身 errs.NotFound("pipeline not found") 的先例）。5xx 与网络错误等
+// 无法归类的错误原样返回，仍由 errs.Wrap 落 500——外部系统故障本就是内部错误。
+func classifyGitlabError(err error) error {
+	if err == nil {
+		return nil
+	}
+	var respErr *gitlab.ErrorResponse
+	if !errors.As(err, &respErr) || respErr.Response == nil {
+		return err
+	}
+	switch respErr.Response.StatusCode {
+	case http.StatusNotFound:
+		return errs.WrapNotFound(err, "gitlab 资源不存在")
+	case http.StatusBadRequest:
+		return errs.WrapInvalidArgument(err, "gitlab 请求参数错误")
+	case http.StatusUnauthorized:
+		return errs.WrapUnauthenticated(err, "gitlab 认证失败")
+	case http.StatusForbidden:
+		return errs.WrapPermissionDenied(err, "gitlab 无权限")
+	default:
+		return err
+	}
+}
+
 // GetProject 按项目 id 返回项目信息。
 func (g *server) GetProject(pid string) (*biz.GitProject, error) {
 	p, _, err := g.client.Projects.GetProject(pid, &gitlab.GetProjectOptions{})
-	return toGitProject(p), err
+	return toGitProject(p), classifyGitlabError(err)
 }
 
 // listProjects 是分页内部实现，供 AllProjects 迭代拉取全部项目。
@@ -167,7 +197,7 @@ func (g *server) listProjects(page, pageSize int) ([]*biz.GitProject, error) {
 		ListOptions:    gitlab.ListOptions{PerPage: pageSize, Page: page},
 	})
 	if err != nil {
-		return nil, err
+		return nil, classifyGitlabError(err)
 	}
 	projects := make([]*biz.GitProject, 0, len(res))
 	for _, re := range res {
@@ -201,7 +231,7 @@ func (g *server) AllProjects() ([]*biz.GitProject, error) {
 func (g *server) listBranches(pid string, page, pageSize int) ([]*biz.Branch, error) {
 	gitlabBranches, _, e := g.client.Branches.ListBranches(pid, &gitlab.ListBranchesOptions{ListOptions: gitlab.ListOptions{PerPage: pageSize, Page: page}})
 	if e != nil {
-		return nil, e
+		return nil, classifyGitlabError(e)
 	}
 	branches := make([]*biz.Branch, 0, len(gitlabBranches))
 	for _, gitlabBranch := range gitlabBranches {
@@ -235,7 +265,7 @@ func (g *server) AllBranches(pid string) ([]*biz.Branch, error) {
 func (g *server) GetCommit(pid string, sha string) (*biz.Commit, error) {
 	c, _, err := g.client.Commits.GetCommit(pid, sha)
 	if err != nil {
-		return nil, err
+		return nil, classifyGitlabError(err)
 	}
 	return toCommit(c), nil
 }
@@ -249,7 +279,7 @@ func (g *server) ListCommits(pid string, branch string) ([]*biz.Commit, error) {
 		res = append(res, toCommit(c))
 	}
 
-	return res, err
+	return res, classifyGitlabError(err)
 }
 
 // GetCommitPipeline 返回指定分支/提交对应的 push/web pipeline；没有则报错。
@@ -265,7 +295,7 @@ func (g *server) GetCommitPipeline(pid string, branch string, sha string) (*biz.
 		SHA: gitlab.String(sha),
 	})
 	if err != nil {
-		return nil, err
+		return nil, classifyGitlabError(err)
 	}
 	// 只拿 push/web 的 pipeline
 	for _, info := range pipelines {
@@ -300,7 +330,7 @@ func (g *server) PipelineJobOptions(pid string, branch string) (stages []string,
 	}
 	pipelines, _, err := g.client.Pipelines.ListProjectPipelines(pid, opts)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, classifyGitlabError(err)
 	}
 	var p *gitlab.PipelineInfo
 	for _, info := range pipelines {
@@ -367,7 +397,7 @@ func (g *server) listPipelineJobs(pid string, pipelineID int) ([]*gitlab.Job, er
 			ListOptions: gitlab.ListOptions{Page: page, PerPage: 100},
 		})
 		if err != nil {
-			return nil, err
+			return nil, classifyGitlabError(err)
 		}
 		jobs = append(jobs, batch...)
 		if len(batch) < 100 {
@@ -386,7 +416,7 @@ func getRawFile(client *gitlab.Client, pid string, shaOrBranch string, filename 
 		opt.Ref = gitlab.String(shaOrBranch)
 	}
 	raw, _, err := client.RepositoryFiles.GetRawFile(pid, filename, &opt)
-	return string(raw), err
+	return string(raw), classifyGitlabError(err)
 }
 
 // GetFileContentWithSha 按 commit sha 返回文件内容。
@@ -418,7 +448,7 @@ func getDirectoryFiles(g *gitlab.Client, pid string, commit string, path string,
 	for opt.Page != -1 {
 		tree, _, err := g.Repositories.ListTree(pid, opt)
 		if err != nil {
-			return nil, err
+			return nil, classifyGitlabError(err)
 		}
 		if len(tree) != opt.PerPage {
 			opt.Page = -1

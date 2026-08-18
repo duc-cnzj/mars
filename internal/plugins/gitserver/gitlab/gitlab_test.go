@@ -2,9 +2,11 @@ package gitlab
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/duc-cnzj/mars/v6/internal/app"
@@ -154,7 +156,61 @@ func TestGetProject_error(t *testing.T) {
 
 	g := newServer(t, srv.URL)
 	_, err := g.GetProject("999")
-	assert.Error(t, err)
+	require.Error(t, err)
+	// gitlab 项目不存在是资源缺失而非系统故障，经 classifyGitlabError 映射为 404，
+	// data 层 errs.Wrap 保留该状态码，避免客户端把"项目不存在"误判成 500。
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+// TestClassifyGitlabError 覆盖 gitlab API 错误按 HTTP 状态码归类的全部分支：
+// 404→NotFound、400→InvalidArgument、401→Unauthenticated、403→PermissionDenied，
+// 5xx 与非 *gitlab.ErrorResponse 原样透传（data 层 errs.Wrap 落 500）、nil 返回 nil。
+func TestClassifyGitlabError(t *testing.T) {
+	t.Run("nil input", func(t *testing.T) {
+		assert.Nil(t, classifyGitlabError(nil))
+	})
+
+	t.Run("non gitlab error passthrough", func(t *testing.T) {
+		plain := errors.New("connection refused")
+		assert.Same(t, plain, classifyGitlabError(plain))
+	})
+
+	testCases := []struct {
+		name   string
+		code   int
+		expect codes.Code
+	}{
+		{"not found", http.StatusNotFound, codes.NotFound},
+		{"bad request", http.StatusBadRequest, codes.InvalidArgument},
+		{"unauthorized", http.StatusUnauthorized, codes.Unauthenticated},
+		{"forbidden", http.StatusForbidden, codes.PermissionDenied},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// ErrorResponse.Error() 会解引用 Response.Request.URL.Path，
+			// 测试需与真实 go-gitlab 一致地补上 Request，否则 status.Convert 构造消息时 panic。
+			respErr := &gitlab.ErrorResponse{
+				Response: &http.Response{
+					StatusCode: tc.code,
+					Request:    &http.Request{URL: &url.URL{Path: "/api/v4/projects/999"}},
+				},
+				Message: "boom",
+			}
+			got := classifyGitlabError(respErr)
+			assert.Equal(t, tc.expect, status.Code(got))
+			assert.ErrorIs(t, got, respErr)
+		})
+	}
+
+	t.Run("server error stays passthrough", func(t *testing.T) {
+		respErr := &gitlab.ErrorResponse{Response: &http.Response{StatusCode: http.StatusInternalServerError}, Message: "boom"}
+		assert.Same(t, respErr, classifyGitlabError(respErr))
+	})
+
+	t.Run("error response without response stays passthrough", func(t *testing.T) {
+		respErr := &gitlab.ErrorResponse{Message: "no response"}
+		assert.Same(t, respErr, classifyGitlabError(respErr))
+	})
 }
 
 // ---------------------------------------------------------------------------

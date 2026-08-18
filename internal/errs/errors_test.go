@@ -24,6 +24,7 @@ func TestWrapConstructors_NilErr(t *testing.T) {
 	assert.Nil(t, WrapNotFound(nil, "query access token"))
 	assert.Nil(t, WrapInvalidArgument(nil, "create repo"))
 	assert.Nil(t, WrapUnauthenticated(nil, "verify token"))
+	assert.Nil(t, WrapPermissionDenied(nil, "permission denied"))
 	assert.Nil(t, Wrap(nil, "revoke access token"))
 }
 
@@ -51,6 +52,13 @@ func TestWrapConstructors(t *testing.T) {
 		underlying := errors.New("token 验证失败")
 		err := WrapUnauthenticated(underlying, "verify token")
 		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+		assert.ErrorIs(t, err, underlying)
+	})
+
+	t.Run("WrapPermissionDenied", func(t *testing.T) {
+		underlying := errors.New("gitlab 无权限")
+		err := WrapPermissionDenied(underlying, "permission denied")
+		assert.Equal(t, codes.PermissionDenied, status.Code(err))
 		assert.ErrorIs(t, err, underlying)
 	})
 }

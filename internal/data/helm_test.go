@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli/values"
@@ -67,7 +69,10 @@ func Test_checkIfInstallable(t *testing.T) {
 			Type: "xxx",
 		},
 	})
-	assert.Error(t, err)
+	require.Error(t, err)
+	// chart 类型非法是显式校验失败，映射为 InvalidArgument(400) 而非默认 500，
+	// 上层 errs.Wrap 保留该状态码，客户端不会把"chart 不可安装"误判成服务器内部错误。
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
 }
 
 // TestUpgradeOrInstall_ClusterError 覆盖 UpgradeOrInstall 两个失败路径：

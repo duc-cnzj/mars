@@ -83,6 +83,12 @@ func WrapUnauthenticated(err error, msg string) error {
 	return wrapErr(codes.Unauthenticated, err, msg)
 }
 
+// WrapPermissionDenied 构造"无权限"领域错误（gRPC PermissionDenied / HTTP 403）。
+// 供权限拒绝类场景（如外部 API 返回 403）在边界处包裹返回。
+func WrapPermissionDenied(err error, msg string) error {
+	return wrapErr(codes.PermissionDenied, err, msg)
+}
+
 // Wrap 是 data 层边界统一使用的"自动归类"构造器：按底层错误实际类型推导协议码，
 // 而非由调用方硬编码语义——这是处理不确定错误（查询/更新/外部 API 调用的返回错误
 // 可能是"记录不存在"也可能是"DB 连接断开/网络抖动"）的正确姿势。
