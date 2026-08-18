@@ -1398,6 +1398,21 @@ func (mr *MockRepoBizMockRecorder) Get(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepoBiz)(nil).Get), arg0, arg1)
 }
 
+// GetByGitProjectID mocks base method.
+func (m *MockRepoBiz) GetByGitProjectID(arg0 context.Context, arg1 int32) (*Repo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByGitProjectID", arg0, arg1)
+	ret0, _ := ret[0].(*Repo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByGitProjectID indicates an expected call of GetByGitProjectID.
+func (mr *MockRepoBizMockRecorder) GetByGitProjectID(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByGitProjectID", reflect.TypeOf((*MockRepoBiz)(nil).GetByGitProjectID), arg0, arg1)
+}
+
 // List mocks base method.
 func (m *MockRepoBiz) List(arg0 context.Context, arg1 *ListRepoRequest) ([]*Repo, *pagination.Pagination, error) {
 	m.ctrl.T.Helper()

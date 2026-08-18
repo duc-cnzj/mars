@@ -19,6 +19,8 @@ type RepoBiz interface {
 	Create(ctx context.Context, in *CreateRepoInput) (*Repo, error)
 	// Get 按 id 查询仓库。
 	Get(ctx context.Context, id int) (*Repo, error)
+	// GetByGitProjectID 按 git 项目 ID 查询已启用的单个仓库；NotFound 由 errs 归类。
+	GetByGitProjectID(ctx context.Context, projectID int32) (*Repo, error)
 	// Show 按 id 查询仓库（携带关联项目）。
 	Show(ctx context.Context, id int) (*Repo, error)
 	// Update 校验输入后更新仓库（同名冲突校验见实现）。
@@ -82,6 +84,11 @@ func (b *repoBiz) Create(ctx context.Context, in *CreateRepoInput) (*Repo, error
 // Get 按 id 查询仓库（透传 repo）。
 func (b *repoBiz) Get(ctx context.Context, id int) (*Repo, error) {
 	return b.repoRepo.Get(ctx, id)
+}
+
+// GetByGitProjectID 按 git 项目 ID 查询仓库（透传 repo）。
+func (b *repoBiz) GetByGitProjectID(ctx context.Context, projectID int32) (*Repo, error) {
+	return b.repoRepo.GetByGitProjectID(ctx, projectID)
 }
 
 // Show 按 id 查询仓库（透传 repo）。
@@ -174,6 +181,8 @@ type RepoRepo interface {
 	Get(ctx context.Context, id int) (*Repo, error)
 	// GetByName 按名称查询仓库。
 	GetByName(ctx context.Context, name string) (*Repo, error)
+	// GetByGitProjectID 按 git 项目 ID 查询已启用的单个仓库；NotFound 由 errs 归类。
+	GetByGitProjectID(ctx context.Context, projectID int32) (*Repo, error)
 	// Show 按 id 查询仓库（携带关联项目）。
 	Show(ctx context.Context, id int) (*Repo, error)
 	// Update 更新仓库。

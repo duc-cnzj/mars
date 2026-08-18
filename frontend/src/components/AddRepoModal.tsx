@@ -1,7 +1,7 @@
 import React, { useEffect, memo, useMemo } from "react";
 import yaml from "js-yaml";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
-import { CloseOutlined, CopyOutlined } from "@ant-design/icons";
+import { CloseOutlined, CopyOutlined, PlusOutlined } from "@ant-design/icons";
 import CopyToClipboard from "./CopyToClipboard";
 import _ from "lodash";
 import DynamicElement from "./elements/DynamicElement";
@@ -409,6 +409,62 @@ const AddRepoModal: React.FC<{
                   </Form.Item>
                 </Col>
               </Row>
+            )}
+
+            {needGitRepo && (
+              <Form.Item
+                label="pipeline 通过规则"
+                tooltip="配置的 (stage_name, job_name) 全部成功后该流水线才判定为通过；不配置则使用整体流水线状态"
+              >
+                <Form.List name={["marsConfig", "pipelinePassRules"]}>
+                  {(fields, { add, remove }) => (
+                    <>
+                      {fields.map(({ key, name, ...restField }) => (
+                        <Row key={key} gutter={[8, 8]} align="middle">
+                          <Col span={10}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, "stageName"]}
+                              rules={[
+                                { required: true, message: "stage_name 必填" },
+                              ]}
+                            >
+                              <Input placeholder="stage_name（如 build）" />
+                            </Form.Item>
+                          </Col>
+                          <Col span={10}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, "jobName"]}
+                              rules={[
+                                { required: true, message: "job_name 必填" },
+                              ]}
+                            >
+                              <Input placeholder="job_name（如 build-docker）" />
+                            </Form.Item>
+                          </Col>
+                          <Col span={4}>
+                            <Button
+                              type="text"
+                              danger
+                              icon={<CloseOutlined />}
+                              onClick={() => remove(name)}
+                            />
+                          </Col>
+                        </Row>
+                      ))}
+                      <Button
+                        type="dashed"
+                        block
+                        icon={<PlusOutlined />}
+                        onClick={() => add()}
+                      >
+                        添加规则
+                      </Button>
+                    </>
+                  )}
+                </Form.List>
+              </Form.Item>
             )}
 
             <Form.Item

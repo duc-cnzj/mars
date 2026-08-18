@@ -13,6 +13,10 @@ const pipelines: {
     type: "warning",
     message: "pipeline 还在执行中",
   },
+  manual: {
+    type: "warning",
+    message: "pipeline 等待手动触发",
+  },
   success: {
     type: "success",
     message: "pipeline 执行成功",

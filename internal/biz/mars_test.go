@@ -282,3 +282,99 @@ func TestParseInputConfigWithInvalidYaml(t *testing.T) {
 
 	assert.NotNil(t, err)
 }
+
+// TestPipelinePassStatus 验证流水线通过规则的判定：
+// 无规则返回原始状态；全部命中成功才 success；命中失败/运行/缺失各自按语义返回。
+// 原始状态用 StatusUnknown 区分，确保结果来自规则计算而非原样透传。
+func TestPipelinePassStatus(t *testing.T) {
+	job := func(stage, name string, status biz.Status) biz.PipelineJob {
+		return biz.PipelineJob{Name: name, Status: status, StageName: stage}
+	}
+	rule := func(stage, name string) *mars2.PipelinePassRule {
+		return &mars2.PipelinePassRule{StageName: stage, JobName: name}
+	}
+	tests := []struct {
+		name     string
+		pipeline *biz.Pipeline
+		rules    []*mars2.PipelinePassRule
+		want     biz.Status
+	}{
+		{
+			name:     "无规则返回原始状态",
+			pipeline: &biz.Pipeline{Status: biz.StatusUnknown, Jobs: []biz.PipelineJob{job("stage2", "test", biz.StatusFailed)}},
+			rules:    nil,
+			want:     biz.StatusUnknown,
+		},
+		{
+			name:     "全部规则命中成功",
+			pipeline: &biz.Pipeline{Status: biz.StatusFailed, Jobs: []biz.PipelineJob{job("stage2", "test", biz.StatusFailed), job("stage1", "build", biz.StatusSuccess)}},
+			rules:    []*mars2.PipelinePassRule{rule("stage1", "build")},
+			want:     biz.StatusSuccess,
+		},
+		{
+			name:     "命中 job 失败判 failed",
+			pipeline: &biz.Pipeline{Status: biz.StatusUnknown, Jobs: []biz.PipelineJob{job("stage1", "build", biz.StatusSuccess), job("stage2", "test", biz.StatusFailed)}},
+			rules:    []*mars2.PipelinePassRule{rule("stage2", "test")},
+			want:     biz.StatusFailed,
+		},
+		{
+			name:     "命中 job 在运行判 running",
+			pipeline: &biz.Pipeline{Status: biz.StatusUnknown, Jobs: []biz.PipelineJob{job("stage1", "build", biz.StatusSuccess), job("stage2", "test", biz.StatusRunning)}},
+			rules:    []*mars2.PipelinePassRule{rule("stage2", "test")},
+			want:     biz.StatusRunning,
+		},
+		{
+			name:     "命中 job 未开始（unknown）判 running",
+			pipeline: &biz.Pipeline{Status: biz.StatusFailed, Jobs: []biz.PipelineJob{job("stage1", "build", biz.StatusUnknown)}},
+			rules:    []*mars2.PipelinePassRule{rule("stage1", "build")},
+			want:     biz.StatusRunning,
+		},
+		{
+			name:     "manual 优先于未开始",
+			pipeline: &biz.Pipeline{Status: biz.StatusUnknown, Jobs: []biz.PipelineJob{job("stage1", "a", biz.StatusUnknown), job("stage2", "b", biz.StatusManual)}},
+			rules:    []*mars2.PipelinePassRule{rule("stage1", "a"), rule("stage2", "b")},
+			want:     biz.StatusManual,
+		},
+		{
+			name:     "规则指定 job 缺失回退原始状态",
+			pipeline: &biz.Pipeline{Status: biz.StatusUnknown, Jobs: []biz.PipelineJob{job("stage1", "build", biz.StatusSuccess)}},
+			rules:    []*mars2.PipelinePassRule{rule("stageX", "build")},
+			want:     biz.StatusUnknown,
+		},
+		{
+			name:     "多规则全部成功",
+			pipeline: &biz.Pipeline{Status: biz.StatusFailed, Jobs: []biz.PipelineJob{job("stage1", "build", biz.StatusSuccess), job("stage2", "test", biz.StatusSuccess)}},
+			rules:    []*mars2.PipelinePassRule{rule("stage1", "build"), rule("stage2", "test")},
+			want:     biz.StatusSuccess,
+		},
+		{
+			name:     "失败优先于运行",
+			pipeline: &biz.Pipeline{Status: biz.StatusUnknown, Jobs: []biz.PipelineJob{job("stage1", "a", biz.StatusRunning), job("stage2", "b", biz.StatusFailed)}},
+			rules:    []*mars2.PipelinePassRule{rule("stage1", "a"), rule("stage2", "b")},
+			want:     biz.StatusFailed,
+		},
+		{
+			name:     "命中 job 为 manual 判 manual",
+			pipeline: &biz.Pipeline{Status: biz.StatusUnknown, Jobs: []biz.PipelineJob{job("stage1", "build", biz.StatusManual)}},
+			rules:    []*mars2.PipelinePassRule{rule("stage1", "build")},
+			want:     biz.StatusManual,
+		},
+		{
+			name:     "manual 优先于运行",
+			pipeline: &biz.Pipeline{Status: biz.StatusUnknown, Jobs: []biz.PipelineJob{job("stage1", "a", biz.StatusRunning), job("stage2", "b", biz.StatusManual)}},
+			rules:    []*mars2.PipelinePassRule{rule("stage1", "a"), rule("stage2", "b")},
+			want:     biz.StatusManual,
+		},
+		{
+			name:     "失败优先于 manual",
+			pipeline: &biz.Pipeline{Status: biz.StatusUnknown, Jobs: []biz.PipelineJob{job("stage1", "a", biz.StatusManual), job("stage2", "b", biz.StatusFailed)}},
+			rules:    []*mars2.PipelinePassRule{rule("stage1", "a"), rule("stage2", "b")},
+			want:     biz.StatusFailed,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, biz.PipelinePassStatus(tt.pipeline, tt.rules))
+		})
+	}
+}

@@ -2089,6 +2089,8 @@ components:
             properties:
                 status:
                     type: string
+                    description: |
+                        流水线判定结果，可能取值：success - 通过；failed - 失败；running - 执行中；manual - 存在手动触发的 job，等待人工确认；unknown - 状态未知。配置 pipeline pass 规则时由规则判定，未配置时为 CI 整体流水线状态。
                 webUrl:
                     type: string
                 jobs:
@@ -2170,6 +2172,13 @@ components:
                     items:
                         $ref: '#/components/schemas/mars.Element'
                     description: elements 自定义字段
+                pipelinePassRules:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/mars.PipelinePassRule'
+                    description: |-
+                        pipeline_pass_rules 流水线通过规则：配置的 (stage, job) 全部成功后该流水线才判定为通过。
+                         未配置时 PipelineInfo 返回整体流水线状态。
                 displayName:
                     type: string
                     description: |-
@@ -2205,6 +2214,13 @@ components:
                 order:
                     type: integer
                     format: uint32
+        mars.PipelinePassRule:
+            type: object
+            properties:
+                stageName:
+                    type: string
+                jobName:
+                    type: string
         metrics.CpuMemoryInNamespaceResponse:
             type: object
             properties:

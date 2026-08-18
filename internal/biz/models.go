@@ -535,6 +535,8 @@ const (
 	StatusFailed Status = "failed"
 	// StatusRunning 表示流水线/集群状态进行中。
 	StatusRunning Status = "running"
+	// StatusManual 表示流水线/集群存在手动触发的 job，等待人工确认。
+	StatusManual Status = "manual"
 )
 
 // PictureItem 是首页图片信息。

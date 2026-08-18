@@ -79,11 +79,20 @@ message PipelineInfoRequest {
 // PipelineJob 是 CI 流水线单个 job 的名称、状态与所属 stage。
 message PipelineJob {
   string name       = 1;
+  // status 是 job 的状态，取值同 PipelineInfoResponse.status。
   string status     = 2;
   string stage_name = 3;
 }
 
 message PipelineInfoResponse {
+  // status 是流水线判定结果，可能取值：
+  //   success - 流水线通过；
+  //   failed  - 流水线失败；
+  //   running - 流水线执行中；
+  //   manual  - 存在手动触发的 job，等待人工确认；
+  //   unknown - 状态未知（created/pending/canceled/skipped/scheduled 等未识别状态）。
+  // 仓库配置 pipeline pass 规则时由规则判定：配置的 (stage, job) 全部成功后判定 success，
+  // 规则指定的 job 缺失时回退为整体流水线状态；未配置规则时为 CI 整体流水线状态。
   string status  = 1;
   string web_url = 2;
   // jobs 是流水线各 job 的名称与状态，按执行顺序排列。

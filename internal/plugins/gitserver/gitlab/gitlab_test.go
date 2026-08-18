@@ -657,7 +657,7 @@ func TestPipelineStatus_mapping(t *testing.T) {
 	assert.Equal(t, biz.StatusFailed, pipelineStatus("failed"))
 	assert.Equal(t, biz.StatusRunning, pipelineStatus("running"))
 	assert.Equal(t, biz.StatusSuccess, pipelineStatus("success"))
-	assert.Equal(t, biz.StatusSuccess, pipelineStatus("manual"))
+	assert.Equal(t, biz.StatusManual, pipelineStatus("manual"))
 	assert.Equal(t, biz.StatusUnknown, pipelineStatus("canceled"))
 	assert.Equal(t, biz.StatusUnknown, pipelineStatus(""))
 }

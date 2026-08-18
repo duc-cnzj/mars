@@ -668,10 +668,11 @@ func (x *PipelineInfoRequest) GetCommit() string {
 
 // PipelineJob 是 CI 流水线单个 job 的名称、状态与所属 stage。
 type PipelineJob struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
-	StageName     string                 `protobuf:"bytes,3,opt,name=stage_name,json=stageName,proto3" json:"stage_name,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// status 是 job 的状态，取值同 PipelineInfoResponse.status。
+	Status        string `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	StageName     string `protobuf:"bytes,3,opt,name=stage_name,json=stageName,proto3" json:"stage_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -728,9 +729,19 @@ func (x *PipelineJob) GetStageName() string {
 }
 
 type PipelineInfoResponse struct {
-	state  protoimpl.MessageState `protogen:"open.v1"`
-	Status string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	WebUrl string                 `protobuf:"bytes,2,opt,name=web_url,json=webUrl,proto3" json:"web_url,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// status 是流水线判定结果，可能取值：
+	//
+	//	success - 流水线通过；
+	//	failed  - 流水线失败；
+	//	running - 流水线执行中；
+	//	manual  - 存在手动触发的 job，等待人工确认；
+	//	unknown - 状态未知（created/pending/canceled/skipped/scheduled 等未识别状态）。
+	//
+	// 仓库配置 pipeline pass 规则时由规则判定：配置的 (stage, job) 全部成功后判定 success，
+	// 规则指定的 job 缺失时回退为整体流水线状态；未配置规则时为 CI 整体流水线状态。
+	Status string `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	WebUrl string `protobuf:"bytes,2,opt,name=web_url,json=webUrl,proto3" json:"web_url,omitempty"`
 	// jobs 是流水线各 job 的名称与状态，按执行顺序排列。
 	Jobs          []*PipelineJob `protobuf:"bytes,3,rep,name=jobs,proto3" json:"jobs,omitempty"`
 	unknownFields protoimpl.UnknownFields

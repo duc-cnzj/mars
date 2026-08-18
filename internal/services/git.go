@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/git"
+	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/date"
 	"github.com/duc-cnzj/mars/v6/internal/util/slice"
@@ -166,10 +168,18 @@ func (g *gitSvc) Commit(ctx context.Context, request *git.CommitRequest) (*git.C
 }
 
 // PipelineInfo 返回指定提交对应 CI 流水线的状态、URL 与各 job 状态。
+// 若 git 项目对应仓库配置了 pipeline pass 规则，则 status 由规则判定（见 biz.PipelinePassStatus），
+// 未配置规则时返回整体流水线状态。
 func (g *gitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequest) (*git.PipelineInfoResponse, error) {
-	pipeline, err := g.gitBiz.GetCommitPipeline(ctx, cast.ToInt(request.GitProjectId), request.Branch, request.Commit)
+	projectID := cast.ToInt(request.GitProjectId)
+	pipeline, err := g.gitBiz.GetCommitPipeline(ctx, projectID, request.Branch, request.Commit)
 	if err != nil {
 		return nil, logError(ctx, g.logger, err)
+	}
+
+	status := pipeline.Status
+	if rules := g.repoPassRules(ctx, projectID); len(rules) > 0 {
+		status = biz.PipelinePassStatus(pipeline, rules)
 	}
 
 	jobs := make([]*git.PipelineJob, 0, len(pipeline.Jobs))
@@ -177,10 +187,28 @@ func (g *gitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequ
 		jobs = append(jobs, &git.PipelineJob{Name: j.Name, Status: j.Status, StageName: j.StageName})
 	}
 	return &git.PipelineInfoResponse{
-		Status: pipeline.Status,
+		Status: status,
 		WebUrl: pipeline.WebURL,
 		Jobs:   jobs,
 	}, nil
+}
+
+// repoPassRules 返回 git 项目对应已启用仓库配置的流水线通过规则。
+// 无匹配仓库（NotFound）、仓库未配置规则或查询失败时返回空（调用方走默认整体状态逻辑）；
+// 查询失败属于降级场景，打日志后按"未配置规则"处理，不阻断流水线状态返回。
+func (g *gitSvc) repoPassRules(ctx context.Context, projectID int) []*mars.PipelinePassRule {
+	repo, err := g.repoBiz.GetByGitProjectID(ctx, int32(projectID))
+	if err != nil {
+		if errs.IsNotFound(err) {
+			return nil
+		}
+		g.logger.ErrorCtx(ctx, err)
+		return nil
+	}
+	if rules := repo.GetMarsConfig().PipelinePassRules; len(rules) > 0 {
+		return rules
+	}
+	return nil
 }
 
 // GetChartValuesYaml 解析 helm chart 的 values.yaml：把前端提交的表单项映射为 values 返回。
