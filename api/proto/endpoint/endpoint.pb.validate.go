@@ -82,7 +82,7 @@ type InNamespaceRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m InNamespaceRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -218,7 +218,7 @@ type InNamespaceResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m InNamespaceResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -331,7 +331,7 @@ type InProjectRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m InProjectRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -465,7 +465,7 @@ type InProjectResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m InProjectResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}

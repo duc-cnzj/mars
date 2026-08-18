@@ -99,7 +99,7 @@ type InfoResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m InfoResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -198,7 +198,7 @@ type InfoRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m InfoRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}

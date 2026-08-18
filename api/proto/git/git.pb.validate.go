@@ -85,7 +85,7 @@ type OptionMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m OptionMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -185,7 +185,7 @@ type ProjectOptionsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ProjectOptionsRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -321,7 +321,7 @@ type ProjectOptionsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ProjectOptionsResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -436,7 +436,7 @@ type BranchOptionsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m BranchOptionsRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -572,7 +572,7 @@ type BranchOptionsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m BranchOptionsResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -687,7 +687,7 @@ type CommitOptionsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CommitOptionsRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -823,7 +823,7 @@ type CommitOptionsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CommitOptionsResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -958,7 +958,7 @@ type CommitRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CommitRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1086,7 +1086,7 @@ type CommitResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CommitResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1219,7 +1219,7 @@ type PipelineInfoRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m PipelineInfoRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1326,7 +1326,7 @@ type PipelineJobMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m PipelineJobMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1464,7 +1464,7 @@ type PipelineInfoResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m PipelineInfoResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1566,7 +1566,7 @@ type AllReposRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m AllReposRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1700,7 +1700,7 @@ type AllReposResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m AllReposResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1811,7 +1811,7 @@ type GetChartValuesYamlRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m GetChartValuesYamlRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1915,7 +1915,7 @@ type GetChartValuesYamlResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m GetChartValuesYamlResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -2023,7 +2023,7 @@ type AllReposResponse_ItemMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m AllReposResponse_ItemMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}

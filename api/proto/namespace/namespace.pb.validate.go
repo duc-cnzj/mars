@@ -86,7 +86,7 @@ type CreateRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CreateRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -217,7 +217,7 @@ type CreateResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CreateResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -327,7 +327,7 @@ type ShowRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ShowRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -455,7 +455,7 @@ type ShowResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ShowResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -566,7 +566,7 @@ type IsExistsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m IsExistsRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -670,7 +670,7 @@ type IsExistsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m IsExistsResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -781,7 +781,7 @@ type DeleteRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m DeleteRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -881,7 +881,7 @@ type DeleteResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m DeleteResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -994,7 +994,7 @@ type FavoriteRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m FavoriteRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1094,7 +1094,7 @@ type FavoriteResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m FavoriteResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1207,7 +1207,7 @@ type UpdateDescRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m UpdateDescRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1338,7 +1338,7 @@ type UpdateDescResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m UpdateDescResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1453,7 +1453,7 @@ type ListRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ListRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1592,7 +1592,7 @@ type ListResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ListResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1705,7 +1705,7 @@ type UpdatePrivateRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m UpdatePrivateRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1836,7 +1836,7 @@ type UpdatePrivateResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m UpdatePrivateResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -2016,7 +2016,7 @@ type SyncMembersRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m SyncMembersRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -2147,7 +2147,7 @@ type SyncMembersResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m SyncMembersResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -2333,7 +2333,7 @@ type TransferRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m TransferRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -2462,7 +2462,7 @@ type TransferResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m TransferResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}

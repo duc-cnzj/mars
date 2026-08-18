@@ -1538,21 +1538,6 @@ func (mr *MockRepoRepoMockRecorder) Get(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepoRepo)(nil).Get), arg0, arg1)
 }
 
-// GetByName mocks base method.
-func (m *MockRepoRepo) GetByName(arg0 context.Context, arg1 string) (*biz.Repo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByName", arg0, arg1)
-	ret0, _ := ret[0].(*biz.Repo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetByName indicates an expected call of GetByName.
-func (mr *MockRepoRepoMockRecorder) GetByName(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByName", reflect.TypeOf((*MockRepoRepo)(nil).GetByName), arg0, arg1)
-}
-
 // GetByGitProjectID mocks base method.
 func (m *MockRepoRepo) GetByGitProjectID(arg0 context.Context, arg1 int32) (*biz.Repo, error) {
 	m.ctrl.T.Helper()
@@ -1566,6 +1551,21 @@ func (m *MockRepoRepo) GetByGitProjectID(arg0 context.Context, arg1 int32) (*biz
 func (mr *MockRepoRepoMockRecorder) GetByGitProjectID(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByGitProjectID", reflect.TypeOf((*MockRepoRepo)(nil).GetByGitProjectID), arg0, arg1)
+}
+
+// GetByName mocks base method.
+func (m *MockRepoRepo) GetByName(arg0 context.Context, arg1 string) (*biz.Repo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByName", arg0, arg1)
+	ret0, _ := ret[0].(*biz.Repo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByName indicates an expected call of GetByName.
+func (mr *MockRepoRepoMockRecorder) GetByName(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByName", reflect.TypeOf((*MockRepoRepo)(nil).GetByName), arg0, arg1)
 }
 
 // List mocks base method.

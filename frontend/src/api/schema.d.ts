@@ -1143,14 +1143,25 @@ export interface components {
             description: string;
         };
         "git.PipelineInfoResponse": {
-            /** @description 流水线判定结果，可能取值：success - 通过；failed - 失败；running - 执行中；manual - 存在手动触发的 job，等待人工确认；unknown - 状态未知。配置 pipeline pass 规则时由规则判定，未配置时为 CI 整体流水线状态。 */
+            /**
+             * @description status 是流水线判定结果，可能取值：
+             *        success - 流水线通过；
+             *        failed  - 流水线失败；
+             *        running - 流水线执行中；
+             *        manual  - 存在手动触发的 job，等待人工确认；
+             *        unknown - 状态未知（created/pending/canceled/skipped/scheduled 等未识别状态）。
+             *      仓库配置 pipeline pass 规则时由规则判定：配置的 (stage, job) 全部成功后判定 success，
+             *      规则指定的 job 缺失时回退为整体流水线状态；未配置规则时为 CI 整体流水线状态。
+             */
             status: string;
             webUrl: string;
             /** @description jobs 是流水线各 job 的名称与状态，按执行顺序排列。 */
             jobs: components["schemas"]["git.PipelineJob"][];
         };
+        /** @description PipelineJob 是 CI 流水线单个 job 的名称、状态与所属 stage。 */
         "git.PipelineJob": {
             name: string;
+            /** @description status 是 job 的状态，取值同 PipelineInfoResponse.status。 */
             status: string;
             stageName: string;
         };
@@ -1197,16 +1208,16 @@ export interface components {
             /** @description elements 自定义字段 */
             elements: components["schemas"]["mars.Element"][];
             /**
-             * @description pipeline_pass_rules 流水线通过规则：配置的 (stage, job) 全部成功后该流水线才判定为通过。
-             *      未配置时 PipelineInfo 返回整体流水线状态。
-             */
-            pipelinePassRules: components["schemas"]["mars.PipelinePassRule"][];
-            /**
              * @description 显示的名称 (helm app name), 不填就使用 git server project name
              *      以字母开头结尾，中间可以有 '_' '-'
              *      Deprecated: v5+ 不再使用这个字段
              */
             displayName: string;
+            /**
+             * @description pipeline_pass_rules 流水线通过规则：配置的 (stage, job) 全部成功后该流水线才判定为通过。
+             *      未配置时 PipelineInfo 返回整体流水线状态。
+             */
+            pipelinePassRules: components["schemas"]["mars.PipelinePassRule"][];
         };
         "mars.Element": {
             path: string;
@@ -1220,6 +1231,11 @@ export interface components {
             selectValues: string[];
             /** Format: uint32 */
             order: number;
+        };
+        /** @description PipelinePassRule 是流水线通过规则的单条匹配项：命中指定 stage 下名为 job_name 的 job。 */
+        "mars.PipelinePassRule": {
+            stageName: string;
+            jobName: string;
         };
         "metrics.CpuMemoryInNamespaceResponse": {
             cpu: string;
@@ -3731,12 +3747,6 @@ export enum MarsElementType {
     ElementTypeTextArea = "ElementTypeTextArea",
     ElementTypeNumberSelect = "ElementTypeNumberSelect",
     ElementTypeNumberRadio = "ElementTypeNumberRadio"
-}
-export interface MarsPipelinePassRule {
-    /** stage_name */
-    stageName: string;
-    /** job_name */
-    jobName: string;
 }
 export enum ProjectCheckApplyStatusResponseStatus {
     StatusUnknown = "StatusUnknown",

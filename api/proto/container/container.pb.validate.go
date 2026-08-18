@@ -115,7 +115,7 @@ type CopyToPodRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CopyToPodRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -219,7 +219,7 @@ type CopyToPodResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m CopyToPodResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -324,7 +324,7 @@ type TerminalSizeMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m TerminalSizeMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -478,7 +478,7 @@ type ExecRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ExecRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -629,7 +629,7 @@ type ExecOnceRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ExecOnceRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -732,7 +732,7 @@ type ExecErrorMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ExecErrorMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -862,7 +862,7 @@ type ExecResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ExecResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -999,7 +999,7 @@ type StreamCopyToPodRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m StreamCopyToPodRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1113,7 +1113,7 @@ type StreamCopyToPodResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m StreamCopyToPodResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1237,7 +1237,7 @@ type IsPodRunningRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m IsPodRunningRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1343,7 +1343,7 @@ type IsPodRunningResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m IsPodRunningResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1467,7 +1467,7 @@ type IsPodExistsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m IsPodExistsRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1571,7 +1571,7 @@ type IsPodExistsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m IsPodExistsResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1707,7 +1707,7 @@ type LogRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m LogRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1814,7 +1814,7 @@ type LogResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m LogResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -1938,7 +1938,7 @@ type ForceDeletePodRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ForceDeletePodRequestMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
@@ -2048,7 +2048,7 @@ type ForceDeletePodResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
 func (m ForceDeletePodResponseMultiError) Error() string {
-	var msgs []string
+	msgs := make([]string, 0, len(m))
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
 	}
