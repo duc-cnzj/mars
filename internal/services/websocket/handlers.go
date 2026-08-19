@@ -29,7 +29,7 @@ func (wc *websocketManager) HandleAuthorize(ctx context.Context, c Conn, t webso
 	var input websocket_pb.AuthorizeTokenInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		wc.logger.Error("[Websocket]: " + err.Error())
-		newMessageSender(c, "", t).SendEndError(err)
+		newMessageSender(c, t).SendEndError(err)
 
 		return
 	}
@@ -48,7 +48,7 @@ func (wc *websocketManager) HandleJoinRoom(ctx context.Context, c Conn, t websoc
 	var input websocket_pb.ProjectPodEventJoinInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		wc.logger.Error("[Websocket]: " + err.Error())
-		newMessageSender(c, "", t).SendEndError(err)
+		newMessageSender(c, t).SendEndError(err)
 
 		return
 	}
@@ -60,7 +60,7 @@ func (wc *websocketManager) HandleJoinRoom(ctx context.Context, c Conn, t websoc
 		// 无权访问回错误帧且不触达 PubSub.Join，防止私有项目事件流泄露。
 		if _, err := wc.accessBiz.RequireProjectAccess(ctx, int(input.ProjectId)); err != nil {
 			wc.logger.Error("[Websocket]: join room permission denied: ", err)
-			newMessageSender(c, "", t).SendEndError(err)
+			newMessageSender(c, t).SendEndError(err)
 			return
 		}
 		if err := c.PubSub().Join(int64(input.GetProjectId())); err != nil {
@@ -77,7 +77,7 @@ func (wc *websocketManager) HandleJoinRoom(ctx context.Context, c Conn, t websoc
 func (wc *websocketManager) HandleStartShell(ctx context.Context, c Conn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.WsHandleExecShellInput
 	if err := proto.Unmarshal(message, &input); err != nil {
-		newMessageSender(c, "", t).SendEndError(err)
+		newMessageSender(c, t).SendEndError(err)
 		return
 	}
 	// 拉起容器内 shell 前必须做命名空间级访问控制：交互终端可执行任意命令，
@@ -85,19 +85,19 @@ func (wc *websocketManager) HandleStartShell(ctx context.Context, c Conn, t webs
 	// 防止任意已认证用户枚举 namespace/pod/container 进入私有命名空间的容器 shell（RCE）。
 	if _, err := wc.accessBiz.RequireNamespaceAccessByName(ctx, input.Container.GetNamespace()); err != nil {
 		wc.logger.Error("[Websocket]: start shell permission denied: ", err)
-		newMessageSender(c, "", t).SendEndError(err)
+		newMessageSender(c, t).SendEndError(err)
 		return
 	}
 	sessionID, err := wc.StartShell(ctx, &input, c)
 	if err != nil {
 		wc.logger.Error(err)
-		newMessageSender(c, "", WsHandleExecShell).SendEndError(err)
+		newMessageSender(c, WsHandleExecShell).SendEndError(err)
 		return
 	}
 
 	wc.logger.Debugf("[Websocket]: 收到 初始化连接 WsHandleExecShell 消息, sessionID: %v", sessionID)
 
-	newMessageSender(c, "", WsHandleExecShell).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
+	newMessageSender(c, WsHandleExecShell).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
 			Id:     c.ID(),
 			Uid:    c.UID(),
@@ -119,7 +119,7 @@ func (wc *websocketManager) HandleStartShell(ctx context.Context, c Conn, t webs
 func (wc *websocketManager) HandleShellMessage(ctx context.Context, c Conn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.TerminalMessageInput
 	if err := proto.Unmarshal(message, &input); err != nil {
-		newMessageSender(c, "", t).SendEndError(err)
+		newMessageSender(c, t).SendEndError(err)
 
 		return
 	}
@@ -136,7 +136,7 @@ func (wc *websocketManager) HandleCloseShell(ctx context.Context, c Conn, t webs
 	var input websocket_pb.TerminalMessageInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		wc.logger.Error(err.Error())
-		newMessageSender(c, "", t).SendEndError(err)
+		newMessageSender(c, t).SendEndError(err)
 
 		return
 	}
@@ -149,14 +149,20 @@ func (wc *websocketManager) HandleCloseShell(ctx context.Context, c Conn, t webs
 func (wc *websocketManager) HandleCreateProject(ctx context.Context, c Conn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.CreateProjectInput
 	if err := proto.Unmarshal(message, &input); err != nil {
-		newMessageSender(c, "", t).SendEndError(err)
+		newMessageSender(c, t).SendEndError(err)
 
 		return
 	}
 
-	// 空 name 的"以仓库名缺省"解析由 deploy.ApplyProject 统一收敛，
-	// 这里不再重复取 repo，直接透传原始 name——与 gRPC project.Apply 的 slug 行为对齐。
-	// 仓库取回失败（含空 name + 无效 repoID）由 ApplyProject 兜底返回错误，不 panic。
+	// 空 name 的"以仓库名缺省"解析由 deploy.ApplyProject 统一收敛，这里不再重复取
+	// repo，直接透传原始 name——与 gRPC project.Apply 的 slug 行为对齐。仓库取回失败
+	// （含空 name + 无效 repoID）由 ApplyProject 兜底返回错误，不 panic。
+	//
+	// 名缺省与部署帧 slug 均属编排层语义（ApplyProject 内 RepoBiz.Get 已必然执行一次）：
+	// 本层不解析 name，也不构造 slug——newMessageSender 不接收 slug 参数，部署帧 slug
+	// 由 ApplyProject 名解析后经 DeployMsger.SetSlug 统一回填（唯一权威来源）。若在本层
+	// 提前算最终名须重复取 repo（创建部署热路径白白多一笔取数），且 gRPC Apply 路径不经
+	// 本 handler 仍会漏掉，解析会裂成两处——两者都收敛在编排内。
 	name := input.GetName()
 
 	// JobInput.Type 取路由帧类型 t（而非消息体 input.Type）：客户端发送的是裸消息体，
@@ -175,7 +181,7 @@ func (wc *websocketManager) HandleCreateProject(ctx context.Context, c Conn, t w
 		ExtraValues: input.ExtraValues,
 		User:        c.GetUser(),
 		PubSub:      c.PubSub(),
-		Messager:    newMessageSender(c, deploy.GetSlugName(input.NamespaceId, name), t),
+		Messager:    newMessageSender(c, t),
 	}); err != nil {
 		wc.logger.Error(err)
 	}
@@ -185,7 +191,7 @@ func (wc *websocketManager) HandleCreateProject(ctx context.Context, c Conn, t w
 func (wc *websocketManager) HandleUpdateProject(ctx context.Context, c Conn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.UpdateProjectInput
 	if err := proto.Unmarshal(message, &input); err != nil {
-		newMessageSender(c, "", t).SendEndError(err)
+		newMessageSender(c, t).SendEndError(err)
 		return
 	}
 
@@ -195,7 +201,7 @@ func (wc *websocketManager) HandleUpdateProject(ctx context.Context, c Conn, t w
 	p, err := wc.accessBiz.RequireProjectAccess(ctx, int(input.ProjectId))
 	if err != nil {
 		wc.logger.Error("[Websocket]: update project permission denied: ", err)
-		newMessageSender(c, "", t).SendEndError(err)
+		newMessageSender(c, t).SendEndError(err)
 		return
 	}
 
@@ -216,7 +222,7 @@ func (wc *websocketManager) HandleUpdateProject(ctx context.Context, c Conn, t w
 		TimeoutSeconds: int32(wc.config.InstallTimeout.Seconds()),
 		User:           c.GetUser(),
 		PubSub:         c.PubSub(),
-		Messager:       newMessageSender(c, deploy.GetSlugName(p.NamespaceID, p.Name), t),
+		Messager:       newMessageSender(c, t),
 	}); err != nil {
 		// 与 HandleCreateProject 一致：部署结果会经 SendDeployedResult 推给客户端，
 		// 这里补服务端日志，避免更新路径的失败在可观测性上成为盲区。
@@ -228,7 +234,7 @@ func (wc *websocketManager) HandleUpdateProject(ctx context.Context, c Conn, t w
 func (wc *websocketManager) HandleCancelDeploy(ctx context.Context, c Conn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.CancelInput
 	if err := proto.Unmarshal(message, &input); err != nil {
-		newMessageSender(c, "", t).SendEndError(err)
+		newMessageSender(c, t).SendEndError(err)
 
 		return
 	}
@@ -270,9 +276,9 @@ func (wc *websocketManager) installProject(ctx context.Context, c Conn, input *d
 		OnJob: func(job deploy.Job) error {
 			if input.IsNotDryRun() {
 				if err := c.AddCancelDeployTask(job.ID(), job.Stop); err != nil {
-					newMessageSender(c, deploy.GetSlugName(input.NamespaceId, input.Name), input.Type).
-						SendDeployedResult(deploy.ResultDeployFailed, "正在清理中，请稍后再试。", nil)
-					// 传输层已发失败帧 → ApplyProject 跳过 watcher 与 InstallProject。
+					// 复用入站 messager（ApplyProject 已回填最终 slug）：传输层已发失败帧
+					// → ApplyProject 跳过 watcher 与 InstallProject。
+					input.Messager.SendDeployedResult(deploy.ResultDeployFailed, "正在清理中，请稍后再试。", nil)
 					return err
 				}
 				job.OnFinally(1000, func(err error, base func()) {
@@ -304,15 +310,15 @@ type messageSender struct {
 }
 
 // newMessageSender 构造面向某连接的出站消息适配器，并绑定进度上报器。
+// slug 不在构造期绑定：部署帧 slug 依赖最终部署名（创建项目前端不发 name），由共享
+// 编排 ApplyProject 名解析后经 DeployMsger.SetSlug 统一回填；错误帧无 slug 关联需求。
 func newMessageSender(
 	conn Conn,
-	slugName string,
 	wsType websocket_pb.Type,
 ) deploy.DeployMsger {
 	m := &messageSender{
-		conn:     conn,
-		slugName: slugName,
-		wsType:   wsType,
+		conn:   conn,
+		wsType: wsType,
 	}
 	m.percent = deploy.NewProcessPercent(m, deploy.NewRealSleeper())
 	return m
@@ -346,6 +352,13 @@ func (ms *messageSender) SendMsgWithContainerLog(msg string, containers []*webso
 		Metadata:   ms.metadata(ms.wsType, deploy.ResultLogWithContainers, false, msg),
 		Containers: containers,
 	})
+}
+
+// SetSlug 回填出站帧携带的部署标识 slug：构造期不绑定 slug（构造期 name 可能为空），
+// 共享编排 ApplyProject 名缺省解析后调用本方法按最终名计算，与前端 toSlug 关联的日志
+// key 对齐，保证客户端能收到并关联创建部署的进度/日志帧。
+func (ms *messageSender) SetSlug(slug string) {
+	ms.slugName = slug
 }
 
 // metadata 收敛 5 个发送方法的公共字段（Slug/Type/Result/End/Uid/Id/Message），

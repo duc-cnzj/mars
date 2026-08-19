@@ -585,9 +585,17 @@ func (x *mockProjectApplyServer) RecvMsg(m any) error {
 }
 
 func TestMessager_Current(t *testing.T) {
-	m := newMessager(true, "slug", websocket.Type_ApplyProject, nil)
+	m := newMessager(true, websocket.Type_ApplyProject, nil)
 	current := m.Current()
 	assert.Equal(t, int64(0), current)
+}
+
+// TestMessager_SetSlug 覆盖 slug 就地回填：创建部署名缺省解析后由 ApplyProject 调用，
+// 保证出站帧携带最终名（前端 toSlug 关联的日志 key）。
+func TestMessager_SetSlug(t *testing.T) {
+	m := newMessager(true, websocket.Type_ApplyProject, nil)
+	m.(*messager).SetSlug("new-slug")
+	assert.Equal(t, "new-slug", m.(*messager).slugName)
 }
 
 type mockApplyServer struct {
@@ -603,7 +611,7 @@ func (m *mockApplyServer) Send(response *project.ApplyResponse) error {
 
 func TestMessager_Add(t *testing.T) {
 	server := &mockApplyServer{}
-	m := newMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.Add()
 	current := m.Current()
 	assert.Equal(t, websocket.Type_ProcessPercent, server.response.Metadata.Type)
@@ -612,7 +620,7 @@ func TestMessager_Add(t *testing.T) {
 
 func TestMessager_To(t *testing.T) {
 	server := &mockApplyServer{}
-	m := newMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.To(50)
 	current := m.Current()
 	assert.Equal(t, int32(50), server.response.Metadata.Percent)
@@ -621,7 +629,7 @@ func TestMessager_To(t *testing.T) {
 
 func TestMessager_SendEndError(t *testing.T) {
 	server := &mockApplyServer{}
-	m := newMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.SendEndError(errors.New("test error"))
 	assert.True(t, server.response.Metadata.End)
 	assert.Equal(t, "test error", server.response.Metadata.Message)
@@ -629,7 +637,7 @@ func TestMessager_SendEndError(t *testing.T) {
 
 func TestMessager_SendMsg(t *testing.T) {
 	server := &mockApplyServer{}
-	m := newMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.SendMsg("test message")
 	assert.False(t, server.response.Metadata.End)
 	assert.Equal(t, "test message", server.response.Metadata.Message)
@@ -647,14 +655,14 @@ func (m *mockWsMessage) GetMetadata() *websocket.Metadata {
 
 func TestMessager_SendProtoMsg(t *testing.T) {
 	server := &mockApplyServer{}
-	m := newMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.SendProtoMsg(&mockWsMessage{})
 	assert.Equal(t, websocket.Type_ApplyProject, server.response.Metadata.Type)
 }
 
 func TestMessager_SendProcessPercent(t *testing.T) {
 	server := &mockApplyServer{}
-	m := newMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.SendProcessPercent(50)
 	assert.Equal(t, websocket.Type_ProcessPercent, server.response.Metadata.Type)
 	assert.Equal(t, int32(50), server.response.Metadata.Percent)
@@ -662,7 +670,7 @@ func TestMessager_SendProcessPercent(t *testing.T) {
 
 func TestMessager_SendMsgWithContainerLog(t *testing.T) {
 	server := &mockApplyServer{}
-	m := newMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.SendMsgWithContainerLog("test message", []*websocket.Container{})
 	assert.False(t, server.response.Metadata.End)
 	assert.Equal(t, "test message", server.response.Metadata.Message)
@@ -671,7 +679,7 @@ func TestMessager_SendMsgWithContainerLog(t *testing.T) {
 
 func TestMessager_SendDeployedResult(t *testing.T) {
 	server := &mockApplyServer{}
-	m := newMessager(true, "slug", websocket.Type_ApplyProject, server)
+	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.SendDeployedResult(websocket.ResultType_Success, "test message", &types.ProjectModel{})
 	assert.True(t, server.response.Metadata.End)
 	assert.Equal(t, "test message", server.response.Metadata.Message)

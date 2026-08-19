@@ -207,7 +207,7 @@ func (wc *websocketManager) Serve(w http.ResponseWriter, r *http.Request) {
 		return wc.write(ctx, wsConn)
 	})
 
-	newMessageSender(wsConn, "", WsSetUid).SendMsg(wsConn.UID())
+	newMessageSender(wsConn, WsSetUid).SendMsg(wsConn.UID())
 
 	g.Go(func() error {
 		var err error
@@ -248,7 +248,7 @@ func (wc *websocketManager) read(ctx context.Context, wsconn Conn) error {
 			return err
 		}
 		if err := proto.Unmarshal(message, &wsRequest); err != nil {
-			newMessageSender(wsconn, "", WsInternalError).SendEndError(err)
+			newMessageSender(wsconn, WsInternalError).SendEndError(err)
 
 			continue
 		}
@@ -319,7 +319,7 @@ func (wc *websocketManager) dispatchEvent(ctx context.Context, wsconn Conn, wsRe
 
 		// websocket.onopen 事件不一定是最早发出来的，所以要等 onopen 的认证结束后才能进行后面的操作
 		if wsconn.GetUser() == nil && wsRequest.Type != websocket_pb.Type_HandleAuthorize {
-			newMessageSender(wsconn, "", WsAuthorize).SendMsg("认证中，请稍等~")
+			newMessageSender(wsconn, WsAuthorize).SendMsg("认证中，请稍等~")
 			return
 		}
 		// 已认证连接的 user 在 Conn 上（SetUser），不在 ctx；分发前把用户物化进 ctx，

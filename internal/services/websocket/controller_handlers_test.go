@@ -318,12 +318,15 @@ func TestWebsocketManager_installProject_addCancelDeployTaskError(t *testing.T) 
 	repoBiz.EXPECT().Get(gomock.Any(), 0).Return(&biz.Repo{Name: "app", NeedGitRepo: false}, nil).AnyTimes()
 
 	sub := app.NewMockPubSub(m)
+	// 失败帧经入站 messager 真实推送：OnJob 复用 ApplyProject 已回填最终 slug 的发送器，
+	// 故帧内 slug 必须等于按最终名（仓库名 app）计算的 GetSlugName，而非空 slug。
 	sub.EXPECT().ToSelf(gomock.Cond(func(x any) bool {
 		resp, ok := x.(*websocket_pb.WsMetadataResponse)
 		return ok &&
 			resp.Metadata.Type == WsCreateProject &&
 			resp.Metadata.Result == deploy.ResultDeployFailed &&
-			resp.Metadata.Message == "正在清理中，请稍后再试。"
+			resp.Metadata.Message == "正在清理中，请稍后再试。" &&
+			resp.Metadata.Slug == deploy.GetSlugName(1, "app")
 	}))
 
 	wm := &websocketManager{logger: mlog.NewForConfig(nil), accessBiz: biz.NewAccessBiz(nsBiz, nil), jobManager: jb, repoBiz: repoBiz, gitBiz: gitBiz, projBiz: projBiz}
@@ -336,6 +339,7 @@ func TestWebsocketManager_installProject_addCancelDeployTaskError(t *testing.T) 
 		NamespaceId: 1,
 		Name:        "app",
 		User:        &biz.UserInfo{},
+		Messager:    newMessageSender(conn, WsCreateProject),
 	})
 	assert.NoError(t, err)
 }
@@ -384,13 +388,25 @@ func TestMessageSenderFunctionality(t *testing.T) {
 	defer m.Finish()
 
 	conn := NewMockConn(m)
-	ms := newMessageSender(conn, "slug", websocket_pb.Type_SetUid)
+	ms := newMessageSender(conn, websocket_pb.Type_SetUid)
 
 	assert.NotNil(t, ms)
 	assert.Equal(t, conn, ms.(*messageSender).conn)
-	assert.Equal(t, "slug", ms.(*messageSender).slugName)
+	assert.Equal(t, "", ms.(*messageSender).slugName)
 	assert.Equal(t, websocket_pb.Type_SetUid, ms.(*messageSender).wsType)
 	assert.NotNil(t, ms.(*messageSender).percent)
+}
+
+// TestMessageSender_SetSlug 覆盖 slug 就地重算：创建部署名缺省解析后由 ApplyProject 调用，
+// 保证出站帧携带最终名（前端 toSlug 关联的日志 key）。
+func TestMessageSender_SetSlug(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	conn := NewMockConn(m)
+	ms := newMessageSender(conn, websocket_pb.Type_SetUid)
+	ms.(*messageSender).SetSlug("new-slug")
+	assert.Equal(t, "new-slug", ms.(*messageSender).slugName)
 }
 
 func TestSendDeployedResultFunctionality(t *testing.T) {
@@ -413,7 +429,8 @@ func TestSendDeployedResultFunctionality(t *testing.T) {
 		assert.Equal(t, "message", res.Metadata.Message)
 	})
 
-	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleAuthorize)
+	ms := newMessageSender(conn, websocket_pb.Type_HandleAuthorize)
+	ms.(*messageSender).SetSlug("slug")
 	ms.SendDeployedResult(websocket_pb.ResultType_Deployed, "message", &types.ProjectModel{})
 }
 
@@ -433,7 +450,7 @@ func TestSendEndErrorFunctionality(t *testing.T) {
 	})
 	conn.EXPECT().UID().Return("uid").Times(1)
 	conn.EXPECT().ID().Return("id").Times(1)
-	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms := newMessageSender(conn, websocket_pb.Type_HandleExecShellMsg)
 	ms.SendEndError(errors.New("error"))
 }
 
@@ -454,7 +471,7 @@ func TestSendProcessPercentFunctionality(t *testing.T) {
 	conn.EXPECT().UID().Return("uid").Times(1)
 	conn.EXPECT().ID().Return("id").Times(1)
 
-	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms := newMessageSender(conn, websocket_pb.Type_HandleExecShellMsg)
 	ms.SendProcessPercent(50)
 }
 
@@ -475,7 +492,7 @@ func TestSendMsgFunctionality(t *testing.T) {
 	conn.EXPECT().UID().Return("uid").Times(1)
 	conn.EXPECT().ID().Return("id").Times(1)
 
-	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms := newMessageSender(conn, websocket_pb.Type_HandleExecShellMsg)
 	ms.SendMsg("message")
 }
 
@@ -499,7 +516,7 @@ func TestSendMsgWithContainerLogFunctionality(t *testing.T) {
 	conn.EXPECT().UID().Return("uid").Times(1)
 	conn.EXPECT().ID().Return("id").Times(1)
 
-	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms := newMessageSender(conn, websocket_pb.Type_HandleExecShellMsg)
 	ms.SendMsgWithContainerLog("message", containers)
 }
 
@@ -515,7 +532,7 @@ func TestSendProtoMsgFunctionality(t *testing.T) {
 		// SendProtoMsg 是直通语义：入参即出参，字段原样透传。
 		assert.Equal(t, "passthrough", res.Metadata.Message)
 	})
-	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms := newMessageSender(conn, websocket_pb.Type_HandleExecShellMsg)
 	ms.SendProtoMsg(&wsResponse{Metadata: &websocket_pb.Metadata{Message: "passthrough"}})
 }
 
@@ -535,7 +552,7 @@ func TestProcessPercentAddFunctionality(t *testing.T) {
 	conn.EXPECT().UID().Return("uid").Times(1)
 	conn.EXPECT().ID().Return("id").Times(1)
 
-	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms := newMessageSender(conn, websocket_pb.Type_HandleExecShellMsg)
 	ms.Add()
 }
 
@@ -555,7 +572,7 @@ func TestProcessPercentToFunctionality(t *testing.T) {
 	conn.EXPECT().UID().Return("uid").AnyTimes()
 	conn.EXPECT().ID().Return("id").AnyTimes()
 
-	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms := newMessageSender(conn, websocket_pb.Type_HandleExecShellMsg)
 	ms.To(3)
 	assert.Equal(t, int64(3), ms.Current())
 }
@@ -571,7 +588,7 @@ func Test_messageSender_Current(t *testing.T) {
 	conn.EXPECT().UID().Return("uid").AnyTimes()
 	conn.EXPECT().ID().Return("id").AnyTimes()
 
-	ms := newMessageSender(conn, "slug", websocket_pb.Type_HandleExecShellMsg)
+	ms := newMessageSender(conn, websocket_pb.Type_HandleExecShellMsg)
 	assert.Equal(t, int64(0), ms.Current())
 	ms.Add()
 	assert.Equal(t, int64(1), ms.Current())

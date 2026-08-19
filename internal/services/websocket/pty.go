@@ -248,7 +248,7 @@ func (t *ptyHandler) Write(p []byte) (n int, err error) {
 			t.logger.Debugf("resize shell size failed: %v", err)
 		}
 	}
-	newMessageSender(t.conn, t.sessionID, WsHandleExecShellMsg).SendProtoMsg(t.shellResponse(WsHandleExecShellMsg, OpStdout, p))
+	newMessageSender(t.conn, WsHandleExecShellMsg).SendProtoMsg(t.shellResponse(WsHandleExecShellMsg, OpStdout, p))
 
 	return len(p), nil
 }
@@ -381,7 +381,7 @@ func (t *ptyHandler) Close(ctx context.Context, reason string) bool {
 	if !t.Closeable.Close() {
 		return false
 	}
-	newMessageSender(t.conn, t.sessionID, WsHandleCloseShell).SendProtoMsg(t.shellResponse(WsHandleCloseShell, OpStdout, []byte(reason)))
+	newMessageSender(t.conn, WsHandleCloseShell).SendProtoMsg(t.shellResponse(WsHandleCloseShell, OpStdout, []byte(reason)))
 
 	t.sendControlFrame(ctx, ETX)
 	t.sendControlFrame(ctx, END_OF_TRANSMISSION)
@@ -410,6 +410,6 @@ func (t *ptyHandler) Close(ctx context.Context, reason string) bool {
 
 // Toast 向客户端终端推送 OOB 提示信息（hterm 在终端中央展示）。
 func (t *ptyHandler) Toast(p string) error {
-	newMessageSender(t.conn, t.sessionID, WsHandleExecShellMsg).SendProtoMsg(t.shellResponse(WsHandleExecShellMsg, OpToast, []byte(p)))
+	newMessageSender(t.conn, WsHandleExecShellMsg).SendProtoMsg(t.shellResponse(WsHandleExecShellMsg, OpToast, []byte(p)))
 	return nil
 }

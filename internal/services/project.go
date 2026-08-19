@@ -137,7 +137,6 @@ func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyReques
 func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_ApplyServer) error {
 	msger := newMessager(
 		input.SendPercent,
-		deploy.GetSlugName(input.NamespaceId, input.Name),
 		websocket.Type_ApplyProject,
 		server,
 	)
@@ -361,6 +360,9 @@ func (e *emptyMessager) SendMsgWithContainerLog(msg string, containers []*websoc
 func (e *emptyMessager) SendDeployedResult(resultType websocket.ResultType, s string, p *types.ProjectModel) {
 }
 
+// SetSlug 空实现：丢弃全部帧的空 messager 无 slug 关联需求。
+func (e *emptyMessager) SetSlug(string) {}
+
 var _ deploy.DeployMsger = (*messager)(nil)
 
 // messager 是 deploy.DeployMsger 的流式实现：按 sendPercent 决定是否推送进度帧，
@@ -375,8 +377,10 @@ type messager struct {
 }
 
 // newMessager 构造带进度上报的 deploy 消息器：按 sendPercent 决定是否推送进度帧。
-func newMessager(sendPercent bool, slugName string, t websocket.Type, server project.Project_ApplyServer) deploy.DeployMsger {
-	m := messager{sendPercent: sendPercent, slugName: slugName, t: t, server: server}
+// slug 不在构造期绑定：部署帧 slug 依赖最终部署名（创建场景客户端不发 name），由共享
+// 编排 ApplyProject 名解析后经 DeployMsger.SetSlug 统一回填。
+func newMessager(sendPercent bool, t websocket.Type, server project.Project_ApplyServer) deploy.DeployMsger {
+	m := messager{sendPercent: sendPercent, t: t, server: server}
 	m.percent = deploy.NewProcessPercent(&m, deploy.NewRealSleeper())
 	return &m
 }
@@ -432,6 +436,12 @@ func (m *messager) SendProtoMsg(message app.WebsocketMessage) {
 // SendMsgWithContainerLog 发送携带容器日志的消息帧。
 func (m *messager) SendMsgWithContainerLog(msg string, containers []*websocket.Container) {
 	m.send(&project.ApplyResponse{Metadata: m.metadata(m.t, websocket.ResultType_LogWithContainers, false, msg)})
+}
+
+// SetSlug 就地更新流帧携带的部署标识 slug：部署名在共享编排 ApplyProject 中被缺省解析后
+// 调用（创建部署未显式传名时），使客户端能按最终名关联部署日志。
+func (m *messager) SetSlug(slug string) {
+	m.slugName = slug
 }
 
 // metadata 收敛 5 个发送方法的公共字段（Slug/Type/Result/End/Message），与 websocket 侧

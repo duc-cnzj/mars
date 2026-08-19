@@ -495,6 +495,18 @@ func (mr *MockDeployMsgerMockRecorder) SendProtoMsg(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendProtoMsg", reflect.TypeOf((*MockDeployMsger)(nil).SendProtoMsg), arg0)
 }
 
+// SetSlug mocks base method.
+func (m *MockDeployMsger) SetSlug(arg0 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSlug", arg0)
+}
+
+// SetSlug indicates an expected call of SetSlug.
+func (mr *MockDeployMsgerMockRecorder) SetSlug(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSlug", reflect.TypeOf((*MockDeployMsger)(nil).SetSlug), arg0)
+}
+
 // To mocks base method.
 func (m *MockDeployMsger) To(arg0 int64) {
 	m.ctrl.T.Helper()

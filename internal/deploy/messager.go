@@ -11,9 +11,13 @@ import (
 
 // DeployMsger 是部署流水线向用户汇报进度的端口。实现方由传输层提供：
 // websocket 侧用 messageSender，gRPC 侧用 services 里的 messager/emptyMessager。
+// SetSlug 是部署帧 slug 的唯一权威回填入口：slug 依赖最终部署名（创建项目场景前端不发
+// name，名由 ApplyProject 缺省解析），传输层构造期不绑定 slug，由共享编排 ApplyProject
+// 名解析后就地回填，实现方据此保证后续所有帧（含 git ensure 消息）携带最终名。
 type DeployMsger interface {
 	Percentable
 
+	SetSlug(slug string)
 	SendProcessPercent(int64)
 	SendDeployedResult(t websocket_pb.ResultType, msg string, p *types.ProjectModel)
 	SendEndError(error)
