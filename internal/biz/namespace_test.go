@@ -33,6 +33,7 @@ type fakeNamespaceRepoForNSBiz struct {
 	syncMembers   func(ctx context.Context, namespaceID int, memberEmails []string) (*Namespace, error)
 	updatePrivate func(ctx context.Context, namespaceID int, private bool) (*Namespace, error)
 	transfer      func(ctx context.Context, id int, email string) (*Namespace, error)
+	updateConfig  func(ctx context.Context, input *UpdateConfigInput) (*Namespace, error)
 }
 
 func (f *fakeNamespaceRepoForNSBiz) GetMarsNamespace(name string) string { return f.getMars(name) }
@@ -65,6 +66,9 @@ func (f *fakeNamespaceRepoForNSBiz) UpdatePrivate(ctx context.Context, namespace
 }
 func (f *fakeNamespaceRepoForNSBiz) Transfer(ctx context.Context, id int, email string) (*Namespace, error) {
 	return f.transfer(ctx, id, email)
+}
+func (f *fakeNamespaceRepoForNSBiz) UpdateConfig(ctx context.Context, input *UpdateConfigInput) (*Namespace, error) {
+	return f.updateConfig(ctx, input)
 }
 
 type fakeK8sRepoForNSBiz struct {
@@ -743,6 +747,37 @@ func TestNamespaceBiz_Transfer_Valid(t *testing.T) {
 	assert.Equal(t, 1, got.ID)
 	assert.Equal(t, 1, gotID)
 	assert.Equal(t, "a@b.c", gotEmail)
+}
+
+func TestNamespaceBiz_UpdateConfig_InvalidID(t *testing.T) {
+	n := nsFacadeForTest(&fakeNamespaceRepoForNSBiz{})
+	got, err := n.UpdateConfig(context.TODO(), &UpdateConfigInput{ID: 0})
+	assert.Nil(t, got)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Equal(t, "namespace id 不能小于等于 0", status.Convert(err).Message())
+}
+
+func TestNamespaceBiz_UpdateConfig_Valid(t *testing.T) {
+	var gotInput *UpdateConfigInput
+	ns := &fakeNamespaceRepoForNSBiz{updateConfig: func(ctx context.Context, input *UpdateConfigInput) (*Namespace, error) {
+		gotInput = input
+		return &Namespace{ID: input.ID}, nil
+	}}
+	n := nsFacadeForTest(ns)
+	got, err := n.UpdateConfig(context.TODO(), &UpdateConfigInput{ID: 1})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, got.ID)
+	assert.Equal(t, 1, gotInput.ID)
+}
+
+func TestNamespaceBiz_UpdateConfig_RepoError(t *testing.T) {
+	ns := &fakeNamespaceRepoForNSBiz{updateConfig: func(ctx context.Context, input *UpdateConfigInput) (*Namespace, error) {
+		return nil, errors.New("db down")
+	}}
+	n := nsFacadeForTest(ns)
+	got, err := n.UpdateConfig(context.TODO(), &UpdateConfigInput{ID: 1})
+	assert.Nil(t, got)
+	assert.Equal(t, "db down", err.Error())
 }
 
 // ---- 纯透传查询 ----

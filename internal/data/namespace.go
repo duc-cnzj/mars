@@ -155,6 +155,66 @@ func (repo *namespaceRepo) UpdatePrivate(ctx context.Context, namespaceID int, p
 	return repo.Show(ctx, namespaceID)
 }
 
+// UpdateConfig 单事务原子更新 namespace 配置（描述/私有/成员/转让管理员）：
+// 合并 UpdatePrivate/SyncMembers/Transfer/UpdateDesc 的既有业务规则。顺序为先写
+// namespace 字段（描述/私有/转让），再以 final 名单差量同步成员——私有转公开时先
+// 清空成员，随后若给定新名单则按名单重建。Emails 非 nil（含空）表示成员需全量同步。
+func (repo *namespaceRepo) UpdateConfig(ctx context.Context, input *biz.UpdateConfigInput) (out *biz.Namespace, err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/UpdateConfig")
+	defer func() { endSpan(span, err) }()
+	if err := repo.data.WithTx(ctx, func(tx *ent.Tx) error {
+		get, err := tx.Namespace.Query().Where(namespace.ID(input.ID)).First(ctx)
+		if err != nil {
+			return err
+		}
+		up := tx.Namespace.UpdateOneID(input.ID)
+		if input.Description != nil {
+			up = up.SetDescription(*input.Description)
+		}
+		if input.Private != nil {
+			up = up.SetPrivate(*input.Private)
+			// 转公开清空全部成员（对齐 UpdatePrivate 规则）；随后若给定新名单则按名单重建。
+			if !*input.Private {
+				if _, err = tx.Member.Delete().Where(member.NamespaceID(input.ID)).Exec(ctx); err != nil {
+					return err
+				}
+			}
+		}
+		if input.NewAdminEmail != "" && input.NewAdminEmail != get.CreatorEmail {
+			up = up.SetCreatorEmail(input.NewAdminEmail)
+		}
+		if _, err = up.Save(ctx); err != nil {
+			return err
+		}
+		// 成员差量同步（对齐 SyncMembers：Emails 非 nil 即全量同步，含清空）。
+		if input.Emails != nil {
+			current, err := tx.Member.Query().Where(member.NamespaceID(input.ID)).Select(member.FieldEmail).Strings(ctx)
+			if err != nil {
+				return err
+			}
+			del, add := lo.Difference(current, input.Emails)
+			if len(add) > 0 {
+				creates := make([]*ent.MemberCreate, 0, len(add))
+				for _, addEmail := range add {
+					creates = append(creates, tx.Member.Create().SetEmail(addEmail).SetNamespaceID(input.ID))
+				}
+				if _, err := tx.Member.CreateBulk(creates...).Save(ctx); err != nil {
+					return err
+				}
+			}
+			if len(del) > 0 {
+				if _, err := tx.Member.Delete().Where(member.NamespaceID(input.ID), member.EmailIn(del...)).Exec(ctx); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, errs.Wrap(err, "update config")
+	}
+	return repo.Show(ctx, input.ID)
+}
+
 // NewNamespaceRepo 构造 namespaceRepo：nsPrefix 来自配置，用于创建/查找时加前缀。
 func NewNamespaceRepo(data dataStore) biz.NamespaceRepo {
 	return &namespaceRepo{

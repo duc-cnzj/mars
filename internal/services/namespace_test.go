@@ -790,6 +790,45 @@ func Test_namespaceSvc_UpdatePrivate(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+// Test_namespaceSvc_UpdateConfig 覆盖批量更新配置接口：
+// 非空间管理员/超级管理员 403；owner 失败透传；owner 成功落审计。
+func Test_namespaceSvc_UpdateConfig(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+	nsRepo := mocks.nsRepo
+	eventRepo := mocks.eventRepo
+
+	// 非空间管理员/超级管理员（creator 不是当前用户）→ 拒绝
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{CreatorEmail: "other@email.com"}, nil)
+	_, err := svc.UpdateConfig(newOtherUserCtx(), &namespace.UpdateConfigRequest{Id: 1})
+	assert.Error(t, err)
+
+	// owner 但 biz 失败 → 透传错误
+	nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{CreatorEmail: "user@mars.com"}, nil)
+	nsRepo.EXPECT().UpdateConfig(gomock.Any(), gomock.Any()).Return(nil, errors.New("x"))
+	ns, err := svc.UpdateConfig(newOtherUserCtx(), &namespace.UpdateConfigRequest{Id: 1, Desc: lo.ToPtr("d")})
+	assert.Nil(t, ns)
+	assert.Equal(t, "x", err.Error())
+
+	// owner 成功 → 审计 + 返回 item
+	eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{CreatorEmail: "user@mars.com"}, nil)
+	nsRepo.EXPECT().UpdateConfig(gomock.Any(), gomock.Any()).Return(&biz.Namespace{}, nil)
+	ns, err = svc.UpdateConfig(newOtherUserCtx(), &namespace.UpdateConfigRequest{Id: 1})
+	assert.NotNil(t, ns)
+	assert.Nil(t, err)
+}
+
+// TestNamespaceSvc_UpdateConfig_ShowError 覆盖 Show 查询失败直接上抛。
+func TestNamespaceSvc_UpdateConfig_ShowError(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+	nsRepo := mocks.nsRepo
+
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("x"))
+	res, err := svc.UpdateConfig(newAdminUserCtx(), &namespace.UpdateConfigRequest{Id: 1})
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
 func Test_namespaceSvc_Transfer(t *testing.T) {
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo

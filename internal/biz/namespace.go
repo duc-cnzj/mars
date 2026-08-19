@@ -58,6 +58,8 @@ type NamespaceBiz interface {
 	UpdatePrivate(ctx context.Context, namespaceID int, private bool) (*Namespace, error)
 	// Transfer 校验 id 与 email 后转移所有权。
 	Transfer(ctx context.Context, id int, email string) (*Namespace, error)
+	// UpdateConfig 校验 id 后单事务原子更新命名空间配置（描述/私有/成员/转让管理员）。
+	UpdateConfig(ctx context.Context, input *UpdateConfigInput) (*Namespace, error)
 	// Create 创建命名空间：GetMarsNamespace → FindByName 预查 → k8s 建（含收养已存在）
 	// → docker secret（失败降级）→ DB 记录（本请求新建的失败回滚）→ 自动关注 → 派发
 	// EventNamespaceCreated。返回 exists=true 表示命名空间已存在（未建新记录），
@@ -287,6 +289,14 @@ func (n *namespaceBiz) UpdatePrivate(ctx context.Context, namespaceID int, priva
 	return n.nsRepo.UpdatePrivate(ctx, namespaceID, private)
 }
 
+// UpdateConfig 校验 id 后单事务原子更新 namespace 配置（描述/私有/成员/转让管理员）。
+func (n *namespaceBiz) UpdateConfig(ctx context.Context, input *UpdateConfigInput) (*Namespace, error) {
+	if input.ID <= 0 {
+		return nil, errs.WrapInvalidArgument(errors.New("namespace id 不能小于等于 0"), "update config")
+	}
+	return n.nsRepo.UpdateConfig(ctx, input)
+}
+
 // Transfer 校验 id 与 email 后转移 namespace 所有权。
 func (n *namespaceBiz) Transfer(ctx context.Context, id int, email string) (*Namespace, error) {
 	if id <= 0 {
@@ -326,4 +336,6 @@ type NamespaceRepo interface {
 	UpdatePrivate(ctx context.Context, namespaceID int, private bool) (*Namespace, error)
 	// Transfer 转移命名空间所有权。
 	Transfer(ctx context.Context, id int, email string) (*Namespace, error)
+	// UpdateConfig 单事务原子更新命名空间配置（描述/私有/成员/转让管理员）。
+	UpdateConfig(ctx context.Context, input *UpdateConfigInput) (*Namespace, error)
 }

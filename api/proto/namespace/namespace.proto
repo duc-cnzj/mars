@@ -84,6 +84,23 @@ message SyncMembersResponse{
   types.NamespaceModel item = 1;
 }
 
+// UpdateConfigRequest 一次性原子更新命名空间配置（描述/私有/成员/转让管理员）。
+// 各字段 optional：不传（或为空）则不更新对应项；传入则生效。仅空间管理员/超级管理员可调用。
+message UpdateConfigRequest{
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  // 描述；不传不更新
+  optional string desc = 2;
+  // 是否私有；不传不更新（optional 区分"未传"与 false）
+  optional bool private = 3;
+  // 成员邮箱列表；不传不更新，传入则全量同步（多余删除、缺失新增）
+  repeated string emails = 4 [(validate.rules).repeated.items.string.email = true];
+  // 新管理员邮箱；空串不转让（ignore_empty 保证不传时跳过 email 校验）
+  string new_admin_email = 5 [(validate.rules).string = {email: true, ignore_empty: true}];
+}
+message UpdateConfigResponse{
+  types.NamespaceModel item = 1;
+}
+
 service Namespace {
   rpc List(ListRequest) returns (ListResponse) {
     option (google.api.http)      = {
@@ -111,6 +128,16 @@ service Namespace {
     };
     option (openapi.v3.operation) = {
       summary: "修改空间的成员",
+    };
+  }
+
+  rpc UpdateConfig(UpdateConfigRequest) returns (UpdateConfigResponse) {
+    option (google.api.http)      = {
+      post: "/api/namespaces/update_config",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "批量更新空间配置（描述/私有/成员/转让管理员）",
     };
   }
 

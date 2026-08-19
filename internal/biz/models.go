@@ -321,6 +321,17 @@ type UpdateNamespaceInput struct {
 	Description string
 }
 
+// UpdateConfigInput 是一次性原子更新命名空间配置（描述/私有/成员/转让管理员）的输入。
+// 指针字段（Description/Private）区分"未传"与零值；Emails 为 nil 表示不更新成员，
+// 非 nil（含空切片）表示以该名单全量同步；NewAdminEmail 空串表示不转让。
+type UpdateConfigInput struct {
+	ID            int
+	Description   *string
+	Private       *bool
+	Emails        []string
+	NewAdminEmail string
+}
+
 // FavoriteNamespaceInput 是设置/取消收藏的输入。
 type FavoriteNamespaceInput struct {
 	NamespaceID int

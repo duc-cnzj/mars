@@ -1816,6 +1816,21 @@ func (mr *MockNamespaceRepoMockRecorder) Update(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockNamespaceRepo)(nil).Update), arg0, arg1)
 }
 
+// UpdateConfig mocks base method.
+func (m *MockNamespaceRepo) UpdateConfig(arg0 context.Context, arg1 *biz.UpdateConfigInput) (*biz.Namespace, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateConfig", arg0, arg1)
+	ret0, _ := ret[0].(*biz.Namespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateConfig indicates an expected call of UpdateConfig.
+func (mr *MockNamespaceRepoMockRecorder) UpdateConfig(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfig", reflect.TypeOf((*MockNamespaceRepo)(nil).UpdateConfig), arg0, arg1)
+}
+
 // UpdateImagePullSecrets mocks base method.
 func (m *MockNamespaceRepo) UpdateImagePullSecrets(arg0 context.Context, arg1 int, arg2 []string) error {
 	m.ctrl.T.Helper()

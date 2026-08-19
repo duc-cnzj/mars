@@ -322,3 +322,47 @@ func (n *namespaceSvc) SyncMembers(ctx context.Context, req *namespace.SyncMembe
 
 	return &namespace.SyncMembersResponse{Item: transformer.FromNamespace(ns)}, nil
 }
+
+// UpdateConfig 一次性原子更新命名空间配置（描述/私有/成员/转让管理员），
+// 仅空间管理员（创建者）/超级管理员（admin）可操作，落变更审计日志（含前后 diff）。
+func (n *namespaceSvc) UpdateConfig(ctx context.Context, req *namespace.UpdateConfigRequest) (*namespace.UpdateConfigResponse, error) {
+	user := biz.MustGetUser(ctx)
+	// show 用于 owner 校验（非空间管理员/超级管理员直接 403）与审计前值。
+	show, err := n.showNsAndCheckOwner(ctx, int(req.Id))
+	if err != nil {
+		return nil, err
+	}
+
+	ns, err := n.nsBiz.UpdateConfig(ctx, &biz.UpdateConfigInput{
+		ID:            int(req.Id),
+		Description:   req.Desc,
+		Private:       req.Private,
+		Emails:        req.Emails,
+		NewAdminEmail: req.NewAdminEmail,
+	})
+	if err != nil {
+		return nil, logError(ctx, n.logger, err)
+	}
+
+	n.eventBiz.AuditLogWithChange(
+		types.EventActionType_Update,
+		user.Name,
+		fmt.Sprintf("[批量更新空间配置] id: %v name: %v", show.ID, show.Name),
+		biz.AnyYamlPrettier{
+			"namespace": show.Name,
+			"desc":      show.Description,
+			"private":   show.Private,
+			"members":   show.Members,
+			"admin":     show.CreatorEmail,
+		},
+		biz.AnyYamlPrettier{
+			"namespace": ns.Name,
+			"desc":      ns.Description,
+			"private":   ns.Private,
+			"members":   ns.Members,
+			"admin":     ns.CreatorEmail,
+		},
+	)
+
+	return &namespace.UpdateConfigResponse{Item: transformer.FromNamespace(ns)}, nil
+}

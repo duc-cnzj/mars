@@ -45,6 +45,15 @@ func (s *NamespaceSvc) SyncMembers(ctx context.Context, req *namespace.SyncMembe
 	return &out, nil
 }
 
+// UpdateConfig POST /api/namespaces/update_config。
+func (s *NamespaceSvc) UpdateConfig(ctx context.Context, req *namespace.UpdateConfigRequest) (*namespace.UpdateConfigResponse, error) {
+	var out namespace.UpdateConfigResponse
+	if err := s.C.Do(ctx, http.MethodPost, "/api/namespaces/update_config", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // Create POST /api/namespaces。
 func (s *NamespaceSvc) Create(ctx context.Context, req *namespace.CreateRequest) (*namespace.CreateResponse, error) {
 	var out namespace.CreateResponse
