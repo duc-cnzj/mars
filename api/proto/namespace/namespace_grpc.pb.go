@@ -23,6 +23,7 @@ const (
 	Namespace_List_FullMethodName          = "/namespace.Namespace/List"
 	Namespace_UpdatePrivate_FullMethodName = "/namespace.Namespace/UpdatePrivate"
 	Namespace_SyncMembers_FullMethodName   = "/namespace.Namespace/SyncMembers"
+	Namespace_UpdateConfig_FullMethodName  = "/namespace.Namespace/UpdateConfig"
 	Namespace_Create_FullMethodName        = "/namespace.Namespace/Create"
 	Namespace_Show_FullMethodName          = "/namespace.Namespace/Show"
 	Namespace_UpdateDesc_FullMethodName    = "/namespace.Namespace/UpdateDesc"
@@ -39,6 +40,7 @@ type NamespaceClient interface {
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	UpdatePrivate(ctx context.Context, in *UpdatePrivateRequest, opts ...grpc.CallOption) (*UpdatePrivateResponse, error)
 	SyncMembers(ctx context.Context, in *SyncMembersRequest, opts ...grpc.CallOption) (*SyncMembersResponse, error)
+	UpdateConfig(ctx context.Context, in *UpdateConfigRequest, opts ...grpc.CallOption) (*UpdateConfigResponse, error)
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
 	UpdateDesc(ctx context.Context, in *UpdateDescRequest, opts ...grpc.CallOption) (*UpdateDescResponse, error)
@@ -80,6 +82,16 @@ func (c *namespaceClient) SyncMembers(ctx context.Context, in *SyncMembersReques
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SyncMembersResponse)
 	err := c.cc.Invoke(ctx, Namespace_SyncMembers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *namespaceClient) UpdateConfig(ctx context.Context, in *UpdateConfigRequest, opts ...grpc.CallOption) (*UpdateConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateConfigResponse)
+	err := c.cc.Invoke(ctx, Namespace_UpdateConfig_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +175,7 @@ type NamespaceServer interface {
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	UpdatePrivate(context.Context, *UpdatePrivateRequest) (*UpdatePrivateResponse, error)
 	SyncMembers(context.Context, *SyncMembersRequest) (*SyncMembersResponse, error)
+	UpdateConfig(context.Context, *UpdateConfigRequest) (*UpdateConfigResponse, error)
 	Create(context.Context, *CreateRequest) (*CreateResponse, error)
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
 	UpdateDesc(context.Context, *UpdateDescRequest) (*UpdateDescResponse, error)
@@ -188,6 +201,9 @@ func (UnimplementedNamespaceServer) UpdatePrivate(context.Context, *UpdatePrivat
 }
 func (UnimplementedNamespaceServer) SyncMembers(context.Context, *SyncMembersRequest) (*SyncMembersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SyncMembers not implemented")
+}
+func (UnimplementedNamespaceServer) UpdateConfig(context.Context, *UpdateConfigRequest) (*UpdateConfigResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateConfig not implemented")
 }
 func (UnimplementedNamespaceServer) Create(context.Context, *CreateRequest) (*CreateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Create not implemented")
@@ -281,6 +297,24 @@ func _Namespace_SyncMembers_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(NamespaceServer).SyncMembers(ctx, req.(*SyncMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Namespace_UpdateConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NamespaceServer).UpdateConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Namespace_UpdateConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NamespaceServer).UpdateConfig(ctx, req.(*UpdateConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -429,6 +463,10 @@ var Namespace_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SyncMembers",
 			Handler:    _Namespace_SyncMembers_Handler,
+		},
+		{
+			MethodName: "UpdateConfig",
+			Handler:    _Namespace_UpdateConfig_Handler,
 		},
 		{
 			MethodName: "Create",

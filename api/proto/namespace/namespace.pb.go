@@ -915,6 +915,132 @@ func (x *SyncMembersResponse) GetItem() *types.NamespaceModel {
 	return nil
 }
 
+// UpdateConfigRequest 一次性原子更新命名空间配置（描述/私有/成员/转让管理员）。
+// 各字段 optional：不传（或为空）则不更新对应项；传入则生效。仅空间管理员/超级管理员可调用。
+type UpdateConfigRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	// 描述；不传不更新
+	Desc *string `protobuf:"bytes,2,opt,name=desc,proto3,oneof" json:"desc,omitempty"`
+	// 是否私有；不传不更新（optional 区分"未传"与 false）
+	Private *bool `protobuf:"varint,3,opt,name=private,proto3,oneof" json:"private,omitempty"`
+	// 成员邮箱列表；不传不更新，传入则全量同步（多余删除、缺失新增）
+	Emails []string `protobuf:"bytes,4,rep,name=emails,proto3" json:"emails,omitempty"`
+	// 新管理员邮箱；空串不转让（ignore_empty 保证不传时跳过 email 校验）
+	NewAdminEmail string `protobuf:"bytes,5,opt,name=new_admin_email,json=newAdminEmail,proto3" json:"new_admin_email,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateConfigRequest) Reset() {
+	*x = UpdateConfigRequest{}
+	mi := &file_proto_namespace_namespace_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateConfigRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateConfigRequest) ProtoMessage() {}
+
+func (x *UpdateConfigRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_namespace_namespace_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateConfigRequest.ProtoReflect.Descriptor instead.
+func (*UpdateConfigRequest) Descriptor() ([]byte, []int) {
+	return file_proto_namespace_namespace_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *UpdateConfigRequest) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *UpdateConfigRequest) GetDesc() string {
+	if x != nil && x.Desc != nil {
+		return *x.Desc
+	}
+	return ""
+}
+
+func (x *UpdateConfigRequest) GetPrivate() bool {
+	if x != nil && x.Private != nil {
+		return *x.Private
+	}
+	return false
+}
+
+func (x *UpdateConfigRequest) GetEmails() []string {
+	if x != nil {
+		return x.Emails
+	}
+	return nil
+}
+
+func (x *UpdateConfigRequest) GetNewAdminEmail() string {
+	if x != nil {
+		return x.NewAdminEmail
+	}
+	return ""
+}
+
+type UpdateConfigResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Item          *types.NamespaceModel  `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateConfigResponse) Reset() {
+	*x = UpdateConfigResponse{}
+	mi := &file_proto_namespace_namespace_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateConfigResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateConfigResponse) ProtoMessage() {}
+
+func (x *UpdateConfigResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_namespace_namespace_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateConfigResponse.ProtoReflect.Descriptor instead.
+func (*UpdateConfigResponse) Descriptor() ([]byte, []int) {
+	return file_proto_namespace_namespace_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *UpdateConfigResponse) GetItem() *types.NamespaceModel {
+	if x != nil {
+		return x.Item
+	}
+	return nil
+}
+
 type TransferRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Id    int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -926,7 +1052,7 @@ type TransferRequest struct {
 
 func (x *TransferRequest) Reset() {
 	*x = TransferRequest{}
-	mi := &file_proto_namespace_namespace_proto_msgTypes[18]
+	mi := &file_proto_namespace_namespace_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -938,7 +1064,7 @@ func (x *TransferRequest) String() string {
 func (*TransferRequest) ProtoMessage() {}
 
 func (x *TransferRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_namespace_namespace_proto_msgTypes[18]
+	mi := &file_proto_namespace_namespace_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -951,7 +1077,7 @@ func (x *TransferRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransferRequest.ProtoReflect.Descriptor instead.
 func (*TransferRequest) Descriptor() ([]byte, []int) {
-	return file_proto_namespace_namespace_proto_rawDescGZIP(), []int{18}
+	return file_proto_namespace_namespace_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *TransferRequest) GetId() int32 {
@@ -977,7 +1103,7 @@ type TransferResponse struct {
 
 func (x *TransferResponse) Reset() {
 	*x = TransferResponse{}
-	mi := &file_proto_namespace_namespace_proto_msgTypes[19]
+	mi := &file_proto_namespace_namespace_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -989,7 +1115,7 @@ func (x *TransferResponse) String() string {
 func (*TransferResponse) ProtoMessage() {}
 
 func (x *TransferResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_namespace_namespace_proto_msgTypes[19]
+	mi := &file_proto_namespace_namespace_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1002,7 +1128,7 @@ func (x *TransferResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransferResponse.ProtoReflect.Descriptor instead.
 func (*TransferResponse) Descriptor() ([]byte, []int) {
-	return file_proto_namespace_namespace_proto_rawDescGZIP(), []int{19}
+	return file_proto_namespace_namespace_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *TransferResponse) GetItem() *types.NamespaceModel {
@@ -1068,17 +1194,29 @@ const file_proto_namespace_namespace_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\x12$\n" +
 	"\x06emails\x18\x02 \x03(\tB\f\xfaB\t\x92\x01\x06\"\x04r\x02`\x01R\x06emails\"@\n" +
 	"\x13SyncMembersResponse\x12)\n" +
+	"\x04item\x18\x01 \x01(\v2\x15.types.NamespaceModelR\x04item\"\xd9\x01\n" +
+	"\x13UpdateConfigRequest\x12\x1b\n" +
+	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\x12\x17\n" +
+	"\x04desc\x18\x02 \x01(\tH\x00R\x04desc\x88\x01\x01\x12\x1d\n" +
+	"\aprivate\x18\x03 \x01(\bH\x01R\aprivate\x88\x01\x01\x12$\n" +
+	"\x06emails\x18\x04 \x03(\tB\f\xfaB\t\x92\x01\x06\"\x04r\x02`\x01R\x06emails\x122\n" +
+	"\x0fnew_admin_email\x18\x05 \x01(\tB\n" +
+	"\xfaB\ar\x05\xd0\x01\x01`\x01R\rnewAdminEmailB\a\n" +
+	"\x05_descB\n" +
+	"\n" +
+	"\b_private\"A\n" +
+	"\x14UpdateConfigResponse\x12)\n" +
 	"\x04item\x18\x01 \x01(\v2\x15.types.NamespaceModelR\x04item\"e\n" +
 	"\x0fTransferRequest\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\x125\n" +
 	"\x0fnew_admin_email\x18\x02 \x01(\tB\r\xe2A\x01\x02\xfaB\x06r\x04 \x01`\x01R\rnewAdminEmail\"=\n" +
 	"\x10TransferResponse\x12)\n" +
-	"\x04item\x18\x01 \x01(\v2\x15.types.NamespaceModelR\x04item2\xb9\n" +
-	"\n" +
+	"\x04item\x18\x01 \x01(\v2\x15.types.NamespaceModelR\x04item2\xfc\v\n" +
 	"\tNamespace\x12m\n" +
 	"\x04List\x12\x16.namespace.ListRequest\x1a\x17.namespace.ListResponse\"4\xbaG\x1a\x12\x18分页获取名称空间\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/namespaces\x12\x9d\x01\n" +
 	"\rUpdatePrivate\x12\x1f.namespace.UpdatePrivateRequest\x1a .namespace.UpdatePrivateResponse\"I\xbaG\x1d\x12\x1b修改空间的访问权限\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/api/namespaces/update_private\x12\x8f\x01\n" +
-	"\vSyncMembers\x12\x1d.namespace.SyncMembersRequest\x1a\x1e.namespace.SyncMembersResponse\"A\xbaG\x17\x12\x15修改空间的成员\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/api/namespaces/sync_members\x12p\n" +
+	"\vSyncMembers\x12\x1d.namespace.SyncMembersRequest\x1a\x1e.namespace.SyncMembersResponse\"A\xbaG\x17\x12\x15修改空间的成员\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/api/namespaces/sync_members\x12\xc0\x01\n" +
+	"\fUpdateConfig\x12\x1e.namespace.UpdateConfigRequest\x1a\x1f.namespace.UpdateConfigResponse\"o\xbaGD\x12B批量更新空间配置（描述/私有/成员/转让管理员）\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/api/namespaces/update_config\x12p\n" +
 	"\x06Create\x12\x18.namespace.CreateRequest\x1a\x19.namespace.CreateResponse\"1\xbaG\x14\x12\x12创建名称空间\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/api/namespaces\x12r\n" +
 	"\x04Show\x12\x16.namespace.ShowRequest\x1a\x17.namespace.ShowResponse\"9\xbaG\x1a\x12\x18查看名称空间详情\x82\xd3\xe4\x93\x02\x16\x12\x14/api/namespaces/{id}\x12\x93\x01\n" +
 	"\n" +
@@ -1100,7 +1238,7 @@ func file_proto_namespace_namespace_proto_rawDescGZIP() []byte {
 	return file_proto_namespace_namespace_proto_rawDescData
 }
 
-var file_proto_namespace_namespace_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_proto_namespace_namespace_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_proto_namespace_namespace_proto_goTypes = []any{
 	(*CreateRequest)(nil),         // 0: namespace.CreateRequest
 	(*CreateResponse)(nil),        // 1: namespace.CreateResponse
@@ -1120,43 +1258,48 @@ var file_proto_namespace_namespace_proto_goTypes = []any{
 	(*UpdatePrivateResponse)(nil), // 15: namespace.UpdatePrivateResponse
 	(*SyncMembersRequest)(nil),    // 16: namespace.SyncMembersRequest
 	(*SyncMembersResponse)(nil),   // 17: namespace.SyncMembersResponse
-	(*TransferRequest)(nil),       // 18: namespace.TransferRequest
-	(*TransferResponse)(nil),      // 19: namespace.TransferResponse
-	(*types.NamespaceModel)(nil),  // 20: types.NamespaceModel
+	(*UpdateConfigRequest)(nil),   // 18: namespace.UpdateConfigRequest
+	(*UpdateConfigResponse)(nil),  // 19: namespace.UpdateConfigResponse
+	(*TransferRequest)(nil),       // 20: namespace.TransferRequest
+	(*TransferResponse)(nil),      // 21: namespace.TransferResponse
+	(*types.NamespaceModel)(nil),  // 22: types.NamespaceModel
 }
 var file_proto_namespace_namespace_proto_depIdxs = []int32{
-	20, // 0: namespace.CreateResponse.item:type_name -> types.NamespaceModel
-	20, // 1: namespace.ShowResponse.item:type_name -> types.NamespaceModel
-	20, // 2: namespace.UpdateDescResponse.item:type_name -> types.NamespaceModel
-	20, // 3: namespace.ListResponse.items:type_name -> types.NamespaceModel
-	20, // 4: namespace.UpdatePrivateResponse.item:type_name -> types.NamespaceModel
-	20, // 5: namespace.SyncMembersResponse.item:type_name -> types.NamespaceModel
-	20, // 6: namespace.TransferResponse.item:type_name -> types.NamespaceModel
-	12, // 7: namespace.Namespace.List:input_type -> namespace.ListRequest
-	14, // 8: namespace.Namespace.UpdatePrivate:input_type -> namespace.UpdatePrivateRequest
-	16, // 9: namespace.Namespace.SyncMembers:input_type -> namespace.SyncMembersRequest
-	0,  // 10: namespace.Namespace.Create:input_type -> namespace.CreateRequest
-	2,  // 11: namespace.Namespace.Show:input_type -> namespace.ShowRequest
-	10, // 12: namespace.Namespace.UpdateDesc:input_type -> namespace.UpdateDescRequest
-	6,  // 13: namespace.Namespace.Delete:input_type -> namespace.DeleteRequest
-	4,  // 14: namespace.Namespace.IsExists:input_type -> namespace.IsExistsRequest
-	8,  // 15: namespace.Namespace.Favorite:input_type -> namespace.FavoriteRequest
-	18, // 16: namespace.Namespace.Transfer:input_type -> namespace.TransferRequest
-	13, // 17: namespace.Namespace.List:output_type -> namespace.ListResponse
-	15, // 18: namespace.Namespace.UpdatePrivate:output_type -> namespace.UpdatePrivateResponse
-	17, // 19: namespace.Namespace.SyncMembers:output_type -> namespace.SyncMembersResponse
-	1,  // 20: namespace.Namespace.Create:output_type -> namespace.CreateResponse
-	3,  // 21: namespace.Namespace.Show:output_type -> namespace.ShowResponse
-	11, // 22: namespace.Namespace.UpdateDesc:output_type -> namespace.UpdateDescResponse
-	7,  // 23: namespace.Namespace.Delete:output_type -> namespace.DeleteResponse
-	5,  // 24: namespace.Namespace.IsExists:output_type -> namespace.IsExistsResponse
-	9,  // 25: namespace.Namespace.Favorite:output_type -> namespace.FavoriteResponse
-	19, // 26: namespace.Namespace.Transfer:output_type -> namespace.TransferResponse
-	17, // [17:27] is the sub-list for method output_type
-	7,  // [7:17] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	22, // 0: namespace.CreateResponse.item:type_name -> types.NamespaceModel
+	22, // 1: namespace.ShowResponse.item:type_name -> types.NamespaceModel
+	22, // 2: namespace.UpdateDescResponse.item:type_name -> types.NamespaceModel
+	22, // 3: namespace.ListResponse.items:type_name -> types.NamespaceModel
+	22, // 4: namespace.UpdatePrivateResponse.item:type_name -> types.NamespaceModel
+	22, // 5: namespace.SyncMembersResponse.item:type_name -> types.NamespaceModel
+	22, // 6: namespace.UpdateConfigResponse.item:type_name -> types.NamespaceModel
+	22, // 7: namespace.TransferResponse.item:type_name -> types.NamespaceModel
+	12, // 8: namespace.Namespace.List:input_type -> namespace.ListRequest
+	14, // 9: namespace.Namespace.UpdatePrivate:input_type -> namespace.UpdatePrivateRequest
+	16, // 10: namespace.Namespace.SyncMembers:input_type -> namespace.SyncMembersRequest
+	18, // 11: namespace.Namespace.UpdateConfig:input_type -> namespace.UpdateConfigRequest
+	0,  // 12: namespace.Namespace.Create:input_type -> namespace.CreateRequest
+	2,  // 13: namespace.Namespace.Show:input_type -> namespace.ShowRequest
+	10, // 14: namespace.Namespace.UpdateDesc:input_type -> namespace.UpdateDescRequest
+	6,  // 15: namespace.Namespace.Delete:input_type -> namespace.DeleteRequest
+	4,  // 16: namespace.Namespace.IsExists:input_type -> namespace.IsExistsRequest
+	8,  // 17: namespace.Namespace.Favorite:input_type -> namespace.FavoriteRequest
+	20, // 18: namespace.Namespace.Transfer:input_type -> namespace.TransferRequest
+	13, // 19: namespace.Namespace.List:output_type -> namespace.ListResponse
+	15, // 20: namespace.Namespace.UpdatePrivate:output_type -> namespace.UpdatePrivateResponse
+	17, // 21: namespace.Namespace.SyncMembers:output_type -> namespace.SyncMembersResponse
+	19, // 22: namespace.Namespace.UpdateConfig:output_type -> namespace.UpdateConfigResponse
+	1,  // 23: namespace.Namespace.Create:output_type -> namespace.CreateResponse
+	3,  // 24: namespace.Namespace.Show:output_type -> namespace.ShowResponse
+	11, // 25: namespace.Namespace.UpdateDesc:output_type -> namespace.UpdateDescResponse
+	7,  // 26: namespace.Namespace.Delete:output_type -> namespace.DeleteResponse
+	5,  // 27: namespace.Namespace.IsExists:output_type -> namespace.IsExistsResponse
+	9,  // 28: namespace.Namespace.Favorite:output_type -> namespace.FavoriteResponse
+	21, // 29: namespace.Namespace.Transfer:output_type -> namespace.TransferResponse
+	19, // [19:30] is the sub-list for method output_type
+	8,  // [8:19] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_proto_namespace_namespace_proto_init() }
@@ -1165,13 +1308,14 @@ func file_proto_namespace_namespace_proto_init() {
 		return
 	}
 	file_proto_namespace_namespace_proto_msgTypes[12].OneofWrappers = []any{}
+	file_proto_namespace_namespace_proto_msgTypes[18].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_namespace_namespace_proto_rawDesc), len(file_proto_namespace_namespace_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -2,7 +2,10 @@ package data
 
 import (
 	"context"
+	"errors"
 	"testing"
+
+	entgo "entgo.io/ent"
 
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/config"
@@ -685,4 +688,235 @@ func TestNamespaceRepo_List_ReturnsImagePullSecrets(t *testing.T) {
 	require.Len(t, res, 1)
 	assert.Equal(t, ns.ID, res[0].ID)
 	assert.Equal(t, []string{"s1", "s2"}, res[0].ImagePullSecrets)
+}
+
+// Test_namespaceRepo_UpdateConfig_Combined 覆盖单事务内四项配置（描述/私有/成员/转让）一次提交全生效。
+func Test_namespaceRepo_UpdateConfig_Combined(t *testing.T) {
+	repo, entdb := newNsRepo(t)
+	ns := createNamespace(entdb)
+	ns.Update().SetPrivate(true).SetDescription("old desc").SetCreatorEmail("old@x.y").SaveX(context.TODO())
+	entdb.Member.Create().SetEmail("a@x.y").SetNamespaceID(ns.ID).SaveX(context.TODO())
+
+	res, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{
+		ID:            ns.ID,
+		Description:   lo.ToPtr("new desc"),
+		Private:       lo.ToPtr(true),
+		Emails:        []string{"a@x.y", "b@x.y"},
+		NewAdminEmail: "new@x.y",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "new desc", res.Description)
+	assert.True(t, res.Private)
+	assert.Equal(t, "new@x.y", res.CreatorEmail)
+	require.Len(t, res.Members, 2)
+	assert.ElementsMatch(t, []string{"a@x.y", "b@x.y"}, []string{res.Members[0].Email, res.Members[1].Email})
+}
+
+// Test_namespaceRepo_UpdateConfig_Partial 覆盖仅更新部分字段：未传字段保持不变。
+func Test_namespaceRepo_UpdateConfig_Partial(t *testing.T) {
+	repo, entdb := newNsRepo(t)
+	ns := entdb.Namespace.Create().SetName("partial-ns").SetCreatorEmail("me@x.y").SetPrivate(true).SetDescription("keep").SaveX(context.TODO())
+	entdb.Member.Create().SetEmail("keep@x.y").SetNamespaceID(ns.ID).SaveX(context.TODO())
+
+	// 只传描述：私有/成员/管理员均不变
+	res, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{
+		ID:          ns.ID,
+		Description: lo.ToPtr("changed"),
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "changed", res.Description)
+	assert.True(t, res.Private)
+	assert.Equal(t, "me@x.y", res.CreatorEmail)
+	require.Len(t, res.Members, 1)
+	assert.Equal(t, "keep@x.y", res.Members[0].Email)
+}
+
+// Test_namespaceRepo_UpdateConfig_PrivateFalseClears 覆盖 private=false 转公开清空成员（对齐 UpdatePrivate 规则）。
+func Test_namespaceRepo_UpdateConfig_PrivateFalseClears(t *testing.T) {
+	repo, entdb := newNsRepo(t)
+	ns := entdb.Namespace.Create().SetName("clear-ns").SetCreatorEmail("me@x.y").SetPrivate(true).SaveX(context.TODO())
+	entdb.Member.Create().SetEmail("a@x.y").SetNamespaceID(ns.ID).SaveX(context.TODO())
+
+	res, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{
+		ID:      ns.ID,
+		Private: lo.ToPtr(false),
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Private)
+	assert.Len(t, res.Members, 0)
+	got := entdb.Member.Query().CountX(context.TODO())
+	assert.Zero(t, got)
+}
+
+// Test_namespaceRepo_UpdateConfig_PrivateFalseWithEmails 覆盖 private=false + 新名单：清空后按名单重建。
+func Test_namespaceRepo_UpdateConfig_PrivateFalseWithEmails(t *testing.T) {
+	repo, entdb := newNsRepo(t)
+	ns := entdb.Namespace.Create().SetName("rebuild-ns").SetCreatorEmail("me@x.y").SetPrivate(true).SaveX(context.TODO())
+	entdb.Member.Create().SetEmail("old@x.y").SetNamespaceID(ns.ID).SaveX(context.TODO())
+
+	res, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{
+		ID:      ns.ID,
+		Private: lo.ToPtr(false),
+		Emails:  []string{"new@x.y"},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Private)
+	require.Len(t, res.Members, 1)
+	assert.Equal(t, "new@x.y", res.Members[0].Email)
+	got := entdb.Member.Query().AllX(context.TODO())
+	require.Len(t, got, 1)
+	assert.Equal(t, "new@x.y", got[0].Email)
+}
+
+// Test_namespaceRepo_UpdateConfig_EmailsEmptyClears 覆盖 Emails 非 nil 空切片 → 成员清空（对齐 SyncMembers 空名单）。
+func Test_namespaceRepo_UpdateConfig_EmailsEmptyClears(t *testing.T) {
+	repo, entdb := newNsRepo(t)
+	ns := entdb.Namespace.Create().SetName("empty-ns").SetCreatorEmail("me@x.y").SetPrivate(true).SaveX(context.TODO())
+	entdb.Member.Create().SetEmail("a@x.y").SetNamespaceID(ns.ID).SaveX(context.TODO())
+
+	res, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{
+		ID:      ns.ID,
+		Emails:  []string{},
+		Private: lo.ToPtr(true),
+	})
+	require.NoError(t, err)
+	assert.True(t, res.Private)
+	assert.Len(t, res.Members, 0)
+}
+
+// Test_namespaceRepo_UpdateConfig_SameAdminSkips 覆盖 newAdminEmail 与当前 creator 相同 → 不转让。
+func Test_namespaceRepo_UpdateConfig_SameAdminSkips(t *testing.T) {
+	repo, entdb := newNsRepo(t)
+	ns := entdb.Namespace.Create().SetName("same-ns").SetCreatorEmail("me@x.y").SaveX(context.TODO())
+
+	res, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{
+		ID:            ns.ID,
+		NewAdminEmail: "me@x.y",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "me@x.y", res.CreatorEmail)
+}
+
+// Test_namespaceRepo_UpdateConfig_MissingNamespace 覆盖 tx 内查询不存在的 namespace 报错。
+func Test_namespaceRepo_UpdateConfig_MissingNamespace(t *testing.T) {
+	repo, _ := newNsRepo(t)
+	_, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{ID: 999999, Description: lo.ToPtr("x")})
+	assert.Error(t, err)
+}
+
+// TestNamespaceRepo_UpdateConfig_ErrorBranch 用 closed DB 覆盖查询错误分支。
+func TestNamespaceRepo_UpdateConfig_ErrorBranch(t *testing.T) {
+	repo, _ := newNsRepo(t)
+	_ = repo.data.DB().Close()
+	_, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{ID: 1, Description: lo.ToPtr("x")})
+	assert.Error(t, err)
+}
+
+// newNsRepoWithHook 构造一个挂了 mutation hook 的 namespaceRepo（真实 sqlite），
+// 用于在 UpdateConfig 单事务中间注入确定性错误，补齐 closed DB 无法触达的中间错误分支。
+func newNsRepoWithHook(t *testing.T, hook func(next entgo.Mutator) entgo.Mutator) (*namespaceRepo, *ent.Client) {
+	t.Helper()
+	entdb, err := NewSqliteDB()
+	require.NoError(t, err)
+	t.Cleanup(func() { entdb.Close() })
+	if hook != nil {
+		entdb.Use(hook)
+	}
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{DB: entdb, Cfg: &config.Config{}}))
+	return repo.(*namespaceRepo), entdb
+}
+
+// newNsRepoWithIntercept 构造一个挂了 query 拦截器的 namespaceRepo（真实 sqlite），
+// 用于注入成员查询失败。
+func newNsRepoWithIntercept(t *testing.T, intercept entgo.Interceptor) (*namespaceRepo, *ent.Client) {
+	t.Helper()
+	entdb, err := NewSqliteDB()
+	require.NoError(t, err)
+	t.Cleanup(func() { entdb.Close() })
+	if intercept != nil {
+		entdb.Intercept(intercept)
+	}
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{DB: entdb, Cfg: &config.Config{}}))
+	return repo.(*namespaceRepo), entdb
+}
+
+// Test_namespaceRepo_UpdateConfig_SaveError 注入 namespace 更新失败，覆盖 up.Save 错误分支。
+func Test_namespaceRepo_UpdateConfig_SaveError(t *testing.T) {
+	repo, entdb := newNsRepoWithHook(t, func(next entgo.Mutator) entgo.Mutator {
+		return entgo.MutateFunc(func(ctx context.Context, m entgo.Mutation) (entgo.Value, error) {
+			if mm, ok := m.(*ent.NamespaceMutation); ok && mm.Op() == entgo.OpUpdateOne {
+				return nil, errors.New("inject save error")
+			}
+			return next.Mutate(ctx, m)
+		})
+	})
+	ns := entdb.Namespace.Create().SetName("save-err").SetCreatorEmail("me@x.y").SaveX(context.TODO())
+	_, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{ID: ns.ID, Description: lo.ToPtr("x")})
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "inject save error")
+}
+
+// Test_namespaceRepo_UpdateConfig_DeleteMembersError 注入转公开清空成员失败，覆盖 Private=false 时 Delete 错误分支。
+func Test_namespaceRepo_UpdateConfig_DeleteMembersError(t *testing.T) {
+	repo, entdb := newNsRepoWithHook(t, func(next entgo.Mutator) entgo.Mutator {
+		return entgo.MutateFunc(func(ctx context.Context, m entgo.Mutation) (entgo.Value, error) {
+			if mm, ok := m.(*ent.MemberMutation); ok && mm.Op() == entgo.OpDelete {
+				return nil, errors.New("inject member delete error")
+			}
+			return next.Mutate(ctx, m)
+		})
+	})
+	ns := entdb.Namespace.Create().SetName("del-err").SetCreatorEmail("me@x.y").SetPrivate(true).SaveX(context.TODO())
+	_, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{ID: ns.ID, Private: lo.ToPtr(false)})
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "inject member delete error")
+}
+
+// Test_namespaceRepo_UpdateConfig_MembersQueryError 注入成员名单查询失败，覆盖差量同步 Query 错误分支。
+func Test_namespaceRepo_UpdateConfig_MembersQueryError(t *testing.T) {
+	repo, entdb := newNsRepoWithIntercept(t, entgo.InterceptFunc(func(next entgo.Querier) entgo.Querier {
+		return entgo.QuerierFunc(func(ctx context.Context, q entgo.Query) (entgo.Value, error) {
+			if _, ok := q.(*ent.MemberQuery); ok {
+				return nil, errors.New("inject member query error")
+			}
+			return next.Query(ctx, q)
+		})
+	}))
+	ns := entdb.Namespace.Create().SetName("q-err").SetCreatorEmail("me@x.y").SaveX(context.TODO())
+	_, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{ID: ns.ID, Emails: []string{"a@x.y"}})
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "inject member query error")
+}
+
+// Test_namespaceRepo_UpdateConfig_CreateBulkError 注入成员批量创建失败，覆盖 CreateBulk 错误分支。
+func Test_namespaceRepo_UpdateConfig_CreateBulkError(t *testing.T) {
+	repo, entdb := newNsRepoWithHook(t, func(next entgo.Mutator) entgo.Mutator {
+		return entgo.MutateFunc(func(ctx context.Context, m entgo.Mutation) (entgo.Value, error) {
+			if mm, ok := m.(*ent.MemberMutation); ok && mm.Op() == entgo.OpCreate {
+				return nil, errors.New("inject member create error")
+			}
+			return next.Mutate(ctx, m)
+		})
+	})
+	ns := entdb.Namespace.Create().SetName("create-err").SetCreatorEmail("me@x.y").SaveX(context.TODO())
+	_, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{ID: ns.ID, Emails: []string{"a@x.y"}})
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "inject member create error")
+}
+
+// Test_namespaceRepo_UpdateConfig_DeleteMembersDiffError 注入差量删除成员失败，覆盖 Emails 差量同步 Delete 错误分支。
+func Test_namespaceRepo_UpdateConfig_DeleteMembersDiffError(t *testing.T) {
+	repo, entdb := newNsRepoWithHook(t, func(next entgo.Mutator) entgo.Mutator {
+		return entgo.MutateFunc(func(ctx context.Context, m entgo.Mutation) (entgo.Value, error) {
+			if mm, ok := m.(*ent.MemberMutation); ok && mm.Op() == entgo.OpDelete {
+				return nil, errors.New("inject member delete error")
+			}
+			return next.Mutate(ctx, m)
+		})
+	})
+	ns := entdb.Namespace.Create().SetName("del-diff-err").SetCreatorEmail("me@x.y").SetPrivate(true).SaveX(context.TODO())
+	entdb.Member.Create().SetEmail("a@x.y").SetNamespaceID(ns.ID).SaveX(context.TODO())
+	_, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{ID: ns.ID, Emails: []string{}})
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "inject member delete error")
 }

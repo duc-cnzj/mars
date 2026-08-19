@@ -98,10 +98,21 @@ func TestEventRepo_List(t *testing.T) {
 		assert.Equal(t, int32(10), pag.PageSize)
 	})
 
-	t.Run("action filter", func(t *testing.T) {
-		items, _, _ := repo.List(ctx, &biz.ListEventInput{Page: 1, PageSize: 10, ActionType: types.EventActionType_Delete})
+	t.Run("action filter single", func(t *testing.T) {
+		items, _, _ := repo.List(ctx, &biz.ListEventInput{Page: 1, PageSize: 10, ActionTypes: []types.EventActionType{types.EventActionType_Delete}})
 		require.Len(t, items, 1)
 		assert.Equal(t, "delete b", items[0].Message)
+	})
+
+	t.Run("action filter multi (IN)", func(t *testing.T) {
+		items, _, _ := repo.List(ctx, &biz.ListEventInput{Page: 1, PageSize: 10, ActionTypes: []types.EventActionType{types.EventActionType_Create, types.EventActionType_Delete}})
+		require.Len(t, items, 2)
+		assert.ElementsMatch(t, []string{"create a", "delete b"}, []string{items[0].Message, items[1].Message})
+	})
+
+	t.Run("action filter no match", func(t *testing.T) {
+		items, _, _ := repo.List(ctx, &biz.ListEventInput{Page: 1, PageSize: 10, ActionTypes: []types.EventActionType{types.EventActionType_Shell}})
+		require.Len(t, items, 0)
 	})
 
 	t.Run("search by message", func(t *testing.T) {

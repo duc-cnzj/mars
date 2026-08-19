@@ -71,6 +71,13 @@ func ApplyProject(ctx context.Context, deps ApplyProjectDeps, input *ApplyProjec
 	if input.JobInput.Name == "" {
 		input.JobInput.Name = show.Name
 	}
+	// 部署帧 slug 的唯一权威来源：传输层构造 messager 不绑定 slug（构造期 name 可能为
+	// 空，与前端 toSlug 关联的日志 key 不一致），此处名缺省解析后就地回填
+	// GetSlugName(ns, 最终名)，保证后续所有帧（含 git ensure 消息）携带最终名。
+	// Messager 为空（如测试中的空 messager）时跳过。
+	if input.JobInput.Messager != nil {
+		input.JobInput.Messager.SetSlug(GetSlugName(input.JobInput.NamespaceId, input.JobInput.Name))
+	}
 
 	if show.NeedGitRepo {
 		var msgs []string

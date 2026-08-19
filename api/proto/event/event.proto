@@ -13,7 +13,11 @@ option go_package = "github.com/duc-cnzj/mars/api/v6/proto/event;event";
 message ListRequest {
   optional int32                 page        = 1;
   optional int32                 page_size   = 2;
-  types.EventActionType action_type = 3;
+  // 动作类型精确过滤（单值，兼容旧客户端）：Unknown(0) = 全部
+  types.EventActionType          action_type = 3;
+  // 动作类型多值过滤（新参数）：空 = 全部，多值 = 任一匹配（IN）；
+  // 与 action_type 同时传入时优先取 action_types
+  repeated types.EventActionType action_types = 5;
   // 模糊搜索 message 和 username
   string                         search      = 4;
 }

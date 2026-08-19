@@ -694,6 +694,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/namespaces/update_config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 批量更新空间配置（描述/私有/成员/转让管理员） */
+        post: operations["Namespace_UpdateConfig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/namespaces/update_private": {
         parameters: {
             query?: never;
@@ -1349,6 +1366,25 @@ export interface components {
             newAdminEmail: string;
         };
         "namespace.TransferResponse": {
+            item: components["schemas"]["types.NamespaceModel"];
+        };
+        /**
+         * @description UpdateConfigRequest 一次性原子更新命名空间配置（描述/私有/成员/转让管理员）。
+         *      各字段 optional：不传（或为空）则不更新对应项；传入则生效。仅空间管理员/超级管理员可调用。
+         */
+        "namespace.UpdateConfigRequest": {
+            /** Format: int32 */
+            id: number;
+            /** @description 描述；不传不更新 */
+            desc?: string;
+            /** @description 是否私有；不传不更新（optional 区分"未传"与 false） */
+            private?: boolean;
+            /** @description 成员邮箱列表；不传不更新，传入则全量同步（多余删除、缺失新增） */
+            emails?: string[];
+            /** @description 新管理员邮箱；空串不转让（ignore_empty 保证不传时跳过 email 校验） */
+            newAdminEmail?: string;
+        };
+        "namespace.UpdateConfigResponse": {
             item: components["schemas"]["types.NamespaceModel"];
         };
         "namespace.UpdateDescRequest": {
@@ -2337,7 +2373,13 @@ export interface operations {
             query?: {
                 page?: number;
                 pageSize?: number;
+                /** @description 动作类型精确过滤（单值，兼容旧客户端）：Unknown(0) = 全部 */
                 actionType?: PathsApiEventsGetParametersQueryActionType;
+                /**
+                 * @description 动作类型多值过滤（新参数）：空 = 全部，多值 = 任一匹配（IN）；
+                 *      与 action_type 同时传入时优先取 action_types
+                 */
+                actionTypes?: PathsApiEventsGetParametersQueryActionTypes[];
                 /** @description 模糊搜索 message 和 username */
                 search?: string;
             };
@@ -3133,6 +3175,39 @@ export interface operations {
             };
         };
     };
+    Namespace_UpdateConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["namespace.UpdateConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["namespace.UpdateConfigResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
     Namespace_UpdatePrivate: {
         parameters: {
             query?: never;
@@ -3837,6 +3912,20 @@ export interface operations {
     };
 }
 export enum PathsApiEventsGetParametersQueryActionType {
+    Unknown = "Unknown",
+    Create = "Create",
+    Update = "Update",
+    Delete = "Delete",
+    Upload = "Upload",
+    Download = "Download",
+    DryRun = "DryRun",
+    Shell = "Shell",
+    Login = "Login",
+    CancelDeploy = "CancelDeploy",
+    Exec = "Exec",
+    ForceDeletePod = "ForceDeletePod"
+}
+export enum PathsApiEventsGetParametersQueryActionTypes {
     Unknown = "Unknown",
     Create = "Create",
     Update = "Update",

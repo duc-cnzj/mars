@@ -87,7 +87,7 @@ func (repo *eventRepo) List(ctx context.Context, input *biz.ListEventInput) (eve
 	defer func() { endSpan(span, err) }()
 	var db = repo.d.DB()
 	items := db.Event.Query().Where(
-		filters.IfIntEQ[types.EventActionType](entevent.FieldAction)(input.ActionType),
+		filters.IfIntsIN[types.EventActionType](entevent.FieldAction)(input.ActionTypes),
 		filters.IfOrderByDesc("id")(input.OrderIDDesc),
 		filters.If(func(t string) bool {
 			return t != ""

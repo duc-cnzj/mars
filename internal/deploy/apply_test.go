@@ -138,6 +138,43 @@ func TestApplyProject_NameDefault(t *testing.T) {
 	assert.Equal(t, "repo-app", input.Name)
 }
 
+// TestApplyProject_NameDefaultSyncsSlug 回归：创建项目场景前端不发 name，传输层构造
+// messager 不绑定 slug；名缺省解析后 ApplyProject 必须把 messager 的 slug 回填为最终名
+// （GetSlugName），与前端 toSlug 关联的日志 key 对齐——否则创建部署所有帧落错 key
+// （前端日志区空）。
+func TestApplyProject_NameDefaultSyncsSlug(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
+	job := NewMockJob(ctrl)
+
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(pubNs(), nil)
+	repo.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2, Name: "repo-app", NeedGitRepo: false}, nil)
+	jobMgr.EXPECT().NewJob(gomock.Any()).Return(job)
+	expectInstallChain(job, nil)
+
+	msger := &slugRecorder{MockDeployMsger: NewMockDeployMsger(ctrl)}
+	input := baseJobInput()
+	input.Name = ""
+	input.Messager = msger
+	_, err := ApplyProject(context.Background(), applyDepsOf(nsRepo, repo, git, proj, jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{JobInput: input})
+	assert.NoError(t, err)
+	// name 就地解析为仓库名 + messager slug 以最终名重算，与前端 toSlug(namespaceId, repo.Name) 对齐。
+	assert.Equal(t, "repo-app", input.Name)
+	assert.Equal(t, GetSlugName(1, "repo-app"), msger.slug)
+}
+
+// slugRecorder 实现 DeployMsger 契约的 SetSlug，记录最新值；其余方法委托 mock。
+type slugRecorder struct {
+	*MockDeployMsger
+	slug string
+}
+
+// SetSlug 记录调用参数。
+func (s *slugRecorder) SetSlug(slug string) {
+	s.slug = slug
+}
+
 func TestApplyProject_GitEnsureAndMessages(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -147,6 +184,7 @@ func TestApplyProject_GitEnsureAndMessages(t *testing.T) {
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(pubNs(), nil)
 	repo.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2, Name: "app", NeedGitRepo: true}, nil)
 	git.EXPECT().EnsureBranchAndCommit(gomock.Any(), gomock.Any(), "", "").Return("main", "abc123", []string{"已解析分支: main"}, nil)
+	msger.EXPECT().SetSlug(GetSlugName(1, "app"))
 	msger.EXPECT().SendMsg("已解析分支: main")
 	jobMgr.EXPECT().NewJob(gomock.Any()).DoAndReturn(func(input *JobInput) Job {
 		assert.Equal(t, "main", input.GitBranch)

@@ -515,6 +515,7 @@ paths:
                     format: int32
                 - name: actionType
                   in: query
+                  description: 动作类型精确过滤（单值，兼容旧客户端）：Unknown(0) = 全部
                   schema:
                     enum:
                         - Unknown
@@ -531,6 +532,29 @@ paths:
                         - ForceDeletePod
                     type: string
                     format: enum
+                - name: actionTypes
+                  in: query
+                  description: |-
+                    动作类型多值过滤（新参数）：空 = 全部，多值 = 任一匹配（IN）；
+                     与 action_type 同时传入时优先取 action_types
+                  schema:
+                    type: array
+                    items:
+                        enum:
+                            - Unknown
+                            - Create
+                            - Update
+                            - Delete
+                            - Upload
+                            - Download
+                            - DryRun
+                            - Shell
+                            - Login
+                            - CancelDeploy
+                            - Exec
+                            - ForceDeletePod
+                        type: string
+                        format: enum
                 - name: search
                   in: query
                   description: 模糊搜索 message 和 username
@@ -1206,6 +1230,31 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/namespace.TransferResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/namespaces/update_config:
+        post:
+            tags:
+                - Namespace
+            summary: 批量更新空间配置（描述/私有/成员/转让管理员）
+            operationId: Namespace_UpdateConfig
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/namespace.UpdateConfigRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.UpdateConfigResponse'
                 default:
                     description: Default error response
                     content:
@@ -2441,6 +2490,36 @@ components:
                     type: string
                     description: 新管理员的邮箱
         namespace.TransferResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.NamespaceModel'
+        namespace.UpdateConfigRequest:
+            required:
+                - id
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                desc:
+                    type: string
+                    description: 描述；不传不更新
+                private:
+                    type: boolean
+                    description: 是否私有；不传不更新（optional 区分"未传"与 false）
+                emails:
+                    type: array
+                    items:
+                        type: string
+                    description: 成员邮箱列表；不传不更新，传入则全量同步（多余删除、缺失新增）
+                newAdminEmail:
+                    type: string
+                    description: 新管理员邮箱；空串不转让（ignore_empty 保证不传时跳过 email 校验）
+            description: |-
+                UpdateConfigRequest 一次性原子更新命名空间配置（描述/私有/成员/转让管理员）。
+                 各字段 optional：不传（或为空）则不更新对应项；传入则生效。仅空间管理员/超级管理员可调用。
+        namespace.UpdateConfigResponse:
             type: object
             properties:
                 item:

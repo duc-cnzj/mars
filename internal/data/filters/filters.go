@@ -29,12 +29,16 @@ func IfStrEQ(field string) func(string) func(*sql.Selector) {
 	})
 }
 
-// IfIntEQ 整数相等过滤：输入非零时才追加 field = s。
-func IfIntEQ[T ~int | ~int32](field string) func(T) func(*sql.Selector) {
-	return If[T](func(s T) bool {
-		return s != 0
-	}, func(s T) func(*sql.Selector) {
-		return sql.FieldEQ(field, s)
+// IfIntsIN 整数多值 IN 过滤：输入非空时才追加 field IN (vs...)。
+func IfIntsIN[T ~int | ~int32](field string) func([]T) func(*sql.Selector) {
+	return If[[]T](func(s []T) bool {
+		return len(s) > 0
+	}, func(s []T) func(*sql.Selector) {
+		vs := make([]any, 0, len(s))
+		for _, v := range s {
+			vs = append(vs, v)
+		}
+		return sql.FieldIn(field, vs...)
 	})
 }
 

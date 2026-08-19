@@ -164,9 +164,11 @@ type Event struct {
 }
 
 // ListEventInput 是事件分页列表输入。
+// ActionTypes 是动作类型过滤的生效值集合（IN 匹配）：空 = 全部，多值 = 任一匹配；
+// 由 services 层从 action_type（单值，Unknown=全部）与 action_types（多值）归一化而来。
 type ListEventInput struct {
 	Page, PageSize int32
-	ActionType     types.EventActionType
+	ActionTypes    []types.EventActionType
 	Search         string
 	OrderIDDesc    *bool
 }
@@ -317,6 +319,17 @@ type CreateNamespaceInput struct {
 type UpdateNamespaceInput struct {
 	ID          int
 	Description string
+}
+
+// UpdateConfigInput 是一次性原子更新命名空间配置（描述/私有/成员/转让管理员）的输入。
+// 指针字段（Description/Private）区分"未传"与零值；Emails 为 nil 表示不更新成员，
+// 非 nil（含空切片）表示以该名单全量同步；NewAdminEmail 空串表示不转让。
+type UpdateConfigInput struct {
+	ID            int
+	Description   *string
+	Private       *bool
+	Emails        []string
+	NewAdminEmail string
 }
 
 // FavoriteNamespaceInput 是设置/取消收藏的输入。
