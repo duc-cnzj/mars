@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: ""
+    version: api/v6.0.0-beta.6
 paths:
     /api/access_tokens:
         get:
@@ -2357,6 +2357,11 @@ components:
                 order:
                     type: integer
                     format: uint32
+                textareaLanguage:
+                    type: string
+                    description: |-
+                        textarea_language 多行（ElementTypeTextArea）编辑器语言提示，空值由前端回退默认（env）。
+                         透传给 CodeEditor 的 language（对齐前端 FILE_TYPE_TO_LANG 键），仅对 textarea 类型有意义。
         mars.PipelinePassRule:
             type: object
             properties:

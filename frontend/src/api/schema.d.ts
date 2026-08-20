@@ -1293,6 +1293,11 @@ export interface components {
             selectValues: string[];
             /** Format: uint32 */
             order: number;
+            /**
+             * @description textarea_language 多行（ElementTypeTextArea）编辑器语言提示，空值由前端回退默认（env）。
+             *      透传给 CodeEditor 的 language（对齐前端 FILE_TYPE_TO_LANG 键），仅对 textarea 类型有意义。
+             */
+            textareaLanguage: string;
         };
         /** @description PipelinePassRule 是流水线通过规则的单条匹配项：命中指定 stage 下名为 job_name 的 job。 */
         "mars.PipelinePassRule": {
