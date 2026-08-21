@@ -726,6 +726,7 @@ export function RepoFormModal({
               value={form.valuesYaml}
               onChange={(v) => set('valuesYaml', v)}
               minHeight="200px"
+              yamlTemplateCompletion
             />
           </label>
             </div>

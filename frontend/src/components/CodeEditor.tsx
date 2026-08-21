@@ -344,18 +344,26 @@ const completionKeymap = Prec.high(
  * 解析当前文件类型后追加能力：yaml 补全+linter、json linter、补全快捷键（暗色主题经 theme 属性注入）。
  * 只读预览只挂语法高亮（scalar 高亮 + 语言），不挂 linter/autocomplete/color ——
  * 编辑弹窗里只读大 values.yaml 同步挂载三份编辑器，去掉交互扩展能省掉整棵树的解析与视图抖动。
+ * yaml 模板补全（YAML_COMPLETIONS 的 <.*> 变量）仅当 enableYamlTemplateCompletion 显式开启时挂载，
+ * 用于 repos 表单的 values.yaml「自动补全: alt+enter」场景；其余 yaml 编辑只保留基础 autocompletion。
  */
 function buildExtensions(
   fileType: string,
   langExt: Extension,
   readOnly = false,
+  enableYamlTemplateCompletion = false,
 ): Extension[] {
   const ext: Extension[] = [langExt, editorChrome]
   if (isYamlType(fileType)) ext.push(yamlScalarHighlight)
   if (readOnly) return ext
   ext.push(color, completionKeymap)
   if (isYamlType(fileType)) {
-    ext.push(yamlLinter, autocompletion({ override: [yamlCompletions] }))
+    ext.push(
+      yamlLinter,
+      enableYamlTemplateCompletion
+        ? autocompletion({ override: [yamlCompletions] })
+        : autocompletion(),
+    )
   } else if (isJsonType(fileType)) {
     ext.push(linter(jsonParseLinter()), autocompletion())
   } else {
@@ -366,7 +374,7 @@ function buildExtensions(
 
 /**
  * 轻量代码编辑器（CodeMirror 6）：多语言语法高亮 + 行号 + 折叠 + 暗色主题。
- * - yaml：内置 30+ 个 <.*> 模板补全（Alt-Enter/Mod-Enter 触发）+ yaml 语法校验
+ * - yaml：yaml 语法校验；30+ 个 <.*> 模板补全仅当 yamlTemplateCompletion 开启时挂载（Alt-Enter/Mod-Enter 触发）
  * - json：JSON.parse 语法校验
  * 用于项目配置 / repo 的 values.yaml / config 等代码编辑场景。
  * language 传入 marsConfig.configFileType 对应的文件类型（如 php/yaml/json）。
@@ -377,6 +385,7 @@ export function CodeEditor({
   minHeight = '160px',
   readOnly = false,
   language = 'yaml',
+  yamlTemplateCompletion = false,
   className,
 }: {
   value: string
@@ -384,6 +393,8 @@ export function CodeEditor({
   minHeight?: string
   readOnly?: boolean
   language?: string
+  /** 仅 repos 表单 values.yaml 场景开启：挂载 YAML_COMPLETIONS 模板补全（对应「自动补全: alt+enter」提示） */
+  yamlTemplateCompletion?: boolean
   className?: string
 }) {
   // 记录当前已应用到编辑器的语言。初始即挂载语言，避免挂载时对同一扩展再 setExtensions
@@ -394,7 +405,12 @@ export function CodeEditor({
   const [extensions, setExtensions] = useState<Extension[]>(() => [
     // 初始扩展按语言取同步扩展：yaml/json 用对应 lang 扩展，其他语言先占位 yaml 等异步 resolve。
     // 否则 configFileType=json 的仓库打开编辑时，编辑器会一直用 yaml 语法。
-    ...buildExtensions(language, isJsonType(language) ? json() : yaml(), readOnly),
+    ...buildExtensions(
+      language,
+      isJsonType(language) ? json() : yaml(),
+      readOnly,
+      yamlTemplateCompletion,
+    ),
   ])
 
   // yaml/json 扩展同步；language 变化（含 yaml↔json 互切）都要重建扩展，
@@ -404,14 +420,21 @@ export function CodeEditor({
     if (name === 'YAML' || name === 'JSON') {
       if (lastLang.current === language) return // 已应用，跳过，避免挂载时重复 reconfigure
       lastLang.current = language
-      setExtensions(buildExtensions(language, name === 'JSON' ? json() : yaml(), readOnly))
+      setExtensions(
+        buildExtensions(
+          language,
+          name === 'JSON' ? json() : yaml(),
+          readOnly,
+          yamlTemplateCompletion,
+        ),
+      )
       return
     }
     let alive = true
     void resolveLang(language).then((ext) => {
       if (!alive) return
       lastLang.current = language
-      setExtensions(buildExtensions(language, ext, readOnly))
+      setExtensions(buildExtensions(language, ext, readOnly, yamlTemplateCompletion))
     })
     return () => {
       alive = false
