@@ -199,6 +199,17 @@ service Namespace {
     };
   }
 
+  rpc FavoriteSort(FavoriteSortRequest) returns (FavoriteSortResponse) {
+    option (google.api.http)      = {
+      put: "/api/namespaces/favorite/sort",
+      body: "*"
+    };
+
+    option (openapi.v3.operation) = {
+      summary: "整体重排我的关注列表",
+    };
+  }
+
   rpc Transfer(TransferRequest) returns (TransferResponse){
     option (google.api.http)      = {
       post: "/api/namespaces/transfer",
@@ -219,3 +230,10 @@ message TransferRequest{
 message TransferResponse{
   types.NamespaceModel item = 1;
 }
+
+// FavoriteSortRequest 整体重排关注列表。
+// namespace_ids 为该用户全部关注空间的有序 id 列表（拖拽后的新顺序）。
+message FavoriteSortRequest{
+  repeated int32 namespace_ids = 1 [(validate.rules).repeated = {min_items: 1}];
+}
+message FavoriteSortResponse{}

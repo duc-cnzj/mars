@@ -469,6 +469,37 @@ func TestNamespaceSvc_Favorite_Error(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+func TestNamespaceSvc_FavoriteSort_Success(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+	nsRepo := mocks.nsRepo
+	eventRepo := mocks.eventRepo
+
+	nsRepo.EXPECT().FavoriteSort(gomock.Any(), adminEmail, []int{3, 1, 2}).Return(nil)
+
+	req := &namespace.FavoriteSortRequest{NamespaceIds: []int32{3, 1, 2}}
+	eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Update,
+		biz.MustGetUser(newAdminUserCtx()).Name,
+		"用户重排关注列表",
+		req,
+	)
+
+	res, err := svc.FavoriteSort(newAdminUserCtx(), req)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+}
+
+func TestNamespaceSvc_FavoriteSort_Error(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+	nsRepo := mocks.nsRepo
+
+	nsRepo.EXPECT().FavoriteSort(gomock.Any(), adminEmail, []int{3, 1, 2}).Return(errors.New("boom"))
+
+	res, err := svc.FavoriteSort(newAdminUserCtx(), &namespace.FavoriteSortRequest{NamespaceIds: []int32{3, 1, 2}})
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
 func TestNamespaceSvc_IsExists_Success(t *testing.T) {
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo

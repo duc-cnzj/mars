@@ -2,6 +2,9 @@ package data
 
 import (
 	"context"
+	"fmt"
+
+	"entgo.io/ent/dialect/sql"
 
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
@@ -249,6 +252,18 @@ func (repo *namespaceRepo) List(ctx context.Context, input *biz.ListNamespaceInp
 		query = query.Where(
 			namespace.HasFavoritesWith(favorite.Email(input.Email)),
 		)
+		// 关注列表按用户自定义排序：sort_order 升序（同值按 namespace id 兜底稳定序）。
+		// LEFT JOIN favorites 取排序值；JOIN 带 email 条件收敛为该用户行（等价 INNER JOIN），
+		// (email,namespace_id) 唯一索引保证每空间至多命中一行，分页/计数不被放大。
+		query = query.Order(
+			func(s *sql.Selector) {
+				t := sql.Table(favorite.Table)
+				s.LeftJoin(t).
+					On(s.C(namespace.FieldID), t.C(favorite.FieldNamespaceID)).
+					Where(sql.EQ(t.C(favorite.FieldEmail), input.Email)).
+					OrderBy(t.C(favorite.FieldSortOrder), s.C(namespace.FieldID))
+			},
+		)
 	}
 
 	all, err := query.Clone().
@@ -410,5 +425,73 @@ func (repo *namespaceRepo) Favorite(ctx context.Context, input *biz.FavoriteName
 	if exist {
 		return nil
 	}
-	return errs.Wrap(repo.data.DB().Favorite.Create().SetNamespaceID(input.NamespaceID).SetEmail(input.UserEmail).Exec(ctx), "favorite namespace")
+	// 新关注追加末尾：sort_order = 该用户现有最大 +1（无历史关注则 0，排最前）。
+	// 先挡掉非 NotFound 的查询错误（早退，避免 if/else 嵌套），NotFound 视为无历史关注。
+	last, err := repo.data.DB().Favorite.Query().
+		Where(favorite.Email(input.UserEmail)).
+		Order(ent.Desc(favorite.FieldSortOrder)).
+		First(ctx)
+	// 非 NotFound 的查询错误（DB 抖动等）：防御分支，SQLite 无法确定性触发。
+	if err != nil && !ent.IsNotFound(err) {
+		return errs.Wrap(err, "favorite namespace")
+	}
+	sortOrder := 0
+	if last != nil {
+		sortOrder = last.SortOrder + 1
+	}
+	return errs.Wrap(repo.data.DB().Favorite.Create().
+		SetNamespaceID(input.NamespaceID).
+		SetEmail(input.UserEmail).
+		SetSortOrder(sortOrder).
+		Exec(ctx), "favorite namespace")
+}
+
+// FavoriteSort 整体重排关注列表：按传入的有序 namespace id 回填该用户的 sort_order（0,1,2,…）。
+// 事务内按 email 条件逐行更新——非该用户的关注行不会被触碰，越权写他人空间天然被隔离。
+// 传入列表必须为该用户全部有效关注空间：半程重排会静默破坏排序，故先校验数量/成员/重复后再回填。
+func (repo *namespaceRepo) FavoriteSort(ctx context.Context, email string, orderedNamespaceIDs []int) (err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/FavoriteSort")
+	defer func() { endSpan(span, err) }()
+	return errs.Wrap(repo.data.WithTx(ctx, func(tx *ent.Tx) error {
+		userFavs, err := tx.Favorite.Query().
+			Where(favorite.Email(email)).
+			Select(favorite.FieldNamespaceID).
+			All(ctx)
+		// DB 查询失败（防御分支：SQLite 无法确定性触发）。
+		if err != nil {
+			return err
+		}
+		// 已删除空间的关注行 namespace_id 为 0（FK SetNull），前端列表不可见，不计入校验集。
+		userIDs := make(map[int]struct{}, len(userFavs))
+		for _, f := range userFavs {
+			if f.NamespaceID > 0 {
+				userIDs[f.NamespaceID] = struct{}{}
+			}
+		}
+		if len(userIDs) != len(orderedNamespaceIDs) {
+			return errs.WrapInvalidArgument(fmt.Errorf("排序列表必须为该用户全部 %d 个关注空间（实际 %d 个）", len(userIDs), len(orderedNamespaceIDs)), "favorite sort")
+		}
+		seen := make(map[int]struct{}, len(orderedNamespaceIDs))
+		for i, nsID := range orderedNamespaceIDs {
+			if _, ok := userIDs[nsID]; !ok {
+				return errs.WrapInvalidArgument(fmt.Errorf("排序列表包含非该用户的关注空间 id=%d", nsID), "favorite sort")
+			}
+			if _, dup := seen[nsID]; dup {
+				return errs.WrapInvalidArgument(fmt.Errorf("排序列表包含重复 id=%d", nsID), "favorite sort")
+			}
+			seen[nsID] = struct{}{}
+			if err := tx.Favorite.
+				Update().
+				Where(
+					favorite.Email(email),
+					favorite.NamespaceID(nsID),
+				).
+				SetSortOrder(i).
+				Exec(ctx); err != nil {
+				// DB 写入失败（防御分支：SQLite 无法确定性触发）。
+				return err
+			}
+		}
+		return nil
+	}), "favorite sort")
 }

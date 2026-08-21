@@ -660,6 +660,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/namespaces/favorite/sort": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 整体重排我的关注列表 */
+        put: operations["Namespace_FavoriteSort"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/namespaces/sync_members": {
         parameters: {
             query?: never;
@@ -1340,6 +1357,14 @@ export interface components {
             favorite?: boolean;
         };
         "namespace.FavoriteResponse": Record<string, never>;
+        /**
+         * @description FavoriteSortRequest 整体重排关注列表。
+         *      namespace_ids 为该用户全部关注空间的有序 id 列表（拖拽后的新顺序）。
+         */
+        "namespace.FavoriteSortRequest": {
+            namespaceIds: number[];
+        };
+        "namespace.FavoriteSortResponse": Record<string, never>;
         "namespace.IsExistsResponse": {
             id: string;
             exists: boolean;
@@ -3101,6 +3126,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["namespace.FavoriteResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Namespace_FavoriteSort: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["namespace.FavoriteSortRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["namespace.FavoriteSortResponse"];
                 };
             };
             /** @description Default error response */

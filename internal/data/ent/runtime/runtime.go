@@ -12,6 +12,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/changelog"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/dbcache"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/event"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/favorite"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/file"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/member"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
@@ -175,6 +176,12 @@ func init() {
 	eventDescDuration := eventFields[6].Descriptor()
 	// event.DefaultDuration holds the default value on creation for the duration field.
 	event.DefaultDuration = eventDescDuration.Default.(string)
+	favoriteFields := schema.Favorite{}.Fields()
+	_ = favoriteFields
+	// favoriteDescSortOrder is the schema descriptor for sort_order field.
+	favoriteDescSortOrder := favoriteFields[2].Descriptor()
+	// favorite.DefaultSortOrder holds the default value on creation for the sort_order field.
+	favorite.DefaultSortOrder = favoriteDescSortOrder.Default.(int)
 	fileMixin := schema.File{}.Mixin()
 	fileMixinHooks2 := fileMixin[2].Hooks()
 	file.Hooks[0] = fileMixinHooks2[0]

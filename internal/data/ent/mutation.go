@@ -4513,6 +4513,8 @@ type FavoriteMutation struct {
 	typ              string
 	id               *int
 	email            *string
+	sort_order       *int
+	addsort_order    *int
 	clearedFields    map[string]struct{}
 	namespace        *int
 	clearednamespace bool
@@ -4704,6 +4706,62 @@ func (m *FavoriteMutation) ResetNamespaceID() {
 	delete(m.clearedFields, favorite.FieldNamespaceID)
 }
 
+// SetSortOrder sets the "sort_order" field.
+func (m *FavoriteMutation) SetSortOrder(i int) {
+	m.sort_order = &i
+	m.addsort_order = nil
+}
+
+// SortOrder returns the value of the "sort_order" field in the mutation.
+func (m *FavoriteMutation) SortOrder() (r int, exists bool) {
+	v := m.sort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSortOrder returns the old "sort_order" field's value of the Favorite entity.
+// If the Favorite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FavoriteMutation) OldSortOrder(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSortOrder is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSortOrder requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSortOrder: %w", err)
+	}
+	return oldValue.SortOrder, nil
+}
+
+// AddSortOrder adds i to the "sort_order" field.
+func (m *FavoriteMutation) AddSortOrder(i int) {
+	if m.addsort_order != nil {
+		*m.addsort_order += i
+	} else {
+		m.addsort_order = &i
+	}
+}
+
+// AddedSortOrder returns the value that was added to the "sort_order" field in this mutation.
+func (m *FavoriteMutation) AddedSortOrder() (r int, exists bool) {
+	v := m.addsort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSortOrder resets all changes to the "sort_order" field.
+func (m *FavoriteMutation) ResetSortOrder() {
+	m.sort_order = nil
+	m.addsort_order = nil
+}
+
 // ClearNamespace clears the "namespace" edge to the Namespace entity.
 func (m *FavoriteMutation) ClearNamespace() {
 	m.clearednamespace = true
@@ -4765,12 +4823,15 @@ func (m *FavoriteMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *FavoriteMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.email != nil {
 		fields = append(fields, favorite.FieldEmail)
 	}
 	if m.namespace != nil {
 		fields = append(fields, favorite.FieldNamespaceID)
+	}
+	if m.sort_order != nil {
+		fields = append(fields, favorite.FieldSortOrder)
 	}
 	return fields
 }
@@ -4784,6 +4845,8 @@ func (m *FavoriteMutation) Field(name string) (ent.Value, bool) {
 		return m.Email()
 	case favorite.FieldNamespaceID:
 		return m.NamespaceID()
+	case favorite.FieldSortOrder:
+		return m.SortOrder()
 	}
 	return nil, false
 }
@@ -4797,6 +4860,8 @@ func (m *FavoriteMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldEmail(ctx)
 	case favorite.FieldNamespaceID:
 		return m.OldNamespaceID(ctx)
+	case favorite.FieldSortOrder:
+		return m.OldSortOrder(ctx)
 	}
 	return nil, fmt.Errorf("unknown Favorite field %s", name)
 }
@@ -4820,6 +4885,13 @@ func (m *FavoriteMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetNamespaceID(v)
 		return nil
+	case favorite.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSortOrder(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Favorite field %s", name)
 }
@@ -4828,6 +4900,9 @@ func (m *FavoriteMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *FavoriteMutation) AddedFields() []string {
 	var fields []string
+	if m.addsort_order != nil {
+		fields = append(fields, favorite.FieldSortOrder)
+	}
 	return fields
 }
 
@@ -4836,6 +4911,8 @@ func (m *FavoriteMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *FavoriteMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case favorite.FieldSortOrder:
+		return m.AddedSortOrder()
 	}
 	return nil, false
 }
@@ -4845,6 +4922,13 @@ func (m *FavoriteMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *FavoriteMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case favorite.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSortOrder(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Favorite numeric field %s", name)
 }
@@ -4886,6 +4970,9 @@ func (m *FavoriteMutation) ResetField(name string) error {
 		return nil
 	case favorite.FieldNamespaceID:
 		m.ResetNamespaceID()
+		return nil
+	case favorite.FieldSortOrder:
+		m.ResetSortOrder()
 		return nil
 	}
 	return fmt.Errorf("unknown Favorite field %s", name)

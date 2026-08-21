@@ -27,6 +27,7 @@ type fakeNamespaceRepoForNSBiz struct {
 	create        func(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error)
 	delete        func(ctx context.Context, id int) error
 	favorite      func(ctx context.Context, input *FavoriteNamespaceInput) error
+	favoriteSort  func(ctx context.Context, email string, orderedNamespaceIDs []int) error
 	list          func(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error)
 	update        func(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error)
 	show          func(ctx context.Context, id int) (*Namespace, error)
@@ -48,6 +49,9 @@ func (f *fakeNamespaceRepoForNSBiz) Delete(ctx context.Context, id int) error {
 }
 func (f *fakeNamespaceRepoForNSBiz) Favorite(ctx context.Context, input *FavoriteNamespaceInput) error {
 	return f.favorite(ctx, input)
+}
+func (f *fakeNamespaceRepoForNSBiz) FavoriteSort(ctx context.Context, email string, orderedNamespaceIDs []int) error {
+	return f.favoriteSort(ctx, email, orderedNamespaceIDs)
 }
 func (f *fakeNamespaceRepoForNSBiz) List(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error) {
 	return f.list(ctx, input)
@@ -667,6 +671,35 @@ func TestNamespaceBiz_Favorite_Valid(t *testing.T) {
 	err := n.Favorite(context.TODO(), &FavoriteNamespaceInput{NamespaceID: 1, UserEmail: "a@b.c", Favorite: true})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, gotInput.NamespaceID)
+}
+
+func TestNamespaceBiz_FavoriteSort_EmptyList(t *testing.T) {
+	n := nsFacadeForTest(&fakeNamespaceRepoForNSBiz{})
+	// nil 输入：排序列表为空必须报 400
+	err := n.FavoriteSort(context.TODO(), nil)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Equal(t, "排序列表不能为空", status.Convert(err).Message())
+	// 空列表同样拒绝
+	err = n.FavoriteSort(context.TODO(), &FavoriteSortNamespaceInput{UserEmail: "a@b.c"})
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+func TestNamespaceBiz_FavoriteSort_Valid(t *testing.T) {
+	var gotEmail string
+	var gotIDs []int
+	ns := &fakeNamespaceRepoForNSBiz{favoriteSort: func(ctx context.Context, email string, orderedNamespaceIDs []int) error {
+		gotEmail = email
+		gotIDs = orderedNamespaceIDs
+		return nil
+	}}
+	n := nsFacadeForTest(ns)
+	err := n.FavoriteSort(context.TODO(), &FavoriteSortNamespaceInput{
+		UserEmail:           "a@b.c",
+		OrderedNamespaceIDs: []int{3, 1, 2},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "a@b.c", gotEmail)
+	assert.Equal(t, []int{3, 1, 2}, gotIDs)
 }
 
 func TestNamespaceBiz_SyncMembers_InvalidNamespaceID(t *testing.T) {

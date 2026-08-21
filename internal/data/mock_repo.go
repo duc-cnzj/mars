@@ -1696,6 +1696,20 @@ func (mr *MockNamespaceRepoMockRecorder) Favorite(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Favorite", reflect.TypeOf((*MockNamespaceRepo)(nil).Favorite), arg0, arg1)
 }
 
+// FavoriteSort mocks base method.
+func (m *MockNamespaceRepo) FavoriteSort(arg0 context.Context, arg1 string, arg2 []int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FavoriteSort", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// FavoriteSort indicates an expected call of FavoriteSort.
+func (mr *MockNamespaceRepoMockRecorder) FavoriteSort(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FavoriteSort", reflect.TypeOf((*MockNamespaceRepo)(nil).FavoriteSort), arg0, arg1, arg2)
+}
+
 // FindByName mocks base method.
 func (m *MockNamespaceRepo) FindByName(arg0 context.Context, arg1 string) (*biz.Namespace, error) {
 	m.ctrl.T.Helper()

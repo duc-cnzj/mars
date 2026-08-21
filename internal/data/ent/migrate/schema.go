@@ -149,6 +149,7 @@ var (
 	FavoritesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "email", Type: field.TypeString},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "namespace_id", Type: field.TypeInt, Nullable: true},
 	}
 	// FavoritesTable holds the schema information for the "favorites" table.
@@ -159,9 +160,21 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "favorites_namespaces_favorites",
-				Columns:    []*schema.Column{FavoritesColumns[2]},
+				Columns:    []*schema.Column{FavoritesColumns[3]},
 				RefColumns: []*schema.Column{NamespacesColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "favorite_email_namespace_id",
+				Unique:  true,
+				Columns: []*schema.Column{FavoritesColumns[1], FavoritesColumns[3]},
+			},
+			{
+				Name:    "favorite_email_sort_order",
+				Unique:  false,
+				Columns: []*schema.Column{FavoritesColumns[1], FavoritesColumns[2]},
 			},
 		},
 	}

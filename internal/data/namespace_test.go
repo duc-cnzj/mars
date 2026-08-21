@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	entgo "entgo.io/ent"
@@ -320,6 +321,166 @@ func Test_namespaceRepo_Favorite_Unfavorite(t *testing.T) {
 
 	_, err = entdb.Favorite.Query().Where(favorite.NamespaceID(ns.ID), favorite.Email("test@example.com")).Only(context.TODO())
 	assert.Error(t, err)
+}
+
+func Test_namespaceRepo_Favorite_SortOrderAppend(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{
+		Cfg: &config.Config{},
+		DB:  entdb,
+	}))
+	ctx := context.TODO()
+	ns1 := entdb.Namespace.Create().SetCreatorEmail("a").SetName("ns-1").SaveX(ctx)
+	ns2 := entdb.Namespace.Create().SetCreatorEmail("a").SetName("ns-2").SaveX(ctx)
+
+	require.NoError(t, repo.Favorite(ctx, &biz.FavoriteNamespaceInput{NamespaceID: ns1.ID, UserEmail: "u@mars.com", Favorite: true}))
+	fav1 := entdb.Favorite.Query().Where(favorite.NamespaceID(ns1.ID), favorite.Email("u@mars.com")).OnlyX(ctx)
+	require.Equal(t, 0, fav1.SortOrder, "首个关注排最前")
+
+	require.NoError(t, repo.Favorite(ctx, &biz.FavoriteNamespaceInput{NamespaceID: ns2.ID, UserEmail: "u@mars.com", Favorite: true}))
+	fav2 := entdb.Favorite.Query().Where(favorite.NamespaceID(ns2.ID), favorite.Email("u@mars.com")).OnlyX(ctx)
+	require.Equal(t, 1, fav2.SortOrder, "新关注追加末尾")
+}
+
+func Test_namespaceRepo_List_FavoriteOrdered(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{
+		Cfg: &config.Config{},
+		DB:  entdb,
+	}))
+	ctx := context.TODO()
+	var ns []*ent.Namespace
+	for i := 0; i < 4; i++ {
+		ns = append(ns, entdb.Namespace.Create().SetCreatorEmail("a").SetName(fmt.Sprintf("ns-%d", i)).SaveX(ctx))
+	}
+	email := "u@mars.com"
+	// 打乱 sort_order：期望按 0,1,2,3 升序返回（ns3, ns1, ns4, ns2）
+	entdb.Favorite.Create().SetNamespaceID(ns[2].ID).SetEmail(email).SetSortOrder(0).SaveX(ctx)
+	entdb.Favorite.Create().SetNamespaceID(ns[0].ID).SetEmail(email).SetSortOrder(1).SaveX(ctx)
+	entdb.Favorite.Create().SetNamespaceID(ns[3].ID).SetEmail(email).SetSortOrder(2).SaveX(ctx)
+	entdb.Favorite.Create().SetNamespaceID(ns[1].ID).SetEmail(email).SetSortOrder(3).SaveX(ctx)
+
+	res, _, err := repo.List(ctx, &biz.ListNamespaceInput{Favorite: true, Email: email, Page: 1, PageSize: 10, IsAdmin: true})
+	require.NoError(t, err)
+	require.Len(t, res, 4)
+	want := []int{ns[2].ID, ns[0].ID, ns[3].ID, ns[1].ID}
+	for i, w := range want {
+		require.Equal(t, w, res[i].ID, "关注列表应按 sort_order 升序")
+	}
+}
+
+func Test_namespaceRepo_FavoriteSort(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{
+		Cfg: &config.Config{},
+		DB:  entdb,
+	}))
+	ctx := context.TODO()
+	var ns []*ent.Namespace
+	for i := 0; i < 3; i++ {
+		ns = append(ns, entdb.Namespace.Create().SetCreatorEmail("a").SetName(fmt.Sprintf("ns-%d", i)).SaveX(ctx))
+	}
+	email := "u@mars.com"
+	for i, n := range ns {
+		entdb.Favorite.Create().SetNamespaceID(n.ID).SetEmail(email).SetSortOrder(i).SaveX(ctx)
+	}
+	// 整体重排为 2,0,1
+	require.NoError(t, repo.FavoriteSort(ctx, email, []int{ns[2].ID, ns[0].ID, ns[1].ID}))
+
+	var got []int
+	all := entdb.Favorite.Query().Where(favorite.Email(email)).Order(ent.Asc(favorite.FieldSortOrder)).AllX(ctx)
+	for _, f := range all {
+		got = append(got, f.NamespaceID)
+	}
+	require.Equal(t, []int{ns[2].ID, ns[0].ID, ns[1].ID}, got, "重排后 sort_order 按新顺序回填")
+}
+
+// Test_namespaceRepo_FavoriteSort_PartialList 半程重排（只传部分关注空间）必须被拒绝，否则会静默破坏排序。
+func Test_namespaceRepo_FavoriteSort_PartialList(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+	ctx := context.TODO()
+	var ns []*ent.Namespace
+	for i := 0; i < 3; i++ {
+		ns = append(ns, entdb.Namespace.Create().SetCreatorEmail("a").SetName(fmt.Sprintf("ns-%d", i)).SaveX(ctx))
+	}
+	email := "u@mars.com"
+	for i, n := range ns {
+		entdb.Favorite.Create().SetNamespaceID(n.ID).SetEmail(email).SetSortOrder(i).SaveX(ctx)
+	}
+	err := repo.FavoriteSort(ctx, email, []int{ns[0].ID, ns[1].ID})
+	require.ErrorContains(t, err, "全部 3 个关注空间", "数量不一致必须报错")
+	// 排序值保持原样，未被半程重排污染
+	got := entdb.Favorite.Query().Where(favorite.Email(email)).Order(ent.Asc(favorite.FieldSortOrder)).AllX(ctx)
+	require.Equal(t, []int{ns[0].ID, ns[1].ID, ns[2].ID}, []int{got[0].NamespaceID, got[1].NamespaceID, got[2].NamespaceID})
+}
+
+// Test_namespaceRepo_FavoriteSort_NonFavorite 列表包含非该用户的关注空间必须被拒绝。
+func Test_namespaceRepo_FavoriteSort_NonFavorite(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+	ctx := context.TODO()
+	ns0 := entdb.Namespace.Create().SetCreatorEmail("a").SetName("ns-0").SaveX(ctx)
+	ns1 := entdb.Namespace.Create().SetCreatorEmail("a").SetName("ns-1").SaveX(ctx)
+	ns2 := entdb.Namespace.Create().SetCreatorEmail("a").SetName("ns-2").SaveX(ctx)
+	email := "u@mars.com"
+	entdb.Favorite.Create().SetNamespaceID(ns0.ID).SetEmail(email).SetSortOrder(0).SaveX(ctx)
+	entdb.Favorite.Create().SetNamespaceID(ns1.ID).SetEmail(email).SetSortOrder(1).SaveX(ctx)
+	err := repo.FavoriteSort(ctx, email, []int{ns2.ID, ns0.ID})
+	require.ErrorContains(t, err, "非该用户的关注空间", "越权插入他人空间必须报错")
+}
+
+// Test_namespaceRepo_FavoriteSort_Duplicate 列表包含重复 id 必须被拒绝（长度恒真下数量校验无法发现）。
+func Test_namespaceRepo_FavoriteSort_Duplicate(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+	ctx := context.TODO()
+	ns0 := entdb.Namespace.Create().SetCreatorEmail("a").SetName("ns-0").SaveX(ctx)
+	ns1 := entdb.Namespace.Create().SetCreatorEmail("a").SetName("ns-1").SaveX(ctx)
+	email := "u@mars.com"
+	entdb.Favorite.Create().SetNamespaceID(ns0.ID).SetEmail(email).SetSortOrder(0).SaveX(ctx)
+	entdb.Favorite.Create().SetNamespaceID(ns1.ID).SetEmail(email).SetSortOrder(1).SaveX(ctx)
+	err := repo.FavoriteSort(ctx, email, []int{ns0.ID, ns0.ID})
+	require.ErrorContains(t, err, "重复 id", "重复 id 必须报错")
+}
+
+// Test_namespaceRepo_FavoriteSort_OrphanedFavorite 已删除空间的关注行（namespace_id=0）不计入校验集，不阻塞重排。
+func Test_namespaceRepo_FavoriteSort_OrphanedFavorite(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+	ctx := context.TODO()
+	ns0 := entdb.Namespace.Create().SetCreatorEmail("a").SetName("ns-0").SaveX(ctx)
+	ns1 := entdb.Namespace.Create().SetCreatorEmail("a").SetName("ns-1").SaveX(ctx)
+	email := "u@mars.com"
+	// 孤儿关注行：namespace_id 为空（FK SetNull 后写入），前端列表不可见
+	entdb.Favorite.Create().SetEmail(email).SetSortOrder(0).SaveX(ctx)
+	entdb.Favorite.Create().SetNamespaceID(ns0.ID).SetEmail(email).SetSortOrder(1).SaveX(ctx)
+	entdb.Favorite.Create().SetNamespaceID(ns1.ID).SetEmail(email).SetSortOrder(2).SaveX(ctx)
+
+	require.NoError(t, repo.FavoriteSort(ctx, email, []int{ns1.ID, ns0.ID}), "孤儿关注行应从校验集剔除")
+	got := entdb.Favorite.Query().Where(favorite.Email(email), favorite.NamespaceIDNotNil()).Order(ent.Asc(favorite.FieldSortOrder)).AllX(ctx)
+	require.Equal(t, []int{ns1.ID, ns0.ID}, []int{got[0].NamespaceID, got[1].NamespaceID})
 }
 
 func Test_namespaceRepo_FindByName(t *testing.T) {

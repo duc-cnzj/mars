@@ -21,6 +21,8 @@ type Favorite struct {
 	Email string `json:"email,omitempty"`
 	// NamespaceID holds the value of the "namespace_id" field.
 	NamespaceID int `json:"namespace_id,omitempty"`
+	// 用户关注列表排序值，越小越靠前
+	SortOrder int `json:"sort_order,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the FavoriteQuery when eager-loading is set.
 	Edges        FavoriteEdges `json:"edges"`
@@ -52,7 +54,7 @@ func (*Favorite) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case favorite.FieldID, favorite.FieldNamespaceID:
+		case favorite.FieldID, favorite.FieldNamespaceID, favorite.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
 		case favorite.FieldEmail:
 			values[i] = new(sql.NullString)
@@ -88,6 +90,12 @@ func (_m *Favorite) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field namespace_id", values[i])
 			} else if value.Valid {
 				_m.NamespaceID = int(value.Int64)
+			}
+		case favorite.FieldSortOrder:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field sort_order", values[i])
+			} else if value.Valid {
+				_m.SortOrder = int(value.Int64)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -135,6 +143,9 @@ func (_m *Favorite) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("namespace_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.NamespaceID))
+	builder.WriteString(", ")
+	builder.WriteString("sort_order=")
+	builder.WriteString(fmt.Sprintf("%v", _m.SortOrder))
 	builder.WriteByte(')')
 	return builder.String()
 }

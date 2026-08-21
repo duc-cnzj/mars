@@ -339,6 +339,13 @@ type FavoriteNamespaceInput struct {
 	Favorite    bool
 }
 
+// FavoriteSortNamespaceInput 是整体重排关注列表的输入。
+// OrderedNamespaceIDs 为排序后的完整 namespace id 列表（该用户全部关注空间）。
+type FavoriteSortNamespaceInput struct {
+	UserEmail           string
+	OrderedNamespaceIDs []int
+}
+
 // ---------- Project ----------
 
 // Project 是项目领域模型。

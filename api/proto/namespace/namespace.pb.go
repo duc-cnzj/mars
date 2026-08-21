@@ -1138,6 +1138,88 @@ func (x *TransferResponse) GetItem() *types.NamespaceModel {
 	return nil
 }
 
+// FavoriteSortRequest 整体重排关注列表。
+// namespace_ids 为该用户全部关注空间的有序 id 列表（拖拽后的新顺序）。
+type FavoriteSortRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NamespaceIds  []int32                `protobuf:"varint,1,rep,packed,name=namespace_ids,json=namespaceIds,proto3" json:"namespace_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FavoriteSortRequest) Reset() {
+	*x = FavoriteSortRequest{}
+	mi := &file_proto_namespace_namespace_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FavoriteSortRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FavoriteSortRequest) ProtoMessage() {}
+
+func (x *FavoriteSortRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_namespace_namespace_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FavoriteSortRequest.ProtoReflect.Descriptor instead.
+func (*FavoriteSortRequest) Descriptor() ([]byte, []int) {
+	return file_proto_namespace_namespace_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *FavoriteSortRequest) GetNamespaceIds() []int32 {
+	if x != nil {
+		return x.NamespaceIds
+	}
+	return nil
+}
+
+type FavoriteSortResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FavoriteSortResponse) Reset() {
+	*x = FavoriteSortResponse{}
+	mi := &file_proto_namespace_namespace_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FavoriteSortResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FavoriteSortResponse) ProtoMessage() {}
+
+func (x *FavoriteSortResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_namespace_namespace_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FavoriteSortResponse.ProtoReflect.Descriptor instead.
+func (*FavoriteSortResponse) Descriptor() ([]byte, []int) {
+	return file_proto_namespace_namespace_proto_rawDescGZIP(), []int{23}
+}
+
 var File_proto_namespace_namespace_proto protoreflect.FileDescriptor
 
 const file_proto_namespace_namespace_proto_rawDesc = "" +
@@ -1211,7 +1293,10 @@ const file_proto_namespace_namespace_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\x125\n" +
 	"\x0fnew_admin_email\x18\x02 \x01(\tB\r\xe2A\x01\x02\xfaB\x06r\x04 \x01`\x01R\rnewAdminEmail\"=\n" +
 	"\x10TransferResponse\x12)\n" +
-	"\x04item\x18\x01 \x01(\v2\x15.types.NamespaceModelR\x04item2\xfc\v\n" +
+	"\x04item\x18\x01 \x01(\v2\x15.types.NamespaceModelR\x04item\"D\n" +
+	"\x13FavoriteSortRequest\x12-\n" +
+	"\rnamespace_ids\x18\x01 \x03(\x05B\b\xfaB\x05\x92\x01\x02\b\x01R\fnamespaceIds\"\x16\n" +
+	"\x14FavoriteSortResponse2\x9b\r\n" +
 	"\tNamespace\x12m\n" +
 	"\x04List\x12\x16.namespace.ListRequest\x1a\x17.namespace.ListResponse\"4\xbaG\x1a\x12\x18分页获取名称空间\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/namespaces\x12\x9d\x01\n" +
 	"\rUpdatePrivate\x12\x1f.namespace.UpdatePrivateRequest\x1a .namespace.UpdatePrivateResponse\"I\xbaG\x1d\x12\x1b修改空间的访问权限\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/api/namespaces/update_private\x12\x8f\x01\n" +
@@ -1223,7 +1308,8 @@ const file_proto_namespace_namespace_proto_rawDesc = "" +
 	"UpdateDesc\x12\x1c.namespace.UpdateDescRequest\x1a\x1d.namespace.UpdateDescResponse\"H\xbaG\x1a\x12\x18更新空间描述信息\x82\xd3\xe4\x93\x02%:\x01*\" /api/namespaces/{id}/update_desc\x12r\n" +
 	"\x06Delete\x12\x18.namespace.DeleteRequest\x1a\x19.namespace.DeleteResponse\"3\xbaG\x14\x12\x12删除名称空间\x82\xd3\xe4\x93\x02\x16*\x14/api/namespaces/{id}\x12\x89\x01\n" +
 	"\bIsExists\x12\x1a.namespace.IsExistsRequest\x1a\x1b.namespace.IsExistsResponse\"D\xbaG#\x12!IsExists 名称空间是否存在\x82\xd3\xe4\x93\x02\x18\"\x16/api/namespaces/exists\x12\x80\x01\n" +
-	"\bFavorite\x12\x1a.namespace.FavoriteRequest\x1a\x1b.namespace.FavoriteResponse\";\xbaG\x15\x12\x13关注/取消关注\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/namespaces/favorite\x12\x8b\x01\n" +
+	"\bFavorite\x12\x1a.namespace.FavoriteRequest\x1a\x1b.namespace.FavoriteResponse\";\xbaG\x15\x12\x13关注/取消关注\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/namespaces/favorite\x12\x9c\x01\n" +
+	"\fFavoriteSort\x12\x1e.namespace.FavoriteSortRequest\x1a\x1f.namespace.FavoriteSortResponse\"K\xbaG \x12\x1e整体重排我的关注列表\x82\xd3\xe4\x93\x02\":\x01*\x1a\x1d/api/namespaces/favorite/sort\x12\x8b\x01\n" +
 	"\bTransfer\x12\x1a.namespace.TransferRequest\x1a\x1b.namespace.TransferResponse\"F\xbaG \x12\x1e转让自己的空间给别人\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/namespaces/transferB;Z9github.com/duc-cnzj/mars/api/v6/proto/namespace;namespaceb\x06proto3"
 
 var (
@@ -1238,7 +1324,7 @@ func file_proto_namespace_namespace_proto_rawDescGZIP() []byte {
 	return file_proto_namespace_namespace_proto_rawDescData
 }
 
-var file_proto_namespace_namespace_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_proto_namespace_namespace_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_proto_namespace_namespace_proto_goTypes = []any{
 	(*CreateRequest)(nil),         // 0: namespace.CreateRequest
 	(*CreateResponse)(nil),        // 1: namespace.CreateResponse
@@ -1262,17 +1348,19 @@ var file_proto_namespace_namespace_proto_goTypes = []any{
 	(*UpdateConfigResponse)(nil),  // 19: namespace.UpdateConfigResponse
 	(*TransferRequest)(nil),       // 20: namespace.TransferRequest
 	(*TransferResponse)(nil),      // 21: namespace.TransferResponse
-	(*types.NamespaceModel)(nil),  // 22: types.NamespaceModel
+	(*FavoriteSortRequest)(nil),   // 22: namespace.FavoriteSortRequest
+	(*FavoriteSortResponse)(nil),  // 23: namespace.FavoriteSortResponse
+	(*types.NamespaceModel)(nil),  // 24: types.NamespaceModel
 }
 var file_proto_namespace_namespace_proto_depIdxs = []int32{
-	22, // 0: namespace.CreateResponse.item:type_name -> types.NamespaceModel
-	22, // 1: namespace.ShowResponse.item:type_name -> types.NamespaceModel
-	22, // 2: namespace.UpdateDescResponse.item:type_name -> types.NamespaceModel
-	22, // 3: namespace.ListResponse.items:type_name -> types.NamespaceModel
-	22, // 4: namespace.UpdatePrivateResponse.item:type_name -> types.NamespaceModel
-	22, // 5: namespace.SyncMembersResponse.item:type_name -> types.NamespaceModel
-	22, // 6: namespace.UpdateConfigResponse.item:type_name -> types.NamespaceModel
-	22, // 7: namespace.TransferResponse.item:type_name -> types.NamespaceModel
+	24, // 0: namespace.CreateResponse.item:type_name -> types.NamespaceModel
+	24, // 1: namespace.ShowResponse.item:type_name -> types.NamespaceModel
+	24, // 2: namespace.UpdateDescResponse.item:type_name -> types.NamespaceModel
+	24, // 3: namespace.ListResponse.items:type_name -> types.NamespaceModel
+	24, // 4: namespace.UpdatePrivateResponse.item:type_name -> types.NamespaceModel
+	24, // 5: namespace.SyncMembersResponse.item:type_name -> types.NamespaceModel
+	24, // 6: namespace.UpdateConfigResponse.item:type_name -> types.NamespaceModel
+	24, // 7: namespace.TransferResponse.item:type_name -> types.NamespaceModel
 	12, // 8: namespace.Namespace.List:input_type -> namespace.ListRequest
 	14, // 9: namespace.Namespace.UpdatePrivate:input_type -> namespace.UpdatePrivateRequest
 	16, // 10: namespace.Namespace.SyncMembers:input_type -> namespace.SyncMembersRequest
@@ -1283,20 +1371,22 @@ var file_proto_namespace_namespace_proto_depIdxs = []int32{
 	6,  // 15: namespace.Namespace.Delete:input_type -> namespace.DeleteRequest
 	4,  // 16: namespace.Namespace.IsExists:input_type -> namespace.IsExistsRequest
 	8,  // 17: namespace.Namespace.Favorite:input_type -> namespace.FavoriteRequest
-	20, // 18: namespace.Namespace.Transfer:input_type -> namespace.TransferRequest
-	13, // 19: namespace.Namespace.List:output_type -> namespace.ListResponse
-	15, // 20: namespace.Namespace.UpdatePrivate:output_type -> namespace.UpdatePrivateResponse
-	17, // 21: namespace.Namespace.SyncMembers:output_type -> namespace.SyncMembersResponse
-	19, // 22: namespace.Namespace.UpdateConfig:output_type -> namespace.UpdateConfigResponse
-	1,  // 23: namespace.Namespace.Create:output_type -> namespace.CreateResponse
-	3,  // 24: namespace.Namespace.Show:output_type -> namespace.ShowResponse
-	11, // 25: namespace.Namespace.UpdateDesc:output_type -> namespace.UpdateDescResponse
-	7,  // 26: namespace.Namespace.Delete:output_type -> namespace.DeleteResponse
-	5,  // 27: namespace.Namespace.IsExists:output_type -> namespace.IsExistsResponse
-	9,  // 28: namespace.Namespace.Favorite:output_type -> namespace.FavoriteResponse
-	21, // 29: namespace.Namespace.Transfer:output_type -> namespace.TransferResponse
-	19, // [19:30] is the sub-list for method output_type
-	8,  // [8:19] is the sub-list for method input_type
+	22, // 18: namespace.Namespace.FavoriteSort:input_type -> namespace.FavoriteSortRequest
+	20, // 19: namespace.Namespace.Transfer:input_type -> namespace.TransferRequest
+	13, // 20: namespace.Namespace.List:output_type -> namespace.ListResponse
+	15, // 21: namespace.Namespace.UpdatePrivate:output_type -> namespace.UpdatePrivateResponse
+	17, // 22: namespace.Namespace.SyncMembers:output_type -> namespace.SyncMembersResponse
+	19, // 23: namespace.Namespace.UpdateConfig:output_type -> namespace.UpdateConfigResponse
+	1,  // 24: namespace.Namespace.Create:output_type -> namespace.CreateResponse
+	3,  // 25: namespace.Namespace.Show:output_type -> namespace.ShowResponse
+	11, // 26: namespace.Namespace.UpdateDesc:output_type -> namespace.UpdateDescResponse
+	7,  // 27: namespace.Namespace.Delete:output_type -> namespace.DeleteResponse
+	5,  // 28: namespace.Namespace.IsExists:output_type -> namespace.IsExistsResponse
+	9,  // 29: namespace.Namespace.Favorite:output_type -> namespace.FavoriteResponse
+	23, // 30: namespace.Namespace.FavoriteSort:output_type -> namespace.FavoriteSortResponse
+	21, // 31: namespace.Namespace.Transfer:output_type -> namespace.TransferResponse
+	20, // [20:32] is the sub-list for method output_type
+	8,  // [8:20] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
 	8,  // [8:8] is the sub-list for extension extendee
 	0,  // [0:8] is the sub-list for field type_name
@@ -1315,7 +1405,7 @@ func file_proto_namespace_namespace_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_namespace_namespace_proto_rawDesc), len(file_proto_namespace_namespace_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   22,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

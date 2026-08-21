@@ -274,6 +274,25 @@ func (n *namespaceSvc) Favorite(ctx context.Context, req *namespace.FavoriteRequ
 	return &namespace.FavoriteResponse{}, nil
 }
 
+// FavoriteSort 整体重排当前用户的关注列表，落更新审计日志。
+func (n *namespaceSvc) FavoriteSort(ctx context.Context, req *namespace.FavoriteSortRequest) (*namespace.FavoriteSortResponse, error) {
+	user := biz.MustGetUser(ctx)
+	err := n.nsBiz.FavoriteSort(ctx, &biz.FavoriteSortNamespaceInput{
+		UserEmail:           user.Email,
+		OrderedNamespaceIDs: lo.Map(req.NamespaceIds, func(id int32, _ int) int { return int(id) }),
+	})
+	if err != nil {
+		return nil, logError(ctx, n.logger, err)
+	}
+	n.eventBiz.AuditLogWithRequest(
+		types.EventActionType_Update,
+		user.Name,
+		"用户重排关注列表",
+		req,
+	)
+	return &namespace.FavoriteSortResponse{}, nil
+}
+
 // UpdatePrivate 切换命名空间私密属性，仅 owner 可操作，落更新审计日志。
 func (n *namespaceSvc) UpdatePrivate(ctx context.Context, req *namespace.UpdatePrivateRequest) (*namespace.UpdatePrivateResponse, error) {
 	user := biz.MustGetUser(ctx)

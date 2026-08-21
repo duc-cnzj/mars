@@ -2860,3 +2860,218 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = TransferResponseValidationError{}
+
+// Validate checks the field values on FavoriteSortRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *FavoriteSortRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FavoriteSortRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// FavoriteSortRequestMultiError, or nil if none found.
+func (m *FavoriteSortRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FavoriteSortRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(m.GetNamespaceIds()) < 1 {
+		err := FavoriteSortRequestValidationError{
+			field:  "NamespaceIds",
+			reason: "value must contain at least 1 item(s)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return FavoriteSortRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// FavoriteSortRequestMultiError is an error wrapping multiple validation
+// errors returned by FavoriteSortRequest.ValidateAll() if the designated
+// constraints aren't met.
+type FavoriteSortRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FavoriteSortRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FavoriteSortRequestMultiError) AllErrors() []error { return m }
+
+// FavoriteSortRequestValidationError is the validation error returned by
+// FavoriteSortRequest.Validate if the designated constraints aren't met.
+type FavoriteSortRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e FavoriteSortRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e FavoriteSortRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e FavoriteSortRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e FavoriteSortRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e FavoriteSortRequestValidationError) ErrorName() string {
+	return "FavoriteSortRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e FavoriteSortRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sFavoriteSortRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = FavoriteSortRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = FavoriteSortRequestValidationError{}
+
+// Validate checks the field values on FavoriteSortResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *FavoriteSortResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FavoriteSortResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// FavoriteSortResponseMultiError, or nil if none found.
+func (m *FavoriteSortResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FavoriteSortResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return FavoriteSortResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// FavoriteSortResponseMultiError is an error wrapping multiple validation
+// errors returned by FavoriteSortResponse.ValidateAll() if the designated
+// constraints aren't met.
+type FavoriteSortResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FavoriteSortResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FavoriteSortResponseMultiError) AllErrors() []error { return m }
+
+// FavoriteSortResponseValidationError is the validation error returned by
+// FavoriteSortResponse.Validate if the designated constraints aren't met.
+type FavoriteSortResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e FavoriteSortResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e FavoriteSortResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e FavoriteSortResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e FavoriteSortResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e FavoriteSortResponseValidationError) ErrorName() string {
+	return "FavoriteSortResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e FavoriteSortResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sFavoriteSortResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = FavoriteSortResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = FavoriteSortResponseValidationError{}

@@ -108,6 +108,15 @@ func (s *NamespaceSvc) Favorite(ctx context.Context, req *namespace.FavoriteRequ
 	return &out, nil
 }
 
+// FavoriteSort PUT /api/namespaces/favorite/sort。
+func (s *NamespaceSvc) FavoriteSort(ctx context.Context, req *namespace.FavoriteSortRequest) (*namespace.FavoriteSortResponse, error) {
+	var out namespace.FavoriteSortResponse
+	if err := s.C.Do(ctx, http.MethodPut, "/api/namespaces/favorite/sort", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // Transfer POST /api/namespaces/transfer。
 func (s *NamespaceSvc) Transfer(ctx context.Context, req *namespace.TransferRequest) (*namespace.TransferResponse, error) {
 	var out namespace.TransferResponse

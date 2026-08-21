@@ -62,6 +62,27 @@ func (_u *FavoriteUpdate) ClearNamespaceID() *FavoriteUpdate {
 	return _u
 }
 
+// SetSortOrder sets the "sort_order" field.
+func (_u *FavoriteUpdate) SetSortOrder(v int) *FavoriteUpdate {
+	_u.mutation.ResetSortOrder()
+	_u.mutation.SetSortOrder(v)
+	return _u
+}
+
+// SetNillableSortOrder sets the "sort_order" field if the given value is not nil.
+func (_u *FavoriteUpdate) SetNillableSortOrder(v *int) *FavoriteUpdate {
+	if v != nil {
+		_u.SetSortOrder(*v)
+	}
+	return _u
+}
+
+// AddSortOrder adds value to the "sort_order" field.
+func (_u *FavoriteUpdate) AddSortOrder(v int) *FavoriteUpdate {
+	_u.mutation.AddSortOrder(v)
+	return _u
+}
+
 // SetNamespace sets the "namespace" edge to the Namespace entity.
 func (_u *FavoriteUpdate) SetNamespace(v *Namespace) *FavoriteUpdate {
 	return _u.SetNamespaceID(v.ID)
@@ -116,6 +137,12 @@ func (_u *FavoriteUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Email(); ok {
 		_spec.SetField(favorite.FieldEmail, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.SortOrder(); ok {
+		_spec.SetField(favorite.FieldSortOrder, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedSortOrder(); ok {
+		_spec.AddField(favorite.FieldSortOrder, field.TypeInt, value)
 	}
 	if _u.mutation.NamespaceCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -197,6 +224,27 @@ func (_u *FavoriteUpdateOne) SetNillableNamespaceID(v *int) *FavoriteUpdateOne {
 // ClearNamespaceID clears the value of the "namespace_id" field.
 func (_u *FavoriteUpdateOne) ClearNamespaceID() *FavoriteUpdateOne {
 	_u.mutation.ClearNamespaceID()
+	return _u
+}
+
+// SetSortOrder sets the "sort_order" field.
+func (_u *FavoriteUpdateOne) SetSortOrder(v int) *FavoriteUpdateOne {
+	_u.mutation.ResetSortOrder()
+	_u.mutation.SetSortOrder(v)
+	return _u
+}
+
+// SetNillableSortOrder sets the "sort_order" field if the given value is not nil.
+func (_u *FavoriteUpdateOne) SetNillableSortOrder(v *int) *FavoriteUpdateOne {
+	if v != nil {
+		_u.SetSortOrder(*v)
+	}
+	return _u
+}
+
+// AddSortOrder adds value to the "sort_order" field.
+func (_u *FavoriteUpdateOne) AddSortOrder(v int) *FavoriteUpdateOne {
+	_u.mutation.AddSortOrder(v)
 	return _u
 }
 
@@ -284,6 +332,12 @@ func (_u *FavoriteUpdateOne) sqlSave(ctx context.Context) (_node *Favorite, err 
 	}
 	if value, ok := _u.mutation.Email(); ok {
 		_spec.SetField(favorite.FieldEmail, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.SortOrder(); ok {
+		_spec.SetField(favorite.FieldSortOrder, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedSortOrder(); ok {
+		_spec.AddField(favorite.FieldSortOrder, field.TypeInt, value)
 	}
 	if _u.mutation.NamespaceCleared() {
 		edge := &sqlgraph.EdgeSpec{
