@@ -1,0 +1,41 @@
+/* ============================================================
+   蔚蓝 AZURE · 雪白 + 靛蓝
+   定位：极简企业 SaaS 风格
+   - 纯白/浅灰基底 + 单一靛蓝强调色
+   - 高亮浅色描边、干脆圆角、克制的阴影
+   - 呼吸感强、信息密度低，适合长时间巡检
+   ============================================================ */
+.theme-seiji {
+  color-scheme: light;
+
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --raised: #f1f3f6;
+  --overlay: #ffffff;
+  --border: #e3e6eb;
+  --border-strong: #cfd4dc;
+
+  --text: #1a1d24;
+  --text-muted: #646a76;
+  --text-faint: #6a707c;
+
+  --primary: #4f46e5;
+  --primary-strong: #4338ca;
+  --primary-soft: rgba(79, 70, 229, 0.08);
+  --primary-foreground: #ffffff;
+
+  --ok: #16a34a;   --ok-soft: rgba(22, 163, 74, 0.08);
+  --warn: #d97706; --warn-soft: rgba(217, 119, 6, 0.08);
+  --err: #dc2626;  --err-soft: rgba(220, 38, 38, 0.08);
+  --info: #2563eb; --info-soft: rgba(37, 99, 235, 0.08);
+
+  --chart-1: #4f46e5;
+  --chart-2: #06b6d4;
+
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+
+  --font-sans-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+}

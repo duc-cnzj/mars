@@ -1,0 +1,41 @@
+/* ============================================================
+   璀璨洋红 MAGENTA · 珊瑚粉 + 璀璨洋红
+   灵感：小米 SU7 15 周年限定色「璀璨洋红」
+   定位：年轻活力 SaaS 风格
+   - 浅粉白基底 + 单一洋红强调色
+   - 柔和描边、圆润圆角、轻快呼吸感
+   ============================================================ */
+.theme-magenta {
+  color-scheme: light;
+
+  --bg: #fdf2f8;
+  --surface: #ffffff;
+  --raised: #f8e6f0;
+  --overlay: #ffffff;
+  --border: #f0d8e6;
+  --border-strong: #e2c0d4;
+
+  --text: #2a1420;
+  --text-muted: #8a6276;
+  --text-faint: #8e6478;
+
+  --primary: #c92a93;
+  --primary-strong: #a91f7d;
+  --primary-soft: rgba(201, 42, 147, 0.10);
+  --primary-foreground: #ffffff;
+
+  --ok: #0f9d78;   --ok-soft: rgba(15, 157, 120, 0.10);
+  --warn: #d97706; --warn-soft: rgba(217, 119, 6, 0.10);
+  --err: #e0245e;  --err-soft: rgba(224, 36, 94, 0.10);
+  --info: #c92a93; --info-soft: rgba(201, 42, 147, 0.10);
+
+  --chart-1: #c92a93;
+  --chart-2: #ff9ecf;
+
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+
+  --font-sans-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+}

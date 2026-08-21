@@ -1,0 +1,41 @@
+/* ============================================================
+   海湾蓝 BAY · 晴空白 + 海湾蓝
+   灵感：小米 SU7 招牌色「海湾蓝」
+   定位：清爽 SaaS 风格
+   - 晴空蓝白基底 + 单一海湾蓝强调色
+   - 高亮浅色描边、干脆圆角、透气感强
+   ============================================================ */
+.theme-bay {
+  color-scheme: light;
+
+  --bg: #eef5fb;
+  --surface: #ffffff;
+  --raised: #e8f1fa;
+  --overlay: #ffffff;
+  --border: #d7e6f4;
+  --border-strong: #bcd3e8;
+
+  --text: #15202c;
+  --text-muted: #5c7389;
+  --text-faint: #5a7084;
+
+  --primary: #1f7fd1;
+  --primary-strong: #186cb5;
+  --primary-soft: rgba(31, 127, 209, 0.10);
+  --primary-foreground: #ffffff;
+
+  --ok: #14997a;   --ok-soft: rgba(20, 153, 122, 0.10);
+  --warn: #d97706; --warn-soft: rgba(217, 119, 6, 0.10);
+  --err: #d64545;  --err-soft: rgba(214, 69, 69, 0.10);
+  --info: #1f7fd1; --info-soft: rgba(31, 127, 209, 0.10);
+
+  --chart-1: #1f7fd1;
+  --chart-2: #25c9c3;
+
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+
+  --font-sans-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+}

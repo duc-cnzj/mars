@@ -1,0 +1,41 @@
+/* ============================================================
+   GitHub Dimmed · 雾蓝 + 柔蓝
+   定位：GitHub Dark Dimmed（官方低对比护眼变体）
+   - 官方 Primer Dark Dimmed 配色：雾蓝灰基底 + 柔蓝强调
+   - 柔和低对比描边、圆润圆角、暖化状态色
+   - 比纯暗色更护眼，适合长时间巡检/审阅
+   ============================================================ */
+.theme-github-dimmed {
+  color-scheme: dark;
+
+  --bg: #22272e;
+  --surface: #2d333b;
+  --raised: #373e47;
+  --overlay: #2f363f;
+  --border: #444c56;
+  --border-strong: #545d68;
+
+  --text: #adbac7;
+  --text-muted: #8794a0;
+  --text-faint: #828fa0;
+
+  --primary: #539bf5;
+  --primary-strong: #6cb6ff;
+  --primary-soft: rgba(83, 155, 245, 0.12);
+  --primary-foreground: #1c2128;
+
+  --ok: #57ab5a;   --ok-soft: rgba(87, 171, 90, 0.12);
+  --warn: #c69026; --warn-soft: rgba(198, 144, 38, 0.12);
+  --err: #e5534b;  --err-soft: rgba(229, 83, 75, 0.12);
+  --info: #539bf5; --info-soft: rgba(83, 155, 245, 0.12);
+
+  --chart-1: #539bf5;
+  --chart-2: #b083f0;
+
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+
+  --font-sans-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+}

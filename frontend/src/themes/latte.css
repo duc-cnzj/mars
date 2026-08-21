@@ -1,0 +1,41 @@
+/* ============================================================
+   拿铁 LATTE · 奶白 + 蓝莓蓝
+   定位：Catppuccin Latte（近两年极流行的柔和亮色系）
+   - 官方 Catppuccin Latte 配色：奶白基底 + 蓝莓蓝强调
+   - 温暖米灰描边、圆润圆角、柔和多巴胺状态色
+   - 通透、治愈、低刺激，适合长时间阅读与协作
+   ============================================================ */
+.theme-latte {
+  color-scheme: light;
+
+  --bg: #eff1f5;
+  --surface: #ffffff;
+  --raised: #e6e9ef;
+  --overlay: #ffffff;
+  --border: #d6dae3;
+  --border-strong: #bcc0cc;
+
+  --text: #4c4f69;
+  --text-muted: #52566c;
+  --text-faint: #5c5f77;
+
+  --primary: #1e66f5;
+  --primary-strong: #1654d4;
+  --primary-soft: rgba(30, 102, 245, 0.08);
+  --primary-foreground: #ffffff;
+
+  --ok: #40a02b;   --ok-soft: rgba(64, 160, 43, 0.08);
+  --warn: #df8e1d; --warn-soft: rgba(223, 142, 29, 0.08);
+  --err: #d20f39;  --err-soft: rgba(210, 15, 57, 0.08);
+  --info: #179299; --info-soft: rgba(23, 146, 153, 0.08);
+
+  --chart-1: #1e66f5;
+  --chart-2: #179299;
+
+  --r-sm: 7px;
+  --r-md: 10px;
+  --r-lg: 14px;
+
+  --font-sans-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+}

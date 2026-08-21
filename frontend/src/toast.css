@@ -1,0 +1,138 @@
+/* ============================================================
+   sonner toast 主题化设计 v6 —— 双主题变体（暗/亮自适应）
+   ------------------------------------------------------------
+   结构沿用参照图 toast.jpg（深卡 + 右上角对角渐变 + 裸彩图标），
+   但卡片底色/文字/按钮/渐变强度全部由系统主题语义 token 驱动，
+   换肤即换 toast：
+
+   · 暗色主题（data-sonner-theme=dark）：
+     卡片 = 主题 --surface（近黑），文字亮白，右上角强类型色渐变
+     （38%→10%→0，参照图）。
+   · 亮色主题（data-sonner-theme=light）：
+     卡片 = 主题 --surface（浅色），文字 --text（深），右上角柔和
+     类型色渐变（10%→3%→0），动作按钮深底浅字（反转）。
+   · 类型色 --toast-accent 映射 --ok/--err/--warn/--info；
+     所有 var() 均带 fallback，杜绝 IACVT 透明回归。
+   ============================================================ */
+
+/* ── 容器基座：主题表面色 + 无边框 + 分层阴影（渐变由下方类型规则覆盖）── */
+[data-sonner-toast][data-styled='true'] {
+  background: var(--surface, #1f1e24) !important;
+  /* 显式清零：sonner 基座自带 border:1px solid var(--normal-border)，不设 border 会透出来 */
+  border: none !important;
+  border-radius: var(--r-lg);
+  color: var(--text, #ffffff) !important;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 6px 20px -4px color-mix(in srgb, #000 22%, transparent),
+    0 32px 80px -16px color-mix(in srgb, #000 45%, transparent);
+}
+
+/* ── 文字层级：标题加粗 / 描述走主题弱化色 ── */
+[data-sonner-toast][data-styled='true'] [data-title] { font-weight: 600; }
+[data-rich-colors='true'][data-sonner-toast][data-styled='true'] [data-description] {
+  color: var(--text-muted, #9aa0a6) !important;
+  font-weight: 400;
+}
+
+/* ── 类型 → 强调色映射（渐变 + 图标共享）── */
+[data-rich-colors='true'][data-sonner-toast][data-type='success'] { --toast-accent: var(--ok, #34d399);   }
+[data-rich-colors='true'][data-sonner-toast][data-type='error']   { --toast-accent: var(--err, #f85149);  }
+[data-rich-colors='true'][data-sonner-toast][data-type='warning'] { --toast-accent: var(--warn, #fbbf24); }
+[data-rich-colors='true'][data-sonner-toast][data-type='info']    { --toast-accent: var(--info, #60a5fa); }
+/* 裸调用（适配层已映射到 info，仅供兜底） */
+[data-rich-colors='true'][data-sonner-toast][data-type='default'] { --toast-accent: var(--info, #60a5fa); }
+
+/* ── 类型图标：左侧裸彩色图标（两主题通用）── */
+[data-rich-colors='true'][data-sonner-toast][data-type='success'] [data-icon] { color: var(--toast-accent) !important; }
+[data-rich-colors='true'][data-sonner-toast][data-type='error']   [data-icon] { color: var(--toast-accent) !important; }
+[data-rich-colors='true'][data-sonner-toast][data-type='warning'] [data-icon] { color: var(--toast-accent) !important; }
+[data-rich-colors='true'][data-sonner-toast][data-type='info']    [data-icon] { color: var(--toast-accent) !important; }
+[data-rich-colors='true'][data-sonner-toast][data-type='default'] [data-icon] { color: var(--toast-accent) !important; }
+
+/* ── 图标尺寸：18px，无容器底，视觉居中 ── */
+[data-sonner-toast][data-styled='true'] [data-icon] {
+  width: 18px;
+  height: 18px;
+  justify-content: center;
+}
+[data-sonner-toast][data-styled='true'] [data-icon] svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ============================================================
+   暗色主题：近黑卡片 + 亮字 + 强对角渐变（参照图）
+   ============================================================ */
+[data-sonner-toaster][data-sonner-theme='dark'] [data-rich-colors='true'][data-sonner-toast][data-type='success'],
+[data-sonner-toaster][data-sonner-theme='dark'] [data-rich-colors='true'][data-sonner-toast][data-type='error'],
+[data-sonner-toaster][data-sonner-theme='dark'] [data-rich-colors='true'][data-sonner-toast][data-type='warning'],
+[data-sonner-toaster][data-sonner-theme='dark'] [data-rich-colors='true'][data-sonner-toast][data-type='info'],
+[data-sonner-toaster][data-sonner-theme='dark'] [data-rich-colors='true'][data-sonner-toast][data-type='default'] {
+  background:
+    linear-gradient(225deg,
+      color-mix(in srgb, var(--toast-accent, var(--info)) 38%, var(--surface, #1f1e24) 62%) 0%,
+      color-mix(in srgb, var(--toast-accent, var(--info)) 10%, var(--surface, #1f1e24) 90%) 42%,
+      var(--surface, #1f1e24) 78%) !important;
+  color: #ffffff !important;
+}
+[data-sonner-toaster][data-sonner-theme='dark'] [data-sonner-toast][data-styled='true'] [data-button] {
+  background: #ffffff !important;
+  color: var(--surface, #1f1e24) !important;
+  border-radius: 8px;
+  font-weight: 600;
+}
+[data-sonner-toaster][data-sonner-theme='dark'] [data-sonner-toast][data-styled='true'] [data-button]:hover {
+  background: #e8e8ee !important;
+}
+[data-sonner-toaster][data-sonner-theme='dark'] [data-sonner-toast][data-styled='true'] [data-cancel] {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #d0d0d8 !important;
+}
+[data-sonner-toaster][data-sonner-theme='dark'] [data-sonner-toast][data-styled='true'] [data-close-button] {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #a0a0ac !important;
+}
+[data-sonner-toaster][data-sonner-theme='dark'] [data-sonner-toast][data-styled='true'] [data-close-button]:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+}
+
+/* ============================================================
+   亮色主题：浅色卡片 + 深字 + 柔和对角渐变 + 按钮反转
+   ============================================================ */
+[data-sonner-toaster][data-sonner-theme='light'] [data-rich-colors='true'][data-sonner-toast][data-type='success'],
+[data-sonner-toaster][data-sonner-theme='light'] [data-rich-colors='true'][data-sonner-toast][data-type='error'],
+[data-sonner-toaster][data-sonner-theme='light'] [data-rich-colors='true'][data-sonner-toast][data-type='warning'],
+[data-sonner-toaster][data-sonner-theme='light'] [data-rich-colors='true'][data-sonner-toast][data-type='info'],
+[data-sonner-toaster][data-sonner-theme='light'] [data-rich-colors='true'][data-sonner-toast][data-type='default'] {
+  background:
+    linear-gradient(225deg,
+      color-mix(in srgb, var(--toast-accent, var(--info)) 10%, var(--surface, #ffffff) 90%) 0%,
+      color-mix(in srgb, var(--toast-accent, var(--info)) 3%, var(--surface, #ffffff) 97%) 42%,
+      var(--surface, #ffffff) 78%) !important;
+  color: var(--text, #1f1e24) !important;
+}
+[data-sonner-toaster][data-sonner-theme='light'] [data-sonner-toast][data-styled='true'] [data-button] {
+  background: var(--text, #1f1e24) !important;
+  color: var(--surface, #ffffff) !important;
+  border-radius: 8px;
+  font-weight: 600;
+}
+[data-sonner-toaster][data-sonner-theme='light'] [data-sonner-toast][data-styled='true'] [data-button]:hover {
+  background: color-mix(in srgb, var(--text, #1f1e24) 85%, #000000 15%) !important;
+}
+[data-sonner-toaster][data-sonner-theme='light'] [data-sonner-toast][data-styled='true'] [data-cancel] {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: var(--text-muted, #6b7280) !important;
+}
+[data-sonner-toaster][data-sonner-theme='light'] [data-sonner-toast][data-styled='true'] [data-close-button] {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  color: var(--text-muted, #6b7280) !important;
+}
+[data-sonner-toaster][data-sonner-theme='light'] [data-sonner-toast][data-styled='true'] [data-close-button]:hover {
+  background: rgba(0, 0, 0, 0.08) !important;
+  color: var(--text, #1f1e24) !important;
+}

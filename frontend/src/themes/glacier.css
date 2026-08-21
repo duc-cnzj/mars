@@ -1,0 +1,41 @@
+/* ============================================================
+   冰川 GLACIER · 冰白 + 翡翠绿
+   定位：现代监控健康 / 清新风格
+   - 冰川冰白基底 + 单一翡翠绿强调色
+   - 柔化圆角、轻盈蓝灰描边、次级天蓝图表序列
+   - 清爽、通透、柔和，弱化"工具感"强化"健康感"
+   ============================================================ */
+.theme-glacier {
+  color-scheme: light;
+
+  --bg: #eef4f5;
+  --surface: #ffffff;
+  --raised: #f2f8f8;
+  --overlay: #ffffff;
+  --border: #d9e4e5;
+  --border-strong: #c3d3d5;
+
+  --text: #0f172a;
+  --text-muted: #5c6b7a;
+  --text-faint: #60717e;
+
+  --primary: #0d9488;
+  --primary-strong: #0f766e;
+  --primary-soft: rgba(13, 148, 136, 0.08);
+  --primary-foreground: #ffffff;
+
+  --ok: #0f9d63;   --ok-soft: rgba(15, 157, 99, 0.08);
+  --warn: #c98a16; --warn-soft: rgba(201, 138, 22, 0.08);
+  --err: #d64550;  --err-soft: rgba(214, 69, 80, 0.08);
+  --info: #2f7fd9; --info-soft: rgba(47, 127, 217, 0.08);
+
+  --chart-1: #0d9488;
+  --chart-2: #38bdf8;
+
+  --r-sm: 7px;
+  --r-md: 10px;
+  --r-lg: 14px;
+
+  --font-sans-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+}

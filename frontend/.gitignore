@@ -1,26 +1,49 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-.env
-.env*
-!.env.production
-
-# dependencies
-/node_modules
-/.pnp
+# Dependencies
+node_modules
+.pnp
 .pnp.js
+package-lock.json
+pnpm-lock.yaml
+# yarn.lock 纳入版本库：并入 mars 后 CI（release.yaml 缓存依赖 frontend/yarn.lock）
+# 与 Docker 构建（yarn install 可复现）都需要它，与旧版前端提交 yarn.lock 一致。
 
-# testing
-/coverage
+# Build output
+build
+dist
+dist-ssr
+*.local
 
-# production
-/build
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
 
-# misc
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
+# Logs
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.production
+
+# Claude
+.claude/
+
+# Coverage
+coverage

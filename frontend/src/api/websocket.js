@@ -126,7 +126,7 @@ export const websocket = $root.websocket = (() => {
         function ClusterInfo(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -227,9 +227,13 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        ClusterInfo.encode = function encode(message, writer) {
+        ClusterInfo.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.status != null && Object.hasOwnProperty.call(message, "status"))
                 writer.uint32(/* id 1, wireType 2 =*/10).string(message.status);
             if (message.freeMemory != null && Object.hasOwnProperty.call(message, "freeMemory"))
@@ -266,12 +270,18 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        ClusterInfo.decode = function decode(reader, length) {
+        ClusterInfo.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.ClusterInfo();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
                         message.status = reader.string();
@@ -318,7 +328,7 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -364,7 +374,7 @@ export const websocket = $root.websocket = (() => {
         function ExtraValue(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -393,9 +403,13 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        ExtraValue.encode = function encode(message, writer) {
+        ExtraValue.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.path != null && Object.hasOwnProperty.call(message, "path"))
                 writer.uint32(/* id 1, wireType 2 =*/10).string(message.path);
             if (message.value != null && Object.hasOwnProperty.call(message, "value"))
@@ -414,12 +428,18 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        ExtraValue.decode = function decode(reader, length) {
+        ExtraValue.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.ExtraValue();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
                         message.path = reader.string();
@@ -430,7 +450,7 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -477,7 +497,7 @@ export const websocket = $root.websocket = (() => {
         function Container(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -514,9 +534,13 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        Container.encode = function encode(message, writer) {
+        Container.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
                 writer.uint32(/* id 1, wireType 2 =*/10).string(message.namespace);
             if (message.pod != null && Object.hasOwnProperty.call(message, "pod"))
@@ -537,12 +561,18 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        Container.decode = function decode(reader, length) {
+        Container.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.Container();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
                         message.namespace = reader.string();
@@ -557,7 +587,7 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -602,7 +632,7 @@ export const websocket = $root.websocket = (() => {
         function WsRequestMetadata(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -623,9 +653,13 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        WsRequestMetadata.encode = function encode(message, writer) {
+        WsRequestMetadata.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.type != null && Object.hasOwnProperty.call(message, "type"))
                 writer.uint32(/* id 1, wireType 0 =*/8).int32(message.type);
             return writer;
@@ -642,19 +676,25 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        WsRequestMetadata.decode = function decode(reader, length) {
+        WsRequestMetadata.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.WsRequestMetadata();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
                         message.type = reader.int32();
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -700,7 +740,7 @@ export const websocket = $root.websocket = (() => {
         function AuthorizeTokenInput(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -729,9 +769,13 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        AuthorizeTokenInput.encode = function encode(message, writer) {
+        AuthorizeTokenInput.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.type != null && Object.hasOwnProperty.call(message, "type"))
                 writer.uint32(/* id 1, wireType 0 =*/8).int32(message.type);
             if (message.token != null && Object.hasOwnProperty.call(message, "token"))
@@ -750,12 +794,18 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        AuthorizeTokenInput.decode = function decode(reader, length) {
+        AuthorizeTokenInput.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.AuthorizeTokenInput();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
                         message.type = reader.int32();
@@ -766,7 +816,7 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -815,7 +865,7 @@ export const websocket = $root.websocket = (() => {
         function TerminalMessage(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -868,9 +918,13 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        TerminalMessage.encode = function encode(message, writer) {
+        TerminalMessage.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.op != null && Object.hasOwnProperty.call(message, "op"))
                 writer.uint32(/* id 1, wireType 2 =*/10).string(message.op);
             if (message.data != null && Object.hasOwnProperty.call(message, "data"))
@@ -895,12 +949,18 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        TerminalMessage.decode = function decode(reader, length) {
+        TerminalMessage.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.TerminalMessage();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
                         message.op = reader.string();
@@ -923,7 +983,7 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -971,7 +1031,7 @@ export const websocket = $root.websocket = (() => {
         function ProjectPodEventJoinInput(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -1016,9 +1076,13 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        ProjectPodEventJoinInput.encode = function encode(message, writer) {
+        ProjectPodEventJoinInput.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.type != null && Object.hasOwnProperty.call(message, "type"))
                 writer.uint32(/* id 1, wireType 0 =*/8).int32(message.type);
             if (message.join != null && Object.hasOwnProperty.call(message, "join"))
@@ -1041,12 +1105,18 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        ProjectPodEventJoinInput.decode = function decode(reader, length) {
+        ProjectPodEventJoinInput.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.ProjectPodEventJoinInput();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
                         message.type = reader.int32();
@@ -1065,7 +1135,7 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -1111,7 +1181,7 @@ export const websocket = $root.websocket = (() => {
         function TerminalMessageInput(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -1140,13 +1210,17 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        TerminalMessageInput.encode = function encode(message, writer) {
+        TerminalMessageInput.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.type != null && Object.hasOwnProperty.call(message, "type"))
                 writer.uint32(/* id 1, wireType 0 =*/8).int32(message.type);
             if (message.message != null && Object.hasOwnProperty.call(message, "message"))
-                $root.websocket.TerminalMessage.encode(message.message, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+                $root.websocket.TerminalMessage.encode(message.message, writer.uint32(/* id 2, wireType 2 =*/18).fork(), q + 1).ldelim();
             return writer;
         };
 
@@ -1161,23 +1235,29 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        TerminalMessageInput.decode = function decode(reader, length) {
+        TerminalMessageInput.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.TerminalMessageInput();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
                         message.type = reader.int32();
                         break;
                     }
                 case 2: {
-                        message.message = $root.websocket.TerminalMessage.decode(reader, reader.uint32());
+                        message.message = $root.websocket.TerminalMessage.decode(reader, reader.uint32(), undefined, long + 1);
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -1224,7 +1304,7 @@ export const websocket = $root.websocket = (() => {
         function WsHandleExecShellInput(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -1261,13 +1341,17 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        WsHandleExecShellInput.encode = function encode(message, writer) {
+        WsHandleExecShellInput.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.type != null && Object.hasOwnProperty.call(message, "type"))
                 writer.uint32(/* id 1, wireType 0 =*/8).int32(message.type);
             if (message.container != null && Object.hasOwnProperty.call(message, "container"))
-                $root.websocket.Container.encode(message.container, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+                $root.websocket.Container.encode(message.container, writer.uint32(/* id 2, wireType 2 =*/18).fork(), q + 1).ldelim();
             if (message.sessionId != null && Object.hasOwnProperty.call(message, "sessionId"))
                 writer.uint32(/* id 3, wireType 2 =*/26).string(message.sessionId);
             return writer;
@@ -1284,19 +1368,25 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        WsHandleExecShellInput.decode = function decode(reader, length) {
+        WsHandleExecShellInput.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.WsHandleExecShellInput();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
                         message.type = reader.int32();
                         break;
                     }
                 case 2: {
-                        message.container = $root.websocket.Container.decode(reader, reader.uint32());
+                        message.container = $root.websocket.Container.decode(reader, reader.uint32(), undefined, long + 1);
                         break;
                     }
                 case 3: {
@@ -1304,7 +1394,7 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -1351,7 +1441,7 @@ export const websocket = $root.websocket = (() => {
         function CancelInput(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -1388,9 +1478,13 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        CancelInput.encode = function encode(message, writer) {
+        CancelInput.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.type != null && Object.hasOwnProperty.call(message, "type"))
                 writer.uint32(/* id 1, wireType 0 =*/8).int32(message.type);
             if (message.namespaceId != null && Object.hasOwnProperty.call(message, "namespaceId"))
@@ -1411,12 +1505,18 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        CancelInput.decode = function decode(reader, length) {
+        CancelInput.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.CancelInput();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
                         message.type = reader.int32();
@@ -1431,7 +1531,7 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -1485,7 +1585,7 @@ export const websocket = $root.websocket = (() => {
             this.extraValues = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -1585,9 +1685,13 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        CreateProjectInput.encode = function encode(message, writer) {
+        CreateProjectInput.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.type != null && Object.hasOwnProperty.call(message, "type"))
                 writer.uint32(/* id 1, wireType 0 =*/8).int32(message.type);
             if (message.namespaceId != null && Object.hasOwnProperty.call(message, "namespaceId"))
@@ -1604,7 +1708,7 @@ export const websocket = $root.websocket = (() => {
                 writer.uint32(/* id 7, wireType 2 =*/58).string(message.config);
             if (message.extraValues != null && message.extraValues.length)
                 for (let i = 0; i < message.extraValues.length; ++i)
-                    $root.websocket.ExtraValue.encode(message.extraValues[i], writer.uint32(/* id 8, wireType 2 =*/66).fork()).ldelim();
+                    $root.websocket.ExtraValue.encode(message.extraValues[i], writer.uint32(/* id 8, wireType 2 =*/66).fork(), q + 1).ldelim();
             if (message.atomic != null && Object.hasOwnProperty.call(message, "atomic"))
                 writer.uint32(/* id 9, wireType 0 =*/72).bool(message.atomic);
             return writer;
@@ -1621,12 +1725,18 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        CreateProjectInput.decode = function decode(reader, length) {
+        CreateProjectInput.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.CreateProjectInput();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
                         message.type = reader.int32();
@@ -1659,7 +1769,7 @@ export const websocket = $root.websocket = (() => {
                 case 8: {
                         if (!(message.extraValues && message.extraValues.length))
                             message.extraValues = [];
-                        message.extraValues.push($root.websocket.ExtraValue.decode(reader, reader.uint32()));
+                        message.extraValues.push($root.websocket.ExtraValue.decode(reader, reader.uint32(), undefined, long + 1));
                         break;
                     }
                 case 9: {
@@ -1667,7 +1777,7 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -1720,7 +1830,7 @@ export const websocket = $root.websocket = (() => {
             this.extraValues = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -1806,9 +1916,13 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        UpdateProjectInput.encode = function encode(message, writer) {
+        UpdateProjectInput.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.type != null && Object.hasOwnProperty.call(message, "type"))
                 writer.uint32(/* id 1, wireType 0 =*/8).int32(message.type);
             if (message.projectId != null && Object.hasOwnProperty.call(message, "projectId"))
@@ -1821,7 +1935,7 @@ export const websocket = $root.websocket = (() => {
                 writer.uint32(/* id 5, wireType 2 =*/42).string(message.config);
             if (message.extraValues != null && message.extraValues.length)
                 for (let i = 0; i < message.extraValues.length; ++i)
-                    $root.websocket.ExtraValue.encode(message.extraValues[i], writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
+                    $root.websocket.ExtraValue.encode(message.extraValues[i], writer.uint32(/* id 6, wireType 2 =*/50).fork(), q + 1).ldelim();
             if (message.version != null && Object.hasOwnProperty.call(message, "version"))
                 writer.uint32(/* id 7, wireType 0 =*/56).int32(message.version);
             if (message.atomic != null && Object.hasOwnProperty.call(message, "atomic"))
@@ -1840,12 +1954,18 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        UpdateProjectInput.decode = function decode(reader, length) {
+        UpdateProjectInput.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.UpdateProjectInput();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
                         message.type = reader.int32();
@@ -1870,7 +1990,7 @@ export const websocket = $root.websocket = (() => {
                 case 6: {
                         if (!(message.extraValues && message.extraValues.length))
                             message.extraValues = [];
-                        message.extraValues.push($root.websocket.ExtraValue.decode(reader, reader.uint32()));
+                        message.extraValues.push($root.websocket.ExtraValue.decode(reader, reader.uint32(), undefined, long + 1));
                         break;
                     }
                 case 7: {
@@ -1882,7 +2002,7 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -1935,7 +2055,7 @@ export const websocket = $root.websocket = (() => {
         function Metadata(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -2020,9 +2140,13 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        Metadata.encode = function encode(message, writer) {
+        Metadata.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.id != null && Object.hasOwnProperty.call(message, "id"))
                 writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
             if (message.uid != null && Object.hasOwnProperty.call(message, "uid"))
@@ -2055,12 +2179,18 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        Metadata.decode = function decode(reader, length) {
+        Metadata.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.Metadata();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
                         message.id = reader.string();
@@ -2099,7 +2229,7 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -2144,7 +2274,7 @@ export const websocket = $root.websocket = (() => {
         function WsMetadataResponse(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -2165,11 +2295,15 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        WsMetadataResponse.encode = function encode(message, writer) {
+        WsMetadataResponse.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
-                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork(), q + 1).ldelim();
             return writer;
         };
 
@@ -2184,19 +2318,25 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        WsMetadataResponse.decode = function decode(reader, length) {
+        WsMetadataResponse.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.WsMetadataResponse();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
-                        message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32());
+                        message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32(), undefined, long + 1);
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -2243,7 +2383,7 @@ export const websocket = $root.websocket = (() => {
         function WsHandleShellResponse(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -2280,15 +2420,19 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        WsHandleShellResponse.encode = function encode(message, writer) {
+        WsHandleShellResponse.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
-                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork(), q + 1).ldelim();
             if (message.terminalMessage != null && Object.hasOwnProperty.call(message, "terminalMessage"))
-                $root.websocket.TerminalMessage.encode(message.terminalMessage, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+                $root.websocket.TerminalMessage.encode(message.terminalMessage, writer.uint32(/* id 2, wireType 2 =*/18).fork(), q + 1).ldelim();
             if (message.container != null && Object.hasOwnProperty.call(message, "container"))
-                $root.websocket.Container.encode(message.container, writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
+                $root.websocket.Container.encode(message.container, writer.uint32(/* id 3, wireType 2 =*/26).fork(), q + 1).ldelim();
             return writer;
         };
 
@@ -2303,27 +2447,33 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        WsHandleShellResponse.decode = function decode(reader, length) {
+        WsHandleShellResponse.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.WsHandleShellResponse();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
-                        message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32());
+                        message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32(), undefined, long + 1);
                         break;
                     }
                 case 2: {
-                        message.terminalMessage = $root.websocket.TerminalMessage.decode(reader, reader.uint32());
+                        message.terminalMessage = $root.websocket.TerminalMessage.decode(reader, reader.uint32(), undefined, long + 1);
                         break;
                     }
                 case 3: {
-                        message.container = $root.websocket.Container.decode(reader, reader.uint32());
+                        message.container = $root.websocket.Container.decode(reader, reader.uint32(), undefined, long + 1);
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -2369,7 +2519,7 @@ export const websocket = $root.websocket = (() => {
         function WsHandleClusterResponse(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -2398,13 +2548,17 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        WsHandleClusterResponse.encode = function encode(message, writer) {
+        WsHandleClusterResponse.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
-                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork(), q + 1).ldelim();
             if (message.info != null && Object.hasOwnProperty.call(message, "info"))
-                $root.websocket.ClusterInfo.encode(message.info, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+                $root.websocket.ClusterInfo.encode(message.info, writer.uint32(/* id 2, wireType 2 =*/18).fork(), q + 1).ldelim();
             return writer;
         };
 
@@ -2419,23 +2573,29 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        WsHandleClusterResponse.decode = function decode(reader, length) {
+        WsHandleClusterResponse.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.WsHandleClusterResponse();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
-                        message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32());
+                        message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32(), undefined, long + 1);
                         break;
                     }
                 case 2: {
-                        message.info = $root.websocket.ClusterInfo.decode(reader, reader.uint32());
+                        message.info = $root.websocket.ClusterInfo.decode(reader, reader.uint32(), undefined, long + 1);
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -2482,7 +2642,7 @@ export const websocket = $root.websocket = (() => {
             this.containers = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -2511,14 +2671,18 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        WsWithContainerMessageResponse.encode = function encode(message, writer) {
+        WsWithContainerMessageResponse.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
-                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork(), q + 1).ldelim();
             if (message.containers != null && message.containers.length)
                 for (let i = 0; i < message.containers.length; ++i)
-                    $root.websocket.Container.encode(message.containers[i], writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+                    $root.websocket.Container.encode(message.containers[i], writer.uint32(/* id 2, wireType 2 =*/18).fork(), q + 1).ldelim();
             return writer;
         };
 
@@ -2533,25 +2697,31 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        WsWithContainerMessageResponse.decode = function decode(reader, length) {
+        WsWithContainerMessageResponse.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.WsWithContainerMessageResponse();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
-                        message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32());
+                        message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32(), undefined, long + 1);
                         break;
                     }
                 case 2: {
                         if (!(message.containers && message.containers.length))
                             message.containers = [];
-                        message.containers.push($root.websocket.Container.decode(reader, reader.uint32()));
+                        message.containers.push($root.websocket.Container.decode(reader, reader.uint32(), undefined, long + 1));
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -2597,7 +2767,7 @@ export const websocket = $root.websocket = (() => {
         function WsProjectPodEventResponse(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -2626,11 +2796,15 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        WsProjectPodEventResponse.encode = function encode(message, writer) {
+        WsProjectPodEventResponse.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
-                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork(), q + 1).ldelim();
             if (message.projectId != null && Object.hasOwnProperty.call(message, "projectId"))
                 writer.uint32(/* id 2, wireType 0 =*/16).int32(message.projectId);
             return writer;
@@ -2647,15 +2821,21 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        WsProjectPodEventResponse.decode = function decode(reader, length) {
+        WsProjectPodEventResponse.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.WsProjectPodEventResponse();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
-                        message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32());
+                        message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32(), undefined, long + 1);
                         break;
                     }
                 case 2: {
@@ -2663,7 +2843,7 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
@@ -2709,7 +2889,7 @@ export const websocket = $root.websocket = (() => {
         function WsReloadProjectsResponse(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -2738,11 +2918,15 @@ export const websocket = $root.websocket = (() => {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        WsReloadProjectsResponse.encode = function encode(message, writer) {
+        WsReloadProjectsResponse.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
-                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork(), q + 1).ldelim();
             if (message.namespaceId != null && Object.hasOwnProperty.call(message, "namespaceId"))
                 writer.uint32(/* id 2, wireType 0 =*/16).int32(message.namespaceId);
             return writer;
@@ -2759,15 +2943,21 @@ export const websocket = $root.websocket = (() => {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        WsReloadProjectsResponse.decode = function decode(reader, length) {
+        WsReloadProjectsResponse.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.WsReloadProjectsResponse();
             while (reader.pos < end) {
                 let tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
                 case 1: {
-                        message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32());
+                        message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32(), undefined, long + 1);
                         break;
                     }
                 case 2: {
@@ -2775,7 +2965,7 @@ export const websocket = $root.websocket = (() => {
                         break;
                     }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
             }
