@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM node:21-alpine as web-build
+FROM --platform=$BUILDPLATFORM node:22-alpine AS web-build
 
 WORKDIR /app
 
@@ -39,7 +39,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARG
     && CGO_ENABLED=1 CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="$LDFLAGS $EXTRA_FLAGS" -o /bin/app main.go \
     && upx -9 /bin/app
 
-FROM --platform=$TARGETPLATFORM gcr.io/distroless/base-debian12
+FROM gcr.io/distroless/base-debian12
 
 WORKDIR /
 
