@@ -209,6 +209,7 @@ export function TabEdit({
                 placeholder={t('project.project')}
                 searchPlaceholder={t('project.searchProject')}
                 align="center"
+                truncateTip
                 className="md:rounded-r-none"
               />
             )}
@@ -227,6 +228,7 @@ export function TabEdit({
                   searchPlaceholder={t('project.searchBranch')}
                   emptyText={t('common.empty')}
                   align="center"
+                  truncateTip
                   className="md:-ml-px md:rounded-none md:border-l-0"
                 />
               ))}
@@ -242,6 +244,7 @@ export function TabEdit({
                   searchPlaceholder={t('project.searchCommit')}
                   emptyText={t('common.empty')}
                   align="center"
+                  truncateTip
                   className="md:-ml-px md:rounded-l-none md:border-l-0"
                 />
               ))}
