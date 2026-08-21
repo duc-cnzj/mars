@@ -91,21 +91,33 @@ func TestGrpcRunner_Shutdown(t *testing.T) {
 		server: server,
 	}
 
-	server.EXPECT().GracefulStop().Times(2)
-	// Test case: Shutdown completes before context deadline
+	// Test case 1：ctx 未到期，GracefulStop 完成后 Shutdown 返回 nil。
+	server.EXPECT().GracefulStop().Times(1)
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Second)
 	defer cancel()
 
 	err := runner.Shutdown(ctx)
 	assert.Nil(t, err)
 
-	// Test case: Shutdown does not complete before context deadline
+	// Test case 2：ctx 已取消且优雅停止迟迟不结束，Shutdown 须走 ctx.Done() 分支返回错误。
+	// 若 mock 的 GracefulStop 立即返回，done 与 ctx.Done() 同时就绪，select 随机选择，
+	// 约一半概率误返 nil 造成 CI 偶发失败——用 release 阻塞 GracefulStop 使 done 永不就绪，
+	// Shutdown 只能经 ctx 取消返回，测试结果确定；stopped 确保 mock 调用完成后测试才结束，
+	// 避免 m.Finish() 与 Shutdown 内部 goroutine 竞态（原来靠 time.Sleep 兜底）。
+	release := make(chan struct{})
+	stopped := make(chan struct{})
+	server.EXPECT().GracefulStop().Do(func() {
+		<-release
+		close(stopped)
+	}).Times(1)
+
 	ctx, cancel = context.WithCancel(context.TODO())
 	cancel()
 
 	err = runner.Shutdown(ctx)
 	assert.NotNil(t, err)
-	time.Sleep(time.Second)
+	close(release)
+	<-stopped
 }
 
 func Test_grpcRunner_initServer(t *testing.T) {
