@@ -2883,10 +2883,21 @@ func (m *FavoriteSortRequest) validate(all bool) error {
 
 	var errors []error
 
-	if len(m.GetNamespaceIds()) < 1 {
+	if m.GetFirstId() <= 0 {
 		err := FavoriteSortRequestValidationError{
-			field:  "NamespaceIds",
-			reason: "value must contain at least 1 item(s)",
+			field:  "FirstId",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetSecondId() <= 0 {
+		err := FavoriteSortRequestValidationError{
+			field:  "SecondId",
+			reason: "value must be greater than 0",
 		}
 		if !all {
 			return err

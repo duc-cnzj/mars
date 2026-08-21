@@ -178,7 +178,7 @@ func (g *gitRepo) GetCommitPipeline(ctx context.Context, projectID int, branch, 
 
 // PipelineJobOptions 返回项目流水线的 stage/job 去重选项（供配置通过规则下拉）。
 func (g *gitRepo) PipelineJobOptions(ctx context.Context, projectID int, branch string) (stages []string, jobs []string, err error) {
-	ctx, span := tracer.Start(ctx, "gitRepo/PipelineJobOptions")
+	_, span := tracer.Start(ctx, "gitRepo/PipelineJobOptions")
 	defer func() { endSpan(span, err) }()
 	stages, jobs, err = g.gitServer().PipelineJobOptions(fmt.Sprintf("%d", projectID), branch)
 	if err != nil {

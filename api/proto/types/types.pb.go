@@ -597,21 +597,23 @@ func (x *ChangelogModel) GetDeletedAt() string {
 }
 
 type EventModel struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Action        EventActionType        `protobuf:"varint,2,opt,name=action,proto3,enum=types.EventActionType" json:"action,omitempty"`
-	Username      string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
-	Message       string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
-	Old           string                 `protobuf:"bytes,5,opt,name=old,proto3" json:"old,omitempty"`
-	New           string                 `protobuf:"bytes,6,opt,name=new,proto3" json:"new,omitempty"`
-	Duration      string                 `protobuf:"bytes,7,opt,name=duration,proto3" json:"duration,omitempty"`
-	FileId        int32                  `protobuf:"varint,8,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
-	File          *FileModel             `protobuf:"bytes,9,opt,name=file,proto3" json:"file,omitempty"`
-	EventAt       string                 `protobuf:"bytes,10,opt,name=event_at,json=eventAt,proto3" json:"event_at,omitempty"`
-	HasDiff       bool                   `protobuf:"varint,11,opt,name=has_diff,json=hasDiff,proto3" json:"has_diff,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,100,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     string                 `protobuf:"bytes,101,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	DeletedAt     string                 `protobuf:"bytes,102,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Id       int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Action   EventActionType        `protobuf:"varint,2,opt,name=action,proto3,enum=types.EventActionType" json:"action,omitempty"`
+	Username string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
+	Message  string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
+	Old      string                 `protobuf:"bytes,5,opt,name=old,proto3" json:"old,omitempty"`
+	New      string                 `protobuf:"bytes,6,opt,name=new,proto3" json:"new,omitempty"`
+	Duration string                 `protobuf:"bytes,7,opt,name=duration,proto3" json:"duration,omitempty"`
+	FileId   int32                  `protobuf:"varint,8,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	File     *FileModel             `protobuf:"bytes,9,opt,name=file,proto3" json:"file,omitempty"`
+	EventAt  string                 `protobuf:"bytes,10,opt,name=event_at,json=eventAt,proto3" json:"event_at,omitempty"`
+	HasDiff  bool                   `protobuf:"varint,11,opt,name=has_diff,json=hasDiff,proto3" json:"has_diff,omitempty"`
+	// 操作人邮箱：admin 全量可见，普通登录用户 List 只返回本人事件（归属过滤），Show 越权返回 404
+	OperatorEmail string `protobuf:"bytes,12,opt,name=operator_email,json=operatorEmail,proto3" json:"operator_email,omitempty"`
+	CreatedAt     string `protobuf:"bytes,100,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     string `protobuf:"bytes,101,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	DeletedAt     string `protobuf:"bytes,102,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -721,6 +723,13 @@ func (x *EventModel) GetHasDiff() bool {
 		return x.HasDiff
 	}
 	return false
+}
+
+func (x *EventModel) GetOperatorEmail() string {
+	if x != nil {
+		return x.OperatorEmail
+	}
+	return ""
 }
 
 func (x *EventModel) GetCreatedAt() string {
@@ -1827,7 +1836,7 @@ const file_proto_types_types_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18e \x01(\tR\tupdatedAt\x12\x1d\n" +
 	"\n" +
-	"deleted_at\x18f \x01(\tR\tdeletedAt\"\x94\x03\n" +
+	"deleted_at\x18f \x01(\tR\tdeletedAt\"\xbb\x03\n" +
 	"\n" +
 	"EventModel\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12.\n" +
@@ -1841,7 +1850,8 @@ const file_proto_types_types_proto_rawDesc = "" +
 	"\x04file\x18\t \x01(\v2\x10.types.FileModelR\x04file\x12\x19\n" +
 	"\bevent_at\x18\n" +
 	" \x01(\tR\aeventAt\x12\x19\n" +
-	"\bhas_diff\x18\v \x01(\bR\ahasDiff\x12\x1d\n" +
+	"\bhas_diff\x18\v \x01(\bR\ahasDiff\x12%\n" +
+	"\x0eoperator_email\x18\f \x01(\tR\roperatorEmail\x12\x1d\n" +
 	"\n" +
 	"created_at\x18d \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +

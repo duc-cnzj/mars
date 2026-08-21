@@ -219,6 +219,7 @@ func (cb *containerBiz) Exec(ctx context.Context, stream ExecStream, user *UserI
 			cb.eventBiz.FileAuditLogWithDuration(
 				types.EventActionType_Exec,
 				r.User().Name,
+				r.User().Email,
 				fmt.Sprintf("[Exec]: 用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.Container().Container, r.Container().Namespace, r.Container().Pod),
 				fid,
 				r.Duration(),
@@ -393,6 +394,7 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 	cb.eventBiz.AuditLogWithChange(
 		types.EventActionType_Exec,
 		user.Name,
+		user.Email,
 		fmt.Sprintf("[ExecOnce]: 用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", co, input.Namespace, input.Pod),
 		nil,
 		AnyYamlPrettier{

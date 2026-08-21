@@ -37,6 +37,7 @@ func Test_repoSvc_Clone_Success(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Create,
 		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
 		gomock.Any(),
 		gomock.Not(nil),
 	)
@@ -124,6 +125,7 @@ func TestRepoSvc_Create_Success(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Create,
 		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
 		gomock.Any(),
 		gomock.Not(nil),
 	)
@@ -180,6 +182,7 @@ func TestRepoSvc_Delete_Success(t *testing.T) {
 	}
 	eventRepo.EXPECT().AuditLogWithRequest(types.EventActionType_Delete,
 		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
 		gomock.Any(),
 		req,
 	)
@@ -317,6 +320,7 @@ func TestRepoSvc_ToggleEnabled_Success(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Update,
 		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
 		gomock.Any(),
 		req,
 	)
@@ -373,6 +377,7 @@ func TestRepoSvc_Update_Success(t *testing.T) {
 
 	eventRepo.EXPECT().AuditLogWithChange(types.EventActionType_Update,
 		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
 		gomock.Any(),
 		gomock.Not(nil),
 		gomock.Not(nil),

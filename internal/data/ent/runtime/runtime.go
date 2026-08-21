@@ -162,18 +162,24 @@ func init() {
 	event.DefaultUsername = eventDescUsername.Default.(string)
 	// event.UsernameValidator is a validator for the "username" field. It is called by the builders before save.
 	event.UsernameValidator = eventDescUsername.Validators[0].(func(string) error)
+	// eventDescOperatorEmail is the schema descriptor for operator_email field.
+	eventDescOperatorEmail := eventFields[2].Descriptor()
+	// event.DefaultOperatorEmail holds the default value on creation for the operator_email field.
+	event.DefaultOperatorEmail = eventDescOperatorEmail.Default.(string)
+	// event.OperatorEmailValidator is a validator for the "operator_email" field. It is called by the builders before save.
+	event.OperatorEmailValidator = eventDescOperatorEmail.Validators[0].(func(string) error)
 	// eventDescMessage is the schema descriptor for message field.
-	eventDescMessage := eventFields[2].Descriptor()
+	eventDescMessage := eventFields[3].Descriptor()
 	// event.DefaultMessage holds the default value on creation for the message field.
 	event.DefaultMessage = eventDescMessage.Default.(string)
 	// event.MessageValidator is a validator for the "message" field. It is called by the builders before save.
 	event.MessageValidator = eventDescMessage.Validators[0].(func(string) error)
 	// eventDescHasDiff is the schema descriptor for has_diff field.
-	eventDescHasDiff := eventFields[5].Descriptor()
+	eventDescHasDiff := eventFields[6].Descriptor()
 	// event.DefaultHasDiff holds the default value on creation for the has_diff field.
 	event.DefaultHasDiff = eventDescHasDiff.Default.(bool)
 	// eventDescDuration is the schema descriptor for duration field.
-	eventDescDuration := eventFields[6].Descriptor()
+	eventDescDuration := eventFields[7].Descriptor()
 	// event.DefaultDuration holds the default value on creation for the duration field.
 	event.DefaultDuration = eventDescDuration.Default.(string)
 	favoriteFields := schema.Favorite{}.Fields()

@@ -446,52 +446,96 @@ func (repo *namespaceRepo) Favorite(ctx context.Context, input *biz.FavoriteName
 		Exec(ctx), "favorite namespace")
 }
 
-// FavoriteSort 整体重排关注列表：按传入的有序 namespace id 回填该用户的 sort_order（0,1,2,…）。
-// 事务内按 email 条件逐行更新——非该用户的关注行不会被触碰，越权写他人空间天然被隔离。
-// 传入列表必须为该用户全部有效关注空间：半程重排会静默破坏排序，故先校验数量/成员/重复后再回填。
-func (repo *namespaceRepo) FavoriteSort(ctx context.Context, email string, orderedNamespaceIDs []int) (err error) {
+// FavoriteSort 把 firstID 关注空间移动到 secondID 所在位置，中间元素 sort_order 整体顺移。
+// 两个 id 必须都是该用户的关注空间；相同 id（firstID==secondID）视为无效请求直接拒绝，
+// 避免半程移动静默破坏排序。事务内按 email+namespace_id 精确更新，越权写他人空间天然被隔离。
+func (repo *namespaceRepo) FavoriteSort(ctx context.Context, email string, firstID, secondID int) (err error) {
 	ctx, span := tracer.Start(ctx, "namespaceRepo/FavoriteSort")
 	defer func() { endSpan(span, err) }()
 	return errs.Wrap(repo.data.WithTx(ctx, func(tx *ent.Tx) error {
-		userFavs, err := tx.Favorite.Query().
-			Where(favorite.Email(email)).
-			Select(favorite.FieldNamespaceID).
+		if firstID == secondID {
+			return errs.WrapInvalidArgument(fmt.Errorf("两个空间 id 不能相同"), "favorite sort")
+		}
+		favs, err := tx.Favorite.Query().
+			Where(favorite.Email(email), favorite.NamespaceIDIn(firstID, secondID)).
 			All(ctx)
 		// DB 查询失败（防御分支：SQLite 无法确定性触发）。
 		if err != nil {
 			return err
 		}
-		// 已删除空间的关注行 namespace_id 为 0（FK SetNull），前端列表不可见，不计入校验集。
-		userIDs := make(map[int]struct{}, len(userFavs))
-		for _, f := range userFavs {
-			if f.NamespaceID > 0 {
-				userIDs[f.NamespaceID] = struct{}{}
-			}
+		if len(favs) != 2 {
+			return errs.WrapInvalidArgument(fmt.Errorf("关注列表必须同时包含这两个空间（实际命中 %d 个）", len(favs)), "favorite sort")
 		}
-		if len(userIDs) != len(orderedNamespaceIDs) {
-			return errs.WrapInvalidArgument(fmt.Errorf("排序列表必须为该用户全部 %d 个关注空间（实际 %d 个）", len(userIDs), len(orderedNamespaceIDs)), "favorite sort")
+		var orderA, orderB int
+		for _, f := range favs {
+			// 命中 firstID 即记录并继续，剩余必为 secondID（guard clause 替代 else）。
+			if f.NamespaceID == firstID {
+				orderA = f.SortOrder
+				continue
+			}
+			orderB = f.SortOrder
 		}
-		seen := make(map[int]struct{}, len(orderedNamespaceIDs))
-		for i, nsID := range orderedNamespaceIDs {
-			if _, ok := userIDs[nsID]; !ok {
-				return errs.WrapInvalidArgument(fmt.Errorf("排序列表包含非该用户的关注空间 id=%d", nsID), "favorite sort")
-			}
-			if _, dup := seen[nsID]; dup {
-				return errs.WrapInvalidArgument(fmt.Errorf("排序列表包含重复 id=%d", nsID), "favorite sort")
-			}
-			seen[nsID] = struct{}{}
-			if err := tx.Favorite.
-				Update().
-				Where(
-					favorite.Email(email),
-					favorite.NamespaceID(nsID),
-				).
-				SetSortOrder(i).
-				Exec(ctx); err != nil {
-				// DB 写入失败（防御分支：SQLite 无法确定性触发）。
+		// 两空间 sort_order 相同（历史迁移全 0 / 手工改库重复序）：区间顺移缺位置信息，
+		// 先在事务内把该用户关注按 (sort_order, id) 稳定序重排为 0..N，再重读两空间落位。
+		// 懒修复随首次拖拽触发，不随系统启动扫描全表。
+		if orderA == orderB {
+			if err := renumberFavoriteSortOrders(ctx, tx, email); err != nil {
 				return err
 			}
+			fresh, err := tx.Favorite.Query().
+				Where(favorite.Email(email), favorite.NamespaceIDIn(firstID, secondID)).
+				All(ctx)
+			if err != nil {
+				return err
+			}
+			for _, f := range fresh {
+				if f.NamespaceID == firstID {
+					orderA = f.SortOrder
+					continue
+				}
+				orderB = f.SortOrder
+			}
 		}
-		return nil
+		// 区间顺移统一表达，避免 if/else 双分支重复 UPDATE：此时必满足 orderA != orderB，
+		// 前移（A<B）区间 [A+1, B] 减 1，后移（A>B）区间 [B, A-1] 加 1，方向由 delta 表达。
+		lower, upper, delta := orderA+1, orderB, -1
+		if orderA > orderB {
+			lower, upper, delta = orderB, orderA-1, 1
+		}
+		if err := tx.Favorite.
+			Update().
+			Where(favorite.Email(email), favorite.SortOrderGTE(lower), favorite.SortOrderLTE(upper)).
+			AddSortOrder(delta).
+			Exec(ctx); err != nil {
+			// DB 写入失败（防御分支：SQLite 无法确定性触发）。
+			return err
+		}
+		return tx.Favorite.
+			Update().
+			Where(favorite.Email(email), favorite.NamespaceID(firstID)).
+			SetSortOrder(orderB).
+			Exec(ctx)
 	}), "favorite sort")
+}
+
+// renumberFavoriteSortOrders 把该用户全部关注按 (sort_order, id) 稳定序重排为 0..N。
+// 仅在 FavoriteSort 发现两空间 sort_order 相同（历史迁移全 0 / 手工改库重复序，区间顺移
+// 缺位置信息）时懒触发，事务内幂等执行；不随系统启动扫描全表。
+func renumberFavoriteSortOrders(ctx context.Context, tx *ent.Tx, email string) error {
+	userFavs, err := tx.Favorite.Query().
+		Where(favorite.Email(email)).
+		Order(ent.Asc(favorite.FieldSortOrder), ent.Asc(favorite.FieldID)).
+		All(ctx)
+	if err != nil {
+		return err
+	}
+	for i, f := range userFavs {
+		if f.SortOrder == i {
+			continue
+		}
+		if err := tx.Favorite.UpdateOneID(f.ID).SetSortOrder(i).Exec(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
 }

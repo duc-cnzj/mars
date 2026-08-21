@@ -140,6 +140,7 @@ func TestNamespaceSvc_Create_Success(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Create,
 		"admin",
+		adminEmail,
 		gomock.Any(),
 		req,
 	)
@@ -167,7 +168,7 @@ func TestNamespaceSvc_Create_FavoriteError(t *testing.T) {
 	nsRepo.EXPECT().Favorite(gomock.Any(), gomock.Any()).Return(errors.New("favorite boom"))
 	eventRepo.EXPECT().Dispatch(biz.EventNamespaceCreated, gomock.Any())
 	req := &namespace.CreateRequest{Namespace: "namespace1"}
-	eventRepo.EXPECT().AuditLogWithRequest(types.EventActionType_Create, "admin", gomock.Any(), req)
+	eventRepo.EXPECT().AuditLogWithRequest(types.EventActionType_Create, "admin", adminEmail, gomock.Any(), req)
 
 	res, err := svc.Create(newAdminUserCtx(), req)
 	assert.Nil(t, err)
@@ -273,6 +274,7 @@ func TestNamespaceSvc_Create_AlreadyExists_Adopt(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Create,
 		"admin",
+		adminEmail,
 		gomock.Any(),
 		req,
 	)
@@ -332,7 +334,7 @@ func TestNamespaceSvc_Delete_SecretError(t *testing.T) {
 	// DeleteSecret 失败只记录日志，不中断删除流程。
 	k8sRepo.EXPECT().DeleteSecret(gomock.Any(), "namespace1", "a").Return(errors.New("secret error"))
 	eventRepo.EXPECT().Dispatch(biz.EventNamespaceDeleted, biz.NamespaceDeletedData{ID: 1})
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", adminEmail, gomock.Any(), gomock.Any())
 	k8sRepo.EXPECT().DeleteNamespace(gomock.Any(), "namespace1").Return(nil)
 	k8sRepo.EXPECT().GetNamespace(gomock.Any(), "namespace1").Return(nil, k8sapierrors.NewNotFound(schema.GroupResource{Resource: "namespaces"}, "namespace1"))
 	nsRepo.EXPECT().Delete(gomock.Any(), 1).Return(nil)
@@ -373,7 +375,7 @@ func TestNamespaceSvc_Delete_Success(t *testing.T) {
 	helmerRepo.EXPECT().Uninstall("projA", "namespace1", gomock.Any()).Return(nil)
 	helmerRepo.EXPECT().Uninstall("projB", "namespace1", gomock.Any()).Return(nil)
 	eventRepo.EXPECT().Dispatch(biz.EventNamespaceDeleted, biz.NamespaceDeletedData{ID: 1})
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", adminEmail, gomock.Any(), gomock.Any())
 	k8sRepo.EXPECT().DeleteNamespace(gomock.Any(), "namespace1").Return(nil)
 	k8sRepo.EXPECT().GetNamespace(gomock.Any(), "namespace1").Return(nil, k8sapierrors.NewNotFound(schema.GroupResource{Resource: "namespaces"}, "namespace1"))
 	nsRepo.EXPECT().Delete(gomock.Any(), 1).Return(nil)
@@ -440,6 +442,7 @@ func TestNamespaceSvc_Favorite_Success(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Update,
 		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
 		"用户关注项目空间: namespace1",
 		req,
 	)
@@ -474,13 +477,14 @@ func TestNamespaceSvc_FavoriteSort_Success(t *testing.T) {
 	nsRepo := mocks.nsRepo
 	eventRepo := mocks.eventRepo
 
-	nsRepo.EXPECT().FavoriteSort(gomock.Any(), adminEmail, []int{3, 1, 2}).Return(nil)
+	nsRepo.EXPECT().FavoriteSort(gomock.Any(), adminEmail, 3, 1).Return(nil)
 
-	req := &namespace.FavoriteSortRequest{NamespaceIds: []int32{3, 1, 2}}
+	req := &namespace.FavoriteSortRequest{FirstId: 3, SecondId: 1}
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Update,
 		biz.MustGetUser(newAdminUserCtx()).Name,
-		"用户重排关注列表",
+		biz.MustGetUser(newAdminUserCtx()).Email,
+		"用户调整关注列表排序",
 		req,
 	)
 
@@ -493,9 +497,9 @@ func TestNamespaceSvc_FavoriteSort_Error(t *testing.T) {
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
-	nsRepo.EXPECT().FavoriteSort(gomock.Any(), adminEmail, []int{3, 1, 2}).Return(errors.New("boom"))
+	nsRepo.EXPECT().FavoriteSort(gomock.Any(), adminEmail, 3, 1).Return(errors.New("boom"))
 
-	res, err := svc.FavoriteSort(newAdminUserCtx(), &namespace.FavoriteSortRequest{NamespaceIds: []int32{3, 1, 2}})
+	res, err := svc.FavoriteSort(newAdminUserCtx(), &namespace.FavoriteSortRequest{FirstId: 3, SecondId: 1})
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
 }
@@ -650,7 +654,7 @@ func Test_namespaceSvc_UpdateDesc(t *testing.T) {
 		Name:        "namespace1",
 		Description: "new desc",
 	}, nil)
-	eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), "admin", gomock.Any(), gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), "admin", adminEmail, gomock.Any(), gomock.Any(), gomock.Any())
 
 	res, err := svc.UpdateDesc(newAdminUserCtx(), &namespace.UpdateDescRequest{
 		Id:   1,
@@ -780,7 +784,7 @@ func Test_namespaceSvc_SyncMembers(t *testing.T) {
 	nsRepo.EXPECT().SyncMembers(gomock.Any(), gomock.Any(), gomock.Any()).Return(&biz.Namespace{}, nil)
 
 	nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{CreatorEmail: "user@mars.com"}, nil)
-	eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	ns, err = svc.SyncMembers(newOtherUserCtx(), &namespace.SyncMembersRequest{
 		Id:     1,
 		Emails: []string{"a"},
@@ -810,7 +814,7 @@ func Test_namespaceSvc_UpdatePrivate(t *testing.T) {
 	assert.Nil(t, ns)
 	assert.Error(t, err)
 
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{CreatorEmail: "user@mars.com"}, nil)
 	nsRepo.EXPECT().UpdatePrivate(gomock.Any(), gomock.Any(), gomock.Any()).Return(&biz.Namespace{}, nil)
 	ns, err = svc.UpdatePrivate(newOtherUserCtx(), &namespace.UpdatePrivateRequest{
@@ -841,7 +845,7 @@ func Test_namespaceSvc_UpdateConfig(t *testing.T) {
 	assert.Equal(t, "x", err.Error())
 
 	// owner 成功 → 审计 + 返回 item
-	eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{CreatorEmail: "user@mars.com"}, nil)
 	nsRepo.EXPECT().UpdateConfig(gomock.Any(), gomock.Any()).Return(&biz.Namespace{}, nil)
 	ns, err = svc.UpdateConfig(newOtherUserCtx(), &namespace.UpdateConfigRequest{Id: 1})
@@ -888,6 +892,7 @@ func Test_namespaceSvc_Transfer(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Update,
 		biz.MustGetUser(newOtherUserCtx()).Name,
+		biz.MustGetUser(newOtherUserCtx()).Email,
 		"转让项目空间给: a",
 		req,
 	)
@@ -948,7 +953,7 @@ func TestNamespaceSvc_Create_CreateDockerSecretError(t *testing.T) {
 	}).Return(nil)
 	eventRepo.EXPECT().Dispatch(biz.EventNamespaceCreated, gomock.Any())
 	req := &namespace.CreateRequest{Namespace: "namespace1"}
-	eventRepo.EXPECT().AuditLogWithRequest(types.EventActionType_Create, "admin", gomock.Any(), req)
+	eventRepo.EXPECT().AuditLogWithRequest(types.EventActionType_Create, "admin", adminEmail, gomock.Any(), req)
 
 	res, err := svc.Create(newAdminUserCtx(), req)
 	assert.Nil(t, err)
@@ -998,7 +1003,7 @@ func TestNamespaceSvc_Delete_UninstallError(t *testing.T) {
 	k8sRepo.EXPECT().GetNamespace(gomock.Any(), "namespace1").Return(nil, k8sapierrors.NewNotFound(schema.GroupResource{Resource: "namespaces"}, "namespace1"))
 	nsRepo.EXPECT().Delete(gomock.Any(), 1).Return(nil)
 	eventRepo.EXPECT().Dispatch(biz.EventNamespaceDeleted, biz.NamespaceDeletedData{ID: 1})
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", adminEmail, gomock.Any(), gomock.Any())
 
 	res, err := svc.Delete(newAdminUserCtx(), &namespace.DeleteRequest{Id: 1})
 	assert.Nil(t, err)
@@ -1051,7 +1056,7 @@ func TestNamespaceSvc_Delete_DeleteNamespaceNotFoundIsClean(t *testing.T) {
 		Return(nil, k8sapierrors.NewNotFound(schema.GroupResource{Resource: "namespaces"}, "namespace1"))
 	nsRepo.EXPECT().Delete(gomock.Any(), 1).Return(nil)
 	eventRepo.EXPECT().Dispatch(biz.EventNamespaceDeleted, biz.NamespaceDeletedData{ID: 1})
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", adminEmail, gomock.Any(), gomock.Any())
 
 	res, err := svc.Delete(newAdminUserCtx(), &namespace.DeleteRequest{Id: 1})
 	assert.Nil(t, err)
@@ -1086,7 +1091,7 @@ func TestNamespaceSvc_Delete_Timer(t *testing.T) {
 	k8sRepo.EXPECT().GetNamespace(gomock.Any(), "namespace1").Return(&corev1.Namespace{}, nil).AnyTimes()
 	nsRepo.EXPECT().Delete(gomock.Any(), 1).Return(nil)
 	eventRepo.EXPECT().Dispatch(biz.EventNamespaceDeleted, biz.NamespaceDeletedData{ID: 1})
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", adminEmail, gomock.Any(), gomock.Any())
 
 	start := time.Now()
 	res, err := svc.Delete(newAdminUserCtx(), &namespace.DeleteRequest{Id: 1})
@@ -1109,7 +1114,7 @@ func TestNamespaceSvc_Delete_TransientErrorContinuesPolling(t *testing.T) {
 	k8sRepo.EXPECT().DeleteNamespace(gomock.Any(), "namespace1").Return(nil)
 	nsRepo.EXPECT().Delete(gomock.Any(), 1).Return(nil)
 	eventRepo.EXPECT().Dispatch(biz.EventNamespaceDeleted, biz.NamespaceDeletedData{ID: 1})
-	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", gomock.Any(), gomock.Any())
+	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), "admin", adminEmail, gomock.Any(), gomock.Any())
 
 	injectFastNamespaceDeletePolling(t)
 	calls := 0

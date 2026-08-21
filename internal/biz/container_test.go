@@ -132,15 +132,15 @@ func (f *fakeFileBizForContainer) NewRecorder(user *UserInfo, container *Contain
 // fakeEventBizForContainer 只覆写 Exec/ExecOnce 用到的两个审计方法。
 type fakeEventBizForContainer struct {
 	EventBiz
-	fileAudit func(action types.EventActionType, username, msg string, fileID int, duration time.Duration)
-	audit     func(action types.EventActionType, username, msg string, oldS, newS YamlPrettier)
+	fileAudit func(action types.EventActionType, username, operatorEmail, msg string, fileID int, duration time.Duration)
+	audit     func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier)
 }
 
-func (f *fakeEventBizForContainer) FileAuditLogWithDuration(action types.EventActionType, username, msg string, fileID int, duration time.Duration) {
-	f.fileAudit(action, username, msg, fileID, duration)
+func (f *fakeEventBizForContainer) FileAuditLogWithDuration(action types.EventActionType, username, operatorEmail, msg string, fileID int, duration time.Duration) {
+	f.fileAudit(action, username, operatorEmail, msg, fileID, duration)
 }
-func (f *fakeEventBizForContainer) AuditLogWithChange(action types.EventActionType, username, msg string, oldS, newS YamlPrettier) {
-	f.audit(action, username, msg, oldS, newS)
+func (f *fakeEventBizForContainer) AuditLogWithChange(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {
+	f.audit(action, username, operatorEmail, msg, oldS, newS)
 }
 
 // fakeRecorderForContainer 实现 Recorder 全部方法，供审计路径读 File/User/Duration。
@@ -380,7 +380,7 @@ func TestContainerBiz_Exec_SuccessExitError(t *testing.T) {
 	reco := &fakeRecorderForContainer{user: &UserInfo{Name: "mars"}, file: &File{ID: 1}, dur: time.Second}
 	file := &fakeFileBizForContainer{recorder: func(u *UserInfo, c *Container) Recorder { return reco }}
 	var audited bool
-	event := &fakeEventBizForContainer{fileAudit: func(action types.EventActionType, username, msg string, fileID int, duration time.Duration) {
+	event := &fakeEventBizForContainer{fileAudit: func(action types.EventActionType, username, operatorEmail, msg string, fileID int, duration time.Duration) {
 		audited = true
 		assert.Equal(t, types.EventActionType_Exec, action)
 		assert.Equal(t, "mars", username)
@@ -425,7 +425,7 @@ func TestContainerBiz_Exec_FirstMessageWriteError(t *testing.T) {
 	reco := &fakeRecorderForContainer{user: &UserInfo{Name: "mars"}, file: &File{ID: 1}, dur: time.Second}
 	file := &fakeFileBizForContainer{recorder: func(u *UserInfo, c *Container) Recorder { return reco }}
 	var audited bool
-	event := &fakeEventBizForContainer{fileAudit: func(action types.EventActionType, username, msg string, fileID int, duration time.Duration) {
+	event := &fakeEventBizForContainer{fileAudit: func(action types.EventActionType, username, operatorEmail, msg string, fileID int, duration time.Duration) {
 		audited = true
 	}}
 	cb := newTestContainerBiz(k, file, event)
@@ -469,7 +469,8 @@ func TestContainerBiz_Exec_SendError(t *testing.T) {
 	}
 	reco := &fakeRecorderForContainer{user: &UserInfo{Name: "mars"}, file: &File{ID: 1}, dur: time.Second}
 	file := &fakeFileBizForContainer{recorder: func(u *UserInfo, c *Container) Recorder { return reco }}
-	event := &fakeEventBizForContainer{fileAudit: func(action types.EventActionType, username, msg string, fileID int, duration time.Duration) {}}
+	event := &fakeEventBizForContainer{fileAudit: func(action types.EventActionType, username, operatorEmail, msg string, fileID int, duration time.Duration) {
+	}}
 	cb := newTestContainerBiz(k, file, event)
 	// recvGate 拖住 recv loop：否则 seq 耗尽后 recv loop 先 closeAll 关 pipe，
 	// execFn 写的字节落入已关管道，send loop 走 EOF 分支，发送失败分支永不可达。
@@ -535,7 +536,7 @@ func TestContainerBiz_ExecOnce_Success(t *testing.T) {
 		},
 	}
 	var captured AnyYamlPrettier
-	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, msg string, oldS, newS YamlPrettier) {
+	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {
 		assert.Equal(t, types.EventActionType_Exec, action)
 		assert.Equal(t, "admin", username)
 		assert.Nil(t, oldS)
@@ -568,7 +569,7 @@ func TestContainerBiz_ExecOnce_ExitError(t *testing.T) {
 		},
 	}
 	var captured AnyYamlPrettier
-	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, msg string, oldS, newS YamlPrettier) {
+	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {
 		captured, _ = newS.(AnyYamlPrettier)
 	}}
 	cb := newTestContainerBiz(k, &fakeFileBizForContainer{}, event)
@@ -595,7 +596,7 @@ func TestContainerBiz_ExecOnce_SendError(t *testing.T) {
 			return &ExecExitError{Code: 1}
 		},
 	}
-	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, msg string, oldS, newS YamlPrettier) {}}
+	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {}}
 	cb := newTestContainerBiz(k, &fakeFileBizForContainer{}, event)
 	stream := &fakeExecOnceStream{sendErr: errors.New("send boom")}
 	err := cb.ExecOnce(context.Background(), stream, &UserInfo{Name: "admin"}, &ExecOnceInput{

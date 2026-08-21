@@ -20,6 +20,7 @@ func (Event) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int32("action").GoType(types.EventActionType(0)).Default(0),
 		field.String("username").MaxLen(255).Default("").Comment("用户名称"),
+		field.String("operator_email").MaxLen(255).Default("").Comment("操作人邮箱，用于普通用户我的事件归属过滤"),
 		field.String("message").MaxLen(255).Default(""),
 		field.String("old").
 			SchemaType(map[string]string{
@@ -51,6 +52,7 @@ func (Event) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("action"),
 		index.Fields("username", "created_at"),
+		index.Fields("operator_email", "created_at"),
 	}
 }
 func (Event) Mixin() []ent.Mixin {

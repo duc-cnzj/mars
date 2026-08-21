@@ -164,7 +164,7 @@ func Test_projectSvc_Delete(t *testing.T) {
 	req := &project.DeleteRequest{
 		Id: 1,
 	}
-	mocks.eventRepo.EXPECT().AuditLogWithRequest(types.EventActionType_Delete, biz.MustGetUser(newAdminUserCtx()).Name, gomock.Any(), req)
+	mocks.eventRepo.EXPECT().AuditLogWithRequest(types.EventActionType_Delete, biz.MustGetUser(newAdminUserCtx()).Name, biz.MustGetUser(newAdminUserCtx()).Email, gomock.Any(), req)
 	mocks.eventRepo.EXPECT().Dispatch(biz.EventProjectDeleted, &biz.ProjectDeletedPayload{
 		NamespaceID: 1,
 		ProjectID:   2,
@@ -188,7 +188,7 @@ func Test_projectSvc_Delete_UninstallNotFound(t *testing.T) {
 		NamespaceID: 1,
 		Namespace:   &biz.Namespace{Name: "ns"},
 	}, nil)
-	mocks.eventRepo.EXPECT().AuditLogWithRequest(types.EventActionType_Delete, biz.MustGetUser(newAdminUserCtx()).Name, gomock.Any(), gomock.Any())
+	mocks.eventRepo.EXPECT().AuditLogWithRequest(types.EventActionType_Delete, biz.MustGetUser(newAdminUserCtx()).Name, biz.MustGetUser(newAdminUserCtx()).Email, gomock.Any(), gomock.Any())
 	mocks.eventRepo.EXPECT().Dispatch(biz.EventProjectDeleted, &biz.ProjectDeletedPayload{NamespaceID: 1, ProjectID: 2})
 	mocks.projectRepo.EXPECT().Delete(gomock.Any(), 1).Return(nil)
 
@@ -251,7 +251,7 @@ func Test_projectSvc_Delete_Fail3(t *testing.T) {
 	mocks.helmerRepo.EXPECT().Uninstall(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mocks.projectRepo.EXPECT().Delete(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mocks.eventRepo.EXPECT().Dispatch(gomock.Any(), gomock.Any()).AnyTimes()
-	mocks.eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	mocks.eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	_, err := svc.Delete(newOtherUserCtx(), &project.DeleteRequest{
 		Id: 1,
 	})

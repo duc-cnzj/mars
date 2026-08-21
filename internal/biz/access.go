@@ -62,8 +62,8 @@ type AccessBiz interface {
 	// RequireFileAccess 是文件访问门卫：校验当前用户是否为文件所有者（Username
 	// 匹配）或 admin，否则 errs.ErrorPermissionDenied。文件可能含部署配置/执行记录等
 	// 敏感内容，只允许所有者或 admin 下载，防止枚举文件 ID 拖库。
-	// 注意与 gRPC file 服务 admin 门禁（RequireAdmin）是两条独立规则：HTTP 下载
-	// 放行所有者，gRPC 文件管理仅限 admin。
+	// HTTP 下载与 gRPC ShowRecords（回放会话）共用本门卫；其余 gRPC 文件管理
+	// （列表/磁盘信息/删除）仍走 Authorize 的 admin 门禁（RequireAdmin）。
 	RequireFileAccess(ctx context.Context, fil *File) error
 	// CanAccessNamespace 是纯布尔谓词：判定当前用户能否访问命名空间
 	// （admin/创建者/成员/公开空间放行），不映射错误。

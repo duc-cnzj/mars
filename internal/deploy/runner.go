@@ -572,6 +572,7 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 		j.eventRepo.AuditLogWithChange(
 			act,
 			j.user.Name,
+			j.user.Email,
 			fmt.Sprintf("%s 项目: %s/%s", act.String(), j.ns.Name, j.Project().Name),
 			oldConf, newConf)
 		j.messager.To(100)

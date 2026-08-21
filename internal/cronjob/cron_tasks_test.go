@@ -591,7 +591,7 @@ func TestTasks_CleanUploadFiles(t *testing.T) {
 	local.EXPECT().RemoveEmptyDir().Return(nil)
 
 	event := data.NewMockEventRepo(m)
-	event.EXPECT().AuditLogWithChange(types.EventActionType_Delete, "system", "删除未被记录的文件", gomock.Any(), nil)
+	event.EXPECT().AuditLogWithChange(types.EventActionType_Delete, "system", "", "删除未被记录的文件", gomock.Any(), nil)
 
 	repo := newTasksBase(m)
 	repo.timer = fakeTimer{now: now}

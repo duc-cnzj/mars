@@ -20,24 +20,26 @@ func TestFromEvent_NilInput(t *testing.T) {
 func TestFromEvent_ValidInput(t *testing.T) {
 	now := time.Now()
 	e := &biz.Event{
-		ID:        1,
-		CreatedAt: now,
-		UpdatedAt: now,
-		Action:    types.EventActionType_Delete,
-		Username:  "testUsername",
-		Message:   "testMessage",
-		Old:       "testOld",
-		New:       "testNew",
-		Duration:  "testDuration",
-		FileID:    nil,
-		HasDiff:   true,
-		File:      nil,
+		ID:            1,
+		CreatedAt:     now,
+		UpdatedAt:     now,
+		Action:        types.EventActionType_Delete,
+		Username:      "testUsername",
+		Message:       "testMessage",
+		Old:           "testOld",
+		New:           "testNew",
+		Duration:      "testDuration",
+		FileID:        nil,
+		HasDiff:       true,
+		File:          nil,
+		OperatorEmail: "duc@example.com",
 	}
 	result := transformer.FromEvent(e)
 	assert.NotNil(t, result)
 	assert.Equal(t, int32(1), result.Id)
 	assert.Equal(t, types.EventActionType_Delete, result.Action)
 	assert.Equal(t, "testUsername", result.Username)
+	assert.Equal(t, "duc@example.com", result.OperatorEmail)
 	assert.Equal(t, "testMessage", result.Message)
 	assert.Equal(t, "testOld", result.Old)
 	assert.Equal(t, "testNew", result.New)

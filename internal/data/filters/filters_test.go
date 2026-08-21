@@ -44,6 +44,29 @@ func TestIfStrEQ(t *testing.T) {
 	assert.Equal(t, "test2", x4[0].Name)
 }
 
+func TestIfStrEQPtr(t *testing.T) {
+	db := openTestDB(t)
+	db.Namespace.Create().SetName("test").SetCreatorEmail("a").SaveX(context.TODO())
+	db.Namespace.Create().SetName("test2").SetCreatorEmail("b").SaveX(context.TODO())
+
+	// nil 指针：不过滤，返回全部。
+	x := db.Namespace.Query().Where(IfStrEQPtr("creator_email")(nil)).AllX(context.TODO())
+	assert.Equal(t, 2, len(x))
+
+	// 非 nil 空串：与 IfStrEQ 语义一致，空串不过滤。
+	x2 := db.Namespace.Query().Where(IfStrEQPtr("creator_email")(lo.ToPtr(""))).AllX(context.TODO())
+	assert.Equal(t, 2, len(x2))
+
+	// 非 nil 非空：追加 field = *s 等值过滤。
+	x3 := db.Namespace.Query().Where(IfStrEQPtr("creator_email")(lo.ToPtr("a"))).AllX(context.TODO())
+	assert.Equal(t, 1, len(x3))
+	assert.Equal(t, "test", x3[0].Name)
+
+	// 无匹配值：返回空。
+	x4 := db.Namespace.Query().Where(IfStrEQPtr("creator_email")(lo.ToPtr("zzz"))).AllX(context.TODO())
+	assert.Equal(t, 0, len(x4))
+}
+
 func TestIfIntsIN(t *testing.T) {
 	db := openTestDB(t)
 	id1 := db.Namespace.Create().SetCreatorEmail("a").SetName("test").SaveX(context.TODO()).ID

@@ -29,6 +29,8 @@ type Event struct {
 	Action types.EventActionType `json:"action,omitempty"`
 	// 用户名称
 	Username string `json:"username,omitempty"`
+	// 操作人邮箱，用于普通用户我的事件归属过滤
+	OperatorEmail string `json:"operator_email,omitempty"`
 	// Message holds the value of the "message" field.
 	Message string `json:"message,omitempty"`
 	// Old holds the value of the "old" field.
@@ -76,7 +78,7 @@ func (*Event) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case event.FieldID, event.FieldAction, event.FieldFileID:
 			values[i] = new(sql.NullInt64)
-		case event.FieldUsername, event.FieldMessage, event.FieldOld, event.FieldNew, event.FieldDuration:
+		case event.FieldUsername, event.FieldOperatorEmail, event.FieldMessage, event.FieldOld, event.FieldNew, event.FieldDuration:
 			values[i] = new(sql.NullString)
 		case event.FieldCreatedAt, event.FieldUpdatedAt, event.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -131,6 +133,12 @@ func (_m *Event) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field username", values[i])
 			} else if value.Valid {
 				_m.Username = value.String
+			}
+		case event.FieldOperatorEmail:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field operator_email", values[i])
+			} else if value.Valid {
+				_m.OperatorEmail = value.String
 			}
 		case event.FieldMessage:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -226,6 +234,9 @@ func (_m *Event) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("username=")
 	builder.WriteString(_m.Username)
+	builder.WriteString(", ")
+	builder.WriteString("operator_email=")
+	builder.WriteString(_m.OperatorEmail)
 	builder.WriteString(", ")
 	builder.WriteString("message=")
 	builder.WriteString(_m.Message)

@@ -84,6 +84,7 @@ func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*r
 	r.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Create,
 		biz.MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Email,
 		fmt.Sprintf("创建仓库: %d: %s", create.ID, create.Name),
 		req,
 	)
@@ -126,6 +127,7 @@ func (r *repoSvc) Update(ctx context.Context, req *reposerver.UpdateRequest) (*r
 	r.eventBiz.AuditLogWithChange(
 		types.EventActionType_Update,
 		biz.MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Email,
 		fmt.Sprintf("更新仓库: %d: %s", create.ID, create.Name),
 		&biz.StringYamlPrettier{Str: string(old)},
 		&biz.StringYamlPrettier{Str: string(out)},
@@ -150,6 +152,7 @@ func (r *repoSvc) ToggleEnabled(ctx context.Context, request *reposerver.ToggleE
 	r.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Update,
 		biz.MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Email,
 		fmt.Sprintf("[repo 状态变动]: %s 仓库 %s", status, toggle.Name),
 		request,
 	)
@@ -168,6 +171,7 @@ func (r *repoSvc) Delete(ctx context.Context, request *reposerver.DeleteRequest)
 	r.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Delete,
 		biz.MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Email,
 		fmt.Sprintf("删除 repo: %d", request.Id),
 		request,
 	)
@@ -194,6 +198,7 @@ func (r *repoSvc) Clone(ctx context.Context, req *reposerver.CloneRequest) (*rep
 	r.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Create,
 		biz.MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Email,
 		fmt.Sprintf("克隆 repo: (id: %d, name: %s) -> (id: %d, name: %s)", show.ID, show.Name, clone.ID, clone.Name),
 		req,
 	)

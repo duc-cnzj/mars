@@ -94,6 +94,20 @@ func (_c *EventCreate) SetNillableUsername(v *string) *EventCreate {
 	return _c
 }
 
+// SetOperatorEmail sets the "operator_email" field.
+func (_c *EventCreate) SetOperatorEmail(v string) *EventCreate {
+	_c.mutation.SetOperatorEmail(v)
+	return _c
+}
+
+// SetNillableOperatorEmail sets the "operator_email" field if the given value is not nil.
+func (_c *EventCreate) SetNillableOperatorEmail(v *string) *EventCreate {
+	if v != nil {
+		_c.SetOperatorEmail(*v)
+	}
+	return _c
+}
+
 // SetMessage sets the "message" field.
 func (_c *EventCreate) SetMessage(v string) *EventCreate {
 	_c.mutation.SetMessage(v)
@@ -242,6 +256,10 @@ func (_c *EventCreate) defaults() error {
 		v := event.DefaultUsername
 		_c.mutation.SetUsername(v)
 	}
+	if _, ok := _c.mutation.OperatorEmail(); !ok {
+		v := event.DefaultOperatorEmail
+		_c.mutation.SetOperatorEmail(v)
+	}
 	if _, ok := _c.mutation.Message(); !ok {
 		v := event.DefaultMessage
 		_c.mutation.SetMessage(v)
@@ -274,6 +292,14 @@ func (_c *EventCreate) check() error {
 	if v, ok := _c.mutation.Username(); ok {
 		if err := event.UsernameValidator(v); err != nil {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "Event.username": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.OperatorEmail(); !ok {
+		return &ValidationError{Name: "operator_email", err: errors.New(`ent: missing required field "Event.operator_email"`)}
+	}
+	if v, ok := _c.mutation.OperatorEmail(); ok {
+		if err := event.OperatorEmailValidator(v); err != nil {
+			return &ValidationError{Name: "operator_email", err: fmt.Errorf(`ent: validator failed for field "Event.operator_email": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Message(); !ok {
@@ -336,6 +362,10 @@ func (_c *EventCreate) createSpec() (*Event, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Username(); ok {
 		_spec.SetField(event.FieldUsername, field.TypeString, value)
 		_node.Username = value
+	}
+	if value, ok := _c.mutation.OperatorEmail(); ok {
+		_spec.SetField(event.FieldOperatorEmail, field.TypeString, value)
+		_node.OperatorEmail = value
 	}
 	if value, ok := _c.mutation.Message(); ok {
 		_spec.SetField(event.FieldMessage, field.TypeString, value)
@@ -483,6 +513,18 @@ func (u *EventUpsert) SetUsername(v string) *EventUpsert {
 // UpdateUsername sets the "username" field to the value that was provided on create.
 func (u *EventUpsert) UpdateUsername() *EventUpsert {
 	u.SetExcluded(event.FieldUsername)
+	return u
+}
+
+// SetOperatorEmail sets the "operator_email" field.
+func (u *EventUpsert) SetOperatorEmail(v string) *EventUpsert {
+	u.Set(event.FieldOperatorEmail, v)
+	return u
+}
+
+// UpdateOperatorEmail sets the "operator_email" field to the value that was provided on create.
+func (u *EventUpsert) UpdateOperatorEmail() *EventUpsert {
+	u.SetExcluded(event.FieldOperatorEmail)
 	return u
 }
 
@@ -688,6 +730,20 @@ func (u *EventUpsertOne) SetUsername(v string) *EventUpsertOne {
 func (u *EventUpsertOne) UpdateUsername() *EventUpsertOne {
 	return u.Update(func(s *EventUpsert) {
 		s.UpdateUsername()
+	})
+}
+
+// SetOperatorEmail sets the "operator_email" field.
+func (u *EventUpsertOne) SetOperatorEmail(v string) *EventUpsertOne {
+	return u.Update(func(s *EventUpsert) {
+		s.SetOperatorEmail(v)
+	})
+}
+
+// UpdateOperatorEmail sets the "operator_email" field to the value that was provided on create.
+func (u *EventUpsertOne) UpdateOperatorEmail() *EventUpsertOne {
+	return u.Update(func(s *EventUpsert) {
+		s.UpdateOperatorEmail()
 	})
 }
 
@@ -1074,6 +1130,20 @@ func (u *EventUpsertBulk) SetUsername(v string) *EventUpsertBulk {
 func (u *EventUpsertBulk) UpdateUsername() *EventUpsertBulk {
 	return u.Update(func(s *EventUpsert) {
 		s.UpdateUsername()
+	})
+}
+
+// SetOperatorEmail sets the "operator_email" field.
+func (u *EventUpsertBulk) SetOperatorEmail(v string) *EventUpsertBulk {
+	return u.Update(func(s *EventUpsert) {
+		s.SetOperatorEmail(v)
+	})
+}
+
+// UpdateOperatorEmail sets the "operator_email" field to the value that was provided on create.
+func (u *EventUpsertBulk) UpdateOperatorEmail() *EventUpsertBulk {
+	return u.Update(func(s *EventUpsert) {
+		s.UpdateOperatorEmail()
 	})
 }
 

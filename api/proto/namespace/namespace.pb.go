@@ -1138,11 +1138,14 @@ func (x *TransferResponse) GetItem() *types.NamespaceModel {
 	return nil
 }
 
-// FavoriteSortRequest 整体重排关注列表。
-// namespace_ids 为该用户全部关注空间的有序 id 列表（拖拽后的新顺序）。
+// FavoriteSortRequest 把关注列表中的 first_id 移动到 second_id 所在位置，中间元素整体顺移。
+// 前端拖拽只需提交被移动与落点两个空间 id，无需全量重排。
 type FavoriteSortRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	NamespaceIds  []int32                `protobuf:"varint,1,rep,packed,name=namespace_ids,json=namespaceIds,proto3" json:"namespace_ids,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// 被移动的空间 id
+	FirstId int32 `protobuf:"varint,1,opt,name=first_id,json=firstId,proto3" json:"first_id,omitempty"`
+	// 移动目标位置的参照空间 id
+	SecondId      int32 `protobuf:"varint,2,opt,name=second_id,json=secondId,proto3" json:"second_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1177,11 +1180,18 @@ func (*FavoriteSortRequest) Descriptor() ([]byte, []int) {
 	return file_proto_namespace_namespace_proto_rawDescGZIP(), []int{22}
 }
 
-func (x *FavoriteSortRequest) GetNamespaceIds() []int32 {
+func (x *FavoriteSortRequest) GetFirstId() int32 {
 	if x != nil {
-		return x.NamespaceIds
+		return x.FirstId
 	}
-	return nil
+	return 0
+}
+
+func (x *FavoriteSortRequest) GetSecondId() int32 {
+	if x != nil {
+		return x.SecondId
+	}
+	return 0
 }
 
 type FavoriteSortResponse struct {
@@ -1293,10 +1303,11 @@ const file_proto_namespace_namespace_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\x125\n" +
 	"\x0fnew_admin_email\x18\x02 \x01(\tB\r\xe2A\x01\x02\xfaB\x06r\x04 \x01`\x01R\rnewAdminEmail\"=\n" +
 	"\x10TransferResponse\x12)\n" +
-	"\x04item\x18\x01 \x01(\v2\x15.types.NamespaceModelR\x04item\"D\n" +
-	"\x13FavoriteSortRequest\x12-\n" +
-	"\rnamespace_ids\x18\x01 \x03(\x05B\b\xfaB\x05\x92\x01\x02\b\x01R\fnamespaceIds\"\x16\n" +
-	"\x14FavoriteSortResponse2\x9b\r\n" +
+	"\x04item\x18\x01 \x01(\v2\x15.types.NamespaceModelR\x04item\"g\n" +
+	"\x13FavoriteSortRequest\x12&\n" +
+	"\bfirst_id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\afirstId\x12(\n" +
+	"\tsecond_id\x18\x02 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\bsecondId\"\x16\n" +
+	"\x14FavoriteSortResponse2\xb0\r\n" +
 	"\tNamespace\x12m\n" +
 	"\x04List\x12\x16.namespace.ListRequest\x1a\x17.namespace.ListResponse\"4\xbaG\x1a\x12\x18分页获取名称空间\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/namespaces\x12\x9d\x01\n" +
 	"\rUpdatePrivate\x12\x1f.namespace.UpdatePrivateRequest\x1a .namespace.UpdatePrivateResponse\"I\xbaG\x1d\x12\x1b修改空间的访问权限\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/api/namespaces/update_private\x12\x8f\x01\n" +
@@ -1308,8 +1319,8 @@ const file_proto_namespace_namespace_proto_rawDesc = "" +
 	"UpdateDesc\x12\x1c.namespace.UpdateDescRequest\x1a\x1d.namespace.UpdateDescResponse\"H\xbaG\x1a\x12\x18更新空间描述信息\x82\xd3\xe4\x93\x02%:\x01*\" /api/namespaces/{id}/update_desc\x12r\n" +
 	"\x06Delete\x12\x18.namespace.DeleteRequest\x1a\x19.namespace.DeleteResponse\"3\xbaG\x14\x12\x12删除名称空间\x82\xd3\xe4\x93\x02\x16*\x14/api/namespaces/{id}\x12\x89\x01\n" +
 	"\bIsExists\x12\x1a.namespace.IsExistsRequest\x1a\x1b.namespace.IsExistsResponse\"D\xbaG#\x12!IsExists 名称空间是否存在\x82\xd3\xe4\x93\x02\x18\"\x16/api/namespaces/exists\x12\x80\x01\n" +
-	"\bFavorite\x12\x1a.namespace.FavoriteRequest\x1a\x1b.namespace.FavoriteResponse\";\xbaG\x15\x12\x13关注/取消关注\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/namespaces/favorite\x12\x9c\x01\n" +
-	"\fFavoriteSort\x12\x1e.namespace.FavoriteSortRequest\x1a\x1f.namespace.FavoriteSortResponse\"K\xbaG \x12\x1e整体重排我的关注列表\x82\xd3\xe4\x93\x02\":\x01*\x1a\x1d/api/namespaces/favorite/sort\x12\x8b\x01\n" +
+	"\bFavorite\x12\x1a.namespace.FavoriteRequest\x1a\x1b.namespace.FavoriteResponse\";\xbaG\x15\x12\x13关注/取消关注\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/namespaces/favorite\x12\xb1\x01\n" +
+	"\fFavoriteSort\x12\x1e.namespace.FavoriteSortRequest\x1a\x1f.namespace.FavoriteSortResponse\"`\xbaG5\x123移动关注列表中一个空间到另一个位置\x82\xd3\xe4\x93\x02\":\x01*\x1a\x1d/api/namespaces/favorite/sort\x12\x8b\x01\n" +
 	"\bTransfer\x12\x1a.namespace.TransferRequest\x1a\x1b.namespace.TransferResponse\"F\xbaG \x12\x1e转让自己的空间给别人\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/namespaces/transferB;Z9github.com/duc-cnzj/mars/api/v6/proto/namespace;namespaceb\x06proto3"
 
 var (

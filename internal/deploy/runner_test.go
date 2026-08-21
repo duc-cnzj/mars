@@ -1865,7 +1865,7 @@ func Test_jobRunner_Run_Success(t *testing.T) {
 	projRepo.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Return(&biz.Project{}, nil)
 	eventRepo.EXPECT().Dispatch(biz.EventProjectChanged, gomock.Any())
 	eventRepo.EXPECT().AuditLogWithChange(
-		types.EventActionType_Update, "duc",
+		types.EventActionType_Update, "duc", "",
 		gomock.Any(), gomock.Any(),
 		gomock.Any())
 	msger.EXPECT().To(gomock.Any()).AnyTimes()
@@ -2076,7 +2076,7 @@ func Test_jobRunner_Run_DryRun(t *testing.T) {
 	k8sRepo.EXPECT().SplitManifests(gomock.Any())
 	k8sRepo.EXPECT().GetPodSelectorsByManifest(gomock.Any())
 	eventRepo.EXPECT().AuditLogWithChange(
-		types.EventActionType_DryRun, "duc",
+		types.EventActionType_DryRun, "duc", "",
 		gomock.Any(), gomock.Any(), gomock.Any())
 	msger.EXPECT().To(gomock.Any()).AnyTimes()
 

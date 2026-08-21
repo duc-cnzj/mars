@@ -569,10 +569,10 @@ func TestPtyHandler_Close(t *testing.T) {
 		logger:    mlog.NewForConfig(nil),
 	}
 	eventRepo.EXPECT().FileAuditLogWithDuration(
-		types.EventActionType_Shell, "duc",
+		types.EventActionType_Shell, "duc", "duc@x.com",
 		gomock.Not(nil), 1,
 		time.Second)
-	recorder.EXPECT().User().Return(&biz.UserInfo{Name: "duc"})
+	recorder.EXPECT().User().Return(&biz.UserInfo{Name: "duc", Email: "duc@x.com"}).AnyTimes()
 	recorder.EXPECT().Duration().Return(time.Second)
 	recorder.EXPECT().Container().Return(&biz.Container{}).AnyTimes()
 	recorder.EXPECT().File().Return(&biz.File{ID: 1})

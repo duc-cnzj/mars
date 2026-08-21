@@ -66,6 +66,7 @@ func TestAuthSvc_Login_Success(t *testing.T) {
 	eventRepo.EXPECT().AuditLog(
 		types.EventActionType_Login,
 		resp.UserInfo.Name,
+		resp.UserInfo.Email,
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", resp.UserInfo.Name, resp.UserInfo.Email),
 	)
 
@@ -119,6 +120,7 @@ func TestAuthSvc_Exchange_Success(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Login,
 		userinfo.Name,
+		userinfo.Email,
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", userinfo.Name, userinfo.Email),
 		gomock.Any(),
 	)

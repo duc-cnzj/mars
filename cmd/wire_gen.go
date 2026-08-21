@@ -142,9 +142,8 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 	}
 	fileServer := services.NewFileSvc(fileSvcDeps)
 	eventSvcDeps := services.EventSvcDeps{
-		Logger:    logger,
-		EventBiz:  eventBiz,
-		AccessBiz: accessBiz,
+		Logger:   logger,
+		EventBiz: eventBiz,
 	}
 	eventServer := services.NewEventSvc(eventSvcDeps)
 	endpointBiz := biz.NewEndpointBiz(logger, projectBiz, namespaceRepo)

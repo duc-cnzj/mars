@@ -3474,26 +3474,27 @@ func (m *DBCacheMutation) ResetEdge(name string) error {
 // EventMutation represents an operation that mutates the Event nodes in the graph.
 type EventMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	created_at    *time.Time
-	updated_at    *time.Time
-	deleted_at    *time.Time
-	action        *types.EventActionType
-	addaction     *types.EventActionType
-	username      *string
-	message       *string
-	old           *string
-	new           *string
-	has_diff      *bool
-	duration      *string
-	clearedFields map[string]struct{}
-	file          *int
-	clearedfile   bool
-	done          bool
-	oldValue      func(context.Context) (*Event, error)
-	predicates    []predicate.Event
+	op             Op
+	typ            string
+	id             *int
+	created_at     *time.Time
+	updated_at     *time.Time
+	deleted_at     *time.Time
+	action         *types.EventActionType
+	addaction      *types.EventActionType
+	username       *string
+	operator_email *string
+	message        *string
+	old            *string
+	new            *string
+	has_diff       *bool
+	duration       *string
+	clearedFields  map[string]struct{}
+	file           *int
+	clearedfile    bool
+	done           bool
+	oldValue       func(context.Context) (*Event, error)
+	predicates     []predicate.Event
 }
 
 var _ ent.Mutation = (*EventMutation)(nil)
@@ -3805,6 +3806,42 @@ func (m *EventMutation) OldUsername(ctx context.Context) (v string, err error) {
 // ResetUsername resets all changes to the "username" field.
 func (m *EventMutation) ResetUsername() {
 	m.username = nil
+}
+
+// SetOperatorEmail sets the "operator_email" field.
+func (m *EventMutation) SetOperatorEmail(s string) {
+	m.operator_email = &s
+}
+
+// OperatorEmail returns the value of the "operator_email" field in the mutation.
+func (m *EventMutation) OperatorEmail() (r string, exists bool) {
+	v := m.operator_email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOperatorEmail returns the old "operator_email" field's value of the Event entity.
+// If the Event object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventMutation) OldOperatorEmail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOperatorEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOperatorEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOperatorEmail: %w", err)
+	}
+	return oldValue.OperatorEmail, nil
+}
+
+// ResetOperatorEmail resets all changes to the "operator_email" field.
+func (m *EventMutation) ResetOperatorEmail() {
+	m.operator_email = nil
 }
 
 // SetMessage sets the "message" field.
@@ -4123,7 +4160,7 @@ func (m *EventMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, event.FieldCreatedAt)
 	}
@@ -4138,6 +4175,9 @@ func (m *EventMutation) Fields() []string {
 	}
 	if m.username != nil {
 		fields = append(fields, event.FieldUsername)
+	}
+	if m.operator_email != nil {
+		fields = append(fields, event.FieldOperatorEmail)
 	}
 	if m.message != nil {
 		fields = append(fields, event.FieldMessage)
@@ -4175,6 +4215,8 @@ func (m *EventMutation) Field(name string) (ent.Value, bool) {
 		return m.Action()
 	case event.FieldUsername:
 		return m.Username()
+	case event.FieldOperatorEmail:
+		return m.OperatorEmail()
 	case event.FieldMessage:
 		return m.Message()
 	case event.FieldOld:
@@ -4206,6 +4248,8 @@ func (m *EventMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldAction(ctx)
 	case event.FieldUsername:
 		return m.OldUsername(ctx)
+	case event.FieldOperatorEmail:
+		return m.OldOperatorEmail(ctx)
 	case event.FieldMessage:
 		return m.OldMessage(ctx)
 	case event.FieldOld:
@@ -4261,6 +4305,13 @@ func (m *EventMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUsername(v)
+		return nil
+	case event.FieldOperatorEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOperatorEmail(v)
 		return nil
 	case event.FieldMessage:
 		v, ok := value.(string)
@@ -4409,6 +4460,9 @@ func (m *EventMutation) ResetField(name string) error {
 		return nil
 	case event.FieldUsername:
 		m.ResetUsername()
+		return nil
+	case event.FieldOperatorEmail:
+		m.ResetOperatorEmail()
 		return nil
 	case event.FieldMessage:
 		m.ResetMessage()

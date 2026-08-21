@@ -668,7 +668,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** 整体重排我的关注列表 */
+        /** 移动关注列表中一个空间到另一个位置 */
         put: operations["Namespace_FavoriteSort"];
         post?: never;
         delete?: never;
@@ -1358,11 +1358,20 @@ export interface components {
         };
         "namespace.FavoriteResponse": Record<string, never>;
         /**
-         * @description FavoriteSortRequest 整体重排关注列表。
-         *      namespace_ids 为该用户全部关注空间的有序 id 列表（拖拽后的新顺序）。
+         * @description FavoriteSortRequest 把关注列表中的 first_id 移动到 second_id 所在位置，中间元素整体顺移。
+         *      前端拖拽只需提交被移动与落点两个空间 id，无需全量重排。
          */
         "namespace.FavoriteSortRequest": {
-            namespaceIds: number[];
+            /**
+             * Format: int32
+             * @description 被移动的空间 id
+             */
+            firstId: number;
+            /**
+             * Format: int32
+             * @description 移动目标位置的参照空间 id
+             */
+            secondId: number;
         };
         "namespace.FavoriteSortResponse": Record<string, never>;
         "namespace.IsExistsResponse": {
@@ -1648,6 +1657,8 @@ export interface components {
             file: components["schemas"]["types.FileModel"];
             eventAt: string;
             hasDiff: boolean;
+            /** @description 操作人邮箱：admin 全量可见，普通登录用户 List 只返回本人事件（归属过滤），Show 越权返回 404 */
+            operatorEmail: string;
             createdAt: string;
             updatedAt: string;
             deletedAt: string;

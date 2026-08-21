@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: api/v6.0.0-beta.6
+    version: ""
 paths:
     /api/access_tokens:
         get:
@@ -1190,7 +1190,7 @@ paths:
         put:
             tags:
                 - Namespace
-            summary: 整体重排我的关注列表
+            summary: 移动关注列表中一个空间到另一个位置
             operationId: Namespace_FavoriteSort
             requestBody:
                 content:
@@ -2463,16 +2463,22 @@ components:
             type: object
             properties: {}
         namespace.FavoriteSortRequest:
+            required:
+                - firstId
+                - secondId
             type: object
             properties:
-                namespaceIds:
-                    type: array
-                    items:
-                        type: integer
-                        format: int32
+                firstId:
+                    type: integer
+                    description: 被移动的空间 id
+                    format: int32
+                secondId:
+                    type: integer
+                    description: 移动目标位置的参照空间 id
+                    format: int32
             description: |-
-                FavoriteSortRequest 整体重排关注列表。
-                 namespace_ids 为该用户全部关注空间的有序 id 列表（拖拽后的新顺序）。
+                FavoriteSortRequest 把关注列表中的 first_id 移动到 second_id 所在位置，中间元素整体顺移。
+                 前端拖拽只需提交被移动与落点两个空间 id，无需全量重排。
         namespace.FavoriteSortResponse:
             type: object
             properties: {}
@@ -3014,6 +3020,9 @@ components:
                     type: string
                 hasDiff:
                     type: boolean
+                operatorEmail:
+                    type: string
+                    description: 操作人邮箱：admin 全量可见，普通登录用户 List 只返回本人事件（归属过滤），Show 越权返回 404
                 createdAt:
                     type: string
                 updatedAt:
