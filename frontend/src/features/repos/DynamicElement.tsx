@@ -1,0 +1,356 @@
+import { useTranslation } from 'react-i18next'
+import { GripVertical, Plus, X } from 'lucide-react'
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import type { components } from '../../api/schema'
+import { SearchableSelect } from '@/components/SearchableSelect'
+import { Button } from '@/components/ui/shadcn/button'
+import { Input } from '@/components/ui/shadcn/input'
+import { Textarea } from '@/components/ui/shadcn/textarea'
+import { SelectFileType } from './SelectFileType'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/shadcn/select'
+
+type Element = components['schemas']['mars.Element']
+
+/** 需要"选择器选项"的类型：default 必须命中其中一项（对齐旧版隐藏/校验逻辑） */
+export const SELECTIVE_TYPES = new Set([
+  'ElementTypeSelect',
+  'ElementTypeNumberSelect',
+  'ElementTypeRadio',
+  'ElementTypeNumberRadio',
+])
+
+/** 默认值必填的类型（对齐旧版 isDefaultRequired）；RepoFormModal 提交校验复用同一份 */
+export const DEFAULT_REQUIRED_TYPES = new Set([
+  'ElementTypeInputNumber',
+  'ElementTypeRadio',
+  'ElementTypeNumberRadio',
+  'ElementTypeSelect',
+  'ElementTypeNumberSelect',
+  'ElementTypeSwitch',
+])
+
+/** 类型下拉选项：value 为 schema 枚举字符串，label 走 i18n（as const 保住 key 字面量类型） */
+const ELEMENT_TYPE_KEYS = [
+  { value: 'ElementTypeUnknown', key: 'repos.elementTypeUnknown' },
+  { value: 'ElementTypeInput', key: 'repos.elementTypeInput' },
+  { value: 'ElementTypeInputNumber', key: 'repos.elementTypeInputNumber' },
+  { value: 'ElementTypeTextArea', key: 'repos.elementTypeTextArea' },
+  { value: 'ElementTypeRadio', key: 'repos.elementTypeRadio' },
+  { value: 'ElementTypeNumberRadio', key: 'repos.elementTypeNumberRadio' },
+  { value: 'ElementTypeSelect', key: 'repos.elementTypeSelect' },
+  { value: 'ElementTypeNumberSelect', key: 'repos.elementTypeNumberSelect' },
+  { value: 'ElementTypeSwitch', key: 'repos.elementTypeSwitch' },
+] as const
+
+const labelCls = 'text-[12px] font-medium text-mute'
+
+/**
+ * 自定义配置编辑器（还原旧版 DynamicElement）：mars.Config.elements 的增删/拖拽排序。
+ * 每个元素定义部署表单里的一个自定义参数：path / type / description / default / selectValues / order。
+ * 拖拽用 dnd-kit（旧版 react-beautiful-dnd 已停止维护）。
+ */
+export function DynamicElement({
+  value,
+  onChange,
+}: {
+  value: Element[]
+  onChange: (next: Element[]) => void
+}) {
+  const { t } = useTranslation()
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  )
+
+  const update = (i: number, patch: Partial<Element>) => {
+    const next = [...value]
+    next[i] = { ...next[i], ...patch }
+    onChange(next)
+  }
+
+  const add = () =>
+    onChange([
+      ...value,
+      {
+        path: '',
+        type: 'ElementTypeUnknown' as Element['type'],
+        default: '',
+        description: '',
+        selectValues: [],
+        order: value.length,
+        textareaLanguage: '',
+      },
+    ])
+
+  const remove = (i: number) =>
+    onChange(value.filter((_, idx) => idx !== i))
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return
+    const from = Number(String(active.id).replace('el-', ''))
+    const to = Number(String(over.id).replace('el-', ''))
+    if (Number.isNaN(from) || Number.isNaN(to)) return
+    const next = [...value]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    // 排序后刷新 order，保持与列表顺序一致
+    onChange(next.map((el, i) => ({ ...el, order: i })))
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+      >
+        <SortableContext
+          items={value.map((_, i) => `el-${i}`)}
+          strategy={verticalListSortingStrategy}
+        >
+          {value.map((el, i) => (
+            <SortableElementItem
+              key={`el-${i}`}
+              id={`el-${i}`}
+              element={el}
+              onChange={(patch) => update(i, patch)}
+              onRemove={() => remove(i)}
+            />
+          ))}
+        </SortableContext>
+      </DndContext>
+      <Button variant="outline" className="border-dashed" onClick={add}>
+        <Plus />
+        {t('repos.addElement')}
+      </Button>
+    </div>
+  )
+}
+
+/** 单个自定义字段卡片：拖拽手柄 + 字段编辑，可拖拽排序 */
+function SortableElementItem({
+  id,
+  element,
+  onChange,
+  onRemove,
+}: {
+  id: string
+  element: Element
+  onChange: (patch: Partial<Element>) => void
+  onRemove: () => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+  const { t } = useTranslation()
+  const selective = SELECTIVE_TYPES.has(element.type)
+  const defaultRequired = DEFAULT_REQUIRED_TYPES.has(element.type)
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.7 : 1,
+        zIndex: isDragging ? 10 : undefined,
+      }}
+      className={`rounded-lg border p-3 shadow-sm ${
+        isDragging ? 'border-primary' : 'border-line'
+      } bg-surface`}
+    >
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            aria-label={t('repos.elementDrag')}
+            className="mt-2.5 cursor-grab text-faint transition-colors hover:text-ink active:cursor-grabbing"
+          >
+            <GripVertical className="size-4" />
+          </button>
+          <label className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <span className={labelCls}>
+              {t('repos.elementPath')} <span className="text-err">*</span>
+            </span>
+            <Input
+              value={element.path}
+              onChange={(e) => onChange({ path: e.target.value })}
+              placeholder={t('repos.elementPathPlaceholder')}
+            />
+          </label>
+          <label className="flex w-[150px] shrink-0 flex-col gap-1.5">
+            <span className={labelCls}>
+              {t('repos.elementType')} <span className="text-err">*</span>
+            </span>
+            <Select
+              value={element.type}
+              onValueChange={(v) => onChange({ type: v as Element['type'] })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={t('repos.elementTypePlaceholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                {ELEMENT_TYPE_KEYS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {t(o.key)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </label>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={onRemove}
+            aria-label={t('common.delete')}
+            className="mt-2 shrink-0"
+          >
+            <X />
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2.5 pl-6 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5">
+            <span className={labelCls}>
+              {t('repos.elementDescription')} <span className="text-err">*</span>
+            </span>
+            <Input
+              value={element.description}
+              onChange={(e) => onChange({ description: e.target.value })}
+              placeholder={t('repos.elementDescriptionPlaceholder')}
+            />
+          </label>
+          {element.type !== 'ElementTypeTextArea' && (
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>
+                {t('repos.elementDefault')}
+                {defaultRequired && <span className="text-err"> *</span>}
+              </span>
+              <DefaultValueInput
+                type={element.type}
+                value={element.default}
+                onChange={(v) => onChange({ default: v })}
+              />
+            </label>
+          )}
+        </div>
+
+        {/* TextArea 默认值另起一行独占整行（对齐旧版 DynamicElement 的独立行），
+            编辑器语言紧随其后（textareaLanguage 透传给部署表单的 CodeMirror） */}
+        {element.type === 'ElementTypeTextArea' && (
+          <div className="grid grid-cols-1 gap-2.5 pl-6 sm:grid-cols-2">
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>{t('repos.elementDefault')}</span>
+              <DefaultValueInput
+                type={element.type}
+                value={element.default}
+                onChange={(v) => onChange({ default: v })}
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>{t('repos.elementTextareaLanguage')}</span>
+              {/* 复用配置文件类型选择器：55 种语言候选 + 可搜索 + 自由值兜底；
+                  空串表示未指定 → 部署表单按默认语言 textile 高亮（Elements.tsx 的 FILE_TYPES 回退） */}
+              <SelectFileType
+                value={element.textareaLanguage}
+                onChange={(v) => onChange({ textareaLanguage: v })}
+                placeholder={t('repos.elementTextareaLanguagePlaceholder')}
+              />
+            </label>
+          </div>
+        )}
+
+        {selective && (
+          <label className="flex flex-col gap-1.5 pl-6">
+            <span className={labelCls}>{t('repos.elementSelectValues')}</span>
+            {/* 可自定义多选（对齐旧版 tags Select）：options 即当前值本身（自引用），
+                输入新值回车直接加入 chip，也支持从列表勾选/取消 */}
+            <SearchableSelect
+              multiple
+              creatable
+              value={element.selectValues}
+              options={element.selectValues.map((v) => ({ value: v, label: v }))}
+              onChange={(v) =>
+                onChange({ selectValues: Array.isArray(v) ? v : [v] })
+              }
+              placeholder={t('repos.elementSelectValuesPlaceholder')}
+              searchPlaceholder={t('repos.elementSelectValuesSearchPlaceholder')}
+              emptyText={t('repos.elementSelectValuesEmpty')}
+              createText={(q) => t('repos.elementSelectValuesCreate', { name: q })}
+            />
+          </label>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** 按类型渲染默认值控件：Switch → true/false，InputNumber → 数字框，TextArea → 多行 */
+function DefaultValueInput({
+  type,
+  value,
+  onChange,
+}: {
+  type: Element['type']
+  value: string
+  onChange: (v: string) => void
+}) {
+  if (type === 'ElementTypeTextArea') {
+    return (
+      <Textarea
+        value={value}
+        rows={3}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="default"
+      />
+    )
+  }
+  if (type === 'ElementTypeInputNumber') {
+    return (
+      <Input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    )
+  }
+  if (type === 'ElementTypeSwitch') {
+    return (
+      <Select value={value === 'true' ? 'true' : 'false'} onValueChange={onChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="false">false</SelectItem>
+          <SelectItem value="true">true</SelectItem>
+        </SelectContent>
+      </Select>
+    )
+  }
+  return <Input value={value} onChange={(e) => onChange(e.target.value)} />
+}

@@ -1,0 +1,41 @@
+/* ============================================================
+   德古拉 DRACULA · 深紫 + 荧光紫
+   定位：全球最流行的开发者主题
+   - 官方 Dracula 配色：暖黑紫基底 + 标志性荧光紫强调
+   - 发丝级低对比描边、锐利圆角、经典八色彩板
+   - 深色终端/IDE 用户最熟悉，沉浸感强
+   ============================================================ */
+.theme-dracula {
+  color-scheme: dark;
+
+  --bg: #21222c;
+  --surface: #282a36;
+  --raised: #343746;
+  --overlay: #2f303c;
+  --border: rgba(248, 248, 242, 0.11);
+  --border-strong: rgba(248, 248, 242, 0.22);
+
+  --text: #f8f8f2;
+  --text-muted: #a6accd;
+  --text-faint: #8288a3;
+
+  --primary: #bd93f9;
+  --primary-strong: #d0b8ff;
+  --primary-soft: rgba(189, 147, 249, 0.12);
+  --primary-foreground: #1b1429;
+
+  --ok: #50fa7b;   --ok-soft: rgba(80, 250, 123, 0.12);
+  --warn: #f1fa8c; --warn-soft: rgba(241, 250, 140, 0.12);
+  --err: #d34f4f;  --err-soft: rgba(255, 85, 85, 0.12);
+  --info: #8be9fd; --info-soft: rgba(139, 233, 253, 0.12);
+
+  --chart-1: #bd93f9;
+  --chart-2: #8be9fd;
+
+  --r-sm: 5px;
+  --r-md: 7px;
+  --r-lg: 10px;
+
+  --font-sans-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+}

@@ -1,0 +1,185 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   品牌字体：dank mono（旧版 Mars 字标，从旧 frontend 迁移）
+   ============================================================ */
+@font-face {
+  font-family: "dank mono";
+  src: url("./assets/dankmono.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================================================
+   语义 token → Tailwind 工具类映射
+   组件只使用语义类（bg-surface / text-accent / border-line …）
+   换主题 = 切换外层 .theme-* class，组件零改动
+   ============================================================ */
+@theme inline {
+  --font-sans: var(--font-sans-family), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: var(--font-mono-family), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-overlay: var(--overlay);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+
+  --color-ink: var(--text);
+  --color-mute: var(--text-muted);
+  --color-faint: var(--text-faint);
+
+  /* 主强调色（accent→primary，对齐 shadcn token） */
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-foreground: var(--primary-foreground);
+
+  /* shadcn 标准 token → Mars 语义变量 */
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--overlay);
+  --color-popover-foreground: var(--text);
+  --color-secondary: var(--raised);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--raised);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--raised); /* shadcn 微妙高亮 */
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--err);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--border);
+  --color-input: var(--border-strong);
+  --color-ring: var(--primary);
+
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-err: var(--err);
+  --color-err-soft: var(--err-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+}
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans-family), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+* { box-sizing: border-box; }
+
+::selection { background: var(--primary); color: var(--primary-foreground); }
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+/* Tailwind v4 preflight 不再给 button 默认 cursor:pointer（v3/antd 都有），
+   全局恢复：可用的 button / role=button 显示手型，disabled 保持默认箭头。
+   注意：必须放进 @layer base —— 若写成无层级规则，按 CSS 级联「无层级 > 有层级」，
+   会永久压过 Tailwind 的 cursor-grab/cursor-default 等 utilities（拖拽手柄将显示成 pointer）。
+   放入 base 层后 utilities 层优先，cursor-grab / cursor-default / cursor-pointer 均可正常覆盖。 */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+}
+
+/* 细滚动条，随主题着色 */
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* Modal / 弹层入场动画由 shadcn 的 tw-animate-css 承担（animate-in/out，reduced-motion 内置降级） */
+
+/* 列表项进入动画：淡入 + 上浮，配合 animation-delay 错峰（新挂载的行自动播一次） */
+@keyframes mars-list-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-list-in { animation: mars-list-in 0.28s ease-out both; }
+
+/* 无障碍：prefers-reduced-motion 关闭装饰性动画/过渡
+   （列表进入、登录卡片入场、登录按钮位移）
+   loading spinner 保留——它是进度信号，禁用会丢失加载反馈 */
+@media (prefers-reduced-motion: reduce) {
+  .animate-list-in,
+  .login-card,
+  .btn-login {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   登录页（还原旧版视觉）
+   1) 卡片入场：淡入 + 上浮（对应旧版 LoginCard fadeInUp 0.6s）
+   2) 渐变登录按钮：135deg primary→primary-strong + 主题色辉光
+   ============================================================ */
+@keyframes mars-fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.login-card { animation: mars-fade-in-up 0.6s ease-out both; }
+
+.btn-login {
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  box-shadow: 0 4px 15px color-mix(in srgb, var(--primary) 30%, transparent);
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+.btn-login:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 45%, transparent);
+}
+.btn-login:active { transform: translateY(0); }
+
+/* ============================================================
+   咖啡赞助卡标题：五颜六色彩虹文字
+   饱和六色渐变 + 流动动画（头尾同色 → 循环无缝）
+   ============================================================ */
+.coffee-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  background: linear-gradient(
+    90deg,
+    #f5222d,
+    #fa8c16,
+    #fadb14,
+    #52c41a,
+    #13c2c2,
+    #1677ff,
+    #722ed1
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
