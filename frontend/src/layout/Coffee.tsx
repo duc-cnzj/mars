@@ -16,7 +16,7 @@ export function Coffee() {
       <div className="coffee-title">{t('coffee.title')}</div>
       <button
         type="button"
-        aria-label={t('coffee.flipHint')}
+        aria-label={t('coffee.flipTip')}
         onClick={() => setFlipped((v) => !v)}
         className="cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         style={{ perspective: '700px' }}
@@ -51,7 +51,7 @@ export function Coffee() {
         </div>
       </button>
       <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-        {t('coffee.flipHint')}
+        {t('coffee.flipTip')}
       </p>
     </div>
   )

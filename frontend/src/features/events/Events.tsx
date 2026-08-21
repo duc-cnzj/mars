@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { formatDateTime } from '@/lib/format'
-import { toHumanizeDateTime } from '@/lib/humanizeDateTime'
+import { humanizeDateTime } from '@/lib/humanizeDateTime'
 import type {
   components,
   PathsApiEventsGetParametersQueryActionTypes as SchemaActionTypes,
@@ -519,7 +519,7 @@ export function Events() {
                       {/* 相对时间由前端基于 createdAt 本地化计算（后端 event_at 写死中文，
                           新 UI 不再消费），与下方精确时间并存，对齐旧版布局 */}
                       <span className="text-[11px] text-ink">
-                        {toHumanizeDateTime(item.createdAt)}
+                        {humanizeDateTime(item.createdAt)}
                       </span>
                       <span className="font-mono text-[11px] text-faint">
                         {formatDateTime(item.createdAt)}

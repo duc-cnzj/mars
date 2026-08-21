@@ -7,7 +7,7 @@ import { Spinner } from './components/ui'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AuthProvider, GuestRoute } from './features/auth/AuthContext'
 import { themeClass, themes } from './themes'
-import { useTheme } from './useTheme'
+import { useTheme } from './hooks/useTheme'
 
 // 登录后的应用壳（RequireAuth + WebSocket + AppLayout）懒加载：登录页只渲染 GuestRoute/Login，
 // 不需要顶栏/底栏/集群状态/WebSocket/protobuf 这一坨，懒加载后这些依赖不进登录页。

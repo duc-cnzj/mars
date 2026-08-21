@@ -26,7 +26,7 @@ type FlatKeys<T, P extends string = ''> = {
 /** 用户下拉菜单项：图标 + 词条键 + 路由目标 */
 const NAV_ITEMS: { icon: IconName; labelKey: TKey; to: string }[] = [
   { icon: 'grid', labelKey: 'nav.workbench', to: '/' },
-  { icon: 'pulse', labelKey: 'nav.event', to: '/events' },
+  { icon: 'pulse', labelKey: 'nav.events', to: '/events' },
   { icon: 'repo', labelKey: 'nav.repo', to: '/repos' },
   { icon: 'key', labelKey: 'nav.token', to: '/tokens' },
 ]

@@ -1,11 +1,9 @@
-import { memo } from 'react'
-
 /**
  * ANSI 转义序列解析（port 自旧前端 pkg/lazylog/ansiparse.js）。
  * 支持 30-37/90-97 前景色、40-47/100-107 背景色、38;5;n / 48;5;n 256 色、
  * 1 bold / 3 italic / 4 underline，以及 22/23/24 取消样式、39/49 重置前景/背景。
  * 保留 \b 退格擦除语义。38;2;r;g;b 真彩色当前不支持（解析时跳过参数）。
- * 渲染产物：AnsiText（React 组件）。
+ * 渲染产物：AnsiText（React 组件，见 components/AnsiText.tsx）。
  */
 
 const foregroundColors: Record<string, string> = {
@@ -175,7 +173,7 @@ export function ansiparse(str: string): AnsiSegment[] {
 }
 
 /** 终端配色 → CSS 颜色（固定 16 色，保持跨主题一致） */
-const PALETTE: Record<string, string> = {
+export const PALETTE: Record<string, string> = {
   black: '#181818',
   red: '#cd3131',
   green: '#0dbc79',
@@ -210,66 +208,3 @@ function ansi256(index: number): string {
   const v = 8 + (index - 232) * 10
   return `#${toHex(v)}${toHex(v)}${toHex(v)}`
 }
-
-function segmentStyle(seg: AnsiSegment): React.CSSProperties {
-  const style: React.CSSProperties = {}
-  if (seg.foreground) style.color = PALETTE[seg.foreground] ?? seg.foreground
-  if (seg.background) style.background = PALETTE[seg.background] ?? seg.background
-  if (seg.bold) style.fontWeight = 700
-  if (seg.italic) style.fontStyle = 'italic'
-  if (seg.underline) style.textDecoration = 'underline'
-  return style
-}
-
-/**
- * ANSI 着色文本组件：解析后逐段渲染为带样式的 <span>。
- * 契约导出名（TabLog 会 import 此组件）。
- * 传入 highlight 时：段内命中关键字（不区分大小写）的片段用黄底黑字 <mark> 高亮，
- * 命中片段继承所在段前景色以外的样式被覆盖为黑字，其余文字保持原 ANSI 颜色不变。
- */
-export const AnsiText = memo(function AnsiText({
-  text,
-  highlight,
-}: {
-  text: string
-  highlight?: string
-}) {
-  const kw = highlight?.trim().toLowerCase() || ''
-  return (
-    <>
-      {ansiparse(text).map((seg, i) => {
-        if (!kw || !seg.text) {
-          return (
-            <span key={i} style={segmentStyle(seg)}>
-              {seg.text}
-            </span>
-          )
-        }
-        const lower = seg.text.toLowerCase()
-        const nodes: React.ReactNode[] = []
-        let pos = 0
-        let idx = lower.indexOf(kw, pos)
-        let k = 0
-        while (idx !== -1) {
-          if (idx > pos) nodes.push(seg.text.slice(pos, idx))
-          const end = idx + kw.length
-          nodes.push(
-            <mark key={k++} className="bg-[#fde047] text-black">
-              {seg.text.slice(idx, end)}
-            </mark>,
-          )
-          pos = end
-          idx = lower.indexOf(kw, pos)
-        }
-        if (pos < seg.text.length) nodes.push(seg.text.slice(pos))
-        return (
-          <span key={i} style={segmentStyle(seg)}>
-            {nodes}
-          </span>
-        )
-      })}
-    </>
-  )
-})
-
-AnsiText.displayName = 'AnsiText'

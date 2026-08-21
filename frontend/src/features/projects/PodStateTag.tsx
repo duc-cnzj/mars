@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Loader2, RefreshCw } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { components } from '../../api/schema'
-import { shortContainerName } from './containerName'
+import { shortContainerName } from './shortContainerName'
 import { Icon } from '../../components/icons'
 
 type StateContainer = components['schemas']['types.StateContainer']

@@ -234,7 +234,7 @@ export function CreateProjectModal({
 
   const startDeploy = () => {
     if (clusterBad) {
-      toast.error(t('project.clusterBadDeploy'))
+      toast.error(t('project.clusterResourceShortage'))
       return
     }
     if (repoId <= 0 || !projectName) {
@@ -379,7 +379,7 @@ export function CreateProjectModal({
               >
                 {stream.loading && <Loader2 className="size-3.5 animate-spin" />}
                 <Icon name="rocket" className="text-[13px]" />
-                {clusterBad ? t('project.clusterBadDeploy') : t('project.deploy')}
+                {clusterBad ? t('project.clusterResourceShortage') : t('project.deploy')}
               </Button>
               {stream.loading && (
                 <Button size="xs" variant="outline" onClick={stream.cancel}>

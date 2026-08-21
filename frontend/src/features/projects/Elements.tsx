@@ -97,7 +97,7 @@ function ElementField({
               type="button"
               onClick={() => setCollapsed((c) => !c)}
               aria-expanded={!collapsed}
-              title={collapsed ? '展开' : '折叠'}
+              title={collapsed ? t('project.expand') : t('project.collapse')}
               className="shrink-0 rounded text-faint transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             >
               <ChevronDown

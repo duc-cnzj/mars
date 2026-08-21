@@ -70,11 +70,11 @@ export function ClusterStatus() {
 
   const rows: [string, string][] = [
     [t('header.cpuFree'), active.freeRequestCpu],
-    [t('header.memFree'), active.freeRequestMemory],
+    [t('header.memoryFree'), active.freeRequestMemory],
     [t('header.cpuRate'), active.requestCpuRate],
-    [t('header.memRate'), active.requestMemoryRate],
+    [t('header.memoryRate'), active.requestMemoryRate],
     [t('header.cpuTotal'), active.totalCpu],
-    [t('header.memTotal'), active.totalMemory],
+    [t('header.memoryTotal'), active.totalMemory],
   ]
 
   return (

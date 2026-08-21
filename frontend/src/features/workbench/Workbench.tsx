@@ -527,7 +527,7 @@ export function Workbench() {
                   name="grid"
                   className="size-4 group-data-[state=active]:fill-current group-data-[state=active]:text-primary"
                 />
-                {t('workbench.allProjects')}
+                {t('workbench.allSpaces')}
               </TabsTrigger>
               <TabsTrigger value="favorite" className="group">
                 <Icon
@@ -587,7 +587,7 @@ export function Workbench() {
                 {t('common.clearSearch')}
               </Button>
             ) : tab === 'favorite' ? (
-              <span className="text-[12px] text-faint">{t('workbench.favoritesEmptyHint')}</span>
+              <span className="text-[12px] text-faint">{t('workbench.favoritesEmptyTip')}</span>
             ) : (
               <Button variant="default" size="sm" onClick={() => setAddOpen(true)}>
                 <Icon name="plus" className="size-4" />
@@ -666,7 +666,7 @@ export function Workbench() {
         >
           {tab === 'all' && count > PAGE_SIZE && (
             <>
-              {/* 键盘翻页提示：⌘/Ctrl + ←/→ 仅在全部项目页生效（mac 显 ⌘，win/linux 显 Ctrl；移动端无实体键盘隐藏） */}
+              {/* 键盘翻页提示：⌘/Ctrl + ←/→ 仅在全部空间页生效（mac 显 ⌘，win/linux 显 Ctrl；移动端无实体键盘隐藏） */}
               <span className="hidden items-center gap-1.5 text-[11px] text-faint sm:flex">
                 <kbd className="flex h-5 items-center gap-0.5 whitespace-nowrap rounded border border-line bg-raised px-1 font-mono text-[10px] leading-none text-mute">
                   {isMac ? <span className="font-sans text-[11px]">⌘</span> : <span>Ctrl</span>}←
@@ -674,7 +674,7 @@ export function Workbench() {
                 <kbd className="flex h-5 items-center gap-0.5 whitespace-nowrap rounded border border-line bg-raised px-1 font-mono text-[10px] leading-none text-mute">
                   {isMac ? <span className="font-sans text-[11px]">⌘</span> : <span>Ctrl</span>}→
                 </kbd>
-                {t('workbench.pageTurnHint')}
+                {t('workbench.pageTurnTip')}
               </span>
               {/* m-0 覆盖 Pagination 基类 mx-auto：否则在 justify-end 行里 nav 会居中、
                   把左侧键盘提示顶到页面最左，无法紧贴分页 */}
@@ -736,7 +736,7 @@ export function Workbench() {
           {sortable && items.length > 0 && (
             <span className="hidden items-center gap-1 font-mono text-[11px] text-faint sm:flex">
               <GripVertical className="size-3" />
-              {t('workbench.dragSortHint')}
+              {t('workbench.dragSortTip')}
             </span>
           )}
           <span className="font-mono text-[11px] text-faint">

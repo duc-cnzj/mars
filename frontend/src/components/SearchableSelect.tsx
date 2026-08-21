@@ -52,6 +52,8 @@ export function SearchableSelect({
   className,
   zIndex,
   align = 'start',
+  /** 单选 trigger 选中值过长被省略（truncate 生效）时 hover 弹完整文本 tooltip；默认关闭（沿用原生 title） */
+  truncateTip = false,
 }: {
   value: string | string[]
   options: SearchableSelectOption[]
@@ -77,6 +79,8 @@ export function SearchableSelect({
    * 只影响文本对齐（text-center），chevron 仍固定最右；不覆盖弹层（PopoverContent align 另管）。
    */
   align?: 'start' | 'center'
+  /** 单选 trigger 文本被省略时是否弹 tooltip（默认不弹，保持原生 title 行为；仅单选生效） */
+  truncateTip?: boolean
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -85,6 +89,13 @@ export function SearchableSelect({
   const [query, setQuery] = useState('')
   const [highlighted, setHighlighted] = useState(0)
   const searchRef = useRef<HTMLInputElement>(null)
+  // 单选 trigger 截断检测：文本被省略（truncate 生效）时才弹 tooltip，替代原生 title 不截断也弹。
+  // 命名带 label 前缀，与下拉列表的 truncated（命中数超限）区分。
+  const labelRef = useRef<HTMLSpanElement>(null)
+  const [labelTruncated, setLabelTruncated] = useState(false)
+  const [tipHover, setTipHover] = useState(false)
+  // tooltip content 走 portal 挂 body，须盖过可拖拽宿主弹窗的动态 z-index（同 Elements 注释）
+  const [tipZ, setTipZ] = useState(50)
 
   // 契约：multiple 时 value 为 string[]，否则为 string。TS 无法从 boolean 窄化 value，
   // 单选分支用 as 收敛。selectedValues 固定为 string[]，否则推导类型会污染成联合数组。
@@ -96,6 +107,9 @@ export function SearchableSelect({
   const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues])
   /** 值 → 展示 label（选项里没有时回退到原始值，如自定义分支/手输 stage） */
   const labelOf = (v: string) => options.find((o) => o.value === v)?.label ?? v
+  /** 单选 trigger 展示文本：选中项 label 或占位符 */
+  const displayLabel =
+    selectedValues.length > 0 ? labelOf(selectedValues[0] as string) : (placeholder ?? '')
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -127,6 +141,20 @@ export function SearchableSelect({
       setQuery('')
     }
   }, [open])
+
+  // 截断检测（单选 + truncateTip 开启时）：scrollWidth > clientWidth（+1px 缓冲防亚像素抖动）；
+  // ResizeObserver 在 span 尺寸变化（窗口/分段列宽调整）时重算，文字变化由 displayLabel 依赖触发重算。
+  // 未开启时直接 return 不挂 observer；未截断或占位文本短时 labelTruncated=false，tooltip 恒不打开。
+  useEffect(() => {
+    if (multiple || !truncateTip) return
+    const el = labelRef.current
+    if (!el) return
+    const measure = () => setLabelTruncated(el.scrollWidth > el.clientWidth + 1)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [multiple, truncateTip, displayLabel])
 
   /** 提交一个值：单选直接选中关闭；多选切换选中态保持打开 */
   const select = (v: string) => {
@@ -261,20 +289,54 @@ export function SearchableSelect({
             </>
           ) : (
             <>
-              <span
-                // 两种对齐都 flex-1 占满：start 时文字居左、center 时文字居中，
-                // chevron 均被推在最右（用户要求居中的是文本，箭头保持靠右）
-                className={cn('min-w-0 flex-1 truncate', align === 'center' && 'text-center')}
-                title={
-                  selectedValues.length > 0
-                    ? labelOf(selectedValues[0] as string)
-                    : undefined
-                }
-              >
-                {selectedValues.length > 0
-                  ? labelOf(selectedValues[0] as string)
-                  : (placeholder ?? '')}
-              </span>
+              {/* truncateTip 开启：仅选中值被省略时 hover 弹完整文本 tooltip（受控 open，见下方）。
+                  hover 挂在文本 span 本体；仅截断时才真正打开、才需抬 z-index，未截断时 open 恒
+                  false、content 不挂载。默认关闭则回到原生 title 行为（不截断也弹，无样式）。 */}
+              {truncateTip ? (
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip open={labelTruncated && tipHover} onOpenChange={() => {}}>
+                    <TooltipTrigger asChild>
+                      <span
+                        ref={labelRef}
+                        onMouseEnter={() => {
+                          if (labelTruncated) setTipZ(nextZIndex())
+                          setTipHover(true)
+                        }}
+                        onMouseLeave={() => setTipHover(false)}
+                        className={cn(
+                          'min-w-0 flex-1 truncate',
+                          align === 'center' && 'text-center',
+                        )}
+                      >
+                        {displayLabel}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="top"
+                      // 防御性去掉 text-wrap:balance：balance 会把折行压成多行等宽、首行不占满就换行。
+                      // 必须写长属性 textWrapStyle（text-wrap-style）而非 shorthand textWrap（text-wrap:normal）：
+                      // text-balance 写的是 longhand，Chrome 长短属性交互怪癖，shorthand 压不掉（同 Elements FieldLabel）
+                      style={{ zIndex: tipZ, textWrapStyle: 'auto' }}
+                      className="max-w-[min(320px,80vw)] break-words"
+                    >
+                      {displayLabel}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <span
+                  // 两种对齐都 flex-1 占满：start 时文字居左、center 时文字居中，
+                  // chevron 均被推在最右（用户要求居中的是文本，箭头保持靠右）
+                  className={cn('min-w-0 flex-1 truncate', align === 'center' && 'text-center')}
+                  title={
+                    selectedValues.length > 0
+                      ? labelOf(selectedValues[0] as string)
+                      : undefined
+                  }
+                >
+                  {displayLabel}
+                </span>
+              )}
               <ChevronDown className="size-4 shrink-0 opacity-50" />
             </>
           )}

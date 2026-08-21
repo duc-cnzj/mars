@@ -5,7 +5,7 @@ import type { components } from '../../api/schema'
 import { api } from '../../api/client'
 import { getToken } from '../../api/token'
 import { useWebsocket } from '../../realtime/useWebsocket'
-import { AnsiText } from '../../utils/ansi'
+import { AnsiText } from '../../components/AnsiText'
 import { copyText } from '../../utils/copy'
 import { Icon } from '../../components/icons'
 import { Empty, SkeletonTabLog } from '../../components/ui'
@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/shadcn/radio-group'
 import { PodStateTag } from './PodStateTag'
-import { shortContainerName } from './containerName'
+import { shortContainerName } from './shortContainerName'
 
 type StateContainer = components['schemas']['types.StateContainer']
 

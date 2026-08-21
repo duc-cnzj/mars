@@ -515,7 +515,7 @@ export function RepoFormModal({
               <Input value={form.name} onChange={(e) => set('name', e.target.value)} />
             </label>
             <label className="flex flex-col gap-1.5">
-              <span className={labelCls}>{t('repos.description')}</span>
+              <span className={labelCls}>{t('repos.appDescription')}</span>
               <Input
                 value={form.description}
                 onChange={(e) => set('description', e.target.value)}

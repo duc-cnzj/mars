@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { themes, type ThemeId } from './themes'
+import { themes, type ThemeId } from '../themes'
 
 const THEME_KEY = 'mars.theme'
 

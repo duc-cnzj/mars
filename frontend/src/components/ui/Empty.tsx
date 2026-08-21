@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Icon, type IconName } from '../icons'
 
 /**
@@ -6,7 +7,7 @@ import { Icon, type IconName } from '../icons'
  * action 插槽放引导 CTA（如「新建空间」「清除搜索」），空态不止是说明，还要给下一步。
  */
 export function Empty({
-  text = '暂无数据',
+  text,
   icon = 'database',
   action,
 }: {
@@ -14,14 +15,16 @@ export function Empty({
   icon?: IconName
   action?: ReactNode
 }) {
+  const { t } = useTranslation()
+  const label = text ?? t('common.empty')
   return (
     <div
       role="status"
-      aria-label={text}
+      aria-label={label}
       className="flex flex-col items-center justify-center gap-2 py-12 text-faint"
     >
       <Icon name={icon} className="text-[28px]" />
-      <span className="text-[13px]">{text}</span>
+      <span className="text-[13px]">{label}</span>
       {action && <div className="mt-1">{action}</div>}
     </div>
   )

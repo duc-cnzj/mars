@@ -312,7 +312,7 @@ export function AccessTokenManager() {
                   <span>
                     {t('tokens.expiresAt')} {formatDateTime(item.expiredAt)}
                   </span>
-                  <span>{item.lastUsedAt ? `${item.lastUsedAt} ${t('tokens.usedAt')}` : t('tokens.neverUsed')}</span>
+                  <span>{item.lastUsedAt ? `${item.lastUsedAt} ${t('tokens.used')}` : t('tokens.neverUsed')}</span>
                 </div>
               </div>
               {!item.isDeleted && !item.isExpired && (
