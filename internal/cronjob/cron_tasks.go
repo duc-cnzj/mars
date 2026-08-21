@@ -378,6 +378,7 @@ func (repo *Tasks) CleanUploadFiles() error {
 	repo.event.AuditLogWithChange(
 		types.EventActionType_Delete,
 		"system",
+		"",
 		"删除未被记录的文件",
 		clearList,
 		nil,

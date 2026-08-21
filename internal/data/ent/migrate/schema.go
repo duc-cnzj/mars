@@ -112,6 +112,7 @@ var (
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "action", Type: field.TypeInt32, Default: 0},
 		{Name: "username", Type: field.TypeString, Size: 255, Default: ""},
+		{Name: "operator_email", Type: field.TypeString, Size: 255, Default: ""},
 		{Name: "message", Type: field.TypeString, Size: 255, Default: ""},
 		{Name: "old", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "longtext"}},
 		{Name: "new", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "longtext"}},
@@ -127,7 +128,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "events_files_events",
-				Columns:    []*schema.Column{EventsColumns[11]},
+				Columns:    []*schema.Column{EventsColumns[12]},
 				RefColumns: []*schema.Column{FilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -143,12 +144,18 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{EventsColumns[5], EventsColumns[1]},
 			},
+			{
+				Name:    "event_operator_email_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{EventsColumns[6], EventsColumns[1]},
+			},
 		},
 	}
 	// FavoritesColumns holds the columns for the "favorites" table.
 	FavoritesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "email", Type: field.TypeString},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "namespace_id", Type: field.TypeInt, Nullable: true},
 	}
 	// FavoritesTable holds the schema information for the "favorites" table.
@@ -159,9 +166,21 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "favorites_namespaces_favorites",
-				Columns:    []*schema.Column{FavoritesColumns[2]},
+				Columns:    []*schema.Column{FavoritesColumns[3]},
 				RefColumns: []*schema.Column{NamespacesColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "favorite_email_namespace_id",
+				Unique:  true,
+				Columns: []*schema.Column{FavoritesColumns[1], FavoritesColumns[3]},
+			},
+			{
+				Name:    "favorite_email_sort_order",
+				Unique:  false,
+				Columns: []*schema.Column{FavoritesColumns[1], FavoritesColumns[2]},
 			},
 		},
 	}

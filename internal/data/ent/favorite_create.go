@@ -42,6 +42,20 @@ func (_c *FavoriteCreate) SetNillableNamespaceID(v *int) *FavoriteCreate {
 	return _c
 }
 
+// SetSortOrder sets the "sort_order" field.
+func (_c *FavoriteCreate) SetSortOrder(v int) *FavoriteCreate {
+	_c.mutation.SetSortOrder(v)
+	return _c
+}
+
+// SetNillableSortOrder sets the "sort_order" field if the given value is not nil.
+func (_c *FavoriteCreate) SetNillableSortOrder(v *int) *FavoriteCreate {
+	if v != nil {
+		_c.SetSortOrder(*v)
+	}
+	return _c
+}
+
 // SetNamespace sets the "namespace" edge to the Namespace entity.
 func (_c *FavoriteCreate) SetNamespace(v *Namespace) *FavoriteCreate {
 	return _c.SetNamespaceID(v.ID)
@@ -54,6 +68,7 @@ func (_c *FavoriteCreate) Mutation() *FavoriteMutation {
 
 // Save creates the Favorite in the database.
 func (_c *FavoriteCreate) Save(ctx context.Context) (*Favorite, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -79,10 +94,21 @@ func (_c *FavoriteCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_c *FavoriteCreate) defaults() {
+	if _, ok := _c.mutation.SortOrder(); !ok {
+		v := favorite.DefaultSortOrder
+		_c.mutation.SetSortOrder(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_c *FavoriteCreate) check() error {
 	if _, ok := _c.mutation.Email(); !ok {
 		return &ValidationError{Name: "email", err: errors.New(`ent: missing required field "Favorite.email"`)}
+	}
+	if _, ok := _c.mutation.SortOrder(); !ok {
+		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "Favorite.sort_order"`)}
 	}
 	return nil
 }
@@ -114,6 +140,10 @@ func (_c *FavoriteCreate) createSpec() (*Favorite, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Email(); ok {
 		_spec.SetField(favorite.FieldEmail, field.TypeString, value)
 		_node.Email = value
+	}
+	if value, ok := _c.mutation.SortOrder(); ok {
+		_spec.SetField(favorite.FieldSortOrder, field.TypeInt, value)
+		_node.SortOrder = value
 	}
 	if nodes := _c.mutation.NamespaceIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -214,6 +244,24 @@ func (u *FavoriteUpsert) ClearNamespaceID() *FavoriteUpsert {
 	return u
 }
 
+// SetSortOrder sets the "sort_order" field.
+func (u *FavoriteUpsert) SetSortOrder(v int) *FavoriteUpsert {
+	u.Set(favorite.FieldSortOrder, v)
+	return u
+}
+
+// UpdateSortOrder sets the "sort_order" field to the value that was provided on create.
+func (u *FavoriteUpsert) UpdateSortOrder() *FavoriteUpsert {
+	u.SetExcluded(favorite.FieldSortOrder)
+	return u
+}
+
+// AddSortOrder adds v to the "sort_order" field.
+func (u *FavoriteUpsert) AddSortOrder(v int) *FavoriteUpsert {
+	u.Add(favorite.FieldSortOrder, v)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -289,6 +337,27 @@ func (u *FavoriteUpsertOne) ClearNamespaceID() *FavoriteUpsertOne {
 	})
 }
 
+// SetSortOrder sets the "sort_order" field.
+func (u *FavoriteUpsertOne) SetSortOrder(v int) *FavoriteUpsertOne {
+	return u.Update(func(s *FavoriteUpsert) {
+		s.SetSortOrder(v)
+	})
+}
+
+// AddSortOrder adds v to the "sort_order" field.
+func (u *FavoriteUpsertOne) AddSortOrder(v int) *FavoriteUpsertOne {
+	return u.Update(func(s *FavoriteUpsert) {
+		s.AddSortOrder(v)
+	})
+}
+
+// UpdateSortOrder sets the "sort_order" field to the value that was provided on create.
+func (u *FavoriteUpsertOne) UpdateSortOrder() *FavoriteUpsertOne {
+	return u.Update(func(s *FavoriteUpsert) {
+		s.UpdateSortOrder()
+	})
+}
+
 // Exec executes the query.
 func (u *FavoriteUpsertOne) Exec(ctx context.Context) error {
 	if len(u.create.conflict) == 0 {
@@ -341,6 +410,7 @@ func (_c *FavoriteCreateBulk) Save(ctx context.Context) ([]*Favorite, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*FavoriteMutation)
 				if !ok {
@@ -524,6 +594,27 @@ func (u *FavoriteUpsertBulk) UpdateNamespaceID() *FavoriteUpsertBulk {
 func (u *FavoriteUpsertBulk) ClearNamespaceID() *FavoriteUpsertBulk {
 	return u.Update(func(s *FavoriteUpsert) {
 		s.ClearNamespaceID()
+	})
+}
+
+// SetSortOrder sets the "sort_order" field.
+func (u *FavoriteUpsertBulk) SetSortOrder(v int) *FavoriteUpsertBulk {
+	return u.Update(func(s *FavoriteUpsert) {
+		s.SetSortOrder(v)
+	})
+}
+
+// AddSortOrder adds v to the "sort_order" field.
+func (u *FavoriteUpsertBulk) AddSortOrder(v int) *FavoriteUpsertBulk {
+	return u.Update(func(s *FavoriteUpsert) {
+		s.AddSortOrder(v)
+	})
+}
+
+// UpdateSortOrder sets the "sort_order" field to the value that was provided on create.
+func (u *FavoriteUpsertBulk) UpdateSortOrder() *FavoriteUpsertBulk {
+	return u.Update(func(s *FavoriteUpsert) {
+		s.UpdateSortOrder()
 	})
 }
 

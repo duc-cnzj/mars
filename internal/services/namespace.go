@@ -77,6 +77,7 @@ func (n *namespaceSvc) Transfer(ctx context.Context, request *namespace.Transfer
 	n.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Update,
 		user.Name,
+		user.Email,
 		"转让项目空间给: "+request.NewAdminEmail,
 		request,
 	)
@@ -149,6 +150,7 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 	n.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Create,
 		user.Name,
+		user.Email,
 		fmt.Sprintf("创建项目空间: %d: %s", ns.ID, ns.Name),
 		request,
 	)
@@ -186,6 +188,7 @@ func (n *namespaceSvc) UpdateDesc(ctx context.Context, req *namespace.UpdateDesc
 	n.eventBiz.AuditLogWithChange(
 		types.EventActionType_Update,
 		biz.MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Email,
 		fmt.Sprintf("更新项目空间描述: id: '%d' '%s'", ns.ID, ns.Name),
 		biz.AnyYamlPrettier{
 			"namespace": old.Name,
@@ -218,6 +221,7 @@ func (n *namespaceSvc) Delete(ctx context.Context, input *namespace.DeleteReques
 	n.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Delete,
 		user.Name,
+		user.Email,
 		fmt.Sprintf("删除项目空间: id: '%d' '%s', 删除的项目有: '%s'", ns.ID, ns.Name, strings.Join(deletedProjectNames, ", ")),
 		input,
 	)
@@ -268,10 +272,32 @@ func (n *namespaceSvc) Favorite(ctx context.Context, req *namespace.FavoriteRequ
 	n.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Update,
 		user.Name,
+		user.Email,
 		fmt.Sprintf("用户%s项目空间: %s", str, ns.Name),
 		req,
 	)
 	return &namespace.FavoriteResponse{}, nil
+}
+
+// FavoriteSort 把 first_id 移到 second_id 位置，落更新审计日志。
+func (n *namespaceSvc) FavoriteSort(ctx context.Context, req *namespace.FavoriteSortRequest) (*namespace.FavoriteSortResponse, error) {
+	user := biz.MustGetUser(ctx)
+	err := n.nsBiz.FavoriteSort(ctx, &biz.FavoriteSortNamespaceInput{
+		UserEmail: user.Email,
+		FirstID:   int(req.FirstId),
+		SecondID:  int(req.SecondId),
+	})
+	if err != nil {
+		return nil, logError(ctx, n.logger, err)
+	}
+	n.eventBiz.AuditLogWithRequest(
+		types.EventActionType_Update,
+		user.Name,
+		user.Email,
+		"用户调整关注列表排序",
+		req,
+	)
+	return &namespace.FavoriteSortResponse{}, nil
 }
 
 // UpdatePrivate 切换命名空间私密属性，仅 owner 可操作，落更新审计日志。
@@ -289,6 +315,7 @@ func (n *namespaceSvc) UpdatePrivate(ctx context.Context, req *namespace.UpdateP
 	n.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Update,
 		user.Name,
+		user.Email,
 		fmt.Sprintf("[更新空间访问权限] id: %v private: %t, name: %v", req.Id, req.GetPrivate(), private.Name),
 		req,
 	)
@@ -311,6 +338,7 @@ func (n *namespaceSvc) SyncMembers(ctx context.Context, req *namespace.SyncMembe
 	n.eventBiz.AuditLogWithChange(
 		types.EventActionType_Update,
 		user.Name,
+		user.Email,
 		fmt.Sprintf("[同步空间成员] id: %v name: %v", show.ID, show.Name),
 		biz.AnyYamlPrettier{
 			"members": show.Members,
@@ -347,6 +375,7 @@ func (n *namespaceSvc) UpdateConfig(ctx context.Context, req *namespace.UpdateCo
 	n.eventBiz.AuditLogWithChange(
 		types.EventActionType_Update,
 		user.Name,
+		user.Email,
 		fmt.Sprintf("[批量更新空间配置] id: %v name: %v", show.ID, show.Name),
 		biz.AnyYamlPrettier{
 			"namespace": show.Name,

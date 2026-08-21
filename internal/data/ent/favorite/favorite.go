@@ -16,6 +16,8 @@ const (
 	FieldEmail = "email"
 	// FieldNamespaceID holds the string denoting the namespace_id field in the database.
 	FieldNamespaceID = "namespace_id"
+	// FieldSortOrder holds the string denoting the sort_order field in the database.
+	FieldSortOrder = "sort_order"
 	// EdgeNamespace holds the string denoting the namespace edge name in mutations.
 	EdgeNamespace = "namespace"
 	// Table holds the table name of the favorite in the database.
@@ -34,6 +36,7 @@ var Columns = []string{
 	FieldID,
 	FieldEmail,
 	FieldNamespaceID,
+	FieldSortOrder,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -45,6 +48,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultSortOrder holds the default value on creation for the "sort_order" field.
+	DefaultSortOrder int
+)
 
 // OrderOption defines the ordering options for the Favorite queries.
 type OrderOption func(*sql.Selector)
@@ -62,6 +70,11 @@ func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 // ByNamespaceID orders the results by the namespace_id field.
 func ByNamespaceID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNamespaceID, opts...).ToFunc()
+}
+
+// BySortOrder orders the results by the sort_order field.
+func BySortOrder(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSortOrder, opts...).ToFunc()
 }
 
 // ByNamespaceField orders the results by namespace field.

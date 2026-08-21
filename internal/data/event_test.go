@@ -87,8 +87,8 @@ func TestEventRepo_List(t *testing.T) {
 	repo, entdb, _ := newEventRepo(t)
 	ctx := context.TODO()
 
-	entdb.Event.Create().SetAction(types.EventActionType_Create).SetUsername("alice").SetMessage("create a").SetDuration("1s").SetHasDiff(false).SaveX(ctx)
-	entdb.Event.Create().SetAction(types.EventActionType_Delete).SetUsername("bob").SetMessage("delete b").SetDuration("2s").SetHasDiff(true).SaveX(ctx)
+	entdb.Event.Create().SetAction(types.EventActionType_Create).SetUsername("alice").SetMessage("create a").SetDuration("1s").SetHasDiff(false).SetOperatorEmail("alice@example.com").SaveX(ctx)
+	entdb.Event.Create().SetAction(types.EventActionType_Delete).SetUsername("bob").SetMessage("delete b").SetDuration("2s").SetHasDiff(true).SetOperatorEmail("bob@example.com").SaveX(ctx)
 
 	t.Run("no filters returns all", func(t *testing.T) {
 		items, pag, err := repo.List(ctx, &biz.ListEventInput{Page: 1, PageSize: 10})
@@ -132,6 +132,18 @@ func TestEventRepo_List(t *testing.T) {
 		require.Len(t, items, 2)
 		assert.Greater(t, items[0].ID, items[1].ID)
 	})
+
+	t.Run("operator email filter", func(t *testing.T) {
+		items, _, _ := repo.List(ctx, &biz.ListEventInput{Page: 1, PageSize: 10, OperatorEmail: lo.ToPtr("alice@example.com")})
+		require.Len(t, items, 1)
+		assert.Equal(t, "create a", items[0].Message)
+		assert.Equal(t, "alice@example.com", items[0].OperatorEmail)
+	})
+
+	t.Run("operator email no match", func(t *testing.T) {
+		items, _, _ := repo.List(ctx, &biz.ListEventInput{Page: 1, PageSize: 10, OperatorEmail: lo.ToPtr("nobody@example.com")})
+		require.Len(t, items, 0)
+	})
 }
 
 // TestEventRepo_Show 覆盖存在与不存在两种结果。
@@ -157,19 +169,20 @@ func TestEventRepo_AuditMethods(t *testing.T) {
 		eventer.EXPECT().Dispatch(want, gomock.Any()).Do(func(_ event.Event, p any) {
 			al := p.(AuditLog)
 			assert.Equal(t, "u", al.GetUsername())
+			assert.Equal(t, "u@example.com", al.GetOperatorEmail())
 			assert.Equal(t, types.EventActionType_Create, al.GetAction())
 			assert.Equal(t, "msg", al.GetMsg())
 			assert.Equal(t, "", al.GetOldStr())
 			assert.Equal(t, "", al.GetNewStr())
 		})
-		repo.AuditLog(types.EventActionType_Create, "u", "msg")
+		repo.AuditLog(types.EventActionType_Create, "u", "u@example.com", "msg")
 	})
 
 	t.Run("FileAuditLog", func(t *testing.T) {
 		eventer.EXPECT().Dispatch(want, gomock.Any()).Do(func(_ event.Event, p any) {
 			assert.Equal(t, 7, p.(AuditLog).GetFileID())
 		})
-		repo.FileAuditLog(types.EventActionType_Delete, "u", "m", 7)
+		repo.FileAuditLog(types.EventActionType_Delete, "u", "u@example.com", "m", 7)
 	})
 
 	t.Run("FileAuditLogWithDuration", func(t *testing.T) {
@@ -178,7 +191,7 @@ func TestEventRepo_AuditMethods(t *testing.T) {
 			assert.Equal(t, 7, al.GetFileID())
 			assert.NotEmpty(t, al.GetDuration())
 		})
-		repo.FileAuditLogWithDuration(types.EventActionType_Delete, "u", "m", 7, time.Second)
+		repo.FileAuditLogWithDuration(types.EventActionType_Delete, "u", "u@example.com", "m", 7, time.Second)
 	})
 
 	t.Run("AuditLogWithRequest", func(t *testing.T) {
@@ -186,7 +199,7 @@ func TestEventRepo_AuditMethods(t *testing.T) {
 			al := p.(AuditLog)
 			assert.Contains(t, al.GetNewStr(), "name: x")
 		})
-		repo.AuditLogWithRequest(types.EventActionType_Update, "u", "m", struct {
+		repo.AuditLogWithRequest(types.EventActionType_Update, "u", "u@example.com", "m", struct {
 			Name string `yaml:"name"`
 		}{Name: "x"})
 	})
@@ -197,7 +210,7 @@ func TestEventRepo_AuditMethods(t *testing.T) {
 			al := p.(AuditLog)
 			assert.Equal(t, "{Foo:x}", al.GetNewStr())
 		})
-		repo.AuditLogWithRequest(types.EventActionType_Update, "u", "m", failingYAMLMarshaler{Foo: "x"})
+		repo.AuditLogWithRequest(types.EventActionType_Update, "u", "u@example.com", "m", failingYAMLMarshaler{Foo: "x"})
 	})
 
 	t.Run("AuditLogWithChange", func(t *testing.T) {
@@ -206,7 +219,7 @@ func TestEventRepo_AuditMethods(t *testing.T) {
 			assert.Equal(t, "old-yaml", al.GetOldStr())
 			assert.Equal(t, "new-yaml", al.GetNewStr())
 		})
-		repo.AuditLogWithChange(types.EventActionType_Update, "u", "m",
+		repo.AuditLogWithChange(types.EventActionType_Update, "u", "u@example.com", "m",
 			yamlPrettierFn(func() string { return "old-yaml" }),
 			yamlPrettierFn(func() string { return "new-yaml" }),
 		)
@@ -218,7 +231,7 @@ func TestEventRepo_AuditMethods(t *testing.T) {
 			assert.Equal(t, "", al.GetOldStr())
 			assert.Equal(t, "", al.GetNewStr())
 		})
-		repo.AuditLogWithChange(types.EventActionType_Update, "u", "m", nil, nil)
+		repo.AuditLogWithChange(types.EventActionType_Update, "u", "u@example.com", "m", nil, nil)
 	})
 }
 

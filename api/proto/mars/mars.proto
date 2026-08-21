@@ -59,10 +59,13 @@ enum ElementType {
 }
 
 message Element {
-  string          path          = 1 [(validate.rules).string.min_bytes = 1];
-  ElementType     type          = 2 [(validate.rules).enum.defined_only = true];
-  string          default       = 3;
-  string          description   = 4;
-  repeated string select_values = 6;
-  uint32          order         = 7;
+  string          path             = 1 [(validate.rules).string.min_bytes = 1];
+  ElementType     type             = 2 [(validate.rules).enum.defined_only = true];
+  string          default          = 3;
+  string          description      = 4;
+  repeated string select_values    = 6;
+  uint32          order            = 7;
+  // textarea_language 多行（ElementTypeTextArea）编辑器语言提示，空值由前端回退默认（env）。
+  // 透传给 CodeEditor 的 language（对齐前端 FILE_TYPE_TO_LANG 键），仅对 textarea 类型有意义。
+  string          textarea_language = 8;
 }

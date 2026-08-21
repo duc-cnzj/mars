@@ -274,6 +274,7 @@ func TestContainerSvc_CopyToPod_Success(t *testing.T) {
 	eventRepo.EXPECT().FileAuditLog(
 		types.EventActionType_Upload,
 		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
 		gomock.Any(),
 		11,
 	)
@@ -326,6 +327,7 @@ func TestContainerSvc_CopyToPod_DefaultContainer(t *testing.T) {
 	eventRepo.EXPECT().FileAuditLog(
 		types.EventActionType_Upload,
 		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
 		gomock.Any(),
 		11,
 	)
@@ -579,6 +581,7 @@ func TestContainerSvc_StreamCopyToPod_Success(t *testing.T) {
 	eventRepo.EXPECT().FileAuditLog(
 		types.EventActionType_Upload,
 		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
 		gomock.Any(),
 		1,
 	)
@@ -663,6 +666,7 @@ func TestContainerSvc_ExecOnce_Success(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithChange(
 		types.EventActionType_Exec,
 		"admin",
+		adminEmail,
 		gomock.Any(),
 		nil,
 		gomock.Cond(func(x any) bool {
@@ -979,7 +983,7 @@ func TestContainerSvc_StreamCopyToPod_MultipleMessages(t *testing.T) {
 	fileRepo := mocks.fileRepo
 	eventRepo := mocks.eventRepo
 
-	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Upload, "admin", gomock.Any(), 1)
+	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Upload, "admin", adminEmail, gomock.Any(), 1)
 	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
 	fileRepo.EXPECT().StreamUploadFile(gomock.Any(), gomock.Any()).Return(&biz.File{ID: 1, Namespace: "a", Pod: "b", Container: "c"}, nil)
 	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), gomock.Any()).Return(&biz.File{}, nil)
@@ -1023,7 +1027,7 @@ func TestContainerSvc_StreamCopyToPod_RecvError(t *testing.T) {
 	fileRepo := mocks.fileRepo
 	eventRepo := mocks.eventRepo
 
-	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Upload, "admin", gomock.Any(), 1)
+	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Upload, "admin", adminEmail, gomock.Any(), 1)
 	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
 	fileRepo.EXPECT().StreamUploadFile(gomock.Any(), gomock.Any()).Return(&biz.File{ID: 1, Namespace: "a", Pod: "b", Container: "c"}, nil)
 	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), gomock.Any()).Return(&biz.File{}, nil)
@@ -1041,7 +1045,7 @@ func TestContainerSvc_StreamCopyToPod_CtxCancelled(t *testing.T) {
 	fileRepo := mocks.fileRepo
 	eventRepo := mocks.eventRepo
 
-	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Upload, "admin", gomock.Any(), 1)
+	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Upload, "admin", adminEmail, gomock.Any(), 1)
 	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
 	fileRepo.EXPECT().StreamUploadFile(gomock.Any(), gomock.Any()).Return(&biz.File{ID: 1, Namespace: "a", Pod: "b", Container: "c"}, nil)
 	k8sRepo.EXPECT().CopyFileToPod(gomock.Any(), gomock.Any()).Return(&biz.File{}, nil)
@@ -1086,7 +1090,7 @@ func TestContainerSvc_Exec_SendError(t *testing.T) {
 	fileRepo := mocks.fileRepo
 	eventRepo := mocks.eventRepo
 
-	eventRepo.EXPECT().FileAuditLogWithDuration(types.EventActionType_Exec, "mars", gomock.Any(), 1, time.Second)
+	eventRepo.EXPECT().FileAuditLogWithDuration(types.EventActionType_Exec, "mars", "", gomock.Any(), 1, time.Second)
 	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
 	reco := &recorderMock{}
 	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any()).Return(reco)
@@ -1117,7 +1121,7 @@ func TestContainerSvc_Exec_FirstWriteError(t *testing.T) {
 	fileRepo := mocks.fileRepo
 	eventRepo := mocks.eventRepo
 
-	eventRepo.EXPECT().FileAuditLogWithDuration(types.EventActionType_Exec, "mars", gomock.Any(), 1, time.Second)
+	eventRepo.EXPECT().FileAuditLogWithDuration(types.EventActionType_Exec, "mars", "", gomock.Any(), 1, time.Second)
 	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
 	reco := &recorderMock{}
 	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any()).Return(reco)
@@ -1182,7 +1186,7 @@ func TestContainerSvc_Exec_ConcurrentSend(t *testing.T) {
 	fileRepo := mocks.fileRepo
 	eventRepo := mocks.eventRepo
 
-	eventRepo.EXPECT().FileAuditLogWithDuration(types.EventActionType_Exec, "mars", gomock.Any(), 1, time.Second)
+	eventRepo.EXPECT().FileAuditLogWithDuration(types.EventActionType_Exec, "mars", "", gomock.Any(), 1, time.Second)
 	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
 	fileRepo.EXPECT().NewRecorder(gomock.Any(), gomock.Any()).Return(&recorderMock{})
 	k8sRepo.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Cond(func(x any) bool {
@@ -1249,7 +1253,7 @@ func TestContainerSvc_ExecOnce_ConcurrentSend(t *testing.T) {
 	nsRepo.EXPECT().FindByName(gomock.Any(), gomock.Any()).Return(&biz.Namespace{}, nil).AnyTimes()
 	eventRepo := mocks.eventRepo
 
-	eventRepo.EXPECT().AuditLogWithChange(types.EventActionType_Exec, "admin", gomock.Any(), nil, gomock.Any())
+	eventRepo.EXPECT().AuditLogWithChange(types.EventActionType_Exec, "admin", adminEmail, gomock.Any(), nil, gomock.Any())
 	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
 	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), "a", "b").Return("c", nil)
 	k8sRepo.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Cond(func(x any) bool {
@@ -1301,7 +1305,7 @@ func TestContainerSvc_ExecOnce_SendError(t *testing.T) {
 	nsRepo.EXPECT().FindByName(gomock.Any(), gomock.Any()).Return(&biz.Namespace{}, nil).AnyTimes()
 	eventRepo := mocks.eventRepo
 
-	eventRepo.EXPECT().AuditLogWithChange(types.EventActionType_Exec, "admin", gomock.Any(), nil, gomock.Any())
+	eventRepo.EXPECT().AuditLogWithChange(types.EventActionType_Exec, "admin", adminEmail, gomock.Any(), nil, gomock.Any())
 	k8sRepo.EXPECT().IsPodRunning("a", "b").Return(true, "")
 	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), "a", "b").Return("c", nil)
 	k8sRepo.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Cond(func(x any) bool {
@@ -1339,6 +1343,7 @@ func TestContainerSvc_Exec_Success(t *testing.T) {
 	eventRepo.EXPECT().FileAuditLogWithDuration(
 		types.EventActionType_Exec,
 		"mars",
+		"",
 		gomock.Any(),
 		1,
 		time.Second,
@@ -1519,7 +1524,7 @@ func Test_containerSvc_ForceDeletePod_Success(t *testing.T) {
 	svc, mocks := newContainerSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{}, nil).AnyTimes()
 	mocks.k8sRepo.EXPECT().DeletePod(gomock.Any(), "a", "b", gomock.Any()).Return(nil)
-	mocks.eventRepo.EXPECT().AuditLog(types.EventActionType_ForceDeletePod, "admin", gomock.Any()).Times(1)
+	mocks.eventRepo.EXPECT().AuditLog(types.EventActionType_ForceDeletePod, "admin", adminEmail, gomock.Any()).Times(1)
 	resp, err := svc.ForceDeletePod(newAdminUserCtx(), &container.ForceDeletePodRequest{
 		Namespace: "a",
 		Pod:       "b",
@@ -1535,7 +1540,7 @@ func Test_containerSvc_ForceDeletePod_Error(t *testing.T) {
 	svc, mocks := newContainerSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{}, nil).AnyTimes()
 	mocks.k8sRepo.EXPECT().DeletePod(gomock.Any(), "a", "b", gomock.Any()).Return(errors.New("k8s delete failed"))
-	mocks.eventRepo.EXPECT().AuditLog(types.EventActionType_ForceDeletePod, "admin", gomock.Any()).Times(1)
+	mocks.eventRepo.EXPECT().AuditLog(types.EventActionType_ForceDeletePod, "admin", adminEmail, gomock.Any()).Times(1)
 	_, err := svc.ForceDeletePod(newAdminUserCtx(), &container.ForceDeletePodRequest{
 		Namespace: "a",
 		Pod:       "b",

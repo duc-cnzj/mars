@@ -92,10 +92,12 @@ message EventModel {
   FileModel       file       = 9;
   string          event_at   = 10;
   bool            has_diff   = 11;
+  // 操作人邮箱：admin 全量可见，普通登录用户 List 只返回本人事件（归属过滤），Show 越权返回 404
+  string          operator_email = 12;
 
-  string          created_at = 100;
-  string          updated_at = 101;
-  string          deleted_at = 102;
+  string          created_at     = 100;
+  string          updated_at     = 101;
+  string          deleted_at     = 102;
 }
 
 message FileModel {

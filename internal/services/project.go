@@ -246,6 +246,7 @@ func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 	p.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Delete,
 		biz.MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Email,
 		fmt.Sprintf("删除项目: %d: %s/%s ", proj.ID, proj.Namespace.Name, proj.Name),
 		request,
 	)

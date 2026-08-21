@@ -82,6 +82,11 @@ func Username(v string) predicate.Event {
 	return predicate.Event(sql.FieldEQ(FieldUsername, v))
 }
 
+// OperatorEmail applies equality check predicate on the "operator_email" field. It's identical to OperatorEmailEQ.
+func OperatorEmail(v string) predicate.Event {
+	return predicate.Event(sql.FieldEQ(FieldOperatorEmail, v))
+}
+
 // Message applies equality check predicate on the "message" field. It's identical to MessageEQ.
 func Message(v string) predicate.Event {
 	return predicate.Event(sql.FieldEQ(FieldMessage, v))
@@ -359,6 +364,71 @@ func UsernameEqualFold(v string) predicate.Event {
 // UsernameContainsFold applies the ContainsFold predicate on the "username" field.
 func UsernameContainsFold(v string) predicate.Event {
 	return predicate.Event(sql.FieldContainsFold(FieldUsername, v))
+}
+
+// OperatorEmailEQ applies the EQ predicate on the "operator_email" field.
+func OperatorEmailEQ(v string) predicate.Event {
+	return predicate.Event(sql.FieldEQ(FieldOperatorEmail, v))
+}
+
+// OperatorEmailNEQ applies the NEQ predicate on the "operator_email" field.
+func OperatorEmailNEQ(v string) predicate.Event {
+	return predicate.Event(sql.FieldNEQ(FieldOperatorEmail, v))
+}
+
+// OperatorEmailIn applies the In predicate on the "operator_email" field.
+func OperatorEmailIn(vs ...string) predicate.Event {
+	return predicate.Event(sql.FieldIn(FieldOperatorEmail, vs...))
+}
+
+// OperatorEmailNotIn applies the NotIn predicate on the "operator_email" field.
+func OperatorEmailNotIn(vs ...string) predicate.Event {
+	return predicate.Event(sql.FieldNotIn(FieldOperatorEmail, vs...))
+}
+
+// OperatorEmailGT applies the GT predicate on the "operator_email" field.
+func OperatorEmailGT(v string) predicate.Event {
+	return predicate.Event(sql.FieldGT(FieldOperatorEmail, v))
+}
+
+// OperatorEmailGTE applies the GTE predicate on the "operator_email" field.
+func OperatorEmailGTE(v string) predicate.Event {
+	return predicate.Event(sql.FieldGTE(FieldOperatorEmail, v))
+}
+
+// OperatorEmailLT applies the LT predicate on the "operator_email" field.
+func OperatorEmailLT(v string) predicate.Event {
+	return predicate.Event(sql.FieldLT(FieldOperatorEmail, v))
+}
+
+// OperatorEmailLTE applies the LTE predicate on the "operator_email" field.
+func OperatorEmailLTE(v string) predicate.Event {
+	return predicate.Event(sql.FieldLTE(FieldOperatorEmail, v))
+}
+
+// OperatorEmailContains applies the Contains predicate on the "operator_email" field.
+func OperatorEmailContains(v string) predicate.Event {
+	return predicate.Event(sql.FieldContains(FieldOperatorEmail, v))
+}
+
+// OperatorEmailHasPrefix applies the HasPrefix predicate on the "operator_email" field.
+func OperatorEmailHasPrefix(v string) predicate.Event {
+	return predicate.Event(sql.FieldHasPrefix(FieldOperatorEmail, v))
+}
+
+// OperatorEmailHasSuffix applies the HasSuffix predicate on the "operator_email" field.
+func OperatorEmailHasSuffix(v string) predicate.Event {
+	return predicate.Event(sql.FieldHasSuffix(FieldOperatorEmail, v))
+}
+
+// OperatorEmailEqualFold applies the EqualFold predicate on the "operator_email" field.
+func OperatorEmailEqualFold(v string) predicate.Event {
+	return predicate.Event(sql.FieldEqualFold(FieldOperatorEmail, v))
+}
+
+// OperatorEmailContainsFold applies the ContainsFold predicate on the "operator_email" field.
+func OperatorEmailContainsFold(v string) predicate.Event {
+	return predicate.Event(sql.FieldContainsFold(FieldOperatorEmail, v))
 }
 
 // MessageEQ applies the EQ predicate on the "message" field.

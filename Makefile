@@ -15,18 +15,46 @@ BIN_DIR ?= bin
 $(BIN_DIR):
 	mkdir -p $@
 
+# protoc 本体是 C++ 二进制（go install 装不了），这里钉版本装到项目内 bin/protoc/，
+# 与系统隔离、免 sudo，且 include/（well-known types）随包自带、protoc 按自身相对路径自动找到。
+# 改版本号即可；可选版本：https://github.com/protocolbuffers/protobuf/releases
+PROTOC_VERSION ?= 31.1
+PROTOC := $(BIN_DIR)/protoc/bin/protoc
+
+# 平台后缀映射（uname → GitHub release 命名；Windows 的 protoc-gen 建议走 WSL/Docker）
+UNAME_S := $(shell uname -s)
+UNAME_M := $(shell uname -m)
+PROTOC_OS := $(if $(findstring Darwin,$(UNAME_S)),osx,$(if $(findstring Linux,$(UNAME_S)),linux,win))
+PROTOC_ARCH := $(if $(findstring arm64,$(UNAME_M)),aarch_64,x86_64)
+PROTOC_SUFFIX := $(if $(filter win,$(PROTOC_OS)),win64,$(PROTOC_OS)-$(PROTOC_ARCH))
+
+$(PROTOC): | $(BIN_DIR)
+	mkdir -p $(BIN_DIR)/protoc
+	curl -fLo $(BIN_DIR)/protoc.zip \
+		https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_SUFFIX).zip
+	unzip -oq $(BIN_DIR)/protoc.zip -d $(BIN_DIR)/protoc
+	rm $(BIN_DIR)/protoc.zip
+
+.PHONY: protoc
+protoc: $(PROTOC)
+
 .PHONY: build_tools
+# go install 不带 @version 时按主模块 MVS 解析版本安装，可能被传递依赖顶高（grpc-gateway 就被
+# go.opentelemetry.io/proto/otlp 顶到 v2.27.1），导致生成器与 go.mod 声明漂移、输出不可复现。
+# 这里全部显式钉版本；grpc-gateway 钉 v2.21.0（与 go.mod 声明一致，勿动，除非有意升级）。
+# 其余与 go list -m 解析版本一致。改版本号需同时改 go.mod 对应依赖。
 build_tools:
-	go install \
-		github.com/envoyproxy/protoc-gen-validate \
-		github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway \
-		google.golang.org/grpc/cmd/protoc-gen-go-grpc \
-		google.golang.org/protobuf/cmd/protoc-gen-go \
-		github.com/google/gnostic/cmd/protoc-gen-openapi
+	# go install 一次调用要求所有参数同模块同版本，各工具版本不同，必须拆开
+	# 注意：protoc-gen-go-grpc 已从 grpc 主模块拆出为独立模块，版本号与 grpc 运行时（v1.79.3）无关
+	go install github.com/envoyproxy/protoc-gen-validate@v1.3.0
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.21.0
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.1
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
+	go install github.com/google/gnostic/cmd/protoc-gen-openapi@v0.7.0
 
 .PHONY: api
-api:
-	protoc \
+api: $(PROTOC)
+	$(PROTOC) \
         --proto_path=./api \
 		--proto_path ./third_party/protos \
 		--go_out=paths=source_relative:./api \

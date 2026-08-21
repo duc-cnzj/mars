@@ -23,7 +23,7 @@
 | `RequireProjectAccess(ctx, id)` | 🛡️ | 取项目 + 校验其所属命名空间可访问性，返回项目 |
 | `RequireNamespaceOwner(ctx, ns)` | 🏠 | 校验当前用户是否为命名空间创建者 |
 | `RequireAdmin(ctx, fullMethodName, allowlist...)` | ⭐ | allowlist 精确命中放行，否则要求 admin |
-| `RequireFileAccess(ctx, fil)` | 📄 | 当前用户为文件所有者（Username 匹配）或 admin（独立于 gRPC admin 门禁，用于 HTTP 下载） |
+| `RequireFileAccess(ctx, fil)` | 📄 | 当前用户为文件所有者（Username 匹配）或 admin（独立于 gRPC admin 门禁，用于 HTTP 下载与 gRPC ShowRecords 回放） |
 | `CanAccessNamespace(ctx, ns)` | 🛡️（布尔） | 纯布尔谓词：admin / 创建者 / 成员 / 公开空间放行，不映射错误；供 IsExists「不可访问视同不存在」的静默场景 |
 
 > AccessBiz 由 `internal/biz/access.go` 定义，经 `NewAccessBiz(nsRepo, projBiz)` 构造（wire 组装）。用户提取在方法内部直接走 `biz.MustGetUser`（原 `internal/auth` 包已并入 `biz/context.go`），不再由传输层注入 `getUser` 回调——ctx 无用户即编程错误（panic），免登录白名单方法不触达任何判定。全部访问判定均已收进 AccessBiz 方法，无顶层自由函数；deploy 等非传输层消费方按 job 临时构造 AccessBiz 复用同一判定。
@@ -39,17 +39,17 @@
 | `RequireProjectAccess` | 这个项目能看吗？先查它挂在哪个命名空间下，再按命名空间规则判。项目携带部署配置/环境变量，必须查归属防枚举 ID 拖库 | ✅ 项目对象 |
 | `RequireNamespaceOwner` | 你是这个空间的房主（创建者）或 admin 吗？只管 yes/no，不返回对象 | ❌ |
 | `RequireAdmin` | 大门守卫：白名单精确命中就放行，否则必须是 admin（抄错一个字符都不算豁免） | ❌ |
-| `RequireFileAccess` | 文件上传者是你，或你是 admin？纯对象比对、不查库，HTTP 下载专用 | ❌ |
+| `RequireFileAccess` | 文件上传者是你，或你是 admin？HTTP 下载直接对象比对；gRPC ShowRecords 回放先 `GetByID` 查库取文件元数据再比对 | ❌ |
 | `CanAccessNamespace` | 这个空间你能不能进？只回答能/不能，不报错——「进不去」当作「不存在」静默隐藏，不暴露存在性 | ❌ |
 
-记忆法：1/2/3 负责「能看某块资源吗」且通过后带实体；4 负责「你能动这块地吗」；5 是全局 admin 大闸；6 是 HTTP 下载专用轻量闸；7 是 1/2/3 的纯布尔底座（能进=1、不能=0，不报错）。§3 鉴权链正是三层叠用：登录拦截器 → Authorize（5）→ 方法内（1/2/3/4）。
+记忆法：1/2/3 负责「能看某块资源吗」且通过后带实体；4 负责「你能动这块地吗」；5 是全局 admin 大闸；6 是文件所有者轻量闸（HTTP 下载 / ShowRecords 回放）；7 是 1/2/3 的纯布尔底座（能进=1、不能=0，不报错）。§3 鉴权链正是三层叠用：登录拦截器 → Authorize（5）→ 方法内（1/2/3/4/6）。
 
 ## 3. gRPC 鉴权链（三层叠加）
 
 每个 gRPC 方法按序经过（`internal/server/grpc.go` + `internal/server/middlewares/login.go` + `interceptor.go`）：
 
 1. **登录拦截器**（`middlewares.LoginUnaryServerInterceptor(authFn, logger)` / Stream 版 `LoginStreamServerInterceptor(authFn, logger)`）：命中 `biz.IsPublicMethod` 白名单（与 §4.1 免登录清单逐行对应，白名单归属 biz 层）的公开方法直接放行；其余方法要求 Bearer token，校验通过后把用户注入上下文；认证失败打 `[auth audit]` Warning 审计日志（401 兜底）。
-2. **Authorize 门禁**（`AuthUnaryServerInterceptor`）：服务实现 `Authorize` 接口（file/repo/event）→ 自动调用 `Authorize(ctx, fullMethodName)`，内部走 `RequireAdmin`。
+2. **Authorize 门禁**（`AuthUnaryServerInterceptor`）：服务实现 `Authorize` 接口（file/repo）→ 自动调用 `Authorize(ctx, fullMethodName)`，内部走 `RequireAdmin`。
 3. **方法内访问控制**：各服务方法体开头调用 AccessBiz 的 Require*/Can* 方法（命名空间/项目/owner 级）。
 
 ## 4. 各服务方法 → 权限对照
@@ -68,10 +68,10 @@
 | 服务 | 方法 | 权限 | 依据 |
 |---|---|---|---|
 | file | MaxUploadSize | 🔑 | allowlist `/file.File/MaxUploadSize` |
-| file | List / DiskInfo / ShowRecords / Delete | ⭐ | file.go:125（Authorize 门禁） |
+| file | ShowRecords | 📄 `RequireFileAccess`（所有者/admin） | file.go:79 方法体 `GetByID` + `RequireFileAccess`；allowlist file.go:135 放行后做所有者判定 |
+| file | List / DiskInfo / Delete | ⭐ | file.go:135（Authorize 门禁） |
 | repo | List / Show | 🔑 | allowlist `/repo.Repo/List` `/Show` |
 | repo | Create / Update / ToggleEnabled / Delete / Clone | ⭐ | repo.go:209（Authorize 门禁） |
-| event | List / Show | ⭐ | event.go:72（审计日志，无豁免） |
 
 ### 4.3 命名空间/项目级访问控制（🛡️ / 🏠）
 
@@ -100,6 +100,7 @@
 | accessToken | List | 🔑 | 按 Email 只返回本人 token（access_token.go:55） |
 | accessToken | Grant / Lease / Revoke | 🔑 | 按 token 值操作，"持有即有权"（见 §6.3） |
 | git | AllRepos / ProjectOptions / BranchOptions / CommitOptions / Commit / PipelineInfo / GetChartValuesYaml | 🔑 | git 信息不绑定命名空间（全局仓库） |
+| event | List / Show | 🔑 登录即可（普通用户仅见本人） | event.go:54 按操作人邮箱（operator_email）归属过滤：admin 全量，普通用户只看自己的事件；Show 越权访问返回 404（视同不存在，防审计日志 id 枚举） |
 
 ## 5. HTTP 端点（httphandler.go / file_handler.go / swagger_handler.go）
 
@@ -111,7 +112,7 @@
 | /api/ws_info、/ws | 🔑 authenticated | httphandler.go:59（RegisterWsRoute） |
 | /doc/swagger.json、/docs/ | 🆓 公开（仅 HttpCache） | swagger_handler.go:26 |
 
-> gRPC file 服务的 admin 门禁与 HTTP 下载的所有者判定是**两条独立规则**：HTTP 下载放行文件所有者，gRPC 文件管理仅限 admin，二者不可互相替代。
+> gRPC file 服务的 admin 门禁与文件所有者判定是**两条独立规则**：HTTP 下载与 gRPC ShowRecords 共用 `RequireFileAccess` 放行文件所有者/admin，其余 gRPC 文件管理（列表/磁盘信息/删除）仍走 Authorize admin 门禁。ShowRecords 先 allowlist 过 admin 门禁，再在方法体内 `RequireFileAccess` 做所有者判定——两层叠加，普通用户仅能回放自己的会话。
 
 ## 6. 审计观察（蓝军视角）
 

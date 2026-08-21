@@ -459,39 +459,39 @@ func (m *MockEventRepo) EXPECT() *MockEventRepoMockRecorder {
 }
 
 // AuditLog mocks base method.
-func (m *MockEventRepo) AuditLog(arg0 types.EventActionType, arg1, arg2 string) {
+func (m *MockEventRepo) AuditLog(arg0 types.EventActionType, arg1, arg2, arg3 string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AuditLog", arg0, arg1, arg2)
+	m.ctrl.Call(m, "AuditLog", arg0, arg1, arg2, arg3)
 }
 
 // AuditLog indicates an expected call of AuditLog.
-func (mr *MockEventRepoMockRecorder) AuditLog(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockEventRepoMockRecorder) AuditLog(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuditLog", reflect.TypeOf((*MockEventRepo)(nil).AuditLog), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuditLog", reflect.TypeOf((*MockEventRepo)(nil).AuditLog), arg0, arg1, arg2, arg3)
 }
 
 // AuditLogWithChange mocks base method.
-func (m *MockEventRepo) AuditLogWithChange(arg0 types.EventActionType, arg1, arg2 string, arg3, arg4 biz.YamlPrettier) {
+func (m *MockEventRepo) AuditLogWithChange(arg0 types.EventActionType, arg1, arg2, arg3 string, arg4, arg5 biz.YamlPrettier) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AuditLogWithChange", arg0, arg1, arg2, arg3, arg4)
+	m.ctrl.Call(m, "AuditLogWithChange", arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // AuditLogWithChange indicates an expected call of AuditLogWithChange.
-func (mr *MockEventRepoMockRecorder) AuditLogWithChange(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
+func (mr *MockEventRepoMockRecorder) AuditLogWithChange(arg0, arg1, arg2, arg3, arg4, arg5 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuditLogWithChange", reflect.TypeOf((*MockEventRepo)(nil).AuditLogWithChange), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuditLogWithChange", reflect.TypeOf((*MockEventRepo)(nil).AuditLogWithChange), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // AuditLogWithRequest mocks base method.
-func (m *MockEventRepo) AuditLogWithRequest(arg0 types.EventActionType, arg1, arg2 string, arg3 any) {
+func (m *MockEventRepo) AuditLogWithRequest(arg0 types.EventActionType, arg1, arg2, arg3 string, arg4 any) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AuditLogWithRequest", arg0, arg1, arg2, arg3)
+	m.ctrl.Call(m, "AuditLogWithRequest", arg0, arg1, arg2, arg3, arg4)
 }
 
 // AuditLogWithRequest indicates an expected call of AuditLogWithRequest.
-func (mr *MockEventRepoMockRecorder) AuditLogWithRequest(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockEventRepoMockRecorder) AuditLogWithRequest(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuditLogWithRequest", reflect.TypeOf((*MockEventRepo)(nil).AuditLogWithRequest), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuditLogWithRequest", reflect.TypeOf((*MockEventRepo)(nil).AuditLogWithRequest), arg0, arg1, arg2, arg3, arg4)
 }
 
 // Dispatch mocks base method.
@@ -507,27 +507,27 @@ func (mr *MockEventRepoMockRecorder) Dispatch(arg0, arg1 any) *gomock.Call {
 }
 
 // FileAuditLog mocks base method.
-func (m *MockEventRepo) FileAuditLog(arg0 types.EventActionType, arg1, arg2 string, arg3 int) {
+func (m *MockEventRepo) FileAuditLog(arg0 types.EventActionType, arg1, arg2, arg3 string, arg4 int) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "FileAuditLog", arg0, arg1, arg2, arg3)
+	m.ctrl.Call(m, "FileAuditLog", arg0, arg1, arg2, arg3, arg4)
 }
 
 // FileAuditLog indicates an expected call of FileAuditLog.
-func (mr *MockEventRepoMockRecorder) FileAuditLog(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockEventRepoMockRecorder) FileAuditLog(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FileAuditLog", reflect.TypeOf((*MockEventRepo)(nil).FileAuditLog), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FileAuditLog", reflect.TypeOf((*MockEventRepo)(nil).FileAuditLog), arg0, arg1, arg2, arg3, arg4)
 }
 
 // FileAuditLogWithDuration mocks base method.
-func (m *MockEventRepo) FileAuditLogWithDuration(arg0 types.EventActionType, arg1, arg2 string, arg3 int, arg4 time.Duration) {
+func (m *MockEventRepo) FileAuditLogWithDuration(arg0 types.EventActionType, arg1, arg2, arg3 string, arg4 int, arg5 time.Duration) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "FileAuditLogWithDuration", arg0, arg1, arg2, arg3, arg4)
+	m.ctrl.Call(m, "FileAuditLogWithDuration", arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // FileAuditLogWithDuration indicates an expected call of FileAuditLogWithDuration.
-func (mr *MockEventRepoMockRecorder) FileAuditLogWithDuration(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
+func (mr *MockEventRepoMockRecorder) FileAuditLogWithDuration(arg0, arg1, arg2, arg3, arg4, arg5 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FileAuditLogWithDuration", reflect.TypeOf((*MockEventRepo)(nil).FileAuditLogWithDuration), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FileAuditLogWithDuration", reflect.TypeOf((*MockEventRepo)(nil).FileAuditLogWithDuration), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // HandleAuditLog mocks base method.
@@ -1694,6 +1694,20 @@ func (m *MockNamespaceRepo) Favorite(arg0 context.Context, arg1 *biz.FavoriteNam
 func (mr *MockNamespaceRepoMockRecorder) Favorite(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Favorite", reflect.TypeOf((*MockNamespaceRepo)(nil).Favorite), arg0, arg1)
+}
+
+// FavoriteSort mocks base method.
+func (m *MockNamespaceRepo) FavoriteSort(arg0 context.Context, arg1 string, arg2, arg3 int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FavoriteSort", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// FavoriteSort indicates an expected call of FavoriteSort.
+func (mr *MockNamespaceRepoMockRecorder) FavoriteSort(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FavoriteSort", reflect.TypeOf((*MockNamespaceRepo)(nil).FavoriteSort), arg0, arg1, arg2, arg3)
 }
 
 // FindByName mocks base method.

@@ -76,7 +76,16 @@ func (f *fileSvc) DiskInfo(ctx context.Context, request *file.DiskInfoRequest) (
 }
 
 // ShowRecords 返回指定文件的上传/执行记录文本（读取存储对象后整体回传）。
+// 访问控制：按 id 取文件元数据后 RequireFileAccess 判定（所有者或 admin），
+// 越权返回 errs.ErrorPermissionDenied——与 HTTP 下载同一条门卫，普通用户可回放自己的会话。
 func (f *fileSvc) ShowRecords(ctx context.Context, request *file.ShowRecordsRequest) (*file.ShowRecordsResponse, error) {
+	fil, err := f.fileBiz.GetByID(ctx, int(request.Id))
+	if err != nil {
+		return nil, logError(ctx, f.logger, err)
+	}
+	if err := f.accessBiz.RequireFileAccess(ctx, fil); err != nil {
+		return nil, logError(ctx, f.logger, err)
+	}
 	records, err := f.fileBiz.ShowRecords(ctx, int(request.Id))
 	if err != nil {
 		return nil, logError(ctx, f.logger, err)
@@ -102,6 +111,7 @@ func (f *fileSvc) Delete(ctx context.Context, request *file.DeleteRequest) (*fil
 	f.eventBiz.FileAuditLog(
 		types.EventActionType_Delete,
 		biz.MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Email,
 		fmt.Sprintf("删除文件: '%s', 该文件由 %s 上传, 大小是 %s", record.Path, record.Username, humanize.Bytes(record.Size)),
 		record.ID,
 	)
@@ -119,7 +129,8 @@ func (f *fileSvc) MaxUploadSize(ctx context.Context, request *file.MaxUploadSize
 }
 
 // Authorize 是文件服务的 admin 门禁：MaxUploadSize 放行给任意登录用户，
-// 其余文件管理方法（列表/删除/详情）仅 admin 可调用。
+// ShowRecords 放行后在方法体内 RequireFileAccess 做所有者/admin 判定，
+// 其余文件管理方法（列表/磁盘信息/删除）仅 admin 可调用。
 func (f *fileSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
-	return f.accessBiz.RequireAdmin(ctx, fullMethodName, file.File_MaxUploadSize_FullMethodName)
+	return f.accessBiz.RequireAdmin(ctx, fullMethodName, file.File_MaxUploadSize_FullMethodName, file.File_ShowRecords_FullMethodName)
 }

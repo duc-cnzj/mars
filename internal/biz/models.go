@@ -147,18 +147,19 @@ const (
 
 // Event 是事件审计记录领域模型。
 type Event struct {
-	ID        int
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time
-	Action    types.EventActionType
-	Username  string
-	Message   string
-	Old       string
-	New       string
-	Duration  string
-	FileID    *int
-	HasDiff   bool
+	ID            int
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	DeletedAt     *time.Time
+	Action        types.EventActionType
+	Username      string
+	OperatorEmail string
+	Message       string
+	Old           string
+	New           string
+	Duration      string
+	FileID        *int
+	HasDiff       bool
 
 	File *File
 }
@@ -166,11 +167,13 @@ type Event struct {
 // ListEventInput 是事件分页列表输入。
 // ActionTypes 是动作类型过滤的生效值集合（IN 匹配）：空 = 全部，多值 = 任一匹配；
 // 由 services 层从 action_type（单值，Unknown=全部）与 action_types（多值）归一化而来。
+// OperatorEmail 按操作人邮箱等值过滤：nil = 不过滤（admin 全量），非 nil = 只看该邮箱的事件。
 type ListEventInput struct {
 	Page, PageSize int32
 	ActionTypes    []types.EventActionType
 	Search         string
 	OrderIDDesc    *bool
+	OperatorEmail  *string
 }
 
 // NamespaceCreatedData 是 namespace 创建事件载荷：DB 模型 + k8s 对象。
@@ -337,6 +340,14 @@ type FavoriteNamespaceInput struct {
 	NamespaceID int
 	UserEmail   string
 	Favorite    bool
+}
+
+// FavoriteSortNamespaceInput 是移动关注列表排序的输入。
+// FirstID 为被移动的空间，SecondID 为移动目标位置的参照空间（FirstID 移到 SecondID 位置）。
+type FavoriteSortNamespaceInput struct {
+	UserEmail string
+	FirstID   int
+	SecondID  int
 }
 
 // ---------- Project ----------

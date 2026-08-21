@@ -660,6 +660,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/namespaces/favorite/sort": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 移动关注列表中一个空间到另一个位置 */
+        put: operations["Namespace_FavoriteSort"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/namespaces/sync_members": {
         parameters: {
             query?: never;
@@ -1293,6 +1310,11 @@ export interface components {
             selectValues: string[];
             /** Format: uint32 */
             order: number;
+            /**
+             * @description textarea_language 多行（ElementTypeTextArea）编辑器语言提示，空值由前端回退默认（env）。
+             *      透传给 CodeEditor 的 language（对齐前端 FILE_TYPE_TO_LANG 键），仅对 textarea 类型有意义。
+             */
+            textareaLanguage: string;
         };
         /** @description PipelinePassRule 是流水线通过规则的单条匹配项：命中指定 stage 下名为 job_name 的 job。 */
         "mars.PipelinePassRule": {
@@ -1335,6 +1357,23 @@ export interface components {
             favorite?: boolean;
         };
         "namespace.FavoriteResponse": Record<string, never>;
+        /**
+         * @description FavoriteSortRequest 把关注列表中的 first_id 移动到 second_id 所在位置，中间元素整体顺移。
+         *      前端拖拽只需提交被移动与落点两个空间 id，无需全量重排。
+         */
+        "namespace.FavoriteSortRequest": {
+            /**
+             * Format: int32
+             * @description 被移动的空间 id
+             */
+            firstId: number;
+            /**
+             * Format: int32
+             * @description 移动目标位置的参照空间 id
+             */
+            secondId: number;
+        };
+        "namespace.FavoriteSortResponse": Record<string, never>;
         "namespace.IsExistsResponse": {
             id: string;
             exists: boolean;
@@ -1618,6 +1657,8 @@ export interface components {
             file: components["schemas"]["types.FileModel"];
             eventAt: string;
             hasDiff: boolean;
+            /** @description 操作人邮箱：admin 全量可见，普通登录用户 List 只返回本人事件（归属过滤），Show 越权返回 404 */
+            operatorEmail: string;
             createdAt: string;
             updatedAt: string;
             deletedAt: string;
@@ -3096,6 +3137,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["namespace.FavoriteResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Namespace_FavoriteSort: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["namespace.FavoriteSortRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["namespace.FavoriteSortResponse"];
                 };
             };
             /** @description Default error response */

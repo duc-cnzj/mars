@@ -139,6 +139,7 @@ func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToP
 	c.eventBiz.FileAuditLog(
 		types.EventActionType_Upload,
 		biz.MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Email,
 		copyToPodAuditMsg("", request.Namespace, request.Pod, request.Container, file),
 		file.ID,
 	)
@@ -222,6 +223,7 @@ func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPo
 	c.eventBiz.FileAuditLog(
 		types.EventActionType_Upload,
 		biz.MustGetUser(ctx).Name,
+		biz.MustGetUser(ctx).Email,
 		copyToPodAuditMsg("[StreamUploadFile]: ", file.Namespace, file.Pod, file.Container, file),
 		file.ID,
 	)
@@ -325,10 +327,10 @@ func (c *containerSvc) ForceDeletePod(ctx context.Context, request *container.Fo
 	user := biz.MustGetUser(ctx)
 	msg := fmt.Sprintf("强制删除 pod: %s/%s", request.GetNamespace(), request.GetPod())
 	if err := c.k8sBiz.ForceDeletePod(ctx, request.GetNamespace(), request.GetPod(), request.GetGracePeriodSeconds()); err != nil {
-		c.eventBiz.AuditLog(types.EventActionType_ForceDeletePod, user.Name, msg+", 失败: "+err.Error())
+		c.eventBiz.AuditLog(types.EventActionType_ForceDeletePod, user.Name, user.Email, msg+", 失败: "+err.Error())
 		return nil, logError(ctx, c.logger, err)
 	}
-	c.eventBiz.AuditLog(types.EventActionType_ForceDeletePod, user.Name, msg)
+	c.eventBiz.AuditLog(types.EventActionType_ForceDeletePod, user.Name, user.Email, msg)
 	return &container.ForceDeletePodResponse{
 		Deleted:   true,
 		Namespace: request.GetNamespace(),

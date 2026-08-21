@@ -281,15 +281,18 @@ func (x *PipelinePassRule) GetJobName() string {
 }
 
 type Element struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	Type          ElementType            `protobuf:"varint,2,opt,name=type,proto3,enum=mars.ElementType" json:"type,omitempty"`
-	Default       string                 `protobuf:"bytes,3,opt,name=default,proto3" json:"default,omitempty"`
-	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	SelectValues  []string               `protobuf:"bytes,6,rep,name=select_values,json=selectValues,proto3" json:"select_values,omitempty"`
-	Order         uint32                 `protobuf:"varint,7,opt,name=order,proto3" json:"order,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Path         string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Type         ElementType            `protobuf:"varint,2,opt,name=type,proto3,enum=mars.ElementType" json:"type,omitempty"`
+	Default      string                 `protobuf:"bytes,3,opt,name=default,proto3" json:"default,omitempty"`
+	Description  string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	SelectValues []string               `protobuf:"bytes,6,rep,name=select_values,json=selectValues,proto3" json:"select_values,omitempty"`
+	Order        uint32                 `protobuf:"varint,7,opt,name=order,proto3" json:"order,omitempty"`
+	// textarea_language 多行（ElementTypeTextArea）编辑器语言提示，空值由前端回退默认（env）。
+	// 透传给 CodeEditor 的 language（对齐前端 FILE_TYPE_TO_LANG 键），仅对 textarea 类型有意义。
+	TextareaLanguage string `protobuf:"bytes,8,opt,name=textarea_language,json=textareaLanguage,proto3" json:"textarea_language,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *Element) Reset() {
@@ -364,6 +367,13 @@ func (x *Element) GetOrder() uint32 {
 	return 0
 }
 
+func (x *Element) GetTextareaLanguage() string {
+	if x != nil {
+		return x.TextareaLanguage
+	}
+	return ""
+}
+
 var File_proto_mars_mars_proto protoreflect.FileDescriptor
 
 const file_proto_mars_mars_proto_rawDesc = "" +
@@ -387,14 +397,15 @@ const file_proto_mars_mars_proto_rawDesc = "" +
 	"\x10PipelinePassRule\x12\x1d\n" +
 	"\n" +
 	"stage_name\x18\x01 \x01(\tR\tstageName\x12\x19\n" +
-	"\bjob_name\x18\x02 \x01(\tR\ajobName\"\xce\x01\n" +
+	"\bjob_name\x18\x02 \x01(\tR\ajobName\"\xfb\x01\n" +
 	"\aElement\x12\x1b\n" +
 	"\x04path\x18\x01 \x01(\tB\a\xfaB\x04r\x02 \x01R\x04path\x12/\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.mars.ElementTypeB\b\xfaB\x05\x82\x01\x02\x10\x01R\x04type\x12\x18\n" +
 	"\adefault\x18\x03 \x01(\tR\adefault\x12 \n" +
 	"\vdescription\x18\x04 \x01(\tR\vdescription\x12#\n" +
 	"\rselect_values\x18\x06 \x03(\tR\fselectValues\x12\x14\n" +
-	"\x05order\x18\a \x01(\rR\x05order*\xed\x01\n" +
+	"\x05order\x18\a \x01(\rR\x05order\x12+\n" +
+	"\x11textarea_language\x18\b \x01(\tR\x10textareaLanguage*\xed\x01\n" +
 	"\vElementType\x12\x16\n" +
 	"\x12ElementTypeUnknown\x10\x00\x12\x14\n" +
 	"\x10ElementTypeInput\x10\x01\x12\x1a\n" +

@@ -396,6 +396,8 @@ func (m *Element) validate(all bool) error {
 
 	// no validation rules for Order
 
+	// no validation rules for TextareaLanguage
+
 	if len(errors) > 0 {
 		return ElementMultiError(errors)
 	}

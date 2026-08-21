@@ -400,6 +400,7 @@ func (t *ptyHandler) Close(ctx context.Context, reason string) bool {
 	t.eventRepo.FileAuditLogWithDuration(
 		types.EventActionType_Shell,
 		recoder.User().Name,
+		recoder.User().Email,
 		fmt.Sprintf("用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", recoder.Container().Container, recoder.Container().Namespace, recoder.Container().Pod),
 		fid,
 		recoder.Duration(),

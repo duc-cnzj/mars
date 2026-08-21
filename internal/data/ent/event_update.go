@@ -91,6 +91,20 @@ func (_u *EventUpdate) SetNillableUsername(v *string) *EventUpdate {
 	return _u
 }
 
+// SetOperatorEmail sets the "operator_email" field.
+func (_u *EventUpdate) SetOperatorEmail(v string) *EventUpdate {
+	_u.mutation.SetOperatorEmail(v)
+	return _u
+}
+
+// SetNillableOperatorEmail sets the "operator_email" field if the given value is not nil.
+func (_u *EventUpdate) SetNillableOperatorEmail(v *string) *EventUpdate {
+	if v != nil {
+		_u.SetOperatorEmail(*v)
+	}
+	return _u
+}
+
 // SetMessage sets the "message" field.
 func (_u *EventUpdate) SetMessage(v string) *EventUpdate {
 	_u.mutation.SetMessage(v)
@@ -258,6 +272,11 @@ func (_u *EventUpdate) check() error {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "Event.username": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.OperatorEmail(); ok {
+		if err := event.OperatorEmailValidator(v); err != nil {
+			return &ValidationError{Name: "operator_email", err: fmt.Errorf(`ent: validator failed for field "Event.operator_email": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Message(); ok {
 		if err := event.MessageValidator(v); err != nil {
 			return &ValidationError{Name: "message", err: fmt.Errorf(`ent: validator failed for field "Event.message": %w`, err)}
@@ -295,6 +314,9 @@ func (_u *EventUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Username(); ok {
 		_spec.SetField(event.FieldUsername, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.OperatorEmail(); ok {
+		_spec.SetField(event.FieldOperatorEmail, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Message(); ok {
 		_spec.SetField(event.FieldMessage, field.TypeString, value)
@@ -423,6 +445,20 @@ func (_u *EventUpdateOne) SetUsername(v string) *EventUpdateOne {
 func (_u *EventUpdateOne) SetNillableUsername(v *string) *EventUpdateOne {
 	if v != nil {
 		_u.SetUsername(*v)
+	}
+	return _u
+}
+
+// SetOperatorEmail sets the "operator_email" field.
+func (_u *EventUpdateOne) SetOperatorEmail(v string) *EventUpdateOne {
+	_u.mutation.SetOperatorEmail(v)
+	return _u
+}
+
+// SetNillableOperatorEmail sets the "operator_email" field if the given value is not nil.
+func (_u *EventUpdateOne) SetNillableOperatorEmail(v *string) *EventUpdateOne {
+	if v != nil {
+		_u.SetOperatorEmail(*v)
 	}
 	return _u
 }
@@ -607,6 +643,11 @@ func (_u *EventUpdateOne) check() error {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "Event.username": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.OperatorEmail(); ok {
+		if err := event.OperatorEmailValidator(v); err != nil {
+			return &ValidationError{Name: "operator_email", err: fmt.Errorf(`ent: validator failed for field "Event.operator_email": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Message(); ok {
 		if err := event.MessageValidator(v); err != nil {
 			return &ValidationError{Name: "message", err: fmt.Errorf(`ent: validator failed for field "Event.message": %w`, err)}
@@ -661,6 +702,9 @@ func (_u *EventUpdateOne) sqlSave(ctx context.Context) (_node *Event, err error)
 	}
 	if value, ok := _u.mutation.Username(); ok {
 		_spec.SetField(event.FieldUsername, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.OperatorEmail(); ok {
+		_spec.SetField(event.FieldOperatorEmail, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Message(); ok {
 		_spec.SetField(event.FieldMessage, field.TypeString, value)

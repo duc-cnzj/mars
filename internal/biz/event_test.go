@@ -29,23 +29,23 @@ func (f *fakeEventRepoForEventBiz) Show(ctx context.Context, id int) (*Event, er
 	return &Event{ID: id}, nil
 }
 
-func (f *fakeEventRepoForEventBiz) AuditLog(action types.EventActionType, username string, msg string) {
+func (f *fakeEventRepoForEventBiz) AuditLog(action types.EventActionType, username, operatorEmail, msg string) {
 	f.auditCalled = true
 }
 
-func (f *fakeEventRepoForEventBiz) AuditLogWithChange(action types.EventActionType, username string, msg string, oldS, newS YamlPrettier) {
+func (f *fakeEventRepoForEventBiz) AuditLogWithChange(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {
 	f.auditChangeCalled = true
 }
 
-func (f *fakeEventRepoForEventBiz) AuditLogWithRequest(action types.EventActionType, username string, msg string, req any) {
+func (f *fakeEventRepoForEventBiz) AuditLogWithRequest(action types.EventActionType, username, operatorEmail, msg string, req any) {
 	f.auditRequestCalled = true
 }
 
-func (f *fakeEventRepoForEventBiz) FileAuditLog(action types.EventActionType, username string, msg string, fileId int) {
+func (f *fakeEventRepoForEventBiz) FileAuditLog(action types.EventActionType, username, operatorEmail, msg string, fileId int) {
 	f.fileAuditCalled = true
 }
 
-func (f *fakeEventRepoForEventBiz) FileAuditLogWithDuration(action types.EventActionType, username string, msg string, fileId int, duration time.Duration) {
+func (f *fakeEventRepoForEventBiz) FileAuditLogWithDuration(action types.EventActionType, username, operatorEmail, msg string, fileId int, duration time.Duration) {
 	f.fileDurationCalled = true
 }
 
@@ -73,34 +73,34 @@ func TestEventBiz_Show(t *testing.T) {
 func TestEventBiz_AuditLog(t *testing.T) {
 	f := &fakeEventRepoForEventBiz{}
 	e := newEventBizForTest(f)
-	e.AuditLog(types.EventActionType_Delete, "user", "msg")
+	e.AuditLog(types.EventActionType_Delete, "user", "user@example.com", "msg")
 	assert.True(t, f.auditCalled)
 }
 
 func TestEventBiz_AuditLogWithChange(t *testing.T) {
 	f := &fakeEventRepoForEventBiz{}
 	e := newEventBizForTest(f)
-	e.AuditLogWithChange(types.EventActionType_Update, "user", "msg", nil, nil)
+	e.AuditLogWithChange(types.EventActionType_Update, "user", "user@example.com", "msg", nil, nil)
 	assert.True(t, f.auditChangeCalled)
 }
 
 func TestEventBiz_AuditLogWithRequest(t *testing.T) {
 	f := &fakeEventRepoForEventBiz{}
 	e := newEventBizForTest(f)
-	e.AuditLogWithRequest(types.EventActionType_Create, "user", "msg", map[string]string{"a": "b"})
+	e.AuditLogWithRequest(types.EventActionType_Create, "user", "user@example.com", "msg", map[string]string{"a": "b"})
 	assert.True(t, f.auditRequestCalled)
 }
 
 func TestEventBiz_FileAuditLog(t *testing.T) {
 	f := &fakeEventRepoForEventBiz{}
 	e := newEventBizForTest(f)
-	e.FileAuditLog(types.EventActionType_Create, "user", "msg", 1)
+	e.FileAuditLog(types.EventActionType_Create, "user", "user@example.com", "msg", 1)
 	assert.True(t, f.fileAuditCalled)
 }
 
 func TestEventBiz_FileAuditLogWithDuration(t *testing.T) {
 	f := &fakeEventRepoForEventBiz{}
 	e := newEventBizForTest(f)
-	e.FileAuditLogWithDuration(types.EventActionType_Create, "user", "msg", 1, time.Second)
+	e.FileAuditLogWithDuration(types.EventActionType_Create, "user", "user@example.com", "msg", 1, time.Second)
 	assert.True(t, f.fileDurationCalled)
 }

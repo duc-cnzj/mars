@@ -26,6 +26,8 @@ const (
 	FieldAction = "action"
 	// FieldUsername holds the string denoting the username field in the database.
 	FieldUsername = "username"
+	// FieldOperatorEmail holds the string denoting the operator_email field in the database.
+	FieldOperatorEmail = "operator_email"
 	// FieldMessage holds the string denoting the message field in the database.
 	FieldMessage = "message"
 	// FieldOld holds the string denoting the old field in the database.
@@ -59,6 +61,7 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldAction,
 	FieldUsername,
+	FieldOperatorEmail,
 	FieldMessage,
 	FieldOld,
 	FieldNew,
@@ -97,6 +100,10 @@ var (
 	DefaultUsername string
 	// UsernameValidator is a validator for the "username" field. It is called by the builders before save.
 	UsernameValidator func(string) error
+	// DefaultOperatorEmail holds the default value on creation for the "operator_email" field.
+	DefaultOperatorEmail string
+	// OperatorEmailValidator is a validator for the "operator_email" field. It is called by the builders before save.
+	OperatorEmailValidator func(string) error
 	// DefaultMessage holds the default value on creation for the "message" field.
 	DefaultMessage string
 	// MessageValidator is a validator for the "message" field. It is called by the builders before save.
@@ -138,6 +145,11 @@ func ByAction(opts ...sql.OrderTermOption) OrderOption {
 // ByUsername orders the results by the username field.
 func ByUsername(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUsername, opts...).ToFunc()
+}
+
+// ByOperatorEmail orders the results by the operator_email field.
+func ByOperatorEmail(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOperatorEmail, opts...).ToFunc()
 }
 
 // ByMessage orders the results by the message field.

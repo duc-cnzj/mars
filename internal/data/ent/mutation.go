@@ -3474,26 +3474,27 @@ func (m *DBCacheMutation) ResetEdge(name string) error {
 // EventMutation represents an operation that mutates the Event nodes in the graph.
 type EventMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	created_at    *time.Time
-	updated_at    *time.Time
-	deleted_at    *time.Time
-	action        *types.EventActionType
-	addaction     *types.EventActionType
-	username      *string
-	message       *string
-	old           *string
-	new           *string
-	has_diff      *bool
-	duration      *string
-	clearedFields map[string]struct{}
-	file          *int
-	clearedfile   bool
-	done          bool
-	oldValue      func(context.Context) (*Event, error)
-	predicates    []predicate.Event
+	op             Op
+	typ            string
+	id             *int
+	created_at     *time.Time
+	updated_at     *time.Time
+	deleted_at     *time.Time
+	action         *types.EventActionType
+	addaction      *types.EventActionType
+	username       *string
+	operator_email *string
+	message        *string
+	old            *string
+	new            *string
+	has_diff       *bool
+	duration       *string
+	clearedFields  map[string]struct{}
+	file           *int
+	clearedfile    bool
+	done           bool
+	oldValue       func(context.Context) (*Event, error)
+	predicates     []predicate.Event
 }
 
 var _ ent.Mutation = (*EventMutation)(nil)
@@ -3805,6 +3806,42 @@ func (m *EventMutation) OldUsername(ctx context.Context) (v string, err error) {
 // ResetUsername resets all changes to the "username" field.
 func (m *EventMutation) ResetUsername() {
 	m.username = nil
+}
+
+// SetOperatorEmail sets the "operator_email" field.
+func (m *EventMutation) SetOperatorEmail(s string) {
+	m.operator_email = &s
+}
+
+// OperatorEmail returns the value of the "operator_email" field in the mutation.
+func (m *EventMutation) OperatorEmail() (r string, exists bool) {
+	v := m.operator_email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOperatorEmail returns the old "operator_email" field's value of the Event entity.
+// If the Event object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventMutation) OldOperatorEmail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOperatorEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOperatorEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOperatorEmail: %w", err)
+	}
+	return oldValue.OperatorEmail, nil
+}
+
+// ResetOperatorEmail resets all changes to the "operator_email" field.
+func (m *EventMutation) ResetOperatorEmail() {
+	m.operator_email = nil
 }
 
 // SetMessage sets the "message" field.
@@ -4123,7 +4160,7 @@ func (m *EventMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, event.FieldCreatedAt)
 	}
@@ -4138,6 +4175,9 @@ func (m *EventMutation) Fields() []string {
 	}
 	if m.username != nil {
 		fields = append(fields, event.FieldUsername)
+	}
+	if m.operator_email != nil {
+		fields = append(fields, event.FieldOperatorEmail)
 	}
 	if m.message != nil {
 		fields = append(fields, event.FieldMessage)
@@ -4175,6 +4215,8 @@ func (m *EventMutation) Field(name string) (ent.Value, bool) {
 		return m.Action()
 	case event.FieldUsername:
 		return m.Username()
+	case event.FieldOperatorEmail:
+		return m.OperatorEmail()
 	case event.FieldMessage:
 		return m.Message()
 	case event.FieldOld:
@@ -4206,6 +4248,8 @@ func (m *EventMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldAction(ctx)
 	case event.FieldUsername:
 		return m.OldUsername(ctx)
+	case event.FieldOperatorEmail:
+		return m.OldOperatorEmail(ctx)
 	case event.FieldMessage:
 		return m.OldMessage(ctx)
 	case event.FieldOld:
@@ -4261,6 +4305,13 @@ func (m *EventMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUsername(v)
+		return nil
+	case event.FieldOperatorEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOperatorEmail(v)
 		return nil
 	case event.FieldMessage:
 		v, ok := value.(string)
@@ -4410,6 +4461,9 @@ func (m *EventMutation) ResetField(name string) error {
 	case event.FieldUsername:
 		m.ResetUsername()
 		return nil
+	case event.FieldOperatorEmail:
+		m.ResetOperatorEmail()
+		return nil
 	case event.FieldMessage:
 		m.ResetMessage()
 		return nil
@@ -4513,6 +4567,8 @@ type FavoriteMutation struct {
 	typ              string
 	id               *int
 	email            *string
+	sort_order       *int
+	addsort_order    *int
 	clearedFields    map[string]struct{}
 	namespace        *int
 	clearednamespace bool
@@ -4704,6 +4760,62 @@ func (m *FavoriteMutation) ResetNamespaceID() {
 	delete(m.clearedFields, favorite.FieldNamespaceID)
 }
 
+// SetSortOrder sets the "sort_order" field.
+func (m *FavoriteMutation) SetSortOrder(i int) {
+	m.sort_order = &i
+	m.addsort_order = nil
+}
+
+// SortOrder returns the value of the "sort_order" field in the mutation.
+func (m *FavoriteMutation) SortOrder() (r int, exists bool) {
+	v := m.sort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSortOrder returns the old "sort_order" field's value of the Favorite entity.
+// If the Favorite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FavoriteMutation) OldSortOrder(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSortOrder is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSortOrder requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSortOrder: %w", err)
+	}
+	return oldValue.SortOrder, nil
+}
+
+// AddSortOrder adds i to the "sort_order" field.
+func (m *FavoriteMutation) AddSortOrder(i int) {
+	if m.addsort_order != nil {
+		*m.addsort_order += i
+	} else {
+		m.addsort_order = &i
+	}
+}
+
+// AddedSortOrder returns the value that was added to the "sort_order" field in this mutation.
+func (m *FavoriteMutation) AddedSortOrder() (r int, exists bool) {
+	v := m.addsort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSortOrder resets all changes to the "sort_order" field.
+func (m *FavoriteMutation) ResetSortOrder() {
+	m.sort_order = nil
+	m.addsort_order = nil
+}
+
 // ClearNamespace clears the "namespace" edge to the Namespace entity.
 func (m *FavoriteMutation) ClearNamespace() {
 	m.clearednamespace = true
@@ -4765,12 +4877,15 @@ func (m *FavoriteMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *FavoriteMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.email != nil {
 		fields = append(fields, favorite.FieldEmail)
 	}
 	if m.namespace != nil {
 		fields = append(fields, favorite.FieldNamespaceID)
+	}
+	if m.sort_order != nil {
+		fields = append(fields, favorite.FieldSortOrder)
 	}
 	return fields
 }
@@ -4784,6 +4899,8 @@ func (m *FavoriteMutation) Field(name string) (ent.Value, bool) {
 		return m.Email()
 	case favorite.FieldNamespaceID:
 		return m.NamespaceID()
+	case favorite.FieldSortOrder:
+		return m.SortOrder()
 	}
 	return nil, false
 }
@@ -4797,6 +4914,8 @@ func (m *FavoriteMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldEmail(ctx)
 	case favorite.FieldNamespaceID:
 		return m.OldNamespaceID(ctx)
+	case favorite.FieldSortOrder:
+		return m.OldSortOrder(ctx)
 	}
 	return nil, fmt.Errorf("unknown Favorite field %s", name)
 }
@@ -4820,6 +4939,13 @@ func (m *FavoriteMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetNamespaceID(v)
 		return nil
+	case favorite.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSortOrder(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Favorite field %s", name)
 }
@@ -4828,6 +4954,9 @@ func (m *FavoriteMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *FavoriteMutation) AddedFields() []string {
 	var fields []string
+	if m.addsort_order != nil {
+		fields = append(fields, favorite.FieldSortOrder)
+	}
 	return fields
 }
 
@@ -4836,6 +4965,8 @@ func (m *FavoriteMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *FavoriteMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case favorite.FieldSortOrder:
+		return m.AddedSortOrder()
 	}
 	return nil, false
 }
@@ -4845,6 +4976,13 @@ func (m *FavoriteMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *FavoriteMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case favorite.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSortOrder(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Favorite numeric field %s", name)
 }
@@ -4886,6 +5024,9 @@ func (m *FavoriteMutation) ResetField(name string) error {
 		return nil
 	case favorite.FieldNamespaceID:
 		m.ResetNamespaceID()
+		return nil
+	case favorite.FieldSortOrder:
+		m.ResetSortOrder()
 		return nil
 	}
 	return fmt.Errorf("unknown Favorite field %s", name)

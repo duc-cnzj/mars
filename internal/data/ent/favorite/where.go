@@ -63,6 +63,11 @@ func NamespaceID(v int) predicate.Favorite {
 	return predicate.Favorite(sql.FieldEQ(FieldNamespaceID, v))
 }
 
+// SortOrder applies equality check predicate on the "sort_order" field. It's identical to SortOrderEQ.
+func SortOrder(v int) predicate.Favorite {
+	return predicate.Favorite(sql.FieldEQ(FieldSortOrder, v))
+}
+
 // EmailEQ applies the EQ predicate on the "email" field.
 func EmailEQ(v string) predicate.Favorite {
 	return predicate.Favorite(sql.FieldEQ(FieldEmail, v))
@@ -156,6 +161,46 @@ func NamespaceIDIsNil() predicate.Favorite {
 // NamespaceIDNotNil applies the NotNil predicate on the "namespace_id" field.
 func NamespaceIDNotNil() predicate.Favorite {
 	return predicate.Favorite(sql.FieldNotNull(FieldNamespaceID))
+}
+
+// SortOrderEQ applies the EQ predicate on the "sort_order" field.
+func SortOrderEQ(v int) predicate.Favorite {
+	return predicate.Favorite(sql.FieldEQ(FieldSortOrder, v))
+}
+
+// SortOrderNEQ applies the NEQ predicate on the "sort_order" field.
+func SortOrderNEQ(v int) predicate.Favorite {
+	return predicate.Favorite(sql.FieldNEQ(FieldSortOrder, v))
+}
+
+// SortOrderIn applies the In predicate on the "sort_order" field.
+func SortOrderIn(vs ...int) predicate.Favorite {
+	return predicate.Favorite(sql.FieldIn(FieldSortOrder, vs...))
+}
+
+// SortOrderNotIn applies the NotIn predicate on the "sort_order" field.
+func SortOrderNotIn(vs ...int) predicate.Favorite {
+	return predicate.Favorite(sql.FieldNotIn(FieldSortOrder, vs...))
+}
+
+// SortOrderGT applies the GT predicate on the "sort_order" field.
+func SortOrderGT(v int) predicate.Favorite {
+	return predicate.Favorite(sql.FieldGT(FieldSortOrder, v))
+}
+
+// SortOrderGTE applies the GTE predicate on the "sort_order" field.
+func SortOrderGTE(v int) predicate.Favorite {
+	return predicate.Favorite(sql.FieldGTE(FieldSortOrder, v))
+}
+
+// SortOrderLT applies the LT predicate on the "sort_order" field.
+func SortOrderLT(v int) predicate.Favorite {
+	return predicate.Favorite(sql.FieldLT(FieldSortOrder, v))
+}
+
+// SortOrderLTE applies the LTE predicate on the "sort_order" field.
+func SortOrderLTE(v int) predicate.Favorite {
+	return predicate.Favorite(sql.FieldLTE(FieldSortOrder, v))
 }
 
 // HasNamespace applies the HasEdge predicate on the "namespace" edge.

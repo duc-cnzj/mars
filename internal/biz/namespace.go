@@ -52,6 +52,8 @@ type NamespaceBiz interface {
 	GetMarsNamespace(name string) string
 	// Favorite 校验输入后设置/取消收藏。
 	Favorite(ctx context.Context, input *FavoriteNamespaceInput) error
+	// FavoriteSort 校验输入后把 firstID 移动到 secondID 位置。
+	FavoriteSort(ctx context.Context, input *FavoriteSortNamespaceInput) error
 	// SyncMembers 校验 id 后同步成员列表。
 	SyncMembers(ctx context.Context, namespaceID int, memberEmails []string) (*Namespace, error)
 	// UpdatePrivate 校验 id 后更新私有状态。
@@ -273,6 +275,14 @@ func (n *namespaceBiz) Favorite(ctx context.Context, input *FavoriteNamespaceInp
 	return n.nsRepo.Favorite(ctx, input)
 }
 
+// FavoriteSort 校验输入后把 firstID 移动到 secondID 位置。
+func (n *namespaceBiz) FavoriteSort(ctx context.Context, input *FavoriteSortNamespaceInput) error {
+	if input == nil || input.FirstID <= 0 || input.SecondID <= 0 {
+		return errs.WrapInvalidArgument(errors.New("两个空间 id 必须大于 0"), "favorite sort")
+	}
+	return n.nsRepo.FavoriteSort(ctx, input.UserEmail, input.FirstID, input.SecondID)
+}
+
 // SyncMembers 校验 namespace id 后同步成员。
 func (n *namespaceBiz) SyncMembers(ctx context.Context, namespaceID int, memberEmails []string) (*Namespace, error) {
 	if namespaceID <= 0 {
@@ -330,6 +340,8 @@ type NamespaceRepo interface {
 	FindByName(ctx context.Context, name string) (*Namespace, error)
 	// Favorite 设置/取消收藏命名空间。
 	Favorite(ctx context.Context, input *FavoriteNamespaceInput) error
+	// FavoriteSort 把 firstID 关注空间移动到 secondID 位置。
+	FavoriteSort(ctx context.Context, email string, firstID, secondID int) error
 	// SyncMembers 同步命名空间成员列表。
 	SyncMembers(ctx context.Context, namespaceID int, memberEmails []string) (*Namespace, error)
 	// UpdatePrivate 更新命名空间私有状态。

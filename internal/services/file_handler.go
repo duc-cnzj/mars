@@ -109,6 +109,7 @@ func (f *fileHandler) httpDownload(w http.ResponseWriter, r *http.Request, pathP
 	f.eventBiz.FileAuditLog(
 		types.EventActionType_Download,
 		user.Name,
+		user.Email,
 		fmt.Sprintf("下载文件 '%s', 大小 %s",
 			fil.Path,
 			fil.HumanizeSize,
@@ -170,6 +171,7 @@ func (f *fileHandler) copyFromPod(w http.ResponseWriter, r *http.Request, pathPa
 	f.eventBiz.FileAuditLog(
 		types.EventActionType_Download,
 		info.Name,
+		info.Email,
 		fmt.Sprintf("从 Pod '%s' 复制文件 '%s' 到本地", input.Pod, input.FilePath),
 		fromPod.ID,
 	)
@@ -297,6 +299,7 @@ func (f *fileHandler) handleBinaryFileUpload(w http.ResponseWriter, r *http.Requ
 	f.eventBiz.FileAuditLog(
 		types.EventActionType_Upload,
 		info.Name,
+		info.Email,
 		fmt.Sprintf("上传文件 '%s', 大小 %s", createdFile.Path, humanize.Bytes(createdFile.Size)),
 		createdFile.ID,
 	)

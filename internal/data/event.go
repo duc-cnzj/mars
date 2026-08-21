@@ -22,8 +22,10 @@ import (
 
 // AuditLog 是审计日志事件负载的抽象，由 event.Dispatcher 回调消费方（HandleAuditLog）读取。
 type AuditLog interface {
-	// GetUsername 返回操作人。
+	// GetUsername 返回操作人名称。
 	GetUsername() string
+	// GetOperatorEmail 返回操作人邮箱（普通用户"我的事件"归属判定的依据，系统事件为空串）。
+	GetOperatorEmail() string
 	// GetAction 返回操作动作类型。
 	GetAction() types.EventActionType
 	// GetMsg 返回操作描述消息。
@@ -63,6 +65,7 @@ func (repo *eventRepo) HandleAuditLog(d any, e biz.EventKey) error {
 	var db = repo.d.DB()
 	if _, err := db.Event.Create().SetAction(logData.GetAction()).
 		SetUsername(logData.GetUsername()).
+		SetOperatorEmail(logData.GetOperatorEmail()).
 		SetMessage(logData.GetMsg()).
 		SetOld(logData.GetOldStr()).
 		SetNew(logData.GetNewStr()).
@@ -81,7 +84,7 @@ func (repo *eventRepo) Dispatch(created biz.EventKey, createdData any) {
 	repo.eventer.Dispatch(event.Event(created), createdData)
 }
 
-// List 分页查询事件列表，支持按动作类型、搜索关键词与倒序过滤。
+// List 分页查询事件列表，支持按动作类型、操作人邮箱、搜索关键词与倒序过滤。
 func (repo *eventRepo) List(ctx context.Context, input *biz.ListEventInput) (events []*biz.Event, pag *pagination.Pagination, err error) {
 	ctx, span := tracer.Start(ctx, "eventRepo/List")
 	defer func() { endSpan(span, err) }()
@@ -97,11 +100,13 @@ func (repo *eventRepo) List(ctx context.Context, input *biz.ListEventInput) (eve
 				entevent.UsernameContains(t),
 			)
 		})(input.Search),
+		filters.IfStrEQPtr(entevent.FieldOperatorEmail)(input.OperatorEmail),
 	).
 		Select(
 			entevent.FieldID,
 			entevent.FieldAction,
 			entevent.FieldUsername,
+			entevent.FieldOperatorEmail,
 			entevent.FieldMessage,
 			entevent.FieldDuration,
 			entevent.FieldFileID,
@@ -123,19 +128,20 @@ func toEvent(e *ent.Event) *biz.Event {
 		return nil
 	}
 	return &biz.Event{
-		ID:        e.ID,
-		CreatedAt: e.CreatedAt,
-		UpdatedAt: e.UpdatedAt,
-		DeletedAt: e.DeletedAt,
-		Action:    e.Action,
-		Username:  e.Username,
-		Message:   e.Message,
-		Old:       e.Old,
-		New:       e.New,
-		Duration:  e.Duration,
-		FileID:    e.FileID,
-		HasDiff:   e.HasDiff,
-		File:      toFile(e.Edges.File),
+		ID:            e.ID,
+		CreatedAt:     e.CreatedAt,
+		UpdatedAt:     e.UpdatedAt,
+		DeletedAt:     e.DeletedAt,
+		Action:        e.Action,
+		Username:      e.Username,
+		OperatorEmail: e.OperatorEmail,
+		Message:       e.Message,
+		Old:           e.Old,
+		New:           e.New,
+		Duration:      e.Duration,
+		FileID:        e.FileID,
+		HasDiff:       e.HasDiff,
+		File:          toFile(e.Edges.File),
 	}
 }
 
@@ -149,47 +155,48 @@ func (repo *eventRepo) Show(ctx context.Context, id int) (out *biz.Event, err er
 }
 
 // AuditLog 记录一条无变更对比的审计日志（空旧/新值）。
-func (repo *eventRepo) AuditLog(action types.EventActionType, username string, msg string) {
-	repo.AuditLogWithChange(action, username, msg, nil, nil)
+func (repo *eventRepo) AuditLog(action types.EventActionType, username string, operatorEmail string, msg string) {
+	repo.AuditLogWithChange(action, username, operatorEmail, msg, nil, nil)
 }
 
 // FileAuditLog 记录一条关联文件 ID 的审计日志。
-func (repo *eventRepo) FileAuditLog(action types.EventActionType, username string, msg string, fileId int) {
-	repo.eventer.Dispatch(event.Event(biz.AuditLogEvent), NewEventAuditLog(username, action, msg, AuditWithFileID(fileId)))
+func (repo *eventRepo) FileAuditLog(action types.EventActionType, username string, operatorEmail string, msg string, fileId int) {
+	repo.eventer.Dispatch(event.Event(biz.AuditLogEvent), NewEventAuditLog(username, action, msg, AuditWithOperatorEmail(operatorEmail), AuditWithFileID(fileId)))
 }
 
 // FileAuditLogWithDuration 记录关联文件 ID 并带耗时的审计日志。
-func (repo *eventRepo) FileAuditLogWithDuration(action types.EventActionType, username string, msg string, fileId int, d time.Duration) {
-	repo.eventer.Dispatch(event.Event(biz.AuditLogEvent), NewEventAuditLog(username, action, msg, AuditWithFileID(fileId), AuditWithDuration(date.HumanDuration(d))))
+func (repo *eventRepo) FileAuditLogWithDuration(action types.EventActionType, username string, operatorEmail string, msg string, fileId int, d time.Duration) {
+	repo.eventer.Dispatch(event.Event(biz.AuditLogEvent), NewEventAuditLog(username, action, msg, AuditWithOperatorEmail(operatorEmail), AuditWithFileID(fileId), AuditWithDuration(date.HumanDuration(d))))
 }
 
 // AuditLogWithRequest 把请求对象 YAML 序列化后作为"变更后"值记录审计日志。
 // 本方法无 error 返回值（审计失败不阻断主流程），属"无法向调用方返回错误"的边缘
 // 路径：序列化失败时降级为 %+v，避免审计记录静默为空；错误不在此处打印日志
 // （数据层不打印错误日志），留待链路最上层消费。
-func (repo *eventRepo) AuditLogWithRequest(action types.EventActionType, username string, msg string, req any) {
+func (repo *eventRepo) AuditLogWithRequest(action types.EventActionType, username string, operatorEmail string, msg string, req any) {
 	marshal, err := yaml.PrettyMarshal(req)
 	after := string(marshal)
 	if err != nil {
 		after = fmt.Sprintf("%+v", req)
 	}
-	repo.eventer.Dispatch(event.Event(biz.AuditLogEvent), NewEventAuditLog(username, action, msg, AuditWithOldNewStr("", after)))
+	repo.eventer.Dispatch(event.Event(biz.AuditLogEvent), NewEventAuditLog(username, action, msg, AuditWithOperatorEmail(operatorEmail), AuditWithOldNewStr("", after)))
 }
 
 // AuditLogWithChange 记录带旧/新 YAML 变更对比的审计日志（nil 用空值兜底）。
-func (repo *eventRepo) AuditLogWithChange(action types.EventActionType, username string, msg string, oldS, newS biz.YamlPrettier) {
+func (repo *eventRepo) AuditLogWithChange(action types.EventActionType, username string, operatorEmail string, msg string, oldS, newS biz.YamlPrettier) {
 	if oldS == nil {
 		oldS = &emptyYamlPrettier{}
 	}
 	if newS == nil {
 		newS = &emptyYamlPrettier{}
 	}
-	repo.eventer.Dispatch(event.Event(biz.AuditLogEvent), NewEventAuditLog(username, action, msg, AuditWithOldNew(oldS, newS)))
+	repo.eventer.Dispatch(event.Event(biz.AuditLogEvent), NewEventAuditLog(username, action, msg, AuditWithOperatorEmail(operatorEmail), AuditWithOldNew(oldS, newS)))
 }
 
 // auditLogImpl 是 AuditLog 接口的默认实现：保存审计字段并序列化变更对比。
 type auditLogImpl struct {
 	Username        string
+	OperatorEmail   string
 	Action          types.EventActionType
 	Msg, OldS, NewS string
 	FileId          int
@@ -203,6 +210,13 @@ func (e *auditLogImpl) GetDuration() string {
 
 // AuditOption 是 NewEventAuditLog 的可选参数：以函数式设置 auditLogImpl 的字段。
 type AuditOption func(*auditLogImpl)
+
+// AuditWithOperatorEmail 设置操作人邮箱（普通用户"我的事件"归属判定的依据）。
+func AuditWithOperatorEmail(email string) AuditOption {
+	return func(e *auditLogImpl) {
+		e.OperatorEmail = email
+	}
+}
 
 // AuditWithOldNewStr 直接设置旧/新值的字符串。
 func AuditWithOldNewStr(o, n string) AuditOption {
@@ -247,9 +261,14 @@ func NewEventAuditLog(username string, action types.EventActionType, msg string,
 	return e
 }
 
-// GetUsername 返回操作人。
+// GetUsername 返回操作人名称。
 func (e *auditLogImpl) GetUsername() string {
 	return e.Username
+}
+
+// GetOperatorEmail 返回操作人邮箱。
+func (e *auditLogImpl) GetOperatorEmail() string {
+	return e.OperatorEmail
 }
 
 // GetAction 返回操作动作类型。

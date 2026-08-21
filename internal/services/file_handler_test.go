@@ -109,6 +109,7 @@ binary data
 	eventRepo.EXPECT().FileAuditLog(
 		types.EventActionType_Upload,
 		"duc",
+		gomock.Any(),
 		"上传文件 '/app.txt', 大小 1.0 kB",
 		1,
 	)
@@ -153,7 +154,7 @@ binary data
 	fileRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&biz.File{
 		ID: 1, Path: "/app.txt", Size: 1000, Username: "duc",
 	}, nil)
-	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Upload, "duc", gomock.Any(), 1)
+	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Upload, "duc", gomock.Any(), gomock.Any(), 1)
 	up.EXPECT().Type().Return(schematype.Local)
 	up.EXPECT().Disk("users").Return(up)
 	finfo := uploader.NewMockFileInfo(mocks.ctrl)
@@ -200,7 +201,7 @@ binary data
 		Size:       1000,
 		UploadType: schematype.Local,
 	}).Return(&biz.File{ID: 1, Path: "/app.txt", Size: 1000, Username: "../../evil"}, nil)
-	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Upload, "../../evil", gomock.Any(), 1)
+	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Upload, "../../evil", gomock.Any(), gomock.Any(), 1)
 	up.EXPECT().Type().Return(schematype.Local)
 	up.EXPECT().Disk("users").Return(up)
 	finfo := uploader.NewMockFileInfo(mocks.ctrl)
@@ -334,7 +335,7 @@ func Test_fileHandler_copyFromPod_Success(t *testing.T) {
 		FilePath:  "d",
 		UserName:  "duc",
 	}).Return(&biz.File{ID: 1, Path: "/aaa/b.txt"}, nil)
-	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Download, "duc", gomock.Any(), 1)
+	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Download, "duc", gomock.Any(), gomock.Any(), 1)
 	h.copyFromPod(w, r, map[string]string{})
 	assert.Equal(t, http.StatusOK, w.Code)
 }
@@ -370,7 +371,7 @@ func Test_fileHandler_copyFromPod_DefaultContainer(t *testing.T) {
 		FilePath:  "d",
 		UserName:  "duc",
 	}).Return(&biz.File{ID: 1, Path: "/aaa/b.txt"}, nil)
-	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Download, "duc", gomock.Any(), 1)
+	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Download, "duc", gomock.Any(), gomock.Any(), 1)
 	h.copyFromPod(w, r, map[string]string{})
 	assert.Equal(t, http.StatusOK, w.Code)
 }
@@ -410,7 +411,7 @@ func Test_fileHandler_copyFromPod_AccessDenied(t *testing.T) {
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true, CreatorEmail: "user@mars.com"}, nil)
 	// 若访问控制被删除，请求会继续走到 CopyFromPod + 下载路径 → 200，而非 403
 	k8sRepo.EXPECT().CopyFromPod(gomock.Any(), gomock.Any()).Return(&biz.File{ID: 1, Path: "/aaa/b.txt"}, nil).AnyTimes()
-	eventRepo.EXPECT().FileAuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	eventRepo.EXPECT().FileAuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil).AnyTimes()
 
 	marshal, _ := json.Marshal(&copyFromPodRequest{Namespace: "a", Pod: "b", Container: "c", FilePath: "d"})
@@ -451,7 +452,7 @@ func Test_fileHandler_httpDownload_Ok(t *testing.T) {
 	fileRepo := mocks.fileRepo
 	mockUploader := mocks.uploader
 	fileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{ID: 1, Path: "/aaa/b.txt", Username: "duc"}, nil)
-	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Download, "duc", gomock.Any(), 1)
+	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Download, "duc", gomock.Any(), gomock.Any(), 1)
 	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil)
 
 	w := httptest.NewRecorder()
@@ -487,7 +488,7 @@ func Test_fileHandler_httpDownload_AccessDenied(t *testing.T) {
 	h.eventBiz = biz.NewEventBiz(eventRepo)
 	h.uploader = mockUploader
 	// 若所有权检查被删除，会走到下载路径 → 200，而非 403
-	eventRepo.EXPECT().FileAuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	eventRepo.EXPECT().FileAuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil).AnyTimes()
 
 	w := httptest.NewRecorder()
@@ -739,7 +740,7 @@ func Test_fileHandler_RegisterFileRoute_Closures(t *testing.T) {
 	finfo.EXPECT().Path().Return("/app.txt")
 	finfo.EXPECT().Size().Return(uint64(4))
 	fileRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&biz.File{ID: 1, Path: "/app.txt", Size: 4, Username: "duc"}, nil)
-	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Upload, "duc", gomock.Any(), 1)
+	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Upload, "duc", gomock.Any(), gomock.Any(), 1)
 
 	req2, _ := http.NewRequest("POST", srv.URL+"/api/files", &buf)
 	req2.Header.Set("Content-Type", mw.FormDataContentType())

@@ -216,7 +216,7 @@ func TestWebsocketManager_HandleCancelDeploy(t *testing.T) {
 	})
 	marshal, _ := proto.Marshal(input)
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{}, nil)
-	eventRepo.EXPECT().AuditLog(types.EventActionType_CancelDeploy, "", gomock.Any())
+	eventRepo.EXPECT().AuditLog(types.EventActionType_CancelDeploy, "", "", gomock.Any())
 	wm.HandleCancelDeploy(context.TODO(), conn, WsCancel, marshal)
 	assert.True(t, called)
 }

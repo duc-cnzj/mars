@@ -30,6 +30,7 @@ const (
 	Namespace_Delete_FullMethodName        = "/namespace.Namespace/Delete"
 	Namespace_IsExists_FullMethodName      = "/namespace.Namespace/IsExists"
 	Namespace_Favorite_FullMethodName      = "/namespace.Namespace/Favorite"
+	Namespace_FavoriteSort_FullMethodName  = "/namespace.Namespace/FavoriteSort"
 	Namespace_Transfer_FullMethodName      = "/namespace.Namespace/Transfer"
 )
 
@@ -47,6 +48,7 @@ type NamespaceClient interface {
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	IsExists(ctx context.Context, in *IsExistsRequest, opts ...grpc.CallOption) (*IsExistsResponse, error)
 	Favorite(ctx context.Context, in *FavoriteRequest, opts ...grpc.CallOption) (*FavoriteResponse, error)
+	FavoriteSort(ctx context.Context, in *FavoriteSortRequest, opts ...grpc.CallOption) (*FavoriteSortResponse, error)
 	Transfer(ctx context.Context, in *TransferRequest, opts ...grpc.CallOption) (*TransferResponse, error)
 }
 
@@ -158,6 +160,16 @@ func (c *namespaceClient) Favorite(ctx context.Context, in *FavoriteRequest, opt
 	return out, nil
 }
 
+func (c *namespaceClient) FavoriteSort(ctx context.Context, in *FavoriteSortRequest, opts ...grpc.CallOption) (*FavoriteSortResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FavoriteSortResponse)
+	err := c.cc.Invoke(ctx, Namespace_FavoriteSort_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *namespaceClient) Transfer(ctx context.Context, in *TransferRequest, opts ...grpc.CallOption) (*TransferResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TransferResponse)
@@ -182,6 +194,7 @@ type NamespaceServer interface {
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	IsExists(context.Context, *IsExistsRequest) (*IsExistsResponse, error)
 	Favorite(context.Context, *FavoriteRequest) (*FavoriteResponse, error)
+	FavoriteSort(context.Context, *FavoriteSortRequest) (*FavoriteSortResponse, error)
 	Transfer(context.Context, *TransferRequest) (*TransferResponse, error)
 	mustEmbedUnimplementedNamespaceServer()
 }
@@ -222,6 +235,9 @@ func (UnimplementedNamespaceServer) IsExists(context.Context, *IsExistsRequest) 
 }
 func (UnimplementedNamespaceServer) Favorite(context.Context, *FavoriteRequest) (*FavoriteResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Favorite not implemented")
+}
+func (UnimplementedNamespaceServer) FavoriteSort(context.Context, *FavoriteSortRequest) (*FavoriteSortResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method FavoriteSort not implemented")
 }
 func (UnimplementedNamespaceServer) Transfer(context.Context, *TransferRequest) (*TransferResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Transfer not implemented")
@@ -427,6 +443,24 @@ func _Namespace_Favorite_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Namespace_FavoriteSort_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FavoriteSortRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NamespaceServer).FavoriteSort(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Namespace_FavoriteSort_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NamespaceServer).FavoriteSort(ctx, req.(*FavoriteSortRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Namespace_Transfer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TransferRequest)
 	if err := dec(in); err != nil {
@@ -491,6 +525,10 @@ var Namespace_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Favorite",
 			Handler:    _Namespace_Favorite_Handler,
+		},
+		{
+			MethodName: "FavoriteSort",
+			Handler:    _Namespace_FavoriteSort_Handler,
 		},
 		{
 			MethodName: "Transfer",

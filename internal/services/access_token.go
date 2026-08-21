@@ -82,6 +82,7 @@ func (a *accessTokenSvc) Grant(ctx context.Context, request *token.GrantRequest)
 	a.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Create,
 		user.Name,
+		user.Email,
 		fmt.Sprintf(`[accessTokenSvc]: 用户 "%s" 创建了一个 token "%s", 过期时间是 "%s".`, user.Name, maskToken(at.Token), at.ExpiredAt.Format(dateTimeFormat)),
 		request,
 	)
@@ -100,6 +101,7 @@ func (a *accessTokenSvc) Lease(ctx context.Context, request *token.LeaseRequest)
 	a.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Update,
 		user.Name,
+		user.Email,
 		fmt.Sprintf(`[accessTokenSvc]: 用户 "%s" 续租了 token "%s", 增加了 "%s", 过期时间是 "%s".`, user.Name, maskToken(at.Token), date.HumanDuration(time.Second*time.Duration(request.ExpireSeconds)), at.ExpiredAt.Format(dateTimeFormat)),
 		request,
 	)
@@ -124,6 +126,7 @@ func (a *accessTokenSvc) Revoke(ctx context.Context, request *token.RevokeReques
 	a.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Delete,
 		user.Name,
+		user.Email,
 		fmt.Sprintf(`[accessTokenSvc]: 用户 "%s" 删除 token "%s".`, user.Name, maskToken(request.Token)),
 		request,
 	)

@@ -250,6 +250,7 @@ func (wc *websocketManager) HandleCancelDeploy(ctx context.Context, c Conn, t we
 		wc.eventRepo.AuditLog(
 			types.EventActionType_CancelDeploy,
 			c.GetUser().Name,
+			c.GetUser().Email,
 			fmt.Sprintf("用户取消部署 namespace: %s, 服务 %s.", ns.Name, input.Name))
 	}
 }

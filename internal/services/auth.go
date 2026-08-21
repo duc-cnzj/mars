@@ -54,6 +54,7 @@ func (a *authSvc) Login(ctx context.Context, request *apiauth.LoginRequest) (*ap
 	a.eventBiz.AuditLog(
 		types.EventActionType_Login,
 		loginResp.UserInfo.Name,
+		loginResp.UserInfo.Email,
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", loginResp.UserInfo.Name, loginResp.UserInfo.Email),
 	)
 
@@ -123,6 +124,7 @@ func (a *authSvc) Exchange(ctx context.Context, request *apiauth.ExchangeRequest
 	a.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Login,
 		userinfo.Name,
+		userinfo.Email,
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", userinfo.Name, userinfo.Email),
 		request,
 	)

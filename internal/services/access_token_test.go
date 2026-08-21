@@ -86,6 +86,7 @@ func TestAccessTokenSvc_Grant_Success(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Create,
 		"admin",
+		user.Email,
 		fmt.Sprintf(`[accessTokenSvc]: 用户 "%s" 创建了一个 token "%s", 过期时间是 "%s".`, user.Name, maskToken(resp.Token), resp.ExpiredAt.Format("2006-01-02 15:04:05")),
 		req,
 	)
@@ -119,9 +120,10 @@ func TestAccessTokenSvc_Grant_AuditLogMasksFullToken(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Create,
 		user.Name,
+		user.Email,
 		gomock.Any(),
 		gomock.Any(),
-	).Do(func(_ types.EventActionType, _ string, msg string, _ any) {
+	).Do(func(_ types.EventActionType, _ string, _ string, msg string, _ any) {
 		assert.NotContains(t, msg, fullToken, "审计日志不得出现完整 token")
 		assert.Contains(t, msg, maskToken(fullToken), "审计日志应包含脱敏 token")
 	})
@@ -146,6 +148,7 @@ func TestAccessTokenSvc_Lease_Success(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Update,
 		"admin",
+		adminEmail,
 		fmt.Sprintf(`[accessTokenSvc]: 用户 "%s" 续租了 token "%s", 增加了 "%s", 过期时间是 "%s".`, biz.MustGetUser(newAdminUserCtx()).Name, maskToken(resp.Token), date.HumanDuration(time.Second*time.Duration(req.ExpireSeconds)), resp.ExpiredAt.Format("2006-01-02 15:04:05")),
 		req,
 	)
@@ -184,6 +187,7 @@ func TestAccessTokenSvc_Revoke_Success(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Delete,
 		"admin",
+		adminEmail,
 		fmt.Sprintf(`[accessTokenSvc]: 用户 "%s" 删除 token "%s".`, biz.MustGetUser(newAdminUserCtx()).Name, maskToken(req.Token)),
 		req,
 	)
