@@ -1,7 +1,7 @@
 import type { ReactNode, SVGProps } from 'react'
 
 /** 1.6px 描边线性图标基底，随 currentColor 着色 */
-function I({ children, ...rest }: SVGProps<SVGSVGElement> & { children: ReactNode }) {
+function Svg({ children, ...rest }: SVGProps<SVGSVGElement> & { children: ReactNode }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -342,8 +342,8 @@ export function Icon({
   ...rest
 }: { name: IconName; className?: string } & Omit<SVGProps<SVGSVGElement>, 'name' | 'children'>) {
   return (
-    <I className={className} {...rest}>
+    <Svg className={className} {...rest}>
       {paths[name]}
-    </I>
+    </Svg>
   )
 }

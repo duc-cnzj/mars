@@ -29,7 +29,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/shadcn/radio-group'
 import { copyText } from '../../utils/copy'
 import { PodMetrics } from './PodMetrics'
 import { PodStateTag } from './PodStateTag'
-import { shortContainerName } from './containerName'
+import { shortContainerName } from './shortContainerName'
 
 type StateContainer = components['schemas']['types.StateContainer']
 type NPC = { namespace: string; pod: string; container: string }

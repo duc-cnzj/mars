@@ -67,7 +67,7 @@ export function Topbar({
           className="flex h-8 items-center rounded-lg border border-primary-foreground/20 bg-primary-foreground/10 px-2.5 font-mono text-[12px] text-primary-foreground transition-colors hover:bg-primary-foreground/15"
           title={t('locale.language')}
         >
-          {locale === 'zh-CN' ? 'EN' : '中文'}
+          {locale === 'zh-CN' ? t('locale.en') : t('locale.zh')}
         </button>
         <UserMenu />
         <ClusterStatus />

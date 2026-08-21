@@ -48,7 +48,7 @@ const MAGNITUDES = [
  * 与后端行为一致：diff < 1s 显示"现在"（无方向后缀）；超过 37 年显示"很久以前"；
  * 未来时间取"以后"/"from now"方向。input 无法解析为合法日期时返回空串（对齐后端 t==nil 返回空串）。
  */
-export function toHumanizeDateTime(input: string | number | Date, now = Date.now()): string {
+export function humanizeDateTime(input: string | number | Date, now = Date.now()): string {
   const target = new Date(input).getTime()
   if (Number.isNaN(target)) return ''
 

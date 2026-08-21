@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import { Loader2 } from 'lucide-react'
 import type { components } from '../../api/schema'
@@ -97,7 +97,7 @@ export function TabInfo({
     <div className="flex flex-col gap-4">
       {/* 关键指标 */}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <MetricCard icon="rocket" label={t('project.id')} value={String(detail.id)} />
+        <MetricCard icon="rocket" label={t('project.projectId')} value={String(detail.id)} />
         <MetricCard icon="cpu" label={t('project.cpu')} value={metricsLoading ? '…' : cpu} />
         <MetricCard icon="memory" label={t('project.memory')} value={metricsLoading ? '…' : memory} />
       </div>
@@ -253,11 +253,17 @@ export function TabInfo({
             <DialogTitle>{t('project.deleteProject')}</DialogTitle>
           </DialogHeader>
           <p className="text-[13px] leading-relaxed text-mute">
-            {t('project.deleteConfirm')}
-            <span className="mx-1 text-err">{detail.namespace?.name ?? namespaceLabel(detail)}</span>
-            <span>下的</span>
-            <span className="mx-1 font-medium text-ink">{detail.name}</span>
-            <span>{t('project.question')}</span>
+            <Trans
+              i18nKey="project.deleteConfirm"
+              values={{
+                namespace: detail.namespace?.name ?? namespaceLabel(detail),
+                name: detail.name,
+              }}
+              components={{
+                ns: <span className="mx-1 text-err" />,
+                name: <span className="mx-1 font-medium text-ink" />,
+              }}
+            />
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>

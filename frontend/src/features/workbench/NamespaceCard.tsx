@@ -428,7 +428,7 @@ export function NamespaceCard({
                 onChange={setMembersList}
                 placeholder={t('workbench.membersPlaceholder')}
               />
-              <p className="text-[11px] text-faint">{t('workbench.membersHint')}</p>
+              <p className="text-[11px] text-faint">{t('workbench.membersTip')}</p>
             </div>
 
             {/* 转让所有权 */}
@@ -440,7 +440,7 @@ export function NamespaceCard({
                 placeholder={t('workbench.transferPlaceholder')}
               />
               <p className="text-[11px] text-faint">
-                {t('workbench.transferHint', { email: ns.creatorEmail })}
+                {t('workbench.transferTip', { email: ns.creatorEmail })}
               </p>
             </div>
           </div>

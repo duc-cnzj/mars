@@ -17,6 +17,8 @@ import {
 } from '@codemirror/autocomplete'
 import { linter, type Diagnostic } from '@codemirror/lint'
 import * as YAML from 'yaml'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 import { cn } from '@/lib/utils'
 
@@ -216,7 +218,9 @@ const yamlLinter = linter((view: EditorView): Diagnostic[] => {
 })
 
 /** yaml 模板补全（还原旧版 MyCodeMirror 的 30+ 个 <.Branch>/<.Commit> 变量） */
-const YAML_COMPLETIONS: Completion[] = [
+/** 模板补全列表：label/apply 里的 `<.*>` 变量与英文标识符固定，仅 3 条注释文案走 t 随语言切换 */
+function buildYamlCompletions(t: TFunction): Completion[] {
+  return [
   {
     apply: '<.ImagePullSecrets>',
     label: '<.ImagePullSecrets>',
@@ -246,7 +250,7 @@ const YAML_COMPLETIONS: Completion[] = [
     apply: '<.LongCommit>',
     label: '<.LongCommit>',
     type: 'text',
-    detail: '# 完整的 commit sha',
+    detail: `# ${t('repos.yamlCompleteLongCommit')}`,
   },
   { apply: '<.Host1>', label: '<.Host1>', type: 'text' },
   { apply: '<.Host2>', label: '<.Host2>', type: 'text' },
@@ -278,9 +282,9 @@ const YAML_COMPLETIONS: Completion[] = [
     detail: '<.Branch>-<.Pipeline>',
   },
   {
-    apply: `mars.duc-cnzj.github.io/ignore-containers: "app1,app2" # 自行修改 app1,app2 的值`,
+    apply: `mars.duc-cnzj.github.io/ignore-containers: "app1,app2" # ${t('repos.yamlCompleteIgnoreContainersApply')}`,
     label: 'annotationIgnoreContainerNames',
-    detail: `# 过滤容器`,
+    detail: `# ${t('repos.yamlCompleteIgnoreContainers')}`,
     info: () => {
       const div = document.createElement('div')
       div.textContent = `mars.duc-cnzj.github.io/ignore-containers: "app1,app2"`
@@ -288,16 +292,17 @@ const YAML_COMPLETIONS: Completion[] = [
     },
   },
   {
-    apply: `mars.duc-cnzj.github.io/order-index: "10" # 值为字符串类型, 数值越大越靠前`,
+    apply: `mars.duc-cnzj.github.io/order-index: "10" # ${t('repos.yamlCompleteOrderIndexApply')}`,
     label: 'annotationPodOrderIndex',
-    detail: `# 排序，数值越大越靠前`,
+    detail: `# ${t('repos.yamlCompleteOrderIndex')}`,
     info: () => {
       const div = document.createElement('div')
       div.textContent = `mars.duc-cnzj.github.io/order-index: "10"`
       return div
     },
   },
-]
+  ]
+}
 
 /** 对齐旧版 MyCodeMirror 的编辑器外观微调：行高、gutter 间距、去 focus 外框 */
 const editorChrome = EditorView.theme(
@@ -325,11 +330,13 @@ const editorChrome = EditorView.theme(
   {},
 )
 
-/** yaml 模式补全 source：匹配当前词并返回模板项 */
-function yamlCompletions(context: CompletionContext): CompletionResult | null {
-  const word = context.matchBefore(/\w*/)
-  if (!word || (word.from === word.to && !context.explicit)) return null
-  return { from: word.from, options: YAML_COMPLETIONS }
+/** yaml 模式补全 source：匹配当前词并返回模板项（注释文案随 t 走当前语言） */
+function yamlCompletions(t: TFunction) {
+  return (context: CompletionContext): CompletionResult | null => {
+    const word = context.matchBefore(/\w*/)
+    if (!word || (word.from === word.to && !context.explicit)) return null
+    return { from: word.from, options: buildYamlCompletions(t) }
+  }
 }
 
 /** Alt-Enter / Mod-Enter 触发补全（提高优先级覆盖默认 Mod-Enter 换行） */
@@ -352,6 +359,7 @@ function buildExtensions(
   langExt: Extension,
   readOnly = false,
   enableYamlTemplateCompletion = false,
+  t: TFunction,
 ): Extension[] {
   const ext: Extension[] = [langExt, editorChrome]
   if (isYamlType(fileType)) ext.push(yamlScalarHighlight)
@@ -361,7 +369,7 @@ function buildExtensions(
     ext.push(
       yamlLinter,
       enableYamlTemplateCompletion
-        ? autocompletion({ override: [yamlCompletions] })
+        ? autocompletion({ override: [yamlCompletions(t)] })
         : autocompletion(),
     )
   } else if (isJsonType(fileType)) {
@@ -397,10 +405,12 @@ export function CodeEditor({
   yamlTemplateCompletion?: boolean
   className?: string
 }) {
-  // 记录当前已应用到编辑器的语言。初始即挂载语言，避免挂载时对同一扩展再 setExtensions
+  // 记录当前已应用到编辑器的语言与语言包。初始即挂载，避免挂载时对同一扩展再 setExtensions
   // 一次触发 CodeMirror 全量 reconfigure（重新解析 + 重新高亮 + 重渲染 DOM，
-  // 打开编辑弹窗时 3 份编辑器一起卡顿）。
+  // 打开编辑弹窗时 3 份编辑器一起卡顿）。locale 变化也要重建（补全注释文案随语言切换）。
+  const { t, i18n } = useTranslation()
   const lastLang = useRef(language)
+  const lastLocale = useRef(i18n.language)
 
   const [extensions, setExtensions] = useState<Extension[]>(() => [
     // 初始扩展按语言取同步扩展：yaml/json 用对应 lang 扩展，其他语言先占位 yaml 等异步 resolve。
@@ -410,6 +420,7 @@ export function CodeEditor({
       isJsonType(language) ? json() : yaml(),
       readOnly,
       yamlTemplateCompletion,
+      t,
     ),
   ])
 
@@ -418,14 +429,16 @@ export function CodeEditor({
   useEffect(() => {
     const name = FILE_TYPE_TO_LANG[language]
     if (name === 'YAML' || name === 'JSON') {
-      if (lastLang.current === language) return // 已应用，跳过，避免挂载时重复 reconfigure
+      if (lastLang.current === language && lastLocale.current === i18n.language) return // 已应用，跳过，避免挂载时重复 reconfigure
       lastLang.current = language
+      lastLocale.current = i18n.language
       setExtensions(
         buildExtensions(
           language,
           name === 'JSON' ? json() : yaml(),
           readOnly,
           yamlTemplateCompletion,
+          t,
         ),
       )
       return
@@ -434,12 +447,13 @@ export function CodeEditor({
     void resolveLang(language).then((ext) => {
       if (!alive) return
       lastLang.current = language
-      setExtensions(buildExtensions(language, ext, readOnly, yamlTemplateCompletion))
+      lastLocale.current = i18n.language
+      setExtensions(buildExtensions(language, ext, readOnly, yamlTemplateCompletion, t))
     })
     return () => {
       alive = false
     }
-  }, [language, readOnly])
+  }, [language, readOnly, i18n.language])
 
   // 大文档回退：1MB 以上的值不进 CodeMirror（见 LARGE_DOC_LIMIT 注释）。
   // 放在常规渲染之前：大文档立即渲染，避免走 CodeMirror 挂载路径。

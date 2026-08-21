@@ -273,13 +273,13 @@ function SortableElementItem({
               />
             </label>
             <label className="flex flex-col gap-1.5">
-              <span className={labelCls}>{t('repos.elementTextareaLanguage')}</span>
+              <span className={labelCls}>{t('repos.elementTextAreaLanguage')}</span>
               {/* 复用配置文件类型选择器：55 种语言候选 + 可搜索 + 自由值兜底；
                   空串表示未指定 → 部署表单按默认语言 textile 高亮（Elements.tsx 的 FILE_TYPES 回退） */}
               <SelectFileType
                 value={element.textareaLanguage}
                 onChange={(v) => onChange({ textareaLanguage: v })}
-                placeholder={t('repos.elementTextareaLanguagePlaceholder')}
+                placeholder={t('repos.elementTextAreaLanguagePlaceholder')}
               />
             </label>
           </div>

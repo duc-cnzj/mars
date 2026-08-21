@@ -167,8 +167,8 @@ export function Repos() {
       // toggle 后新状态是 !item.enabled：旧为启用 → 已禁用；旧为禁用 → 已启用
       toast.success(
         item.enabled
-          ? t('repos.toggleDisabled', { name: item.name })
-          : t('repos.toggleEnabled', { name: item.name }),
+          ? t('repos.disableSuccess', { name: item.name })
+          : t('repos.enableSuccess', { name: item.name }),
       )
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
@@ -192,7 +192,7 @@ export function Repos() {
 
   const clone = async () => {
     if (cloneId <= 0 || !cloneName.trim()) {
-      toast.error(t('repos.cloneFailed'))
+      toast.error(t('repos.cloneEmptyError'))
       return
     }
     try {

@@ -139,7 +139,7 @@ export function PodMetrics({ namespace, pod }: { namespace: string; pod: string 
               value={latest(cpu)?.human ?? '—'}
               points={cpu.map((s) => s.v)}
               labels={cpu.map((s) => s.human)}
-              hint={t('project.metricsCpuHint')}
+              hint={t('project.metricsCpuTip')}
               color="var(--primary)"
               height={9}
             />
