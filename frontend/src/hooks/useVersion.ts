@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
-import { api } from '../api/client'
-import type { components } from '../api/schema'
+import { api } from '@/api/client'
+import type { components } from '@/api/schema'
 
 type VersionResponse = components['schemas']['version.Response']
 

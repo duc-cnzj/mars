@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { Loader2, Plus, X } from 'lucide-react'
 import * as YAML from 'yaml'
-import type { components } from '../../api/schema'
-import { api } from '../../api/client'
-import { CodeEditor, getMode } from '../../components/CodeEditor'
-import { Icon } from '../../components/icons'
+import type { components } from '@/api/schema'
+import { api } from '@/api/client'
+import { CodeEditor, getMode } from '@/components/CodeEditor'
+import { Icon } from '@/components/Icons'
 import { Skeleton } from '@/components/ui/shadcn/skeleton'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
@@ -22,7 +21,7 @@ import {
   SheetContent,
   SheetTitle,
 } from '@/components/ui/shadcn/sheet'
-import { copyText } from '../../utils/copy'
+import { copyText } from '@/lib/copy'
 import { SelectFileType } from './SelectFileType'
 import { DEFAULT_REQUIRED_TYPES, DynamicElement, SELECTIVE_TYPES } from './DynamicElement'
 
@@ -113,6 +112,8 @@ export function RepoFormModal({
     stages: string[]
     jobs: string[]
   }>({ stages: [], jobs: [] })
+  /** 已填充/已选中的 git 项目 id：识别「用户切换了 git 项目」而非初始回填，切换时清空已选分支与通过规则 */
+  const gitSelectionRef = useRef(0)
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }))
@@ -137,6 +138,27 @@ export function RepoFormModal({
     })
   }
 
+  /** 详情补拉只回填配置区（marsConfig 派生字段），不动 name/description/needGitRepo/gitProjectId：
+      基础字段列表项已完整，且详情返回前用户可能已在编辑——整体覆盖会丢掉输入 */
+  const fillConfig = (item: RepoModel) => {
+    const c = item.marsConfig
+    // 详情请求返回前用户已切换 git 项目：branches/pipelinePassRules 属于旧项目，
+    // 已被分支 effect 清空并重新拉取——这里不能再拿旧项目的配置覆盖回来
+    //（分支 effect deps 不含 branches 不会重跑，stale 分支会被保存到错误项目上）
+    const projectSwitched = gitSelectionRef.current !== (item.gitProjectId ?? 0)
+    setForm((f) => ({
+      ...f,
+      branches: projectSwitched ? f.branches : c?.branches?.length ? c.branches : ['*'],
+      pipelinePassRules: projectSwitched ? f.pipelinePassRules : c?.pipelinePassRules ?? [],
+      localChartPath: c?.localChartPath ?? '',
+      configField: c?.configField ?? '',
+      configFileType: c?.configFileType ?? 'yaml',
+      configFileValues: c?.configFileValues ?? '',
+      valuesYaml: c?.valuesYaml ?? '',
+      elements: c?.elements ?? [],
+    }))
+  }
+
   // 打开时回填：列表项即时回填（先看到名称/描述，配置缺失也不白屏），
   // 再后台补拉详情拿权威 marsConfig 覆盖（UAT 列表接口实测不携带完整配置，
   // 单靠列表项编辑时配置区全空）。回填前重置为 DEFAULTS，避免残留上次数据。
@@ -145,12 +167,15 @@ export function RepoFormModal({
     setChartDefaults('') // 左侧 chart 模板重置，等待重新拉取
     if (!editItem) {
       setForm(DEFAULTS)
+      gitSelectionRef.current = 0
       return
     }
     fillForm(editItem)
+    gitSelectionRef.current = editItem.gitProjectId ?? 0
   }, [open, editItem]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 后台补拉详情：列表项可能不含 marsConfig，详情响应才是权威配置。
+  // 只用 fillConfig 回填配置区，避免覆盖用户已在编辑的基础字段。
   useEffect(() => {
     if (!open || !editItem) return
     let alive = true
@@ -158,7 +183,7 @@ export function RepoFormModal({
       .GET('/api/repos/{id}', { params: { path: { id: editItem.id } } })
       .then(({ data, error }) => {
         if (!alive || error || !data) return
-        fillForm(data.item)
+        fillConfig(data.item)
       })
     return () => {
       alive = false
@@ -179,7 +204,10 @@ export function RepoFormModal({
       setBranches([])
       return
     }
-    if (editItem && form.gitProjectId !== editItem.gitProjectId) {
+    if (form.gitProjectId !== gitSelectionRef.current) {
+      // git 项目切换（含创建模式；旧实现只对比 editItem.gitProjectId，创建态会残留上个项目的分支）：
+      // 清空已选分支与通过规则，它们属于上一个项目
+      gitSelectionRef.current = form.gitProjectId
       setForm((f) => ({ ...f, branches: [], pipelinePassRules: [] }))
     }
     void api
@@ -215,9 +243,11 @@ export function RepoFormModal({
   useEffect(() => {
     if (!open) {
       initialValuesFetch.current = false
+      setValuesLoading(false) // 关闭时复位，避免上次在途请求因 alive 失效而卡住 loading 态
       return
     }
     if (!form.needGitRepo || !form.localChartPath.trim()) {
+      setValuesLoading(false) // 路径被清空时在途请求被 cleanup 弃用（alive=false），这里兜底复位 loading
       return
     }
     const first = !initialValuesFetch.current
@@ -445,7 +475,7 @@ export function RepoFormModal({
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="!w-full !max-w-full p-0" showCloseButton={false}>
+      <SheetContent side="right" className="!w-full !max-w-full p-0">
         <div className="flex h-full flex-col">
           {/* 标题栏：标题 + 取消/保存（还原旧版 Drawer title 栏放主按钮） */}
           <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-4">
@@ -457,7 +487,7 @@ export function RepoFormModal({
                 {t('common.cancel')}
               </Button>
               <Button variant="default" size="sm" disabled={saving} onClick={submit}>
-                {saving && <Loader2 className="size-4 animate-spin" />}
+                {saving && <Icon name="loader" className="size-4 animate-spin" />}
                 {editItem ? t('common.save') : t('repos.create')}
               </Button>
             </div>
@@ -472,7 +502,7 @@ export function RepoFormModal({
                   <span className="rounded bg-primary-soft px-2 py-0.5 text-[12px] font-medium text-primary">
                     {t('repos.chartsDefaults')}
                   </span>
-                  {valuesLoading && <Loader2 className="size-3 animate-spin text-mute" />}
+                  {valuesLoading && <Icon name="loader" className="size-3 animate-spin text-mute" />}
                 </span>
                 <button
                   type="button"
@@ -621,7 +651,7 @@ export function RepoFormModal({
                       onClick={() => removeRule(i)}
                       aria-label={t('common.delete')}
                     >
-                      <X />
+                      <Icon name="close" />
                     </Button>
                   </div>
                 ))}
@@ -630,7 +660,7 @@ export function RepoFormModal({
                   className="border-dashed"
                   onClick={addRule}
                 >
-                  <Plus />
+                  <Icon name="plus" />
                   {t('repos.addRule')}
                 </Button>
               </div>

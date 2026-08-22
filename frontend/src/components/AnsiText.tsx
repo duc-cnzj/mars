@@ -1,5 +1,5 @@
 import { memo, type CSSProperties, type ReactNode } from 'react'
-import { ansiparse, PALETTE, type AnsiSegment } from '../utils/ansi'
+import { ansiparse, PALETTE, type AnsiSegment } from '@/lib/ansi'
 
 function segmentStyle(seg: AnsiSegment): CSSProperties {
   const style: CSSProperties = {}

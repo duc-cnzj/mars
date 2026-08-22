@@ -1,12 +1,11 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { Gauge, Link, Loader2, Pencil } from 'lucide-react'
-import type { components } from '../../api/schema'
-import { api } from '../../api/client'
-import { copyText } from '../../utils/copy'
-import { Icon } from '../../components/icons'
-import { Tag } from '../../components/ui'
+import type { components } from '@/api/schema'
+import { api } from '@/api/client'
+import { copyText } from '@/lib/copy'
+import { Icon } from '@/components/Icons'
+import { Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
 import { Textarea } from '@/components/ui/shadcn/textarea'
@@ -30,12 +29,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/shadcn/tooltip'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '@/features/auth/AuthProvider'
 // 创建项目弹窗静态依赖 Elements→CodeEditor(CodeMirror 620KB)，懒加载后延迟到点「新建」才拉取
 const CreateProjectModal = lazy(() =>
   import('../projects/CreateProjectModal').then((m) => ({ default: m.CreateProjectModal })),
 )
-import { ProjectRow } from '../projects/ProjectRow'
+import { ProjectRow } from '@/features/projects/ProjectRow'
 
 type NamespaceModel = components['schemas']['types.NamespaceModel']
 type ProjectModel = components['schemas']['types.ProjectModel']
@@ -76,7 +75,8 @@ export function NamespaceCard({
   onOpenProject: (p: ProjectModel) => void
   /** 删除命名空间成功后回调（携带空间 id，供工作台关闭该空间下已打开的弹窗） */
   onDeleted: (nsId: number) => void
-  onChanged: () => void
+  /** 空间内项目/配置变更回调（携带空间 id，供工作台按空间详情原地刷新）。稳定引用才让 memo 生效 */
+  onChanged: (nsId: number) => void
   /** 拖拽排序手柄（关注 Tab 启用时注入）：渲染在右上图标簇最左端，不传入则不显示 */
   dragHandle?: ReactNode
 }) {
@@ -207,7 +207,7 @@ export function NamespaceCard({
         toast.success(t('workbench.configSaved'))
       }
       setManageOpen(false)
-      onChanged()
+      onChanged(ns.id)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     } finally {
@@ -450,7 +450,7 @@ export function NamespaceCard({
               {t('common.cancel')}
             </Button>
             <Button onClick={saveConfig} disabled={saving}>
-              {saving && <Loader2 className="size-4 animate-spin" />}
+              {saving && <Icon name="loader" className="size-4 animate-spin" />}
               {t('common.save')}
             </Button>
           </DialogFooter>
@@ -472,7 +472,7 @@ export function NamespaceCard({
               {t('common.cancel')}
             </Button>
             <Button variant="destructive" disabled={deleting} onClick={remove}>
-              {deleting && <Loader2 className="size-4 animate-spin" />}
+              {deleting && <Icon name="loader" className="size-4 animate-spin" />}
               {t('common.delete')}
             </Button>
           </DialogFooter>
@@ -485,15 +485,15 @@ export function NamespaceCard({
           namespaceId={ns.id}
           namespaceName={ns.name}
           open={createOpen}
-          onOpenChange={setCreateOpen}
-          onChanged={onChanged}
+          onClose={() => setCreateOpen(false)}
+          onChanged={() => onChanged(ns.id)}
         />
       </Suspense>
 
       {/* 空间刷新中覆盖层：别人对该空间部署/删除时整卡置 loading，刷新完成即消失（对齐旧版 Spin spinning=loading） */}
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-surface/70 backdrop-blur-[2px]">
-          <Loader2 className="size-5 animate-spin text-primary" />
+          <Icon name="loader" className="size-5 animate-spin text-primary" />
         </div>
       )}
     </div>
@@ -552,7 +552,7 @@ function MemberInput({
   return (
     <div
       onClick={() => inputRef.current?.focus()}
-      className="flex min-h-[52px] cursor-text flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-2.5 py-2 transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50"
+      className="flex min-h-[52px] cursor-text flex-wrap items-center gap-1.5 rounded-md border border-line-strong bg-transparent px-2.5 py-2 transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50"
     >
       {value.map((email, i) => (
         <span
@@ -603,7 +603,7 @@ function NamespaceDescription({
   text: string
   namespaceId: number
   canEdit: boolean
-  onChanged: () => void
+  onChanged: (nsId: number) => void
 }) {
   const { t } = useTranslation()
   const ref = useRef<HTMLDivElement>(null)
@@ -612,6 +612,8 @@ function NamespaceDescription({
   const [draft, setDraft] = useState(text)
   const [saving, setSaving] = useState(false)
 
+  // 依赖只留 text：text 变化重建 + ResizeObserver 兜住尺寸变化。
+  // truncated 放依赖会让它每次翻转都重建 observer（反模式，无谓开销）
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -620,7 +622,7 @@ function NamespaceDescription({
     const ro = new ResizeObserver(check)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [text, truncated])
+  }, [text])
 
   const saveDesc = async () => {
     if (saving) return
@@ -633,7 +635,7 @@ function NamespaceDescription({
       if (error) throw new Error(error.message ?? String(error))
       toast.success(t('workbench.descSaved'))
       setOpen(false)
-      onChanged()
+      onChanged(namespaceId)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     } finally {
@@ -659,7 +661,7 @@ function NamespaceDescription({
       />
       <div className="mt-2 flex justify-end">
         <Button size="sm" variant="outline" disabled={saving} onClick={saveDesc}>
-          {saving && <Loader2 className="size-3.5 animate-spin" />}
+          {saving && <Icon name="loader" className="size-3.5 animate-spin" />}
           {t('common.save')}
         </Button>
       </div>
@@ -720,7 +722,7 @@ function NamespaceDescription({
               aria-label={t('common.edit')}
               className="flex shrink-0 items-center rounded p-0.5 text-faint opacity-0 transition-opacity hover:text-primary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 group-hover:opacity-100 pointer-coarse:opacity-100"
             >
-              <Pencil size={12} />
+              <Icon name="pencil" className="size-3" />
             </button>
           </PopoverTrigger>
           {editor}
@@ -789,7 +791,7 @@ function NamespaceCpuMemory({ namespaceId }: { namespaceId: number }) {
           className="rounded-md p-1 text-faint transition-colors hover:bg-raised hover:text-primary"
           aria-label={t('workbench.spaceCpuMemory')}
         >
-          <Gauge size={16} />
+          <Icon name="gauge" className="size-4" />
         </button>
       </PopoverTrigger>
       <PopoverContent side="top" className="w-[min(240px,80vw)] p-2 font-mono text-[11px]">
@@ -801,7 +803,7 @@ function NamespaceCpuMemory({ namespaceId }: { namespaceId: number }) {
           </div>
         ) : (
           <div className="flex items-center gap-1.5 px-1 py-1 text-faint">
-            <Loader2 className="size-3 animate-spin" />
+            <Icon name="loader" className="size-3 animate-spin" />
             {t('common.loading')}
           </div>
         )}
@@ -844,14 +846,14 @@ function NamespaceEndpoints({ namespaceId }: { namespaceId: number }) {
           className="rounded-md p-1 text-faint transition-colors hover:bg-raised hover:text-primary"
           aria-label={t('workbench.endpoints')}
         >
-          <Link size={16} />
+          <Icon name="link" className="size-4" />
         </button>
       </PopoverTrigger>
       <PopoverContent side="top" className="w-[max-content] max-w-[min(480px,90vw)] p-2">
         <div className="mb-1 px-1 text-[12px] font-medium">{t('workbench.endpoints')}</div>
         {!loaded ? (
           <div className="flex items-center gap-1.5 px-1 py-1 text-[12px] text-faint">
-            <Loader2 className="size-3 animate-spin" />
+            <Icon name="loader" className="size-3 animate-spin" />
             {t('common.loading')}
           </div>
         ) : eps.length === 0 ? (

@@ -1,12 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
+import { isMac } from '@/lib/platform'
 import { Input } from '@/components/ui/shadcn/input'
 import { Kbd } from '@/components/ui/Kbd'
-import { Icon } from './icons'
-
-// 平台判断：macOS 显示 ⌘K，Windows/Linux 显示 Ctrl K（快捷键两者都支持）
-const isMac = /Mac|iPod|iPhone|iPad/i.test(navigator.platform || navigator.userAgent)
+import { Icon } from './Icons'
 
 /**
  * 通用搜索框：左侧放大镜 + 右侧快捷键徽标（⌘K / Ctrl K）/ 有值时变清除按钮。
@@ -81,7 +79,7 @@ export function SearchInput({
       ) : (
         <button
           type="button"
-          aria-label="Focus search"
+          aria-label={t('common.focusSearch')}
           onClick={() => ref.current?.focus()}
           className="absolute right-2.5 top-1/2 -translate-y-1/2"
         >

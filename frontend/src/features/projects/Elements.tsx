@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
-import type { components } from '../../api/schema'
+import type { components } from '@/api/schema'
 import { Input } from '@/components/ui/shadcn/input'
 import { Switch } from '@/components/ui/shadcn/switch'
 import { CodeEditor, FILE_TYPES } from '@/components/CodeEditor'
 import { SearchableSelect } from '@/components/SearchableSelect'
-import { nextZIndex } from '@/hooks/useDraggableDialog'
+import { nextZIndex } from '@/lib/zIndex'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/shadcn/tooltip'
-import { ChevronDown } from 'lucide-react'
+import { Icon } from '@/components/Icons'
 
 type Element = components['schemas']['mars.Element']
 type ExtraValue = components['schemas']['websocket.ExtraValue']
@@ -100,9 +100,9 @@ function ElementField({
               title={collapsed ? t('project.expand') : t('project.collapse')}
               className="shrink-0 rounded text-faint transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             >
-              <ChevronDown
-                size={14}
-                className={cn('transition-transform', collapsed && '-rotate-90')}
+              <Icon
+                name="chevron-down"
+                className={cn('size-3.5 transition-transform', collapsed && '-rotate-90')}
               />
             </button>
           </div>

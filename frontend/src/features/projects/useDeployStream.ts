@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { websocket } from '../../api/websocket'
-import { useWebsocket } from '../../realtime/useWebsocket'
+import { websocket } from '@/api/websocket'
+import { useWebsocket } from '@/hooks/useWebsocket'
+
+// 部署日志行数上限：长跑/异常刷屏的部署会话（如卡在某步反复推日志）日志不被无限累积
+// 拖垮内存，超出丢弃最旧行。容器日志 TabLog 独立用 5000，部署面板会话短、留 1000 足够。
+const MAX_DEPLOY_LOG_LINES = 1000
 
 export type DeployStreamStatus = 'idle' | 'deploying' | 'deployed' | 'failed' | 'canceled'
 
@@ -78,7 +82,11 @@ export function useDeployStream(namespaceId: number, name: string) {
           containers = []
         }
       }
-      setLogs((prev) => [...prev, { msg: meta.message ?? '', result: meta.result ?? 0, containers }])
+      // 超上限丢最旧：纯函数式更新，StrictMode 双调用幂等（slice 只读 prev）
+      setLogs((prev) => {
+        const next = [...prev, { msg: meta.message ?? '', result: meta.result ?? 0, containers }]
+        return next.length > MAX_DEPLOY_LOG_LINES ? next.slice(next.length - MAX_DEPLOY_LOG_LINES) : next
+      })
       // 进度只认 ProcessPercent 帧；日志帧不带 percent（protobuf 默认解成 0），
       // 不能把它打回 0 —— 否则每条日志一来进度就跳 0
       if (typeof meta.percent === 'number' && meta.percent > 0) setPercent(meta.percent)

@@ -4,7 +4,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/shadcn/dialog'
-import { DiffViewer } from '../../components/DiffViewer'
+import { DiffViewer } from '@/components/DiffViewer'
 import { EventTitle } from './EventTitle'
 
 /**

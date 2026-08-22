@@ -6,14 +6,14 @@ import { humanizeDateTime } from '@/lib/humanizeDateTime'
 import type {
   components,
   PathsApiEventsGetParametersQueryActionTypes as SchemaActionTypes,
-} from '../../api/schema'
-import { api } from '../../api/client'
-import { getToken } from '../../api/token'
+} from '@/api/schema'
+import { api } from '@/api/client'
+import { getToken } from '@/api/token'
 import { toast } from '@/lib/toast'
-import { Icon } from '../../components/icons'
-import { Empty, SkeletonList, Tag, type Tone } from '../../components/ui'
+import { Icon } from '@/components/Icons'
+import { Empty, SkeletonList, Tag, type Tone } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
-import { SearchInput } from '../../components/SearchInput'
+import { SearchInput } from '@/components/SearchInput'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +33,7 @@ import {
 import { DiffModal } from './DiffModal'
 import { EventTitle } from './EventTitle'
 import { AsciinemaPlayer } from './AsciinemaPlayer'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '@/features/auth/AuthProvider'
 
 type EventModel = components['schemas']['types.EventModel']
 
@@ -139,6 +139,9 @@ export function Events() {
   const busyRef = useRef(false)
   const reqIdRef = useRef(0)
   const refreshingRef = useRef(false)
+  /** 上次实际发出的 (filterKey, page)：跳过过滤切换瞬间的过期请求，以及刷新完成后的重复请求 */
+  const lastFilterKeyRef = useRef('')
+  const lastPageRef = useRef(0)
 
   const [diff, setDiff] = useState<{
     open: boolean
@@ -240,8 +243,15 @@ export function Events() {
   useEffect(() => {
     // 刷新已直接拉取第 1 页，跳过 setPage(1) 触发的重复请求
     if (page === 1 && refreshingRef.current) return
+    // 过滤条件刚变、page 尚未重置到 1（filterKey effect 已 setPage(1)，本 commit 里拿到的还是旧 page）：
+    // 跳过这次「新条件×旧页码」的过期请求，真正的第 1 页由 setPage(1) 触发的下一次 effect 承担
+    if (lastFilterKeyRef.current !== filterKey && page !== 1) return
+    // 同 (filterKey, page) 去重：刷新完成后的 effect 重跑不会重复拉第 1 页
+    if (lastFilterKeyRef.current === filterKey && lastPageRef.current === page) return
+    lastFilterKeyRef.current = filterKey
+    lastPageRef.current = page
     void fetchList(page, actionType, debouncedSearch, page > 1)
-  }, [page, filterKey, fetchList]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [page, filterKey, fetchList, refreshing]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 触底加载：sentinel 进入列表容器视口（提前 200px）且非忙碌/非刷新时翻下一页
   useEffect(() => {
@@ -269,6 +279,9 @@ export function Events() {
     // 回到顶部：让哨兵离开视口，刷新后不会自动加载后续页
     if (scrollRef.current) scrollRef.current.scrollTop = 0
     setPage(1)
+    // 预标记本次刷新要拉的 (filterKey, page)，刷新完成后的 effect 重跑据此去重，不重复拉第 1 页
+    lastFilterKeyRef.current = filterKey
+    lastPageRef.current = 1
     await fetchList(1, actionType, debouncedSearch, false)
     busyRef.current = false
     refreshingRef.current = false

@@ -1,6 +1,5 @@
-import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeftIcon, ChevronRightIcon, GripVertical, Loader2, RefreshCw } from 'lucide-react'
 import {
   DndContext,
   PointerSensor,
@@ -16,19 +15,20 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { components } from '../../api/schema'
-import { api } from '../../api/client'
+import type { components } from '@/api/schema'
+import { api } from '@/api/client'
 import { toast } from '@/lib/toast'
-import { Icon } from '../../components/icons'
-import { Empty, SkeletonGrid } from '../../components/ui'
+import { isMac } from '@/lib/platform'
+import { Icon } from '@/components/Icons'
+import { Empty, SkeletonGrid } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink } from '@/components/ui/shadcn/pagination'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/shadcn/tabs'
-import { SearchInput } from '../../components/SearchInput'
+import { SearchInput } from '@/components/SearchInput'
 import { AddNamespaceModal } from './AddNamespaceModal'
 import { NamespaceCard } from './NamespaceCard'
-import { useWebsocket } from '../../realtime/useWebsocket'
+import { useWebsocket } from '@/hooks/useWebsocket'
 // 项目详情弹窗静态依赖 TabEdit→CodeEditor(CodeMirror 620KB)/DiffViewer(react-diff-viewer)/prism，
 // 懒加载后这些重依赖延迟到真正点开项目卡片时才拉取，不进工作台首屏。
 const ProjectDetailModal = lazy(() =>
@@ -49,9 +49,6 @@ const PAGE_SIZE = 12
 // 拖拽性能：NamespaceCard 是重组件（弹窗/工具提示/项目行），memo 后拖拽过程的
 // 反复渲染只落在外层 dnd-kit 节点上，卡片本体引用不变则跳过重渲染。
 const MemoizedNamespaceCard = memo(NamespaceCard)
-
-// 平台判断：macOS 显示 ⌘，Windows/Linux 显示 Ctrl（快捷键两者都支持，与 SearchInput 一致）
-const isMac = /Mac|iPod|iPhone|iPad/i.test(navigator.platform || navigator.userAgent)
 
 /** 工作台 Tab 选择持久化 key（与旧版 AppContent 的 'active-tabs' 一致） */
 const TABS_KEY = 'active-tabs'
@@ -111,12 +108,23 @@ export function Workbench() {
   const [hydrated, setHydrated] = useState(false)
   const restoredRef = useRef(false)
   // 其他用户部署/删除/变更触发的空间刷新（WS ReloadProjects）：命中的空间卡显示 loading，
-  // 对齐旧版 setNamespaceReload(true, nsID) → 仅该空间卡 Spin；刷新完成后清除。
-  const [reloadingNsId, setReloadingNsId] = useState<number | null>(null)
+  // 对齐旧版 setNamespaceReload(true, nsID) → 仅这批受影响空间卡 Spin；刷新完成后清除。
+  const [reloadingNsIds, setReloadingNsIds] = useState<number[] | null>(null)
   const handledReloadRevRef = useRef(0)
-  const { reloadProjectsRev, reloadNsId } = useWebsocket()
+  const { reloadProjectsRev, reloadNsIds, ready } = useWebsocket()
+  // WS 是否已建立过连接：首连不触发重同步（首屏数据已由 fetchList 拉取），
+  // 后续每次 ready=false→true（断线重连）都整页重拉一次兜底。
+  const wsConnectedRef = useRef(false)
+  // 上一拍 ready 值：依赖 refresh 换引用（翻页/切 Tab）重跑 effect 时 ready 未翻转，不得误判为重连
+  const wsPrevReadyRef = useRef(false)
+  // 本地操作刚刷新过的空间标记（nsId → 时间戳）：TTL 内到达的 WS 批次刷新直接跳过，
+  // 避免「本地 onChanged 直刷一次 + 后端广播又刷一次」的重复请求与二次 loading 闪（④）。
+  const recentlyRefreshedRef = useRef(new Map<number, number>())
   // 手动刷新按钮的自身 loading：刷新列表但保持网格挂载（与后台刷新同语义，不动卡片覆盖层）
   const [refreshing, setRefreshing] = useState(false)
+  // 手动刷新完成的递增记号：ListEnter.replayKey 用它重播列表入场动画（刷新不重挂卡片，
+  // 靠摘类回加触发动画重启，NamespaceCard 内部展开等状态原样保留）
+  const [listRev, setListRev] = useState(0)
   // 无限滚动的哨兵节点：进入视口即加载下一页
   const sentinelRef = useRef<HTMLDivElement>(null)
   // 总页数（派生自 count，供分页渲染与键盘翻页 guard 共用）
@@ -128,11 +136,18 @@ export function Workbench() {
 
   // 翻页辅助：pageRef 实时页 + 请求序列号。
   // pageRef 由 goPage 同步写、渲染期回写 page，键盘 handler 在 React 重渲前即可读到最新页；
-  // fetchSeqRef 每次 fetchPage 递增，响应回来与最新序列比对——过期请求整包丢弃，
+  // fetchSeqRef 每次 fetchList 递增，响应回来与最新序列比对——过期请求整包丢弃，
   // 杜绝「快速连按翻页 → 旧响应 setPage 回写 → 页码来回跳」的乱序落地。
   const pageRef = useRef(page)
   pageRef.current = page // 渲染期同步最新页（幂等，StrictMode 双渲无害）
   const fetchSeqRef = useRef(0)
+  // 实时 items 镜像：异步回调（refreshNamespace 404 移除前判存在、避免向未加载页下刀）需同步读当前列表，
+  // 不依赖会过期的闭包 items；渲染期同步，幂等。
+  const itemsRef = useRef(items)
+  itemsRef.current = items
+  // 实时 openProjects 镜像：稳定 openProject 回调（memo 生效前提）里读最新已开集合做去重。
+  const openProjectsRef = useRef(openProjects)
+  openProjectsRef.current = openProjects
 
   // 首屏空闲预热：详情弹窗/配置编辑器已懒加载（见上方 lazy 注释），这里在首帧渲染并
   // 等数据请求发出后（1.2s）后台拉取对应 chunk，既保住首屏体积又让「点开项目卡片/
@@ -158,7 +173,7 @@ export function Workbench() {
    * 越界自纠正：目标页超出总页数时保持骨架屏直接切到最后一页（成功路径），
    * 或首屏失败回退第 1 页（错误路径），由 [page] effect 重拉并同步 URL。
    */
-  const fetchPage = useCallback(
+  const fetchList = useCallback(
     async (p: number, append: boolean) => {
       const seq = ++fetchSeqRef.current
       let corrected = false
@@ -215,68 +230,165 @@ export function Workbench() {
     [tab, debouncedKw, goPage],
   )
 
-  // 关注 Tab 无搜索时进入「全量 + 可排序」模式：一次性拉完该用户全部关注（跨页顺序对拖拽重排
-  // 是必要前提——后端 FavoriteSort 按整份有序 id 列表回写 sort_order），拖拽后按此全量回传。
-  const loadAllFavorites = useCallback(async () => {
-    const seq = ++fetchSeqRef.current
-    setLoading(true)
-    const all: NamespaceModel[] = []
-    try {
-      for (let p = 1; ; p += 1) {
-        const { data, error } = await api.GET('/api/namespaces', {
-          params: { query: { page: p, pageSize: PAGE_SIZE, favorite: true } },
-        })
-        if (seq !== fetchSeqRef.current) return
-        if (error) throw new Error(error.message ?? String(error))
-        if (!data || data.items.length === 0) break
-        all.push(...data.items)
-        if (all.length >= data.count) break
-      }
-      setItems(all)
-      setCount(all.length)
-      setHasMore(false)
-      loadedRef.current = true
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e))
-    } finally {
-      if (seq === fetchSeqRef.current) setLoading(false)
-    }
-  }, [])
-
-  // 统一刷新入口：关注 Tab 无搜索时走全量加载（保序），其余路径走分页刷新。
+  // 统一刷新入口：整页拉取当前条件（分页/关注分页）。
+  // 关注 Tab 拖拽排序是相对移动契约（firstId=被拖拽空间，secondId=落点参照项，见 handleDragEnd），
+  // 无需全量加载——部分加载下已加载卡片间的拖拽同样正确，未加载卡片保持后端相对顺序。
   const refresh = useCallback(() => {
-    if (tab === 'favorite' && !debouncedKw) return loadAllFavorites()
-    return fetchPage(page, false)
-  }, [tab, debouncedKw, page, loadAllFavorites, fetchPage])
+    return fetchList(page, false)
+  }, [page, fetchList])
 
-  // 其他用户部署/删除项目 → WS ReloadProjects（WS 层已 debounce 500ms）→ 刷新列表，
-  // 命中空间卡显示 loading、刷新后状态图标随之更新（对齐旧版 AppContent + ItemCard）。
-  // reloadProjectsRev 与 reloadNsId 同批更新；handledReloadRevRef 防止依赖 refresh 身份变化时
-  // effect 重复触发（翻页/切 Tab 会让 refresh 换引用，但 rev 未变不应再刷一次）。
+  /**
+   * 只刷新单个空间的详情并原地替换列表项（不整页重拉）。
+   * 适用：单空间内的项目/配置变更（本地操作 onChanged + WS ReloadProjects）——尤其关注 Tab
+   * 无限滚动下整页重拉会折叠回第 1 页并丢滚动位置；原地替换保持卡片挂载、内部展开状态不丢。
+   * 空间已被删除（show 返回 404/grpc code 5）→ 从列表移除并同步计数；其余错误仅 toast。
+   * 目标空间未加载（关注 Tab 的未翻到页 / 他端新建）→ 原地无匹配则静默，由后续整页刷新兜底。
+   */
+  const refreshNamespace = useCallback(
+    async (nsId: number, silent = false): Promise<boolean> => {
+      try {
+        const { data, error } = await api.GET('/api/namespaces/{id}', {
+          params: { path: { id: String(nsId) } },
+        })
+        if (error) {
+          if (error.code === 5) {
+            if (itemsRef.current.some((it) => it.id === nsId)) {
+              setItems((prev) => prev.filter((it) => it.id !== nsId))
+              setCount((c) => Math.max(0, c - 1))
+            }
+            // 空间已被删除：其名下项目弹窗一并关掉，否则残留孤儿弹窗
+            //（弹窗内 TabLog/TabShell 请求持续 404；handleDeleted 卡片流程会关，WS 404 路径漏了）
+            setOpenProjects((prev) => prev.filter((e) => e.project.namespaceId !== nsId))
+            return true // 404 = 正常收敛，不算刷新失败
+          }
+          if (!silent) toast.error(error.message ?? String(error))
+          return false
+        }
+        if (!data?.item) return true
+        // Show 响应不含 favorite（后端 transformer 不计算，仅 List 路径回填）：
+        // 原地替换时保留旧值，否则已收藏空间刷新后星标变空心，关注 Tab 点星会被
+        // `removing = tab==='favorite' && !ns.favorite` 误判成"取消关注"（数据级误操作）
+        setItems((prev) =>
+          prev.map((it) => (it.id === nsId ? { ...it, ...data.item, favorite: it.favorite } : it)),
+        )
+        return true
+      } catch (e) {
+        // 网络层失败（fetch reject）：不向外抛——onChanged/WS 批量直接传本函数时不会产生未处理拒绝
+        if (!silent) toast.error(e instanceof Error ? e.message : String(e))
+        return false
+      }
+    },
+    [],
+  )
+
+  // 本地操作触发的空间刷新：先记录 nsId+时间戳（④ 去重依据）再执行真实刷新。
+  // 部署/创建/删除项目后端都会广播 ReloadProjects，本地直刷后 WS 批次（500ms debounce）又刷一次
+  // = 两次请求 + 两次 loading 闪。后端时序（runner.OnFinally：UpdateDeployStatus → ToAll → SendDeployedResult）
+  // 保证本地 onChanged 刷新时最终状态已落库，跳过 WS 批次安全；TTL 窗口覆盖 debounce + 余量。
+  const localRefresh = useCallback(
+    (nsId: number) => {
+      recentlyRefreshedRef.current.set(nsId, Date.now())
+      return refreshNamespace(nsId)
+    },
+    [refreshNamespace],
+  )
+
+  // 其他用户部署/删除/创建项目 → WS ReloadProjects（WS 层已 debounce 500ms，窗口内累积受影响空间集合）
+  // → 逐个 refreshNamespace 只刷新对应空间，命中空间卡显示 loading、刷新后状态图标随之更新。
+  // 按空间详情原地替换，不整页重拉——关注 Tab 无限滚动下整页重拉会折叠回第 1 页、丢滚动位置。
+  // reloadNsIds 为 null（窗口内有坏帧未解出）时退化为整页刷新。
+  // reloadProjectsRev 与 reloadNsIds 同批更新；handledReloadRevRef 防止依赖身份变化时
+  // effect 重复触发（翻页/切 Tab 会让回调换引用，但 rev 未变不应再刷一次）。
   useEffect(() => {
     if (reloadProjectsRev === 0 || reloadProjectsRev === handledReloadRevRef.current) return
     handledReloadRevRef.current = reloadProjectsRev
-    const nsId = reloadNsId
-    setReloadingNsId(nsId)
-    void refresh().finally(() => setReloadingNsId(null))
-  }, [reloadProjectsRev, reloadNsId, refresh])
+    const ids = reloadNsIds
+    if (ids === null) {
+      // 坏帧/未知空间：整页刷新（不标单卡 loading）
+      setReloadingNsIds(null)
+      void refresh().finally(() => setReloadingNsIds(null))
+      return
+    }
+    if (ids.length === 0) return // 防御：空集合无刷新目标
+    // ④ 去重：过滤掉 TTL 内本地刚刷过的空间（部署成功/创建项目 onChanged 直刷），
+    //    只刷真正来自其他端的变更——同空间避免二次请求 + 二次 loading 闪。
+    const now = Date.now()
+    const TTL = 2000
+    let hasExpired = false
+    const freshIds = ids.filter((id) => {
+      const ts = recentlyRefreshedRef.current.get(id)
+      if (ts === undefined) return true
+      if (now - ts < TTL) return false
+      recentlyRefreshedRef.current.delete(id)
+      hasExpired = true
+      return true
+    })
+    // 顺带清掉过期的标记，避免 Map 无限增长
+    if (hasExpired) {
+      for (const [id, ts] of recentlyRefreshedRef.current) {
+        if (now - ts > TTL) recentlyRefreshedRef.current.delete(id)
+      }
+    }
+    if (freshIds.length === 0) return
+    setReloadingNsIds(freshIds)
+    // silent=true：单卡失败不逐卡 toast；allSettled 汇总失败数合并成一条（⑤）。
+    // allSettled 同时保证单卡 show 失败不影响其余空间刷新、不产生未处理拒绝。
+    void Promise.allSettled(freshIds.map((nsId) => refreshNamespace(nsId, true))).then((results) => {
+      setReloadingNsIds(null)
+      const failed = results.filter((r) => r.status === 'fulfilled' && r.value === false).length
+      if (failed > 0) toast.error(t('workbench.refreshNsFailed', { count: failed }))
+    })
+  }, [reloadProjectsRev, reloadNsIds, refresh, refreshNamespace, t])
 
-  // 手动刷新：整页拉取当前条件（分页/关注全量），loading 由按钮 spinner 表达
+  // WS 断线重连 → 重同步：ReloadProjects 是实时推送，断线窗口内其他用户的部署/删除/创建
+  // 事件不会补发，本地列表可能陈旧。重连成功（ready false→true 沿）后整页重拉当前条件兜底。
+  // 用 refresh 而非 handleRefresh：静默原地替换，不重播入场动画（用户没主动刷新）、
+  // 不整页重挂（卡片展开状态/已开弹窗保留）；首连不刷，首屏数据已由 fetchList 拉取。
+  // ready 沿检测用 wsPrevReadyRef：refresh 依赖 page/tab/kw，其引用变化会重跑本 effect，
+  // 但 ready 未翻转（仍是 true）时不得误触发——`!ready || prev` 直接短路。
+  useEffect(() => {
+    const prev = wsPrevReadyRef.current
+    wsPrevReadyRef.current = ready
+    if (!ready || prev) return
+    if (wsConnectedRef.current) {
+      if (tab === 'favorite' && itemsRef.current.length > 0) {
+        // 关注 Tab 无限滚动下 page 恒为 1（哨兵走 append 不动 page），整页 refresh 会把
+        // 已加载列表折叠回第 1 页丢滚动位置——与 WS 批次同一套语义，改对已加载空间逐个
+        // refreshNamespace 原地补刷断线窗口内他端的部署/删除/变更；未加载到的空间（他端新建）
+        // 由后续翻页拉取天然兜底。reconnect 罕见，逐个请求量级可接受。
+        void Promise.allSettled(itemsRef.current.map((it) => refreshNamespace(it.id, true)))
+      } else {
+        void refresh()
+      }
+    } else {
+      wsConnectedRef.current = true
+    }
+  }, [ready, refresh, tab, refreshNamespace])
+
+  // 手动刷新：整页拉取当前条件（分页/关注分页），loading 由按钮 spinner 表达
   const handleRefresh = useCallback(() => {
     if (refreshing) return
     setRefreshing(true)
-    void refresh().finally(() => setRefreshing(false))
+    void refresh().finally(() => {
+      setRefreshing(false)
+      // 数据就位后再重播入场动画（刷新按钮 = 重新进入列表的语义）
+      setListRev((r) => r + 1)
+    })
   }, [refreshing, refresh])
 
   const handleDeleted = useCallback(
     (nsId: number) => {
       setOpenProjects((prev) => prev.filter((e) => e.project.namespaceId !== nsId))
-      void refresh()
+      // 与其他 onChanged/onDeleted 路径一致：TTL 标记 + 按空间详情原地刷新。
+      // 整页 refresh 会让关注 Tab 折叠回第 1 页丢滚动位置；refreshNamespace 的 404 分支
+      // 已负责「从列表移除 + 同步计数 + 关闭该空间名下弹窗」，直接复用即可。
+      void localRefresh(nsId)
     },
-    [refresh],
+    [localRefresh],
   )
 
-  // 关注 Tab 拖拽重排：乐观重排列表 + 提交被移动与落点两个空间 id，失败回滚。
+  // 关注 Tab 拖拽重排（无搜索时）：乐观重排已加载卡片 + 提交相对移动（firstId=被拖拽空间，
+  // secondId=落点参照项，后端在整份顺序里重定位，未加载卡片相对顺序不受影响——部分加载下拖拽同样正确），失败回滚。
   const sortable = tab === 'favorite' && !debouncedKw
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -290,7 +402,9 @@ export function Workbench() {
       const prev = items
       const next = arrayMove(items, from, to)
       setItems(next)
-      setCount(next.length)
+      // 不 setCount：count 是后端返回的关注总数（fetchList 的 data.count），拖拽重排不改变
+      // 集合大小。next.length 只是已加载条数，部分加载下覆盖会把"共 N 个空间"错算成已加载数
+      //（loadAllFavorites 全量时代 items.length===count 才成立，无限滚动后已失配）。
       // 后端 FavoriteSort 契约：firstId=被拖拽空间，secondId=落点位置原空间（移动前位置）。
       // prev 是移动前数组：prev[from] 即被拖拽项，prev[to] 即落点参照项。
       void api
@@ -312,7 +426,7 @@ export function Workbench() {
   // 搜索输入防抖 400ms：触发时回到第 1 页并携带新关键词查询。
   // 挂载时 keyword===debouncedKw（同为空）直接跳过——否则 400ms 后的 setPage(1)
   // 会覆盖从 URL 恢复的初始分页（如 ?page=3 刷新后被拉回第 1 页），
-  // 并与 fetchPage 的 setPage(p) 形成 [3,1,3,1] 乒乓死循环。
+  // 并与 fetchList 的 setPage(p) 形成 [3,1,3,1] 乒乓死循环。
   useEffect(() => {
     const timer = setTimeout(() => {
       if (keyword === debouncedKw) return
@@ -359,15 +473,10 @@ export function Workbench() {
 
   // 查询条件（Tab/关键词）或用户翻页 → 整体替换对应页。
   // 统一由 (tab, page, debouncedKw) 驱动：Tab 切换、搜索、翻页（含回到第 1 页）都会重新拉取；
-  // 「关注」Tab 无搜索时进入全量模式（loadAllFavorites，拖拽排序的整份顺序来源），
-  // 追加走哨兵 fetchPage(append)，不改 page，因此不会误触发本 effect。
+  // 追加走哨兵 fetchList(append)，不改 page，因此不会误触发本 effect。
   useEffect(() => {
-    if (tab === 'favorite' && !debouncedKw) {
-      void loadAllFavorites()
-      return
-    }
-    void fetchPage(page, false)
-  }, [tab, page, debouncedKw, fetchPage, loadAllFavorites])
+    void fetchList(page, false)
+  }, [tab, page, debouncedKw, fetchList])
 
   // 「关注」Tab 无限滚动：哨兵进入视口（提前 240px 预载）且未在加载中 → 追加下一页。
   // 追加页码由已加载条数推导（items.length / PAGE_SIZE + 1），不依赖 page 状态，
@@ -380,43 +489,55 @@ export function Workbench() {
       (entries) => {
         if (!entries[0].isIntersecting) return
         if (loading || loadingMore || !hasMore) return
-        void fetchPage(Math.floor(items.length / PAGE_SIZE) + 1, true)
+        void fetchList(Math.floor(items.length / PAGE_SIZE) + 1, true)
       },
       { rootMargin: '240px 0px' },
     )
     obs.observe(el)
     return () => obs.disconnect()
-  }, [tab, items.length, hasMore, loading, loadingMore, fetchPage])
+  }, [tab, items.length, hasMore, loading, loadingMore, fetchList])
 
   // 收藏切换乐观更新：关注 Tab 上取消关注 → 直接从列表移除（成功即保持移除；
   // 失败时 NamespaceCard 用原 ns 回调回滚 → 列表已无该卡，追加回尾部恢复）。
   // 全部 Tab 仅原地更新 favorite 字段，不涉及增删。
-  const optimisticToggle = (ns: NamespaceModel) => {
-    const removing = tab === 'favorite' && !ns.favorite
-    if (removing) {
-      if (items.some((it) => it.id === ns.id)) {
-        setItems(items.filter((it) => it.id !== ns.id))
-        setCount((c) => Math.max(0, c - 1))
+  // useCallback 稳定引用（依赖 tab 而非 items，列表用 itemsRef 现读）：让 memo(NamespaceCard) 生效，
+  // items 变化（单卡刷新/翻页）不应让全部卡片重渲染；setItems 改用函数式，避免闭包过期。
+  const optimisticToggle = useCallback(
+    (ns: NamespaceModel) => {
+      const removing = tab === 'favorite' && !ns.favorite
+      if (removing) {
+        if (itemsRef.current.some((it) => it.id === ns.id)) {
+          setItems((prev) => prev.filter((it) => it.id !== ns.id))
+          setCount((c) => Math.max(0, c - 1))
+        }
+        return
       }
-      return
-    }
-    if (!items.some((it) => it.id === ns.id)) {
-      setItems([...items, ns]) // 回滚恢复被移除的卡片
-      setCount((c) => c + 1)
-      return
-    }
-    setItems(items.map((it) => (it.id === ns.id ? ns : it)))
-  }
+      if (!itemsRef.current.some((it) => it.id === ns.id)) {
+        setItems((prev) => [...prev, ns]) // 回滚恢复被移除的卡片
+        setCount((c) => c + 1)
+        return
+      }
+      // 只合并 favorite 字段，不整体替换 ns：请求期间 WS 批刷新可能已更新该空间
+      //（部署状态等），整体替换会把那些新字段一并打回旧值
+      setItems((prev) =>
+        prev.map((it) => (it.id === ns.id ? { ...it, favorite: ns.favorite } : it)),
+      )
+    },
+    [tab],
+  )
   // ctrl/cmd+k 聚焦搜索由 SearchInput 内置（与 events/repos 一致）
 
-  /** 打开项目详情弹窗（多开）：已开同 id 只置顶（bringToFront），否则追加。卡片行点击上报 */
-  const openProject = (p: ProjectModel, namespaceName: string) => {
-    if (openProjects.some((e) => e.project.id === p.id)) {
+  /** 打开项目详情弹窗（多开）：已开同 id 只置顶（bringToFront），否则追加。卡片行点击上报。
+   *  稳定引用（useCallback []）：卡片 onOpenProject prop 需要稳定才能让 memo(NamespaceCard) 生效——
+   *  namespace 名从 itemsRef 现查、去重从 openProjectsRef 现读，不依赖会过期的闭包。 */
+  const openProject = useCallback((p: ProjectModel) => {
+    const namespaceName = itemsRef.current.find((it) => it.id === p.namespaceId)?.name ?? ''
+    if (openProjectsRef.current.some((e) => e.project.id === p.id)) {
       setFrontBumps((b) => ({ ...b, [p.id]: (b[p.id] ?? 0) + 1 }))
       return
     }
     setOpenProjects((prev) => [...prev, { project: p, namespaceName }])
-  }
+  }, [])
   const closeProject = (id: number) =>
     setOpenProjects((prev) => prev.filter((e) => e.project.id !== id))
 
@@ -554,7 +675,7 @@ export function Workbench() {
             title={t('workbench.refresh')}
             aria-label={t('workbench.refresh')}
           >
-            {refreshing ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+            {refreshing ? <Icon name="loader" className="size-4 animate-spin" /> : <Icon name="refresh-cw" className="size-4" />}
           </Button>
           <Button variant="default" onClick={() => setAddOpen(true)}>
             <Icon name="plus" className="size-4" />
@@ -563,9 +684,9 @@ export function Workbench() {
         </div>
       </div>
 
-      {/* 列表：骨架屏只在无数据时换出。已有 items 的后台刷新（部署成功 onChanged/删除/改配置）
-          保持网格挂载——否则 loading 硬切换会把 NamespaceCard 整个卸载，
-          其 openProjects（打开的详情弹窗）随之销毁，部署成功弹窗就被误关了 */}
+      {/* 列表：骨架屏只在无数据时换出。已有 items 的变更（部署成功 onChanged/删除项目/改配置/WS）
+          走 refreshNamespace 原地替换该空间——保持网格挂载，不整页重拉（关注 Tab 折叠回第 1 页、
+          且 loading 硬切换会把 NamespaceCard 整个卸载，其打开的详情弹窗随之销毁） */}
       {loading && items.length === 0 ? (
         <div role="status" aria-busy="true">
           <SkeletonGrid count={9} />
@@ -597,7 +718,7 @@ export function Workbench() {
           }
         />
       ) : sortable ? (
-        // 关注 Tab 无搜索：全量列表包进 DndContext 支持拖拽重排（后端按整份有序 id 回写）
+        // 关注 Tab 无搜索：分页列表包进 DndContext 支持拖拽重排（相对移动契约，见 handleDragEnd）
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -613,12 +734,13 @@ export function Workbench() {
                   key={ns.id}
                   id={String(ns.id)}
                   index={index}
+                  replayKey={listRev}
                   ns={ns}
-                  loading={reloadingNsId !== null && ns.id === reloadingNsId}
+                  loading={reloadingNsIds?.includes(ns.id) ?? false}
                   onToggleFavorite={optimisticToggle}
-                  onOpenProject={(p) => openProject(p, ns.name)}
+                  onOpenProject={openProject}
                   onDeleted={handleDeleted}
-                  onChanged={() => void refresh()}
+                  onChanged={localRefresh}
                 />
               ))}
             </div>
@@ -627,21 +749,21 @@ export function Workbench() {
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {items.map((ns, index) => (
-            <div
+            <ListEnter
               key={ns.id}
-              className="animate-list-in"
-              style={{ animationDelay: `${Math.min(index, 10) * 30}ms` }}
+              delay={(index % PAGE_SIZE) * LIST_ENTER_STAGGER_MS}
+              replayKey={listRev}
             >
               <MemoizedNamespaceCard
                 ns={ns}
-                loading={reloadingNsId !== null && ns.id === reloadingNsId}
+                loading={reloadingNsIds?.includes(ns.id) ?? false}
                 onToggleFavorite={optimisticToggle}
-                onOpenProject={(p) => openProject(p, ns.name)}
+                onOpenProject={openProject}
                 // 删除命名空间 → 关闭该空间下已打开的详情弹窗（原卡片卸载自带的行为，提升后显式接管）
                 onDeleted={handleDeleted}
-                onChanged={() => void refresh()}
+                onChanged={localRefresh}
               />
-            </div>
+            </ListEnter>
           ))}
         </div>
       )}
@@ -649,7 +771,7 @@ export function Workbench() {
       {/* 关注 Tab 无限滚动哨兵：滚到底部即追加下一页（未加载完时才渲染） */}
       {tab === 'favorite' && items.length > 0 && hasMore && (
         <div ref={sentinelRef} className="flex h-10 items-center justify-center">
-          {loadingMore && <Loader2 className="size-4 animate-spin text-faint" />}
+          {loadingMore && <Icon name="loader" className="size-4 animate-spin text-faint" />}
         </div>
       )}
 
@@ -693,7 +815,7 @@ export function Workbench() {
                       if (page > 1) goPage(page - 1)
                     }}
                   >
-                    <ChevronLeftIcon className="size-4" />
+                    <Icon name="chevron-left" className="size-4" />
                   </PaginationLink>
                 </PaginationItem>
                 {pageItems.map((item, i) =>
@@ -725,7 +847,7 @@ export function Workbench() {
                       if (page < totalPages) goPage(page + 1)
                     }}
                   >
-                    <ChevronRightIcon className="size-4" />
+                    <Icon name="chevron-right" className="size-4" />
                   </PaginationLink>
                 </PaginationItem>
               </PaginationContent>
@@ -735,7 +857,7 @@ export function Workbench() {
           {/* 关注 Tab 无搜索时展示拖拽排序提示（有可排序卡片才提示） */}
           {sortable && items.length > 0 && (
             <span className="hidden items-center gap-1 font-mono text-[11px] text-faint sm:flex">
-              <GripVertical className="size-3" />
+              <Icon name="grip-vertical" className="size-3" />
               {t('workbench.dragSortTip')}
             </span>
           )}
@@ -750,11 +872,11 @@ export function Workbench() {
       <AddNamespaceModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        onCreated={() => void fetchPage(1, false)}
+        onCreated={() => void fetchList(1, false)}
       />
 
       {/* 已打开的项目详情弹窗（多开，URL ?open= 持久化）：刷新/翻页/切 Tab 保持打开。
-          删除/配置变更 = 关弹窗 + 刷新列表（语义与原 NamespaceCard 渲染时一致）。
+          删除/配置变更 = 关弹窗 + 按空间详情原地刷新列表（只更新该空间卡，不整页重拉）。
           Suspense fallback=null：弹窗懒加载完成即弹出，不占首屏。 */}
       <Suspense fallback={null}>
         {openProjects.map(({ project, namespaceName }) => (
@@ -767,12 +889,56 @@ export function Workbench() {
             onClose={() => closeProject(project.id)}
             onDeleted={() => {
               closeProject(project.id)
-              void refresh()
+              // localRefresh（记录标记 + 刷新）：删除项目也会广播 ReloadProjects，
+              // 直刷 + WS 批次双重刷新会闪两次 loading，与 ④ 去重保持一致
+              void localRefresh(project.namespaceId)
             }}
-            onChanged={() => void refresh()}
+            onChanged={() => void localRefresh(project.namespaceId)}
           />
         ))}
       </Suspense>
+    </div>
+  )
+}
+
+/** 列表项入场错峰步长：每张卡片在上张开始后 120ms 再进入（0.45s 动画 → 肉眼可分辨的逐个进入级联）。
+ *  延迟按「批内相对位置」(index % PAGE_SIZE) 计算：无限下拉追加的每批新卡片从 0 重新级联，
+ *  否则第 2 页起全部卡片同取 1200ms 延迟 → fill-mode:both 下前 1.2s 全不可见，级联丢失（2026-08-22 修）。 */
+const LIST_ENTER_STAGGER_MS = 120
+
+/**
+ * 列表项进入动画容器：挂载时播 animate-list-in（淡入上浮 + delay 错峰），播完即摘掉类——
+ * fill-mode:both 会让动画"永久存活"，浏览器每帧都重算这 6 个元素的样式/布局（拖拽时的
+ * StyleAndLayout 风暴）。replayKey 变化（主页手动刷新完成）时把已摘的类回加，浏览器重启
+ * 动画；不重挂卡片子树，NamespaceCard 内部展开等状态原样保留。
+ */
+function ListEnter({
+  delay,
+  replayKey,
+  className,
+  style,
+  children,
+}: {
+  delay: number
+  replayKey: number
+  className?: string
+  style?: CSSProperties
+  children: ReactNode
+}) {
+  const [entered, setEntered] = useState(false)
+  // 仅当 replayKey 变化且动画已播完（entered=true、类已摘）时回加类触发重启。
+  // 省略 entered 依赖是有意的：放进依赖会在 onAnimationEnd 置 true 后立刻回加类 → 无限重播。
+  useEffect(() => {
+    if (entered) setEntered(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replayKey])
+  return (
+    <div
+      className={cn(className, !entered && 'animate-list-in')}
+      style={{ animationDelay: `${delay}ms`, ...style }}
+      onAnimationEnd={() => setEntered(true)}
+    >
+      {children}
     </div>
   )
 }
@@ -784,6 +950,7 @@ export function Workbench() {
 function SortableNamespaceCard({
   id,
   index,
+  replayKey,
   ns,
   loading,
   onToggleFavorite,
@@ -793,17 +960,15 @@ function SortableNamespaceCard({
 }: {
   id: string
   index: number
+  replayKey: number
   ns: NamespaceModel
   loading: boolean
   onToggleFavorite: (ns: NamespaceModel) => void
   onOpenProject: (p: ProjectModel) => void
   onDeleted: (nsId: number) => void
-  onChanged: () => void
+  onChanged: (nsId: number) => void
 }) {
   const { t } = useTranslation()
-  // 入场动画播完即摘掉 animate-list-in：fill-mode:both 会让动画"永久存活"，
-  // 浏览器每帧都重算这 6 个元素的样式/布局（拖拽时的 StyleAndLayout 风暴）。
-  const [entered, setEntered] = useState(false)
   const {
     attributes,
     listeners,
@@ -831,7 +996,7 @@ function SortableNamespaceCard({
         title={t('workbench.dragSort')}
         className="cursor-grab rounded-md p-1 text-faint transition-colors hover:bg-raised hover:text-primary active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
       >
-        <GripVertical className="size-[15px]" />
+        <Icon name="grip-vertical" className="size-[15px]" />
       </button>
     ),
     [t, attributes, listeners, setActivatorNodeRef],
@@ -846,19 +1011,18 @@ function SortableNamespaceCard({
       }}
       className={cn('will-change-transform', isDragging && 'relative z-10')}
     >
-      <div
+      <ListEnter
+        delay={(index % PAGE_SIZE) * LIST_ENTER_STAGGER_MS}
+        replayKey={replayKey}
         className={cn(
           'h-full',
-          !entered && 'animate-list-in',
           // 拖拽高亮用细 ring（2px 无模糊，GPU 合成便宜）；不要大 blur 阴影——每帧重绘是真机卡顿源
           isDragging && 'rounded-xl ring-2 ring-primary/50',
         )}
         style={{
-          animationDelay: `${Math.min(index, 10) * 30}ms`,
           // 拖拽抬起：scale 是独立 CSS 属性，不与 dnd-kit 的 inline transform 冲突
           scale: isDragging ? '1.03' : undefined,
         }}
-        onAnimationEnd={() => setEntered(true)}
       >
         <MemoizedNamespaceCard
         ns={ns}
@@ -869,7 +1033,7 @@ function SortableNamespaceCard({
         onChanged={onChanged}
         dragHandle={dragHandle}
         />
-      </div>
+      </ListEnter>
     </div>
   )
 }

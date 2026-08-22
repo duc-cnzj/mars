@@ -1,10 +1,10 @@
 import { useEffect, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { api } from '../../api/client'
-import { getState, removeState, setToken } from '../../api/token'
+import { api } from '@/api/client'
+import { getState, removeState, setToken } from '@/api/token'
 import { toast } from '@/lib/toast'
-import { useAuth } from './AuthContext'
+import { useAuth } from './AuthProvider'
 
 /**
  * OIDC 回调页：用 code 换 token（POST /api/auth/exchange），
@@ -14,7 +14,11 @@ export function AuthCallback() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const auth = useAuth()
+  // 只用稳定引用：auth 是 context value，会随 user 变化重建——放进 effect 依赖会导致
+  // refresh 成功 setUser 后 context 值变化 → effect 清理+重跑 → 重复 exchange
+  // （OIDC code 单次有效则二次 exchange 失败跳登录页、表现为 SSO 登录失败；可复用则无限请求循环）。
+  // refresh 本身是稳定的 useCallback。
+  const { refresh } = useAuth()
 
   const code = params.get('code')
   const state = params.get('state')
@@ -41,7 +45,7 @@ export function AuthCallback() {
         return
       }
       setToken(data.token)
-      await auth.refresh?.()
+      await refresh()
       if (!cancelled) navigate('/', { replace: true })
     }
 
@@ -49,7 +53,7 @@ export function AuthCallback() {
     return () => {
       cancelled = true
     }
-  }, [code, state, navigate, toast, t, auth])
+  }, [code, state, navigate, toast, t, refresh])
 
   return <LoginLoading />
 }

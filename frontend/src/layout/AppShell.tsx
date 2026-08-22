@@ -1,7 +1,7 @@
-import { RequireAuth } from '../features/auth/AuthContext'
-import { ProvideWebsocket } from '../realtime/useWebsocket'
+import { RequireAuth } from '@/features/auth/AuthProvider'
+import { ProvideWebsocket } from '@/hooks/useWebsocket'
 import { AppLayout } from './AppLayout'
-import type { ThemeId } from '../themes'
+import type { ThemeId } from '@/themes'
 
 /**
  * 登录后的应用壳（受保护路由的外壳）：认证守卫 + WebSocket 实时通道 + 整体布局。

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import type { components } from '../../api/schema'
-import { api } from '../../api/client'
-import { nextZIndex } from '../../hooks/useDraggableDialog'
-import { Icon } from '../../components/icons'
-import { Empty, Tag } from '../../components/ui'
+import type { components } from '@/api/schema'
+import { api } from '@/api/client'
+import { nextZIndex } from '@/lib/zIndex'
+import { Icon } from '@/components/Icons'
+import { Empty, Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import {
   Dialog,
@@ -13,8 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/shadcn/dialog'
-import { diffLines } from '../../utils/diff'
-import { DiffViewer } from '../../components/DiffViewer'
+import { diffLines } from '@/lib/diffLines'
+import { DiffViewer } from '@/components/DiffViewer'
 
 type ChangelogModel = components['schemas']['types.ChangelogModel']
 
@@ -79,7 +79,7 @@ export function ConfigHistory({
           {loading ? (
             <div className="py-10 text-center text-[13px] text-faint">{t('common.loading')}</div>
           ) : items.length === 0 ? (
-            <Empty text={t('common.empty')} />
+            <Empty text={t('common.empty')} icon="clock" />
           ) : (
           <div className="flex max-h-[60vh] flex-col gap-1.5 overflow-auto overscroll-contain">
             {items.map((item, idx) => {

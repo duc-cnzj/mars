@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getToken } from '../../api/token'
-import { AreaSpark } from '../../components/charts/AreaSpark'
+import { getToken } from '@/api/token'
+import { AreaSpark } from '@/components/charts/AreaSpark'
 
 /** 后端窗口：timeSpan=150s / tick=5s → 最多 30 个采样点，环形缓冲上限对齐该值 */
 const MAX_POINTS = 30

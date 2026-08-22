@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Icon } from '../../components/icons'
+import { Icon } from '@/components/Icons'
 import { formatSeconds } from '@/lib/format'
 
 /** 部署耗时计时：running 期间以 100ms 刷新，结束后定格。颜色随耗时渐变（<10s 绿 / <30s 黄 / <50s 粉 / <70s 橙 / 其余深红），与旧版 TimeCost 一致。 */

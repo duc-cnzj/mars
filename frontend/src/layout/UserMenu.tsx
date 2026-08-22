@@ -9,9 +9,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/shadcn/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/shadcn/avatar'
-import { Icon, type IconName } from '../components/icons'
-import { useAuth } from '../features/auth/AuthContext'
-import type zhCN from '../i18n/locales/zh-CN'
+import { Icon, type IconName } from '@/components/Icons'
+import { useAuth } from '@/features/auth/AuthProvider'
+import type zhCN from '@/i18n/locales/zh-CN'
 
 /** 词条扁平 key 联合类型，保证导航键在词条内（同旧 Sidebar 的 FlatKeys 手法） */
 type TKey = FlatKeys<typeof zhCN>

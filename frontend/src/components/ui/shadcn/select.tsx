@@ -1,5 +1,5 @@
 import * as React from "react"
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon, SearchIcon } from "lucide-react"
+import { Icon } from "@/components/Icons"
 import { Select as SelectPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
@@ -43,7 +43,7 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="size-4 opacity-50" />
+        <Icon name="chevron-down" className="size-4 opacity-50" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )
@@ -122,7 +122,7 @@ function SelectContent({
         {hasSearch && (
           <div className="border-b border-line p-1.5">
             <div className="relative">
-              <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Icon name="search" className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 ref={(node) => {
                   setSearchEl(node)
@@ -200,7 +200,7 @@ function SelectItem({
         className="absolute right-2 flex size-3.5 items-center justify-center"
       >
         <SelectPrimitive.ItemIndicator>
-          <CheckIcon className="size-4" />
+          <Icon name="check" className="size-4" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
@@ -234,7 +234,7 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <ChevronUpIcon className="size-4" />
+      <Icon name="chevron-up" className="size-4" />
     </SelectPrimitive.ScrollUpButton>
   )
 }
@@ -252,7 +252,7 @@ function SelectScrollDownButton({
       )}
       {...props}
     >
-      <ChevronDownIcon className="size-4" />
+      <Icon name="chevron-down" className="size-4" />
     </SelectPrimitive.ScrollDownButton>
   )
 }

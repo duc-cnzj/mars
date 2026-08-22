@@ -1,7 +1,7 @@
 /**
  * ANSI 转义序列解析（port 自旧前端 pkg/lazylog/ansiparse.js）。
  * 支持 30-37/90-97 前景色、40-47/100-107 背景色、38;5;n / 48;5;n 256 色、
- * 1 bold / 3 italic / 4 underline，以及 22/23/24 取消样式、39/49 重置前景/背景。
+ * 1 bold / 3 italic / 4 underline，以及 22/23/24 取消样式、39/49 重置前景/背景、0 重置全部。
  * 保留 \b 退格擦除语义。38;2;r;g;b 真彩色当前不支持（解析时跳过参数）。
  * 渲染产物：AnsiText（React 组件，见 components/AnsiText.tsx）。
  */
@@ -146,6 +146,9 @@ export function ansiparse(str: string): AnsiSegment[] {
             state.italic = false
           } else if (ansiCode === '24') {
             state.underline = false
+          } else if (ansiCode === '0') {
+            // 0 = 重置所有属性（行尾常见的 \x1b[0m）：不处理会把上一段的颜色/样式带到后续未着色文本
+            state = {}
           }
         }
         ansiState = []

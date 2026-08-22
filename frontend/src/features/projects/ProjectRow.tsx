@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { Gauge, Link, Loader2 } from 'lucide-react'
-import type { components } from '../../api/schema'
-import { api } from '../../api/client'
-import { getEndpoints } from '../../api/endpointsCache'
-import { copyText } from '../../utils/copy'
-import { Icon } from '../../components/icons'
+import type { components } from '@/api/schema'
+import { api } from '@/api/client'
+import { getEndpoints } from '@/api/endpointsCache'
+import { copyText } from '@/lib/copy'
+import { Icon } from '@/components/Icons'
 import { DeployStatusIcon } from './DeployStatusIcon'
 import {
   Popover,
@@ -127,7 +126,7 @@ function ProjectCpuMemory({ projectId }: { projectId: number }) {
           aria-label={t('project.cpuMemory')}
           title={t('project.cpuMemory')}
         >
-          <Gauge size={16} />
+          <Icon name="gauge" className="size-4" />
         </span>
       </PopoverTrigger>
       <PopoverContent
@@ -143,7 +142,7 @@ function ProjectCpuMemory({ projectId }: { projectId: number }) {
           </div>
         ) : (
           <div className="flex items-center gap-1.5 px-1 py-1 text-[12px] text-faint">
-            <Loader2 className="size-3 animate-spin" />
+            <Icon name="loader" className="size-3 animate-spin" />
             {t('common.loading')}
           </div>
         )}
@@ -186,7 +185,7 @@ function ProjectEndpoints({ projectId }: { projectId: number }) {
           aria-label={t('project.endpoints')}
           title={t('project.endpoints')}
         >
-          <Link size={16} />
+          <Icon name="link" className="size-4" />
         </span>
       </PopoverTrigger>
       <PopoverContent
@@ -199,7 +198,7 @@ function ProjectEndpoints({ projectId }: { projectId: number }) {
         </div>
         {eps === null ? (
           <div className="flex items-center gap-1.5 px-1 py-1 text-[12px] text-faint">
-            <Loader2 className="size-3 animate-spin" />
+            <Icon name="loader" className="size-3 animate-spin" />
             {t('common.loading')}
           </div>
         ) : eps.length === 0 ? (

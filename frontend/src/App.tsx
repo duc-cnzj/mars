@@ -5,9 +5,10 @@ import 'sonner/dist/styles.css' // sonner 官方默认样式（明暗主题变�
 import './toast.css' // toast 主题化设计：与 15 个系统主题语义 token 联动（玻璃表面 + 类型色相）
 import { Spinner } from './components/ui'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { AuthProvider, GuestRoute } from './features/auth/AuthContext'
+import { AuthProvider, GuestRoute } from './features/auth/AuthProvider'
 import { themeClass, themes } from './themes'
 import { useTheme } from './hooks/useTheme'
+import { useThemeHotkeys } from './hooks/useThemeHotkeys'
 
 // 登录后的应用壳（RequireAuth + WebSocket + AppLayout）懒加载：登录页只渲染 GuestRoute/Login，
 // 不需要顶栏/底栏/集群状态/WebSocket/protobuf 这一坨，懒加载后这些依赖不进登录页。
@@ -24,25 +25,20 @@ const AccessTokenManager = lazy(() =>
 )
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })))
 
-import './themes/ring.css'
-import './themes/amber.css'
 import './themes/seiji.css'
-import './themes/glacier.css'
-import './themes/dracula.css'
-import './themes/nord.css'
-import './themes/latte.css'
-import './themes/github.css'
-import './themes/github-dark.css'
-import './themes/github-dimmed.css'
-import './themes/chrome-dark.css'
-import './themes/bay.css'
-import './themes/cherry.css'
 import './themes/magenta.css'
-import './themes/volcano.css'
+import './themes/latte.css'
+import './themes/mint.css'
+import './themes/lavender.css'
+import './themes/cherry.css'
+import './themes/violet.css'
+import './themes/lime.css'
 
 /** 应用根：主题作用域包裹路由，认证 + Toast + 布局全在这层编排 */
 export default function App() {
   const { theme, setTheme } = useTheme()
+  // 主题快捷键：Ctrl/⌘ + Shift + ，/ 。按注册顺序循环切换（编辑态不接管）
+  useThemeHotkeys({ theme, setTheme })
 
   // 应用主题有明暗之分，换算成 sonner 的明暗模式（dark 深色饱和渐变 / light 浅色粉彩）
   const toastTheme = themes.find((t) => t.id === theme)?.mode ?? 'dark'

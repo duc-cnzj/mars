@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { nextZIndex } from '@/lib/zIndex'
 
 /**
  * 可拖拽弹窗 Hook（增强版，兼容旧 API）：
@@ -11,14 +12,6 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
  * （left-[50%] top-[50%] translate-x/y-[-50%]），portal / 焦点圈定 / ESC 仍由 Radix 负责。
  * 弹窗容器用 closest('[data-slot="dialog-content"]') 定位，兼容同时打开多个弹窗。
  */
-
-/** 跨实例共享的 z-index 计数器：从 shadcn 的 z-50 之上开始累加，实现置顶 */
-let zCounter = 51
-
-/** 供非可拖拽但需盖过可拖拽弹窗的浮层（如强杀确认框）分配 z-index */
-export function nextZIndex() {
-  return ++zCounter
-}
 
 const MIN_W = 320
 const MIN_H = 240
@@ -50,13 +43,13 @@ function clampToWindow(rect: Rect): Rect {
 
 export function useDraggableDialog(onResize?: () => void) {
   const [rect, setRect] = useState<Rect | null>(null)
-  const [zIndex, setZIndex] = useState(() => ++zCounter)
+  const [zIndex, setZIndex] = useState(() => nextZIndex())
   // 拖拽/缩放把手按下时缓存起始信息 + 目标元素引用；拖动期间直接改 DOM style，
   // 避免每次 pointermove 都 setRect 触发整个弹窗子树重渲染（日志/xterm 很重 → 延迟高、跟手不准）
   const dragRef = useRef<{ startX: number; startY: number; orig: Rect; el: HTMLDivElement } | null>(null)
   const resizeRef = useRef<{ startX: number; startY: number; orig: Rect; dir: ResizeDir; el: HTMLDivElement } | null>(null)
 
-  const bringToFront = useCallback(() => setZIndex(() => ++zCounter), [])
+  const bringToFront = useCallback(() => setZIndex(() => nextZIndex()), [])
 
   // 尺寸变化信号：仅当宽/高真的变化时通知宿主（纯拖动位移不算），
   // 用于让 shell 终端等子组件在弹窗缩放/最大化/还原后 refit（对齐旧版 DraggableModal onResize）

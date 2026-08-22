@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
-import { Info } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/shadcn/tooltip'
-import { nextZIndex } from '../../hooks/useDraggableDialog'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/shadcn/tooltip'
+import { nextZIndex } from '@/lib/zIndex'
+import { Icon } from '@/components/Icons'
 
 /**
  * 零依赖 SVG 迷你面积图：标题 + 当前值 + 平滑面积折线。
@@ -187,7 +187,7 @@ export function AreaSpark({
                 >
                   <TooltipTrigger asChild>
                     <span className="inline-flex cursor-help items-center text-faint/70 hover:text-faint" tabIndex={-1}>
-                      <Info className="size-3" aria-hidden />
+                      <Icon name="info" className="size-3" aria-hidden />
                     </span>
                   </TooltipTrigger>
                   <TooltipContent sideOffset={4} className="max-w-[220px] text-center" style={{ zIndex: hintZ }}>

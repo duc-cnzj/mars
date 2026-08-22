@@ -5,7 +5,7 @@ import 'asciinema-player/dist/bundle/asciinema-player.css'
 import type { Options } from 'asciinema-player'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/shadcn/radio-group'
 import { Button } from '@/components/ui/shadcn/button'
-import { Icon } from '@/components/icons'
+import { Icon } from '@/components/Icons'
 
 /** 倍速档位（对齐旧版 Player 的 8 档，默认 1.5） */
 const SPEEDS = [0.5, 0.75, 1, 1.5, 2, 2.5, 3, 6]

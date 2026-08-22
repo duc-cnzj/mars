@@ -5,9 +5,9 @@ import ReactDiffViewer, {
 } from 'react-diff-viewer'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
-import { getHighlightSyntax } from '../utils/highlight'
-import { copyText } from '../utils/copy'
-import { Icon } from './icons'
+import { getHighlightSyntax } from '@/lib/highlight'
+import { copyText } from '@/lib/copy'
+import { Icon } from './Icons'
 import { Button } from '@/components/ui/shadcn/button'
 
 type ViewMode = 'split' | 'unified'

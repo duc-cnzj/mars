@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { FILE_TYPES } from '../../components/CodeEditor'
+import { FILE_TYPES } from '@/components/CodeEditor'
 import {
   Select,
   SelectContent,

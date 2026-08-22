@@ -1,10 +1,9 @@
 import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, RefreshCw } from 'lucide-react'
 import type { ReactNode } from 'react'
-import type { components } from '../../api/schema'
-import { shortContainerName } from './shortContainerName'
-import { Icon } from '../../components/icons'
+import type { components } from '@/api/schema'
+import { shortContainerName } from '@/lib/shortContainerName'
+import { Icon } from '@/components/Icons'
 
 type StateContainer = components['schemas']['types.StateContainer']
 
@@ -75,19 +74,19 @@ export const PodStateTag = memo(function PodStateTag({
 
   if (container.isOld) {
     className = 'bg-[#fde047] text-white'
-    icon = <RefreshCw className="size-3 animate-spin" />
+    icon = <Icon name="refresh-cw" className="size-3 animate-spin" />
     content = `${pod} ${t('project.podAboutToStop')}`
   } else if (container.terminating) {
     className = 'bg-[#fca5a5] text-white'
-    icon = <RefreshCw className="size-3 animate-spin" />
+    icon = <Icon name="refresh-cw" className="size-3 animate-spin" />
     content = `${pod} ${t('project.podStopping')}`
   } else if (container.pending) {
     className = 'bg-[#67e8f9] text-white'
-    icon = <Loader2 className="size-3 animate-spin" />
+    icon = <Icon name="loader" className="size-3 animate-spin" />
     content = `${pod} ${t('project.podStarting')}`
   } else if (!container.ready) {
     className = 'bg-[#93c5fd] text-white'
-    icon = <RefreshCw className="size-3 animate-spin" />
+    icon = <Icon name="refresh-cw" className="size-3 animate-spin" />
     content = `${pod} ${t('project.podNotReady')}`
   }
 

@@ -1,20 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { Loader2 } from 'lucide-react'
-import type { components } from '../../api/schema'
-import { api } from '../../api/client'
-import { Icon } from '../../components/icons'
-import { CodeEditor } from '../../components/CodeEditor'
-import { DiffViewer } from '../../components/DiffViewer'
-import { useCheers } from '../../hooks/useCheers'
+import type { components } from '@/api/schema'
+import { api } from '@/api/client'
+import { Icon } from '@/components/Icons'
+import { CodeEditor } from '@/components/CodeEditor'
+import { DiffViewer } from '@/components/DiffViewer'
+import { useConfetti } from '@/hooks/useConfetti'
 import { Button } from '@/components/ui/shadcn/button'
 import { SearchableSelect } from '@/components/SearchableSelect'
 import { ConfigHistory } from './ConfigHistory'
 import { DeployLog } from './DeployLog'
 import { Elements } from './Elements'
 import { PipelineInfo } from './PipelineInfo'
-import { SegmentedSkeleton } from './SegmentedSkeleton'
+import { SegmentedSkeleton } from '@/components/ui'
 import { useDeployStream } from './useDeployStream'
 
 type ProjectModel = components['schemas']['types.ProjectModel']
@@ -38,7 +37,7 @@ export function TabEdit({
   onChanged: () => void
 }) {
   const { t } = useTranslation()
-  const cheers = useCheers()
+  const fireConfetti = useConfetti()
 
   const gitProjectId = detail.repo?.gitProjectId ?? 0
   const needGit = detail.repo?.needGitRepo
@@ -88,7 +87,7 @@ export function TabEdit({
   // 失败/取消 → 终态 toast（失败保留日志面板供排查，取消无需隐藏）
   useEffect(() => {
     if (stream.status === 'deployed') {
-      cheers()
+      fireConfetti()
       toast.success(t('project.deploySuccess', { name: detail.name }))
       // 部署成功后才隐藏日志、回到配置表单：部署中日志替换表单，成功后展示配置结果（失败保留日志排查）
       setShowLog(false)
@@ -178,7 +177,7 @@ export function TabEdit({
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* 吸顶头部（对齐旧版 Affix）：pipeline + 项目/分支/commit 级联 + 操作按钮 */}
-      <div className="z-10 shrink-0 border-b border-line bg-background">
+      <div className="z-10 shrink-0 border-b border-line bg-bg">
         <div className="space-y-2 px-1 pb-2 pt-1">
           {/* pipeline 区域：needGit 时固定占位高度（横幅/占位等高 42px）。
               三种状态高度一致：pipeline 横幅 / 获取不到占位 / 未就绪提示，切换不挤压下方网格 */}
@@ -253,7 +252,7 @@ export function TabEdit({
           {/* 操作按钮行：统一 xs 尺寸（部署/重置/历史主操作 + 部署中/日志切换一致高度） */}
           <div className="flex flex-wrap items-center gap-2">
             <Button size="xs" variant="default" disabled={stream.loading} onClick={realDeploy}>
-              {stream.loading && <Loader2 className="size-3.5 animate-spin" />}
+              {stream.loading && <Icon name="loader" className="size-3.5 animate-spin" />}
               <Icon name="rocket" className="text-[13px]" />
               {t('project.deploy')}
             </Button>

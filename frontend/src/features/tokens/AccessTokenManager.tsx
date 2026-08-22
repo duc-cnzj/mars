@@ -3,11 +3,10 @@ import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
 import { formatDateTime } from '@/lib/format'
 import { toast } from '@/lib/toast'
-import { Loader2 } from 'lucide-react'
-import type { components } from '../../api/schema'
-import { api } from '../../api/client'
-import { Icon } from '../../components/icons'
-import { Empty, SkeletonList, Tag } from '../../components/ui'
+import type { components } from '@/api/schema'
+import { api } from '@/api/client'
+import { Icon } from '@/components/Icons'
+import { Empty, SkeletonList, Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
 import { Textarea } from '@/components/ui/shadcn/textarea'
@@ -35,7 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/shadcn/dialog'
-import { copyText } from '../../utils/copy'
+import { copyText } from '@/lib/copy'
 
 type TokenModel = components['schemas']['types.AccessTokenModel']
 type Unit = 'month' | 'day' | 'hour' | 'minute' | 'second'
@@ -417,7 +416,7 @@ export function AccessTokenManager() {
               {t('common.cancel')}
             </Button>
             <Button variant="default" disabled={saving} onClick={submit}>
-              {saving && <Loader2 className="size-4 animate-spin" />}
+              {saving && <Icon name="loader" className="size-4 animate-spin" />}
               {t('tokens.submit')}
             </Button>
           </DialogFooter>

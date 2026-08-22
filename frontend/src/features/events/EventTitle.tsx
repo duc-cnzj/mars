@@ -1,4 +1,4 @@
-import { Icon } from '@/components/icons'
+import { Icon } from '@/components/Icons'
 
 /**
  * 事件弹窗统一标题：主题色用户名 chip（user 图标）+ 常规字重灰色消息。

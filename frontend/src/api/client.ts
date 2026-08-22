@@ -2,7 +2,7 @@ import createClient, { type Middleware } from 'openapi-fetch'
 import type { paths } from './schema'
 import { getToken, removeToken, getLogoutUrl, removeLogoutUrl } from './token'
 import { toast } from '@/lib/toast'
-import i18n from '../i18n'
+import i18n from '@/i18n'
 
 /** 401 提示去抖：同一时间窗口内只弹一次，避免并发请求刷屏 */
 let last401Toast = 0

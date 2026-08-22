@@ -1,8 +1,8 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Topbar } from './Topbar'
 import { Footer } from './Footer'
-import { ErrorBoundary } from '../components/ErrorBoundary'
-import type { ThemeId } from '../themes'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import type { ThemeId } from '@/themes'
 
 /**
  * 应用整体布局（旧版风格）：全宽渐变顶栏 + 居中内容区 + 渐变底栏。

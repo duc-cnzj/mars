@@ -2,14 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from '@/lib/toast'
-import { Loader2 } from 'lucide-react'
-import type { components } from '../../api/schema'
-import { api } from '../../api/client'
-import { Icon } from '../../components/icons'
-import { Empty, SkeletonList, Tag } from '../../components/ui'
+import type { components } from '@/api/schema'
+import { api } from '@/api/client'
+import { Icon } from '@/components/Icons'
+import { Empty, SkeletonList, Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
-import { SearchInput } from '../../components/SearchInput'
+import { SearchInput } from '@/components/SearchInput'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,7 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/shadcn/dialog'
-import { copyText } from '../../utils/copy'
+import { copyText } from '@/lib/copy'
 import { RepoFormModal } from './RepoFormModal'
 
 type RepoModel = components['schemas']['types.RepoModel']
@@ -48,6 +47,8 @@ export function Repos() {
   // 搜索关键词从 URL query 恢复：刷新/分享链接/前进后退都保留上次搜索
   const [searchParams, setSearchParams] = useSearchParams()
   const [keyword, setKeyword] = useState(() => searchParams.get('name') ?? '')
+  /** 搜索防抖 400ms（对齐 events 页）：避免每敲一个键就触发一次「整列表变骨架」的重拉 */
+  const [debouncedKeyword, setDebouncedKeyword] = useState(() => searchParams.get('name') ?? '')
   const [initialLoading, setInitialLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -56,6 +57,9 @@ export function Repos() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const busyRef = useRef(false)
   const refreshingRef = useRef(false)
+  /** 上次实际发出的 (debouncedKeyword, page)：刷新完成后的 effect 重跑据此去重，不重复拉第 1 页 */
+  const lastKwRef = useRef('')
+  const lastPageRef = useRef(0)
   const hasMore = items.length < count
 
   const [formOpen, setFormOpen] = useState(false)
@@ -88,11 +92,24 @@ export function Repos() {
     [],
   )
 
+  // 搜索防抖 400ms：keyword 同步 URL（立即），实际拉取走 debouncedKeyword
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedKeyword(keyword), 400)
+    return () => clearTimeout(timer)
+  }, [keyword])
+
   useEffect(() => {
     // 刷新已直接拉取第 1 页，跳过 setPage(1) 触发的重复请求
     if (page === 1 && refreshingRef.current) return
-    void fetchList(page, keyword, page > 1)
-  }, [page, keyword, fetchList])
+    // 防抖未落定（keyword 已变、debouncedKeyword 尚未跟上）不拉：否则 onChange 里 setPage(1)
+    // 会让「深翻页后首次输入」以旧关键词抢拉一次第 1 页（旧数据闪现 + 一次浪费请求）
+    if (keyword !== debouncedKeyword) return
+    // 同 (debouncedKeyword, page) 去重：刷新完成后的 effect 重跑（refreshing 翻转触发）不重复拉第 1 页
+    if (lastKwRef.current === debouncedKeyword && lastPageRef.current === page) return
+    lastKwRef.current = debouncedKeyword
+    lastPageRef.current = page
+    void fetchList(page, debouncedKeyword, page > 1)
+  }, [page, debouncedKeyword, keyword, fetchList, refreshing])
 
   // 搜索关键词变化 → 同步 URL query。replace 避免每次输入堆一条历史；
   // 空值直接删参数，URL 保持干净；其余参数原样保留
@@ -134,7 +151,10 @@ export function Repos() {
     // 回到顶部：让哨兵离开视口，刷新后不会自动加载后续页
     if (scrollRef.current) scrollRef.current.scrollTop = 0
     setPage(1)
-    await fetchList(1, keyword, false)
+    // 预标记本次刷新要拉的 (debouncedKeyword, 1)，刷新完成后的 effect 重跑据此去重
+    lastKwRef.current = debouncedKeyword
+    lastPageRef.current = 1
+    await fetchList(1, debouncedKeyword, false)
     busyRef.current = false
     refreshingRef.current = false
     setRefreshing(false)
@@ -323,7 +343,7 @@ export function Repos() {
                         variant="destructive"
                         disabled={togglingId === item.id}
                       >
-                        {togglingId === item.id && <Loader2 className="size-4 animate-spin" />}
+                        {togglingId === item.id && <Icon name="loader" className="size-4 animate-spin" />}
                         {t('repos.disable')}
                       </Button>
                     </AlertDialogTrigger>
@@ -354,7 +374,7 @@ export function Repos() {
                     disabled={togglingId === item.id}
                     onClick={() => toggle(item)}
                   >
-                    {togglingId === item.id && <Loader2 className="size-4 animate-spin" />}
+                    {togglingId === item.id && <Icon name="loader" className="size-4 animate-spin" />}
                     {t('repos.enable')}
                   </Button>
                 )}
