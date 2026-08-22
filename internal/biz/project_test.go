@@ -12,9 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kmetatypes "k8s.io/apimachinery/pkg/types"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -301,6 +303,35 @@ func TestProjectBiz_GetAllActiveContainers_ShowErr(t *testing.T) {
 	f := &fakeProjectRepoForProjectBiz{showErr: errors.New("show down")}
 	b := newProjectBizWithK8s(f, &fakeEndpointK8sRepo{})
 	got, err := b.GetAllActiveContainers(context.TODO(), 1)
+	assert.Nil(t, got)
+	assert.ErrorContains(t, err, "show down")
+}
+
+func TestProjectBiz_ResourceTree(t *testing.T) {
+	uid := kmetatypes.UID("dep-uid")
+	f := &fakeProjectRepoForProjectBiz{}
+	k := &fakeTreeK8sRepo{
+		deployments:  map[string]*appsv1.Deployment{"app": readyDeployment("app", uid)},
+		manifestDeps: []*appsv1.Deployment{{ObjectMeta: metav1.ObjectMeta{Name: "app"}}},
+	}
+	b := newProjectBizWithK8s(f, k)
+	got, err := b.ResourceTree(context.TODO(), 1)
+	assert.NoError(t, err)
+	assert.True(t, f.showCalled)
+	if assert.NotNil(t, got) {
+		assert.Equal(t, "application-1", got.Nodes[0].ID)
+		if assert.Len(t, got.Nodes, 2) {
+			assert.Equal(t, "deployment-app", got.Nodes[1].ID)
+			assert.Equal(t, "healthy", got.Nodes[1].Status)
+		}
+		assert.True(t, hasTreeEdge(got, "owner", "application-1", "deployment-app"))
+	}
+}
+
+func TestProjectBiz_ResourceTree_ShowErr(t *testing.T) {
+	f := &fakeProjectRepoForProjectBiz{showErr: errors.New("show down")}
+	b := newProjectBizWithK8s(f, &fakeTreeK8sRepo{})
+	got, err := b.ResourceTree(context.TODO(), 1)
 	assert.Nil(t, got)
 	assert.ErrorContains(t, err, "show down")
 }

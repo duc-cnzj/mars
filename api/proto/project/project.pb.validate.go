@@ -1597,6 +1597,513 @@ var _ interface {
 	ErrorName() string
 } = CheckApplyStatusResponseValidationError{}
 
+// Validate checks the field values on ResourceTreeNode with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ResourceTreeNode) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResourceTreeNode with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResourceTreeNodeMultiError, or nil if none found.
+func (m *ResourceTreeNode) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResourceTreeNode) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for Kind
+
+	// no validation rules for Name
+
+	// no validation rules for Namespace
+
+	// no validation rules for Status
+
+	// no validation rules for Labels
+
+	// no validation rules for Old
+
+	if len(errors) > 0 {
+		return ResourceTreeNodeMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResourceTreeNodeMultiError is an error wrapping multiple validation errors
+// returned by ResourceTreeNode.ValidateAll() if the designated constraints
+// aren't met.
+type ResourceTreeNodeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResourceTreeNodeMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResourceTreeNodeMultiError) AllErrors() []error { return m }
+
+// ResourceTreeNodeValidationError is the validation error returned by
+// ResourceTreeNode.Validate if the designated constraints aren't met.
+type ResourceTreeNodeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResourceTreeNodeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResourceTreeNodeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResourceTreeNodeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResourceTreeNodeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResourceTreeNodeValidationError) ErrorName() string { return "ResourceTreeNodeValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ResourceTreeNodeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResourceTreeNode.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResourceTreeNodeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResourceTreeNodeValidationError{}
+
+// Validate checks the field values on ResourceTreeEdge with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ResourceTreeEdge) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResourceTreeEdge with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResourceTreeEdgeMultiError, or nil if none found.
+func (m *ResourceTreeEdge) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResourceTreeEdge) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for Type
+
+	// no validation rules for Source
+
+	// no validation rules for Target
+
+	if len(errors) > 0 {
+		return ResourceTreeEdgeMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResourceTreeEdgeMultiError is an error wrapping multiple validation errors
+// returned by ResourceTreeEdge.ValidateAll() if the designated constraints
+// aren't met.
+type ResourceTreeEdgeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResourceTreeEdgeMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResourceTreeEdgeMultiError) AllErrors() []error { return m }
+
+// ResourceTreeEdgeValidationError is the validation error returned by
+// ResourceTreeEdge.Validate if the designated constraints aren't met.
+type ResourceTreeEdgeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResourceTreeEdgeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResourceTreeEdgeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResourceTreeEdgeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResourceTreeEdgeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResourceTreeEdgeValidationError) ErrorName() string { return "ResourceTreeEdgeValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ResourceTreeEdgeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResourceTreeEdge.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResourceTreeEdgeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResourceTreeEdgeValidationError{}
+
+// Validate checks the field values on ResourceTreeRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ResourceTreeRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResourceTreeRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResourceTreeRequestMultiError, or nil if none found.
+func (m *ResourceTreeRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResourceTreeRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetId() <= 0 {
+		err := ResourceTreeRequestValidationError{
+			field:  "Id",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return ResourceTreeRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResourceTreeRequestMultiError is an error wrapping multiple validation
+// errors returned by ResourceTreeRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ResourceTreeRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResourceTreeRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResourceTreeRequestMultiError) AllErrors() []error { return m }
+
+// ResourceTreeRequestValidationError is the validation error returned by
+// ResourceTreeRequest.Validate if the designated constraints aren't met.
+type ResourceTreeRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResourceTreeRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResourceTreeRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResourceTreeRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResourceTreeRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResourceTreeRequestValidationError) ErrorName() string {
+	return "ResourceTreeRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResourceTreeRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResourceTreeRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResourceTreeRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResourceTreeRequestValidationError{}
+
+// Validate checks the field values on ResourceTreeResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ResourceTreeResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResourceTreeResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResourceTreeResponseMultiError, or nil if none found.
+func (m *ResourceTreeResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResourceTreeResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Status
+
+	for idx, item := range m.GetNodes() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceTreeResponseValidationError{
+						field:  fmt.Sprintf("Nodes[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceTreeResponseValidationError{
+						field:  fmt.Sprintf("Nodes[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceTreeResponseValidationError{
+					field:  fmt.Sprintf("Nodes[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetEdges() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceTreeResponseValidationError{
+						field:  fmt.Sprintf("Edges[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceTreeResponseValidationError{
+						field:  fmt.Sprintf("Edges[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceTreeResponseValidationError{
+					field:  fmt.Sprintf("Edges[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ResourceTreeResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResourceTreeResponseMultiError is an error wrapping multiple validation
+// errors returned by ResourceTreeResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ResourceTreeResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResourceTreeResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResourceTreeResponseMultiError) AllErrors() []error { return m }
+
+// ResourceTreeResponseValidationError is the validation error returned by
+// ResourceTreeResponse.Validate if the designated constraints aren't met.
+type ResourceTreeResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResourceTreeResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResourceTreeResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResourceTreeResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResourceTreeResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResourceTreeResponseValidationError) ErrorName() string {
+	return "ResourceTreeResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResourceTreeResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResourceTreeResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResourceTreeResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResourceTreeResponseValidationError{}
+
 // Validate checks the field values on ApplyResponse with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.

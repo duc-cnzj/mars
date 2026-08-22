@@ -29,6 +29,7 @@ const (
 	Project_Delete_FullMethodName                = "/project.Project/Delete"
 	Project_AllContainers_FullMethodName         = "/project.Project/AllContainers"
 	Project_CheckApplyStatus_FullMethodName      = "/project.Project/CheckApplyStatus"
+	Project_ResourceTree_FullMethodName          = "/project.Project/ResourceTree"
 )
 
 // ProjectClient is the client API for Project service.
@@ -55,6 +56,10 @@ type ProjectClient interface {
 	// 通过工作负载实时状态（Deployment/StatefulSet/DaemonSet 的 updated/available replicas）
 	// 与最新版本 pod 容器状态聚合判定，避免过渡窗口误报。
 	CheckApplyStatus(ctx context.Context, in *CheckApplyStatusRequest, opts ...grpc.CallOption) (*CheckApplyStatusResponse, error)
+	// ResourceTree 返回项目的资源拓扑树：Application → Deployment → ReplicaSet → Pod /
+	// StatefulSet / DaemonSet，以及 Service 的 selector 边。完整资源列表（区别于
+	// AllContainers 的活跃容器平铺），供拓扑图 Tab 渲染与 pod 事件驱动下的实时刷新。
+	ResourceTree(ctx context.Context, in *ResourceTreeRequest, opts ...grpc.CallOption) (*ResourceTreeResponse, error)
 }
 
 type projectClient struct {
@@ -164,6 +169,16 @@ func (c *projectClient) CheckApplyStatus(ctx context.Context, in *CheckApplyStat
 	return out, nil
 }
 
+func (c *projectClient) ResourceTree(ctx context.Context, in *ResourceTreeRequest, opts ...grpc.CallOption) (*ResourceTreeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResourceTreeResponse)
+	err := c.cc.Invoke(ctx, Project_ResourceTree_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServer is the server API for Project service.
 // All implementations must embed UnimplementedProjectServer
 // for forward compatibility.
@@ -188,6 +203,10 @@ type ProjectServer interface {
 	// 通过工作负载实时状态（Deployment/StatefulSet/DaemonSet 的 updated/available replicas）
 	// 与最新版本 pod 容器状态聚合判定，避免过渡窗口误报。
 	CheckApplyStatus(context.Context, *CheckApplyStatusRequest) (*CheckApplyStatusResponse, error)
+	// ResourceTree 返回项目的资源拓扑树：Application → Deployment → ReplicaSet → Pod /
+	// StatefulSet / DaemonSet，以及 Service 的 selector 边。完整资源列表（区别于
+	// AllContainers 的活跃容器平铺），供拓扑图 Tab 渲染与 pod 事件驱动下的实时刷新。
+	ResourceTree(context.Context, *ResourceTreeRequest) (*ResourceTreeResponse, error)
 	mustEmbedUnimplementedProjectServer()
 }
 
@@ -224,6 +243,9 @@ func (UnimplementedProjectServer) AllContainers(context.Context, *AllContainersR
 }
 func (UnimplementedProjectServer) CheckApplyStatus(context.Context, *CheckApplyStatusRequest) (*CheckApplyStatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CheckApplyStatus not implemented")
+}
+func (UnimplementedProjectServer) ResourceTree(context.Context, *ResourceTreeRequest) (*ResourceTreeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResourceTree not implemented")
 }
 func (UnimplementedProjectServer) mustEmbedUnimplementedProjectServer() {}
 func (UnimplementedProjectServer) testEmbeddedByValue()                 {}
@@ -401,6 +423,24 @@ func _Project_CheckApplyStatus_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Project_ResourceTree_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResourceTreeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).ResourceTree(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Project_ResourceTree_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).ResourceTree(ctx, req.(*ResourceTreeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Project_ServiceDesc is the grpc.ServiceDesc for Project service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -439,6 +479,10 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckApplyStatus",
 			Handler:    _Project_CheckApplyStatus_Handler,
+		},
+		{
+			MethodName: "ResourceTree",
+			Handler:    _Project_ResourceTree_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -664,6 +664,21 @@ func (mr *MockProjectBizMockRecorder) List(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockProjectBiz)(nil).List), arg0, arg1)
 }
 
+// ResourceTree mocks base method.
+func (m *MockProjectBiz) ResourceTree(arg0 context.Context, arg1 int) (*ResourceTree, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResourceTree", arg0, arg1)
+	ret0, _ := ret[0].(*ResourceTree)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResourceTree indicates an expected call of ResourceTree.
+func (mr *MockProjectBizMockRecorder) ResourceTree(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceTree", reflect.TypeOf((*MockProjectBiz)(nil).ResourceTree), arg0, arg1)
+}
+
 // Show mocks base method.
 func (m *MockProjectBiz) Show(arg0 context.Context, arg1 int) (*Project, error) {
 	m.ctrl.T.Helper()

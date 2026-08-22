@@ -89,3 +89,12 @@ func (s *ProjectSvc) CheckApplyStatus(ctx context.Context, req *project.CheckApp
 	}
 	return &out, nil
 }
+
+// ResourceTree GET /api/projects/{id}/resource_tree。
+func (s *ProjectSvc) ResourceTree(ctx context.Context, req *project.ResourceTreeRequest) (*project.ResourceTreeResponse, error) {
+	var out project.ResourceTreeResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, fmt.Sprintf("/api/projects/%d/resource_tree", req.Id), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

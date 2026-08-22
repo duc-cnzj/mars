@@ -18,6 +18,8 @@ type ProjectBiz interface {
 	CheckApplyStatus(ctx context.Context, id int) (*ApplyStatus, error)
 	// GetProjectEndpointsInNamespace 汇总命名空间内项目的服务端点。
 	GetProjectEndpointsInNamespace(ctx context.Context, namespace string, projectIDs ...int) ([]*types.ServiceEndpoint, error)
+	// ResourceTree 返回项目资源拓扑树（完整资源列表，供拓扑图 Tab 渲染与 pod 事件实时刷新）。
+	ResourceTree(ctx context.Context, id int) (*ResourceTree, error)
 	// List 分页列出项目。
 	List(ctx context.Context, input *ListProjectInput) ([]*Project, *pagination.Pagination, error)
 	// Create 校验输入后创建项目。
@@ -64,6 +66,15 @@ func (p *projectBiz) GetAllActiveContainers(ctx context.Context, id int) ([]*typ
 		return nil, err
 	}
 	return buildStateContainers(ctx, p.k8sRepo, proj)
+}
+
+// ResourceTree 返回项目资源拓扑树（见 buildResourceTree）。
+func (p *projectBiz) ResourceTree(ctx context.Context, id int) (*ResourceTree, error) {
+	proj, err := p.projRepo.Show(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return buildResourceTree(ctx, p.k8sRepo, proj)
 }
 
 // GetProjectEndpointsInNamespace 汇总 Ingress/LoadBalancer/NodePort/HTTPRoute 四种来源的

@@ -912,6 +912,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{id}/resource_tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取项目资源拓扑树
+         * @description ResourceTree 返回项目的资源拓扑树：Application → Deployment → ReplicaSet → Pod /
+         *      StatefulSet / DaemonSet，以及 Service 的 selector 边。完整资源列表（区别于
+         *      AllContainers 的活跃容器平铺），供拓扑图 Tab 渲染与 pod 事件驱动下的实时刷新。
+         */
+        get: operations["Project_ResourceTree"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{id}/version": {
         parameters: {
             query?: never;
@@ -1488,6 +1510,41 @@ export interface components {
             urls: components["schemas"]["types.ServiceEndpoint"][];
             cpu: string;
             memory: string;
+        };
+        /** @description ResourceTreeEdge 拓扑资源树边：owner=属主引用，selector=标签选择器。 */
+        "project.ResourceTreeEdge": {
+            id: string;
+            type: string;
+            source: string;
+            target: string;
+        };
+        /**
+         * @description ResourceTreeNode 拓扑资源树节点：kind/status 与前端拓扑渲染器对齐。
+         *      id 稳定唯一：application-{id} / deployment-{name} / rs-{name} / pod-{name} /
+         *      svc-{name} / statefulset-{name} / daemonset-{name}。
+         *      old 标记滚动升级中的旧 ReplicaSet/Pod（旧版本副本），前端可据此弱化或打标签。
+         */
+        "project.ResourceTreeNode": {
+            id: string;
+            kind: string;
+            name: string;
+            namespace: string;
+            /** @description healthy=健康 / degraded=异常 / progressing=进行中 / unknown=未知 */
+            status: string;
+            labels: {
+                [key: string]: string;
+            };
+            old: boolean;
+        };
+        "project.ResourceTreeResponse": {
+            /**
+             * Format: enum
+             * @description 项目整体部署状态，复用 types.Deploy 枚举
+             * @enum {string}
+             */
+            status: ProjectResourceTreeResponseStatus;
+            nodes: components["schemas"]["project.ResourceTreeNode"][];
+            edges: components["schemas"]["project.ResourceTreeEdge"][];
         };
         "project.ShowResponse": {
             item: components["schemas"]["types.ProjectModel"];
@@ -3663,6 +3720,37 @@ export interface operations {
             };
         };
     };
+    Project_ResourceTree: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["project.ResourceTreeResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
     Project_Version: {
         parameters: {
             query?: never;
@@ -4025,6 +4113,12 @@ export enum MarsElementType {
     ElementTypeNumberRadio = "ElementTypeNumberRadio"
 }
 export enum ProjectCheckApplyStatusResponseStatus {
+    StatusUnknown = "StatusUnknown",
+    StatusDeploying = "StatusDeploying",
+    StatusDeployed = "StatusDeployed",
+    StatusFailed = "StatusFailed"
+}
+export enum ProjectResourceTreeResponseStatus {
     StatusUnknown = "StatusUnknown",
     StatusDeploying = "StatusDeploying",
     StatusDeployed = "StatusDeployed",

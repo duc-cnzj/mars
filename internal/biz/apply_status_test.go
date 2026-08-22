@@ -514,13 +514,13 @@ func TestOwnedBy(t *testing.T) {
 	assert.False(t, ownedBy(&corev1.Pod{}, "a"))
 }
 
-func TestOwnedByRS(t *testing.T) {
+func TestPodsOwnedBy(t *testing.T) {
 	pods := []*corev1.Pod{
 		rsPodForTest("m1", "rs", ""),
 		rsPodForTest("m2", "rs", ""),
 		rsPodForTest("other", "rs-other", ""),
 	}
-	got := ownedByRS(pods, "rs")
+	got := podsOwnedBy(pods, "rs")
 	assert.ElementsMatch(t, []string{"m1", "m2"}, lo.Map(got, func(p *corev1.Pod, _ int) string { return p.Name }))
 }
 

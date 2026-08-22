@@ -1610,6 +1610,36 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+    /api/projects/{id}/resource_tree:
+        get:
+            tags:
+                - Project
+            summary: 获取项目资源拓扑树
+            description: |-
+                ResourceTree 返回项目的资源拓扑树：Application → Deployment → ReplicaSet → Pod /
+                 StatefulSet / DaemonSet，以及 Service 的 selector 边。完整资源列表（区别于
+                 AllContainers 的活跃容器平铺），供拓扑图 Tab 渲染与 pod 事件驱动下的实时刷新。
+            operationId: Project_ResourceTree
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.ResourceTreeResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/projects/{id}/version:
         get:
             tags:
@@ -2693,6 +2723,63 @@ components:
                     type: string
                 memory:
                     type: string
+        project.ResourceTreeEdge:
+            type: object
+            properties:
+                id:
+                    type: string
+                type:
+                    type: string
+                source:
+                    type: string
+                target:
+                    type: string
+            description: ResourceTreeEdge 拓扑资源树边：owner=属主引用，selector=标签选择器。
+        project.ResourceTreeNode:
+            type: object
+            properties:
+                id:
+                    type: string
+                kind:
+                    type: string
+                name:
+                    type: string
+                namespace:
+                    type: string
+                status:
+                    type: string
+                    description: healthy=健康 / degraded=异常 / progressing=进行中 / unknown=未知
+                labels:
+                    type: object
+                    additionalProperties:
+                        type: string
+                old:
+                    type: boolean
+            description: |-
+                ResourceTreeNode 拓扑资源树节点：kind/status 与前端拓扑渲染器对齐。
+                 id 稳定唯一：application-{id} / deployment-{name} / rs-{name} / pod-{name} /
+                 svc-{name} / statefulset-{name} / daemonset-{name}。
+                 old 标记滚动升级中的旧 ReplicaSet/Pod（旧版本副本），前端可据此弱化或打标签。
+        project.ResourceTreeResponse:
+            type: object
+            properties:
+                status:
+                    enum:
+                        - StatusUnknown
+                        - StatusDeploying
+                        - StatusDeployed
+                        - StatusFailed
+                    type: string
+                    description: 项目整体部署状态，复用 types.Deploy 枚举
+                    format: enum
+                nodes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/project.ResourceTreeNode'
+                edges:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/project.ResourceTreeEdge'
         project.ShowResponse:
             type: object
             properties:

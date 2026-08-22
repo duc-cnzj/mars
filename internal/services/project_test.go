@@ -1152,6 +1152,84 @@ func Test_projectSvc_CheckApplyStatus_FailedWithFailures(t *testing.T) {
 	}
 }
 
+// Test_projectSvc_ResourceTree 覆盖 ResourceTree 全链路：access-check + biz 建树 + proto 映射。
+// Deployment → RS → Pod 属主链与整体 Deployed 状态如实映射到 proto 节点/边。
+func Test_projectSvc_ResourceTree(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	// Show 被调用两次：一次 svc 层 access-check，一次 biz.ResourceTree 内部取项目。
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{
+		ID: 1, NamespaceID: 1, Namespace: &biz.Namespace{Name: "ns"},
+		PodSelectors: []string{"app=demo"}, Manifest: []string{"deploy"},
+	}, nil).Times(2)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{}, nil)
+
+	dep := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{Name: "demo-app", Namespace: "ns", UID: "dep-1", Generation: 1},
+		Spec:       appsv1.DeploymentSpec{Replicas: lo.ToPtr(int32(1))},
+		Status:     appsv1.DeploymentStatus{ObservedGeneration: 1, UpdatedReplicas: 1, AvailableReplicas: 1},
+	}
+	rs := &appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "demo-app-5f6b", Namespace: "ns", UID: "rs-new",
+			Annotations:     map[string]string{"deployment.kubernetes.io/revision": "2"},
+			OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", UID: "dep-1"}},
+		},
+	}
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "web-abc", Namespace: "ns", Labels: map[string]string{"app": "demo"},
+			OwnerReferences: []metav1.OwnerReference{{Kind: "ReplicaSet", UID: "rs-new"}},
+		},
+		Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "web"}}},
+		Status: corev1.PodStatus{
+			Phase:             corev1.PodRunning,
+			ContainerStatuses: []corev1.ContainerStatus{{Name: "web", Ready: true}},
+		},
+	}
+	mocks.k8sRepo.EXPECT().ListPodsBySelectors(gomock.Any(), gomock.Any()).Return([]*corev1.Pod{pod}, nil)
+	mocks.k8sRepo.EXPECT().GetWorkloadsByManifest(gomock.Any()).Return([]*appsv1.Deployment{{ObjectMeta: metav1.ObjectMeta{Name: "demo-app"}}}, nil, nil)
+	mocks.k8sRepo.EXPECT().ListReplicaSets("ns").Return([]*appsv1.ReplicaSet{rs}, nil)
+	mocks.k8sRepo.EXPECT().GetDeployment("ns", "demo-app").Return(dep, nil)
+	mocks.k8sRepo.EXPECT().ListServices("ns").Return(nil, nil)
+
+	resp, err := svc.ResourceTree(newAdminUserCtx(), &project.ResourceTreeRequest{Id: 1})
+	assert.NoError(t, err)
+	assert.Equal(t, types.Deploy_StatusDeployed, resp.GetStatus())
+	assert.Equal(t, "healthy", resp.GetNodes()[0].GetStatus())
+	assert.Len(t, resp.GetNodes(), 4)
+	assert.Len(t, resp.GetEdges(), 3)
+	kinds := map[string]struct{}{}
+	for _, n := range resp.GetNodes() {
+		kinds[n.GetKind()] = struct{}{}
+	}
+	for _, want := range []string{"Application", "Deployment", "ReplicaSet", "Pod"} {
+		assert.Contains(t, kinds, want)
+	}
+}
+
+// Test_projectSvc_ResourceTree_BizError 覆盖 access-check 通过、biz 建树失败（ListPods 上抛）。
+func Test_projectSvc_ResourceTree_BizError(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{
+		ID: 1, NamespaceID: 1, Namespace: &biz.Namespace{Name: "ns"},
+		PodSelectors: []string{"app=demo"}, Manifest: []string{"deploy"},
+	}, nil).Times(2)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{}, nil)
+	mocks.k8sRepo.EXPECT().ListPodsBySelectors(gomock.Any(), gomock.Any()).Return(nil, errors.New("boom"))
+
+	resp, err := svc.ResourceTree(newAdminUserCtx(), &project.ResourceTreeRequest{Id: 1})
+	assert.Nil(t, resp)
+	assert.ErrorContains(t, err, "boom")
+}
+
+func Test_projectSvc_ResourceTree_PermissionDenied(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
+	_, err := svc.ResourceTree(newOtherUserCtx(), &project.ResourceTreeRequest{Id: 1})
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+}
+
 func Test_projectSvc_CheckApplyStatus_PermissionDenied(t *testing.T) {
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)

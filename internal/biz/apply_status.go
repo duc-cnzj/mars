@@ -262,7 +262,7 @@ func deploymentNewPods(dep *appsv1.Deployment, rss []*appsv1.ReplicaSet, pods []
 	if latest == nil {
 		return nil
 	}
-	return ownedByRS(pods, latest.UID)
+	return podsOwnedBy(pods, latest.UID)
 }
 
 // latestReplicaSet 返回 Deployment 下 revision 注解最大的 ReplicaSet；无则返回 nil。
@@ -338,8 +338,9 @@ func ownedBy(obj metav1.Object, uid kmetatypes.UID) bool {
 	return false
 }
 
-// ownedByRS 过滤出 OwnerReference 包含指定 ReplicaSet UID 的 pod。
-func ownedByRS(pods []*corev1.Pod, uid kmetatypes.UID) []*corev1.Pod {
+// podsOwnedBy 过滤出 OwnerReference 直接包含指定 UID 属主的 pod。
+// Deployment 系走 ReplicaSet 属主；StatefulSet/DaemonSet 的属主即 workload 本身。
+func podsOwnedBy(pods []*corev1.Pod, uid kmetatypes.UID) []*corev1.Pod {
 	var res []*corev1.Pod
 	for _, pod := range pods {
 		if ownedBy(pod, uid) {

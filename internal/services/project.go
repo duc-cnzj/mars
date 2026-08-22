@@ -301,6 +301,44 @@ func (p *projectSvc) CheckApplyStatus(ctx context.Context, request *project.Chec
 	}, nil
 }
 
+// ResourceTree 返回项目资源拓扑树（完整资源列表），响应前做项目级访问控制。
+func (p *projectSvc) ResourceTree(ctx context.Context, request *project.ResourceTreeRequest) (*project.ResourceTreeResponse, error) {
+	if _, err := p.accessBiz.RequireProjectAccess(ctx, int(request.Id)); err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+	tree, err := p.projBiz.ResourceTree(ctx, int(request.Id))
+	if err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+	return mapDomainTree(tree), nil
+}
+
+// mapDomainTree 把领域 ResourceTree 映射为 proto ResourceTreeResponse。
+func mapDomainTree(tree *biz.ResourceTree) *project.ResourceTreeResponse {
+	nodes := make([]*project.ResourceTreeNode, 0, len(tree.Nodes))
+	for _, n := range tree.Nodes {
+		nodes = append(nodes, &project.ResourceTreeNode{
+			Id:        n.ID,
+			Kind:      n.Kind,
+			Name:      n.Name,
+			Namespace: n.Namespace,
+			Status:    n.Status,
+			Labels:    n.Labels,
+			Old:       n.Old,
+		})
+	}
+	edges := make([]*project.ResourceTreeEdge, 0, len(tree.Edges))
+	for _, e := range tree.Edges {
+		edges = append(edges, &project.ResourceTreeEdge{
+			Id:     e.ID,
+			Type:   e.Type,
+			Source: e.Source,
+			Target: e.Target,
+		})
+	}
+	return &project.ResourceTreeResponse{Status: tree.Status, Nodes: nodes, Edges: edges}
+}
+
 // mapDomainFailures 把领域 ContainerFailure 转成 proto ContainerFailure（透传全部诊断字段）。
 func mapDomainFailures(failures []*biz.ContainerFailure) []*project.ContainerFailure {
 	out := make([]*project.ContainerFailure, 0, len(failures))

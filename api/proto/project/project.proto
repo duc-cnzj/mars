@@ -75,6 +75,39 @@ message CheckApplyStatusResponse {
   repeated ContainerFailure failures = 4;
 }
 
+// ResourceTreeNode 拓扑资源树节点：kind/status 与前端拓扑渲染器对齐。
+// id 稳定唯一：application-{id} / deployment-{name} / rs-{name} / pod-{name} /
+// svc-{name} / statefulset-{name} / daemonset-{name}。
+// old 标记滚动升级中的旧 ReplicaSet/Pod（旧版本副本），前端可据此弱化或打标签。
+message ResourceTreeNode {
+  string id   = 1;
+  string kind = 2; // Application | Deployment | ReplicaSet | Pod | Service | StatefulSet | DaemonSet
+  string name = 3;
+  string namespace = 4;
+  // healthy=健康 / degraded=异常 / progressing=进行中 / unknown=未知
+  string status = 5;
+  map<string, string> labels = 6;
+  bool old = 7;
+}
+
+// ResourceTreeEdge 拓扑资源树边：owner=属主引用，selector=标签选择器。
+message ResourceTreeEdge {
+  string id     = 1;
+  string type   = 2; // owner | selector
+  string source = 3;
+  string target = 4;
+}
+
+message ResourceTreeRequest {
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
+message ResourceTreeResponse {
+  // 项目整体部署状态，复用 types.Deploy 枚举
+  types.Deploy status = 1;
+  repeated ResourceTreeNode nodes = 2;
+  repeated ResourceTreeEdge edges = 3;
+}
+
 message ApplyResponse {
   websocket.Metadata metadata = 1;
   types.ProjectModel project  = 2;
@@ -200,6 +233,18 @@ service Project {
     };
     option (openapi.v3.operation) = {
       summary: "检查项目部署后的容器运行状态",
+    };
+  }
+
+  // ResourceTree 返回项目的资源拓扑树：Application → Deployment → ReplicaSet → Pod /
+  // StatefulSet / DaemonSet，以及 Service 的 selector 边。完整资源列表（区别于
+  // AllContainers 的活跃容器平铺），供拓扑图 Tab 渲染与 pod 事件驱动下的实时刷新。
+  rpc ResourceTree(ResourceTreeRequest) returns (ResourceTreeResponse) {
+    option (google.api.http) = {
+      get: "/api/projects/{id}/resource_tree"
+    };
+    option (openapi.v3.operation) = {
+      summary: "获取项目资源拓扑树",
     };
   }
 }
