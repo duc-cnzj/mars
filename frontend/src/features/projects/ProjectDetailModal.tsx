@@ -158,8 +158,8 @@ export function ProjectDetailModal({
     <Dialog
       open={open}
       // 非模态（对齐旧版 DraggableModal）：Radix modal Dialog 会给 body 加 pointer-events:none，
-      // 锁死弹窗外所有点击（点了卡片没反应 → 没法开多个）。modal={false} 去掉这个锁，
-      // 但 ESC 关闭 / onPointerDownOutside（外点不关）仍生效。
+      // 锁死弹窗外所有点击（点了卡片没反应 → 没法开多个）。modal={false} 去掉这个锁。
+      // ESC/外点/焦点外移等 dismiss 路径全部在 DialogContent 显式拦截，只保留 X 关闭。
       modal={false}
       onOpenChange={(o) => !o && onClose()}
     >
@@ -167,16 +167,19 @@ export function ProjectDetailModal({
         ref={dialogRef}
         {...dnd.contentProps}
         // 无 mask（对齐旧版 DraggableModal）：页面不被压暗、不拦截外部点击，
-        // 才能边开着详情弹窗边点其他卡片再开多个。仍只允许 X / ESC 关闭（外部点击不关）。
+        // 才能边开着详情弹窗边点其他卡片再开多个。只允许点击 X 关闭。
         // 用 onPointerDownOutside 而非 onInteractOutside：后者连内部 Popover 打开时
         // focus 到搜索框（在 dialog content 外）也会触发，会与 Radix FocusScope 打架导致下拉开不出来
         showOverlay={false}
-        // 外部点击不关：pointerdown 落点在外→preventDefault 拦掉 dismiss；
-        // 但点卡片等可聚焦元素会把焦点移出弹窗，Radix 另走 onFocusOutside 的 dismiss 路径
-        //（pointerdown 被「拦截」跳过时 isDeferred 先复位，focusin 不再被跳过 → 误关旧弹窗）。
-        // onPointerDownOutside 拦不住焦点路径，需一并 preventDefault onFocusOutside。
+        // 三条 dismiss 路径全拦，弹窗只能点 X 关闭：
+        // 1. 外部 pointerdown → preventDefault 拦掉 dismiss；
+        // 2. 点卡片等可聚焦元素把焦点移出弹窗，Radix 另走 onFocusOutside 的 dismiss 路径
+        //   （pointerdown 被「拦截」跳过时 isDeferred 先复位，focusin 不再被跳过 → 误关旧弹窗），
+        //   onPointerDownOutside 拦不住焦点路径，需一并 preventDefault onFocusOutside；
+        // 3. ESC 默认走 onEscapeKeyDown 关闭，preventDefault 一并拦掉（用户要求：只能 X 关）。
         onPointerDownOutside={(e) => e.preventDefault()}
         onFocusOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
         style={dnd.contentStyle}
         className="sm:max-w-5xl h-[70vh] flex flex-col"
       >
