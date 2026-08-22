@@ -59,12 +59,12 @@ func TestTaskManagerStopAll(t *testing.T) {
 	stopped1 := false
 	stopped2 := false
 	taskManager.Register("task1", func(err error) {
-		if err == deploy.ErrCancel {
+		if err == deploy.ErrCancelConnClosed {
 			stopped1 = true
 		}
 	})
 	taskManager.Register("task2", func(err error) {
-		if err == deploy.ErrCancel {
+		if err == deploy.ErrCancelConnClosed {
 			stopped2 = true
 		}
 	})

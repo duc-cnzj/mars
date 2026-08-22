@@ -30,8 +30,13 @@ import (
 var ErrorVersionNotMatched = errors.New("[部署冲突]: 1. 可能是多个人同时部署导致 2. 项目已经存在")
 
 // ErrCancel 是部署被取消的信号错误，jobRunner.Stop 会记录它；
-// ws 传输层的 TaskManager 停止任务时也用它作为取消原因。
+// ws 传输层的 TaskManager 停止任务（手动取消）时也用它作为取消原因。
 var ErrCancel = errors.New("取消本次部署，自动回滚到上一个版本！")
+
+// ErrCancelConnClosed 是连接断开（CloseAndClean → taskManager.StopAll）触发的取消信号，
+// 与 ErrCancel（手动取消）区分，使部署流水线能判定取消来源：
+// 手动取消的审计由传输层 HandleCancelDeploy 记录，连接断开/请求 ctx 取消由 Finish 统一留痕。
+var ErrCancelConnClosed = errors.New("连接断开，部署已取消")
 
 // Result* 是部署结果状态（websocket_pb.ResultType 的语义别名），
 // 由 deployResult 记录并由 DeployMsger 上报，故保留在部署侧。
@@ -601,6 +606,16 @@ func (j *jobRunner) Finish() Job {
 			if e := j.GetStoppedErrorIfHas(); e != nil {
 				j.deployResult.Set(websocket_pb.ResultType_DeployedCanceled, e.Error(), pmodel)
 				err = e
+				// 取消部署审计留痕：手动取消（ErrCancel）的审计由传输层 HandleCancelDeploy 记录，
+				// 这里只补记录其余取消来源（连接断开/请求 ctx 取消/服务端关闭），同一取消不双份留痕。
+				if !errors.Is(e, ErrCancel) {
+					j.eventRepo.AuditLog(
+						types.EventActionType_CancelDeploy,
+						j.user.Name,
+						j.user.Email,
+						fmt.Sprintf("取消部署: %s, 原因: %s", j.cancelTarget(), e.Error()),
+					)
+				}
 			}
 		}(j.Error())
 		callbacks = append(callbacks, j.errorCallback.Sort()...)
@@ -676,6 +691,15 @@ func (j *jobRunner) HasError() bool {
 // Project 返回当前部署的项目实体。
 func (j *jobRunner) Project() *biz.Project {
 	return j.project
+}
+
+// cancelTarget 拼取消审计的目标名（namespace/项目名）。
+// project 在 Validate 完成前被取消时可能为空，回退用输入字段。
+func (j *jobRunner) cancelTarget() string {
+	if j.ns != nil && j.project != nil {
+		return fmt.Sprintf("%s/%s", j.ns.Name, j.project.Name)
+	}
+	return fmt.Sprintf("%d/%s", j.input.NamespaceId, j.input.Name)
 }
 
 // PubSub 返回输入绑定的消息总线（广播 reload 等事件）。
