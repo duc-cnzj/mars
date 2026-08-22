@@ -328,10 +328,16 @@ func (repo *namespaceRepo) Show(ctx context.Context, id int) (out *biz.Namespace
 	defer func() { endSpan(span, err) }()
 	first, err := repo.data.DB().Namespace.Query().
 		WithProjects(func(query *ent.ProjectQuery) {
+			// 项目列与 List 路径保持一致：列表卡片要读 deploy_status 渲染部署状态，
+			// 漏选会把 deployStatus 落成零值（StatusUnknown）——部署成功后
+			// 前端 refreshNamespace 用 show 原地替换卡片，项目状态就"变没"了。
 			query.Select(
 				project.FieldID,
 				project.FieldName,
+				project.FieldDeployStatus,
 				project.FieldNamespaceID,
+				project.FieldCreatedAt,
+				project.FieldUpdatedAt,
 			)
 		}).
 		WithMembers().
