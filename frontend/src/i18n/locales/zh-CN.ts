@@ -342,6 +342,7 @@ export default {
     statusDeployed: '已部署',
     statusFailed: '部署失败',
     statusCanceled: '已取消',
+    deployInterrupted: '连接中断，部署已取消，请重新部署',
     tabLogs: '容器日志',
     tabShell: '命令行',
     expand: '展开',

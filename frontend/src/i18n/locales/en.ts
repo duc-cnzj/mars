@@ -345,6 +345,7 @@ export default {
     statusDeployed: 'Deployed',
     statusFailed: 'Failed',
     statusCanceled: 'Canceled',
+    deployInterrupted: 'Connection lost, deployment canceled, redeploy to retry',
     tabLogs: 'Container logs',
     tabShell: 'Shell',
     expand: 'Expand',

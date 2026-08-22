@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { toast } from '@/lib/toast'
 import { websocket } from '@/api/websocket'
 import { useWebsocket } from '@/hooks/useWebsocket'
 
@@ -46,12 +48,27 @@ async function toSlug(namespaceId: number, name: string): Promise<string> {
  * 触发 create/update 后后端在 WS 通道回投进度帧（metadata.result/percent/end）。
  */
 export function useDeployStream(namespaceId: number, name: string) {
+  const { t } = useTranslation()
   const { ready, send, subscribe } = useWebsocket()
   const [slug, setSlug] = useState('')
   const [status, setStatus] = useState<DeployStreamStatus>('idle')
   const [percent, setPercent] = useState(0)
   const [logs, setLogs] = useState<DeployLogLine[]>([])
   const [loading, setLoading] = useState(false)
+  // 断线重连（ready false→true）时若在途部署，面板不能永久停在「部署中」。
+  // 后端部署流绑定在发起连接上（conn.CloseAndClean → taskManager.StopAll 已把部署取消），
+  // 新连接无按 slug 重挂机制也收不到 end 帧——如实判为已取消并提示重部署。
+  const wasReadyRef = useRef(ready)
+
+  useEffect(() => {
+    const reconnected = !wasReadyRef.current && ready
+    wasReadyRef.current = ready
+    if (reconnected && status === 'deploying') {
+      setStatus('canceled')
+      setLoading(false)
+      toast.error(t('project.deployInterrupted'))
+    }
+  }, [ready, status, t])
 
   useEffect(() => {
     let alive = true
