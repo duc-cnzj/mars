@@ -56,9 +56,10 @@ type ProjectClient interface {
 	// 通过工作负载实时状态（Deployment/StatefulSet/DaemonSet 的 updated/available replicas）
 	// 与最新版本 pod 容器状态聚合判定，避免过渡窗口误报。
 	CheckApplyStatus(ctx context.Context, in *CheckApplyStatusRequest, opts ...grpc.CallOption) (*CheckApplyStatusResponse, error)
-	// ResourceTree 返回项目的资源拓扑树：Application → Deployment → ReplicaSet → Pod /
-	// StatefulSet / DaemonSet，以及 Service 的 selector 边。完整资源列表（区别于
-	// AllContainers 的活跃容器平铺），供拓扑图 Tab 渲染与 pod 事件驱动下的实时刷新。
+	// ResourceTree 返回项目的资源拓扑树，按访问链路分层：
+	// Application → Ingress → Service → Deployment/StatefulSet/DaemonSet → ReplicaSet → Pod。
+	// Service 无 Ingress 覆盖、workload 无 Service 覆盖时兜底直挂 Application。完整资源列表
+	// （区别于 AllContainers 的活跃容器平铺），供拓扑图 Tab 渲染与 pod 事件驱动下的实时刷新。
 	ResourceTree(ctx context.Context, in *ResourceTreeRequest, opts ...grpc.CallOption) (*ResourceTreeResponse, error)
 }
 
@@ -203,9 +204,10 @@ type ProjectServer interface {
 	// 通过工作负载实时状态（Deployment/StatefulSet/DaemonSet 的 updated/available replicas）
 	// 与最新版本 pod 容器状态聚合判定，避免过渡窗口误报。
 	CheckApplyStatus(context.Context, *CheckApplyStatusRequest) (*CheckApplyStatusResponse, error)
-	// ResourceTree 返回项目的资源拓扑树：Application → Deployment → ReplicaSet → Pod /
-	// StatefulSet / DaemonSet，以及 Service 的 selector 边。完整资源列表（区别于
-	// AllContainers 的活跃容器平铺），供拓扑图 Tab 渲染与 pod 事件驱动下的实时刷新。
+	// ResourceTree 返回项目的资源拓扑树，按访问链路分层：
+	// Application → Ingress → Service → Deployment/StatefulSet/DaemonSet → ReplicaSet → Pod。
+	// Service 无 Ingress 覆盖、workload 无 Service 覆盖时兜底直挂 Application。完整资源列表
+	// （区别于 AllContainers 的活跃容器平铺），供拓扑图 Tab 渲染与 pod 事件驱动下的实时刷新。
 	ResourceTree(context.Context, *ResourceTreeRequest) (*ResourceTreeResponse, error)
 	mustEmbedUnimplementedProjectServer()
 }

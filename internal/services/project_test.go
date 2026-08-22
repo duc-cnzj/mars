@@ -1191,6 +1191,7 @@ func Test_projectSvc_ResourceTree(t *testing.T) {
 	mocks.k8sRepo.EXPECT().ListReplicaSets("ns").Return([]*appsv1.ReplicaSet{rs}, nil)
 	mocks.k8sRepo.EXPECT().GetDeployment("ns", "demo-app").Return(dep, nil)
 	mocks.k8sRepo.EXPECT().ListServices("ns").Return(nil, nil)
+	mocks.k8sRepo.EXPECT().ListIngresses("ns").Return(nil, nil)
 
 	resp, err := svc.ResourceTree(newAdminUserCtx(), &project.ResourceTreeRequest{Id: 1})
 	assert.NoError(t, err)

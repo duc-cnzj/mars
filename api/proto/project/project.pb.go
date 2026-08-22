@@ -702,13 +702,13 @@ func (x *CheckApplyStatusResponse) GetFailures() []*ContainerFailure {
 }
 
 // ResourceTreeNode 拓扑资源树节点：kind/status 与前端拓扑渲染器对齐。
-// id 稳定唯一：application-{id} / deployment-{name} / rs-{name} / pod-{name} /
-// svc-{name} / statefulset-{name} / daemonset-{name}。
+// id 稳定唯一：application-{id} / deployment-{name} / replicaset-{name} / pod-{name} /
+// service-{name} / ingress-{name} / statefulset-{name} / daemonset-{name}。
 // old 标记滚动升级中的旧 ReplicaSet/Pod（旧版本副本），前端可据此弱化或打标签。
 type ResourceTreeNode struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	Id        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Kind      string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"` // Application | Deployment | ReplicaSet | Pod | Service | StatefulSet | DaemonSet
+	Kind      string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"` // Application | Ingress | Service | Deployment | ReplicaSet | Pod | StatefulSet | DaemonSet
 	Name      string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	Namespace string                 `protobuf:"bytes,4,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	// healthy=健康 / degraded=异常 / progressing=进行中 / unknown=未知
@@ -798,11 +798,11 @@ func (x *ResourceTreeNode) GetOld() bool {
 	return false
 }
 
-// ResourceTreeEdge 拓扑资源树边：owner=属主引用，selector=标签选择器。
+// ResourceTreeEdge 拓扑资源树边：owner=属主引用，selector=标签选择器，route=路由后端。
 type ResourceTreeEdge struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"` // owner | selector
+	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"` // owner | selector | route
 	Source        string                 `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
 	Target        string                 `protobuf:"bytes,4,opt,name=target,proto3" json:"target,omitempty"`
 	unknownFields protoimpl.UnknownFields

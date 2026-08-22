@@ -11,30 +11,34 @@ import (
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kmetatypes "k8s.io/apimachinery/pkg/types"
 )
 
 // fakeTreeK8sRepo 是 buildResourceTree 的 K8sRepo 替身，覆写资源树推导用到的全部原语
 // （ListPodsBySelectors/ListReplicaSets/GetDeployment/GetWorkloadsByManifest/ListServices/
-// GetStatefulSet/GetDaemonSet），collectWorkloadOldPods 分类 StatefulSet 旧副本用 GetStatefulSet。
+// ListIngresses/GetStatefulSet/GetDaemonSet），collectWorkloadOldPods 分类 StatefulSet
+// 旧副本用 GetStatefulSet。
 type fakeTreeK8sRepo struct {
 	K8sRepo
-	pods         []*corev1.Pod
-	listPodsErr  error
-	rss          []*appsv1.ReplicaSet
-	listRSErr    error
-	deployments  map[string]*appsv1.Deployment
-	getDepErr    error
-	manifestDeps []*appsv1.Deployment
-	services     []*corev1.Service
-	listSvcErr   error
-	statefulSets map[string]*appsv1.StatefulSet
-	daemonSets   map[string]*appsv1.DaemonSet
-	manifestSts  []*appsv1.StatefulSet
-	manifestDs   []*appsv1.DaemonSet
-	getStsErr    error
-	getDsErr     error
+	pods           []*corev1.Pod
+	listPodsErr    error
+	rss            []*appsv1.ReplicaSet
+	listRSErr      error
+	deployments    map[string]*appsv1.Deployment
+	getDepErr      error
+	manifestDeps   []*appsv1.Deployment
+	services       []*corev1.Service
+	listSvcErr     error
+	ingresses      []*networkingv1.Ingress
+	listIngressErr error
+	statefulSets   map[string]*appsv1.StatefulSet
+	daemonSets     map[string]*appsv1.DaemonSet
+	manifestSts    []*appsv1.StatefulSet
+	manifestDs     []*appsv1.DaemonSet
+	getStsErr      error
+	getDsErr       error
 }
 
 func (f *fakeTreeK8sRepo) ListPodsBySelectors(namespace string, selectors []string) ([]*corev1.Pod, error) {
@@ -58,6 +62,10 @@ func (f *fakeTreeK8sRepo) GetWorkloadsByManifest(manifests []string) ([]*appsv1.
 
 func (f *fakeTreeK8sRepo) ListServices(namespace string) ([]*corev1.Service, error) {
 	return f.services, f.listSvcErr
+}
+
+func (f *fakeTreeK8sRepo) ListIngresses(namespace string) ([]*networkingv1.Ingress, error) {
+	return f.ingresses, f.listIngressErr
 }
 
 func (f *fakeTreeK8sRepo) GetStatefulSet(namespace, name string) (*appsv1.StatefulSet, error) {
@@ -210,13 +218,14 @@ func TestBuildResourceTree_HappyPath(t *testing.T) {
 	assert.Equal(t, "healthy", got.Nodes[0].Status)
 	assert.Equal(t, types.Deploy_StatusDeployed, got.Status)
 
-	// Deployment：状态 healthy，Application→Deployment owner 边
+	// Deployment：状态 healthy，被 Service selector 覆盖挂其下（不再是 Application 子节点）
 	dep := treeNode(t, got, "deployment-demo-app")
 	if assert.NotNil(t, dep) {
 		assert.Equal(t, "Deployment", dep.Kind)
 		assert.Equal(t, "healthy", dep.Status)
 	}
-	assert.True(t, hasTreeEdge(got, "owner", "application-1", "deployment-demo-app"))
+	assert.True(t, hasTreeEdge(got, "selector", "service-demo-app-svc", "deployment-demo-app"))
+	assert.False(t, hasTreeEdge(got, "owner", "application-1", "deployment-demo-app"))
 
 	// 新/旧 RS：revision 2 为新、revision 1 标旧；各自挂在 Deployment 下
 	rsNew := treeNode(t, got, "replicaset-demo-app-8b2f4e7d")
@@ -243,13 +252,14 @@ func TestBuildResourceTree_HappyPath(t *testing.T) {
 		assert.True(t, hasTreeEdge(got, "owner", "replicaset-demo-app-7c3e9d1f5", "pod-pod-old-1"))
 	}
 
-	// StatefulSet 节点 + 旧副本 pod：sts 子树挂 Application，pod 挂 sts 下，old 标记
+	// StatefulSet 节点 + 旧副本 pod：sts 被同一 Service selector 覆盖挂其下，pod 挂 sts 下，old 标记
 	stsNode := treeNode(t, got, "statefulset-sts")
 	if assert.NotNil(t, stsNode) {
 		assert.Equal(t, "StatefulSet", stsNode.Kind)
 		assert.Equal(t, "healthy", stsNode.Status)
 	}
-	assert.True(t, hasTreeEdge(got, "owner", "application-1", "statefulset-sts"))
+	assert.True(t, hasTreeEdge(got, "selector", "service-demo-app-svc", "statefulset-sts"))
+	assert.False(t, hasTreeEdge(got, "owner", "application-1", "statefulset-sts"))
 	stsPod := treeNode(t, got, "pod-pod-sts")
 	if assert.NotNil(t, stsPod) {
 		assert.Equal(t, "true", stsPod.Labels["old"])
@@ -257,15 +267,17 @@ func TestBuildResourceTree_HappyPath(t *testing.T) {
 	}
 	assert.True(t, hasTreeEdge(got, "owner", "statefulset-sts", "pod-pod-sts"))
 
-	// Service：健康 + 到全部 4 个 pod 的 selector 边
+	// Service：健康；无 ingress 覆盖 → 兜底挂 Application，selector 边连到其覆盖的两个 workload
 	svc := treeNode(t, got, "service-demo-app-svc")
 	if assert.NotNil(t, svc) {
 		assert.Equal(t, "Service", svc.Kind)
 		assert.Equal(t, "healthy", svc.Status)
 	}
-	for _, id := range []string{"pod-pod-new-1", "pod-pod-new-2", "pod-pod-old-1", "pod-pod-sts"} {
-		assert.True(t, hasTreeEdge(got, "selector", "service-demo-app-svc", id), "缺少 selector 边: "+id)
-	}
+	assert.True(t, hasTreeEdge(got, "owner", "application-1", "service-demo-app-svc"))
+	assert.True(t, hasTreeEdge(got, "selector", "service-demo-app-svc", "deployment-demo-app"))
+	assert.True(t, hasTreeEdge(got, "selector", "service-demo-app-svc", "statefulset-sts"))
+	// 不再有 Service → pod 的直接 selector 边（pod 经 workload 链可达）
+	assert.False(t, hasTreeEdge(got, "selector", "service-demo-app-svc", "pod-pod-new-1"))
 }
 
 // TestBuildResourceTree_Degraded 覆盖容器稳定失败（CrashLoopBackOff）沿 Pod→RS→Application
@@ -451,14 +463,15 @@ func TestBuildResourceTree_StatefulSetDaemonSet(t *testing.T) {
 	assert.Equal(t, "healthy", got.Nodes[0].Status)
 	assert.Equal(t, types.Deploy_StatusDeployed, got.Status)
 
-	// StatefulSet 子树：节点 + 两个属主 pod + Application/sts 与 sts/pod 两级 owner 边
+	// StatefulSet 子树：节点 + 两个属主 pod + sts/pod owner 边；被 Service selector 覆盖挂其下
 	stsNode := treeNode(t, got, "statefulset-sts")
 	if assert.NotNil(t, stsNode) {
 		assert.Equal(t, "StatefulSet", stsNode.Kind)
 		assert.Equal(t, "healthy", stsNode.Status)
 		assert.False(t, stsNode.Old)
 	}
-	assert.True(t, hasTreeEdge(got, "owner", "application-1", "statefulset-sts"))
+	assert.True(t, hasTreeEdge(got, "selector", "service-app-svc", "statefulset-sts"))
+	assert.False(t, hasTreeEdge(got, "owner", "application-1", "statefulset-sts"))
 	for _, id := range []string{"pod-pod-sts-1", "pod-pod-sts-2"} {
 		if n := treeNode(t, got, id); assert.NotNil(t, n) {
 			assert.False(t, n.Old)
@@ -466,13 +479,14 @@ func TestBuildResourceTree_StatefulSetDaemonSet(t *testing.T) {
 		assert.True(t, hasTreeEdge(got, "owner", "statefulset-sts", id))
 	}
 
-	// DaemonSet 子树：节点 + 一个属主 pod
+	// DaemonSet 子树：节点 + 一个属主 pod；被 Service selector 覆盖挂其下
 	dsNode := treeNode(t, got, "daemonset-ds")
 	if assert.NotNil(t, dsNode) {
 		assert.Equal(t, "DaemonSet", dsNode.Kind)
 		assert.Equal(t, "healthy", dsNode.Status)
 	}
-	assert.True(t, hasTreeEdge(got, "owner", "application-1", "daemonset-ds"))
+	assert.True(t, hasTreeEdge(got, "selector", "service-app-svc", "daemonset-ds"))
+	assert.False(t, hasTreeEdge(got, "owner", "application-1", "daemonset-ds"))
 	assert.True(t, hasTreeEdge(got, "owner", "daemonset-ds", "pod-pod-ds-1"))
 
 	// 裸 pod：仍直挂 Application，无 controller 标签、不标旧
@@ -483,10 +497,13 @@ func TestBuildResourceTree_StatefulSetDaemonSet(t *testing.T) {
 	}
 	assert.True(t, hasTreeEdge(got, "owner", "application-1", "pod-pod-bare"))
 
-	// Service selector 边覆盖 sts/ds/bare 全部 4 个 pod
-	for _, id := range []string{"pod-pod-sts-1", "pod-pod-sts-2", "pod-pod-ds-1", "pod-pod-bare"} {
-		assert.True(t, hasTreeEdge(got, "selector", "service-app-svc", id), "缺少 selector 边: "+id)
-	}
+	// Service：无 ingress → 兜底挂 Application；selector 边连到 sts/ds 两个 workload；
+	// 不再有直接连 pod 的 selector 边
+	assert.True(t, hasTreeEdge(got, "owner", "application-1", "service-app-svc"))
+	assert.True(t, hasTreeEdge(got, "selector", "service-app-svc", "statefulset-sts"))
+	assert.True(t, hasTreeEdge(got, "selector", "service-app-svc", "daemonset-ds"))
+	assert.False(t, hasTreeEdge(got, "selector", "service-app-svc", "pod-pod-sts-1"))
+	assert.False(t, hasTreeEdge(got, "selector", "service-app-svc", "pod-pod-bare"))
 }
 
 // TestBuildResourceTree_StatefulSetDaemonSetNotCreated 覆盖 manifest 声明但尚未创建的
@@ -617,7 +634,7 @@ func TestBuildResourceTree_OrphanWorkloadPod(t *testing.T) {
 }
 
 // TestBuildResourceTree_Errors 覆盖资源树推导路径上的读取失败（非 NotFound）全部上抛：
-// ListReplicaSets / GetDeployment / ListServices。
+// ListReplicaSets / GetDeployment / ListServices / ListIngresses。
 func TestBuildResourceTree_Errors(t *testing.T) {
 	tests := []struct {
 		name string
@@ -634,6 +651,7 @@ func TestBuildResourceTree_Errors(t *testing.T) {
 			"api down",
 		},
 		{"ListServices", &fakeTreeK8sRepo{listSvcErr: errors.New("svc down")}, "svc down"},
+		{"ListIngresses", &fakeTreeK8sRepo{listIngressErr: errors.New("ing down")}, "ing down"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -713,6 +731,275 @@ func TestBuildResourceTree_NoWorkloadsFallback(t *testing.T) {
 	assert.Len(t, got.Nodes, 1)
 	assert.Equal(t, "healthy", got.Nodes[0].Status)
 	assert.Equal(t, types.Deploy_StatusDeployed, got.Status)
+}
+
+// TestBuildResourceTree_Ingress 覆盖 Ingress 入图：backend 命中项目 Service → owner 边挂
+// Application、route 边连到该 svc；svc 被 ingress 覆盖后不再兜底挂 Application；workload
+// 经 svc selector 边挂其下。ingress 状态沿后端 svc 传播为 healthy。
+func TestBuildResourceTree_Ingress(t *testing.T) {
+	rs := &appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "demo-app-8b2f4e7d", UID: "rs-new-uid",
+			Annotations:     map[string]string{RevisionAnnotation: "2"},
+			OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", UID: "dep-1"}},
+		},
+	}
+	pod := readyPod("pod-web", "demo-app-8b2f4e7d", "rs-new-uid")
+	k := &fakeTreeK8sRepo{
+		pods: []*corev1.Pod{pod},
+		rss:  []*appsv1.ReplicaSet{rs},
+		deployments: map[string]*appsv1.Deployment{
+			"demo-app": readyDeployment("demo-app", "dep-1"),
+		},
+		manifestDeps: []*appsv1.Deployment{{ObjectMeta: metav1.ObjectMeta{Name: "demo-app"}}},
+		services: []*corev1.Service{{
+			ObjectMeta: metav1.ObjectMeta{Name: "demo-svc", Namespace: "ns"},
+			Spec:       corev1.ServiceSpec{Selector: map[string]string{"app": "demo"}},
+		}},
+		ingresses: []*networkingv1.Ingress{{
+			ObjectMeta: metav1.ObjectMeta{Name: "demo-ingress", Namespace: "ns"},
+			Spec: networkingv1.IngressSpec{
+				Rules: []networkingv1.IngressRule{{
+					Host: "a.example.com",
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{{
+								Path:    "/",
+								Backend: networkingv1.IngressBackend{Service: &networkingv1.IngressServiceBackend{Name: "demo-svc"}},
+							}},
+						},
+					},
+				}},
+			},
+		}},
+	}
+	proj := &Project{
+		ID: 1, Name: "demo-app", Namespace: &Namespace{Name: "ns"},
+		PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
+		DeployStatus: types.Deploy_StatusDeployed,
+	}
+	got, err := buildResourceTree(context.TODO(), k, proj)
+	assert.NoError(t, err)
+
+	// Ingress 节点：healthy，owner 挂 Application，route 连到 demo-svc
+	ing := treeNode(t, got, "ingress-demo-ingress")
+	if assert.NotNil(t, ing) {
+		assert.Equal(t, "Ingress", ing.Kind)
+		assert.Equal(t, "healthy", ing.Status)
+	}
+	assert.True(t, hasTreeEdge(got, "owner", "application-1", "ingress-demo-ingress"))
+	assert.True(t, hasTreeEdge(got, "route", "ingress-demo-ingress", "service-demo-svc"))
+
+	// svc 被 ingress 覆盖 → 不再兜底挂 Application；workload 挂 svc 下
+	svc := treeNode(t, got, "service-demo-svc")
+	if assert.NotNil(t, svc) {
+		assert.Equal(t, "Service", svc.Kind)
+		assert.Equal(t, "healthy", svc.Status)
+	}
+	assert.False(t, hasTreeEdge(got, "owner", "application-1", "service-demo-svc"))
+	assert.True(t, hasTreeEdge(got, "selector", "service-demo-svc", "deployment-demo-app"))
+	assert.False(t, hasTreeEdge(got, "owner", "application-1", "deployment-demo-app"))
+
+	// 整体聚合：全健康 → Deployed
+	assert.Equal(t, types.Deploy_StatusDeployed, got.Status)
+}
+
+// TestBuildResourceTree_IngressNoMatch 覆盖 backend 不指向项目 Service 的 Ingress 被剔除：
+// 不入图、无 route 边；项目 svc 因无 ingress 覆盖兜底挂 Application。
+func TestBuildResourceTree_IngressNoMatch(t *testing.T) {
+	rs := &appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "demo-app-8b2f4e7d", UID: "rs-uid",
+			Annotations:     map[string]string{RevisionAnnotation: "2"},
+			OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", UID: "dep-1"}},
+		},
+	}
+	pod := readyPod("pod-web", "demo-app-8b2f4e7d", "rs-uid")
+	k := &fakeTreeK8sRepo{
+		pods: []*corev1.Pod{pod},
+		rss:  []*appsv1.ReplicaSet{rs},
+		deployments: map[string]*appsv1.Deployment{
+			"demo-app": readyDeployment("demo-app", "dep-1"),
+		},
+		manifestDeps: []*appsv1.Deployment{{ObjectMeta: metav1.ObjectMeta{Name: "demo-app"}}},
+		services: []*corev1.Service{{
+			ObjectMeta: metav1.ObjectMeta{Name: "demo-svc", Namespace: "ns"},
+			Spec:       corev1.ServiceSpec{Selector: map[string]string{"app": "demo"}},
+		}},
+		ingresses: []*networkingv1.Ingress{{
+			ObjectMeta: metav1.ObjectMeta{Name: "other-ingress", Namespace: "ns"},
+			Spec: networkingv1.IngressSpec{
+				Rules: []networkingv1.IngressRule{{
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{{
+								Backend: networkingv1.IngressBackend{Service: &networkingv1.IngressServiceBackend{Name: "other-svc"}},
+							}},
+						},
+					},
+				}},
+			},
+		}},
+	}
+	proj := &Project{
+		ID: 1, Name: "demo-app", Namespace: &Namespace{Name: "ns"},
+		PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
+		DeployStatus: types.Deploy_StatusDeployed,
+	}
+	got, err := buildResourceTree(context.TODO(), k, proj)
+	assert.NoError(t, err)
+
+	assert.Nil(t, treeNode(t, got, "ingress-other-ingress"))
+	// 项目 svc 无 ingress 覆盖 → 兜底挂 Application；workload 挂 svc 下
+	assert.True(t, hasTreeEdge(got, "owner", "application-1", "service-demo-svc"))
+	assert.True(t, hasTreeEdge(got, "selector", "service-demo-svc", "deployment-demo-app"))
+}
+
+// TestBuildResourceTree_IngressMultiParent 覆盖多对多：两个 ingress 路由到同一 svc（route 双父边）、
+// 一个 svc 同时选中两个 deployment（selector 双父边）。
+func TestBuildResourceTree_IngressMultiParent(t *testing.T) {
+	rsA := &appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "app-a-8b2f4e7d", UID: "rs-a-uid",
+			Annotations:     map[string]string{RevisionAnnotation: "2"},
+			OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", UID: "dep-a"}},
+		},
+	}
+	rsB := &appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "app-b-8b2f4e7d", UID: "rs-b-uid",
+			Annotations:     map[string]string{RevisionAnnotation: "2"},
+			OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", UID: "dep-b"}},
+		},
+	}
+	podA := readyPod("pod-a", "app-a-8b2f4e7d", "rs-a-uid")
+	podB := readyPod("pod-b", "app-b-8b2f4e7d", "rs-b-uid")
+	k := &fakeTreeK8sRepo{
+		pods: []*corev1.Pod{podA, podB},
+		rss:  []*appsv1.ReplicaSet{rsA, rsB},
+		deployments: map[string]*appsv1.Deployment{
+			"app-a": readyDeployment("app-a", "dep-a"),
+			"app-b": readyDeployment("app-b", "dep-b"),
+		},
+		manifestDeps: []*appsv1.Deployment{
+			{ObjectMeta: metav1.ObjectMeta{Name: "app-a"}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "app-b"}},
+		},
+		services: []*corev1.Service{{
+			ObjectMeta: metav1.ObjectMeta{Name: "demo-svc", Namespace: "ns"},
+			Spec:       corev1.ServiceSpec{Selector: map[string]string{"app": "demo"}},
+		}},
+		ingresses: []*networkingv1.Ingress{
+			{ObjectMeta: metav1.ObjectMeta{Name: "ing-a", Namespace: "ns"},
+				Spec: networkingv1.IngressSpec{Rules: []networkingv1.IngressRule{{IngressRuleValue: networkingv1.IngressRuleValue{HTTP: &networkingv1.HTTPIngressRuleValue{Paths: []networkingv1.HTTPIngressPath{{Backend: networkingv1.IngressBackend{Service: &networkingv1.IngressServiceBackend{Name: "demo-svc"}}}}}}}}}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "ing-b", Namespace: "ns"},
+				Spec: networkingv1.IngressSpec{Rules: []networkingv1.IngressRule{{IngressRuleValue: networkingv1.IngressRuleValue{HTTP: &networkingv1.HTTPIngressRuleValue{Paths: []networkingv1.HTTPIngressPath{{Backend: networkingv1.IngressBackend{Service: &networkingv1.IngressServiceBackend{Name: "demo-svc"}}}}}}}}}},
+		},
+	}
+	proj := &Project{
+		ID: 1, Name: "demo-app", Namespace: &Namespace{Name: "ns"},
+		PodSelectors: []string{"app=demo"}, Manifest: []string{"a.yaml", "b.yaml"},
+		DeployStatus: types.Deploy_StatusDeployed,
+	}
+	got, err := buildResourceTree(context.TODO(), k, proj)
+	assert.NoError(t, err)
+
+	// 两个 ingress 都 route 到同一 svc（svc 多父）
+	for _, ing := range []string{"ingress-ing-a", "ingress-ing-b"} {
+		assert.True(t, hasTreeEdge(got, "owner", "application-1", ing), "缺少 owner 边: "+ing)
+		assert.True(t, hasTreeEdge(got, "route", ing, "service-demo-svc"), "缺少 route 边: "+ing)
+	}
+	assert.False(t, hasTreeEdge(got, "owner", "application-1", "service-demo-svc"))
+	// 一个 svc 同时选中两个 deployment（workload 多父）
+	for _, dep := range []string{"deployment-app-a", "deployment-app-b"} {
+		assert.True(t, hasTreeEdge(got, "selector", "service-demo-svc", dep), "缺少 selector 边: "+dep)
+		assert.False(t, hasTreeEdge(got, "owner", "application-1", dep))
+	}
+}
+
+// Test_ingressBackendServiceNames 覆盖 backend 提取：默认 backend + 各 rule path backend，
+// 相同 svc 去重，非 Service backend（Resource 引用）跳过。
+func Test_ingressBackendServiceNames(t *testing.T) {
+	ing := &networkingv1.Ingress{
+		Spec: networkingv1.IngressSpec{
+			DefaultBackend: &networkingv1.IngressBackend{Service: &networkingv1.IngressServiceBackend{Name: "default-svc"}},
+			Rules: []networkingv1.IngressRule{
+				{
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{
+								{Backend: networkingv1.IngressBackend{Service: &networkingv1.IngressServiceBackend{Name: "api-svc"}}},
+								{Backend: networkingv1.IngressBackend{Service: &networkingv1.IngressServiceBackend{Name: "api-svc"}}}, // 去重
+								{Backend: networkingv1.IngressBackend{}}, // 非 Service backend，跳过
+							},
+						},
+					},
+				},
+				{Host: "plain.example.com"}, // 无 HTTP 字段的 rule，跳过
+			},
+		},
+	}
+	assert.ElementsMatch(t, []string{"default-svc", "api-svc"}, ingressBackendServiceNames(ing))
+	assert.Empty(t, ingressBackendServiceNames(&networkingv1.Ingress{}))
+}
+
+// Test_ingressStatus 覆盖 Ingress 状态聚合：任一 degraded→degraded、任一
+// progressing→progressing、全 healthy→healthy。
+func Test_ingressStatus(t *testing.T) {
+	assert.Equal(t, "healthy", ingressStatus([]string{"healthy", "healthy"}))
+	assert.Equal(t, "degraded", ingressStatus([]string{"healthy", "degraded"}))
+	assert.Equal(t, "progressing", ingressStatus([]string{"healthy", "progressing"}))
+}
+
+// Test_deploymentOwnerUID 覆盖 RS 属主提取：有 Deployment 属主返回其 UID；
+// 无属主或属主为其他控制器（CronJob 等）返回空 UID，用于筛掉非本项目 Deployment 的 RS。
+func Test_deploymentOwnerUID(t *testing.T) {
+	depRS := &appsv1.ReplicaSet{ObjectMeta: metav1.ObjectMeta{OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", UID: "dep-1"}}}}
+	assert.Equal(t, kmetatypes.UID("dep-1"), deploymentOwnerUID(depRS))
+	otherRS := &appsv1.ReplicaSet{ObjectMeta: metav1.ObjectMeta{OwnerReferences: []metav1.OwnerReference{{Kind: "CronJob", UID: "cj-1"}}}}
+	assert.Empty(t, deploymentOwnerUID(otherRS))
+	assert.Empty(t, deploymentOwnerUID(&appsv1.ReplicaSet{}))
+}
+
+// TestBuildResourceTree_WorkloadMultiSvc 覆盖反向多父：一个 workload 同时被多个 svc
+// 选中（多条 selector 边）；两个 svc 均无 ingress 覆盖 → 兜底 owner 挂 Application。
+func TestBuildResourceTree_WorkloadMultiSvc(t *testing.T) {
+	rs := &appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "demo-app-8b2f4e7d", UID: "rs-new-uid",
+			Annotations:     map[string]string{RevisionAnnotation: "2"},
+			OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", UID: "dep-1"}},
+		},
+	}
+	pod := readyPod("pod-web", "demo-app-8b2f4e7d", "rs-new-uid")
+	k := &fakeTreeK8sRepo{
+		pods: []*corev1.Pod{pod},
+		rss:  []*appsv1.ReplicaSet{rs},
+		deployments: map[string]*appsv1.Deployment{
+			"demo-app": readyDeployment("demo-app", "dep-1"),
+		},
+		manifestDeps: []*appsv1.Deployment{{ObjectMeta: metav1.ObjectMeta{Name: "demo-app"}}},
+		services: []*corev1.Service{
+			{ObjectMeta: metav1.ObjectMeta{Name: "svc-a", Namespace: "ns"}, Spec: corev1.ServiceSpec{Selector: map[string]string{"app": "demo"}}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "svc-b", Namespace: "ns"}, Spec: corev1.ServiceSpec{Selector: map[string]string{"app": "demo"}}},
+		},
+	}
+	proj := &Project{
+		ID: 1, Name: "demo-app", Namespace: &Namespace{Name: "ns"},
+		PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
+		DeployStatus: types.Deploy_StatusDeployed,
+	}
+	got, err := buildResourceTree(context.TODO(), k, proj)
+	assert.NoError(t, err)
+
+	// workload 被两个 svc 同时覆盖 → 两条 selector 边，不再 owner 挂 app
+	for _, svc := range []string{"service-svc-a", "service-svc-b"} {
+		assert.True(t, hasTreeEdge(got, "selector", svc, "deployment-demo-app"), "缺少 selector 边: "+svc)
+	}
+	assert.False(t, hasTreeEdge(got, "owner", "application-1", "deployment-demo-app"))
+	// 两个 svc 均无 ingress → 兜底 owner 挂 Application
+	assert.True(t, hasTreeEdge(got, "owner", "application-1", "service-svc-a"))
+	assert.True(t, hasTreeEdge(got, "owner", "application-1", "service-svc-b"))
 }
 
 // Test_aggregate 覆盖整体状态聚合的各级优先级：无子节点→Unknown、degraded→Failed、

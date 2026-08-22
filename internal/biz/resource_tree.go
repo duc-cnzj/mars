@@ -10,6 +10,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	kmetatypes "k8s.io/apimachinery/pkg/types"
 )
 
@@ -21,7 +22,7 @@ type ResourceTree struct {
 }
 
 // ResourceTreeNode 是拓扑树节点。kind/status 与前端拓扑渲染器对齐:
-// kind ∈ Application|Deployment|ReplicaSet|Pod|Service|StatefulSet|DaemonSet,
+// kind ∈ Application|Ingress|Service|Deployment|ReplicaSet|Pod|StatefulSet|DaemonSet,
 // status ∈ healthy|degraded|progressing|unknown。
 // Old 标记滚动升级中的旧版本 ReplicaSet/Pod,前端可据此弱化或打标签。
 type ResourceTreeNode struct {
@@ -34,7 +35,7 @@ type ResourceTreeNode struct {
 	Old       bool
 }
 
-// ResourceTreeEdge 是拓扑树边:Type=owner 属主引用 / selector 标签选择器。
+// ResourceTreeEdge 是拓扑树边:Type=owner 属主引用 / selector 标签选择器 / route 路由后端。
 type ResourceTreeEdge struct {
 	ID     string
 	Type   string
@@ -42,16 +43,19 @@ type ResourceTreeEdge struct {
 	Target string
 }
 
-// buildResourceTree 构建项目资源拓扑树:Application → Deployment → ReplicaSet → Pod /
-// StatefulSet / DaemonSet,以及 Service 的 selector 边。与 AllContainers 一致:
-// 不裁剪 workload 类型(sts/ds 完整入图),且剔除 Failed 阶段 pod(视为非活跃资源)。
+// buildResourceTree 构建项目资源拓扑树，按访问链路分层：
+// Application → Ingress → Service → Deployment/StatefulSet/DaemonSet → ReplicaSet → Pod。
 //
-// Deployment/StatefulSet/DaemonSet 以 manifest 声明的名字为准逐个读实时对象
-// (拿 UID 与滚动状态,未创建占位 progressing);
-// ReplicaSet 从命名空间列表里筛属主是本项目 Deployment 的,按 revision 注解识别旧版本;
-// pod 按其属主归到对应 workload 下:RS 属主归 Deployment 子树,sts/ds 属主归其子树
-// (old 复用 collectWorkloadOldPods 的 hash 判定),其余裸 pod 直挂 Application;
-// Service 用 selector 与项目 pod labels 的交集判定归属。
+// Ingress 从命名空间列表筛 backend 命中项目 Service 的（route 边连到该 svc，
+// backend 不指向项目 svc 的不入图）；Service 用 selector 与项目 pod labels 的交集
+// 判定归属，并据此覆盖其下的 workload；workload（deploy/sts/ds）挂在覆盖它的
+// Service 下，无 Service 覆盖时兜底直挂 Application；无 Ingress 覆盖的 Service
+// 同样兜底直挂
+// Application。ReplicaSet 从命名空间列表里筛属主是本项目 Deployment 的，按 revision
+// 注解识别旧版本；pod 按其属主归到对应 workload 下（RS 属主归 Deployment 子树，
+// sts/ds 属主归其子树，old 复用 collectWorkloadOldPods 的 hash 判定），其余裸 pod
+// 直挂 Application。与 AllContainers 一致：不裁剪 workload 类型，且剔除 Failed 阶段
+// pod（视为非活跃资源）。
 func buildResourceTree(ctx context.Context, k8sRepo K8sRepo, proj *Project) (*ResourceTree, error) {
 	ns := proj.Namespace.Name
 	appID := "application-" + strconv.Itoa(proj.ID)
@@ -79,7 +83,11 @@ func buildResourceTree(ctx context.Context, k8sRepo K8sRepo, proj *Project) (*Re
 		return nil, err
 	}
 
-	// 1. Deployment 节点:按 manifest 名字读实时对象判滚动状态,并收 UID 供 RS 筛选。
+	// podWorkload 记录 pod → 属主 workload 节点 id（无属主 workload 的裸 pod 不在其中），
+	// 供 Service selector 覆盖 workload 的判定。
+	podWorkload := make(map[string]string)
+
+	// 1. Deployment 节点：按 manifest 名字读实时对象判滚动状态（父边延后到 svc 覆盖确定后挂载）。
 	//    尚未创建(部署刚发起)时占位为 progressing 节点。
 	depByUID := make(map[kmetatypes.UID]*appsv1.Deployment)
 	depIDByUID := make(map[kmetatypes.UID]string)
@@ -88,7 +96,6 @@ func buildResourceTree(ctx context.Context, k8sRepo K8sRepo, proj *Project) (*Re
 		if err != nil {
 			if errs.IsNotFound(err) {
 				tree.addNode(ns, "Deployment", wl.Name, "progressing", nil, false)
-				tree.addEdge("owner", appID, kindID("Deployment", wl.Name))
 				continue
 			}
 			return nil, err
@@ -97,28 +104,28 @@ func buildResourceTree(ctx context.Context, k8sRepo K8sRepo, proj *Project) (*Re
 		depIDByUID[live.UID] = kindID("Deployment", live.Name)
 		st, _, _ := judgeDeploymentRollout(live, rss, pods)
 		tree.addNode(ns, "Deployment", live.Name, deployStatusString(st), nil, false)
-		tree.addEdge("owner", appID, kindID("Deployment", live.Name))
 	}
 
-	// 2. StatefulSet / DaemonSet 节点(与 Deployment 同级挂 Application):与 AllContainers
-	//    一致不做类型裁剪,sts/ds pod 完整入图。未创建占位 progressing;属主 pod 聚合到其下
-	//    (old 标记复用 collectWorkloadOldPods 的 hash 判定),聚合过的 pod 不再直挂 Application。
+	// 2. StatefulSet / DaemonSet 节点与属主 pod 子树（父边延后）：与 AllContainers 一致
+	//    不做类型裁剪，sts/ds pod 完整入图。未创建占位 progressing；old 标记复用
+	//    collectWorkloadOldPods 的 hash 判定。
 	oldPodNames := collectWorkloadOldPods(k8sRepo, pods)
-	ownedWorkloadPods := make(map[string]struct{})
+	ownedWorkloadPods := make(map[string]struct{}) // 已归入 sts/ds 子树的 pod，避免重复直挂 Application
 	for _, wl := range statefulSets {
 		live, err := k8sRepo.GetStatefulSet(ns, wl.Name)
 		if err != nil {
 			if errs.IsNotFound(err) {
 				tree.addNode(ns, "StatefulSet", wl.Name, "progressing", nil, false)
-				tree.addEdge("owner", appID, kindID("StatefulSet", wl.Name))
 				continue
 			}
 			return nil, err
 		}
 		owned := podsOwnedBy(pods, live.UID)
 		st, _, _ := judgeStatefulSetRollout(live, owned)
-		for name := range tree.addWorkloadSubtree(ns, appID, "StatefulSet", live.Name, owned, oldPodNames, st) {
-			ownedWorkloadPods[name] = struct{}{}
+		wkID := tree.addWorkloadSubtree(ns, "StatefulSet", live.Name, owned, oldPodNames, st)
+		for _, p := range owned {
+			podWorkload[p.Name] = wkID
+			ownedWorkloadPods[p.Name] = struct{}{}
 		}
 	}
 	for _, wl := range daemonSets {
@@ -126,29 +133,23 @@ func buildResourceTree(ctx context.Context, k8sRepo K8sRepo, proj *Project) (*Re
 		if err != nil {
 			if errs.IsNotFound(err) {
 				tree.addNode(ns, "DaemonSet", wl.Name, "progressing", nil, false)
-				tree.addEdge("owner", appID, kindID("DaemonSet", wl.Name))
 				continue
 			}
 			return nil, err
 		}
 		owned := podsOwnedBy(pods, live.UID)
 		st, _, _ := judgeDaemonSetRollout(live, owned)
-		for name := range tree.addWorkloadSubtree(ns, appID, "DaemonSet", live.Name, owned, oldPodNames, st) {
-			ownedWorkloadPods[name] = struct{}{}
+		wkID := tree.addWorkloadSubtree(ns, "DaemonSet", live.Name, owned, oldPodNames, st)
+		for _, p := range owned {
+			podWorkload[p.Name] = wkID
+			ownedWorkloadPods[p.Name] = struct{}{}
 		}
 	}
 
-	// 3. ReplicaSet:筛属主为本项目 Deployment 的 RS,按 revision 标旧,聚合其 pod。
+	// 3. ReplicaSet：筛属主为本项目 Deployment 的 RS，按 revision 标旧，聚合其 pod。
 	rsByUID := make(map[kmetatypes.UID]*appsv1.ReplicaSet)
 	for _, rs := range rss {
-		var ownerUID kmetatypes.UID
-		for _, re := range rs.OwnerReferences {
-			if re.Kind == "Deployment" {
-				ownerUID = re.UID
-				break
-			}
-		}
-		if _, ok := depByUID[ownerUID]; !ok {
+		if _, ok := depByUID[deploymentOwnerUID(rs)]; !ok {
 			continue // 非本项目 Deployment 的 RS
 		}
 		rsByUID[rs.UID] = rs
@@ -165,7 +166,8 @@ func buildResourceTree(ctx context.Context, k8sRepo K8sRepo, proj *Project) (*Re
 		}
 	}
 
-	// pod 归类:属项目 RS → 聚合到 RS;属 sts/ds → 已在其子树;否则直挂 Application
+	// pod 归类:属项目 RS → 聚合到 RS 并记录属主 Deployment；属 sts/ds → 已在其子树；
+	// 否则裸 pod 直挂 Application（controller 打标，old 标记 hash 判定仍生效）。
 	rsAgg := make(map[kmetatypes.UID][]*corev1.Pod)
 	for _, pod := range pods {
 		var rsUID kmetatypes.UID
@@ -178,8 +180,11 @@ func buildResourceTree(ctx context.Context, k8sRepo K8sRepo, proj *Project) (*Re
 			// 非 RS 属主(sts/ds/裸 pod)记录其控制者,直挂 Application 时打标签
 			controller = strings.ToLower(ref.Kind) + "/" + ref.Name
 		}
-		if _, ok := rsByUID[rsUID]; ok {
+		if rs, ok := rsByUID[rsUID]; ok {
 			rsAgg[rsUID] = append(rsAgg[rsUID], pod)
+			if depID, ok := depIDByUID[deploymentOwnerUID(rs)]; ok {
+				podWorkload[pod.Name] = depID
+			}
 			continue
 		}
 		if _, ok := ownedWorkloadPods[pod.Name]; ok {
@@ -209,16 +214,11 @@ func buildResourceTree(ctx context.Context, k8sRepo K8sRepo, proj *Project) (*Re
 	for _, name := range rsNames {
 		rs := rsByName[name]
 		rsID := kindID("ReplicaSet", name)
-		var depUID kmetatypes.UID
-		for _, re := range rs.OwnerReferences {
-			if re.Kind == "Deployment" {
-				depUID = re.UID
-				break
-			}
-		}
+		depUID := deploymentOwnerUID(rs)
+		depID := depIDByUID[depUID]
 		old := latestRev[depUID] > 0 && revisionOf(rs) < latestRev[depUID]
 		tree.addNode(ns, "ReplicaSet", name, rsStatus(rsAgg[rs.UID]), nil, old)
-		tree.addEdge("owner", depIDByUID[depUID], rsID)
+		tree.addEdge("owner", depID, rsID)
 		for _, pod := range sortPods(rsAgg[rs.UID]) {
 			podID := kindID("Pod", pod.Name)
 			tree.addNode(ns, "Pod", pod.Name, podStatus(pod), podLabels(pod, old, ""), old)
@@ -226,13 +226,15 @@ func buildResourceTree(ctx context.Context, k8sRepo K8sRepo, proj *Project) (*Re
 		}
 	}
 
-	// 4. Service:selector 与项目 pod labels 有交集才算本项目服务,按名排序输出。
+	// 4. Service：selector 与项目 pod labels 有交集才算项目服务；同时算出它覆盖的
+	//    workload（selector 命中的 pod 归属哪个 workload 节点）。
 	services, err := k8sRepo.ListServices(ns)
 	if err != nil {
 		return nil, err
 	}
 	var svcNames []string
-	svcMatched := make(map[string][]*corev1.Pod)
+	svcMatched := make(map[string][]*corev1.Pod) // svc 名 → 命中的项目 pod
+	svcWorkloads := make(map[string][]string)    // svc 名 → 覆盖的 workload 节点 id（按 id 排序）
 	for _, svc := range services {
 		if len(svc.Spec.Selector) == 0 {
 			continue
@@ -248,18 +250,102 @@ func buildResourceTree(ctx context.Context, k8sRepo K8sRepo, proj *Project) (*Re
 		}
 		svcNames = append(svcNames, svc.Name)
 		svcMatched[svc.Name] = matched
+		covered := make(map[string]struct{})
+		for _, pod := range matched {
+			if wkID, ok := podWorkload[pod.Name]; ok {
+				covered[wkID] = struct{}{}
+			}
+		}
+		ids := make([]string, 0, len(covered))
+		for id := range covered {
+			ids = append(ids, id)
+		}
+		sort.Strings(ids)
+		svcWorkloads[svc.Name] = ids
 	}
 	sort.Strings(svcNames)
+
+	// 5. Ingress：backend 命中项目 Service 才算项目 ingress（route 边连到该 svc）。
+	ingresses, err := k8sRepo.ListIngresses(ns)
+	if err != nil {
+		return nil, err
+	}
+	var ingressNames []string
+	ingressSvc := make(map[string][]string) // ingress 名 → backend 命中的 svc 名
+	for _, ing := range ingresses {
+		var covered []string
+		for _, svcName := range ingressBackendServiceNames(ing) {
+			if _, ok := svcMatched[svcName]; ok {
+				covered = append(covered, svcName)
+			}
+		}
+		if len(covered) == 0 {
+			continue // backend 不指向项目 svc 的 ingress 不入图
+		}
+		ingressNames = append(ingressNames, ing.Name)
+		ingressSvc[ing.Name] = covered
+	}
+	sort.Strings(ingressNames)
+
+	// 6. 挂父边：Ingress 恒挂 Application；Service 有 ingress 覆盖走 route 边否则兜底挂
+	//    Application；workload 有 svc 覆盖走 selector 边否则兜底挂 Application。
+	ingressCoveredSvc := make(map[string]struct{})
+	for _, svcs := range ingressSvc {
+		for _, svcName := range svcs {
+			ingressCoveredSvc[svcName] = struct{}{}
+		}
+	}
+	workloadSvcs := make(map[string][]string)
+	for svcName, ids := range svcWorkloads {
+		for _, id := range ids {
+			workloadSvcs[id] = append(workloadSvcs[id], svcName)
+		}
+	}
+	for id := range workloadSvcs {
+		sort.Strings(workloadSvcs[id])
+	}
+
+	for _, name := range ingressNames {
+		ingID := kindID("Ingress", name)
+		var statuses []string
+		for _, svcName := range ingressSvc[name] {
+			statuses = append(statuses, serviceStatus(svcMatched[svcName]))
+		}
+		tree.addNode(ns, "Ingress", name, ingressStatus(statuses), nil, false)
+		tree.addEdge("owner", appID, ingID)
+		for _, svcName := range ingressSvc[name] {
+			tree.addEdge("route", ingID, kindID("Service", svcName))
+		}
+	}
 	for _, name := range svcNames {
-		svcID := kindID("Service", name)
 		tree.addNode(ns, "Service", name, serviceStatus(svcMatched[name]), nil, false)
-		for _, pod := range sortPods(svcMatched[name]) {
-			tree.addEdge("selector", svcID, kindID("Pod", pod.Name))
+		if _, ok := ingressCoveredSvc[name]; ok {
+			continue // route 边已由覆盖它的 ingress 挂出
+		}
+		tree.addEdge("owner", appID, kindID("Service", name))
+	}
+	// workload 父边按节点 id 排序保证确定性输出
+	var workloadIDs []string
+	for _, n := range tree.Nodes {
+		switch n.Kind {
+		case "Deployment", "StatefulSet", "DaemonSet":
+			workloadIDs = append(workloadIDs, n.ID)
+		}
+	}
+	sort.Strings(workloadIDs)
+	for _, id := range workloadIDs {
+		svcs := workloadSvcs[id]
+		if len(svcs) == 0 {
+			tree.addEdge("owner", appID, id)
+			continue
+		}
+		for _, svcName := range svcs {
+			tree.addEdge("selector", kindID("Service", svcName), id)
 		}
 	}
 
-	// 5. 聚合整体状态:任一 degraded→Failed,任一 progressing→Deploying,全健康→Deployed。
-	//    无任何工作负载时回退项目记录的部署状态(避免新项目误报 unknown)。
+	// 7. 聚合整体状态:任一 degraded→Failed,任一 progressing→Deploying,全健康→Deployed。
+	//    无任何资源时回退项目记录的部署状态(避免新项目误报 unknown)。
 	tree.Status = tree.aggregate()
 	if len(tree.Nodes) == 1 {
 		tree.Status = proj.DeployStatus
@@ -281,29 +367,65 @@ func (t *ResourceTree) addEdge(typ, source, target string) {
 	t.Edges = append(t.Edges, &ResourceTreeEdge{ID: typ + "-" + source + "-" + target, Type: typ, Source: source, Target: target})
 }
 
-// addWorkloadSubtree 为单个 StatefulSet/DaemonSet 建节点并聚合其属主 pod:
+// addWorkloadSubtree 为单个 StatefulSet/DaemonSet 建节点并聚合其属主 pod：
 // workload 节点状态由调用方传入(复用 judge 滚动判定),owned 是其属主 pod
 // (已按 UID 过滤);pod 挂 workload 下并建 owner 边,controller 标签省略
-// (属主关系由边表达)。返回被聚合的 pod 名集合,调用方据此避免重复直挂 Application。
-func (t *ResourceTree) addWorkloadSubtree(ns, appID, kind, name string, owned []*corev1.Pod, oldPodNames map[string]struct{}, status types.Deploy) map[string]struct{} {
+// (属主关系由边表达)。返回 workload 节点 id；父边(svc selector / app owner)
+// 由调用方在 svc 覆盖确定后统一挂载。
+func (t *ResourceTree) addWorkloadSubtree(ns, kind, name string, owned []*corev1.Pod, oldPodNames map[string]struct{}, status types.Deploy) string {
+	wkID := kindID(kind, name)
 	t.addNode(ns, kind, name, deployStatusString(status), nil, false)
-	t.addEdge("owner", appID, kindID(kind, name))
-	names := make(map[string]struct{}, len(owned))
 	for _, pod := range sortPods(owned) {
 		old := false
 		if _, ok := oldPodNames[pod.Name]; ok {
 			old = true
 		}
 		t.addNode(ns, "Pod", pod.Name, podStatus(pod), podLabels(pod, old, ""), old)
-		t.addEdge("owner", kindID(kind, name), kindID("Pod", pod.Name))
-		names[pod.Name] = struct{}{}
+		t.addEdge("owner", wkID, kindID("Pod", pod.Name))
 	}
-	return names
+	return wkID
 }
 
 // kindID 由资源 kind 与名称推导节点 id(全小写 + 连字符,如 deployment-demo-app)。
 func kindID(kind, name string) string {
 	return strings.ToLower(kind) + "-" + name
+}
+
+// deploymentOwnerUID 返回 ReplicaSet 属主 Deployment 的 UID；无 Deployment 属主时返回空 UID。
+func deploymentOwnerUID(rs *appsv1.ReplicaSet) kmetatypes.UID {
+	for _, re := range rs.OwnerReferences {
+		if re.Kind == "Deployment" {
+			return re.UID
+		}
+	}
+	return ""
+}
+
+// ingressBackendServiceNames 提取 Ingress 全部 backend 引用的 Service 名
+// （默认 backend + 各 rule 的 path backend，去重），供 route 边与项目归属判定。
+func ingressBackendServiceNames(ing *networkingv1.Ingress) []string {
+	seen := make(map[string]struct{})
+	var names []string
+	add := func(b *networkingv1.IngressBackend) {
+		if b == nil || b.Service == nil {
+			return
+		}
+		if _, ok := seen[b.Service.Name]; ok {
+			return
+		}
+		seen[b.Service.Name] = struct{}{}
+		names = append(names, b.Service.Name)
+	}
+	add(ing.Spec.DefaultBackend)
+	for _, rule := range ing.Spec.Rules {
+		if rule.HTTP == nil {
+			continue
+		}
+		for _, path := range rule.HTTP.Paths {
+			add(&path.Backend)
+		}
+	}
+	return names
 }
 
 // aggregate 聚合非根节点状态为整体部署判定:任一 degraded→Failed,任一
@@ -374,6 +496,29 @@ func serviceStatus(pods []*corev1.Pod) string {
 		return "degraded"
 	default:
 		return "progressing"
+	}
+}
+
+// ingressStatus 由后端 svc 状态聚合 Ingress 状态:任一 degraded→degraded,任一
+// progressing→progressing,全 healthy→healthy。ingress 仅在覆盖项目 svc 时入图,
+// 因此不会出现无后端的情况。
+func ingressStatus(statuses []string) string {
+	degraded, progressing := false, false
+	for _, s := range statuses {
+		switch s {
+		case "degraded":
+			degraded = true
+		case "progressing":
+			progressing = true
+		}
+	}
+	switch {
+	case degraded:
+		return "degraded"
+	case progressing:
+		return "progressing"
+	default:
+		return "healthy"
 	}
 }
 

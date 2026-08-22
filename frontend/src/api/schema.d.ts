@@ -921,9 +921,10 @@ export interface paths {
         };
         /**
          * 获取项目资源拓扑树
-         * @description ResourceTree 返回项目的资源拓扑树：Application → Deployment → ReplicaSet → Pod /
-         *      StatefulSet / DaemonSet，以及 Service 的 selector 边。完整资源列表（区别于
-         *      AllContainers 的活跃容器平铺），供拓扑图 Tab 渲染与 pod 事件驱动下的实时刷新。
+         * @description ResourceTree 返回项目的资源拓扑树，按访问链路分层：
+         *      Application → Ingress → Service → Deployment/StatefulSet/DaemonSet → ReplicaSet → Pod。
+         *      Service 无 Ingress 覆盖、workload 无 Service 覆盖时兜底直挂 Application。完整资源列表
+         *      （区别于 AllContainers 的活跃容器平铺），供拓扑图 Tab 渲染与 pod 事件驱动下的实时刷新。
          */
         get: operations["Project_ResourceTree"];
         put?: never;
@@ -1511,7 +1512,7 @@ export interface components {
             cpu: string;
             memory: string;
         };
-        /** @description ResourceTreeEdge 拓扑资源树边：owner=属主引用，selector=标签选择器。 */
+        /** @description ResourceTreeEdge 拓扑资源树边：owner=属主引用，selector=标签选择器，route=路由后端。 */
         "project.ResourceTreeEdge": {
             id: string;
             type: string;
@@ -1520,8 +1521,8 @@ export interface components {
         };
         /**
          * @description ResourceTreeNode 拓扑资源树节点：kind/status 与前端拓扑渲染器对齐。
-         *      id 稳定唯一：application-{id} / deployment-{name} / rs-{name} / pod-{name} /
-         *      svc-{name} / statefulset-{name} / daemonset-{name}。
+         *      id 稳定唯一：application-{id} / deployment-{name} / replicaset-{name} / pod-{name} /
+         *      service-{name} / ingress-{name} / statefulset-{name} / daemonset-{name}。
          *      old 标记滚动升级中的旧 ReplicaSet/Pod（旧版本副本），前端可据此弱化或打标签。
          */
         "project.ResourceTreeNode": {
