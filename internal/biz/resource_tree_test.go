@@ -303,6 +303,54 @@ func TestBuildResourceTree_Degraded(t *testing.T) {
 	assert.Equal(t, types.Deploy_StatusFailed, got.Status)
 }
 
+// TestBuildResourceTree_FilterFailedPod 覆盖 Failed 阶段 pod 被剔除:与 AllContainers 一致,
+// Failed pod 不入图(无 pod 节点与 owner 边),不参与聚合;非 Failed pod 正常入图。
+func TestBuildResourceTree_FilterFailedPod(t *testing.T) {
+	rs := &appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "demo-app-8b2f4e7d", UID: "rs-new-uid",
+			Annotations:     map[string]string{RevisionAnnotation: "2"},
+			OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", UID: "dep-1"}},
+		},
+	}
+	ready := readyPod("pod-ready", "demo-app-8b2f4e7d", "rs-new-uid")
+	failed := readyPod("pod-failed", "demo-app-8b2f4e7d", "rs-new-uid")
+	failed.Status.Phase = corev1.PodFailed
+	replicas := int32(1)
+	k := &fakeTreeK8sRepo{
+		pods: []*corev1.Pod{ready, failed},
+		rss:  []*appsv1.ReplicaSet{rs},
+		deployments: map[string]*appsv1.Deployment{
+			"demo-app": {
+				ObjectMeta: metav1.ObjectMeta{Name: "demo-app", Namespace: "ns", UID: "dep-1", Generation: 1},
+				Spec:       appsv1.DeploymentSpec{Replicas: &replicas},
+				Status: appsv1.DeploymentStatus{
+					ObservedGeneration: 1, UpdatedReplicas: 1, AvailableReplicas: 1,
+				},
+			},
+		},
+		manifestDeps: []*appsv1.Deployment{{ObjectMeta: metav1.ObjectMeta{Name: "demo-app"}}},
+	}
+	proj := &Project{
+		ID: 1, Name: "demo-app", Namespace: &Namespace{Name: "ns"},
+		PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
+		DeployStatus: types.Deploy_StatusDeployed,
+	}
+	got, err := buildResourceTree(context.TODO(), k, proj)
+	assert.NoError(t, err)
+
+	// Failed pod 无节点、无 owner 边;ready pod 正常挂 RS 下
+	assert.Nil(t, treeNode(t, got, "pod-pod-failed"))
+	assert.False(t, hasTreeEdge(got, "owner", "replicaset-demo-app-8b2f4e7d", "pod-pod-failed"))
+	if n := treeNode(t, got, "pod-pod-ready"); assert.NotNil(t, n) {
+		assert.Equal(t, "healthy", n.Status)
+	}
+	assert.True(t, hasTreeEdge(got, "owner", "replicaset-demo-app-8b2f4e7d", "pod-pod-ready"))
+	// 全健康 → Deployed,根节点 healthy
+	assert.Equal(t, types.Deploy_StatusDeployed, got.Status)
+	assert.Equal(t, "healthy", got.Nodes[0].Status)
+}
+
 // TestBuildResourceTree_DeploymentNotCreated 覆盖部署刚发起、Deployment 尚未创建的场景：
 // 占位为 progressing 节点，仍挂 Application 下，聚合为 Deploying。
 func TestBuildResourceTree_DeploymentNotCreated(t *testing.T) {
@@ -695,7 +743,6 @@ func Test_podStatus(t *testing.T) {
 		{"healthy", func(p *corev1.Pod) {}, "healthy"},
 		{"deleting", func(p *corev1.Pod) { ts := metav1.Now(); p.DeletionTimestamp = &ts }, "progressing"},
 		{"pending", func(p *corev1.Pod) { p.Status.Phase = corev1.PodPending }, "progressing"},
-		{"failed", func(p *corev1.Pod) { p.Status.Phase = corev1.PodFailed }, "degraded"},
 		{"no container statuses", func(p *corev1.Pod) { p.Status.ContainerStatuses = nil }, "progressing"},
 		{"waiting fatal", func(p *corev1.Pod) {
 			p.Status.ContainerStatuses[0] = corev1.ContainerStatus{Name: "web", State: corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{Reason: "CrashLoopBackOff"}}}

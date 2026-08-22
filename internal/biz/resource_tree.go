@@ -43,8 +43,8 @@ type ResourceTreeEdge struct {
 }
 
 // buildResourceTree 构建项目资源拓扑树:Application → Deployment → ReplicaSet → Pod /
-// StatefulSet / DaemonSet,以及 Service 的 selector 边。完整资源列表(区别于
-// buildStateContainers 的活跃容器平铺),与 AllContainers 一致不裁剪 workload 类型。
+// StatefulSet / DaemonSet,以及 Service 的 selector 边。与 AllContainers 一致:
+// 不裁剪 workload 类型(sts/ds 完整入图),且剔除 Failed 阶段 pod(视为非活跃资源)。
 //
 // Deployment/StatefulSet/DaemonSet 以 manifest 声明的名字为准逐个读实时对象
 // (拿 UID 与滚动状态,未创建占位 progressing);
@@ -71,6 +71,8 @@ func buildResourceTree(ctx context.Context, k8sRepo K8sRepo, proj *Project) (*Re
 	if err != nil {
 		return nil, err
 	}
+	// 与 AllContainers 一致：Failed 阶段 pod 视为非活跃，不参与拓扑与状态判定
+	pods = activePods(pods)
 	deployments, statefulSets, daemonSets := k8sRepo.GetWorkloadsByManifest(proj.Manifest)
 	rss, err := k8sRepo.ListReplicaSets(ns)
 	if err != nil {
@@ -396,14 +398,12 @@ func aggregatePodStatus(pods []*corev1.Pod) string {
 	}
 }
 
-// podStatus 推导单个 pod 节点状态:终止中/等待就绪→progressing,Failed 或容器
-// 稳定失败 reason→degraded,全部容器 Ready→healthy,否则 progressing。
+// podStatus 推导单个 pod 节点状态:终止中/等待就绪→progressing,容器稳定失败
+// reason→degraded,全部容器 Ready→healthy,否则 progressing。
+// 入参约定为非 Failed 阶段 pod(调用方已过 activePods,Failed 不入图)。
 func podStatus(pod *corev1.Pod) string {
 	if pod.DeletionTimestamp != nil {
 		return "progressing"
-	}
-	if pod.Status.Phase == corev1.PodFailed {
-		return "degraded"
 	}
 	if pod.Status.Phase == corev1.PodPending {
 		return "progressing"

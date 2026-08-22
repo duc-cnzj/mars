@@ -75,10 +75,22 @@ func isContainerReady(pod *corev1.Pod, containerName string) bool {
 	return false
 }
 
+// activePods 过滤出非 Failed 阶段的 pod：Failed 视为非活跃资源（无可用容器），
+// AllContainers 与 ResourceTree 统一剔除，保证两条链路的 pod 集合一致。
+func activePods(pods []*corev1.Pod) []*corev1.Pod {
+	active := make([]*corev1.Pod, 0, len(pods))
+	for _, pod := range pods {
+		if pod.Status.Phase != corev1.PodFailed {
+			active = append(active, pod)
+		}
+	}
+	return active
+}
+
 // buildStateContainers 从项目的 PodSelectors 出发推导出活跃容器的状态列表。
-// 领域逻辑：Deployment 通过 ReplicaSet 的 deployment revision 注解识别滚动发布中的
-// 旧版本副本；StatefulSet/DaemonSet 按 controller-revision-hash 识别旧版本副本；
-// 并过滤掉标注了 IgnoreContainerNames 的 sidecar 容器。
+// 领域逻辑：剔除 Failed 阶段 pod（见 activePods）；Deployment 通过 ReplicaSet 的
+// deployment revision 注解识别滚动发布中的旧版本副本；StatefulSet/DaemonSet 按
+// controller-revision-hash 识别旧版本副本；并过滤掉标注了 IgnoreContainerNames 的 sidecar 容器。
 func buildStateContainers(ctx context.Context, k8sRepo K8sRepo, proj *Project) ([]*types.StateContainer, error) {
 	if len(proj.PodSelectors) == 0 {
 		return nil, nil
@@ -88,10 +100,8 @@ func buildStateContainers(ctx context.Context, k8sRepo K8sRepo, proj *Project) (
 		return nil, err
 	}
 	var list = make(map[string]*corev1.Pod)
-	for _, pod := range pods {
-		if pod.Status.Phase != corev1.PodFailed {
-			list[pod.Name] = pod
-		}
+	for _, pod := range activePods(pods) {
+		list[pod.Name] = pod
 	}
 
 	var m = make(map[string]*appsv1.ReplicaSet)

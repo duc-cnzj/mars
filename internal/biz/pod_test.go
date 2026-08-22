@@ -127,6 +127,24 @@ func (f *fakePodK8sRepo) GetStatefulSet(namespace, name string) (*appsv1.Statefu
 	return f.sts, nil
 }
 
+// Test_activePods 覆盖 activePods 边界：nil/空→空、全 Failed→空、混合输入只保留非 Failed。
+func Test_activePods(t *testing.T) {
+	mk := func(phase corev1.PodPhase) *corev1.Pod {
+		return &corev1.Pod{Status: corev1.PodStatus{Phase: phase}}
+	}
+	assert.Empty(t, activePods(nil))
+	assert.Empty(t, activePods([]*corev1.Pod{}))
+	assert.Empty(t, activePods([]*corev1.Pod{mk(corev1.PodFailed), mk(corev1.PodFailed)}))
+
+	running := mk(corev1.PodRunning)
+	succeeded := mk(corev1.PodSucceeded) // Succeeded 不在当前过滤范围（仅按痛点滤 Failed）
+	got := activePods([]*corev1.Pod{running, mk(corev1.PodFailed), succeeded})
+	if assert.Len(t, got, 2) {
+		assert.Equal(t, corev1.PodRunning, got[0].Status.Phase)
+		assert.Equal(t, corev1.PodSucceeded, got[1].Status.Phase)
+	}
+}
+
 func TestBuildStateContainers_EmptySelectors(t *testing.T) {
 	k := &fakePodK8sRepo{}
 	proj := &Project{Namespace: &Namespace{Name: "ns"}}
