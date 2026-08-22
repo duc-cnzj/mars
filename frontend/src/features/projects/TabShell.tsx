@@ -208,6 +208,15 @@ export function TabShell({
     })
   }, [containers])
 
+  // 切换目标容器 → 所有分屏终端跟随切换到新容器。
+  // pane 的 npc 更新后 ShellTerminal 的 sessionId（`ns-pod-container:uuid`）随之变化，
+  // 触发旧会话关闭、新会话建立——即「点哪个容器，终端就切到哪个容器」。
+  // （pane 只负责网格排布，容器永远跟随 target，与旧版把所有 ShellWindow 绑定到同一 value 一致）
+  useEffect(() => {
+    if (!target) return
+    setPanes((prev) => prev.map((p) => ({ ...p, npc: target })))
+  }, [target])
+
   // 分屏数量变化（新增/删除）→ 行列重置为等分
   useEffect(() => {
     setColWeights([1, 1])
@@ -418,14 +427,23 @@ export function TabShell({
           const id = `${c.pod}|${c.container}`
           return (
             <div key={id} className="flex items-center gap-1.5">
-              {/* 点击已选中的 radio 点/标签（label htmlFor 转发到 button）→ 重建 shell 连接 */}
+              {/* 点击已选中的 radio 圆点 → 重建 shell 连接（未选中切换仍走 Radix onValueChange） */}
               <RadioGroupItem
                 id={id}
                 value={id}
                 className="size-3.5"
                 onClick={() => handleSameReconnect(c)}
               />
-              <label htmlFor={id} className="cursor-pointer select-none text-[13px] text-ink">
+              {/* 点击文字同样触发切换/重连：显式 onClick 与胶囊一致，不依赖 htmlFor 转发
+                  （preventDefault 阻止原生 label→button 转发，避免与 handleSameReconnect 双重触发） */}
+              <label
+                htmlFor={id}
+                className="cursor-pointer select-none text-[13px] text-ink"
+                onClick={(e) => {
+                  e.preventDefault()
+                  selectContainer(c)
+                }}
+              >
                 {shortContainerName(c.container, projectName)}
               </label>
               {/* 点击标签同样选中 radio；标签内复制按钮 hover 显示、复制完整容器名。

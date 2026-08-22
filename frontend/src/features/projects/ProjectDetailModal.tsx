@@ -78,9 +78,11 @@ export function ProjectDetailModal({
       : 'detail',
   )
   // 已访问 Tab 集合：首次访问后保持挂载（切走仅 hidden 不卸载），
-  // 部署流/表单状态在 tab 间切换时保留（用户：部署中切 tab 部署页不能被 destroy）
+  // 部署流/表单状态在 tab 间切换时保留（用户：部署中切 tab 部署页不能被 destroy）。
+  // shell 不记入集合：xterm/WS 会话是重资源，切走即销毁、切回重建（见渲染处注释）
   const [visitedTabs, setVisitedTabs] = useState<Set<TabKey>>(() => new Set())
   useEffect(() => {
+    if (tab === 'shell') return
     setVisitedTabs((prev) => {
       if (prev.has(tab)) return prev
       const next = new Set(prev)
@@ -233,9 +235,11 @@ export function ProjectDetailModal({
             tabItems.map((it) => {
               const active = tab === it.key
               // 已访问的 Tab 保持挂载（hidden 隐藏而非卸载）：部署流/表单状态切走再切回不丢。
+              // shell 例外：不在 visitedTabs 中（见其声明处），非激活即卸载销毁 xterm/WS 会话、
+              // 切回重建终端——重资源不常驻；其余 tab 每个恒在自己 wrapper 内（active 或 hidden
+              // 占同一树位），切换不重挂载。
               // wrapper 统一 h-full overflow-auto：TabEdit/TabShell 是 h-full 内部自滚内容，
               // TabInfo/TabLog 是内容高、由 wrapper 滚动——与原先外层 overflow-auto 行为一致。
-              // 每个 tab 恒在自己 wrapper 内（active 或 hidden 都占同一树位），切换不会重挂载。
               if (!active && !visitedTabs.has(it.key)) return null
               return (
                 <div

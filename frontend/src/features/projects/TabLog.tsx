@@ -382,15 +382,24 @@ export function TabLog({ projectId, projectName }: { projectId: number; projectN
             const id = `${c.pod}|${c.container}`
             return (
               <div key={id} className="flex items-center gap-1.5">
-                {/* 需求 2：点击已选中的 radio 点/标签（label htmlFor 转发到 button）→ 重启流。
-                    Radix 对已选中项不触发 onValueChange，这里单独处理；未选中项的切换仍走 onValueChange */}
+                {/* 需求 2：点击已选中的 radio 圆点 → 重启流。Radix 对已选中项不触发 onValueChange，
+                    这里单独处理；未选中项的切换仍走 onValueChange */}
                 <RadioGroupItem
                   id={id}
                   value={id}
                   className="size-3.5"
                   onClick={() => handleSameRestart(c)}
                 />
-                <label htmlFor={id} className="cursor-pointer select-none text-[13px] text-ink">
+                {/* 点击文字同样触发切换/重连：显式 onClick 与胶囊一致，不依赖 htmlFor 转发
+                    （preventDefault 阻止原生 label→button 转发，避免与 handleSameRestart 双重触发） */}
+                <label
+                  htmlFor={id}
+                  className="cursor-pointer select-none text-[13px] text-ink"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    selectContainer(c)
+                  }}
+                >
                   {shortContainerName(c.container, projectName)}
                 </label>
                 {/* 点击标签同样选中 radio；标签内复制按钮 hover 显示、复制完整容器名。
