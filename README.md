@@ -5,7 +5,7 @@ English | [简体中文](README_zh-CN.md)
 </div>
 
 <h1 align="center">Mars</h1>
-<div align="center"><img style="width: 100px;height: 100px" src="./frontend/public/logo192.png" /></div>
+<div align="center"><img style="width: 100px;height: 100px" src="./frontend/src/assets/marslogo.png" /></div>
 <p align="center">You write the code, we ship it live. Production in 30 seconds.</p>
 <br><br>
 

@@ -5,7 +5,7 @@
 </div>
 
 <h1 align="center">Mars</h1>
-<div align="center"><img style="width: 100px;height: 100px" src="./frontend/public/logo192.png" /></div>
+<div align="center"><img style="width: 100px;height: 100px" src="./frontend/src/assets/marslogo.png" /></div>
 <p align="center">你负责代码，上线交给我。30 秒，生产环境见。</p>
 <br><br>
 
