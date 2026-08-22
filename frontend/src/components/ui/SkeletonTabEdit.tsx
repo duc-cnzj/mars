@@ -1,5 +1,5 @@
 import { Skeleton } from './shadcn/skeleton'
-import { SegmentedSkeleton } from '../../features/projects/SegmentedSkeleton'
+import { SegmentedSkeleton } from '@/components/ui/SegmentedSkeleton'
 
 /**
  * 配置更新骨架：占位结构与 TabEdit 对齐（吸顶头部 pipeline 槽 + 三段 select 分段控件 + 按钮行；
@@ -12,7 +12,7 @@ export function SkeletonTabEdit() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* 吸顶头部：pipeline 占位槽 + 三段 select 分段控件 + 操作按钮行 */}
-      <div className="z-10 shrink-0 border-b border-line bg-background">
+      <div className="z-10 shrink-0 border-b border-line bg-bg">
         <div className="space-y-2 px-1 pb-2 pt-1">
           {/* pipeline 槽：与 PipelineInfo/占位横幅等高（42px）的骨架条（图标 + 状态文案 + 右侧刷新） */}
           <div className="flex min-h-[42px] items-center gap-2 rounded-md border border-line bg-surface px-3 py-2">

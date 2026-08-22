@@ -50,7 +50,7 @@ export function Coffee() {
           />
         </div>
       </button>
-      <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+      <p className="text-center text-[11px] leading-relaxed text-mute">
         {t('coffee.flipTip')}
       </p>
     </div>

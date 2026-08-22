@@ -1,19 +1,19 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import type { components } from '../../api/schema'
-import { api } from '../../api/client'
-import { getToken } from '../../api/token'
-import { useWebsocket } from '../../realtime/useWebsocket'
-import { AnsiText } from '../../components/AnsiText'
-import { copyText } from '../../utils/copy'
-import { Icon } from '../../components/icons'
-import { Empty, SkeletonTabLog } from '../../components/ui'
+import type { components } from '@/api/schema'
+import { api } from '@/api/client'
+import { getToken } from '@/api/token'
+import { useWebsocket } from '@/hooks/useWebsocket'
+import { AnsiText } from '@/components/AnsiText'
+import { copyText } from '@/lib/copy'
+import { Icon } from '@/components/Icons'
+import { Empty, SkeletonTabLog } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/shadcn/radio-group'
 import { PodStateTag } from './PodStateTag'
-import { shortContainerName } from './shortContainerName'
+import { shortContainerName } from '@/lib/shortContainerName'
 
 type StateContainer = components['schemas']['types.StateContainer']
 
@@ -414,7 +414,7 @@ export function TabLog({ projectId, projectName }: { projectId: number; projectN
         // 容器列表加载中：整块骨架占位（单选行 + 工具条 + 深色日志面板），避免切数据跳动
         <SkeletonTabLog />
       ) : (
-        <Empty text={t('project.noContainers')} />
+        <Empty text={t('project.noContainers')} icon="logs" />
       )}
 
       {/* 工具条 + 断流提示 + 日志面板：仅在有容器时渲染，无容器只留 Empty 提示 */}

@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { api } from '../../api/client'
+import { api } from '@/api/client'
 import {
   getToken,
   removeToken,
@@ -16,9 +16,9 @@ import {
   setLogoutUrl,
   getLogoutUrl,
   removeLogoutUrl,
-} from '../../api/token'
-import { Spinner } from '../../components/ui'
-import type { components } from '../../api/schema'
+} from '@/api/token'
+import { Spinner } from '@/components/ui'
+import type { components } from '@/api/schema'
 
 type UserInfo = components['schemas']['auth.InfoResponse']
 
@@ -69,7 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    void loadUser().finally(() => setLoading(false))
+    // 网络失败时 loadUser 会 reject，捕获避免未处理 rejection；
+    // 失败后 user 保持 null、loading 置 false，由 RequireAuth 交回登录页
+    void loadUser()
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [loadUser])
 
   /** 账号密码登录：成功即写 token 并恢复会话；失败抛错（由 Login 弹"用户名或密码不正确"） */

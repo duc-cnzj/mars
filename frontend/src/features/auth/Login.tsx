@@ -2,16 +2,15 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { api } from '../../api/client'
-import { setState, isRandomBg, toggleRandomBg } from '../../api/token'
-import { Loader2, Pin, PinOff } from 'lucide-react'
+import { api } from '@/api/client'
+import { setState, isRandomBg, toggleRandomBg } from '@/api/token'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/shadcn/tabs'
-import { Icon } from '../../components/icons'
-import marsLogo from '../../assets/marslogo.png'
-import { useAuth } from './AuthContext'
-import type { components } from '../../api/schema'
+import { Icon } from '@/components/Icons'
+import marsLogo from '@/assets/marslogo.png'
+import { useAuth } from './AuthProvider'
+import type { components } from '@/api/schema'
 
 type SettingsResponse = components['schemas']['auth.SettingsResponse']
 type OidcSetting = components['schemas']['auth.SettingsResponse_OidcSetting']
@@ -125,7 +124,7 @@ export function Login() {
         className="btn-login h-10 w-full rounded-lg text-[14px] font-semibold text-primary-foreground"
         disabled={submitting}
       >
-        {submitting && <Loader2 className="size-4 animate-spin" />}
+        {submitting && <Icon name="loader" className="size-4 animate-spin" />}
         {t('auth.signIn')}
       </Button>
     </form>
@@ -158,7 +157,7 @@ export function Login() {
         title={random ? t('auth.pinWallpaper') : t('auth.unpinWallpaper')}
         className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-black/20 text-white/70 backdrop-blur transition-colors hover:bg-black/30 hover:text-white"
       >
-        {random ? <PinOff className="size-[18px]" /> : <Pin className="size-[18px]" />}
+        {random ? <Icon name="pin-off" className="size-[18px]" /> : <Icon name="pin" className="size-[18px]" />}
       </button>
 
       <div className="login-card w-full max-w-sm rounded-xl border border-line bg-surface p-8 shadow-[0_16px_50px_rgba(0,0,0,0.08)]">

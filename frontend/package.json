@@ -28,7 +28,6 @@
     "clsx": "^2.1.1",
     "dayjs": "^1.11.21",
     "i18next": "^26.3.6",
-    "lucide-react": "^1.31.0",
     "openapi-fetch": "^0.17.0",
     "prism-themes": "^1.9.0",
     "prismjs": "^1.30.0",

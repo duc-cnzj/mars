@@ -1,0 +1,41 @@
+/* ============================================================
+   紫罗兰 VIOLET · 靛黑 + 紫罗兰
+   定位：神秘夜的深色紫系
+   - 靛黑基底 + 紫罗兰强调色（比德古拉更蓝、更柔和）
+   - 中饱和、不发光的紫色——聚焦而非炫目
+   - 压暗顶栏（barMix 60）
+   ============================================================ */
+.theme-violet {
+  color-scheme: dark;
+
+  --bg: #0e0d1b;
+  --surface: #141228;
+  --raised: #1c1a36;
+  --overlay: #221f40;
+  --border: rgba(198, 187, 250, 0.13);
+  --border-strong: rgba(198, 187, 250, 0.26);
+
+  --text: #eceaf8;
+  --text-muted: #a9a3cf;
+  --text-faint: #8a85ae;
+
+  --primary: #a78bfa;
+  --primary-strong: #c4b5fd;
+  --primary-soft: rgba(167, 139, 250, 0.13);
+  --primary-foreground: #170f33;
+
+  --ok: #34d399;   --ok-soft: rgba(52, 211, 153, 0.12);
+  --warn: #fbbf24; --warn-soft: rgba(251, 191, 36, 0.12);
+  --err: #f87171;  --err-soft: rgba(248, 113, 113, 0.12);
+  --info: #60a5fa; --info-soft: rgba(96, 165, 250, 0.12);
+
+  --chart-1: #a78bfa;
+  --chart-2: #818cf8;
+
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+
+  --font-sans-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+}

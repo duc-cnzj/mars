@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { Loader2 } from 'lucide-react'
-import { api } from '../../api/client'
+import { api } from '@/api/client'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
 import {
@@ -12,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/shadcn/dialog'
+import { Icon } from '@/components/Icons'
 
 /** 名称格式校验（与旧版 AddNamespace 一致）：小写字母/数字/中划线 */
 const NAME_RE = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/
@@ -96,7 +96,7 @@ export function AddNamespaceModal({
             {t('common.cancel')}
           </Button>
           <Button variant="default" disabled={!name.trim() || nameError || saving} onClick={submit}>
-            {saving && <Loader2 className="size-4 animate-spin" />}
+            {saving && <Icon name="loader" className="size-4 animate-spin" />}
             {t('common.create')}
           </Button>
         </DialogFooter>

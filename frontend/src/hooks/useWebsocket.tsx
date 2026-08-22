@@ -8,9 +8,9 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { websocket } from '../api/websocket'
-import { getToken } from '../api/token'
-import type { components } from '../api/schema'
+import { websocket } from '@/api/websocket'
+import { getToken } from '@/api/token'
+import type { components } from '@/api/schema'
 
 export type WsMetadata = websocket.Metadata
 
@@ -33,8 +33,9 @@ interface WsContextValue {
   clusterInfo: ClusterInfo | null
   /** 项目重载次数：收到 ReloadProjects 后 debounce 500ms 递增，Workbench 用作刷新信号 */
   reloadProjectsRev: number
-  /** 最近一次 ReloadProjects 触发的空间 id（与 reloadProjectsRev 同批更新，无 id 时为 null） */
-  reloadNsId: number | null
+  /** 本次 ReloadProjects 批次受影响的空间 id 集合（与 reloadProjectsRev 同批更新）。
+   *  debounce 窗口内累积多个空间并发变更，不互相覆盖；null = 窗口内有解不出 nsId 的坏帧 → 消费端整页刷新。 */
+  reloadNsIds: number[] | null
   /** 注册 ProjectPodEvent 回调：pod 重启等事件时按 projectId 分发 */
   subscribeProjectPodEvent: (projectId: number, handler: () => void) => () => void
   /** 加入/退出某项目的 pod 事件订阅（弹窗打开 join、关闭 leave，后端随后向该项目推送 pod 事件） */
@@ -42,6 +43,18 @@ interface WsContextValue {
 }
 
 const WsContext = createContext<WsContextValue | null>(null)
+
+/** 编码并发送 ProjectPodEventJoinInput 帧（onopen 重放与 joinProjectPodEvent 共用） */
+function sendPodEventJoin(conn: WebSocket, namespaceId: number, projectId: number, join: boolean) {
+  conn.send(
+    websocket.ProjectPodEventJoinInput.encode({
+      type: websocket.Type.ProjectPodEvent,
+      join,
+      namespaceId,
+      projectId,
+    }).finish(),
+  )
+}
 
 /**
  * WebSocket 实时通道 Provider：连接 /ws → 鉴权 → 分发 protobuf 帧。
@@ -54,13 +67,24 @@ export function ProvideWebsocket({ children }: { children: ReactNode }) {
   const authFailedRef = useRef(false)
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** Provider 卸载后置位：conn.close() 异步触发 onclose，会赶在 cleanup 之后才执行并再排重连定时器，
+   *  在已卸载组件上无限重连泄漏连接。disposed 守卫阻断后续 connect/onclose 的重连路径。 */
+  const disposedRef = useRef(false)
+  // ReloadProjects debounce 窗口内的累积器：受影响空间 id 集合 + 是否出现坏帧。
+  // 多空间并发变更不再互相覆盖，窗口结束后整批下发一次。
+  const pendingNsIdsRef = useRef<Set<number>>(new Set())
+  const pendingFullReloadRef = useRef(false)
   const slugHandlers = useRef(new Map<string, Set<FrameHandler>>())
   const typeHandlers = useRef(new Map<number, Set<FrameHandler>>())
   const podEventHandlers = useRef(new Map<number, Set<() => void>>())
+  // 活跃 pod 事件订阅登记：projectId → {namespaceId, count}。
+  // join 累加、leave 递减（同项目可被 StrictMode 双挂载/多弹窗重复 join），count 归零才从登记移除。
+  // 断线重连后服务端 join 状态随旧连接丢失，onopen 据此重放 join 帧（见 connect onopen）。
+  const podEventJoinsRef = useRef<Map<number, { namespaceId: number; count: number }>>(new Map())
   const [tick, setTick] = useState(0)
   const [clusterInfo, setClusterInfo] = useState<ClusterInfo | null>(null)
   const [reloadProjectsRev, setReloadProjectsRev] = useState(0)
-  const [reloadNsId, setReloadNsId] = useState<number | null>(null)
+  const [reloadNsIds, setReloadNsIds] = useState<number[] | null>(null)
 
   const subscribe = useCallback((slug: string, handler: FrameHandler) => {
     const set = slugHandlers.current.get(slug) ?? new Set<FrameHandler>()
@@ -94,6 +118,7 @@ export function ProvideWebsocket({ children }: { children: ReactNode }) {
   }, [])
 
   const connect = useCallback(() => {
+    if (disposedRef.current) return
     if (authFailedRef.current) return
     if (retryTimer.current) {
       clearTimeout(retryTimer.current)
@@ -112,6 +137,12 @@ export function ProvideWebsocket({ children }: { children: ReactNode }) {
           token,
         }).finish(),
       )
+      // 重放所有活跃 pod 事件订阅：初连/断线重连成功后服务端才认得 join 帧。
+      // 连接未就绪时 joinProjectPodEvent 丢弃的帧、以及重连后随旧连接丢失的服务端订阅，
+      // 都在鉴权后按登记补发（后端非授权帧会被门卫丢弃，必须先发 Authorize 再发 join）。
+      for (const [projectId, { namespaceId }] of podEventJoinsRef.current) {
+        sendPodEventJoin(conn, namespaceId, projectId, true)
+      }
       setTick((n) => n + 1)
     }
     conn.onmessage = (evt) => {
@@ -158,25 +189,44 @@ export function ProvideWebsocket({ children }: { children: ReactNode }) {
         }
       }
 
-      // ReloadProjects：命名空间/项目变更 → debounce 后递增刷新信号并记录触发空间 id。
-      // nsId 供 Workbench 精确给被更新空间卡显示 loading（对齐旧版 setNamespaceReload(true, nsID)）。
+      // ReloadProjects：命名空间/项目变更 → debounce 后递增刷新信号并把受影响空间 id 集合下发。
+      // 窗口内累积 Set：多个空间并发变更不再互相覆盖（旧实现单值最后一条胜出会丢变更）。
+      // 坏帧（解不出 nsId）置 pendingFullReload，本次批次整体退化为整页刷新。
+      // 集合供 Workbench 精确给被更新空间卡显示 loading（对齐旧版 setNamespaceReload(true, nsID)）。
       if (type === websocket.Type.ReloadProjects) {
         let nsId: number | null = null
         try {
           nsId = websocket.WsReloadProjectsResponse.decode(raw).namespaceId ?? null
         } catch {
-          /* 坏帧忽略，nsId=null（不做精确卡 loading，仍触发全量刷新） */
+          /* 坏帧忽略，nsId=null */
         }
+        // proto3 未设置的 int32 解出 0 而非 null：0/负/坏帧一律视为「未知空间」→ 整页刷新兜底。
+        // 只判 null 会让缺省帧被 add(0) 当成 namespace 0 做一次注定 404 的单卡刷新（no-op），
+        // 「坏帧退化整页刷新」这条兜底路径永远不生效。
+        if (nsId === null || nsId <= 0) pendingFullReloadRef.current = true
+        else pendingNsIdsRef.current.add(nsId)
         if (reloadTimer.current) clearTimeout(reloadTimer.current)
         reloadTimer.current = setTimeout(() => {
           reloadTimer.current = null
-          setReloadNsId(nsId)
+          if (pendingFullReloadRef.current) {
+            setReloadNsIds(null)
+          } else {
+            setReloadNsIds([...pendingNsIdsRef.current])
+          }
+          pendingNsIdsRef.current.clear()
+          pendingFullReloadRef.current = false
           setReloadProjectsRev((r) => r + 1)
         }, 500)
       }
     }
     conn.onclose = () => {
-      if (connRef.current === conn) connRef.current = null
+      if (disposedRef.current) return
+      // 过期连接（StrictMode 双挂载残留 / 被新连接顶替）关闭：忽略，重连由当前连接负责。
+      // 没有这条守卫，StrictMode 下旧 conn 的 onclose 会多排一个 3s 重连定时器，
+      // 触发时再开一条新连接——与当前已建立连接并存，之后每条旧连接关闭又排新的，无限churn。
+      // disposedRef 只堵卸载路径，堵不住「重挂后旧连接才关闭」这条。
+      if (connRef.current !== conn) return
+      connRef.current = null
       if (authFailedRef.current) return
       retryTimer.current = setTimeout(() => {
         retryTimer.current = null
@@ -189,8 +239,10 @@ export function ProvideWebsocket({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    disposedRef.current = false
     connect()
     return () => {
+      disposedRef.current = true
       if (retryTimer.current) clearTimeout(retryTimer.current)
       if (reloadTimer.current) clearTimeout(reloadTimer.current)
       connRef.current?.close()
@@ -203,19 +255,34 @@ export function ProvideWebsocket({ children }: { children: ReactNode }) {
     if (c && c.readyState === WebSocket.OPEN) c.send(bytes)
   }, [])
 
-  /** 加入/退出项目 pod 事件订阅：编码为 ProjectPodEventJoinInput 帧（与旧前端 useProjectRoom 一致） */
+  /** 加入/退出项目 pod 事件订阅：编码为 ProjectPodEventJoinInput 帧（与旧前端 useProjectRoom 一致）。
+   *   join/leave 同步维护 podEventJoinsRef 登记：同项目重复 join 计数，count 归零才真正下发 leave
+   *   （一个弹窗关闭不能退掉另一个同项目弹窗的订阅）。连接未就绪时帧被丢弃也无碍，
+   *   连接成功后 onopen 会按登记重放 join。 */
   const joinProjectPodEvent = useCallback(
     (namespaceId: number, projectId: number, join: boolean) => {
-      send(
-        websocket.ProjectPodEventJoinInput.encode({
-          type: websocket.Type.ProjectPodEvent,
-          join,
-          namespaceId,
-          projectId,
-        }).finish(),
-      )
+      const c = connRef.current
+      if (join) {
+        const entry = podEventJoinsRef.current.get(projectId)
+        if (entry) {
+          entry.count += 1
+        } else {
+          podEventJoinsRef.current.set(projectId, { namespaceId, count: 1 })
+          // 仅首次 join 发帧：服务端已订阅，重复 join 只需计数（连接未就绪时帧被丢弃，onopen 会重放）
+          if (c?.readyState === WebSocket.OPEN) sendPodEventJoin(c, namespaceId, projectId, true)
+        }
+      } else {
+        const entry = podEventJoinsRef.current.get(projectId)
+        if (entry) {
+          entry.count -= 1
+          if (entry.count <= 0) {
+            podEventJoinsRef.current.delete(projectId)
+            if (c?.readyState === WebSocket.OPEN) sendPodEventJoin(c, namespaceId, projectId, false)
+          }
+        }
+      }
     },
-    [send],
+    [],
   )
 
   const value = useMemo<WsContextValue>(
@@ -227,11 +294,11 @@ export function ProvideWebsocket({ children }: { children: ReactNode }) {
       subscribeType,
       clusterInfo,
       reloadProjectsRev,
-      reloadNsId,
+      reloadNsIds,
       subscribeProjectPodEvent,
       joinProjectPodEvent,
     }),
-    // tick 驱动连接状态变更时重算 ready/ws；clusterInfo / reloadProjectsRev / reloadNsId 变化时重发最新值
+    // tick 驱动连接状态变更时重算 ready/ws；clusterInfo / reloadProjectsRev / reloadNsIds 变化时重发最新值
     //（send/subscribe/subscribeProjectPodEvent/joinProjectPodEvent 走 ref，稳定不变）
     [
       send,
@@ -241,7 +308,7 @@ export function ProvideWebsocket({ children }: { children: ReactNode }) {
       joinProjectPodEvent,
       clusterInfo,
       reloadProjectsRev,
-      reloadNsId,
+      reloadNsIds,
       tick,
     ],
   )

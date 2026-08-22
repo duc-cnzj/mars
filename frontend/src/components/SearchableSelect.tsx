@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, ChevronDown, Plus, Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/shadcn/input'
-import { nextZIndex } from '../hooks/useDraggableDialog'
+import { nextZIndex } from '@/lib/zIndex'
 import {
   Popover,
   PopoverContent,
@@ -15,6 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/shadcn/tooltip'
+import { Icon } from '@/components/Icons'
 
 export interface SearchableSelectOption {
   value: string
@@ -257,7 +257,7 @@ export function SearchableSelect({
                       }}
                       className="text-secondary-foreground/60 hover:text-secondary-foreground"
                     >
-                      <X className="size-3" />
+                      <Icon name="close" className="size-3" />
                     </button>
                   </span>
                 ))}
@@ -285,7 +285,7 @@ export function SearchableSelect({
                   </TooltipProvider>
                 )}
               </span>
-              <ChevronDown className="size-4 shrink-0 opacity-50" />
+              <Icon name="chevron-down" className="size-4 shrink-0 opacity-50" />
             </>
           ) : (
             <>
@@ -337,7 +337,7 @@ export function SearchableSelect({
                   {displayLabel}
                 </span>
               )}
-              <ChevronDown className="size-4 shrink-0 opacity-50" />
+              <Icon name="chevron-down" className="size-4 shrink-0 opacity-50" />
             </>
           )}
         </button>
@@ -350,7 +350,7 @@ export function SearchableSelect({
       >
         <div className="border-b border-line p-1.5">
           <div className="relative">
-            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Icon name="search" className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               ref={searchRef}
               data-slot="searchable-select-input"
@@ -378,7 +378,7 @@ export function SearchableSelect({
             onClick={() => createCustom(trimmed)}
             className="flex w-full items-center gap-2 border-b border-line px-3 py-1.5 text-left text-sm text-primary hover:bg-accent"
           >
-            <Plus className="size-4 shrink-0" />
+            <Icon name="plus" className="size-4 shrink-0" />
             {createText ? createText(trimmed) : trimmed}
           </button>
         )}
@@ -414,7 +414,7 @@ export function SearchableSelect({
                 </span>
                 {isSel && (
                   <span className="absolute right-2 flex items-center">
-                    <Check className="size-4" />
+                    <Icon name="check" className="size-4" />
                   </span>
                 )}
               </button>

@@ -1,17 +1,17 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import type { components } from '../../api/schema'
-import { api } from '../../api/client'
+import type { components } from '@/api/schema'
+import { api } from '@/api/client'
 import {
   SkeletonDetail,
   SkeletonTabEdit,
   SkeletonTabLog,
   SkeletonTabShell,
-} from '../../components/ui'
-import { useDraggableDialog } from '../../hooks/useDraggableDialog'
-import { useWheelRedirect } from '../../hooks/useWheelRedirect'
-import { useWebsocket } from '../../realtime/useWebsocket'
+} from '@/components/ui'
+import { useDraggableDialog } from '@/hooks/useDraggableDialog'
+import { useWheelRedirect } from '@/hooks/useWheelRedirect'
+import { useWebsocket } from '@/hooks/useWebsocket'
 import {
   Dialog,
   DialogContent,

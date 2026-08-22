@@ -38,6 +38,7 @@ export type IconName =
   | 'chevron-down'
   | 'chevron-right'
   | 'chevron-left'
+  | 'chevron-up'
   | 'plus'
   | 'filter'
   | 'refresh'
@@ -67,6 +68,17 @@ export type IconName =
   | 'check-circle-fill'
   | 'close-circle-fill'
   | 'warning-fill'
+  | 'circle'
+  | 'circle-check'
+  | 'circle-x'
+  | 'circle-question'
+  | 'info'
+  | 'gauge'
+  | 'pencil'
+  | 'pin'
+  | 'pin-off'
+  | 'refresh-cw'
+  | 'grip-vertical'
   | 'user'
 
 const paths: Record<IconName, ReactNode> = {
@@ -167,6 +179,7 @@ const paths: Record<IconName, ReactNode> = {
   'chevron-down': <path d="m6 9 6 6 6-6" />,
   'chevron-right': <path d="m9 6 6 6-6 6" />,
   'chevron-left': <path d="m15 6-6 6 6 6" />,
+  'chevron-up': <path d="m6 15 6-6 6 6" />,
   plus: <path d="M12 5v14M5 12h14" />,
   filter: <path d="M4 5h16l-6 7v5.5L10 20v-8L4 5Z" />,
   refresh: (
@@ -325,6 +338,88 @@ const paths: Record<IconName, ReactNode> = {
       />
       <path d="M12 9v4" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
       <path d="M12 17h.01" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+    </>
+  ),
+  // 描边圆环：shadcn dropdown-menu radio 指示点（配合 fill-current 填实，替代 lucide CircleIcon）
+  circle: <circle cx="12" cy="12" r="10" />,
+  // lucide circle-check 同款（描边圆环 + 对勾）：部署状态图标（对齐旧版 DeployStatus outline 风格）
+  'circle-check': (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="m9 12 2 2 4-4" />
+    </>
+  ),
+  // lucide circle-x 同款（描边圆环 + 叉）：部署失败状态
+  'circle-x': (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="m15 9-6 6M9 9l6 6" />
+    </>
+  ),
+  // lucide circle-question-mark 同款（描边圆环 + 问号）：部署未知状态
+  'circle-question': (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <path d="M12 17h.01" />
+    </>
+  ),
+  // lucide info 同款：圆形 + 竖线 + 圆点，用于图表说明 tooltip
+  info: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4" />
+      <path d="M12 8h.01" />
+    </>
+  ),
+  // lucide gauge 同款：半圆表盘 + 指针，用于资源用量
+  gauge: (
+    <>
+      <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+      <path d="m12 14 4-4" />
+    </>
+  ),
+  // lucide pencil 同款：编辑铅笔
+  pencil: (
+    <>
+      <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+      <path d="m15 5 4 4" />
+    </>
+  ),
+  // lucide pin 同款：图钉（登录壁纸固定）
+  pin: (
+    <>
+      <path d="M12 17v5" />
+      <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+    </>
+  ),
+  // lucide pin-off 同款：图钉划线（登录壁纸随机）
+  'pin-off': (
+    <>
+      <path d="M12 17v5" />
+      <path d="M15 9.34V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H7.89" />
+      <path d="m2 2 20 20" />
+      <path d="M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h11" />
+    </>
+  ),
+  // lucide refresh-cw 同款：环形刷新箭头
+  'refresh-cw': (
+    <>
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+      <path d="M8 16H3v5" />
+    </>
+  ),
+  // lucide grip-vertical 同款：竖向拖拽把手（六圆点填实，与 more 同风格）
+  'grip-vertical': (
+    <>
+      <circle cx="9" cy="5" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="19" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="5" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="19" r="1.4" fill="currentColor" stroke="none" />
     </>
   ),
   user: (

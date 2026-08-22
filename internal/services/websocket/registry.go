@@ -166,10 +166,11 @@ func (tm *taskManager) Register(id string, fn func(error)) error {
 }
 
 // StopAll 触发全部在途部署的取消回调（连接断开时的统一清理）。
+// 与手动取消（Stop → deploy.ErrCancel）区分，传 ErrCancelConnClosed 供 Finish 判定取消来源并留痕。
 func (tm *taskManager) StopAll() {
 	tm.Lock()
 	defer tm.Unlock()
 	for _, f := range tm.tasks {
-		f(deploy.ErrCancel)
+		f(deploy.ErrCancelConnClosed)
 	}
 }

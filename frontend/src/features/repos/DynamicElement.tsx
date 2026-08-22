@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next'
-import { GripVertical, Plus, X } from 'lucide-react'
 import {
   DndContext,
   PointerSensor,
@@ -14,7 +13,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { components } from '../../api/schema'
+import type { components } from '@/api/schema'
 import { SearchableSelect } from '@/components/SearchableSelect'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
@@ -27,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/shadcn/select'
+import { Icon } from '@/components/Icons'
 
 type Element = components['schemas']['mars.Element']
 
@@ -138,7 +138,7 @@ export function DynamicElement({
         </SortableContext>
       </DndContext>
       <Button variant="outline" className="border-dashed" onClick={add}>
-        <Plus />
+        <Icon name="plus" />
         {t('repos.addElement')}
       </Button>
     </div>
@@ -191,7 +191,7 @@ function SortableElementItem({
             aria-label={t('repos.elementDrag')}
             className="mt-2.5 cursor-grab text-faint transition-colors hover:text-ink active:cursor-grabbing"
           >
-            <GripVertical className="size-4" />
+            <Icon name="grip-vertical" className="size-4" />
           </button>
           <label className="flex min-w-0 flex-1 flex-col gap-1.5">
             <span className={labelCls}>
@@ -230,7 +230,7 @@ function SortableElementItem({
             aria-label={t('common.delete')}
             className="mt-2 shrink-0"
           >
-            <X />
+            <Icon name="close" />
           </Button>
         </div>
 

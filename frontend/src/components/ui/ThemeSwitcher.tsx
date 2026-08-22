@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
-import { Check, ChevronDown } from 'lucide-react'
-import { themes, type ThemeId } from '../../themes'
+import { themes, type ThemeId } from '@/themes'
+import { isMac } from '@/lib/platform'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,74 +8,48 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/shadcn/dropdown-menu'
+import { Icon } from '@/components/Icons'
 
-/** 主题 id → i18n 词条 key（名字 / 一句定位），字面量联合保持 t() 类型校验 */
+/** 主题 id → i18n 词条 key（名字 / 一句定位），字面量联合保持 t() 类型校验。
+ *  顺序与 themes/index.ts 注册表一致（决定切换器/快捷键的显示顺序） */
 type ThemeNameKey =
-  | 'themes.ring.name'
-  | 'themes.amber.name'
   | 'themes.seiji.name'
-  | 'themes.glacier.name'
-  | 'themes.dracula.name'
-  | 'themes.nord.name'
-  | 'themes.latte.name'
-  | 'themes.github.name'
-  | 'themes.githubDark.name'
-  | 'themes.githubDimmed.name'
-  | 'themes.chromeDark.name'
-  | 'themes.bay.name'
-  | 'themes.cherry.name'
   | 'themes.magenta.name'
-  | 'themes.volcano.name'
+  | 'themes.latte.name'
+  | 'themes.mint.name'
+  | 'themes.lavender.name'
+  | 'themes.cherry.name'
+  | 'themes.violet.name'
+  | 'themes.lime.name'
 type ThemeTaglineKey =
-  | 'themes.ring.tagline'
-  | 'themes.amber.tagline'
   | 'themes.seiji.tagline'
-  | 'themes.glacier.tagline'
-  | 'themes.dracula.tagline'
-  | 'themes.nord.tagline'
-  | 'themes.latte.tagline'
-  | 'themes.github.tagline'
-  | 'themes.githubDark.tagline'
-  | 'themes.githubDimmed.tagline'
-  | 'themes.chromeDark.tagline'
-  | 'themes.bay.tagline'
-  | 'themes.cherry.tagline'
   | 'themes.magenta.tagline'
-  | 'themes.volcano.tagline'
+  | 'themes.latte.tagline'
+  | 'themes.mint.tagline'
+  | 'themes.lavender.tagline'
+  | 'themes.cherry.tagline'
+  | 'themes.violet.tagline'
+  | 'themes.lime.tagline'
 
 const THEME_NAME_KEY: Record<ThemeId, ThemeNameKey> = {
-  ring: 'themes.ring.name',
-  amber: 'themes.amber.name',
   seiji: 'themes.seiji.name',
-  glacier: 'themes.glacier.name',
-  dracula: 'themes.dracula.name',
-  nord: 'themes.nord.name',
-  latte: 'themes.latte.name',
-  github: 'themes.github.name',
-  'github-dark': 'themes.githubDark.name',
-  'github-dimmed': 'themes.githubDimmed.name',
-  'chrome-dark': 'themes.chromeDark.name',
-  bay: 'themes.bay.name',
-  cherry: 'themes.cherry.name',
   magenta: 'themes.magenta.name',
-  volcano: 'themes.volcano.name',
+  latte: 'themes.latte.name',
+  mint: 'themes.mint.name',
+  lavender: 'themes.lavender.name',
+  cherry: 'themes.cherry.name',
+  violet: 'themes.violet.name',
+  lime: 'themes.lime.name',
 }
 const THEME_TAGLINE_KEY: Record<ThemeId, ThemeTaglineKey> = {
-  ring: 'themes.ring.tagline',
-  amber: 'themes.amber.tagline',
   seiji: 'themes.seiji.tagline',
-  glacier: 'themes.glacier.tagline',
-  dracula: 'themes.dracula.tagline',
-  nord: 'themes.nord.tagline',
-  latte: 'themes.latte.tagline',
-  github: 'themes.github.tagline',
-  'github-dark': 'themes.githubDark.tagline',
-  'github-dimmed': 'themes.githubDimmed.tagline',
-  'chrome-dark': 'themes.chromeDark.tagline',
-  bay: 'themes.bay.tagline',
-  cherry: 'themes.cherry.tagline',
   magenta: 'themes.magenta.tagline',
-  volcano: 'themes.volcano.tagline',
+  latte: 'themes.latte.tagline',
+  mint: 'themes.mint.tagline',
+  lavender: 'themes.lavender.tagline',
+  cherry: 'themes.cherry.tagline',
+  violet: 'themes.violet.tagline',
+  lime: 'themes.lime.tagline',
 }
 
 /**
@@ -120,14 +94,23 @@ export function ThemeSwitcher({
           <span className="hidden min-[560px]:block">
             {t(THEME_NAME_KEY[current.id])}
           </span>
-          <ChevronDown className="size-3.5 shrink-0 opacity-60" />
+          <Icon name="chevron-down" className="size-3.5 shrink-0 opacity-60" />
         </button>
       </DropdownMenuTrigger>
       {/* z-[9999] 盖过一切：可拖拽弹窗的共享 z 计数器从 51 起每开/置顶一次 +1，
           固定高位保证主题选择浮层永远在最上（如项目详情弹窗开着时也能打开并盖住它） */}
       <DropdownMenuContent align="end" sideOffset={6} className="z-[9999] w-64 p-1">
-        <div className="px-2 pt-1 pb-1.5 text-[10px] font-medium uppercase tracking-wider text-faint">
-          {t('themes.switchTo')}
+        <div className="flex items-center justify-between gap-2 px-2 pt-1 pb-1.5 text-[10px]">
+          <span className="font-medium uppercase tracking-wider text-faint">
+            {t('themes.switchTo')}
+          </span>
+          <kbd className="flex h-5 items-center gap-0.5 whitespace-nowrap rounded border border-primary/25 bg-primary/10 px-1.5 font-mono text-[10px] leading-none text-primary">
+            {isMac ? <span className="font-sans text-[9px]">⌘</span> : <span>Ctrl</span>}
+            <span>+</span>
+            <span>Shift</span>
+            <span>+</span>
+            <span>，</span>
+          </kbd>
         </div>
         <DropdownMenuSeparator />
         {themes.map((th) => {
@@ -153,7 +136,7 @@ export function ThemeSwitcher({
               <span className={`shrink-0 text-[10px] ${active ? 'text-primary' : 'text-mute'}`}>
                 {t(th.mode === 'dark' ? 'themes.dark' : 'themes.light')}
               </span>
-              {active && <Check className="size-3.5 shrink-0 text-primary" />}
+              {active && <Icon name="check" className="size-3.5 shrink-0 text-primary" />}
             </DropdownMenuItem>
           )
         })}

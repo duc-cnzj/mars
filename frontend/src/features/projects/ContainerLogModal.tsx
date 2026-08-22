@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { getToken } from '../../api/token'
-import { AnsiText } from '../../components/AnsiText'
-import { Icon } from '../../components/icons'
+import { getToken } from '@/api/token'
+import { AnsiText } from '@/components/AnsiText'
+import { Icon } from '@/components/Icons'
 import {
   Dialog,
   DialogContent,

@@ -1,10 +1,10 @@
 import { formatDate } from '@/lib/format'
 import { useTranslation } from 'react-i18next'
-import { useVersion } from '../hooks/useVersion'
-import { Popover, PopoverContent, PopoverTrigger } from '../components/ui'
+import { useVersion } from '@/hooks/useVersion'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui'
 import { Coffee as CoffeeCard } from './Coffee'
-import { IconFont } from '../components/IconFont'
-import { barGradient, type ThemeId } from '../themes'
+import { IconFont } from '@/components/IconFont'
+import { barGradient, type ThemeId } from '@/themes'
 
 /**
  * 渐变底栏（还原旧版 AppFooter）：版权 + 版本号 + 构建时间 + 请喝咖啡赞助入口。

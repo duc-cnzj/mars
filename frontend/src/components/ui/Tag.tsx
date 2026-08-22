@@ -10,7 +10,7 @@ const tones: Record<Tone, string> = {
   err: 'text-err bg-err-soft',
   info: 'text-info bg-info-soft',
   accent: 'text-primary bg-primary-soft',
-  mute: 'text-muted-foreground bg-muted',
+  mute: 'text-mute bg-raised',
 }
 
 /** tone → 前置圆点色 */
@@ -20,7 +20,7 @@ const dots: Record<Tone, string> = {
   err: 'bg-err',
   info: 'bg-info',
   accent: 'bg-primary',
-  mute: 'bg-muted-foreground',
+  mute: 'bg-mute',
 }
 
 /**

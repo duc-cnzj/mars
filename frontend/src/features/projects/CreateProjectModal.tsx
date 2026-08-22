@@ -2,11 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
-import { Loader2 } from 'lucide-react'
-import type { components } from '../../api/schema'
-import { api } from '../../api/client'
-import { Icon } from '../../components/icons'
-import { Tag } from '../../components/ui'
+import type { components } from '@/api/schema'
+import { api } from '@/api/client'
+import { Icon } from '@/components/Icons'
+import { Tag, SegmentedSkeleton } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import {
   Dialog,
@@ -15,14 +14,13 @@ import {
   DialogTitle,
 } from '@/components/ui/shadcn/dialog'
 import { SearchableSelect } from '@/components/SearchableSelect'
-import { useDraggableDialog } from '../../hooks/useDraggableDialog'
-import { useWheelRedirect } from '../../hooks/useWheelRedirect'
-import { useCheers } from '../../hooks/useCheers'
-import { CodeEditor } from '../../components/CodeEditor'
+import { useDraggableDialog } from '@/hooks/useDraggableDialog'
+import { useWheelRedirect } from '@/hooks/useWheelRedirect'
+import { useConfetti } from '@/hooks/useConfetti'
+import { CodeEditor } from '@/components/CodeEditor'
 import { Elements } from './Elements'
 import { DeployLog } from './DeployLog'
 import { PipelineInfo } from './PipelineInfo'
-import { SegmentedSkeleton } from './SegmentedSkeleton'
 import { useDeployStream } from './useDeployStream'
 
 type GitOption = components['schemas']['git.Option']
@@ -39,19 +37,19 @@ export function CreateProjectModal({
   namespaceId,
   namespaceName,
   open,
-  onOpenChange,
+  onClose,
   onChanged,
 }: {
   namespaceId: number
   /** 空间名称：title 徽标展示（替换原先的数字 id，让用户看清创建在哪个空间） */
   namespaceName: string
   open: boolean
-  onOpenChange: (open: boolean) => void
+  onClose: () => void
   onChanged: () => void
 }) {
   const { t } = useTranslation()
   const dnd = useDraggableDialog()
-  const cheers = useCheers()
+  const fireConfetti = useConfetti()
 
   const [projectOptions, setProjectOptions] = useState<GitOption[]>([])
   const [branchOptions, setBranchOptions] = useState<GitOption[]>([])
@@ -84,7 +82,7 @@ export function CreateProjectModal({
     if (!open) return
     setClusterBad(false)
     let alive = true
-    api.GET('/api/cluster_info').then(({ data }) => {
+    void api.GET('/api/cluster_info').then(({ data }) => {
       if (alive && data?.item && data.item.status === 'bad') setClusterBad(true)
     })
     return () => {
@@ -197,14 +195,14 @@ export function CreateProjectModal({
   // 部署终态：成功 → 彩蛋 + toast + 刷新 + 关闭（对齐旧版创建流程）；
   // 失败/取消 → 终态 toast 后保留日志面板供排查（对齐成功侧一致性）。
   // 成功前把 showLog 置 false（对齐 TabEdit：部署成功后隐藏日志、回到配置表单）；
-  // 随后 onOpenChange(false) 关闭弹窗，本行在关闭前保证状态一致（若将来改为成功后停留，配置即回显）
+  // 随后 onClose() 关闭弹窗，本行在关闭前保证状态一致（若将来改为成功后停留，配置即回显）
   useEffect(() => {
     if (stream.status === 'deployed') {
-      cheers()
+      fireConfetti()
       toast.success(t('project.deploySuccess', { name: projectName }))
       setShowLog(false)
       onChanged()
-      onOpenChange(false)
+      onClose()
     } else if (stream.status === 'failed') {
       toast.error(t('project.deployFailed', { name: projectName }))
     } else if (stream.status === 'canceled') {
@@ -267,7 +265,7 @@ export function CreateProjectModal({
   // pointer-events:none 锁死弹窗外点击，且遮罩挡着没法与其他项目弹窗并存；
   // modal={false} + showOverlay={false} 去掉锁与遮罩——弹窗可拖动/缩放/最大化、可多开，弹窗外仍可操作
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onOpenChange(false)} modal={false}>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()} modal={false}>
       <DialogContent
         ref={dialogRef}
         {...dnd.contentProps}
@@ -295,7 +293,7 @@ export function CreateProjectModal({
         </DialogHeader>
 
         {/* 吸顶头部（对齐 TabEdit/旧版 Affix）：pipeline + 项目/分支/commit 分段 + 操作按钮 */}
-        <div className="z-10 shrink-0 border-b border-line bg-background">
+        <div className="z-10 shrink-0 border-b border-line bg-bg">
           <div className="space-y-2 px-1 pb-2 pt-1">
             {/* pipeline 槽：needGitRepo 时固定占位高度（横幅/占位等高 42px，切换不挤压下方网格） */}
             <div className={needGitRepo ? 'min-h-[42px]' : undefined}>
@@ -377,7 +375,7 @@ export function CreateProjectModal({
                 disabled={deployDisabled}
                 onClick={startDeploy}
               >
-                {stream.loading && <Loader2 className="size-3.5 animate-spin" />}
+                {stream.loading && <Icon name="loader" className="size-3.5 animate-spin" />}
                 <Icon name="rocket" className="text-[13px]" />
                 {clusterBad ? t('project.clusterResourceShortage') : t('project.deploy')}
               </Button>

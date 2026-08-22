@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Icon, type IconName } from '../icons'
+import { Icon, type IconName } from '@/components/Icons'
 
 /**
  * 空态占位：icon 按页面语义传入（默认数据库图标），避免所有空态都长一个样。

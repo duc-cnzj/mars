@@ -60,7 +60,7 @@ const FILE_TYPE_TO_PRISM: Record<string, string> = {
 }
 
 /** HTML 转义（未知语言时的兜底渲染）；null/undefined 按空串处理，避免 .replace 崩溃 */
-export function escapeHtml(s: string | null | undefined): string {
+function escapeHtml(s: string | null | undefined): string {
   return (s ?? '').replace(
     /[&<>"']/g,
     (c) =>

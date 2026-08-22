@@ -5,8 +5,8 @@ import confetti from 'canvas-confetti'
  * 部署成功彩蛋：从顶部洒落南瓜/圣诞树/爱心三种形状（canvas-confetti）。
  * 移植自旧版 mars/frontend/src/contexts/useCheers.ts。
  */
-export function useCheers() {
-  const cheers = useCallback(() => {
+export function useConfetti() {
+  const fireConfetti = useCallback(() => {
     // 形状通过 shapeFromPath 定义；运行时重复构建有性能损耗，这里沿用旧版写法
     //（旧版注释：can only use a path once in development and save the result）
 
@@ -63,5 +63,5 @@ export function useCheers() {
     })
   }, [])
 
-  return cheers
+  return fireConfetti
 }

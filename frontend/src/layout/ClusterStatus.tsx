@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { api } from '../api/client'
+import { api } from '@/api/client'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/shadcn/popover'
-import { useWebsocket } from '../realtime/useWebsocket'
-import type { components } from '../api/schema'
+import { useWebsocket } from '@/hooks/useWebsocket'
+import type { components } from '@/api/schema'
 
 type ClusterInfo = components['schemas']['websocket.ClusterInfo']
 

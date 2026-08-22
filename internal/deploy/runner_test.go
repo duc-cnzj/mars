@@ -1704,15 +1704,22 @@ func TestJober_Finish_WhenError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
+
+	// 非手动取消（连接断开/请求 ctx 取消）：Finish 取消分支补记审计留痕。
 	stopCtx, stopFn := context.WithCancelCause(context.TODO())
 	stopFn(errors.New("stopped"))
+	eventRepo := data.NewMockEventRepo(m)
+	eventRepo.EXPECT().AuditLog(types.EventActionType_CancelDeploy, "u", "u@mars.com", "取消部署: 1/app, 原因: stopped")
 	job := &jobRunner{
 		deployResult: &deployResult{},
 		logger:       mlog.NewForConfig(nil),
 		err:          errors.New("xxx"),
 		messager:     msger,
+		eventRepo:    eventRepo,
+		user:         &biz.UserInfo{Name: "u", Email: "u@mars.com"},
 		stopCtx:      stopCtx,
 		stopFn:       stopFn,
+		input:        &JobInput{NamespaceId: 1, Name: "app"},
 	}
 	successCalled := 0
 	job.OnSuccess(1, func(err error, sendResultToUser func()) {
@@ -1735,6 +1742,23 @@ func TestJober_Finish_WhenError(t *testing.T) {
 	assert.Equal(t, 1, finallyCalled)
 	assert.Equal(t, 0, successCalled)
 	assert.Equal(t, 1, errorCalled)
+
+	// 手动取消（ErrCancel）：审计由传输层 HandleCancelDeploy 记录，Finish 不重复留痕。
+	manualCtx, manualStop := context.WithCancelCause(context.TODO())
+	manualStop(ErrCancel)
+	job3 := &jobRunner{
+		deployResult: &deployResult{},
+		logger:       mlog.NewForConfig(nil),
+		err:          errors.New("xxx"),
+		messager:     msger,
+		eventRepo:    data.NewMockEventRepo(m),
+		user:         &biz.UserInfo{Name: "u", Email: "u@mars.com"},
+		stopCtx:      manualCtx,
+		stopFn:       manualStop,
+		input:        &JobInput{NamespaceId: 1, Name: "app"},
+	}
+	msger.EXPECT().SendDeployedResult(websocket_pb.ResultType_DeployedCanceled, ErrCancel.Error(), nil).Times(1)
+	job3.Finish()
 
 	// failed
 	job2 := &jobRunner{
@@ -1778,6 +1802,15 @@ func TestJober_Finish_WhenSuccess(t *testing.T) {
 	assert.Equal(t, 1, finallyCalled)
 	assert.Equal(t, 1, successCalled)
 	assert.Equal(t, 0, errorCalled)
+}
+
+func TestJobRunner_cancelTarget(t *testing.T) {
+	assert.Equal(t, "1/app", (&jobRunner{input: &JobInput{NamespaceId: 1, Name: "app"}}).cancelTarget())
+	assert.Equal(t, "ns-1/app", (&jobRunner{
+		ns:      &biz.Namespace{Name: "ns-1"},
+		project: &biz.Project{Name: "app"},
+		input:   &JobInput{NamespaceId: 1, Name: "app"},
+	}).cancelTarget())
 }
 
 func Test_jobRunner_Run_Fail(t *testing.T) {

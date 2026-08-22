@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2 } from 'lucide-react'
-import { api } from '../../api/client'
-import { toast } from '../../lib/toast'
-import { Icon, type IconName } from '../../components/icons'
+import { api } from '@/api/client'
+import { toast } from '@/lib/toast'
+import { Icon, type IconName } from '@/components/Icons'
 
 type PipelineStatus = 'success' | 'running' | 'failed' | 'manual' | 'unknown'
 
@@ -129,7 +128,7 @@ export function PipelineInfo({
   if (!status && loading) {
     return (
       <div className="flex min-h-[42px] items-center gap-2 rounded-md border border-line bg-surface px-3 py-2">
-        <Loader2 className="size-4 shrink-0 animate-spin text-faint" />
+        <Icon name="loader" className="size-4 shrink-0 animate-spin text-faint" />
         <span className="text-[13px] font-medium leading-none text-faint">{t('common.loading')}</span>
       </div>
     )

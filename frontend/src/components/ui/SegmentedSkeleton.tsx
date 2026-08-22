@@ -7,8 +7,8 @@
  */
 export function SegmentedSkeleton({ className }: { className?: string }) {
   return (
-    <div className={`h-[38px] w-full overflow-hidden rounded-md border border-input ${className ?? ''}`}>
-      <div className="h-full w-full animate-pulse bg-accent md:ml-px md:w-[calc(100%-1px)]" />
+    <div className={`h-[38px] w-full overflow-hidden rounded-md border border-line-strong ${className ?? ''}`}>
+      <div className="h-full w-full animate-pulse bg-raised md:ml-px md:w-[calc(100%-1px)]" />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
-import { materialDark, yamlScalarHighlight } from './prism-material-dark'
+import { materialDark, yamlScalarHighlight } from '@/lib/prism-material-dark'
 import { color } from '@uiw/codemirror-extensions-color'
 import { yaml } from '@codemirror/lang-yaml'
 import { json, jsonParseLinter } from '@codemirror/lang-json'

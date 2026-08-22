@@ -9,27 +9,26 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { Loader2 } from 'lucide-react'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
-import type { components } from '../../api/schema'
-import { api } from '../../api/client'
-import { getToken } from '../../api/token'
-import { websocket } from '../../api/websocket'
-import type { FrameHandler } from '../../realtime/useWebsocket'
-import { useWebsocket } from '../../realtime/useWebsocket'
-import { nextZIndex } from '../../hooks/useDraggableDialog'
-import { Icon } from '../../components/icons'
-import { Empty, SkeletonTabShell } from '../../components/ui'
+import type { components } from '@/api/schema'
+import { api } from '@/api/client'
+import { getToken } from '@/api/token'
+import { websocket } from '@/api/websocket'
+import type { FrameHandler } from '@/hooks/useWebsocket'
+import { useWebsocket } from '@/hooks/useWebsocket'
+import { nextZIndex } from '@/lib/zIndex'
+import { Icon } from '@/components/Icons'
+import { Empty, SkeletonTabShell } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/shadcn/popover'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/shadcn/radio-group'
-import { copyText } from '../../utils/copy'
+import { copyText } from '@/lib/copy'
 import { PodMetrics } from './PodMetrics'
 import { PodStateTag } from './PodStateTag'
-import { shortContainerName } from './shortContainerName'
+import { shortContainerName } from '@/lib/shortContainerName'
 
 type StateContainer = components['schemas']['types.StateContainer']
 type NPC = { namespace: string; pod: string; container: string }
@@ -218,11 +217,11 @@ export function TabShell({
   // 同一容器也允许再开一个终端（每个 pane 独立 WS 会话），最多 MAX_PANES 格
   const addPane = () => {
     if (!target || panes.length >= MAX_PANES) return
-    setPanes((prev) => {
-      if (prev.length >= MAX_PANES) return prev
-      setResizeRev((r) => r + 1)
-      return [...prev, { id: crypto.randomUUID(), npc: target }]
-    })
+    const pane = { id: crypto.randomUUID(), npc: target }
+    // updater 保持纯（StrictMode 双跑幂等：append 同一个已生成对象），
+    // setResizeRev 挪出——放在 updater 里双跑会 +2，且违反 updater 必须无副作用
+    setPanes((prev) => (prev.length >= MAX_PANES ? prev : [...prev, pane]))
+    setResizeRev((r) => r + 1)
   }
 
   const removePane = (id: string) => {
@@ -400,7 +399,7 @@ export function TabShell({
   if (containers.length === 0) {
     // 首次拉取未返回前用骨架占位（对齐 TabLog 加载态），避免误显「暂无任何容器」闪跳
     if (loading) return <SkeletonTabShell />
-    return <Empty text={t('project.noContainers')} />
+    return <Empty text={t('project.noContainers')} icon="terminal" />
   }
 
   return (
@@ -471,7 +470,7 @@ export function TabShell({
               disabled={uploading}
               onClick={() => fileInputRef.current?.click()}
             >
-              {uploading ? <Loader2 className="size-3 animate-spin" /> : <Icon name="copy" className="text-[11px]" />}
+              {uploading ? <Icon name="loader" className="size-3 animate-spin" /> : <Icon name="copy" className="text-[11px]" />}
               {t('project.uploadToPod')}
             </Button>
 
@@ -479,7 +478,7 @@ export function TabShell({
             <Popover open={dlOpen} onOpenChange={(o) => { if (o) setDlZ(nextZIndex()); setDlOpen(o) }}>
               <PopoverTrigger asChild>
                 <Button size="xs" variant="outline" disabled={downloading}>
-                  {downloading ? <Loader2 className="size-3 animate-spin" /> : <Icon name="logs" className="text-[11px]" />}
+                  {downloading ? <Icon name="loader" className="size-3 animate-spin" /> : <Icon name="logs" className="text-[11px]" />}
                   {t('project.downloadFromPod')}
                 </Button>
               </PopoverTrigger>
@@ -507,7 +506,7 @@ export function TabShell({
                       disabled={downloading || !dlPath.trim()}
                       onClick={onDownload}
                     >
-                      {downloading && <Loader2 className="size-3 animate-spin" />}
+                      {downloading && <Icon name="loader" className="size-3 animate-spin" />}
                       {t('project.downloadFromPod')}
                     </Button>
                   </div>
@@ -552,7 +551,7 @@ export function TabShell({
                         setConfirmOpen(false)
                       }}
                     >
-                      {forceDeleting && <Loader2 className="size-3 animate-spin" />}
+                      {forceDeleting && <Icon name="loader" className="size-3 animate-spin" />}
                       {t('project.forceDeletePod')}
                     </Button>
                   </div>

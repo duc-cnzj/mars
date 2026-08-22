@@ -8,6 +8,8 @@ import (
 
 	entgo "entgo.io/ent"
 
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
+
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
@@ -161,6 +163,52 @@ func Test_namespaceRepo_Show(t *testing.T) {
 	show, err := repo.Show(context.TODO(), create.ID)
 	assert.Nil(t, err)
 	assert.Len(t, show.Projects, 1)
+}
+
+// Test_namespaceRepo_Show_ProjectDeployFields 回归 Show 的项目列需与 List 路径一致：
+// 必须携带 deploy_status/created_at/updated_at，否则项目 DeployStatus 会落成零值
+// （StatusUnknown），部署成功后前端 refreshNamespace 用 show 原地替换卡片，
+// 项目部署状态就"变没"了。
+func Test_namespaceRepo_Show_ProjectDeployFields(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{
+		Cfg: &config.Config{
+			NsPrefix: "abc",
+		},
+		DB: entdb,
+	}))
+
+	create, err := repo.Create(context.TODO(), &biz.CreateNamespaceInput{
+		Name:             "aaa",
+		ImagePullSecrets: []string{"a", "b"},
+		Description:      "desc",
+		CreatorEmail:     "aa",
+	})
+	require.NoError(t, err)
+
+	// 项目写入非默认部署状态（StatusDeployed），Show 需原样带回该状态而非零值。
+	entdb.Project.Create().
+		SetGitBranch("").
+		SetGitCommit("").
+		SetConfig("").
+		SetGitProjectID(1).
+		SetCreator("").
+		SetName("testProject").
+		SetNamespaceID(create.ID).
+		SetDeployStatus(types.Deploy_StatusDeployed).
+		SaveX(context.TODO())
+
+	show, err := repo.Show(context.TODO(), create.ID)
+	require.NoError(t, err)
+	require.Len(t, show.Projects, 1)
+
+	got := show.Projects[0]
+	assert.Equal(t, types.Deploy_StatusDeployed, got.DeployStatus)
+	assert.False(t, got.CreatedAt.IsZero(), "Show 的项目应返回非零 CreatedAt")
+	assert.False(t, got.UpdatedAt.IsZero(), "Show 的项目应返回非零 UpdatedAt")
 }
 
 func Test_namespaceRepo_Update(t *testing.T) {

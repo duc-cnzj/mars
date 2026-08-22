@@ -1,14 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { Loader2 } from 'lucide-react'
-import type { components } from '../../api/schema'
-import { api } from '../../api/client'
-import { getHighlightSyntax } from '../../utils/highlight'
-import { copyText } from '../../utils/copy'
-import { nextZIndex } from '../../hooks/useDraggableDialog'
-import { Icon, type IconName } from '../../components/icons'
-import { Tag } from '../../components/ui'
+import type { components } from '@/api/schema'
+import { api } from '@/api/client'
+import { getHighlightSyntax } from '@/lib/highlight'
+import { copyText } from '@/lib/copy'
+import { nextZIndex } from '@/lib/zIndex'
+import { Icon, type IconName } from '@/components/Icons'
+import { Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import {
   Dialog,
@@ -196,7 +195,7 @@ export function TabInfo({
 
       {/* 相关配置：默认折叠（配置通常很长，收起保持弹窗清爽），展开显示完整 YAML 预览。
           折叠按钮 sticky 吸顶（图钉）：展开长配置滚动时标题/折叠按钮钉在滚动区顶部不消失，
-          想收起不用滚回顶部；bg-background 与弹窗底色一致，遮盖滚过内容不露底。
+          想收起不用滚回顶部；bg-bg 与弹窗底色一致，遮盖滚过内容不露底。
           预览不设内部 max-h，随内容撑开，弹窗内容区（max-h-[68vh] overflow-auto）单滚动边界 */}
       {detail.overrideValues && (
         <section className="flex flex-col gap-1.5">
@@ -205,7 +204,7 @@ export function TabInfo({
             onClick={() => setConfigOpen((o) => !o)}
             aria-expanded={configOpen}
             aria-controls={`tabinfo-config-panel-${detail.id}`}
-            className="sticky -top-px z-20 flex w-full items-center gap-1.5 bg-background py-1 text-[13px] font-semibold text-ink transition-colors hover:text-primary"
+            className="sticky -top-px z-20 flex w-full items-center gap-1.5 bg-bg py-1 text-[13px] font-semibold text-ink transition-colors hover:text-primary"
           >
             <Icon name="database" className="text-[14px] text-primary" />
             {t('project.overrideValues')}
@@ -270,7 +269,7 @@ export function TabInfo({
               {t('common.cancel')}
             </Button>
             <Button variant="destructive" disabled={deleting} onClick={remove}>
-              {deleting && <Loader2 className="size-4 animate-spin" />}
+              {deleting && <Icon name="loader" className="size-4 animate-spin" />}
               {t('common.delete')}
             </Button>
           </DialogFooter>
