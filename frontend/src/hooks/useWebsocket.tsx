@@ -44,6 +44,18 @@ interface WsContextValue {
 
 const WsContext = createContext<WsContextValue | null>(null)
 
+/** 编码并发送 ProjectPodEventJoinInput 帧（onopen 重放与 joinProjectPodEvent 共用） */
+function sendPodEventJoin(conn: WebSocket, namespaceId: number, projectId: number, join: boolean) {
+  conn.send(
+    websocket.ProjectPodEventJoinInput.encode({
+      type: websocket.Type.ProjectPodEvent,
+      join,
+      namespaceId,
+      projectId,
+    }).finish(),
+  )
+}
+
 /**
  * WebSocket 实时通道 Provider：连接 /ws → 鉴权 → 分发 protobuf 帧。
  * 帧格式：外层一律为 WsMetadataResponse（含 Metadata），
@@ -65,6 +77,10 @@ export function ProvideWebsocket({ children }: { children: ReactNode }) {
   const slugHandlers = useRef(new Map<string, Set<FrameHandler>>())
   const typeHandlers = useRef(new Map<number, Set<FrameHandler>>())
   const podEventHandlers = useRef(new Map<number, Set<() => void>>())
+  // 活跃 pod 事件订阅登记：projectId → {namespaceId, count}。
+  // join 累加、leave 递减（同项目可被 StrictMode 双挂载/多弹窗重复 join），count 归零才从登记移除。
+  // 断线重连后服务端 join 状态随旧连接丢失，onopen 据此重放 join 帧（见 connect onopen）。
+  const podEventJoinsRef = useRef<Map<number, { namespaceId: number; count: number }>>(new Map())
   const [tick, setTick] = useState(0)
   const [clusterInfo, setClusterInfo] = useState<ClusterInfo | null>(null)
   const [reloadProjectsRev, setReloadProjectsRev] = useState(0)
@@ -121,6 +137,12 @@ export function ProvideWebsocket({ children }: { children: ReactNode }) {
           token,
         }).finish(),
       )
+      // 重放所有活跃 pod 事件订阅：初连/断线重连成功后服务端才认得 join 帧。
+      // 连接未就绪时 joinProjectPodEvent 丢弃的帧、以及重连后随旧连接丢失的服务端订阅，
+      // 都在鉴权后按登记补发（后端非授权帧会被门卫丢弃，必须先发 Authorize 再发 join）。
+      for (const [projectId, { namespaceId }] of podEventJoinsRef.current) {
+        sendPodEventJoin(conn, namespaceId, projectId, true)
+      }
       setTick((n) => n + 1)
     }
     conn.onmessage = (evt) => {
@@ -233,19 +255,34 @@ export function ProvideWebsocket({ children }: { children: ReactNode }) {
     if (c && c.readyState === WebSocket.OPEN) c.send(bytes)
   }, [])
 
-  /** 加入/退出项目 pod 事件订阅：编码为 ProjectPodEventJoinInput 帧（与旧前端 useProjectRoom 一致） */
+  /** 加入/退出项目 pod 事件订阅：编码为 ProjectPodEventJoinInput 帧（与旧前端 useProjectRoom 一致）。
+   *   join/leave 同步维护 podEventJoinsRef 登记：同项目重复 join 计数，count 归零才真正下发 leave
+   *   （一个弹窗关闭不能退掉另一个同项目弹窗的订阅）。连接未就绪时帧被丢弃也无碍，
+   *   连接成功后 onopen 会按登记重放 join。 */
   const joinProjectPodEvent = useCallback(
     (namespaceId: number, projectId: number, join: boolean) => {
-      send(
-        websocket.ProjectPodEventJoinInput.encode({
-          type: websocket.Type.ProjectPodEvent,
-          join,
-          namespaceId,
-          projectId,
-        }).finish(),
-      )
+      const c = connRef.current
+      if (join) {
+        const entry = podEventJoinsRef.current.get(projectId)
+        if (entry) {
+          entry.count += 1
+        } else {
+          podEventJoinsRef.current.set(projectId, { namespaceId, count: 1 })
+          // 仅首次 join 发帧：服务端已订阅，重复 join 只需计数（连接未就绪时帧被丢弃，onopen 会重放）
+          if (c?.readyState === WebSocket.OPEN) sendPodEventJoin(c, namespaceId, projectId, true)
+        }
+      } else {
+        const entry = podEventJoinsRef.current.get(projectId)
+        if (entry) {
+          entry.count -= 1
+          if (entry.count <= 0) {
+            podEventJoinsRef.current.delete(projectId)
+            if (c?.readyState === WebSocket.OPEN) sendPodEventJoin(c, namespaceId, projectId, false)
+          }
+        }
+      }
     },
-    [send],
+    [],
   )
 
   const value = useMemo<WsContextValue>(
