@@ -80,6 +80,7 @@ export type IconName =
   | 'refresh-cw'
   | 'grip-vertical'
   | 'user'
+  | 'minus'
 
 const paths: Record<IconName, ReactNode> = {
   grid: (
@@ -181,6 +182,7 @@ const paths: Record<IconName, ReactNode> = {
   'chevron-left': <path d="m15 6-6 6 6 6" />,
   'chevron-up': <path d="m6 15 6-6 6 6" />,
   plus: <path d="M12 5v14M5 12h14" />,
+  minus: <path d="M5 12h14" />,
   filter: <path d="M4 5h16l-6 7v5.5L10 20v-8L4 5Z" />,
   refresh: (
     <>
@@ -428,6 +430,28 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M4.5 20c0-3.5 3.4-5.5 7.5-5.5s7.5 2 7.5 5.5" />
     </>
   ),
+}
+
+/**
+ * 导出现有线性图标的路径几何，供 SVG 画布（资源拓扑节点）内嵌复用。
+ * 复用 paths 的元素描述（纯静态 SVG 路径，无状态），外层 <g> 负责缩放/着色。
+ * 与 Icon 的 <svg> 基底同款线性默认（fill=none + stroke=currentColor）——
+ * 否则裸 path 落回 SVG 默认 fill:black，暗色主题下 icon 黑乎乎不可见。
+ * 注意：Icon 自带 <svg> 与 24 视口；此处只给路径，尺寸由调用方 context 决定。
+ */
+export function IconPaths({ name }: { name: IconName }) {
+  return (
+    <g
+      key={name}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {paths[name]}
+    </g>
+  )
 }
 
 /** 线性图标：<Icon name="cluster" className="text-xl" /> */

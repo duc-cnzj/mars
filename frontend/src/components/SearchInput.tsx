@@ -15,11 +15,14 @@ export function SearchInput({
   onChange,
   placeholder,
   className,
+  size = 'md',
 }: {
   value: string
   onChange: (v: string) => void
   placeholder?: string
   className?: string
+  /** sm：紧凑工具栏用（h-8 + 更小内边距）；md：常规整页工具栏用（h-9） */
+  size?: 'sm' | 'md'
 }) {
   const { t } = useTranslation()
   const ref = useRef<HTMLInputElement>(null)
@@ -43,7 +46,10 @@ export function SearchInput({
     <div className={cn('relative', className)}>
       <Icon
         name="search"
-        className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint"
+        className={cn(
+          'pointer-events-none absolute top-1/2 -translate-y-1/2 text-faint',
+          size === 'sm' ? 'left-2.5 size-3.5' : 'left-3 size-4',
+        )}
       />
       <Input
         ref={ref}
@@ -56,9 +62,13 @@ export function SearchInput({
           // transition-[color,box-shadow]）在 v4 排序里会后于本组覆盖类，需用 ! 强制；
           // 圆角/边框/内边距/focus bg 已确认能自然胜出。focus ring 沿用基座 ring-[3px] ring-ring/50 保持全站一致。
           // Ctrl K 徽标更宽，非 mac 需要更多右侧空间，避免与文本重叠
-          isMac
-            ? 'h-9 rounded-lg border-line !bg-raised/60 pl-9 pr-14 !text-[13px]'
-            : 'h-9 rounded-lg border-line !bg-raised/60 pl-9 pr-16 !text-[13px]',
+          size === 'sm'
+            ? isMac
+              ? 'h-8 rounded-lg border-line !bg-raised/60 pl-8 pr-11 !text-[12px]'
+              : 'h-8 rounded-lg border-line !bg-raised/60 pl-8 pr-14 !text-[12px]'
+            : isMac
+              ? 'h-9 rounded-lg border-line !bg-raised/60 pl-9 pr-14 !text-[13px]'
+              : 'h-9 rounded-lg border-line !bg-raised/60 pl-9 pr-16 !text-[13px]',
           'placeholder:!text-ink/30 !transition-[border-color,background-color,box-shadow] duration-150',
           'hover:border-line-strong',
           'focus-visible:bg-surface',

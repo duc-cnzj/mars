@@ -21,6 +21,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/shadcn/tabs'
 import { TabInfo } from './TabInfo'
 import { TabLog } from './TabLog'
+import { TopologyTab } from '../topology/TopologyTab'
 
 // 命令行 Tab 依赖 xterm（约 300KB），按需加载直到真正打开 Shell 才拉取
 const TabShell = lazy(() => import('./TabShell').then((m) => ({ default: m.TabShell })))
@@ -29,12 +30,12 @@ const TabShell = lazy(() => import('./TabShell').then((m) => ({ default: m.TabSh
 const TabEdit = lazy(() => import('./TabEdit').then((m) => ({ default: m.TabEdit })))
 
 type ProjectModel = components['schemas']['types.ProjectModel']
-type TabKey = 'logs' | 'shell' | 'edit' | 'detail'
+type TabKey = 'logs' | 'shell' | 'edit' | 'detail' | 'topology'
 
 /**
- * 项目详情弹窗：忠实还原旧版 DraggableModal 的 4 Tab 结构。
- * 容器日志 / 命令行 / 配置更新 仅在 Deployed/Deploying 时展示，详细信息始终存在。
- * 打开时拉取项目最新详情，成功后按需刷新。
+ * 项目详情弹窗：忠实还原旧版 DraggableModal 的 Tab 结构。
+ * 容器日志 / 命令行 / 配置更新 / 拓扑 仅在 Deployed/Deploying 时展示，详细信息始终存在。
+ * 打开时拉取项目最新详情，成功后按需刷新；部署成功后从配置 Tab 自动切到拓扑 Tab。
  */
 export function ProjectDetailModal({
   project,
@@ -79,10 +80,11 @@ export function ProjectDetailModal({
   )
   // 已访问 Tab 集合：首次访问后保持挂载（切走仅 hidden 不卸载），
   // 部署流/表单状态在 tab 间切换时保留（用户：部署中切 tab 部署页不能被 destroy）。
-  // shell 不记入集合：xterm/WS 会话是重资源，切走即销毁、切回重建（见渲染处注释）
+  // shell / topology 不记入集合：前者是重资源 xterm/WS 会话，后者是常驻轮询 + pod 事件订阅的
+  // 实时资源树 —— 切走即卸载销毁、切回重建（用户：拓扑 Tab 与 shell 一样切走销毁，见渲染处注释）
   const [visitedTabs, setVisitedTabs] = useState<Set<TabKey>>(() => new Set())
   useEffect(() => {
-    if (tab === 'shell') return
+    if (tab === 'shell' || tab === 'topology') return
     setVisitedTabs((prev) => {
       if (prev.has(tab)) return prev
       const next = new Set(prev)
@@ -142,6 +144,7 @@ export function ProjectDetailModal({
           { key: 'logs' as const, label: t('project.tabLogs') },
           { key: 'shell' as const, label: t('project.tabShell') },
           { key: 'edit' as const, label: t('project.tabEdit') },
+          { key: 'topology' as const, label: t('project.tabTopology') },
         ]
       : []),
     { key: 'detail' as const, label: t('project.tabDetail') },
@@ -229,6 +232,9 @@ export function ProjectDetailModal({
             ) : tab === 'edit' ? (
               // 配置更新骨架对齐 TabEdit 结构（吸顶头 + 配置编辑器），不再误用 SkeletonDetail
               <SkeletonTabEdit />
+            ) : tab === 'topology' ? (
+              // 拓扑骨架：复用详细信息骨架占位（资源树由 Tab 自身拉取，弹窗详情只挡首帧）
+              <SkeletonDetail />
             ) : (
               <SkeletonDetail />
             )
@@ -238,9 +244,10 @@ export function ProjectDetailModal({
             tabItems.map((it) => {
               const active = tab === it.key
               // 已访问的 Tab 保持挂载（hidden 隐藏而非卸载）：部署流/表单状态切走再切回不丢。
-              // shell 例外：不在 visitedTabs 中（见其声明处），非激活即卸载销毁 xterm/WS 会话、
-              // 切回重建终端——重资源不常驻；其余 tab 每个恒在自己 wrapper 内（active 或 hidden
-              // 占同一树位），切换不重挂载。
+              // shell / topology 例外：不在 visitedTabs 中（见其声明处），非激活即卸载销毁——
+              // shell 销毁 xterm/WS 会话，topology 销毁常驻轮询 + pod 事件订阅的资源树（用户要求
+              // 拓扑 Tab 与 shell 一样切走销毁），切回重建；其余 tab 每个恒在自己 wrapper 内
+              //（active 或 hidden 占同一树位），切换不重挂载。
               // wrapper 统一 h-full overflow-auto：TabEdit/TabShell 是 h-full 内部自滚内容，
               // TabInfo/TabLog 是内容高、由 wrapper 滚动——与原先外层 overflow-auto 行为一致。
               if (!active && !visitedTabs.has(it.key)) return null
@@ -257,9 +264,19 @@ export function ProjectDetailModal({
                   )}
                   {it.key === 'edit' && (
                     <Suspense fallback={<SkeletonTabEdit />}>
-                      <TabEdit detail={detail} onChanged={handleChanged} />
+                      {/* 部署成功后从配置 Tab 自动切到拓扑 Tab（用户在配置 Tab 盯日志，成功后跳拓扑看终态资源树）。
+                          守卫：仅当前仍在配置 Tab 才跳——用户切到日志/详情等 Tab 时部署在后台完成，不把他拽回拓扑。
+                          onDeployed 在 TabEdit 的 [stream.status] effect 触发，inline 箭头捕获最新 tab，父重渲即新闭包 */}
+                      <TabEdit
+                        detail={detail}
+                        onChanged={handleChanged}
+                        onDeployed={() => {
+                          if (tab === 'edit') setTab('topology')
+                        }}
+                      />
                     </Suspense>
                   )}
+                  {it.key === 'topology' && <TopologyTab project={detail} resizeAt={resizeAt} />}
                   {it.key === 'detail' && <TabInfo detail={detail} onDeleted={onDeleted} />}
                 </div>
               )

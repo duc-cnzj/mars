@@ -126,11 +126,50 @@ body {
 }
 .animate-list-in { animation: mars-list-in 0.45s ease-out both; }
 
+/* ============================================================
+   拓扑常驻「活」感：让整张图像在运行中的系统
+   1) 状态点呼吸：健康/异常做轻微透明度起伏
+   2) 进行中脉冲：progressing 状态点持续缩放跳动（部署时最强的”活动”信号）
+   3) 状态标签声呐：Pod/Application 状态胶囊外扩一圈细环，像应用心跳
+   4) selector 虚线流动：服务→Pod 的流量边呈”行军蚁”式流动
+   全部随 prefers-reduced-motion 降级；transform 动画需 transform-box 以节点自身为中心。
+   所有标签/状态点动画统一 2.4s 周期、同相位启动 —— 全图同节拍（用户要求频率同步）
+   ============================================================ */
+@keyframes topo-dot-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.topo-dot-breathe { animation: topo-dot-breathe 2.4s ease-in-out infinite; }
+
+@keyframes topo-dot-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.5); }
+}
+.topo-dot-pulse { animation: topo-dot-pulse 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+
+/* 状态标签（Pod 生命周期胶囊 / Application 状态胶囊）「声呐环」：与胶囊同几何的圆角矩形描边外扩淡出。
+   全图所有标签同周期同相位一起扩 —— 整体像一次雷达波扫过（用户要求频率同步，不再错相位）。
+   起始透明度高、外扩大、描边粗，保证环一眼可见 */
+@keyframes topo-pill-ping {
+  0% { transform: scale(1); opacity: 0.9; }
+  75%, 100% { transform: scale(1.5); opacity: 0; }
+}
+.topo-pill-ping { animation: topo-pill-ping 2.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+
+@keyframes topo-dash-flow {
+  to { stroke-dashoffset: -20; }
+}
+.topo-dash-flow { animation: topo-dash-flow 1.2s linear infinite; }
+
 /* 无障碍：prefers-reduced-motion 关闭装饰性动画/过渡
-   （列表进入、登录卡片入场、登录按钮位移）
+   （列表进入、登录卡片入场、登录按钮位移、拓扑常驻呼吸/脉冲/声呐/流动）
    loading spinner 保留——它是进度信号，禁用会丢失加载反馈 */
 @media (prefers-reduced-motion: reduce) {
   .animate-list-in,
+  .topo-dot-breathe,
+  .topo-dot-pulse,
+  .topo-pill-ping,
+  .topo-dash-flow,
   .login-card,
   .btn-login {
     animation: none !important;

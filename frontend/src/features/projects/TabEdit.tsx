@@ -32,9 +32,12 @@ type ExtraValue = components['schemas']['websocket.ExtraValue']
 export function TabEdit({
   detail,
   onChanged,
+  onDeployed,
 }: {
   detail: ProjectModel
   onChanged: () => void
+  /** 部署成功回调（弹窗据此从配置 Tab 切到拓扑 Tab 看最终资源树） */
+  onDeployed?: () => void
 }) {
   const { t } = useTranslation()
   const fireConfetti = useConfetti()
@@ -92,6 +95,8 @@ export function TabEdit({
       // 部署成功后才隐藏日志、回到配置表单：部署中日志替换表单，成功后展示配置结果（失败保留日志排查）
       setShowLog(false)
       onChanged()
+      // 成功后切到拓扑 Tab：弹窗内看最终资源树 + 后续 pod 事件驱动实时刷新
+      onDeployed?.()
     } else if (stream.status === 'failed') {
       toast.error(t('project.deployFailed', { name: detail.name }))
     } else if (stream.status === 'canceled') {

@@ -41,7 +41,7 @@ function decodeLogFrame(line: string): string {
 /** 单行日志：行号（绝对序号）+ ANSI 着色文本。一条日志一行，长行不换行（whitespace-pre），
  *  溢出由外层 overflow-auto 提供水平滚动；文本 span shrink-0 保持自然宽，避免被压缩后换行。
  *  memo：仅当行内容变化时重渲染，流式追加时不重绘旧行 */
-const LogLine = memo(function LogLine({
+export const LogLine = memo(function LogLine({
   line,
   index,
   highlight,
