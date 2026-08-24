@@ -473,7 +473,7 @@ func TestGetCommitPipeline_jobs_mixed(t *testing.T) {
 	assert.Equal(t, biz.StatusRunning, p.Jobs[2].Status)
 	assert.Equal(t, "test", p.Jobs[2].StageName)
 	assert.Equal(t, "deploy", p.Jobs[3].Name)
-	assert.Equal(t, biz.StatusUnknown, p.Jobs[3].Status) // skipped → unknown
+	assert.Equal(t, biz.StatusFailed, p.Jobs[3].Status) // skipped → failed（被跳过当失败处理）
 	assert.Equal(t, "deploy", p.Jobs[3].StageName)
 }
 
@@ -873,6 +873,7 @@ func TestToCommit_maps_fields(t *testing.T) {
 
 func TestPipelineStatus_mapping(t *testing.T) {
 	assert.Equal(t, biz.StatusFailed, pipelineStatus("failed"))
+	assert.Equal(t, biz.StatusFailed, pipelineStatus("skipped"))
 	assert.Equal(t, biz.StatusRunning, pipelineStatus("running"))
 	assert.Equal(t, biz.StatusSuccess, pipelineStatus("success"))
 	assert.Equal(t, biz.StatusManual, pipelineStatus("manual"))

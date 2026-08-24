@@ -54,6 +54,8 @@ export function SearchableSelect({
   align = 'start',
   /** 单选 trigger 选中值过长被省略（truncate 生效）时 hover 弹完整文本 tooltip；默认关闭（沿用原生 title） */
   truncateTip = false,
+  /** 弹层开合回调：供宿主在点开时拉取最新选项（如分支/commit 列表），SearchableSelect 自身不请求数据 */
+  onOpenChange,
 }: {
   value: string | string[]
   options: SearchableSelectOption[]
@@ -81,6 +83,8 @@ export function SearchableSelect({
   align?: 'start' | 'center'
   /** 单选 trigger 文本被省略时是否弹 tooltip（默认不弹，保持原生 title 行为；仅单选生效） */
   truncateTip?: boolean
+  /** 弹层开合回调（打开/关闭都触发；仅通知，不改变组件自身开合行为） */
+  onOpenChange?: (open: boolean) => void
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -217,6 +221,8 @@ export function SearchableSelect({
         // 挂载时算一次会过期，导致弹层被宿主盖住、选项看不见
         if (o) setPopZ(nextZIndex())
         setOpen(o)
+        // 通知宿主：点开时可拉取最新选项（分支/commit 列表）
+        onOpenChange?.(o)
       }}
       modal
     >

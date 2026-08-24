@@ -74,10 +74,12 @@ func toCommit(c *gitlab.Commit) *biz.Commit {
 // pipelineStatus 将 GitLab pipeline 状态字符串映射为业务层 Status。
 // 可能值：created, waiting_for_resource, preparing, pending, running, success,
 // failed, canceled, skipped, manual, scheduled；其中 manual 单独映射为
-// StatusManual（区别于 success：存在手动触发的 job，等待人工确认）。
+// StatusManual（区别于 success：存在手动触发的 job，等待人工确认）；skipped 映射为
+// StatusFailed——后续 stage 的 job 被跳过通常意味着前置 stage 的 job 失败，按失败处理
+// （用户拍板），避免部署门禁把被跳过的 job 当成 unknown→running 而漏报失败。
 func pipelineStatus(s string) biz.Status {
 	switch s {
-	case "failed":
+	case "failed", "skipped":
 		return biz.StatusFailed
 	case "running":
 		return biz.StatusRunning

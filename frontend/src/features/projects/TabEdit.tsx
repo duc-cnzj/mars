@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
@@ -105,32 +105,47 @@ export function TabEdit({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stream.status])
 
-  useEffect(() => {
-    if (!needGit || gitProjectId <= 0) return
-    setLoadingBranch(true)
-    api
+  // 分支选项拉取：挂载时初次拉（loading 骨架），每次点开分支下拉再拉一次最新。
+  // 点开时的刷新不置 loading —— 骨架会把打开的下拉换掉导致闪关，故静默更新选项
+  const fetchBranchOptions = useCallback(() => {
+    if (!needGit || gitProjectId <= 0) return Promise.resolve()
+    return api
       .GET('/api/git/projects/{gitProjectId}/branch_options', {
         params: { path: { gitProjectId }, query: { repoId: detail.repoId } },
       })
       .then(({ data, error }) => {
         if (!error && data) setBranchOptions(data.items)
       })
-      .finally(() => setLoadingBranch(false))
+      .catch(() => {})
   }, [needGit, gitProjectId, detail.repoId])
 
   useEffect(() => {
-    if (!needGit || gitProjectId <= 0 || !branch) return
-    setLoadingCommit(true)
-    setCommitOptions([])
-    api
+    if (!needGit || gitProjectId <= 0) return
+    setLoadingBranch(true)
+    void fetchBranchOptions().finally(() => setLoadingBranch(false))
+  }, [fetchBranchOptions])
+
+  // commit 选项拉取：挂载/换分支时初次拉（清空旧 commit 选项 + loading 骨架）；
+  // 每次点开 commit 下拉再拉一次最新（静默刷新，不清空，避免下拉打开中闪空）
+  const fetchCommitOptions = useCallback(() => {
+    if (!needGit || gitProjectId <= 0 || !branch) return Promise.resolve()
+    return api
       .GET('/api/git/projects/{gitProjectId}/branches/{branch}/commit_options', {
         params: { path: { gitProjectId, branch } },
       })
       .then(({ data, error }) => {
         if (!error && data) setCommitOptions(data.items)
       })
-      .finally(() => setLoadingCommit(false))
+      .catch(() => {})
   }, [needGit, gitProjectId, branch])
+
+  useEffect(() => {
+    if (!needGit || gitProjectId <= 0) return
+    setCommitOptions([])
+    if (!branch) return
+    setLoadingCommit(true)
+    void fetchCommitOptions().finally(() => setLoadingCommit(false))
+  }, [fetchCommitOptions, branch])
 
   const branchOpts = useMemo(
     () => branchOptions.map((o) => ({ label: o.label, value: o.value })),
@@ -228,6 +243,10 @@ export function TabEdit({
                     setBranch(v as string)
                     setCommit('')
                   }}
+                  onOpenChange={(open) => {
+                    // 每次点开分支下拉 → 重新拉取最新分支列表（静默刷新，下拉保持打开）
+                    if (open) void fetchBranchOptions()
+                  }}
                   placeholder={t('project.branch')}
                   searchPlaceholder={t('project.searchBranch')}
                   emptyText={t('common.empty')}
@@ -244,6 +263,10 @@ export function TabEdit({
                   value={commit}
                   options={commitOpts}
                   onChange={(v) => setCommit(v as string)}
+                  onOpenChange={(open) => {
+                    // 每次点开 commit 下拉 → 重新拉取最新 commit 列表（静默刷新，下拉保持打开）
+                    if (open) void fetchCommitOptions()
+                  }}
                   placeholder={t('project.commit')}
                   searchPlaceholder={t('project.searchCommit')}
                   emptyText={t('common.empty')}
