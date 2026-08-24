@@ -211,8 +211,9 @@ export function SearchableSelect({
     }
   }
 
-  // modal：打开时把焦点困在弹层内。非 modal 时，上方残留的 radix Select 会在
-  // 搜索框聚焦后把焦点抢回它的 trigger，radix Popover 判定焦点逃离即自动关闭。
+  // 非 modal：不再给 body 切 pointer-events，避免弹层开合瞬间浏览器重算 :hover、
+  // 在非模态宿主弹窗（项目详情 modal={false}）边缘露出卡片时闪一下 hover。
+  // 焦点链不依赖 modal 焦点陷阱：打开自动聚焦搜索框、键盘上下/回车选择、Escape 关闭。
   return (
     <Popover
       open={open}
@@ -224,7 +225,6 @@ export function SearchableSelect({
         // 通知宿主：点开时可拉取最新选项（分支/commit 列表）
         onOpenChange?.(o)
       }}
-      modal
     >
       <PopoverTrigger asChild>
         <button
