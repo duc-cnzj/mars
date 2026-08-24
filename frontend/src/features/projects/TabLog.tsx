@@ -80,6 +80,7 @@ export function TabLog({ projectId, projectName }: { projectId: number; projectN
   const [keyword, setKeyword] = useState('')
   const [follow, setFollow] = useState(true)
   const abortRef = useRef<AbortController | null>(null)
+  const mountedRef = useRef(true) // 组件存活标记：卸载后短路 startStream 的 finally 重连，防流泄漏
   const scrollRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const pendingRef = useRef('') // 半行缓冲（SSE 分片可能跨帧截断行尾）
@@ -235,6 +236,10 @@ export function TabLog({ projectId, projectName }: { projectId: number; projectN
           toast.error(err instanceof Error ? err.message : String(err))
         }
       } finally {
+        // 组件已卸载（关弹窗/切页）：abort 触发本 finally 时卸载 cleanup 已同步跑完，直接 return
+        // 短路，避免「断流自动恢复」定时器在卸载后注册、重新拉起 stream_logs——新流失去 abort
+        // 宿主，泄漏成后台持续请求（referer 变成切后的页面）
+        if (!mountedRef.current) return
         if (ac.signal === abortRef.current?.signal) {
           flushPending()
           setStreaming(false)
@@ -284,14 +289,16 @@ export function TabLog({ projectId, projectName }: { projectId: number; projectN
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.pod, selected?.container, streamEpoch])
 
-  // 卸载时中断流与恢复定时器
-  useEffect(
-    () => () => {
+  // 卸载时中断流与恢复定时器；mountedRef 置 false 供 startStream 的 finally 短路重连
+  // （先置 true 兼容 StrictMode 开发态的重挂载）
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
       abortRef.current?.abort()
       if (autoReloadTimer.current) clearTimeout(autoReloadTimer.current)
-    },
-    [],
-  )
+    }
+  }, [])
 
   // follow 自动滚底（搜索时暂停跟随）
   useEffect(() => {
