@@ -30,7 +30,7 @@ export function Coffee() {
           }}
         >
           <img
-            src="/alipay.jpg"
+            src={`${import.meta.env.BASE_URL}alipay.jpg`}
             alt={t('coffee.alipay')}
             className="block rounded-lg border border-line bg-surface shadow-md"
             style={{
@@ -39,7 +39,7 @@ export function Coffee() {
             }}
           />
           <img
-            src="/wechatpay.jpg"
+            src={`${import.meta.env.BASE_URL}wechatpay.jpg`}
             alt={t('coffee.wechat')}
             className="absolute inset-0 rounded-lg border border-line bg-surface shadow-md"
             style={{
