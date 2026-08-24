@@ -27,6 +27,7 @@ export default defineConfig({
             text: 'Quickstart',
             items: [
               { text: 'Quickstart', link: '/quickstart' },
+              { text: 'Install with Helm', link: '/install' },
               { text: 'Configuration', link: '/configuration' }
             ]
           },
@@ -68,6 +69,7 @@ export default defineConfig({
             text: '快速开始',
             items: [
               { text: '快速开始', link: '/zh/quickstart' },
+              { text: 'Helm 部署', link: '/zh/install' },
               { text: '系统配置', link: '/zh/configuration' }
             ]
           },
