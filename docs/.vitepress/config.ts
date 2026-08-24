@@ -36,7 +36,8 @@ export default defineConfig({
               { text: 'Deploying Apps', link: '/projects' },
               { text: 'Containers & Logs', link: '/containers' },
               { text: 'Permissions', link: '/access-control' },
-              { text: 'Audit & History', link: '/audit' }
+              { text: 'Audit & History', link: '/audit' },
+              { text: 'SDK & API', link: '/sdk' }
             ]
           }
         ],
@@ -76,7 +77,8 @@ export default defineConfig({
               { text: '部署应用', link: '/zh/projects' },
               { text: '容器与日志', link: '/zh/containers' },
               { text: '权限管理', link: '/zh/access-control' },
-              { text: '审计与历史', link: '/zh/audit' }
+              { text: '审计与历史', link: '/zh/audit' },
+              { text: 'SDK 对接', link: '/zh/sdk' }
             ]
           }
         ],
