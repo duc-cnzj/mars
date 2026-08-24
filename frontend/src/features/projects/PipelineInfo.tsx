@@ -30,7 +30,8 @@ const PIPELINE_META: Record<PipelineStatus, { key: PipelineKey; icon: IconName; 
 /**
  * git pipeline 状态横幅（对齐旧版 antd Alert）：全宽彩色底 + 状态图标 + 状态文案 +
  * 「查看 pipeline 详情」外链 + 右侧刷新按钮（loading 转圈，hover 品牌色 + 弱放大）。
- * 无 branch/commit 时不渲染；拉取中占位 loading；404 占位「未找到」；请求失败/无状态占位「不可用」+ 可重试。
+ * 无 branch/commit 时不渲染；拉取中占位 loading；404 占位「未找到」；请求失败/无状态占位「不可用」。
+ * 「未找到」与「不可用」均带右侧刷新按钮（pipeline 可能稍后出现，可重查）。
  * 状态色：ok 绿 / warn 琥珀 / err 红 / info 蓝；unknown 与 loading 保持中性灰。各占位与横幅等高，保持槽位稳定不跳。
  */
 export function PipelineInfo({
@@ -48,7 +49,7 @@ export function PipelineInfo({
   const [loading, setLoading] = useState(false)
   // 请求失败/返回无 pipeline 状态 → true，占位「不可用」（区别于「未就绪」的静默不渲染）
   const [unavailable, setUnavailable] = useState(false)
-  // 404（commit 不存在 / 该 commit 无 pipeline）→ true，占位「未找到」（区别于临时不可用，重试无意义故无刷新）
+  // 404（commit 不存在 / 该 commit 无 pipeline）→ true，占位「未找到」（仍带刷新按钮：pipeline 可能稍后出现）
   const [notFound, setNotFound] = useState(false)
   // 请求序号：分支/commit 切换或手动刷新并发时，只认最后一次响应（丢弃过期）
   const reqRef = useRef(0)
@@ -112,7 +113,7 @@ export function PipelineInfo({
     void fetchInfo()
   }, [fetchInfo])
 
-  // 404（commit 不存在 / 无 pipeline）：红色「未找到」（与横幅等高；区别于「不可用」不给刷新按钮，重试无意义）
+  // 404（commit 不存在 / 无 pipeline）：红色「未找到」（与横幅等高）+ 右侧刷新按钮（pipeline 可能稍后出现，可重查）
   if (notFound) {
     return (
       <div className="flex min-h-[42px] items-center gap-2 rounded-md border border-err/30 bg-err-soft px-3 py-2">
@@ -120,6 +121,15 @@ export function PipelineInfo({
         <span className="text-[13px] font-medium leading-none text-err">
           {t('project.pipelineNotFound')}
         </span>
+        <button
+          type="button"
+          onClick={() => void fetchInfo(true)}
+          title={t('project.pipelineRefresh')}
+          aria-label={t('project.pipelineRefresh')}
+          className="ml-auto flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-raised hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
+          <Icon name="refresh" className={`text-[14px] ${loading ? 'animate-spin' : ''}`} />
+        </button>
       </div>
     )
   }
