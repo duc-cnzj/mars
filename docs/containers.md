@@ -1,48 +1,40 @@
 ---
-title: 🐳 容器终端与日志
-lang: zh-CN
+title: 🐳 Containers & Logs
+lang: en-US
 ---
 
-# 🐳 容器终端与日志
+# 🐳 Containers & Logs
 
-mars 通过 WebSocket 提供容器交互能力，前端基于 `xterm` 实现，浏览器里即可完成排障。
+Mars lets you work with your running containers straight from the browser — no `kubectl` needed.
 
-## 终端（Exec / ExecOnce）
+## Open a terminal
 
-在网页上直接打开所选容器的交互终端：
+Click a container and choose **terminal**. A shell opens inside that container so you can debug live — check config files, run commands, poke around.
 
-| 接口 | 说明 |
+- A **one-off command** option runs a single command and shows you the output.
+- Need to replay what happened earlier? Terminal sessions are recorded — see [Audit & History](./audit.md).
+
+## Watch live logs
+
+Pick a container and open its **logs**. Output streams in real time, so you can watch an app boot up or trace an error.
+
+## Copy files
+
+Move files between your machine and a container:
+
+- **Into the container** — upload a file (e.g. a config or a hotfix) to a path inside the container.
+- **Out of the container** — download a file from inside the container to your computer.
+
+Useful for grabbing logs, export files, or dropping in a quick fix without rebuilding.
+
+## Monitor resource usage
+
+| View | What you see |
 |---|---|
-| `Exec` | 建立持久 WebSocket 终端会话 |
-| `ExecOnce` | 执行一次命令并返回输出 |
+| Per container | CPU and memory usage of that container |
+| Project / namespace | overall CPU and memory across the project or namespace |
+| Pod ranking | which pods are using the most resources — handy for spotting a runaway |
 
-典型场景：进入容器调试、执行一次性诊断命令。
+## Permissions
 
-## 日志（StreamContainerLog）
-
-实时拉取容器标准输出/错误日志，支持按命名空间、项目、容器维度查看。
-
-```bash
-# 通过 HTTP/JSON SDK 拉取日志（SSE/NDJSON 流式）
-go run ./examples/http -action logs
-```
-
-## 文件操作（CopyToPod）
-
-| 接口 | 说明 |
-|---|---|
-| `CopyToPod` | 把本地文件拷贝进容器 |
-| `StreamCopyToPod` | 流式拷贝 |
-| `POST /api/copy_from_pod` | 从容器拷出文件 |
-
-## 资源监控（metrics）
-
-| 接口 | 说明 |
-|---|---|
-| `TopPod` / `StreamTopPod` | 命名空间内 Pod 资源排行（实时流）|
-| `CpuMemoryInProject` | 项目维度 CPU / 内存使用 |
-| `CpuMemoryInNamespace` | 命名空间维度 CPU / 内存使用 |
-
-## 权限
-
-所有容器接口均要求**命名空间级访问权限**（`RequireNamespaceAccessByName`），详见 [权限模型](./access-control.md)。
+To open terminals or read logs in a namespace, you need **access to that namespace** — public namespaces are open to anyone logged in; private ones require membership. See [Permissions](./access-control.md).

@@ -1,147 +1,99 @@
 ---
-title: 📦 项目管理
-lang: zh-CN
+title: 📦 Deploying Apps
+lang: en-US
 ---
 
-# 📦 项目管理
+# 📦 Deploying Apps
 
-## 命名空间（Namespace）
+Everything your team deploys lives in a **namespace**, and each application is a **project**. This page explains both and how to manage versions.
 
-命名空间是 mars 的**资源隔离单元**，每个项目都归属某个命名空间。mars 管理的命名空间统一带 `ns_prefix` 前缀（默认 `devops-`）。
+## Namespaces
 
-支持的操作：
+A namespace is a **place to group your applications** — think of it as a folder or a team's space. Mars creates one real Kubernetes namespace for each of these.
 
-| 操作 | 说明 |
+- **Create** — click the **+** button in the top-right corner, give it a name, and create it.
+- **Public vs private** — public namespaces are visible to anyone logged in; private ones only to people you add (see [Permissions](./access-control.md)).
+- **Favorite** — star a namespace so it's easy to find.
+- **Transfer** — hand ownership of a namespace to another user (only the owner can do this).
+
+## Projects
+
+A **project** ties a Git repository to a Helm chart so Mars knows how to deploy it.
+
+### Create a project
+
+1. Open your namespace and add a project.
+2. Choose the Git repository and branch.
+3. **Set the chart directory** — where the Helm chart lives:
+   - In this repository: just write the folder path (e.g. `charts`).
+   - In another project: use `project-id|branch|path`, e.g. `12|main|charts`.
+
+### Configure the chart values
+
+After you set the chart directory, Mars loads a default `values.yaml` that you can edit. This file controls things like the image tag, replicas and domain.
+
+You can use these built-in variables (surrounded by `<>`, so they don't clash with Helm's own templates):
+
+| Variable | What it becomes |
 |---|---|
-| 创建 / 列表 | 在页面点击 `+` 创建；私有空间需成员身份 |
-| Transfer | 转移命名空间所有权（仅 owner）|
-| UpdatePrivate | 切换公开 / 私有（仅 owner）|
-| SyncMembers | 同步成员（仅 owner）|
-| Favorite | 收藏命名空间 |
-| IsExists | 查询命名空间是否存在（私有空间视同不存在）|
+| `<.Branch>` | the current Git branch |
+| `<.Commit>` | the current commit |
+| `<.Pipeline>` | the GitLab pipeline number |
+| `<.Host1>` … `<.Host10>` | your domain(s), up to 10 |
+| `<.TlsSecret1>` … `<.TlsSecret10>` | the matching HTTPS certificate secret |
+| `<.ClusterIssuer>` | the certificate issuer (if you use cert-manager) |
+| `<.ImagePullSecrets>` | your private-registry credentials |
 
-> 权限细节见 [权限模型](./access-control.md)。
-
-## 项目（Project）
-
-项目对应一个 git 仓库 + 一套 helm charts 配置，部署即通过 helm 把项目渲染到 Kubernetes 集群。
-
-### 核心操作
-
-| 操作 | 说明 |
-|---|---|
-| WebApply / Apply | 基于 helm 一键部署 / 升级应用 |
-| Version / 回滚 | 查看版本列表并回滚到历史版本 |
-| AllContainers | 列出项目全部容器 |
-| ResourceTree | 实时资源拓扑，展示资源依赖树 |
-| MemoryCpuAndEndpoints | 查看容器资源占用与访问端点 |
-
-### values 变量
-
-配置 `values.yaml` 时支持内置变量（使用 `<>` 作为定界符，避免和 helm 模板语法冲突）：
-
-| 变量 | 含义 |
-|---|---|
-| `<.ImagePullSecrets>` | 镜像拉取凭据 |
-| `<.Branch>` | 当前分支 |
-| `<.Commit>` | 当前 commit |
-| `<.Pipeline>` | gitlab pipeline |
-| `<.ClusterIssuer>` | 集群签发器 |
-| `<.Host1>` … `<.Host10>` | 域名，最多 10 个 |
-| `<.TlsSecret1>` … `<.TlsSecret10>` | 对应 TLS 证书 secret |
-
-示例：
+Example:
 
 ```yaml
 image:
-  repository: xxx
-  tag: "<.Branch>-<.Pipeline>"
+  repository: myapp
+  tag: "<.Branch>-<.Pipeline>"    # e.g. main-1234
 
 ingress:
   enabled: true
-  annotations:
-    cert-manager.io/cluster-issuer: "<.ClusterIssuer>"
   hosts:
     - host: <.Host1>
-      paths:
-        - path: /
-          pathType: Prefix
   tls:
     - secretName: <.TlsSecret1>
       hosts:
         - <.Host1>
 ```
 
-## 配置方式
+**Remember to save** your chart directory before configuring values — the values are loaded from that directory.
 
-### 全局配置（推荐）
+### Deploy / upgrade
 
-在页面的「配置项目」中开启项目，进入**启用全局配置**模式：
+Click **Deploy** to install the app (or to update it — a new deployment becomes a rolling update). While testing, use **debug mode** so the deployment continues even if a step fails.
 
-1. 首先配置 **charts 目录**
-   - charts 就在项目目录下：直接写相对路径
-   - 引用其他项目的 charts：按 `项目id|项目分支|相对路径` 格式，如 `12|main|charts`
-2. 保存 charts 路径后，会自动加载默认 `values.yaml` 供参考，按提示配置其他字段
-3. **配置完记得保存**
+### Roll back
 
-### 按分支单独配置（.mars.yaml）
+Every deployment is saved as a **version**. If something goes wrong:
 
-用法借鉴 `.gitlab-ci.yml`，在项目下创建 `.mars.yaml` 即可：
+1. Open the project's **version history**.
+2. Find the last good version.
+3. Click **roll back** — Mars reinstalls that version.
+
+### Resource topology
+
+Open the project's **resource tree** to see how the app's components (deployments, services, ingresses…) depend on each other — a handy overview when something isn't connecting.
+
+## Per-branch settings (.mars.yaml)
+
+You can also put a `.mars.yaml` file in the repository to define settings per branch — chart location, default values, allowed branches, and so on. This keeps deployment config close to the code.
 
 ```yaml
-# 项目默认的配置文件(可选)
-config_file: config.yaml
-# 默认配置，必须用 '|'；未设置 config_file 时使用
-config_file_values: |
-  env: dev
-  port: 8000
-# 配置文件的类型(有 config_file 时必填)
-config_file_type: yaml
-# config_field 对应到 helm values.yaml 中的哪个字段(有 config_file 时必填)
-# 支持 '->' 指向下一级，如 'config->app_name' 会生成：
-#   config:
-#     app_name: xxxx
-config_field: conf
-# charts 文件在项目中存放的目录(必填)，格式同全局配置
+# where the chart lives in this repository
 local_chart_path: charts
-# 是否单字段配置(有 config_file 时必填)
-is_simple_env: false
-# 若配置则只会显示配置的分支，默认 "*"(可选)
+# only show these branches in the UI
 branches:
+  - main
   - dev
-  - master
-# 与 helm 的 values.yaml 用法一致，但支持内置变量(见上文)
+# default values (like a values.yaml)
 values_yaml: |
   replicaCount: 1
   image:
-    repository: xxx
-    pullPolicy: IfNotPresent
+    repository: myapp
     tag: "<.Branch>-<.Pipeline>"
-  imagePullSecrets: []
-  ingress:
-    enabled: true
-    hosts:
-      - host: <.Host1>
 ```
-
-#### `is_simple_env` / `config_file` 说明
-
-以一份普通的 helm values.yaml 为例：
-
-```yaml
-# 你的 app 的 config 配置：这些都是独立变量 → is_simple_env: false，config_field: conf
-conf:
-  APP_PORT: 8080
-  DB_HOST: mysql
-  DB_PORT: 3306
-
-# 这是一个整体 → is_simple_env: true，config_field: conf_two
-conf_two: |
-  APP_PORT: 8080
-  DB_HOST: mysql
-  DB_PORT: 3306
-```
-
-- `conf` 下是一组独立变量：`is_simple_env` 应为 `false`
-- `conf_two` 是整块内容：`is_simple_env` 应为 `true`
-- `config_field` 指定这些内容挂在 helm values.yaml 的哪个字段下

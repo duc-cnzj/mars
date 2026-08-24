@@ -1,177 +1,126 @@
 ---
-title: ⚙️ 配置参考
-lang: zh-CN
+title: ⚙️ Configuration
+lang: en-US
 ---
 
-# ⚙️ 配置参考
+# ⚙️ Configuration
 
-Mars 通过 `-c, --config` 读取 YAML 配置，默认读取当前目录下的 `config.yaml`（由 `./bin/app init` 生成；完整示例见 [config_example.yaml](https://github.com/duc-cnzj/mars/blob/master/config_example.yaml)）。
+Mars reads a single YAML file for all its settings: `config.yaml` in the directory you run it from. Generate one with `./bin/app init`, then edit it and restart Mars for changes to take effect.
 
-## CLI 命令
+This page explains the settings you're most likely to touch. A full commented template lives at [`config_example.yaml`](https://github.com/duc-cnzj/mars/blob/master/config_example.yaml) in the repository.
 
-根命令为 `app`：
+## Core settings
 
-| 命令 | 说明 |
-|---|---|
-| `app serve` | 启动全部服务（api / metrics / cron / profile）|
-| `app inspect` | 查看运行时信息：`all` / `tags` / `cronjobs` / `events` / `plugins` / `config` |
-| `app init` | 生成默认 `config.yaml` |
-
-`app serve` 常用参数：
-
-```bash
-app serve -c config.yaml \
-  --app_port 4000 \
-  --grpc_port 50000 \
-  --metrics_port 9091 \
-  --kubeconfig ~/.kube/config \
-  --exclude_server metrics,cron,profile
-```
-
-> 配置还支持环境变量覆盖，前缀为 `MARS`。
-
-## 配置字段总表
-
-对齐 `config_example.yaml`，未注释字段均为默认值。
-
-### 服务与通用
-
-| 字段 | 默认值 | 说明 |
+| Setting | Default | What it does |
 |---|---|---|
-| `app_port` | `4000` | HTTP/JSON（gateway）端口 |
-| `grpc_port` | `50000` | gRPC 端口 |
-| `metrics_port` | `9090` | metrics 端口 |
-| `debug` | `false` | 调试模式 |
-| `exclude_server` | `""` | 需要排除的 server tag，如 `cron,api,metrics` |
-| `log_channel` | `zap` | 日志通道：`logrus` / `zap` |
-| `git_server_cached` | `true` | 开启 git 请求缓存（git 请求较慢，默认开启）|
-| `db_auto_migrate` | `false` | 是否自动迁移数据库表结构 |
-| `cache_driver` | `memory` | 缓存驱动：`memory` / `db` |
-| `external_ip` | `127.0.0.1` | 集群外网访问 IP |
-| `ns_prefix` | `devops-` | mars 管理的命名空间统一加此前缀 |
-| `install_timeout` | `90s` | helm 安装超时 |
-| `tracing_endpoint` | `""` | OTLP 链路追踪端点（如 Jaeger 4317）|
-| `admin_password` | `123456` | admin 账号密码 |
-| `private_key` | `""` | RSA 私钥（签发访问 token 用）|
+| `app_port` | `4000` | The web address users open: `http://<host>:4000` |
+| `grpc_port` | `50000` | Internal API port (most users don't touch this) |
+| `admin_password` | `123456` | Password for the built-in `admin` account — **change it!** |
 
-### 存储
+## Connecting your Git server
 
-| 字段 | 默认值 | 说明 |
-|---|---|---|
-| `db_driver` | `sqlite` | 存储驱动：`sqlite` / `mysql` |
-| `db_database` | `/tmp/mars-sqlite.db` | sqlite 时为 db 绝对路径；mysql 时为库名 |
-| `db_host` / `db_port` / `db_username` / `db_password` | `127.0.0.1` / `13306` / `root` / `""` | mysql 时必填，sqlite 忽略 |
-| `db_slow_log_enabled` | `true` | 开启慢查询日志 |
-| `db_slow_log_threshold` | `200ms` | 慢查询阈值：`ns` / `us` / `ms` / `s` / `m` / `h` |
-| `db_debug` | `false` | 开启 ent Debug 模式（打印 SQL）|
-
-### 文件与 S3
-
-| 字段 | 默认值 | 说明 |
-|---|---|---|
-| `upload_dir` | `/tmp/mars-uploads` | 上传文件保存目录 |
-| `upload_max_size` | `50m` | 上传大小上限（支持 `MB` / `Gi` / `m` / `g`）|
-| `s3_enabled` | `false` | 是否上传文件到 S3 |
-| `s3_endpoint` | `""` | MinIO / S3 端点 |
-| `s3_access_key_id` / `s3_secret_access_key` | `minioadmin` | S3 凭据 |
-| `s3_use_ssl` | `false` | 是否使用 SSL |
-| `s3_bucket` | `mars` | S3 bucket 名 |
-
-### 插件
-
-#### git_server_plugin（Git 服务端）
+Set `git_server_plugin` so Mars can read your repositories and charts:
 
 ```yaml
 git_server_plugin:
   name: gitlab
   args:
-    token: ""
+    token: "your-gitlab-token"
     baseurl: "https://gitlab.com/api/v4"
 ```
 
-#### ws_sender_plugin（实时消息队列）
+To create a GitLab token: **GitLab → Settings → Access Tokens → Add new token**, and give it at least `read_api` scope. Use your self-hosted GitLab address in `baseurl` if you have one.
+
+## Connecting your Kubernetes cluster
+
+Point Mars at your cluster's kubeconfig. If Mars runs on the same machine as `kubectl`, you usually already have this file:
 
 ```yaml
-ws_sender_plugin:
-  name: ws_sender_memory
-#  name: ws_sender_nsq
-#  args:
-#    addr: 127.0.0.1:4150
-#    # lookupd_addr 可选；必须是 nsqlookupd HTTP 端口 4161（4160 是 TCP 端口）
-#    lookupd_addr: 127.0.0.1:4161
-#    msg_timeout: 120        # 消息处理超时，默认 60s
-#    dial_timeout: 5         # 连接建立超时，默认 1s
-#    read_timeout: 120       # 读取超时，默认 60s
-#    write_timeout: 5        # 写入超时，默认 1s
-#    heartbeat_interval: 30  # 心跳间隔，默认 30s
-#  name: ws_sender_redis
-#  args:
-#    addr: 127.0.0.1:6379
-#    password: ""
-#    db: 1
+kubeconfig: "/home/you/.kube/config"
 ```
 
-::: warning
-使用 NSQ 时注意：`lookupd_addr` 必须填 **nsqlookupd 的 HTTP 端口 4161**，4160 是 TCP 端口。
-:::
+- Running Mars **inside** the cluster? Leave it empty — Mars uses the in-cluster credentials automatically.
+- Running **outside**? Point it at your kubeconfig file.
 
-#### domain_manager_plugin（域名/证书管理）
+Mars adds a prefix to every namespace it creates — `ns_prefix` (default `devops-`). You can change it if that prefix clashes with your cluster.
 
-```yaml
-domain_manager_plugin:
-  name: default_domain_manager
-#  name: manual_domain_manager
-#  args:
-#    wildcard_domain: "*.mars.local"
-#    tls_key: ""
-#    tls_crt: ""
-#  name: sync_secret_domain_manager
-#  args:
-#    wildcard_domain: "*.mars.local"
-#    secret_name: ""
-#    secret_namespace: ""
-#  name: cert-manager_domain_manager
-#  args:
-#    wildcard_domain: "*.mars.local"
-#    cluster_issuer: "letsencrypt-mars"
-```
+## Sign-in
 
-#### picture_plugin（登录页背景图）
+### Password login
 
-```yaml
-picture_plugin:
-  name: picture_bing
-#  name: picture_cartoon
-```
+Works out of the box with `admin` and `admin_password`. When users log in with the admin account, they get full permissions (see [Permissions](./access-control.md)).
 
-### 私有镜像仓库
+### Single sign-on (OIDC)
 
-```yaml
-imagepullsecrets:
-  - username: "jack"
-    password: "12345"
-    email: "jack@example.com"
-    # server 默认 "https://index.docker.io/v1/"
-  - username: "john"
-    password: "12345"
-    email: "john@example.com"
-    server: "registry.cn-hangzhou.aliyuncs.com"
-```
-
-### OIDC 单点登录（多 provider）
+To let people log in with their company account, add one or more OIDC providers:
 
 ```yaml
 oidc:
-  - name: "sso1"
+  - name: "company-sso"
     enabled: true
-    provider_url: "http://127.0.0.1:9001"
-    client_id: "sso-xxx"
+    provider_url: "https://sso.company.com"
+    client_id: "mars"
     client_secret: "xxxx"
     redirect_url: "http://127.0.0.1:3000/auth/callback"
-  - name: "sso2"
-    enabled: true
-    provider_url: "http://127.0.0.1:9001"
-    client_id: "sso-xxx"
-    client_secret: "xxxx"
-    redirect_url: "http://127.0.0.1:3000/auth/callback"
+```
+
+You can configure several providers — users can pick which one to sign in with.
+
+## Private image registry
+
+To pull images from a private Docker registry, list the credentials:
+
+```yaml
+imagepullsecrets:
+  - username: "registry-user"
+    password: "registry-password"
+    email: "you@example.com"
+    server: "registry.example.com"        # default: https://index.docker.io/v1/
+```
+
+Mars attaches these credentials to deployed applications so they can pull private images.
+
+## Storage
+
+Mars stores its own data (namespaces, projects, deploy history) in a database.
+
+| Setting | Default | Notes |
+|---|---|---|
+| `db_driver` | `sqlite` | `sqlite` needs no setup; `mysql` for production |
+| `db_database` | `/tmp/mars-sqlite.db` | file path for sqlite; database name for mysql |
+| `db_host` / `db_port` / `db_username` / `db_password` | — | required only for `mysql` |
+
+## File uploads
+
+| Setting | Default | Notes |
+|---|---|---|
+| `upload_dir` | `/tmp/mars-uploads` | where uploaded files are stored |
+| `upload_max_size` | `50m` | maximum upload size (e.g. `100m`, `1g`) |
+| `s3_enabled` | `false` | store uploads on S3 / MinIO instead of disk |
+
+## Small niceties
+
+| Setting | Default | What it does |
+|---|---|---|
+| `picture_plugin` | `picture_bing` | background image on the login page: `picture_bing` or `picture_cartoon` |
+| `external_ip` | `127.0.0.1` | externally reachable IP of your cluster |
+| `install_timeout` | `90s` | how long a deployment may take before timing out |
+| `debug` | `false` | verbose logs for troubleshooting |
+
+## Command line
+
+| Command | What it does |
+|---|---|
+| `./bin/app init` | generate a `config.yaml` if one doesn't exist |
+| `./bin/app serve -c config.yaml` | start the server |
+| `./bin/app inspect` | show runtime info (config, plugins, jobs…) |
+
+Common flags for `serve`:
+
+```bash
+./bin/app serve -c config.yaml \
+  --app_port 4000 \
+  --grpc_port 50000 \
+  --metrics_port 9091 \
+  --kubeconfig ~/.kube/config
 ```
