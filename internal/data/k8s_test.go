@@ -501,37 +501,42 @@ func Test_getStatus(t *testing.T) {
 		Wants      biz.ClusterStatus
 	}{
 		{
-			CpuRate:    60,
-			MemoryRate: 60,
+			CpuRate:    80,
+			MemoryRate: 80,
 			Wants:      StatusHealth,
 		},
 		{
-			CpuRate:    61,
-			MemoryRate: 61,
+			CpuRate:    81,
+			MemoryRate: 81,
 			Wants:      StatusNotGood,
 		},
 		{
-			CpuRate:    61,
+			CpuRate:    81,
 			MemoryRate: 10,
 			Wants:      StatusNotGood,
 		},
 		{
 			CpuRate:    10,
-			MemoryRate: 60,
+			MemoryRate: 80,
 			Wants:      StatusHealth,
 		},
 		{
-			CpuRate:    81,
-			MemoryRate: 81,
+			CpuRate:    95,
+			MemoryRate: 95,
+			Wants:      StatusNotGood,
+		},
+		{
+			CpuRate:    96,
+			MemoryRate: 96,
 			Wants:      StatusBad,
 		},
 		{
 			CpuRate:    10,
-			MemoryRate: 81,
+			MemoryRate: 96,
 			Wants:      StatusBad,
 		},
 		{
-			CpuRate:    81,
+			CpuRate:    96,
 			MemoryRate: 1,
 			Wants:      StatusBad,
 		},

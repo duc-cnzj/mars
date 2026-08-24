@@ -847,13 +847,13 @@ func (repo *k8sRepo) ClusterInfo() *biz.ClusterInfo {
 	}
 }
 
-// getStatus 按请求率阈值定级：任一超 80 为 bad，超 60 为 not good，否则 health。
+// getStatus 按请求率阈值定级：任一超 95 为 bad，超 80 为 not good，否则 health。
 func (repo *k8sRepo) getStatus(rateRequestMemory float64, rateRequestCpu float64) biz.ClusterStatus {
 	var status = StatusHealth
-	if rateRequestMemory > 60 || rateRequestCpu > 60 {
+	if rateRequestMemory > 80 || rateRequestCpu > 80 {
 		status = StatusNotGood
 	}
-	if rateRequestMemory > 80 || rateRequestCpu > 80 {
+	if rateRequestMemory > 95 || rateRequestCpu > 95 {
 		status = StatusBad
 	}
 	return status
