@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: v6.0.0-beta.14
+    version: api/v6.0.0-beta.18
 paths:
     /api/access_tokens:
         get:
@@ -1780,6 +1780,53 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+    /api/repos/export:
+        get:
+            tags:
+                - Repo
+            summary: 导出全部 repo 为 JSON（与导入格式一致，可直接回导入）
+            description: |-
+                注意：Export 必须排在 Show 之后。grpc-gateway 按注册逆序试匹配路由，
+                 Show 的 `/api/repos/{id}` 通配会吞掉 `/api/repos/export`，Export 晚注册才能先命中。
+            operationId: Repo_Export
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.ExportResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/repos/import:
+        post:
+            tags:
+                - Repo
+            summary: 导入 repo JSON（按名称幂等：已存在则覆盖，不存在则创建）
+            operationId: Repo_Import
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/repo.ImportRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.ImportResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/repos/toggle_enabled:
         post:
             tags:
@@ -2874,6 +2921,43 @@ components:
         repo.DeleteResponse:
             type: object
             properties: {}
+        repo.ExportResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.RepoModel'
+        repo.ImportRequest:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.RepoModel'
+                    description: items 与导出响应同构：导出的 JSON 文件内容可原样作为导入请求体。
+                dryRun:
+                    type: boolean
+                    description: dry_run 为 true 时只预览计数（将新建/覆盖多少），不落库、不留审计、不产生快照。
+        repo.ImportResponse:
+            type: object
+            properties:
+                total:
+                    type: integer
+                    format: int32
+                created:
+                    type: integer
+                    format: int32
+                updated:
+                    type: integer
+                    format: int32
+                updatedOld:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.RepoModel'
+                    description: |-
+                        updated_old 仅 dry_run 预览时返回：将被覆盖条目的当前（旧）状态，
+                         供前端按 name 与导入文件条目配对渲染 old→new diff；真实导入时为空。
         repo.ListResponse:
             type: object
             properties:

@@ -23,6 +23,8 @@ const (
 	Repo_List_FullMethodName          = "/repo.Repo/List"
 	Repo_Create_FullMethodName        = "/repo.Repo/Create"
 	Repo_Show_FullMethodName          = "/repo.Repo/Show"
+	Repo_Export_FullMethodName        = "/repo.Repo/Export"
+	Repo_Import_FullMethodName        = "/repo.Repo/Import"
 	Repo_Update_FullMethodName        = "/repo.Repo/Update"
 	Repo_Delete_FullMethodName        = "/repo.Repo/Delete"
 	Repo_ToggleEnabled_FullMethodName = "/repo.Repo/ToggleEnabled"
@@ -36,6 +38,10 @@ type RepoClient interface {
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
+	// 注意：Export 必须排在 Show 之后。grpc-gateway 按注册逆序试匹配路由，
+	// Show 的 `/api/repos/{id}` 通配会吞掉 `/api/repos/export`，Export 晚注册才能先命中。
+	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
+	Import(ctx context.Context, in *ImportRequest, opts ...grpc.CallOption) (*ImportResponse, error)
 	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	ToggleEnabled(ctx context.Context, in *ToggleEnabledRequest, opts ...grpc.CallOption) (*ToggleEnabledResponse, error)
@@ -74,6 +80,26 @@ func (c *repoClient) Show(ctx context.Context, in *ShowRequest, opts ...grpc.Cal
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ShowResponse)
 	err := c.cc.Invoke(ctx, Repo_Show_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *repoClient) Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExportResponse)
+	err := c.cc.Invoke(ctx, Repo_Export_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *repoClient) Import(ctx context.Context, in *ImportRequest, opts ...grpc.CallOption) (*ImportResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ImportResponse)
+	err := c.cc.Invoke(ctx, Repo_Import_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -127,6 +153,10 @@ type RepoServer interface {
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	Create(context.Context, *CreateRequest) (*CreateResponse, error)
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
+	// 注意：Export 必须排在 Show 之后。grpc-gateway 按注册逆序试匹配路由，
+	// Show 的 `/api/repos/{id}` 通配会吞掉 `/api/repos/export`，Export 晚注册才能先命中。
+	Export(context.Context, *ExportRequest) (*ExportResponse, error)
+	Import(context.Context, *ImportRequest) (*ImportResponse, error)
 	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	ToggleEnabled(context.Context, *ToggleEnabledRequest) (*ToggleEnabledResponse, error)
@@ -149,6 +179,12 @@ func (UnimplementedRepoServer) Create(context.Context, *CreateRequest) (*CreateR
 }
 func (UnimplementedRepoServer) Show(context.Context, *ShowRequest) (*ShowResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Show not implemented")
+}
+func (UnimplementedRepoServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Export not implemented")
+}
+func (UnimplementedRepoServer) Import(context.Context, *ImportRequest) (*ImportResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Import not implemented")
 }
 func (UnimplementedRepoServer) Update(context.Context, *UpdateRequest) (*UpdateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Update not implemented")
@@ -233,6 +269,42 @@ func _Repo_Show_Handler(srv interface{}, ctx context.Context, dec func(interface
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RepoServer).Show(ctx, req.(*ShowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Repo_Export_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RepoServer).Export(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Repo_Export_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RepoServer).Export(ctx, req.(*ExportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Repo_Import_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ImportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RepoServer).Import(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Repo_Import_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RepoServer).Import(ctx, req.(*ImportRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -327,6 +399,14 @@ var Repo_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Show",
 			Handler:    _Repo_Show_Handler,
+		},
+		{
+			MethodName: "Export",
+			Handler:    _Repo_Export_Handler,
+		},
+		{
+			MethodName: "Import",
+			Handler:    _Repo_Import_Handler,
 		},
 		{
 			MethodName: "Update",

@@ -4,10 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 )
+
+// repoNamePattern 是 repo 名称的合法字符集，对齐 proto validate 与 ent schema。
+// 导入请求复用 RepoModel 模型消息（无逐字段 validate 规则），故在 biz 层自行校验 name。
+var repoNamePattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 // RepoBiz 收口仓库领域业务：增删改查、克隆与启用开关。
 type RepoBiz interface {
@@ -29,6 +34,10 @@ type RepoBiz interface {
 	Clone(ctx context.Context, input *CloneRepoInput) (*Repo, error)
 	// ToggleEnabled 启用/禁用仓库。
 	ToggleEnabled(ctx context.Context, id int, enabled bool) (*Repo, error)
+	// Import 批量导入仓库（按 name 幂等覆盖），返回新建/更新计数。
+	Import(ctx context.Context, items []*ImportRepoItem) (created, updated int, err error)
+	// PreviewImport 干跑导入：同 Import 的校验与计数判定，但不落库（导入前预览用）。
+	PreviewImport(ctx context.Context, items []*ImportRepoItem) (created, updated int, err error)
 }
 
 type repoBiz struct {
@@ -141,6 +150,49 @@ func (b *repoBiz) Clone(ctx context.Context, input *CloneRepoInput) (*Repo, erro
 	return b.repoRepo.Clone(ctx, input)
 }
 
+// validateImportItems 整体校验导入条目：任一为空、name 非法或重复即返回参数错误，保证校验先行、零部分变更。
+// 调用方（Import/PreviewImport）已对空切片短路，此处空切片自然返回 nil。
+func validateImportItems(items []*ImportRepoItem) error {
+	seen := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		if item == nil {
+			return errs.WrapInvalidArgument(errors.New("导入数据不能为空"), "import repo")
+		}
+		if !repoNamePattern.MatchString(item.Name) {
+			return errs.WrapInvalidArgument(fmt.Errorf("repo 名称 %q 不合法", item.Name), "import repo")
+		}
+		if _, dup := seen[item.Name]; dup {
+			return errs.WrapInvalidArgument(fmt.Errorf("repo 名称 %q 在导入文件中重复", item.Name), "import repo")
+		}
+		seen[item.Name] = struct{}{}
+	}
+	return nil
+}
+
+// Import 批量导入仓库：先整体校验所有 name（任一非法或重复即返回、不做任何变更），
+// 再委托 data 层在单个事务内按 name 幂等应用——已存在走 Update（保留原 ID 与关联项目），
+// 不存在走 Create；任一条目落库失败整体回滚，不留下部分导入结果。
+func (b *repoBiz) Import(ctx context.Context, items []*ImportRepoItem) (created, updated int, err error) {
+	if len(items) == 0 {
+		return 0, 0, nil
+	}
+	if err := validateImportItems(items); err != nil {
+		return 0, 0, err
+	}
+	return b.repoRepo.Import(ctx, items)
+}
+
+// PreviewImport 干跑导入：与 Import 共用整体校验，委托 data 层只做计划不计落库（导入前预览用）。
+func (b *repoBiz) PreviewImport(ctx context.Context, items []*ImportRepoItem) (created, updated int, err error) {
+	if len(items) == 0 {
+		return 0, 0, nil
+	}
+	if err := validateImportItems(items); err != nil {
+		return 0, 0, err
+	}
+	return b.repoRepo.PreviewImport(ctx, items)
+}
+
 // ToggleEnabled 启用/禁用仓库，禁用时需验证无关联项目。
 func (b *repoBiz) ToggleEnabled(ctx context.Context, id int, enabled bool) (*Repo, error) {
 	if id <= 0 {
@@ -184,4 +236,8 @@ type RepoRepo interface {
 	Clone(ctx context.Context, input *CloneRepoInput) (*Repo, error)
 	// ToggleEnabled 启用/禁用仓库。
 	ToggleEnabled(ctx context.Context, id int, enabled bool) (*Repo, error)
+	// Import 批量导入仓库（按名称幂等，事务性整体应用）。
+	Import(ctx context.Context, items []*ImportRepoItem) (created, updated int, err error)
+	// PreviewImport 干跑导入：同 Import 的校验与计数判定，但不落库（导入前预览用）。
+	PreviewImport(ctx context.Context, items []*ImportRepoItem) (created, updated int, err error)
 }

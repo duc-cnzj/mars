@@ -24,6 +24,8 @@ type fakeRepoRepoForRepoBiz struct {
 	toggleEnabled func(ctx context.Context, id int, enabled bool) (*Repo, error)
 	all           func(ctx context.Context, in *AllRepoRequest) ([]*Repo, error)
 	list          func(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error)
+	importFn      func(ctx context.Context, items []*ImportRepoItem) (int, int, error)
+	previewImport func(ctx context.Context, items []*ImportRepoItem) (int, int, error)
 }
 
 func (f *fakeRepoRepoForRepoBiz) All(ctx context.Context, in *AllRepoRequest) ([]*Repo, error) {
@@ -64,6 +66,14 @@ func (f *fakeRepoRepoForRepoBiz) Delete(ctx context.Context, id int) error {
 
 func (f *fakeRepoRepoForRepoBiz) ToggleEnabled(ctx context.Context, id int, enabled bool) (*Repo, error) {
 	return f.toggleEnabled(ctx, id, enabled)
+}
+
+func (f *fakeRepoRepoForRepoBiz) Import(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
+	return f.importFn(ctx, items)
+}
+
+func (f *fakeRepoRepoForRepoBiz) PreviewImport(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
+	return f.previewImport(ctx, items)
 }
 
 // ---- Create ----
@@ -546,4 +556,204 @@ func TestRepoBiz_Show_Passthrough(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, showCalled)
 	assert.Equal(t, 2, got.ID)
+}
+
+// ---- Import ----
+
+func TestRepoBiz_Import_EmptyItems(t *testing.T) {
+	var called bool
+	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+		importFn: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
+			called = true
+			return 0, 0, nil
+		},
+	})
+	created, updated, err := b.Import(context.TODO(), nil)
+	assert.NoError(t, err)
+	assert.Zero(t, created)
+	assert.Zero(t, updated)
+	assert.False(t, called)
+}
+
+func TestRepoBiz_Import_NilItem(t *testing.T) {
+	var called bool
+	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+		importFn: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
+			called = true
+			return 0, 0, nil
+		},
+	})
+	created, updated, err := b.Import(context.TODO(), []*ImportRepoItem{nil})
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Equal(t, "导入数据不能为空", status.Convert(err).Message())
+	assert.Zero(t, created)
+	assert.Zero(t, updated)
+	assert.False(t, called)
+}
+
+func TestRepoBiz_Import_InvalidName(t *testing.T) {
+	for _, name := range []string{"", "bad name", "bad/name", "中文"} {
+		t.Run(name, func(t *testing.T) {
+			var called bool
+			b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+				importFn: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
+					called = true
+					return 0, 0, nil
+				},
+			})
+			created, updated, err := b.Import(context.TODO(), []*ImportRepoItem{{Name: name}})
+			assert.Equal(t, codes.InvalidArgument, status.Code(err))
+			assert.Contains(t, status.Convert(err).Message(), "不合法")
+			assert.Zero(t, created)
+			assert.Zero(t, updated)
+			assert.False(t, called)
+		})
+	}
+}
+
+func TestRepoBiz_Import_DuplicateName(t *testing.T) {
+	// 同一导入文件内同名：若放行，pre-phase 两条都判 create，无唯一约束下会落重复行。
+	// 必须在委托前整体拒绝（零部分变更）。
+	var called bool
+	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+		importFn: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
+			called = true
+			return 0, 0, nil
+		},
+	})
+	created, updated, err := b.Import(context.TODO(), []*ImportRepoItem{
+		{Name: "app", Enabled: true},
+		{Name: "app", Enabled: false},
+	})
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Contains(t, status.Convert(err).Message(), "重复")
+	assert.Zero(t, created)
+	assert.Zero(t, updated)
+	assert.False(t, called)
+}
+
+func TestRepoBiz_Import_ValidationBeforeAnyMutation(t *testing.T) {
+	// 校验先行：首个 name 合法、第二个非法时，import 不被调用（零部分变更）。
+	var called bool
+	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+		importFn: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
+			called = true
+			return 0, 0, nil
+		},
+	})
+	created, updated, err := b.Import(context.TODO(), []*ImportRepoItem{
+		{Name: "valid"},
+		{Name: "invalid name"},
+	})
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Zero(t, created)
+	assert.Zero(t, updated)
+	assert.False(t, called)
+}
+
+func TestRepoBiz_Import_Delegates(t *testing.T) {
+	// 校验通过后整体委托 data 层事务导入，created/updated 计数原样透传。
+	items := []*ImportRepoItem{
+		{Name: "app", Enabled: true, Description: "desc"},
+		{Name: "new", Enabled: false},
+	}
+	var got []*ImportRepoItem
+	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+		importFn: func(ctx context.Context, in []*ImportRepoItem) (int, int, error) {
+			got = in
+			return 1, 1, nil
+		},
+	})
+	created, updated, err := b.Import(context.TODO(), items)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, created)
+	assert.Equal(t, 1, updated)
+	assert.Equal(t, items, got)
+}
+
+func TestRepoBiz_Import_ErrorPassthrough(t *testing.T) {
+	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+		importFn: func(ctx context.Context, in []*ImportRepoItem) (int, int, error) {
+			return 0, 0, errors.New("db down")
+		},
+	})
+	created, updated, err := b.Import(context.TODO(), []*ImportRepoItem{{Name: "app"}})
+	assert.Equal(t, "db down", err.Error())
+	assert.Zero(t, created)
+	assert.Zero(t, updated)
+}
+
+// ---- PreviewImport ----
+
+func TestRepoBiz_PreviewImport_EmptyItems(t *testing.T) {
+	var called bool
+	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+		previewImport: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
+			called = true
+			return 0, 0, nil
+		},
+	})
+	created, updated, err := b.PreviewImport(context.TODO(), nil)
+	assert.NoError(t, err)
+	assert.Zero(t, created)
+	assert.Zero(t, updated)
+	assert.False(t, called)
+}
+
+func TestRepoBiz_PreviewImport_InvalidItems(t *testing.T) {
+	// 干跑与真实导入共用 validateImportItems：任一 nil/name 非法/重复即整体拒绝，不调 repo。
+	cases := []struct {
+		name  string
+		items []*ImportRepoItem
+		msg   string
+	}{
+		{"nil item", []*ImportRepoItem{nil}, "导入数据不能为空"},
+		{"invalid name", []*ImportRepoItem{{Name: "bad name"}}, "不合法"},
+		{"duplicate name", []*ImportRepoItem{{Name: "app"}, {Name: "app"}}, "重复"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var called bool
+			b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+				previewImport: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
+					called = true
+					return 0, 0, nil
+				},
+			})
+			created, updated, err := b.PreviewImport(context.TODO(), tc.items)
+			assert.Equal(t, codes.InvalidArgument, status.Code(err))
+			assert.Contains(t, status.Convert(err).Message(), tc.msg)
+			assert.Zero(t, created)
+			assert.Zero(t, updated)
+			assert.False(t, called)
+		})
+	}
+}
+
+func TestRepoBiz_PreviewImport_Delegates(t *testing.T) {
+	items := []*ImportRepoItem{{Name: "app"}, {Name: "new"}}
+	var got []*ImportRepoItem
+	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+		previewImport: func(ctx context.Context, in []*ImportRepoItem) (int, int, error) {
+			got = in
+			return 1, 1, nil
+		},
+	})
+	created, updated, err := b.PreviewImport(context.TODO(), items)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, created)
+	assert.Equal(t, 1, updated)
+	assert.Equal(t, items, got)
+}
+
+func TestRepoBiz_PreviewImport_ErrorPassthrough(t *testing.T) {
+	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+		previewImport: func(ctx context.Context, in []*ImportRepoItem) (int, int, error) {
+			return 0, 0, errors.New("db down")
+		},
+	})
+	created, updated, err := b.PreviewImport(context.TODO(), []*ImportRepoItem{{Name: "app"}})
+	assert.Equal(t, "db down", err.Error())
+	assert.Zero(t, created)
+	assert.Zero(t, updated)
 }

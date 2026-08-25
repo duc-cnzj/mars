@@ -45,6 +45,24 @@ func (s *RepoSvc) Show(ctx context.Context, req *repo.ShowRequest) (*repo.ShowRe
 	return &out, nil
 }
 
+// Export GET /api/repos/export。
+func (s *RepoSvc) Export(ctx context.Context, req *repo.ExportRequest) (*repo.ExportResponse, error) {
+	var out repo.ExportResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, "/api/repos/export", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// Import POST /api/repos/import。
+func (s *RepoSvc) Import(ctx context.Context, req *repo.ImportRequest) (*repo.ImportResponse, error) {
+	var out repo.ImportResponse
+	if err := s.C.Do(ctx, http.MethodPost, "/api/repos/import", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // Update PUT /api/repos/{id}。
 func (s *RepoSvc) Update(ctx context.Context, req *repo.UpdateRequest) (*repo.UpdateResponse, error) {
 	var out repo.UpdateResponse

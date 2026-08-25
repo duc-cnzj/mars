@@ -1004,6 +1004,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/repos/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 导出全部 repo 为 JSON（与导入格式一致，可直接回导入）
+         * @description 注意：Export 必须排在 Show 之后。grpc-gateway 按注册逆序试匹配路由，
+         *      Show 的 `/api/repos/{id}` 通配会吞掉 `/api/repos/export`，Export 晚注册才能先命中。
+         */
+        get: operations["Repo_Export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/repos/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 导入 repo JSON（按名称幂等：已存在则覆盖，不存在则创建） */
+        post: operations["Repo_Import"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/repos/toggle_enabled": {
         parameters: {
             query?: never;
@@ -1597,6 +1635,28 @@ export interface components {
             item: components["schemas"]["types.RepoModel"];
         };
         "repo.DeleteResponse": Record<string, never>;
+        "repo.ExportResponse": {
+            items: components["schemas"]["types.RepoModel"][];
+        };
+        "repo.ImportRequest": {
+            /** @description items 与导出响应同构：导出的 JSON 文件内容可原样作为导入请求体。 */
+            items: components["schemas"]["types.RepoModel"][];
+            /** @description dry_run 为 true 时只预览计数（将新建/覆盖多少），不落库、不留审计、不产生快照。 */
+            dryRun: boolean;
+        };
+        "repo.ImportResponse": {
+            /** Format: int32 */
+            total: number;
+            /** Format: int32 */
+            created: number;
+            /** Format: int32 */
+            updated: number;
+            /**
+             * @description updated_old 仅 dry_run 预览时返回：将被覆盖条目的当前（旧）状态，
+             *      供前端按 name 与导入文件条目配对渲染 old→new diff；真实导入时为空。
+             */
+            updatedOld: components["schemas"]["types.RepoModel"][];
+        };
         "repo.ListResponse": {
             /** Format: int32 */
             page: number;
@@ -3901,6 +3961,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["repo.CloneResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Repo_Export: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["repo.ExportResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Repo_Import: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["repo.ImportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["repo.ImportResponse"];
                 };
             };
             /** @description Default error response */

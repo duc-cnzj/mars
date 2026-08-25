@@ -1458,6 +1458,22 @@ func (mr *MockRepoBizMockRecorder) Get(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepoBiz)(nil).Get), arg0, arg1)
 }
 
+// Import mocks base method.
+func (m *MockRepoBiz) Import(arg0 context.Context, arg1 []*ImportRepoItem) (int, int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Import", arg0, arg1)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Import indicates an expected call of Import.
+func (mr *MockRepoBizMockRecorder) Import(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockRepoBiz)(nil).Import), arg0, arg1)
+}
+
 // List mocks base method.
 func (m *MockRepoBiz) List(arg0 context.Context, arg1 *ListRepoRequest) ([]*Repo, *pagination.Pagination, error) {
 	m.ctrl.T.Helper()
@@ -1472,6 +1488,22 @@ func (m *MockRepoBiz) List(arg0 context.Context, arg1 *ListRepoRequest) ([]*Repo
 func (mr *MockRepoBizMockRecorder) List(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockRepoBiz)(nil).List), arg0, arg1)
+}
+
+// PreviewImport mocks base method.
+func (m *MockRepoBiz) PreviewImport(arg0 context.Context, arg1 []*ImportRepoItem) (int, int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PreviewImport", arg0, arg1)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// PreviewImport indicates an expected call of PreviewImport.
+func (mr *MockRepoBizMockRecorder) PreviewImport(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PreviewImport", reflect.TypeOf((*MockRepoBiz)(nil).PreviewImport), arg0, arg1)
 }
 
 // Show mocks base method.

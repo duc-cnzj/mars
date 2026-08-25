@@ -545,6 +545,17 @@ type CloneRepoInput struct {
 	Name string
 }
 
+// ImportRepoItem 是导入仓库的单条数据：字段与导出模型对齐，
+// 只携带可落库字段（id/时间戳/git 派生信息由服务端按 name 重新生成）。
+type ImportRepoItem struct {
+	Name         string
+	Enabled      bool
+	NeedGitRepo  bool
+	GitProjectID *int32
+	MarsConfig   *mars.Config
+	Description  string
+}
+
 // ---------- Git ----------
 
 // Status 是流水线/集群状态的字符串别名。
