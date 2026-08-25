@@ -98,6 +98,27 @@ service Repo {
     };
   }
 
+  // 注意：Export 必须排在 Show 之后。grpc-gateway 按注册逆序试匹配路由，
+  // Show 的 `/api/repos/{id}` 通配会吞掉 `/api/repos/export`，Export 晚注册才能先命中。
+  rpc Export(ExportRequest) returns (ExportResponse) {
+    option (google.api.http)      = {
+      get: "/api/repos/export"
+    };
+    option (openapi.v3.operation) = {
+      summary: "导出全部 repo 为 JSON（与导入格式一致，可直接回导入）",
+    };
+  }
+
+  rpc Import(ImportRequest) returns (ImportResponse) {
+    option (google.api.http)      = {
+      post: "/api/repos/import"
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "导入 repo JSON（按名称幂等：已存在则覆盖，不存在则创建）",
+    };
+  }
+
   rpc Update(UpdateRequest) returns (UpdateResponse) {
     option (google.api.http)      = {
       put: "/api/repos/{id}",
@@ -150,4 +171,26 @@ message CloneRequest{
 
 message CloneResponse{
   types.RepoModel item = 1;
+}
+
+message ExportRequest{}
+
+message ExportResponse {
+  repeated types.RepoModel items = 1;
+}
+
+message ImportRequest {
+  // items 与导出响应同构：导出的 JSON 文件内容可原样作为导入请求体。
+  repeated types.RepoModel items = 1;
+  // dry_run 为 true 时只预览计数（将新建/覆盖多少），不落库、不留审计、不产生快照。
+  bool dry_run = 2;
+}
+
+message ImportResponse {
+  int32 total   = 1;
+  int32 created = 2;
+  int32 updated = 3;
+  // updated_old 仅 dry_run 预览时返回：将被覆盖条目的当前（旧）状态，
+  // 供前端按 name 与导入文件条目配对渲染 old→new diff；真实导入时为空。
+  repeated types.RepoModel updated_old = 4;
 }

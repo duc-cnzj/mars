@@ -3,7 +3,10 @@ package services
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 
@@ -13,9 +16,12 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/transformer"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -475,6 +481,379 @@ func TestRepoSvc_Authorize_NonListMethod(t *testing.T) {
 
 	assert.NotNil(t, err)
 	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
+func TestRepoSvc_Export_Success(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+
+	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return([]*biz.Repo{
+		{ID: 1, Name: "a"},
+		{ID: 2, Name: "b"},
+	}, nil)
+
+	res, err := svc.Export(context.TODO(), &reposerver.ExportRequest{})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	require.Len(t, res.Items, 2)
+	assert.Equal(t, "a", res.Items[0].Name)
+	assert.Equal(t, "b", res.Items[1].Name)
+}
+
+func TestRepoSvc_Export_Error(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+
+	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return(nil, errors.New("boom"))
+
+	res, err := svc.Export(context.TODO(), &reposerver.ExportRequest{})
+
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestRepoSvc_Import_Success(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+	eventRepo := mocks.eventRepo
+
+	// 导入前/后各采集一次全量快照：before 用于审计 old 字段，after 用于审计 new 字段。
+	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return([]*biz.Repo{
+		{ID: 1, Name: "existing", Enabled: true, Description: "d1"},
+	}, nil).Times(2)
+
+	// 幂等覆盖在 data 层事务内完成，services 只委托一次。
+	repoRepo.EXPECT().Import(gomock.Any(), []*biz.ImportRepoItem{
+		{Name: "existing", Enabled: true, Description: "d1"},
+		{Name: "new", Enabled: true, Description: "d2"},
+	}).Return(1, 1, nil)
+
+	req := &reposerver.ImportRequest{Items: []*types.RepoModel{
+		{Name: "existing", Enabled: true, Description: "d1"},
+		{Name: "new", Enabled: true, Description: "d2"},
+	}}
+	eventRepo.EXPECT().AuditLogWithChange(
+		types.EventActionType_Update,
+		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
+		"导入 repo: 共 2 个（新建 1，覆盖 1）",
+		gomock.Not(nil),
+		gomock.Not(nil),
+	)
+
+	res, err := svc.Import(newAdminUserCtx(), req)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, int32(2), res.Total)
+	assert.Equal(t, int32(1), res.Created)
+	assert.Equal(t, int32(1), res.Updated)
+}
+
+func TestRepoSvc_Import_Empty(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+	eventRepo := mocks.eventRepo
+
+	// 空导入仍走快照流程（无数据变更），审计记录计数为 0。
+	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return(nil, nil).Times(2)
+
+	req := &reposerver.ImportRequest{}
+	eventRepo.EXPECT().AuditLogWithChange(
+		types.EventActionType_Update,
+		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
+		"导入 repo: 共 0 个（新建 0，覆盖 0）",
+		gomock.Not(nil),
+		gomock.Not(nil),
+	)
+
+	res, err := svc.Import(newAdminUserCtx(), req)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, int32(0), res.Total)
+	assert.Equal(t, int32(0), res.Created)
+	assert.Equal(t, int32(0), res.Updated)
+}
+
+func TestRepoSvc_Import_Error(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+
+	// 导入前快照成功后导入失败：数据未变（事务回滚），返回错误、无审计。
+	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return(nil, nil)
+	repoRepo.EXPECT().Import(gomock.Any(), []*biz.ImportRepoItem{
+		{Name: "new"},
+	}).Return(0, 0, errors.New("db down"))
+
+	res, err := svc.Import(newAdminUserCtx(), &reposerver.ImportRequest{Items: []*types.RepoModel{
+		{Name: "new"},
+	}})
+
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestRepoSvc_Import_DryRun(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+
+	// dry_run：委托 PreviewImport 干跑计数 + 采集全量旧值，按 name 匹配出将被覆盖条目。
+	repoRepo.EXPECT().PreviewImport(gomock.Any(), []*biz.ImportRepoItem{
+		{Name: "existing", Enabled: true},
+		{Name: "new", Enabled: true},
+	}).Return(1, 1, nil)
+	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return([]*biz.Repo{
+		{ID: 1, Name: "existing", Enabled: true},
+	}, nil)
+
+	res, err := svc.Import(newAdminUserCtx(), &reposerver.ImportRequest{
+		Items: []*types.RepoModel{
+			{Name: "existing", Enabled: true},
+			{Name: "new", Enabled: true},
+		},
+		DryRun: true,
+	})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, int32(2), res.Total)
+	assert.Equal(t, int32(1), res.Created)
+	assert.Equal(t, int32(1), res.Updated)
+	// 仅「existing」在库中，updated_old 只含它的旧值；「new」是新建不出现在 updated_old。
+	require.Len(t, res.UpdatedOld, 1)
+	assert.Equal(t, "existing", res.UpdatedOld[0].Name)
+	assert.Equal(t, true, res.UpdatedOld[0].Enabled)
+}
+
+func TestRepoSvc_Import_DryRun_Error(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+
+	// 至少一条 item 才会委托到 repo（biz.PreviewImport 对空切片短路）。
+	repoRepo.EXPECT().PreviewImport(gomock.Any(), gomock.Any()).Return(0, 0, errors.New("boom"))
+
+	res, err := svc.Import(newAdminUserCtx(), &reposerver.ImportRequest{
+		Items:  []*types.RepoModel{{Name: "new"}},
+		DryRun: true,
+	})
+
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestRepoSvc_Import_DryRun_SnapshotError(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+
+	// dry_run 预览计数成功后采集旧值快照失败：整体返回错误（拿不到 diff 依据就不放行预览）。
+	repoRepo.EXPECT().PreviewImport(gomock.Any(), gomock.Any()).Return(0, 1, nil)
+	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return(nil, errors.New("boom"))
+
+	res, err := svc.Import(newAdminUserCtx(), &reposerver.ImportRequest{
+		Items:  []*types.RepoModel{{Name: "existing"}},
+		DryRun: true,
+	})
+
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestRepoSvc_Import_SnapshotBeforeError(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+
+	// 导入前快照采集失败：fail-fast，不进入导入、无审计。
+	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return(nil, errors.New("boom"))
+
+	res, err := svc.Import(newAdminUserCtx(), &reposerver.ImportRequest{Items: []*types.RepoModel{{Name: "new"}}})
+
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestRepoSvc_Import_SnapshotAfterError(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+
+	// 导入成功后再采集新快照失败：数据已变更但无法产出审计，返回错误。
+	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return(nil, nil)                    // before
+	repoRepo.EXPECT().Import(gomock.Any(), []*biz.ImportRepoItem{{Name: "new"}}).Return(1, 0, nil) // import
+	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return(nil, errors.New("boom"))     // after
+
+	res, err := svc.Import(newAdminUserCtx(), &reposerver.ImportRequest{Items: []*types.RepoModel{{Name: "new"}}})
+
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func Test_ExportImport_RoundTrip(t *testing.T) {
+	// round-trip 闭环：biz.Repo → FromRepo（导出）→ toImportRepoItem（导入抽取）
+	// 必须保住可落库字段（name/enabled/need_git_repo/git_project_id/mars_config/description），
+	// 服务器生成字段（id/时间戳/git 项目名）有意丢弃由 data 层重新推导。
+	repo := &biz.Repo{
+		ID:             42,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		Name:           "app",
+		DefaultBranch:  "main",
+		GitProjectName: "proj",
+		GitProjectID:   100,
+		Enabled:        true,
+		NeedGitRepo:    true,
+		MarsConfig:     &mars.Config{ConfigField: "c", LocalChartPath: "100|main|chart"},
+		Description:    "desc",
+	}
+
+	item := toImportRepoItem(transformer.FromRepo(repo))
+	require.NotNil(t, item)
+	assert.Equal(t, "app", item.Name)
+	assert.True(t, item.Enabled)
+	assert.True(t, item.NeedGitRepo)
+	assert.Equal(t, lo.ToPtr(int32(100)), item.GitProjectID)
+	assert.Equal(t, &mars.Config{ConfigField: "c", LocalChartPath: "100|main|chart"}, item.MarsConfig)
+	assert.Equal(t, "desc", item.Description)
+
+	// 非 git 仓库导出后回导：不携带 git id（git 字段由 data 层按 NeedGitRepo 清空）。
+	noGit := toImportRepoItem(transformer.FromRepo(&biz.Repo{Name: "plain", Enabled: false, NeedGitRepo: false}))
+	require.NotNil(t, noGit)
+	assert.Equal(t, "plain", noGit.Name)
+	assert.False(t, noGit.Enabled)
+	assert.False(t, noGit.NeedGitRepo)
+	assert.Nil(t, noGit.GitProjectID)
+}
+
+func Test_toImportRepoItem(t *testing.T) {
+	assert.Nil(t, toImportRepoItem(nil))
+
+	item := toImportRepoItem(&types.RepoModel{
+		Name:         "app",
+		Enabled:      true,
+		NeedGitRepo:  true,
+		GitProjectId: 100,
+		MarsConfig:   &mars.Config{ConfigField: "c"},
+		Description:  "desc",
+	})
+	require.NotNil(t, item)
+	assert.Equal(t, "app", item.Name)
+	assert.True(t, item.Enabled)
+	assert.True(t, item.NeedGitRepo)
+	assert.Equal(t, lo.ToPtr(int32(100)), item.GitProjectID)
+	assert.Equal(t, &mars.Config{ConfigField: "c"}, item.MarsConfig)
+	assert.Equal(t, "desc", item.Description)
+
+	// 需要 git 仓库但 id 无效（0）→ 不携带 GitProjectID，避免落库无效 0 值。
+	noID := toImportRepoItem(&types.RepoModel{NeedGitRepo: true})
+	require.NotNil(t, noID)
+	assert.Nil(t, noID.GitProjectID)
+
+	// 不需要 git 仓库 → 即使带了 id 也不携带。
+	noGit := toImportRepoItem(&types.RepoModel{NeedGitRepo: false, GitProjectId: 100})
+	require.NotNil(t, noGit)
+	assert.Nil(t, noGit.GitProjectID)
+}
+
+func TestRepoSvc_Authorize_ExportImport_Admin(t *testing.T) {
+	svc, _ := newRepoSvcWithMocks(t)
+
+	_, err := svc.Authorize(newAdminUserCtx(), reposerver.Repo_Export_FullMethodName)
+	assert.Nil(t, err)
+	_, err = svc.Authorize(newAdminUserCtx(), reposerver.Repo_Import_FullMethodName)
+	assert.Nil(t, err)
+}
+
+func TestRepoSvc_Authorize_Export_NonAdmin(t *testing.T) {
+	svc, _ := newRepoSvcWithMocks(t)
+
+	_, err := svc.Authorize(newOtherUserCtx(), reposerver.Repo_Export_FullMethodName)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
+func TestRepoSvc_Authorize_Import_NonAdmin(t *testing.T) {
+	svc, _ := newRepoSvcWithMocks(t)
+
+	_, err := svc.Authorize(newOtherUserCtx(), reposerver.Repo_Import_FullMethodName)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
+// Test_repoAuditYaml 锁定审计 YAML 字段白名单：只保留业务字段
+// （name/enabled/need_git_repo/git_project_id/description/mars_config），
+// 剔除服务器生成的 id/时间戳/git 项目名——否则导入/更新审计 diff 会被
+// updated_at 刷新等业务无关噪声刷屏（用户明确不关注 created_at/updated_at）。
+func Test_repoAuditYaml(t *testing.T) {
+	out := repoAuditYaml([]*types.RepoModel{
+		{
+			Id:             1,
+			CreatedAt:      "2020-01-02T03:04:05Z",
+			UpdatedAt:      "2026-08-25T00:00:00Z",
+			Name:           "name_4",
+			Enabled:        true,
+			NeedGitRepo:    false,
+			GitProjectId:   0,
+			GitProjectName: "git-name",
+			Description:    "desc",
+			MarsConfig:     &mars.Config{ConfigField: "c"},
+		},
+	})
+
+	// 业务字段全保留（断言 mars_config 嵌套内容可序列化）。
+	assert.Contains(t, out, "name: name_4")
+	assert.Contains(t, out, "enabled: true")
+	assert.Contains(t, out, "need_git_repo: false")
+	assert.Contains(t, out, "git_project_id: 0")
+	assert.Contains(t, out, "description: desc")
+	assert.Contains(t, out, "config_field: c")
+
+	// 服务器生成字段全部剔除。
+	assert.NotContains(t, out, "created_at:")
+	assert.NotContains(t, out, "updated_at:")
+	assert.NotContains(t, out, "git_project_name:")
+	// 用 "\n  id:" 而非 "id:"——避免误伤合法的 git_project_id: 子串。
+	assert.NotContains(t, out, "\n  id:")
+
+	// nil/空输入不 panic，输出空列表。
+	assert.Equal(t, "[]\n", repoAuditYaml(nil))
+}
+
+// TestRepoGatewayRoute_ExportNotShadowedByShow 路由回归：GET /api/repos/export 必须命中
+// Export 而非被 Show 的 /api/repos/{id} 通配吞掉。grpc-gateway 按注册逆序试匹配，
+// Export 排在 Show 之后（proto service 块顺序），晚注册先命中；此测试锁定该顺序。
+func TestRepoGatewayRoute_ExportNotShadowedByShow(t *testing.T) {
+	mux := runtime.NewServeMux()
+	server := &routeRecorderRepoServer{}
+	require.NoError(t, reposerver.RegisterRepoHandlerServer(context.TODO(), mux, server))
+
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/repos/export", nil))
+
+	// Export 命中 → 200 + 响应含 exported；若被 Show 吞掉，id="export" 解析失败返回 400。
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), "exported")
+	assert.Equal(t, 1, server.exportCalls)
+	assert.Zero(t, server.showCalls)
+}
+
+// routeRecorderRepoServer 记录 Export/Show 被调用次数，用于锁定 gateway 路由命中。
+type routeRecorderRepoServer struct {
+	reposerver.UnimplementedRepoServer
+	exportCalls int
+	showCalls   int
+}
+
+func (s *routeRecorderRepoServer) Export(_ context.Context, _ *reposerver.ExportRequest) (*reposerver.ExportResponse, error) {
+	s.exportCalls++
+	return &reposerver.ExportResponse{Items: []*types.RepoModel{{Name: "exported"}}}, nil
+}
+
+func (s *routeRecorderRepoServer) Show(_ context.Context, _ *reposerver.ShowRequest) (*reposerver.ShowResponse, error) {
+	s.showCalls++
+	return &reposerver.ShowResponse{Item: &types.RepoModel{Name: "show"}}, nil
 }
 
 // repoNotFound 返回 biz 层 errs.IsNotFound 判定的 NotFound 错误，

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
+import { stringify } from 'yaml'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
@@ -27,10 +28,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/shadcn/dialog'
+import { DiffViewer } from '@/components/DiffViewer'
 import { copyText } from '@/lib/copy'
 import { RepoFormModal } from './RepoFormModal'
 
 type RepoModel = components['schemas']['types.RepoModel']
+
+/** 把 repo 序列化成导入视角的 YAML：只取可落库字段，剔除 name/id/时间戳/gitProjectName，避免噪声 diff */
+function repoImportYaml(m: RepoModel): string {
+  return stringify({
+    enabled: m.enabled,
+    needGitRepo: m.needGitRepo,
+    gitProjectId: m.gitProjectId,
+    description: m.description,
+    marsConfig: m.marsConfig,
+  })
+}
 
 const PAGE_SIZE = 15
 
@@ -67,6 +80,19 @@ export function Repos() {
   const [cloneOpen, setCloneOpen] = useState(false)
   const [cloneId, setCloneId] = useState(0)
   const [cloneName, setCloneName] = useState('')
+
+  const [exporting, setExporting] = useState(false)
+  const [importing, setImporting] = useState(false)
+  /** 导入预览：文件解析 + dry-run 计数，确认后才真实提交 */
+  const [preview, setPreview] = useState<{
+    items: RepoModel[]
+    total: number
+    created: number
+    updated: number
+    /** 将被覆盖条目的当前（旧）状态，与 items 按 name 配对渲染 diff */
+    updatedOld: RepoModel[]
+  } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchList = useCallback(
     async (p: number, kw?: string, append = false) => {
@@ -235,6 +261,101 @@ export function Repos() {
     else toast.error(t('common.retry'))
   }
 
+  // 导出全部 repo 为 JSON：文件内容与导入请求体同构（{ items }），可直接回导入
+  const doExport = async () => {
+    setExporting(true)
+    try {
+      const { data, error } = await api.GET('/api/repos/export')
+      if (error) throw new Error(error.message ?? String(error))
+      if (!data) return
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'repos.json'
+      a.click()
+      // 等浏览器启动下载后再释放 blob URL：立即 revoke 在 Firefox 下偶发下载失败（对象已被回收）
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      toast.success(t('repos.exportSuccess'))
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  // 选择导入文件 → 解析校验 → dry-run 预览计数，确认后才真实提交
+  const onPickFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // 允许再次选择同一文件
+    if (!file) return
+    setImporting(true)
+    try {
+      const text = await file.text()
+      let parsed: { items?: RepoModel[] }
+      try {
+        parsed = JSON.parse(text)
+      } catch {
+        throw new Error(t('repos.importInvalidFile'))
+      }
+      if (!Array.isArray(parsed?.items)) throw new Error(t('repos.importInvalidFile'))
+      const { data, error } = await api.POST('/api/repos/import', {
+        body: { items: parsed.items, dryRun: true },
+      })
+      if (error) throw new Error(error.message ?? String(error))
+      if (!data) return
+      setPreview({
+        items: parsed.items,
+        total: data.total,
+        created: data.created,
+        updated: data.updated,
+        updatedOld: data.updatedOld ?? [],
+      })
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  // 确认导入：真实提交，按名称幂等覆盖
+  const confirmImport = async () => {
+    if (!preview) return
+    setImporting(true)
+    try {
+      const { data, error } = await api.POST('/api/repos/import', {
+        body: { items: preview.items, dryRun: false },
+      })
+      if (error) throw new Error(error.message ?? String(error))
+      if (!data) return
+      toast.success(t('repos.importSuccess', { created: data.created, updated: data.updated }))
+      setPreview(null)
+      refresh()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  /** 预览里将被覆盖且有字段变更的条目：旧值 vs 新值 YAML，只保留实际有差异的 */
+  const changedEntries = useMemo(() => {
+    if (!preview) return [] as { name: string; oldYaml: string; newYaml: string }[]
+    return preview.items.flatMap((item) => {
+      const old = preview.updatedOld.find((o) => o.name === item.name)
+      if (!old) return []
+      const oldYaml = repoImportYaml(old)
+      const newYaml = repoImportYaml(item)
+      return oldYaml !== newYaml ? [{ name: item.name, oldYaml, newYaml }] : []
+    })
+  }, [preview])
+
+  /** 将被新建的条目名称：文件条目里没在 updatedOld（未被覆盖集合）中命中的即新建，只列名不渲染内容 */
+  const newNames = useMemo(() => {
+    if (!preview) return [] as string[]
+    return preview.items.filter((i) => !preview.updatedOld.some((o) => o.name === i.name)).map((i) => i.name)
+  }, [preview])
+
   return (
     // 父级 main 是 min-h-screen 下的 flex-1（高度 auto），flex 链没有有界高度，
     // 用 calc(100dvh - 100px) 让内部滚动容器 flex-1 min-h-0 overflow-y-auto 真正可滚动。
@@ -249,10 +370,38 @@ export function Repos() {
               <Icon name="refresh" className="size-4" />
               {t('common.refresh')}
             </Button>
+            <Button size="sm" variant="outline" disabled={exporting} onClick={doExport}>
+              {exporting ? (
+                <Icon name="loader" className="size-4 animate-spin" />
+              ) : (
+                <Icon name="download" className="size-4" />
+              )}
+              {t('repos.export')}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={importing}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {importing ? (
+                <Icon name="loader" className="size-4 animate-spin" />
+              ) : (
+                <Icon name="upload" className="size-4" />
+              )}
+              {t('repos.import')}
+            </Button>
             <Button size="sm" variant="default" onClick={openCreate}>
               <Icon name="plus" className="size-4" />
               {t('repos.add')}
             </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={onPickFile}
+            />
           </div>
         </div>
 
@@ -451,6 +600,89 @@ export function Repos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 导入预览：dry-run 计数确认，确认后才真实提交 */}
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="sm:max-w-[80vw]">
+          <DialogHeader>
+            <DialogTitle>{t('repos.importPreviewTitle')}</DialogTitle>
+          </DialogHeader>
+          {/* 导入前先导出一份当前仓库快照：导入会覆盖同名仓库，误操作后可据此对照回滚 */}
+          <div className="flex items-center justify-between gap-3 rounded-md border border-warn/60 bg-warn-soft px-3 py-2">
+            <div className="flex items-start gap-2 text-[13px] text-ink">
+              <Icon name="alert" className="mt-0.5 size-4 shrink-0 text-warn" />
+              <span>{t('repos.importBackupTip')}</span>
+            </div>
+            <Button size="sm" variant="outline" className="shrink-0" disabled={exporting} onClick={doExport}>
+              {exporting ? (
+                <Icon name="loader" className="size-4 animate-spin" />
+              ) : (
+                <Icon name="download" className="size-4" />
+              )}
+              {t('repos.export')}
+            </Button>
+          </div>
+          <div className="space-y-2 text-[13px] text-mute">
+            <p>{t('repos.importPreviewTip')}</p>
+            {preview && (
+              <p className="font-medium text-ink">
+                {t('repos.importPreviewCounts', {
+                  total: preview.total,
+                  created: preview.created,
+                  updated: preview.updated,
+                  changed: changedEntries.length,
+                })}
+              </p>
+            )}
+          </div>
+          {/* 将被新建的条目：只列名称，不渲染内容 */}
+          {newNames.length > 0 && (
+            <div className="rounded-md border border-line bg-raised/50 px-3 py-2">
+              <p className="text-[12px] font-medium text-mute">{t('repos.importNewTitle')}</p>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {newNames.map((name) => (
+                  <span
+                    key={name}
+                    className="rounded border border-line bg-surface px-1.5 py-0.5 font-mono text-[12px] text-ink"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* 被更新且有字段变更的条目：旧值 vs 新值 diff，确认前先看清会覆盖什么 */}
+          {changedEntries.length > 0 && (
+            <div className="max-h-[55vh] overflow-y-auto rounded-md border border-line bg-raised/50">
+              <p className="sticky top-0 z-10 border-b border-line bg-surface px-3 py-1.5 text-[12px] font-medium text-mute">
+                {t('repos.importUpdatedTitle')}
+              </p>
+              <div className="space-y-2 p-2">
+                {changedEntries.map(({ name, oldYaml, newYaml }) => (
+                  <div key={name} className="overflow-hidden rounded-md border border-line bg-surface">
+                    <p className="truncate border-b border-line px-3 py-1.5 text-[12px] font-medium text-ink">
+                      {name}
+                    </p>
+                    <div className="p-2">
+                      <DiffViewer oldValue={oldYaml} newValue={newYaml} language="yaml" initialView="split" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" disabled={importing} onClick={() => setPreview(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="default" disabled={importing} onClick={confirmImport}>
+              {importing && <Icon name="loader" className="size-4 animate-spin" />}
+              {t('common.confirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }

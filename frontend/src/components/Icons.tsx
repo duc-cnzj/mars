@@ -81,6 +81,8 @@ export type IconName =
   | 'grip-vertical'
   | 'user'
   | 'minus'
+  | 'download'
+  | 'upload'
 
 const paths: Record<IconName, ReactNode> = {
   grid: (
@@ -411,6 +413,22 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M21 3v5h-5" />
       <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
       <path d="M8 16H3v5" />
+    </>
+  ),
+  // lucide download 同款：箭头落入托盘，用作导出/下载文件
+  download: (
+    <>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M12 15V3" />
+    </>
+  ),
+  // lucide upload 同款：箭头升起出托盘，用作导入/上传文件
+  upload: (
+    <>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="m17 8-5-5-5 5" />
+      <path d="M12 3v12" />
     </>
   ),
   // lucide grip-vertical 同款：竖向拖拽把手（六圆点填实，与 more 同风格）

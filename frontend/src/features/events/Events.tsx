@@ -157,6 +157,10 @@ export function Events() {
   })
   const [records, setRecords] = useState<string[]>([])
   const [recordKey, setRecordKey] = useState(0)
+  /** 操作记录加载中：回放数据较大时拉取慢，期间显示 loading 而非误判空态 */
+  const [recordsLoading, setRecordsLoading] = useState(false)
+  /** 记录请求守卫：自增序号，只接受最后一次发起的结果；过期响应（慢请求晚到/已关弹窗）直接丢弃，防止覆盖新数据或提前掐断 loading */
+  const recordSeqRef = useRef(0)
 
   const fetchList = useCallback(
     async (p: number, act: ActionType[], kw: string, append: boolean) => {
@@ -306,18 +310,26 @@ export function Events() {
   }
 
   const openRecord = async (item: EventModel) => {
+    // 每次发起自增序号，后续完成时核对：过期（已换新记录/弹窗已关）则整个结果丢弃
+    const seq = ++recordSeqRef.current
     setRecord({ open: true, username: item.username, message: item.message })
+    setRecordsLoading(true)
     try {
       const { data, error } = await api.GET('/api/record_files/{id}', {
         params: { path: { id: item.fileId } },
       })
+      if (seq !== recordSeqRef.current) return
       if (error) throw new Error(error.message ?? String(error))
       if (data) {
         setRecords(data.items)
         setRecordKey(0)
       }
     } catch (e) {
+      if (seq !== recordSeqRef.current) return
       toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      // 只允许最后一次请求复位 loading，过期响应的 finally 不碰状态
+      if (seq === recordSeqRef.current) setRecordsLoading(false)
     }
   }
 
@@ -575,9 +587,11 @@ export function Events() {
         open={record.open}
         onOpenChange={(o) => {
           if (!o) {
+            recordSeqRef.current++ // 关弹窗即失效在途请求，过期响应不再写状态
             setRecord({ open: false, username: '', message: '' })
             setRecords([])
             setRecordKey(0)
+            setRecordsLoading(false)
           }
         }}
       >
@@ -610,7 +624,12 @@ export function Events() {
               )}
               {/* 终端超宽时横向滚动，不撑破弹窗 */}
               <div className="overflow-x-auto">
-                {records[recordKey] ? (
+                {recordsLoading ? (
+                  <div className="flex items-center justify-center gap-2 px-3 py-8 text-[12px] text-mute">
+                    <Icon name="loader" className="animate-spin text-[13px]" />
+                    {t('events.recordLoading')}
+                  </div>
+                ) : records[recordKey] ? (
                   <AsciinemaPlayer key={recordKey} src={records[recordKey]} />
                 ) : (
                   <div className="px-3 py-4 text-[12px] text-mute">{t('common.empty')}</div>

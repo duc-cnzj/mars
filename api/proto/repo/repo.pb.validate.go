@@ -2071,3 +2071,513 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CloneResponseValidationError{}
+
+// Validate checks the field values on ExportRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExportRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExportRequestMultiError, or
+// nil if none found.
+func (m *ExportRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ExportRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportRequestMultiError is an error wrapping multiple validation errors
+// returned by ExportRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ExportRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportRequestMultiError) AllErrors() []error { return m }
+
+// ExportRequestValidationError is the validation error returned by
+// ExportRequest.Validate if the designated constraints aren't met.
+type ExportRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportRequestValidationError) ErrorName() string { return "ExportRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExportRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportRequestValidationError{}
+
+// Validate checks the field values on ExportResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExportResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExportResponseMultiError,
+// or nil if none found.
+func (m *ExportResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetItems() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExportResponseValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExportResponseValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExportResponseValidationError{
+					field:  fmt.Sprintf("Items[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ExportResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportResponseMultiError is an error wrapping multiple validation errors
+// returned by ExportResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ExportResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportResponseMultiError) AllErrors() []error { return m }
+
+// ExportResponseValidationError is the validation error returned by
+// ExportResponse.Validate if the designated constraints aren't met.
+type ExportResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportResponseValidationError) ErrorName() string { return "ExportResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExportResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportResponseValidationError{}
+
+// Validate checks the field values on ImportRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ImportRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ImportRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ImportRequestMultiError, or
+// nil if none found.
+func (m *ImportRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ImportRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetItems() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ImportRequestValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ImportRequestValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ImportRequestValidationError{
+					field:  fmt.Sprintf("Items[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for DryRun
+
+	if len(errors) > 0 {
+		return ImportRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ImportRequestMultiError is an error wrapping multiple validation errors
+// returned by ImportRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ImportRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ImportRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ImportRequestMultiError) AllErrors() []error { return m }
+
+// ImportRequestValidationError is the validation error returned by
+// ImportRequest.Validate if the designated constraints aren't met.
+type ImportRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ImportRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ImportRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ImportRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ImportRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ImportRequestValidationError) ErrorName() string { return "ImportRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ImportRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sImportRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ImportRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ImportRequestValidationError{}
+
+// Validate checks the field values on ImportResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ImportResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ImportResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ImportResponseMultiError,
+// or nil if none found.
+func (m *ImportResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ImportResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Total
+
+	// no validation rules for Created
+
+	// no validation rules for Updated
+
+	for idx, item := range m.GetUpdatedOld() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ImportResponseValidationError{
+						field:  fmt.Sprintf("UpdatedOld[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ImportResponseValidationError{
+						field:  fmt.Sprintf("UpdatedOld[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ImportResponseValidationError{
+					field:  fmt.Sprintf("UpdatedOld[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ImportResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ImportResponseMultiError is an error wrapping multiple validation errors
+// returned by ImportResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ImportResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ImportResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ImportResponseMultiError) AllErrors() []error { return m }
+
+// ImportResponseValidationError is the validation error returned by
+// ImportResponse.Validate if the designated constraints aren't met.
+type ImportResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ImportResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ImportResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ImportResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ImportResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ImportResponseValidationError) ErrorName() string { return "ImportResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ImportResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sImportResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ImportResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ImportResponseValidationError{}

@@ -859,6 +859,210 @@ func (x *CloneResponse) GetItem() *types.RepoModel {
 	return nil
 }
 
+type ExportRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExportRequest) Reset() {
+	*x = ExportRequest{}
+	mi := &file_proto_repo_repo_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExportRequest) ProtoMessage() {}
+
+func (x *ExportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_repo_repo_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExportRequest.ProtoReflect.Descriptor instead.
+func (*ExportRequest) Descriptor() ([]byte, []int) {
+	return file_proto_repo_repo_proto_rawDescGZIP(), []int{16}
+}
+
+type ExportResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*types.RepoModel     `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExportResponse) Reset() {
+	*x = ExportResponse{}
+	mi := &file_proto_repo_repo_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExportResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExportResponse) ProtoMessage() {}
+
+func (x *ExportResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_repo_repo_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExportResponse.ProtoReflect.Descriptor instead.
+func (*ExportResponse) Descriptor() ([]byte, []int) {
+	return file_proto_repo_repo_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ExportResponse) GetItems() []*types.RepoModel {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type ImportRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// items 与导出响应同构：导出的 JSON 文件内容可原样作为导入请求体。
+	Items []*types.RepoModel `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	// dry_run 为 true 时只预览计数（将新建/覆盖多少），不落库、不留审计、不产生快照。
+	DryRun        bool `protobuf:"varint,2,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ImportRequest) Reset() {
+	*x = ImportRequest{}
+	mi := &file_proto_repo_repo_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ImportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ImportRequest) ProtoMessage() {}
+
+func (x *ImportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_repo_repo_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ImportRequest.ProtoReflect.Descriptor instead.
+func (*ImportRequest) Descriptor() ([]byte, []int) {
+	return file_proto_repo_repo_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ImportRequest) GetItems() []*types.RepoModel {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *ImportRequest) GetDryRun() bool {
+	if x != nil {
+		return x.DryRun
+	}
+	return false
+}
+
+type ImportResponse struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Total   int32                  `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
+	Created int32                  `protobuf:"varint,2,opt,name=created,proto3" json:"created,omitempty"`
+	Updated int32                  `protobuf:"varint,3,opt,name=updated,proto3" json:"updated,omitempty"`
+	// updated_old 仅 dry_run 预览时返回：将被覆盖条目的当前（旧）状态，
+	// 供前端按 name 与导入文件条目配对渲染 old→new diff；真实导入时为空。
+	UpdatedOld    []*types.RepoModel `protobuf:"bytes,4,rep,name=updated_old,json=updatedOld,proto3" json:"updated_old,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ImportResponse) Reset() {
+	*x = ImportResponse{}
+	mi := &file_proto_repo_repo_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ImportResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ImportResponse) ProtoMessage() {}
+
+func (x *ImportResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_repo_repo_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ImportResponse.ProtoReflect.Descriptor instead.
+func (*ImportResponse) Descriptor() ([]byte, []int) {
+	return file_proto_repo_repo_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *ImportResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *ImportResponse) GetCreated() int32 {
+	if x != nil {
+		return x.Created
+	}
+	return 0
+}
+
+func (x *ImportResponse) GetUpdated() int32 {
+	if x != nil {
+		return x.Updated
+	}
+	return 0
+}
+
+func (x *ImportResponse) GetUpdatedOld() []*types.RepoModel {
+	if x != nil {
+		return x.UpdatedOld
+	}
+	return nil
+}
+
 var File_proto_repo_repo_proto protoreflect.FileDescriptor
 
 const file_proto_repo_repo_proto_rawDesc = "" +
@@ -923,13 +1127,27 @@ const file_proto_repo_repo_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\x121\n" +
 	"\x04name\x18\x02 \x01(\tB\x1d\xe2A\x01\x02\xfaB\x16r\x14 \x012\x10^[a-zA-Z0-9_-]+$R\x04name\"5\n" +
 	"\rCloneResponse\x12$\n" +
-	"\x04item\x18\x01 \x01(\v2\x10.types.RepoModelR\x04item2\xc1\x05\n" +
+	"\x04item\x18\x01 \x01(\v2\x10.types.RepoModelR\x04item\"\x0f\n" +
+	"\rExportRequest\"8\n" +
+	"\x0eExportResponse\x12&\n" +
+	"\x05items\x18\x01 \x03(\v2\x10.types.RepoModelR\x05items\"P\n" +
+	"\rImportRequest\x12&\n" +
+	"\x05items\x18\x01 \x03(\v2\x10.types.RepoModelR\x05items\x12\x17\n" +
+	"\adry_run\x18\x02 \x01(\bR\x06dryRun\"\x8d\x01\n" +
+	"\x0eImportResponse\x12\x14\n" +
+	"\x05total\x18\x01 \x01(\x05R\x05total\x12\x18\n" +
+	"\acreated\x18\x02 \x01(\x05R\acreated\x12\x18\n" +
+	"\aupdated\x18\x03 \x01(\x05R\aupdated\x121\n" +
+	"\vupdated_old\x18\x04 \x03(\v2\x10.types.RepoModelR\n" +
+	"updatedOld2\x89\b\n" +
 	"\x04Repo\x12X\n" +
 	"\x04List\x12\x11.repo.ListRequest\x1a\x12.repo.ListResponse\")\xbaG\x14\x12\x12获取 repo 列表\x82\xd3\xe4\x93\x02\f\x12\n" +
 	"/api/repos\x12Z\n" +
 	"\x06Create\x12\x13.repo.CreateRequest\x1a\x14.repo.CreateResponse\"%\xbaG\r\x12\v创建 repo\x82\xd3\xe4\x93\x02\x0f:\x01*\"\n" +
 	"/api/repos\x12]\n" +
-	"\x04Show\x12\x11.repo.ShowRequest\x1a\x12.repo.ShowResponse\".\xbaG\x14\x12\x12获取 repo 详情\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/repos/{id}\x12_\n" +
+	"\x04Show\x12\x11.repo.ShowRequest\x1a\x12.repo.ShowResponse\".\xbaG\x14\x12\x12获取 repo 详情\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/repos/{id}\x12\x9d\x01\n" +
+	"\x06Export\x12\x13.repo.ExportRequest\x1a\x14.repo.ExportResponse\"h\xbaGL\x12J导出全部 repo 为 JSON（与导入格式一致，可直接回导入）\x82\xd3\xe4\x93\x02\x13\x12\x11/api/repos/export\x12\xa5\x01\n" +
+	"\x06Import\x12\x13.repo.ImportRequest\x1a\x14.repo.ImportResponse\"p\xbaGQ\x12O导入 repo JSON（按名称幂等：已存在则覆盖，不存在则创建）\x82\xd3\xe4\x93\x02\x16:\x01*\"\x11/api/repos/import\x12_\n" +
 	"\x06Update\x12\x13.repo.UpdateRequest\x1a\x14.repo.UpdateResponse\"*\xbaG\r\x12\v更新 repo\x82\xd3\xe4\x93\x02\x14:\x01*\x1a\x0f/api/repos/{id}\x12\\\n" +
 	"\x06Delete\x12\x13.repo.DeleteRequest\x1a\x14.repo.DeleteResponse\"'\xbaG\r\x12\v删除 repo\x82\xd3\xe4\x93\x02\x11*\x0f/api/repos/{id}\x12\x85\x01\n" +
 	"\rToggleEnabled\x12\x1a.repo.ToggleEnabledRequest\x1a\x1b.repo.ToggleEnabledResponse\";\xbaG\x14\x12\x12开启/关闭 repo\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/api/repos/toggle_enabled\x12]\n" +
@@ -947,7 +1165,7 @@ func file_proto_repo_repo_proto_rawDescGZIP() []byte {
 	return file_proto_repo_repo_proto_rawDescData
 }
 
-var file_proto_repo_repo_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_proto_repo_repo_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_proto_repo_repo_proto_goTypes = []any{
 	(*ListRequest)(nil),           // 0: repo.ListRequest
 	(*ListResponse)(nil),          // 1: repo.ListResponse
@@ -965,38 +1183,49 @@ var file_proto_repo_repo_proto_goTypes = []any{
 	(*DeleteResponse)(nil),        // 13: repo.DeleteResponse
 	(*CloneRequest)(nil),          // 14: repo.CloneRequest
 	(*CloneResponse)(nil),         // 15: repo.CloneResponse
-	(*types.RepoModel)(nil),       // 16: types.RepoModel
-	(*mars.Config)(nil),           // 17: mars.Config
+	(*ExportRequest)(nil),         // 16: repo.ExportRequest
+	(*ExportResponse)(nil),        // 17: repo.ExportResponse
+	(*ImportRequest)(nil),         // 18: repo.ImportRequest
+	(*ImportResponse)(nil),        // 19: repo.ImportResponse
+	(*types.RepoModel)(nil),       // 20: types.RepoModel
+	(*mars.Config)(nil),           // 21: mars.Config
 }
 var file_proto_repo_repo_proto_depIdxs = []int32{
-	16, // 0: repo.ListResponse.items:type_name -> types.RepoModel
-	16, // 1: repo.ShowResponse.item:type_name -> types.RepoModel
-	16, // 2: repo.ToggleEnabledResponse.item:type_name -> types.RepoModel
-	17, // 3: repo.CreateRequest.mars_config:type_name -> mars.Config
-	16, // 4: repo.CreateResponse.item:type_name -> types.RepoModel
-	17, // 5: repo.UpdateRequest.mars_config:type_name -> mars.Config
-	16, // 6: repo.UpdateResponse.item:type_name -> types.RepoModel
-	16, // 7: repo.AllResponse.items:type_name -> types.RepoModel
-	16, // 8: repo.CloneResponse.item:type_name -> types.RepoModel
-	0,  // 9: repo.Repo.List:input_type -> repo.ListRequest
-	6,  // 10: repo.Repo.Create:input_type -> repo.CreateRequest
-	2,  // 11: repo.Repo.Show:input_type -> repo.ShowRequest
-	8,  // 12: repo.Repo.Update:input_type -> repo.UpdateRequest
-	12, // 13: repo.Repo.Delete:input_type -> repo.DeleteRequest
-	4,  // 14: repo.Repo.ToggleEnabled:input_type -> repo.ToggleEnabledRequest
-	14, // 15: repo.Repo.Clone:input_type -> repo.CloneRequest
-	1,  // 16: repo.Repo.List:output_type -> repo.ListResponse
-	7,  // 17: repo.Repo.Create:output_type -> repo.CreateResponse
-	3,  // 18: repo.Repo.Show:output_type -> repo.ShowResponse
-	9,  // 19: repo.Repo.Update:output_type -> repo.UpdateResponse
-	13, // 20: repo.Repo.Delete:output_type -> repo.DeleteResponse
-	5,  // 21: repo.Repo.ToggleEnabled:output_type -> repo.ToggleEnabledResponse
-	15, // 22: repo.Repo.Clone:output_type -> repo.CloneResponse
-	16, // [16:23] is the sub-list for method output_type
-	9,  // [9:16] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	20, // 0: repo.ListResponse.items:type_name -> types.RepoModel
+	20, // 1: repo.ShowResponse.item:type_name -> types.RepoModel
+	20, // 2: repo.ToggleEnabledResponse.item:type_name -> types.RepoModel
+	21, // 3: repo.CreateRequest.mars_config:type_name -> mars.Config
+	20, // 4: repo.CreateResponse.item:type_name -> types.RepoModel
+	21, // 5: repo.UpdateRequest.mars_config:type_name -> mars.Config
+	20, // 6: repo.UpdateResponse.item:type_name -> types.RepoModel
+	20, // 7: repo.AllResponse.items:type_name -> types.RepoModel
+	20, // 8: repo.CloneResponse.item:type_name -> types.RepoModel
+	20, // 9: repo.ExportResponse.items:type_name -> types.RepoModel
+	20, // 10: repo.ImportRequest.items:type_name -> types.RepoModel
+	20, // 11: repo.ImportResponse.updated_old:type_name -> types.RepoModel
+	0,  // 12: repo.Repo.List:input_type -> repo.ListRequest
+	6,  // 13: repo.Repo.Create:input_type -> repo.CreateRequest
+	2,  // 14: repo.Repo.Show:input_type -> repo.ShowRequest
+	16, // 15: repo.Repo.Export:input_type -> repo.ExportRequest
+	18, // 16: repo.Repo.Import:input_type -> repo.ImportRequest
+	8,  // 17: repo.Repo.Update:input_type -> repo.UpdateRequest
+	12, // 18: repo.Repo.Delete:input_type -> repo.DeleteRequest
+	4,  // 19: repo.Repo.ToggleEnabled:input_type -> repo.ToggleEnabledRequest
+	14, // 20: repo.Repo.Clone:input_type -> repo.CloneRequest
+	1,  // 21: repo.Repo.List:output_type -> repo.ListResponse
+	7,  // 22: repo.Repo.Create:output_type -> repo.CreateResponse
+	3,  // 23: repo.Repo.Show:output_type -> repo.ShowResponse
+	17, // 24: repo.Repo.Export:output_type -> repo.ExportResponse
+	19, // 25: repo.Repo.Import:output_type -> repo.ImportResponse
+	9,  // 26: repo.Repo.Update:output_type -> repo.UpdateResponse
+	13, // 27: repo.Repo.Delete:output_type -> repo.DeleteResponse
+	5,  // 28: repo.Repo.ToggleEnabled:output_type -> repo.ToggleEnabledResponse
+	15, // 29: repo.Repo.Clone:output_type -> repo.CloneResponse
+	21, // [21:30] is the sub-list for method output_type
+	12, // [12:21] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_proto_repo_repo_proto_init() }
@@ -1014,7 +1243,7 @@ func file_proto_repo_repo_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_repo_repo_proto_rawDesc), len(file_proto_repo_repo_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
