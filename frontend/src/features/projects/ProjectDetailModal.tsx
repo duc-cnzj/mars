@@ -71,27 +71,12 @@ export function ProjectDetailModal({
   const [detail, setDetail] = useState<ProjectModel | null>(null)
   const [loading, setLoading] = useState(false)
   // 初始 tab 直接按列表项状态定（与下方「打开即同步默认 Tab」的 open effect 同源）：
-  // 若先渲染 tab='detail' 再靠 effect 改，visitedTabs 会把详细信息误标为已访问，
-  // 导致 TabInfo 打开瞬间就隐式挂载（hidden）触发 memory_cpu 等拉取，mock 缺 handler 即崩。
+  // 避免先渲染默认 tab 再靠 effect 切换造成闪跳/重复挂载。
   const [tab, setTab] = useState<TabKey>(() =>
     project.deployStatus === 'StatusDeployed' || project.deployStatus === 'StatusDeploying'
       ? 'logs'
       : 'detail',
   )
-  // 已访问 Tab 集合：首次访问后保持挂载（切走仅 hidden 不卸载），
-  // 部署流/表单状态在 tab 间切换时保留（用户：部署中切 tab 部署页不能被 destroy）。
-  // shell / topology 不记入集合：前者是重资源 xterm/WS 会话，后者是常驻轮询 + pod 事件订阅的
-  // 实时资源树 —— 切走即卸载销毁、切回重建（用户：拓扑 Tab 与 shell 一样切走销毁，见渲染处注释）
-  const [visitedTabs, setVisitedTabs] = useState<Set<TabKey>>(() => new Set())
-  useEffect(() => {
-    if (tab === 'shell' || tab === 'topology') return
-    setVisitedTabs((prev) => {
-      if (prev.has(tab)) return prev
-      const next = new Set(prev)
-      next.add(tab)
-      return next
-    })
-  }, [tab])
 
   const reload = async () => {
     setLoading(true)
@@ -243,14 +228,14 @@ export function ProjectDetailModal({
           ) : (
             tabItems.map((it) => {
               const active = tab === it.key
-              // 已访问的 Tab 保持挂载（hidden 隐藏而非卸载）：部署流/表单状态切走再切回不丢。
-              // shell / topology 例外：不在 visitedTabs 中（见其声明处），非激活即卸载销毁——
-              // shell 销毁 xterm/WS 会话，topology 销毁常驻轮询 + pod 事件订阅的资源树（用户要求
-              // 拓扑 Tab 与 shell 一样切走销毁），切回重建；其余 tab 每个恒在自己 wrapper 内
-              //（active 或 hidden 占同一树位），切换不重挂载。
+              // 仅 TabEdit 保持挂载（切走 hidden 不卸载）：部署流/表单状态在 tab 间切换时保留
+              //（用户：部署中切 tab 部署页不能被 destroy）。
+              // 其余 tab 非激活即卸载销毁、切回重建：TabLog/TabInfo 重新拉取最新数据，
+              // shell 销毁 xterm/WS 会话，topology 销毁常驻轮询 + pod 事件订阅的资源树
+              //（用户：除 TabEdit 外其余 tab 一律销毁，见 tab 声明处注释）。
               // wrapper 统一 h-full overflow-auto：TabEdit/TabShell 是 h-full 内部自滚内容，
               // TabInfo/TabLog 是内容高、由 wrapper 滚动——与原先外层 overflow-auto 行为一致。
-              if (!active && !visitedTabs.has(it.key)) return null
+              if (!active && it.key !== 'edit') return null
               return (
                 <div
                   key={it.key}
