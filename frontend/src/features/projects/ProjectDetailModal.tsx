@@ -254,6 +254,7 @@ export function ProjectDetailModal({
                           onDeployed 在 TabEdit 的 [stream.status] effect 触发，inline 箭头捕获最新 tab，父重渲即新闭包 */}
                       <TabEdit
                         detail={detail}
+                        active={active}
                         onChanged={handleChanged}
                         onDeployed={() => {
                           if (tab === 'edit') setTab('topology')

@@ -211,25 +211,32 @@ export function TabLog({ projectId, projectName }: { projectId: number; projectN
         if (!reader) return
         const decoder = new TextDecoder()
         let buffer = ''
-        for (;;) {
-          const { done, value } = await reader.read()
-          if (done) break
-          buffer += decoder.decode(value, { stream: true })
-          let idx = buffer.indexOf('\n')
-          while (idx >= 0) {
-            const line = buffer.slice(0, idx)
-            buffer = buffer.slice(idx + 1)
-            if (line && !line.startsWith(':') && line.trim()) {
-              try {
-                const piece = decodeLogFrame(line)
-                if (piece) appendLog(piece)
-              } catch {
-                // 单帧解析失败（如日志帧内嵌 error）不打断整条流
-                appendLog('')
+        // 流中途断开（服务端超时控制 / 网络抖动）与正常 EOF 同语义：不 toast，
+        // 由 finally 置 streamEnded 展示「断流提示」横幅 + 自动恢复，而非弹错误通知。
+        // 仅请求阶段（fetch 失败 / HTTP 非 2xx / 401）的错误才走外层 catch toast。
+        try {
+          for (;;) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buffer += decoder.decode(value, { stream: true })
+            let idx = buffer.indexOf('\n')
+            while (idx >= 0) {
+              const line = buffer.slice(0, idx)
+              buffer = buffer.slice(idx + 1)
+              if (line && !line.startsWith(':') && line.trim()) {
+                try {
+                  const piece = decodeLogFrame(line)
+                  if (piece) appendLog(piece)
+                } catch {
+                  // 单帧解析失败（如日志帧内嵌 error）不打断整条流
+                  appendLog('')
+                }
               }
+              idx = buffer.indexOf('\n')
             }
-            idx = buffer.indexOf('\n')
           }
+        } catch {
+          // 静默吞掉流中断：交给 finally 的断流提示/自动恢复处理，不打扰用户
         }
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {

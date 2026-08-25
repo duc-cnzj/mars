@@ -33,10 +33,15 @@ export function Elements({
   elements,
   value,
   onChange,
+  active,
 }: {
   elements: Element[]
   value: ExtraValue[]
   onChange: (value: ExtraValue[]) => void
+  /** 当前是否为激活 Tab（keep-alive 隐藏时为 false）：仅 select 型字段随 active 翻转重建，
+   *  强制关闭可能开着的 SearchableSelect 弹层——portal 挂 body，display:none 裁不掉，否则
+   *  切走 tab 残留成幽灵下拉。其余字段（textarea CodeEditor/折叠态等）保持挂载不丢状态 */
+  active?: boolean
 }) {
   const rows = useMemo(() => {
     const map = new Map<string, string>()
@@ -58,14 +63,22 @@ export function Elements({
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-      {rows.map(({ element, display }) => (
-        <ElementField
-          key={element.path}
-          element={element}
-          display={display}
-          update={update}
-        />
-      ))}
+      {rows.map(({ element, display }) => {
+        // select 型字段的 SearchableSelect 弹层是点击打开的 portal（挂 body），失活（keep-alive
+        // 隐藏）时若不重建会残留成幽灵下拉。key 拼 active 让其在切走/切回时各重建一次、open 复位
+        // false；textarea/input/radio/switch 无 portal 风险，保持原 key（element.path）不重建，
+        // 保住 textarea CodeEditor 实例、折叠态与滚动位置。
+        const isSelect =
+          element.type === 'ElementTypeSelect' || element.type === 'ElementTypeNumberSelect'
+        return (
+          <ElementField
+            key={isSelect ? `${element.path}-${active ? 'on' : 'off'}` : element.path}
+            element={element}
+            display={display}
+            update={update}
+          />
+        )
+      })}
     </div>
   )
 }

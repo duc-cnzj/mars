@@ -31,10 +31,14 @@ type ExtraValue = components['schemas']['websocket.ExtraValue']
  */
 export function TabEdit({
   detail,
+  active,
   onChanged,
   onDeployed,
 }: {
   detail: ProjectModel
+  /** 当前是否为激活 Tab：失活（keep-alive 隐藏）时通过 key 重建三个 SearchableSelect，
+   *  强制关闭可能开着、portal 挂在 body 上的弹层——否则切走瞬间残留成幽灵下拉（闪一帧淡出） */
+  active?: boolean
   onChanged: () => void
   /** 部署成功回调（弹窗据此从配置 Tab 切到拓扑 Tab 看最终资源树） */
   onDeployed?: () => void
@@ -215,7 +219,12 @@ export function TabEdit({
             )}
           </div>
 
-          <div className={`grid grid-cols-1 gap-2 ${needGit ? 'md:grid-cols-3 md:gap-0' : 'md:grid-cols-1'}`}>
+          <div
+            // key 随 active 翻转：失活时重建整格（三个 SearchableSelect 随之重建，open 复位 false），
+            // portal 弹层随组件卸载即刻移除，绕开 Radix Presence 150ms 退出动画，无残影
+            key={active ? 'sel-active' : 'sel-hidden'}
+            className={`grid grid-cols-1 gap-2 ${needGit ? 'md:grid-cols-3 md:gap-0' : 'md:grid-cols-1'}`}
+          >
             {/* 三个 SearchableSelect 在 md+ 合并为分段控件（对齐旧版 Row/Col）：左保留圆角、中全 0、右保留圆角。
                 骨架高度 h-[38px] 取 trigger 的 used height（min-h-9=36 内容已顶满 34 后加 border 2px = 38） */}
             {loadingRepo ? (
@@ -319,8 +328,15 @@ export function TabEdit({
         ) : (
           <>
             {elements.length > 0 && (
+              // 不整块重建 Elements：整块 key 翻转会把 textarea 的 CodeEditor/折叠态等全部重置，
+              // 违背 keep-alive 保留表单状态的初衷。失活只重键 select 型字段（见 Elements 内部 key 逻辑）
               <div className="mb-3">
-                <Elements elements={elements} value={extraValues} onChange={setExtraValues} />
+                <Elements
+                  elements={elements}
+                  value={extraValues}
+                  onChange={setExtraValues}
+                  active={active}
+                />
               </div>
             )}
 
