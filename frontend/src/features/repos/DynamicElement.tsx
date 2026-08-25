@@ -64,6 +64,34 @@ const ELEMENT_TYPE_KEYS = [
 const labelCls = 'text-[12px] font-medium text-mute'
 
 /**
+ * 类型切换后按新类型归一化 default，杜绝「显示值 ≠ 存储值」错位与过期默认值：
+ * - switch：只认 'true'/'false'，其它值（空串/文本遗留值）兜底 'false'（控件本就按非 'true' 显 false）
+ * - InputNumber：清掉非数字旧值，否则浏览器数字框显空、存储却留着垃圾值，保存还照过非空校验
+ * - 选择类型（Select/Radio 等）：default 必须是 selectValues 选项之一，否则清空重选，
+ *   避免保存撞「默认值必须命中选项」
+ */
+function normalizeDefaultForType(el: Element): Element {
+  const { type, default: d, selectValues } = el
+  if (type === 'ElementTypeSwitch' && d !== 'true' && d !== 'false') {
+    return { ...el, default: 'false' }
+  }
+  if (
+    type === 'ElementTypeInputNumber' &&
+    d !== '' &&
+    // 数字输入只接受 HTML 浮点语法（含符号/小数/指数）：hex '0x10' 等 Number() 能解析但
+    // input[type=number] 显示为空，同样「显示空、存储有值」错位；再叠加有限数挡住 '1e999' 溢出
+    (!/^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/.test(d) ||
+      !Number.isFinite(Number(d)))
+  ) {
+    return { ...el, default: '' }
+  }
+  if (SELECTIVE_TYPES.has(type) && d !== '' && !selectValues.includes(d)) {
+    return { ...el, default: '' }
+  }
+  return el
+}
+
+/**
  * 自定义配置编辑器（还原旧版 DynamicElement）：mars.Config.elements 的增删/拖拽排序。
  * 每个元素定义部署表单里的一个自定义参数：path / type / description / default / selectValues / order。
  * 拖拽用 dnd-kit（旧版 react-beautiful-dnd 已停止维护）。
@@ -82,7 +110,14 @@ export function DynamicElement({
 
   const update = (i: number, patch: Partial<Element>) => {
     const next = [...value]
-    next[i] = { ...next[i], ...patch }
+    const merged = { ...next[i], ...patch }
+    // switch 归一化幂等、任意编辑都安全（default 只会是 'true'/'false'，命中即原样）；
+    // InputNumber/选择类型的清理只在类型真正切换时触发，避免打断用户正在输入默认值
+    next[i] =
+      merged.type === 'ElementTypeSwitch' ||
+      (patch.type && merged.type !== next[i].type)
+        ? normalizeDefaultForType(merged)
+        : merged
     onChange(next)
   }
 
