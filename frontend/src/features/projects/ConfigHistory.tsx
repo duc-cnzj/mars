@@ -95,7 +95,7 @@ export function ConfigHistory({
                   <button
                     type="button"
                     onClick={() => setExpanded(isExpanded ? null : item.version)}
-                    className="flex w-full flex-wrap items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-raised"
+                    className="flex w-full flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-raised"
                   >
                     <Tag tone="accent" dot={false}>
                       v{item.version}

@@ -352,7 +352,7 @@ export function SearchableSelect({
         align="start"
         sideOffset={4}
         style={{ zIndex: zIndex ?? (popZ || undefined) }}
-        className="w-[var(--radix-popover-trigger-width)] min-w-[12rem] p-0"
+        className="w-[var(--radix-popover-trigger-width)] min-w-[12rem] overflow-hidden p-0"
       >
         <div className="border-b border-line p-1.5">
           <div className="relative">
