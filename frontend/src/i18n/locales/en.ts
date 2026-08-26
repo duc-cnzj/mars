@@ -452,6 +452,7 @@ export default {
     selectProjectFirst: 'Please select a project first',
     createProject: 'Create project',
     configElements: 'Deploy parameters',
+    configFileTab: 'Config file',
     reset: 'Reset',
     config: 'Config',
     needBranchCommit: 'Please select branch and commit first',

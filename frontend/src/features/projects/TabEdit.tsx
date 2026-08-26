@@ -4,11 +4,12 @@ import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
 import { Icon } from '@/components/Icons'
-import { CodeEditor } from '@/components/CodeEditor'
+import { CodeEditor, FILE_TYPES } from '@/components/CodeEditor'
 import { DiffViewer } from '@/components/DiffViewer'
 import { useConfetti } from '@/hooks/useConfetti'
 import { Button } from '@/components/ui/shadcn/button'
 import { SearchableSelect } from '@/components/SearchableSelect'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/shadcn/tabs'
 import { ConfigHistory } from './ConfigHistory'
 import { DeployLog } from './DeployLog'
 import { Elements } from './Elements'
@@ -24,8 +25,12 @@ type ExtraValue = components['schemas']['websocket.ExtraValue']
 /**
  * 配置更新 Tab（布局对齐旧版 DeployProjectForm）：
  * - 吸顶头部：pipeline 状态 + 项目/分支/commit 级联选择 + 操作按钮行（部署/重置/取消/查看日志/历史）
- * - 部署参数（Elements）3 列紧凑排布
- * - 配置编辑器与变更 diff 并排（配置有改动时 12/12 分栏，diff 统一视图、仅显示变更、无工具栏），最小 500px，随内容正常滚动
+ * - 部署参数（Elements）3 列紧凑排布（TextArea 长文本块下移底部 tab，不占网格）
+ * - 底部「配置文件 / 各 TextArea」可切换 tab（仅在存在 TextArea 字段时出现）：每个 TextArea 独立一个
+ *   tab、标题取各自 description||path。TextArea 面板与配置文件面板共用同一套 grid 定高布局
+ *   （min-h-[500px] flex-1 + grid-rows-[minmax(0,1fr)] + 编辑器 h-full），两面板视觉一致——编辑器都
+ *   占满整列高度；相对部署值有改动时右侧并排 diff（统一视图、仅变更、无工具栏）。无 TextArea 时无 tab、
+ *   配置文件编辑器直接展示
  * - 部署时日志替换表单（查看/隐藏日志切换），实时进度 + 日志行
  * 正式部署走 WS 实时部署流（WebApply）。
  */
@@ -198,6 +203,35 @@ export function TabEdit({
   const hasLog = stream.loading || stream.status !== 'idle'
   const projectRepoName = detail.repo?.name || detail.name
 
+  /** 自定义节点字段拆分：TextArea 长文本块移出部署参数网格，进底部「自定义配置」tab；其余字段留网格 */
+  const textareaElements = useMemo(
+    () => elements.filter((e) => e.type === 'ElementTypeTextArea'),
+    [elements],
+  )
+  const compactElements = useMemo(
+    () => elements.filter((e) => e.type !== 'ElementTypeTextArea'),
+    [elements],
+  )
+  const hasTextarea = textareaElements.length > 0
+  // 部署时的 TextArea 取值（按 path）：供底部 tab 的 TextArea diff 对比「旧值」，有改动才展开 diff
+  //（与 configChanged 对比 detail.config 同一语义；未部署过的新字段无旧值 → 不展开）
+  const textareaOldValues = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const v of detail.finalExtraValues ?? []) map.set(v.path, v.value)
+    return map
+  }, [detail.finalExtraValues])
+  // 底部 tab 的 value：'config'（配置文件编辑器，默认选中）或某个 TextArea 的 path——每个 TextArea 独立
+  // 一个 tab、标题取各自 description||path，多 TextArea 时即有多个 tab。无 TextArea 字段时不渲染 tab 栏
+  const [bottomTab, setBottomTab] = useState<string>('config')
+
+  /** 更新指定 path 的取值（保留其余项），统一转字符串存储（与 Elements 内部 update 同语义） */
+  const updateExtraValue = useCallback((path: string, raw: unknown) => {
+    setExtraValues((prev) => [
+      ...prev.filter((v) => v.path !== path),
+      { path, value: String(raw) },
+    ])
+  }, [])
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* 吸顶头部（对齐旧版 Affix）：pipeline + 项目/分支/commit 级联 + 操作按钮 */}
@@ -327,26 +361,133 @@ export function TabEdit({
           />
         ) : (
           <>
-            {elements.length > 0 && (
-              // 不整块重建 Elements：整块 key 翻转会把 textarea 的 CodeEditor/折叠态等全部重置，
+            {compactElements.length > 0 && (
+              // 部署参数网格只含非 TextArea 字段（长文本块下移底部「自定义配置」tab）。
+              // 不整块重建 Elements：整块 key 翻转会把 CodeEditor/折叠态等全部重置，
               // 违背 keep-alive 保留表单状态的初衷。失活只重键 select 型字段（见 Elements 内部 key 逻辑）
               <div className="mb-3">
                 <Elements
-                  elements={elements}
+                  elements={compactElements}
                   value={extraValues}
                   onChange={setExtraValues}
                   active={active}
+                  variant="compact"
                 />
               </div>
             )}
 
-            {/* 左右两列放同一条 grid 行轨（minmax(0,1fr)）：行高定死（flex-1 + min-h-[500px]）
-                后两列即等高，编辑器/diff 用 h-full 填满（同 DiffModal 已证实的 grid 定高模式）。
-                不沿用 flex stretch 列：height:100% 对其求值不稳、flex-grow 对不定高容器不分配，
-                都会让 diff 塌成内容高、与左侧 codemirror 不等高。
-                diff 列不默认展开：配置无改动时编辑器占满全宽，改动后才 12/12 并排 */}
+            {hasTextarea && (
+              // 底部「配置文件 / 各 TextArea」分段控件（default 变体，同 Login 登录方式切换）。
+              // 配置文件排在首位并默认选中（主编辑面）；每个 TextArea 独立一个 tab、标题取各自
+              // description||path，多个 TextArea 即多个 tab。tab 按内容宽排布，容器宽度不足时横向滚动，
+              // 长标题 max-w 截断省略。无 TextArea 字段时不渲染、配置文件编辑器直接展示
+              <Tabs
+                value={bottomTab}
+                onValueChange={setBottomTab}
+                className="mb-2 shrink-0"
+              >
+                {/* 尺寸对齐上方部署按钮（Button size=xs：h-6 + text-xs）：触发器 h-6、分段底
+                    h-[30px]（基座 p-[3px] 上下共 6px 包住 24px 触发器）。选中态用主题色柔色变体
+                    （primary-soft 底 + primary 文字，! 压过基座 bg-background/text-foreground/shadow-sm），
+                    比实心填充轻、比无色的默认态鲜明 */}
+                <TabsList className="max-w-full overflow-x-auto !h-[30px]">
+                  <TabsTrigger
+                    value="config"
+                    className="shrink-0 !h-6 !py-0 !text-xs data-[state=active]:!bg-primary-soft data-[state=active]:!text-primary data-[state=active]:!shadow-none"
+                  >
+                    {t('project.configFileTab')}
+                  </TabsTrigger>
+                  {textareaElements.map((element) => (
+                    <TabsTrigger
+                      key={element.path}
+                      // tab value 用 't:' 前缀，避开与 'config' 哨兵值撞车（若某 TextArea 的 path
+                      // 恰为 'config'，无前缀时该 tab 与配置文件 tab 值相同、面板判定也会双显）
+                      value={`t:${element.path}`}
+                      className="shrink-0 max-w-[200px] !h-6 !py-0 !text-xs data-[state=active]:!bg-primary-soft data-[state=active]:!text-primary data-[state=active]:!shadow-none"
+                    >
+                      <span className="block truncate">
+                        {element.description || element.path}
+                      </span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            )}
+
+            {/* 自定义配置面板区：每个 TextArea 独立一个面板，与配置文件面板同样保持挂载、用 hidden
+                切换（display:none 不卸载）。关键：切 tab 不卸载 CodeMirror——挂载瞬间编辑器高度为 0、
+                撑不起 flex 容器，会触发整块配置区滚动条重置到顶部；保持挂载后切走/切回都无挂载事件，
+                滚动位置不丢。每个面板的编辑器/变更 diff 结构逐项对齐配置文件面板（同一套 grid 定高
+                模式：min-h-[500px] flex-1 + grid-rows-[minmax(0,1fr)] 行 + 编辑器 h-full），两面板
+                视觉一致。值实时写入 extraValues，切走不丢数据 */}
+            {textareaElements.map((element) => {
+              // 该 TextArea 当前编辑值：extraValues 按 path，无则回退元素 default（同 Elements 的 display 语义）
+              const textareaValue =
+                extraValues.find((v) => v.path === element.path)?.value ??
+                element.default ??
+                ''
+              // 相对部署值（finalExtraValues 按 path）有改动才展开右侧 diff（与 configChanged 同语义）
+              const textareaChanged =
+                textareaOldValues.has(element.path) &&
+                textareaOldValues.get(element.path) !== textareaValue
+              // 编辑器语言由后端 textarea_language 指定；不在 CodeEditor 支持集里回退 textile（与 Elements 同逻辑）
+              const textareaLang = (
+                FILE_TYPES as readonly string[]
+              ).includes(element.textareaLanguage)
+                ? element.textareaLanguage
+                : 'textile'
+              return (
+                <div
+                  key={element.path}
+                  // 与触发器的 't:' 前缀对应，value 统一带前缀判定（见上方 tab 注释）
+                  className={
+                    bottomTab !== `t:${element.path}`
+                      ? 'hidden'
+                      : 'grid min-h-[500px] flex-1 grid-rows-[minmax(0,1fr)]'
+                  }
+                  style={{
+                    gridTemplateColumns: textareaChanged
+                      ? 'minmax(0, 1fr) minmax(0, 1fr)'
+                      : 'minmax(0, 1fr)',
+                  }}
+                >
+                  <div className="min-h-0 min-w-0">
+                    <CodeEditor
+                      value={textareaValue}
+                      onChange={(v) => updateExtraValue(element.path, v)}
+                      language={textareaLang}
+                      className="h-full !rounded-r-none !border-r-0"
+                    />
+                  </div>
+                  {textareaChanged && (
+                    <div className="min-h-0 min-w-0">
+                      <DiffViewer
+                        oldValue={textareaOldValues.get(element.path)}
+                        newValue={textareaValue}
+                        language={textareaLang}
+                        initialView="unified"
+                        hideToolbar
+                        className="h-full overflow-hidden rounded-l-none rounded-r-md border-y border-r border-line"
+                        viewportClassName="rounded-l-none rounded-r-md"
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* 配置文件面板：配置编辑器与变更 diff 并排。左右两列放同一条 grid 行轨（minmax(0,1fr)）：
+                行高定死（flex-1 + min-h-[500px]）后两列即等高，编辑器/diff 用 h-full 填满
+                （同 DiffModal 已证实的 grid 定高模式）。不沿用 flex stretch 列：height:100% 对其
+                求值不稳、flex-grow 对不定高容器不分配，都会让 diff 塌成内容高、与左侧 codemirror 不等高。
+                diff 列不默认展开：配置无改动时编辑器占满全宽，改动后才 12/12 并排。
+                bottomTab 非 'config'（选中某 TextArea tab）时隐藏（display 切换，CodeMirror 不卸载） */}
             <div
-              className="grid min-h-[500px] flex-1 grid-rows-[minmax(0,1fr)]"
+              className={
+                bottomTab !== 'config'
+                  ? 'hidden'
+                  : 'grid min-h-[500px] flex-1 grid-rows-[minmax(0,1fr)]'
+              }
               style={{
                 gridTemplateColumns: configChanged
                   ? 'minmax(0, 1fr) minmax(0, 1fr)'

@@ -448,6 +448,7 @@ export default {
     selectProjectFirst: '请先选择项目',
     createProject: '创建项目',
     configElements: '部署参数',
+    configFileTab: '配置文件',
     reset: '重置',
     config: '配置',
     needBranchCommit: '请先选择分支与 commit',

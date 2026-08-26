@@ -28,12 +28,16 @@ const isTrue = (v: unknown): boolean =>
  * 布局：响应式 3 列网格；除多行（label 换行、全宽 CodeMirror，label 后可折叠，
  * 语言由 element.textareaLanguage 指定、不匹配支持类型时回退 textile）外，其余控件
  * label 与控件同行（inline）；行内 label 超长收缩省略号、hover 完整 tooltip。
+ * variant 过滤：'compact' 排除 TextArea（部署参数网格用，长文本块下移底部 tab）、
+ * 'all' 不过滤（CreateProjectModal 等）。底部「自定义配置」TextArea 面板不再经本组件渲染——
+ * 由 TabEdit 直接以配置文件面板同一套 grid 定高结构渲染（见 TabEdit 底部 tab）。
  */
 export function Elements({
   elements,
   value,
   onChange,
   active,
+  variant = 'all',
 }: {
   elements: Element[]
   value: ExtraValue[]
@@ -42,15 +46,25 @@ export function Elements({
    *  强制关闭可能开着的 SearchableSelect 弹层——portal 挂 body，display:none 裁不掉，否则
    *  切走 tab 残留成幽灵下拉。其余字段（textarea CodeEditor/折叠态等）保持挂载不丢状态 */
   active?: boolean
+  /** 字段过滤：'compact' 不含 TextArea / 'all' 全部（默认） */
+  variant?: 'all' | 'compact'
 }) {
   const rows = useMemo(() => {
+    // variant 过滤：'compact' 排除 TextArea / 'all' 全部（默认）
+    const keep = (element: Element): boolean => {
+      const isTextAreaField = element.type === 'ElementTypeTextArea'
+      if (variant === 'compact') return !isTextAreaField
+      return true
+    }
     const map = new Map<string, string>()
     for (const v of value) map.set(v.path, v.value)
-    return elements.map((element): { element: Element; display: string } => ({
-      element,
-      display: map.get(element.path) ?? element.default ?? '',
-    }))
-  }, [elements, value])
+    return elements
+      .filter(keep)
+      .map((element): { element: Element; display: string } => ({
+        element,
+        display: map.get(element.path) ?? element.default ?? '',
+      }))
+  }, [elements, value, variant])
 
   /** 更新指定 path 的取值（保留其余项），统一转字符串存储 */
   const update = (path: string, raw: unknown) => {
