@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: api/v6.0.0-beta.18
+    version: v6.0.0-beta.22
 paths:
     /api/access_tokens:
         get:
@@ -1928,6 +1928,35 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/repo.DeleteResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/repos/{id}/export:
+        get:
+            tags:
+                - Repo
+            summary: 导出单个 repo 为 JSON（与导入格式一致，可直接回导入）
+            description: |-
+                ExportOne 路由 /api/repos/{id}/export 为 3 段，与 Export 的 /api/repos/export、
+                 Show 的 /api/repos/{id}（均 2 段）段数不同，无 grpc-gateway 路由遮蔽，注册顺序无关。
+            operationId: Repo_ExportOne
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.ExportResponse'
                 default:
                     description: Default error response
                     content:

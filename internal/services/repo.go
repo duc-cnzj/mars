@@ -221,6 +221,19 @@ func (r *repoSvc) Export(ctx context.Context, req *reposerver.ExportRequest) (*r
 	}, nil
 }
 
+// ExportOne 导出单个 repo 为 JSON：返回体与导入请求同构（ExportResponse 单元素 items），
+// 可直接回传 /api/repos/import 实现单条 round-trip（备份/恢复单个仓库）。
+// 复用 Get（soft-delete 已被 interceptor 过滤，已删除 repo 返回 NotFound）；仅 admin 可调（对齐 Export）。
+func (r *repoSvc) ExportOne(ctx context.Context, req *reposerver.ExportOneRequest) (*reposerver.ExportResponse, error) {
+	repo, err := r.repoBiz.Get(ctx, int(req.Id))
+	if err != nil {
+		return nil, logError(ctx, r.logger, err)
+	}
+	return &reposerver.ExportResponse{
+		Items: []*types.RepoModel{transformer.FromRepo(repo)},
+	}, nil
+}
+
 // snapshotRepos 采集全部 repo 的当前状态（与导出同构），用于导入前快照与审计。
 func (r *repoSvc) snapshotRepos(ctx context.Context) ([]*types.RepoModel, error) {
 	repos, err := r.repoBiz.All(ctx, &biz.AllRepoRequest{})
@@ -340,7 +353,7 @@ func toImportRepoItem(m *types.RepoModel) *biz.ImportRepoItem {
 }
 
 // Authorize 是 repo 服务的 admin 门禁：List/Show 放行给任意登录用户，
-// 其余仓库管理方法（创建/更新/启停/删除/克隆/导入/导出）仅 admin 可调用。
+// 其余仓库管理方法（创建/更新/启停/删除/克隆/导入/导出/导出单个）仅 admin 可调用。
 func (r *repoSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
 	return r.accessBiz.RequireAdmin(ctx, fullMethodName, reposerver.Repo_List_FullMethodName, reposerver.Repo_Show_FullMethodName)
 }

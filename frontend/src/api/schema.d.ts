@@ -1078,6 +1078,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/repos/{id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 导出单个 repo 为 JSON（与导入格式一致，可直接回导入）
+         * @description ExportOne 路由 /api/repos/{id}/export 为 3 段，与 Export 的 /api/repos/export、
+         *      Show 的 /api/repos/{id}（均 2 段）段数不同，无 grpc-gateway 路由遮蔽，注册顺序无关。
+         */
+        get: operations["Repo_ExportOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/version": {
         parameters: {
             query?: never;
@@ -4153,6 +4174,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["repo.DeleteResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Repo_ExportOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["repo.ExportResponse"];
                 };
             };
             /** @description Default error response */

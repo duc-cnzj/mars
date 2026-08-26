@@ -132,6 +132,8 @@ function ElementField({
                   : 'textile'
               }
               minHeight="72px"
+              // 限高对齐底部配置栏（TabEdit 配置 CodeEditor minHeight=500px）：内容超长时内部滚动，不再无限撑高
+              maxHeight="500px"
             />
           )}
         </div>

@@ -513,6 +513,33 @@ func TestRepoSvc_Export_Error(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+func TestRepoSvc_ExportOne_Success(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{ID: 1, Name: "a"}, nil)
+
+	res, err := svc.ExportOne(context.TODO(), &reposerver.ExportOneRequest{Id: 1})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	require.Len(t, res.Items, 1)
+	assert.Equal(t, int32(1), res.Items[0].Id)
+	assert.Equal(t, "a", res.Items[0].Name)
+}
+
+func TestRepoSvc_ExportOne_Error(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	repoRepo := mocks.repoRepo
+
+	repoRepo.EXPECT().Get(gomock.Any(), 1).Return(nil, errors.New("boom"))
+
+	res, err := svc.ExportOne(context.TODO(), &reposerver.ExportOneRequest{Id: 1})
+
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
 func TestRepoSvc_Import_Success(t *testing.T) {
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
@@ -755,12 +782,14 @@ func Test_toImportRepoItem(t *testing.T) {
 	assert.Nil(t, noGit.GitProjectID)
 }
 
-func TestRepoSvc_Authorize_ExportImport_Admin(t *testing.T) {
+func TestRepoSvc_Authorize_ExportImportExportOne_Admin(t *testing.T) {
 	svc, _ := newRepoSvcWithMocks(t)
 
 	_, err := svc.Authorize(newAdminUserCtx(), reposerver.Repo_Export_FullMethodName)
 	assert.Nil(t, err)
 	_, err = svc.Authorize(newAdminUserCtx(), reposerver.Repo_Import_FullMethodName)
+	assert.Nil(t, err)
+	_, err = svc.Authorize(newAdminUserCtx(), reposerver.Repo_ExportOne_FullMethodName)
 	assert.Nil(t, err)
 }
 
@@ -777,6 +806,15 @@ func TestRepoSvc_Authorize_Import_NonAdmin(t *testing.T) {
 	svc, _ := newRepoSvcWithMocks(t)
 
 	_, err := svc.Authorize(newOtherUserCtx(), reposerver.Repo_Import_FullMethodName)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
+func TestRepoSvc_Authorize_ExportOne_NonAdmin(t *testing.T) {
+	svc, _ := newRepoSvcWithMocks(t)
+
+	_, err := svc.Authorize(newOtherUserCtx(), reposerver.Repo_ExportOne_FullMethodName)
 
 	assert.NotNil(t, err)
 	assert.Equal(t, codes.PermissionDenied, status.Code(err))
@@ -839,11 +877,29 @@ func TestRepoGatewayRoute_ExportNotShadowedByShow(t *testing.T) {
 	assert.Zero(t, server.showCalls)
 }
 
-// routeRecorderRepoServer 记录 Export/Show 被调用次数，用于锁定 gateway 路由命中。
+// TestRepoGatewayRoute_ExportOne 锁定单条导出路由 /api/repos/{id}/export 命中 ExportOne，
+// 且不被 Show 的 /api/repos/{id} 或 Export 的 /api/repos/export 遮蔽（段数不同，天然隔离）。
+func TestRepoGatewayRoute_ExportOne(t *testing.T) {
+	mux := runtime.NewServeMux()
+	server := &routeRecorderRepoServer{}
+	require.NoError(t, reposerver.RegisterRepoHandlerServer(context.TODO(), mux, server))
+
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/repos/1/export", nil))
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), "exported-one")
+	assert.Equal(t, 1, server.exportOneCalls)
+	assert.Zero(t, server.exportCalls)
+	assert.Zero(t, server.showCalls)
+}
+
+// routeRecorderRepoServer 记录 Export/Show/ExportOne 被调用次数，用于锁定 gateway 路由命中。
 type routeRecorderRepoServer struct {
 	reposerver.UnimplementedRepoServer
-	exportCalls int
-	showCalls   int
+	exportCalls    int
+	showCalls      int
+	exportOneCalls int
 }
 
 func (s *routeRecorderRepoServer) Export(_ context.Context, _ *reposerver.ExportRequest) (*reposerver.ExportResponse, error) {
@@ -854,6 +910,11 @@ func (s *routeRecorderRepoServer) Export(_ context.Context, _ *reposerver.Export
 func (s *routeRecorderRepoServer) Show(_ context.Context, _ *reposerver.ShowRequest) (*reposerver.ShowResponse, error) {
 	s.showCalls++
 	return &reposerver.ShowResponse{Item: &types.RepoModel{Name: "show"}}, nil
+}
+
+func (s *routeRecorderRepoServer) ExportOne(_ context.Context, _ *reposerver.ExportOneRequest) (*reposerver.ExportResponse, error) {
+	s.exportOneCalls++
+	return &reposerver.ExportResponse{Items: []*types.RepoModel{{Name: "exported-one"}}}, nil
 }
 
 // repoNotFound 返回 biz 层 errs.IsNotFound 判定的 NotFound 错误，

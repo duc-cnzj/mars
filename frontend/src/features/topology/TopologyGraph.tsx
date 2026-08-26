@@ -1,7 +1,6 @@
 import {
   forwardRef,
   useCallback,
-  useId,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
@@ -101,7 +100,6 @@ export const TopologyGraph = forwardRef<TopologyGraphHandle, TopologyGraphProps>
     const [view, setView] = useState<View>({ x: 0, y: 0, scale: 1 })
     // 空白处平移手势进行中（背景 cursor 切换 grab ↔ grabbing）
     const [panning, setPanning] = useState(false)
-    const gridId = useId()
 
     // 节点 <g> 元素注册表：拖拽期间按 id 直接 setAttribute('transform')，绕开 React
     const nodeEls = useRef(new Map<string, SVGGElement>())
@@ -392,10 +390,6 @@ export const TopologyGraph = forwardRef<TopologyGraphHandle, TopologyGraphProps>
           onPointerDown={handleBackgroundPointerDown}
         >
           <defs>
-            {/* 画布点阵：浅色网格点缀，营造「拓扑画布」质感（随主题 line 色） */}
-            <pattern id={gridId} width={26} height={26} patternUnits="userSpaceOnUse">
-              <circle cx={1.5} cy={1.5} r={1.2} fill="var(--line)" opacity={0.55} />
-            </pattern>
             {/* 边箭头：orient=auto 自动对齐末段方向（进目标即指向盒内）；常态线色 / 高亮主色两套 */}
             <marker id="topo-arrow-line" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
               <path d="M0 0 L10 5 L0 10 z" fill="var(--line)" />
@@ -404,8 +398,6 @@ export const TopologyGraph = forwardRef<TopologyGraphHandle, TopologyGraphProps>
               <path d="M0 0 L10 5 L0 10 z" fill="var(--primary)" />
             </marker>
           </defs>
-          {/* 点阵层：屏幕坐标（不受世界变换影响） */}
-          <rect width="100%" height="100%" fill={`url(#${gridId})`} pointerEvents="none" />
           {/* 世界组：统一应用 view 平移缩放 */}
           <g ref={worldRef} transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}>
             {routes.map((route) => {

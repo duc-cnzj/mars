@@ -24,6 +24,7 @@ const (
 	Repo_Create_FullMethodName        = "/repo.Repo/Create"
 	Repo_Show_FullMethodName          = "/repo.Repo/Show"
 	Repo_Export_FullMethodName        = "/repo.Repo/Export"
+	Repo_ExportOne_FullMethodName     = "/repo.Repo/ExportOne"
 	Repo_Import_FullMethodName        = "/repo.Repo/Import"
 	Repo_Update_FullMethodName        = "/repo.Repo/Update"
 	Repo_Delete_FullMethodName        = "/repo.Repo/Delete"
@@ -41,6 +42,9 @@ type RepoClient interface {
 	// 注意：Export 必须排在 Show 之后。grpc-gateway 按注册逆序试匹配路由，
 	// Show 的 `/api/repos/{id}` 通配会吞掉 `/api/repos/export`，Export 晚注册才能先命中。
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
+	// ExportOne 路由 /api/repos/{id}/export 为 3 段，与 Export 的 /api/repos/export、
+	// Show 的 /api/repos/{id}（均 2 段）段数不同，无 grpc-gateway 路由遮蔽，注册顺序无关。
+	ExportOne(ctx context.Context, in *ExportOneRequest, opts ...grpc.CallOption) (*ExportResponse, error)
 	Import(ctx context.Context, in *ImportRequest, opts ...grpc.CallOption) (*ImportResponse, error)
 	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
@@ -90,6 +94,16 @@ func (c *repoClient) Export(ctx context.Context, in *ExportRequest, opts ...grpc
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ExportResponse)
 	err := c.cc.Invoke(ctx, Repo_Export_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *repoClient) ExportOne(ctx context.Context, in *ExportOneRequest, opts ...grpc.CallOption) (*ExportResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExportResponse)
+	err := c.cc.Invoke(ctx, Repo_ExportOne_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -156,6 +170,9 @@ type RepoServer interface {
 	// 注意：Export 必须排在 Show 之后。grpc-gateway 按注册逆序试匹配路由，
 	// Show 的 `/api/repos/{id}` 通配会吞掉 `/api/repos/export`，Export 晚注册才能先命中。
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
+	// ExportOne 路由 /api/repos/{id}/export 为 3 段，与 Export 的 /api/repos/export、
+	// Show 的 /api/repos/{id}（均 2 段）段数不同，无 grpc-gateway 路由遮蔽，注册顺序无关。
+	ExportOne(context.Context, *ExportOneRequest) (*ExportResponse, error)
 	Import(context.Context, *ImportRequest) (*ImportResponse, error)
 	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
@@ -182,6 +199,9 @@ func (UnimplementedRepoServer) Show(context.Context, *ShowRequest) (*ShowRespons
 }
 func (UnimplementedRepoServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Export not implemented")
+}
+func (UnimplementedRepoServer) ExportOne(context.Context, *ExportOneRequest) (*ExportResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ExportOne not implemented")
 }
 func (UnimplementedRepoServer) Import(context.Context, *ImportRequest) (*ImportResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Import not implemented")
@@ -287,6 +307,24 @@ func _Repo_Export_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RepoServer).Export(ctx, req.(*ExportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Repo_ExportOne_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportOneRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RepoServer).ExportOne(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Repo_ExportOne_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RepoServer).ExportOne(ctx, req.(*ExportOneRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -403,6 +441,10 @@ var Repo_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Export",
 			Handler:    _Repo_Export_Handler,
+		},
+		{
+			MethodName: "ExportOne",
+			Handler:    _Repo_ExportOne_Handler,
 		},
 		{
 			MethodName: "Import",

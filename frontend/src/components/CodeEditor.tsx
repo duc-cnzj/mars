@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { materialDark, yamlScalarHighlight } from '@/lib/prism-material-dark'
 import { color } from '@uiw/codemirror-extensions-color'
@@ -6,7 +6,7 @@ import { yaml } from '@codemirror/lang-yaml'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
 import { LanguageDescription } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
-import { Prec, type Extension } from '@codemirror/state'
+import { EditorState, Prec, type Extension } from '@codemirror/state'
 import { EditorView, keymap } from '@codemirror/view'
 import {
   autocompletion,
@@ -165,6 +165,35 @@ const FILE_TYPE_TO_LANG: Record<string, string> = {
  * 只读场景回退为 <pre>（完整展示，无高亮），可编辑场景回退原生 <textarea>（保留全量编辑）。
  */
 const LARGE_DOC_LIMIT = 1024 * 1024 // 1MB
+
+/**
+ * 基础功能开关：提成模块级常量，保证引用跨渲染稳定。
+ * @uiw/react-codemirror 的 useCodeMirror 在 basicSetup / onChange / extensions / theme 任一
+ * 依赖引用变化时都会 StateEffect.reconfigure 整棵编辑器——把内联对象/箭头函数传进去等于每次
+ * render 都重建，搜索面板这类打开的 UI 状态（打开面板的 state field）被重置，表现为「搜索栏
+ * 自动失焦隐藏」。固定引用后 reconfigure 只在真正需要时触发，搜索面板保持打开，关闭仅走
+ * Esc / ✕ 按钮两条原生路径（Cmd/Ctrl+F 只负责打开）。
+ */
+const CM_BASIC_SETUP = {
+  lineNumbers: true,
+  highlightActiveLineGutter: false,
+  foldGutter: true,
+  dropCursor: true,
+  allowMultipleSelections: true,
+  indentOnInput: true,
+  bracketMatching: true,
+  closeBrackets: true,
+  autocompletion: true,
+  rectangularSelection: true,
+  crosshairCursor: true,
+  highlightActiveLine: false,
+  highlightSelectionMatches: true,
+  closeBracketsKeymap: true,
+  searchKeymap: true,
+  foldKeymap: true,
+  completionKeymap: true,
+  lintKeymap: true,
+}
 
 /** 模块级缓存：同一语言只 resolve 一次（language-data 的 load 是异步的） */
 const langCache = new Map<string, Promise<Extension>>()
@@ -354,6 +383,34 @@ const completionKeymap = Prec.high(
  * yaml 模板补全（YAML_COMPLETIONS 的 <.*> 变量）仅当 enableYamlTemplateCompletion 显式开启时挂载，
  * 用于 repos 表单的 values.yaml「自动补全: alt+enter」场景；其余 yaml 编辑只保留基础 autocompletion。
  */
+/**
+ * @codemirror/search 内置 UI 文案 → CodeMirror phrase 键（EditorState.phrases 注入）。
+ * 搜索面板 / gotoLine 对话框 / 匹配 announce 都经 view.state.phrase(key) 取词，键是英文原词。
+ * 文案值带字面量「$」（CodeMirror 数字/词占位符，非 i18next 插值）。语言切换后 extensions
+ * 重建（见 locale effect），面板重新打开即用新语言。
+ */
+function buildSearchPhrases(t: TFunction): Record<string, string> {
+  return {
+    Find: t('codemirror.find'),
+    Replace: t('codemirror.replace'),
+    next: t('codemirror.next'),
+    previous: t('codemirror.previous'),
+    all: t('codemirror.all'),
+    'match case': t('codemirror.matchCase'),
+    regexp: t('codemirror.regexp'),
+    'by word': t('codemirror.byWord'),
+    replace: t('codemirror.replace'),
+    'replace all': t('codemirror.replaceAll'),
+    close: t('codemirror.close'),
+    'Go to line': t('codemirror.goToLine'),
+    go: t('codemirror.go'),
+    'replaced match on line $': t('codemirror.replacedMatchOnLine'),
+    'replaced $ matches': t('codemirror.replacedMatches'),
+    'current match': t('codemirror.currentMatch'),
+    'on line': t('codemirror.onLine'),
+  }
+}
+
 function buildExtensions(
   fileType: string,
   langExt: Extension,
@@ -361,7 +418,7 @@ function buildExtensions(
   enableYamlTemplateCompletion = false,
   t: TFunction,
 ): Extension[] {
-  const ext: Extension[] = [langExt, editorChrome]
+  const ext: Extension[] = [langExt, editorChrome, EditorState.phrases.of(buildSearchPhrases(t))]
   if (isYamlType(fileType)) ext.push(yamlScalarHighlight)
   if (readOnly) return ext
   ext.push(color, completionKeymap)
@@ -391,6 +448,7 @@ export function CodeEditor({
   value,
   onChange,
   minHeight = '160px',
+  maxHeight,
   readOnly = false,
   language = 'yaml',
   yamlTemplateCompletion = false,
@@ -399,6 +457,8 @@ export function CodeEditor({
   value: string
   onChange: (value: string) => void
   minHeight?: string
+  /** 可选最大高度：超过后编辑器内部滚动（textarea 动态节点限高用，对齐底部配置栏高度） */
+  maxHeight?: string
   readOnly?: boolean
   language?: string
   /** 仅 repos 表单 values.yaml 场景开启：挂载 YAML_COMPLETIONS 模板补全（对应「自动补全: alt+enter」提示） */
@@ -411,6 +471,13 @@ export function CodeEditor({
   const { t, i18n } = useTranslation()
   const lastLang = useRef(language)
   const lastLocale = useRef(i18n.language)
+
+  // onChange 引用稳定化：调用方（如 Elements 动态字段）常传内联箭头函数，每次 render 引用都变。
+  // 若不包装，@uiw 的 useCodeMirror 会因 onChange 引用变化反复 StateEffect.reconfigure，打开中的
+  // 搜索面板被重置关闭。这里用 ref 保存最新回调、useCallback 返回恒稳引用，reconfigure 不再误触发。
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  const stableOnChange = useCallback((v: string) => onChangeRef.current(v), [])
 
   const [extensions, setExtensions] = useState<Extension[]>(() => [
     // 初始扩展按语言取同步扩展：yaml/json 用对应 lang 扩展，其他语言先占位 yaml 等异步 resolve。
@@ -467,7 +534,7 @@ export function CodeEditor({
             'flex flex-col overflow-hidden rounded-md border border-line bg-surface text-[12px]',
             className,
           )}
-          style={{ height: '100%', minHeight }}
+          style={{ height: '100%', minHeight, maxHeight }}
         >
           <pre className="min-h-0 flex-1 overflow-auto whitespace-pre p-2 font-mono leading-relaxed text-ink">
             {value}
@@ -485,40 +552,27 @@ export function CodeEditor({
           'w-full resize-none overflow-auto rounded-md border border-line bg-surface p-2 font-mono text-[12px] leading-relaxed text-ink outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
           className,
         )}
-        style={{ height: '100%', minHeight }}
+        style={{ height: '100%', minHeight, maxHeight }}
       />
     )
   }
 
+  // 注意：wrapper 不设 height:100%（也不设 height:auto 的 inline style——inline 会压过调用方
+  // 的 h-full class）。在网格 stretch 的父容器里（Elements 动态 textarea 节点是 col-span-3 网格项，
+  // 高度 = label 行 + 编辑器），height:100% 会解析成整个网格项高度，编辑器下方多出 label 行高的一段
+  // 空隙 + 底部 border。需要填满定高容器的调用方（TabEdit 配置栏 / CreateProjectModal / RepoFormModal
+  // 只读 chart 预览）已显式传 className="h-full"，编辑器高度由 editorChrome 的 .cm-editor{height:100%}
+  // 承接，这里默认保持内容高即可。
   return (
     <CodeMirror
       value={value}
-      onChange={onChange}
+      onChange={stableOnChange}
       extensions={extensions}
       theme={materialDark}
       minHeight={minHeight}
-      style={{ height: '100%' }}
+      maxHeight={maxHeight}
       readOnly={readOnly}
-      basicSetup={{
-        lineNumbers: true,
-        highlightActiveLineGutter: false,
-        foldGutter: true,
-        dropCursor: true,
-        allowMultipleSelections: true,
-        indentOnInput: true,
-        bracketMatching: true,
-        closeBrackets: true,
-        autocompletion: true,
-        rectangularSelection: true,
-        crosshairCursor: true,
-        highlightActiveLine: false,
-        highlightSelectionMatches: true,
-        closeBracketsKeymap: true,
-        searchKeymap: true,
-        foldKeymap: true,
-        completionKeymap: true,
-        lintKeymap: true,
-      }}
+      basicSetup={CM_BASIC_SETUP}
       className={cn(
         'overflow-hidden rounded-md border border-line text-[12px]',
         className,

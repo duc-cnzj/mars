@@ -249,6 +249,7 @@ export default {
     export: '导出',
     import: '导入',
     exportSuccess: '已导出 repos.json',
+    exportOneSuccess: '已导出 {{name}}.json',
     importInvalidFile: '文件格式不正确，请选择导出的 repo JSON',
     importPreviewTitle: '确认导入',
     importBackupTip: '导入会覆盖同名仓库，建议先导出当前仓库作为快照备份，误操作后可据此对照回滚。',
@@ -493,5 +494,25 @@ export default {
     dragTitle: '拖动标题栏移动窗口',
     resizeEdge: '拖动边缘调整尺寸',
     resizeCorner: '拖动角落调整尺寸',
+  },
+  // CodeMirror 内置 UI 文案（搜索面板 / gotoLine / 匹配 announce），经 EditorState.phrases 注入。
+  // 「$」是 CodeMirror phrase 的占位符（数字/词插入位），i18next 不解释它，保持字面量。
+  codemirror: {
+    find: '查找',
+    replace: '替换',
+    next: '下一个',
+    previous: '上一个',
+    all: '全选',
+    matchCase: '区分大小写',
+    regexp: '正则表达式',
+    byWord: '全词匹配',
+    replaceAll: '全部替换',
+    close: '关闭',
+    goToLine: '转到行',
+    go: '跳转',
+    replacedMatchOnLine: '已替换第 $ 行匹配',
+    replacedMatches: '已替换 $ 处匹配',
+    currentMatch: '当前匹配',
+    onLine: '位于第',
   },
 } as const

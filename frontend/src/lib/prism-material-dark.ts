@@ -35,11 +35,21 @@ const chrome = EditorView.theme(
     '.cm-activeLineGutter': { backgroundColor: '#262933', color: '#8f98bb' },
     '.cm-content': { caretColor: '#eee' },
     '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#eee' },
-    // 官方 ::selection background:#363636
+    // 选中高亮：官方 prism 的 #363636 与编辑器底 #2e303c 几乎同深（选中看不见）。
+    // 先用 VS Code #264f78 用户仍觉不明显，升级为 GitHub 暗色选中蓝 #2f81f7——
+    // 更亮的饱和蓝，对 #eee 白字与 #2e303c 底都清晰可辨
     '&.cm-focused .cm-selectionBackground, & .cm-line::selection, & .cm-selectionLayer .cm-selectionBackground, .cm-content ::selection':
-      { backgroundColor: '#363636 !important' },
-    '& .cm-selectionMatch': { backgroundColor: '#3f3f3f' },
+      { backgroundColor: '#2f81f7 !important' },
+    // 命中匹配高亮：比主选中暗一档的蓝灰，与 #363636 同级的旧值也近不可见，一并提亮
+    '& .cm-selectionMatch': { backgroundColor: '#3a4a6b' },
     '&.cm-editor.cm-focused': { outline: 'none' },
+    // 搜索面板保持 @codemirror/search 默认：sticky 横条贴在编辑器底部（top:false 的面板容器
+    // .cm-panels.cm-panels-bottom），不自定义定位/卡片样式，避免和编辑器内容抢视觉。
+    // 只加宽查找/替换输入框：基座 .cm-textfield 无 width，走浏览器默认（~177px）太窄。
+    // min(220px, 50vw) 兼顾窄编辑器不横向溢出面板
+    '.cm-panel.cm-search .cm-textfield': {
+      width: 'min(220px, 50vw)',
+    },
   },
   { dark: true },
 )

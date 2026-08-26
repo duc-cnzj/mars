@@ -109,6 +109,17 @@ service Repo {
     };
   }
 
+  // ExportOne 路由 /api/repos/{id}/export 为 3 段，与 Export 的 /api/repos/export、
+  // Show 的 /api/repos/{id}（均 2 段）段数不同，无 grpc-gateway 路由遮蔽，注册顺序无关。
+  rpc ExportOne(ExportOneRequest) returns (ExportResponse) {
+    option (google.api.http)      = {
+      get: "/api/repos/{id}/export"
+    };
+    option (openapi.v3.operation) = {
+      summary: "导出单个 repo 为 JSON（与导入格式一致，可直接回导入）",
+    };
+  }
+
   rpc Import(ImportRequest) returns (ImportResponse) {
     option (google.api.http)      = {
       post: "/api/repos/import"
@@ -174,6 +185,10 @@ message CloneResponse{
 }
 
 message ExportRequest{}
+
+message ExportOneRequest {
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
 
 message ExportResponse {
   repeated types.RepoModel items = 1;

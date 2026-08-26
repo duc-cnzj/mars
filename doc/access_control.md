@@ -71,7 +71,7 @@
 | file | ShowRecords | 📄 `RequireFileAccess`（所有者/admin） | file.go:79 方法体 `GetByID` + `RequireFileAccess`；allowlist file.go:135 放行后做所有者判定 |
 | file | List / DiskInfo / Delete | ⭐ | file.go:135（Authorize 门禁） |
 | repo | List / Show | 🔑 | allowlist `/repo.Repo/List` `/Show` |
-| repo | Create / Update / ToggleEnabled / Delete / Clone | ⭐ | repo.go:209（Authorize 门禁） |
+| repo | Create / Update / ToggleEnabled / Delete / Clone / Import / Export / ExportOne | ⭐ | repo.go:357（Authorize 门禁） |
 
 ### 4.3 命名空间/项目级访问控制（🛡️ / 🏠）
 

@@ -17,7 +17,7 @@ import type { components } from '@/api/schema'
 import { SearchableSelect } from '@/components/SearchableSelect'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
-import { Textarea } from '@/components/ui/shadcn/textarea'
+import { CodeEditor, FILE_TYPES } from '@/components/CodeEditor'
 import { SelectFileType } from './SelectFileType'
 import {
   Select,
@@ -280,7 +280,18 @@ function SortableElementItem({
               placeholder={t('repos.elementDescriptionPlaceholder')}
             />
           </label>
-          {element.type !== 'ElementTypeTextArea' && (
+          {element.type === 'ElementTypeTextArea' ? (
+            // TextArea：编辑器语言与字段描述同行（右半列），下方 CodeMirror 默认值独占一行
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>{t('repos.elementTextAreaLanguage')}</span>
+              {/* 复用配置文件类型选择器：55 种语言候选 + 可搜索 + 自由值兜底 */}
+              <SelectFileType
+                value={element.textareaLanguage}
+                onChange={(v) => onChange({ textareaLanguage: v })}
+                placeholder={t('repos.elementTextAreaLanguagePlaceholder')}
+              />
+            </label>
+          ) : (
             <label className="flex flex-col gap-1.5">
               <span className={labelCls}>
                 {t('repos.elementDefault')}
@@ -295,29 +306,24 @@ function SortableElementItem({
           )}
         </div>
 
-        {/* TextArea 默认值另起一行独占整行（对齐旧版 DynamicElement 的独立行），
-            编辑器语言紧随其后（textareaLanguage 透传给部署表单的 CodeMirror） */}
+        {/* TextArea 默认值 CodeMirror：独占一行（独立于上方 grid），语言联动——language 直接取
+            textareaLanguage，切换语言选择器即重新解析高亮；空串/未知值回退 textile（与部署表单
+            Elements.tsx 的 FILE_TYPES 判定一致） */}
         {element.type === 'ElementTypeTextArea' && (
-          <div className="grid grid-cols-1 gap-2.5 pl-6 sm:grid-cols-2">
-            <label className="flex flex-col gap-1.5">
-              <span className={labelCls}>{t('repos.elementDefault')}</span>
-              <DefaultValueInput
-                type={element.type}
-                value={element.default}
-                onChange={(v) => onChange({ default: v })}
-              />
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className={labelCls}>{t('repos.elementTextAreaLanguage')}</span>
-              {/* 复用配置文件类型选择器：55 种语言候选 + 可搜索 + 自由值兜底；
-                  空串表示未指定 → 部署表单按默认语言 textile 高亮（Elements.tsx 的 FILE_TYPES 回退） */}
-              <SelectFileType
-                value={element.textareaLanguage}
-                onChange={(v) => onChange({ textareaLanguage: v })}
-                placeholder={t('repos.elementTextAreaLanguagePlaceholder')}
-              />
-            </label>
-          </div>
+          <label className="flex flex-col gap-1.5 pl-6">
+            <span className={labelCls}>{t('repos.elementDefault')}</span>
+            <CodeEditor
+              value={element.default}
+              onChange={(v) => onChange({ default: v })}
+              language={
+                (FILE_TYPES as readonly string[]).includes(element.textareaLanguage)
+                  ? element.textareaLanguage
+                  : 'textile'
+              }
+              minHeight="100px"
+              className="text-[12px]"
+            />
+          </label>
         )}
 
         {selective && (
@@ -355,16 +361,6 @@ function DefaultValueInput({
   value: string
   onChange: (v: string) => void
 }) {
-  if (type === 'ElementTypeTextArea') {
-    return (
-      <Textarea
-        value={value}
-        rows={3}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="default"
-      />
-    )
-  }
   if (type === 'ElementTypeInputNumber') {
     return (
       <Input

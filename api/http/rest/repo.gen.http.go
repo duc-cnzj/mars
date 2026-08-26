@@ -54,6 +54,15 @@ func (s *RepoSvc) Export(ctx context.Context, req *repo.ExportRequest) (*repo.Ex
 	return &out, nil
 }
 
+// ExportOne GET /api/repos/{id}/export。
+func (s *RepoSvc) ExportOne(ctx context.Context, req *repo.ExportOneRequest) (*repo.ExportResponse, error) {
+	var out repo.ExportResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, fmt.Sprintf("/api/repos/%d/export", req.Id), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // Import POST /api/repos/import。
 func (s *RepoSvc) Import(ctx context.Context, req *repo.ImportRequest) (*repo.ImportResponse, error) {
 	var out repo.ImportResponse

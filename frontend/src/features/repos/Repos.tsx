@@ -82,6 +82,8 @@ export function Repos() {
   const [cloneName, setCloneName] = useState('')
 
   const [exporting, setExporting] = useState(false)
+  /** 正在单条导出的 repo id（>0 表示某行导出进行中，禁用该行按钮防重复点击） */
+  const [exportingOneId, setExportingOneId] = useState(0)
   const [importing, setImporting] = useState(false)
   /** 导入预览：文件解析 + dry-run 计数，确认后才真实提交 */
   const [preview, setPreview] = useState<{
@@ -284,6 +286,31 @@ export function Repos() {
     }
   }
 
+  // 导出单个 repo 为 JSON：返回体与全量导出同构（{ items }），可直接回导入实现单条备份/恢复
+  const doExportOne = async (item: RepoModel) => {
+    setExportingOneId(item.id)
+    try {
+      const { data, error } = await api.GET('/api/repos/{id}/export', {
+        params: { path: { id: item.id } },
+      })
+      if (error) throw new Error(error.message ?? String(error))
+      if (!data) return
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${item.name}.json`
+      a.click()
+      // 等浏览器启动下载后再释放 blob URL：立即 revoke 在 Firefox 下偶发下载失败（对象已被回收）
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      toast.success(t('repos.exportOneSuccess', { name: item.name }))
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setExportingOneId(0)
+    }
+  }
+
   // 选择导入文件 → 解析校验 → dry-run 预览计数，确认后才真实提交
   const onPickFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -469,6 +496,19 @@ export function Repos() {
                 </div>
               </div>
               <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={exportingOneId === item.id}
+                  onClick={() => doExportOne(item)}
+                >
+                  {exportingOneId === item.id ? (
+                    <Icon name="loader" className="size-4 animate-spin" />
+                  ) : (
+                    <Icon name="download" className="size-4" />
+                  )}
+                  {t('repos.export')}
+                </Button>
                 <Button
                   size="sm"
                   variant="outline"

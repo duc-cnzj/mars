@@ -168,7 +168,8 @@ export const TopologyNode = memo(function TopologyNode({
           ? 'stroke-primary/40'
           : 'stroke-line'
   const strokeWidth = highlight === 'selected' ? 2 : highlight === 'hover' ? 1.6 : 1.2
-  const fillClass = highlight === 'selected' ? 'fill-raised' : 'fill-surface'
+  // 卡片填充：默认页面灰 fill-bg（白画布上明显可辨），选中抬一档 fill-raised + 主色描边
+  const fillClass = highlight === 'selected' ? 'fill-raised' : 'fill-bg'
   const cursorClass = isDragging ? 'cursor-grabbing' : 'cursor-grab'
   // 名称可用宽度 = 右侧状态指示区左缘 - 名称起点 - 间距；按像素截断（比固定 22/26 字符更贴实际：
   // 短状态胶囊/纯状态点时名称吃掉更多宽度，省略更少）。nameTruncated 驱动全名 hover 提示条
