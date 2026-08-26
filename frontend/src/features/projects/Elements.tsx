@@ -7,6 +7,8 @@ import { Switch } from '@/components/ui/shadcn/switch'
 import { CodeEditor, FILE_TYPES } from '@/components/CodeEditor'
 import { SearchableSelect } from '@/components/SearchableSelect'
 import { nextZIndex } from '@/lib/zIndex'
+import { buildSections, groupLabel } from '@/lib/groupSections'
+import type { GroupSection } from '@/lib/groupSections'
 import {
   Tooltip,
   TooltipContent,
@@ -16,6 +18,7 @@ import {
 import { Icon } from '@/components/Icons'
 
 type Element = components['schemas']['mars.Element']
+type GroupSetting = components['schemas']['mars.GroupSetting']
 type ExtraValue = components['schemas']['websocket.ExtraValue']
 
 /** 与旧版 Elements.tsx 一致的布尔判定：1/true/"1"/"True"/"true" 视为开 */
@@ -38,6 +41,7 @@ export function Elements({
   onChange,
   active,
   variant = 'all',
+  groupSettings = [],
 }: {
   elements: Element[]
   value: ExtraValue[]
@@ -48,23 +52,28 @@ export function Elements({
   active?: boolean
   /** 字段过滤：'compact' 不含 TextArea / 'all' 全部（默认） */
   variant?: 'all' | 'compact'
+  /** 分区配置（order/collapsed）：决定分区展示顺序与默认折叠；空 = 无分区平铺（兼容旧版） */
+  groupSettings?: GroupSetting[]
 }) {
-  const rows = useMemo(() => {
-    // variant 过滤：'compact' 排除 TextArea / 'all' 全部（默认）
-    const keep = (element: Element): boolean => {
-      const isTextAreaField = element.type === 'ElementTypeTextArea'
-      if (variant === 'compact') return !isTextAreaField
-      return true
-    }
-    const map = new Map<string, string>()
-    for (const v of value) map.set(v.path, v.value)
-    return elements
-      .filter(keep)
-      .map((element): { element: Element; display: string } => ({
-        element,
-        display: map.get(element.path) ?? element.default ?? '',
-      }))
-  }, [elements, value, variant])
+  // variant 过滤：'compact' 排除 TextArea / 'all' 全部（默认）
+  const visible = useMemo(
+    () =>
+      elements.filter((element) =>
+        variant === 'compact' ? element.type !== 'ElementTypeTextArea' : true,
+      ),
+    [elements, variant],
+  )
+  // 分区派生：编辑页 DynamicElement 与部署表单共用同一份 buildSections，保证两页分组/顺序一致
+  const sections = useMemo(
+    () => buildSections(visible, groupSettings),
+    [visible, groupSettings],
+  )
+  // path → 取值映射（命中值为空时回退默认值）
+  const map = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const v of value) m.set(v.path, v.value)
+    return m
+  }, [value])
 
   /** 更新指定 path 的取值（保留其余项），统一转字符串存储 */
   const update = (path: string, raw: unknown) => {
@@ -73,26 +82,133 @@ export function Elements({
     onChange(next)
   }
 
+  /** 单个字段 key：select 型拼 active（keep-alive 失活重建弹层、复位 open），其余用 path 保
+   *  实例（textarea CodeEditor/折叠态/滚动位置）；select 型弹层是点击打开的 portal（挂 body），
+   *  display:none 裁不掉，切走不重建会残留幽灵下拉 */
+  const fieldKey = (element: Element) =>
+    element.type === 'ElementTypeSelect' || element.type === 'ElementTypeNumberSelect'
+      ? `${element.path}-${active ? 'on' : 'off'}`
+      : element.path
+
   if (elements.length === 0) return null
 
-  return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-      {rows.map(({ element, display }) => {
-        // select 型字段的 SearchableSelect 弹层是点击打开的 portal（挂 body），失活（keep-alive
-        // 隐藏）时若不重建会残留成幽灵下拉。key 拼 active 让其在切走/切回时各重建一次、open 复位
-        // false；textarea/input/radio/switch 无 portal 风险，保持原 key（element.path）不重建，
-        // 保住 textarea CodeEditor 实例、折叠态与滚动位置。
-        const isSelect =
-          element.type === 'ElementTypeSelect' || element.type === 'ElementTypeNumberSelect'
-        return (
+  // 无分区：兼容旧版平铺（无分区头/无折叠）
+  if (sections.length === 0) {
+    return (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+        {visible.map((element) => (
           <ElementField
-            key={isSelect ? `${element.path}-${active ? 'on' : 'off'}` : element.path}
+            key={fieldKey(element)}
             element={element}
-            display={display}
+            display={map.get(element.path) ?? element.default ?? ''}
             update={update}
           />
-        )
-      })}
+        ))}
+      </div>
+    )
+  }
+
+  // 分区模式：所有分区收敛进单个面板容器，分区间以 border-top 分隔（.block + .block），
+  // 头栏对齐设计稿 .block-title.collapsible：主题色 accent 竖条 + 分区名 + 计数 badge + 右侧 chevron。
+  // 未分组恒排最后、不可折叠（无 accent/chevron）。容器无边框（用户要求 borderless，去掉卡片感）
+  return (
+    <div className="rounded-lg bg-surface px-5 py-2">
+      {sections.map((section, i) => (
+        <ElementSection
+          key={section.name}
+          section={section}
+          map={map}
+          update={update}
+          fieldKey={fieldKey}
+          isFirst={i === 0}
+        />
+      ))}
+    </div>
+  )
+}
+
+/**
+ * 分区块（部署表单面板内）：头栏 = 主题色竖条（accent）+ 分区名 + 计数 badge + 右侧 chevron，
+ * 整个标题行可点击折叠，对齐 oms-deploy-config-redesign.html 的 .block-title.collapsible——
+ * accent 3px/12px 主题色、badge 灰底圆角、chevron margin-left:auto 贴右、折叠时 rotate(-90deg)。
+ * 块间以 border-top 分隔（.block + .block），不再各自成独立卡片。默认折叠取 group_settings.collapsed
+ * （进入页面时该分区收起），之后为本地瞬态——部署表单的折叠只是浏览态、不写回配置（与编辑页
+ * DynamicElement 的持久化折叠语义不同）。未分组区恒排最后、不可折叠。
+ */
+function ElementSection({
+  section,
+  map,
+  update,
+  fieldKey,
+  isFirst,
+}: {
+  section: GroupSection
+  map: Map<string, string>
+  update: (path: string, raw: unknown) => void
+  fieldKey: (element: Element) => string
+  /** 面板内首块不加分隔线（.block + .block 语义：首块不画顶边） */
+  isFirst?: boolean
+}) {
+  const { t } = useTranslation()
+  const isUngrouped = section.name === ''
+  // 默认折叠 = 初始收起（useState 惰性初始化，仅首次挂载生效）；keep-alive 切走/切回保留用户瞬态
+  const [open, setOpen] = useState(() => !section.collapsed)
+  // 头栏公共内容：accent 竖条（未分组无）+ 分区名 + 计数 badge
+  const headerInner = (
+    <>
+      {!isUngrouped && <span className="h-3 w-[3px] shrink-0 rounded-[2px] bg-primary" />}
+      <span
+        className={cn(
+          'min-w-0 truncate text-[13px] font-semibold group-hover:text-primary',
+          isUngrouped ? 'text-mute' : 'text-ink',
+        )}
+      >
+        {isUngrouped ? t('repos.groupUngrouped') : groupLabel(section.name, t)}
+      </span>
+      <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-normal text-mute">
+        {t('repos.groupsItemCount', { count: section.elements.length })}
+      </span>
+    </>
+  )
+  return (
+    <div className={cn(!isFirst && 'border-t border-line')}>
+      {isUngrouped ? (
+        // 未分组：纯展示头（无折叠），不加可点击/焦点交互
+        <div className="flex items-center gap-2 py-3">{headerInner}</div>
+      ) : (
+        // 可折叠块：整个标题行即按钮（对齐设计稿 .block-title.collapsible 整体点击语义）
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          title={open ? t('project.collapse') : t('project.expand')}
+          className="group flex w-full cursor-pointer items-center gap-2 rounded py-3 text-left select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
+          {headerInner}
+          <Icon
+            name="chevron-down"
+            className={cn(
+              'ml-auto size-4 shrink-0 text-ink transition-transform duration-200 group-hover:text-primary',
+              !open && '-rotate-90',
+            )}
+          />
+        </button>
+      )}
+      {open && (
+        // pb-3 对齐头栏 py-3：面板 py-2 对称后，上距=pt-2(8)+头栏顶(12)=20、下距=内容pb-3(12)+pb-2(8)=20，两侧一致
+        <div className="pb-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {section.elements.map((element) => (
+              <ElementField
+                key={fieldKey(element)}
+                element={element}
+                display={map.get(element.path) ?? element.default ?? ''}
+                update={update}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

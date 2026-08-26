@@ -1379,6 +1379,12 @@ export interface components {
              *      未配置时 PipelineInfo 返回整体流水线状态。
              */
             pipelinePassRules: components["schemas"]["mars.PipelinePassRule"][];
+            /**
+             * @description group_settings 分区展示配置：分区排序（order 升序）+ 默认折叠（collapsed）。
+             *      分区本身由 Element.group 派生，这里只记录分区的展示元数据。
+             *      旧配置无此字段 → 无分区配置 → 前端扁平渲染，行为与旧版一致。
+             */
+            groupSettings: components["schemas"]["mars.GroupSetting"][];
         };
         "mars.Element": {
             path: string;
@@ -1397,6 +1403,18 @@ export interface components {
              *      透传给 CodeEditor 的 language（对齐前端 FILE_TYPE_TO_LANG 键），仅对 textarea 类型有意义。
              */
             textareaLanguage: string;
+            /**
+             * @description group 分区名（服务卡片/折叠分区的展示元数据）。空串 = 未分组 → 前端渲染「未分组」区，
+             *      全空 = 旧版扁平布局。仅前端展示用，不参与部署。
+             */
+            group: string;
+        };
+        /** @description GroupSetting 是分区（group）的展示配置：分区排序与默认折叠。 */
+        "mars.GroupSetting": {
+            name: string;
+            /** Format: uint32 */
+            order: number;
+            collapsed: boolean;
         };
         /** @description PipelinePassRule 是流水线通过规则的单条匹配项：命中指定 stage 下名为 job_name 的 job。 */
         "mars.PipelinePassRule": {

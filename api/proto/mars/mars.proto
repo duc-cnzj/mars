@@ -38,6 +38,18 @@ message Config {
   // pipeline_pass_rules 流水线通过规则：配置的 (stage, job) 全部成功后该流水线才判定为通过。
   // 未配置时 PipelineInfo 返回整体流水线状态。
   repeated PipelinePassRule pipeline_pass_rules = 11;
+
+  // group_settings 分区展示配置：分区排序（order 升序）+ 默认折叠（collapsed）。
+  // 分区本身由 Element.group 派生，这里只记录分区的展示元数据。
+  // 旧配置无此字段 → 无分区配置 → 前端扁平渲染，行为与旧版一致。
+  repeated GroupSetting group_settings = 12;
+}
+
+// GroupSetting 是分区（group）的展示配置：分区排序与默认折叠。
+message GroupSetting {
+  string name      = 1 [(validate.rules).string = { min_bytes: 1, max_bytes: 64 }];
+  uint32 order     = 2; // 分区排序：升序，越小越靠前
+  bool   collapsed = 3; // 默认折叠：进入页面时该分区收起
 }
 
 // PipelinePassRule 是流水线通过规则的单条匹配项：命中指定 stage 下名为 job_name 的 job。
@@ -68,4 +80,10 @@ message Element {
   // textarea_language 多行（ElementTypeTextArea）编辑器语言提示，空值由前端回退默认（env）。
   // 透传给 CodeEditor 的 language（对齐前端 FILE_TYPE_TO_LANG 键），仅对 textarea 类型有意义。
   string          textarea_language = 8;
+  // group 分区名（服务卡片/折叠分区的展示元数据）。空串 = 未分组 → 前端渲染「未分组」区，
+  // 全空 = 旧版扁平布局。仅前端展示用，不参与部署。
+  string          group             = 9 [(validate.rules).string = {
+    max_bytes: 64,
+    ignore_empty: true,
+  }];
 }

@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { cn } from '@/lib/utils'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
 import { Icon } from '@/components/Icons'
@@ -17,7 +16,8 @@ import { SearchableSelect } from '@/components/SearchableSelect'
 import { useDraggableDialog } from '@/hooks/useDraggableDialog'
 import { useWheelRedirect } from '@/hooks/useWheelRedirect'
 import { useConfetti } from '@/hooks/useConfetti'
-import { CodeEditor } from '@/components/CodeEditor'
+import { CodeEditor, FILE_TYPES } from '@/components/CodeEditor'
+import { BottomTabButton, handleTablistKeyDown } from './configTabs'
 import { Elements } from './Elements'
 import { DeployLog } from './DeployLog'
 import { PipelineInfo } from './PipelineInfo'
@@ -25,6 +25,7 @@ import { useDeployStream } from './useDeployStream'
 
 type GitOption = components['schemas']['git.Option']
 type Element = components['schemas']['mars.Element']
+type GroupSetting = components['schemas']['mars.GroupSetting']
 type ExtraValue = components['schemas']['websocket.ExtraValue']
 
 /**
@@ -64,7 +65,11 @@ export function CreateProjectModal({
   const [config, setConfig] = useState('')
   const [extraValues, setExtraValues] = useState<ExtraValue[]>([])
   const [elements, setElements] = useState<Element[]>([])
+  const [groupSettings, setGroupSettings] = useState<GroupSetting[]>([])
   const [configFileType, setConfigFileType] = useState('yaml')
+  // 底部「配置文件 / 各 TextArea」tab：'config'（配置文件编辑器，默认选中）或某个 TextArea 的 path
+  //（'t:' 前缀避开与 'config' 哨兵值撞车，同 TabEdit 约定）
+  const [bottomTab, setBottomTab] = useState<string>('config')
 
   const [loadingProject, setLoadingProject] = useState(false)
   const [loadingConfig, setLoadingConfig] = useState(false)
@@ -102,6 +107,7 @@ export function CreateProjectModal({
     setConfig('')
     setExtraValues([])
     setElements([])
+    setGroupSettings([])
     setConfigFileType('yaml')
     setBranchOptions([])
     setCommitOptions([])
@@ -140,6 +146,7 @@ export function CreateProjectModal({
       if (marsConfig) {
         setConfig(marsConfig.configFileValues ?? '')
         setElements(marsConfig.elements ?? [])
+        setGroupSettings(marsConfig.groupSettings ?? [])
         setExtraValues(
           (marsConfig.elements ?? []).map((e) => ({
             path: e.path,
@@ -187,6 +194,25 @@ export function CreateProjectModal({
 
   // 实时部署流：name 用选中 repo 的 label（未选中为空串，内部自动重订阅）
   const stream = useDeployStream(namespaceId, projectName)
+
+  // TextArea 长文本块移出部署参数网格，进底部「配置文件 / 各 TextArea」tab（结构对齐 TabEdit）
+  const textareaElements = useMemo(
+    () => elements.filter((e) => e.type === 'ElementTypeTextArea'),
+    [elements],
+  )
+  const compactElements = useMemo(
+    () => elements.filter((e) => e.type !== 'ElementTypeTextArea'),
+    [elements],
+  )
+  const hasTextarea = textareaElements.length > 0
+
+  /** 更新指定 path 的取值（保留其余项），统一转字符串存储（与 Elements 内部 update 同语义，同 TabEdit） */
+  const updateExtraValue = useCallback((path: string, raw: unknown) => {
+    setExtraValues((prev) => [
+      ...prev.filter((v) => v.path !== path),
+      { path, value: String(raw) },
+    ])
+  }, [])
 
   // 整块弹窗区域滚轮重定向：标题/吸顶头等不可滚动区滚轮转发到内容区滚动条，不穿透滚主页面
   //（有嵌套滚动如 CodeMirror/日志则原生，详见 useWheelRedirect）
@@ -408,29 +434,116 @@ export function CreateProjectModal({
             />
           ) : (
             <>
-              {elements.length > 0 && (
+              {/* 部署参数网格只含非 TextArea 字段（长文本块下移底部「自定义配置」tab，对齐 TabEdit） */}
+              {compactElements.length > 0 && (
                 <div className="mb-3">
                   <Section title={t('project.configElements')}>
-                    <Elements elements={elements} value={extraValues} onChange={setExtraValues} />
+                    <Elements
+                      elements={compactElements}
+                      value={extraValues}
+                      onChange={setExtraValues}
+                      variant="compact"
+                      groupSettings={groupSettings}
+                    />
                   </Section>
                 </div>
               )}
 
-              <Section title={t('project.config')} fill>
-                {loadingConfig ? (
-                  <div className="py-6 text-center text-[13px] text-faint">
-                    {t('common.loading')}
+              {loadingConfig ? (
+                <div className="py-6 text-center text-[13px] text-faint">
+                  {t('common.loading')}
+                </div>
+              ) : (
+                <>
+                  {/* 底部「配置文件 / 各 TextArea」tab 条（与 TabEdit 一致的 pill 轨道样式）。
+                      配置文件排在首位并默认选中（主编辑面）；每个 TextArea 独立一个 tab、标题取各自
+                      description||path。定高 30px 灰色轨道 + 激活主题色块（见 configTabs.BottomTabButton
+                      默认 pill）。无 TextArea 字段时不渲染 */}
+                  {hasTextarea && (
+                    <div
+                      role="tablist"
+                      aria-label={t('project.configFileTab')}
+                      onKeyDown={handleTablistKeyDown}
+                      className="mb-2 flex h-[30px] w-fit max-w-full shrink-0 items-center gap-1 overflow-x-auto rounded-lg bg-line-strong/60 p-[3px] scrollbar-none"
+                    >
+                      <BottomTabButton
+                        active={bottomTab === 'config'}
+                        onClick={() => setBottomTab('config')}
+                      >
+                        {t('project.configFileTab')}
+                      </BottomTabButton>
+                      {textareaElements.map((element) => (
+                        <BottomTabButton
+                          key={element.path}
+                          // tab value 用 't:' 前缀，避开与 'config' 哨兵值撞车（同 TabEdit 约定）
+                          active={bottomTab === `t:${element.path}`}
+                          onClick={() => setBottomTab(`t:${element.path}`)}
+                          title={element.description || element.path}
+                        >
+                          <span className="block max-w-[200px] truncate">
+                            {element.description || element.path}
+                          </span>
+                        </BottomTabButton>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 每个 TextArea 独立一个面板：grid 定高（min-h-[280px] flex-1 + grid-rows + h-full，
+                      对齐设计稿 editor.tall 高度语义）。创建场景无部署旧值、恒不展开 diff（TabEdit 的
+                      改动并排 diff 在创建侧不适用）。与配置文件面板用 hidden 切换（display:none 不卸载
+                      CodeMirror，切走/切回不重置编辑器） */}
+                  {textareaElements.map((element) => {
+                    // 该 TextArea 当前编辑值：extraValues 按 path，无则回退元素 default（同 Elements 的 display 语义）
+                    const textareaValue =
+                      extraValues.find((v) => v.path === element.path)?.value ??
+                      element.default ??
+                      ''
+                    // 编辑器语言由后端 textarea_language 指定；不在 CodeEditor 支持集里回退 textile（同 Elements 逻辑）
+                    const textareaLang = (
+                      FILE_TYPES as readonly string[]
+                    ).includes(element.textareaLanguage)
+                      ? element.textareaLanguage
+                      : 'textile'
+                    return (
+                      <div
+                        key={element.path}
+                        className={
+                          bottomTab !== `t:${element.path}`
+                            ? 'hidden'
+                            : 'grid min-h-[280px] flex-1 grid-rows-[minmax(0,1fr)]'
+                        }
+                      >
+                        <div className="min-h-0 min-w-0">
+                          <CodeEditor
+                            value={textareaValue}
+                            onChange={(v) => updateExtraValue(element.path, v)}
+                            language={textareaLang}
+                            className="h-full"
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+
+                  {/* 配置文件面板：与 TextArea 面板同一套 grid 定高结构，创建场景恒单列（无 diff 并排） */}
+                  <div
+                    className={
+                      bottomTab !== 'config'
+                        ? 'hidden'
+                        : 'grid min-h-[280px] flex-1 grid-rows-[minmax(0,1fr)]'
+                    }
+                  >
+                    <div className="min-h-0 min-w-0">
+                      <CodeEditor
+                        value={config}
+                        onChange={setConfig}
+                        language={configFileType}
+                        className="h-full"
+                      />
+                    </div>
                   </div>
-                ) : (
-                  <CodeEditor
-                    value={config}
-                    onChange={setConfig}
-                    language={configFileType}
-                    minHeight="260px"
-                    className="h-full"
-                  />
-                )}
-              </Section>
+                </>
+              )}
             </>
           )}
         </div>
@@ -460,23 +573,11 @@ export function CreateProjectModal({
   )
 }
 
-function Section({
-  title,
-  children,
-  fill,
-}: {
-  title: string
-  children: React.ReactNode
-  /** 撑满剩余高度（供配置编辑器自适应）：
-   *  外层 section 只给 flex-1、不给 min-h-0——收缩不得低于内容高度（编辑器 min-height），
-   *  空间不足时 section 保持内容高、由内容区 overflow-y-auto 滚动，而不是把编辑器裁掉不可见。
-   *  内层 div 给 flex-1 min-h-0：有富余空间时 height:100% 可解析、编辑器撑满；无富余时贴近内容高。 */
-  fill?: boolean
-}) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className={cn('flex flex-col gap-1.5', fill && 'flex-1')}>
+    <section className="flex flex-col gap-1.5">
       <h4 className="text-[13px] font-semibold text-ink">{title}</h4>
-      <div className={cn('flex flex-col gap-2', fill && 'min-h-0 flex-1')}>{children}</div>
+      <div className="flex flex-col gap-2">{children}</div>
     </section>
   )
 }

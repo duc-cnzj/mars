@@ -116,8 +116,12 @@ type Config struct {
 	// pipeline_pass_rules 流水线通过规则：配置的 (stage, job) 全部成功后该流水线才判定为通过。
 	// 未配置时 PipelineInfo 返回整体流水线状态。
 	PipelinePassRules []*PipelinePassRule `protobuf:"bytes,11,rep,name=pipeline_pass_rules,json=pipelinePassRules,proto3" json:"pipeline_pass_rules,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// group_settings 分区展示配置：分区排序（order 升序）+ 默认折叠（collapsed）。
+	// 分区本身由 Element.group 派生，这里只记录分区的展示元数据。
+	// 旧配置无此字段 → 无分区配置 → 前端扁平渲染，行为与旧版一致。
+	GroupSettings []*GroupSetting `protobuf:"bytes,12,rep,name=group_settings,json=groupSettings,proto3" json:"group_settings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Config) Reset() {
@@ -227,6 +231,74 @@ func (x *Config) GetPipelinePassRules() []*PipelinePassRule {
 	return nil
 }
 
+func (x *Config) GetGroupSettings() []*GroupSetting {
+	if x != nil {
+		return x.GroupSettings
+	}
+	return nil
+}
+
+// GroupSetting 是分区（group）的展示配置：分区排序与默认折叠。
+type GroupSetting struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Order         uint32                 `protobuf:"varint,2,opt,name=order,proto3" json:"order,omitempty"`         // 分区排序：升序，越小越靠前
+	Collapsed     bool                   `protobuf:"varint,3,opt,name=collapsed,proto3" json:"collapsed,omitempty"` // 默认折叠：进入页面时该分区收起
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GroupSetting) Reset() {
+	*x = GroupSetting{}
+	mi := &file_proto_mars_mars_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupSetting) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupSetting) ProtoMessage() {}
+
+func (x *GroupSetting) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mars_mars_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupSetting.ProtoReflect.Descriptor instead.
+func (*GroupSetting) Descriptor() ([]byte, []int) {
+	return file_proto_mars_mars_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *GroupSetting) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *GroupSetting) GetOrder() uint32 {
+	if x != nil {
+		return x.Order
+	}
+	return 0
+}
+
+func (x *GroupSetting) GetCollapsed() bool {
+	if x != nil {
+		return x.Collapsed
+	}
+	return false
+}
+
 // PipelinePassRule 是流水线通过规则的单条匹配项：命中指定 stage 下名为 job_name 的 job。
 type PipelinePassRule struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -238,7 +310,7 @@ type PipelinePassRule struct {
 
 func (x *PipelinePassRule) Reset() {
 	*x = PipelinePassRule{}
-	mi := &file_proto_mars_mars_proto_msgTypes[1]
+	mi := &file_proto_mars_mars_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -250,7 +322,7 @@ func (x *PipelinePassRule) String() string {
 func (*PipelinePassRule) ProtoMessage() {}
 
 func (x *PipelinePassRule) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mars_mars_proto_msgTypes[1]
+	mi := &file_proto_mars_mars_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -263,7 +335,7 @@ func (x *PipelinePassRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PipelinePassRule.ProtoReflect.Descriptor instead.
 func (*PipelinePassRule) Descriptor() ([]byte, []int) {
-	return file_proto_mars_mars_proto_rawDescGZIP(), []int{1}
+	return file_proto_mars_mars_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *PipelinePassRule) GetStageName() string {
@@ -291,13 +363,16 @@ type Element struct {
 	// textarea_language 多行（ElementTypeTextArea）编辑器语言提示，空值由前端回退默认（env）。
 	// 透传给 CodeEditor 的 language（对齐前端 FILE_TYPE_TO_LANG 键），仅对 textarea 类型有意义。
 	TextareaLanguage string `protobuf:"bytes,8,opt,name=textarea_language,json=textareaLanguage,proto3" json:"textarea_language,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// group 分区名（服务卡片/折叠分区的展示元数据）。空串 = 未分组 → 前端渲染「未分组」区，
+	// 全空 = 旧版扁平布局。仅前端展示用，不参与部署。
+	Group         string `protobuf:"bytes,9,opt,name=group,proto3" json:"group,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Element) Reset() {
 	*x = Element{}
-	mi := &file_proto_mars_mars_proto_msgTypes[2]
+	mi := &file_proto_mars_mars_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -309,7 +384,7 @@ func (x *Element) String() string {
 func (*Element) ProtoMessage() {}
 
 func (x *Element) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mars_mars_proto_msgTypes[2]
+	mi := &file_proto_mars_mars_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -322,7 +397,7 @@ func (x *Element) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Element.ProtoReflect.Descriptor instead.
 func (*Element) Descriptor() ([]byte, []int) {
-	return file_proto_mars_mars_proto_rawDescGZIP(), []int{2}
+	return file_proto_mars_mars_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Element) GetPath() string {
@@ -374,11 +449,18 @@ func (x *Element) GetTextareaLanguage() string {
 	return ""
 }
 
+func (x *Element) GetGroup() string {
+	if x != nil {
+		return x.Group
+	}
+	return ""
+}
+
 var File_proto_mars_mars_proto protoreflect.FileDescriptor
 
 const file_proto_mars_mars_proto_rawDesc = "" +
 	"\n" +
-	"\x15proto/mars/mars.proto\x12\x04mars\x1a\x17validate/validate.proto\"\xf0\x03\n" +
+	"\x15proto/mars/mars.proto\x12\x04mars\x1a\x17validate/validate.proto\"\xab\x04\n" +
 	"\x06Config\x12\x1f\n" +
 	"\vconfig_file\x18\x01 \x01(\tR\n" +
 	"configFile\x12,\n" +
@@ -393,11 +475,16 @@ const file_proto_mars_mars_proto_rawDesc = "" +
 	"\belements\x18\t \x03(\v2\r.mars.ElementR\belements\x12L\n" +
 	"\fdisplay_name\x18\n" +
 	" \x01(\tB)\xfaB&r$(@2\x1d^[A-Za-z]([A-Z-_a-z]*[^_-])*$\xd0\x01\x01R\vdisplayName\x12F\n" +
-	"\x13pipeline_pass_rules\x18\v \x03(\v2\x16.mars.PipelinePassRuleR\x11pipelinePassRules\"L\n" +
+	"\x13pipeline_pass_rules\x18\v \x03(\v2\x16.mars.PipelinePassRuleR\x11pipelinePassRules\x129\n" +
+	"\x0egroup_settings\x18\f \x03(\v2\x12.mars.GroupSettingR\rgroupSettings\"a\n" +
+	"\fGroupSetting\x12\x1d\n" +
+	"\x04name\x18\x01 \x01(\tB\t\xfaB\x06r\x04 \x01(@R\x04name\x12\x14\n" +
+	"\x05order\x18\x02 \x01(\rR\x05order\x12\x1c\n" +
+	"\tcollapsed\x18\x03 \x01(\bR\tcollapsed\"L\n" +
 	"\x10PipelinePassRule\x12\x1d\n" +
 	"\n" +
 	"stage_name\x18\x01 \x01(\tR\tstageName\x12\x19\n" +
-	"\bjob_name\x18\x02 \x01(\tR\ajobName\"\xfb\x01\n" +
+	"\bjob_name\x18\x02 \x01(\tR\ajobName\"\x9d\x02\n" +
 	"\aElement\x12\x1b\n" +
 	"\x04path\x18\x01 \x01(\tB\a\xfaB\x04r\x02 \x01R\x04path\x12/\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x11.mars.ElementTypeB\b\xfaB\x05\x82\x01\x02\x10\x01R\x04type\x12\x18\n" +
@@ -405,7 +492,9 @@ const file_proto_mars_mars_proto_rawDesc = "" +
 	"\vdescription\x18\x04 \x01(\tR\vdescription\x12#\n" +
 	"\rselect_values\x18\x06 \x03(\tR\fselectValues\x12\x14\n" +
 	"\x05order\x18\a \x01(\rR\x05order\x12+\n" +
-	"\x11textarea_language\x18\b \x01(\tR\x10textareaLanguage*\xed\x01\n" +
+	"\x11textarea_language\x18\b \x01(\tR\x10textareaLanguage\x12 \n" +
+	"\x05group\x18\t \x01(\tB\n" +
+	"\xfaB\ar\x05(@\xd0\x01\x01R\x05group*\xed\x01\n" +
 	"\vElementType\x12\x16\n" +
 	"\x12ElementTypeUnknown\x10\x00\x12\x14\n" +
 	"\x10ElementTypeInput\x10\x01\x12\x1a\n" +
@@ -430,22 +519,24 @@ func file_proto_mars_mars_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_mars_mars_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_mars_mars_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_proto_mars_mars_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_proto_mars_mars_proto_goTypes = []any{
 	(ElementType)(0),         // 0: mars.ElementType
 	(*Config)(nil),           // 1: mars.Config
-	(*PipelinePassRule)(nil), // 2: mars.PipelinePassRule
-	(*Element)(nil),          // 3: mars.Element
+	(*GroupSetting)(nil),     // 2: mars.GroupSetting
+	(*PipelinePassRule)(nil), // 3: mars.PipelinePassRule
+	(*Element)(nil),          // 4: mars.Element
 }
 var file_proto_mars_mars_proto_depIdxs = []int32{
-	3, // 0: mars.Config.elements:type_name -> mars.Element
-	2, // 1: mars.Config.pipeline_pass_rules:type_name -> mars.PipelinePassRule
-	0, // 2: mars.Element.type:type_name -> mars.ElementType
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	4, // 0: mars.Config.elements:type_name -> mars.Element
+	3, // 1: mars.Config.pipeline_pass_rules:type_name -> mars.PipelinePassRule
+	2, // 2: mars.Config.group_settings:type_name -> mars.GroupSetting
+	0, // 3: mars.Element.type:type_name -> mars.ElementType
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_proto_mars_mars_proto_init() }
@@ -459,7 +550,7 @@ func file_proto_mars_mars_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_mars_mars_proto_rawDesc), len(file_proto_mars_mars_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

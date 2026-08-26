@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
@@ -9,6 +9,7 @@ import { DiffViewer } from '@/components/DiffViewer'
 import { useConfetti } from '@/hooks/useConfetti'
 import { Button } from '@/components/ui/shadcn/button'
 import { SearchableSelect } from '@/components/SearchableSelect'
+import { BottomTabButton, handleTablistKeyDown } from './configTabs'
 import { ConfigHistory } from './ConfigHistory'
 import { DeployLog } from './DeployLog'
 import { Elements } from './Elements'
@@ -19,6 +20,7 @@ import { useDeployStream } from './useDeployStream'
 type ProjectModel = components['schemas']['types.ProjectModel']
 type GitOption = components['schemas']['git.Option']
 type Element = components['schemas']['mars.Element']
+type GroupSetting = components['schemas']['mars.GroupSetting']
 type ExtraValue = components['schemas']['websocket.ExtraValue']
 
 /**
@@ -60,6 +62,7 @@ export function TabEdit({
     detail.finalExtraValues ?? [],
   )
   const [elements, setElements] = useState<Element[]>([])
+  const [groupSettings, setGroupSettings] = useState<GroupSetting[]>([])
   const [configFileType, setConfigFileType] = useState('yaml')
   const [branchOptions, setBranchOptions] = useState<GitOption[]>([])
   const [commitOptions, setCommitOptions] = useState<GitOption[]>([])
@@ -81,6 +84,7 @@ export function TabEdit({
         if (!alive || !data?.item?.marsConfig) return
         const mc = data.item.marsConfig
         setElements(mc.elements ?? [])
+        setGroupSettings(mc.groupSettings ?? [])
         setConfigFileType(mc.configFileType || 'yaml')
       })
       .finally(() => {
@@ -371,6 +375,7 @@ export function TabEdit({
                   onChange={setExtraValues}
                   active={active}
                   variant="compact"
+                  groupSettings={groupSettings}
                 />
               </div>
             )}
@@ -529,76 +534,5 @@ export function TabEdit({
         )}
       </div>
     </div>
-  )
-}
-
-/**
- * 底部配置 tab 条的方向键导航（roving tabindex，对齐原 shadcn Tabs 的键盘行为）：
- * ←/→ 循环移动焦点并激活（聚焦即切换），Home/End 跳首尾。事件在按钮上触发后冒泡到
- * tablist 容器统一处理；target 可能是按钮内 span，向上找 [role=tab] 定位当前项。
- */
-function handleTablistKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-  const tabs = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
-  if (tabs.length === 0) return
-  const curEl = (e.target as HTMLElement).closest<HTMLButtonElement>('[role="tab"]')
-  const cur = curEl ? tabs.indexOf(curEl) : -1
-  let next = cur
-  switch (e.key) {
-    case 'ArrowRight':
-      next = cur < 0 ? 0 : (cur + 1) % tabs.length
-      break
-    case 'ArrowLeft':
-      next = cur < 0 ? tabs.length - 1 : (cur - 1 + tabs.length) % tabs.length
-      break
-    case 'Home':
-      next = 0
-      break
-    case 'End':
-      next = tabs.length - 1
-      break
-    default:
-      return
-  }
-  e.preventDefault()
-  tabs[next].focus()
-  tabs[next].click()
-}
-
-/**
- * 底部配置 tab 条的单按钮：尺寸对齐上方部署按钮（Button size=xs：h-6 + text-xs），
- * 选中态用主题色柔色变体（primary-soft 底 + primary 文字），比实心填充轻、比无色默认态鲜明。
- * 长标题由外部包 span truncate + max-w 截断；按钮自身 shrink-0，容器不足时横向滚动不挤压。
- * roving tabindex：仅选中项可 Tab 聚焦（tabIndex=0），其余 -1，方向键在容器 onKeyDown 统一移动。
- * 不用 shadcn TabsTrigger：其基座 h-[calc(100%-1px)]/py-1/text-sm 需多层 ! 压掉，
- * 且宿主 TabsList 定高 + 溢出时经典滚动条会挤出纵向滚动条，自定义条从根上规避。
- */
-function BottomTabButton({
-  active,
-  onClick,
-  children,
-  title,
-}: {
-  active: boolean
-  onClick: () => void
-  children: ReactNode
-  /** 完整标题（长文本 tab 的 tooltip） */
-  title?: string
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      tabIndex={active ? 0 : -1}
-      title={title}
-      onClick={onClick}
-      className={`flex h-6 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs font-medium whitespace-nowrap transition-colors ${
-        active
-          ? 'bg-primary/20 text-primary'
-          : 'text-foreground/60 hover:text-foreground'
-      }`}
-    >
-      {children}
-    </button>
   )
 }

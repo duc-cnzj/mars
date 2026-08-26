@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/shadcn/tooltip'
 import { Icon } from '@/components/Icons'
+import { Tag } from '@/components/ui'
 
 export interface SearchableSelectOption {
   value: string
@@ -114,6 +115,8 @@ export function SearchableSelect({
   /** 单选 trigger 展示文本：选中项 label 或占位符 */
   const displayLabel =
     selectedValues.length > 0 ? labelOf(selectedValues[0] as string) : (placeholder ?? '')
+  /** 未选中：展示的是 placeholder，用 Input 同款淡色（text-ink/30），与选中值形成区分 */
+  const isPlaceholder = selectedValues.length === 0
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -312,6 +315,7 @@ export function SearchableSelect({
                         className={cn(
                           'min-w-0 flex-1 truncate',
                           align === 'center' && 'text-center',
+                          isPlaceholder && 'text-ink/30',
                         )}
                       >
                         {displayLabel}
@@ -333,7 +337,11 @@ export function SearchableSelect({
                 <span
                   // 两种对齐都 flex-1 占满：start 时文字居左、center 时文字居中，
                   // chevron 均被推在最右（用户要求居中的是文本，箭头保持靠右）
-                  className={cn('min-w-0 flex-1 truncate', align === 'center' && 'text-center')}
+                  className={cn(
+                    'min-w-0 flex-1 truncate',
+                    align === 'center' && 'text-center',
+                    isPlaceholder && 'text-ink/30',
+                  )}
                   title={
                     selectedValues.length > 0
                       ? labelOf(selectedValues[0] as string)
@@ -409,13 +417,14 @@ export function SearchableSelect({
                   isSel && 'font-medium',
                 )}
               >
-                {/* 有 description 时内层改纵向叠排（label + 小字说明），无则保持单行；外按钮仍 items-center 整体垂直居中 */}
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate">{o.label}</span>
+                {/* 有 description 时 label 后同行放一个 Tag 展示说明（chip 底色醒目），超长行内截断；
+                    无则单行。外按钮仍 items-center 整体垂直居中 */}
+                <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                  <span className="min-w-0 truncate">{o.label}</span>
                   {o.description && (
-                    <span className="truncate text-[11px] text-muted-foreground">
-                      {o.description}
-                    </span>
+                    <Tag tone="accent" dot={false} className="min-w-0 max-w-[55%]">
+                      <span className="min-w-0 truncate">{o.description}</span>
+                    </Tag>
                   )}
                 </span>
                 {isSel && (

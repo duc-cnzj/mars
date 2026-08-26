@@ -6,6 +6,7 @@ import type { components } from '@/api/schema'
 import { api } from '@/api/client'
 import { CodeEditor, getMode } from '@/components/CodeEditor'
 import { Icon } from '@/components/Icons'
+import { Tag } from '@/components/ui'
 import { Skeleton } from '@/components/ui/shadcn/skeleton'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
@@ -22,6 +23,8 @@ import {
   SheetTitle,
 } from '@/components/ui/shadcn/sheet'
 import { copyText } from '@/lib/copy'
+import { cn } from '@/lib/utils'
+import { buildSections, DEFAULT_GROUP } from '@/lib/groupSections'
 import { SelectFileType } from './SelectFileType'
 import { DEFAULT_REQUIRED_TYPES, DynamicElement, SELECTIVE_TYPES } from './DynamicElement'
 
@@ -30,6 +33,7 @@ type GitItem = components['schemas']['git.AllReposResponse_Item']
 type BranchOption = components['schemas']['git.Option']
 type PipelinePassRule = components['schemas']['mars.PipelinePassRule']
 type Element = components['schemas']['mars.Element']
+type GroupSetting = components['schemas']['mars.GroupSetting']
 
 interface FormState {
   name: string
@@ -44,6 +48,7 @@ interface FormState {
   configFileValues: string
   valuesYaml: string
   elements: Element[]
+  groupSettings: GroupSetting[]
 }
 
 const DEFAULTS: FormState = {
@@ -59,10 +64,16 @@ const DEFAULTS: FormState = {
   configFileValues: '',
   valuesYaml: '',
   elements: [],
+  groupSettings: [],
 }
 
 /** 复用表单行样式 */
 const labelCls = 'text-[12px] font-medium text-mute'
+
+/** 未显式归组的元素兜底进默认分区（DEFAULT_GROUP=default）：后端旧数据可能无 group 字段，
+    编辑时统一归入兜底组，提交即带 group='default'；展示层由 groupLabel 国际化（基础配置/Default） */
+const withDefaultGroup = (els: Element[]) =>
+  els.map((el) => (el.group?.trim() ? el : { ...el, group: DEFAULT_GROUP }))
 
 /** 按 'a->b->c' 路径从对象取值（还原旧版 lodash.get 语义，缺失返回 ''） */
 function deepGet(obj: unknown, parts: string[]): unknown {
@@ -107,6 +118,11 @@ export function RepoFormModal({
   const [configFileContent, setConfigFileContent] = useState('')
   const [configDetected, setConfigDetected] = useState(false)
   const [configPopoverOpen, setConfigPopoverOpen] = useState(false)
+  // charts 默认值抽屉开关：默认打开（用户要求默认可见，可收起让表单全宽）
+  const [chartsOpen, setChartsOpen] = useState(true)
+  // 自定义配置分区的编辑器视图展开态（Record<分区名, 是否展开>）。纯视图状态，与 group_settings
+  // 的默认折叠配置彻底解耦：折叠展开只影响编辑时的视觉/排序，不写配置；「默认折叠」开关才写配置。
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
   // pipeline 通过规则下拉选项（项目级最近 pipeline 的 stage/job）
   const [pipelineOptions, setPipelineOptions] = useState<{
     stages: string[]
@@ -117,6 +133,25 @@ export function RepoFormModal({
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }))
+
+  // 自定义配置的具名分区（标题旁「折叠/展开所有组」按钮的候选）。未分组不可折叠、不参与；
+  // buildSections 与 DynamicElement 同源，保证按钮的分区列表与渲染完全一致
+  const namedSections = useMemo(
+    () => buildSections(form.elements, form.groupSettings).filter((s) => s.name !== ''),
+    [form.elements, form.groupSettings],
+  )
+  // 全展开判定：所有具名分区在视图上都展开 → 按钮显示「折叠所有组」，否则显示「展开所有组」（toggle 语义）
+  const allOpen =
+    namedSections.length > 0 && namedSections.every((s) => openGroups[s.name] ?? true)
+  /** 一键折叠/展开所有具名分区：只切视图展开态（openGroups），不写 group_settings 配置。
+      折叠后各分区标题紧凑排布，方便拖拽排序（对应 collapseGroupsSortTip 提示） */
+  const toggleAllGroups = () => {
+    const next: Record<string, boolean> = {}
+    namedSections.forEach((s) => {
+      next[s.name] = !allOpen
+    })
+    setOpenGroups(next)
+  }
 
   /** 用 RepoModel 回填表单（marsConfig 可能为 null/缺失，全部可选链兜底） */
   const fillForm = (item: RepoModel) => {
@@ -134,7 +169,8 @@ export function RepoFormModal({
       configFileType: c?.configFileType ?? 'yaml',
       configFileValues: c?.configFileValues ?? '',
       valuesYaml: c?.valuesYaml ?? '',
-      elements: c?.elements ?? [],
+      elements: withDefaultGroup(c?.elements ?? []),
+      groupSettings: c?.groupSettings ?? [],
     })
   }
 
@@ -155,7 +191,8 @@ export function RepoFormModal({
       configFileType: c?.configFileType ?? 'yaml',
       configFileValues: c?.configFileValues ?? '',
       valuesYaml: c?.valuesYaml ?? '',
-      elements: c?.elements ?? [],
+      elements: withDefaultGroup(c?.elements ?? []),
+      groupSettings: c?.groupSettings ?? [],
     }))
   }
 
@@ -165,6 +202,8 @@ export function RepoFormModal({
   useEffect(() => {
     if (!open) return
     setChartDefaults('') // 左侧 chart 模板重置，等待重新拉取
+    setOpenGroups({}) // 分区视图展开态重置（默认全展开），独立于 group_settings 配置
+    setChartsOpen(true) // charts 默认值抽屉默认展开
     if (!editItem) {
       setForm(DEFAULTS)
       gitSelectionRef.current = 0
@@ -395,6 +434,25 @@ export function RepoFormModal({
       pipelinePassRules: f.pipelinePassRules.filter((_, idx) => idx !== i),
     }))
 
+  /** 归一化分区配置（提交时）：只保留元素仍在引用的分区，已有分区保持 order/collapsed，
+      新分区（卡片上输入、还没配过）按元素首次出现顺序追加；顺序连续化，丢弃孤儿配置 */
+  const normalizeGroupSettings = (): GroupSetting[] => {
+    const used = new Set(
+      form.elements.map((el) => el.group?.trim()).filter((g): g is string => Boolean(g)),
+    )
+    const byName = new Map(
+      form.groupSettings.filter((g) => used.has(g.name)).map((g) => [g.name, g]),
+    )
+    return [...used]
+      .map((name, i) => ({
+        name,
+        order: byName.get(name)?.order ?? i,
+        collapsed: byName.get(name)?.collapsed ?? false,
+      }))
+      .sort((a, b) => a.order - b.order)
+      .map((g, i) => ({ ...g, order: i }))
+  }
+
   const buildConfig = () => ({
     configFile: '',
     configFileValues: form.configFileValues,
@@ -406,6 +464,7 @@ export function RepoFormModal({
     pipelinePassRules: form.pipelinePassRules,
     valuesYaml: form.valuesYaml,
     elements: form.elements,
+    groupSettings: normalizeGroupSettings(),
     displayName: '',
   })
 
@@ -483,6 +542,22 @@ export function RepoFormModal({
               {editItem ? `${t('repos.update')}: ${editItem.name}` : t('repos.add')}
             </SheetTitle>
             <div className="flex items-center gap-2">
+              {/* charts 默认值抽屉开关：虚线按钮（次级/浏览语义）+ 图标随状态翻转（开=向左收起 / 关=向右展开） */}
+              <Button
+                type="button"
+                variant="dashed"
+                size="sm"
+                onClick={() => setChartsOpen((o) => !o)}
+                aria-expanded={chartsOpen}
+                title={chartsOpen ? t('project.collapse') : t('project.expand')}
+                className="gap-1"
+              >
+                <Icon
+                  name={chartsOpen ? 'chevron-left' : 'chevron-right'}
+                  className="size-3.5"
+                />
+                {t('repos.chartsDefaults')}
+              </Button>
               <Button variant="outline" size="sm" onClick={onClose}>
                 {t('common.cancel')}
               </Button>
@@ -493,10 +568,19 @@ export function RepoFormModal({
             </div>
           </div>
 
-          {/* 左右分屏：左 = charts 默认值只读预览，右 = 表单 */}
-          <div className="grid h-full min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden p-5 md:grid-cols-2">
-            {/* 左侧：values.yaml 只读预览 + 复制 */}
-            <div className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-surface">
+          {/* 表单 + charts 默认值抽屉：抽屉占用布局空间（与表单同排 flex），展开 3:7、折叠 0:1 */}
+          <div className="flex h-full min-h-0 flex-1 gap-4 overflow-hidden p-5">
+            {/* charts 默认值抽屉：展开 w-[30%]（与右侧 3:7）、折叠 w-0（0:1）——占用原左栏 div 而非
+                浮层覆盖；width 过渡带动表单宽度联动。收起时 invisible（visibility:hidden）：
+                w-0+overflow-hidden 裁视觉，visibility:hidden 把它移出 Tab 序与 AT 树——内部
+                copy/close 按钮不可再被键盘聚焦（aria-hidden 只护 AT，护不住键盘焦点） */}
+            <div
+              aria-hidden={!chartsOpen}
+              className={cn(
+                'flex shrink-0 flex-col overflow-hidden rounded-lg bg-surface transition-[width] duration-300',
+                chartsOpen ? 'w-[30%] border border-line' : 'invisible w-0 border-0',
+              )}
+            >
               <div className="flex shrink-0 items-center justify-between border-b border-line px-3 py-2">
                 <span className="flex items-center gap-1.5">
                   <span className="rounded bg-primary-soft px-2 py-0.5 text-[12px] font-medium text-primary">
@@ -504,16 +588,30 @@ export function RepoFormModal({
                   </span>
                   {valuesLoading && <Icon name="loader" className="size-3 animate-spin text-mute" />}
                 </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="xs"
-                  onClick={copyValues}
-                  className="gap-1 text-[12px] hover:text-primary"
-                >
-                  <Icon name="copy" className="size-3.5" />
-                  {t('common.copy')}
-                </Button>
+                <span className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    onClick={copyValues}
+                    className="gap-1 text-[12px] hover:text-primary"
+                  >
+                    <Icon name="copy" className="size-3.5" />
+                    {t('common.copy')}
+                  </Button>
+                  {/* 抽屉收起：让表单全宽（与头部开关等效，就近可关） */}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => setChartsOpen(false)}
+                    aria-label={t('common.close')}
+                    title={t('project.collapse')}
+                    className="shrink-0"
+                  >
+                    <Icon name="close" />
+                  </Button>
+                </span>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                 {valuesLoading && !chartDefaults ? (
@@ -537,8 +635,8 @@ export function RepoFormModal({
               </div>
             </div>
 
-            {/* 右侧：表单 */}
-            <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain p-1">
+            {/* 表单：flex-1 吃掉抽屉之外的剩余宽度（展开 70% / 折叠 100%），min-w-0 防内容撑破 */}
+            <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain p-1">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1.5">
               <span className={labelCls}>
@@ -730,17 +828,61 @@ export function RepoFormModal({
               value={form.configFileValues}
               onChange={(v) => set('configFileValues', v)}
               minHeight="120px"
+              maxHeight="500px"
               language={getMode(form.configFileType)}
             />
           </label>
 
           <div className="flex flex-col gap-2">
-            <span className={labelCls} title={t('repos.dynamicElementsTip')}>
-              {t('repos.dynamicElements')}
-            </span>
+            {/* 标题 + 「折叠/展开所有组」按钮：有具名分区才显示；toggle 语义——全折叠时显示「展开所有组」 */}
+            <div className="flex items-center gap-2">
+              <span className={labelCls} title={t('repos.dynamicElementsTip')}>
+                {t('repos.dynamicElements')}
+              </span>
+              {/* 友好提示：折叠所有组后各分区标题紧凑排布，可拖动标题排序。文字直接显示在标题旁 */}
+              {namedSections.length > 0 && (
+                <Tag tone="accent" dot={false} className="shrink-0">
+                  {t('repos.collapseGroupsSortTip')}
+                </Tag>
+              )}
+              {namedSections.length > 0 && (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={toggleAllGroups}
+                  className="shrink-0"
+                >
+                  {allOpen
+                    ? t('repos.collapseAllGroups')
+                    : t('repos.expandAllGroups')}
+                </Button>
+              )}
+              {/* charts 默认值抽屉开关（与标题栏同款虚线按钮）：折叠所有组右侧就近放一个，无需滚回顶部 */}
+              <Button
+                type="button"
+                variant="dashed"
+                size="xs"
+                onClick={() => setChartsOpen((o) => !o)}
+                aria-expanded={chartsOpen}
+                title={chartsOpen ? t('project.collapse') : t('project.expand')}
+                className="shrink-0 gap-1"
+              >
+                <Icon
+                  name={chartsOpen ? 'chevron-left' : 'chevron-right'}
+                  className="size-3"
+                />
+                {t('repos.chartsDefaults')}
+              </Button>
+            </div>
             <DynamicElement
               value={form.elements}
+              groups={form.groupSettings}
+              openGroups={openGroups}
               onChange={(v) => set('elements', v)}
+              onGroupsChange={(v) => set('groupSettings', v)}
+              onToggleOpen={(name) =>
+                setOpenGroups((m) => ({ ...m, [name]: !(m[name] ?? true) }))
+              }
             />
           </div>
 
