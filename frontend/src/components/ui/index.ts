@@ -13,6 +13,7 @@ export { SkeletonDetail } from './SkeletonDetail'
 export { SkeletonTabLog } from './SkeletonTabLog'
 export { SkeletonTabShell } from './SkeletonTabShell'
 export { SkeletonTabEdit } from './SkeletonTabEdit'
+export { SkeletonTopology } from './SkeletonTopology'
 export { SegmentedSkeleton } from './SegmentedSkeleton'
 
 // shadcn 组件统一出口

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
@@ -9,7 +9,6 @@ import { DiffViewer } from '@/components/DiffViewer'
 import { useConfetti } from '@/hooks/useConfetti'
 import { Button } from '@/components/ui/shadcn/button'
 import { SearchableSelect } from '@/components/SearchableSelect'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/shadcn/tabs'
 import { ConfigHistory } from './ConfigHistory'
 import { DeployLog } from './DeployLog'
 import { Elements } from './Elements'
@@ -377,41 +376,44 @@ export function TabEdit({
             )}
 
             {hasTextarea && (
-              // 底部「配置文件 / 各 TextArea」分段控件（default 变体，同 Login 登录方式切换）。
-              // 配置文件排在首位并默认选中（主编辑面）；每个 TextArea 独立一个 tab、标题取各自
-              // description||path，多个 TextArea 即多个 tab。tab 按内容宽排布，容器宽度不足时横向滚动，
-              // 长标题 max-w 截断省略。无 TextArea 字段时不渲染、配置文件编辑器直接展示
-              <Tabs
-                value={bottomTab}
-                onValueChange={setBottomTab}
-                className="mb-2 shrink-0"
+              // 底部「配置文件 / 各 TextArea」分段控件。配置文件排在首位并默认选中（主编辑面）；
+              // 每个 TextArea 独立一个 tab、标题取各自 description||path，多个 TextArea 即多个 tab。
+              // tab 按内容宽排布，容器宽度不足时横向滚动、长标题 max-w 截断省略；滚动条隐藏
+              // （scrollbar-none），横向滑动保留、纵向恒不占位。无 TextArea 字段时不渲染
+              // 自定义 tab 条替代 shadcn TabsList：定高 30px 容器内，经典（非 overlay）滚动条会在
+              // 横向溢出时吃掉 ~15px 纵向空间、把 24px 触发器挤爆成纵向滚动条（双条并存）。
+              // 自定义条只保留横向溢出 + 隐藏滚动条，从根上杜绝纵向滚动条。
+              // 宽度自适应：w-fit 让条只占内容宽（窄时不拉满容器），max-w-full 在内容超宽时
+              // 被容器钳制、转为横向滚动（等价原 shadcn TabsList 的 w-fit max-w-full 语义）
+              <div
+                role="tablist"
+                aria-label={t('project.configFileTab')}
+                onKeyDown={handleTablistKeyDown}
+                // 轨道色用 border-strong/60（比 raised 实一档）：bg-muted=raised 太浅几乎不可见，
+                // 又不把 --raised 全局加深（连带骨架/搜索框等），局部取 border-strong 语义 token
+                className="mb-2 flex h-[30px] w-fit max-w-full shrink-0 items-center gap-1 overflow-x-auto rounded-lg bg-line-strong/60 p-[3px] scrollbar-none"
               >
-                {/* 尺寸对齐上方部署按钮（Button size=xs：h-6 + text-xs）：触发器 h-6、分段底
-                    h-[30px]（基座 p-[3px] 上下共 6px 包住 24px 触发器）。选中态用主题色柔色变体
-                    （primary-soft 底 + primary 文字，! 压过基座 bg-background/text-foreground/shadow-sm），
-                    比实心填充轻、比无色的默认态鲜明 */}
-                <TabsList className="max-w-full overflow-x-auto !h-[30px]">
-                  <TabsTrigger
-                    value="config"
-                    className="shrink-0 !h-6 !py-0 !text-xs data-[state=active]:!bg-primary-soft data-[state=active]:!text-primary data-[state=active]:!shadow-none"
+                <BottomTabButton
+                  active={bottomTab === 'config'}
+                  onClick={() => setBottomTab('config')}
+                >
+                  {t('project.configFileTab')}
+                </BottomTabButton>
+                {textareaElements.map((element) => (
+                  <BottomTabButton
+                    key={element.path}
+                    // tab value 用 't:' 前缀，避开与 'config' 哨兵值撞车（若某 TextArea 的 path
+                    // 恰为 'config'，无前缀时该 tab 与配置文件 tab 值相同、面板判定也会双显）
+                    active={bottomTab === `t:${element.path}`}
+                    onClick={() => setBottomTab(`t:${element.path}`)}
+                    title={element.description || element.path}
                   >
-                    {t('project.configFileTab')}
-                  </TabsTrigger>
-                  {textareaElements.map((element) => (
-                    <TabsTrigger
-                      key={element.path}
-                      // tab value 用 't:' 前缀，避开与 'config' 哨兵值撞车（若某 TextArea 的 path
-                      // 恰为 'config'，无前缀时该 tab 与配置文件 tab 值相同、面板判定也会双显）
-                      value={`t:${element.path}`}
-                      className="shrink-0 max-w-[200px] !h-6 !py-0 !text-xs data-[state=active]:!bg-primary-soft data-[state=active]:!text-primary data-[state=active]:!shadow-none"
-                    >
-                      <span className="block truncate">
-                        {element.description || element.path}
-                      </span>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
+                    <span className="block max-w-[200px] truncate">
+                      {element.description || element.path}
+                    </span>
+                  </BottomTabButton>
+                ))}
+              </div>
             )}
 
             {/* 自定义配置面板区：每个 TextArea 独立一个面板，与配置文件面板同样保持挂载、用 hidden
@@ -527,5 +529,76 @@ export function TabEdit({
         )}
       </div>
     </div>
+  )
+}
+
+/**
+ * 底部配置 tab 条的方向键导航（roving tabindex，对齐原 shadcn Tabs 的键盘行为）：
+ * ←/→ 循环移动焦点并激活（聚焦即切换），Home/End 跳首尾。事件在按钮上触发后冒泡到
+ * tablist 容器统一处理；target 可能是按钮内 span，向上找 [role=tab] 定位当前项。
+ */
+function handleTablistKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+  const tabs = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+  if (tabs.length === 0) return
+  const curEl = (e.target as HTMLElement).closest<HTMLButtonElement>('[role="tab"]')
+  const cur = curEl ? tabs.indexOf(curEl) : -1
+  let next = cur
+  switch (e.key) {
+    case 'ArrowRight':
+      next = cur < 0 ? 0 : (cur + 1) % tabs.length
+      break
+    case 'ArrowLeft':
+      next = cur < 0 ? tabs.length - 1 : (cur - 1 + tabs.length) % tabs.length
+      break
+    case 'Home':
+      next = 0
+      break
+    case 'End':
+      next = tabs.length - 1
+      break
+    default:
+      return
+  }
+  e.preventDefault()
+  tabs[next].focus()
+  tabs[next].click()
+}
+
+/**
+ * 底部配置 tab 条的单按钮：尺寸对齐上方部署按钮（Button size=xs：h-6 + text-xs），
+ * 选中态用主题色柔色变体（primary-soft 底 + primary 文字），比实心填充轻、比无色默认态鲜明。
+ * 长标题由外部包 span truncate + max-w 截断；按钮自身 shrink-0，容器不足时横向滚动不挤压。
+ * roving tabindex：仅选中项可 Tab 聚焦（tabIndex=0），其余 -1，方向键在容器 onKeyDown 统一移动。
+ * 不用 shadcn TabsTrigger：其基座 h-[calc(100%-1px)]/py-1/text-sm 需多层 ! 压掉，
+ * 且宿主 TabsList 定高 + 溢出时经典滚动条会挤出纵向滚动条，自定义条从根上规避。
+ */
+function BottomTabButton({
+  active,
+  onClick,
+  children,
+  title,
+}: {
+  active: boolean
+  onClick: () => void
+  children: ReactNode
+  /** 完整标题（长文本 tab 的 tooltip） */
+  title?: string
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      tabIndex={active ? 0 : -1}
+      title={title}
+      onClick={onClick}
+      className={`flex h-6 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs font-medium whitespace-nowrap transition-colors ${
+        active
+          ? 'bg-primary/20 text-primary'
+          : 'text-foreground/60 hover:text-foreground'
+      }`}
+    >
+      {children}
+    </button>
   )
 }

@@ -414,7 +414,7 @@ export function Events() {
                 <AlertDialogFooter>
                   <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                   <AlertDialogAction
-                    className="bg-destructive text-white hover:bg-destructive/90"
+                    variant="destructive"
                     onClick={() => deleteFile(item)}
                   >
                     {t('common.delete')}
@@ -446,7 +446,7 @@ export function Events() {
                   <AlertDialogFooter>
                     <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                     <AlertDialogAction
-                      className="bg-destructive text-white hover:bg-destructive/90"
+                      variant="destructive"
                       onClick={() => deleteFile(item)}
                     >
                       {t('common.delete')}

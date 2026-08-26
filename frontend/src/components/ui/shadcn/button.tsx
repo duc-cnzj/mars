@@ -5,20 +5,30 @@ import { Slot } from "radix-ui"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-[background-color,border-color,box-shadow,color,transform] duration-150 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-98 active:duration-0 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-[background-color,border-color,box-shadow,color,scale] duration-150 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-98 active:duration-0 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary-strong",
+        /* 主操作：品牌渐变（135deg primary→primary-strong，对齐登录按钮）+ primary 色投影辉光，
+           hover 上浮 1px 且投影加深（「浮起」），active 回缩复位（「按下」） */
+        default:
+          "bg-[linear-gradient(135deg,var(--primary),var(--primary-strong))] text-primary-foreground shadow-sm shadow-primary/25 hover:shadow-md hover:shadow-primary/40 active:shadow-sm active:shadow-primary/20",
         destructive:
-          "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
+          "bg-destructive text-white shadow-sm shadow-destructive/25 hover:bg-destructive/90 hover:shadow-md hover:shadow-destructive/35 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40 active:shadow-sm active:bg-destructive/85",
+        /* 描边按钮：透明底 + 带主色相的描边（border-primary/40，比 border-strong 更明显且与 hover 同色相过渡） */
         outline:
-          "border border-border bg-background shadow-xs hover:border-primary hover:bg-accent hover:text-primary dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border border-primary/40 bg-transparent text-ink hover:border-primary hover:bg-primary-soft hover:text-primary active:border-primary-strong active:bg-primary-soft active:text-primary-strong",
+        /* 虚线按钮：outline 的虚线版（border-dashed），语义=「次级/浏览/添加」入口，
+           与 outline 共享「hover 点亮 primary」交互，替代散落的 className="border-dashed" 覆盖 */
+        dashed:
+          "border border-dashed border-primary/40 bg-transparent text-ink hover:border-primary hover:bg-primary-soft hover:text-primary active:border-primary-strong active:bg-primary-soft active:text-primary-strong",
+        /* 实心次级：hover 点亮为 primary（灰底 → primary-soft 填充 + primary 文字），
+           与 outline/dashed 统一的「次级按钮 hover 点亮」交互语言 */
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "bg-secondary text-secondary-foreground hover:bg-primary-soft hover:text-primary active:bg-primary-soft active:text-primary-strong",
         ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-        link: "text-primary underline-offset-4 hover:underline",
+          "text-mute hover:bg-raised/60 hover:text-ink active:bg-raised/80 active:text-ink",
+        link: "text-primary underline-offset-4 hover:text-primary-strong active:text-primary-strong",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

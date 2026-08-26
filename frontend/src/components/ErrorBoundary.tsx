@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Button } from '@/components/ui/shadcn/button'
 
 /**
  * 全局错误边界：子树渲染异常时不白屏，展示可恢复的兜底态。
@@ -37,13 +38,9 @@ function ErrorFallback({ error }: { error: Error }) {
       <pre className="max-w-full overflow-auto rounded-lg bg-raised px-4 py-3 font-mono text-[12px] text-mute">
         {error.message || String(error)}
       </pre>
-      <button
-        type="button"
-        className="rounded-md border border-line bg-surface px-4 py-1.5 text-[12px] text-ink transition-colors hover:bg-raised"
-        onClick={() => window.location.reload()}
-      >
+      <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
         {t('common.refresh')}
-      </button>
+      </Button>
     </div>
   )
 }

@@ -172,7 +172,7 @@ export function DynamicElement({
           ))}
         </SortableContext>
       </DndContext>
-      <Button variant="outline" className="border-dashed" onClick={add}>
+      <Button variant="dashed" onClick={add}>
         <Icon name="plus" />
         {t('repos.addElement')}
       </Button>

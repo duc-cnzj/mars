@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@/components/Icons'
+import { Button } from '@/components/ui/shadcn/button'
 import { Tag } from '@/components/ui/Tag'
 import {
   Tooltip,
@@ -96,14 +97,15 @@ export function TopologyDetail({ node, onClose, actions, endpoints }: TopologyDe
           {/* 长名截断时 hover 弹全名 tooltip（超宽检测见组件） */}
           <NodeName name={node.name} />
         </div>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-xs"
           onClick={onClose}
           aria-label={t('common.close')}
-          className="rounded-md p-1 text-mute transition-colors hover:bg-raised hover:text-ink"
+          className="text-mute hover:text-ink"
         >
           <Icon name="close" className="size-4" />
-        </button>
+        </Button>
       </div>
 
       {/* 主体：滚动区域 */}

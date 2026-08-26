@@ -8,6 +8,7 @@ import {
   SkeletonTabEdit,
   SkeletonTabLog,
   SkeletonTabShell,
+  SkeletonTopology,
 } from '@/components/ui'
 import { useDraggableDialog } from '@/hooks/useDraggableDialog'
 import { useWheelRedirect } from '@/hooks/useWheelRedirect'
@@ -218,8 +219,8 @@ export function ProjectDetailModal({
               // 配置更新骨架对齐 TabEdit 结构（吸顶头 + 配置编辑器），不再误用 SkeletonDetail
               <SkeletonTabEdit />
             ) : tab === 'topology' ? (
-              // 拓扑骨架：复用详细信息骨架占位（资源树由 Tab 自身拉取，弹窗详情只挡首帧）
-              <SkeletonDetail />
+              // 拓扑骨架：对齐 TopologyTab 真实图分层（弹窗详情只挡首帧，此后资源树由 Tab 自身拉取）
+              <SkeletonTopology />
             ) : (
               <SkeletonDetail />
             )

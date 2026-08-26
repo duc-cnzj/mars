@@ -228,35 +228,39 @@ export function NamespaceCard({
             <div className="flex min-w-0 items-center gap-2">
               <span className="min-w-0 truncate text-[14px] font-bold text-ink">{ns.name}</span>
               {ns.private && <Tag tone="accent" className="shrink-0">{t('workbench.private')}</Tag>}
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon-xs"
                 onClick={copyId}
                 title={t('workbench.copyId')}
                 aria-label={t('workbench.copyId')}
-                className="shrink-0 rounded p-0.5 text-faint opacity-60 transition-opacity hover:opacity-100 hover:text-primary focus-visible:opacity-100"
+                className="text-faint hover:text-primary"
               >
-                <Icon name="copy" className="text-[12px]" />
-              </button>
+                <Icon name="copy" className="size-4" />
+              </Button>
             </div>
-            {/* 管理员 + 空间资源用量 + 空间访问地址 + 关注：右组贴最右，紧凑图标簇（gap-0 + p-1）。
-                拖拽手柄（关注 Tab）插在最左端，与其余图标同一交互样式 */}
+            {/* 管理员 + 空间资源用量 + 空间访问地址 + 关注：右组贴最右，紧凑图标簇（gap-0 无间距，
+                每个都是 ghost icon-xs 标准按钮，hover 点亮 primary）。拖拽手柄（关注 Tab）插在最左端，
+                与其余图标同一交互样式 */}
             <div className="flex shrink-0 items-center gap-0">
               {dragHandle}
               <NamespaceAdmin email={ns.creatorEmail} />
               <NamespaceCpuMemory namespaceId={ns.id} />
               <NamespaceEndpoints namespaceId={ns.id} />
               {/* 关注星：主题色实心填充（随换肤）；未关注为描边淡色 */}
-              <button
+              <Button
+                variant="ghost"
+                size="icon-xs"
                 onClick={toggleFavorite}
                 aria-pressed={ns.favorite}
-                className={`rounded-md p-1 transition-colors hover:bg-raised ${
-                  ns.favorite ? 'text-primary' : 'text-faint hover:text-ink'
+                className={`${
+                  ns.favorite ? 'text-primary hover:text-primary' : 'text-faint'
                 }`}
                 title={ns.favorite ? t('workbench.unfavorite') : t('workbench.favorite')}
                 aria-label={ns.favorite ? t('workbench.unfavorite') : t('workbench.favorite')}
               >
-                <Icon name="star" className={`text-[16px] ${ns.favorite ? 'fill-current' : ''}`} />
-              </button>
+                <Icon name="star" className={`size-4 ${ns.favorite ? 'fill-current' : ''}`} />
+              </Button>
             </div>
           </div>
           <NamespaceDescription
@@ -278,29 +282,26 @@ export function NamespaceCard({
             ))}
           </div>
           {foldProjects && (
-            <button
-              type="button"
+            <Button
+              variant="dashed"
+              size="xs"
+              className="w-full"
               onClick={() => setProjectsExpanded((v) => !v)}
-              className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-line px-2.5 py-1 text-[12px] text-faint transition-colors hover:border-primary/50 hover:text-primary"
             >
               <Icon name={projectsExpanded ? 'collapse' : 'expand'} className="text-[12px]" />
               {projectsExpanded
                 ? t('workbench.collapseProjects')
                 : t('workbench.expandProjects', { count: foldedCount })}
-            </button>
+            </Button>
           )}
         </>
       )}
 
       {/* 新建项目入口（旧版虚线按钮） */}
-      <button
-        type="button"
-        onClick={() => setCreateOpen(true)}
-        className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-line px-2.5 py-1.5 text-[12px] text-faint transition-colors hover:border-primary/50 hover:text-primary"
-      >
+      <Button variant="dashed" size="xs" className="w-full" onClick={() => setCreateOpen(true)}>
         <Icon name="plus" className="text-[12px]" />
         {t('workbench.addProject')}
-      </button>
+      </Button>
 
       {/* 底部：成员 + 项目数 + 删除 */}
       <div className="mt-auto flex items-center justify-between border-t border-line pt-3">
@@ -335,26 +336,27 @@ export function NamespaceCard({
           </span>
           {/* 空间配置（管理）置于底部，与删除并列 */}
           {isOwner && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={() => setManageOpen(true)}
               aria-label={t('workbench.manage')}
               title={t('workbench.manage')}
-              className="rounded-md p-1.5 text-faint transition-colors hover:bg-raised hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              className="text-faint hover:text-primary"
             >
-              <Icon name="gear" className="text-[15px]" />
-            </button>
+              <Icon name="gear" className="size-4" />
+            </Button>
           )}
           {/* 删除同样仅 owner 可见（对齐旧版 ItemCard useIsOwned 包裹删除按钮） */}
           {isOwner && (
             <Button
               variant="ghost"
-              size="sm"
+              size="icon-xs"
               onClick={() => setConfirmOpen(true)}
-              className="text-faint opacity-60 transition-opacity hover:opacity-100 hover:text-err focus-visible:opacity-100"
+              className="text-faint opacity-60 transition-[background-color,border-color,box-shadow,color,scale,opacity] hover:opacity-100 hover:text-err focus-visible:opacity-100"
               title={t('workbench.deleteNamespace')}
             >
-              <Icon name="close" className="text-[13px]" />
+              <Icon name="close" className="size-4" />
             </Button>
           )}
         </div>
@@ -742,14 +744,15 @@ function NamespaceAdmin({ email }: { email: string }) {
     // modal：阻止外点透传到下层卡片内容（卡片顶 icon 簇 side=top 翻转后会盖住项目行）
     <Popover modal>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="rounded-md p-1 text-faint transition-colors hover:bg-raised hover:text-primary"
+        <Button
+          variant="ghost"
+          size="icon-xs"
           aria-label={t('workbench.adminLabel')}
           title={t('workbench.adminLabel')}
+          className="text-faint hover:text-primary"
         >
-          <Icon name="crown" className="text-[15px]" />
-        </button>
+          <Icon name="crown" className="size-4" />
+        </Button>
       </PopoverTrigger>
       <PopoverContent side="top" className="w-[max-content] max-w-[min(320px,80vw)] p-2">
         <div className="mb-1 px-1 text-[12px] font-medium">{t('workbench.adminLabel')}</div>
@@ -786,13 +789,14 @@ function NamespaceCpuMemory({ namespaceId }: { namespaceId: number }) {
     // modal：阻止外点透传到底层项目行（点 icon 开 popover 后误触项目行打开弹窗）
     <Popover modal onOpenChange={(open) => open && fetchUsage()}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="rounded-md p-1 text-faint transition-colors hover:bg-raised hover:text-primary"
+        <Button
+          variant="ghost"
+          size="icon-xs"
           aria-label={t('workbench.spaceCpuMemory')}
+          className="text-faint hover:text-primary"
         >
           <Icon name="gauge" className="size-4" />
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent side="top" className="w-[min(240px,80vw)] p-2 font-mono text-[11px]">
         <div className="mb-1 px-1 text-[12px] font-medium">{t('workbench.spaceCpuMemory')}</div>
@@ -841,13 +845,14 @@ function NamespaceEndpoints({ namespaceId }: { namespaceId: number }) {
     // modal：阻止外点透传到底层项目行（点 icon 开 popover 后误触项目行打开弹窗）
     <Popover modal onOpenChange={(open) => open && fetchEndpoints()}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="rounded-md p-1 text-faint transition-colors hover:bg-raised hover:text-primary"
+        <Button
+          variant="ghost"
+          size="icon-xs"
           aria-label={t('workbench.endpoints')}
+          className="text-faint hover:text-primary"
         >
           <Icon name="link" className="size-4" />
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent side="top" className="w-[max-content] max-w-[min(480px,90vw)] p-2">
         <div className="mb-1 px-1 text-[12px] font-medium">{t('workbench.endpoints')}</div>
@@ -881,14 +886,16 @@ function NamespaceEndpoints({ namespaceId }: { namespaceId: number }) {
                 ) : (
                   <span className="min-w-0 flex-1 truncate text-mute">{ep.url}</span>
                 )}
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={() => copyUrl(ep.url)}
                   title={t('common.copied')}
-                  className="shrink-0 rounded p-0.5 text-faint transition-colors hover:text-primary"
+                  className="shrink-0 text-faint hover:text-primary"
                 >
                   <Icon name="copy" className="text-[11px]" />
-                </button>
+                </Button>
               </div>
             ))}
           </div>

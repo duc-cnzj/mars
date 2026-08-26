@@ -504,14 +504,16 @@ export function RepoFormModal({
                   </span>
                   {valuesLoading && <Icon name="loader" className="size-3 animate-spin text-mute" />}
                 </span>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="xs"
                   onClick={copyValues}
-                  className="flex items-center gap-1 text-[12px] text-mute transition-colors hover:text-primary"
+                  className="gap-1 text-[12px] hover:text-primary"
                 >
-                  <Icon name="copy" className="text-[12px]" />
+                  <Icon name="copy" className="size-3.5" />
                   {t('common.copy')}
-                </button>
+                </Button>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                 {valuesLoading && !chartDefaults ? (
@@ -656,8 +658,7 @@ export function RepoFormModal({
                   </div>
                 ))}
                 <Button
-                  variant="outline"
-                  className="border-dashed"
+                  variant="dashed"
                   onClick={addRule}
                 >
                   <Icon name="plus" />

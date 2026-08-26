@@ -548,7 +548,7 @@ export function Repos() {
                       <AlertDialogFooter>
                         <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
-                          className="bg-destructive text-white hover:bg-destructive/90"
+                          variant="destructive"
                           onClick={() => toggle(item)}
                         >
                           {t('repos.disable')}
@@ -581,7 +581,7 @@ export function Repos() {
                     <AlertDialogFooter>
                       <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                       <AlertDialogAction
-                        className="bg-destructive text-white hover:bg-destructive/90"
+                        variant="destructive"
                         onClick={() => remove(item)}
                       >
                         {t('common.delete')}

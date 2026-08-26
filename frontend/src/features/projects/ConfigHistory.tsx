@@ -66,7 +66,9 @@ export function ConfigHistory({
 
   return (
     <>
-      <Button variant="ghost" size="xs" onClick={() => setOpen(true)}>
+      {/* 虚线按钮：outline 底 + dashed 边框，同 RepoFormModal/DynamicElement 的「添加」入口样式，
+          与上方实心主按钮/ghost 次按钮区分，暗示「浏览记录」为次级入口 */}
+      <Button variant="dashed" size="xs" onClick={() => setOpen(true)}>
         <Icon name="pulse" className="text-[13px]" />
         {t('project.configHistory')}
       </Button>

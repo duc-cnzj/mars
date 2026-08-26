@@ -8,7 +8,7 @@ import { useWebsocket } from '@/hooks/useWebsocket'
 import { Icon } from '@/components/Icons'
 import { SearchInput } from '@/components/SearchInput'
 import { StatusDot } from '@/components/ui/StatusDot'
-import { Empty } from '@/components/ui'
+import { Empty, SkeletonTopology } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/shadcn/popover'
 import { ContainerLogModal, type ContainerLogTarget } from '../projects/ContainerLogModal'
@@ -368,8 +368,7 @@ export function TopologyTab({
                 </Button>
                 <Button
                   size="xs"
-                  variant="default"
-                  className="bg-destructive text-white hover:bg-destructive/90"
+                  variant="destructive"
                   disabled={killing}
                   onClick={() => void killPod()}
                 >
@@ -441,9 +440,17 @@ export function TopologyTab({
         </div>
       </div>
 
-      {/* 画布区域：图 + 空态 + 图例 + 详情面板 */}
+      {/* 画布区域：图 + 骨架/空态 + 图例 + 详情面板。
+          graph 为 null = 首次加载在途 → 骨架屏（占位结构与真实分层树对齐）；
+          已加载但节点为空 = 真正无资源 → Empty 提示；有节点 → 渲染真图 */}
       <div className="relative min-h-0 flex-1">
-        {graph ? (
+        {graph === null ? (
+          <SkeletonTopology />
+        ) : graph.nodes.length === 0 ? (
+          <div className="flex h-full items-center justify-center rounded-lg border border-line bg-surface">
+            <Empty text={t('topology.liveEmpty')} icon="network" />
+          </div>
+        ) : (
           <TopologyGraph
             ref={graphRef}
             graph={graph}
@@ -459,22 +466,18 @@ export function TopologyTab({
             beginDrag={live.beginDrag}
             endDrag={live.endDrag}
           />
-        ) : (
-          <div className="flex h-full items-center justify-center rounded-lg border border-line bg-surface">
-            <Empty text={t('topology.liveEmpty')} icon="network" />
-          </div>
         )}
 
-        {/* 空态提示：无选中时引导点击节点 */}
-        {graph && !selectedId && (
+        {/* 空态提示：无选中时引导点击节点（仅真图非空时显示，空图/骨架不出现） */}
+        {graph && graph.nodes.length > 0 && !selectedId && (
           <div className="pointer-events-none absolute top-3 left-3 z-10 flex items-center gap-1.5 rounded-md bg-overlay/85 px-2.5 py-1.5 text-[12px] text-faint backdrop-blur-sm">
             <Icon name="info" className="size-3.5" />
             {t('topology.noSelection')}
           </div>
         )}
 
-        {/* 图例：状态色 + 关系线型 */}
-        {graph && (
+        {/* 图例：状态色 + 关系线型（仅真图非空时显示，空图/骨架不出现） */}
+        {graph && graph.nodes.length > 0 && (
           <div className="absolute bottom-3 left-3 z-10 rounded-lg border border-line bg-overlay px-3 py-2 shadow-sm">
             <div className="mb-1.5 text-[11px] font-medium text-faint">{t('topology.legend')}</div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-mute">

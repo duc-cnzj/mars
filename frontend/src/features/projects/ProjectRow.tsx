@@ -5,7 +5,9 @@ import type { components } from '@/api/schema'
 import { api } from '@/api/client'
 import { getEndpoints } from '@/api/endpointsCache'
 import { copyText } from '@/lib/copy'
+import { cn } from '@/lib/utils'
 import { Icon } from '@/components/Icons'
+import { Button, buttonVariants } from '@/components/ui/shadcn/button'
 import { DeployStatusIcon } from './DeployStatusIcon'
 import {
   Popover,
@@ -23,7 +25,7 @@ type ProjectModel = components['schemas']['types.ProjectModel']
 type ServiceEndpointModel = components['schemas']['types.ServiceEndpoint']
 
 /**
- * 项目行：命名空间卡片内联的项目入口（旧版虚线按钮样式）。
+ * 项目行：命名空间卡片内联的项目入口（对齐标准 dashed variant：同「次级入口」虚线语言，hover 点亮 primary）。
  * 展示部署状态 + 项目名；部署成功时右侧追加访问地址与 CPU/内存（对齐旧版 ProjectDetail）。
  * 项目名被省略号截断时，hover 名称文字本体弹完整名 tooltip；未截断不弹。
  * 名称 span 点击冒泡到行按钮，正常打开详情弹窗；仅 CPU/URL 图标为独立交互区（onClick stopPropagation）。
@@ -55,10 +57,24 @@ export function ProjectRow({
   }, [project.name])
 
   return (
-    <button
-      type="button"
+    /* 对齐标准 dashed variant（buttonVariants），但外层用 <div role="button"> 而非 <button>：
+       行内嵌 CPU/内存、端点等独立交互区（PopoverTrigger span），若外层用 <button> 会形成
+       button-in-button 语义冲突（HTML 无效 + 无障碍树嵌套）。div role=button 容器可合法容纳
+       交互子元素，视觉与按钮完全一致（Enter/Space 同样触发打开详情）。 */
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="flex w-full items-center gap-2 rounded-lg border border-dashed border-line bg-surface px-3 py-2 text-left transition-colors hover:border-primary/50 hover:bg-raised"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
+      className={cn(
+        buttonVariants({ variant: 'dashed' }),
+        'h-auto w-full cursor-pointer justify-start rounded-lg px-3 py-2 text-left',
+      )}
     >
       <DeployStatusIcon status={project.deployStatus} />
       <TooltipProvider delayDuration={100}>
@@ -85,7 +101,7 @@ export function ProjectRow({
           <ProjectEndpoints projectId={project.id} />
         </>
       )}
-    </button>
+    </div>
   )
 }
 
@@ -226,14 +242,16 @@ function ProjectEndpoints({ projectId }: { projectId: number }) {
                 ) : (
                   <span className="min-w-0 flex-1 truncate text-mute">{ep.url}</span>
                 )}
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={() => copyUrl(ep.url)}
                   title={t('common.copied')}
-                  className="flex size-6 shrink-0 items-center justify-center rounded-md text-faint transition-colors hover:text-primary"
+                  className="shrink-0 text-faint hover:text-primary"
                 >
                   <Icon name="copy" className="text-[11px]" />
-                </button>
+                </Button>
               </div>
             ))}
           </div>

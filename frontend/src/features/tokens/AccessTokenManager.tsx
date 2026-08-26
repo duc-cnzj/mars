@@ -334,7 +334,7 @@ export function AccessTokenManager() {
                       <AlertDialogFooter>
                         <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
-                          className="bg-destructive text-white hover:bg-destructive/90"
+                          variant="destructive"
                           onClick={() => revoke(item)}
                         >
                           {t('tokens.revoke')}

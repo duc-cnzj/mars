@@ -161,7 +161,7 @@ function ElementField({
             type="number"
             value={display}
             onChange={(e) => update(element.path, e.target.value)}
-            className="h-8 min-w-0 flex-1 text-[12px]!"
+            className="h-8 min-w-0 flex-1 text-[13px]!"
           />
         </div>
       )
@@ -173,7 +173,7 @@ function ElementField({
             id={fieldId}
             value={display}
             onChange={(e) => update(element.path, e.target.value)}
-            className="h-8 min-w-0 flex-1 text-[12px]!"
+            className="h-8 min-w-0 flex-1 text-[13px]!"
           />
         </div>
       )
@@ -190,7 +190,7 @@ function ElementField({
             placeholder={label}
             searchPlaceholder={t('common.search')}
             emptyText={t('common.empty')}
-            className="min-w-0 min-h-8 flex-1 px-2 py-1 text-[12px]"
+            className="min-w-0 min-h-8 flex-1 px-2 py-1 text-[13px]"
           />
         </div>
       )
@@ -203,7 +203,7 @@ function ElementField({
             {element.selectValues.map((sv) => (
               <label
                 key={sv}
-                className="flex cursor-pointer items-center gap-1.5 text-[12px] text-ink"
+                className="flex cursor-pointer items-center gap-1.5 text-[13px] text-ink"
               >
                 <input
                   type="radio"
@@ -265,8 +265,10 @@ function FieldLabel({
     return () => ro.disconnect()
   }, [label])
 
+  // label 可读性：10px + faint 太细看不清，提为 12px + medium 加粗 + mute 加深对比；
+  // 与 13px 的控件值保持「值略大、label 略粗」的双重层级，一眼能分 label/value
   const labelCls = cn(
-    'min-w-0 text-[10px] text-faint',
+    'min-w-0 text-[12px] font-medium text-mute',
     truncate && 'shrink truncate',
     className,
   )

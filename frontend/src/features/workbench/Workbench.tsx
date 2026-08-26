@@ -987,17 +987,18 @@ function SortableNamespaceCard({
   // 该节点引用不变 → 下游 memo(NamespaceCard) 能跳过重渲染，拖拽只动外层廉价节点。
   const dragHandle = useMemo(
     () => (
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon-xs"
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
         aria-label={t('workbench.dragSort')}
         title={t('workbench.dragSort')}
-        className="cursor-grab rounded-md p-1 text-faint transition-colors hover:bg-raised hover:text-primary active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="cursor-grab text-faint hover:text-primary active:cursor-grabbing"
       >
-        <Icon name="grip-vertical" className="size-[15px]" />
-      </button>
+        <Icon name="grip-vertical" className="size-4" />
+      </Button>
     ),
     [t, attributes, listeners, setActivatorNodeRef],
   )

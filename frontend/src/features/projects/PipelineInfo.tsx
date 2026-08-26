@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
 import { toast } from '@/lib/toast'
 import { Icon, type IconName } from '@/components/Icons'
+import { Button } from '@/components/ui/shadcn/button'
 
 type PipelineStatus = 'success' | 'running' | 'failed' | 'manual' | 'unknown'
 
@@ -121,15 +122,16 @@ export function PipelineInfo({
         <span className="text-[13px] font-medium leading-none text-err">
           {t('project.pipelineNotFound')}
         </span>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-xs"
           onClick={() => void fetchInfo(true)}
           title={t('project.pipelineRefresh')}
           aria-label={t('project.pipelineRefresh')}
-          className="ml-auto flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-raised hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="ml-auto text-faint hover:text-primary"
         >
-          <Icon name="refresh" className={`text-[14px] ${loading ? 'animate-spin' : ''}`} />
-        </button>
+          <Icon name="refresh" className={`size-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
     )
   }
@@ -153,15 +155,16 @@ export function PipelineInfo({
         <span className="text-[13px] font-medium leading-none text-warn">
           {t('project.pipelineUnavailable')}
         </span>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-xs"
           onClick={() => void fetchInfo(true)}
           title={t('project.pipelineRefresh')}
           aria-label={t('project.pipelineRefresh')}
-          className="ml-auto flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-raised hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="ml-auto text-faint hover:text-primary"
         >
-          <Icon name="refresh" className={`text-[14px] ${loading ? 'animate-spin' : ''}`} />
-        </button>
+          <Icon name="refresh" className={`size-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
     )
   }
@@ -182,15 +185,17 @@ export function PipelineInfo({
           <Icon name="external" className="text-[12px]" />
         </a>
       )}
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon-xs"
         onClick={() => void fetchInfo(true)}
         title={t('project.pipelineRefresh')}
         aria-label={t('project.pipelineRefresh')}
-        className="ml-auto flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-raised hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="ml-auto text-faint hover:text-primary"
       >
-        <Icon name="refresh" className={`text-[14px] ${loading ? 'animate-spin' : ''}`} />
-      </button>
+        <Icon name="refresh" className={`size-4 ${loading ? 'animate-spin' : ''}`} />
+      </Button>
     </div>
   )
 }

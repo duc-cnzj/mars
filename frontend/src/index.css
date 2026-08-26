@@ -116,6 +116,16 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
+/* 隐藏滚动条但保留滚动能力：底部配置 tab 栏等窄定高容器，经典（非 overlay）滚动条会占
+   ~15px 高度，溢出时挤占固定 30px 内容区、冒出纵向滚动条（双条并存）。隐藏后横向仍可
+   用触摸板/滚轮滑动，30px 定高内不再出现纵向滚动条。覆盖上面的全局细滚动条规则 */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Modal / 弹层入场动画由 shadcn 的 tw-animate-css 承担（animate-in/out，reduced-motion 内置降级） */
 
 /* 列表项进入动画：淡入 + 上浮，配合 animation-delay 错峰（新挂载的行自动播一次）。

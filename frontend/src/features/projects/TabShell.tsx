@@ -561,8 +561,7 @@ export function TabShell({
                     </Button>
                     <Button
                       size="xs"
-                      variant="default"
-                      className="bg-destructive text-white hover:bg-destructive/90"
+                      variant="destructive"
                       disabled={forceDeleting}
                       onClick={() => {
                         void forceDelete()
