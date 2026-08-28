@@ -7,14 +7,15 @@
 package token
 
 import (
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
+
 	types "github.com/duc-cnzj/mars/api/v6/proto/types"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
 )
 
 const (

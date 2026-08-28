@@ -10,16 +10,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestFromUser_Roles 验证角色归一化：含 mars_admin 归 admin，其余一律 user。
+// TestFromUser_Roles 验证角色归一化：含 mars_admin 归 admin，否则空数组（普通用户）。
 func TestFromUser_Roles(t *testing.T) {
 	m := transformer.FromUser(&biz.User{Email: "a@b.c", Roles: []string{biz.MarsAdmin, "user"}})
 	assert.Equal(t, []string{"admin"}, m.Roles)
 
 	m = transformer.FromUser(&biz.User{Email: "a@b.c", Roles: []string{"user"}})
-	assert.Equal(t, []string{"user"}, m.Roles)
+	assert.Equal(t, []string{}, m.Roles)
 
 	m = transformer.FromUser(&biz.User{Email: "a@b.c"})
-	assert.Equal(t, []string{"user"}, m.Roles)
+	assert.Equal(t, []string{}, m.Roles)
 }
 
 // TestFromUser_LastLogin 验证 last_login 映射：nil 保持缺省，非 nil 转 RFC3339。

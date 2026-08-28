@@ -7,13 +7,14 @@
 package types
 
 import (
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
+
 	mars "github.com/duc-cnzj/mars/api/v6/proto/mars"
 	websocket "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
 )
 
 const (

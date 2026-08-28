@@ -91,7 +91,7 @@ func Test_userSvc_List(t *testing.T) {
 	assert.Equal(t, int32(2), resp.Count)
 	if assert.Len(t, resp.Items, 2) {
 		assert.Equal(t, []string{"admin"}, resp.Items[0].Roles)
-		assert.Equal(t, []string{"user"}, resp.Items[1].Roles)
+		assert.Equal(t, []string{}, resp.Items[1].Roles)
 		assert.NotNil(t, resp.Items[1].LastLogin)
 	}
 	if assert.NotNil(t, resp.Stats) {

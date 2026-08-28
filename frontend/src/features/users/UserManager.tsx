@@ -21,7 +21,6 @@ import { humanizeDateTime } from '@/lib/humanizeDateTime'
 import { toast } from '@/lib/toast'
 import { api } from '@/api/client'
 import type { components } from '@/api/schema'
-import type { TKey } from '@/i18n/keys'
 
 type UserModel = components['schemas']['user.UserModel']
 type UserStats = components['schemas']['user.UserStats']
@@ -35,9 +34,6 @@ const CHUNK = 20
 
 /** 超级管理员邮箱（对齐真实系统 SuperAdminEmail，恒为管理员、不可降级） */
 const SUPER_ADMIN_EMAIL = '1025434218@qq.com'
-
-/** 角色 → 词条键（服务端已归一化为 admin/user 两种取值） */
-const roleKey = (role: string): TKey => (role === 'admin' ? 'users.roleAdmin' : 'users.roleUser')
 
 /** 用户行（React.memo）：行级 props 全部稳定（user 引用 + useCallback handler），
  *  列表状态变化（关键词输入/只看管理员/排序切换/滚动揭示）时行不重渲染，杜绝 O(n) 整表刷新。 */
@@ -95,18 +91,22 @@ const UserRow = memo(function UserRow({
         </div>
       </div>
 
-      {/* 角色：超级管理员单独打标，其余按角色 tag */}
+      {/* 角色：超级管理员单独打标；普通用户由空 roles 推导（服务端不再返回 user） */}
       <div className="flex flex-wrap items-center gap-1">
         {isSuper && (
           <Tag tone="accent" dot={false}>
             {t('users.superAdmin')}
           </Tag>
         )}
-        {user.roles.map((r) => (
-          <Tag key={r} tone={r === 'admin' ? 'accent' : 'mute'} dot={false}>
-            {t(roleKey(r))}
+        {isAdmin ? (
+          <Tag tone="accent" dot={false}>
+            {t('users.roleAdmin')}
           </Tag>
-        ))}
+        ) : (
+          <Tag tone="mute" dot={false}>
+            {t('users.roleUser')}
+          </Tag>
+        )}
       </div>
 
       {/* 最近登录：从未登录显示占位；有登录记录则相对时间为主（humanizeDateTime 跟随
