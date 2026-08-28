@@ -15,7 +15,9 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/picture"
 	"github.com/duc-cnzj/mars/api/v6/proto/project"
 	"github.com/duc-cnzj/mars/api/v6/proto/repo"
+	"github.com/duc-cnzj/mars/api/v6/proto/settings"
 	"github.com/duc-cnzj/mars/api/v6/proto/token"
+	"github.com/duc-cnzj/mars/api/v6/proto/user"
 	"github.com/duc-cnzj/mars/api/v6/proto/version"
 	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/google/wire"
@@ -41,6 +43,8 @@ var WireServiceSet = wire.NewSet(
 	wire.Struct(new(ClusterSvcDeps), "*"),
 	wire.Struct(new(EventSvcDeps), "*"),
 	wire.Struct(new(PictureSvcDeps), "*"),
+	wire.Struct(new(SettingsSvcDeps), "*"),
+	wire.Struct(new(UserSvcDeps), "*"),
 	wire.Struct(new(NewGrpcRegistryDeps), "*"),
 	NewAccessTokenSvc,
 	NewAuthSvc,
@@ -57,7 +61,9 @@ var WireServiceSet = wire.NewSet(
 	NewNamespaceSvc,
 	NewPictureSvc,
 	NewProjectSvc,
+	NewSettingsSvc,
 	NewVersionSvc,
+	NewUserSvc,
 	NewGrpcRegistry,
 )
 
@@ -80,6 +86,8 @@ type NewGrpcRegistryDeps struct {
 	Auth        auth.AuthServer
 	AccessToken token.AccessTokenServer
 	Repo        repo.RepoServer
+	Settings    settings.SettingsServer
+	User        user.UserServer
 }
 
 // NewGrpcRegistry 组装 gRPC 网关路由表与服务器注册函数：把各服务实现注册到
@@ -89,6 +97,8 @@ func NewGrpcRegistry(deps NewGrpcRegistryDeps) *app.GrpcRegistry {
 	return &app.GrpcRegistry{
 		EndpointFuncs: []app.EndpointFunc{
 			repo.RegisterRepoHandlerFromEndpoint,
+			settings.RegisterSettingsHandlerFromEndpoint,
+			user.RegisterUserHandlerFromEndpoint,
 			container.RegisterContainerHandlerFromEndpoint,
 			cluster.RegisterClusterHandlerFromEndpoint,
 			endpoint.RegisterEndpointHandlerFromEndpoint,
@@ -106,6 +116,8 @@ func NewGrpcRegistry(deps NewGrpcRegistryDeps) *app.GrpcRegistry {
 		},
 		RegistryFunc: func(s grpc.ServiceRegistrar) {
 			repo.RegisterRepoServer(s, deps.Repo)
+			settings.RegisterSettingsServer(s, deps.Settings)
+			user.RegisterUserServer(s, deps.User)
 			container.RegisterContainerServer(s, deps.Container)
 			cluster.RegisterClusterServer(s, deps.Cluster)
 			endpoint.RegisterEndpointServer(s, deps.Endpoint)

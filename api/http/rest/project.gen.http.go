@@ -98,3 +98,12 @@ func (s *ProjectSvc) ResourceTree(ctx context.Context, req *project.ResourceTree
 	}
 	return &out, nil
 }
+
+// Liveness GET /api/admin/projects/liveness。
+func (s *ProjectSvc) Liveness(ctx context.Context, req *project.LivenessRequest) (*project.LivenessResponse, error) {
+	var out project.LivenessResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, "/api/admin/projects/liveness", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

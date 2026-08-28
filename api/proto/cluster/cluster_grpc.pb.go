@@ -8,7 +8,6 @@ package cluster
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -20,7 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Cluster_ClusterInfo_FullMethodName = "/cluster.Cluster/ClusterInfo"
+	Cluster_ClusterInfo_FullMethodName   = "/cluster.Cluster/ClusterInfo"
+	Cluster_ClusterBoard_FullMethodName  = "/cluster.Cluster/ClusterBoard"
+	Cluster_ResourceBoard_FullMethodName = "/cluster.Cluster/ResourceBoard"
 )
 
 // ClusterClient is the client API for Cluster service.
@@ -28,6 +29,12 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ClusterClient interface {
 	ClusterInfo(ctx context.Context, in *InfoRequest, opts ...grpc.CallOption) (*InfoResponse, error)
+	// ClusterBoard 集群资源看板（管理员后台）：总览 + 节点/命名空间/Pod 明细聚合快照。
+	// top_sort 可选，控制 Top Pod 排行维度（cpu 默认 / mem）。
+	ClusterBoard(ctx context.Context, in *BoardRequest, opts ...grpc.CallOption) (*BoardResponse, error)
+	// ResourceBoard 空间资源管理（管理员后台）：每个命名空间的 Pod requests/实际用量
+	// 占比聚合，含每空间的项目明细——定位「申请了很多却用不到多少」的空间。
+	ResourceBoard(ctx context.Context, in *InfoRequest, opts ...grpc.CallOption) (*ResourceBoardResponse, error)
 }
 
 type clusterClient struct {
@@ -48,11 +55,37 @@ func (c *clusterClient) ClusterInfo(ctx context.Context, in *InfoRequest, opts .
 	return out, nil
 }
 
+func (c *clusterClient) ClusterBoard(ctx context.Context, in *BoardRequest, opts ...grpc.CallOption) (*BoardResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BoardResponse)
+	err := c.cc.Invoke(ctx, Cluster_ClusterBoard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clusterClient) ResourceBoard(ctx context.Context, in *InfoRequest, opts ...grpc.CallOption) (*ResourceBoardResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResourceBoardResponse)
+	err := c.cc.Invoke(ctx, Cluster_ResourceBoard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ClusterServer is the server API for Cluster service.
 // All implementations must embed UnimplementedClusterServer
 // for forward compatibility.
 type ClusterServer interface {
 	ClusterInfo(context.Context, *InfoRequest) (*InfoResponse, error)
+	// ClusterBoard 集群资源看板（管理员后台）：总览 + 节点/命名空间/Pod 明细聚合快照。
+	// top_sort 可选，控制 Top Pod 排行维度（cpu 默认 / mem）。
+	ClusterBoard(context.Context, *BoardRequest) (*BoardResponse, error)
+	// ResourceBoard 空间资源管理（管理员后台）：每个命名空间的 Pod requests/实际用量
+	// 占比聚合，含每空间的项目明细——定位「申请了很多却用不到多少」的空间。
+	ResourceBoard(context.Context, *InfoRequest) (*ResourceBoardResponse, error)
 	mustEmbedUnimplementedClusterServer()
 }
 
@@ -65,6 +98,12 @@ type UnimplementedClusterServer struct{}
 
 func (UnimplementedClusterServer) ClusterInfo(context.Context, *InfoRequest) (*InfoResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ClusterInfo not implemented")
+}
+func (UnimplementedClusterServer) ClusterBoard(context.Context, *BoardRequest) (*BoardResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ClusterBoard not implemented")
+}
+func (UnimplementedClusterServer) ResourceBoard(context.Context, *InfoRequest) (*ResourceBoardResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResourceBoard not implemented")
 }
 func (UnimplementedClusterServer) mustEmbedUnimplementedClusterServer() {}
 func (UnimplementedClusterServer) testEmbeddedByValue()                 {}
@@ -105,6 +144,42 @@ func _Cluster_ClusterInfo_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Cluster_ClusterBoard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BoardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterServer).ClusterBoard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Cluster_ClusterBoard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterServer).ClusterBoard(ctx, req.(*BoardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Cluster_ResourceBoard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterServer).ResourceBoard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Cluster_ResourceBoard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterServer).ResourceBoard(ctx, req.(*InfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Cluster_ServiceDesc is the grpc.ServiceDesc for Cluster service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -115,6 +190,14 @@ var Cluster_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ClusterInfo",
 			Handler:    _Cluster_ClusterInfo_Handler,
+		},
+		{
+			MethodName: "ClusterBoard",
+			Handler:    _Cluster_ClusterBoard_Handler,
+		},
+		{
+			MethodName: "ResourceBoard",
+			Handler:    _Cluster_ResourceBoard_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

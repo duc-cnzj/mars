@@ -109,3 +109,30 @@ func (c *changelogRepo) FindLastChangeByProjectID(ctx context.Context, projectID
 	first, err := db.Changelog.Query().Where(changelog.ProjectID(projectID)).Order(ent.Desc(changelog.FieldID)).First(ctx)
 	return toChangeLog(first), errs.Wrap(err, "find last change")
 }
+
+// CountByProjectIDs 按项目 ID 集合聚合各项目变更记录数（GROUP BY project_id），
+// 供项目活跃度清单汇总 deploy_count。ids 为空返回空 map。
+func (c *changelogRepo) CountByProjectIDs(ctx context.Context, ids ...int) (out map[int]int, err error) {
+	ctx, span := tracer.Start(ctx, "changelogRepo/CountByProjectIDs")
+	defer func() { endSpan(span, err) }()
+	if len(ids) == 0 {
+		return map[int]int{}, nil
+	}
+	var rows []struct {
+		ProjectID int `json:"project_id"`
+		Count     int `json:"count"`
+	}
+	err = c.data.DB().Changelog.Query().
+		Where(changelog.ProjectIDIn(ids...)).
+		GroupBy(changelog.FieldProjectID).
+		Aggregate(ent.Count()).
+		Scan(ctx, &rows)
+	if err != nil {
+		return nil, errs.Wrap(err, "count changelog by project ids")
+	}
+	out = make(map[int]int, len(rows))
+	for _, row := range rows {
+		out[row.ProjectID] = row.Count
+	}
+	return out, nil
+}

@@ -8,7 +8,6 @@ package project
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -30,6 +29,7 @@ const (
 	Project_AllContainers_FullMethodName         = "/project.Project/AllContainers"
 	Project_CheckApplyStatus_FullMethodName      = "/project.Project/CheckApplyStatus"
 	Project_ResourceTree_FullMethodName          = "/project.Project/ResourceTree"
+	Project_Liveness_FullMethodName              = "/project.Project/Liveness"
 )
 
 // ProjectClient is the client API for Project service.
@@ -61,6 +61,9 @@ type ProjectClient interface {
 	// Service 无 Ingress 覆盖、workload 无 Service 覆盖时兜底直挂 Application。完整资源列表
 	// （区别于 AllContainers 的活跃容器平铺），供拓扑图 Tab 渲染与 pod 事件驱动下的实时刷新。
 	ResourceTree(ctx context.Context, in *ResourceTreeRequest, opts ...grpc.CallOption) (*ResourceTreeResponse, error)
+	// Liveness 项目活跃度清单（管理员后台）：按 30/90 天阈值分类活跃/低活跃/僵尸，
+	// 服务端聚合累计部署次数与统计，识别长期无人使用的治理候选项目。
+	Liveness(ctx context.Context, in *LivenessRequest, opts ...grpc.CallOption) (*LivenessResponse, error)
 }
 
 type projectClient struct {
@@ -180,6 +183,16 @@ func (c *projectClient) ResourceTree(ctx context.Context, in *ResourceTreeReques
 	return out, nil
 }
 
+func (c *projectClient) Liveness(ctx context.Context, in *LivenessRequest, opts ...grpc.CallOption) (*LivenessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LivenessResponse)
+	err := c.cc.Invoke(ctx, Project_Liveness_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServer is the server API for Project service.
 // All implementations must embed UnimplementedProjectServer
 // for forward compatibility.
@@ -209,6 +222,9 @@ type ProjectServer interface {
 	// Service 无 Ingress 覆盖、workload 无 Service 覆盖时兜底直挂 Application。完整资源列表
 	// （区别于 AllContainers 的活跃容器平铺），供拓扑图 Tab 渲染与 pod 事件驱动下的实时刷新。
 	ResourceTree(context.Context, *ResourceTreeRequest) (*ResourceTreeResponse, error)
+	// Liveness 项目活跃度清单（管理员后台）：按 30/90 天阈值分类活跃/低活跃/僵尸，
+	// 服务端聚合累计部署次数与统计，识别长期无人使用的治理候选项目。
+	Liveness(context.Context, *LivenessRequest) (*LivenessResponse, error)
 	mustEmbedUnimplementedProjectServer()
 }
 
@@ -248,6 +264,9 @@ func (UnimplementedProjectServer) CheckApplyStatus(context.Context, *CheckApplyS
 }
 func (UnimplementedProjectServer) ResourceTree(context.Context, *ResourceTreeRequest) (*ResourceTreeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ResourceTree not implemented")
+}
+func (UnimplementedProjectServer) Liveness(context.Context, *LivenessRequest) (*LivenessResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Liveness not implemented")
 }
 func (UnimplementedProjectServer) mustEmbedUnimplementedProjectServer() {}
 func (UnimplementedProjectServer) testEmbeddedByValue()                 {}
@@ -443,6 +462,24 @@ func _Project_ResourceTree_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Project_Liveness_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LivenessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).Liveness(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Project_Liveness_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).Liveness(ctx, req.(*LivenessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Project_ServiceDesc is the grpc.ServiceDesc for Project service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -485,6 +522,10 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ResourceTree",
 			Handler:    _Project_ResourceTree_Handler,
+		},
+		{
+			MethodName: "Liveness",
+			Handler:    _Project_Liveness_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

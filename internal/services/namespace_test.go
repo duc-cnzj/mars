@@ -20,8 +20,10 @@ import (
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	k8sapierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 func TestNewNamespaceSvc_Creation(t *testing.T) {
@@ -1209,3 +1211,146 @@ func newNamespaceSvcWithMocks(t *testing.T) (*namespaceSvc, *namespaceSvcMocks) 
 	}
 	return s, mocks
 }
+
+// Test_namespaceSvc_AdminList 管理列表成功路径：透传搜索/私有过滤入参，单次批量快照用量
+// 映射到 AdminItem 全字段落位 + 活跃度分类过滤 + 全量统计（不随分类过滤裁剪）。
+func Test_namespaceSvc_AdminList(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+	now := time.Now()
+	mocks.nsRepo.EXPECT().ListAllAdmin(gomock.Any(), "mars", true).Return([]*biz.Namespace{
+		// 无项目 → 僵尸
+		{ID: 1, Name: "mars-a", CreatorEmail: "a@b.c"},
+		// 10 天前更新 → 活跃
+		{ID: 2, Name: "mars-b", CreatorEmail: "b@b.c", Projects: []*biz.Project{{UpdatedAt: now.Add(-10 * 24 * time.Hour)}}},
+		// 120 天前更新 → 僵尸
+		{ID: 3, Name: "mars-c", CreatorEmail: "c@b.c", Projects: []*biz.Project{{UpdatedAt: now.Add(-120 * 24 * time.Hour)}}},
+		// 60 天前更新 → 低活跃
+		{ID: 4, Name: "mars-d", CreatorEmail: "d@b.c", Projects: []*biz.Project{{UpdatedAt: now.Add(-60 * 24 * time.Hour)}}},
+	}, nil)
+	// 单次批量资源快照：mars-a/mars-b 有指标，mars-c/mars-d 无指标降级 0
+	mocks.k8sRepo.EXPECT().ResourceSnapshot(gomock.Any()).Return(&biz.ResourceSnapshotData{PodMetrics: []v1beta1.PodMetrics{
+		{ObjectMeta: metav1.ObjectMeta{Name: "p-a", Namespace: "mars-a"}, Containers: []v1beta1.ContainerMetrics{{Usage: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("100m"),
+			corev1.ResourceMemory: resource.MustParse("500M"),
+		}}}},
+		{ObjectMeta: metav1.ObjectMeta{Name: "p-b", Namespace: "mars-b"}, Containers: []v1beta1.ContainerMetrics{{Usage: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("200m"),
+			corev1.ResourceMemory: resource.MustParse("600M"),
+		}}}},
+	}}, nil)
+
+	// 活跃度分类过滤 zombie：mars-a（无项目）与 mars-c（120 天）命中，活跃/低活跃被过滤
+	resp, err := svc.AdminList(newAdminUserCtx(), &namespace.AdminListRequest{
+		Page:        loPtr32(1),
+		PageSize:    loPtr32(15),
+		Search:      "mars",
+		PrivateOnly: true,
+		Liveness:    "zombie",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, int32(1), resp.Page)
+	assert.Equal(t, int32(15), resp.PageSize)
+	assert.Equal(t, int32(2), resp.Count)
+	// 统计基于 search 命中全量，不随分类过滤裁剪
+	if assert.NotNil(t, resp.Stats) {
+		assert.Equal(t, int32(4), resp.Stats.Total)
+		assert.Equal(t, int32(1), resp.Stats.Active)
+		assert.Equal(t, int32(1), resp.Stats.Dormant)
+		assert.Equal(t, int32(2), resp.Stats.Zombie)
+	}
+	if assert.Len(t, resp.Items, 2) {
+		item := resp.Items[0]
+		assert.Equal(t, int32(1), item.Ns.Id)
+		assert.Equal(t, "mars-a", item.Ns.Name)
+		assert.Equal(t, "a@b.c", item.Ns.CreatorEmail)
+		assert.Equal(t, "100 m", item.CpuUsed)
+		assert.Equal(t, "500 MB", item.MemUsed)
+		// 无项目：最近活跃为空串 + 分类僵尸
+		assert.Empty(t, item.LastActiveAt)
+		assert.Equal(t, "zombie", item.LivenessKind)
+		assert.Equal(t, int32(3), resp.Items[1].Ns.Id)
+		assert.Equal(t, "zombie", resp.Items[1].LivenessKind)
+	}
+}
+
+// Test_namespaceSvc_AdminList_LastActiveAt 管理列表最近活跃时间：空间下所有项目
+// UpdatedAt 最大值转 RFC3339 字符串，由服务端算好返回（前端零计算）。
+func Test_namespaceSvc_AdminList_LastActiveAt(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+	base := time.Date(2026, 8, 20, 10, 0, 0, 0, time.UTC)
+	mocks.nsRepo.EXPECT().ListAllAdmin(gomock.Any(), "", false).Return([]*biz.Namespace{{
+		ID:           1,
+		Name:         "mars-a",
+		CreatorEmail: "a@b.c",
+		Projects: []*biz.Project{
+			{UpdatedAt: base.Add(-time.Hour)},
+			{UpdatedAt: base.Add(3 * time.Hour)},
+		},
+	}}, nil)
+	mocks.k8sRepo.EXPECT().ResourceSnapshot(gomock.Any()).Return(&biz.ResourceSnapshotData{}, nil)
+
+	resp, err := svc.AdminList(newAdminUserCtx(), &namespace.AdminListRequest{})
+	assert.NoError(t, err)
+	if assert.Len(t, resp.Items, 1) {
+		// 最大 UpdatedAt（base+3h）按 RFC3339 序列化
+		assert.Equal(t, base.Add(3*time.Hour).Format(time.RFC3339), resp.Items[0].LastActiveAt)
+	}
+}
+
+// Test_namespaceSvc_AdminList_Error 管理列表失败路径：List 查询错误上抛。
+func Test_namespaceSvc_AdminList_Error(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().ListAllAdmin(gomock.Any(), "", false).Return(nil, errors.New("boom"))
+
+	resp, err := svc.AdminList(newAdminUserCtx(), &namespace.AdminListRequest{})
+	assert.Nil(t, resp)
+	assert.Error(t, err)
+}
+
+// Test_namespaceSvc_AdminList_DefaultPagination 空分页参数回退默认值（page=1、page_size=15）。
+func Test_namespaceSvc_AdminList_DefaultPagination(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().ListAllAdmin(gomock.Any(), "", false).Return([]*biz.Namespace{}, nil)
+	mocks.k8sRepo.EXPECT().ResourceSnapshot(gomock.Any()).Return(&biz.ResourceSnapshotData{}, nil)
+
+	resp, err := svc.AdminList(newAdminUserCtx(), &namespace.AdminListRequest{})
+	assert.NoError(t, err)
+	assert.Equal(t, int32(1), resp.Page)
+	assert.Equal(t, int32(15), resp.PageSize)
+	assert.Empty(t, resp.Items)
+}
+
+// Test_namespaceSvc_Authorize 授权门禁：AdminList 未进 allowlist（admin 专属），
+// 其余 12 个用户方法全部在 allowlist 内放行普通用户，逐个覆盖防漏。
+func Test_namespaceSvc_Authorize(t *testing.T) {
+	svc, _ := newNamespaceSvcWithMocks(t)
+
+	// admin：管理后台 AdminList 放行。
+	ctx, err := svc.Authorize(newAdminUserCtx(), namespace.Namespace_AdminList_FullMethodName)
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+	// 非 admin：AdminList 拒绝。
+	_, err = svc.Authorize(newOtherUserCtx(), namespace.Namespace_AdminList_FullMethodName)
+	assert.Equal(t, errs.ErrorPermissionDenied, err)
+	// 非 admin：allowlist 内的用户方法全部放行，逐个覆盖防漏。
+	for _, m := range []string{
+		namespace.Namespace_List_FullMethodName,
+		namespace.Namespace_UpdatePrivate_FullMethodName,
+		namespace.Namespace_SyncMembers_FullMethodName,
+		namespace.Namespace_UpdateConfig_FullMethodName,
+		namespace.Namespace_Create_FullMethodName,
+		namespace.Namespace_Show_FullMethodName,
+		namespace.Namespace_UpdateDesc_FullMethodName,
+		namespace.Namespace_Delete_FullMethodName,
+		namespace.Namespace_IsExists_FullMethodName,
+		namespace.Namespace_Favorite_FullMethodName,
+		namespace.Namespace_FavoriteSort_FullMethodName,
+		namespace.Namespace_Transfer_FullMethodName,
+	} {
+		_, err := svc.Authorize(newOtherUserCtx(), m)
+		assert.NoError(t, err, "方法 %s 应放行普通用户", m)
+	}
+}
+
+// loPtr32 返回 int32 的指针，用于构造 proto optional 字段的入参。
+func loPtr32(v int32) *int32 { return &v }

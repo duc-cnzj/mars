@@ -34,6 +34,8 @@ type Tx struct {
 	Project *ProjectClient
 	// Repo is the client for interacting with the Repo builders.
 	Repo *RepoClient
+	// User is the client for interacting with the User builders.
+	User *UserClient
 
 	// lazily loaded.
 	client     *Client
@@ -176,6 +178,7 @@ func (tx *Tx) init() {
 	tx.Namespace = NewNamespaceClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)
 	tx.Repo = NewRepoClient(tx.config)
+	tx.User = NewUserClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

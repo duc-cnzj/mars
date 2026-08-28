@@ -85,7 +85,8 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		PluginManager:    pluginManager,
 	}
 	jobManager := deploy.NewJobManager(jobManagerDeps)
-	projectBiz := biz.NewProjectBiz(logger, projectRepo, k8sRepo)
+	changelogRepo := data.NewChangelogRepo(logger, dataImpl)
+	projectBiz := biz.NewProjectBiz(logger, projectRepo, k8sRepo, changelogRepo)
 	gitBiz := biz.NewGitBiz(gitRepo)
 	k8sBiz := biz.NewK8sBiz(k8sRepo)
 	eventBiz := biz.NewEventBiz(eventRepo)
@@ -164,11 +165,13 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 	}
 	containerServer := services.NewContainerSvc(containerSvcDeps)
 	clusterSvcDeps := services.ClusterSvcDeps{
-		K8sBiz: k8sBiz,
-		Logger: logger,
+		K8sBiz:       k8sBiz,
+		NamespaceBiz: namespaceBiz,
+		ProjectBiz:   projectBiz,
+		AccessBiz:    accessBiz,
+		Logger:       logger,
 	}
 	clusterServer := services.NewClusterSvc(clusterSvcDeps)
-	changelogRepo := data.NewChangelogRepo(logger, dataImpl)
 	changelogBiz := biz.NewChangelogBiz(changelogRepo)
 	changelogSvcDeps := services.ChangelogSvcDeps{
 		ClBiz:     changelogBiz,
@@ -176,10 +179,13 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		AccessBiz: accessBiz,
 	}
 	changelogServer := services.NewChangelogSvc(changelogSvcDeps)
+	userRepo := data.NewUserRepo(dataImpl, timerTimer)
+	userBiz := biz.NewUserBiz(userRepo)
 	authSvcDeps := services.AuthSvcDeps{
 		EventBiz: eventBiz,
 		Logger:   logger,
 		AuthBiz:  authBiz,
+		UserBiz:  userBiz,
 	}
 	authServer := services.NewAuthSvc(authSvcDeps)
 	accessTokenSvcDeps := services.AccessTokenSvcDeps{
@@ -195,6 +201,19 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		AccessBiz: accessBiz,
 	}
 	repoServer := services.NewRepoSvc(repoSvcDeps)
+	settingsBiz := biz.NewSettingsBiz(configConfig)
+	settingsSvcDeps := services.SettingsSvcDeps{
+		SettingsBiz: settingsBiz,
+		AccessBiz:   accessBiz,
+		Logger:      logger,
+	}
+	settingsServer := services.NewSettingsSvc(settingsSvcDeps)
+	userSvcDeps := services.UserSvcDeps{
+		UserBiz:   userBiz,
+		AccessBiz: accessBiz,
+		Logger:    logger,
+	}
+	userServer := services.NewUserSvc(userSvcDeps)
 	newGrpcRegistryDeps := services.NewGrpcRegistryDeps{
 		Version:     versionServer,
 		Project:     projectServer,
@@ -211,6 +230,8 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		Auth:        authServer,
 		AccessToken: accessTokenServer,
 		Repo:        repoServer,
+		Settings:    settingsServer,
+		User:        userServer,
 	}
 	grpcRegistry := services.NewGrpcRegistry(newGrpcRegistryDeps)
 	registry := metrics.NewRegistry()

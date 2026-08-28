@@ -11,6 +11,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/transformer"
+	"github.com/duc-cnzj/mars/v6/internal/util/date"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	"github.com/samber/lo"
 )
@@ -47,6 +48,27 @@ func NewNamespaceSvc(deps NamespaceSvcDeps) namespace.NamespaceServer {
 		eventBiz:  deps.EventBiz,
 		accessBiz: deps.AccessBiz,
 	}
+}
+
+// Authorize 是服务级授权门禁：命名空间服务仅新增的 AdminList（管理员后台）要求 admin，
+// 其余用户方法（列表/创建/展示/删除/收藏/成员同步等）全部放行 allowlist，避免误伤
+// 普通用户——这些方法内部的 RequireNamespaceOwner/RequireNamespaceAccessByID 等
+// 访问控制仍照常生效。
+func (n *namespaceSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
+	return n.accessBiz.RequireAdmin(ctx, fullMethodName,
+		namespace.Namespace_List_FullMethodName,
+		namespace.Namespace_UpdatePrivate_FullMethodName,
+		namespace.Namespace_SyncMembers_FullMethodName,
+		namespace.Namespace_UpdateConfig_FullMethodName,
+		namespace.Namespace_Create_FullMethodName,
+		namespace.Namespace_Show_FullMethodName,
+		namespace.Namespace_UpdateDesc_FullMethodName,
+		namespace.Namespace_Delete_FullMethodName,
+		namespace.Namespace_IsExists_FullMethodName,
+		namespace.Namespace_Favorite_FullMethodName,
+		namespace.Namespace_FavoriteSort_FullMethodName,
+		namespace.Namespace_Transfer_FullMethodName,
+	)
 }
 
 // showNsAndCheckOwner 加载命名空间并校验当前用户为 owner：Transfer/Delete/
@@ -119,6 +141,44 @@ func (n *namespaceSvc) List(ctx context.Context, request *namespace.ListRequest)
 	}
 
 	return res, nil
+}
+
+// AdminList 返回命名空间管理列表（管理员后台）：全量空间 + 逐空间实时 CPU/内存用量 +
+// 活跃度分类 + 全量统计，经 Authorize admin 门禁后仅管理员可调用。
+func (n *namespaceSvc) AdminList(ctx context.Context, request *namespace.AdminListRequest) (*namespace.AdminListResponse, error) {
+	page, size := pagination.InitByDefault(request.Page, request.PageSize)
+	items, stats, pag, err := n.nsBiz.AdminList(ctx, &biz.AdminListInput{
+		Page:        page,
+		PageSize:    size,
+		Search:      request.Search,
+		PrivateOnly: request.PrivateOnly,
+		Liveness:    request.Liveness,
+	})
+	if err != nil {
+		return nil, logError(ctx, n.logger, err)
+	}
+	resp := &namespace.AdminListResponse{
+		Page:     pag.Page,
+		PageSize: pag.PageSize,
+		Count:    pag.Count,
+		// 活跃度统计：基于 search 命中全量，不随分页/分类过滤裁剪。
+		Stats: &namespace.LivenessStats{
+			Total:   int32(stats.Total),
+			Active:  int32(stats.Active),
+			Dormant: int32(stats.Dormant),
+			Zombie:  int32(stats.Zombie),
+		},
+	}
+	for _, item := range items {
+		resp.Items = append(resp.Items, &namespace.AdminItem{
+			Ns:           transformer.FromNamespace(item.Namespace),
+			CpuUsed:      item.CpuUsed,
+			MemUsed:      item.MemUsed,
+			LastActiveAt: date.ToRFC3339(&item.LastActiveAt),
+			LivenessKind: string(item.LivenessKind),
+		})
+	}
+	return resp, nil
 }
 
 // Create 创建命名空间：已存在时按 IgnoreIfExists 策略放行或返回 AlreadyExists；放行前

@@ -101,6 +101,45 @@ message UpdateConfigResponse{
   types.NamespaceModel item = 1;
 }
 
+// AdminListRequest 命名空间管理列表（管理员后台）。
+message AdminListRequest {
+  optional int32 page      = 1;
+  optional int32 page_size = 2;
+  // 关键词：匹配空间名/创建者邮箱
+  string search = 3;
+  // 只看私有空间
+  bool private_only = 4;
+  // 活跃度分类过滤：active/dormant/zombie，空 = 全部
+  string liveness = 5;
+}
+// AdminItem 命名空间管理条目：空间模型（含成员/创建者）+ 实时用量 + 最近活跃时间。
+message AdminItem {
+  types.NamespaceModel ns       = 1;
+  // CPU 用量（人类可读，如 "2.1 core"）
+  string cpu_used = 2;
+  // 内存用量（人类可读，如 "18.4 GiB"）
+  string mem_used = 3;
+  // 最近活跃时间：空间下所有项目 UpdatedAt 的最大值（RFC3339）；无项目（从未活跃）为空串
+  string last_active_at = 4;
+  // 活跃度分类：active（活跃）/ dormant（低活跃）/ zombie（僵尸）；无项目（从未活跃）视为 zombie
+  string liveness_kind = 5;
+}
+// LivenessStats 活跃度统计（基于 search 命中全量，不随分页/分类过滤裁剪）。
+message LivenessStats {
+  int32 total = 1;
+  int32 active = 2;
+  int32 dormant = 3;
+  int32 zombie = 4;
+}
+message AdminListResponse {
+  int32 page      = 1;
+  int32 page_size = 2;
+  int32 count     = 3;
+  repeated AdminItem items = 4;
+  // 活跃度统计（基于 search 命中全量）
+  LivenessStats stats = 5;
+}
+
 service Namespace {
   rpc List(ListRequest) returns (ListResponse) {
     option (google.api.http)      = {
@@ -218,6 +257,16 @@ service Namespace {
 
     option (openapi.v3.operation) = {
       summary: "转让自己的空间给别人",
+    };
+  }
+
+  // AdminList 命名空间管理列表（管理员后台）：分页 + 关键词/私有过滤 + 实时 CPU/内存用量。
+  rpc AdminList(AdminListRequest) returns (AdminListResponse) {
+    option (google.api.http)      = {
+      get: "/api/admin/namespaces"
+    };
+    option (openapi.v3.operation) = {
+      summary: "命名空间管理列表（管理员）",
     };
   }
 }

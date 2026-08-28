@@ -52,4 +52,6 @@ type ChangelogRepo interface {
 	Create(ctx context.Context, input *CreateChangeLogInput) (*Changelog, error)
 	// FindLastChangeByProjectID 查询项目最近一条变更记录。
 	FindLastChangeByProjectID(ctx context.Context, projectID int) (*Changelog, error)
+	// CountByProjectIDs 按项目 ID 集合聚合各项目变更记录数（GROUP BY project_id）。
+	CountByProjectIDs(ctx context.Context, ids ...int) (map[int]int, error)
 }

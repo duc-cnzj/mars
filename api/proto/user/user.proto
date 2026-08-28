@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package user;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/duc-cnzj/mars/api/v6/proto/user;user";
+
+// UserModel 是后台用户管理的单条展示模型：roles 已归一化为 admin/user
+// （真实库中 mars_admin=管理员，user=普通用户，展示层统一为 admin/user 两种取值）。
+message UserModel {
+  int32           id         = 1;
+  string          email      = 2;
+  string          name       = 3;
+  repeated string roles      = 4; // admin=管理员，user=普通用户
+  optional string last_login = 5; // RFC3339，从未登录为缺省
+  string          created_at = 6; // RFC3339
+}
+
+// UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部三卡。
+message UserStats {
+  int32 total   = 1; // 用户总数
+  int32 admins  = 2; // 管理员数
+  int32 regular = 3; // 普通用户数（total - admins）
+}
+
+message ListRequest {
+  optional int32 page      = 1;
+  optional int32 page_size = 2;
+  string          search   = 3; // 按邮箱/展示名模糊搜索
+  string          role     = 4; // admin=只看管理员，其余值=全部
+}
+
+message ListResponse {
+  int32            page      = 1;
+  int32            page_size = 2;
+  int32            count     = 3;
+  repeated UserModel items    = 4;
+  UserStats        stats     = 5;
+}
+
+message ToggleAdminRequest {
+  string email = 1;
+  bool   admin = 2; // true=设为管理员，false=移除管理员
+}
+
+message ToggleAdminResponse {}
+
+// SyncUsersRequest 触发用户投影同步：把真实身份源（内置管理员/命名空间成员）
+// 同步为 users 投影，幂等可重复调用。空请求，由页面「同步用户」按钮触发。
+message SyncUsersRequest {}
+
+// SyncUsersResponse 同步完成响应（无返回数据，成功即完成）。
+message SyncUsersResponse {}
+
+service User {
+  rpc List(ListRequest) returns (ListResponse) {
+    option (google.api.http) = {
+      get: "/api/admin/users"
+    };
+  }
+
+  rpc ToggleAdmin(ToggleAdminRequest) returns (ToggleAdminResponse) {
+    option (google.api.http) = {
+      put: "/api/admin/users/{email}/role",
+      body: "*"
+    };
+  }
+
+  rpc Sync(SyncUsersRequest) returns (SyncUsersResponse) {
+    option (google.api.http) = {
+      post: "/api/admin/users/sync"
+    };
+  }
+}

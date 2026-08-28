@@ -1,6 +1,6 @@
 package biz
 
-//go:generate go tool mockgen -destination ./mock_biz.go -package biz github.com/duc-cnzj/mars/v6/internal/biz AuthBiz,EndpointBiz,AccessTokenBiz,PictureBiz,GitBiz,ProjectBiz,K8sBiz,NamespaceBiz,RepoBiz
+//go:generate go tool mockgen -destination ./mock_biz.go -package biz github.com/duc-cnzj/mars/v6/internal/biz AuthBiz,EndpointBiz,AccessTokenBiz,PictureBiz,GitBiz,ProjectBiz,K8sBiz,NamespaceBiz,RepoBiz,SettingsBiz,UserBiz
 
 import "github.com/google/wire"
 
@@ -22,6 +22,8 @@ var WireBizSet = wire.NewSet(
 	NewNamespaceBiz,
 	NewContainerBiz,
 	NewMetricsBiz,
+	NewSettingsBiz,
+	NewUserBiz,
 	NewAccessTokenManager,
 	// AccessBiz 由 NewAccessBiz 直接构造：内部自绑 MustGetUser（见 context.go），
 	// 无需传输层 wire.Value 注入 getUser 回调。

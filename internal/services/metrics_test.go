@@ -466,7 +466,7 @@ func newMetricsSvcWithMocks(t *testing.T) (*metricsSvc, *metricsSvcMocks) {
 		K8sBiz:     biz.NewK8sBiz(mocks.k8sRepo),
 		MetricsBiz: biz.NewMetricsBiz(biz.NewK8sBiz(mocks.k8sRepo)),
 		Logger:     logger,
-		AccessBiz:  biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo)),
+		AccessBiz:  biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo, nil)),
 	}).(*metricsSvc)
 	if !ok {
 		panic("NewMetricsSvc returned unexpected type")

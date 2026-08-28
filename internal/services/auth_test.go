@@ -25,6 +25,7 @@ func TestNewAuthSvc(t *testing.T) {
 	assert.NotNil(t, svc.logger)
 	assert.NotNil(t, svc.eventBiz)
 	assert.NotNil(t, svc.authBiz)
+	assert.NotNil(t, svc.userBiz)
 }
 
 // Test_authSvc_Info 覆盖 Info 成功路径：用户由鉴权拦截器经 biz.SetUser 注入 ctx，
@@ -113,6 +114,7 @@ func TestAuthSvc_Exchange_Success(t *testing.T) {
 	svc, mocks := newAuthSvcWithMocks(t)
 	authBizMock := mocks.authBiz
 	eventRepo := mocks.eventRepo
+	userBizMock := mocks.userBiz
 
 	userinfo := &biz.UserInfo{Name: "duc", Email: "DUC@example.com"}
 	authBizMock.EXPECT().Exchange(gomock.Any(), "code").Return(userinfo, nil)
@@ -124,11 +126,32 @@ func TestAuthSvc_Exchange_Success(t *testing.T) {
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", userinfo.Name, userinfo.Email),
 		gomock.Any(),
 	)
+	// 登录成功即同步用户投影（不存在则创建、存在则推进最近登录）
+	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), "DUC@example.com", "duc").Return(nil)
 
 	resp, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: "code"})
 	assert.NoError(t, err)
 	assert.Equal(t, "signed", resp.Token)
 	assert.Equal(t, int64(3600), resp.ExpiresIn)
+}
+
+// TestAuthSvc_Exchange_SyncUserErrorNotBlocking 投影写库失败不阻断登录：OIDC 凭证已校验、
+// 登录事件已落库，users 只是管理投影，该用户下次登录会由 SyncLoginUser 自动补回。
+func TestAuthSvc_Exchange_SyncUserErrorNotBlocking(t *testing.T) {
+	svc, mocks := newAuthSvcWithMocks(t)
+	authBizMock := mocks.authBiz
+	eventRepo := mocks.eventRepo
+	userBizMock := mocks.userBiz
+
+	userinfo := &biz.UserInfo{Name: "duc", Email: "duc@example.com"}
+	authBizMock.EXPECT().Exchange(gomock.Any(), "code").Return(userinfo, nil)
+	authBizMock.EXPECT().Sign(gomock.Any(), userinfo).Return(&biz.LoginResponse{Token: "signed", ExpiredIn: 3600}, nil)
+	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), "duc@example.com", "duc").Return(errors.New("projection boom"))
+
+	resp, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: "code"})
+	assert.NoError(t, err, "投影写库失败不得阻断登录")
+	assert.Equal(t, "signed", resp.Token)
 }
 
 func TestAuthSvc_Exchange_Error(t *testing.T) {
@@ -216,6 +239,7 @@ type authSvcMocks struct {
 	ctrl      *gomock.Controller
 	eventRepo *data.MockEventRepo
 	authBiz   *biz.MockAuthBiz
+	userBiz   *biz.MockUserBiz
 }
 
 func newAuthSvcWithMocks(t *testing.T) (*authSvc, *authSvcMocks) {
@@ -225,11 +249,13 @@ func newAuthSvcWithMocks(t *testing.T) (*authSvc, *authSvcMocks) {
 		ctrl:      ctrl,
 		eventRepo: data.NewMockEventRepo(ctrl),
 		authBiz:   biz.NewMockAuthBiz(ctrl),
+		userBiz:   biz.NewMockUserBiz(ctrl),
 	}
 	s, ok := NewAuthSvc(AuthSvcDeps{
 		EventBiz: biz.NewEventBiz(mocks.eventRepo),
 		Logger:   mlog.NewForConfig(nil),
 		AuthBiz:  mocks.authBiz,
+		UserBiz:  mocks.userBiz,
 	}).(*authSvc)
 	if !ok {
 		panic("NewAuthSvc returned unexpected type")

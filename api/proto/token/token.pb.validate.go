@@ -57,6 +57,12 @@ func (m *ListRequest) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Search
+
+	// no validation rules for All
+
+	// no validation rules for Status
+
 	if m.Page != nil {
 		// no validation rules for Page
 	}

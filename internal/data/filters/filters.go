@@ -71,7 +71,7 @@ func IfBool(field string) func(*bool) func(*sql.Selector) {
 	})
 }
 
-// IfEmail/IfEnabled/IfOrderByIDDesc/IfNameLike 是常用查询过滤器的命名实例。
+// IfEmail/IfEnabled/IfOrderByIDDesc/IfNameLike/IfEmailLike 是常用查询过滤器的命名实例。
 var (
 	IfEmail         = IfStrEQ("email")
 	IfEnabled       = IfBool("enabled")
@@ -80,5 +80,12 @@ var (
 		return s != ""
 	}, func(t string) func(*sql.Selector) {
 		return sql.FieldContains("name", t)
+	})
+	// IfEmailLike 邮箱模糊搜索：输入非空时追加 email LIKE %s%（大小写不敏感），
+	// 用于管理后台按用户（邮箱）过滤 access token 等场景。
+	IfEmailLike = If(func(s string) bool {
+		return s != ""
+	}, func(t string) func(*sql.Selector) {
+		return sql.FieldContainsFold("email", t)
 	})
 )

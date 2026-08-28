@@ -7,15 +7,14 @@
 package token
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	types "github.com/duc-cnzj/mars/api/v6/proto/types"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -26,9 +25,15 @@ const (
 )
 
 type ListRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Page          *int32                 `protobuf:"varint,1,opt,name=page,proto3,oneof" json:"page,omitempty"`
-	PageSize      *int32                 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3,oneof" json:"page_size,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Page     *int32                 `protobuf:"varint,1,opt,name=page,proto3,oneof" json:"page,omitempty"`
+	PageSize *int32                 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3,oneof" json:"page_size,omitempty"`
+	Search   string                 `protobuf:"bytes,3,opt,name=search,proto3" json:"search,omitempty"` // 按创建人邮箱模糊搜索（管理员后台按用户查令牌）
+	// all：管理员显式 opt-in 查看全部用户令牌（默认收敛到本人，最小权限）；普通用户传此字段等效无操作
+	All bool `protobuf:"varint,4,opt,name=all,proto3" json:"all,omitempty"`
+	// status：令牌状态过滤（”/缺省=不过滤；valid=有效、expired=已过期、revoked=已撤销）。
+	// 状态判定以撤销优先（与展示层标签一致：已撤销 > 已过期 > 有效）。
+	Status        string `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -75,6 +80,27 @@ func (x *ListRequest) GetPageSize() int32 {
 		return *x.PageSize
 	}
 	return 0
+}
+
+func (x *ListRequest) GetSearch() string {
+	if x != nil {
+		return x.Search
+	}
+	return ""
+}
+
+func (x *ListRequest) GetAll() bool {
+	if x != nil {
+		return x.All
+	}
+	return false
+}
+
+func (x *ListRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
 }
 
 type ListResponse struct {
@@ -421,10 +447,13 @@ var File_proto_token_token_proto protoreflect.FileDescriptor
 
 const file_proto_token_token_proto_rawDesc = "" +
 	"\n" +
-	"\x17proto/token/token.proto\x12\x05token\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\x1a\x17proto/types/types.proto\"_\n" +
+	"\x17proto/token/token.proto\x12\x05token\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\x1a\x17proto/types/types.proto\"\xa1\x01\n" +
 	"\vListRequest\x12\x17\n" +
 	"\x04page\x18\x01 \x01(\x05H\x00R\x04page\x88\x01\x01\x12 \n" +
-	"\tpage_size\x18\x02 \x01(\x05H\x01R\bpageSize\x88\x01\x01B\a\n" +
+	"\tpage_size\x18\x02 \x01(\x05H\x01R\bpageSize\x88\x01\x01\x12\x16\n" +
+	"\x06search\x18\x03 \x01(\tR\x06search\x12\x10\n" +
+	"\x03all\x18\x04 \x01(\bR\x03all\x12\x16\n" +
+	"\x06status\x18\x05 \x01(\tR\x06statusB\a\n" +
 	"\x05_pageB\f\n" +
 	"\n" +
 	"_page_size\"\x84\x01\n" +

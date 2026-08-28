@@ -25,3 +25,21 @@ func (s *ClusterSvc) ClusterInfo(ctx context.Context, req *cluster.InfoRequest) 
 	}
 	return &out, nil
 }
+
+// ClusterBoard GET /api/admin/cluster/board。
+func (s *ClusterSvc) ClusterBoard(ctx context.Context, req *cluster.BoardRequest) (*cluster.BoardResponse, error) {
+	var out cluster.BoardResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, "/api/admin/cluster/board", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// ResourceBoard GET /api/admin/cluster/resources。
+func (s *ClusterSvc) ResourceBoard(ctx context.Context, req *cluster.InfoRequest) (*cluster.ResourceBoardResponse, error) {
+	var out cluster.ResourceBoardResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, "/api/admin/cluster/resources", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

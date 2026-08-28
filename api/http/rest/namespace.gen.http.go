@@ -125,3 +125,12 @@ func (s *NamespaceSvc) Transfer(ctx context.Context, req *namespace.TransferRequ
 	}
 	return &out, nil
 }
+
+// AdminList GET /api/admin/namespaces。
+func (s *NamespaceSvc) AdminList(ctx context.Context, req *namespace.AdminListRequest) (*namespace.AdminListResponse, error) {
+	var out namespace.AdminListResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, "/api/admin/namespaces", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

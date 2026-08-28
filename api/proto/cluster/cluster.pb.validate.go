@@ -261,3 +261,1213 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = InfoRequestValidationError{}
+
+// Validate checks the field values on BoardNode with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *BoardNode) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BoardNode with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in BoardNodeMultiError, or nil
+// if none found.
+func (m *BoardNode) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BoardNode) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Role
+
+	// no validation rules for Status
+
+	// no validation rules for CpuCapacity
+
+	// no validation rules for CpuUsage
+
+	// no validation rules for CpuRequest
+
+	// no validation rules for MemCapacity
+
+	// no validation rules for MemUsage
+
+	// no validation rules for MemRequest
+
+	if len(errors) > 0 {
+		return BoardNodeMultiError(errors)
+	}
+
+	return nil
+}
+
+// BoardNodeMultiError is an error wrapping multiple validation errors returned
+// by BoardNode.ValidateAll() if the designated constraints aren't met.
+type BoardNodeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BoardNodeMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BoardNodeMultiError) AllErrors() []error { return m }
+
+// BoardNodeValidationError is the validation error returned by
+// BoardNode.Validate if the designated constraints aren't met.
+type BoardNodeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BoardNodeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BoardNodeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BoardNodeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BoardNodeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BoardNodeValidationError) ErrorName() string { return "BoardNodeValidationError" }
+
+// Error satisfies the builtin error interface
+func (e BoardNodeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBoardNode.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BoardNodeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BoardNodeValidationError{}
+
+// Validate checks the field values on BoardNamespace with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *BoardNamespace) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BoardNamespace with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in BoardNamespaceMultiError,
+// or nil if none found.
+func (m *BoardNamespace) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BoardNamespace) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for CpuMilli
+
+	// no validation rules for MemoryBytes
+
+	// no validation rules for PodCount
+
+	if len(errors) > 0 {
+		return BoardNamespaceMultiError(errors)
+	}
+
+	return nil
+}
+
+// BoardNamespaceMultiError is an error wrapping multiple validation errors
+// returned by BoardNamespace.ValidateAll() if the designated constraints
+// aren't met.
+type BoardNamespaceMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BoardNamespaceMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BoardNamespaceMultiError) AllErrors() []error { return m }
+
+// BoardNamespaceValidationError is the validation error returned by
+// BoardNamespace.Validate if the designated constraints aren't met.
+type BoardNamespaceValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BoardNamespaceValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BoardNamespaceValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BoardNamespaceValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BoardNamespaceValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BoardNamespaceValidationError) ErrorName() string { return "BoardNamespaceValidationError" }
+
+// Error satisfies the builtin error interface
+func (e BoardNamespaceValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBoardNamespace.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BoardNamespaceValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BoardNamespaceValidationError{}
+
+// Validate checks the field values on BoardRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *BoardRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BoardRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in BoardRequestMultiError, or
+// nil if none found.
+func (m *BoardRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BoardRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for TopSort
+
+	if len(errors) > 0 {
+		return BoardRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// BoardRequestMultiError is an error wrapping multiple validation errors
+// returned by BoardRequest.ValidateAll() if the designated constraints aren't met.
+type BoardRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BoardRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BoardRequestMultiError) AllErrors() []error { return m }
+
+// BoardRequestValidationError is the validation error returned by
+// BoardRequest.Validate if the designated constraints aren't met.
+type BoardRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BoardRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BoardRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BoardRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BoardRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BoardRequestValidationError) ErrorName() string { return "BoardRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e BoardRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBoardRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BoardRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BoardRequestValidationError{}
+
+// Validate checks the field values on BoardPod with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *BoardPod) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BoardPod with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in BoardPodMultiError, or nil
+// if none found.
+func (m *BoardPod) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BoardPod) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Namespace
+
+	// no validation rules for Pod
+
+	// no validation rules for CpuMilli
+
+	// no validation rules for MemoryBytes
+
+	if len(errors) > 0 {
+		return BoardPodMultiError(errors)
+	}
+
+	return nil
+}
+
+// BoardPodMultiError is an error wrapping multiple validation errors returned
+// by BoardPod.ValidateAll() if the designated constraints aren't met.
+type BoardPodMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BoardPodMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BoardPodMultiError) AllErrors() []error { return m }
+
+// BoardPodValidationError is the validation error returned by
+// BoardPod.Validate if the designated constraints aren't met.
+type BoardPodValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BoardPodValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BoardPodValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BoardPodValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BoardPodValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BoardPodValidationError) ErrorName() string { return "BoardPodValidationError" }
+
+// Error satisfies the builtin error interface
+func (e BoardPodValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBoardPod.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BoardPodValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BoardPodValidationError{}
+
+// Validate checks the field values on BoardResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *BoardResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BoardResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in BoardResponseMultiError, or
+// nil if none found.
+func (m *BoardResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BoardResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetOverview()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, BoardResponseValidationError{
+					field:  "Overview",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, BoardResponseValidationError{
+					field:  "Overview",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOverview()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return BoardResponseValidationError{
+				field:  "Overview",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetNodes() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BoardResponseValidationError{
+						field:  fmt.Sprintf("Nodes[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BoardResponseValidationError{
+						field:  fmt.Sprintf("Nodes[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return BoardResponseValidationError{
+					field:  fmt.Sprintf("Nodes[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetNamespaces() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BoardResponseValidationError{
+						field:  fmt.Sprintf("Namespaces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BoardResponseValidationError{
+						field:  fmt.Sprintf("Namespaces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return BoardResponseValidationError{
+					field:  fmt.Sprintf("Namespaces[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetPods() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BoardResponseValidationError{
+						field:  fmt.Sprintf("Pods[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BoardResponseValidationError{
+						field:  fmt.Sprintf("Pods[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return BoardResponseValidationError{
+					field:  fmt.Sprintf("Pods[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return BoardResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// BoardResponseMultiError is an error wrapping multiple validation errors
+// returned by BoardResponse.ValidateAll() if the designated constraints
+// aren't met.
+type BoardResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BoardResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BoardResponseMultiError) AllErrors() []error { return m }
+
+// BoardResponseValidationError is the validation error returned by
+// BoardResponse.Validate if the designated constraints aren't met.
+type BoardResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BoardResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BoardResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BoardResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BoardResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BoardResponseValidationError) ErrorName() string { return "BoardResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e BoardResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBoardResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BoardResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BoardResponseValidationError{}
+
+// Validate checks the field values on ResourceProject with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ResourceProject) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResourceProject with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResourceProjectMultiError, or nil if none found.
+func (m *ResourceProject) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResourceProject) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for PodCount
+
+	// no validation rules for CpuRequestMilli
+
+	// no validation rules for CpuUsageMilli
+
+	// no validation rules for MemRequestBytes
+
+	// no validation rules for MemUsageBytes
+
+	for idx, item := range m.GetWorkloads() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceProjectValidationError{
+						field:  fmt.Sprintf("Workloads[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceProjectValidationError{
+						field:  fmt.Sprintf("Workloads[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceProjectValidationError{
+					field:  fmt.Sprintf("Workloads[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ResourceProjectMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResourceProjectMultiError is an error wrapping multiple validation errors
+// returned by ResourceProject.ValidateAll() if the designated constraints
+// aren't met.
+type ResourceProjectMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResourceProjectMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResourceProjectMultiError) AllErrors() []error { return m }
+
+// ResourceProjectValidationError is the validation error returned by
+// ResourceProject.Validate if the designated constraints aren't met.
+type ResourceProjectValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResourceProjectValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResourceProjectValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResourceProjectValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResourceProjectValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResourceProjectValidationError) ErrorName() string { return "ResourceProjectValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ResourceProjectValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResourceProject.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResourceProjectValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResourceProjectValidationError{}
+
+// Validate checks the field values on ResourceProjectWorkload with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ResourceProjectWorkload) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResourceProjectWorkload with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResourceProjectWorkloadMultiError, or nil if none found.
+func (m *ResourceProjectWorkload) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResourceProjectWorkload) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Kind
+
+	// no validation rules for Name
+
+	// no validation rules for PodCount
+
+	// no validation rules for CpuRequestMilli
+
+	// no validation rules for CpuUsageMilli
+
+	// no validation rules for MemRequestBytes
+
+	// no validation rules for MemUsageBytes
+
+	if len(errors) > 0 {
+		return ResourceProjectWorkloadMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResourceProjectWorkloadMultiError is an error wrapping multiple validation
+// errors returned by ResourceProjectWorkload.ValidateAll() if the designated
+// constraints aren't met.
+type ResourceProjectWorkloadMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResourceProjectWorkloadMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResourceProjectWorkloadMultiError) AllErrors() []error { return m }
+
+// ResourceProjectWorkloadValidationError is the validation error returned by
+// ResourceProjectWorkload.Validate if the designated constraints aren't met.
+type ResourceProjectWorkloadValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResourceProjectWorkloadValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResourceProjectWorkloadValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResourceProjectWorkloadValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResourceProjectWorkloadValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResourceProjectWorkloadValidationError) ErrorName() string {
+	return "ResourceProjectWorkloadValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResourceProjectWorkloadValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResourceProjectWorkload.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResourceProjectWorkloadValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResourceProjectWorkloadValidationError{}
+
+// Validate checks the field values on ResourceNamespace with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ResourceNamespace) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResourceNamespace with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResourceNamespaceMultiError, or nil if none found.
+func (m *ResourceNamespace) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResourceNamespace) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for PodCount
+
+	// no validation rules for CpuRequestMilli
+
+	// no validation rules for CpuUsageMilli
+
+	// no validation rules for MemRequestBytes
+
+	// no validation rules for MemUsageBytes
+
+	for idx, item := range m.GetProjects() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceNamespaceValidationError{
+						field:  fmt.Sprintf("Projects[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceNamespaceValidationError{
+						field:  fmt.Sprintf("Projects[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceNamespaceValidationError{
+					field:  fmt.Sprintf("Projects[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ResourceNamespaceMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResourceNamespaceMultiError is an error wrapping multiple validation errors
+// returned by ResourceNamespace.ValidateAll() if the designated constraints
+// aren't met.
+type ResourceNamespaceMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResourceNamespaceMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResourceNamespaceMultiError) AllErrors() []error { return m }
+
+// ResourceNamespaceValidationError is the validation error returned by
+// ResourceNamespace.Validate if the designated constraints aren't met.
+type ResourceNamespaceValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResourceNamespaceValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResourceNamespaceValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResourceNamespaceValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResourceNamespaceValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResourceNamespaceValidationError) ErrorName() string {
+	return "ResourceNamespaceValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResourceNamespaceValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResourceNamespace.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResourceNamespaceValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResourceNamespaceValidationError{}
+
+// Validate checks the field values on ResourceBoardResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ResourceBoardResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResourceBoardResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResourceBoardResponseMultiError, or nil if none found.
+func (m *ResourceBoardResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResourceBoardResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetNamespaces() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceBoardResponseValidationError{
+						field:  fmt.Sprintf("Namespaces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceBoardResponseValidationError{
+						field:  fmt.Sprintf("Namespaces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceBoardResponseValidationError{
+					field:  fmt.Sprintf("Namespaces[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ResourceBoardResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResourceBoardResponseMultiError is an error wrapping multiple validation
+// errors returned by ResourceBoardResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ResourceBoardResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResourceBoardResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResourceBoardResponseMultiError) AllErrors() []error { return m }
+
+// ResourceBoardResponseValidationError is the validation error returned by
+// ResourceBoardResponse.Validate if the designated constraints aren't met.
+type ResourceBoardResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResourceBoardResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResourceBoardResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResourceBoardResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResourceBoardResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResourceBoardResponseValidationError) ErrorName() string {
+	return "ResourceBoardResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResourceBoardResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResourceBoardResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResourceBoardResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResourceBoardResponseValidationError{}

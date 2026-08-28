@@ -52,6 +52,13 @@ type K8sBiz interface {
 	GetCpuAndMemoryQuantity(pod v1beta1.PodMetrics) (cpu *resource.Quantity, memory *resource.Quantity)
 	// ClusterInfo 返回集群健康与资源汇总信息。
 	ClusterInfo() *ClusterInfo
+	// ClusterBoard 聚合集群看板快照：总览 + 节点明细 + 命名空间用量 + Top Pod。
+	// 命名空间排行与 Top Pod 只保留 mars 管理命名空间集合（managedNames）内的空间/Pod；
+	// topSort 控制 Top Pod 排行维度（"cpu"/"mem"，空=按 CPU 降序）。
+	ClusterBoard(ctx context.Context, managedNames []string, topSort string) (*ClusterBoard, error)
+	// ResourceBoard 聚合空间资源板快照：每个管理命名空间的 Pod requests/实际用量
+	// 占比 + 项目明细（按项目 PodSelectors 匹配拆分），定位超申请空间。
+	ResourceBoard(ctx context.Context, managedNames []string, projects []*Project) (*ResourceBoard, error)
 	// Execute 在容器内执行命令，stdin/stdout/stderr 接线由输入提供。
 	Execute(ctx context.Context, c *Container, input *ExecuteInput) error
 	// DeleteSecret 校验命名后删除 secret。
@@ -279,6 +286,10 @@ type K8sRepo interface {
 	GetCpuAndMemoryQuantity(pod v1beta1.PodMetrics) (cpu *resource.Quantity, memory *resource.Quantity)
 	// ClusterInfo 返回集群健康与资源汇总信息。
 	ClusterInfo() *ClusterInfo
+	// ClusterBoard 拉取集群看板快照（节点/命名空间/全集群 Pod 与指标）。
+	ClusterBoard(ctx context.Context) (*ClusterBoardData, error)
+	// ResourceSnapshot 拉取空间资源聚合快照（全集群 Running Pod 与指标）。
+	ResourceSnapshot(ctx context.Context) (*ResourceSnapshotData, error)
 	// Execute 在容器内执行命令，stdin/stdout/stderr 接线由输入提供。
 	Execute(ctx context.Context, c *Container, input *ExecuteInput) error
 	// GetSecret 读取命名空间下指定名称的 k8s secret（domainmanager 插件校验 TLS 证书用）。

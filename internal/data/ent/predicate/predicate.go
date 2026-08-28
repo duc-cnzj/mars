@@ -38,3 +38,6 @@ type Project func(*sql.Selector)
 
 // Repo is the predicate function for repo builders.
 type Repo func(*sql.Selector)
+
+// User is the predicate function for user builders.
+type User func(*sql.Selector)

@@ -226,15 +226,70 @@ func NewNamespaceRepo(data dataStore) biz.NamespaceRepo {
 	}
 }
 
+// adminNamespaceBaseQuery 构造管理员视角命名空间的过滤条件：名称模糊 + 管理后台搜索
+// （匹配空间名/创建者邮箱）+ 只看私有。List 分页与 ListAllAdmin 全量共用，保证同一份
+// 过滤语义单一来源；边装配由 withAdminEdges 按需叠加（Count 走本 base 保持无边，避免
+// 边 JOIN 放大计数）。
+func (repo *namespaceRepo) adminNamespaceBaseQuery(ctx context.Context, input *biz.ListNamespaceInput) *ent.NamespaceQuery {
+	return repo.data.DB().Namespace.Query().
+		Where(
+			filters.IfNameLike(lo.FromPtr(input.Name)),
+			// 管理后台搜索：模糊匹配空间名或创建者邮箱，空串不过滤。
+			filters.If(func(s string) bool {
+				return s != ""
+			}, func(t string) func(*sql.Selector) {
+				return namespace.Or(namespace.NameContains(t), namespace.CreatorEmailContains(t))
+			})(input.Search),
+			// 管理后台私有过滤：只看私有空间。
+			filters.If(func(b bool) bool {
+				return b
+			}, func(bool) func(*sql.Selector) {
+				return namespace.Private(true)
+			})(input.PrivateOnly),
+		)
+}
+
+// withAdminEdges 给管理查询装配全量边（收藏/成员/项目），供列表展示下钻：成员列表
+// （含邮箱）、项目（含 UpdatedAt 供活跃度聚合）、关注标记。email 为当前用户，关注列表
+// 收敛为该用户行（admin 场景为空串，不匹配任何关注行，语义等价无边）。
+func withAdminEdges(query *ent.NamespaceQuery, email string) *ent.NamespaceQuery {
+	return query.
+		Select(
+			namespace.FieldID,
+			namespace.FieldName,
+			namespace.FieldDescription,
+			namespace.FieldCreatedAt,
+			namespace.FieldUpdatedAt,
+			namespace.FieldCreatorEmail,
+			namespace.FieldPrivate,
+			namespace.FieldImagePullSecrets,
+		).
+		WithFavorites(func(query *ent.FavoriteQuery) {
+			query.Where(favorite.Email(email))
+		}).
+		WithMembers(func(query *ent.MemberQuery) {
+			query.Select(member.FieldID, member.FieldEmail)
+		}).
+		WithProjects(
+			func(query *ent.ProjectQuery) {
+				query.Select(
+					project.FieldID,
+					project.FieldName,
+					project.FieldDeployStatus,
+					project.FieldNamespaceID,
+					project.FieldCreatedAt,
+					project.FieldUpdatedAt,
+				)
+			},
+		)
+}
+
 // List 按输入条件分页查询 namespace：支持名称模糊与收藏过滤；非管理员只可见
 // 公开的、自己创建的、或自己是成员的私有 namespace。
 func (repo *namespaceRepo) List(ctx context.Context, input *biz.ListNamespaceInput) (out []*biz.Namespace, pag *pagination.Pagination, err error) {
 	ctx, span := tracer.Start(ctx, "namespaceRepo/List")
 	defer func() { endSpan(span, err) }()
-	query := repo.data.DB().Namespace.Query().
-		Where(
-			filters.IfNameLike(lo.FromPtr(input.Name)),
-		)
+	query := repo.adminNamespaceBaseQuery(ctx, input)
 	if !input.IsAdmin {
 		query = query.Where(
 			namespace.Or(
@@ -266,35 +321,7 @@ func (repo *namespaceRepo) List(ctx context.Context, input *biz.ListNamespaceInp
 		)
 	}
 
-	all, err := query.Clone().
-		Select(
-			namespace.FieldID,
-			namespace.FieldName,
-			namespace.FieldDescription,
-			namespace.FieldCreatedAt,
-			namespace.FieldUpdatedAt,
-			namespace.FieldCreatorEmail,
-			namespace.FieldPrivate,
-			namespace.FieldImagePullSecrets,
-		).
-		WithFavorites(func(query *ent.FavoriteQuery) {
-			query.Where(favorite.Email(input.Email))
-		}).
-		WithMembers(func(query *ent.MemberQuery) {
-			query.Select(member.FieldID, member.FieldEmail)
-		}).
-		WithProjects(
-			func(query *ent.ProjectQuery) {
-				query.Select(
-					project.FieldID,
-					project.FieldName,
-					project.FieldDeployStatus,
-					project.FieldNamespaceID,
-					project.FieldCreatedAt,
-					project.FieldUpdatedAt,
-				)
-			},
-		).
+	all, err := withAdminEdges(query.Clone(), input.Email).
 		Offset(pagination.GetPageOffset(input.Page, input.PageSize)).
 		Limit(int(input.PageSize)).
 		All(ctx)
@@ -382,6 +409,23 @@ func (repo *namespaceRepo) ListAll(ctx context.Context) (out []*biz.Namespace, e
 	all, err := repo.data.DB().Namespace.Query().All(ctx)
 	if err != nil {
 		return nil, errs.Wrap(err, "list all namespaces")
+	}
+	return slice.Map(all, toNamespace), nil
+}
+
+// ListAllAdmin 全量加载管理员视角的命名空间：search/privateOnly DB 过滤 + 项目边装配，
+// 无分页。供 AdminList 活跃度聚合——活跃度分类依赖「空间下项目 UpdatedAt 最大值」的
+// 跨表聚合，必须先全量载入再按活跃度统计/过滤/内存分页（对齐项目 ListLiveness 语义；
+// 管理员聚合数据量小，全量可接受）。
+func (repo *namespaceRepo) ListAllAdmin(ctx context.Context, search string, privateOnly bool) (out []*biz.Namespace, err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/ListAllAdmin")
+	defer func() { endSpan(span, err) }()
+	all, err := withAdminEdges(repo.adminNamespaceBaseQuery(ctx, &biz.ListNamespaceInput{
+		Search:      search,
+		PrivateOnly: privateOnly,
+	}), "").All(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "list all admin namespaces")
 	}
 	return slice.Map(all, toNamespace), nil
 }

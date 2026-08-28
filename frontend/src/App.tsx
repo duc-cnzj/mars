@@ -24,6 +24,9 @@ const AccessTokenManager = lazy(() =>
   import('./features/tokens/AccessTokenManager').then((m) => ({ default: m.AccessTokenManager })),
 )
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })))
+const ResourceBoardDemo = lazy(() =>
+  import('./features/admin/ResourceBoardDemo').then((m) => ({ default: m.ResourceBoardDemo })),
+)
 
 import './themes/seiji.css'
 import './themes/magenta.css'
@@ -97,6 +100,9 @@ export default function App() {
                   {/* 旧 URL 重定向：/access_token_manager 保留兼容老书签 */}
                   <Route path="access_token_manager" element={<Navigate to="/tokens" replace />} />
                 </Route>
+
+                {/* 空间资源 demo（临时路由，未接真实后端） */}
+                <Route path="/demo/resources" element={<ResourceBoardDemo />} />
 
                 {/* 兜底 404 */}
                 <Route path="*" element={<NotFound />} />

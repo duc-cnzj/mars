@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package settings;
+
+import "google/api/annotations.proto";
+import "openapi/v3/annotations.proto";
+
+option go_package = "github.com/duc-cnzj/mars/api/v6/proto/settings;settings";
+
+message GetRequest {}
+
+// ConfigItem 单条配置项。
+message ConfigItem {
+  string key = 1;
+  string value = 2;
+  // 敏感配置脱敏展示（如密码/密钥）
+  bool masked = 3;
+}
+// ConfigGroup 一组相关配置。
+message ConfigGroup {
+  string id = 1;
+  repeated ConfigItem items = 2;
+}
+message GetResponse {
+  repeated ConfigGroup groups = 1;
+}
+
+service Settings {
+  // Get 只读聚合平台配置（管理员后台）：OIDC / 文件上限 / 部署默认值等。
+  rpc Get(GetRequest) returns (GetResponse) {
+    option (google.api.http)      = {
+      get: "/api/admin/settings"
+    };
+    option (openapi.v3.operation) = {
+      summary: "平台配置聚合（管理员，只读）",
+    };
+  }
+}

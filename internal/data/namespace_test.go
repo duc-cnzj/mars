@@ -115,6 +115,31 @@ func TestNamespaceRepo_List_Success(t *testing.T) {
 	res, pag, _ = repo.List(ctx, input)
 	assert.Len(t, res, 5)
 	assert.Equal(t, int32(5), pag.Count)
+
+	// 管理员后台搜索/私有过滤：Search 模糊匹配空间名或创建者邮箱，PrivateOnly 只看私有。
+	t.Run("admin search by name", func(t *testing.T) {
+		res, _, err := repo.List(ctx, &biz.ListNamespaceInput{Page: 1, PageSize: 10, IsAdmin: true, Search: "es3"})
+		assert.NoError(t, err)
+		require.Len(t, res, 1)
+		assert.Equal(t, "tes3", res[0].Name)
+	})
+
+	t.Run("admin search by creator email", func(t *testing.T) {
+		res, pag, err := repo.List(ctx, &biz.ListNamespaceInput{Page: 1, PageSize: 10, IsAdmin: true, Search: "a"})
+		assert.NoError(t, err)
+		assert.Equal(t, int32(5), pag.Count)
+		assert.Len(t, res, 5)
+	})
+
+	t.Run("admin private only", func(t *testing.T) {
+		res, pag, err := repo.List(ctx, &biz.ListNamespaceInput{Page: 1, PageSize: 10, IsAdmin: true, PrivateOnly: true})
+		assert.NoError(t, err)
+		assert.Equal(t, int32(2), pag.Count)
+		require.Len(t, res, 2)
+		for _, ns := range res {
+			assert.True(t, ns.Private)
+		}
+	})
 }
 
 func Test_namespaceRepo_Create(t *testing.T) {
@@ -674,6 +699,45 @@ func TestNamespaceRepo_ListAll(t *testing.T) {
 	assert.ElementsMatch(t, []string{"ns-a", "ns-b"}, []string{list[0].Name, list[1].Name})
 }
 
+// TestNamespaceRepo_ListAllAdmin 覆盖管理员视角全量端口：search/私有过滤 DB 层生效 + 项目边
+// 装配（供活跃度聚合取项目 UpdatedAt 最大值），无分页（一次返回全部命中）。
+func TestNamespaceRepo_ListAllAdmin(t *testing.T) {
+	repo, entdb := newNsRepo(t)
+	ctx := context.TODO()
+	ns := entdb.Namespace.Create().SetName("ns-a").SetCreatorEmail("a@b.c").SaveX(ctx)
+	entdb.Project.Create().SetName("proj").SetNamespaceID(ns.ID).SetCreator("").SaveX(ctx)
+	entdb.Namespace.Create().SetName("ns-b").SetCreatorEmail("b@b.c").SaveX(ctx)
+	entdb.Namespace.Create().SetName("ns-c").SetCreatorEmail("c@c.c").SetPrivate(true).SaveX(ctx)
+
+	t.Run("全量返回", func(t *testing.T) {
+		got, err := repo.ListAllAdmin(ctx, "", false)
+		assert.NoError(t, err)
+		require.Len(t, got, 3)
+	})
+
+	t.Run("search 过滤", func(t *testing.T) {
+		got, err := repo.ListAllAdmin(ctx, "ns-a", false)
+		assert.NoError(t, err)
+		require.Len(t, got, 1)
+		assert.Equal(t, "ns-a", got[0].Name)
+	})
+
+	t.Run("privateOnly 过滤", func(t *testing.T) {
+		got, err := repo.ListAllAdmin(ctx, "", true)
+		assert.NoError(t, err)
+		require.Len(t, got, 1)
+		assert.True(t, got[0].Private)
+	})
+
+	t.Run("项目边装配", func(t *testing.T) {
+		got, err := repo.ListAllAdmin(ctx, "ns-a", false)
+		assert.NoError(t, err)
+		require.Len(t, got, 1)
+		require.Len(t, got[0].Projects, 1)
+		assert.Equal(t, "proj", got[0].Projects[0].Name)
+	})
+}
+
 // TestNamespaceRepo_UpdateImagePullSecrets 覆盖仅回写 imagePullSecrets 列表的端口。
 func TestNamespaceRepo_UpdateImagePullSecrets(t *testing.T) {
 	entdb, _ := NewSqliteDB()
@@ -726,6 +790,11 @@ func TestNamespaceRepo_ErrorBranches(t *testing.T) {
 
 	t.Run("ListAll query error", func(t *testing.T) {
 		_, err := repo.ListAll(ctx)
+		assert.Error(t, err)
+	})
+
+	t.Run("ListAllAdmin query error", func(t *testing.T) {
+		_, err := repo.ListAllAdmin(ctx, "", false)
 		assert.Error(t, err)
 	})
 

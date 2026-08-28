@@ -292,3 +292,41 @@ func createProject(entdb *ent.Client, nsID int) *ent.Project {
 func createNamespace(entdb *ent.Client) *ent.Namespace {
 	return entdb.Namespace.Create().SetName(rand.String(10)).SetCreatorEmail(rand.String(20) + "@q.c").SaveX(context.TODO())
 }
+
+// TestChangelogRepo_CountByProjectIDs 按项目聚合变更记录数：两项目各落多条，计数分组正确。
+func TestChangelogRepo_CountByProjectIDs(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+
+	ns := createNamespace(entdb)
+	p1 := createProject(entdb, ns.ID)
+	p2 := createProject(entdb, ns.ID)
+	for i := 0; i < 2; i++ {
+		entdb.Changelog.Create().SetVersion(i).SetUsername("").SetProject(p1).SaveX(context.TODO())
+	}
+	entdb.Changelog.Create().SetVersion(0).SetUsername("").SetProject(p2).SaveX(context.TODO())
+
+	counts, err := repo.CountByProjectIDs(context.TODO(), p1.ID, p2.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, map[int]int{p1.ID: 2, p2.ID: 1}, counts)
+}
+
+// TestChangelogRepo_CountByProjectIDs_Empty 空 ID 集合返回空 map 不报错。
+func TestChangelogRepo_CountByProjectIDs_Empty(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+
+	counts, err := repo.CountByProjectIDs(context.TODO())
+	assert.NoError(t, err)
+	assert.Empty(t, counts)
+}
+
+// TestChangelogRepo_CountByProjectIDs_Error GROUP BY 聚合失败整体上抛（关闭的 DB）。
+func TestChangelogRepo_CountByProjectIDs_Error(t *testing.T) {
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: mustClosedDB(t)}))
+	counts, err := repo.CountByProjectIDs(context.TODO(), 1, 2)
+	assert.Nil(t, counts)
+	assert.Error(t, err)
+}
