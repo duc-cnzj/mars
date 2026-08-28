@@ -16,13 +16,11 @@ import { Button } from '@/components/ui/shadcn/button'
 import { SearchInput } from '@/components/SearchInput'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/shadcn/alert-dialog'
 import {
   Dialog,
@@ -159,6 +157,10 @@ export function Events() {
   const [recordKey, setRecordKey] = useState(0)
   /** 操作记录加载中：回放数据较大时拉取慢，期间显示 loading 而非误判空态 */
   const [recordsLoading, setRecordsLoading] = useState(false)
+  // 删除文件确认弹窗：null=关闭；非空=确认删除该事件的附件（受控弹窗，DELETE 成功前不关闭）
+  const [deleteFileTarget, setDeleteFileTarget] = useState<EventModel | null>(null)
+  // 删除进行中（防重复点击；进行中禁止关闭弹窗，失败保持打开可重试）
+  const [deletingFile, setDeletingFile] = useState(false)
   /** 记录请求守卫：自增序号，只接受最后一次发起的结果；过期响应（慢请求晚到/已关弹窗）直接丢弃，防止覆盖新数据或提前掐断 loading */
   const recordSeqRef = useRef(0)
 
@@ -333,16 +335,28 @@ export function Events() {
     }
   }
 
-  const deleteFile = async (item: EventModel) => {
+  /** 删除事件附件：受控弹窗，DELETE 成功才关闭；失败保持打开（toast 报错）供重试，杜绝「还没删成功弹窗先消失」 */
+  const deleteFile = async () => {
+    if (!deleteFileTarget || deletingFile) return
+    setDeletingFile(true)
     try {
       const { error } = await api.DELETE('/api/files/{id}', {
-        params: { path: { id: item.fileId } },
+        params: { path: { id: deleteFileTarget.fileId } },
       })
       if (error) throw new Error(error.message ?? String(error))
-      setItems((prev) => prev.map((v) => (v.id === item.id ? { ...v, fileId: 0 } : v)))
-      toast.success(t('events.deleteSuccess', { name: item.file?.path ?? String(item.fileId) }))
+      setItems((prev) =>
+        prev.map((v) => (v.id === deleteFileTarget.id ? { ...v, fileId: 0 } : v)),
+      )
+      toast.success(
+        t('events.deleteSuccess', {
+          name: deleteFileTarget.file?.path ?? String(deleteFileTarget.fileId),
+        }),
+      )
+      setDeleteFileTarget(null)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setDeletingFile(false)
     }
   }
 
@@ -356,9 +370,17 @@ export function Events() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `file-${fileId}`
+      // 优先用服务端 Content-Disposition 的真实文件名（中文走 RFC 5987 filename*=，需解码），
+      // 缺失才回退 file-{id}——避免所有下载都叫 file-{id} 无扩展名
+      const cd = res.headers.get('Content-Disposition')
+      const ext = cd?.match(/filename\*=(?:UTF-8|utf-8)''([^;]+)/)
+      const plain = cd?.match(/filename="?([^";]+)"?/i)
+      a.download = ext?.[1]
+        ? decodeURIComponent(ext[1])
+        : (plain?.[1] ?? `file-${fileId}`)
       a.click()
-      URL.revokeObjectURL(url)
+      // 延迟 revoke（对齐 Repos 导出同款 1s 兜底）：立即 revoke 在 Firefox 等可能中断下载
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
       toast.success(t('events.downloadSuccess'))
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
@@ -399,12 +421,13 @@ export function Events() {
               )}
             </Button>
             {isAdmin && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" variant="destructive">
-                  {t('events.deleteFile')}
-                </Button>
-              </AlertDialogTrigger>
+            <AlertDialog
+              open={deleteFileTarget?.id === item.id}
+              onOpenChange={(o) => !o && !deletingFile && setDeleteFileTarget(null)}
+            >
+              <Button size="sm" variant="destructive" onClick={() => setDeleteFileTarget(item)}>
+                {t('events.deleteFile')}
+              </Button>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>
@@ -412,13 +435,12 @@ export function Events() {
                   </AlertDialogTitle>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    onClick={() => deleteFile(item)}
-                  >
+                  <AlertDialogCancel disabled={deletingFile}>{t('common.cancel')}</AlertDialogCancel>
+                  {/* 普通 Button 而非 AlertDialogAction：后者点击默认关闭弹窗，会「还没删成功就消失」 */}
+                  <Button variant="destructive" disabled={deletingFile} onClick={deleteFile}>
+                    {deletingFile && <Icon name="loader" className="size-4 animate-spin" />}
                     {t('common.delete')}
-                  </AlertDialogAction>
+                  </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -431,12 +453,13 @@ export function Events() {
               {t('events.download')}
             </Button>
             {isAdmin && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button size="sm" variant="destructive">
-                    {t('events.deleteFile')}
-                  </Button>
-                </AlertDialogTrigger>
+              <AlertDialog
+                open={deleteFileTarget?.id === item.id}
+                onOpenChange={(o) => !o && !deletingFile && setDeleteFileTarget(null)}
+              >
+                <Button size="sm" variant="destructive" onClick={() => setDeleteFileTarget(item)}>
+                  {t('events.deleteFile')}
+                </Button>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>
@@ -444,13 +467,12 @@ export function Events() {
                     </AlertDialogTitle>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      onClick={() => deleteFile(item)}
-                    >
+                    <AlertDialogCancel disabled={deletingFile}>{t('common.cancel')}</AlertDialogCancel>
+                    {/* 普通 Button 而非 AlertDialogAction：后者点击默认关闭弹窗，会「还没删成功就消失」 */}
+                    <Button variant="destructive" disabled={deletingFile} onClick={deleteFile}>
+                      {deletingFile && <Icon name="loader" className="size-4 animate-spin" />}
                       {t('common.delete')}
-                    </AlertDialogAction>
+                    </Button>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
@@ -467,9 +489,10 @@ export function Events() {
   }
 
   return (
-    // 父级 main 是 min-h-screen 下的 flex-1（高度 auto），flex 链没有有界高度，
-    // 用 calc(100dvh - 100px) 让内部滚动容器 flex-1 min-h-0 overflow-y-auto 真正可滚动。
-    <div className="flex h-[calc(100dvh_-_100px)] flex-col gap-3">
+    // 双布局共享：/admin/events（AdminLayout）父级有界（h-full 生效），/events（AppLayout）
+    // 父级 main 高度 auto、flex 链无有界高度（h-full 退化）——max-h 兜底视口高度上限，
+    // 两种上下文下内部滚动容器 flex-1 min-h-0 overflow-y-auto 都能真正滚动且不产生双滚动条。
+    <div className="flex h-full max-h-[calc(100dvh_-_100px)] flex-col gap-3">
       {/* 工具栏 */}
       <div className="flex shrink-0 flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -529,7 +552,9 @@ export function Events() {
         ) : (
           <div className="divide-y divide-line">
             {items.map((item, index) => {
-              const act = item.action as unknown as ActionType
+              // action 是后端自由 string：超出枚举（新类型/异常值）归一化到 Unknown 兜底，
+              // 避免 ACTION_TONE/ACTION_KEY 索引出 undefined（无 tone 标签 + t(undefined)）
+              const act = (item.action in ACTION_KEY ? item.action : 'Unknown') as ActionType
               return (
                 <div
                   key={item.id}

@@ -92,9 +92,16 @@ body {
 
 ::selection { background: var(--primary); color: var(--primary-foreground); }
 
-:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 1px;
+/* 全局默认键盘焦点环（无障碍保留）：必须放进 @layer base —— 若写成无层级规则，
+   按 CSS 级联「无层级 > 有层级」，会永久压过 Tailwind 的 focus-visible:outline-none /
+   ring 等 utilities（header dropdown trigger 想压掉焦点环就压不掉，表现为关闭菜单时
+   Radix 焦点回弹 trigger，outline 硬切弹出闪烁）。放入 base 层后 utilities 层优先，
+   组件可正常覆盖；未覆盖处默认焦点环行为不变。 */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+  }
 }
 
 /* Tailwind v4 preflight 不再给 button 默认 cursor:pointer（v3/antd 都有），

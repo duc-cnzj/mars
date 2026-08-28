@@ -15,6 +15,7 @@ export { SkeletonTabShell } from './SkeletonTabShell'
 export { SkeletonTabEdit } from './SkeletonTabEdit'
 export { SkeletonTopology } from './SkeletonTopology'
 export { SegmentedSkeleton } from './SegmentedSkeleton'
+export { RefreshFade } from './RefreshFade'
 
 // shadcn 组件统一出口
 export { Button, buttonVariants } from './shadcn/button'

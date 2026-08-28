@@ -26,20 +26,23 @@ const dots: Record<Tone, string> = {
 /**
  * 语义状态标签：圆点 + 彩色底。基于 shadcn Badge 渲染，
  * tone 是应用域的状态语义（ok/warn/err/info/accent/mute），走语义 token 换肤。
+ * title 可选悬停解释（如活跃度徽标的状态含义），透传到 Badge 原生 title。
  */
 export function Tag({
   tone = 'ok',
   children,
   dot = true,
   className = '',
+  title,
 }: {
   tone?: Tone
   children: ReactNode
   dot?: boolean
   className?: string
+  title?: string
 }) {
   return (
-    <Badge className={`gap-1.5 px-2 py-0.5 text-[11px] font-medium ${tones[tone]} ${className}`}>
+    <Badge title={title} className={`gap-1.5 px-2 py-0.5 text-[11px] font-medium ${tones[tone]} ${className}`}>
       {dot && <span className={`h-1.5 w-1.5 rounded-full ${dots[tone]}`} />}
       {children}
     </Badge>

@@ -27,10 +27,12 @@ export type IconName =
   | 'project'
   | 'rocket'
   | 'boxes'
+  | 'book'
   | 'terminal'
   | 'pulse'
   | 'repo'
   | 'key'
+  | 'shield'
   | 'link'
   | 'gear'
   | 'search'
@@ -80,9 +82,12 @@ export type IconName =
   | 'refresh-cw'
   | 'grip-vertical'
   | 'user'
+  | 'users'
   | 'minus'
   | 'download'
   | 'upload'
+  | 'eye'
+  | 'eye-off'
 
 const paths: Record<IconName, ReactNode> = {
   grid: (
@@ -129,6 +134,13 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M7 14v4l4 2 4-2v-4" />
     </>
   ),
+  // lucide book-open 同款：翻开的书页，接口文档/文档入口的语义符号（替代原 gear 设置齿轮）
+  book: (
+    <>
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2V3Z" />
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7V3Z" />
+    </>
+  ),
   terminal: (
     <>
       <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -152,6 +164,13 @@ const paths: Record<IconName, ReactNode> = {
     <>
       <circle cx="8" cy="15" r="4.5" />
       <path d="m11.2 11.8 8.3-8.3M16.5 6.5 19 9M13.5 9.5 15.5 11.5" />
+    </>
+  ),
+  // lucide Shield 同款：盾牌轮廓，管理后台（mars_admin 专属区）的语义符号
+  shield: (
+    <>
+      <path d="M12 3 4 6v5c0 4.6 3.4 8.6 8 10 4.6-1.4 8-5.4 8-10V6l-8-3Z" />
+      <path d="m9 11.5 2 2 4-4" />
     </>
   ),
   // lucide Link 同款几何：与外层 ProjectRow URL 图标对齐（旧版 TabInfo 地址 section 用 LinkOutlined）
@@ -431,6 +450,22 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M12 3v12" />
     </>
   ),
+  // lucide eye 同款：眼睛（敏感信息「点击查看」开关）
+  eye: (
+    <>
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  // lucide eye-off 同款：闭眼（敏感信息「隐藏」开关）
+  'eye-off': (
+    <>
+      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+      <line x1="2" x2="22" y1="2" y2="22" />
+    </>
+  ),
   // lucide grip-vertical 同款：竖向拖拽把手（六圆点填实，与 more 同风格）
   'grip-vertical': (
     <>
@@ -446,6 +481,14 @@ const paths: Record<IconName, ReactNode> = {
     <>
       <circle cx="12" cy="8" r="3.5" />
       <path d="M4.5 20c0-3.5 3.4-5.5 7.5-5.5s7.5 2 7.5 5.5" />
+    </>
+  ),
+  users: (
+    <>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 20c0-3.2 3-5 6.5-5s6.5 1.8 6.5 5" />
+      <path d="M16 4.6a3.5 3.5 0 0 1 0 6.8" />
+      <path d="M17.5 15.4c2.4.7 4 2.4 4 4.6" />
     </>
   ),
 }

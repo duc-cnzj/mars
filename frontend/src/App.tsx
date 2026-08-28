@@ -5,7 +5,7 @@ import 'sonner/dist/styles.css' // sonner 官方默认样式（明暗主题变�
 import './toast.css' // toast 主题化设计：与 15 个系统主题语义 token 联动（玻璃表面 + 类型色相）
 import { Spinner } from './components/ui'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { AuthProvider, GuestRoute } from './features/auth/AuthProvider'
+import { AuthProvider, GuestRoute, RequireAdmin } from './features/auth/AuthProvider'
 import { themeClass, themes } from './themes'
 import { useTheme } from './hooks/useTheme'
 import { useThemeHotkeys } from './hooks/useThemeHotkeys'
@@ -23,10 +23,36 @@ const Events = lazy(() => import('./features/events/Events').then((m) => ({ defa
 const AccessTokenManager = lazy(() =>
   import('./features/tokens/AccessTokenManager').then((m) => ({ default: m.AccessTokenManager })),
 )
-const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })))
-const ResourceBoardDemo = lazy(() =>
-  import('./features/admin/ResourceBoardDemo').then((m) => ({ default: m.ResourceBoardDemo })),
+// 集群资源看板（挂在管理后台 /admin/cluster 下，mars_admin 门控，当前假数据演示）
+const ResourceBoard = lazy(() =>
+  import('./features/cluster/ResourceBoard').then((m) => ({ default: m.ResourceBoard })),
 )
+// 用户管理（挂在管理后台 /admin/users 下，mars_admin 门控，当前假数据演示）
+const UserManager = lazy(() =>
+  import('./features/users/UserManager').then((m) => ({ default: m.UserManager })),
+)
+// 命名空间全局管理（挂在管理后台 /admin/namespaces 下，mars_admin 门控，当前假数据演示）
+const NamespaceManager = lazy(() =>
+  import('./features/namespaces/NamespaceManager').then((m) => ({ default: m.NamespaceManager })),
+)
+// 空间资源管理（挂在管理后台 /admin/resources 下，mars_admin 门控）：
+// 命名空间 requests/实际用量占比列表 + 项目明细，定位超申请空间
+const ResourceManagement = lazy(() =>
+  import('./features/cluster/ResourceManagement').then((m) => ({ default: m.ResourceManagement })),
+)
+// 系统设置（挂在管理后台 /admin/settings 下，mars_admin 门控，当前假数据演示）
+const SystemSettings = lazy(() =>
+  import('./features/settings/SystemSettings').then((m) => ({ default: m.SystemSettings })),
+)
+// 项目治理（挂在管理后台 /admin/projects 下，mars_admin 门控，当前假数据演示）
+const ProjectGovernance = lazy(() =>
+  import('./features/governance/ProjectGovernance').then((m) => ({ default: m.ProjectGovernance })),
+)
+// 管理后台布局（左侧导航 + 右侧主体）：进入 /admin 才加载
+const AdminLayout = lazy(() =>
+  import('./layout/AdminLayout').then((m) => ({ default: m.AdminLayout })),
+)
+const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })))
 
 import './themes/seiji.css'
 import './themes/magenta.css'
@@ -94,15 +120,25 @@ export default function App() {
                   }
                 >
                   <Route index element={<Workbench />} />
-                  <Route path="repos" element={<Repos />} />
                   <Route path="events" element={<Events />} />
                   <Route path="tokens" element={<AccessTokenManager />} />
-                  {/* 旧 URL 重定向：/access_token_manager 保留兼容老书签 */}
+                  {/* 管理后台（mars_admin 门控）：左侧导航 + 右侧主体，平台级治理视图 */}
+                  <Route path="admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
+                    <Route index element={<Navigate to="/admin/cluster" replace />} />
+                    <Route path="cluster" element={<ResourceBoard />} />
+                    <Route path="projects" element={<ProjectGovernance />} />
+                    <Route path="events" element={<Events />} />
+                    <Route path="repos" element={<Repos />} />
+                    <Route path="namespaces" element={<NamespaceManager />} />
+                    <Route path="resources" element={<ResourceManagement />} />
+                    <Route path="tokens" element={<AccessTokenManager />} />
+                    <Route path="users" element={<UserManager />} />
+                    <Route path="settings" element={<SystemSettings />} />
+                  </Route>
+                  {/* 旧 URL 重定向：/repos 迁入后台 /admin/repos、/access_token_manager 迁 /tokens，保留兼容老书签 */}
+                  <Route path="repos" element={<Navigate to="/admin/repos" replace />} />
                   <Route path="access_token_manager" element={<Navigate to="/tokens" replace />} />
                 </Route>
-
-                {/* 空间资源 demo（临时路由，未接真实后端） */}
-                <Route path="/demo/resources" element={<ResourceBoardDemo />} />
 
                 {/* 兜底 404 */}
                 <Route path="*" element={<NotFound />} />
