@@ -131,24 +131,3 @@ func Test_userSvc_ToggleAdmin_Error(t *testing.T) {
 	_, err := svc.ToggleAdmin(newAdminUserCtx(), &user.ToggleAdminRequest{Email: "a@b.c"})
 	assert.Equal(t, codes.NotFound, status.Code(err))
 }
-
-// Test_userSvc_Sync 成功路径：触发投影同步（内置管理员/命名空间成员 → users 表）。
-func Test_userSvc_Sync(t *testing.T) {
-	svc, mocks := newUserSvcWithMocks(t)
-	defer mocks.ctrl.Finish()
-
-	mocks.userBiz.EXPECT().Sync(gomock.Any()).Return(nil)
-	_, err := svc.Sync(newAdminUserCtx(), &user.SyncUsersRequest{})
-	assert.NoError(t, err)
-}
-
-// Test_userSvc_Sync_Error 同步失败：透传 biz 错误（保留原始状态码）。
-func Test_userSvc_Sync_Error(t *testing.T) {
-	svc, mocks := newUserSvcWithMocks(t)
-	defer mocks.ctrl.Finish()
-
-	mocks.userBiz.EXPECT().Sync(gomock.Any()).
-		Return(status.Error(codes.Internal, "sync boom"))
-	_, err := svc.Sync(newAdminUserCtx(), &user.SyncUsersRequest{})
-	assert.Equal(t, codes.Internal, status.Code(err))
-}

@@ -155,22 +155,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/users/sync": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["User_Sync"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/admin/users/{email}/role": {
         parameters: {
             query?: never;
@@ -1670,13 +1654,9 @@ export interface components {
             /** Format: int32 */
             length: number;
         };
-        /** @description AdminItem 命名空间管理条目：空间模型（含成员/创建者）+ 实时用量 + 最近活跃时间。 */
+        /** @description AdminItem 命名空间管理条目：空间模型（含成员/创建者）+ 最近活跃时间 + 活跃度分类。 */
         "namespace.AdminItem": {
             ns: components["schemas"]["types.NamespaceModel"];
-            /** @description CPU 用量（人类可读，如 "2.1 core"） */
-            cpuUsed: string;
-            /** @description 内存用量（人类可读，如 "18.4 GiB"） */
-            memUsed: string;
             /** @description 最近活跃时间：空间下所有项目 UpdatedAt 的最大值（RFC3339）；无项目（从未活跃）为空串 */
             lastActiveAt: string;
             /** @description 活跃度分类：active（活跃）/ dormant（低活跃）/ zombie（僵尸）；无项目（从未活跃）视为 zombie */
@@ -1848,7 +1828,7 @@ export interface components {
             count: number;
             items: components["schemas"]["types.ProjectModel"][];
         };
-        /** @description LivenessItem 单个项目的活跃度条目：标识 + 部署状态/次数 + 最近更新 + 资源占用。 */
+        /** @description LivenessItem 单个项目的活跃度条目：标识 + 部署状态/次数 + 最近更新。 */
         "project.LivenessItem": {
             /** Format: int32 */
             id: number;
@@ -1874,14 +1854,6 @@ export interface components {
             gitCommitTitle: string;
             gitCommitAuthor: string;
             gitCommitDate: string;
-            /**
-             * @description 项目资源申请/实际用量（与空间资源聚合同源：按 PodSelectors 匹配 pod，毫核/字节）：
-             *      供治理页量化「僵尸 × 高资源 = 可回收」，资源快照不可用时缺省为 0（非致命降级）。
-             */
-            cpuRequestMilli: string;
-            cpuUsageMilli: string;
-            memRequestBytes: string;
-            memUsageBytes: string;
         };
         "project.LivenessResponse": {
             /** Format: int32 */
@@ -2293,8 +2265,6 @@ export interface components {
             items: components["schemas"]["user.UserModel"][];
             stats: components["schemas"]["user.UserStats"];
         };
-        /** @description SyncUsersResponse 同步完成响应（无返回数据，成功即完成）。 */
-        "user.SyncUsersResponse": Record<string, never>;
         "user.ToggleAdminRequest": {
             email: string;
             admin: boolean;
@@ -2684,35 +2654,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["user.ListResponse"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["google.rpc.Status"];
-                };
-            };
-        };
-    };
-    User_Sync: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["user.SyncUsersResponse"];
                 };
             };
             /** @description Default error response */

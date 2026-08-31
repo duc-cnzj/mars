@@ -112,17 +112,13 @@ message AdminListRequest {
   // 活跃度分类过滤：active/dormant/zombie，空 = 全部
   string liveness = 5;
 }
-// AdminItem 命名空间管理条目：空间模型（含成员/创建者）+ 实时用量 + 最近活跃时间。
+// AdminItem 命名空间管理条目：空间模型（含成员/创建者）+ 最近活跃时间 + 活跃度分类。
 message AdminItem {
-  types.NamespaceModel ns       = 1;
-  // CPU 用量（人类可读，如 "2.1 core"）
-  string cpu_used = 2;
-  // 内存用量（人类可读，如 "18.4 GiB"）
-  string mem_used = 3;
+  types.NamespaceModel ns = 1;
   // 最近活跃时间：空间下所有项目 UpdatedAt 的最大值（RFC3339）；无项目（从未活跃）为空串
-  string last_active_at = 4;
+  string last_active_at = 2;
   // 活跃度分类：active（活跃）/ dormant（低活跃）/ zombie（僵尸）；无项目（从未活跃）视为 zombie
-  string liveness_kind = 5;
+  string liveness_kind = 3;
 }
 // LivenessStats 活跃度统计（基于 search 命中全量，不随分页/分类过滤裁剪）。
 message LivenessStats {

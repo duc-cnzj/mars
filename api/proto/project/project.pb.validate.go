@@ -3171,14 +3171,6 @@ func (m *LivenessItem) validate(all bool) error {
 
 	// no validation rules for GitCommitDate
 
-	// no validation rules for CpuRequestMilli
-
-	// no validation rules for CpuUsageMilli
-
-	// no validation rules for MemRequestBytes
-
-	// no validation rules for MemUsageBytes
-
 	if len(errors) > 0 {
 		return LivenessItemMultiError(errors)
 	}

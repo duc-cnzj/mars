@@ -42,11 +42,8 @@ type ListUserResult struct {
 	Stats UserStats
 }
 
-// UserRepo 是用户投影的持久化端口（data 层实现）：
-// EnsureSynced 把真实身份源（内置管理员/命名空间成员）同步为 users 投影。
+// UserRepo 是用户投影的持久化端口（data 层实现）：登录 upsert 与查询/角色管理。
 type UserRepo interface {
-	// EnsureSynced 幂等同步用户投影，重复调用不产生重复行、不覆盖手动角色变更。
-	EnsureSynced(ctx context.Context) error
 	// SyncLoginUser 登录成功时按邮箱 upsert 用户投影（不存在则创建）。
 	SyncLoginUser(ctx context.Context, email, name string) error
 	// List 分页查询用户，支持搜索与仅管理员过滤，返回全量统计。
@@ -55,11 +52,8 @@ type UserRepo interface {
 	ToggleAdmin(ctx context.Context, email string, admin bool) error
 }
 
-// UserBiz 是后台用户管理的业务接口：投影同步与查询/角色管理分离，
-// 同步由页面「同步用户」按钮显式触发，列表不做隐式同步。
+// UserBiz 是后台用户管理的业务接口：登录 upsert、查询与角色管理。
 type UserBiz interface {
-	// Sync 把真实身份源（内置管理员/命名空间成员）同步为 users 投影，幂等可重复调用。
-	Sync(ctx context.Context) error
 	// SyncLoginUser 登录成功时同步用户投影（不存在则创建），email 不能为空。
 	SyncLoginUser(ctx context.Context, email, name string) error
 	// List 分页查询用户列表（支持搜索/仅管理员过滤）。
@@ -78,14 +72,7 @@ func NewUserBiz(repo UserRepo) UserBiz {
 	return &userBiz{repo: repo}
 }
 
-// Sync 触发用户投影同步：把内置管理员/命名空间成员同步为 users 投影，幂等可重复调用。
-// 由页面「同步用户」按钮显式触发；列表不再隐式同步，避免每次打开用户管理页都做全量对账。
-func (u *userBiz) Sync(ctx context.Context) error {
-	return u.repo.EnsureSynced(ctx)
-}
-
-// List 分页查询用户投影：不做隐式同步（同步由「同步用户」按钮显式触发），
-// 直接透传 repo 查询。
+// List 分页查询用户投影：直接透传 repo 查询。
 func (u *userBiz) List(ctx context.Context, input *ListUserInput) (*ListUserResult, error) {
 	return u.repo.List(ctx, input)
 }

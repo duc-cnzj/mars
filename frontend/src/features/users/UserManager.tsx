@@ -184,8 +184,6 @@ const UserRow = memo(function UserRow({
  * - 最近登录列点击切换升/降序（本地排序，服务端无此能力）；行内一键复制邮箱
  * - 行内「设为管理员 / 移除管理员」走角色管理接口（PUT /api/admin/users/{email}/role），
  *   均带 AlertDialog 二次确认（超级管理员不可降级）
- * - 「同步用户」走 POST /api/admin/users/sync：把内置管理员 + 命名空间成员对账为 users
- *   投影（幂等可重复调用），带 AlertDialog 二次确认，成功后自动刷新列表拉最新投影
  * - 无限下拉（客户端滚动揭示）：一次拉全量 + 本地排序后逐块揭示，搜索/筛选/排序变化自动回顶部
  * - ⚠️ 系统无封号/禁用状态，本页不提供该能力
  */
@@ -200,10 +198,6 @@ export function UserManager() {
   const [adminOnly, setAdminOnly] = useState(false)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  // 同步用户进行中（防重复点击；同步完成后自动 refresh 拉最新投影）
-  const [syncing, setSyncing] = useState(false)
-  // 同步确认弹窗开关：点「同步用户」先二次确认再执行（受控弹窗，请求成功才关闭）
-  const [syncOpen, setSyncOpen] = useState(false)
   const [error, setError] = useState('')
   // 手动刷新计数：递增触发 fetch effect 重跑
   const [reloadKey, setReloadKey] = useState(0)
@@ -273,25 +267,6 @@ export function UserManager() {
     setRefreshing(true)
     setReloadKey((k) => k + 1)
   }, [])
-
-  /** 同步用户：把真实身份源（内置管理员/命名空间成员）同步为 users 投影，幂等可重复调用。
-   *  受控弹窗：请求成功才关闭，失败保持打开（toast 报错）供重试，杜绝「没同步完弹窗先消失」；
-   *  完成后自动刷新列表展示最新投影。 */
-  const syncUsers = useCallback(async () => {
-    if (syncing) return
-    setSyncing(true)
-    try {
-      const { error: err } = await api.POST('/api/admin/users/sync', {})
-      if (err) throw new Error(err.message ?? String(err))
-      toast.success(t('users.syncSuccess'))
-      setSyncOpen(false)
-      refresh()
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e))
-    } finally {
-      setSyncing(false)
-    }
-  }, [refresh, syncing, t])
 
   // 搜索 / 只看管理员 / 手动刷新 / 排序方向变化 → 回顶部并重置揭示量
   //（排序切换走本地重排，无需重新拉取，故不进入 fetch effect 依赖）
@@ -385,7 +360,7 @@ export function UserManager() {
 
   return (
     <div className="flex h-full flex-col gap-4">
-      {/* 页头：标题 + 搜索 + 刷新 + 同步 */}
+      {/* 页头：标题 + 搜索 + 刷新 */}
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <h2 className="text-[16px] font-semibold text-ink">{t('users.title')}</h2>
@@ -405,14 +380,6 @@ export function UserManager() {
               <Icon name="refresh" className="size-4" />
             )}
             {t('common.refresh')}
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setSyncOpen(true)} disabled={syncing}>
-            {syncing ? (
-              <Icon name="loader" className="size-4 animate-spin" />
-            ) : (
-              <Icon name="refresh-cw" className="size-4" />
-            )}
-            {t('users.sync')}
           </Button>
         </div>
       </div>
@@ -496,28 +463,6 @@ export function UserManager() {
         </div>
         </div>
       </section>
-
-      {/* 同步用户二次确认弹窗：点「同步用户」→ 确认 → 执行（幂等，成功才关闭，失败保持打开可重试） */}
-      <AlertDialog open={syncOpen} onOpenChange={(o) => !o && !syncing && setSyncOpen(false)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('users.syncConfirmTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>{t('users.syncConfirmDesc')}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={syncing}>{t('common.cancel')}</AlertDialogCancel>
-            {/* 普通 Button 而非 AlertDialogAction：后者点击默认关闭弹窗，会「没同步完就消失」 */}
-            <Button disabled={syncing} onClick={syncUsers}>
-              {syncing ? (
-                <Icon name="loader" className="size-4 animate-spin" />
-              ) : (
-                <Icon name="refresh-cw" className="size-4" />
-              )}
-              {t('users.sync')}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }

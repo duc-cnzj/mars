@@ -2713,10 +2713,6 @@ func (m *AdminItem) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for CpuUsed
-
-	// no validation rules for MemUsed
-
 	// no validation rules for LastActiveAt
 
 	// no validation rules for LivenessKind

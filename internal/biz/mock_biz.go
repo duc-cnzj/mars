@@ -1718,20 +1718,6 @@ func (mr *MockUserBizMockRecorder) List(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUserBiz)(nil).List), arg0, arg1)
 }
 
-// Sync mocks base method.
-func (m *MockUserBiz) Sync(arg0 context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Sync", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Sync indicates an expected call of Sync.
-func (mr *MockUserBizMockRecorder) Sync(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sync", reflect.TypeOf((*MockUserBiz)(nil).Sync), arg0)
-}
-
 // SyncLoginUser mocks base method.
 func (m *MockUserBiz) SyncLoginUser(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()

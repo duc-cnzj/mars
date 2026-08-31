@@ -25,9 +25,7 @@ import (
 	"helm.sh/helm/v3/pkg/storage/driver"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 func TestNewProjectSvc(t *testing.T) {
@@ -1287,26 +1285,6 @@ func TestProjectSvc_Liveness(t *testing.T) {
 		{ID: 2, Name: "old", UpdatedAt: now.Add(-120 * 24 * time.Hour), Namespace: &biz.Namespace{Name: "legacy"}, Repo: &biz.Repo{Name: "old-repo"}},
 	}, nil)
 	mocks.changelogRepo.EXPECT().CountByProjectIDs(gomock.Any(), 1, 2).Return(map[int]int{1: 7, 2: 0}, nil)
-	// 资源快照：web 项目命中 1 个 Running Pod（app=web 选择器匹配），CPU 申请 500m/用 100m，
-	// 内存申请 256Mi/用 64Mi；old 无 selectors 命中 0 pod，资源缺省保持 0。
-	mocks.k8sRepo.EXPECT().ResourceSnapshot(gomock.Any()).Return(&biz.ResourceSnapshotData{
-		Pods: []corev1.Pod{{
-			ObjectMeta: metav1.ObjectMeta{Name: "web-0", Namespace: "default", Labels: map[string]string{"app": "web"}},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("500m"),
-					corev1.ResourceMemory: resource.MustParse("256Mi"),
-				},
-			}}}},
-		}},
-		PodMetrics: []v1beta1.PodMetrics{{
-			ObjectMeta: metav1.ObjectMeta{Name: "web-0", Namespace: "default"},
-			Containers: []v1beta1.ContainerMetrics{{Usage: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("100m"),
-				corev1.ResourceMemory: resource.MustParse("64Mi"),
-			}}},
-		}},
-	}, nil)
 
 	resp, err := svc.Liveness(newAdminUserCtx(), &project.LivenessRequest{
 		Page:     lo.ToPtr(int32(1)),
@@ -1329,37 +1307,9 @@ func TestProjectSvc_Liveness(t *testing.T) {
 			assert.Equal(t, "alice@mars.dev", resp.Items[0].GitCommitAuthor)
 			assert.NotEmpty(t, resp.Items[0].GitCommitDate)
 			assert.NotEmpty(t, resp.Items[0].UpdatedAt)
-			// 资源 join：web 命中 pod，cpu/mem 申请与用量精确落位
-			assert.Equal(t, int64(500), resp.Items[0].CpuRequestMilli)
-			assert.Equal(t, int64(100), resp.Items[0].CpuUsageMilli)
-			assert.Equal(t, int64(268435456), resp.Items[0].MemRequestBytes)
-			assert.Equal(t, int64(67108864), resp.Items[0].MemUsageBytes)
-			// 无 selectors 的项目（old）资源缺省为 0
 			assert.Equal(t, "legacy", resp.Items[1].Namespace)
 			assert.Equal(t, int32(0), resp.Items[1].DeployCount)
-			assert.Equal(t, int64(0), resp.Items[1].CpuRequestMilli)
-			assert.Equal(t, int64(0), resp.Items[1].MemUsageBytes)
 		}
-	}
-}
-
-// TestProjectSvc_Liveness_ResourceSnapshotErr 资源快照失败降级：活跃度主数据保留、
-// 资源字段为 0（补充数据不因指标抖动打崩治理页），错误原地落日志。
-func TestProjectSvc_Liveness_ResourceSnapshotErr(t *testing.T) {
-	svc, mocks := newProjectSvcWithMocks(t)
-	now := time.Now()
-	mocks.projectRepo.EXPECT().ListLiveness(gomock.Any(), "").Return([]*biz.Project{
-		{ID: 1, Name: "web", UpdatedAt: now.Add(-10 * 24 * time.Hour), Namespace: &biz.Namespace{Name: "default"}, PodSelectors: []string{"app=web"}},
-	}, nil)
-	mocks.changelogRepo.EXPECT().CountByProjectIDs(gomock.Any(), 1).Return(map[int]int{1: 1}, nil)
-	mocks.k8sRepo.EXPECT().ResourceSnapshot(gomock.Any()).Return(nil, errors.New("metrics down"))
-
-	resp, err := svc.Liveness(newAdminUserCtx(), &project.LivenessRequest{})
-	assert.NoError(t, err)
-	if assert.NotNil(t, resp) && assert.Len(t, resp.Items, 1) {
-		assert.Equal(t, "web", resp.Items[0].Name)
-		assert.Equal(t, int64(0), resp.Items[0].CpuRequestMilli)
-		assert.Equal(t, int64(0), resp.Items[0].MemUsageBytes)
 	}
 }
 
@@ -1372,10 +1322,8 @@ func TestProjectSvc_Liveness_Err(t *testing.T) {
 	assert.ErrorContains(t, err, "down")
 }
 
-// TestProjectSvc_Liveness_NilNamespace 命名空间为空的活跃度条目守卫：attachLivenessResources
-// 的 nil 守卫 continue 跳过全部项目，len(projects)==0 提前 return——不触达 ResourceSnapshot，
-// 资源字段缺省 0、响应正常返回不 panic。刻意不设 k8sRepo.ResourceSnapshot 期望：gomock 严格
-// 模式在代码误调（early-return 失效）时 fail，反向锁定提前返回语义。
+// TestProjectSvc_Liveness_NilNamespace 命名空间为空的活跃度条目守卫：传输层对 nil namespace
+// 回退空串，响应正常返回不 panic。
 func TestProjectSvc_Liveness_NilNamespace(t *testing.T) {
 	svc, mocks := newProjectSvcWithMocks(t)
 	now := time.Now()
@@ -1389,8 +1337,6 @@ func TestProjectSvc_Liveness_NilNamespace(t *testing.T) {
 	if assert.NotNil(t, resp) && assert.Len(t, resp.Items, 1) {
 		assert.Equal(t, "orphan", resp.Items[0].Name)
 		assert.Equal(t, "", resp.Items[0].Namespace)
-		assert.Equal(t, int64(0), resp.Items[0].CpuRequestMilli)
-		assert.Equal(t, int64(0), resp.Items[0].MemUsageBytes)
 	}
 }
 

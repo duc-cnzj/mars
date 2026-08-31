@@ -19,7 +19,6 @@ import (
 	eventsv1 "k8s.io/api/events/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
@@ -258,6 +257,18 @@ var newK8sClientset = func(config *restclient.Config) (kubernetes.Interface, err
 	return kubernetes.NewForConfig(config)
 }
 
+// setInformerErrorHandler 将 informer 的 reflector 错误路由到结构化日志。
+//
+// 不修改 process 级 runtime.ErrorHandlers 全局——共享可变全局，并发 InitK8s 或
+// 测试清理写回都会与 reflector goroutine 读取竞争成 data race；改为 per-informer
+// 挂接 WatchErrorHandler，错误只进当前 informer 的日志通道。调用点必在 inf.Start
+// 之前，sharedIndexInformer 未启动时 SetWatchErrorHandler 返回 nil，故忽略返回值。
+func setInformerErrorHandler(informer cache.SharedIndexInformer, logger mlog.Logger) {
+	_ = informer.SetWatchErrorHandler(func(_ *cache.Reflector, err error) {
+		logger.Warning(err)
+	})
+}
+
 // InitK8s 建立 k8s 客户端与各类 informer/lister（once 幂等），装配事件/容器事件
 // 扇出通道并启动监听；依赖真实集群，属集成边界。
 func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
@@ -275,13 +286,6 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 		podCh := make(chan Obj[*corev1.Pod], 1000)
 		podFanOutObj := newFanOut(logger, "pod", podCh, make(map[string]chan<- Obj[*corev1.Pod]))
 		logger.Info("init k8s client...")
-
-		runtime.ErrorHandlers = []func(err error){
-			func(err error) {
-				logger.Warning(err)
-			},
-		}
-
 		logger.Warning(cfg.KubeConfig)
 		if cfg.KubeConfig != "" {
 			config, err = clientcmd.BuildConfigFromFlags("", cfg.KubeConfig)
@@ -334,9 +338,10 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 		if gwinstalled {
 			logger.Info("gateway api installed")
 			gwhttprouteinformer = externalversions.NewSharedInformerFactoryWithOptions(gwclientset.NewForConfigOrDie(config), 0)
-			httpRouteLister = gwinformers.New(gwhttprouteinformer, corev1.NamespaceAll, nil).
-				HTTPRoutes().
-				Lister()
+			httpRouteInf := gwinformers.New(gwhttprouteinformer, corev1.NamespaceAll, nil).
+				HTTPRoutes()
+			setInformerErrorHandler(httpRouteInf.Informer(), logger)
+			httpRouteLister = httpRouteInf.Lister()
 		}
 
 		svcLister := inf.Core().V1().Services().Lister()
@@ -378,6 +383,21 @@ func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
 			},
 		})
 		eventLister := inf.Events().V1().Events().Lister()
+		// reflector 错误路由到结构化日志：逐个挂接（含仅取 Lister 的 informer，
+		// inf.Start 同样会启动它们），避免改全局 runtime.ErrorHandlers 引发的竞争。
+		for _, informer := range []cache.SharedIndexInformer{
+			inf.Core().V1().Services().Informer(),
+			inf.Networking().V1().Ingresses().Informer(),
+			inf.Apps().V1().ReplicaSets().Informer(),
+			inf.Apps().V1().Deployments().Informer(),
+			inf.Apps().V1().StatefulSets().Informer(),
+			inf.Apps().V1().DaemonSets().Informer(),
+			podInf,
+			secretInf,
+			eventInf,
+		} {
+			setInformerErrorHandler(informer, logger)
+		}
 		data.k8sClient = &K8sClient{
 			GatewayApiInstalled: gwinstalled,
 			HTTPRouteLister:     httpRouteLister,

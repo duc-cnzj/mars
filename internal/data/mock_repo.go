@@ -2265,20 +2265,6 @@ func (m *MockUserRepo) EXPECT() *MockUserRepoMockRecorder {
 	return m.recorder
 }
 
-// EnsureSynced mocks base method.
-func (m *MockUserRepo) EnsureSynced(arg0 context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EnsureSynced", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// EnsureSynced indicates an expected call of EnsureSynced.
-func (mr *MockUserRepoMockRecorder) EnsureSynced(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsureSynced", reflect.TypeOf((*MockUserRepo)(nil).EnsureSynced), arg0)
-}
-
 // List mocks base method.
 func (m *MockUserRepo) List(arg0 context.Context, arg1 *biz.ListUserInput) (*biz.ListUserResult, error) {
 	m.ctrl.T.Helper()

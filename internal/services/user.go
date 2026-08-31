@@ -76,12 +76,3 @@ func (s *userSvc) ToggleAdmin(ctx context.Context, request *user.ToggleAdminRequ
 	}
 	return &user.ToggleAdminResponse{}, nil
 }
-
-// Sync 触发用户投影同步（内置管理员/命名空间成员 → users 表），幂等可重复调用，
-// 由页面「同步用户」按钮显式触发。
-func (s *userSvc) Sync(ctx context.Context, _ *user.SyncUsersRequest) (*user.SyncUsersResponse, error) {
-	if err := s.userBiz.Sync(ctx); err != nil {
-		return nil, logError(ctx, s.logger, err)
-	}
-	return &user.SyncUsersResponse{}, nil
-}

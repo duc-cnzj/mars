@@ -1121,18 +1121,14 @@ func (x *AdminListRequest) GetLiveness() string {
 	return ""
 }
 
-// AdminItem 命名空间管理条目：空间模型（含成员/创建者）+ 实时用量 + 最近活跃时间。
+// AdminItem 命名空间管理条目：空间模型（含成员/创建者）+ 最近活跃时间 + 活跃度分类。
 type AdminItem struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Ns    *types.NamespaceModel  `protobuf:"bytes,1,opt,name=ns,proto3" json:"ns,omitempty"`
-	// CPU 用量（人类可读，如 "2.1 core"）
-	CpuUsed string `protobuf:"bytes,2,opt,name=cpu_used,json=cpuUsed,proto3" json:"cpu_used,omitempty"`
-	// 内存用量（人类可读，如 "18.4 GiB"）
-	MemUsed string `protobuf:"bytes,3,opt,name=mem_used,json=memUsed,proto3" json:"mem_used,omitempty"`
 	// 最近活跃时间：空间下所有项目 UpdatedAt 的最大值（RFC3339）；无项目（从未活跃）为空串
-	LastActiveAt string `protobuf:"bytes,4,opt,name=last_active_at,json=lastActiveAt,proto3" json:"last_active_at,omitempty"`
+	LastActiveAt string `protobuf:"bytes,2,opt,name=last_active_at,json=lastActiveAt,proto3" json:"last_active_at,omitempty"`
 	// 活跃度分类：active（活跃）/ dormant（低活跃）/ zombie（僵尸）；无项目（从未活跃）视为 zombie
-	LivenessKind  string `protobuf:"bytes,5,opt,name=liveness_kind,json=livenessKind,proto3" json:"liveness_kind,omitempty"`
+	LivenessKind  string `protobuf:"bytes,3,opt,name=liveness_kind,json=livenessKind,proto3" json:"liveness_kind,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1172,20 +1168,6 @@ func (x *AdminItem) GetNs() *types.NamespaceModel {
 		return x.Ns
 	}
 	return nil
-}
-
-func (x *AdminItem) GetCpuUsed() string {
-	if x != nil {
-		return x.CpuUsed
-	}
-	return ""
-}
-
-func (x *AdminItem) GetMemUsed() string {
-	if x != nil {
-		return x.MemUsed
-	}
-	return ""
 }
 
 func (x *AdminItem) GetLastActiveAt() string {
@@ -1614,13 +1596,11 @@ const file_proto_namespace_namespace_proto_rawDesc = "" +
 	"\bliveness\x18\x05 \x01(\tR\blivenessB\a\n" +
 	"\x05_pageB\f\n" +
 	"\n" +
-	"_page_size\"\xb3\x01\n" +
+	"_page_size\"}\n" +
 	"\tAdminItem\x12%\n" +
-	"\x02ns\x18\x01 \x01(\v2\x15.types.NamespaceModelR\x02ns\x12\x19\n" +
-	"\bcpu_used\x18\x02 \x01(\tR\acpuUsed\x12\x19\n" +
-	"\bmem_used\x18\x03 \x01(\tR\amemUsed\x12$\n" +
-	"\x0elast_active_at\x18\x04 \x01(\tR\flastActiveAt\x12#\n" +
-	"\rliveness_kind\x18\x05 \x01(\tR\flivenessKind\"o\n" +
+	"\x02ns\x18\x01 \x01(\v2\x15.types.NamespaceModelR\x02ns\x12$\n" +
+	"\x0elast_active_at\x18\x02 \x01(\tR\flastActiveAt\x12#\n" +
+	"\rliveness_kind\x18\x03 \x01(\tR\flivenessKind\"o\n" +
 	"\rLivenessStats\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\x05R\x05total\x12\x16\n" +
 	"\x06active\x18\x02 \x01(\x05R\x06active\x12\x18\n" +

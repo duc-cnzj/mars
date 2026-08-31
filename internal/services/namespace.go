@@ -143,8 +143,8 @@ func (n *namespaceSvc) List(ctx context.Context, request *namespace.ListRequest)
 	return res, nil
 }
 
-// AdminList 返回命名空间管理列表（管理员后台）：全量空间 + 逐空间实时 CPU/内存用量 +
-// 活跃度分类 + 全量统计，经 Authorize admin 门禁后仅管理员可调用。
+// AdminList 返回命名空间管理列表（管理员后台）：全量空间 + 活跃度分类 + 全量统计，
+// 经 Authorize admin 门禁后仅管理员可调用。
 func (n *namespaceSvc) AdminList(ctx context.Context, request *namespace.AdminListRequest) (*namespace.AdminListResponse, error) {
 	page, size := pagination.InitByDefault(request.Page, request.PageSize)
 	items, stats, pag, err := n.nsBiz.AdminList(ctx, &biz.AdminListInput{
@@ -172,8 +172,6 @@ func (n *namespaceSvc) AdminList(ctx context.Context, request *namespace.AdminLi
 	for _, item := range items {
 		resp.Items = append(resp.Items, &namespace.AdminItem{
 			Ns:           transformer.FromNamespace(item.Namespace),
-			CpuUsed:      item.CpuUsed,
-			MemUsed:      item.MemUsed,
 			LastActiveAt: date.ToRFC3339(&item.LastActiveAt),
 			LivenessKind: string(item.LivenessKind),
 		})

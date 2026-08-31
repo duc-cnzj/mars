@@ -20,10 +20,8 @@ import (
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	k8sapierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 func TestNewNamespaceSvc_Creation(t *testing.T) {
@@ -1212,8 +1210,8 @@ func newNamespaceSvcWithMocks(t *testing.T) (*namespaceSvc, *namespaceSvcMocks) 
 	return s, mocks
 }
 
-// Test_namespaceSvc_AdminList 管理列表成功路径：透传搜索/私有过滤入参，单次批量快照用量
-// 映射到 AdminItem 全字段落位 + 活跃度分类过滤 + 全量统计（不随分类过滤裁剪）。
+// Test_namespaceSvc_AdminList 管理列表成功路径：透传搜索/私有过滤入参，AdminItem 字段
+// 落位 + 活跃度分类过滤 + 全量统计（不随分类过滤裁剪）。
 func Test_namespaceSvc_AdminList(t *testing.T) {
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	now := time.Now()
@@ -1227,17 +1225,6 @@ func Test_namespaceSvc_AdminList(t *testing.T) {
 		// 60 天前更新 → 低活跃
 		{ID: 4, Name: "mars-d", CreatorEmail: "d@b.c", Projects: []*biz.Project{{UpdatedAt: now.Add(-60 * 24 * time.Hour)}}},
 	}, nil)
-	// 单次批量资源快照：mars-a/mars-b 有指标，mars-c/mars-d 无指标降级 0
-	mocks.k8sRepo.EXPECT().ResourceSnapshot(gomock.Any()).Return(&biz.ResourceSnapshotData{PodMetrics: []v1beta1.PodMetrics{
-		{ObjectMeta: metav1.ObjectMeta{Name: "p-a", Namespace: "mars-a"}, Containers: []v1beta1.ContainerMetrics{{Usage: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("100m"),
-			corev1.ResourceMemory: resource.MustParse("500M"),
-		}}}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "p-b", Namespace: "mars-b"}, Containers: []v1beta1.ContainerMetrics{{Usage: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("200m"),
-			corev1.ResourceMemory: resource.MustParse("600M"),
-		}}}},
-	}}, nil)
 
 	// 活跃度分类过滤 zombie：mars-a（无项目）与 mars-c（120 天）命中，活跃/低活跃被过滤
 	resp, err := svc.AdminList(newAdminUserCtx(), &namespace.AdminListRequest{
@@ -1263,8 +1250,6 @@ func Test_namespaceSvc_AdminList(t *testing.T) {
 		assert.Equal(t, int32(1), item.Ns.Id)
 		assert.Equal(t, "mars-a", item.Ns.Name)
 		assert.Equal(t, "a@b.c", item.Ns.CreatorEmail)
-		assert.Equal(t, "100 m", item.CpuUsed)
-		assert.Equal(t, "500 MB", item.MemUsed)
 		// 无项目：最近活跃为空串 + 分类僵尸
 		assert.Empty(t, item.LastActiveAt)
 		assert.Equal(t, "zombie", item.LivenessKind)
@@ -1287,7 +1272,6 @@ func Test_namespaceSvc_AdminList_LastActiveAt(t *testing.T) {
 			{UpdatedAt: base.Add(3 * time.Hour)},
 		},
 	}}, nil)
-	mocks.k8sRepo.EXPECT().ResourceSnapshot(gomock.Any()).Return(&biz.ResourceSnapshotData{}, nil)
 
 	resp, err := svc.AdminList(newAdminUserCtx(), &namespace.AdminListRequest{})
 	assert.NoError(t, err)
@@ -1311,7 +1295,6 @@ func Test_namespaceSvc_AdminList_Error(t *testing.T) {
 func Test_namespaceSvc_AdminList_DefaultPagination(t *testing.T) {
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().ListAllAdmin(gomock.Any(), "", false).Return([]*biz.Namespace{}, nil)
-	mocks.k8sRepo.EXPECT().ResourceSnapshot(gomock.Any()).Return(&biz.ResourceSnapshotData{}, nil)
 
 	resp, err := svc.AdminList(newAdminUserCtx(), &namespace.AdminListRequest{})
 	assert.NoError(t, err)

@@ -10,7 +10,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
-	"github.com/duc-cnzj/mars/v6/internal/data/ent/member"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/user"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
@@ -20,8 +19,7 @@ import (
 
 var _ biz.UserRepo = (*userRepo)(nil)
 
-// userRepo 是后台用户投影的持久化实现：维护 users 表与真实身份源
-// （内置管理员/命名空间成员）的对账，以及分页查询与角色升降级。
+// userRepo 是后台用户投影的持久化实现：维护 users 表的登录 upsert、分页查询与角色升降级。
 type userRepo struct {
 	data  dataStore
 	timer timer.Timer
@@ -32,68 +30,11 @@ func NewUserRepo(data dataStore, timer timer.Timer) biz.UserRepo {
 	return &userRepo{data: data, timer: timer}
 }
 
-// syncSource 是用户同步源的中间结构：一个邮箱对应一条待落库投影。
-type syncSource struct {
-	email string
-	name  string
-	roles []string
-}
-
-// EnsureSynced 把真实身份源同步为 users 投影，幂等可重复调用：
-// 源 = 内置管理员（SuperAdminEmail 恒为管理员）+ 命名空间成员（补漏）。
-// 登录用户由 SyncLoginUser 在登录热路径实时 upsert（不存在创建、存在推进 last_login），
-// 同步源不再从登录事件全表扫描兜底——那会让每次同步全表扫 event 表（O(全部登录事件)），
-// 事件表随平台使用持续增长，同步成本线性放大；SyncLoginUser 失败是 DB 故障级罕见瞬态，
-// 下次登录自动补回，不值得为此付出全扫代价。由 UserBiz.Sync 触发（页面「同步用户」按钮）。
-// 已有用户仅补空 name，绝不覆盖 roles（尊重管理员后台手动升降级，避免同步把角色冲回默认）。
-// 落库顺序确定：内置管理员恒为首条（最先创建、ID 最小），随后成员按 ID 升序——不依赖
-// map 迭代随机序（见 collectSyncSources）。
-func (r *userRepo) EnsureSynced(ctx context.Context) (err error) {
-	ctx, span := tracer.Start(ctx, "userRepo/EnsureSynced")
-	defer func() { endSpan(span, err) }()
-	db := r.data.DB()
-
-	sources, err := r.collectSyncSources(ctx)
-	if err != nil {
-		return err
-	}
-
-	existing, err := db.User.Query().All(ctx)
-	if err != nil {
-		return errs.Wrap(err, "list existing users for sync")
-	}
-	byEmail := make(map[string]*ent.User, len(existing))
-	for _, u := range existing {
-		byEmail[u.Email] = u
-	}
-
-	for _, src := range sources {
-		if cur, ok := byEmail[src.email]; ok {
-			update := db.User.UpdateOneID(cur.ID)
-			// 同步源（管理员/成员）不携带登录时间：只补空 name，last_login 由 SyncLoginUser 推进。
-			if updateUserProjection(update, cur, nil, src.name) {
-				if _, err := update.Save(ctx); err != nil {
-					return errs.Wrap(err, "update user projection")
-				}
-			}
-			continue
-		}
-		if _, err := db.User.Create().
-			SetEmail(src.email).
-			SetName(src.name).
-			SetRoles(src.roles).
-			Save(ctx); err != nil {
-			return errs.Wrap(err, "create user projection")
-		}
-	}
-	return nil
-}
-
 // SyncLoginUser 登录成功时按邮箱 upsert 用户投影（幂等可重复调用）：
-// 已存在 → 仅推进最近登录（不倒退）+ 补空展示名（不覆盖非空）；不存在 → 创建
-// （超级管理员恒 mars_admin，其余角色为空数组；展示名取登录名，空则回退邮箱本地部分；
-// 最近登录 = 当前时刻）。与 EnsureSynced 的源语义一致，但只处理单邮箱（登录热路径，
-// 不做全量对账）；roles 一律不覆盖，尊重管理员后台手动升降级。
+// 已存在 → 仅推进最近登录（不倒退）+ 补空展示名/升级 email 本地部分默认名（手动设置
+// 的非空名不被覆盖）；不存在 → 创建（超级管理员恒 mars_admin，其余角色为空数组；展示名
+// 取登录名，空则回退邮箱本地部分；最近登录 = 当前时刻）。只处理单邮箱（登录热路径）；
+// roles 一律不覆盖，尊重管理员后台手动升降级。
 func (r *userRepo) SyncLoginUser(ctx context.Context, email, name string) (err error) {
 	ctx, span := tracer.Start(ctx, "userRepo/SyncLoginUser")
 	defer func() { endSpan(span, err) }()
@@ -138,69 +79,25 @@ func (r *userRepo) SyncLoginUser(ctx context.Context, email, name string) (err e
 }
 
 // updateUserProjection 把 lastLogin/name 投影规则应用到既有用户（不覆盖 roles）：
-// 仅补更晚的最近登录（已有登录时间不倒退，未登录用户补首次登录时间）+ 补空展示名
-// （非空不被覆盖，来源为登录名或同步源固定名）。返回是否有字段被实际修改；调用方
-// 负责 Save 与错误包裹，以保留各自错误消息语义。EnsureSynced（lastLogin 恒 nil，只
-// 补空 name）与 SyncLoginUser（推进最近登录）共用。
+// 仅补更晚的最近登录（已有登录时间不倒退，未登录用户补首次登录时间）+ 展示名规则：
+// 补空，并把「email 本地部分」自动默认名升级为真实登录名（本地部分是空登录名的
+// 回退默认值，不是人改的，可安全升级）；与本地部分不同的手动名不被覆盖。返回是否有
+// 字段被实际修改；调用方负责 Save 与错误包裹，以保留各自错误消息语义。SyncLoginUser
+// 登录热路径（推进最近登录 + 补名）调用。
 func updateUserProjection(update *ent.UserUpdateOne, cur *ent.User, lastLogin *time.Time, name string) bool {
 	changed := false
 	if lastLogin != nil && (cur.LastLogin == nil || lastLogin.After(*cur.LastLogin)) {
 		update.SetLastLogin(*lastLogin)
 		changed = true
 	}
-	if cur.Name == "" && name != "" {
+	if name != "" && name != cur.Name && (cur.Name == "" || cur.Name == localPartOf(cur.Email)) {
 		update.SetName(name)
 		changed = true
 	}
 	return changed
 }
 
-// collectSyncSources 汇总身份源并保证确定性顺序：内置管理员恒为首条，随后命名空间成员
-// 按 ID 升序稳定补漏（未在管理员源中出现的邮箱，展示名回退邮箱本地部分）。返回有序切片
-// 而非 map——EnsureSynced 按序落库，杜绝 Go map 迭代随机序把超管插到成员中间（超管必须
-// 最先创建、ID 最小，作为平台拥有者锚定用户表）。登录用户由 SyncLoginUser 实时 upsert，
-// 不再从登录事件全表扫描兜底（性能权衡见 EnsureSynced 注释）。
-func (r *userRepo) collectSyncSources(ctx context.Context) ([]*syncSource, error) {
-	db := r.data.DB()
-	sources := make([]*syncSource, 0)
-
-	// 源一：内置管理员，恒定角色且不可降级，恒为同步首条。
-	sources = append(sources, &syncSource{
-		email: biz.SuperAdminEmail,
-		name:  biz.SuperAdminName,
-		roles: []string{biz.MarsAdmin},
-	})
-
-	// 源二：命名空间成员补漏（未在管理员源中出现的邮箱），按 ID 升序保证稳定顺序。
-	members, err := db.Member.Query().
-		Select(member.FieldEmail).
-		Where(member.EmailNEQ("")).
-		Order(ent.Asc(member.FieldID)).
-		All(ctx)
-	if err != nil {
-		return nil, errs.Wrap(err, "query members for user sync")
-	}
-	// 邮箱统一小写归一（对齐 SyncLoginUser 的 ToLower 与 VerifyToken）：成员源与登录源
-	// 归一化口径不一致会把同一逻辑身份分裂成两行——UNIQUE 索引大小写敏感，Bob@X.com 与
-	// bob@x.com 互不冲突同时落库，列表重复、统计虚高、last_login 永远推不进成员源行。
-	// 空串/纯空白成员邮箱跳过。
-	seen := map[string]bool{biz.SuperAdminEmail: true}
-	for _, m := range members {
-		email := strings.ToLower(strings.TrimSpace(m.Email))
-		if email == "" || seen[email] {
-			continue
-		}
-		seen[email] = true
-		sources = append(sources, &syncSource{
-			email: email,
-			name:  localPartOf(email),
-			roles: []string{},
-		})
-	}
-	return sources, nil
-}
-
-// localPartOf 取邮箱 @ 前的本地部分作展示名回退（真实展示名优先取事件 OIDC 名）。
+// localPartOf 取邮箱 @ 前的本地部分作展示名回退（真实展示名优先取 OIDC 登录名）。
 func localPartOf(email string) string {
 	if i := strings.IndexByte(email, '@'); i > 0 {
 		return email[:i]
