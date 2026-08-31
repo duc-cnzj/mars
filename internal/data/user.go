@@ -45,7 +45,8 @@ type syncSource struct {
 // 同步源不再从登录事件全表扫描兜底——那会让每次同步全表扫 event 表（O(全部登录事件)），
 // 事件表随平台使用持续增长，同步成本线性放大；SyncLoginUser 失败是 DB 故障级罕见瞬态，
 // 下次登录自动补回，不值得为此付出全扫代价。由 UserBiz.Sync 触发（页面「同步用户」按钮）。
-// 已有用户仅补空 name，绝不覆盖 roles（尊重管理员后台手动升降级，避免同步把角色冲回默认）。
+// 已有用户仅补空 name/升级 email 本地部分默认名，绝不覆盖 roles（尊重管理员后台手动
+// 升降级，避免同步把角色冲回默认）。
 // 落库顺序确定：内置管理员恒为首条（最先创建、ID 最小），随后成员按 ID 升序——不依赖
 // map 迭代随机序（见 collectSyncSources）。
 func (r *userRepo) EnsureSynced(ctx context.Context) (err error) {
@@ -90,10 +91,10 @@ func (r *userRepo) EnsureSynced(ctx context.Context) (err error) {
 }
 
 // SyncLoginUser 登录成功时按邮箱 upsert 用户投影（幂等可重复调用）：
-// 已存在 → 仅推进最近登录（不倒退）+ 补空展示名（不覆盖非空）；不存在 → 创建
-// （超级管理员恒 mars_admin，其余角色为空数组；展示名取登录名，空则回退邮箱本地部分；
-// 最近登录 = 当前时刻）。与 EnsureSynced 的源语义一致，但只处理单邮箱（登录热路径，
-// 不做全量对账）；roles 一律不覆盖，尊重管理员后台手动升降级。
+// 已存在 → 仅推进最近登录（不倒退）+ 补空展示名/升级 email 本地部分默认名（手动设置
+// 的非空名不被覆盖）；不存在 → 创建（超级管理员恒 mars_admin，其余角色为空数组；展示名
+// 取登录名，空则回退邮箱本地部分；最近登录 = 当前时刻）。与 EnsureSynced 的源语义一致，
+// 但只处理单邮箱（登录热路径，不做全量对账）；roles 一律不覆盖，尊重管理员后台手动升降级。
 func (r *userRepo) SyncLoginUser(ctx context.Context, email, name string) (err error) {
 	ctx, span := tracer.Start(ctx, "userRepo/SyncLoginUser")
 	defer func() { endSpan(span, err) }()
@@ -138,17 +139,18 @@ func (r *userRepo) SyncLoginUser(ctx context.Context, email, name string) (err e
 }
 
 // updateUserProjection 把 lastLogin/name 投影规则应用到既有用户（不覆盖 roles）：
-// 仅补更晚的最近登录（已有登录时间不倒退，未登录用户补首次登录时间）+ 补空展示名
-// （非空不被覆盖，来源为登录名或同步源固定名）。返回是否有字段被实际修改；调用方
-// 负责 Save 与错误包裹，以保留各自错误消息语义。EnsureSynced（lastLogin 恒 nil，只
-// 补空 name）与 SyncLoginUser（推进最近登录）共用。
+// 仅补更晚的最近登录（已有登录时间不倒退，未登录用户补首次登录时间）+ 展示名规则：
+// 补空，并把「email 本地部分」自动默认名升级为真实登录名（本地部分是同步/空登录名的
+// 回退默认值，不是人改的，可安全升级）；与本地部分不同的手动名不被覆盖。返回是否有
+// 字段被实际修改；调用方负责 Save 与错误包裹，以保留各自错误消息语义。EnsureSynced
+// （lastLogin 恒 nil，只补/升级 name）与 SyncLoginUser（推进最近登录）共用。
 func updateUserProjection(update *ent.UserUpdateOne, cur *ent.User, lastLogin *time.Time, name string) bool {
 	changed := false
 	if lastLogin != nil && (cur.LastLogin == nil || lastLogin.After(*cur.LastLogin)) {
 		update.SetLastLogin(*lastLogin)
 		changed = true
 	}
-	if cur.Name == "" && name != "" {
+	if name != "" && name != cur.Name && (cur.Name == "" || cur.Name == localPartOf(cur.Email)) {
 		update.SetName(name)
 		changed = true
 	}

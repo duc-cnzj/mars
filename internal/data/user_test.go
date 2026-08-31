@@ -360,7 +360,8 @@ func Test_userRepo_SyncLoginUser_UpdateExisting(t *testing.T) {
 	assert.True(t, u.LastLogin.After(old), "last_login 应前进到登录时刻")
 }
 
-// Test_userRepo_SyncLoginUser_DoesNotOverrideName 已有非空展示名不被登录名覆盖。
+// Test_userRepo_SyncLoginUser_DoesNotOverrideName 已有非空展示名（手动设置，≠ email
+// 本地部分）不被登录名覆盖。
 func Test_userRepo_SyncLoginUser_DoesNotOverrideName(t *testing.T) {
 	repo, entdb := newUserRepo(t)
 	ctx := context.TODO()
@@ -376,6 +377,44 @@ func Test_userRepo_SyncLoginUser_DoesNotOverrideName(t *testing.T) {
 
 	u := entdb.User.Query().Where(entuser.EmailEQ("alice@x.com")).OnlyX(ctx)
 	assert.Equal(t, "自定义名", u.Name, "非空展示名不被覆盖")
+}
+
+// Test_userRepo_SyncLoginUser_UpgradesLocalPartName 既有用户名为「email 本地部分」
+// （成员同步/空登录名的自动默认值）时，带真实登录名登录应升级展示名并推进最近登录。
+func Test_userRepo_SyncLoginUser_UpgradesLocalPartName(t *testing.T) {
+	repo, entdb := newUserRepo(t)
+	ctx := context.TODO()
+
+	// 成员同步生成的投影：展示名回退为 email 本地部分
+	_, err := entdb.Member.Create().SetEmail("linkaijian@uco.com").Save(ctx)
+	require.NoError(t, err)
+	require.NoError(t, repo.EnsureSynced(ctx))
+
+	// 带真实 OIDC 登录名再次登录：本地部分默认名升级为真实名
+	require.NoError(t, repo.SyncLoginUser(ctx, "linkaijian@uco.com", "林开建（AI）"))
+
+	u := entdb.User.Query().Where(entuser.EmailEQ("linkaijian@uco.com")).OnlyX(ctx)
+	assert.Equal(t, "林开建（AI）", u.Name, "email 本地部分默认名应升级为真实登录名")
+	assert.NotNil(t, u.LastLogin, "登录应推进 last_login")
+}
+
+// Test_userRepo_SyncLoginUser_UpgradeNotDowngradedBySync 升级单向：已升级为真实名的
+// 用户，成员全量同步（源 name 为本地部分）不得降级回本地部分。
+func Test_userRepo_SyncLoginUser_UpgradeNotDowngradedBySync(t *testing.T) {
+	repo, entdb := newUserRepo(t)
+	ctx := context.TODO()
+
+	_, err := entdb.Member.Create().SetEmail("bob@x.com").Save(ctx)
+	require.NoError(t, err)
+	require.NoError(t, repo.EnsureSynced(ctx))
+
+	// 登录升级为真实名
+	require.NoError(t, repo.SyncLoginUser(ctx, "bob@x.com", "Bob Builder"))
+	// 成员全量同步（源 name=本地部分 bob），真实名不得被降级
+	require.NoError(t, repo.EnsureSynced(ctx))
+
+	u := entdb.User.Query().Where(entuser.EmailEQ("bob@x.com")).OnlyX(ctx)
+	assert.Equal(t, "Bob Builder", u.Name, "真实名不得被成员同步降级回本地部分")
 }
 
 // Test_userRepo_SyncLoginUser_DoesNotRewindLastLogin 已有更晚登录时间不倒退。
