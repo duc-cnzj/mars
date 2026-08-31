@@ -151,19 +151,19 @@ func (mr *MockProjectRepoMockRecorder) List(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockProjectRepo)(nil).List), arg0, arg1)
 }
 
-// ListAll mocks base method.
-func (m *MockProjectRepo) ListAll(arg0 context.Context) ([]*biz.Project, error) {
+// ListAllProjectBriefs mocks base method.
+func (m *MockProjectRepo) ListAllProjectBriefs(arg0 context.Context) ([]*biz.Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListAll", arg0)
+	ret := m.ctrl.Call(m, "ListAllProjectBriefs", arg0)
 	ret0, _ := ret[0].([]*biz.Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListAll indicates an expected call of ListAll.
-func (mr *MockProjectRepoMockRecorder) ListAll(arg0 any) *gomock.Call {
+// ListAllProjectBriefs indicates an expected call of ListAllProjectBriefs.
+func (mr *MockProjectRepoMockRecorder) ListAllProjectBriefs(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAll", reflect.TypeOf((*MockProjectRepo)(nil).ListAll), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllProjectBriefs", reflect.TypeOf((*MockProjectRepo)(nil).ListAllProjectBriefs), arg0)
 }
 
 // ListByDeployStatus mocks base method.

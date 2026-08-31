@@ -27,7 +27,7 @@ type fakeProjectRepoForProjectBiz struct {
 	ProjectRepo
 	createCalled, deleteCalled, updateProjectCalled  bool
 	findByIDsCalled, listCalled, listLivenessCalled  bool
-	listAllCalled                                    bool
+	listAllProjectBriefsCalled                       bool
 	showCalled, versionCalled, findByNameCalled      bool
 	updateDeployStatusCalled, updateVersionCalled    bool
 	findByVersionCalled, updateStatusByVersionCalled bool
@@ -64,8 +64,8 @@ func (f *fakeProjectRepoForProjectBiz) List(ctx context.Context, input *ListProj
 	return []*Project{{ID: 1}}, nil, nil
 }
 
-func (f *fakeProjectRepoForProjectBiz) ListAll(ctx context.Context) ([]*Project, error) {
-	f.listAllCalled = true
+func (f *fakeProjectRepoForProjectBiz) ListAllProjectBriefs(ctx context.Context) ([]*Project, error) {
+	f.listAllProjectBriefsCalled = true
 	return []*Project{{Name: "proj1", Namespace: &Namespace{Name: "ns"}}}, nil
 }
 
@@ -425,12 +425,12 @@ func TestProjectBiz_GetProjectEndpointsInNamespace_HTTPRouteErr(t *testing.T) {
 
 // ---- 纯透传查询 ----
 
-func TestProjectBiz_ListAll(t *testing.T) {
+func TestProjectBiz_ListAllProjectBriefs(t *testing.T) {
 	f := &fakeProjectRepoForProjectBiz{}
 	b := newProjectBizForTest(f)
-	got, err := b.ListAll(context.TODO())
+	got, err := b.ListAllProjectBriefs(context.TODO())
 	assert.NoError(t, err)
-	assert.True(t, f.listAllCalled)
+	assert.True(t, f.listAllProjectBriefsCalled)
 	assert.Len(t, got, 1)
 	assert.Equal(t, "proj1", got[0].Name)
 }

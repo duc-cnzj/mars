@@ -741,9 +741,27 @@ func (repo *k8sRepo) CopyFileToPod(ctx context.Context, input *biz.CopyFileToPod
 	})
 }
 
-// ClusterInfo 统计集群资源：节点调度能力/实际用量/请求量，换算 CPU/内存余量
-// 与使用率，并按请求率阈值给出健康状态。节点或指标 List 失败只记日志降级返回。
+// ClusterInfo 返回集群资源统计（调度能力/用量/请求率/健康状态），经 30s 缓存合并重复读：
+// 命中直接反序列化缓存快照；未命中/缓存出错时降级实时计算（cache 为 nil 的旧构造也走
+// 实时，兼容既有测试）。节点或指标 List 失败由 fetchClusterInfo 记日志降级返回。
 func (repo *k8sRepo) ClusterInfo() *biz.ClusterInfo {
+	if repo.cache != nil {
+		remember, err := repo.cache.Remember(NewKey("cluster_info"), clusterInfoCacheSeconds, func() ([]byte, error) {
+			return json.Marshal(repo.fetchClusterInfo())
+		}, false)
+		if err == nil {
+			var info biz.ClusterInfo
+			if err := json.Unmarshal(remember, &info); err == nil {
+				return &info
+			}
+		}
+	}
+	return repo.fetchClusterInfo()
+}
+
+// fetchClusterInfo 实时统计集群资源：节点调度能力/实际用量/请求量，换算 CPU/内存余量
+// 与使用率，并按请求率阈值给出健康状态。节点或指标 List 失败只记日志降级返回。
+func (repo *k8sRepo) fetchClusterInfo() *biz.ClusterInfo {
 	selector := labels.Everything()
 	var nodes []corev1.Node
 
@@ -855,6 +873,11 @@ func (repo *k8sRepo) ClusterInfo() *biz.ClusterInfo {
 }
 
 const (
+	// clusterInfoCacheSeconds 集群信息统计缓存的 TTL 秒数：30s，与 cluster_board 快照缓存
+	// 同频——集群节点/用量变化平缓，30s 内统计视为稳定；ClusterBoard 聚合的 Overview 也经
+	// 此缓存，TTL 内的重复读不再重复拉取 Nodes/NodeMetrics（fetchClusterBoard 自身的节点
+	// /指标 List 走 cluster_board 独立缓存，冷缓存首访两者仍各拉一次，互不消重）。
+	clusterInfoCacheSeconds = 30
 	// clusterBoardCacheSeconds 集群看板快照缓存的 TTL 秒数（与 cron 预热周期一致）。
 	clusterBoardCacheSeconds = 30
 	// resourceSnapshotCacheSeconds 空间资源快照缓存的 TTL 秒数：5 分钟，比看板缓存

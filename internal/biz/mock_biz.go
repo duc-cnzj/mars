@@ -664,19 +664,19 @@ func (mr *MockProjectBizMockRecorder) List(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockProjectBiz)(nil).List), arg0, arg1)
 }
 
-// ListAll mocks base method.
-func (m *MockProjectBiz) ListAll(arg0 context.Context) ([]*Project, error) {
+// ListAllProjectBriefs mocks base method.
+func (m *MockProjectBiz) ListAllProjectBriefs(arg0 context.Context) ([]*Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListAll", arg0)
+	ret := m.ctrl.Call(m, "ListAllProjectBriefs", arg0)
 	ret0, _ := ret[0].([]*Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListAll indicates an expected call of ListAll.
-func (mr *MockProjectBizMockRecorder) ListAll(arg0 any) *gomock.Call {
+// ListAllProjectBriefs indicates an expected call of ListAllProjectBriefs.
+func (mr *MockProjectBizMockRecorder) ListAllProjectBriefs(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAll", reflect.TypeOf((*MockProjectBiz)(nil).ListAll), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllProjectBriefs", reflect.TypeOf((*MockProjectBiz)(nil).ListAllProjectBriefs), arg0)
 }
 
 // Liveness mocks base method.

@@ -103,14 +103,14 @@ func (c *clusterSvc) ClusterBoard(ctx context.Context, req *cluster.BoardRequest
 
 // ResourceBoard 返回空间资源聚合快照：每个管理命名空间的 Pod requests/实际用量
 // 占比及项目明细，为管理员专用接口（定位「申请了很多 requests 却用不到多少资源」
-// 的空间）。命名空间集合由 namespaceBiz 提供，项目归属由 projectBiz.ListAll 提供，
+// 的空间）。命名空间集合由 namespaceBiz 提供，项目归属由 projectBiz.ListAllProjectBriefs 提供，
 // biz 层按项目 PodSelectors 匹配 pod 拆分后返回。
 func (c *clusterSvc) ResourceBoard(ctx context.Context, req *cluster.InfoRequest) (*cluster.ResourceBoardResponse, error) {
 	managedNames, err := c.namespaceBiz.ListAllNames(ctx)
 	if err != nil {
 		return nil, logError(ctx, c.logger, err)
 	}
-	projects, err := c.projectBiz.ListAll(ctx)
+	projects, err := c.projectBiz.ListAllProjectBriefs(ctx)
 	if err != nil {
 		return nil, logError(ctx, c.logger, err)
 	}

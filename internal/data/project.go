@@ -201,12 +201,16 @@ func (repo *projectRepo) ListLivenessPage(ctx context.Context, query *biz.Livene
 	}, nil
 }
 
-// ListAll 查询全部项目（含命名空间边与 Pod selectors），供空间资源聚合做 pod→项目归属映射。
-func (repo *projectRepo) ListAll(ctx context.Context) (projects []*biz.Project, err error) {
+// ListAllProjectBriefs 查询全部项目的精简投影（仅 Name/PodSelectors + 关联 Namespace.Name），
+// 供空间资源聚合做 pod→项目归属映射。不投影 config/override_values/env_values/extra_values/
+// manifest 等 longtext/JSON 大列——全列拉取在项目多时是显著的传输与解码成本；toProject 复制
+// 未选字段为零值，消费端仅读上述三字段，安全。
+func (repo *projectRepo) ListAllProjectBriefs(ctx context.Context) (projects []*biz.Project, err error) {
 	ctx, span := tracer.Start(ctx, "projectRepo/ListAll")
 	defer func() { endSpan(span, err) }()
 	all, err := repo.data.DB().Project.Query().
-		WithNamespace().
+		Select(project.FieldID, project.FieldName, project.FieldPodSelectors).
+		WithNamespace(func(q *ent.NamespaceQuery) { q.Select(namespace.FieldName) }).
 		Order(ent.Desc(project.FieldID)).
 		All(ctx)
 	if err != nil {

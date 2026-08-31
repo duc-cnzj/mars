@@ -698,6 +698,54 @@ func TestClusterInfo(t *testing.T) {
 	}, info)
 }
 
+// TestClusterInfo_CacheHit 覆盖 30s 缓存的合并读：首次调用实时 List 一次并回填，TTL 内
+// 第二次调用命中缓存不重复 List nodes（用 fake reactor 计数验证），且两次结果一致。
+func TestClusterInfo_CacheHit(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	cpu := &resource.Quantity{}
+	cpu.Add(resource.MustParse("3"))
+	memory := &resource.Quantity{}
+	memory.Add(resource.MustParse("10Gi"))
+	fc := fake.NewSimpleClientset(&corev1.NodeList{Items: []corev1.Node{
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "node01"},
+			Status: corev1.NodeStatus{
+				Allocatable: corev1.ResourceList{
+					corev1.ResourceCPU:    cpu.DeepCopy(),
+					corev1.ResourceMemory: memory.DeepCopy(),
+				},
+			},
+		},
+	}})
+	// 前置 reactor 只计数不接管，交给内置 ObjectTracker 返回已注册的 NodeList。
+	nodeListCalls := 0
+	fc.PrependReactor("list", "nodes", func(action testing2.Action) (bool, runtime.Object, error) {
+		nodeListCalls++
+		return false, nil, nil
+	})
+	fcm := &fake2.Clientset{}
+	fcm.AddReactor("list", "nodes", func(action testing2.Action) (bool, runtime.Object, error) {
+		return true, &v1beta1.NodeMetricsList{
+			Items: []v1beta1.NodeMetrics{
+				{ObjectMeta: metav1.ObjectMeta{Name: "node01"}, Usage: corev1.ResourceList{}},
+			},
+		}, nil
+	})
+	mockData := NewMockDataStore(m)
+	kr := &k8sRepo{
+		logger: mlog.NewForConfig(nil),
+		data:   mockData,
+		cache:  NewCacheImpl(&config.Config{CacheDriver: "memory"}, nil, mlog.NewForConfig(nil)),
+	}
+	mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
+
+	first := kr.ClusterInfo()
+	second := kr.ClusterInfo()
+	assert.Equal(t, 1, nodeListCalls, "TTL 内第二次调用应命中缓存，不重复 List nodes")
+	assert.Equal(t, first, second)
+}
+
 // Nodes().List 失败时不能 panic（nil 解引用），应返回空 biz.ClusterInfo。
 func TestClusterInfo_NodesListError(t *testing.T) {
 	m := gomock.NewController(t)

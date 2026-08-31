@@ -1131,8 +1131,8 @@ func TestProjectRepo_ErrorBranches(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("ListAll query error", func(t *testing.T) {
-		_, err := repo.ListAll(ctx)
+	t.Run("ListAllProjectBriefs query error", func(t *testing.T) {
+		_, err := repo.ListAllProjectBriefs(ctx)
 		assert.Error(t, err)
 	})
 }
@@ -1373,9 +1373,9 @@ func TestProjectRepo_ListLivenessPage_QueryErrors(t *testing.T) {
 	}
 }
 
-// TestProjectRepo_ListAll 全量项目（含命名空间边与 Pod selectors）：不分页返回全部
-// 项目并按 id 倒序，供空间资源聚合做 pod→项目归属映射。
-func TestProjectRepo_ListAll(t *testing.T) {
+// TestProjectRepo_ListAllProjectBriefs 全量项目精简投影（仅 Name/PodSelectors + 命名空间边）：
+// 不分页返回全部并按 id 倒序，供空间资源聚合做 pod→项目归属映射。
+func TestProjectRepo_ListAllProjectBriefs(t *testing.T) {
 	ctx := context.TODO()
 	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
@@ -1385,10 +1385,11 @@ func TestProjectRepo_ListAll(t *testing.T) {
 	ns := db.Namespace.Create().SetName("team-apps").SetCreatorEmail("a@q.c").SaveX(ctx)
 	repo1 := createRepo(db)
 	repo2 := createRepo(db)
-	db.Project.Create().SetName("app-1").SetGitBranch("main").SetGitCommit("c1").SetCreator("u").SetGitProjectID(1).SetNamespaceID(ns.ID).SetRepoID(repo1.ID).SetPodSelectors([]string{"app=1"}).SaveX(ctx)
-	db.Project.Create().SetName("app-2").SetGitBranch("main").SetGitCommit("c2").SetCreator("u").SetGitProjectID(2).SetNamespaceID(ns.ID).SetRepoID(repo2.ID).SetPodSelectors([]string{"app=2"}).SaveX(ctx)
+	// 落库时写入 config/override_values/manifest 大列真实值，反向断言投影应裁剪它们为零值。
+	db.Project.Create().SetName("app-1").SetGitBranch("main").SetGitCommit("c1").SetCreator("u").SetGitProjectID(1).SetNamespaceID(ns.ID).SetRepoID(repo1.ID).SetPodSelectors([]string{"app=1"}).SetConfig("big-config-1").SetOverrideValues("big-override-1").SetManifest([]string{"manifest-1"}).SaveX(ctx)
+	db.Project.Create().SetName("app-2").SetGitBranch("main").SetGitCommit("c2").SetCreator("u").SetGitProjectID(2).SetNamespaceID(ns.ID).SetRepoID(repo2.ID).SetPodSelectors([]string{"app=2"}).SetConfig("big-config-2").SetOverrideValues("big-override-2").SetManifest([]string{"manifest-2"}).SaveX(ctx)
 
-	all, err := r.ListAll(ctx)
+	all, err := r.ListAllProjectBriefs(ctx)
 	assert.NoError(t, err)
 	if assert.Len(t, all, 2) {
 		// 按 id 倒序：后创建的 app-2 在前。
@@ -1397,6 +1398,12 @@ func TestProjectRepo_ListAll(t *testing.T) {
 		for _, p := range all {
 			assert.Equal(t, "team-apps", p.Namespace.Name, "命名空间边应加载")
 			assert.NotEmpty(t, p.PodSelectors, "Pod selectors 应加载")
+			// 反向断言：未投影的 longtext/JSON 大列应保持零值——这正是精简投影的卖点，
+			// 若未来回归全列拉取（如误加 Select(FieldAll)），此处应失败。
+			assert.Empty(t, p.Config, "未投影的 config 大列应保持空")
+			assert.Empty(t, p.OverrideValues, "未投影的 override_values 大列应保持空")
+			assert.Nil(t, p.Manifest, "未投影的 manifest 大列应保持 nil")
+			assert.Nil(t, p.Repo, "未投影的 repo 边应保持 nil")
 		}
 	}
 }

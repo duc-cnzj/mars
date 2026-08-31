@@ -170,7 +170,7 @@ func Test_clusterSvc_ResourceBoard(t *testing.T) {
 	svc, mocks := newClusterSvcWithMocks(t)
 
 	mocks.nsBiz.EXPECT().ListAllNames(gomock.Any()).Return([]string{"ns-a"}, nil)
-	mocks.projectBiz.EXPECT().ListAll(gomock.Any()).Return([]*biz.Project{{Name: "web"}}, nil)
+	mocks.projectBiz.EXPECT().ListAllProjectBriefs(gomock.Any()).Return([]*biz.Project{{Name: "web"}}, nil)
 	mocks.k8sBiz.EXPECT().ResourceBoard(gomock.Any(), []string{"ns-a"}, gomock.Any()).Return(&biz.ResourceBoard{
 		Namespaces: []*biz.ResourceNamespace{{
 			Name:            "ns-a",
@@ -269,7 +269,7 @@ func Test_clusterSvc_ResourceBoard_Error(t *testing.T) {
 	t.Run("项目归属失败", func(t *testing.T) {
 		svc, mocks := newClusterSvcWithMocks(t)
 		mocks.nsBiz.EXPECT().ListAllNames(gomock.Any()).Return([]string{"ns-a"}, nil)
-		mocks.projectBiz.EXPECT().ListAll(gomock.Any()).Return(nil, errors.New("boom"))
+		mocks.projectBiz.EXPECT().ListAllProjectBriefs(gomock.Any()).Return(nil, errors.New("boom"))
 
 		resp, err := svc.ResourceBoard(newAdminUserCtx(), &cluster.InfoRequest{})
 		assert.Nil(t, resp)
@@ -279,7 +279,7 @@ func Test_clusterSvc_ResourceBoard_Error(t *testing.T) {
 	t.Run("biz 聚合失败", func(t *testing.T) {
 		svc, mocks := newClusterSvcWithMocks(t)
 		mocks.nsBiz.EXPECT().ListAllNames(gomock.Any()).Return([]string{"ns-a"}, nil)
-		mocks.projectBiz.EXPECT().ListAll(gomock.Any()).Return(nil, nil)
+		mocks.projectBiz.EXPECT().ListAllProjectBriefs(gomock.Any()).Return(nil, nil)
 		mocks.k8sBiz.EXPECT().ResourceBoard(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("boom"))
 
 		resp, err := svc.ResourceBoard(newAdminUserCtx(), &cluster.InfoRequest{})
