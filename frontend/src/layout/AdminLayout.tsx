@@ -7,18 +7,18 @@ import type { TKey } from '@/i18n/keys'
 /**
  * 管理后台侧栏导航项：图标 + 词条键 + 路由目标。
  * 平台级治理视角，按职责分组自上而下：
- * 资源治理（集群 → 项目活跃度/僵尸识别 → 命名空间）→
- * 代码与运维（仓库 → 事件 → 系统设置）→ 安全（令牌 → 用户）；
+ * 集群资源（资源治理）→ 核心业务前置（仓库 → 事件 → 令牌）→
+ * 资源治理（项目活跃度 → 命名空间 → 空间资源）→ 账号与系统（用户 → 系统设置）；
  * 事件/令牌/用户复用普通入口组件（真实 API），操作审计已合并进事件页（管理员即看全平台）。
  */
 const ADMIN_NAV: { icon: IconName; labelKey: TKey; to: string }[] = [
   { icon: 'cluster', labelKey: 'nav.cluster', to: '/admin/cluster' },
-  { icon: 'boxes', labelKey: 'nav.projects', to: '/admin/projects' },
-  { icon: 'namespace', labelKey: 'nav.namespaces', to: '/admin/namespaces' },
-  { icon: 'gauge', labelKey: 'nav.resources', to: '/admin/resources' },
   { icon: 'repo', labelKey: 'nav.repo', to: '/admin/repos' },
   { icon: 'pulse', labelKey: 'nav.events', to: '/admin/events' },
   { icon: 'key', labelKey: 'nav.token', to: '/admin/tokens' },
+  { icon: 'boxes', labelKey: 'nav.projects', to: '/admin/projects' },
+  { icon: 'namespace', labelKey: 'nav.namespaces', to: '/admin/namespaces' },
+  { icon: 'gauge', labelKey: 'nav.resources', to: '/admin/resources' },
   { icon: 'users', labelKey: 'nav.users', to: '/admin/users' },
   { icon: 'gear', labelKey: 'nav.settings', to: '/admin/settings' },
 ]
