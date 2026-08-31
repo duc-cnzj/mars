@@ -88,6 +88,14 @@ function deepGet(obj: unknown, parts: string[]): unknown {
   return cur
 }
 
+/** 判定 localChartPath 是否为远端 chart 地址："|" 切分 3 段且首段为十进制整数，
+    对齐后端 biz.IsRemoteLocalChartPath 语义（"git 项目 ID|分支|chart 目录"）。
+    仅远端格式地址触发 chart 模板拉取；本地路径由后端返回空串处理。 */
+const isRemoteChartPath = (input: string): boolean => {
+  const parts = input.split('|')
+  return parts.length === 3 && /^\d+$/.test(parts[0])
+}
+
 /**
  * 添加 / 编辑 repo 弹窗：核心字段 + mars.Config 配置。
  * 编辑时从 editItem 回填；git 项目与分支动态拉取。
@@ -274,8 +282,8 @@ export function RepoFormModal({
       })
   }, [open, form.gitProjectId])
 
-  // 左侧「charts 默认值」自动拉取：关联 git 且有 localChartPath 时拉取。打开弹窗立即拉（不等待），
-  // 之后 localChartPath 变化走 2s 防抖，避免输入时狂打接口。
+  // 左侧「charts 默认值」自动拉取：配置了远端 chart 地址（pid|branch|path）即拉取，与 needGitRepo 无关。
+  // 打开弹窗立即拉（不等待），之后 localChartPath 变化走 2s 防抖，避免输入时狂打接口。
   // 用 ref 记录「本次打开是否已首次拉取」：首次 0ms，后续 2000ms。
   // 注意：结果只进 chartDefaults（只读引用），不覆盖表单 valuesYaml——右侧可编辑值来自库里的保存配置。
   const initialValuesFetch = useRef(false)
@@ -285,8 +293,8 @@ export function RepoFormModal({
       setValuesLoading(false) // 关闭时复位，避免上次在途请求因 alive 失效而卡住 loading 态
       return
     }
-    if (!form.needGitRepo || !form.localChartPath.trim()) {
-      setValuesLoading(false) // 路径被清空时在途请求被 cleanup 弃用（alive=false），这里兜底复位 loading
+    if (!isRemoteChartPath(form.localChartPath)) {
+      setValuesLoading(false) // 地址为空/非远端格式时在途请求被 cleanup 弃用（alive=false），这里兜底复位 loading
       return
     }
     const first = !initialValuesFetch.current
@@ -310,7 +318,7 @@ export function RepoFormModal({
       clearTimeout(timer)
       alive = false // 请求在途时 effect 重跑，丢弃过期响应，避免旧数据覆盖新输入
     }
-  }, [open, form.needGitRepo, form.localChartPath])
+  }, [open, form.localChartPath])
 
   // 配置自动推导：chartDefaults（拉取的 chart 模板）+ configField 就绪时，防抖 1s 从模板里取
   // configField 指向的全局配置。对齐旧版：从左侧只读模板推导，不读右侧表单值。
