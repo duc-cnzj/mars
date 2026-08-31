@@ -1542,17 +1542,20 @@ func (x *ProjectModel) GetDeletedAt() string {
 }
 
 type AccessTokenModel struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	ExpiredAt     string                 `protobuf:"bytes,3,opt,name=expired_at,json=expiredAt,proto3" json:"expired_at,omitempty"`
-	Usage         string                 `protobuf:"bytes,4,opt,name=usage,proto3" json:"usage,omitempty"`
-	LastUsedAt    string                 `protobuf:"bytes,5,opt,name=last_used_at,json=lastUsedAt,proto3" json:"last_used_at,omitempty"`
-	IsDeleted     bool                   `protobuf:"varint,6,opt,name=is_deleted,json=isDeleted,proto3" json:"is_deleted,omitempty"`
-	IsExpired     bool                   `protobuf:"varint,7,opt,name=is_expired,json=isExpired,proto3" json:"is_expired,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,100,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     string                 `protobuf:"bytes,101,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	DeletedAt     string                 `protobuf:"bytes,102,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Token      string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Email      string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	ExpiredAt  string                 `protobuf:"bytes,3,opt,name=expired_at,json=expiredAt,proto3" json:"expired_at,omitempty"`
+	Usage      string                 `protobuf:"bytes,4,opt,name=usage,proto3" json:"usage,omitempty"`
+	LastUsedAt string                 `protobuf:"bytes,5,opt,name=last_used_at,json=lastUsedAt,proto3" json:"last_used_at,omitempty"`
+	IsDeleted  bool                   `protobuf:"varint,6,opt,name=is_deleted,json=isDeleted,proto3" json:"is_deleted,omitempty"`
+	IsExpired  bool                   `protobuf:"varint,7,opt,name=is_expired,json=isExpired,proto3" json:"is_expired,omitempty"`
+	// name：创建人显示名（签发时从用户 user_info 快照）。可能为空（历史令牌/旧数据），
+	// 前端展示回退到 email，避免空串。
+	Name          string `protobuf:"bytes,8,opt,name=name,proto3" json:"name,omitempty"`
+	CreatedAt     string `protobuf:"bytes,100,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     string `protobuf:"bytes,101,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	DeletedAt     string `protobuf:"bytes,102,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1634,6 +1637,13 @@ func (x *AccessTokenModel) GetIsExpired() bool {
 		return x.IsExpired
 	}
 	return false
+}
+
+func (x *AccessTokenModel) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
 }
 
 func (x *AccessTokenModel) GetCreatedAt() string {
@@ -1948,7 +1958,7 @@ const file_proto_types_types_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18e \x01(\tR\tupdatedAt\x12\x1d\n" +
 	"\n" +
-	"deleted_at\x18f \x01(\tR\tdeletedAt\"\xb0\x02\n" +
+	"deleted_at\x18f \x01(\tR\tdeletedAt\"\xc4\x02\n" +
 	"\x10AccessTokenModel\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1d\n" +
@@ -1960,7 +1970,8 @@ const file_proto_types_types_proto_rawDesc = "" +
 	"\n" +
 	"is_deleted\x18\x06 \x01(\bR\tisDeleted\x12\x1d\n" +
 	"\n" +
-	"is_expired\x18\a \x01(\bR\tisExpired\x12\x1d\n" +
+	"is_expired\x18\a \x01(\bR\tisExpired\x12\x12\n" +
+	"\x04name\x18\b \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
 	"created_at\x18d \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +

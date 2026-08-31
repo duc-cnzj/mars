@@ -2098,6 +2098,11 @@ export interface components {
             lastUsedAt: string;
             isDeleted: boolean;
             isExpired: boolean;
+            /**
+             * @description name：创建人显示名（签发时从用户 user_info 快照）。可能为空（历史令牌/旧数据），
+             *      前端展示回退到 email，避免空串。
+             */
+            name: string;
             createdAt: string;
             updatedAt: string;
             deletedAt: string;
@@ -3223,6 +3228,8 @@ export interface operations {
                 actionTypes?: PathsApiEventsGetParametersQueryActionTypes[];
                 /** @description 模糊搜索 message 和 username */
                 search?: string;
+                /** @description all：管理员显式 opt-in 查看全部用户事件（默认收敛到本人，最小权限）；普通用户传此字段等效无操作 */
+                all?: boolean;
             };
             header?: never;
             path?: never;

@@ -1914,6 +1914,8 @@ func (m *AccessTokenModel) validate(all bool) error {
 
 	// no validation rules for IsExpired
 
+	// no validation rules for Name
+
 	// no validation rules for CreatedAt
 
 	// no validation rules for UpdatedAt

@@ -408,10 +408,20 @@ export function Repos() {
     <div className="flex h-full flex-col gap-3">
       {/* 工具栏 */}
       <div className="flex shrink-0 flex-col gap-3">
-        {/* 标题 + 刷新 + 添加 */}
+        {/* 标题 + 搜索 + 刷新 + 导出/导入/添加 */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-[16px] font-semibold text-ink">{t('repos.title')}</h2>
           <div className="flex flex-wrap items-center gap-2">
+            {/* 搜索统一放标题行右上角（对齐 Events/治理/工作台） */}
+            <SearchInput
+              value={keyword}
+              onChange={(v) => {
+                setKeyword(v)
+                setPage(1)
+              }}
+              placeholder={t('repos.searchPlaceholder')}
+              className="max-w-xs"
+            />
             <Button size="sm" variant="outline" disabled={refreshing} onClick={refresh}>
               {refreshing ? (
                 <Icon name="loader" className="size-4 animate-spin" />
@@ -454,17 +464,6 @@ export function Repos() {
             />
           </div>
         </div>
-
-        {/* 搜索 */}
-        <SearchInput
-          value={keyword}
-          onChange={(v) => {
-            setKeyword(v)
-            setPage(1)
-          }}
-          placeholder={t('repos.searchPlaceholder')}
-          className="max-w-xs"
-        />
       </div>
 
       {/* 列表：flex 撑满剩余高度，容器内滚动（对齐旧版 div 内无限加载） */}

@@ -11,15 +11,16 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/shadcn/avatar'
 import { Icon, type IconName } from '@/components/Icons'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { cn } from '@/lib/utils'
 import type { TKey } from '@/i18n/keys'
 
-/** 用户下拉菜单项：图标 + 词条键 + 路由目标 */
-const NAV_ITEMS: { icon: IconName; labelKey: TKey; to: string }[] = [
+/** 用户下拉菜单项：图标 + 词条键 + 路由目标。管理后台紧随工作台，图标与文字均品牌主色突出（图标加粗描边、文字同色柔光），整项容器与其他项一致。 */
+const NAV_ITEMS: { icon: IconName; labelKey: TKey; to: string; special?: boolean }[] = [
   { icon: 'grid', labelKey: 'nav.workbench', to: '/' },
+  // 管理后台（mars_admin 门控）：仓库管理/集群资源等后台页统一收进后台侧栏，下拉只留总入口
+  { icon: 'shield', labelKey: 'nav.admin', to: '/admin', special: true },
   { icon: 'pulse', labelKey: 'nav.events', to: '/events' },
   { icon: 'key', labelKey: 'nav.token', to: '/tokens' },
-  // 管理后台（mars_admin 门控）：仓库管理/集群资源等后台页统一收进后台侧栏，下拉只留总入口
-  { icon: 'shield', labelKey: 'nav.admin', to: '/admin' },
 ]
 
 /**
@@ -69,8 +70,20 @@ export function UserMenu() {
         {navItems.map((it) => (
           <DropdownMenuItem key={it.to} asChild className="cursor-pointer">
             <Link to={it.to}>
-              <Icon name={it.icon} className="size-4" />
-              {t(it.labelKey)}
+              {/* 管理后台入口特殊化：图标品牌主色+加粗描边；文字品牌主色+同色柔光（text-shadow），其余项保持墨色细描边/无阴影 */}
+              <Icon
+                name={it.icon}
+                className={cn('size-4', it.special && 'text-primary')}
+                {...(it.special ? { strokeWidth: 2 } : {})}
+              />
+              <span
+                className={cn(
+                  it.special &&
+                    'text-primary [text-shadow:0_0_6px_color-mix(in_srgb,var(--primary)_40%,transparent)]',
+                )}
+              >
+                {t(it.labelKey)}
+              </span>
             </Link>
           </DropdownMenuItem>
         ))}

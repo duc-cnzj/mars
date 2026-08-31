@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { formatDateTime } from '@/lib/format'
 import { toast } from '@/lib/toast'
@@ -35,6 +36,7 @@ import {
 } from '@/components/ui/shadcn/dialog'
 import { copyText } from '@/lib/copy'
 import { useAuth } from '@/features/auth/AuthProvider'
+import type { TKey } from '@/i18n/keys'
 
 type TokenModel = components['schemas']['types.AccessTokenModel']
 type Unit = 'month' | 'day' | 'hour' | 'minute' | 'second'
@@ -52,6 +54,16 @@ const UNIT_KEY = {
   minute: 'tokens.unitMinute',
   second: 'tokens.unitSecond',
 } as const
+
+/** 状态筛选展示顺序：全部在前，其余按常用度（有效/已过期/已撤销） */
+const STATUS_ORDER: readonly TokenStatus[] = ['all', 'valid', 'expired', 'revoked']
+/** 状态 → 词条键，避免动态 key 破坏 i18next 类型校验 */
+const STATUS_KEY: Record<TokenStatus, TKey> = {
+  all: 'tokens.statusAll',
+  valid: 'tokens.statusValid',
+  expired: 'tokens.statusExpired',
+  revoked: 'tokens.statusRevoked',
+}
 
 /** 按单位把数值换算成秒（month 用日历月差，其余按固定进制） */
 function getSeconds(num: number, unit: Unit): number {
@@ -72,12 +84,27 @@ function getSeconds(num: number, unit: Unit): number {
 /**
  * 访问令牌管理：列表（分页）+ 创建 + 续租 + 撤销。
  * token 点击即复制；撤销前二次确认；状态标签区分 已撤销/已过期/即将过期。
+ * 双入口共享：/admin/tokens 传 adminView（后台全平台视图，mars_admin 可查全平台令牌）；
+ * /tokens 默认个人视图——admin 在下拉入口也与普通用户一致只看到自己（全平台只属后台）。
  */
-export function AccessTokenManager() {
+export function AccessTokenManager({ adminView = false }: { adminView?: boolean }) {
   const { t } = useTranslation()
-  // 管理员可查全平台令牌，普通用户服务端已收敛到本人 → 「我创建的」收敛按钮仅管理员可见
+  // 全平台视图仅后台入口启用（/admin/tokens 传 adminView）；下拉入口（/tokens）无论角色一律
+  // 收敛本人（对齐普通用户最小权限）。adminMode = 后台入口 且 用户是 mars_admin 双条件。
   const { user } = useAuth()
   const isAdmin = user?.roles.includes('mars_admin') ?? false
+  const adminMode = adminView && isAdmin
+  // 个人视图（下拉 /tokens）下的 admin 提示：想看全平台令牌请前往后台。
+  // 后台视图（adminMode=true）或普通用户都不展示（后台已在全平台、普通用户无全平台权限）
+  const showAdminHint = isAdmin && !adminMode
+
+  /** 状态筛选 chip 样式：激活态用主色系，其余灰底边框（对齐 Events/命名空间活力度筛选） */
+  const chipCls = (active: boolean) =>
+    `cursor-pointer select-none rounded-full border px-3 py-1 text-[12px] transition-colors ${
+      active
+        ? 'border-primary bg-primary-soft font-medium text-primary'
+        : 'border-line bg-surface text-mute hover:border-primary hover:text-primary'
+    }`
 
   const [items, setItems] = useState<TokenModel[]>([])
   const [count, setCount] = useState(0)
@@ -89,11 +116,11 @@ export function AccessTokenManager() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const busyRef = useRef(false)
   const refreshingRef = useRef(false)
-  // 按创建人搜索（admin 可查全平台令牌，普通用户仅本人；搜索走服务端 query）
+  // 按创建人/邮箱搜索（后台视图 admin 可查全平台令牌，个人视图仅本人；搜索走服务端 query）
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  // 「我创建的」快捷筛选：admin 全量视图收敛到本人令牌（与服务端 all 反极性映射，见 fetchList）；
-  // 仅管理员可见——普通用户服务端本就只返回本人令牌，无需收敛入口
+  // 「我创建的」快捷筛选：后台视图 admin 全量收敛到本人令牌（与服务端 all 反极性映射，见 fetchList）；
+  // 仅后台视图且 mars_admin 可见——个人视图（下拉入口）与普通用户一致，无需收敛入口
   const [mineOnly, setMineOnly] = useState(false)
   // 状态过滤：全部/有效/已过期/已撤销（走服务端 query，与搜索/「我创建的」正交，全用户可用）
   const [statusFilter, setStatusFilter] = useState<TokenStatus>('all')
@@ -147,7 +174,7 @@ export function AccessTokenManager() {
               // 后端字段是 all（true=展开全部）而非 mineOnly（true=只看本人），旧代码发 mineOnly
               // 被 grpc-gateway 静默忽略 → admin 全平台视图不可达且「我创建的」是 no-op。普通用户
               // 服务端本就收敛本人，不发 all（undefined）。
-              all: isAdmin ? !mineOnly : undefined,
+              all: adminMode ? !mineOnly : undefined,
               status: statusFilter === 'all' ? undefined : statusFilter,
             },
           },
@@ -167,7 +194,7 @@ export function AccessTokenManager() {
         setLoadingMore(false)
       }
     },
-    [debouncedSearch, mineOnly, statusFilter, isAdmin],
+    [debouncedSearch, mineOnly, statusFilter, adminMode],
   )
 
   // 搜索防抖 300ms：停顿后才把关键词交给 fetchList
@@ -176,10 +203,10 @@ export function AccessTokenManager() {
     return () => window.clearTimeout(timer)
   }, [search])
 
-  /** 搜索指纹：关键词/「我创建的」/状态过滤/是否管理员任一变化都视为新的过滤条件
-   *  （配合页码去重 refs；isAdmin 影响 all 参数——未受 RequireAuth 门控的挂载（如冒烟）
-   *   在会话解析后 isAdmin 翻转，须按新 all 值重拉第 1 页） */
-  const filterKey = `${debouncedSearch}|${mineOnly}|${statusFilter}|${isAdmin}`
+  /** 搜索指纹：关键词/「我创建的」/状态过滤/是否后台视图任一变化都视为新的过滤条件
+   *  （配合页码去重 refs；adminMode 影响 all 参数——未受 RequireAuth 门控的挂载（如冒烟）
+   *   在会话解析后 adminMode 可能翻转，须按新 all 值重拉第 1 页） */
+  const filterKey = `${debouncedSearch}|${mineOnly}|${statusFilter}|${adminMode}`
   // 渲染期同步最新条件（供 fetchList 落地校验丢弃旧条件响应，见 filterKeyRef 声明注释）
   filterKeyRef.current = filterKey
 
@@ -337,8 +364,29 @@ export function AccessTokenManager() {
       <div className="flex shrink-0 flex-col gap-3">
         {/* 标题 + 刷新 + 创建 */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-[16px] font-semibold text-ink">{t('tokens.list')}</h2>
+          <div className="flex flex-wrap items-baseline gap-1.5">
+            <h2 className="text-[16px] font-semibold text-ink">{t('tokens.list')}</h2>
+            {showAdminHint && (
+              <span className="text-[12px] text-faint">
+                {t('tokens.adminHintPrefix')}{' '}
+                <Link to="/admin/tokens" className="text-primary underline-offset-2 hover:underline">
+                  {t('tokens.adminHintLink')}
+                </Link>
+              </span>
+            )}
+          </div>
           <div className="flex flex-wrap items-center gap-2">
+            {/* 搜索统一放标题行右上角（对齐 Events/治理/工作台）。按创建人/邮箱搜索仅后台视图
+                admin 有意义（个人视图只看本人令牌，搜创建人恒为自己，纯噪音入口） */}
+            {adminMode && (
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder={t('tokens.searchPlaceholder')}
+                className="w-72"
+                size="sm"
+              />
+            )}
             <Button size="sm" variant="outline" disabled={refreshing} onClick={refresh}>
               {refreshing ? (
                 <Icon name="loader" className="size-4 animate-spin" />
@@ -353,30 +401,23 @@ export function AccessTokenManager() {
             </Button>
           </div>
         </div>
-        {/* 按创建人搜索（admin 看全平台 / 普通用户仅本人，搜索走服务端 query） +
-            我创建的快捷筛选（仅管理员可见：全平台视图收敛到本人令牌，与服务端 mine_only 对齐） */}
+        {/* 状态过滤 chips + 「我创建的」快捷筛选（走服务端 query：分页列表前端过滤只会滤当前已加载页、
+            count/hasMore 全错，与搜索正交，全用户可用）；我创建的仅后台视图 admin 可见 */}
         <div className="flex flex-wrap items-center gap-2">
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder={t('tokens.searchPlaceholder')}
-            className="w-72"
-            size="sm"
-          />
-          {/* 状态过滤：走服务端 query（分页列表前端过滤只会滤当前已加载页、count/hasMore 全错），
-              与搜索/「我创建的」正交；全用户可用（普通用户过滤本人的令牌） */}
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as TokenStatus)}>
-            <SelectTrigger size="sm" className="w-32" aria-label={t('tokens.statusFilter')}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('tokens.statusAll')}</SelectItem>
-              <SelectItem value="valid">{t('tokens.statusValid')}</SelectItem>
-              <SelectItem value="expired">{t('tokens.statusExpired')}</SelectItem>
-              <SelectItem value="revoked">{t('tokens.statusRevoked')}</SelectItem>
-            </SelectContent>
-          </Select>
-          {isAdmin && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[12px] text-faint">{t('tokens.statusFilter')}</span>
+            {STATUS_ORDER.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStatusFilter(s)}
+                className={chipCls(statusFilter === s)}
+              >
+                {t(STATUS_KEY[s])}
+              </button>
+            ))}
+          </div>
+          {adminMode && (
             <Button
               size="sm"
               variant={mineOnly ? 'default' : 'outline'}
@@ -414,6 +455,16 @@ export function AccessTokenManager() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[13px] font-medium text-ink">{item.usage}</span>
+                  {/* 创建人仅后台视图 admin 可见，放令牌标题后（原在灰色元信息行里太不明显）；
+                      个人视图服务端只返回本人令牌，创建人恒为本人，展示无意义 */}
+                  {adminMode && (
+                    <span className="inline-flex items-center gap-1 text-[12px] text-mute">
+                      {t('tokens.creator')}
+                      {/* 创建人展示显示名（后端从 user_info 快照回填，历史令牌回退 email），
+                          避免暴露邮箱 */}
+                      <span className="font-mono text-primary">{item.name || item.email}</span>
+                    </span>
+                  )}
                   {renderTags(item)}
                 </div>
                 <div
@@ -434,13 +485,6 @@ export function AccessTokenManager() {
                   <span>
                     {t('tokens.expiresAt')} {formatDateTime(item.expiredAt)}
                   </span>
-                  {/* 创建人仅管理员可见：普通用户服务端只返回本人令牌，创建人恒为本人，展示无意义还暴露邮箱 */}
-                  {isAdmin && (
-                    <span className="inline-flex items-center gap-1">
-                      {t('tokens.creator')}
-                      <span className="font-mono text-mute">{item.email}</span>
-                    </span>
-                  )}
                   <span>{item.lastUsedAt ? `${item.lastUsedAt} ${t('tokens.used')}` : t('tokens.neverUsed')}</span>
                 </div>
               </div>

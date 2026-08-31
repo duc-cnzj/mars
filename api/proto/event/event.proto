@@ -20,6 +20,8 @@ message ListRequest {
   repeated types.EventActionType action_types = 5;
   // 模糊搜索 message 和 username
   string                         search      = 4;
+  // all：管理员显式 opt-in 查看全部用户事件（默认收敛到本人，最小权限）；普通用户传此字段等效无操作
+  bool                           all         = 6;
 }
 
 message ListResponse {

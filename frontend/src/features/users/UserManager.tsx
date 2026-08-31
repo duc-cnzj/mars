@@ -385,12 +385,19 @@ export function UserManager() {
 
   return (
     <div className="flex h-full flex-col gap-4">
-      {/* 页头：标题 + 刷新 */}
+      {/* 页头：标题 + 搜索 + 刷新 + 同步 */}
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <h2 className="text-[16px] font-semibold text-ink">{t('users.title')}</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* 搜索统一放标题行右上角（对齐 Events/治理/工作台） */}
+          <SearchInput
+            value={keyword}
+            onChange={setKeyword}
+            placeholder={t('users.searchPlaceholder')}
+            className="w-72"
+          />
           <Button variant="outline" size="sm" onClick={refresh} disabled={refreshing}>
             {refreshing ? (
               <Icon name="loader" className="size-4 animate-spin" />
@@ -417,14 +424,8 @@ export function UserManager() {
         <StatCard label={t('users.regular')} value={stats.regular} icon="user" tone="ok" />
       </div>
 
-      {/* 工具栏：搜索 + 一键只看管理员 + 结果计数（SearchInput 内置 ⌘K 聚焦快捷键） */}
+      {/* 工具栏：只看管理员 + 结果计数（SearchInput 内置 ⌘K 聚焦快捷键，已上移到标题行） */}
       <div className="flex shrink-0 flex-wrap items-center gap-3">
-        <SearchInput
-          value={keyword}
-          onChange={setKeyword}
-          placeholder={t('users.searchPlaceholder')}
-          className="w-full sm:w-72"
-        />
         <Button
           size="sm"
           variant={adminOnly ? 'default' : 'outline'}

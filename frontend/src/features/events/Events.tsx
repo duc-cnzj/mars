@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { formatDateTime } from '@/lib/format'
 import { humanizeDateTime } from '@/lib/humanizeDateTime'
 import type {
@@ -105,14 +105,22 @@ const ACTION_TONE: Record<ActionType, Tone> = {
 
 /**
  * 事件日志：动作类型多选标签 + 内容搜索 + 分页列表。
+ * 双入口共享：/admin/events 传 adminView（后台全量视图，admin 发 all=true 看全平台事件）；
+ * /events 默认个人视图——admin 在下拉入口也只看到自己（后端默认收敛本人，全量只属后台）。
  * 行内操作：查看改动（diff）/ 查看操作记录（终端回放）/ 下载文件 / 删除文件。
  * 列表滚动限制在固定高度容器内（对齐旧版 div 内无限加载），筛选变化回到第 1 页。
  */
-export function Events() {
+export function Events({ adminView = false }: { adminView?: boolean }) {
   const { t } = useTranslation()
   // 事件列表对普通用户开放，但删除文件仅 admin（后端强制，前端不展示必然 403 的入口）
   const { user } = useAuth()
   const isAdmin = user?.roles.includes('mars_admin') ?? false
+  // 全量视图仅后台入口启用（/admin/events 传 adminView）；下拉入口（/events）无论角色一律
+  // 收敛本人（对齐普通用户最小权限）。adminMode = 后台入口 且 用户是 mars_admin 双条件。
+  const adminMode = adminView && isAdmin
+  // 个人视图（下拉 /events）下的 admin 提示：想看全平台事件请前往后台。
+  // 后台视图（adminMode=true）或普通用户都不展示（后台已在全平台、普通用户无全平台权限）
+  const showAdminHint = isAdmin && !adminMode
 
   const [items, setItems] = useState<EventModel[]>([])
   const [page, setPage] = useState(1)
@@ -178,6 +186,9 @@ export function Events() {
               pageSize: PAGE_SIZE,
               actionTypes: act.length ? (act as unknown as SchemaActionTypes[]) : undefined,
               search: kw.trim() || undefined,
+              // all=true = 后台视图 admin 看全平台事件（后端默认收敛本人，与访问令牌 all 语义一致）；
+              // 个人视图/普通用户不发 all（undefined）→ 服务端收敛本人
+              all: adminMode ? true : undefined,
             },
           },
         })
@@ -198,7 +209,7 @@ export function Events() {
         }
       }
     },
-    [],
+    [adminMode],
   )
 
   // 文件占用仅 admin 可查（后端 fileSvc.Authorize 除 MaxUploadSize 外全 admin），
@@ -232,10 +243,11 @@ export function Events() {
     )
   }, [search, actionType, setSearchParams])
 
-  /** 筛选/搜索指纹：任一变化都视为新的过滤条件 */
+  /** 筛选/搜索指纹：任一变化都视为新的过滤条件
+   *  （含 adminMode：adminView 挂载初期会话未解析时可能翻转，须按新 all 值重拉第 1 页） */
   const filterKey = useMemo(
-    () => `${debouncedSearch}|${actionType.join(',')}`,
-    [debouncedSearch, actionType],
+    () => `${debouncedSearch}|${actionType.join(',')}|${adminMode}`,
+    [debouncedSearch, actionType, adminMode],
   )
 
   // 筛选条件变化回到第 1 页（由 page 变化驱动下面的 fetch）。
@@ -496,7 +508,17 @@ export function Events() {
       {/* 工具栏 */}
       <div className="flex shrink-0 flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-[16px] font-semibold text-ink">{t('events.title')}</h2>
+          <div className="flex flex-wrap items-baseline gap-1.5">
+            <h2 className="text-[16px] font-semibold text-ink">{t('events.title')}</h2>
+            {showAdminHint && (
+              <span className="text-[12px] text-faint">
+                {t('events.adminHintPrefix')}{' '}
+                <Link to="/admin/events" className="text-primary underline-offset-2 hover:underline">
+                  {t('events.adminHintLink')}
+                </Link>
+              </span>
+            )}
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <SearchInput
               value={search}

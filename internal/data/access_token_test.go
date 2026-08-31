@@ -63,19 +63,20 @@ func TestAccessTokenRepo_List(t *testing.T) {
 	})
 }
 
-// TestAccessTokenRepo_List_Search 覆盖 Search 按创建人邮箱模糊匹配（IfEmailLike 分支）：
-// 命中创建人邮箱的令牌返回，未命中返回空。
+// TestAccessTokenRepo_List_Search 覆盖 Search 按创建人邮箱或显示名模糊匹配
+// （email OR user_info.name，JSON_EXTRACT('$.name') LIKE）。三个子测试分别隔离：
+// 仅邮箱命中（"@x.com"）、仅显示名命中（"builder"）、邮箱与显示名 OR 叠加（"bob"）。
 func TestAccessTokenRepo_List_Search(t *testing.T) {
 	repo, _ := newAccessTokenRepo(t)
 	ctx := context.TODO()
 
-	for _, u := range []struct{ email string }{
-		{email: "alice@x.com"},
-		{email: "alice@x.com"},
-		{email: "bob@y.com"},
+	for _, u := range []struct{ name, email string }{
+		{name: "Alice Adams", email: "alice@x.com"},
+		{name: "Alice Adams", email: "alice@x.com"},
+		{name: "Bob Builder", email: "bob@y.com"},
 	} {
 		_, err := repo.Grant(ctx, &biz.GrantAccessTokenInput{
-			User:          &biz.UserInfo{Name: "u", Email: u.email},
+			User:          &biz.UserInfo{Name: u.name, Email: u.email},
 			Usage:         "test",
 			ExpireSeconds: 3600,
 		})
@@ -83,10 +84,28 @@ func TestAccessTokenRepo_List_Search(t *testing.T) {
 	}
 
 	t.Run("search matches creator email", func(t *testing.T) {
-		list, pag, err := repo.List(ctx, &biz.ListAccessTokenInput{Page: 1, PageSize: 10, Search: "ali"})
+		// "@x.com" 只出现在邮箱列（显示名 Alice Adams/Bob Builder 不含 @），隔离验证邮箱模糊路径
+		list, pag, err := repo.List(ctx, &biz.ListAccessTokenInput{Page: 1, PageSize: 10, Search: "@x.com"})
 		assert.NoError(t, err)
 		assert.Len(t, list, 2, "命中 alice 创建的两条令牌")
 		assert.Equal(t, int32(2), pag.Count)
+	})
+
+	t.Run("search matches creator name only", func(t *testing.T) {
+		// "builder" 只出现在显示名 Bob Builder（邮箱 bob@y.com 不含），隔离验证 name(JSON) 模糊路径
+		list, pag, err := repo.List(ctx, &biz.ListAccessTokenInput{Page: 1, PageSize: 10, Search: "builder"})
+		assert.NoError(t, err)
+		assert.Len(t, list, 1, "命中 name=Bob Builder 的令牌")
+		assert.Equal(t, "Bob Builder", list[0].UserInfo.Name)
+		assert.Equal(t, int32(1), pag.Count)
+	})
+
+	t.Run("search matches either email or name", func(t *testing.T) {
+		// "bob" 同时命中 bob 令牌的邮箱与显示名，验证 OR 语义不相互排斥
+		list, pag, err := repo.List(ctx, &biz.ListAccessTokenInput{Page: 1, PageSize: 10, Search: "bob"})
+		assert.NoError(t, err)
+		assert.Len(t, list, 1)
+		assert.Equal(t, int32(1), pag.Count)
 	})
 
 	t.Run("search miss returns empty", func(t *testing.T) {

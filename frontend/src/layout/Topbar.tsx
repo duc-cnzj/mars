@@ -61,14 +61,15 @@ export function Topbar({
 
       {/* 右：工具 + 用户 + 状态（集群状态在最右）；min-w-0 + 用户名截断，避免小屏溢出 */}
       <div className="flex min-w-0 items-center gap-2">
-        <ThemeSwitcher theme={theme} onSelect={onSelectTheme} variant="overlay" />
+        {/* 语言切换：无边框纯文字按钮，位于主题切换左侧；与主题/用户触发器同高，hover 浅底提示可点 */}
         <button
           onClick={switchLocale}
-          className="flex h-8 items-center rounded-lg border border-primary-foreground/20 bg-primary-foreground/10 px-2.5 font-mono text-[12px] text-primary-foreground transition-colors hover:bg-primary-foreground/15"
+          className="flex h-8 items-center rounded-lg px-2.5 font-mono text-[12px] text-primary-foreground transition-colors hover:bg-primary-foreground/10"
           title={t('locale.language')}
         >
           {locale === 'zh-CN' ? t('locale.en') : t('locale.zh')}
         </button>
+        <ThemeSwitcher theme={theme} onSelect={onSelectTheme} variant="overlay" />
         <UserMenu />
         <ClusterStatus />
       </div>

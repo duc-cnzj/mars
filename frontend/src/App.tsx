@@ -127,11 +127,13 @@ export default function App() {
                     <Route index element={<Navigate to="/admin/cluster" replace />} />
                     <Route path="cluster" element={<ResourceBoard />} />
                     <Route path="projects" element={<ProjectGovernance />} />
-                    <Route path="events" element={<Events />} />
+                    {/* 后台入口传 adminView：全平台事件（admin 发 all=true 看全部）；下拉 /events 不传 → 个人视图 */}
+                    <Route path="events" element={<Events adminView />} />
                     <Route path="repos" element={<Repos />} />
                     <Route path="namespaces" element={<NamespaceManager />} />
                     <Route path="resources" element={<ResourceManagement />} />
-                    <Route path="tokens" element={<AccessTokenManager />} />
+                    {/* 后台入口传 adminView：全平台视图（mars_admin 可查全平台令牌）；下拉 /tokens 不传 → 个人视图 */}
+                    <Route path="tokens" element={<AccessTokenManager adminView />} />
                     <Route path="users" element={<UserManager />} />
                     <Route path="settings" element={<SystemSettings />} />
                   </Route>

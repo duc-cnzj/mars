@@ -475,12 +475,19 @@ export function NamespaceManager() {
     <div className="flex h-full flex-col gap-4">
       {/* 页头 + 工具栏 + 筛选（shrink-0，固定不随列表滚动） */}
       <div className="flex shrink-0 flex-col gap-3">
-        {/* 页头：标题 + 刷新 */}
+        {/* 页头：标题 + 搜索 + 刷新 */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <h2 className="text-[16px] font-semibold text-ink">{t('namespaces.title')}</h2>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* 搜索统一放标题行右上角（对齐 Events/治理/工作台） */}
+            <SearchInput
+              value={keyword}
+              onChange={setKeyword}
+              placeholder={t('namespaces.searchPlaceholder')}
+              className="w-72"
+            />
             <Button variant="outline" size="sm" onClick={refresh} disabled={refreshing}>
               {refreshing ? (
                 <Icon name="loader" className="size-4 animate-spin" />
@@ -492,14 +499,8 @@ export function NamespaceManager() {
           </div>
         </div>
 
-        {/* 工具栏：搜索 + 只看私有 + 结果计数（SearchInput 内置 ⌘K 聚焦快捷键） */}
+        {/* 工具栏：只看私有 + 结果计数（SearchInput 内置 ⌘K 聚焦快捷键，已上移到标题行） */}
         <div className="flex flex-wrap items-center gap-3">
-          <SearchInput
-            value={keyword}
-            onChange={setKeyword}
-            placeholder={t('namespaces.searchPlaceholder')}
-            className="w-full sm:w-72"
-          />
           <Button
             size="sm"
             variant={privateOnly ? 'default' : 'outline'}

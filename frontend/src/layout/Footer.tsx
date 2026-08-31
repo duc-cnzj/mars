@@ -45,7 +45,9 @@ export function Footer({ theme }: { theme: ThemeId }) {
                 <IconFont name="#icon-naicha" className="size-[22px] scale-x-[-1]" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-[230px] p-2" align="center" sideOffset={8}>
+            {/* 打赏卡片 z-[10000] 压过一切弹层：下拉/主题切换（9998/9999）、confetti（9999）、
+                可拖拽弹窗共享计数器（51 起累加）——赞助入口任何时候不被遮挡 */}
+            <PopoverContent className="z-[10000] w-[230px] p-2" align="center" sideOffset={8}>
               <CoffeeCard />
             </PopoverContent>
           </Popover>
