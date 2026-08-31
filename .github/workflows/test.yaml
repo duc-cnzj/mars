@@ -46,7 +46,10 @@ jobs:
           NSQ_ADDR: localhost:4150
           NSQ_LOOKUPD_ADDR: localhost:4161
         run: |
-          mkdir frontend/build && touch frontend/build/dummy
+          # CI 不构建真实前端（build/ 被 gitignore），但 frontend 包 //go:embed build/* 必须有文件
+          # 才能编译，且 SPA 兜底测试断言 index.html 内容含 <!doctype html>。写入最小合法 stub，
+          # 而非空 dummy——否则 staticFs.ReadFile("build/index.html") 运行期失败，兜底返回空页。
+          mkdir -p frontend/build && printf '%s\n' "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"UTF-8\"><title>Mars</title></head><body><div id=\"root\"></div></body></html>" > frontend/build/index.html
           make test
       - uses: codecov/codecov-action@v4
         with:
