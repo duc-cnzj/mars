@@ -62,6 +62,13 @@ func (a *authSvc) Login(ctx context.Context, request *apiauth.LoginRequest) (*ap
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", loginResp.UserInfo.Name, loginResp.UserInfo.Email),
 	)
 
+	// 登录成功即同步用户投影（与 OIDC Exchange 行为对齐）：admin 账号同样落 users 表，
+	// 不存在则创建、存在则推进最近登录。投影写库失败仅记日志不阻断登录——凭证已校验、
+	// 登录事件已落库，users 只是管理投影，该用户下次登录会由 SyncLoginUser 自动补回。
+	if err := a.userBiz.SyncLoginUser(ctx, loginResp.UserInfo.Email, loginResp.UserInfo.Name); err != nil {
+		a.logger.ErrorCtx(ctx, err)
+	}
+
 	return &apiauth.LoginResponse{
 		Token:     loginResp.Token,
 		ExpiresIn: loginResp.ExpiredIn,

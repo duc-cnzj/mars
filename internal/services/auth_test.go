@@ -56,12 +56,14 @@ func TestAuthSvc_Login_Success(t *testing.T) {
 	svc, mocks := newAuthSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 	authBizMock := mocks.authBiz
+	userBizMock := mocks.userBiz
 
 	resp := &biz.LoginResponse{
 		Token:     "test-token",
 		ExpiredIn: 100,
 		UserInfo: &biz.UserInfo{
-			Name: "duc",
+			Name:  biz.SuperAdminName,
+			Email: biz.SuperAdminEmail,
 		},
 	}
 	eventRepo.EXPECT().AuditLog(
@@ -70,17 +72,50 @@ func TestAuthSvc_Login_Success(t *testing.T) {
 		resp.UserInfo.Email,
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", resp.UserInfo.Name, resp.UserInfo.Email),
 	)
+	// 登录成功即同步用户投影（admin 同样落 users 表，与 OIDC Exchange 行为对齐）
+	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), biz.SuperAdminEmail, biz.SuperAdminName).Return(nil)
 
 	authBizMock.EXPECT().Login(gomock.Any(), &biz.LoginInput{
-		Username: "test",
+		Username: "admin",
 		Password: "password",
 	}).Return(resp, nil)
 
 	res, err := svc.Login(context.TODO(), &apiauth.LoginRequest{
-		Username: "test",
+		Username: "admin",
 		Password: "password",
 	})
 	assert.NoError(t, err)
+	assert.Equal(t, "test-token", res.Token)
+}
+
+// TestAuthSvc_Login_SyncUserErrorNotBlocking 投影写库失败不阻断登录（与 OIDC Exchange 一致）：
+// 凭证已校验、登录事件已落库，users 只是管理投影，该用户下次登录会由 SyncLoginUser 自动补回。
+func TestAuthSvc_Login_SyncUserErrorNotBlocking(t *testing.T) {
+	svc, mocks := newAuthSvcWithMocks(t)
+	authBizMock := mocks.authBiz
+	eventRepo := mocks.eventRepo
+	userBizMock := mocks.userBiz
+
+	resp := &biz.LoginResponse{
+		Token:     "test-token",
+		ExpiredIn: 100,
+		UserInfo: &biz.UserInfo{
+			Name:  biz.SuperAdminName,
+			Email: biz.SuperAdminEmail,
+		},
+	}
+	eventRepo.EXPECT().AuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), biz.SuperAdminEmail, biz.SuperAdminName).Return(errors.New("projection boom"))
+	authBizMock.EXPECT().Login(gomock.Any(), &biz.LoginInput{
+		Username: "admin",
+		Password: "password",
+	}).Return(resp, nil)
+
+	res, err := svc.Login(context.TODO(), &apiauth.LoginRequest{
+		Username: "admin",
+		Password: "password",
+	})
+	assert.NoError(t, err, "投影写库失败不得阻断登录")
 	assert.Equal(t, "test-token", res.Token)
 }
 
