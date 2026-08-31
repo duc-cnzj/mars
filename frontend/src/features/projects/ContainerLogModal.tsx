@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import { nextZIndex } from '@/lib/zIndex'
 import { getToken } from '@/api/token'
+import { containerStreamLogsUrl } from '@/api/endpoints'
 import { Icon } from '@/components/Icons'
 import { Input } from '@/components/ui/shadcn/input'
 import {
@@ -107,10 +108,7 @@ export function ContainerLogModal({
     setEnded(false)
     setKeyword('')
 
-    const url =
-      `/api/containers/namespaces/${encodeURIComponent(container.namespace)}` +
-      `/pods/${encodeURIComponent(container.pod)}` +
-      `/containers/${encodeURIComponent(container.container)}/stream_logs?showEvents=false`
+    const url = containerStreamLogsUrl(container.namespace, container.pod, container.container, false)
 
     ;(async () => {
       try {

@@ -9,6 +9,8 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
+import { POD_DEBOUNCE_MS } from '@/lib/constants'
+import { API } from '@/api/endpoints'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
@@ -130,7 +132,7 @@ export function TabShell({
   const reload = useCallback(() => {
     setLoading(true)
     api
-      .GET('/api/projects/{id}/containers', { params: { path: { id: projectId } } })
+      .GET(API.projectsContainers, { params: { path: { id: projectId } } })
       .then(({ data }) => setContainers(data?.items ?? []))
       .finally(() => setLoading(false))
   }, [projectId])
@@ -146,7 +148,7 @@ export function TabShell({
       podDebounce.current = setTimeout(() => {
         podDebounce.current = null
         reload()
-      }, 1000)
+      }, POD_DEBOUNCE_MS)
     })
     return () => {
       if (podDebounce.current) clearTimeout(podDebounce.current)
@@ -169,7 +171,7 @@ export function TabShell({
   // 上传大小上限：挂载时拉取一次
   useEffect(() => {
     api
-      .GET('/api/files/max_upload_size')
+      .GET(API.fileMaxUploadSize)
       .then(({ data }) => {
         if (data) setMaxUpload({ bytes: data.bytes, humanizeSize: data.humanizeSize })
       })
@@ -293,7 +295,7 @@ export function TabShell({
     setForceDeleting(true)
     try {
       const { error } = await api.POST(
-        '/api/containers/namespaces/{namespace}/pods/{pod}/force_delete',
+        API.containerForceDelete,
         {
           params: { path: { namespace: target.namespace, pod: target.pod } },
           body: { namespace: target.namespace, pod: target.pod, gracePeriodSeconds: '0' },
@@ -324,14 +326,14 @@ export function TabShell({
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const upRes = await fetch('/api/files', {
+      const upRes = await fetch(API.filesUpload, {
         method: 'POST',
         headers: { Authorization: getToken() },
         body: fd,
       })
       if (!upRes.ok) throw new Error((await upRes.text()) || `HTTP ${upRes.status}`)
       const { id } = (await upRes.json()) as { id: number }
-      const { data, error } = await api.POST('/api/containers/copy_to_pod', {
+      const { data, error } = await api.POST(API.containerCopyToPod, {
         body: {
           fileId: String(id),
           namespace: target.namespace,
@@ -354,7 +356,7 @@ export function TabShell({
     if (!path || !target || downloading) return
     setDownloading(true)
     try {
-      const res = await fetch('/api/copy_from_pod', {
+      const res = await fetch(API.copyFromPod, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -169,6 +169,8 @@ message LivenessRequest {
   string search = 3;
   // 活跃度过滤：空 = 全部；active/dormant/zombie = 只看对应活跃度
   string liveness = 4;
+  // 排序方向：空 = 按更新时间倒序（desc）；asc/desc = 指定更新时间升/降序
+  string sort = 5;
 }
 // LivenessItem 单个项目的活跃度条目：标识 + 部署状态/次数 + 最近更新。
 message LivenessItem {

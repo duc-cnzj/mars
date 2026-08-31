@@ -65,6 +65,8 @@ func (m *UserModel) validate(all bool) error {
 
 	// no validation rules for CreatedAt
 
+	// no validation rules for IsSuperAdmin
+
 	if m.LastLogin != nil {
 		// no validation rules for LastLogin
 	}
@@ -276,6 +278,8 @@ func (m *ListRequest) validate(all bool) error {
 	// no validation rules for Search
 
 	// no validation rules for Role
+
+	// no validation rules for Sort
 
 	if m.Page != nil {
 		// no validation rules for Page

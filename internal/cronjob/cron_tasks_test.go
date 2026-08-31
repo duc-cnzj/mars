@@ -627,3 +627,45 @@ func Test_listFiles_PrettyYaml(t *testing.T) {
 	assert.Contains(t, out, "size: 2.0 kB")
 	assert.Equal(t, "[]\n", listFiles{}.PrettyYaml())
 }
+
+// TestTasks_CacheClusterBoard 覆盖集群看板 30s 预热任务：force=true 触发一次刷新，
+// 成功后无错误。
+func TestTasks_CacheClusterBoard(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := data.NewMockK8sRepo(m)
+	k8sRepo.EXPECT().ClusterBoard(context.TODO(), true).Return(&biz.ClusterBoardData{}, nil)
+	repo := &Tasks{k8sRepo: k8sRepo}
+	assert.NoError(t, repo.CacheClusterBoard())
+}
+
+// TestTasks_CacheClusterBoard_Error 覆盖集群看板刷新失败路径：错误原样上抛。
+func TestTasks_CacheClusterBoard_Error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := data.NewMockK8sRepo(m)
+	k8sRepo.EXPECT().ClusterBoard(context.TODO(), true).Return(nil, errors.New("cluster board boom"))
+	repo := &Tasks{k8sRepo: k8sRepo}
+	assert.Equal(t, "cluster board boom", repo.CacheClusterBoard().Error())
+}
+
+// TestTasks_CacheResourceSnapshot 覆盖空间资源快照 5m 预热任务：force=true 触发一次
+// 刷新，成功后无错误。
+func TestTasks_CacheResourceSnapshot(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := data.NewMockK8sRepo(m)
+	k8sRepo.EXPECT().ResourceSnapshot(context.TODO(), true).Return(&biz.ResourceSnapshotData{}, nil)
+	repo := &Tasks{k8sRepo: k8sRepo}
+	assert.NoError(t, repo.CacheResourceSnapshot())
+}
+
+// TestTasks_CacheResourceSnapshot_Error 覆盖空间资源快照刷新失败路径：错误原样上抛。
+func TestTasks_CacheResourceSnapshot_Error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := data.NewMockK8sRepo(m)
+	k8sRepo.EXPECT().ResourceSnapshot(context.TODO(), true).Return(nil, errors.New("snapshot boom"))
+	repo := &Tasks{k8sRepo: k8sRepo}
+	assert.Equal(t, "snapshot boom", repo.CacheResourceSnapshot().Error())
+}

@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { getState, removeState, setToken } from '@/api/token'
 import { toast } from '@/lib/toast'
 import { useAuth } from './AuthProvider'
@@ -39,7 +40,7 @@ export function AuthCallback() {
         return
       }
       removeState()
-      const { data, error } = await api.POST('/api/auth/exchange', { body: { code } })
+      const { data, error } = await api.POST(API.authExchange, { body: { code } })
       if (error || !data?.token) {
         navigate('/login', { replace: true })
         return

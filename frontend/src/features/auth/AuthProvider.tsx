@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import {
   getToken,
   removeToken,
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null)
       return null
     }
-    const { data } = await api.GET('/api/auth/info')
+    const { data } = await api.GET(API.authInfo)
     if (data) {
       setUser(data)
       if (data.logoutUrl) setLogoutUrl(data.logoutUrl)
@@ -79,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /** 账号密码登录：成功即写 token 并恢复会话；失败抛错（由 Login 弹"用户名或密码不正确"） */
   const signin = useCallback(
     async (username: string, password: string): Promise<UserInfo> => {
-      const { data, error } = await api.POST('/api/auth/login', {
+      const { data, error } = await api.POST(API.authLogin, {
         body: { username, password },
       })
       if (error || !data?.token) throw new Error('login failed')
@@ -141,5 +142,17 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
   if (loading) return <AuthLoading />
   if (!user?.roles.includes('mars_admin')) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
+/**
+ * 超级管理员守卫：系统设置路由级门控（is_super_admin 来自 /api/auth/info）。
+ * 嵌套在 RequireAdmin 内（已登录且为管理员），仅内置超管放行，普通管理员重定向回首页，
+ * 防止直接敲 URL 访问系统设置（可见性与可访问性双保险）。
+ */
+export function RequireSuperAdmin({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth()
+  if (loading) return <AuthLoading />
+  if (!user?.isSuperAdmin) return <Navigate to="/" replace />
   return <>{children}</>
 }

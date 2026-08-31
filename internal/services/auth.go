@@ -83,12 +83,13 @@ func (a *authSvc) Login(ctx context.Context, request *apiauth.LoginRequest) (*ap
 func (a *authSvc) Info(ctx context.Context, req *apiauth.InfoRequest) (*apiauth.InfoResponse, error) {
 	user := biz.MustGetUser(ctx)
 	return &apiauth.InfoResponse{
-		Id:        cast.ToInt32(user.ID),
-		Avatar:    user.Picture,
-		Name:      user.Name,
-		Email:     user.Email,
-		LogoutUrl: user.LogoutUrl,
-		Roles:     user.Roles,
+		Id:           cast.ToInt32(user.ID),
+		Avatar:       user.Picture,
+		Name:         user.Name,
+		Email:        user.Email,
+		LogoutUrl:    user.LogoutUrl,
+		Roles:        user.Roles,
+		IsSuperAdmin: user.IsSuperAdmin(),
 	}, nil
 }
 

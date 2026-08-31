@@ -412,3 +412,19 @@ func (repo *Tasks) CacheAllProjects() error {
 	_, err := repo.gitRepo.AllProjects(context.TODO(), true)
 	return err
 }
+
+// CacheClusterBoard 每 30s 强制刷新集群看板快照缓存，避免读端高峰期触达全集群
+// List。force=true 使 data 层跳过缓存读直接回填。失败即上抛，由 cron 记录，
+// 下一轮自动重试。
+func (repo *Tasks) CacheClusterBoard() error {
+	_, err := repo.k8sRepo.ClusterBoard(context.TODO(), true)
+	return err
+}
+
+// CacheResourceSnapshot 每 5m 强制刷新空间资源快照缓存（与缓存 TTL 一致），
+// 避免读端高峰期触达全集群 List。force=true 使 data 层跳过缓存读直接回填。
+// 失败即上抛，由 cron 记录，下一轮自动重试。
+func (repo *Tasks) CacheResourceSnapshot() error {
+	_, err := repo.k8sRepo.ResourceSnapshot(context.TODO(), true)
+	return err
+}

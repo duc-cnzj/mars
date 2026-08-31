@@ -9,12 +9,13 @@ option go_package = "github.com/duc-cnzj/mars/api/v6/proto/user;user";
 // UserModel 是后台用户管理的单条展示模型：roles 已归一化为 admin/user
 // （真实库中 mars_admin=管理员，user=普通用户，展示层统一为 admin/user 两种取值）。
 message UserModel {
-  int32           id         = 1;
-  string          email      = 2;
-  string          name       = 3;
-  repeated string roles      = 4; // admin=管理员，user=普通用户
-  optional string last_login = 5; // RFC3339，从未登录为缺省
-  string          created_at = 6; // RFC3339
+  int32           id             = 1;
+  string          email          = 2;
+  string          name           = 3;
+  repeated string roles          = 4; // admin=管理员，user=普通用户
+  optional string last_login     = 5; // RFC3339，从未登录为缺省
+  string          created_at     = 6; // RFC3339
+  bool            is_super_admin = 7; // 是否为内置超级管理员（固定邮箱身份）
 }
 
 // UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部三卡。
@@ -29,6 +30,7 @@ message ListRequest {
   optional int32 page_size = 2;
   string          search   = 3; // 按邮箱/展示名模糊搜索
   string          role     = 4; // admin=只看管理员，其余值=全部
+  string          sort     = 5; // 排序方向：空 = 最近登录倒序（desc）；asc/desc = 指定最近登录升/降序
 }
 
 message ListResponse {

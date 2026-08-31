@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { Icon } from '@/components/Icons'
 import { CodeEditor, FILE_TYPES } from '@/components/CodeEditor'
 import { DiffViewer } from '@/components/DiffViewer'
@@ -79,7 +80,7 @@ export function TabEdit({
     let alive = true
     setLoadingRepo(true)
     api
-      .GET('/api/repos/{id}', { params: { path: { id: detail.repoId } } })
+      .GET(API.reposDetail, { params: { path: { id: detail.repoId } } })
       .then(({ data }) => {
         if (!alive || !data?.item?.marsConfig) return
         const mc = data.item.marsConfig
@@ -122,7 +123,7 @@ export function TabEdit({
   const fetchBranchOptions = useCallback(() => {
     if (!needGit || gitProjectId <= 0) return Promise.resolve()
     return api
-      .GET('/api/git/projects/{gitProjectId}/branch_options', {
+      .GET(API.gitBranchOptions, {
         params: { path: { gitProjectId }, query: { repoId: detail.repoId } },
       })
       .then(({ data, error }) => {
@@ -142,7 +143,7 @@ export function TabEdit({
   const fetchCommitOptions = useCallback(() => {
     if (!needGit || gitProjectId <= 0 || !branch) return Promise.resolve()
     return api
-      .GET('/api/git/projects/{gitProjectId}/branches/{branch}/commit_options', {
+      .GET(API.gitCommitOptions, {
         params: { path: { gitProjectId, branch } },
       })
       .then(({ data, error }) => {

@@ -32,8 +32,8 @@ type fakeProjectRepoForProjectBiz struct {
 	updateDeployStatusCalled, updateVersionCalled    bool
 	findByVersionCalled, updateStatusByVersionCalled bool
 	findByIDsErr, showErr, listLivenessErr           error
-	listLivenessProjects                             []*Project
-	listLivenessSearch                               string
+	listLivenessPageResult                           *LivenessPageResult
+	listLivenessPageQuery                            *LivenessPageQuery
 }
 
 func (f *fakeProjectRepoForProjectBiz) Create(ctx context.Context, project *CreateProjectInput) (*Project, error) {
@@ -69,13 +69,13 @@ func (f *fakeProjectRepoForProjectBiz) ListAll(ctx context.Context) ([]*Project,
 	return []*Project{{Name: "proj1", Namespace: &Namespace{Name: "ns"}}}, nil
 }
 
-func (f *fakeProjectRepoForProjectBiz) ListLiveness(ctx context.Context, search string) ([]*Project, error) {
+func (f *fakeProjectRepoForProjectBiz) ListLivenessPage(ctx context.Context, query *LivenessPageQuery) (*LivenessPageResult, error) {
 	f.listLivenessCalled = true
-	f.listLivenessSearch = search
+	f.listLivenessPageQuery = query
 	if f.listLivenessErr != nil {
 		return nil, f.listLivenessErr
 	}
-	return f.listLivenessProjects, nil
+	return f.listLivenessPageResult, nil
 }
 
 func (f *fakeProjectRepoForProjectBiz) Show(ctx context.Context, id int) (*Project, error) {
@@ -511,8 +511,8 @@ func TestProjectBiz_UpdateStatusByVersion(t *testing.T) {
 
 // ---- 项目活跃度 ----
 
-// Test_classifyLiveness 表驱动锁定分类边界：≤30 天活跃、≥90 天僵尸、中间休眠。
-func Test_classifyLiveness(t *testing.T) {
+// Test_ClassifyLiveness 表驱动锁定分类边界：≤30 天活跃、≥90 天僵尸、中间休眠。
+func Test_ClassifyLiveness(t *testing.T) {
 	now := time.Now()
 	tests := []struct {
 		name      string
@@ -527,19 +527,24 @@ func Test_classifyLiveness(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, classifyLiveness(tt.updatedAt, now))
+			assert.Equal(t, tt.want, ClassifyLiveness(tt.updatedAt, now))
 		})
 	}
 }
 
-// TestProjectBiz_Liveness 全量聚合：三类项目各一，分类/统计/部署次数/搜索透传全对。
+// TestProjectBiz_Liveness 薄传递：分类/统计/过滤/分页由 repo 下沉 SQL，biz 透传入参并
+// 装配部署次数与结果。
 func TestProjectBiz_Liveness(t *testing.T) {
 	now := time.Now()
 	f := &fakeProjectRepoForProjectBiz{
-		listLivenessProjects: []*Project{
-			{ID: 1, UpdatedAt: now.Add(-10 * 24 * time.Hour)},
-			{ID: 2, UpdatedAt: now.Add(-60 * 24 * time.Hour)},
-			{ID: 3, UpdatedAt: now.Add(-120 * 24 * time.Hour)},
+		listLivenessPageResult: &LivenessPageResult{
+			Projects: []*Project{
+				{ID: 1, UpdatedAt: now.Add(-10 * 24 * time.Hour)},
+				{ID: 2, UpdatedAt: now.Add(-60 * 24 * time.Hour)},
+				{ID: 3, UpdatedAt: now.Add(-120 * 24 * time.Hour)},
+			},
+			Count: 3,
+			Stats: LivenessStats{Total: 3, Active: 1, Dormant: 1, Zombie: 1},
 		},
 	}
 	cl := &fakeClRepoForLiveness{counts: map[int]int{1: 5, 2: 3, 3: 0}}
@@ -547,56 +552,65 @@ func TestProjectBiz_Liveness(t *testing.T) {
 	res, err := b.Liveness(context.TODO(), &LivenessInput{Page: 1, PageSize: 10, Search: "app"})
 	assert.NoError(t, err)
 	assert.True(t, f.listLivenessCalled)
-	assert.Equal(t, "app", f.listLivenessSearch)
+	if assert.NotNil(t, f.listLivenessPageQuery) {
+		assert.Equal(t, "app", f.listLivenessPageQuery.Search)
+		assert.Equal(t, int32(1), f.listLivenessPageQuery.Page)
+		assert.Equal(t, int32(10), f.listLivenessPageQuery.PageSize)
+		// Now 为捕获的分类基准时间，注入 repo 与行级标记共用同一基准。
+		assert.False(t, f.listLivenessPageQuery.Now.IsZero())
+	}
 	if assert.NotNil(t, res) {
 		assert.Equal(t, LivenessStats{Total: 3, Active: 1, Dormant: 1, Zombie: 1}, res.Stats)
 		assert.Equal(t, int32(3), res.Count)
 		if assert.Len(t, res.Items, 3) {
-			assert.Equal(t, LivenessActive, res.Items[0].Kind)
 			assert.Equal(t, 5, res.Items[0].DeployCount)
-			assert.Equal(t, LivenessDormant, res.Items[1].Kind)
 			assert.Equal(t, 3, res.Items[1].DeployCount)
-			assert.Equal(t, LivenessZombie, res.Items[2].Kind)
 			assert.Equal(t, 0, res.Items[2].DeployCount)
 		}
 	}
 }
 
-// TestProjectBiz_Liveness_FilterByKind 分类过滤：统计仍基于全量，条目仅剩目标分类。
+// TestProjectBiz_Liveness_FilterByKind 分类过滤透传：Liveness 参数透传 repo，统计/条目
+// 直接反映 repo 结果（SQL 侧过滤）。
 func TestProjectBiz_Liveness_FilterByKind(t *testing.T) {
 	now := time.Now()
 	f := &fakeProjectRepoForProjectBiz{
-		listLivenessProjects: []*Project{
-			{ID: 1, UpdatedAt: now.Add(-10 * 24 * time.Hour)},
-			{ID: 2, UpdatedAt: now.Add(-60 * 24 * time.Hour)},
-			{ID: 3, UpdatedAt: now.Add(-120 * 24 * time.Hour)},
+		listLivenessPageResult: &LivenessPageResult{
+			Projects: []*Project{{ID: 3, UpdatedAt: now.Add(-120 * 24 * time.Hour)}},
+			Count:    1,
+			Stats:    LivenessStats{Total: 3, Active: 1, Dormant: 1, Zombie: 1},
 		},
 	}
 	b := newProjectBizForTest(f)
 	res, err := b.Liveness(context.TODO(), &LivenessInput{Page: 1, PageSize: 10, Liveness: "zombie"})
 	assert.NoError(t, err)
+	if assert.NotNil(t, f.listLivenessPageQuery) {
+		assert.Equal(t, "zombie", f.listLivenessPageQuery.Liveness)
+	}
 	if assert.NotNil(t, res) {
 		assert.Equal(t, LivenessStats{Total: 3, Active: 1, Dormant: 1, Zombie: 1}, res.Stats)
 		assert.Equal(t, int32(1), res.Count)
-		if assert.Len(t, res.Items, 1) {
-			assert.Equal(t, LivenessZombie, res.Items[0].Kind)
-		}
+		assert.Len(t, res.Items, 1)
 	}
 }
 
-// TestProjectBiz_Liveness_Pagination 内存分页：page=2 size=2 命中 [2:4) 两条。
+// TestProjectBiz_Liveness_Pagination 分页参数透传：Page/PageSize 交给 repo，结果直接反映
+// repo 返回的页内条目。
 func TestProjectBiz_Liveness_Pagination(t *testing.T) {
 	now := time.Now()
-	projects := make([]*Project, 0, 5)
-	for i := 0; i < 5; i++ {
-		projects = append(projects, &Project{ID: i + 1, UpdatedAt: now.Add(-time.Duration(i+1) * 24 * time.Hour)})
+	f := &fakeProjectRepoForProjectBiz{
+		listLivenessPageResult: &LivenessPageResult{
+			Projects: []*Project{{ID: 3, UpdatedAt: now.Add(-3 * 24 * time.Hour)}, {ID: 4, UpdatedAt: now.Add(-4 * 24 * time.Hour)}},
+			Count:    5,
+		},
 	}
-	b := newProjectBizForTest(&fakeProjectRepoForProjectBiz{listLivenessProjects: projects})
+	b := newProjectBizForTest(f)
 	res, err := b.Liveness(context.TODO(), &LivenessInput{Page: 2, PageSize: 2})
 	assert.NoError(t, err)
 	if assert.NotNil(t, res) {
 		assert.Equal(t, int32(5), res.Count)
 		assert.Equal(t, int32(2), res.Page)
+		assert.Equal(t, int32(2), res.PageSize)
 		if assert.Len(t, res.Items, 2) {
 			assert.Equal(t, 3, res.Items[0].Project.ID)
 			assert.Equal(t, 4, res.Items[1].Project.ID)
@@ -604,14 +618,12 @@ func TestProjectBiz_Liveness_Pagination(t *testing.T) {
 	}
 }
 
-// TestProjectBiz_Liveness_PaginationOutOfRange 越界页：条目为空但计数保留全量。
+// TestProjectBiz_Liveness_PaginationOutOfRange 越界页：repo 返回空条目但计数保留全量。
 func TestProjectBiz_Liveness_PaginationOutOfRange(t *testing.T) {
-	now := time.Now()
-	projects := make([]*Project, 0, 5)
-	for i := 0; i < 5; i++ {
-		projects = append(projects, &Project{ID: i + 1, UpdatedAt: now.Add(-time.Duration(i+1) * 24 * time.Hour)})
+	f := &fakeProjectRepoForProjectBiz{
+		listLivenessPageResult: &LivenessPageResult{Projects: nil, Count: 5},
 	}
-	b := newProjectBizForTest(&fakeProjectRepoForProjectBiz{listLivenessProjects: projects})
+	b := newProjectBizForTest(f)
 	res, err := b.Liveness(context.TODO(), &LivenessInput{Page: 99, PageSize: 10})
 	assert.NoError(t, err)
 	if assert.NotNil(t, res) {
@@ -620,8 +632,8 @@ func TestProjectBiz_Liveness_PaginationOutOfRange(t *testing.T) {
 	}
 }
 
-// TestProjectBiz_Liveness_ListLivenessErr 项目加载失败整体上抛。
-func TestProjectBiz_Liveness_ListLivenessErr(t *testing.T) {
+// TestProjectBiz_Liveness_ListLivenessPageErr 分页查询失败整体上抛。
+func TestProjectBiz_Liveness_ListLivenessPageErr(t *testing.T) {
 	f := &fakeProjectRepoForProjectBiz{listLivenessErr: errors.New("list down")}
 	b := newProjectBizForTest(f)
 	res, err := b.Liveness(context.TODO(), &LivenessInput{})
@@ -631,7 +643,7 @@ func TestProjectBiz_Liveness_ListLivenessErr(t *testing.T) {
 
 // TestProjectBiz_Liveness_CountErr 部署次数聚合失败整体上抛。
 func TestProjectBiz_Liveness_CountErr(t *testing.T) {
-	f := &fakeProjectRepoForProjectBiz{listLivenessProjects: []*Project{{ID: 1, UpdatedAt: time.Now()}}}
+	f := &fakeProjectRepoForProjectBiz{listLivenessPageResult: &LivenessPageResult{Projects: []*Project{{ID: 1, UpdatedAt: time.Now()}}}}
 	cl := &fakeClRepoForLiveness{err: errors.New("count down")}
 	b := newProjectBizWithClRepo(f, cl)
 	res, err := b.Liveness(context.TODO(), &LivenessInput{})

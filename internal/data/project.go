@@ -2,9 +2,11 @@ package data
 
 import (
 	"context"
+	"time"
 
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/member"
@@ -87,20 +89,88 @@ func (repo *projectRepo) Version(ctx context.Context, id int) (version int, err 
 	return get.Version, nil
 }
 
-// ListLiveness 查询活跃度聚合所需的全部项目：加载仓库/命名空间边，按更新时间倒序，
-// 支持关键词模糊搜索（匹配项目名或命名空间名，不分大小写）。返回全量命中集合，
-// 供 biz 层分类/统计/内存分页（管理员聚合数据量小，统计需全量，repo 不预分页）。
+// projectSearchPred 项目治理关键词搜索谓词：匹配项目名或命名空间名（模糊，不分大小写）。
+func projectSearchPred(search string) func(*sql.Selector) {
+	return project.Or(
+		project.NameContainsFold(search),
+		project.HasNamespaceWith(namespace.NameContainsFold(search)),
+	)
+}
+
+// projectLivenessPred 项目活跃度分类 SQL 谓词：分类键是普通列 updated_at，直接按边界比较。
+// 边界由分类基准 now 推导（活跃=updated_at > now-31d；僵尸=<= now-90d；低活跃=两者之间），
+// 与 biz.classifyLiveness 的 int(now.Sub(ts).Hours()/24) 阈值数学等价（datetime 整秒存储 +
+// DSN loc=Local 使 SQL 边界参数与 Go time.Now() 同墙钟，见 internal/config/config.go DSN）。
+// 非法 liveness 值返回恒假谓词，复现旧逻辑「无行命中非法分类」的空列表语义。
+func projectLivenessPred(liveness string, now time.Time) func(*sql.Selector) {
+	active, zombie := livenessBoundaries(now)
+	switch liveness {
+	case "active":
+		return project.UpdatedAtGT(active)
+	case "zombie":
+		return project.UpdatedAtLTE(zombie)
+	case "dormant":
+		return project.And(project.UpdatedAtLTE(active), project.UpdatedAtGT(zombie))
+	default:
+		// 非法 liveness 值 → 恒假谓词（FALSE），复现旧逻辑「无行命中非法分类」的空列表语义。
+		return func(s *sql.Selector) { s.Where(sql.False()) }
+	}
+}
+
+// ListLivenessPage 分页查询活跃度聚合所需项目（真 SQL 分页）：分类过滤/排序/统计/分页全部
+// 下沉 SQL，stats 基于搜索命中全量（无 edges 的干净 query 计数，避免 JOIN/边查询放大，对齐
+// namespaceRepo.List 的计数口径），count 为分类过滤后总数（无过滤 = total）。
 //
-// 字段裁剪：只取列表展示/分类统计所需的短字段（name/updated_at/部署状态/git 提交信息 + 边外键），
-// 不拉 config/override_values 等 longtext/JSON 大列——原先无 Select 全表 SELECT * 每次把
-// 每行的多个 longtext 全拉回内存，是项目治理页慢的主因（量级一大即产生数十 MB 无效 IO）；
-// 边查询依赖的外键 namespace_id/repo_id 必须保留在 Select 中，否则 eager-load 失配。
-func (repo *projectRepo) ListLiveness(ctx context.Context, search string) (projects []*biz.Project, err error) {
-	ctx, span := tracer.Start(ctx, "projectRepo/ListLiveness")
+// 排序：updated_at {desc|asc} + id {desc|asc} 决胜键——datetime 整秒精度下同秒多条排序非全序，
+// 加 id 保证 LIMIT/OFFSET 翻页不漂移/不重复。字段裁剪沿用旧 ListLiveness（短字段 + 边外键），
+// 避免拉 config/override_values 等 longtext/JSON 大列。
+func (repo *projectRepo) ListLivenessPage(ctx context.Context, query *biz.LivenessPageQuery) (page *biz.LivenessPageResult, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/ListLivenessPage")
 	defer func() { endSpan(span, err) }()
-	query := repo.data.DB().Project.Query().
-		WithNamespace().
-		WithRepo().
+	// 计数/统计用无 edges 干净 query：search 命中全量上做 4 次 COUNT（total + 三分类），
+	// 与分页行查询解耦，避免 WithNamespace/WithRepo 的 JOIN 放大计数。
+	base := repo.data.DB().Project.Query()
+	if query.Search != "" {
+		base = base.Where(projectSearchPred(query.Search))
+	}
+	total, err := base.Clone().Count(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "count project liveness total")
+	}
+	active, err := base.Clone().Where(projectLivenessPred("active", query.Now)).Count(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "count project liveness active")
+	}
+	dormant, err := base.Clone().Where(projectLivenessPred("dormant", query.Now)).Count(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "count project liveness dormant")
+	}
+	zombie, err := base.Clone().Where(projectLivenessPred("zombie", query.Now)).Count(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "count project liveness zombie")
+	}
+	count := total
+	if query.Liveness != "" {
+		filtered, err := base.Clone().Where(projectLivenessPred(query.Liveness, query.Now)).Count(ctx)
+		if err != nil {
+			return nil, errs.Wrap(err, "count project liveness filtered")
+		}
+		count = filtered
+	}
+	// 分页行：先叠加搜索 + 分类过滤（*ProjectQuery 上 Where），再 Select 裁剪短字段、
+	// 排序（updated_at + id 决胜键）与 Offset/Limit；边（仓库/命名空间）沿用旧 ListLiveness。
+	order := sql.OrderDesc()
+	if query.Sort == "asc" {
+		order = sql.OrderAsc()
+	}
+	rows := repo.data.DB().Project.Query().WithNamespace().WithRepo()
+	if query.Search != "" {
+		rows = rows.Where(projectSearchPred(query.Search))
+	}
+	if query.Liveness != "" {
+		rows = rows.Where(projectLivenessPred(query.Liveness, query.Now))
+	}
+	all, err := rows.
 		Select(
 			project.FieldID,
 			project.FieldName,
@@ -114,18 +184,21 @@ func (repo *projectRepo) ListLiveness(ctx context.Context, search string) (proje
 			project.FieldNamespaceID,
 			project.FieldRepoID,
 		).
-		Order(ent.Desc(project.FieldUpdatedAt))
-	if search != "" {
-		query = query.Where(project.Or(
-			project.NameContainsFold(search),
-			project.HasNamespaceWith(namespace.NameContainsFold(search)),
-		))
-	}
-	all, err := query.All(ctx)
+		Order(
+			sql.OrderByField(project.FieldUpdatedAt, order).ToFunc(),
+			sql.OrderByField(project.FieldID, order).ToFunc(),
+		).
+		Offset(pagination.GetPageOffset(query.Page, query.PageSize)).
+		Limit(int(query.PageSize)).
+		All(ctx)
 	if err != nil {
-		return nil, errs.Wrap(err, "list project liveness")
+		return nil, errs.Wrap(err, "list project liveness page")
 	}
-	return slice.Map(all, toProject), nil
+	return &biz.LivenessPageResult{
+		Projects: slice.Map(all, toProject),
+		Count:    count,
+		Stats:    biz.LivenessStats{Total: total, Active: active, Dormant: dormant, Zombie: zombie},
+	}, nil
 }
 
 // ListAll 查询全部项目（含命名空间边与 Pod selectors），供空间资源聚合做 pod→项目归属映射。

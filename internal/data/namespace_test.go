@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	entgo "entgo.io/ent"
 
@@ -699,9 +700,12 @@ func TestNamespaceRepo_ListAll(t *testing.T) {
 	assert.ElementsMatch(t, []string{"ns-a", "ns-b"}, []string{list[0].Name, list[1].Name})
 }
 
-// TestNamespaceRepo_ListAllAdmin 覆盖管理员视角全量端口：search/私有过滤 DB 层生效 + 项目边
-// 装配（供活跃度聚合取项目 UpdatedAt 最大值），无分页（一次返回全部命中）。
-func TestNamespaceRepo_ListAllAdmin(t *testing.T) {
+// timePtr 构造 time.Time 指针，供边界奇偶性测试的「无项目（nil）vs 有项目」种子区分。
+func timePtr(t time.Time) *time.Time { return &t }
+
+// TestNamespaceRepo_ListAdminPage 真 SQL 分页：search/私有过滤 DB 层生效 + 项目边装配
+// （供活跃度聚合取项目 UpdatedAt 最大值）+ 分页（id 升序确定性）。分类过滤/统计由 kind 专项覆盖。
+func TestNamespaceRepo_ListAdminPage(t *testing.T) {
 	repo, entdb := newNsRepo(t)
 	ctx := context.TODO()
 	ns := entdb.Namespace.Create().SetName("ns-a").SetCreatorEmail("a@b.c").SaveX(ctx)
@@ -709,33 +713,176 @@ func TestNamespaceRepo_ListAllAdmin(t *testing.T) {
 	entdb.Namespace.Create().SetName("ns-b").SetCreatorEmail("b@b.c").SaveX(ctx)
 	entdb.Namespace.Create().SetName("ns-c").SetCreatorEmail("c@c.c").SetPrivate(true).SaveX(ctx)
 
-	t.Run("全量返回", func(t *testing.T) {
-		got, err := repo.ListAllAdmin(ctx, "", false)
+	t.Run("全量返回且计数正确", func(t *testing.T) {
+		got, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Page: 1, PageSize: 10, Now: time.Now()})
 		assert.NoError(t, err)
-		require.Len(t, got, 3)
+		require.Len(t, got.Namespaces, 3)
+		assert.Equal(t, 3, got.Count)
+		// ns-a 有刚创建的项目（活跃），ns-b/ns-c 无项目（僵尸）。
+		assert.Equal(t, biz.AdminLivenessStats{Total: 3, Active: 1, Zombie: 2}, got.Stats)
 	})
 
 	t.Run("search 过滤", func(t *testing.T) {
-		got, err := repo.ListAllAdmin(ctx, "ns-a", false)
+		got, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Search: "ns-a", Page: 1, PageSize: 10, Now: time.Now()})
 		assert.NoError(t, err)
-		require.Len(t, got, 1)
-		assert.Equal(t, "ns-a", got[0].Name)
+		require.Len(t, got.Namespaces, 1)
+		assert.Equal(t, "ns-a", got.Namespaces[0].Name)
+		assert.Equal(t, 1, got.Count)
 	})
 
 	t.Run("privateOnly 过滤", func(t *testing.T) {
-		got, err := repo.ListAllAdmin(ctx, "", true)
+		got, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{PrivateOnly: true, Page: 1, PageSize: 10, Now: time.Now()})
 		assert.NoError(t, err)
-		require.Len(t, got, 1)
-		assert.True(t, got[0].Private)
+		require.Len(t, got.Namespaces, 1)
+		assert.True(t, got.Namespaces[0].Private)
 	})
 
 	t.Run("项目边装配", func(t *testing.T) {
-		got, err := repo.ListAllAdmin(ctx, "ns-a", false)
+		got, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Search: "ns-a", Page: 1, PageSize: 10, Now: time.Now()})
 		assert.NoError(t, err)
-		require.Len(t, got, 1)
-		require.Len(t, got[0].Projects, 1)
-		assert.Equal(t, "proj", got[0].Projects[0].Name)
+		require.Len(t, got.Namespaces, 1)
+		require.Len(t, got.Namespaces[0].Projects, 1)
+		assert.Equal(t, "proj", got.Namespaces[0].Projects[0].Name)
 	})
+
+	t.Run("分页 id 升序", func(t *testing.T) {
+		// page=2 size=2：id 升序下第 [2:3) 行为 ns-c，count 保留全量 3。
+		got, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Page: 2, PageSize: 2, Now: time.Now()})
+		assert.NoError(t, err)
+		require.Len(t, got.Namespaces, 1)
+		assert.Equal(t, "ns-c", got.Namespaces[0].Name)
+		assert.Equal(t, 3, got.Count)
+	})
+
+	t.Run("越界页返回空但计数保留", func(t *testing.T) {
+		got, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Page: 99, PageSize: 10, Now: time.Now()})
+		assert.NoError(t, err)
+		assert.Empty(t, got.Namespaces)
+		assert.Equal(t, 3, got.Count)
+	})
+}
+
+// TestNamespaceRepo_ListAdminPage_KindFilter 分类过滤 + stats 全量口径：EXISTS 谓词命中正确
+// 分类（活跃/低活跃/僵尸含无项目空间），非法分类恒空。
+func TestNamespaceRepo_ListAdminPage_KindFilter(t *testing.T) {
+	repo, entdb := newNsRepo(t)
+	ctx := context.TODO()
+	now := time.Now()
+	active := entdb.Namespace.Create().SetName("ns-active").SetCreatorEmail("a@b.c").SaveX(ctx)
+	entdb.Project.Create().SetName("p1").SetUpdatedAt(now.Add(-10 * 24 * time.Hour)).SetNamespaceID(active.ID).SetCreator("").SaveX(ctx)
+	dormant := entdb.Namespace.Create().SetName("ns-dormant").SetCreatorEmail("b@b.c").SaveX(ctx)
+	entdb.Project.Create().SetName("p2").SetUpdatedAt(now.Add(-60 * 24 * time.Hour)).SetNamespaceID(dormant.ID).SetCreator("").SaveX(ctx)
+	// 无项目空间：从未活跃 → 僵尸。
+	entdb.Namespace.Create().SetName("ns-zombie").SetCreatorEmail("c@c.c").SaveX(ctx)
+
+	t.Run("活跃分类命中且 stats 为全量", func(t *testing.T) {
+		got, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Liveness: "active", Page: 1, PageSize: 10, Now: now})
+		assert.NoError(t, err)
+		require.Len(t, got.Namespaces, 1)
+		assert.Equal(t, "ns-active", got.Namespaces[0].Name)
+		// 统计不随分类过滤裁剪（search 命中全量）。
+		assert.Equal(t, biz.AdminLivenessStats{Total: 3, Active: 1, Dormant: 1, Zombie: 1}, got.Stats)
+		assert.Equal(t, 1, got.Count)
+	})
+
+	t.Run("低活跃分类命中一行", func(t *testing.T) {
+		got, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Liveness: "dormant", Page: 1, PageSize: 10, Now: now})
+		assert.NoError(t, err)
+		require.Len(t, got.Namespaces, 1)
+		assert.Equal(t, "ns-dormant", got.Namespaces[0].Name)
+	})
+
+	t.Run("僵尸分类含无项目空间", func(t *testing.T) {
+		got, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Liveness: "zombie", Page: 1, PageSize: 10, Now: now})
+		assert.NoError(t, err)
+		require.Len(t, got.Namespaces, 1)
+		assert.Equal(t, "ns-zombie", got.Namespaces[0].Name)
+	})
+
+	t.Run("非法分类恒空", func(t *testing.T) {
+		got, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Liveness: "bogus", Page: 1, PageSize: 10, Now: now})
+		assert.NoError(t, err)
+		assert.Empty(t, got.Namespaces)
+		assert.Equal(t, 0, got.Count)
+	})
+}
+
+// TestNamespaceRepo_ListAdminPage_QueryErrors 注入第 N 次查询失败，逐一覆盖 ListAdminPage
+// 各 COUNT/list 错误分支（total 已由 TestNamespaceRepo_ErrorBranches 用 closed DB 覆盖）：
+// 无过滤查询序 total→active→dormant→zombie→listAll；有 liveness 过滤时第 5 次为 filtered，
+// 第 6 次为 listAll。故 n=2/3/4 覆盖三分类 COUNT 错误，n=5+liveness 覆盖 filtered COUNT 错误，
+// n=5 无过滤覆盖 listAll 错误。
+func TestNamespaceRepo_ListAdminPage_QueryErrors(t *testing.T) {
+	cases := []struct {
+		name     string
+		failAt   int
+		liveness string
+	}{
+		{name: "active count error", failAt: 2},
+		{name: "dormant count error", failAt: 3},
+		{name: "zombie count error", failAt: 4},
+		{name: "filtered count error", failAt: 5, liveness: "active"},
+		{name: "list page error", failAt: 5},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var n int
+			repo, entdb := newNsRepoWithIntercept(t, entgo.InterceptFunc(func(next entgo.Querier) entgo.Querier {
+				return entgo.QuerierFunc(func(ctx context.Context, q entgo.Query) (entgo.Value, error) {
+					n++
+					if n == tc.failAt {
+						return nil, errors.New("inject namespace query error")
+					}
+					return next.Query(ctx, q)
+				})
+			}))
+			ns := entdb.Namespace.Create().SetName("ns-err").SetCreatorEmail("e@x.y").SaveX(context.TODO())
+			entdb.Project.Create().SetName("p-err").SetNamespaceID(ns.ID).SetCreator("").SaveX(context.TODO())
+			_, err := repo.ListAdminPage(context.TODO(), &biz.AdminListPageQuery{Liveness: tc.liveness, Page: 1, PageSize: 10, Now: time.Now()})
+			require.Error(t, err)
+			assert.ErrorContains(t, err, "inject namespace query error")
+		})
+	}
+}
+
+// TestNamespaceRepo_ListAdminPage_BoundaryParity 边界奇偶性守护：命名空间活跃度分类 SQL
+// EXISTS 谓词 == Go ClassifyLiveness(MAX(project.updated_at))。种入跨边界命名空间
+// （now-31d±1s、now-90d、无项目），断言 stats 四分类计数与各 kind 命中行数一致。
+func TestNamespaceRepo_ListAdminPage_BoundaryParity(t *testing.T) {
+	repo, entdb := newNsRepo(t)
+	ctx := context.TODO()
+	now := time.Now()
+	seeds := []struct {
+		name string
+		ts   *time.Time // nil = 无项目（零值时间 → 僵尸）
+	}{
+		{"s-active-1", timePtr(now.Add(-1 * 24 * time.Hour))},
+		{"s-active-2", timePtr(now.Add(-31*24*time.Hour + time.Second))},
+		{"s-dormant-1", timePtr(now.Add(-31 * 24 * time.Hour))},
+		{"s-dormant-2", timePtr(now.Add(-60 * 24 * time.Hour))},
+		{"s-zombie-1", timePtr(now.Add(-90 * 24 * time.Hour))},
+		{"s-zombie-2", timePtr(now.Add(-120 * 24 * time.Hour))},
+		{"s-noproj", nil},
+	}
+	want := map[string]int{"active": 0, "dormant": 0, "zombie": 0}
+	for _, s := range seeds {
+		ns := entdb.Namespace.Create().SetName(s.name).SetCreatorEmail("a@b.c").SaveX(ctx)
+		var lastActive time.Time
+		if s.ts != nil {
+			entdb.Project.Create().SetName("proj").SetUpdatedAt(*s.ts).SetNamespaceID(ns.ID).SetCreator("").SaveX(ctx)
+			lastActive = *s.ts
+		}
+		want[string(biz.ClassifyLiveness(lastActive, now))]++
+	}
+
+	page, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Page: 1, PageSize: 20, Now: now})
+	assert.NoError(t, err)
+	assert.Equal(t, biz.AdminLivenessStats{Total: len(seeds), Active: want["active"], Dormant: want["dormant"], Zombie: want["zombie"]}, page.Stats)
+	for _, kind := range []string{"active", "dormant", "zombie"} {
+		got, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Liveness: kind, Page: 1, PageSize: 20, Now: now})
+		assert.NoError(t, err)
+		assert.Len(t, got.Namespaces, want[kind], "kind=%s SQL 命中行数应等于 Go 分类计数", kind)
+	}
 }
 
 // TestNamespaceRepo_UpdateImagePullSecrets 覆盖仅回写 imagePullSecrets 列表的端口。
@@ -793,8 +940,8 @@ func TestNamespaceRepo_ErrorBranches(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("ListAllAdmin query error", func(t *testing.T) {
-		_, err := repo.ListAllAdmin(ctx, "", false)
+	t.Run("ListAdminPage query error", func(t *testing.T) {
+		_, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Page: 1, PageSize: 10})
 		assert.Error(t, err)
 	})
 

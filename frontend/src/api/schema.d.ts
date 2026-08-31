@@ -1270,6 +1270,7 @@ export interface components {
             email: string;
             logoutUrl: string;
             roles: string[];
+            isSuperAdmin: boolean;
         };
         "auth.LoginRequest": {
             username: string;
@@ -2282,6 +2283,7 @@ export interface components {
             roles: string[];
             lastLogin: string;
             createdAt: string;
+            isSuperAdmin: boolean;
         };
         /** @description UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部三卡。 */
         "user.UserStats": {
@@ -2577,6 +2579,8 @@ export interface operations {
                 search?: string;
                 /** @description 活跃度过滤：空 = 全部；active/dormant/zombie = 只看对应活跃度 */
                 liveness?: string;
+                /** @description 排序方向：空 = 按更新时间倒序（desc）；asc/desc = 指定更新时间升/降序 */
+                sort?: string;
             };
             header?: never;
             path?: never;
@@ -2640,6 +2644,7 @@ export interface operations {
                 pageSize?: number;
                 search?: string;
                 role?: string;
+                sort?: string;
             };
             header?: never;
             path?: never;

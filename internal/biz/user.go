@@ -28,11 +28,13 @@ type UserStats struct {
 }
 
 // ListUserInput 是用户分页列表输入：Search 按邮箱/展示名模糊匹配，
-// AdminOnly 只看管理员（roles 含 mars_admin）。
+// AdminOnly 只看管理员（roles 含 mars_admin），Sort 指定最近登录排序方向。
 type ListUserInput struct {
 	Page, PageSize int32
 	Search         string
 	AdminOnly      bool
+	// Sort 排序方向：空 = 最近登录倒序（desc）；asc/desc = 指定最近登录升/降序。
+	Sort string
 }
 
 // ListUserResult 是用户分页列表结果，携带统计。

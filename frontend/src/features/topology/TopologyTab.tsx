@@ -4,6 +4,7 @@ import { toast } from '@/lib/toast'
 import { nextZIndex } from '@/lib/zIndex'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { useWebsocket } from '@/hooks/useWebsocket'
 import { Icon } from '@/components/Icons'
 import { SearchInput } from '@/components/SearchInput'
@@ -33,7 +34,7 @@ type ResourceTreeEdge = components['schemas']['project.ResourceTreeEdge']
 type ResourceTreeResponse = components['schemas']['project.ResourceTreeResponse']
 type StateContainer = components['schemas']['types.StateContainer']
 
-/** pod 事件 → 重拉资源树的去抖间隔（与 TabLog 的 1000ms 同策略，稍短让图跟手） */
+/** pod 事件 → 重拉资源树的去抖间隔（与 TabLog/TabShell 的 POD_DEBOUNCE_MS=500 对齐，避免频繁重拉） */
 const POD_DEBOUNCE_MS = 500
 /** 兜底轮询间隔：pod 事件丢失（断流/订阅漏）时的安全网 */
 const POLL_MS = 30000
@@ -166,11 +167,11 @@ export function TopologyTab({
   const fetchTree = useCallback(async () => {
     try {
       const [treeRes, containerRes, endpointRes] = await Promise.all([
-        api.GET('/api/projects/{id}/resource_tree', { params: { path: { id: project.id } } }),
-        api.GET('/api/projects/{id}/containers', { params: { path: { id: project.id } } }).catch(() => null),
+        api.GET(API.projectsResourceTree, { params: { path: { id: project.id } } }),
+        api.GET(API.projectsContainers, { params: { path: { id: project.id } } }).catch(() => null),
         // 项目访问地址（Application 根节点详情卡片全部展示）：失败不回退树刷新，仅当次地址列表为空
         api
-          .GET('/api/endpoints/projects/{projectId}', { params: { path: { projectId: project.id } } })
+          .GET(API.endpointsProject, { params: { path: { projectId: project.id } } })
           .catch(() => null),
       ])
       if (treeRes.error) throw new Error(treeRes.error.message ?? String(treeRes.error))
@@ -280,7 +281,7 @@ export function TopologyTab({
     if (!selectedNode) return
     setKilling(true)
     try {
-      const { error } = await api.POST('/api/containers/namespaces/{namespace}/pods/{pod}/force_delete', {
+      const { error } = await api.POST(API.containerForceDelete, {
         params: { path: { namespace: selectedNode.namespace, pod: selectedNode.name } },
         body: { namespace: selectedNode.namespace, pod: selectedNode.name, gracePeriodSeconds: '0' },
       })

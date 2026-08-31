@@ -1444,7 +1444,9 @@ type LivenessRequest struct {
 	// 关键词：匹配项目名/命名空间名/仓库名
 	Search string `protobuf:"bytes,3,opt,name=search,proto3" json:"search,omitempty"`
 	// 活跃度过滤：空 = 全部；active/dormant/zombie = 只看对应活跃度
-	Liveness      string `protobuf:"bytes,4,opt,name=liveness,proto3" json:"liveness,omitempty"`
+	Liveness string `protobuf:"bytes,4,opt,name=liveness,proto3" json:"liveness,omitempty"`
+	// 排序方向：空 = 按更新时间倒序（desc）；asc/desc = 指定更新时间升/降序
+	Sort          string `protobuf:"bytes,5,opt,name=sort,proto3" json:"sort,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1503,6 +1505,13 @@ func (x *LivenessRequest) GetSearch() string {
 func (x *LivenessRequest) GetLiveness() string {
 	if x != nil {
 		return x.Liveness
+	}
+	return ""
+}
+
+func (x *LivenessRequest) GetSort() string {
+	if x != nil {
+		return x.Sort
 	}
 	return ""
 }
@@ -1904,12 +1913,13 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\x1dMemoryCpuAndEndpointsResponse\x12*\n" +
 	"\x04urls\x18\x01 \x03(\v2\x16.types.ServiceEndpointR\x04urls\x12\x10\n" +
 	"\x03cpu\x18\x02 \x01(\tR\x03cpu\x12\x16\n" +
-	"\x06memory\x18\x03 \x01(\tR\x06memory\"\x97\x01\n" +
+	"\x06memory\x18\x03 \x01(\tR\x06memory\"\xab\x01\n" +
 	"\x0fLivenessRequest\x12\x17\n" +
 	"\x04page\x18\x01 \x01(\x05H\x00R\x04page\x88\x01\x01\x12 \n" +
 	"\tpage_size\x18\x02 \x01(\x05H\x01R\bpageSize\x88\x01\x01\x12\x16\n" +
 	"\x06search\x18\x03 \x01(\tR\x06search\x12\x1a\n" +
-	"\bliveness\x18\x04 \x01(\tR\blivenessB\a\n" +
+	"\bliveness\x18\x04 \x01(\tR\bliveness\x12\x12\n" +
+	"\x04sort\x18\x05 \x01(\tR\x04sortB\a\n" +
 	"\x05_pageB\f\n" +
 	"\n" +
 	"_page_size\"\x96\x03\n" +

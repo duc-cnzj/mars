@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { copyText } from '@/lib/copy'
 import { Icon } from '@/components/Icons'
 import { Tag } from '@/components/ui'
@@ -140,7 +141,7 @@ export function NamespaceCard({
     const prev = ns.favorite
     onToggleFavorite({ ...ns, favorite: !prev }) // 乐观更新
     try {
-      const { error } = await api.POST('/api/namespaces/favorite', {
+      const { error } = await api.POST(API.namespacesFavorite, {
         body: { id: ns.id, favorite: !prev },
       })
       if (error) {
@@ -158,7 +159,7 @@ export function NamespaceCard({
   const remove = async () => {
     setDeleting(true)
     try {
-      const { error } = await api.DELETE('/api/namespaces/{id}', {
+      const { error } = await api.DELETE(API.namespacesDetail, {
         params: { path: { id: ns.id } },
       })
       if (error) throw new Error(error.message ?? String(error))
@@ -179,7 +180,7 @@ export function NamespaceCard({
     setSaving(true)
     try {
       const email = transferEmail.trim()
-      const { error } = await api.POST('/api/namespaces/update_config', {
+      const { error } = await api.POST(API.namespacesUpdateConfig, {
         body: {
           id: ns.id,
           private: isPrivate,
@@ -545,7 +546,7 @@ function NamespaceDescription({
     if (saving) return
     setSaving(true)
     try {
-      const { error } = await api.POST('/api/namespaces/{id}/update_desc', {
+      const { error } = await api.POST(API.namespacesUpdateDesc, {
         params: { path: { id: namespaceId } },
         body: { id: namespaceId, desc: draft.trim() },
       })
@@ -691,7 +692,7 @@ function NamespaceCpuMemory({ namespaceId }: { namespaceId: number }) {
   const fetchUsage = () => {
     if (usage) return
     api
-      .GET('/api/metrics/namespace/{namespaceId}/cpu_memory', {
+      .GET(API.metricsNamespaceCpuMemory, {
         params: { path: { namespaceId } },
       })
       .then(({ data }) => {
@@ -740,7 +741,7 @@ function NamespaceEndpoints({ namespaceId }: { namespaceId: number }) {
   const fetchEndpoints = () => {
     if (loaded) return
     api
-      .GET('/api/endpoints/namespaces/{namespaceId}', {
+      .GET(API.endpointsNamespace, {
         params: { path: { namespaceId } },
       })
       .then(({ data }) => {

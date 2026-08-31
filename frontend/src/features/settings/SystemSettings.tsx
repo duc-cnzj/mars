@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/shadcn/button'
 import { copyText } from '@/lib/copy'
 import { toast } from '@/lib/toast'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import type { components } from '@/api/schema'
 import type { TKey } from '@/i18n/keys'
 
@@ -79,7 +80,7 @@ export function SystemSettings() {
     let ignore = false
     setLoading(true)
     void api
-      .GET('/api/admin/settings')
+      .GET(API.adminSettings)
       .then(({ data, error: err }) => {
         if (ignore) return
         if (err) {

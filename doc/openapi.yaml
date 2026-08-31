@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: ""
+    version: api/v6.0.0-beta.31
 paths:
     /api/access_tokens:
         get:
@@ -252,6 +252,11 @@ paths:
                   description: 活跃度过滤：空 = 全部；active/dormant/zombie = 只看对应活跃度
                   schema:
                     type: string
+                - name: sort
+                  in: query
+                  description: 排序方向：空 = 按更新时间倒序（desc）；asc/desc = 指定更新时间升/降序
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -306,6 +311,10 @@ paths:
                   schema:
                     type: string
                 - name: role
+                  in: query
+                  schema:
+                    type: string
+                - name: sort
                   in: query
                   schema:
                     type: string
@@ -2264,6 +2273,8 @@ components:
                     type: array
                     items:
                         type: string
+                isSuperAdmin:
+                    type: boolean
         auth.LoginRequest:
             required:
                 - username
@@ -4076,6 +4087,8 @@ components:
                     type: string
                 createdAt:
                     type: string
+                isSuperAdmin:
+                    type: boolean
             description: |-
                 UserModel 是后台用户管理的单条展示模型：roles 已归一化为 admin/user
                  （真实库中 mars_admin=管理员，user=普通用户，展示层统一为 admin/user 两种取值）。

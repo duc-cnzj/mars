@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import type { components } from '@/api/schema'
 
 type VersionResponse = components['schemas']['version.Response']
@@ -16,7 +17,7 @@ const emit = () => {
 function ensureVersion() {
   if (promise) return
   promise = api
-    .GET('/api/version')
+    .GET(API.version)
     .then(({ data }) => {
       if (data) {
         cache = data

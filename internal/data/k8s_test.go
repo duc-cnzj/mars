@@ -64,6 +64,7 @@ func TestNewK8sRepo(t *testing.T) {
 		mockUploader,
 		NewDefaultArchiver(),
 		NewExecutorManager(mockData, mlog.NewForConfig(nil)),
+		NewCacheImpl(&config.Config{}, nil, mlog.NewForConfig(nil)),
 	).(*k8sRepo)
 	assert.NotNil(t, repo)
 	assert.NotNil(t, repo.logger)
@@ -73,6 +74,7 @@ func TestNewK8sRepo(t *testing.T) {
 	assert.NotNil(t, repo.uploader)
 	assert.NotNil(t, repo.archiver)
 	assert.NotNil(t, repo.executor)
+	assert.NotNil(t, repo.cache)
 }
 
 // GetSecret 通过 K8sClient 实时读取命名空间下的 secret：
@@ -113,6 +115,7 @@ func TestSplitManifests(t *testing.T) {
 		mockUploader,
 		NewDefaultArchiver(),
 		NewExecutorManager(mockData, mlog.NewForConfig(nil)),
+		NewCacheImpl(&config.Config{}, nil, mlog.NewForConfig(nil)),
 	).(*k8sRepo)
 
 	t.Run("should split manifest string correctly", func(t *testing.T) {
@@ -705,7 +708,7 @@ func TestClusterInfo_NodesListError(t *testing.T) {
 	})
 	fcm := &fake2.Clientset{}
 	mockData := NewMockDataStore(m)
-	kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData}
+	kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData, cache: NewCacheImpl(&config.Config{}, nil, mlog.NewForConfig(nil))}
 	mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
 	info := kr.ClusterInfo()
 	assert.Equal(t, &biz.ClusterInfo{}, info)
@@ -737,7 +740,7 @@ func TestClusterInfo_MetricsListError(t *testing.T) {
 		return true, nil, errors.New("metrics list boom")
 	})
 	mockData := NewMockDataStore(m)
-	kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData}
+	kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData, cache: NewCacheImpl(&config.Config{}, nil, mlog.NewForConfig(nil))}
 	mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
 	info := kr.ClusterInfo()
 	// 不 panic，节点信息仍可统计：metrics 失败时 TotalMemory 回退到节点 allocatable（单节点 10Gi）。
@@ -2397,7 +2400,7 @@ func (errReplicaSetLister) GetPodReplicaSets(*corev1.Pod) ([]*appsv1.ReplicaSet,
 // newK8sRepoWithClient 构造包住指定 K8sClient 的 k8sRepo，供 lister 读取方法测试用。
 func newK8sRepoWithClient(mockData *MockDataStore, c *K8sClient) *k8sRepo {
 	mockData.EXPECT().K8s().Return(c).AnyTimes()
-	return &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData}
+	return &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData, cache: NewCacheImpl(&config.Config{}, nil, mlog.NewForConfig(nil))}
 }
 
 func TestK8sRepo_ListReplicaSets(t *testing.T) {
@@ -2568,10 +2571,10 @@ func TestK8sRepo_ClusterBoard(t *testing.T) {
 		}}, nil
 	})
 	mockData := NewMockDataStore(m)
-	kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData}
+	kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData, cache: NewCacheImpl(&config.Config{}, nil, mlog.NewForConfig(nil))}
 	mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
 
-	got, err := kr.ClusterBoard(context.TODO())
+	got, err := kr.ClusterBoard(context.TODO(), false)
 	assert.NoError(t, err)
 	assert.Len(t, got.Nodes, 2)
 	assert.Len(t, got.NodeMetrics, 1)
@@ -2581,6 +2584,93 @@ func TestK8sRepo_ClusterBoard(t *testing.T) {
 	assert.Equal(t, "node01", got.Nodes[0].Name)
 	assert.Equal(t, "ns-a", got.Namespaces[0].Name)
 	assert.Equal(t, "p1", got.PodMetrics[0].Name)
+}
+
+// TestK8sRepo_ClusterBoard_Cache 覆盖 30s 缓存语义：force=false 首次调用触发 List 并回填，
+// 二次调用命中缓存不再触发 List；force=true 强制刷新重新触发 List（cron 预热路径）。
+func TestK8sRepo_ClusterBoard_Cache(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	var listCalls int32
+	fc := fake.NewSimpleClientset()
+	fc.PrependReactor("list", "nodes", func(action testing2.Action) (bool, runtime.Object, error) {
+		listCalls++
+		return true, &corev1.NodeList{Items: []corev1.Node{{ObjectMeta: metav1.ObjectMeta{Name: "n1"}}}}, nil
+	})
+	fcm := &fake2.Clientset{}
+	fcm.AddReactor("list", "nodes", func(action testing2.Action) (bool, runtime.Object, error) {
+		return true, &v1beta1.NodeMetricsList{}, nil
+	})
+	mockData := NewMockDataStore(m)
+	mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
+	kr := &k8sRepo{
+		logger: mlog.NewForConfig(nil),
+		data:   mockData,
+		cache:  NewCacheImpl(&config.Config{CacheDriver: "memory"}, nil, mlog.NewForConfig(nil)),
+	}
+
+	got, err := kr.ClusterBoard(context.TODO(), false)
+	assert.NoError(t, err)
+	assert.Len(t, got.Nodes, 1)
+	assert.Equal(t, int32(1), listCalls, "首次调用触发 List 回填")
+
+	got2, err := kr.ClusterBoard(context.TODO(), false)
+	assert.NoError(t, err)
+	assert.Equal(t, got.Nodes[0].Name, got2.Nodes[0].Name)
+	assert.Equal(t, int32(1), listCalls, "force=false 二次调用命中缓存不触发 List")
+
+	_, err = kr.ClusterBoard(context.TODO(), true)
+	assert.NoError(t, err)
+	assert.Equal(t, int32(2), listCalls, "force=true 强制刷新重新触发 List")
+}
+
+// TestK8sRepo_ClusterBoard_UnmarshalError 覆盖缓存值损坏（非合法 JSON）时反序列化
+// 失败整体上抛，不产生半成品快照（防御缓存被外部污染的分支）。
+func TestK8sRepo_ClusterBoard_UnmarshalError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	cache := NewMockCache(m)
+	cache.EXPECT().Remember(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("not-json"), nil)
+	kr := &k8sRepo{cache: cache}
+
+	got, err := kr.ClusterBoard(context.TODO(), false)
+	assert.Nil(t, got)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unmarshal cluster board cache")
+}
+
+// TestK8sRepo_CacheTTLs 断言两个快照缓存使用各自 TTL：ClusterBoard=30s、
+// ResourceSnapshot=300s，锁死 Remember 的 seconds 参数——TTL 是本次分频的核心语义，
+// 防止将来被误统一成同一刷新周期（cron 预热节律与之一致）。注意断言用字面契约值
+// （30/300）而非常量引用：若常量被误改，测试仍能抓住错配。
+func TestK8sRepo_CacheTTLs(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	cache := NewMockCache(m)
+	cache.EXPECT().Remember(NewKey("cluster_board"), 30, gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+	cache.EXPECT().Remember(NewKey("resource_snapshot"), 300, gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+
+	kr := &k8sRepo{cache: cache}
+	_, err := kr.ClusterBoard(context.TODO(), false)
+	assert.NoError(t, err)
+	_, err = kr.ResourceSnapshot(context.TODO(), false)
+	assert.NoError(t, err)
+}
+
+// TestK8sRepo_ResourceSnapshot_UnmarshalError 同上：空间资源快照缓存损坏时反序列化失败上抛。
+func TestK8sRepo_ResourceSnapshot_UnmarshalError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	cache := NewMockCache(m)
+	cache.EXPECT().Remember(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("not-json"), nil)
+	kr := &k8sRepo{cache: cache}
+
+	got, err := kr.ResourceSnapshot(context.TODO(), false)
+	assert.Nil(t, got)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unmarshal resource snapshot cache")
 }
 
 // TestK8sRepo_ClusterBoard_Errors 集群看板各资源 List 失败整体上抛：任一环节失败
@@ -2614,10 +2704,10 @@ func TestK8sRepo_ClusterBoard_Errors(t *testing.T) {
 				})
 			}
 			mockData := NewMockDataStore(m)
-			kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData}
+			kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData, cache: NewCacheImpl(&config.Config{}, nil, mlog.NewForConfig(nil))}
 			mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
 
-			got, err := kr.ClusterBoard(context.TODO())
+			got, err := kr.ClusterBoard(context.TODO(), false)
 			assert.Nil(t, got)
 			assert.Error(t, err)
 		})
@@ -2655,10 +2745,10 @@ func TestK8sRepo_ResourceSnapshot(t *testing.T) {
 		}}, nil
 	})
 	mockData := NewMockDataStore(m)
-	kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData}
+	kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData, cache: NewCacheImpl(&config.Config{}, nil, mlog.NewForConfig(nil))}
 	mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
 
-	got, err := kr.ResourceSnapshot(context.TODO())
+	got, err := kr.ResourceSnapshot(context.TODO(), false)
 	assert.NoError(t, err)
 	if assert.Len(t, got.Pods, 1) {
 		assert.Equal(t, "p1", got.Pods[0].Name)
@@ -2700,10 +2790,10 @@ func TestK8sRepo_ResourceSnapshot_Errors(t *testing.T) {
 				})
 			}
 			mockData := NewMockDataStore(m)
-			kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData}
+			kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData, cache: NewCacheImpl(&config.Config{}, nil, mlog.NewForConfig(nil))}
 			mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
 
-			got, err := kr.ResourceSnapshot(context.TODO())
+			got, err := kr.ResourceSnapshot(context.TODO(), false)
 			assert.Nil(t, got)
 			assert.Error(t, err)
 		})

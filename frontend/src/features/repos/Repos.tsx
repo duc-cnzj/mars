@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { stringify } from 'yaml'
 import { toast } from '@/lib/toast'
+import { REVOKE_OBJECT_URL_MS, SEARCH_DEBOUNCE_MS } from '@/lib/constants'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { Icon } from '@/components/Icons'
 import { Empty, SkeletonList, Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
@@ -58,7 +60,7 @@ export function Repos() {
   // 搜索关键词从 URL query 恢复：刷新/分享链接/前进后退都保留上次搜索
   const [searchParams, setSearchParams] = useSearchParams()
   const [keyword, setKeyword] = useState(() => searchParams.get('name') ?? '')
-  /** 搜索防抖 400ms（对齐 events 页）：避免每敲一个键就触发一次「整列表变骨架」的重拉 */
+  /** 搜索防抖 300ms（SEARCH_DEBOUNCE_MS，对齐 events 页）：避免每敲一个键就触发一次「整列表变骨架」的重拉 */
   const [debouncedKeyword, setDebouncedKeyword] = useState(() => searchParams.get('name') ?? '')
   const [initialLoading, setInitialLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -110,7 +112,7 @@ export function Repos() {
       if (append) setLoadingMore(true)
       else setInitialLoading(true)
       try {
-        const { data, error } = await api.GET('/api/repos', {
+        const { data, error } = await api.GET(API.repos, {
           params: { query: { page: p, pageSize: PAGE_SIZE, name: kw?.trim() || undefined } },
         })
         if (error) throw new Error(error.message ?? String(error))
@@ -131,9 +133,9 @@ export function Repos() {
     [],
   )
 
-  // 搜索防抖 400ms：keyword 同步 URL（立即），实际拉取走 debouncedKeyword
+  // 搜索防抖 300ms（SEARCH_DEBOUNCE_MS）：keyword 同步 URL（立即），实际拉取走 debouncedKeyword
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedKeyword(keyword), 400)
+    const timer = setTimeout(() => setDebouncedKeyword(keyword), SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(timer)
   }, [keyword])
 
@@ -216,7 +218,7 @@ export function Repos() {
   const toggle = async (item: RepoModel) => {
     setTogglingId(item.id)
     try {
-      const { error } = await api.POST('/api/repos/toggle_enabled', {
+      const { error } = await api.POST(API.reposToggleEnabled, {
         body: { id: item.id, enabled: !item.enabled },
       })
       if (error) throw new Error(error.message ?? String(error))
@@ -242,7 +244,7 @@ export function Repos() {
     if (deletingId !== 0) return
     setDeletingId(item.id)
     try {
-      const { error } = await api.DELETE('/api/repos/{id}', {
+      const { error } = await api.DELETE(API.reposDetail, {
         params: { path: { id: item.id } },
       })
       if (error) throw new Error(error.message ?? String(error))
@@ -263,7 +265,7 @@ export function Repos() {
       return
     }
     try {
-      const { error } = await api.POST('/api/repos/clone', {
+      const { error } = await api.POST(API.reposClone, {
         body: { id: cloneId, name: cloneName.trim() },
       })
       if (error) throw new Error(error.message ?? String(error))
@@ -286,7 +288,7 @@ export function Repos() {
   const doExport = async () => {
     setExporting(true)
     try {
-      const { data, error } = await api.GET('/api/repos/export')
+      const { data, error } = await api.GET(API.reposExport)
       if (error) throw new Error(error.message ?? String(error))
       if (!data) return
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' })
@@ -296,7 +298,7 @@ export function Repos() {
       a.download = 'repos.json'
       a.click()
       // 等浏览器启动下载后再释放 blob URL：立即 revoke 在 Firefox 下偶发下载失败（对象已被回收）
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      window.setTimeout(() => URL.revokeObjectURL(url), REVOKE_OBJECT_URL_MS)
       toast.success(t('repos.exportSuccess'))
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
@@ -309,7 +311,7 @@ export function Repos() {
   const doExportOne = async (item: RepoModel) => {
     setExportingOneId(item.id)
     try {
-      const { data, error } = await api.GET('/api/repos/{id}/export', {
+      const { data, error } = await api.GET(API.reposDetailExport, {
         params: { path: { id: item.id } },
       })
       if (error) throw new Error(error.message ?? String(error))
@@ -321,7 +323,7 @@ export function Repos() {
       a.download = `${item.name}.json`
       a.click()
       // 等浏览器启动下载后再释放 blob URL：立即 revoke 在 Firefox 下偶发下载失败（对象已被回收）
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      window.setTimeout(() => URL.revokeObjectURL(url), REVOKE_OBJECT_URL_MS)
       toast.success(t('repos.exportOneSuccess', { name: item.name }))
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
@@ -345,7 +347,7 @@ export function Repos() {
         throw new Error(t('repos.importInvalidFile'))
       }
       if (!Array.isArray(parsed?.items)) throw new Error(t('repos.importInvalidFile'))
-      const { data, error } = await api.POST('/api/repos/import', {
+      const { data, error } = await api.POST(API.reposImport, {
         body: { items: parsed.items, dryRun: true },
       })
       if (error) throw new Error(error.message ?? String(error))
@@ -369,7 +371,7 @@ export function Repos() {
     if (!preview) return
     setImporting(true)
     try {
-      const { data, error } = await api.POST('/api/repos/import', {
+      const { data, error } = await api.POST(API.reposImport, {
         body: { items: preview.items, dryRun: false },
       })
       if (error) throw new Error(error.message ?? String(error))

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getToken } from '@/api/token'
+import { podMetricsStreamUrl } from '@/api/endpoints'
 import { AreaSpark } from '@/components/charts/AreaSpark'
 
 /** 后端窗口：timeSpan=150s / tick=5s → 最多 30 个采样点，环形缓冲上限对齐该值 */
@@ -50,7 +51,7 @@ export function PodMetrics({ namespace, pod }: { namespace: string; pod: string 
     setFailed(false)
 
     const ctrl = new AbortController()
-    const url = `/api/metrics/namespace/${namespace}/pods/${pod}/stream?time=${Date.now()}`
+    const url = `${podMetricsStreamUrl(namespace, pod)}?time=${Date.now()}`
     let buf = ''
 
     const push = (kind: 'cpu' | 'memory') => (r: PodSample) => {

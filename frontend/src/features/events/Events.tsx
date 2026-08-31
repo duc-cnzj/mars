@@ -8,8 +8,10 @@ import type {
   PathsApiEventsGetParametersQueryActionTypes as SchemaActionTypes,
 } from '@/api/schema'
 import { api } from '@/api/client'
+import { API, downloadFileUrl } from '@/api/endpoints'
 import { getToken } from '@/api/token'
 import { toast } from '@/lib/toast'
+import { REVOKE_OBJECT_URL_MS, SEARCH_DEBOUNCE_MS } from '@/lib/constants'
 import { Icon } from '@/components/Icons'
 import { Empty, SkeletonList, Tag, type Tone } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
@@ -179,7 +181,7 @@ export function Events({ adminView = false }: { adminView?: boolean }) {
       if (append) setLoadingMore(true)
       else setInitialLoading(true)
       try {
-        const { data, error } = await api.GET('/api/events', {
+        const { data, error } = await api.GET(API.events, {
           params: {
             query: {
               page: p,
@@ -216,14 +218,14 @@ export function Events({ adminView = false }: { adminView?: boolean }) {
   // 普通用户跳过请求，避免必 403 的调用与未捕获的 rejection
   useEffect(() => {
     if (!isAdmin) return
-    void api.GET('/api/files/disk_info').then(({ data }) => {
+    void api.GET(API.fileDiskInfo).then(({ data }) => {
       if (data) setDiskUsage(data.humanizeUsage)
     })
   }, [isAdmin])
 
-  // 搜索防抖 400ms
+  // 搜索防抖 300ms（SEARCH_DEBOUNCE_MS）
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 400)
+    const timer = setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(timer)
   }, [search])
 
@@ -308,7 +310,7 @@ export function Events({ adminView = false }: { adminView?: boolean }) {
 
   const viewDiff = async (id: number) => {
     try {
-      const { data, error } = await api.GET('/api/events/{id}', { params: { path: { id } } })
+      const { data, error } = await api.GET(API.eventsDetail, { params: { path: { id } } })
       if (error) throw new Error(error.message ?? String(error))
       if (!data?.item) return
       setDiff({
@@ -329,7 +331,7 @@ export function Events({ adminView = false }: { adminView?: boolean }) {
     setRecord({ open: true, username: item.username, message: item.message })
     setRecordsLoading(true)
     try {
-      const { data, error } = await api.GET('/api/record_files/{id}', {
+      const { data, error } = await api.GET(API.recordFileDetail, {
         params: { path: { id: item.fileId } },
       })
       if (seq !== recordSeqRef.current) return
@@ -352,7 +354,7 @@ export function Events({ adminView = false }: { adminView?: boolean }) {
     if (!deleteFileTarget || deletingFile) return
     setDeletingFile(true)
     try {
-      const { error } = await api.DELETE('/api/files/{id}', {
+      const { error } = await api.DELETE(API.fileDetail, {
         params: { path: { id: deleteFileTarget.fileId } },
       })
       if (error) throw new Error(error.message ?? String(error))
@@ -374,7 +376,7 @@ export function Events({ adminView = false }: { adminView?: boolean }) {
 
   const downloadFile = async (fileId: number) => {
     try {
-      const res = await fetch(`/api/download_file/${fileId}`, {
+      const res = await fetch(downloadFileUrl(fileId), {
         headers: { Authorization: getToken(), 'X-Requested-With': 'XMLHttpRequest' },
       })
       if (!res.ok) throw new Error('download failed')
@@ -392,7 +394,7 @@ export function Events({ adminView = false }: { adminView?: boolean }) {
         : (plain?.[1] ?? `file-${fileId}`)
       a.click()
       // 延迟 revoke（对齐 Repos 导出同款 1s 兜底）：立即 revoke 在 Firefox 等可能中断下载
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      window.setTimeout(() => URL.revokeObjectURL(url), REVOKE_OBJECT_URL_MS)
       toast.success(t('events.downloadSuccess'))
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))

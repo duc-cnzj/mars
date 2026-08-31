@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { Icon } from '@/components/Icons'
 import { Tag, SegmentedSkeleton } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
@@ -87,7 +88,7 @@ export function CreateProjectModal({
     if (!open) return
     setClusterBad(false)
     let alive = true
-    void api.GET('/api/cluster_info').then(({ data }) => {
+    void api.GET(API.clusterInfo).then(({ data }) => {
       if (alive && data?.item && data.item.status === 'bad') setClusterBad(true)
     })
     return () => {
@@ -114,7 +115,7 @@ export function CreateProjectModal({
     setShowLog(false)
     setLoadingProject(true)
     api
-      .GET('/api/git/project_options')
+      .GET(API.gitProjectOptions)
       .then(({ data, error }) => {
         if (!error && data) setProjectOptions(data.items)
       })
@@ -138,7 +139,7 @@ export function CreateProjectModal({
     setElements([])
     setLoadingConfig(true)
     try {
-      const { data, error } = await api.GET('/api/repos/{id}', {
+      const { data, error } = await api.GET(API.reposDetail, {
         params: { path: { id } },
       })
       if (error) throw new Error(error.message ?? String(error))
@@ -168,7 +169,7 @@ export function CreateProjectModal({
     setLoadingBranch(true)
     setBranchOptions([])
     api
-      .GET('/api/git/projects/{gitProjectId}/branch_options', {
+      .GET(API.gitBranchOptions, {
         params: { path: { gitProjectId }, query: { repoId } },
       })
       .then(({ data, error }) => {
@@ -183,7 +184,7 @@ export function CreateProjectModal({
     setLoadingCommit(true)
     setCommitOptions([])
     api
-      .GET('/api/git/projects/{gitProjectId}/branches/{branch}/commit_options', {
+      .GET(API.gitCommitOptions, {
         params: { path: { gitProjectId, branch } },
       })
       .then(({ data, error }) => {

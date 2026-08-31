@@ -49,6 +49,20 @@ func Test_authSvc_Info(t *testing.T) {
 		assert.Equal(t, "duc@example.com", resp.Email)
 		assert.Equal(t, "https://logout.example", resp.LogoutUrl)
 		assert.Equal(t, []string{"admin", "dev"}, resp.Roles)
+		assert.False(t, resp.IsSuperAdmin)
+	}
+}
+
+// Test_authSvc_Info_SuperAdmin 内置超级管理员固定邮箱登录 → is_super_admin = true。
+func Test_authSvc_Info_SuperAdmin(t *testing.T) {
+	svc, _ := newAuthSvcWithMocks(t)
+	resp, err := svc.Info(biz.SetUser(context.TODO(), &biz.UserInfo{
+		Email: biz.SuperAdminEmail,
+		Roles: []string{biz.MarsAdmin},
+	}), nil)
+	assert.Nil(t, err)
+	if assert.NotNil(t, resp) {
+		assert.True(t, resp.IsSuperAdmin)
 	}
 }
 

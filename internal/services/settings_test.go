@@ -1,10 +1,12 @@
 package services
 
 import (
+	"context"
 	"testing"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/settings"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/biz/schematype"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +30,6 @@ func newSettingsSvcWithMocks(t *testing.T) (*settingsSvc, *settingsSvcMocks) {
 	logger := mlog.NewForConfig(nil)
 	s, ok := NewSettingsSvc(SettingsSvcDeps{
 		SettingsBiz: mocks.settingsBiz,
-		AccessBiz:   biz.NewAccessBiz(nil, nil),
 		Logger:      logger,
 	}).(*settingsSvc)
 	if !ok {
@@ -41,7 +42,6 @@ func TestNewSettingsSvc(t *testing.T) {
 	svc, _ := newSettingsSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.settingsBiz)
-	assert.NotNil(t, svc.accessBiz)
 	assert.NotNil(t, svc.logger)
 }
 
@@ -81,7 +81,18 @@ func Test_settingsSvc_Get_Empty(t *testing.T) {
 	assert.Empty(t, resp.Groups)
 }
 
-// Test_settingsSvc_Authorize 授权门禁：Get 无白名单方法，admin 放行、普通用户拒绝。
+// newOrdinaryAdminUserCtx 构造普通管理员上下文（mars_admin 角色但非超管固定邮箱）。
+func newOrdinaryAdminUserCtx() context.Context {
+	return biz.SetUser(context.TODO(), &biz.UserInfo{
+		ID:    "9",
+		Email: "ordinary-admin@mars.com",
+		Name:  "ordinary-admin",
+		Roles: []string{schematype.MarsAdmin},
+	})
+}
+
+// Test_settingsSvc_Authorize 授权门禁：仅内置超级管理员放行（newAdminUserCtx 的
+// adminEmail 即超管固定邮箱），普通管理员（mars_admin）与普通用户均拒绝。
 func Test_settingsSvc_Authorize(t *testing.T) {
 	svc, _ := newSettingsSvcWithMocks(t)
 
@@ -89,7 +100,9 @@ func Test_settingsSvc_Authorize(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
 
-	ctx, err = svc.Authorize(newOtherUserCtx(), settings.Settings_Get_FullMethodName)
+	_, err = svc.Authorize(newOrdinaryAdminUserCtx(), settings.Settings_Get_FullMethodName)
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
-	assert.Nil(t, ctx)
+
+	_, err = svc.Authorize(newOtherUserCtx(), settings.Settings_Get_FullMethodName)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }

@@ -4,8 +4,10 @@ import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { formatDateTime } from '@/lib/format'
 import { toast } from '@/lib/toast'
+import { SEARCH_DEBOUNCE_MS } from '@/lib/constants'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { Icon } from '@/components/Icons'
 import { SearchInput } from '@/components/SearchInput'
 import { Empty, SkeletonList, Tag } from '@/components/ui'
@@ -164,7 +166,7 @@ export function AccessTokenManager({ adminView = false }: { adminView?: boolean 
       if (append) setLoadingMore(true)
       else setInitialLoading(true)
       try {
-        const { data, error } = await api.GET('/api/access_tokens', {
+        const { data, error } = await api.GET(API.accessTokens, {
           params: {
             query: {
               page: p,
@@ -199,7 +201,7 @@ export function AccessTokenManager({ adminView = false }: { adminView?: boolean 
 
   // 搜索防抖 300ms：停顿后才把关键词交给 fetchList
   useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedSearch(search), 300)
+    const timer = window.setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS)
     return () => window.clearTimeout(timer)
   }, [search])
 
@@ -277,7 +279,7 @@ export function AccessTokenManager({ adminView = false }: { adminView?: boolean 
     if (!revokeTarget || revoking) return
     setRevoking(true)
     try {
-      const { error } = await api.DELETE('/api/access_tokens/{token}', {
+      const { error } = await api.DELETE(API.accessTokenDetail, {
         params: { path: { token: revokeTarget.token } },
       })
       if (error) throw new Error(error.message ?? String(error))
@@ -323,13 +325,13 @@ export function AccessTokenManager({ adminView = false }: { adminView?: boolean 
     setSaving(true)
     try {
       if (mode === 'create') {
-        const { error } = await api.POST('/api/access_tokens', {
+        const { error } = await api.POST(API.accessTokens, {
           body: { usage: usage.trim(), expireSeconds },
         })
         if (error) throw new Error(error.message ?? String(error))
         toast.success(t('tokens.createSuccess'))
       } else {
-        const { error } = await api.PUT('/api/access_tokens/{token}', {
+        const { error } = await api.PUT(API.accessTokenDetail, {
           body: { token: currToken, expireSeconds },
           params: { path: { token: currToken } },
         })

@@ -1,5 +1,6 @@
 import type { components } from './schema'
 import { api } from './client'
+import { API } from './endpoints'
 
 type ServiceEndpoint = components['schemas']['types.ServiceEndpoint']
 
@@ -28,7 +29,7 @@ export function getEndpoints(projectId: number): Promise<ServiceEndpoint[]> {
   const pending = inflight.get(projectId)
   if (pending) return pending
   const p = api
-    .GET('/api/endpoints/projects/{projectId}', { params: { path: { projectId } } })
+    .GET(API.endpointsProject, { params: { path: { projectId } } })
     .then(({ data }) => {
       const items = data?.items ?? []
       cache.set(projectId, { items, until: Date.now() + TTL_MS })

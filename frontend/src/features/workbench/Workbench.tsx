@@ -1,5 +1,6 @@
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { SEARCH_DEBOUNCE_MS } from '@/lib/constants'
 import {
   DndContext,
   PointerSensor,
@@ -17,6 +18,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { toast } from '@/lib/toast'
 import { isMac } from '@/lib/platform'
 import { buildPages } from '@/lib/pagination'
@@ -164,7 +166,7 @@ export function Workbench() {
       if (append) setLoadingMore(true)
       else setLoading(true)
       try {
-        const { data, error } = await api.GET('/api/namespaces', {
+        const { data, error } = await api.GET(API.namespaces, {
           params: {
             query: {
               page: p,
@@ -231,7 +233,7 @@ export function Workbench() {
   const refreshNamespace = useCallback(
     async (nsId: number, silent = false): Promise<boolean> => {
       try {
-        const { data, error } = await api.GET('/api/namespaces/{id}', {
+        const { data, error } = await api.GET(API.namespacesDetail, {
           params: { path: { id: String(nsId) } },
         })
         if (error) {
@@ -392,7 +394,7 @@ export function Workbench() {
       // 后端 FavoriteSort 契约：firstId=被拖拽空间，secondId=落点位置原空间（移动前位置）。
       // items 是移动前数组：items[from] 即被拖拽项，items[to] 即落点参照项。
       void api
-        .PUT('/api/namespaces/favorite/sort', {
+        .PUT(API.namespacesFavoriteSort, {
           body: { firstId: dragged.id, secondId: items[to].id },
         })
         .then(({ error }) => {
@@ -418,8 +420,8 @@ export function Workbench() {
     [items, t],
   )
 
-  // 搜索输入防抖 400ms：触发时回到第 1 页并携带新关键词查询。
-  // 挂载时 keyword===debouncedKw（同为空）直接跳过——否则 400ms 后的 setPage(1)
+  // 搜索输入防抖 300ms（SEARCH_DEBOUNCE_MS）：触发时回到第 1 页并携带新关键词查询。
+  // 挂载时 keyword===debouncedKw（同为空）直接跳过——否则 300ms 后的 setPage(1)
   // 会覆盖从 URL 恢复的初始分页（如 ?page=3 刷新后被拉回第 1 页），
   // 并与 fetchList 的 setPage(p) 形成 [3,1,3,1] 乒乓死循环。
   useEffect(() => {
@@ -427,7 +429,7 @@ export function Workbench() {
       if (keyword === debouncedKw) return
       goPage(1)
       setDebouncedKw(keyword)
-    }, 400)
+    }, SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(timer)
   }, [keyword, debouncedKw])
 
@@ -543,7 +545,7 @@ export function Workbench() {
     const found: OpenEntry[] = []
     let page = 1
     for (;;) {
-      const { data, error } = await api.GET('/api/namespaces', {
+      const { data, error } = await api.GET(API.namespaces, {
         params: { query: { page, pageSize: PAGE_SIZE } },
       })
       if (error || !data) break

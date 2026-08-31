@@ -4,6 +4,7 @@ import { toast } from '@/lib/toast'
 import * as YAML from 'yaml'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { CodeEditor, getMode } from '@/components/CodeEditor'
 import { Icon } from '@/components/Icons'
 import { Tag } from '@/components/ui'
@@ -227,7 +228,7 @@ export function RepoFormModal({
     if (!open || !editItem) return
     let alive = true
     void api
-      .GET('/api/repos/{id}', { params: { path: { id: editItem.id } } })
+      .GET(API.reposDetail, { params: { path: { id: editItem.id } } })
       .then(({ data, error }) => {
         if (!alive || error || !data) return
         fillConfig(data.item)
@@ -240,7 +241,7 @@ export function RepoFormModal({
   // git 项目下拉数据
   useEffect(() => {
     if (!open) return
-    void api.GET('/api/git/all_repos').then(({ data }) => {
+    void api.GET(API.gitAllRepos).then(({ data }) => {
       if (data) setProjects(data.items)
     })
   }, [open])
@@ -258,7 +259,7 @@ export function RepoFormModal({
       setForm((f) => ({ ...f, branches: [], pipelinePassRules: [] }))
     }
     void api
-      .GET('/api/git/projects/{gitProjectId}/branch_options', {
+      .GET(API.gitBranchOptions, {
         params: { path: { gitProjectId: form.gitProjectId } },
       })
       .then(({ data }) => {
@@ -273,7 +274,7 @@ export function RepoFormModal({
       return
     }
     void api
-      .GET('/api/git/projects/{gitProjectId}/pipeline_job_options', {
+      .GET(API.gitPipelineJobOptions, {
         params: { path: { gitProjectId: form.gitProjectId } },
       })
       .then(({ data }) => {
@@ -303,7 +304,7 @@ export function RepoFormModal({
     const timer = setTimeout(() => {
       setValuesLoading(true)
       api
-        .POST('/api/git/get_chart_values_yaml', {
+        .POST(API.gitChartValuesYaml, {
           body: { input: form.localChartPath.trim() },
         })
         .then(({ data, error }) => {
@@ -520,14 +521,14 @@ export function RepoFormModal({
     }
     try {
       if (editItem) {
-        const { error } = await api.PUT('/api/repos/{id}', {
+        const { error } = await api.PUT(API.reposDetail, {
           body: { ...body, id: editItem.id },
           params: { path: { id: editItem.id } },
         })
         if (error) throw new Error(error.message ?? String(error))
         toast.success(t('repos.updateSuccess'))
       } else {
-        const { error } = await api.POST('/api/repos', { body })
+        const { error } = await api.POST(API.repos, { body })
         if (error) throw new Error(error.message ?? String(error))
         toast.success(t('repos.createSuccess'))
       }

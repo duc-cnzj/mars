@@ -30,9 +30,10 @@ type UserModel struct {
 	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
 	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Roles         []string               `protobuf:"bytes,4,rep,name=roles,proto3" json:"roles,omitempty"`                                // admin=管理员，user=普通用户
-	LastLogin     *string                `protobuf:"bytes,5,opt,name=last_login,json=lastLogin,proto3,oneof" json:"last_login,omitempty"` // RFC3339，从未登录为缺省
-	CreatedAt     string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`       // RFC3339
+	Roles         []string               `protobuf:"bytes,4,rep,name=roles,proto3" json:"roles,omitempty"`                                      // admin=管理员，user=普通用户
+	LastLogin     *string                `protobuf:"bytes,5,opt,name=last_login,json=lastLogin,proto3,oneof" json:"last_login,omitempty"`       // RFC3339，从未登录为缺省
+	CreatedAt     string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`             // RFC3339
+	IsSuperAdmin  bool                   `protobuf:"varint,7,opt,name=is_super_admin,json=isSuperAdmin,proto3" json:"is_super_admin,omitempty"` // 是否为内置超级管理员（固定邮箱身份）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -109,6 +110,13 @@ func (x *UserModel) GetCreatedAt() string {
 	return ""
 }
 
+func (x *UserModel) GetIsSuperAdmin() bool {
+	if x != nil {
+		return x.IsSuperAdmin
+	}
+	return false
+}
+
 // UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部三卡。
 type UserStats struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -176,6 +184,7 @@ type ListRequest struct {
 	PageSize      *int32                 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3,oneof" json:"page_size,omitempty"`
 	Search        string                 `protobuf:"bytes,3,opt,name=search,proto3" json:"search,omitempty"` // 按邮箱/展示名模糊搜索
 	Role          string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`     // admin=只看管理员，其余值=全部
+	Sort          string                 `protobuf:"bytes,5,opt,name=sort,proto3" json:"sort,omitempty"`     // 排序方向：空 = 最近登录倒序（desc）；asc/desc = 指定最近登录升/降序
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -234,6 +243,13 @@ func (x *ListRequest) GetSearch() string {
 func (x *ListRequest) GetRole() string {
 	if x != nil {
 		return x.Role
+	}
+	return ""
+}
+
+func (x *ListRequest) GetSort() string {
+	if x != nil {
+		return x.Sort
 	}
 	return ""
 }
@@ -406,7 +422,7 @@ var File_proto_user_user_proto protoreflect.FileDescriptor
 
 const file_proto_user_user_proto_rawDesc = "" +
 	"\n" +
-	"\x15proto/user/user.proto\x12\x04user\x1a\x1cgoogle/api/annotations.proto\"\xad\x01\n" +
+	"\x15proto/user/user.proto\x12\x04user\x1a\x1cgoogle/api/annotations.proto\"\xd3\x01\n" +
 	"\tUserModel\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x12\n" +
@@ -415,17 +431,19 @@ const file_proto_user_user_proto_rawDesc = "" +
 	"\n" +
 	"last_login\x18\x05 \x01(\tH\x00R\tlastLogin\x88\x01\x01\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\tR\tcreatedAtB\r\n" +
+	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12$\n" +
+	"\x0eis_super_admin\x18\a \x01(\bR\fisSuperAdminB\r\n" +
 	"\v_last_login\"S\n" +
 	"\tUserStats\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\x05R\x05total\x12\x16\n" +
 	"\x06admins\x18\x02 \x01(\x05R\x06admins\x12\x18\n" +
-	"\aregular\x18\x03 \x01(\x05R\aregular\"\x8b\x01\n" +
+	"\aregular\x18\x03 \x01(\x05R\aregular\"\x9f\x01\n" +
 	"\vListRequest\x12\x17\n" +
 	"\x04page\x18\x01 \x01(\x05H\x00R\x04page\x88\x01\x01\x12 \n" +
 	"\tpage_size\x18\x02 \x01(\x05H\x01R\bpageSize\x88\x01\x01\x12\x16\n" +
 	"\x06search\x18\x03 \x01(\tR\x06search\x12\x12\n" +
-	"\x04role\x18\x04 \x01(\tR\x04roleB\a\n" +
+	"\x04role\x18\x04 \x01(\tR\x04role\x12\x12\n" +
+	"\x04sort\x18\x05 \x01(\tR\x04sortB\a\n" +
 	"\x05_pageB\f\n" +
 	"\n" +
 	"_page_size\"\xa3\x01\n" +

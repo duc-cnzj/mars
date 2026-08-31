@@ -286,10 +286,12 @@ type K8sRepo interface {
 	GetCpuAndMemoryQuantity(pod v1beta1.PodMetrics) (cpu *resource.Quantity, memory *resource.Quantity)
 	// ClusterInfo 返回集群健康与资源汇总信息。
 	ClusterInfo() *ClusterInfo
-	// ClusterBoard 拉取集群看板快照（节点/命名空间/全集群 Pod 与指标）。
-	ClusterBoard(ctx context.Context) (*ClusterBoardData, error)
-	// ResourceSnapshot 拉取空间资源聚合快照（全集群 Running Pod 与指标）。
-	ResourceSnapshot(ctx context.Context) (*ResourceSnapshotData, error)
+	// ClusterBoard 拉取集群看板快照（节点/命名空间/全集群 Pod 与指标），
+	// 经 30s 缓存合并重复读；force=true 强制跳过缓存刷新（cron 预热用）。
+	ClusterBoard(ctx context.Context, force bool) (*ClusterBoardData, error)
+	// ResourceSnapshot 拉取空间资源聚合快照（全集群 Running Pod 与指标），
+	// 经 30s 缓存合并重复读；force=true 强制跳过缓存刷新（cron 预热用）。
+	ResourceSnapshot(ctx context.Context, force bool) (*ResourceSnapshotData, error)
 	// Execute 在容器内执行命令，stdin/stdout/stderr 接线由输入提供。
 	Execute(ctx context.Context, c *Container, input *ExecuteInput) error
 	// GetSecret 读取命名空间下指定名称的 k8s secret（domainmanager 插件校验 TLS 证书用）。

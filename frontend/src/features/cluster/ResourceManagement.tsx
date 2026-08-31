@@ -5,6 +5,7 @@ import { Icon } from '@/components/Icons'
 import { Empty, RefreshFade, SkeletonGrid, Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import type { components } from '@/api/schema'
 import { fmtCpuMilli, fmtMem } from './board'
 
@@ -57,7 +58,7 @@ const ratioPct = (request: number, usage: number): number | null =>
 /** 超申请阈值：实际用量不足申请的 30% 即标「超申请」——定位低占比高申请空间的入口 */
 const OVER_REQUEST_THRESHOLD = 30
 
-/** 排序维度 → 占比取值函数；null 在升序中恒排末尾（无申请量不可能超申请） */
+/** 排序维度 → 占比取值函数；null（无申请量）在降序中恒排末尾（无申请量无从谈占比） */
 const DIM_RATIO = {
   cpu: (ns: ResourceNamespaceView) => ratioPct(ns.cpuRequestMilli, ns.cpuUsageMilli),
   mem: (ns: ResourceNamespaceView) => ratioPct(ns.memRequestBytes, ns.memUsageBytes),
@@ -124,9 +125,9 @@ const toNamespaceView = (ns: ResourceNamespaceDto): ResourceNamespaceView => ({
 /**
  * 空间资源管理（管理员后台）：
  * 卡片网格展示每个管理命名空间的 Pod requests/实际用量占比——找「申请了很多 requests
- * 却用不到多少资源」的空间。默认按 CPU 占比升序（超申请者置顶），可切内存占比；超申请
- * 卡片橙色描边 + 徽标列超出的量，进度条按状态着色（绿=正常/橙=超申请/红=超用）。点卡片
- * 展开项目明细（含工作负载细分）。诊断页不轮询（手动刷新即可，避免后台空转）。
+ * 却用不到多少资源」的空间。默认按 CPU 占比降序（占比高者置顶，资源利用最充分的空间排前）；
+ * 可切内存占比；超申请卡片橙色描边 + 徽标列超出的量，进度条按状态着色（绿=正常/橙=超申请/
+ * 红=超用）。点卡片展开项目明细（含工作负载细分）。诊断页不轮询（手动刷新即可，避免后台空转）。
  */
 export function ResourceManagement() {
   const { t } = useTranslation()
@@ -144,7 +145,7 @@ export function ResourceManagement() {
   const refresh = useCallback(async () => {
     setRefreshing(true)
     try {
-      const { data, error } = await api.GET('/api/admin/cluster/resources')
+      const { data, error } = await api.GET(API.adminResources)
       if (error) throw new Error(error.message ?? String(error))
       if (!data) return
       setNamespaces(data.namespaces.map(toNamespaceView))
@@ -164,11 +165,11 @@ export function ResourceManagement() {
     void refresh()
   }, [refresh])
 
-  // 按当前维度占比升序：占比最低（申请多、用得少）者置顶；无申请量（null）恒排末尾
+  // 按当前维度占比降序：占比最高（利用最充分）者置顶；无申请量（null）恒排末尾
   const sorted = [...namespaces].sort((a, b) => {
-    const ra = DIM_RATIO[sortKey](a) ?? Infinity
-    const rb = DIM_RATIO[sortKey](b) ?? Infinity
-    return ra - rb
+    const ra = DIM_RATIO[sortKey](a) ?? -Infinity
+    const rb = DIM_RATIO[sortKey](b) ?? -Infinity
+    return rb - ra
   })
 
   /** 分段控件样式：容器内嵌按钮，选中项浮起（bg-surface + 阴影），未选中 muted */
@@ -179,9 +180,16 @@ export function ResourceManagement() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 页头：标题 + 手动刷新 */}
+      {/* 页头：标题 + 后台数据刷新提示 + 手动刷新 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[16px] font-semibold text-ink">{t('resources.title')}</h2>
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-[16px] font-semibold text-ink">{t('resources.title')}</h2>
+          {/* 后台聚合数据 5 分钟刷新一次，告知用户看到的用量可能最多滞后 5 分钟 */}
+          <span className="hidden items-center gap-1 text-[11px] text-faint sm:flex">
+            <Icon name="clock" className="size-3" />
+            {t('resources.backendRefresh')}
+          </span>
+        </div>
         <Button variant="outline" size="sm" onClick={refresh} disabled={refreshing}>
           {refreshing ? (
             <Icon name="loader" className="size-3.5 animate-spin" />

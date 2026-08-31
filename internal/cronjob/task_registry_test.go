@@ -44,7 +44,7 @@ func TestTasks_Registry_Base(t *testing.T) {
 }
 
 // TestTasks_Registry_Conditional 覆盖条件任务：GitServerCached 追加两个缓存任务，
-// K8s 环境（KubeConfig 非空）追加镜像拉取 secret 同步任务。
+// K8s 环境（KubeConfig 非空）追加镜像拉取 secret 同步与两个快照预热任务。
 func TestTasks_Registry_Conditional(t *testing.T) {
 	withCache := Registry(&Tasks{}, &config.Config{GitServerCached: true})
 	assert.ElementsMatch(t, []string{
@@ -55,14 +55,14 @@ func TestTasks_Registry_Conditional(t *testing.T) {
 	inK8s := Registry(&Tasks{}, &config.Config{KubeConfig: "/tmp/kube"})
 	assert.ElementsMatch(t, []string{
 		"clean_upload_files", "fix_project_deploy_status", "sync_domain_secret", "disk_info",
-		"sync_image_pull_secrets",
+		"sync_image_pull_secrets", "cache_cluster_board", "cache_resource_snapshot",
 	}, taskNames(inK8s))
 
-	// 条件全开：6 + 1。
+	// 条件全开：6 + 3。
 	both := Registry(&Tasks{}, &config.Config{GitServerCached: true, KubeConfig: "/tmp/kube"})
 	assert.ElementsMatch(t, []string{
 		"clean_upload_files", "fix_project_deploy_status", "sync_domain_secret", "disk_info",
-		"all_branch_cache", "all_project_cache", "sync_image_pull_secrets",
+		"all_branch_cache", "all_project_cache", "sync_image_pull_secrets", "cache_cluster_board", "cache_resource_snapshot",
 	}, taskNames(both))
 }
 
@@ -100,4 +100,6 @@ func TestTasks_Registry_Schedules(t *testing.T) {
 	assert.Equal(t, "0 */2 * * * *", exprs["all_branch_cache"])
 	assert.Equal(t, "0 */5 * * * *", exprs["all_project_cache"])
 	assert.Equal(t, "0 */5 * * * *", exprs["sync_image_pull_secrets"])
+	assert.Equal(t, "0,30 * * * * *", exprs["cache_cluster_board"])
+	assert.Equal(t, "0 */5 * * * *", exprs["cache_resource_snapshot"])
 }

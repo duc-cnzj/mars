@@ -1272,17 +1272,21 @@ func TestProjectSvc_Liveness(t *testing.T) {
 	svc, mocks := newProjectSvcWithMocks(t)
 	now := time.Now()
 	commitDate := now.Add(-36 * time.Hour)
-	mocks.projectRepo.EXPECT().ListLiveness(gomock.Any(), "app").Return([]*biz.Project{
-		{
-			ID: 1, Name: "web", UpdatedAt: now.Add(-10 * 24 * time.Hour),
-			Namespace: &biz.Namespace{Name: "default"}, Repo: &biz.Repo{Name: "web-repo"},
-			GitBranch: "main", GitCommit: "abc123",
-			PodSelectors:    []string{"app=web"},
-			GitCommitTitle:  "fix: rate limit",
-			GitCommitAuthor: "alice@mars.dev",
-			GitCommitDate:   &commitDate,
+	mocks.projectRepo.EXPECT().ListLivenessPage(gomock.Any(), gomock.Any()).Return(&biz.LivenessPageResult{
+		Projects: []*biz.Project{
+			{
+				ID: 1, Name: "web", UpdatedAt: now.Add(-10 * 24 * time.Hour),
+				Namespace: &biz.Namespace{Name: "default"}, Repo: &biz.Repo{Name: "web-repo"},
+				GitBranch: "main", GitCommit: "abc123",
+				PodSelectors:    []string{"app=web"},
+				GitCommitTitle:  "fix: rate limit",
+				GitCommitAuthor: "alice@mars.dev",
+				GitCommitDate:   &commitDate,
+			},
+			{ID: 2, Name: "old", UpdatedAt: now.Add(-120 * 24 * time.Hour), Namespace: &biz.Namespace{Name: "legacy"}, Repo: &biz.Repo{Name: "old-repo"}},
 		},
-		{ID: 2, Name: "old", UpdatedAt: now.Add(-120 * 24 * time.Hour), Namespace: &biz.Namespace{Name: "legacy"}, Repo: &biz.Repo{Name: "old-repo"}},
+		Count: 2,
+		Stats: biz.LivenessStats{Total: 2, Active: 1, Zombie: 1},
 	}, nil)
 	mocks.changelogRepo.EXPECT().CountByProjectIDs(gomock.Any(), 1, 2).Return(map[int]int{1: 7, 2: 0}, nil)
 
@@ -1316,7 +1320,7 @@ func TestProjectSvc_Liveness(t *testing.T) {
 // TestProjectSvc_Liveness_Err 聚合失败上抛（经 logError 打印）。
 func TestProjectSvc_Liveness_Err(t *testing.T) {
 	svc, mocks := newProjectSvcWithMocks(t)
-	mocks.projectRepo.EXPECT().ListLiveness(gomock.Any(), "").Return(nil, errors.New("down"))
+	mocks.projectRepo.EXPECT().ListLivenessPage(gomock.Any(), gomock.Any()).Return(nil, errors.New("down"))
 	resp, err := svc.Liveness(newAdminUserCtx(), &project.LivenessRequest{})
 	assert.Nil(t, resp)
 	assert.ErrorContains(t, err, "down")
@@ -1327,8 +1331,11 @@ func TestProjectSvc_Liveness_Err(t *testing.T) {
 func TestProjectSvc_Liveness_NilNamespace(t *testing.T) {
 	svc, mocks := newProjectSvcWithMocks(t)
 	now := time.Now()
-	mocks.projectRepo.EXPECT().ListLiveness(gomock.Any(), "").Return([]*biz.Project{
-		{ID: 1, Name: "orphan", UpdatedAt: now.Add(-10 * 24 * time.Hour)}, // Namespace == nil
+	mocks.projectRepo.EXPECT().ListLivenessPage(gomock.Any(), gomock.Any()).Return(&biz.LivenessPageResult{
+		Projects: []*biz.Project{
+			{ID: 1, Name: "orphan", UpdatedAt: now.Add(-10 * 24 * time.Hour)}, // Namespace == nil
+		},
+		Count: 1,
 	}, nil)
 	mocks.changelogRepo.EXPECT().CountByProjectIDs(gomock.Any(), 1).Return(map[int]int{1: 1}, nil)
 
@@ -1337,6 +1344,39 @@ func TestProjectSvc_Liveness_NilNamespace(t *testing.T) {
 	if assert.NotNil(t, resp) && assert.Len(t, resp.Items, 1) {
 		assert.Equal(t, "orphan", resp.Items[0].Name)
 		assert.Equal(t, "", resp.Items[0].Namespace)
+	}
+}
+
+// TestProjectSvc_Liveness_SortAsc 排序方向：Sort 参数透传到 repo（ListLivenessPage.Query.Sort），
+// repo 返回已排好序的条目（asc 最早更新 old 在前），传输层原样透传。
+func TestProjectSvc_Liveness_SortAsc(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	now := time.Now()
+	var gotSort string
+	mocks.projectRepo.EXPECT().ListLivenessPage(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, q *biz.LivenessPageQuery) (*biz.LivenessPageResult, error) {
+			gotSort = q.Sort
+			return &biz.LivenessPageResult{
+				// repo 已按 asc 排好（最早更新 old 在前），biz/传输层原样透传。
+				Projects: []*biz.Project{
+					{ID: 2, Name: "old", UpdatedAt: now.Add(-120 * 24 * time.Hour)},
+					{ID: 1, Name: "web", UpdatedAt: now.Add(-10 * 24 * time.Hour)},
+				},
+				Count: 2,
+			}, nil
+		})
+	mocks.changelogRepo.EXPECT().CountByProjectIDs(gomock.Any(), 2, 1).Return(map[int]int{}, nil)
+
+	resp, err := svc.Liveness(newAdminUserCtx(), &project.LivenessRequest{
+		Page:     lo.ToPtr(int32(1)),
+		PageSize: lo.ToPtr(int32(10)),
+		Sort:     "asc",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "asc", gotSort)
+	if assert.NotNil(t, resp) && assert.Len(t, resp.Items, 2) {
+		assert.Equal(t, "old", resp.Items[0].Name) // 最早更新在前
+		assert.Equal(t, "web", resp.Items[1].Name)
 	}
 }
 

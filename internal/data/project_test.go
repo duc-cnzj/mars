@@ -3,9 +3,13 @@ package data
 import (
 	"bytes"
 	"context"
+	"errors"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
+
+	entgo "entgo.io/ent"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
@@ -17,6 +21,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/util/slice"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -1121,8 +1126,8 @@ func TestProjectRepo_ErrorBranches(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("ListLiveness query error", func(t *testing.T) {
-		_, err := repo.ListLiveness(ctx, "")
+	t.Run("ListLivenessPage query error", func(t *testing.T) {
+		_, err := repo.ListLivenessPage(ctx, &biz.LivenessPageQuery{Page: 1, PageSize: 10})
 		assert.Error(t, err)
 	})
 
@@ -1132,9 +1137,10 @@ func TestProjectRepo_ErrorBranches(t *testing.T) {
 	})
 }
 
-// TestProjectRepo_ListLiveness 全量 + 搜索：边（命名空间/仓库）加载、按项目名/命名空间名
-// 模糊搜索（不分大小写）、无命中返回空。
-func TestProjectRepo_ListLiveness(t *testing.T) {
+// TestProjectRepo_ListLivenessPage 真 SQL 分页：全量 + 搜索 + 边加载 + stats 全量口径。
+// 覆盖：无搜索返回全量且边（命名空间/仓库）已加载、按项目名/命名空间名模糊搜索（不分大小写）、
+// 无命中返回空。分页/分类/排序由 kind 专项测试覆盖。
+func TestProjectRepo_ListLivenessPage(t *testing.T) {
 	ctx := context.TODO()
 	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
@@ -1150,10 +1156,13 @@ func TestProjectRepo_ListLiveness(t *testing.T) {
 	db.Project.Create().SetName("old-svc").SetGitBranch("dev").SetGitCommit("c2").SetCreator("u").SetGitProjectID(2).SetNamespaceID(legacyNS.ID).SetRepoID(repo2.ID).SaveX(ctx)
 
 	t.Run("无搜索返回全量且边已加载", func(t *testing.T) {
-		all, err := r.ListLiveness(ctx, "")
+		page, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Page: 1, PageSize: 10, Now: time.Now()})
 		assert.NoError(t, err)
-		if assert.Len(t, all, 2) {
-			for _, p := range all {
+		assert.Equal(t, 2, page.Count)
+		// 刚创建的项目皆活跃；stats 基于搜索命中全量。
+		assert.Equal(t, biz.LivenessStats{Total: 2, Active: 2}, page.Stats)
+		if assert.Len(t, page.Projects, 2) {
+			for _, p := range page.Projects {
 				assert.NotNil(t, p.Namespace, "命名空间边应加载")
 				assert.NotNil(t, p.Repo, "仓库边应加载")
 			}
@@ -1161,27 +1170,207 @@ func TestProjectRepo_ListLiveness(t *testing.T) {
 	})
 
 	t.Run("按项目名模糊搜索", func(t *testing.T) {
-		byName, err := r.ListLiveness(ctx, "web-api")
+		page, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Search: "web-api", Page: 1, PageSize: 10, Now: time.Now()})
 		assert.NoError(t, err)
-		if assert.Len(t, byName, 1) {
-			assert.Equal(t, "web-api", byName[0].Name)
+		assert.Equal(t, 1, page.Count)
+		assert.Equal(t, biz.LivenessStats{Total: 1, Active: 1}, page.Stats)
+		if assert.Len(t, page.Projects, 1) {
+			assert.Equal(t, "web-api", page.Projects[0].Name)
 		}
 	})
 
 	t.Run("按命名空间名搜索不分大小写", func(t *testing.T) {
-		byNS, err := r.ListLiveness(ctx, "LEGACY")
+		page, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Search: "LEGACY", Page: 1, PageSize: 10, Now: time.Now()})
 		assert.NoError(t, err)
-		if assert.Len(t, byNS, 1) {
-			assert.Equal(t, "old-svc", byNS[0].Name)
-			assert.Equal(t, "legacy", byNS[0].Namespace.Name)
+		assert.Equal(t, 1, page.Count)
+		if assert.Len(t, page.Projects, 1) {
+			assert.Equal(t, "old-svc", page.Projects[0].Name)
+			assert.Equal(t, "legacy", page.Projects[0].Namespace.Name)
 		}
 	})
 
 	t.Run("无命中返回空", func(t *testing.T) {
-		none, err := r.ListLiveness(ctx, "zzz")
+		page, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Search: "zzz", Page: 1, PageSize: 10, Now: time.Now()})
 		assert.NoError(t, err)
-		assert.Empty(t, none)
+		assert.Equal(t, 0, page.Count)
+		assert.Empty(t, page.Projects)
+		assert.Equal(t, biz.LivenessStats{}, page.Stats)
 	})
+
+	t.Run("越界页返回空但计数保留", func(t *testing.T) {
+		page, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Page: 99, PageSize: 10, Now: time.Now()})
+		assert.NoError(t, err)
+		assert.Equal(t, 2, page.Count)
+		assert.Empty(t, page.Projects)
+	})
+}
+
+// TestProjectRepo_ListLivenessPage_KindFilter 分类过滤 + 排序决胜键：kind 谓词命中正确行，
+// 排序为 updated_at {desc|asc} + id 决胜键（同秒不漂移），stats 不随分类过滤裁剪。
+func TestProjectRepo_ListLivenessPage_KindFilter(t *testing.T) {
+	ctx := context.TODO()
+	logger := mlog.NewForConfig(nil)
+	db, _ := NewSqliteDB()
+	defer db.Close()
+	r := NewProjectRepo(logger, NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	ns := db.Namespace.Create().SetName("kind").SetCreatorEmail("a@q.c").SaveX(ctx)
+	repo := createRepo(db)
+	now := time.Now()
+	// 三个分类各一条：活跃/低活跃/僵尸。
+	db.Project.Create().SetName("p-active").SetUpdatedAt(now.Add(-10 * 24 * time.Hour)).SetGitBranch("main").SetGitCommit("c1").SetCreator("u").SetGitProjectID(1).SetNamespaceID(ns.ID).SetRepoID(repo.ID).SaveX(ctx)
+	db.Project.Create().SetName("p-dormant").SetUpdatedAt(now.Add(-60 * 24 * time.Hour)).SetGitBranch("main").SetGitCommit("c2").SetCreator("u").SetGitProjectID(2).SetNamespaceID(ns.ID).SetRepoID(repo.ID).SaveX(ctx)
+	db.Project.Create().SetName("p-zombie").SetUpdatedAt(now.Add(-120 * 24 * time.Hour)).SetGitBranch("main").SetGitCommit("c3").SetCreator("u").SetGitProjectID(3).SetNamespaceID(ns.ID).SetRepoID(repo.ID).SaveX(ctx)
+
+	t.Run("活跃分类命中一行且 stats 为全量", func(t *testing.T) {
+		page, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Liveness: "active", Page: 1, PageSize: 10, Now: now})
+		assert.NoError(t, err)
+		assert.Equal(t, 1, page.Count)
+		assert.Equal(t, biz.LivenessStats{Total: 3, Active: 1, Dormant: 1, Zombie: 1}, page.Stats)
+		if assert.Len(t, page.Projects, 1) {
+			assert.Equal(t, "p-active", page.Projects[0].Name)
+		}
+	})
+
+	t.Run("低活跃分类命中一行", func(t *testing.T) {
+		page, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Liveness: "dormant", Page: 1, PageSize: 10, Now: now})
+		assert.NoError(t, err)
+		assert.Equal(t, 1, page.Count)
+		if assert.Len(t, page.Projects, 1) {
+			assert.Equal(t, "p-dormant", page.Projects[0].Name)
+		}
+	})
+
+	t.Run("僵尸分类命中一行", func(t *testing.T) {
+		page, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Liveness: "zombie", Page: 1, PageSize: 10, Now: now})
+		assert.NoError(t, err)
+		assert.Equal(t, 1, page.Count)
+		if assert.Len(t, page.Projects, 1) {
+			assert.Equal(t, "p-zombie", page.Projects[0].Name)
+		}
+	})
+
+	t.Run("非法分类恒空", func(t *testing.T) {
+		page, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Liveness: "bogus", Page: 1, PageSize: 10, Now: now})
+		assert.NoError(t, err)
+		assert.Equal(t, 0, page.Count)
+		assert.Empty(t, page.Projects)
+	})
+
+	t.Run("排序 updated_at + id 决胜键", func(t *testing.T) {
+		// 同 updated_at 的多条：id 决胜键保证 desc/asc 翻页确定性。
+		base := now.Add(-5 * 24 * time.Hour)
+		for i := 1; i <= 3; i++ {
+			db.Project.Create().SetName("p-tie-" + strconv.Itoa(i)).SetUpdatedAt(base).SetGitBranch("main").SetGitCommit("c").SetCreator("u").SetGitProjectID(10 + i).SetNamespaceID(ns.ID).SetRepoID(repo.ID).SaveX(ctx)
+		}
+		desc, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Sort: "desc", Page: 1, PageSize: 10, Now: now})
+		assert.NoError(t, err)
+		asc, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Sort: "asc", Page: 1, PageSize: 10, Now: now})
+		assert.NoError(t, err)
+		// desc: updated_at 大的在前，同秒按 id 大者在前（p-tie-3/2/1 在最前，其次 10d/60d/120d）。
+		if assert.Len(t, desc.Projects, 6) {
+			assert.Equal(t, "p-tie-3", desc.Projects[0].Name)
+			assert.Equal(t, "p-tie-2", desc.Projects[1].Name)
+			assert.Equal(t, "p-tie-1", desc.Projects[2].Name)
+			assert.Equal(t, "p-active", desc.Projects[3].Name)
+			assert.Equal(t, "p-dormant", desc.Projects[4].Name)
+			assert.Equal(t, "p-zombie", desc.Projects[5].Name)
+		}
+		// asc: updated_at 小的在前（最久未更新 p-zombie 打头），同秒 p-tie 按 id 小者在前收尾。
+		if assert.Len(t, asc.Projects, 6) {
+			assert.Equal(t, "p-zombie", asc.Projects[0].Name)
+			assert.Equal(t, "p-dormant", asc.Projects[1].Name)
+			assert.Equal(t, "p-active", asc.Projects[2].Name)
+			assert.Equal(t, "p-tie-1", asc.Projects[3].Name)
+			assert.Equal(t, "p-tie-2", asc.Projects[4].Name)
+			assert.Equal(t, "p-tie-3", asc.Projects[5].Name)
+		}
+	})
+}
+
+// TestProjectRepo_ListLivenessPage_BoundaryParity 边界奇偶性守护：SQL kind 计数 == Go
+// classifyLiveness 逐行分类。种入跨边界项目（now-31d±1s、now-90d±1s、从未更新），断言
+// stats 四分类计数与各 kind 过滤命中行 == Go 逐行分类结果，防边界公式漂移。
+func TestProjectRepo_ListLivenessPage_BoundaryParity(t *testing.T) {
+	ctx := context.TODO()
+	logger := mlog.NewForConfig(nil)
+	db, _ := NewSqliteDB()
+	defer db.Close()
+	r := NewProjectRepo(logger, NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	ns := db.Namespace.Create().SetName("parity").SetCreatorEmail("a@q.c").SaveX(ctx)
+	repo := createRepo(db)
+	now := time.Now()
+	updates := []time.Time{
+		now.Add(-1 * 24 * time.Hour),            // 活跃
+		now.Add(-31*24*time.Hour + time.Second), // 活跃（31d 临界后一秒）
+		now.Add(-31 * 24 * time.Hour),           // 低活跃（恰 31d：int 向下取整 31 → 非活跃）
+		now.Add(-60 * 24 * time.Hour),           // 低活跃
+		now.Add(-90 * 24 * time.Hour),           // 僵尸（恰 90d：int 取整 90 → 僵尸）
+		now.Add(-120 * 24 * time.Hour),          // 僵尸
+	}
+	var wantCounts = map[string]int{"active": 0, "dormant": 0, "zombie": 0}
+	wantProjects := map[string]string{} // 名 → kind
+	for i, ts := range updates {
+		name := "p" + strconv.Itoa(i)
+		db.Project.Create().SetName(name).SetUpdatedAt(ts).SetGitBranch("main").SetGitCommit("c").SetCreator("u").SetGitProjectID(i).SetNamespaceID(ns.ID).SetRepoID(repo.ID).SaveX(ctx)
+		kind := biz.ClassifyLiveness(ts, now) // Go 逐行分类
+		wantCounts[string(kind)]++
+		wantProjects[name] = string(kind)
+	}
+
+	page, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Page: 1, PageSize: 20, Now: now})
+	assert.NoError(t, err)
+	assert.Equal(t, biz.LivenessStats{Total: len(updates), Active: wantCounts["active"], Dormant: wantCounts["dormant"], Zombie: wantCounts["zombie"]}, page.Stats)
+
+	// 每个 kind 的过滤命中行 == Go 逐行分类结果。
+	for _, kind := range []string{"active", "dormant", "zombie"} {
+		filtered, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Liveness: kind, Page: 1, PageSize: 20, Now: now})
+		assert.NoError(t, err)
+		assert.Len(t, filtered.Projects, wantCounts[kind], "kind=%s SQL 命中行数应等于 Go 分类计数", kind)
+		for _, p := range filtered.Projects {
+			assert.Equal(t, kind, wantProjects[p.Name], "kind=%s 命中行分类应一致", kind)
+		}
+	}
+}
+
+// TestProjectRepo_ListLivenessPage_QueryErrors 注入第 N 次查询失败，逐一覆盖 ListLivenessPage
+// 各 COUNT/list 错误分支（total 已由 TestProjectRepo_ErrorBranches 用 closed DB 覆盖）：
+// 无过滤查询序 total→active→dormant→zombie→listAll；有 liveness 过滤时第 5 次为 filtered，
+// 第 6 次为 listAll。故 n=2/3/4 覆盖三分类 COUNT 错误，n=5+liveness 覆盖 filtered COUNT 错误，
+// n=5 无过滤覆盖 listAll 错误。
+func TestProjectRepo_ListLivenessPage_QueryErrors(t *testing.T) {
+	ctx := context.TODO()
+	logger := mlog.NewForConfig(nil)
+	cases := []struct {
+		name     string
+		failAt   int
+		liveness string
+	}{
+		{name: "active count error", failAt: 2},
+		{name: "dormant count error", failAt: 3},
+		{name: "zombie count error", failAt: 4},
+		{name: "filtered count error", failAt: 5, liveness: "active"},
+		{name: "list page error", failAt: 5},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, _ := NewSqliteDB()
+			defer db.Close()
+			var n int
+			db.Intercept(entgo.InterceptFunc(func(next entgo.Querier) entgo.Querier {
+				return entgo.QuerierFunc(func(ctx context.Context, q entgo.Query) (entgo.Value, error) {
+					n++
+					if n == tc.failAt {
+						return nil, errors.New("inject project query error")
+					}
+					return next.Query(ctx, q)
+				})
+			}))
+			r := NewProjectRepo(logger, NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+			_, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Liveness: tc.liveness, Page: 1, PageSize: 10, Now: time.Now()})
+			require.Error(t, err)
+			assert.ErrorContains(t, err, "inject project query error")
+		})
+	}
 }
 
 // TestProjectRepo_ListAll 全量项目（含命名空间边与 Pod selectors）：不分页返回全部

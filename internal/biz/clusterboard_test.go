@@ -21,7 +21,7 @@ type clusterBoardRepoStub struct {
 	boardErr error
 }
 
-func (s *clusterBoardRepoStub) ClusterBoard(ctx context.Context) (*ClusterBoardData, error) {
+func (s *clusterBoardRepoStub) ClusterBoard(ctx context.Context, force bool) (*ClusterBoardData, error) {
 	return s.board, s.boardErr
 }
 

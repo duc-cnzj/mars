@@ -30,7 +30,7 @@ type fakeNamespaceRepoForNSBiz struct {
 	favoriteSort  func(ctx context.Context, email string, firstID, secondID int) error
 	list          func(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error)
 	listAll       func(ctx context.Context) ([]*Namespace, error)
-	listAllAdmin  func(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error)
+	listAdminPage func(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error)
 	update        func(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error)
 	show          func(ctx context.Context, id int) (*Namespace, error)
 	syncMembers   func(ctx context.Context, namespaceID int, memberEmails []string) (*Namespace, error)
@@ -61,8 +61,8 @@ func (f *fakeNamespaceRepoForNSBiz) List(ctx context.Context, input *ListNamespa
 func (f *fakeNamespaceRepoForNSBiz) ListAll(ctx context.Context) ([]*Namespace, error) {
 	return f.listAll(ctx)
 }
-func (f *fakeNamespaceRepoForNSBiz) ListAllAdmin(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error) {
-	return f.listAllAdmin(ctx, search, privateOnly)
+func (f *fakeNamespaceRepoForNSBiz) ListAdminPage(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error) {
+	return f.listAdminPage(ctx, query)
 }
 func (f *fakeNamespaceRepoForNSBiz) Update(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error) {
 	return f.update(ctx, input)
@@ -864,29 +864,38 @@ func TestNamespaceBiz_ListAllNames_RepoError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-// TestNamespaceBiz_AdminList 管理列表成功路径：ListAllAdmin（搜索/私有过滤透传）全量加载，
-// 最近活跃时间 + 活跃度分类装入条目，统计基于全量。
+// TestNamespaceBiz_AdminList 管理列表成功路径：ListAdminPage（搜索/私有/分页/Now 透传）返回
+// 已分页+已分类+已统计结果，biz 按已加载的边计算最近活跃时间与行级活跃度分类，统计/计数原样透传。
 func TestNamespaceBiz_AdminList(t *testing.T) {
-	var gotSearch string
-	var gotPrivate bool
 	now := time.Now()
-	ns := &fakeNamespaceRepoForNSBiz{listAllAdmin: func(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error) {
-		gotSearch, gotPrivate = search, privateOnly
-		return []*Namespace{
-			// 无项目：从未活跃 → 僵尸
-			{ID: 1, Name: "mars-a"},
-			// 项目 10 天前更新：活跃
-			{ID: 2, Name: "mars-b", Projects: []*Project{{UpdatedAt: now.Add(-10 * 24 * time.Hour)}}},
-			// 项目 120 天前更新：僵尸
-			{ID: 3, Name: "mars-c", Projects: []*Project{{UpdatedAt: now.Add(-120 * 24 * time.Hour)}}},
+	var gotQuery *AdminListPageQuery
+	ns := &fakeNamespaceRepoForNSBiz{listAdminPage: func(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error) {
+		gotQuery = query
+		return &AdminListPageResult{
+			Namespaces: []*Namespace{
+				// 无项目：从未活跃 → 僵尸
+				{ID: 1, Name: "mars-a"},
+				// 项目 10 天前更新：活跃
+				{ID: 2, Name: "mars-b", Projects: []*Project{{UpdatedAt: now.Add(-10 * 24 * time.Hour)}}},
+				// 项目 120 天前更新：僵尸
+				{ID: 3, Name: "mars-c", Projects: []*Project{{UpdatedAt: now.Add(-120 * 24 * time.Hour)}}},
+			},
+			Count: 3,
+			Stats: AdminLivenessStats{Total: 3, Active: 1, Zombie: 2},
 		}, nil
 	}}
 	n := nsBizForTest(ns, &fakeK8sRepoForNSBiz{}, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
 
 	items, stats, pag, err := n.AdminList(context.TODO(), &AdminListInput{Page: 1, PageSize: 15, Search: "mars", PrivateOnly: true})
 	assert.NoError(t, err)
-	assert.Equal(t, "mars", gotSearch)
-	assert.True(t, gotPrivate)
+	// 查询参数透传：Search/PrivateOnly/分页 + 分类基准 Now（非零）
+	if assert.NotNil(t, gotQuery) {
+		assert.Equal(t, "mars", gotQuery.Search)
+		assert.True(t, gotQuery.PrivateOnly)
+		assert.Equal(t, int32(1), gotQuery.Page)
+		assert.Equal(t, int32(15), gotQuery.PageSize)
+		assert.False(t, gotQuery.Now.IsZero())
+	}
 	assert.Equal(t, int32(3), pag.Count)
 	assert.Equal(t, AdminLivenessStats{Total: 3, Active: 1, Zombie: 2}, *stats)
 	if assert.Len(t, items, 3) {
@@ -903,21 +912,29 @@ func TestNamespaceBiz_AdminList(t *testing.T) {
 	}
 }
 
-// TestNamespaceBiz_AdminList_FilterByKind 分类过滤：条目仅剩目标分类，统计仍基于全量。
+// TestNamespaceBiz_AdminList_FilterByKind 分类过滤：Liveness 参数透传，条目/计数/统计由 repo 决定原样透传。
 func TestNamespaceBiz_AdminList_FilterByKind(t *testing.T) {
 	now := time.Now()
-	ns := &fakeNamespaceRepoForNSBiz{listAllAdmin: func(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error) {
-		return []*Namespace{
-			{ID: 1, Name: "a", Projects: []*Project{{UpdatedAt: now.Add(-10 * 24 * time.Hour)}}},  // 活跃
-			{ID: 2, Name: "b", Projects: []*Project{{UpdatedAt: now.Add(-60 * 24 * time.Hour)}}},  // 低活跃
-			{ID: 3, Name: "c", Projects: []*Project{{UpdatedAt: now.Add(-120 * 24 * time.Hour)}}}, // 僵尸
+	var gotQuery *AdminListPageQuery
+	ns := &fakeNamespaceRepoForNSBiz{listAdminPage: func(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error) {
+		gotQuery = query
+		return &AdminListPageResult{
+			Namespaces: []*Namespace{
+				{ID: 2, Name: "b", Projects: []*Project{{UpdatedAt: now.Add(-60 * 24 * time.Hour)}}}, // 低活跃
+			},
+			Count: 1,
+			Stats: AdminLivenessStats{Total: 3, Active: 1, Dormant: 1, Zombie: 1},
 		}, nil
 	}}
 	n := nsBizForTest(ns, &fakeK8sRepoForNSBiz{}, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
 
 	items, stats, pag, err := n.AdminList(context.TODO(), &AdminListInput{Page: 1, PageSize: 10, Liveness: "dormant"})
 	assert.NoError(t, err)
-	// 统计不随分类过滤裁剪
+	// 分类参数透传给 repo（分类过滤由 repo 下沉 SQL）
+	if assert.NotNil(t, gotQuery) {
+		assert.Equal(t, "dormant", gotQuery.Liveness)
+	}
+	// 统计不随分类过滤裁剪（repo 返回 search 命中全量口径）
 	assert.Equal(t, AdminLivenessStats{Total: 3, Active: 1, Dormant: 1, Zombie: 1}, *stats)
 	assert.Equal(t, int32(1), pag.Count)
 	if assert.Len(t, items, 1) {
@@ -926,20 +943,26 @@ func TestNamespaceBiz_AdminList_FilterByKind(t *testing.T) {
 	}
 }
 
-// TestNamespaceBiz_AdminList_Pagination 内存分页：page=2 size=2 命中 [2:4) 两条。
+// TestNamespaceBiz_AdminList_Pagination 分页：Page/PageSize 透传，条目/计数由 repo 决定原样透传。
 func TestNamespaceBiz_AdminList_Pagination(t *testing.T) {
 	now := time.Now()
+	var gotQuery *AdminListPageQuery
 	var list []*Namespace
 	for i := 1; i <= 4; i++ {
 		list = append(list, &Namespace{ID: i, Name: "ns", Projects: []*Project{{UpdatedAt: now.Add(-10 * 24 * time.Hour)}}})
 	}
-	ns := &fakeNamespaceRepoForNSBiz{listAllAdmin: func(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error) {
-		return list, nil
+	ns := &fakeNamespaceRepoForNSBiz{listAdminPage: func(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error) {
+		gotQuery = query
+		return &AdminListPageResult{Namespaces: list[2:4], Count: 4}, nil
 	}}
 	n := nsBizForTest(ns, &fakeK8sRepoForNSBiz{}, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
 
 	items, _, pag, err := n.AdminList(context.TODO(), &AdminListInput{Page: 2, PageSize: 2})
 	assert.NoError(t, err)
+	if assert.NotNil(t, gotQuery) {
+		assert.Equal(t, int32(2), gotQuery.Page)
+		assert.Equal(t, int32(2), gotQuery.PageSize)
+	}
 	assert.Equal(t, int32(4), pag.Count)
 	if assert.Len(t, items, 2) {
 		assert.Equal(t, 3, items[0].Namespace.ID)
@@ -947,14 +970,10 @@ func TestNamespaceBiz_AdminList_Pagination(t *testing.T) {
 	}
 }
 
-// TestNamespaceBiz_AdminList_PaginationOutOfRange 越界页：条目为空但计数保留全量。
+// TestNamespaceBiz_AdminList_PaginationOutOfRange 越界页：条目为空但计数保留全量（由 repo 返回）。
 func TestNamespaceBiz_AdminList_PaginationOutOfRange(t *testing.T) {
-	now := time.Now()
-	ns := &fakeNamespaceRepoForNSBiz{listAllAdmin: func(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error) {
-		return []*Namespace{
-			{ID: 1, Name: "a", Projects: []*Project{{UpdatedAt: now.Add(-10 * 24 * time.Hour)}}},
-			{ID: 2, Name: "b", Projects: []*Project{{UpdatedAt: now.Add(-10 * 24 * time.Hour)}}},
-		}, nil
+	ns := &fakeNamespaceRepoForNSBiz{listAdminPage: func(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error) {
+		return &AdminListPageResult{Namespaces: nil, Count: 2}, nil
 	}}
 	n := nsBizForTest(ns, &fakeK8sRepoForNSBiz{}, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
 
@@ -1019,9 +1038,9 @@ func Test_lastActiveAt(t *testing.T) {
 	}
 }
 
-// TestNamespaceBiz_AdminList_RepoError 管理列表失败路径：ListAllAdmin 查询错误原样上抛。
+// TestNamespaceBiz_AdminList_RepoError 管理列表失败路径：ListAdminPage 查询错误原样上抛。
 func TestNamespaceBiz_AdminList_RepoError(t *testing.T) {
-	ns := &fakeNamespaceRepoForNSBiz{listAllAdmin: func(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error) {
+	ns := &fakeNamespaceRepoForNSBiz{listAdminPage: func(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error) {
 		return nil, errors.New("boom")
 	}}
 	n := nsBizForTest(ns, &fakeK8sRepoForNSBiz{}, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})

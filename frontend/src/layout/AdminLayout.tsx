@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '@/features/auth/AuthProvider'
 import { Icon, type IconName } from '@/components/Icons'
 import type { TKey } from '@/i18n/keys'
 
@@ -11,7 +12,7 @@ import type { TKey } from '@/i18n/keys'
  * 资源治理（项目活跃度 → 命名空间 → 空间资源）→ 账号与系统（用户 → 系统设置）；
  * 事件/令牌/用户复用普通入口组件（真实 API），操作审计已合并进事件页（管理员即看全平台）。
  */
-const ADMIN_NAV: { icon: IconName; labelKey: TKey; to: string }[] = [
+const ADMIN_NAV: { icon: IconName; labelKey: TKey; to: string; superOnly?: boolean }[] = [
   { icon: 'cluster', labelKey: 'nav.cluster', to: '/admin/cluster' },
   { icon: 'repo', labelKey: 'nav.repo', to: '/admin/repos' },
   { icon: 'pulse', labelKey: 'nav.events', to: '/admin/events' },
@@ -20,7 +21,8 @@ const ADMIN_NAV: { icon: IconName; labelKey: TKey; to: string }[] = [
   { icon: 'namespace', labelKey: 'nav.namespaces', to: '/admin/namespaces' },
   { icon: 'gauge', labelKey: 'nav.resources', to: '/admin/resources' },
   { icon: 'users', labelKey: 'nav.users', to: '/admin/users' },
-  { icon: 'gear', labelKey: 'nav.settings', to: '/admin/settings' },
+  // 系统设置仅超级管理员可见（后端 /api/admin/settings 已按 is_super_admin 门禁）
+  { icon: 'gear', labelKey: 'nav.settings', to: '/admin/settings', superOnly: true },
 ]
 
 /** 侧栏宽度（要调就改这一个地方）：展开全宽 / 收起图标栏 */
@@ -47,10 +49,14 @@ function readSidebarCollapsed(): boolean {
 export function AdminLayout() {
   const { t } = useTranslation()
   const location = useLocation()
+  const { user } = useAuth()
   const [collapsed, setCollapsed] = useState(readSidebarCollapsed)
 
+  // 当前登录用户可见的导航项：superOnly 项仅内置超管可见（普通管理员不显示系统设置）
+  const nav = ADMIN_NAV.filter((it) => !it.superOnly || user?.isSuperAdmin)
+
   // 当前页导航项（按路由前缀匹配），驱动面包屑第二级
-  const current = ADMIN_NAV.find((it) => location.pathname.startsWith(it.to))
+  const current = nav.find((it) => location.pathname.startsWith(it.to))
 
   /** 切换折叠态并持久化（写入失败忽略——只影响下次刷新是否恢复） */
   const toggle = useCallback(() => {
@@ -78,7 +84,7 @@ export function AdminLayout() {
           {!collapsed && <span className="truncate text-[13px] font-medium text-ink">{t('nav.admin')}</span>}
         </div>
         <nav className="flex min-h-0 flex-1 flex-col gap-0.5">
-          {ADMIN_NAV.map((it) => (
+          {nav.map((it) => (
             <NavLink
               key={it.to}
               to={it.to}

@@ -199,27 +199,29 @@ func (p *projectBiz) UpdateProject(ctx context.Context, input *UpdateProjectInpu
 type LivenessKind string
 
 const (
-	// LivenessActive 活跃：最近 activeDays 天内有更新。
+	// LivenessActive 活跃：最近 ActiveLivenessDays 天内有更新。
 	LivenessActive LivenessKind = "active"
-	// LivenessDormant 休眠：超过 activeDays 天但未达 zombieDays 天未更新。
+	// LivenessDormant 休眠：超过 ActiveLivenessDays 天但未达 ZombieLivenessDays 天未更新。
 	LivenessDormant LivenessKind = "dormant"
-	// LivenessZombie 僵尸：超过 zombieDays 天未更新。
+	// LivenessZombie 僵尸：超过 ZombieLivenessDays 天未更新。
 	LivenessZombie LivenessKind = "zombie"
 )
 
-// 活跃度分类阈值（服务端单一事实来源）：活跃=最近 30 天有更新，僵尸=超过 90 天未更新。
+// 活跃度分类阈值（服务端单一事实来源，data 层 SQL 边界计算共用，勿另起常量）：
+// 活跃=最近 30 天有更新，僵尸=超过 90 天未更新。
 const (
-	activeDays = 30
-	zombieDays = 90
+	ActiveLivenessDays = 30
+	ZombieLivenessDays = 90
 )
 
-// classifyLiveness 按项目更新时间距 now 的天数分类活跃度；now 由调用方注入便于测试。
-func classifyLiveness(updatedAt, now time.Time) LivenessKind {
+// ClassifyLiveness 按项目更新时间距 now 的天数分类活跃度；now 由调用方注入便于测试。
+// 导出供 data 层边界奇偶性守护测试对照 SQL 分类结果，杜绝 Go/SQL 双份公式漂移。
+func ClassifyLiveness(updatedAt, now time.Time) LivenessKind {
 	days := int(now.Sub(updatedAt).Hours() / 24)
 	switch {
-	case days <= activeDays:
+	case days <= ActiveLivenessDays:
 		return LivenessActive
-	case days >= zombieDays:
+	case days >= ZombieLivenessDays:
 		return LivenessZombie
 	default:
 		return LivenessDormant
@@ -233,18 +235,36 @@ type LivenessInput struct {
 	Search string
 	// Liveness 活跃度分类过滤：空 = 全部，否则 active/dormant/zombie。
 	Liveness string
+	// Sort 排序方向：空 = 按更新时间倒序（desc）；asc/desc = 指定更新时间升/降序。
+	Sort string
 }
 
-// LivenessItem 是活跃度清单中的单条项目：携带分类与部署次数。
+// LivenessItem 是活跃度清单中的单条项目：携带部署次数。
+// 活跃度分类不发线上（proto 无 kind 字段，前端依 updatedAt 自行推导），故不再承载 Kind。
 type LivenessItem struct {
 	Project     *Project
 	DeployCount int
-	Kind        LivenessKind
 }
 
 // LivenessStats 是活跃度统计（基于搜索命中全量，不随分页/过滤裁剪）。
 type LivenessStats struct {
 	Total, Active, Dormant, Zombie int
+}
+
+// LivenessPageQuery 是活跃度分页查询输入：搜索/分类过滤/排序/分页全部下沉 SQL。
+// Now 为分类基准时间：SQL 边界（now-31d/now-90d）与 biz 行级标记共用同一基准，杜绝边界竞态。
+type LivenessPageQuery struct {
+	Search, Liveness, Sort string
+	Page, PageSize         int32
+	Now                    time.Time
+}
+
+// LivenessPageResult 是活跃度分页查询结果：已分页项目（含仓库/命名空间边）+ 全量统计。
+// Count 为分类过滤后总数（未分页），Stats 为搜索命中全量统计（不随过滤/分页裁剪）。
+type LivenessPageResult struct {
+	Projects []*Project
+	Count    int
+	Stats    LivenessStats
 }
 
 // LivenessResult 是活跃度聚合结果：已分页条目 + 全量统计。
@@ -255,64 +275,39 @@ type LivenessResult struct {
 	Stats          LivenessStats
 }
 
-// Liveness 聚合项目活跃度清单：全量加载（含仓库/命名空间边）后按更新时间分类，
-// 汇总各项目部署次数与活跃度统计，支持关键词搜索与分类过滤，内存分页返回。
-// 管理员聚合视图数据量小（百级项目），统计需要全量，故 repo 不预分页。
+// Liveness 聚合项目活跃度清单：分类/过滤/排序/统计/分页全部由 repo 下沉 SQL（真分页），
+// biz 仅补充部署次数并装配结果。
 func (p *projectBiz) Liveness(ctx context.Context, input *LivenessInput) (*LivenessResult, error) {
-	projects, err := p.projRepo.ListLiveness(ctx, input.Search)
+	now := time.Now()
+	page, err := p.projRepo.ListLivenessPage(ctx, &LivenessPageQuery{
+		Search:   input.Search,
+		Liveness: input.Liveness,
+		Sort:     input.Sort,
+		Page:     input.Page,
+		PageSize: input.PageSize,
+		Now:      now,
+	})
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]int, 0, len(projects))
-	for _, proj := range projects {
+	ids := make([]int, 0, len(page.Projects))
+	for _, proj := range page.Projects {
 		ids = append(ids, proj.ID)
 	}
 	counts, err := p.clRepo.CountByProjectIDs(ctx, ids...)
 	if err != nil {
 		return nil, err
 	}
-	now := time.Now()
-	items := make([]*LivenessItem, 0, len(projects))
-	stats := LivenessStats{Total: len(projects)}
-	for _, proj := range projects {
-		kind := classifyLiveness(proj.UpdatedAt, now)
-		switch kind {
-		case LivenessActive:
-			stats.Active++
-		case LivenessDormant:
-			stats.Dormant++
-		default:
-			stats.Zombie++
-		}
-		items = append(items, &LivenessItem{Project: proj, DeployCount: counts[proj.ID], Kind: kind})
-	}
-	// 先分类过滤再分页；统计始终基于搜索命中全量，不随分页/过滤裁剪。
-	if input.Liveness != "" {
-		filtered := make([]*LivenessItem, 0, len(items))
-		for _, it := range items {
-			if string(it.Kind) == input.Liveness {
-				filtered = append(filtered, it)
-			}
-		}
-		items = filtered
-	}
-	count := int32(len(items))
-	offset := pagination.GetPageOffset(input.Page, input.PageSize)
-	if offset < len(items) {
-		end := offset + int(input.PageSize)
-		if end > len(items) {
-			end = len(items)
-		}
-		items = items[offset:end]
-	} else {
-		items = nil
+	items := make([]*LivenessItem, 0, len(page.Projects))
+	for _, proj := range page.Projects {
+		items = append(items, &LivenessItem{Project: proj, DeployCount: counts[proj.ID]})
 	}
 	return &LivenessResult{
 		Items:    items,
 		Page:     input.Page,
 		PageSize: input.PageSize,
-		Count:    count,
-		Stats:    stats,
+		Count:    int32(page.Count),
+		Stats:    page.Stats,
 	}, nil
 }
 
@@ -320,9 +315,9 @@ func (p *projectBiz) Liveness(ctx context.Context, input *LivenessInput) (*Liven
 type ProjectRepo interface {
 	// FindProjectsByIDs 按主键批量取项目（endpoint 编排需要，按 Manifest 匹配集群内对象）。
 	FindProjectsByIDs(ctx context.Context, ids ...int) ([]*Project, error)
-	// ListLiveness 查询活跃度聚合所需的全部项目（含仓库/命名空间边），按更新时间倒序，
-	// 支持关键词搜索（匹配项目名/命名空间名，不分大小写）。
-	ListLiveness(ctx context.Context, search string) ([]*Project, error)
+	// ListLivenessPage 分页查询活跃度聚合所需项目（含仓库/命名空间边）：分类过滤/排序/统计/
+	// 分页全部下沉 SQL（真分页），Now 为分类基准时间（活跃=updated_at > now-31d，僵尸=<= now-90d）。
+	ListLivenessPage(ctx context.Context, query *LivenessPageQuery) (*LivenessPageResult, error)
 	// List 分页列出项目（可按命名空间/名称/访问谓词过滤）。
 	List(ctx context.Context, input *ListProjectInput) ([]*Project, *pagination.Pagination, error)
 	// ListAll 查询全部项目（含命名空间边与 Pod selectors）。

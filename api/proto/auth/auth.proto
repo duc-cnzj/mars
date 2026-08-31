@@ -58,12 +58,13 @@ message ExchangeResponse {
 message InfoRequest {}
 
 message InfoResponse {
-  int32           id         = 1;
-  string          avatar     = 2;
-  string          name       = 3;
-  string          email      = 4;
-  string          logout_url = 5;
-  repeated string roles      = 6;
+  int32           id             = 1;
+  string          avatar         = 2;
+  string          name           = 3;
+  string          email          = 4;
+  string          logout_url     = 5;
+  repeated string roles          = 6;
+  bool            is_super_admin = 7; // 是否为内置超级管理员（固定邮箱身份）
 }
 
 message SettingsRequest {}

@@ -3,6 +3,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { getHighlightSyntax } from '@/lib/highlight'
 import { copyText } from '@/lib/copy'
 import { nextZIndex } from '@/lib/zIndex'
@@ -48,7 +49,7 @@ export function TabInfo({
     let cancelled = false
     setMetricsLoading(true)
     api
-      .GET('/api/projects/{id}/memory_cpu_and_endpoints', {
+      .GET(API.projectsMemoryCpuEndpoints, {
         params: { path: { id: detail.id } },
       })
       .then(({ data, error }) => {
@@ -76,7 +77,7 @@ export function TabInfo({
   const remove = async () => {
     setDeleting(true)
     try {
-      const { error } = await api.DELETE('/api/projects/{id}', {
+      const { error } = await api.DELETE(API.projectsDetail, {
         params: { path: { id: detail.id } },
       })
       if (error) throw new Error(error.message ?? String(error))

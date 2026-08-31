@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
 import {
@@ -49,7 +50,7 @@ export function AddNamespaceModal({
     }
     setSaving(true)
     try {
-      const { error } = await api.POST('/api/namespaces', {
+      const { error } = await api.POST(API.namespaces, {
         body: { namespace: value, description: desc.trim() },
       })
       if (error) throw new Error(error.message ?? String(error))

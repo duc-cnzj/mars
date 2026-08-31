@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import {
   SkeletonDetail,
   SkeletonTabEdit,
@@ -82,7 +83,7 @@ export function ProjectDetailModal({
   const reload = async () => {
     setLoading(true)
     try {
-      const { data, error } = await api.GET('/api/projects/{id}', {
+      const { data, error } = await api.GET(API.projectsDetail, {
         params: { path: { id: project.id } },
       })
       if (error) throw new Error(error.message ?? String(error))

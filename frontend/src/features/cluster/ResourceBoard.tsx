@@ -47,6 +47,11 @@ export function ResourceBoard() {
             <Icon name="clock" className="size-3" />
             {t('cluster.autoRefresh', { seconds: REFRESH_INTERVAL_MS / 1000 })}
           </span>
+          {/* 后端聚合缓存每 30s 刷新一次，告知用户看到的快照最多滞后 30s */}
+          <span className="hidden items-center gap-1 text-[11px] text-faint sm:flex">
+            <Icon name="database" className="size-3" />
+            {t('cluster.backendCache')}
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <span className="font-mono text-[11px] text-faint">

@@ -22,7 +22,7 @@ type resourceBoardRepoStub struct {
 	err      error
 }
 
-func (s *resourceBoardRepoStub) ResourceSnapshot(ctx context.Context) (*ResourceSnapshotData, error) {
+func (s *resourceBoardRepoStub) ResourceSnapshot(ctx context.Context, force bool) (*ResourceSnapshotData, error) {
 	return s.snapshot, s.err
 }
 

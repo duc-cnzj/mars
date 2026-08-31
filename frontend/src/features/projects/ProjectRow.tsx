@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { getEndpoints } from '@/api/endpointsCache'
 import { copyText } from '@/lib/copy'
 import { cn } from '@/lib/utils'
@@ -120,7 +121,7 @@ function ProjectCpuMemory({ projectId }: { projectId: number }) {
   const fetchUsage = () => {
     if (usage) return
     api
-      .GET('/api/metrics/projects/{projectId}/cpu_memory', {
+      .GET(API.metricsProjectCpuMemory, {
         params: { path: { projectId } },
       })
       .then(({ data }) => {

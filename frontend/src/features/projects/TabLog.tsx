@@ -1,8 +1,10 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
+import { POD_DEBOUNCE_MS } from '@/lib/constants'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
+import { API, containerStreamLogsUrl } from '@/api/endpoints'
 import { getToken } from '@/api/token'
 import { useWebsocket } from '@/hooks/useWebsocket'
 import { AnsiText } from '@/components/AnsiText'
@@ -146,7 +148,7 @@ export function TabLog({ projectId, projectName }: { projectId: number; projectN
   const listContainers = useCallback(async () => {
     setLoading(true)
     try {
-      const { data, error } = await api.GET('/api/projects/{id}/containers', {
+      const { data, error } = await api.GET(API.projectsContainers, {
         params: { path: { id: projectId } },
       })
       if (error) throw new Error(error.message ?? String(error))
@@ -177,7 +179,7 @@ export function TabLog({ projectId, projectName }: { projectId: number; projectN
       podDebounce.current = setTimeout(() => {
         podDebounce.current = null
         void listContainers()
-      }, 1000)
+      }, POD_DEBOUNCE_MS)
     })
     return () => {
       if (podDebounce.current) clearTimeout(podDebounce.current)
@@ -203,7 +205,7 @@ export function TabLog({ projectId, projectName }: { projectId: number; projectN
       setFollow(true)
       try {
         const res = await fetch(
-          `/api/containers/namespaces/${encodeURIComponent(c.namespace)}/pods/${encodeURIComponent(c.pod)}/containers/${encodeURIComponent(c.container)}/stream_logs?showEvents=true`,
+          containerStreamLogsUrl(c.namespace, c.pod, c.container, true),
           { headers: { Authorization: getToken() }, signal: ac.signal },
         )
         if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`)

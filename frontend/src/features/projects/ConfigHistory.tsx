@@ -3,10 +3,17 @@ import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { nextZIndex } from '@/lib/zIndex'
 import { Icon } from '@/components/Icons'
 import { Empty, Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/shadcn/tooltip'
 import {
   Dialog,
   DialogContent,
@@ -46,10 +53,9 @@ export function ConfigHistory({
   const fetchHistory = async () => {
     setLoading(true)
     try {
-      const { data, error } = await api.POST(
-        '/api/changelogs/find_last_changelogs_by_project_id',
-        { body: { projectId, onlyChanged: true } },
-      )
+      const { data, error } = await api.POST(API.changelogsFindLast, {
+        body: { projectId, onlyChanged: true },
+      })
       if (error) throw new Error(error.message ?? String(error))
       setItems(data?.items ?? [])
     } catch (e) {
@@ -108,15 +114,28 @@ export function ConfigHistory({
                     {item.gitCommitWebUrl && (
                       // 仅链接文本可跳转（新标签页）：不加 flex-1 撑满整行，
                       // 链接只包住文字宽度，行内其余区域点击走外层按钮的展开/收缩。
-                      <a
-                        href={item.gitCommitWebUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="ml-auto max-w-[60%] truncate text-[12px] text-primary hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {item.gitCommitTitle}
-                      </a>
+                      // min-w-0 是关键：flex 子项默认 min-width:auto 按 nowrap 内容撑开，
+                      // 吞掉 truncate 的省略效果导致长 commit title 换行——显式允许收缩后
+                      // truncate（nowrap + overflow-hidden + text-ellipsis）才真正单行省略。
+                      // tooltip 兜底：省略部分悬停显示全文（项目工具提示统一走 shadcn Tooltip）。
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a
+                              href={item.gitCommitWebUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="ml-auto min-w-0 max-w-[50%] truncate text-[12px] text-primary hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {item.gitCommitTitle}
+                            </a>
+                          </TooltipTrigger>
+                          {/* tooltip portal 到 body，默认 z-50 会被可拖拽宿主弹窗（nextZIndex 从 51 起
+                              动态置顶，本弹窗 z 已在 52+）盖住——显式抬到宿主弹窗之上才可见 */}
+                          <TooltipContent style={{ zIndex: z + 1 }}>{item.gitCommitTitle}</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                     <Icon
                       name="chevron-down"

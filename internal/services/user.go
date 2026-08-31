@@ -47,6 +47,7 @@ func (s *userSvc) List(ctx context.Context, request *user.ListRequest) (*user.Li
 		PageSize:  size,
 		Search:    request.Search,
 		AdminOnly: request.Role == "admin",
+		Sort:      request.Sort,
 	})
 	if err != nil {
 		return nil, logError(ctx, s.logger, err)

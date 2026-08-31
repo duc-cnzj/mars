@@ -186,19 +186,19 @@ func (mr *MockProjectRepoMockRecorder) ListByDeployStatus(arg0 any, arg1 ...any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByDeployStatus", reflect.TypeOf((*MockProjectRepo)(nil).ListByDeployStatus), varargs...)
 }
 
-// ListLiveness mocks base method.
-func (m *MockProjectRepo) ListLiveness(arg0 context.Context, arg1 string) ([]*biz.Project, error) {
+// ListLivenessPage mocks base method.
+func (m *MockProjectRepo) ListLivenessPage(arg0 context.Context, arg1 *biz.LivenessPageQuery) (*biz.LivenessPageResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListLiveness", arg0, arg1)
-	ret0, _ := ret[0].([]*biz.Project)
+	ret := m.ctrl.Call(m, "ListLivenessPage", arg0, arg1)
+	ret0, _ := ret[0].(*biz.LivenessPageResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListLiveness indicates an expected call of ListLiveness.
-func (mr *MockProjectRepoMockRecorder) ListLiveness(arg0, arg1 any) *gomock.Call {
+// ListLivenessPage indicates an expected call of ListLivenessPage.
+func (mr *MockProjectRepoMockRecorder) ListLivenessPage(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLiveness", reflect.TypeOf((*MockProjectRepo)(nil).ListLiveness), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLivenessPage", reflect.TypeOf((*MockProjectRepo)(nil).ListLivenessPage), arg0, arg1)
 }
 
 // Show mocks base method.
@@ -732,18 +732,18 @@ func (mr *MockK8sRepoMockRecorder) AddTlsSecret(arg0, arg1, arg2, arg3 any) *gom
 }
 
 // ClusterBoard mocks base method.
-func (m *MockK8sRepo) ClusterBoard(arg0 context.Context) (*biz.ClusterBoardData, error) {
+func (m *MockK8sRepo) ClusterBoard(arg0 context.Context, arg1 bool) (*biz.ClusterBoardData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClusterBoard", arg0)
+	ret := m.ctrl.Call(m, "ClusterBoard", arg0, arg1)
 	ret0, _ := ret[0].(*biz.ClusterBoardData)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ClusterBoard indicates an expected call of ClusterBoard.
-func (mr *MockK8sRepoMockRecorder) ClusterBoard(arg0 any) *gomock.Call {
+func (mr *MockK8sRepoMockRecorder) ClusterBoard(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterBoard", reflect.TypeOf((*MockK8sRepo)(nil).ClusterBoard), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterBoard", reflect.TypeOf((*MockK8sRepo)(nil).ClusterBoard), arg0, arg1)
 }
 
 // ClusterInfo mocks base method.
@@ -1279,18 +1279,18 @@ func (mr *MockK8sRepoMockRecorder) LogStream(arg0, arg1, arg2, arg3 any) *gomock
 }
 
 // ResourceSnapshot mocks base method.
-func (m *MockK8sRepo) ResourceSnapshot(arg0 context.Context) (*biz.ResourceSnapshotData, error) {
+func (m *MockK8sRepo) ResourceSnapshot(arg0 context.Context, arg1 bool) (*biz.ResourceSnapshotData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourceSnapshot", arg0)
+	ret := m.ctrl.Call(m, "ResourceSnapshot", arg0, arg1)
 	ret0, _ := ret[0].(*biz.ResourceSnapshotData)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ResourceSnapshot indicates an expected call of ResourceSnapshot.
-func (mr *MockK8sRepoMockRecorder) ResourceSnapshot(arg0 any) *gomock.Call {
+func (mr *MockK8sRepoMockRecorder) ResourceSnapshot(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceSnapshot", reflect.TypeOf((*MockK8sRepo)(nil).ResourceSnapshot), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceSnapshot", reflect.TypeOf((*MockK8sRepo)(nil).ResourceSnapshot), arg0, arg1)
 }
 
 // SplitManifests mocks base method.
@@ -1867,6 +1867,21 @@ func (mr *MockNamespaceRepoMockRecorder) List(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockNamespaceRepo)(nil).List), arg0, arg1)
 }
 
+// ListAdminPage mocks base method.
+func (m *MockNamespaceRepo) ListAdminPage(arg0 context.Context, arg1 *biz.AdminListPageQuery) (*biz.AdminListPageResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAdminPage", arg0, arg1)
+	ret0, _ := ret[0].(*biz.AdminListPageResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAdminPage indicates an expected call of ListAdminPage.
+func (mr *MockNamespaceRepoMockRecorder) ListAdminPage(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAdminPage", reflect.TypeOf((*MockNamespaceRepo)(nil).ListAdminPage), arg0, arg1)
+}
+
 // ListAll mocks base method.
 func (m *MockNamespaceRepo) ListAll(arg0 context.Context) ([]*biz.Namespace, error) {
 	m.ctrl.T.Helper()
@@ -1880,21 +1895,6 @@ func (m *MockNamespaceRepo) ListAll(arg0 context.Context) ([]*biz.Namespace, err
 func (mr *MockNamespaceRepoMockRecorder) ListAll(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAll", reflect.TypeOf((*MockNamespaceRepo)(nil).ListAll), arg0)
-}
-
-// ListAllAdmin mocks base method.
-func (m *MockNamespaceRepo) ListAllAdmin(arg0 context.Context, arg1 string, arg2 bool) ([]*biz.Namespace, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListAllAdmin", arg0, arg1, arg2)
-	ret0, _ := ret[0].([]*biz.Namespace)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListAllAdmin indicates an expected call of ListAllAdmin.
-func (mr *MockNamespaceRepoMockRecorder) ListAllAdmin(arg0, arg1, arg2 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllAdmin", reflect.TypeOf((*MockNamespaceRepo)(nil).ListAllAdmin), arg0, arg1, arg2)
 }
 
 // Show mocks base method.

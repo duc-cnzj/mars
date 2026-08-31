@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } fr
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from '@/lib/toast'
+import { SEARCH_DEBOUNCE_MS } from '@/lib/constants'
 import { Icon } from '@/components/Icons'
 import { SearchInput } from '@/components/SearchInput'
 import { Empty, RefreshFade, SkeletonList, Tag, type Tone } from '@/components/ui'
@@ -17,15 +18,6 @@ import {
   DialogTitle,
 } from '@/components/ui/shadcn/dialog'
 import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/shadcn/alert-dialog'
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -35,6 +27,7 @@ import { formatDateTime } from '@/lib/format'
 import { humanizeDateTime } from '@/lib/humanizeDateTime'
 import { MemberInput } from '@/features/workbench/MemberInput'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import type { components } from '@/api/schema'
 import type { TKey } from '@/i18n/keys'
 
@@ -89,13 +82,11 @@ function memberDisplayList(
 const NamespaceRow = memo(function NamespaceRow({
   item,
   onManage,
-  onDelete,
   className,
   style,
 }: {
   item: AdminItem
   onManage: (item: AdminItem) => void
-  onDelete: (item: AdminItem) => void
   /** RefreshFade 经 cloneElement 注入的渐入 class/延迟——须转发到根元素才生效 */
   className?: string
   style?: CSSProperties
@@ -230,7 +221,7 @@ const NamespaceRow = memo(function NamespaceRow({
         </time>
       </span>
 
-      {/* 操作：管理（私有/成员/转让）+ 删除（受控确认弹窗）——admin 对任意空间可操作 */}
+      {/* 操作：管理（私有/成员/转让）——admin 对任意空间可操作 */}
       <div className="flex items-center gap-1">
         <Button
           variant="ghost"
@@ -241,16 +232,6 @@ const NamespaceRow = memo(function NamespaceRow({
           className="text-faint hover:text-primary"
         >
           <Icon name="gear" className="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={() => onDelete(item)}
-          aria-label={t('namespaces.delete')}
-          title={t('namespaces.delete')}
-          className="text-faint hover:text-err"
-        >
-          <Icon name="close" className="size-4" />
         </Button>
       </div>
     </div>
@@ -263,9 +244,9 @@ const NamespaceRow = memo(function NamespaceRow({
  * 管理员视角查看「所有」命名空间（工作台只展示当前用户可访问的「我的空间」）：
  * - 按名称/创建者搜索 + 「只看私有」一键过滤 + 活跃度分类筛选（均走服务端 query，输入 300ms 防抖）
  * - 成员/项目下钻：点「N 人 · M 项目」弹 Popover 查看具体成员（邮箱）与项目
- * - 无限下拉（服务端分页，滚动触底追加）；每行提供「管理/删除」操作——admin 对任意空间可编辑
+ * - 无限下拉（服务端分页，滚动触底追加）；每行提供「管理」操作——admin 对任意空间可编辑
  *   （后端 RequireNamespaceOwner 对 admin 绕过 owner 校验），管理弹窗私有/成员/转让一次提交
- *   update_config，删除二次确认后 DELETE
+ *   update_config
  * - ?ns= 预选：从空间资源页跳转过来时把该空间作为初始搜索词（消费后清参，刷新不重复预选）
  * - 数据由 /api/admin/namespaces 提供
  */
@@ -291,10 +272,6 @@ export function NamespaceManager() {
   const [version, setVersion] = useState(0)
   // 管理弹窗当前目标：null=关闭；非空=该空间配置弹窗打开（单例弹窗，复用 NamespaceCard 的管理交互）
   const [manageNs, setManageNs] = useState<AdminItem | null>(null)
-  // 删除确认当前目标：null=关闭；非空=确认删除该空间（受控弹窗，删除成功前不关闭）
-  const [deleteNs, setDeleteNs] = useState<AdminItem | null>(null)
-  // 删除进行中（防重复点击；进行中禁止关闭弹窗，失败保持打开可重试）
-  const [deleting, setDeleting] = useState(false)
   // 无限下拉哨兵：进入列表容器视口（提前 300px）即翻下一页
   const sentinelRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -332,7 +309,7 @@ export function NamespaceManager() {
 
   // 关键词防抖：输入停顿 300ms 后才把新关键词交给 fetch effect
   useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedKeyword(keyword), 300)
+    const timer = window.setTimeout(() => setDebouncedKeyword(keyword), SEARCH_DEBOUNCE_MS)
     return () => window.clearTimeout(timer)
   }, [keyword])
 
@@ -354,7 +331,7 @@ export function NamespaceManager() {
       if (append) setLoadingMore(true)
       else setInitialLoading(true)
       try {
-        const { data, error: err } = await api.GET('/api/admin/namespaces', {
+        const { data, error: err } = await api.GET(API.adminNamespaces, {
           params: {
             query: {
               page: p,
@@ -436,29 +413,8 @@ export function NamespaceManager() {
     setRefreshing(false)
   }
 
-  /** 删除命名空间：admin 门卫已放行（RequireNamespaceOwner 对 admin 绕过）。
-   *  受控弹窗：DELETE 成功才关闭；失败保持打开（toast 报错）供重试，杜绝「还没删成功弹窗先消失」。 */
-  const removeNs = async () => {
-    if (!deleteNs || deleting) return
-    setDeleting(true)
-    try {
-      const { error } = await api.DELETE('/api/namespaces/{id}', {
-        params: { path: { id: deleteNs.ns.id } },
-      })
-      if (error) throw new Error(error.message ?? String(error))
-      toast.success(t('namespaces.deleteSuccess'))
-      setDeleteNs(null)
-      void refresh()
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e))
-    } finally {
-      setDeleting(false)
-    }
-  }
-
   // 行操作回调：引用稳定（useCallback），React.memo 行据此跳过不相关重渲
   const handleManage = useCallback((item: AdminItem) => setManageNs(item), [])
-  const handleDelete = useCallback((item: AdminItem) => setDeleteNs(item), [])
 
   const chipCls = (active: boolean) =>
     `cursor-pointer select-none rounded-full border px-3 py-1 text-[12px] transition-colors ${
@@ -585,7 +541,6 @@ export function NamespaceManager() {
                 key={item.ns.id}
                 item={item}
                 onManage={handleManage}
-                onDelete={handleDelete}
               />
             ))}
             </RefreshFade>
@@ -619,29 +574,6 @@ export function NamespaceManager() {
         onOpenChange={(o) => !o && setManageNs(null)}
         onSaved={refresh}
       />
-
-      {/* 删除确认弹窗（受控单例）：DELETE 成功前不关闭（deleting 时禁止外点/Esc 关闭），失败保持打开可重试 */}
-      <AlertDialog
-        open={deleteNs !== null}
-        onOpenChange={(o) => !o && !deleting && setDeleteNs(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('namespaces.deleteConfirmTitle', { name: deleteNs?.ns.name ?? '' })}
-            </AlertDialogTitle>
-            <AlertDialogDescription>{t('namespaces.deleteConfirmDesc')}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>{t('common.cancel')}</AlertDialogCancel>
-            {/* 普通 Button 而非 AlertDialogAction：后者点击默认关闭弹窗，会「还没删成功就消失」 */}
-            <Button variant="destructive" disabled={deleting} onClick={removeNs}>
-              {deleting && <Icon name="loader" className="size-4 animate-spin" />}
-              {t('namespaces.delete')}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }
@@ -682,7 +614,7 @@ function ManageDialog({
     setSaving(true)
     try {
       const email = transferEmail.trim()
-      const { error } = await api.POST('/api/namespaces/update_config', {
+      const { error } = await api.POST(API.namespacesUpdateConfig, {
         body: {
           id: item.ns.id,
           private: isPrivate,

@@ -606,6 +606,8 @@ func (m *InfoResponse) validate(all bool) error {
 
 	// no validation rules for LogoutUrl
 
+	// no validation rules for IsSuperAdmin
+
 	if len(errors) > 0 {
 		return InfoResponseMultiError(errors)
 	}

@@ -128,8 +128,25 @@ func (r *userRepo) List(ctx context.Context, input *biz.ListUserInput) (out *biz
 		query = query.Where(adminPredicate())
 	}
 
+	// 排序：默认最近登录倒序（最近登录在前）；asc 显式指定升序（最早登录在前）。
+	// 无论升降序，last_login 为 NULL（从未登录）的用户都垫底：以 `last_login IS NULL`
+	// 作首要排序列（非 NULL=0 在前、NULL=1 在后），MySQL/SQLite 均兼容（不用
+	// Postgres 专有的 NULLS LAST）；非法 sort 值回落 desc 默认。
+	loginOrder := sql.OrderDesc()
+	if input.Sort == "asc" {
+		loginOrder = sql.OrderAsc()
+	}
+	query = query.Order(
+		func(s *sql.Selector) {
+			s.OrderExprFunc(func(b *sql.Builder) {
+				b.Ident(user.FieldLastLogin).WriteOp(sql.OpIsNull)
+			})
+		},
+		sql.OrderByField(user.FieldLastLogin, loginOrder).ToFunc(),
+		ent.Desc(user.FieldID),
+	)
+
 	users, err := query.Clone().
-		Order(ent.Desc(user.FieldLastLogin), ent.Desc(user.FieldID)).
 		Offset(pagination.GetPageOffset(input.Page, input.PageSize)).
 		Limit(int(input.PageSize)).
 		All(ctx)

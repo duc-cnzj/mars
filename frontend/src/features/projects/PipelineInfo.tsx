@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { toast } from '@/lib/toast'
 import { Icon, type IconName } from '@/components/Icons'
 import { Button } from '@/components/ui/shadcn/button'
@@ -69,7 +70,7 @@ export function PipelineInfo({
       setUnavailable(false)
       setNotFound(false)
       api
-        .GET('/api/git/repos/{repoId}/branches/{branch}/commits/{commit}/pipeline_info', {
+        .GET(API.gitPipelineInfo, {
           params: { path: { repoId, branch, commit } },
         })
         .then(({ data, error, response }) => {

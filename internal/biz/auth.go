@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/duc-cnzj/mars/v6/internal/biz/schematype"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 )
@@ -25,10 +26,9 @@ type LoginResponse struct {
 }
 
 const (
-	// SuperAdminEmail 是内置超级管理员身份的固定邮箱，单一事实来源：
-	// admin 登录返回的 adminUserInfo 与 data 层 namespace 创建者"超级管理员"展示映射共用此值。
-	// 修改前需同步 data/namespace.go 的 ToNamespace 与两侧测试断言。
-	SuperAdminEmail = "1025434218@qq.com"
+	// SuperAdminEmail 是内置超级管理员身份的固定邮箱，单一事实来源在 schematype 包
+	// （与 UserInfo.IsSuperAdmin 判定共用，改邮箱只需动一处）。
+	SuperAdminEmail = schematype.SuperAdminEmail
 
 	// SuperAdminName 是内置超级管理员的展示名。
 	SuperAdminName = "超级管理员"

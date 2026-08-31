@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 
@@ -227,7 +228,7 @@ func NewNamespaceRepo(data dataStore) biz.NamespaceRepo {
 }
 
 // adminNamespaceBaseQuery 构造管理员视角命名空间的过滤条件：名称模糊 + 管理后台搜索
-// （匹配空间名/创建者邮箱）+ 只看私有。List 分页与 ListAllAdmin 全量共用，保证同一份
+// （匹配空间名/创建者邮箱）+ 只看私有。List 分页与 ListAdminPage 共用，保证同一份
 // 过滤语义单一来源；边装配由 withAdminEdges 按需叠加（Count 走本 base 保持无边，避免
 // 边 JOIN 放大计数）。
 func (repo *namespaceRepo) adminNamespaceBaseQuery(ctx context.Context, input *biz.ListNamespaceInput) *ent.NamespaceQuery {
@@ -413,21 +414,86 @@ func (repo *namespaceRepo) ListAll(ctx context.Context) (out []*biz.Namespace, e
 	return slice.Map(all, toNamespace), nil
 }
 
-// ListAllAdmin 全量加载管理员视角的命名空间：search/privateOnly DB 过滤 + 项目边装配，
-// 无分页。供 AdminList 活跃度聚合——活跃度分类依赖「空间下项目 UpdatedAt 最大值」的
-// 跨表聚合，必须先全量载入再按活跃度统计/过滤/内存分页（对齐项目 ListLiveness 语义；
-// 管理员聚合数据量小，全量可接受）。
-func (repo *namespaceRepo) ListAllAdmin(ctx context.Context, search string, privateOnly bool) (out []*biz.Namespace, err error) {
-	ctx, span := tracer.Start(ctx, "namespaceRepo/ListAllAdmin")
-	defer func() { endSpan(span, err) }()
-	all, err := withAdminEdges(repo.adminNamespaceBaseQuery(ctx, &biz.ListNamespaceInput{
-		Search:      search,
-		PrivateOnly: privateOnly,
-	}), "").All(ctx)
-	if err != nil {
-		return nil, errs.Wrap(err, "list all admin namespaces")
+// namespaceLivenessPred 命名空间活跃度分类 SQL 谓词：分类键是「空间下项目 UpdatedAt 最大值」
+// 的跨表聚合，SQL 侧以 ent 原生 EXISTS 谓词等价表达（MAX(updated_at) > X ⟺ EXISTS(项目
+// updated_at > X)），免建 correlated subquery 新地基；边界由分类基准 now 推导（活跃=最大
+// updated_at > now-31d；僵尸=<= now-90d；低活跃=两者之间），与 biz.classifyLiveness 阈值
+// 数学等价。无项目（从未活跃 → 零值时间 → 僵尸）以 NOT EXISTS(任意项目) 表达。
+// 非法 liveness 值返回恒假谓词，复现旧逻辑「无行命中非法分类」的空列表语义。
+func namespaceLivenessPred(liveness string, now time.Time) func(*sql.Selector) {
+	active, zombie := livenessBoundaries(now)
+	// hasRecent = 是否存在项目 updated_at > boundary。
+	hasRecent := func(boundary time.Time) func(*sql.Selector) {
+		return namespace.HasProjectsWith(project.UpdatedAtGT(boundary))
 	}
-	return slice.Map(all, toNamespace), nil
+	switch liveness {
+	case "active":
+		return hasRecent(active)
+	case "zombie":
+		// 无项目 或 最近活跃已过僵尸边界。
+		return namespace.Or(namespace.Not(namespace.HasProjects()), namespace.Not(hasRecent(zombie)))
+	case "dormant":
+		return namespace.And(hasRecent(zombie), namespace.Not(hasRecent(active)))
+	default:
+		return func(s *sql.Selector) { s.Where(sql.False()) }
+	}
+}
+
+// ListAdminPage 分页列出管理员视角的命名空间（真 SQL 分页）：分类过滤/统计/分页全部下沉
+// SQL，stats 基于 search 命中全量（无 edges 的 base 计数，避免 JOIN 放大），count 为分类
+// 过滤后总数（无过滤 = total）。行级 lastActiveAt/活跃度仍由 biz 依已加载的项目边计算，
+// 故分页行保留 withAdminEdges 全量边装配（成员/项目/关注，供前端下钻）。
+// 排序按 id 升序（现状自然序），保证 LIMIT/OFFSET 翻页确定性。
+func (repo *namespaceRepo) ListAdminPage(ctx context.Context, query *biz.AdminListPageQuery) (page *biz.AdminListPageResult, err error) {
+	ctx, span := tracer.Start(ctx, "namespaceRepo/ListAdminPage")
+	defer func() { endSpan(span, err) }()
+	base := repo.adminNamespaceBaseQuery(ctx, &biz.ListNamespaceInput{
+		Search:      query.Search,
+		PrivateOnly: query.PrivateOnly,
+	})
+	total, err := base.Clone().Count(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "count admin namespaces total")
+	}
+	active, err := base.Clone().Where(namespaceLivenessPred("active", query.Now)).Count(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "count admin namespaces active")
+	}
+	dormant, err := base.Clone().Where(namespaceLivenessPred("dormant", query.Now)).Count(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "count admin namespaces dormant")
+	}
+	zombie, err := base.Clone().Where(namespaceLivenessPred("zombie", query.Now)).Count(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "count admin namespaces zombie")
+	}
+	count := total
+	if query.Liveness != "" {
+		filtered, err := base.Clone().Where(namespaceLivenessPred(query.Liveness, query.Now)).Count(ctx)
+		if err != nil {
+			return nil, errs.Wrap(err, "count admin namespaces filtered")
+		}
+		count = filtered
+	}
+	rows := base.Clone()
+	if query.Liveness != "" {
+		rows = rows.Where(namespaceLivenessPred(query.Liveness, query.Now))
+	}
+	// Where/Order 在 *NamespaceQuery 上叠加（Select 裁剪由 withAdminEdges 收尾），
+	// 对齐 namespaceRepo.List 的既有写法。
+	rows = rows.Order(ent.Asc(namespace.FieldID))
+	all, err := withAdminEdges(rows, "").
+		Offset(pagination.GetPageOffset(query.Page, query.PageSize)).
+		Limit(int(query.PageSize)).
+		All(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "list admin namespaces page")
+	}
+	return &biz.AdminListPageResult{
+		Namespaces: slice.Map(all, toNamespace),
+		Count:      count,
+		Stats:      biz.AdminLivenessStats{Total: total, Active: active, Dormant: dormant, Zombie: zombie},
+	}, nil
 }
 
 // UpdateImagePullSecrets 仅回写 namespace 的 imagePullSecrets 列表，

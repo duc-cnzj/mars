@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/shadcn/popover'
 import { useWebsocket } from '@/hooks/useWebsocket'
 import type { components } from '@/api/schema'
@@ -34,7 +35,7 @@ export function ClusterStatus() {
     let alive = true
     setLoading(true)
     api
-      .GET('/api/cluster_info')
+      .GET(API.clusterInfo)
       .then(({ data }) => {
         if (alive) setInfo(data?.item ?? null)
       })

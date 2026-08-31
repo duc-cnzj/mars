@@ -72,9 +72,11 @@ type k8sRepo struct {
 	data          dataStore
 	fileRepo      biz.FileRepo
 	timer         timer.Timer
+	cache         Cache
 }
 
 // NewK8sRepo 构造 k8s repo：从 data 读取上传大小上限，组合归档器与远程执行器。
+// cache 用于合并全集群快照（ClusterBoard/ResourceSnapshot）的重复读。
 func NewK8sRepo(
 	logger mlog.Logger,
 	timer timer.Timer,
@@ -83,6 +85,7 @@ func NewK8sRepo(
 	uploader uploader.Uploader,
 	archiver Archiver,
 	remoteExecutor ExecutorManager,
+	cache Cache,
 ) biz.K8sRepo {
 	return &k8sRepo{
 		fileRepo:      fileRepo,
@@ -93,6 +96,7 @@ func NewK8sRepo(
 		maxUploadSize: data.Config().MaxUploadSize(),
 		archiver:      archiver,
 		executor:      remoteExecutor,
+		cache:         cache,
 	}
 }
 
@@ -850,10 +854,38 @@ func (repo *k8sRepo) ClusterInfo() *biz.ClusterInfo {
 	}
 }
 
-// ClusterBoard 一次性拉取集群看板快照：节点列表、节点指标、命名空间、全部 Running
-// Pod 与 Pod 指标。任一资源 List 失败即整体上抛（errs.Wrap 自动归类），展示层的
-// 角色/状态派生与 TopN 排序收敛在 biz 纯函数，本方法只做数据获取。
-func (repo *k8sRepo) ClusterBoard(ctx context.Context) (*biz.ClusterBoardData, error) {
+const (
+	// clusterBoardCacheSeconds 集群看板快照缓存的 TTL 秒数（与 cron 预热周期一致）。
+	clusterBoardCacheSeconds = 30
+	// resourceSnapshotCacheSeconds 空间资源快照缓存的 TTL 秒数：5 分钟，比看板缓存
+	// 长——资源板数据量大且变化平缓，降低拉取频率（与 cron 预热周期一致）。
+	resourceSnapshotCacheSeconds = 5 * 60
+)
+
+// ClusterBoard 返回集群看板快照：经 30s 缓存合并重复读，force=true 强制跳过
+// 缓存刷新（cron 预热）；未命中/过期时执行 fetchClusterBoard 回填。
+func (repo *k8sRepo) ClusterBoard(ctx context.Context, force bool) (*biz.ClusterBoardData, error) {
+	remember, err := repo.cache.Remember(NewKey("cluster_board"), clusterBoardCacheSeconds, func() ([]byte, error) {
+		data, err := repo.fetchClusterBoard(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(data)
+	}, force)
+	if err != nil {
+		return nil, err
+	}
+	var data biz.ClusterBoardData
+	if err := json.Unmarshal(remember, &data); err != nil {
+		return nil, errs.Wrap(err, "unmarshal cluster board cache")
+	}
+	return &data, nil
+}
+
+// fetchClusterBoard 一次性拉取集群看板快照：节点列表、节点指标、命名空间、全部
+// Running Pod 与 Pod 指标。任一资源 List 失败即整体上抛（errs.Wrap 自动归类），
+// 展示层的角色/状态派生与 TopN 排序收敛在 biz 纯函数，本方法只做数据获取。
+func (repo *k8sRepo) fetchClusterBoard(ctx context.Context) (*biz.ClusterBoardData, error) {
 	nodes, err := repo.data.K8s().Client.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, errs.Wrap(err, "list cluster board nodes")
@@ -885,11 +917,31 @@ func (repo *k8sRepo) ClusterBoard(ctx context.Context) (*biz.ClusterBoardData, e
 	}, nil
 }
 
-// ResourceSnapshot 拉取全部 Running Pod、ReplicaSet 与其 metrics 快照，供空间资源
-// 聚合（requests 取 pod spec、实际用量取 PodMetrics）。ReplicaSet 供项目 pod →
+// ResourceSnapshot 返回空间资源聚合快照：经 30s 缓存合并重复读，force=true 强制
+// 跳过缓存刷新（cron 预热）；未命中/过期时执行 fetchResourceSnapshot 回填。
+func (repo *k8sRepo) ResourceSnapshot(ctx context.Context, force bool) (*biz.ResourceSnapshotData, error) {
+	remember, err := repo.cache.Remember(NewKey("resource_snapshot"), resourceSnapshotCacheSeconds, func() ([]byte, error) {
+		data, err := repo.fetchResourceSnapshot(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(data)
+	}, force)
+	if err != nil {
+		return nil, err
+	}
+	var data biz.ResourceSnapshotData
+	if err := json.Unmarshal(remember, &data); err != nil {
+		return nil, errs.Wrap(err, "unmarshal resource snapshot cache")
+	}
+	return &data, nil
+}
+
+// fetchResourceSnapshot 拉取全部 Running Pod、ReplicaSet 与其 metrics 快照，供空间
+// 资源聚合（requests 取 pod spec、实际用量取 PodMetrics）。ReplicaSet 供项目 pod →
 // Deployment 属主链解析（pod 直接属主是 RS，RS 属主是 Deployment）。比 ClusterBoard
 // 少了节点/命名空间两次 List。
-func (repo *k8sRepo) ResourceSnapshot(ctx context.Context) (*biz.ResourceSnapshotData, error) {
+func (repo *k8sRepo) fetchResourceSnapshot(ctx context.Context) (*biz.ResourceSnapshotData, error) {
 	pods, err := repo.data.K8s().Client.CoreV1().Pods("").List(ctx, metav1.ListOptions{
 		FieldSelector: fields.ParseSelectorOrDie("status.phase=Running").String(),
 	})

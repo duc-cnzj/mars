@@ -284,6 +284,25 @@ type AdminLivenessStats struct {
 	Total, Active, Dormant, Zombie int
 }
 
+// AdminListPageQuery 是命名空间管理分页查询输入：搜索/私有过滤/分类过滤/分页全部下沉 SQL。
+// Now 为分类基准时间：SQL 边界（now-31d/now-90d）与 biz 行级标记共用同一基准，杜绝边界竞态。
+type AdminListPageQuery struct {
+	Search      string
+	PrivateOnly bool
+	Liveness    string
+	Page        int32
+	PageSize    int32
+	Now         time.Time
+}
+
+// AdminListPageResult 是命名空间管理分页查询结果：已分页命名空间（含成员/项目/收藏边）+ 全量统计。
+// Count 为分类过滤后总数（未分页），Stats 为 search 命中全量统计（不随过滤/分页裁剪）。
+type AdminListPageResult struct {
+	Namespaces []*Namespace
+	Count      int
+	Stats      AdminLivenessStats
+}
+
 // lastActiveAt 返回命名空间最近活跃时间：其下所有项目 UpdatedAt 的最大值。
 // 无项目（从未部署/从未活跃）返回零值 time.Time，服务端序列化为空串，前端展示「从未活跃」。
 func lastActiveAt(ns *Namespace) time.Time {
@@ -296,54 +315,32 @@ func lastActiveAt(ns *Namespace) time.Time {
 	return latest
 }
 
-// AdminList 返回命名空间管理列表：全量加载（search/私有过滤 DB 层 + 项目边装配）后，
-// 计算最近活跃时间 + 活跃度分类，统计基于全量（不随分页/分类过滤裁剪），再按分类过滤
-// + 内存分页。活跃度分类依赖「空间下项目 UpdatedAt 最大值」的跨表聚合，故不复用 DB
-// 分页；空间量级小，全量加载后内存分类/分页可接受（对齐项目 Liveness 语义）。
+// AdminList 返回命名空间管理列表：分类过滤/统计/分页由 repo 下沉 SQL（真分页，分类键为
+// 「空间下项目 UpdatedAt 最大值」的跨表聚合，SQL 侧以 EXISTS 子查询等价表达），
+// biz 仅按已加载的边计算最近活跃时间与行级活跃度分类。
 func (n *namespaceBiz) AdminList(ctx context.Context, input *AdminListInput) ([]*AdminNamespace, *AdminLivenessStats, *pagination.Pagination, error) {
-	namespaces, err := n.nsRepo.ListAllAdmin(ctx, input.Search, input.PrivateOnly)
+	now := time.Now()
+	page, err := n.nsRepo.ListAdminPage(ctx, &AdminListPageQuery{
+		Search:      input.Search,
+		PrivateOnly: input.PrivateOnly,
+		Liveness:    input.Liveness,
+		Page:        input.Page,
+		PageSize:    input.PageSize,
+		Now:         now,
+	})
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
-	now := time.Now()
-	items := make([]*AdminNamespace, 0, len(namespaces))
-	stats := AdminLivenessStats{Total: len(namespaces)}
-	for _, ns := range namespaces {
+	items := make([]*AdminNamespace, 0, len(page.Namespaces))
+	for _, ns := range page.Namespaces {
 		activeAt := lastActiveAt(ns)
-		kind := classifyLiveness(activeAt, now)
-		switch kind {
-		case LivenessActive:
-			stats.Active++
-		case LivenessDormant:
-			stats.Dormant++
-		default:
-			stats.Zombie++
-		}
-		items = append(items, &AdminNamespace{Namespace: ns, LastActiveAt: activeAt, LivenessKind: kind})
+		items = append(items, &AdminNamespace{
+			Namespace:    ns,
+			LastActiveAt: activeAt,
+			LivenessKind: ClassifyLiveness(activeAt, now),
+		})
 	}
-	// 先分类过滤再分页；统计始终基于搜索命中全量，不随分页/过滤裁剪。
-	if input.Liveness != "" {
-		filtered := make([]*AdminNamespace, 0, len(items))
-		for _, it := range items {
-			if string(it.LivenessKind) == input.Liveness {
-				filtered = append(filtered, it)
-			}
-		}
-		items = filtered
-	}
-	count := int32(len(items))
-	offset := pagination.GetPageOffset(input.Page, input.PageSize)
-	if offset < len(items) {
-		end := offset + int(input.PageSize)
-		if end > len(items) {
-			end = len(items)
-		}
-		items = items[offset:end]
-	} else {
-		items = nil
-	}
-	return items, &stats, pagination.NewPagination(input.Page, input.PageSize, int(count)), nil
+	return items, &page.Stats, pagination.NewPagination(input.Page, input.PageSize, page.Count), nil
 }
 
 // Show 按 id 查询 namespace（透传 repo）。
@@ -424,9 +421,10 @@ func (n *namespaceBiz) Transfer(ctx context.Context, id int, email string) (*Nam
 type NamespaceRepo interface {
 	// List 分页列出命名空间（可按收藏/名称/访问权限过滤）。
 	List(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error)
-	// ListAllAdmin 全量列出管理员视角的命名空间（search/私有过滤 + 项目边装配，无分页），
-	// 供 AdminList 活跃度聚合：分类依赖项目 UpdatedAt 最大值，须全量载入后内存统计/分页。
-	ListAllAdmin(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error)
+	// ListAdminPage 分页列出管理员视角的命名空间（search/私有过滤 + 项目边装配）：分类过滤/
+	// 统计/分页全部下沉 SQL（真分页，分类键为「空间下项目 UpdatedAt 最大值」，SQL 侧以
+	// EXISTS 子查询等价表达），Now 为分类基准时间。
+	ListAdminPage(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error)
 	// Create 创建命名空间。
 	Create(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error)
 	// Show 按 id 查询命名空间。

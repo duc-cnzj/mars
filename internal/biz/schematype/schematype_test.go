@@ -72,3 +72,21 @@ func TestUserInfo_JSON_Contract(t *testing.T) {
 	assert.NoError(t, json.Unmarshal(raw, &back))
 	assert.Equal(t, *ui, back)
 }
+
+// TestUserInfo_IsSuperAdmin_SuperAdminEmail 内置超管固定邮箱命中 IsSuperAdmin。
+func TestUserInfo_IsSuperAdmin_SuperAdminEmail(t *testing.T) {
+	ui := &UserInfo{Email: SuperAdminEmail}
+	assert.True(t, ui.IsSuperAdmin())
+}
+
+// TestUserInfo_IsSuperAdmin_OtherEmail 普通邮箱（含管理员身份）不命中超管判定。
+func TestUserInfo_IsSuperAdmin_OtherEmail(t *testing.T) {
+	ui := &UserInfo{Email: "someone@else.com", Roles: []string{string(MarsAdmin)}}
+	assert.False(t, ui.IsSuperAdmin())
+}
+
+// TestUserInfo_IsSuperAdmin_EmptyEmail 空邮箱（未登录/未知身份）不命中超管判定。
+func TestUserInfo_IsSuperAdmin_EmptyEmail(t *testing.T) {
+	ui := &UserInfo{}
+	assert.False(t, ui.IsSuperAdmin())
+}

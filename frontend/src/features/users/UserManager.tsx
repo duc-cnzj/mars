@@ -1,6 +1,7 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@/components/Icons'
+import { SEARCH_DEBOUNCE_MS } from '@/lib/constants'
 import { SearchInput } from '@/components/SearchInput'
 import { StatCard } from '@/components/StatCard'
 import { Empty, RefreshFade, SkeletonList, Tag } from '@/components/ui'
@@ -20,20 +21,14 @@ import { formatDateTime } from '@/lib/format'
 import { humanizeDateTime } from '@/lib/humanizeDateTime'
 import { toast } from '@/lib/toast'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import type { components } from '@/api/schema'
 
 type UserModel = components['schemas']['user.UserModel']
 type UserStats = components['schemas']['user.UserStats']
 
-/** 单次拉取上限：百级用户全量回填后本地排序（对齐 governance 服务端内存分页语义，
- *  搜索/角色过滤走服务端，最近登录排序无服务端支持故本地做） */
-const FETCH_LIMIT = 100
-
-/** 无限下拉滚动揭示块大小：一次拉全量后本地排序，滚动到底逐块揭示 */
-const CHUNK = 20
-
-/** 超级管理员邮箱（对齐真实系统 SuperAdminEmail，恒为管理员、不可降级） */
-const SUPER_ADMIN_EMAIL = '1025434218@qq.com'
+/** 每页条数（服务端分页，滚动触底追加下一页） */
+const PAGE_SIZE = 15
 
 /** 用户行（React.memo）：行级 props 全部稳定（user 引用 + useCallback handler），
  *  列表状态变化（关键词输入/只看管理员/排序切换/滚动揭示）时行不重渲染，杜绝 O(n) 整表刷新。 */
@@ -61,7 +56,8 @@ const UserRow = memo(function UserRow({
 }) {
   const { t } = useTranslation()
   const isAdmin = user.roles.includes('admin')
-  const isSuper = user.email === SUPER_ADMIN_EMAIL
+  // 超管标识来自后端（user.UserModel.is_super_admin，由服务端按内置超管邮箱判定），前端不写死邮箱
+  const isSuper = user.isSuperAdmin
   return (
     <div
       className={`grid grid-cols-1 gap-2 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_7rem_8rem] lg:items-center ${className ?? ''}`}
@@ -181,10 +177,10 @@ const UserRow = memo(function UserRow({
  * 数据来自 /api/admin/users（服务端搜索 + 只看管理员过滤 + 全量口径统计）：
  * - 顶部三卡统计来自服务端 stats（全量口径，不受搜索/角色过滤影响）
  * - 关键词搜索（300ms 防抖）与「只看管理员」均走服务端 query
- * - 最近登录列点击切换升/降序（本地排序，服务端无此能力）；行内一键复制邮箱
+ * - 最近登录列点击切换升/降序（服务端排序）；行内一键复制邮箱
  * - 行内「设为管理员 / 移除管理员」走角色管理接口（PUT /api/admin/users/{email}/role），
  *   均带 AlertDialog 二次确认（超级管理员不可降级）
- * - 无限下拉（客户端滚动揭示）：一次拉全量 + 本地排序后逐块揭示，搜索/筛选/排序变化自动回顶部
+ * - 无限下拉（服务端分页，滚动触底追加下一页）；搜索/筛选/排序变化自动回顶部
  * - ⚠️ 系统无封号/禁用状态，本页不提供该能力
  */
 export function UserManager() {
@@ -196,124 +192,147 @@ export function UserManager() {
   // 防抖后的关键词：避免每次击键都打后端
   const [debouncedKeyword, setDebouncedKeyword] = useState('')
   const [adminOnly, setAdminOnly] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
-  // 手动刷新计数：递增触发 fetch effect 重跑
-  const [reloadKey, setReloadKey] = useState(0)
-  // 渐入版本号：取数成功 +1，RefreshFade 依 key 重挂载列表重播渐入
+  // 渐入版本号：整页取数成功 +1，RefreshFade 依 key 重挂载列表重播渐入（追加页不重播，避免闪断）
   const [version, setVersion] = useState(0)
-  // 最近登录列排序方向（默认降序 = 最近登录在前，点击表头切换升/降）
+  // 最近登录列排序方向（默认降序 = 最近登录在前，点击表头切换升/降），作为 sort 参数交给服务端
   const [loginSort, setLoginSort] = useState<'asc' | 'desc'>('desc')
   // 提权/降权确认弹窗：null=关闭；非空=确认变更该用户管理员角色（受控弹窗，请求成功前不关闭）
   const [toggleTarget, setToggleTarget] = useState<UserModel | null>(null)
   // 角色变更进行中（防重复点击；进行中禁止关闭弹窗，失败保持打开可重试）
   const [toggling, setToggling] = useState(false)
-  // 滚动揭示量：只渲染 sorted.slice(0, visible)，滚动到底 +CHUNK（客户端无限下拉）
-  const [visible, setVisible] = useState(CHUNK)
   // 列表滚动容器（IntersectionObserver 的 root）与底部哨兵
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  // 请求忙碌锁：阻止触底加载在请求中/刷新时连环翻页
+  const busyRef = useRef(false)
+  const refreshingRef = useRef(false)
+  // 请求去重基准：记录上次真正发起的 (过滤条件, 页码)，跳过「新条件×旧页码」过期请求与重复请求。
+  // 初始值必须「不可能等于」首屏状态——null ≠ filterKey、0 ≠ 1 的 page，
+  // 否则首屏挂载被去重判定吞掉，列表永远不请求（骨架屏常驻）
+  const lastFilterKeyRef = useRef<string | null>(null)
+  const lastPageRef = useRef(0)
+  // 最新过滤条件快照（每次渲染同步）：校验在途响应落地时是否仍属当前过滤。
+  // 拦截「旧筛选的追加页晚到、被 append 进新筛选结果」的跨条件污染——追加页不可取消，
+  // 改落地校验丢弃过期响应
+  const filterKeyRef = useRef('')
+  const hasMore = users.length < count
+  // 有旧数据时的重取 loading：首载 users 为空走骨架，不进遮罩；搜索/筛选/刷新重取则遮罩旧列表
+  const refetching = initialLoading && users.length > 0
 
   // 关键词防抖：输入停顿 300ms 后才把新关键词交给 fetch effect
   useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedKeyword(keyword), 300)
+    const timer = window.setTimeout(() => setDebouncedKeyword(keyword), SEARCH_DEBOUNCE_MS)
     return () => window.clearTimeout(timer)
   }, [keyword])
 
-  // 拉取用户清单：搜索/只看管理员过滤交给服务端，stats 为全量口径统计
-  useEffect(() => {
-    let ignore = false
-    setLoading(true)
-    void api
-      .GET('/api/admin/users', {
-        params: {
-          query: {
-            page: 1,
-            pageSize: FETCH_LIMIT,
-            search: debouncedKeyword.trim() || undefined,
-            role: adminOnly ? 'admin' : undefined,
-          },
-        },
-      })
-      .then(({ data, error: err }) => {
-        if (ignore) return
-        if (err) {
-          setError(err.message ?? String(err))
-          setUsers([])
-          return
-        }
-        setError('')
-        if (!data) return
-        setUsers(data.items)
-        setCount(data.count)
-        setStats(data.stats)
-        // 取数成功 → 版本号 +1，整表重播一次渐入（keep-last-frame，不闪断）
-        setVersion((v) => v + 1)
-      })
-      .finally(() => {
-        if (!ignore) {
-          setLoading(false)
-          setRefreshing(false)
-        }
-      })
-    return () => {
-      ignore = true
-    }
-  }, [debouncedKeyword, adminOnly, reloadKey])
+  // 过滤条件指纹：搜索 / 只看管理员 / 排序方向任一变化都视为新的过滤条件
+  //（排序切换走服务端重新拉取，故也纳入指纹）
+  const filterKey = `${debouncedKeyword}|${adminOnly}|${loginSort}`
+  // 每渲染同步最新过滤条件（供 fetchList 落地校验，见 filterKeyRef 声明注释）
+  filterKeyRef.current = filterKey
 
-  /** 手动刷新：拉取最新一版用户清单（useCallback 稳定引用，供行 memo 与 toggleAdmin 复用） */
-  const refresh = useCallback(() => {
-    setRefreshing(true)
-    setReloadKey((k) => k + 1)
-  }, [])
-
-  // 搜索 / 只看管理员 / 手动刷新 / 排序方向变化 → 回顶部并重置揭示量
-  //（排序切换走本地重排，无需重新拉取，故不进入 fetch effect 依赖）
+  // 过滤条件变化 → 回到顶部 + 重置第 1 页（由 page 变化驱动下面的 fetch）
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 })
-    setVisible(CHUNK)
-  }, [debouncedKeyword, adminOnly, reloadKey, loginSort])
+    setPage(1)
+  }, [filterKey])
 
-  // 按最近登录排序（默认最近登录在前）。lastLogin 缺失（从未登录）→ 排序基准 NaN，
-  // 排序时 desc 映射 0 / asc 映射 +Infinity：升、降序两个方向从未登录者都沉底
-  //（asc = 最旧登录在前，从未登录应垫底而非置顶；diff 为 NaN 时 Array.sort 视为相等保持原序）。
-  // 辅助逻辑内联进 useMemo（闭包只依赖 loginSort，依赖数组齐整，不悬挂组件体内 helper）
-  const sorted = useMemo(() => {
-    const base = (s: string | undefined): number => {
-      if (!s) return Number.NaN
-      const ts = new Date(s).getTime()
-      return Number.isNaN(ts) ? Number.NaN : ts
-    }
-    const toSort = (s: string | undefined): number => {
-      const ts = base(s)
-      if (Number.isNaN(ts)) return loginSort === 'asc' ? Number.POSITIVE_INFINITY : 0
-      return ts
-    }
-    return [...users].sort((a, b) => {
-      const diff = toSort(a.lastLogin) - toSort(b.lastLogin)
-      return loginSort === 'desc' ? -diff : diff
-    })
-  }, [users, loginSort])
+  /** 拉取第 p 页用户清单：append=true 追加到列表尾（无限滚动），否则整体替换（首屏/搜索/刷新）。
+   *  搜索/只看管理员/最近登录排序交给服务端，stats 为全量口径统计。 */
+  const fetchList = useCallback(
+    async (p: number, append: boolean) => {
+      busyRef.current = true
+      if (append) setLoadingMore(true)
+      else setInitialLoading(true)
+      try {
+        const { data, error: err } = await api.GET(API.adminUsers, {
+          params: {
+            query: {
+              page: p,
+              pageSize: PAGE_SIZE,
+              search: debouncedKeyword.trim() || undefined,
+              role: adminOnly ? 'admin' : undefined,
+              sort: loginSort,
+            },
+          },
+        })
+        if (err) throw new Error(err.message ?? String(err))
+        if (!data) return
+        // 在途响应落地时若过滤条件已切换（旧筛选的追加页晚到）→ 丢弃，不 append 进新筛选结果
+        if (filterKeyRef.current !== filterKey) return
+        setError('')
+        setUsers((prev) => (append ? [...prev, ...data.items] : data.items))
+        setCount(data.count)
+        setStats(data.stats)
+        // 仅整页取数（非追加）重播渐入：追加页复用已有动画，避免整表重挂闪断
+        if (!append) setVersion((v) => v + 1)
+      } catch (e) {
+        // 追加页失败不清空已加载列表，toast 提示即可；首屏/整页失败落 error 空态
+        if (append) toast.error(e instanceof Error ? e.message : String(e))
+        else setError(e instanceof Error ? e.message : String(e))
+      } finally {
+        busyRef.current = false
+        setInitialLoading(false)
+        setLoadingMore(false)
+      }
+    },
+    [debouncedKeyword, adminOnly, loginSort],
+  )
 
-  // 滚动揭示切片 + 是否还有未揭示行（揭示完毕哨兵显示「没有更多了」）
-  const revealed = sorted.slice(0, visible)
-  const hasMore = visible < sorted.length
+  useEffect(() => {
+    // 刷新已直接拉取第 1 页，跳过 setPage(1) 触发的重复请求
+    if (page === 1 && refreshingRef.current) return
+    // 过滤条件刚变、page 尚未重置到 1（filterKey effect 已 setPage(1)，本 commit 里拿到的还是旧 page）：
+    // 跳过这次「新条件×旧页码」的过期请求，真正的第 1 页由 setPage(1) 触发的下一次 effect 承担
+    if (lastFilterKeyRef.current !== filterKey && page !== 1) return
+    // 同 (filterKey, page) 去重：刷新完成后的 effect 重跑不会重复拉第 1 页
+    if (lastFilterKeyRef.current === filterKey && lastPageRef.current === page) return
+    lastFilterKeyRef.current = filterKey
+    lastPageRef.current = page
+    void fetchList(page, page > 1)
+  }, [page, filterKey, fetchList])
 
-  // 底部哨兵进入列表视口（含 300px 预加载区）→ 揭示下一块（客户端无限下拉）
+  /** 手动刷新：回到第 1 页拉最新一版用户清单（保留当前搜索/筛选/排序）。
+   *  useCallback 稳定引用，供行 memo 与 toggleAdmin 复用。
+   *  重置期间同步锁 busyRef，阻止触底加载在刷新时连环翻页。 */
+  const refresh = useCallback(async () => {
+    if (refreshingRef.current) return
+    refreshingRef.current = true
+    setRefreshing(true)
+    busyRef.current = true
+    // 回到顶部：让哨兵离开视口，刷新后不会自动加载后续页
+    if (scrollRef.current) scrollRef.current.scrollTop = 0
+    setPage(1)
+    // 预标记本次刷新要拉的 (filterKey, 1)，刷新完成后的 effect 重跑据此去重
+    lastFilterKeyRef.current = filterKey
+    lastPageRef.current = 1
+    await fetchList(1, false)
+    busyRef.current = false
+    refreshingRef.current = false
+    setRefreshing(false)
+  }, [filterKey, fetchList])
+
+  // 底部哨兵进入列表容器视口（含 300px 预加载区）且非忙碌/非刷新时 → 翻下一页（服务端分页）
   useEffect(() => {
     const sentinel = sentinelRef.current
     const root = scrollRef.current
     if (!sentinel || !root) return
-    const observer = new IntersectionObserver(
+    const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) setVisible((v) => Math.min(v + CHUNK, sorted.length))
+        if (entries[0].isIntersecting && hasMore && !busyRef.current && !refreshing) {
+          setPage((p) => p + 1)
+        }
       },
       { root, rootMargin: '300px' },
     )
-    observer.observe(sentinel)
-    return () => observer.disconnect()
-  }, [sorted.length])
+    io.observe(sentinel)
+    return () => io.disconnect()
+  }, [hasMore, initialLoading, loadingMore, refreshing])
 
   // 弹窗目标/进行中状态同步 ref：供 useCallback 稳定读取最新值，避免 handler 每渲染重建令行 memo 失效
   const toggleTargetRef = useRef<UserModel | null>(null)
@@ -330,7 +349,7 @@ export function UserManager() {
     const makeAdmin = !target.roles.includes('admin')
     setToggling(true)
     try {
-      const { error: err } = await api.PUT('/api/admin/users/{email}/role', {
+      const { error: err } = await api.PUT(API.adminUserRole, {
         params: { path: { email: target.email } },
         body: { email: target.email, admin: makeAdmin },
       })
@@ -427,19 +446,21 @@ export function UserManager() {
           <span>{t('users.action')}</span>
         </div>
 
-        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
-        {loading && sorted.length === 0 ? (
+        <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-y-auto">
+        {/* 内容区：重取遮罩时降透明度并禁止交互，保持旧帧不闪断（首载骨架不遮罩） */}
+        <div className={refetching ? 'pointer-events-none opacity-40' : undefined}>
+        {initialLoading && users.length === 0 ? (
           <SkeletonList count={8} bare />
-        ) : error ? (
+        ) : error && users.length === 0 ? (
           <Empty icon="alert" text={error} />
-        ) : sorted.length === 0 ? (
+        ) : users.length === 0 ? (
           <Empty
             icon="users"
             text={keyword ? t('users.searchEmpty', { kw: keyword.trim() }) : t('common.empty')}
           />
         ) : (
           <RefreshFade version={version}>
-          {revealed.map((u) => (
+          {users.map((u) => (
             <UserRow
               key={u.email}
               user={u}
@@ -453,14 +474,24 @@ export function UserManager() {
           ))}
           </RefreshFade>
         )}
-        {/* 无限下拉哨兵：进入视口揭示下一块；揭示完毕显示「没有更多了」 */}
+        {/* 无限下拉哨兵：进入视口翻下一页；无更多数据时显示到底提示 */}
         <div ref={sentinelRef} className="flex h-10 items-center justify-center gap-2">
-          {hasMore ? (
-            <Icon name="loader" className="size-3.5 animate-spin text-faint" />
-          ) : (
+          {loadingMore ? (
+            <span className="flex items-center gap-1.5 text-[12px] text-mute">
+              <Icon name="loader" className="animate-spin text-[13px]" />
+              {t('common.loadingMore')}
+            </span>
+          ) : users.length > 0 && !hasMore ? (
             <span className="text-[11px] text-faint">{t('common.noMore')}</span>
-          )}
+          ) : null}
         </div>
+        </div>
+        {/* 重取遮罩：有旧数据时的 loading（搜索/只看管理员/排序/刷新），居中 spinner */}
+        {refetching && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/50">
+            <Icon name="loader" className="size-5 animate-spin text-faint" />
+          </div>
+        )}
         </div>
       </section>
     </div>

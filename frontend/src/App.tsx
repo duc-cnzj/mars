@@ -5,7 +5,7 @@ import 'sonner/dist/styles.css' // sonner 官方默认样式（明暗主题变�
 import './toast.css' // toast 主题化设计：与 15 个系统主题语义 token 联动（玻璃表面 + 类型色相）
 import { Spinner } from './components/ui'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { AuthProvider, GuestRoute, RequireAdmin } from './features/auth/AuthProvider'
+import { AuthProvider, GuestRoute, RequireAdmin, RequireSuperAdmin } from './features/auth/AuthProvider'
 import { themeClass, themes } from './themes'
 import { useTheme } from './hooks/useTheme'
 import { useThemeHotkeys } from './hooks/useThemeHotkeys'
@@ -135,7 +135,15 @@ export default function App() {
                     {/* 后台入口传 adminView：全平台视图（mars_admin 可查全平台令牌）；下拉 /tokens 不传 → 个人视图 */}
                     <Route path="tokens" element={<AccessTokenManager adminView />} />
                     <Route path="users" element={<UserManager />} />
-                    <Route path="settings" element={<SystemSettings />} />
+                    {/* 系统设置仅超级管理员可见（后端 /api/admin/settings 已按 is_super_admin 门禁） */}
+                    <Route
+                      path="settings"
+                      element={
+                        <RequireSuperAdmin>
+                          <SystemSettings />
+                        </RequireSuperAdmin>
+                      }
+                    />
                   </Route>
                   {/* 旧 URL 重定向：/repos 迁入后台 /admin/repos、/access_token_manager 迁 /tokens，保留兼容老书签 */}
                   <Route path="repos" element={<Navigate to="/admin/repos" replace />} />

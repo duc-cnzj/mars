@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import { setState, isRandomBg, toggleRandomBg } from '@/api/token'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
@@ -51,7 +52,7 @@ export function Login() {
   /** 拉取背景图（url + copyright）；random 传后端（random_bg=1 随机挑图，否则固定当天首图，对齐旧版） */
   const fetchBg = useCallback(() => {
     void api
-      .GET('/api/picture/background', {
+      .GET(API.pictureBackground, {
         params: { query: { random: isRandomBg() } },
       })
       .then(({ data }) => {
@@ -62,7 +63,7 @@ export function Login() {
   useEffect(() => {
     fetchBg()
     // 拉取 SSO 配置（若启用则展示 OIDC 登录 Tab），并恢复登录方式记忆
-    void api.GET('/api/auth/settings').then(({ data }) => {
+    void api.GET(API.authSettings).then(({ data }) => {
       if (!data) return
       const items = (data as SettingsResponse).items.filter((i) => i.enabled)
       setSsoItems(items)

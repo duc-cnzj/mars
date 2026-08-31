@@ -77,6 +77,7 @@ func (p *projectSvc) Liveness(ctx context.Context, request *project.LivenessRequ
 		PageSize: size,
 		Search:   request.Search,
 		Liveness: request.Liveness,
+		Sort:     request.Sort,
 	})
 	if err != nil {
 		return nil, logError(ctx, p.logger, err)

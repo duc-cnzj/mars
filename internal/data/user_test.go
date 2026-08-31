@@ -74,6 +74,46 @@ func Test_userRepo_List_SearchAdminOnlyStats(t *testing.T) {
 	})
 }
 
+// Test_userRepo_List_SortAscDesc 排序方向：默认（空 sort）最近登录倒序在前；
+// asc 最早登录在前；无论升降序，从未登录（last_login 为 NULL）者都垫底。
+func Test_userRepo_List_SortAscDesc(t *testing.T) {
+	repo, entdb := newUserRepo(t)
+	ctx := context.TODO()
+
+	now := time.Now()
+	recentLogin := now.Add(-2 * time.Hour)
+	oldLogin := now.Add(-30 * 24 * time.Hour)
+	for _, u := range []struct {
+		email     string
+		lastLogin *time.Time
+	}{
+		{"recent@x.com", &recentLogin},
+		{"never@x.com", nil},
+		{"old@x.com", &oldLogin},
+	} {
+		_, err := entdb.User.Create().SetEmail(u.email).SetName(u.email).SetRoles([]string{}).SetNillableLastLogin(u.lastLogin).Save(ctx)
+		require.NoError(t, err)
+	}
+
+	t.Run("desc default", func(t *testing.T) {
+		out, err := repo.List(ctx, &biz.ListUserInput{Page: 1, PageSize: 10})
+		require.NoError(t, err)
+		require.Len(t, out.Items, 3)
+		assert.Equal(t, "recent@x.com", out.Items[0].Email)
+		assert.Equal(t, "old@x.com", out.Items[1].Email)
+		assert.Equal(t, "never@x.com", out.Items[2].Email) // 从未登录垫底
+	})
+
+	t.Run("asc", func(t *testing.T) {
+		out, err := repo.List(ctx, &biz.ListUserInput{Page: 1, PageSize: 10, Sort: "asc"})
+		require.NoError(t, err)
+		require.Len(t, out.Items, 3)
+		assert.Equal(t, "old@x.com", out.Items[0].Email) // 最早登录在前
+		assert.Equal(t, "recent@x.com", out.Items[1].Email)
+		assert.Equal(t, "never@x.com", out.Items[2].Email) // 从未登录仍垫底
+	})
+}
+
 // Test_userRepo_ToggleAdmin 覆盖升降级/幂等/超级管理员保护/未找到。
 func Test_userRepo_ToggleAdmin(t *testing.T) {
 	repo, entdb := newUserRepo(t)

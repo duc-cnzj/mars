@@ -269,6 +269,7 @@ type InfoResponse struct {
 	Email         string                 `protobuf:"bytes,4,opt,name=email,proto3" json:"email,omitempty"`
 	LogoutUrl     string                 `protobuf:"bytes,5,opt,name=logout_url,json=logoutUrl,proto3" json:"logout_url,omitempty"`
 	Roles         []string               `protobuf:"bytes,6,rep,name=roles,proto3" json:"roles,omitempty"`
+	IsSuperAdmin  bool                   `protobuf:"varint,7,opt,name=is_super_admin,json=isSuperAdmin,proto3" json:"is_super_admin,omitempty"` // 是否为内置超级管理员（固定邮箱身份）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -343,6 +344,13 @@ func (x *InfoResponse) GetRoles() []string {
 		return x.Roles
 	}
 	return nil
+}
+
+func (x *InfoResponse) GetIsSuperAdmin() bool {
+	if x != nil {
+		return x.IsSuperAdmin
+	}
+	return false
 }
 
 type SettingsRequest struct {
@@ -519,7 +527,7 @@ const file_proto_auth_auth_proto_rawDesc = "" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1d\n" +
 	"\n" +
 	"expires_in\x18\x02 \x01(\x03R\texpiresIn\"\r\n" +
-	"\vInfoRequest\"\x95\x01\n" +
+	"\vInfoRequest\"\xbb\x01\n" +
 	"\fInfoResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x16\n" +
 	"\x06avatar\x18\x02 \x01(\tR\x06avatar\x12\x12\n" +
@@ -527,7 +535,8 @@ const file_proto_auth_auth_proto_rawDesc = "" +
 	"\x05email\x18\x04 \x01(\tR\x05email\x12\x1d\n" +
 	"\n" +
 	"logout_url\x18\x05 \x01(\tR\tlogoutUrl\x12\x14\n" +
-	"\x05roles\x18\x06 \x03(\tR\x05roles\"\x11\n" +
+	"\x05roles\x18\x06 \x03(\tR\x05roles\x12$\n" +
+	"\x0eis_super_admin\x18\a \x01(\bR\fisSuperAdmin\"\x11\n" +
 	"\x0fSettingsRequest\"\xe4\x01\n" +
 	"\x10SettingsResponse\x128\n" +
 	"\x05items\x18\x01 \x03(\v2\".auth.SettingsResponse.OidcSettingR\x05items\x1a\x95\x01\n" +

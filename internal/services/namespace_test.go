@@ -1210,20 +1210,20 @@ func newNamespaceSvcWithMocks(t *testing.T) (*namespaceSvc, *namespaceSvcMocks) 
 	return s, mocks
 }
 
-// Test_namespaceSvc_AdminList 管理列表成功路径：透传搜索/私有过滤入参，AdminItem 字段
-// 落位 + 活跃度分类过滤 + 全量统计（不随分类过滤裁剪）。
+// Test_namespaceSvc_AdminList 管理列表成功路径：ListAdminPage（搜索/私有/分类/分页/Now 透传）
+// 返回已分类+已统计+已分页结果，AdminItem 字段落位（最近活跃时间 + 活跃度分类），统计基于
+// search 命中全量不随分类过滤裁剪。
 func Test_namespaceSvc_AdminList(t *testing.T) {
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	now := time.Now()
-	mocks.nsRepo.EXPECT().ListAllAdmin(gomock.Any(), "mars", true).Return([]*biz.Namespace{
-		// 无项目 → 僵尸
-		{ID: 1, Name: "mars-a", CreatorEmail: "a@b.c"},
-		// 10 天前更新 → 活跃
-		{ID: 2, Name: "mars-b", CreatorEmail: "b@b.c", Projects: []*biz.Project{{UpdatedAt: now.Add(-10 * 24 * time.Hour)}}},
-		// 120 天前更新 → 僵尸
-		{ID: 3, Name: "mars-c", CreatorEmail: "c@b.c", Projects: []*biz.Project{{UpdatedAt: now.Add(-120 * 24 * time.Hour)}}},
-		// 60 天前更新 → 低活跃
-		{ID: 4, Name: "mars-d", CreatorEmail: "d@b.c", Projects: []*biz.Project{{UpdatedAt: now.Add(-60 * 24 * time.Hour)}}},
+	mocks.nsRepo.EXPECT().ListAdminPage(gomock.Any(), gomock.Any()).Return(&biz.AdminListPageResult{
+		// 分类过滤已下沉 SQL：zombie 只命中 mars-a（无项目→僵尸）与 mars-c（120 天→僵尸）。
+		Namespaces: []*biz.Namespace{
+			{ID: 1, Name: "mars-a", CreatorEmail: "a@b.c"},
+			{ID: 3, Name: "mars-c", CreatorEmail: "c@b.c", Projects: []*biz.Project{{UpdatedAt: now.Add(-120 * 24 * time.Hour)}}},
+		},
+		Count: 2,
+		Stats: biz.AdminLivenessStats{Total: 4, Active: 1, Dormant: 1, Zombie: 2},
 	}, nil)
 
 	// 活跃度分类过滤 zombie：mars-a（无项目）与 mars-c（120 天）命中，活跃/低活跃被过滤
@@ -1263,15 +1263,18 @@ func Test_namespaceSvc_AdminList(t *testing.T) {
 func Test_namespaceSvc_AdminList_LastActiveAt(t *testing.T) {
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	base := time.Date(2026, 8, 20, 10, 0, 0, 0, time.UTC)
-	mocks.nsRepo.EXPECT().ListAllAdmin(gomock.Any(), "", false).Return([]*biz.Namespace{{
-		ID:           1,
-		Name:         "mars-a",
-		CreatorEmail: "a@b.c",
-		Projects: []*biz.Project{
-			{UpdatedAt: base.Add(-time.Hour)},
-			{UpdatedAt: base.Add(3 * time.Hour)},
-		},
-	}}, nil)
+	mocks.nsRepo.EXPECT().ListAdminPage(gomock.Any(), gomock.Any()).Return(&biz.AdminListPageResult{
+		Namespaces: []*biz.Namespace{{
+			ID:           1,
+			Name:         "mars-a",
+			CreatorEmail: "a@b.c",
+			Projects: []*biz.Project{
+				{UpdatedAt: base.Add(-time.Hour)},
+				{UpdatedAt: base.Add(3 * time.Hour)},
+			},
+		}},
+		Count: 1,
+	}, nil)
 
 	resp, err := svc.AdminList(newAdminUserCtx(), &namespace.AdminListRequest{})
 	assert.NoError(t, err)
@@ -1281,10 +1284,10 @@ func Test_namespaceSvc_AdminList_LastActiveAt(t *testing.T) {
 	}
 }
 
-// Test_namespaceSvc_AdminList_Error 管理列表失败路径：List 查询错误上抛。
+// Test_namespaceSvc_AdminList_Error 管理列表失败路径：ListAdminPage 查询错误上抛。
 func Test_namespaceSvc_AdminList_Error(t *testing.T) {
 	svc, mocks := newNamespaceSvcWithMocks(t)
-	mocks.nsRepo.EXPECT().ListAllAdmin(gomock.Any(), "", false).Return(nil, errors.New("boom"))
+	mocks.nsRepo.EXPECT().ListAdminPage(gomock.Any(), gomock.Any()).Return(nil, errors.New("boom"))
 
 	resp, err := svc.AdminList(newAdminUserCtx(), &namespace.AdminListRequest{})
 	assert.Nil(t, resp)
@@ -1294,7 +1297,7 @@ func Test_namespaceSvc_AdminList_Error(t *testing.T) {
 // Test_namespaceSvc_AdminList_DefaultPagination 空分页参数回退默认值（page=1、page_size=15）。
 func Test_namespaceSvc_AdminList_DefaultPagination(t *testing.T) {
 	svc, mocks := newNamespaceSvcWithMocks(t)
-	mocks.nsRepo.EXPECT().ListAllAdmin(gomock.Any(), "", false).Return([]*biz.Namespace{}, nil)
+	mocks.nsRepo.EXPECT().ListAdminPage(gomock.Any(), gomock.Any()).Return(&biz.AdminListPageResult{}, nil)
 
 	resp, err := svc.AdminList(newAdminUserCtx(), &namespace.AdminListRequest{})
 	assert.NoError(t, err)

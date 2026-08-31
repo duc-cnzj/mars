@@ -60,7 +60,7 @@ type ClusterBoard struct {
 // 命名空间（managedNames 集合）及其 Pod，排除 kube-system/calico 等系统组件；
 // 节点表不参与过滤（节点请求聚合需全量 Pod 才算得准）。
 func (k *k8sBiz) ClusterBoard(ctx context.Context, managedNames []string, topSort string) (*ClusterBoard, error) {
-	data, err := k.k8sRepo.ClusterBoard(ctx)
+	data, err := k.k8sRepo.ClusterBoard(ctx, false)
 	if err != nil {
 		return nil, err
 	}

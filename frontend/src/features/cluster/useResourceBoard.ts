@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '@/api/client'
+import { API } from '@/api/endpoints'
 import {
   buildOverview,
   buildPodCount,
@@ -14,8 +15,9 @@ import {
 const TREND_POINTS = 16
 
 /** 自动刷新间隔：轮询 /api/admin/cluster/board 获取最新快照。
- *  3s→15s：/api/admin/cluster/board 每次做全集群 List，降频 5 倍削请求负载；指标粒度本身 ~15s，无需更密。 */
-export const REFRESH_INTERVAL_MS = 15_000
+ *  3s→15s→45s：/api/admin/cluster/board 每次做全集群 List，逐级降频削请求负载；后端缓存
+ *  每 30s 刷新一次（页面提示用户），45s 轮询在缓存粒度上仍够密、不会错过缓存刷新。 */
+export const REFRESH_INTERVAL_MS = 45_000
 
 /**
  * 集群资源看板数据源（轮询真实后端）：
@@ -23,7 +25,7 @@ export const REFRESH_INTERVAL_MS = 15_000
  *   集群总览并推进 CPU/内存使用率趋势（环形缓冲 16 点）；refresh() 手动立即拉新一版
  * - 轮询失败静默保留上一帧快照（看板不闪断），下次成功自动恢复；返回值全部为最新快照
  * - 渐入语义：轮询（fetchSnapshot）静默不重播，手动刷新（refresh）成功才 +version，
- *   避免每 15s 轮询重播渐入导致的闪屏（对齐 Repos 的「重新获取数据时内容渐入」体验）
+ *   避免每 45s 轮询重播渐入导致的闪屏（对齐 Repos 的「重新获取数据时内容渐入」体验）
  */
 export function useResourceBoard() {
   const [nodes, setNodes] = useState<NodeMetric[]>([])
@@ -44,7 +46,7 @@ export function useResourceBoard() {
   const [lastUpdate, setLastUpdate] = useState<Date>(() => new Date())
   // 手动刷新中：刷新按钮转圈 + 禁用，避免连点
   const [refreshing, setRefreshing] = useState(false)
-  // 用户操作重取中（手动刷新 / topSort 维度切换）：内容区遮罩 loading。轮询不置位——否则每 15s
+  // 用户操作重取中（手动刷新 / topSort 维度切换）：内容区遮罩 loading。轮询不置位——否则每 45s
   // 周期刷新会遮罩闪屏，用户操作才显示「正在拉新数据」的反馈。
   const [refetching, setRefetching] = useState(false)
   // 渐入版本号：仅手动刷新成功 +1，RefreshFade 依 key 重挂载区块重播渐入（轮询不 bump，防闪屏）
@@ -53,12 +55,12 @@ export function useResourceBoard() {
   /**
    * 拉取快照（轮询 + 手动刷新共用取数逻辑）：返回是否成功应用到状态，供手动刷新判定是否重播渐入。
    * mode='user'（手动刷新 / topSort 切换）时置 refetching 遮罩，mode='poll'（周期轮询）静默不触碰
-   * refetching——避免每 15s 轮询遮罩闪屏。
+   * refetching——避免每 45s 轮询遮罩闪屏。
    */
   const fetchSnapshot = useCallback(async (mode: 'poll' | 'user' = 'poll'): Promise<boolean> => {
     if (mode === 'user') setRefetching(true)
     try {
-      const { data, error } = await api.GET('/api/admin/cluster/board', {
+      const { data, error } = await api.GET(API.adminBoard, {
         params: { query: { topSort } },
       })
       if (error) throw new Error(error.message ?? String(error))

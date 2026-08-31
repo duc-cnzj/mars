@@ -48,3 +48,12 @@ func TestFromUser_Fields(t *testing.T) {
 	assert.Equal(t, "duc", m.Name)
 	assert.Equal(t, date.ToRFC3339(&created), m.CreatedAt)
 }
+
+// TestFromUser_IsSuperAdmin 验证超管标识：内置超管固定邮箱为 true，其余为 false。
+func TestFromUser_IsSuperAdmin(t *testing.T) {
+	m := transformer.FromUser(&biz.User{Email: biz.SuperAdminEmail})
+	assert.True(t, m.IsSuperAdmin)
+
+	m = transformer.FromUser(&biz.User{Email: "ordinary@mars.com"})
+	assert.False(t, m.IsSuperAdmin)
+}

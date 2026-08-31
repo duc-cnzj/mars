@@ -78,7 +78,7 @@ func FormatResourceUsage(cpuMilli, memBytes int64) (string, string) {
 // 匹配 pod。命名空间集合由快照中落在 managedNames 内的命名空间派生
 // （无 Pod 也无指标的空间不产出记录——无资源可管理即不展示）。
 func (k *k8sBiz) ResourceBoard(ctx context.Context, managedNames []string, projects []*Project) (*ResourceBoard, error) {
-	data, err := k.k8sRepo.ResourceSnapshot(ctx)
+	data, err := k.k8sRepo.ResourceSnapshot(ctx, false)
 	if err != nil {
 		return nil, err
 	}

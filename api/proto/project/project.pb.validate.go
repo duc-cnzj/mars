@@ -3039,6 +3039,8 @@ func (m *LivenessRequest) validate(all bool) error {
 
 	// no validation rules for Liveness
 
+	// no validation rules for Sort
+
 	if m.Page != nil {
 		// no validation rules for Page
 	}

@@ -64,7 +64,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 	fileRepo := data.NewFileRepo(logger, dataImpl, cache, uploaderUploader, timerTimer)
 	archiver := data.NewDefaultArchiver()
 	executorManager := data.NewExecutorManager(dataImpl, logger)
-	k8sRepo := data.NewK8sRepo(logger, timerTimer, dataImpl, fileRepo, uploaderUploader, archiver, executorManager)
+	k8sRepo := data.NewK8sRepo(logger, timerTimer, dataImpl, fileRepo, uploaderUploader, archiver, executorManager, cache)
 	helmerRepo := data.NewDefaultHelmer(k8sRepo, dataImpl, configConfig, logger)
 	releaseInstaller := deploy.NewReleaseInstaller(logger, helmerRepo, configConfig, timerTimer)
 	namespaceRepo := data.NewNamespaceRepo(dataImpl)
@@ -204,7 +204,6 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 	settingsBiz := biz.NewSettingsBiz(configConfig)
 	settingsSvcDeps := services.SettingsSvcDeps{
 		SettingsBiz: settingsBiz,
-		AccessBiz:   accessBiz,
 		Logger:      logger,
 	}
 	settingsServer := services.NewSettingsSvc(settingsSvcDeps)
