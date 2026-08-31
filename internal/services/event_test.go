@@ -36,12 +36,33 @@ func TestEventSvc_List_Success(t *testing.T) {
 		OrderIDDesc: lo.ToPtr(true),
 	}).Return([]*biz.Event{}, &pagination.Pagination{}, nil)
 
+	// admin 显式传 all=true 才展开全量（不注入 OperatorEmail）
 	resp, err := svc.List(newAdminUserCtx(), &event.ListRequest{
 		Page:        lo.ToPtr(int32(1)),
 		PageSize:    lo.ToPtr(int32(12)),
 		ActionTypes: []types.EventActionType{types.EventActionType_Delete},
 		Search:      "x",
+		All:         true,
 	})
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+}
+
+// admin 未传 all（默认收敛本人，镜像 access_token 语义）：按操作人邮箱过滤为本人事件。
+// 这是「下拉入口 /events 对 admin 也只看到自己」的契约基础——全量视图只属显式 all=true 的后台入口。
+func TestEventSvc_List_Admin_WithoutAll_FiltersByOwnEmail(t *testing.T) {
+	svc, mocks := newEventSvcWithMocks(t)
+	eventRepo := mocks.eventRepo
+	admin := biz.MustGetUser(newAdminUserCtx())
+
+	eventRepo.EXPECT().List(gomock.Any(), &biz.ListEventInput{
+		Page:          1,
+		PageSize:      15,
+		OrderIDDesc:   lo.ToPtr(true),
+		OperatorEmail: &admin.Email,
+	}).Return([]*biz.Event{}, &pagination.Pagination{}, nil)
+
+	resp, err := svc.List(newAdminUserCtx(), &event.ListRequest{})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 }
@@ -86,7 +107,8 @@ func TestEventSvc_List_Failure(t *testing.T) {
 	svc, mocks := newEventSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 
-	req := &event.ListRequest{}
+	// admin + all=true（全量视图路径）：repo 报错 → List 传播错误
+	req := &event.ListRequest{All: true}
 
 	eventRepo.EXPECT().List(gomock.Any(), &biz.ListEventInput{
 		Page:        1,

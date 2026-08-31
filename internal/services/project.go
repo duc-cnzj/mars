@@ -12,6 +12,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/deploy"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/transformer"
+	"github.com/duc-cnzj/mars/v6/internal/util/date"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v6/internal/util/slice"
 	"github.com/samber/lo"
@@ -65,6 +66,124 @@ func NewProjectSvc(deps ProjectSvcDeps) project.ProjectServer {
 		plMgr:      deps.PluginMgr,
 		accessBiz:  deps.AccessBiz,
 	}
+}
+
+// Liveness 分页返回项目活跃度清单（管理员后台）：含活跃度统计与单项目部署次数，
+// 覆盖全部项目（不分命名空间可见性），经 Authorize admin 门禁后仅管理员可调用。
+func (p *projectSvc) Liveness(ctx context.Context, request *project.LivenessRequest) (*project.LivenessResponse, error) {
+	page, size := pagination.InitByDefault(request.Page, request.PageSize)
+	result, err := p.projBiz.Liveness(ctx, &biz.LivenessInput{
+		Page:     page,
+		PageSize: size,
+		Search:   request.Search,
+		Liveness: request.Liveness,
+	})
+	if err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+	items := make([]*project.LivenessItem, 0, len(result.Items))
+	for _, it := range result.Items {
+		// 边已在 ListLiveness 加载，nil 守卫兜底保证不 panic。
+		nsName, repoName := "", ""
+		if it.Project.Namespace != nil {
+			nsName = it.Project.Namespace.Name
+		}
+		if it.Project.Repo != nil {
+			repoName = it.Project.Repo.Name
+		}
+		items = append(items, &project.LivenessItem{
+			Id:              int32(it.Project.ID),
+			Name:            it.Project.Name,
+			Namespace:       nsName,
+			Repo:            repoName,
+			DeployStatus:    it.Project.DeployStatus,
+			DeployCount:     int32(it.DeployCount),
+			GitBranch:       it.Project.GitBranch,
+			GitCommit:       it.Project.GitCommit,
+			UpdatedAt:       date.ToRFC3339(&it.Project.UpdatedAt),
+			GitCommitTitle:  it.Project.GitCommitTitle,
+			GitCommitAuthor: it.Project.GitCommitAuthor,
+			GitCommitDate:   date.ToRFC3339(it.Project.GitCommitDate),
+		})
+	}
+	// 资源占用 enrich：与空间资源聚合同源（按项目 PodSelectors 匹配 pod），按
+	// ns/name join 到本页可见项目。资源快照来自集群指标 API，属补充数据——失败
+	// 时降级为 0 并保留活跃度主数据（治理页不能因指标抖动整体不可用），此处是
+	// 无法向请求返回错误的边缘路径，允许原地打日志（CLAUDE.md 日志规范例外）。
+	attachLivenessResources(ctx, p.logger, p.k8sBiz, result.Items, items)
+	return &project.LivenessResponse{
+		Page:     result.Page,
+		PageSize: result.PageSize,
+		Count:    result.Count,
+		Stats: &project.LivenessStats{
+			Total:   int32(result.Stats.Total),
+			Active:  int32(result.Stats.Active),
+			Dormant: int32(result.Stats.Dormant),
+			Zombie:  int32(result.Stats.Zombie),
+		},
+		Items: items,
+	}, nil
+}
+
+// attachLivenessResources 把项目资源占用 join 进活跃度条目：资源来自 k8sBiz.ResourceBoard
+// （项目 PodSelectors 匹配 pod 聚合，与空间资源页同源），按 ns/name 键关联，缺省（无运行
+// Pod 的项目不产出资源记录）保持 0。资源快照来自集群指标 API，属补充数据——失败时降级为
+// 0 并保留活跃度主数据，治理页不因指标抖动整体不可用；此分支无法向请求返回错误，按日志
+// 规范例外原地打日志（CLAUDE.md：异步/边缘路径必须落日志，否则错误无声丢失）。
+func attachLivenessResources(ctx context.Context, logger mlog.Logger, k8sBiz biz.K8sBiz, resultItems []*biz.LivenessItem, items []*project.LivenessItem) {
+	projects := make([]*biz.Project, 0, len(resultItems))
+	managed := make(map[string]bool, len(resultItems))
+	for _, it := range resultItems {
+		proj := it.Project
+		if proj == nil || proj.Namespace == nil {
+			continue
+		}
+		projects = append(projects, proj)
+		managed[proj.Namespace.Name] = true
+	}
+	if len(projects) == 0 {
+		return
+	}
+	managedNames := make([]string, 0, len(managed))
+	for name := range managed {
+		managedNames = append(managedNames, name)
+	}
+	board, err := k8sBiz.ResourceBoard(ctx, managedNames, projects)
+	if err != nil {
+		logger.ErrorCtx(ctx, err)
+		return
+	}
+	byKey := make(map[string]biz.ResourceProject, len(items))
+	for _, ns := range board.Namespaces {
+		for _, p := range ns.Projects {
+			byKey[ns.Name+"/"+p.Name] = *p
+		}
+	}
+	for _, item := range items {
+		if r, ok := byKey[item.Namespace+"/"+item.Name]; ok {
+			item.CpuRequestMilli = r.CpuRequestMilli
+			item.CpuUsageMilli = r.CpuUsageMilli
+			item.MemRequestBytes = r.MemRequestBytes
+			item.MemUsageBytes = r.MemUsageBytes
+		}
+	}
+}
+
+// Authorize 是服务级授权门禁：项目服务仅新增的 Liveness（管理员后台）要求 admin，
+// 其余用户方法（列表/部署/展示/删除等）全部放行 allowlist，避免误伤普通用户。
+func (p *projectSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
+	return p.accessBiz.RequireAdmin(ctx, fullMethodName,
+		project.Project_List_FullMethodName,
+		project.Project_WebApply_FullMethodName,
+		project.Project_Apply_FullMethodName,
+		project.Project_Show_FullMethodName,
+		project.Project_MemoryCpuAndEndpoints_FullMethodName,
+		project.Project_Delete_FullMethodName,
+		project.Project_Version_FullMethodName,
+		project.Project_AllContainers_FullMethodName,
+		project.Project_CheckApplyStatus_FullMethodName,
+		project.Project_ResourceTree_FullMethodName,
+	)
 }
 
 // List 分页列出当前用户可见的项目（按命名空间访问谓词过滤），按 id 倒序返回。

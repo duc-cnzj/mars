@@ -1436,6 +1436,393 @@ func (x *MemoryCpuAndEndpointsResponse) GetMemory() string {
 	return ""
 }
 
+// LivenessRequest 项目活跃度查询（管理员后台）。
+type LivenessRequest struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Page     *int32                 `protobuf:"varint,1,opt,name=page,proto3,oneof" json:"page,omitempty"`
+	PageSize *int32                 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3,oneof" json:"page_size,omitempty"`
+	// 关键词：匹配项目名/命名空间名/仓库名
+	Search string `protobuf:"bytes,3,opt,name=search,proto3" json:"search,omitempty"`
+	// 活跃度过滤：空 = 全部；active/dormant/zombie = 只看对应活跃度
+	Liveness      string `protobuf:"bytes,4,opt,name=liveness,proto3" json:"liveness,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LivenessRequest) Reset() {
+	*x = LivenessRequest{}
+	mi := &file_proto_project_project_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LivenessRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LivenessRequest) ProtoMessage() {}
+
+func (x *LivenessRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_project_project_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LivenessRequest.ProtoReflect.Descriptor instead.
+func (*LivenessRequest) Descriptor() ([]byte, []int) {
+	return file_proto_project_project_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *LivenessRequest) GetPage() int32 {
+	if x != nil && x.Page != nil {
+		return *x.Page
+	}
+	return 0
+}
+
+func (x *LivenessRequest) GetPageSize() int32 {
+	if x != nil && x.PageSize != nil {
+		return *x.PageSize
+	}
+	return 0
+}
+
+func (x *LivenessRequest) GetSearch() string {
+	if x != nil {
+		return x.Search
+	}
+	return ""
+}
+
+func (x *LivenessRequest) GetLiveness() string {
+	if x != nil {
+		return x.Liveness
+	}
+	return ""
+}
+
+// LivenessItem 单个项目的活跃度条目：标识 + 部署状态/次数 + 最近更新 + 资源占用。
+type LivenessItem struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Id        int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name      string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Namespace string                 `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Repo      string                 `protobuf:"bytes,4,opt,name=repo,proto3" json:"repo,omitempty"`
+	// 最近部署状态：StatusDeployed=正常 / StatusDeploying=进行中 / StatusFailed=失败
+	DeployStatus types.Deploy `protobuf:"varint,5,opt,name=deploy_status,json=deployStatus,proto3,enum=types.Deploy" json:"deploy_status,omitempty"`
+	// 累计部署次数（changelog 计数）
+	DeployCount int32  `protobuf:"varint,6,opt,name=deploy_count,json=deployCount,proto3" json:"deploy_count,omitempty"`
+	GitBranch   string `protobuf:"bytes,7,opt,name=git_branch,json=gitBranch,proto3" json:"git_branch,omitempty"`
+	GitCommit   string `protobuf:"bytes,8,opt,name=git_commit,json=gitCommit,proto3" json:"git_commit,omitempty"`
+	// 最近更新时间 RFC3339（活跃度分类依据）
+	UpdatedAt string `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	// 最近提交信息（判断代码是否仍有人维护）：提交标题 / 作者 / 时间 RFC3339
+	GitCommitTitle  string `protobuf:"bytes,10,opt,name=git_commit_title,json=gitCommitTitle,proto3" json:"git_commit_title,omitempty"`
+	GitCommitAuthor string `protobuf:"bytes,11,opt,name=git_commit_author,json=gitCommitAuthor,proto3" json:"git_commit_author,omitempty"`
+	GitCommitDate   string `protobuf:"bytes,12,opt,name=git_commit_date,json=gitCommitDate,proto3" json:"git_commit_date,omitempty"`
+	// 项目资源申请/实际用量（与空间资源聚合同源：按 PodSelectors 匹配 pod，毫核/字节）：
+	// 供治理页量化「僵尸 × 高资源 = 可回收」，资源快照不可用时缺省为 0（非致命降级）。
+	CpuRequestMilli int64 `protobuf:"varint,13,opt,name=cpu_request_milli,json=cpuRequestMilli,proto3" json:"cpu_request_milli,omitempty"`
+	CpuUsageMilli   int64 `protobuf:"varint,14,opt,name=cpu_usage_milli,json=cpuUsageMilli,proto3" json:"cpu_usage_milli,omitempty"`
+	MemRequestBytes int64 `protobuf:"varint,15,opt,name=mem_request_bytes,json=memRequestBytes,proto3" json:"mem_request_bytes,omitempty"`
+	MemUsageBytes   int64 `protobuf:"varint,16,opt,name=mem_usage_bytes,json=memUsageBytes,proto3" json:"mem_usage_bytes,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *LivenessItem) Reset() {
+	*x = LivenessItem{}
+	mi := &file_proto_project_project_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LivenessItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LivenessItem) ProtoMessage() {}
+
+func (x *LivenessItem) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_project_project_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LivenessItem.ProtoReflect.Descriptor instead.
+func (*LivenessItem) Descriptor() ([]byte, []int) {
+	return file_proto_project_project_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *LivenessItem) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *LivenessItem) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *LivenessItem) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
+func (x *LivenessItem) GetRepo() string {
+	if x != nil {
+		return x.Repo
+	}
+	return ""
+}
+
+func (x *LivenessItem) GetDeployStatus() types.Deploy {
+	if x != nil {
+		return x.DeployStatus
+	}
+	return types.Deploy(0)
+}
+
+func (x *LivenessItem) GetDeployCount() int32 {
+	if x != nil {
+		return x.DeployCount
+	}
+	return 0
+}
+
+func (x *LivenessItem) GetGitBranch() string {
+	if x != nil {
+		return x.GitBranch
+	}
+	return ""
+}
+
+func (x *LivenessItem) GetGitCommit() string {
+	if x != nil {
+		return x.GitCommit
+	}
+	return ""
+}
+
+func (x *LivenessItem) GetUpdatedAt() string {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return ""
+}
+
+func (x *LivenessItem) GetGitCommitTitle() string {
+	if x != nil {
+		return x.GitCommitTitle
+	}
+	return ""
+}
+
+func (x *LivenessItem) GetGitCommitAuthor() string {
+	if x != nil {
+		return x.GitCommitAuthor
+	}
+	return ""
+}
+
+func (x *LivenessItem) GetGitCommitDate() string {
+	if x != nil {
+		return x.GitCommitDate
+	}
+	return ""
+}
+
+func (x *LivenessItem) GetCpuRequestMilli() int64 {
+	if x != nil {
+		return x.CpuRequestMilli
+	}
+	return 0
+}
+
+func (x *LivenessItem) GetCpuUsageMilli() int64 {
+	if x != nil {
+		return x.CpuUsageMilli
+	}
+	return 0
+}
+
+func (x *LivenessItem) GetMemRequestBytes() int64 {
+	if x != nil {
+		return x.MemRequestBytes
+	}
+	return 0
+}
+
+func (x *LivenessItem) GetMemUsageBytes() int64 {
+	if x != nil {
+		return x.MemUsageBytes
+	}
+	return 0
+}
+
+// LivenessStats 活跃度统计（服务端按 30/90 天阈值计算）。
+type LivenessStats struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Total         int32                  `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
+	Active        int32                  `protobuf:"varint,2,opt,name=active,proto3" json:"active,omitempty"`
+	Dormant       int32                  `protobuf:"varint,3,opt,name=dormant,proto3" json:"dormant,omitempty"`
+	Zombie        int32                  `protobuf:"varint,4,opt,name=zombie,proto3" json:"zombie,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LivenessStats) Reset() {
+	*x = LivenessStats{}
+	mi := &file_proto_project_project_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LivenessStats) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LivenessStats) ProtoMessage() {}
+
+func (x *LivenessStats) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_project_project_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LivenessStats.ProtoReflect.Descriptor instead.
+func (*LivenessStats) Descriptor() ([]byte, []int) {
+	return file_proto_project_project_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *LivenessStats) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *LivenessStats) GetActive() int32 {
+	if x != nil {
+		return x.Active
+	}
+	return 0
+}
+
+func (x *LivenessStats) GetDormant() int32 {
+	if x != nil {
+		return x.Dormant
+	}
+	return 0
+}
+
+func (x *LivenessStats) GetZombie() int32 {
+	if x != nil {
+		return x.Zombie
+	}
+	return 0
+}
+
+type LivenessResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	Count         int32                  `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
+	Stats         *LivenessStats         `protobuf:"bytes,4,opt,name=stats,proto3" json:"stats,omitempty"`
+	Items         []*LivenessItem        `protobuf:"bytes,5,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LivenessResponse) Reset() {
+	*x = LivenessResponse{}
+	mi := &file_proto_project_project_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LivenessResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LivenessResponse) ProtoMessage() {}
+
+func (x *LivenessResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_project_project_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LivenessResponse.ProtoReflect.Descriptor instead.
+func (*LivenessResponse) Descriptor() ([]byte, []int) {
+	return file_proto_project_project_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *LivenessResponse) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *LivenessResponse) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *LivenessResponse) GetCount() int32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+func (x *LivenessResponse) GetStats() *LivenessStats {
+	if x != nil {
+		return x.Stats
+	}
+	return nil
+}
+
+func (x *LivenessResponse) GetItems() []*LivenessItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
 var File_proto_project_project_proto protoreflect.FileDescriptor
 
 const file_proto_project_project_proto_rawDesc = "" +
@@ -1551,7 +1938,48 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\x1dMemoryCpuAndEndpointsResponse\x12*\n" +
 	"\x04urls\x18\x01 \x03(\v2\x16.types.ServiceEndpointR\x04urls\x12\x10\n" +
 	"\x03cpu\x18\x02 \x01(\tR\x03cpu\x12\x16\n" +
-	"\x06memory\x18\x03 \x01(\tR\x06memory2\xb6\t\n" +
+	"\x06memory\x18\x03 \x01(\tR\x06memory\"\x97\x01\n" +
+	"\x0fLivenessRequest\x12\x17\n" +
+	"\x04page\x18\x01 \x01(\x05H\x00R\x04page\x88\x01\x01\x12 \n" +
+	"\tpage_size\x18\x02 \x01(\x05H\x01R\bpageSize\x88\x01\x01\x12\x16\n" +
+	"\x06search\x18\x03 \x01(\tR\x06search\x12\x1a\n" +
+	"\bliveness\x18\x04 \x01(\tR\blivenessB\a\n" +
+	"\x05_pageB\f\n" +
+	"\n" +
+	"_page_size\"\xbe\x04\n" +
+	"\fLivenessItem\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1c\n" +
+	"\tnamespace\x18\x03 \x01(\tR\tnamespace\x12\x12\n" +
+	"\x04repo\x18\x04 \x01(\tR\x04repo\x122\n" +
+	"\rdeploy_status\x18\x05 \x01(\x0e2\r.types.DeployR\fdeployStatus\x12!\n" +
+	"\fdeploy_count\x18\x06 \x01(\x05R\vdeployCount\x12\x1d\n" +
+	"\n" +
+	"git_branch\x18\a \x01(\tR\tgitBranch\x12\x1d\n" +
+	"\n" +
+	"git_commit\x18\b \x01(\tR\tgitCommit\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\t \x01(\tR\tupdatedAt\x12(\n" +
+	"\x10git_commit_title\x18\n" +
+	" \x01(\tR\x0egitCommitTitle\x12*\n" +
+	"\x11git_commit_author\x18\v \x01(\tR\x0fgitCommitAuthor\x12&\n" +
+	"\x0fgit_commit_date\x18\f \x01(\tR\rgitCommitDate\x12*\n" +
+	"\x11cpu_request_milli\x18\r \x01(\x03R\x0fcpuRequestMilli\x12&\n" +
+	"\x0fcpu_usage_milli\x18\x0e \x01(\x03R\rcpuUsageMilli\x12*\n" +
+	"\x11mem_request_bytes\x18\x0f \x01(\x03R\x0fmemRequestBytes\x12&\n" +
+	"\x0fmem_usage_bytes\x18\x10 \x01(\x03R\rmemUsageBytes\"o\n" +
+	"\rLivenessStats\x12\x14\n" +
+	"\x05total\x18\x01 \x01(\x05R\x05total\x12\x16\n" +
+	"\x06active\x18\x02 \x01(\x05R\x06active\x12\x18\n" +
+	"\adormant\x18\x03 \x01(\x05R\adormant\x12\x16\n" +
+	"\x06zombie\x18\x04 \x01(\x05R\x06zombie\"\xb4\x01\n" +
+	"\x10LivenessResponse\x12\x12\n" +
+	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x14\n" +
+	"\x05count\x18\x03 \x01(\x05R\x05count\x12,\n" +
+	"\x05stats\x18\x04 \x01(\v2\x16.project.LivenessStatsR\x05stats\x12+\n" +
+	"\x05items\x18\x05 \x03(\v2\x15.project.LivenessItemR\x05items2\xc7\n" +
+	"\n" +
 	"\aProject\x12J\n" +
 	"\x04List\x12\x14.project.ListRequest\x1a\x15.project.ListResponse\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/api/projects\x128\n" +
 	"\x05Apply\x12\x15.project.ApplyRequest\x1a\x16.project.ApplyResponse0\x01\x12\x88\x01\n" +
@@ -1562,7 +1990,8 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\x06Delete\x12\x16.project.DeleteRequest\x1a\x17.project.DeleteResponse\"\x1a\x82\xd3\xe4\x93\x02\x14*\x12/api/projects/{id}\x12u\n" +
 	"\rAllContainers\x12\x1d.project.AllContainersRequest\x1a\x1e.project.AllContainersResponse\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/projects/{id}/containers\x12\xaf\x01\n" +
 	"\x10CheckApplyStatus\x12 .project.CheckApplyStatusRequest\x1a!.project.CheckApplyStatusResponse\"V\xbaG,\x12*检查项目部署后的容器运行状态\x82\xd3\xe4\x93\x02!\x12\x1f/api/projects/{id}/apply_status\x12\x95\x01\n" +
-	"\fResourceTree\x12\x1c.project.ResourceTreeRequest\x1a\x1d.project.ResourceTreeResponse\"H\xbaG\x1d\x12\x1b获取项目资源拓扑树\x82\xd3\xe4\x93\x02\"\x12 /api/projects/{id}/resource_treeB7Z5github.com/duc-cnzj/mars/api/v6/proto/project;projectb\x06proto3"
+	"\fResourceTree\x12\x1c.project.ResourceTreeRequest\x1a\x1d.project.ResourceTreeResponse\"H\xbaG\x1d\x12\x1b获取项目资源拓扑树\x82\xd3\xe4\x93\x02\"\x12 /api/projects/{id}/resource_tree\x12\x8e\x01\n" +
+	"\bLiveness\x12\x18.project.LivenessRequest\x1a\x19.project.LivenessResponse\"M\xbaG&\x12$项目活跃度清单（管理员）\x82\xd3\xe4\x93\x02\x1e\x12\x1c/api/admin/projects/livenessB7Z5github.com/duc-cnzj/mars/api/v6/proto/project;projectb\x06proto3"
 
 var (
 	file_proto_project_project_proto_rawDescOnce sync.Once
@@ -1576,7 +2005,7 @@ func file_proto_project_project_proto_rawDescGZIP() []byte {
 	return file_proto_project_project_proto_rawDescData
 }
 
-var file_proto_project_project_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_proto_project_project_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_proto_project_project_proto_goTypes = []any{
 	(*ListRequest)(nil),                   // 0: project.ListRequest
 	(*ListResponse)(nil),                  // 1: project.ListResponse
@@ -1601,56 +2030,65 @@ var file_proto_project_project_proto_goTypes = []any{
 	(*WebApplyResponse)(nil),              // 20: project.WebApplyResponse
 	(*MemoryCpuAndEndpointsRequest)(nil),  // 21: project.MemoryCpuAndEndpointsRequest
 	(*MemoryCpuAndEndpointsResponse)(nil), // 22: project.MemoryCpuAndEndpointsResponse
-	nil,                                   // 23: project.ResourceTreeNode.LabelsEntry
-	(*types.ProjectModel)(nil),            // 24: types.ProjectModel
-	(*types.StateContainer)(nil),          // 25: types.StateContainer
-	(types.Deploy)(0),                     // 26: types.Deploy
-	(*websocket.Metadata)(nil),            // 27: websocket.Metadata
-	(*websocket.ExtraValue)(nil),          // 28: websocket.ExtraValue
-	(*types.ServiceEndpoint)(nil),         // 29: types.ServiceEndpoint
+	(*LivenessRequest)(nil),               // 23: project.LivenessRequest
+	(*LivenessItem)(nil),                  // 24: project.LivenessItem
+	(*LivenessStats)(nil),                 // 25: project.LivenessStats
+	(*LivenessResponse)(nil),              // 26: project.LivenessResponse
+	nil,                                   // 27: project.ResourceTreeNode.LabelsEntry
+	(*types.ProjectModel)(nil),            // 28: types.ProjectModel
+	(*types.StateContainer)(nil),          // 29: types.StateContainer
+	(types.Deploy)(0),                     // 30: types.Deploy
+	(*websocket.Metadata)(nil),            // 31: websocket.Metadata
+	(*websocket.ExtraValue)(nil),          // 32: websocket.ExtraValue
+	(*types.ServiceEndpoint)(nil),         // 33: types.ServiceEndpoint
 }
 var file_proto_project_project_proto_depIdxs = []int32{
-	24, // 0: project.ListResponse.items:type_name -> types.ProjectModel
-	24, // 1: project.ShowResponse.item:type_name -> types.ProjectModel
-	25, // 2: project.AllContainersResponse.items:type_name -> types.StateContainer
-	26, // 3: project.CheckApplyStatusResponse.status:type_name -> types.Deploy
-	25, // 4: project.CheckApplyStatusResponse.containers:type_name -> types.StateContainer
+	28, // 0: project.ListResponse.items:type_name -> types.ProjectModel
+	28, // 1: project.ShowResponse.item:type_name -> types.ProjectModel
+	29, // 2: project.AllContainersResponse.items:type_name -> types.StateContainer
+	30, // 3: project.CheckApplyStatusResponse.status:type_name -> types.Deploy
+	29, // 4: project.CheckApplyStatusResponse.containers:type_name -> types.StateContainer
 	10, // 5: project.CheckApplyStatusResponse.failures:type_name -> project.ContainerFailure
-	23, // 6: project.ResourceTreeNode.labels:type_name -> project.ResourceTreeNode.LabelsEntry
-	26, // 7: project.ResourceTreeResponse.status:type_name -> types.Deploy
+	27, // 6: project.ResourceTreeNode.labels:type_name -> project.ResourceTreeNode.LabelsEntry
+	30, // 7: project.ResourceTreeResponse.status:type_name -> types.Deploy
 	13, // 8: project.ResourceTreeResponse.nodes:type_name -> project.ResourceTreeNode
 	14, // 9: project.ResourceTreeResponse.edges:type_name -> project.ResourceTreeEdge
-	27, // 10: project.ApplyResponse.metadata:type_name -> websocket.Metadata
-	24, // 11: project.ApplyResponse.project:type_name -> types.ProjectModel
-	28, // 12: project.ApplyRequest.extra_values:type_name -> websocket.ExtraValue
-	28, // 13: project.WebApplyRequest.extra_values:type_name -> websocket.ExtraValue
-	24, // 14: project.WebApplyResponse.project:type_name -> types.ProjectModel
-	29, // 15: project.MemoryCpuAndEndpointsResponse.urls:type_name -> types.ServiceEndpoint
-	0,  // 16: project.Project.List:input_type -> project.ListRequest
-	18, // 17: project.Project.Apply:input_type -> project.ApplyRequest
-	19, // 18: project.Project.WebApply:input_type -> project.WebApplyRequest
-	2,  // 19: project.Project.Show:input_type -> project.ShowRequest
-	21, // 20: project.Project.MemoryCpuAndEndpoints:input_type -> project.MemoryCpuAndEndpointsRequest
-	6,  // 21: project.Project.Version:input_type -> project.VersionRequest
-	4,  // 22: project.Project.Delete:input_type -> project.DeleteRequest
-	8,  // 23: project.Project.AllContainers:input_type -> project.AllContainersRequest
-	11, // 24: project.Project.CheckApplyStatus:input_type -> project.CheckApplyStatusRequest
-	15, // 25: project.Project.ResourceTree:input_type -> project.ResourceTreeRequest
-	1,  // 26: project.Project.List:output_type -> project.ListResponse
-	17, // 27: project.Project.Apply:output_type -> project.ApplyResponse
-	20, // 28: project.Project.WebApply:output_type -> project.WebApplyResponse
-	3,  // 29: project.Project.Show:output_type -> project.ShowResponse
-	22, // 30: project.Project.MemoryCpuAndEndpoints:output_type -> project.MemoryCpuAndEndpointsResponse
-	7,  // 31: project.Project.Version:output_type -> project.VersionResponse
-	5,  // 32: project.Project.Delete:output_type -> project.DeleteResponse
-	9,  // 33: project.Project.AllContainers:output_type -> project.AllContainersResponse
-	12, // 34: project.Project.CheckApplyStatus:output_type -> project.CheckApplyStatusResponse
-	16, // 35: project.Project.ResourceTree:output_type -> project.ResourceTreeResponse
-	26, // [26:36] is the sub-list for method output_type
-	16, // [16:26] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	31, // 10: project.ApplyResponse.metadata:type_name -> websocket.Metadata
+	28, // 11: project.ApplyResponse.project:type_name -> types.ProjectModel
+	32, // 12: project.ApplyRequest.extra_values:type_name -> websocket.ExtraValue
+	32, // 13: project.WebApplyRequest.extra_values:type_name -> websocket.ExtraValue
+	28, // 14: project.WebApplyResponse.project:type_name -> types.ProjectModel
+	33, // 15: project.MemoryCpuAndEndpointsResponse.urls:type_name -> types.ServiceEndpoint
+	30, // 16: project.LivenessItem.deploy_status:type_name -> types.Deploy
+	25, // 17: project.LivenessResponse.stats:type_name -> project.LivenessStats
+	24, // 18: project.LivenessResponse.items:type_name -> project.LivenessItem
+	0,  // 19: project.Project.List:input_type -> project.ListRequest
+	18, // 20: project.Project.Apply:input_type -> project.ApplyRequest
+	19, // 21: project.Project.WebApply:input_type -> project.WebApplyRequest
+	2,  // 22: project.Project.Show:input_type -> project.ShowRequest
+	21, // 23: project.Project.MemoryCpuAndEndpoints:input_type -> project.MemoryCpuAndEndpointsRequest
+	6,  // 24: project.Project.Version:input_type -> project.VersionRequest
+	4,  // 25: project.Project.Delete:input_type -> project.DeleteRequest
+	8,  // 26: project.Project.AllContainers:input_type -> project.AllContainersRequest
+	11, // 27: project.Project.CheckApplyStatus:input_type -> project.CheckApplyStatusRequest
+	15, // 28: project.Project.ResourceTree:input_type -> project.ResourceTreeRequest
+	23, // 29: project.Project.Liveness:input_type -> project.LivenessRequest
+	1,  // 30: project.Project.List:output_type -> project.ListResponse
+	17, // 31: project.Project.Apply:output_type -> project.ApplyResponse
+	20, // 32: project.Project.WebApply:output_type -> project.WebApplyResponse
+	3,  // 33: project.Project.Show:output_type -> project.ShowResponse
+	22, // 34: project.Project.MemoryCpuAndEndpoints:output_type -> project.MemoryCpuAndEndpointsResponse
+	7,  // 35: project.Project.Version:output_type -> project.VersionResponse
+	5,  // 36: project.Project.Delete:output_type -> project.DeleteResponse
+	9,  // 37: project.Project.AllContainers:output_type -> project.AllContainersResponse
+	12, // 38: project.Project.CheckApplyStatus:output_type -> project.CheckApplyStatusResponse
+	16, // 39: project.Project.ResourceTree:output_type -> project.ResourceTreeResponse
+	26, // 40: project.Project.Liveness:output_type -> project.LivenessResponse
+	30, // [30:41] is the sub-list for method output_type
+	19, // [19:30] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_proto_project_project_proto_init() }
@@ -1661,13 +2099,14 @@ func file_proto_project_project_proto_init() {
 	file_proto_project_project_proto_msgTypes[0].OneofWrappers = []any{}
 	file_proto_project_project_proto_msgTypes[18].OneofWrappers = []any{}
 	file_proto_project_project_proto_msgTypes[19].OneofWrappers = []any{}
+	file_proto_project_project_proto_msgTypes[23].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_project_project_proto_rawDesc), len(file_proto_project_project_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   24,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

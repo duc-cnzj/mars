@@ -21,6 +21,82 @@ message InfoResponse {
 
 message InfoRequest {}
 
+// BoardNode 集群看板节点资源明细（CPU 毫核 / 内存字节）。
+message BoardNode {
+  string name = 1;
+  // master / worker
+  string role = 2;
+  // Ready / NotReady / SchedulingDisabled
+  string status = 3;
+  int64 cpu_capacity = 4;
+  int64 cpu_usage    = 5;
+  int64 cpu_request  = 6;
+  int64 mem_capacity = 7;
+  int64 mem_usage    = 8;
+  int64 mem_request  = 9;
+}
+// BoardNamespace 集群看板命名空间聚合：CPU/内存用量 + Pod 数。
+message BoardNamespace {
+  string name = 1;
+  int64  cpu_milli     = 2;
+  int64  memory_bytes  = 3;
+  int32  pod_count     = 4;
+}
+// BoardRequest 集群看板请求：top_sort 控制 Top Pod 排行维度（默认按 CPU 用量降序）。
+message BoardRequest {
+  string top_sort = 1; // 排行维度：cpu（默认）/ mem；空字符串=按 CPU 降序
+}
+// BoardPod 集群看板 Top Pod（按 top_sort 维度降序取 N 个，默认 CPU）。
+message BoardPod {
+  string namespace = 1;
+  string pod       = 2;
+  int64  cpu_milli     = 3;
+  int64  memory_bytes  = 4;
+}
+// BoardResponse 集群看板聚合快照：总览 + 节点 + 命名空间 + Top Pod。
+message BoardResponse {
+  websocket.ClusterInfo  overview    = 1;
+  repeated BoardNode     nodes       = 2;
+  repeated BoardNamespace namespaces = 3;
+  repeated BoardPod      pods        = 4;
+}
+// ResourceProject 单命名空间内一个项目的资源申请/实际用量聚合（Pod selectors 匹配）。
+message ResourceProject {
+  string name = 1;              // 项目名
+  int32  pod_count = 2;         // 命中该项目的 Running Pod 数
+  int64  cpu_request_milli = 3; // requests CPU 合计（毫核）
+  int64  cpu_usage_milli = 4;   // 实际用量 CPU 合计（毫核）
+  int64  mem_request_bytes = 5; // requests 内存合计（字节）
+  int64  mem_usage_bytes = 6;   // 实际用量内存合计（字节）
+  repeated ResourceProjectWorkload workloads = 7; // 项目内各工作负载明细
+}
+// ResourceProjectWorkload 项目内单个工作负载（Deployment/StatefulSet/DaemonSet）的
+// 资源申请/实际用量聚合（pod 属主链匹配）。
+message ResourceProjectWorkload {
+  string kind = 1;              // 工作负载类型：Deployment/StatefulSet/DaemonSet
+  string name = 2;              // 工作负载名
+  int32  pod_count = 3;         // 命中的 Running Pod 数
+  int64  cpu_request_milli = 4; // requests CPU 合计（毫核）
+  int64  cpu_usage_milli = 5;   // 实际用量 CPU 合计（毫核）
+  int64  mem_request_bytes = 6; // requests 内存合计（字节）
+  int64  mem_usage_bytes = 7;   // 实际用量内存合计（字节）
+}
+// ResourceNamespace 单命名空间资源聚合：全部 Running Pod 的 requests 与实际用量，
+// 并按项目拆分（namespace 总量 = 空间内所有 pod，不受项目归属影响）。
+message ResourceNamespace {
+  string name = 1;
+  int32  pod_count = 2;
+  int64  cpu_request_milli = 3;
+  int64  cpu_usage_milli = 4;
+  int64  mem_request_bytes = 5;
+  int64  mem_usage_bytes = 6;
+  repeated ResourceProject projects = 7;
+}
+// ResourceBoardResponse 空间资源管理聚合：全部管理命名空间（含项目明细）。
+message ResourceBoardResponse {
+  repeated ResourceNamespace namespaces = 1;
+}
+
 service Cluster {
   rpc ClusterInfo(InfoRequest) returns (InfoResponse) {
     option (google.api.http)      = {
@@ -30,6 +106,28 @@ service Cluster {
     option (openapi.v3.operation) = {
       security: {},
       summary: "查看集群信息",
+    };
+  }
+
+  // ClusterBoard 集群资源看板（管理员后台）：总览 + 节点/命名空间/Pod 明细聚合快照。
+  // top_sort 可选，控制 Top Pod 排行维度（cpu 默认 / mem）。
+  rpc ClusterBoard(BoardRequest) returns (BoardResponse) {
+    option (google.api.http)      = {
+      get: "/api/admin/cluster/board"
+    };
+    option (openapi.v3.operation) = {
+      summary: "集群资源看板（管理员）",
+    };
+  }
+
+  // ResourceBoard 空间资源管理（管理员后台）：每个命名空间的 Pod requests/实际用量
+  // 占比聚合，含每空间的项目明细——定位「申请了很多却用不到多少」的空间。
+  rpc ResourceBoard(InfoRequest) returns (ResourceBoardResponse) {
+    option (google.api.http)      = {
+      get: "/api/admin/cluster/resources"
+    };
+    option (openapi.v3.operation) = {
+      summary: "空间资源管理（管理员）",
     };
   }
 }

@@ -32,6 +32,7 @@ const (
 	Namespace_Favorite_FullMethodName      = "/namespace.Namespace/Favorite"
 	Namespace_FavoriteSort_FullMethodName  = "/namespace.Namespace/FavoriteSort"
 	Namespace_Transfer_FullMethodName      = "/namespace.Namespace/Transfer"
+	Namespace_AdminList_FullMethodName     = "/namespace.Namespace/AdminList"
 )
 
 // NamespaceClient is the client API for Namespace service.
@@ -50,6 +51,8 @@ type NamespaceClient interface {
 	Favorite(ctx context.Context, in *FavoriteRequest, opts ...grpc.CallOption) (*FavoriteResponse, error)
 	FavoriteSort(ctx context.Context, in *FavoriteSortRequest, opts ...grpc.CallOption) (*FavoriteSortResponse, error)
 	Transfer(ctx context.Context, in *TransferRequest, opts ...grpc.CallOption) (*TransferResponse, error)
+	// AdminList 命名空间管理列表（管理员后台）：分页 + 关键词/私有过滤 + 实时 CPU/内存用量。
+	AdminList(ctx context.Context, in *AdminListRequest, opts ...grpc.CallOption) (*AdminListResponse, error)
 }
 
 type namespaceClient struct {
@@ -180,6 +183,16 @@ func (c *namespaceClient) Transfer(ctx context.Context, in *TransferRequest, opt
 	return out, nil
 }
 
+func (c *namespaceClient) AdminList(ctx context.Context, in *AdminListRequest, opts ...grpc.CallOption) (*AdminListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListResponse)
+	err := c.cc.Invoke(ctx, Namespace_AdminList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NamespaceServer is the server API for Namespace service.
 // All implementations must embed UnimplementedNamespaceServer
 // for forward compatibility.
@@ -196,6 +209,8 @@ type NamespaceServer interface {
 	Favorite(context.Context, *FavoriteRequest) (*FavoriteResponse, error)
 	FavoriteSort(context.Context, *FavoriteSortRequest) (*FavoriteSortResponse, error)
 	Transfer(context.Context, *TransferRequest) (*TransferResponse, error)
+	// AdminList 命名空间管理列表（管理员后台）：分页 + 关键词/私有过滤 + 实时 CPU/内存用量。
+	AdminList(context.Context, *AdminListRequest) (*AdminListResponse, error)
 	mustEmbedUnimplementedNamespaceServer()
 }
 
@@ -241,6 +256,9 @@ func (UnimplementedNamespaceServer) FavoriteSort(context.Context, *FavoriteSortR
 }
 func (UnimplementedNamespaceServer) Transfer(context.Context, *TransferRequest) (*TransferResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Transfer not implemented")
+}
+func (UnimplementedNamespaceServer) AdminList(context.Context, *AdminListRequest) (*AdminListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminList not implemented")
 }
 func (UnimplementedNamespaceServer) mustEmbedUnimplementedNamespaceServer() {}
 func (UnimplementedNamespaceServer) testEmbeddedByValue()                   {}
@@ -479,6 +497,24 @@ func _Namespace_Transfer_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Namespace_AdminList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NamespaceServer).AdminList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Namespace_AdminList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NamespaceServer).AdminList(ctx, req.(*AdminListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Namespace_ServiceDesc is the grpc.ServiceDesc for Namespace service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -533,6 +569,10 @@ var Namespace_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Transfer",
 			Handler:    _Namespace_Transfer_Handler,
+		},
+		{
+			MethodName: "AdminList",
+			Handler:    _Namespace_AdminList_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -15,7 +15,9 @@ import (
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	k8sapierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 // 以下 stub 只覆盖 NamespaceBiz 用到的接口方法，其余由嵌入接口兜底。
@@ -29,6 +31,8 @@ type fakeNamespaceRepoForNSBiz struct {
 	favorite      func(ctx context.Context, input *FavoriteNamespaceInput) error
 	favoriteSort  func(ctx context.Context, email string, firstID, secondID int) error
 	list          func(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error)
+	listAll       func(ctx context.Context) ([]*Namespace, error)
+	listAllAdmin  func(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error)
 	update        func(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error)
 	show          func(ctx context.Context, id int) (*Namespace, error)
 	syncMembers   func(ctx context.Context, namespaceID int, memberEmails []string) (*Namespace, error)
@@ -56,6 +60,12 @@ func (f *fakeNamespaceRepoForNSBiz) FavoriteSort(ctx context.Context, email stri
 func (f *fakeNamespaceRepoForNSBiz) List(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error) {
 	return f.list(ctx, input)
 }
+func (f *fakeNamespaceRepoForNSBiz) ListAll(ctx context.Context) ([]*Namespace, error) {
+	return f.listAll(ctx)
+}
+func (f *fakeNamespaceRepoForNSBiz) ListAllAdmin(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error) {
+	return f.listAllAdmin(ctx, search, privateOnly)
+}
 func (f *fakeNamespaceRepoForNSBiz) Update(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error) {
 	return f.update(ctx, input)
 }
@@ -82,6 +92,7 @@ type fakeK8sRepoForNSBiz struct {
 	createDockerSecret func(ctx context.Context, namespace string) (*corev1.Secret, error)
 	deleteNamespace    func(ctx context.Context, name string) error
 	deleteSecret       func(ctx context.Context, namespace, secret string) error
+	resourceSnapshot   func(ctx context.Context) (*ResourceSnapshotData, error)
 }
 
 func (f *fakeK8sRepoForNSBiz) CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
@@ -98,6 +109,9 @@ func (f *fakeK8sRepoForNSBiz) DeleteNamespace(ctx context.Context, name string) 
 }
 func (f *fakeK8sRepoForNSBiz) DeleteSecret(ctx context.Context, namespace, secret string) error {
 	return f.deleteSecret(ctx, namespace, secret)
+}
+func (f *fakeK8sRepoForNSBiz) ResourceSnapshot(ctx context.Context) (*ResourceSnapshotData, error) {
+	return f.resourceSnapshot(ctx)
 }
 
 type fakeHelmerRepoForNSBiz struct {
@@ -832,6 +846,264 @@ func TestNamespaceBiz_List_Passthrough(t *testing.T) {
 	assert.Len(t, got, 1)
 	assert.Nil(t, pag)
 	assert.NotNil(t, gotInput)
+}
+
+// TestNamespaceBiz_ListAllNames 成功路径：ListAll 全量空间名抽成 k8s 名称切片。
+func TestNamespaceBiz_ListAllNames(t *testing.T) {
+	ns := &fakeNamespaceRepoForNSBiz{listAll: func(ctx context.Context) ([]*Namespace, error) {
+		return []*Namespace{{Name: "mars-dev"}, {Name: "mars-prod"}}, nil
+	}}
+	n := nsFacadeForTest(ns)
+	got, err := n.ListAllNames(context.TODO())
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"mars-dev", "mars-prod"}, got)
+}
+
+// TestNamespaceBiz_ListAllNames_RepoError 失败路径：ListAll 报错时原样上抛。
+func TestNamespaceBiz_ListAllNames_RepoError(t *testing.T) {
+	ns := &fakeNamespaceRepoForNSBiz{listAll: func(ctx context.Context) ([]*Namespace, error) {
+		return nil, errors.New("db down")
+	}}
+	n := nsFacadeForTest(ns)
+	got, err := n.ListAllNames(context.TODO())
+	assert.Nil(t, got)
+	assert.Error(t, err)
+}
+
+// podMetricOf 构造指定命名空间、指定 CPU/内存量的单容器 Pod 指标（AdminList 用量断言用）。
+func podMetricOf(ns, cpu, mem string) v1beta1.PodMetrics {
+	return v1beta1.PodMetrics{
+		ObjectMeta: metav1.ObjectMeta{Name: "p-" + ns, Namespace: ns},
+		Containers: []v1beta1.ContainerMetrics{{Usage: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse(cpu),
+			corev1.ResourceMemory: resource.MustParse(mem),
+		}}},
+	}
+}
+
+// TestNamespaceBiz_AdminList 管理列表成功路径：ListAllAdmin（搜索/私有过滤透传）全量加载，
+// 单次批量资源快照映射到逐空间 CPU/内存用量（无指标空间降级 0）+ 最近活跃时间 +
+// 活跃度分类装入条目，统计基于全量。
+func TestNamespaceBiz_AdminList(t *testing.T) {
+	var gotSearch string
+	var gotPrivate bool
+	now := time.Now()
+	ns := &fakeNamespaceRepoForNSBiz{listAllAdmin: func(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error) {
+		gotSearch, gotPrivate = search, privateOnly
+		return []*Namespace{
+			// 无项目：从未活跃 → 僵尸
+			{ID: 1, Name: "mars-a"},
+			// 项目 10 天前更新：活跃
+			{ID: 2, Name: "mars-b", Projects: []*Project{{UpdatedAt: now.Add(-10 * 24 * time.Hour)}}},
+			// 项目 120 天前更新：僵尸；快照无其指标 → 用量降级 0
+			{ID: 3, Name: "mars-c", Projects: []*Project{{UpdatedAt: now.Add(-120 * 24 * time.Hour)}}},
+		}, nil
+	}}
+	k8s := &fakeK8sRepoForNSBiz{resourceSnapshot: func(ctx context.Context) (*ResourceSnapshotData, error) {
+		return &ResourceSnapshotData{PodMetrics: []v1beta1.PodMetrics{
+			podMetricOf("mars-a", "100m", "500M"),
+			podMetricOf("mars-b", "200m", "600M"),
+		}}, nil
+	}}
+	n := nsBizForTest(ns, k8s, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
+
+	items, stats, pag, err := n.AdminList(context.TODO(), &AdminListInput{Page: 1, PageSize: 15, Search: "mars", PrivateOnly: true})
+	assert.NoError(t, err)
+	assert.Equal(t, "mars", gotSearch)
+	assert.True(t, gotPrivate)
+	assert.Equal(t, int32(3), pag.Count)
+	assert.Equal(t, AdminLivenessStats{Total: 3, Active: 1, Zombie: 2}, *stats)
+	if assert.Len(t, items, 3) {
+		assert.Equal(t, 1, items[0].Namespace.ID)
+		assert.Equal(t, "100 m", items[0].CpuUsed)
+		assert.Equal(t, "500 MB", items[0].MemUsed)
+		// 无项目：最近活跃为零值，分类僵尸
+		assert.True(t, items[0].LastActiveAt.IsZero())
+		assert.Equal(t, LivenessZombie, items[0].LivenessKind)
+		assert.Equal(t, 2, items[1].Namespace.ID)
+		assert.Equal(t, "200 m", items[1].CpuUsed)
+		assert.Equal(t, "600 MB", items[1].MemUsed)
+		// 带项目：最近活跃 = 最大 UpdatedAt，分类活跃
+		assert.Equal(t, now.Add(-10*24*time.Hour).Truncate(time.Second), items[1].LastActiveAt.Truncate(time.Second))
+		assert.Equal(t, LivenessActive, items[1].LivenessKind)
+		assert.Equal(t, 3, items[2].Namespace.ID)
+		assert.Equal(t, "0 m", items[2].CpuUsed)
+		assert.Equal(t, "0 B", items[2].MemUsed)
+		assert.Equal(t, LivenessZombie, items[2].LivenessKind)
+	}
+}
+
+// TestNamespaceBiz_AdminList_FilterByKind 分类过滤：条目仅剩目标分类，统计仍基于全量。
+func TestNamespaceBiz_AdminList_FilterByKind(t *testing.T) {
+	now := time.Now()
+	ns := &fakeNamespaceRepoForNSBiz{listAllAdmin: func(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error) {
+		return []*Namespace{
+			{ID: 1, Name: "a", Projects: []*Project{{UpdatedAt: now.Add(-10 * 24 * time.Hour)}}},  // 活跃
+			{ID: 2, Name: "b", Projects: []*Project{{UpdatedAt: now.Add(-60 * 24 * time.Hour)}}},  // 低活跃
+			{ID: 3, Name: "c", Projects: []*Project{{UpdatedAt: now.Add(-120 * 24 * time.Hour)}}}, // 僵尸
+		}, nil
+	}}
+	k8s := &fakeK8sRepoForNSBiz{resourceSnapshot: func(ctx context.Context) (*ResourceSnapshotData, error) {
+		return &ResourceSnapshotData{}, nil
+	}}
+	n := nsBizForTest(ns, k8s, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
+
+	items, stats, pag, err := n.AdminList(context.TODO(), &AdminListInput{Page: 1, PageSize: 10, Liveness: "dormant"})
+	assert.NoError(t, err)
+	// 统计不随分类过滤裁剪
+	assert.Equal(t, AdminLivenessStats{Total: 3, Active: 1, Dormant: 1, Zombie: 1}, *stats)
+	assert.Equal(t, int32(1), pag.Count)
+	if assert.Len(t, items, 1) {
+		assert.Equal(t, 2, items[0].Namespace.ID)
+		assert.Equal(t, LivenessDormant, items[0].LivenessKind)
+	}
+}
+
+// TestNamespaceBiz_AdminList_Pagination 内存分页：page=2 size=2 命中 [2:4) 两条。
+func TestNamespaceBiz_AdminList_Pagination(t *testing.T) {
+	now := time.Now()
+	var list []*Namespace
+	for i := 1; i <= 4; i++ {
+		list = append(list, &Namespace{ID: i, Name: "ns", Projects: []*Project{{UpdatedAt: now.Add(-10 * 24 * time.Hour)}}})
+	}
+	ns := &fakeNamespaceRepoForNSBiz{listAllAdmin: func(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error) {
+		return list, nil
+	}}
+	k8s := &fakeK8sRepoForNSBiz{resourceSnapshot: func(ctx context.Context) (*ResourceSnapshotData, error) {
+		return &ResourceSnapshotData{}, nil
+	}}
+	n := nsBizForTest(ns, k8s, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
+
+	items, _, pag, err := n.AdminList(context.TODO(), &AdminListInput{Page: 2, PageSize: 2})
+	assert.NoError(t, err)
+	assert.Equal(t, int32(4), pag.Count)
+	if assert.Len(t, items, 2) {
+		assert.Equal(t, 3, items[0].Namespace.ID)
+		assert.Equal(t, 4, items[1].Namespace.ID)
+	}
+}
+
+// TestNamespaceBiz_AdminList_PaginationOutOfRange 越界页：条目为空但计数保留全量。
+func TestNamespaceBiz_AdminList_PaginationOutOfRange(t *testing.T) {
+	now := time.Now()
+	ns := &fakeNamespaceRepoForNSBiz{listAllAdmin: func(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error) {
+		return []*Namespace{
+			{ID: 1, Name: "a", Projects: []*Project{{UpdatedAt: now.Add(-10 * 24 * time.Hour)}}},
+			{ID: 2, Name: "b", Projects: []*Project{{UpdatedAt: now.Add(-10 * 24 * time.Hour)}}},
+		}, nil
+	}}
+	k8s := &fakeK8sRepoForNSBiz{resourceSnapshot: func(ctx context.Context) (*ResourceSnapshotData, error) {
+		return &ResourceSnapshotData{}, nil
+	}}
+	n := nsBizForTest(ns, k8s, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
+
+	items, _, pag, err := n.AdminList(context.TODO(), &AdminListInput{Page: 99, PageSize: 10})
+	assert.NoError(t, err)
+	assert.Empty(t, items)
+	assert.Equal(t, int32(2), pag.Count)
+}
+
+// TestNamespaceBiz_AdminList_ResourceSnapshotError 快照失败降级：用量全零但空间主列表
+// 照常返回（治理页不因指标 API 抖动整体不可用），错误不上抛（原地打日志）。
+func TestNamespaceBiz_AdminList_ResourceSnapshotError(t *testing.T) {
+	ns := &fakeNamespaceRepoForNSBiz{listAllAdmin: func(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error) {
+		return []*Namespace{{ID: 1, Name: "mars-a"}}, nil
+	}}
+	k8s := &fakeK8sRepoForNSBiz{resourceSnapshot: func(ctx context.Context) (*ResourceSnapshotData, error) {
+		return nil, errors.New("metrics api down")
+	}}
+	n := nsBizForTest(ns, k8s, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
+
+	items, _, pag, err := n.AdminList(context.TODO(), &AdminListInput{Page: 1, PageSize: 10})
+	assert.NoError(t, err)
+	assert.Equal(t, int32(1), pag.Count)
+	if assert.Len(t, items, 1) {
+		assert.Equal(t, "0 m", items[0].CpuUsed)
+		assert.Equal(t, "0 B", items[0].MemUsed)
+	}
+}
+
+// Test_namespaceUsages 快照聚合：按命名空间分组累加全部 Pod 指标用量；nil 快照返回空 map。
+func Test_namespaceUsages(t *testing.T) {
+	metrics := []v1beta1.PodMetrics{
+		podMetricOf("a", "100m", "500M"),
+		podMetricOf("a", "200m", "600M"), // 同空间多 Pod 累加
+		podMetricOf("b", "50m", "1G"),
+	}
+	got := namespaceUsages(&ResourceSnapshotData{PodMetrics: metrics})
+	assert.Equal(t, podUsage{cpuMilli: 300, memBytes: 1100000000}, got["a"])
+	assert.Equal(t, podUsage{cpuMilli: 50, memBytes: 1000000000}, got["b"])
+	// nil 快照防御：返回空 map 而非 nil/panic
+	assert.Empty(t, namespaceUsages(nil))
+}
+
+// Test_FormatResourceUsage 用量格式化：CPU 固定 "%d m"，内存走 humanize.Bytes（十进制基数），
+// 零值输出 "0 m"/"0 B"。
+func Test_FormatResourceUsage(t *testing.T) {
+	cpu, mem := FormatResourceUsage(100, 500000000)
+	assert.Equal(t, "100 m", cpu)
+	assert.Equal(t, "500 MB", mem)
+	cpu, mem = FormatResourceUsage(0, 0)
+	assert.Equal(t, "0 m", cpu)
+	assert.Equal(t, "0 B", mem)
+}
+
+// Test_lastActiveAt 最近活跃时间取命名空间下所有项目 UpdatedAt 的最大值：
+// 无项目返回零值；有项目取最大；nil 项目指针跳过不 panic。
+func Test_lastActiveAt(t *testing.T) {
+	base := time.Date(2026, 8, 20, 10, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name     string
+		projects []*Project
+		want     time.Time
+	}{
+		{name: "无项目返回零值", projects: nil, want: time.Time{}},
+		{name: "空列表返回零值", projects: []*Project{}, want: time.Time{}},
+		{name: "nil 项目跳过返回零值", projects: []*Project{nil}, want: time.Time{}},
+		{
+			name:     "单项目取自身 UpdatedAt",
+			projects: []*Project{{UpdatedAt: base}},
+			want:     base,
+		},
+		{
+			name: "多项目取最大 UpdatedAt",
+			projects: []*Project{
+				{UpdatedAt: base.Add(-2 * time.Hour)},
+				{UpdatedAt: base.Add(3 * time.Hour)},
+				{UpdatedAt: base.Add(-1 * time.Hour)},
+			},
+			want: base.Add(3 * time.Hour),
+		},
+		{
+			name: "nil 项目混入不影响最大值",
+			projects: []*Project{
+				nil,
+				{UpdatedAt: base.Add(time.Hour)},
+				nil,
+				{UpdatedAt: base.Add(-time.Hour)},
+			},
+			want: base.Add(time.Hour),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, lastActiveAt(&Namespace{Projects: tc.projects}))
+		})
+	}
+}
+
+// TestNamespaceBiz_AdminList_RepoError 管理列表失败路径：ListAllAdmin 查询错误原样上抛。
+func TestNamespaceBiz_AdminList_RepoError(t *testing.T) {
+	ns := &fakeNamespaceRepoForNSBiz{listAllAdmin: func(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error) {
+		return nil, errors.New("boom")
+	}}
+	n := nsBizForTest(ns, &fakeK8sRepoForNSBiz{}, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
+
+	items, stats, pag, err := n.AdminList(context.TODO(), &AdminListInput{})
+	assert.Nil(t, items)
+	assert.Nil(t, stats)
+	assert.Nil(t, pag)
+	assert.Error(t, err)
 }
 
 func TestNamespaceBiz_Show_Passthrough(t *testing.T) {

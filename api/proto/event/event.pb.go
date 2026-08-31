@@ -36,7 +36,9 @@ type ListRequest struct {
 	// 与 action_type 同时传入时优先取 action_types
 	ActionTypes []types.EventActionType `protobuf:"varint,5,rep,packed,name=action_types,json=actionTypes,proto3,enum=types.EventActionType" json:"action_types,omitempty"`
 	// 模糊搜索 message 和 username
-	Search        string `protobuf:"bytes,4,opt,name=search,proto3" json:"search,omitempty"`
+	Search string `protobuf:"bytes,4,opt,name=search,proto3" json:"search,omitempty"`
+	// all：管理员显式 opt-in 查看全部用户事件（默认收敛到本人，最小权限）；普通用户传此字段等效无操作
+	All           bool `protobuf:"varint,6,opt,name=all,proto3" json:"all,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -104,6 +106,13 @@ func (x *ListRequest) GetSearch() string {
 		return x.Search
 	}
 	return ""
+}
+
+func (x *ListRequest) GetAll() bool {
+	if x != nil {
+		return x.All
+	}
+	return false
 }
 
 type ListResponse struct {
@@ -258,14 +267,15 @@ var File_proto_event_event_proto protoreflect.FileDescriptor
 
 const file_proto_event_event_proto_rawDesc = "" +
 	"\n" +
-	"\x17proto/event/event.proto\x12\x05event\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\x1a\x17proto/types/types.proto\x1a\x1copenapi/v3/annotations.proto\"\xeb\x01\n" +
+	"\x17proto/event/event.proto\x12\x05event\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\x1a\x17proto/types/types.proto\x1a\x1copenapi/v3/annotations.proto\"\xfd\x01\n" +
 	"\vListRequest\x12\x17\n" +
 	"\x04page\x18\x01 \x01(\x05H\x00R\x04page\x88\x01\x01\x12 \n" +
 	"\tpage_size\x18\x02 \x01(\x05H\x01R\bpageSize\x88\x01\x01\x127\n" +
 	"\vaction_type\x18\x03 \x01(\x0e2\x16.types.EventActionTypeR\n" +
 	"actionType\x129\n" +
 	"\faction_types\x18\x05 \x03(\x0e2\x16.types.EventActionTypeR\vactionTypes\x12\x16\n" +
-	"\x06search\x18\x04 \x01(\tR\x06searchB\a\n" +
+	"\x06search\x18\x04 \x01(\tR\x06search\x12\x10\n" +
+	"\x03all\x18\x06 \x01(\bR\x03allB\a\n" +
 	"\x05_pageB\f\n" +
 	"\n" +
 	"_page_size\"h\n" +

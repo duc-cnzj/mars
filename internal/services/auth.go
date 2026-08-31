@@ -16,13 +16,15 @@ import (
 var _ apiauth.AuthServer = (*authSvc)(nil)
 
 // authSvc 是 apiauth.AuthServer 的 gRPC 实现：提供登录、用户信息、登录设置
-// 与 OIDC 授权码换取，审计事件经 eventBiz 落库，由 NewAuthSvc 构造。
+// 与 OIDC 授权码换取，审计事件经 eventBiz 落库，登录成功后经 userBiz 同步用户投影，
+// 由 NewAuthSvc 构造。
 type authSvc struct {
 	apiauth.UnimplementedAuthServer
 
 	logger   mlog.Logger
 	authBiz  biz.AuthBiz
 	eventBiz biz.EventBiz
+	userBiz  biz.UserBiz
 }
 
 // AuthSvcDeps 收口 NewAuthSvc 的构造依赖，由 wire 按字段注入。
@@ -30,6 +32,7 @@ type AuthSvcDeps struct {
 	EventBiz biz.EventBiz
 	Logger   mlog.Logger
 	AuthBiz  biz.AuthBiz
+	UserBiz  biz.UserBiz
 }
 
 // NewAuthSvc 收口认证服务的构造依赖，由 wire 按字段注入。
@@ -38,6 +41,7 @@ func NewAuthSvc(deps AuthSvcDeps) apiauth.AuthServer {
 		logger:   deps.Logger.WithModule("services/auth"),
 		eventBiz: deps.EventBiz,
 		authBiz:  deps.AuthBiz,
+		userBiz:  deps.UserBiz,
 	}
 }
 
@@ -128,6 +132,12 @@ func (a *authSvc) Exchange(ctx context.Context, request *apiauth.ExchangeRequest
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", userinfo.Name, userinfo.Email),
 		request,
 	)
+	// 登录成功即同步用户投影：不存在则创建、存在则推进最近登录。投影写库失败仅记日志
+	// 不阻断登录——OIDC 凭证已校验、登录事件已落库，users 只是管理投影，该用户下次
+	// 登录会由 SyncLoginUser 自动补回。
+	if err := a.userBiz.SyncLoginUser(ctx, userinfo.Email, userinfo.Name); err != nil {
+		a.logger.ErrorCtx(ctx, err)
+	}
 
 	return &apiauth.ExchangeResponse{
 		Token:     data.Token,

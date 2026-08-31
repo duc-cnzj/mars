@@ -53,6 +53,9 @@ type ListAccessTokenInput struct {
 	Page, PageSize int32
 	WithSoftDelete bool
 	Email          string
+	Search         string
+	// Status 状态过滤：''=不过滤；valid=未撤销且未过期；expired=未撤销但已过期；revoked=已撤销（软删除）。
+	Status string
 }
 
 // GrantAccessTokenInput 是签发 access token 的输入。
@@ -301,6 +304,7 @@ func (ns *Namespace) GetImagePullSecrets() []*types.ImagePullSecret {
 }
 
 // ListNamespaceInput 是 namespace 分页列表输入。
+// Search/PrivateOnly 是管理员后台管理列表的过滤维度，其余场景不传即不过滤。
 type ListNamespaceInput struct {
 	Page     int32
 	PageSize int32
@@ -308,6 +312,10 @@ type ListNamespaceInput struct {
 	Email    string
 	Name     *string
 	IsAdmin  bool
+	// Search 关键词模糊匹配空间名/创建者邮箱。
+	Search string
+	// PrivateOnly 只看私有空间。
+	PrivateOnly bool
 }
 
 // CreateNamespaceInput 是创建 namespace 的输入。

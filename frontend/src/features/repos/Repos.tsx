@@ -12,14 +12,12 @@ import { Input } from '@/components/ui/shadcn/input'
 import { SearchInput } from '@/components/SearchInput'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/shadcn/alert-dialog'
 import {
   Dialog,
@@ -66,6 +64,12 @@ export function Repos() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [togglingId, setTogglingId] = useState(0)
+  // 禁用确认弹窗：null=关闭；非空=确认禁用该仓库（受控弹窗，toggle 成功前不关闭）
+  const [toggleTarget, setToggleTarget] = useState<RepoModel | null>(null)
+  // 删除确认弹窗：null=关闭；非空=确认删除该仓库（受控弹窗，DELETE 成功前不关闭）
+  const [deleteTarget, setDeleteTarget] = useState<RepoModel | null>(null)
+  // 删除进行中（防重复提交；进行中禁止关闭弹窗，失败保持打开可重试）
+  const [deletingId, setDeletingId] = useState(0)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const busyRef = useRef(false)
@@ -73,6 +77,10 @@ export function Repos() {
   /** 上次实际发出的 (debouncedKeyword, page)：刷新完成后的 effect 重跑据此去重，不重复拉第 1 页 */
   const lastKwRef = useRef('')
   const lastPageRef = useRef(0)
+  /** 最新关键词快照（渲染期同步）：fetchList 落地时校验响应是否仍属当前关键词，
+   *  丢弃「旧关键词的追加页晚到」的跨条件污染（对齐 Events reqIdRef / NamespaceManager filterKeyRef） */
+  const kwRef = useRef(debouncedKeyword)
+  kwRef.current = debouncedKeyword
   const hasMore = items.length < count
 
   const [formOpen, setFormOpen] = useState(false)
@@ -107,6 +115,9 @@ export function Repos() {
         })
         if (error) throw new Error(error.message ?? String(error))
         if (!data) return
+        // 过期响应（关键词已变、此响应属于旧条件）：丢弃不落地——触底加载的追加页晚到时
+        // 不能把旧关键词的下一页 append 进新关键词结果，否则跨条件污染持续到下次取数
+        if (kwRef.current !== kw) return
         setItems((prev) => (append ? [...prev, ...data.items] : data.items))
         setCount(data.count)
       } catch (e) {
@@ -218,6 +229,8 @@ export function Repos() {
           ? t('repos.disableSuccess', { name: item.name })
           : t('repos.enableSuccess', { name: item.name }),
       )
+      // 受控弹窗：toggle 成功才关闭（失败保持打开可重试）
+      setToggleTarget(null)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     } finally {
@@ -226,15 +239,21 @@ export function Repos() {
   }
 
   const remove = async (item: RepoModel) => {
+    if (deletingId !== 0) return
+    setDeletingId(item.id)
     try {
       const { error } = await api.DELETE('/api/repos/{id}', {
         params: { path: { id: item.id } },
       })
       if (error) throw new Error(error.message ?? String(error))
       toast.success(t('repos.deleteSuccess', { name: item.name }))
+      // 受控弹窗：DELETE 成功才关闭（失败保持打开可重试）
+      setDeleteTarget(null)
       refresh()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setDeletingId(0)
     }
   }
 
@@ -384,17 +403,31 @@ export function Repos() {
   }, [preview])
 
   return (
-    // 父级 main 是 min-h-screen 下的 flex-1（高度 auto），flex 链没有有界高度，
-    // 用 calc(100dvh - 100px) 让内部滚动容器 flex-1 min-h-0 overflow-y-auto 真正可滚动。
-    <div className="flex h-[calc(100dvh_-_100px)] flex-col gap-3">
+    // 已迁入管理后台（/admin/repos）：父级 AdminLayout 右侧是 min-h-0 flex-1 overflow-y-auto 的有界滚动容器，
+    // 这里用 h-full 填满它，内层列表自行滚动——避免内嵌 calc(100dvh) 自足高度造成双重滚动、面包屑/侧栏随外层滚走。
+    <div className="flex h-full flex-col gap-3">
       {/* 工具栏 */}
       <div className="flex shrink-0 flex-col gap-3">
-        {/* 标题 + 刷新 + 添加 */}
+        {/* 标题 + 搜索 + 刷新 + 导出/导入/添加 */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-[16px] font-semibold text-ink">{t('repos.title')}</h2>
           <div className="flex flex-wrap items-center gap-2">
+            {/* 搜索统一放标题行右上角（对齐 Events/治理/工作台） */}
+            <SearchInput
+              value={keyword}
+              onChange={(v) => {
+                setKeyword(v)
+                setPage(1)
+              }}
+              placeholder={t('repos.searchPlaceholder')}
+              className="max-w-xs"
+            />
             <Button size="sm" variant="outline" disabled={refreshing} onClick={refresh}>
-              <Icon name="refresh" className="size-4" />
+              {refreshing ? (
+                <Icon name="loader" className="size-4 animate-spin" />
+              ) : (
+                <Icon name="refresh" className="size-4" />
+              )}
               {t('common.refresh')}
             </Button>
             <Button size="sm" variant="outline" disabled={exporting} onClick={doExport}>
@@ -431,17 +464,6 @@ export function Repos() {
             />
           </div>
         </div>
-
-        {/* 搜索 */}
-        <SearchInput
-          value={keyword}
-          onChange={(v) => {
-            setKeyword(v)
-            setPage(1)
-          }}
-          placeholder={t('repos.searchPlaceholder')}
-          className="max-w-xs"
-        />
       </div>
 
       {/* 列表：flex 撑满剩余高度，容器内滚动（对齐旧版 div 内无限加载） */}
@@ -525,17 +547,19 @@ export function Repos() {
                 </Button>
                 {item.enabled ? (
                   // 禁用需确认：避免误点直接停掉线上的 repo（启用不弹）
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={togglingId === item.id}
-                      >
-                        {togglingId === item.id && <Icon name="loader" className="size-4 animate-spin" />}
-                        {t('repos.disable')}
-                      </Button>
-                    </AlertDialogTrigger>
+                  <AlertDialog
+                    open={toggleTarget?.id === item.id}
+                    onOpenChange={(o) => !o && togglingId === 0 && setToggleTarget(null)}
+                  >
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={togglingId === item.id}
+                      onClick={() => setToggleTarget(item)}
+                    >
+                      {togglingId === item.id && <Icon name="loader" className="size-4 animate-spin" />}
+                      {t('repos.disable')}
+                    </Button>
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>
@@ -546,13 +570,16 @@ export function Repos() {
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                        <AlertDialogAction
+                        <AlertDialogCancel disabled={togglingId !== 0}>{t('common.cancel')}</AlertDialogCancel>
+                        {/* 普通 Button 而非 AlertDialogAction：后者点击默认关闭弹窗，会「还没禁用成功就消失」 */}
+                        <Button
                           variant="destructive"
+                          disabled={togglingId !== 0}
                           onClick={() => toggle(item)}
                         >
+                          {togglingId === item.id && <Icon name="loader" className="size-4 animate-spin" />}
                           {t('repos.disable')}
-                        </AlertDialogAction>
+                        </Button>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -567,25 +594,25 @@ export function Repos() {
                     {t('repos.enable')}
                   </Button>
                 )}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="destructive">
-                      {t('repos.delete')}
-                    </Button>
-                  </AlertDialogTrigger>
+                <AlertDialog
+                  open={deleteTarget?.id === item.id}
+                  onOpenChange={(o) => !o && deletingId === 0 && setDeleteTarget(null)}
+                >
+                  <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(item)}>
+                    {t('repos.delete')}
+                  </Button>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>{t('repos.deleteConfirm', { name: item.name })}</AlertDialogTitle>
                       <AlertDialogDescription>{t('repos.deleteTip')}</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                      <AlertDialogAction
-                        variant="destructive"
-                        onClick={() => remove(item)}
-                      >
+                      <AlertDialogCancel disabled={deletingId !== 0}>{t('common.cancel')}</AlertDialogCancel>
+                      {/* 普通 Button 而非 AlertDialogAction：后者点击默认关闭弹窗，会「还没删除成功就消失」 */}
+                      <Button variant="destructive" disabled={deletingId !== 0} onClick={() => remove(item)}>
+                        {deletingId === item.id && <Icon name="loader" className="size-4 animate-spin" />}
                         {t('common.delete')}
-                      </AlertDialogAction>
+                      </Button>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>

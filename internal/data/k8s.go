@@ -568,17 +568,20 @@ func (repo *k8sRepo) GetCpuAndMemory(ctx context.Context, list []v1beta1.PodMetr
 		}
 	}
 
-	var cpuStr, memoryStr = "0 m", "0 MB"
-
+	// 无任何可用指标时保持历史默认输出 "0 m"/"0 MB"（区别于纯格式化 0 值的 "0 B"），
+	// 兼容既有调用方"未采集到指标"的展示契约；有指标则委托 biz.FormatResourceUsage
+	// 输出，保证与命名空间管理列表的用量格式同源。
+	if cpu == nil && memory == nil {
+		return "0 m", "0 MB"
+	}
+	cpuMilli, memBytes := int64(0), int64(0)
 	if cpu != nil {
-		cpuStr = fmt.Sprintf("%d m", cpu.MilliValue())
+		cpuMilli = cpu.MilliValue()
 	}
 	if memory != nil {
-		asInt64, _ := memory.AsInt64()
-		memoryStr = humanize.Bytes(uint64(asInt64))
+		memBytes, _ = memory.AsInt64()
 	}
-
-	return cpuStr, memoryStr
+	return biz.FormatResourceUsage(cpuMilli, memBytes)
 }
 
 // GetCpuAndMemoryQuantity 累加单个 Pod 内全部容器的 CPU/内存用量；
@@ -845,6 +848,67 @@ func (repo *k8sRepo) ClusterInfo() *biz.ClusterInfo {
 		RequestCpuRate:    fmt.Sprintf("%.1f%%", rateRequestCpu),
 		RequestMemoryRate: fmt.Sprintf("%.1f%%", rateRequestMemory),
 	}
+}
+
+// ClusterBoard 一次性拉取集群看板快照：节点列表、节点指标、命名空间、全部 Running
+// Pod 与 Pod 指标。任一资源 List 失败即整体上抛（errs.Wrap 自动归类），展示层的
+// 角色/状态派生与 TopN 排序收敛在 biz 纯函数，本方法只做数据获取。
+func (repo *k8sRepo) ClusterBoard(ctx context.Context) (*biz.ClusterBoardData, error) {
+	nodes, err := repo.data.K8s().Client.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errs.Wrap(err, "list cluster board nodes")
+	}
+	nodeMetrics, err := repo.data.K8s().MetricsClient.MetricsV1beta1().NodeMetricses().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errs.Wrap(err, "list cluster board node metrics")
+	}
+	namespaces, err := repo.data.K8s().Client.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errs.Wrap(err, "list cluster board namespaces")
+	}
+	pods, err := repo.data.K8s().Client.CoreV1().Pods("").List(ctx, metav1.ListOptions{
+		FieldSelector: fields.ParseSelectorOrDie("status.phase=Running").String(),
+	})
+	if err != nil {
+		return nil, errs.Wrap(err, "list cluster board pods")
+	}
+	podMetrics, err := repo.data.K8s().MetricsClient.MetricsV1beta1().PodMetricses("").List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errs.Wrap(err, "list cluster board pod metrics")
+	}
+	return &biz.ClusterBoardData{
+		Nodes:       nodes.Items,
+		NodeMetrics: nodeMetrics.Items,
+		Namespaces:  namespaces.Items,
+		Pods:        pods.Items,
+		PodMetrics:  podMetrics.Items,
+	}, nil
+}
+
+// ResourceSnapshot 拉取全部 Running Pod、ReplicaSet 与其 metrics 快照，供空间资源
+// 聚合（requests 取 pod spec、实际用量取 PodMetrics）。ReplicaSet 供项目 pod →
+// Deployment 属主链解析（pod 直接属主是 RS，RS 属主是 Deployment）。比 ClusterBoard
+// 少了节点/命名空间两次 List。
+func (repo *k8sRepo) ResourceSnapshot(ctx context.Context) (*biz.ResourceSnapshotData, error) {
+	pods, err := repo.data.K8s().Client.CoreV1().Pods("").List(ctx, metav1.ListOptions{
+		FieldSelector: fields.ParseSelectorOrDie("status.phase=Running").String(),
+	})
+	if err != nil {
+		return nil, errs.Wrap(err, "list resource board pods")
+	}
+	rss, err := repo.data.K8s().Client.AppsV1().ReplicaSets("").List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errs.Wrap(err, "list resource board replica sets")
+	}
+	podMetrics, err := repo.data.K8s().MetricsClient.MetricsV1beta1().PodMetricses("").List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errs.Wrap(err, "list resource board pod metrics")
+	}
+	return &biz.ResourceSnapshotData{
+		Pods:        pods.Items,
+		ReplicaSets: rss.Items,
+		PodMetrics:  podMetrics.Items,
+	}, nil
 }
 
 // getStatus 按请求率阈值定级：任一超 95 为 bad，超 80 为 not good，否则 health。

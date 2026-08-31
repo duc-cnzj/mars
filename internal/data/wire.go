@@ -1,6 +1,6 @@
 package data
 
-//go:generate go tool mockgen -destination ./mock_repo.go -package data github.com/duc-cnzj/mars/v6/internal/biz ProjectRepo,GitRepo,EventRepo,ChangelogRepo,K8sRepo,FileRepo,RepoRepo,NamespaceRepo,HelmerRepo,Recorder
+//go:generate go tool mockgen -destination ./mock_repo.go -package data github.com/duc-cnzj/mars/v6/internal/biz ProjectRepo,GitRepo,EventRepo,ChangelogRepo,K8sRepo,FileRepo,RepoRepo,NamespaceRepo,HelmerRepo,Recorder,UserRepo
 //go:generate go tool mockgen -destination ./mock_exec_test.go -package data github.com/duc-cnzj/mars/v6/internal/data ExecutorManager,Executor
 //go:generate go tool mockgen -destination ./mock_cache.go -package data github.com/duc-cnzj/mars/v6/internal/data Cache
 
@@ -22,6 +22,7 @@ var WireDataSet = wire.NewSet(
 	NewChangelogRepo,
 	NewAccessTokenRepo,
 	NewEventRepo,
+	NewUserRepo,
 	NewFileRepo,
 	NewGitRepo,
 	NewAuthn,

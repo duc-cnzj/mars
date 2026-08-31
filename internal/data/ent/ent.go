@@ -23,6 +23,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/repo"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/user"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -94,6 +95,7 @@ func checkColumn(t, c string) error {
 			namespace.Table:   namespace.ValidColumn,
 			project.Table:     project.ValidColumn,
 			repo.Table:        repo.ValidColumn,
+			user.Table:        user.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

@@ -2,8 +2,11 @@ package data
 
 import (
 	"context"
+	"strings"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/accesstoken"
@@ -49,7 +52,8 @@ func NewAccessTokenRepo(data dataStore, timer timer.Timer) biz.AccessTokenRepo {
 	return &accessTokenRepo{data: data, timer: timer}
 }
 
-// List 分页查询 access token 列表，支持邮箱过滤；
+// List 分页查询 access token 列表，支持邮箱精确过滤 + 邮箱/创建人显示名模糊搜索（admin 后台
+// 按用户查令牌）+ 状态过滤（valid/expired/revoked，语义见 ListAccessTokenInput.Status 注释）；
 // WithSoftDelete 时跳过软删除过滤，包含已删除记录。
 func (r *accessTokenRepo) List(ctx context.Context, input *biz.ListAccessTokenInput) (out []*biz.AccessToken, pag *pagination.Pagination, err error) {
 	ctx, span := tracer.Start(ctx, "accessTokenRepo/List")
@@ -58,8 +62,30 @@ func (r *accessTokenRepo) List(ctx context.Context, input *biz.ListAccessTokenIn
 	if input.WithSoftDelete {
 		ctx = mixin.SkipSoftDelete(ctx)
 	}
-	query := db.AccessToken.Query().
-		Where(filters.IfEmail(input.Email))
+	query := db.AccessToken.Query().Where(filters.IfEmail(input.Email))
+	// Search：按创建人邮箱或显示名（user_info JSON 的 name 字段）模糊匹配——admin 后台
+	// 「按创建人搜索」搜邮箱/name 都命中（对齐 userRepo.List 的 email OR name 语义）。
+	// name 存于 JSON 列，用 JSON_EXTRACT('$.name') LIKE（大小写不敏感）命中；历史令牌
+	// user_info 缺失/为空时 JSON 提取返回 NULL，NULL LIKE 恒为假，仅邮箱列兜底不误伤。
+	if s := strings.TrimSpace(input.Search); s != "" {
+		query = query.Where(accesstoken.Or(
+			accesstoken.EmailContainsFold(s),
+			func(sel *sql.Selector) {
+				sel.Where(sqljson.StringContains(accesstoken.FieldUserInfo, s, sqljson.Path("name")))
+			},
+		))
+	}
+	// 状态过滤（对齐前端状态标签优先级：已撤销 > 已过期 > 有效）：
+	// valid=未撤销且未过期；expired=未撤销但已过期；revoked=已撤销（软删除优先，即使同时已过期）。
+	// now 取注入时钟保证可测；query 是下方 data 与 count 的共享基座，一处加、两端生效。
+	switch input.Status {
+	case "revoked":
+		query = query.Where(accesstoken.DeletedAtNotNil())
+	case "expired":
+		query = query.Where(accesstoken.DeletedAtIsNil(), accesstoken.ExpiredAtLT(r.timer.Now()))
+	case "valid":
+		query = query.Where(accesstoken.DeletedAtIsNil(), accesstoken.ExpiredAtGTE(r.timer.Now()))
+	}
 
 	tokens, err := query.Clone().
 		Order(ent.Desc(accesstoken.FieldID)).

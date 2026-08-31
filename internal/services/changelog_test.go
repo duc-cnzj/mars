@@ -35,7 +35,7 @@ func newChangelogSvcWithMocks(t *testing.T) (*changelogSvc, *changelogSvcMocks) 
 	s, ok := NewChangelogSvc(ChangelogSvcDeps{
 		ClBiz:     biz.NewChangelogBiz(mocks.clRepo),
 		Logger:    logger,
-		AccessBiz: biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), biz.NewProjectBiz(logger, mocks.projRepo, nil)),
+		AccessBiz: biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), biz.NewProjectBiz(logger, mocks.projRepo, nil, nil)),
 	}).(*changelogSvc)
 	if !ok {
 		panic("NewChangelogSvc returned unexpected type")

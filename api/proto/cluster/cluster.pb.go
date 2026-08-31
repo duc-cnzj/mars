@@ -157,6 +157,695 @@ func (*InfoRequest) Descriptor() ([]byte, []int) {
 	return file_proto_cluster_cluster_proto_rawDescGZIP(), []int{1}
 }
 
+// BoardNode 集群看板节点资源明细（CPU 毫核 / 内存字节）。
+type BoardNode struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// master / worker
+	Role string `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	// Ready / NotReady / SchedulingDisabled
+	Status        string `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	CpuCapacity   int64  `protobuf:"varint,4,opt,name=cpu_capacity,json=cpuCapacity,proto3" json:"cpu_capacity,omitempty"`
+	CpuUsage      int64  `protobuf:"varint,5,opt,name=cpu_usage,json=cpuUsage,proto3" json:"cpu_usage,omitempty"`
+	CpuRequest    int64  `protobuf:"varint,6,opt,name=cpu_request,json=cpuRequest,proto3" json:"cpu_request,omitempty"`
+	MemCapacity   int64  `protobuf:"varint,7,opt,name=mem_capacity,json=memCapacity,proto3" json:"mem_capacity,omitempty"`
+	MemUsage      int64  `protobuf:"varint,8,opt,name=mem_usage,json=memUsage,proto3" json:"mem_usage,omitempty"`
+	MemRequest    int64  `protobuf:"varint,9,opt,name=mem_request,json=memRequest,proto3" json:"mem_request,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BoardNode) Reset() {
+	*x = BoardNode{}
+	mi := &file_proto_cluster_cluster_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BoardNode) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BoardNode) ProtoMessage() {}
+
+func (x *BoardNode) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_cluster_cluster_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BoardNode.ProtoReflect.Descriptor instead.
+func (*BoardNode) Descriptor() ([]byte, []int) {
+	return file_proto_cluster_cluster_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *BoardNode) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *BoardNode) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *BoardNode) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *BoardNode) GetCpuCapacity() int64 {
+	if x != nil {
+		return x.CpuCapacity
+	}
+	return 0
+}
+
+func (x *BoardNode) GetCpuUsage() int64 {
+	if x != nil {
+		return x.CpuUsage
+	}
+	return 0
+}
+
+func (x *BoardNode) GetCpuRequest() int64 {
+	if x != nil {
+		return x.CpuRequest
+	}
+	return 0
+}
+
+func (x *BoardNode) GetMemCapacity() int64 {
+	if x != nil {
+		return x.MemCapacity
+	}
+	return 0
+}
+
+func (x *BoardNode) GetMemUsage() int64 {
+	if x != nil {
+		return x.MemUsage
+	}
+	return 0
+}
+
+func (x *BoardNode) GetMemRequest() int64 {
+	if x != nil {
+		return x.MemRequest
+	}
+	return 0
+}
+
+// BoardNamespace 集群看板命名空间聚合：CPU/内存用量 + Pod 数。
+type BoardNamespace struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	CpuMilli      int64                  `protobuf:"varint,2,opt,name=cpu_milli,json=cpuMilli,proto3" json:"cpu_milli,omitempty"`
+	MemoryBytes   int64                  `protobuf:"varint,3,opt,name=memory_bytes,json=memoryBytes,proto3" json:"memory_bytes,omitempty"`
+	PodCount      int32                  `protobuf:"varint,4,opt,name=pod_count,json=podCount,proto3" json:"pod_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BoardNamespace) Reset() {
+	*x = BoardNamespace{}
+	mi := &file_proto_cluster_cluster_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BoardNamespace) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BoardNamespace) ProtoMessage() {}
+
+func (x *BoardNamespace) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_cluster_cluster_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BoardNamespace.ProtoReflect.Descriptor instead.
+func (*BoardNamespace) Descriptor() ([]byte, []int) {
+	return file_proto_cluster_cluster_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *BoardNamespace) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *BoardNamespace) GetCpuMilli() int64 {
+	if x != nil {
+		return x.CpuMilli
+	}
+	return 0
+}
+
+func (x *BoardNamespace) GetMemoryBytes() int64 {
+	if x != nil {
+		return x.MemoryBytes
+	}
+	return 0
+}
+
+func (x *BoardNamespace) GetPodCount() int32 {
+	if x != nil {
+		return x.PodCount
+	}
+	return 0
+}
+
+// BoardRequest 集群看板请求：top_sort 控制 Top Pod 排行维度（默认按 CPU 用量降序）。
+type BoardRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TopSort       string                 `protobuf:"bytes,1,opt,name=top_sort,json=topSort,proto3" json:"top_sort,omitempty"` // 排行维度：cpu（默认）/ mem；空字符串=按 CPU 降序
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BoardRequest) Reset() {
+	*x = BoardRequest{}
+	mi := &file_proto_cluster_cluster_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BoardRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BoardRequest) ProtoMessage() {}
+
+func (x *BoardRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_cluster_cluster_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BoardRequest.ProtoReflect.Descriptor instead.
+func (*BoardRequest) Descriptor() ([]byte, []int) {
+	return file_proto_cluster_cluster_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *BoardRequest) GetTopSort() string {
+	if x != nil {
+		return x.TopSort
+	}
+	return ""
+}
+
+// BoardPod 集群看板 Top Pod（按 top_sort 维度降序取 N 个，默认 CPU）。
+type BoardPod struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Pod           string                 `protobuf:"bytes,2,opt,name=pod,proto3" json:"pod,omitempty"`
+	CpuMilli      int64                  `protobuf:"varint,3,opt,name=cpu_milli,json=cpuMilli,proto3" json:"cpu_milli,omitempty"`
+	MemoryBytes   int64                  `protobuf:"varint,4,opt,name=memory_bytes,json=memoryBytes,proto3" json:"memory_bytes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BoardPod) Reset() {
+	*x = BoardPod{}
+	mi := &file_proto_cluster_cluster_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BoardPod) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BoardPod) ProtoMessage() {}
+
+func (x *BoardPod) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_cluster_cluster_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BoardPod.ProtoReflect.Descriptor instead.
+func (*BoardPod) Descriptor() ([]byte, []int) {
+	return file_proto_cluster_cluster_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *BoardPod) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
+func (x *BoardPod) GetPod() string {
+	if x != nil {
+		return x.Pod
+	}
+	return ""
+}
+
+func (x *BoardPod) GetCpuMilli() int64 {
+	if x != nil {
+		return x.CpuMilli
+	}
+	return 0
+}
+
+func (x *BoardPod) GetMemoryBytes() int64 {
+	if x != nil {
+		return x.MemoryBytes
+	}
+	return 0
+}
+
+// BoardResponse 集群看板聚合快照：总览 + 节点 + 命名空间 + Top Pod。
+type BoardResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Overview      *websocket.ClusterInfo `protobuf:"bytes,1,opt,name=overview,proto3" json:"overview,omitempty"`
+	Nodes         []*BoardNode           `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	Namespaces    []*BoardNamespace      `protobuf:"bytes,3,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
+	Pods          []*BoardPod            `protobuf:"bytes,4,rep,name=pods,proto3" json:"pods,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BoardResponse) Reset() {
+	*x = BoardResponse{}
+	mi := &file_proto_cluster_cluster_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BoardResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BoardResponse) ProtoMessage() {}
+
+func (x *BoardResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_cluster_cluster_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BoardResponse.ProtoReflect.Descriptor instead.
+func (*BoardResponse) Descriptor() ([]byte, []int) {
+	return file_proto_cluster_cluster_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *BoardResponse) GetOverview() *websocket.ClusterInfo {
+	if x != nil {
+		return x.Overview
+	}
+	return nil
+}
+
+func (x *BoardResponse) GetNodes() []*BoardNode {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+func (x *BoardResponse) GetNamespaces() []*BoardNamespace {
+	if x != nil {
+		return x.Namespaces
+	}
+	return nil
+}
+
+func (x *BoardResponse) GetPods() []*BoardPod {
+	if x != nil {
+		return x.Pods
+	}
+	return nil
+}
+
+// ResourceProject 单命名空间内一个项目的资源申请/实际用量聚合（Pod selectors 匹配）。
+type ResourceProject struct {
+	state           protoimpl.MessageState     `protogen:"open.v1"`
+	Name            string                     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`                                                 // 项目名
+	PodCount        int32                      `protobuf:"varint,2,opt,name=pod_count,json=podCount,proto3" json:"pod_count,omitempty"`                        // 命中该项目的 Running Pod 数
+	CpuRequestMilli int64                      `protobuf:"varint,3,opt,name=cpu_request_milli,json=cpuRequestMilli,proto3" json:"cpu_request_milli,omitempty"` // requests CPU 合计（毫核）
+	CpuUsageMilli   int64                      `protobuf:"varint,4,opt,name=cpu_usage_milli,json=cpuUsageMilli,proto3" json:"cpu_usage_milli,omitempty"`       // 实际用量 CPU 合计（毫核）
+	MemRequestBytes int64                      `protobuf:"varint,5,opt,name=mem_request_bytes,json=memRequestBytes,proto3" json:"mem_request_bytes,omitempty"` // requests 内存合计（字节）
+	MemUsageBytes   int64                      `protobuf:"varint,6,opt,name=mem_usage_bytes,json=memUsageBytes,proto3" json:"mem_usage_bytes,omitempty"`       // 实际用量内存合计（字节）
+	Workloads       []*ResourceProjectWorkload `protobuf:"bytes,7,rep,name=workloads,proto3" json:"workloads,omitempty"`                                       // 项目内各工作负载明细
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ResourceProject) Reset() {
+	*x = ResourceProject{}
+	mi := &file_proto_cluster_cluster_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceProject) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceProject) ProtoMessage() {}
+
+func (x *ResourceProject) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_cluster_cluster_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceProject.ProtoReflect.Descriptor instead.
+func (*ResourceProject) Descriptor() ([]byte, []int) {
+	return file_proto_cluster_cluster_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ResourceProject) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ResourceProject) GetPodCount() int32 {
+	if x != nil {
+		return x.PodCount
+	}
+	return 0
+}
+
+func (x *ResourceProject) GetCpuRequestMilli() int64 {
+	if x != nil {
+		return x.CpuRequestMilli
+	}
+	return 0
+}
+
+func (x *ResourceProject) GetCpuUsageMilli() int64 {
+	if x != nil {
+		return x.CpuUsageMilli
+	}
+	return 0
+}
+
+func (x *ResourceProject) GetMemRequestBytes() int64 {
+	if x != nil {
+		return x.MemRequestBytes
+	}
+	return 0
+}
+
+func (x *ResourceProject) GetMemUsageBytes() int64 {
+	if x != nil {
+		return x.MemUsageBytes
+	}
+	return 0
+}
+
+func (x *ResourceProject) GetWorkloads() []*ResourceProjectWorkload {
+	if x != nil {
+		return x.Workloads
+	}
+	return nil
+}
+
+// ResourceProjectWorkload 项目内单个工作负载（Deployment/StatefulSet/DaemonSet）的
+// 资源申请/实际用量聚合（pod 属主链匹配）。
+type ResourceProjectWorkload struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Kind            string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`                                                 // 工作负载类型：Deployment/StatefulSet/DaemonSet
+	Name            string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                                 // 工作负载名
+	PodCount        int32                  `protobuf:"varint,3,opt,name=pod_count,json=podCount,proto3" json:"pod_count,omitempty"`                        // 命中的 Running Pod 数
+	CpuRequestMilli int64                  `protobuf:"varint,4,opt,name=cpu_request_milli,json=cpuRequestMilli,proto3" json:"cpu_request_milli,omitempty"` // requests CPU 合计（毫核）
+	CpuUsageMilli   int64                  `protobuf:"varint,5,opt,name=cpu_usage_milli,json=cpuUsageMilli,proto3" json:"cpu_usage_milli,omitempty"`       // 实际用量 CPU 合计（毫核）
+	MemRequestBytes int64                  `protobuf:"varint,6,opt,name=mem_request_bytes,json=memRequestBytes,proto3" json:"mem_request_bytes,omitempty"` // requests 内存合计（字节）
+	MemUsageBytes   int64                  `protobuf:"varint,7,opt,name=mem_usage_bytes,json=memUsageBytes,proto3" json:"mem_usage_bytes,omitempty"`       // 实际用量内存合计（字节）
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ResourceProjectWorkload) Reset() {
+	*x = ResourceProjectWorkload{}
+	mi := &file_proto_cluster_cluster_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceProjectWorkload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceProjectWorkload) ProtoMessage() {}
+
+func (x *ResourceProjectWorkload) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_cluster_cluster_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceProjectWorkload.ProtoReflect.Descriptor instead.
+func (*ResourceProjectWorkload) Descriptor() ([]byte, []int) {
+	return file_proto_cluster_cluster_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ResourceProjectWorkload) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *ResourceProjectWorkload) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ResourceProjectWorkload) GetPodCount() int32 {
+	if x != nil {
+		return x.PodCount
+	}
+	return 0
+}
+
+func (x *ResourceProjectWorkload) GetCpuRequestMilli() int64 {
+	if x != nil {
+		return x.CpuRequestMilli
+	}
+	return 0
+}
+
+func (x *ResourceProjectWorkload) GetCpuUsageMilli() int64 {
+	if x != nil {
+		return x.CpuUsageMilli
+	}
+	return 0
+}
+
+func (x *ResourceProjectWorkload) GetMemRequestBytes() int64 {
+	if x != nil {
+		return x.MemRequestBytes
+	}
+	return 0
+}
+
+func (x *ResourceProjectWorkload) GetMemUsageBytes() int64 {
+	if x != nil {
+		return x.MemUsageBytes
+	}
+	return 0
+}
+
+// ResourceNamespace 单命名空间资源聚合：全部 Running Pod 的 requests 与实际用量，
+// 并按项目拆分（namespace 总量 = 空间内所有 pod，不受项目归属影响）。
+type ResourceNamespace struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Name            string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	PodCount        int32                  `protobuf:"varint,2,opt,name=pod_count,json=podCount,proto3" json:"pod_count,omitempty"`
+	CpuRequestMilli int64                  `protobuf:"varint,3,opt,name=cpu_request_milli,json=cpuRequestMilli,proto3" json:"cpu_request_milli,omitempty"`
+	CpuUsageMilli   int64                  `protobuf:"varint,4,opt,name=cpu_usage_milli,json=cpuUsageMilli,proto3" json:"cpu_usage_milli,omitempty"`
+	MemRequestBytes int64                  `protobuf:"varint,5,opt,name=mem_request_bytes,json=memRequestBytes,proto3" json:"mem_request_bytes,omitempty"`
+	MemUsageBytes   int64                  `protobuf:"varint,6,opt,name=mem_usage_bytes,json=memUsageBytes,proto3" json:"mem_usage_bytes,omitempty"`
+	Projects        []*ResourceProject     `protobuf:"bytes,7,rep,name=projects,proto3" json:"projects,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ResourceNamespace) Reset() {
+	*x = ResourceNamespace{}
+	mi := &file_proto_cluster_cluster_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceNamespace) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceNamespace) ProtoMessage() {}
+
+func (x *ResourceNamespace) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_cluster_cluster_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceNamespace.ProtoReflect.Descriptor instead.
+func (*ResourceNamespace) Descriptor() ([]byte, []int) {
+	return file_proto_cluster_cluster_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ResourceNamespace) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ResourceNamespace) GetPodCount() int32 {
+	if x != nil {
+		return x.PodCount
+	}
+	return 0
+}
+
+func (x *ResourceNamespace) GetCpuRequestMilli() int64 {
+	if x != nil {
+		return x.CpuRequestMilli
+	}
+	return 0
+}
+
+func (x *ResourceNamespace) GetCpuUsageMilli() int64 {
+	if x != nil {
+		return x.CpuUsageMilli
+	}
+	return 0
+}
+
+func (x *ResourceNamespace) GetMemRequestBytes() int64 {
+	if x != nil {
+		return x.MemRequestBytes
+	}
+	return 0
+}
+
+func (x *ResourceNamespace) GetMemUsageBytes() int64 {
+	if x != nil {
+		return x.MemUsageBytes
+	}
+	return 0
+}
+
+func (x *ResourceNamespace) GetProjects() []*ResourceProject {
+	if x != nil {
+		return x.Projects
+	}
+	return nil
+}
+
+// ResourceBoardResponse 空间资源管理聚合：全部管理命名空间（含项目明细）。
+type ResourceBoardResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Namespaces    []*ResourceNamespace   `protobuf:"bytes,1,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceBoardResponse) Reset() {
+	*x = ResourceBoardResponse{}
+	mi := &file_proto_cluster_cluster_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceBoardResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceBoardResponse) ProtoMessage() {}
+
+func (x *ResourceBoardResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_cluster_cluster_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceBoardResponse.ProtoReflect.Descriptor instead.
+func (*ResourceBoardResponse) Descriptor() ([]byte, []int) {
+	return file_proto_cluster_cluster_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ResourceBoardResponse) GetNamespaces() []*ResourceNamespace {
+	if x != nil {
+		return x.Namespaces
+	}
+	return nil
+}
+
 var File_proto_cluster_cluster_proto protoreflect.FileDescriptor
 
 const file_proto_cluster_cluster_proto_rawDesc = "" +
@@ -164,14 +853,75 @@ const file_proto_cluster_cluster_proto_rawDesc = "" +
 	"\x1bproto/cluster/cluster.proto\x12\acluster\x1a\x1cgoogle/api/annotations.proto\x1a\x1copenapi/v3/annotations.proto\x1a\x1fproto/websocket/websocket.proto\":\n" +
 	"\fInfoResponse\x12*\n" +
 	"\x04item\x18\x01 \x01(\v2\x16.websocket.ClusterInfoR\x04item\"\r\n" +
-	"\vInfoRequest*O\n" +
+	"\vInfoRequest\"\x8d\x02\n" +
+	"\tBoardNode\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\x12!\n" +
+	"\fcpu_capacity\x18\x04 \x01(\x03R\vcpuCapacity\x12\x1b\n" +
+	"\tcpu_usage\x18\x05 \x01(\x03R\bcpuUsage\x12\x1f\n" +
+	"\vcpu_request\x18\x06 \x01(\x03R\n" +
+	"cpuRequest\x12!\n" +
+	"\fmem_capacity\x18\a \x01(\x03R\vmemCapacity\x12\x1b\n" +
+	"\tmem_usage\x18\b \x01(\x03R\bmemUsage\x12\x1f\n" +
+	"\vmem_request\x18\t \x01(\x03R\n" +
+	"memRequest\"\x81\x01\n" +
+	"\x0eBoardNamespace\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +
+	"\tcpu_milli\x18\x02 \x01(\x03R\bcpuMilli\x12!\n" +
+	"\fmemory_bytes\x18\x03 \x01(\x03R\vmemoryBytes\x12\x1b\n" +
+	"\tpod_count\x18\x04 \x01(\x05R\bpodCount\")\n" +
+	"\fBoardRequest\x12\x19\n" +
+	"\btop_sort\x18\x01 \x01(\tR\atopSort\"z\n" +
+	"\bBoardPod\x12\x1c\n" +
+	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x10\n" +
+	"\x03pod\x18\x02 \x01(\tR\x03pod\x12\x1b\n" +
+	"\tcpu_milli\x18\x03 \x01(\x03R\bcpuMilli\x12!\n" +
+	"\fmemory_bytes\x18\x04 \x01(\x03R\vmemoryBytes\"\xcd\x01\n" +
+	"\rBoardResponse\x122\n" +
+	"\boverview\x18\x01 \x01(\v2\x16.websocket.ClusterInfoR\boverview\x12(\n" +
+	"\x05nodes\x18\x02 \x03(\v2\x12.cluster.BoardNodeR\x05nodes\x127\n" +
+	"\n" +
+	"namespaces\x18\x03 \x03(\v2\x17.cluster.BoardNamespaceR\n" +
+	"namespaces\x12%\n" +
+	"\x04pods\x18\x04 \x03(\v2\x11.cluster.BoardPodR\x04pods\"\xaa\x02\n" +
+	"\x0fResourceProject\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +
+	"\tpod_count\x18\x02 \x01(\x05R\bpodCount\x12*\n" +
+	"\x11cpu_request_milli\x18\x03 \x01(\x03R\x0fcpuRequestMilli\x12&\n" +
+	"\x0fcpu_usage_milli\x18\x04 \x01(\x03R\rcpuUsageMilli\x12*\n" +
+	"\x11mem_request_bytes\x18\x05 \x01(\x03R\x0fmemRequestBytes\x12&\n" +
+	"\x0fmem_usage_bytes\x18\x06 \x01(\x03R\rmemUsageBytes\x12>\n" +
+	"\tworkloads\x18\a \x03(\v2 .cluster.ResourceProjectWorkloadR\tworkloads\"\x86\x02\n" +
+	"\x17ResourceProjectWorkload\x12\x12\n" +
+	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1b\n" +
+	"\tpod_count\x18\x03 \x01(\x05R\bpodCount\x12*\n" +
+	"\x11cpu_request_milli\x18\x04 \x01(\x03R\x0fcpuRequestMilli\x12&\n" +
+	"\x0fcpu_usage_milli\x18\x05 \x01(\x03R\rcpuUsageMilli\x12*\n" +
+	"\x11mem_request_bytes\x18\x06 \x01(\x03R\x0fmemRequestBytes\x12&\n" +
+	"\x0fmem_usage_bytes\x18\a \x01(\x03R\rmemUsageBytes\"\xa2\x02\n" +
+	"\x11ResourceNamespace\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +
+	"\tpod_count\x18\x02 \x01(\x05R\bpodCount\x12*\n" +
+	"\x11cpu_request_milli\x18\x03 \x01(\x03R\x0fcpuRequestMilli\x12&\n" +
+	"\x0fcpu_usage_milli\x18\x04 \x01(\x03R\rcpuUsageMilli\x12*\n" +
+	"\x11mem_request_bytes\x18\x05 \x01(\x03R\x0fmemRequestBytes\x12&\n" +
+	"\x0fmem_usage_bytes\x18\x06 \x01(\x03R\rmemUsageBytes\x124\n" +
+	"\bprojects\x18\a \x03(\v2\x18.cluster.ResourceProjectR\bprojects\"S\n" +
+	"\x15ResourceBoardResponse\x12:\n" +
+	"\n" +
+	"namespaces\x18\x01 \x03(\v2\x1a.cluster.ResourceNamespaceR\n" +
+	"namespaces*O\n" +
 	"\x06Status\x12\x11\n" +
 	"\rStatusUnknown\x10\x00\x12\r\n" +
 	"\tStatusBad\x10\x01\x12\x11\n" +
 	"\rStatusNotGood\x10\x02\x12\x10\n" +
-	"\fStatusHealth\x10\x032y\n" +
+	"\fStatusHealth\x10\x032\x95\x03\n" +
 	"\aCluster\x12n\n" +
-	"\vClusterInfo\x12\x14.cluster.InfoRequest\x1a\x15.cluster.InfoResponse\"2\xbaG\x16\x12\x12查看集群信息Z\x00\x82\xd3\xe4\x93\x02\x13\x12\x11/api/cluster_infoB7Z5github.com/duc-cnzj/mars/api/v6/proto/cluster;clusterb\x06proto3"
+	"\vClusterInfo\x12\x14.cluster.InfoRequest\x1a\x15.cluster.InfoResponse\"2\xbaG\x16\x12\x12查看集群信息Z\x00\x82\xd3\xe4\x93\x02\x13\x12\x11/api/cluster_info\x12\x85\x01\n" +
+	"\fClusterBoard\x12\x15.cluster.BoardRequest\x1a\x16.cluster.BoardResponse\"F\xbaG#\x12!集群资源看板（管理员）\x82\xd3\xe4\x93\x02\x1a\x12\x18/api/admin/cluster/board\x12\x91\x01\n" +
+	"\rResourceBoard\x12\x14.cluster.InfoRequest\x1a\x1e.cluster.ResourceBoardResponse\"J\xbaG#\x12!空间资源管理（管理员）\x82\xd3\xe4\x93\x02\x1e\x12\x1c/api/admin/cluster/resourcesB7Z5github.com/duc-cnzj/mars/api/v6/proto/cluster;clusterb\x06proto3"
 
 var (
 	file_proto_cluster_cluster_proto_rawDescOnce sync.Once
@@ -186,22 +936,42 @@ func file_proto_cluster_cluster_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_cluster_cluster_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_cluster_cluster_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_cluster_cluster_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_proto_cluster_cluster_proto_goTypes = []any{
-	(Status)(0),                   // 0: cluster.Status
-	(*InfoResponse)(nil),          // 1: cluster.InfoResponse
-	(*InfoRequest)(nil),           // 2: cluster.InfoRequest
-	(*websocket.ClusterInfo)(nil), // 3: websocket.ClusterInfo
+	(Status)(0),                     // 0: cluster.Status
+	(*InfoResponse)(nil),            // 1: cluster.InfoResponse
+	(*InfoRequest)(nil),             // 2: cluster.InfoRequest
+	(*BoardNode)(nil),               // 3: cluster.BoardNode
+	(*BoardNamespace)(nil),          // 4: cluster.BoardNamespace
+	(*BoardRequest)(nil),            // 5: cluster.BoardRequest
+	(*BoardPod)(nil),                // 6: cluster.BoardPod
+	(*BoardResponse)(nil),           // 7: cluster.BoardResponse
+	(*ResourceProject)(nil),         // 8: cluster.ResourceProject
+	(*ResourceProjectWorkload)(nil), // 9: cluster.ResourceProjectWorkload
+	(*ResourceNamespace)(nil),       // 10: cluster.ResourceNamespace
+	(*ResourceBoardResponse)(nil),   // 11: cluster.ResourceBoardResponse
+	(*websocket.ClusterInfo)(nil),   // 12: websocket.ClusterInfo
 }
 var file_proto_cluster_cluster_proto_depIdxs = []int32{
-	3, // 0: cluster.InfoResponse.item:type_name -> websocket.ClusterInfo
-	2, // 1: cluster.Cluster.ClusterInfo:input_type -> cluster.InfoRequest
-	1, // 2: cluster.Cluster.ClusterInfo:output_type -> cluster.InfoResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	12, // 0: cluster.InfoResponse.item:type_name -> websocket.ClusterInfo
+	12, // 1: cluster.BoardResponse.overview:type_name -> websocket.ClusterInfo
+	3,  // 2: cluster.BoardResponse.nodes:type_name -> cluster.BoardNode
+	4,  // 3: cluster.BoardResponse.namespaces:type_name -> cluster.BoardNamespace
+	6,  // 4: cluster.BoardResponse.pods:type_name -> cluster.BoardPod
+	9,  // 5: cluster.ResourceProject.workloads:type_name -> cluster.ResourceProjectWorkload
+	8,  // 6: cluster.ResourceNamespace.projects:type_name -> cluster.ResourceProject
+	10, // 7: cluster.ResourceBoardResponse.namespaces:type_name -> cluster.ResourceNamespace
+	2,  // 8: cluster.Cluster.ClusterInfo:input_type -> cluster.InfoRequest
+	5,  // 9: cluster.Cluster.ClusterBoard:input_type -> cluster.BoardRequest
+	2,  // 10: cluster.Cluster.ResourceBoard:input_type -> cluster.InfoRequest
+	1,  // 11: cluster.Cluster.ClusterInfo:output_type -> cluster.InfoResponse
+	7,  // 12: cluster.Cluster.ClusterBoard:output_type -> cluster.BoardResponse
+	11, // 13: cluster.Cluster.ResourceBoard:output_type -> cluster.ResourceBoardResponse
+	11, // [11:14] is the sub-list for method output_type
+	8,  // [8:11] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_proto_cluster_cluster_proto_init() }
@@ -215,7 +985,7 @@ func file_proto_cluster_cluster_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_cluster_cluster_proto_rawDesc), len(file_proto_cluster_cluster_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

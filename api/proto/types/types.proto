@@ -210,6 +210,9 @@ message AccessTokenModel {
   string last_used_at = 5;
   bool   is_deleted   = 6;
   bool   is_expired   = 7;
+  // name：创建人显示名（签发时从用户 user_info 快照）。可能为空（历史令牌/旧数据），
+  // 前端展示回退到 email，避免空串。
+  string name         = 8;
 
   string created_at   = 100;
   string updated_at   = 101;

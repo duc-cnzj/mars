@@ -36,6 +36,157 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/cluster/board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 集群资源看板（管理员）
+         * @description ClusterBoard 集群资源看板（管理员后台）：总览 + 节点/命名空间/Pod 明细聚合快照。
+         *      top_sort 可选，控制 Top Pod 排行维度（cpu 默认 / mem）。
+         */
+        get: operations["Cluster_ClusterBoard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/cluster/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 空间资源管理（管理员）
+         * @description ResourceBoard 空间资源管理（管理员后台）：每个命名空间的 Pod requests/实际用量
+         *      占比聚合，含每空间的项目明细——定位「申请了很多却用不到多少」的空间。
+         */
+        get: operations["Cluster_ResourceBoard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/namespaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 命名空间管理列表（管理员）
+         * @description AdminList 命名空间管理列表（管理员后台）：分页 + 关键词/私有过滤 + 实时 CPU/内存用量。
+         */
+        get: operations["Namespace_AdminList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/projects/liveness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 项目活跃度清单（管理员）
+         * @description Liveness 项目活跃度清单（管理员后台）：按 30/90 天阈值分类活跃/低活跃/僵尸，
+         *      服务端聚合累计部署次数与统计，识别长期无人使用的治理候选项目。
+         */
+        get: operations["Project_Liveness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 平台配置聚合（管理员，只读）
+         * @description Get 只读聚合平台配置（管理员后台）：OIDC / 文件上限 / 部署默认值等。
+         */
+        get: operations["Settings_Get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["User_List"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["User_Sync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{email}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["User_ToggleAdmin"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/exchange": {
         parameters: {
             query?: never;
@@ -1162,8 +1313,87 @@ export interface components {
         "changelog.FindLastChangelogsByProjectIDResponse": {
             items: components["schemas"]["types.ChangelogModel"][];
         };
+        /** @description BoardNamespace 集群看板命名空间聚合：CPU/内存用量 + Pod 数。 */
+        "cluster.BoardNamespace": {
+            name: string;
+            cpuMilli: string;
+            memoryBytes: string;
+            /** Format: int32 */
+            podCount: number;
+        };
+        /** @description BoardNode 集群看板节点资源明细（CPU 毫核 / 内存字节）。 */
+        "cluster.BoardNode": {
+            name: string;
+            /** @description master / worker */
+            role: string;
+            /** @description Ready / NotReady / SchedulingDisabled */
+            status: string;
+            cpuCapacity: string;
+            cpuUsage: string;
+            cpuRequest: string;
+            memCapacity: string;
+            memUsage: string;
+            memRequest: string;
+        };
+        /** @description BoardPod 集群看板 Top Pod（按 top_sort 维度降序取 N 个，默认 CPU）。 */
+        "cluster.BoardPod": {
+            namespace: string;
+            pod: string;
+            cpuMilli: string;
+            memoryBytes: string;
+        };
+        /** @description BoardResponse 集群看板聚合快照：总览 + 节点 + 命名空间 + Top Pod。 */
+        "cluster.BoardResponse": {
+            overview: components["schemas"]["websocket.ClusterInfo"];
+            nodes: components["schemas"]["cluster.BoardNode"][];
+            namespaces: components["schemas"]["cluster.BoardNamespace"][];
+            pods: components["schemas"]["cluster.BoardPod"][];
+        };
         "cluster.InfoResponse": {
             item: components["schemas"]["websocket.ClusterInfo"];
+        };
+        /** @description ResourceBoardResponse 空间资源管理聚合：全部管理命名空间（含项目明细）。 */
+        "cluster.ResourceBoardResponse": {
+            namespaces: components["schemas"]["cluster.ResourceNamespace"][];
+        };
+        /**
+         * @description ResourceNamespace 单命名空间资源聚合：全部 Running Pod 的 requests 与实际用量，
+         *      并按项目拆分（namespace 总量 = 空间内所有 pod，不受项目归属影响）。
+         */
+        "cluster.ResourceNamespace": {
+            name: string;
+            /** Format: int32 */
+            podCount: number;
+            cpuRequestMilli: string;
+            cpuUsageMilli: string;
+            memRequestBytes: string;
+            memUsageBytes: string;
+            projects: components["schemas"]["cluster.ResourceProject"][];
+        };
+        /** @description ResourceProject 单命名空间内一个项目的资源申请/实际用量聚合（Pod selectors 匹配）。 */
+        "cluster.ResourceProject": {
+            name: string;
+            /** Format: int32 */
+            podCount: number;
+            cpuRequestMilli: string;
+            cpuUsageMilli: string;
+            memRequestBytes: string;
+            memUsageBytes: string;
+            workloads: components["schemas"]["cluster.ResourceProjectWorkload"][];
+        };
+        /**
+         * @description ResourceProjectWorkload 项目内单个工作负载（Deployment/StatefulSet/DaemonSet）的
+         *      资源申请/实际用量聚合（pod 属主链匹配）。
+         */
+        "cluster.ResourceProjectWorkload": {
+            kind: string;
+            name: string;
+            /** Format: int32 */
+            podCount: number;
+            cpuRequestMilli: string;
+            cpuUsageMilli: string;
+            memRequestBytes: string;
+            memUsageBytes: string;
         };
         "container.CopyToPodRequest": {
             fileId: string;
@@ -1440,6 +1670,29 @@ export interface components {
             /** Format: int32 */
             length: number;
         };
+        /** @description AdminItem 命名空间管理条目：空间模型（含成员/创建者）+ 实时用量 + 最近活跃时间。 */
+        "namespace.AdminItem": {
+            ns: components["schemas"]["types.NamespaceModel"];
+            /** @description CPU 用量（人类可读，如 "2.1 core"） */
+            cpuUsed: string;
+            /** @description 内存用量（人类可读，如 "18.4 GiB"） */
+            memUsed: string;
+            /** @description 最近活跃时间：空间下所有项目 UpdatedAt 的最大值（RFC3339）；无项目（从未活跃）为空串 */
+            lastActiveAt: string;
+            /** @description 活跃度分类：active（活跃）/ dormant（低活跃）/ zombie（僵尸）；无项目（从未活跃）视为 zombie */
+            livenessKind: string;
+        };
+        "namespace.AdminListResponse": {
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            count: number;
+            items: components["schemas"]["namespace.AdminItem"][];
+            /** @description 活跃度统计（基于 search 命中全量） */
+            stats: components["schemas"]["namespace.LivenessStats"];
+        };
         "namespace.CreateRequest": {
             namespace: string;
             /** @description 已存在则忽略，不会报错 */
@@ -1486,6 +1739,17 @@ export interface components {
             page: number;
             /** Format: int32 */
             pageSize: number;
+        };
+        /** @description LivenessStats 活跃度统计（基于 search 命中全量，不随分页/分类过滤裁剪）。 */
+        "namespace.LivenessStats": {
+            /** Format: int32 */
+            total: number;
+            /** Format: int32 */
+            active: number;
+            /** Format: int32 */
+            dormant: number;
+            /** Format: int32 */
+            zombie: number;
         };
         "namespace.ShowResponse": {
             item: components["schemas"]["types.NamespaceModel"];
@@ -1583,6 +1847,62 @@ export interface components {
             /** Format: int32 */
             count: number;
             items: components["schemas"]["types.ProjectModel"][];
+        };
+        /** @description LivenessItem 单个项目的活跃度条目：标识 + 部署状态/次数 + 最近更新 + 资源占用。 */
+        "project.LivenessItem": {
+            /** Format: int32 */
+            id: number;
+            name: string;
+            namespace: string;
+            repo: string;
+            /**
+             * Format: enum
+             * @description 最近部署状态：StatusDeployed=正常 / StatusDeploying=进行中 / StatusFailed=失败
+             * @enum {string}
+             */
+            deployStatus: ProjectLivenessItemDeployStatus;
+            /**
+             * Format: int32
+             * @description 累计部署次数（changelog 计数）
+             */
+            deployCount: number;
+            gitBranch: string;
+            gitCommit: string;
+            /** @description 最近更新时间 RFC3339（活跃度分类依据） */
+            updatedAt: string;
+            /** @description 最近提交信息（判断代码是否仍有人维护）：提交标题 / 作者 / 时间 RFC3339 */
+            gitCommitTitle: string;
+            gitCommitAuthor: string;
+            gitCommitDate: string;
+            /**
+             * @description 项目资源申请/实际用量（与空间资源聚合同源：按 PodSelectors 匹配 pod，毫核/字节）：
+             *      供治理页量化「僵尸 × 高资源 = 可回收」，资源快照不可用时缺省为 0（非致命降级）。
+             */
+            cpuRequestMilli: string;
+            cpuUsageMilli: string;
+            memRequestBytes: string;
+            memUsageBytes: string;
+        };
+        "project.LivenessResponse": {
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            count: number;
+            stats: components["schemas"]["project.LivenessStats"];
+            items: components["schemas"]["project.LivenessItem"][];
+        };
+        /** @description LivenessStats 活跃度统计（服务端按 30/90 天阈值计算）。 */
+        "project.LivenessStats": {
+            /** Format: int32 */
+            total: number;
+            /** Format: int32 */
+            active: number;
+            /** Format: int32 */
+            dormant: number;
+            /** Format: int32 */
+            zombie: number;
         };
         "project.MemoryCpuAndEndpointsResponse": {
             urls: components["schemas"]["types.ServiceEndpoint"][];
@@ -1729,6 +2049,21 @@ export interface components {
         "repo.UpdateResponse": {
             item: components["schemas"]["types.RepoModel"];
         };
+        /** @description ConfigGroup 一组相关配置。 */
+        "settings.ConfigGroup": {
+            id: string;
+            items: components["schemas"]["settings.ConfigItem"][];
+        };
+        /** @description ConfigItem 单条配置项。 */
+        "settings.ConfigItem": {
+            key: string;
+            value: string;
+            /** @description 敏感配置脱敏展示（如密码/密钥） */
+            masked: boolean;
+        };
+        "settings.GetResponse": {
+            groups: components["schemas"]["settings.ConfigGroup"][];
+        };
         "token.GrantRequest": {
             /** Format: int32 */
             expireSeconds: number;
@@ -1763,6 +2098,11 @@ export interface components {
             lastUsedAt: string;
             isDeleted: boolean;
             isExpired: boolean;
+            /**
+             * @description name：创建人显示名（签发时从用户 user_info 快照）。可能为空（历史令牌/旧数据），
+             *      前端展示回退到 email，避免空串。
+             */
+            name: string;
             createdAt: string;
             updatedAt: string;
             deletedAt: string;
@@ -1943,6 +2283,45 @@ export interface components {
             pending: boolean;
             ready: boolean;
         };
+        "user.ListResponse": {
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            count: number;
+            items: components["schemas"]["user.UserModel"][];
+            stats: components["schemas"]["user.UserStats"];
+        };
+        /** @description SyncUsersResponse 同步完成响应（无返回数据，成功即完成）。 */
+        "user.SyncUsersResponse": Record<string, never>;
+        "user.ToggleAdminRequest": {
+            email: string;
+            admin: boolean;
+        };
+        "user.ToggleAdminResponse": Record<string, never>;
+        /**
+         * @description UserModel 是后台用户管理的单条展示模型：roles 已归一化为 admin/user
+         *      （真实库中 mars_admin=管理员，user=普通用户，展示层统一为 admin/user 两种取值）。
+         */
+        "user.UserModel": {
+            /** Format: int32 */
+            id: number;
+            email: string;
+            name: string;
+            roles: string[];
+            lastLogin: string;
+            createdAt: string;
+        };
+        /** @description UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部三卡。 */
+        "user.UserStats": {
+            /** Format: int32 */
+            total: number;
+            /** Format: int32 */
+            admins: number;
+            /** Format: int32 */
+            regular: number;
+        };
         "version.Response": {
             version: string;
             buildDate: string;
@@ -1987,6 +2366,14 @@ export interface operations {
             query?: {
                 page?: number;
                 pageSize?: number;
+                search?: string;
+                /** @description all：管理员显式 opt-in 查看全部用户令牌（默认收敛到本人，最小权限）；普通用户传此字段等效无操作 */
+                all?: boolean;
+                /**
+                 * @description status：令牌状态过滤（''/缺省=不过滤；valid=有效、expired=已过期、revoked=已撤销）。
+                 *      状态判定以撤销优先（与展示层标签一致：已撤销 > 已过期 > 有效）。
+                 */
+                status?: string;
             };
             header?: never;
             path?: never;
@@ -2100,6 +2487,267 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["token.RevokeResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Cluster_ClusterBoard: {
+        parameters: {
+            query?: {
+                topSort?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["cluster.BoardResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Cluster_ResourceBoard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["cluster.ResourceBoardResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Namespace_AdminList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                /** @description 关键词：匹配空间名/创建者邮箱 */
+                search?: string;
+                /** @description 只看私有空间 */
+                privateOnly?: boolean;
+                /** @description 活跃度分类过滤：active/dormant/zombie，空 = 全部 */
+                liveness?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["namespace.AdminListResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Project_Liveness: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                /** @description 关键词：匹配项目名/命名空间名/仓库名 */
+                search?: string;
+                /** @description 活跃度过滤：空 = 全部；active/dormant/zombie = 只看对应活跃度 */
+                liveness?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["project.LivenessResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Settings_Get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["settings.GetResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    User_List: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                search?: string;
+                role?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["user.ListResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    User_Sync: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["user.SyncUsersResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    User_ToggleAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                email: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["user.ToggleAdminRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["user.ToggleAdminResponse"];
                 };
             };
             /** @description Default error response */
@@ -2580,6 +3228,8 @@ export interface operations {
                 actionTypes?: PathsApiEventsGetParametersQueryActionTypes[];
                 /** @description 模糊搜索 message 和 username */
                 search?: string;
+                /** @description all：管理员显式 opt-in 查看全部用户事件（默认收敛到本人，最小权限）；普通用户传此字段等效无操作 */
+                all?: boolean;
             };
             header?: never;
             path?: never;
@@ -4306,6 +4956,12 @@ export enum MarsElementType {
     ElementTypeNumberRadio = "ElementTypeNumberRadio"
 }
 export enum ProjectCheckApplyStatusResponseStatus {
+    StatusUnknown = "StatusUnknown",
+    StatusDeploying = "StatusDeploying",
+    StatusDeployed = "StatusDeployed",
+    StatusFailed = "StatusFailed"
+}
+export enum ProjectLivenessItemDeployStatus {
     StatusUnknown = "StatusUnknown",
     StatusDeploying = "StatusDeploying",
     StatusDeployed = "StatusDeployed",

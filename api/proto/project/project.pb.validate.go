@@ -3012,3 +3012,523 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MemoryCpuAndEndpointsResponseValidationError{}
+
+// Validate checks the field values on LivenessRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *LivenessRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on LivenessRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// LivenessRequestMultiError, or nil if none found.
+func (m *LivenessRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *LivenessRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Search
+
+	// no validation rules for Liveness
+
+	if m.Page != nil {
+		// no validation rules for Page
+	}
+
+	if m.PageSize != nil {
+		// no validation rules for PageSize
+	}
+
+	if len(errors) > 0 {
+		return LivenessRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// LivenessRequestMultiError is an error wrapping multiple validation errors
+// returned by LivenessRequest.ValidateAll() if the designated constraints
+// aren't met.
+type LivenessRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m LivenessRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m LivenessRequestMultiError) AllErrors() []error { return m }
+
+// LivenessRequestValidationError is the validation error returned by
+// LivenessRequest.Validate if the designated constraints aren't met.
+type LivenessRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e LivenessRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e LivenessRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e LivenessRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e LivenessRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e LivenessRequestValidationError) ErrorName() string { return "LivenessRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e LivenessRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sLivenessRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = LivenessRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = LivenessRequestValidationError{}
+
+// Validate checks the field values on LivenessItem with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *LivenessItem) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on LivenessItem with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in LivenessItemMultiError, or
+// nil if none found.
+func (m *LivenessItem) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *LivenessItem) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for Name
+
+	// no validation rules for Namespace
+
+	// no validation rules for Repo
+
+	// no validation rules for DeployStatus
+
+	// no validation rules for DeployCount
+
+	// no validation rules for GitBranch
+
+	// no validation rules for GitCommit
+
+	// no validation rules for UpdatedAt
+
+	// no validation rules for GitCommitTitle
+
+	// no validation rules for GitCommitAuthor
+
+	// no validation rules for GitCommitDate
+
+	// no validation rules for CpuRequestMilli
+
+	// no validation rules for CpuUsageMilli
+
+	// no validation rules for MemRequestBytes
+
+	// no validation rules for MemUsageBytes
+
+	if len(errors) > 0 {
+		return LivenessItemMultiError(errors)
+	}
+
+	return nil
+}
+
+// LivenessItemMultiError is an error wrapping multiple validation errors
+// returned by LivenessItem.ValidateAll() if the designated constraints aren't met.
+type LivenessItemMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m LivenessItemMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m LivenessItemMultiError) AllErrors() []error { return m }
+
+// LivenessItemValidationError is the validation error returned by
+// LivenessItem.Validate if the designated constraints aren't met.
+type LivenessItemValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e LivenessItemValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e LivenessItemValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e LivenessItemValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e LivenessItemValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e LivenessItemValidationError) ErrorName() string { return "LivenessItemValidationError" }
+
+// Error satisfies the builtin error interface
+func (e LivenessItemValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sLivenessItem.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = LivenessItemValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = LivenessItemValidationError{}
+
+// Validate checks the field values on LivenessStats with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *LivenessStats) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on LivenessStats with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in LivenessStatsMultiError, or
+// nil if none found.
+func (m *LivenessStats) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *LivenessStats) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Total
+
+	// no validation rules for Active
+
+	// no validation rules for Dormant
+
+	// no validation rules for Zombie
+
+	if len(errors) > 0 {
+		return LivenessStatsMultiError(errors)
+	}
+
+	return nil
+}
+
+// LivenessStatsMultiError is an error wrapping multiple validation errors
+// returned by LivenessStats.ValidateAll() if the designated constraints
+// aren't met.
+type LivenessStatsMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m LivenessStatsMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m LivenessStatsMultiError) AllErrors() []error { return m }
+
+// LivenessStatsValidationError is the validation error returned by
+// LivenessStats.Validate if the designated constraints aren't met.
+type LivenessStatsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e LivenessStatsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e LivenessStatsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e LivenessStatsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e LivenessStatsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e LivenessStatsValidationError) ErrorName() string { return "LivenessStatsValidationError" }
+
+// Error satisfies the builtin error interface
+func (e LivenessStatsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sLivenessStats.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = LivenessStatsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = LivenessStatsValidationError{}
+
+// Validate checks the field values on LivenessResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *LivenessResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on LivenessResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// LivenessResponseMultiError, or nil if none found.
+func (m *LivenessResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *LivenessResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Page
+
+	// no validation rules for PageSize
+
+	// no validation rules for Count
+
+	if all {
+		switch v := interface{}(m.GetStats()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, LivenessResponseValidationError{
+					field:  "Stats",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, LivenessResponseValidationError{
+					field:  "Stats",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetStats()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return LivenessResponseValidationError{
+				field:  "Stats",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetItems() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, LivenessResponseValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, LivenessResponseValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return LivenessResponseValidationError{
+					field:  fmt.Sprintf("Items[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return LivenessResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// LivenessResponseMultiError is an error wrapping multiple validation errors
+// returned by LivenessResponse.ValidateAll() if the designated constraints
+// aren't met.
+type LivenessResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m LivenessResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m LivenessResponseMultiError) AllErrors() []error { return m }
+
+// LivenessResponseValidationError is the validation error returned by
+// LivenessResponse.Validate if the designated constraints aren't met.
+type LivenessResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e LivenessResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e LivenessResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e LivenessResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e LivenessResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e LivenessResponseValidationError) ErrorName() string { return "LivenessResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e LivenessResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sLivenessResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = LivenessResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = LivenessResponseValidationError{}

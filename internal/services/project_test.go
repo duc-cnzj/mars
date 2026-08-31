@@ -25,7 +25,9 @@ import (
 	"helm.sh/helm/v3/pkg/storage/driver"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 func TestNewProjectSvc(t *testing.T) {
@@ -750,16 +752,17 @@ func Test_projectSvc_MemoryCpuAndEndpoints_fail2(t *testing.T) {
 // projectSvcMocks 聚合 newProjectSvcWithMocks 创建的全部 mock，测试按字段取用。
 // mocks.ctrl 仅供临时创建额外 mock（如 deploy.NewMockJob(mocks.ctrl)）。
 type projectSvcMocks struct {
-	ctrl        *gomock.Controller
-	projectRepo *data.MockProjectRepo
-	repoRepo    *data.MockRepoRepo
-	gitRepo     *data.MockGitRepo
-	k8sRepo     *data.MockK8sRepo
-	eventRepo   *data.MockEventRepo
-	helmerRepo  *data.MockHelmerRepo
-	nsRepo      *data.MockNamespaceRepo
-	plMgr       *app.MockPluginManager
-	jobManager  *deploy.MockJobManager
+	ctrl          *gomock.Controller
+	projectRepo   *data.MockProjectRepo
+	repoRepo      *data.MockRepoRepo
+	gitRepo       *data.MockGitRepo
+	k8sRepo       *data.MockK8sRepo
+	eventRepo     *data.MockEventRepo
+	helmerRepo    *data.MockHelmerRepo
+	nsRepo        *data.MockNamespaceRepo
+	changelogRepo *data.MockChangelogRepo
+	plMgr         *app.MockPluginManager
+	jobManager    *deploy.MockJobManager
 }
 
 // newProjectSvcWithMocks 构造带全套 mock 的 projectSvc，消除各测试重复的
@@ -768,29 +771,30 @@ func newProjectSvcWithMocks(t *testing.T) (*projectSvc, *projectSvcMocks) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	mocks := &projectSvcMocks{
-		ctrl:        ctrl,
-		projectRepo: data.NewMockProjectRepo(ctrl),
-		repoRepo:    data.NewMockRepoRepo(ctrl),
-		gitRepo:     data.NewMockGitRepo(ctrl),
-		k8sRepo:     data.NewMockK8sRepo(ctrl),
-		eventRepo:   data.NewMockEventRepo(ctrl),
-		helmerRepo:  data.NewMockHelmerRepo(ctrl),
-		nsRepo:      data.NewMockNamespaceRepo(ctrl),
-		plMgr:       app.NewMockPluginManager(ctrl),
-		jobManager:  deploy.NewMockJobManager(ctrl),
+		ctrl:          ctrl,
+		projectRepo:   data.NewMockProjectRepo(ctrl),
+		repoRepo:      data.NewMockRepoRepo(ctrl),
+		gitRepo:       data.NewMockGitRepo(ctrl),
+		k8sRepo:       data.NewMockK8sRepo(ctrl),
+		eventRepo:     data.NewMockEventRepo(ctrl),
+		helmerRepo:    data.NewMockHelmerRepo(ctrl),
+		nsRepo:        data.NewMockNamespaceRepo(ctrl),
+		changelogRepo: data.NewMockChangelogRepo(ctrl),
+		plMgr:         app.NewMockPluginManager(ctrl),
+		jobManager:    deploy.NewMockJobManager(ctrl),
 	}
 	logger := mlog.NewForConfig(nil)
 	s, ok := NewProjectSvc(ProjectSvcDeps{
 		RepoBiz:    biz.NewRepoBiz(mocks.repoRepo),
 		PluginMgr:  mocks.plMgr,
 		JobManager: mocks.jobManager,
-		ProjBiz:    biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo),
+		ProjBiz:    biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo, mocks.changelogRepo),
 		GitBiz:     biz.NewGitBiz(mocks.gitRepo),
 		K8sBiz:     biz.NewK8sBiz(mocks.k8sRepo),
 		EventBiz:   biz.NewEventBiz(mocks.eventRepo),
 		Logger:     logger,
 		DeployBiz:  biz.NewDeployBiz(logger, mocks.projectRepo, mocks.helmerRepo, mocks.eventRepo),
-		AccessBiz:  biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo)),
+		AccessBiz:  biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo, mocks.changelogRepo)),
 	}).(*projectSvc)
 	if !ok {
 		panic("NewProjectSvc returned unexpected type")
@@ -1260,4 +1264,160 @@ func TestEmptyMessager(t *testing.T) {
 
 	// 全部调用后状态不变（无内部计数器/缓冲可泄漏）。
 	assert.Equal(t, int64(0), e.Current())
+}
+
+// ---- 项目活跃度（管理员后台） ----
+
+// TestProjectSvc_Liveness 聚合响应：条目映射（部署次数/命名空间/仓库/commit 信息）+
+// 统计全量 + 资源占用 join（与空间资源同源，按 PodSelectors 匹配 pod）。
+func TestProjectSvc_Liveness(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	now := time.Now()
+	commitDate := now.Add(-36 * time.Hour)
+	mocks.projectRepo.EXPECT().ListLiveness(gomock.Any(), "app").Return([]*biz.Project{
+		{
+			ID: 1, Name: "web", UpdatedAt: now.Add(-10 * 24 * time.Hour),
+			Namespace: &biz.Namespace{Name: "default"}, Repo: &biz.Repo{Name: "web-repo"},
+			GitBranch: "main", GitCommit: "abc123",
+			PodSelectors:    []string{"app=web"},
+			GitCommitTitle:  "fix: rate limit",
+			GitCommitAuthor: "alice@mars.dev",
+			GitCommitDate:   &commitDate,
+		},
+		{ID: 2, Name: "old", UpdatedAt: now.Add(-120 * 24 * time.Hour), Namespace: &biz.Namespace{Name: "legacy"}, Repo: &biz.Repo{Name: "old-repo"}},
+	}, nil)
+	mocks.changelogRepo.EXPECT().CountByProjectIDs(gomock.Any(), 1, 2).Return(map[int]int{1: 7, 2: 0}, nil)
+	// 资源快照：web 项目命中 1 个 Running Pod（app=web 选择器匹配），CPU 申请 500m/用 100m，
+	// 内存申请 256Mi/用 64Mi；old 无 selectors 命中 0 pod，资源缺省保持 0。
+	mocks.k8sRepo.EXPECT().ResourceSnapshot(gomock.Any()).Return(&biz.ResourceSnapshotData{
+		Pods: []corev1.Pod{{
+			ObjectMeta: metav1.ObjectMeta{Name: "web-0", Namespace: "default", Labels: map[string]string{"app": "web"}},
+			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("500m"),
+					corev1.ResourceMemory: resource.MustParse("256Mi"),
+				},
+			}}}},
+		}},
+		PodMetrics: []v1beta1.PodMetrics{{
+			ObjectMeta: metav1.ObjectMeta{Name: "web-0", Namespace: "default"},
+			Containers: []v1beta1.ContainerMetrics{{Usage: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("100m"),
+				corev1.ResourceMemory: resource.MustParse("64Mi"),
+			}}},
+		}},
+	}, nil)
+
+	resp, err := svc.Liveness(newAdminUserCtx(), &project.LivenessRequest{
+		Page:     lo.ToPtr(int32(1)),
+		PageSize: lo.ToPtr(int32(10)),
+		Search:   "app",
+	})
+	assert.NoError(t, err)
+	if assert.NotNil(t, resp) {
+		assert.Equal(t, int32(2), resp.Count)
+		assert.Equal(t, int32(1), resp.Stats.Active)
+		assert.Equal(t, int32(1), resp.Stats.Zombie)
+		if assert.Len(t, resp.Items, 2) {
+			assert.Equal(t, "web", resp.Items[0].Name)
+			assert.Equal(t, "default", resp.Items[0].Namespace)
+			assert.Equal(t, "web-repo", resp.Items[0].Repo)
+			assert.Equal(t, int32(7), resp.Items[0].DeployCount)
+			assert.Equal(t, "main", resp.Items[0].GitBranch)
+			assert.Equal(t, "abc123", resp.Items[0].GitCommit)
+			assert.Equal(t, "fix: rate limit", resp.Items[0].GitCommitTitle)
+			assert.Equal(t, "alice@mars.dev", resp.Items[0].GitCommitAuthor)
+			assert.NotEmpty(t, resp.Items[0].GitCommitDate)
+			assert.NotEmpty(t, resp.Items[0].UpdatedAt)
+			// 资源 join：web 命中 pod，cpu/mem 申请与用量精确落位
+			assert.Equal(t, int64(500), resp.Items[0].CpuRequestMilli)
+			assert.Equal(t, int64(100), resp.Items[0].CpuUsageMilli)
+			assert.Equal(t, int64(268435456), resp.Items[0].MemRequestBytes)
+			assert.Equal(t, int64(67108864), resp.Items[0].MemUsageBytes)
+			// 无 selectors 的项目（old）资源缺省为 0
+			assert.Equal(t, "legacy", resp.Items[1].Namespace)
+			assert.Equal(t, int32(0), resp.Items[1].DeployCount)
+			assert.Equal(t, int64(0), resp.Items[1].CpuRequestMilli)
+			assert.Equal(t, int64(0), resp.Items[1].MemUsageBytes)
+		}
+	}
+}
+
+// TestProjectSvc_Liveness_ResourceSnapshotErr 资源快照失败降级：活跃度主数据保留、
+// 资源字段为 0（补充数据不因指标抖动打崩治理页），错误原地落日志。
+func TestProjectSvc_Liveness_ResourceSnapshotErr(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	now := time.Now()
+	mocks.projectRepo.EXPECT().ListLiveness(gomock.Any(), "").Return([]*biz.Project{
+		{ID: 1, Name: "web", UpdatedAt: now.Add(-10 * 24 * time.Hour), Namespace: &biz.Namespace{Name: "default"}, PodSelectors: []string{"app=web"}},
+	}, nil)
+	mocks.changelogRepo.EXPECT().CountByProjectIDs(gomock.Any(), 1).Return(map[int]int{1: 1}, nil)
+	mocks.k8sRepo.EXPECT().ResourceSnapshot(gomock.Any()).Return(nil, errors.New("metrics down"))
+
+	resp, err := svc.Liveness(newAdminUserCtx(), &project.LivenessRequest{})
+	assert.NoError(t, err)
+	if assert.NotNil(t, resp) && assert.Len(t, resp.Items, 1) {
+		assert.Equal(t, "web", resp.Items[0].Name)
+		assert.Equal(t, int64(0), resp.Items[0].CpuRequestMilli)
+		assert.Equal(t, int64(0), resp.Items[0].MemUsageBytes)
+	}
+}
+
+// TestProjectSvc_Liveness_Err 聚合失败上抛（经 logError 打印）。
+func TestProjectSvc_Liveness_Err(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.projectRepo.EXPECT().ListLiveness(gomock.Any(), "").Return(nil, errors.New("down"))
+	resp, err := svc.Liveness(newAdminUserCtx(), &project.LivenessRequest{})
+	assert.Nil(t, resp)
+	assert.ErrorContains(t, err, "down")
+}
+
+// TestProjectSvc_Liveness_NilNamespace 命名空间为空的活跃度条目守卫：attachLivenessResources
+// 的 nil 守卫 continue 跳过全部项目，len(projects)==0 提前 return——不触达 ResourceSnapshot，
+// 资源字段缺省 0、响应正常返回不 panic。刻意不设 k8sRepo.ResourceSnapshot 期望：gomock 严格
+// 模式在代码误调（early-return 失效）时 fail，反向锁定提前返回语义。
+func TestProjectSvc_Liveness_NilNamespace(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	now := time.Now()
+	mocks.projectRepo.EXPECT().ListLiveness(gomock.Any(), "").Return([]*biz.Project{
+		{ID: 1, Name: "orphan", UpdatedAt: now.Add(-10 * 24 * time.Hour)}, // Namespace == nil
+	}, nil)
+	mocks.changelogRepo.EXPECT().CountByProjectIDs(gomock.Any(), 1).Return(map[int]int{1: 1}, nil)
+
+	resp, err := svc.Liveness(newAdminUserCtx(), &project.LivenessRequest{})
+	assert.NoError(t, err)
+	if assert.NotNil(t, resp) && assert.Len(t, resp.Items, 1) {
+		assert.Equal(t, "orphan", resp.Items[0].Name)
+		assert.Equal(t, "", resp.Items[0].Namespace)
+		assert.Equal(t, int64(0), resp.Items[0].CpuRequestMilli)
+		assert.Equal(t, int64(0), resp.Items[0].MemUsageBytes)
+	}
+}
+
+// TestProjectSvc_Authorize 门禁：仅 Liveness 要求 admin，其余用户方法全部放行 allowlist。
+func TestProjectSvc_Authorize(t *testing.T) {
+	svc, _ := newProjectSvcWithMocks(t)
+	// admin：任何方法放行。
+	ctx, err := svc.Authorize(newAdminUserCtx(), project.Project_Liveness_FullMethodName)
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+	// 非 admin：Liveness（管理员后台）拒绝。
+	_, err = svc.Authorize(newOtherUserCtx(), project.Project_Liveness_FullMethodName)
+	assert.Equal(t, errs.ErrorPermissionDenied, err)
+	// 非 admin：allowlist 内的用户方法全部放行，逐个覆盖防漏。
+	for _, m := range []string{
+		project.Project_List_FullMethodName,
+		project.Project_WebApply_FullMethodName,
+		project.Project_Apply_FullMethodName,
+		project.Project_Show_FullMethodName,
+		project.Project_MemoryCpuAndEndpoints_FullMethodName,
+		project.Project_Delete_FullMethodName,
+		project.Project_Version_FullMethodName,
+		project.Project_AllContainers_FullMethodName,
+		project.Project_CheckApplyStatus_FullMethodName,
+		project.Project_ResourceTree_FullMethodName,
+	} {
+		_, err := svc.Authorize(newOtherUserCtx(), m)
+		assert.NoError(t, err, "方法 %s 应放行普通用户", m)
+	}
 }

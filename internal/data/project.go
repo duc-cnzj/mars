@@ -87,6 +87,43 @@ func (repo *projectRepo) Version(ctx context.Context, id int) (version int, err 
 	return get.Version, nil
 }
 
+// ListLiveness 查询活跃度聚合所需的全部项目：加载仓库/命名空间边，按更新时间倒序，
+// 支持关键词模糊搜索（匹配项目名或命名空间名，不分大小写）。返回全量命中集合，
+// 供 biz 层分类/统计/内存分页（管理员聚合数据量小，统计需全量，repo 不预分页）。
+func (repo *projectRepo) ListLiveness(ctx context.Context, search string) (projects []*biz.Project, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/ListLiveness")
+	defer func() { endSpan(span, err) }()
+	query := repo.data.DB().Project.Query().
+		WithNamespace().
+		WithRepo().
+		Order(ent.Desc(project.FieldUpdatedAt))
+	if search != "" {
+		query = query.Where(project.Or(
+			project.NameContainsFold(search),
+			project.HasNamespaceWith(namespace.NameContainsFold(search)),
+		))
+	}
+	all, err := query.All(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "list project liveness")
+	}
+	return slice.Map(all, toProject), nil
+}
+
+// ListAll 查询全部项目（含命名空间边与 Pod selectors），供空间资源聚合做 pod→项目归属映射。
+func (repo *projectRepo) ListAll(ctx context.Context) (projects []*biz.Project, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/ListAll")
+	defer func() { endSpan(span, err) }()
+	all, err := repo.data.DB().Project.Query().
+		WithNamespace().
+		Order(ent.Desc(project.FieldID)).
+		All(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "list all projects")
+	}
+	return slice.Map(all, toProject), nil
+}
+
 // List 分页查询项目列表；非 admin 只返回其可访问命名空间下的项目，防私有内容泄漏。
 func (repo *projectRepo) List(ctx context.Context, input *biz.ListProjectInput) (projects []*biz.Project, pag *pagination.Pagination, err error) {
 	ctx, span := tracer.Start(ctx, "projectRepo/List")

@@ -131,3 +131,15 @@ export function GuestRoute({ children }: { children: ReactNode }) {
   if (user) return <Navigate to="/" replace />
   return <>{children}</>
 }
+
+/**
+ * 管理员守卫：管理后台路由级门控（mars_admin）。
+ * 嵌套在 RequireAuth 内（用户已登录），仅校验角色；非管理员重定向回首页，
+ * 防止直接敲 URL 绕过下拉入口的可视化隐藏（可见性与可访问性双保险）。
+ */
+export function RequireAdmin({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth()
+  if (loading) return <AuthLoading />
+  if (!user?.roles.includes('mars_admin')) return <Navigate to="/" replace />
+  return <>{children}</>
+}

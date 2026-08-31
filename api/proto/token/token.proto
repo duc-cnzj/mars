@@ -9,8 +9,14 @@ import "proto/types/types.proto";
 option go_package = "github.com/duc-cnzj/mars/api/v6/proto/token;token";
 
 message ListRequest {
-  optional int32 page      = 1;
-  optional int32 page_size = 2;
+  optional int32  page      = 1;
+  optional int32  page_size = 2;
+  string          search    = 3; // 按创建人邮箱模糊搜索（管理员后台按用户查令牌）
+  // all：管理员显式 opt-in 查看全部用户令牌（默认收敛到本人，最小权限）；普通用户传此字段等效无操作
+  bool all = 4;
+  // status：令牌状态过滤（''/缺省=不过滤；valid=有效、expired=已过期、revoked=已撤销）。
+  // 状态判定以撤销优先（与展示层标签一致：已撤销 > 已过期 > 有效）。
+  string status = 5;
 }
 
 message ListResponse {

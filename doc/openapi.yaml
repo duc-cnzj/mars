@@ -22,6 +22,22 @@ paths:
                   schema:
                     type: integer
                     format: int32
+                - name: search
+                  in: query
+                  schema:
+                    type: string
+                - name: all
+                  in: query
+                  description: all：管理员显式 opt-in 查看全部用户令牌（默认收敛到本人，最小权限）；普通用户传此字段等效无操作
+                  schema:
+                    type: boolean
+                - name: status
+                  in: query
+                  description: |-
+                    status：令牌状态过滤（''/缺省=不过滤；valid=有效、expired=已过期、revoked=已撤销）。
+                     状态判定以撤销优先（与展示层标签一致：已撤销 > 已过期 > 有效）。
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -105,6 +121,249 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/token.RevokeResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/admin/cluster/board:
+        get:
+            tags:
+                - Cluster
+            summary: 集群资源看板（管理员）
+            description: |-
+                ClusterBoard 集群资源看板（管理员后台）：总览 + 节点/命名空间/Pod 明细聚合快照。
+                 top_sort 可选，控制 Top Pod 排行维度（cpu 默认 / mem）。
+            operationId: Cluster_ClusterBoard
+            parameters:
+                - name: topSort
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.BoardResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/admin/cluster/resources:
+        get:
+            tags:
+                - Cluster
+            summary: 空间资源管理（管理员）
+            description: |-
+                ResourceBoard 空间资源管理（管理员后台）：每个命名空间的 Pod requests/实际用量
+                 占比聚合，含每空间的项目明细——定位「申请了很多却用不到多少」的空间。
+            operationId: Cluster_ResourceBoard
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.ResourceBoardResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/admin/namespaces:
+        get:
+            tags:
+                - Namespace
+            summary: 命名空间管理列表（管理员）
+            description: AdminList 命名空间管理列表（管理员后台）：分页 + 关键词/私有过滤 + 实时 CPU/内存用量。
+            operationId: Namespace_AdminList
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: search
+                  in: query
+                  description: 关键词：匹配空间名/创建者邮箱
+                  schema:
+                    type: string
+                - name: privateOnly
+                  in: query
+                  description: 只看私有空间
+                  schema:
+                    type: boolean
+                - name: liveness
+                  in: query
+                  description: 活跃度分类过滤：active/dormant/zombie，空 = 全部
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.AdminListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/admin/projects/liveness:
+        get:
+            tags:
+                - Project
+            summary: 项目活跃度清单（管理员）
+            description: |-
+                Liveness 项目活跃度清单（管理员后台）：按 30/90 天阈值分类活跃/低活跃/僵尸，
+                 服务端聚合累计部署次数与统计，识别长期无人使用的治理候选项目。
+            operationId: Project_Liveness
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: search
+                  in: query
+                  description: 关键词：匹配项目名/命名空间名/仓库名
+                  schema:
+                    type: string
+                - name: liveness
+                  in: query
+                  description: 活跃度过滤：空 = 全部；active/dormant/zombie = 只看对应活跃度
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.LivenessResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/admin/settings:
+        get:
+            tags:
+                - Settings
+            summary: 平台配置聚合（管理员，只读）
+            description: Get 只读聚合平台配置（管理员后台）：OIDC / 文件上限 / 部署默认值等。
+            operationId: Settings_Get
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/settings.GetResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/admin/users:
+        get:
+            tags:
+                - User
+            operationId: User_List
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: search
+                  in: query
+                  schema:
+                    type: string
+                - name: role
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.ListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/admin/users/sync:
+        post:
+            tags:
+                - User
+            operationId: User_Sync
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.SyncUsersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/admin/users/{email}/role:
+        put:
+            tags:
+                - User
+            operationId: User_ToggleAdmin
+            parameters:
+                - name: email
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/user.ToggleAdminRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.ToggleAdminResponse'
                 default:
                     description: Default error response
                     content:
@@ -560,6 +819,11 @@ paths:
                   description: 模糊搜索 message 和 username
                   schema:
                     type: string
+                - name: all
+                  in: query
+                  description: all：管理员显式 opt-in 查看全部用户事件（默认收敛到本人，最小权限）；普通用户传此字段等效无操作
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -2072,11 +2336,151 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/types.ChangelogModel'
+        cluster.BoardNamespace:
+            type: object
+            properties:
+                name:
+                    type: string
+                cpuMilli:
+                    type: string
+                memoryBytes:
+                    type: string
+                podCount:
+                    type: integer
+                    format: int32
+            description: BoardNamespace 集群看板命名空间聚合：CPU/内存用量 + Pod 数。
+        cluster.BoardNode:
+            type: object
+            properties:
+                name:
+                    type: string
+                role:
+                    type: string
+                    description: master / worker
+                status:
+                    type: string
+                    description: Ready / NotReady / SchedulingDisabled
+                cpuCapacity:
+                    type: string
+                cpuUsage:
+                    type: string
+                cpuRequest:
+                    type: string
+                memCapacity:
+                    type: string
+                memUsage:
+                    type: string
+                memRequest:
+                    type: string
+            description: BoardNode 集群看板节点资源明细（CPU 毫核 / 内存字节）。
+        cluster.BoardPod:
+            type: object
+            properties:
+                namespace:
+                    type: string
+                pod:
+                    type: string
+                cpuMilli:
+                    type: string
+                memoryBytes:
+                    type: string
+            description: BoardPod 集群看板 Top Pod（按 top_sort 维度降序取 N 个，默认 CPU）。
+        cluster.BoardResponse:
+            type: object
+            properties:
+                overview:
+                    $ref: '#/components/schemas/websocket.ClusterInfo'
+                nodes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.BoardNode'
+                namespaces:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.BoardNamespace'
+                pods:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.BoardPod'
+            description: BoardResponse 集群看板聚合快照：总览 + 节点 + 命名空间 + Top Pod。
         cluster.InfoResponse:
             type: object
             properties:
                 item:
                     $ref: '#/components/schemas/websocket.ClusterInfo'
+        cluster.ResourceBoardResponse:
+            type: object
+            properties:
+                namespaces:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.ResourceNamespace'
+            description: ResourceBoardResponse 空间资源管理聚合：全部管理命名空间（含项目明细）。
+        cluster.ResourceNamespace:
+            type: object
+            properties:
+                name:
+                    type: string
+                podCount:
+                    type: integer
+                    format: int32
+                cpuRequestMilli:
+                    type: string
+                cpuUsageMilli:
+                    type: string
+                memRequestBytes:
+                    type: string
+                memUsageBytes:
+                    type: string
+                projects:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.ResourceProject'
+            description: |-
+                ResourceNamespace 单命名空间资源聚合：全部 Running Pod 的 requests 与实际用量，
+                 并按项目拆分（namespace 总量 = 空间内所有 pod，不受项目归属影响）。
+        cluster.ResourceProject:
+            type: object
+            properties:
+                name:
+                    type: string
+                podCount:
+                    type: integer
+                    format: int32
+                cpuRequestMilli:
+                    type: string
+                cpuUsageMilli:
+                    type: string
+                memRequestBytes:
+                    type: string
+                memUsageBytes:
+                    type: string
+                workloads:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.ResourceProjectWorkload'
+            description: ResourceProject 单命名空间内一个项目的资源申请/实际用量聚合（Pod selectors 匹配）。
+        cluster.ResourceProjectWorkload:
+            type: object
+            properties:
+                kind:
+                    type: string
+                name:
+                    type: string
+                podCount:
+                    type: integer
+                    format: int32
+                cpuRequestMilli:
+                    type: string
+                cpuUsageMilli:
+                    type: string
+                memRequestBytes:
+                    type: string
+                memUsageBytes:
+                    type: string
+            description: |-
+                ResourceProjectWorkload 项目内单个工作负载（Deployment/StatefulSet/DaemonSet）的
+                 资源申请/实际用量聚合（pod 属主链匹配）。
         container.CopyToPodRequest:
             required:
                 - fileId
@@ -2558,6 +2962,44 @@ components:
                 length:
                     type: integer
                     format: int32
+        namespace.AdminItem:
+            type: object
+            properties:
+                ns:
+                    $ref: '#/components/schemas/types.NamespaceModel'
+                cpuUsed:
+                    type: string
+                    description: CPU 用量（人类可读，如 "2.1 core"）
+                memUsed:
+                    type: string
+                    description: 内存用量（人类可读，如 "18.4 GiB"）
+                lastActiveAt:
+                    type: string
+                    description: 最近活跃时间：空间下所有项目 UpdatedAt 的最大值（RFC3339）；无项目（从未活跃）为空串
+                livenessKind:
+                    type: string
+                    description: 活跃度分类：active（活跃）/ dormant（低活跃）/ zombie（僵尸）；无项目（从未活跃）视为 zombie
+            description: AdminItem 命名空间管理条目：空间模型（含成员/创建者）+ 实时用量 + 最近活跃时间。
+        namespace.AdminListResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                count:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/namespace.AdminItem'
+                stats:
+                    allOf:
+                        - $ref: '#/components/schemas/namespace.LivenessStats'
+                    description: 活跃度统计（基于 search 命中全量）
         namespace.CreateRequest:
             required:
                 - namespace
@@ -2636,6 +3078,22 @@ components:
                 pageSize:
                     type: integer
                     format: int32
+        namespace.LivenessStats:
+            type: object
+            properties:
+                total:
+                    type: integer
+                    format: int32
+                active:
+                    type: integer
+                    format: int32
+                dormant:
+                    type: integer
+                    format: int32
+                zombie:
+                    type: integer
+                    format: int32
+            description: LivenessStats 活跃度统计（基于 search 命中全量，不随分页/分类过滤裁剪）。
         namespace.ShowResponse:
             type: object
             properties:
@@ -2813,6 +3271,91 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/types.ProjectModel'
+        project.LivenessItem:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                namespace:
+                    type: string
+                repo:
+                    type: string
+                deployStatus:
+                    enum:
+                        - StatusUnknown
+                        - StatusDeploying
+                        - StatusDeployed
+                        - StatusFailed
+                    type: string
+                    description: 最近部署状态：StatusDeployed=正常 / StatusDeploying=进行中 / StatusFailed=失败
+                    format: enum
+                deployCount:
+                    type: integer
+                    description: 累计部署次数（changelog 计数）
+                    format: int32
+                gitBranch:
+                    type: string
+                gitCommit:
+                    type: string
+                updatedAt:
+                    type: string
+                    description: 最近更新时间 RFC3339（活跃度分类依据）
+                gitCommitTitle:
+                    type: string
+                    description: 最近提交信息（判断代码是否仍有人维护）：提交标题 / 作者 / 时间 RFC3339
+                gitCommitAuthor:
+                    type: string
+                gitCommitDate:
+                    type: string
+                cpuRequestMilli:
+                    type: string
+                    description: |-
+                        项目资源申请/实际用量（与空间资源聚合同源：按 PodSelectors 匹配 pod，毫核/字节）：
+                         供治理页量化「僵尸 × 高资源 = 可回收」，资源快照不可用时缺省为 0（非致命降级）。
+                cpuUsageMilli:
+                    type: string
+                memRequestBytes:
+                    type: string
+                memUsageBytes:
+                    type: string
+            description: LivenessItem 单个项目的活跃度条目：标识 + 部署状态/次数 + 最近更新 + 资源占用。
+        project.LivenessResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                count:
+                    type: integer
+                    format: int32
+                stats:
+                    $ref: '#/components/schemas/project.LivenessStats'
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/project.LivenessItem'
+        project.LivenessStats:
+            type: object
+            properties:
+                total:
+                    type: integer
+                    format: int32
+                active:
+                    type: integer
+                    format: int32
+                dormant:
+                    type: integer
+                    format: int32
+                zombie:
+                    type: integer
+                    format: int32
+            description: LivenessStats 活跃度统计（服务端按 30/90 天阈值计算）。
         project.MemoryCpuAndEndpointsResponse:
             type: object
             properties:
@@ -3073,6 +3616,34 @@ components:
             properties:
                 item:
                     $ref: '#/components/schemas/types.RepoModel'
+        settings.ConfigGroup:
+            type: object
+            properties:
+                id:
+                    type: string
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/settings.ConfigItem'
+            description: ConfigGroup 一组相关配置。
+        settings.ConfigItem:
+            type: object
+            properties:
+                key:
+                    type: string
+                value:
+                    type: string
+                masked:
+                    type: boolean
+                    description: 敏感配置脱敏展示（如密码/密钥）
+            description: ConfigItem 单条配置项。
+        settings.GetResponse:
+            type: object
+            properties:
+                groups:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/settings.ConfigGroup'
         token.GrantRequest:
             type: object
             properties:
@@ -3135,6 +3706,11 @@ components:
                     type: boolean
                 isExpired:
                     type: boolean
+                name:
+                    type: string
+                    description: |-
+                        name：创建人显示名（签发时从用户 user_info 快照）。可能为空（历史令牌/旧数据），
+                         前端展示回退到 email，避免空串。
                 createdAt:
                     type: string
                 updatedAt:
@@ -3489,6 +4065,72 @@ components:
                     type: boolean
                 ready:
                     type: boolean
+        user.ListResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                count:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/user.UserModel'
+                stats:
+                    $ref: '#/components/schemas/user.UserStats'
+        user.SyncUsersResponse:
+            type: object
+            properties: {}
+            description: SyncUsersResponse 同步完成响应（无返回数据，成功即完成）。
+        user.ToggleAdminRequest:
+            type: object
+            properties:
+                email:
+                    type: string
+                admin:
+                    type: boolean
+        user.ToggleAdminResponse:
+            type: object
+            properties: {}
+        user.UserModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                email:
+                    type: string
+                name:
+                    type: string
+                roles:
+                    type: array
+                    items:
+                        type: string
+                lastLogin:
+                    type: string
+                createdAt:
+                    type: string
+            description: |-
+                UserModel 是后台用户管理的单条展示模型：roles 已归一化为 admin/user
+                 （真实库中 mars_admin=管理员，user=普通用户，展示层统一为 admin/user 两种取值）。
+        user.UserStats:
+            type: object
+            properties:
+                total:
+                    type: integer
+                    format: int32
+                admins:
+                    type: integer
+                    format: int32
+                regular:
+                    type: integer
+                    format: int32
+            description: UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部三卡。
         version.Response:
             type: object
             properties:
@@ -3568,4 +4210,6 @@ tags:
     - name: Picture
     - name: Project
     - name: Repo
+    - name: Settings
+    - name: User
     - name: Version

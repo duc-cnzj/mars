@@ -19,6 +19,7 @@ import type { components } from '@/api/schema'
 import { api } from '@/api/client'
 import { toast } from '@/lib/toast'
 import { isMac } from '@/lib/platform'
+import { buildPages } from '@/lib/pagination'
 import { Icon } from '@/components/Icons'
 import { Empty, SkeletonGrid } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
@@ -52,23 +53,6 @@ const MemoizedNamespaceCard = memo(NamespaceCard)
 
 /** 工作台 Tab 选择持久化 key（与旧版 AppContent 的 'active-tabs' 一致） */
 const TABS_KEY = 'active-tabs'
-
-type PageItem = number | '...'
-
-/** 经典省略号分页：首尾固定两页 + 当前页±1，中间用省略号折叠（如 1 2 … 5 6 7 … 99 100）。
- * 总页数 ≤ 5 时全量展示——省略号折叠不省空间，直接列全。 */
-function buildPages(page: number, total: number): PageItem[] {
-  if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1)
-  const items: PageItem[] = []
-  const start = Math.max(3, page - 1)
-  const end = Math.min(total - 2, page + 1)
-  items.push(1, 2)
-  if (start > 3) items.push('...')
-  for (let i = start; i <= end; i += 1) items.push(i)
-  if (end < total - 2) items.push('...')
-  items.push(total - 1, total)
-  return items
-}
 
 /**
  * 工作台：命名空间列表页。
@@ -399,21 +383,32 @@ export function Workbench() {
       const from = items.findIndex((ns) => String(ns.id) === active.id)
       const to = items.findIndex((ns) => String(ns.id) === over.id)
       if (from === -1 || to === -1) return
-      const prev = items
+      const dragged = items[from]
       const next = arrayMove(items, from, to)
       setItems(next)
       // 不 setCount：count 是后端返回的关注总数（fetchList 的 data.count），拖拽重排不改变
       // 集合大小。next.length 只是已加载条数，部分加载下覆盖会把"共 N 个空间"错算成已加载数
       //（loadAllFavorites 全量时代 items.length===count 才成立，无限滚动后已失配）。
       // 后端 FavoriteSort 契约：firstId=被拖拽空间，secondId=落点位置原空间（移动前位置）。
-      // prev 是移动前数组：prev[from] 即被拖拽项，prev[to] 即落点参照项。
+      // items 是移动前数组：items[from] 即被拖拽项，items[to] 即落点参照项。
       void api
         .PUT('/api/namespaces/favorite/sort', {
-          body: { firstId: prev[from].id, secondId: prev[to].id },
+          body: { firstId: dragged.id, secondId: items[to].id },
         })
         .then(({ error }) => {
           if (error) {
-            setItems(prev)
+            // 失败回滚：只把被拖拽项移回原位，不做整表快照替换——乐观移动与失败之间的窗口里
+            // WS ReloadProjects 的 refreshNamespace 会 in-place 合并该空间（部署状态等）、触底
+            // 追加也可能落地，整表回滚会把它们一并抹掉（对齐 optimisticToggle 只合 favorite 字段、
+            // 不整对象替换的既有约定）。若该空间已被并发删除，原位无可恢复项则保持现状。
+            setItems((cur) => {
+              const idx = cur.findIndex((it) => it.id === dragged.id)
+              if (idx === -1) return cur
+              const restored = [...cur]
+              const [moved] = restored.splice(idx, 1)
+              restored.splice(Math.min(from, restored.length), 0, moved)
+              return restored
+            })
             toast.error(error.message ?? String(error))
           } else {
             toast.success(t('workbench.sortSaved'))

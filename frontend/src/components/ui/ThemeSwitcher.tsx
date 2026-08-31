@@ -75,10 +75,12 @@ export function ThemeSwitcher({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
+        {/* 设计上不需要 focus-visible 焦点环：显式 outline-none 压掉全局 outline、不设 ring——
+            Radix 关闭下拉会把焦点还给 trigger，焦点环会硬切弹出（闪烁）；对齐 UserMenu trigger */}
         <button
           type="button"
           aria-label={t('themes.switchTo')}
-          className={`flex h-8 items-center gap-2 rounded-lg px-2.5 text-[12px] transition-colors ${
+          className={`flex h-8 items-center gap-2 rounded-lg px-2.5 text-[12px] transition-colors focus-visible:outline-none ${
             onAccent
               ? 'border border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/15'
               : 'border border-line bg-raised text-ink hover:bg-surface'

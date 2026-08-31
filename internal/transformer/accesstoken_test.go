@@ -103,3 +103,34 @@ func TestFromAccessToken_NotExpired(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.False(t, result.IsExpired)
 }
+
+func TestFromAccessToken_NameFromUserInfo(t *testing.T) {
+	now := time.Now()
+	at := &biz.AccessToken{
+		Token:     "testToken",
+		Email:     "testEmail",
+		ExpiredAt: now.Add(time.Hour),
+		Usage:     "testUsage",
+		CreatedAt: now,
+		UpdatedAt: now,
+		UserInfo:  biz.UserInfo{Name: "Display Name", Email: "testEmail"},
+	}
+	result := transformer.FromAccessToken(at)
+	assert.NotNil(t, result)
+	assert.Equal(t, "Display Name", result.Name)
+}
+
+func TestFromAccessToken_NameFallbackToEmail(t *testing.T) {
+	now := time.Now()
+	at := &biz.AccessToken{
+		Token:     "testToken",
+		Email:     "testEmail",
+		ExpiredAt: now.Add(time.Hour),
+		Usage:     "testUsage",
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	result := transformer.FromAccessToken(at)
+	assert.NotNil(t, result)
+	assert.Equal(t, "testEmail", result.Name)
+}

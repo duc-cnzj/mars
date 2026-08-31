@@ -2511,3 +2511,201 @@ func TestK8sRepo_GetWorkloadsByManifest(t *testing.T) {
 		assert.Equal(t, "agent", daemonSets[0].Name)
 	}
 }
+
+// TestK8sRepo_ClusterBoard 集群看板快照：一次拉取节点/节点指标/命名空间/Pod/Pod 指标，
+// fake 客户端注入全量数据后断言各切片完整落位。
+func TestK8sRepo_ClusterBoard(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	cpu := resource.MustParse("4")
+	memory := resource.MustParse("8Gi")
+	fc := fake.NewSimpleClientset(
+		&corev1.NodeList{Items: []corev1.Node{
+			{
+				ObjectMeta: metav1.ObjectMeta{Name: "node01"},
+				Status: corev1.NodeStatus{
+					Capacity: corev1.ResourceList{
+						corev1.ResourceCPU:    cpu.DeepCopy(),
+						corev1.ResourceMemory: memory.DeepCopy(),
+					},
+				},
+			},
+			{ObjectMeta: metav1.ObjectMeta{Name: "node02"}},
+		}},
+		&corev1.NamespaceList{Items: []corev1.Namespace{
+			{ObjectMeta: metav1.ObjectMeta{Name: "ns-a"}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "ns-b"}},
+		}},
+		&corev1.PodList{Items: []corev1.Pod{
+			{ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a"}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "p2", Namespace: "ns-b"}},
+		}},
+	)
+	fcm := &fake2.Clientset{}
+	fcm.AddReactor("list", "nodes", func(action testing2.Action) (bool, runtime.Object, error) {
+		return true, &v1beta1.NodeMetricsList{Items: []v1beta1.NodeMetrics{
+			{ObjectMeta: metav1.ObjectMeta{Name: "node01"}, Usage: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("1"),
+				corev1.ResourceMemory: resource.MustParse("1Gi"),
+			}},
+		}}, nil
+	})
+	fcm.AddReactor("list", "pods", func(action testing2.Action) (bool, runtime.Object, error) {
+		return true, &v1beta1.PodMetricsList{Items: []v1beta1.PodMetrics{
+			{ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a"}, Containers: []v1beta1.ContainerMetrics{
+				{Usage: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("500m"),
+					corev1.ResourceMemory: resource.MustParse("256Mi"),
+				}},
+			}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "p2", Namespace: "ns-b"}, Containers: []v1beta1.ContainerMetrics{
+				{Usage: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("250m"),
+					corev1.ResourceMemory: resource.MustParse("128Mi"),
+				}},
+			}},
+		}}, nil
+	})
+	mockData := NewMockDataStore(m)
+	kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData}
+	mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
+
+	got, err := kr.ClusterBoard(context.TODO())
+	assert.NoError(t, err)
+	assert.Len(t, got.Nodes, 2)
+	assert.Len(t, got.NodeMetrics, 1)
+	assert.Len(t, got.Namespaces, 2)
+	assert.Len(t, got.Pods, 2)
+	assert.Len(t, got.PodMetrics, 2)
+	assert.Equal(t, "node01", got.Nodes[0].Name)
+	assert.Equal(t, "ns-a", got.Namespaces[0].Name)
+	assert.Equal(t, "p1", got.PodMetrics[0].Name)
+}
+
+// TestK8sRepo_ClusterBoard_Errors 集群看板各资源 List 失败整体上抛：任一环节失败
+// 返回 errs.Wrap 错误且快照为 nil，不产生半成品。
+func TestK8sRepo_ClusterBoard_Errors(t *testing.T) {
+	cases := []struct {
+		name            string
+		coreResource    string // fc 上注入失败 reactor 的资源；空串表示不注入
+		metricsResource string // fcm 上注入失败 reactor 的资源；空串表示不注入
+	}{
+		{name: "nodes", coreResource: "nodes"},
+		{name: "namespaces", coreResource: "namespaces"},
+		{name: "pods", coreResource: "pods"},
+		{name: "node metrics", metricsResource: "nodes"},
+		{name: "pod metrics", metricsResource: "pods"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := gomock.NewController(t)
+			defer m.Finish()
+			fc := fake.NewSimpleClientset()
+			if tc.coreResource != "" {
+				fc.PrependReactor("list", tc.coreResource, func(action testing2.Action) (bool, runtime.Object, error) {
+					return true, nil, errors.New("core list boom")
+				})
+			}
+			fcm := &fake2.Clientset{}
+			if tc.metricsResource != "" {
+				fcm.PrependReactor("list", tc.metricsResource, func(action testing2.Action) (bool, runtime.Object, error) {
+					return true, nil, errors.New("metrics list boom")
+				})
+			}
+			mockData := NewMockDataStore(m)
+			kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData}
+			mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
+
+			got, err := kr.ClusterBoard(context.TODO())
+			assert.Nil(t, got)
+			assert.Error(t, err)
+		})
+	}
+}
+
+// TestK8sRepo_ResourceSnapshot 空间资源快照：拉 Running Pod、ReplicaSet 与其指标
+// 三段数据，Pod List 必须携带 status.phase=Running 字段选择器，切片完整落位。
+func TestK8sRepo_ResourceSnapshot(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	fc := fake.NewSimpleClientset()
+	fc.PrependReactor("list", "pods", func(action testing2.Action) (bool, runtime.Object, error) {
+		restrictions := action.(testing2.ListAction).GetListRestrictions()
+		assert.Equal(t, "status.phase=Running", restrictions.Fields.String(), "Pod List 必须过滤 Running")
+		return true, &corev1.PodList{Items: []corev1.Pod{
+			{ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a"}, Status: corev1.PodStatus{Phase: corev1.PodRunning}},
+		}}, nil
+	})
+	fc.PrependReactor("list", "replicasets", func(action testing2.Action) (bool, runtime.Object, error) {
+		return true, &appsv1.ReplicaSetList{Items: []appsv1.ReplicaSet{
+			{ObjectMeta: metav1.ObjectMeta{Name: "p1-abc", Namespace: "ns-a"}},
+		}}, nil
+	})
+	fcm := &fake2.Clientset{}
+	fcm.AddReactor("list", "pods", func(action testing2.Action) (bool, runtime.Object, error) {
+		return true, &v1beta1.PodMetricsList{Items: []v1beta1.PodMetrics{
+			{ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a"}, Containers: []v1beta1.ContainerMetrics{
+				{Usage: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("500m"),
+					corev1.ResourceMemory: resource.MustParse("256Mi"),
+				}},
+			}},
+		}}, nil
+	})
+	mockData := NewMockDataStore(m)
+	kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData}
+	mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
+
+	got, err := kr.ResourceSnapshot(context.TODO())
+	assert.NoError(t, err)
+	if assert.Len(t, got.Pods, 1) {
+		assert.Equal(t, "p1", got.Pods[0].Name)
+	}
+	if assert.Len(t, got.ReplicaSets, 1) {
+		assert.Equal(t, "p1-abc", got.ReplicaSets[0].Name)
+	}
+	if assert.Len(t, got.PodMetrics, 1) {
+		assert.Equal(t, "p1", got.PodMetrics[0].Name)
+	}
+}
+
+// TestK8sRepo_ResourceSnapshot_Errors 空间资源快照各 List 失败整体上抛：
+// Pod、ReplicaSet 与 Pod 指标任一环节失败均返回错误且快照为 nil，不产生半成品。
+func TestK8sRepo_ResourceSnapshot_Errors(t *testing.T) {
+	cases := []struct {
+		name            string
+		coreResource    string // fc 上注入失败 reactor 的资源；空串表示不注入
+		metricsResource string // fcm 上注入失败 reactor 的资源；空串表示不注入
+	}{
+		{name: "pods", coreResource: "pods"},
+		{name: "replica sets", coreResource: "replicasets"},
+		{name: "pod metrics", metricsResource: "pods"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := gomock.NewController(t)
+			defer m.Finish()
+			fc := fake.NewSimpleClientset()
+			if tc.coreResource != "" {
+				fc.PrependReactor("list", tc.coreResource, func(action testing2.Action) (bool, runtime.Object, error) {
+					return true, nil, errors.New("core list boom")
+				})
+			}
+			fcm := &fake2.Clientset{}
+			if tc.metricsResource != "" {
+				fcm.PrependReactor("list", tc.metricsResource, func(action testing2.Action) (bool, runtime.Object, error) {
+					return true, nil, errors.New("metrics list boom")
+				})
+			}
+			mockData := NewMockDataStore(m)
+			kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData}
+			mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
+
+			got, err := kr.ResourceSnapshot(context.TODO())
+			assert.Nil(t, got)
+			assert.Error(t, err)
+		})
+	}
+}

@@ -6,25 +6,47 @@ import i18n from '@/i18n'
  * YYYY-MM-DD），时间用当前 locale 的 24 小时制。换 locale 时自动跟随。
  */
 
-/** 日期：YYYY-MM-DD（en-CA 的 Intl 输出即 ISO 风格，无需手动拼串） */
-export function formatDate(ts: string | number | Date): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date(ts))
+/** 解析输入为合法 Date，非法（空串/undefined/无法解析）返回 null，避免 Intl.format 抛 RangeError */
+function toDate(ts: string | number | Date): Date | null {
+  const d = new Date(ts)
+  return Number.isNaN(d.getTime()) ? null : d
 }
 
-/** 日期+时间：YYYY-MM-DD HH:mm:ss */
+/** 日期格式化器缓存（en-CA 固定，单例复用——列表行渲染高频调用，避免每次 new Intl.DateTimeFormat） */
+let dateFmt: Intl.DateTimeFormat | null = null
+/** 时间格式化器缓存：跟随 i18n.language 变化重建（对齐 formatSeconds 的缓存模式） */
+let timeFmtLang: string | null = null
+let timeFmt: Intl.DateTimeFormat | null = null
+
+/** 日期：YYYY-MM-DD（en-CA 的 Intl 输出即 ISO 风格，无需手动拼串）；输入非法时返回空串 */
+export function formatDate(ts: string | number | Date): string {
+  const d = toDate(ts)
+  if (!d) return ''
+  if (!dateFmt) {
+    dateFmt = new Intl.DateTimeFormat('en-CA', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    })
+  }
+  return dateFmt.format(d)
+}
+
+/** 日期+时间：YYYY-MM-DD HH:mm:ss；输入非法时返回空串 */
 export function formatDateTime(ts: string | number | Date): string {
-  const date = formatDate(ts)
-  const time = new Intl.DateTimeFormat(i18n.language, {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).format(new Date(ts))
-  return `${date} ${time}`
+  const d = toDate(ts)
+  if (!d) return ''
+  const date = formatDate(d)
+  if (!timeFmt || timeFmtLang !== i18n.language) {
+    timeFmtLang = i18n.language
+    timeFmt = new Intl.DateTimeFormat(timeFmtLang, {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    })
+  }
+  return `${date} ${timeFmt.format(d)}`
 }
 
 let numFmtLang: string | null = null

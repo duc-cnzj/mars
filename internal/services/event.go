@@ -49,8 +49,9 @@ func normalizeActionTypes(actionType types.EventActionType, actionTypes []types.
 }
 
 // List 分页查询事件（审计日志），支持按动作类型过滤与关键字搜索，按 id 倒序返回。
-// admin 可看全量；普通用户只看操作人邮箱（event.operator_email）为自己的事件，归属
-// 过滤条件由 ctx 用户身份推导注入，不接受请求参数——否则可传他人邮箱枚举全部事件。
+// 默认只看操作人邮箱（event.operator_email）为自己的事件，归属过滤条件由 ctx 用户身份
+// 推导注入，不接受请求参数——否则可传他人邮箱枚举全部事件。仅 admin 显式传 all 才展开
+// 全量（镜像 access_token 的 all 语义），普通用户传 all 等效无操作（仍收敛本人）。
 func (e *eventSvc) List(ctx context.Context, request *event.ListRequest) (*event.ListResponse, error) {
 	page, size := pagination.InitByDefault(request.Page, request.PageSize)
 	input := &biz.ListEventInput{
@@ -61,7 +62,7 @@ func (e *eventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 		OrderIDDesc: lo.ToPtr(true),
 	}
 	user := biz.MustGetUser(ctx)
-	if !user.IsAdmin() {
+	if !user.IsAdmin() || !request.All {
 		// 归属过滤按邮箱等值（filters.IfStrEQ 对空串不过滤）：无邮箱的普通用户
 		// 没有可归属事件，直接返回空列表，防止空串触发"不过滤"语义导致全量可见。
 		if user.Email == "" {

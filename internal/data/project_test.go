@@ -550,7 +550,7 @@ func Test_projectRepo_GetAllPods(t *testing.T) {
 	}})
 	r := NewProjectRepo(logger, data)
 	// 容器拓扑推导已迁入 biz.ProjectBiz，data 侧用真实 k8sRepo 薄包装跑全链路。
-	b := biz.NewProjectBiz(mlog.NewForConfig(nil), r, &k8sRepo{data: data, logger: logger})
+	b := biz.NewProjectBiz(mlog.NewForConfig(nil), r, &k8sRepo{data: data, logger: logger}, nil)
 	project.Update().SetPodSelectors(nil).Save(context.TODO())
 	_, err := b.GetAllActiveContainers(context.TODO(), project.ID)
 
@@ -1030,7 +1030,7 @@ func Test_projectRepo_GetProjectEndpointsInNamespace(t *testing.T) {
 	}
 	mockData.EXPECT().K8s().Return(&K8sClient{}).AnyTimes()
 	mockData.EXPECT().DB().Return(db)
-	b := biz.NewProjectBiz(mlog.NewForConfig(nil), projRepo, k8s)
+	b := biz.NewProjectBiz(mlog.NewForConfig(nil), projRepo, k8s, nil)
 	_, err := b.GetProjectEndpointsInNamespace(context.TODO(), "duc", 1)
 	assert.Nil(t, err)
 }
@@ -1120,4 +1120,94 @@ func TestProjectRepo_ErrorBranches(t *testing.T) {
 		_, err := repo.FindProjectsByIDs(ctx, 1)
 		assert.Error(t, err)
 	})
+
+	t.Run("ListLiveness query error", func(t *testing.T) {
+		_, err := repo.ListLiveness(ctx, "")
+		assert.Error(t, err)
+	})
+
+	t.Run("ListAll query error", func(t *testing.T) {
+		_, err := repo.ListAll(ctx)
+		assert.Error(t, err)
+	})
+}
+
+// TestProjectRepo_ListLiveness 全量 + 搜索：边（命名空间/仓库）加载、按项目名/命名空间名
+// 模糊搜索（不分大小写）、无命中返回空。
+func TestProjectRepo_ListLiveness(t *testing.T) {
+	ctx := context.TODO()
+	logger := mlog.NewForConfig(nil)
+	db, _ := NewSqliteDB()
+	defer db.Close()
+	r := NewProjectRepo(logger, NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+
+	ns := db.Namespace.Create().SetName("team-apps").SetCreatorEmail("a@q.c").SaveX(ctx)
+	legacyNS := db.Namespace.Create().SetName("legacy").SetCreatorEmail("b@q.c").SaveX(ctx)
+	repo1 := createRepo(db)
+	repo2 := createRepo(db)
+	// 项目名命中 "web"；另一项目名不命中但命名空间名命中 "legacy"。
+	db.Project.Create().SetName("web-api").SetGitBranch("main").SetGitCommit("c1").SetCreator("u").SetGitProjectID(1).SetNamespaceID(ns.ID).SetRepoID(repo1.ID).SaveX(ctx)
+	db.Project.Create().SetName("old-svc").SetGitBranch("dev").SetGitCommit("c2").SetCreator("u").SetGitProjectID(2).SetNamespaceID(legacyNS.ID).SetRepoID(repo2.ID).SaveX(ctx)
+
+	t.Run("无搜索返回全量且边已加载", func(t *testing.T) {
+		all, err := r.ListLiveness(ctx, "")
+		assert.NoError(t, err)
+		if assert.Len(t, all, 2) {
+			for _, p := range all {
+				assert.NotNil(t, p.Namespace, "命名空间边应加载")
+				assert.NotNil(t, p.Repo, "仓库边应加载")
+			}
+		}
+	})
+
+	t.Run("按项目名模糊搜索", func(t *testing.T) {
+		byName, err := r.ListLiveness(ctx, "web-api")
+		assert.NoError(t, err)
+		if assert.Len(t, byName, 1) {
+			assert.Equal(t, "web-api", byName[0].Name)
+		}
+	})
+
+	t.Run("按命名空间名搜索不分大小写", func(t *testing.T) {
+		byNS, err := r.ListLiveness(ctx, "LEGACY")
+		assert.NoError(t, err)
+		if assert.Len(t, byNS, 1) {
+			assert.Equal(t, "old-svc", byNS[0].Name)
+			assert.Equal(t, "legacy", byNS[0].Namespace.Name)
+		}
+	})
+
+	t.Run("无命中返回空", func(t *testing.T) {
+		none, err := r.ListLiveness(ctx, "zzz")
+		assert.NoError(t, err)
+		assert.Empty(t, none)
+	})
+}
+
+// TestProjectRepo_ListAll 全量项目（含命名空间边与 Pod selectors）：不分页返回全部
+// 项目并按 id 倒序，供空间资源聚合做 pod→项目归属映射。
+func TestProjectRepo_ListAll(t *testing.T) {
+	ctx := context.TODO()
+	logger := mlog.NewForConfig(nil)
+	db, _ := NewSqliteDB()
+	defer db.Close()
+	r := NewProjectRepo(logger, NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+
+	ns := db.Namespace.Create().SetName("team-apps").SetCreatorEmail("a@q.c").SaveX(ctx)
+	repo1 := createRepo(db)
+	repo2 := createRepo(db)
+	db.Project.Create().SetName("app-1").SetGitBranch("main").SetGitCommit("c1").SetCreator("u").SetGitProjectID(1).SetNamespaceID(ns.ID).SetRepoID(repo1.ID).SetPodSelectors([]string{"app=1"}).SaveX(ctx)
+	db.Project.Create().SetName("app-2").SetGitBranch("main").SetGitCommit("c2").SetCreator("u").SetGitProjectID(2).SetNamespaceID(ns.ID).SetRepoID(repo2.ID).SetPodSelectors([]string{"app=2"}).SaveX(ctx)
+
+	all, err := r.ListAll(ctx)
+	assert.NoError(t, err)
+	if assert.Len(t, all, 2) {
+		// 按 id 倒序：后创建的 app-2 在前。
+		assert.Equal(t, "app-2", all[0].Name)
+		assert.Equal(t, "app-1", all[1].Name)
+		for _, p := range all {
+			assert.Equal(t, "team-apps", p.Namespace.Name, "命名空间边应加载")
+			assert.NotEmpty(t, p.PodSelectors, "Pod selectors 应加载")
+		}
+	}
 }

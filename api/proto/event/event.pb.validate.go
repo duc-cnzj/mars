@@ -65,6 +65,8 @@ func (m *ListRequest) validate(all bool) error {
 
 	// no validation rules for Search
 
+	// no validation rules for All
+
 	if m.Page != nil {
 		// no validation rules for Page
 	}

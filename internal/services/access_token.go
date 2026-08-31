@@ -8,6 +8,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/token"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/transformer"
 	"github.com/duc-cnzj/mars/v6/internal/util/date"
@@ -46,23 +47,47 @@ func NewAccessTokenSvc(deps AccessTokenSvcDeps) token.AccessTokenServer {
 	}
 }
 
-// List 分页列出当前用户的 access token（含软删除，只返回本人数据）。
+// List 分页列出 access token（含软删除）：默认收敛到本人——所有用户（含 admin）都
+// 只见自己创建的令牌（最小权限，延续旧非 admin 契约）；仅 admin 显式传 all 才展开
+// 全部用户令牌的全量视图，非 admin 传 all 等效无操作。admin 判定复用
+// UserInfo.IsAdmin（同 access 门卫判据）。
+// 令牌返回完整值——列表承载复制/撤销/续租三个功能，若返回掩码则三者全废（撤销匹配
+// 0 行假成功、续租 NotFound、复制无效密钥）；安全权衡：完整值只对 admin 全量视图与
+// 本人可见（admin 为最高可信角色，管理操作本就需要完整值），视觉脱敏由前端展示层
+// 承担（列表防肩窥），maskToken 仅保留给审计日志，不让明文密钥落日志。
 func (a *accessTokenSvc) List(ctx context.Context, request *token.ListRequest) (*token.ListResponse, error) {
 	page, size := pagination.InitByDefault(request.Page, request.PageSize)
-	tokens, p, err := a.repo.List(ctx, &biz.ListAccessTokenInput{
+	user := biz.MustGetUser(ctx)
+	// 状态过滤参数边界校验：公开 HTTP 参数，未知值直接 400 拒绝（对齐 valid/expired/revoked 三态），
+	// 避免静默吞错把「打错的值」当成「不过滤」改变查询语义。
+	switch request.Status {
+	case "", "valid", "expired", "revoked":
+	default:
+		return nil, logError(ctx, a.logger, errs.WrapInvalidArgument(fmt.Errorf("unknown access token status %q", request.Status), "list access tokens"))
+	}
+	// 默认：全部用户只看本人（Email=当前用户，延续旧非 admin 契约）；仅 admin 显式传
+	// all 才展开全量（Email="" 不过滤），普通用户传 all 等效无操作（仍收敛到本人）。
+	input := &biz.ListAccessTokenInput{
 		Page:           page,
 		PageSize:       size,
-		Email:          biz.MustGetUser(ctx).Email,
+		Email:          user.Email,
+		Search:         request.Search,
 		WithSoftDelete: true,
-	})
+		Status:         request.Status,
+	}
+	if user.IsAdmin() && request.All {
+		input.Email = ""
+	}
+	tokens, p, err := a.repo.List(ctx, input)
 	if err != nil {
 		return nil, logError(ctx, a.logger, err)
 	}
+	items := slice.Map(tokens, transformer.FromAccessToken)
 
 	return &token.ListResponse{
 		Page:     p.Page,
 		PageSize: p.PageSize,
-		Items:    slice.Map(tokens, transformer.FromAccessToken),
+		Items:    items,
 		Count:    p.Count,
 	}, nil
 }

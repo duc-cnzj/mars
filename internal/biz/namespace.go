@@ -19,6 +19,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
+	"github.com/duc-cnzj/mars/v6/internal/util/slice"
 	v1 "k8s.io/api/core/v1"
 	k8sapierrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -42,6 +43,11 @@ var (
 type NamespaceBiz interface {
 	// List 分页列出 namespace。
 	List(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error)
+	// AdminList 返回命名空间管理列表（管理员后台）：全量空间 + 逐空间实时 CPU/内存用量 +
+	// 活跃度分类/统计，支持活跃度分类过滤与内存分页。
+	AdminList(ctx context.Context, input *AdminListInput) ([]*AdminNamespace, *AdminLivenessStats, *pagination.Pagination, error)
+	// ListAllNames 返回全部 mars 管理命名空间的 k8s 名称（集群看板按此过滤排行/Top Pod）。
+	ListAllNames(ctx context.Context) ([]string, error)
 	// Show 按 id 查询 namespace。
 	Show(ctx context.Context, id int) (*Namespace, error)
 	// Update 校验输入后更新 namespace。
@@ -244,6 +250,136 @@ func (n *namespaceBiz) List(ctx context.Context, input *ListNamespaceInput) ([]*
 	return n.nsRepo.List(ctx, input)
 }
 
+// ListAllNames 返回全部 mars 管理命名空间的 k8s 名称（委托 ListAll 抽名，供集群
+// 看板把排行/Top Pod 收敛到 mars 自己管理的空间）。
+func (n *namespaceBiz) ListAllNames(ctx context.Context) ([]string, error) {
+	namespaces, err := n.nsRepo.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return slice.Map(namespaces, func(ns *Namespace) string { return ns.Name }), nil
+}
+
+// AdminListInput 是命名空间管理列表输入：管理员后台的搜索/私有过滤 + 活跃度分类 + 分页。
+type AdminListInput struct {
+	Page, PageSize int32
+	Search         string
+	PrivateOnly    bool
+	// Liveness 活跃度分类过滤：空 = 全部，否则 active/dormant/zombie。
+	Liveness string
+}
+
+// AdminNamespace 是命名空间管理条目：空间模型 + 实时 CPU/内存用量（人类可读字符串）
+// + 最近活跃时间（空间下所有项目 UpdatedAt 最大值）+ 活跃度分类。
+type AdminNamespace struct {
+	Namespace    *Namespace
+	CpuUsed      string
+	MemUsed      string
+	LastActiveAt time.Time
+	// LivenessKind 活跃度分类（复用项目活跃度阈值：≤30 天活跃 / ≥90 天僵尸；
+	// 无项目即从未活跃，归为僵尸）。
+	LivenessKind LivenessKind
+}
+
+// AdminLivenessStats 是命名空间活跃度统计（基于 search 命中全量，不随分页/分类过滤裁剪）。
+type AdminLivenessStats struct {
+	Total, Active, Dormant, Zombie int
+}
+
+// lastActiveAt 返回命名空间最近活跃时间：其下所有项目 UpdatedAt 的最大值。
+// 无项目（从未部署/从未活跃）返回零值 time.Time，服务端序列化为空串，前端展示「从未活跃」。
+func lastActiveAt(ns *Namespace) time.Time {
+	var latest time.Time
+	for _, p := range ns.Projects {
+		if p != nil && p.UpdatedAt.After(latest) {
+			latest = p.UpdatedAt
+		}
+	}
+	return latest
+}
+
+// namespaceUsages 从资源快照聚合各命名空间的实际 CPU/内存用量（毫核/字节）：
+// 复用 podMetricsUsage 累加全部 Pod 指标，供 AdminList 一次性取全量空间用量，
+// 取代逐空间 live 调用 GetCpuAndMemoryInNamespace 的 N+1 请求。快照为 nil（防御
+// 未知 nil）时返回空 map；快照中未出现的命名空间在查询时得到零值（无运行 Pod）。
+func namespaceUsages(data *ResourceSnapshotData) map[string]podUsage {
+	usages := make(map[string]podUsage)
+	if data == nil {
+		return usages
+	}
+	for _, m := range data.PodMetrics {
+		cpu, memory := podMetricsUsage(m)
+		u := usages[m.Namespace]
+		u.cpuMilli += cpu
+		u.memBytes += memory
+		usages[m.Namespace] = u
+	}
+	return usages
+}
+
+// AdminList 返回命名空间管理列表：全量加载（search/私有过滤 DB 层 + 项目边装配）后，从
+// 单次批量资源快照映射各空间 CPU/内存用量（快照失败降级全零，不阻塞主列表）+ 最近活跃
+// 时间 + 活跃度分类，统计基于全量（不随分页/分类过滤裁剪），再按分类过滤 + 内存分页。
+// 活跃度分类依赖「空间下项目 UpdatedAt 最大值」的跨表聚合，故不复用 DB 分页；
+// 空间量级小，全量 + 单次快照聚合可接受（对齐项目 Liveness 语义）。
+func (n *namespaceBiz) AdminList(ctx context.Context, input *AdminListInput) ([]*AdminNamespace, *AdminLivenessStats, *pagination.Pagination, error) {
+	namespaces, err := n.nsRepo.ListAllAdmin(ctx, input.Search, input.PrivateOnly)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	// 一次性批量拉取全量资源快照，取代逐空间 GetCpuAndMemoryInNamespace 的 N+1 请求。
+	snapshot, err := n.k8sRepo.ResourceSnapshot(ctx)
+	// 用量属补充展示数据：快照失败时降级为全零用量并保留空间主列表，不能因指标抖动
+	// 让治理页整体不可用（对齐 Liveness 资源 enrich 的降级语义）；此分支无法向请求
+	// 返回错误，属日志规范例外的边缘路径，原地打日志避免错误无声丢失。
+	if err != nil {
+		n.logger.ErrorCtx(ctx, "namespace admin list 资源快照失败", err)
+		snapshot = nil
+	}
+	usages := namespaceUsages(snapshot)
+
+	now := time.Now()
+	items := make([]*AdminNamespace, 0, len(namespaces))
+	stats := AdminLivenessStats{Total: len(namespaces)}
+	for _, ns := range namespaces {
+		activeAt := lastActiveAt(ns)
+		kind := classifyLiveness(activeAt, now)
+		switch kind {
+		case LivenessActive:
+			stats.Active++
+		case LivenessDormant:
+			stats.Dormant++
+		default:
+			stats.Zombie++
+		}
+		u := usages[ns.Name]
+		cpu, mem := FormatResourceUsage(u.cpuMilli, u.memBytes)
+		items = append(items, &AdminNamespace{Namespace: ns, CpuUsed: cpu, MemUsed: mem, LastActiveAt: activeAt, LivenessKind: kind})
+	}
+	// 先分类过滤再分页；统计始终基于搜索命中全量，不随分页/过滤裁剪。
+	if input.Liveness != "" {
+		filtered := make([]*AdminNamespace, 0, len(items))
+		for _, it := range items {
+			if string(it.LivenessKind) == input.Liveness {
+				filtered = append(filtered, it)
+			}
+		}
+		items = filtered
+	}
+	count := int32(len(items))
+	offset := pagination.GetPageOffset(input.Page, input.PageSize)
+	if offset < len(items) {
+		end := offset + int(input.PageSize)
+		if end > len(items) {
+			end = len(items)
+		}
+		items = items[offset:end]
+	} else {
+		items = nil
+	}
+	return items, &stats, pagination.NewPagination(input.Page, input.PageSize, int(count)), nil
+}
+
 // Show 按 id 查询 namespace（透传 repo）。
 func (n *namespaceBiz) Show(ctx context.Context, id int) (*Namespace, error) {
 	return n.nsRepo.Show(ctx, id)
@@ -322,6 +458,9 @@ func (n *namespaceBiz) Transfer(ctx context.Context, id int, email string) (*Nam
 type NamespaceRepo interface {
 	// List 分页列出命名空间（可按收藏/名称/访问权限过滤）。
 	List(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error)
+	// ListAllAdmin 全量列出管理员视角的命名空间（search/私有过滤 + 项目边装配，无分页），
+	// 供 AdminList 活跃度聚合：分类依赖项目 UpdatedAt 最大值，须全量载入后内存统计/分页。
+	ListAllAdmin(ctx context.Context, search string, privateOnly bool) ([]*Namespace, error)
 	// Create 创建命名空间。
 	Create(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error)
 	// Show 按 id 查询命名空间。
