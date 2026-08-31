@@ -34,7 +34,12 @@ func LoadFrontendRoutes(mux *mux.Router) {
 		}),
 	)
 	subrouter.Handle("/auth/callback", toWebRoute())
-	subrouter.Handle("/{any}", toWebRoute())
+	// SPA 兜底：/{any:.*} 匹配任意深度的前端路由（如 /admin/cluster），刷新/深链接时
+	// 都回 index.html 交由前端 Router 接管。必须显式给 .* 通配——gorilla 的命名变量
+	// 默认只匹配 [^/]+ 单段路径，多段路由会漏到 grpc-gateway 返回 404（历史 P0：
+	// /admin/* 刷新即 {"code":5,"message":"Not Found"}）。/api /ws /docs 等后端路径
+	// 已在 server 层先于本兜底注册（见 http.go initServer），不会被吞。
+	subrouter.Handle("/{any:.*}", toWebRoute())
 }
 
 func toWebRoute() http.Handler {

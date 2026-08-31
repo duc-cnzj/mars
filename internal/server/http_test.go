@@ -213,7 +213,9 @@ func Test_initServer_RoutesAndClosures(t *testing.T) {
 	grpcRegistry := &app.GrpcRegistry{
 		EndpointFuncs: []app.EndpointFunc{
 			func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error {
-				return mux.HandlePath("GET", "/test/{name}",
+				// 生产环境 grpc-gateway 路由全部挂在 /api 下（proto http 注解约定），
+				// 测试用 /api 前缀与 initServer 的 PathPrefix("/api/") 绑定对齐。
+				return mux.HandlePath("GET", "/api/test/{name}",
 					func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 						w.Write([]byte("gateway:" + pathParams["name"]))
 					})
@@ -238,7 +240,7 @@ func Test_initServer_RoutesAndClosures(t *testing.T) {
 
 	// 经 EndpointFunc 注册的 grpc-gateway 路由：验证 EndpointFuncs 循环装配链路。
 	rr = httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest("GET", "/test/foo", nil))
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/api/test/foo", nil))
 	assert.Equal(t, "gateway:foo", rr.Body.String())
 
 	// /api 前缀与非 /api 前缀：分别覆盖 otelhttp.WithFilter 的 true/false 分支。
@@ -246,6 +248,57 @@ func Test_initServer_RoutesAndClosures(t *testing.T) {
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/api/anything", nil))
 	rr = httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/nope", nil))
+}
+
+// Test_initServer_SpaFallback 覆盖 SPA 兜底路由（历史 P0 回归点）：/admin/* 这类多段前端
+// 路由刷新/深链接时直接 GET 服务器，必须回 index.html 让前端 Router 接管；而 /api 前缀
+// 仍由 grpc-gateway 处理，不能被 SPA 兜底吞掉。
+func Test_initServer_SpaFallback(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	handler := app.NewMockHttpHandler(m)
+	handler.EXPECT().RegisterSwaggerUIRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterWsRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterFileRoute(gomock.Not(nil)).Times(1)
+
+	grpcRegistry := &app.GrpcRegistry{
+		EndpointFuncs: []app.EndpointFunc{
+			func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error {
+				return mux.HandlePath("GET", "/api/version",
+					func(w http.ResponseWriter, r *http.Request, _ map[string]string) {
+						w.Write([]byte(`{"api":"version"}`))
+					})
+			},
+		},
+	}
+
+	httpServer, err := initServer(context.TODO(), &apiGateway{
+		endpoint:     "x",
+		port:         "1000",
+		logger:       mlog.NewForConfig(nil),
+		grpcRegistry: grpcRegistry,
+		handler:      handler,
+	})
+	assert.Nil(t, err)
+	h := httpServer.(*http.Server).Handler
+
+	// 多段前端路由：刷新 /admin/cluster 必须回 index.html（本次 bug 的复现点）。
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/admin/cluster", nil))
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "text/html; charset=utf-8", rr.Header().Get("Content-Type"))
+	assert.Contains(t, rr.Body.String(), "<!doctype html>")
+
+	// 单段前端路由：/admin 同样回 index.html（既有行为不回退）。
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/admin", nil))
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Body.String(), "<!doctype html>")
+
+	// /api 前缀不受 SPA 兜底影响，仍由 grpc-gateway 处理。
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/api/version", nil))
+	assert.Equal(t, `{"api":"version"}`, rr.Body.String())
 }
 
 // Test_apiGateway_shouldTagRPC 覆盖 gRPC 统计过滤判定：白名单内方法不计入（返回 false）、

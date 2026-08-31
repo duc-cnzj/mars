@@ -112,6 +112,8 @@ func (a *apiGateway) setNosniff(ctx context.Context, writer http.ResponseWriter,
 // initServer 装配 HTTP 网关：构建 grpc-gateway ServeMux（headers/forward/JSON 编解码）、
 // grpc 拨号选项（OpenTelemetry 过滤、最大接收消息）、注册 API 路由/文件/ws/swagger/前端路由，
 // 最终用中间件链 + otelhttp 包裹返回可启动的 http.Server。
+// 路由注册顺序是硬约束：/api（gmux）、/ws、swagger 必须先于前端 SPA 兜底（/{any:.*}），
+// 否则会被兜底吞成 index.html；前端 /resources 静态文件与 /{any:.*} 兜底最后注册。
 func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 	router := mux.NewRouter()
 
@@ -152,9 +154,13 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 
 	a.handler.RegisterFileRoute(gmux)
 	a.handler.RegisterWsRoute(router)
-	frontend.LoadFrontendRoutes(router)
+	// /api 前缀统一交给 grpc-gateway：必须先于前端 SPA 兜底注册，否则 /api/xxx
+	// 会被 LoadFrontendRoutes 的 /{any:.*} 兜底吞成 index.html。全仓 HTTP API
+	// 均约定挂在 /api 下（proto http 注解 + 文件路由，见 fileHandler.RegisterFileRoute）。
+	router.PathPrefix("/api/").Handler(gmux)
+	// swagger 文档路由先于前端兜底注册，避免 /docs/ 与 /doc/swagger.json 被 SPA 兜底拦截。
 	a.handler.RegisterSwaggerUIRoute(router)
-	router.PathPrefix("/").Handler(gmux)
+	frontend.LoadFrontendRoutes(router)
 
 	s := &http.Server{
 		Addr: ":" + a.port,
