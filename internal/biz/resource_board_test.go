@@ -6,12 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 // resourceBoardRepoStub 是 K8sBiz.ResourceBoard 测试用的 K8sRepo 假实现：
@@ -29,12 +23,9 @@ func (s *resourceBoardRepoStub) ResourceSnapshot(ctx context.Context, force bool
 // TestK8sBiz_ResourceBoard_Success 成功路径：快照 + 管理集合 + 项目归属聚合成空间板。
 func TestK8sBiz_ResourceBoard_Success(t *testing.T) {
 	stub := &resourceBoardRepoStub{snapshot: &ResourceSnapshotData{
-		Pods: []corev1.Pod{{
-			ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a"},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("500m")},
-			}}}},
-		}},
+		Pods: []*ResourcePod{
+			{Name: "p1", Namespace: "ns-a", CpuRequestMilli: 500},
+		},
 	}}
 	b := NewK8sBiz(stub)
 
@@ -63,48 +54,17 @@ func TestBuildResourceBoard_NilData(t *testing.T) {
 	assert.Empty(t, board.Namespaces)
 }
 
-// TestBuildResourceNamespaces 命名空间聚合：requests 累加 pod spec 容器 Requests、
-// 实际用量累加 PodMetrics，只保留管理集合内的空间，按名排序保证确定性输出。
+// TestBuildResourceNamespaces 命名空间聚合：requests 累加快照 Pod 聚合值、
+// 实际用量累加 PodMetrics 聚合值，只保留管理集合内的空间，按名排序保证确定性输出。
 func TestBuildResourceNamespaces(t *testing.T) {
-	pods := []corev1.Pod{
-		{
-			ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a"},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("500m"),
-					corev1.ResourceMemory: resource.MustParse("256Mi"),
-				},
-			}}}},
-		},
-		{
-			ObjectMeta: metav1.ObjectMeta{Name: "p2", Namespace: "ns-a"},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("1"),
-					corev1.ResourceMemory: resource.MustParse("1Gi"),
-				},
-			}}}},
-		},
-		{
-			ObjectMeta: metav1.ObjectMeta{Name: "p3", Namespace: "kube-system"},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1500m")},
-			}}}},
-		},
+	pods := []*ResourcePod{
+		{Name: "p1", Namespace: "ns-a", CpuRequestMilli: 500, MemRequestBytes: 268435456},
+		{Name: "p2", Namespace: "ns-a", CpuRequestMilli: 1000, MemRequestBytes: 1073741824},
+		{Name: "p3", Namespace: "kube-system", CpuRequestMilli: 1500},
 	}
-	podMetrics := []v1beta1.PodMetrics{
-		{ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a"}, Containers: []v1beta1.ContainerMetrics{
-			{Usage: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("200m"),
-				corev1.ResourceMemory: resource.MustParse("64Mi"),
-			}},
-		}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "p2", Namespace: "ns-a"}, Containers: []v1beta1.ContainerMetrics{
-			{Usage: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("300m"),
-				corev1.ResourceMemory: resource.MustParse("128Mi"),
-			}},
-		}},
+	podMetrics := []*ResourcePodMetric{
+		{Name: "p1", Namespace: "ns-a", CpuMilli: 200, MemBytes: 67108864},
+		{Name: "p2", Namespace: "ns-a", CpuMilli: 300, MemBytes: 134217728},
 	}
 
 	got := buildResourceNamespaces(map[string]bool{"ns-a": true}, pods, podMetrics)
@@ -121,20 +81,14 @@ func TestBuildResourceNamespaces(t *testing.T) {
 // TestBuildResourceNamespaces_MetricOnlyAndUnmanaged 指标环边：只有指标无 Pod 的
 // 管理空间也产出记录（PodCount=0）；非管理空间的指标被跳过（不入板）。
 func TestBuildResourceNamespaces_MetricOnlyAndUnmanaged(t *testing.T) {
-	pods := []corev1.Pod{
-		{ObjectMeta: metav1.ObjectMeta{Name: "p", Namespace: "ns-a"}, Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("500m")},
-		}}}}},
+	pods := []*ResourcePod{
+		{Name: "p", Namespace: "ns-a", CpuRequestMilli: 500},
 	}
-	podMetrics := []v1beta1.PodMetrics{
+	podMetrics := []*ResourcePodMetric{
 		// 管理空间 ns-b：无 Pod 但有指标 → 仍产出记录（PodCount=0）。
-		{ObjectMeta: metav1.ObjectMeta{Name: "m-b", Namespace: "ns-b"}, Containers: []v1beta1.ContainerMetrics{
-			{Usage: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("100m")}},
-		}},
+		{Name: "m-b", Namespace: "ns-b", CpuMilli: 100},
 		// 非管理空间 kube-system：指标被跳过。
-		{ObjectMeta: metav1.ObjectMeta{Name: "m-sys", Namespace: "kube-system"}, Containers: []v1beta1.ContainerMetrics{
-			{Usage: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1500m")}},
-		}},
+		{Name: "m-sys", Namespace: "kube-system", CpuMilli: 1500},
 	}
 
 	got := buildResourceNamespaces(map[string]bool{"ns-a": true, "ns-b": true}, pods, podMetrics)
@@ -150,9 +104,9 @@ func TestBuildResourceNamespaces_MetricOnlyAndUnmanaged(t *testing.T) {
 
 // TestBuildResourceNamespaces_Sorted 排序：多个管理空间按名升序输出。
 func TestBuildResourceNamespaces_Sorted(t *testing.T) {
-	pods := []corev1.Pod{
-		{ObjectMeta: metav1.ObjectMeta{Name: "p", Namespace: "ns-b"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "p", Namespace: "ns-a"}},
+	pods := []*ResourcePod{
+		{Namespace: "ns-b"},
+		{Namespace: "ns-a"},
 	}
 	got := buildResourceNamespaces(map[string]bool{"ns-a": true, "ns-b": true}, pods, nil)
 	assert.Len(t, got, 2)
@@ -163,36 +117,14 @@ func TestBuildResourceNamespaces_Sorted(t *testing.T) {
 // TestAttachResourceProjects 项目拆分：按 PodSelectors 匹配同空间 Pod，requests/用量
 // 各自累加；一个 pod 命中多个项目时每个项目都计入（selectors 重叠场景）。
 func TestAttachResourceProjects(t *testing.T) {
-	pods := []corev1.Pod{
-		{
-			ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a", Labels: map[string]string{"app": "a"}},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("500m"),
-					corev1.ResourceMemory: resource.MustParse("256Mi"),
-				},
-			}}}},
-		},
-		{
-			ObjectMeta: metav1.ObjectMeta{Name: "p2", Namespace: "ns-a", Labels: map[string]string{"app": "b"}},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1")},
-			}}}},
-		},
-		{
-			ObjectMeta: metav1.ObjectMeta{Name: "p3", Namespace: "ns-a", Labels: map[string]string{"app": "c"}},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("2")},
-			}}}},
-		},
+	pods := []*ResourcePod{
+		{Name: "p1", Namespace: "ns-a", Labels: map[string]string{"app": "a"}, CpuRequestMilli: 500, MemRequestBytes: 268435456},
+		{Name: "p2", Namespace: "ns-a", Labels: map[string]string{"app": "b"}, CpuRequestMilli: 1000},
+		{Name: "p3", Namespace: "ns-a", Labels: map[string]string{"app": "c"}, CpuRequestMilli: 2000},
 	}
-	podMetrics := []v1beta1.PodMetrics{
-		{ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a"}, Containers: []v1beta1.ContainerMetrics{
-			{Usage: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("200m")}},
-		}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "p2", Namespace: "ns-a"}, Containers: []v1beta1.ContainerMetrics{
-			{Usage: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("300m")}},
-		}},
+	podMetrics := []*ResourcePodMetric{
+		{Name: "p1", Namespace: "ns-a", CpuMilli: 200},
+		{Name: "p2", Namespace: "ns-a", CpuMilli: 300},
 	}
 	projects := []*Project{
 		{Name: "proj-b", Namespace: &Namespace{Name: "ns-a"}, PodSelectors: []string{"app=b"}},
@@ -219,8 +151,10 @@ func TestAttachResourceProjects(t *testing.T) {
 
 // TestAttachResourceProjects_MultiMatch 重叠 selector：同一 pod 命中两个项目时各自计数。
 func TestAttachResourceProjects_MultiMatch(t *testing.T) {
-	pods := []corev1.Pod{{
-		ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a", Labels: map[string]string{"app": "a", "tier": "web"}},
+	pods := []*ResourcePod{{
+		Name:      "p1",
+		Namespace: "ns-a",
+		Labels:    map[string]string{"app": "a", "tier": "web"},
 	}}
 	projects := []*Project{
 		{Name: "proj-x", Namespace: &Namespace{Name: "ns-a"}, PodSelectors: []string{"app=a"}},
@@ -238,9 +172,9 @@ func TestAttachResourceProjects_MultiMatch(t *testing.T) {
 // TestAttachResourceProjects_NilAndCrossNamespace 防御：nil 项目/无命名空间边的项目
 // 直接跳过；与本空间项目命名空间不同的 pod 不计入（namespace 不匹配 continue）。
 func TestAttachResourceProjects_NilAndCrossNamespace(t *testing.T) {
-	pods := []corev1.Pod{
-		{ObjectMeta: metav1.ObjectMeta{Name: "p-a", Namespace: "ns-a", Labels: map[string]string{"app": "a"}}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "p-b", Namespace: "ns-b", Labels: map[string]string{"app": "a"}}},
+	pods := []*ResourcePod{
+		{Name: "p-a", Namespace: "ns-a", Labels: map[string]string{"app": "a"}},
+		{Name: "p-b", Namespace: "ns-b", Labels: map[string]string{"app": "a"}},
 	}
 	projects := []*Project{
 		nil, // 空指针跳过
@@ -276,40 +210,25 @@ func TestMatchAnySelector(t *testing.T) {
 // TestAttachResourceProjects_DeploymentChain 项目内 Deployment 属主链分组：
 // pod → RS → Deployment 逐段解析，requests/usage/PodCount 按工作负载正确累加。
 func TestAttachResourceProjects_DeploymentChain(t *testing.T) {
-	depUID := types.UID("deploy-1")
-	rs1UID := types.UID("rs-1")
-	rs2UID := types.UID("rs-2")
-	pods := []corev1.Pod{
+	pods := []*ResourcePod{
 		{
-			ObjectMeta: metav1.ObjectMeta{Name: "web-x", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
-				OwnerReferences: []metav1.OwnerReference{{Kind: "ReplicaSet", Name: "web-x-rs", UID: rs1UID}}},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("400m"),
-					corev1.ResourceMemory: resource.MustParse("512Mi"),
-				}}}}},
+			Name: "web-x", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
+			Owners:          []*ResourceOwner{{Kind: "ReplicaSet", Name: "web-x-rs", UID: "rs-1"}},
+			CpuRequestMilli: 400, MemRequestBytes: 536870912,
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{Name: "web-y", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
-				OwnerReferences: []metav1.OwnerReference{{Kind: "ReplicaSet", Name: "web-y-rs", UID: rs2UID}}},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("300m"),
-					corev1.ResourceMemory: resource.MustParse("256Mi"),
-				}}}}},
+			Name: "web-y", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
+			Owners:          []*ResourceOwner{{Kind: "ReplicaSet", Name: "web-y-rs", UID: "rs-2"}},
+			CpuRequestMilli: 300, MemRequestBytes: 268435456,
 		},
 	}
-	replicaSets := []appsv1.ReplicaSet{
-		{ObjectMeta: metav1.ObjectMeta{Name: "web-x-rs", UID: rs1UID, OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", Name: "web-api", UID: depUID}}}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "web-y-rs", UID: rs2UID, OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", Name: "worker", UID: depUID}}}},
+	replicaSets := []*ResourceReplicaSet{
+		{UID: "rs-1", Owners: []*ResourceOwner{{Kind: "Deployment", Name: "web-api"}}},
+		{UID: "rs-2", Owners: []*ResourceOwner{{Kind: "Deployment", Name: "worker"}}},
 	}
-	podMetrics := []v1beta1.PodMetrics{
-		{ObjectMeta: metav1.ObjectMeta{Name: "web-x", Namespace: "ns-a"}, Containers: []v1beta1.ContainerMetrics{
-			{Usage: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("100m")}},
-		}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "web-y", Namespace: "ns-a"}, Containers: []v1beta1.ContainerMetrics{
-			{Usage: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("50m")}},
-		}},
+	podMetrics := []*ResourcePodMetric{
+		{Name: "web-x", Namespace: "ns-a", CpuMilli: 100},
+		{Name: "web-y", Namespace: "ns-a", CpuMilli: 50},
 	}
 	projects := []*Project{{Name: "proj-a", Namespace: &Namespace{Name: "ns-a"}, PodSelectors: []string{"app=a"}}}
 	namespaces := []*ResourceNamespace{{Name: "ns-a"}}
@@ -339,18 +258,16 @@ func TestAttachResourceProjects_DeploymentChain(t *testing.T) {
 // TestAttachResourceProjects_StatefulSetAndDaemonSet 直接属主分组：pod 属主为
 // StatefulSet/DaemonSet 时不经 RS，直接归入对应工作负载。
 func TestAttachResourceProjects_StatefulSetAndDaemonSet(t *testing.T) {
-	pods := []corev1.Pod{
+	pods := []*ResourcePod{
 		{
-			ObjectMeta: metav1.ObjectMeta{Name: "sts-0", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
-				OwnerReferences: []metav1.OwnerReference{{Kind: "StatefulSet", Name: "db"}}},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("200m")}}}}},
+			Name: "sts-0", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
+			Owners:          []*ResourceOwner{{Kind: "StatefulSet", Name: "db"}},
+			CpuRequestMilli: 200,
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{Name: "ds-x", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
-				OwnerReferences: []metav1.OwnerReference{{Kind: "DaemonSet", Name: "agent"}}},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("100m")}}}}},
+			Name: "ds-x", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
+			Owners:          []*ResourceOwner{{Kind: "DaemonSet", Name: "agent"}},
+			CpuRequestMilli: 100,
 		},
 	}
 	projects := []*Project{{Name: "proj-a", Namespace: &Namespace{Name: "ns-a"}, PodSelectors: []string{"app=a"}}}
@@ -374,17 +291,15 @@ func TestAttachResourceProjects_StatefulSetAndDaemonSet(t *testing.T) {
 // TestAttachResourceProjects_BarePodAndMissingRS 裸 pod 与 RS 缺失兜底：
 // 无 workload 属主 / 属主 RS 不在快照内的 pod 都计入项目总量但不单列工作负载。
 func TestAttachResourceProjects_BarePodAndMissingRS(t *testing.T) {
-	pods := []corev1.Pod{
+	pods := []*ResourcePod{
 		{
-			ObjectMeta: metav1.ObjectMeta{Name: "bare", Namespace: "ns-a", Labels: map[string]string{"app": "a"}},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("300m")}}}}},
+			Name: "bare", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
+			CpuRequestMilli: 300,
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{Name: "orphan", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
-				OwnerReferences: []metav1.OwnerReference{{Kind: "ReplicaSet", Name: "ghost-rs", UID: types.UID("ghost")}}},
-			Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("500m")}}}}},
+			Name: "orphan", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
+			Owners:          []*ResourceOwner{{Kind: "ReplicaSet", Name: "ghost-rs", UID: "ghost"}},
+			CpuRequestMilli: 500,
 		},
 	}
 	projects := []*Project{{Name: "proj-a", Namespace: &Namespace{Name: "ns-a"}, PodSelectors: []string{"app=a"}}}
@@ -404,27 +319,27 @@ func TestAttachResourceProjects_BarePodAndMissingRS(t *testing.T) {
 // TestWorkloadOf 属主链解析：Deployment 经 RS 属主链、STS/DS 直接属主、
 // Job/裸 pod/RS 缺失均返回空键。
 func TestWorkloadOf(t *testing.T) {
-	rsByUID := rsByUIDIndex([]appsv1.ReplicaSet{
-		{ObjectMeta: metav1.ObjectMeta{Name: "r1", UID: "u1", OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", Name: "web"}}}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "r2", UID: "u2"}}, // 无 Deployment 属主
+	rsByUID := rsByUIDIndex([]*ResourceReplicaSet{
+		{UID: "u1", Owners: []*ResourceOwner{{Kind: "Deployment", Name: "web"}}},
+		{UID: "u2"}, // 无 Deployment 属主
 	})
 	cases := []struct {
 		name string
-		pod  corev1.Pod
+		pod  *ResourcePod
 		kind string
 		wn   string
 	}{
-		{"deployment chain", corev1.Pod{ObjectMeta: metav1.ObjectMeta{OwnerReferences: []metav1.OwnerReference{{Kind: "ReplicaSet", Name: "r1-x", UID: "u1"}}}}, "Deployment", "web"},
-		{"statefulset direct", corev1.Pod{ObjectMeta: metav1.ObjectMeta{OwnerReferences: []metav1.OwnerReference{{Kind: "StatefulSet", Name: "db"}}}}, "StatefulSet", "db"},
-		{"daemonset direct", corev1.Pod{ObjectMeta: metav1.ObjectMeta{OwnerReferences: []metav1.OwnerReference{{Kind: "DaemonSet", Name: "agent"}}}}, "DaemonSet", "agent"},
-		{"rs missing in index", corev1.Pod{ObjectMeta: metav1.ObjectMeta{OwnerReferences: []metav1.OwnerReference{{Kind: "ReplicaSet", Name: "ghost", UID: "nope"}}}}, "", ""},
-		{"rs without deployment owner", corev1.Pod{ObjectMeta: metav1.ObjectMeta{OwnerReferences: []metav1.OwnerReference{{Kind: "ReplicaSet", Name: "r2-x", UID: "u2"}}}}, "", ""},
-		{"job bare", corev1.Pod{ObjectMeta: metav1.ObjectMeta{OwnerReferences: []metav1.OwnerReference{{Kind: "Job", Name: "j1"}}}}, "", ""},
-		{"no owner", corev1.Pod{}, "", ""},
+		{"deployment chain", &ResourcePod{Owners: []*ResourceOwner{{Kind: "ReplicaSet", Name: "r1-x", UID: "u1"}}}, "Deployment", "web"},
+		{"statefulset direct", &ResourcePod{Owners: []*ResourceOwner{{Kind: "StatefulSet", Name: "db"}}}, "StatefulSet", "db"},
+		{"daemonset direct", &ResourcePod{Owners: []*ResourceOwner{{Kind: "DaemonSet", Name: "agent"}}}, "DaemonSet", "agent"},
+		{"rs missing in index", &ResourcePod{Owners: []*ResourceOwner{{Kind: "ReplicaSet", Name: "ghost", UID: "nope"}}}, "", ""},
+		{"rs without deployment owner", &ResourcePod{Owners: []*ResourceOwner{{Kind: "ReplicaSet", Name: "r2-x", UID: "u2"}}}, "", ""},
+		{"job bare", &ResourcePod{Owners: []*ResourceOwner{{Kind: "Job", Name: "j1"}}}, "", ""},
+		{"no owner", &ResourcePod{}, "", ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			kind, name := workloadOf(&tc.pod, rsByUID)
+			kind, name := workloadOf(tc.pod, rsByUID)
 			assert.Equal(t, tc.kind, kind)
 			assert.Equal(t, tc.wn, name)
 		})
@@ -433,13 +348,13 @@ func TestWorkloadOf(t *testing.T) {
 
 // TestRsByUIDIndex RS 按 UID 建索引：命中/未命中，索引指向原切片元素。
 func TestRsByUIDIndex(t *testing.T) {
-	rss := []appsv1.ReplicaSet{
-		{ObjectMeta: metav1.ObjectMeta{Name: "a", UID: "u-a"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "b", UID: "u-b"}},
+	rss := []*ResourceReplicaSet{
+		{UID: "u-a"},
+		{UID: "u-b"},
 	}
 	idx := rsByUIDIndex(rss)
-	assert.Same(t, &rss[0], idx["u-a"])
-	assert.Same(t, &rss[1], idx["u-b"])
+	assert.Same(t, rss[0], idx["u-a"])
+	assert.Same(t, rss[1], idx["u-b"])
 	assert.Nil(t, idx["missing"])
 	assert.Empty(t, rsByUIDIndex(nil))
 }

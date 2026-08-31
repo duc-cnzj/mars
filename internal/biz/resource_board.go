@@ -6,21 +6,53 @@ import (
 	"sort"
 
 	"github.com/dustin/go-humanize"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	kmetatypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
-// ResourceSnapshotData 空间资源聚合的一次原始快照：全集群 Running Pod、ReplicaSet
-// 与其指标。requests 取自 pod spec 容器 Resources.Requests，实际用量取自 PodMetrics
-// 容器 Usage；ReplicaSet 供项目 pod → Deployment 属主链解析（pod 直接属主是 RS，
-// RS 属主是 Deployment；StatefulSet/DaemonSet pod 直接属主即 workload）。
+// ResourceOwner 资源快照瘦身快照中的单个属主引用：只保留 workload 属主链解析
+// 用到的 Kind/Name/UID，由 data 层 mapper 从 metav1.OwnerReference 归约而来。
+type ResourceOwner struct {
+	Kind string
+	Name string
+	UID  string
+}
+
+// ResourcePod 空间资源瘦身快照中的单 Pod：命名空间、标签（项目 selector 匹配）、
+// 属主引用（workload 拆分）+ 容器 requests 聚合。labels 保留完整——项目 selector
+// 可匹配任意标签；其余 spec/status 大块不缓存。
+type ResourcePod struct {
+	Name            string
+	Namespace       string
+	Labels          map[string]string
+	Owners          []*ResourceOwner
+	CpuRequestMilli int64
+	MemRequestBytes int64
+}
+
+// ResourceReplicaSet 空间资源瘦身快照中的单 ReplicaSet：UID + 属主引用
+// （mapper 只保留 Kind==Deployment 的 owner，供 pod → Deployment 属主链解析）。
+type ResourceReplicaSet struct {
+	UID    string
+	Owners []*ResourceOwner
+}
+
+// ResourcePodMetric 空间资源瘦身快照中的单 Pod 指标：命名空间、名称 + 容器用量聚合。
+type ResourcePodMetric struct {
+	Namespace string
+	Name      string
+	CpuMilli  int64
+	MemBytes  int64
+}
+
+// ResourceSnapshotData 空间资源聚合的一次瘦身快照：全集群 Running Pod、ReplicaSet
+// 与其指标经 mapper 归约。requests 取自 pod spec 容器 Resources.Requests（已聚合），
+// 实际用量取自 PodMetrics 容器 Usage（已聚合）；ReplicaSet 供项目 pod → Deployment
+// 属主链解析（pod 直接属主是 RS，RS 属主是 Deployment；StatefulSet/DaemonSet pod
+// 直接属主即 workload）。
 type ResourceSnapshotData struct {
-	Pods        []corev1.Pod
-	ReplicaSets []appsv1.ReplicaSet
-	PodMetrics  []v1beta1.PodMetrics
+	Pods        []*ResourcePod
+	ReplicaSets []*ResourceReplicaSet
+	PodMetrics  []*ResourcePodMetric
 }
 
 // ResourceProject 单个命名空间内一个项目的资源申请/实际用量聚合（Pod selectors 匹配）。
@@ -85,7 +117,7 @@ func (k *k8sBiz) ResourceBoard(ctx context.Context, managedNames []string, proje
 	return buildResourceBoard(data, toNamespaceSet(managedNames), projects), nil
 }
 
-// buildResourceBoard 把原始快照聚合为空间资源板：命名空间总量按全部 Running Pod
+// buildResourceBoard 把瘦身快照聚合为空间资源板：命名空间总量按全部 Running Pod
 // 累加 requests/用量，项目拆分按 selectors 匹配同名空间内的 pod。快照为 nil 时
 // 返回空板（防御未知 nil，对齐 buildClusterBoard 的防御语义）。
 func buildResourceBoard(data *ResourceSnapshotData, managed map[string]bool, projects []*Project) *ResourceBoard {
@@ -98,9 +130,9 @@ func buildResourceBoard(data *ResourceSnapshotData, managed map[string]bool, pro
 }
 
 // buildResourceNamespaces 从快照派生命名空间板：每个空间累加全部 Running Pod 的
-// requests（pod spec）与实际用量（PodMetrics），Pod 数取空间内 Running Pod 数量。
-// 只保留 managed 集合内的空间；命名空间按名排序保证确定性输出。
-func buildResourceNamespaces(managed map[string]bool, pods []corev1.Pod, podMetrics []v1beta1.PodMetrics) []*ResourceNamespace {
+// requests（快照已聚合）与实际用量（PodMetrics 快照已聚合），Pod 数取空间内
+// Running Pod 数量。只保留 managed 集合内的空间；命名空间按名排序保证确定性输出。
+func buildResourceNamespaces(managed map[string]bool, pods []*ResourcePod, podMetrics []*ResourcePodMetric) []*ResourceNamespace {
 	byName := make(map[string]*ResourceNamespace)
 	for _, pod := range pods {
 		if !managed[pod.Namespace] {
@@ -112,10 +144,8 @@ func buildResourceNamespaces(managed map[string]bool, pods []corev1.Pod, podMetr
 			byName[pod.Namespace] = ns
 		}
 		ns.PodCount++
-		for _, c := range pod.Spec.Containers {
-			ns.CpuRequestMilli += c.Resources.Requests.Cpu().MilliValue()
-			ns.MemRequestBytes += c.Resources.Requests.Memory().Value()
-		}
+		ns.CpuRequestMilli += pod.CpuRequestMilli
+		ns.MemRequestBytes += pod.MemRequestBytes
 	}
 	for _, m := range podMetrics {
 		if !managed[m.Namespace] {
@@ -126,9 +156,8 @@ func buildResourceNamespaces(managed map[string]bool, pods []corev1.Pod, podMetr
 			ns = &ResourceNamespace{Name: m.Namespace}
 			byName[m.Namespace] = ns
 		}
-		cpu, memory := podMetricsUsage(m)
-		ns.CpuUsageMilli += cpu
-		ns.MemUsageBytes += memory
+		ns.CpuUsageMilli += m.CpuMilli
+		ns.MemUsageBytes += m.MemBytes
 	}
 	result := make([]*ResourceNamespace, 0, len(byName))
 	for _, ns := range byName {
@@ -145,18 +174,17 @@ type podUsage struct {
 }
 
 // attachResourceProjects 按项目 PodSelectors 把项目拆分配进对应命名空间板：
-// requests 从 pod spec 累加，实际用量按 (namespace, name) 从指标索引取；
+// requests 从快照 Pod 聚合值累加，实际用量按 (namespace, name) 从指标索引取；
 // 命中 selectors 任意一个即归该项目，并按其属主链拆进工作负载细分。
 // 项目按名排序、工作负载按 kind 再 name 排序保证确定性输出。
-func attachResourceProjects(namespaces []*ResourceNamespace, projects []*Project, pods []corev1.Pod, replicaSets []appsv1.ReplicaSet, podMetrics []v1beta1.PodMetrics) {
+func attachResourceProjects(namespaces []*ResourceNamespace, projects []*Project, pods []*ResourcePod, replicaSets []*ResourceReplicaSet, podMetrics []*ResourcePodMetric) {
 	nsByName := make(map[string]*ResourceNamespace, len(namespaces))
 	for _, ns := range namespaces {
 		nsByName[ns.Name] = ns
 	}
 	usageByKey := make(map[string]podUsage, len(podMetrics))
 	for _, m := range podMetrics {
-		cpu, memory := podMetricsUsage(m)
-		usageByKey[m.Namespace+"/"+m.Name] = podUsage{cpuMilli: cpu, memBytes: memory}
+		usageByKey[m.Namespace+"/"+m.Name] = podUsage{cpuMilli: m.CpuMilli, memBytes: m.MemBytes}
 	}
 	rsByUID := rsByUIDIndex(replicaSets)
 	for _, proj := range projects {
@@ -175,10 +203,8 @@ func attachResourceProjects(namespaces []*ResourceNamespace, projects []*Project
 				continue
 			}
 			item.PodCount++
-			for _, c := range pod.Spec.Containers {
-				item.CpuRequestMilli += c.Resources.Requests.Cpu().MilliValue()
-				item.MemRequestBytes += c.Resources.Requests.Memory().Value()
-			}
+			item.CpuRequestMilli += pod.CpuRequestMilli
+			item.MemRequestBytes += pod.MemRequestBytes
 			var usage podUsage
 			if u, ok := usageByKey[pod.Namespace+"/"+pod.Name]; ok {
 				usage = u
@@ -186,17 +212,15 @@ func attachResourceProjects(namespaces []*ResourceNamespace, projects []*Project
 				item.MemUsageBytes += u.memBytes
 			}
 			// 无 workload 属主的裸 pod（Job 等）只计入项目总量，不单列工作负载
-			if kind, name := workloadOf(&pod, rsByUID); kind != "" {
+			if kind, name := workloadOf(pod, rsByUID); kind != "" {
 				wk := workloads[kind+"/"+name]
 				if wk == nil {
 					wk = &ResourceProjectWorkload{Kind: kind, Name: name}
 					workloads[kind+"/"+name] = wk
 				}
 				wk.PodCount++
-				for _, c := range pod.Spec.Containers {
-					wk.CpuRequestMilli += c.Resources.Requests.Cpu().MilliValue()
-					wk.MemRequestBytes += c.Resources.Requests.Memory().Value()
-				}
+				wk.CpuRequestMilli += pod.CpuRequestMilli
+				wk.MemRequestBytes += pod.MemRequestBytes
 				wk.CpuUsageMilli += usage.cpuMilli
 				wk.MemUsageBytes += usage.memBytes
 			}
@@ -214,10 +238,10 @@ func attachResourceProjects(namespaces []*ResourceNamespace, projects []*Project
 }
 
 // rsByUIDIndex 把 ReplicaSet 列表按 UID 建索引，供项目 pod → Deployment 属主链解析。
-func rsByUIDIndex(rss []appsv1.ReplicaSet) map[kmetatypes.UID]*appsv1.ReplicaSet {
-	index := make(map[kmetatypes.UID]*appsv1.ReplicaSet, len(rss))
-	for i := range rss {
-		index[rss[i].UID] = &rss[i]
+func rsByUIDIndex(rss []*ResourceReplicaSet) map[string]*ResourceReplicaSet {
+	index := make(map[string]*ResourceReplicaSet, len(rss))
+	for _, rs := range rss {
+		index[rs.UID] = rs
 	}
 	return index
 }
@@ -226,8 +250,8 @@ func rsByUIDIndex(rss []appsv1.ReplicaSet) map[kmetatypes.UID]*appsv1.ReplicaSet
 // （pod 直接属主 ReplicaSet → RS 属主 Deployment），StatefulSet/DaemonSet pod 直接
 // 属主即 workload；无 workload 属主的裸 pod（Job 等）或属主 RS 不在快照内返回空键
 // （计入项目总量但不单列）。
-func workloadOf(pod *corev1.Pod, rsByUID map[kmetatypes.UID]*appsv1.ReplicaSet) (kind, name string) {
-	for _, ref := range pod.OwnerReferences {
+func workloadOf(pod *ResourcePod, rsByUID map[string]*ResourceReplicaSet) (kind, name string) {
+	for _, ref := range pod.Owners {
 		switch ref.Kind {
 		case "StatefulSet":
 			return "StatefulSet", ref.Name
@@ -235,7 +259,7 @@ func workloadOf(pod *corev1.Pod, rsByUID map[kmetatypes.UID]*appsv1.ReplicaSet) 
 			return "DaemonSet", ref.Name
 		case "ReplicaSet":
 			if rs := rsByUID[ref.UID]; rs != nil {
-				for _, rref := range rs.OwnerReferences {
+				for _, rref := range rs.Owners {
 					if rref.Kind == "Deployment" {
 						return "Deployment", rref.Name
 					}

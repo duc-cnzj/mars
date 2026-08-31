@@ -6,10 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 // clusterBoardRepoStub 是 K8sBiz.ClusterBoard 测试用的 K8sRepo 假实现：
@@ -33,8 +29,8 @@ func (s *clusterBoardRepoStub) ClusterInfo() *ClusterInfo {
 // 管理命名空间集合 nil 时排行/Top Pod 为空（无 mars 空间可展示）。
 func TestK8sBiz_ClusterBoard_Success(t *testing.T) {
 	stub := &clusterBoardRepoStub{
-		board: &ClusterBoardData{Nodes: []corev1.Node{
-			{ObjectMeta: metav1.ObjectMeta{Name: "node01"}},
+		board: &ClusterBoardData{Nodes: []*BoardNode{
+			{Name: "node01"},
 		}},
 		info: &ClusterInfo{Status: StatusHealth},
 	}
@@ -66,44 +62,26 @@ func TestNodeRole(t *testing.T) {
 		{"node-role.kubernetes.io/control-plane": ""},
 	}
 	for _, labels := range masterLabels {
-		assert.Equal(t, "master", nodeRole(corev1.Node{ObjectMeta: metav1.ObjectMeta{Labels: labels}}))
+		assert.Equal(t, "master", nodeRole(&BoardNode{Labels: labels}))
 	}
-	assert.Equal(t, "worker", nodeRole(corev1.Node{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"node-role.kubernetes.io/worker": ""}}}))
-	assert.Equal(t, "worker", nodeRole(corev1.Node{}))
+	assert.Equal(t, "worker", nodeRole(&BoardNode{Labels: map[string]string{"node-role.kubernetes.io/worker": ""}}))
+	assert.Equal(t, "worker", nodeRole(&BoardNode{}))
 }
 
 // TestNodeStatus 状态派生：不可调度优先标 SchedulingDisabled，再按 Ready 条件定级，
 // 无 Ready 条件兜底 NotReady。
 func TestNodeStatus(t *testing.T) {
-	assert.Equal(t, "SchedulingDisabled", nodeStatus(corev1.Node{
-		Spec: corev1.NodeSpec{Unschedulable: true},
-		Status: corev1.NodeStatus{Conditions: []corev1.NodeCondition{
-			{Type: corev1.NodeReady, Status: corev1.ConditionTrue},
-		}},
-	}))
-	assert.Equal(t, "Ready", nodeStatus(corev1.Node{
-		Status: corev1.NodeStatus{Conditions: []corev1.NodeCondition{
-			{Type: corev1.NodeReady, Status: corev1.ConditionTrue},
-		}},
-	}))
-	assert.Equal(t, "NotReady", nodeStatus(corev1.Node{
-		Status: corev1.NodeStatus{Conditions: []corev1.NodeCondition{
-			{Type: corev1.NodeReady, Status: corev1.ConditionFalse},
-		}},
-	}))
-	// 无 Ready 条件（如刚注册的节点）兜底 NotReady。
-	assert.Equal(t, "NotReady", nodeStatus(corev1.Node{Status: corev1.NodeStatus{Conditions: []corev1.NodeCondition{
-		{Type: corev1.NodeMemoryPressure, Status: corev1.ConditionTrue},
-	}}}))
+	assert.Equal(t, "SchedulingDisabled", nodeStatus(&BoardNode{Unschedulable: true, ReadyStatus: "True"}))
+	assert.Equal(t, "Ready", nodeStatus(&BoardNode{ReadyStatus: "True"}))
+	assert.Equal(t, "NotReady", nodeStatus(&BoardNode{ReadyStatus: "False"}))
+	// 无 Ready 条件（如刚注册的节点）ReadyStatus 为空，兜底 NotReady。
+	assert.Equal(t, "NotReady", nodeStatus(&BoardNode{}))
 }
 
 // TestNodeUsage 用量匹配：按节点名命中 NodeMetrics 返回用量，未命中返回 0。
 func TestNodeUsage(t *testing.T) {
-	metrics := []v1beta1.NodeMetrics{
-		{ObjectMeta: metav1.ObjectMeta{Name: "node01"}, Usage: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("1"),
-			corev1.ResourceMemory: resource.MustParse("1Gi"),
-		}},
+	metrics := []*BoardNodeMetric{
+		{Name: "node01", CpuUsageMilli: 1000, MemUsageBytes: 1073741824},
 	}
 	cpu, memory := nodeUsage("node01", metrics)
 	assert.Equal(t, int64(1000), cpu)
@@ -117,31 +95,9 @@ func TestNodeUsage(t *testing.T) {
 // TestNodeRequests 请求聚合：只累加落在目标节点上的 Pod 容器 Requests，
 // 其他节点 Pod 被忽略；无匹配节点返回 0。
 func TestNodeRequests(t *testing.T) {
-	pods := []corev1.Pod{
-		{
-			ObjectMeta: metav1.ObjectMeta{Name: "p1"},
-			Spec: corev1.PodSpec{
-				NodeName: "node01",
-				Containers: []corev1.Container{
-					{Resources: corev1.ResourceRequirements{Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("500m"),
-						corev1.ResourceMemory: resource.MustParse("256Mi"),
-					}}},
-				},
-			},
-		},
-		{
-			ObjectMeta: metav1.ObjectMeta{Name: "p2"},
-			Spec: corev1.PodSpec{
-				NodeName: "node02",
-				Containers: []corev1.Container{
-					{Resources: corev1.ResourceRequirements{Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("1"),
-						corev1.ResourceMemory: resource.MustParse("1Gi"),
-					}}},
-				},
-			},
-		},
+	pods := []*BoardPod{
+		{NodeName: "node01", CpuRequestMilli: 500, MemRequestBytes: 268435456},
+		{NodeName: "node02", CpuRequestMilli: 1000, MemRequestBytes: 1073741824},
 	}
 	cpu, memory := nodeRequests(pods, "node01")
 	assert.Equal(t, int64(500), cpu)
@@ -152,58 +108,33 @@ func TestNodeRequests(t *testing.T) {
 	assert.Zero(t, memory)
 }
 
-// TestPodMetricsUsage 容器用量累加：Pod 指标用量分散在 Containers 列表，逐容器求和。
+// TestPodMetricsUsage 容器用量累加：快照已把容器用量聚合成整 Pod 用量，直接读取。
 func TestPodMetricsUsage(t *testing.T) {
-	m := v1beta1.PodMetrics{Containers: []v1beta1.ContainerMetrics{
-		{Usage: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("200m"),
-			corev1.ResourceMemory: resource.MustParse("64Mi"),
-		}},
-		{Usage: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("300m"),
-			corev1.ResourceMemory: resource.MustParse("64Mi"),
-		}},
-	}}
+	m := &BoardPodMetric{CpuMilli: 500, MemBytes: 134217728}
 	cpu, memory := podMetricsUsage(m)
 	assert.Equal(t, int64(500), cpu)
 	assert.Equal(t, int64(134217728), memory)
 
-	cpu, memory = podMetricsUsage(v1beta1.PodMetrics{})
+	cpu, memory = podMetricsUsage(&BoardPodMetric{})
 	assert.Zero(t, cpu)
 	assert.Zero(t, memory)
 }
 
 // TestBuildBoardNode 节点明细集成：容量/用量/请求/角色/状态一次性装配正确。
 func TestBuildBoardNode(t *testing.T) {
-	node := corev1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "node01",
-			Labels: map[string]string{"node-role.kubernetes.io/master": ""},
-		},
-		Status: corev1.NodeStatus{
-			Capacity: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("4"),
-				corev1.ResourceMemory: resource.MustParse("8Gi"),
-			},
-			Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
-		},
+	node := &BoardNode{
+		Name:             "node01",
+		Labels:           map[string]string{"node-role.kubernetes.io/master": ""},
+		ReadyStatus:      "True",
+		CpuCapacityMilli: 4000,
+		MemCapacityBytes: 8589934592,
 	}
-	metrics := []v1beta1.NodeMetrics{
-		{ObjectMeta: metav1.ObjectMeta{Name: "node01"}, Usage: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("1"),
-			corev1.ResourceMemory: resource.MustParse("1Gi"),
-		}},
+	metrics := []*BoardNodeMetric{
+		{Name: "node01", CpuUsageMilli: 1000, MemUsageBytes: 1073741824},
 	}
-	pods := []corev1.Pod{{
-		ObjectMeta: metav1.ObjectMeta{Name: "p1"},
-		Spec: corev1.PodSpec{
-			NodeName: "node01",
-			Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("500m"),
-				corev1.ResourceMemory: resource.MustParse("256Mi"),
-			}}}},
-		},
-	}}
+	pods := []*BoardPod{
+		{NodeName: "node01", CpuRequestMilli: 500, MemRequestBytes: 268435456},
+	}
 
 	got := buildBoardNode(node, metrics, pods)
 	assert.Equal(t, "node01", got.Name)
@@ -219,22 +150,18 @@ func TestBuildBoardNode(t *testing.T) {
 
 // TestBuildBoardNamespaces 命名空间聚合：Pod 数与用量按命名空间归属统计互不串扰。
 func TestBuildBoardNamespaces(t *testing.T) {
-	namespaces := []corev1.Namespace{
-		{ObjectMeta: metav1.ObjectMeta{Name: "ns-a"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "ns-b"}},
+	namespaces := []*BoardNamespace{
+		{Name: "ns-a"},
+		{Name: "ns-b"},
 	}
-	pods := []corev1.Pod{
-		{ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "p2", Namespace: "ns-a"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "p3", Namespace: "ns-b"}},
+	pods := []*BoardPod{
+		{Namespace: "ns-a"},
+		{Namespace: "ns-a"},
+		{Namespace: "ns-b"},
 	}
-	podMetrics := []v1beta1.PodMetrics{
-		{ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a"}, Containers: []v1beta1.ContainerMetrics{
-			{Usage: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("500m")}},
-		}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "p3", Namespace: "ns-b"}, Containers: []v1beta1.ContainerMetrics{
-			{Usage: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("250m")}},
-		}},
+	podMetrics := []*BoardPodMetric{
+		{Namespace: "ns-a", CpuMilli: 500},
+		{Namespace: "ns-b", CpuMilli: 250},
 	}
 
 	got := buildBoardNamespaces(namespaces, pods, podMetrics)
@@ -248,13 +175,9 @@ func TestBuildBoardNamespaces(t *testing.T) {
 // TestBuildBoardTopPods 排序与截断：默认按 CPU 降序取前 topN，topSort="mem" 按内存降序；
 // 空输入返回空切片。
 func TestBuildBoardTopPods(t *testing.T) {
-	metrics := []v1beta1.PodMetrics{
-		{ObjectMeta: metav1.ObjectMeta{Name: "low", Namespace: "ns-a"}, Containers: []v1beta1.ContainerMetrics{
-			{Usage: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("100m"), corev1.ResourceMemory: resource.MustParse("4Gi")}},
-		}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "high", Namespace: "ns-b"}, Containers: []v1beta1.ContainerMetrics{
-			{Usage: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("2"), corev1.ResourceMemory: resource.MustParse("256Mi")}},
-		}},
+	metrics := []*BoardPodMetric{
+		{Name: "low", Namespace: "ns-a", CpuMilli: 100, MemBytes: 4 << 30},
+		{Name: "high", Namespace: "ns-b", CpuMilli: 2000, MemBytes: 256 << 20},
 	}
 	// 默认（空 = cpu）按 CPU 降序：high(2 core) 在前
 	got := buildBoardTopPods(metrics, 1, "")
@@ -279,7 +202,7 @@ func TestBuildClusterBoard(t *testing.T) {
 	assert.Empty(t, board.Nodes)
 
 	data := &ClusterBoardData{
-		Nodes: []corev1.Node{{ObjectMeta: metav1.ObjectMeta{Name: "n"}}},
+		Nodes: []*BoardNode{{Name: "n"}},
 	}
 	board = buildClusterBoard(data, overview, nil, "")
 	assert.Equal(t, overview, board.Overview)
@@ -293,32 +216,18 @@ func TestBuildClusterBoard(t *testing.T) {
 func TestBuildClusterBoard_ManagedFilter(t *testing.T) {
 	managed := map[string]bool{"ns-a": true}
 	data := &ClusterBoardData{
-		Nodes: []corev1.Node{{ObjectMeta: metav1.ObjectMeta{Name: "n"}}},
-		Namespaces: []corev1.Namespace{
-			{ObjectMeta: metav1.ObjectMeta{Name: "ns-a"}},
-			{ObjectMeta: metav1.ObjectMeta{Name: "kube-system"}},
+		Nodes: []*BoardNode{{Name: "n"}},
+		Namespaces: []*BoardNamespace{
+			{Name: "ns-a"},
+			{Name: "kube-system"},
 		},
-		Pods: []corev1.Pod{
-			{ObjectMeta: metav1.ObjectMeta{Name: "p-a", Namespace: "ns-a"}, Spec: corev1.PodSpec{
-				NodeName: "n",
-				Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{Requests: corev1.ResourceList{
-					corev1.ResourceCPU: resource.MustParse("500m"),
-				}}}},
-			}},
-			{ObjectMeta: metav1.ObjectMeta{Name: "p-sys", Namespace: "kube-system"}, Spec: corev1.PodSpec{
-				NodeName: "n",
-				Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{Requests: corev1.ResourceList{
-					corev1.ResourceCPU: resource.MustParse("1500m"),
-				}}}},
-			}},
+		Pods: []*BoardPod{
+			{Namespace: "ns-a", NodeName: "n", CpuRequestMilli: 500},
+			{Namespace: "kube-system", NodeName: "n", CpuRequestMilli: 1500},
 		},
-		PodMetrics: []v1beta1.PodMetrics{
-			{ObjectMeta: metav1.ObjectMeta{Name: "p-a", Namespace: "ns-a"}, Containers: []v1beta1.ContainerMetrics{
-				{Usage: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("500m")}},
-			}},
-			{ObjectMeta: metav1.ObjectMeta{Name: "p-sys", Namespace: "kube-system"}, Containers: []v1beta1.ContainerMetrics{
-				{Usage: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("2")}},
-			}},
+		PodMetrics: []*BoardPodMetric{
+			{Name: "p-a", Namespace: "ns-a", CpuMilli: 500},
+			{Name: "p-sys", Namespace: "kube-system", CpuMilli: 2000},
 		},
 	}
 	board := buildClusterBoard(data, &ClusterInfo{}, managed, "")
@@ -334,9 +243,9 @@ func TestBuildClusterBoard_ManagedFilter(t *testing.T) {
 
 // TestFilterNamespaces 命名空间过滤：只保留 mars 管理集合内的空间。
 func TestFilterNamespaces(t *testing.T) {
-	nss := []corev1.Namespace{
-		{ObjectMeta: metav1.ObjectMeta{Name: "ns-a"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "kube-system"}},
+	nss := []*BoardNamespace{
+		{Name: "ns-a"},
+		{Name: "kube-system"},
 	}
 	got := filterNamespaces(nss, map[string]bool{"ns-a": true})
 	assert.Len(t, got, 1)
@@ -346,9 +255,9 @@ func TestFilterNamespaces(t *testing.T) {
 
 // TestFilterPodMetrics Pod 指标过滤：只保留落在 mars 管理命名空间内的指标。
 func TestFilterPodMetrics(t *testing.T) {
-	ms := []v1beta1.PodMetrics{
-		{ObjectMeta: metav1.ObjectMeta{Name: "p-a", Namespace: "ns-a"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "p-sys", Namespace: "kube-system"}},
+	ms := []*BoardPodMetric{
+		{Name: "p-a", Namespace: "ns-a"},
+		{Name: "p-sys", Namespace: "kube-system"},
 	}
 	got := filterPodMetrics(ms, map[string]bool{"ns-a": true})
 	assert.Len(t, got, 1)

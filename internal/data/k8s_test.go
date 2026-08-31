@@ -2526,15 +2526,27 @@ func TestK8sRepo_ClusterBoard(t *testing.T) {
 	fc := fake.NewSimpleClientset(
 		&corev1.NodeList{Items: []corev1.Node{
 			{
-				ObjectMeta: metav1.ObjectMeta{Name: "node01"},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node01",
+					Labels: map[string]string{
+						"node-role.kubernetes.io/master": "",
+						"kubernetes.io/hostname":         "host",
+					},
+				},
 				Status: corev1.NodeStatus{
 					Capacity: corev1.ResourceList{
 						corev1.ResourceCPU:    cpu.DeepCopy(),
 						corev1.ResourceMemory: memory.DeepCopy(),
 					},
+					Conditions: []corev1.NodeCondition{
+						{Type: corev1.NodeReady, Status: corev1.ConditionTrue},
+						{Type: corev1.NodeMemoryPressure, Status: corev1.ConditionFalse},
+					},
 				},
 			},
-			{ObjectMeta: metav1.ObjectMeta{Name: "node02"}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "node02"}, Status: corev1.NodeStatus{Conditions: []corev1.NodeCondition{
+				{Type: corev1.NodeMemoryPressure, Status: corev1.ConditionFalse},
+			}}},
 		}},
 		&corev1.NamespaceList{Items: []corev1.Namespace{
 			{ObjectMeta: metav1.ObjectMeta{Name: "ns-a"}},
@@ -2582,6 +2594,13 @@ func TestK8sRepo_ClusterBoard(t *testing.T) {
 	assert.Len(t, got.Pods, 2)
 	assert.Len(t, got.PodMetrics, 2)
 	assert.Equal(t, "node01", got.Nodes[0].Name)
+	assert.Equal(t, int64(4000), got.Nodes[0].CpuCapacityMilli, "mapper 归约：4 核容量转毫核")
+	assert.Equal(t, int64(8589934592), got.Nodes[0].MemCapacityBytes, "mapper 归约：8Gi 容量转字节")
+	assert.Equal(t, "", got.Nodes[0].Labels["node-role.kubernetes.io/master"], "mapper 归约：保留角色标签")
+	_, hasHostname := got.Nodes[0].Labels["kubernetes.io/hostname"]
+	assert.False(t, hasHostname, "mapper 归约：丢弃非角色标签")
+	assert.Equal(t, "True", got.Nodes[0].ReadyStatus, "mapper 归约：NodeReady 条件归约为 Status")
+	assert.Equal(t, "", got.Nodes[1].ReadyStatus, "mapper 归约：仅非 Ready 条件时 ReadyStatus 为空")
 	assert.Equal(t, "ns-a", got.Namespaces[0].Name)
 	assert.Equal(t, "p1", got.PodMetrics[0].Name)
 }
@@ -2725,12 +2744,12 @@ func TestK8sRepo_ResourceSnapshot(t *testing.T) {
 		restrictions := action.(testing2.ListAction).GetListRestrictions()
 		assert.Equal(t, "status.phase=Running", restrictions.Fields.String(), "Pod List 必须过滤 Running")
 		return true, &corev1.PodList{Items: []corev1.Pod{
-			{ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a"}, Status: corev1.PodStatus{Phase: corev1.PodRunning}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "ns-a", OwnerReferences: []metav1.OwnerReference{{Kind: "StatefulSet", Name: "db"}}}, Status: corev1.PodStatus{Phase: corev1.PodRunning}, Spec: corev1.PodSpec{Containers: []corev1.Container{{Resources: corev1.ResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("500m")}}}}}},
 		}}, nil
 	})
 	fc.PrependReactor("list", "replicasets", func(action testing2.Action) (bool, runtime.Object, error) {
 		return true, &appsv1.ReplicaSetList{Items: []appsv1.ReplicaSet{
-			{ObjectMeta: metav1.ObjectMeta{Name: "p1-abc", Namespace: "ns-a"}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "p1-abc", Namespace: "ns-a", UID: "rs-1", OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", Name: "web"}, {Kind: "Node", Name: "x"}}}},
 		}}, nil
 	})
 	fcm := &fake2.Clientset{}
@@ -2752,12 +2771,21 @@ func TestK8sRepo_ResourceSnapshot(t *testing.T) {
 	assert.NoError(t, err)
 	if assert.Len(t, got.Pods, 1) {
 		assert.Equal(t, "p1", got.Pods[0].Name)
+		assert.Equal(t, int64(500), got.Pods[0].CpuRequestMilli, "mapper 归约：容器 500m requests 聚合")
+		if assert.Len(t, got.Pods[0].Owners, 1) {
+			assert.Equal(t, "StatefulSet", got.Pods[0].Owners[0].Kind, "mapper 归约：保留 pod 属主")
+		}
 	}
 	if assert.Len(t, got.ReplicaSets, 1) {
-		assert.Equal(t, "p1-abc", got.ReplicaSets[0].Name)
+		assert.Equal(t, "rs-1", got.ReplicaSets[0].UID, "ReplicaSet 归约为 UID + Deployment 属主")
+		if assert.Len(t, got.ReplicaSets[0].Owners, 1) {
+			assert.Equal(t, "Deployment", got.ReplicaSets[0].Owners[0].Kind, "mapper 归约：RS 只保留 Deployment 属主")
+		}
 	}
 	if assert.Len(t, got.PodMetrics, 1) {
 		assert.Equal(t, "p1", got.PodMetrics[0].Name)
+		assert.Equal(t, int64(500), got.PodMetrics[0].CpuMilli, "mapper 归约：容器用量聚合")
+		assert.Equal(t, int64(268435456), got.PodMetrics[0].MemBytes, "mapper 归约：256Mi 用量转字节")
 	}
 }
 

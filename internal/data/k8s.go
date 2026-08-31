@@ -883,8 +883,9 @@ func (repo *k8sRepo) ClusterBoard(ctx context.Context, force bool) (*biz.Cluster
 }
 
 // fetchClusterBoard 一次性拉取集群看板快照：节点列表、节点指标、命名空间、全部
-// Running Pod 与 Pod 指标。任一资源 List 失败即整体上抛（errs.Wrap 自动归类），
-// 展示层的角色/状态派生与 TopN 排序收敛在 biz 纯函数，本方法只做数据获取。
+// Running Pod 与 Pod 指标，返回前归约为瘦身 DTO（缓存只存消费字段，丢弃
+// annotations/conditions 等大块）。任一资源 List 失败即整体上抛（errs.Wrap
+// 自动归类），展示层的角色/状态派生与 TopN 排序收敛在 biz 纯函数，本方法只做数据获取。
 func (repo *k8sRepo) fetchClusterBoard(ctx context.Context) (*biz.ClusterBoardData, error) {
 	nodes, err := repo.data.K8s().Client.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -909,11 +910,11 @@ func (repo *k8sRepo) fetchClusterBoard(ctx context.Context) (*biz.ClusterBoardDa
 		return nil, errs.Wrap(err, "list cluster board pod metrics")
 	}
 	return &biz.ClusterBoardData{
-		Nodes:       nodes.Items,
-		NodeMetrics: nodeMetrics.Items,
-		Namespaces:  namespaces.Items,
-		Pods:        pods.Items,
-		PodMetrics:  podMetrics.Items,
+		Nodes:       mapBoardNodes(nodes.Items),
+		NodeMetrics: mapBoardNodeMetrics(nodeMetrics.Items),
+		Namespaces:  mapBoardNamespaces(namespaces.Items),
+		Pods:        mapBoardPods(pods.Items),
+		PodMetrics:  mapBoardPodMetrics(podMetrics.Items),
 	}, nil
 }
 
@@ -938,9 +939,9 @@ func (repo *k8sRepo) ResourceSnapshot(ctx context.Context, force bool) (*biz.Res
 }
 
 // fetchResourceSnapshot 拉取全部 Running Pod、ReplicaSet 与其 metrics 快照，供空间
-// 资源聚合（requests 取 pod spec、实际用量取 PodMetrics）。ReplicaSet 供项目 pod →
-// Deployment 属主链解析（pod 直接属主是 RS，RS 属主是 Deployment）。比 ClusterBoard
-// 少了节点/命名空间两次 List。
+// 资源聚合（requests 取 pod spec、实际用量取 PodMetrics），返回前归约为瘦身 DTO。
+// ReplicaSet 供项目 pod → Deployment 属主链解析（pod 直接属主是 RS，RS 属主是
+// Deployment）。比 ClusterBoard 少了节点/命名空间两次 List。
 func (repo *k8sRepo) fetchResourceSnapshot(ctx context.Context) (*biz.ResourceSnapshotData, error) {
 	pods, err := repo.data.K8s().Client.CoreV1().Pods("").List(ctx, metav1.ListOptions{
 		FieldSelector: fields.ParseSelectorOrDie("status.phase=Running").String(),
@@ -957,10 +958,202 @@ func (repo *k8sRepo) fetchResourceSnapshot(ctx context.Context) (*biz.ResourceSn
 		return nil, errs.Wrap(err, "list resource board pod metrics")
 	}
 	return &biz.ResourceSnapshotData{
-		Pods:        pods.Items,
-		ReplicaSets: rss.Items,
-		PodMetrics:  podMetrics.Items,
+		Pods:        mapResourcePods(pods.Items),
+		ReplicaSets: mapResourceReplicaSets(rss.Items),
+		PodMetrics:  mapResourcePodMetrics(podMetrics.Items),
 	}, nil
+}
+
+// mapBoardNodes 把原生节点列表归约为看板瘦身 DTO（只保留角色标签/可调度/Ready/容量）。
+func mapBoardNodes(nodes []corev1.Node) []*biz.BoardNode {
+	result := make([]*biz.BoardNode, 0, len(nodes))
+	for i := range nodes {
+		result = append(result, mapBoardNode(&nodes[i]))
+	}
+	return result
+}
+
+// mapBoardNode 归约单个节点：Labels 只保留 node-role.kubernetes.io/* 前缀键，Ready
+// 归约为 NodeReady 条件的 Status，容量转毫核/字节；annotations/conditions 等大块丢弃。
+func mapBoardNode(node *corev1.Node) *biz.BoardNode {
+	return &biz.BoardNode{
+		Name:             node.Name,
+		Labels:           roleLabels(node.Labels),
+		Unschedulable:    node.Spec.Unschedulable,
+		ReadyStatus:      nodeReadyStatus(node.Status.Conditions),
+		CpuCapacityMilli: node.Status.Capacity.Cpu().MilliValue(),
+		MemCapacityBytes: node.Status.Capacity.Memory().Value(),
+	}
+}
+
+// roleLabels 只保留 node-role.kubernetes.io/* 前缀的标签（看板角色判定只用该域键）。
+func roleLabels(labels map[string]string) map[string]string {
+	if len(labels) == 0 {
+		return nil
+	}
+	kept := make(map[string]string)
+	for k, v := range labels {
+		if strings.HasPrefix(k, "node-role.kubernetes.io/") {
+			kept[k] = v
+		}
+	}
+	return kept
+}
+
+// nodeReadyStatus 提取 NodeReady 条件的 Status；无该条件返回空串。
+func nodeReadyStatus(conditions []corev1.NodeCondition) string {
+	for _, cond := range conditions {
+		if cond.Type != corev1.NodeReady {
+			continue
+		}
+		return string(cond.Status)
+	}
+	return ""
+}
+
+// mapBoardNodeMetrics 归约节点指标列表为瘦身 DTO（名称 + CPU/内存用量）。
+func mapBoardNodeMetrics(metrics []v1beta1.NodeMetrics) []*biz.BoardNodeMetric {
+	result := make([]*biz.BoardNodeMetric, 0, len(metrics))
+	for i := range metrics {
+		result = append(result, &biz.BoardNodeMetric{
+			Name:          metrics[i].Name,
+			CpuUsageMilli: metrics[i].Usage.Cpu().MilliValue(),
+			MemUsageBytes: metrics[i].Usage.Memory().Value(),
+		})
+	}
+	return result
+}
+
+// mapBoardNamespaces 归约命名空间列表为瘦身 DTO（排行只用到名称）。
+func mapBoardNamespaces(namespaces []corev1.Namespace) []*biz.BoardNamespace {
+	result := make([]*biz.BoardNamespace, 0, len(namespaces))
+	for i := range namespaces {
+		result = append(result, &biz.BoardNamespace{Name: namespaces[i].Name})
+	}
+	return result
+}
+
+// mapBoardPods 归约 Pod 列表为瘦身 DTO：只保留命名空间/所在节点 + 容器 requests 聚合。
+func mapBoardPods(pods []corev1.Pod) []*biz.BoardPod {
+	result := make([]*biz.BoardPod, 0, len(pods))
+	for i := range pods {
+		cpu, memory := podRequestsSum(pods[i].Spec.Containers)
+		result = append(result, &biz.BoardPod{
+			Namespace:       pods[i].Namespace,
+			NodeName:        pods[i].Spec.NodeName,
+			CpuRequestMilli: cpu,
+			MemRequestBytes: memory,
+		})
+	}
+	return result
+}
+
+// mapBoardPodMetrics 归约 Pod 指标列表为瘦身 DTO：命名空间/名称 + 容器用量聚合。
+func mapBoardPodMetrics(metrics []v1beta1.PodMetrics) []*biz.BoardPodMetric {
+	result := make([]*biz.BoardPodMetric, 0, len(metrics))
+	for i := range metrics {
+		cpu, memory := podMetricsUsageSum(metrics[i].Containers)
+		result = append(result, &biz.BoardPodMetric{
+			Namespace: metrics[i].Namespace,
+			Name:      metrics[i].Name,
+			CpuMilli:  cpu,
+			MemBytes:  memory,
+		})
+	}
+	return result
+}
+
+// podRequestsSum 累加容器列表的 CPU/内存 Requests（毫核/字节）。
+func podRequestsSum(containers []corev1.Container) (int64, int64) {
+	var cpu, memory int64
+	for _, c := range containers {
+		cpu += c.Resources.Requests.Cpu().MilliValue()
+		memory += c.Resources.Requests.Memory().Value()
+	}
+	return cpu, memory
+}
+
+// podMetricsUsageSum 累加 PodMetrics 容器列表的 CPU/内存用量（毫核/字节）：PodMetrics
+// 无顶层 Usage，用量分散在 Containers 里。
+func podMetricsUsageSum(containers []v1beta1.ContainerMetrics) (int64, int64) {
+	var cpu, memory int64
+	for _, c := range containers {
+		cpu += c.Usage.Cpu().MilliValue()
+		memory += c.Usage.Memory().Value()
+	}
+	return cpu, memory
+}
+
+// mapResourcePods 归约 Pod 列表为资源快照瘦身 DTO：labels 完整保留（项目 selector
+// 可匹配任意标签），requests 预聚合，属主引用只留 Kind/Name/UID。
+func mapResourcePods(pods []corev1.Pod) []*biz.ResourcePod {
+	result := make([]*biz.ResourcePod, 0, len(pods))
+	for i := range pods {
+		cpu, memory := podRequestsSum(pods[i].Spec.Containers)
+		result = append(result, &biz.ResourcePod{
+			Name:            pods[i].Name,
+			Namespace:       pods[i].Namespace,
+			Labels:          pods[i].Labels,
+			Owners:          mapOwners(pods[i].OwnerReferences),
+			CpuRequestMilli: cpu,
+			MemRequestBytes: memory,
+		})
+	}
+	return result
+}
+
+// mapResourceReplicaSets 归约 ReplicaSet 列表为瘦身 DTO：只保留 UID + Deployment 属主
+// （供项目 pod → Deployment 属主链解析）。
+func mapResourceReplicaSets(rss []appsv1.ReplicaSet) []*biz.ResourceReplicaSet {
+	result := make([]*biz.ResourceReplicaSet, 0, len(rss))
+	for i := range rss {
+		result = append(result, &biz.ResourceReplicaSet{
+			UID:    string(rss[i].UID),
+			Owners: mapDeploymentOwners(rss[i].OwnerReferences),
+		})
+	}
+	return result
+}
+
+// mapResourcePodMetrics 归约 Pod 指标列表为资源快照瘦身 DTO（字段同看板 Pod 指标）。
+func mapResourcePodMetrics(metrics []v1beta1.PodMetrics) []*biz.ResourcePodMetric {
+	result := make([]*biz.ResourcePodMetric, 0, len(metrics))
+	for i := range metrics {
+		cpu, memory := podMetricsUsageSum(metrics[i].Containers)
+		result = append(result, &biz.ResourcePodMetric{
+			Namespace: metrics[i].Namespace,
+			Name:      metrics[i].Name,
+			CpuMilli:  cpu,
+			MemBytes:  memory,
+		})
+	}
+	return result
+}
+
+// mapOwner 归约单个属主引用为瘦身 DTO（Kind/Name/UID）。
+func mapOwner(ref metav1.OwnerReference) *biz.ResourceOwner {
+	return &biz.ResourceOwner{Kind: ref.Kind, Name: ref.Name, UID: string(ref.UID)}
+}
+
+// mapOwners 归约属主引用列表为瘦身 DTO（workload 属主链解析需要）。
+func mapOwners(refs []metav1.OwnerReference) []*biz.ResourceOwner {
+	result := make([]*biz.ResourceOwner, 0, len(refs))
+	for _, ref := range refs {
+		result = append(result, mapOwner(ref))
+	}
+	return result
+}
+
+// mapDeploymentOwners 从属主引用中只保留 Deployment（RS 属主链解析只关心 Deployment）。
+func mapDeploymentOwners(refs []metav1.OwnerReference) []*biz.ResourceOwner {
+	var result []*biz.ResourceOwner
+	for _, ref := range refs {
+		if ref.Kind != "Deployment" {
+			continue
+		}
+		result = append(result, mapOwner(ref))
+	}
+	return result
 }
 
 // getStatus 按请求率阈值定级：任一超 95 为 bad，超 80 为 not good，否则 health。

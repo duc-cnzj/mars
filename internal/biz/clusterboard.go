@@ -5,21 +5,60 @@ import (
 	"sort"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 // clusterBoardTopN 集群看板 Top Pod 的条数上限（按 top_sort 维度降序取前 N，默认 CPU）。
 const clusterBoardTopN = 20
 
-// ClusterBoardData 是集群看板的一次原始快照：由 data 层一次性拉取节点/命名空间/
-// 全集群 Pod 与其指标，biz 层负责聚合成展示模型。保持 data 层纯数据获取，
-// TopN 排序与角色/状态派生等展示逻辑收敛在 biz 纯函数中，便于测试。
+// BoardNode 集群看板瘦身快照中的单节点：只保留看板消费的字段（名称、角色标签、
+// 可调度状态、Ready 状态与容量），由 data 层 mapper 从 corev1.Node 归约而来，
+// 避免把 annotations/conditions/images 等大块序列化进缓存。
+type BoardNode struct {
+	Name             string
+	Labels           map[string]string // 只保留 node-role.kubernetes.io/* 前缀的角色标签
+	Unschedulable    bool
+	ReadyStatus      string // 仅 NodeReady 条件的 Status（"True"/"False"/空）
+	CpuCapacityMilli int64
+	MemCapacityBytes int64
+}
+
+// BoardNodeMetric 集群看板瘦身快照中的单节点指标：名称 + CPU/内存用量。
+type BoardNodeMetric struct {
+	Name          string
+	CpuUsageMilli int64
+	MemUsageBytes int64
+}
+
+// BoardNamespace 集群看板瘦身快照中的单命名空间：排行只用到名称。
+type BoardNamespace struct {
+	Name string
+}
+
+// BoardPod 集群看板瘦身快照中的单 Pod：命名空间、所在节点 + 容器 requests 聚合。
+type BoardPod struct {
+	Namespace       string
+	NodeName        string
+	CpuRequestMilli int64
+	MemRequestBytes int64
+}
+
+// BoardPodMetric 集群看板瘦身快照中的单 Pod 指标：命名空间、名称 + 容器用量聚合。
+type BoardPodMetric struct {
+	Namespace string
+	Name      string
+	CpuMilli  int64
+	MemBytes  int64
+}
+
+// ClusterBoardData 是集群看板的一次瘦身快照：由 data 层一次性拉取节点/命名空间/
+// 全集群 Pod 与其指标并经 mapper 归约，biz 层负责聚合成展示模型。相比序列化完整
+// K8s 对象，只保留消费字段，缓存体积缩小一个数量级以上。
 type ClusterBoardData struct {
-	Nodes       []corev1.Node
-	NodeMetrics []v1beta1.NodeMetrics
-	Namespaces  []corev1.Namespace
-	Pods        []corev1.Pod
-	PodMetrics  []v1beta1.PodMetrics
+	Nodes       []*BoardNode
+	NodeMetrics []*BoardNodeMetric
+	Namespaces  []*BoardNamespace
+	Pods        []*BoardPod
+	PodMetrics  []*BoardPodMetric
 }
 
 // ClusterBoardNode 是集群看板的单节点明细：角色/状态 + 容量/用量/请求（CPU 毫核、内存字节）。
@@ -77,8 +116,8 @@ func toNamespaceSet(names []string) map[string]bool {
 }
 
 // filterNamespaces 只保留 mars 管理集合内的命名空间（排行仅展示 mars 管理空间）。
-func filterNamespaces(namespaces []corev1.Namespace, managed map[string]bool) []corev1.Namespace {
-	filtered := make([]corev1.Namespace, 0, len(namespaces))
+func filterNamespaces(namespaces []*BoardNamespace, managed map[string]bool) []*BoardNamespace {
+	filtered := make([]*BoardNamespace, 0, len(namespaces))
 	for _, ns := range namespaces {
 		if managed[ns.Name] {
 			filtered = append(filtered, ns)
@@ -88,8 +127,8 @@ func filterNamespaces(namespaces []corev1.Namespace, managed map[string]bool) []
 }
 
 // filterPodMetrics 只保留落在 mars 管理命名空间内的 Pod 指标（Top Pod 排除系统 Pod）。
-func filterPodMetrics(metrics []v1beta1.PodMetrics, managed map[string]bool) []v1beta1.PodMetrics {
-	filtered := make([]v1beta1.PodMetrics, 0, len(metrics))
+func filterPodMetrics(metrics []*BoardPodMetric, managed map[string]bool) []*BoardPodMetric {
+	filtered := make([]*BoardPodMetric, 0, len(metrics))
 	for _, m := range metrics {
 		if managed[m.Namespace] {
 			filtered = append(filtered, m)
@@ -98,7 +137,7 @@ func filterPodMetrics(metrics []v1beta1.PodMetrics, managed map[string]bool) []v
 	return filtered
 }
 
-// buildClusterBoard 把原始快照聚合成看板模型：Overview 直接引用传入总览，
+// buildClusterBoard 把瘦身快照聚合成看板模型：Overview 直接引用传入总览，
 // 节点/命名空间/Top Pod 分别派生；命名空间与 Top Pod 按 mars 管理集合过滤；
 // topSort 控制 Top Pod 排行维度（"cpu"/"mem"，空=CPU）。快照为 nil 时只保留
 // 总览，防御未知 nil。
@@ -116,7 +155,7 @@ func buildClusterBoard(data *ClusterBoardData, overview *ClusterInfo, managed ma
 }
 
 // buildBoardNodes 逐节点派生看板明细（角色/状态/容量/用量/请求）。
-func buildBoardNodes(nodes []corev1.Node, nodeMetrics []v1beta1.NodeMetrics, pods []corev1.Pod) []*ClusterBoardNode {
+func buildBoardNodes(nodes []*BoardNode, nodeMetrics []*BoardNodeMetric, pods []*BoardPod) []*ClusterBoardNode {
 	result := make([]*ClusterBoardNode, 0, len(nodes))
 	for _, node := range nodes {
 		result = append(result, buildBoardNode(node, nodeMetrics, pods))
@@ -124,26 +163,26 @@ func buildBoardNodes(nodes []corev1.Node, nodeMetrics []v1beta1.NodeMetrics, pod
 	return result
 }
 
-// buildBoardNode 派生单个节点明细：容量取 Status.Capacity，用量匹配同名 NodeMetrics，
-// 请求累加落在该节点上的 Running Pod 的容器 Requests。
-func buildBoardNode(node corev1.Node, nodeMetrics []v1beta1.NodeMetrics, pods []corev1.Pod) *ClusterBoardNode {
+// buildBoardNode 派生单个节点明细：容量取快照容量，用量匹配同名节点指标，
+// 请求累加落在该节点上的 Running Pod 的容器 Requests（快照已预聚合）。
+func buildBoardNode(node *BoardNode, nodeMetrics []*BoardNodeMetric, pods []*BoardPod) *ClusterBoardNode {
 	cpuUsage, memoryUsage := nodeUsage(node.Name, nodeMetrics)
 	cpuRequest, memoryRequest := nodeRequests(pods, node.Name)
 	return &ClusterBoardNode{
 		Name:        node.Name,
 		Role:        nodeRole(node),
 		Status:      nodeStatus(node),
-		CpuCapacity: node.Status.Capacity.Cpu().MilliValue(),
+		CpuCapacity: node.CpuCapacityMilli,
 		CpuUsage:    cpuUsage,
 		CpuRequest:  cpuRequest,
-		MemCapacity: node.Status.Capacity.Memory().Value(),
+		MemCapacity: node.MemCapacityBytes,
 		MemUsage:    memoryUsage,
 		MemRequest:  memoryRequest,
 	}
 }
 
-// nodeRole 按节点标签判定角色：存在 master/control-plane 角色标签即 master，否则 worker。
-func nodeRole(node corev1.Node) string {
+// nodeRole 按节点角色标签判定角色：存在 master/control-plane 角色标签即 master，否则 worker。
+func nodeRole(node *BoardNode) string {
 	for _, key := range []string{
 		"node-role.kubernetes.io/master",
 		"node-role.kubernetes.io/control-plane",
@@ -156,63 +195,51 @@ func nodeRole(node corev1.Node) string {
 }
 
 // nodeStatus 按节点状态派生看板状态：不可调度优先标 SchedulingDisabled，
-// 否则按 Ready 条件判 Ready/NotReady。
-func nodeStatus(node corev1.Node) string {
-	if node.Spec.Unschedulable {
+// 否则按 Ready 条件（快照已归约为 ReadyStatus）判 Ready/NotReady。
+func nodeStatus(node *BoardNode) string {
+	if node.Unschedulable {
 		return "SchedulingDisabled"
 	}
-	for _, cond := range node.Status.Conditions {
-		if cond.Type != corev1.NodeReady {
-			continue
-		}
-		if cond.Status == corev1.ConditionTrue {
-			return "Ready"
-		}
-		return "NotReady"
+	if node.ReadyStatus == string(corev1.ConditionTrue) {
+		return "Ready"
 	}
 	return "NotReady"
 }
 
 // nodeUsage 从节点指标列表匹配同名单节点的 CPU/内存用量（毫核/字节），未匹配返回 0。
-func nodeUsage(name string, nodeMetrics []v1beta1.NodeMetrics) (int64, int64) {
+func nodeUsage(name string, nodeMetrics []*BoardNodeMetric) (int64, int64) {
 	for _, m := range nodeMetrics {
 		if m.Name != name {
 			continue
 		}
-		return m.Usage.Cpu().MilliValue(), m.Usage.Memory().Value()
+		return m.CpuUsageMilli, m.MemUsageBytes
 	}
 	return 0, 0
 }
 
-// nodeRequests 累加落在指定节点上的全部 Pod 的容器 CPU/内存 Requests（毫核/字节）。
-func nodeRequests(pods []corev1.Pod, nodeName string) (int64, int64) {
+// nodeRequests 累加落在指定节点上的全部 Pod 的容器 CPU/内存 Requests（毫核/字节），
+// 各 Pod 的 Requests 由快照预聚合，这里只按节点归属求和。
+func nodeRequests(pods []*BoardPod, nodeName string) (int64, int64) {
 	var cpu, memory int64
 	for _, pod := range pods {
-		if pod.Spec.NodeName != nodeName {
+		if pod.NodeName != nodeName {
 			continue
 		}
-		for _, container := range pod.Spec.Containers {
-			cpu += container.Resources.Requests.Cpu().MilliValue()
-			memory += container.Resources.Requests.Memory().Value()
-		}
+		cpu += pod.CpuRequestMilli
+		memory += pod.MemRequestBytes
 	}
 	return cpu, memory
 }
 
-// podMetricsUsage 累加单个 Pod 指标下全部容器的 CPU/内存用量（毫核/字节）：
-// PodMetrics 无顶层 Usage，用量分散在 Containers 列表里。
-func podMetricsUsage(m v1beta1.PodMetrics) (int64, int64) {
-	var cpu, memory int64
-	for _, c := range m.Containers {
-		cpu += c.Usage.Cpu().MilliValue()
-		memory += c.Usage.Memory().Value()
-	}
-	return cpu, memory
+// podMetricsUsage 读取单个 Pod 指标的 CPU/内存用量（毫核/字节）：快照已把容器
+// 用量聚合成整 Pod 用量。
+func podMetricsUsage(m *BoardPodMetric) (int64, int64) {
+	return m.CpuMilli, m.MemBytes
 }
 
 // buildBoardNamespaces 逐命名空间聚合：Pod 数取落在该命名空间的 Running Pod 数量，
 // CPU/内存用量累加该命名空间下全部 Pod 指标。
-func buildBoardNamespaces(namespaces []corev1.Namespace, pods []corev1.Pod, podMetrics []v1beta1.PodMetrics) []*ClusterBoardNamespace {
+func buildBoardNamespaces(namespaces []*BoardNamespace, pods []*BoardPod, podMetrics []*BoardPodMetric) []*ClusterBoardNamespace {
 	result := make([]*ClusterBoardNamespace, 0, len(namespaces))
 	for _, ns := range namespaces {
 		item := &ClusterBoardNamespace{Name: ns.Name}
@@ -236,7 +263,7 @@ func buildBoardNamespaces(namespaces []corev1.Namespace, pods []corev1.Pod, podM
 
 // buildBoardTopPods 把全部 Pod 指标转成看板项，按 topSort 维度降序取前 topN 条：
 // "mem" 按内存用量排序，其余（含空/"cpu"）按 CPU 用量排序。
-func buildBoardTopPods(podMetrics []v1beta1.PodMetrics, topN int, topSort string) []*ClusterBoardPod {
+func buildBoardTopPods(podMetrics []*BoardPodMetric, topN int, topSort string) []*ClusterBoardPod {
 	pods := make([]*ClusterBoardPod, 0, len(podMetrics))
 	for _, m := range podMetrics {
 		cpu, memory := podMetricsUsage(m)
