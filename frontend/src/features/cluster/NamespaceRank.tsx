@@ -2,9 +2,6 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fmtCpuMilli, fmtMem, type NamespaceMetric } from './board'
 
-/** 排行展示条数（对齐服务端 Top N 语义） */
-const RANK_LIMIT = 8
-
 /** 排序维度 → 数据字段（CPU 毫核 / 内存字节） */
 const SORT_FIELD = { cpu: 'cpuMilli', mem: 'memoryBytes' } as const
 
@@ -21,10 +18,11 @@ export function NamespaceRank({ namespaces }: { namespaces: NamespaceMetric[] })
   // 排序维度：默认 CPU，可切内存（资源大户判断 CPU/内存两维度都要看）
   const [sortKey, setSortKey] = useState<SortKey>('cpu')
   const field = SORT_FIELD[sortKey]
-  const top = [...namespaces].sort((a, b) => b[field] - a[field]).slice(0, RANK_LIMIT)
+  // 后端给多少显示多少（服务端已限定 mars 管理命名空间集合），本地仅按维度降序全量展示
+  const ranked = [...namespaces].sort((a, b) => b[field] - a[field])
   // 以最大值为 1 兜底：空列表 → Math.max(1)=1；全 0 数据（集群无指标）→ Math.max(1,0,...)=1，
   // 避免 0/0=NaN 的 width:"NaN%" 无效样式（条消失）
-  const maxMain = Math.max(1, ...top.map((n) => n[field]))
+  const maxMain = Math.max(1, ...ranked.map((n) => n[field]))
 
   const chipCls = (active: boolean) =>
     `rounded-md border px-1.5 py-0.5 text-[11px] transition-colors ${
@@ -37,7 +35,7 @@ export function NamespaceRank({ namespaces }: { namespaces: NamespaceMetric[] })
     <section className="rounded-lg border border-line bg-surface">
       <header className="flex items-center gap-2 border-b border-line px-4 py-3">
         <span className="text-[13px] font-semibold text-ink">{t('cluster.namespaceTitle')}</span>
-        <span className="font-mono text-[11px] text-faint">TOP {top.length}</span>
+        <span className="font-mono text-[11px] text-faint">TOP {ranked.length}</span>
         {/* 排序维度切换：CPU / 内存 */}
         <div className="ml-auto flex items-center gap-1">
           <button type="button" onClick={() => setSortKey('cpu')} className={chipCls(sortKey === 'cpu')}>
@@ -51,7 +49,7 @@ export function NamespaceRank({ namespaces }: { namespaces: NamespaceMetric[] })
 
       {/* 空间过多时固定最大高度内滚动（表头常驻；对齐 NodeTable 的 max-h-[400px] 滚动模式） */}
       <div className="max-h-[400px] space-y-2.5 overflow-y-auto px-4 py-3">
-        {top.map((ns, i) => {
+        {ranked.map((ns, i) => {
           const pct = (ns[field] / maxMain) * 100
           return (
             <div key={ns.namespace} className="flex items-center gap-3">
