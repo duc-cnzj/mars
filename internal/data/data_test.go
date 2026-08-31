@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	restclient "k8s.io/client-go/rest"
@@ -432,15 +431,13 @@ func waitEvent(t *testing.T, ch <-chan Obj[*eventsv1.Event], want fanOutType) Ob
 // fake clientset（内存 list/watch 供 Pod/Secret informer 同步），httptest 假 API
 // 只响应 CRD list（含 httproutes → 触发 gateway 分支）。断言 listers 装配后向 fake
 // 注入 Pod/Event 变更，验证 informer 回调→扇出广播链路；gateway informer 对假 API
-// 的 404 触发 runtime.ErrorHandlers 闭包。
+// 的 404 触发 per-informer WatchErrorHandler 闭包。
 func TestDataImpl_InitK8s_HappyPath(t *testing.T) {
 	fk := kubefake.NewSimpleClientset()
 	origClientset := newK8sClientset
 	newK8sClientset = func(_ *restclient.Config) (kubernetes.Interface, error) { return fk, nil }
-	origErrHandlers := utilruntime.ErrorHandlers
 	t.Cleanup(func() {
 		newK8sClientset = origClientset
-		utilruntime.ErrorHandlers = origErrHandlers
 	})
 
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -450,7 +447,7 @@ func TestDataImpl_InitK8s_HappyPath(t *testing.T) {
 			// 首个 CRD 不匹配 → for 循环 if 假分支；第二个匹配 → gwinstalled=true + break。
 			fmt.Fprint(w, `{"apiVersion":"apiextensions.k8s.io/v1","kind":"CustomResourceDefinitionList","metadata":{"resourceVersion":"1"},"items":[{"metadata":{"name":"ingresses.networking.k8s.io"}},{"metadata":{"name":"httproutes.gateway.networking.k8s.io"}}]}`)
 		default:
-			// gateway informer 的 HTTPRoutes list 落 404 → reflector 报错 → ErrorHandlers 闭包。
+			// gateway informer 的 HTTPRoutes list 落 404 → reflector 报错 → WatchErrorHandler 闭包。
 			http.Error(w, "not found", http.StatusNotFound)
 		}
 	}))
@@ -498,7 +495,7 @@ func TestDataImpl_InitK8s_HappyPath(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "e1", waitEvent(t, evCh, Add).Current().Name)
 
-	// 留出时间让 gateway informer 对 404 假 API 报错，执行 runtime.ErrorHandlers 闭包。
+	// 留出时间让 gateway informer 对 404 假 API 报错，执行 per-informer WatchErrorHandler 闭包。
 	time.Sleep(300 * time.Millisecond)
 }
 
@@ -517,10 +514,8 @@ func TestDataImpl_InitK8s_ClientsetError(t *testing.T) {
 	newK8sClientset = func(_ *restclient.Config) (kubernetes.Interface, error) {
 		return nil, errors.New("clientset boom")
 	}
-	origErrHandlers := utilruntime.ErrorHandlers
 	t.Cleanup(func() {
 		newK8sClientset = origClientset
-		utilruntime.ErrorHandlers = origErrHandlers
 	})
 
 	d := &dataImpl{
@@ -538,10 +533,8 @@ func TestDataImpl_InitK8s_CrdListError(t *testing.T) {
 	fk := kubefake.NewSimpleClientset()
 	origClientset := newK8sClientset
 	newK8sClientset = func(_ *restclient.Config) (kubernetes.Interface, error) { return fk, nil }
-	origErrHandlers := utilruntime.ErrorHandlers
 	t.Cleanup(func() {
 		newK8sClientset = origClientset
-		utilruntime.ErrorHandlers = origErrHandlers
 	})
 
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
