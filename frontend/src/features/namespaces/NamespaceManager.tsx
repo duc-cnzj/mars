@@ -101,7 +101,7 @@ const NamespaceRow = memo(function NamespaceRow({
   style?: CSSProperties
 }) {
   const { t } = useTranslation()
-  const { ns, cpuUsed, memUsed, lastActiveAt, livenessKind } = item
+  const { ns, lastActiveAt, livenessKind } = item
   // 成员展示列表（补上所有者本人）：属性计数与成员下钻共用，保证「人数算上所有者」
   const memberList = memberDisplayList(ns.members, ns.creatorEmail)
   // 后端 livenessKind 是自由 string（schema 未收成枚举字面量）：防御性归一化到三态，
@@ -110,7 +110,7 @@ const NamespaceRow = memo(function NamespaceRow({
     livenessKind === 'dormant' || livenessKind === 'zombie' ? livenessKind : 'active'
   return (
     <div
-      className={`grid grid-cols-1 gap-2 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_7rem_9rem_9rem_7rem_6rem] lg:items-center ${className ?? ''}`}
+      className={`grid grid-cols-1 gap-2 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_7rem_9rem_7rem_6rem] lg:items-center ${className ?? ''}`}
       style={style}
     >
       {/* 命名空间：名称 + 私有 tag + 描述 */}
@@ -192,11 +192,6 @@ const NamespaceRow = memo(function NamespaceRow({
         </PopoverContent>
       </Popover>
 
-      {/* 资源用量：CPU / 内存（服务端返回人类可读字符串） */}
-      <span className="font-mono text-[11px] text-mute">
-        {t('namespaces.resourceUsage', { cpu: cpuUsed, mem: memUsed })}
-      </span>
-
       {/* 最近活跃时间：空间下所有项目 UpdatedAt 最大值；无项目（从未部署）显示「从未活跃」。
           非活跃空间前置活跃度标签（活跃是常态不标，对齐项目治理的行内语义） */}
       <span className="text-[11px] text-ink">
@@ -268,7 +263,6 @@ const NamespaceRow = memo(function NamespaceRow({
  * 管理员视角查看「所有」命名空间（工作台只展示当前用户可访问的「我的空间」）：
  * - 按名称/创建者搜索 + 「只看私有」一键过滤 + 活跃度分类筛选（均走服务端 query，输入 300ms 防抖）
  * - 成员/项目下钻：点「N 人 · M 项目」弹 Popover 查看具体成员（邮箱）与项目
- * - 资源用量（CPU/内存）由服务端逐空间实时采样返回（人类可读字符串）
  * - 无限下拉（服务端分页，滚动触底追加）；每行提供「管理/删除」操作——admin 对任意空间可编辑
  *   （后端 RequireNamespaceOwner 对 admin 绕过 owner 校验），管理弹窗私有/成员/转让一次提交
  *   update_config，删除二次确认后 DELETE
@@ -318,6 +312,8 @@ export function NamespaceManager() {
   const filterKeyRef = useRef('')
   const nsParamConsumedRef = useRef(false)
   const hasMore = items.length < count
+  // 有旧数据时的重取 loading：首载 items 为空走骨架，不进遮罩；搜索/筛选/刷新重取则遮罩旧列表
+  const refetching = initialLoading && items.length > 0
 
   // 消费 ?ns= 预选参数：写进搜索词后立即从 URL 清除（replace），刷新/分享链接不再重复预选
   useEffect(() => {
@@ -557,17 +553,18 @@ export function NamespaceManager() {
 
       {/* 命名空间列表：表头固定 + 列表内部滚动（滚动容器作为哨兵 root） */}
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-surface">
-        <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_7rem_9rem_9rem_7rem_6rem] items-center gap-2 border-b border-line px-4 py-2 text-[11px] font-medium text-faint lg:grid">
+        <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_7rem_9rem_7rem_6rem] items-center gap-2 border-b border-line px-4 py-2 text-[11px] font-medium text-faint lg:grid">
           <span>{t('namespaces.namespace')}</span>
           <span>{t('namespaces.owner')}</span>
           <span>{t('namespaces.props')}</span>
-          <span>{t('namespaces.resource')}</span>
           <span>{t('namespaces.lastActive')}</span>
           <span>{t('namespaces.createdAt')}</span>
           <span>{t('namespaces.action')}</span>
         </div>
 
-        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+        <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-y-auto">
+        {/* 内容区：重取遮罩时降透明度并禁止交互，保持旧帧不闪断（首载骨架不遮罩） */}
+        <div className={refetching ? 'pointer-events-none opacity-40' : undefined}>
           {initialLoading && items.length === 0 ? (
             <SkeletonList count={8} bare />
           ) : error && items.length === 0 ? (
@@ -605,6 +602,13 @@ export function NamespaceManager() {
               <span className="text-[12px] text-faint">{t('common.noMore')}</span>
             ) : null}
           </div>
+        </div>
+        {/* 重取遮罩：有旧数据时的 loading（搜索/活跃度筛选/刷新），居中 spinner */}
+        {refetching && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/50">
+            <Icon name="loader" className="size-5 animate-spin text-faint" />
+          </div>
+        )}
         </div>
       </section>
 

@@ -322,24 +322,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
-    /api/admin/users/sync:
-        post:
-            tags:
-                - User
-            operationId: User_Sync
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/user.SyncUsersResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/google.rpc.Status'
     /api/admin/users/{email}/role:
         put:
             tags:
@@ -2967,19 +2949,13 @@ components:
             properties:
                 ns:
                     $ref: '#/components/schemas/types.NamespaceModel'
-                cpuUsed:
-                    type: string
-                    description: CPU 用量（人类可读，如 "2.1 core"）
-                memUsed:
-                    type: string
-                    description: 内存用量（人类可读，如 "18.4 GiB"）
                 lastActiveAt:
                     type: string
                     description: 最近活跃时间：空间下所有项目 UpdatedAt 的最大值（RFC3339）；无项目（从未活跃）为空串
                 livenessKind:
                     type: string
                     description: 活跃度分类：active（活跃）/ dormant（低活跃）/ zombie（僵尸）；无项目（从未活跃）视为 zombie
-            description: AdminItem 命名空间管理条目：空间模型（含成员/创建者）+ 实时用量 + 最近活跃时间。
+            description: AdminItem 命名空间管理条目：空间模型（含成员/创建者）+ 最近活跃时间 + 活跃度分类。
         namespace.AdminListResponse:
             type: object
             properties:
@@ -3310,18 +3286,7 @@ components:
                     type: string
                 gitCommitDate:
                     type: string
-                cpuRequestMilli:
-                    type: string
-                    description: |-
-                        项目资源申请/实际用量（与空间资源聚合同源：按 PodSelectors 匹配 pod，毫核/字节）：
-                         供治理页量化「僵尸 × 高资源 = 可回收」，资源快照不可用时缺省为 0（非致命降级）。
-                cpuUsageMilli:
-                    type: string
-                memRequestBytes:
-                    type: string
-                memUsageBytes:
-                    type: string
-            description: LivenessItem 单个项目的活跃度条目：标识 + 部署状态/次数 + 最近更新 + 资源占用。
+            description: LivenessItem 单个项目的活跃度条目：标识 + 部署状态/次数 + 最近更新。
         project.LivenessResponse:
             type: object
             properties:
@@ -4083,10 +4048,6 @@ components:
                         $ref: '#/components/schemas/user.UserModel'
                 stats:
                     $ref: '#/components/schemas/user.UserStats'
-        user.SyncUsersResponse:
-            type: object
-            properties: {}
-            description: SyncUsersResponse 同步完成响应（无返回数据，成功即完成）。
         user.ToggleAdminRequest:
             type: object
             properties:

@@ -1507,7 +1507,7 @@ func (x *LivenessRequest) GetLiveness() string {
 	return ""
 }
 
-// LivenessItem 单个项目的活跃度条目：标识 + 部署状态/次数 + 最近更新 + 资源占用。
+// LivenessItem 单个项目的活跃度条目：标识 + 部署状态/次数 + 最近更新。
 type LivenessItem struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	Id        int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1526,12 +1526,6 @@ type LivenessItem struct {
 	GitCommitTitle  string `protobuf:"bytes,10,opt,name=git_commit_title,json=gitCommitTitle,proto3" json:"git_commit_title,omitempty"`
 	GitCommitAuthor string `protobuf:"bytes,11,opt,name=git_commit_author,json=gitCommitAuthor,proto3" json:"git_commit_author,omitempty"`
 	GitCommitDate   string `protobuf:"bytes,12,opt,name=git_commit_date,json=gitCommitDate,proto3" json:"git_commit_date,omitempty"`
-	// 项目资源申请/实际用量（与空间资源聚合同源：按 PodSelectors 匹配 pod，毫核/字节）：
-	// 供治理页量化「僵尸 × 高资源 = 可回收」，资源快照不可用时缺省为 0（非致命降级）。
-	CpuRequestMilli int64 `protobuf:"varint,13,opt,name=cpu_request_milli,json=cpuRequestMilli,proto3" json:"cpu_request_milli,omitempty"`
-	CpuUsageMilli   int64 `protobuf:"varint,14,opt,name=cpu_usage_milli,json=cpuUsageMilli,proto3" json:"cpu_usage_milli,omitempty"`
-	MemRequestBytes int64 `protobuf:"varint,15,opt,name=mem_request_bytes,json=memRequestBytes,proto3" json:"mem_request_bytes,omitempty"`
-	MemUsageBytes   int64 `protobuf:"varint,16,opt,name=mem_usage_bytes,json=memUsageBytes,proto3" json:"mem_usage_bytes,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1648,34 +1642,6 @@ func (x *LivenessItem) GetGitCommitDate() string {
 		return x.GitCommitDate
 	}
 	return ""
-}
-
-func (x *LivenessItem) GetCpuRequestMilli() int64 {
-	if x != nil {
-		return x.CpuRequestMilli
-	}
-	return 0
-}
-
-func (x *LivenessItem) GetCpuUsageMilli() int64 {
-	if x != nil {
-		return x.CpuUsageMilli
-	}
-	return 0
-}
-
-func (x *LivenessItem) GetMemRequestBytes() int64 {
-	if x != nil {
-		return x.MemRequestBytes
-	}
-	return 0
-}
-
-func (x *LivenessItem) GetMemUsageBytes() int64 {
-	if x != nil {
-		return x.MemUsageBytes
-	}
-	return 0
 }
 
 // LivenessStats 活跃度统计（服务端按 30/90 天阈值计算）。
@@ -1946,7 +1912,7 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\bliveness\x18\x04 \x01(\tR\blivenessB\a\n" +
 	"\x05_pageB\f\n" +
 	"\n" +
-	"_page_size\"\xbe\x04\n" +
+	"_page_size\"\x96\x03\n" +
 	"\fLivenessItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1c\n" +
@@ -1963,11 +1929,7 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\x10git_commit_title\x18\n" +
 	" \x01(\tR\x0egitCommitTitle\x12*\n" +
 	"\x11git_commit_author\x18\v \x01(\tR\x0fgitCommitAuthor\x12&\n" +
-	"\x0fgit_commit_date\x18\f \x01(\tR\rgitCommitDate\x12*\n" +
-	"\x11cpu_request_milli\x18\r \x01(\x03R\x0fcpuRequestMilli\x12&\n" +
-	"\x0fcpu_usage_milli\x18\x0e \x01(\x03R\rcpuUsageMilli\x12*\n" +
-	"\x11mem_request_bytes\x18\x0f \x01(\x03R\x0fmemRequestBytes\x12&\n" +
-	"\x0fmem_usage_bytes\x18\x10 \x01(\x03R\rmemUsageBytes\"o\n" +
+	"\x0fgit_commit_date\x18\f \x01(\tR\rgitCommitDate\"o\n" +
 	"\rLivenessStats\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\x05R\x05total\x12\x16\n" +
 	"\x06active\x18\x02 \x01(\x05R\x06active\x12\x18\n" +

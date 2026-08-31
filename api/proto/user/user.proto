@@ -46,13 +46,6 @@ message ToggleAdminRequest {
 
 message ToggleAdminResponse {}
 
-// SyncUsersRequest 触发用户投影同步：把真实身份源（内置管理员/命名空间成员）
-// 同步为 users 投影，幂等可重复调用。空请求，由页面「同步用户」按钮触发。
-message SyncUsersRequest {}
-
-// SyncUsersResponse 同步完成响应（无返回数据，成功即完成）。
-message SyncUsersResponse {}
-
 service User {
   rpc List(ListRequest) returns (ListResponse) {
     option (google.api.http) = {
@@ -64,12 +57,6 @@ service User {
     option (google.api.http) = {
       put: "/api/admin/users/{email}/role",
       body: "*"
-    };
-  }
-
-  rpc Sync(SyncUsersRequest) returns (SyncUsersResponse) {
-    option (google.api.http) = {
-      post: "/api/admin/users/sync"
     };
   }
 }

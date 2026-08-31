@@ -13,8 +13,6 @@ import {
 } from '@/components/ui/shadcn/tooltip'
 import { formatDateTime } from '@/lib/format'
 import { humanizeDateTime } from '@/lib/humanizeDateTime'
-import { fmtCpuMilli, fmtMem } from '@/features/cluster/board'
-import { ratioPct, ResourceBar } from '@/features/cluster/ResourceManagement'
 import { api } from '@/api/client'
 import type { components } from '@/api/schema'
 import type { TKey } from '@/i18n/keys'
@@ -42,9 +40,6 @@ const ZOMBIE_DAYS = 90
 
 /** 单次拉取上限：项目量级百级，全量拉回后本地排序（对齐服务端内存分页语义） */
 const FETCH_LIMIT = 100
-
-/** 资源占用 int64 字段（JSON 序列化为 string）→ number（对齐 ResourceManagement 的字符串数值转 number 模式） */
-const resNum = (v: string): number => Number(v)
 
 /** 无限下拉滚动揭示块大小：一次拉全量后本地排序，滚动到底逐块揭示 */
 const CHUNK = 20
@@ -119,17 +114,9 @@ const GovernanceRow = memo(function GovernanceRow({
   style?: CSSProperties
 }) {
   const { t } = useTranslation()
-  // 资源字段：int64 经 JSON 序列化为 string，统一转 number（与 ResourceManagement 同一模式）
-  const cpuReq = resNum(item.cpuRequestMilli)
-  const cpuUse = resNum(item.cpuUsageMilli)
-  const memReq = resNum(item.memRequestBytes)
-  const memUse = resNum(item.memUsageBytes)
-  // 无运行 Pod 的项目资源全 0 → 资源列显示「—」；回收候选 = 僵尸且仍申请资源（量化可回收）
-  const hasResource = cpuReq > 0 || cpuUse > 0 || memReq > 0 || memUse > 0
-  const recycle = liveness === 'zombie' && (cpuReq > 0 || memReq > 0)
   return (
     <div
-      className={`grid grid-cols-1 gap-1 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_6rem_5rem_2fr_1fr] lg:items-center lg:gap-3 ${className ?? ''}`}
+      className={`grid grid-cols-1 gap-1 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_6rem_5rem_1fr] lg:items-center lg:gap-3 ${className ?? ''}`}
       style={style}
     >
       {/* 项目：名称 + 仓库·分支@commit + 最近提交人（判断代码是否仍有人维护） */}
@@ -160,33 +147,7 @@ const GovernanceRow = memo(function GovernanceRow({
         <span className="ml-0.5 text-[10px] text-faint">{t('governance.times')}</span>
       </span>
 
-      {/* 资源占用：占比条（当前值/申请值 + 占比%），低占比自动 warn（超申请 = 僵尸可回收的量化信号） */}
-      <div className="flex min-w-0 flex-col gap-0.5">
-        {hasResource ? (
-          <>
-            <ResourceBar
-              label={t('resources.cpu')}
-              request={fmtCpuMilli(cpuReq)}
-              usage={fmtCpuMilli(cpuUse)}
-              ratio={ratioPct(cpuReq, cpuUse)}
-              active
-              percentTag
-            />
-            <ResourceBar
-              label={t('resources.mem')}
-              request={fmtMem(memReq)}
-              usage={fmtMem(memUse)}
-              ratio={ratioPct(memReq, memUse)}
-              active
-              percentTag
-            />
-          </>
-        ) : (
-          <span className="text-[11px] text-faint">—</span>
-        )}
-      </div>
-
-      {/* 最后更新时间：相对为主，精确放 tooltip；非活跃/可回收项目前置标签 */}
+      {/* 最后更新时间：相对为主，精确放 tooltip；非活跃项目前置标签 */}
       <div className="flex min-w-0 flex-wrap items-center gap-1.5">
         {liveness !== 'active' && (
           <TooltipProvider delayDuration={100}>
@@ -205,13 +166,6 @@ const GovernanceRow = memo(function GovernanceRow({
             </Tooltip>
           </TooltipProvider>
         )}
-        {recycle && (
-          <span title={t('governance.recycleTip')} className="cursor-help">
-            <Tag tone="accent" dot={false}>
-              {t('governance.recycle')}
-            </Tag>
-          </span>
-        )}
         <time dateTime={item.updatedAt} title={formatDateTime(item.updatedAt)} className="text-[12px] text-ink">
           {humanizeDateTime(item.updatedAt)}
         </time>
@@ -227,8 +181,7 @@ const GovernanceRow = memo(function GovernanceRow({
  * - 顶部三卡统计：项目总数 / 活跃（30 天内更新）/ 僵尸（90 天未更新），数据来自服务端 stats
  * - 关键词搜索 + 活跃度筛选均走服务端 query（输入 300ms 防抖），更新时间列可点击升降序切换
  * - 数据由 /api/admin/projects/liveness 提供；行内活跃度标签按同阈值前端推导（服务端不回传分类），
- *   行同时展示仓库/最近提交（判断代码是否仍有人维护）与资源占用（服务端 join：commit 信息 +
- *   PodSelectors 聚合申请/用量），低占比标超申请、僵尸×高资源行标「建议回收」
+ *   行同时展示仓库/最近提交（判断代码是否仍有人维护）
  */
 export function ProjectGovernance() {
   const { t } = useTranslation()
@@ -333,6 +286,8 @@ export function ProjectGovernance() {
   // 服务端返回条数少于总条数 → 列表被后端截断（如搜索命中超过服务端上限）：
   // 哨兵不再显示「没有更多了」误导，改提示仅展示前 N 条
   const truncated = count > items.length
+  // 有旧数据时的重取 loading：首载 items 为空走骨架，不进遮罩；搜索/筛选/刷新重取则遮罩旧列表
+  const refetching = loading && items.length > 0
 
   // 底部哨兵进入列表视口（含 300px 预加载区）→ 揭示下一块（客户端无限下拉）
   useEffect(() => {
@@ -427,12 +382,11 @@ export function ProjectGovernance() {
 
       {/* 项目列表：固定表头 + 内部滚动容器（无限下拉 root） */}
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-surface">
-        <div className="hidden grid-cols-[1fr_1fr_6rem_5rem_2fr_1fr] items-center gap-3 border-b border-line px-4 py-2 text-[11px] font-medium text-faint lg:grid">
+        <div className="hidden grid-cols-[1fr_1fr_6rem_5rem_1fr] items-center gap-3 border-b border-line px-4 py-2 text-[11px] font-medium text-faint lg:grid">
           <span>{t('governance.project')}</span>
           <span>{t('governance.namespace')}</span>
           <span>{t('governance.status')}</span>
           <span>{t('governance.deployCount')}</span>
-          <span>{t('governance.resource')}</span>
           <button
             type="button"
             onClick={() => setTimeSort((v) => (v === 'desc' ? 'asc' : 'desc'))}
@@ -444,7 +398,9 @@ export function ProjectGovernance() {
           </button>
         </div>
 
-        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+        <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-y-auto">
+        {/* 内容区：重取遮罩时降透明度并禁止交互，保持旧帧不闪断（首载骨架不遮罩） */}
+        <div className={refetching ? 'pointer-events-none opacity-40' : undefined}>
         {loading && items.length === 0 ? (
           <SkeletonList count={8} bare />
         ) : error ? (
@@ -479,6 +435,13 @@ export function ProjectGovernance() {
             <span className="text-[11px] text-faint">{t('common.noMore')}</span>
           )}
         </div>
+        </div>
+        {/* 重取遮罩：有旧数据时的 loading（搜索/活跃度筛选/刷新），居中 spinner */}
+        {refetching && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/50">
+            <Icon name="loader" className="size-5 animate-spin text-faint" />
+          </div>
+        )}
         </div>
       </section>
     </div>

@@ -402,81 +402,6 @@ func (*ToggleAdminResponse) Descriptor() ([]byte, []int) {
 	return file_proto_user_user_proto_rawDescGZIP(), []int{5}
 }
 
-// SyncUsersRequest 触发用户投影同步：把真实身份源（内置管理员/命名空间成员）
-// 同步为 users 投影，幂等可重复调用。空请求，由页面「同步用户」按钮触发。
-type SyncUsersRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SyncUsersRequest) Reset() {
-	*x = SyncUsersRequest{}
-	mi := &file_proto_user_user_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SyncUsersRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SyncUsersRequest) ProtoMessage() {}
-
-func (x *SyncUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_user_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SyncUsersRequest.ProtoReflect.Descriptor instead.
-func (*SyncUsersRequest) Descriptor() ([]byte, []int) {
-	return file_proto_user_user_proto_rawDescGZIP(), []int{6}
-}
-
-// SyncUsersResponse 同步完成响应（无返回数据，成功即完成）。
-type SyncUsersResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SyncUsersResponse) Reset() {
-	*x = SyncUsersResponse{}
-	mi := &file_proto_user_user_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SyncUsersResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SyncUsersResponse) ProtoMessage() {}
-
-func (x *SyncUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_user_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SyncUsersResponse.ProtoReflect.Descriptor instead.
-func (*SyncUsersResponse) Descriptor() ([]byte, []int) {
-	return file_proto_user_user_proto_rawDescGZIP(), []int{7}
-}
-
 var File_proto_user_user_proto protoreflect.FileDescriptor
 
 const file_proto_user_user_proto_rawDesc = "" +
@@ -513,13 +438,10 @@ const file_proto_user_user_proto_rawDesc = "" +
 	"\x12ToggleAdminRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x14\n" +
 	"\x05admin\x18\x02 \x01(\bR\x05admin\"\x15\n" +
-	"\x13ToggleAdminResponse\"\x12\n" +
-	"\x10SyncUsersRequest\"\x13\n" +
-	"\x11SyncUsersResponse2\x95\x02\n" +
+	"\x13ToggleAdminResponse2\xbd\x01\n" +
 	"\x04User\x12G\n" +
 	"\x04List\x12\x11.user.ListRequest\x1a\x12.user.ListResponse\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/admin/users\x12l\n" +
-	"\vToggleAdmin\x12\x18.user.ToggleAdminRequest\x1a\x19.user.ToggleAdminResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\x1a\x1d/api/admin/users/{email}/role\x12V\n" +
-	"\x04Sync\x12\x16.user.SyncUsersRequest\x1a\x17.user.SyncUsersResponse\"\x1d\x82\xd3\xe4\x93\x02\x17\"\x15/api/admin/users/syncB1Z/github.com/duc-cnzj/mars/api/v6/proto/user;userb\x06proto3"
+	"\vToggleAdmin\x12\x18.user.ToggleAdminRequest\x1a\x19.user.ToggleAdminResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\x1a\x1d/api/admin/users/{email}/roleB1Z/github.com/duc-cnzj/mars/api/v6/proto/user;userb\x06proto3"
 
 var (
 	file_proto_user_user_proto_rawDescOnce sync.Once
@@ -533,7 +455,7 @@ func file_proto_user_user_proto_rawDescGZIP() []byte {
 	return file_proto_user_user_proto_rawDescData
 }
 
-var file_proto_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_proto_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_proto_user_user_proto_goTypes = []any{
 	(*UserModel)(nil),           // 0: user.UserModel
 	(*UserStats)(nil),           // 1: user.UserStats
@@ -541,20 +463,16 @@ var file_proto_user_user_proto_goTypes = []any{
 	(*ListResponse)(nil),        // 3: user.ListResponse
 	(*ToggleAdminRequest)(nil),  // 4: user.ToggleAdminRequest
 	(*ToggleAdminResponse)(nil), // 5: user.ToggleAdminResponse
-	(*SyncUsersRequest)(nil),    // 6: user.SyncUsersRequest
-	(*SyncUsersResponse)(nil),   // 7: user.SyncUsersResponse
 }
 var file_proto_user_user_proto_depIdxs = []int32{
 	0, // 0: user.ListResponse.items:type_name -> user.UserModel
 	1, // 1: user.ListResponse.stats:type_name -> user.UserStats
 	2, // 2: user.User.List:input_type -> user.ListRequest
 	4, // 3: user.User.ToggleAdmin:input_type -> user.ToggleAdminRequest
-	6, // 4: user.User.Sync:input_type -> user.SyncUsersRequest
-	3, // 5: user.User.List:output_type -> user.ListResponse
-	5, // 6: user.User.ToggleAdmin:output_type -> user.ToggleAdminResponse
-	7, // 7: user.User.Sync:output_type -> user.SyncUsersResponse
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
+	3, // 4: user.User.List:output_type -> user.ListResponse
+	5, // 5: user.User.ToggleAdmin:output_type -> user.ToggleAdminResponse
+	4, // [4:6] is the sub-list for method output_type
+	2, // [2:4] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
 	2, // [2:2] is the sub-list for extension extendee
 	0, // [0:2] is the sub-list for field type_name
@@ -573,7 +491,7 @@ func file_proto_user_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_user_user_proto_rawDesc), len(file_proto_user_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -36,12 +36,3 @@ func (s *UserSvc) ToggleAdmin(ctx context.Context, req *user.ToggleAdminRequest)
 	}
 	return &out, nil
 }
-
-// Sync POST /api/admin/users/sync。
-func (s *UserSvc) Sync(ctx context.Context, req *user.SyncUsersRequest) (*user.SyncUsersResponse, error) {
-	var out user.SyncUsersResponse
-	if err := s.C.DoQuery(ctx, http.MethodPost, "/api/admin/users/sync", req, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}

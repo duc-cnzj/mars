@@ -22,7 +22,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	User_List_FullMethodName        = "/user.User/List"
 	User_ToggleAdmin_FullMethodName = "/user.User/ToggleAdmin"
-	User_Sync_FullMethodName        = "/user.User/Sync"
 )
 
 // UserClient is the client API for User service.
@@ -31,7 +30,6 @@ const (
 type UserClient interface {
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	ToggleAdmin(ctx context.Context, in *ToggleAdminRequest, opts ...grpc.CallOption) (*ToggleAdminResponse, error)
-	Sync(ctx context.Context, in *SyncUsersRequest, opts ...grpc.CallOption) (*SyncUsersResponse, error)
 }
 
 type userClient struct {
@@ -62,23 +60,12 @@ func (c *userClient) ToggleAdmin(ctx context.Context, in *ToggleAdminRequest, op
 	return out, nil
 }
 
-func (c *userClient) Sync(ctx context.Context, in *SyncUsersRequest, opts ...grpc.CallOption) (*SyncUsersResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SyncUsersResponse)
-	err := c.cc.Invoke(ctx, User_Sync_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // UserServer is the server API for User service.
 // All implementations must embed UnimplementedUserServer
 // for forward compatibility.
 type UserServer interface {
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	ToggleAdmin(context.Context, *ToggleAdminRequest) (*ToggleAdminResponse, error)
-	Sync(context.Context, *SyncUsersRequest) (*SyncUsersResponse, error)
 	mustEmbedUnimplementedUserServer()
 }
 
@@ -94,9 +81,6 @@ func (UnimplementedUserServer) List(context.Context, *ListRequest) (*ListRespons
 }
 func (UnimplementedUserServer) ToggleAdmin(context.Context, *ToggleAdminRequest) (*ToggleAdminResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ToggleAdmin not implemented")
-}
-func (UnimplementedUserServer) Sync(context.Context, *SyncUsersRequest) (*SyncUsersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Sync not implemented")
 }
 func (UnimplementedUserServer) mustEmbedUnimplementedUserServer() {}
 func (UnimplementedUserServer) testEmbeddedByValue()              {}
@@ -155,24 +139,6 @@ func _User_ToggleAdmin_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _User_Sync_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SyncUsersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserServer).Sync(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: User_Sync_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServer).Sync(ctx, req.(*SyncUsersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // User_ServiceDesc is the grpc.ServiceDesc for User service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -187,10 +153,6 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ToggleAdmin",
 			Handler:    _User_ToggleAdmin_Handler,
-		},
-		{
-			MethodName: "Sync",
-			Handler:    _User_Sync_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

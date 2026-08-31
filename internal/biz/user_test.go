@@ -18,7 +18,6 @@ type fakeUserRepoForUserBiz struct {
 	syncErr   error
 	listErr   error
 	toggleErr error
-	synced    bool
 	syncIn    struct {
 		email string
 		name  string
@@ -29,11 +28,6 @@ type fakeUserRepoForUserBiz struct {
 		email string
 		admin bool
 	}
-}
-
-func (f *fakeUserRepoForUserBiz) EnsureSynced(ctx context.Context) error {
-	f.synced = true
-	return f.syncErr
 }
 
 func (f *fakeUserRepoForUserBiz) SyncLoginUser(ctx context.Context, email, name string) error {
@@ -55,7 +49,7 @@ func (f *fakeUserRepoForUserBiz) ToggleAdmin(ctx context.Context, email string, 
 	return f.toggleErr
 }
 
-// TestUserBiz_List_Success 成功路径：直接透传 repo 查询，不做隐式同步。
+// TestUserBiz_List_Success 成功路径：直接透传 repo 查询。
 func TestUserBiz_List_Success(t *testing.T) {
 	fake := &fakeUserRepoForUserBiz{result: &ListUserResult{
 		Items: []*User{{Email: "a@b.c"}},
@@ -66,28 +60,9 @@ func TestUserBiz_List_Success(t *testing.T) {
 
 	out, err := b.List(context.TODO(), &ListUserInput{Page: 2, PageSize: 10})
 	assert.NoError(t, err)
-	assert.False(t, fake.synced, "List 不应隐式同步（同步由「同步用户」按钮显式触发）")
 	assert.Equal(t, int32(2), fake.listIn.Page)
 	assert.Equal(t, int32(10), fake.listIn.PageSize)
 	assert.Same(t, fake.result, out, "List 应原样透传 repo 结果")
-}
-
-// TestUserBiz_Sync_Success 成功路径：Sync 触发 repo.EnsureSynced 全量同步。
-func TestUserBiz_Sync_Success(t *testing.T) {
-	fake := &fakeUserRepoForUserBiz{}
-	b := NewUserBiz(fake)
-
-	assert.NoError(t, b.Sync(context.TODO()))
-	assert.True(t, fake.synced, "Sync 应触发 repo.EnsureSynced")
-}
-
-// TestUserBiz_Sync_Error 同步失败：透传 repo 错误。
-func TestUserBiz_Sync_Error(t *testing.T) {
-	fake := &fakeUserRepoForUserBiz{syncErr: errors.New("sync boom")}
-	b := NewUserBiz(fake)
-
-	err := b.Sync(context.TODO())
-	assert.EqualError(t, err, "sync boom")
 }
 
 // TestUserBiz_ToggleAdmin_Success 成功路径：透传 email/admin 到 repo。

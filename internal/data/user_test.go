@@ -26,161 +26,6 @@ func newUserRepo(t *testing.T) (*userRepo, *ent.Client) {
 	return repo.(*userRepo), entdb
 }
 
-// Test_userRepo_EnsureSynced_SeedsFromSources 内置管理员/命名空间成员两类源全部落库为
-// users 投影，且重复调用幂等不产生重复行。登录用户由 SyncLoginUser 在登录热路径实时
-// upsert，EnsureSynced 不再从登录事件兜底，故无登录源断言。
-func Test_userRepo_EnsureSynced_SeedsFromSources(t *testing.T) {
-	repo, entdb := newUserRepo(t)
-	ctx := context.TODO()
-
-	_, err := entdb.Member.Create().SetEmail("bob@x.com").Save(ctx)
-	require.NoError(t, err)
-
-	require.NoError(t, repo.EnsureSynced(ctx))
-
-	byEmail := make(map[string]*ent.User)
-	for _, u := range entdb.User.Query().AllX(ctx) {
-		byEmail[u.Email] = u
-	}
-	require.Len(t, byEmail, 2, "应落库内置管理员 + 命名空间成员两行")
-
-	admin := byEmail[biz.SuperAdminEmail]
-	require.NotNil(t, admin)
-	assert.Equal(t, biz.SuperAdminName, admin.Name)
-	assert.Equal(t, []string{biz.MarsAdmin}, admin.Roles)
-	assert.Nil(t, admin.LastLogin, "同步源不携带登录时间")
-
-	bob := byEmail["bob@x.com"]
-	require.NotNil(t, bob)
-	assert.Equal(t, "bob", bob.Name, "成员源展示名回退邮箱本地部分")
-	assert.Equal(t, []string{}, bob.Roles)
-	assert.Nil(t, bob.LastLogin, "成员源无登录时间")
-	assert.Less(t, admin.ID, bob.ID, "同步顺序：内置管理员恒先落库（ID 最小）")
-
-	// 幂等：重复同步不新增行
-	require.NoError(t, repo.EnsureSynced(ctx))
-	assert.Len(t, entdb.User.Query().AllX(ctx), 2)
-}
-
-// Test_userRepo_EnsureSynced_SuperAdminFirst 多成员并发同步时内置管理员恒为第一条落库，
-// ID 小于所有成员——回归锁定「同步用户时第一个先同步超级管理员」：collectSyncSources 若按
-// map 遍历，Go 迭代随机序会把超管插到成员中间，ID 不再最小（此用例断言 >1 成员时仍成立）。
-func Test_userRepo_EnsureSynced_SuperAdminFirst(t *testing.T) {
-	repo, entdb := newUserRepo(t)
-	ctx := context.TODO()
-
-	for _, email := range []string{"a@x.com", "b@x.com", "c@x.com"} {
-		_, err := entdb.Member.Create().SetEmail(email).Save(ctx)
-		require.NoError(t, err)
-	}
-	require.NoError(t, repo.EnsureSynced(ctx))
-
-	admin := entdb.User.Query().Where(entuser.EmailEQ(biz.SuperAdminEmail)).OnlyX(ctx)
-	for _, u := range entdb.User.Query().AllX(ctx) {
-		if u.Email == biz.SuperAdminEmail {
-			continue
-		}
-		assert.Less(t, admin.ID, u.ID, "内置管理员应最先落库（ID 最小），got admin=%d member=%s id=%d", admin.ID, u.Email, u.ID)
-	}
-}
-
-// Test_userRepo_EnsureSynced_PreservesRoles 已有用户手动升降级后再次同步不被冲回默认。
-// last_login 由 SyncLoginUser 推进，EnsureSynced 不触碰登录时间（同步源不携带）。
-func Test_userRepo_EnsureSynced_PreservesRoles(t *testing.T) {
-	repo, entdb := newUserRepo(t)
-	ctx := context.TODO()
-
-	_, err := entdb.Member.Create().SetEmail("bob@x.com").Save(ctx)
-	require.NoError(t, err)
-	require.NoError(t, repo.EnsureSynced(ctx))
-
-	// 手动升级为管理员后，再次同步 roles 不被覆盖
-	require.NoError(t, repo.ToggleAdmin(ctx, "bob@x.com", true))
-	require.NoError(t, repo.EnsureSynced(ctx))
-
-	bob := entdb.User.Query().Where(entuser.EmailEQ("bob@x.com")).OnlyX(ctx)
-	assert.True(t, slices.Contains(bob.Roles, biz.MarsAdmin), "同步不得覆盖手动角色")
-	assert.Nil(t, bob.LastLogin, "同步源不携带登录时间，不触碰 last_login")
-}
-
-// Test_userRepo_EnsureSynced_MemberEmailWithoutAtSign 成员邮箱不含 @ 时展示名
-// 回退为邮箱本身（localPartOf 的兜底分支）。
-func Test_userRepo_EnsureSynced_MemberEmailWithoutAtSign(t *testing.T) {
-	repo, entdb := newUserRepo(t)
-	ctx := context.TODO()
-
-	_, err := entdb.Member.Create().SetEmail("plain").Save(ctx)
-	require.NoError(t, err)
-	require.NoError(t, repo.EnsureSynced(ctx))
-
-	member := entdb.User.Query().Where(entuser.EmailEQ("plain")).OnlyX(ctx)
-	assert.Equal(t, "plain", member.Name, "无 @ 邮箱展示名回退为邮箱本身")
-}
-
-// Test_userRepo_EnsureSynced_MemberEmailHitsExistingSourceSkip 成员邮箱命中内置管理员源时
-// 跳过不重复入列：collectSyncSources 的 sources 已存在分支不产生重复行、不改写角色。
-func Test_userRepo_EnsureSynced_MemberEmailHitsExistingSourceSkip(t *testing.T) {
-	repo, entdb := newUserRepo(t)
-	ctx := context.TODO()
-
-	_, err := entdb.Member.Create().SetEmail(biz.SuperAdminEmail).Save(ctx)
-	require.NoError(t, err)
-
-	require.NoError(t, repo.EnsureSynced(ctx))
-
-	admins := entdb.User.Query().Where(entuser.EmailEQ(biz.SuperAdminEmail)).AllX(ctx)
-	assert.Len(t, admins, 1, "成员邮箱命中已有源时不得产生重复行")
-	assert.Equal(t, []string{biz.MarsAdmin}, admins[0].Roles, "角色不被成员源改写")
-}
-
-// Test_userRepo_EnsureSynced_MemberEmailLowercased 成员邮箱混合大小写同步时统一小写落库：
-// collectSyncSources 与 SyncLoginUser（ToLower 归一）口径一致，杜绝同一逻辑身份因
-// UNIQUE 索引大小写敏感分裂成 Bob@X.com + bob@x.com 两行——列表重复、统计虚高、
-// 成员源行 last_login 永远推不进。
-func Test_userRepo_EnsureSynced_MemberEmailLowercased(t *testing.T) {
-	repo, entdb := newUserRepo(t)
-	ctx := context.TODO()
-
-	_, err := entdb.Member.Create().SetEmail("Bob@X.com").Save(ctx)
-	require.NoError(t, err)
-	require.NoError(t, repo.EnsureSynced(ctx))
-
-	// 成员源落库必须小写归一，不允许出现 Bob@X.com 行
-	bobUpper := entdb.User.Query().Where(entuser.EmailEQ("Bob@X.com")).AllX(ctx)
-	assert.Empty(t, bobUpper, "混合大小写邮箱不得原样落库")
-
-	bob := entdb.User.Query().Where(entuser.EmailEQ("bob@x.com")).OnlyX(ctx)
-	assert.NotNil(t, bob, "成员源应小写落库为 bob@x.com")
-	assert.Equal(t, []string{}, bob.Roles, "成员源角色为空数组=普通用户")
-
-	// 该用户走 OIDC 登录（大小写混合输入）：小写归一命中既有行，推进 last_login 而非新建重复行
-	require.NoError(t, repo.SyncLoginUser(ctx, "Bob@X.com", "bob"))
-	rows := entdb.User.Query().AllX(ctx)
-	assert.Len(t, rows, 2, "超管 + bob@x.com，不允许分裂成两行")
-	assert.NotNil(t, entdb.User.Query().Where(entuser.EmailEQ("bob@x.com")).OnlyX(ctx).LastLogin, "OIDC 登录应推进 last_login")
-}
-
-// Test_userRepo_EnsureSynced_NameOnlyFillsEmpty 展示名仅补空：已有非空展示名不被覆盖。
-func Test_userRepo_EnsureSynced_NameOnlyFillsEmpty(t *testing.T) {
-	repo, entdb := newUserRepo(t)
-	ctx := context.TODO()
-
-	_, err := entdb.Member.Create().SetEmail("bob@x.com").Save(ctx)
-	require.NoError(t, err)
-	require.NoError(t, repo.EnsureSynced(ctx))
-
-	// 清空展示名后重新同步应补回；改名后不应被覆盖
-	_, err = entdb.User.Update().Where(entuser.EmailEQ("bob@x.com")).SetName("").Save(ctx)
-	require.NoError(t, err)
-	require.NoError(t, repo.EnsureSynced(ctx))
-	assert.Equal(t, "bob", entdb.User.Query().Where(entuser.EmailEQ("bob@x.com")).OnlyX(ctx).Name)
-
-	_, err = entdb.User.Update().Where(entuser.EmailEQ("bob@x.com")).SetName("自定义名").Save(ctx)
-	require.NoError(t, err)
-	require.NoError(t, repo.EnsureSynced(ctx))
-	assert.Equal(t, "自定义名", entdb.User.Query().Where(entuser.EmailEQ("bob@x.com")).OnlyX(ctx).Name)
-}
-
 // Test_userRepo_List_SearchAdminOnlyStats 覆盖搜索/仅管理员过滤/全量统计/分页。
 func Test_userRepo_List_SearchAdminOnlyStats(t *testing.T) {
 	repo, entdb := newUserRepo(t)
@@ -260,12 +105,6 @@ func Test_userRepo_List_ErrorBranch(t *testing.T) {
 	repo := NewUserRepo(NewDataImpl(&NewDataParams{DB: mustClosedDB(t), Cfg: &config.Config{}}), timer.NewReal()).(*userRepo)
 	_, err := repo.List(context.TODO(), &biz.ListUserInput{Page: 1, PageSize: 10})
 	assert.Error(t, err)
-}
-
-// Test_userRepo_EnsureSynced_ErrorBranch 关闭 DB 下同步源查询失败即返回错误。
-func Test_userRepo_EnsureSynced_ErrorBranch(t *testing.T) {
-	repo := NewUserRepo(NewDataImpl(&NewDataParams{DB: mustClosedDB(t), Cfg: &config.Config{}}), timer.NewReal()).(*userRepo)
-	assert.Error(t, repo.EnsureSynced(context.TODO()))
 }
 
 // TestToUser 覆盖 nil 与实体两种转换。
@@ -380,15 +219,18 @@ func Test_userRepo_SyncLoginUser_DoesNotOverrideName(t *testing.T) {
 }
 
 // Test_userRepo_SyncLoginUser_UpgradesLocalPartName 既有用户名为「email 本地部分」
-// （成员同步/空登录名的自动默认值）时，带真实登录名登录应升级展示名并推进最近登录。
+// （空登录名的自动默认值）时，带真实登录名登录应升级展示名并推进最近登录。
 func Test_userRepo_SyncLoginUser_UpgradesLocalPartName(t *testing.T) {
 	repo, entdb := newUserRepo(t)
 	ctx := context.TODO()
 
-	// 成员同步生成的投影：展示名回退为 email 本地部分
-	_, err := entdb.Member.Create().SetEmail("linkaijian@uco.com").Save(ctx)
+	// 既有投影：展示名为 email 本地部分（空登录名自动默认值落库）
+	_, err := entdb.User.Create().
+		SetEmail("linkaijian@uco.com").
+		SetName("linkaijian").
+		SetRoles([]string{}).
+		Save(ctx)
 	require.NoError(t, err)
-	require.NoError(t, repo.EnsureSynced(ctx))
 
 	// 带真实 OIDC 登录名再次登录：本地部分默认名升级为真实名
 	require.NoError(t, repo.SyncLoginUser(ctx, "linkaijian@uco.com", "林开建（AI）"))
@@ -396,25 +238,6 @@ func Test_userRepo_SyncLoginUser_UpgradesLocalPartName(t *testing.T) {
 	u := entdb.User.Query().Where(entuser.EmailEQ("linkaijian@uco.com")).OnlyX(ctx)
 	assert.Equal(t, "林开建（AI）", u.Name, "email 本地部分默认名应升级为真实登录名")
 	assert.NotNil(t, u.LastLogin, "登录应推进 last_login")
-}
-
-// Test_userRepo_SyncLoginUser_UpgradeNotDowngradedBySync 升级单向：已升级为真实名的
-// 用户，成员全量同步（源 name 为本地部分）不得降级回本地部分。
-func Test_userRepo_SyncLoginUser_UpgradeNotDowngradedBySync(t *testing.T) {
-	repo, entdb := newUserRepo(t)
-	ctx := context.TODO()
-
-	_, err := entdb.Member.Create().SetEmail("bob@x.com").Save(ctx)
-	require.NoError(t, err)
-	require.NoError(t, repo.EnsureSynced(ctx))
-
-	// 登录升级为真实名
-	require.NoError(t, repo.SyncLoginUser(ctx, "bob@x.com", "Bob Builder"))
-	// 成员全量同步（源 name=本地部分 bob），真实名不得被降级
-	require.NoError(t, repo.EnsureSynced(ctx))
-
-	u := entdb.User.Query().Where(entuser.EmailEQ("bob@x.com")).OnlyX(ctx)
-	assert.Equal(t, "Bob Builder", u.Name, "真实名不得被成员同步降级回本地部分")
 }
 
 // Test_userRepo_SyncLoginUser_DoesNotRewindLastLogin 已有更晚登录时间不倒退。

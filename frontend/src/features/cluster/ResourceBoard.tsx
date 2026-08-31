@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@/components/Icons'
-import { RefreshFade } from '@/components/ui'
+import { RefreshFade, SkeletonList } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
+import { Skeleton } from '@/components/ui/shadcn/skeleton'
 import { useResourceBoard, REFRESH_INTERVAL_MS } from './useResourceBoard'
 import { OverviewCards } from './OverviewCards'
 import { NodeTable } from './NodeTable'
@@ -30,8 +31,11 @@ export function ResourceBoard() {
     lastUpdate,
     version,
     refreshing,
+    refetching,
     refresh,
   } = useResourceBoard()
+  // 已有一版数据：首载（nodes 为空）走骨架屏；重取（手动刷新 / topSort 切换）时遮罩旧帧不闪断
+  const hasData = nodes.length > 0
 
   return (
     <div className="flex flex-col gap-4">
@@ -60,30 +64,64 @@ export function ResourceBoard() {
         </div>
       </div>
 
-      {/* 内容区：进入/手动刷新重播渐入；轮询不 bump version → 每 3s 不闪屏 */}
-      <RefreshFade version={version} className="flex flex-col gap-4">
-        {/* 集群总览四卡 */}
-        <div>
-          <OverviewCards
-            overview={overview}
-            namespaceCount={namespaces.length}
-            podCount={podCount}
-            cpuTrend={cpuTrend}
-            memTrend={memTrend}
-          />
-        </div>
+      {/* 内容区：重取遮罩时降透明度并禁止交互，保持旧帧不闪断（首载骨架不遮罩） */}
+      <div className="relative">
+        {!hasData ? (
+          /* 首载骨架：卡片区 + 列表区占位（对齐看板实际布局：四卡 → 节点表 → 排行双列） */
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="rounded-lg border border-line bg-surface p-4">
+                  <Skeleton className="h-3 w-14" />
+                  <Skeleton className="mt-3 h-6 w-20" />
+                </div>
+              ))}
+            </div>
+            <SkeletonList count={5} />
+            <div className="flex flex-col gap-4 lg:flex-row">
+              <div className="flex-1">
+                <SkeletonList count={5} />
+              </div>
+              <div className="flex-1">
+                <SkeletonList count={5} />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className={refetching ? 'pointer-events-none opacity-40' : undefined}>
+            {/* 进入/手动刷新重播渐入；轮询不 bump version → 周期刷新不闪屏 */}
+            <RefreshFade version={version} className="flex flex-col gap-4">
+              {/* 集群总览四卡 */}
+              <div>
+                <OverviewCards
+                  overview={overview}
+                  namespaceCount={namespaces.length}
+                  podCount={podCount}
+                  cpuTrend={cpuTrend}
+                  memTrend={memTrend}
+                />
+              </div>
 
-        {/* 节点资源表 */}
-        <div>
-          <NodeTable nodes={nodes} />
-        </div>
+              {/* 节点资源表 */}
+              <div>
+                <NodeTable nodes={nodes} />
+              </div>
 
-        {/* 命名空间排行 + Top Pod 排行（宽屏双列，窄屏堆叠） */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <NamespaceRank namespaces={namespaces} />
-          <TopPods pods={pods} topSort={topSort} onTopSortChange={setTopSort} />
-        </div>
-      </RefreshFade>
+              {/* 命名空间排行 + Top Pod 排行（宽屏双列，窄屏堆叠） */}
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <NamespaceRank namespaces={namespaces} />
+                <TopPods pods={pods} topSort={topSort} onTopSortChange={setTopSort} />
+              </div>
+            </RefreshFade>
+          </div>
+        )}
+        {/* 重取遮罩：手动刷新 / topSort 维度切换（用户操作，非轮询）时居中 spinner */}
+        {refetching && hasData && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/50">
+            <Icon name="loader" className="size-5 animate-spin text-faint" />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
