@@ -760,21 +760,6 @@ func (mr *MockK8sRepoMockRecorder) ClusterInfo() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterInfo", reflect.TypeOf((*MockK8sRepo)(nil).ClusterInfo))
 }
 
-// RefreshClusterInfo mocks base method.
-func (m *MockK8sRepo) RefreshClusterInfo() (*biz.ClusterInfo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RefreshClusterInfo")
-	ret0, _ := ret[0].(*biz.ClusterInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// RefreshClusterInfo indicates an expected call of RefreshClusterInfo.
-func (mr *MockK8sRepoMockRecorder) RefreshClusterInfo() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshClusterInfo", reflect.TypeOf((*MockK8sRepo)(nil).RefreshClusterInfo))
-}
-
 // CopyFileToPod mocks base method.
 func (m *MockK8sRepo) CopyFileToPod(arg0 context.Context, arg1 *biz.CopyFileToPodInput) (*biz.File, error) {
 	m.ctrl.T.Helper()
@@ -1291,6 +1276,21 @@ func (m *MockK8sRepo) LogStream(arg0 context.Context, arg1, arg2, arg3 string) (
 func (mr *MockK8sRepoMockRecorder) LogStream(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogStream", reflect.TypeOf((*MockK8sRepo)(nil).LogStream), arg0, arg1, arg2, arg3)
+}
+
+// RefreshClusterInfo mocks base method.
+func (m *MockK8sRepo) RefreshClusterInfo() (*biz.ClusterInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RefreshClusterInfo")
+	ret0, _ := ret[0].(*biz.ClusterInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RefreshClusterInfo indicates an expected call of RefreshClusterInfo.
+func (mr *MockK8sRepoMockRecorder) RefreshClusterInfo() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshClusterInfo", reflect.TypeOf((*MockK8sRepo)(nil).RefreshClusterInfo))
 }
 
 // ResourceSnapshot mocks base method.

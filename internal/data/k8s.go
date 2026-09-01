@@ -742,8 +742,8 @@ func (repo *k8sRepo) CopyFileToPod(ctx context.Context, input *biz.CopyFileToPod
 }
 
 // ClusterInfo 返回集群资源统计（调度能力/用量/请求率/健康状态），经 30s 缓存合并重复读：
-// 命中直接反序列化缓存快照；未命中/缓存出错时降级实时计算（cache 为 nil 的旧构造也走
-// 实时，兼容既有测试）。节点或指标 List 失败由 fetchClusterInfo 记日志降级返回。
+// 命中直接反序列化缓存快照；未命中/缓存出错时降级实时计算。节点或指标 List 失败由
+// fetchClusterInfo 记日志降级返回。
 func (repo *k8sRepo) ClusterInfo() *biz.ClusterInfo {
 	info, err := repo.clusterInfo(false)
 	if err != nil {
@@ -758,12 +758,9 @@ func (repo *k8sRepo) RefreshClusterInfo() (*biz.ClusterInfo, error) {
 	return repo.clusterInfo(true)
 }
 
-// clusterInfo 读取集群信息缓存；force 时跳过缓存读直接回填。cache 为 nil（旧构造/
-// 未配置缓存驱动）时不缓存直接实时计算，兼容既有测试。序列化/反序列化失败上抛。
+// clusterInfo 读取集群信息缓存；force 时跳过缓存读直接回填。缓存始终由 NewK8sRepo 注入，
+// 序列化/反序列化失败上抛。
 func (repo *k8sRepo) clusterInfo(force bool) (*biz.ClusterInfo, error) {
-	if repo.cache == nil {
-		return repo.fetchClusterInfo(), nil
-	}
 	remember, err := repo.cache.Remember(NewKey("cluster_info"), clusterInfoCacheSeconds, func() ([]byte, error) {
 		return json.Marshal(repo.fetchClusterInfo())
 	}, force)

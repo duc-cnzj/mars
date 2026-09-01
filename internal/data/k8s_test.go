@@ -680,6 +680,7 @@ func TestClusterInfo(t *testing.T) {
 	kr := &k8sRepo{
 		logger: mlog.NewForConfig(nil),
 		data:   mockData,
+		cache:  NewCacheImpl(&config.Config{}, nil, mlog.NewForConfig(nil)),
 	}
 	mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
 	info := kr.ClusterInfo()
@@ -885,35 +886,6 @@ func TestK8sRepo_RefreshClusterInfo_RememberError(t *testing.T) {
 	got, err := kr.RefreshClusterInfo()
 	assert.Nil(t, got)
 	assert.EqualError(t, err, "cache boom")
-}
-
-// TestK8sRepo_RefreshClusterInfo_NoCache 覆盖 cache 为 nil（旧构造/未配置缓存驱动）时
-// RefreshClusterInfo 直接实时计算返回，不 panic 也无错误（预热对无缓存环境是无害空转）。
-func TestK8sRepo_RefreshClusterInfo_NoCache(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	fc := fake.NewSimpleClientset(&corev1.NodeList{Items: []corev1.Node{
-		{
-			ObjectMeta: metav1.ObjectMeta{Name: "node01"},
-			Status: corev1.NodeStatus{
-				Allocatable: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("3"),
-					corev1.ResourceMemory: resource.MustParse("10Gi"),
-				},
-			},
-		},
-	}})
-	fcm := &fake2.Clientset{}
-	fcm.AddReactor("list", "nodes", func(action testing2.Action) (bool, runtime.Object, error) {
-		return true, &v1beta1.NodeMetricsList{}, nil
-	})
-	mockData := NewMockDataStore(m)
-	kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData, cache: nil}
-	mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
-
-	info, err := kr.RefreshClusterInfo()
-	assert.NoError(t, err)
-	assert.NotNil(t, info)
 }
 
 func Test_getNodeRequestCpuAndMemory(t *testing.T) {
