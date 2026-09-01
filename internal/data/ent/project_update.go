@@ -175,6 +175,26 @@ func (_u *ProjectUpdate) SetNillableCreator(v *string) *ProjectUpdate {
 	return _u
 }
 
+// SetUpdatedBy sets the "updated_by" field.
+func (_u *ProjectUpdate) SetUpdatedBy(v string) *ProjectUpdate {
+	_u.mutation.SetUpdatedBy(v)
+	return _u
+}
+
+// SetNillableUpdatedBy sets the "updated_by" field if the given value is not nil.
+func (_u *ProjectUpdate) SetNillableUpdatedBy(v *string) *ProjectUpdate {
+	if v != nil {
+		_u.SetUpdatedBy(*v)
+	}
+	return _u
+}
+
+// ClearUpdatedBy clears the value of the "updated_by" field.
+func (_u *ProjectUpdate) ClearUpdatedBy() *ProjectUpdate {
+	_u.mutation.ClearUpdatedBy()
+	return _u
+}
+
 // SetOverrideValues sets the "override_values" field.
 func (_u *ProjectUpdate) SetOverrideValues(v string) *ProjectUpdate {
 	_u.mutation.SetOverrideValues(v)
@@ -603,6 +623,11 @@ func (_u *ProjectUpdate) check() error {
 			return &ValidationError{Name: "git_commit", err: fmt.Errorf(`ent: validator failed for field "Project.git_commit": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.UpdatedBy(); ok {
+		if err := project.UpdatedByValidator(v); err != nil {
+			return &ValidationError{Name: "updated_by", err: fmt.Errorf(`ent: validator failed for field "Project.updated_by": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ConfigType(); ok {
 		if err := project.ConfigTypeValidator(v); err != nil {
 			return &ValidationError{Name: "config_type", err: fmt.Errorf(`ent: validator failed for field "Project.config_type": %w`, err)}
@@ -679,6 +704,12 @@ func (_u *ProjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Creator(); ok {
 		_spec.SetField(project.FieldCreator, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.UpdatedBy(); ok {
+		_spec.SetField(project.FieldUpdatedBy, field.TypeString, value)
+	}
+	if _u.mutation.UpdatedByCleared() {
+		_spec.ClearField(project.FieldUpdatedBy, field.TypeString)
 	}
 	if value, ok := _u.mutation.OverrideValues(); ok {
 		_spec.SetField(project.FieldOverrideValues, field.TypeString, value)
@@ -1049,6 +1080,26 @@ func (_u *ProjectUpdateOne) SetNillableCreator(v *string) *ProjectUpdateOne {
 	if v != nil {
 		_u.SetCreator(*v)
 	}
+	return _u
+}
+
+// SetUpdatedBy sets the "updated_by" field.
+func (_u *ProjectUpdateOne) SetUpdatedBy(v string) *ProjectUpdateOne {
+	_u.mutation.SetUpdatedBy(v)
+	return _u
+}
+
+// SetNillableUpdatedBy sets the "updated_by" field if the given value is not nil.
+func (_u *ProjectUpdateOne) SetNillableUpdatedBy(v *string) *ProjectUpdateOne {
+	if v != nil {
+		_u.SetUpdatedBy(*v)
+	}
+	return _u
+}
+
+// ClearUpdatedBy clears the value of the "updated_by" field.
+func (_u *ProjectUpdateOne) ClearUpdatedBy() *ProjectUpdateOne {
+	_u.mutation.ClearUpdatedBy()
 	return _u
 }
 
@@ -1493,6 +1544,11 @@ func (_u *ProjectUpdateOne) check() error {
 			return &ValidationError{Name: "git_commit", err: fmt.Errorf(`ent: validator failed for field "Project.git_commit": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.UpdatedBy(); ok {
+		if err := project.UpdatedByValidator(v); err != nil {
+			return &ValidationError{Name: "updated_by", err: fmt.Errorf(`ent: validator failed for field "Project.updated_by": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ConfigType(); ok {
 		if err := project.ConfigTypeValidator(v); err != nil {
 			return &ValidationError{Name: "config_type", err: fmt.Errorf(`ent: validator failed for field "Project.config_type": %w`, err)}
@@ -1586,6 +1642,12 @@ func (_u *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err er
 	}
 	if value, ok := _u.mutation.Creator(); ok {
 		_spec.SetField(project.FieldCreator, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.UpdatedBy(); ok {
+		_spec.SetField(project.FieldUpdatedBy, field.TypeString, value)
+	}
+	if _u.mutation.UpdatedByCleared() {
+		_spec.ClearField(project.FieldUpdatedBy, field.TypeString)
 	}
 	if value, ok := _u.mutation.OverrideValues(); ok {
 		_spec.SetField(project.FieldOverrideValues, field.TypeString, value)

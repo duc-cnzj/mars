@@ -28,6 +28,9 @@ func (User) Fields() []ent.Field {
 		field.JSON("roles", []string{}).
 			Default([]string{}).
 			Comment("角色列表：mars_admin=管理员；空数组=普通用户"),
+		field.Bool("roles_override").
+			Default(false).
+			Comment("角色是否已被后台手动管理接管：false=登录时按 SSO 角色同步；true=后台手动升降级后 SSO 不再覆盖"),
 		field.Time("last_login").
 			Nillable().
 			Optional().

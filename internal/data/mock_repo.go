@@ -760,6 +760,21 @@ func (mr *MockK8sRepoMockRecorder) ClusterInfo() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterInfo", reflect.TypeOf((*MockK8sRepo)(nil).ClusterInfo))
 }
 
+// RefreshClusterInfo mocks base method.
+func (m *MockK8sRepo) RefreshClusterInfo() (*biz.ClusterInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RefreshClusterInfo")
+	ret0, _ := ret[0].(*biz.ClusterInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RefreshClusterInfo indicates an expected call of RefreshClusterInfo.
+func (mr *MockK8sRepoMockRecorder) RefreshClusterInfo() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshClusterInfo", reflect.TypeOf((*MockK8sRepo)(nil).RefreshClusterInfo))
+}
+
 // CopyFileToPod mocks base method.
 func (m *MockK8sRepo) CopyFileToPod(arg0 context.Context, arg1 *biz.CopyFileToPodInput) (*biz.File, error) {
 	m.ctrl.T.Helper()
@@ -2280,18 +2295,32 @@ func (mr *MockUserRepoMockRecorder) List(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUserRepo)(nil).List), arg0, arg1)
 }
 
-// SyncLoginUser mocks base method.
-func (m *MockUserRepo) SyncLoginUser(arg0 context.Context, arg1, arg2 string) error {
+// ResetRolesOverride mocks base method.
+func (m *MockUserRepo) ResetRolesOverride(arg0 context.Context, arg1 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SyncLoginUser", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "ResetRolesOverride", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetRolesOverride indicates an expected call of ResetRolesOverride.
+func (mr *MockUserRepoMockRecorder) ResetRolesOverride(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetRolesOverride", reflect.TypeOf((*MockUserRepo)(nil).ResetRolesOverride), arg0, arg1)
+}
+
+// SyncLoginUser mocks base method.
+func (m *MockUserRepo) SyncLoginUser(arg0 context.Context, arg1, arg2 string, arg3 []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SyncLoginUser", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SyncLoginUser indicates an expected call of SyncLoginUser.
-func (mr *MockUserRepoMockRecorder) SyncLoginUser(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockUserRepoMockRecorder) SyncLoginUser(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncLoginUser", reflect.TypeOf((*MockUserRepo)(nil).SyncLoginUser), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncLoginUser", reflect.TypeOf((*MockUserRepo)(nil).SyncLoginUser), arg0, arg1, arg2, arg3)
 }
 
 // ToggleAdmin mocks base method.

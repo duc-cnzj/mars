@@ -36,3 +36,12 @@ func (s *UserSvc) ToggleAdmin(ctx context.Context, req *user.ToggleAdminRequest)
 	}
 	return &out, nil
 }
+
+// ResetRolesOverride PUT /api/admin/users/{email}/roles_override。
+func (s *UserSvc) ResetRolesOverride(ctx context.Context, req *user.ResetRolesOverrideRequest) (*user.ResetRolesOverrideResponse, error) {
+	var out user.ResetRolesOverrideResponse
+	if err := s.C.DoQuery(ctx, http.MethodPut, fmt.Sprintf("/api/admin/users/%s/roles_override", url.PathEscape(req.Email)), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

@@ -40,6 +40,8 @@ type Project struct {
 	Config string `json:"config,omitempty"`
 	// Creator holds the value of the "creator" field.
 	Creator string `json:"creator,omitempty"`
+	// 最近一次人为更新的用户名（创建/成功部署），系统自动状态变更不刷新
+	UpdatedBy string `json:"updated_by,omitempty"`
 	// OverrideValues holds the value of the "override_values" field.
 	OverrideValues string `json:"override_values,omitempty"`
 	// docker 镜像
@@ -135,7 +137,7 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case project.FieldID, project.FieldGitProjectID, project.FieldDeployStatus, project.FieldVersion, project.FieldNamespaceID, project.FieldRepoID:
 			values[i] = new(sql.NullInt64)
-		case project.FieldName, project.FieldGitBranch, project.FieldGitCommit, project.FieldConfig, project.FieldCreator, project.FieldOverrideValues, project.FieldConfigType, project.FieldGitCommitWebURL, project.FieldGitCommitTitle, project.FieldGitCommitAuthor:
+		case project.FieldName, project.FieldGitBranch, project.FieldGitCommit, project.FieldConfig, project.FieldCreator, project.FieldUpdatedBy, project.FieldOverrideValues, project.FieldConfigType, project.FieldGitCommitWebURL, project.FieldGitCommitTitle, project.FieldGitCommitAuthor:
 			values[i] = new(sql.NullString)
 		case project.FieldCreatedAt, project.FieldUpdatedAt, project.FieldDeletedAt, project.FieldGitCommitDate:
 			values[i] = new(sql.NullTime)
@@ -214,6 +216,12 @@ func (_m *Project) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field creator", values[i])
 			} else if value.Valid {
 				_m.Creator = value.String
+			}
+		case project.FieldUpdatedBy:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_by", values[i])
+			} else if value.Valid {
+				_m.UpdatedBy = value.String
 			}
 		case project.FieldOverrideValues:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -409,6 +417,9 @@ func (_m *Project) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("creator=")
 	builder.WriteString(_m.Creator)
+	builder.WriteString(", ")
+	builder.WriteString("updated_by=")
+	builder.WriteString(_m.UpdatedBy)
 	builder.WriteString(", ")
 	builder.WriteString("override_values=")
 	builder.WriteString(_m.OverrideValues)

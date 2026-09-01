@@ -22,6 +22,7 @@ export const API = {
   adminSettings: '/api/admin/settings',
   adminUsers: '/api/admin/users',
   adminUserRole: '/api/admin/users/{email}/role',
+  adminUserRolesOverride: '/api/admin/users/{email}/roles_override',
 
   // --- changelogs（配置历史） ---
   changelogsFindLast: '/api/changelogs/find_last_changelogs_by_project_id',

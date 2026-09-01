@@ -77,3 +77,11 @@ func (s *userSvc) ToggleAdmin(ctx context.Context, request *user.ToggleAdminRequ
 	}
 	return &user.ToggleAdminResponse{}, nil
 }
+
+// ResetRolesOverride 解除指定用户的后台手动接管（roles_override 置回 false，恢复 SSO 角色同步）。
+func (s *userSvc) ResetRolesOverride(ctx context.Context, request *user.ResetRolesOverrideRequest) (*user.ResetRolesOverrideResponse, error) {
+	if err := s.userBiz.ResetRolesOverride(ctx, request.Email); err != nil {
+		return nil, logError(ctx, s.logger, err)
+	}
+	return &user.ResetRolesOverrideResponse{}, nil
+}

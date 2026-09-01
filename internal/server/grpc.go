@@ -32,7 +32,8 @@ type grpcRunner struct {
 }
 
 // NewGrpcRunner 构建 gRPC 传输层启动器：从 app 取 GrpcRegistry 用于注册服务、
-// AuthBiz 用于鉴权，endpoint 为监听地址。返回实现 app.Server 生命周期。
+// AuthBiz 用于鉴权与生效角色计算（有效角色经 AuthBiz.EffectiveRoles 按 users 表接管
+// 状态解析，不另需 UserBiz），endpoint 为监听地址。返回实现 app.Server 生命周期。
 func NewGrpcRunner(
 	endpoint string,
 	app app.ServerDeps,
@@ -83,7 +84,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 // 并把注册表中的服务注册到该 server。链序约定见 initServer 内部注释。
 func (g *grpcRunner) initServer() *grpc.Server {
 	authFn := func(ctx context.Context) (context.Context, error) {
-		return authenticate(ctx, g.authBiz)
+		return g.authenticate(ctx)
 	}
 	// 链序约定（从左到右 = 从外到内，最先列出者最外层）：
 	// 1. Recovery 必须在最外层——grpc-go 无内置 recover，内层任何拦截器 panic 未被
@@ -130,14 +131,15 @@ func (g *grpcRunner) recoveryHandler(p any) error {
 	return status.Error(codes.Internal, "internal server error")
 }
 
-// authenticate 从 gRPC metadata 提取 Bearer token 并调用 biz.Authenticate 完成鉴权：
-// 与 HTTP 侧登录中间件共用同一鉴权核心，本函数只做 gRPC 特有的 token 提取。
-func authenticate(ctx context.Context, auth biz.AuthBiz) (context.Context, error) {
+// authenticate 从 gRPC metadata 提取 Bearer token 并完成鉴权：校验、注入用户与按 users
+// 表接管状态计算生效角色统一走 biz.Authenticate，与 HTTP LoginHTTP
+// 中间件共用同一鉴权核心——本函数只负责 gRPC 特有的 token 提取（metadata），不再各自实现。
+func (g *grpcRunner) authenticate(ctx context.Context) (context.Context, error) {
 	token, err := grpc_auth.AuthFromMD(ctx, "bearer")
 	if err != nil {
 		return nil, err
 	}
-	// 校验与用户注入统一走 biz.Authenticate，与 HTTP LoginHTTP 中间件共用同一
-	// 鉴权核心——本函数只负责 gRPC 特有的 token 提取（metadata），不再各自实现。
-	return biz.Authenticate(ctx, auth, token)
+	// 校验与用户注入统一走 biz.Authenticate，与 HTTP LoginHTTP 中间件
+	// 共用同一鉴权核心——本函数只负责 gRPC 特有的 token 提取（metadata）。
+	return biz.Authenticate(ctx, g.authBiz, token)
 }

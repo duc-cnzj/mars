@@ -185,6 +185,7 @@ message ProjectModel {
   Deploy                        deploy_status       = 15;
   string                        humanize_created_at = 16;
   string                        humanize_updated_at = 17;
+  string                        updated_by          = 26;
 
   string                        config_type         = 18;
   string                        git_commit_web_url  = 19;

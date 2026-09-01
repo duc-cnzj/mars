@@ -371,6 +371,7 @@ type Project struct {
 	GitBranch        string
 	GitCommit        string
 	Config           string
+	UpdatedBy        string
 	OverrideValues   string
 	DockerImage      []string
 	PodSelectors     []string
@@ -451,6 +452,7 @@ type CreateProjectInput struct {
 	DeployStatus types.Deploy
 	RepoID       int
 	Creator      string
+	UpdatedBy    string
 }
 
 // UpdateProjectInput 是更新项目的输入。
@@ -472,6 +474,7 @@ type UpdateProjectInput struct {
 	EnvValues        []*types.KeyValue
 	OverrideValues   string
 	Manifest         []string
+	UpdatedBy        string
 }
 
 // StatePod 是项目下单个 pod 的展示状态。

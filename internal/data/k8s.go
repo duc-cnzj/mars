@@ -745,18 +745,36 @@ func (repo *k8sRepo) CopyFileToPod(ctx context.Context, input *biz.CopyFileToPod
 // 命中直接反序列化缓存快照；未命中/缓存出错时降级实时计算（cache 为 nil 的旧构造也走
 // 实时，兼容既有测试）。节点或指标 List 失败由 fetchClusterInfo 记日志降级返回。
 func (repo *k8sRepo) ClusterInfo() *biz.ClusterInfo {
-	if repo.cache != nil {
-		remember, err := repo.cache.Remember(NewKey("cluster_info"), clusterInfoCacheSeconds, func() ([]byte, error) {
-			return json.Marshal(repo.fetchClusterInfo())
-		}, false)
-		if err == nil {
-			var info biz.ClusterInfo
-			if err := json.Unmarshal(remember, &info); err == nil {
-				return &info
-			}
-		}
+	info, err := repo.clusterInfo(false)
+	if err != nil {
+		return repo.fetchClusterInfo()
 	}
-	return repo.fetchClusterInfo()
+	return info
+}
+
+// RefreshClusterInfo 强制刷新集群信息缓存并返回最新统计（cron/启动预热用）：
+// force=true 跳过缓存读直接回填并写回缓存。失败返回错误由调用方记录，下一轮自动重试。
+func (repo *k8sRepo) RefreshClusterInfo() (*biz.ClusterInfo, error) {
+	return repo.clusterInfo(true)
+}
+
+// clusterInfo 读取集群信息缓存；force 时跳过缓存读直接回填。cache 为 nil（旧构造/
+// 未配置缓存驱动）时不缓存直接实时计算，兼容既有测试。序列化/反序列化失败上抛。
+func (repo *k8sRepo) clusterInfo(force bool) (*biz.ClusterInfo, error) {
+	if repo.cache == nil {
+		return repo.fetchClusterInfo(), nil
+	}
+	remember, err := repo.cache.Remember(NewKey("cluster_info"), clusterInfoCacheSeconds, func() ([]byte, error) {
+		return json.Marshal(repo.fetchClusterInfo())
+	}, force)
+	if err != nil {
+		return nil, err
+	}
+	var info biz.ClusterInfo
+	if err := json.Unmarshal(remember, &info); err != nil {
+		return nil, err
+	}
+	return &info, nil
 }
 
 // fetchClusterInfo 实时统计集群资源：节点调度能力/实际用量/请求量，换算 CPU/内存余量
@@ -873,16 +891,16 @@ func (repo *k8sRepo) fetchClusterInfo() *biz.ClusterInfo {
 }
 
 const (
-	// clusterInfoCacheSeconds 集群信息统计缓存的 TTL 秒数：30s，与 cluster_board 快照缓存
-	// 同频——集群节点/用量变化平缓，30s 内统计视为稳定；ClusterBoard 聚合的 Overview 也经
+	// clusterInfoCacheSeconds 集群信息统计缓存的 TTL 秒数：10 分钟，与 cluster_board 快照缓存
+	// 同频——集群节点/用量变化平缓，10 分钟内统计视为稳定；ClusterBoard 聚合的 Overview 也经
 	// 此缓存，TTL 内的重复读不再重复拉取 Nodes/NodeMetrics（fetchClusterBoard 自身的节点
 	// /指标 List 走 cluster_board 独立缓存，冷缓存首访两者仍各拉一次，互不消重）。
-	clusterInfoCacheSeconds = 30
-	// clusterBoardCacheSeconds 集群看板快照缓存的 TTL 秒数（与 cron 预热周期一致）。
-	clusterBoardCacheSeconds = 30
-	// resourceSnapshotCacheSeconds 空间资源快照缓存的 TTL 秒数：5 分钟，比看板缓存
-	// 长——资源板数据量大且变化平缓，降低拉取频率（与 cron 预热周期一致）。
-	resourceSnapshotCacheSeconds = 5 * 60
+	clusterInfoCacheSeconds = 10 * 60
+	// clusterBoardCacheSeconds 集群看板快照缓存的 TTL 秒数。
+	clusterBoardCacheSeconds = 10 * 60
+	// resourceSnapshotCacheSeconds 空间资源快照缓存的 TTL 秒数：10 分钟，与看板缓存同频——
+	// 资源板数据量大且变化平缓，降低拉取频率。
+	resourceSnapshotCacheSeconds = 10 * 60
 )
 
 // ClusterBoard 返回集群看板快照：经 30s 缓存合并重复读，force=true 强制跳过
@@ -909,26 +927,40 @@ func (repo *k8sRepo) ClusterBoard(ctx context.Context, force bool) (*biz.Cluster
 // Running Pod 与 Pod 指标，返回前归约为瘦身 DTO（缓存只存消费字段，丢弃
 // annotations/conditions 等大块）。任一资源 List 失败即整体上抛（errs.Wrap
 // 自动归类），展示层的角色/状态派生与 TopN 排序收敛在 biz 纯函数，本方法只做数据获取。
-func (repo *k8sRepo) fetchClusterBoard(ctx context.Context) (*biz.ClusterBoardData, error) {
-	nodes, err := repo.data.K8s().Client.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+// 每个 List 经 spanCall 包一层 child span，trace 面板可定位是哪一类 k8s API 慢。
+func (repo *k8sRepo) fetchClusterBoard(ctx context.Context) (data *biz.ClusterBoardData, err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/fetchClusterBoard")
+	defer func() { endSpan(span, err) }()
+
+	nodes, err := spanCall(ctx, "k8sRepo/fetchClusterBoard/nodes", func(ctx context.Context) (*corev1.NodeList, error) {
+		return repo.data.K8s().Client.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	})
 	if err != nil {
 		return nil, errs.Wrap(err, "list cluster board nodes")
 	}
-	nodeMetrics, err := repo.data.K8s().MetricsClient.MetricsV1beta1().NodeMetricses().List(ctx, metav1.ListOptions{})
+	nodeMetrics, err := spanCall(ctx, "k8sRepo/fetchClusterBoard/nodeMetrics", func(ctx context.Context) (*v1beta1.NodeMetricsList, error) {
+		return repo.data.K8s().MetricsClient.MetricsV1beta1().NodeMetricses().List(ctx, metav1.ListOptions{})
+	})
 	if err != nil {
 		return nil, errs.Wrap(err, "list cluster board node metrics")
 	}
-	namespaces, err := repo.data.K8s().Client.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+	namespaces, err := spanCall(ctx, "k8sRepo/fetchClusterBoard/namespaces", func(ctx context.Context) (*corev1.NamespaceList, error) {
+		return repo.data.K8s().Client.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+	})
 	if err != nil {
 		return nil, errs.Wrap(err, "list cluster board namespaces")
 	}
-	pods, err := repo.data.K8s().Client.CoreV1().Pods("").List(ctx, metav1.ListOptions{
-		FieldSelector: fields.ParseSelectorOrDie("status.phase=Running").String(),
+	pods, err := spanCall(ctx, "k8sRepo/fetchClusterBoard/pods", func(ctx context.Context) (*corev1.PodList, error) {
+		return repo.data.K8s().Client.CoreV1().Pods("").List(ctx, metav1.ListOptions{
+			FieldSelector: fields.ParseSelectorOrDie("status.phase=Running").String(),
+		})
 	})
 	if err != nil {
 		return nil, errs.Wrap(err, "list cluster board pods")
 	}
-	podMetrics, err := repo.data.K8s().MetricsClient.MetricsV1beta1().PodMetricses("").List(ctx, metav1.ListOptions{})
+	podMetrics, err := spanCall(ctx, "k8sRepo/fetchClusterBoard/podMetrics", func(ctx context.Context) (*v1beta1.PodMetricsList, error) {
+		return repo.data.K8s().MetricsClient.MetricsV1beta1().PodMetricses("").List(ctx, metav1.ListOptions{})
+	})
 	if err != nil {
 		return nil, errs.Wrap(err, "list cluster board pod metrics")
 	}
@@ -964,19 +996,29 @@ func (repo *k8sRepo) ResourceSnapshot(ctx context.Context, force bool) (*biz.Res
 // fetchResourceSnapshot 拉取全部 Running Pod、ReplicaSet 与其 metrics 快照，供空间
 // 资源聚合（requests 取 pod spec、实际用量取 PodMetrics），返回前归约为瘦身 DTO。
 // ReplicaSet 供项目 pod → Deployment 属主链解析（pod 直接属主是 RS，RS 属主是
-// Deployment）。比 ClusterBoard 少了节点/命名空间两次 List。
-func (repo *k8sRepo) fetchResourceSnapshot(ctx context.Context) (*biz.ResourceSnapshotData, error) {
-	pods, err := repo.data.K8s().Client.CoreV1().Pods("").List(ctx, metav1.ListOptions{
-		FieldSelector: fields.ParseSelectorOrDie("status.phase=Running").String(),
+// Deployment）。比 ClusterBoard 少了节点/命名空间两次 List。每个 List 经 spanCall
+// 包一层 child span，trace 面板可定位是哪一类 k8s API 慢。
+func (repo *k8sRepo) fetchResourceSnapshot(ctx context.Context) (data *biz.ResourceSnapshotData, err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/fetchResourceSnapshot")
+	defer func() { endSpan(span, err) }()
+
+	pods, err := spanCall(ctx, "k8sRepo/fetchResourceSnapshot/pods", func(ctx context.Context) (*corev1.PodList, error) {
+		return repo.data.K8s().Client.CoreV1().Pods("").List(ctx, metav1.ListOptions{
+			FieldSelector: fields.ParseSelectorOrDie("status.phase=Running").String(),
+		})
 	})
 	if err != nil {
 		return nil, errs.Wrap(err, "list resource board pods")
 	}
-	rss, err := repo.data.K8s().Client.AppsV1().ReplicaSets("").List(ctx, metav1.ListOptions{})
+	rss, err := spanCall(ctx, "k8sRepo/fetchResourceSnapshot/replicaSets", func(ctx context.Context) (*appsv1.ReplicaSetList, error) {
+		return repo.data.K8s().Client.AppsV1().ReplicaSets("").List(ctx, metav1.ListOptions{})
+	})
 	if err != nil {
 		return nil, errs.Wrap(err, "list resource board replica sets")
 	}
-	podMetrics, err := repo.data.K8s().MetricsClient.MetricsV1beta1().PodMetricses("").List(ctx, metav1.ListOptions{})
+	podMetrics, err := spanCall(ctx, "k8sRepo/fetchResourceSnapshot/podMetrics", func(ctx context.Context) (*v1beta1.PodMetricsList, error) {
+		return repo.data.K8s().MetricsClient.MetricsV1beta1().PodMetricses("").List(ctx, metav1.ListOptions{})
+	})
 	if err != nil {
 		return nil, errs.Wrap(err, "list resource board pod metrics")
 	}

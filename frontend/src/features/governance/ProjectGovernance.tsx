@@ -139,7 +139,7 @@ const GovernanceRow = memo(function GovernanceRow({
 
   return (
     <div
-      className={`grid grid-cols-1 gap-1 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-2 lg:grid-cols-[1fr_3fr_1fr_6rem_4.5rem_5.5rem] lg:items-center lg:gap-3 ${className ?? ''}`}
+      className={`grid grid-cols-1 gap-1 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-2 lg:grid-cols-[1fr_3fr_1fr_6rem_4.5rem_5.5rem_5.5rem] lg:items-center lg:gap-3 ${className ?? ''}`}
       style={style}
     >
       {/* 项目名 */}
@@ -181,6 +181,11 @@ const GovernanceRow = memo(function GovernanceRow({
       <span className="font-mono text-[12px] text-ink">
         {item.deployCount}
         <span className="ml-0.5 text-[10px] text-faint">{t('governance.times')}</span>
+      </span>
+
+      {/* 最近更新人：人为更新（创建/成功部署）者，系统状态变更不刷新；历史项目可能为空 */}
+      <span className="truncate text-[12px] text-mute" title={item.updatedBy}>
+        {item.updatedBy || '—'}
       </span>
 
       {/* 最后更新时间：相对为主，精确放 tooltip；非活跃项目前置标签 */}
@@ -452,12 +457,13 @@ export function ProjectGovernance() {
 
       {/* 项目列表：固定表头 + 内部滚动容器（无限下拉 root） */}
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-surface">
-        <div className="hidden grid-cols-[1fr_3fr_1fr_6rem_4.5rem_5.5rem] items-center gap-3 border-b border-line px-4 py-2 text-[11px] font-medium text-faint lg:grid">
+        <div className="hidden grid-cols-[1fr_3fr_1fr_6rem_4.5rem_5.5rem_5.5rem] items-center gap-3 border-b border-line px-4 py-2 text-[11px] font-medium text-faint lg:grid">
           <span>{t('governance.project')}</span>
           <span>{t('governance.lastCommit')}</span>
           <span>{t('governance.namespace')}</span>
           <span>{t('governance.status')}</span>
           <span>{t('governance.deployCount')}</span>
+          <span>{t('governance.updatedBy')}</span>
           <button
             type="button"
             onClick={() => setTimeSort((v) => (v === 'desc' ? 'asc' : 'desc'))}

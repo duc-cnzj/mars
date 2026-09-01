@@ -34,6 +34,8 @@ const (
 	FieldConfig = "config"
 	// FieldCreator holds the string denoting the creator field in the database.
 	FieldCreator = "creator"
+	// FieldUpdatedBy holds the string denoting the updated_by field in the database.
+	FieldUpdatedBy = "updated_by"
 	// FieldOverrideValues holds the string denoting the override_values field in the database.
 	FieldOverrideValues = "override_values"
 	// FieldDockerImage holds the string denoting the docker_image field in the database.
@@ -111,6 +113,7 @@ var Columns = []string{
 	FieldGitCommit,
 	FieldConfig,
 	FieldCreator,
+	FieldUpdatedBy,
 	FieldOverrideValues,
 	FieldDockerImage,
 	FieldPodSelectors,
@@ -162,6 +165,8 @@ var (
 	GitBranchValidator func(string) error
 	// GitCommitValidator is a validator for the "git_commit" field. It is called by the builders before save.
 	GitCommitValidator func(string) error
+	// UpdatedByValidator is a validator for the "updated_by" field. It is called by the builders before save.
+	UpdatedByValidator func(string) error
 	// DefaultAtomic holds the default value on creation for the "atomic" field.
 	DefaultAtomic bool
 	// DefaultDeployStatus holds the default value on creation for the "deploy_status" field.
@@ -235,6 +240,11 @@ func ByConfig(opts ...sql.OrderTermOption) OrderOption {
 // ByCreator orders the results by the creator field.
 func ByCreator(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreator, opts...).ToFunc()
+}
+
+// ByUpdatedBy orders the results by the updated_by field.
+func ByUpdatedBy(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedBy, opts...).ToFunc()
 }
 
 // ByOverrideValues orders the results by the override_values field.

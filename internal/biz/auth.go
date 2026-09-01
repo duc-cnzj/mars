@@ -56,6 +56,11 @@ type AuthBiz interface {
 	// Exchange 遍历已配置的 OIDC provider，用一次性授权码换取用户信息。
 	// 全部 provider 都失败时返回 InvalidArgument，且不回显 code（一次性凭证）。
 	Exchange(ctx context.Context, code string) (*UserInfo, error)
+	// EffectiveRoles 计算登录用户在鉴权时的生效角色：后台手动接管（roles_override=true）
+	// 的用户以 users 表手工角色为准（SSO 不再覆盖），未接管回落登录身份携带的 SSO 角色。
+	// 供鉴权入口（Authenticate / websocket HandleAuthorize）在验签后调用，实现「后台可控制
+	// SSO 带来的管理员权限」；email 空回落登录身份角色（鉴权路径不阻断）。
+	EffectiveRoles(ctx context.Context, email string, ssoRoles []string) ([]string, error)
 }
 
 // AuthConfigProvider 是 AuthBiz 的配置取数窄接口：定义在消费方（biz），
@@ -68,19 +73,32 @@ type AuthConfigProvider interface {
 	OidcConfig() OidcConfig
 }
 
+// EffectiveRolesProvider 是 AuthBiz 计算生效角色的取数窄接口：定义在消费方（biz），
+// 由 data 用户投影 repo 实现（对齐 AuthConfigProvider 模式）。只暴露生效角色解析，
+// 不把整个用户管理面塞给 AuthBiz——AuthBiz 保持「身份/token + 授权角色解析」职责，
+// users 表数据仍由 data 层持有，biz 通过窄接口取数。
+type EffectiveRolesProvider interface {
+	// EffectiveRoles 按 users 表 roles_override 接管状态计算生效角色：被手动接管
+	// （true）以 users 表手工角色为准，未接管回落登录身份携带的 SSO 角色。
+	EffectiveRoles(ctx context.Context, email string, ssoRoles []string) ([]string, error)
+}
+
 type authBiz struct {
 	auth          Auth
 	adminPassword string
 	oidcConfig    func() OidcConfig
+	roles         EffectiveRolesProvider
 	logger        mlog.Logger
 }
 
-// NewAuthBiz 构造 auth biz：注入认证器与配置（admin 密码、OIDC provider 配置）。
-func NewAuthBiz(auth Auth, cfg AuthConfigProvider, logger mlog.Logger) AuthBiz {
+// NewAuthBiz 构造 auth biz：注入认证器、配置（admin 密码、OIDC provider 配置）与
+// 生效角色解析器（data 用户投影 repo，窄接口取数不暴露用户管理面）。
+func NewAuthBiz(auth Auth, cfg AuthConfigProvider, roles EffectiveRolesProvider, logger mlog.Logger) AuthBiz {
 	return &authBiz{
 		auth:          auth,
 		adminPassword: cfg.AdminPassword(),
 		oidcConfig:    func() OidcConfig { return cfg.OidcConfig() },
+		roles:         roles,
 		logger:        logger,
 	}
 }
@@ -114,6 +132,17 @@ func (a *authBiz) VerifyToken(ctx context.Context, token string) (*UserInfo, err
 	// email 统一小写
 	verifyToken.UserInfo.Email = strings.ToLower(verifyToken.UserInfo.Email)
 	return verifyToken.UserInfo, nil
+}
+
+// EffectiveRoles 计算登录用户在鉴权时的生效角色：email 空回落登录身份角色（鉴权路径
+// 不阻断——空邮箱无法匹配 users 表，跟随登录身份即正确退化），否则把邮箱与登录身份
+// 角色透传给窄接口 provider 按 users 表 roles_override 接管状态计算生效角色。
+func (a *authBiz) EffectiveRoles(ctx context.Context, email string, ssoRoles []string) ([]string, error) {
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return ssoRoles, nil
+	}
+	return a.roles.EffectiveRoles(ctx, email, ssoRoles)
 }
 
 // Settings 返回已装配的 OIDC provider 配置（provider 未配置 OIDC 时返回 nil）。

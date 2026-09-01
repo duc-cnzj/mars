@@ -76,6 +76,20 @@ func (_c *UserCreate) SetRoles(v []string) *UserCreate {
 	return _c
 }
 
+// SetRolesOverride sets the "roles_override" field.
+func (_c *UserCreate) SetRolesOverride(v bool) *UserCreate {
+	_c.mutation.SetRolesOverride(v)
+	return _c
+}
+
+// SetNillableRolesOverride sets the "roles_override" field if the given value is not nil.
+func (_c *UserCreate) SetNillableRolesOverride(v *bool) *UserCreate {
+	if v != nil {
+		_c.SetRolesOverride(*v)
+	}
+	return _c
+}
+
 // SetLastLogin sets the "last_login" field.
 func (_c *UserCreate) SetLastLogin(v time.Time) *UserCreate {
 	_c.mutation.SetLastLogin(v)
@@ -141,6 +155,10 @@ func (_c *UserCreate) defaults() {
 		v := user.DefaultRoles
 		_c.mutation.SetRoles(v)
 	}
+	if _, ok := _c.mutation.RolesOverride(); !ok {
+		v := user.DefaultRolesOverride
+		_c.mutation.SetRolesOverride(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -169,6 +187,9 @@ func (_c *UserCreate) check() error {
 	}
 	if _, ok := _c.mutation.Roles(); !ok {
 		return &ValidationError{Name: "roles", err: errors.New(`ent: missing required field "User.roles"`)}
+	}
+	if _, ok := _c.mutation.RolesOverride(); !ok {
+		return &ValidationError{Name: "roles_override", err: errors.New(`ent: missing required field "User.roles_override"`)}
 	}
 	return nil
 }
@@ -216,6 +237,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Roles(); ok {
 		_spec.SetField(user.FieldRoles, field.TypeJSON, value)
 		_node.Roles = value
+	}
+	if value, ok := _c.mutation.RolesOverride(); ok {
+		_spec.SetField(user.FieldRolesOverride, field.TypeBool, value)
+		_node.RolesOverride = value
 	}
 	if value, ok := _c.mutation.LastLogin(); ok {
 		_spec.SetField(user.FieldLastLogin, field.TypeTime, value)
@@ -318,6 +343,18 @@ func (u *UserUpsert) SetRoles(v []string) *UserUpsert {
 // UpdateRoles sets the "roles" field to the value that was provided on create.
 func (u *UserUpsert) UpdateRoles() *UserUpsert {
 	u.SetExcluded(user.FieldRoles)
+	return u
+}
+
+// SetRolesOverride sets the "roles_override" field.
+func (u *UserUpsert) SetRolesOverride(v bool) *UserUpsert {
+	u.Set(user.FieldRolesOverride, v)
+	return u
+}
+
+// UpdateRolesOverride sets the "roles_override" field to the value that was provided on create.
+func (u *UserUpsert) UpdateRolesOverride() *UserUpsert {
+	u.SetExcluded(user.FieldRolesOverride)
 	return u
 }
 
@@ -437,6 +474,20 @@ func (u *UserUpsertOne) SetRoles(v []string) *UserUpsertOne {
 func (u *UserUpsertOne) UpdateRoles() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateRoles()
+	})
+}
+
+// SetRolesOverride sets the "roles_override" field.
+func (u *UserUpsertOne) SetRolesOverride(v bool) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetRolesOverride(v)
+	})
+}
+
+// UpdateRolesOverride sets the "roles_override" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateRolesOverride() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateRolesOverride()
 	})
 }
 
@@ -725,6 +776,20 @@ func (u *UserUpsertBulk) SetRoles(v []string) *UserUpsertBulk {
 func (u *UserUpsertBulk) UpdateRoles() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateRoles()
+	})
+}
+
+// SetRolesOverride sets the "roles_override" field.
+func (u *UserUpsertBulk) SetRolesOverride(v bool) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetRolesOverride(v)
+	})
+}
+
+// UpdateRolesOverride sets the "roles_override" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateRolesOverride() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateRolesOverride()
 	})
 }
 

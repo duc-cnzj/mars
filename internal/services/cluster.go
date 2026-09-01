@@ -7,6 +7,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/transformer"
+	"go.opentelemetry.io/otel"
 )
 
 var _ cluster.ClusterServer = (*clusterSvc)(nil)
@@ -58,9 +59,12 @@ func (c *clusterSvc) ClusterInfo(ctx context.Context, req *cluster.InfoRequest) 
 // ClusterBoard 返回集群看板聚合快照：总览 + 节点明细 + 命名空间用量 + Top Pod，
 // 为管理员专用接口。命名空间排行/Top Pod 只保留 mars 自己管理的命名空间及其 Pod
 // （由 namespaceBiz 提供管理空间名集合，biz 层过滤后 TopN）；req.top_sort 透传给
-// biz 控制 Top Pod 排行维度（cpu 默认 / mem）。
+// biz 控制 Top Pod 排行维度（cpu 默认 / mem）。管理空间名查询包一层 span，trace
+// 面板区分「DB 查管理空间慢」还是「快照拉取/聚合慢」。
 func (c *clusterSvc) ClusterBoard(ctx context.Context, req *cluster.BoardRequest) (*cluster.BoardResponse, error) {
-	managedNames, err := c.namespaceBiz.ListAllNames(ctx)
+	nsCtx, nsSpan := otel.Tracer("").Start(ctx, "clusterSvc/ClusterBoard/listNames")
+	managedNames, err := c.namespaceBiz.ListAllNames(nsCtx)
+	nsSpan.End()
 	if err != nil {
 		return nil, logError(ctx, c.logger, err)
 	}
@@ -104,13 +108,18 @@ func (c *clusterSvc) ClusterBoard(ctx context.Context, req *cluster.BoardRequest
 // ResourceBoard 返回空间资源聚合快照：每个管理命名空间的 Pod requests/实际用量
 // 占比及项目明细，为管理员专用接口（定位「申请了很多 requests 却用不到多少资源」
 // 的空间）。命名空间集合由 namespaceBiz 提供，项目归属由 projectBiz.ListAllProjectBriefs 提供，
-// biz 层按项目 PodSelectors 匹配 pod 拆分后返回。
+// biz 层按项目 PodSelectors 匹配 pod 拆分后返回。两个 DB 前置查询各包一层 span，
+// trace 面板区分「DB 查管理空间/项目慢」还是「快照拉取/聚合慢」。
 func (c *clusterSvc) ResourceBoard(ctx context.Context, req *cluster.InfoRequest) (*cluster.ResourceBoardResponse, error) {
-	managedNames, err := c.namespaceBiz.ListAllNames(ctx)
+	nsCtx, nsSpan := otel.Tracer("").Start(ctx, "clusterSvc/ResourceBoard/listNames")
+	managedNames, err := c.namespaceBiz.ListAllNames(nsCtx)
+	nsSpan.End()
 	if err != nil {
 		return nil, logError(ctx, c.logger, err)
 	}
-	projects, err := c.projectBiz.ListAllProjectBriefs(ctx)
+	projCtx, projSpan := otel.Tracer("").Start(ctx, "clusterSvc/ResourceBoard/listProjects")
+	projects, err := c.projectBiz.ListAllProjectBriefs(projCtx)
+	projSpan.End()
 	if err != nil {
 		return nil, logError(ctx, c.logger, err)
 	}

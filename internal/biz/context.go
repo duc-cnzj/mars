@@ -45,15 +45,35 @@ func MustGetUser(ctx context.Context) *UserInfo {
 	return info
 }
 
-// Authenticate 校验 bearer token 并把用户注入 ctx，返回新 ctx。
-// 这是 gRPC 拦截器与 HTTP 中间件共用的唯一鉴权核心：两个传输层各自负责
-// "取 token"（gRPC metadata / HTTP Authorization header），校验与注入统一
-// 收敛本处——此前 gRPC（biz.Auth）与 HTTP 文件路由（biz.AuthBiz）各写一份
-// "VerifyToken + SetUser" 骨架，鉴权策略变更时两处易漂移。
-func Authenticate(ctx context.Context, auth AuthBiz, token string) (context.Context, error) {
+// authenticate 校验 bearer token 并把用户注入 ctx（角色取登录身份/JWT），返回新 ctx。
+// 这是 Authenticate 的纯校验基座：只做 token 校验与用户注入、不读取用户表，供
+// Authenticate 内部调用。不单独导出——避免出现第二条鉴权路径导致生效角色策略漂移。
+func authenticate(ctx context.Context, auth AuthBiz, token string) (context.Context, error) {
 	user, err := auth.VerifyToken(ctx, token)
 	if err != nil {
 		return nil, err
 	}
+	return SetUser(ctx, user), nil
+}
+
+// Authenticate 是 gRPC 拦截器与 HTTP 中间件共用的唯一鉴权核心：两个传输层各自负责
+// "取 token"（gRPC metadata / HTTP Authorization header），校验与生效角色计算统一
+// 收敛本处。先经 authenticate 校验 token 并注入用户，再用 auth.EffectiveRoles 按
+// users 表 roles_override 接管状态计算生效角色并覆盖注入用户的 Roles——使后台手动
+// 升降级真正生效：降权后用户即使 JWT 仍带 mars_admin，生效角色也不含管理员（对应用户
+// 表读取失败回落登录身份角色：不阻断鉴权，DB 恢复后接管自动生效；空邮箱同样回落）。
+func Authenticate(ctx context.Context, auth AuthBiz, token string) (context.Context, error) {
+	ctx, err := authenticate(ctx, auth, token)
+	if err != nil {
+		return nil, err
+	}
+	user := MustGetUser(ctx)
+	roles, err := auth.EffectiveRoles(ctx, user.Email, user.Roles)
+	if err != nil {
+		// 用户表读取失败（DB 抖动）：回落登录身份角色（JWT），不锁死已登录用户；
+		// 手动接管在 DB 恢复后由下一次请求自动生效，不在此处吞错留无声漂移。
+		return ctx, nil
+	}
+	user.Roles = roles
 	return SetUser(ctx, user), nil
 }

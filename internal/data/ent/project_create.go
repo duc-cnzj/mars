@@ -145,6 +145,20 @@ func (_c *ProjectCreate) SetCreator(v string) *ProjectCreate {
 	return _c
 }
 
+// SetUpdatedBy sets the "updated_by" field.
+func (_c *ProjectCreate) SetUpdatedBy(v string) *ProjectCreate {
+	_c.mutation.SetUpdatedBy(v)
+	return _c
+}
+
+// SetNillableUpdatedBy sets the "updated_by" field if the given value is not nil.
+func (_c *ProjectCreate) SetNillableUpdatedBy(v *string) *ProjectCreate {
+	if v != nil {
+		_c.SetUpdatedBy(*v)
+	}
+	return _c
+}
+
 // SetOverrideValues sets the "override_values" field.
 func (_c *ProjectCreate) SetOverrideValues(v string) *ProjectCreate {
 	_c.mutation.SetOverrideValues(v)
@@ -471,6 +485,11 @@ func (_c *ProjectCreate) check() error {
 	if _, ok := _c.mutation.Creator(); !ok {
 		return &ValidationError{Name: "creator", err: errors.New(`ent: missing required field "Project.creator"`)}
 	}
+	if v, ok := _c.mutation.UpdatedBy(); ok {
+		if err := project.UpdatedByValidator(v); err != nil {
+			return &ValidationError{Name: "updated_by", err: fmt.Errorf(`ent: validator failed for field "Project.updated_by": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.Atomic(); !ok {
 		return &ValidationError{Name: "atomic", err: errors.New(`ent: missing required field "Project.atomic"`)}
 	}
@@ -571,6 +590,10 @@ func (_c *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Creator(); ok {
 		_spec.SetField(project.FieldCreator, field.TypeString, value)
 		_node.Creator = value
+	}
+	if value, ok := _c.mutation.UpdatedBy(); ok {
+		_spec.SetField(project.FieldUpdatedBy, field.TypeString, value)
+		_node.UpdatedBy = value
 	}
 	if value, ok := _c.mutation.OverrideValues(); ok {
 		_spec.SetField(project.FieldOverrideValues, field.TypeString, value)
@@ -863,6 +886,24 @@ func (u *ProjectUpsert) SetCreator(v string) *ProjectUpsert {
 // UpdateCreator sets the "creator" field to the value that was provided on create.
 func (u *ProjectUpsert) UpdateCreator() *ProjectUpsert {
 	u.SetExcluded(project.FieldCreator)
+	return u
+}
+
+// SetUpdatedBy sets the "updated_by" field.
+func (u *ProjectUpsert) SetUpdatedBy(v string) *ProjectUpsert {
+	u.Set(project.FieldUpdatedBy, v)
+	return u
+}
+
+// UpdateUpdatedBy sets the "updated_by" field to the value that was provided on create.
+func (u *ProjectUpsert) UpdateUpdatedBy() *ProjectUpsert {
+	u.SetExcluded(project.FieldUpdatedBy)
+	return u
+}
+
+// ClearUpdatedBy clears the value of the "updated_by" field.
+func (u *ProjectUpsert) ClearUpdatedBy() *ProjectUpsert {
+	u.SetNull(project.FieldUpdatedBy)
 	return u
 }
 
@@ -1344,6 +1385,27 @@ func (u *ProjectUpsertOne) SetCreator(v string) *ProjectUpsertOne {
 func (u *ProjectUpsertOne) UpdateCreator() *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateCreator()
+	})
+}
+
+// SetUpdatedBy sets the "updated_by" field.
+func (u *ProjectUpsertOne) SetUpdatedBy(v string) *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.SetUpdatedBy(v)
+	})
+}
+
+// UpdateUpdatedBy sets the "updated_by" field to the value that was provided on create.
+func (u *ProjectUpsertOne) UpdateUpdatedBy() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.UpdateUpdatedBy()
+	})
+}
+
+// ClearUpdatedBy clears the value of the "updated_by" field.
+func (u *ProjectUpsertOne) ClearUpdatedBy() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearUpdatedBy()
 	})
 }
 
@@ -2038,6 +2100,27 @@ func (u *ProjectUpsertBulk) SetCreator(v string) *ProjectUpsertBulk {
 func (u *ProjectUpsertBulk) UpdateCreator() *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateCreator()
+	})
+}
+
+// SetUpdatedBy sets the "updated_by" field.
+func (u *ProjectUpsertBulk) SetUpdatedBy(v string) *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.SetUpdatedBy(v)
+	})
+}
+
+// UpdateUpdatedBy sets the "updated_by" field to the value that was provided on create.
+func (u *ProjectUpsertBulk) UpdateUpdatedBy() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.UpdateUpdatedBy()
+	})
+}
+
+// ClearUpdatedBy clears the value of the "updated_by" field.
+func (u *ProjectUpsertBulk) ClearUpdatedBy() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearUpdatedBy()
 	})
 }
 

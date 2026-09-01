@@ -75,6 +75,20 @@ func (_u *UserUpdate) AppendRoles(v []string) *UserUpdate {
 	return _u
 }
 
+// SetRolesOverride sets the "roles_override" field.
+func (_u *UserUpdate) SetRolesOverride(v bool) *UserUpdate {
+	_u.mutation.SetRolesOverride(v)
+	return _u
+}
+
+// SetNillableRolesOverride sets the "roles_override" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableRolesOverride(v *bool) *UserUpdate {
+	if v != nil {
+		_u.SetRolesOverride(*v)
+	}
+	return _u
+}
+
 // SetLastLogin sets the "last_login" field.
 func (_u *UserUpdate) SetLastLogin(v time.Time) *UserUpdate {
 	_u.mutation.SetLastLogin(v)
@@ -180,6 +194,9 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			sqljson.Append(u, user.FieldRoles, value)
 		})
 	}
+	if value, ok := _u.mutation.RolesOverride(); ok {
+		_spec.SetField(user.FieldRolesOverride, field.TypeBool, value)
+	}
 	if value, ok := _u.mutation.LastLogin(); ok {
 		_spec.SetField(user.FieldLastLogin, field.TypeTime, value)
 	}
@@ -249,6 +266,20 @@ func (_u *UserUpdateOne) SetRoles(v []string) *UserUpdateOne {
 // AppendRoles appends value to the "roles" field.
 func (_u *UserUpdateOne) AppendRoles(v []string) *UserUpdateOne {
 	_u.mutation.AppendRoles(v)
+	return _u
+}
+
+// SetRolesOverride sets the "roles_override" field.
+func (_u *UserUpdateOne) SetRolesOverride(v bool) *UserUpdateOne {
+	_u.mutation.SetRolesOverride(v)
+	return _u
+}
+
+// SetNillableRolesOverride sets the "roles_override" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableRolesOverride(v *bool) *UserUpdateOne {
+	if v != nil {
+		_u.SetRolesOverride(*v)
+	}
 	return _u
 }
 
@@ -386,6 +417,9 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, user.FieldRoles, value)
 		})
+	}
+	if value, ok := _u.mutation.RolesOverride(); ok {
+		_spec.SetField(user.FieldRolesOverride, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.LastLogin(); ok {
 		_spec.SetField(user.FieldLastLogin, field.TypeTime, value)

@@ -30,10 +30,11 @@ type UserModel struct {
 	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
 	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Roles         []string               `protobuf:"bytes,4,rep,name=roles,proto3" json:"roles,omitempty"`                                      // admin=管理员，user=普通用户
-	LastLogin     *string                `protobuf:"bytes,5,opt,name=last_login,json=lastLogin,proto3,oneof" json:"last_login,omitempty"`       // RFC3339，从未登录为缺省
-	CreatedAt     string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`             // RFC3339
-	IsSuperAdmin  bool                   `protobuf:"varint,7,opt,name=is_super_admin,json=isSuperAdmin,proto3" json:"is_super_admin,omitempty"` // 是否为内置超级管理员（固定邮箱身份）
+	Roles         []string               `protobuf:"bytes,4,rep,name=roles,proto3" json:"roles,omitempty"`                                       // admin=管理员，user=普通用户
+	LastLogin     *string                `protobuf:"bytes,5,opt,name=last_login,json=lastLogin,proto3,oneof" json:"last_login,omitempty"`        // RFC3339，从未登录为缺省
+	CreatedAt     string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`              // RFC3339
+	IsSuperAdmin  bool                   `protobuf:"varint,7,opt,name=is_super_admin,json=isSuperAdmin,proto3" json:"is_super_admin,omitempty"`  // 是否为内置超级管理员（固定邮箱身份）
+	RolesOverride bool                   `protobuf:"varint,8,opt,name=roles_override,json=rolesOverride,proto3" json:"roles_override,omitempty"` // 角色是否已被后台手动接管：true=生效角色来自后台手动设置，SSO 不再覆盖；false=按最近一次 SSO 登录同步
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -113,6 +114,13 @@ func (x *UserModel) GetCreatedAt() string {
 func (x *UserModel) GetIsSuperAdmin() bool {
 	if x != nil {
 		return x.IsSuperAdmin
+	}
+	return false
+}
+
+func (x *UserModel) GetRolesOverride() bool {
+	if x != nil {
+		return x.RolesOverride
 	}
 	return false
 }
@@ -418,11 +426,91 @@ func (*ToggleAdminResponse) Descriptor() ([]byte, []int) {
 	return file_proto_user_user_proto_rawDescGZIP(), []int{5}
 }
 
+type ResetRolesOverrideRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResetRolesOverrideRequest) Reset() {
+	*x = ResetRolesOverrideRequest{}
+	mi := &file_proto_user_user_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResetRolesOverrideRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResetRolesOverrideRequest) ProtoMessage() {}
+
+func (x *ResetRolesOverrideRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_user_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResetRolesOverrideRequest.ProtoReflect.Descriptor instead.
+func (*ResetRolesOverrideRequest) Descriptor() ([]byte, []int) {
+	return file_proto_user_user_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ResetRolesOverrideRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+type ResetRolesOverrideResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResetRolesOverrideResponse) Reset() {
+	*x = ResetRolesOverrideResponse{}
+	mi := &file_proto_user_user_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResetRolesOverrideResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResetRolesOverrideResponse) ProtoMessage() {}
+
+func (x *ResetRolesOverrideResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_user_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResetRolesOverrideResponse.ProtoReflect.Descriptor instead.
+func (*ResetRolesOverrideResponse) Descriptor() ([]byte, []int) {
+	return file_proto_user_user_proto_rawDescGZIP(), []int{7}
+}
+
 var File_proto_user_user_proto protoreflect.FileDescriptor
 
 const file_proto_user_user_proto_rawDesc = "" +
 	"\n" +
-	"\x15proto/user/user.proto\x12\x04user\x1a\x1cgoogle/api/annotations.proto\"\xd3\x01\n" +
+	"\x15proto/user/user.proto\x12\x04user\x1a\x1cgoogle/api/annotations.proto\"\xfa\x01\n" +
 	"\tUserModel\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x12\n" +
@@ -432,7 +520,8 @@ const file_proto_user_user_proto_rawDesc = "" +
 	"last_login\x18\x05 \x01(\tH\x00R\tlastLogin\x88\x01\x01\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12$\n" +
-	"\x0eis_super_admin\x18\a \x01(\bR\fisSuperAdminB\r\n" +
+	"\x0eis_super_admin\x18\a \x01(\bR\fisSuperAdmin\x12%\n" +
+	"\x0eroles_override\x18\b \x01(\bR\rrolesOverrideB\r\n" +
 	"\v_last_login\"S\n" +
 	"\tUserStats\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\x05R\x05total\x12\x16\n" +
@@ -456,10 +545,14 @@ const file_proto_user_user_proto_rawDesc = "" +
 	"\x12ToggleAdminRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x14\n" +
 	"\x05admin\x18\x02 \x01(\bR\x05admin\"\x15\n" +
-	"\x13ToggleAdminResponse2\xbd\x01\n" +
+	"\x13ToggleAdminResponse\"1\n" +
+	"\x19ResetRolesOverrideRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\"\x1c\n" +
+	"\x1aResetRolesOverrideResponse2\xc8\x02\n" +
 	"\x04User\x12G\n" +
 	"\x04List\x12\x11.user.ListRequest\x1a\x12.user.ListResponse\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/admin/users\x12l\n" +
-	"\vToggleAdmin\x12\x18.user.ToggleAdminRequest\x1a\x19.user.ToggleAdminResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\x1a\x1d/api/admin/users/{email}/roleB1Z/github.com/duc-cnzj/mars/api/v6/proto/user;userb\x06proto3"
+	"\vToggleAdmin\x12\x18.user.ToggleAdminRequest\x1a\x19.user.ToggleAdminResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\x1a\x1d/api/admin/users/{email}/role\x12\x88\x01\n" +
+	"\x12ResetRolesOverride\x12\x1f.user.ResetRolesOverrideRequest\x1a .user.ResetRolesOverrideResponse\"/\x82\xd3\xe4\x93\x02)\x1a'/api/admin/users/{email}/roles_overrideB1Z/github.com/duc-cnzj/mars/api/v6/proto/user;userb\x06proto3"
 
 var (
 	file_proto_user_user_proto_rawDescOnce sync.Once
@@ -473,24 +566,28 @@ func file_proto_user_user_proto_rawDescGZIP() []byte {
 	return file_proto_user_user_proto_rawDescData
 }
 
-var file_proto_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_proto_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_proto_user_user_proto_goTypes = []any{
-	(*UserModel)(nil),           // 0: user.UserModel
-	(*UserStats)(nil),           // 1: user.UserStats
-	(*ListRequest)(nil),         // 2: user.ListRequest
-	(*ListResponse)(nil),        // 3: user.ListResponse
-	(*ToggleAdminRequest)(nil),  // 4: user.ToggleAdminRequest
-	(*ToggleAdminResponse)(nil), // 5: user.ToggleAdminResponse
+	(*UserModel)(nil),                  // 0: user.UserModel
+	(*UserStats)(nil),                  // 1: user.UserStats
+	(*ListRequest)(nil),                // 2: user.ListRequest
+	(*ListResponse)(nil),               // 3: user.ListResponse
+	(*ToggleAdminRequest)(nil),         // 4: user.ToggleAdminRequest
+	(*ToggleAdminResponse)(nil),        // 5: user.ToggleAdminResponse
+	(*ResetRolesOverrideRequest)(nil),  // 6: user.ResetRolesOverrideRequest
+	(*ResetRolesOverrideResponse)(nil), // 7: user.ResetRolesOverrideResponse
 }
 var file_proto_user_user_proto_depIdxs = []int32{
 	0, // 0: user.ListResponse.items:type_name -> user.UserModel
 	1, // 1: user.ListResponse.stats:type_name -> user.UserStats
 	2, // 2: user.User.List:input_type -> user.ListRequest
 	4, // 3: user.User.ToggleAdmin:input_type -> user.ToggleAdminRequest
-	3, // 4: user.User.List:output_type -> user.ListResponse
-	5, // 5: user.User.ToggleAdmin:output_type -> user.ToggleAdminResponse
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
+	6, // 4: user.User.ResetRolesOverride:input_type -> user.ResetRolesOverrideRequest
+	3, // 5: user.User.List:output_type -> user.ListResponse
+	5, // 6: user.User.ToggleAdmin:output_type -> user.ToggleAdminResponse
+	7, // 7: user.User.ResetRolesOverride:output_type -> user.ResetRolesOverrideResponse
+	5, // [5:8] is the sub-list for method output_type
+	2, // [2:5] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
 	2, // [2:2] is the sub-list for extension extendee
 	0, // [0:2] is the sub-list for field type_name
@@ -509,7 +606,7 @@ func file_proto_user_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_user_user_proto_rawDesc), len(file_proto_user_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

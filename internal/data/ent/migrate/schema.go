@@ -265,6 +265,7 @@ var (
 		{Name: "git_commit", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "config", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "longtext"}},
 		{Name: "creator", Type: field.TypeString},
+		{Name: "updated_by", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "override_values", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "longtext"}},
 		{Name: "docker_image", Type: field.TypeJSON, Nullable: true},
 		{Name: "pod_selectors", Type: field.TypeJSON, Nullable: true},
@@ -291,13 +292,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "projects_namespaces_projects",
-				Columns:    []*schema.Column{ProjectsColumns[25]},
+				Columns:    []*schema.Column{ProjectsColumns[26]},
 				RefColumns: []*schema.Column{NamespacesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "projects_repos_projects",
-				Columns:    []*schema.Column{ProjectsColumns[26]},
+				Columns:    []*schema.Column{ProjectsColumns[27]},
 				RefColumns: []*schema.Column{ReposColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -339,6 +340,7 @@ var (
 		{Name: "email", Type: field.TypeString, Unique: true, Size: 255},
 		{Name: "name", Type: field.TypeString, Size: 255, Default: ""},
 		{Name: "roles", Type: field.TypeJSON},
+		{Name: "roles_override", Type: field.TypeBool, Default: false},
 		{Name: "last_login", Type: field.TypeTime, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
@@ -350,7 +352,7 @@ var (
 			{
 				Name:    "user_last_login",
 				Unique:  false,
-				Columns: []*schema.Column{UsersColumns[6]},
+				Columns: []*schema.Column{UsersColumns[7]},
 			},
 		},
 	}

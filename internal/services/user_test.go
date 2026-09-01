@@ -131,3 +131,24 @@ func Test_userSvc_ToggleAdmin_Error(t *testing.T) {
 	_, err := svc.ToggleAdmin(newAdminUserCtx(), &user.ToggleAdminRequest{Email: "a@b.c"})
 	assert.Equal(t, codes.NotFound, status.Code(err))
 }
+
+// Test_userSvc_ResetRolesOverride 成功路径透传。
+func Test_userSvc_ResetRolesOverride(t *testing.T) {
+	svc, mocks := newUserSvcWithMocks(t)
+	defer mocks.ctrl.Finish()
+
+	mocks.userBiz.EXPECT().ResetRolesOverride(gomock.Any(), "a@b.c").Return(nil)
+	_, err := svc.ResetRolesOverride(newAdminUserCtx(), &user.ResetRolesOverrideRequest{Email: "a@b.c"})
+	assert.NoError(t, err)
+}
+
+// Test_userSvc_ResetRolesOverride_Error 透传 biz 错误（保留原始状态码）。
+func Test_userSvc_ResetRolesOverride_Error(t *testing.T) {
+	svc, mocks := newUserSvcWithMocks(t)
+	defer mocks.ctrl.Finish()
+
+	mocks.userBiz.EXPECT().ResetRolesOverride(gomock.Any(), "a@b.c").
+		Return(status.Error(codes.NotFound, "用户不存在"))
+	_, err := svc.ResetRolesOverride(newAdminUserCtx(), &user.ResetRolesOverrideRequest{Email: "a@b.c"})
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}

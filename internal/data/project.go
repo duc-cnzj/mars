@@ -34,6 +34,7 @@ func toProject(project *ent.Project) *biz.Project {
 		GitBranch:        project.GitBranch,
 		GitCommit:        project.GitCommit,
 		Config:           project.Config,
+		UpdatedBy:        project.UpdatedBy,
 		OverrideValues:   project.OverrideValues,
 		DockerImage:      project.DockerImage,
 		PodSelectors:     project.PodSelectors,
@@ -175,6 +176,7 @@ func (repo *projectRepo) ListLivenessPage(ctx context.Context, query *biz.Livene
 			project.FieldID,
 			project.FieldName,
 			project.FieldUpdatedAt,
+			project.FieldUpdatedBy,
 			project.FieldDeployStatus,
 			project.FieldGitBranch,
 			project.FieldGitCommit,
@@ -258,6 +260,7 @@ func (repo *projectRepo) Create(ctx context.Context, input *biz.CreateProjectInp
 	save, err := repo.data.DB().Project.Create().
 		SetName(input.Name).
 		SetCreator(input.Creator).
+		SetUpdatedBy(input.UpdatedBy).
 		SetGitProjectID(input.GitProjectID).
 		SetGitBranch(input.GitBranch).
 		SetGitCommit(input.GitCommit).
@@ -297,6 +300,7 @@ func (repo *projectRepo) UpdateProject(ctx context.Context, input *biz.UpdatePro
 		SetFinalExtraValues(input.FinalExtraValues).
 		SetEnvValues(input.EnvValues).
 		SetOverrideValues(input.OverrideValues).
+		SetUpdatedBy(input.UpdatedBy).
 		Save(ctx)
 	return toProject(save), errs.Wrap(err, "update project")
 }

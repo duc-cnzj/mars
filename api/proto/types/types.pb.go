@@ -1292,6 +1292,7 @@ type ProjectModel struct {
 	DeployStatus      Deploy                  `protobuf:"varint,15,opt,name=deploy_status,json=deployStatus,proto3,enum=types.Deploy" json:"deploy_status,omitempty"`
 	HumanizeCreatedAt string                  `protobuf:"bytes,16,opt,name=humanize_created_at,json=humanizeCreatedAt,proto3" json:"humanize_created_at,omitempty"`
 	HumanizeUpdatedAt string                  `protobuf:"bytes,17,opt,name=humanize_updated_at,json=humanizeUpdatedAt,proto3" json:"humanize_updated_at,omitempty"`
+	UpdatedBy         string                  `protobuf:"bytes,26,opt,name=updated_by,json=updatedBy,proto3" json:"updated_by,omitempty"`
 	ConfigType        string                  `protobuf:"bytes,18,opt,name=config_type,json=configType,proto3" json:"config_type,omitempty"`
 	GitCommitWebUrl   string                  `protobuf:"bytes,19,opt,name=git_commit_web_url,json=gitCommitWebUrl,proto3" json:"git_commit_web_url,omitempty"`
 	GitCommitTitle    string                  `protobuf:"bytes,20,opt,name=git_commit_title,json=gitCommitTitle,proto3" json:"git_commit_title,omitempty"`
@@ -1453,6 +1454,13 @@ func (x *ProjectModel) GetHumanizeCreatedAt() string {
 func (x *ProjectModel) GetHumanizeUpdatedAt() string {
 	if x != nil {
 		return x.HumanizeUpdatedAt
+	}
+	return ""
+}
+
+func (x *ProjectModel) GetUpdatedBy() string {
+	if x != nil {
+		return x.UpdatedBy
 	}
 	return ""
 }
@@ -1920,7 +1928,7 @@ const file_proto_types_types_proto_rawDesc = "" +
 	"deleted_at\x18f \x01(\tR\tdeletedAt\"2\n" +
 	"\bKeyValue\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\"\xd4\b\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"\xf3\b\n" +
 	"\fProjectModel\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12$\n" +
@@ -1942,7 +1950,9 @@ const file_proto_types_types_proto_rawDesc = "" +
 	"\x12final_extra_values\x18\x0e \x03(\v2\x15.websocket.ExtraValueR\x10finalExtraValues\x122\n" +
 	"\rdeploy_status\x18\x0f \x01(\x0e2\r.types.DeployR\fdeployStatus\x12.\n" +
 	"\x13humanize_created_at\x18\x10 \x01(\tR\x11humanizeCreatedAt\x12.\n" +
-	"\x13humanize_updated_at\x18\x11 \x01(\tR\x11humanizeUpdatedAt\x12\x1f\n" +
+	"\x13humanize_updated_at\x18\x11 \x01(\tR\x11humanizeUpdatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_by\x18\x1a \x01(\tR\tupdatedBy\x12\x1f\n" +
 	"\vconfig_type\x18\x12 \x01(\tR\n" +
 	"configType\x12+\n" +
 	"\x12git_commit_web_url\x18\x13 \x01(\tR\x0fgitCommitWebUrl\x12(\n" +

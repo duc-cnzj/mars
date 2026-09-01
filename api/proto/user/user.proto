@@ -16,6 +16,7 @@ message UserModel {
   optional string last_login     = 5; // RFC3339，从未登录为缺省
   string          created_at     = 6; // RFC3339
   bool            is_super_admin = 7; // 是否为内置超级管理员（固定邮箱身份）
+  bool            roles_override = 8; // 角色是否已被后台手动接管：true=生效角色来自后台手动设置，SSO 不再覆盖；false=按最近一次 SSO 登录同步
 }
 
 // UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部三卡。
@@ -48,6 +49,12 @@ message ToggleAdminRequest {
 
 message ToggleAdminResponse {}
 
+message ResetRolesOverrideRequest {
+  string email = 1;
+}
+
+message ResetRolesOverrideResponse {}
+
 service User {
   rpc List(ListRequest) returns (ListResponse) {
     option (google.api.http) = {
@@ -59,6 +66,14 @@ service User {
     option (google.api.http) = {
       put: "/api/admin/users/{email}/role",
       body: "*"
+    };
+  }
+
+  // 解除后台手动接管（roles_override 置回 false）：该用户从下一次登录起恢复按 SSO 角色同步，
+  // 供超管把误接管/不再需要手动管理的用户「交还」给 SSO。
+  rpc ResetRolesOverride(ResetRolesOverrideRequest) returns (ResetRolesOverrideResponse) {
+    option (google.api.http) = {
+      put: "/api/admin/users/{email}/roles_override"
     };
   }
 }

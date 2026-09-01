@@ -351,36 +351,40 @@ func init() {
 	projectDescGitCommit := projectFields[3].Descriptor()
 	// project.GitCommitValidator is a validator for the "git_commit" field. It is called by the builders before save.
 	project.GitCommitValidator = projectDescGitCommit.Validators[0].(func(string) error)
+	// projectDescUpdatedBy is the schema descriptor for updated_by field.
+	projectDescUpdatedBy := projectFields[6].Descriptor()
+	// project.UpdatedByValidator is a validator for the "updated_by" field. It is called by the builders before save.
+	project.UpdatedByValidator = projectDescUpdatedBy.Validators[0].(func(string) error)
 	// projectDescAtomic is the schema descriptor for atomic field.
-	projectDescAtomic := projectFields[9].Descriptor()
+	projectDescAtomic := projectFields[10].Descriptor()
 	// project.DefaultAtomic holds the default value on creation for the atomic field.
 	project.DefaultAtomic = projectDescAtomic.Default.(bool)
 	// projectDescDeployStatus is the schema descriptor for deploy_status field.
-	projectDescDeployStatus := projectFields[10].Descriptor()
+	projectDescDeployStatus := projectFields[11].Descriptor()
 	// project.DefaultDeployStatus holds the default value on creation for the deploy_status field.
 	project.DefaultDeployStatus = types.Deploy(projectDescDeployStatus.Default.(int32))
 	// projectDescVersion is the schema descriptor for version field.
-	projectDescVersion := projectFields[14].Descriptor()
+	projectDescVersion := projectFields[15].Descriptor()
 	// project.DefaultVersion holds the default value on creation for the version field.
 	project.DefaultVersion = projectDescVersion.Default.(int)
 	// projectDescConfigType is the schema descriptor for config_type field.
-	projectDescConfigType := projectFields[15].Descriptor()
+	projectDescConfigType := projectFields[16].Descriptor()
 	// project.ConfigTypeValidator is a validator for the "config_type" field. It is called by the builders before save.
 	project.ConfigTypeValidator = projectDescConfigType.Validators[0].(func(string) error)
 	// projectDescGitCommitWebURL is the schema descriptor for git_commit_web_url field.
-	projectDescGitCommitWebURL := projectFields[17].Descriptor()
+	projectDescGitCommitWebURL := projectFields[18].Descriptor()
 	// project.DefaultGitCommitWebURL holds the default value on creation for the git_commit_web_url field.
 	project.DefaultGitCommitWebURL = projectDescGitCommitWebURL.Default.(string)
 	// project.GitCommitWebURLValidator is a validator for the "git_commit_web_url" field. It is called by the builders before save.
 	project.GitCommitWebURLValidator = projectDescGitCommitWebURL.Validators[0].(func(string) error)
 	// projectDescGitCommitTitle is the schema descriptor for git_commit_title field.
-	projectDescGitCommitTitle := projectFields[18].Descriptor()
+	projectDescGitCommitTitle := projectFields[19].Descriptor()
 	// project.DefaultGitCommitTitle holds the default value on creation for the git_commit_title field.
 	project.DefaultGitCommitTitle = projectDescGitCommitTitle.Default.(string)
 	// project.GitCommitTitleValidator is a validator for the "git_commit_title" field. It is called by the builders before save.
 	project.GitCommitTitleValidator = projectDescGitCommitTitle.Validators[0].(func(string) error)
 	// projectDescGitCommitAuthor is the schema descriptor for git_commit_author field.
-	projectDescGitCommitAuthor := projectFields[19].Descriptor()
+	projectDescGitCommitAuthor := projectFields[20].Descriptor()
 	// project.DefaultGitCommitAuthor holds the default value on creation for the git_commit_author field.
 	project.DefaultGitCommitAuthor = projectDescGitCommitAuthor.Default.(string)
 	// project.GitCommitAuthorValidator is a validator for the "git_commit_author" field. It is called by the builders before save.
@@ -471,6 +475,10 @@ func init() {
 	userDescRoles := userFields[2].Descriptor()
 	// user.DefaultRoles holds the default value on creation for the roles field.
 	user.DefaultRoles = userDescRoles.Default.([]string)
+	// userDescRolesOverride is the schema descriptor for roles_override field.
+	userDescRolesOverride := userFields[3].Descriptor()
+	// user.DefaultRolesOverride holds the default value on creation for the roles_override field.
+	user.DefaultRolesOverride = userDescRolesOverride.Default.(bool)
 }
 
 const (

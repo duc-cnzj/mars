@@ -34,6 +34,10 @@ func TestWebsocketManager_HandleAuthorize(t *testing.T) {
 	authMock.EXPECT().VerifyToken(gomock.Any(), "validToken").Return(&biz.UserInfo{Name: "testUser"}, nil)
 	authMock.EXPECT().VerifyToken(gomock.Any(), "invalidToken").Return(nil, errors.New("invalid"))
 
+	// 有效 token 路径会经 authBiz.EffectiveRoles 解析生效角色（对齐 gRPC/HTTP 鉴权入口）；
+	// mock 返回空生效角色，验证角色覆盖链路被触达。
+	authMock.EXPECT().EffectiveRoles(gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{}, nil)
+
 	wm := &websocketManager{
 		authBiz: authMock,
 		logger:  mlog.NewForConfig(nil),

@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 
+	"go.opentelemetry.io/otel"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -98,7 +99,11 @@ type ClusterBoard struct {
 // 从 data 快照派生（透传 repo）。命名空间排行与 Top Pod 只保留 mars 自己管理的
 // 命名空间（managedNames 集合）及其 Pod，排除 kube-system/calico 等系统组件；
 // 节点表不参与过滤（节点请求聚合需全量 Pod 才算得准）。
+// 包一层 span 覆盖快照拉取 + 总览（ClusterInfo 另走 30s 缓存）+ 聚合派生，trace
+// 面板据此区分「拉快照慢」还是「聚合慢」。
 func (k *k8sBiz) ClusterBoard(ctx context.Context, managedNames []string, topSort string) (*ClusterBoard, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "k8sBiz/ClusterBoard")
+	defer span.End()
 	data, err := k.k8sRepo.ClusterBoard(ctx, false)
 	if err != nil {
 		return nil, err

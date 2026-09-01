@@ -35,6 +35,12 @@ func (wc *websocketManager) HandleAuthorize(ctx context.Context, c Conn, t webso
 	}
 
 	if user, err := wc.authBiz.VerifyToken(ctx, input.Token); err == nil {
+		// 按 users 表接管状态计算生效角色（对齐 gRPC/HTTP 鉴权入口）：后台手动降权后
+		// 即使 JWT 仍带 mars_admin，也不授予管理员权限；用户表读取失败回落登录身份角色。
+		// 生效角色解析已收进 authBiz.EffectiveRoles，与 Authenticate 鉴权核心共用同一 provider。
+		if roles, rerr := wc.authBiz.EffectiveRoles(ctx, user.Email, user.Roles); rerr == nil {
+			user.Roles = roles
+		}
 		c.SetUser(user)
 		metrics.WebsocketConnectionsCount.With(prometheus.Labels{"username": user.Name}).Inc()
 	}

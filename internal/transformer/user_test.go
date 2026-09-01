@@ -57,3 +57,13 @@ func TestFromUser_IsSuperAdmin(t *testing.T) {
 	m = transformer.FromUser(&biz.User{Email: "ordinary@mars.com"})
 	assert.False(t, m.IsSuperAdmin)
 }
+
+// TestFromUser_RolesOverride 验证接管标志透传：默认 false（角色来自 SSO 同步），
+// 后台手动接管后为 true（前端据此显示来源 badge）。
+func TestFromUser_RolesOverride(t *testing.T) {
+	m := transformer.FromUser(&biz.User{Email: "a@b.c"})
+	assert.False(t, m.RolesOverride)
+
+	m = transformer.FromUser(&biz.User{Email: "a@b.c", RolesOverride: true})
+	assert.True(t, m.RolesOverride)
+}

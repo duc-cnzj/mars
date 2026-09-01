@@ -33,6 +33,8 @@ export type IconName =
   | 'repo'
   | 'key'
   | 'shield'
+  | 'shield-plus'
+  | 'shield-minus'
   | 'link'
   | 'gear'
   | 'search'
@@ -80,6 +82,7 @@ export type IconName =
   | 'pin'
   | 'pin-off'
   | 'refresh-cw'
+  | 'restore'
   | 'grip-vertical'
   | 'user'
   | 'users'
@@ -171,6 +174,21 @@ const paths: Record<IconName, ReactNode> = {
     <>
       <path d="M12 3 4 6v5c0 4.6 3.4 8.6 8 10 4.6-1.4 8-5.4 8-10V6l-8-3Z" />
       <path d="m9 11.5 2 2 4-4" />
+    </>
+  ),
+  // shield 同轮廓 + 加号：设为管理员（授予 admin 角色）
+  'shield-plus': (
+    <>
+      <path d="M12 3 4 6v5c0 4.6 3.4 8.6 8 10 4.6-1.4 8-5.4 8-10V6l-8-3Z" />
+      <path d="M9 12h6" />
+      <path d="M12 9v6" />
+    </>
+  ),
+  // shield 同轮廓 + 减号：移除管理员（收回 admin 角色）
+  'shield-minus': (
+    <>
+      <path d="M12 3 4 6v5c0 4.6 3.4 8.6 8 10 4.6-1.4 8-5.4 8-10V6l-8-3Z" />
+      <path d="M9 12h6" />
     </>
   ),
   // lucide Link 同款几何：与外层 ProjectRow URL 图标对齐（旧版 TabInfo 地址 section 用 LinkOutlined）
@@ -432,6 +450,13 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M21 3v5h-5" />
       <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
       <path d="M8 16H3v5" />
+    </>
+  ),
+  // lucide rotate-ccw 同款：逆时针回卷箭头，语义=把被后台手动接管的用户「交还」给 SSO 同步
+  restore: (
+    <>
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
     </>
   ),
   // lucide download 同款：箭头落入托盘，用作导出/下载文件

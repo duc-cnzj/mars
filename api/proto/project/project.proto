@@ -186,6 +186,8 @@ message LivenessItem {
   string git_commit = 8;
   // 最近更新时间 RFC3339（活跃度分类依据）
   string updated_at = 9;
+  // 最近一次人为更新的用户名（创建/成功部署），系统状态变更不刷新
+  string updated_by = 13;
   // 最近提交信息（判断代码是否仍有人维护）：提交标题 / 作者 / 时间 RFC3339
   string git_commit_title = 10;
   string git_commit_author = 11;

@@ -78,6 +78,7 @@ func TestAuthSvc_Login_Success(t *testing.T) {
 		UserInfo: &biz.UserInfo{
 			Name:  biz.SuperAdminName,
 			Email: biz.SuperAdminEmail,
+			Roles: []string{biz.MarsAdmin},
 		},
 	}
 	eventRepo.EXPECT().AuditLog(
@@ -86,8 +87,8 @@ func TestAuthSvc_Login_Success(t *testing.T) {
 		resp.UserInfo.Email,
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", resp.UserInfo.Name, resp.UserInfo.Email),
 	)
-	// 登录成功即同步用户投影（admin 同样落 users 表，与 OIDC Exchange 行为对齐）
-	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), biz.SuperAdminEmail, biz.SuperAdminName).Return(nil)
+	// 登录成功即同步用户投影（admin 同样落 users 表，与 OIDC Exchange 行为对齐），角色随投影写入
+	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), biz.SuperAdminEmail, biz.SuperAdminName, []string{biz.MarsAdmin}).Return(nil)
 
 	authBizMock.EXPECT().Login(gomock.Any(), &biz.LoginInput{
 		Username: "admin",
@@ -116,10 +117,11 @@ func TestAuthSvc_Login_SyncUserErrorNotBlocking(t *testing.T) {
 		UserInfo: &biz.UserInfo{
 			Name:  biz.SuperAdminName,
 			Email: biz.SuperAdminEmail,
+			Roles: []string{biz.MarsAdmin},
 		},
 	}
 	eventRepo.EXPECT().AuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), biz.SuperAdminEmail, biz.SuperAdminName).Return(errors.New("projection boom"))
+	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), biz.SuperAdminEmail, biz.SuperAdminName, []string{biz.MarsAdmin}).Return(errors.New("projection boom"))
 	authBizMock.EXPECT().Login(gomock.Any(), &biz.LoginInput{
 		Username: "admin",
 		Password: "password",
@@ -165,7 +167,8 @@ func TestAuthSvc_Exchange_Success(t *testing.T) {
 	eventRepo := mocks.eventRepo
 	userBizMock := mocks.userBiz
 
-	userinfo := &biz.UserInfo{Name: "duc", Email: "DUC@example.com"}
+	// SSO id_token 携带管理员角色：同步用户投影时应把角色一并传入
+	userinfo := &biz.UserInfo{Name: "duc", Email: "DUC@example.com", Roles: []string{biz.MarsAdmin}}
 	authBizMock.EXPECT().Exchange(gomock.Any(), "code").Return(userinfo, nil)
 	authBizMock.EXPECT().Sign(gomock.Any(), userinfo).Return(&biz.LoginResponse{Token: "signed", ExpiredIn: 3600}, nil)
 	eventRepo.EXPECT().AuditLogWithRequest(
@@ -175,8 +178,8 @@ func TestAuthSvc_Exchange_Success(t *testing.T) {
 		fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", userinfo.Name, userinfo.Email),
 		gomock.Any(),
 	)
-	// 登录成功即同步用户投影（不存在则创建、存在则推进最近登录）
-	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), "DUC@example.com", "duc").Return(nil)
+	// 登录成功即同步用户投影（不存在则创建、存在则推进最近登录），SSO 角色随投影写入
+	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), "DUC@example.com", "duc", []string{biz.MarsAdmin}).Return(nil)
 
 	resp, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: "code"})
 	assert.NoError(t, err)
@@ -192,11 +195,11 @@ func TestAuthSvc_Exchange_SyncUserErrorNotBlocking(t *testing.T) {
 	eventRepo := mocks.eventRepo
 	userBizMock := mocks.userBiz
 
-	userinfo := &biz.UserInfo{Name: "duc", Email: "duc@example.com"}
+	userinfo := &biz.UserInfo{Name: "duc", Email: "duc@example.com", Roles: []string{biz.MarsAdmin}}
 	authBizMock.EXPECT().Exchange(gomock.Any(), "code").Return(userinfo, nil)
 	authBizMock.EXPECT().Sign(gomock.Any(), userinfo).Return(&biz.LoginResponse{Token: "signed", ExpiredIn: 3600}, nil)
 	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), "duc@example.com", "duc").Return(errors.New("projection boom"))
+	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), "duc@example.com", "duc", []string{biz.MarsAdmin}).Return(errors.New("projection boom"))
 
 	resp, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: "code"})
 	assert.NoError(t, err, "投影写库失败不得阻断登录")
