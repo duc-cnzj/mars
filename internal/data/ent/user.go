@@ -28,6 +28,8 @@ type User struct {
 	Name string `json:"name,omitempty"`
 	// 角色列表：mars_admin=管理员；空数组=普通用户
 	Roles []string `json:"roles,omitempty"`
+	// 角色是否已被后台手动管理接管：false=登录时按 SSO 角色同步；true=后台手动升降级后 SSO 不再覆盖
+	RolesOverride bool `json:"roles_override,omitempty"`
 	// 最近登录时间（取最近一条登录事件）
 	LastLogin    *time.Time `json:"last_login,omitempty"`
 	selectValues sql.SelectValues
@@ -40,6 +42,8 @@ func (*User) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case user.FieldRoles:
 			values[i] = new([]byte)
+		case user.FieldRolesOverride:
+			values[i] = new(sql.NullBool)
 		case user.FieldID:
 			values[i] = new(sql.NullInt64)
 		case user.FieldEmail, user.FieldName:
@@ -99,6 +103,12 @@ func (_m *User) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field roles: %w", err)
 				}
 			}
+		case user.FieldRolesOverride:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field roles_override", values[i])
+			} else if value.Valid {
+				_m.RolesOverride = value.Bool
+			}
 		case user.FieldLastLogin:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field last_login", values[i])
@@ -156,6 +166,9 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("roles=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Roles))
+	builder.WriteString(", ")
+	builder.WriteString("roles_override=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RolesOverride))
 	builder.WriteString(", ")
 	if v := _m.LastLogin; v != nil {
 		builder.WriteString("last_login=")

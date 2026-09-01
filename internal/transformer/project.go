@@ -29,6 +29,7 @@ func FromProject(project *biz.Project) *types.ProjectModel {
 		DeployStatus:      project.DeployStatus,
 		HumanizeCreatedAt: date.ToHumanizeDateTime(&project.CreatedAt),
 		HumanizeUpdatedAt: date.ToHumanizeDateTime(&project.UpdatedAt),
+		UpdatedBy:         project.UpdatedBy,
 		ConfigType:        project.ConfigType,
 		GitCommitWebUrl:   project.GitCommitWebURL,
 		GitCommitTitle:    project.GitCommitTitle,

@@ -323,6 +323,8 @@ func TestWebsocketManager_Serve(t *testing.T) {
 
 	authMock := biz.NewMockAuthBiz(m)
 	authMock.EXPECT().VerifyToken(gomock.Any(), "token").Return(&biz.UserInfo{Name: "user"}, nil).AnyTimes()
+	// 认证成功路径经 authBiz.EffectiveRoles 解析生效角色（对齐 gRPC/HTTP 鉴权入口）。
+	authMock.EXPECT().EffectiveRoles(gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{}, nil).AnyTimes()
 
 	// JoinRoom 前经 RequireProjectAccess（Show + 所属命名空间校验）：公开命名空间放行。
 	projBiz := biz.NewMockProjectBiz(m)

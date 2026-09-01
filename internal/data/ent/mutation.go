@@ -7801,6 +7801,7 @@ type ProjectMutation struct {
 	git_commit               *string
 	_config                  *string
 	creator                  *string
+	updated_by               *string
 	override_values          *string
 	docker_image             *[]string
 	appenddocker_image       []string
@@ -8343,6 +8344,55 @@ func (m *ProjectMutation) OldCreator(ctx context.Context) (v string, err error) 
 // ResetCreator resets all changes to the "creator" field.
 func (m *ProjectMutation) ResetCreator() {
 	m.creator = nil
+}
+
+// SetUpdatedBy sets the "updated_by" field.
+func (m *ProjectMutation) SetUpdatedBy(s string) {
+	m.updated_by = &s
+}
+
+// UpdatedBy returns the value of the "updated_by" field in the mutation.
+func (m *ProjectMutation) UpdatedBy() (r string, exists bool) {
+	v := m.updated_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedBy returns the old "updated_by" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldUpdatedBy(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedBy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedBy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedBy: %w", err)
+	}
+	return oldValue.UpdatedBy, nil
+}
+
+// ClearUpdatedBy clears the value of the "updated_by" field.
+func (m *ProjectMutation) ClearUpdatedBy() {
+	m.updated_by = nil
+	m.clearedFields[project.FieldUpdatedBy] = struct{}{}
+}
+
+// UpdatedByCleared returns if the "updated_by" field was cleared in this mutation.
+func (m *ProjectMutation) UpdatedByCleared() bool {
+	_, ok := m.clearedFields[project.FieldUpdatedBy]
+	return ok
+}
+
+// ResetUpdatedBy resets all changes to the "updated_by" field.
+func (m *ProjectMutation) ResetUpdatedBy() {
+	m.updated_by = nil
+	delete(m.clearedFields, project.FieldUpdatedBy)
 }
 
 // SetOverrideValues sets the "override_values" field.
@@ -9378,7 +9428,7 @@ func (m *ProjectMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectMutation) Fields() []string {
-	fields := make([]string, 0, 26)
+	fields := make([]string, 0, 27)
 	if m.created_at != nil {
 		fields = append(fields, project.FieldCreatedAt)
 	}
@@ -9405,6 +9455,9 @@ func (m *ProjectMutation) Fields() []string {
 	}
 	if m.creator != nil {
 		fields = append(fields, project.FieldCreator)
+	}
+	if m.updated_by != nil {
+		fields = append(fields, project.FieldUpdatedBy)
 	}
 	if m.override_values != nil {
 		fields = append(fields, project.FieldOverrideValues)
@@ -9483,6 +9536,8 @@ func (m *ProjectMutation) Field(name string) (ent.Value, bool) {
 		return m.Config()
 	case project.FieldCreator:
 		return m.Creator()
+	case project.FieldUpdatedBy:
+		return m.UpdatedBy()
 	case project.FieldOverrideValues:
 		return m.OverrideValues()
 	case project.FieldDockerImage:
@@ -9544,6 +9599,8 @@ func (m *ProjectMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldConfig(ctx)
 	case project.FieldCreator:
 		return m.OldCreator(ctx)
+	case project.FieldUpdatedBy:
+		return m.OldUpdatedBy(ctx)
 	case project.FieldOverrideValues:
 		return m.OldOverrideValues(ctx)
 	case project.FieldDockerImage:
@@ -9649,6 +9706,13 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreator(v)
+		return nil
+	case project.FieldUpdatedBy:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedBy(v)
 		return nil
 	case project.FieldOverrideValues:
 		v, ok := value.(string)
@@ -9853,6 +9917,9 @@ func (m *ProjectMutation) ClearedFields() []string {
 	if m.FieldCleared(project.FieldConfig) {
 		fields = append(fields, project.FieldConfig)
 	}
+	if m.FieldCleared(project.FieldUpdatedBy) {
+		fields = append(fields, project.FieldUpdatedBy)
+	}
 	if m.FieldCleared(project.FieldOverrideValues) {
 		fields = append(fields, project.FieldOverrideValues)
 	}
@@ -9914,6 +9981,9 @@ func (m *ProjectMutation) ClearField(name string) error {
 		return nil
 	case project.FieldConfig:
 		m.ClearConfig()
+		return nil
+	case project.FieldUpdatedBy:
+		m.ClearUpdatedBy()
 		return nil
 	case project.FieldOverrideValues:
 		m.ClearOverrideValues()
@@ -9982,6 +10052,9 @@ func (m *ProjectMutation) ResetField(name string) error {
 		return nil
 	case project.FieldCreator:
 		m.ResetCreator()
+		return nil
+	case project.FieldUpdatedBy:
+		m.ResetUpdatedBy()
 		return nil
 	case project.FieldOverrideValues:
 		m.ResetOverrideValues()
@@ -11255,20 +11328,21 @@ func (m *RepoMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	created_at    *time.Time
-	updated_at    *time.Time
-	email         *string
-	name          *string
-	roles         *[]string
-	appendroles   []string
-	last_login    *time.Time
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*User, error)
-	predicates    []predicate.User
+	op             Op
+	typ            string
+	id             *int
+	created_at     *time.Time
+	updated_at     *time.Time
+	email          *string
+	name           *string
+	roles          *[]string
+	appendroles    []string
+	roles_override *bool
+	last_login     *time.Time
+	clearedFields  map[string]struct{}
+	done           bool
+	oldValue       func(context.Context) (*User, error)
+	predicates     []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -11564,6 +11638,42 @@ func (m *UserMutation) ResetRoles() {
 	m.appendroles = nil
 }
 
+// SetRolesOverride sets the "roles_override" field.
+func (m *UserMutation) SetRolesOverride(b bool) {
+	m.roles_override = &b
+}
+
+// RolesOverride returns the value of the "roles_override" field in the mutation.
+func (m *UserMutation) RolesOverride() (r bool, exists bool) {
+	v := m.roles_override
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRolesOverride returns the old "roles_override" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldRolesOverride(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRolesOverride is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRolesOverride requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRolesOverride: %w", err)
+	}
+	return oldValue.RolesOverride, nil
+}
+
+// ResetRolesOverride resets all changes to the "roles_override" field.
+func (m *UserMutation) ResetRolesOverride() {
+	m.roles_override = nil
+}
+
 // SetLastLogin sets the "last_login" field.
 func (m *UserMutation) SetLastLogin(t time.Time) {
 	m.last_login = &t
@@ -11647,7 +11757,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -11662,6 +11772,9 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.roles != nil {
 		fields = append(fields, user.FieldRoles)
+	}
+	if m.roles_override != nil {
+		fields = append(fields, user.FieldRolesOverride)
 	}
 	if m.last_login != nil {
 		fields = append(fields, user.FieldLastLogin)
@@ -11684,6 +11797,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case user.FieldRoles:
 		return m.Roles()
+	case user.FieldRolesOverride:
+		return m.RolesOverride()
 	case user.FieldLastLogin:
 		return m.LastLogin()
 	}
@@ -11705,6 +11820,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldName(ctx)
 	case user.FieldRoles:
 		return m.OldRoles(ctx)
+	case user.FieldRolesOverride:
+		return m.OldRolesOverride(ctx)
 	case user.FieldLastLogin:
 		return m.OldLastLogin(ctx)
 	}
@@ -11750,6 +11867,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRoles(v)
+		return nil
+	case user.FieldRolesOverride:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRolesOverride(v)
 		return nil
 	case user.FieldLastLogin:
 		v, ok := value.(time.Time)
@@ -11830,6 +11954,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldRoles:
 		m.ResetRoles()
+		return nil
+	case user.FieldRolesOverride:
+		m.ResetRolesOverride()
 		return nil
 	case user.FieldLastLogin:
 		m.ResetLastLogin()

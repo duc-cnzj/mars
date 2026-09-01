@@ -20,8 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	User_List_FullMethodName        = "/user.User/List"
-	User_ToggleAdmin_FullMethodName = "/user.User/ToggleAdmin"
+	User_List_FullMethodName               = "/user.User/List"
+	User_ToggleAdmin_FullMethodName        = "/user.User/ToggleAdmin"
+	User_ResetRolesOverride_FullMethodName = "/user.User/ResetRolesOverride"
 )
 
 // UserClient is the client API for User service.
@@ -30,6 +31,9 @@ const (
 type UserClient interface {
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	ToggleAdmin(ctx context.Context, in *ToggleAdminRequest, opts ...grpc.CallOption) (*ToggleAdminResponse, error)
+	// 解除后台手动接管（roles_override 置回 false）：该用户从下一次登录起恢复按 SSO 角色同步，
+	// 供超管把误接管/不再需要手动管理的用户「交还」给 SSO。
+	ResetRolesOverride(ctx context.Context, in *ResetRolesOverrideRequest, opts ...grpc.CallOption) (*ResetRolesOverrideResponse, error)
 }
 
 type userClient struct {
@@ -60,12 +64,25 @@ func (c *userClient) ToggleAdmin(ctx context.Context, in *ToggleAdminRequest, op
 	return out, nil
 }
 
+func (c *userClient) ResetRolesOverride(ctx context.Context, in *ResetRolesOverrideRequest, opts ...grpc.CallOption) (*ResetRolesOverrideResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResetRolesOverrideResponse)
+	err := c.cc.Invoke(ctx, User_ResetRolesOverride_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServer is the server API for User service.
 // All implementations must embed UnimplementedUserServer
 // for forward compatibility.
 type UserServer interface {
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	ToggleAdmin(context.Context, *ToggleAdminRequest) (*ToggleAdminResponse, error)
+	// 解除后台手动接管（roles_override 置回 false）：该用户从下一次登录起恢复按 SSO 角色同步，
+	// 供超管把误接管/不再需要手动管理的用户「交还」给 SSO。
+	ResetRolesOverride(context.Context, *ResetRolesOverrideRequest) (*ResetRolesOverrideResponse, error)
 	mustEmbedUnimplementedUserServer()
 }
 
@@ -81,6 +98,9 @@ func (UnimplementedUserServer) List(context.Context, *ListRequest) (*ListRespons
 }
 func (UnimplementedUserServer) ToggleAdmin(context.Context, *ToggleAdminRequest) (*ToggleAdminResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ToggleAdmin not implemented")
+}
+func (UnimplementedUserServer) ResetRolesOverride(context.Context, *ResetRolesOverrideRequest) (*ResetRolesOverrideResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResetRolesOverride not implemented")
 }
 func (UnimplementedUserServer) mustEmbedUnimplementedUserServer() {}
 func (UnimplementedUserServer) testEmbeddedByValue()              {}
@@ -139,6 +159,24 @@ func _User_ToggleAdmin_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_ResetRolesOverride_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetRolesOverrideRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).ResetRolesOverride(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_ResetRolesOverride_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).ResetRolesOverride(ctx, req.(*ResetRolesOverrideRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // User_ServiceDesc is the grpc.ServiceDesc for User service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -153,6 +191,10 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ToggleAdmin",
 			Handler:    _User_ToggleAdmin_Handler,
+		},
+		{
+			MethodName: "ResetRolesOverride",
+			Handler:    _User_ResetRolesOverride_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

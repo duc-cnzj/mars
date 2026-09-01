@@ -680,6 +680,7 @@ func TestClusterInfo(t *testing.T) {
 	kr := &k8sRepo{
 		logger: mlog.NewForConfig(nil),
 		data:   mockData,
+		cache:  NewCacheImpl(&config.Config{}, nil, mlog.NewForConfig(nil)),
 	}
 	mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
 	info := kr.ClusterInfo()
@@ -793,6 +794,98 @@ func TestClusterInfo_MetricsListError(t *testing.T) {
 	info := kr.ClusterInfo()
 	// 不 panic，节点信息仍可统计：metrics 失败时 TotalMemory 回退到节点 allocatable（单节点 10Gi）。
 	assert.Equal(t, "10 GiB", info.TotalMemory)
+}
+
+// TestClusterInfo_CacheErrorFallsBack 覆盖缓存出错的降级语义：cache.Remember 失败
+// （缓存驱动抖动/序列化失败）时，ClusterInfo 不返回 nil，而是实时重算兜底返回——
+// 锁死注释承诺的「未命中/缓存出错时降级实时计算」。与 RefreshClusterInfo 的「失败
+// 整体上抛」刻意区分：无 err 返回值封装层的失败必须对调用方保底而非吞掉。
+func TestClusterInfo_CacheErrorFallsBack(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	cache := NewMockCache(m)
+	cache.EXPECT().Remember(NewKey("cluster_info"), clusterInfoCacheSeconds, gomock.Any(), false).
+		Return(nil, errors.New("cache boom"))
+	cpu := &resource.Quantity{}
+	cpu.Add(resource.MustParse("3"))
+	memory := &resource.Quantity{}
+	memory.Add(resource.MustParse("10Gi"))
+	fc := fake.NewSimpleClientset(
+		&corev1.NodeList{Items: []corev1.Node{
+			{
+				ObjectMeta: metav1.ObjectMeta{Name: "node01"},
+				Status: corev1.NodeStatus{
+					Allocatable: corev1.ResourceList{
+						corev1.ResourceCPU:    cpu.DeepCopy(),
+						corev1.ResourceMemory: memory.DeepCopy(),
+					},
+				},
+			},
+		}},
+	)
+	fcm := &fake2.Clientset{}
+	fcm.AddReactor("list", "nodes", func(action testing2.Action) (bool, runtime.Object, error) {
+		return true, &v1beta1.NodeMetricsList{
+			Items: []v1beta1.NodeMetrics{
+				{ObjectMeta: metav1.ObjectMeta{Name: "node01"}, Usage: corev1.ResourceList{}},
+			},
+		}, nil
+	})
+	mockData := NewMockDataStore(m)
+	kr := &k8sRepo{logger: mlog.NewForConfig(nil), data: mockData, cache: cache}
+	mockData.EXPECT().K8s().Return(&K8sClient{Client: fc, MetricsClient: fcm}).AnyTimes()
+
+	info := kr.ClusterInfo()
+	// 缓存失败不返回 nil：实时重算兜底，单节点 3CPU/10Gi、零用量 → TotalMemory=10 GiB。
+	assert.NotNil(t, info)
+	assert.Equal(t, "10 GiB", info.TotalMemory)
+}
+
+// TestK8sRepo_RefreshClusterInfo_Force 覆盖预热路径：RefreshClusterInfo 必须带
+// force=true（跳过缓存读直接回填），锁死 Remember 第四参数——这是「cron/启动预热
+// 消灭冷窗口」的核心语义，防止被误改成惰性读。
+func TestK8sRepo_RefreshClusterInfo_Force(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	cache := NewMockCache(m)
+	cache.EXPECT().Remember(NewKey("cluster_info"), clusterInfoCacheSeconds, gomock.Any(), true).
+		Return([]byte(`{"status":"health"}`), nil)
+	kr := &k8sRepo{cache: cache}
+
+	info, err := kr.RefreshClusterInfo()
+	assert.NoError(t, err)
+	assert.Equal(t, biz.ClusterStatus("health"), info.Status)
+}
+
+// TestK8sRepo_RefreshClusterInfo_UnmarshalError 覆盖缓存值损坏（非合法 JSON）时
+// RefreshClusterInfo 整体上抛，与 ClusterBoard 的 UnmarshalError 防御语义一致。
+func TestK8sRepo_RefreshClusterInfo_UnmarshalError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	cache := NewMockCache(m)
+	cache.EXPECT().Remember(NewKey("cluster_info"), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return([]byte("not-json"), nil)
+	kr := &k8sRepo{cache: cache}
+
+	got, err := kr.RefreshClusterInfo()
+	assert.Nil(t, got)
+	assert.Error(t, err)
+}
+
+// TestK8sRepo_RefreshClusterInfo_RememberError 覆盖缓存驱动读写失败（Remember 返回错误）
+// 时 RefreshClusterInfo 整体上抛、不静默降级：预热方（cron/启动）据此记录错误，下一轮重试。
+// 与 ClusterInfo() 的"缓存失败降级实时计算"语义刻意区分——force 入口失败必须让调用方可见。
+func TestK8sRepo_RefreshClusterInfo_RememberError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	cache := NewMockCache(m)
+	cache.EXPECT().Remember(NewKey("cluster_info"), clusterInfoCacheSeconds, gomock.Any(), true).
+		Return(nil, errors.New("cache boom"))
+	kr := &k8sRepo{cache: cache}
+
+	got, err := kr.RefreshClusterInfo()
+	assert.Nil(t, got)
+	assert.EqualError(t, err, "cache boom")
 }
 
 func Test_getNodeRequestCpuAndMemory(t *testing.T) {
@@ -2707,17 +2800,16 @@ func TestK8sRepo_ClusterBoard_UnmarshalError(t *testing.T) {
 	assert.Contains(t, err.Error(), "unmarshal cluster board cache")
 }
 
-// TestK8sRepo_CacheTTLs 断言两个快照缓存使用各自 TTL：ClusterBoard=30s、
-// ResourceSnapshot=300s，锁死 Remember 的 seconds 参数——TTL 是本次分频的核心语义，
-// 防止将来被误统一成同一刷新周期（cron 预热节律与之一致）。注意断言用字面契约值
-// （30/300）而非常量引用：若常量被误改，测试仍能抓住错配。
+// TestK8sRepo_CacheTTLs 断言两个快照缓存使用各自 TTL：ClusterBoard=600s、
+// ResourceSnapshot=600s，锁死 Remember 的 seconds 参数。注意断言用字面契约值
+// （600）而非常量引用：若常量被误改，测试仍能抓住错配。
 func TestK8sRepo_CacheTTLs(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
 	cache := NewMockCache(m)
-	cache.EXPECT().Remember(NewKey("cluster_board"), 30, gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
-	cache.EXPECT().Remember(NewKey("resource_snapshot"), 300, gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+	cache.EXPECT().Remember(NewKey("cluster_board"), 600, gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+	cache.EXPECT().Remember(NewKey("resource_snapshot"), 600, gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
 	kr := &k8sRepo{cache: cache}
 	_, err := kr.ClusterBoard(context.TODO(), false)

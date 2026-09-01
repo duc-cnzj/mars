@@ -39,6 +39,10 @@ func (Project) Fields() []ent.Field {
 			}).
 			Optional(),
 		field.String("creator"),
+		field.String("updated_by").
+			MaxLen(255).
+			Optional().
+			Comment("最近一次人为更新的用户名（创建/成功部署），系统自动状态变更不刷新"),
 		field.String("override_values").
 			SchemaType(map[string]string{
 				dialect.MySQL: "longtext",

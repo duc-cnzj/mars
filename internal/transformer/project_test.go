@@ -53,6 +53,7 @@ func TestFromProject_ValidInput(t *testing.T) {
 		GitCommitDate:    &now,
 		Version:          1,
 		RepoID:           1,
+		UpdatedBy:        "testUpdatedBy",
 		Repo:             &biz.Repo{ID: 1, Name: "testRepo"},
 		Namespace:        &biz.Namespace{ID: 1, Name: "testNs"},
 		CreatedAt:        now,
@@ -96,6 +97,7 @@ func TestFromProject_ValidInput(t *testing.T) {
 	assert.Equal(t, int32(1), result.RepoId)
 	assert.Equal(t, date.ToRFC3339(&now), result.CreatedAt)
 	assert.Equal(t, date.ToRFC3339(&now), result.UpdatedAt)
+	assert.Equal(t, "testUpdatedBy", result.UpdatedBy)
 	assert.Empty(t, result.DeletedAt)
 	assert.Equal(t, int32(1), result.Repo.Id)
 	assert.Equal(t, "testRepo", result.Repo.Name)

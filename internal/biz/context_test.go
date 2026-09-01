@@ -72,9 +72,9 @@ func TestContextKeyIsolation(t *testing.T) {
 	assert.Panics(t, func() { MustGetUser(ctx) })
 }
 
-// TestAuthenticate_Success 验证 Authenticate 校验通过后把用户注入 ctx：
-// 返回的新 ctx 里 MustGetUser 能取回同一用户。
-func TestAuthenticate_Success(t *testing.T) {
+// Test_authenticate_Success 验证 authenticate 校验通过后把用户注入 ctx：
+// 返回的新 ctx 里 MustGetUser 能取回同一用户（纯 token 校验基座，角色取登录身份/JWT）。
+func Test_authenticate_Success(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -82,14 +82,14 @@ func TestAuthenticate_Success(t *testing.T) {
 	user := &UserInfo{ID: "1", Name: "duc", Email: "duc@example.com"}
 	auth.EXPECT().VerifyToken(gomock.Any(), "token-1").Return(user, nil)
 
-	ctx, err := Authenticate(context.TODO(), auth, "token-1")
+	ctx, err := authenticate(context.TODO(), auth, "token-1")
 	assert.NoError(t, err)
 	assert.Equal(t, user, MustGetUser(ctx))
 }
 
-// TestAuthenticate_InvalidToken 验证 token 校验失败时 Authenticate 返回原始错误，
+// Test_authenticate_InvalidToken 验证 token 校验失败时 authenticate 返回原始错误，
 // 且不产生可消费的 ctx（返回 nil——失败契约是"不进入业务逻辑"，中间件据此直接 401）。
-func TestAuthenticate_InvalidToken(t *testing.T) {
+func Test_authenticate_InvalidToken(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -97,7 +97,55 @@ func TestAuthenticate_InvalidToken(t *testing.T) {
 	verifyErr := errors.New("verify failed")
 	auth.EXPECT().VerifyToken(gomock.Any(), "bad-token").Return(nil, verifyErr)
 
-	ctx, err := Authenticate(context.TODO(), auth, "bad-token")
+	ctx, err := authenticate(context.TODO(), auth, "bad-token")
+	assert.ErrorIs(t, err, verifyErr)
+	assert.Nil(t, ctx)
+}
+
+// TestAuthenticate_AppliesEffectiveRoles 验证有效角色解析链路：VerifyToken 通过后，
+// authBiz.EffectiveRoles 按 users 表接管状态返回生效角色并覆盖注入用户（后台降权后 JWT
+// 仍带的 mars_admin 不再生效，RequireAdmin 据此拒绝）。
+func TestAuthenticate_AppliesEffectiveRoles(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	auth := NewMockAuthBiz(m)
+	user := &UserInfo{Email: "duc@x.com", Roles: []string{MarsAdmin}}
+	auth.EXPECT().VerifyToken(gomock.Any(), "token-1").Return(user, nil)
+	auth.EXPECT().EffectiveRoles(gomock.Any(), "duc@x.com", []string{MarsAdmin}).Return([]string{}, nil)
+
+	ctx, err := Authenticate(context.TODO(), auth, "token-1")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{}, MustGetUser(ctx).Roles, "降权后生效角色不应含 mars_admin")
+}
+
+// TestAuthenticate_RepoErrorFallsBack 用户表读取失败回落登录身份角色：
+// 鉴权不阻断，返回携带原角色的 ctx（DB 恢复后手动接管由下一次请求自动生效）。
+func TestAuthenticate_RepoErrorFallsBack(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	auth := NewMockAuthBiz(m)
+	user := &UserInfo{Email: "duc@x.com", Roles: []string{MarsAdmin}}
+	auth.EXPECT().VerifyToken(gomock.Any(), "token-1").Return(user, nil)
+	auth.EXPECT().EffectiveRoles(gomock.Any(), "duc@x.com", []string{MarsAdmin}).Return(nil, errors.New("db boom"))
+
+	ctx, err := Authenticate(context.TODO(), auth, "token-1")
+	assert.NoError(t, err, "用户表读取失败不阻断鉴权")
+	assert.Equal(t, []string{MarsAdmin}, MustGetUser(ctx).Roles, "回落登录身份角色")
+}
+
+// TestAuthenticate_InvalidToken_EffectiveRolesUntouched VerifyToken 失败透传原始错误并返回 nil ctx，
+// 不触达 EffectiveRoles。
+func TestAuthenticate_InvalidToken_EffectiveRolesUntouched(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	auth := NewMockAuthBiz(m)
+	verifyErr := errors.New("verify failed")
+	auth.EXPECT().VerifyToken(gomock.Any(), "bad").Return(nil, verifyErr)
+
+	ctx, err := Authenticate(context.TODO(), auth, "bad")
 	assert.ErrorIs(t, err, verifyErr)
 	assert.Nil(t, ctx)
 }

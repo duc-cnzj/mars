@@ -195,9 +195,9 @@ func TestDefaultAuthProvider_Verify_Fail(t *testing.T) {
 }
 
 // newTestAuthBiz 构造 authBiz 测试实例：Exchange 编排只依赖 oidcConfig 与 logger，
-// auth 在该路径不被触及，可安全传 nil。
+// auth 与生效角色解析器在该路径不被触及，可安全传 nil。
 func newTestAuthBiz(oidcConfig func() OidcConfig) *authBiz {
-	return NewAuthBiz(nil, fakeAuthConfigProvider{oidcConfig: oidcConfig}, mlog.NewForConfig(nil)).(*authBiz)
+	return NewAuthBiz(nil, fakeAuthConfigProvider{oidcConfig: oidcConfig}, nil, mlog.NewForConfig(nil)).(*authBiz)
 }
 
 func TestAuthBiz_Exchange_Success(t *testing.T) {

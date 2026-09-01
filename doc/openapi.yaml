@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: api/v6.0.0-beta.33
+    version: ""
 paths:
     /api/access_tokens:
         get:
@@ -355,6 +355,33 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.ToggleAdminResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/admin/users/{email}/roles_override:
+        put:
+            tags:
+                - User
+            description: |-
+                解除后台手动接管（roles_override 置回 false）：该用户从下一次登录起恢复按 SSO 角色同步，
+                 供超管把误接管/不再需要手动管理的用户「交还」给 SSO。
+            operationId: User_ResetRolesOverride
+            parameters:
+                - name: email
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.ResetRolesOverrideResponse'
                 default:
                     description: Default error response
                     content:
@@ -3290,6 +3317,9 @@ components:
                 updatedAt:
                     type: string
                     description: 最近更新时间 RFC3339（活跃度分类依据）
+                updatedBy:
+                    type: string
+                    description: 最近一次人为更新的用户名（创建/成功部署），系统状态变更不刷新
                 gitCommitTitle:
                     type: string
                     description: 最近提交信息（判断代码是否仍有人维护）：提交标题 / 作者 / 时间 RFC3339
@@ -3961,6 +3991,8 @@ components:
                     type: string
                 humanizeUpdatedAt:
                     type: string
+                updatedBy:
+                    type: string
                 configType:
                     type: string
                 gitCommitWebUrl:
@@ -4059,6 +4091,9 @@ components:
                         $ref: '#/components/schemas/user.UserModel'
                 stats:
                     $ref: '#/components/schemas/user.UserStats'
+        user.ResetRolesOverrideResponse:
+            type: object
+            properties: {}
         user.ToggleAdminRequest:
             type: object
             properties:
@@ -4088,6 +4123,8 @@ components:
                 createdAt:
                     type: string
                 isSuperAdmin:
+                    type: boolean
+                rolesOverride:
                     type: boolean
             description: |-
                 UserModel 是后台用户管理的单条展示模型：roles 已归一化为 admin/user

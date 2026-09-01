@@ -47,6 +47,21 @@ func (m *MockAuthBiz) EXPECT() *MockAuthBizMockRecorder {
 	return m.recorder
 }
 
+// EffectiveRoles mocks base method.
+func (m *MockAuthBiz) EffectiveRoles(arg0 context.Context, arg1 string, arg2 []string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EffectiveRoles", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EffectiveRoles indicates an expected call of EffectiveRoles.
+func (mr *MockAuthBizMockRecorder) EffectiveRoles(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveRoles", reflect.TypeOf((*MockAuthBiz)(nil).EffectiveRoles), arg0, arg1, arg2)
+}
+
 // Exchange mocks base method.
 func (m *MockAuthBiz) Exchange(arg0 context.Context, arg1 string) (*schematype.UserInfo, error) {
 	m.ctrl.T.Helper()
@@ -1718,18 +1733,32 @@ func (mr *MockUserBizMockRecorder) List(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUserBiz)(nil).List), arg0, arg1)
 }
 
-// SyncLoginUser mocks base method.
-func (m *MockUserBiz) SyncLoginUser(arg0 context.Context, arg1, arg2 string) error {
+// ResetRolesOverride mocks base method.
+func (m *MockUserBiz) ResetRolesOverride(arg0 context.Context, arg1 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SyncLoginUser", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "ResetRolesOverride", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetRolesOverride indicates an expected call of ResetRolesOverride.
+func (mr *MockUserBizMockRecorder) ResetRolesOverride(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetRolesOverride", reflect.TypeOf((*MockUserBiz)(nil).ResetRolesOverride), arg0, arg1)
+}
+
+// SyncLoginUser mocks base method.
+func (m *MockUserBiz) SyncLoginUser(arg0 context.Context, arg1, arg2 string, arg3 []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SyncLoginUser", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SyncLoginUser indicates an expected call of SyncLoginUser.
-func (mr *MockUserBizMockRecorder) SyncLoginUser(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockUserBizMockRecorder) SyncLoginUser(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncLoginUser", reflect.TypeOf((*MockUserBiz)(nil).SyncLoginUser), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncLoginUser", reflect.TypeOf((*MockUserBiz)(nil).SyncLoginUser), arg0, arg1, arg2, arg3)
 }
 
 // ToggleAdmin mocks base method.

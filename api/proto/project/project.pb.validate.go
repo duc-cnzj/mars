@@ -3167,6 +3167,8 @@ func (m *LivenessItem) validate(all bool) error {
 
 	// no validation rules for UpdatedAt
 
+	// no validation rules for UpdatedBy
+
 	// no validation rules for GitCommitTitle
 
 	// no validation rules for GitCommitAuthor

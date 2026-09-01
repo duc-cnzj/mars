@@ -328,6 +328,7 @@ func (j *jobRunner) Validate() Job {
 			NamespaceID:  j.ns.ID,
 			RepoID:       j.repo.ID,
 			Creator:      j.user.Email,
+			UpdatedBy:    j.user.Name,
 		}
 		j.messager.SendMsg("[Check]: 新建项目")
 		createProjectInput.DeployStatus = types.Deploy_StatusDeploying
@@ -545,6 +546,7 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 			EnvValues:        j.vars.ToKeyValue(),
 			OverrideValues:   string(marshal),
 			Manifest:         j.manifests,
+			UpdatedBy:        j.user.Name,
 		}
 
 		var (

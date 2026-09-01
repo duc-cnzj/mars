@@ -421,10 +421,19 @@ func (repo *Tasks) CacheClusterBoard() error {
 	return err
 }
 
-// CacheResourceSnapshot 每 5m 强制刷新空间资源快照缓存（与缓存 TTL 一致），
-// 避免读端高峰期触达全集群 List。force=true 使 data 层跳过缓存读直接回填。
-// 失败即上抛，由 cron 记录，下一轮自动重试。
+// CacheResourceSnapshot 每 5m 强制刷新空间资源快照缓存（cron 节奏比 10min 缓存
+// TTL 更密，读端总命中热缓存），避免读端高峰期触达全集群 List。force=true 使
+// data 层跳过缓存读直接回填。失败即上抛，由 cron 记录，下一轮自动重试。
 func (repo *Tasks) CacheResourceSnapshot() error {
 	_, err := repo.k8sRepo.ResourceSnapshot(context.TODO(), true)
+	return err
+}
+
+// CacheClusterInfo 每 30s 强制刷新集群信息统计缓存（cron 节奏比 10min 缓存 TTL
+// 更密，读端总命中热缓存），避免顶栏 ClusterInfo 首次请求触达全集群 List（该缓存
+// 原无 cron 预热，重启后首个请求必冷）。force=true 使 data 层跳过缓存读直接回填。
+// 失败即上抛，由 cron 记录，下一轮自动重试。
+func (repo *Tasks) CacheClusterInfo() error {
+	_, err := repo.k8sRepo.RefreshClusterInfo()
 	return err
 }

@@ -67,9 +67,10 @@ func (f *fileHandler) RegisterFileRoute(mux *runtime.ServeMux) {
 }
 
 // authHandler 把 file handler 套上 LoginHTTP 鉴权中间件：校验 Authorization header
-// 中的 token（经 biz.Authenticate 统一"校验+注入用户到 ctx"）后进入真实 handler，
-// 失败统一 401。作为 HTTP 文件路由的唯一鉴权入口，替代原先各 handler 手写的
-// authenticated() 副本——鉴权核心与 gRPC 拦截器共用 biz.Authenticate，杜绝双实现漂移。
+// 中的 token（经 biz.Authenticate 统一"校验+注入用户+应用用户表角色
+// 接管"到 ctx）后进入真实 handler，失败统一 401。作为 HTTP 文件路由的唯一鉴权入口，
+// 替代原先各 handler 手写的 authenticated() 副本——鉴权核心与 gRPC 拦截器共用
+// biz.Authenticate，杜绝双实现漂移。
 func (f *fileHandler) authHandler(handler func(w http.ResponseWriter, r *http.Request, pathParams map[string]string)) runtime.HandlerFunc {
 	authMW := middlewares.LoginHTTP(func(ctx context.Context, token string) (context.Context, error) {
 		return biz.Authenticate(ctx, f.authBiz, token)

@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '@/features/auth/AuthProvider'
 import { Icon } from '@/components/Icons'
 import { SEARCH_DEBOUNCE_MS } from '@/lib/constants'
 import { SearchInput } from '@/components/SearchInput'
@@ -36,9 +37,15 @@ const UserRow = memo(function UserRow({
   user,
   isOpen,
   toggling,
+  resetOpen,
+  resetting,
+  canManage,
   onToggle,
   onClose,
   onConfirm,
+  onReset,
+  onResetClose,
+  onResetConfirm,
   onCopyEmail,
   className,
   style,
@@ -46,9 +53,16 @@ const UserRow = memo(function UserRow({
   user: UserModel
   isOpen: boolean
   toggling: boolean
+  resetOpen: boolean
+  resetting: boolean
+  /** 当前登录用户是否为超管：false 时本行只读（普通管理员只能查看，不能改他人权限） */
+  canManage: boolean
   onToggle: (u: UserModel) => void
   onClose: () => void
   onConfirm: () => void
+  onReset: (u: UserModel) => void
+  onResetClose: () => void
+  onResetConfirm: () => void
   onCopyEmail: (email: string) => void
   /** RefreshFade 经 cloneElement 注入的渐入 class/延迟——须转发到根元素才生效 */
   className?: string
@@ -58,9 +72,13 @@ const UserRow = memo(function UserRow({
   const isAdmin = user.roles.includes('admin')
   // 超管标识来自后端（user.UserModel.is_super_admin，由服务端按内置超管邮箱判定），前端不写死邮箱
   const isSuper = user.isSuperAdmin
+  // 角色来源：roles_override=false（未被后台接管）= 生效角色来自最近一次 SSO 登录同步；
+  // true（已被后台接管）= 生效角色来自超管手动设置。仅在非超管管理员上展示来源徽标，
+  // 内置超管是固定身份，无来源语义。
+  const sourceOverride = user.rolesOverride
   return (
     <div
-      className={`grid grid-cols-1 gap-2 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_7rem_8rem] lg:items-center ${className ?? ''}`}
+      className={`grid grid-cols-1 gap-2 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_7rem_15rem] lg:items-center ${className ?? ''}`}
       style={style}
     >
       {/* 用户：头像（系统无头像字段，统一图标占位）+ 姓名 + 邮箱 */}
@@ -87,20 +105,26 @@ const UserRow = memo(function UserRow({
         </div>
       </div>
 
-      {/* 角色：超级管理员单独打标；普通用户由空 roles 推导（服务端不再返回 user） */}
+      {/* 角色：超级管理员单独打标（超管=最高身份，不再叠加管理员标）；普通用户由空 roles 推导
+          （服务端不再返回 user）。非超管管理员附带来源徽标：roles_override=false=SSO 带来，
+          true=后台手动设置 */}
       <div className="flex flex-wrap items-center gap-1">
-        {isSuper && (
+        {isSuper ? (
           <Tag tone="accent" dot={false}>
             {t('users.superAdmin')}
           </Tag>
-        )}
-        {isAdmin ? (
+        ) : isAdmin ? (
           <Tag tone="accent" dot={false}>
             {t('users.roleAdmin')}
           </Tag>
         ) : (
           <Tag tone="mute" dot={false}>
             {t('users.roleUser')}
+          </Tag>
+        )}
+        {isAdmin && !isSuper && (
+          <Tag tone={sourceOverride ? 'warn' : 'info'} dot={false}>
+            {t(sourceOverride ? 'users.roleSourceManual' : 'users.roleSourceSSO')}
           </Tag>
         )}
       </div>
@@ -118,37 +142,71 @@ const UserRow = memo(function UserRow({
         )}
       </span>
 
-      {/* 操作：添加/删除管理员（二次确认；超级管理员不可降级） */}
-      {isSuper ? (
-        <Button size="sm" variant="ghost" disabled title={t('users.superAdminCannotDemote')}>
-          <Icon name="shield" className="size-3.5" />
-          {t('users.demote')}
-        </Button>
+      {/* 操作：仅超管可修改他人权限（需求：普通管理员只能查看不能改）；二次确认；内置超管是固定身份，
+          操作栏以「-」占位（无降级入口，连禁用按钮都不放）；其余按钮统一尺寸 + 固定等宽 w-28，
+          按语义分层变体——「设为管理员」主操作 default 实心，「移除管理员」危险动作 destructive 红色实心
+          （与确认弹窗红键同语义），「恢复同步」次级操作 outline 描边，杜绝「有的按钮大有的按钮小」 */}
+      {!canManage ? (
+        <span className="text-[11px] text-faint">{t('users.viewOnly')}</span>
+      ) : isSuper ? (
+        <span className="text-[11px] text-faint">-</span>
       ) : isAdmin ? (
-        <AlertDialog open={isOpen} onOpenChange={(o) => !o && !toggling && onClose()}>
-          <Button size="sm" variant="outline" onClick={() => onToggle(user)}>
-            <Icon name="minus" className="size-3.5" />
-            {t('users.demote')}
-          </Button>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('users.demoteConfirmTitle', { name: user.name })}</AlertDialogTitle>
-              <AlertDialogDescription>{t('users.demoteConfirmDesc')}</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={toggling}>{t('common.cancel')}</AlertDialogCancel>
-              {/* 普通 Button 而非 AlertDialogAction：后者点击默认关闭弹窗，会「还没生效就消失」 */}
-              <Button variant="destructive" disabled={toggling} onClick={onConfirm}>
-                {toggling && <Icon name="loader" className="size-4 animate-spin" />}
-                {t('users.demote')}
+        <div className="flex items-center gap-1.5">
+          {/* 恢复 SSO 同步：仅后台手动接管中的管理员显示（rolesOverride=true），
+              解除接管标记把该用户交还给 SSO 角色同步（下一次登录生效） */}
+          {sourceOverride && (
+            <AlertDialog open={resetOpen} onOpenChange={(o) => !o && !resetting && onResetClose()}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onReset(user)}
+                title={t('users.restoreSSOSync')}
+                className="w-28"
+              >
+                <Icon name="restore" className="size-3.5" />
+                {t('users.restoreSSOSyncShort')}
               </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('users.restoreSSOSyncConfirmTitle', { name: user.name })}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('users.restoreSSOSyncConfirmDesc')}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={resetting}>{t('common.cancel')}</AlertDialogCancel>
+                  {/* 普通 Button 而非 AlertDialogAction：后者点击默认关闭弹窗，会「还没生效就消失」 */}
+                  <Button disabled={resetting} onClick={onResetConfirm}>
+                    {resetting && <Icon name="loader" className="size-4 animate-spin" />}
+                    {t('users.restoreSSOSync')}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <AlertDialog open={isOpen} onOpenChange={(o) => !o && !toggling && onClose()}>
+            <Button size="sm" variant="destructive" onClick={() => onToggle(user)} className="w-28">
+              <Icon name="shield-minus" className="size-3.5" />
+              {t('users.demote')}
+            </Button>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t('users.demoteConfirmTitle', { name: user.name })}</AlertDialogTitle>
+                <AlertDialogDescription>{t('users.demoteConfirmDesc')}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={toggling}>{t('common.cancel')}</AlertDialogCancel>
+                {/* 普通 Button 而非 AlertDialogAction：后者点击默认关闭弹窗，会「还没生效就消失」 */}
+                <Button variant="destructive" disabled={toggling} onClick={onConfirm}>
+                  {toggling && <Icon name="loader" className="size-4 animate-spin" />}
+                  {t('users.demote')}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       ) : (
         <AlertDialog open={isOpen} onOpenChange={(o) => !o && !toggling && onClose()}>
-          <Button size="sm" variant="default" onClick={() => onToggle(user)}>
-            <Icon name="shield" className="size-3.5" />
+          <Button size="sm" variant="default" onClick={() => onToggle(user)} className="w-28">
+            <Icon name="shield-plus" className="size-3.5" />
             {t('users.promote')}
           </Button>
           <AlertDialogContent>
@@ -185,6 +243,8 @@ const UserRow = memo(function UserRow({
  */
 export function UserManager() {
   const { t } = useTranslation()
+  // 当前登录用户是否超管：普通管理员进入本页只读（后端 ToggleAdmin 同样有超管门卫，前端仅隐藏入口）
+  const canManage = useAuth().user?.isSuperAdmin === true
   const [users, setUsers] = useState<UserModel[]>([])
   const [count, setCount] = useState(0)
   const [stats, setStats] = useState<UserStats>({ total: 0, admins: 0, regular: 0 })
@@ -205,6 +265,10 @@ export function UserManager() {
   const [toggleTarget, setToggleTarget] = useState<UserModel | null>(null)
   // 角色变更进行中（防重复点击；进行中禁止关闭弹窗，失败保持打开可重试）
   const [toggling, setToggling] = useState(false)
+  // 恢复 SSO 同步确认弹窗：null=关闭；非空=确认解除该用户后台手动接管（受控弹窗，请求成功前不关闭）
+  const [resetTarget, setResetTarget] = useState<UserModel | null>(null)
+  // 解除接管进行中（防重复点击；进行中禁止关闭弹窗，失败保持打开可重试）
+  const [resetting, setResetting] = useState(false)
   // 列表滚动容器（IntersectionObserver 的 root）与底部哨兵
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -337,8 +401,12 @@ export function UserManager() {
   // 弹窗目标/进行中状态同步 ref：供 useCallback 稳定读取最新值，避免 handler 每渲染重建令行 memo 失效
   const toggleTargetRef = useRef<UserModel | null>(null)
   const togglingRef = useRef(false)
+  const resetTargetRef = useRef<UserModel | null>(null)
+  const resettingRef = useRef(false)
   toggleTargetRef.current = toggleTarget
   togglingRef.current = toggling
+  resetTargetRef.current = resetTarget
+  resettingRef.current = resetting
 
   /** 添加/删除管理员：调角色管理接口（超级管理员不可降级由服务端保证）。
    *  受控弹窗：请求成功才关闭，失败保持打开（toast 报错）供重试，杜绝「还没生效弹窗先消失」。
@@ -364,6 +432,28 @@ export function UserManager() {
     }
   }, [refresh, t])
 
+  /** 恢复 SSO 同步：解除后台手动接管（roles_override 置回 false），该用户从下一次登录起
+   *  恢复按 SSO 角色同步（手动设置的权限将被覆盖）。受控弹窗：请求成功才关闭，失败保持
+   *  打开（toast 报错）供重试；成功后行内角色来源徽标随 refresh 回到「来自 SSO」。 */
+  const resetRolesOverride = useCallback(async () => {
+    const target = resetTargetRef.current
+    if (!target || resettingRef.current) return
+    setResetting(true)
+    try {
+      const { error: err } = await api.PUT(API.adminUserRolesOverride, {
+        params: { path: { email: target.email } },
+      })
+      if (err) throw new Error(err.message ?? String(err))
+      toast.success(t('users.restoreSSOSyncSuccess'))
+      setResetTarget(null)
+      void refresh()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setResetting(false)
+    }
+  }, [refresh, t])
+
   /** 复制用户邮箱（邀请成员/联系用户），成功 toast 反馈（useCallback 稳定引用） */
   const copyEmail = useCallback(async (email: string) => {
     const ok = await copyText(email)
@@ -376,6 +466,12 @@ export function UserManager() {
 
   /** 关闭确认弹窗（受控弹窗 onOpenChange(false) → 关） */
   const handleClose = useCallback(() => setToggleTarget(null), [])
+
+  /** 打开恢复 SSO 同步确认弹窗（setResetTarget 恒稳定，useCallback 仅为行 memo 的 prop 引用一致） */
+  const handleReset = useCallback((u: UserModel) => setResetTarget(u), [])
+
+  /** 关闭恢复确认弹窗（受控弹窗 onOpenChange(false) → 关） */
+  const handleResetClose = useCallback(() => setResetTarget(null), [])
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -426,7 +522,7 @@ export function UserManager() {
 
       {/* 用户列表：固定表头 + 内部滚动容器（无限下拉 root） */}
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-surface">
-        <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_7rem_8rem] items-center gap-2 border-b border-line px-4 py-2 text-[11px] font-medium text-faint lg:grid">
+        <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_7rem_15rem] items-center gap-2 border-b border-line px-4 py-2 text-[11px] font-medium text-faint lg:grid">
           <span>{t('users.user')}</span>
           <span>{t('users.role')}</span>
           <button
@@ -466,9 +562,15 @@ export function UserManager() {
               user={u}
               isOpen={toggleTarget?.email === u.email}
               toggling={toggling}
+              resetOpen={resetTarget?.email === u.email}
+              resetting={resetting}
+              canManage={canManage}
               onToggle={handleToggle}
               onClose={handleClose}
               onConfirm={toggleAdmin}
+              onReset={handleReset}
+              onResetClose={handleResetClose}
+              onResetConfirm={resetRolesOverride}
               onCopyEmail={copyEmail}
             />
           ))}

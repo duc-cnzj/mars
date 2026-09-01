@@ -1282,6 +1282,7 @@ func TestProjectSvc_Liveness(t *testing.T) {
 				GitCommitTitle:  "fix: rate limit",
 				GitCommitAuthor: "alice@mars.dev",
 				GitCommitDate:   &commitDate,
+				UpdatedBy:       "bob@mars.dev",
 			},
 			{ID: 2, Name: "old", UpdatedAt: now.Add(-120 * 24 * time.Hour), Namespace: &biz.Namespace{Name: "legacy"}, Repo: &biz.Repo{Name: "old-repo"}},
 		},
@@ -1311,6 +1312,7 @@ func TestProjectSvc_Liveness(t *testing.T) {
 			assert.Equal(t, "alice@mars.dev", resp.Items[0].GitCommitAuthor)
 			assert.NotEmpty(t, resp.Items[0].GitCommitDate)
 			assert.NotEmpty(t, resp.Items[0].UpdatedAt)
+			assert.Equal(t, "bob@mars.dev", resp.Items[0].UpdatedBy)
 			assert.Equal(t, "legacy", resp.Items[1].Namespace)
 			assert.Equal(t, int32(0), resp.Items[1].DeployCount)
 		}

@@ -44,7 +44,8 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 	if err != nil {
 		return nil, err
 	}
-	authBiz := biz.NewAuthBiz(auth, dataImpl, logger)
+	userRepo := data.NewUserRepo(dataImpl, timerTimer)
+	authBiz := biz.NewAuthBiz(auth, dataImpl, userRepo, logger)
 	dispatcher := event.NewDispatcher(logger)
 	cache := data.NewCacheImpl(configConfig, dataImpl, logger)
 	pluginManager, err := app.NewPluginManager(configConfig, logger)
@@ -179,7 +180,6 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		AccessBiz: accessBiz,
 	}
 	changelogServer := services.NewChangelogSvc(changelogSvcDeps)
-	userRepo := data.NewUserRepo(dataImpl, timerTimer)
 	userBiz := biz.NewUserBiz(userRepo)
 	authSvcDeps := services.AuthSvcDeps{
 		EventBiz: eventBiz,
@@ -261,6 +261,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		Logger:       logger,
 		Uploader:     uploaderUploader,
 		AuthBiz:      authBiz,
+		UserBiz:      userBiz,
 		EventBiz:     eventBiz,
 		FileBiz:      fileBiz,
 		Timer:        timerTimer,

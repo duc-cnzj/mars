@@ -23,6 +23,8 @@ const (
 	FieldName = "name"
 	// FieldRoles holds the string denoting the roles field in the database.
 	FieldRoles = "roles"
+	// FieldRolesOverride holds the string denoting the roles_override field in the database.
+	FieldRolesOverride = "roles_override"
 	// FieldLastLogin holds the string denoting the last_login field in the database.
 	FieldLastLogin = "last_login"
 	// Table holds the table name of the user in the database.
@@ -37,6 +39,7 @@ var Columns = []string{
 	FieldEmail,
 	FieldName,
 	FieldRoles,
+	FieldRolesOverride,
 	FieldLastLogin,
 }
 
@@ -65,6 +68,8 @@ var (
 	NameValidator func(string) error
 	// DefaultRoles holds the default value on creation for the "roles" field.
 	DefaultRoles []string
+	// DefaultRolesOverride holds the default value on creation for the "roles_override" field.
+	DefaultRolesOverride bool
 )
 
 // OrderOption defines the ordering options for the User queries.
@@ -93,6 +98,11 @@ func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByRolesOverride orders the results by the roles_override field.
+func ByRolesOverride(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRolesOverride, opts...).ToFunc()
 }
 
 // ByLastLogin orders the results by the last_login field.

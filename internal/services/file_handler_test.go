@@ -33,6 +33,9 @@ func Test_fileHandler_authHandler(t *testing.T) {
 
 	// 有效 token：VerifyToken 通过 → 注入用户并进入 handler。
 	authBiz.EXPECT().VerifyToken(gomock.Any(), "valid-token").Return(&biz.UserInfo{Name: "test-user"}, nil).Times(1)
+	// 有效 token 路径经 authBiz.EffectiveRoles 解析生效角色（对齐 gRPC 鉴权入口）。
+	// mock UserInfo 未设 Email，EffectiveRoles 实收空串，matcher 用 Any 兜住。
+	authBiz.EXPECT().EffectiveRoles(gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{}, nil).Times(1)
 	var gotUser string
 	handler := h.authHandler(func(w http.ResponseWriter, r *http.Request, _ map[string]string) {
 		gotUser = biz.MustGetUser(r.Context()).Name
@@ -732,6 +735,9 @@ func Test_fileHandler_RegisterFileRoute_Closures(t *testing.T) {
 	// 三条路由统一经 authHandler 鉴权：download/copy_from_pod 也先过 token 校验，
 	// 故 "tok" 期望 AnyTimes（POST files / download / copy_from_pod 共 3 处）。
 	authBiz.EXPECT().VerifyToken(gomock.Any(), "tok").Return(&biz.UserInfo{Name: "duc"}, nil).AnyTimes()
+	// 有效 token 路径经 authBiz.EffectiveRoles 解析生效角色，同样 AnyTimes（3 处路由鉴权）。
+	// mock UserInfo 未设 Email，EffectiveRoles 实收空串，email matcher 用 Any。
+	authBiz.EXPECT().EffectiveRoles(gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{}, nil).AnyTimes()
 	fileRepo.EXPECT().MaxUploadSize().Return(uint64(10000))
 	up.EXPECT().Type().Return(schematype.Local)
 	up.EXPECT().Disk("users").Return(up)

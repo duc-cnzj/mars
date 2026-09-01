@@ -66,6 +66,7 @@ func TestProjectRepoCreate(t *testing.T) {
 		DeployStatus: types.Deploy_StatusDeployed,
 		RepoID:       repo.ID,
 		Creator:      "testCreator",
+		UpdatedBy:    "testUpdatedBy",
 	}
 
 	project, err := r.Create(ctx, input)
@@ -80,6 +81,7 @@ func TestProjectRepoCreate(t *testing.T) {
 	assert.Equal(t, input.PodSelectors, project.PodSelectors)
 	assert.Equal(t, input.DeployStatus, project.DeployStatus)
 	assert.Equal(t, input.RepoID, project.RepoID)
+	assert.Equal(t, input.UpdatedBy, project.UpdatedBy)
 }
 
 func TestProjectRepoUpdateProject(t *testing.T) {
@@ -102,6 +104,7 @@ func TestProjectRepoUpdateProject(t *testing.T) {
 		PodSelectors: []string{"updatedSelector"},
 		DockerImage:  []string{"updatedImage"},
 		Manifest:     []string{"updatedManifest"},
+		UpdatedBy:    "updatedByUser",
 	}
 
 	project, err := r.UpdateProject(ctx, input)
@@ -113,6 +116,7 @@ func TestProjectRepoUpdateProject(t *testing.T) {
 	assert.Equal(t, input.PodSelectors, project.PodSelectors)
 	assert.Equal(t, input.DockerImage, project.DockerImage)
 	assert.Equal(t, input.Manifest, project.Manifest)
+	assert.Equal(t, input.UpdatedBy, project.UpdatedBy)
 }
 
 func TestProjectRepoDelete(t *testing.T) {

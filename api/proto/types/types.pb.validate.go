@@ -1723,6 +1723,8 @@ func (m *ProjectModel) validate(all bool) error {
 
 	// no validation rules for HumanizeUpdatedAt
 
+	// no validation rules for UpdatedBy
+
 	// no validation rules for ConfigType
 
 	// no validation rules for GitCommitWebUrl

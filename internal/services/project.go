@@ -102,6 +102,7 @@ func (p *projectSvc) Liveness(ctx context.Context, request *project.LivenessRequ
 			GitBranch:       it.Project.GitBranch,
 			GitCommit:       it.Project.GitCommit,
 			UpdatedAt:       date.ToRFC3339(&it.Project.UpdatedAt),
+			UpdatedBy:       it.Project.UpdatedBy,
 			GitCommitTitle:  it.Project.GitCommitTitle,
 			GitCommitAuthor: it.Project.GitCommitAuthor,
 			GitCommitDate:   date.ToRFC3339(it.Project.GitCommitDate),

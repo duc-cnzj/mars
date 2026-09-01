@@ -1,6 +1,8 @@
 package data
 
 import (
+	"context"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -27,4 +29,23 @@ func endSpan(span trace.Span, err error) {
 		span.SetStatus(codes.Error, err.Error())
 	}
 	span.End()
+}
+
+// spanCall 在 ctx 上创建名为 name 的 child span，包裹一次单调用并返回其结果：
+// fn 出错时先 RecordError 落异常事件、再把状态置为 Error（描述为错误原文），
+// 返回后统一 End。
+// 供 fetchClusterBoard/fetchResourceSnapshot 内逐 k8s List 调用的耗时观测使用，
+// 让 trace 面板能看到每个 List 的独立耗时，而不只是整个快照拉取的总时长。
+// 每次现取 otel.Tracer 而非复用包级 tracer：包级 tracer 在 init 时捕获、首个
+// SetTracerProvider 后即钉死首 provider（setDelegate 只 swap 一次），现取才能
+// 在测试中多轮 set/还原全局 provider 捕获 span。
+func spanCall[V any](ctx context.Context, name string, fn func(context.Context) (V, error)) (V, error) {
+	ctx, span := otel.Tracer(tracerName).Start(ctx, name)
+	defer span.End()
+	v, err := fn(ctx)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+	return v, err
 }

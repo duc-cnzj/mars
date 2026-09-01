@@ -46,9 +46,30 @@ func (f fakeAuthConfigProvider) OidcConfig() OidcConfig {
 	return f.oidcConfig()
 }
 
+// fakeRolesProvider 是 EffectiveRolesProvider 的测试替身：记录入参并按注入的
+// 结果/错误返回，供 authBiz.EffectiveRoles 用例验证「邮箱 trim + 透传」编排。
+type fakeRolesProvider struct {
+	inEmail    string
+	inSSORoles []string
+	out        []string
+	err        error
+}
+
+func (f *fakeRolesProvider) EffectiveRoles(_ context.Context, email string, ssoRoles []string) ([]string, error) {
+	f.inEmail = email
+	f.inSSORoles = ssoRoles
+	return f.out, f.err
+}
+
 // newAuthBizForTest 组装 authBiz 测试实例：auth 与 oidcConfig 均可为 nil，依赖由测试注入。
+// roles 为 nil 时 authBiz 的生效角色解析保持 nil——既有用例不触碰 EffectiveRoles，不触发解引用。
 func newAuthBizForTest(auth Auth, adminPassword string, oidcConfig func() OidcConfig) *authBiz {
-	return NewAuthBiz(auth, fakeAuthConfigProvider{adminPassword: adminPassword, oidcConfig: oidcConfig}, mlog.NewForConfig(nil)).(*authBiz)
+	return NewAuthBiz(auth, fakeAuthConfigProvider{adminPassword: adminPassword, oidcConfig: oidcConfig}, nil, mlog.NewForConfig(nil)).(*authBiz)
+}
+
+// newAuthBizForTestWithRoles 组装带生效角色解析器的 authBiz 测试实例，供 EffectiveRoles 用例注入 fakeRolesProvider。
+func newAuthBizForTestWithRoles(auth Auth, roles EffectiveRolesProvider) *authBiz {
+	return NewAuthBiz(auth, fakeAuthConfigProvider{}, roles, mlog.NewForConfig(nil)).(*authBiz)
 }
 
 func TestAuthBiz_Login_Success(t *testing.T) {
@@ -154,4 +175,38 @@ func TestAuthBiz_Sign_NilInput(t *testing.T) {
 	assert.Nil(t, got)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
 	assert.Equal(t, "sign user 不能为空", status.Convert(err).Message())
+}
+
+// TestAuthBiz_EffectiveRoles_Success 成功路径：邮箱 trim 后透传 email/SSO 角色到 provider，
+// 生效角色取 provider 结果。
+func TestAuthBiz_EffectiveRoles_Success(t *testing.T) {
+	roles := &fakeRolesProvider{out: []string{}}
+	a := newAuthBizForTestWithRoles(nil, roles)
+
+	got, err := a.EffectiveRoles(context.TODO(), "  a@b.c  ", []string{MarsAdmin})
+	assert.NoError(t, err)
+	assert.Equal(t, "a@b.c", roles.inEmail, "邮箱应 trim 后传给 provider")
+	assert.Equal(t, []string{MarsAdmin}, roles.inSSORoles, "SSO 角色应原样透传")
+	assert.Equal(t, []string{}, got)
+}
+
+// TestAuthBiz_EffectiveRoles_EmptyEmailFallsBack 空邮箱回落登录身份角色（鉴权路径不阻断）：
+// 返回原角色且不触达 provider。
+func TestAuthBiz_EffectiveRoles_EmptyEmailFallsBack(t *testing.T) {
+	roles := &fakeRolesProvider{}
+	a := newAuthBizForTestWithRoles(nil, roles)
+
+	got, err := a.EffectiveRoles(context.TODO(), "  ", []string{MarsAdmin})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{MarsAdmin}, got, "空邮箱应回落登录身份角色")
+	assert.Empty(t, roles.inEmail, "空邮箱不应触达 provider")
+}
+
+// TestAuthBiz_EffectiveRoles_RepoError 透传 provider 错误。
+func TestAuthBiz_EffectiveRoles_RepoError(t *testing.T) {
+	roles := &fakeRolesProvider{err: errors.New("boom")}
+	a := newAuthBizForTestWithRoles(nil, roles)
+
+	_, err := a.EffectiveRoles(context.TODO(), "a@b.c", []string{})
+	assert.EqualError(t, err, "boom")
 }

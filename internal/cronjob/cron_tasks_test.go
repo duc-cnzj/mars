@@ -669,3 +669,23 @@ func TestTasks_CacheResourceSnapshot_Error(t *testing.T) {
 	repo := &Tasks{k8sRepo: k8sRepo}
 	assert.Equal(t, "snapshot boom", repo.CacheResourceSnapshot().Error())
 }
+
+// TestTasks_CacheClusterInfo 覆盖集群信息统计 30s 预热任务：force 刷新一次，成功后无错误。
+func TestTasks_CacheClusterInfo(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := data.NewMockK8sRepo(m)
+	k8sRepo.EXPECT().RefreshClusterInfo().Return(&biz.ClusterInfo{}, nil)
+	repo := &Tasks{k8sRepo: k8sRepo}
+	assert.NoError(t, repo.CacheClusterInfo())
+}
+
+// TestTasks_CacheClusterInfo_Error 覆盖集群信息刷新失败路径：错误原样上抛。
+func TestTasks_CacheClusterInfo_Error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	k8sRepo := data.NewMockK8sRepo(m)
+	k8sRepo.EXPECT().RefreshClusterInfo().Return(nil, errors.New("cluster info boom"))
+	repo := &Tasks{k8sRepo: k8sRepo}
+	assert.Equal(t, "cluster info boom", repo.CacheClusterInfo().Error())
+}

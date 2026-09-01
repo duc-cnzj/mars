@@ -89,7 +89,7 @@ type Bootstrapper interface {
 //
 // 除角色接口外，App 还显式声明 AuthBiz/ProjectRepo 两个访问器：二者分别是
 // ServerDeps/PluginApp 的成员，组合根实现（*app）天然持有。把她们显式写进
-// App 接口，使 mockgen 生成的 MockApp 一并具备这两个方法，测试才能把
+// App 接口，使 mockgen 生成的 MockApp 一并具备这几个方法，测试才能把
 // MockApp 直接当作 ServerDeps/PluginApp/BootstrapDeps 的替身使用——
 // 否则每次重生成 mock 都会丢失手补方法、打断这三个包的单测编译。
 type App interface {
@@ -187,7 +187,7 @@ type ServerDeps interface {
 	// Logger 返回日志器。
 	Logger() mlog.Logger
 	// AuthBiz 返回鉴权业务逻辑。gRPC 拦截器经它（biz.Authenticate）做
-	// token 校验与用户注入，与 HTTP LoginHTTP 中间件共用同一鉴权核心。
+	// token 校验、用户注入与生效角色解析，与 HTTP LoginHTTP 中间件共用同一鉴权核心。
 	AuthBiz() biz.AuthBiz
 	// GrpcRegistry 返回注册表。
 	GrpcRegistry() *GrpcRegistry

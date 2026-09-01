@@ -31,6 +31,7 @@ type HttpHandlerDeps struct {
 	Logger       mlog.Logger
 	Uploader     uploader.Uploader
 	AuthBiz      biz.AuthBiz
+	UserBiz      biz.UserBiz
 	EventBiz     biz.EventBiz
 	FileBiz      biz.FileBiz
 	Timer        timer.Timer

@@ -57,6 +57,7 @@ type httpHandlerMocks struct {
 	ctrl       *gomock.Controller
 	httpServer *app.MockHttpHandler
 	authBiz    *biz.MockAuthBiz
+	userBiz    *biz.MockUserBiz
 	uploader   *uploader.MockUploader
 	fileRepo   *data.MockFileRepo
 	eventRepo  *data.MockEventRepo
@@ -71,6 +72,7 @@ func newHttpHandlerMocks(t *testing.T) *httpHandlerMocks {
 		ctrl:       ctrl,
 		httpServer: app.NewMockHttpHandler(ctrl),
 		authBiz:    biz.NewMockAuthBiz(ctrl),
+		userBiz:    biz.NewMockUserBiz(ctrl),
 		uploader:   uploader.NewMockUploader(ctrl),
 		fileRepo:   data.NewMockFileRepo(ctrl),
 		eventRepo:  data.NewMockEventRepo(ctrl),
@@ -88,6 +90,7 @@ func buildHttpHandlerDeps(t *testing.T, mocks *httpHandlerMocks) HttpHandlerDeps
 		Logger:       logger,
 		Uploader:     mocks.uploader,
 		AuthBiz:      mocks.authBiz,
+		UserBiz:      mocks.userBiz,
 		EventBiz:     biz.NewEventBiz(mocks.eventRepo),
 		FileBiz:      biz.NewFileBiz(mocks.fileRepo),
 		Timer:        timer.NewReal(),

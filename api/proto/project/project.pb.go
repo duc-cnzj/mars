@@ -1531,6 +1531,8 @@ type LivenessItem struct {
 	GitCommit   string `protobuf:"bytes,8,opt,name=git_commit,json=gitCommit,proto3" json:"git_commit,omitempty"`
 	// 最近更新时间 RFC3339（活跃度分类依据）
 	UpdatedAt string `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	// 最近一次人为更新的用户名（创建/成功部署），系统状态变更不刷新
+	UpdatedBy string `protobuf:"bytes,13,opt,name=updated_by,json=updatedBy,proto3" json:"updated_by,omitempty"`
 	// 最近提交信息（判断代码是否仍有人维护）：提交标题 / 作者 / 时间 RFC3339
 	GitCommitTitle  string `protobuf:"bytes,10,opt,name=git_commit_title,json=gitCommitTitle,proto3" json:"git_commit_title,omitempty"`
 	GitCommitAuthor string `protobuf:"bytes,11,opt,name=git_commit_author,json=gitCommitAuthor,proto3" json:"git_commit_author,omitempty"`
@@ -1628,6 +1630,13 @@ func (x *LivenessItem) GetGitCommit() string {
 func (x *LivenessItem) GetUpdatedAt() string {
 	if x != nil {
 		return x.UpdatedAt
+	}
+	return ""
+}
+
+func (x *LivenessItem) GetUpdatedBy() string {
+	if x != nil {
+		return x.UpdatedBy
 	}
 	return ""
 }
@@ -1922,7 +1931,7 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\x04sort\x18\x05 \x01(\tR\x04sortB\a\n" +
 	"\x05_pageB\f\n" +
 	"\n" +
-	"_page_size\"\x96\x03\n" +
+	"_page_size\"\xb5\x03\n" +
 	"\fLivenessItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1c\n" +
@@ -1935,7 +1944,9 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\n" +
 	"git_commit\x18\b \x01(\tR\tgitCommit\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\t \x01(\tR\tupdatedAt\x12(\n" +
+	"updated_at\x18\t \x01(\tR\tupdatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_by\x18\r \x01(\tR\tupdatedBy\x12(\n" +
 	"\x10git_commit_title\x18\n" +
 	" \x01(\tR\x0egitCommitTitle\x12*\n" +
 	"\x11git_commit_author\x18\v \x01(\tR\x0fgitCommitAuthor\x12&\n" +

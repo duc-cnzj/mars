@@ -74,6 +74,11 @@ func Name(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldName, v))
 }
 
+// RolesOverride applies equality check predicate on the "roles_override" field. It's identical to RolesOverrideEQ.
+func RolesOverride(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldRolesOverride, v))
+}
+
 // LastLogin applies equality check predicate on the "last_login" field. It's identical to LastLoginEQ.
 func LastLogin(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldLastLogin, v))
@@ -287,6 +292,16 @@ func NameEqualFold(v string) predicate.User {
 // NameContainsFold applies the ContainsFold predicate on the "name" field.
 func NameContainsFold(v string) predicate.User {
 	return predicate.User(sql.FieldContainsFold(FieldName, v))
+}
+
+// RolesOverrideEQ applies the EQ predicate on the "roles_override" field.
+func RolesOverrideEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldRolesOverride, v))
+}
+
+// RolesOverrideNEQ applies the NEQ predicate on the "roles_override" field.
+func RolesOverrideNEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldRolesOverride, v))
 }
 
 // LastLoginEQ applies the EQ predicate on the "last_login" field.

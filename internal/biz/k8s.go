@@ -286,6 +286,9 @@ type K8sRepo interface {
 	GetCpuAndMemoryQuantity(pod v1beta1.PodMetrics) (cpu *resource.Quantity, memory *resource.Quantity)
 	// ClusterInfo 返回集群健康与资源汇总信息。
 	ClusterInfo() *ClusterInfo
+	// RefreshClusterInfo 强制刷新集群信息缓存并返回最新统计（cron/启动预热用），
+	// 等价 ClusterInfo 但跳过缓存读直接回填。失败返回错误由调用方记录，下一轮自动重试。
+	RefreshClusterInfo() (*ClusterInfo, error)
 	// ClusterBoard 拉取集群看板快照（节点/命名空间/全集群 Pod 与指标），
 	// 经 30s 缓存合并重复读；force=true 强制跳过缓存刷新（cron 预热用）。
 	ClusterBoard(ctx context.Context, force bool) (*ClusterBoardData, error)

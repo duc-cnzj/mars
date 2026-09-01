@@ -175,8 +175,9 @@ func (app *app) HttpHandler() HttpHandler {
 	return app.httpHandler
 }
 
-// AuthBiz 实现 ServerDeps 接口的 AuthBiz。gRPC 拦截器经它做 token 校验与用户注入，
-// 与 HTTP LoginHTTP 中间件共用 biz.Authenticate 同一鉴权核心。
+// AuthBiz 实现 ServerDeps 接口的 AuthBiz。gRPC 拦截器经它做 token 校验、用户注入
+// 与生效角色解析（EffectiveRoles 按 users 表接管状态计算），与 HTTP LoginHTTP
+// 中间件共用 biz.Authenticate 同一鉴权核心。
 func (app *app) AuthBiz() biz.AuthBiz {
 	return app.authBiz
 }

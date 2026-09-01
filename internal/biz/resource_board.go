@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/dustin/go-humanize"
+	"go.opentelemetry.io/otel"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -109,7 +110,10 @@ func FormatResourceUsage(cpuMilli, memBytes int64) (string, string) {
 // requests 取 Running Pod spec、实际用量取 PodMetrics；项目拆分按项目 PodSelectors
 // 匹配 pod。命名空间集合由快照中落在 managedNames 内的命名空间派生
 // （无 Pod 也无指标的空间不产出记录——无资源可管理即不展示）。
+// 包一层 span 覆盖快照拉取 + 聚合派生，trace 面板据此区分「拉快照慢」还是「聚合慢」。
 func (k *k8sBiz) ResourceBoard(ctx context.Context, managedNames []string, projects []*Project) (*ResourceBoard, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "k8sBiz/ResourceBoard")
+	defer span.End()
 	data, err := k.k8sRepo.ResourceSnapshot(ctx, false)
 	if err != nil {
 		return nil, err

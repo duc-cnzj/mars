@@ -19,23 +19,31 @@ import (
 
 var _ biz.UserRepo = (*userRepo)(nil)
 
+// 编译期断言：userRepo 同时实现 biz.EffectiveRolesProvider——authBiz 经该窄接口
+// 读取 users 表接管状态计算生效角色（对齐 AuthConfigProvider 的窄接口取数模式）。
+var _ biz.EffectiveRolesProvider = (*userRepo)(nil)
+
 // userRepo 是后台用户投影的持久化实现：维护 users 表的登录 upsert、分页查询与角色升降级。
 type userRepo struct {
 	data  dataStore
 	timer timer.Timer
 }
 
-// NewUserRepo 构造用户投影 repo。
-func NewUserRepo(data dataStore, timer timer.Timer) biz.UserRepo {
+// NewUserRepo 构造用户投影 repo。返回具体类型（对齐 data.NewData→*dataImpl 的
+// 装配惯例）：wire 依赖具体类型一次实例满足多个窄接口——userRepo 同时实现
+// biz.UserRepo（用户管理）与 biz.EffectiveRolesProvider（生效角色解析），
+// 同一实例注入 NewUserBiz/NewAuthBiz，避免两接口各建实例读同一张表。
+func NewUserRepo(data dataStore, timer timer.Timer) *userRepo {
 	return &userRepo{data: data, timer: timer}
 }
 
 // SyncLoginUser 登录成功时按邮箱 upsert 用户投影（幂等可重复调用）：
-// 已存在 → 仅推进最近登录（不倒退）+ 补空展示名/升级 email 本地部分默认名（手动设置
-// 的非空名不被覆盖）；不存在 → 创建（超级管理员恒 mars_admin，其余角色为空数组；展示名
-// 取登录名，空则回退邮箱本地部分；最近登录 = 当前时刻）。只处理单邮箱（登录热路径）；
-// roles 一律不覆盖，尊重管理员后台手动升降级。
-func (r *userRepo) SyncLoginUser(ctx context.Context, email, name string) (err error) {
+// 已存在 → 推进最近登录 + 补空展示名（手动设置的非空名不被覆盖），且当该用户未被后台
+// 手动管理（roles_override=false）时按登录身份同步角色（SSO id_token 带来的 mars_admin
+// 得以写进 users 表）；不存在 → 创建（角色取登录身份，空则普通用户；展示名取登录名，
+// 空则回退邮箱本地部分；最近登录 = 当前时刻）。只处理单邮箱（登录热路径）；roles_override
+// 为 true 的用户（已被后台手动升降级接管）角色不被 SSO 覆盖，尊重手动管理。
+func (r *userRepo) SyncLoginUser(ctx context.Context, email, name string, roles []string) (err error) {
 	ctx, span := tracer.Start(ctx, "userRepo/SyncLoginUser")
 	defer func() { endSpan(span, err) }()
 	db := r.data.DB()
@@ -46,11 +54,24 @@ func (r *userRepo) SyncLoginUser(ctx context.Context, email, name string) (err e
 		return errs.InvalidArgument("email 不能为空")
 	}
 	now := r.timer.Now()
+	// 登录身份携带的角色（SSO id_token / 内置超管），nil 归一为空数组统一 JSON 存储；
+	// 超级管理员恒 mars_admin——登录身份已带，此守卫兜底防 SSO 侧把它降级成普通用户。
+	roles = normalizeRoles(roles)
+	if email == biz.SuperAdminEmail && !slices.Contains(roles, biz.MarsAdmin) {
+		roles = append(roles, biz.MarsAdmin)
+	}
 
 	cur, err := db.User.Query().Where(user.EmailEQ(email)).First(ctx)
 	if err == nil {
 		update := db.User.UpdateOneID(cur.ID)
-		if !updateUserProjection(update, cur, &now, name) {
+		changed := updateUserProjection(update, cur, &now, name)
+		// SSO 角色同步：仅未被后台手动接管（roles_override=false）时按登录身份覆盖角色；
+		// 被接管（true）则尊重手动升降级，即使 SSO 下次仍带 mars_admin 也不洗掉手动降权。
+		if !cur.RolesOverride && !slices.Equal(cur.Roles, roles) {
+			update.SetRoles(roles)
+			changed = true
+		}
+		if !changed {
 			return nil
 		}
 		_, err = update.Save(ctx)
@@ -61,10 +82,6 @@ func (r *userRepo) SyncLoginUser(ctx context.Context, email, name string) (err e
 		return errs.Wrap(err, "query user on login")
 	}
 
-	roles := []string{}
-	if email == biz.SuperAdminEmail {
-		roles = []string{biz.MarsAdmin}
-	}
 	displayName := name
 	if displayName == "" {
 		displayName = localPartOf(email)
@@ -78,7 +95,51 @@ func (r *userRepo) SyncLoginUser(ctx context.Context, email, name string) (err e
 	return errs.Wrap(err, "create user projection on login")
 }
 
-// updateUserProjection 把 lastLogin/name 投影规则应用到既有用户（不覆盖 roles）：
+// EffectiveRoles 计算登录用户在鉴权时的生效角色：后台手动接管（roles_override=true）
+// 的用户以 users 表手工角色为准（升降级真正生效，SSO 不再覆盖）；未接管或尚未落投影
+// （首次登录前窗口）回落登录身份携带的 SSO 角色。超级管理员恒 mars_admin（守卫兜底防
+// 接管状态误伤超管）。供鉴权入口在验签后调用，实现「后台可控制 SSO 带来的管理员权限」：
+// 后台降权后该用户即使 JWT 仍带 mars_admin，生效角色也不含管理员。用户表读取失败返回
+// 错误（由调用方决定回落策略），不在此处静默吞错。
+func (r *userRepo) EffectiveRoles(ctx context.Context, email string, ssoRoles []string) ([]string, error) {
+	ctx, span := tracer.Start(ctx, "userRepo/EffectiveRoles")
+	defer func() { endSpan(span, nil) }()
+	db := r.data.DB()
+	// 邮箱统一小写归一（对齐 SyncLoginUser/VerifyToken）。
+	email = strings.ToLower(strings.TrimSpace(email))
+	// SSO 角色归一：nil 转空数组；超级管理员恒 mars_admin——登录身份已带，此守卫兜底。
+	ssoRoles = normalizeRoles(ssoRoles)
+	if email == biz.SuperAdminEmail && !slices.Contains(ssoRoles, biz.MarsAdmin) {
+		ssoRoles = append(ssoRoles, biz.MarsAdmin)
+	}
+
+	cur, err := db.User.Query().Where(user.EmailEQ(email)).First(ctx)
+	if err != nil {
+		// 用户尚未落投影（首次登录前窗口）：跟随登录身份角色，不视为故障。
+		if !errs.IsNotFound(err) {
+			return nil, errs.Wrap(err, "query user for effective roles")
+		}
+		return ssoRoles, nil
+	}
+	// 未被后台手动接管：生效角色 = SSO 登录身份角色（users 表角色在每次登录时已同步）。
+	if !cur.RolesOverride {
+		return ssoRoles, nil
+	}
+	// 已被后台手动接管：生效角色 = users 表手工角色（升降级结果），SSO 不再覆盖。
+	return normalizeRoles(cur.Roles), nil
+}
+
+// normalizeRoles 把登录身份携带的角色归一为确定值：nil 转空切片，统一 JSON 以数组而非
+// null 存储，保证与 schema 默认值 [] 一致。
+func normalizeRoles(roles []string) []string {
+	if roles == nil {
+		return []string{}
+	}
+	return roles
+}
+
+// updateUserProjection 把 lastLogin/name 投影规则应用到既有用户（不处理 roles，角色同步
+// 由调用方 SyncLoginUser 按 roles_override 判定单独进行）：
 // 仅补更晚的最近登录（已有登录时间不倒退，未登录用户补首次登录时间）+ 展示名规则：
 // 补空，并把「email 本地部分」自动默认名升级为真实登录名（本地部分是空登录名的
 // 回退默认值，不是人改的，可安全升级）；与本地部分不同的手动名不被覆盖。返回是否有
@@ -164,22 +225,26 @@ func (r *userRepo) List(ctx context.Context, input *biz.ListUserInput) (out *biz
 	}, nil
 }
 
-// toUser 把 ent.User 转换为 biz.User（nil 安全）。
+// toUser 把 ent.User 转换为 biz.User（nil 安全）。RolesOverride 透传手动接管标记，
+// 供用户管理页展示「角色来源」（SSO 自动 / 后台手动）。
 func toUser(u *ent.User) *biz.User {
 	if u == nil {
 		return nil
 	}
 	return &biz.User{
-		ID:        u.ID,
-		Email:     u.Email,
-		Name:      u.Name,
-		Roles:     u.Roles,
-		LastLogin: u.LastLogin,
-		CreatedAt: u.CreatedAt,
+		ID:            u.ID,
+		Email:         u.Email,
+		Name:          u.Name,
+		Roles:         u.Roles,
+		RolesOverride: u.RolesOverride,
+		LastLogin:     u.LastLogin,
+		CreatedAt:     u.CreatedAt,
 	}
 }
 
 // ToggleAdmin 设置/移除指定用户的管理员角色（mars_admin）；超级管理员不可降级。
+// 手动升降级即声明接管该用户角色：置 roles_override=true，此后 SSO 登录不再覆盖其角色，
+// 即使 SSO 下次仍带 mars_admin，手动降权也不被洗掉。
 func (r *userRepo) ToggleAdmin(ctx context.Context, email string, admin bool) (err error) {
 	ctx, span := tracer.Start(ctx, "userRepo/ToggleAdmin")
 	defer func() { endSpan(span, err) }()
@@ -192,10 +257,11 @@ func (r *userRepo) ToggleAdmin(ctx context.Context, email string, admin bool) (e
 		return errs.Wrap(err, "query user")
 	}
 	roles := toggleRole(u.Roles, biz.MarsAdmin, admin)
-	if slices.Equal(roles, u.Roles) {
+	// 角色未变且已是手动接管状态：无字段需写，幂等早退。
+	if slices.Equal(roles, u.Roles) && u.RolesOverride {
 		return nil
 	}
-	_, err = db.User.UpdateOneID(u.ID).SetRoles(roles).Save(ctx)
+	_, err = db.User.UpdateOneID(u.ID).SetRoles(roles).SetRolesOverride(true).Save(ctx)
 	return errs.Wrap(err, "update user role")
 }
 
@@ -217,4 +283,24 @@ func toggleRole(roles []string, role string, present bool) []string {
 		out = append(out, role)
 	}
 	return out
+}
+
+// ResetRolesOverride 解除后台手动接管：把 roles_override 置回 false，该用户从下一次登录起
+// 恢复按 SSO 角色同步（SSO 重新成为角色来源）。幂等：本就未接管（roles_override=false）直接
+// 返回；邮箱不存在按 NotFound 上抛。超级管理员无接管概念（biz 门卫已拦截降级/接管），不受影响。
+func (r *userRepo) ResetRolesOverride(ctx context.Context, email string) (err error) {
+	ctx, span := tracer.Start(ctx, "userRepo/ResetRolesOverride")
+	defer func() { endSpan(span, err) }()
+	// 邮箱统一小写归一（对齐 SyncLoginUser/EffectiveRoles）。
+	email = strings.ToLower(strings.TrimSpace(email))
+	db := r.data.DB()
+	u, err := db.User.Query().Where(user.EmailEQ(email)).First(ctx)
+	if err != nil {
+		return errs.Wrap(err, "query user")
+	}
+	if !u.RolesOverride {
+		return nil
+	}
+	_, err = db.User.UpdateOneID(u.ID).SetRolesOverride(false).Save(ctx)
+	return errs.Wrap(err, "update user roles override")
 }

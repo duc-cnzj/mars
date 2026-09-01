@@ -67,6 +67,8 @@ func (m *UserModel) validate(all bool) error {
 
 	// no validation rules for IsSuperAdmin
 
+	// no validation rules for RolesOverride
+
 	if m.LastLogin != nil {
 		// no validation rules for LastLogin
 	}
@@ -741,3 +743,209 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ToggleAdminResponseValidationError{}
+
+// Validate checks the field values on ResetRolesOverrideRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ResetRolesOverrideRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResetRolesOverrideRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResetRolesOverrideRequestMultiError, or nil if none found.
+func (m *ResetRolesOverrideRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResetRolesOverrideRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Email
+
+	if len(errors) > 0 {
+		return ResetRolesOverrideRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResetRolesOverrideRequestMultiError is an error wrapping multiple validation
+// errors returned by ResetRolesOverrideRequest.ValidateAll() if the
+// designated constraints aren't met.
+type ResetRolesOverrideRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResetRolesOverrideRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResetRolesOverrideRequestMultiError) AllErrors() []error { return m }
+
+// ResetRolesOverrideRequestValidationError is the validation error returned by
+// ResetRolesOverrideRequest.Validate if the designated constraints aren't met.
+type ResetRolesOverrideRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResetRolesOverrideRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResetRolesOverrideRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResetRolesOverrideRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResetRolesOverrideRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResetRolesOverrideRequestValidationError) ErrorName() string {
+	return "ResetRolesOverrideRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResetRolesOverrideRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResetRolesOverrideRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResetRolesOverrideRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResetRolesOverrideRequestValidationError{}
+
+// Validate checks the field values on ResetRolesOverrideResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ResetRolesOverrideResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResetRolesOverrideResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResetRolesOverrideResponseMultiError, or nil if none found.
+func (m *ResetRolesOverrideResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResetRolesOverrideResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ResetRolesOverrideResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResetRolesOverrideResponseMultiError is an error wrapping multiple
+// validation errors returned by ResetRolesOverrideResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ResetRolesOverrideResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResetRolesOverrideResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResetRolesOverrideResponseMultiError) AllErrors() []error { return m }
+
+// ResetRolesOverrideResponseValidationError is the validation error returned
+// by ResetRolesOverrideResponse.Validate if the designated constraints aren't met.
+type ResetRolesOverrideResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResetRolesOverrideResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResetRolesOverrideResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResetRolesOverrideResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResetRolesOverrideResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResetRolesOverrideResponseValidationError) ErrorName() string {
+	return "ResetRolesOverrideResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResetRolesOverrideResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResetRolesOverrideResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResetRolesOverrideResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResetRolesOverrideResponseValidationError{}

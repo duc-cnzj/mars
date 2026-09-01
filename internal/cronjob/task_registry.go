@@ -41,6 +41,7 @@ func Registry(t *Tasks, cfg *config.Config) []CronTask {
 		tasks = append(tasks,
 			CronTask{Name: "sync_image_pull_secrets", Schedule: cron.Command.EveryFiveMinutes, Run: t.SyncImagePullSecrets},
 			CronTask{Name: "cache_cluster_board", Schedule: cron.Command.EveryThirtySeconds, Run: t.CacheClusterBoard},
+			CronTask{Name: "cache_cluster_info", Schedule: cron.Command.EveryThirtySeconds, Run: t.CacheClusterInfo},
 			CronTask{Name: "cache_resource_snapshot", Schedule: cron.Command.EveryFiveMinutes, Run: t.CacheResourceSnapshot},
 		)
 	}

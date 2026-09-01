@@ -171,6 +171,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users/{email}/roles_override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description 解除后台手动接管（roles_override 置回 false）：该用户从下一次登录起恢复按 SSO 角色同步，
+         *      供超管把误接管/不再需要手动管理的用户「交还」给 SSO。
+         */
+        put: operations["User_ResetRolesOverride"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/exchange": {
         parameters: {
             query?: never;
@@ -1851,6 +1871,8 @@ export interface components {
             gitCommit: string;
             /** @description 最近更新时间 RFC3339（活跃度分类依据） */
             updatedAt: string;
+            /** @description 最近一次人为更新的用户名（创建/成功部署），系统状态变更不刷新 */
+            updatedBy: string;
             /** @description 最近提交信息（判断代码是否仍有人维护）：提交标题 / 作者 / 时间 RFC3339 */
             gitCommitTitle: string;
             gitCommitAuthor: string;
@@ -2211,6 +2233,7 @@ export interface components {
             deployStatus: TypesProjectModelDeployStatus;
             humanizeCreatedAt: string;
             humanizeUpdatedAt: string;
+            updatedBy: string;
             configType: string;
             gitCommitWebUrl: string;
             gitCommitTitle: string;
@@ -2266,6 +2289,7 @@ export interface components {
             items: components["schemas"]["user.UserModel"][];
             stats: components["schemas"]["user.UserStats"];
         };
+        "user.ResetRolesOverrideResponse": Record<string, never>;
         "user.ToggleAdminRequest": {
             email: string;
             admin: boolean;
@@ -2284,6 +2308,7 @@ export interface components {
             lastLogin: string;
             createdAt: string;
             isSuperAdmin: boolean;
+            rolesOverride: boolean;
         };
         /** @description UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部三卡。 */
         "user.UserStats": {
@@ -2694,6 +2719,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["user.ToggleAdminResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    User_ResetRolesOverride: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                email: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["user.ResetRolesOverrideResponse"];
                 };
             };
             /** @description Default error response */

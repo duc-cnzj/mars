@@ -47,23 +47,33 @@ func TestGrpcRunner_RecoveryHandler(t *testing.T) {
 }
 
 func TestAuthenticate(t *testing.T) {
-	_, err := authenticate(context.TODO(), nil)
-	assert.Error(t, err)
-	md := metadata.New(map[string]string{"authorization": "Bearer xxx"})
-
 	m := gomock.NewController(t)
 	defer m.Finish()
-	authS := biz.NewMockAuthBiz(m)
-	authS.EXPECT().VerifyToken(gomock.Any(), "xxx").Return(nil, status.Errorf(codes.Unauthenticated, "Unauthenticated."))
+
+	// 无 token：AuthFromMD 直接报错，不触达 authBiz。
+	runner := &grpcRunner{}
+	_, err := runner.authenticate(context.TODO())
+	assert.Error(t, err)
+
+	md := metadata.New(map[string]string{"authorization": "Bearer xxx"})
 	incomingContext := metadata.NewIncomingContext(context.TODO(), md)
-	_, err = authenticate(incomingContext, authS)
+	authS := biz.NewMockAuthBiz(m)
+	runner = &grpcRunner{authBiz: authS}
+
+	// 无效 token：返回 Unauthenticated。
+	authS.EXPECT().VerifyToken(gomock.Any(), "xxx").Return(nil, status.Errorf(codes.Unauthenticated, "Unauthenticated."))
+	_, err = runner.authenticate(incomingContext)
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.Unauthenticated, fromError.Code())
 
-	authS.EXPECT().VerifyToken(gomock.Any(), "xxx").Return(&biz.UserInfo{Name: "duc"}, nil)
-	ctx2, err := authenticate(incomingContext, authS)
+	// 有效 token：注入用户，并经 authBiz.EffectiveRoles 按 users 表接管状态覆盖生效角色——
+	// 后台手动降权后即使 JWT 仍带 mars_admin，生效角色也不含管理员（RequireAdmin 据此拒绝）。
+	authS.EXPECT().VerifyToken(gomock.Any(), "xxx").Return(&biz.UserInfo{Name: "duc", Email: "duc@x.com", Roles: []string{biz.MarsAdmin}}, nil)
+	authS.EXPECT().EffectiveRoles(gomock.Any(), "duc@x.com", []string{biz.MarsAdmin}).Return([]string{}, nil)
+	ctx2, err := runner.authenticate(incomingContext)
 	assert.Nil(t, err)
 	assert.Equal(t, "duc", biz.MustGetUser(ctx2).Name)
+	assert.Empty(t, biz.MustGetUser(ctx2).Roles, "降权后生效角色不应含 mars_admin")
 }
 
 func TestNewGrpcRunner(t *testing.T) {
@@ -192,6 +202,7 @@ func (panickingAuthorizeService) Authorize(_ context.Context, _ string) (context
 func newBufconnGRPCRunner(m *gomock.Controller) (*grpcRunner, *bufconn.Listener) {
 	authBiz := biz.NewMockAuthBiz(m)
 	authBiz.EXPECT().VerifyToken(gomock.Any(), "tok").Return(&biz.UserInfo{Name: "duc"}, nil).AnyTimes()
+	authBiz.EXPECT().EffectiveRoles(gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{}, nil).AnyTimes()
 	return &grpcRunner{
 		logger:  mlog.NewForConfig(nil),
 		authBiz: authBiz,
@@ -251,6 +262,7 @@ func Test_grpcRunner_initServer_InterceptorPanicRecovered(t *testing.T) {
 
 	authBiz := biz.NewMockAuthBiz(m)
 	authBiz.EXPECT().VerifyToken(gomock.Any(), "tok").Return(&biz.UserInfo{Name: "duc"}, nil).AnyTimes()
+	authBiz.EXPECT().EffectiveRoles(gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{}, nil).AnyTimes()
 
 	runner := &grpcRunner{
 		logger:  mlog.NewForConfig(nil),
@@ -305,6 +317,7 @@ func Test_grpcRunner_initServer_AccessLogPrintsUser(t *testing.T) {
 
 	authBiz := biz.NewMockAuthBiz(m)
 	authBiz.EXPECT().VerifyToken(gomock.Any(), "tok").Return(&biz.UserInfo{Name: "duc"}, nil).AnyTimes()
+	authBiz.EXPECT().EffectiveRoles(gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{}, nil).AnyTimes()
 
 	runner := &grpcRunner{
 		logger:  logger,

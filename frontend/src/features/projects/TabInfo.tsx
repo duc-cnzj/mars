@@ -192,6 +192,7 @@ export function TabInfo({
       <Section icon="gear" title={t('project.timeline')}>
         <KV k={t('project.createdAt')} v={detail.humanizeCreatedAt} />
         <KV k={t('project.updatedAt')} v={detail.humanizeUpdatedAt} />
+        {detail.updatedBy && <KV k={t('project.updatedBy')} v={detail.updatedBy} />}
       </Section>
 
       {/* 相关配置：默认折叠（配置通常很长，收起保持弹窗清爽），展开显示完整 YAML 预览。
