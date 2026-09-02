@@ -89,6 +89,11 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{ChangelogsColumns[18], ChangelogsColumns[17], ChangelogsColumns[3], ChangelogsColumns[4]},
 			},
+			{
+				Name:    "changelog_deleted_at_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ChangelogsColumns[3], ChangelogsColumns[1]},
+			},
 		},
 	}
 	// DbCacheColumns holds the columns for the "db_cache" table.

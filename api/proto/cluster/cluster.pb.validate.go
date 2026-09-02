@@ -1471,3 +1471,353 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ResourceBoardResponseValidationError{}
+
+// Validate checks the field values on DeployTrendRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeployTrendRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeployTrendRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeployTrendRequestMultiError, or nil if none found.
+func (m *DeployTrendRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeployTrendRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Days
+
+	if len(errors) > 0 {
+		return DeployTrendRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeployTrendRequestMultiError is an error wrapping multiple validation errors
+// returned by DeployTrendRequest.ValidateAll() if the designated constraints
+// aren't met.
+type DeployTrendRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeployTrendRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeployTrendRequestMultiError) AllErrors() []error { return m }
+
+// DeployTrendRequestValidationError is the validation error returned by
+// DeployTrendRequest.Validate if the designated constraints aren't met.
+type DeployTrendRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeployTrendRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeployTrendRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeployTrendRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeployTrendRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeployTrendRequestValidationError) ErrorName() string {
+	return "DeployTrendRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeployTrendRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeployTrendRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeployTrendRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeployTrendRequestValidationError{}
+
+// Validate checks the field values on DeployTrendPoint with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *DeployTrendPoint) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeployTrendPoint with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeployTrendPointMultiError, or nil if none found.
+func (m *DeployTrendPoint) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeployTrendPoint) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Date
+
+	// no validation rules for Count
+
+	if len(errors) > 0 {
+		return DeployTrendPointMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeployTrendPointMultiError is an error wrapping multiple validation errors
+// returned by DeployTrendPoint.ValidateAll() if the designated constraints
+// aren't met.
+type DeployTrendPointMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeployTrendPointMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeployTrendPointMultiError) AllErrors() []error { return m }
+
+// DeployTrendPointValidationError is the validation error returned by
+// DeployTrendPoint.Validate if the designated constraints aren't met.
+type DeployTrendPointValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeployTrendPointValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeployTrendPointValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeployTrendPointValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeployTrendPointValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeployTrendPointValidationError) ErrorName() string { return "DeployTrendPointValidationError" }
+
+// Error satisfies the builtin error interface
+func (e DeployTrendPointValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeployTrendPoint.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeployTrendPointValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeployTrendPointValidationError{}
+
+// Validate checks the field values on DeployTrendResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeployTrendResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeployTrendResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeployTrendResponseMultiError, or nil if none found.
+func (m *DeployTrendResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeployTrendResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for StartDate
+
+	// no validation rules for EndDate
+
+	// no validation rules for Days
+
+	for idx, item := range m.GetItems() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, DeployTrendResponseValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, DeployTrendResponseValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return DeployTrendResponseValidationError{
+					field:  fmt.Sprintf("Items[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return DeployTrendResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeployTrendResponseMultiError is an error wrapping multiple validation
+// errors returned by DeployTrendResponse.ValidateAll() if the designated
+// constraints aren't met.
+type DeployTrendResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeployTrendResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeployTrendResponseMultiError) AllErrors() []error { return m }
+
+// DeployTrendResponseValidationError is the validation error returned by
+// DeployTrendResponse.Validate if the designated constraints aren't met.
+type DeployTrendResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeployTrendResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeployTrendResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeployTrendResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeployTrendResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeployTrendResponseValidationError) ErrorName() string {
+	return "DeployTrendResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeployTrendResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeployTrendResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeployTrendResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeployTrendResponseValidationError{}

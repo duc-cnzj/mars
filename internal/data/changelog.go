@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"time"
 
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 
@@ -135,4 +136,31 @@ func (c *changelogRepo) CountByProjectIDs(ctx context.Context, ids ...int) (out 
 		out[row.ProjectID] = row.Count
 	}
 	return out, nil
+}
+
+// SelectCreatedAtBetween 取窗口 [since, until) 内全部 changelog 的 created_at（仅 Select 该列，
+// 不回表读 config/git_commit_title 长文本；软删由 SoftDeleteMixin 拦截器统一过滤）。
+// 供部署趋势按天聚合：biz 拿到时间戳后在 Go 内分桶，避免 SQL date() 会话时区切错天界。
+//
+// ent 的 Scan 不把单列结果拆到 []time.Time（会把 time.Time 当 struct 找列字段报
+// "missing struct field for column"），故沿用 CountByProjectIDs 的同款匿名 struct +
+// json 标签映射（json 标签 = 列名 created_at），再折叠为时间戳切片。
+func (c *changelogRepo) SelectCreatedAtBetween(ctx context.Context, since, until time.Time) (created []time.Time, err error) {
+	ctx, span := tracer.Start(ctx, "changelogRepo/SelectCreatedAtBetween")
+	defer func() { endSpan(span, err) }()
+	var rows []struct {
+		CreatedAt time.Time `json:"created_at"`
+	}
+	err = c.data.DB().Changelog.Query().
+		Where(changelog.CreatedAtGTE(since), changelog.CreatedAtLT(until)).
+		Select(changelog.FieldCreatedAt).
+		Scan(ctx, &rows)
+	if err != nil {
+		return nil, errs.Wrap(err, "select changelog created_at between")
+	}
+	created = make([]time.Time, 0, len(rows))
+	for _, row := range rows {
+		created = append(created, row.CreatedAt)
+	}
+	return created, nil
 }

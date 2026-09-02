@@ -5,16 +5,18 @@ import { Button } from '@/components/ui/shadcn/button'
 import { Skeleton } from '@/components/ui/shadcn/skeleton'
 import { useResourceBoard, REFRESH_INTERVAL_MS } from './useResourceBoard'
 import { OverviewCards } from './OverviewCards'
+import { DeployTrendPanel } from './DeployTrendPanel'
 import { NodeTable } from './NodeTable'
 import { NamespaceRank } from './NamespaceRank'
 import { TopPods } from './TopPods'
 
 /**
- * 集群资源看板（管理员后台）
+ * 集群总览（管理员后台）
  *
- * 集群总览（健康状态 / CPU / 内存 / 请求率）＋ 节点资源表 ＋ 命名空间排行 ＋ Top Pod 排行，
- * 数据由 useResourceBoard 每 REFRESH_INTERVAL_MS 轮询 /api/admin/cluster/board 提供，
- * 也可点刷新按钮手动拉新一版。
+ * 资源总览（健康状态 / CPU / 内存 / 请求率）＋ 每日部署趋势 ＋ 节点资源表 ＋ 命名空间排行 ＋ Top Pod 排行，
+ * 资源数据由 useResourceBoard 每 REFRESH_INTERVAL_MS 轮询 /api/admin/cluster/board 提供，
+ * 部署趋势由 useDeployTrend 拉 /api/admin/cluster/deploy_trend（日粒度、随手动刷新重挂载取新）。
+ * 也可点刷新按钮手动拉新一版资源快照。
  */
 export function ResourceBoard() {
   const { t } = useTranslation()
@@ -82,6 +84,17 @@ export function ResourceBoard() {
                 </div>
               ))}
             </div>
+            {/* 部署趋势面板骨架占位（标题行 + 统计行 + 曲线区），与真数据布局同构避免首载跳动 */}
+            <div className="rounded-lg border border-line bg-surface p-4">
+              <Skeleton className="h-3 w-24" />
+              <div className="mt-3 flex gap-8">
+                <Skeleton className="h-5 w-16" />
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-5 w-16" />
+              </div>
+              <Skeleton className="mt-3 h-40 w-full" />
+              <Skeleton className="mt-1.5 h-3 w-full" />
+            </div>
             <SkeletonList count={5} />
             <div className="flex flex-col gap-4 lg:flex-row">
               <div className="flex-1">
@@ -105,6 +118,11 @@ export function ResourceBoard() {
                   cpuTrend={cpuTrend}
                   memTrend={memTrend}
                 />
+              </div>
+
+              {/* 每日部署趋势（deploy_trend 真数据） */}
+              <div>
+                <DeployTrendPanel />
               </div>
 
               {/* 节点资源表 */}

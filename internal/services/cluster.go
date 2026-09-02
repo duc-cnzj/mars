@@ -21,6 +21,7 @@ type clusterSvc struct {
 	namespaceBiz biz.NamespaceBiz
 	projectBiz   biz.ProjectBiz
 	accessBiz    biz.AccessBiz
+	changelogBiz biz.ChangelogBiz
 	logger       mlog.Logger
 }
 
@@ -30,6 +31,7 @@ type ClusterSvcDeps struct {
 	NamespaceBiz biz.NamespaceBiz
 	ProjectBiz   biz.ProjectBiz
 	AccessBiz    biz.AccessBiz
+	ChangelogBiz biz.ChangelogBiz
 	Logger       mlog.Logger
 }
 
@@ -40,6 +42,7 @@ func NewClusterSvc(deps ClusterSvcDeps) cluster.ClusterServer {
 		namespaceBiz: deps.NamespaceBiz,
 		projectBiz:   deps.ProjectBiz,
 		accessBiz:    deps.AccessBiz,
+		changelogBiz: deps.ChangelogBiz,
 		logger:       deps.Logger.WithModule("services/cluster"),
 	}
 }
@@ -149,6 +152,32 @@ func (c *clusterSvc) ResourceBoard(ctx context.Context, req *cluster.InfoRequest
 			})
 		}
 		resp.Namespaces = append(resp.Namespaces, item)
+	}
+	return resp, nil
+}
+
+// DeployTrend 返回近 N 天每日部署次数（默认 30、上限 90）：透传 changelog biz 的按天聚合
+// 结果并映射为 proto，供集群总览页「每日部署趋势」曲线。数据源 = changelog（每次部署一条），
+// 服务端时区分桶、无部署补 0；管理员接口（Authorize 兜底，仅 ClusterInfo 公开）。
+func (c *clusterSvc) DeployTrend(ctx context.Context, req *cluster.DeployTrendRequest) (*cluster.DeployTrendResponse, error) {
+	days := biz.DeployTrendDefaultDays
+	if req != nil && req.GetDays() > 0 {
+		days = int(req.GetDays())
+	}
+	if days > biz.DeployTrendMaxDays {
+		days = biz.DeployTrendMaxDays
+	}
+	items, err := c.changelogBiz.DeployDailyCounts(ctx, days)
+	if err != nil {
+		return nil, logError(ctx, c.logger, err)
+	}
+	resp := &cluster.DeployTrendResponse{Days: int32(days)}
+	for _, it := range items {
+		resp.Items = append(resp.Items, &cluster.DeployTrendPoint{Date: it.Date, Count: int32(it.Count)})
+	}
+	if len(items) > 0 {
+		resp.StartDate = items[0].Date
+		resp.EndDate = items[len(items)-1].Date
 	}
 	return resp, nil
 }

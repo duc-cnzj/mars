@@ -17,6 +17,7 @@ export const API = {
   // --- admin（后台） ---
   adminBoard: '/api/admin/cluster/board',
   adminResources: '/api/admin/cluster/resources',
+  adminDeployTrend: '/api/admin/cluster/deploy_trend',
   adminNamespaces: '/api/admin/namespaces',
   adminProjectsLiveness: '/api/admin/projects/liveness',
   adminSettings: '/api/admin/settings',

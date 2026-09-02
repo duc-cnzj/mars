@@ -846,6 +846,173 @@ func (x *ResourceBoardResponse) GetNamespaces() []*ResourceNamespace {
 	return nil
 }
 
+// DeployTrendRequest 部署趋势请求：days 控制统计窗口天数。
+type DeployTrendRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Days          int32                  `protobuf:"varint,1,opt,name=days,proto3" json:"days,omitempty"` // 近多少天（1~90，空/0 = 默认 30）
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeployTrendRequest) Reset() {
+	*x = DeployTrendRequest{}
+	mi := &file_proto_cluster_cluster_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeployTrendRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeployTrendRequest) ProtoMessage() {}
+
+func (x *DeployTrendRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_cluster_cluster_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeployTrendRequest.ProtoReflect.Descriptor instead.
+func (*DeployTrendRequest) Descriptor() ([]byte, []int) {
+	return file_proto_cluster_cluster_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *DeployTrendRequest) GetDays() int32 {
+	if x != nil {
+		return x.Days
+	}
+	return 0
+}
+
+// DeployTrendPoint 单日部署计数。
+type DeployTrendPoint struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Date          string                 `protobuf:"bytes,1,opt,name=date,proto3" json:"date,omitempty"`    // 所属天，服务端时区 "YYYY-MM-DD"
+	Count         int32                  `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"` // 当日部署次数
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeployTrendPoint) Reset() {
+	*x = DeployTrendPoint{}
+	mi := &file_proto_cluster_cluster_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeployTrendPoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeployTrendPoint) ProtoMessage() {}
+
+func (x *DeployTrendPoint) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_cluster_cluster_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeployTrendPoint.ProtoReflect.Descriptor instead.
+func (*DeployTrendPoint) Descriptor() ([]byte, []int) {
+	return file_proto_cluster_cluster_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *DeployTrendPoint) GetDate() string {
+	if x != nil {
+		return x.Date
+	}
+	return ""
+}
+
+func (x *DeployTrendPoint) GetCount() int32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+// DeployTrendResponse 近 N 天每日部署计数：items 按日期升序、无部署的天补 0，长度恒等于 days。
+type DeployTrendResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StartDate     string                 `protobuf:"bytes,1,opt,name=start_date,json=startDate,proto3" json:"start_date,omitempty"` // 窗口首天（含）
+	EndDate       string                 `protobuf:"bytes,2,opt,name=end_date,json=endDate,proto3" json:"end_date,omitempty"`       // 窗口末天（含）
+	Days          int32                  `protobuf:"varint,3,opt,name=days,proto3" json:"days,omitempty"`
+	Items         []*DeployTrendPoint    `protobuf:"bytes,4,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeployTrendResponse) Reset() {
+	*x = DeployTrendResponse{}
+	mi := &file_proto_cluster_cluster_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeployTrendResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeployTrendResponse) ProtoMessage() {}
+
+func (x *DeployTrendResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_cluster_cluster_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeployTrendResponse.ProtoReflect.Descriptor instead.
+func (*DeployTrendResponse) Descriptor() ([]byte, []int) {
+	return file_proto_cluster_cluster_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *DeployTrendResponse) GetStartDate() string {
+	if x != nil {
+		return x.StartDate
+	}
+	return ""
+}
+
+func (x *DeployTrendResponse) GetEndDate() string {
+	if x != nil {
+		return x.EndDate
+	}
+	return ""
+}
+
+func (x *DeployTrendResponse) GetDays() int32 {
+	if x != nil {
+		return x.Days
+	}
+	return 0
+}
+
+func (x *DeployTrendResponse) GetItems() []*DeployTrendPoint {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
 var File_proto_cluster_cluster_proto protoreflect.FileDescriptor
 
 const file_proto_cluster_cluster_proto_rawDesc = "" +
@@ -912,16 +1079,28 @@ const file_proto_cluster_cluster_proto_rawDesc = "" +
 	"\x15ResourceBoardResponse\x12:\n" +
 	"\n" +
 	"namespaces\x18\x01 \x03(\v2\x1a.cluster.ResourceNamespaceR\n" +
-	"namespaces*O\n" +
+	"namespaces\"(\n" +
+	"\x12DeployTrendRequest\x12\x12\n" +
+	"\x04days\x18\x01 \x01(\x05R\x04days\"<\n" +
+	"\x10DeployTrendPoint\x12\x12\n" +
+	"\x04date\x18\x01 \x01(\tR\x04date\x12\x14\n" +
+	"\x05count\x18\x02 \x01(\x05R\x05count\"\x94\x01\n" +
+	"\x13DeployTrendResponse\x12\x1d\n" +
+	"\n" +
+	"start_date\x18\x01 \x01(\tR\tstartDate\x12\x19\n" +
+	"\bend_date\x18\x02 \x01(\tR\aendDate\x12\x12\n" +
+	"\x04days\x18\x03 \x01(\x05R\x04days\x12/\n" +
+	"\x05items\x18\x04 \x03(\v2\x19.cluster.DeployTrendPointR\x05items*O\n" +
 	"\x06Status\x12\x11\n" +
 	"\rStatusUnknown\x10\x00\x12\r\n" +
 	"\tStatusBad\x10\x01\x12\x11\n" +
 	"\rStatusNotGood\x10\x02\x12\x10\n" +
-	"\fStatusHealth\x10\x032\x95\x03\n" +
+	"\fStatusHealth\x10\x032\xaf\x04\n" +
 	"\aCluster\x12n\n" +
 	"\vClusterInfo\x12\x14.cluster.InfoRequest\x1a\x15.cluster.InfoResponse\"2\xbaG\x16\x12\x12查看集群信息Z\x00\x82\xd3\xe4\x93\x02\x13\x12\x11/api/cluster_info\x12\x85\x01\n" +
 	"\fClusterBoard\x12\x15.cluster.BoardRequest\x1a\x16.cluster.BoardResponse\"F\xbaG#\x12!集群资源看板（管理员）\x82\xd3\xe4\x93\x02\x1a\x12\x18/api/admin/cluster/board\x12\x91\x01\n" +
-	"\rResourceBoard\x12\x14.cluster.InfoRequest\x1a\x1e.cluster.ResourceBoardResponse\"J\xbaG#\x12!空间资源管理（管理员）\x82\xd3\xe4\x93\x02\x1e\x12\x1c/api/admin/cluster/resourcesB7Z5github.com/duc-cnzj/mars/api/v6/proto/cluster;clusterb\x06proto3"
+	"\rResourceBoard\x12\x14.cluster.InfoRequest\x1a\x1e.cluster.ResourceBoardResponse\"J\xbaG#\x12!空间资源管理（管理员）\x82\xd3\xe4\x93\x02\x1e\x12\x1c/api/admin/cluster/resources\x12\x97\x01\n" +
+	"\vDeployTrend\x12\x1b.cluster.DeployTrendRequest\x1a\x1c.cluster.DeployTrendResponse\"M\xbaG#\x12!集群部署趋势（管理员）\x82\xd3\xe4\x93\x02!\x12\x1f/api/admin/cluster/deploy_trendB7Z5github.com/duc-cnzj/mars/api/v6/proto/cluster;clusterb\x06proto3"
 
 var (
 	file_proto_cluster_cluster_proto_rawDescOnce sync.Once
@@ -936,7 +1115,7 @@ func file_proto_cluster_cluster_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_cluster_cluster_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_cluster_cluster_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_proto_cluster_cluster_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_proto_cluster_cluster_proto_goTypes = []any{
 	(Status)(0),                     // 0: cluster.Status
 	(*InfoResponse)(nil),            // 1: cluster.InfoResponse
@@ -950,28 +1129,34 @@ var file_proto_cluster_cluster_proto_goTypes = []any{
 	(*ResourceProjectWorkload)(nil), // 9: cluster.ResourceProjectWorkload
 	(*ResourceNamespace)(nil),       // 10: cluster.ResourceNamespace
 	(*ResourceBoardResponse)(nil),   // 11: cluster.ResourceBoardResponse
-	(*websocket.ClusterInfo)(nil),   // 12: websocket.ClusterInfo
+	(*DeployTrendRequest)(nil),      // 12: cluster.DeployTrendRequest
+	(*DeployTrendPoint)(nil),        // 13: cluster.DeployTrendPoint
+	(*DeployTrendResponse)(nil),     // 14: cluster.DeployTrendResponse
+	(*websocket.ClusterInfo)(nil),   // 15: websocket.ClusterInfo
 }
 var file_proto_cluster_cluster_proto_depIdxs = []int32{
-	12, // 0: cluster.InfoResponse.item:type_name -> websocket.ClusterInfo
-	12, // 1: cluster.BoardResponse.overview:type_name -> websocket.ClusterInfo
+	15, // 0: cluster.InfoResponse.item:type_name -> websocket.ClusterInfo
+	15, // 1: cluster.BoardResponse.overview:type_name -> websocket.ClusterInfo
 	3,  // 2: cluster.BoardResponse.nodes:type_name -> cluster.BoardNode
 	4,  // 3: cluster.BoardResponse.namespaces:type_name -> cluster.BoardNamespace
 	6,  // 4: cluster.BoardResponse.pods:type_name -> cluster.BoardPod
 	9,  // 5: cluster.ResourceProject.workloads:type_name -> cluster.ResourceProjectWorkload
 	8,  // 6: cluster.ResourceNamespace.projects:type_name -> cluster.ResourceProject
 	10, // 7: cluster.ResourceBoardResponse.namespaces:type_name -> cluster.ResourceNamespace
-	2,  // 8: cluster.Cluster.ClusterInfo:input_type -> cluster.InfoRequest
-	5,  // 9: cluster.Cluster.ClusterBoard:input_type -> cluster.BoardRequest
-	2,  // 10: cluster.Cluster.ResourceBoard:input_type -> cluster.InfoRequest
-	1,  // 11: cluster.Cluster.ClusterInfo:output_type -> cluster.InfoResponse
-	7,  // 12: cluster.Cluster.ClusterBoard:output_type -> cluster.BoardResponse
-	11, // 13: cluster.Cluster.ResourceBoard:output_type -> cluster.ResourceBoardResponse
-	11, // [11:14] is the sub-list for method output_type
-	8,  // [8:11] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	13, // 8: cluster.DeployTrendResponse.items:type_name -> cluster.DeployTrendPoint
+	2,  // 9: cluster.Cluster.ClusterInfo:input_type -> cluster.InfoRequest
+	5,  // 10: cluster.Cluster.ClusterBoard:input_type -> cluster.BoardRequest
+	2,  // 11: cluster.Cluster.ResourceBoard:input_type -> cluster.InfoRequest
+	12, // 12: cluster.Cluster.DeployTrend:input_type -> cluster.DeployTrendRequest
+	1,  // 13: cluster.Cluster.ClusterInfo:output_type -> cluster.InfoResponse
+	7,  // 14: cluster.Cluster.ClusterBoard:output_type -> cluster.BoardResponse
+	11, // 15: cluster.Cluster.ResourceBoard:output_type -> cluster.ResourceBoardResponse
+	14, // 16: cluster.Cluster.DeployTrend:output_type -> cluster.DeployTrendResponse
+	13, // [13:17] is the sub-list for method output_type
+	9,  // [9:13] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_proto_cluster_cluster_proto_init() }
@@ -985,7 +1170,7 @@ func file_proto_cluster_cluster_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_cluster_cluster_proto_rawDesc), len(file_proto_cluster_cluster_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

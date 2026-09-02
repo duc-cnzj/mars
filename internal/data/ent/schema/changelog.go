@@ -83,6 +83,10 @@ func (Changelog) Edges() []ent.Edge {
 func (Changelog) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("project_id", "config_changed", "deleted_at", "version"),
+		// 部署趋势按天聚合（deploy_trend）：软删拦截器恒加 deleted_at IS NULL，
+		// (deleted_at, created_at) 复合让 created_at 范围扫描走覆盖式二级索引，
+		// 不回表读 config/git_commit_title 长文本。部署写频率低，索引维护开销可忽略。
+		index.Fields("deleted_at", "created_at"),
 	}
 }
 

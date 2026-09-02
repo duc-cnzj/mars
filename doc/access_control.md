@@ -74,7 +74,7 @@
 | repo | Create / Update / ToggleEnabled / Delete / Clone / Import / Export / ExportOne | ⭐ | repo.go:357（Authorize 门禁） |
 | user | List / ToggleAdmin / Sync | ⭐ | user.go:38（Authorize → RequireAdmin，无 allowlist，整服务 admin） |
 | settings | Get | ⭐ | settings.go:40（Authorize → RequireAdmin，无 allowlist，整服务 admin） |
-| cluster | ClusterBoard | ⭐ | cluster.go:47（Authorize 门禁，仅 ClusterBoard 需 admin，ClusterInfo 走免登录白名单见 §4.1） |
+| cluster | ClusterBoard / ResourceBoard / DeployTrend | ⭐ | cluster.go:52（Authorize → RequireAdmin，allowlist 仅 ClusterInfo，其余全 admin；ClusterInfo 免登录见 §4.1） |
 | namespace | AdminList | ⭐ | namespace.go:57（Authorize allowlist 放行用户方法，AdminList 未豁免） |
 | project | Liveness | ⭐ | project.go:174（Authorize allowlist 放行用户方法，Liveness 未豁免） |
 

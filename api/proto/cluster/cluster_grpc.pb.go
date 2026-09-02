@@ -23,6 +23,7 @@ const (
 	Cluster_ClusterInfo_FullMethodName   = "/cluster.Cluster/ClusterInfo"
 	Cluster_ClusterBoard_FullMethodName  = "/cluster.Cluster/ClusterBoard"
 	Cluster_ResourceBoard_FullMethodName = "/cluster.Cluster/ResourceBoard"
+	Cluster_DeployTrend_FullMethodName   = "/cluster.Cluster/DeployTrend"
 )
 
 // ClusterClient is the client API for Cluster service.
@@ -36,6 +37,10 @@ type ClusterClient interface {
 	// ResourceBoard 空间资源管理（管理员后台）：每个命名空间的 Pod requests/实际用量
 	// 占比聚合，含每空间的项目明细——定位「申请了很多却用不到多少」的空间。
 	ResourceBoard(ctx context.Context, in *InfoRequest, opts ...grpc.CallOption) (*ResourceBoardResponse, error)
+	// DeployTrend 每日部署趋势（管理员）：近 N 天每日部署次数曲线。
+	// 数据源 = changelog（每次部署落一条变更记录，与项目活跃度 deploy_count 同口径），
+	// 服务端时区分桶、窗口内无部署的天补 0——前端按 date 原样做 label，无时区换算。
+	DeployTrend(ctx context.Context, in *DeployTrendRequest, opts ...grpc.CallOption) (*DeployTrendResponse, error)
 }
 
 type clusterClient struct {
@@ -76,6 +81,16 @@ func (c *clusterClient) ResourceBoard(ctx context.Context, in *InfoRequest, opts
 	return out, nil
 }
 
+func (c *clusterClient) DeployTrend(ctx context.Context, in *DeployTrendRequest, opts ...grpc.CallOption) (*DeployTrendResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeployTrendResponse)
+	err := c.cc.Invoke(ctx, Cluster_DeployTrend_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ClusterServer is the server API for Cluster service.
 // All implementations must embed UnimplementedClusterServer
 // for forward compatibility.
@@ -87,6 +102,10 @@ type ClusterServer interface {
 	// ResourceBoard 空间资源管理（管理员后台）：每个命名空间的 Pod requests/实际用量
 	// 占比聚合，含每空间的项目明细——定位「申请了很多却用不到多少」的空间。
 	ResourceBoard(context.Context, *InfoRequest) (*ResourceBoardResponse, error)
+	// DeployTrend 每日部署趋势（管理员）：近 N 天每日部署次数曲线。
+	// 数据源 = changelog（每次部署落一条变更记录，与项目活跃度 deploy_count 同口径），
+	// 服务端时区分桶、窗口内无部署的天补 0——前端按 date 原样做 label，无时区换算。
+	DeployTrend(context.Context, *DeployTrendRequest) (*DeployTrendResponse, error)
 	mustEmbedUnimplementedClusterServer()
 }
 
@@ -105,6 +124,9 @@ func (UnimplementedClusterServer) ClusterBoard(context.Context, *BoardRequest) (
 }
 func (UnimplementedClusterServer) ResourceBoard(context.Context, *InfoRequest) (*ResourceBoardResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ResourceBoard not implemented")
+}
+func (UnimplementedClusterServer) DeployTrend(context.Context, *DeployTrendRequest) (*DeployTrendResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeployTrend not implemented")
 }
 func (UnimplementedClusterServer) mustEmbedUnimplementedClusterServer() {}
 func (UnimplementedClusterServer) testEmbeddedByValue()                 {}
@@ -181,6 +203,24 @@ func _Cluster_ResourceBoard_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Cluster_DeployTrend_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeployTrendRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterServer).DeployTrend(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Cluster_DeployTrend_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterServer).DeployTrend(ctx, req.(*DeployTrendRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Cluster_ServiceDesc is the grpc.ServiceDesc for Cluster service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -199,6 +239,10 @@ var Cluster_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ResourceBoard",
 			Handler:    _Cluster_ResourceBoard_Handler,
+		},
+		{
+			MethodName: "DeployTrend",
+			Handler:    _Cluster_DeployTrend_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

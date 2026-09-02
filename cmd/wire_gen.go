@@ -165,15 +165,16 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		Logger:       logger,
 	}
 	containerServer := services.NewContainerSvc(containerSvcDeps)
+	changelogBiz := biz.NewChangelogBiz(changelogRepo)
 	clusterSvcDeps := services.ClusterSvcDeps{
 		K8sBiz:       k8sBiz,
 		NamespaceBiz: namespaceBiz,
 		ProjectBiz:   projectBiz,
 		AccessBiz:    accessBiz,
+		ChangelogBiz: changelogBiz,
 		Logger:       logger,
 	}
 	clusterServer := services.NewClusterSvc(clusterSvcDeps)
-	changelogBiz := biz.NewChangelogBiz(changelogRepo)
 	changelogSvcDeps := services.ChangelogSvcDeps{
 		ClBiz:     changelogBiz,
 		Logger:    logger,

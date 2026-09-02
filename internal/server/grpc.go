@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net"
+	"runtime/debug"
 
 	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
@@ -126,8 +127,14 @@ func (g *grpcRunner) initServer() *grpc.Server {
 // recoveryHandler 是 gRPC 恢复拦截器的兜底回调：记录 panic 值并返回 Internal 状态错误，
 // 避免 panic 击穿进程；返回错误而非 nil 是为了让客户端收到明确的失败——若返回 nil，
 // 恢复后的 RPC 会被 grpc_recovery 当成成功空响应交付，panic 被伪装成成功。
+//
+// 日志必须带 goroutine 栈快照：运行时 panic（nil 指针解引用等）的 recover 值只是
+// runtime.Error，既不含 pkg/errors 栈也非 fmt.Formatter，%+v 对它无效——只能现场抓
+// debug.Stack() 定位真实 panic 起源帧（与 mlog.HandlePanic 的 panicStack 同思路）。
+// grpc_recovery 的 defer 尚未返回，被 unwinding 的帧仍在当前 goroutine 栈上，故此处
+// 抓栈能看到 panic 发生点而非仅恢复点。
 func (g *grpcRunner) recoveryHandler(p any) error {
-	g.logger.Errorf("[Grpc]: recovery error: \n%v", p)
+	g.logger.Errorf("[Grpc]: recovery error: \n%v\n--- goroutine stack ---\n%s", p, string(debug.Stack()))
 	return status.Error(codes.Internal, "internal server error")
 }
 

@@ -358,3 +358,53 @@ func TestChangelogRepo_CountByProjectIDs_Error(t *testing.T) {
 	assert.Nil(t, counts)
 	assert.Error(t, err)
 }
+
+// TestChangelogRepo_SelectCreatedAtBetween 真库验证部署趋势取数：只回窗口内 changelog 的
+// created_at（Scan 到 []time.Time 单列），软删行被拦截器排除，越过边界的行不返回。
+func TestChangelogRepo_SelectCreatedAtBetween(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+
+	// 窗口锚点：留足前后余量，确保下述 created_at 全部落在 [lo, hi) 内。
+	lo := time.Now().Add(-time.Hour)
+	r1 := entdb.Changelog.Create().SetVersion(1).SetUsername("u1").SaveX(context.TODO())
+	r2 := entdb.Changelog.Create().SetVersion(2).SetUsername("u2").SaveX(context.TODO())
+	hi := time.Now().Add(time.Hour)
+
+	created, err := repo.SelectCreatedAtBetween(context.TODO(), lo, hi)
+	assert.NoError(t, err)
+	if assert.Len(t, created, 2) {
+		// ent 客户端时间戳落库再读回，忽略 monotonic/location 差异后应等于原值。
+		assert.True(t, created[0].Equal(r1.CreatedAt) || created[0].Equal(r2.CreatedAt))
+		assert.True(t, created[1].Equal(r1.CreatedAt) || created[1].Equal(r2.CreatedAt))
+	}
+
+	// 软删 r2（SoftDeleteMixin 把 Delete 转 OpUpdate+SetDeletedAt）：再查同窗口只剩 r1。
+	delErr := entdb.Changelog.DeleteOneID(r2.ID).Exec(context.TODO())
+	require.NoError(t, delErr)
+	created, err = repo.SelectCreatedAtBetween(context.TODO(), lo, hi)
+	assert.NoError(t, err)
+	if assert.Len(t, created, 1) {
+		assert.True(t, created[0].Equal(r1.CreatedAt))
+	}
+}
+
+// TestChangelogRepo_SelectCreatedAtBetween_Empty 空窗口返回空切片不报错。
+func TestChangelogRepo_SelectCreatedAtBetween_Empty(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+
+	created, err := repo.SelectCreatedAtBetween(context.TODO(), time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC))
+	assert.NoError(t, err)
+	assert.Empty(t, created)
+}
+
+// TestChangelogRepo_SelectCreatedAtBetween_Error 查询失败整体上抛（关闭的 DB）。
+func TestChangelogRepo_SelectCreatedAtBetween_Error(t *testing.T) {
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: mustClosedDB(t)}))
+	created, err := repo.SelectCreatedAtBetween(context.TODO(), time.Now().Add(-time.Hour), time.Now())
+	assert.Nil(t, created)
+	assert.Error(t, err)
+}

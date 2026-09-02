@@ -97,6 +97,23 @@ message ResourceBoardResponse {
   repeated ResourceNamespace namespaces = 1;
 }
 
+// DeployTrendRequest 部署趋势请求：days 控制统计窗口天数。
+message DeployTrendRequest {
+  int32 days = 1; // 近多少天（1~90，空/0 = 默认 30）
+}
+// DeployTrendPoint 单日部署计数。
+message DeployTrendPoint {
+  string date = 1; // 所属天，服务端时区 "YYYY-MM-DD"
+  int32  count = 2; // 当日部署次数
+}
+// DeployTrendResponse 近 N 天每日部署计数：items 按日期升序、无部署的天补 0，长度恒等于 days。
+message DeployTrendResponse {
+  string start_date = 1; // 窗口首天（含）
+  string end_date   = 2; // 窗口末天（含）
+  int32  days       = 3;
+  repeated DeployTrendPoint items = 4;
+}
+
 service Cluster {
   rpc ClusterInfo(InfoRequest) returns (InfoResponse) {
     option (google.api.http)      = {
@@ -128,6 +145,18 @@ service Cluster {
     };
     option (openapi.v3.operation) = {
       summary: "空间资源管理（管理员）",
+    };
+  }
+
+  // DeployTrend 每日部署趋势（管理员）：近 N 天每日部署次数曲线。
+  // 数据源 = changelog（每次部署落一条变更记录，与项目活跃度 deploy_count 同口径），
+  // 服务端时区分桶、窗口内无部署的天补 0——前端按 date 原样做 label，无时区换算。
+  rpc DeployTrend(DeployTrendRequest) returns (DeployTrendResponse) {
+    option (google.api.http)      = {
+      get: "/api/admin/cluster/deploy_trend"
+    };
+    option (openapi.v3.operation) = {
+      summary: "集群部署趋势（管理员）",
     };
   }
 }

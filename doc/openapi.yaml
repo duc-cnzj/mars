@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: ""
+    version: api/v6.0.0-beta.37
 paths:
     /api/access_tokens:
         get:
@@ -148,6 +148,35 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.BoardResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/admin/cluster/deploy_trend:
+        get:
+            tags:
+                - Cluster
+            summary: 集群部署趋势（管理员）
+            description: |-
+                DeployTrend 每日部署趋势（管理员）：近 N 天每日部署次数曲线。
+                 数据源 = changelog（每次部署落一条变更记录，与项目活跃度 deploy_count 同口径），
+                 服务端时区分桶、窗口内无部署的天补 0——前端按 date 原样做 label，无时区换算。
+            operationId: Cluster_DeployTrend
+            parameters:
+                - name: days
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.DeployTrendResponse'
                 default:
                     description: Default error response
                     content:
@@ -2423,6 +2452,30 @@ components:
                     items:
                         $ref: '#/components/schemas/cluster.BoardPod'
             description: BoardResponse 集群看板聚合快照：总览 + 节点 + 命名空间 + Top Pod。
+        cluster.DeployTrendPoint:
+            type: object
+            properties:
+                date:
+                    type: string
+                count:
+                    type: integer
+                    format: int32
+            description: DeployTrendPoint 单日部署计数。
+        cluster.DeployTrendResponse:
+            type: object
+            properties:
+                startDate:
+                    type: string
+                endDate:
+                    type: string
+                days:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.DeployTrendPoint'
+            description: DeployTrendResponse 近 N 天每日部署计数：items 按日期升序、无部署的天补 0，长度恒等于 days。
         cluster.InfoResponse:
             type: object
             properties:

@@ -57,6 +57,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/cluster/deploy_trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 集群部署趋势（管理员）
+         * @description DeployTrend 每日部署趋势（管理员）：近 N 天每日部署次数曲线。
+         *      数据源 = changelog（每次部署落一条变更记录，与项目活跃度 deploy_count 同口径），
+         *      服务端时区分桶、窗口内无部署的天补 0——前端按 date 原样做 label，无时区换算。
+         */
+        get: operations["Cluster_DeployTrend"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/cluster/resources": {
         parameters: {
             query?: never;
@@ -1354,6 +1376,20 @@ export interface components {
             namespaces: components["schemas"]["cluster.BoardNamespace"][];
             pods: components["schemas"]["cluster.BoardPod"][];
         };
+        /** @description DeployTrendPoint 单日部署计数。 */
+        "cluster.DeployTrendPoint": {
+            date: string;
+            /** Format: int32 */
+            count: number;
+        };
+        /** @description DeployTrendResponse 近 N 天每日部署计数：items 按日期升序、无部署的天补 0，长度恒等于 days。 */
+        "cluster.DeployTrendResponse": {
+            startDate: string;
+            endDate: string;
+            /** Format: int32 */
+            days: number;
+            items: components["schemas"]["cluster.DeployTrendPoint"][];
+        };
         "cluster.InfoResponse": {
             item: components["schemas"]["websocket.ClusterInfo"];
         };
@@ -2515,6 +2551,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["cluster.BoardResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Cluster_DeployTrend: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["cluster.DeployTrendResponse"];
                 };
             };
             /** @description Default error response */

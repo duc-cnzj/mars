@@ -20,7 +20,7 @@ const TREND_POINTS = 16
 export const REFRESH_INTERVAL_MS = 45_000
 
 /**
- * 集群资源看板数据源（轮询真实后端）：
+ * 集群总览数据源（轮询真实后端）：
  * - 每 REFRESH_INTERVAL_MS 拉取 /api/admin/cluster/board 快照，转数值后从节点聚合出
  *   集群总览并推进 CPU/内存使用率趋势（环形缓冲 16 点）；refresh() 手动立即拉新一版
  * - 轮询失败静默保留上一帧快照（看板不闪断），下次成功自动恢复；返回值全部为最新快照

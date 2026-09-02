@@ -63,6 +63,7 @@ type clusterSvcMocks struct {
 	projectBiz  *biz.MockProjectBiz
 	projectRepo *data.MockProjectRepo
 	nsRepo      *data.MockNamespaceRepo
+	clRepo      *data.MockChangelogRepo
 }
 
 func newClusterSvcWithMocks(t *testing.T) (*clusterSvc, *clusterSvcMocks) {
@@ -75,6 +76,7 @@ func newClusterSvcWithMocks(t *testing.T) (*clusterSvc, *clusterSvcMocks) {
 		projectBiz:  biz.NewMockProjectBiz(ctrl),
 		projectRepo: data.NewMockProjectRepo(ctrl),
 		nsRepo:      data.NewMockNamespaceRepo(ctrl),
+		clRepo:      data.NewMockChangelogRepo(ctrl),
 	}
 	logger := mlog.NewForConfig(nil)
 	s, ok := NewClusterSvc(ClusterSvcDeps{
@@ -82,6 +84,7 @@ func newClusterSvcWithMocks(t *testing.T) (*clusterSvc, *clusterSvcMocks) {
 		NamespaceBiz: mocks.nsBiz,
 		ProjectBiz:   mocks.projectBiz,
 		AccessBiz:    biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), biz.NewProjectBiz(logger, mocks.projectRepo, nil, nil)),
+		ChangelogBiz: biz.NewChangelogBiz(mocks.clRepo),
 		Logger:       logger,
 	}).(*clusterSvc)
 	if !ok {
@@ -305,6 +308,15 @@ func Test_clusterSvc_Authorize(t *testing.T) {
 
 	// 非白名单方法：普通用户拒绝。
 	ctx, err = svc.Authorize(newOtherUserCtx(), cluster.Cluster_ClusterBoard_FullMethodName)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	assert.Nil(t, ctx)
+
+	// DeployTrend（每日部署趋势）非公开方法：admin 放行、普通用户拒绝——与 ClusterBoard
+	// 同门禁（allowlist 仅 ClusterInfo），此处显式钉死契约，防误加进免登录白名单。
+	ctx, err = svc.Authorize(newAdminUserCtx(), cluster.Cluster_DeployTrend_FullMethodName)
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+	ctx, err = svc.Authorize(newOtherUserCtx(), cluster.Cluster_DeployTrend_FullMethodName)
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 	assert.Nil(t, ctx)
 }

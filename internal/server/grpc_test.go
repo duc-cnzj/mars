@@ -2,9 +2,10 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"io"
 	"net"
+	"os"
 	"testing"
 	"time"
 
@@ -24,26 +25,45 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+// captureStdout 在窗口内重定向 os.Stdout 并返回捕获的输出。logrus 后端在构造时固化
+// output fd（NewLogrusLogger 里 SetOutput(os.Stdout)），因此 logger 必须在 fn 内构造。
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	fn()
+	_ = w.Close()
+	os.Stdout = old
+	out, _ := io.ReadAll(r)
+	return string(out)
+}
+
+// panicNilDeref 触发真实的 nil 指针解引用 panic，复现线上 recovery 日志的
+// "runtime error: invalid memory address or nil pointer dereference"。
+func panicNilDeref() {
+	var p *int
+	_ = *p
+}
+
 func TestGrpcRunner_RecoveryHandler(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-
-	logger := mlog.NewMockLogger(m)
-	auth := biz.NewMockAuthBiz(m)
-
-	runner := &grpcRunner{
-		logger:  logger,
-		authBiz: auth,
-	}
-
-	// Test case: recoveryHandler 记录 panic 值并返回 Internal 错误，
-	// 客户端收到明确失败而非成功空响应。
-	err := errors.New("test error")
-	logger.EXPECT().Errorf("[Grpc]: recovery error: \n%v", err).Times(1)
-
-	got := runner.recoveryHandler(err)
-	assert.Error(t, got)
-	assert.Equal(t, codes.Internal, status.Code(got))
+	// 回归：panic 日志必须带 goroutine 栈快照定位起源帧。此前 recoveryHandler 只打
+	// panic 值（%v），而 nil 解引用等运行时 panic 的 recover 值只是 runtime.Error——
+	// 既无 pkg/errors 栈也非 fmt.Formatter，%+v 对它无效，无快照即无从定位 panic 点。
+	out := captureStdout(t, func() {
+		runner := &grpcRunner{logger: mlog.NewForConfig(nil)}
+		func() {
+			// 与 grpc_recovery 的 defer→recover→handler 同形：unwind 结束前抓栈，
+			// 栈快照才含 panicNilDeref 起源帧（recover 返回后再调用只剩恢复点）。
+			defer func() {
+				got := runner.recoveryHandler(recover())
+				assert.Equal(t, codes.Internal, status.Code(got), "panic 应转 Internal 返回，客户端收到明确失败")
+			}()
+			panicNilDeref()
+		}()
+	})
+	assert.Contains(t, out, "invalid memory address or nil pointer dereference", "日志应含 panic 值")
+	assert.Contains(t, out, "panicNilDeref", "栈快照应含 nil deref 起源函数帧，而非仅恢复点")
 }
 
 func TestAuthenticate(t *testing.T) {

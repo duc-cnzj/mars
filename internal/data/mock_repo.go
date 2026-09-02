@@ -693,6 +693,21 @@ func (mr *MockChangelogRepoMockRecorder) FindLastChangelogsByProjectID(arg0, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindLastChangelogsByProjectID", reflect.TypeOf((*MockChangelogRepo)(nil).FindLastChangelogsByProjectID), arg0, arg1)
 }
 
+// SelectCreatedAtBetween mocks base method.
+func (m *MockChangelogRepo) SelectCreatedAtBetween(arg0 context.Context, arg1, arg2 time.Time) ([]time.Time, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectCreatedAtBetween", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]time.Time)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectCreatedAtBetween indicates an expected call of SelectCreatedAtBetween.
+func (mr *MockChangelogRepoMockRecorder) SelectCreatedAtBetween(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectCreatedAtBetween", reflect.TypeOf((*MockChangelogRepo)(nil).SelectCreatedAtBetween), arg0, arg1, arg2)
+}
+
 // MockK8sRepo is a mock of K8sRepo interface.
 type MockK8sRepo struct {
 	ctrl     *gomock.Controller

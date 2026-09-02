@@ -43,3 +43,12 @@ func (s *ClusterSvc) ResourceBoard(ctx context.Context, req *cluster.InfoRequest
 	}
 	return &out, nil
 }
+
+// DeployTrend GET /api/admin/cluster/deploy_trend。
+func (s *ClusterSvc) DeployTrend(ctx context.Context, req *cluster.DeployTrendRequest) (*cluster.DeployTrendResponse, error) {
+	var out cluster.DeployTrendResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, "/api/admin/cluster/deploy_trend", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
