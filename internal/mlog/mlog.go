@@ -263,6 +263,17 @@ func (e *logWrapper) WithModule(module string) Logger {
 	return &logWrapper{Logger: e.Logger.WithModule(module), kvs: e.kvs}
 }
 
+// WithCallerSkip 实现 mlog.CallerSkipAdjuster：透传给内层 logger，供调用方
+// （如 services.logError 收敛 helper）补偿自身额外引入的调用帧，避免 file
+// 字段指向 helper 内部而非真实调用点。内层不支持（如 mock）时静默忽略，
+// 返回自身，不破坏原有行为。
+func (e *logWrapper) WithCallerSkip(skip int) Logger {
+	if a, ok := e.Logger.(CallerSkipAdjuster); ok {
+		return &logWrapper{Logger: a.WithCallerSkip(skip), kvs: e.kvs}
+	}
+	return e
+}
+
 // withFields 求值 kvs 里的 Valuer 并附加到内层 logger，返回可直接打日志的
 // logger。只做构造、不引入 wrapper 帧：调用链保持 caller→wrapper→inner 两层，
 // caller skip 不漂移（zap/logrus 的 WithCallerSkip 补偿据此设计）。

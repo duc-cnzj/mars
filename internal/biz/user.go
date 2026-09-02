@@ -107,7 +107,7 @@ func (u *userBiz) SyncLoginUser(ctx context.Context, email, name string, roles [
 func (u *userBiz) ToggleAdmin(ctx context.Context, email string, admin bool) error {
 	// 权限门卫：只有超级管理员才能修改其他用户的权限，普通管理员仅可查看。
 	if !MustGetUser(ctx).IsSuperAdmin() {
-		return errs.ErrorPermissionDenied
+		return errs.WrapPermissionDenied(errs.ErrorPermissionDenied, "切换用户管理员角色")
 	}
 	if strings.TrimSpace(email) == "" {
 		return errs.InvalidArgument("email 不能为空")
@@ -121,7 +121,7 @@ func (u *userBiz) ToggleAdmin(ctx context.Context, email string, admin bool) err
 func (u *userBiz) ResetRolesOverride(ctx context.Context, email string) error {
 	// 权限门卫：解除接管同属角色管理，只有超级管理员能操作。
 	if !MustGetUser(ctx).IsSuperAdmin() {
-		return errs.ErrorPermissionDenied
+		return errs.WrapPermissionDenied(errs.ErrorPermissionDenied, "解除用户角色接管")
 	}
 	if strings.TrimSpace(email) == "" {
 		return errs.InvalidArgument("email 不能为空")

@@ -13,6 +13,11 @@ import (
 // 服务层错误日志是唯一出口（gRPC 错误日志拦截器已移除）：每个 service 的 logger
 // 自带 WithModule("services/xxx") 模块标签，日志按服务归属，而非中间件的统一 "grpc"。
 func logError(ctx context.Context, logger mlog.Logger, err error) error {
+	// logError 自身引入一帧调用栈，必须经 CallerSkipAdjuster 补偿一帧，
+	// 否则 file 字段指向本文件（services/errors.go）而非真实调用方。
+	if a, ok := logger.(mlog.CallerSkipAdjuster); ok {
+		logger = a.WithCallerSkip(1)
+	}
 	logger.ErrorCtx(ctx, err)
 	return err
 }

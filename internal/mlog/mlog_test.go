@@ -116,6 +116,44 @@ func TestNewLogWrapper_CallerPointsToCallSite(t *testing.T) {
 	}
 }
 
+// logWrapper 实现 mlog.CallerSkipAdjuster：WithCallerSkip 透传给内层，供收敛
+// helper（如 services.logError）补偿自身引入的调用帧。模拟生产三层链路：
+// 真实调用点 → helper（多一层）→ logWrapper。无补偿时 caller 落在 helper 帧，
+// 补偿 1 帧后越过 helper 指向真实调用点（两次 caller 落点不同）。
+func Test_logWrapper_WithCallerSkip(t *testing.T) {
+	z, buf := newTestZap(t)
+	wrapped := NewLogWrapper(z)
+	logAt := func(skip bool) string {
+		buf.Reset()
+		helper := func(logger Logger) { // logError 的角色：helper 自身多一层
+			if skip {
+				if a, ok := logger.(CallerSkipAdjuster); ok {
+					logger = a.WithCallerSkip(1)
+				}
+			}
+			logger.Error("x")
+		}
+		realCaller := func() { helper(wrapped) } // 真实调用点
+		realCaller()
+		m := parseZap(t, buf)
+		f, _ := m["file"].(string)
+		assert.Regexp(t, `mlog_test\.go:\d+$`, f, "caller 应指向测试文件真实调用点")
+		return f
+	}
+	// WithCallerSkip(1) 补偿 helper 帧：两次 caller 落点不同。
+	assert.NotEqual(t, logAt(false), logAt(true))
+}
+
+// logWrapper 内层不实现 CallerSkipAdjuster（如 mock）时：WithCallerSkip 静默
+// 跳过补偿返回自身，不破坏原有日志链路（对齐 NewLogWrapper/With 的同类回退）。
+func Test_logWrapper_WithCallerSkip_NoInnerAdjuster(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	wrapped := &logWrapper{Logger: NewMockLogger(m)}
+	got := wrapped.WithCallerSkip(1)
+	assert.Same(t, wrapped, got, "内层不实现 CallerSkipAdjuster 时应返回自身，不做任何包裹")
+}
+
 // formatError 对 pkg/errors（fmt.Formatter）用 %+v 打出完整堆栈。
 // 栈帧断言（函数名 TestErrorLogWrapper_Error_PkgErrorsStack）验证 %+v 真实生效：
 // 只查 root/outer 消息子串时，即使 formatError 退化为 err.Error() 测试也通过

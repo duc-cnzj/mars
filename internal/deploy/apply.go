@@ -50,7 +50,7 @@ func ApplyProject(ctx context.Context, deps ApplyProjectDeps, input *ApplyProjec
 	// 匿名部署（User==nil）无法建档/审计（runner 会 nil-deref panic），一律拒绝。
 	// 鉴权流程必带用户，此守卫对合法流恒不触发。
 	if input.JobInput.User == nil {
-		return nil, errs.ErrorPermissionDenied
+		return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, "发起部署（需要登录用户）")
 	}
 
 	// 把部署身份物化进 ctx：WS 的 user 在 Conn 上不在 ctx，此处统一从 JobInput 取，

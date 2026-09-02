@@ -38,7 +38,7 @@ func NewSettingsSvc(deps SettingsSvcDeps) settings.SettingsServer {
 // 也无权限——防止越权读取平台级敏感配置（数据库密码/kubeconfig 等）。
 func (s *settingsSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
 	if !biz.MustGetUser(ctx).IsSuperAdmin() {
-		return nil, errs.ErrorPermissionDenied
+		return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, "访问平台配置")
 	}
 	return ctx, nil
 }

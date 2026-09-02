@@ -309,7 +309,10 @@ func Test_projectSvc_Version_NamespaceError(t *testing.T) {
 
 	resp, err := svc.Version(newAdminUserCtx(), &project.VersionRequest{Id: 1})
 	assert.Nil(t, resp)
-	assert.Error(t, err)
+	// 命名空间加载失败必须原样上抛（不能被误包成 PermissionDenied）：
+	// RequireProjectAccess 的 errors.Is guard 只给真权限拒绝加项目上下文，
+	// 不确定错误（DB 故障）不得改判 403，否则私有命名空间存在性被侧信道暴露。
+	assert.EqualError(t, err, "namespace error")
 }
 
 func Test_projectSvc_AllContainers(t *testing.T) {
@@ -1391,7 +1394,7 @@ func TestProjectSvc_Authorize(t *testing.T) {
 	assert.NotNil(t, ctx)
 	// 非 admin：Liveness（管理员后台）拒绝。
 	_, err = svc.Authorize(newOtherUserCtx(), project.Project_Liveness_FullMethodName)
-	assert.Equal(t, errs.ErrorPermissionDenied, err)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 	// 非 admin：allowlist 内的用户方法全部放行，逐个覆盖防漏。
 	for _, m := range []string{
 		project.Project_List_FullMethodName,

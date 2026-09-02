@@ -360,6 +360,7 @@ func (j *jobRunner) Validate() Job {
 	} else {
 		j.project = found
 		version := j.project.Version
+		projectID := j.project.ID
 		if j.IsNotDryRun() {
 			j.messager.SendMsg(fmt.Sprintf("[Check]: 检查当前版本, version: %v", lo.FromPtr(j.input.Version)))
 			j.project, err = j.projRepo.UpdateStatusByVersion(context.TODO(), int(j.input.ProjectID), types.Deploy_StatusDeploying, int(lo.FromPtr(j.input.Version)))
@@ -367,7 +368,10 @@ func (j *jobRunner) Validate() Job {
 				return j.SetError(fmt.Errorf("%w: %w", ErrorVersionNotMatched, err))
 			}
 			j.OnError(1, func(err error, sendResultToUser func()) {
-				j.project, _ = j.projRepo.UpdateVersion(context.TODO(), j.project.ID, version)
+				// 版本回滚用注册时快照的 projectID/version：Run 阶段 UpdateProject 失败或
+				// 本回调自身的 UpdateVersion 失败都可能改写 j.project，Finish 执行回调时
+				// 不能再依赖 j.project 非 nil，否则对 nil project 解引用 panic。
+				_, _ = j.projRepo.UpdateVersion(context.TODO(), projectID, version)
 				sendResultToUser()
 			})
 		}
@@ -555,10 +559,14 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 		)
 
 		if j.IsNotDryRun() {
-			j.project, err = j.projRepo.UpdateProject(context.TODO(), updateProjectInput)
-			if err != nil {
-				return err
+			updated, uerr := j.projRepo.UpdateProject(context.TODO(), updateProjectInput)
+			if uerr != nil {
+				// 失败时不得把 j.project 覆盖为 nil：Validate 阶段注册的 OnError/OnFinally
+				// 回调在 Finish 时会解引用 j.project.ID（版本回滚/状态回收），置空会触发
+				// nil 解引用 panic。保留旧值，仅成功时才替换为新实体。
+				return uerr
 			}
+			j.project = updated
 
 			newConf = j.project.ToEventYaml()
 			j.eventRepo.Dispatch(biz.EventProjectChanged, &biz.ProjectChangedData{

@@ -2068,6 +2068,91 @@ func Test_jobRunner_Run_UpdateProjectError(t *testing.T) {
 	msger.EXPECT().To(gomock.Any()).AnyTimes()
 
 	assert.Equal(t, "update failed", jb.Run(context.TODO()).Error().Error())
+	// UpdateProject 失败不得把 j.project 覆盖为 nil：Finish 的 OnError/OnFinally 回调
+	// 会解引用 j.project.ID（版本回滚/状态回收），置空会触发 nil 解引用 panic。
+	assert.NotNil(t, jb.project)
+}
+
+// 回归：生产 UpdateProject 事故——Validate 更新路径注册的版本回滚 OnError 与状态回收
+// OnFinally 回调在 Finish 时解引用 j.project.ID。若 Run 阶段 UpdateProject 落库失败把
+// j.project 覆盖为 nil，Finish 执行错误回调会对 nil 解引用 panic。
+// 修复后：UpdateProject 失败保留 j.project 旧值；回滚回调用注册时快照的 projectID 且
+// 不再改写 j.project（回滚自身失败也不会置 nil），全链不 panic、错误原样返回。
+func Test_jobRunner_Run_UpdateProjectError_FinishNoPanic(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	nsRepo := data.NewMockNamespaceRepo(m)
+	msger := NewMockDeployMsger(m)
+	repoRepo := data.NewMockRepoRepo(m)
+	projectRepo := data.NewMockProjectRepo(m)
+	sub := app.NewMockPubSub(m)
+	helmer := data.NewMockHelmerRepo(m)
+	gits := app.NewMockGitServer(m)
+	pluginMgr := app.NewMockPluginManager(m)
+	installer := NewMockReleaseInstaller(m)
+	k8sRepo := data.NewMockK8sRepo(m)
+	eventRepo := data.NewMockEventRepo(m)
+	msger.EXPECT().To(gomock.Any()).AnyTimes()
+	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+
+	// Validate 更新路径：项目已存在，注册版本回滚 OnError(369) 与状态回收 OnFinally(382)。
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{ID: 1}, nil)
+	repoRepo.EXPECT().Get(gomock.Any(), 12).Return(&biz.Repo{
+		MarsConfig:   &mars.Config{},
+		NeedGitRepo:  true,
+		GitProjectID: 88,
+	}, nil)
+	projectRepo.EXPECT().FindByName(gomock.Any(), "xx", 1).Return(&biz.Project{ID: 5, Version: 3}, nil)
+	projectRepo.EXPECT().UpdateStatusByVersion(gomock.Any(), 100, types.Deploy_StatusDeploying, 10).Return(&biz.Project{ID: 5}, nil)
+	pluginMgr.EXPECT().Git().Return(gits).AnyTimes()
+	gits.EXPECT().GetCommit("88", "abc123").Return(&biz.Commit{ShortID: "abc123", Title: "t"}, nil)
+
+	// Run：helm 安装成功，UpdateProject 落库失败（返回 nil 实体）——旧代码在此把 j.project 置 nil。
+	installer.EXPECT().Run(gomock.Any(), gomock.Any()).Return(&release.Release{Config: map[string]any{}}, nil)
+	k8sRepo.EXPECT().SplitManifests(gomock.Any())
+	k8sRepo.EXPECT().GetPodSelectorsByManifest(gomock.Any())
+	projectRepo.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Return(nil, errors.New("update failed"))
+
+	// Finish 错误回调：版本回滚 UpdateVersion 自身也失败——验证回调不把 j.project 改写为 nil，
+	// OnFinally 状态回收与结果下发仍正常执行，整体不 panic。
+	projectRepo.EXPECT().UpdateVersion(gomock.Any(), 5, 3).Return(nil, errors.New("rollback failed"))
+	helmer.EXPECT().ReleaseStatus(gomock.Any(), gomock.Any()).Return(types.Deploy_StatusDeploying)
+	projectRepo.EXPECT().UpdateDeployStatus(gomock.Any(), 5, types.Deploy_StatusDeploying).Return(&biz.Project{ID: 5}, nil)
+	sub.EXPECT().ToAll(gomock.Any()).AnyTimes()
+	msger.EXPECT().SendDeployedResult(websocket_pb.ResultType_DeployedFailed, "update failed", gomock.Any())
+
+	job := &jobRunner{
+		logger:       mlog.NewForConfig(nil),
+		messager:     msger,
+		nsRepo:       nsRepo,
+		projRepo:     projectRepo,
+		repoRepo:     repoRepo,
+		helmer:       helmer,
+		pluginMgr:    pluginMgr,
+		k8sRepo:      k8sRepo,
+		eventRepo:    eventRepo,
+		installer:    installer,
+		user:         &biz.UserInfo{Email: "duc@x.com", Name: "duc"},
+		deployResult: &deployResult{},
+		stopCtx:      context.TODO(),
+		messageCh:    newSafeWriteMessageCh(mlog.NewForConfig(nil), 10),
+		chart:        &chart.Chart{Metadata: &chart.Metadata{}},
+		input: &JobInput{
+			Type:        websocket_pb.Type_UpdateProject,
+			NamespaceId: 1,
+			Name:        "xx",
+			RepoID:      12,
+			ProjectID:   100,
+			Version:     lo.ToPtr(int32(10)),
+			GitCommit:   "abc123",
+			DryRun:      false,
+			PubSub:      sub,
+		},
+	}
+	// 与生产一致的全链（跳过 LoadConfigs：loaders 不涉及 j.project，本用例聚焦
+	// Validate 注册回调 + Run 落库失败 + Finish 执行回调这条触发链）。旧代码会在此
+	// 对 nil j.project 解引用 panic，修复后错误原样返回。
+	assert.Equal(t, "update failed", job.Validate().Run(context.TODO()).Finish().Error().Error())
 }
 
 // Run dryRun 路径：跳过落库，act 记为 DryRun。

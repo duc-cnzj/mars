@@ -71,6 +71,7 @@ func TestAccessBiz_RequireNamespaceAccessByName(t *testing.T) {
 
 		_, err := ab.RequireNamespaceAccessByName(plainCtx(), "ns")
 		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+		assert.ErrorContains(t, err, "访问命名空间 ns", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是哪个命名空间")
 	})
 }
 
@@ -128,6 +129,7 @@ func TestAccessBiz_RequireNamespaceAccessByID(t *testing.T) {
 
 		_, err := ab.RequireNamespaceAccessByID(plainCtx(), 1)
 		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+		assert.ErrorContains(t, err, "访问命名空间 #1", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是哪个命名空间")
 	})
 
 	t.Run("nil namespace denied", func(t *testing.T) {
@@ -136,6 +138,7 @@ func TestAccessBiz_RequireNamespaceAccessByID(t *testing.T) {
 
 		_, err := ab.RequireNamespaceAccessByID(plainCtx(), 1)
 		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+		assert.ErrorContains(t, err, "访问命名空间 #1", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是哪个命名空间")
 	})
 }
 
@@ -165,6 +168,19 @@ func TestAccessBiz_RequireProjectAccess(t *testing.T) {
 
 		_, err := ab.RequireProjectAccess(plainCtx(), 1)
 		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+		assert.ErrorContains(t, err, "访问项目 #1", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是哪个项目")
+	})
+
+	t.Run("namespace load error propagates raw", func(t *testing.T) {
+		// errors.Is guard 的负分支：命名空间加载失败（DB 故障/不存在）是"不确定错误"，
+		// 不得被误包成 PermissionDenied——改判 403 会把私有命名空间存在性侧信道暴露，
+		// 也让 500/404 语义失真。加载错误必须原样上抛、不带项目上下文。
+		ab, m := newAccessBizFixture(t)
+		m.proj.EXPECT().Show(gomock.Any(), 1).Return(&Project{ID: 1, NamespaceID: 5}, nil)
+		m.nsRepo.EXPECT().Show(gomock.Any(), 5).Return(nil, errors.New("boom"))
+
+		_, err := ab.RequireProjectAccess(plainCtx(), 1)
+		assert.EqualError(t, err, "boom")
 	})
 }
 
@@ -188,6 +204,7 @@ func TestAccessBiz_RequireNamespaceOwner(t *testing.T) {
 
 		err := ab.RequireNamespaceOwner(plainCtx(), &Namespace{Private: true, CreatorEmail: "owner@example.com"})
 		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+		assert.ErrorContains(t, err, "变更命名空间（仅 owner 可操作）", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是什么操作")
 	})
 
 	t.Run("nil namespace denied", func(t *testing.T) {
@@ -195,6 +212,7 @@ func TestAccessBiz_RequireNamespaceOwner(t *testing.T) {
 
 		err := ab.RequireNamespaceOwner(plainCtx(), nil)
 		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+		assert.ErrorContains(t, err, "变更命名空间（仅 owner 可操作）", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是什么操作")
 	})
 }
 
@@ -220,6 +238,7 @@ func TestAccessBiz_RequireAdmin(t *testing.T) {
 
 		_, err := ab.RequireAdmin(plainCtx(), "/file.File/List")
 		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+		assert.ErrorContains(t, err, "管理员操作", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是管理员操作")
 	})
 }
 
@@ -268,7 +287,7 @@ func TestAccessBiz_CanAccessNamespace(t *testing.T) {
 // 非所有者非 admin 拒绝。nil-user 不再是合法输入——ctx 无用户即编程错误，
 // MustGetUser 直接 panic（见 context_test.go）。
 func TestAccessBiz_RequireFileAccess(t *testing.T) {
-	fil := &File{Username: "owner"}
+	fil := &File{ID: 99, Username: "owner"}
 
 	t.Run("owner passes", func(t *testing.T) {
 		ab, _ := newAccessBizFixture(t)
@@ -286,5 +305,6 @@ func TestAccessBiz_RequireFileAccess(t *testing.T) {
 		ab, _ := newAccessBizFixture(t)
 
 		assert.ErrorIs(t, ab.RequireFileAccess(plainCtx(), fil), errs.ErrorPermissionDenied)
+		assert.ErrorContains(t, ab.RequireFileAccess(plainCtx(), fil), "访问文件 #99", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是哪个文件")
 	})
 }

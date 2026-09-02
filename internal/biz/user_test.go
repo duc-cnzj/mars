@@ -96,7 +96,8 @@ func TestUserBiz_ToggleAdmin_NonSuperAdminDenied(t *testing.T) {
 	ctx := SetUser(context.TODO(), &UserInfo{Email: "regular-admin@x.com", Roles: []string{MarsAdmin}})
 
 	err := b.ToggleAdmin(ctx, "a@b.c", true)
-	assert.Equal(t, errs.ErrorPermissionDenied, err, "普通管理员只能查看不能修改")
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied, "普通管理员只能查看不能修改")
+	assert.ErrorContains(t, err, "切换用户管理员角色", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是哪个操作")
 	assert.Empty(t, fake.toggles, "非超管不应触达 repo")
 }
 
@@ -176,7 +177,8 @@ func TestUserBiz_ResetRolesOverride_NonSuperAdminDenied(t *testing.T) {
 	ctx := SetUser(context.TODO(), &UserInfo{Email: "regular-admin@x.com", Roles: []string{MarsAdmin}})
 
 	err := b.ResetRolesOverride(ctx, "a@b.c")
-	assert.Equal(t, errs.ErrorPermissionDenied, err, "解除接管同属角色管理，普通管理员只能查看")
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied, "解除接管同属角色管理，普通管理员只能查看")
+	assert.ErrorContains(t, err, "解除用户角色接管", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是哪个操作")
 	assert.Empty(t, fake.resets, "非超管不应触达 repo")
 }
 

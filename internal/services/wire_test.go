@@ -71,5 +71,5 @@ func Test_AccessGetUserBinding(t *testing.T) {
 
 	// 非 admin 上下文且未命中 allowlist 时拒绝。
 	_, err = ab.RequireAdmin(newOtherUserCtx(), "/api/v1/file/List")
-	assert.Equal(t, errs.ErrorPermissionDenied, err)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }

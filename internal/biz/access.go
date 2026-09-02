@@ -2,6 +2,8 @@ package biz
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 )
@@ -100,7 +102,7 @@ func (a *accessBiz) RequireNamespaceAccessByName(ctx context.Context, namespace 
 		return nil, err
 	}
 	if !a.CanAccessNamespace(ctx, ns) {
-		return nil, errs.ErrorPermissionDenied
+		return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, fmt.Sprintf("访问命名空间 %s", namespace))
 	}
 	return ns, nil
 }
@@ -115,7 +117,7 @@ func (a *accessBiz) RequireNamespaceAccessByID(ctx context.Context, id int) (*Na
 		return nil, err
 	}
 	if !a.CanAccessNamespace(ctx, ns) {
-		return nil, errs.ErrorPermissionDenied
+		return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, fmt.Sprintf("访问命名空间 #%d", id))
 	}
 	return ns, nil
 }
@@ -130,6 +132,11 @@ func (a *accessBiz) RequireProjectAccess(ctx context.Context, id int) (*Project,
 		return nil, err
 	}
 	if _, nserr := a.RequireNamespaceAccessByID(ctx, proj.NamespaceID); nserr != nil {
+		// 仅当底层确实是权限拒绝时才追加项目上下文；命名空间加载失败（DB/网络）
+		// 等不确定错误原样上抛，不得被误分类为 PermissionDenied。
+		if errors.Is(nserr, errs.ErrorPermissionDenied) {
+			return nil, errs.WrapPermissionDenied(nserr, fmt.Sprintf("访问项目 #%d", id))
+		}
 		return nil, nserr
 	}
 	return proj, nil
@@ -142,7 +149,7 @@ func (a *accessBiz) RequireProjectAccess(ctx context.Context, id int) (*Project,
 func (a *accessBiz) RequireNamespaceOwner(ctx context.Context, ns *Namespace) error {
 	user := MustGetUser(ctx)
 	if ns == nil || (!user.IsAdmin() && ns.CreatorEmail != user.Email) {
-		return errs.ErrorPermissionDenied
+		return errs.WrapPermissionDenied(errs.ErrorPermissionDenied, "变更命名空间（仅 owner 可操作）")
 	}
 	return nil
 }
@@ -157,7 +164,7 @@ func (a *accessBiz) RequireAdmin(ctx context.Context, fullMethodName string, all
 		}
 	}
 	if !MustGetUser(ctx).IsAdmin() {
-		return nil, errs.ErrorPermissionDenied
+		return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, "管理员操作")
 	}
 	return ctx, nil
 }
@@ -171,7 +178,7 @@ func (a *accessBiz) RequireFileAccess(ctx context.Context, fil *File) error {
 	if fil.Username == user.Name || user.IsAdmin() {
 		return nil
 	}
-	return errs.ErrorPermissionDenied
+	return errs.WrapPermissionDenied(errs.ErrorPermissionDenied, fmt.Sprintf("访问文件 #%d", fil.ID))
 }
 
 // CanAccessNamespace 是纯布尔谓词：判定当前用户能否访问命名空间

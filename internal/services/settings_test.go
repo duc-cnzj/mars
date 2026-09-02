@@ -102,7 +102,9 @@ func Test_settingsSvc_Authorize(t *testing.T) {
 
 	_, err = svc.Authorize(newOrdinaryAdminUserCtx(), settings.Settings_Get_FullMethodName)
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	assert.ErrorContains(t, err, "访问平台配置", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是哪个操作")
 
 	_, err = svc.Authorize(newOtherUserCtx(), settings.Settings_Get_FullMethodName)
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	assert.ErrorContains(t, err, "访问平台配置", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是哪个操作")
 }

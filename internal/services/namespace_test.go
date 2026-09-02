@@ -104,6 +104,7 @@ func TestNamespaceSvc_Create_IgnoreIfExists_PrivateDenied(t *testing.T) {
 
 	assert.Nil(t, res)
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	assert.ErrorContains(t, err, "访问已存在的命名空间", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是哪个操作")
 }
 
 func TestNamespaceSvc_Create_Success(t *testing.T) {
@@ -1317,7 +1318,7 @@ func Test_namespaceSvc_Authorize(t *testing.T) {
 	assert.NotNil(t, ctx)
 	// 非 admin：AdminList 拒绝。
 	_, err = svc.Authorize(newOtherUserCtx(), namespace.Namespace_AdminList_FullMethodName)
-	assert.Equal(t, errs.ErrorPermissionDenied, err)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 	// 非 admin：allowlist 内的用户方法全部放行，逐个覆盖防漏。
 	for _, m := range []string{
 		namespace.Namespace_List_FullMethodName,

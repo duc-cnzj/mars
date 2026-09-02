@@ -86,6 +86,7 @@ func TestApplyProject_AnonymousRejected(t *testing.T) {
 	})
 	assert.Nil(t, job)
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	assert.ErrorContains(t, err, "发起部署", "匿名部署拒绝必须带操作上下文，否则日志看不出拒绝的是哪个操作")
 }
 
 func TestApplyProject_PermissionDenied(t *testing.T) {

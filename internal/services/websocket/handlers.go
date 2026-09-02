@@ -211,7 +211,7 @@ func (wc *websocketManager) HandleUpdateProject(ctx context.Context, c Conn, t w
 		return
 	}
 
-	wc.logger.Warning("update project", input.String())
+	wc.logger.DebugCtx(ctx, "update project", input.String())
 
 	if err := wc.installProject(ctx, c, &deploy.JobInput{
 		Type:           t,

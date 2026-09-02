@@ -196,7 +196,7 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 			// FindByName（不感知权限），若当前用户无权访问直接 403，与 IsExists
 			// "私有空间视同不存在"的隐藏语义对齐，闭合元数据泄露面。
 			if !n.accessBiz.CanAccessNamespace(ctx, ns) {
-				return nil, logError(ctx, n.logger, errs.ErrorPermissionDenied)
+				return nil, logError(ctx, n.logger, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, "访问已存在的命名空间"))
 			}
 			return &namespace.CreateResponse{Item: transformer.FromNamespace(ns), Exists: true}, nil
 		}
