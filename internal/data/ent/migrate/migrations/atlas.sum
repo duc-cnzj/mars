@@ -1,4 +1,4 @@
-h1:DT4wQvSZ63H0V5Z35jZGxefOzBd5ch6TsxZ73DdePIg=
+h1:XHn6Zb0ZVJN5rmA2SptLTaKIEZIE6pSeYoQkDWJDVog=
 20240830070729_init_table.sql h1:MpFJpzgZTlpydgXSrQ16Lx/VXCwM4HOeCnv8BGylyy8=
 20240902102428_add_namespace_rbac.sql h1:J8aI8b1/C0Cti8c2/naluS3dCUDZ1mGvPzz+SAsa6bE=
 20240911141124_change_config_longtext_to_changelogs_table.sql h1:7Pt3DN0d4e4Z9UG1+KDrKjAqarJ/omTRaX8f1I+58d4=
@@ -8,3 +8,4 @@ h1:DT4wQvSZ63H0V5Z35jZGxefOzBd5ch6TsxZ73DdePIg=
 20260827094852_add_users_table.sql h1:obv/5jNoyN65mmannl4Icm3rm4ZUXRvvQy8iPIhVDtg=
 20260901090000_add_users_roles_override.sql h1:z+APHHXFQB9me3FiMsQOrnja68t1LX8yWYte0KfYoXU=
 20260901090001_add_projects_updated_by.sql h1:t8OM7+C41ilWe85aKTvg681E93bBLVWlRwTOhk70tyk=
+20260902041434_change_git_commit_title_to_longtext.sql h1:CY1/0T/bZuEj5Z+vXsdEucIvIH1+4CFzA4iGd426oAQ=

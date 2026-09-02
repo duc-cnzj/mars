@@ -9098,9 +9098,22 @@ func (m *ProjectMutation) OldGitCommitTitle(ctx context.Context) (v string, err 
 	return oldValue.GitCommitTitle, nil
 }
 
+// ClearGitCommitTitle clears the value of the "git_commit_title" field.
+func (m *ProjectMutation) ClearGitCommitTitle() {
+	m.git_commit_title = nil
+	m.clearedFields[project.FieldGitCommitTitle] = struct{}{}
+}
+
+// GitCommitTitleCleared returns if the "git_commit_title" field was cleared in this mutation.
+func (m *ProjectMutation) GitCommitTitleCleared() bool {
+	_, ok := m.clearedFields[project.FieldGitCommitTitle]
+	return ok
+}
+
 // ResetGitCommitTitle resets all changes to the "git_commit_title" field.
 func (m *ProjectMutation) ResetGitCommitTitle() {
 	m.git_commit_title = nil
+	delete(m.clearedFields, project.FieldGitCommitTitle)
 }
 
 // SetGitCommitAuthor sets the "git_commit_author" field.
@@ -9944,6 +9957,9 @@ func (m *ProjectMutation) ClearedFields() []string {
 	if m.FieldCleared(project.FieldManifest) {
 		fields = append(fields, project.FieldManifest)
 	}
+	if m.FieldCleared(project.FieldGitCommitTitle) {
+		fields = append(fields, project.FieldGitCommitTitle)
+	}
 	if m.FieldCleared(project.FieldGitCommitDate) {
 		fields = append(fields, project.FieldGitCommitDate)
 	}
@@ -10008,6 +10024,9 @@ func (m *ProjectMutation) ClearField(name string) error {
 		return nil
 	case project.FieldManifest:
 		m.ClearManifest()
+		return nil
+	case project.FieldGitCommitTitle:
+		m.ClearGitCommitTitle()
 		return nil
 	case project.FieldGitCommitDate:
 		m.ClearGitCommitDate()

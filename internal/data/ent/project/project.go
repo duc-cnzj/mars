@@ -179,10 +179,6 @@ var (
 	DefaultGitCommitWebURL string
 	// GitCommitWebURLValidator is a validator for the "git_commit_web_url" field. It is called by the builders before save.
 	GitCommitWebURLValidator func(string) error
-	// DefaultGitCommitTitle holds the default value on creation for the "git_commit_title" field.
-	DefaultGitCommitTitle string
-	// GitCommitTitleValidator is a validator for the "git_commit_title" field. It is called by the builders before save.
-	GitCommitTitleValidator func(string) error
 	// DefaultGitCommitAuthor holds the default value on creation for the "git_commit_author" field.
 	DefaultGitCommitAuthor string
 	// GitCommitAuthorValidator is a validator for the "git_commit_author" field. It is called by the builders before save.

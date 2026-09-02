@@ -114,10 +114,6 @@ func init() {
 	changelogDescUsername := changelogFields[1].Descriptor()
 	// changelog.UsernameValidator is a validator for the "username" field. It is called by the builders before save.
 	changelog.UsernameValidator = changelogDescUsername.Validators[0].(func(string) error)
-	// changelogDescGitCommitTitle is the schema descriptor for git_commit_title field.
-	changelogDescGitCommitTitle := changelogFields[10].Descriptor()
-	// changelog.GitCommitTitleValidator is a validator for the "git_commit_title" field. It is called by the builders before save.
-	changelog.GitCommitTitleValidator = changelogDescGitCommitTitle.Validators[0].(func(string) error)
 	// changelogDescGitCommitAuthor is the schema descriptor for git_commit_author field.
 	changelogDescGitCommitAuthor := changelogFields[11].Descriptor()
 	// changelog.GitCommitAuthorValidator is a validator for the "git_commit_author" field. It is called by the builders before save.
@@ -377,12 +373,6 @@ func init() {
 	project.DefaultGitCommitWebURL = projectDescGitCommitWebURL.Default.(string)
 	// project.GitCommitWebURLValidator is a validator for the "git_commit_web_url" field. It is called by the builders before save.
 	project.GitCommitWebURLValidator = projectDescGitCommitWebURL.Validators[0].(func(string) error)
-	// projectDescGitCommitTitle is the schema descriptor for git_commit_title field.
-	projectDescGitCommitTitle := projectFields[19].Descriptor()
-	// project.DefaultGitCommitTitle holds the default value on creation for the git_commit_title field.
-	project.DefaultGitCommitTitle = projectDescGitCommitTitle.Default.(string)
-	// project.GitCommitTitleValidator is a validator for the "git_commit_title" field. It is called by the builders before save.
-	project.GitCommitTitleValidator = projectDescGitCommitTitle.Validators[0].(func(string) error)
 	// projectDescGitCommitAuthor is the schema descriptor for git_commit_author field.
 	projectDescGitCommitAuthor := projectFields[20].Descriptor()
 	// project.DefaultGitCommitAuthor holds the default value on creation for the git_commit_author field.

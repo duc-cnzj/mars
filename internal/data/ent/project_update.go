@@ -427,6 +427,12 @@ func (_u *ProjectUpdate) SetNillableGitCommitTitle(v *string) *ProjectUpdate {
 	return _u
 }
 
+// ClearGitCommitTitle clears the value of the "git_commit_title" field.
+func (_u *ProjectUpdate) ClearGitCommitTitle() *ProjectUpdate {
+	_u.mutation.ClearGitCommitTitle()
+	return _u
+}
+
 // SetGitCommitAuthor sets the "git_commit_author" field.
 func (_u *ProjectUpdate) SetGitCommitAuthor(v string) *ProjectUpdate {
 	_u.mutation.SetGitCommitAuthor(v)
@@ -638,11 +644,6 @@ func (_u *ProjectUpdate) check() error {
 			return &ValidationError{Name: "git_commit_web_url", err: fmt.Errorf(`ent: validator failed for field "Project.git_commit_web_url": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.GitCommitTitle(); ok {
-		if err := project.GitCommitTitleValidator(v); err != nil {
-			return &ValidationError{Name: "git_commit_title", err: fmt.Errorf(`ent: validator failed for field "Project.git_commit_title": %w`, err)}
-		}
-	}
 	if v, ok := _u.mutation.GitCommitAuthor(); ok {
 		if err := project.GitCommitAuthorValidator(v); err != nil {
 			return &ValidationError{Name: "git_commit_author", err: fmt.Errorf(`ent: validator failed for field "Project.git_commit_author": %w`, err)}
@@ -809,6 +810,9 @@ func (_u *ProjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.GitCommitTitle(); ok {
 		_spec.SetField(project.FieldGitCommitTitle, field.TypeString, value)
+	}
+	if _u.mutation.GitCommitTitleCleared() {
+		_spec.ClearField(project.FieldGitCommitTitle, field.TypeString)
 	}
 	if value, ok := _u.mutation.GitCommitAuthor(); ok {
 		_spec.SetField(project.FieldGitCommitAuthor, field.TypeString, value)
@@ -1335,6 +1339,12 @@ func (_u *ProjectUpdateOne) SetNillableGitCommitTitle(v *string) *ProjectUpdateO
 	return _u
 }
 
+// ClearGitCommitTitle clears the value of the "git_commit_title" field.
+func (_u *ProjectUpdateOne) ClearGitCommitTitle() *ProjectUpdateOne {
+	_u.mutation.ClearGitCommitTitle()
+	return _u
+}
+
 // SetGitCommitAuthor sets the "git_commit_author" field.
 func (_u *ProjectUpdateOne) SetGitCommitAuthor(v string) *ProjectUpdateOne {
 	_u.mutation.SetGitCommitAuthor(v)
@@ -1559,11 +1569,6 @@ func (_u *ProjectUpdateOne) check() error {
 			return &ValidationError{Name: "git_commit_web_url", err: fmt.Errorf(`ent: validator failed for field "Project.git_commit_web_url": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.GitCommitTitle(); ok {
-		if err := project.GitCommitTitleValidator(v); err != nil {
-			return &ValidationError{Name: "git_commit_title", err: fmt.Errorf(`ent: validator failed for field "Project.git_commit_title": %w`, err)}
-		}
-	}
 	if v, ok := _u.mutation.GitCommitAuthor(); ok {
 		if err := project.GitCommitAuthorValidator(v); err != nil {
 			return &ValidationError{Name: "git_commit_author", err: fmt.Errorf(`ent: validator failed for field "Project.git_commit_author": %w`, err)}
@@ -1747,6 +1752,9 @@ func (_u *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err er
 	}
 	if value, ok := _u.mutation.GitCommitTitle(); ok {
 		_spec.SetField(project.FieldGitCommitTitle, field.TypeString, value)
+	}
+	if _u.mutation.GitCommitTitleCleared() {
+		_spec.ClearField(project.FieldGitCommitTitle, field.TypeString)
 	}
 	if value, ok := _u.mutation.GitCommitAuthor(); ok {
 		_spec.SetField(project.FieldGitCommitAuthor, field.TypeString, value)

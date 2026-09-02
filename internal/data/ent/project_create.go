@@ -445,10 +445,6 @@ func (_c *ProjectCreate) defaults() error {
 		v := project.DefaultGitCommitWebURL
 		_c.mutation.SetGitCommitWebURL(v)
 	}
-	if _, ok := _c.mutation.GitCommitTitle(); !ok {
-		v := project.DefaultGitCommitTitle
-		_c.mutation.SetGitCommitTitle(v)
-	}
 	if _, ok := _c.mutation.GitCommitAuthor(); !ok {
 		v := project.DefaultGitCommitAuthor
 		_c.mutation.SetGitCommitAuthor(v)
@@ -510,14 +506,6 @@ func (_c *ProjectCreate) check() error {
 	if v, ok := _c.mutation.GitCommitWebURL(); ok {
 		if err := project.GitCommitWebURLValidator(v); err != nil {
 			return &ValidationError{Name: "git_commit_web_url", err: fmt.Errorf(`ent: validator failed for field "Project.git_commit_web_url": %w`, err)}
-		}
-	}
-	if _, ok := _c.mutation.GitCommitTitle(); !ok {
-		return &ValidationError{Name: "git_commit_title", err: errors.New(`ent: missing required field "Project.git_commit_title"`)}
-	}
-	if v, ok := _c.mutation.GitCommitTitle(); ok {
-		if err := project.GitCommitTitleValidator(v); err != nil {
-			return &ValidationError{Name: "git_commit_title", err: fmt.Errorf(`ent: validator failed for field "Project.git_commit_title": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.GitCommitAuthor(); !ok {
@@ -1123,6 +1111,12 @@ func (u *ProjectUpsert) UpdateGitCommitTitle() *ProjectUpsert {
 	return u
 }
 
+// ClearGitCommitTitle clears the value of the "git_commit_title" field.
+func (u *ProjectUpsert) ClearGitCommitTitle() *ProjectUpsert {
+	u.SetNull(project.FieldGitCommitTitle)
+	return u
+}
+
 // SetGitCommitAuthor sets the "git_commit_author" field.
 func (u *ProjectUpsert) SetGitCommitAuthor(v string) *ProjectUpsert {
 	u.Set(project.FieldGitCommitAuthor, v)
@@ -1658,6 +1652,13 @@ func (u *ProjectUpsertOne) SetGitCommitTitle(v string) *ProjectUpsertOne {
 func (u *ProjectUpsertOne) UpdateGitCommitTitle() *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateGitCommitTitle()
+	})
+}
+
+// ClearGitCommitTitle clears the value of the "git_commit_title" field.
+func (u *ProjectUpsertOne) ClearGitCommitTitle() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearGitCommitTitle()
 	})
 }
 
@@ -2373,6 +2374,13 @@ func (u *ProjectUpsertBulk) SetGitCommitTitle(v string) *ProjectUpsertBulk {
 func (u *ProjectUpsertBulk) UpdateGitCommitTitle() *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.UpdateGitCommitTitle()
+	})
+}
+
+// ClearGitCommitTitle clears the value of the "git_commit_title" field.
+func (u *ProjectUpsertBulk) ClearGitCommitTitle() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.ClearGitCommitTitle()
 	})
 }
 

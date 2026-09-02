@@ -323,11 +323,6 @@ func (_c *ChangelogCreate) check() error {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "Changelog.username": %w`, err)}
 		}
 	}
-	if v, ok := _c.mutation.GitCommitTitle(); ok {
-		if err := changelog.GitCommitTitleValidator(v); err != nil {
-			return &ValidationError{Name: "git_commit_title", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_commit_title": %w`, err)}
-		}
-	}
 	if v, ok := _c.mutation.GitCommitAuthor(); ok {
 		if err := changelog.GitCommitAuthorValidator(v); err != nil {
 			return &ValidationError{Name: "git_commit_author", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_commit_author": %w`, err)}

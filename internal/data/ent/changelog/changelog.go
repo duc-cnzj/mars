@@ -115,8 +115,6 @@ var (
 	DefaultVersion int
 	// UsernameValidator is a validator for the "username" field. It is called by the builders before save.
 	UsernameValidator func(string) error
-	// GitCommitTitleValidator is a validator for the "git_commit_title" field. It is called by the builders before save.
-	GitCommitTitleValidator func(string) error
 	// GitCommitAuthorValidator is a validator for the "git_commit_author" field. It is called by the builders before save.
 	GitCommitAuthorValidator func(string) error
 	// DefaultConfigChanged holds the default value on creation for the "config_changed" field.

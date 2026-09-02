@@ -66,7 +66,7 @@ type Project struct {
 	Manifest []string `json:"manifest,omitempty"`
 	// GitCommitWebURL holds the value of the "git_commit_web_url" field.
 	GitCommitWebURL string `json:"git_commit_web_url,omitempty"`
-	// GitCommitTitle holds the value of the "git_commit_title" field.
+	// git commit 标题（保留完整内容，不截断）
 	GitCommitTitle string `json:"git_commit_title,omitempty"`
 	// GitCommitAuthor holds the value of the "git_commit_author" field.
 	GitCommitAuthor string `json:"git_commit_author,omitempty"`

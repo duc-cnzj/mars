@@ -119,6 +119,31 @@ func TestProjectRepoUpdateProject(t *testing.T) {
 	assert.Equal(t, input.UpdatedBy, project.UpdatedBy)
 }
 
+// TestProjectRepoUpdateProject_LongGitCommitTitle 回归：git commit title 超过 255 字节
+// （含多字节 UTF-8）仍可完整落库。历史上 git_commit_title MaxLen(255) 按字节校验，
+// 超长 commit 标题会炸整个部署；放宽为 longtext 后应原样保存、不截断。
+func TestProjectRepoUpdateProject_LongGitCommitTitle(t *testing.T) {
+	ctx := context.TODO()
+	logger := mlog.NewForConfig(nil)
+	db, _ := NewSqliteDB()
+	defer db.Close()
+	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
+	r := NewProjectRepo(logger, data)
+
+	p := createProject(db, createNamespace(db).ID)
+
+	// 100 个中文字符 = 300 字节 > 255，但只有 100 个 rune：精准命中"按字节校验"的老坑。
+	longTitle := strings.Repeat("长", 100)
+	require.Greater(t, len(longTitle), 255)
+
+	project, err := r.UpdateProject(ctx, &biz.UpdateProjectInput{
+		ID:             p.ID,
+		GitCommitTitle: longTitle,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, longTitle, project.GitCommitTitle)
+}
+
 func TestProjectRepoDelete(t *testing.T) {
 	ctx := context.TODO()
 	logger := mlog.NewForConfig(nil)

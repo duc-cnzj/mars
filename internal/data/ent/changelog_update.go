@@ -404,11 +404,6 @@ func (_u *ChangelogUpdate) check() error {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "Changelog.username": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.GitCommitTitle(); ok {
-		if err := changelog.GitCommitTitleValidator(v); err != nil {
-			return &ValidationError{Name: "git_commit_title", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_commit_title": %w`, err)}
-		}
-	}
 	if v, ok := _u.mutation.GitCommitAuthor(); ok {
 		if err := changelog.GitCommitAuthorValidator(v); err != nil {
 			return &ValidationError{Name: "git_commit_author", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_commit_author": %w`, err)}
@@ -968,11 +963,6 @@ func (_u *ChangelogUpdateOne) check() error {
 	if v, ok := _u.mutation.Username(); ok {
 		if err := changelog.UsernameValidator(v); err != nil {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "Changelog.username": %w`, err)}
-		}
-	}
-	if v, ok := _u.mutation.GitCommitTitle(); ok {
-		if err := changelog.GitCommitTitleValidator(v); err != nil {
-			return &ValidationError{Name: "git_commit_title", err: fmt.Errorf(`ent: validator failed for field "Changelog.git_commit_title": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.GitCommitAuthor(); ok {

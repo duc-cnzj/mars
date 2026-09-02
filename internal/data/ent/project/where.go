@@ -1206,6 +1206,16 @@ func GitCommitTitleHasSuffix(v string) predicate.Project {
 	return predicate.Project(sql.FieldHasSuffix(FieldGitCommitTitle, v))
 }
 
+// GitCommitTitleIsNil applies the IsNil predicate on the "git_commit_title" field.
+func GitCommitTitleIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldGitCommitTitle))
+}
+
+// GitCommitTitleNotNil applies the NotNil predicate on the "git_commit_title" field.
+func GitCommitTitleNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldGitCommitTitle))
+}
+
 // GitCommitTitleEqualFold applies the EqualFold predicate on the "git_commit_title" field.
 func GitCommitTitleEqualFold(v string) predicate.Project {
 	return predicate.Project(sql.FieldEqualFold(FieldGitCommitTitle, v))

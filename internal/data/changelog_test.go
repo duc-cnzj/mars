@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/util/rand"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestChangelogRepo_Create(t *testing.T) {
@@ -59,6 +61,32 @@ func TestChangelogRepo_Create(t *testing.T) {
 	assert.Equal(t, input.GitCommitDate, changelog.GitCommitDate)
 	assert.Equal(t, input.ConfigChanged, changelog.ConfigChanged)
 	assert.Equal(t, input.ProjectID, changelog.ProjectID)
+}
+
+// TestChangelogRepo_Create_LongGitCommitTitle 回归：变更记录的 git commit title 超过
+// 255 字节（含多字节 UTF-8）仍可完整落库。project 放宽为 longtext 后，从 DB 回读的
+// 超长 title 会透传到 changelog，changelog 的 git_commit_title 必须同步放宽，
+// 否则变更记录会静默写入失败、审计丢数据。
+func TestChangelogRepo_Create_LongGitCommitTitle(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{
+		DB: entdb,
+	}))
+
+	project := createProject(entdb, createNamespace(entdb).ID)
+
+	longTitle := strings.Repeat("长", 100) // 300 字节 > 255
+	require.Greater(t, len(longTitle), 255)
+
+	changelog, err := repo.Create(context.TODO(), &biz.CreateChangeLogInput{
+		Version:        1,
+		Username:       "testUser",
+		GitCommitTitle: longTitle,
+		ProjectID:      project.ID,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, longTitle, changelog.GitCommitTitle)
 }
 
 func TestChangelogRepo_FindLastChangelogsByProjectID(t *testing.T) {

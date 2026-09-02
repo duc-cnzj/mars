@@ -48,8 +48,11 @@ func (Changelog) Fields() []ent.Field {
 		field.String("git_commit_web_url").
 			Optional(),
 		field.String("git_commit_title").
-			MaxLen(255).
-			Optional(),
+			SchemaType(map[string]string{
+				dialect.MySQL: "longtext",
+			}).
+			Optional().
+			Comment("git commit 标题（保留完整内容，不截断）"),
 		field.String("git_commit_author").
 			MaxLen(255).
 			Optional(),
