@@ -8,8 +8,10 @@ package biz
 // 语义确定性地触发写错误分支。
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"sync"
 	"testing"
 	"time"
@@ -72,17 +74,24 @@ func (f *fakeExecStream) lastExitCode() int64 {
 	return -1
 }
 
-// fakeExecOnceStream 是 ExecOnce 用例的假发送流：Send 记录响应，sendErr 非 nil 时失败。
+// fakeExecOnceStream 是 ExecOnce 用例的假发送流：Send 记录响应。
+// sendErr 使任意帧发送失败（覆盖 send loop 的逐字节转发失败）；
+// errFrameErr 仅使错误帧（截断/退出码）发送失败，用于覆盖主流程发错误帧的失败分支
+// 而不打断 send loop 对输出流的消费（否则管道提前关闭，截断永远不会触发）。
 type fakeExecOnceStream struct {
-	sendErr error
-	mu      sync.Mutex
-	sent    []*container.ExecResponse
+	sendErr     error
+	errFrameErr error
+	mu          sync.Mutex
+	sent        []*container.ExecResponse
 }
 
 func (f *fakeExecOnceStream) Send(resp *container.ExecResponse) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.sent = append(f.sent, resp)
+	if resp.Error != nil {
+		return f.errFrameErr
+	}
 	return f.sendErr
 }
 
@@ -97,6 +106,18 @@ func (f *fakeExecOnceStream) lastExitCode() int64 {
 		}
 	}
 	return -1
+}
+
+// findError 返回第一条匹配 code 的错误帧，未找到返回 nil（mutex 保护，防与 send loop 并发读写）。
+func (f *fakeExecOnceStream) findError(code int64) *container.ExecError {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, r := range f.sent {
+		if r.Error != nil && r.Error.Code == code {
+			return r.Error
+		}
+	}
+	return nil
 }
 
 // ---- stub 替身 ----
@@ -603,4 +624,163 @@ func TestContainerBiz_ExecOnce_SendError(t *testing.T) {
 		Namespace: "a", Pod: "b",
 	})
 	assert.Error(t, err)
+}
+
+// TestContainerBiz_ExecOnce_ExitErrorSendFailure 覆盖退出码错误帧发送失败分支：
+// errFrameErr 只让错误帧失败，不打断 send loop，覆盖主流程发退出码帧失败只记日志。
+func TestContainerBiz_ExecOnce_ExitErrorSendFailure(t *testing.T) {
+	k := &fakeK8sBizForContainer{
+		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
+		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
+			return "c", nil
+		},
+		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
+			_, _ = input.Stdout.Write([]byte("out"))
+			return &ExecExitError{Code: 1, Message: "boom"}
+		},
+	}
+	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {}}
+	cb := newTestContainerBiz(k, &fakeFileBizForContainer{}, event)
+	stream := &fakeExecOnceStream{errFrameErr: errors.New("frame boom")}
+	err := cb.ExecOnce(context.Background(), stream, &UserInfo{Name: "admin"}, &ExecOnceInput{
+		Namespace: "a", Pod: "b", Command: []string{"ls"},
+	})
+	assert.Error(t, err)
+	assert.Equal(t, int64(1), stream.lastExitCode())
+}
+
+// ---- execOnceDeadline / cappedWriter 单元 ----
+
+func TestExecOnceDeadline(t *testing.T) {
+	assert.Equal(t, time.Duration(30)*time.Second, execOnceDeadline(0), "0 用默认 30s")
+	assert.Equal(t, time.Duration(30)*time.Second, execOnceDeadline(-5), "负值用默认 30s")
+	assert.Equal(t, time.Duration(5)*time.Second, execOnceDeadline(5), "正数透传")
+}
+
+// errWriter 恒返回错误，用于 cappedWriter 底层写失败分支。
+type errWriter struct{}
+
+func (errWriter) Write(p []byte) (int, error) { return 0, errors.New("write boom") }
+
+func TestCappedWriter(t *testing.T) {
+	var buf bytes.Buffer
+	cancelled := false
+	c := newCappedWriter(&buf, 10, func() { cancelled = true })
+
+	// 上限内：完整转发，不截断不取消。
+	n, err := c.Write([]byte("12345"))
+	assert.NoError(t, err)
+	assert.Equal(t, 5, n)
+	assert.False(t, c.isTruncated())
+	assert.Equal(t, "12345", buf.String())
+
+	// 单次越界：转发剩余 5 字节后封顶截断，并触发 cancel。
+	n, err = c.Write([]byte("abcdefghij"))
+	assert.NoError(t, err)
+	assert.Equal(t, 10, n)
+	assert.True(t, c.isTruncated())
+	assert.True(t, cancelled)
+	assert.Equal(t, "12345abcde", buf.String())
+
+	// 已截断：后续 Write 直接丢弃（不转发、不重复 cancel）。
+	cancelled = false
+	n, err = c.Write([]byte("zzz"))
+	assert.NoError(t, err)
+	assert.Equal(t, 3, n)
+	assert.Equal(t, "12345abcde", buf.String())
+	assert.False(t, cancelled)
+}
+
+func TestCappedWriter_NilCancelAndWriteError(t *testing.T) {
+	// nil cancel 不 panic。
+	c := newCappedWriter(io.Discard, 10, nil)
+	_, err := c.Write([]byte("abc"))
+	assert.NoError(t, err)
+	assert.False(t, c.isTruncated())
+
+	// 底层写错误透传（剩余计算不触发截断）。
+	c2 := newCappedWriter(errWriter{}, 10, nil)
+	n, err := c2.Write([]byte("hello"))
+	assert.Error(t, err)
+	assert.Equal(t, 5, n)
+
+	// 越界时的部分转发若底层写失败：同样透传错误（不置截断）。
+	c3 := newCappedWriter(errWriter{}, 10, nil)
+	n, err = c3.Write(make([]byte, 20))
+	assert.Error(t, err)
+	assert.Equal(t, 20, n)
+}
+
+// ---- ExecOnce 超时 wiring 与输出截断 ----
+
+// TestContainerBiz_ExecOnce_TimeoutWiring 验证请求超时被接进 Execute 的 ctx deadline。
+func TestContainerBiz_ExecOnce_TimeoutWiring(t *testing.T) {
+	k := &fakeK8sBizForContainer{
+		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
+		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
+			return "c", nil
+		},
+		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
+			deadline, ok := ctx.Deadline()
+			assert.True(t, ok, "Execute 应收到带 deadline 的 ctx")
+			assert.WithinDuration(t, time.Now().Add(5*time.Second), deadline, 2*time.Second)
+			return nil
+		},
+	}
+	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {}}
+	cb := newTestContainerBiz(k, &fakeFileBizForContainer{}, event)
+	err := cb.ExecOnce(context.Background(), &fakeExecOnceStream{}, &UserInfo{Name: "admin"}, &ExecOnceInput{
+		Namespace: "a", Pod: "b", Command: []string{"ls"}, TimeoutSeconds: 5,
+	})
+	assert.NoError(t, err)
+}
+
+// TestContainerBiz_ExecOnce_Truncation 覆盖输出超限：发一条明确的截断错误帧而非静默断流。
+func TestContainerBiz_ExecOnce_Truncation(t *testing.T) {
+	big := make([]byte, maxExecOnceStreamSize+16)
+	k := &fakeK8sBizForContainer{
+		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
+		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
+			return "c", nil
+		},
+		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
+			_, _ = input.Stdout.Write(big)
+			return nil
+		},
+	}
+	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {}}
+	cb := newTestContainerBiz(k, &fakeFileBizForContainer{}, event)
+	stream := &fakeExecOnceStream{}
+	err := cb.ExecOnce(context.Background(), stream, &UserInfo{Name: "admin"}, &ExecOnceInput{
+		Namespace: "a", Pod: "b", Command: []string{"cat"},
+	})
+	assert.NoError(t, err)
+	truncFrame := stream.findError(execOnceTruncatedCode)
+	assert.NotNil(t, truncFrame, "应发送一条输出超限截断错误帧")
+	assert.Contains(t, truncFrame.Message, "上限")
+}
+
+// TestContainerBiz_ExecOnce_TruncationSendError 覆盖截断错误帧发送失败分支：send 报错时
+// 只记 Debug 日志不 panic，用例仍正常返回。
+func TestContainerBiz_ExecOnce_TruncationSendError(t *testing.T) {
+	big := make([]byte, maxExecOnceStreamSize+16)
+	k := &fakeK8sBizForContainer{
+		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
+		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
+			return "c", nil
+		},
+		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
+			_, _ = input.Stdout.Write(big)
+			return nil
+		},
+	}
+	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {}}
+	cb := newTestContainerBiz(k, &fakeFileBizForContainer{}, event)
+	// errFrameErr 仅让截断错误帧发送失败，不打断 send loop 对 1MiB 输出的消费，
+	// 故截断仍会触发，从而覆盖"截断帧发送失败只记日志"分支。
+	stream := &fakeExecOnceStream{errFrameErr: errors.New("frame boom")}
+	err := cb.ExecOnce(context.Background(), stream, &UserInfo{Name: "admin"}, &ExecOnceInput{
+		Namespace: "a", Pod: "b", Command: []string{"cat"},
+	})
+	assert.NoError(t, err)
 }

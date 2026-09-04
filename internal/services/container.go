@@ -310,10 +310,11 @@ func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server conta
 		return logError(server.Context(), c.logger, err)
 	}
 	return c.containerBiz.ExecOnce(server.Context(), server, biz.MustGetUser(server.Context()), &biz.ExecOnceInput{
-		Namespace: request.Namespace,
-		Pod:       request.Pod,
-		Container: request.Container,
-		Command:   request.Command,
+		Namespace:      request.Namespace,
+		Pod:            request.Pod,
+		Container:      request.Container,
+		Command:        request.Command,
+		TimeoutSeconds: request.TimeoutSeconds,
 	})
 }
 

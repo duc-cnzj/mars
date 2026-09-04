@@ -283,13 +283,16 @@ func (x *ExecRequest) GetSizeQueue() *TerminalSize {
 }
 
 type ExecOnceRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Pod           string                 `protobuf:"bytes,2,opt,name=pod,proto3" json:"pod,omitempty"`
-	Container     string                 `protobuf:"bytes,3,opt,name=container,proto3" json:"container,omitempty"`
-	Command       []string               `protobuf:"bytes,4,rep,name=command,proto3" json:"command,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Namespace string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Pod       string                 `protobuf:"bytes,2,opt,name=pod,proto3" json:"pod,omitempty"`
+	Container string                 `protobuf:"bytes,3,opt,name=container,proto3" json:"container,omitempty"`
+	Command   []string               `protobuf:"bytes,4,rep,name=command,proto3" json:"command,omitempty"`
+	// 最大执行时长（秒）。0 表示使用服务端默认（30s）。超时强制终止命令，
+	// 防止死循环/挂起命令无限占用资源（同时配合服务端输出封顶兜底）。
+	TimeoutSeconds int64 `protobuf:"varint,5,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ExecOnceRequest) Reset() {
@@ -348,6 +351,13 @@ func (x *ExecOnceRequest) GetCommand() []string {
 		return x.Command
 	}
 	return nil
+}
+
+func (x *ExecOnceRequest) GetTimeoutSeconds() int64 {
+	if x != nil {
+		return x.TimeoutSeconds
+	}
+	return 0
 }
 
 type ExecError struct {
@@ -1102,12 +1112,13 @@ const file_proto_container_container_proto_rawDesc = "" +
 	"\acommand\x18\x04 \x03(\tR\acommand\x12\x18\n" +
 	"\amessage\x18\x05 \x01(\fR\amessage\x126\n" +
 	"\n" +
-	"size_queue\x18\x06 \x01(\v2\x17.container.TerminalSizeR\tsizeQueue\"\xa7\x01\n" +
+	"size_queue\x18\x06 \x01(\v2\x17.container.TerminalSizeR\tsizeQueue\"\xd0\x01\n" +
 	"\x0fExecOnceRequest\x12)\n" +
 	"\tnamespace\x18\x01 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\tnamespace\x12\x1d\n" +
 	"\x03pod\x18\x02 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\x03pod\x12\x1c\n" +
 	"\tcontainer\x18\x03 \x01(\tR\tcontainer\x12,\n" +
-	"\acommand\x18\x04 \x03(\tB\x12\xe2A\x01\x02\xfaB\v\x92\x01\b\b\x01\"\x04r\x02 \x01R\acommand\"9\n" +
+	"\acommand\x18\x04 \x03(\tB\x12\xe2A\x01\x02\xfaB\v\x92\x01\b\b\x01\"\x04r\x02 \x01R\acommand\x12'\n" +
+	"\x0ftimeout_seconds\x18\x05 \x01(\x03R\x0etimeoutSeconds\"9\n" +
 	"\tExecError\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x03R\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"T\n" +
@@ -1158,11 +1169,12 @@ const file_proto_container_container_proto_rawDesc = "" +
 	"\adeleted\x18\x01 \x01(\bR\adeleted\x12\x1c\n" +
 	"\tnamespace\x18\x02 \x01(\tR\tnamespace\x12\x10\n" +
 	"\x03pod\x18\x03 \x01(\tR\x03pod\x12\x18\n" +
-	"\amessage\x18\x04 \x01(\tR\amessage2\xc1\t\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage2\xb0\n" +
+	"\n" +
 	"\tContainer\x12\x86\x01\n" +
 	"\tCopyToPod\x12\x1b.container.CopyToPodRequest\x1a\x1c.container.CopyToPodResponse\">\xbaG\x15\x12\x13上传文件到 pod\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/api/containers/copy_to_pod\x12;\n" +
-	"\x04Exec\x12\x16.container.ExecRequest\x1a\x17.container.ExecResponse(\x010\x01\x12A\n" +
-	"\bExecOnce\x12\x1a.container.ExecOnceRequest\x1a\x17.container.ExecResponse0\x01\x12Z\n" +
+	"\x04Exec\x12\x16.container.ExecRequest\x1a\x17.container.ExecResponse(\x010\x01\x12\xaf\x01\n" +
+	"\bExecOnce\x12\x1a.container.ExecOnceRequest\x1a\x17.container.ExecResponse\"l\xbaGH\x12F在容器内执行一次命令（非交互，SSE 流式返回输出）\x82\xd3\xe4\x93\x02\x1b\x12\x19/api/containers/exec_once0\x01\x12Z\n" +
 	"\x0fStreamCopyToPod\x12!.container.StreamCopyToPodRequest\x1a\".container.StreamCopyToPodResponse(\x01\x12\x95\x01\n" +
 	"\fIsPodRunning\x12\x1e.container.IsPodRunningRequest\x1a\x1f.container.IsPodRunningResponse\"D\xbaG\x14\x12\x12pod 是否 running\x82\xd3\xe4\x93\x02':\x01*\"\"/api/containers/pod_running_status\x12\x88\x01\n" +
 	"\vIsPodExists\x12\x1d.container.IsPodExistsRequest\x1a\x1e.container.IsPodExistsResponse\":\xbaG\x12\x12\x10pod 是否存在\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/api/containers/pod_exists\x12\xaa\x01\n" +

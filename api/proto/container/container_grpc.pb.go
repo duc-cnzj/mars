@@ -38,7 +38,8 @@ type ContainerClient interface {
 	CopyToPod(ctx context.Context, in *CopyToPodRequest, opts ...grpc.CallOption) (*CopyToPodResponse, error)
 	// Exec grpc 执行 pod 命令，交互式, 使用方法见 examples/ 目录
 	Exec(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ExecRequest, ExecResponse], error)
-	// ExecOnce grpc 执行一次 pod 命令, 非 tty 模式, 适合一次性脚本, 使用方法见 examples/ 目录
+	// ExecOnce grpc 执行一次 pod 命令, 非 tty 模式, 适合一次性脚本, 使用方法见 examples/ 目录。
+	// HTTP 侧为 GET server-streaming（SSE）：command 走重复 query 参数（?command=ls&command=-la）。
 	ExecOnce(ctx context.Context, in *ExecOnceRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ExecResponse], error)
 	// StreamCopyToPod grpc 上传文件到 pod, 使用方法见 examples/ 目录
 	StreamCopyToPod(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[StreamCopyToPodRequest, StreamCopyToPodResponse], error)
@@ -181,7 +182,8 @@ type ContainerServer interface {
 	CopyToPod(context.Context, *CopyToPodRequest) (*CopyToPodResponse, error)
 	// Exec grpc 执行 pod 命令，交互式, 使用方法见 examples/ 目录
 	Exec(grpc.BidiStreamingServer[ExecRequest, ExecResponse]) error
-	// ExecOnce grpc 执行一次 pod 命令, 非 tty 模式, 适合一次性脚本, 使用方法见 examples/ 目录
+	// ExecOnce grpc 执行一次 pod 命令, 非 tty 模式, 适合一次性脚本, 使用方法见 examples/ 目录。
+	// HTTP 侧为 GET server-streaming（SSE）：command 走重复 query 参数（?command=ls&command=-la）。
 	ExecOnce(*ExecOnceRequest, grpc.ServerStreamingServer[ExecResponse]) error
 	// StreamCopyToPod grpc 上传文件到 pod, 使用方法见 examples/ 目录
 	StreamCopyToPod(grpc.ClientStreamingServer[StreamCopyToPodRequest, StreamCopyToPodResponse]) error

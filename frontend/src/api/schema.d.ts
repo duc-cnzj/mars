@@ -332,6 +332,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/containers/exec_once": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 在容器内执行一次命令（非交互，SSE 流式返回输出）
+         * @description ExecOnce grpc 执行一次 pod 命令, 非 tty 模式, 适合一次性脚本, 使用方法见 examples/ 目录。
+         *      HTTP 侧为 GET server-streaming（SSE）：command 走重复 query 参数（?command=ls&command=-la）。
+         */
+        get: operations["Container_ExecOnce"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs": {
         parameters: {
             query?: never;
@@ -1445,6 +1466,15 @@ export interface components {
         "container.CopyToPodResponse": {
             podFilePath: string;
             fileName: string;
+        };
+        "container.ExecError": {
+            code: string;
+            message: string;
+        };
+        "container.ExecResponse": {
+            /** Format: bytes */
+            message: string;
+            error: components["schemas"]["container.ExecError"];
         };
         "container.ForceDeletePodRequest": {
             namespace: string;
@@ -3036,6 +3066,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["container.CopyToPodResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Container_ExecOnce: {
+        parameters: {
+            query?: {
+                namespace?: string;
+                pod?: string;
+                container?: string;
+                command?: string[];
+                /**
+                 * @description 最大执行时长（秒）。0 表示使用服务端默认（30s）。超时强制终止命令，
+                 *      防止死循环/挂起命令无限占用资源（同时配合服务端输出封顶兜底）。
+                 */
+                timeoutSeconds?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["container.ExecResponse"];
                 };
             };
             /** @description Default error response */
