@@ -210,9 +210,10 @@ export function TabShell({
     })
   }, [containers])
 
-  // 切换目标容器 → 所有分屏终端 pane 跟随切换到新容器。
-  // （pane 只负责网格排布，容器永远跟随 target，与旧版把所有 ShellWindow 绑定到同一 value 一致；
-  //   会话在 ShellTerminal 挂载时建立，sessionId 为挂载时生成的不透明 uuid）
+  // 切换目标容器 → 所有分屏终端跟随切换到新容器。
+  // pane 的 npc 更新后 ShellTerminal 的 sessionId 随之变化，触发旧会话关闭、
+  // 新会话建立——即「点哪个容器，终端就切到哪个容器」。
+  // （pane 只负责网格排布，容器永远跟随 target，与旧版把所有 ShellWindow 绑定到同一 value 一致）
   useEffect(() => {
     if (!target) return
     setPanes((prev) => prev.map((p) => ({ ...p, npc: target })))
@@ -666,7 +667,12 @@ function ShellTerminal({
   const hostRef = useRef<HTMLDivElement>(null)
   const termRef = useRef<Terminal | null>(null)
   const fitRef = useRef<FitAddon | null>(null)
-  const sessionId = useMemo(() => crypto.randomUUID(), [])
+  const sessionId = useMemo(
+    () => crypto.randomUUID(),
+    // 依赖容器三元组：切容器时重新生成不透明 id，触发下方会话 effect 关闭旧会话、为
+    // 新容器建立新会话（该 id 是会话 effect 的依赖，改动它才能正确重建）。
+    [namespace, pod, container],
+  )
 
   // 容器尺寸变化即 refit：覆盖弹窗缩放/最大化/还原、分屏拖拽、窗口 resize 等一切路径，
   // rAF 节流避免同帧多次 fit；保证终端始终贴合宿主宽高（resizeAt 信号保留作兜底）
