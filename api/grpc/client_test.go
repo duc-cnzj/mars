@@ -209,7 +209,7 @@ func TestOptions_AppendInterceptors(t *testing.T) {
 	}
 }
 
-// 全部 15 个 service 访问器都应返回非 nil 客户端。
+// 全部 17 个 service 访问器都应返回非 nil 客户端。
 func TestServiceAccessors_AllWired(t *testing.T) {
 	lis := newBufconnServer(t, func(s *grpc.Server) {})
 	c := newTestClient(t, lis)
@@ -229,6 +229,8 @@ func TestServiceAccessors_AllWired(t *testing.T) {
 		"Project":     c.Project(),
 		"Version":     c.Version(),
 		"Endpoint":    c.Endpoint(),
+		"Settings":    c.Settings(),
+		"User":        c.User(),
 	} {
 		if svc == nil {
 			t.Errorf("访问器 %s 返回 nil", name)

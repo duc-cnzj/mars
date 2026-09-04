@@ -17,6 +17,7 @@ import (
 	_ "github.com/duc-cnzj/mars/api/v6/proto/picture"
 	_ "github.com/duc-cnzj/mars/api/v6/proto/project"
 	_ "github.com/duc-cnzj/mars/api/v6/proto/repo"
+	_ "github.com/duc-cnzj/mars/api/v6/proto/settings"
 	_ "github.com/duc-cnzj/mars/api/v6/proto/token"
 	_ "github.com/duc-cnzj/mars/api/v6/proto/user"
 	_ "github.com/duc-cnzj/mars/api/v6/proto/version"
