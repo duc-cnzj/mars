@@ -6,6 +6,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.2
 	github.com/envoyproxy/protoc-gen-validate v1.0.4
 	github.com/google/gnostic v0.7.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0
