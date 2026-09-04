@@ -1,6 +1,8 @@
 config.yaml
 gosec-results.json
 /bin/
+# examples/ws 为 package main，go build ./examples/ws 会在仓库根产出 ws 可执行文件
+/ws
 coverage.txt
 .claude/
 # mockgen -source 反射模式的工作目录残留，go list ./... 会误收为包
