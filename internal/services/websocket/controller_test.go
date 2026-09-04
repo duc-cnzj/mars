@@ -113,7 +113,7 @@ func TestWebsocketManager_HandleStartShell(t *testing.T) {
 	defer m.Finish()
 
 	// StartShell 前先过命名空间级访问门卫（RequireNamespaceAccessByName）：
-	// FindByName 返回公开命名空间放行，随后 StartShell 才对非规范 sessionID 报错。
+	// FindByName 返回公开命名空间放行，随后 StartShell 才对空 sessionID 报错。
 	nsBiz := biz.NewMockNamespaceBiz(m)
 	nsBiz.EXPECT().FindByName(gomock.Any(), "testNamespace").Return(&biz.Namespace{Name: "testNamespace", Private: false}, nil)
 
@@ -125,7 +125,7 @@ func TestWebsocketManager_HandleStartShell(t *testing.T) {
 	conn := &wsConn{pubSub: sub, id: "testConnID", uid: "testConnUID"}
 
 	input := &websocket_pb.WsHandleExecShellInput{
-		SessionId: "testSession",
+		SessionId: "",
 		Container: &websocket_pb.Container{
 			Namespace: "testNamespace",
 			Pod:       "testPod",
@@ -140,7 +140,7 @@ func TestWebsocketManager_HandleStartShell(t *testing.T) {
 			End:     true,
 			Uid:     "testConnUID",
 			Id:      "testConnID",
-			Message: "invalid session sessionID, must format: '<namespace>-<pod>-<container>:<randomID>', input: 'testSession'",
+			Message: "invalid session sessionID: empty",
 		},
 	})
 	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{ID: "1", Name: "u", Email: "u@mars.com"})

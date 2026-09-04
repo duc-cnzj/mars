@@ -45,7 +45,7 @@ const decoder = new TextDecoder()
  * 命令行 Tab：xterm 交互式终端，最多 4 个、2×2「田」字网格布局。
  * 新增顺序固定：①向右边 ②向下边 ③右下，即填充顺序 左上→右上→左下→右下；最多 4 个。
  * 网格内可拖拽分隔条调整行列占比（列分隔条改左右列权重，行分隔条改上下行权重）。
- * 每个分屏是一个独立 WebSocket 会话（session_id `<ns>-<pod>-<container>:<uuid>`），
+ * 每个分屏是一个独立 WebSocket 会话（session_id 为客户端生成的不透明 uuid），
  * stdout 帧按 slug 路由回对应终端。顶部为容器选择 + 新增终端 + 文件传输 + 强杀 + 资源用量。
  * - pod 事件 → debounce 重拉容器列表（新 pod 自动出现在列表）
  * - WebSocket 断线重连 → 重建所有终端实例
@@ -210,10 +210,9 @@ export function TabShell({
     })
   }, [containers])
 
-  // 切换目标容器 → 所有分屏终端跟随切换到新容器。
-  // pane 的 npc 更新后 ShellTerminal 的 sessionId（`ns-pod-container:uuid`）随之变化，
-  // 触发旧会话关闭、新会话建立——即「点哪个容器，终端就切到哪个容器」。
-  // （pane 只负责网格排布，容器永远跟随 target，与旧版把所有 ShellWindow 绑定到同一 value 一致）
+  // 切换目标容器 → 所有分屏终端 pane 跟随切换到新容器。
+  // （pane 只负责网格排布，容器永远跟随 target，与旧版把所有 ShellWindow 绑定到同一 value 一致；
+  //   会话在 ShellTerminal 挂载时建立，sessionId 为挂载时生成的不透明 uuid）
   useEffect(() => {
     if (!target) return
     setPanes((prev) => prev.map((p) => ({ ...p, npc: target })))
@@ -667,10 +666,7 @@ function ShellTerminal({
   const hostRef = useRef<HTMLDivElement>(null)
   const termRef = useRef<Terminal | null>(null)
   const fitRef = useRef<FitAddon | null>(null)
-  const sessionId = useMemo(
-    () => `${namespace}-${pod}-${container}:${crypto.randomUUID()}`,
-    [namespace, pod, container],
-  )
+  const sessionId = useMemo(() => crypto.randomUUID(), [])
 
   // 容器尺寸变化即 refit：覆盖弹窗缩放/最大化/还原、分屏拖拽、窗口 resize 等一切路径，
   // rAF 节流避免同帧多次 fit；保证终端始终贴合宿主宽高（resizeAt 信号保留作兜底）

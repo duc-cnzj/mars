@@ -69,7 +69,7 @@ func (c *Client) OpenTerminal(ctx context.Context, container *websocket_pb.Conta
 	if err := c.waitReady(ctx); err != nil {
 		return nil, err
 	}
-	sessionID := newSessionID(container)
+	sessionID := newSessionID()
 	if err := c.execShell(container, sessionID); err != nil {
 		return nil, err
 	}

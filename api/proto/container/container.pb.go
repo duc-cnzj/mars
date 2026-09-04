@@ -288,8 +288,8 @@ type ExecOnceRequest struct {
 	Pod       string                 `protobuf:"bytes,2,opt,name=pod,proto3" json:"pod,omitempty"`
 	Container string                 `protobuf:"bytes,3,opt,name=container,proto3" json:"container,omitempty"`
 	Command   []string               `protobuf:"bytes,4,rep,name=command,proto3" json:"command,omitempty"`
-	// 最大执行时长（秒）。0 表示使用服务端默认（30s）。超时强制终止命令，
-	// 防止死循环/挂起命令无限占用资源（同时配合服务端输出封顶兜底）。
+	// 最大执行时长（秒）。0 表示使用服务端默认（1min）。超时强制终止命令，
+	// 防止死循环/挂起命令无限占用资源；与服务端输出封顶互补——输出超限同样终止命令。
 	TimeoutSeconds int64 `protobuf:"varint,5,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache

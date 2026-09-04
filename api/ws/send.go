@@ -7,8 +7,8 @@ import (
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 )
 
-// execShell 请求在指定容器内拉起一个交互终端 shell。sessionID 须符合
-// "<namespace>-<pod>-<container>:<randomID>" 格式（服务端校验）。
+// execShell 请求在指定容器内拉起一个交互终端 shell。sessionID 是不透明关联键，
+// 由 newSessionID 生成，服务端只校验非空。
 func (c *Client) execShell(container *websocket_pb.Container, sessionID string) error {
 	return c.writeMsg(&websocket_pb.WsHandleExecShellInput{
 		Type:      websocket_pb.Type_HandleExecShell,

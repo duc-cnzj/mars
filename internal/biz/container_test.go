@@ -652,8 +652,8 @@ func TestContainerBiz_ExecOnce_ExitErrorSendFailure(t *testing.T) {
 // ---- execOnceDeadline / cappedWriter 单元 ----
 
 func TestExecOnceDeadline(t *testing.T) {
-	assert.Equal(t, time.Duration(30)*time.Second, execOnceDeadline(0), "0 用默认 30s")
-	assert.Equal(t, time.Duration(30)*time.Second, execOnceDeadline(-5), "负值用默认 30s")
+	assert.Equal(t, time.Duration(defaultExecOnceTimeout)*time.Second, execOnceDeadline(0), "0 用默认值")
+	assert.Equal(t, time.Duration(defaultExecOnceTimeout)*time.Second, execOnceDeadline(-5), "负值用默认值")
 	assert.Equal(t, time.Duration(5)*time.Second, execOnceDeadline(5), "正数透传")
 }
 

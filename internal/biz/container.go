@@ -68,7 +68,7 @@ type ExecOnceInput struct {
 	Pod       string
 	Container string
 	Command   []string
-	// TimeoutSeconds 命令最大执行时长（秒）；0 表示使用服务端默认（30s）。
+	// TimeoutSeconds 命令最大执行时长（秒）；0 表示使用服务端默认（1min）。
 	// 超时强制终止命令，防止死循环/挂起命令无限占用资源。
 	TimeoutSeconds int64
 }
@@ -570,7 +570,7 @@ func (queue *execSizeQueue) Next() *TerminalSize {
 const maxExecOnceLogSize = 1 << 20 // 1MiB
 
 // defaultExecOnceTimeout 是 ExecOnce 的默认最大执行时长（秒），超时强制终止命令。
-const defaultExecOnceTimeout = 30
+const defaultExecOnceTimeout = 60
 
 // maxExecOnceStreamSize 限制 ExecOnce 推给客户端的流输出大小；超限截断并终止命令。
 // 与 maxExecOnceLogSize 解耦：日志侧与流侧各有上限，互不掩盖。
@@ -580,7 +580,7 @@ const maxExecOnceStreamSize = 5 << 20 // 5MiB
 // 此码取其外（-1）以示区别，客户端据此识别"输出被截断"而非正常退出。
 const execOnceTruncatedCode int64 = -1
 
-// execOnceDeadline 依据请求超时（0 用默认 30s）推导 ExecOnce 的执行截止时长。
+// execOnceDeadline 依据请求超时（0 用默认 1min）推导 ExecOnce 的执行截止时长。
 func execOnceDeadline(timeoutSeconds int64) time.Duration {
 	if timeoutSeconds <= 0 {
 		timeoutSeconds = defaultExecOnceTimeout

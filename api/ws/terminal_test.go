@@ -31,12 +31,11 @@ func sendShell(t *testing.T, c *websocket.Conn, wsType websocket_pb.Type, op, si
 	}
 }
 
-// assertTerminalID 校验 OpenTerminal 自动生成的 sessionID 符合
-// "<namespace>-<pod>-<container>:" 前缀（服务端校验规则）。
+// assertTerminalID 校验 OpenTerminal 自动生成的 sessionID 非空（不透明关联键）。
 func assertTerminalID(t *testing.T, id string) {
 	t.Helper()
-	if !strings.HasPrefix(id, "ns-pod-c:") {
-		t.Fatalf("sessionID 应带 'ns-pod-c:' 前缀，实际 %q", id)
+	if id == "" {
+		t.Fatalf("sessionID 不应为空")
 	}
 }
 
