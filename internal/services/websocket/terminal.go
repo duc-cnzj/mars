@@ -2,7 +2,7 @@ package websocket
 
 // terminal.go 定义终端编排逻辑：StartShell 拉起容器内 shell，
 // runTerminal/execInContainer/resetSession 驱动 pty 的完整生命周期，
-// 以及 shell 白名单、sessionID 格式校验等辅助函数。
+// 以及 shell 白名单、sessionID 非空校验等辅助函数。
 
 import (
 	"context"
@@ -152,14 +152,9 @@ func (wc *websocketManager) resetSession(session PtyHandler) PtyHandler {
 	return newSession
 }
 
-// isValidSessionID 校验 sessionID 是否符合 '<namespace>-<pod>-<container>:' 前缀。
-func isValidSessionID(container *websocket_pb.Container, id string) bool {
-	prefix := fmt.Sprintf("%s-%s-%s:", container.Namespace, container.Pod, container.Container)
-	return strings.HasPrefix(id, prefix)
-}
-
 // StartShell 为请求的容器创建 ptyHandler 会话并登记到连接，
 // 再以 goroutine 启动 runTerminal 拉 shell；返回会话 sessionID。
+// sessionID 由客户端生成（对服务端是不透明关联键，只用于路由），这里仅要求非空。
 func (wc *websocketManager) StartShell(ctx context.Context, input *websocket_pb.WsHandleExecShellInput, conn Conn) (string, error) {
 	var (
 		container = &biz.Container{
@@ -170,8 +165,8 @@ func (wc *websocketManager) StartShell(ctx context.Context, input *websocket_pb.
 		sessionID = input.SessionId
 	)
 
-	if !isValidSessionID(input.Container, sessionID) {
-		return "", fmt.Errorf("invalid session sessionID, must format: '<namespace>-<pod>-<container>:<randomID>', input: '%s'", sessionID)
+	if sessionID == "" {
+		return "", fmt.Errorf("invalid session sessionID: empty")
 	}
 
 	pty := &ptyHandler{

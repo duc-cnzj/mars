@@ -40,6 +40,9 @@ message ExecOnceRequest {
   string          pod       = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   string          container = 3;
   repeated string command   = 4 [(validate.rules).repeated = {min_items: 1, items: {string: {min_bytes: 1}}}, (google.api.field_behavior) = REQUIRED];
+  // 最大执行时长（秒）。0 表示使用服务端默认（1min）。超时强制终止命令，
+  // 防止死循环/挂起命令无限占用资源；与服务端输出封顶互补——输出超限同样终止命令。
+  int64           timeout_seconds = 5;
 }
 
 message ExecError {
@@ -130,8 +133,17 @@ service Container {
   // Exec grpc 执行 pod 命令，交互式, 使用方法见 examples/ 目录
   rpc Exec(stream ExecRequest) returns (stream ExecResponse);
 
-  // ExecOnce grpc 执行一次 pod 命令, 非 tty 模式, 适合一次性脚本, 使用方法见 examples/ 目录
-  rpc ExecOnce(ExecOnceRequest) returns (stream ExecResponse);
+  // ExecOnce grpc 执行一次 pod 命令, 非 tty 模式, 适合一次性脚本, 使用方法见 examples/ 目录。
+  // HTTP 侧为 GET server-streaming（SSE）：command 走重复 query 参数（?command=ls&command=-la）。
+  rpc ExecOnce(ExecOnceRequest) returns (stream ExecResponse) {
+    option (google.api.http)      = {
+      get: "/api/containers/exec_once"
+    };
+
+    option (openapi.v3.operation) = {
+      summary: "在容器内执行一次命令（非交互，SSE 流式返回输出）",
+    };
+  }
 
   // StreamCopyToPod grpc 上传文件到 pod, 使用方法见 examples/ 目录
   rpc StreamCopyToPod(stream StreamCopyToPodRequest) returns (StreamCopyToPodResponse);

@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: api/v6.0.0-beta.37
+    version: ""
 paths:
     /api/access_tokens:
         get:
@@ -576,6 +576,54 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/container.CopyToPodResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/containers/exec_once:
+        get:
+            tags:
+                - Container
+            summary: 在容器内执行一次命令（非交互，SSE 流式返回输出）
+            description: |-
+                ExecOnce grpc 执行一次 pod 命令, 非 tty 模式, 适合一次性脚本, 使用方法见 examples/ 目录。
+                 HTTP 侧为 GET server-streaming（SSE）：command 走重复 query 参数（?command=ls&command=-la）。
+            operationId: Container_ExecOnce
+            parameters:
+                - name: namespace
+                  in: query
+                  schema:
+                    type: string
+                - name: pod
+                  in: query
+                  schema:
+                    type: string
+                - name: container
+                  in: query
+                  schema:
+                    type: string
+                - name: command
+                  in: query
+                  schema:
+                    type: array
+                    items:
+                        type: string
+                - name: timeoutSeconds
+                  in: query
+                  description: |-
+                    最大执行时长（秒）。0 表示使用服务端默认（1min）。超时强制终止命令，
+                     防止死循环/挂起命令无限占用资源；与服务端输出封顶互补——输出超限同样终止命令。
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/container.ExecResponse'
                 default:
                     description: Default error response
                     content:
@@ -2577,6 +2625,21 @@ components:
                     type: string
                 fileName:
                     type: string
+        container.ExecError:
+            type: object
+            properties:
+                code:
+                    type: string
+                message:
+                    type: string
+        container.ExecResponse:
+            type: object
+            properties:
+                message:
+                    type: string
+                    format: bytes
+                error:
+                    $ref: '#/components/schemas/container.ExecError'
         container.ForceDeletePodRequest:
             required:
                 - namespace

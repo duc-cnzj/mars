@@ -253,6 +253,14 @@ func (wc *websocketManager) read(ctx context.Context, wsconn Conn) error {
 			continue
 		}
 
+		// 鉴权帧必须同步处理：HandleAuthorize 成功后 SetUser 要先于后续帧完成，
+		// 否则后到的 ExecShell/Resize 会因 GetUser()==nil 被"认证中"拒绝（帧分发竞态）。
+		// 其余帧保持 go 异步分发，避免 shell 拉取等慢 handler 阻塞读循环。
+		if wsRequest.Type == websocket_pb.Type_HandleAuthorize {
+			wc.dispatchEvent(ctx, wsconn, &wsRequest, message)
+			continue
+		}
+
 		go wc.dispatchEvent(ctx, wsconn, &wsRequest, message)
 	}
 }

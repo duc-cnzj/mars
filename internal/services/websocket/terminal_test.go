@@ -33,17 +33,6 @@ func TestSilence(t *testing.T) {
 	assert.False(t, shouldSilenceShellError(errors.New("command terminated with exit code 131")))
 }
 
-func TestCheckSessionID(t *testing.T) {
-	container := &websocket_pb.Container{
-		Namespace: "namespace",
-		Pod:       "pod",
-		Container: "container",
-	}
-
-	assert.True(t, isValidSessionID(container, "namespace-pod-container:randomID"))
-	assert.False(t, isValidSessionID(container, "invalidSessionID"))
-}
-
 func TestSizeStore(t *testing.T) {
 	s := &sizeStore{}
 
@@ -798,7 +787,7 @@ func TestStartShell_WithValidSessionID(t *testing.T) {
 			Pod:       "pod",
 			Container: "container",
 		},
-		SessionId: "namespace-pod-container:randomID",
+		SessionId: "abc123",
 	}
 
 	conn.EXPECT().SetPtyHandler(input.SessionId, gomock.Any())
@@ -810,7 +799,7 @@ func TestStartShell_WithValidSessionID(t *testing.T) {
 	assert.Equal(t, input.SessionId, sessionID)
 }
 
-func TestStartShell_WithInvalidSessionID(t *testing.T) {
+func TestStartShell_EmptySessionID(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -825,7 +814,7 @@ func TestStartShell_WithInvalidSessionID(t *testing.T) {
 			Pod:       "pod",
 			Container: "container",
 		},
-		SessionId: "invalidSessionID",
+		SessionId: "",
 	}
 
 	_, err := ws.StartShell(context.TODO(), input, conn)

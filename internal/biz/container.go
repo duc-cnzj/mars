@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/container"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
@@ -67,6 +68,9 @@ type ExecOnceInput struct {
 	Pod       string
 	Container string
 	Command   []string
+	// TimeoutSeconds 命令最大执行时长（秒）；0 表示使用服务端默认（1min）。
+	// 超时强制终止命令，防止死循环/挂起命令无限占用资源。
+	TimeoutSeconds int64
 }
 
 // ContainerBiz 封装容器终端用例编排：交互式会话的流复用、一次性命令的有界输出审计、退出码映射。
@@ -348,7 +352,14 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 			pipeWriter.Close()
 		})
 	}
-	w := io.MultiWriter(pipeWriter, bf)
+
+	// 审计日志缓冲有界只管日志侧，推给客户端的流要单独封顶：超限立即截断并取消
+	// execCtx 强制终止远端命令，防止死循环/大输出命令无限刷屏（详见 cappedWriter）。
+	execCtx, execCancel := context.WithTimeout(ctx, execOnceDeadline(input.TimeoutSeconds))
+	defer execCancel()
+	capped := newCappedWriter(pipeWriter, maxExecOnceStreamSize, execCancel)
+	w := io.MultiWriter(capped, bf)
+
 	go func() {
 		defer closeAll()
 		defer cb.logger.HandlePanic("biz.ContainerBiz.ExecOnce: send loop")
@@ -368,7 +379,7 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 	}()
 	startTime := cb.timer.Now()
 
-	err = cb.k8sBiz.Execute(ctx, &Container{
+	err = cb.k8sBiz.Execute(execCtx, &Container{
 		Namespace: input.Namespace,
 		Pod:       input.Pod,
 		Container: co,
@@ -379,7 +390,19 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 		Cmd:    input.Command,
 	})
 	var exitError *ExecExitError
-	if errors.As(err, &exitError) {
+	switch {
+	case capped.isTruncated():
+		// 输出超限被强制截断：命令由 cancel 终止（err 为 Canceled，非退出码），
+		// 只发一条明确的截断错误帧，让客户端知道输出不完整，而非静默断流。
+		if sendErr := sendMsg(&container.ExecResponse{
+			Error: &container.ExecError{
+				Code:    execOnceTruncatedCode,
+				Message: fmt.Sprintf("命令输出超过 %d 字节上限，已强制终止", maxExecOnceStreamSize),
+			},
+		}); sendErr != nil {
+			cb.logger.DebugCtx(ctx, "ExecOnce: send truncation error failed", sendErr)
+		}
+	case errors.As(err, &exitError):
 		if sendErr := sendMsg(&container.ExecResponse{
 			Error: &container.ExecError{
 				Code:    int64(exitError.Code),
@@ -545,6 +568,76 @@ func (queue *execSizeQueue) Next() *TerminalSize {
 
 // maxExecOnceLogSize 限制 ExecOnce 审计日志记录的命令输出大小，防止大输出命令打爆内存。
 const maxExecOnceLogSize = 1 << 20 // 1MiB
+
+// defaultExecOnceTimeout 是 ExecOnce 的默认最大执行时长（秒），超时强制终止命令。
+const defaultExecOnceTimeout = 60
+
+// maxExecOnceStreamSize 限制 ExecOnce 推给客户端的流输出大小；超限截断并终止命令。
+// 与 maxExecOnceLogSize 解耦：日志侧与流侧各有上限，互不掩盖。
+const maxExecOnceStreamSize = 5 << 20 // 5MiB
+
+// execOnceTruncatedCode 是 ExecOnce 输出超限被截断时的错误码。真实退出码 0-255，
+// 此码取其外（-1）以示区别，客户端据此识别"输出被截断"而非正常退出。
+const execOnceTruncatedCode int64 = -1
+
+// execOnceDeadline 依据请求超时（0 用默认 1min）推导 ExecOnce 的执行截止时长。
+func execOnceDeadline(timeoutSeconds int64) time.Duration {
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = defaultExecOnceTimeout
+	}
+	return time.Duration(timeoutSeconds) * time.Second
+}
+
+// cappedWriter 有界转发命令输出：累计超过 max 字节后停止转发（丢弃后续输出）并调用
+// cancel 强制终止远端命令，同时记录已截断。截断后 Write 直接返回成功（不再阻塞远端
+// 写方，进程由 cancel 终止），返回 nil 错误。
+type cappedWriter struct {
+	mu        sync.Mutex
+	w         io.Writer // 真实消费方（pipeWriter），截断后不再转发
+	max       int
+	written   int
+	truncated bool
+	cancel    context.CancelFunc
+}
+
+// newCappedWriter 构造带 max 字节上限、超限触发 cancel 的有界转发器。
+func newCappedWriter(w io.Writer, max int, cancel context.CancelFunc) *cappedWriter {
+	return &cappedWriter{w: w, max: max, cancel: cancel}
+}
+
+// Write 转发 p 直到累计达到上限；超限则标记截断、触发 cancel 并停止转发后续输出。
+func (c *cappedWriter) Write(p []byte) (int, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.truncated {
+		return len(p), nil // 已截断：直接丢弃，不转发（避免阻塞远端），进程由 cancel 终止
+	}
+	remaining := c.max - c.written
+	if len(p) > remaining {
+		// 本条将越界：转发能容纳的剩余部分后封顶截断。
+		if _, err := c.w.Write(p[:remaining]); err != nil {
+			return len(p), err
+		}
+		c.written = c.max
+		c.truncated = true
+		if c.cancel != nil {
+			c.cancel()
+		}
+		return len(p), nil
+	}
+	if _, err := c.w.Write(p); err != nil {
+		return len(p), err
+	}
+	c.written += len(p)
+	return len(p), nil
+}
+
+// isTruncated 返回是否已因输出超限被截断。
+func (c *cappedWriter) isTruncated() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.truncated
+}
 
 // limitedBuffer 只保留最近 max 字节的写入内容，用于有界收集命令输出。
 type limitedBuffer struct {
