@@ -14,6 +14,7 @@
 //   - 0-255  容器内命令的非零退出码（命令已启动并结束）
 //   - -1     命令输出超限被服务端强制截断
 //   - -2     容器 exec 启动/执行失败（如命令在容器内不存在）
+//   - -3     命令执行超时被服务端强制终止（timeout_seconds 上限）
 //
 // 用法（flag 驱动，可复现不同错误路径）：
 //
@@ -112,6 +113,8 @@ func describeExecErrorCode(code int64) string {
 		return "(命令输出超限被服务端强制截断)"
 	case code == -2:
 		return "(exec 启动/执行失败，如命令在容器内不存在)"
+	case code == -3:
+		return "(命令执行超时被服务端强制终止)"
 	default:
 		return fmt.Sprintf("(容器内命令退出码 %d)", code)
 	}

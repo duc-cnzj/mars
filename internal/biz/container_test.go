@@ -12,6 +12,8 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -833,6 +835,64 @@ func TestCappedWriter_NilCancelAndWriteError(t *testing.T) {
 }
 
 // ---- ExecOnce 超时 wiring 与输出截断 ----
+
+// TestContainerBiz_ExecOnce_Timeout 覆盖命令执行超过 timeout_seconds 上限被强制终止：
+// 发一条明确的超时错误帧（execOnceTimeoutCode=-3）而非误标为 -2"exec 启动失败"，
+// ExecOnce 返回 nil（属服务端执行策略，不提升为传输层错误）。
+func TestContainerBiz_ExecOnce_Timeout(t *testing.T) {
+	k := &fakeK8sBizForContainer{
+		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
+		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
+			return "c", nil
+		},
+		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
+			_, _ = input.Stdout.Write([]byte("slow"))
+			// 阻塞到 execCtx deadline 真触发（TimeoutSeconds:1 → 约 1s），
+			// 使 execCtx.Err()==DeadlineExceeded，模拟命令超时被强制终止。
+			<-ctx.Done()
+			return context.DeadlineExceeded
+		},
+	}
+	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {}}
+	cb := newTestContainerBiz(k, &fakeFileBizForContainer{}, event)
+	stream := &fakeExecOnceStream{}
+	err := cb.ExecOnce(context.Background(), stream, &UserInfo{Name: "admin"}, &ExecOnceInput{
+		Namespace: "a", Pod: "b", Command: []string{"sleep"}, TimeoutSeconds: 1,
+	})
+	assert.NoError(t, err)
+	timeoutFrame := stream.findError(execOnceTimeoutCode)
+	assert.NotNil(t, timeoutFrame, "应发送一条超时错误帧而非误标为 exec 启动失败")
+	assert.Contains(t, timeoutFrame.Message, "秒上限")
+	assert.Nil(t, stream.findError(execOnceExecFailedCode), "超时不应当误标为 -2 exec 启动失败")
+}
+
+// TestContainerBiz_ExecOnce_Timeout_NetError 覆盖 deadline 到期但 err 被 SPDY 包装成
+// net.Error（Timeout()==true）的场景：判据是 execCtx.Err() 而非 err 类型，必须仍识别为
+// -3 超时，不落到 500。
+func TestContainerBiz_ExecOnce_Timeout_NetError(t *testing.T) {
+	k := &fakeK8sBizForContainer{
+		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
+		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
+			return "c", nil
+		},
+		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
+			_, _ = input.Stdout.Write([]byte("slow"))
+			<-ctx.Done() // 等到 deadline 真触发
+			// net.OpError 包装 os.ErrDeadlineExceeded：net.Error 且 Timeout()==true。
+			return &net.OpError{Op: "read", Err: os.ErrDeadlineExceeded}
+		},
+	}
+	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {}}
+	cb := newTestContainerBiz(k, &fakeFileBizForContainer{}, event)
+	stream := &fakeExecOnceStream{}
+	err := cb.ExecOnce(context.Background(), stream, &UserInfo{Name: "admin"}, &ExecOnceInput{
+		Namespace: "a", Pod: "b", Command: []string{"sleep"}, TimeoutSeconds: 1,
+	})
+	assert.NoError(t, err)
+	timeoutFrame := stream.findError(execOnceTimeoutCode)
+	assert.NotNil(t, timeoutFrame, "net.Error 超时（deadline 到期）应识别为 -3 超时帧")
+	assert.Nil(t, stream.findError(execOnceExecFailedCode))
+}
 
 // TestContainerBiz_ExecOnce_TimeoutWiring 验证请求超时被接进 Execute 的 ctx deadline。
 func TestContainerBiz_ExecOnce_TimeoutWiring(t *testing.T) {

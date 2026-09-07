@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
@@ -32,6 +34,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -1301,18 +1304,21 @@ func (f *fakeTerminalSizeQueue) Next() *biz.TerminalSize {
 	return nil
 }
 
-// Test_translateExecError 覆盖 translateExecError 三分支：nil 透传、非退出码 exec 失败
-// 翻译为领域 ExecFailure、CodeExitError 翻译为领域 ExecExitError。
+// Test_translateExecError 覆盖 translateExecError 的分类：nil 透传、mars 自身错误（k8s
+// API 故障/连接断开/上下文超时）原样透传映射 500、容器 exec 启动失败翻译为领域 ExecFailure、
+// CodeExitError 翻译为领域 ExecExitError。
 func Test_translateExecError(t *testing.T) {
 	assert.Nil(t, translateExecError(nil))
 
-	generic := errors.New("boom")
+	// 容器 exec 启动失败（命令不存在等）→ ExecFailure，归为"容器执行结果"。
+	generic := errors.New("exec: \"cc\": executable file not found in $PATH")
 	failed := translateExecError(generic)
 	require.NotNil(t, failed)
 	gotFailure, ok := failed.(*biz.ExecFailure)
 	require.True(t, ok)
-	assert.Equal(t, "boom", gotFailure.Message)
+	assert.Equal(t, generic.Error(), gotFailure.Message)
 
+	// 容器内命令退出码 → ExecExitError。
 	exited := &clientgoexec.CodeExitError{Err: errors.New("boom"), Code: 2}
 	translated := translateExecError(exited)
 	require.NotNil(t, translated)
@@ -1320,6 +1326,20 @@ func Test_translateExecError(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, 2, got.Code)
 	assert.Equal(t, exited.Error(), got.Message)
+
+	// mars 自身错误原样透传（→ 500），不得归为 ExecFailure 静默吞掉。
+	marsSide := []error{
+		apierrors.NewInternalError(errors.New("k8s apiserver down")),
+		apierrors.NewBadRequest("pods forbidden"),
+		&url.Error{Op: "GET", URL: "http://127.0.0.1/api", Err: errors.New("connection refused")},
+		&net.DNSError{Err: "no such host", Name: "k8s.example.com", IsTimeout: false},
+		context.DeadlineExceeded,
+		context.Canceled,
+	}
+	for _, e := range marsSide {
+		got := translateExecError(e)
+		assert.Equal(t, e, got, "mars 自身错误应原样透传（%T），而非转成 ExecFailure", e)
+	}
 }
 
 // Test_toRemotecommandTerminalSizeQueue 覆盖尺寸队列适配：nil 输入返回 nil、

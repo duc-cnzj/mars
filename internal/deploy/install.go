@@ -22,7 +22,24 @@ import (
 // GlobalLock → Validate → LoadConfigs → Run → Finish，最终返回流水线错误。
 // 这是 gRPC 服务与 websocket 传输共同使用的部署入口。
 func InstallProject(ctx context.Context, job Job) (err error) {
-	return job.GlobalLock().Validate().LoadConfigs().Run(ctx).Finish().Error()
+	// 正常路径由 ...Finish() 触发 OnFinally（含 GlobalLock 登记的锁释放/进度收尾）。
+	// 但若 Validate/LoadConfigs/Run 中途 panic（代码缺陷），链式调用直接展开，
+	// Finish 永不执行 → 锁释放回调不跑，续期 goroutine + 任务锁永久泄漏，阻塞后续
+	// 同任务部署。此处 defer 仅在「尚未执行 Finish」时补一次 Finish 释放资源，再
+	// re-panic 交由传输层统一 recover（指标/审计语义不变）。用 finished 标志保证
+	// 恰好一次：若 panic 发生在 Finish 之后（如 Error()），不重复触发 Finish 的回调链。
+	var finished bool
+	defer func() {
+		if r := recover(); r != nil {
+			if !finished {
+				_ = job.Finish()
+			}
+			panic(r)
+		}
+	}()
+	job.GlobalLock().Validate().LoadConfigs().Run(ctx).Finish()
+	finished = true
+	return job.Error()
 }
 
 // GetSlugName 由 namespaceID + 服务名生成部署任务标识，供传输层区分同一服务的多次部署。

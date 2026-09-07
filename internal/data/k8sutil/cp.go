@@ -115,6 +115,9 @@ func (t *TarPipe) initReadFrom(n uint64) {
 func (t *TarPipe) Read(p []byte) (n int, err error) {
 	select {
 	case <-t.ctx.Done():
+		// 必须关闭 reader，否则后台 kubectl exec 写端 goroutine（不感知 ctx）会永久
+		// 阻塞在 io.Pipe 写侧，连带泄漏 exec 连接；关闭后写端收到 ErrClosedPipe 退出。
+		t.reader.Close()
 		return 0, t.ctx.Err()
 	default:
 		n, err = t.reader.Read(p)

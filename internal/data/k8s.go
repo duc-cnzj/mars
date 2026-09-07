@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -34,6 +36,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	eventv1 "k8s.io/api/events/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -374,24 +377,43 @@ func (repo *k8sRepo) UpdateSecret(ctx context.Context, namespace, name string, s
 }
 
 // SubscribePodEvents 订阅 informer 的 Pod 事件并转换为领域 PodEvent 类型。
-// 取消订阅函数会移除 fanout 监听并关闭事件通道，消费方 range 循环随之退出；
-// 转换 goroutine 在通道关闭后退出，不留泄漏。
+// 取消订阅函数会移除 fanout 监听并关闭事件通道，消费方 range 循环随之退出。
 func (repo *k8sRepo) SubscribePodEvents(listener string) (<-chan biz.PodEvent, func()) {
 	raw := make(chan Obj[*corev1.Pod], 500)
 	out := make(chan biz.PodEvent, 500)
+	done := make(chan struct{})
 	repo.data.K8s().podFanOut.AddListener(listener, raw)
 	go func() {
 		defer close(out)
-		for obj := range raw {
-			out <- biz.PodEvent{
-				Type:    biz.PodEventType(obj.Type()),
-				Old:     obj.Old(),
-				Current: obj.Current(),
+		for {
+			select {
+			case <-done:
+				return
+			case obj, ok := <-raw:
+				if !ok {
+					// raw 已关闭（fanout 移除监听器）：消费方同步退出，剩余缓冲无人再读，直接返回。
+					return
+				}
+				// out<- 纳入 select：out 积满且消费方已停止排空时，unsubscribe 的 done 仍能打断
+				// 发送，避免转换 goroutine 永久阻塞在缓冲写（原实现 out 满即悬挂）。
+				select {
+				case out <- biz.PodEvent{
+					Type:    biz.PodEventType(obj.Type()),
+					Old:     obj.Old(),
+					Current: obj.Current(),
+				}:
+				case <-done:
+					return
+				}
 			}
 		}
 	}()
+	var once sync.Once
 	return out, func() {
-		repo.data.K8s().podFanOut.RemoveListener(listener)
+		once.Do(func() {
+			close(done)
+			repo.data.K8s().podFanOut.RemoveListener(listener)
+		})
 	}
 }
 
@@ -708,6 +730,13 @@ func (repo *k8sRepo) copyToPod(ctx context.Context, namespace, pod, container, f
 				TTY:    false,
 			},
 		)
+
+	// Execute 返回（无论成功/失败）后 exec 侧不再消费 stdin。成功时 io.Pipe 同步语义
+	// 已保证 io.Copy 写完所有字节（读端读完才握手完成）；失败时（建流失败/容器内 tar
+	// 提前退出）client-go 不消费也不关闭 stdin，喂数据 goroutine 会永久阻塞在
+	// outStream.Write 上，连带 defer wg.Wait() 挂死。此处主动关写端，让 io.Copy
+	// 收到 ErrClosedPipe 退出，goroutine 随之关闭 reader/outStream/src 并 wg.Done。
+	outStream.Close()
 
 	return &copyToPodResult{
 		TargetDir:     targetContainerDir,
@@ -1655,10 +1684,12 @@ func toRemotecommandTerminalSizeQueue(q biz.TerminalSizeQueue) remotecommand.Ter
 	return &terminalSizeQueueAdapter{queue: q}
 }
 
-// translateExecError 把 client-go 的容器退出码错误（CodeExitError）翻译为 biz 领域错误
-// ExecExitError，使 biz 层不依赖 client-go 错误类型；非退出码的容器 exec 启动/执行失败
-// （命令不存在、容器运行时错误等）翻译为 biz.ExecFailure，同样归为"容器执行结果"，
-// 由 biz 以流内错误帧传达而不提升为传输层 500。
+// translateExecError 把 client-go 的容器执行错误翻译为 biz 领域错误，隔离 client-go 类型：
+//   - CodeExitError（容器内命令退出码）→ ExecExitError
+//   - 容器 exec 启动/执行失败（命令不存在、容器运行时错误）→ ExecFailure，归为"容器执行结果"，
+//     由 biz 以流内错误帧传达而不提升为传输层 500
+//   - mars 自身错误（k8s API 通信故障、SPDY 连接断开、上下文取消/超时）原样透传，
+//     由最上层映射为 500，不归为容器执行结果
 func translateExecError(err error) error {
 	if err == nil {
 		return nil
@@ -1667,5 +1698,27 @@ func translateExecError(err error) error {
 	if errors.As(err, &exitErr) {
 		return &biz.ExecExitError{Code: exitErr.ExitStatus(), Message: exitErr.Error()}
 	}
+	if isMarsSideExecError(err) {
+		return err
+	}
 	return &biz.ExecFailure{Message: err.Error()}
+}
+
+// isMarsSideExecError 判断错误是否属于 mars 自身错误——k8s API 通信故障（StatusError）、
+// SPDY 连接断开（url.Error/net.Error）、或命令上下文被取消/超时——而非容器 exec 启动失败。
+// 此类错误应透传为传输层错误（500），不能归为容器执行结果错误帧。
+func isMarsSideExecError(err error) bool {
+	var statusErr *apierrors.StatusError
+	if errors.As(err, &statusErr) {
+		return true
+	}
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) {
+		return true
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return true
+	}
+	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 }

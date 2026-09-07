@@ -365,6 +365,7 @@ func (x *ExecOnceRequest) GetTimeoutSeconds() int64 {
 //   - 0-255   容器内命令的非零退出码（命令已启动并结束）
 //   - -1      命令输出超限被服务端强制截断（ExecOnce）
 //   - -2      容器 exec 启动/执行失败（如命令在容器内不存在）
+//   - -3      命令执行超时被服务端强制终止（ExecOnce，timeout_seconds 上限）
 //
 // 命令错误经此错误帧传达，流以 io.EOF 正常结束，不提升为传输层 gRPC/HTTP 错误。
 type ExecError struct {

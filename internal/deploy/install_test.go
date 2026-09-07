@@ -16,6 +16,25 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+// TestInstallProject_PanicStillFinishes 回归：流水线中途 panic 时，InstallProject 的
+// defer 仍执行 Finish() 触发 OnFinally（全局锁释放），避免锁续期 goroutine 与任务锁
+// 永久泄漏阻塞后续同任务部署；随后 re-panic 交给传输层统一 recover。
+func TestInstallProject_PanicStillFinishes(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	job := NewMockJob(m)
+
+	job.EXPECT().GlobalLock().Return(job)
+	// Validate 阶段 panic，模拟代码缺陷导致的链式调用提前展开。
+	job.EXPECT().Validate().DoAndReturn(func() Job { panic("boom") })
+	// defer 中仍必须调用 Finish 释放锁；未调用则 m.Finish() 报错。
+	job.EXPECT().Finish().Return(job)
+
+	assert.Panics(t, func() {
+		_ = InstallProject(context.TODO(), job)
+	})
+}
+
 func TestNewReleaseInstaller(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()

@@ -871,7 +871,7 @@ func TestElementsLoader_typedValue(t *testing.T) {
 }
 
 func TestJober_GlobalLock(t *testing.T) {
-	l := locker.NewMemoryLock(timer.NewReal(), [2]int{2, 100}, locker.NewMemStore(), mlog.NewForConfig(nil))
+	l := locker.NewMemoryLock(timer.NewReal(), locker.NewMemStore(), mlog.NewForConfig(nil))
 	job := &jobRunner{locker: l, input: &JobInput{NamespaceId: 1, Name: "app"}}
 	assert.Nil(t, job.GlobalLock().Error())
 	assert.Equal(t, "正在部署中，请稍后再试", (&jobRunner{locker: l, input: &JobInput{NamespaceId: 1, Name: "app"}}).GlobalLock().Error().Error())

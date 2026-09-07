@@ -430,6 +430,24 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 			cb.logger.DebugCtx(ctx, "ExecOnce: send truncation error failed", sendErr)
 		}
 	default:
+		if errors.Is(execCtx.Err(), context.DeadlineExceeded) {
+			// 命令执行超过 timeout_seconds 上限被强制终止：发明确超时错误帧，
+			// 让客户端区分"命令超时"与"exec 未成功启动"，而非误标为 -2。
+			// 判据用 execCtx.Err()（我们自己的 deadline 是否真触发），而非 err 的类型：
+			// 超时可能被 SPDY 传输包装成任意 net.Error，但只有 execCtx deadline 到期
+			// execCtx.Err() 才为 DeadlineExceeded；若只看 err 类型，SPDY 建连超时等
+			// 基础设施错误会被误标为"命令超时"（实应为 500）。
+			if sendErr := sendMsg(&container.ExecResponse{
+				Error: &container.ExecError{
+					Code:    execOnceTimeoutCode,
+					Message: fmt.Sprintf("命令执行超过 %d 秒上限，已强制终止", int(execOnceDeadline(input.TimeoutSeconds)/time.Second)),
+				},
+			}); sendErr != nil {
+				cb.logger.DebugCtx(ctx, "ExecOnce: send timeout error failed", sendErr)
+			}
+			handled = true
+			break
+		}
 		handled, sendErr = sendExecResultFrame(sendMsg, err)
 		if sendErr != nil {
 			cb.logger.DebugCtx(ctx, "ExecOnce: send exec result frame failed", sendErr)
@@ -609,6 +627,10 @@ const execOnceTruncatedCode int64 = -1
 // execOnceExecFailedCode 是 ExecOnce 容器 exec 启动/执行失败（如命令在容器内不存在）时的
 // 错误码。取截断码之外（-2），客户端据此识别"exec 未成功启动"这一容器执行结果。
 const execOnceExecFailedCode int64 = -2
+
+// execOnceTimeoutCode 是 ExecOnce 命令执行超时被服务端强制终止时的错误码。取截断/启动失败码
+// 之外（-3），客户端据此区分"命令执行超时"与"exec 未成功启动/输出被截断"。
+const execOnceTimeoutCode int64 = -3
 
 // execOnceDeadline 依据请求超时（0 用默认 1min）推导 ExecOnce 的执行截止时长。
 func execOnceDeadline(timeoutSeconds int64) time.Duration {

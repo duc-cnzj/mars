@@ -182,6 +182,7 @@ func (p *redisSender) New(uid, id string) app.PubSub {
 		uid:                       uid,
 		id:                        id,
 		manager:                   p,
+		pem:                       pem,
 		ProjectPodEventSubscriber: pem,
 		ProjectPodEventPublisher:  pem,
 	}
@@ -197,6 +198,7 @@ type rdsPubSub struct {
 	manager   *redisSender
 	uid, id   string
 	ch        chan []byte
+	pem       *podEventManagers
 	closeOnce sync.Once
 
 	app.ProjectPodEventSubscriber
@@ -237,6 +239,15 @@ func (p *rdsPubSub) Close() error {
 			_ = p.manager.wsPubSub.Unsubscribe(p.manager.ctx, p.id)
 			p.manager.mu.Unlock()
 		}
+
+		// 关闭本连接的 pod 事件订阅连接。New 对空 id（只发不收）调用方也创建了 pubSub，
+		// 若不在 Close 释放，每条空 id 连接（Info/TickClusterHealth 等）都会泄漏一条
+		// redis 订阅连接；Run 的 defer 二次关闭由 go-redis 幂等兜底。
+		// Close 与 Join/Leave 的 Subscribe/Unsubscribe 一样纳入 pem.mu 串行化，避免
+		// go-redis PubSub 非并发安全下 Close ∥ Subscribe 竞争。
+		p.pem.mu.Lock()
+		_ = p.pem.pubSub.Close()
+		p.pem.mu.Unlock()
 
 		// 不要 close(p.ch)：dispatcher 与 podEventManagers.Run 两个 goroutine 都可能
 		// 向 p.ch 发送，send-on-closed-channel 会 panic；消费者（websocket write）已

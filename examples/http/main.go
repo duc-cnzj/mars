@@ -10,6 +10,7 @@
 //	go run ./examples/http                             # 默认：unary 列出项目空间 + 错误码对齐演示
 //	go run ./examples/http -action logs                # server-streaming 拉取 pod 日志（SSE/NDJSON）
 //	go run ./examples/http -action exec_once           # server-streaming 执行一次命令，演示错误帧语义
+//	go run ./examples/http -action exec_once -timeout 1 # 配合把 command 换成 "sleep 5" 演示超时错误帧 -3
 //	go run ./examples/http -action pod_running         # unary 查询 pod 是否 running
 //	go run ./examples/http -action version             # unary 查询服务端版本
 //	go run ./examples/http -action project             # unary 分页列出可见项目（核心业务域）
@@ -49,6 +50,7 @@ func main() {
 		user    = flag.String("user", "admin", "用户名")
 		pass    = flag.String("pass", "123456", "密码")
 		action  = flag.String("action", "list", "演示动作: list | logs | exec_once | pod_running | version | project | top_pod | cluster | webapply | upload | download")
+		timeout = flag.Int64("timeout", 60, "命令最大执行秒数（0=服务端默认 1min，exec_once 动作使用）")
 	)
 	flag.Parse()
 
@@ -70,7 +72,7 @@ func main() {
 	case "logs":
 		streamLogs(ctx, cli)
 	case "exec_once":
-		execOnce(ctx, cli)
+		execOnce(ctx, cli, *timeout)
 	case "pod_running":
 		podRunning(ctx, cli)
 	case "version":
@@ -149,14 +151,17 @@ func streamLogs(ctx context.Context, cli *http.Client) {
 //   - 0-255  容器内命令的非零退出码
 //   - -1     命令输出超限被服务端强制截断
 //   - -2     容器 exec 启动/执行失败（如命令在容器内不存在）
+//   - -3     命令执行超时被服务端强制终止（ExecOnce，timeout_seconds 上限）
 //
-// 复现不同路径：把 command 换成 "cc" 演示 -2；下方默认命令演示退出码 3。
-func execOnce(ctx context.Context, cli *http.Client) {
+// 复现不同路径：把 command 换成 "cc" 演示 -2；换成 "sleep 5" 并 -timeout 1 演示 -3；
+// 下方默认命令演示退出码 3。
+func execOnce(ctx context.Context, cli *http.Client, timeoutSeconds int64) {
 	stream, err := cli.Container().ExecOnce(ctx, &container.ExecOnceRequest{
-		Namespace: "duc-abc",
-		Pod:       "ng-nginx-594b65865-g975j",
-		Container: "",
-		Command:   []string{"bash", "-c", "echo 'hello from exec_once'; echo 'oops to stderr' >&2; exit 3"},
+		Namespace:      "duc-abc",
+		Pod:            "ng-nginx-594b65865-g975j",
+		Container:      "",
+		Command:        []string{"bash", "-c", "echo 'hello from exec_once'; echo 'oops to stderr' >&2; exit 3"},
+		TimeoutSeconds: timeoutSeconds,
 	})
 	if err != nil {
 		log.Fatalf("ExecOnce 建立流失败: %v", err)
@@ -190,6 +195,8 @@ func describeExecErrorCode(code int64) string {
 		return "(命令输出超限被服务端强制截断)"
 	case code == -2:
 		return "(exec 启动/执行失败，如命令在容器内不存在)"
+	case code == -3:
+		return "(命令执行超时被服务端强制终止)"
 	default:
 		return fmt.Sprintf("(容器内命令退出码 %d)", code)
 	}
