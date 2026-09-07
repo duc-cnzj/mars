@@ -1685,6 +1685,85 @@ func TestK8sRepo_SubscribePodEvents(t *testing.T) {
 	assert.False(t, ok)
 }
 
+// TestK8sRepo_SubscribePodEvents_RawClosed 覆盖转换 goroutine 经 raw 关闭分支退出的路径
+// （k8s.go L393 if !ok return）：直接移除 listener 关闭 raw 而不触发 done，goroutine
+// 应读取到 raw 已关闭（ok=false）而从外层 select 的 !ok 分支退出，而非依赖 done。
+func TestK8sRepo_SubscribePodEvents_RawClosed(t *testing.T) {
+	input := make(chan Obj[*corev1.Pod], 4)
+	fan := newFanOut[*corev1.Pod](mlog.NewForConfig(nil), "pod", input, map[string]chan<- Obj[*corev1.Pod]{})
+	d := NewDataImpl(&NewDataParams{
+		Cfg:       &config.Config{},
+		K8sClient: &K8sClient{podFanOut: fan},
+	})
+	repo := &k8sRepo{data: d}
+
+	ch, _ := repo.SubscribePodEvents("pod-watcher")
+	done := make(chan struct{})
+	defer close(done)
+	go fan.Distribute(done)
+
+	// 仅移除监听器关闭 raw，done 保持打开：goroutine 外层 select 只有 raw 关闭分支就绪，
+	// 确定性经 L393 的 !ok 退出。
+	fan.RemoveListener("pod-watcher")
+	_, ok := <-ch
+	assert.False(t, ok, "raw 关闭后 out 应被 close，消费方读不到数据")
+}
+
+// TestK8sRepo_SubscribePodEvents_DoneWhileOutFull 覆盖 out 积满时 unsubscribe 的 done
+// 打断内层 select 发送的路径（k8s.go L405）：消费方不读，事件泵填满 out 缓冲后 goroutine
+// 阻塞在 inner select 的 out<- 发送；此时 unsubscribe 关闭 done，goroutine 应从 L405 退出，
+// 而非永久悬挂（本次内存泄露修复的核心场景）。
+func TestK8sRepo_SubscribePodEvents_DoneWhileOutFull(t *testing.T) {
+	input := make(chan Obj[*corev1.Pod], 4)
+	fan := newFanOut[*corev1.Pod](mlog.NewForConfig(nil), "pod", input, map[string]chan<- Obj[*corev1.Pod]{})
+	d := NewDataImpl(&NewDataParams{
+		Cfg:       &config.Config{},
+		K8sClient: &K8sClient{podFanOut: fan},
+	})
+	repo := &k8sRepo{data: d}
+
+	ch, unsubscribe := repo.SubscribePodEvents("pod-watcher")
+	done := make(chan struct{})
+	defer close(done)
+	go fan.Distribute(done)
+
+	pod := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "p", Namespace: "default"}}
+	pumpDone := make(chan struct{})
+	defer close(pumpDone)
+	// 持续灌入事件，保证 raw 恒非空，out 会被填满。
+	go func() {
+		for {
+			select {
+			case input <- newObj[*corev1.Pod](nil, pod, Update):
+			case <-pumpDone:
+				return
+			}
+		}
+	}()
+
+	// 等 out（ch）积满：此时 goroutine 必阻塞在 inner select 等待 out 空间或 done。
+	deadline := time.After(3 * time.Second)
+	for len(ch) < cap(ch) {
+		select {
+		case <-deadline:
+			t.Fatal("out 未在超时内积满，无法触发 inner select 阻塞")
+		case <-time.After(time.Millisecond):
+		}
+	}
+	// done 关闭 → goroutine 从 inner select 的 <-done 分支（L405）退出并关闭 out。
+	unsubscribe()
+	// out 缓冲中积压的事件仍可读出（closed 通道先吐缓冲值），需排空至关闭才算退出。
+	drained := 0
+	for {
+		_, ok := <-ch
+		if !ok {
+			break
+		}
+		drained++
+	}
+	assert.Greater(t, drained, 0, "out 积压事件应先被排空")
+}
+
 // TestIsPodRunning_WaitingAndNotRunning 补齐 IsPodRunning 的两个剩余分支：
 // 容器处于 Waiting 态（取 Waiting.Reason/Message）与无容器状态（"pod not running."）。
 func TestIsPodRunning_WaitingAndNotRunning(t *testing.T) {
