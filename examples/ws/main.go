@@ -9,7 +9,7 @@
 //   - term.Stdout()                      接收容器输出；
 //   - term.Done()                        会话结束信号。
 //
-// 本 demo 默认以 raw 模式运行（-raw=false 可切回 canonical）：
+// 本 demo 以 raw 模式运行（Pump 默认开启，可用 WithRawMode(false) 关闭）：
 //   - raw 模式下关掉本地行缓冲与回显，每个按键字节即时透传给远端 shell，
 //     由远端 readline 解释——tab 补全、方向键、clear 等交互得以生效；
 //   - Ctrl+C 在 raw 模式下只是一个字节 0x03，透传给远端 shell（由远端发 SIGINT），
@@ -62,13 +62,12 @@ func main() {
 	fmt.Fprintf(os.Stderr, "[ws] 终端已打开（sessionID=%s）：直接输入命令回车执行；Ctrl+C 退出\n", term.ID())
 
 	// 数据面：term.Pump 接好 stdin→远端、远端→stdout、远端→toast 三通道，
-	// 并按 -raw 开关切本地终端模式（默认 raw，get tab 补全/方向键/clear）。
+	// 并以默认 raw 模式切本地终端（get tab 补全/方向键/clear）。
 	// stop 既停转发又恢复本地终端设置，故必须 defer。
 	stop := term.Pump(
 		os.Stdin,
 		func(data []byte) { _, _ = os.Stdout.Write(data) },
 		func(data []byte) { fmt.Fprintf(os.Stderr, "[toast] %s\n", data) },
-		//ws.WithRawMode(*raw),
 	)
 	defer stop()
 

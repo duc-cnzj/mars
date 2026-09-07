@@ -39,6 +39,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/project"
 	"github.com/duc-cnzj/mars/api/v6/proto/version"
 	"github.com/duc-cnzj/mars/api/v6/proto/websocket"
+	"github.com/duc-cnzj/mars/v6/examples/execerr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -178,27 +179,13 @@ func execOnce(ctx context.Context, cli *http.Client, timeoutSeconds int64) {
 			log.Fatalf("ExecOnce Recv 传输层错误: %v", err)
 		}
 		if recv.Error != nil {
-			fmt.Printf("-> 错误帧: code=%d %s\n", recv.Error.Code, describeExecErrorCode(recv.Error.Code))
+			fmt.Printf("-> 错误帧: code=%d %s\n", recv.Error.Code, execerr.Describe(recv.Error.Code))
 			if recv.Error.Message != "" {
 				fmt.Printf("   %s\n", recv.Error.Message)
 			}
 			continue
 		}
 		fmt.Print(string(recv.Message))
-	}
-}
-
-// describeExecErrorCode 解释 ExecError.code 语义，便于 demo 直观展示错误帧类型。
-func describeExecErrorCode(code int64) string {
-	switch {
-	case code == -1:
-		return "(命令输出超限被服务端强制截断)"
-	case code == -2:
-		return "(exec 启动/执行失败，如命令在容器内不存在)"
-	case code == -3:
-		return "(命令执行超时被服务端强制终止)"
-	default:
-		return fmt.Sprintf("(容器内命令退出码 %d)", code)
 	}
 }
 
