@@ -45,6 +45,12 @@ message ExecOnceRequest {
   int64           timeout_seconds = 5;
 }
 
+// ExecError 是 Exec/ExecOnce 命令执行结果的错误帧，随 ExecResponse.error 逐帧传达。
+// code 语义：
+//   - 0-255   容器内命令的非零退出码（命令已启动并结束）
+//   - -1      命令输出超限被服务端强制截断（ExecOnce）
+//   - -2      容器 exec 启动/执行失败（如命令在容器内不存在）
+// 命令错误经此错误帧传达，流以 io.EOF 正常结束，不提升为传输层 gRPC/HTTP 错误。
 message ExecError {
   int64  code    = 1;
   string message = 2;
@@ -130,11 +136,12 @@ service Container {
     };
   }
 
-  // Exec grpc 执行 pod 命令，交互式, 使用方法见 examples/ 目录
+  // Exec grpc 执行 pod 命令，交互式, 使用方法见 examples/grpc/ 目录
   rpc Exec(stream ExecRequest) returns (stream ExecResponse);
 
-  // ExecOnce grpc 执行一次 pod 命令, 非 tty 模式, 适合一次性脚本, 使用方法见 examples/ 目录。
-  // HTTP 侧为 GET server-streaming（SSE）：command 走重复 query 参数（?command=ls&command=-la）。
+  // ExecOnce grpc 执行一次 pod 命令, 非 tty 模式, 适合一次性脚本, 使用方法见 examples/grpc/ 目录。
+  // HTTP 侧为 GET server-streaming（SSE）：command 走重复 query 参数（?command=ls&command=-la），
+  // 使用方法见 examples/http/ 目录。
   rpc ExecOnce(ExecOnceRequest) returns (stream ExecResponse) {
     option (google.api.http)      = {
       get: "/api/containers/exec_once"
@@ -145,7 +152,7 @@ service Container {
     };
   }
 
-  // StreamCopyToPod grpc 上传文件到 pod, 使用方法见 examples/ 目录
+  // StreamCopyToPod grpc 上传文件到 pod, 使用方法见 examples/grpc/ 目录
   rpc StreamCopyToPod(stream StreamCopyToPodRequest) returns (StreamCopyToPodResponse);
 
   rpc IsPodRunning(IsPodRunningRequest) returns (IsPodRunningResponse) {

@@ -1656,7 +1656,9 @@ func toRemotecommandTerminalSizeQueue(q biz.TerminalSizeQueue) remotecommand.Ter
 }
 
 // translateExecError 把 client-go 的容器退出码错误（CodeExitError）翻译为 biz 领域错误
-// ExecExitError，使 biz 层不依赖 client-go 错误类型；其余错误原样透传。
+// ExecExitError，使 biz 层不依赖 client-go 错误类型；非退出码的容器 exec 启动/执行失败
+// （命令不存在、容器运行时错误等）翻译为 biz.ExecFailure，同样归为"容器执行结果"，
+// 由 biz 以流内错误帧传达而不提升为传输层 500。
 func translateExecError(err error) error {
 	if err == nil {
 		return nil
@@ -1665,5 +1667,5 @@ func translateExecError(err error) error {
 	if errors.As(err, &exitErr) {
 		return &biz.ExecExitError{Code: exitErr.ExitStatus(), Message: exitErr.Error()}
 	}
-	return err
+	return &biz.ExecFailure{Message: err.Error()}
 }

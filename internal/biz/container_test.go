@@ -421,7 +421,8 @@ func TestContainerBiz_Exec_SuccessExitError(t *testing.T) {
 		FirstMessage: []byte("hi"),
 		InitialSize:  &container.TerminalSize{Width: 100, Height: 200},
 	})
-	assert.Error(t, err)
+	// 退出码属"容器执行结果"，经流内错误帧传达后返回 nil，不提升为传输层 500。
+	assert.NoError(t, err)
 	// 初始终端窗口已预先应用到 recorder。
 	w, h := reco.size()
 	assert.Equal(t, uint16(100), w)
@@ -429,6 +430,71 @@ func TestContainerBiz_Exec_SuccessExitError(t *testing.T) {
 	assert.True(t, audited)
 	// 退出错误帧已发送，退出码 2。
 	assert.Equal(t, int64(2), stream.lastExitCode())
+}
+
+// TestContainerBiz_Exec_ExecFailure 覆盖容器 exec 启动失败（如命令在容器内不存在）：
+// 属"容器执行结果"，经流内错误帧（execOnceExecFailedCode）传达后 Exec 返回 nil，
+// 不提升为传输层 500。
+func TestContainerBiz_Exec_ExecFailure(t *testing.T) {
+	k := &fakeK8sBizForContainer{
+		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
+		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
+			return &ExecFailure{Message: "exec: \"cc\": executable file not found in $PATH"}
+		},
+	}
+	reco := &fakeRecorderForContainer{user: &UserInfo{Name: "mars"}, file: &File{ID: 1}, dur: time.Second}
+	file := &fakeFileBizForContainer{recorder: func(u *UserInfo, c *Container) Recorder { return reco }}
+	event := &fakeEventBizForContainer{fileAudit: func(action types.EventActionType, username, operatorEmail, msg string, fileID int, duration time.Duration) {
+	}}
+	cb := newTestContainerBiz(k, file, event)
+	stream := &fakeExecStream{}
+	err := cb.Exec(context.Background(), stream, &UserInfo{Name: "mars"}, &ExecInput{
+		Namespace: "a", Pod: "b", Container: "c", Command: []string{"cc"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, execOnceExecFailedCode, stream.lastExitCode())
+}
+
+// TestContainerBiz_Exec_ExecFailureSendFailure 覆盖 exec 失败错误帧发送失败分支：
+// sendErr 只让错误帧失败，不打断流程，Exec 仍返回 nil（属"容器执行结果"）。
+func TestContainerBiz_Exec_ExecFailureSendFailure(t *testing.T) {
+	k := &fakeK8sBizForContainer{
+		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
+		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
+			return &ExecFailure{Message: "exec not found"}
+		},
+	}
+	reco := &fakeRecorderForContainer{user: &UserInfo{Name: "mars"}, file: &File{ID: 1}, dur: time.Second}
+	file := &fakeFileBizForContainer{recorder: func(u *UserInfo, c *Container) Recorder { return reco }}
+	event := &fakeEventBizForContainer{fileAudit: func(action types.EventActionType, username, operatorEmail, msg string, fileID int, duration time.Duration) {
+	}}
+	cb := newTestContainerBiz(k, file, event)
+	stream := &fakeExecStream{sendErr: errors.New("send boom")}
+	err := cb.Exec(context.Background(), stream, &UserInfo{Name: "mars"}, &ExecInput{
+		Namespace: "a", Pod: "b", Container: "c", Command: []string{"cc"},
+	})
+	assert.NoError(t, err)
+}
+
+// TestContainerBiz_Exec_MarsError 覆盖 mars 自身错误（如 SPDY 建连失败）上抛：
+// 非"容器执行结果"，Exec 直接返回原错误，由最上层映射为 500。
+func TestContainerBiz_Exec_MarsError(t *testing.T) {
+	k := &fakeK8sBizForContainer{
+		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
+		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
+			return errors.New("spdy: failed to upgrade websocket")
+		},
+	}
+	reco := &fakeRecorderForContainer{user: &UserInfo{Name: "mars"}, file: &File{ID: 1}, dur: time.Second}
+	file := &fakeFileBizForContainer{recorder: func(u *UserInfo, c *Container) Recorder { return reco }}
+	event := &fakeEventBizForContainer{fileAudit: func(action types.EventActionType, username, operatorEmail, msg string, fileID int, duration time.Duration) {
+	}}
+	cb := newTestContainerBiz(k, file, event)
+	err := cb.Exec(context.Background(), &fakeExecStream{}, &UserInfo{Name: "mars"}, &ExecInput{
+		Namespace: "a", Pod: "b", Container: "c", Command: []string{"ls"},
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to upgrade")
 }
 
 // TestContainerBiz_Exec_FirstMessageWriteError 覆盖 recv goroutine 首帧写错误分支：
@@ -461,7 +527,8 @@ func TestContainerBiz_Exec_FirstMessageWriteError(t *testing.T) {
 		})
 	}()
 	close(release)
-	assert.Error(t, <-done)
+	// 退出码属"容器执行结果"，经流内错误帧传达后返回 nil，不提升为传输层 500。
+	assert.NoError(t, <-done)
 	assert.True(t, audited)
 }
 
@@ -516,7 +583,8 @@ func TestContainerBiz_Exec_SendError(t *testing.T) {
 	}, time.Second, 10*time.Millisecond)
 	close(release)
 	close(stream.recvGate)
-	assert.Error(t, <-done)
+	// exec 以退出码结束属"容器执行结果"，send loop 失败只记日志，Exec 返回 nil。
+	assert.NoError(t, <-done)
 }
 
 // ---- ExecOnce ----
@@ -598,7 +666,8 @@ func TestContainerBiz_ExecOnce_ExitError(t *testing.T) {
 	err := cb.ExecOnce(context.Background(), stream, &UserInfo{Name: "admin"}, &ExecOnceInput{
 		Namespace: "a", Pod: "b", Command: []string{"ls"},
 	})
-	assert.Error(t, err)
+	// 退出码属"容器执行结果"，经流内帧传达后 ExecOnce 返回 nil，不再上抛为传输层错误。
+	assert.NoError(t, err)
 	assert.Equal(t, int64(1), stream.lastExitCode())
 	assert.Equal(t, "out", captured["result"])
 	assert.Contains(t, captured["error"].(string), "boom")
@@ -613,8 +682,8 @@ func TestContainerBiz_ExecOnce_SendError(t *testing.T) {
 		},
 		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
 			_, _ = input.Stdout.Write([]byte("out"))
-			// 返回退出错误让 ExecOnce 的返回值非 nil（send loop 的失败只记日志不改变返回值）。
-			return &ExecExitError{Code: 1}
+			// 返回 mars 自身错误让 ExecOnce 的返回值非 nil（send loop 的失败只记日志不改变返回值）。
+			return errors.New("mars internal")
 		},
 	}
 	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {}}
@@ -645,8 +714,60 @@ func TestContainerBiz_ExecOnce_ExitErrorSendFailure(t *testing.T) {
 	err := cb.ExecOnce(context.Background(), stream, &UserInfo{Name: "admin"}, &ExecOnceInput{
 		Namespace: "a", Pod: "b", Command: []string{"ls"},
 	})
-	assert.Error(t, err)
+	// 退出码属"容器执行结果"，即使错误帧发送失败也只记日志，ExecOnce 仍返回 nil。
+	assert.NoError(t, err)
 	assert.Equal(t, int64(1), stream.lastExitCode())
+}
+
+// TestContainerBiz_ExecOnce_ExecFailure 覆盖容器 exec 启动失败（如命令在容器内不存在）：
+// 属"容器执行结果"，经流内错误帧（execOnceExecFailedCode）传达后 ExecOnce 返回 nil，
+// 不提升为传输层 500。
+func TestContainerBiz_ExecOnce_ExecFailure(t *testing.T) {
+	k := &fakeK8sBizForContainer{
+		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
+		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
+			return "c", nil
+		},
+		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
+			return &ExecFailure{Message: "exec: \"cc\": executable file not found in $PATH"}
+		},
+	}
+	var captured AnyYamlPrettier
+	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {
+		captured, _ = newS.(AnyYamlPrettier)
+	}}
+	cb := newTestContainerBiz(k, &fakeFileBizForContainer{}, event)
+	stream := &fakeExecOnceStream{}
+	err := cb.ExecOnce(context.Background(), stream, &UserInfo{Name: "admin"}, &ExecOnceInput{
+		Namespace: "a", Pod: "b", Command: []string{"cc"},
+	})
+	assert.NoError(t, err)
+	frame := stream.findError(execOnceExecFailedCode)
+	assert.NotNil(t, frame)
+	assert.Contains(t, frame.Message, "executable file not found")
+	assert.Contains(t, captured["error"].(string), "executable file not found")
+}
+
+// TestContainerBiz_ExecOnce_ExecFailureSendFailure 覆盖 exec 失败错误帧发送失败分支：
+// errFrameErr 只让错误帧失败，不打断 send loop，ExecOnce 仍返回 nil。
+func TestContainerBiz_ExecOnce_ExecFailureSendFailure(t *testing.T) {
+	k := &fakeK8sBizForContainer{
+		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
+		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
+			return "c", nil
+		},
+		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
+			return &ExecFailure{Message: "exec not found"}
+		},
+	}
+	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {}}
+	cb := newTestContainerBiz(k, &fakeFileBizForContainer{}, event)
+	stream := &fakeExecOnceStream{errFrameErr: errors.New("frame boom")}
+	err := cb.ExecOnce(context.Background(), stream, &UserInfo{Name: "admin"}, &ExecOnceInput{
+		Namespace: "a", Pod: "b", Command: []string{"cc"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, execOnceExecFailedCode, stream.lastExitCode())
 }
 
 // ---- execOnceDeadline / cappedWriter 单元 ----

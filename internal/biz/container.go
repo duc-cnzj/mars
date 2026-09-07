@@ -296,16 +296,11 @@ func (cb *containerBiz) Exec(ctx context.Context, stream ExecStream, user *UserI
 		Cmd:               input.Command,
 		TerminalSizeQueue: queue,
 	})
-	var exitError *ExecExitError
-	if errors.As(err, &exitError) {
-		if sendErr := sendMsg(&container.ExecResponse{
-			Error: &container.ExecError{
-				Code:    int64(exitError.Code),
-				Message: exitError.Message,
-			},
-		}); sendErr != nil {
-			cb.logger.DebugCtx(ctx, "Exec: send exit error failed", sendErr)
-		}
+	// 容器执行结果错误（退出码/exec 启动失败）经流内错误帧传达后返回 nil，不提升为传输层 500；
+	// 仅 mars 自身错误（SPDY 建连失败、k8s API 通信故障等）才 return err 映射为 500。
+	handled, sendErr := sendExecResultFrame(sendMsg, err)
+	if sendErr != nil {
+		cb.logger.DebugCtx(ctx, "Exec: send exec result frame failed", sendErr)
 	}
 	closeAll()
 	cb.logger.DebugCtx(ctx, "Exec: 等待彻底退出", err)
@@ -315,7 +310,36 @@ func (cb *containerBiz) Exec(ctx context.Context, stream ExecStream, user *UserI
 			cb.logger.DebugCtx(ctx, "Exec: errgroup exit error", egErr)
 		}
 	}()
+	if handled {
+		return nil
+	}
 	return err
+}
+
+// sendExecResultFrame 把容器执行结果错误（ExecExitError 退出码 / ExecFailure exec 启动失败）
+// 以流内错误帧传达给客户端，返回 handled 表示该错误是"容器执行结果"——调用方应 return nil
+// 而非上抛为传输层 500；sendErr 为帧发送错误（调用方仅记日志，不改变返回语义）。
+// sendFn 由调用方注入以保证 gRPC SendMsg 串行化并发安全。
+func sendExecResultFrame(sendFn func(*container.ExecResponse) error, err error) (handled bool, sendErr error) {
+	var exitError *ExecExitError
+	if errors.As(err, &exitError) {
+		return true, sendFn(&container.ExecResponse{
+			Error: &container.ExecError{
+				Code:    int64(exitError.Code),
+				Message: exitError.Message,
+			},
+		})
+	}
+	var execFailure *ExecFailure
+	if errors.As(err, &execFailure) {
+		return true, sendFn(&container.ExecResponse{
+			Error: &container.ExecError{
+				Code:    execOnceExecFailedCode,
+				Message: execFailure.Message,
+			},
+		})
+	}
+	return false, nil
 }
 
 // ExecOnce 实现一次性命令编排，逻辑自 transport containerSvc.ExecOnce 下沉，行为不变。
@@ -389,9 +413,12 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 		TTY:    false,
 		Cmd:    input.Command,
 	})
-	var exitError *ExecExitError
+	// 容器执行结果（退出码/exec 启动失败/输出截断）经流内错误帧传达，流正常结束不再上抛；
+	// 仅 mars 自身错误（SPDY 建连失败、k8s API 通信故障等）才 return err，由最上层映射为 500。
+	var sendErr error
+	handled := capped.isTruncated()
 	switch {
-	case capped.isTruncated():
+	case handled:
 		// 输出超限被强制截断：命令由 cancel 终止（err 为 Canceled，非退出码），
 		// 只发一条明确的截断错误帧，让客户端知道输出不完整，而非静默断流。
 		if sendErr := sendMsg(&container.ExecResponse{
@@ -402,14 +429,10 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 		}); sendErr != nil {
 			cb.logger.DebugCtx(ctx, "ExecOnce: send truncation error failed", sendErr)
 		}
-	case errors.As(err, &exitError):
-		if sendErr := sendMsg(&container.ExecResponse{
-			Error: &container.ExecError{
-				Code:    int64(exitError.Code),
-				Message: exitError.Message,
-			},
-		}); sendErr != nil {
-			cb.logger.DebugCtx(ctx, "ExecOnce: send exit error failed", sendErr)
+	default:
+		handled, sendErr = sendExecResultFrame(sendMsg, err)
+		if sendErr != nil {
+			cb.logger.DebugCtx(ctx, "ExecOnce: send exec result frame failed", sendErr)
 		}
 	}
 
@@ -431,6 +454,9 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 		},
 	)
 	cb.logger.DebugCtx(ctx, "ExecOnce: 彻底退出", err)
+	if handled {
+		return nil
+	}
 	return err
 }
 
@@ -579,6 +605,10 @@ const maxExecOnceStreamSize = 5 << 20 // 5MiB
 // execOnceTruncatedCode 是 ExecOnce 输出超限被截断时的错误码。真实退出码 0-255，
 // 此码取其外（-1）以示区别，客户端据此识别"输出被截断"而非正常退出。
 const execOnceTruncatedCode int64 = -1
+
+// execOnceExecFailedCode 是 ExecOnce 容器 exec 启动/执行失败（如命令在容器内不存在）时的
+// 错误码。取截断码之外（-2），客户端据此识别"exec 未成功启动"这一容器执行结果。
+const execOnceExecFailedCode int64 = -2
 
 // execOnceDeadline 依据请求超时（0 用默认 1min）推导 ExecOnce 的执行截止时长。
 func execOnceDeadline(timeoutSeconds int64) time.Duration {

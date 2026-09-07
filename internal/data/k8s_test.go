@@ -1301,13 +1301,17 @@ func (f *fakeTerminalSizeQueue) Next() *biz.TerminalSize {
 	return nil
 }
 
-// Test_translateExecError 覆盖 translateExecError 三分支：nil 透传、非退出码错误透传、
-// CodeExitError 翻译为领域 ExecExitError。
+// Test_translateExecError 覆盖 translateExecError 三分支：nil 透传、非退出码 exec 失败
+// 翻译为领域 ExecFailure、CodeExitError 翻译为领域 ExecExitError。
 func Test_translateExecError(t *testing.T) {
 	assert.Nil(t, translateExecError(nil))
 
 	generic := errors.New("boom")
-	assert.Same(t, generic, translateExecError(generic))
+	failed := translateExecError(generic)
+	require.NotNil(t, failed)
+	gotFailure, ok := failed.(*biz.ExecFailure)
+	require.True(t, ok)
+	assert.Equal(t, "boom", gotFailure.Message)
 
 	exited := &clientgoexec.CodeExitError{Err: errors.New("boom"), Code: 2}
 	translated := translateExecError(exited)

@@ -360,6 +360,13 @@ func (x *ExecOnceRequest) GetTimeoutSeconds() int64 {
 	return 0
 }
 
+// ExecError 是 Exec/ExecOnce 命令执行结果的错误帧，随 ExecResponse.error 逐帧传达。
+// code 语义：
+//   - 0-255   容器内命令的非零退出码（命令已启动并结束）
+//   - -1      命令输出超限被服务端强制截断（ExecOnce）
+//   - -2      容器 exec 启动/执行失败（如命令在容器内不存在）
+//
+// 命令错误经此错误帧传达，流以 io.EOF 正常结束，不提升为传输层 gRPC/HTTP 错误。
 type ExecError struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Code          int64                  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
