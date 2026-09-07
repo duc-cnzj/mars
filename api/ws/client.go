@@ -59,7 +59,6 @@ type Client struct {
 	conn       *websocket.Conn
 	writeMu    sync.Mutex
 	ready      atomic.Bool
-	uidVal     atomic.Value
 	authFailed atomic.Bool
 	readyOnce  sync.Once
 	authOnce   sync.Once
@@ -215,7 +214,6 @@ func (c *Client) dispatch(message []byte) {
 	}
 	switch m.Type {
 	case websocket_pb.Type_SetUid:
-		c.uidVal.Store(m.Message)
 		c.ready.Store(true)
 		c.readyOnce.Do(func() { close(c.readyCh) })
 	case websocket_pb.Type_InternalError:
@@ -312,14 +310,6 @@ func (c *Client) Close() error {
 	c.closeConn()
 	c.wg.Wait()
 	return nil
-}
-
-// uid 返回连接的 uid（收到 SetUid 帧后有效）。
-func (c *Client) uid() string {
-	if v := c.uidVal.Load(); v != nil {
-		return v.(string)
-	}
-	return ""
 }
 
 // wsURLToHTTPBase 把 ws/wss url 转成同主机的 http/https base（去掉路径），

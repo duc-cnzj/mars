@@ -108,13 +108,27 @@ func TestWaitReady_AuthorizeSuccess(t *testing.T) {
 	}
 	defer cli.Close()
 
+	// 订阅 SetUid 事件，验证握手后事件正常分发（替代读取已删除的内部 uid()）。
+	uidCh := make(chan string, 1)
+	unsub := cli.onType(websocket_pb.Type_SetUid, func(ev *Event) {
+		if ev.Metadata != nil {
+			uidCh <- ev.Metadata.Message
+		}
+	})
+	defer unsub()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	if err := cli.waitReady(ctx); err != nil {
 		t.Fatalf("WaitReady 应成功: %v", err)
 	}
-	if got := cli.uid(); got != "uid-1" {
-		t.Fatalf("UID 应为 uid-1，实际 %q", got)
+	select {
+	case uid := <-uidCh:
+		if uid != "uid-1" {
+			t.Fatalf("SetUid 事件 uid 应为 uid-1，实际 %q", uid)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("等待 SetUid 事件分发超时")
 	}
 }
 

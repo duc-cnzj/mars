@@ -10,7 +10,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -116,13 +115,13 @@ func (t *Terminal) handle(ev *Event) {
 	}
 }
 
-// retryGate 是鉴权竞态兜底：服务器把 ExecShell 回"认证中，请稍等~"gate 帧时，
-// 若 shell 尚未开启就隔 150ms 重发 ExecShell。仅 readLoop goroutine 内调用
-// （onType 分发），与 handle 串行；重发本身在独立 goroutine 里做，不阻塞读循环。
-func (t *Terminal) retryGate(ev *Event) {
-	if ev.Metadata == nil || !strings.Contains(ev.Metadata.Message, "认证中") {
-		return
-	}
+// retryGate 是鉴权竞态兜底：服务器在鉴权完成前会把 ExecShell 回"认证中"gate 帧
+// （type=HandleAuthorize）丢弃，本回调收到该类型帧且 shell 尚未开启时就隔 150ms
+// 重发 ExecShell。判定只依赖帧类型——服务端仅在鉴权竞态时回 HandleAuthorize 帧
+// （controller.go 的"认证中"gate），故不再匹配帧消息文本，避免与服务端本地化
+// 文案耦合。仅 readLoop goroutine 内调用（onType 分发），与 handle 串行；重发
+// 本身在独立 goroutine 里做，不阻塞读循环。
+func (t *Terminal) retryGate(_ *Event) {
 	select {
 	case <-t.opened:
 		return

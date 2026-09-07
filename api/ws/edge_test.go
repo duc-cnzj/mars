@@ -178,13 +178,6 @@ func TestWaitReady_CtxCancel(t *testing.T) {
 	}
 }
 
-func TestUID_Empty(t *testing.T) {
-	c := &Client{}
-	if got := c.uid(); got != "" {
-		t.Fatalf("未收到 SetUid 时 UID 应为空，实际 %q", got)
-	}
-}
-
 // ---- wsURLToHTTPBase url.Parse 错误 ----
 
 func TestWSURLToHTTPBase_ParseError(t *testing.T) {
@@ -374,14 +367,9 @@ func newRetryClient() *Client {
 	return c
 }
 
-func TestRetryGate_NonGateFrames(t *testing.T) {
-	t2 := &Terminal{client: newRetryClient(), opened: make(chan struct{})}
-	t2.retryGate(&Event{Metadata: nil}) // metadata 为 nil → 直接返回
-	t2.retryGate(&Event{Metadata: &websocket_pb.Metadata{Message: "hello"}})
-	if t2.retries != 0 {
-		t.Fatalf("非 gate 帧不应触发重试，实际 %d", t2.retries)
-	}
-}
+// 类型过滤在订阅层完成（OpenTerminal 用 onType(HandleAuthorize) 挂 retryGate，
+// 服务端仅在鉴权竞态时回该类型帧），retryGate 自身只按 opened/maxRetries 决定是否重发，
+// 不再匹配帧消息文本，故无"非 gate 帧"分支可测。
 
 func TestRetryGate_Opened(t *testing.T) {
 	t2 := &Terminal{client: newRetryClient(), opened: make(chan struct{})}
@@ -394,7 +382,7 @@ func TestRetryGate_Opened(t *testing.T) {
 
 func TestRetryGate_MaxRetries(t *testing.T) {
 	t2 := &Terminal{client: newRetryClient(), opened: make(chan struct{}), retries: maxOpenRetries}
-	t2.retryGate(&Event{Metadata: &websocket_pb.Metadata{Message: "认证中，请稍等~"}})
+	t2.retryGate(&Event{})
 	if t2.retries != maxOpenRetries {
 		t.Fatalf("超过最大重试不应再重发，实际 %d", t2.retries)
 	}
@@ -408,7 +396,7 @@ func TestRetryGate_Retries(t *testing.T) {
 		sessionID: "ns-pod-c:sid",
 		container: &websocket_pb.Container{Namespace: "ns", Pod: "pod", Container: "c"},
 	}
-	t2.retryGate(&Event{Metadata: &websocket_pb.Metadata{Message: "认证中，请稍等~"}})
+	t2.retryGate(&Event{})
 	if t2.retries != 1 {
 		t.Fatalf("应重试一次，实际 %d", t2.retries)
 	}
