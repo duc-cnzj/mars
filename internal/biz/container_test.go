@@ -894,6 +894,32 @@ func TestContainerBiz_ExecOnce_Timeout_NetError(t *testing.T) {
 	assert.Nil(t, stream.findError(execOnceExecFailedCode))
 }
 
+// TestContainerBiz_ExecOnce_TimeoutSendError 覆盖超时错误帧（-3）发送失败分支：
+// send 报错时只记 Debug 日志不 panic，用例仍正常返回。与截断/退出码/exec失败
+// 三种错误帧的 SendError 测试对偶（此前 -3 块漏写了这枚对偶测试）。
+func TestContainerBiz_ExecOnce_TimeoutSendError(t *testing.T) {
+	k := &fakeK8sBizForContainer{
+		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
+		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
+			return "c", nil
+		},
+		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
+			_, _ = input.Stdout.Write([]byte("slow"))
+			<-ctx.Done() // 等到 execCtx deadline 真触发
+			return context.DeadlineExceeded
+		},
+	}
+	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {}}
+	cb := newTestContainerBiz(k, &fakeFileBizForContainer{}, event)
+	// errFrameErr 仅使超时错误帧发送失败，不打断 send loop 对普通消息帧的消费，
+	// 从而覆盖"超时帧发送失败只记日志"分支（line 445）。
+	stream := &fakeExecOnceStream{errFrameErr: errors.New("frame boom")}
+	err := cb.ExecOnce(context.Background(), stream, &UserInfo{Name: "admin"}, &ExecOnceInput{
+		Namespace: "a", Pod: "b", Command: []string{"sleep"}, TimeoutSeconds: 1,
+	})
+	assert.NoError(t, err)
+}
+
 // TestContainerBiz_ExecOnce_TimeoutWiring 验证请求超时被接进 Execute 的 ctx deadline。
 func TestContainerBiz_ExecOnce_TimeoutWiring(t *testing.T) {
 	k := &fakeK8sBizForContainer{
