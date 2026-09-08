@@ -403,6 +403,29 @@ func TestRetryGate_Retries(t *testing.T) {
 	time.Sleep(200 * time.Millisecond) // 等 goroutine 的 sleep+execShell 跑完
 }
 
+// TestRetryExecShell_ResendWhenNotOpened 覆盖重发路径：opened 未关闭 → delay 后应
+// 调用 exec 重发（计数闭包注入，规避真实 150ms sleep 的不确定性）。
+func TestRetryExecShell_ResendWhenNotOpened(t *testing.T) {
+	t2 := &Terminal{opened: make(chan struct{}), sessionID: "sid", container: &websocket_pb.Container{}}
+	calls := 0
+	t2.retryExecShell(0, func(*websocket_pb.Container, string) error { calls++; return nil })
+	if calls != 1 {
+		t.Fatalf("opened 未关闭时应重发 execShell，实际 %d", calls)
+	}
+}
+
+// TestRetryExecShell_SkipAfterOpened 覆盖防御分支（本次修复核心）：shell 在重发前
+// 已开启（opened 关闭）→ delay 后应丢弃重发，绝不二次拉起 shell。
+func TestRetryExecShell_SkipAfterOpened(t *testing.T) {
+	t2 := &Terminal{opened: make(chan struct{}), sessionID: "sid", container: &websocket_pb.Container{}}
+	close(t2.opened) // shell 已开启 → 应跳过重发
+	calls := 0
+	t2.retryExecShell(0, func(*websocket_pb.Container, string) error { calls++; return nil })
+	if calls != 0 {
+		t.Fatalf("opened 已关闭时不应重发 execShell，实际 %d", calls)
+	}
+}
+
 // ---- handle 缓冲满丢弃分支 ----
 
 func TestTerminal_handle_BufferFull(t *testing.T) {

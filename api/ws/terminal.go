@@ -115,6 +115,19 @@ func (t *Terminal) handle(ev *Event) {
 	}
 }
 
+// shouldRetry 判断重试是否仍有效：shell 尚未开启（opened 未关闭）才需要重发。
+// retryGate 入口与重试 goroutine 共用——重发前再次确认 shell 未开，避免 sleep
+// 期间 shell 已开启却仍重发 ExecShell，服务端会重复拉起第二个 shell（StartShell
+// 每次请求新建 ptyHandler 并在容器内跑一个新 shell 进程）。
+func (t *Terminal) shouldRetry() bool {
+	select {
+	case <-t.opened:
+		return false
+	default:
+		return true
+	}
+}
+
 // retryGate 是鉴权竞态兜底：服务器在鉴权完成前会把 ExecShell 回"认证中"gate 帧
 // （type=HandleAuthorize）丢弃，本回调收到该类型帧且 shell 尚未开启时就隔 150ms
 // 重发 ExecShell。判定只依赖帧类型——服务端仅在鉴权竞态时回 HandleAuthorize 帧
@@ -122,19 +135,25 @@ func (t *Terminal) handle(ev *Event) {
 // 文案耦合。仅 readLoop goroutine 内调用（onType 分发），与 handle 串行；重发
 // 本身在独立 goroutine 里做，不阻塞读循环。
 func (t *Terminal) retryGate(_ *Event) {
-	select {
-	case <-t.opened:
-		return
-	default:
-	}
-	if t.retries >= maxOpenRetries {
+	if !t.shouldRetry() || t.retries >= maxOpenRetries {
 		return
 	}
 	t.retries++
-	go func() {
-		time.Sleep(150 * time.Millisecond) // 给服务器留出处理 Authorize 的时间
-		_ = t.client.execShell(t.container, t.sessionID)
-	}()
+	go t.retryExecShell(150*time.Millisecond, t.client.execShell)
+}
+
+// retryExecShell 在 delay 后重发 ExecShell，但重发前再次确认 shell 仍未开启
+// （shouldRetry）：若 sleep 期间 shell 已开启则丢弃本次重发——否则服务端会为同一
+// sessionID 重复拉起 shell 并覆盖已登记的 ptyHandler（StartShell 每次请求新建
+// ptyHandler 并跑一个新 shell 进程，见 terminal.go）。delay/exec 注入：生产由
+// retryGate 传 150ms 与 client.execShell，测试传短延迟与可观测闭包，规避硬编码
+// sleep 的不确定性（与本文件 autoHandleWindowSize 的平台依赖注入同款 idiom）。
+func (t *Terminal) retryExecShell(delay time.Duration, exec func(*websocket_pb.Container, string) error) {
+	time.Sleep(delay)
+	if !t.shouldRetry() {
+		return // 期间 shell 已开启，丢弃本次重发，避免重复拉起 shell
+	}
+	_ = exec(t.container, t.sessionID)
 }
 
 // ID 返回终端会话 id（即 sessionID）。
