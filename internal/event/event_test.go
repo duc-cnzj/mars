@@ -184,3 +184,124 @@ func TestDispatcher_Dispatch_ChannelFull(t *testing.T) {
 	logger.EXPECT().Warningf(gomock.Any(), gomock.Any(), gomock.Any())
 	dispatcher.Dispatch(Event("second"), "payload2")
 }
+
+// TestDispatcher_Run_SemFull_CallCtxDone 回归：信号量满（全部 handler 被慢监听器拖死）时，
+// Run 循环阻塞在 sem 发送也必须能响应调用方 ctx 取消退出，否则 Shutdown 后该 goroutine 泄漏。
+// 覆盖 Run 内层 select 的 <-ctx.Done() 分支。
+func TestDispatcher_Run_SemFull_CallCtxDone(t *testing.T) {
+	logger := mlog.NewForConfig(nil)
+	callCtx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	block := make(chan struct{})
+	defer close(block)
+	held := make(chan struct{})
+	d := &dispatcher{
+		ctx:       context.TODO(),
+		ch:        make(chan *eventBody, 2),
+		sem:       make(chan struct{}, 1),
+		logger:    logger,
+		listeners: map[Event][]Listener{},
+	}
+	// 监听器取得唯一 sem 槽位后永久阻塞，模拟慢监听器拖死信号量。
+	d.Listen(Event("e"), func(any, Event) error {
+		close(held)
+		<-block
+		return nil
+	})
+
+	done := make(chan struct{})
+	go func() {
+		_ = d.Run(callCtx)
+		close(done)
+	}()
+
+	d.Dispatch(Event("e"), nil)
+	<-held                      // 首个 handler 已持有 sem 槽位（sem 已满）
+	d.Dispatch(Event("e"), nil) // 第二个事件：Run 出队后阻塞在 sem 发送
+
+	cancel() // 调用方 ctx 取消，须穿过内层 sem select 退出
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run 未在信号量满时响应 ctx 取消，goroutine 泄漏")
+	}
+}
+
+// TestDispatcher_Run_ListenerPanic 验证监听器 panic 被 HandlePanic 兜底：监听器抛 panic
+// 不会击穿 Run 循环，后续分发的其它事件仍能被正常处理。注意：panic 会沿着当前 goroutine
+// 的 for 循环向上展开（event.go:117），同事件的后续监听器会被跳过，但整个 dispatcher 存活。
+func TestDispatcher_Run_ListenerPanic(t *testing.T) {
+	logger := mlog.NewForConfig(nil)
+	dispatcher := NewDispatcher(logger)
+
+	panicked := make(chan struct{})
+	dispatcher.Listen(Event("boom"), func(any, Event) error {
+		close(panicked)
+		panic("listener exploded")
+	})
+	// 后续分发的新事件：若 panic 击穿 Run 循环，此事件将永远不会被处理。
+	after := make(chan struct{})
+	dispatcher.Listen(Event("after"), func(any, Event) error {
+		close(after)
+		return nil
+	})
+
+	dispatcher.Run(context.TODO())
+	dispatcher.Dispatch(Event("boom"), nil)
+
+	select {
+	case <-panicked:
+	case <-time.After(2 * time.Second):
+		t.Fatal("panicking listener was not called")
+	}
+	// panic 被 HandlePanic 恢复后，dispatcher 必须继续处理新事件。
+	dispatcher.Dispatch(Event("after"), nil)
+	select {
+	case <-after:
+	case <-time.After(2 * time.Second):
+		t.Fatal("event after a panic was not handled; Run loop was killed by panic")
+	}
+
+	dispatcher.Shutdown(context.TODO())
+}
+
+// TestDispatcher_Run_SemFull_Shutdown 回归：与 CallCtxDone 对称，覆盖 Shutdown（内部 ctx）
+// 取消时穿过内层 sem select 退出，即 <-d.ctx.Done() 分支。
+func TestDispatcher_Run_SemFull_Shutdown(t *testing.T) {
+	logger := mlog.NewForConfig(nil)
+	dCtx, dCancel := context.WithCancel(context.TODO())
+
+	block := make(chan struct{})
+	defer close(block)
+	held := make(chan struct{})
+	d := &dispatcher{
+		ctx:       dCtx,
+		ch:        make(chan *eventBody, 2),
+		sem:       make(chan struct{}, 1),
+		logger:    logger,
+		listeners: map[Event][]Listener{},
+	}
+	d.Listen(Event("e"), func(any, Event) error {
+		close(held)
+		<-block
+		return nil
+	})
+
+	done := make(chan struct{})
+	go func() {
+		_ = d.Run(context.TODO())
+		close(done)
+	}()
+
+	d.Dispatch(Event("e"), nil)
+	<-held
+	d.Dispatch(Event("e"), nil)
+
+	dCancel() // Shutdown 取消内部 ctx
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run 未在 Shutdown 时退出，goroutine 泄漏")
+	}
+}

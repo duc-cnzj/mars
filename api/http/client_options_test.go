@@ -122,7 +122,7 @@ func TestWithTracer_PropagatesTraceContext(t *testing.T) {
 	}
 }
 
-// 全部 15 个 service 访问器都应返回非 nil 客户端（与 gRPC SDK 对齐）。
+// 全部 17 个 service 访问器都应返回非 nil 客户端（与 gRPC SDK 对齐）。
 func TestServiceAccessors_AllWired(t *testing.T) {
 	c, err := NewClient("http://localhost:1")
 	if err != nil {
@@ -143,6 +143,8 @@ func TestServiceAccessors_AllWired(t *testing.T) {
 		"Picture":     c.Picture(),
 		"Project":     c.Project(),
 		"Repo":        c.Repo(),
+		"Settings":    c.Settings(),
+		"User":        c.User(),
 		"Version":     c.Version(),
 	} {
 		if svc == nil {

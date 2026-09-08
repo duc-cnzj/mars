@@ -224,14 +224,21 @@ func (d *cacheDBStore) Get(key string) (value []byte, err error) {
 func (d *cacheDBStore) Set(key string, value []byte, seconds int) (err error) {
 	toString := base64.StdEncoding.EncodeToString(value)
 
-	return d.d.DB().DBCache.Create().
+	if err := d.d.DB().DBCache.Create().
 		SetKey(key).
 		SetValue(toString).
 		SetExpiredAt(time.Now().Add(time.Duration(seconds) * time.Second)).
 		OnConflict().
 		UpdateValue().
 		UpdateExpiredAt().
-		Exec(context.TODO())
+		Exec(context.TODO()); err != nil {
+		return err
+	}
+
+	// 顺带清理已过期行：Get 只用 ExpiredAtGTE 过滤，过期行从不删除，长跑会让 dbcache
+	// 表无限增长（DB 存储泄漏）。DB 缓存写不频繁，此 DELETE 成本低，写路径顺带全局清理。
+	_, _ = d.d.DB().DBCache.Delete().Where(dbcache.ExpiredAtLTE(time.Now())).Exec(context.TODO())
+	return nil
 }
 
 // Delete 删除指定缓存键，键不存在时也返回 nil（ent Delete 对空结果不报错）。

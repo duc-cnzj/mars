@@ -75,23 +75,19 @@ type MemItem struct {
 type memoryLock struct {
 	sync.Mutex
 
-	owner   string
-	lottery [2]int
-	timer   timer.Timer
-	locks   *MemStore
-	logger  mlog.Logger
+	owner  string
+	timer  timer.Timer
+	locks  *MemStore
+	logger mlog.Logger
 }
 
 // NewMemoryLock 创建一个基于内存的锁。
-//
-// lottery 是 [分子, 分母] 组合：每次 Acquire 有 lottery[0]/lottery[1] 的概率触发一次僵尸锁清理。
-func NewMemoryLock(timer timer.Timer, lottery [2]int, store *MemStore, logger mlog.Logger) Locker {
+func NewMemoryLock(timer timer.Timer, store *MemStore, logger mlog.Logger) Locker {
 	return &memoryLock{
-		owner:   rand.String(40),
-		lottery: lottery,
-		timer:   timer,
-		locks:   store,
-		logger:  logger,
+		owner:  rand.String(40),
+		timer:  timer,
+		locks:  store,
+		logger: logger,
 	}
 }
 
@@ -125,16 +121,14 @@ func (m *memoryLock) acquireInternal(key string, seconds int64) bool {
 
 // Acquire 尝试获取 key 锁并返回是否成功。
 //
-// 每次获取会以 lottery 概率触发一次僵尸锁清理，避免过期项无限堆积。
+// 每次获取都会确定性执行一次僵尸锁清理，保证过期锁项不会无限堆积，
+// 锁 map 内存占用有上界。
 func (m *memoryLock) Acquire(key string, seconds int64) bool {
 	m.Lock()
 	defer m.Unlock()
 
 	acquired := m.acquireInternal(key, seconds)
-
-	if rand.Intn(m.lottery[1]) < m.lottery[0] {
-		m.locks.CleanupExpired(m.timer.Now().Unix(), staleWindow)
-	}
+	m.locks.CleanupExpired(m.timer.Now().Unix(), staleWindow)
 
 	return acquired
 }

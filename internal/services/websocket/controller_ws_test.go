@@ -98,7 +98,7 @@ func TestWebsocketManager_read_validMessage(t *testing.T) {
 	mockWs.EXPECT().SetReadLimit(maxMessageSize)
 	mockWs.EXPECT().SetReadDeadline(gomock.Any()).AnyTimes()
 	mockWs.EXPECT().SetPongHandler(gomock.Any()).Do(func(h func(string) error) { pongHandler = h })
-	mockWs.EXPECT().ReadMessage().Return(1, msg, nil)     // 有效消息 → go dispatchEvent
+	mockWs.EXPECT().ReadMessage().Return(1, msg, nil)     // 有效消息 → 同步 dispatchEvent（鉴权帧）
 	mockWs.EXPECT().ReadMessage().Return(0, nil, errBoom) // 退出循环
 
 	wm := &websocketManager{logger: mlog.NewForConfig(nil), timer: timer.NewReal()}
@@ -112,10 +112,53 @@ func TestWebsocketManager_read_validMessage(t *testing.T) {
 	conn := &wsConn{GorillaWs: mockWs}
 	err = wm.read(context.TODO(), conn)
 	assert.Error(t, err)
-	<-called // 等异步 dispatchEvent 完成
+	<-called // 鉴权帧同步处理，返回时 handler 必已执行
 
 	// 触发 pong handler 内部再设读超时
 	assert.NoError(t, pongHandler(""))
+}
+
+// TestWebsocketManager_read_authorizeOrdering 回归鉴权竞态：鉴权帧必须同步处理，
+// 保证 SetUser 先于后续非授权帧完成，否则 ExecShell/Resize 会因 GetUser()==nil
+// 被"认证中，请稍等~"拒绝（实际线上表现为"能输入但没有返回"）。
+func TestWebsocketManager_read_authorizeOrdering(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	authMsg, _ := proto.Marshal(&websocket_pb.WsRequestMetadata{Type: websocket_pb.Type_HandleAuthorize})
+	execMsg, _ := proto.Marshal(&websocket_pb.WsRequestMetadata{Type: websocket_pb.Type_HandleExecShell})
+
+	mockWs := NewMockGorillaWs(m)
+	mockWs.EXPECT().SetReadLimit(maxMessageSize)
+	mockWs.EXPECT().SetReadDeadline(gomock.Any()).AnyTimes()
+	mockWs.EXPECT().SetPongHandler(gomock.Any()).AnyTimes()
+	mockWs.EXPECT().ReadMessage().Return(1, authMsg, nil) // 鉴权帧 → 同步
+	mockWs.EXPECT().ReadMessage().Return(1, execMsg, nil) // 后续帧 → go 异步
+	mockWs.EXPECT().ReadMessage().Return(0, nil, errBoom) // 退出循环
+
+	wm := &websocketManager{logger: mlog.NewForConfig(nil), timer: timer.NewReal()}
+	seen := make(chan struct{}, 1)
+	wm.handlers = map[websocket_pb.Type]HandleRequestFunc{
+		websocket_pb.Type_HandleAuthorize: func(ctx context.Context, c Conn, ty websocket_pb.Type, message []byte) {
+			c.SetUser(&biz.UserInfo{Name: "admin"}) // 同步阶段完成 SetUser
+		},
+		websocket_pb.Type_HandleExecShell: func(ctx context.Context, c Conn, ty websocket_pb.Type, message []byte) {
+			// 若鉴权异步（旧 bug），本 goroutine 可能先于 SetUser 运行 → GetUser()==nil → 失败。
+			if c.GetUser() == nil {
+				t.Error("鉴权未先于后续帧完成，GetUser()==nil（竞态复现）")
+			}
+			seen <- struct{}{}
+		},
+	}
+
+	conn := &wsConn{GorillaWs: mockWs}
+	err := wm.read(context.TODO(), conn)
+	assert.Error(t, err)
+	select {
+	case <-seen:
+	case <-time.After(2 * time.Second):
+		t.Fatal("ExecShell handler 未在时限内执行")
+	}
 }
 
 func TestWebsocketManager_write(t *testing.T) {

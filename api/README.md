@@ -1,18 +1,18 @@
 # mars API SDK
 
-mars 的客户端 SDK 模块（`github.com/duc-cnzj/mars/api/v6`）。提供 **gRPC** 与 **HTTP/JSON**（grpc-gateway）两套对等客户端，共享同一批 proto 生成类型：方法签名、返回类型、错误码全部对齐，调用方切换传输方式时业务代码无需改动。
+mars 的客户端 SDK 模块（`github.com/duc-cnzj/mars/api/v6`）。提供 **gRPC**、**HTTP/JSON**（grpc-gateway）与 **WebSocket** 三套客户端，共享同一批 proto 生成类型：方法签名、返回类型、错误码全部对齐，调用方切换传输方式时业务代码无需改动。其中 WebSocket（`api/ws`）承载 gRPC/HTTP 无法表达的**容器终端**双向实时能力（唯一对外入口 `OpenTerminal`）。
 
-## 两种传输，一套类型
+## 三种传输，一套类型
 
-| 维度 | gRPC SDK (`api/grpc`) | HTTP SDK (`api/http`) |
-|---|---|---|
-| 传输 | HTTP/2 gRPC | HTTP/1.1 JSON（grpc-gateway） |
-| 客户端 | `grpc.NewClient(addr, opts...)` | `http.NewClient(baseURL, opts...)` |
-| 访问器 | `cli.Namespace().List(ctx, req)` | `cli.Namespace().List(ctx, req)` |
+| 维度 | gRPC SDK (`api/grpc`) | HTTP SDK (`api/http`) | WebSocket SDK (`api/ws`) |
+|---|---|---|---|
+| 传输 | HTTP/2 gRPC | HTTP/1.1 JSON（grpc-gateway） | WebSocket（二进制 protobuf 帧） |
+| 客户端 | `grpc.NewClient(addr, opts...)` | `http.NewClient(baseURL, opts...)` | `ws.NewClient(url, opts...)` |
+| 访问器 | `cli.Namespace().List(ctx, req)` | `cli.Namespace().List(ctx, req)` | `cli.OpenTerminal(ctx, container)` 终端入口 |
 | 流式 | 原生 gRPC stream | server-streaming → SSE/NDJSON |
 | 需要服务端 | mars gRPC 端口（如 `:50000`） | mars gateway 端口（如 `:4000`） |
 
-两个包都暴露同一批 15 个 service 访问器：`Auth/Repo/Changelog/Cluster/Container/Event/AccessToken/File/Git/Metrics/Namespace/Picture/Project/Version/Endpoint`。
+两个包都暴露同一批 17 个 service 访问器：`Auth/Repo/Changelog/Cluster/Container/Event/AccessToken/File/Git/Metrics/Namespace/Picture/Project/Version/Endpoint/Settings/User`。
 
 ### 能力差异：gRPC 特有 vs HTTP 特有
 
@@ -149,6 +149,57 @@ func main() {
 | gRPC `WithUnaryClientInterceptor` / `WithStreamClientInterceptor` | 拦截器注入是 gRPC 原生机制，HTTP 无对应 |
 | HTTP `WithHTTPClient(hc)` / `WithTimeout(d)` | 直接操控 `*http.Client`，gRPC 无对应（连接配置走 dial options） |
 | HTTP `WithHeader` / `WithHeaders` | 客户端级自定义 header，覆盖 SDK 自动 header（Set 语义），gRPC 无对应（自定义元数据走拦截器） |
+
+## WebSocket SDK（`api/ws`）
+
+`api/ws` 面向一个核心场景：**在指定容器内拉起交互 shell 并读写**（gRPC/HTTP 无法表达的 bidi 实时能力）。因此对外**只暴露一个入口** `OpenTerminal`——连接、鉴权、sessionID 生成、shell 开启、鉴权竞态兜底全部在内部搞定，调用方只拿一个可读写的 `Terminal`。端点 `ws(s)://<host>/ws`，鉴权用与 HTTP/gRPC 同源的 JWT。
+
+```go
+cli, err := ws.NewClient("ws://127.0.0.1:4000/ws", ws.WithAuth("admin", "123456"))
+if err != nil { panic(err) }
+defer cli.Close()
+
+// 单调用完成「连接→鉴权→打开终端」全部交互；sessionID 由 SDK 自动生成。
+ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+defer cancel()
+term, err := cli.OpenTerminal(ctx, &websocket.Container{Namespace: "ns", Pod: "p", Container: "c"})
+if err != nil { panic(err) }
+defer term.Close()
+
+// 数据面：一条调用接好 stdin→远端、远端→stdout/toast 三通道（默认 raw 模式，
+// 见下方 raw 说明）。返回的 stop 同时停止转发并恢复本地终端，故必须 defer。
+stop := term.Pump(os.Stdin,
+	func(d []byte) { _, _ = os.Stdout.Write(d) },
+	func(d []byte) { /* OOB 提示（toast） */ },
+)
+defer stop()
+
+// 控制面：自动跟随本地终端窗口尺寸变化（初始尺寸 + SIGWINCH）同步远端 pty。
+term.AutoHandleWindowSize()
+
+// 仍可手动操作：term.Write(p) 发 stdin、term.Stdout() 收输出、term.Resize(h, w)、
+// term.ID() 取自动生成的 sessionID。
+
+// 会话结束（进程退出/被踢/主动 Close）
+<-term.Done()
+```
+
+**raw 模式（默认开启）**：`Pump` 默认把本地终端切到 raw 模式（关本地行缓冲与回显，每个按键字节即时透传远端 shell），由远端 readline 解释，从而获得 **tab 补全、方向键、clear** 等完整交互。代价是 **Ctrl+C 在 raw 模式下只是一个字节 `0x03`** 透传给远端 shell（由远端发 SIGINT），退出请用远端 `exit` 而非本地 Ctrl+C。用 `ws.WithRawMode(false)` 可退回 canonical 模式（本地回显、Ctrl+C 走本地 SIGINT）。`stop` 会自动恢复本地终端设置。
+
+- `Client` 常驻后台 goroutine，断线按退避策略自动重连、重鉴权；`Close()` 幂等。
+- 终端高层抽象 `Terminal`：`Pump(in, stdout, toast, opts...)`（数据面编排，返回 stop，默认 raw 模式）、`AutoHandleWindowSize()`（跟随本地窗口尺寸）、`Write`（stdin）/`Resize`/`Stdout`/`Toast`/`Done`/`Close`/`ID`（自动生成的 sessionID）。
+- 完整可运行示例见仓库根 [`examples/ws`](../examples/ws)。
+
+### WebSocket Option
+
+| Option | 说明 |
+|---|---|
+| `WithBearerToken(token)` | 直接注入已签发 JWT，连接时发 HandleAuthorize |
+| `WithAuth(user, pass)` | 连接时用 `api/http` 登录换 token，每次重连自动续期 |
+| `WithTokenProvider(fn)` | 自定义 token 来源，最灵活（缓存/OIDC exchange 等） |
+| `WithHTTPClient(hc)` | 仅配合 `WithAuth` 登录注入底层 `*http.Client` |
+| `WithDialer(d)` | 注入自定义 ws 拨号器（TLS/代理/握手超时） |
+| `WithReconnectBackoff(b)` | 自定义断线重连退避策略 |
 
 ## Server-streaming
 

@@ -18,11 +18,10 @@ import (
 // getDB 以闭包形式注入：每次操作实时获取当前 *ent.Client，因此锁可以在
 // DB 初始化（DBBootstrapper → InitDB）之前构造，只要首次调用发生在就绪之后。
 type databaseLock struct {
-	lottery [2]int
-	timer   timer.Timer
-	owner   string
-	getDB   func() *ent.Client
-	logger  mlog.Logger
+	timer  timer.Timer
+	owner  string
+	getDB  func() *ent.Client
+	logger mlog.Logger
 }
 
 // NewDatabaseLock 创建一个基于数据库的锁。
@@ -30,14 +29,12 @@ type databaseLock struct {
 // getDB 是获取当前 *ent.Client 的闭包（例如 data.Data 的 DB 方法值），
 // 允许锁实例在 DB 尚未初始化时构造；但首次 Acquire 前必须完成初始化，
 // 否则 DB 相关操作返回失败（false/空串/error），而不是 panic。
-// lottery 是 [分子, 分母] 组合：每次 Acquire 有 lottery[0]/lottery[1] 的概率触发一次过期锁清理。
-func NewDatabaseLock(timer timer.Timer, lottery [2]int, getDB func() *ent.Client, logger mlog.Logger) Locker {
+func NewDatabaseLock(timer timer.Timer, getDB func() *ent.Client, logger mlog.Logger) Locker {
 	return &databaseLock{
-		lottery: lottery,
-		timer:   timer,
-		owner:   rand.String(40),
-		getDB:   getDB,
-		logger:  logger,
+		timer:  timer,
+		owner:  rand.String(40),
+		getDB:  getDB,
+		logger: logger,
 	}
 }
 
@@ -94,7 +91,7 @@ func (d *databaseLock) Type() string {
 }
 
 // Acquire 尝试获取 key 锁并返回是否成功：
-// 先尝试插入新锁，失败则接管已过期的锁，并以 lottery 概率触发一次过期锁清理。
+// 先尝试插入新锁，失败则接管已过期的锁，随后确定性执行一次过期锁清理。
 func (d *databaseLock) Acquire(key string, seconds int64) bool {
 	db := d.db()
 	if db == nil {
@@ -112,9 +109,8 @@ func (d *databaseLock) Acquire(key string, seconds int64) bool {
 		acquired = true
 	}
 
-	if rand.Intn(d.lottery[1]) < d.lottery[0] {
-		d.cleanupExpiredLocks(db)
-	}
+	// 每次获取都确定性回收僵尸锁，保证 cache_locks 表不会无限膨胀。
+	d.cleanupExpiredLocks(db)
 
 	return acquired
 }

@@ -759,7 +759,7 @@ type WsHandleExecShellInput struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	Type      Type                   `protobuf:"varint,1,opt,name=type,proto3,enum=websocket.Type" json:"type,omitempty"`
 	Container *Container             `protobuf:"bytes,2,opt,name=container,proto3" json:"container,omitempty"`
-	// format: "<namespace>-<pod>-<container>:<randomID>"
+	// 会话关联键：客户端生成的不透明随机 id，服务端仅校验非空并按它路由帧。
 	SessionId     string `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

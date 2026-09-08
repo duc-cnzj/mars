@@ -33,17 +33,6 @@ func TestSilence(t *testing.T) {
 	assert.False(t, shouldSilenceShellError(errors.New("command terminated with exit code 131")))
 }
 
-func TestCheckSessionID(t *testing.T) {
-	container := &websocket_pb.Container{
-		Namespace: "namespace",
-		Pod:       "pod",
-		Container: "container",
-	}
-
-	assert.True(t, isValidSessionID(container, "namespace-pod-container:randomID"))
-	assert.False(t, isValidSessionID(container, "invalidSessionID"))
-}
-
 func TestSizeStore(t *testing.T) {
 	s := &sizeStore{}
 
@@ -537,6 +526,30 @@ func TestPtyHandler_Read2(t *testing.T) {
 	assert.Len(t, p3.shellCh, 1)
 }
 
+// TestPtyHandler_SendResize_AfterDoneChanClose 回归：doneChan 关闭后多次 Send/Resize
+// 命中 doneChan 分支，shellCh/sizeChan 只应被首个调用方关闭一次，二次调用不得
+// "close of closed channel" panic。修复前两次调用即 panic。
+func TestPtyHandler_SendResize_AfterDoneChanClose(t *testing.T) {
+	p := &ptyHandler{
+		sessionID: "duc",
+		logger:    mlog.NewForConfig(nil),
+		sizeChan:  make(chan biz.TerminalSize, 1),
+		shellCh:   make(chan *websocket_pb.TerminalMessage, 1),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
+	}
+	close(p.doneChan)
+
+	// 多次 Send 命中 doneChan 分支，均返回错误且不 panic（shellCh 只 close 一次）。
+	assert.Equal(t, "doneChan closed", p.Send(context.TODO(), nil).Error())
+	assert.Equal(t, "doneChan closed", p.Send(context.TODO(), nil).Error())
+	assert.Equal(t, "doneChan closed", p.Send(context.TODO(), nil).Error())
+
+	// 多次 Resize 命中 doneChan 分支，均返回错误且不 panic（sizeChan 只 close 一次）。
+	assert.Equal(t, "doneChan closed", p.Resize(biz.TerminalSize{}).Error())
+	assert.Equal(t, "doneChan closed", p.Resize(biz.TerminalSize{}).Error())
+}
+
 func Test_sizeStore_Changed(t *testing.T) {
 	t.Parallel()
 	ss := sizeStore{
@@ -798,7 +811,7 @@ func TestStartShell_WithValidSessionID(t *testing.T) {
 			Pod:       "pod",
 			Container: "container",
 		},
-		SessionId: "namespace-pod-container:randomID",
+		SessionId: "abc123",
 	}
 
 	conn.EXPECT().SetPtyHandler(input.SessionId, gomock.Any())
@@ -810,7 +823,7 @@ func TestStartShell_WithValidSessionID(t *testing.T) {
 	assert.Equal(t, input.SessionId, sessionID)
 }
 
-func TestStartShell_WithInvalidSessionID(t *testing.T) {
+func TestStartShell_EmptySessionID(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -825,7 +838,7 @@ func TestStartShell_WithInvalidSessionID(t *testing.T) {
 			Pod:       "pod",
 			Container: "container",
 		},
-		SessionId: "invalidSessionID",
+		SessionId: "",
 	}
 
 	_, err := ws.StartShell(context.TODO(), input, conn)

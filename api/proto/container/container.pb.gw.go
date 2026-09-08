@@ -100,11 +100,18 @@ func request_Container_Exec_0(ctx context.Context, marshaler runtime.Marshaler, 
 	return stream, metadata, nil
 }
 
+var (
+	filter_Container_ExecOnce_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+)
+
 func request_Container_ExecOnce_0(ctx context.Context, marshaler runtime.Marshaler, client ContainerClient, req *http.Request, pathParams map[string]string) (Container_ExecOnceClient, runtime.ServerMetadata, error) {
 	var protoReq ExecOnceRequest
 	var metadata runtime.ServerMetadata
 
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Container_ExecOnce_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -511,7 +518,7 @@ func RegisterContainerHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		return
 	})
 
-	mux.Handle("POST", pattern_Container_ExecOnce_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Container_ExecOnce_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
 		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -717,13 +724,13 @@ func RegisterContainerHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 
 	})
 
-	mux.Handle("POST", pattern_Container_ExecOnce_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Container_ExecOnce_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/container.Container/ExecOnce", runtime.WithHTTPPathPattern("/container.Container/ExecOnce"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/container.Container/ExecOnce", runtime.WithHTTPPathPattern("/api/containers/exec_once"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -879,7 +886,7 @@ var (
 
 	pattern_Container_Exec_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"container.Container", "Exec"}, ""))
 
-	pattern_Container_ExecOnce_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"container.Container", "ExecOnce"}, ""))
+	pattern_Container_ExecOnce_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "containers", "exec_once"}, ""))
 
 	pattern_Container_StreamCopyToPod_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"container.Container", "StreamCopyToPod"}, ""))
 

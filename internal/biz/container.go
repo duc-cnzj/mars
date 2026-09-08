@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/container"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
@@ -67,6 +68,9 @@ type ExecOnceInput struct {
 	Pod       string
 	Container string
 	Command   []string
+	// TimeoutSeconds 命令最大执行时长（秒）；0 表示使用服务端默认（1min）。
+	// 超时强制终止命令，防止死循环/挂起命令无限占用资源。
+	TimeoutSeconds int64
 }
 
 // ContainerBiz 封装容器终端用例编排：交互式会话的流复用、一次性命令的有界输出审计、退出码映射。
@@ -292,16 +296,11 @@ func (cb *containerBiz) Exec(ctx context.Context, stream ExecStream, user *UserI
 		Cmd:               input.Command,
 		TerminalSizeQueue: queue,
 	})
-	var exitError *ExecExitError
-	if errors.As(err, &exitError) {
-		if sendErr := sendMsg(&container.ExecResponse{
-			Error: &container.ExecError{
-				Code:    int64(exitError.Code),
-				Message: exitError.Message,
-			},
-		}); sendErr != nil {
-			cb.logger.DebugCtx(ctx, "Exec: send exit error failed", sendErr)
-		}
+	// 容器执行结果错误（退出码/exec 启动失败）经流内错误帧传达后返回 nil，不提升为传输层 500；
+	// 仅 mars 自身错误（SPDY 建连失败、k8s API 通信故障等）才 return err 映射为 500。
+	handled, sendErr := sendExecResultFrame(sendMsg, err)
+	if sendErr != nil {
+		cb.logger.DebugCtx(ctx, "Exec: send exec result frame failed", sendErr)
 	}
 	closeAll()
 	cb.logger.DebugCtx(ctx, "Exec: 等待彻底退出", err)
@@ -311,7 +310,36 @@ func (cb *containerBiz) Exec(ctx context.Context, stream ExecStream, user *UserI
 			cb.logger.DebugCtx(ctx, "Exec: errgroup exit error", egErr)
 		}
 	}()
+	if handled {
+		return nil
+	}
 	return err
+}
+
+// sendExecResultFrame 把容器执行结果错误（ExecExitError 退出码 / ExecFailure exec 启动失败）
+// 以流内错误帧传达给客户端，返回 handled 表示该错误是"容器执行结果"——调用方应 return nil
+// 而非上抛为传输层 500；sendErr 为帧发送错误（调用方仅记日志，不改变返回语义）。
+// sendFn 由调用方注入以保证 gRPC SendMsg 串行化并发安全。
+func sendExecResultFrame(sendFn func(*container.ExecResponse) error, err error) (handled bool, sendErr error) {
+	var exitError *ExecExitError
+	if errors.As(err, &exitError) {
+		return true, sendFn(&container.ExecResponse{
+			Error: &container.ExecError{
+				Code:    int64(exitError.Code),
+				Message: exitError.Message,
+			},
+		})
+	}
+	var execFailure *ExecFailure
+	if errors.As(err, &execFailure) {
+		return true, sendFn(&container.ExecResponse{
+			Error: &container.ExecError{
+				Code:    execOnceExecFailedCode,
+				Message: execFailure.Message,
+			},
+		})
+	}
+	return false, nil
 }
 
 // ExecOnce 实现一次性命令编排，逻辑自 transport containerSvc.ExecOnce 下沉，行为不变。
@@ -348,7 +376,14 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 			pipeWriter.Close()
 		})
 	}
-	w := io.MultiWriter(pipeWriter, bf)
+
+	// 审计日志缓冲有界只管日志侧，推给客户端的流要单独封顶：超限立即截断并取消
+	// execCtx 强制终止远端命令，防止死循环/大输出命令无限刷屏（详见 cappedWriter）。
+	execCtx, execCancel := context.WithTimeout(ctx, execOnceDeadline(input.TimeoutSeconds))
+	defer execCancel()
+	capped := newCappedWriter(pipeWriter, maxExecOnceStreamSize, execCancel)
+	w := io.MultiWriter(capped, bf)
+
 	go func() {
 		defer closeAll()
 		defer cb.logger.HandlePanic("biz.ContainerBiz.ExecOnce: send loop")
@@ -368,7 +403,7 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 	}()
 	startTime := cb.timer.Now()
 
-	err = cb.k8sBiz.Execute(ctx, &Container{
+	err = cb.k8sBiz.Execute(execCtx, &Container{
 		Namespace: input.Namespace,
 		Pod:       input.Pod,
 		Container: co,
@@ -378,15 +413,44 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 		TTY:    false,
 		Cmd:    input.Command,
 	})
-	var exitError *ExecExitError
-	if errors.As(err, &exitError) {
+	// 容器执行结果（退出码/exec 启动失败/输出截断）经流内错误帧传达，流正常结束不再上抛；
+	// 仅 mars 自身错误（SPDY 建连失败、k8s API 通信故障等）才 return err，由最上层映射为 500。
+	var sendErr error
+	handled := capped.isTruncated()
+	switch {
+	case handled:
+		// 输出超限被强制截断：命令由 cancel 终止（err 为 Canceled，非退出码），
+		// 只发一条明确的截断错误帧，让客户端知道输出不完整，而非静默断流。
 		if sendErr := sendMsg(&container.ExecResponse{
 			Error: &container.ExecError{
-				Code:    int64(exitError.Code),
-				Message: exitError.Message,
+				Code:    execOnceTruncatedCode,
+				Message: fmt.Sprintf("命令输出超过 %d 字节上限，已强制终止", maxExecOnceStreamSize),
 			},
 		}); sendErr != nil {
-			cb.logger.DebugCtx(ctx, "ExecOnce: send exit error failed", sendErr)
+			cb.logger.DebugCtx(ctx, "ExecOnce: send truncation error failed", sendErr)
+		}
+	default:
+		if errors.Is(execCtx.Err(), context.DeadlineExceeded) {
+			// 命令执行超过 timeout_seconds 上限被强制终止：发明确超时错误帧，
+			// 让客户端区分"命令超时"与"exec 未成功启动"，而非误标为 -2。
+			// 判据用 execCtx.Err()（我们自己的 deadline 是否真触发），而非 err 的类型：
+			// 超时可能被 SPDY 传输包装成任意 net.Error，但只有 execCtx deadline 到期
+			// execCtx.Err() 才为 DeadlineExceeded；若只看 err 类型，SPDY 建连超时等
+			// 基础设施错误会被误标为"命令超时"（实应为 500）。
+			if sendErr := sendMsg(&container.ExecResponse{
+				Error: &container.ExecError{
+					Code:    execOnceTimeoutCode,
+					Message: fmt.Sprintf("命令执行超过 %d 秒上限，已强制终止", int(execOnceDeadline(input.TimeoutSeconds)/time.Second)),
+				},
+			}); sendErr != nil {
+				cb.logger.DebugCtx(ctx, "ExecOnce: send timeout error failed", sendErr)
+			}
+			handled = true
+			break
+		}
+		handled, sendErr = sendExecResultFrame(sendMsg, err)
+		if sendErr != nil {
+			cb.logger.DebugCtx(ctx, "ExecOnce: send exec result frame failed", sendErr)
 		}
 	}
 
@@ -408,6 +472,9 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 		},
 	)
 	cb.logger.DebugCtx(ctx, "ExecOnce: 彻底退出", err)
+	if handled {
+		return nil
+	}
 	return err
 }
 
@@ -545,6 +612,84 @@ func (queue *execSizeQueue) Next() *TerminalSize {
 
 // maxExecOnceLogSize 限制 ExecOnce 审计日志记录的命令输出大小，防止大输出命令打爆内存。
 const maxExecOnceLogSize = 1 << 20 // 1MiB
+
+// defaultExecOnceTimeout 是 ExecOnce 的默认最大执行时长（秒），超时强制终止命令。
+const defaultExecOnceTimeout = 60
+
+// maxExecOnceStreamSize 限制 ExecOnce 推给客户端的流输出大小；超限截断并终止命令。
+// 与 maxExecOnceLogSize 解耦：日志侧与流侧各有上限，互不掩盖。
+const maxExecOnceStreamSize = 5 << 20 // 5MiB
+
+// execOnceTruncatedCode 是 ExecOnce 输出超限被截断时的错误码。真实退出码 0-255，
+// 此码取其外（-1）以示区别，客户端据此识别"输出被截断"而非正常退出。
+const execOnceTruncatedCode int64 = -1
+
+// execOnceExecFailedCode 是 ExecOnce 容器 exec 启动/执行失败（如命令在容器内不存在）时的
+// 错误码。取截断码之外（-2），客户端据此识别"exec 未成功启动"这一容器执行结果。
+const execOnceExecFailedCode int64 = -2
+
+// execOnceTimeoutCode 是 ExecOnce 命令执行超时被服务端强制终止时的错误码。取截断/启动失败码
+// 之外（-3），客户端据此区分"命令执行超时"与"exec 未成功启动/输出被截断"。
+const execOnceTimeoutCode int64 = -3
+
+// execOnceDeadline 依据请求超时（0 用默认 1min）推导 ExecOnce 的执行截止时长。
+func execOnceDeadline(timeoutSeconds int64) time.Duration {
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = defaultExecOnceTimeout
+	}
+	return time.Duration(timeoutSeconds) * time.Second
+}
+
+// cappedWriter 有界转发命令输出：累计超过 max 字节后停止转发（丢弃后续输出）并调用
+// cancel 强制终止远端命令，同时记录已截断。截断后 Write 直接返回成功（不再阻塞远端
+// 写方，进程由 cancel 终止），返回 nil 错误。
+type cappedWriter struct {
+	mu        sync.Mutex
+	w         io.Writer // 真实消费方（pipeWriter），截断后不再转发
+	max       int
+	written   int
+	truncated bool
+	cancel    context.CancelFunc
+}
+
+// newCappedWriter 构造带 max 字节上限、超限触发 cancel 的有界转发器。
+func newCappedWriter(w io.Writer, max int, cancel context.CancelFunc) *cappedWriter {
+	return &cappedWriter{w: w, max: max, cancel: cancel}
+}
+
+// Write 转发 p 直到累计达到上限；超限则标记截断、触发 cancel 并停止转发后续输出。
+func (c *cappedWriter) Write(p []byte) (int, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.truncated {
+		return len(p), nil // 已截断：直接丢弃，不转发（避免阻塞远端），进程由 cancel 终止
+	}
+	remaining := c.max - c.written
+	if len(p) > remaining {
+		// 本条将越界：转发能容纳的剩余部分后封顶截断。
+		if _, err := c.w.Write(p[:remaining]); err != nil {
+			return len(p), err
+		}
+		c.written = c.max
+		c.truncated = true
+		if c.cancel != nil {
+			c.cancel()
+		}
+		return len(p), nil
+	}
+	if _, err := c.w.Write(p); err != nil {
+		return len(p), err
+	}
+	c.written += len(p)
+	return len(p), nil
+}
+
+// isTruncated 返回是否已因输出超限被截断。
+func (c *cappedWriter) isTruncated() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.truncated
+}
 
 // limitedBuffer 只保留最近 max 字节的写入内容，用于有界收集命令输出。
 type limitedBuffer struct {

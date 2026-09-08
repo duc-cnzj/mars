@@ -6,10 +6,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 )
 
-// defaultLottery 是默认的过期锁清理概率 [分子, 分母]，
-// 即每次 Acquire 有 2/100 的概率触发一次僵尸锁清理。
-var defaultLottery = [2]int{2, 100}
-
 // Driver 是锁后端驱动类型，与 CacheDriver 枚举值保持一致。
 // 定义为命名类型而非裸 string，是为了让 wire 注入时能按类型唯一匹配，
 // 避免与其它 string 类型的 provider 产生注入歧义。
@@ -63,10 +59,10 @@ func NewLocker(driver Driver, getDB func() *ent.Client, logger mlog.Logger, time
 	logger = logger.WithModule("locker/locker")
 	switch driver {
 	case DriverDB:
-		return NewDatabaseLock(timer, defaultLottery, getDB, logger)
+		return NewDatabaseLock(timer, getDB, logger)
 	case DriverMemory:
 		fallthrough
 	default:
-		return NewMemoryLock(timer, defaultLottery, NewMemStore(), logger)
+		return NewMemoryLock(timer, NewMemStore(), logger)
 	}
 }

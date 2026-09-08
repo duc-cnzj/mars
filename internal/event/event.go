@@ -21,6 +21,10 @@ type Listener func(any, Event) error
 // eventChannelBuffer is the capacity of the dispatcher's event channel.
 const eventChannelBuffer = 800
 
+// maxConcurrentHandlers 限制事件监听器处理 goroutine 的并发上限：慢监听器（DB/网络）被拖住
+// 时，事件洪峰不会无界堆积 goroutine，而是由信号量背压到通道，满则走 Dispatch 丢弃告警。
+const maxConcurrentHandlers = 64
+
 // Dispatcher 是进程内即发即忘（fire-and-forget）的事件总线。
 type Dispatcher interface {
 	// Listen 为事件注册监听器。
@@ -57,6 +61,7 @@ type dispatcher struct {
 	cancel context.CancelFunc
 
 	ch        chan *eventBody
+	sem       chan struct{}
 	logger    mlog.Logger
 	listeners map[Event][]Listener
 }
@@ -71,6 +76,7 @@ func NewDispatcher(logger mlog.Logger) Dispatcher {
 		ctx:       ctx,
 		cancel:    cancelFunc,
 		ch:        make(chan *eventBody, eventChannelBuffer),
+		sem:       make(chan struct{}, maxConcurrentHandlers),
 		logger:    logger.WithModule("event/dispatcher"),
 		listeners: map[Event][]Listener{},
 	}
@@ -95,7 +101,18 @@ func (d *dispatcher) Run(ctx context.Context) error {
 					d.logger.Warning("event dispatcher channel closed")
 					return
 				}
+				// 有界信号量限流：满则本循环阻塞，事件由通道缓冲，再满则 Dispatch 丢弃。
+				// 信号量发送必须与 ctx.Done 一起 select：64 个 handler 全被慢监听器拖死时，
+				// 若只阻塞在 sem 发送，Run 循环不再观察 ctx.Done，Shutdown 后 goroutine 泄漏。
+				select {
+				case d.sem <- struct{}{}:
+				case <-d.ctx.Done():
+					return
+				case <-ctx.Done():
+					return
+				}
 				go func() {
+					defer func() { <-d.sem }()
 					defer d.logger.HandlePanic("event dispatcher")
 					for _, fn := range d.GetListeners(obj.event) {
 						if err := fn(obj.payload, obj.event); err != nil {

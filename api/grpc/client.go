@@ -28,7 +28,9 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/picture"
 	"github.com/duc-cnzj/mars/api/v6/proto/project"
 	"github.com/duc-cnzj/mars/api/v6/proto/repo"
+	"github.com/duc-cnzj/mars/api/v6/proto/settings"
 	"github.com/duc-cnzj/mars/api/v6/proto/token"
+	"github.com/duc-cnzj/mars/api/v6/proto/user"
 	"github.com/duc-cnzj/mars/api/v6/proto/version"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
@@ -68,6 +70,8 @@ type Client struct {
 	project     project.ProjectClient
 	repo        repo.RepoClient
 	accessToken token.AccessTokenClient
+	settings    settings.SettingsClient
+	user        user.UserClient
 	version     version.VersionClient
 }
 
@@ -112,6 +116,8 @@ func NewClient(addr string, opts ...Option) (*Client, error) {
 	c.endpoint = endpoint.NewEndpointClient(dial)
 	c.accessToken = token.NewAccessTokenClient(dial)
 	c.repo = repo.NewRepoClient(dial)
+	c.settings = settings.NewSettingsClient(dial)
+	c.user = user.NewUserClient(dial)
 
 	if c.password != "" || c.username != "" {
 		if err := c.getToken(); err != nil {
@@ -216,6 +222,16 @@ func (c *Client) Version() version.VersionClient {
 // Endpoint 返回端点(endpoint)服务的 gRPC 客户端。
 func (c *Client) Endpoint() endpoint.EndpointClient {
 	return c.endpoint
+}
+
+// Settings 返回平台配置(settings)服务的 gRPC 客户端（管理员后台，只读聚合平台配置）。
+func (c *Client) Settings() settings.SettingsClient {
+	return c.settings
+}
+
+// User 返回用户(user)服务的 gRPC 客户端（管理员后台用户管理）。
+func (c *Client) User() user.UserClient {
+	return c.user
 }
 
 func (c *Client) authToken() string {

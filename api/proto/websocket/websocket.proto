@@ -112,7 +112,7 @@ message WsHandleExecShellInput {
   Type      type       = 1;
 
   Container container  = 2;
-  // format: "<namespace>-<pod>-<container>:<randomID>"
+  // 会话关联键：客户端生成的不透明随机 id，服务端仅校验非空并按它路由帧。
   string    session_id = 3;
 }
 

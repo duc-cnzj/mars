@@ -28,6 +28,11 @@ func (s *ContainerSvc) CopyToPod(ctx context.Context, req *container.CopyToPodRe
 	return &out, nil
 }
 
+// ExecOnce GET /api/containers/exec_once（server-streaming → SSE）。
+func (s *ContainerSvc) ExecOnce(ctx context.Context, req *container.ExecOnceRequest) (transport.Stream[*container.ExecResponse], error) {
+	return transport.OpenStream[*container.ExecResponse](s.C, ctx, http.MethodGet, "/api/containers/exec_once", req)
+}
+
 // IsPodRunning POST /api/containers/pod_running_status。
 func (s *ContainerSvc) IsPodRunning(ctx context.Context, req *container.IsPodRunningRequest) (*container.IsPodRunningResponse, error) {
 	var out container.IsPodRunningResponse

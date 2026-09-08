@@ -787,6 +787,17 @@ type ExecExitError struct {
 // Error 返回退出错误消息。
 func (e *ExecExitError) Error() string { return e.Message }
 
+// ExecFailure 是容器 exec 启动/执行失败（如命令在容器内不存在、容器运行时错误）的领域错误。
+// 区别于 ExecExitError（命令已启动并产生非零退出码），exec 未成功启动即告失败；
+// 由 data 层 translateExecError 在非退出码分支翻译而来，隔离 client-go/OCI 错误类型。
+// 它与 ExecExitError 同属"容器执行结果"，由 biz 层以流内错误帧传达，不提升为传输层 500。
+type ExecFailure struct {
+	Message string
+}
+
+// Error 返回 exec 失败消息。
+func (e *ExecFailure) Error() string { return e.Message }
+
 // LogFn 是部署过程的日志回调函数。
 type LogFn func(format string, v ...any)
 

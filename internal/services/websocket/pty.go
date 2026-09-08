@@ -148,9 +148,14 @@ type ptyHandler struct {
 
 	shellMu sync.RWMutex
 	shellCh chan *websocket_pb.TerminalMessage
+	// shellCloseOnce 保证 doneChan 关闭后仅首个 Send 真正 close(shellCh)，
+	// 后续排队的 Send 不再二次 close，避免 "close of closed channel" panic。
+	shellCloseOnce sync.Once
 
 	sizeMu   sync.RWMutex
 	sizeChan chan biz.TerminalSize
+	// sizeCloseOnce 与 shellCloseOnce 同理，守卫 Resize 的 close(sizeChan)。
+	sizeCloseOnce sync.Once
 
 	closeable.Closeable
 }
@@ -291,7 +296,7 @@ func (t *ptyHandler) Send(ctx context.Context, m *websocket_pb.TerminalMessage) 
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-t.doneChan:
-		close(t.shellCh)
+		t.shellCloseOnce.Do(func() { close(t.shellCh) })
 		return errors.New("doneChan closed")
 	default:
 	}
@@ -308,7 +313,7 @@ func (t *ptyHandler) Send(ctx context.Context, m *websocket_pb.TerminalMessage) 
 func (t *ptyHandler) Resize(size biz.TerminalSize) error {
 	select {
 	case <-t.doneChan:
-		close(t.sizeChan)
+		t.sizeCloseOnce.Do(func() { close(t.sizeChan) })
 		return errors.New("doneChan closed")
 	default:
 	}

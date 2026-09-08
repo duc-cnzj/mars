@@ -717,7 +717,8 @@ func TestContainerSvc_ExecOnce_Success(t *testing.T) {
 		Pod:       "b",
 		Command:   []string{"ls"},
 	}, ser)
-	assert.Error(t, err)
+	// 退出码属"容器执行结果"，经流内错误帧传达后 ExecOnce 返回 nil，不提升为传输层 500。
+	assert.NoError(t, err)
 	assert.Equal(t, int64(1), ser.Error.Code)
 	assert.Equal(t, "xx", ser.Error.Message)
 }
@@ -1108,7 +1109,8 @@ func TestContainerSvc_Exec_SendError(t *testing.T) {
 	})).Return(&biz.ExecExitError{Code: 3, Message: "xx"})
 
 	err := svc.Exec(&execServerAll{})
-	assert.Error(t, err)
+	// exec 以退出码结束属"容器执行结果"，send 失败只记日志，返回 nil。
+	assert.NoError(t, err)
 }
 
 // recv goroutine 的首个 message 写入失败（reader 已被关闭）时，
@@ -1128,7 +1130,8 @@ func TestContainerSvc_Exec_FirstWriteError(t *testing.T) {
 	k8sRepo.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Return(&biz.ExecExitError{Code: 4, Message: "xx"})
 
 	err := svc.Exec(&execServerAll{})
-	assert.Error(t, err)
+	// exec 以退出码结束属"容器执行结果"，返回 nil，不提升为传输层 500。
+	assert.NoError(t, err)
 }
 
 // 并发 Send 检测 mock：追踪任何时刻正在执行 Send 的 goroutine 数。
@@ -1215,7 +1218,8 @@ func TestContainerSvc_Exec_ConcurrentSend(t *testing.T) {
 	}
 	close(server.release)
 
-	assert.Error(t, <-done)
+	// exec 以退出码结束属"容器执行结果"，返回 nil；并发 send 已由 sendMu 串行化。
+	assert.NoError(t, <-done)
 	// gRPC SendMsg 不保证并发安全：任何时刻最多 1 个 Send 在执行。
 	assert.Equal(t, int32(1), server.max.Load())
 }
@@ -1278,7 +1282,8 @@ func TestContainerSvc_ExecOnce_ConcurrentSend(t *testing.T) {
 	}
 	close(server.release)
 
-	assert.Error(t, <-done)
+	// 退出码属"容器执行结果"，经流内错误帧传达后返回 nil；并发 send 已由 sendMu 串行化。
+	assert.NoError(t, <-done)
 	assert.Equal(t, int32(1), server.max.Load())
 }
 
@@ -1319,7 +1324,8 @@ func TestContainerSvc_ExecOnce_SendError(t *testing.T) {
 	})).Return(&biz.ExecExitError{Code: 1, Message: "xx"})
 
 	err := svc.ExecOnce(&container.ExecOnceRequest{Namespace: "a", Pod: "b"}, &execOnceServerErr{})
-	assert.Error(t, err)
+	// send 失败只记日志不改变返回值；exec 以退出码结束属"容器执行结果"，返回 nil。
+	assert.NoError(t, err)
 }
 
 func TestContainerSvc_Exec_PodNotRunning(t *testing.T) {
@@ -1378,7 +1384,8 @@ func TestContainerSvc_Exec_Success(t *testing.T) {
 	mock := &execServerMock{}
 	err := svc.Exec(mock)
 	assert.Equal(t, int64(2), mock.err.Code)
-	assert.NotNil(t, err)
+	// exec 以退出码结束属"容器执行结果"，经流内错误帧传达后返回 nil，不提升为传输层 500。
+	assert.NoError(t, err)
 	assert.Equal(t, uint16(10), reco.w)
 	assert.Equal(t, uint16(20), reco.h)
 }

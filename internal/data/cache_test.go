@@ -281,6 +281,44 @@ func TestDBStore_Set(t *testing.T) {
 	assert.NotEqual(t, only1.ExpiredAt, only2.ExpiredAt)
 }
 
+// TestDBStore_Set_CleanupExpired 覆盖 DB 后端写入时顺带清理过期行：
+// Set 会删除所有已过期（ExpiredAt <= 当前时间）的缓存行，防止 dbcache 表无限增长。
+func TestDBStore_Set_CleanupExpired(t *testing.T) {
+	sqliteDB, _ := NewSqliteDB()
+	defer sqliteDB.Close()
+
+	s := &cacheDBStore{
+		d: NewDataImpl(&NewDataParams{DB: sqliteDB}),
+	}
+
+	// 造一条已过期与一条未过期的干扰行。
+	sqliteDB.DBCache.Create().SetKey("expired").SetValue("e").SetExpiredAt(time.Now().Add(-1 * time.Second)).Exec(context.TODO())
+	sqliteDB.DBCache.Create().SetKey("alive").SetValue("a").SetExpiredAt(time.Now().Add(10 * time.Second)).Exec(context.TODO())
+
+	// 任意一次 Set 触发全局过期清理。
+	err := s.Set("test", []byte("test"), 10)
+	assert.Nil(t, err)
+
+	_, err = sqliteDB.DBCache.Query().Where(dbcache.Key("expired")).Only(context.TODO())
+	assert.Error(t, err, "过期行应被清理")
+	_, err = sqliteDB.DBCache.Query().Where(dbcache.Key("alive")).Only(context.TODO())
+	assert.Nil(t, err, "未过期行应保留")
+}
+
+// TestDBStore_Set_CreateError 覆盖 DB 写入失败的错误分支：底层 Create.Exec 报错时
+// Set 提前返回错误，不执行后续过期行清理。用已关闭的 sqlite 连接强制触发。
+func TestDBStore_Set_CreateError(t *testing.T) {
+	sqliteDB, _ := NewSqliteDB()
+	s := &cacheDBStore{
+		d: NewDataImpl(&NewDataParams{DB: sqliteDB}),
+	}
+	// 关闭连接后 Create.Exec 无法写库，应返回底层错误而非静默吞掉。
+	sqliteDB.Close()
+
+	err := s.Set("test", []byte("test"), 10)
+	assert.Error(t, err)
+}
+
 // TestDBStore_Delete 覆盖 DB 后端的删除：删除后查询返回错误；不存在时删除也返回 nil。
 func TestDBStore_Delete(t *testing.T) {
 	sqliteDB, _ := NewSqliteDB()

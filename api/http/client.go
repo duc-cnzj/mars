@@ -477,5 +477,11 @@ func (c *Client) Project() *rest.ProjectSvc { return &rest.ProjectSvc{C: ops{c}}
 // Repo 返回仓库(repo)服务的 HTTP SDK 客户端。
 func (c *Client) Repo() *rest.RepoSvc { return &rest.RepoSvc{C: ops{c}} }
 
+// Settings 返回平台配置(settings)服务的 HTTP SDK 客户端（管理员后台，只读聚合平台配置）。
+func (c *Client) Settings() *rest.SettingsSvc { return &rest.SettingsSvc{C: ops{c}} }
+
+// User 返回用户(user)服务的 HTTP SDK 客户端（管理员后台用户管理）。
+func (c *Client) User() *rest.UserSvc { return &rest.UserSvc{C: ops{c}} }
+
 // Version 返回版本(version)服务的 HTTP SDK 客户端。
 func (c *Client) Version() *rest.VersionSvc { return &rest.VersionSvc{C: ops{c}} }
