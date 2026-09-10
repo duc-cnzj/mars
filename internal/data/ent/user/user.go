@@ -27,6 +27,8 @@ const (
 	FieldRolesOverride = "roles_override"
 	// FieldLastLogin holds the string denoting the last_login field in the database.
 	FieldLastLogin = "last_login"
+	// FieldIsGray holds the string denoting the is_gray field in the database.
+	FieldIsGray = "is_gray"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 )
@@ -41,6 +43,7 @@ var Columns = []string{
 	FieldRoles,
 	FieldRolesOverride,
 	FieldLastLogin,
+	FieldIsGray,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -70,6 +73,8 @@ var (
 	DefaultRoles []string
 	// DefaultRolesOverride holds the default value on creation for the "roles_override" field.
 	DefaultRolesOverride bool
+	// DefaultIsGray holds the default value on creation for the "is_gray" field.
+	DefaultIsGray bool
 )
 
 // OrderOption defines the ordering options for the User queries.
@@ -108,4 +113,9 @@ func ByRolesOverride(opts ...sql.OrderTermOption) OrderOption {
 // ByLastLogin orders the results by the last_login field.
 func ByLastLogin(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLastLogin, opts...).ToFunc()
+}
+
+// ByIsGray orders the results by the is_gray field.
+func ByIsGray(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsGray, opts...).ToFunc()
 }

@@ -174,8 +174,8 @@ func adminPredicate() func(*sql.Selector) {
 	}
 }
 
-// List 分页查询用户投影：支持按邮箱/展示名模糊搜索与仅管理员过滤；
-// 统计（total/admins/regular）按全量口径计算，不受搜索/过滤影响。
+// List 分页查询用户投影：支持按邮箱/展示名模糊搜索、仅管理员过滤与仅灰度过滤；
+// 统计（total/admins/regular/gray）按全量口径计算，不受搜索/过滤影响。
 func (r *userRepo) List(ctx context.Context, input *biz.ListUserInput) (out *biz.ListUserResult, err error) {
 	ctx, span := tracer.Start(ctx, "userRepo/List")
 	defer func() { endSpan(span, err) }()
@@ -187,6 +187,9 @@ func (r *userRepo) List(ctx context.Context, input *biz.ListUserInput) (out *biz
 	}
 	if input.AdminOnly {
 		query = query.Where(adminPredicate())
+	}
+	if input.GrayOnly {
+		query = query.Where(user.IsGrayEQ(true))
 	}
 
 	// 排序：默认最近登录倒序（最近登录在前）；asc 显式指定升序（最早登录在前）。
@@ -218,15 +221,21 @@ func (r *userRepo) List(ctx context.Context, input *biz.ListUserInput) (out *biz
 
 	total := db.User.Query().CountX(ctx)
 	admins := db.User.Query().Where(adminPredicate()).CountX(ctx)
+	gray := db.User.Query().Where(user.IsGrayEQ(true)).CountX(ctx)
 	return &biz.ListUserResult{
 		Items: slice.Map(users, toUser),
 		Pag:   pagination.NewPagination(input.Page, input.PageSize, count),
-		Stats: biz.UserStats{Total: int32(total), Admins: int32(admins), Regular: int32(total - admins)},
+		Stats: biz.UserStats{
+			Total:   int32(total),
+			Admins:  int32(admins),
+			Regular: int32(total - admins),
+			Gray:    int32(gray),
+		},
 	}, nil
 }
 
 // toUser 把 ent.User 转换为 biz.User（nil 安全）。RolesOverride 透传手动接管标记，
-// 供用户管理页展示「角色来源」（SSO 自动 / 后台手动）。
+// 供用户管理页展示「角色来源」（SSO 自动 / 后台手动）；IsGray 透传灰度标记。
 func toUser(u *ent.User) *biz.User {
 	if u == nil {
 		return nil
@@ -237,6 +246,7 @@ func toUser(u *ent.User) *biz.User {
 		Name:          u.Name,
 		Roles:         u.Roles,
 		RolesOverride: u.RolesOverride,
+		IsGray:        u.IsGray,
 		LastLogin:     u.LastLogin,
 		CreatedAt:     u.CreatedAt,
 	}
@@ -304,4 +314,44 @@ func (r *userRepo) ResetRolesOverride(ctx context.Context, email string) (err er
 	}
 	_, err = db.User.UpdateOneID(u.ID).SetRolesOverride(false).Save(ctx)
 	return errs.Wrap(err, "update user roles override")
+}
+
+// ToggleGray 设置/移除指定用户的灰度标记（is_gray）：灰度只影响发布通道路由
+// （nginx-ingress canary 按 cookie 分流到灰度 Deployment），不改角色、不触碰
+// roles_override，故与 ToggleAdmin 的角色接管逻辑完全正交。
+// 幂等：标记本就等于目标值时直接返回，不产生无谓 UPDATE；邮箱统一小写归一
+// （对齐 ResetRolesOverride/SyncLoginUser），用户不存在按 NotFound 上抛。
+func (r *userRepo) ToggleGray(ctx context.Context, email string, gray bool) (err error) {
+	ctx, span := tracer.Start(ctx, "userRepo/ToggleGray")
+	defer func() { endSpan(span, err) }()
+	email = strings.ToLower(strings.TrimSpace(email))
+	db := r.data.DB()
+	u, err := db.User.Query().Where(user.EmailEQ(email)).First(ctx)
+	if err != nil {
+		return errs.Wrap(err, "query user")
+	}
+	if u.IsGray == gray {
+		return nil
+	}
+	_, err = db.User.UpdateOneID(u.ID).SetIsGray(gray).Save(ctx)
+	return errs.Wrap(err, "update user gray flag")
+}
+
+// IsGray 读取指定用户的灰度标记（供 /api/auth/info 下发权威口径，每次前端启动查一次）：
+// 邮箱统一小写归一（对齐 SyncLoginUser/EffectiveRoles）；用户尚未落投影（从未登录，
+// 首次登录前窗口）返回 false 而非错误——「无投影」等价于「非灰度」，否则 /api/auth/info
+// 会因缺行而报错，把整个登录态恢复拖垮。其余查询失败（如 DB 断开）照常上抛，由调用方降级。
+func (r *userRepo) IsGray(ctx context.Context, email string) (out bool, err error) {
+	ctx, span := tracer.Start(ctx, "userRepo/IsGray")
+	defer func() { endSpan(span, err) }()
+	email = strings.ToLower(strings.TrimSpace(email))
+	db := r.data.DB()
+	u, err := db.User.Query().Where(user.EmailEQ(email)).First(ctx)
+	if err != nil {
+		if errs.IsNotFound(err) {
+			return false, nil
+		}
+		return false, errs.Wrap(err, "query user gray flag")
+	}
+	return u.IsGray, nil
 }

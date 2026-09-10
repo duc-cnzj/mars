@@ -67,3 +67,12 @@ func TestFromUser_RolesOverride(t *testing.T) {
 	m = transformer.FromUser(&biz.User{Email: "a@b.c", RolesOverride: true})
 	assert.True(t, m.RolesOverride)
 }
+
+// TestFromUser_IsGray 验证灰度标记透传：发布通道维度，与角色/接管正交。
+func TestFromUser_IsGray(t *testing.T) {
+	m := transformer.FromUser(&biz.User{Email: "a@b.c"})
+	assert.False(t, m.IsGray)
+
+	m = transformer.FromUser(&biz.User{Email: "a@b.c", IsGray: true})
+	assert.True(t, m.IsGray)
+}

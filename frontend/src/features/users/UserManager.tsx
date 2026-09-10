@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/shadcn/alert-dialog'
 import { Button } from '@/components/ui/shadcn/button'
+import { Switch } from '@/components/ui/shadcn/switch'
 import { copyText } from '@/lib/copy'
 import { formatDateTime } from '@/lib/format'
 import { humanizeDateTime } from '@/lib/humanizeDateTime'
@@ -40,12 +41,14 @@ const UserRow = memo(function UserRow({
   resetOpen,
   resetting,
   canManage,
+  grayToggling,
   onToggle,
   onClose,
   onConfirm,
   onReset,
   onResetClose,
   onResetConfirm,
+  onToggleGray,
   onCopyEmail,
   className,
   style,
@@ -57,12 +60,15 @@ const UserRow = memo(function UserRow({
   resetting: boolean
   /** 当前登录用户是否为超管：false 时本行只读（普通管理员只能查看，不能改他人权限） */
   canManage: boolean
+  /** 本行灰度开关请求进行中（防重复点击） */
+  grayToggling: boolean
   onToggle: (u: UserModel) => void
   onClose: () => void
   onConfirm: () => void
   onReset: (u: UserModel) => void
   onResetClose: () => void
   onResetConfirm: () => void
+  onToggleGray: (u: UserModel) => void
   onCopyEmail: (email: string) => void
   /** RefreshFade 经 cloneElement 注入的渐入 class/延迟——须转发到根元素才生效 */
   className?: string
@@ -78,7 +84,7 @@ const UserRow = memo(function UserRow({
   const sourceOverride = user.rolesOverride
   return (
     <div
-      className={`grid grid-cols-1 gap-2 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_7rem_15rem] lg:items-center ${className ?? ''}`}
+      className={`grid grid-cols-1 gap-2 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_8rem_7rem_15rem] lg:items-center ${className ?? ''}`}
       style={style}
     >
       {/* 用户：头像（系统无头像字段，统一图标占位）+ 姓名 + 邮箱 */}
@@ -127,6 +133,23 @@ const UserRow = memo(function UserRow({
             {t(sourceOverride ? 'users.roleSourceManual' : 'users.roleSourceSSO')}
           </Tag>
         )}
+      </div>
+
+      {/* 灰度版本：开关即时生效（灰度是发布通道路由，非权限授予，故不设二次确认），
+          后端写入用户标记后，该用户下次登录被下发灰度路由 cookie，由 nginx-ingress
+          canary 分流到灰度版本；关闭则清除 cookie 回落稳定版。
+          仅超管可改（与角色变更同门禁）；状态 Tag 常驻避免开关时行高抖动 */}
+      <div className="flex items-center gap-2">
+        <Switch
+          size="sm"
+          checked={user.isGray}
+          disabled={!canManage || grayToggling}
+          onCheckedChange={() => onToggleGray(user)}
+          aria-label={t('users.gray')}
+        />
+        <Tag tone={user.isGray ? 'warn' : 'mute'} dot={false}>
+          {t(user.isGray ? 'users.grayOn' : 'users.grayOff')}
+        </Tag>
       </div>
 
       {/* 最近登录：从未登录显示占位；有登录记录则相对时间为主（humanizeDateTime 跟随
@@ -247,11 +270,13 @@ export function UserManager() {
   const canManage = useAuth().user?.isSuperAdmin === true
   const [users, setUsers] = useState<UserModel[]>([])
   const [count, setCount] = useState(0)
-  const [stats, setStats] = useState<UserStats>({ total: 0, admins: 0, regular: 0 })
+  const [stats, setStats] = useState<UserStats>({ total: 0, admins: 0, regular: 0, gray: 0 })
   const [keyword, setKeyword] = useState('')
   // 防抖后的关键词：避免每次击键都打后端
   const [debouncedKeyword, setDebouncedKeyword] = useState('')
   const [adminOnly, setAdminOnly] = useState(false)
+  // 只看灰度：与「只看管理员」同构的服务端过滤（灰度名单平时很短，集中查看便于批量摘除）
+  const [grayOnly, setGrayOnly] = useState(false)
   const [page, setPage] = useState(1)
   const [initialLoading, setInitialLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -269,6 +294,8 @@ export function UserManager() {
   const [resetTarget, setResetTarget] = useState<UserModel | null>(null)
   // 解除接管进行中（防重复点击；进行中禁止关闭弹窗，失败保持打开可重试）
   const [resetting, setResetting] = useState(false)
+  // 灰度开关请求进行中（防重复点击；开关即时生效、不设二次确认，故只需禁用态）
+  const [grayToggling, setGrayToggling] = useState(false)
   // 列表滚动容器（IntersectionObserver 的 root）与底部哨兵
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -294,9 +321,9 @@ export function UserManager() {
     return () => window.clearTimeout(timer)
   }, [keyword])
 
-  // 过滤条件指纹：搜索 / 只看管理员 / 排序方向任一变化都视为新的过滤条件
+  // 过滤条件指纹：搜索 / 只看管理员 / 只看灰度 / 排序方向任一变化都视为新的过滤条件
   //（排序切换走服务端重新拉取，故也纳入指纹）
-  const filterKey = `${debouncedKeyword}|${adminOnly}|${loginSort}`
+  const filterKey = `${debouncedKeyword}|${adminOnly}|${grayOnly}|${loginSort}`
   // 每渲染同步最新过滤条件（供 fetchList 落地校验，见 filterKeyRef 声明注释）
   filterKeyRef.current = filterKey
 
@@ -322,6 +349,7 @@ export function UserManager() {
               search: debouncedKeyword.trim() || undefined,
               role: adminOnly ? 'admin' : undefined,
               sort: loginSort,
+              gray: grayOnly || undefined,
             },
           },
         })
@@ -345,7 +373,7 @@ export function UserManager() {
         setLoadingMore(false)
       }
     },
-    [debouncedKeyword, adminOnly, loginSort],
+    [debouncedKeyword, adminOnly, grayOnly, loginSort],
   )
 
   useEffect(() => {
@@ -403,6 +431,9 @@ export function UserManager() {
   const togglingRef = useRef(false)
   const resetTargetRef = useRef<UserModel | null>(null)
   const resettingRef = useRef(false)
+  // 灰度开关忙碌锁：开关是「点一下发一次」的即时操作，无弹窗承载状态，
+  // 用 ref 阻断连点导致的并发写（后到请求覆盖先到结果 → 列表与后端不一致）
+  const grayBusyRef = useRef(false)
   toggleTargetRef.current = toggleTarget
   togglingRef.current = toggling
   resetTargetRef.current = resetTarget
@@ -454,6 +485,40 @@ export function UserManager() {
     }
   }, [refresh, t])
 
+  /** 设置/取消用户灰度版本：写用户标记，该用户下次登录下发或清除灰度路由 cookie。
+   *  即时生效、无二次确认——灰度是发布通道路由而非权限授予，误操作代价仅是一次切换。
+   *  成功后就地改该行与灰度统计卡（避免整页 refresh 打断滚动位置与搜索态）；
+   *  但「只看灰度」下成员集合会变，必须重拉以移除已摘除的行。
+   *  useCallback 稳定引用：行 memo 的 onToggleGray prop 不因父级状态抖动而重建。 */
+  const toggleGray = useCallback(
+    async (u: UserModel) => {
+      if (grayBusyRef.current) return
+      grayBusyRef.current = true
+      setGrayToggling(true)
+      const next = !u.isGray
+      try {
+        const { error: err } = await api.PUT(API.adminUserGray, {
+          params: { path: { email: u.email } },
+          body: { email: u.email, gray: next },
+        })
+        if (err) throw new Error(err.message ?? String(err))
+        toast.success(t(next ? 'users.grayEnableSuccess' : 'users.grayDisableSuccess'))
+        if (grayOnly) {
+          void refresh()
+        } else {
+          setUsers((prev) => prev.map((x) => (x.email === u.email ? { ...x, isGray: next } : x)))
+          setStats((s) => ({ ...s, gray: Math.max(0, s.gray + (next ? 1 : -1)) }))
+        }
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : String(e))
+      } finally {
+        grayBusyRef.current = false
+        setGrayToggling(false)
+      }
+    },
+    [grayOnly, refresh, t],
+  )
+
   /** 复制用户邮箱（邀请成员/联系用户），成功 toast 反馈（useCallback 稳定引用） */
   const copyEmail = useCallback(async (email: string) => {
     const ok = await copyText(email)
@@ -499,11 +564,12 @@ export function UserManager() {
         </div>
       </div>
 
-      {/* 顶部三卡统计（服务端全量口径） */}
-      <div className="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* 顶部四卡统计（服务端全量口径）：总用户 / 管理员 / 普通用户 / 灰度用户 */}
+      <div className="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label={t('users.total')} value={stats.total} icon="users" tone="mute" />
         <StatCard label={t('users.admins')} value={stats.admins} icon="shield" tone="accent" />
         <StatCard label={t('users.regular')} value={stats.regular} icon="user" tone="ok" />
+        <StatCard label={t('users.grayUsers')} value={stats.gray} icon="rocket" tone="warn" />
       </div>
 
       {/* 工具栏：只看管理员 + 结果计数（SearchInput 内置 ⌘K 聚焦快捷键，已上移到标题行） */}
@@ -517,14 +583,24 @@ export function UserManager() {
           <Icon name="shield" className="size-3.5" />
           {t('users.filterAdmin')}
         </Button>
+        <Button
+          size="sm"
+          variant={grayOnly ? 'default' : 'outline'}
+          aria-pressed={grayOnly}
+          onClick={() => setGrayOnly((v) => !v)}
+        >
+          <Icon name="pulse" className="size-3.5" />
+          {t('users.filterGray')}
+        </Button>
         <span className="text-[12px] text-faint">{t('users.resultCount', { count })}</span>
       </div>
 
       {/* 用户列表：固定表头 + 内部滚动容器（无限下拉 root） */}
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-surface">
-        <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_7rem_15rem] items-center gap-2 border-b border-line px-4 py-2 text-[11px] font-medium text-faint lg:grid">
+        <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_8rem_7rem_15rem] items-center gap-2 border-b border-line px-4 py-2 text-[11px] font-medium text-faint lg:grid">
           <span>{t('users.user')}</span>
           <span>{t('users.role')}</span>
+          <span>{t('users.gray')}</span>
           <button
             type="button"
             onClick={() => setLoginSort((v) => (v === 'desc' ? 'asc' : 'desc'))}
@@ -565,12 +641,14 @@ export function UserManager() {
               resetOpen={resetTarget?.email === u.email}
               resetting={resetting}
               canManage={canManage}
+              grayToggling={grayToggling}
               onToggle={handleToggle}
               onClose={handleClose}
               onConfirm={toggleAdmin}
               onReset={handleReset}
               onResetClose={handleResetClose}
               onResetConfirm={resetRolesOverride}
+              onToggleGray={toggleGray}
               onCopyEmail={copyEmail}
             />
           ))}

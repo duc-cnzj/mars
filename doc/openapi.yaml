@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: api/v6.0.0-beta.39
+    version: ""
 paths:
     /api/access_tokens:
         get:
@@ -347,6 +347,10 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: gray
+                  in: query
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -354,6 +358,39 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.ListResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/admin/users/{email}/gray:
+        put:
+            tags:
+                - User
+            description: |-
+                设置/移除灰度用户：改变的是发布通道路由（nginx-ingress canary），不是权限授予，
+                 故不设二次确认；该用户下次打开页面即按新通道分流。
+            operationId: User_ToggleGray
+            parameters:
+                - name: email
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/user.ToggleGrayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.ToggleGrayResponse'
                 default:
                     description: Default error response
                     content:
@@ -2380,6 +2417,8 @@ components:
                         type: string
                 isSuperAdmin:
                     type: boolean
+                isGray:
+                    type: boolean
         auth.LoginRequest:
             required:
                 - username
@@ -4229,6 +4268,16 @@ components:
         user.ToggleAdminResponse:
             type: object
             properties: {}
+        user.ToggleGrayRequest:
+            type: object
+            properties:
+                email:
+                    type: string
+                gray:
+                    type: boolean
+        user.ToggleGrayResponse:
+            type: object
+            properties: {}
         user.UserModel:
             type: object
             properties:
@@ -4251,6 +4300,8 @@ components:
                     type: boolean
                 rolesOverride:
                     type: boolean
+                isGray:
+                    type: boolean
             description: |-
                 UserModel 是后台用户管理的单条展示模型：roles 已归一化为 admin/user
                  （真实库中 mars_admin=管理员，user=普通用户，展示层统一为 admin/user 两种取值）。
@@ -4266,7 +4317,10 @@ components:
                 regular:
                     type: integer
                     format: int32
-            description: UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部三卡。
+                gray:
+                    type: integer
+                    format: int32
+            description: UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部统计卡。
         version.Response:
             type: object
             properties:

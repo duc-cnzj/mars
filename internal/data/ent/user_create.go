@@ -104,6 +104,20 @@ func (_c *UserCreate) SetNillableLastLogin(v *time.Time) *UserCreate {
 	return _c
 }
 
+// SetIsGray sets the "is_gray" field.
+func (_c *UserCreate) SetIsGray(v bool) *UserCreate {
+	_c.mutation.SetIsGray(v)
+	return _c
+}
+
+// SetNillableIsGray sets the "is_gray" field if the given value is not nil.
+func (_c *UserCreate) SetNillableIsGray(v *bool) *UserCreate {
+	if v != nil {
+		_c.SetIsGray(*v)
+	}
+	return _c
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_c *UserCreate) Mutation() *UserMutation {
 	return _c.mutation
@@ -159,6 +173,10 @@ func (_c *UserCreate) defaults() {
 		v := user.DefaultRolesOverride
 		_c.mutation.SetRolesOverride(v)
 	}
+	if _, ok := _c.mutation.IsGray(); !ok {
+		v := user.DefaultIsGray
+		_c.mutation.SetIsGray(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -190,6 +208,9 @@ func (_c *UserCreate) check() error {
 	}
 	if _, ok := _c.mutation.RolesOverride(); !ok {
 		return &ValidationError{Name: "roles_override", err: errors.New(`ent: missing required field "User.roles_override"`)}
+	}
+	if _, ok := _c.mutation.IsGray(); !ok {
+		return &ValidationError{Name: "is_gray", err: errors.New(`ent: missing required field "User.is_gray"`)}
 	}
 	return nil
 }
@@ -245,6 +266,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.LastLogin(); ok {
 		_spec.SetField(user.FieldLastLogin, field.TypeTime, value)
 		_node.LastLogin = &value
+	}
+	if value, ok := _c.mutation.IsGray(); ok {
+		_spec.SetField(user.FieldIsGray, field.TypeBool, value)
+		_node.IsGray = value
 	}
 	return _node, _spec
 }
@@ -373,6 +398,18 @@ func (u *UserUpsert) UpdateLastLogin() *UserUpsert {
 // ClearLastLogin clears the value of the "last_login" field.
 func (u *UserUpsert) ClearLastLogin() *UserUpsert {
 	u.SetNull(user.FieldLastLogin)
+	return u
+}
+
+// SetIsGray sets the "is_gray" field.
+func (u *UserUpsert) SetIsGray(v bool) *UserUpsert {
+	u.Set(user.FieldIsGray, v)
+	return u
+}
+
+// UpdateIsGray sets the "is_gray" field to the value that was provided on create.
+func (u *UserUpsert) UpdateIsGray() *UserUpsert {
+	u.SetExcluded(user.FieldIsGray)
 	return u
 }
 
@@ -509,6 +546,20 @@ func (u *UserUpsertOne) UpdateLastLogin() *UserUpsertOne {
 func (u *UserUpsertOne) ClearLastLogin() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearLastLogin()
+	})
+}
+
+// SetIsGray sets the "is_gray" field.
+func (u *UserUpsertOne) SetIsGray(v bool) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetIsGray(v)
+	})
+}
+
+// UpdateIsGray sets the "is_gray" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateIsGray() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateIsGray()
 	})
 }
 
@@ -811,6 +862,20 @@ func (u *UserUpsertBulk) UpdateLastLogin() *UserUpsertBulk {
 func (u *UserUpsertBulk) ClearLastLogin() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearLastLogin()
+	})
+}
+
+// SetIsGray sets the "is_gray" field.
+func (u *UserUpsertBulk) SetIsGray(v bool) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetIsGray(v)
+	})
+}
+
+// UpdateIsGray sets the "is_gray" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateIsGray() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateIsGray()
 	})
 }
 

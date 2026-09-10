@@ -35,6 +35,7 @@ type UserModel struct {
 	CreatedAt     string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`              // RFC3339
 	IsSuperAdmin  bool                   `protobuf:"varint,7,opt,name=is_super_admin,json=isSuperAdmin,proto3" json:"is_super_admin,omitempty"`  // 是否为内置超级管理员（固定邮箱身份）
 	RolesOverride bool                   `protobuf:"varint,8,opt,name=roles_override,json=rolesOverride,proto3" json:"roles_override,omitempty"` // 角色是否已被后台手动接管：true=生效角色来自后台手动设置，SSO 不再覆盖；false=按最近一次 SSO 登录同步
+	IsGray        bool                   `protobuf:"varint,9,opt,name=is_gray,json=isGray,proto3" json:"is_gray,omitempty"`                      // 是否灰度用户：true=登录后被下发灰度路由 cookie，由 nginx-ingress canary 分流到灰度版本
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -125,12 +126,20 @@ func (x *UserModel) GetRolesOverride() bool {
 	return false
 }
 
-// UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部三卡。
+func (x *UserModel) GetIsGray() bool {
+	if x != nil {
+		return x.IsGray
+	}
+	return false
+}
+
+// UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部统计卡。
 type UserStats struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Total         int32                  `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`     // 用户总数
 	Admins        int32                  `protobuf:"varint,2,opt,name=admins,proto3" json:"admins,omitempty"`   // 管理员数
 	Regular       int32                  `protobuf:"varint,3,opt,name=regular,proto3" json:"regular,omitempty"` // 普通用户数（total - admins）
+	Gray          int32                  `protobuf:"varint,4,opt,name=gray,proto3" json:"gray,omitempty"`       // 灰度用户数
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -186,6 +195,13 @@ func (x *UserStats) GetRegular() int32 {
 	return 0
 }
 
+func (x *UserStats) GetGray() int32 {
+	if x != nil {
+		return x.Gray
+	}
+	return 0
+}
+
 type ListRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Page          *int32                 `protobuf:"varint,1,opt,name=page,proto3,oneof" json:"page,omitempty"`
@@ -193,6 +209,7 @@ type ListRequest struct {
 	Search        string                 `protobuf:"bytes,3,opt,name=search,proto3" json:"search,omitempty"` // 按邮箱/展示名模糊搜索
 	Role          string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`     // admin=只看管理员，其余值=全部
 	Sort          string                 `protobuf:"bytes,5,opt,name=sort,proto3" json:"sort,omitempty"`     // 排序方向：空 = 最近登录倒序（desc）；asc/desc = 指定最近登录升/降序
+	Gray          bool                   `protobuf:"varint,6,opt,name=gray,proto3" json:"gray,omitempty"`    // true=只看灰度用户
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -260,6 +277,13 @@ func (x *ListRequest) GetSort() string {
 		return x.Sort
 	}
 	return ""
+}
+
+func (x *ListRequest) GetGray() bool {
+	if x != nil {
+		return x.Gray
+	}
+	return false
 }
 
 type ListResponse struct {
@@ -426,6 +450,94 @@ func (*ToggleAdminResponse) Descriptor() ([]byte, []int) {
 	return file_proto_user_user_proto_rawDescGZIP(), []int{5}
 }
 
+type ToggleGrayRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Gray          bool                   `protobuf:"varint,2,opt,name=gray,proto3" json:"gray,omitempty"` // true=加入灰度，false=移出灰度
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToggleGrayRequest) Reset() {
+	*x = ToggleGrayRequest{}
+	mi := &file_proto_user_user_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToggleGrayRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToggleGrayRequest) ProtoMessage() {}
+
+func (x *ToggleGrayRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_user_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToggleGrayRequest.ProtoReflect.Descriptor instead.
+func (*ToggleGrayRequest) Descriptor() ([]byte, []int) {
+	return file_proto_user_user_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ToggleGrayRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *ToggleGrayRequest) GetGray() bool {
+	if x != nil {
+		return x.Gray
+	}
+	return false
+}
+
+type ToggleGrayResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToggleGrayResponse) Reset() {
+	*x = ToggleGrayResponse{}
+	mi := &file_proto_user_user_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToggleGrayResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToggleGrayResponse) ProtoMessage() {}
+
+func (x *ToggleGrayResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_user_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToggleGrayResponse.ProtoReflect.Descriptor instead.
+func (*ToggleGrayResponse) Descriptor() ([]byte, []int) {
+	return file_proto_user_user_proto_rawDescGZIP(), []int{7}
+}
+
 type ResetRolesOverrideRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
@@ -435,7 +547,7 @@ type ResetRolesOverrideRequest struct {
 
 func (x *ResetRolesOverrideRequest) Reset() {
 	*x = ResetRolesOverrideRequest{}
-	mi := &file_proto_user_user_proto_msgTypes[6]
+	mi := &file_proto_user_user_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -447,7 +559,7 @@ func (x *ResetRolesOverrideRequest) String() string {
 func (*ResetRolesOverrideRequest) ProtoMessage() {}
 
 func (x *ResetRolesOverrideRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_user_proto_msgTypes[6]
+	mi := &file_proto_user_user_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -460,7 +572,7 @@ func (x *ResetRolesOverrideRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResetRolesOverrideRequest.ProtoReflect.Descriptor instead.
 func (*ResetRolesOverrideRequest) Descriptor() ([]byte, []int) {
-	return file_proto_user_user_proto_rawDescGZIP(), []int{6}
+	return file_proto_user_user_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ResetRolesOverrideRequest) GetEmail() string {
@@ -478,7 +590,7 @@ type ResetRolesOverrideResponse struct {
 
 func (x *ResetRolesOverrideResponse) Reset() {
 	*x = ResetRolesOverrideResponse{}
-	mi := &file_proto_user_user_proto_msgTypes[7]
+	mi := &file_proto_user_user_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -490,7 +602,7 @@ func (x *ResetRolesOverrideResponse) String() string {
 func (*ResetRolesOverrideResponse) ProtoMessage() {}
 
 func (x *ResetRolesOverrideResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_user_proto_msgTypes[7]
+	mi := &file_proto_user_user_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -503,14 +615,14 @@ func (x *ResetRolesOverrideResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResetRolesOverrideResponse.ProtoReflect.Descriptor instead.
 func (*ResetRolesOverrideResponse) Descriptor() ([]byte, []int) {
-	return file_proto_user_user_proto_rawDescGZIP(), []int{7}
+	return file_proto_user_user_proto_rawDescGZIP(), []int{9}
 }
 
 var File_proto_user_user_proto protoreflect.FileDescriptor
 
 const file_proto_user_user_proto_rawDesc = "" +
 	"\n" +
-	"\x15proto/user/user.proto\x12\x04user\x1a\x1cgoogle/api/annotations.proto\"\xfa\x01\n" +
+	"\x15proto/user/user.proto\x12\x04user\x1a\x1cgoogle/api/annotations.proto\"\x93\x02\n" +
 	"\tUserModel\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x12\n" +
@@ -521,18 +633,21 @@ const file_proto_user_user_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12$\n" +
 	"\x0eis_super_admin\x18\a \x01(\bR\fisSuperAdmin\x12%\n" +
-	"\x0eroles_override\x18\b \x01(\bR\rrolesOverrideB\r\n" +
-	"\v_last_login\"S\n" +
+	"\x0eroles_override\x18\b \x01(\bR\rrolesOverride\x12\x17\n" +
+	"\ais_gray\x18\t \x01(\bR\x06isGrayB\r\n" +
+	"\v_last_login\"g\n" +
 	"\tUserStats\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\x05R\x05total\x12\x16\n" +
 	"\x06admins\x18\x02 \x01(\x05R\x06admins\x12\x18\n" +
-	"\aregular\x18\x03 \x01(\x05R\aregular\"\x9f\x01\n" +
+	"\aregular\x18\x03 \x01(\x05R\aregular\x12\x12\n" +
+	"\x04gray\x18\x04 \x01(\x05R\x04gray\"\xb3\x01\n" +
 	"\vListRequest\x12\x17\n" +
 	"\x04page\x18\x01 \x01(\x05H\x00R\x04page\x88\x01\x01\x12 \n" +
 	"\tpage_size\x18\x02 \x01(\x05H\x01R\bpageSize\x88\x01\x01\x12\x16\n" +
 	"\x06search\x18\x03 \x01(\tR\x06search\x12\x12\n" +
 	"\x04role\x18\x04 \x01(\tR\x04role\x12\x12\n" +
-	"\x04sort\x18\x05 \x01(\tR\x04sortB\a\n" +
+	"\x04sort\x18\x05 \x01(\tR\x04sort\x12\x12\n" +
+	"\x04gray\x18\x06 \x01(\bR\x04grayB\a\n" +
 	"\x05_pageB\f\n" +
 	"\n" +
 	"_page_size\"\xa3\x01\n" +
@@ -545,14 +660,20 @@ const file_proto_user_user_proto_rawDesc = "" +
 	"\x12ToggleAdminRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x14\n" +
 	"\x05admin\x18\x02 \x01(\bR\x05admin\"\x15\n" +
-	"\x13ToggleAdminResponse\"1\n" +
+	"\x13ToggleAdminResponse\"=\n" +
+	"\x11ToggleGrayRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
+	"\x04gray\x18\x02 \x01(\bR\x04gray\"\x14\n" +
+	"\x12ToggleGrayResponse\"1\n" +
 	"\x19ResetRolesOverrideRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"\x1c\n" +
-	"\x1aResetRolesOverrideResponse2\xc8\x02\n" +
+	"\x1aResetRolesOverrideResponse2\xb3\x03\n" +
 	"\x04User\x12G\n" +
 	"\x04List\x12\x11.user.ListRequest\x1a\x12.user.ListResponse\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/admin/users\x12l\n" +
 	"\vToggleAdmin\x12\x18.user.ToggleAdminRequest\x1a\x19.user.ToggleAdminResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\x1a\x1d/api/admin/users/{email}/role\x12\x88\x01\n" +
-	"\x12ResetRolesOverride\x12\x1f.user.ResetRolesOverrideRequest\x1a .user.ResetRolesOverrideResponse\"/\x82\xd3\xe4\x93\x02)\x1a'/api/admin/users/{email}/roles_overrideB1Z/github.com/duc-cnzj/mars/api/v6/proto/user;userb\x06proto3"
+	"\x12ResetRolesOverride\x12\x1f.user.ResetRolesOverrideRequest\x1a .user.ResetRolesOverrideResponse\"/\x82\xd3\xe4\x93\x02)\x1a'/api/admin/users/{email}/roles_override\x12i\n" +
+	"\n" +
+	"ToggleGray\x12\x17.user.ToggleGrayRequest\x1a\x18.user.ToggleGrayResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\x1a\x1d/api/admin/users/{email}/grayB1Z/github.com/duc-cnzj/mars/api/v6/proto/user;userb\x06proto3"
 
 var (
 	file_proto_user_user_proto_rawDescOnce sync.Once
@@ -566,7 +687,7 @@ func file_proto_user_user_proto_rawDescGZIP() []byte {
 	return file_proto_user_user_proto_rawDescData
 }
 
-var file_proto_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_proto_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_proto_user_user_proto_goTypes = []any{
 	(*UserModel)(nil),                  // 0: user.UserModel
 	(*UserStats)(nil),                  // 1: user.UserStats
@@ -574,20 +695,24 @@ var file_proto_user_user_proto_goTypes = []any{
 	(*ListResponse)(nil),               // 3: user.ListResponse
 	(*ToggleAdminRequest)(nil),         // 4: user.ToggleAdminRequest
 	(*ToggleAdminResponse)(nil),        // 5: user.ToggleAdminResponse
-	(*ResetRolesOverrideRequest)(nil),  // 6: user.ResetRolesOverrideRequest
-	(*ResetRolesOverrideResponse)(nil), // 7: user.ResetRolesOverrideResponse
+	(*ToggleGrayRequest)(nil),          // 6: user.ToggleGrayRequest
+	(*ToggleGrayResponse)(nil),         // 7: user.ToggleGrayResponse
+	(*ResetRolesOverrideRequest)(nil),  // 8: user.ResetRolesOverrideRequest
+	(*ResetRolesOverrideResponse)(nil), // 9: user.ResetRolesOverrideResponse
 }
 var file_proto_user_user_proto_depIdxs = []int32{
 	0, // 0: user.ListResponse.items:type_name -> user.UserModel
 	1, // 1: user.ListResponse.stats:type_name -> user.UserStats
 	2, // 2: user.User.List:input_type -> user.ListRequest
 	4, // 3: user.User.ToggleAdmin:input_type -> user.ToggleAdminRequest
-	6, // 4: user.User.ResetRolesOverride:input_type -> user.ResetRolesOverrideRequest
-	3, // 5: user.User.List:output_type -> user.ListResponse
-	5, // 6: user.User.ToggleAdmin:output_type -> user.ToggleAdminResponse
-	7, // 7: user.User.ResetRolesOverride:output_type -> user.ResetRolesOverrideResponse
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
+	8, // 4: user.User.ResetRolesOverride:input_type -> user.ResetRolesOverrideRequest
+	6, // 5: user.User.ToggleGray:input_type -> user.ToggleGrayRequest
+	3, // 6: user.User.List:output_type -> user.ListResponse
+	5, // 7: user.User.ToggleAdmin:output_type -> user.ToggleAdminResponse
+	9, // 8: user.User.ResetRolesOverride:output_type -> user.ResetRolesOverrideResponse
+	7, // 9: user.User.ToggleGray:output_type -> user.ToggleGrayResponse
+	6, // [6:10] is the sub-list for method output_type
+	2, // [2:6] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
 	2, // [2:2] is the sub-list for extension extendee
 	0, // [0:2] is the sub-list for field type_name
@@ -606,7 +731,7 @@ func file_proto_user_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_user_user_proto_rawDesc), len(file_proto_user_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

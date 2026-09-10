@@ -152,3 +152,50 @@ func Test_userSvc_ResetRolesOverride_Error(t *testing.T) {
 	_, err := svc.ResetRolesOverride(newAdminUserCtx(), &user.ResetRolesOverrideRequest{Email: "a@b.c"})
 	assert.Equal(t, codes.NotFound, status.Code(err))
 }
+
+// Test_userSvc_List_GrayFilter 灰度过滤与灰度统计透传：request.gray → GrayOnly，
+// Stats.Gray → UserStats.Gray，条目 is_gray → UserModel.IsGray。
+func Test_userSvc_List_GrayFilter(t *testing.T) {
+	svc, mocks := newUserSvcWithMocks(t)
+	defer mocks.ctrl.Finish()
+
+	mocks.userBiz.EXPECT().List(gomock.Any(), &biz.ListUserInput{
+		Page:     1,
+		PageSize: 15,
+		GrayOnly: true,
+	}).Return(&biz.ListUserResult{
+		Items: []*biz.User{{ID: 1, Email: "gray@mars.dev", Roles: []string{}, IsGray: true}},
+		Pag:   pagination.NewPagination(1, 15, 1),
+		Stats: biz.UserStats{Total: 3, Admins: 1, Regular: 2, Gray: 1},
+	}, nil)
+
+	resp, err := svc.List(newAdminUserCtx(), &user.ListRequest{Page: loPtr32(1), PageSize: loPtr32(15), Gray: true})
+	assert.NoError(t, err)
+	if assert.Len(t, resp.Items, 1) {
+		assert.True(t, resp.Items[0].IsGray)
+	}
+	if assert.NotNil(t, resp.Stats) {
+		assert.Equal(t, int32(1), resp.Stats.Gray)
+	}
+}
+
+// Test_userSvc_ToggleGray 成功路径透传：灰度是发布通道路由，不设二次确认。
+func Test_userSvc_ToggleGray(t *testing.T) {
+	svc, mocks := newUserSvcWithMocks(t)
+	defer mocks.ctrl.Finish()
+
+	mocks.userBiz.EXPECT().ToggleGray(gomock.Any(), "a@b.c", true).Return(nil)
+	_, err := svc.ToggleGray(newAdminUserCtx(), &user.ToggleGrayRequest{Email: "a@b.c", Gray: true})
+	assert.NoError(t, err)
+}
+
+// Test_userSvc_ToggleGray_Error 透传 biz 错误（保留原始状态码）。
+func Test_userSvc_ToggleGray_Error(t *testing.T) {
+	svc, mocks := newUserSvcWithMocks(t)
+	defer mocks.ctrl.Finish()
+
+	mocks.userBiz.EXPECT().ToggleGray(gomock.Any(), "a@b.c", false).
+		Return(status.Error(codes.NotFound, "用户不存在"))
+	_, err := svc.ToggleGray(newAdminUserCtx(), &user.ToggleGrayRequest{Email: "a@b.c"})
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}

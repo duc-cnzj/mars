@@ -29,9 +29,9 @@ func TestNewAuthSvc(t *testing.T) {
 }
 
 // Test_authSvc_Info 覆盖 Info 成功路径：用户由鉴权拦截器经 biz.SetUser 注入 ctx，
-// Info 不再自行验签，仅做「取 ctx 用户 → 映射响应」。
+// Info 不再自行验签，仅做「取 ctx 用户 → 映射响应」+ 读一次库取权威灰度标记。
 func Test_authSvc_Info(t *testing.T) {
-	svc, _ := newAuthSvcWithMocks(t)
+	svc, mocks := newAuthSvcWithMocks(t)
 	user := &biz.UserInfo{
 		ID:        "123",
 		Email:     "duc@example.com",
@@ -40,6 +40,8 @@ func Test_authSvc_Info(t *testing.T) {
 		Roles:     []string{"admin", "dev"},
 		LogoutUrl: "https://logout.example",
 	}
+	// IsGray 是 Info 里唯一读库字段：灰度标记不在 JWT 里，每次都要取当前库值。
+	mocks.userBiz.EXPECT().IsGray(gomock.Any(), "duc@example.com").Return(true, nil)
 	resp, err := svc.Info(biz.SetUser(context.TODO(), user), nil)
 	assert.Nil(t, err)
 	if assert.NotNil(t, resp) {
@@ -50,12 +52,14 @@ func Test_authSvc_Info(t *testing.T) {
 		assert.Equal(t, "https://logout.example", resp.LogoutUrl)
 		assert.Equal(t, []string{"admin", "dev"}, resp.Roles)
 		assert.False(t, resp.IsSuperAdmin)
+		assert.True(t, resp.IsGray)
 	}
 }
 
 // Test_authSvc_Info_SuperAdmin 内置超级管理员固定邮箱登录 → is_super_admin = true。
 func Test_authSvc_Info_SuperAdmin(t *testing.T) {
-	svc, _ := newAuthSvcWithMocks(t)
+	svc, mocks := newAuthSvcWithMocks(t)
+	mocks.userBiz.EXPECT().IsGray(gomock.Any(), biz.SuperAdminEmail).Return(false, nil)
 	resp, err := svc.Info(biz.SetUser(context.TODO(), &biz.UserInfo{
 		Email: biz.SuperAdminEmail,
 		Roles: []string{biz.MarsAdmin},
@@ -63,6 +67,23 @@ func Test_authSvc_Info_SuperAdmin(t *testing.T) {
 	assert.Nil(t, err)
 	if assert.NotNil(t, resp) {
 		assert.True(t, resp.IsSuperAdmin)
+		assert.False(t, resp.IsGray)
+	}
+}
+
+// Test_authSvc_Info_IsGrayFailOpen 读库失败降级为「非灰度」且不阻断 /api/auth/info：
+// 灰度只是发布通道，一次查询失败不该把整个登录态恢复打断（用户会看到「打不开页面」，
+// 而问题其实只是发布通道未知）。
+func Test_authSvc_Info_IsGrayFailOpen(t *testing.T) {
+	svc, mocks := newAuthSvcWithMocks(t)
+	mocks.userBiz.EXPECT().IsGray(gomock.Any(), "duc@example.com").Return(false, errors.New("db boom"))
+	resp, err := svc.Info(biz.SetUser(context.TODO(), &biz.UserInfo{
+		Email: "duc@example.com",
+	}), nil)
+	assert.NoError(t, err, "灰度读库失败不得阻断 info")
+	if assert.NotNil(t, resp) {
+		assert.False(t, resp.IsGray, "降级为非灰度（稳定版）")
+		assert.Equal(t, "duc@example.com", resp.Email)
 	}
 }
 

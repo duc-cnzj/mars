@@ -65,6 +65,7 @@ message InfoResponse {
   string          logout_url     = 5;
   repeated string roles          = 6;
   bool            is_super_admin = 7; // 是否为内置超级管理员（固定邮箱身份）
+  bool            is_gray        = 8; // 是否灰度用户：前端据此在底栏显示灰度标记，并在登录/打开页面时对齐灰度路由 cookie
 }
 
 message SettingsRequest {}

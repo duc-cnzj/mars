@@ -177,6 +177,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users/{email}/gray": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description 设置/移除灰度用户：改变的是发布通道路由（nginx-ingress canary），不是权限授予，
+         *      故不设二次确认；该用户下次打开页面即按新通道分流。
+         */
+        put: operations["User_ToggleGray"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/users/{email}/role": {
         parameters: {
             query?: never;
@@ -1335,6 +1355,7 @@ export interface components {
             logoutUrl: string;
             roles: string[];
             isSuperAdmin: boolean;
+            isGray: boolean;
         };
         "auth.LoginRequest": {
             username: string;
@@ -2371,6 +2392,11 @@ export interface components {
             admin: boolean;
         };
         "user.ToggleAdminResponse": Record<string, never>;
+        "user.ToggleGrayRequest": {
+            email: string;
+            gray: boolean;
+        };
+        "user.ToggleGrayResponse": Record<string, never>;
         /**
          * @description UserModel 是后台用户管理的单条展示模型：roles 已归一化为 admin/user
          *      （真实库中 mars_admin=管理员，user=普通用户，展示层统一为 admin/user 两种取值）。
@@ -2385,8 +2411,9 @@ export interface components {
             createdAt: string;
             isSuperAdmin: boolean;
             rolesOverride: boolean;
+            isGray: boolean;
         };
-        /** @description UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部三卡。 */
+        /** @description UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部统计卡。 */
         "user.UserStats": {
             /** Format: int32 */
             total: number;
@@ -2394,6 +2421,8 @@ export interface components {
             admins: number;
             /** Format: int32 */
             regular: number;
+            /** Format: int32 */
+            gray: number;
         };
         "version.Response": {
             version: string;
@@ -2777,6 +2806,7 @@ export interface operations {
                 search?: string;
                 role?: string;
                 sort?: string;
+                gray?: boolean;
             };
             header?: never;
             path?: never;
@@ -2791,6 +2821,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["user.ListResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    User_ToggleGray: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                email: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["user.ToggleGrayRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["user.ToggleGrayResponse"];
                 };
             };
             /** @description Default error response */

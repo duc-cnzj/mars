@@ -69,6 +69,8 @@ func (m *UserModel) validate(all bool) error {
 
 	// no validation rules for RolesOverride
 
+	// no validation rules for IsGray
+
 	if m.LastLogin != nil {
 		// no validation rules for LastLogin
 	}
@@ -178,6 +180,8 @@ func (m *UserStats) validate(all bool) error {
 
 	// no validation rules for Regular
 
+	// no validation rules for Gray
+
 	if len(errors) > 0 {
 		return UserStatsMultiError(errors)
 	}
@@ -282,6 +286,8 @@ func (m *ListRequest) validate(all bool) error {
 	// no validation rules for Role
 
 	// no validation rules for Sort
+
+	// no validation rules for Gray
 
 	if m.Page != nil {
 		// no validation rules for Page
@@ -743,6 +749,214 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ToggleAdminResponseValidationError{}
+
+// Validate checks the field values on ToggleGrayRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ToggleGrayRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ToggleGrayRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ToggleGrayRequestMultiError, or nil if none found.
+func (m *ToggleGrayRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ToggleGrayRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Email
+
+	// no validation rules for Gray
+
+	if len(errors) > 0 {
+		return ToggleGrayRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ToggleGrayRequestMultiError is an error wrapping multiple validation errors
+// returned by ToggleGrayRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ToggleGrayRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ToggleGrayRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ToggleGrayRequestMultiError) AllErrors() []error { return m }
+
+// ToggleGrayRequestValidationError is the validation error returned by
+// ToggleGrayRequest.Validate if the designated constraints aren't met.
+type ToggleGrayRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ToggleGrayRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ToggleGrayRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ToggleGrayRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ToggleGrayRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ToggleGrayRequestValidationError) ErrorName() string {
+	return "ToggleGrayRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ToggleGrayRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sToggleGrayRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ToggleGrayRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ToggleGrayRequestValidationError{}
+
+// Validate checks the field values on ToggleGrayResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ToggleGrayResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ToggleGrayResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ToggleGrayResponseMultiError, or nil if none found.
+func (m *ToggleGrayResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ToggleGrayResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ToggleGrayResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ToggleGrayResponseMultiError is an error wrapping multiple validation errors
+// returned by ToggleGrayResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ToggleGrayResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ToggleGrayResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ToggleGrayResponseMultiError) AllErrors() []error { return m }
+
+// ToggleGrayResponseValidationError is the validation error returned by
+// ToggleGrayResponse.Validate if the designated constraints aren't met.
+type ToggleGrayResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ToggleGrayResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ToggleGrayResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ToggleGrayResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ToggleGrayResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ToggleGrayResponseValidationError) ErrorName() string {
+	return "ToggleGrayResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ToggleGrayResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sToggleGrayResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ToggleGrayResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ToggleGrayResponseValidationError{}
 
 // Validate checks the field values on ResetRolesOverrideRequest with the rules
 // defined in the proto definition for this message. If any rules are

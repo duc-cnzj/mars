@@ -17,13 +17,15 @@ message UserModel {
   string          created_at     = 6; // RFC3339
   bool            is_super_admin = 7; // 是否为内置超级管理员（固定邮箱身份）
   bool            roles_override = 8; // 角色是否已被后台手动接管：true=生效角色来自后台手动设置，SSO 不再覆盖；false=按最近一次 SSO 登录同步
+  bool            is_gray        = 9; // 是否灰度用户：true=登录后被下发灰度路由 cookie，由 nginx-ingress canary 分流到灰度版本
 }
 
-// UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部三卡。
+// UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）：驱动顶部统计卡。
 message UserStats {
   int32 total   = 1; // 用户总数
   int32 admins  = 2; // 管理员数
   int32 regular = 3; // 普通用户数（total - admins）
+  int32 gray    = 4; // 灰度用户数
 }
 
 message ListRequest {
@@ -32,6 +34,7 @@ message ListRequest {
   string          search   = 3; // 按邮箱/展示名模糊搜索
   string          role     = 4; // admin=只看管理员，其余值=全部
   string          sort     = 5; // 排序方向：空 = 最近登录倒序（desc）；asc/desc = 指定最近登录升/降序
+  bool            gray     = 6; // true=只看灰度用户
 }
 
 message ListResponse {
@@ -48,6 +51,13 @@ message ToggleAdminRequest {
 }
 
 message ToggleAdminResponse {}
+
+message ToggleGrayRequest {
+  string email = 1;
+  bool   gray  = 2; // true=加入灰度，false=移出灰度
+}
+
+message ToggleGrayResponse {}
 
 message ResetRolesOverrideRequest {
   string email = 1;
@@ -74,6 +84,15 @@ service User {
   rpc ResetRolesOverride(ResetRolesOverrideRequest) returns (ResetRolesOverrideResponse) {
     option (google.api.http) = {
       put: "/api/admin/users/{email}/roles_override"
+    };
+  }
+
+  // 设置/移除灰度用户：改变的是发布通道路由（nginx-ingress canary），不是权限授予，
+  // 故不设二次确认；该用户下次打开页面即按新通道分流。
+  rpc ToggleGray(ToggleGrayRequest) returns (ToggleGrayResponse) {
+    option (google.api.http) = {
+      put: "/api/admin/users/{email}/gray",
+      body: "*"
     };
   }
 }

@@ -2295,6 +2295,21 @@ func (m *MockUserRepo) EXPECT() *MockUserRepoMockRecorder {
 	return m.recorder
 }
 
+// IsGray mocks base method.
+func (m *MockUserRepo) IsGray(arg0 context.Context, arg1 string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsGray", arg0, arg1)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsGray indicates an expected call of IsGray.
+func (mr *MockUserRepoMockRecorder) IsGray(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsGray", reflect.TypeOf((*MockUserRepo)(nil).IsGray), arg0, arg1)
+}
+
 // List mocks base method.
 func (m *MockUserRepo) List(arg0 context.Context, arg1 *biz.ListUserInput) (*biz.ListUserResult, error) {
 	m.ctrl.T.Helper()
@@ -2350,4 +2365,18 @@ func (m *MockUserRepo) ToggleAdmin(arg0 context.Context, arg1 string, arg2 bool)
 func (mr *MockUserRepoMockRecorder) ToggleAdmin(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToggleAdmin", reflect.TypeOf((*MockUserRepo)(nil).ToggleAdmin), arg0, arg1, arg2)
+}
+
+// ToggleGray mocks base method.
+func (m *MockUserRepo) ToggleGray(arg0 context.Context, arg1 string, arg2 bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ToggleGray", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ToggleGray indicates an expected call of ToggleGray.
+func (mr *MockUserRepoMockRecorder) ToggleGray(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToggleGray", reflect.TypeOf((*MockUserRepo)(nil).ToggleGray), arg0, arg1, arg2)
 }
