@@ -84,10 +84,12 @@ export function ResourceBoard() {
                 </div>
               ))}
             </div>
-            {/* 部署趋势面板骨架占位（标题行 + 统计行 + 曲线区），与真数据布局同构避免首载跳动 */}
+            {/* 部署趋势面板骨架占位（标题行 + 统计行 + 曲线区），与真数据布局同构避免首载跳动。
+                统计行 4 个占位块 = 今日/日均/峰值/总计，与 DeployTrendPanel 的 metrics 项数一致 */}
             <div className="rounded-lg border border-line bg-surface p-4">
               <Skeleton className="h-3 w-24" />
-              <div className="mt-3 flex gap-8">
+              <div className="mt-3 flex flex-wrap gap-x-8 gap-y-2">
+                <Skeleton className="h-5 w-16" />
                 <Skeleton className="h-5 w-16" />
                 <Skeleton className="h-5 w-20" />
                 <Skeleton className="h-5 w-16" />

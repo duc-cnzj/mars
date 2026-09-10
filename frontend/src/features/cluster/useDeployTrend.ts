@@ -16,6 +16,8 @@ export interface DeployTrend {
   dates: string[]
   /** 窗口内总部署次数 */
   total: number
+  /** 今日部署次数（= 序列末位那一天的 count，即「今天」这个桶） */
+  today: number
   /** 窗口内日均部署次数（保留 1 位小数） */
   dailyAvg: number
   /** 窗口内单日峰值 */
@@ -32,9 +34,12 @@ function toMDLabel(date: string): string {
   return m ? `${Number(m[2])}/${Number(m[3])}` : date
 }
 
-/** 从原始序列折叠出面板读数：总次数 / 日均 / 峰值及其下标。
+/** 从原始序列折叠出面板读数：总次数 / 今日 / 日均 / 峰值及其下标。
  *  日均分母取实际窗口长度 counts.length（服务端返回 items 数与请求 days 一致：
- *  30→30 点、90→90 点），不能写死默认 30——切 60/90 窗口时写死会低估日均。 */
+ *  30→30 点、90→90 点），不能写死默认 30——切 60/90 窗口时写死会低估日均。
+ *  今日 = 末位 count：服务端按天升序铺满且「无部署补 0」，末位恒是今天那个桶（三个窗口
+ *  都是「近 N 天含今天」，切 30/60/90 今日读数不变）。**不做客户端日期换算**——「今天」
+ *  以服务端分桶时区为准，与 dates 末位同一个天界，避免负时区把今日挪到昨天。 */
 function summarize(counts: number[], dates: string[]): DeployTrend {
   const n = counts.length || 1
   const total = counts.reduce((sum, c) => sum + c, 0)
@@ -50,6 +55,7 @@ function summarize(counts: number[], dates: string[]): DeployTrend {
     counts,
     dates,
     total,
+    today: counts[counts.length - 1] ?? 0,
     dailyAvg: Math.round((total / n) * 10) / 10,
     peak,
     peakIndex,

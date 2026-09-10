@@ -51,6 +51,11 @@ const DialogOverlay = React.forwardRef<
 // 顶层弹窗（多个项目详情弹窗并开）的遮罩必须恒 z-50：若也跟随 z，后开弹窗的遮罩(z-53)
 // 会盖住先开兄弟弹窗的内容(z-52)，下层弹窗被遮罩压死、点不到 X，只能从顶逐个关
 // （表现为「点关闭关不掉、要点很多次」，且叠层瞬间遮罩轰一下盖满全屏像白光一闪）。
+//
+// raiseOverlay：给「必须盖过另一个顶层弹窗」的顶层弹窗用的显式开关——这些弹窗不是兄弟多开
+// （如空间卡片的成员/管理/删除确认，开在项目详情弹窗之上），遮罩不抬会露馅：上面的弹窗虽然
+// z 更高，但遮罩仍停在 z-50，被它压住的项目详情弹窗看起来完全没变暗，像两块面板硬叠在一起。
+// 不设默认值：默认抬会让兄弟多开的项目详情弹窗互相压死（见上）。
 const DialogDepthContext = React.createContext(0)
 
 const DialogContent = React.forwardRef<
@@ -58,12 +63,16 @@ const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
     showCloseButton?: boolean
     showOverlay?: boolean
+    /** 遮罩跟随 content 的 z 一并抬升（仅用于需盖过其它顶层弹窗的场景，见顶部注释） */
+    raiseOverlay?: boolean
   }
->(({ className, children, showCloseButton = true, showOverlay = true, style, ...props }, ref) => {
+>(({ className, children, showCloseButton = true, showOverlay = true, raiseOverlay = false, style, ...props }, ref) => {
   const { t } = useTranslation()
   const depth = React.useContext(DialogDepthContext)
   const z = style?.zIndex
-  const overlayZ = depth > 0 && z ? z : undefined
+  // 用 z != null 而非真值判断：zIndex: 0 是合法值却被真值判断吞掉，
+  // 会让 content 停在 z-0 而遮罩回落到默认 z-50（遮罩反盖内容）
+  const overlayZ = (depth > 0 || raiseOverlay) && z != null ? z : undefined
   return (
     <DialogPortal data-slot="dialog-portal">
       {showOverlay && <DialogOverlay style={overlayZ ? { zIndex: overlayZ } : undefined} />}

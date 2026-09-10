@@ -982,6 +982,9 @@ function SortableNamespaceCard({
 
   // 手柄引用稳定（dnd-kit 的 useNodeRef 用 useCallback 包了），useMemo 后拖拽过程
   // 该节点引用不变 → 下游 memo(NamespaceCard) 能跳过重渲染，拖拽只动外层廉价节点。
+  // 悬停显示：默认 opacity-0 只隐不缩，保留 24px 占位 → 悬停时关注星不跳位；
+  // 卡片根节点带无名 group，group-hover 即「鼠标移入整卡」（同 NamespaceCard 描述铅笔的写法）。
+  // focus-visible 兜键盘可达；pointer-coarse 兜触屏——触屏无 hover，不常显手柄就没法拖。
   const dragHandle = useMemo(
     () => (
       <Button
@@ -992,7 +995,7 @@ function SortableNamespaceCard({
         {...listeners}
         aria-label={t('workbench.dragSort')}
         title={t('workbench.dragSort')}
-        className="cursor-grab text-faint hover:text-primary active:cursor-grabbing"
+        className="cursor-grab text-faint opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 hover:text-primary active:cursor-grabbing"
       >
         <Icon name="grip-vertical" className="size-4" />
       </Button>

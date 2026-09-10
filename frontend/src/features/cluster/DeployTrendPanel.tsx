@@ -45,7 +45,7 @@ export function DeployTrendPanel() {
   const id = useId()
   // 趋势窗口档位：默认 30 天，可切 30/60/90（切档即按新窗口重拉，日均随窗口长度重算）
   const [rangeDays, setRangeDays] = useState<DeployTrendRange>(DEPLOY_TREND_DAYS)
-  const { counts, dates, total, dailyAvg, peak, peakIndex } = useDeployTrend(rangeDays)
+  const { counts, dates, total, today, dailyAvg, peak, peakIndex } = useDeployTrend(rangeDays)
   // hover 对齐到的采样点下标（null = 未悬停）
   const [hover, setHover] = useState<number | null>(null)
 
@@ -74,11 +74,16 @@ export function DeployTrendPanel() {
   // x 轴刻度下标：首尾 + 均匀间隔（避开重叠）
   const ticks = Array.from({ length: TICK_N }, (_, i) => Math.round((i * (n - 1)) / (TICK_N - 1)))
 
-  // 峰值读数标注项：日均/峰值（含日期）/总计
+  // 统计行读数：今日（序列末位那天，紧跟档位 chip 的「近 N 天」上下文，不再重复挂日期）/ 日均 / 峰值（含日期）/ 总计。
+  // 单位并入标题（今日（次）｜30），值列只留纯数字——等宽数字列对齐、扫读更快；
+  // 括号形态不在此拼，交给各语言词条（zh「（）」/ en「()」）。
+  // hover 气泡无标题承载单位，仍走 deployTrendUnit 的「值 + 单位」合写。
+  const unit = t('cluster.deployTrendUnitLabel')
   const metrics: { label: string; value: string; sub?: string }[] = [
-    { label: t('cluster.deployTrendAvg'), value: t('cluster.deployTrendUnit', { count: dailyAvg }) },
-    { label: t('cluster.deployTrendPeak'), value: `${peak}`, sub: dates[peakIndex] },
-    { label: t('cluster.deployTrendTotal'), value: `${total}` },
+    { label: t('cluster.deployTrendToday', { unit }), value: `${today}` },
+    { label: t('cluster.deployTrendAvg', { unit }), value: `${dailyAvg}` },
+    { label: t('cluster.deployTrendPeak', { unit }), value: `${peak}`, sub: dates[peakIndex] },
+    { label: t('cluster.deployTrendTotal', { unit }), value: `${total}` },
   ]
 
   /** 档位切换 chip 样式：选中项主色描边 + 浅底（对齐 TopPods 的 CPU/内存切换形态） */

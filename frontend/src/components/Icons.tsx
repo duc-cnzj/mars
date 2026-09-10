@@ -76,6 +76,7 @@ export type IconName =
   | 'circle-check'
   | 'circle-x'
   | 'circle-question'
+  | 'question'
   | 'info'
   | 'gauge'
   | 'pencil'
@@ -403,6 +404,14 @@ const paths: Record<IconName, ReactNode> = {
       <circle cx="12" cy="12" r="10" />
       <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
       <path d="M12 17h.01" />
+    </>
+  ),
+  // 裸问号（无外圈）：把 lucide help-circle 的内嵌问号以 (12,12) 为心放大 1.5 倍，
+  // 去掉外圈后笔画撑满 24 网格，用于「空间信息」图标的悬停态（外圈会和圆角方块底重复成双圈）
+  question: (
+    <>
+      <path d="M7.64 7.5a4.5 4.5 0 0 1 8.74 1.5c0 3-4.5 4.5-4.5 4.5" />
+      <path d="M12 19.5h.01" />
     </>
   ),
   // lucide info 同款：圆形 + 竖线 + 圆点，用于图表说明 tooltip

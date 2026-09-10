@@ -4,7 +4,7 @@ import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
-import { nextZIndex } from '@/lib/zIndex'
+import { useOverlayZ } from '@/hooks/useOverlayZ'
 import { Icon } from '@/components/Icons'
 import { Empty, Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
@@ -40,12 +40,9 @@ export function ConfigHistory({
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
-  // 历史弹窗（portal 挂 body）须盖过可拖拽宿主弹窗 z-51+：打开时取下一个共享 z-index
-  const [z, setZ] = useState(() => nextZIndex())
-  // 触发源是普通 Button（非 Radix DialogTrigger），onOpenChange(true) 不会触发 → 由 effect 在打开时置顶
-  useEffect(() => {
-    if (open) setZ(nextZIndex())
-  }, [open])
+  // 历史弹窗（portal 挂 body）须盖过可拖拽宿主弹窗 z-51+。
+  // 触发源是普通 Button（非 Radix DialogTrigger），onOpenChange(true) 不会触发 → 只能由 effect 在打开时置顶
+  const z = useOverlayZ(open)
   const [items, setItems] = useState<ChangelogModel[]>([])
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState<number | null>(null)

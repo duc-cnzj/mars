@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
-import { nextZIndex } from '@/lib/zIndex'
+import { useOverlayZ } from '@/hooks/useOverlayZ'
 import { getToken } from '@/api/token'
 import { containerStreamLogsUrl } from '@/api/endpoints'
 import { Icon } from '@/components/Icons'
@@ -58,10 +58,9 @@ export function ContainerLogModal({
   container: ContainerLogTarget
 }) {
   const { t } = useTranslation()
-  const [z, setZ] = useState(() => nextZIndex())
-  useEffect(() => {
-    if (open) setZ(nextZIndex())
-  }, [open])
+  // 本弹窗当前唯一调用点（DeployLog）是「有条件挂载 + open 恒为 true」，即挂载即打开；
+  // useOverlayZ 在 open=true 的首次渲染后（绘制前）取 z，两种情况都覆盖，不依赖 open 是否真的翻转
+  const z = useOverlayZ(open)
   const [lines, setLines] = useState<string[]>([])
   const [streaming, setStreaming] = useState(false)
   const [ended, setEnded] = useState(false)

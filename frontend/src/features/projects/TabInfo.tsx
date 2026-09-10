@@ -2,11 +2,13 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
+import type { TKey } from '@/i18n/keys'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
 import { getHighlightSyntax } from '@/lib/highlight'
 import { copyText } from '@/lib/copy'
-import { nextZIndex } from '@/lib/zIndex'
+import { selectAllOnDoubleClick } from '@/lib/selection'
+import { useOverlayZ } from '@/hooks/useOverlayZ'
 import { Icon, type IconName } from '@/components/Icons'
 import { Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
@@ -35,12 +37,9 @@ export function TabInfo({
   const [memory, setMemory] = useState('')
   const [metricsLoading, setMetricsLoading] = useState(true)
   const [confirmOpen, setConfirmOpen] = useState(false)
-  // 确认框 z-index：盖过可拖拽宿主弹窗（宿主 zIndex 从 51 起），打开时再置顶
-  const [confirmZ, setConfirmZ] = useState(() => nextZIndex())
-  // 触发源是普通 Button（非 Radix DialogTrigger），onOpenChange(true) 不会触发 → 由 effect 在打开时置顶
-  useEffect(() => {
-    if (confirmOpen) setConfirmZ(nextZIndex())
-  }, [confirmOpen])
+  // 确认框 z-index：盖过可拖拽宿主弹窗（宿主 zIndex 从 51 起）。
+  // 触发源是普通 Button（非 Radix DialogTrigger），onOpenChange(true) 不会触发 → 只能由 effect 在打开时置顶
+  const confirmZ = useOverlayZ(confirmOpen)
   const [deleting, setDeleting] = useState(false)
   // 相关配置默认折叠：配置通常很长，收起保持弹窗清爽，需要时展开看完整预览
   const [configOpen, setConfigOpen] = useState(false)
@@ -68,9 +67,12 @@ export function TabInfo({
     }
   }, [detail.id])
 
-  const copyConfig = async () => {
-    const ok = await copyText(detail.overrideValues)
-    if (ok) toast.success(t('common.copied'))
+  /** 复制文本并统一反馈：相关配置 / 访问地址 / 容器镜像三处共用同一套交互
+   *  （失败统一「复制失败」；成功文案按来源区分——doneKey 由调用点传入，
+   *   「已复制访问地址！」「已复制镜像地址！」「已复制相关配置！」，不再一律「已复制」） */
+  const copyValue = async (value: string, doneKey: TKey) => {
+    const ok = await copyText(value)
+    if (ok) toast.success(t(doneKey))
     else toast.error(t('common.copyFailed'))
   }
 
@@ -138,6 +140,18 @@ export function TabInfo({
                     {ep.portName && <span className="text-faint"> ({ep.portName})</span>}
                   </span>
                 )}
+                {/* 访问地址复制：对齐 ProjectRow 端点弹层同款按钮（ghost icon-xs，hover 提亮主色） */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => void copyValue(ep.url, 'project.copyEndpoint')}
+                  aria-label={t('common.copy')}
+                  title={t('common.copy')}
+                  className="shrink-0 text-faint hover:text-primary"
+                >
+                  <Icon name="copy" className="text-[11px]" />
+                </Button>
                 <Tag tone="mute" dot={false}>
                   {ep.name}
                 </Tag>
@@ -180,8 +194,30 @@ export function TabInfo({
         ) : (
           <ul className="flex flex-col gap-1">
             {detail.dockerImage.map((img, i) => (
-              <li key={i} className="break-all font-mono text-[12px] text-ink" translate="no">
-                {img}
+              // 对齐：items-center 让按钮与文字垂直居中（items-start 会让 24px 按钮顶对齐 18px 行高，
+              // 恒定偏 3px，实测）；按钮**紧随文本**（文本不 flex-1 撑满，按钮就贴着一行文本走），
+              // 超长镜像名靠 break-all 在可用宽度内折行，按钮始终跟在本行文本之后
+              <li key={i} className="flex items-center gap-2 text-[12px]">
+                {/* 双击整选（selectAllOnDoubleClick）：镜像含 `.` `/` `:`，浏览器默认双击按「词」断选
+                    （registry.uco.com/mars/demo:v1.0.0 只选到一段），改选整个文本节点便于整段复制 */}
+                <span
+                  className="min-w-0 break-all font-mono text-ink"
+                  translate="no"
+                  onDoubleClick={selectAllOnDoubleClick}
+                >
+                  {img}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => void copyValue(img, 'project.copyImage')}
+                  aria-label={t('common.copy')}
+                  title={t('common.copy')}
+                  className="shrink-0 text-faint hover:text-primary"
+                >
+                  <Icon name="copy" className="text-[11px]" />
+                </Button>
               </li>
             ))}
           </ul>
@@ -223,7 +259,7 @@ export function TabInfo({
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => void copyConfig()}
+                  onClick={() => void copyValue(detail.overrideValues, 'project.copyOverrideValues')}
                   aria-label={t('common.copy')}
                   title={t('common.copy')}
                   className="absolute right-1 top-1 z-10 flex size-6 items-center justify-center rounded-md text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"

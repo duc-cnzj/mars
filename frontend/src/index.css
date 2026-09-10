@@ -90,7 +90,14 @@ body {
 
 * { box-sizing: border-box; }
 
-::selection { background: var(--primary); color: var(--primary-foreground); }
+/* 选中高亮：品牌色 30% 淡底 + 常规文字色。
+   不用实心 --primary——实底在浅色主题下是白字、深色主题下是近黑字（--primary-foreground），
+   选中变成一整块大色块糊住文字；30% 透明度能看出选中范围，文字仍清晰。
+   透明度用 color-mix 按各主题 --primary 现算，8 套主题自动适配，不硬编码色值。 */
+::selection {
+  background: color-mix(in srgb, var(--primary) 30%, transparent);
+  color: var(--text);
+}
 
 /* 全局默认键盘焦点环（无障碍保留）：必须放进 @layer base —— 若写成无层级规则，
    按 CSS 级联「无层级 > 有层级」，会永久压过 Tailwind 的 focus-visible:outline-none /
@@ -143,6 +150,20 @@ body {
 }
 .animate-list-in { animation: mars-list-in 0.45s ease-out both; }
 
+/* 空间卡片的「空间信息」入口：悬停时图标由空间图标换成问号并左右摆动（问号＝「这里是什么」）。
+   摆动一次 0.9s、幅度逐次收敛（-14°→12°→-9°→6°→-3°）再回中，像探头张望而非机械摇头；
+   infinite 让悬停期间持续摆，移开鼠标即随图标一起隐去（动画挂在 hover 才显示的节点上）。
+   transform-origin 落在 50% 60%：绕偏下的轴摆，视觉上像挂在轴上的牌子 */
+@keyframes mars-icon-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-14deg); }
+  30% { transform: rotate(12deg); }
+  45% { transform: rotate(-9deg); }
+  60% { transform: rotate(6deg); }
+  75% { transform: rotate(-3deg); }
+}
+.animate-icon-wobble { animation: mars-icon-wobble 0.9s ease-in-out infinite; transform-origin: 50% 60%; }
+
 /* ============================================================
    拓扑常驻「活」感：让整张图像在运行中的系统
    1) 状态点呼吸：健康/异常做轻微透明度起伏
@@ -183,6 +204,7 @@ body {
    loading spinner 保留——它是进度信号，禁用会丢失加载反馈 */
 @media (prefers-reduced-motion: reduce) {
   .animate-list-in,
+  .animate-icon-wobble,
   .topo-dot-breathe,
   .topo-dot-pulse,
   .topo-pill-ping,

@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@/components/Icons'
 import { Empty, RefreshFade, SkeletonList, Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/shadcn/tooltip'
 import { copyText } from '@/lib/copy'
 import { toast } from '@/lib/toast'
+import { cn } from '@/lib/utils'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
 import type { components } from '@/api/schema'
@@ -56,6 +58,50 @@ const SETTING_LABEL_KEY: Record<string, TKey> = {
   s3_access_key_id: 'settings.s3AccessKey',
   s3_secret_access_key: 'settings.s3SecretKey',
   admin_password: 'settings.adminPassword',
+}
+
+/**
+ * 单行截断文本：超出容器宽度时悬停显示全文（shadcn Tooltip，原生 title 有延迟且无样式、用户感知不到）
+ *
+ * 对齐 ProjectRow / Elements FieldLabel 的既有模式——恒走 Tooltip 分支、open 受控
+ * （truncated && hover，onOpenChange 置空）：不要按 truncated 在裸文本 ↔ Tooltip 之间切换 DOM，
+ * 也不要把 onOpenChange 接真实 setState（Radix 受控开合逻辑会和鼠标事件互斗，悬停一开就关）。
+ */
+function TruncatedText({ text, className }: { text: string; className?: string }) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const [truncated, setTruncated] = useState(false)
+  const [hover, setHover] = useState(false)
+
+  // 截断检测：scrollWidth > clientWidth（+1px 缓冲防亚像素抖动）；ResizeObserver 跟随容器尺寸变化重算
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const measure = () => setTruncated(el.scrollWidth > el.clientWidth + 1)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [text])
+
+  return (
+    <TooltipProvider delayDuration={100}>
+      <Tooltip open={truncated && hover} onOpenChange={() => {}}>
+        <TooltipTrigger asChild>
+          <span
+            ref={ref}
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+            className={cn('truncate', className)}
+          >
+            {text}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[min(320px,80vw)] break-words">
+          {text}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
 }
 
 /**
@@ -151,20 +197,17 @@ export function SystemSettings() {
                     return (
                       <div
                         key={item.key}
-                        className="grid grid-cols-[10rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5"
+                        className="grid grid-cols-[16rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5"
                       >
-                        <span className="truncate text-[13px] text-mute" title={labelKey ? undefined : item.key}>
-                          {labelKey ? t(labelKey) : item.key}
-                        </span>
+                        {/* 标签列：有词条映射显示中文标签（短，恒不截断），否则回退原始配置 key */}
+                        <TruncatedText className="text-[13px] text-mute" text={labelKey ? t(labelKey) : item.key} />
 
-                        <span
-                          className={`truncate font-mono text-[13px] ${
-                            item.masked && !visible ? 'text-mute' : 'text-ink'
-                          }`}
-                          title={item.masked && !visible ? undefined : item.value}
-                        >
-                          {item.masked && !visible ? MASK : item.value}
-                        </span>
+                        {/* 值列：tooltip 传「实际展示的文本」而非原始值——掩码态传 MASK，
+                            避免悬停把密码/密钥明文漏出去（掩码恒 6 字符，实际也不会触发 tooltip） */}
+                        <TruncatedText
+                          className={`font-mono text-[13px] ${item.masked && !visible ? 'text-mute' : 'text-ink'}`}
+                          text={item.masked && !visible ? MASK : item.value}
+                        />
 
                         <div className="flex items-center gap-1">
                           {item.masked && (

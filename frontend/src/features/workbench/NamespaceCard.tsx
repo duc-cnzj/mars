@@ -1,10 +1,21 @@
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
+import type { TKey } from '@/i18n/keys'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
 import { copyText } from '@/lib/copy'
+import { selectAllOnDoubleClick } from '@/lib/selection'
+import { useOverlayZ } from '@/hooks/useOverlayZ'
 import { Icon } from '@/components/Icons'
 import { Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
@@ -61,6 +72,35 @@ function displayMembers(ns: NamespaceModel): MemberModel[] {
  * 命名空间卡片：名称/描述 + 成员头像 + 项目数 + 收藏星 + 管理/删除入口。
  * 收藏切换乐观更新失败回滚；删除需二次确认；管理弹窗（描述/私有/成员/转让）仅 owner 可见。
  */
+/** i18n 取词最小签名：只要「字面量 key → 文案」这一面（TKey 约束编译期防悬空 key）。
+ *  不用 i18next TFunction / ReturnType<useTranslation>：前者的泛型在本仓 strict 下实例化过深，
+ *  后者把 useTranslation 的泛型重载原样带出，同样报 TS2589。 */
+type TFn = (key: TKey) => string
+
+/**
+ * 双击整选 + 复制（卡片标题→空间名称、成员/管理员邮箱共用）：
+ * 整选给到视觉反馈（浏览器默认按「词」断选，mars-demo 只选到半截），复制结果走 toast。
+ * 提到模块层是因为空间信息弹窗（NamespaceInfoDialog）也要用同一交互。
+ */
+function makeDoubleClickCopy(t: TFn) {
+  return (text: string, doneKey: TKey) => (e: MouseEvent<HTMLElement>) => {
+    selectAllOnDoubleClick(e)
+    void copyText(text).then((ok) =>
+      ok ? toast.success(t(doneKey)) : toast.error(t('common.copyFailed')),
+    )
+  }
+}
+
+/*
+ * 卡片上四个弹窗（成员/信息/管理/删除确认）与项目详情弹窗**平级**——后者是可拖拽宿主，
+ * z 取 nextZIndex()（从 51 起），而这四个走 shadcn 默认 z-50，项目详情弹窗打开时会被整块压住，
+ * 表现为「点了成员没反应」（弹窗确实开了，只是被盖住）。故统一走 useOverlayZ 在打开时置顶。
+ *
+ * 遮罩同步抬升（DialogContent raiseOverlay）：四者都是顶层（DialogDepthContext depth=0），
+ * 默认遮罩恒 z-50，只抬 content 的话被压住的项目详情弹窗不会变暗，两层弹窗像硬叠在一起。
+ * 这四个弹窗不是兄弟多开，抬遮罩不会引发兄弟互压（见 dialog.tsx 顶部注释）。
+ */
+
 export function NamespaceCard({
   ns,
   loading = false,
@@ -97,6 +137,13 @@ export function NamespaceCard({
   const [manageOpen, setManageOpen] = useState(false)
   // 成员弹窗：点击底部成员区打开，列出全部成员
   const [membersOpen, setMembersOpen] = useState(false)
+  // 空间信息弹窗：点标题左侧图标打开，聚合管理员 / 空间资源总使用量 / 空间访问地址
+  const [infoOpen, setInfoOpen] = useState(false)
+  // 四个弹窗的 z：打开时置顶，压过同级的项目详情弹窗（可拖拽宿主 z≥51）
+  const confirmZ = useOverlayZ(confirmOpen)
+  const manageZ = useOverlayZ(manageOpen)
+  const membersZ = useOverlayZ(membersOpen)
+  const infoZ = useOverlayZ(infoOpen)
   const [isPrivate, setIsPrivate] = useState(ns.private)
   const [membersList, setMembersList] = useState<string[]>([])
   const [transferEmail, setTransferEmail] = useState('')
@@ -129,11 +176,7 @@ export function NamespaceCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manageOpen])
 
-  const copyId = async () => {
-    const ok = await copyText(String(ns.id))
-    if (ok) toast.success(t('workbench.copyId'))
-    else toast.error(t('common.copyFailed'))
-  }
+  const copyOnDoubleClick = makeDoubleClickCopy(t)
 
   const toggleFavorite = async () => {
     if (busy) return
@@ -222,34 +265,46 @@ export function NamespaceCard({
     <div className="group relative flex h-full flex-col gap-3 rounded-lg border border-line bg-surface p-4 transition-[box-shadow,border-color] hover:border-primary/40 hover:shadow-xl hover:shadow-ink/20">
       {/* 头部：左侧 36px 正方形图标块与标题行顶对齐；右侧分上下两行 = 标题行(名称+操作簇) / 描述行 */}
       <div className="group/top flex items-start gap-2.5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
-          <Icon name="namespace" className="text-[16px]" />
-        </div>
+        {/* 标题左侧图标块 = 「空间信息」入口：管理员 / 空间资源总使用量 / 空间访问地址三块内容收进同一弹窗，
+            顶部图标簇不再各占一位（原三个 popover 触发图标已移除）。
+            悬停/聚焦换成问号并左右摆动（animate-icon-wobble）——问号是「这里是什么」的语义提示，
+            暗示可点开看详情。纯 CSS 显隐切换（group-hover/focus-visible），不引入 React 状态、不额外渲染 */}
+        <button
+          type="button"
+          onClick={() => setInfoOpen(true)}
+          aria-label={t('workbench.namespaceInfo')}
+          title={t('workbench.namespaceInfo')}
+          className="group/info flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        >
+          <Icon
+            name="namespace"
+            className="text-[16px] group-hover/info:hidden group-focus-visible/info:hidden"
+          />
+          {/* 问号比默认图标大一号（20px vs 16px）：裸问号笔画只占 24 网格的六成，
+              同字号下视觉重量明显轻于空间图标，放大补回来 */}
+          <Icon
+            name="question"
+            className="hidden animate-icon-wobble text-[20px] group-hover/info:block group-focus-visible/info:block"
+          />
+        </button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            {/* 左组：title + 私有 + 复制 包一个 div（天然宽度，不 flex-1 撑宽，私有/复制紧贴名称）；操作簇由 justify-between 推到最右 */}
+            {/* 左组：title + 私有 包一个 div（天然宽度，不 flex-1 撑宽，私有紧贴名称）；操作簇由 justify-between 推到最右 */}
             <div className="flex min-w-0 items-center gap-2">
-              <span className="min-w-0 truncate text-[14px] font-bold text-ink">{ns.name}</span>
-              {ns.private && <Tag tone="accent" className="shrink-0">{t('workbench.private')}</Tag>}
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={copyId}
-                title={t('workbench.copyId')}
-                aria-label={t('workbench.copyId')}
-                className="text-faint hover:text-primary"
+              {/* 双击标题：整选 + 复制空间名称（见 copyOnDoubleClick）；title 提示交互，复制反馈走 toast */}
+              <span
+                className="min-w-0 truncate text-[14px] font-bold text-ink"
+                title={t('workbench.copyNameTip')}
+                onDoubleClick={copyOnDoubleClick(ns.name, 'workbench.copyName')}
               >
-                <Icon name="copy" className="size-4" />
-              </Button>
+                {ns.name}
+              </span>
+              {ns.private && <Tag tone="accent" className="shrink-0">{t('workbench.private')}</Tag>}
             </div>
-            {/* 管理员 + 空间资源用量 + 空间访问地址 + 关注：右组贴最右，紧凑图标簇（gap-0 无间距，
-                每个都是 ghost icon-xs 标准按钮，hover 点亮 primary）。拖拽手柄（关注 Tab）插在最左端，
-                与其余图标同一交互样式 */}
+            {/* 右组贴最右，紧凑图标簇（gap-0 无间距）。拖拽手柄（关注 Tab）插在最左端，与关注星同一交互样式；
+                管理员/资源用量/访问地址已收进左侧图标块的「空间信息」弹窗 */}
             <div className="flex shrink-0 items-center gap-0">
               {dragHandle}
-              <NamespaceAdmin email={ns.creatorEmail} />
-              <NamespaceCpuMemory namespaceId={ns.id} />
-              <NamespaceEndpoints namespaceId={ns.id} />
               {/* 关注星：主题色实心填充（随换肤）；未关注为描边淡色 */}
               <Button
                 variant="ghost"
@@ -333,6 +388,7 @@ export function NamespaceCard({
           </span>
         </button>
         <div className="flex items-center gap-1">
+          {/* 空间 ID 已移入「空间信息」弹窗标题行（名称可改、ID 稳定，排障对账时一眼定位），footer 只留项目数 */}
           <span className="flex items-center gap-1 rounded-md bg-raised px-2 py-1 font-mono text-[11px] text-mute">
             <Icon name="project" className="text-[12px]" />
             {ns.projects.length}
@@ -367,7 +423,7 @@ export function NamespaceCard({
 
       {/* 成员弹窗：点击底部成员区打开，列出全部成员（owner 行打「所有者」标记） */}
       <Dialog open={membersOpen} onOpenChange={(o) => !o && setMembersOpen(false)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" style={{ zIndex: membersZ }} raiseOverlay>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-[15px]">
               <Icon name="user" className="text-[14px]" />
@@ -391,7 +447,12 @@ export function NamespaceCard({
                       {m.email[0]?.toUpperCase() ?? ''}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink">
+                  {/* 双击邮箱：整选 + 复制（成员邮箱常要转发/粘贴，双击即得） */}
+                  <span
+                    className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink"
+                    title={t('workbench.copyMemberEmailTip')}
+                    onDoubleClick={copyOnDoubleClick(m.email, 'workbench.copyMemberEmail')}
+                  >
                     {m.email}
                   </span>
                   {m.email === ns.creatorEmail && (
@@ -404,9 +465,12 @@ export function NamespaceCard({
         </DialogContent>
       </Dialog>
 
+      {/* 空间信息弹窗：标题左侧图标触发，聚合管理员 / 资源用量 / 访问地址 */}
+      <NamespaceInfoDialog ns={ns} open={infoOpen} onOpenChange={setInfoOpen} z={infoZ} />
+
       {/* 管理弹窗（仅 owner）：私有/成员/转让（描述编辑已上移到卡片内联） */}
       <Dialog open={manageOpen} onOpenChange={(o) => !o && setManageOpen(false)}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg" style={{ zIndex: manageZ }} raiseOverlay>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-[15px]">
               <Icon name="gear" className="text-[14px]" />
@@ -464,7 +528,7 @@ export function NamespaceCard({
 
       {/* 删除确认 */}
       <Dialog open={confirmOpen} onOpenChange={(o) => !o && setConfirmOpen(false)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" style={{ zIndex: confirmZ }} raiseOverlay>
           <DialogHeader>
             <DialogTitle>{t('workbench.deleteNamespace')}</DialogTitle>
           </DialogHeader>
@@ -651,105 +715,58 @@ function NamespaceDescription({
 }
 
 /**
- * 空间管理员：icon 触发，点击 Popover 展示管理员邮箱（对齐顶部 icon 簇「点击弹层」交互）。
- * 顶部只占一个图标位，不挤占名称区；管理员名称通过弹层查看。
+ * 空间信息弹窗：卡片左上图标触发，聚合原先顶部三个图标 popover 的内容——
+ * 管理员邮箱（creator_email）/ 空间资源总使用量（懒拉 metricsNamespaceCpuMemory）/ 空间访问地址（懒拉 endpointsNamespace）。
+ * 两块远端数据都在弹窗打开时拉取、各带「已加载则短路」的缓存，语义与原 popover 一致（不问不拉、拉过不重拉）。
  */
-function NamespaceAdmin({ email }: { email: string }) {
+function NamespaceInfoDialog({
+  ns,
+  open,
+  onOpenChange,
+  z,
+}: {
+  ns: NamespaceModel
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  /** 顶层弹窗 z（打开时取 nextZIndex()）：压过同级可拖拽的项目详情弹窗 */
+  z: number
+}) {
   const { t } = useTranslation()
-  return (
-    // modal：阻止外点透传到下层卡片内容（卡片顶 icon 簇 side=top 翻转后会盖住项目行）
-    <Popover modal>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          aria-label={t('workbench.adminLabel')}
-          title={t('workbench.adminLabel')}
-          className="text-faint hover:text-primary"
-        >
-          <Icon name="crown" className="size-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent side="top" className="w-[max-content] max-w-[min(320px,80vw)] p-2">
-        <div className="mb-1 px-1 text-[12px] font-medium">{t('workbench.adminLabel')}</div>
-        <div className="flex items-center gap-1.5 px-1 pb-1 font-mono text-[12px]">
-          <Icon name="user" className="shrink-0 text-[12px] text-faint" />
-          <span className="break-all">{email || t('common.unknown')}</span>
-        </div>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-/**
- * 空间级 CPU/内存用量：点击时懒拉取 /api/metrics/namespace/{namespaceId}/cpu_memory。
- * 旧版为 hover Tooltip，触屏/键盘不可达；改为点击弹层满足「Hover vs Tap」（参考旧版 CpuMemory）。
- */
-function NamespaceCpuMemory({ namespaceId }: { namespaceId: number }) {
-  const { t } = useTranslation()
+  const copyOnDoubleClick = makeDoubleClickCopy(t)
   const [usage, setUsage] = useState<{ cpu: string; memory: string } | null>(null)
+  const [eps, setEps] = useState<ServiceEndpointModel[]>([])
+  const [epsLoaded, setEpsLoaded] = useState(false)
 
+  /** 资源用量：拉不到就落 '-' 占位（不让弹窗卡在 loading） */
   const fetchUsage = () => {
     if (usage) return
     api
-      .GET(API.metricsNamespaceCpuMemory, {
-        params: { path: { namespaceId } },
-      })
+      .GET(API.metricsNamespaceCpuMemory, { params: { path: { namespaceId: ns.id } } })
       .then(({ data }) => {
         if (data) setUsage({ cpu: data.cpu, memory: data.memory })
       })
       .catch(() => setUsage({ cpu: '-', memory: '-' }))
   }
 
-  return (
-    // modal：阻止外点透传到底层项目行（点 icon 开 popover 后误触项目行打开弹窗）
-    <Popover modal onOpenChange={(open) => open && fetchUsage()}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          aria-label={t('workbench.spaceCpuMemory')}
-          className="text-faint hover:text-primary"
-        >
-          <Icon name="gauge" className="size-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent side="top" className="w-[min(240px,80vw)] p-2 font-mono text-[11px]">
-        <div className="mb-1 px-1 text-[12px] font-medium">{t('workbench.spaceCpuMemory')}</div>
-        {usage ? (
-          <div className="flex flex-col gap-0.5 px-1 pb-1">
-            <span>cpu: {usage.cpu || '-'}</span>
-            <span>memory: {usage.memory || '-'}</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 px-1 py-1 text-faint">
-            <Icon name="loader" className="size-3 animate-spin" />
-            {t('common.loading')}
-          </div>
-        )}
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-/** 空间端点：hover/点击时拉取 /api/endpoints/namespaces/{namespaceId}，支持 http 链接与复制（参考旧版 ServiceEndpoint） */
-function NamespaceEndpoints({ namespaceId }: { namespaceId: number }) {
-  const { t } = useTranslation()
-  const [eps, setEps] = useState<ServiceEndpointModel[]>([])
-  const [loaded, setLoaded] = useState(false)
-
+  /** 访问地址：失败也置 loaded，落到「暂无」空态 */
   const fetchEndpoints = () => {
-    if (loaded) return
+    if (epsLoaded) return
     api
-      .GET(API.endpointsNamespace, {
-        params: { path: { namespaceId } },
-      })
+      .GET(API.endpointsNamespace, { params: { path: { namespaceId: ns.id } } })
       .then(({ data }) => {
         setEps(data?.items ?? [])
-        setLoaded(true)
+        setEpsLoaded(true)
       })
-      .catch(() => setLoaded(true))
+      .catch(() => setEpsLoaded(true))
   }
+
+  // 打开即并发拉两块（依赖只挂 open：ns 变更会重建卡片，闭包里的 ns.id 恒为当次卡片的空间）
+  useEffect(() => {
+    if (!open) return
+    fetchUsage()
+    fetchEndpoints()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   const copyUrl = async (url: string) => {
     const ok = await copyText(url)
@@ -758,65 +775,135 @@ function NamespaceEndpoints({ namespaceId }: { namespaceId: number }) {
   }
 
   return (
-    // modal：阻止外点透传到底层项目行（点 icon 开 popover 后误触项目行打开弹窗）
-    <Popover modal onOpenChange={(open) => open && fetchEndpoints()}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          aria-label={t('workbench.endpoints')}
-          className="text-faint hover:text-primary"
-        >
-          <Icon name="link" className="size-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent side="top" className="w-[max-content] max-w-[min(480px,90vw)] p-2">
-        <div className="mb-1 px-1 text-[12px] font-medium">{t('workbench.endpoints')}</div>
-        {!loaded ? (
-          <div className="flex items-center gap-1.5 px-1 py-1 text-[12px] text-faint">
-            <Icon name="loader" className="size-3 animate-spin" />
-            {t('common.loading')}
-          </div>
-        ) : eps.length === 0 ? (
-          <div className="px-1 py-1 text-[12px] text-faint">{t('common.empty')}</div>
-        ) : (
-          <div className="flex max-h-48 flex-col gap-0.5 overflow-auto">
-            {eps.map((ep, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-1.5 rounded-md px-1 py-1 text-[12px] hover:bg-raised"
-              >
-                <span className="shrink-0 text-faint">
-                  {ep.name}
-                  {ep.portName ? `(${ep.portName})` : ''}:
-                </span>
-                {ep.url.startsWith('http') ? (
-                  <a
-                    href={ep.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="min-w-0 flex-1 truncate text-primary hover:underline"
-                  >
-                    {ep.url}
-                  </a>
-                ) : (
-                  <span className="min-w-0 flex-1 truncate text-mute">{ep.url}</span>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {/* 比同文件的成员/管理弹窗(512) 宽两档到 2xl(672)：主体是访问地址，地址整条展开吃横向空间。
+          加高走「容器留白」——p-8 替代基类 p-6、gap-6 替代 gap-4，只放大卡片内边距与标题间隔，
+          不碰列表行距（行距刚收过，再放大会反弹成上一版的松散感） */}
+      <DialogContent className="sm:max-w-2xl gap-6 p-8" style={{ zIndex: z }} raiseOverlay>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-[15px]">
+            <Icon name="namespace" className="text-[17px]" />
+            {t('workbench.namespaceInfo')}
+            {/* 空间名 + ID 都走标签（Tag）而非 · 连缀纯文本：名称是弹窗主体用 accent 底、
+                ID 是辅助标识用 mute 底，两个 chip 一深一浅即分层，扫读不再糊成一串。
+                dot=false：Tag 的点是状态语义词，这里只是标识，不带状态含义。
+                text-[13px] 覆盖 Tag 基类的 11px：全弹窗统一到「标题 15 / 正文 13」两级，
+                chip 跟着正文走而非停在徽标层（Tag 用字符串拼接、经 Badge 的 cn() 兜底，
+                后写的 text-* / font-* 覆盖基类，与 font-normal 同理） */}
+            <Tag tone="accent" dot={false} className="font-mono text-[13px] font-normal">
+              {ns.name}
+            </Tag>
+            <Tag tone="mute" dot={false} className="font-mono text-[13px] font-normal">
+              ID {ns.id}
+            </Tag>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-3 py-1">
+          {/* 管理员：双击邮箱整选 + 复制（与卡片标题、成员弹窗行同一交互） */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-[13px] text-mute">
+              <Icon name="crown" className="text-[13px]" />
+              {t('workbench.adminLabel')}
+            </div>
+            <div className="rounded-md border border-line px-3 py-2.5">
+              <span
+                className="block truncate font-mono text-[13px] text-ink"
+                title={t('workbench.copyMemberEmailTip')}
+                onDoubleClick={copyOnDoubleClick(
+                  ns.creatorEmail,
+                  'workbench.copyMemberEmail',
                 )}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => copyUrl(ep.url)}
-                  title={t('common.copied')}
-                  className="shrink-0 text-faint hover:text-primary"
-                >
-                  <Icon name="copy" className="text-[11px]" />
-                </Button>
-              </div>
-            ))}
+              >
+                {ns.creatorEmail || t('common.unknown')}
+              </span>
+            </div>
           </div>
-        )}
-      </PopoverContent>
-    </Popover>
+
+          {/* 空间资源总使用量 */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-[13px] text-mute">
+              <Icon name="gauge" className="text-[13px]" />
+              {t('workbench.spaceCpuMemory')}
+            </div>
+            <div className="rounded-md border border-line px-3 py-2.5 font-mono text-[13px]">
+              {usage ? (
+                <div className="flex flex-col gap-0.5 text-ink">
+                  <span>cpu: {usage.cpu || '-'}</span>
+                  <span>memory: {usage.memory || '-'}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-faint">
+                  <Icon name="loader" className="size-3 animate-spin" />
+                  {t('common.loading')}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 空间访问地址：http 链接可直接打开，右侧复制按钮 */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-[13px] text-mute">
+              <Icon name="link" className="text-[13px]" />
+              {t('workbench.endpoints')}
+            </div>
+            {/* 外框只留 4px：行自带 px-2 py-1.5（悬停底色要贴边），外框再给 8px 会双层内缩 */}
+            <div className="rounded-md border border-line p-1">
+              {!epsLoaded ? (
+                <div className="flex items-center gap-1.5 px-2 py-1.5 text-[13px] text-faint">
+                  <Icon name="loader" className="size-3 animate-spin" />
+                  {t('common.loading')}
+                </div>
+              ) : eps.length === 0 ? (
+                <div className="px-2 py-1.5 text-[13px] text-faint">{t('common.empty')}</div>
+              ) : (
+                <div className="flex max-h-48 flex-col overflow-auto">
+                  {eps.map((ep, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 rounded-md px-2 py-1 text-[13px] hover:bg-raised"
+                    >
+                      {/* 名称/端口 + 地址同行不换行：名称是扫读锚点放最左（加粗 ink，不再是原来
+                          压成 text-faint 几乎糊掉的那版），与地址之间留 gap-2 断开、不再用冒号粘连；
+                          地址 truncate 保证永不折行，完整值靠 title 悬停与右侧复制按钮兜底 */}
+                      <span className="shrink-0">
+                        <span className="font-medium text-ink">{ep.name}</span>
+                        {ep.portName && <span className="text-mute"> · {ep.portName}</span>}
+                      </span>
+                      {ep.url.startsWith('http') ? (
+                        <a
+                          href={ep.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={ep.url}
+                          className="min-w-0 flex-1 truncate font-mono text-primary hover:underline"
+                        >
+                          {ep.url}
+                        </a>
+                      ) : (
+                        <span className="min-w-0 flex-1 truncate font-mono text-ink" title={ep.url}>
+                          {ep.url}
+                        </span>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => copyUrl(ep.url)}
+                        aria-label={t('common.copy')}
+                        title={t('common.copy')}
+                        className="shrink-0 text-faint hover:text-primary"
+                      >
+                        <Icon name="copy" className="text-[13px]" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

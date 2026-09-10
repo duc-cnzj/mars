@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
+import { selectAllOnDoubleClick } from '@/lib/selection'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
@@ -180,14 +181,22 @@ export function ProjectDetailModal({
             title={t('project.dragTitle')}
           >
             {/* 项目名整体居中；命名空间悬浮贴其右上（绝对定位，不参与居中）。
-                整体标记 data-no-drag：该区域文本可选中复制，拖拽让位给命名空间/空白区 */}
+                整体标记 data-no-drag：该区域文本可选中复制，拖拽让位给命名空间/空白区；
+                双击手势同样让位（useDraggableDialog 按同一标记跳过最大化/还原）。
+                两个 span 是兄弟而非父子，各挂各的 onDoubleClick、各选各的：
+                项目名是 block truncate，默认双击按「词」断选（mars-demo 只选中一段）
+                且截断尾部本就不在选区内，整选才能一次拿到完整文本 */}
             <span className="relative min-w-0 cursor-text" data-no-drag>
-              <span className="block truncate text-[18px] font-semibold text-ink">
+              <span
+                className="block truncate text-[18px] font-semibold text-ink"
+                onDoubleClick={selectAllOnDoubleClick}
+              >
                 {project.name}
               </span>
               <span
                 className="absolute left-full top-0 ml-0.5 -mt-1 whitespace-nowrap text-[10px] leading-none text-primary"
                 style={{ fontFamily: '"dank mono", ui-monospace, monospace' }}
+                onDoubleClick={selectAllOnDoubleClick}
               >
                 {namespaceName}
               </span>

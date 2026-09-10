@@ -195,7 +195,7 @@ export function useDraggableDialog(onResize?: () => void) {
     [bringToFront],
   )
 
-  /** 双击标题栏 / 卡片边缘：全屏 / 还原（整个 header 均可双击，包括项目名文本区） */
+  /** 双击标题栏 / 卡片边缘：全屏 / 还原（除 data-no-drag 文本区外，整个 header 均可双击） */
   const toggleMaximize = useCallback((e: React.MouseEvent) => {
     const el = (e.currentTarget as HTMLElement).closest(
       '[data-slot="dialog-content"]',
@@ -230,6 +230,22 @@ export function useDraggableDialog(onResize?: () => void) {
       return { ...base, prev: base, x: 0, y: 0, width: ww, height: wh }
     })
   }, [])
+
+  /** 标题栏双击的统一出口：命中 data-no-drag 文本区（标题上的项目名 / 命名空间）时让位给
+   *  「双击整选」（selectAllOnDoubleClick），不触发最大化/还原。
+   *
+   *  与 handlePointerDown 的 data-no-drag 守卫同源：那块区域已经让位给原生文本选择，
+   *  双击手势必须一并让位——否则双击整选的那一帧弹窗同时被最大化，刚选中的文本随重排丢失
+   *  （表现为「双击一下弹窗放大，文字没选中」）。
+   *  e 原样透传给 toggleMaximize：它靠 e.currentTarget 找 dialog-content，
+   *  在本处理器内同步调用时 currentTarget 仍是挂载处理器的那块标题栏。 */
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if ((e.target as HTMLElement).closest?.('[data-no-drag]')) return
+      toggleMaximize(e)
+    },
+    [toggleMaximize],
+  )
 
   /** 弹窗内容任意位置 pointer down 也置顶（跨多个弹窗） */
   const handleContentPointerDown = useCallback(
@@ -280,7 +296,7 @@ export function useDraggableDialog(onResize?: () => void) {
   return {
     contentStyle,
     contentProps: { onPointerDownCapture: handleContentPointerDown },
-    dragHandleProps: { onPointerDown: handlePointerDown, onDoubleClick: toggleMaximize },
+    dragHandleProps: { onPointerDown: handlePointerDown, onDoubleClick: handleDoubleClick },
     getResizeHandleProps,
     bringToFront,
     isMaximized,
