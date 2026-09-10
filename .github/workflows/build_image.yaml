@@ -40,15 +40,12 @@ jobs:
           # 只会拿到字面量 "HEAD"。这里把真实 ref 名喂进去，避免版本接口暴露 "HEAD"。
           build-args: |
             GIT_BRANCH=${{ github.ref_name }}
-          # 用官方 action 而非裸 `docker buildx build`：gha 缓存后端依赖
-          # ACTIONS_RUNTIME_TOKEN / ACTIONS_CACHE_URL，这两个变量不会暴露给 run 步骤，
-          # 必须在 workflow 里手动暴露；官方 action 会自动注入，裸命令则会静默失效。
-          # scope 固定写死：默认 scope 取自 git ref，而本 workflow 只在 tag 推送时触发，
-          # 每个 tag 都是独立 scope，会导致缓存永不命中。
-          cache-from: type=gha,scope=mars-image
-          # mode=max 是硬要求：go mod download / yarn install 都位于中间 stage，
-          # mode=min 只导出最终镜像层，等于完全没缓存到东西。
-          cache-to: type=gha,mode=max,scope=mars-image,ignore-error=true
+          # 刻意不配 cache-from/cache-to：GHA 缓存按 ref 作用域隔离，本 workflow 只在
+          # tag 推送时触发，每个 tag 都是全新 ref，缓存只写不读、永不命中；而 mode=max
+          # 会导出全部中间层（实测约 3.6GB），给每次构建平白加上约 11 分钟
+          # （preparing build cache for export 251s + 逐层写出 + 双平台镜像 ~1.4GB×2）。
+          # 收益为 0、支出为 11 分钟，故整体去掉。若将来要恢复缓存，必须同时给
+          # 默认分支（master）安排一个只做 cache-to 的预热 job，否则永远读不到。
           # 与原先 --provenance=false --sbom=false 等价：不加 attestation，省时间
           provenance: false
           sbom: false

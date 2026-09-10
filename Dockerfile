@@ -22,8 +22,8 @@ RUN apt update && \
 
 WORKDIR /app
 
-# 先只拷模块描述文件，让 go mod download 层只依赖 go.mod/go.sum/go.work*：
-# 源码变更（含每次提交都会变的 .git）不再让模块下载层失效，CI 可直接命中缓存层。
+# 先只拷模块描述文件，让 go mod download 单独成层：只依赖 go.mod/go.sum/go.work*，
+# 源码变更（含每次提交都会变的 .git）不会让它失效，本地重复构建可复用该层。
 # 已验证：仅凭这 6 个文件即可枚举出全部 942 个模块，与含完整源码时结果一致。
 COPY go.mod go.sum go.work go.work.sum ./
 COPY api/go.mod api/go.sum ./api/
@@ -43,8 +43,8 @@ COPY --from=web-build /app/build /app/frontend/build
 # 反而白白打断前面的层缓存。
 ARG GIT_BRANCH
 
-# 编译缓存挡在层外：/root/.cache/go-build 是 GB 级的工具缓存，若写进镜像层，
-# 会被 CI 的层缓存（mode=max）反复整包导出，几轮就撑爆 GHA 的 10GB 上限并触发淘汰。
+# 编译缓存挡在层外：/root/.cache/go-build 是 GB 级的工具缓存，写进镜像层只会白白
+# 撑大镜像，用 cache mount 承载即可让本地重复构建复用，不进最终产物。
 # 注意这里刻意不给 /go/pkg/mod 挂 cache mount：模块缓存要靠上层 go mod download 的
 # 镜像层携带而来，挂了 cache mount 反而会遮住层里的内容，退化成每次重新下载。
 RUN --mount=type=cache,target=/root/.cache/go-build \
