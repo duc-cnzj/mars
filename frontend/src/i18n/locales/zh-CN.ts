@@ -170,6 +170,7 @@ export default {
     username: '用户名',
     password: '密码',
     loginFailed: '用户名或密码错误',
+    loginSuccess: '登录成功',
     loginExpired: '登录过期，请重新登录',
     ssoLogin: '使用 SSO 登录',
     passwordLogin: '账号密码',

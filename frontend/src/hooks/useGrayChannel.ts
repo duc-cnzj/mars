@@ -75,6 +75,18 @@ export function setGrayChannel(enabled: boolean): void {
 const ALIGN_GUARD_KEY = 'mars_gray_aligned'
 
 /**
+ * 本次会话是否已排定一次整页刷新（reload 已调用、但新文档尚未接管）。
+ * 供「一旦刷新就会丢失」的副作用使用——典型是登录成功 toast：整页刷新会连同 JS 内存一起
+ * 清掉 toast，所以 reload 在路上的时候不要弹，留给刷新后的新文档弹（见 markLoginSuccess）。
+ */
+let reloadPending = false
+
+/** 是否已有一次整页刷新在路上（见 reloadPending） */
+export function isReloadPending(): boolean {
+  return reloadPending
+}
+
+/**
  * 启动对齐：把后端 isGray（灰度「意图」）落成本浏览器的灰度路由 cookie（灰度「事实」），
  * 两者不一致时硬刷新一次，让新 cookie 真正生效。这是「意图 → 事实」之间唯一的那根线。
  *
@@ -93,6 +105,7 @@ export function alignGrayChannel(isGray: boolean): void {
   if (sessionStorage.getItem(ALIGN_GUARD_KEY) === '1') return
   sessionStorage.setItem(ALIGN_GUARD_KEY, '1')
   setGrayChannel(isGray)
+  reloadPending = true
   window.location.reload()
 }
 

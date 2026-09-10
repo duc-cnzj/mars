@@ -169,6 +169,7 @@ export default {
     username: 'Username',
     password: 'Password',
     loginFailed: 'Invalid username or password',
+    loginSuccess: 'Signed in',
     loginExpired: 'Session expired, please sign in again',
     ssoLogin: 'Sign in with SSO',
     passwordLogin: 'Password',

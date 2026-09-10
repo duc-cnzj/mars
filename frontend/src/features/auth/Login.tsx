@@ -32,7 +32,7 @@ const saveLoginType = (type: 'sso' | 'password') => {
 /**
  * 登录页：随机壁纸 + 固定 pin + 背景版权角标；
  * 账号密码 + SSO 两个 Tab（SSO 仅在 /api/auth/settings 启用时展示），登录方式记忆。
- * 密码登录失败 toast"用户名或密码不正确"，成功后跳回原路径（含 query）。
+ * 密码登录失败 toast"用户名或密码不正确"、成功 toast"登录成功"，随后跳回原路径（含 query）。
  */
 export function Login() {
   const { t } = useTranslation()
@@ -76,6 +76,7 @@ export function Login() {
     if (!username || !password || submitting) return
     setSubmitting(true)
     try {
+      // 成功提示由 AuthProvider 在 user 落地时统一弹（见 markLoginSuccess 注释）
       await signin(username, password)
       // 跳回原路径（含 query）；无来源则回首页
       navigate(from ? `${from.pathname}${from.search}` : '/', { replace: true })

@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
 import {
@@ -19,7 +20,8 @@ import {
   removeLogoutUrl,
 } from '@/api/token'
 import { Spinner } from '@/components/ui'
-import { alignGrayChannel, setGrayChannel } from '@/hooks/useGrayChannel'
+import { toast } from '@/lib/toast'
+import { alignGrayChannel, isReloadPending, setGrayChannel } from '@/hooks/useGrayChannel'
 import type { components } from '@/api/schema'
 
 type UserInfo = components['schemas']['auth.InfoResponse']
@@ -33,6 +35,22 @@ interface AuthCtxValue {
 }
 
 const Ctx = createContext<AuthCtxValue | null>(null)
+
+/** 「本次是显式登录成功」旗标键；存 sessionStorage 以便跨整页刷新存活 */
+const LOGIN_TOAST_KEY = 'mars_login_success'
+
+/**
+ * 标记登录成功，由 AuthProvider 的 effect 统一弹提示（勿在登录函数里直接 toast.success）。
+ *
+ * 为什么绕这一道：loadUser 内的 alignGrayChannel 在灰度「意图」与本浏览器 cookie 不一致时会
+ * 立刻 window.location.reload() 去换灰度通道——而 loadUser 正被登录流程 await，于是刚弹出的
+ * toast 会连同整页 JS 内存一起被刷新清掉，表现为「登录成功但没有任何提示」。旗标落在
+ * sessionStorage（唯一跨刷新存活的本标签页存储），刷新后会话恢复、user 落地时补弹一次，
+ * 无论中途刷没刷新，用户都恰好看见一次。
+ */
+export function markLoginSuccess(): void {
+  sessionStorage.setItem(LOGIN_TOAST_KEY, '1')
+}
 
 /** 全局加载态（RequireAuth / GuestRoute 在会话恢复期间的占位） */
 function AuthLoading() {
@@ -49,6 +67,7 @@ function AuthLoading() {
  * 恢复失败时清掉无效 token（避免无限回跳登录页）。
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation()
   const [user, setUser] = useState<UserInfo | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -82,6 +101,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false))
   }, [loadUser])
 
+  // 登录成功提示：由「user 落地」驱动而非登录函数内直接弹。会话建立时若带有登录旗标就补弹
+  // 一次并立即清旗标——无论中途是否被 alignGrayChannel 的整页刷新打断，都恰好提示一次；
+  // 而普通刷新页面（无旗标）不会被误弹。详见 markLoginSuccess。
+  // isReloadPending 必须先判：reload 在路上的话这个 effect 仍会在旧文档上跑一遍，此时若把旗标
+  // 消费掉，toast 会随刷新一起消失且旗标没了、新文档不再补弹——必须把旗标留给新文档。
+  useEffect(() => {
+    if (!user) return
+    if (isReloadPending()) return
+    if (sessionStorage.getItem(LOGIN_TOAST_KEY) !== '1') return
+    sessionStorage.removeItem(LOGIN_TOAST_KEY)
+    toast.success(t('auth.loginSuccess'))
+  }, [user, t])
+
   /** 账号密码登录：成功即写 token 并恢复会话；失败抛错（由 Login 弹"用户名或密码不正确"） */
   const signin = useCallback(
     async (username: string, password: string): Promise<UserInfo> => {
@@ -90,6 +122,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       if (error || !data?.token) throw new Error('login failed')
       setToken(data.token)
+      // 旗标必须在 loadUser 之内 setUser 之前打：toast 由「user 落地」的 effect 触发，
+      // 打晚了 effect 已经跑过，就永远不弹
+      markLoginSuccess()
       const info = await loadUser()
       if (!info) throw new Error('login failed')
       return info
