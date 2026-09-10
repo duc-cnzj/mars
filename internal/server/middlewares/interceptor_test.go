@@ -10,6 +10,7 @@ import (
 )
 
 func TestAuthStreamServerInterceptor(t *testing.T) {
+	t.Parallel()
 	err := AuthStreamServerInterceptor()(&authServer{
 		err: errors.New("xxx"),
 	}, &ss{}, &grpc.StreamServerInfo{}, func(srv any, stream grpc.ServerStream) error {
@@ -46,6 +47,7 @@ func (a *authServer) Authorize(ctx context.Context, fullMethodName string) (cont
 }
 
 func TestAuthUnaryServerInterceptor(t *testing.T) {
+	t.Parallel()
 	called := 0
 	as := &authServer{}
 	_, err2 := AuthUnaryServerInterceptor()(context.TODO(), nil, &grpc.UnaryServerInfo{

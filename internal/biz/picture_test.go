@@ -39,6 +39,7 @@ func newPictureBizForTest(getter PictureGetter) PictureBiz {
 }
 
 func TestPictureBiz_Get_Valid(t *testing.T) {
+	t.Parallel()
 	called, random := false, false
 	b := newPictureBizForTest(&fakePictureGetter{
 		called: &called,
@@ -54,6 +55,7 @@ func TestPictureBiz_Get_Valid(t *testing.T) {
 }
 
 func TestPictureBiz_Get_PropagatesError(t *testing.T) {
+	t.Parallel()
 	b := newPictureBizForTest(&fakePictureGetter{err: errors.New("pic down")})
 	got, err := b.Get(context.TODO(), false)
 	assert.Nil(t, got)

@@ -25,8 +25,6 @@ import (
 // Tasks 是定时任务用例集合：7 个任务由注册表 Registry 枚举声明（CronTask 值），
 // 内部仅依赖各 biz 端口/uploader/helm/git 完成周期清理、状态修复与缓存预热，是
 // 纯应用层用例，不触碰任何基础设施门面（DB/K8sClient/Config 均经端口访问）。
-// 原常驻的 Pod 事件监听（ProjectPodEventListener）已归位 eventhandler 包，
-// 此处只留真定时任务。
 type Tasks struct {
 	timer       timer.Timer
 	logger      mlog.Logger

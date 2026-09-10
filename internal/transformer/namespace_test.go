@@ -10,12 +10,14 @@ import (
 )
 
 func TestFromNamespace_NilInput(t *testing.T) {
+	t.Parallel()
 	var ns *biz.Namespace
 	result := transformer.FromNamespace(ns)
 	assert.Nil(t, result)
 }
 
 func TestFromNamespace_ValidInput(t *testing.T) {
+	t.Parallel()
 	ns := &biz.Namespace{
 		ID:          1,
 		Name:        "testNamespace",
@@ -41,6 +43,7 @@ func TestFromNamespace_ValidInput(t *testing.T) {
 }
 
 func TestFromNamespace_DeletedNamespace(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	ns := &biz.Namespace{
 		ID:        1,

@@ -256,7 +256,7 @@ func (r *userRepo) ToggleAdmin(ctx context.Context, email string, admin bool) (e
 	if err != nil {
 		return errs.Wrap(err, "query user")
 	}
-	roles := toggleRole(u.Roles, biz.MarsAdmin, admin)
+	roles := toggleMarsAdmin(u.Roles, admin)
 	// 角色未变且已是手动接管状态：无字段需写，幂等早退。
 	if slices.Equal(roles, u.Roles) && u.RolesOverride {
 		return nil
@@ -265,12 +265,13 @@ func (r *userRepo) ToggleAdmin(ctx context.Context, email string, admin bool) (e
 	return errs.Wrap(err, "update user role")
 }
 
-// toggleRole 返回把 role 增/删（present=true 追加，false 移除）后的新角色切片，保持既有顺序。
-func toggleRole(roles []string, role string, present bool) []string {
+// toggleMarsAdmin 返回把 mars_admin 角色增/删（present=true 追加，false 移除）后的
+// 新角色切片，保持既有顺序；该后台接管入口目前只操作 mars_admin，故不抽通用 role 形参。
+func toggleMarsAdmin(roles []string, present bool) []string {
 	out := make([]string, 0, len(roles)+1)
 	added := false
 	for _, r := range roles {
-		if r == role {
+		if r == biz.MarsAdmin {
 			if present {
 				out = append(out, r)
 				added = true
@@ -280,7 +281,7 @@ func toggleRole(roles []string, role string, present bool) []string {
 		out = append(out, r)
 	}
 	if present && !added {
-		out = append(out, role)
+		out = append(out, biz.MarsAdmin)
 	}
 	return out
 }

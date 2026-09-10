@@ -1,7 +1,6 @@
 package biz
 
 import (
-	"context"
 	"sort"
 	"strconv"
 	"strings"
@@ -91,7 +90,7 @@ func activePods(pods []*corev1.Pod) []*corev1.Pod {
 // 领域逻辑：剔除 Failed 阶段 pod（见 activePods）；Deployment 通过 ReplicaSet 的
 // deployment revision 注解识别滚动发布中的旧版本副本；StatefulSet/DaemonSet 按
 // controller-revision-hash 识别旧版本副本；并过滤掉标注了 IgnoreContainerNames 的 sidecar 容器。
-func buildStateContainers(ctx context.Context, k8sRepo K8sRepo, proj *Project) ([]*types.StateContainer, error) {
+func buildStateContainers(k8sRepo K8sRepo, proj *Project) ([]*types.StateContainer, error) {
 	if len(proj.PodSelectors) == 0 {
 		return nil, nil
 	}

@@ -6,7 +6,7 @@
 // pprofRunner 三个 runner 共享（测试替身缝，见 *_test.go 的 fake 实现）。
 package server
 
-//go:generate go tool mockgen -destination ./mock_server_test.go -package server github.com/duc-cnzj/mars/v6/internal/server HttpServer,GrpcServerImp
+//go:generate go tool mockgen -destination ./mock_server_test.go -package server github.com/duc-cnzj/mars/v6/internal/server HttpServer,GrpcServerImpl
 
 import "context"
 

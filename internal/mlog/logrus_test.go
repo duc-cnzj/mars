@@ -21,6 +21,7 @@ func newTestLogrus(t *testing.T, debug bool) (*logrusLogger, *test.Hook) {
 }
 
 func TestLogrusLogger_Entry_Levels(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		log  func(l Logger)
@@ -33,6 +34,7 @@ func TestLogrusLogger_Entry_Levels(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
 			l, hook := newTestLogrus(t, true)
 			c.log(l)
 			e := hook.LastEntry()
@@ -44,6 +46,7 @@ func TestLogrusLogger_Entry_Levels(t *testing.T) {
 
 // file 字段格式：path/file.go:line，无尾点（P0-1 锁定，与 zap 后端一致）。
 func TestLogrusLogger_FileField_NoTrailingDot(t *testing.T) {
+	t.Parallel()
 	l, hook := newTestLogrus(t, true)
 	l.Info("x")
 	file, ok := hook.LastEntry().Data["file"].(string)
@@ -53,6 +56,7 @@ func TestLogrusLogger_FileField_NoTrailingDot(t *testing.T) {
 }
 
 func TestLogrusLogger_WithModule_AddsField(t *testing.T) {
+	t.Parallel()
 	l, hook := newTestLogrus(t, true)
 	l.WithModule("grpc").Info("x")
 	assert.Equal(t, "grpc", hook.LastEntry().Data["module"])
@@ -60,6 +64,7 @@ func TestLogrusLogger_WithModule_AddsField(t *testing.T) {
 
 // 无 panic 时 HandlePanicWithCallback 不触发 callback、不产生日志。
 func TestLogrusLogger_HandlePanic_NoPanic(t *testing.T) {
+	t.Parallel()
 	l, hook := newTestLogrus(t, true)
 	called := false
 	l.HandlePanicWithCallback("boom", func(error) { called = true })
@@ -68,6 +73,7 @@ func TestLogrusLogger_HandlePanic_NoPanic(t *testing.T) {
 }
 
 func TestLogrusLogger_HandlePanic_LogsEntry(t *testing.T) {
+	t.Parallel()
 	l, hook := newTestLogrus(t, false)
 	func() {
 		defer l.HandlePanic("boom")
@@ -79,6 +85,7 @@ func TestLogrusLogger_HandlePanic_LogsEntry(t *testing.T) {
 }
 
 func TestLogrusLogger_HandlePanic_DebugRepanic(t *testing.T) {
+	t.Parallel()
 	l, _ := newTestLogrus(t, true)
 	assert.PanicsWithValue(t, "boom", func() {
 		defer l.HandlePanic("boom")
@@ -88,6 +95,7 @@ func TestLogrusLogger_HandlePanic_DebugRepanic(t *testing.T) {
 
 // panic 值为非 error/string 类型时 callback 仍须触发（P0-3 锁定）。
 func TestLogrusLogger_HandlePanicWithCallback_NonErrorValue(t *testing.T) {
+	t.Parallel()
 	l, _ := newTestLogrus(t, false)
 	var got error
 	func() {
@@ -99,6 +107,7 @@ func TestLogrusLogger_HandlePanicWithCallback_NonErrorValue(t *testing.T) {
 }
 
 func TestLogrusLogger_HandlePanicWithCallback_String(t *testing.T) {
+	t.Parallel()
 	l, _ := newTestLogrus(t, false)
 	var got error
 	func() {
@@ -109,6 +118,7 @@ func TestLogrusLogger_HandlePanicWithCallback_String(t *testing.T) {
 }
 
 func TestLogrusLogger_HandlePanicWithCallback_DebugRepanic(t *testing.T) {
+	t.Parallel()
 	l, _ := newTestLogrus(t, true)
 	assert.PanicsWithValue(t, "boom", func() {
 		defer l.HandlePanicWithCallback("boom", func(error) {})
@@ -117,6 +127,7 @@ func TestLogrusLogger_HandlePanicWithCallback_DebugRepanic(t *testing.T) {
 }
 
 func TestLogrusLogger_HandlePanicWithCallback_Error(t *testing.T) {
+	t.Parallel()
 	l, _ := newTestLogrus(t, false)
 	root := errors.New("root")
 	var got error
@@ -128,11 +139,13 @@ func TestLogrusLogger_HandlePanicWithCallback_Error(t *testing.T) {
 }
 
 func Test_logrusLogger_Flush(t *testing.T) {
+	t.Parallel()
 	logger := NewLogrusLogger(true)
 	assert.Nil(t, logger.Flush())
 }
 
 func Test_logrusLogger_fields(t *testing.T) {
+	t.Parallel()
 	logger := NewLogrusLogger(true).(*logrusLogger)
 	logger.module = "x"
 	fields := logger.fields()
@@ -144,6 +157,7 @@ func Test_logrusLogger_fields(t *testing.T) {
 // WithCallerSkip 实现 mlog.CallerSkipAdjuster：为包装层（logWrapper）引入的每
 // 一帧补偿 1 层 caller。与 zap 后端同一行为契约，双层闭包模拟生产链路。
 func Test_logrusLogger_WithCallerSkip(t *testing.T) {
+	t.Parallel()
 	l, hook := newTestLogrus(t, true)
 	logAt := func(wrapped bool) string {
 		hook.Reset()
@@ -167,6 +181,7 @@ func Test_logrusLogger_WithCallerSkip(t *testing.T) {
 }
 
 func TestLogrusLogger_FormatMethods(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		log  func(l Logger)
@@ -179,6 +194,7 @@ func TestLogrusLogger_FormatMethods(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
 			l, hook := newTestLogrus(t, true)
 			c.log(l)
 			assert.Equal(t, c.want, hook.LastEntry().Message)

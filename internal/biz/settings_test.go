@@ -73,6 +73,7 @@ func findSetting(t *testing.T, group *ConfigGroup, key string) *ConfigItem {
 // TestSettingsBiz_Get 全字段配置聚合：六组存在、代表性项 key/value/masked 落位、
 // 敏感项（密码/密钥/凭证 token）正确脱敏。
 func TestSettingsBiz_Get(t *testing.T) {
+	t.Parallel()
 	got := NewSettingsBiz(fullSettingsConfig()).Get()
 	assert.Len(t, got.Groups, 6)
 
@@ -125,6 +126,7 @@ func TestSettingsBiz_Get(t *testing.T) {
 
 // TestSettingsBiz_Get_Empty 空配置聚合：六组仍存在且 id 非空，插件组无 args 行。
 func TestSettingsBiz_Get_Empty(t *testing.T) {
+	t.Parallel()
 	got := NewSettingsBiz(&config.Config{}).Get()
 	assert.Len(t, got.Groups, 6)
 	for _, g := range got.Groups {
@@ -138,6 +140,7 @@ func TestSettingsBiz_Get_Empty(t *testing.T) {
 
 // TestSensitiveSettingKey 敏感参数键判定：token/password/secret 片段命中，其余放行。
 func TestSensitiveSettingKey(t *testing.T) {
+	t.Parallel()
 	assert.True(t, sensitiveSettingKey("token"))
 	assert.True(t, sensitiveSettingKey("password"))
 	assert.True(t, sensitiveSettingKey("secret"))

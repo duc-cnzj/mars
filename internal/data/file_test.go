@@ -299,6 +299,7 @@ func TestRecorder_Close_EmptyFile(t *testing.T) {
 // fileRepo 用 mock 返回错误；注意 Close 的 defer 会用 upFile.Close 的返回值
 // 覆盖 err，因此断言 Error 依赖 upFile.Close 也返回错误。
 func TestRecorder_Close_CreateError(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	up := uploader.NewMockUploader(m)
@@ -527,6 +528,7 @@ func TestRecorder_Accessors(t *testing.T) {
 
 // TestToFile_Nil 覆盖 nil 转换。
 func TestToFile_Nil(t *testing.T) {
+	t.Parallel()
 	assert.Nil(t, toFile(nil))
 }
 

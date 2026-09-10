@@ -63,10 +63,12 @@ func stopBackOff(t *testing.T) {
 }
 
 func TestCartoonName(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "picture_cartoon", (&cartoon{}).Name())
 }
 
 func TestCartoonInitialize_and_Destroy(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	cache := data.NewMockCache(ctrl)
@@ -190,10 +192,12 @@ func newBingServer(t *testing.T, body string, hits *atomic.Int64) *httptest.Serv
 }
 
 func TestBingName(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "picture_bing", (&bing{}).Name())
 }
 
 func TestBingInitialize_and_Destroy(t *testing.T) {
+	t.Parallel()
 	b := &bing{}
 	require.NoError(t, b.Initialize(pictureApp{logger: mlog.NewForConfig(nil)}, nil))
 	assert.NoError(t, b.Destroy())
@@ -347,6 +351,7 @@ func TestBingGet_copyright_without_paren_stays(t *testing.T) {
 
 // TestRegister_interface ensures the plugin satisfies app.Picture.
 func TestRegister_interface(t *testing.T) {
+	t.Parallel()
 	var _ app.Picture = (*cartoon)(nil)
 	var _ app.Picture = (*bing)(nil)
 }

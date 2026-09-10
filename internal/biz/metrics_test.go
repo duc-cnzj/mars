@@ -14,6 +14,7 @@ import (
 )
 
 func TestMetricsBizPodSample(t *testing.T) {
+	t.Parallel()
 	ctx := context.TODO()
 
 	t.Run("success returns normalized sample", func(t *testing.T) {

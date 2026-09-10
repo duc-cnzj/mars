@@ -13,12 +13,14 @@ import (
 )
 
 func TestNewPictureSvc(t *testing.T) {
+	t.Parallel()
 	svc, _ := newPictureSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.picBiz)
 }
 
 func Test_pictureSvc_Background(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newPictureSvcWithMocks(t)
 	picBiz := mocks.picBiz
 	picBiz.EXPECT().Get(gomock.Any(), true).Return(&app.PictureItem{Url: "http://pic", Copyright: "© 2026"}, nil)

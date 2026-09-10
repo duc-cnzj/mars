@@ -66,6 +66,7 @@ func waitClosed[T any](t *testing.T, name string, ch <-chan T) {
 // 两个分发 goroutine 启动并退出、informer factory 启动、WaitForCacheSync 返回；
 // gwInstalled 两分支分别验证 Gateway API factory 的启动与跳过。
 func TestK8sClient_Start(t *testing.T) {
+	t.Parallel()
 	t.Run("未安装 Gateway API 跳过 gwFactory 启动", func(t *testing.T) {
 		evCh, podCh := runK8sClientStart(t, false)
 		waitClosed(t, "event", evCh)

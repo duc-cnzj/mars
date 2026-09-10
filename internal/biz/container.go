@@ -481,7 +481,7 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 // resolveLog 解析 pod 并应用可读日志守卫：GetPod 失败原样上抛（错误由最上层 services 统一打印），
 // pod 不存在、或非 ShowEvents 且处于 Pending 时返回 NotFound。
 // ContainerLog/StreamContainerLog 共用，防止两处 GetPod + 守卫逻辑漂移。
-func (cb *containerBiz) resolveLog(ctx context.Context, input *LogInput) (*v1.Pod, error) {
+func (cb *containerBiz) resolveLog(input *LogInput) (*v1.Pod, error) {
 	podInfo, err := cb.k8sBiz.GetPod(input.Namespace, input.Pod)
 	if err != nil {
 		return nil, err
@@ -496,7 +496,7 @@ func (cb *containerBiz) resolveLog(ctx context.Context, input *LogInput) (*v1.Po
 // 守卫（NotFound）见 resolveLog；Pending+ShowEvents 聚合本 pod 的 Pod 事件；
 // 其余阶段（Running/Succeeded/Failed）统一只取尾部日志，防终止 pod 全量读打爆内存。
 func (cb *containerBiz) Log(ctx context.Context, input *LogInput) (*LogResult, error) {
-	podInfo, err := cb.resolveLog(ctx, input)
+	podInfo, err := cb.resolveLog(input)
 	if err != nil {
 		return nil, err
 	}
@@ -531,7 +531,7 @@ func (cb *containerBiz) Log(ctx context.Context, input *LogInput) (*LogResult, e
 // Running pod 返回实时流；Succeeded/Failed/Pending 与一次性 Log 同源（尾部/事件文本），
 // transport 拿到 Content 后逐行切分下发。
 func (cb *containerBiz) LogStream(ctx context.Context, input *LogInput) (*LogStreamResult, error) {
-	podInfo, err := cb.resolveLog(ctx, input)
+	podInfo, err := cb.resolveLog(input)
 	if err != nil {
 		return nil, err
 	}

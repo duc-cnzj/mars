@@ -29,6 +29,7 @@ import (
 // 白名单来自 documentedExcludeTags（serve.go 的单一来源），flag help 也由它派生，
 // 测试再引用同一变量，杜绝"文档写 A、代码用 B"的三处漂移。
 func TestExcludeServerDocumentedTagsCovered(t *testing.T) {
+	t.Parallel()
 	got := make(map[string]bool)
 	for _, boot := range serverBootstrappers {
 		for _, tag := range boot.Tags() {
@@ -48,6 +49,7 @@ func TestExcludeServerDocumentedTagsCovered(t *testing.T) {
 // 才实时解析插件能力；把 plugin 插到中间会破坏初始化时序约定。
 // 顺序是组合根（serve.go）的职责，契约锁在组合根一侧，不引入额外接口机制。
 func TestServerBootstrappersPluginLast(t *testing.T) {
+	t.Parallel()
 	if len(serverBootstrappers) == 0 {
 		t.Fatal("serverBootstrappers 为空")
 	}
@@ -60,6 +62,7 @@ func TestServerBootstrappersPluginLast(t *testing.T) {
 // 构造期（wire 期，插件未加载）不触碰 Ws()；首次 Publish 才解析 ws 插件建
 // 一次性 PubSub 并断言发布器；后续 Publish 复用同一发布器，不再重复解析。
 func TestPodEventPublisher_LazyResolvesWs(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
@@ -81,9 +84,9 @@ func TestPodEventPublisher_LazyResolvesWs(t *testing.T) {
 }
 
 // TestProvideGitServer_LazyResolvesGit 验证 provideGitServer 惰性解析：
-// 构造期（wire 期，插件未加载）不触碰 Git()；首次调用闭包才实时解析 git 插件，
-// 替代原 GitServerHolder 快照 + 启动前 refreshGitServer 的机制。
+// 构造期（wire 期，插件未加载）不触碰 Git()；首次调用闭包才实时解析 git 插件。
 func TestProvideGitServer_LazyResolvesGit(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
@@ -100,6 +103,7 @@ func TestProvideGitServer_LazyResolvesGit(t *testing.T) {
 // TestRegisterCronJobs 覆盖机械注册循环：每个 CronTask 的调度声明经 Schedule
 // 落进真实 cron.Manager，命令名与 cron 表达式正确（表达式由各调度构造器产出）。
 func TestRegisterCronJobs(t *testing.T) {
+	t.Parallel()
 	cm := cron.NewManager(timer.NewReal(), nil, nil, mlog.NewForConfig(nil))
 	RegisterCronJobs([]cronjob.CronTask{
 		{Name: "daily", Schedule: func(cmd cron.Command) cron.Command { return cmd.DailyAt("2:00") }, Run: func() error { return nil }},
@@ -128,6 +132,7 @@ func TestRegisterCronJobs(t *testing.T) {
 // TestNewGetCertsFunc_LazyResolvesDomain 验证 newGetCertsFunc 惰性解析：
 // 构造期不触碰 Domain()；首次调用闭包才实时解析域名插件取证书。
 func TestNewGetCertsFunc_LazyResolvesDomain(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
@@ -148,6 +153,7 @@ func TestNewGetCertsFunc_LazyResolvesDomain(t *testing.T) {
 // TestNewToAllFunc_LazyResolvesWs 验证 newToAllFunc 惰性解析：
 // 构造期不触碰 Ws()；调用闭包时建一次性 PubSub、广播后关闭。
 func TestNewToAllFunc_LazyResolvesWs(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
@@ -168,6 +174,7 @@ func TestNewToAllFunc_LazyResolvesWs(t *testing.T) {
 // TestProvideEventDeps_WiresLazyClosures 验证 provideEventDeps 把 GetCerts/ToAll
 // 两个惰性闭包装配进 PluginDeps，触发时实时解析插件。
 func TestProvideEventDeps_WiresLazyClosures(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
@@ -198,6 +205,7 @@ func TestProvideEventDeps_WiresLazyClosures(t *testing.T) {
 
 // TestProvideCronDeps_WiresLazyClosures 验证 provideCronDeps 装配 GetCerts 惰性闭包。
 func TestProvideCronDeps_WiresLazyClosures(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
@@ -218,6 +226,7 @@ func TestProvideCronDeps_WiresLazyClosures(t *testing.T) {
 // TestProvidePodEventPublisher 验证 providePodEventPublisher 返回绑定 pm 的
 // podPubAdapter（惰性发布器）。
 func TestProvidePodEventPublisher(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
@@ -238,6 +247,7 @@ func (f *fakeMinioGetter) MinioCli() *minio.Client { f.called = true; return nil
 
 // TestProvideMinioClient 验证 provideMinioClient 惰性取数委托给 MinioGetter 端口。
 func TestProvideMinioClient(t *testing.T) {
+	t.Parallel()
 	g := &fakeMinioGetter{}
 	get := provideMinioClient(g)
 	assert.Nil(t, get())
@@ -252,6 +262,7 @@ func (f *fakeDBGetter) DB() *ent.Client { f.called = true; return nil }
 
 // TestProvideDBGetter 验证 provideDBGetter 惰性取数委托给 DBGetter 端口。
 func TestProvideDBGetter(t *testing.T) {
+	t.Parallel()
 	g := &fakeDBGetter{}
 	get := provideDBGetter(g)
 	assert.Nil(t, get())
@@ -260,6 +271,7 @@ func TestProvideDBGetter(t *testing.T) {
 
 // TestProvideCacheDriver_SqliteDbFallback 验证 sqlite + db 组合强制回退内存锁。
 func TestProvideCacheDriver_SqliteDbFallback(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	got := provideCacheDriver(&config.Config{DBDriver: "sqlite", CacheDriver: "db"}, logger)
 	assert.Equal(t, locker.DriverMemory, got)
@@ -267,6 +279,7 @@ func TestProvideCacheDriver_SqliteDbFallback(t *testing.T) {
 
 // TestProvideCacheDriver_Passthrough 验证其他组合原样返回 cache 驱动。
 func TestProvideCacheDriver_Passthrough(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	assert.Equal(t, locker.DriverDB, provideCacheDriver(&config.Config{DBDriver: "mysql", CacheDriver: "db"}, logger))
 	assert.Equal(t, locker.DriverMemory, provideCacheDriver(&config.Config{DBDriver: "mysql", CacheDriver: "memory"}, logger))
@@ -274,6 +287,7 @@ func TestProvideCacheDriver_Passthrough(t *testing.T) {
 
 // TestPodListenerServer_ShutdownNoCancel 验证未 Run 时 Shutdown 是幂等 no-op。
 func TestPodListenerServer_ShutdownNoCancel(t *testing.T) {
+	t.Parallel()
 	s := &podListenerServer{listener: nil}
 	assert.NoError(t, s.Shutdown(context.Background()))
 }
@@ -281,6 +295,7 @@ func TestPodListenerServer_ShutdownNoCancel(t *testing.T) {
 // TestPodListenerServer_RunAndShutdown 验证 Run 异步启动监听并持有 cancel，
 // Shutdown 取消后监听退出（SubscribePodEvents 由 mock 提供，不触真实 informer）。
 func TestPodListenerServer_RunAndShutdown(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 

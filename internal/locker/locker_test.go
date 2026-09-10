@@ -10,19 +10,23 @@ import (
 )
 
 func TestResolveDriver_DB(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, DriverDB, ResolveDriver("mysql", "db", mlog.NewForConfig(nil)))
 }
 
 func TestResolveDriver_Memory(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, DriverMemory, ResolveDriver("mysql", "memory", mlog.NewForConfig(nil)))
 }
 
 func TestResolveDriver_Unknown(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, Driver("unknown"), ResolveDriver("mysql", "unknown", mlog.NewForConfig(nil)))
 }
 
 // TestResolveDriver_SQLiteFallback 覆盖 sqlite + db 组合强制回退内存锁的规则。
 func TestResolveDriver_SQLiteFallback(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, DriverMemory, ResolveDriver("sqlite", "db", mlog.NewForConfig(nil)))
 }
 

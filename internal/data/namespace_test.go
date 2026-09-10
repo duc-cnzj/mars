@@ -265,6 +265,7 @@ func Test_namespaceRepo_Update(t *testing.T) {
 }
 
 func Test_namespaceRepo_GetMarsNamespace(t *testing.T) {
+	t.Parallel()
 	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{
 		Cfg: &config.Config{
 			NsPrefix: "abc-",
@@ -585,6 +586,7 @@ func Test_namespaceRepo_FindByName(t *testing.T) {
 }
 
 func TestNamespace_GetImagePullSecrets(t *testing.T) {
+	t.Parallel()
 	ns := &biz.Namespace{}
 	assert.NotNil(t, ns.GetImagePullSecrets())
 	ns = &biz.Namespace{
@@ -651,6 +653,7 @@ func Test_namespaceRepo_UpdatePrivate(t *testing.T) {
 }
 
 func TestToNamespace(t *testing.T) {
+	t.Parallel()
 	ns := toNamespace(&ent.Namespace{
 		CreatorEmail: biz.SuperAdminEmail,
 	})
@@ -909,6 +912,7 @@ func newNsRepo(t *testing.T) (*namespaceRepo, *ent.Client) {
 
 // TestToMember_ToFavorite_Nil 覆盖 nil 安全转换分支。
 func TestToMember_ToFavorite_Nil(t *testing.T) {
+	t.Parallel()
 	assert.Nil(t, toMember(nil))
 	assert.Nil(t, toFavorite(nil))
 	assert.Nil(t, toNamespace(nil))

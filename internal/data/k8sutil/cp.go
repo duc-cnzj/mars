@@ -160,13 +160,7 @@ type CopyFileSpec struct {
 	PodNamespace string
 	// ContainerName 可选的容器名：留空时由远端默认容器承接。
 	ContainerName string
-	File          PathSpec
-}
-
-// PathSpec 是远端路径的抽象：String 返回路径字符串。
-type PathSpec interface {
-	// String 返回路径字符串。
-	String() string
+	File          RemotePath
 }
 
 // RemotePath 表示远端 unix 风格路径：方法始终用 `/` 分隔，不处理窗口风格。

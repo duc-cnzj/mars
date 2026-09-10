@@ -176,7 +176,7 @@ func (c *Client) SetBearerToken(token string) {
 
 func (c *Client) setToken(token string) {
 	// 匹配 "bearer " 含空格，避免 "bearertok" 这类恰好以 bearer 开头但缺空格的
-	// token 被误判已带前缀（蓝军审计发现，Wave 25）。
+	// token 被误判已带前缀。
 	if token != "" && !strings.HasPrefix(strings.ToLower(token), "bearer ") {
 		token = "Bearer " + token
 	}

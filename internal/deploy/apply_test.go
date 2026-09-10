@@ -76,6 +76,7 @@ func expectInstallChain(job *MockJob, err error) {
 }
 
 func TestApplyProject_AnonymousRejected(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	_, repo, _, _, jobMgr, _ := applyTestKit(t, ctrl)
@@ -90,6 +91,7 @@ func TestApplyProject_AnonymousRejected(t *testing.T) {
 }
 
 func TestApplyProject_PermissionDenied(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, _, _, jobMgr, _ := applyTestKit(t, ctrl)
@@ -103,6 +105,7 @@ func TestApplyProject_PermissionDenied(t *testing.T) {
 }
 
 func TestApplyProject_RepoGetError(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, _, _, jobMgr, _ := applyTestKit(t, ctrl)
@@ -116,6 +119,7 @@ func TestApplyProject_RepoGetError(t *testing.T) {
 }
 
 func TestApplyProject_NameDefault(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
@@ -144,6 +148,7 @@ func TestApplyProject_NameDefault(t *testing.T) {
 // （GetSlugName），与前端 toSlug 关联的日志 key 对齐——否则创建部署所有帧落错 key
 // （前端日志区空）。
 func TestApplyProject_NameDefaultSyncsSlug(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
@@ -177,6 +182,7 @@ func (s *slugRecorder) SetSlug(slug string) {
 }
 
 func TestApplyProject_GitEnsureAndMessages(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, git, proj, jobMgr, msger := applyTestKit(t, ctrl)
@@ -202,6 +208,7 @@ func TestApplyProject_GitEnsureAndMessages(t *testing.T) {
 }
 
 func TestApplyProject_GitEnsureError(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, git, _, jobMgr, _ := applyTestKit(t, ctrl)
@@ -216,6 +223,7 @@ func TestApplyProject_GitEnsureError(t *testing.T) {
 }
 
 func TestApplyProject_VersionReverseLookup(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
@@ -241,6 +249,7 @@ func TestApplyProject_VersionReverseLookup(t *testing.T) {
 }
 
 func TestApplyProject_VersionReverseLookupNotFound(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
@@ -265,6 +274,7 @@ func TestApplyProject_VersionReverseLookupNotFound(t *testing.T) {
 }
 
 func TestApplyProject_VersionReverseLookupError(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
@@ -283,6 +293,7 @@ func TestApplyProject_VersionReverseLookupError(t *testing.T) {
 }
 
 func TestApplyProject_VersionNoLookupWhenProjectIDSet(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
@@ -308,6 +319,7 @@ func TestApplyProject_VersionNoLookupWhenProjectIDSet(t *testing.T) {
 }
 
 func TestApplyProject_OnJobShortCircuit(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, git, proj, jobMgr, msger := applyTestKit(t, ctrl)
@@ -330,6 +342,7 @@ func TestApplyProject_OnJobShortCircuit(t *testing.T) {
 }
 
 func TestApplyProject_InstallSuccess(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
@@ -346,6 +359,7 @@ func TestApplyProject_InstallSuccess(t *testing.T) {
 }
 
 func TestApplyProject_InstallError(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
@@ -364,6 +378,7 @@ func TestApplyProject_InstallError(t *testing.T) {
 }
 
 func TestApplyProject_CtxCancelStopsJob(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)

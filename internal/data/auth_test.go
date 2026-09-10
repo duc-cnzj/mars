@@ -38,6 +38,7 @@ func (m *mockAuthenticator) VerifyToken(s string) (*biz.JwtClaims, bool) {
 }
 
 func TestAuth_Sign(t *testing.T) {
+	t.Parallel()
 	auth := newJwtAuth(priKey, publicKey, timer.NewReal())
 	sign, err := auth.Sign(&biz.UserInfo{
 		LogoutUrl: "xxx",
@@ -73,6 +74,7 @@ func TestAuth_Sign(t *testing.T) {
 }
 
 func TestAuth_VerifyToken(t *testing.T) {
+	t.Parallel()
 	auth := newJwtAuth(priKey, publicKey, timer.NewReal())
 	sign, _ := auth.Sign(&biz.UserInfo{
 		LogoutUrl: "xxx",
@@ -95,6 +97,7 @@ func TestAuth_VerifyToken(t *testing.T) {
 // TestJwtAuth_VerifyToken_RejectsNonRSA 覆盖 alg 校验分支：HS256 签名的 token
 // 在 keyfunc 处被显式拒绝，防止 alg confusion（HS256 用公钥当密钥）。
 func TestJwtAuth_VerifyToken_RejectsNonRSA(t *testing.T) {
+	t.Parallel()
 	auth := newJwtAuth(priKey, publicKey, timer.NewReal())
 	hmac, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &biz.JwtClaims{
 		StandardClaims: &jwt.StandardClaims{Subject: "x"},
@@ -105,14 +108,17 @@ func TestJwtAuth_VerifyToken_RejectsNonRSA(t *testing.T) {
 }
 
 func TestNewAuth(t *testing.T) {
+	t.Parallel()
 	assert.Implements(t, (*biz.Auth)(nil), newJwtAuth(nil, nil, timer.NewReal()))
 }
 
 func TestNewAccessTokenAuth(t *testing.T) {
+	t.Parallel()
 	assert.Implements(t, (*biz.Authenticator)(nil), newTokenManagerAuth(nil, timer.NewReal()))
 }
 
 func TestAccessTokenAuth_VerifyToken(t *testing.T) {
+	t.Parallel()
 	_, b := newTokenManagerAuth(nil, timer.NewReal()).VerifyToken("")
 	assert.False(t, b)
 
@@ -151,6 +157,7 @@ func TestAccessTokenAuth_VerifyToken(t *testing.T) {
 }
 
 func TestNewAuthn(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{PrivateKey: `-----BEGIN RSA PRIVATE KEY-----
 MIICWwIBAAKBgQCdx5ZBeL3P3lH2fU/8yd4E1L880DjaKCnnnQkya+kOE7kkJNtP
 xW4WIKsBgXUPtXUYk/uA5AkklJ/1ssiTbkM/G5J54ThsACarhiNijUznD81c7g0Q
@@ -171,6 +178,7 @@ cSE/4A4yfzTjN2r5GuJr8rTU7gU4Su9C8dLC0htWCA==
 }
 
 func TestNewAuthn_InvalidPrivateKey(t *testing.T) {
+	t.Parallel()
 	// 无效 PEM：ParseRSAPrivateKeyFromPEM 返回错误，NewAuthn 直接透传。
 	authn, err := NewAuthn(nil, &config.Config{PrivateKey: "not-a-valid-pem"}, timer.NewReal())
 	assert.Nil(t, authn)
@@ -178,6 +186,7 @@ func TestNewAuthn_InvalidPrivateKey(t *testing.T) {
 }
 
 func TestAuthn_VerifyToken(t *testing.T) {
+	t.Parallel()
 	auth := &mockAuthenticator{
 		fn: func(s string) (*biz.JwtClaims, bool) {
 			if s == "a" {
@@ -195,6 +204,7 @@ func TestAuthn_VerifyToken(t *testing.T) {
 }
 
 func TestAuthn_Sign(t *testing.T) {
+	t.Parallel()
 	called := false
 	a := &authn{signFunc: func(info *biz.UserInfo) (*biz.SignData, error) {
 		called = true

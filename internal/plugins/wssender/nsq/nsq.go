@@ -24,24 +24,8 @@ const ephemeralBroadcastRoom = wssender.BroadcastRoom + "#ephemeral"
 // nsqSenderName 插件注册名。
 var nsqSenderName = "ws_sender_nsq"
 
-// nsqProducer 抽象 go-nsq producer 的最小方法面，便于测试注入 fake。
-type nsqProducer interface {
-	Ping() error
-	Stop()
-	Publish(topic string, body []byte) error
-}
-
-// nsqConsumer 抽象 go-nsq consumer 的最小方法面。
-// 不包含 SetLoggerForLevel：其参数为 go-nsq 未导出的 logger 类型，无法跨包表达。
-type nsqConsumer interface {
-	AddHandler(gonsq.Handler)
-	ConnectToNSQD(addr string) error
-	ConnectToNSQLookupd(addr string) error
-	Stop()
-	StopChan() <-chan int
-}
-
-// consumerWrapper 包装 *gonsq.Consumer，把 StopChan 字段以方法形式暴露给 nsqConsumer。
+// consumerWrapper 包装 *gonsq.Consumer，把 StopChan 字段以方法形式暴露，
+// 使 consumer 集合可统一经方法调用等待停止（StopChan 在 go-nsq 中是字段，无法直接当方法用）。
 type consumerWrapper struct {
 	*gonsq.Consumer
 }
@@ -74,7 +58,7 @@ func getNsqProjectEventRoom[T int64 | int](nsID T) string {
 
 // nsqSender 是 NSQ 版 WsSender：持有共享 producer 与默认配置，按需创建连接。
 type nsqSender struct {
-	producer    nsqProducer
+	producer    *gonsq.Producer
 	cfg         *gonsq.Config
 	lookupdAddr string
 	addr        string
@@ -171,7 +155,7 @@ func (n *nsqSender) New(uid, id string) app.PubSub {
 		uid:          uid,
 		id:           id,
 		projectRepo:  n.projectRepo,
-		consumers:    map[string]nsqConsumer{},
+		consumers:    map[string]*consumerWrapper{},
 		channelRefs:  map[string]int{},
 		producer:     n.producer,
 		msgCh:        make(chan []byte, wssender.MessageChSize),
@@ -189,10 +173,10 @@ type nsq struct {
 	projectRepo       biz.ProjectRepo
 
 	consumersMu sync.RWMutex
-	consumers   map[string]nsqConsumer
+	consumers   map[string]*consumerWrapper
 	channelRefs map[string]int // channel 引用计数：同一 namespace 多个项目共享一个 consumer
 
-	producer   nsqProducer
+	producer   *gonsq.Producer
 	msgCh      chan []byte
 	eventMsgCh chan []byte
 	closeOnce  sync.Once
@@ -392,7 +376,7 @@ func (n *nsq) Subscribe() <-chan []byte {
 }
 
 // connect 注册 handler 并连接 consumer：有 lookupd 走 nsqlookupd，否则直连 nsqd。
-func (n *nsq) connect(consumer nsqConsumer, addr, lookupdAddr string, h gonsq.Handler) error {
+func (n *nsq) connect(consumer *consumerWrapper, addr, lookupdAddr string, h gonsq.Handler) error {
 	setLogLevel(n.logger, consumer)
 	consumer.AddHandler(h)
 
@@ -411,7 +395,7 @@ func (n *nsq) Close() error {
 	defer n.logger.Debugf("[nsq]: id: %v closed", n.ID())
 	n.closeOnce.Do(func() {
 		n.consumersMu.Lock()
-		var consumers []nsqConsumer
+		var consumers []*consumerWrapper
 		for _, c := range n.consumers {
 			c.Stop()
 			consumers = append(consumers, c)

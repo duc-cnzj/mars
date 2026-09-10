@@ -79,6 +79,7 @@ func (f *fakeRepoRepoForRepoBiz) PreviewImport(ctx context.Context, items []*Imp
 // ---- Create ----
 
 func TestRepoBiz_Create_NilInput(t *testing.T) {
+	t.Parallel()
 	r := &fakeRepoRepoForRepoBiz{
 		create: func(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
 			t.Fatal("不应走到数据层创建")
@@ -93,6 +94,7 @@ func TestRepoBiz_Create_NilInput(t *testing.T) {
 }
 
 func TestRepoBiz_Create_NameTaken(t *testing.T) {
+	t.Parallel()
 	var created bool
 	r := &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
@@ -113,6 +115,7 @@ func TestRepoBiz_Create_NameTaken(t *testing.T) {
 }
 
 func TestRepoBiz_Create_NameFree(t *testing.T) {
+	t.Parallel()
 	r := &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
 			return nil, notFoundErr()
@@ -129,6 +132,7 @@ func TestRepoBiz_Create_NameFree(t *testing.T) {
 }
 
 func TestRepoBiz_Create_GetByNameError(t *testing.T) {
+	t.Parallel()
 	var created bool
 	r := &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
@@ -149,6 +153,7 @@ func TestRepoBiz_Create_GetByNameError(t *testing.T) {
 // ---- Update ----
 
 func TestRepoBiz_Update_NameTakenByOther(t *testing.T) {
+	t.Parallel()
 	var updated bool
 	r := &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
@@ -169,6 +174,7 @@ func TestRepoBiz_Update_NameTakenByOther(t *testing.T) {
 }
 
 func TestRepoBiz_Update_SelfNameNoConflict(t *testing.T) {
+	t.Parallel()
 	// GetByName 命中自身（同 ID）不视为名称冲突。
 	r := &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
@@ -188,6 +194,7 @@ func TestRepoBiz_Update_SelfNameNoConflict(t *testing.T) {
 }
 
 func TestRepoBiz_Update_RenameWithoutProjectsAllowed(t *testing.T) {
+	t.Parallel()
 	r := &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
 			return nil, notFoundErr()
@@ -207,6 +214,7 @@ func TestRepoBiz_Update_RenameWithoutProjectsAllowed(t *testing.T) {
 }
 
 func TestRepoBiz_Update_RenameWithProjectsBlocked(t *testing.T) {
+	t.Parallel()
 	r := &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
 			return nil, notFoundErr()
@@ -227,6 +235,7 @@ func TestRepoBiz_Update_RenameWithProjectsBlocked(t *testing.T) {
 }
 
 func TestRepoBiz_Update_GetByNameError(t *testing.T) {
+	t.Parallel()
 	r := &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
 			return nil, errors.New("db down")
@@ -239,6 +248,7 @@ func TestRepoBiz_Update_GetByNameError(t *testing.T) {
 }
 
 func TestRepoBiz_Update_ShowError(t *testing.T) {
+	t.Parallel()
 	r := &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
 			return nil, notFoundErr()
@@ -256,6 +266,7 @@ func TestRepoBiz_Update_ShowError(t *testing.T) {
 // ---- Clone ----
 
 func TestRepoBiz_Clone_NameTaken(t *testing.T) {
+	t.Parallel()
 	var cloned bool
 	r := &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
@@ -276,6 +287,7 @@ func TestRepoBiz_Clone_NameTaken(t *testing.T) {
 }
 
 func TestRepoBiz_Clone_NameFree(t *testing.T) {
+	t.Parallel()
 	r := &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
 			return nil, notFoundErr()
@@ -293,6 +305,7 @@ func TestRepoBiz_Clone_NameFree(t *testing.T) {
 }
 
 func TestRepoBiz_Clone_GetByNameError(t *testing.T) {
+	t.Parallel()
 	var cloned bool
 	r := &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
@@ -313,6 +326,7 @@ func TestRepoBiz_Clone_GetByNameError(t *testing.T) {
 // ---- Delete ----
 
 func TestRepoBiz_Delete_HasProjectsBlocked(t *testing.T) {
+	t.Parallel()
 	var deleted bool
 	r := &fakeRepoRepoForRepoBiz{
 		show: func(ctx context.Context, id int) (*Repo, error) {
@@ -332,6 +346,7 @@ func TestRepoBiz_Delete_HasProjectsBlocked(t *testing.T) {
 }
 
 func TestRepoBiz_Delete_Happy(t *testing.T) {
+	t.Parallel()
 	r := &fakeRepoRepoForRepoBiz{
 		show: func(ctx context.Context, id int) (*Repo, error) {
 			return &Repo{ID: 1, Name: "app"}, nil
@@ -346,6 +361,7 @@ func TestRepoBiz_Delete_Happy(t *testing.T) {
 }
 
 func TestRepoBiz_Delete_ShowError(t *testing.T) {
+	t.Parallel()
 	r := &fakeRepoRepoForRepoBiz{
 		show: func(ctx context.Context, id int) (*Repo, error) {
 			return nil, errors.New("db down")
@@ -358,6 +374,7 @@ func TestRepoBiz_Delete_ShowError(t *testing.T) {
 // ---- ToggleEnabled ----
 
 func TestRepoBiz_ToggleEnabled_DisableWithProjectsBlocked(t *testing.T) {
+	t.Parallel()
 	var toggled bool
 	r := &fakeRepoRepoForRepoBiz{
 		get: func(ctx context.Context, id int) (*Repo, error) {
@@ -380,6 +397,7 @@ func TestRepoBiz_ToggleEnabled_DisableWithProjectsBlocked(t *testing.T) {
 }
 
 func TestRepoBiz_ToggleEnabled_DisableWithoutProjectsAllowed(t *testing.T) {
+	t.Parallel()
 	r := &fakeRepoRepoForRepoBiz{
 		get: func(ctx context.Context, id int) (*Repo, error) {
 			return &Repo{ID: 1, Name: "app", Enabled: true}, nil
@@ -399,6 +417,7 @@ func TestRepoBiz_ToggleEnabled_DisableWithoutProjectsAllowed(t *testing.T) {
 }
 
 func TestRepoBiz_ToggleEnabled_EnableNoProjectsCheck(t *testing.T) {
+	t.Parallel()
 	r := &fakeRepoRepoForRepoBiz{
 		get: func(ctx context.Context, id int) (*Repo, error) {
 			return &Repo{ID: 1, Name: "app", Enabled: false}, nil
@@ -415,6 +434,7 @@ func TestRepoBiz_ToggleEnabled_EnableNoProjectsCheck(t *testing.T) {
 }
 
 func TestRepoBiz_ToggleEnabled_GetError(t *testing.T) {
+	t.Parallel()
 	r := &fakeRepoRepoForRepoBiz{
 		get: func(ctx context.Context, id int) (*Repo, error) {
 			return nil, errors.New("db down")
@@ -427,6 +447,7 @@ func TestRepoBiz_ToggleEnabled_GetError(t *testing.T) {
 }
 
 func TestRepoBiz_ToggleEnabled_ShowError(t *testing.T) {
+	t.Parallel()
 	r := &fakeRepoRepoForRepoBiz{
 		get: func(ctx context.Context, id int) (*Repo, error) {
 			return &Repo{ID: 1, Name: "app", Enabled: true}, nil
@@ -444,6 +465,7 @@ func TestRepoBiz_ToggleEnabled_ShowError(t *testing.T) {
 // ---- 输入合法性校验（空名/非法 id 在业务规则前拦截，repo 不被调用）----
 
 func TestRepoBiz_Create_EmptyName(t *testing.T) {
+	t.Parallel()
 	var created bool
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{create: func(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
 		created = true
@@ -457,6 +479,7 @@ func TestRepoBiz_Create_EmptyName(t *testing.T) {
 }
 
 func TestRepoBiz_Update_InvalidID(t *testing.T) {
+	t.Parallel()
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{})
 	got, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 0})
 	assert.Nil(t, got)
@@ -465,6 +488,7 @@ func TestRepoBiz_Update_InvalidID(t *testing.T) {
 }
 
 func TestRepoBiz_Delete_InvalidID(t *testing.T) {
+	t.Parallel()
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{})
 	err := b.Delete(context.TODO(), 0)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -472,6 +496,7 @@ func TestRepoBiz_Delete_InvalidID(t *testing.T) {
 }
 
 func TestRepoBiz_Clone_InvalidID(t *testing.T) {
+	t.Parallel()
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{})
 	got, err := b.Clone(context.TODO(), &CloneRepoInput{ID: 0, Name: "app"})
 	assert.Nil(t, got)
@@ -480,6 +505,7 @@ func TestRepoBiz_Clone_InvalidID(t *testing.T) {
 }
 
 func TestRepoBiz_Clone_EmptyName(t *testing.T) {
+	t.Parallel()
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{})
 	got, err := b.Clone(context.TODO(), &CloneRepoInput{ID: 1, Name: ""})
 	assert.Nil(t, got)
@@ -488,6 +514,7 @@ func TestRepoBiz_Clone_EmptyName(t *testing.T) {
 }
 
 func TestRepoBiz_ToggleEnabled_InvalidID(t *testing.T) {
+	t.Parallel()
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{})
 	got, err := b.ToggleEnabled(context.TODO(), 0, false)
 	assert.Nil(t, got)
@@ -498,6 +525,7 @@ func TestRepoBiz_ToggleEnabled_InvalidID(t *testing.T) {
 // ---- 纯透传查询（All/List/Get/Show）----
 
 func TestRepoBiz_All_Passthrough(t *testing.T) {
+	t.Parallel()
 	enabled := true
 	var allCalled bool
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
@@ -514,6 +542,7 @@ func TestRepoBiz_All_Passthrough(t *testing.T) {
 }
 
 func TestRepoBiz_List_Passthrough(t *testing.T) {
+	t.Parallel()
 	var listCalled bool
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
 		list: func(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error) {
@@ -530,6 +559,7 @@ func TestRepoBiz_List_Passthrough(t *testing.T) {
 }
 
 func TestRepoBiz_Get_Passthrough(t *testing.T) {
+	t.Parallel()
 	var getCalled bool
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
 		get: func(ctx context.Context, id int) (*Repo, error) {
@@ -545,6 +575,7 @@ func TestRepoBiz_Get_Passthrough(t *testing.T) {
 }
 
 func TestRepoBiz_Show_Passthrough(t *testing.T) {
+	t.Parallel()
 	var showCalled bool
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
 		show: func(ctx context.Context, id int) (*Repo, error) {
@@ -561,6 +592,7 @@ func TestRepoBiz_Show_Passthrough(t *testing.T) {
 // ---- Import ----
 
 func TestRepoBiz_Import_EmptyItems(t *testing.T) {
+	t.Parallel()
 	var called bool
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
 		importFn: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
@@ -576,6 +608,7 @@ func TestRepoBiz_Import_EmptyItems(t *testing.T) {
 }
 
 func TestRepoBiz_Import_NilItem(t *testing.T) {
+	t.Parallel()
 	var called bool
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
 		importFn: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
@@ -592,6 +625,7 @@ func TestRepoBiz_Import_NilItem(t *testing.T) {
 }
 
 func TestRepoBiz_Import_InvalidName(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{"", "bad name", "bad/name", "中文"} {
 		t.Run(name, func(t *testing.T) {
 			var called bool
@@ -612,6 +646,7 @@ func TestRepoBiz_Import_InvalidName(t *testing.T) {
 }
 
 func TestRepoBiz_Import_DuplicateName(t *testing.T) {
+	t.Parallel()
 	// 同一导入文件内同名：若放行，pre-phase 两条都判 create，无唯一约束下会落重复行。
 	// 必须在委托前整体拒绝（零部分变更）。
 	var called bool
@@ -633,6 +668,7 @@ func TestRepoBiz_Import_DuplicateName(t *testing.T) {
 }
 
 func TestRepoBiz_Import_ValidationBeforeAnyMutation(t *testing.T) {
+	t.Parallel()
 	// 校验先行：首个 name 合法、第二个非法时，import 不被调用（零部分变更）。
 	var called bool
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
@@ -652,6 +688,7 @@ func TestRepoBiz_Import_ValidationBeforeAnyMutation(t *testing.T) {
 }
 
 func TestRepoBiz_Import_Delegates(t *testing.T) {
+	t.Parallel()
 	// 校验通过后整体委托 data 层事务导入，created/updated 计数原样透传。
 	items := []*ImportRepoItem{
 		{Name: "app", Enabled: true, Description: "desc"},
@@ -672,6 +709,7 @@ func TestRepoBiz_Import_Delegates(t *testing.T) {
 }
 
 func TestRepoBiz_Import_ErrorPassthrough(t *testing.T) {
+	t.Parallel()
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
 		importFn: func(ctx context.Context, in []*ImportRepoItem) (int, int, error) {
 			return 0, 0, errors.New("db down")
@@ -686,6 +724,7 @@ func TestRepoBiz_Import_ErrorPassthrough(t *testing.T) {
 // ---- PreviewImport ----
 
 func TestRepoBiz_PreviewImport_EmptyItems(t *testing.T) {
+	t.Parallel()
 	var called bool
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
 		previewImport: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
@@ -701,6 +740,7 @@ func TestRepoBiz_PreviewImport_EmptyItems(t *testing.T) {
 }
 
 func TestRepoBiz_PreviewImport_InvalidItems(t *testing.T) {
+	t.Parallel()
 	// 干跑与真实导入共用 validateImportItems：任一 nil/name 非法/重复即整体拒绝，不调 repo。
 	cases := []struct {
 		name  string
@@ -731,6 +771,7 @@ func TestRepoBiz_PreviewImport_InvalidItems(t *testing.T) {
 }
 
 func TestRepoBiz_PreviewImport_Delegates(t *testing.T) {
+	t.Parallel()
 	items := []*ImportRepoItem{{Name: "app"}, {Name: "new"}}
 	var got []*ImportRepoItem
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
@@ -747,6 +788,7 @@ func TestRepoBiz_PreviewImport_Delegates(t *testing.T) {
 }
 
 func TestRepoBiz_PreviewImport_ErrorPassthrough(t *testing.T) {
+	t.Parallel()
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
 		previewImport: func(ctx context.Context, in []*ImportRepoItem) (int, int, error) {
 			return 0, 0, errors.New("db down")

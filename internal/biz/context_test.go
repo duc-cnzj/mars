@@ -14,6 +14,7 @@ import (
 
 // TestContextWithUser 验证 SetUser 注入用户后，GetUser / MustGetUser 能取回同一用户。
 func TestContextWithUser(t *testing.T) {
+	t.Parallel()
 	ctx := context.TODO()
 	userInfo := &UserInfo{
 		ID:    "1",
@@ -34,6 +35,7 @@ func TestContextWithUser(t *testing.T) {
 // TestContextWithoutUser 验证未注入用户的 context 上 GetUser 返回错误、
 // MustGetUser 必须 panic——用户缺失是编程错误，不能返回 nil 向下游传递。
 func TestContextWithoutUser(t *testing.T) {
+	t.Parallel()
 	ctx := context.TODO()
 
 	_, err := GetUser(ctx)
@@ -47,6 +49,7 @@ func TestContextWithoutUser(t *testing.T) {
 // 同时覆盖带类型 nil 指针 (*UserInfo)(nil)：断言成功但 info==nil，
 // 与未注入（断言失败）是 GetUser 里两条不同分支。
 func TestContextWithNilUser(t *testing.T) {
+	t.Parallel()
 	// untyped nil：ctx.Value 返回接口 nil，类型断言失败（ok=false 分支）。
 	ctx := SetUser(context.TODO(), nil)
 	_, err := GetUser(ctx)
@@ -63,6 +66,7 @@ func TestContextWithNilUser(t *testing.T) {
 // TestContextKeyIsolation 验证 key 类型隔离：用其他类型作 key 塞入的值，
 // GetUser 必须拿不到——context key 依赖的是类型唯一性而非值内容。
 func TestContextKeyIsolation(t *testing.T) {
+	t.Parallel()
 	// 用一个与 ctxTokenInfo 无关的私有 key 类型注入假用户。
 	type unrelatedKey struct{}
 	ctx := context.WithValue(context.TODO(), unrelatedKey{}, &UserInfo{ID: "1"})
@@ -75,6 +79,7 @@ func TestContextKeyIsolation(t *testing.T) {
 // Test_authenticate_Success 验证 authenticate 校验通过后把用户注入 ctx：
 // 返回的新 ctx 里 MustGetUser 能取回同一用户（纯 token 校验基座，角色取登录身份/JWT）。
 func Test_authenticate_Success(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -90,6 +95,7 @@ func Test_authenticate_Success(t *testing.T) {
 // Test_authenticate_InvalidToken 验证 token 校验失败时 authenticate 返回原始错误，
 // 且不产生可消费的 ctx（返回 nil——失败契约是"不进入业务逻辑"，中间件据此直接 401）。
 func Test_authenticate_InvalidToken(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -106,6 +112,7 @@ func Test_authenticate_InvalidToken(t *testing.T) {
 // authBiz.EffectiveRoles 按 users 表接管状态返回生效角色并覆盖注入用户（后台降权后 JWT
 // 仍带的 mars_admin 不再生效，RequireAdmin 据此拒绝）。
 func TestAuthenticate_AppliesEffectiveRoles(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -122,6 +129,7 @@ func TestAuthenticate_AppliesEffectiveRoles(t *testing.T) {
 // TestAuthenticate_RepoErrorFallsBack 用户表读取失败回落登录身份角色：
 // 鉴权不阻断，返回携带原角色的 ctx（DB 恢复后手动接管由下一次请求自动生效）。
 func TestAuthenticate_RepoErrorFallsBack(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -138,6 +146,7 @@ func TestAuthenticate_RepoErrorFallsBack(t *testing.T) {
 // TestAuthenticate_InvalidToken_EffectiveRolesUntouched VerifyToken 失败透传原始错误并返回 nil ctx，
 // 不触达 EffectiveRoles。
 func TestAuthenticate_InvalidToken_EffectiveRolesUntouched(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 

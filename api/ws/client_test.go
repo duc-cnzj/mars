@@ -84,12 +84,14 @@ func sendInternalError(t *testing.T, c *websocket.Conn) {
 }
 
 func TestNewClient_RequiresTokenProvider(t *testing.T) {
+	t.Parallel()
 	if _, err := NewClient("ws://localhost:1/ws"); err == nil {
 		t.Fatal("缺少 token 来源时应返回错误")
 	}
 }
 
 func TestNewClient_InvalidWSURLForAuth(t *testing.T) {
+	t.Parallel()
 	// WithAuth 要求 ws/wss scheme，非法 scheme 应在构造期报错。
 	if _, err := NewClient("http://localhost:1/ws", WithAuth("u", "p")); err == nil {
 		t.Fatal("WithAuth + 非 ws scheme 应返回错误")
@@ -97,6 +99,7 @@ func TestNewClient_InvalidWSURLForAuth(t *testing.T) {
 }
 
 func TestWaitReady_AuthorizeSuccess(t *testing.T) {
+	t.Parallel()
 	srv := newWsServer(t, func(c *websocket.Conn) {
 		defer c.Close()
 		readAuthorize(t, c)
@@ -133,6 +136,7 @@ func TestWaitReady_AuthorizeSuccess(t *testing.T) {
 }
 
 func TestWaitReady_AuthFailed(t *testing.T) {
+	t.Parallel()
 	srv := newWsServer(t, func(c *websocket.Conn) {
 		defer c.Close()
 		readAuthorize(t, c)
@@ -152,6 +156,7 @@ func TestWaitReady_AuthFailed(t *testing.T) {
 }
 
 func TestClose_Idempotent(t *testing.T) {
+	t.Parallel()
 	srv := newWsServer(t, func(c *websocket.Conn) {
 		defer c.Close()
 		readAuthorize(t, c)
@@ -176,6 +181,7 @@ func TestClose_Idempotent(t *testing.T) {
 }
 
 func TestReconnect_Reauthorize(t *testing.T) {
+	t.Parallel()
 	var authorizeCalls atomic.Int32
 	srv := newWsServer(t, func(c *websocket.Conn) {
 		defer c.Close()
@@ -213,6 +219,7 @@ func TestReconnect_Reauthorize(t *testing.T) {
 }
 
 func TestWSURLToHTTPBase(t *testing.T) {
+	t.Parallel()
 	cases := []struct{ in, want string }{
 		{"ws://localhost:4000/ws", "http://localhost:4000"},
 		{"wss://mars.example.com/ws", "https://mars.example.com"},

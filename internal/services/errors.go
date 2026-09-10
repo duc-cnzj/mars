@@ -10,7 +10,7 @@ import (
 // logger.ErrorCtx(ctx, err); return nil, err 三段式样板。行为与原文完全等价：
 // 先落日志再返回原始错误，调用方无需区分二者。
 //
-// 服务层错误日志是唯一出口（gRPC 错误日志拦截器已移除）：每个 service 的 logger
+// 服务层错误日志是唯一出口：每个 service 的 logger
 // 自带 WithModule("services/xxx") 模块标签，日志按服务归属，而非中间件的统一 "grpc"。
 func logError(ctx context.Context, logger mlog.Logger, err error) error {
 	// logError 自身引入一帧调用栈，必须经 CallerSkipAdjuster 补偿一帧，

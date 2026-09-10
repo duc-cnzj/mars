@@ -25,16 +25,37 @@ jobs:
         with:
           install: true
       -
-        name: Build
+        name: Login registries
         run: |
           docker login registry.cn-hangzhou.aliyuncs.com -u ${{ secrets.ALIYUN_DOCKER_USERNAME }} --password ${{ secrets.ALIYUN_DOCKER_PASSWORD }}
           docker login -u ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }}
-          docker build --platform linux/arm64,linux/amd64 \
-             --provenance=false --sbom=false \
-             -t duccnzj/mars \
-             -t duccnzj/mars:$tag \
-             -t duccnzj/mars:v${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }} \
-             -t registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars:$tag \
-             -t registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars:v${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }} \
-             -t registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars \
-             --push .
+      -
+        name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64,linux/amd64
+          push: true
+          # tag 推送时 checkout 是 detached HEAD，容器内 `git rev-parse --abbrev-ref HEAD`
+          # 只会拿到字面量 "HEAD"。这里把真实 ref 名喂进去，避免版本接口暴露 "HEAD"。
+          build-args: |
+            GIT_BRANCH=${{ github.ref_name }}
+          # 用官方 action 而非裸 `docker buildx build`：gha 缓存后端依赖
+          # ACTIONS_RUNTIME_TOKEN / ACTIONS_CACHE_URL，这两个变量不会暴露给 run 步骤，
+          # 必须在 workflow 里手动暴露；官方 action 会自动注入，裸命令则会静默失效。
+          # scope 固定写死：默认 scope 取自 git ref，而本 workflow 只在 tag 推送时触发，
+          # 每个 tag 都是独立 scope，会导致缓存永不命中。
+          cache-from: type=gha,scope=mars-image
+          # mode=max 是硬要求：go mod download / yarn install 都位于中间 stage，
+          # mode=min 只导出最终镜像层，等于完全没缓存到东西。
+          cache-to: type=gha,mode=max,scope=mars-image,ignore-error=true
+          # 与原先 --provenance=false --sbom=false 等价：不加 attestation，省时间
+          provenance: false
+          sbom: false
+          tags: |
+            duccnzj/mars
+            duccnzj/mars:${{ env.tag }}
+            duccnzj/mars:v${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }}
+            registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars:${{ env.tag }}
+            registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars:v${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }}
+            registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars

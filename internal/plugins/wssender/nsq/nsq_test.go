@@ -44,7 +44,7 @@ func newTestNSQ(uid, id string) *nsq {
 		id:           id,
 		msgCh:        make(chan []byte, wssender.MessageChSize),
 		eventMsgCh:   make(chan []byte, wssender.MessageChSize),
-		consumers:    map[string]nsqConsumer{},
+		consumers:    map[string]*consumerWrapper{},
 		channelRefs:  map[string]int{},
 		pidSelectors: map[int32][]labels.Selector{},
 	}
@@ -602,7 +602,7 @@ func TestClose(t *testing.T) {
 	_ = n.Subscribe()
 
 	n.consumersMu.RLock()
-	cs := make([]nsqConsumer, 0, len(n.consumers))
+	cs := make([]*consumerWrapper, 0, len(n.consumers))
 	for _, c := range n.consumers {
 		cs = append(cs, c)
 	}

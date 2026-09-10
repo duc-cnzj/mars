@@ -9,12 +9,14 @@ import (
 )
 
 func TestCounterIncrements(t *testing.T) {
+	t.Parallel()
 	counter := NewCounter()
 	counter.Inc()
 	assert.Equal(t, 1, counter.Count())
 }
 
 func TestCounterDecrements(t *testing.T) {
+	t.Parallel()
 	counter := NewCounter()
 	counter.Inc()
 	counter.Dec()
@@ -22,6 +24,7 @@ func TestCounterDecrements(t *testing.T) {
 }
 
 func TestCounterDoesNotDecrementBelowZero(t *testing.T) {
+	t.Parallel()
 	counter := NewCounter()
 	decremented := counter.Dec()
 	assert.False(t, decremented)
@@ -29,12 +32,14 @@ func TestCounterDoesNotDecrementBelowZero(t *testing.T) {
 }
 
 func TestCounterWaitReturnsWhenCountIsZero(t *testing.T) {
+	t.Parallel()
 	counter := NewCounter()
 	err := counter.Wait(context.TODO())
 	assert.Nil(t, err)
 }
 
 func TestCounterWaitReturnsOnError(t *testing.T) {
+	t.Parallel()
 	counter := NewCounter()
 	counter.Inc()
 

@@ -108,9 +108,22 @@ func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogR
 	}, nil
 }
 
-// CopyToPod 把已上传的文件写入指定 pod 容器路径：先校验 pod 运行态，落上传审计日志。
+// CopyToPod 把已上传的文件写入指定 pod 容器路径：先校验命名空间访问与文件归属，
+// 再校验 pod 运行态，落上传审计日志。
 func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToPodRequest) (*container.CopyToPodResponse, error) {
 	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.Namespace); err != nil {
+		return nil, logError(ctx, c.logger, err)
+	}
+	// 文件归属门卫：CopyToPod 按 FileId 直接取库内文件，若只校验命名空间权限，
+	// 任意登录用户都能传别人的 FileId（如某公开命名空间里他人上传的文件）把文件拷进
+	// 自己可控的 pod 再读走，构成跨租户 IDOR。与 file.go/file_handler.go 同用
+	// RequireFileAccess（文件所有者或 admin 放行）。
+	// StreamCopyToPod 无需此校验：其 FileId 来自本次调用刚上传的文件，天然属于调用者。
+	fil, err := c.fileBiz.GetByID(ctx, int(request.FileId))
+	if err != nil {
+		return nil, logError(ctx, c.logger, err)
+	}
+	if err := c.accessBiz.RequireFileAccess(ctx, fil); err != nil {
 		return nil, logError(ctx, c.logger, err)
 	}
 	// 运行态前置校验与"空则找默认容器"统一走 biz：与 StreamCopyToPod/Exec 的

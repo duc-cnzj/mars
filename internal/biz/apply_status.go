@@ -74,7 +74,7 @@ func (p *projectBiz) CheckApplyStatus(ctx context.Context, id int) (*ApplyStatus
 	if err != nil {
 		return nil, err
 	}
-	containers, err := buildStateContainers(ctx, p.k8sRepo, proj)
+	containers, err := buildStateContainers(p.k8sRepo, proj)
 	if err != nil {
 		return nil, err
 	}

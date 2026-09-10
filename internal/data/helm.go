@@ -173,7 +173,7 @@ func (d *DefaultHelmer) upgradeOrInstall(
 
 	client.Namespace = namespace
 	if client.Install {
-		// If a release does not exist, install it.
+		// release 不存在时执行安装。
 		histClient := action.NewHistory(actionConfig)
 		histClient.Max = 1
 		if _, err := histClient.Run(releaseName); err == driver.ErrReleaseNotFound {
@@ -325,7 +325,7 @@ func (d *DefaultHelmer) runInstall(ctx context.Context, releaseName string, char
 		return nil, err
 	}
 
-	// Check chart dependencies to make sure all are present in /charts
+	// 校验 chart 依赖，确认已全部落在 /charts 目录下。
 	if err := checkIfInstallable(chartRequested); err != nil {
 		return nil, err
 	}
@@ -343,14 +343,6 @@ func checkIfInstallable(ch *chart.Chart) error {
 	}
 	return errs.WrapInvalidArgument(fmt.Errorf("%s charts are not installable", ch.Metadata.Type), "check chart installable")
 }
-
-// Status* 是 release 状态字符串常量（与 helm release.Info.Status 对齐）。
-const (
-	StatusUnknown  string = "unknown"
-	StatusPending  string = "pending"
-	StatusDeployed string = "deployed"
-	StatusFailed   string = "failed"
-)
 
 // tokenFile/rootCAFile 是集群内 service account 的 token 与 CA 证书挂载路径，
 // 供无 kubeconfig 时走集群内认证连接。

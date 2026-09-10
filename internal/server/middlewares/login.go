@@ -12,7 +12,7 @@ import (
 
 // LoginUnaryServerInterceptor 是登录校验的 Unary 拦截器：命中 biz.IsPublicMethod 白名单的
 // 免登录方法跳过 token 校验直接进 handler，其余方法先 authenticate 注入用户上下文；失败
-// （未携带/无效 token）返回 Unauthenticated，与原先 grpc_auth 的语义一致。免登录白名单
+// （未携带/无效 token）返回 Unauthenticated。免登录白名单
 // 归属 biz 层（访问控制契约，见 biz/public_methods.go），本层只消费 IsPublicMethod。
 // 认证失败经 logger 打一条 Warning 审计日志（[auth audit]）：AccessLog 移置 Login 之后，
 // Login 失败直接 return 时内层 AccessLog 不会执行，401 审计由本拦截器兜底（见 grpc.go 链序注释）。

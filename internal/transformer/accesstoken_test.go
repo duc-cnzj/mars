@@ -11,12 +11,14 @@ import (
 )
 
 func TestFromAccessToken_NilInput(t *testing.T) {
+	t.Parallel()
 	var at *biz.AccessToken
 	result := transformer.FromAccessToken(at)
 	assert.Nil(t, result)
 }
 
 func TestFromAccessToken_ValidInput(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	exp := now.Add(-time.Hour)
 	at := &biz.AccessToken{
@@ -41,6 +43,7 @@ func TestFromAccessToken_ValidInput(t *testing.T) {
 }
 
 func TestFromAccessToken_DeletedToken(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	at := &biz.AccessToken{
 		Token:     "testToken",
@@ -57,6 +60,7 @@ func TestFromAccessToken_DeletedToken(t *testing.T) {
 }
 
 func TestFromAccessToken_ExpiredToken(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	expiredTime := now.Add(-time.Hour)
 	at := &biz.AccessToken{
@@ -73,6 +77,7 @@ func TestFromAccessToken_ExpiredToken(t *testing.T) {
 }
 
 func TestFromAccessToken_LastUsedAt(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	lastUsed := now.Add(-time.Hour)
 	at := &biz.AccessToken{
@@ -90,6 +95,7 @@ func TestFromAccessToken_LastUsedAt(t *testing.T) {
 }
 
 func TestFromAccessToken_NotExpired(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	at := &biz.AccessToken{
 		Token:     "testToken",
@@ -105,6 +111,7 @@ func TestFromAccessToken_NotExpired(t *testing.T) {
 }
 
 func TestFromAccessToken_NameFromUserInfo(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	at := &biz.AccessToken{
 		Token:     "testToken",
@@ -121,6 +128,7 @@ func TestFromAccessToken_NameFromUserInfo(t *testing.T) {
 }
 
 func TestFromAccessToken_NameFallbackToEmail(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	at := &biz.AccessToken{
 		Token:     "testToken",

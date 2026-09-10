@@ -188,6 +188,7 @@ func TestChangelogRepo_FindLastChangeByProjectID_WithNoChangelog(t *testing.T) {
 }
 
 func TestNewChangelogRepo(t *testing.T) {
+	t.Parallel()
 	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{}))
 	assert.NotNil(t, repo)
 	assert.NotNil(t, repo.(*changelogRepo).logger)
@@ -195,6 +196,7 @@ func TestNewChangelogRepo(t *testing.T) {
 }
 
 func TestToChangeLog_WithValidChangelog(t *testing.T) {
+	t.Parallel()
 	c := &ent.Changelog{
 		ID:               1,
 		CreatedAt:        time.Now(),
@@ -240,6 +242,7 @@ func TestToChangeLog_WithValidChangelog(t *testing.T) {
 }
 
 func TestToChangeLog_WithNilChangelog(t *testing.T) {
+	t.Parallel()
 	result := toChangeLog(nil)
 	assert.Nil(t, result)
 }

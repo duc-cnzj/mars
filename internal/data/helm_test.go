@@ -31,6 +31,7 @@ import (
 )
 
 func TestReleaseStatus(t *testing.T) {
+	t.Parallel()
 	// 走导出方法覆盖包装层与 releaseStatus 实现：
 	// 集群不可达时回退为 StatusUnknown。
 	status := (&DefaultHelmer{
@@ -40,11 +41,13 @@ func TestReleaseStatus(t *testing.T) {
 }
 
 func TestRollback(t *testing.T) {
+	t.Parallel()
 	err := (&DefaultHelmer{}).Rollback("test", "ns", false, nil, false)
 	assert.Error(t, err)
 }
 
 func TestUninstallRelease(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	err := (&DefaultHelmer{}).Uninstall("test", "ns", func(format string, v ...any) {})
@@ -52,6 +55,7 @@ func TestUninstallRelease(t *testing.T) {
 }
 
 func Test_checkIfInstallable(t *testing.T) {
+	t.Parallel()
 	err := checkIfInstallable(&chart.Chart{
 		Metadata: &chart.Metadata{
 			Type: "",
@@ -79,6 +83,7 @@ func Test_checkIfInstallable(t *testing.T) {
 // 集群不可达时（kubeconfig 无效）首轮 dry-run 探测失败 / 直连升级失败，错误均冒泡。
 // happy path 需真实集群（helm 集群操作），属集成边界不在单测范围。
 func TestUpgradeOrInstall_ClusterError(t *testing.T) {
+	t.Parallel()
 	newHelmer := func() *DefaultHelmer {
 		return &DefaultHelmer{
 			logger:     mlog.NewForConfig(nil),
@@ -104,6 +109,7 @@ func TestUpgradeOrInstall_ClusterError(t *testing.T) {
 }
 
 func Test_getActionConfigAndSettings(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	// kubeconfig 为空走 in-cluster 分支，非空走 --kubeconfig 分支。
@@ -369,6 +375,7 @@ func (c *ContainerGetterSetter) Get() []*websocket_pb.Container {
 }
 
 func Test_formatStatus(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		input release.Status
 		want  types.Deploy
@@ -408,6 +415,7 @@ func Test_formatStatus(t *testing.T) {
 }
 
 func Test_fillInstall(t *testing.T) {
+	t.Parallel()
 	i := &action.Install{}
 	u := &action.Upgrade{
 		Install:                  true,
@@ -447,18 +455,21 @@ func Test_fillInstall(t *testing.T) {
 }
 
 func Test_wrapRestConfig(t *testing.T) {
+	t.Parallel()
 	cfg := &restclient.Config{}
 	wrapRestConfig(cfg)
 	assert.Equal(t, float32(-1), cfg.QPS)
 }
 
 func Test_logWriter_Write(t *testing.T) {
+	t.Parallel()
 	n, err := (&logWriter{}).Write([]byte("ass"))
 	assert.Nil(t, err)
 	assert.Equal(t, 3, n)
 }
 
 func Test_newDefaultRegistryClient(t *testing.T) {
+	t.Parallel()
 	client, err := newDefaultRegistryClient(false, "")
 	assert.Nil(t, err)
 	assert.NotNil(t, client)
@@ -472,6 +483,7 @@ func Test_newDefaultRegistryClient(t *testing.T) {
 }
 
 func TestWrapLogFn_UnWrap(t *testing.T) {
+	t.Parallel()
 	called := false
 	biz.WrapLogFn(func(container []*websocket_pb.Container, format string, v ...any) {
 		called = true
@@ -480,6 +492,7 @@ func TestWrapLogFn_UnWrap(t *testing.T) {
 }
 
 func TestNewDefaultHelmer(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -493,6 +506,7 @@ func TestNewDefaultHelmer(t *testing.T) {
 // TestDefaultHelmer_PackageChart 覆盖 PackageChart 导出包装
 // 与 packageChart 无依赖分支：打包本地 chart 生成 tgz。
 func TestDefaultHelmer_PackageChart(t *testing.T) {
+	t.Parallel()
 	chartDir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(chartDir, "templates"), 0o755))
 	chartYaml := "apiVersion: v2\nname: test-chart\nversion: 0.1.0\ntype: application\n"

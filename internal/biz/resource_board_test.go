@@ -22,6 +22,7 @@ func (s *resourceBoardRepoStub) ResourceSnapshot(ctx context.Context, force bool
 
 // TestK8sBiz_ResourceBoard_Success 成功路径：快照 + 管理集合 + 项目归属聚合成空间板。
 func TestK8sBiz_ResourceBoard_Success(t *testing.T) {
+	t.Parallel()
 	stub := &resourceBoardRepoStub{snapshot: &ResourceSnapshotData{
 		Pods: []*ResourcePod{
 			{Name: "p1", Namespace: "ns-a", CpuRequestMilli: 500},
@@ -39,6 +40,7 @@ func TestK8sBiz_ResourceBoard_Success(t *testing.T) {
 
 // TestK8sBiz_ResourceBoard_RepoError 失败路径：repo 拉取快照失败时整体上抛。
 func TestK8sBiz_ResourceBoard_RepoError(t *testing.T) {
+	t.Parallel()
 	stub := &resourceBoardRepoStub{err: errors.New("snapshot boom")}
 	b := NewK8sBiz(stub)
 
@@ -49,6 +51,7 @@ func TestK8sBiz_ResourceBoard_RepoError(t *testing.T) {
 
 // TestBuildResourceBoard_NilData 防御：快照为 nil 时返回空板，不 panic。
 func TestBuildResourceBoard_NilData(t *testing.T) {
+	t.Parallel()
 	board := buildResourceBoard(nil, map[string]bool{"ns-a": true}, nil)
 	assert.NotNil(t, board)
 	assert.Empty(t, board.Namespaces)
@@ -57,6 +60,7 @@ func TestBuildResourceBoard_NilData(t *testing.T) {
 // TestBuildResourceNamespaces 命名空间聚合：requests 累加快照 Pod 聚合值、
 // 实际用量累加 PodMetrics 聚合值，只保留管理集合内的空间，按名排序保证确定性输出。
 func TestBuildResourceNamespaces(t *testing.T) {
+	t.Parallel()
 	pods := []*ResourcePod{
 		{Name: "p1", Namespace: "ns-a", CpuRequestMilli: 500, MemRequestBytes: 268435456},
 		{Name: "p2", Namespace: "ns-a", CpuRequestMilli: 1000, MemRequestBytes: 1073741824},
@@ -81,6 +85,7 @@ func TestBuildResourceNamespaces(t *testing.T) {
 // TestBuildResourceNamespaces_MetricOnlyAndUnmanaged 指标环边：只有指标无 Pod 的
 // 管理空间也产出记录（PodCount=0）；非管理空间的指标被跳过（不入板）。
 func TestBuildResourceNamespaces_MetricOnlyAndUnmanaged(t *testing.T) {
+	t.Parallel()
 	pods := []*ResourcePod{
 		{Name: "p", Namespace: "ns-a", CpuRequestMilli: 500},
 	}
@@ -104,6 +109,7 @@ func TestBuildResourceNamespaces_MetricOnlyAndUnmanaged(t *testing.T) {
 
 // TestBuildResourceNamespaces_Sorted 排序：多个管理空间按名升序输出。
 func TestBuildResourceNamespaces_Sorted(t *testing.T) {
+	t.Parallel()
 	pods := []*ResourcePod{
 		{Namespace: "ns-b"},
 		{Namespace: "ns-a"},
@@ -117,6 +123,7 @@ func TestBuildResourceNamespaces_Sorted(t *testing.T) {
 // TestAttachResourceProjects 项目拆分：按 PodSelectors 匹配同空间 Pod，requests/用量
 // 各自累加；一个 pod 命中多个项目时每个项目都计入（selectors 重叠场景）。
 func TestAttachResourceProjects(t *testing.T) {
+	t.Parallel()
 	pods := []*ResourcePod{
 		{Name: "p1", Namespace: "ns-a", Labels: map[string]string{"app": "a"}, CpuRequestMilli: 500, MemRequestBytes: 268435456},
 		{Name: "p2", Namespace: "ns-a", Labels: map[string]string{"app": "b"}, CpuRequestMilli: 1000},
@@ -151,6 +158,7 @@ func TestAttachResourceProjects(t *testing.T) {
 
 // TestAttachResourceProjects_MultiMatch 重叠 selector：同一 pod 命中两个项目时各自计数。
 func TestAttachResourceProjects_MultiMatch(t *testing.T) {
+	t.Parallel()
 	pods := []*ResourcePod{{
 		Name:      "p1",
 		Namespace: "ns-a",
@@ -172,6 +180,7 @@ func TestAttachResourceProjects_MultiMatch(t *testing.T) {
 // TestAttachResourceProjects_NilAndCrossNamespace 防御：nil 项目/无命名空间边的项目
 // 直接跳过；与本空间项目命名空间不同的 pod 不计入（namespace 不匹配 continue）。
 func TestAttachResourceProjects_NilAndCrossNamespace(t *testing.T) {
+	t.Parallel()
 	pods := []*ResourcePod{
 		{Name: "p-a", Namespace: "ns-a", Labels: map[string]string{"app": "a"}},
 		{Name: "p-b", Namespace: "ns-b", Labels: map[string]string{"app": "a"}},
@@ -194,6 +203,7 @@ func TestAttachResourceProjects_NilAndCrossNamespace(t *testing.T) {
 // TestParsedPodSelectors 解析：合法 selector 保留，坏语法（如 "==="）跳过。
 // 注意 labels.Parse("") 返回合法的空 selector（匹配所有），不属于非法输入。
 func TestParsedPodSelectors(t *testing.T) {
+	t.Parallel()
 	selectors := parsedPodSelectors([]string{"app=a", "tier in (web,db)", "==="})
 	assert.Len(t, selectors, 2)
 	assert.Empty(t, parsedPodSelectors(nil))
@@ -201,6 +211,7 @@ func TestParsedPodSelectors(t *testing.T) {
 
 // TestMatchAnySelector 匹配：selector 命中/未命中/空列表恒不命中。
 func TestMatchAnySelector(t *testing.T) {
+	t.Parallel()
 	selectors := parsedPodSelectors([]string{"app=a"})
 	assert.True(t, matchAnySelector(selectors, map[string]string{"app": "a"}))
 	assert.False(t, matchAnySelector(selectors, map[string]string{"app": "b"}))
@@ -210,6 +221,7 @@ func TestMatchAnySelector(t *testing.T) {
 // TestAttachResourceProjects_DeploymentChain 项目内 Deployment 属主链分组：
 // pod → RS → Deployment 逐段解析，requests/usage/PodCount 按工作负载正确累加。
 func TestAttachResourceProjects_DeploymentChain(t *testing.T) {
+	t.Parallel()
 	pods := []*ResourcePod{
 		{
 			Name: "web-x", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
@@ -258,6 +270,7 @@ func TestAttachResourceProjects_DeploymentChain(t *testing.T) {
 // TestAttachResourceProjects_StatefulSetAndDaemonSet 直接属主分组：pod 属主为
 // StatefulSet/DaemonSet 时不经 RS，直接归入对应工作负载。
 func TestAttachResourceProjects_StatefulSetAndDaemonSet(t *testing.T) {
+	t.Parallel()
 	pods := []*ResourcePod{
 		{
 			Name: "sts-0", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
@@ -291,6 +304,7 @@ func TestAttachResourceProjects_StatefulSetAndDaemonSet(t *testing.T) {
 // TestAttachResourceProjects_BarePodAndMissingRS 裸 pod 与 RS 缺失兜底：
 // 无 workload 属主 / 属主 RS 不在快照内的 pod 都计入项目总量但不单列工作负载。
 func TestAttachResourceProjects_BarePodAndMissingRS(t *testing.T) {
+	t.Parallel()
 	pods := []*ResourcePod{
 		{
 			Name: "bare", Namespace: "ns-a", Labels: map[string]string{"app": "a"},
@@ -319,6 +333,7 @@ func TestAttachResourceProjects_BarePodAndMissingRS(t *testing.T) {
 // TestWorkloadOf 属主链解析：Deployment 经 RS 属主链、STS/DS 直接属主、
 // Job/裸 pod/RS 缺失均返回空键。
 func TestWorkloadOf(t *testing.T) {
+	t.Parallel()
 	rsByUID := rsByUIDIndex([]*ResourceReplicaSet{
 		{UID: "u1", Owners: []*ResourceOwner{{Kind: "Deployment", Name: "web"}}},
 		{UID: "u2"}, // 无 Deployment 属主
@@ -348,6 +363,7 @@ func TestWorkloadOf(t *testing.T) {
 
 // TestRsByUIDIndex RS 按 UID 建索引：命中/未命中，索引指向原切片元素。
 func TestRsByUIDIndex(t *testing.T) {
+	t.Parallel()
 	rss := []*ResourceReplicaSet{
 		{UID: "u-a"},
 		{UID: "u-b"},

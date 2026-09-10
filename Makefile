@@ -195,6 +195,16 @@ test:
 	mv coverage.txt.filtered coverage.txt && \
 	go tool cover -func coverage.txt
 
+# test_all 是 CI 的完整门禁：先跑 test 拿到 internal 覆盖率（供 codecov 上传），
+# 再补跑此前完全没有 CI 信号的包——根模块里除 internal/* 外的全部包
+# （cmd/doc/examples/frontend/third_party；frontend 依赖 //go:embed build/*，CI 需先造
+# stub，见 .github/workflows/test.yaml 的 Setup 步骤），以及独立模块 api/
+# （go.work 的第二模块，根模块的 ./... 覆盖不到，必须 cd 进自身模块上下文）。
+.PHONY: test_all
+test_all: test
+	go test $$(go list ./... | grep -v '/internal/') -race -count=1
+	cd api && go test ./... -race -count=1
+
 .PHONY: cover-web
 # go tool cover -html coverage.txt
 cover-web:

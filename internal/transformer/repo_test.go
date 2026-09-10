@@ -11,12 +11,14 @@ import (
 )
 
 func TestFromRepo_NilInput(t *testing.T) {
+	t.Parallel()
 	var r *biz.Repo
 	result := transformer.FromRepo(r)
 	assert.Nil(t, result)
 }
 
 func TestFromRepo_ValidInput(t *testing.T) {
+	t.Parallel()
 	r := &biz.Repo{
 		ID:             1,
 		Name:           "testRepo",
@@ -45,6 +47,7 @@ func TestFromRepo_ValidInput(t *testing.T) {
 }
 
 func TestFromRepo_DeletedRepo(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	r := &biz.Repo{
 		ID:             1,
@@ -65,6 +68,7 @@ func TestFromRepo_DeletedRepo(t *testing.T) {
 }
 
 func TestFromRepo_ZeroValues(t *testing.T) {
+	t.Parallel()
 	r := &biz.Repo{
 		ID:        1,
 		Name:      "zeroRepo",

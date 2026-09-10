@@ -28,8 +28,8 @@ import (
 // 白名单与 doc/access_control.md §4.1「免登录服务」清单逐行一致，public_methods_test.go
 // 的 TestPublicMethods_AlignsWithAccessControlDoc 契约测试会在二者漂移时失败。
 //
-// 相比原先的 guest 内嵌（AuthFuncOverride 无条件放行整个服务）：白名单把"公开"从
-// 服务粒度收窄到方法粒度——新方法默认私有（安全默认），"公开"判定单一归属本处。
+// 白名单把"公开"收窄到方法粒度：新方法默认私有（安全默认），"公开"判定单一归属本处。
+// 刻意不用"按服务整体放行"：服务粒度下每新增一个方法都会被静默放开，方法粒度则默认拒绝。
 var publicMethods = map[string]struct{}{
 	authpb.Auth_Login_FullMethodName:             {},
 	authpb.Auth_Settings_FullMethodName:          {},

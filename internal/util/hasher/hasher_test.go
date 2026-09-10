@@ -7,6 +7,7 @@ import (
 )
 
 func TestHashWithValidData(t *testing.T) {
+	t.Parallel()
 	data := "Hello, World!"
 	expectedHash := "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f"
 
@@ -16,6 +17,7 @@ func TestHashWithValidData(t *testing.T) {
 }
 
 func TestHashWithEmptyData(t *testing.T) {
+	t.Parallel()
 	data := ""
 	expectedHash := "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
@@ -25,6 +27,7 @@ func TestHashWithEmptyData(t *testing.T) {
 }
 
 func TestHashWithDifferentDataSameLength(t *testing.T) {
+	t.Parallel()
 	data1 := "Hello, World!"
 	data2 := "World, Hello!"
 

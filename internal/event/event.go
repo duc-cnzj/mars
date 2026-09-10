@@ -18,7 +18,7 @@ func (e Event) String() string {
 // Listener 处理分发的事件负载；返回的错误由 dispatcher 记录，不阻断同事件其余监听器。
 type Listener func(any, Event) error
 
-// eventChannelBuffer is the capacity of the dispatcher's event channel.
+// eventChannelBuffer 是 dispatcher 事件通道的缓冲容量。
 const eventChannelBuffer = 800
 
 // maxConcurrentHandlers 限制事件监听器处理 goroutine 的并发上限：慢监听器（DB/网络）被拖住
@@ -46,14 +46,14 @@ type Dispatcher interface {
 	List() map[Event][]Listener
 }
 
-// eventBody is a queued event and its payload.
+// eventBody 是一个排队待分发的事件及其负载。
 type eventBody struct {
 	event   Event
 	payload any
 }
 
-// dispatcher is the in-memory Dispatcher implementation. All access to the
-// listeners map is guarded by the embedded sync.RWMutex.
+// dispatcher 是内存版 Dispatcher 实现；listeners map 的所有访问都由内嵌的
+// sync.RWMutex 保护。
 type dispatcher struct {
 	sync.RWMutex
 
@@ -139,8 +139,7 @@ func (d *dispatcher) Listen(event Event, listener Listener) {
 	d.Lock()
 	defer d.Unlock()
 
-	// append on a nil slice yields []Listener{listener}, covering the first
-	// registration for an event.
+	// nil slice 上的 append 会得到 []Listener{listener}，恰好覆盖某事件的首次注册。
 	d.listeners[event] = append(d.listeners[event], listener)
 }
 

@@ -13,12 +13,14 @@ import (
 )
 
 func TestFromProject_NilInput(t *testing.T) {
+	t.Parallel()
 	var p *biz.Project
 	result := transformer.FromProject(p)
 	assert.Nil(t, result)
 }
 
 func TestFromProject_ValidInput(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	p := &biz.Project{
 		ID:             1,
@@ -106,6 +108,7 @@ func TestFromProject_ValidInput(t *testing.T) {
 }
 
 func TestFromProject_DeletedProject(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	p := &biz.Project{
 		ID:             1,
@@ -152,6 +155,7 @@ func TestFromProject_DeletedProject(t *testing.T) {
 }
 
 func TestFromProject_AtomicFalse(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	p := &biz.Project{
 		ID:        1,

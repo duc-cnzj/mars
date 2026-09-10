@@ -28,6 +28,7 @@ import (
 )
 
 func Test_fileHandler_authHandler(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	authBiz := mocks.authBiz
 
@@ -225,6 +226,7 @@ binary data
 }
 
 func Test_fileHandler_handleDownload(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	mockUploader := mocks.uploader
 
@@ -249,6 +251,7 @@ func Test_fileHandler_handleDownload(t *testing.T) {
 // 回归防护：Content-Disposition 必须走 mime.FormatMediaType（RFC 2231/5987），
 // 而不是 url.QueryEscape —— 后者会把空格转成 +（浏览器显示字面 +）、非 ASCII 直接乱码。
 func Test_fileHandler_handleDownload_ContentDisposition(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		path string
 		want string
@@ -268,6 +271,7 @@ func Test_fileHandler_handleDownload_ContentDisposition(t *testing.T) {
 }
 
 func Test_toHttpError(t *testing.T) {
+	t.Parallel()
 	recorder := httptest.NewRecorder()
 	err := status.Error(codes.InvalidArgument, "invalid argument")
 	toHttpError(recorder, err)
@@ -277,6 +281,7 @@ func Test_toHttpError(t *testing.T) {
 }
 
 func Test_toHttpError2(t *testing.T) {
+	t.Parallel()
 	recorder := httptest.NewRecorder()
 	err := errors.New("x")
 	toHttpError(recorder, err)
@@ -286,6 +291,7 @@ func Test_toHttpError2(t *testing.T) {
 }
 
 func Test_fileHandler_copyFromPod_Fail(t *testing.T) {
+	t.Parallel()
 	h, _ := newFileHandlerWithMocks(t)
 	w := httptest.NewRecorder()
 	r := &http.Request{
@@ -296,6 +302,7 @@ func Test_fileHandler_copyFromPod_Fail(t *testing.T) {
 }
 
 func Test_fileHandler_copyFromPod_Fail2(t *testing.T) {
+	t.Parallel()
 	h, _ := newFileHandlerWithMocks(t)
 	w := httptest.NewRecorder()
 	marshal, _ := json.Marshal(&copyFromPodRequest{
@@ -312,6 +319,7 @@ func Test_fileHandler_copyFromPod_Fail2(t *testing.T) {
 }
 
 func Test_fileHandler_copyFromPod_Success(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	eventRepo := mocks.eventRepo
@@ -347,6 +355,7 @@ func Test_fileHandler_copyFromPod_Success(t *testing.T) {
 // 共用 biz.ResolveContainer 的"空则找默认"语义），CopyFromPod 拿到的是解析后的容器名。
 // 去掉 ResolveContainer 调用，本测试会因 FindDefaultContainer 未被调用而失败。
 func Test_fileHandler_copyFromPod_DefaultContainer(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	eventRepo := mocks.eventRepo
@@ -382,6 +391,7 @@ func Test_fileHandler_copyFromPod_DefaultContainer(t *testing.T) {
 // 回归防护：FindDefaultContainer 失败（如 pod 无默认容器）→ 404，不应继续走到
 // CopyFromPod 或下载路径。
 func Test_fileHandler_copyFromPod_ResolveContainerError(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -404,6 +414,7 @@ func Test_fileHandler_copyFromPod_ResolveContainerError(t *testing.T) {
 // 回归防护：POST /api/copy_from_pod 从 pod 拷文件必须先做命名空间级访问控制。
 // 去掉 CopyFromPod 里的 CanAccess 检查，本测试必须失败。
 func Test_fileHandler_copyFromPod_AccessDenied(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -426,6 +437,7 @@ func Test_fileHandler_copyFromPod_AccessDenied(t *testing.T) {
 }
 
 func Test_fileHandler_copyFromPod_NamespaceError(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -440,6 +452,7 @@ func Test_fileHandler_copyFromPod_NamespaceError(t *testing.T) {
 }
 
 func Test_fileHandler_httpDownload_Fail(t *testing.T) {
+	t.Parallel()
 	h, _ := newFileHandlerWithMocks(t)
 	w := httptest.NewRecorder()
 	r := &http.Request{
@@ -450,6 +463,7 @@ func Test_fileHandler_httpDownload_Fail(t *testing.T) {
 }
 
 func Test_fileHandler_httpDownload_Ok(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	eventRepo := mocks.eventRepo
 	fileRepo := mocks.fileRepo
@@ -467,6 +481,7 @@ func Test_fileHandler_httpDownload_Ok(t *testing.T) {
 }
 
 func Test_fileHandler_httpDownload_GetByIDError(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -481,6 +496,7 @@ func Test_fileHandler_httpDownload_GetByIDError(t *testing.T) {
 // 回归防护：GET /api/download_file/{id} 文件可能含部署配置/执行记录等敏感内容，
 // 只允许所有者或 admin 下载。去掉 httpDownload 里的所有权检查，本测试必须失败。
 func Test_fileHandler_httpDownload_AccessDenied(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	fileRepo := mocks.fileRepo
 	eventRepo := mocks.eventRepo
@@ -501,6 +517,7 @@ func Test_fileHandler_httpDownload_AccessDenied(t *testing.T) {
 }
 
 func Test_fileHandler_copyFromPod_K8sError(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -517,6 +534,7 @@ func Test_fileHandler_copyFromPod_K8sError(t *testing.T) {
 }
 
 func Test_fileHandler_handleDownload_NotFound(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	up := mocks.uploader
 
@@ -528,6 +546,7 @@ func Test_fileHandler_handleDownload_NotFound(t *testing.T) {
 }
 
 func Test_fileHandler_handleDownload_ReadError(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	up := mocks.uploader
 
@@ -543,6 +562,7 @@ type errorReader struct{}
 func (errorReader) Read([]byte) (int, error) { return 0, errors.New("read boom") }
 
 func Test_fileHandler_handleDownload_CopyError(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	up := mocks.uploader
 
@@ -555,6 +575,7 @@ func Test_fileHandler_handleDownload_CopyError(t *testing.T) {
 }
 
 func Test_fileHandler_handleBinaryFileUpload_MissingFile(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -574,6 +595,7 @@ func Test_fileHandler_handleBinaryFileUpload_MissingFile(t *testing.T) {
 }
 
 func Test_fileHandler_handleBinaryFileUpload_TraversalFilename(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -597,6 +619,7 @@ func Test_fileHandler_handleBinaryFileUpload_TraversalFilename(t *testing.T) {
 }
 
 func Test_fileHandler_handleBinaryFileUpload_EmptyUsername(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -619,6 +642,7 @@ func Test_fileHandler_handleBinaryFileUpload_EmptyUsername(t *testing.T) {
 }
 
 func Test_fileHandler_handleBinaryFileUpload_PutError(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	fileRepo := mocks.fileRepo
 	up := mocks.uploader
@@ -644,6 +668,7 @@ func Test_fileHandler_handleBinaryFileUpload_PutError(t *testing.T) {
 }
 
 func Test_fileHandler_handleBinaryFileUpload_CreateError(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	fileRepo := mocks.fileRepo
 	up := mocks.uploader
@@ -675,6 +700,7 @@ func Test_fileHandler_handleBinaryFileUpload_CreateError(t *testing.T) {
 }
 
 func Test_fileHandler_handleBinaryFileUpload_CreateDeleteError(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	fileRepo := mocks.fileRepo
 	up := mocks.uploader
@@ -707,6 +733,7 @@ func Test_fileHandler_handleBinaryFileUpload_CreateDeleteError(t *testing.T) {
 }
 
 func Test_fileHandler_RegisterFileRoute_Closures(t *testing.T) {
+	t.Parallel()
 	h, mocks := newFileHandlerWithMocks(t)
 	authBiz := mocks.authBiz
 	fileRepo := mocks.fileRepo

@@ -21,6 +21,7 @@ import (
 // TestWrapConstructors_NilErr 覆盖 wrapErr 的 nil 提前返回分支：底层 err 为 nil 时
 // 四个构造器（含通用 Wrap）均返回 nil，不构造无意义的错误。
 func TestWrapConstructors_NilErr(t *testing.T) {
+	t.Parallel()
 	assert.Nil(t, WrapNotFound(nil, "query access token"))
 	assert.Nil(t, WrapInvalidArgument(nil, "create repo"))
 	assert.Nil(t, WrapUnauthenticated(nil, "verify token"))
@@ -32,6 +33,7 @@ func TestWrapConstructors_NilErr(t *testing.T) {
 // （Error/Unwrap/Format/GRPCStatus）：客户端可见 message 为底层 err.Error()，
 // 上下文 msg 进入 wrap 链供日志打印，%v/%+v 格式化不 panic。
 func TestWrapConstructors(t *testing.T) {
+	t.Parallel()
 	t.Run("WrapNotFound", func(t *testing.T) {
 		err := WrapNotFound(assert.AnError, "query access token")
 		assert.Equal(t, codes.NotFound, status.Code(err))
@@ -66,6 +68,7 @@ func TestWrapConstructors(t *testing.T) {
 // TestMessageConstructors 覆盖五个消息构造器（NotFound/InvalidArgument/Unauthenticated/
 // PermissionDenied/AlreadyExists）：直接携带消息返回对应协议码，无底层错误可包裹。
 func TestMessageConstructors(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name string
 		got  error
@@ -90,6 +93,7 @@ func TestMessageConstructors(t *testing.T) {
 // TestErrorPermissionDenied_Sentinel 验证权限拒绝 sentinel 的协议码与消息，
 // 保证 services 层 errors.Is(err, ErrorPermissionDenied) 可匹配同一实例。
 func TestErrorPermissionDenied_Sentinel(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, codes.PermissionDenied, status.Code(ErrorPermissionDenied))
 	assert.Equal(t, "没有权限执行该操作", status.Convert(ErrorPermissionDenied).Message())
 	assert.True(t, errors.Is(ErrorPermissionDenied, ErrorPermissionDenied))
@@ -98,6 +102,7 @@ func TestErrorPermissionDenied_Sentinel(t *testing.T) {
 // TestWrap_GenericInternal 覆盖通用 Wrap 构造器：默认映射 codes.Internal（HTTP 500），
 // 兜底堆栈捕获；已带 status 码的底层错误保留原码（status.Convert 穿透）。
 func TestWrap_GenericInternal(t *testing.T) {
+	t.Parallel()
 	err := Wrap(assert.AnError, "revoke access token")
 	assert.Equal(t, codes.Internal, status.Code(err))
 	assert.ErrorIs(t, err, assert.AnError)
@@ -113,6 +118,7 @@ func TestWrap_GenericInternal(t *testing.T) {
 // Constraint 错误→AlreadyExists(409)；纯底层错误仍落 Internal。同时验证 errors.As
 // 能穿透 wrap 链还原 ent 错误类型（k8s apierrors/ent 消费方依赖该穿透）。
 func TestWrap_EntAware(t *testing.T) {
+	t.Parallel()
 	t.Run("NotFoundError maps to NotFound", func(t *testing.T) {
 		nf := &ent.NotFoundError{}
 		err := Wrap(nf, "get repo")
@@ -158,6 +164,7 @@ func TestWrap_EntAware(t *testing.T) {
 // 保证 data 边界取 k8s 资源时用统一 Wrap 不会把"网络故障"误判成 404，也不会把
 // "资源不存在"误映射成 500。errors.As 可穿透 wrap 链还原 *apierrors.StatusError。
 func TestWrap_K8sAware(t *testing.T) {
+	t.Parallel()
 	t.Run("apierrors NotFound maps to NotFound", func(t *testing.T) {
 		nf := apierrors.NewNotFound(schema.GroupResource{Resource: "secrets"}, "my-secret")
 		err := Wrap(nf, "get secret")
@@ -182,6 +189,7 @@ func TestWrap_K8sAware(t *testing.T) {
 // 裸 ent.NotFoundError 可被穿透识别，裸 ent 非 NotFound 与裸 k8s apierrors.NotFound
 // 不误判（k8s 仅在经 Wrap 映射为协议码后被识别，见 Wrap 的 k8s 归类分支）。
 func TestIsNotFound(t *testing.T) {
+	t.Parallel()
 	assert.False(t, IsNotFound(nil))
 	assert.False(t, IsNotFound(status.Error(codes.Internal, "boom")))
 	assert.True(t, IsNotFound(status.Error(codes.NotFound, "missing")))
@@ -200,6 +208,7 @@ func TestIsNotFound(t *testing.T) {
 // 覆盖 Format 的 fmt.Fprint 兜底分支（pkg/errors.Wrap 的 withStack 恒实现 Formatter，
 // 正常路径走代理，兜底仅防手工构造）。
 func TestGrpcStatusError_FormatFallback(t *testing.T) {
+	t.Parallel()
 	g := &grpcStatusError{
 		st:      status.New(codes.NotFound, "not found"),
 		wrapped: errors.New("plain error"),

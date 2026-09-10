@@ -161,6 +161,7 @@ func TestMemoryLock_RenewalAcquire(t *testing.T) {
 }
 
 func TestMemoryLock_RenewalAcquire2(t *testing.T) {
+	t.Parallel()
 	lock := NewMemoryLock(timer.NewReal(), NewMemStore(), mlog.NewForConfig(nil)).(*memoryLock)
 	assert.False(t, lock.renewalExistKey("not-exists", 10))
 	key := "RenewalAcquire2"
@@ -210,10 +211,12 @@ func BenchmarkMemoryLock_RenewalAcquire(b *testing.B) {
 }
 
 func Test_memoryLock_ID(t *testing.T) {
+	t.Parallel()
 	id := NewMemoryLock(timer.NewReal(), NewMemStore(), mlog.NewForConfig(nil)).(*memoryLock).ID()
 	assert.Len(t, id, 40)
 }
 
 func Test_memoryLock_Type(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "memory", NewMemoryLock(timer.NewReal(), NewMemStore(), mlog.NewForConfig(nil)).Type())
 }

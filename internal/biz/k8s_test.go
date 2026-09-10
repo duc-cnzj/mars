@@ -21,6 +21,7 @@ import (
 // 字段必须小写（username/password/email/auth），kubelet 解析依赖此格式。
 // 曾因缺 json tag 序列化出大写键导致镜像拉取认证失效（P0）。
 func TestDockerConfigJSONSerializationContract(t *testing.T) {
+	t.Parallel()
 	cfg := DockerConfigJSON{
 		Auths: DockerConfig{"reg.io": {
 			Username: "u",
@@ -44,6 +45,7 @@ func TestDockerConfigJSONSerializationContract(t *testing.T) {
 
 // TestDecodeDockerConfigJSON 覆盖 config.json 字节流解析为领域类型的往返。
 func TestDecodeDockerConfigJSON(t *testing.T) {
+	t.Parallel()
 	input := []byte(`{"auths": {"https://index.docker.io/v1/": {"username": "tu", "password": "tp", "email": "te", "auth": "dXU6cA=="}}}`)
 	res, err := DecodeDockerConfigJSON(input)
 	assert.NoError(t, err)
@@ -59,6 +61,7 @@ func TestDecodeDockerConfigJSON(t *testing.T) {
 
 // TestProjectCpuMemory 验证聚合规则把"项目全部 pod metrics"喂给聚合器并原样返回结果。
 func TestProjectCpuMemory(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -75,6 +78,7 @@ func TestProjectCpuMemory(t *testing.T) {
 }
 
 func TestGetPreOccupiedLenByValuesYaml(t *testing.T) {
+	t.Parallel()
 	t.Run("returns zero when values is empty", func(t *testing.T) {
 		values := ""
 		got := GetPreOccupiedLenByValuesYaml(values)
@@ -134,6 +138,7 @@ func (f *fakeK8sRepoForK8sBiz) DeletePod(ctx context.Context, namespace, pod str
 }
 
 func TestK8sBiz_AddTlsSecret_EmptyNSOrName(t *testing.T) {
+	t.Parallel()
 	k := NewK8sBiz(&fakeK8sRepoForK8sBiz{})
 	got, err := k.AddTlsSecret("", "", "key", "crt")
 	assert.Nil(t, got)
@@ -142,6 +147,7 @@ func TestK8sBiz_AddTlsSecret_EmptyNSOrName(t *testing.T) {
 }
 
 func TestK8sBiz_AddTlsSecret_Valid(t *testing.T) {
+	t.Parallel()
 	f := &fakeK8sRepoForK8sBiz{}
 	b := NewK8sBiz(f)
 	got, err := b.AddTlsSecret("ns", "name", "key", "crt")
@@ -151,6 +157,7 @@ func TestK8sBiz_AddTlsSecret_Valid(t *testing.T) {
 }
 
 func TestK8sBiz_CreateNamespace_EmptyName(t *testing.T) {
+	t.Parallel()
 	k := NewK8sBiz(&fakeK8sRepoForK8sBiz{})
 	got, err := k.CreateNamespace(context.TODO(), "")
 	assert.Nil(t, got)
@@ -159,6 +166,7 @@ func TestK8sBiz_CreateNamespace_EmptyName(t *testing.T) {
 }
 
 func TestK8sBiz_CreateNamespace_Valid(t *testing.T) {
+	t.Parallel()
 	f := &fakeK8sRepoForK8sBiz{}
 	b := NewK8sBiz(f)
 	got, err := b.CreateNamespace(context.TODO(), "ns")
@@ -168,6 +176,7 @@ func TestK8sBiz_CreateNamespace_Valid(t *testing.T) {
 }
 
 func TestK8sBiz_DeleteNamespace_EmptyName(t *testing.T) {
+	t.Parallel()
 	k := NewK8sBiz(&fakeK8sRepoForK8sBiz{})
 	err := k.DeleteNamespace(context.TODO(), "")
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -175,6 +184,7 @@ func TestK8sBiz_DeleteNamespace_EmptyName(t *testing.T) {
 }
 
 func TestK8sBiz_DeleteNamespace_Valid(t *testing.T) {
+	t.Parallel()
 	f := &fakeK8sRepoForK8sBiz{}
 	b := NewK8sBiz(f)
 	assert.NoError(t, b.DeleteNamespace(context.TODO(), "ns"))
@@ -182,6 +192,7 @@ func TestK8sBiz_DeleteNamespace_Valid(t *testing.T) {
 }
 
 func TestK8sBiz_DeleteSecret_EmptyNamespaceOrSecret(t *testing.T) {
+	t.Parallel()
 	k := NewK8sBiz(&fakeK8sRepoForK8sBiz{})
 	err := k.DeleteSecret(context.TODO(), "", "")
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -189,6 +200,7 @@ func TestK8sBiz_DeleteSecret_EmptyNamespaceOrSecret(t *testing.T) {
 }
 
 func TestK8sBiz_DeleteSecret_Valid(t *testing.T) {
+	t.Parallel()
 	f := &fakeK8sRepoForK8sBiz{}
 	b := NewK8sBiz(f)
 	assert.NoError(t, b.DeleteSecret(context.TODO(), "ns", "sec"))
@@ -196,6 +208,7 @@ func TestK8sBiz_DeleteSecret_Valid(t *testing.T) {
 }
 
 func TestK8sBiz_ForceDeletePod_InvalidArgs(t *testing.T) {
+	t.Parallel()
 	k := NewK8sBiz(&fakeK8sRepoForK8sBiz{})
 	err := k.ForceDeletePod(context.TODO(), "", "pod", 0)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -208,6 +221,7 @@ func TestK8sBiz_ForceDeletePod_InvalidArgs(t *testing.T) {
 }
 
 func TestK8sBiz_ForceDeletePod_Valid(t *testing.T) {
+	t.Parallel()
 	f := &fakeK8sRepoForK8sBiz{}
 	b := NewK8sBiz(f)
 	assert.NoError(t, b.ForceDeletePod(context.TODO(), "ns", "pod", 0))
@@ -218,6 +232,7 @@ func TestK8sBiz_ForceDeletePod_Valid(t *testing.T) {
 }
 
 func TestK8sBiz_ForceDeletePod_ValidNonZeroGrace(t *testing.T) {
+	t.Parallel()
 	f := &fakeK8sRepoForK8sBiz{}
 	b := NewK8sBiz(f)
 	assert.NoError(t, b.ForceDeletePod(context.TODO(), "ns", "pod", 30))
@@ -334,6 +349,7 @@ func (f *fakeK8sRepoPassthrough) CopyFromPod(ctx context.Context, input *CopyFro
 }
 
 func TestK8sBiz_PassthroughMethods(t *testing.T) {
+	t.Parallel()
 	f := &fakeK8sRepoPassthrough{}
 	b := NewK8sBiz(f)
 

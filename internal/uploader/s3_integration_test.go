@@ -102,6 +102,7 @@ func newRealS3(t *testing.T, root string) *s3Uploader {
 
 // TestS3Integration_PutReadDelete 走真实 S3 的写入→读取→删除全链路，验证对象内容不丢失。
 func TestS3Integration_PutReadDelete(t *testing.T) {
+	t.Parallel()
 	s3u := newRealS3(t, "it/putread")
 
 	info, err := s3u.Put("a.txt", strings.NewReader("hello s3"))
@@ -128,6 +129,7 @@ func TestS3Integration_PutReadDelete(t *testing.T) {
 
 // TestS3Integration_DirSizeAndList 验证真实 ListObjects 对前缀目录的统计与列举语义。
 func TestS3Integration_DirSizeAndList(t *testing.T) {
+	t.Parallel()
 	s3u := newRealS3(t, "it/dirlist")
 
 	_, err := s3u.Put("a.txt", strings.NewReader("aaa"))
@@ -146,6 +148,7 @@ func TestS3Integration_DirSizeAndList(t *testing.T) {
 
 // TestS3Integration_DeleteDir 验证按前缀递归删除对象的真实行为。
 func TestS3Integration_DeleteDir(t *testing.T) {
+	t.Parallel()
 	s3u := newRealS3(t, "it/deletedir")
 
 	_, err := s3u.Put("x.txt", strings.NewReader("x"))
@@ -161,6 +164,7 @@ func TestS3Integration_DeleteDir(t *testing.T) {
 
 // TestS3Integration_NewFileCloseUploads 验证 NewFile 写入并 Close 后对象真实落到 S3。
 func TestS3Integration_NewFileCloseUploads(t *testing.T) {
+	t.Parallel()
 	s3u := newRealS3(t, "it/newfile")
 
 	file, err := s3u.NewFile("f.txt")

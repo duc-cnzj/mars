@@ -24,7 +24,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-// WireServiceSet 是传输层服务装配集：供 wire 注入，组合 14 个 gRPC service
+// WireServiceSet 是传输层服务装配集：供 wire 注入，组合 17 个 gRPC service
 // （XxxSvcDeps wire.Struct 全字段注入 + 对应 NewXxxSvc 构造器）与 HTTP 处理器、
 // gRPC 注册表，构成 services 包对外可注入的全部传输层能力。
 var WireServiceSet = wire.NewSet(
@@ -67,7 +67,7 @@ var WireServiceSet = wire.NewSet(
 	NewGrpcRegistry,
 )
 
-// NewGrpcRegistryDeps 收口 NewGrpcRegistry 的 15 个 gRPC 服务实现，由 wire 按字段
+// NewGrpcRegistryDeps 收口 NewGrpcRegistry 的 17 个 gRPC 服务实现，由 wire 按字段
 // 注入。与全包 wire.Struct("*") 模式对齐：裸位置参数存在"错一个位置编译期全过、
 // 运行期串服务"的隐患，Deps struct 根除这一风险。
 type NewGrpcRegistryDeps struct {

@@ -19,6 +19,7 @@ import (
 )
 
 func TestCache_Remember(t *testing.T) {
+	t.Parallel()
 	var i int
 	cache := newCache(newGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), mlog.NewForConfig(nil), &singleflight.Group{})
 	fn := func() {
@@ -69,6 +70,7 @@ func TestCache_Remember(t *testing.T) {
 }
 
 func TestCache_RememberV2(t *testing.T) {
+	t.Parallel()
 	cache := newCache(newGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), mlog.NewForConfig(nil), &singleflight.Group{})
 	v := atomic.Int64{}
 	v2 := atomic.Int64{}
@@ -136,6 +138,7 @@ func (e *errorstore) Delete(key string) error {
 }
 
 func TestCache_RememberErrorStore(t *testing.T) {
+	t.Parallel()
 	var i int
 	cache := newCache(&errorstore{}, mlog.NewForConfig(nil), &singleflight.Group{})
 	fn := func() ([]byte, error) {
@@ -153,6 +156,7 @@ func TestCache_RememberErrorStore(t *testing.T) {
 }
 
 func TestCache_Clear(t *testing.T) {
+	t.Parallel()
 	cache := newCache(newGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), mlog.NewForConfig(nil), &singleflight.Group{})
 	called := 0
 	fn := func() ([]byte, error) {
@@ -171,6 +175,7 @@ func TestCache_Clear(t *testing.T) {
 }
 
 func TestCache_SetWithTTL(t *testing.T) {
+	t.Parallel()
 	cache := newCache(newGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), mlog.NewForConfig(nil), &singleflight.Group{})
 	cache.SetWithTTL(NewKey("aaa"), []byte("aa"), 100)
 	get, _ := cache.(*cacheImpl).store.Get(NewKey("aaa").String())
@@ -178,6 +183,7 @@ func TestCache_SetWithTTL(t *testing.T) {
 }
 
 func TestNewCacheImpl_MemoryDriver(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{CacheDriver: "memory"}
 	logger := mlog.NewForConfig(nil)
 	d := NewData(cfg, logger)
@@ -191,6 +197,7 @@ func TestNewCacheImpl_MemoryDriver(t *testing.T) {
 }
 
 func TestNewCacheImpl_DbDriver(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{CacheDriver: "db"}
 	logger := mlog.NewForConfig(nil)
 	d := NewData(cfg, logger)
@@ -204,6 +211,7 @@ func TestNewCacheImpl_DbDriver(t *testing.T) {
 }
 
 func TestNewCacheImpl_UnknownDriver(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{CacheDriver: "unknown"}
 	logger := mlog.NewForConfig(nil)
 	d := NewData(cfg, logger)
@@ -217,6 +225,7 @@ func TestNewCacheImpl_UnknownDriver(t *testing.T) {
 
 // TestCache_RememberNoCache 覆盖 noCache 后端 Remember 每次直调 fn 不透传缓存。
 func TestCache_RememberNoCache(t *testing.T) {
+	t.Parallel()
 	var i int
 	cache := &noCache{}
 	fn := func() {
@@ -233,12 +242,14 @@ func TestCache_RememberNoCache(t *testing.T) {
 
 // TestNoCache_Clear 覆盖 noCache 清空恒 nil。
 func TestNoCache_Clear(t *testing.T) {
+	t.Parallel()
 	cache := &noCache{}
 	assert.Nil(t, cache.Clear(NewKey("aaa")))
 }
 
 // TestNoCache_SetWithTTL 覆盖 noCache 写入恒 nil。
 func TestNoCache_SetWithTTL(t *testing.T) {
+	t.Parallel()
 	cache := &noCache{}
 	assert.Nil(t, cache.SetWithTTL(NewKey("aaa"), []byte("x"), 1))
 }
@@ -344,11 +355,13 @@ func b64ToStr(v string) string {
 
 // TestNewGoCacheAdapter 覆盖 memory 后端实现 store 接口。
 func TestNewGoCacheAdapter(t *testing.T) {
+	t.Parallel()
 	assert.Implements(t, (*store)(nil), newGoCacheAdapter(nil))
 }
 
 // TestGoCacheAdapter_Get_Set_Delete 覆盖 memory 后端的读写删：TTL 过期后 Get 返回 not found。
 func TestGoCacheAdapter_Get_Set_Delete(t *testing.T) {
+	t.Parallel()
 	adapter := newGoCacheAdapter(gocache.New(1*time.Minute, 10*time.Minute))
 	_, err := adapter.Get("aaa")
 	assert.Equal(t, "key aaa not found", err.Error())
@@ -367,6 +380,7 @@ func TestGoCacheAdapter_Get_Set_Delete(t *testing.T) {
 }
 
 func TestMetricsForCache_Clear(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	c := NewMockCache(m)
@@ -376,6 +390,7 @@ func TestMetricsForCache_Clear(t *testing.T) {
 }
 
 func TestMetricsForCache_Remember(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	c := NewMockCache(m)
@@ -391,6 +406,7 @@ func TestMetricsForCache_Remember(t *testing.T) {
 }
 
 func TestNewMetricsForCache(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	c := NewMockCache(m)
@@ -400,6 +416,7 @@ func TestNewMetricsForCache(t *testing.T) {
 }
 
 func TestMetricsForCache_SetWithTTL(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	c := NewMockCache(m)

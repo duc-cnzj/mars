@@ -38,6 +38,7 @@ func (m *mockResponseWriter) WriteHeader(statusCode int) {
 }
 
 func TestAllowCORS(t *testing.T) {
+	t.Parallel()
 	// 预检请求（OPTIONS + Access-Control-Request-Method）：写预检头并短路，不进下游。
 	m := &mockHandler{}
 	rw := &mockResponseWriter{h: map[string][]string{}}

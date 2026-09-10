@@ -61,6 +61,7 @@ func (f *fakeUserRepoForUserBiz) ResetRolesOverride(ctx context.Context, email s
 
 // TestUserBiz_List_Success 成功路径：直接透传 repo 查询。
 func TestUserBiz_List_Success(t *testing.T) {
+	t.Parallel()
 	fake := &fakeUserRepoForUserBiz{result: &ListUserResult{
 		Items: []*User{{Email: "a@b.c"}},
 		Pag:   pagination.NewPagination(1, 15, 1),
@@ -77,6 +78,7 @@ func TestUserBiz_List_Success(t *testing.T) {
 
 // TestUserBiz_ToggleAdmin_Success 成功路径：超级管理员操作时透传 email/admin 到 repo。
 func TestUserBiz_ToggleAdmin_Success(t *testing.T) {
+	t.Parallel()
 	fake := &fakeUserRepoForUserBiz{}
 	b := NewUserBiz(fake)
 	ctx := superAdminCtx()
@@ -91,6 +93,7 @@ func TestUserBiz_ToggleAdmin_Success(t *testing.T) {
 // TestUserBiz_ToggleAdmin_NonSuperAdminDenied 普通管理员不能修改他人权限：返回
 // PermissionDenied，且不触达 repo。
 func TestUserBiz_ToggleAdmin_NonSuperAdminDenied(t *testing.T) {
+	t.Parallel()
 	fake := &fakeUserRepoForUserBiz{}
 	b := NewUserBiz(fake)
 	ctx := SetUser(context.TODO(), &UserInfo{Email: "regular-admin@x.com", Roles: []string{MarsAdmin}})
@@ -104,6 +107,7 @@ func TestUserBiz_ToggleAdmin_NonSuperAdminDenied(t *testing.T) {
 // TestUserBiz_ToggleAdmin_EmptyEmail 空邮箱是确定语义错误：返回 InvalidArgument，
 // 不触达 repo。
 func TestUserBiz_ToggleAdmin_EmptyEmail(t *testing.T) {
+	t.Parallel()
 	fake := &fakeUserRepoForUserBiz{}
 	b := NewUserBiz(fake)
 
@@ -114,6 +118,7 @@ func TestUserBiz_ToggleAdmin_EmptyEmail(t *testing.T) {
 
 // TestUserBiz_ToggleAdmin_RepoError 透传 repo 错误。
 func TestUserBiz_ToggleAdmin_RepoError(t *testing.T) {
+	t.Parallel()
 	fake := &fakeUserRepoForUserBiz{toggleErr: errors.New("toggle boom")}
 	b := NewUserBiz(fake)
 
@@ -128,6 +133,7 @@ func superAdminCtx() context.Context {
 
 // TestUserBiz_SyncLoginUser_Success 成功路径：邮箱 trim 后透传 email/name/roles 到 repo。
 func TestUserBiz_SyncLoginUser_Success(t *testing.T) {
+	t.Parallel()
 	fake := &fakeUserRepoForUserBiz{}
 	b := NewUserBiz(fake)
 
@@ -140,6 +146,7 @@ func TestUserBiz_SyncLoginUser_Success(t *testing.T) {
 // TestUserBiz_SyncLoginUser_EmptyEmail 空邮箱是确定语义错误：返回 InvalidArgument，
 // 不触达 repo。
 func TestUserBiz_SyncLoginUser_EmptyEmail(t *testing.T) {
+	t.Parallel()
 	fake := &fakeUserRepoForUserBiz{}
 	b := NewUserBiz(fake)
 
@@ -151,6 +158,7 @@ func TestUserBiz_SyncLoginUser_EmptyEmail(t *testing.T) {
 
 // TestUserBiz_SyncLoginUser_RepoError 透传 repo 错误。
 func TestUserBiz_SyncLoginUser_RepoError(t *testing.T) {
+	t.Parallel()
 	fake := &fakeUserRepoForUserBiz{syncErr: errors.New("sync boom")}
 	b := NewUserBiz(fake)
 
@@ -160,6 +168,7 @@ func TestUserBiz_SyncLoginUser_RepoError(t *testing.T) {
 
 // TestUserBiz_ResetRolesOverride_Success 成功路径：超级管理员操作时把邮箱透传 repo。
 func TestUserBiz_ResetRolesOverride_Success(t *testing.T) {
+	t.Parallel()
 	fake := &fakeUserRepoForUserBiz{}
 	b := NewUserBiz(fake)
 
@@ -172,6 +181,7 @@ func TestUserBiz_ResetRolesOverride_Success(t *testing.T) {
 // TestUserBiz_ResetRolesOverride_NonSuperAdminDenied 普通管理员不能解除接管：返回
 // PermissionDenied，且不触达 repo。
 func TestUserBiz_ResetRolesOverride_NonSuperAdminDenied(t *testing.T) {
+	t.Parallel()
 	fake := &fakeUserRepoForUserBiz{}
 	b := NewUserBiz(fake)
 	ctx := SetUser(context.TODO(), &UserInfo{Email: "regular-admin@x.com", Roles: []string{MarsAdmin}})
@@ -185,6 +195,7 @@ func TestUserBiz_ResetRolesOverride_NonSuperAdminDenied(t *testing.T) {
 // TestUserBiz_ResetRolesOverride_EmptyEmail 空邮箱是确定语义错误：返回 InvalidArgument，
 // 不触达 repo。
 func TestUserBiz_ResetRolesOverride_EmptyEmail(t *testing.T) {
+	t.Parallel()
 	fake := &fakeUserRepoForUserBiz{}
 	b := NewUserBiz(fake)
 
@@ -195,6 +206,7 @@ func TestUserBiz_ResetRolesOverride_EmptyEmail(t *testing.T) {
 
 // TestUserBiz_ResetRolesOverride_RepoError 透传 repo 错误。
 func TestUserBiz_ResetRolesOverride_RepoError(t *testing.T) {
+	t.Parallel()
 	fake := &fakeUserRepoForUserBiz{resetErr: errors.New("reset boom")}
 	b := NewUserBiz(fake)
 

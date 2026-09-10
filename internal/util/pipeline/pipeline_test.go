@@ -7,6 +7,7 @@ import (
 )
 
 func TestMyPipeline_Send(t *testing.T) {
+	t.Parallel()
 	var result []string
 	New[string]().
 		Send("xxx").

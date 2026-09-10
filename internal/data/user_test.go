@@ -180,6 +180,7 @@ func Test_userRepo_List_ErrorBranch(t *testing.T) {
 
 // TestToUser 覆盖 nil 与实体两种转换。
 func TestToUser(t *testing.T) {
+	t.Parallel()
 	assert.Nil(t, toUser(nil))
 	now := time.Now()
 	u := toUser(&ent.User{ID: 1, Email: "a@b.c", Name: "a", Roles: []string{}, LastLogin: &now, CreatedAt: now})
@@ -190,16 +191,17 @@ func TestToUser(t *testing.T) {
 	assert.Equal(t, &now, u.LastLogin)
 }
 
-// TestToggleRole 覆盖追加/移除/幂等去重。
-func TestToggleRole(t *testing.T) {
-	assert.Equal(t, []string{"mars_admin"}, toggleRole([]string{}, "mars_admin", true))
-	assert.Equal(t, []string{"mars_admin"}, toggleRole([]string{"mars_admin"}, "mars_admin", true), "已存在时保持去重")
-	assert.Empty(t, toggleRole([]string{"mars_admin"}, "mars_admin", false))
-	assert.Empty(t, toggleRole([]string{}, "mars_admin", false), "不存在时移除为幂等")
-	assert.Empty(t, toggleRole(nil, "mars_admin", false))
+// TestToggleMarsAdmin 覆盖追加/移除/幂等去重。
+func TestToggleMarsAdmin(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, []string{"mars_admin"}, toggleMarsAdmin([]string{}, true))
+	assert.Equal(t, []string{"mars_admin"}, toggleMarsAdmin([]string{"mars_admin"}, true), "已存在时保持去重")
+	assert.Empty(t, toggleMarsAdmin([]string{"mars_admin"}, false))
+	assert.Empty(t, toggleMarsAdmin([]string{}, false), "不存在时移除为幂等")
+	assert.Empty(t, toggleMarsAdmin(nil, false))
 	// 历史遗留的非 mars_admin 角色（如旧版写入的 "user"）原样保留，不因升降级被清掉
-	assert.Equal(t, []string{"other", "mars_admin"}, toggleRole([]string{"other"}, "mars_admin", true))
-	assert.Equal(t, []string{"other"}, toggleRole([]string{"other", "mars_admin"}, "mars_admin", false))
+	assert.Equal(t, []string{"other", "mars_admin"}, toggleMarsAdmin([]string{"other"}, true))
+	assert.Equal(t, []string{"other"}, toggleMarsAdmin([]string{"other", "mars_admin"}, false))
 }
 
 // Test_userRepo_SyncLoginUser_CreateNew 新邮箱登录创建投影：角色取登录身份（此处为空=
@@ -406,6 +408,7 @@ func Test_userRepo_SyncLoginUser_NilRoles(t *testing.T) {
 
 // TestLocalPartOf 覆盖邮箱本地部分提取：含 @ 取前缀，无 @ 原样返回。
 func TestLocalPartOf(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "alice", localPartOf("alice@x.com"))
 	assert.Equal(t, "nouser", localPartOf("nouser"), "无 @ 的邮箱原样返回")
 	assert.Equal(t, "", localPartOf(""), "空串原样返回")

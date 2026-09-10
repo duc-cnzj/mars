@@ -50,6 +50,7 @@ func mustRead(t *testing.T, ch <-chan []byte, timeout time.Duration) []byte {
 // ---------------------------------------------------------------------------
 
 func TestNewPubSub(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("uid-1", "id-1").(*memoryPubSub)
 
@@ -59,6 +60,7 @@ func TestNewPubSub(t *testing.T) {
 }
 
 func TestAddThenSubscribe(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "x").(*memoryPubSub)
 	ch := pub.Subscribe()
@@ -77,6 +79,7 @@ func TestAddThenSubscribe(t *testing.T) {
 }
 
 func TestToSelf(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u1", "id1").(*memoryPubSub)
 	ch := pub.Subscribe()
@@ -91,6 +94,7 @@ func TestToSelf(t *testing.T) {
 }
 
 func TestToAll(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub1 := ms.New("u1", "id1").(*memoryPubSub)
 	pub2 := ms.New("u2", "id2").(*memoryPubSub)
@@ -104,6 +108,7 @@ func TestToAll(t *testing.T) {
 }
 
 func TestToSelf_on_PubSub_that_was_Closed(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 	pub.Close()
@@ -117,6 +122,7 @@ func TestToSelf_on_PubSub_that_was_Closed(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestClose_cleans_up_connection(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 	pub.Close()
@@ -128,6 +134,7 @@ func TestClose_cleans_up_connection(t *testing.T) {
 }
 
 func TestMultipleClose_no_panic(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 
@@ -138,6 +145,7 @@ func TestMultipleClose_no_panic(t *testing.T) {
 }
 
 func TestClose_closes_channel(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 	ch := pub.Subscribe()
@@ -156,6 +164,7 @@ func TestClose_closes_channel(t *testing.T) {
 }
 
 func TestSubscribe_unknown_id_returns_closed_channel(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := &memoryPubSub{
 		manager: ms,
@@ -173,6 +182,7 @@ func TestSubscribe_unknown_id_returns_closed_channel(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestInfo_returns_snapshot_not_reference(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	ms.New("u1", "id1")
 
@@ -189,6 +199,7 @@ func TestInfo_returns_snapshot_not_reference(t *testing.T) {
 }
 
 func TestInfo_contains_all_connections(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	ms.New("alice", "a")
 	ms.New("bob", "b")
@@ -202,6 +213,7 @@ func TestInfo_contains_all_connections(t *testing.T) {
 }
 
 func TestInfo_after_close(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 	pub.Close()
@@ -215,6 +227,7 @@ func TestInfo_after_close(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAdd_duplicate_id_does_not_replace(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	ms.Add("original-uid", "same-id")
 
@@ -240,6 +253,7 @@ func TestAdd_duplicate_id_does_not_replace(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAdd_empty_uid_or_id_is_noop(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	ms.Add("", "id") // empty uid
 	assert.Len(t, ms.conns, 0)
@@ -249,6 +263,7 @@ func TestAdd_empty_uid_or_id_is_noop(t *testing.T) {
 }
 
 func TestDelete_non_existent_id_does_not_panic(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	ms.Delete("u", "non-existent") // must not panic
 }
@@ -258,6 +273,7 @@ func TestDelete_non_existent_id_does_not_panic(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestConcurrentToAll(t *testing.T) {
+	t.Parallel()
 	const n = 5
 	ms := newTestSender()
 	pubs := make([]*memoryPubSub, n)
@@ -300,6 +316,7 @@ func TestConcurrentToAll(t *testing.T) {
 }
 
 func TestConcurrentToSelf(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 	ch := pub.Subscribe()
@@ -329,6 +346,7 @@ func TestConcurrentToSelf(t *testing.T) {
 }
 
 func TestConcurrentSendAndClose(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 	_ = pub.Subscribe()
@@ -351,6 +369,7 @@ func TestConcurrentSendAndClose(t *testing.T) {
 }
 
 func TestConcurrentAddDelete(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	var wg sync.WaitGroup
 
@@ -376,6 +395,7 @@ func TestConcurrentAddDelete(t *testing.T) {
 }
 
 func TestConcurrentAddAndToAll(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("pub", "pub").(*memoryPubSub)
 	_ = pub.Subscribe()
@@ -427,6 +447,7 @@ func TestNoGoroutineLeakAfterClose(t *testing.T) {
 }
 
 func TestChannelNotLeakedAfterClose(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	const count = 50
 
@@ -454,6 +475,7 @@ func TestChannelNotLeakedAfterClose(t *testing.T) {
 }
 
 func TestToAll_does_not_panic_when_other_conn_is_closed(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pubA := ms.New("a", "a").(*memoryPubSub)
 	pubB := ms.New("b", "b").(*memoryPubSub)
@@ -473,6 +495,7 @@ func TestToAll_does_not_panic_when_other_conn_is_closed(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRoomDataStructure_after_Join_then_Leave(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 
@@ -522,6 +545,7 @@ func TestRoomDataStructure_after_Join_then_Leave(t *testing.T) {
 }
 
 func TestPublish_empty_room_is_noop(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 	// No rooms joined → Publish should be a no-op
@@ -534,6 +558,7 @@ func TestPublish_empty_room_is_noop(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestInitRegistration(t *testing.T) {
+	t.Parallel()
 	ms := &memorySender{}
 	assert.Equal(t, "ws_sender_memory", ms.Name())
 }
@@ -558,11 +583,13 @@ func TestInitialize_sets_maps_and_db(t *testing.T) {
 }
 
 func TestDestroy_returns_nil(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	assert.NoError(t, ms.Destroy())
 }
 
 func TestRun_returns_nil(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 	assert.NoError(t, pub.Run(context.TODO()))
@@ -615,6 +642,7 @@ func TestJoin_unknown_project_returns_error(t *testing.T) {
 }
 
 func TestPublish_delivers_to_matching_conn(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 	ch := pub.Subscribe()
@@ -639,6 +667,7 @@ func TestPublish_delivers_to_matching_conn(t *testing.T) {
 }
 
 func TestPublish_skips_conn_not_in_conns(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 
@@ -657,6 +686,7 @@ func TestPublish_skips_conn_not_in_conns(t *testing.T) {
 }
 
 func TestPublish_nil_pod_returns_nil(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 	// 契约允许 nil Pod（runner_test 验证 nil-safe），应直接返回 nil 而非解引用 panic。
@@ -664,6 +694,7 @@ func TestPublish_nil_pod_returns_nil(t *testing.T) {
 }
 
 func TestClose_cleans_up_rooms(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 
@@ -687,6 +718,7 @@ func TestClose_cleans_up_rooms(t *testing.T) {
 }
 
 func TestClose_keeps_room_when_other_sockets_remain(t *testing.T) {
+	t.Parallel()
 	ms := newTestSender()
 	pub := ms.New("u", "id").(*memoryPubSub)
 

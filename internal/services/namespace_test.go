@@ -25,6 +25,7 @@ import (
 )
 
 func TestNewNamespaceSvc_Creation(t *testing.T) {
+	t.Parallel()
 	svc, _ := newNamespaceSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.nsBiz)
@@ -33,6 +34,7 @@ func TestNewNamespaceSvc_Creation(t *testing.T) {
 }
 
 func TestNamespaceSvc_Create_NamespaceTerminating(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -66,6 +68,7 @@ func TestNamespaceSvc_Create_NamespaceTerminating(t *testing.T) {
 }
 
 func TestNamespaceSvc_Create_Exists(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -86,6 +89,7 @@ func TestNamespaceSvc_Create_Exists(t *testing.T) {
 // 不能把私有空间完整对象（描述/成员/创建者）返回给无权限用户——与 IsExists
 // "私有空间视同不存在"的隐藏语义对齐，闭合幂等放行的元数据泄露面。
 func TestNamespaceSvc_Create_IgnoreIfExists_PrivateDenied(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -108,6 +112,7 @@ func TestNamespaceSvc_Create_IgnoreIfExists_PrivateDenied(t *testing.T) {
 }
 
 func TestNamespaceSvc_Create_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -153,6 +158,7 @@ func TestNamespaceSvc_Create_Success(t *testing.T) {
 
 // 创建成功但自动关注失败：namespace 仍创建成功，错误只打日志不阻断。
 func TestNamespaceSvc_Create_FavoriteError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -178,6 +184,7 @@ func TestNamespaceSvc_Create_FavoriteError(t *testing.T) {
 
 // DB 记录创建失败时必须回滚本次刚创建的 k8s namespace，避免孤儿资源。
 func TestNamespaceSvc_Create_RollbackOnDbError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -199,6 +206,7 @@ func TestNamespaceSvc_Create_RollbackOnDbError(t *testing.T) {
 }
 
 func TestNamespaceSvc_Create_RollbackDeleteError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -220,6 +228,7 @@ func TestNamespaceSvc_Create_RollbackDeleteError(t *testing.T) {
 }
 
 func TestNamespaceSvc_Create_AlreadyExists(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
@@ -234,6 +243,7 @@ func TestNamespaceSvc_Create_AlreadyExists(t *testing.T) {
 }
 
 func TestNamespaceSvc_Create_AlreadyExists_Adopt(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -287,6 +297,7 @@ func TestNamespaceSvc_Create_AlreadyExists_Adopt(t *testing.T) {
 }
 
 func TestNamespaceSvc_Create_FindByNameError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -304,6 +315,7 @@ func TestNamespaceSvc_Create_FindByNameError(t *testing.T) {
 }
 
 func TestNamespaceSvc_Create_K8sCreateError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -321,6 +333,7 @@ func TestNamespaceSvc_Create_K8sCreateError(t *testing.T) {
 }
 
 func TestNamespaceSvc_Delete_SecretError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -349,6 +362,7 @@ func TestNamespaceSvc_Delete_SecretError(t *testing.T) {
 }
 
 func TestNamespaceSvc_Delete_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -390,6 +404,7 @@ func TestNamespaceSvc_Delete_Success(t *testing.T) {
 }
 
 func TestNamespaceSvc_Delete_Error(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -404,6 +419,7 @@ func TestNamespaceSvc_Delete_Error(t *testing.T) {
 }
 
 func TestNamespaceSvc_Delete_Error2(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -422,6 +438,7 @@ func TestNamespaceSvc_Delete_Error2(t *testing.T) {
 }
 
 func TestNamespaceSvc_Favorite_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	eventRepo := mocks.eventRepo
@@ -455,9 +472,11 @@ func TestNamespaceSvc_Favorite_Success(t *testing.T) {
 }
 
 func TestNamespaceSvc_Favorite_Error(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "namespace1"}, nil)
 	nsRepo.EXPECT().Favorite(gomock.Any(), &biz.FavoriteNamespaceInput{
 		NamespaceID: 1,
 		UserEmail:   adminEmail,
@@ -473,7 +492,53 @@ func TestNamespaceSvc_Favorite_Error(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+// 回归防护：Favorite 必须先过命名空间访问门卫。私有空间 + 非成员非 admin 用户必须被拒，
+// 且不得触达 nsRepo.Favorite / 审计日志——否则 Favorite 退化成存在性预言机：
+// 非法 id 撞外键违例报错、合法 id 静默成功，成功分支还把空间名写进调用者自己的审计事件，
+// 让人零权限读回任意空间的存在性与名称。摘掉 RequireNamespaceAccessByID 时本测试必挂。
+func TestNamespaceSvc_Favorite_AccessDenied(t *testing.T) {
+	t.Parallel()
+	svc, mocks := newNamespaceSvcWithMocks(t)
+
+	// 私有空间 + 调用者既非创建者也非成员 → CanAccessNamespace 为 false。
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{
+		Name:         "secret-ns",
+		Private:      true,
+		CreatorEmail: "someone-else@mars.com",
+	}, nil)
+
+	res, err := svc.Favorite(newOtherUserCtx(), &namespace.FavoriteRequest{
+		Id:       1,
+		Favorite: true,
+	})
+
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	assert.Nil(t, res)
+}
+
+// 取消关注（Favorite=false）走同一门卫：非成员不可对私有空间做取消关注，
+// 避免把"删收藏"当作探测空间存在性的旁路。
+func TestNamespaceSvc_Favorite_UnfavoriteAccessDenied(t *testing.T) {
+	t.Parallel()
+	svc, mocks := newNamespaceSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{
+		Name:         "secret-ns",
+		Private:      true,
+		CreatorEmail: "someone-else@mars.com",
+	}, nil)
+
+	res, err := svc.Favorite(newOtherUserCtx(), &namespace.FavoriteRequest{
+		Id:       1,
+		Favorite: false,
+	})
+
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	assert.Nil(t, res)
+}
+
 func TestNamespaceSvc_FavoriteSort_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	eventRepo := mocks.eventRepo
@@ -495,6 +560,7 @@ func TestNamespaceSvc_FavoriteSort_Success(t *testing.T) {
 }
 
 func TestNamespaceSvc_FavoriteSort_Error(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -506,6 +572,7 @@ func TestNamespaceSvc_FavoriteSort_Error(t *testing.T) {
 }
 
 func TestNamespaceSvc_IsExists_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -526,6 +593,7 @@ func TestNamespaceSvc_IsExists_Success(t *testing.T) {
 }
 
 func TestNamespaceSvc_IsExists_PrivateNamespaceHidden(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -547,6 +615,7 @@ func TestNamespaceSvc_IsExists_PrivateNamespaceHidden(t *testing.T) {
 }
 
 func TestNamespaceSvc_IsExists_NotFound(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -563,6 +632,7 @@ func TestNamespaceSvc_IsExists_NotFound(t *testing.T) {
 }
 
 func TestNamespaceSvc_IsExists_Error(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().GetMarsNamespace("namespace1").Return("namespace1")
@@ -577,6 +647,7 @@ func TestNamespaceSvc_IsExists_Error(t *testing.T) {
 }
 
 func TestNamespaceSvc_Show_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -596,6 +667,7 @@ func TestNamespaceSvc_Show_Success(t *testing.T) {
 }
 
 func TestNamespaceSvc_Show_NotFound(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -610,6 +682,7 @@ func TestNamespaceSvc_Show_NotFound(t *testing.T) {
 }
 
 func TestNamespaceSvc_Show_Error(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -624,6 +697,7 @@ func TestNamespaceSvc_Show_Error(t *testing.T) {
 }
 
 func TestNamespaceSvc_Show_Error2(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -639,6 +713,7 @@ func TestNamespaceSvc_Show_Error2(t *testing.T) {
 }
 
 func Test_namespaceSvc_UpdateDesc(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	eventRepo := mocks.eventRepo
@@ -667,6 +742,7 @@ func Test_namespaceSvc_UpdateDesc(t *testing.T) {
 }
 
 func Test_namespaceSvc_UpdateDesc_fail(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -682,6 +758,7 @@ func Test_namespaceSvc_UpdateDesc_fail(t *testing.T) {
 }
 
 func Test_namespaceSvc_UpdateDesc_fail2(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{
@@ -704,6 +781,7 @@ func Test_namespaceSvc_UpdateDesc_fail2(t *testing.T) {
 }
 
 func Test_namespaceSvc_List(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -761,6 +839,7 @@ func Test_namespaceSvc_List(t *testing.T) {
 }
 
 func Test_namespaceSvc_SyncMembers(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	eventRepo := mocks.eventRepo
@@ -795,6 +874,7 @@ func Test_namespaceSvc_SyncMembers(t *testing.T) {
 }
 
 func Test_namespaceSvc_UpdatePrivate(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	eventRepo := mocks.eventRepo
@@ -829,6 +909,7 @@ func Test_namespaceSvc_UpdatePrivate(t *testing.T) {
 // Test_namespaceSvc_UpdateConfig 覆盖批量更新配置接口：
 // 非空间管理员/超级管理员 403；owner 失败透传；owner 成功落审计。
 func Test_namespaceSvc_UpdateConfig(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	eventRepo := mocks.eventRepo
@@ -856,6 +937,7 @@ func Test_namespaceSvc_UpdateConfig(t *testing.T) {
 
 // TestNamespaceSvc_UpdateConfig_ShowError 覆盖 Show 查询失败直接上抛。
 func TestNamespaceSvc_UpdateConfig_ShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -866,6 +948,7 @@ func TestNamespaceSvc_UpdateConfig_ShowError(t *testing.T) {
 }
 
 func Test_namespaceSvc_Transfer(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	eventRepo := mocks.eventRepo
@@ -905,6 +988,7 @@ func Test_namespaceSvc_Transfer(t *testing.T) {
 }
 
 func TestNamespaceSvc_Transfer_ShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -916,6 +1000,7 @@ func TestNamespaceSvc_Transfer_ShowError(t *testing.T) {
 }
 
 func TestNamespaceSvc_Create_GetNamespaceError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -934,6 +1019,7 @@ func TestNamespaceSvc_Create_GetNamespaceError(t *testing.T) {
 }
 
 func TestNamespaceSvc_Create_CreateDockerSecretError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -963,6 +1049,7 @@ func TestNamespaceSvc_Create_CreateDockerSecretError(t *testing.T) {
 }
 
 func TestNamespaceSvc_Create_RepoCreateError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -985,6 +1072,7 @@ func TestNamespaceSvc_Create_RepoCreateError(t *testing.T) {
 }
 
 func TestNamespaceSvc_Delete_UninstallError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -1012,6 +1100,7 @@ func TestNamespaceSvc_Delete_UninstallError(t *testing.T) {
 }
 
 func TestNamespaceSvc_Delete_DeleteNamespaceError(t *testing.T) {
+	t.Parallel()
 	// F18 同类回归：k8s DeleteNamespace 返回非 NotFound 的真实错误时必须 abort，
 	// 不得继续删 DB 记录——否则留下孤儿 namespace，且轮询超时后会误发 NamespaceDeleted 事件。
 	// 改坏实现（log-and-continue）时：nsRepo.Delete/Dispatch/AuditLog 被意外调用 → 测试 FAIL。
@@ -1065,6 +1154,7 @@ func TestNamespaceSvc_Delete_DeleteNamespaceNotFoundIsClean(t *testing.T) {
 }
 
 func TestNamespaceSvc_Delete_RepoDeleteError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -1136,14 +1226,12 @@ func TestNamespaceSvc_Delete_TransientErrorContinuesPolling(t *testing.T) {
 }
 
 func TestNamespaceSvc_Favorite_ShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
-	nsRepo.EXPECT().Favorite(gomock.Any(), &biz.FavoriteNamespaceInput{
-		NamespaceID: 1,
-		UserEmail:   adminEmail,
-		Favorite:    true,
-	}).Return(nil)
+	// 门卫内的命名空间加载失败（DB/网络抖动）：原样上抛，且不得落库写收藏——
+	// 这里刻意不设 nsRepo.Favorite 期望，一旦实现绕过门卫直接写就会因"未预期调用"失败。
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("x"))
 
 	res, err := svc.Favorite(newAdminUserCtx(), &namespace.FavoriteRequest{Id: 1, Favorite: true})
@@ -1152,6 +1240,7 @@ func TestNamespaceSvc_Favorite_ShowError(t *testing.T) {
 }
 
 func TestNamespaceSvc_UpdatePrivate_ShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -1163,6 +1252,7 @@ func TestNamespaceSvc_UpdatePrivate_ShowError(t *testing.T) {
 }
 
 func TestNamespaceSvc_SyncMembers_ShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -1215,6 +1305,7 @@ func newNamespaceSvcWithMocks(t *testing.T) (*namespaceSvc, *namespaceSvcMocks) 
 // 返回已分类+已统计+已分页结果，AdminItem 字段落位（最近活跃时间 + 活跃度分类），统计基于
 // search 命中全量不随分类过滤裁剪。
 func Test_namespaceSvc_AdminList(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	now := time.Now()
 	mocks.nsRepo.EXPECT().ListAdminPage(gomock.Any(), gomock.Any()).Return(&biz.AdminListPageResult{
@@ -1262,6 +1353,7 @@ func Test_namespaceSvc_AdminList(t *testing.T) {
 // Test_namespaceSvc_AdminList_LastActiveAt 管理列表最近活跃时间：空间下所有项目
 // UpdatedAt 最大值转 RFC3339 字符串，由服务端算好返回（前端零计算）。
 func Test_namespaceSvc_AdminList_LastActiveAt(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	base := time.Date(2026, 8, 20, 10, 0, 0, 0, time.UTC)
 	mocks.nsRepo.EXPECT().ListAdminPage(gomock.Any(), gomock.Any()).Return(&biz.AdminListPageResult{
@@ -1287,6 +1379,7 @@ func Test_namespaceSvc_AdminList_LastActiveAt(t *testing.T) {
 
 // Test_namespaceSvc_AdminList_Error 管理列表失败路径：ListAdminPage 查询错误上抛。
 func Test_namespaceSvc_AdminList_Error(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().ListAdminPage(gomock.Any(), gomock.Any()).Return(nil, errors.New("boom"))
 
@@ -1297,6 +1390,7 @@ func Test_namespaceSvc_AdminList_Error(t *testing.T) {
 
 // Test_namespaceSvc_AdminList_DefaultPagination 空分页参数回退默认值（page=1、page_size=15）。
 func Test_namespaceSvc_AdminList_DefaultPagination(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newNamespaceSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().ListAdminPage(gomock.Any(), gomock.Any()).Return(&biz.AdminListPageResult{}, nil)
 
@@ -1310,6 +1404,7 @@ func Test_namespaceSvc_AdminList_DefaultPagination(t *testing.T) {
 // Test_namespaceSvc_Authorize 授权门禁：AdminList 未进 allowlist（admin 专属），
 // 其余 12 个用户方法全部在 allowlist 内放行普通用户，逐个覆盖防漏。
 func Test_namespaceSvc_Authorize(t *testing.T) {
+	t.Parallel()
 	svc, _ := newNamespaceSvcWithMocks(t)
 
 	// admin：管理后台 AdminList 放行。

@@ -84,7 +84,8 @@
 |---|---|---|---|
 | namespace | Show | 🛡️ `RequireNamespaceAccessByID` | namespace.go:165 |
 | namespace | Transfer / Delete / UpdatePrivate / SyncMembers | 🏠 `RequireNamespaceOwner` | namespace.go:55 `showNsAndCheckOwner` |
-| namespace | List / Create / Favorite / IsExists | 🔑 | List 按 user 过滤；IsExists 私有空间视同不存在；Create+IgnoreIfExists 命中无权访问空间返 403（namespace.go:139） |
+| namespace | List / Create / IsExists | 🔑 | List 按 user 过滤；IsExists 私有空间视同不存在；Create+IgnoreIfExists 命中无权访问空间返 403（namespace.go:139） |
+| namespace | Favorite | 🛡️ `RequireNamespaceAccessByID` | services/namespace.go:320（缺此校验会退化成空间存在性预言机，见下） |
 | namespace | **UpdateDesc** | 🔑 登录即可 | ⚠️ 无 owner/访问校验，见 §6.1 |
 | project | Show / MemoryCpuAndEndpoints / Delete / Version / AllContainers | 🛡️ `RequireProjectAccess` | project.go:206 |
 | project | WebApply / Apply | 🛡️ `RequireNamespaceAccessByID` | deploy/apply.go:62（私有空间成员即可部署） |
@@ -114,7 +115,8 @@
 | POST /api/files（上传） | 🔑 authenticated | file_handler.go:62（authHandler 包装） |
 | GET /api/download_file/{id} | 📄 `RequireFileAccess` | file_handler.go:104 |
 | POST /api/copy_from_pod | 🛡️ `RequireNamespaceAccessByName` | file_handler.go:144 |
-| /api/ws_info、/ws | 🔑 authenticated | httphandler.go:59（RegisterWsRoute） |
+| /api/ws_info | 🆓 公开（仅 `Recovery/RouteLogger/AllowCORS`） | httphandler.go:60 注册在**裸 router**（不经 gmux 鉴权链），INFO 为调试探活端点；见 §6.5 |
+| /ws | 🆓 握手公开，鉴权在 `HandleAuthorize` 帧 | httphandler.go:61；controller.go:170 先 `upgrader.Upgrade` 建连，鉴权发生在后续 `HandleAuthorize` 帧（协议固有），未鉴权连接在 `pongWait` 内可保活 |
 | /doc/swagger.json、/docs/ | 🆓 公开（仅 HttpCache） | swagger_handler.go:26 |
 
 > gRPC file 服务的 admin 门禁与文件所有者判定是**两条独立规则**：HTTP 下载与 gRPC ShowRecords 共用 `RequireFileAccess` 放行文件所有者/admin，其余 gRPC 文件管理（列表/磁盘信息/删除）仍走 Authorize admin 门禁。ShowRecords 先 allowlist 过 admin 门禁，再在方法体内 `RequireFileAccess` 做所有者判定——两层叠加，普通用户仅能回放自己的会话。
@@ -135,3 +137,10 @@
 `IgnoreIfExists=true` 命中已存在命名空间时原本原样返回该空间完整对象——`preCheckNs` 来自全局 `FindByName`（不感知权限），若命中的是私有空间且调用者无权访问，描述/成员邮箱/创建者等元数据会泄露给无权限用户。已修复（services/namespace.go:139）：放行前先 `n.access.CanAccessNamespace` 校验，无权访问直接 403，与 IsExists"私有空间视同不存在"的隐藏语义对齐。
 
 **残留（可接受）**：`IgnoreIfExists=false` 的 AlreadyExists 响应仍向调用者暴露同名空间"存在"这一事实（存在性预言机）。因 k8s 命名空间全局唯一，此事实在集群层本就公开，无法彻底消除；代价是 IsExists 的存在性隐藏被 Create 部分绕过。**保持不变量**：Create 的 FindByName 预查必须是全局查（不按权限过滤）——若改成权限过滤，无权限用户会被引导去 k8s 创建同名空间，撞 k8s 全局唯一性后反推"存在"反而更糟，且幂等部署会误判重复创建。
+
+### 6.5 /api/ws_info 与 /ws —— 免登录端点（文档已对齐实现，非缺口）
+
+`RegisterWsRoute`（httphandler.go:59-62）把两个端点注册在**裸 `router`** 上而非 `gmux`；之后的 `router.PathPrefix("/api/")`（http.go:160）只兜底未被精确匹配的路径，`gmux` 的鉴权链不经此处。两者只过 `defaultMiddlewares`（http.go:29-33：`Recovery/RouteLogger/AllowCORS`，均无鉴权）。
+
+- `/api/ws_info`：`websocketManager.Info`（controller.go:159-165）零校验直接返回 `sub.Info()`——redis 后端为 `{subscribers, id}`，memory 后端为当前**全部连接的 id→uid 映射**（wssender/memory/memory.go:239-242）。定位是调试探活端点、非业务数据面；uid 在 `Serve` 中默认随机 uuid（仅客户端显式传 `?uid=` 才可控，controller.go:180-184），不构成真实用户身份泄露。
+- `/ws`：`upgrader.Upgrade`（controller.go:170）先握手建连，鉴权发生在建连后的 `HandleAuthorize` 帧——这是 WebSocket over HTTP 的协议固有顺序（握手阶段本就拿不到业务鉴权帧），"握手即鉴权"无法实现。代价是预认证连接可在 `pongWait` 内保活，且每连接即占 3 个 goroutine + 1 个 pubsub，**无限速/连接上限**；如需收敛，需在 `Serve` 入口加连接数上限或握手期 token 预校验。

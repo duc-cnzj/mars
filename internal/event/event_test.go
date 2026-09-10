@@ -13,11 +13,13 @@ import (
 )
 
 func TestEvent_String(t *testing.T) {
+	t.Parallel()
 	event := Event("testEvent")
 	assert.Equal(t, "testEvent", event.String())
 }
 
 func TestDispatcher_Listen(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	dispatcher := NewDispatcher(logger)
 
@@ -29,6 +31,7 @@ func TestDispatcher_Listen(t *testing.T) {
 }
 
 func TestDispatcher_GetListeners(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	dispatcher := NewDispatcher(logger)
 
@@ -41,6 +44,7 @@ func TestDispatcher_GetListeners(t *testing.T) {
 // GetListeners must return a copy: appending to it must not grow the
 // dispatcher's internal registration.
 func TestDispatcher_GetListeners_ReturnsCopy(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	dispatcher := NewDispatcher(logger)
 
@@ -55,6 +59,7 @@ func TestDispatcher_GetListeners_ReturnsCopy(t *testing.T) {
 // List must return a copy: mutating the returned map or its slices must not
 // affect the dispatcher's internal registration.
 func TestDispatcher_List_ReturnsCopy(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	dispatcher := NewDispatcher(logger)
 
@@ -73,6 +78,7 @@ func TestDispatcher_List_ReturnsCopy(t *testing.T) {
 // payload and event (even when the listener returns an error) and Shutdown
 // stops the processing loop.
 func TestDispatcher_RunAndDispatch(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	dispatcher := NewDispatcher(logger)
 
@@ -106,6 +112,7 @@ func TestDispatcher_RunAndDispatch(t *testing.T) {
 // fires, the unhandled event has been dequeued and its (empty) listener set
 // consulted.
 func TestDispatcher_Dispatch_NoListeners(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	dispatcher := NewDispatcher(logger)
 
@@ -130,6 +137,7 @@ func TestDispatcher_Dispatch_NoListeners(t *testing.T) {
 
 // Run must stop when the caller's context is cancelled.
 func TestDispatcher_Run_ContextDone(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	logger := mlog.NewMockLogger(m)
@@ -149,6 +157,7 @@ func TestDispatcher_Run_ContextDone(t *testing.T) {
 
 // Run must stop when the event channel is closed.
 func TestDispatcher_Run_ChannelClosed(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	logger := mlog.NewMockLogger(m)
@@ -169,6 +178,7 @@ func TestDispatcher_Run_ChannelClosed(t *testing.T) {
 // Dispatch must never block: when the buffer is full, the event is dropped
 // and a warning is logged.
 func TestDispatcher_Dispatch_ChannelFull(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	logger := mlog.NewMockLogger(m)
@@ -189,6 +199,7 @@ func TestDispatcher_Dispatch_ChannelFull(t *testing.T) {
 // Run 循环阻塞在 sem 发送也必须能响应调用方 ctx 取消退出，否则 Shutdown 后该 goroutine 泄漏。
 // 覆盖 Run 内层 select 的 <-ctx.Done() 分支。
 func TestDispatcher_Run_SemFull_CallCtxDone(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	callCtx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -230,8 +241,9 @@ func TestDispatcher_Run_SemFull_CallCtxDone(t *testing.T) {
 
 // TestDispatcher_Run_ListenerPanic 验证监听器 panic 被 HandlePanic 兜底：监听器抛 panic
 // 不会击穿 Run 循环，后续分发的其它事件仍能被正常处理。注意：panic 会沿着当前 goroutine
-// 的 for 循环向上展开（event.go:117），同事件的后续监听器会被跳过，但整个 dispatcher 存活。
+// 的分发 for 循环向上展开，同事件的后续监听器会被跳过，但整个 dispatcher 存活。
 func TestDispatcher_Run_ListenerPanic(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	dispatcher := NewDispatcher(logger)
 
@@ -269,6 +281,7 @@ func TestDispatcher_Run_ListenerPanic(t *testing.T) {
 // TestDispatcher_Run_SemFull_Shutdown 回归：与 CallCtxDone 对称，覆盖 Shutdown（内部 ctx）
 // 取消时穿过内层 sem select 退出，即 <-d.ctx.Done() 分支。
 func TestDispatcher_Run_SemFull_Shutdown(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	dCtx, dCancel := context.WithCancel(context.TODO())
 

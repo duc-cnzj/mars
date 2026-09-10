@@ -15,6 +15,7 @@ import (
 // Test_clusterSvc_DeployTrend_BucketsZeroFill 成功路径：repo 回两条位于不同天的 created_at，
 // 服务端按本地天界分桶：非零落在对应天、中间无部署的天补 0、长度恒等于 days 且升序。
 func Test_clusterSvc_DeployTrend_BucketsZeroFill(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newClusterSvcWithMocks(t)
 
 	loc := time.Local
@@ -43,6 +44,7 @@ func Test_clusterSvc_DeployTrend_BucketsZeroFill(t *testing.T) {
 
 // Test_clusterSvc_DeployTrend_DefaultAndClamp 窗口收敛：days 缺省取默认 30；超过上限收敛到 90。
 func Test_clusterSvc_DeployTrend_DefaultAndClamp(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newClusterSvcWithMocks(t)
 
 	// days=0/缺省 → 默认 30，空仓库 → 30 天全 0
@@ -71,6 +73,7 @@ func Test_clusterSvc_DeployTrend_DefaultAndClamp(t *testing.T) {
 
 // Test_clusterSvc_DeployTrend_Error 失败路径：repo 查询失败时错误上抛（不吞错返回空表）。
 func Test_clusterSvc_DeployTrend_Error(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newClusterSvcWithMocks(t)
 
 	mocks.clRepo.EXPECT().SelectCreatedAtBetween(gomock.Any(), gomock.Any(), gomock.Any()).

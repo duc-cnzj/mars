@@ -27,6 +27,7 @@ func (fakeSlowTimer) Since(time.Time) time.Duration {
 
 // TestOpenDB 覆盖三种 driver 分支：sqlite 可用、mysql 惰性连接、未知 driver 报错。
 func TestOpenDB(t *testing.T) {
+	t.Parallel()
 	t.Run("sqlite", func(t *testing.T) {
 		drv, err := OpenDB(&config.Config{DBDriver: "sqlite", DBDatabase: "file:opendb?mode=memory&cache=shared"})
 		assert.NoError(t, err)
@@ -60,6 +61,7 @@ func TestInitDB(t *testing.T) {
 
 // TestSlowLogDriver 覆盖 Exec/Query 的慢查询日志分支与普通分支。
 func TestSlowLogDriver(t *testing.T) {
+	t.Parallel()
 	mk := func(threshold time.Duration) *slowLogDriver {
 		drv, err := OpenDB(&config.Config{DBDriver: "sqlite", DBDatabase: filepath.Join(t.TempDir(), "slow.db")})
 		require.NoError(t, err)

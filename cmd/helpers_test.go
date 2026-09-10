@@ -11,6 +11,7 @@ import (
 
 // TestFileExists 验证 fileExists 对存在/不存在路径的判定。
 func TestFileExists(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	existing := filepath.Join(dir, "config.yaml")
 	require.NoError(t, os.WriteFile(existing, []byte("x"), 0o600))
@@ -21,6 +22,7 @@ func TestFileExists(t *testing.T) {
 
 // TestGetFunctionName 验证 GetFunctionName 返回可辨识的运行时函数名。
 func TestGetFunctionName(t *testing.T) {
+	t.Parallel()
 	name := GetFunctionName(fileExists)
 	assert.NotEmpty(t, name)
 	assert.Contains(t, name, "fileExists")

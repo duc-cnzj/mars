@@ -13,11 +13,7 @@ import (
 //
 // 全部访问判定收进 AccessBiz 方法，依赖（nsRepo/projBiz）由 receiver 持有，
 // 当前用户直接走本包 MustGetUser（见 context.go），方法签名只留业务参数，
-// 无任何顶层自由函数。历史上有三个自由函数因
-// "跨包消费/纯谓词"暂留：CheckNsAccessByID 被 deploy 复用、CheckFileAccess 被
-// httphandler 直接调用、NsCanAccess 被 services 侧 IsExists 等场景当纯谓词调——
-// 三者的消费方现已统一改为持有/临时构造 AccessBiz 实例，自由函数全部清除，
-// 判定逻辑收进本接口方法（命名随之从 Check*/NsCanAccess 对齐为 Require*/Can*）。
+// 无任何顶层自由函数：判定逻辑全部收进本接口方法。
 //
 // 命名规约：报错门卫统一 Require* 前缀（必须有权，否则返回 errs.ErrorPermissionDenied）；
 // 纯布尔谓词用 Can* 前缀（不报错，供"不可访问视同不存在"的静默场景）。
@@ -64,8 +60,9 @@ type AccessBiz interface {
 	// RequireFileAccess 是文件访问门卫：校验当前用户是否为文件所有者（Username
 	// 匹配）或 admin，否则 errs.ErrorPermissionDenied。文件可能含部署配置/执行记录等
 	// 敏感内容，只允许所有者或 admin 下载，防止枚举文件 ID 拖库。
-	// HTTP 下载与 gRPC ShowRecords（回放会话）共用本门卫；其余 gRPC 文件管理
-	// （列表/磁盘信息/删除）仍走 Authorize 的 admin 门禁（RequireAdmin）。
+	// 消费方：HTTP 下载、gRPC ShowRecords（回放会话）、gRPC CopyToPod（按 FileId
+	// 拷入 pod——不校验归属则任意登录用户可传他人 FileId 读走，构成跨租户 IDOR）；
+	// 其余 gRPC 文件管理（列表/磁盘信息/删除）仍走 Authorize 的 admin 门禁（RequireAdmin）。
 	RequireFileAccess(ctx context.Context, fil *File) error
 	// CanAccessNamespace 是纯布尔谓词：判定当前用户能否访问命名空间
 	// （admin/创建者/成员/公开空间放行），不映射错误。
@@ -75,8 +72,8 @@ type AccessBiz interface {
 }
 
 // accessBiz 是 AccessBiz 的默认实现：持有实体加载 repo。
-// 用户提取直接走本包 MustGetUser（原 auth 包已并入 biz，见 context.go）——
-// 访问判定仅服务已鉴权请求，ctx 必有用户，不再需要传输层注入 getUser 回调。
+// 用户提取直接走本包 MustGetUser（见 context.go）——访问判定仅服务已鉴权请求，
+// ctx 必有用户。
 // 本实现不持有 logger：判定失败的错误日志由消费方（services 层）统一打印。
 type accessBiz struct {
 	nsRepo  NamespaceBiz
@@ -171,8 +168,6 @@ func (a *accessBiz) RequireAdmin(ctx context.Context, fullMethodName string, all
 
 // RequireFileAccess 是文件访问门卫：校验当前用户是否为文件所有者（Username
 // 匹配）或 admin，否则 errs.ErrorPermissionDenied。
-// 原先的自由函数由 httphandler 直接调用，现 httphandler 已注入 accessBiz，
-// 判定逻辑收进本方法。
 func (a *accessBiz) RequireFileAccess(ctx context.Context, fil *File) error {
 	user := MustGetUser(ctx)
 	if fil.Username == user.Name || user.IsAdmin() {

@@ -93,8 +93,7 @@ func NewClient(addr string, opts ...Option) (*Client, error) {
 
 	// buildDialOptions 恒注入传输凭据（tls==nil 时 insecure，否则 WithTransportCredentials 已加 TLS）。
 	// grpc.NewClient 对畸形 target（如含非法 percent-encoding 的 "%zz"）会构造失败返回 error，
-	// 必须透传而非丢弃——丢弃会留下 conn==nil 的 client，首次 RPC nil pointer panic
-	// （蓝军交叉审计实证，Wave 25；此前探针采样漏掉该 target 类别）。
+	// 必须透传而非丢弃——丢弃会留下 conn==nil 的 client，首次 RPC 即 nil pointer panic。
 	dial, err := grpc.NewClient(addr, c.buildDialOptions()...)
 	if err != nil {
 		return nil, err

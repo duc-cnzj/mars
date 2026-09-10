@@ -10,6 +10,7 @@ import (
 // doc/access_control.md §4.1「免登录服务」清单逐行一致。新增免登录方法必须同时更新
 // 本测试、publicMethods 与文档三处，任何一处漏改都会在此失败（防契约与实现漂移）。
 func TestPublicMethods_AlignsWithAccessControlDoc(t *testing.T) {
+	t.Parallel()
 	want := []string{
 		"/auth.Auth/Exchange",
 		"/auth.Auth/Login",

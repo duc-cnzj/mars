@@ -18,6 +18,7 @@ import (
 )
 
 func TestNewHttpHandler(t *testing.T) {
+	t.Parallel()
 	handler, mocks := newHttpHandlerWithMocks(t)
 	httpHandler := mocks.httpServer
 	assert.NotNil(t, handler)
@@ -44,6 +45,7 @@ func TestNewHttpHandler(t *testing.T) {
 }
 
 func Test_httpHandlerImpl_Shutdown_Error(t *testing.T) {
+	t.Parallel()
 	handler, mocks := newHttpHandlerWithMocks(t)
 	ws := mocks.httpServer
 

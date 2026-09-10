@@ -1,7 +1,7 @@
 // Package errs 是 mars 应用领域错误词汇与协议码映射的单一事实来源。
 //
-// 它统一实现"底层错误 → gRPC/HTTP 状态码"的映射，取代原先由 internal/biz 承担
-// 的协议映射职责（biz 只表达业务语义，不再触碰 grpc status/codes）：
+// 它统一实现"底层错误 → gRPC/HTTP 状态码"的映射；biz 只表达业务语义，不触碰
+// grpc status/codes：
 //   - data 层在 repo 出口用 Wrap 构造器包裹不确定错误（查询/更新/外部 API 调用返回的错误
 //     可能是"记录不存在"也可能是"DB 断开/网络抖动"），由 Wrap 按底层错误实际类型自动归类；
 //     Wrap 自动识别 ent 错误（NotFound/Validation/Constraint）与 k8s apierrors 错误（NotFound），

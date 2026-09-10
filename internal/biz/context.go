@@ -1,10 +1,8 @@
 package biz
 
-// context.go 承载用户信息的 context 存取（原 internal/auth 包整体并入）：
-// SetUser/GetUser/MustGetUser + 私有 ctxTokenInfo key。auth 此前是单文件微包，
-// 唯一依赖就是本包的 UserInfo；由于 auth→biz 反向引用会成环，biz 无法引用
-// auth.MustGetUser，取用户回调才被逼到传输层绑定。把这三函数收进 biz 后，
-// 环物理消失：NewAccessBiz 内部直接绑 MustGetUser，wire.Value 跨包装配整个删除。
+// context.go 承载用户信息的 context 存取：SetUser/GetUser/MustGetUser + 私有
+// ctxTokenInfo key。三者置于 biz 包内，使 AccessBiz 实现可直接绑 MustGetUser，
+// 无需传输层注入取用户回调，也不引入 auth→biz 的反向依赖环。
 
 import (
 	"context"

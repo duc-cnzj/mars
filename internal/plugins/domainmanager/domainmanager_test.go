@@ -83,11 +83,13 @@ func tlsSecret(name, ns string, crt, key []byte) *corev1.Secret {
 // ---------------------------------------------------------------------------
 
 func TestSubdomain_HasIndex(t *testing.T) {
+	t.Parallel()
 	assert.True(t, Subdomain{index: 3}.HasIndex())
 	assert.False(t, Subdomain{index: -1}.HasIndex())
 }
 
 func TestSubdomain_CompleteSubdomain(t *testing.T) {
+	t.Parallel()
 	withIndex := Subdomain{projectName: "app", namespace: "devops-prod", index: 1, domainSuffix: "test.com"}
 	assert.Equal(t, "app-devops-prod-1.test.com", withIndex.CompleteSubdomain())
 
@@ -96,6 +98,7 @@ func TestSubdomain_CompleteSubdomain(t *testing.T) {
 }
 
 func TestSubdomain_MediumSubdomain(t *testing.T) {
+	t.Parallel()
 	// ns 前缀（含尾连字符，默认 "devops-"）被剥离。
 	withIndex := Subdomain{projectName: "app", namespace: "devops-prod", index: 1, nsPrefix: "devops-", domainSuffix: "test.com"}
 	assert.Equal(t, "app-prod-1.test.com", withIndex.MediumSubdomain())
@@ -109,6 +112,7 @@ func TestSubdomain_MediumSubdomain(t *testing.T) {
 }
 
 func TestSubdomain_SubStr_degrade_chain(t *testing.T) {
+	t.Parallel()
 	base := Subdomain{projectName: "app", namespace: "devops-prod", index: 1, nsPrefix: "devops-", domainSuffix: "test.com"}
 
 	// maxLen=0 直接返回完整版（该 struct 无 index，故为 app-prod.test.com）。
@@ -129,6 +133,7 @@ func TestSubdomain_SubStr_degrade_chain(t *testing.T) {
 }
 
 func TestSubdomain_SimpleSubdomain(t *testing.T) {
+	t.Parallel()
 	withIndex := Subdomain{projectName: "app", namespace: "ns", index: 1, domainSuffix: "test.com", maxLen: 20}
 	assert.Equal(t, "test.com", withIndex.SimpleSubdomain()[len(withIndex.SimpleSubdomain())-len("test.com"):])
 
@@ -137,12 +142,14 @@ func TestSubdomain_SimpleSubdomain(t *testing.T) {
 }
 
 func TestSubdomain_SimpleSubdomain_panics_when_no_room(t *testing.T) {
+	t.Parallel()
 	// leftLen <= 0 时必须 panic。
 	s := Subdomain{projectName: "app", namespace: "ns", index: -1, domainSuffix: "toolongdomain.com", maxLen: 5}
 	assert.Panics(t, func() { s.SimpleSubdomain() })
 }
 
 func TestSubdomain_substr(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "abc", substr("abc", 5))
 	assert.Equal(t, "ab", substr("abc", 2))
 }
@@ -152,21 +159,25 @@ func TestSubdomain_substr(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestValidateTLSWildcardDomain_matching(t *testing.T) {
+	t.Parallel()
 	crt, key := genCert(t, []string{"*.example.com"})
 	assert.NoError(t, validateTLSWildcardDomain(key, crt, "*.example.com"))
 }
 
 func TestValidateTLSWildcardDomain_invalid_keypair(t *testing.T) {
+	t.Parallel()
 	assert.Error(t, validateTLSWildcardDomain([]byte("bad key"), []byte("bad crt"), "*.example.com"))
 }
 
 func TestValidateTLSWildcardDomain_domain_mismatch(t *testing.T) {
+	t.Parallel()
 	crt, key := genCert(t, []string{"*.example.com"})
 	err := validateTLSWildcardDomain(key, crt, "*.other.com")
 	assert.ErrorContains(t, err, "域名和证书不匹配")
 }
 
 func TestValidateTLSWildcardDomain_string_types(t *testing.T) {
+	t.Parallel()
 	crt, key := genCert(t, []string{"*.example.com"})
 	assert.NoError(t, validateTLSWildcardDomain(string(key), string(crt), "*.example.com"))
 }
@@ -176,10 +187,12 @@ func TestValidateTLSWildcardDomain_string_types(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCertManager_Name(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "cert-manager_domain_manager", (&certManager{}).Name())
 }
 
 func TestCertManager_Initialize_valid(t *testing.T) {
+	t.Parallel()
 	d := &certManager{}
 	err := d.Initialize(dmApp{logger: mlog.NewForConfig(nil)}, map[string]any{
 		"ns_prefix":       "devops",
@@ -194,12 +207,14 @@ func TestCertManager_Initialize_valid(t *testing.T) {
 }
 
 func TestCertManager_Initialize_missing_required(t *testing.T) {
+	t.Parallel()
 	d := &certManager{}
 	err := d.Initialize(dmApp{logger: mlog.NewForConfig(nil)}, map[string]any{})
 	assert.ErrorContains(t, err, "cluster_issuer, wildcard_domain required")
 }
 
 func TestCertManager_Initialize_bad_type(t *testing.T) {
+	t.Parallel()
 	cases := map[string]any{
 		"ns_prefix":       123,
 		"cluster_issuer":  456,
@@ -214,11 +229,13 @@ func TestCertManager_Initialize_bad_type(t *testing.T) {
 }
 
 func TestCertManager_Destroy(t *testing.T) {
+	t.Parallel()
 	d := &certManager{logger: mlog.NewForConfig(nil)}
 	assert.NoError(t, d.Destroy())
 }
 
 func TestCertManager_GetCertSecretName(t *testing.T) {
+	t.Parallel()
 	d := &certManager{}
 	name := d.GetCertSecretName("my-app", 2)
 	assert.NotEmpty(t, name)
@@ -228,11 +245,13 @@ func TestCertManager_GetCertSecretName(t *testing.T) {
 }
 
 func TestCertManager_GetClusterIssuer(t *testing.T) {
+	t.Parallel()
 	d := &certManager{clusterIssuer: "letsencrypt"}
 	assert.Equal(t, "letsencrypt", d.GetClusterIssuer())
 }
 
 func TestCertManager_GetDomain_and_GetDomainByIndex(t *testing.T) {
+	t.Parallel()
 	d := &certManager{nsPrefix: "devops", domainSuffix: "example.com"}
 
 	domIdx := d.GetDomainByIndex("app", "devops-prod", 2, 0)
@@ -242,6 +261,7 @@ func TestCertManager_GetDomain_and_GetDomainByIndex(t *testing.T) {
 }
 
 func TestCertManager_GetCerts_empty(t *testing.T) {
+	t.Parallel()
 	d := &certManager{}
 	name, key, crt := d.GetCerts()
 	assert.Empty(t, name)
@@ -254,21 +274,25 @@ func TestCertManager_GetCerts_empty(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDefault_Name(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "default_domain_manager", (&defaultDomainManager{}).Name())
 }
 
 func TestDefault_Initialize_and_Destroy(t *testing.T) {
+	t.Parallel()
 	d := &defaultDomainManager{}
 	require.NoError(t, d.Initialize(dmApp{logger: mlog.NewForConfig(nil)}, nil))
 	assert.NoError(t, d.Destroy())
 }
 
 func TestDefault_GetDomainByIndex(t *testing.T) {
+	t.Parallel()
 	d := &defaultDomainManager{}
 	assert.Contains(t, d.GetDomainByIndex("app", "devops-prod", 1, 0), "faker-domain.local")
 }
 
 func TestDefault_empty_cert_methods(t *testing.T) {
+	t.Parallel()
 	d := &defaultDomainManager{}
 	assert.Empty(t, d.GetCertSecretName("app", 1))
 	assert.Empty(t, d.GetClusterIssuer())
@@ -283,10 +307,12 @@ func TestDefault_empty_cert_methods(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestManual_Name(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "manual_domain_manager", (&manualDomainManager{}).Name())
 }
 
 func TestManual_Initialize_valid(t *testing.T) {
+	t.Parallel()
 	crt, key := genCert(t, []string{"*.example.com"})
 	m := &manualDomainManager{}
 	err := m.Initialize(dmApp{logger: mlog.NewForConfig(nil)}, map[string]any{
@@ -300,12 +326,14 @@ func TestManual_Initialize_valid(t *testing.T) {
 }
 
 func TestManual_Initialize_missing_required(t *testing.T) {
+	t.Parallel()
 	m := &manualDomainManager{}
 	err := m.Initialize(dmApp{logger: mlog.NewForConfig(nil)}, map[string]any{})
 	assert.ErrorContains(t, err, "tls_crt, tls_key, wildcard_domain required")
 }
 
 func TestManual_Initialize_cert_mismatch(t *testing.T) {
+	t.Parallel()
 	crt, key := genCert(t, []string{"*.other.com"})
 	m := &manualDomainManager{}
 	err := m.Initialize(dmApp{logger: mlog.NewForConfig(nil)}, map[string]any{
@@ -317,6 +345,7 @@ func TestManual_Initialize_cert_mismatch(t *testing.T) {
 }
 
 func TestManual_Initialize_bad_type(t *testing.T) {
+	t.Parallel()
 	crt, key := genCert(t, []string{"*.example.com"})
 	cases := map[string]any{
 		"ns_prefix":       1,
@@ -333,22 +362,26 @@ func TestManual_Initialize_bad_type(t *testing.T) {
 }
 
 func TestManual_Destroy(t *testing.T) {
+	t.Parallel()
 	m := &manualDomainManager{logger: mlog.NewForConfig(nil)}
 	assert.NoError(t, m.Destroy())
 }
 
 func TestManual_GetDomainByIndex(t *testing.T) {
+	t.Parallel()
 	m := &manualDomainManager{nsPrefix: "devops", domainSuffix: "example.com"}
 	assert.Contains(t, m.GetDomainByIndex("app", "devops-prod", 3, 0), "-3.")
 }
 
 func TestManual_GetCertSecretName_and_issuer(t *testing.T) {
+	t.Parallel()
 	m := &manualDomainManager{}
 	assert.Equal(t, ManualCertSecretName, m.GetCertSecretName("app", 1))
 	assert.Empty(t, m.GetClusterIssuer())
 }
 
 func TestManual_GetCerts(t *testing.T) {
+	t.Parallel()
 	m := &manualDomainManager{tlsKey: "k", tlsCrt: "c"}
 	name, key, crt := m.GetCerts()
 	assert.Equal(t, ManualCertSecretName, name)
@@ -361,6 +394,7 @@ func TestManual_GetCerts(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSyncSecret_Name(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "sync_secret_domain_manager", (&syncSecretDomainManager{}).Name())
 }
 
@@ -374,6 +408,7 @@ func syncSecretArgs() map[string]any {
 }
 
 func TestSyncSecret_Initialize_valid(t *testing.T) {
+	t.Parallel()
 	crt, key := genCert(t, []string{"*.example.com"})
 	secret := tlsSecret("tls-secret", "default", crt, key)
 
@@ -387,18 +422,21 @@ func TestSyncSecret_Initialize_valid(t *testing.T) {
 }
 
 func TestSyncSecret_Initialize_missing_required(t *testing.T) {
+	t.Parallel()
 	d := &syncSecretDomainManager{}
 	err := d.Initialize(dmApp{logger: mlog.NewForConfig(nil)}, map[string]any{})
 	assert.ErrorContains(t, err, "secret_namespace, secret_name, wildcard_domain required")
 }
 
 func TestSyncSecret_Initialize_secret_not_found(t *testing.T) {
+	t.Parallel()
 	d := &syncSecretDomainManager{}
 	err := d.Initialize(dmApp{k8sRepo: newSecretRepo(t, "tls-secret", nil, errors.New("secret not found")), logger: mlog.NewForConfig(nil)}, syncSecretArgs())
 	assert.Error(t, err)
 }
 
 func TestSyncSecret_Initialize_wrong_secret_type(t *testing.T) {
+	t.Parallel()
 	crt, key := genCert(t, []string{"*.example.com"})
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "tls-secret", Namespace: "default"},
@@ -415,6 +453,7 @@ func TestSyncSecret_Initialize_wrong_secret_type(t *testing.T) {
 }
 
 func TestSyncSecret_Initialize_cert_mismatch(t *testing.T) {
+	t.Parallel()
 	crt, key := genCert(t, []string{"*.other.com"})
 	secret := tlsSecret("tls-secret", "default", crt, key)
 
@@ -424,6 +463,7 @@ func TestSyncSecret_Initialize_cert_mismatch(t *testing.T) {
 }
 
 func TestSyncSecret_Initialize_bad_type(t *testing.T) {
+	t.Parallel()
 	// 类型校验发生在 GetSecret 调用之前，故无需设置 GetSecret 期望。
 	d := &syncSecretDomainManager{}
 
@@ -435,16 +475,19 @@ func TestSyncSecret_Initialize_bad_type(t *testing.T) {
 }
 
 func TestSyncSecret_Destroy(t *testing.T) {
+	t.Parallel()
 	d := &syncSecretDomainManager{logger: mlog.NewForConfig(nil)}
 	assert.NoError(t, d.Destroy())
 }
 
 func TestSyncSecret_GetDomainByIndex(t *testing.T) {
+	t.Parallel()
 	d := &syncSecretDomainManager{nsPrefix: "devops", domainSuffix: "example.com"}
 	assert.Contains(t, d.GetDomainByIndex("app", "devops-prod", 1, 0), "example.com")
 }
 
 func TestSyncSecret_GetCertSecretName_and_issuer(t *testing.T) {
+	t.Parallel()
 	d := &syncSecretDomainManager{}
 	assert.Equal(t, SyncSecretSecretName, d.GetCertSecretName("app", 1))
 	assert.Equal(t, SyncSecretSecretName, ManualCertSecretName)
@@ -452,6 +495,7 @@ func TestSyncSecret_GetCertSecretName_and_issuer(t *testing.T) {
 }
 
 func TestSyncSecret_GetCerts_success(t *testing.T) {
+	t.Parallel()
 	crt, key := genCert(t, []string{"*.example.com"})
 	secret := tlsSecret("tls-secret", "default", crt, key)
 
@@ -469,6 +513,7 @@ func TestSyncSecret_GetCerts_success(t *testing.T) {
 }
 
 func TestSyncSecret_GetCerts_read_error(t *testing.T) {
+	t.Parallel()
 	// GetSecret 失败 → 返回空三元组。
 	d := &syncSecretDomainManager{
 		k8sRepo:         newSecretRepo(t, "missing", nil, errors.New("secret not found")),
@@ -485,6 +530,7 @@ func TestSyncSecret_GetCerts_read_error(t *testing.T) {
 
 // TestRegister_interface ensures implementations satisfy app.DomainManager.
 func TestRegister_interface(t *testing.T) {
+	t.Parallel()
 	var _ app.DomainManager = (*certManager)(nil)
 	var _ app.DomainManager = (*defaultDomainManager)(nil)
 	var _ app.DomainManager = (*manualDomainManager)(nil)

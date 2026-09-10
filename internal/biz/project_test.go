@@ -146,6 +146,7 @@ func newProjectBizWithClRepo(repo ProjectRepo, clRepo ChangelogRepo) ProjectBiz 
 }
 
 func TestProjectBiz_Create_NilInput(t *testing.T) {
+	t.Parallel()
 	b := newProjectBizForTest(&fakeProjectRepoForProjectBiz{})
 	got, err := b.Create(context.TODO(), nil)
 	assert.Nil(t, got)
@@ -154,6 +155,7 @@ func TestProjectBiz_Create_NilInput(t *testing.T) {
 }
 
 func TestProjectBiz_Create_EmptyName(t *testing.T) {
+	t.Parallel()
 	b := newProjectBizForTest(&fakeProjectRepoForProjectBiz{})
 	got, err := b.Create(context.TODO(), &CreateProjectInput{Name: "", NamespaceID: 1, RepoID: 1})
 	assert.Nil(t, got)
@@ -162,6 +164,7 @@ func TestProjectBiz_Create_EmptyName(t *testing.T) {
 }
 
 func TestProjectBiz_Create_InvalidNamespaceID(t *testing.T) {
+	t.Parallel()
 	b := newProjectBizForTest(&fakeProjectRepoForProjectBiz{})
 	got, err := b.Create(context.TODO(), &CreateProjectInput{Name: "app", NamespaceID: 0, RepoID: 1})
 	assert.Nil(t, got)
@@ -170,6 +173,7 @@ func TestProjectBiz_Create_InvalidNamespaceID(t *testing.T) {
 }
 
 func TestProjectBiz_Create_InvalidRepoID(t *testing.T) {
+	t.Parallel()
 	b := newProjectBizForTest(&fakeProjectRepoForProjectBiz{})
 	got, err := b.Create(context.TODO(), &CreateProjectInput{Name: "app", NamespaceID: 1, RepoID: 0})
 	assert.Nil(t, got)
@@ -178,6 +182,7 @@ func TestProjectBiz_Create_InvalidRepoID(t *testing.T) {
 }
 
 func TestProjectBiz_Create_Valid(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	b := newProjectBizForTest(f)
 	got, err := b.Create(context.TODO(), &CreateProjectInput{Name: "app", NamespaceID: 1, RepoID: 1})
@@ -187,6 +192,7 @@ func TestProjectBiz_Create_Valid(t *testing.T) {
 }
 
 func TestProjectBiz_Delete_InvalidID(t *testing.T) {
+	t.Parallel()
 	b := newProjectBizForTest(&fakeProjectRepoForProjectBiz{})
 	err := b.Delete(context.TODO(), 0)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -194,6 +200,7 @@ func TestProjectBiz_Delete_InvalidID(t *testing.T) {
 }
 
 func TestProjectBiz_Delete_Valid(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	b := newProjectBizForTest(f)
 	assert.NoError(t, b.Delete(context.TODO(), 1))
@@ -201,6 +208,7 @@ func TestProjectBiz_Delete_Valid(t *testing.T) {
 }
 
 func TestProjectBiz_UpdateProject_InvalidID(t *testing.T) {
+	t.Parallel()
 	b := newProjectBizForTest(&fakeProjectRepoForProjectBiz{})
 	got, err := b.UpdateProject(context.TODO(), &UpdateProjectInput{ID: 0})
 	assert.Nil(t, got)
@@ -209,6 +217,7 @@ func TestProjectBiz_UpdateProject_InvalidID(t *testing.T) {
 }
 
 func TestProjectBiz_UpdateProject_Valid(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	b := newProjectBizForTest(f)
 	got, err := b.UpdateProject(context.TODO(), &UpdateProjectInput{ID: 1})
@@ -221,6 +230,7 @@ func TestProjectBiz_UpdateProject_Valid(t *testing.T) {
 // 三个值序列（EnvValues/ExtraValues/FinalExtraValues）按 key/path 排序后封进 AnyYamlPrettier。
 // 在 biz 包内直测而非跨包，保证计入 biz 自身 coverprofile（跨包测试不贡献）。
 func TestProject_ToEventYaml(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		project  *Project
@@ -287,6 +297,7 @@ func TestProject_ToEventYaml(t *testing.T) {
 // ---- 容器/端点派生 ----
 
 func TestProjectBiz_GetAllActiveContainers(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	k := &fakeEndpointK8sRepo{pods: []*corev1.Pod{{
 		ObjectMeta: metav1.ObjectMeta{Name: "pod", Namespace: "ns"},
@@ -308,6 +319,7 @@ func TestProjectBiz_GetAllActiveContainers(t *testing.T) {
 }
 
 func TestProjectBiz_GetProjectEndpointsInNamespace(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	k := &fakeEndpointK8sRepo{
 		gatewayInstalled: true,
@@ -338,6 +350,7 @@ func TestProjectBiz_GetProjectEndpointsInNamespace(t *testing.T) {
 }
 
 func TestProjectBiz_GetAllActiveContainers_ShowErr(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{showErr: errors.New("show down")}
 	b := newProjectBizWithK8s(f, &fakeEndpointK8sRepo{})
 	got, err := b.GetAllActiveContainers(context.TODO(), 1)
@@ -346,6 +359,7 @@ func TestProjectBiz_GetAllActiveContainers_ShowErr(t *testing.T) {
 }
 
 func TestProjectBiz_ResourceTree(t *testing.T) {
+	t.Parallel()
 	uid := kmetatypes.UID("dep-uid")
 	f := &fakeProjectRepoForProjectBiz{}
 	k := &fakeTreeK8sRepo{
@@ -367,6 +381,7 @@ func TestProjectBiz_ResourceTree(t *testing.T) {
 }
 
 func TestProjectBiz_ResourceTree_ShowErr(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{showErr: errors.New("show down")}
 	b := newProjectBizWithK8s(f, &fakeTreeK8sRepo{})
 	got, err := b.ResourceTree(context.TODO(), 1)
@@ -375,6 +390,7 @@ func TestProjectBiz_ResourceTree_ShowErr(t *testing.T) {
 }
 
 func TestProjectBiz_GetProjectEndpointsInNamespace_FindByIDsErr(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{findByIDsErr: errors.New("ids down")}
 	b := newProjectBizWithK8s(f, &fakeEndpointK8sRepo{})
 	got, err := b.GetProjectEndpointsInNamespace(context.TODO(), "ns", 1)
@@ -387,6 +403,7 @@ func TestProjectBiz_GetProjectEndpointsInNamespace_FindByIDsErr(t *testing.T) {
 // 指定在第几次调用返回错误，以分别命中 LoadBalancer 与 NodePort 的错误分支。
 
 func TestProjectBiz_GetProjectEndpointsInNamespace_IngressErr(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	k := &fakeEndpointK8sRepo{listIngressesErr: errors.New("ing down")}
 	b := newProjectBizWithK8s(f, k)
@@ -396,6 +413,7 @@ func TestProjectBiz_GetProjectEndpointsInNamespace_IngressErr(t *testing.T) {
 }
 
 func TestProjectBiz_GetProjectEndpointsInNamespace_LBErr(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	k := &fakeEndpointK8sRepo{listServicesErr: errors.New("svc down")}
 	b := newProjectBizWithK8s(f, k)
@@ -405,6 +423,7 @@ func TestProjectBiz_GetProjectEndpointsInNamespace_LBErr(t *testing.T) {
 }
 
 func TestProjectBiz_GetProjectEndpointsInNamespace_NodePortErr(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	// 第一次 ListServices（LB 调用）成功，第二次（NodePort 调用）失败。
 	k := &fakeEndpointK8sRepo{listServicesErr: errors.New("svc down"), servicesFailOnCall: 2}
@@ -415,6 +434,7 @@ func TestProjectBiz_GetProjectEndpointsInNamespace_NodePortErr(t *testing.T) {
 }
 
 func TestProjectBiz_GetProjectEndpointsInNamespace_HTTPRouteErr(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	k := &fakeEndpointK8sRepo{gatewayInstalled: true, listHTTPRoutesErr: errors.New("route down")}
 	b := newProjectBizWithK8s(f, k)
@@ -426,6 +446,7 @@ func TestProjectBiz_GetProjectEndpointsInNamespace_HTTPRouteErr(t *testing.T) {
 // ---- 纯透传查询 ----
 
 func TestProjectBiz_ListAllProjectBriefs(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	b := newProjectBizForTest(f)
 	got, err := b.ListAllProjectBriefs(context.TODO())
@@ -436,6 +457,7 @@ func TestProjectBiz_ListAllProjectBriefs(t *testing.T) {
 }
 
 func TestProjectBiz_List(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	b := newProjectBizForTest(f)
 	got, pag, err := b.List(context.TODO(), &ListProjectInput{})
@@ -446,6 +468,7 @@ func TestProjectBiz_List(t *testing.T) {
 }
 
 func TestProjectBiz_Show(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	b := newProjectBizForTest(f)
 	got, err := b.Show(context.TODO(), 5)
@@ -455,6 +478,7 @@ func TestProjectBiz_Show(t *testing.T) {
 }
 
 func TestProjectBiz_Version(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	b := newProjectBizForTest(f)
 	ver, err := b.Version(context.TODO(), 1)
@@ -464,6 +488,7 @@ func TestProjectBiz_Version(t *testing.T) {
 }
 
 func TestProjectBiz_FindByName(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	b := newProjectBizForTest(f)
 	got, err := b.FindByName(context.TODO(), "app", 2)
@@ -473,6 +498,7 @@ func TestProjectBiz_FindByName(t *testing.T) {
 }
 
 func TestProjectBiz_UpdateDeployStatus(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	b := newProjectBizForTest(f)
 	got, err := b.UpdateDeployStatus(context.TODO(), 1, types.Deploy_StatusDeployed)
@@ -482,6 +508,7 @@ func TestProjectBiz_UpdateDeployStatus(t *testing.T) {
 }
 
 func TestProjectBiz_UpdateVersion(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	b := newProjectBizForTest(f)
 	got, err := b.UpdateVersion(context.TODO(), 1, 9)
@@ -491,6 +518,7 @@ func TestProjectBiz_UpdateVersion(t *testing.T) {
 }
 
 func TestProjectBiz_FindByVersion(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	b := newProjectBizForTest(f)
 	got, err := b.FindByVersion(context.TODO(), 1, 4)
@@ -500,6 +528,7 @@ func TestProjectBiz_FindByVersion(t *testing.T) {
 }
 
 func TestProjectBiz_UpdateStatusByVersion(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{}
 	b := newProjectBizForTest(f)
 	got, err := b.UpdateStatusByVersion(context.TODO(), 1, types.Deploy_StatusFailed, 4)
@@ -513,6 +542,7 @@ func TestProjectBiz_UpdateStatusByVersion(t *testing.T) {
 
 // Test_ClassifyLiveness 表驱动锁定分类边界：≤30 天活跃、≥90 天僵尸、中间休眠。
 func Test_ClassifyLiveness(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	tests := []struct {
 		name      string
@@ -535,6 +565,7 @@ func Test_ClassifyLiveness(t *testing.T) {
 // TestProjectBiz_Liveness 薄传递：分类/统计/过滤/分页由 repo 下沉 SQL，biz 透传入参并
 // 装配部署次数与结果。
 func TestProjectBiz_Liveness(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	f := &fakeProjectRepoForProjectBiz{
 		listLivenessPageResult: &LivenessPageResult{
@@ -573,6 +604,7 @@ func TestProjectBiz_Liveness(t *testing.T) {
 // TestProjectBiz_Liveness_FilterByKind 分类过滤透传：Liveness 参数透传 repo，统计/条目
 // 直接反映 repo 结果（SQL 侧过滤）。
 func TestProjectBiz_Liveness_FilterByKind(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	f := &fakeProjectRepoForProjectBiz{
 		listLivenessPageResult: &LivenessPageResult{
@@ -597,6 +629,7 @@ func TestProjectBiz_Liveness_FilterByKind(t *testing.T) {
 // TestProjectBiz_Liveness_Pagination 分页参数透传：Page/PageSize 交给 repo，结果直接反映
 // repo 返回的页内条目。
 func TestProjectBiz_Liveness_Pagination(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	f := &fakeProjectRepoForProjectBiz{
 		listLivenessPageResult: &LivenessPageResult{
@@ -620,6 +653,7 @@ func TestProjectBiz_Liveness_Pagination(t *testing.T) {
 
 // TestProjectBiz_Liveness_PaginationOutOfRange 越界页：repo 返回空条目但计数保留全量。
 func TestProjectBiz_Liveness_PaginationOutOfRange(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{
 		listLivenessPageResult: &LivenessPageResult{Projects: nil, Count: 5},
 	}
@@ -634,6 +668,7 @@ func TestProjectBiz_Liveness_PaginationOutOfRange(t *testing.T) {
 
 // TestProjectBiz_Liveness_ListLivenessPageErr 分页查询失败整体上抛。
 func TestProjectBiz_Liveness_ListLivenessPageErr(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{listLivenessErr: errors.New("list down")}
 	b := newProjectBizForTest(f)
 	res, err := b.Liveness(context.TODO(), &LivenessInput{})
@@ -643,6 +678,7 @@ func TestProjectBiz_Liveness_ListLivenessPageErr(t *testing.T) {
 
 // TestProjectBiz_Liveness_CountErr 部署次数聚合失败整体上抛。
 func TestProjectBiz_Liveness_CountErr(t *testing.T) {
+	t.Parallel()
 	f := &fakeProjectRepoForProjectBiz{listLivenessPageResult: &LivenessPageResult{Projects: []*Project{{ID: 1, UpdatedAt: time.Now()}}}}
 	cl := &fakeClRepoForLiveness{err: errors.New("count down")}
 	b := newProjectBizWithClRepo(f, cl)

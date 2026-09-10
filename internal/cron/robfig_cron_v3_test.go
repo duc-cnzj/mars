@@ -13,6 +13,7 @@ import (
 )
 
 func TestCronLogger_Error(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	l := mlog.NewMockLogger(m)
@@ -22,6 +23,7 @@ func TestCronLogger_Error(t *testing.T) {
 }
 
 func TestCronLogger_Info(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	l := mlog.NewMockLogger(m)

@@ -51,7 +51,7 @@ type gitRepo struct {
 // NewGitRepo 构造 git 仓库的 repo 实现。注入 *config.Config 而非完整 dataStore：
 // gitRepo 只读 GitServerCached 判断缓存开关（ISP），不摸 DB/k8s 客户端。
 // gitServer 是惰性取数闭包：插件在 bootstrap 阶段才完成 Initialize，wire 期
-// pm.Git() 恒为 nil，首次调用方法时才实时解析（替代原 GitServerHolder 快照）。
+// pm.Git() 恒为 nil，首次调用方法时才实时解析。
 func NewGitRepo(logger mlog.Logger, c Cache, gitServer func() GitServer, cfg *config.Config) biz.GitRepo {
 	return &gitRepo{
 		logger:    logger.WithModule("repo/git"),

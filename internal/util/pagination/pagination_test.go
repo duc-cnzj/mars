@@ -7,6 +7,7 @@ import (
 )
 
 func TestGetPageOffset(t *testing.T) {
+	t.Parallel()
 	t.Run("ReturnsCorrectOffsetForPositivePageAndSize", func(t *testing.T) {
 		offset := GetPageOffset(2, 10)
 		assert.Equal(t, 10, offset)
@@ -19,6 +20,7 @@ func TestGetPageOffset(t *testing.T) {
 }
 
 func TestInitByDefault(t *testing.T) {
+	t.Parallel()
 	t.Run("ReturnsDefaultValuesWhenInputIsNil", func(t *testing.T) {
 		// 真 nil 指针：整个 inPage != nil 守卫短路，page/pageSize 必须回落默认。
 		page, pageSize := InitByDefault((*int)(nil), (*int)(nil))
@@ -71,6 +73,7 @@ func TestInitByDefault(t *testing.T) {
 }
 
 func TestNewPagination(t *testing.T) {
+	t.Parallel()
 	t.Run("CreatesNewPaginationWithGivenValues", func(t *testing.T) {
 		page := 2
 		pageSize := 20

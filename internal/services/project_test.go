@@ -29,6 +29,7 @@ import (
 )
 
 func TestNewProjectSvc(t *testing.T) {
+	t.Parallel()
 	svc, _ := newProjectSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.repoBiz)
@@ -42,6 +43,7 @@ func TestNewProjectSvc(t *testing.T) {
 }
 
 func Test_projectSvc_List(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().List(gomock.Any(), &biz.ListProjectInput{
@@ -60,6 +62,7 @@ func Test_projectSvc_List(t *testing.T) {
 }
 
 func Test_projectSvc_List_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().List(gomock.Any(), &biz.ListProjectInput{
@@ -86,6 +89,7 @@ func Test_projectSvc_List_Success(t *testing.T) {
 }
 
 func Test_projectSvc_List_NonAdmin(t *testing.T) {
+	t.Parallel()
 	// 回归防护：非 admin 用户透传自己的 Email 与 IsAdmin=false 到 data 层，
 	// data 层才会按命名空间访问谓词过滤可见项目。改坏实现（IsAdmin 恒 true /
 	// Email 写死为他人）会让非 admin 看到全部项目，此测试必须 FAIL。
@@ -113,6 +117,7 @@ func Test_projectSvc_List_NonAdmin(t *testing.T) {
 }
 
 func TestProjectSvc_Show_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: false}, nil)
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{
@@ -127,6 +132,7 @@ func TestProjectSvc_Show_Success(t *testing.T) {
 }
 
 func TestProjectSvc_Show_Failure(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("x"))
@@ -138,6 +144,7 @@ func TestProjectSvc_Show_Failure(t *testing.T) {
 }
 
 func TestProjectSvc_Show_Failure2(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
@@ -149,6 +156,7 @@ func TestProjectSvc_Show_Failure2(t *testing.T) {
 }
 
 func Test_projectSvc_Delete(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: false}, nil)
 	// 卸载成功 → 继续删 DB 记录
@@ -177,6 +185,7 @@ func Test_projectSvc_Delete(t *testing.T) {
 }
 
 func Test_projectSvc_Delete_UninstallNotFound(t *testing.T) {
+	t.Parallel()
 	// release 已不存在（手动清理/孤儿）不算失败，继续删除 DB 记录，
 	// 避免把已经没 release 的项目锁死无法删除。
 	svc, mocks := newProjectSvcWithMocks(t)
@@ -198,6 +207,7 @@ func Test_projectSvc_Delete_UninstallNotFound(t *testing.T) {
 }
 
 func Test_projectSvc_Delete_UninstallError(t *testing.T) {
+	t.Parallel()
 	// 回归防护：卸载 release 失败（非 not-found）必须中止删除、保留 DB 记录，
 	// 否则会留下无记录、无法重试的孤儿 release。改坏实现（先删 DB 后卸载/忽略
 	// 卸载错误继续删）时此测试 FAIL。
@@ -219,6 +229,7 @@ func Test_projectSvc_Delete_UninstallError(t *testing.T) {
 }
 
 func Test_projectSvc_Delete_Fail(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("x"))
 	response, err := svc.Delete(newAdminUserCtx(), &project.DeleteRequest{
@@ -229,6 +240,7 @@ func Test_projectSvc_Delete_Fail(t *testing.T) {
 }
 
 func Test_projectSvc_Delete_Fail2(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{Private: false}, nil)
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{Namespace: &biz.Namespace{Name: "ns"}}, nil)
@@ -243,6 +255,7 @@ func Test_projectSvc_Delete_Fail2(t *testing.T) {
 }
 
 func Test_projectSvc_Delete_Fail3(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{Private: true}, nil)
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{Name: "app", Namespace: &biz.Namespace{Name: "ns"}}, nil)
@@ -259,6 +272,7 @@ func Test_projectSvc_Delete_Fail3(t *testing.T) {
 }
 
 func Test_projectSvc_Version(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "a"}, nil)
@@ -278,6 +292,7 @@ func Test_projectSvc_Version(t *testing.T) {
 // 回归防护：私有命名空间的项目版本不允许被非 admin / 非创建者 / 非成员读取。
 // 去掉 Version 里的 CanAccess 检查，本测试必须失败。
 func Test_projectSvc_Version_AccessDenied(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
@@ -292,6 +307,7 @@ func Test_projectSvc_Version_AccessDenied(t *testing.T) {
 
 // 回归防护：Version 的 Show/nsRepo 门禁分支（项目或命名空间不存在/DB 故障）。
 func Test_projectSvc_Version_ShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("project error"))
@@ -302,6 +318,7 @@ func Test_projectSvc_Version_ShowError(t *testing.T) {
 }
 
 func Test_projectSvc_Version_NamespaceError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
@@ -316,6 +333,7 @@ func Test_projectSvc_Version_NamespaceError(t *testing.T) {
 }
 
 func Test_projectSvc_AllContainers(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	// Show 被调用两次：一次是 svc 层 access-check，一次是 biz.GetAllActiveContainers 内部取项目。
 	// 项目无 PodSelectors 时 buildStateContainers 提前返回，不触发 k8sRepo 调用。
@@ -329,6 +347,7 @@ func Test_projectSvc_AllContainers(t *testing.T) {
 }
 
 func Test_projectSvc_AllContainers_Fail(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	// 第一次 Show（access-check）成功，第二次 Show（biz 内部）失败 → 整体报错。
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil).Times(1)
@@ -342,6 +361,7 @@ func Test_projectSvc_AllContainers_Fail(t *testing.T) {
 }
 
 func TestProjectSvc_WebApply_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: false}, nil)
@@ -373,6 +393,7 @@ func TestProjectSvc_WebApply_Success(t *testing.T) {
 }
 
 func TestProjectSvc_WebApply_DryRun(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: false}, nil)
@@ -412,6 +433,7 @@ func TestProjectSvc_WebApply_DryRun(t *testing.T) {
 }
 
 func TestProjectSvc_WebApply_Failure(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{Private: false}, nil)
@@ -428,6 +450,7 @@ func TestProjectSvc_WebApply_Failure(t *testing.T) {
 }
 
 func TestProjectSvc_Apply_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{Private: false}, nil)
@@ -464,6 +487,7 @@ func TestProjectSvc_Apply_Success(t *testing.T) {
 }
 
 func TestProjectSvc_Apply_Failure(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{Private: false}, nil)
@@ -490,6 +514,7 @@ func TestProjectSvc_Apply_Failure(t *testing.T) {
 }
 
 func TestProjectSvc_Apply_Failure2(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
@@ -515,6 +540,7 @@ func TestProjectSvc_Apply_Failure2(t *testing.T) {
 }
 
 func TestProjectSvc_Apply_InstallError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{Private: false}, nil)
@@ -588,6 +614,7 @@ func (x *mockProjectApplyServer) RecvMsg(m any) error {
 }
 
 func TestMessager_Current(t *testing.T) {
+	t.Parallel()
 	m := newMessager(true, websocket.Type_ApplyProject, nil)
 	current := m.Current()
 	assert.Equal(t, int64(0), current)
@@ -596,6 +623,7 @@ func TestMessager_Current(t *testing.T) {
 // TestMessager_SetSlug 覆盖 slug 就地回填：创建部署名缺省解析后由 ApplyProject 调用，
 // 保证出站帧携带最终名（前端 toSlug 关联的日志 key）。
 func TestMessager_SetSlug(t *testing.T) {
+	t.Parallel()
 	m := newMessager(true, websocket.Type_ApplyProject, nil)
 	m.(*messager).SetSlug("new-slug")
 	assert.Equal(t, "new-slug", m.(*messager).slugName)
@@ -613,6 +641,7 @@ func (m *mockApplyServer) Send(response *project.ApplyResponse) error {
 }
 
 func TestMessager_Add(t *testing.T) {
+	t.Parallel()
 	server := &mockApplyServer{}
 	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.Add()
@@ -622,6 +651,7 @@ func TestMessager_Add(t *testing.T) {
 }
 
 func TestMessager_To(t *testing.T) {
+	t.Parallel()
 	server := &mockApplyServer{}
 	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.To(50)
@@ -631,6 +661,7 @@ func TestMessager_To(t *testing.T) {
 }
 
 func TestMessager_SendEndError(t *testing.T) {
+	t.Parallel()
 	server := &mockApplyServer{}
 	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.SendEndError(errors.New("test error"))
@@ -639,6 +670,7 @@ func TestMessager_SendEndError(t *testing.T) {
 }
 
 func TestMessager_SendMsg(t *testing.T) {
+	t.Parallel()
 	server := &mockApplyServer{}
 	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.SendMsg("test message")
@@ -657,6 +689,7 @@ func (m *mockWsMessage) GetMetadata() *websocket.Metadata {
 }
 
 func TestMessager_SendProtoMsg(t *testing.T) {
+	t.Parallel()
 	server := &mockApplyServer{}
 	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.SendProtoMsg(&mockWsMessage{})
@@ -664,6 +697,7 @@ func TestMessager_SendProtoMsg(t *testing.T) {
 }
 
 func TestMessager_SendProcessPercent(t *testing.T) {
+	t.Parallel()
 	server := &mockApplyServer{}
 	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.SendProcessPercent(50)
@@ -672,6 +706,7 @@ func TestMessager_SendProcessPercent(t *testing.T) {
 }
 
 func TestMessager_SendMsgWithContainerLog(t *testing.T) {
+	t.Parallel()
 	server := &mockApplyServer{}
 	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.SendMsgWithContainerLog("test message", []*websocket.Container{})
@@ -681,6 +716,7 @@ func TestMessager_SendMsgWithContainerLog(t *testing.T) {
 }
 
 func TestMessager_SendDeployedResult(t *testing.T) {
+	t.Parallel()
 	server := &mockApplyServer{}
 	m := newMessager(true, websocket.Type_ApplyProject, server)
 	m.SendDeployedResult(websocket.ResultType_Success, "test message", &types.ProjectModel{})
@@ -690,6 +726,7 @@ func TestMessager_SendDeployedResult(t *testing.T) {
 }
 
 func Test_projectSvc_MemoryCpuAndEndpoints(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	projModel := &biz.Project{
@@ -719,6 +756,7 @@ func Test_projectSvc_MemoryCpuAndEndpoints(t *testing.T) {
 }
 
 func Test_projectSvc_MemoryCpuAndEndpoints_Fail(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("x"))
@@ -727,6 +765,7 @@ func Test_projectSvc_MemoryCpuAndEndpoints_Fail(t *testing.T) {
 }
 
 func Test_projectSvc_MemoryCpuAndEndpoints_fail2(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	projModel := &biz.Project{
@@ -822,6 +861,7 @@ type ctxAwareApplyServer struct {
 func (x *ctxAwareApplyServer) Context() context.Context { return x.ctx }
 
 func TestProjectSvc_WebApply_ShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: false}, nil)
@@ -839,6 +879,7 @@ func TestProjectSvc_WebApply_ShowError(t *testing.T) {
 }
 
 func Test_projectSvc_apply_NsShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("x"))
@@ -848,6 +889,7 @@ func Test_projectSvc_apply_NsShowError(t *testing.T) {
 }
 
 func TestProjectSvc_Apply_WebsocketSync(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{Private: false}, nil)
@@ -870,6 +912,7 @@ func TestProjectSvc_Apply_WebsocketSync(t *testing.T) {
 }
 
 func TestProjectSvc_Apply_NoCommits(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: false}, nil)
@@ -882,6 +925,7 @@ func TestProjectSvc_Apply_NoCommits(t *testing.T) {
 }
 
 func TestProjectSvc_Apply_VersionFindSuccess(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: false}, nil)
@@ -899,6 +943,7 @@ func TestProjectSvc_Apply_VersionFindSuccess(t *testing.T) {
 }
 
 func TestProjectSvc_Apply_VersionFindError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: false}, nil)
@@ -917,6 +962,7 @@ func TestProjectSvc_Apply_VersionFindError(t *testing.T) {
 }
 
 func TestProjectSvc_Apply_VersionFindDBError(t *testing.T) {
+	t.Parallel()
 	// 回归防护：Version > 0 时 FindByName 返回非 NotFound 的真实 DB 故障必须
 	// 上抛，不能当成"首次部署"吞掉——否则 ProjectID=0 会让 runner 报
 	// "版本不匹配"，把故障伪装成预期。改坏实现（所有错误都放行）时此测试 FAIL。
@@ -933,6 +979,7 @@ func TestProjectSvc_Apply_VersionFindDBError(t *testing.T) {
 }
 
 func TestProjectSvc_Apply_CtxCancelled(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{Private: false}, nil)
@@ -1015,6 +1062,7 @@ func TestProjectSvc_apply_InstallProjectPanic_UnblocksWatcher(t *testing.T) {
 }
 
 func TestProjectSvc_Show_NsShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
@@ -1024,6 +1072,7 @@ func TestProjectSvc_Show_NsShowError(t *testing.T) {
 }
 
 func Test_projectSvc_MemoryCpuAndEndpoints_NsShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
@@ -1033,6 +1082,7 @@ func Test_projectSvc_MemoryCpuAndEndpoints_NsShowError(t *testing.T) {
 }
 
 func Test_projectSvc_MemoryCpuAndEndpoints_PermissionDenied(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
@@ -1042,6 +1092,7 @@ func Test_projectSvc_MemoryCpuAndEndpoints_PermissionDenied(t *testing.T) {
 }
 
 func Test_projectSvc_Delete_NsShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
@@ -1051,6 +1102,7 @@ func Test_projectSvc_Delete_NsShowError(t *testing.T) {
 }
 
 func Test_projectSvc_AllContainers_ShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("x"))
@@ -1059,6 +1111,7 @@ func Test_projectSvc_AllContainers_ShowError(t *testing.T) {
 }
 
 func Test_projectSvc_AllContainers_NsShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
@@ -1068,6 +1121,7 @@ func Test_projectSvc_AllContainers_NsShowError(t *testing.T) {
 }
 
 func Test_projectSvc_AllContainers_PermissionDenied(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
@@ -1079,6 +1133,7 @@ func Test_projectSvc_AllContainers_PermissionDenied(t *testing.T) {
 // Test_projectSvc_CheckApplyStatus 覆盖 CheckApplyStatus 成功路径：无工作负载 → UNKNOWN，
 // 容器/失败明细空，且响应前做项目级访问控制。
 func Test_projectSvc_CheckApplyStatus(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	// Show 被调用两次：一次 svc 层 access-check，一次 biz.CheckApplyStatus 内部取项目。
 	// 项目无 PodSelectors 时 buildStateContainers 提前返回；GetWorkloadsByManifest 返回空 → UNKNOWN。
@@ -1095,6 +1150,7 @@ func Test_projectSvc_CheckApplyStatus(t *testing.T) {
 }
 
 func Test_projectSvc_CheckApplyStatus_BizError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	// access-check 通过，biz 内部 Show 失败 → 整体报错。
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil).Times(1)
@@ -1109,6 +1165,7 @@ func Test_projectSvc_CheckApplyStatus_BizError(t *testing.T) {
 // Test_projectSvc_CheckApplyStatus_FailedWithFailures 覆盖 FAILED 判定 + failures 映射链路：
 // Deployment 最新版本 pod CrashLoopBackOff → svc 层把领域失败诊断映射成 proto 明细并附日志。
 func Test_projectSvc_CheckApplyStatus_FailedWithFailures(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{
 		NamespaceID: 1,
@@ -1160,6 +1217,7 @@ func Test_projectSvc_CheckApplyStatus_FailedWithFailures(t *testing.T) {
 // Test_projectSvc_ResourceTree 覆盖 ResourceTree 全链路：access-check + biz 建树 + proto 映射。
 // Deployment → RS → Pod 属主链与整体 Deployed 状态如实映射到 proto 节点/边。
 func Test_projectSvc_ResourceTree(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	// Show 被调用两次：一次 svc 层 access-check，一次 biz.ResourceTree 内部取项目。
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{
@@ -1215,6 +1273,7 @@ func Test_projectSvc_ResourceTree(t *testing.T) {
 
 // Test_projectSvc_ResourceTree_BizError 覆盖 access-check 通过、biz 建树失败（ListPods 上抛）。
 func Test_projectSvc_ResourceTree_BizError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{
 		ID: 1, NamespaceID: 1, Namespace: &biz.Namespace{Name: "ns"},
@@ -1229,6 +1288,7 @@ func Test_projectSvc_ResourceTree_BizError(t *testing.T) {
 }
 
 func Test_projectSvc_ResourceTree_PermissionDenied(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
@@ -1237,6 +1297,7 @@ func Test_projectSvc_ResourceTree_PermissionDenied(t *testing.T) {
 }
 
 func Test_projectSvc_CheckApplyStatus_PermissionDenied(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
@@ -1248,6 +1309,7 @@ func Test_projectSvc_CheckApplyStatus_PermissionDenied(t *testing.T) {
 // 空对象模式要求所有方法可被安全调用且不产生任何副作用，WebApply 走部署编排时
 // deploy 侧无条件调用这些方法（不判 nil），此处逐一调用断言不 panic、无状态残留。
 func TestEmptyMessager(t *testing.T) {
+	t.Parallel()
 	e := newEmptyMessager()
 
 	// 唯一有返回值的方法：Current 恒为 0（进度未启动）。
@@ -1272,6 +1334,7 @@ func TestEmptyMessager(t *testing.T) {
 // TestProjectSvc_Liveness 聚合响应：条目映射（部署次数/命名空间/仓库/commit 信息）+
 // 统计全量 + 资源占用 join（与空间资源同源，按 PodSelectors 匹配 pod）。
 func TestProjectSvc_Liveness(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	now := time.Now()
 	commitDate := now.Add(-36 * time.Hour)
@@ -1324,6 +1387,7 @@ func TestProjectSvc_Liveness(t *testing.T) {
 
 // TestProjectSvc_Liveness_Err 聚合失败上抛（经 logError 打印）。
 func TestProjectSvc_Liveness_Err(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.projectRepo.EXPECT().ListLivenessPage(gomock.Any(), gomock.Any()).Return(nil, errors.New("down"))
 	resp, err := svc.Liveness(newAdminUserCtx(), &project.LivenessRequest{})
@@ -1334,6 +1398,7 @@ func TestProjectSvc_Liveness_Err(t *testing.T) {
 // TestProjectSvc_Liveness_NilNamespace 命名空间为空的活跃度条目守卫：传输层对 nil namespace
 // 回退空串，响应正常返回不 panic。
 func TestProjectSvc_Liveness_NilNamespace(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	now := time.Now()
 	mocks.projectRepo.EXPECT().ListLivenessPage(gomock.Any(), gomock.Any()).Return(&biz.LivenessPageResult{
@@ -1355,6 +1420,7 @@ func TestProjectSvc_Liveness_NilNamespace(t *testing.T) {
 // TestProjectSvc_Liveness_SortAsc 排序方向：Sort 参数透传到 repo（ListLivenessPage.Query.Sort），
 // repo 返回已排好序的条目（asc 最早更新 old 在前），传输层原样透传。
 func TestProjectSvc_Liveness_SortAsc(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newProjectSvcWithMocks(t)
 	now := time.Now()
 	var gotSort string
@@ -1387,6 +1453,7 @@ func TestProjectSvc_Liveness_SortAsc(t *testing.T) {
 
 // TestProjectSvc_Authorize 门禁：仅 Liveness 要求 admin，其余用户方法全部放行 allowlist。
 func TestProjectSvc_Authorize(t *testing.T) {
+	t.Parallel()
 	svc, _ := newProjectSvcWithMocks(t)
 	// admin：任何方法放行。
 	ctx, err := svc.Authorize(newAdminUserCtx(), project.Project_Liveness_FullMethodName)

@@ -15,6 +15,7 @@ import (
 
 // 选项都是纯 setter，不需要网络：用 localhost:1 的 baseURL，且不带 WithAuth 就不会登录。
 func TestOptions_Apply(t *testing.T) {
+	t.Parallel()
 	custom := &http.Client{Timeout: 30 * time.Second}
 
 	c, err := NewClient("http://localhost:1/", // 末尾斜杠应被 trim
@@ -44,6 +45,7 @@ func TestOptions_Apply(t *testing.T) {
 }
 
 func TestWithTimeout_CreatesClient(t *testing.T) {
+	t.Parallel()
 	c, err := NewClient("http://localhost:1", WithTimeout(5*time.Second))
 	if err != nil {
 		t.Fatal(err)
@@ -54,6 +56,7 @@ func TestWithTimeout_CreatesClient(t *testing.T) {
 }
 
 func TestSetBearerToken_Runtime(t *testing.T) {
+	t.Parallel()
 	c, err := NewClient("http://localhost:1")
 	if err != nil {
 		t.Fatal(err)
@@ -70,6 +73,7 @@ func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) { r
 
 // WithTracer 应把默认 transport 与自定义 transport 都包成 otelhttp.Transport。
 func TestWithTracer_WrapsTransport(t *testing.T) {
+	t.Parallel()
 	c, err := NewClient("http://localhost:1", WithTracer())
 	if err != nil {
 		t.Fatal(err)
@@ -124,6 +128,7 @@ func TestWithTracer_PropagatesTraceContext(t *testing.T) {
 
 // 全部 17 个 service 访问器都应返回非 nil 客户端（与 gRPC SDK 对齐）。
 func TestServiceAccessors_AllWired(t *testing.T) {
+	t.Parallel()
 	c, err := NewClient("http://localhost:1")
 	if err != nil {
 		t.Fatal(err)

@@ -19,12 +19,14 @@ import (
 )
 
 func TestNewEventSvc(t *testing.T) {
+	t.Parallel()
 	svc, _ := newEventSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.eventBiz)
 }
 
 func TestEventSvc_List_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEventSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 
@@ -51,6 +53,7 @@ func TestEventSvc_List_Success(t *testing.T) {
 // admin 未传 all（默认收敛本人，镜像 access_token 语义）：按操作人邮箱过滤为本人事件。
 // 这是「下拉入口 /events 对 admin 也只看到自己」的契约基础——全量视图只属显式 all=true 的后台入口。
 func TestEventSvc_List_Admin_WithoutAll_FiltersByOwnEmail(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEventSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 	admin := biz.MustGetUser(newAdminUserCtx())
@@ -70,6 +73,7 @@ func TestEventSvc_List_Admin_WithoutAll_FiltersByOwnEmail(t *testing.T) {
 // 普通用户 List 必须按操作人邮箱（operator_email）过滤为本人事件，
 // 归属条件由 ctx 身份推导注入，不接受请求参数（防传他人邮箱枚举全量）。
 func TestEventSvc_List_NonAdmin_FiltersByOwnEmail(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEventSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 	user := biz.MustGetUser(newOtherUserCtx())
@@ -89,6 +93,7 @@ func TestEventSvc_List_NonAdmin_FiltersByOwnEmail(t *testing.T) {
 // 无邮箱的普通用户（非 admin）必须返回空列表：若按空串过滤，IfStrEQ 的
 // "空串不过滤"语义会退化成全量可见，违反"普通用户只能看自己的事件"约束。
 func TestEventSvc_List_NonAdmin_EmptyEmail_ReturnsEmpty(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEventSvcWithMocks(t)
 	// 不设置 eventRepo.List 期望：空邮箱路径必须提前返回，任何 DB 查询都会 FAIL。
 	_ = mocks
@@ -104,6 +109,7 @@ func TestEventSvc_List_NonAdmin_EmptyEmail_ReturnsEmpty(t *testing.T) {
 }
 
 func TestEventSvc_List_Failure(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEventSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 
@@ -123,6 +129,7 @@ func TestEventSvc_List_Failure(t *testing.T) {
 }
 
 func Test_normalizeActionTypes(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name   string
 		single types.EventActionType
@@ -136,12 +143,14 @@ func Test_normalizeActionTypes(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, c.want, normalizeActionTypes(c.single, c.multi))
 		})
 	}
 }
 
 func Test_eventSvc_Show(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEventSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 
@@ -153,6 +162,7 @@ func Test_eventSvc_Show(t *testing.T) {
 }
 
 func Test_eventSvc_Show_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEventSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 
@@ -176,6 +186,7 @@ func Test_eventSvc_Show_Success(t *testing.T) {
 
 // 普通用户 Show 只能查看操作人邮箱为自己的事件。
 func Test_eventSvc_Show_NonAdmin_OwnEvent(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEventSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 
@@ -191,6 +202,7 @@ func Test_eventSvc_Show_NonAdmin_OwnEvent(t *testing.T) {
 
 // 普通用户 Show 他人事件返回 404（视同不存在），防审计日志 id 枚举侧信道。
 func Test_eventSvc_Show_NonAdmin_OtherEvent_NotFound(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEventSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 
@@ -210,6 +222,7 @@ func Test_eventSvc_Show_NonAdmin_OtherEvent_NotFound(t *testing.T) {
 // 否则 operator_email 为空的事件（迁移前历史行 / cron 系统事件）会被空邮箱用户
 // 通过 "" == "" 等值比较绕过归属校验，泄露他人审计日志。
 func Test_eventSvc_Show_NonAdmin_EmptyEmail_AlwaysNotFound(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEventSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 

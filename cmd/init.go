@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// initCmd represents the init command
+// initCmd 是 init 子命令：在缺少 config.yaml 时生成一份默认配置文件。
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "create default config file.",

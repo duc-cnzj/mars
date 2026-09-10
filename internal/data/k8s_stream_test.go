@@ -23,6 +23,7 @@ import (
 // Test_k8sRepo_LogStream 覆盖 LogStream 成功路径：日志经假 HTTP 服务流式返回，
 // 读循环逐行投递到 channel，EOF 后关闭 channel。
 func Test_k8sRepo_LogStream(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -53,6 +54,7 @@ func Test_k8sRepo_LogStream(t *testing.T) {
 // 服务端一次性写入远超缓冲容量（1000）的行，消费前 sleep 让读循环先灌满缓冲，
 // 使后续行落入 select default 丢弃分支；断言读到的行数小于总行数证明确有丢弃。
 func Test_k8sRepo_LogStream_DropLine(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -90,6 +92,7 @@ func Test_k8sRepo_LogStream_DropLine(t *testing.T) {
 // Test_k8sRepo_LogStream_StreamError 覆盖 LogStream 打开流失败分支（k8s.go 880-881）：
 // 指向已关闭端口，Stream 连接拒绝。
 func Test_k8sRepo_LogStream_StreamError(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -110,6 +113,7 @@ func Test_k8sRepo_LogStream_StreamError(t *testing.T) {
 // Test_executor_Execute 覆盖 Execute 两个错误分支：NewSPDYExecutor 因非法 CA 构造失败
 // （k8s.go 1146-1148）、StreamWithContext 对不可达端口握手失败（k8s.go 1150）。
 func Test_executor_Execute(t *testing.T) {
+	t.Parallel()
 	t.Run("NewSPDYExecutor error with invalid CA", func(t *testing.T) {
 		client, err := kubernetes.NewForConfig(&restclient.Config{Host: "https://127.0.0.1:1", Timeout: time.Second})
 		require.NoError(t, err)

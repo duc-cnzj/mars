@@ -5,7 +5,8 @@ import (
 	"strings"
 )
 
-// second minute hour `day of the month` month `day of the week`
+// expression 是六段式 cron 表达式的默认值，字段顺序为
+// 秒 分 时 日 月 周（对照 POS_* 下标），初始全为 * 表示每秒触发。
 const expression = "* * * * * *"
 
 // POS_* 是六段式 cron 表达式中各字段的位序下标（second ~ day-of-week）。
@@ -87,7 +88,7 @@ type Command interface {
 	Daily() Command
 	//DailyAt 每天几点(time: "2:00")
 	DailyAt(time string) Command
-	//At alias of DailyAt
+	//At 是 DailyAt 的别名
 	At(string) Command
 	//Weekdays 工作日 1-5
 	Weekdays() Command
@@ -111,8 +112,9 @@ type Command interface {
 	Weekly() Command
 	//WeeklyOn 周日几(day) 几点(time: "0:0")
 	WeeklyOn(day int, time string) Command
+	//Monthly 每月 1 号 0 点
 	Monthly() Command
-	// MonthlyOn dayOfMonth: 1, time: "0:0"
+	//MonthlyOn 每月几号(dayOfMonth: 1)，几点(time: "0:0")
 	MonthlyOn(dayOfMonth string, time string) Command
 	//LastDayOfMonth 每月最后一天
 	LastDayOfMonth(time string) Command
@@ -495,6 +497,7 @@ func (c *command) Days(days []int) Command {
 	return c
 }
 
+// spliceIntoPosition 把六段式表达式第 pos 段替换为 val，其余段保持不变。
 func (c *command) spliceIntoPosition(pos int, val string) {
 	split := strings.Split(c.expression, " ")
 	split[pos] = val

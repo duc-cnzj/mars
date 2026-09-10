@@ -34,6 +34,7 @@ import (
 )
 
 func TestNewJobManager(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	manager := NewJobManager(JobManagerDeps{
@@ -66,6 +67,7 @@ func TestNewJobManager(t *testing.T) {
 }
 
 func TestNewJob(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -168,6 +170,7 @@ func TestNewJob(t *testing.T) {
 }
 
 func TestJobInput_Slug(t *testing.T) {
+	t.Parallel()
 	jp := &JobInput{
 		NamespaceId: 1,
 		Name:        "test",
@@ -178,6 +181,7 @@ func TestJobInput_Slug(t *testing.T) {
 }
 
 func TestEmptyPubSubMethods(t *testing.T) {
+	t.Parallel()
 	e := NewEmptyPubSub()
 
 	assert.NoError(t, e.Join(1), "Join should not return an error")
@@ -194,6 +198,7 @@ func TestEmptyPubSubMethods(t *testing.T) {
 }
 
 func TestInternalCloser(t *testing.T) {
+	t.Parallel()
 	// Test when the function returns nil
 	closer := NewCloser(func() error {
 		return nil
@@ -214,6 +219,7 @@ func TestInternalCloser(t *testing.T) {
 }
 
 func TestMatchDockerImage(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		vars     pipelineVars
@@ -274,6 +280,7 @@ func TestMatchDockerImage(t *testing.T) {
 }
 
 func TestVars_ToKeyValue(t *testing.T) {
+	t.Parallel()
 	v := vars{
 		"key1": "value1",
 		"key2": "value2",
@@ -289,6 +296,7 @@ func TestVars_ToKeyValue(t *testing.T) {
 }
 
 func TestVars_MustGetString(t *testing.T) {
+	t.Parallel()
 	v := vars{
 		"key1": "value1",
 		"key2": "value2",
@@ -300,6 +308,7 @@ func TestVars_MustGetString(t *testing.T) {
 }
 
 func TestVars_Add(t *testing.T) {
+	t.Parallel()
 	v := vars{}
 	v.Add("key1", "value1")
 	v.Add("key2", "value2")
@@ -309,6 +318,7 @@ func TestVars_Add(t *testing.T) {
 }
 
 func TestDeployResult_IsSet(t *testing.T) {
+	t.Parallel()
 	dr := &deployResult{}
 	assert.False(t, dr.IsSet(), "IsSet should return false when set is not true")
 
@@ -317,6 +327,7 @@ func TestDeployResult_IsSet(t *testing.T) {
 }
 
 func TestDeployResult_Msg(t *testing.T) {
+	t.Parallel()
 	dr := &deployResult{}
 	assert.Equal(t, "", dr.Msg(), "Msg should return an empty string when msg is not set")
 
@@ -325,6 +336,7 @@ func TestDeployResult_Msg(t *testing.T) {
 }
 
 func TestDeployResult_Model(t *testing.T) {
+	t.Parallel()
 	dr := &deployResult{}
 	assert.Nil(t, dr.Model(), "Model should return nil when model is not set")
 
@@ -334,6 +346,7 @@ func TestDeployResult_Model(t *testing.T) {
 }
 
 func TestDeployResult_ResultType(t *testing.T) {
+	t.Parallel()
 	dr := &deployResult{}
 	assert.Equal(t, websocket_pb.ResultType(0), dr.ResultType(), "ResultType should return the default value when result is not set")
 
@@ -342,6 +355,7 @@ func TestDeployResult_ResultType(t *testing.T) {
 }
 
 func TestDeployResult_Set(t *testing.T) {
+	t.Parallel()
 	dr := &deployResult{}
 	model := &types.ProjectModel{Name: "test"}
 
@@ -353,6 +367,7 @@ func TestDeployResult_Set(t *testing.T) {
 }
 
 func TestToProjectEventYaml(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		project  *biz.Project
@@ -417,6 +432,7 @@ func TestToProjectEventYaml(t *testing.T) {
 }
 
 func TestHandleMessage(t *testing.T) {
+	t.Parallel()
 	jr := &jobRunner{
 		logger:       mlog.NewForConfig(nil),
 		messageCh:    newSafeWriteMessageCh(mlog.NewForConfig(nil), 1),
@@ -430,6 +446,7 @@ func TestHandleMessage(t *testing.T) {
 }
 
 func TestHandleMessage_2(t *testing.T) {
+	t.Parallel()
 	ch := newSafeWriteMessageCh(mlog.NewForConfig(nil), 1)
 	jr := &jobRunner{
 		logger:       mlog.NewForConfig(nil),
@@ -443,6 +460,7 @@ func TestHandleMessage_2(t *testing.T) {
 }
 
 func TestHandleMessage_3(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -477,6 +495,7 @@ func TestHandleMessage_3(t *testing.T) {
 }
 
 func TestHandleMessage_4(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -500,6 +519,7 @@ func TestHandleMessage_4(t *testing.T) {
 }
 
 func TestHandleMessage_5(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -550,6 +570,7 @@ func (f *fakeOpener) Close() error {
 }
 
 func TestUserConfigLoader_Load(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	em := NewMockDeployMsger(m)
@@ -596,6 +617,7 @@ func TestUserConfigLoader_Load(t *testing.T) {
 }
 
 func TestElementsLoader_Load(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	em := NewMockDeployMsger(m)
@@ -705,6 +727,7 @@ func TestElementsLoader_Load(t *testing.T) {
 }
 
 func TestElementsLoader_deepSetItems(t *testing.T) {
+	t.Parallel()
 	items := (&ElementsLoader{}).deepSetItems(map[string]any{"a": "a"})
 	assert.Equal(t, "a: a\n", items[0])
 	items = (&ElementsLoader{}).deepSetItems(map[string]any{"a->b": "ab"})
@@ -715,6 +738,7 @@ func TestElementsLoader_deepSetItems(t *testing.T) {
 }
 
 func TestElementsLoader_typedValue(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		ele    *mars.Element
 		input  string
@@ -871,6 +895,7 @@ func TestElementsLoader_typedValue(t *testing.T) {
 }
 
 func TestJober_GlobalLock(t *testing.T) {
+	t.Parallel()
 	l := locker.NewMemoryLock(timer.NewReal(), locker.NewMemStore(), mlog.NewForConfig(nil))
 	job := &jobRunner{locker: l, input: &JobInput{NamespaceId: 1, Name: "app"}}
 	assert.Nil(t, job.GlobalLock().Error())
@@ -913,6 +938,7 @@ func (e *emptyLoader) GetCalled() bool {
 }
 
 func TestJober_LoadConfigs1(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -930,6 +956,7 @@ func TestJober_LoadConfigs1(t *testing.T) {
 }
 
 func TestJober_LoadConfigs(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -986,6 +1013,7 @@ func (c *cleanupLoader) Load(ctx *LoadContext) error {
 }
 
 func TestJober_LoadConfigs_registerCleanup(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -1019,6 +1047,7 @@ func TestJober_LoadConfigs_registerCleanup(t *testing.T) {
 }
 
 func TestJober_Stop(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msg := NewMockDeployMsger(m)
@@ -1041,6 +1070,7 @@ func TestJober_Stop(t *testing.T) {
 }
 
 func TestJober_OnError(t *testing.T) {
+	t.Parallel()
 	job := &jobRunner{err: errors.New("xxx")}
 	job.OnError(1, func(err error, sendResultToUser func()) {
 		assert.Equal(t, "xxx", err.Error())
@@ -1056,6 +1086,7 @@ func TestJober_OnError(t *testing.T) {
 }
 
 func TestJober_OnSuccess(t *testing.T) {
+	t.Parallel()
 	job := &jobRunner{}
 	job.OnSuccess(1, func(err error, sendResultToUser func()) {
 		assert.Nil(t, err)
@@ -1071,6 +1102,7 @@ func TestJober_OnSuccess(t *testing.T) {
 }
 
 func TestJober_OnFinally(t *testing.T) {
+	t.Parallel()
 	var tests = []error{
 		errors.New("xxx"),
 		nil,
@@ -1096,6 +1128,7 @@ func TestJober_OnFinally(t *testing.T) {
 }
 
 func Test_jobRunner_Project(t *testing.T) {
+	t.Parallel()
 	job := &jobRunner{project: &biz.Project{}}
 	assert.NotNil(t, job.Project())
 }
@@ -1114,6 +1147,7 @@ func (d *dump) String() string {
 }
 
 func TestMergeValuesLoader_Load(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	up := uploader.NewMockUploader(m)
@@ -1178,6 +1212,7 @@ app:
 }
 
 func TestSystemVariableLoader_Load_ok1(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -1189,6 +1224,7 @@ func TestSystemVariableLoader_Load_ok1(t *testing.T) {
 	}))
 }
 func TestSystemVariableLoader_Load_ok(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -1240,6 +1276,7 @@ VarImagePullSecrets: [{name: a}, {name: b}, {name: c}, ]
 }
 
 func TestSystemVariableLoader_Load_fail(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -1280,6 +1317,7 @@ image: <.Pipeline>-<.Branch>
 }
 
 func TestChartFileLoader_Load2(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	em := NewMockDeployMsger(m)
@@ -1321,6 +1359,7 @@ func TestChartFileLoader_Load2(t *testing.T) {
 }
 
 func TestChartFileLoader_Load(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	em := NewMockDeployMsger(m)
@@ -1383,6 +1422,7 @@ func TestChartFileLoader_Load(t *testing.T) {
 }
 
 func TestChartFileLoader_LoadWithChartMissing(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	em := NewMockDeployMsger(m)
@@ -1428,6 +1468,7 @@ func TestChartFileLoader_LoadWithChartMissing(t *testing.T) {
 }
 
 func TestLoadContext_WriteConfigYamlToTmpFile(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -1449,6 +1490,7 @@ func TestLoadContext_WriteConfigYamlToTmpFile(t *testing.T) {
 }
 
 func Test_jobRunner_Validate_Fail(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
@@ -1531,6 +1573,7 @@ func Test_jobRunner_Validate_Fail(t *testing.T) {
 }
 
 func Test_jobRunner_Validate_FindByName_NotFound_CreatesProject(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
@@ -1572,6 +1615,7 @@ func Test_jobRunner_Validate_FindByName_NotFound_CreatesProject(t *testing.T) {
 }
 
 func Test_jobRunner_Validate_FindByName_NotFound_CreatesProject_Success(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
@@ -1616,6 +1660,7 @@ func Test_jobRunner_Validate_FindByName_NotFound_CreatesProject_Success(t *testi
 // dry-run 新建项目不落库，但必须合成占位 project，否则 Run 的 ReleaseName
 // 与 loader 的 ctx.Project.Name 会对 nil 解引用 panic。
 func Test_jobRunner_Validate_FindByName_NotFound_DryRun_SynthPlaceholderProject(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
@@ -1657,6 +1702,7 @@ func Test_jobRunner_Validate_FindByName_NotFound_DryRun_SynthPlaceholderProject(
 }
 
 func Test_jobRunner_Validate_Success(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
@@ -1701,6 +1747,7 @@ func Test_jobRunner_Validate_Success(t *testing.T) {
 }
 
 func TestJober_Finish_WhenError(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -1773,6 +1820,7 @@ func TestJober_Finish_WhenError(t *testing.T) {
 }
 
 func TestJober_Finish_WhenSuccess(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -1805,6 +1853,7 @@ func TestJober_Finish_WhenSuccess(t *testing.T) {
 }
 
 func TestJobRunner_cancelTarget(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "1/app", (&jobRunner{input: &JobInput{NamespaceId: 1, Name: "app"}}).cancelTarget())
 	assert.Equal(t, "ns-1/app", (&jobRunner{
 		ns:      &biz.Namespace{Name: "ns-1"},
@@ -1814,12 +1863,14 @@ func TestJobRunner_cancelTarget(t *testing.T) {
 }
 
 func Test_jobRunner_Run_Fail(t *testing.T) {
+	t.Parallel()
 	assert.Error(t, (&jobRunner{
 		err: errors.New("x"),
 	}).Run(context.TODO()).Error())
 }
 
 func Test_jobRunner_Run_Fail_2(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	installer := NewMockReleaseInstaller(m)
@@ -1851,6 +1902,7 @@ func Test_jobRunner_Run_Fail_2(t *testing.T) {
 }
 
 func Test_jobRunner_Run_Success(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	installer := NewMockReleaseInstaller(m)
@@ -1911,6 +1963,7 @@ func Test_jobRunner_Run_Success(t *testing.T) {
 // 新建路径下 Create 成功后注册的 OnError 清理回调（删除项目）与 OnFinally 状态回收
 // 回调，只有 Finish 报错时才会真正执行；该用例通过 SetError + Finish 触发它们。
 func Test_jobRunner_Validate_CreatePath_OnErrorOnFinally(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
@@ -1965,6 +2018,7 @@ func Test_jobRunner_Validate_CreatePath_OnErrorOnFinally(t *testing.T) {
 // 更新路径：UpdateStatusByVersion 成功后注册的 OnError 版本回滚回调，以及
 // NeedGitRepo 时的 GetCommit 注入，都由 Finish 报错触发/覆盖。
 func Test_jobRunner_Validate_UpdatePath_OnErrorOnFinally(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
@@ -2029,6 +2083,7 @@ func Test_jobRunner_Validate_UpdatePath_OnErrorOnFinally(t *testing.T) {
 
 // Run 非 dryRun 成功安装后，UpdateProject 落库失败的错误分支。
 func Test_jobRunner_Run_UpdateProjectError(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	installer := NewMockReleaseInstaller(m)
@@ -2079,6 +2134,7 @@ func Test_jobRunner_Run_UpdateProjectError(t *testing.T) {
 // 修复后：UpdateProject 失败保留 j.project 旧值；回滚回调用注册时快照的 projectID 且
 // 不再改写 j.project（回滚自身失败也不会置 nil），全链不 panic、错误原样返回。
 func Test_jobRunner_Run_UpdateProjectError_FinishNoPanic(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
@@ -2157,6 +2213,7 @@ func Test_jobRunner_Run_UpdateProjectError_FinishNoPanic(t *testing.T) {
 
 // Run dryRun 路径：跳过落库，act 记为 DryRun。
 func Test_jobRunner_Run_DryRun(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	installer := NewMockReleaseInstaller(m)

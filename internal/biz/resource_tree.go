@@ -1,7 +1,6 @@
 package biz
 
 import (
-	"context"
 	"sort"
 	"strconv"
 	"strings"
@@ -56,7 +55,7 @@ type ResourceTreeEdge struct {
 // sts/ds 属主归其子树，old 复用 collectWorkloadOldPods 的 hash 判定），其余裸 pod
 // 直挂 Application。与 AllContainers 一致：不裁剪 workload 类型，且剔除 Failed 阶段
 // pod（视为非活跃资源）。
-func buildResourceTree(ctx context.Context, k8sRepo K8sRepo, proj *Project) (*ResourceTree, error) {
+func buildResourceTree(k8sRepo K8sRepo, proj *Project) (*ResourceTree, error) {
 	ns := proj.Namespace.Name
 	appID := "application-" + strconv.Itoa(proj.ID)
 	tree := &ResourceTree{

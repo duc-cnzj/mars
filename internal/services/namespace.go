@@ -309,9 +309,19 @@ func (n *namespaceSvc) IsExists(ctx context.Context, input *namespace.IsExistsRe
 }
 
 // Favorite 关注/取消关注命名空间，落更新审计日志。
+//
+// 前置门卫：收藏目标必须是当前用户可访问的命名空间。缺此校验时 Favorite 会退化成
+// 存在性预言机——非法 id 撞 favorites 表外键违例而报错、合法 id 静默成功，且成功分支
+// 会把该空间 Name 写进调用者本人的审计事件（eventSvc.List 无门卫，可读回），
+// 等于零权限读走任意空间的存在性与名称。
 func (n *namespaceSvc) Favorite(ctx context.Context, req *namespace.FavoriteRequest) (*namespace.FavoriteResponse, error) {
 	user := biz.MustGetUser(ctx)
-	err := n.nsBiz.Favorite(ctx, &biz.FavoriteNamespaceInput{
+	// 门卫同时完成"加载 + 可访问性校验"，返回值直接复用作审计消息里的 ns.Name。
+	ns, err := n.accessBiz.RequireNamespaceAccessByID(ctx, int(req.Id))
+	if err != nil {
+		return nil, logError(ctx, n.logger, err)
+	}
+	err = n.nsBiz.Favorite(ctx, &biz.FavoriteNamespaceInput{
 		NamespaceID: int(req.Id),
 		UserEmail:   user.Email,
 		Favorite:    req.Favorite,
@@ -322,10 +332,6 @@ func (n *namespaceSvc) Favorite(ctx context.Context, req *namespace.FavoriteRequ
 	str := "取消关注"
 	if req.Favorite {
 		str = "关注"
-	}
-	ns, err := n.nsBiz.Show(ctx, int(req.Id))
-	if err != nil {
-		return nil, logError(ctx, n.logger, err)
 	}
 	n.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Update,

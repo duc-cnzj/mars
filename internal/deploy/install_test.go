@@ -20,6 +20,7 @@ import (
 // defer 仍执行 Finish() 触发 OnFinally（全局锁释放），避免锁续期 goroutine 与任务锁
 // 永久泄漏阻塞后续同任务部署；随后 re-panic 交给传输层统一 recover。
 func TestInstallProject_PanicStillFinishes(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	job := NewMockJob(m)
@@ -36,6 +37,7 @@ func TestInstallProject_PanicStillFinishes(t *testing.T) {
 }
 
 func TestNewReleaseInstaller(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	logger := mlog.NewForConfig(nil)
@@ -54,6 +56,7 @@ func TestNewReleaseInstaller(t *testing.T) {
 }
 
 func TestTimeOrderedSetString(t *testing.T) {
+	t.Parallel()
 	tos := newTimeOrderedSetString(timer2.NewReal())
 
 	tos.add("test1")
@@ -69,6 +72,7 @@ func TestTimeOrderedSetString(t *testing.T) {
 }
 
 func TestTimeOrderedSetString_Concurrency(t *testing.T) {
+	t.Parallel()
 	tos := newTimeOrderedSetString(timer2.NewReal())
 	var wg sync.WaitGroup
 
@@ -92,6 +96,7 @@ func TestTimeOrderedSetString_Concurrency(t *testing.T) {
 }
 
 func TestLoggerWrapFunctionality(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -115,6 +120,7 @@ func TestLoggerWrapFunctionality(t *testing.T) {
 }
 
 func TestLoggerWrapEdgeCase(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -136,6 +142,7 @@ func TestLoggerWrapEdgeCase(t *testing.T) {
 }
 
 func Test_releaseInstaller_Run_Dry(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	helmer := data.NewMockHelmerRepo(m)
@@ -173,6 +180,7 @@ func Test_releaseInstaller_Run_Dry(t *testing.T) {
 }
 
 func Test_releaseInstaller_Run_Success(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	helmer := data.NewMockHelmerRepo(m)
@@ -195,6 +203,7 @@ func Test_releaseInstaller_Run_Success(t *testing.T) {
 }
 
 func Test_releaseInstaller_Run(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	helmer := data.NewMockHelmerRepo(m)
@@ -227,6 +236,7 @@ func Test_releaseInstaller_Run(t *testing.T) {
 }
 
 func Test_releaseInstaller_Run_2(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	helmer := data.NewMockHelmerRepo(m)
@@ -259,6 +269,7 @@ func Test_releaseInstaller_Run_2(t *testing.T) {
 }
 
 func Test_releaseInstaller_Run_TimeoutOverride(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	helmer := data.NewMockHelmerRepo(m)
@@ -283,6 +294,7 @@ func Test_releaseInstaller_Run_TimeoutOverride(t *testing.T) {
 }
 
 func TestSafeWriteMessageChSendWhenNotClosed(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	ch := newSafeWriteMessageCh(logger, 1)
 
@@ -298,6 +310,7 @@ func TestSafeWriteMessageChSendWhenNotClosed(t *testing.T) {
 }
 
 func TestSafeWriteMessageChSendWhenClosed(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	ch := newSafeWriteMessageCh(logger, 1)
 
@@ -314,6 +327,7 @@ func TestSafeWriteMessageChSendWhenClosed(t *testing.T) {
 }
 
 func TestSafeWriteMessageChSendWhenFull(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	ch := newSafeWriteMessageCh(logger, 1)
 

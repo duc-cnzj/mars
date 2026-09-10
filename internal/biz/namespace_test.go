@@ -161,6 +161,7 @@ func withFastDeletePolling(t *testing.T) {
 // ---- Create ----
 
 func TestNamespaceBiz_Create_FindByNameNonNotFoundError(t *testing.T) {
+	t.Parallel()
 	ns := &fakeNamespaceRepoForNSBiz{
 		getMars:    func(name string) string { return name },
 		findByName: func(ctx context.Context, name string) (*Namespace, error) { return nil, errors.New("db down") },
@@ -174,6 +175,7 @@ func TestNamespaceBiz_Create_FindByNameNonNotFoundError(t *testing.T) {
 }
 
 func TestNamespaceBiz_Create_ExistsReturnsExisting(t *testing.T) {
+	t.Parallel()
 	existing := &Namespace{ID: 7, Name: "mars-test"}
 	ns := &fakeNamespaceRepoForNSBiz{
 		getMars:    func(name string) string { return name },
@@ -188,6 +190,7 @@ func TestNamespaceBiz_Create_ExistsReturnsExisting(t *testing.T) {
 }
 
 func TestNamespaceBiz_Create_K8sCreateNonAlreadyExistsError(t *testing.T) {
+	t.Parallel()
 	ns := &fakeNamespaceRepoForNSBiz{
 		getMars:    func(name string) string { return name },
 		findByName: func(ctx context.Context, name string) (*Namespace, error) { return nil, notFoundErr() },
@@ -206,6 +209,7 @@ func TestNamespaceBiz_Create_K8sCreateNonAlreadyExistsError(t *testing.T) {
 }
 
 func TestNamespaceBiz_Create_AlreadyExistsGetNamespaceError(t *testing.T) {
+	t.Parallel()
 	ns := &fakeNamespaceRepoForNSBiz{
 		getMars:    func(name string) string { return name },
 		findByName: func(ctx context.Context, name string) (*Namespace, error) { return nil, notFoundErr() },
@@ -227,6 +231,7 @@ func TestNamespaceBiz_Create_AlreadyExistsGetNamespaceError(t *testing.T) {
 }
 
 func TestNamespaceBiz_Create_AlreadyExistsTerminating(t *testing.T) {
+	t.Parallel()
 	ns := &fakeNamespaceRepoForNSBiz{
 		getMars:    func(name string) string { return name },
 		findByName: func(ctx context.Context, name string) (*Namespace, error) { return nil, notFoundErr() },
@@ -248,6 +253,7 @@ func TestNamespaceBiz_Create_AlreadyExistsTerminating(t *testing.T) {
 }
 
 func TestNamespaceBiz_Create_AdoptExistingHappy(t *testing.T) {
+	t.Parallel()
 	found := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "mars-adopted"}}
 	nsRepo := &fakeNamespaceRepoForNSBiz{
 		getMars:    func(name string) string { return name },
@@ -285,6 +291,7 @@ func TestNamespaceBiz_Create_AdoptExistingHappy(t *testing.T) {
 }
 
 func TestNamespaceBiz_Create_DockerSecretDegrade(t *testing.T) {
+	t.Parallel()
 	nsRepo := &fakeNamespaceRepoForNSBiz{
 		getMars:    func(name string) string { return name },
 		findByName: func(ctx context.Context, name string) (*Namespace, error) { return nil, notFoundErr() },
@@ -313,6 +320,7 @@ func TestNamespaceBiz_Create_DockerSecretDegrade(t *testing.T) {
 }
 
 func TestNamespaceBiz_Create_DbCreateErrorRollsBackCreatedNamespace(t *testing.T) {
+	t.Parallel()
 	nsRepo := &fakeNamespaceRepoForNSBiz{
 		getMars:    func(name string) string { return name },
 		findByName: func(ctx context.Context, name string) (*Namespace, error) { return nil, notFoundErr() },
@@ -341,6 +349,7 @@ func TestNamespaceBiz_Create_DbCreateErrorRollsBackCreatedNamespace(t *testing.T
 }
 
 func TestNamespaceBiz_Create_DbCreateErrorAdoptedNoRollback(t *testing.T) {
+	t.Parallel()
 	nsRepo := &fakeNamespaceRepoForNSBiz{
 		getMars:    func(name string) string { return name },
 		findByName: func(ctx context.Context, name string) (*Namespace, error) { return nil, notFoundErr() },
@@ -373,6 +382,7 @@ func TestNamespaceBiz_Create_DbCreateErrorAdoptedNoRollback(t *testing.T) {
 }
 
 func TestNamespaceBiz_Create_RollbackErrorLogged(t *testing.T) {
+	t.Parallel()
 	nsRepo := &fakeNamespaceRepoForNSBiz{
 		getMars:    func(name string) string { return name },
 		findByName: func(ctx context.Context, name string) (*Namespace, error) { return nil, notFoundErr() },
@@ -396,6 +406,7 @@ func TestNamespaceBiz_Create_RollbackErrorLogged(t *testing.T) {
 }
 
 func TestNamespaceBiz_Create_FavoriteDegrade(t *testing.T) {
+	t.Parallel()
 	nsRepo := &fakeNamespaceRepoForNSBiz{
 		getMars:    func(name string) string { return name },
 		findByName: func(ctx context.Context, name string) (*Namespace, error) { return nil, notFoundErr() },
@@ -527,6 +538,7 @@ func TestNamespaceBiz_Delete_DeleteSecretErrorContinue(t *testing.T) {
 }
 
 func TestNamespaceBiz_Delete_DeleteNamespaceNonNotFoundAborts(t *testing.T) {
+	t.Parallel()
 	helmer := &fakeHelmerRepoForNSBiz{uninstall: func(releaseName, namespace string, log LogFn) error { return nil }}
 	var dbDeleted bool
 	k8s := &fakeK8sRepoForNSBiz{
@@ -569,6 +581,7 @@ func TestNamespaceBiz_Delete_DeleteNamespaceNotFoundIsClean(t *testing.T) {
 }
 
 func TestNamespaceBiz_Delete_DbDeleteErrorAborts(t *testing.T) {
+	t.Parallel()
 	helmer := &fakeHelmerRepoForNSBiz{uninstall: func(releaseName, namespace string, log LogFn) error { return nil }}
 	k8s := &fakeK8sRepoForNSBiz{
 		deleteSecret:    func(ctx context.Context, namespace, secret string) error { return nil },
@@ -642,6 +655,7 @@ func nsFacadeForTest(ns NamespaceRepo) NamespaceBiz {
 }
 
 func TestNamespaceBiz_Update_InvalidID(t *testing.T) {
+	t.Parallel()
 	n := nsFacadeForTest(&fakeNamespaceRepoForNSBiz{})
 	got, err := n.Update(context.TODO(), &UpdateNamespaceInput{ID: 0})
 	assert.Nil(t, got)
@@ -650,6 +664,7 @@ func TestNamespaceBiz_Update_InvalidID(t *testing.T) {
 }
 
 func TestNamespaceBiz_Update_Valid(t *testing.T) {
+	t.Parallel()
 	var gotInput *UpdateNamespaceInput
 	ns := &fakeNamespaceRepoForNSBiz{update: func(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error) {
 		gotInput = input
@@ -663,6 +678,7 @@ func TestNamespaceBiz_Update_Valid(t *testing.T) {
 }
 
 func TestNamespaceBiz_Favorite_InvalidNamespaceID(t *testing.T) {
+	t.Parallel()
 	n := nsFacadeForTest(&fakeNamespaceRepoForNSBiz{})
 	err := n.Favorite(context.TODO(), &FavoriteNamespaceInput{NamespaceID: 0, UserEmail: "a@b.c", Favorite: true})
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -670,6 +686,7 @@ func TestNamespaceBiz_Favorite_InvalidNamespaceID(t *testing.T) {
 }
 
 func TestNamespaceBiz_Favorite_Valid(t *testing.T) {
+	t.Parallel()
 	var gotInput *FavoriteNamespaceInput
 	ns := &fakeNamespaceRepoForNSBiz{favorite: func(ctx context.Context, input *FavoriteNamespaceInput) error {
 		gotInput = input
@@ -682,6 +699,7 @@ func TestNamespaceBiz_Favorite_Valid(t *testing.T) {
 }
 
 func TestNamespaceBiz_FavoriteSort_EmptyList(t *testing.T) {
+	t.Parallel()
 	n := nsFacadeForTest(&fakeNamespaceRepoForNSBiz{})
 	// nil 输入：两个空间 id 必须报 400
 	err := n.FavoriteSort(context.TODO(), nil)
@@ -695,6 +713,7 @@ func TestNamespaceBiz_FavoriteSort_EmptyList(t *testing.T) {
 }
 
 func TestNamespaceBiz_FavoriteSort_Valid(t *testing.T) {
+	t.Parallel()
 	var gotEmail string
 	var gotFirst, gotSecond int
 	ns := &fakeNamespaceRepoForNSBiz{favoriteSort: func(ctx context.Context, email string, firstID, secondID int) error {
@@ -716,6 +735,7 @@ func TestNamespaceBiz_FavoriteSort_Valid(t *testing.T) {
 }
 
 func TestNamespaceBiz_SyncMembers_InvalidNamespaceID(t *testing.T) {
+	t.Parallel()
 	n := nsFacadeForTest(&fakeNamespaceRepoForNSBiz{})
 	got, err := n.SyncMembers(context.TODO(), 0, nil)
 	assert.Nil(t, got)
@@ -724,6 +744,7 @@ func TestNamespaceBiz_SyncMembers_InvalidNamespaceID(t *testing.T) {
 }
 
 func TestNamespaceBiz_SyncMembers_Valid(t *testing.T) {
+	t.Parallel()
 	var gotID int
 	var gotEmails []string
 	ns := &fakeNamespaceRepoForNSBiz{syncMembers: func(ctx context.Context, namespaceID int, memberEmails []string) (*Namespace, error) {
@@ -740,6 +761,7 @@ func TestNamespaceBiz_SyncMembers_Valid(t *testing.T) {
 }
 
 func TestNamespaceBiz_UpdatePrivate_InvalidNamespaceID(t *testing.T) {
+	t.Parallel()
 	n := nsFacadeForTest(&fakeNamespaceRepoForNSBiz{})
 	got, err := n.UpdatePrivate(context.TODO(), 0, true)
 	assert.Nil(t, got)
@@ -748,6 +770,7 @@ func TestNamespaceBiz_UpdatePrivate_InvalidNamespaceID(t *testing.T) {
 }
 
 func TestNamespaceBiz_UpdatePrivate_Valid(t *testing.T) {
+	t.Parallel()
 	var gotID int
 	var gotPrivate bool
 	ns := &fakeNamespaceRepoForNSBiz{updatePrivate: func(ctx context.Context, namespaceID int, private bool) (*Namespace, error) {
@@ -764,6 +787,7 @@ func TestNamespaceBiz_UpdatePrivate_Valid(t *testing.T) {
 }
 
 func TestNamespaceBiz_Transfer_InvalidID(t *testing.T) {
+	t.Parallel()
 	n := nsFacadeForTest(&fakeNamespaceRepoForNSBiz{})
 	got, err := n.Transfer(context.TODO(), 0, "a@b.c")
 	assert.Nil(t, got)
@@ -772,6 +796,7 @@ func TestNamespaceBiz_Transfer_InvalidID(t *testing.T) {
 }
 
 func TestNamespaceBiz_Transfer_EmptyEmail(t *testing.T) {
+	t.Parallel()
 	n := nsFacadeForTest(&fakeNamespaceRepoForNSBiz{})
 	got, err := n.Transfer(context.TODO(), 1, "")
 	assert.Nil(t, got)
@@ -780,6 +805,7 @@ func TestNamespaceBiz_Transfer_EmptyEmail(t *testing.T) {
 }
 
 func TestNamespaceBiz_Transfer_Valid(t *testing.T) {
+	t.Parallel()
 	var gotID int
 	var gotEmail string
 	ns := &fakeNamespaceRepoForNSBiz{transfer: func(ctx context.Context, id int, email string) (*Namespace, error) {
@@ -796,6 +822,7 @@ func TestNamespaceBiz_Transfer_Valid(t *testing.T) {
 }
 
 func TestNamespaceBiz_UpdateConfig_InvalidID(t *testing.T) {
+	t.Parallel()
 	n := nsFacadeForTest(&fakeNamespaceRepoForNSBiz{})
 	got, err := n.UpdateConfig(context.TODO(), &UpdateConfigInput{ID: 0})
 	assert.Nil(t, got)
@@ -804,6 +831,7 @@ func TestNamespaceBiz_UpdateConfig_InvalidID(t *testing.T) {
 }
 
 func TestNamespaceBiz_UpdateConfig_Valid(t *testing.T) {
+	t.Parallel()
 	var gotInput *UpdateConfigInput
 	ns := &fakeNamespaceRepoForNSBiz{updateConfig: func(ctx context.Context, input *UpdateConfigInput) (*Namespace, error) {
 		gotInput = input
@@ -817,6 +845,7 @@ func TestNamespaceBiz_UpdateConfig_Valid(t *testing.T) {
 }
 
 func TestNamespaceBiz_UpdateConfig_RepoError(t *testing.T) {
+	t.Parallel()
 	ns := &fakeNamespaceRepoForNSBiz{updateConfig: func(ctx context.Context, input *UpdateConfigInput) (*Namespace, error) {
 		return nil, errors.New("db down")
 	}}
@@ -829,6 +858,7 @@ func TestNamespaceBiz_UpdateConfig_RepoError(t *testing.T) {
 // ---- 纯透传查询 ----
 
 func TestNamespaceBiz_List_Passthrough(t *testing.T) {
+	t.Parallel()
 	var gotInput *ListNamespaceInput
 	ns := &fakeNamespaceRepoForNSBiz{list: func(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error) {
 		gotInput = input
@@ -844,6 +874,7 @@ func TestNamespaceBiz_List_Passthrough(t *testing.T) {
 
 // TestNamespaceBiz_ListAllNames 成功路径：ListAll 全量空间名抽成 k8s 名称切片。
 func TestNamespaceBiz_ListAllNames(t *testing.T) {
+	t.Parallel()
 	ns := &fakeNamespaceRepoForNSBiz{listAll: func(ctx context.Context) ([]*Namespace, error) {
 		return []*Namespace{{Name: "mars-dev"}, {Name: "mars-prod"}}, nil
 	}}
@@ -855,6 +886,7 @@ func TestNamespaceBiz_ListAllNames(t *testing.T) {
 
 // TestNamespaceBiz_ListAllNames_RepoError 失败路径：ListAll 报错时原样上抛。
 func TestNamespaceBiz_ListAllNames_RepoError(t *testing.T) {
+	t.Parallel()
 	ns := &fakeNamespaceRepoForNSBiz{listAll: func(ctx context.Context) ([]*Namespace, error) {
 		return nil, errors.New("db down")
 	}}
@@ -867,6 +899,7 @@ func TestNamespaceBiz_ListAllNames_RepoError(t *testing.T) {
 // TestNamespaceBiz_AdminList 管理列表成功路径：ListAdminPage（搜索/私有/分页/Now 透传）返回
 // 已分页+已分类+已统计结果，biz 按已加载的边计算最近活跃时间与行级活跃度分类，统计/计数原样透传。
 func TestNamespaceBiz_AdminList(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	var gotQuery *AdminListPageQuery
 	ns := &fakeNamespaceRepoForNSBiz{listAdminPage: func(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error) {
@@ -914,6 +947,7 @@ func TestNamespaceBiz_AdminList(t *testing.T) {
 
 // TestNamespaceBiz_AdminList_FilterByKind 分类过滤：Liveness 参数透传，条目/计数/统计由 repo 决定原样透传。
 func TestNamespaceBiz_AdminList_FilterByKind(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	var gotQuery *AdminListPageQuery
 	ns := &fakeNamespaceRepoForNSBiz{listAdminPage: func(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error) {
@@ -945,6 +979,7 @@ func TestNamespaceBiz_AdminList_FilterByKind(t *testing.T) {
 
 // TestNamespaceBiz_AdminList_Pagination 分页：Page/PageSize 透传，条目/计数由 repo 决定原样透传。
 func TestNamespaceBiz_AdminList_Pagination(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	var gotQuery *AdminListPageQuery
 	var list []*Namespace
@@ -972,6 +1007,7 @@ func TestNamespaceBiz_AdminList_Pagination(t *testing.T) {
 
 // TestNamespaceBiz_AdminList_PaginationOutOfRange 越界页：条目为空但计数保留全量（由 repo 返回）。
 func TestNamespaceBiz_AdminList_PaginationOutOfRange(t *testing.T) {
+	t.Parallel()
 	ns := &fakeNamespaceRepoForNSBiz{listAdminPage: func(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error) {
 		return &AdminListPageResult{Namespaces: nil, Count: 2}, nil
 	}}
@@ -986,6 +1022,7 @@ func TestNamespaceBiz_AdminList_PaginationOutOfRange(t *testing.T) {
 // Test_FormatResourceUsage 用量格式化：CPU 固定 "%d m"，内存走 humanize.Bytes（十进制基数），
 // 零值输出 "0 m"/"0 B"。
 func Test_FormatResourceUsage(t *testing.T) {
+	t.Parallel()
 	cpu, mem := FormatResourceUsage(100, 500000000)
 	assert.Equal(t, "100 m", cpu)
 	assert.Equal(t, "500 MB", mem)
@@ -997,6 +1034,7 @@ func Test_FormatResourceUsage(t *testing.T) {
 // Test_lastActiveAt 最近活跃时间取命名空间下所有项目 UpdatedAt 的最大值：
 // 无项目返回零值；有项目取最大；nil 项目指针跳过不 panic。
 func Test_lastActiveAt(t *testing.T) {
+	t.Parallel()
 	base := time.Date(2026, 8, 20, 10, 0, 0, 0, time.UTC)
 	cases := []struct {
 		name     string
@@ -1040,6 +1078,7 @@ func Test_lastActiveAt(t *testing.T) {
 
 // TestNamespaceBiz_AdminList_RepoError 管理列表失败路径：ListAdminPage 查询错误原样上抛。
 func TestNamespaceBiz_AdminList_RepoError(t *testing.T) {
+	t.Parallel()
 	ns := &fakeNamespaceRepoForNSBiz{listAdminPage: func(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error) {
 		return nil, errors.New("boom")
 	}}
@@ -1053,6 +1092,7 @@ func TestNamespaceBiz_AdminList_RepoError(t *testing.T) {
 }
 
 func TestNamespaceBiz_Show_Passthrough(t *testing.T) {
+	t.Parallel()
 	var gotID int
 	ns := &fakeNamespaceRepoForNSBiz{show: func(ctx context.Context, id int) (*Namespace, error) {
 		gotID = id
@@ -1066,12 +1106,14 @@ func TestNamespaceBiz_Show_Passthrough(t *testing.T) {
 }
 
 func TestNamespaceBiz_GetMarsNamespace_Passthrough(t *testing.T) {
+	t.Parallel()
 	ns := &fakeNamespaceRepoForNSBiz{getMars: func(name string) string { return "mars-" + name }}
 	n := nsFacadeForTest(ns)
 	assert.Equal(t, "mars-ns", n.GetMarsNamespace("ns"))
 }
 
 func TestNamespaceBiz_FindByName_Passthrough(t *testing.T) {
+	t.Parallel()
 	var gotName string
 	ns := &fakeNamespaceRepoForNSBiz{findByName: func(ctx context.Context, name string) (*Namespace, error) {
 		gotName = name

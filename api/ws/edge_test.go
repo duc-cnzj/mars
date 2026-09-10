@@ -21,6 +21,7 @@ import (
 // ---- option.go 副作用 ----
 
 func TestOption_SideEffects(t *testing.T) {
+	t.Parallel()
 	c := &Client{}
 
 	tokFn := func(context.Context) (string, error) { return "tk", nil }
@@ -59,6 +60,7 @@ func TestOption_SideEffects(t *testing.T) {
 // ---- writeMsg / send 失败分支 ----
 
 func TestWriteMsg_ClosedAndNotConnected(t *testing.T) {
+	t.Parallel()
 	c := &Client{done: make(chan struct{})}
 	c.ctx, c.ctxCancel = context.WithCancel(context.Background())
 
@@ -76,6 +78,7 @@ func TestWriteMsg_ClosedAndNotConnected(t *testing.T) {
 // ---- authorize / connectOnce / run 错误路径 ----
 
 func TestAuthorize_TokenProviderError(t *testing.T) {
+	t.Parallel()
 	c := &Client{ctx: context.Background()}
 	c.tokenProvider = func(context.Context) (string, error) { return "", errors.New("token 获取失败") }
 	if err := c.authorize(); err == nil {
@@ -84,6 +87,7 @@ func TestAuthorize_TokenProviderError(t *testing.T) {
 }
 
 func TestConnectOnce_DialError(t *testing.T) {
+	t.Parallel()
 	c := &Client{
 		url:    "ws://127.0.0.1:1/ws",
 		dialer: websocket.DefaultDialer,
@@ -96,6 +100,7 @@ func TestConnectOnce_DialError(t *testing.T) {
 }
 
 func TestRun_StopBackoff(t *testing.T) {
+	t.Parallel()
 	// 退避策略返回 Stop 时 run 应退出（91.7% 缺口）。
 	c := &Client{
 		url:             "ws://127.0.0.1:1/ws",
@@ -114,6 +119,7 @@ func TestRun_StopBackoff(t *testing.T) {
 }
 
 func TestRun_CloseDuringBackoff(t *testing.T) {
+	t.Parallel()
 	// 退避等待期间 Close（done 关闭）应退出（case <-c.done 分支）。
 	c := &Client{
 		url:     "ws://127.0.0.1:1/ws",
@@ -133,6 +139,7 @@ func TestRun_CloseDuringBackoff(t *testing.T) {
 // ---- dispatch 坏帧 ----
 
 func TestDispatch_BadFrames(t *testing.T) {
+	t.Parallel()
 	c := &Client{
 		done:            make(chan struct{}),
 		readyCh:         make(chan struct{}),
@@ -150,6 +157,7 @@ func TestDispatch_BadFrames(t *testing.T) {
 // ---- WaitReady 各出口 ----
 
 func TestWaitReady_AlreadyReady(t *testing.T) {
+	t.Parallel()
 	c := &Client{done: make(chan struct{})}
 	c.ready.Store(true)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -160,6 +168,7 @@ func TestWaitReady_AlreadyReady(t *testing.T) {
 }
 
 func TestWaitReady_Closed(t *testing.T) {
+	t.Parallel()
 	c := &Client{done: make(chan struct{}), readyCh: make(chan struct{}), authFailCh: make(chan struct{})}
 	close(c.done)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -170,6 +179,7 @@ func TestWaitReady_Closed(t *testing.T) {
 }
 
 func TestWaitReady_CtxCancel(t *testing.T) {
+	t.Parallel()
 	c := &Client{done: make(chan struct{}), readyCh: make(chan struct{}), authFailCh: make(chan struct{})}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // 已取消的 ctx
@@ -181,6 +191,7 @@ func TestWaitReady_CtxCancel(t *testing.T) {
 // ---- wsURLToHTTPBase url.Parse 错误 ----
 
 func TestWSURLToHTTPBase_ParseError(t *testing.T) {
+	t.Parallel()
 	if _, err := wsURLToHTTPBase("://bad"); err == nil {
 		t.Fatal("非法 url 应报错")
 	}
@@ -213,6 +224,7 @@ func loginServer(t *testing.T, loginFail bool, token string, onWS func(c *websoc
 }
 
 func TestWithAuth_LoginFlow(t *testing.T) {
+	t.Parallel()
 	// 用登录换取 token → 鉴权帧携带该 token → 就绪。
 	srv := loginServer(t, false, "abc", func(c *websocket.Conn) {
 		defer c.Close()
@@ -232,6 +244,7 @@ func TestWithAuth_LoginFlow(t *testing.T) {
 }
 
 func TestWithAuth_LoginFailure(t *testing.T) {
+	t.Parallel()
 	// 登录失败 → tokenProvider 报错 → authorize 返回错误。
 	srv := loginServer(t, true, "", func(c *websocket.Conn) {})
 	cli, err := NewClient(wsURL(t, srv)+"/ws", WithAuth("u", "p"))
@@ -247,6 +260,7 @@ func TestWithAuth_LoginFailure(t *testing.T) {
 // ---- connectOnce authorize 错误分支 ----
 
 func TestConnectOnce_AuthorizeError(t *testing.T) {
+	t.Parallel()
 	// tokenProvider 失败 → 客户端不会发鉴权帧，服务端只升级即返回。
 	srv := newWsServer(t, func(c *websocket.Conn) {
 		defer c.Close()
@@ -265,6 +279,7 @@ func TestConnectOnce_AuthorizeError(t *testing.T) {
 // ---- readLoop pong handler ----
 
 func TestReadLoop_PongHandler(t *testing.T) {
+	t.Parallel()
 	srv := newWsServer(t, func(c *websocket.Conn) {
 		defer c.Close()
 		readAuthorize(t, c)
@@ -283,6 +298,7 @@ func TestReadLoop_PongHandler(t *testing.T) {
 // ---- Terminal 错误分支 ----
 
 func TestTerminal_OpenErrors(t *testing.T) {
+	t.Parallel()
 	// OpenTerminal 的守卫：nil container 直接报错；ctx 取消/连接未就绪时 waitReady 报错。
 	c := &Client{done: make(chan struct{})}
 	c.ctx, c.ctxCancel = context.WithCancel(context.Background())
@@ -307,6 +323,7 @@ func TestTerminal_OpenErrors(t *testing.T) {
 }
 
 func TestTerminal_ResizeAndHandleBadFrame(t *testing.T) {
+	t.Parallel()
 	srv := newWsServer(t, func(c *websocket.Conn) {
 		defer c.Close()
 		readAuthorize(t, c)
@@ -346,6 +363,7 @@ func TestTerminal_ResizeAndHandleBadFrame(t *testing.T) {
 // ---- OpenTerminal execShell 错误分支（waitReady 通过但连接缺失）----
 
 func TestOpenTerminal_ExecShellError(t *testing.T) {
+	t.Parallel()
 	c := &Client{done: make(chan struct{})}
 	c.ctx, c.ctxCancel = context.WithCancel(context.Background())
 	c.ready.Store(true) // waitReady 直接通过
@@ -372,6 +390,7 @@ func newRetryClient() *Client {
 // 不再匹配帧消息文本，故无"非 gate 帧"分支可测。
 
 func TestRetryGate_Opened(t *testing.T) {
+	t.Parallel()
 	t2 := &Terminal{client: newRetryClient(), opened: make(chan struct{})}
 	close(t2.opened) // shell 已开启 → 直接返回
 	t2.retryGate(&Event{Metadata: &websocket_pb.Metadata{Message: "认证中，请稍等~"}})
@@ -381,6 +400,7 @@ func TestRetryGate_Opened(t *testing.T) {
 }
 
 func TestRetryGate_MaxRetries(t *testing.T) {
+	t.Parallel()
 	t2 := &Terminal{client: newRetryClient(), opened: make(chan struct{}), retries: maxOpenRetries}
 	t2.retryGate(&Event{})
 	if t2.retries != maxOpenRetries {
@@ -389,6 +409,7 @@ func TestRetryGate_MaxRetries(t *testing.T) {
 }
 
 func TestRetryGate_Retries(t *testing.T) {
+	t.Parallel()
 	// 正常路径：retries 递增 + 独立 goroutine 里 sleep 后重发 execShell。
 	t2 := &Terminal{
 		client:    newRetryClient(),
@@ -406,6 +427,7 @@ func TestRetryGate_Retries(t *testing.T) {
 // TestRetryExecShell_ResendWhenNotOpened 覆盖重发路径：opened 未关闭 → delay 后应
 // 调用 exec 重发（计数闭包注入，规避真实 150ms sleep 的不确定性）。
 func TestRetryExecShell_ResendWhenNotOpened(t *testing.T) {
+	t.Parallel()
 	t2 := &Terminal{opened: make(chan struct{}), sessionID: "sid", container: &websocket_pb.Container{}}
 	calls := 0
 	t2.retryExecShell(0, func(*websocket_pb.Container, string) error { calls++; return nil })
@@ -417,6 +439,7 @@ func TestRetryExecShell_ResendWhenNotOpened(t *testing.T) {
 // TestRetryExecShell_SkipAfterOpened 覆盖防御分支（本次修复核心）：shell 在重发前
 // 已开启（opened 关闭）→ delay 后应丢弃重发，绝不二次拉起 shell。
 func TestRetryExecShell_SkipAfterOpened(t *testing.T) {
+	t.Parallel()
 	t2 := &Terminal{opened: make(chan struct{}), sessionID: "sid", container: &websocket_pb.Container{}}
 	close(t2.opened) // shell 已开启 → 应跳过重发
 	calls := 0
@@ -429,6 +452,7 @@ func TestRetryExecShell_SkipAfterOpened(t *testing.T) {
 // ---- handle 缓冲满丢弃分支 ----
 
 func TestTerminal_handle_BufferFull(t *testing.T) {
+	t.Parallel()
 	c := &Client{done: make(chan struct{})}
 	t2 := &Terminal{client: c, opened: make(chan struct{}), stdout: make(chan []byte, 1), toast: make(chan []byte, 1)}
 	t2.stdout <- []byte("full") // 缓冲满 → stdout 帧走 default 丢弃

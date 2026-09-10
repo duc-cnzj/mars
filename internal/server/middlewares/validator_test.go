@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/stretchr/testify/assert"
@@ -13,6 +14,7 @@ import (
 )
 
 func TestStreamServerInterceptor(t *testing.T) {
+	t.Parallel()
 	assert.IsType(t, (grpc.StreamServerInterceptor)(nil), ValidatorStreamServerInterceptor())
 	called := false
 	ValidatorStreamServerInterceptor()("", nil, nil, func(srv any, stream grpc.ServerStream) error {
@@ -32,6 +34,7 @@ func (m *mockValidator) Validate() error {
 }
 
 func TestUnaryServerInterceptor(t *testing.T) {
+	t.Parallel()
 	assert.IsType(t, (grpc.UnaryServerInterceptor)(nil), ValidatorUnaryServerInterceptor())
 
 	called := 0
@@ -46,6 +49,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 	})
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, 1, called)
+	assert.Equal(t, codes.InvalidArgument, fromError.Code())
 	assert.Equal(t, "xxx", fromError.Message())
 
 	// 请求未实现 Validator：不校验，直接透传 handler。
@@ -97,6 +101,7 @@ func (v *v) Validate() error {
 }
 
 func Test_recvWrapper_RecvMsg(t *testing.T) {
+	t.Parallel()
 	r := recvWrapper{ServerStream: &ss{}}
 	vv := &v{}
 	r.RecvMsg(vv)
@@ -106,7 +111,13 @@ func Test_recvWrapper_RecvMsg(t *testing.T) {
 	vv1 := &v{
 		err: errors.New("xxx"),
 	}
-	assert.Equal(t, "xxx", r1.RecvMsg(vv1).Error())
+	recvErr := r1.RecvMsg(vv1)
+	// 回归防护：stream 校验失败必须映射成 InvalidArgument，与 unary 路径一致。
+	// 若 RecvMsg 原样上抛 Validate 的 MultiError（非 status 错误），这里会落成 Unknown。
+	st, ok := status.FromError(recvErr)
+	assert.True(t, ok)
+	assert.Equal(t, codes.InvalidArgument, st.Code())
+	assert.Equal(t, "xxx", st.Message())
 	assert.True(t, vv1.called)
 
 	r2 := recvWrapper{ServerStream: &ss{

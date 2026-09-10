@@ -1,7 +1,6 @@
 package biz
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -139,12 +138,13 @@ func hasTreeEdge(tree *ResourceTree, typ, source, target string) bool {
 // TestBuildResourceTree_EmptySelectors 空 PodSelectors（从未部署）只回 Application 根节点，
 // status 跟随项目记录的部署状态，不产生任何 k8s 调用。
 func TestBuildResourceTree_EmptySelectors(t *testing.T) {
+	t.Parallel()
 	k := &fakeTreeK8sRepo{}
 	proj := &Project{
 		ID: 1, Name: "demo-app", Namespace: &Namespace{Name: "ns"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 	if assert.Len(t, got.Nodes, 1) {
 		assert.Equal(t, "application-1", got.Nodes[0].ID)
@@ -158,6 +158,7 @@ func TestBuildResourceTree_EmptySelectors(t *testing.T) {
 // TestBuildResourceTree_HappyPath 覆盖完整滚动发布树：Deployment → 新/旧 RS → Pod 属主链、
 // revision 新旧判定、StatefulSet 旧副本子树、Service selector 边与整体聚合。
 func TestBuildResourceTree_HappyPath(t *testing.T) {
+	t.Parallel()
 	oldRS := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "demo-app-7c3e9d1f5", UID: "rs-old-uid",
@@ -210,7 +211,7 @@ func TestBuildResourceTree_HappyPath(t *testing.T) {
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	// 根节点 + 聚合状态（全健康 → Deployed）
@@ -283,6 +284,7 @@ func TestBuildResourceTree_HappyPath(t *testing.T) {
 // TestBuildResourceTree_Degraded 覆盖容器稳定失败（CrashLoopBackOff）沿 Pod→RS→Application
 // 逐级降级，整体聚合为 Failed。
 func TestBuildResourceTree_Degraded(t *testing.T) {
+	t.Parallel()
 	rs := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "demo-app-8b2f4e7d", UID: "rs-new-uid",
@@ -305,7 +307,7 @@ func TestBuildResourceTree_Degraded(t *testing.T) {
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "degraded", treeNode(t, got, "pod-pod-bad").Status)
@@ -318,6 +320,7 @@ func TestBuildResourceTree_Degraded(t *testing.T) {
 // TestBuildResourceTree_FilterFailedPod 覆盖 Failed 阶段 pod 被剔除:与 AllContainers 一致,
 // Failed pod 不入图(无 pod 节点与 owner 边),不参与聚合;非 Failed pod 正常入图。
 func TestBuildResourceTree_FilterFailedPod(t *testing.T) {
+	t.Parallel()
 	rs := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "demo-app-8b2f4e7d", UID: "rs-new-uid",
@@ -348,7 +351,7 @@ func TestBuildResourceTree_FilterFailedPod(t *testing.T) {
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	// Failed pod 无节点、无 owner 边;ready pod 正常挂 RS 下
@@ -366,6 +369,7 @@ func TestBuildResourceTree_FilterFailedPod(t *testing.T) {
 // TestBuildResourceTree_DeploymentNotCreated 覆盖部署刚发起、Deployment 尚未创建的场景：
 // 占位为 progressing 节点，仍挂 Application 下，聚合为 Deploying。
 func TestBuildResourceTree_DeploymentNotCreated(t *testing.T) {
+	t.Parallel()
 	k := &fakeTreeK8sRepo{
 		deployments:  map[string]*appsv1.Deployment{},
 		getDepErr:    errs.NotFound("deployment not found"),
@@ -376,7 +380,7 @@ func TestBuildResourceTree_DeploymentNotCreated(t *testing.T) {
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	dep := treeNode(t, got, "deployment-demo-app")
@@ -390,11 +394,12 @@ func TestBuildResourceTree_DeploymentNotCreated(t *testing.T) {
 
 // TestBuildResourceTree_ListPodsError 上抛 ListPodsBySelectors 错误。
 func TestBuildResourceTree_ListPodsError(t *testing.T) {
+	t.Parallel()
 	k := &fakeTreeK8sRepo{listPodsErr: errors.New("list down")}
 	proj := &Project{
 		ID: 1, Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=demo"},
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.Nil(t, got)
 	assert.ErrorContains(t, err, "list down")
 }
@@ -420,12 +425,13 @@ func workloadPod(name, kind, owner string, uid kmetatypes.UID, rev string) *core
 // sts/ds 各成子树挂 Application 下（属主 pod 聚合其下、owner 边齐全），
 // 裸 pod 仍直挂 Application，Service selector 边覆盖全部 pod。
 func TestBuildResourceTree_StatefulSetDaemonSet(t *testing.T) {
+	t.Parallel()
 	stsReplicas := int32(2)
 	stsPod1 := workloadPod("pod-sts-1", "StatefulSet", "sts", "sts-uid", "rev2")
 	stsPod2 := workloadPod("pod-sts-2", "StatefulSet", "sts", "sts-uid", "rev2")
 	dsPod := workloadPod("pod-ds-1", "DaemonSet", "ds", "ds-uid", "rev1")
 	bare := readyPod("pod-bare", "", "")
-	bare.ObjectMeta.OwnerReferences = nil
+	bare.OwnerReferences = nil
 
 	sts := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{Name: "sts", Namespace: "ns", UID: "sts-uid", Generation: 1},
@@ -456,7 +462,7 @@ func TestBuildResourceTree_StatefulSetDaemonSet(t *testing.T) {
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"sts.yaml", "ds.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	// 整体聚合：全健康 → Deployed
@@ -509,6 +515,7 @@ func TestBuildResourceTree_StatefulSetDaemonSet(t *testing.T) {
 // TestBuildResourceTree_StatefulSetDaemonSetNotCreated 覆盖 manifest 声明但尚未创建的
 // sts/ds：占位 progressing 节点 + Application 属主边，整体聚合为 Deploying。
 func TestBuildResourceTree_StatefulSetDaemonSetNotCreated(t *testing.T) {
+	t.Parallel()
 	k := &fakeTreeK8sRepo{
 		statefulSets: map[string]*appsv1.StatefulSet{},
 		daemonSets:   map[string]*appsv1.DaemonSet{},
@@ -522,7 +529,7 @@ func TestBuildResourceTree_StatefulSetDaemonSetNotCreated(t *testing.T) {
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"sts.yaml", "ds.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	for _, id := range []string{"statefulset-sts", "daemonset-ds"} {
@@ -539,6 +546,7 @@ func TestBuildResourceTree_StatefulSetDaemonSetNotCreated(t *testing.T) {
 // TestBuildResourceTree_StatefulSetDegraded 覆盖 sts 容器稳定失败：pod 与 sts 节点逐级降级，
 // 整体聚合为 Failed。
 func TestBuildResourceTree_StatefulSetDegraded(t *testing.T) {
+	t.Parallel()
 	replicas := int32(1)
 	bad := workloadPod("pod-sts-bad", "StatefulSet", "sts", "sts-uid", "rev1")
 	bad.Status.ContainerStatuses[0].State.Waiting = &corev1.ContainerStateWaiting{Reason: "CrashLoopBackOff", Message: "back-off"}
@@ -559,7 +567,7 @@ func TestBuildResourceTree_StatefulSetDegraded(t *testing.T) {
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"sts.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "degraded", treeNode(t, got, "pod-pod-sts-bad").Status)
@@ -571,6 +579,7 @@ func TestBuildResourceTree_StatefulSetDegraded(t *testing.T) {
 // TestBuildResourceTree_WorkloadReadError 覆盖 GetStatefulSet/GetDaemonSet 读取失败
 // （非 NotFound，如 API 抖动）时上抛，不误判为占位节点。
 func TestBuildResourceTree_WorkloadReadError(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name string
 		k    *fakeTreeK8sRepo
@@ -597,7 +606,7 @@ func TestBuildResourceTree_WorkloadReadError(t *testing.T) {
 				ID: 1, Namespace: &Namespace{Name: "ns"},
 				PodSelectors: []string{"app=demo"}, Manifest: []string{"x.yaml"},
 			}
-			got, err := buildResourceTree(context.TODO(), tc.k, proj)
+			got, err := buildResourceTree(tc.k, proj)
 			assert.Nil(t, got)
 			assert.ErrorContains(t, err, "api down")
 		})
@@ -607,6 +616,7 @@ func TestBuildResourceTree_WorkloadReadError(t *testing.T) {
 // TestBuildResourceTree_OrphanWorkloadPod 覆盖属主为 sts 但该 sts 不在 manifest 里的 pod：
 // 无对应 workload 节点，降级直挂 Application，controller 打标 + old 标记（hash 判定仍生效）。
 func TestBuildResourceTree_OrphanWorkloadPod(t *testing.T) {
+	t.Parallel()
 	orphan := workloadPod("pod-orphan", "StatefulSet", "orphan", "orphan-uid", "rev1")
 	k := &fakeTreeK8sRepo{
 		pods:        []*corev1.Pod{orphan},
@@ -621,7 +631,7 @@ func TestBuildResourceTree_OrphanWorkloadPod(t *testing.T) {
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"only-deploy.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	assert.Nil(t, treeNode(t, got, "statefulset-orphan"))
@@ -636,6 +646,7 @@ func TestBuildResourceTree_OrphanWorkloadPod(t *testing.T) {
 // TestBuildResourceTree_Errors 覆盖资源树推导路径上的读取失败（非 NotFound）全部上抛：
 // ListReplicaSets / GetDeployment / ListServices / ListIngresses。
 func TestBuildResourceTree_Errors(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		k    *fakeTreeK8sRepo
@@ -659,7 +670,7 @@ func TestBuildResourceTree_Errors(t *testing.T) {
 				ID: 1, Namespace: &Namespace{Name: "ns"},
 				PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
 			}
-			got, err := buildResourceTree(context.TODO(), tt.k, proj)
+			got, err := buildResourceTree(tt.k, proj)
 			assert.Nil(t, got)
 			assert.ErrorContains(t, err, tt.want)
 		})
@@ -669,6 +680,7 @@ func TestBuildResourceTree_Errors(t *testing.T) {
 // TestBuildResourceTree_ServiceAndRSNoMatch 覆盖：非本项目 Deployment 的 RS 不入图、
 // 缩容到 0 的项目 RS 仍入图且 healthy、空 selector 与无匹配 pod 的 Service 均被跳过。
 func TestBuildResourceTree_ServiceAndRSNoMatch(t *testing.T) {
+	t.Parallel()
 	rs := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "demo-app-8b2f4e7d", UID: "rs-new-uid",
@@ -699,7 +711,7 @@ func TestBuildResourceTree_ServiceAndRSNoMatch(t *testing.T) {
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	// 项目 RS 缩容到 0 仍入图且 healthy；孤儿 RS 不入图
@@ -719,13 +731,14 @@ func TestBuildResourceTree_ServiceAndRSNoMatch(t *testing.T) {
 // TestBuildResourceTree_NoWorkloadsFallback 覆盖 PodSelectors 命中但命名空间无任何
 // 工作负载：仅回 Application 根节点，整体状态回退项目记录的部署状态（不误报 unknown）。
 func TestBuildResourceTree_NoWorkloadsFallback(t *testing.T) {
+	t.Parallel()
 	k := &fakeTreeK8sRepo{}
 	proj := &Project{
 		ID: 1, Name: "demo-app", Namespace: &Namespace{Name: "ns"},
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	assert.Len(t, got.Nodes, 1)
@@ -737,6 +750,7 @@ func TestBuildResourceTree_NoWorkloadsFallback(t *testing.T) {
 // Application、route 边连到该 svc；svc 被 ingress 覆盖后不再兜底挂 Application；workload
 // 经 svc selector 边挂其下。ingress 状态沿后端 svc 传播为 healthy。
 func TestBuildResourceTree_Ingress(t *testing.T) {
+	t.Parallel()
 	rs := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "demo-app-8b2f4e7d", UID: "rs-new-uid",
@@ -778,7 +792,7 @@ func TestBuildResourceTree_Ingress(t *testing.T) {
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	// Ingress 节点：healthy，owner 挂 Application，route 连到 demo-svc
@@ -807,6 +821,7 @@ func TestBuildResourceTree_Ingress(t *testing.T) {
 // TestBuildResourceTree_IngressNoMatch 覆盖 backend 不指向项目 Service 的 Ingress 被剔除：
 // 不入图、无 route 边；项目 svc 因无 ingress 覆盖兜底挂 Application。
 func TestBuildResourceTree_IngressNoMatch(t *testing.T) {
+	t.Parallel()
 	rs := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "demo-app-8b2f4e7d", UID: "rs-uid",
@@ -846,7 +861,7 @@ func TestBuildResourceTree_IngressNoMatch(t *testing.T) {
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	assert.Nil(t, treeNode(t, got, "ingress-other-ingress"))
@@ -858,6 +873,7 @@ func TestBuildResourceTree_IngressNoMatch(t *testing.T) {
 // TestBuildResourceTree_IngressMultiParent 覆盖多对多：两个 ingress 路由到同一 svc（route 双父边）、
 // 一个 svc 同时选中两个 deployment（selector 双父边）。
 func TestBuildResourceTree_IngressMultiParent(t *testing.T) {
+	t.Parallel()
 	rsA := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "app-a-8b2f4e7d", UID: "rs-a-uid",
@@ -901,7 +917,7 @@ func TestBuildResourceTree_IngressMultiParent(t *testing.T) {
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"a.yaml", "b.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	// 两个 ingress 都 route 到同一 svc（svc 多父）
@@ -920,6 +936,7 @@ func TestBuildResourceTree_IngressMultiParent(t *testing.T) {
 // Test_ingressBackendServiceNames 覆盖 backend 提取：默认 backend + 各 rule path backend，
 // 相同 svc 去重，非 Service backend（Resource 引用）跳过。
 func Test_ingressBackendServiceNames(t *testing.T) {
+	t.Parallel()
 	ing := &networkingv1.Ingress{
 		Spec: networkingv1.IngressSpec{
 			DefaultBackend: &networkingv1.IngressBackend{Service: &networkingv1.IngressServiceBackend{Name: "default-svc"}},
@@ -946,6 +963,7 @@ func Test_ingressBackendServiceNames(t *testing.T) {
 // Test_ingressStatus 覆盖 Ingress 状态聚合：任一 degraded→degraded、任一
 // progressing→progressing、全 healthy→healthy。
 func Test_ingressStatus(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "healthy", ingressStatus([]string{"healthy", "healthy"}))
 	assert.Equal(t, "degraded", ingressStatus([]string{"healthy", "degraded"}))
 	assert.Equal(t, "progressing", ingressStatus([]string{"healthy", "progressing"}))
@@ -954,6 +972,7 @@ func Test_ingressStatus(t *testing.T) {
 // Test_deploymentOwnerUID 覆盖 RS 属主提取：有 Deployment 属主返回其 UID；
 // 无属主或属主为其他控制器（CronJob 等）返回空 UID，用于筛掉非本项目 Deployment 的 RS。
 func Test_deploymentOwnerUID(t *testing.T) {
+	t.Parallel()
 	depRS := &appsv1.ReplicaSet{ObjectMeta: metav1.ObjectMeta{OwnerReferences: []metav1.OwnerReference{{Kind: "Deployment", UID: "dep-1"}}}}
 	assert.Equal(t, kmetatypes.UID("dep-1"), deploymentOwnerUID(depRS))
 	otherRS := &appsv1.ReplicaSet{ObjectMeta: metav1.ObjectMeta{OwnerReferences: []metav1.OwnerReference{{Kind: "CronJob", UID: "cj-1"}}}}
@@ -964,6 +983,7 @@ func Test_deploymentOwnerUID(t *testing.T) {
 // TestBuildResourceTree_WorkloadMultiSvc 覆盖反向多父：一个 workload 同时被多个 svc
 // 选中（多条 selector 边）；两个 svc 均无 ingress 覆盖 → 兜底 owner 挂 Application。
 func TestBuildResourceTree_WorkloadMultiSvc(t *testing.T) {
+	t.Parallel()
 	rs := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "demo-app-8b2f4e7d", UID: "rs-new-uid",
@@ -989,7 +1009,7 @@ func TestBuildResourceTree_WorkloadMultiSvc(t *testing.T) {
 		PodSelectors: []string{"app=demo"}, Manifest: []string{"demo.yaml"},
 		DeployStatus: types.Deploy_StatusDeployed,
 	}
-	got, err := buildResourceTree(context.TODO(), k, proj)
+	got, err := buildResourceTree(k, proj)
 	assert.NoError(t, err)
 
 	// workload 被两个 svc 同时覆盖 → 两条 selector 边，不再 owner 挂 app
@@ -1005,6 +1025,7 @@ func TestBuildResourceTree_WorkloadMultiSvc(t *testing.T) {
 // Test_aggregate 覆盖整体状态聚合的各级优先级：无子节点→Unknown、degraded→Failed、
 // progressing/unknown→Deploying、全 healthy→Deployed。
 func Test_aggregate(t *testing.T) {
+	t.Parallel()
 	with := func(statuses ...string) *ResourceTree {
 		tree := &ResourceTree{Nodes: []*ResourceTreeNode{{ID: "application-1"}}}
 		for _, s := range statuses {
@@ -1021,6 +1042,7 @@ func Test_aggregate(t *testing.T) {
 
 // Test_podStatus 覆盖单 pod 节点状态的各级判定分支。
 func Test_podStatus(t *testing.T) {
+	t.Parallel()
 	base := func() *corev1.Pod { return readyPod("p", "rs", "rs-uid") }
 	tests := []struct {
 		name string
@@ -1056,6 +1078,7 @@ func Test_podStatus(t *testing.T) {
 
 // Test_aggregatePodStatus 覆盖 pod 集合聚合：degraded 优先、progressing 次之、全健康才 healthy。
 func Test_aggregatePodStatus(t *testing.T) {
+	t.Parallel()
 	healthy := readyPod("p1", "rs", "r1")
 	bad := readyPod("p2", "rs", "r1")
 	bad.Status.ContainerStatuses[0] = corev1.ContainerStatus{Name: "web", State: corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{Reason: "CrashLoopBackOff"}}}
@@ -1069,6 +1092,7 @@ func Test_aggregatePodStatus(t *testing.T) {
 
 // Test_serviceStatus 覆盖 Service 状态：有 ready→healthy、有 degraded→degraded、否则 progressing。
 func Test_serviceStatus(t *testing.T) {
+	t.Parallel()
 	healthy := readyPod("p1", "rs", "r1")
 	bad := readyPod("p2", "rs", "r1")
 	bad.Status.ContainerStatuses[0] = corev1.ContainerStatus{Name: "web", State: corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{Reason: "CrashLoopBackOff"}}}
@@ -1084,6 +1108,7 @@ func Test_serviceStatus(t *testing.T) {
 
 // Test_rsStatus 覆盖 RS 状态：无 pod（缩容到 0）→ healthy，有 pod → 聚合判定。
 func Test_rsStatus(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "healthy", rsStatus(nil))
 	assert.Equal(t, "healthy", rsStatus([]*corev1.Pod{readyPod("p1", "rs", "r1")}))
 	bad := readyPod("p2", "rs", "r1")
@@ -1093,6 +1118,7 @@ func Test_rsStatus(t *testing.T) {
 
 // Test_selectorMatches 覆盖 Service selector 判定：空 selector 不匹配、键值需完全一致。
 func Test_selectorMatches(t *testing.T) {
+	t.Parallel()
 	labels := map[string]string{"app": "demo", "tier": "web"}
 	assert.False(t, selectorMatches(nil, labels))
 	assert.False(t, selectorMatches(map[string]string{"app": "nope"}, labels))
@@ -1101,6 +1127,7 @@ func Test_selectorMatches(t *testing.T) {
 
 // Test_sortPods 覆盖 pod 排序：创建时间升序，时间相同时按名兜底，保证输出确定性。
 func Test_sortPods(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	old := readyPod("old", "rs", "r1")
 	old.CreationTimestamp = metav1.NewTime(now.Add(-time.Minute))

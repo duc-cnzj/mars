@@ -15,6 +15,7 @@ import (
 )
 
 func Test_endpointSvc_InNamespace_ShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEndpointSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("boom"))
@@ -24,6 +25,7 @@ func Test_endpointSvc_InNamespace_ShowError(t *testing.T) {
 }
 
 func TestEndpointSvc_InProject_ShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEndpointSvcWithMocks(t)
 	projRepo := mocks.projRepo
 	projRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("boom"))
@@ -33,6 +35,7 @@ func TestEndpointSvc_InProject_ShowError(t *testing.T) {
 }
 
 func TestEndpointSvc_InProject_NamespaceError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEndpointSvcWithMocks(t)
 	projRepo := mocks.projRepo
 	nsRepo := mocks.nsRepo
@@ -44,6 +47,7 @@ func TestEndpointSvc_InProject_NamespaceError(t *testing.T) {
 }
 
 func TestEndpointSvc_InProject_PermissionDenied(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEndpointSvcWithMocks(t)
 	projRepo := mocks.projRepo
 	nsRepo := mocks.nsRepo
@@ -54,12 +58,14 @@ func TestEndpointSvc_InProject_PermissionDenied(t *testing.T) {
 }
 
 func TestNewEndpointSvc(t *testing.T) {
+	t.Parallel()
 	svc, _ := newEndpointSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.epBiz)
 }
 
 func Test_endpointSvc_InNamespace(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEndpointSvcWithMocks(t)
 	endpointBiz := mocks.epBiz
 	nsRepo := mocks.nsRepo
@@ -72,6 +78,7 @@ func Test_endpointSvc_InNamespace(t *testing.T) {
 	assert.NotNil(t, namespace)
 }
 func Test_endpointSvc_InNamespace_PermissionDenied(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEndpointSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
@@ -82,6 +89,7 @@ func Test_endpointSvc_InNamespace_PermissionDenied(t *testing.T) {
 }
 
 func Test_endpointSvc_InNamespace_Fail(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEndpointSvcWithMocks(t)
 	endpointBiz := mocks.epBiz
 	nsRepo := mocks.nsRepo
@@ -94,6 +102,7 @@ func Test_endpointSvc_InNamespace_Fail(t *testing.T) {
 }
 
 func TestEndpointSvc_InProject_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEndpointSvcWithMocks(t)
 	epBiz := mocks.epBiz
 	projRepo := mocks.projRepo
@@ -110,6 +119,7 @@ func TestEndpointSvc_InProject_Success(t *testing.T) {
 }
 
 func TestEndpointSvc_InProject_Failure(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newEndpointSvcWithMocks(t)
 	epBiz := mocks.epBiz
 	projRepo := mocks.projRepo

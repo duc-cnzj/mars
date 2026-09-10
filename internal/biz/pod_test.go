@@ -1,7 +1,6 @@
 package biz
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -13,6 +12,7 @@ import (
 )
 
 func TestIsContainerReady(t *testing.T) {
+	t.Parallel()
 	pod := &corev1.Pod{
 		Status: corev1.PodStatus{
 			ContainerStatuses: []corev1.ContainerStatus{
@@ -33,6 +33,7 @@ func TestIsContainerReady(t *testing.T) {
 }
 
 func TestSortStatePod_Len(t *testing.T) {
+	t.Parallel()
 	pods := SortStatePod{
 		{Pod: &corev1.Pod{}},
 		{Pod: &corev1.Pod{}},
@@ -42,6 +43,7 @@ func TestSortStatePod_Len(t *testing.T) {
 }
 
 func TestSortStatePod_Swap(t *testing.T) {
+	t.Parallel()
 	pods := SortStatePod{
 		{Pod: &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -60,6 +62,7 @@ func TestSortStatePod_Swap(t *testing.T) {
 }
 
 func TestSortStatePod_Less(t *testing.T) {
+	t.Parallel()
 	pods := SortStatePod{
 		{Pod: &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "Pod1"}, Status: corev1.PodStatus{Phase: corev1.PodRunning}}},
 		{Pod: &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "Pod2"}, Status: corev1.PodStatus{Phase: corev1.PodPending}}},
@@ -129,6 +132,7 @@ func (f *fakePodK8sRepo) GetStatefulSet(namespace, name string) (*appsv1.Statefu
 
 // Test_activePods 覆盖 activePods 边界：nil/空→空、全 Failed→空、混合输入只保留非 Failed。
 func Test_activePods(t *testing.T) {
+	t.Parallel()
 	mk := func(phase corev1.PodPhase) *corev1.Pod {
 		return &corev1.Pod{Status: corev1.PodStatus{Phase: phase}}
 	}
@@ -146,17 +150,19 @@ func Test_activePods(t *testing.T) {
 }
 
 func TestBuildStateContainers_EmptySelectors(t *testing.T) {
+	t.Parallel()
 	k := &fakePodK8sRepo{}
 	proj := &Project{Namespace: &Namespace{Name: "ns"}}
-	got, err := buildStateContainers(context.TODO(), k, proj)
+	got, err := buildStateContainers(k, proj)
 	assert.NoError(t, err)
 	assert.Nil(t, got)
 }
 
 func TestBuildStateContainers_ListPodsError(t *testing.T) {
+	t.Parallel()
 	k := &fakePodK8sRepo{listPodsErr: errors.New("list down")}
 	proj := &Project{Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=a"}}
-	got, err := buildStateContainers(context.TODO(), k, proj)
+	got, err := buildStateContainers(k, proj)
 	assert.Nil(t, got)
 	assert.ErrorContains(t, err, "list down")
 }
@@ -165,6 +171,7 @@ func TestBuildStateContainers_ListPodsError(t *testing.T) {
 // （"1"）小于 rs-new（"2"），故 rs-old 名下 pod 标记 IsOld；同时验证 Failed pod 被过滤、
 // IgnoreContainerNames 侧车容器被剔除、Terminating/Pending 标志与容器 Ready 判定。
 func TestBuildStateContainers_HappyPath(t *testing.T) {
+	t.Parallel()
 	oldRS := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        "rs-old",
@@ -232,7 +239,7 @@ func TestBuildStateContainers_HappyPath(t *testing.T) {
 		},
 	}
 	proj := &Project{Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=a"}}
-	got, err := buildStateContainers(context.TODO(), k, proj)
+	got, err := buildStateContainers(k, proj)
 	assert.NoError(t, err)
 	if assert.Len(t, got, 2) {
 		// 新 pod 在前（IsOld=false），旧 pod 在后（IsOld=true），Failed pod 已过滤。
@@ -247,6 +254,7 @@ func TestBuildStateContainers_HappyPath(t *testing.T) {
 }
 
 func TestBuildStateContainers_GetReplicaSetError(t *testing.T) {
+	t.Parallel()
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pod",
@@ -265,7 +273,7 @@ func TestBuildStateContainers_GetReplicaSetError(t *testing.T) {
 	}
 	k := &fakePodK8sRepo{pods: []*corev1.Pod{pod}, getReplicaSetErr: errors.New("rs down")}
 	proj := &Project{Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=a"}}
-	got, err := buildStateContainers(context.TODO(), k, proj)
+	got, err := buildStateContainers(k, proj)
 	assert.NoError(t, err)
 	// GetReplicaSet 失败时跳过该 pod 的旧副本判定，但 pod 本身仍进入结果（IsOld=false）。
 	if assert.Len(t, got, 1) {
@@ -276,6 +284,7 @@ func TestBuildStateContainers_GetReplicaSetError(t *testing.T) {
 // TestBuildStateContainers_RSWithoutDeploymentOwner 覆盖 ReplicaSet 无 Deployment owner 时
 // 不进 objectMap，pod 不标记 IsOld 的正常路径。
 func TestBuildStateContainers_RSWithoutDeploymentOwner(t *testing.T) {
+	t.Parallel()
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pod",
@@ -299,7 +308,7 @@ func TestBuildStateContainers_RSWithoutDeploymentOwner(t *testing.T) {
 		},
 	}
 	proj := &Project{Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=a"}}
-	got, err := buildStateContainers(context.TODO(), k, proj)
+	got, err := buildStateContainers(k, proj)
 	assert.NoError(t, err)
 	if assert.Len(t, got, 1) {
 		assert.False(t, got[0].IsOld)
@@ -311,6 +320,7 @@ func TestBuildStateContainers_RSWithoutDeploymentOwner(t *testing.T) {
 // 两条分支：list 是 map，迭代顺序随机，故同一场景多次调用后两种顺序都出现，两条分支
 // 跨调用累计均被执行；无论顺序如何，旧副本 pod 恒标记 IsOld=true（结果确定）。
 func TestBuildStateContainers_RevisionCompareBothBranches(t *testing.T) {
+	t.Parallel()
 	for i := 0; i < 30; i++ {
 		rsOld := &appsv1.ReplicaSet{
 			ObjectMeta: metav1.ObjectMeta{
@@ -367,7 +377,7 @@ func TestBuildStateContainers_RevisionCompareBothBranches(t *testing.T) {
 				"rs-new": rsNew,
 			},
 		}
-		got, err := buildStateContainers(context.TODO(), k, &Project{Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=a"}})
+		got, err := buildStateContainers(k, &Project{Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=a"}})
 		assert.NoError(t, err)
 		if assert.Len(t, got, 2) {
 			// 排序后新副本 pod 恒在前，旧副本 pod 恒标记 IsOld=true。
@@ -381,6 +391,7 @@ func TestBuildStateContainers_RevisionCompareBothBranches(t *testing.T) {
 // 分类后标记 IsOld：pod 的 controller-revision-hash 与 status.updateRevision 不一致即旧副本，
 // 且不依赖 ReplicaSet 属主路径（此路径此前导致 STS/DS 的 is_old 误判）。
 func TestBuildStateContainers_StsOldPod(t *testing.T) {
+	t.Parallel()
 	podOld := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "sts-old",
@@ -399,7 +410,7 @@ func TestBuildStateContainers_StsOldPod(t *testing.T) {
 		Status:     appsv1.StatefulSetStatus{UpdateRevision: "rev2"},
 	}
 	k := &fakePodK8sRepo{pods: []*corev1.Pod{podOld}, sts: sts}
-	got, err := buildStateContainers(context.TODO(), k, &Project{Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=a"}})
+	got, err := buildStateContainers(k, &Project{Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=a"}})
 	assert.NoError(t, err)
 	if assert.Len(t, got, 1) {
 		assert.Equal(t, "sts-old", got[0].Pod)

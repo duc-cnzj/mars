@@ -12,6 +12,7 @@ func newCommand() *command {
 }
 
 func TestCommand_At(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		time  string
 		wants string
@@ -35,6 +36,7 @@ func TestCommand_At(t *testing.T) {
 }
 
 func TestCommand_Cron(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		expr string
 	}{
@@ -55,10 +57,12 @@ func TestCommand_Cron(t *testing.T) {
 }
 
 func TestCommand_Daily(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 0 0 * * *", newCommand().Daily().Expression())
 }
 
 func TestCommand_DailyAt(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		time  string
 		wants string
@@ -82,6 +86,7 @@ func TestCommand_DailyAt(t *testing.T) {
 }
 
 func TestCommand_Days(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		days  []int
 		wants string
@@ -105,98 +110,121 @@ func TestCommand_Days(t *testing.T) {
 }
 
 func TestCommand_EveryFifteenMinutes(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 */15 * * * *", newCommand().EveryFifteenMinutes().Expression())
 }
 
 func TestCommand_EveryFifteenSeconds(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "*/15 * * * * *", newCommand().EveryFifteenSeconds().Expression())
 
 }
 
 func TestCommand_EveryFiveMinutes(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 */5 * * * *", newCommand().EveryFiveMinutes().Expression())
 }
 
 func TestCommand_EveryFiveSeconds(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "*/5 * * * * *", newCommand().EveryFiveSeconds().Expression())
 
 }
 
 func TestCommand_EveryFourHours(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 0 */4 * * *", newCommand().EveryFourHours().Expression())
 
 }
 
 func TestCommand_EveryFourMinutes(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 */4 * * * *", newCommand().EveryFourMinutes().Expression())
 }
 
 func TestCommand_EveryFourSeconds(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "*/4 * * * * *", newCommand().EveryFourSeconds().Expression())
 }
 
 func TestCommand_EveryMinute(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 * * * * *", newCommand().EveryMinute().Expression())
 }
 
 func TestCommand_EverySecond(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "* * * * * *", newCommand().EverySecond().Expression())
 }
 
 func TestCommand_EverySixHours(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 0 */6 * * *", newCommand().EverySixHours().Expression())
 }
 
 func TestCommand_EveryTenMinutes(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 */10 * * * *", newCommand().EveryTenMinutes().Expression())
 }
 
 func TestCommand_EveryTenSeconds(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "*/10 * * * * *", newCommand().EveryTenSeconds().Expression())
 }
 
 func TestCommand_EveryThirtyMinutes(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 0,30 * * * *", newCommand().EveryThirtyMinutes().Expression())
 }
 
 func TestCommand_EveryThirtySeconds(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0,30 * * * * *", newCommand().EveryThirtySeconds().Expression())
 }
 
 func TestCommand_EveryThreeHours(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 0 */3 * * *", newCommand().EveryThreeHours().Expression())
 }
 
 func TestCommand_EveryThreeMinutes(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 */3 * * * *", newCommand().EveryThreeMinutes().Expression())
 }
 
 func TestCommand_EveryThreeSeconds(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "*/3 * * * * *", newCommand().EveryThreeSeconds().Expression())
 }
 
 func TestCommand_EveryTwoHours(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 0 */2 * * *", newCommand().EveryTwoHours().Expression())
 }
 
 func TestCommand_EveryTwoMinutes(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 */2 * * * *", newCommand().EveryTwoMinutes().Expression())
 }
 
 func TestCommand_EveryTwoSeconds(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "*/2 * * * * *", newCommand().EveryTwoSeconds().Expression())
 }
 
 func TestCommand_Expression(t *testing.T) {
+	t.Parallel()
 	cmd := newCommand()
 	assert.Equal(t, cmd.expression, cmd.Expression())
 }
 
 func TestCommand_Fridays(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 * * * * 5", newCommand().Fridays().Expression())
 }
 
 func TestCommand_Func(t *testing.T) {
+	t.Parallel()
 	assert.Nil(t, newCommand().Func())
 	cmd := newCommand()
 	i := 0
@@ -207,10 +235,12 @@ func TestCommand_Func(t *testing.T) {
 }
 
 func TestCommand_Hourly(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 0 * * * *", newCommand().Hourly().Expression())
 }
 
 func TestCommand_HourlyAt(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		time  []int
 		wants string
@@ -238,18 +268,22 @@ func TestCommand_HourlyAt(t *testing.T) {
 }
 
 func TestCommand_LastDayOfMonth(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 00 15 L * *", newCommand().LastDayOfMonth("15:00").Expression())
 }
 
 func TestCommand_Mondays(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 * * * * 1", newCommand().Mondays().Expression())
 }
 
 func TestCommand_Monthly(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 0 0 1 * *", newCommand().Monthly().Expression())
 }
 
 func TestCommand_MonthlyOn(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		dom   string
 		time  string
@@ -276,15 +310,18 @@ func TestCommand_MonthlyOn(t *testing.T) {
 }
 
 func TestCommand_Name(t *testing.T) {
+	t.Parallel()
 	cmd := &command{name: "duc"}
 	assert.Equal(t, "duc", cmd.Name())
 }
 
 func TestCommand_Quarterly(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 0 0 1 1-12/3 *", newCommand().Quarterly().Expression())
 }
 
 func TestCommand_QuarterlyOn(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		doq   string
 		time  string
@@ -311,52 +348,64 @@ func TestCommand_QuarterlyOn(t *testing.T) {
 }
 
 func TestCommand_Saturdays(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 * * * * 6", newCommand().Saturdays().Expression())
 }
 
 func TestCommand_Sundays(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 * * * * 0", newCommand().Sundays().Expression())
 
 }
 
 func TestCommand_Thursdays(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 * * * * 4", newCommand().Thursdays().Expression())
 }
 
 func TestCommand_Tuesdays(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 * * * * 2", newCommand().Tuesdays().Expression())
 }
 
 func TestCommand_Wednesdays(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 * * * * 3", newCommand().Wednesdays().Expression())
 }
 
 func TestCommand_Weekdays(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 * * * * 1,2,3,4,5", newCommand().Weekdays().Expression())
 }
 
 func TestCommand_Weekends(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 * * * * 6,0", newCommand().Weekends().Expression())
 }
 
 func TestCommand_Weekly(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 0 0 * * 1", newCommand().Weekly().Expression())
 }
 
 func TestCommand_WeeklyOn(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 00 19 * * 0", newCommand().WeeklyOn(SUNDAY, "19:00").Expression())
 	assert.Equal(t, "0 0 0 * * 0", newCommand().WeeklyOn(SUNDAY, "").Expression())
 }
 
 func TestCommand_Yearly(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 0 0 1 1 *", newCommand().Yearly().Expression())
 }
 
 func TestCommand_YearlyOn(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 33 3 4 3 *", newCommand().YearlyOn("3", "4", "3:33").Expression())
 }
 
 func TestCommand_spliceIntoPosition(t *testing.T) {
+	t.Parallel()
 	cmd := newCommand()
 	cmd.spliceIntoPosition(POS_SECOND, "1")
 	cmd.spliceIntoPosition(POS_MINUTE, "2")
@@ -368,5 +417,6 @@ func TestCommand_spliceIntoPosition(t *testing.T) {
 }
 
 func TestMixture(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "0 0 */6 * * 3", newCommand().EverySixHours().Wednesdays().Expression())
 }

@@ -239,7 +239,7 @@ func (data *dataImpl) InitS3() error {
 			return
 		}
 
-		// Initialize minio client object.
+		// 初始化 minio 客户端。
 		data.minioCli, err = minio.New(endpoint, &minio.Options{
 			Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
 			Secure: useSSL,

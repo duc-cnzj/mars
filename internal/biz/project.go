@@ -74,7 +74,7 @@ func (p *projectBiz) GetAllActiveContainers(ctx context.Context, id int) ([]*typ
 	if err != nil {
 		return nil, err
 	}
-	return buildStateContainers(ctx, p.k8sRepo, proj)
+	return buildStateContainers(p.k8sRepo, proj)
 }
 
 // ResourceTree 返回项目资源拓扑树（见 buildResourceTree）。
@@ -83,7 +83,7 @@ func (p *projectBiz) ResourceTree(ctx context.Context, id int) (*ResourceTree, e
 	if err != nil {
 		return nil, err
 	}
-	return buildResourceTree(ctx, p.k8sRepo, proj)
+	return buildResourceTree(p.k8sRepo, proj)
 }
 
 // GetProjectEndpointsInNamespace 汇总 Ingress/LoadBalancer/NodePort/HTTPRoute 四种来源的

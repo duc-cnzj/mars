@@ -57,6 +57,7 @@ func ready(t *testing.T, cli *Client) {
 }
 
 func TestOnType_Dispatch(t *testing.T) {
+	t.Parallel()
 	got := make(chan *Event, 1)
 	cli, goSend := newCoordClient(t, func(c *websocket.Conn) {
 		sendMeta(t, c, &websocket_pb.Metadata{Type: websocket_pb.Type_ProcessPercent, Percent: 50})
@@ -75,6 +76,7 @@ func TestOnType_Dispatch(t *testing.T) {
 }
 
 func TestOnSession_Dispatch(t *testing.T) {
+	t.Parallel()
 	got := make(chan *Event, 1)
 	cli, goSend := newCoordClient(t, func(c *websocket.Conn) {
 		data, _ := proto.Marshal(&websocket_pb.WsHandleShellResponse{
@@ -99,6 +101,7 @@ func TestOnSession_Dispatch(t *testing.T) {
 }
 
 func TestUnsubscribe_StopsDelivery(t *testing.T) {
+	t.Parallel()
 	got := make(chan *Event, 1)
 	cli, goSend := newCoordClient(t, func(c *websocket.Conn) {
 		sendMeta(t, c, &websocket_pb.Metadata{Type: websocket_pb.Type_ProcessPercent})

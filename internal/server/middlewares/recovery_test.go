@@ -9,6 +9,7 @@ import (
 )
 
 func TestRecovery(t *testing.T) {
+	t.Parallel()
 	// handler panic：Recovery 兜底捕获（HandlePanic），不 panic 击穿，handler 已被调用。
 	rw := &mockResponseWriter{h: map[string][]string{}}
 	m := &mockHandler{

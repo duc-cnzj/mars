@@ -35,7 +35,7 @@ jobs:
         run: |
           docker run --name nsqlookupd -p 4160:4160 -p 4161:4161 -d nsqio/nsq /nsqlookupd
           docker run --name nsqd -p 4150:4150 -p 4151:4151 -d nsqio/nsq /nsqd
-      - name: Run coverage
+      - name: Run tests
         env:
           DB_PORT: ${{ job.services.mysql.ports[3306] }}
           DB_USERNAME: root
@@ -50,7 +50,8 @@ jobs:
           # 才能编译，且 SPA 兜底测试断言 index.html 内容含 <!doctype html>。写入最小合法 stub，
           # 而非空 dummy——否则 staticFs.ReadFile("build/index.html") 运行期失败，兜底返回空页。
           mkdir -p frontend/build && printf '%s\n' "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"UTF-8\"><title>Mars</title></head><body><div id=\"root\"></div></body></html>" > frontend/build/index.html
-          make test
+          # test_all = test（internal 覆盖率 → codecov）+ 根模块非 internal 包 + 独立模块 api/
+          make test_all
       - uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true

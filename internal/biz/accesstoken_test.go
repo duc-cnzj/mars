@@ -85,6 +85,7 @@ func newAccessTokenBizWithClock(now time.Time, repo AccessTokenRepo) AccessToken
 }
 
 func TestAccessTokenBiz_Grant_NilInput(t *testing.T) {
+	t.Parallel()
 	b := newAccessTokenBizForTest(&fakeAccessTokenRepoForAccessTokenBiz{})
 	got, err := b.Grant(context.TODO(), nil)
 	assert.Nil(t, got)
@@ -93,6 +94,7 @@ func TestAccessTokenBiz_Grant_NilInput(t *testing.T) {
 }
 
 func TestAccessTokenBiz_Grant_NilUser(t *testing.T) {
+	t.Parallel()
 	b := newAccessTokenBizForTest(&fakeAccessTokenRepoForAccessTokenBiz{})
 	got, err := b.Grant(context.TODO(), &GrantAccessTokenInput{User: nil, ExpireSeconds: 3600})
 	assert.Nil(t, got)
@@ -101,6 +103,7 @@ func TestAccessTokenBiz_Grant_NilUser(t *testing.T) {
 }
 
 func TestAccessTokenBiz_Grant_InvalidExpireSeconds(t *testing.T) {
+	t.Parallel()
 	b := newAccessTokenBizForTest(&fakeAccessTokenRepoForAccessTokenBiz{})
 	got, err := b.Grant(context.TODO(), &GrantAccessTokenInput{User: &UserInfo{Name: "duc"}, ExpireSeconds: 0})
 	assert.Nil(t, got)
@@ -109,6 +112,7 @@ func TestAccessTokenBiz_Grant_InvalidExpireSeconds(t *testing.T) {
 }
 
 func TestAccessTokenBiz_Grant_Valid(t *testing.T) {
+	t.Parallel()
 	f := &fakeAccessTokenRepoForAccessTokenBiz{}
 	b := newAccessTokenBizForTest(f)
 	got, err := b.Grant(context.TODO(), &GrantAccessTokenInput{User: &UserInfo{Name: "duc"}, ExpireSeconds: 3600})
@@ -118,6 +122,7 @@ func TestAccessTokenBiz_Grant_Valid(t *testing.T) {
 }
 
 func TestAccessTokenBiz_List_Passthrough(t *testing.T) {
+	t.Parallel()
 	f := &fakeAccessTokenRepoForAccessTokenBiz{}
 	b := newAccessTokenBizForTest(f)
 	got, pag, err := b.List(context.TODO(), &ListAccessTokenInput{})
@@ -128,6 +133,7 @@ func TestAccessTokenBiz_List_Passthrough(t *testing.T) {
 }
 
 func TestAccessTokenBiz_FindByToken_Passthrough(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 8, 11, 10, 0, 0, 0, time.UTC)
 	f := &fakeAccessTokenRepoForAccessTokenBiz{now: now}
 	b := newAccessTokenBizForTest(f)
@@ -138,6 +144,7 @@ func TestAccessTokenBiz_FindByToken_Passthrough(t *testing.T) {
 }
 
 func TestAccessTokenBiz_Lease_EmptyToken(t *testing.T) {
+	t.Parallel()
 	b := newAccessTokenBizForTest(&fakeAccessTokenRepoForAccessTokenBiz{})
 	got, err := b.Lease(context.TODO(), "", 3600)
 	assert.Nil(t, got)
@@ -146,6 +153,7 @@ func TestAccessTokenBiz_Lease_EmptyToken(t *testing.T) {
 }
 
 func TestAccessTokenBiz_Lease_Valid(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 8, 11, 10, 0, 0, 0, time.UTC)
 	f := &fakeAccessTokenRepoForAccessTokenBiz{now: now}
 	b := newAccessTokenBizWithClock(now, f)
@@ -157,6 +165,7 @@ func TestAccessTokenBiz_Lease_Valid(t *testing.T) {
 }
 
 func TestAccessTokenBiz_Revoke_EmptyToken(t *testing.T) {
+	t.Parallel()
 	b := newAccessTokenBizForTest(&fakeAccessTokenRepoForAccessTokenBiz{})
 	err := b.Revoke(context.TODO(), "")
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -164,6 +173,7 @@ func TestAccessTokenBiz_Revoke_EmptyToken(t *testing.T) {
 }
 
 func TestAccessTokenBiz_Revoke_Valid(t *testing.T) {
+	t.Parallel()
 	f := &fakeAccessTokenRepoForAccessTokenBiz{}
 	b := newAccessTokenBizForTest(f)
 	assert.NoError(t, b.Revoke(context.TODO(), "tok"))
@@ -171,6 +181,7 @@ func TestAccessTokenBiz_Revoke_Valid(t *testing.T) {
 }
 
 func TestAccessTokenBiz_TouchLastUsedAt_EmptyToken(t *testing.T) {
+	t.Parallel()
 	b := newAccessTokenBizForTest(&fakeAccessTokenRepoForAccessTokenBiz{})
 	err := b.TouchLastUsedAt(context.TODO(), "", time.Now())
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -178,6 +189,7 @@ func TestAccessTokenBiz_TouchLastUsedAt_EmptyToken(t *testing.T) {
 }
 
 func TestAccessTokenBiz_TouchLastUsedAt_Valid(t *testing.T) {
+	t.Parallel()
 	f := &fakeAccessTokenRepoForAccessTokenBiz{}
 	b := newAccessTokenBizForTest(f)
 	assert.NoError(t, b.TouchLastUsedAt(context.TODO(), "tok", time.Now()))
@@ -185,6 +197,7 @@ func TestAccessTokenBiz_TouchLastUsedAt_Valid(t *testing.T) {
 }
 
 func TestAccessTokenBiz_Lease_FindByTokenError(t *testing.T) {
+	t.Parallel()
 	f := &fakeAccessTokenRepoForAccessTokenBiz{findErr: errors.New("db down")}
 	b := newAccessTokenBizForTest(f)
 	got, err := b.Lease(context.TODO(), "tok", 3600)
@@ -195,6 +208,7 @@ func TestAccessTokenBiz_Lease_FindByTokenError(t *testing.T) {
 }
 
 func TestAccessTokenBiz_Lease_Expired(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 8, 11, 10, 0, 0, 0, time.UTC)
 	f := &fakeAccessTokenRepoForAccessTokenBiz{expired: true, now: now}
 	b := newAccessTokenBizWithClock(now, f)
@@ -208,6 +222,7 @@ func TestAccessTokenBiz_Lease_Expired(t *testing.T) {
 
 // TestAccessToken_IsExpired 直接测模型过期判定方法：now 与 ExpiredAt 的三种大小关系。
 func TestAccessToken_IsExpired(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 8, 11, 10, 0, 0, 0, time.UTC)
 	cases := []struct {
 		name      string

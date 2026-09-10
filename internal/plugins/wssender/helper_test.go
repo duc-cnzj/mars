@@ -32,6 +32,7 @@ func testPodEventMsg() *websocket_pb.WsProjectPodEventResponse {
 // ---------------------------------------------------------------------------
 
 func TestSendOrDrop_sends_when_space_available(t *testing.T) {
+	t.Parallel()
 	ch := make(chan []byte, 1)
 	SendOrDrop(ch, []byte("hello"), mlog.NewForConfig(nil), "label")
 
@@ -44,6 +45,7 @@ func TestSendOrDrop_sends_when_space_available(t *testing.T) {
 }
 
 func TestSendOrDrop_drops_when_channel_full(t *testing.T) {
+	t.Parallel()
 	ch := make(chan []byte, 1)
 	ch <- []byte("first")
 
@@ -63,6 +65,7 @@ func TestSendOrDrop_drops_when_channel_full(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTransformToResponse_marshals_proto(t *testing.T) {
+	t.Parallel()
 	data := TransformToResponse(testPodEventMsg())
 	var resp websocket_pb.WsProjectPodEventResponse
 	require.NoError(t, proto.Unmarshal(data, &resp))
@@ -70,6 +73,7 @@ func TestTransformToResponse_marshals_proto(t *testing.T) {
 }
 
 func TestTransformToResponse_nil_returns_empty(t *testing.T) {
+	t.Parallel()
 	assert.Empty(t, TransformToResponse(nil))
 }
 
@@ -78,6 +82,7 @@ func TestTransformToResponse_nil_returns_empty(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestMessage_Marshal_and_DecodeMessage_roundtrip(t *testing.T) {
+	t.Parallel()
 	msg := Message{
 		Data: []byte("payload"),
 		To:   websocket_pb.To_ToOthers,
@@ -94,6 +99,7 @@ func TestMessage_Marshal_and_DecodeMessage_roundtrip(t *testing.T) {
 }
 
 func TestMessage_Marshal_is_valid_json(t *testing.T) {
+	t.Parallel()
 	msg := Message{Data: []byte("x"), To: websocket_pb.To_ToSelf, ID: "i"}
 	var m map[string]any
 	require.NoError(t, json.Unmarshal(msg.Marshal(), &m))
@@ -101,11 +107,13 @@ func TestMessage_Marshal_is_valid_json(t *testing.T) {
 }
 
 func TestDecodeMessage_invalid_json_returns_error(t *testing.T) {
+	t.Parallel()
 	_, err := DecodeMessage([]byte("{not json"))
 	assert.Error(t, err)
 }
 
 func TestDecodeMessage_empty_json_returns_zero_value(t *testing.T) {
+	t.Parallel()
 	msg, err := DecodeMessage([]byte("{}"))
 	require.NoError(t, err)
 	assert.Empty(t, msg.Data)
@@ -114,11 +122,13 @@ func TestDecodeMessage_empty_json_returns_zero_value(t *testing.T) {
 }
 
 func TestDecodeMessage_nil_returns_error(t *testing.T) {
+	t.Parallel()
 	_, err := DecodeMessage(nil)
 	assert.Error(t, err)
 }
 
 func TestProtoToMessage_sets_fields(t *testing.T) {
+	t.Parallel()
 	msg := ProtoToMessage(testPodEventMsg(), "conn-1", websocket_pb.To_ToAll)
 	assert.Equal(t, "conn-1", msg.ID)
 	assert.Equal(t, websocket_pb.To_ToAll, msg.To)
@@ -134,10 +144,12 @@ func TestProtoToMessage_sets_fields(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetProjectPodEventRoom_int64(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "project-pod-events:42", GetProjectPodEventRoom(int64(42)))
 }
 
 func TestGetProjectPodEventRoom_int(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "project-pod-events:42", GetProjectPodEventRoom(42))
 }
 
@@ -146,6 +158,7 @@ func TestGetProjectPodEventRoom_int(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBuildPodEventResponse(t *testing.T) {
+	t.Parallel()
 	data := BuildPodEventResponse("id-9", "uid-9", 3)
 	var resp websocket_pb.WsProjectPodEventResponse
 	require.NoError(t, proto.Unmarshal(data, &resp))
@@ -165,6 +178,7 @@ func TestBuildPodEventResponse(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestMatchSelectorsAndSend_sends_to_matching_project(t *testing.T) {
+	t.Parallel()
 	ch := make(chan []byte, 4)
 	sel, err := labels.Parse("app=frontend")
 	require.NoError(t, err)
@@ -191,6 +205,7 @@ func TestMatchSelectorsAndSend_sends_to_matching_project(t *testing.T) {
 }
 
 func TestMatchSelectorsAndSend_skips_non_matching(t *testing.T) {
+	t.Parallel()
 	ch := make(chan []byte, 4)
 	sel, err := labels.Parse("app=backend")
 	require.NoError(t, err)
@@ -212,6 +227,7 @@ func TestMatchSelectorsAndSend_skips_non_matching(t *testing.T) {
 }
 
 func TestMatchSelectorsAndSend_multiple_projects_one_match(t *testing.T) {
+	t.Parallel()
 	ch := make(chan []byte, 4)
 	selA, err := labels.Parse("app=a")
 	require.NoError(t, err)
@@ -237,6 +253,7 @@ func TestMatchSelectorsAndSend_multiple_projects_one_match(t *testing.T) {
 }
 
 func TestMatchSelectorsAndSend_first_matching_selector_wins(t *testing.T) {
+	t.Parallel()
 	ch := make(chan []byte, 4)
 	selA, err := labels.Parse("app=x")
 	require.NoError(t, err)
@@ -256,6 +273,7 @@ func TestMatchSelectorsAndSend_first_matching_selector_wins(t *testing.T) {
 }
 
 func TestProjectPodEventObj_json_roundtrip(t *testing.T) {
+	t.Parallel()
 	pod := &corev1.Pod{}
 	pod.Name = "pod-1"
 	obj := ProjectPodEventObj{

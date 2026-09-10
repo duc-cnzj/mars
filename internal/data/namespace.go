@@ -231,7 +231,7 @@ func NewNamespaceRepo(data dataStore) biz.NamespaceRepo {
 // （匹配空间名/创建者邮箱）+ 只看私有。List 分页与 ListAdminPage 共用，保证同一份
 // 过滤语义单一来源；边装配由 withAdminEdges 按需叠加（Count 走本 base 保持无边，避免
 // 边 JOIN 放大计数）。
-func (repo *namespaceRepo) adminNamespaceBaseQuery(ctx context.Context, input *biz.ListNamespaceInput) *ent.NamespaceQuery {
+func (repo *namespaceRepo) adminNamespaceBaseQuery(input *biz.ListNamespaceInput) *ent.NamespaceQuery {
 	return repo.data.DB().Namespace.Query().
 		Where(
 			filters.IfNameLike(lo.FromPtr(input.Name)),
@@ -290,7 +290,7 @@ func withAdminEdges(query *ent.NamespaceQuery, email string) *ent.NamespaceQuery
 func (repo *namespaceRepo) List(ctx context.Context, input *biz.ListNamespaceInput) (out []*biz.Namespace, pag *pagination.Pagination, err error) {
 	ctx, span := tracer.Start(ctx, "namespaceRepo/List")
 	defer func() { endSpan(span, err) }()
-	query := repo.adminNamespaceBaseQuery(ctx, input)
+	query := repo.adminNamespaceBaseQuery(input)
 	if !input.IsAdmin {
 		query = query.Where(
 			namespace.Or(
@@ -447,7 +447,7 @@ func namespaceLivenessPred(liveness string, now time.Time) func(*sql.Selector) {
 func (repo *namespaceRepo) ListAdminPage(ctx context.Context, query *biz.AdminListPageQuery) (page *biz.AdminListPageResult, err error) {
 	ctx, span := tracer.Start(ctx, "namespaceRepo/ListAdminPage")
 	defer func() { endSpan(span, err) }()
-	base := repo.adminNamespaceBaseQuery(ctx, &biz.ListNamespaceInput{
+	base := repo.adminNamespaceBaseQuery(&biz.ListNamespaceInput{
 		Search:      query.Search,
 		PrivateOnly: query.PrivateOnly,
 	})

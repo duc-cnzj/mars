@@ -16,6 +16,7 @@ func newPodFan(input chan Obj[*corev1.Pod]) *fanOut[*corev1.Pod] {
 
 // TestFanOut_AddListener_DuplicateKey 覆盖重复 key 注册的告警分支（已存在则忽略新 listener）。
 func TestFanOut_AddListener_DuplicateKey(t *testing.T) {
+	t.Parallel()
 	fan := newPodFan(make(chan Obj[*corev1.Pod]))
 	ch1 := make(chan Obj[*corev1.Pod], 1)
 	ch2 := make(chan Obj[*corev1.Pod], 1)
@@ -33,6 +34,7 @@ func TestFanOut_AddListener_DuplicateKey(t *testing.T) {
 
 // TestFanOut_RemoveAll 覆盖批量关闭：所有 listener 通道被 close 并从 map 移除。
 func TestFanOut_RemoveAll(t *testing.T) {
+	t.Parallel()
 	fan := newPodFan(make(chan Obj[*corev1.Pod]))
 	a := make(chan Obj[*corev1.Pod])
 	b := make(chan Obj[*corev1.Pod])
@@ -50,6 +52,7 @@ func TestFanOut_RemoveAll(t *testing.T) {
 // TestFanOut_Distribute_StartedGuard 覆盖已启动守卫：closeable 原子 CAS 在
 // 已关闭状态下返回 false → Distribute 早退。预置 started 状态避免并发竞态。
 func TestFanOut_Distribute_StartedGuard(t *testing.T) {
+	t.Parallel()
 	fan := newPodFan(make(chan Obj[*corev1.Pod], 1))
 	fan.started.c.Close() // 预置已启动 → start() 返回 false
 	fan.Distribute(make(chan struct{}))
@@ -58,6 +61,7 @@ func TestFanOut_Distribute_StartedGuard(t *testing.T) {
 
 // TestFanOut_Distribute_ChannelClosed 覆盖输入通道关闭 → 分发 goroutine 退出。
 func TestFanOut_Distribute_ChannelClosed(t *testing.T) {
+	t.Parallel()
 	input := make(chan Obj[*corev1.Pod])
 	fan := newPodFan(input)
 	done := make(chan struct{})
@@ -74,6 +78,7 @@ func TestFanOut_Distribute_ChannelClosed(t *testing.T) {
 // 且无接收方 → select 命中 default（drop）。靠 close(input) 保证 obj 先被处理、
 // 再因通道关闭退出，且 <-exited 同步等待，避免竞态。
 func TestFanOut_Distribute_DropFullListener(t *testing.T) {
+	t.Parallel()
 	input := make(chan Obj[*corev1.Pod], 1)
 	fan := newPodFan(input)
 	listener := make(chan Obj[*corev1.Pod]) // 无缓冲、无接收 → 必 drop

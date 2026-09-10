@@ -120,7 +120,8 @@ app serve -c config.yaml \
 ```bash
 make build      # build ./bin/app
 make serve      # go run main.go serve
-make test       # full unit tests (-race -cover)
+make test       # unit tests for internal/ (-race -cover, feeds codecov)
+make test_all   # full gate: make test + rest of root module + api module
 make cover-web  # coverage report
 make api        # regenerate proto via protoc
 make gen        # go generate ./...
@@ -155,7 +156,7 @@ make sec        # gosec security scan
 Pull requests are welcome. Before submitting, please make sure:
 
 - New code ships with unit tests (project standard: 100% coverage of handwritten production code, zero dead code);
-- `make test` + `make lint` + `make sec` all pass;
+- `make test_all` + `make lint` + `make sec` all pass;
 - If proto changed, run `make api` to regenerate and commit the output.
 
 Docs and examples live in [doc/](doc/) (OpenAPI) and [examples/](examples/).

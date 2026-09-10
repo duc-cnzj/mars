@@ -15,6 +15,7 @@ import (
 )
 
 func TestNewClusterSvc(t *testing.T) {
+	t.Parallel()
 	svc, _ := newClusterSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.k8sBiz)
@@ -22,6 +23,7 @@ func TestNewClusterSvc(t *testing.T) {
 }
 
 func Test_clusterSvc_ClusterInfo(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newClusterSvcWithMocks(t)
 
 	mocks.k8sBiz.EXPECT().ClusterInfo().Return(&biz.ClusterInfo{
@@ -95,6 +97,7 @@ func newClusterSvcWithMocks(t *testing.T) (*clusterSvc, *clusterSvcMocks) {
 
 // Test_clusterSvc_ClusterBoard 成功路径：biz 看板聚合成 BoardResponse 全字段落位。
 func Test_clusterSvc_ClusterBoard(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newClusterSvcWithMocks(t)
 
 	mocks.nsBiz.EXPECT().ListAllNames(gomock.Any()).Return([]string{"ns-a"}, nil)
@@ -136,7 +139,9 @@ func Test_clusterSvc_ClusterBoard(t *testing.T) {
 
 // Test_clusterSvc_ClusterBoard_Error 失败路径：管理集合 / biz 聚合任一环节失败均上抛错误。
 func Test_clusterSvc_ClusterBoard_Error(t *testing.T) {
+	t.Parallel()
 	t.Run("管理集合失败", func(t *testing.T) {
+		t.Parallel()
 		svc, mocks := newClusterSvcWithMocks(t)
 		mocks.nsBiz.EXPECT().ListAllNames(gomock.Any()).Return(nil, errors.New("boom"))
 
@@ -146,6 +151,7 @@ func Test_clusterSvc_ClusterBoard_Error(t *testing.T) {
 	})
 
 	t.Run("biz 聚合失败", func(t *testing.T) {
+		t.Parallel()
 		svc, mocks := newClusterSvcWithMocks(t)
 		mocks.nsBiz.EXPECT().ListAllNames(gomock.Any()).Return([]string{"ns-a"}, nil)
 		mocks.k8sBiz.EXPECT().ClusterBoard(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("boom"))
@@ -158,6 +164,7 @@ func Test_clusterSvc_ClusterBoard_Error(t *testing.T) {
 
 // Test_clusterSvc_ClusterBoard_TopSort top_sort 透传：biz 收到与请求一致的排行维度。
 func Test_clusterSvc_ClusterBoard_TopSort(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newClusterSvcWithMocks(t)
 	mocks.nsBiz.EXPECT().ListAllNames(gomock.Any()).Return([]string{"ns-a"}, nil)
 	mocks.k8sBiz.EXPECT().ClusterBoard(gomock.Any(), gomock.Any(), gomock.Eq("mem")).Return(&biz.ClusterBoard{Overview: &biz.ClusterInfo{}}, nil)
@@ -170,6 +177,7 @@ func Test_clusterSvc_ClusterBoard_TopSort(t *testing.T) {
 // Test_clusterSvc_ResourceBoard 成功路径：管理集合 + 项目归属 + biz 空间板
 // 逐字段映射为 ResourceBoardResponse。
 func Test_clusterSvc_ResourceBoard(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newClusterSvcWithMocks(t)
 
 	mocks.nsBiz.EXPECT().ListAllNames(gomock.Any()).Return([]string{"ns-a"}, nil)
@@ -236,6 +244,7 @@ func Test_clusterSvc_ResourceBoard(t *testing.T) {
 
 // TestToWorkloadProtos 映射边界：nil/空列表返回空表，多元素逐字段透传。
 func TestToWorkloadProtos(t *testing.T) {
+	t.Parallel()
 	assert.Empty(t, toWorkloadProtos(nil))
 	assert.Empty(t, toWorkloadProtos([]*biz.ResourceProjectWorkload{}))
 
@@ -260,7 +269,9 @@ func TestToWorkloadProtos(t *testing.T) {
 // Test_clusterSvc_ResourceBoard_Error 失败路径：管理集合 / 项目归属 / biz 聚合
 // 任一环节失败均上抛错误，返回 nil 响应。
 func Test_clusterSvc_ResourceBoard_Error(t *testing.T) {
+	t.Parallel()
 	t.Run("管理集合失败", func(t *testing.T) {
+		t.Parallel()
 		svc, mocks := newClusterSvcWithMocks(t)
 		mocks.nsBiz.EXPECT().ListAllNames(gomock.Any()).Return(nil, errors.New("boom"))
 
@@ -270,6 +281,7 @@ func Test_clusterSvc_ResourceBoard_Error(t *testing.T) {
 	})
 
 	t.Run("项目归属失败", func(t *testing.T) {
+		t.Parallel()
 		svc, mocks := newClusterSvcWithMocks(t)
 		mocks.nsBiz.EXPECT().ListAllNames(gomock.Any()).Return([]string{"ns-a"}, nil)
 		mocks.projectBiz.EXPECT().ListAllProjectBriefs(gomock.Any()).Return(nil, errors.New("boom"))
@@ -280,6 +292,7 @@ func Test_clusterSvc_ResourceBoard_Error(t *testing.T) {
 	})
 
 	t.Run("biz 聚合失败", func(t *testing.T) {
+		t.Parallel()
 		svc, mocks := newClusterSvcWithMocks(t)
 		mocks.nsBiz.EXPECT().ListAllNames(gomock.Any()).Return([]string{"ns-a"}, nil)
 		mocks.projectBiz.EXPECT().ListAllProjectBriefs(gomock.Any()).Return(nil, nil)
@@ -294,6 +307,7 @@ func Test_clusterSvc_ResourceBoard_Error(t *testing.T) {
 // Test_clusterSvc_Authorize 授权门禁：ClusterInfo 免登录放行；非白名单方法
 // admin 放行、普通用户拒绝。
 func Test_clusterSvc_Authorize(t *testing.T) {
+	t.Parallel()
 	svc, _ := newClusterSvcWithMocks(t)
 
 	// 白名单方法（ClusterInfo）：直接放行，不要求 admin。

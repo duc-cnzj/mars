@@ -12,8 +12,11 @@ import (
 //go:embed build/*
 var staticFs embed.FS
 
+// index 是前端构建产物 build/index.html 的内容，SPA 兜底路由直接回写该字节切片。
 var index []byte
 
+// LoadFrontendRoutes 把编译期嵌入的前端产物挂到 mux：/resources/ 走静态文件服务，
+// 其余路径（含 /、/auth/callback 与前端深链接）统一回 index.html 交给前端 Router 接管。
 func LoadFrontendRoutes(mux *mux.Router) {
 	subrouter := mux.PathPrefix("").Subrouter()
 	subrouter.Use(middlewares.HttpCache)
@@ -42,6 +45,7 @@ func LoadFrontendRoutes(mux *mux.Router) {
 	subrouter.Handle("/{any:.*}", toWebRoute())
 }
 
+// toWebRoute 返回回写 index.html 的 handler，供 /auth/callback 与 SPA 兜底路由共用。
 func toWebRoute() http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "text/html; charset=utf-8")

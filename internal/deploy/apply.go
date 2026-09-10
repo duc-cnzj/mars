@@ -2,8 +2,8 @@ package deploy
 
 // apply.go 定义 gRPC/WebSocket 共享的部署编排用例函数 ApplyProject：
 // 鉴权 → 仓库取回与名缺省 → git ensure → 版本反查 → 装配 Job → 传输层钩子
-// → ctx watcher → InstallProject。原先 gRPC projectSvc.apply 与 ws installProject
-// 双份编排各写一遍，行为漂移（WS 缺权限校验/ctx 取消/版本反查），现收敛到一处。
+// → ctx watcher → InstallProject。gRPC 与 ws 两个入口共用本函数，避免双份编排
+// 漂移——权限校验/ctx 取消/版本反查任缺一项都是漏洞。
 //
 // 该函数必须放在 deploy 包而非 biz.ProjectBiz 方法：internal/deploy import
 // internal/biz（JobInput.User *biz.UserInfo），biz 反向 import deploy 即成环，

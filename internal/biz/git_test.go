@@ -66,6 +66,7 @@ func (f *fakeGitRepo) GetChartValuesYaml(ctx context.Context, localChartPath str
 }
 
 func TestGitBiz_EnsureBranchAndCommit_NoBranchNoCommit(t *testing.T) {
+	t.Parallel()
 	g := NewGitBiz(&fakeGitRepo{
 		listCommits: func(ctx context.Context, projectID int, branch string) ([]*Commit, error) {
 			assert.Equal(t, "main", branch)
@@ -81,6 +82,7 @@ func TestGitBiz_EnsureBranchAndCommit_NoBranchNoCommit(t *testing.T) {
 }
 
 func TestGitBiz_EnsureBranchAndCommit_BranchProvided(t *testing.T) {
+	t.Parallel()
 	g := NewGitBiz(&fakeGitRepo{
 		listCommits: func(ctx context.Context, projectID int, branch string) ([]*Commit, error) {
 			assert.Equal(t, "dev", branch)
@@ -95,6 +97,7 @@ func TestGitBiz_EnsureBranchAndCommit_BranchProvided(t *testing.T) {
 }
 
 func TestGitBiz_EnsureBranchAndCommit_BothProvided(t *testing.T) {
+	t.Parallel()
 	g := NewGitBiz(&fakeGitRepo{})
 	branch, commit, msgs, err := g.EnsureBranchAndCommit(context.TODO(), &Repo{DefaultBranch: "main"}, "dev", "abc123")
 	assert.Nil(t, err)
@@ -104,6 +107,7 @@ func TestGitBiz_EnsureBranchAndCommit_BothProvided(t *testing.T) {
 }
 
 func TestGitBiz_EnsureBranchAndCommit_ListCommitsError(t *testing.T) {
+	t.Parallel()
 	g := NewGitBiz(&fakeGitRepo{
 		listCommits: func(ctx context.Context, projectID int, branch string) ([]*Commit, error) {
 			return nil, errors.New("git down")
@@ -117,6 +121,7 @@ func TestGitBiz_EnsureBranchAndCommit_ListCommitsError(t *testing.T) {
 }
 
 func TestGitBiz_EnsureBranchAndCommit_NoCommits(t *testing.T) {
+	t.Parallel()
 	g := NewGitBiz(&fakeGitRepo{
 		listCommits: func(ctx context.Context, projectID int, branch string) ([]*Commit, error) {
 			return nil, nil
@@ -130,6 +135,7 @@ func TestGitBiz_EnsureBranchAndCommit_NoCommits(t *testing.T) {
 }
 
 func TestGitBiz_EnsureBranchAndCommit_NilShow(t *testing.T) {
+	t.Parallel()
 	g := NewGitBiz(&fakeGitRepo{})
 	branch, commit, msgs, err := g.EnsureBranchAndCommit(context.TODO(), nil, "", "")
 	assert.Empty(t, branch)
@@ -142,6 +148,7 @@ func TestGitBiz_EnsureBranchAndCommit_NilShow(t *testing.T) {
 // ---- 纯透传查询 ----
 
 func TestGitBiz_AllProjects_Passthrough(t *testing.T) {
+	t.Parallel()
 	var called bool
 	g := NewGitBiz(&fakeGitRepo{
 		allProjects: func(ctx context.Context, forceFresh bool) ([]*GitProject, error) {
@@ -157,6 +164,7 @@ func TestGitBiz_AllProjects_Passthrough(t *testing.T) {
 }
 
 func TestGitBiz_AllBranches_Passthrough(t *testing.T) {
+	t.Parallel()
 	var called bool
 	g := NewGitBiz(&fakeGitRepo{
 		allBranches: func(ctx context.Context, projectID int, forceFresh bool) ([]*Branch, error) {
@@ -172,6 +180,7 @@ func TestGitBiz_AllBranches_Passthrough(t *testing.T) {
 }
 
 func TestGitBiz_GetCommit_Passthrough(t *testing.T) {
+	t.Parallel()
 	var called bool
 	g := NewGitBiz(&fakeGitRepo{
 		getCommit: func(ctx context.Context, projectID int, sha string) (*Commit, error) {
@@ -187,6 +196,7 @@ func TestGitBiz_GetCommit_Passthrough(t *testing.T) {
 }
 
 func TestGitBiz_GetCommitPipeline_Passthrough(t *testing.T) {
+	t.Parallel()
 	var called bool
 	g := NewGitBiz(&fakeGitRepo{
 		getCommitPipeline: func(ctx context.Context, projectID int, branch, sha string) (*Pipeline, error) {
@@ -203,6 +213,7 @@ func TestGitBiz_GetCommitPipeline_Passthrough(t *testing.T) {
 }
 
 func TestGitBiz_PipelineJobOptions_Passthrough(t *testing.T) {
+	t.Parallel()
 	var called bool
 	g := NewGitBiz(&fakeGitRepo{
 		pipelineJobOptions: func(ctx context.Context, projectID int, branch string) ([]string, []string, error) {
@@ -220,6 +231,7 @@ func TestGitBiz_PipelineJobOptions_Passthrough(t *testing.T) {
 }
 
 func TestGitBiz_GetByProjectID_Passthrough(t *testing.T) {
+	t.Parallel()
 	var called bool
 	g := NewGitBiz(&fakeGitRepo{
 		getByProjectID: func(ctx context.Context, id int) (*GitProject, error) {
@@ -235,6 +247,7 @@ func TestGitBiz_GetByProjectID_Passthrough(t *testing.T) {
 }
 
 func TestGitBiz_GetFileContentWithBranch_Passthrough(t *testing.T) {
+	t.Parallel()
 	var called bool
 	g := NewGitBiz(&fakeGitRepo{
 		getFileContent: func(ctx context.Context, projectID int, branch, path string) (string, error) {
@@ -250,6 +263,7 @@ func TestGitBiz_GetFileContentWithBranch_Passthrough(t *testing.T) {
 }
 
 func TestGitBiz_GetProject_Passthrough(t *testing.T) {
+	t.Parallel()
 	var called bool
 	g := NewGitBiz(&fakeGitRepo{
 		getProject: func(ctx context.Context, id int) (*GitProject, error) {
@@ -264,6 +278,7 @@ func TestGitBiz_GetProject_Passthrough(t *testing.T) {
 }
 
 func TestGitBiz_ListCommits_Passthrough(t *testing.T) {
+	t.Parallel()
 	var called bool
 	g := NewGitBiz(&fakeGitRepo{
 		listCommits: func(ctx context.Context, projectID int, branch string) ([]*Commit, error) {
@@ -280,6 +295,7 @@ func TestGitBiz_ListCommits_Passthrough(t *testing.T) {
 }
 
 func TestGitBiz_GetChartValuesYaml_Passthrough(t *testing.T) {
+	t.Parallel()
 	var called bool
 	g := NewGitBiz(&fakeGitRepo{
 		getChartValuesYaml: func(ctx context.Context, localChartPath string) (string, error) {

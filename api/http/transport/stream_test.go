@@ -57,6 +57,7 @@ func (f *fakeConn) DoQuery(ctx context.Context, method, path string, req, resp p
 }
 
 func TestOpenStream_ErrorPropagates(t *testing.T) {
+	t.Parallel()
 	want := errors.New("open failed")
 	conn := &fakeConn{err: want}
 	_, err := OpenStream[*emptypb.Empty](conn, context.TODO(), "GET", "/x", nil)
@@ -66,6 +67,7 @@ func TestOpenStream_ErrorPropagates(t *testing.T) {
 }
 
 func TestOpenStream_WrapsTyped(t *testing.T) {
+	t.Parallel()
 	payload, err := proto.Marshal(&emptypb.Empty{})
 	if err != nil {
 		t.Fatal(err)
@@ -90,6 +92,7 @@ func TestOpenStream_WrapsTyped(t *testing.T) {
 }
 
 func TestTypedStream_CloseDelegates(t *testing.T) {
+	t.Parallel()
 	raw := &fakeRawStream{}
 	s := &typedStream[*emptypb.Empty]{raw: raw}
 	if err := s.Close(); err != nil {
@@ -101,6 +104,7 @@ func TestTypedStream_CloseDelegates(t *testing.T) {
 }
 
 func TestTypedStream_RecvErrorPropagates(t *testing.T) {
+	t.Parallel()
 	raw := &fakeRawStream{payloads: [][]byte{{1, 2, 3}}} // 非法 proto 字节 → 解码错误
 	s := &typedStream[*emptypb.Empty]{raw: raw}
 	if _, err := s.Recv(); err == nil {

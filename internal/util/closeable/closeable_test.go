@@ -8,28 +8,33 @@ import (
 )
 
 func TestCloseable_IsClosed_Initially(t *testing.T) {
+	t.Parallel()
 	c := &Closeable{}
 	assert.False(t, c.IsClosed())
 }
 
 func TestCloseable_IsClosed_AfterClose(t *testing.T) {
+	t.Parallel()
 	c := &Closeable{}
 	c.Close()
 	assert.True(t, c.IsClosed())
 }
 
 func TestCloseable_Close_Initially(t *testing.T) {
+	t.Parallel()
 	c := &Closeable{}
 	assert.True(t, c.Close())
 }
 
 func TestCloseable_Close_AfterClose(t *testing.T) {
+	t.Parallel()
 	c := &Closeable{}
 	c.Close()
 	assert.False(t, c.Close())
 }
 
 func TestCloseable_ConcurrentClose(t *testing.T) {
+	t.Parallel()
 	c := &Closeable{}
 	var wg sync.WaitGroup
 	var successCount int

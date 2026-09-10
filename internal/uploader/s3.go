@@ -138,7 +138,6 @@ func (s *s3Uploader) Exists(path string) bool {
 
 // MkDir S3 无目录概念，直接返回 nil。
 func (s *s3Uploader) MkDir(path string, recursive bool) error {
-	// S3 does not require directories to be created explicitly
 	return nil
 }
 

@@ -43,11 +43,13 @@ func adminCtx() context.Context {
 func creatorCtx() context.Context { return userCtx(&UserInfo{Email: "owner@example.com"}) }
 
 func TestNewAccessBiz(t *testing.T) {
+	t.Parallel()
 	ab := NewAccessBiz(nil, nil)
 	assert.NotNil(t, ab)
 }
 
 func TestAccessBiz_RequireNamespaceAccessByName(t *testing.T) {
+	t.Parallel()
 	t.Run("public namespace accessible", func(t *testing.T) {
 		ab, m := newAccessBizFixture(t)
 		m.nsRepo.EXPECT().FindByName(gomock.Any(), "ns").Return(&Namespace{Name: "ns", Private: false}, nil)
@@ -79,6 +81,7 @@ func TestAccessBiz_RequireNamespaceAccessByName(t *testing.T) {
 // admin/创建者/成员/公开空间/非成员拒绝/nil ns。nil-user 不再是合法输入——ctx
 // 无用户即编程错误，MustGetUser 直接 panic（见 context_test.go），实现无 nil-user 分支。
 func TestAccessBiz_RequireNamespaceAccessByID(t *testing.T) {
+	t.Parallel()
 	t.Run("public namespace accessible by non-member", func(t *testing.T) {
 		ab, m := newAccessBizFixture(t)
 		m.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&Namespace{ID: 1, Private: false}, nil)
@@ -143,6 +146,7 @@ func TestAccessBiz_RequireNamespaceAccessByID(t *testing.T) {
 }
 
 func TestAccessBiz_RequireProjectAccess(t *testing.T) {
+	t.Parallel()
 	t.Run("accessible", func(t *testing.T) {
 		ab, m := newAccessBizFixture(t)
 		m.proj.EXPECT().Show(gomock.Any(), 1).Return(&Project{ID: 1, NamespaceID: 5}, nil)
@@ -185,6 +189,7 @@ func TestAccessBiz_RequireProjectAccess(t *testing.T) {
 }
 
 func TestAccessBiz_RequireNamespaceOwner(t *testing.T) {
+	t.Parallel()
 	t.Run("owner passes", func(t *testing.T) {
 		ab, _ := newAccessBizFixture(t)
 
@@ -217,6 +222,7 @@ func TestAccessBiz_RequireNamespaceOwner(t *testing.T) {
 }
 
 func TestAccessBiz_RequireAdmin(t *testing.T) {
+	t.Parallel()
 	t.Run("allowlist hit bypasses user extraction", func(t *testing.T) {
 		// ctx 不注入用户：allowlist 精确命中即放行，不触达 MustGetUser，故不 panic。
 		ab, _ := newAccessBizFixture(t)
@@ -246,6 +252,7 @@ func TestAccessBiz_RequireAdmin(t *testing.T) {
 // 拒绝、admin/创建者/成员/公开空间放行、非成员拒绝。nil-user 不再是合法输入——
 // ctx 无用户即编程错误，MustGetUser 直接 panic（见 context_test.go）。
 func TestAccessBiz_CanAccessNamespace(t *testing.T) {
+	t.Parallel()
 	t.Run("nil namespace denied", func(t *testing.T) {
 		ab, _ := newAccessBizFixture(t)
 
@@ -287,6 +294,7 @@ func TestAccessBiz_CanAccessNamespace(t *testing.T) {
 // 非所有者非 admin 拒绝。nil-user 不再是合法输入——ctx 无用户即编程错误，
 // MustGetUser 直接 panic（见 context_test.go）。
 func TestAccessBiz_RequireFileAccess(t *testing.T) {
+	t.Parallel()
 	fil := &File{ID: 99, Username: "owner"}
 
 	t.Run("owner passes", func(t *testing.T) {

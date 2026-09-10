@@ -9,6 +9,7 @@ import (
 )
 
 func TestTaskManagerRegister(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	taskManager := NewTaskManager(logger)
 
@@ -20,6 +21,7 @@ func TestTaskManagerRegister(t *testing.T) {
 }
 
 func TestTaskManagerHas(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	taskManager := NewTaskManager(logger)
 
@@ -29,6 +31,7 @@ func TestTaskManagerHas(t *testing.T) {
 }
 
 func TestTaskManagerRemove(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	taskManager := NewTaskManager(logger)
 
@@ -38,6 +41,7 @@ func TestTaskManagerRemove(t *testing.T) {
 }
 
 func TestTaskManagerStop(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	taskManager := NewTaskManager(logger)
 
@@ -53,6 +57,7 @@ func TestTaskManagerStop(t *testing.T) {
 }
 
 func TestTaskManagerStopAll(t *testing.T) {
+	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	taskManager := NewTaskManager(logger)
 

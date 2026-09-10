@@ -73,6 +73,7 @@ func newAuthBizForTestWithRoles(auth Auth, roles EffectiveRolesProvider) *authBi
 }
 
 func TestAuthBiz_Login_Success(t *testing.T) {
+	t.Parallel()
 	a := newAuthBizForTest(&fakeAuthForBiz{sign: func(u *UserInfo) (*SignData, error) {
 		assert.Equal(t, "超级管理员", u.Name)
 		return &SignData{Token: "token-1", ExpiredIn: 3600}, nil
@@ -87,12 +88,14 @@ func TestAuthBiz_Login_Success(t *testing.T) {
 }
 
 func TestAuthBiz_Login_WrongPassword(t *testing.T) {
+	t.Parallel()
 	a := newAuthBizForTest(&fakeAuthForBiz{}, "secret", nil)
 	_, err := a.Login(context.TODO(), &LoginInput{Username: "admin", Password: "wrong"})
 	assert.Equal(t, codes.Unauthenticated, status.Code(err))
 }
 
 func TestAuthBiz_Login_SignError(t *testing.T) {
+	t.Parallel()
 	a := newAuthBizForTest(&fakeAuthForBiz{sign: func(u *UserInfo) (*SignData, error) {
 		return nil, errors.New("sign boom")
 	}}, "secret", nil)
@@ -101,6 +104,7 @@ func TestAuthBiz_Login_SignError(t *testing.T) {
 }
 
 func TestAuthBiz_VerifyToken_Success(t *testing.T) {
+	t.Parallel()
 	a := newAuthBizForTest(&fakeAuthForBiz{verifyToken: func(token string) (*JwtClaims, bool) {
 		assert.Equal(t, "t", token)
 		return &JwtClaims{UserInfo: &UserInfo{Email: "DUC@EXAMPLE.COM", Name: "duc"}}, true
@@ -114,6 +118,7 @@ func TestAuthBiz_VerifyToken_Success(t *testing.T) {
 }
 
 func TestAuthBiz_VerifyToken_Fail(t *testing.T) {
+	t.Parallel()
 	a := newAuthBizForTest(&fakeAuthForBiz{verifyToken: func(token string) (*JwtClaims, bool) {
 		return nil, false
 	}}, "", nil)
@@ -122,6 +127,7 @@ func TestAuthBiz_VerifyToken_Fail(t *testing.T) {
 }
 
 func TestAuthBiz_Sign_Success(t *testing.T) {
+	t.Parallel()
 	u := &UserInfo{Name: "duc"}
 	a := newAuthBizForTest(&fakeAuthForBiz{sign: func(input *UserInfo) (*SignData, error) {
 		assert.Equal(t, u, input)
@@ -137,6 +143,7 @@ func TestAuthBiz_Sign_Success(t *testing.T) {
 }
 
 func TestAuthBiz_Sign_Error(t *testing.T) {
+	t.Parallel()
 	a := newAuthBizForTest(&fakeAuthForBiz{sign: func(input *UserInfo) (*SignData, error) {
 		return nil, errors.New("sign boom")
 	}}, "", nil)
@@ -145,6 +152,7 @@ func TestAuthBiz_Sign_Error(t *testing.T) {
 }
 
 func TestAuthBiz_Settings_NilConfig(t *testing.T) {
+	t.Parallel()
 	a := newAuthBizForTest(&fakeAuthForBiz{}, "", nil)
 	got, err := a.Settings(context.TODO())
 	assert.NoError(t, err)
@@ -152,6 +160,7 @@ func TestAuthBiz_Settings_NilConfig(t *testing.T) {
 }
 
 func TestAuthBiz_Settings_WithConfig(t *testing.T) {
+	t.Parallel()
 	a := newAuthBizForTest(&fakeAuthForBiz{}, "", func() OidcConfig {
 		return OidcConfig{"x": OidcConfigItem{EndSessionEndpoint: "https://logout"}}
 	})
@@ -162,6 +171,7 @@ func TestAuthBiz_Settings_WithConfig(t *testing.T) {
 }
 
 func TestAuthBiz_Login_NilInput(t *testing.T) {
+	t.Parallel()
 	a := newAuthBizForTest(nil, "secret", nil)
 	got, err := a.Login(context.TODO(), nil)
 	assert.Nil(t, got)
@@ -170,6 +180,7 @@ func TestAuthBiz_Login_NilInput(t *testing.T) {
 }
 
 func TestAuthBiz_Sign_NilInput(t *testing.T) {
+	t.Parallel()
 	a := newAuthBizForTest(nil, "secret", nil)
 	got, err := a.Sign(context.TODO(), nil)
 	assert.Nil(t, got)
@@ -180,6 +191,7 @@ func TestAuthBiz_Sign_NilInput(t *testing.T) {
 // TestAuthBiz_EffectiveRoles_Success 成功路径：邮箱 trim 后透传 email/SSO 角色到 provider，
 // 生效角色取 provider 结果。
 func TestAuthBiz_EffectiveRoles_Success(t *testing.T) {
+	t.Parallel()
 	roles := &fakeRolesProvider{out: []string{}}
 	a := newAuthBizForTestWithRoles(nil, roles)
 
@@ -193,6 +205,7 @@ func TestAuthBiz_EffectiveRoles_Success(t *testing.T) {
 // TestAuthBiz_EffectiveRoles_EmptyEmailFallsBack 空邮箱回落登录身份角色（鉴权路径不阻断）：
 // 返回原角色且不触达 provider。
 func TestAuthBiz_EffectiveRoles_EmptyEmailFallsBack(t *testing.T) {
+	t.Parallel()
 	roles := &fakeRolesProvider{}
 	a := newAuthBizForTestWithRoles(nil, roles)
 
@@ -204,6 +217,7 @@ func TestAuthBiz_EffectiveRoles_EmptyEmailFallsBack(t *testing.T) {
 
 // TestAuthBiz_EffectiveRoles_RepoError 透传 provider 错误。
 func TestAuthBiz_EffectiveRoles_RepoError(t *testing.T) {
+	t.Parallel()
 	roles := &fakeRolesProvider{err: errors.New("boom")}
 	a := newAuthBizForTestWithRoles(nil, roles)
 

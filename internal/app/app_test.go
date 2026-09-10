@@ -33,6 +33,7 @@ func (t *testBoot) Tags() []string {
 }
 
 func TestNewAppWithValidConfig(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	config := &config2.Config{
@@ -92,6 +93,7 @@ func TestNewAppWithValidConfig(t *testing.T) {
 }
 
 func TestNewAppWithoutExcludeTags(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	config := &config2.Config{}
@@ -125,6 +127,7 @@ func TestNewAppWithoutExcludeTags(t *testing.T) {
 }
 
 func TestWithBootstrappers(t *testing.T) {
+	t.Parallel()
 	a := &app{}
 	WithBootstrappers(&testBoot{})(a)
 	assert.Len(t, a.bootstrappers, 1)
@@ -135,12 +138,14 @@ type testServer struct {
 }
 
 func Test_app_AddServer(t *testing.T) {
+	t.Parallel()
 	a := &app{}
 	a.AddServer(&testServer{})
 	assert.Len(t, a.servers, 1)
 }
 
 func Test_app_AuthBiz(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	authBiz := biz.NewMockAuthBiz(m)
@@ -151,17 +156,20 @@ func Test_app_AuthBiz(t *testing.T) {
 }
 
 func Test_app_BeforeServerRunHooks(t *testing.T) {
+	t.Parallel()
 	a := &app{hooks: map[hook][]Callback{}}
 	a.BeforeServerRunHooks(func() {})
 	assert.Len(t, a.hooks, 1)
 }
 
 func Test_app_Bootstrap(t *testing.T) {
+	t.Parallel()
 	a := &app{bootstrappers: []Bootstrapper{&testBoot{}}, timer: timer.NewReal()}
 	assert.Nil(t, a.Bootstrap())
 }
 
 func Test_app_Cache(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	cache := data2.NewMockCache(m)
@@ -172,6 +180,7 @@ func Test_app_Cache(t *testing.T) {
 }
 
 func Test_app_Config(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	config := &config2.Config{}
@@ -182,6 +191,7 @@ func Test_app_Config(t *testing.T) {
 }
 
 func Test_app_CronManager(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	cronManager := cron.NewMockManager(m)
@@ -192,6 +202,7 @@ func Test_app_CronManager(t *testing.T) {
 }
 
 func Test_app_Data(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	data := data2.NewMockData(m)
@@ -200,6 +211,7 @@ func Test_app_Data(t *testing.T) {
 }
 
 func Test_app_Dispatcher(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	dispatcher := event.NewMockDispatcher(m)
@@ -210,6 +222,7 @@ func Test_app_Dispatcher(t *testing.T) {
 }
 
 func Test_app_Done(t *testing.T) {
+	t.Parallel()
 	ctx, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
 	a := &app{done: ctx}
@@ -217,11 +230,13 @@ func Test_app_Done(t *testing.T) {
 }
 
 func Test_app_GrpcRegistry(t *testing.T) {
+	t.Parallel()
 	a := &app{reg: &GrpcRegistry{}}
 	assert.NotNil(t, a.GrpcRegistry())
 }
 
 func Test_app_Logger(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	logger := mlog.NewForConfig(nil)
@@ -232,6 +247,7 @@ func Test_app_Logger(t *testing.T) {
 }
 
 func Test_app_PluginManager(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	pm := NewMockPluginManager(m)
@@ -240,17 +256,20 @@ func Test_app_PluginManager(t *testing.T) {
 }
 
 func Test_app_PrometheusRegistry(t *testing.T) {
+	t.Parallel()
 	a := &app{prometheusRegistry: &prometheus.Registry{}}
 	assert.NotNil(t, a.PrometheusRegistry())
 }
 
 func Test_app_RegisterAfterShutdownFunc(t *testing.T) {
+	t.Parallel()
 	a := &app{hooks: map[hook][]Callback{}}
 	a.RegisterAfterShutdownFunc(func() {})
 	assert.Len(t, a.hooks[afterDownHook], 1)
 }
 
 func Test_app_RunServerHooks(t *testing.T) {
+	t.Parallel()
 	called := false
 	a := &app{
 		logger: mlog.NewForConfig(nil),
@@ -267,6 +286,7 @@ func Test_app_RunServerHooks(t *testing.T) {
 // 回调内再次注册 hook 不死锁（旧实现持 RLock 执行回调到注册处写锁自锁）；
 // 新注册发生在快照之后，本轮不执行，仅已有 hook 执行。
 func Test_app_RunServerHooks_ReentrantRegisterNoDeadlock(t *testing.T) {
+	t.Parallel()
 	var order []string
 	a := &app{
 		logger: mlog.NewForConfig(nil),
@@ -285,6 +305,7 @@ func Test_app_RunServerHooks_ReentrantRegisterNoDeadlock(t *testing.T) {
 
 // afterDown 清理类钩子串行逆序执行（LIFO）：全部执行到，断言元素集合而非顺序。
 func Test_app_RunServerHooks_RunsAllHooks(t *testing.T) {
+	t.Parallel()
 	var ran []string
 	a := &app{
 		logger: mlog.NewForConfig(nil),
@@ -302,6 +323,7 @@ func Test_app_RunServerHooks_RunsAllHooks(t *testing.T) {
 
 // 单个 hook panic 被 HandlePanic 隔离，不阻断其余 hook 串行执行。
 func Test_app_RunServerHooks_PanicIsolated(t *testing.T) {
+	t.Parallel()
 	var ran []string
 	a := &app{
 		logger: mlog.NewForConfig(nil),
@@ -319,6 +341,7 @@ func Test_app_RunServerHooks_PanicIsolated(t *testing.T) {
 
 // afterDown 按注册逆序执行（LIFO）：后注册的钩子先回收，镜像 bootstrap 初始化顺序。
 func Test_app_RunServerHooks_AfterDownLIFO(t *testing.T) {
+	t.Parallel()
 	var ran []string
 	a := &app{
 		logger: mlog.NewForConfig(nil),
@@ -335,6 +358,7 @@ func Test_app_RunServerHooks_AfterDownLIFO(t *testing.T) {
 
 // beforeRun 按注册顺序串行执行。
 func Test_app_RunServerHooks_BeforeRunRegistrationOrder(t *testing.T) {
+	t.Parallel()
 	var ran []string
 	a := &app{
 		logger: mlog.NewForConfig(nil),
@@ -361,6 +385,7 @@ func (m *mockServer) Shutdown(context.Context) error {
 }
 
 func Test_app_Shutdown(t *testing.T) {
+	t.Parallel()
 	called := false
 	started := []Server{&mockServer{}, &mockServer{err: errors.New("x")}}
 	a := &app{
@@ -379,6 +404,7 @@ func Test_app_Shutdown(t *testing.T) {
 
 // Run 中途失败后从未启动的 server 不在 started 集合内，Shutdown 不得回收它们。
 func Test_app_Shutdown_SkipsUnstartedServers(t *testing.T) {
+	t.Parallel()
 	started := &mockServer{}
 	unstarted := &mockServer{}
 	a := &app{
@@ -394,6 +420,7 @@ func Test_app_Shutdown_SkipsUnstartedServers(t *testing.T) {
 }
 
 func Test_app_HttpHandler(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	httpHandler := NewMockHttpHandler(m)
@@ -404,16 +431,19 @@ func Test_app_HttpHandler(t *testing.T) {
 }
 
 func Test_bootShortName(t *testing.T) {
+	t.Parallel()
 	assert.Empty(t, bootShortName(nil))
 	assert.Equal(t, "testBoot", bootShortName(&testBoot{}))
 }
 
 func Test_bootTags_has(t *testing.T) {
+	t.Parallel()
 	assert.True(t, bootTags{"test"}.has("test"))
 	assert.False(t, bootTags{"test"}.has("test1"))
 }
 
 func Test_excludeBootstrapperByTags(t *testing.T) {
+	t.Parallel()
 	boots := []Bootstrapper{&testBoot{tags: []string{"test"}}, &testBoot{tags: []string{"test1"}}}
 	res := excludeBootstrapperByTags([]string{"test"}, boots)
 	assert.Len(t, res, 1)
@@ -428,6 +458,7 @@ func Test_excludeBootstrapperByTags(t *testing.T) {
 }
 
 func Test_unknownExcludeTags(t *testing.T) {
+	t.Parallel()
 	boots := []Bootstrapper{
 		&testBoot{tags: []string{"api"}},
 		&testBoot{tags: []string{"cron", "profile"}},
@@ -443,6 +474,7 @@ func Test_unknownExcludeTags(t *testing.T) {
 }
 
 func TestNewApp_WarnsUnknownExcludeTag(t *testing.T) {
+	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	appli := NewApp(
@@ -469,6 +501,7 @@ func TestNewApp_WarnsUnknownExcludeTag(t *testing.T) {
 }
 
 func Test_app_Bootstrap_Error(t *testing.T) {
+	t.Parallel()
 	a := &app{
 		timer: timer.NewReal(),
 		bootstrappers: []Bootstrapper{&testBoot{
@@ -490,6 +523,7 @@ func (r *runRecorderServer) Run(context.Context) error {
 }
 
 func Test_app_Run_RunsBeforeHooksAndAllServers(t *testing.T) {
+	t.Parallel()
 	beforeRun := false
 	a := &app{
 		logger: mlog.NewForConfig(nil),
@@ -508,6 +542,7 @@ func Test_app_Run_RunsBeforeHooksAndAllServers(t *testing.T) {
 }
 
 func Test_app_Run_StopsOnServerError(t *testing.T) {
+	t.Parallel()
 	a := &app{
 		logger: mlog.NewForConfig(nil),
 		hooks:  map[hook][]Callback{},
@@ -583,6 +618,7 @@ func Test_app_Run_ServerStartupTimeout(t *testing.T) {
 }
 
 func Test_app_Run_ServerPanicBecomesError(t *testing.T) {
+	t.Parallel()
 	a := &app{
 		logger:  mlog.NewForConfig(nil),
 		hooks:   map[hook][]Callback{},

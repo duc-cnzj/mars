@@ -3,9 +3,8 @@ package middlewares
 import (
 	"context"
 
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // Validator 是可选的消息校验能力：请求（Unary 的 req 或 Stream 的 RecvMsg 消息）
@@ -20,7 +19,7 @@ func ValidatorUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		if validator, ok := req.(Validator); ok {
 			if err := validator.Validate(); err != nil {
-				return nil, status.Error(codes.InvalidArgument, err.Error())
+				return nil, errs.InvalidArgument(err.Error())
 			}
 		}
 
@@ -50,7 +49,10 @@ func (s *recvWrapper) RecvMsg(m any) error {
 
 	if validator, ok := m.(Validator); ok {
 		if err := validator.Validate(); err != nil {
-			return err
+			// 生成的 *.pb.validate.go 返回的是 MultiError（非 status 错误），原样上抛会
+			// 让 stream 校验失败落成 Unknown，与 unary 路径的 InvalidArgument 不一致——
+			// 两条路径统一经 errs 构造器映射，保证同一条校验规则的错误码相同。
+			return errs.InvalidArgument(err.Error())
 		}
 	}
 

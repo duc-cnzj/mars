@@ -110,6 +110,7 @@ func newTokenServer(t *testing.T, key *rsa.PrivateKey, issuer, aud string) (oaut
 }
 
 func TestDefaultAuthProvider_Exchange_Success(t *testing.T) {
+	t.Parallel()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{"access_token":"access","token_type":"Bearer","id_token":"raw-id-token"}`)
@@ -129,6 +130,7 @@ func TestDefaultAuthProvider_Exchange_Success(t *testing.T) {
 }
 
 func TestDefaultAuthProvider_Exchange_MissingIDToken(t *testing.T) {
+	t.Parallel()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{"access_token":"access","token_type":"Bearer"}`)
@@ -148,6 +150,7 @@ func TestDefaultAuthProvider_Exchange_MissingIDToken(t *testing.T) {
 }
 
 func TestDefaultAuthProvider_Exchange_Error(t *testing.T) {
+	t.Parallel()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, `{"error":"invalid_grant"}`)
@@ -166,6 +169,7 @@ func TestDefaultAuthProvider_Exchange_Error(t *testing.T) {
 }
 
 func TestDefaultAuthProvider_Verify_Success(t *testing.T) {
+	t.Parallel()
 	issuer, key := newOIDCProvider(t)
 	provider, err := oidc.NewProvider(context.TODO(), issuer)
 	if err != nil {
@@ -182,6 +186,7 @@ func TestDefaultAuthProvider_Verify_Success(t *testing.T) {
 }
 
 func TestDefaultAuthProvider_Verify_Fail(t *testing.T) {
+	t.Parallel()
 	issuer, key := newOIDCProvider(t)
 	provider, err := oidc.NewProvider(context.TODO(), issuer)
 	if err != nil {
@@ -201,6 +206,7 @@ func newTestAuthBiz(oidcConfig func() OidcConfig) *authBiz {
 }
 
 func TestAuthBiz_Exchange_Success(t *testing.T) {
+	t.Parallel()
 	issuer, key := newOIDCProvider(t)
 	provider, err := oidc.NewProvider(context.TODO(), issuer)
 	if err != nil {
@@ -227,6 +233,7 @@ func TestAuthBiz_Exchange_Success(t *testing.T) {
 }
 
 func TestAuthBiz_Exchange_AllProvidersNil(t *testing.T) {
+	t.Parallel()
 	b := newTestAuthBiz(func() OidcConfig {
 		return OidcConfig{
 			"a": OidcConfigItem{Provider: nil, Config: oauth2.Config{}},
@@ -239,6 +246,7 @@ func TestAuthBiz_Exchange_AllProvidersNil(t *testing.T) {
 }
 
 func TestAuthBiz_Exchange_VerifyFail(t *testing.T) {
+	t.Parallel()
 	issuer, key := newOIDCProvider(t)
 	provider, err := oidc.NewProvider(context.TODO(), issuer)
 	if err != nil {
@@ -259,6 +267,7 @@ func TestAuthBiz_Exchange_VerifyFail(t *testing.T) {
 }
 
 func TestAuthBiz_Exchange_ClaimsDecodeError(t *testing.T) {
+	t.Parallel()
 	issuer, key := newOIDCProvider(t)
 	provider, err := oidc.NewProvider(context.TODO(), issuer)
 	if err != nil {
@@ -310,6 +319,7 @@ func TestAuthBiz_Exchange_ClaimsDecodeError(t *testing.T) {
 }
 
 func TestAuthBiz_Exchange_CodeNotEchoed(t *testing.T) {
+	t.Parallel()
 	// 全部 provider 为 nil → 聚合失败；断言错误信息不回显一次性授权码。
 	b := newTestAuthBiz(func() OidcConfig {
 		return OidcConfig{"a": OidcConfigItem{Provider: nil}}
@@ -322,6 +332,7 @@ func TestAuthBiz_Exchange_CodeNotEchoed(t *testing.T) {
 }
 
 func TestAuthBiz_Exchange_SecondProviderSucceeds(t *testing.T) {
+	t.Parallel()
 	// 第一个 provider 换发失败，第二个成功 → 编排继续并返回成功（验证 continue 语义）。
 	issuer, key := newOIDCProvider(t)
 	provider, err := oidc.NewProvider(context.TODO(), issuer)
@@ -346,6 +357,7 @@ func TestAuthBiz_Exchange_SecondProviderSucceeds(t *testing.T) {
 
 // TestAuthBiz_Exchange_EmptyConfig 覆盖 OidcConfig 为空 map 的聚合失败路径。
 func TestAuthBiz_Exchange_EmptyConfig(t *testing.T) {
+	t.Parallel()
 	b := newTestAuthBiz(func() OidcConfig { return OidcConfig{} })
 	_, err := b.Exchange(context.TODO(), "auth-code")
 	assert.Error(t, err)
@@ -355,6 +367,7 @@ func TestAuthBiz_Exchange_EmptyConfig(t *testing.T) {
 // TestAuthBiz_Exchange_ExchangeError 覆盖单个 provider 的 cfg.Exchange 失败后
 // 跳过继续（token 端点返回 400），最终聚合失败。
 func TestAuthBiz_Exchange_ExchangeError(t *testing.T) {
+	t.Parallel()
 	issuer, _ := newOIDCProvider(t)
 	provider, err := oidc.NewProvider(context.TODO(), issuer)
 	if err != nil {

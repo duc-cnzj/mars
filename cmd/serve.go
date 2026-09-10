@@ -191,8 +191,7 @@ func (s *podListenerServer) Shutdown(_ context.Context) error {
 
 // RegisterCronJobs 把注册表 Registry 产出的 []CronTask 机械注册进 cron.Manager。
 // 任务名与调度声明已收敛到任务层（CronTask.Schedule），cmd 作为组合根只做解释，
-// 不关心任何调度细节，也无导入环。常驻的 Pod 事件监听已归位 eventhandler
-// （随 app 启停），不再经 cron 触发。
+// 不关心任何调度细节，也无导入环；cron 只驱动定时任务，不承担事件监听。
 func RegisterCronJobs(tasks []cronjob.CronTask, mgr cron.Manager) {
 	for _, task := range tasks {
 		task.Schedule(mgr.NewCommand(task.Name, task.Run))
@@ -201,8 +200,8 @@ func RegisterCronJobs(tasks []cronjob.CronTask, mgr cron.Manager) {
 
 // provideEventDeps 把 PluginManager 的插件能力包成事件用例的惰性闭包结构体。
 // 插件实例在 PluginBootstrapper（bootstrap 阶段最后一步）才完成 Initialize，
-// wire 期 pm.Domain()/pm.Ws() 恒为 nil，因此闭包在触发时才实时解析 pm——
-// 不需要服务器启动前二次刷新（原 PluginDeps 快照 + refreshPluginDeps 机制的替代）。
+// wire 期 pm.Domain()/pm.Ws() 恒为 nil，因此闭包在触发时才实时解析 pm，
+// 无需服务器启动前二次刷新。
 func provideEventDeps(pm app.PluginManager) *eventhandler.PluginDeps {
 	return &eventhandler.PluginDeps{
 		GetCerts: newGetCertsFunc(pm),
@@ -263,8 +262,7 @@ func (a *podPubAdapter) Publish(nsID int64, pod *corev1.Pod) error {
 
 // provideGitServer 返回惰性取 git 插件闭包：插件在 PluginBootstrapper 阶段才
 // 完成 Initialize，wire 期 pm.Git() 恒为 nil，gitRepo 首次调用方法时才实时解析。
-// 替代原 GitServerHolder 快照 + refreshGitServer 的二次刷新机制，与 event/cron/
-// minio/db 的惰性取数模式对齐。
+// 与 event/cron/minio/db 的惰性取数模式对齐。
 func provideGitServer(pm app.PluginManager) func() data.GitServer {
 	return func() data.GitServer {
 		return pm.Git()

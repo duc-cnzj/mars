@@ -1,52 +1,57 @@
 # mars API SDK
 
-mars 的客户端 SDK 模块（`github.com/duc-cnzj/mars/api/v6`）。提供 **gRPC**、**HTTP/JSON**（grpc-gateway）与 **WebSocket** 三套客户端，共享同一批 proto 生成类型：方法签名、返回类型、错误码全部对齐，调用方切换传输方式时业务代码无需改动。其中 WebSocket（`api/ws`）承载 gRPC/HTTP 无法表达的**容器终端**双向实时能力（唯一对外入口 `OpenTerminal`）。
+<div align="center">
 
-## 三种传输，一套类型
+English | [简体中文](README_zh-CN.md)
 
-| 维度 | gRPC SDK (`api/grpc`) | HTTP SDK (`api/http`) | WebSocket SDK (`api/ws`) |
+</div>
+
+The client SDK module for mars (`github.com/duc-cnzj/mars/api/v6`). It ships three clients — **gRPC**, **HTTP/JSON** (grpc-gateway) and **WebSocket** — that share the same set of proto-generated types: method signatures, return types and error codes are fully aligned, so switching transports requires no changes to your business code. WebSocket (`api/ws`) carries the one capability gRPC and HTTP cannot express: **bidirectional, real-time container terminal** access (single public entry point `OpenTerminal`).
+
+## Three transports, one set of types
+
+| Dimension | gRPC SDK (`api/grpc`) | HTTP SDK (`api/http`) | WebSocket SDK (`api/ws`) |
 |---|---|---|---|
-| 传输 | HTTP/2 gRPC | HTTP/1.1 JSON（grpc-gateway） | WebSocket（二进制 protobuf 帧） |
-| 客户端 | `grpc.NewClient(addr, opts...)` | `http.NewClient(baseURL, opts...)` | `ws.NewClient(url, opts...)` |
-| 访问器 | `cli.Namespace().List(ctx, req)` | `cli.Namespace().List(ctx, req)` | `cli.OpenTerminal(ctx, container)` 终端入口 |
-| 流式 | 原生 gRPC stream | server-streaming → SSE/NDJSON |
-| 需要服务端 | mars gRPC 端口（如 `:50000`） | mars gateway 端口（如 `:4000`） |
+| Transport | HTTP/2 gRPC | HTTP/1.1 JSON (grpc-gateway) | WebSocket (binary protobuf frames) |
+| Client | `grpc.NewClient(addr, opts...)` | `http.NewClient(baseURL, opts...)` | `ws.NewClient(url, opts...)` |
+| Accessor | `cli.Namespace().List(ctx, req)` | `cli.Namespace().List(ctx, req)` | `cli.OpenTerminal(ctx, container)` terminal entry point |
+| Streaming | native gRPC stream | server-streaming → SSE/NDJSON |
+| Server needed | mars gRPC port (e.g. `:50000`) | mars gateway port (e.g. `:4000`) |
 
-两个包都暴露同一批 17 个 service 访问器：`Auth/Repo/Changelog/Cluster/Container/Event/AccessToken/File/Git/Metrics/Namespace/Picture/Project/Version/Endpoint/Settings/User`。
+Both packages expose the same 17 service accessors: `Auth/Repo/Changelog/Cluster/Container/Event/AccessToken/File/Git/Metrics/Namespace/Picture/Project/Version/Endpoint/Settings/User`.
 
-### 能力差异：gRPC 特有 vs HTTP 特有
+### Capability differences: gRPC-only vs HTTP-only
 
-gRPC 共 **65** 个方法，HTTP **61** 个；其中 **61 个共享**（每个 HTTP stub 方法在 gRPC 都有对应，签名一致）。差异只有两类，生成器/手写代码在源码里都有明确注释，可复核。
+gRPC has **84** methods, HTTP also has **84** (81 generated from proto `google.api.http` annotations + 3 hand-written); **81 are shared** (every generated HTTP stub has a matching gRPC counterpart with an identical signature). There are only two kinds of difference, and both are called out explicitly in the generator or the hand-written source, so you can verify them yourself.
 
-**gRPC 特有（4 个）—— HTTP 生成器诚实跳过：**
+**gRPC-only (3) — no HTTP route exists:**
 
-| 方法 | streaming 类型 | HTTP 缺失原因 |
+| Method | Streaming kind | Why HTTP lacks it |
 |---|---|---|
-| `Container.Exec` | bidi | HTTP/JSON 无解，需要 WebSocket（mars ws 通道承载终端） |
-| `Container.StreamCopyToPod` | client | HTTP/JSON 无解，需要 WebSocket |
-| `Container.ExecOnce` | server | proto **无 `google.api.http` 注解**，grpc-gateway 不暴露该路由 |
-| `Project.Apply` | server | proto **无 `google.api.http` 注解**，gateway 不暴露；HTTP 侧替代是 `Project.WebApply` |
+| `Container.Exec` | bidi | Unrepresentable in HTTP/JSON; needs WebSocket (the mars ws channel carries the terminal) |
+| `Container.StreamCopyToPod` | client | Unrepresentable in HTTP/JSON; needs WebSocket |
+| `Project.Apply` | server | proto has **no `google.api.http` annotation**, so the gateway does not expose it; the HTTP-side alternative is `Project.WebApply` |
 
-> 前两个是流式方向本身（client/bidi streaming）在 HTTP/1.1 JSON 下无解；后两个是 server-streaming 但 `.proto` 没配 http 注解——gateway 根本没有对应 HTTP 路由，HTTP SDK 自然没有方法。`Container.StreamContainerLog` / `Metrics.StreamTopPod` 是**配了注解**的 server-streaming，两套 SDK 都有（gRPC 原生流 / HTTP SSE）。
+> The first two are impossible purely because of their streaming direction (client/bidi streaming) under HTTP/1.1 JSON; `Project.Apply` is server-streaming but its `.proto` carries no http annotation — the gateway has no route for it at all, so the HTTP SDK naturally has no method. `Container.ExecOnce` / `Container.StreamContainerLog` / `Metrics.StreamTopPod` are all server-streaming methods that **do** carry the annotation, so both SDKs offer them (native gRPC stream on one side, HTTP SSE on the other).
 
-**HTTP 特有（3 个）—— 不在任何 proto 里，gRPC 无对应：**
+**HTTP-only (3) — defined in no proto at all, with no gRPC counterpart:**
 
-| 方法 | HTTP 路由 | 说明 |
+| Method | HTTP route | Notes |
 |---|---|---|
-| `FileAPI.UploadFile` | `POST /api/files` | multipart 上传，返回文件 ID |
-| `FileAPI.DownloadFile` | `GET /api/download_file/{id}` | 二进制下载，返回流 + 元信息 |
-| `FileAPI.CopyFromPod` | `POST /api/copy_from_pod` | 从 pod 拷贝文件到本地 |
+| `FileAPI.UploadFile` | `POST /api/files` | multipart upload, returns a file ID |
+| `FileAPI.DownloadFile` | `GET /api/download_file/{id}` | binary download, returns a stream plus metadata |
+| `FileAPI.CopyFromPod` | `POST /api/copy_from_pod` | copy a file from a pod to the caller |
 
-> 注意方向性：`Container.CopyToPod`（拷入 pod）两套 SDK 都有；`FileAPI.CopyFromPod`（从 pod 拷出）只有 HTTP 有。gRPC 的 `File` service 只有 `List/Delete/DiskInfo/MaxUploadSize/ShowRecords`，**没有**上传/下载 RPC。
+> Mind the direction: `Container.CopyToPod` (copy *into* a pod) exists in both SDKs, while `FileAPI.CopyFromPod` (copy *out of* a pod) is HTTP-only. The gRPC `File` service only has `List/Delete/DiskInfo/MaxUploadSize/ShowRecords` — it has **no** upload/download RPC.
 
-## 安装
+## Installation
 
 ```bash
 go get -u github.com/duc-cnzj/mars/api/v6/grpc
 go get -u github.com/duc-cnzj/mars/api/v6/http
 ```
 
-## gRPC 用法
+## gRPC usage
 
 ```go
 package main
@@ -59,10 +64,11 @@ import (
 )
 
 func main() {
-	// 构造时若配置了 WithAuth，会立即登录换取 token，失败返回 error。
+	// If WithAuth is configured, the client logs in immediately to obtain a token
+	// and returns an error on failure.
 	c, err := grpc.NewClient("127.0.0.1:50000",
 		grpc.WithAuth("admin", "123456"),
-		grpc.WithTokenAutoRefresh(), // 401 时自动重登并重试（默认最多 5 次指数退避）
+		grpc.WithTokenAutoRefresh(), // re-login and retry on 401 (5 exponential backoffs by default)
 	)
 	if err != nil {
 		panic(err)
@@ -77,21 +83,21 @@ func main() {
 }
 ```
 
-### gRPC Option
+### gRPC options
 
-| Option | 作用 |
+| Option | Effect |
 |---|---|
-| `WithAuth(username, password)` | 构造时登录换取 token，挂到每个 RPC 的 Authorization 元数据 |
-| `WithBearerToken(token)` | 直接注入已签发 token（自动补 `Bearer` 前缀） |
-| `WithTokenAutoRefresh()` | 遇 `codes.Unauthenticated`（且配置了 WithAuth）自动重登重试，覆盖 unary 与 server-streaming；Login/Exchange 自身 401 原样返回（凭据错误重试无意义，也避免 singleflight 自死锁） |
-| `WithUnaryClientInterceptor(op)` | 追加 unary 拦截器 |
-| `WithStreamClientInterceptor(op)` | 追加 streaming 拦截器 |
-| `WithTracer()` | 接入 OpenTelemetry（otelgrpc client stats handler） |
-| `WithTransportCredentials(tlsCfg)` | 使用自定义 `tls.Config` 建立 TLS 连接（含 mTLS）；不调用默认明文 insecure |
+| `WithAuth(username, password)` | Log in at construction time and attach the token to the Authorization metadata of every RPC |
+| `WithBearerToken(token)` | Inject an already-issued token directly (the `Bearer` prefix is added automatically) |
+| `WithTokenAutoRefresh()` | On `codes.Unauthenticated` (and with WithAuth configured), re-login and retry, covering unary and server-streaming; a 401 from Login/Exchange itself is returned as-is (retrying bad credentials is pointless and would also self-deadlock the singleflight) |
+| `WithUnaryClientInterceptor(op)` | Append a unary interceptor |
+| `WithStreamClientInterceptor(op)` | Append a streaming interceptor |
+| `WithTracer()` | Wire up OpenTelemetry (otelgrpc client stats handler) |
+| `WithTransportCredentials(tlsCfg)` | Establish a TLS connection using a custom `tls.Config` (mTLS included); plaintext insecure is never the default |
 
-运行期替换 token：`c.SetBearerToken("...")`。
+Replacing the token at runtime: `c.SetBearerToken("...")`.
 
-## HTTP 用法
+## HTTP usage
 
 ```go
 package main
@@ -122,98 +128,102 @@ func main() {
 }
 ```
 
-> 完整可运行示例见仓库根 [`examples/http`](../examples/http)：覆盖 unary 调用、错误码对齐、
-> server-streaming（SSE）、以及 HTTP 特有能力（multipart 上传 / 二进制下载）。示例默认连接 gateway `:4000`；
-> 服务器端 `mars serve` 的 `app_port` 默认 `:6000`，`:4000` 常见于本地 port-forward / docker 端口映射。
+> Fully runnable examples live in [`examples/http`](../examples/http) at the repository root: unary calls,
+> error-code alignment, server-streaming (SSE), and the HTTP-only capabilities (multipart upload / binary
+> download). The examples connect to the gateway on `:4000`; `mars serve`'s `app_port` defaults to `:6000`,
+> while `:4000` is typical for a local port-forward or docker port mapping.
 
-### HTTP Option
+### HTTP options
 
-| Option | 作用 |
+| Option | Effect |
 |---|---|
-| `WithAuth(username, password)` | 构造时 `POST /api/auth/login` 换取 token |
-| `WithBearerToken(token)` | 直接注入已签发 token（自动补 `Bearer` 前缀） |
-| `WithTokenAutoRefresh()` | 遇 401（且配置了 WithAuth）自动重登并重试一次；Login/Exchange 自身 401 原样返回 |
-| `WithHTTPClient(hc)` | 替换底层 `*http.Client`（可注入自定义 transport） |
-| `WithHeader(key, value)` | 为每个请求附加自定义 header（构造期注入，之后不可变）；同名可覆盖 SDK 自动设置的 `Content-Type`/`Accept`/`Authorization`（Set 语义，最后应用）；key 为空时忽略。如关联日志用 `X-Request-ID`、业务透传 header |
-| `WithHeaders(headers)` | 批量附加自定义 headers，语义同 `WithHeader` |
-| `WithTimeout(d)` | 设置底层 http.Client 整体超时 |
-| `WithTracer()` | 接入 OpenTelemetry，请求注入 trace（底层用 otelhttp 包装 Transport） |
+| `WithAuth(username, password)` | Exchange credentials for a token via `POST /api/auth/login` at construction time |
+| `WithBearerToken(token)` | Inject an already-issued token directly (the `Bearer` prefix is added automatically) |
+| `WithTokenAutoRefresh()` | On 401 (and with WithAuth configured), re-login and retry once; a 401 from Login/Exchange itself is returned as-is |
+| `WithHTTPClient(hc)` | Replace the underlying `*http.Client` (useful for injecting a custom transport) |
+| `WithHeader(key, value)` | Attach a custom header to every request (injected at construction time, immutable afterwards); a same-named header overrides the SDK's automatic `Content-Type`/`Accept`/`Authorization` (Set semantics, applied last); an empty key is ignored. Handy for correlation IDs such as `X-Request-ID` or for passing headers through to your business logic |
+| `WithHeaders(headers)` | Attach a batch of custom headers, same semantics as `WithHeader` |
+| `WithTimeout(d)` | Set the overall timeout of the underlying http.Client |
+| `WithTracer()` | Wire up OpenTelemetry; requests carry traces (the Transport is wrapped with otelhttp under the hood) |
 
-## Option 对照
+## Option comparison
 
-两套 SDK 共享 `WithAuth` / `WithBearerToken` / `WithTokenAutoRefresh` / `WithTracer`，语义一致。传输层特有差异：
+Both SDKs share `WithAuth` / `WithBearerToken` / `WithTokenAutoRefresh` / `WithTracer` with identical semantics. Transport-specific differences:
 
-| 传输特有 | 说明 |
+| Transport-specific | Notes |
 |---|---|
-| gRPC `WithTransportCredentials(tlsCfg)` | HTTP 侧无需该 Option（`WithHTTPClient` 换 transport 即覆盖 TLS/代理） |
-| gRPC `WithUnaryClientInterceptor` / `WithStreamClientInterceptor` | 拦截器注入是 gRPC 原生机制，HTTP 无对应 |
-| HTTP `WithHTTPClient(hc)` / `WithTimeout(d)` | 直接操控 `*http.Client`，gRPC 无对应（连接配置走 dial options） |
-| HTTP `WithHeader` / `WithHeaders` | 客户端级自定义 header，覆盖 SDK 自动 header（Set 语义），gRPC 无对应（自定义元数据走拦截器） |
+| gRPC `WithTransportCredentials(tlsCfg)` | No equivalent needed on the HTTP side (swapping the transport via `WithHTTPClient` covers TLS/proxies) |
+| gRPC `WithUnaryClientInterceptor` / `WithStreamClientInterceptor` | Interceptor injection is a native gRPC mechanism with no HTTP counterpart |
+| HTTP `WithHTTPClient(hc)` / `WithTimeout(d)` | Direct control over `*http.Client`; no gRPC counterpart (connection settings go through dial options) |
+| HTTP `WithHeader` / `WithHeaders` | Client-level custom headers that override the SDK's automatic headers (Set semantics); no gRPC counterpart (custom metadata goes through interceptors) |
 
-## WebSocket SDK（`api/ws`）
+## WebSocket SDK (`api/ws`)
 
-`api/ws` 面向一个核心场景：**在指定容器内拉起交互 shell 并读写**（gRPC/HTTP 无法表达的 bidi 实时能力）。因此对外**只暴露一个入口** `OpenTerminal`——连接、鉴权、sessionID 生成、shell 开启、鉴权竞态兜底全部在内部搞定，调用方只拿一个可读写的 `Terminal`。端点 `ws(s)://<host>/ws`，鉴权用与 HTTP/gRPC 同源的 JWT。
+`api/ws` targets a single core scenario: **spawning an interactive shell inside a given container and reading from / writing to it** (the bidi, real-time capability gRPC and HTTP cannot express). It therefore exposes exactly **one entry point**, `OpenTerminal` — connecting, authenticating, generating the sessionID, opening the shell and handling the auth race are all handled internally, so the caller only receives a readable/writable `Terminal`. The endpoint is `ws(s)://<host>/ws`, authenticated with the same JWT used by HTTP/gRPC.
 
 ```go
 cli, err := ws.NewClient("ws://127.0.0.1:4000/ws", ws.WithAuth("admin", "123456"))
 if err != nil { panic(err) }
 defer cli.Close()
 
-// 单调用完成「连接→鉴权→打开终端」全部交互；sessionID 由 SDK 自动生成。
+// A single call performs the whole "connect → authenticate → open terminal" interaction;
+// the sessionID is generated automatically by the SDK.
 ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 defer cancel()
 term, err := cli.OpenTerminal(ctx, &websocket.Container{Namespace: "ns", Pod: "p", Container: "c"})
 if err != nil { panic(err) }
 defer term.Close()
 
-// 数据面：一条调用接好 stdin→远端、远端→stdout/toast 三通道（默认 raw 模式，
-// 见下方 raw 说明）。返回的 stop 同时停止转发并恢复本地终端，故必须 defer。
+// Data plane: one call wires up all three channels — stdin→remote, remote→stdout, and
+// remote→toast (raw mode by default, see the raw-mode notes below). The returned stop
+// halts forwarding and restores the local terminal, so it must be deferred.
 stop := term.Pump(os.Stdin,
 	func(d []byte) { _, _ = os.Stdout.Write(d) },
-	func(d []byte) { /* OOB 提示（toast） */ },
+	func(d []byte) { /* out-of-band messages (toast) */ },
 )
 defer stop()
 
-// 控制面：自动跟随本地终端窗口尺寸变化（初始尺寸 + SIGWINCH）同步远端 pty。
+// Control plane: automatically follow local terminal window-size changes
+// (initial size plus SIGWINCH) and sync them to the remote pty.
 term.AutoHandleWindowSize()
 
-// 仍可手动操作：term.Write(p) 发 stdin、term.Stdout() 收输出、term.Resize(h, w)、
-// term.ID() 取自动生成的 sessionID。
+// Manual operation is still available: term.Write(p) sends stdin, term.Stdout() receives
+// output, term.Resize(h, w), and term.ID() returns the auto-generated sessionID.
 
-// 会话结束（进程退出/被踢/主动 Close）
+// Session ends (process exit / kicked / explicit Close)
 <-term.Done()
 ```
 
-**raw 模式（默认开启）**：`Pump` 默认把本地终端切到 raw 模式（关本地行缓冲与回显，每个按键字节即时透传远端 shell），由远端 readline 解释，从而获得 **tab 补全、方向键、clear** 等完整交互。代价是 **Ctrl+C 在 raw 模式下只是一个字节 `0x03`** 透传给远端 shell（由远端发 SIGINT），退出请用远端 `exit` 而非本地 Ctrl+C。用 `ws.WithRawMode(false)` 可退回 canonical 模式（本地回显、Ctrl+C 走本地 SIGINT）。`stop` 会自动恢复本地终端设置。
+**Raw mode (on by default)**: `Pump` switches the local terminal to raw mode by default (disabling local line buffering and echo, so every keystroke byte is passed straight through to the remote shell) and lets the remote readline interpret it, which gives you **tab completion, arrow keys, clear** and the rest of the interactive experience. The trade-off is that **in raw mode Ctrl+C is just a `0x03` byte** forwarded to the remote shell (which then raises SIGINT) — exit with the remote `exit` command rather than local Ctrl+C. Use `ws.WithRawMode(false)` to fall back to canonical mode (local echo, Ctrl+C raises a local SIGINT). `stop` restores the local terminal settings automatically.
 
-- `Client` 常驻后台 goroutine，断线按退避策略自动重连、重鉴权；`Close()` 幂等。
-- 终端高层抽象 `Terminal`：`Pump(in, stdout, toast, opts...)`（数据面编排，返回 stop，默认 raw 模式）、`AutoHandleWindowSize()`（跟随本地窗口尺寸）、`Write`（stdin）/`Resize`/`Stdout`/`Toast`/`Done`/`Close`/`ID`（自动生成的 sessionID）。
-- 完整可运行示例见仓库根 [`examples/ws`](../examples/ws)。
+- `Client` keeps a background goroutine alive, reconnecting and re-authenticating with a backoff strategy on disconnect; `Close()` is idempotent.
+- The `Terminal` high-level abstraction: `Pump(in, stdout, toast, opts...)` (data-plane orchestration, returns stop, raw mode by default), `AutoHandleWindowSize()` (follows the local window size), `Write` (stdin) / `Resize` / `Stdout` / `Toast` / `Done` / `Close` / `ID` (the auto-generated sessionID).
+- Fully runnable examples live in [`examples/ws`](../examples/ws) at the repository root.
 
-### WebSocket Option
+### WebSocket options
 
-| Option | 说明 |
+| Option | Notes |
 |---|---|
-| `WithBearerToken(token)` | 直接注入已签发 JWT，连接时发 HandleAuthorize |
-| `WithAuth(user, pass)` | 连接时用 `api/http` 登录换 token，每次重连自动续期 |
-| `WithTokenProvider(fn)` | 自定义 token 来源，最灵活（缓存/OIDC exchange 等） |
-| `WithHTTPClient(hc)` | 仅配合 `WithAuth` 登录注入底层 `*http.Client` |
-| `WithDialer(d)` | 注入自定义 ws 拨号器（TLS/代理/握手超时） |
-| `WithReconnectBackoff(b)` | 自定义断线重连退避策略 |
+| `WithBearerToken(token)` | Inject an already-issued JWT; HandleAuthorize is sent on connect |
+| `WithAuth(user, pass)` | Log in through `api/http` on connect to obtain a token, auto-renewed on every reconnect |
+| `WithTokenProvider(fn)` | Custom token source — the most flexible option (caching, OIDC exchange, etc.) |
+| `WithHTTPClient(hc)` | Injects the underlying `*http.Client` used solely for the `WithAuth` login |
+| `WithDialer(d)` | Inject a custom ws dialer (TLS/proxy/handshake timeout) |
+| `WithReconnectBackoff(b)` | Custom backoff strategy for reconnects |
 
 ## Server-streaming
 
-HTTP/JSON 下，带 `google.api.http` 注解的 server-streaming 方法由 gateway 输出 NDJSON（`{"result": <msg>}`）或标准 SSE（`data: {...}`），SDK 自动兼容两种格式：
+Under HTTP/JSON, server-streaming methods carrying a `google.api.http` annotation are emitted by the gateway as NDJSON (`{"result": <msg>}`) or standard SSE (`data: {...}`); the SDK accepts both formats transparently:
 
 ```go
-// 例：container.StreamContainerLog / StreamTopPod
+// e.g. container.StreamContainerLog / StreamTopPod
 stream, err := c.Container().StreamContainerLog(ctx, &container.StreamContainerLogRequest{...})
 if err != nil {
 	panic(err)
 }
 defer stream.Close()
 for {
-	msg, err := stream.Recv() // io.EOF = 流正常结束
+	msg, err := stream.Recv() // io.EOF = clean end of stream
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			break
@@ -224,40 +234,42 @@ for {
 }
 ```
 
-流中途错误以 `google.rpc.Status` envelope 返回，还原成 `codes.Error`，与 unary 错误码通用。client/bidi streaming（`Exec`、`StreamCopyToPod`、`Apply`）在 HTTP/JSON 下无解（需要 WebSocket），生成器诚实跳过，仅 gRPC SDK 可用。
+Mid-stream errors come back as a `google.rpc.Status` envelope and are restored to a `codes.Error`, so error codes work exactly as they do for unary calls. Only three methods are unreachable over HTTP/JSON: the client/bidi streaming `Exec` and `StreamCopyToPod` (which need WebSocket), plus `Project.Apply`, which carries no http annotation — the generator honestly skips them, leaving them available in the gRPC SDK only.
 
-## 生成工作流
+## Generation workflow
 
-proto 变更后重跑生成器，产物落在 `api/http/rest/`：
+After changing a proto, re-run the generator; the output lands in `api/http/rest/`:
 
 ```bash
 cd api
-go generate ./http/...      # 触发 go:generate → go run ./gen/cmd
-go run ./http/gen/cmd       # 等价手跑
+go generate ./http/...      # triggers go:generate → go run ./gen/cmd
+go run ./http/gen/cmd       # equivalent to running it by hand
 ```
 
-生成器保证 **rest/ 目录 100% 等于当前 proto 的产物**：
+The generator guarantees that **the rest/ directory is 100% equivalent to the output of the current proto**:
 
-- unary + `google.api.http` 注解 → 生成 HTTP stub；
-- server-streaming + 注解 → 生成 SSE stub；
-- client/bidi streaming、无注解方法、自定义路由 → 跳过/手写；
-- 生成后清理 rest/ 里不在集合内的孤儿 `*.gen.http.go`（proto 删掉 service 不留垃圾文件），绝不触碰手写文件。
+- unary + `google.api.http` annotation → generate an HTTP stub;
+- server-streaming + annotation → generate an SSE stub;
+- client/bidi streaming, un-annotated methods, custom routes → skip, or hand-write;
+- after generating, sweep orphan `*.gen.http.go` files in rest/ that are not part of the set (deleting a service from the proto leaves no junk behind), and never touch hand-written files.
 
-`api/http/gen_test.go` 的 `TestGeneratedStubsUpToDate` 做双向漂移校验：已提交 stub ⊆ 生成器输出 且 无孤儿。改 proto 后必须先重新生成再提交，否则测试挂。
+`TestGeneratedStubsUpToDate` in `api/http/gen_test.go` performs a two-way drift check: committed stubs ⊆ generator output, and no orphans. After changing a proto you must regenerate before committing, or the test fails.
 
-## 质量保证
+## Quality assurance
 
 ```bash
-go build ./...             # 全量编译
-go vet ./...               # 静态检查
-go test ./...              # 单测（手写生产代码 100%，rest/ 生成 stub 由漂移测试兜底）
+go build ./...             # full compile
+go vet ./...               # static analysis
+go test ./...              # unit tests (hand-written production code at 100%; rest/ generated stubs are covered by the drift test)
 ```
 
-- grpc 包：bufconn 内存 gRPC 测试，覆盖登录/token 前缀/自动刷新/singleflight 去重/拦截器注入/15 个访问器；
-- http/transport 包：fake stream/conn 覆盖泛型流工厂与错误传播；
-- internal/flight 包：singleflight 去重、DoChan、Forget 语义全覆盖。
+- grpc package: bufconn in-memory gRPC tests covering login / token prefix / auto-refresh / singleflight dedup / interceptor injection / the 17 service accessors;
+- http/transport package: fake stream/conn covering the generic stream factory and error propagation;
+- internal/flight package: full coverage of singleflight dedup (concurrent calls on the same key execute once, the rest share the result, and nothing is cached after completion).
 
-## 相关
+## See also
 
-- proto 定义与 gateway 服务端：仓库根 `api/proto/`、`internal/...`；
-- 更多使用示例：[examples](https://github.com/duc-cnzj/mars/tree/master/examples)。
+- proto definitions and gateway server: repository root `api/proto/`, `internal/...`;
+- More usage examples: [examples](https://github.com/duc-cnzj/mars/tree/master/examples).
+</content>
+</invoke>

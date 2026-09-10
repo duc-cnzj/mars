@@ -224,6 +224,7 @@ func newTestContainerBiz(k K8sBiz, f FileBiz, e EventBiz) *containerBiz {
 // ---- ResolveContainer ----
 
 func TestResolveContainer_GivenContainer(t *testing.T) {
+	t.Parallel()
 	// 显式指定容器时不触达 k8s（findDefault 置 panic 证明未调用）。
 	k := &fakeK8sBizForContainer{findDefault: func(ctx context.Context, ns, pod string) (string, error) {
 		panic("FindDefaultContainer should not be called")
@@ -235,6 +236,7 @@ func TestResolveContainer_GivenContainer(t *testing.T) {
 }
 
 func TestResolveContainer_DefaultContainer(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{findDefault: func(ctx context.Context, ns, pod string) (string, error) {
 		return "default-c", nil
 	}}
@@ -245,6 +247,7 @@ func TestResolveContainer_DefaultContainer(t *testing.T) {
 }
 
 func TestResolveContainer_DefaultContainerError(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{findDefault: func(ctx context.Context, ns, pod string) (string, error) {
 		return "", errors.New("no default")
 	}}
@@ -257,6 +260,7 @@ func TestResolveContainer_DefaultContainerError(t *testing.T) {
 // ---- EnsurePodRunning ----
 
 func TestContainerBiz_EnsurePodRunning_Running(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{isPodRunning: func(ns, pod string) (bool, string) {
 		return true, ""
 	}}
@@ -265,6 +269,7 @@ func TestContainerBiz_EnsurePodRunning_Running(t *testing.T) {
 }
 
 func TestContainerBiz_EnsurePodRunning_NotRunning(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{isPodRunning: func(ns, pod string) (bool, string) {
 		return false, "pod down"
 	}}
@@ -277,6 +282,7 @@ func TestContainerBiz_EnsurePodRunning_NotRunning(t *testing.T) {
 // ---- execSizeQueue ----
 
 func TestExecSizeQueue_Next_ContextDone(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.TODO())
 	cancel()
 	queue := newExecSizeQueue(ctx, make(chan *TerminalSize, 1), &fakeRecorderForContainer{})
@@ -284,6 +290,7 @@ func TestExecSizeQueue_Next_ContextDone(t *testing.T) {
 }
 
 func TestExecSizeQueue_Next_ChannelClosed(t *testing.T) {
+	t.Parallel()
 	ch := make(chan *TerminalSize, 1)
 	close(ch)
 	queue := newExecSizeQueue(context.TODO(), ch, &fakeRecorderForContainer{})
@@ -291,6 +298,7 @@ func TestExecSizeQueue_Next_ChannelClosed(t *testing.T) {
 }
 
 func TestExecSizeQueue_Next_SizeReceived(t *testing.T) {
+	t.Parallel()
 	reco := &fakeRecorderForContainer{}
 	ch := make(chan *TerminalSize, 1)
 	expected := &TerminalSize{Width: 10, Height: 20}
@@ -303,6 +311,7 @@ func TestExecSizeQueue_Next_SizeReceived(t *testing.T) {
 }
 
 func TestExecSizeQueue_Next_ZeroSizeNoResize(t *testing.T) {
+	t.Parallel()
 	// 宽或高为 0 的帧（未设置窗口）只透传尺寸，不触发 Resize。
 	reco := &fakeRecorderForContainer{}
 	ch := make(chan *TerminalSize, 1)
@@ -318,6 +327,7 @@ func TestExecSizeQueue_Next_ZeroSizeNoResize(t *testing.T) {
 // ---- limitedBuffer / toErrStr ----
 
 func TestLimitedBuffer_KeepsSmallOutput(t *testing.T) {
+	t.Parallel()
 	lb := newLimitedBuffer(100)
 	_, err := lb.Write([]byte("abc"))
 	assert.Nil(t, err)
@@ -325,6 +335,7 @@ func TestLimitedBuffer_KeepsSmallOutput(t *testing.T) {
 }
 
 func TestLimitedBuffer_TruncatesToTail(t *testing.T) {
+	t.Parallel()
 	lb := newLimitedBuffer(10)
 	_, err := lb.Write([]byte("hello world foo bar"))
 	assert.Nil(t, err)
@@ -333,6 +344,7 @@ func TestLimitedBuffer_TruncatesToTail(t *testing.T) {
 }
 
 func TestLimitedBuffer_MultipleWritesTruncate(t *testing.T) {
+	t.Parallel()
 	lb := newLimitedBuffer(10)
 	_, _ = lb.Write([]byte("012345"))
 	_, _ = lb.Write([]byte("6789abcdef"))
@@ -340,6 +352,7 @@ func TestLimitedBuffer_MultipleWritesTruncate(t *testing.T) {
 }
 
 func TestLimitedBuffer_SingleHugeWrite(t *testing.T) {
+	t.Parallel()
 	lb := newLimitedBuffer(8)
 	big := make([]byte, 1<<20)
 	for i := range big {
@@ -352,6 +365,7 @@ func TestLimitedBuffer_SingleHugeWrite(t *testing.T) {
 }
 
 func TestToErrStr(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "", toErrStr(nil))
 	assert.Equal(t, "error", toErrStr(errors.New("error")))
 }
@@ -359,6 +373,7 @@ func TestToErrStr(t *testing.T) {
 // ---- Exec ----
 
 func TestContainerBiz_Exec_PodNotRunning(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{isPodRunning: func(ns, pod string) (bool, string) {
 		return false, "pod down"
 	}}
@@ -368,6 +383,7 @@ func TestContainerBiz_Exec_PodNotRunning(t *testing.T) {
 }
 
 func TestContainerBiz_Exec_FindDefaultContainerError(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
@@ -384,6 +400,7 @@ func TestContainerBiz_Exec_FindDefaultContainerError(t *testing.T) {
 // 队列满）、输出回传、退出码帧与审计落库。execFn 用 goroutine 持续消费 stdin，避免
 // io.Pipe 同步语义把 recv goroutine 的 writer.Write 卡死。
 func TestContainerBiz_Exec_SuccessExitError(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
@@ -438,6 +455,7 @@ func TestContainerBiz_Exec_SuccessExitError(t *testing.T) {
 // 属"容器执行结果"，经流内错误帧（execOnceExecFailedCode）传达后 Exec 返回 nil，
 // 不提升为传输层 500。
 func TestContainerBiz_Exec_ExecFailure(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
@@ -460,6 +478,7 @@ func TestContainerBiz_Exec_ExecFailure(t *testing.T) {
 // TestContainerBiz_Exec_ExecFailureSendFailure 覆盖 exec 失败错误帧发送失败分支：
 // sendErr 只让错误帧失败，不打断流程，Exec 仍返回 nil（属"容器执行结果"）。
 func TestContainerBiz_Exec_ExecFailureSendFailure(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
@@ -481,6 +500,7 @@ func TestContainerBiz_Exec_ExecFailureSendFailure(t *testing.T) {
 // TestContainerBiz_Exec_MarsError 覆盖 mars 自身错误（如 SPDY 建连失败）上抛：
 // 非"容器执行结果"，Exec 直接返回原错误，由最上层映射为 500。
 func TestContainerBiz_Exec_MarsError(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error {
@@ -503,6 +523,7 @@ func TestContainerBiz_Exec_MarsError(t *testing.T) {
 // execFn 不消费 stdin，FirstMessage 的 writer.Write 阻塞到 closeAll 关闭 reader 后
 // 返回 ErrClosedPipe——只记日志、不 panic、不中断 Exec。
 func TestContainerBiz_Exec_FirstMessageWriteError(t *testing.T) {
+	t.Parallel()
 	release := make(chan struct{})
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
@@ -537,6 +558,7 @@ func TestContainerBiz_Exec_FirstMessageWriteError(t *testing.T) {
 // TestContainerBiz_Exec_SendError 覆盖 send loop 的发送失败分支：stream.Send 恒报错，
 // send loop 记 ErrorCtx 后退出，Exec 返回下层错误。
 func TestContainerBiz_Exec_SendError(t *testing.T) {
+	t.Parallel()
 	release := make(chan struct{})
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
@@ -592,6 +614,7 @@ func TestContainerBiz_Exec_SendError(t *testing.T) {
 // ---- ExecOnce ----
 
 func TestContainerBiz_ExecOnce_PodNotRunning(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{isPodRunning: func(ns, pod string) (bool, string) {
 		return false, "pod down"
 	}}
@@ -601,6 +624,7 @@ func TestContainerBiz_ExecOnce_PodNotRunning(t *testing.T) {
 }
 
 func TestContainerBiz_ExecOnce_FindDefaultContainerError(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
@@ -616,6 +640,7 @@ func TestContainerBiz_ExecOnce_FindDefaultContainerError(t *testing.T) {
 // TestContainerBiz_ExecOnce_Success 覆盖默认容器回落 + 命令输出有界捕获 + 审计落库
 // （错误为空串、result 为 stdout 内容）。
 func TestContainerBiz_ExecOnce_Success(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
@@ -649,6 +674,7 @@ func TestContainerBiz_ExecOnce_Success(t *testing.T) {
 
 // TestContainerBiz_ExecOnce_ExitError 覆盖退出码帧发送与审计里错误信息透传。
 func TestContainerBiz_ExecOnce_ExitError(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
@@ -677,6 +703,7 @@ func TestContainerBiz_ExecOnce_ExitError(t *testing.T) {
 
 // TestContainerBiz_ExecOnce_SendError 覆盖 ExecOnce send loop 的发送失败分支。
 func TestContainerBiz_ExecOnce_SendError(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
@@ -700,6 +727,7 @@ func TestContainerBiz_ExecOnce_SendError(t *testing.T) {
 // TestContainerBiz_ExecOnce_ExitErrorSendFailure 覆盖退出码错误帧发送失败分支：
 // errFrameErr 只让错误帧失败，不打断 send loop，覆盖主流程发退出码帧失败只记日志。
 func TestContainerBiz_ExecOnce_ExitErrorSendFailure(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
@@ -725,6 +753,7 @@ func TestContainerBiz_ExecOnce_ExitErrorSendFailure(t *testing.T) {
 // 属"容器执行结果"，经流内错误帧（execOnceExecFailedCode）传达后 ExecOnce 返回 nil，
 // 不提升为传输层 500。
 func TestContainerBiz_ExecOnce_ExecFailure(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
@@ -753,6 +782,7 @@ func TestContainerBiz_ExecOnce_ExecFailure(t *testing.T) {
 // TestContainerBiz_ExecOnce_ExecFailureSendFailure 覆盖 exec 失败错误帧发送失败分支：
 // errFrameErr 只让错误帧失败，不打断 send loop，ExecOnce 仍返回 nil。
 func TestContainerBiz_ExecOnce_ExecFailureSendFailure(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
@@ -775,6 +805,7 @@ func TestContainerBiz_ExecOnce_ExecFailureSendFailure(t *testing.T) {
 // ---- execOnceDeadline / cappedWriter 单元 ----
 
 func TestExecOnceDeadline(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, time.Duration(defaultExecOnceTimeout)*time.Second, execOnceDeadline(0), "0 用默认值")
 	assert.Equal(t, time.Duration(defaultExecOnceTimeout)*time.Second, execOnceDeadline(-5), "负值用默认值")
 	assert.Equal(t, time.Duration(5)*time.Second, execOnceDeadline(5), "正数透传")
@@ -786,6 +817,7 @@ type errWriter struct{}
 func (errWriter) Write(p []byte) (int, error) { return 0, errors.New("write boom") }
 
 func TestCappedWriter(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	cancelled := false
 	c := newCappedWriter(&buf, 10, func() { cancelled = true })
@@ -815,6 +847,7 @@ func TestCappedWriter(t *testing.T) {
 }
 
 func TestCappedWriter_NilCancelAndWriteError(t *testing.T) {
+	t.Parallel()
 	// nil cancel 不 panic。
 	c := newCappedWriter(io.Discard, 10, nil)
 	_, err := c.Write([]byte("abc"))
@@ -840,6 +873,7 @@ func TestCappedWriter_NilCancelAndWriteError(t *testing.T) {
 // 发一条明确的超时错误帧（execOnceTimeoutCode=-3）而非误标为 -2"exec 启动失败"，
 // ExecOnce 返回 nil（属服务端执行策略，不提升为传输层错误）。
 func TestContainerBiz_ExecOnce_Timeout(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
@@ -870,6 +904,7 @@ func TestContainerBiz_ExecOnce_Timeout(t *testing.T) {
 // net.Error（Timeout()==true）的场景：判据是 execCtx.Err() 而非 err 类型，必须仍识别为
 // -3 超时，不落到 500。
 func TestContainerBiz_ExecOnce_Timeout_NetError(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
@@ -898,6 +933,7 @@ func TestContainerBiz_ExecOnce_Timeout_NetError(t *testing.T) {
 // send 报错时只记 Debug 日志不 panic，用例仍正常返回。与截断/退出码/exec失败
 // 三种错误帧的 SendError 测试对偶（此前 -3 块漏写了这枚对偶测试）。
 func TestContainerBiz_ExecOnce_TimeoutSendError(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
@@ -922,6 +958,7 @@ func TestContainerBiz_ExecOnce_TimeoutSendError(t *testing.T) {
 
 // TestContainerBiz_ExecOnce_TimeoutWiring 验证请求超时被接进 Execute 的 ctx deadline。
 func TestContainerBiz_ExecOnce_TimeoutWiring(t *testing.T) {
+	t.Parallel()
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
 		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
@@ -944,6 +981,7 @@ func TestContainerBiz_ExecOnce_TimeoutWiring(t *testing.T) {
 
 // TestContainerBiz_ExecOnce_Truncation 覆盖输出超限：发一条明确的截断错误帧而非静默断流。
 func TestContainerBiz_ExecOnce_Truncation(t *testing.T) {
+	t.Parallel()
 	big := make([]byte, maxExecOnceStreamSize+16)
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
@@ -970,6 +1008,7 @@ func TestContainerBiz_ExecOnce_Truncation(t *testing.T) {
 // TestContainerBiz_ExecOnce_TruncationSendError 覆盖截断错误帧发送失败分支：send 报错时
 // 只记 Debug 日志不 panic，用例仍正常返回。
 func TestContainerBiz_ExecOnce_TruncationSendError(t *testing.T) {
+	t.Parallel()
 	big := make([]byte, maxExecOnceStreamSize+16)
 	k := &fakeK8sBizForContainer{
 		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },

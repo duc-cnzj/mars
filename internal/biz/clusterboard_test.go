@@ -28,6 +28,7 @@ func (s *clusterBoardRepoStub) ClusterInfo() *ClusterInfo {
 // TestK8sBiz_ClusterBoard_Success 成功路径：repo 快照 + 总览聚合成看板返回，
 // 管理命名空间集合 nil 时排行/Top Pod 为空（无 mars 空间可展示）。
 func TestK8sBiz_ClusterBoard_Success(t *testing.T) {
+	t.Parallel()
 	stub := &clusterBoardRepoStub{
 		board: &ClusterBoardData{Nodes: []*BoardNode{
 			{Name: "node01"},
@@ -47,6 +48,7 @@ func TestK8sBiz_ClusterBoard_Success(t *testing.T) {
 
 // TestK8sBiz_ClusterBoard_RepoError 失败路径：repo 拉取快照失败时整体上抛，不组装看板。
 func TestK8sBiz_ClusterBoard_RepoError(t *testing.T) {
+	t.Parallel()
 	stub := &clusterBoardRepoStub{boardErr: errors.New("snapshot boom")}
 	b := NewK8sBiz(stub)
 
@@ -57,6 +59,7 @@ func TestK8sBiz_ClusterBoard_RepoError(t *testing.T) {
 
 // TestNodeRole 角色派生：master/control-plane 角色标签归 master，其余归 worker。
 func TestNodeRole(t *testing.T) {
+	t.Parallel()
 	masterLabels := []map[string]string{
 		{"node-role.kubernetes.io/master": ""},
 		{"node-role.kubernetes.io/control-plane": ""},
@@ -71,6 +74,7 @@ func TestNodeRole(t *testing.T) {
 // TestNodeStatus 状态派生：不可调度优先标 SchedulingDisabled，再按 Ready 条件定级，
 // 无 Ready 条件兜底 NotReady。
 func TestNodeStatus(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "SchedulingDisabled", nodeStatus(&BoardNode{Unschedulable: true, ReadyStatus: "True"}))
 	assert.Equal(t, "Ready", nodeStatus(&BoardNode{ReadyStatus: "True"}))
 	assert.Equal(t, "NotReady", nodeStatus(&BoardNode{ReadyStatus: "False"}))
@@ -80,6 +84,7 @@ func TestNodeStatus(t *testing.T) {
 
 // TestNodeUsage 用量匹配：按节点名命中 NodeMetrics 返回用量，未命中返回 0。
 func TestNodeUsage(t *testing.T) {
+	t.Parallel()
 	metrics := []*BoardNodeMetric{
 		{Name: "node01", CpuUsageMilli: 1000, MemUsageBytes: 1073741824},
 	}
@@ -95,6 +100,7 @@ func TestNodeUsage(t *testing.T) {
 // TestNodeRequests 请求聚合：只累加落在目标节点上的 Pod 容器 Requests，
 // 其他节点 Pod 被忽略；无匹配节点返回 0。
 func TestNodeRequests(t *testing.T) {
+	t.Parallel()
 	pods := []*BoardPod{
 		{NodeName: "node01", CpuRequestMilli: 500, MemRequestBytes: 268435456},
 		{NodeName: "node02", CpuRequestMilli: 1000, MemRequestBytes: 1073741824},
@@ -110,6 +116,7 @@ func TestNodeRequests(t *testing.T) {
 
 // TestPodMetricsUsage 容器用量累加：快照已把容器用量聚合成整 Pod 用量，直接读取。
 func TestPodMetricsUsage(t *testing.T) {
+	t.Parallel()
 	m := &BoardPodMetric{CpuMilli: 500, MemBytes: 134217728}
 	cpu, memory := podMetricsUsage(m)
 	assert.Equal(t, int64(500), cpu)
@@ -122,6 +129,7 @@ func TestPodMetricsUsage(t *testing.T) {
 
 // TestBuildBoardNode 节点明细集成：容量/用量/请求/角色/状态一次性装配正确。
 func TestBuildBoardNode(t *testing.T) {
+	t.Parallel()
 	node := &BoardNode{
 		Name:             "node01",
 		Labels:           map[string]string{"node-role.kubernetes.io/master": ""},
@@ -150,6 +158,7 @@ func TestBuildBoardNode(t *testing.T) {
 
 // TestBuildBoardNamespaces 命名空间聚合：Pod 数与用量按命名空间归属统计互不串扰。
 func TestBuildBoardNamespaces(t *testing.T) {
+	t.Parallel()
 	namespaces := []*BoardNamespace{
 		{Name: "ns-a"},
 		{Name: "ns-b"},
@@ -175,6 +184,7 @@ func TestBuildBoardNamespaces(t *testing.T) {
 // TestBuildBoardTopPods 排序与截断：默认按 CPU 降序取前 topN，topSort="mem" 按内存降序；
 // 空输入返回空切片。
 func TestBuildBoardTopPods(t *testing.T) {
+	t.Parallel()
 	metrics := []*BoardPodMetric{
 		{Name: "low", Namespace: "ns-a", CpuMilli: 100, MemBytes: 4 << 30},
 		{Name: "high", Namespace: "ns-b", CpuMilli: 2000, MemBytes: 256 << 20},
@@ -196,6 +206,7 @@ func TestBuildBoardTopPods(t *testing.T) {
 
 // TestBuildClusterBoard 看板组装：快照为 nil 时只保留总览（防御），正常快照全量组装。
 func TestBuildClusterBoard(t *testing.T) {
+	t.Parallel()
 	overview := &ClusterInfo{Status: StatusHealth}
 	board := buildClusterBoard(nil, overview, nil, "")
 	assert.Equal(t, overview, board.Overview)
@@ -214,6 +225,7 @@ func TestBuildClusterBoard(t *testing.T) {
 // TestBuildClusterBoard_ManagedFilter 管理空间过滤：命名空间排行与 Top Pod 只保留
 // mars 管理集合内的空间及其 Pod；节点表仍用全量 Pod（请求聚合需全量，不被过滤）。
 func TestBuildClusterBoard_ManagedFilter(t *testing.T) {
+	t.Parallel()
 	managed := map[string]bool{"ns-a": true}
 	data := &ClusterBoardData{
 		Nodes: []*BoardNode{{Name: "n"}},
@@ -243,6 +255,7 @@ func TestBuildClusterBoard_ManagedFilter(t *testing.T) {
 
 // TestFilterNamespaces 命名空间过滤：只保留 mars 管理集合内的空间。
 func TestFilterNamespaces(t *testing.T) {
+	t.Parallel()
 	nss := []*BoardNamespace{
 		{Name: "ns-a"},
 		{Name: "kube-system"},
@@ -255,6 +268,7 @@ func TestFilterNamespaces(t *testing.T) {
 
 // TestFilterPodMetrics Pod 指标过滤：只保留落在 mars 管理命名空间内的指标。
 func TestFilterPodMetrics(t *testing.T) {
+	t.Parallel()
 	ms := []*BoardPodMetric{
 		{Name: "p-a", Namespace: "ns-a"},
 		{Name: "p-sys", Namespace: "kube-system"},

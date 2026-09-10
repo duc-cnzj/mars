@@ -17,15 +17,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// GrpcServerImp 是 *grpc.Server 的最小抽象：仅暴露启动（Serve）与优雅停止（GracefulStop），
-// 供 grpcRunner 持有时可注入测试替身（见 grpc_test.go 的 fakeGrpcServer）。
-type GrpcServerImp interface {
+// GrpcServerImpl 是 *grpc.Server 的最小抽象：仅暴露启动（Serve）与优雅停止（GracefulStop），
+// 供 grpcRunner 持有时可注入测试替身（见 mock_server_test.go 的 MockGrpcServerImpl）。
+type GrpcServerImpl interface {
 	GracefulStop()
 	Serve(lis net.Listener) error
 }
 
 type grpcRunner struct {
-	server       GrpcServerImp
+	server       GrpcServerImpl
 	endpoint     string
 	logger       mlog.Logger
 	authBiz      biz.AuthBiz

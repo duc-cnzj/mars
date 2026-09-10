@@ -91,11 +91,11 @@ func HumanDuration(d time.Duration) string {
 		return fmt.Sprintf("%d天", hours/24)
 	}
 	if hours < 24*365*8 {
-		dy := int(hours/24) % 365
+		dy := hours / 24 % 365
 		if dy == 0 {
 			return fmt.Sprintf("%d年", hours/24/365)
 		}
 		return fmt.Sprintf("%d年%d天", hours/24/365, dy)
 	}
-	return fmt.Sprintf("%d年", int(hours/24/365))
+	return fmt.Sprintf("%d年", hours/24/365)
 }

@@ -313,7 +313,7 @@ func (g *server) GetCommitPipeline(pid string, branch string, sha string) (*biz.
 	}
 
 	pipeline := toPipeline(p)
-	pipeline.Jobs, err = g.pipelineJobs(pid, int(p.ID))
+	pipeline.Jobs, err = g.pipelineJobs(pid, p.ID)
 	if err != nil {
 		return nil, err
 	}

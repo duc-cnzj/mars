@@ -21,6 +21,7 @@ import (
 )
 
 func TestNewMetricsSvc(t *testing.T) {
+	t.Parallel()
 	svc, _ := newMetricsSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.k8sBiz)
@@ -30,6 +31,7 @@ func TestNewMetricsSvc(t *testing.T) {
 }
 
 func TestMetricsSvc_TopPod_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -48,6 +50,7 @@ func TestMetricsSvc_TopPod_Success(t *testing.T) {
 }
 
 func TestMetricsSvc_TopPod_PodNotRunning(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -66,6 +69,7 @@ func TestMetricsSvc_TopPod_PodNotRunning(t *testing.T) {
 }
 
 func TestMetricsSvc_TopPod_Error(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -87,6 +91,7 @@ func TestMetricsSvc_TopPod_Error(t *testing.T) {
 // 不允许被非授权用户读取。去掉 checkNamespaceAccess 门禁本测试必须失败，
 // 且是干净的 assert 失败（去除后流程继续，返回 200 响应而非 panic）。
 func TestMetricsSvc_TopPod_AccessDenied(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -107,6 +112,7 @@ func TestMetricsSvc_TopPod_AccessDenied(t *testing.T) {
 }
 
 func TestMetricsSvc_TopPod_FindByNameError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -122,6 +128,7 @@ func TestMetricsSvc_TopPod_FindByNameError(t *testing.T) {
 }
 
 func TestMetricsSvc_CpuMemoryInNamespace_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	k8sRepo := mocks.k8sRepo
@@ -140,6 +147,7 @@ func TestMetricsSvc_CpuMemoryInNamespace_Success(t *testing.T) {
 }
 
 func TestMetricsSvc_CpuMemoryInNamespace_NamespaceNotFound(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -154,6 +162,7 @@ func TestMetricsSvc_CpuMemoryInNamespace_NamespaceNotFound(t *testing.T) {
 }
 
 func TestMetricsSvc_CpuMemoryInNamespace_Error(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -168,6 +177,7 @@ func TestMetricsSvc_CpuMemoryInNamespace_Error(t *testing.T) {
 }
 
 func TestMetricsSvc_CpuMemoryInProject_Success(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	projRepo := mocks.projectRepo
 	k8sRepo := mocks.k8sRepo
@@ -191,6 +201,7 @@ func TestMetricsSvc_CpuMemoryInProject_Success(t *testing.T) {
 }
 
 func TestMetricsSvc_CpuMemoryInProject_ProjectNotFound(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	projRepo := mocks.projectRepo
 
@@ -205,6 +216,7 @@ func TestMetricsSvc_CpuMemoryInProject_ProjectNotFound(t *testing.T) {
 }
 
 func TestMetricsSvc_CpuMemoryInProject_Error(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	projRepo := mocks.projectRepo
 
@@ -219,6 +231,7 @@ func TestMetricsSvc_CpuMemoryInProject_Error(t *testing.T) {
 }
 
 func TestMetricsSvc_CpuMemoryInProject_NamespaceShowError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	projRepo := mocks.projectRepo
 	nsRepo := mocks.nsRepo
@@ -237,6 +250,7 @@ func TestMetricsSvc_CpuMemoryInProject_NamespaceShowError(t *testing.T) {
 // 回归防护：私有命名空间的项目资源用量不允许被非 admin / 非创建者 / 非成员读取。
 // 去掉 CpuMemoryInProject 里的 CanAccess 检查，本测试必须失败。
 func TestMetricsSvc_CpuMemoryInProject_AccessDenied(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	projRepo := mocks.projectRepo
 	nsRepo := mocks.nsRepo
@@ -255,6 +269,7 @@ func TestMetricsSvc_CpuMemoryInProject_AccessDenied(t *testing.T) {
 // 回归防护：私有命名空间资源用量不允许被非授权用户读取。
 // 去掉 CpuMemoryInNamespace 里的 CanAccess 检查，本测试必须失败。
 func TestMetricsSvc_CpuMemoryInNamespace_AccessDenied(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 
@@ -269,6 +284,7 @@ func TestMetricsSvc_CpuMemoryInNamespace_AccessDenied(t *testing.T) {
 }
 
 func TestMetricsSvc_Metrics_Success(t *testing.T) {
+	t.Parallel()
 	svc, _ := newMetricsSvcWithMocks(t)
 
 	res := svc.buildTopPodResponse(&biz.PodSample{
@@ -284,6 +300,7 @@ func TestMetricsSvc_Metrics_Success(t *testing.T) {
 }
 
 func TestMetricsSvc_Metrics_NonZeroValues(t *testing.T) {
+	t.Parallel()
 	svc, _ := newMetricsSvcWithMocks(t)
 
 	cpuQuantity := resource.NewMilliQuantity(1500, resource.DecimalSI)
@@ -299,6 +316,7 @@ func TestMetricsSvc_Metrics_NonZeroValues(t *testing.T) {
 }
 
 func TestMetricsSvc_Metrics_FractionalMemory(t *testing.T) {
+	t.Parallel()
 	svc, _ := newMetricsSvcWithMocks(t)
 
 	cpuQuantity := resource.NewMilliQuantity(100, resource.DecimalSI)
@@ -344,6 +362,7 @@ func TestMetricsSvc_StreamTopPod_Success(t *testing.T) {
 }
 
 func TestMetricsSvc_StreamTopPod_Error(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -369,6 +388,7 @@ func TestMetricsSvc_StreamTopPod_Error(t *testing.T) {
 }
 
 func TestMetricsSvc_StreamTopPod_SendError(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -390,6 +410,7 @@ func TestMetricsSvc_StreamTopPod_SendError(t *testing.T) {
 }
 
 func TestMetricsSvc_StreamTopPod_PodNotRunning(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -417,6 +438,7 @@ func TestMetricsSvc_StreamTopPod_PodNotRunning(t *testing.T) {
 // 去掉 checkNamespaceAccess 门禁本测试必须失败，且是干净的 assert 失败
 // （去除后进入流循环直到 ctx 超时返回 nil，而非 panic）。
 func TestMetricsSvc_StreamTopPod_AccessDenied(t *testing.T) {
+	t.Parallel()
 	svc, mocks := newMetricsSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo

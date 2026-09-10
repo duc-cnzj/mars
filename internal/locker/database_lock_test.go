@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"sync"
 	"testing"
@@ -63,11 +62,11 @@ func TestMain(t *testing.M) {
 }
 
 func TestDatabaseLockAcquire(t *testing.T) {
+	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
-	dbLock := setupDatabaseLock()
-	key := "testKey"
+	dbLock, key := setupDatabaseLock(t)
 	seconds := int64(60)
 
 	acquired := dbLock.Acquire(key, seconds)
@@ -78,11 +77,11 @@ func TestDatabaseLockAcquire(t *testing.T) {
 }
 
 func TestDatabaseLockAcquireWhenLockAlreadyExists(t *testing.T) {
+	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
-	dbLock := setupDatabaseLock()
-	key := "testKey"
+	dbLock, key := setupDatabaseLock(t)
 	seconds := int64(60)
 
 	dbLock.Acquire(key, seconds)
@@ -91,11 +90,11 @@ func TestDatabaseLockAcquireWhenLockAlreadyExists(t *testing.T) {
 }
 
 func TestDatabaseLockRelease(t *testing.T) {
+	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
-	dbLock := setupDatabaseLock()
-	key := "testKey"
+	dbLock, key := setupDatabaseLock(t)
 	seconds := int64(60)
 
 	dbLock.Acquire(key, seconds)
@@ -107,11 +106,11 @@ func TestDatabaseLockRelease(t *testing.T) {
 }
 
 func TestDatabaseLockForceRelease(t *testing.T) {
+	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
-	dbLock := setupDatabaseLock()
-	key := "testKey"
+	dbLock, key := setupDatabaseLock(t)
 	seconds := int64(60)
 
 	dbLock.Acquire(key, seconds)
@@ -122,11 +121,11 @@ func TestDatabaseLockForceRelease(t *testing.T) {
 }
 
 func TestDatabaseLockRenewalAcquire(t *testing.T) {
+	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
-	dbLock := setupDatabaseLock()
-	key := "testKey"
+	dbLock, key := setupDatabaseLock(t)
 	seconds := int64(60)
 	renewalSeconds := int64(30)
 
@@ -142,26 +141,32 @@ func TestDatabaseLockRenewalAcquire(t *testing.T) {
 	assert.Empty(t, ownerAfterRelease, "Expected owner to be empty after release")
 }
 
-func setupDatabaseLock() *databaseLock {
-	deleteAllTestKey()
-	return NewDatabaseLock(timer.NewReal(), func() *ent.Client { return entClient }, mlog.NewForConfig(nil)).(*databaseLock)
+// setupDatabaseLock 返回后端为真实 MySQL 的锁实例及其独占 key（key 取测试名）。
+// 使用前只清理该 key 的历史残留：原实现 deleteAllTestKey 清空整张 cache_locks 表，
+// 使全部 MySQL 测试天然互斥、无法并行；改为按 key 隔离后各测试互不干扰、可并行。
+func setupDatabaseLock(t *testing.T) (*databaseLock, string) {
+	t.Helper()
+	key := t.Name()
+	deleteTestKey(key)
+	return NewDatabaseLock(timer.NewReal(), func() *ent.Client { return entClient }, mlog.NewForConfig(nil)).(*databaseLock), key
 }
 
 func Test_databaseLock_Type(t *testing.T) {
+	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
-	dbLock := setupDatabaseLock()
+	dbLock, _ := setupDatabaseLock(t)
 
 	assert.Equal(t, "db", dbLock.Type())
 }
 
 func Test_databaseLock_Release(t *testing.T) {
+	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
-	dbLock := setupDatabaseLock()
-	key := "testKey"
+	dbLock, key := setupDatabaseLock(t)
 	seconds := int64(60)
 
 	dbLock.Acquire(key, seconds)
@@ -176,13 +181,14 @@ func Test_databaseLock_Release(t *testing.T) {
 }
 
 func Test_databaseLock_renewalExistKey(t *testing.T) {
+	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
 
 	dbLock := NewDatabaseLock(timer.NewReal(), func() *ent.Client { return entClient }, mlog.NewForConfig(nil)).(*databaseLock)
 
-	key := "testKey"
+	key := t.Name()
 	seconds := int64(60)
 	dbLock.ForceRelease(key)
 	acquire := dbLock.Acquire(key, seconds)
@@ -196,13 +202,14 @@ func Test_databaseLock_renewalExistKey(t *testing.T) {
 }
 
 func Test_databaseLock_renewalExistKey_Concurrent(t *testing.T) {
+	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
 
 	dbLock := NewDatabaseLock(timer.NewReal(), func() *ent.Client { return entClient }, mlog.NewForConfig(nil)).(*databaseLock)
 
-	key := "testKey"
+	key := t.Name()
 	seconds := int64(60)
 	dbLock.ForceRelease(key)
 	acquire := dbLock.Acquire(key, seconds)
@@ -225,14 +232,16 @@ func Test_databaseLock_renewalExistKey_Concurrent(t *testing.T) {
 }
 
 func TestDatabaseLock_ConcurrentRenewalExistKey(t *testing.T) {
+	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
 	lock := NewDatabaseLock(timer.NewReal(), func() *ent.Client { return entClient }, mlog.NewForConfig(nil)).(*databaseLock)
 	anotherLock := NewDatabaseLock(timer.NewReal(), func() *ent.Client { return entClient }, mlog.NewForConfig(nil)).(*databaseLock)
 	anotherLock2 := NewDatabaseLock(timer.NewReal(), func() *ent.Client { return entClient }, mlog.NewForConfig(nil)).(*databaseLock)
-	key := "test_key"
+	key := t.Name()
 	seconds := int64(10)
+	deleteTestKey(key)
 
 	// Acquire the lock
 	acquired := lock.Acquire(key, seconds)
@@ -298,41 +307,48 @@ func TestDatabaseLock_ConcurrentRenewalExistKey(t *testing.T) {
 }
 
 func Test_databaseLock_Acquire(t *testing.T) {
+	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
-	dbLock := setupDatabaseLock()
+	dbLock, key := setupDatabaseLock(t)
 
-	_, err := entClient.CacheLock.Create().SetOwner("xxx").SetKey("testKey").SetExpiredAt(time.Now().Add(-time.Second * 60)).Save(context.TODO())
+	// 预置一条"已过期但未被清扫"的锁，验证 Acquire 能接管过期锁。
+	// 过期时长取 30s 而非 60s：cleanupExpiredLocks 会删除 expired_at < now-60s 的行，
+	// 若置为 now-60s 恰好落在清扫边界上，并行跑的其它测试的 Acquire 会在本测试的
+	// Create 与接管之间把该行扫掉，导致 updateExpiredLock 匹配 0 行、接管失败（flaky）。
+	_, err := entClient.CacheLock.Create().SetOwner("xxx").SetKey(key).SetExpiredAt(time.Now().Add(-time.Second * 30)).Save(context.TODO())
 	assert.Nil(t, err)
 
-	acquire := dbLock.Acquire("testKey", 60)
+	acquire := dbLock.Acquire(key, 60)
 	assert.True(t, acquire, "Expected to acquire lock")
 }
 
 func Test_databaseLock_RenewalAcquire(t *testing.T) {
+	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
-	dbLock := setupDatabaseLock()
-	_, err := entClient.CacheLock.Create().SetOwner("xxx").SetKey("testKey").SetExpiredAt(time.Now().Add(time.Second * 60)).Save(context.TODO())
+	dbLock, key := setupDatabaseLock(t)
+	_, err := entClient.CacheLock.Create().SetOwner("xxx").SetKey(key).SetExpiredAt(time.Now().Add(time.Second * 60)).Save(context.TODO())
 	assert.Nil(t, err)
-	renewalAcquire, b := dbLock.RenewalAcquire("testKey", 60, 100)
+	renewalAcquire, b := dbLock.RenewalAcquire(key, 60, 100)
 	assert.False(t, b, "Expected not to acquire lock")
 	assert.Nil(t, renewalAcquire, "Expected renewalAcquire to be nil")
 }
 
-func deleteAllTestKey() {
-	entClient.CacheLock.Delete().Where(cachelock.IDGT(0)).Exec(context.TODO())
+// deleteTestKey 只清理指定 key 的锁记录，不影响同表内其它测试，是并行隔离的前提。
+func deleteTestKey(key string) {
+	entClient.CacheLock.Delete().Where(cachelock.Key(key)).Exec(context.TODO())
 }
 
 func Test_databaseLock_renewalRoutine(t *testing.T) {
+	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
-	dbLock := setupDatabaseLock()
-	key := "testKey"
-	dbLock.Acquire(key, 2)
+	dbLock, key := setupDatabaseLock(t)
+	assert.True(t, dbLock.Acquire(key, 2), "前置加锁必须成功，否则续期会因 not owner 提前退出")
 
 	timeout, cancelFunc := context.WithTimeout(context.TODO(), 5*time.Second)
 	defer cancelFunc()
@@ -345,6 +361,10 @@ func Test_databaseLock_renewalRoutine(t *testing.T) {
 
 	wg.Wait()
 	defer dbLock.Release(key)
-	first, _ := entClient.CacheLock.Query().Where(cachelock.Key(key)).First(context.TODO())
-	assert.Greater(t, int(math.Abs(time.Since(first.ExpiredAt).Seconds())), 3)
+	first, err := entClient.CacheLock.Query().Where(cachelock.Key(key)).First(context.TODO())
+	assert.NoError(t, err, "续期协程不应删除锁记录")
+	// 每 2s 续期一次、ttl 10s，5s 时锁的有效期应被推到未来。
+	// 原断言 |now-ExpiredAt| > 3 恰好卡在 3.0 边界（负载下 flaky），
+	// 且续期彻底失效时旧行的偏差同样 > 3、会假阳性通过。
+	assert.True(t, first.ExpiredAt.After(time.Now()), "续期协程应持续推后过期时间，锁不应过期")
 }

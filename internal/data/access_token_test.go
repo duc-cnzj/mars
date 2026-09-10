@@ -246,6 +246,7 @@ func TestAccessTokenRepo_Revoke_TouchLastUsedAt(t *testing.T) {
 
 // TestToAccessToken 覆盖 nil 与实体两种转换。
 func TestToAccessToken(t *testing.T) {
+	t.Parallel()
 	assert.Nil(t, toAccessToken(nil))
 	tok := &ent.AccessToken{ID: 1, Token: "t", Email: "e"}
 	assert.Equal(t, 1, toAccessToken(tok).ID)

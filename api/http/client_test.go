@@ -34,6 +34,7 @@ func newTestServer(t *testing.T, h http.HandlerFunc) *httptest.Server {
 
 // SetBearerToken：运行期替换 token，自动补 Bearer 前缀。
 func TestClient_SetBearerToken(t *testing.T) {
+	t.Parallel()
 	cli, err := NewClient("http://example.com")
 	if err != nil {
 		t.Fatal(err)
@@ -51,6 +52,7 @@ func TestClient_SetBearerToken(t *testing.T) {
 
 // setToken 前缀归一化：与 gRPC SDK 语义一致，非空且未带 "Bearer " 前缀一律补。
 func TestSetToken_NormalizesPrefix(t *testing.T) {
+	t.Parallel()
 	c := &Client{}
 	for _, tc := range []struct{ in, want string }{
 		{"", ""},                          // 空 token 原样
@@ -69,6 +71,7 @@ func TestSetToken_NormalizesPrefix(t *testing.T) {
 
 // refreshToken 并发去重：10 个 goroutine 同时刷新，只发 1 次登录请求。
 func TestClient_refresh_singleflight(t *testing.T) {
+	t.Parallel()
 	var (
 		mu      sync.Mutex
 		logins  int
@@ -134,6 +137,7 @@ func TestClient_refresh_singleflight(t *testing.T) {
 
 // 构造：WithAuth 在 NewClient 阶段自动登录并注入 token。
 func TestNewClient_login(t *testing.T) {
+	t.Parallel()
 	var loginCalled bool
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/auth/login" && r.Method == http.MethodPost {
@@ -166,6 +170,7 @@ func TestNewClient_login(t *testing.T) {
 
 // do()：GET 请求字段扁平化为 query，字段名用 camelCase。
 func TestClient_GET_query(t *testing.T) {
+	t.Parallel()
 	var gotURI string
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		gotURI = r.URL.RequestURI()
@@ -195,6 +200,7 @@ func TestClient_GET_query(t *testing.T) {
 
 // do()：POST 请求编码为 protojson body，零值字段省略。
 func TestClient_POST_body(t *testing.T) {
+	t.Parallel()
 	var body string
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
@@ -222,6 +228,7 @@ func TestClient_POST_body(t *testing.T) {
 
 // do()：gateway 错误体映射为 codes.Error，业务判断与 gRPC SDK 通用。
 func TestClient_error_mapping(t *testing.T) {
+	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte(`{"code":7,"message":"没有权限"}`))
@@ -246,6 +253,7 @@ func TestClient_error_mapping(t *testing.T) {
 
 // do()：401 且开启 autoRefresh 时自动重登并重试一次。
 func TestClient_auto_refresh(t *testing.T) {
+	t.Parallel()
 	var logins, infos int
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -290,6 +298,7 @@ func TestClient_auto_refresh(t *testing.T) {
 
 // 特殊路由：multipart 上传 POST /api/files，返回文件 ID。
 func TestFileSvc_UploadFile(t *testing.T) {
+	t.Parallel()
 	var contentType, reqBody string
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/files" || r.Method != http.MethodPost {
@@ -324,6 +333,7 @@ func TestFileSvc_UploadFile(t *testing.T) {
 
 // 特殊路由：二进制下载 GET /api/download_file/{id}，解析 Content-Disposition。
 func TestFileSvc_DownloadFile(t *testing.T) {
+	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/download_file/7" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -353,6 +363,7 @@ func TestFileSvc_DownloadFile(t *testing.T) {
 
 // 特殊路由：POST /api/copy_from_pod 从 pod 拷文件，返回二进制流。
 func TestFileSvc_CopyFromPod(t *testing.T) {
+	t.Parallel()
 	var gotBody string
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/copy_from_pod" || r.Method != http.MethodPost {
@@ -389,6 +400,7 @@ func TestFileSvc_CopyFromPod(t *testing.T) {
 
 // 路径模板替换：{id} 正确落到 path 上，IsExists 走 query。
 func TestClient_path_templates(t *testing.T) {
+	t.Parallel()
 	paths := make(map[string]bool)
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		paths[r.Method+" "+r.URL.Path] = true
@@ -427,6 +439,7 @@ func TestClient_path_templates(t *testing.T) {
 // %2F 保留：分支名带斜杠时路径必须保留编码（对应 b109aa07 的修复）。
 // 由生成器产出的 string 路径参数走 url.PathEscape，这是最易回归的地方。
 func TestClient_path_percent_encoding(t *testing.T) {
+	t.Parallel()
 	var escapedPath, uri string
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		escapedPath = r.URL.EscapedPath()
@@ -454,6 +467,7 @@ func TestClient_path_percent_encoding(t *testing.T) {
 
 // encodeQuery：repeated 展开、零值跳过、特殊字符转义。
 func Test_encodeQuery(t *testing.T) {
+	t.Parallel()
 	// 空请求 → 空串
 	if got := encodeQuery(&namespace.ListRequest{}); got != "" {
 		t.Errorf("empty = %q", got)
@@ -477,6 +491,7 @@ func Test_encodeQuery(t *testing.T) {
 // stream：grpc-gateway 输出 NDJSON（每行一个 JSON 对象，chunked），
 // Recv 逐条解出、io.EOF 表示流正常结束。
 func TestClient_StreamContainerLog_NDJSON(t *testing.T) {
+	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/containers/namespaces/devops/pods/p-1/containers/app/stream_logs" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -524,6 +539,7 @@ func TestClient_StreamContainerLog_NDJSON(t *testing.T) {
 
 // stream：标准 SSE（data: 块，空行分隔，多行 data 拼接），Recv 同样逐条解出。
 func TestClient_StreamContainerLog_SSE(t *testing.T) {
+	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		fl, ok := w.(http.Flusher)
@@ -576,6 +592,7 @@ func TestClient_StreamContainerLog_SSE(t *testing.T) {
 // stream：grpc-gateway v2 把每个 server-streaming 消息包成 {"result": <msg>}（handler.go
 // ForwardResponseStream），必须解包后才能解出业务消息。
 func TestClient_StreamContainerLog_gateway_envelope(t *testing.T) {
+	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		fl, ok := w.(http.Flusher)
 		if !ok {
@@ -624,6 +641,7 @@ func TestClient_StreamContainerLog_gateway_envelope(t *testing.T) {
 
 // stream：流中途错误以 {"error": <google.rpc.Status>} 内联在 body，还原成 codes.Error。
 func TestClient_StreamContainerLog_stream_error(t *testing.T) {
+	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		fl, ok := w.(http.Flusher)
 		if !ok {
@@ -664,6 +682,7 @@ func TestClient_StreamContainerLog_stream_error(t *testing.T) {
 
 // stream：非 2xx 映射为 gateway 错误体对应的 codes.Error，与 unary 一致。
 func TestClient_StreamContainerLog_error(t *testing.T) {
+	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte(`{"code":13,"message":"内部错误"}`))
@@ -690,6 +709,7 @@ func TestClient_StreamContainerLog_error(t *testing.T) {
 
 // refreshToken 无凭据时直接报错（WithTokenAutoRefresh 未配 WithAuth 时不会进入刷新）。
 func TestRefreshToken_NoCredentials(t *testing.T) {
+	t.Parallel()
 	c := &Client{}
 	if err := c.refreshToken(); err == nil {
 		t.Fatal("无凭据 refreshToken 应返回错误")
@@ -698,6 +718,7 @@ func TestRefreshToken_NoCredentials(t *testing.T) {
 
 // refreshToken 登录失败：flight fn 内 Login 返回错误应透出。
 func TestRefreshToken_LoginFailure(t *testing.T) {
+	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte(`{"code":16,"message":"bad credentials"}`))
@@ -711,6 +732,7 @@ func TestRefreshToken_LoginFailure(t *testing.T) {
 
 // 业务请求 401 → 自动刷新但重登失败 → 返回刷新错误，不吞错。
 func TestDo_RefreshLoginFails_ReturnsError(t *testing.T) {
+	t.Parallel()
 	var logins int
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/auth/login" {
@@ -743,6 +765,7 @@ func TestDo_RefreshLoginFails_ReturnsError(t *testing.T) {
 
 // 底层 hc.Do 网络错误（连接拒绝）应原样返回。
 func TestDo_NetworkError(t *testing.T) {
+	t.Parallel()
 	cli, err := NewClient("http://127.0.0.1:1", WithBearerToken("t")) // 端口 1 无服务
 	if err != nil {
 		t.Fatal(err)
@@ -755,6 +778,7 @@ func TestDo_NetworkError(t *testing.T) {
 
 // 非 2xx 且非 gateway 错误体 → unexpected status 兜底。
 func TestDo_UnexpectedStatus(t *testing.T) {
+	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("boom")) // 不是 {"code":..} 错误体
@@ -772,6 +796,7 @@ func TestDo_UnexpectedStatus(t *testing.T) {
 
 // baseURL 含非法字符 → NewRequestWithContext 失败，返回错误而非 panic。
 func TestDo_InvalidURL(t *testing.T) {
+	t.Parallel()
 	c := &Client{baseURL: "http://exa mple.com"} // 空格使 URL 解析失败
 	if err := c.do(context.Background(), "GET", "/api/x", nil, nil); err == nil {
 		t.Fatal("非法 baseURL 应返回错误")
@@ -780,6 +805,7 @@ func TestDo_InvalidURL(t *testing.T) {
 
 // 构造期 WithAuth 登录失败：NewClient 应返回 error，而非静默继续。
 func TestNewClient_LoginFails_ReturnsError(t *testing.T) {
+	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte(`{"code":16,"message":"bad credentials"}`))

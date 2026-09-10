@@ -10,6 +10,7 @@ import (
 )
 
 func TestEventKey_String(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "audit_log", AuditLogEvent.String())
 	assert.Equal(t, "namespace_created", EventNamespaceCreated.String())
 	assert.Equal(t, "namespace_deleted", EventNamespaceDeleted.String())
@@ -18,6 +19,7 @@ func TestEventKey_String(t *testing.T) {
 }
 
 func TestNamespace_GetImagePullSecrets(t *testing.T) {
+	t.Parallel()
 	ns := &Namespace{ImagePullSecrets: []string{"reg1", "reg2"}}
 	got := ns.GetImagePullSecrets()
 	assert.Len(t, got, 2)
@@ -30,6 +32,7 @@ func TestNamespace_GetImagePullSecrets(t *testing.T) {
 }
 
 func TestRepo_GetMarsConfig(t *testing.T) {
+	t.Parallel()
 	cfg := &mars.Config{ConfigFile: "app.yml", Branches: []string{"main"}}
 	r := &Repo{MarsConfig: cfg}
 	assert.Same(t, cfg, r.GetMarsConfig())
@@ -40,6 +43,7 @@ func TestRepo_GetMarsConfig(t *testing.T) {
 }
 
 func TestWrapLogFn_UnWrap(t *testing.T) {
+	t.Parallel()
 	var (
 		gotContainer []*websocket_pb.Container
 		gotFormat    string

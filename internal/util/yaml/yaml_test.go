@@ -8,6 +8,7 @@ import (
 )
 
 func TestDeepSetKey(t *testing.T) {
+	t.Parallel()
 	strPtr := func(s string) *string { return &s }
 	type args struct {
 		field string
@@ -107,6 +108,7 @@ content: x
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			t.Helper()
 			out, _ := yaml.Marshal(tt.want)
 			want := string(out)
@@ -123,6 +125,7 @@ content: x
 }
 
 func TestDeepGet(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		input   map[string]any
 		key     string
@@ -188,6 +191,7 @@ func TestDeepGet(t *testing.T) {
 }
 
 func TestPrettyMarshal(t *testing.T) {
+	t.Parallel()
 	v := struct {
 		Value string
 	}{
@@ -206,6 +210,7 @@ content: x
 }
 
 func TestIsSimpleEnv(t *testing.T) {
+	t.Parallel()
 	yamlData := `data: |
   name: duc
 data2: 
