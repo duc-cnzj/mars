@@ -32,6 +32,14 @@ type fakeUserRepoForUserBiz struct {
 	}
 	resetErr error
 	resets   []string
+	grayErr  error
+	grays    []struct {
+		email string
+		gray  bool
+	}
+	isGrayErr   error
+	isGrayValue bool
+	isGrayEmail string
 }
 
 func (f *fakeUserRepoForUserBiz) SyncLoginUser(ctx context.Context, email, name string, roles []string) error {
@@ -57,6 +65,19 @@ func (f *fakeUserRepoForUserBiz) ToggleAdmin(ctx context.Context, email string, 
 func (f *fakeUserRepoForUserBiz) ResetRolesOverride(ctx context.Context, email string) error {
 	f.resets = append(f.resets, email)
 	return f.resetErr
+}
+
+func (f *fakeUserRepoForUserBiz) ToggleGray(ctx context.Context, email string, gray bool) error {
+	f.grays = append(f.grays, struct {
+		email string
+		gray  bool
+	}{email, gray})
+	return f.grayErr
+}
+
+func (f *fakeUserRepoForUserBiz) IsGray(ctx context.Context, email string) (bool, error) {
+	f.isGrayEmail = email
+	return f.isGrayValue, f.isGrayErr
 }
 
 // TestUserBiz_List_Success 成功路径：直接透传 repo 查询。
@@ -200,4 +221,81 @@ func TestUserBiz_ResetRolesOverride_RepoError(t *testing.T) {
 
 	err := b.ResetRolesOverride(superAdminCtx(), "a@b.c")
 	assert.EqualError(t, err, "reset boom")
+}
+
+// TestUserBiz_ToggleGray_Success 成功路径：超级管理员操作时把 email（trim）与 gray 透传 repo。
+func TestUserBiz_ToggleGray_Success(t *testing.T) {
+	fake := &fakeUserRepoForUserBiz{}
+	b := NewUserBiz(fake)
+
+	assert.NoError(t, b.ToggleGray(superAdminCtx(), "  a@b.c  ", true))
+	if assert.Len(t, fake.grays, 1) {
+		assert.Equal(t, "a@b.c", fake.grays[0].email, "邮箱应 trim 后传给 repo")
+		assert.True(t, fake.grays[0].gray)
+	}
+}
+
+// TestUserBiz_ToggleGray_NonSuperAdminDenied 普通管理员不能改灰度通道：灰度决定用户被分流到
+// 哪个构建，影响面等同于角色管理，返回 PermissionDenied 且不触达 repo。
+func TestUserBiz_ToggleGray_NonSuperAdminDenied(t *testing.T) {
+	fake := &fakeUserRepoForUserBiz{}
+	b := NewUserBiz(fake)
+	ctx := SetUser(context.TODO(), &UserInfo{Email: "regular-admin@x.com", Roles: []string{MarsAdmin}})
+
+	err := b.ToggleGray(ctx, "a@b.c", true)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied, "普通管理员只能查看不能修改")
+	assert.ErrorContains(t, err, "切换用户灰度通道", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是哪个操作")
+	assert.Empty(t, fake.grays, "非超管不应触达 repo")
+}
+
+// TestUserBiz_ToggleGray_EmptyEmail 空邮箱是确定语义错误：返回 InvalidArgument，不触达 repo。
+func TestUserBiz_ToggleGray_EmptyEmail(t *testing.T) {
+	fake := &fakeUserRepoForUserBiz{}
+	b := NewUserBiz(fake)
+
+	err := b.ToggleGray(superAdminCtx(), "  ", true)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err), "空邮箱应判定为参数不合法，got %v", err)
+	assert.Empty(t, fake.grays, "参数校验失败不应调用 repo")
+}
+
+// TestUserBiz_ToggleGray_RepoError 透传 repo 错误。
+func TestUserBiz_ToggleGray_RepoError(t *testing.T) {
+	fake := &fakeUserRepoForUserBiz{grayErr: errors.New("gray boom")}
+	b := NewUserBiz(fake)
+
+	err := b.ToggleGray(superAdminCtx(), "a@b.c", false)
+	assert.EqualError(t, err, "gray boom")
+}
+
+// TestUserBiz_IsGray_Success 成功路径：读灰度标记无权限门卫（前端每次启动都要读自己的
+// 灰度状态，普通用户也必须能读），邮箱 trim 后透传 repo，原样回传 repo 结果。
+func TestUserBiz_IsGray_Success(t *testing.T) {
+	fake := &fakeUserRepoForUserBiz{isGrayValue: true}
+	b := NewUserBiz(fake)
+
+	got, err := b.IsGray(context.TODO(), "  a@b.c  ")
+	assert.NoError(t, err)
+	assert.True(t, got)
+	assert.Equal(t, "a@b.c", fake.isGrayEmail, "邮箱应 trim 后传给 repo")
+}
+
+// TestUserBiz_IsGray_EmptyEmail 空邮箱直接返回「非灰度」且不触达 repo：调用方为
+// /api/auth/info，无有效身份时「非灰度」是安全默认值，不视为错误。
+func TestUserBiz_IsGray_EmptyEmail(t *testing.T) {
+	fake := &fakeUserRepoForUserBiz{isGrayValue: true}
+	b := NewUserBiz(fake)
+
+	got, err := b.IsGray(context.TODO(), "  ")
+	assert.NoError(t, err, "空邮箱不是错误，是安全的默认值")
+	assert.False(t, got)
+	assert.Empty(t, fake.isGrayEmail, "空邮箱不应调用 repo")
+}
+
+// TestUserBiz_IsGray_RepoError 透传 repo 错误（由调用方 authSvc.Info 决定 fail-open 降级）。
+func TestUserBiz_IsGray_RepoError(t *testing.T) {
+	fake := &fakeUserRepoForUserBiz{isGrayErr: errors.New("gray boom")}
+	b := NewUserBiz(fake)
+
+	_, err := b.IsGray(context.TODO(), "a@b.c")
+	assert.EqualError(t, err, "gray boom")
 }

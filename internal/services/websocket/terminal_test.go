@@ -268,6 +268,7 @@ type testRecorder struct {
 }
 
 func Test_resetSession(t *testing.T) {
+	t.Parallel()
 	old := &ptyHandler{
 		container: &biz.Container{
 			Namespace: "a",
@@ -301,6 +302,7 @@ func Test_resetSession(t *testing.T) {
 }
 
 func Test_resetSession4(t *testing.T) {
+	t.Parallel()
 	old := &ptyHandler{
 		container: &biz.Container{
 			Namespace: "a",
@@ -327,6 +329,7 @@ func Test_resetSession4(t *testing.T) {
 }
 
 func Test_resetSession1(t *testing.T) {
+	t.Parallel()
 	old := &ptyHandler{
 		container: &biz.Container{
 			Namespace: "a",
@@ -354,6 +357,7 @@ func Test_resetSession1(t *testing.T) {
 }
 
 func Test_resetSession2(t *testing.T) {
+	t.Parallel()
 	old := &ptyHandler{
 		container: &biz.Container{
 			Namespace: "a",
@@ -547,6 +551,7 @@ func TestPtyHandler_SendResize_AfterDoneChanClose(t *testing.T) {
 }
 
 func Test_sizeStore_Changed(t *testing.T) {
+	t.Parallel()
 	ss := sizeStore{
 		width:  0,
 		height: 0,

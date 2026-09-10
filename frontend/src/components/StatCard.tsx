@@ -10,12 +10,13 @@ export function StatCard({
   label: string
   value: number
   icon: IconName
-  tone: 'mute' | 'accent' | 'ok'
+  tone: 'mute' | 'accent' | 'ok' | 'warn'
 }) {
   const tones: Record<string, string> = {
     mute: 'text-mute bg-raised',
     accent: 'text-primary bg-primary-soft',
     ok: 'text-ok bg-ok-soft',
+    warn: 'text-warn bg-warn-soft',
   }
   return (
     <section className="rounded-lg border border-line bg-surface p-4">

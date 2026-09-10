@@ -109,6 +109,20 @@ func (_u *UserUpdate) ClearLastLogin() *UserUpdate {
 	return _u
 }
 
+// SetIsGray sets the "is_gray" field.
+func (_u *UserUpdate) SetIsGray(v bool) *UserUpdate {
+	_u.mutation.SetIsGray(v)
+	return _u
+}
+
+// SetNillableIsGray sets the "is_gray" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableIsGray(v *bool) *UserUpdate {
+	if v != nil {
+		_u.SetIsGray(*v)
+	}
+	return _u
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -202,6 +216,9 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.LastLoginCleared() {
 		_spec.ClearField(user.FieldLastLogin, field.TypeTime)
+	}
+	if value, ok := _u.mutation.IsGray(); ok {
+		_spec.SetField(user.FieldIsGray, field.TypeBool, value)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -300,6 +317,20 @@ func (_u *UserUpdateOne) SetNillableLastLogin(v *time.Time) *UserUpdateOne {
 // ClearLastLogin clears the value of the "last_login" field.
 func (_u *UserUpdateOne) ClearLastLogin() *UserUpdateOne {
 	_u.mutation.ClearLastLogin()
+	return _u
+}
+
+// SetIsGray sets the "is_gray" field.
+func (_u *UserUpdateOne) SetIsGray(v bool) *UserUpdateOne {
+	_u.mutation.SetIsGray(v)
+	return _u
+}
+
+// SetNillableIsGray sets the "is_gray" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableIsGray(v *bool) *UserUpdateOne {
+	if v != nil {
+		_u.SetIsGray(*v)
+	}
 	return _u
 }
 
@@ -426,6 +457,9 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if _u.mutation.LastLoginCleared() {
 		_spec.ClearField(user.FieldLastLogin, field.TypeTime)
+	}
+	if value, ok := _u.mutation.IsGray(); ok {
+		_spec.SetField(user.FieldIsGray, field.TypeBool, value)
 	}
 	_node = &User{config: _u.config}
 	_spec.Assign = _node.assignValues

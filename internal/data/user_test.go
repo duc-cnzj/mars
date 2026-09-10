@@ -141,6 +141,102 @@ func Test_userRepo_ToggleAdmin(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// Test_userRepo_ToggleGray 设置/移除灰度标记：只动 is_gray，与角色/接管逻辑完全正交；
+// 幂等；邮箱小写归一；不存在的邮箱上抛 NotFound。
+func Test_userRepo_ToggleGray(t *testing.T) {
+	repo, entdb := newUserRepo(t)
+	ctx := context.TODO()
+
+	_, err := entdb.User.Create().SetEmail("alice@x.com").SetName("alice").SetRoles([]string{}).Save(ctx)
+	require.NoError(t, err)
+
+	require.NoError(t, repo.ToggleGray(ctx, "alice@x.com", true))
+	u := entdb.User.Query().Where(entuser.EmailEQ("alice@x.com")).OnlyX(ctx)
+	assert.True(t, u.IsGray, "应置上灰度标记")
+	assert.False(t, u.RolesOverride, "灰度是发布通道路由，不得触碰角色接管标记")
+	assert.Empty(t, u.Roles, "灰度不得改动角色")
+
+	// 幂等：重复设置同一值无错
+	require.NoError(t, repo.ToggleGray(ctx, "alice@x.com", true))
+	assert.True(t, entdb.User.Query().Where(entuser.EmailEQ("alice@x.com")).OnlyX(ctx).IsGray)
+
+	// 邮箱小写归一：大写入参能匹配已归一存储的邮箱
+	require.NoError(t, repo.ToggleGray(ctx, "ALICE@X.COM", false))
+	assert.False(t, entdb.User.Query().Where(entuser.EmailEQ("alice@x.com")).OnlyX(ctx).IsGray, "应移除灰度标记")
+
+	// 不存在的邮箱 → NotFound 上抛
+	assert.Error(t, repo.ToggleGray(ctx, "nobody@x.com", true))
+}
+
+// Test_userRepo_IsGray 读取灰度标记：正常返回当前值；用户尚未落投影（从未登录的
+// 首次登录前窗口）返回 false 而非错误——「无投影」等价于「非灰度」，否则 /api/auth/info
+// 会因缺行而报错，把整个登录态恢复拖垮。
+func Test_userRepo_IsGray(t *testing.T) {
+	repo, entdb := newUserRepo(t)
+	ctx := context.TODO()
+
+	_, err := entdb.User.Create().SetEmail("alice@x.com").SetName("alice").SetRoles([]string{}).SetIsGray(true).Save(ctx)
+	require.NoError(t, err)
+
+	got, err := repo.IsGray(ctx, "alice@x.com")
+	require.NoError(t, err)
+	assert.True(t, got)
+
+	// 邮箱小写归一
+	got, err = repo.IsGray(ctx, "ALICE@X.COM")
+	require.NoError(t, err)
+	assert.True(t, got)
+
+	// 无投影 → false, nil（不是错误）
+	got, err = repo.IsGray(ctx, "never-logged-in@x.com")
+	require.NoError(t, err, "无投影不是错误，等价于非灰度")
+	assert.False(t, got)
+}
+
+// Test_userRepo_IsGray_DBError 非 NotFound 的查询失败（如 DB 断开）照常上抛，不静默吞成
+// 「非灰度」——否则发布通道未知会被伪装成「稳定版」而无人察觉。降级决策在调用方
+// authSvc.Info（fail-open 到稳定版 + 记日志），不在 repo 层。
+func Test_userRepo_IsGray_DBError(t *testing.T) {
+	repo := NewUserRepo(NewDataImpl(&NewDataParams{DB: mustClosedDB(t), Cfg: &config.Config{}}), timer.NewReal())
+
+	got, err := repo.IsGray(context.TODO(), "alice@x.com")
+	assert.False(t, got)
+	assert.Error(t, err, "DB 故障应上抛而非静默降级")
+}
+
+// Test_userRepo_List_GrayOnlyAndStats 灰度过滤与全量灰度统计：GrayOnly 只看 is_gray=true，
+// Stats.Gray 按全量口径统计（不受搜索/过滤影响）。
+func Test_userRepo_List_GrayOnlyAndStats(t *testing.T) {
+	repo, entdb := newUserRepo(t)
+	ctx := context.TODO()
+
+	for _, u := range []struct {
+		email string
+		gray  bool
+		roles []string
+	}{
+		{"gray1@x.com", true, []string{}},
+		{"gray2@x.com", true, []string{biz.MarsAdmin}},
+		{"stable@x.com", false, []string{}},
+	} {
+		_, err := entdb.User.Create().SetEmail(u.email).SetName(u.email).SetRoles(u.roles).SetIsGray(u.gray).Save(ctx)
+		require.NoError(t, err)
+	}
+
+	out, err := repo.List(ctx, &biz.ListUserInput{Page: 1, PageSize: 10, GrayOnly: true})
+	require.NoError(t, err)
+	assert.Len(t, out.Items, 2)
+	assert.Equal(t, int32(2), out.Pag.Count)
+	for _, item := range out.Items {
+		assert.True(t, item.IsGray, "GrayOnly 结果必须全部是灰度用户")
+	}
+	// 统计按全量口径：3 总 / 1 管理员 / 2 灰度，不受 GrayOnly 过滤影响
+	assert.Equal(t, int32(3), out.Stats.Total)
+	assert.Equal(t, int32(1), out.Stats.Admins)
+	assert.Equal(t, int32(2), out.Stats.Regular)
+	assert.Equal(t, int32(2), out.Stats.Gray)
+}
+
 // Test_userRepo_ResetRolesOverride 解除后台手动接管：置回 roles_override=false 恢复 SSO 角色
 // 同步（已生效角色不被改动），幂等早退；未接管用户与不存在的邮箱各自安全处理。
 func Test_userRepo_ResetRolesOverride(t *testing.T) {
@@ -182,11 +278,12 @@ func Test_userRepo_List_ErrorBranch(t *testing.T) {
 func TestToUser(t *testing.T) {
 	assert.Nil(t, toUser(nil))
 	now := time.Now()
-	u := toUser(&ent.User{ID: 1, Email: "a@b.c", Name: "a", Roles: []string{}, LastLogin: &now, CreatedAt: now})
+	u := toUser(&ent.User{ID: 1, Email: "a@b.c", Name: "a", Roles: []string{}, IsGray: true, LastLogin: &now, CreatedAt: now})
 	assert.Equal(t, 1, u.ID)
 	assert.Equal(t, "a@b.c", u.Email)
 	assert.Equal(t, "a", u.Name)
 	assert.Empty(t, u.Roles)
+	assert.True(t, u.IsGray, "灰度标记应透传")
 	assert.Equal(t, &now, u.LastLogin)
 }
 
@@ -329,6 +426,31 @@ func Test_userRepo_SyncLoginUser_OverrideKeepsManualRoles(t *testing.T) {
 	u := entdb.User.Query().Where(entuser.EmailEQ("alice@x.com")).OnlyX(ctx)
 	assert.NotContains(t, u.Roles, biz.MarsAdmin, "手动接管后 SSO 再带 admin 也不覆盖降权")
 	assert.True(t, u.RolesOverride)
+}
+
+// Test_userRepo_SyncLoginUser_KeepsIsGray 灰度标记在登录 upsert 中不被冲掉：SyncLoginUser
+// 只局部更新 last_login/name/roles，不触碰 is_gray——灰度是后台手动设置的发布通道路由，
+// 登录同步不得把它重置（对齐 roles_override 手动接管标记的保护语义）。
+func Test_userRepo_SyncLoginUser_KeepsIsGray(t *testing.T) {
+	repo, entdb := newUserRepo(t)
+	ctx := context.TODO()
+
+	_, err := entdb.User.Create().SetEmail("alice@x.com").SetName("alice").SetRoles([]string{}).Save(ctx)
+	require.NoError(t, err)
+	require.NoError(t, repo.ToggleGray(ctx, "alice@x.com", true))
+
+	// 登录（既有用户路径）：展示名与角色都发生变化，强制走 update.Save 分支
+	require.NoError(t, repo.SyncLoginUser(ctx, "alice@x.com", "AliceReal", []string{biz.MarsAdmin}))
+
+	u := entdb.User.Query().Where(entuser.EmailEQ("alice@x.com")).OnlyX(ctx)
+	assert.True(t, u.IsGray, "登录同步不得重置后台设置的灰度标记")
+	assert.Equal(t, "AliceReal", u.Name, "展示名应被推进")
+	assert.Contains(t, u.Roles, biz.MarsAdmin, "角色应被同步")
+
+	// 新建路径：首次登录的新用户默认非灰度
+	require.NoError(t, repo.SyncLoginUser(ctx, "bob@x.com", "bob", []string{}))
+	assert.False(t, entdb.User.Query().Where(entuser.EmailEQ("bob@x.com")).OnlyX(ctx).IsGray,
+		"新落投影的用户默认非灰度")
 }
 
 // Test_userRepo_SyncLoginUser_DoesNotOverrideName 已有非空展示名（手动设置，≠ email

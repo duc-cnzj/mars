@@ -24,6 +24,7 @@ export const API = {
   adminUsers: '/api/admin/users',
   adminUserRole: '/api/admin/users/{email}/role',
   adminUserRolesOverride: '/api/admin/users/{email}/roles_override',
+  adminUserGray: '/api/admin/users/{email}/gray',
 
   // --- changelogs（配置历史） ---
   changelogsFindLast: '/api/changelogs/find_last_changelogs_by_project_id',

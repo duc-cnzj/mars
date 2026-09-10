@@ -35,6 +35,9 @@ func (User) Fields() []ent.Field {
 			Nillable().
 			Optional().
 			Comment("最近登录时间（取最近一条登录事件）"),
+		field.Bool("is_gray").
+			Default(false).
+			Comment("是否灰度用户：true=该用户被下发灰度路由 cookie，由 nginx-ingress canary 分流到灰度版本"),
 	}
 }
 

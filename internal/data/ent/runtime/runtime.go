@@ -469,6 +469,10 @@ func init() {
 	userDescRolesOverride := userFields[3].Descriptor()
 	// user.DefaultRolesOverride holds the default value on creation for the roles_override field.
 	user.DefaultRolesOverride = userDescRolesOverride.Default.(bool)
+	// userDescIsGray is the schema descriptor for is_gray field.
+	userDescIsGray := userFields[5].Descriptor()
+	// user.DefaultIsGray holds the default value on creation for the is_gray field.
+	user.DefaultIsGray = userDescIsGray.Default.(bool)
 }
 
 const (

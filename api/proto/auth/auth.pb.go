@@ -270,6 +270,7 @@ type InfoResponse struct {
 	LogoutUrl     string                 `protobuf:"bytes,5,opt,name=logout_url,json=logoutUrl,proto3" json:"logout_url,omitempty"`
 	Roles         []string               `protobuf:"bytes,6,rep,name=roles,proto3" json:"roles,omitempty"`
 	IsSuperAdmin  bool                   `protobuf:"varint,7,opt,name=is_super_admin,json=isSuperAdmin,proto3" json:"is_super_admin,omitempty"` // 是否为内置超级管理员（固定邮箱身份）
+	IsGray        bool                   `protobuf:"varint,8,opt,name=is_gray,json=isGray,proto3" json:"is_gray,omitempty"`                     // 是否灰度用户：前端据此在底栏显示灰度标记，并在登录/打开页面时对齐灰度路由 cookie
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -349,6 +350,13 @@ func (x *InfoResponse) GetRoles() []string {
 func (x *InfoResponse) GetIsSuperAdmin() bool {
 	if x != nil {
 		return x.IsSuperAdmin
+	}
+	return false
+}
+
+func (x *InfoResponse) GetIsGray() bool {
+	if x != nil {
+		return x.IsGray
 	}
 	return false
 }
@@ -527,7 +535,7 @@ const file_proto_auth_auth_proto_rawDesc = "" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1d\n" +
 	"\n" +
 	"expires_in\x18\x02 \x01(\x03R\texpiresIn\"\r\n" +
-	"\vInfoRequest\"\xbb\x01\n" +
+	"\vInfoRequest\"\xd4\x01\n" +
 	"\fInfoResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x16\n" +
 	"\x06avatar\x18\x02 \x01(\tR\x06avatar\x12\x12\n" +
@@ -536,7 +544,8 @@ const file_proto_auth_auth_proto_rawDesc = "" +
 	"\n" +
 	"logout_url\x18\x05 \x01(\tR\tlogoutUrl\x12\x14\n" +
 	"\x05roles\x18\x06 \x03(\tR\x05roles\x12$\n" +
-	"\x0eis_super_admin\x18\a \x01(\bR\fisSuperAdmin\"\x11\n" +
+	"\x0eis_super_admin\x18\a \x01(\bR\fisSuperAdmin\x12\x17\n" +
+	"\ais_gray\x18\b \x01(\bR\x06isGray\"\x11\n" +
 	"\x0fSettingsRequest\"\xe4\x01\n" +
 	"\x10SettingsResponse\x128\n" +
 	"\x05items\x18\x01 \x03(\v2\".auth.SettingsResponse.OidcSettingR\x05items\x1a\x95\x01\n" +

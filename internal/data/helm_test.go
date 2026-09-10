@@ -114,6 +114,7 @@ func Test_getActionConfigAndSettings(t *testing.T) {
 }
 
 func Test_watchEvent(t *testing.T) {
+	t.Parallel()
 	ctx, cancelFn := context.WithCancel(context.TODO())
 	ch := make(chan Obj[*eventv1.Event], 10)
 	go func() {
@@ -158,6 +159,7 @@ func Test_watchEvent(t *testing.T) {
 }
 
 func Test_watchEvent_Error1(t *testing.T) {
+	t.Parallel()
 	ctx, cancelFn := context.WithCancel(context.TODO())
 	ch := make(chan Obj[*eventv1.Event], 10)
 	go func() {
@@ -185,6 +187,7 @@ func Test_watchEvent_Error1(t *testing.T) {
 }
 
 func Test_watchEvent_Error2(t *testing.T) {
+	t.Parallel()
 	ctx, cancelFn := context.WithCancel(context.TODO())
 	ch := make(chan Obj[*eventv1.Event], 10)
 	go func() {
@@ -223,6 +226,7 @@ func Test_watchEvent_Error2(t *testing.T) {
 }
 
 func Test_watchPodStatus(t *testing.T) {
+	t.Parallel()
 	var called int64
 	podCh := make(chan Obj[*corev1.Pod], 10)
 	ctx, cancelFn := context.WithCancel(context.TODO())
@@ -294,6 +298,7 @@ func Test_watchPodStatus(t *testing.T) {
 }
 
 func Test_watchPodStatus_Error1(t *testing.T) {
+	t.Parallel()
 	var called int64
 	var cs = &ContainerGetterSetter{}
 	podCh := make(chan Obj[*corev1.Pod], 10)
@@ -396,6 +401,7 @@ func Test_formatStatus(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run("", func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tt.want, formatStatus(tt.input))
 		})
 	}

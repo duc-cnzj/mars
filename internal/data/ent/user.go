@@ -31,7 +31,9 @@ type User struct {
 	// 角色是否已被后台手动管理接管：false=登录时按 SSO 角色同步；true=后台手动升降级后 SSO 不再覆盖
 	RolesOverride bool `json:"roles_override,omitempty"`
 	// 最近登录时间（取最近一条登录事件）
-	LastLogin    *time.Time `json:"last_login,omitempty"`
+	LastLogin *time.Time `json:"last_login,omitempty"`
+	// 是否灰度用户：true=该用户被下发灰度路由 cookie，由 nginx-ingress canary 分流到灰度版本
+	IsGray       bool `json:"is_gray,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -42,7 +44,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case user.FieldRoles:
 			values[i] = new([]byte)
-		case user.FieldRolesOverride:
+		case user.FieldRolesOverride, user.FieldIsGray:
 			values[i] = new(sql.NullBool)
 		case user.FieldID:
 			values[i] = new(sql.NullInt64)
@@ -116,6 +118,12 @@ func (_m *User) assignValues(columns []string, values []any) error {
 				_m.LastLogin = new(time.Time)
 				*_m.LastLogin = value.Time
 			}
+		case user.FieldIsGray:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_gray", values[i])
+			} else if value.Valid {
+				_m.IsGray = value.Bool
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -174,6 +182,9 @@ func (_m *User) String() string {
 		builder.WriteString("last_login=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("is_gray=")
+	builder.WriteString(fmt.Sprintf("%v", _m.IsGray))
 	builder.WriteByte(')')
 	return builder.String()
 }

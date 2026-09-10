@@ -11358,6 +11358,7 @@ type UserMutation struct {
 	appendroles    []string
 	roles_override *bool
 	last_login     *time.Time
+	is_gray        *bool
 	clearedFields  map[string]struct{}
 	done           bool
 	oldValue       func(context.Context) (*User, error)
@@ -11742,6 +11743,42 @@ func (m *UserMutation) ResetLastLogin() {
 	delete(m.clearedFields, user.FieldLastLogin)
 }
 
+// SetIsGray sets the "is_gray" field.
+func (m *UserMutation) SetIsGray(b bool) {
+	m.is_gray = &b
+}
+
+// IsGray returns the value of the "is_gray" field in the mutation.
+func (m *UserMutation) IsGray() (r bool, exists bool) {
+	v := m.is_gray
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsGray returns the old "is_gray" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldIsGray(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsGray is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsGray requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsGray: %w", err)
+	}
+	return oldValue.IsGray, nil
+}
+
+// ResetIsGray resets all changes to the "is_gray" field.
+func (m *UserMutation) ResetIsGray() {
+	m.is_gray = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -11776,7 +11813,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -11797,6 +11834,9 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.last_login != nil {
 		fields = append(fields, user.FieldLastLogin)
+	}
+	if m.is_gray != nil {
+		fields = append(fields, user.FieldIsGray)
 	}
 	return fields
 }
@@ -11820,6 +11860,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.RolesOverride()
 	case user.FieldLastLogin:
 		return m.LastLogin()
+	case user.FieldIsGray:
+		return m.IsGray()
 	}
 	return nil, false
 }
@@ -11843,6 +11885,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldRolesOverride(ctx)
 	case user.FieldLastLogin:
 		return m.OldLastLogin(ctx)
+	case user.FieldIsGray:
+		return m.OldIsGray(ctx)
 	}
 	return nil, fmt.Errorf("unknown User field %s", name)
 }
@@ -11900,6 +11944,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetLastLogin(v)
+		return nil
+	case user.FieldIsGray:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsGray(v)
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
@@ -11979,6 +12030,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldLastLogin:
 		m.ResetLastLogin()
+		return nil
+	case user.FieldIsGray:
+		m.ResetIsGray()
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)

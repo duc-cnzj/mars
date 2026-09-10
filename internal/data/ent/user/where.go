@@ -84,6 +84,11 @@ func LastLogin(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldLastLogin, v))
 }
 
+// IsGray applies equality check predicate on the "is_gray" field. It's identical to IsGrayEQ.
+func IsGray(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldIsGray, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldCreatedAt, v))
@@ -352,6 +357,16 @@ func LastLoginIsNil() predicate.User {
 // LastLoginNotNil applies the NotNil predicate on the "last_login" field.
 func LastLoginNotNil() predicate.User {
 	return predicate.User(sql.FieldNotNull(FieldLastLogin))
+}
+
+// IsGrayEQ applies the EQ predicate on the "is_gray" field.
+func IsGrayEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldIsGray, v))
+}
+
+// IsGrayNEQ applies the NEQ predicate on the "is_gray" field.
+func IsGrayNEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldIsGray, v))
 }
 
 // And groups predicates with the AND operator between them.

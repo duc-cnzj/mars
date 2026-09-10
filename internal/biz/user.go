@@ -13,6 +13,7 @@ import (
 // （含 mars_admin=管理员；空数组=普通用户，即不含任何角色），与鉴权判定的 Roles 判据同源。
 // RolesOverride 标记角色是否已被后台手动管理接管（true=手工升降级，SSO 不再覆盖），
 // 供用户管理页展示角色来源（SSO 自动 / 后台手动）。
+// IsGray 标记该用户是否走灰度发布通道（发布路由维度，与权限无关）。
 type User struct {
 	ID    int
 	Email string
@@ -21,23 +22,32 @@ type User struct {
 	// RolesOverride 表示该用户角色是否已被后台手动管理接管：false=登录时按 SSO 角色同步；
 	// true=后台手动升降级后 SSO 不再覆盖。
 	RolesOverride bool
-	LastLogin     *time.Time
-	CreatedAt     time.Time
+	// IsGray 表示该用户是否灰度用户：前端在登录/打开页面时据此对齐灰度路由 cookie，
+	// 由 nginx-ingress canary 把该用户分流到灰度版本。
+	IsGray    bool
+	LastLogin *time.Time
+	CreatedAt time.Time
 }
 
 // UserStats 是用户统计（全量口径，不受搜索/角色过滤影响）。
 type UserStats struct {
-	Total   int32
-	Admins  int32
+	Total  int32
+	Admins int32
+	// Regular 普通用户数 = Total - Admins。
 	Regular int32
+	// Gray 灰度用户数。
+	Gray int32
 }
 
 // ListUserInput 是用户分页列表输入：Search 按邮箱/展示名模糊匹配，
-// AdminOnly 只看管理员（roles 含 mars_admin），Sort 指定最近登录排序方向。
+// AdminOnly 只看管理员（roles 含 mars_admin），GrayOnly 只看灰度用户，
+// Sort 指定最近登录排序方向。
 type ListUserInput struct {
 	Page, PageSize int32
 	Search         string
 	AdminOnly      bool
+	// GrayOnly 只看灰度用户（is_gray=true）。
+	GrayOnly bool
 	// Sort 排序方向：空 = 最近登录倒序（desc）；asc/desc = 指定最近登录升/降序。
 	Sort string
 }
@@ -54,13 +64,18 @@ type UserRepo interface {
 	// SyncLoginUser 登录成功时按邮箱 upsert 用户投影（不存在则创建），roles 为该次
 	// 登录身份携带的角色（SSO id_token / 内置超管），data 层据此决定角色同步策略。
 	SyncLoginUser(ctx context.Context, email, name string, roles []string) error
-	// List 分页查询用户，支持搜索与仅管理员过滤，返回全量统计。
+	// List 分页查询用户，支持搜索/仅管理员/仅灰度过滤，返回全量统计。
 	List(ctx context.Context, input *ListUserInput) (*ListUserResult, error)
 	// ToggleAdmin 设置/移除指定用户的管理员角色（mars_admin）。
 	ToggleAdmin(ctx context.Context, email string, admin bool) error
 	// ResetRolesOverride 解除后台手动接管（roles_override 置回 false），该用户恢复按 SSO
 	// 角色同步；供超管把误接管/不再需要手动管理的用户交还给 SSO。
 	ResetRolesOverride(ctx context.Context, email string) error
+	// ToggleGray 设置/移除指定用户的灰度标记（is_gray）。
+	ToggleGray(ctx context.Context, email string, gray bool) error
+	// IsGray 读取指定用户当前的灰度标记：用户尚未落投影（从未登录）时返回 false
+	// 而非错误——「无投影」等价于「非灰度」，避免 /api/auth/info 因缺行而报错。
+	IsGray(ctx context.Context, email string) (bool, error)
 }
 
 // UserBiz 是后台用户管理的业务接口：登录 upsert、查询与角色管理。
@@ -68,7 +83,7 @@ type UserBiz interface {
 	// SyncLoginUser 登录成功时同步用户投影（不存在则创建），email 不能为空；
 	// roles 为登录身份携带的角色，透传给 repo 做 SSO 角色同步。
 	SyncLoginUser(ctx context.Context, email, name string, roles []string) error
-	// List 分页查询用户列表（支持搜索/仅管理员过滤）。
+	// List 分页查询用户列表（支持搜索/仅管理员/仅灰度过滤）。
 	List(ctx context.Context, input *ListUserInput) (*ListUserResult, error)
 	// ToggleAdmin 设置/移除指定用户的管理员角色（mars_admin），email 不能为空；
 	// 仅内置超级管理员可调用（普通管理员只能查看不能修改）。
@@ -76,6 +91,12 @@ type UserBiz interface {
 	// ResetRolesOverride 解除指定用户的后台手动接管（roles_override 置回 false），该用户
 	// 恢复按 SSO 角色同步；仅内置超级管理员可调用，email 不能为空。
 	ResetRolesOverride(ctx context.Context, email string) error
+	// ToggleGray 设置/移除指定用户的灰度标记（is_gray），email 不能为空；
+	// 仅内置超级管理员可调用（与角色变更同门禁）。
+	ToggleGray(ctx context.Context, email string, gray bool) error
+	// IsGray 读取指定用户的灰度标记（供 /api/auth/info 下发权威口径）；
+	// email 为空返回 false，用户尚未落投影（从未登录）同样返回 false。
+	IsGray(ctx context.Context, email string) (bool, error)
 }
 
 // userBiz 是 UserBiz 的实现：包装 UserRepo 提供投影同步/登录 upsert/查询/角色管理。
@@ -127,4 +148,28 @@ func (u *userBiz) ResetRolesOverride(ctx context.Context, email string) error {
 		return errs.InvalidArgument("email 不能为空")
 	}
 	return u.repo.ResetRolesOverride(ctx, email)
+}
+
+// ToggleGray 翻转指定用户的灰度标记：灰度是发布通道路由（不是权限授予），但仍与角色变更
+// 同级门卫——只有超级管理员可操作，避免普通管理员把用户放进非稳定通道；email 空报
+// InvalidArgument，否则把 email/gray 透传给 repo。
+func (u *userBiz) ToggleGray(ctx context.Context, email string, gray bool) error {
+	// 权限门卫：灰度开关决定用户被分流到哪个构建，影响面等同于角色管理，仅超管可改。
+	if !MustGetUser(ctx).IsSuperAdmin() {
+		return errs.WrapPermissionDenied(errs.ErrorPermissionDenied, "切换用户灰度通道")
+	}
+	if strings.TrimSpace(email) == "" {
+		return errs.InvalidArgument("email 不能为空")
+	}
+	return u.repo.ToggleGray(ctx, strings.TrimSpace(email), gray)
+}
+
+// IsGray 读取指定用户的灰度标记：email 为空直接返回 false（调用方为 /api/auth/info，
+// 无有效身份时「非灰度」是安全默认值，不视为错误）；其余情况透传 repo，用户尚未落投影
+// 由 repo 归一为 false。
+func (u *userBiz) IsGray(ctx context.Context, email string) (bool, error) {
+	if strings.TrimSpace(email) == "" {
+		return false, nil
+	}
+	return u.repo.IsGray(ctx, strings.TrimSpace(email))
 }

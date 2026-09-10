@@ -45,3 +45,12 @@ func (s *UserSvc) ResetRolesOverride(ctx context.Context, req *user.ResetRolesOv
 	}
 	return &out, nil
 }
+
+// ToggleGray PUT /api/admin/users/{email}/gray。
+func (s *UserSvc) ToggleGray(ctx context.Context, req *user.ToggleGrayRequest) (*user.ToggleGrayResponse, error) {
+	var out user.ToggleGrayResponse
+	if err := s.C.Do(ctx, http.MethodPut, fmt.Sprintf("/api/admin/users/%s/gray", url.PathEscape(req.Email)), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

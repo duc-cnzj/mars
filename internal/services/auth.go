@@ -81,8 +81,18 @@ func (a *authSvc) Login(ctx context.Context, request *apiauth.LoginRequest) (*ap
 // （消除与拦截器的双重验签）。取用户用 biz.MustGetUser（与 AccessBiz/services 全仓惯例
 // 一致）：双链路（gRPC 拦截器 + HTTP gateway 经 RegisterAuthHandlerFromEndpoint 回环 dial
 // 到同一 gRPC server）必注入用户，ctx 无用户即编程错误（panic，由 grpc_recovery 兜底）。
+//
+// IsGray 是唯一需要额外读库的字段：灰度标记不在 JWT 里（后台可随时改，签进 token 会变成
+// 登录时刻的死快照）。前端的底栏灰度标记与「启动对齐灰度路由 cookie」都以本字段为权威口径，
+// 所以每次 /api/auth/info 都要取当前库值——这正是「后台一改开关，用户刷新页面即生效」的落点。
+// 读库失败降级为「非灰度」（fail-open 到稳定版）并记日志：灰度只是发布通道，不该因一次
+// 查询失败把整个登录态恢复打断（用户会看到「打不开页面」，而问题其实只是发布通道未知）。
 func (a *authSvc) Info(ctx context.Context, req *apiauth.InfoRequest) (*apiauth.InfoResponse, error) {
 	user := biz.MustGetUser(ctx)
+	isGray, err := a.userBiz.IsGray(ctx, user.Email)
+	if err != nil {
+		a.logger.ErrorCtx(ctx, err)
+	}
 	return &apiauth.InfoResponse{
 		Id:           cast.ToInt32(user.ID),
 		Avatar:       user.Picture,
@@ -91,6 +101,7 @@ func (a *authSvc) Info(ctx context.Context, req *apiauth.InfoRequest) (*apiauth.
 		LogoutUrl:    user.LogoutUrl,
 		Roles:        user.Roles,
 		IsSuperAdmin: user.IsSuperAdmin(),
+		IsGray:       isGray,
 	}, nil
 }
 

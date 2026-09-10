@@ -23,6 +23,7 @@ const (
 	User_List_FullMethodName               = "/user.User/List"
 	User_ToggleAdmin_FullMethodName        = "/user.User/ToggleAdmin"
 	User_ResetRolesOverride_FullMethodName = "/user.User/ResetRolesOverride"
+	User_ToggleGray_FullMethodName         = "/user.User/ToggleGray"
 )
 
 // UserClient is the client API for User service.
@@ -34,6 +35,9 @@ type UserClient interface {
 	// 解除后台手动接管（roles_override 置回 false）：该用户从下一次登录起恢复按 SSO 角色同步，
 	// 供超管把误接管/不再需要手动管理的用户「交还」给 SSO。
 	ResetRolesOverride(ctx context.Context, in *ResetRolesOverrideRequest, opts ...grpc.CallOption) (*ResetRolesOverrideResponse, error)
+	// 设置/移除灰度用户：改变的是发布通道路由（nginx-ingress canary），不是权限授予，
+	// 故不设二次确认；该用户下次打开页面即按新通道分流。
+	ToggleGray(ctx context.Context, in *ToggleGrayRequest, opts ...grpc.CallOption) (*ToggleGrayResponse, error)
 }
 
 type userClient struct {
@@ -74,6 +78,16 @@ func (c *userClient) ResetRolesOverride(ctx context.Context, in *ResetRolesOverr
 	return out, nil
 }
 
+func (c *userClient) ToggleGray(ctx context.Context, in *ToggleGrayRequest, opts ...grpc.CallOption) (*ToggleGrayResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ToggleGrayResponse)
+	err := c.cc.Invoke(ctx, User_ToggleGray_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServer is the server API for User service.
 // All implementations must embed UnimplementedUserServer
 // for forward compatibility.
@@ -83,6 +97,9 @@ type UserServer interface {
 	// 解除后台手动接管（roles_override 置回 false）：该用户从下一次登录起恢复按 SSO 角色同步，
 	// 供超管把误接管/不再需要手动管理的用户「交还」给 SSO。
 	ResetRolesOverride(context.Context, *ResetRolesOverrideRequest) (*ResetRolesOverrideResponse, error)
+	// 设置/移除灰度用户：改变的是发布通道路由（nginx-ingress canary），不是权限授予，
+	// 故不设二次确认；该用户下次打开页面即按新通道分流。
+	ToggleGray(context.Context, *ToggleGrayRequest) (*ToggleGrayResponse, error)
 	mustEmbedUnimplementedUserServer()
 }
 
@@ -101,6 +118,9 @@ func (UnimplementedUserServer) ToggleAdmin(context.Context, *ToggleAdminRequest)
 }
 func (UnimplementedUserServer) ResetRolesOverride(context.Context, *ResetRolesOverrideRequest) (*ResetRolesOverrideResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ResetRolesOverride not implemented")
+}
+func (UnimplementedUserServer) ToggleGray(context.Context, *ToggleGrayRequest) (*ToggleGrayResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ToggleGray not implemented")
 }
 func (UnimplementedUserServer) mustEmbedUnimplementedUserServer() {}
 func (UnimplementedUserServer) testEmbeddedByValue()              {}
@@ -177,6 +197,24 @@ func _User_ResetRolesOverride_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_ToggleGray_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ToggleGrayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).ToggleGray(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_ToggleGray_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).ToggleGray(ctx, req.(*ToggleGrayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // User_ServiceDesc is the grpc.ServiceDesc for User service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -195,6 +233,10 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ResetRolesOverride",
 			Handler:    _User_ResetRolesOverride_Handler,
+		},
+		{
+			MethodName: "ToggleGray",
+			Handler:    _User_ToggleGray_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

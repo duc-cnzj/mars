@@ -347,6 +347,7 @@ var (
 		{Name: "roles", Type: field.TypeJSON},
 		{Name: "roles_override", Type: field.TypeBool, Default: false},
 		{Name: "last_login", Type: field.TypeTime, Nullable: true},
+		{Name: "is_gray", Type: field.TypeBool, Default: false},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{

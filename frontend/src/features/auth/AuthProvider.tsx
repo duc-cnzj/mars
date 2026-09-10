@@ -19,6 +19,7 @@ import {
   removeLogoutUrl,
 } from '@/api/token'
 import { Spinner } from '@/components/ui'
+import { alignGrayChannel, setGrayChannel } from '@/hooks/useGrayChannel'
 import type { components } from '@/api/schema'
 
 type UserInfo = components['schemas']['auth.InfoResponse']
@@ -61,6 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data) {
       setUser(data)
       if (data.logoutUrl) setLogoutUrl(data.logoutUrl)
+      // 启动对齐：把后端 isGray（灰度意图）落成本浏览器的灰度路由 cookie（灰度事实）。
+      // 这是「意图 → 事实」之间唯一的那根线；与当前 cookie 不一致时会硬刷新一次
+      //（cookie 只对下一次文档请求生效，不刷新就永远停在旧通道），详见 alignGrayChannel。
+      alignGrayChannel(data.isGray)
       return data
     }
     // 会话恢复失败：清除无效 token，交给守卫回登录页
@@ -96,6 +101,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signout = useCallback(() => {
     removeToken()
     setUser(null)
+    // 登出即失去灰度意图：清掉灰度路由 cookie，避免下一个登录者继承上一个会话的通道。
+    // 紧跟着就是整页跳转（下一次文档请求），故无需再触发对齐刷新。
+    setGrayChannel(false)
     const url = getLogoutUrl() || '/login'
     removeLogoutUrl()
     window.location.href = url

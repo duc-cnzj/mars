@@ -608,6 +608,8 @@ func (m *InfoResponse) validate(all bool) error {
 
 	// no validation rules for IsSuperAdmin
 
+	// no validation rules for IsGray
+
 	if len(errors) > 0 {
 		return InfoResponseMultiError(errors)
 	}

@@ -39,7 +39,7 @@ func (s *userSvc) Authorize(ctx context.Context, fullMethodName string) (context
 	return s.accessBiz.RequireAdmin(ctx, fullMethodName)
 }
 
-// List 分页返回用户列表（含统计），role=admin 时只看管理员。
+// List 分页返回用户列表（含统计），role=admin 时只看管理员，gray=true 时只看灰度用户。
 func (s *userSvc) List(ctx context.Context, request *user.ListRequest) (*user.ListResponse, error) {
 	page, size := pagination.InitByDefault(request.Page, request.PageSize)
 	list, err := s.userBiz.List(ctx, &biz.ListUserInput{
@@ -47,6 +47,7 @@ func (s *userSvc) List(ctx context.Context, request *user.ListRequest) (*user.Li
 		PageSize:  size,
 		Search:    request.Search,
 		AdminOnly: request.Role == "admin",
+		GrayOnly:  request.Gray,
 		Sort:      request.Sort,
 	})
 	if err != nil {
@@ -66,6 +67,7 @@ func (s *userSvc) List(ctx context.Context, request *user.ListRequest) (*user.Li
 			Total:   list.Stats.Total,
 			Admins:  list.Stats.Admins,
 			Regular: list.Stats.Regular,
+			Gray:    list.Stats.Gray,
 		},
 	}, nil
 }
@@ -84,4 +86,12 @@ func (s *userSvc) ResetRolesOverride(ctx context.Context, request *user.ResetRol
 		return nil, logError(ctx, s.logger, err)
 	}
 	return &user.ResetRolesOverrideResponse{}, nil
+}
+
+// ToggleGray 设置/移除指定用户的灰度标记：灰度用户下次打开页面即被分流到灰度版本。
+func (s *userSvc) ToggleGray(ctx context.Context, request *user.ToggleGrayRequest) (*user.ToggleGrayResponse, error) {
+	if err := s.userBiz.ToggleGray(ctx, request.Email, request.Gray); err != nil {
+		return nil, logError(ctx, s.logger, err)
+	}
+	return &user.ToggleGrayResponse{}, nil
 }

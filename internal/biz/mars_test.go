@@ -231,6 +231,7 @@ command:
 	for _, test := range tests {
 		tt := test
 		t.Run(tt.ConfigField, func(t *testing.T) {
+			t.Parallel()
 			res, err := biz.ParseInputConfig(&mars2.Config{
 				IsSimpleEnv: tt.IsSimpleEnv,
 				ValuesYaml:  tt.ValuesYaml,
