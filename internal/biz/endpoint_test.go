@@ -37,13 +37,11 @@ func (f *fakeNamespaceRepo) Show(ctx context.Context, id int) (*Namespace, error
 }
 
 func TestNewEndpointBiz(t *testing.T) {
-	t.Parallel()
 	b := NewEndpointBiz(mlog.NewForConfig(nil), &fakeProjectBiz{}, &fakeNamespaceRepo{})
 	assert.NotNil(t, b)
 }
 
 func TestEndpointBiz_InNamespace_HappyPath(t *testing.T) {
-	t.Parallel()
 	proj := &fakeProjectBiz{}
 	ns := &fakeNamespaceRepo{
 		show: func(ctx context.Context, id int) (*Namespace, error) {
@@ -68,7 +66,6 @@ func TestEndpointBiz_InNamespace_HappyPath(t *testing.T) {
 }
 
 func TestEndpointBiz_InNamespace_NonExistentNamespace(t *testing.T) {
-	t.Parallel()
 	ns := &fakeNamespaceRepo{
 		show: func(ctx context.Context, id int) (*Namespace, error) {
 			return nil, errors.New("x")
@@ -82,7 +79,6 @@ func TestEndpointBiz_InNamespace_NonExistentNamespace(t *testing.T) {
 }
 
 func TestEndpointBiz_InProject_HappyPath(t *testing.T) {
-	t.Parallel()
 	proj := &fakeProjectBiz{
 		show: func(ctx context.Context, id int) (*Project, error) {
 			return &Project{Namespace: &Namespace{Name: "ns"}, ID: 1}, nil
@@ -107,7 +103,6 @@ func TestEndpointBiz_InProject_HappyPath(t *testing.T) {
 }
 
 func TestEndpointBiz_InProject_NonExistentProject(t *testing.T) {
-	t.Parallel()
 	proj := &fakeProjectBiz{
 		show: func(ctx context.Context, id int) (*Project, error) {
 			return nil, errors.New("x")

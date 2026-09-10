@@ -45,19 +45,16 @@ func lockRows(lock *databaseLock) *sqlmock.Rows {
 }
 
 func Test_databaseLock_ID(t *testing.T) {
-	t.Parallel()
 	lock, _, _ := newMockDatabaseLock(t)
 	assert.Len(t, lock.ID(), 40)
 }
 
 func Test_databaseLock_Type_String(t *testing.T) {
-	t.Parallel()
 	lock, _, _ := newMockDatabaseLock(t)
 	assert.Equal(t, "db", lock.Type())
 }
 
 func Test_databaseLock_createLock_Success(t *testing.T) {
-	t.Parallel()
 	lock, client, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `cache_locks`")).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -65,7 +62,6 @@ func Test_databaseLock_createLock_Success(t *testing.T) {
 }
 
 func Test_databaseLock_createLock_Error(t *testing.T) {
-	t.Parallel()
 	lock, client, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `cache_locks`")).
 		WillReturnError(errors.New("duplicate key"))
@@ -73,7 +69,6 @@ func Test_databaseLock_createLock_Error(t *testing.T) {
 }
 
 func Test_databaseLock_updateExpiredLock_Success(t *testing.T) {
-	t.Parallel()
 	lock, client, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("UPDATE `cache_locks`")).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -81,7 +76,6 @@ func Test_databaseLock_updateExpiredLock_Success(t *testing.T) {
 }
 
 func Test_databaseLock_updateExpiredLock_Error(t *testing.T) {
-	t.Parallel()
 	lock, client, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("UPDATE `cache_locks`")).
 		WillReturnError(errors.New("db error"))
@@ -89,7 +83,6 @@ func Test_databaseLock_updateExpiredLock_Error(t *testing.T) {
 }
 
 func Test_databaseLock_updateExpiredLock_NoAffectedRows(t *testing.T) {
-	t.Parallel()
 	lock, client, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("UPDATE `cache_locks`")).
 		WillReturnResult(sqlmock.NewResult(1, 0))
@@ -97,7 +90,6 @@ func Test_databaseLock_updateExpiredLock_NoAffectedRows(t *testing.T) {
 }
 
 func Test_databaseLock_cleanupExpiredLocks_Success(t *testing.T) {
-	t.Parallel()
 	lock, client, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM `cache_locks`")).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -105,7 +97,6 @@ func Test_databaseLock_cleanupExpiredLocks_Success(t *testing.T) {
 }
 
 func Test_databaseLock_cleanupExpiredLocks_Error(t *testing.T) {
-	t.Parallel()
 	lock, client, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM `cache_locks`")).
 		WillReturnError(errors.New("db error"))
@@ -113,7 +104,6 @@ func Test_databaseLock_cleanupExpiredLocks_Error(t *testing.T) {
 }
 
 func Test_databaseLock_Acquire_Create(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `cache_locks`")).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -123,7 +113,6 @@ func Test_databaseLock_Acquire_Create(t *testing.T) {
 }
 
 func Test_databaseLock_Acquire_Takeover(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `cache_locks`")).
 		WillReturnError(errors.New("duplicate key"))
@@ -135,7 +124,6 @@ func Test_databaseLock_Acquire_Takeover(t *testing.T) {
 }
 
 func Test_databaseLock_Acquire_Fail(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `cache_locks`")).
 		WillReturnError(errors.New("duplicate key"))
@@ -147,7 +135,6 @@ func Test_databaseLock_Acquire_Fail(t *testing.T) {
 }
 
 func Test_databaseLock_Owner_Success(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT `cache_locks`")).
 		WillReturnRows(lockRows(lock))
@@ -155,7 +142,6 @@ func Test_databaseLock_Owner_Success(t *testing.T) {
 }
 
 func Test_databaseLock_Owner_Empty(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT `cache_locks`")).
 		WillReturnError(errors.New("not found"))
@@ -163,7 +149,6 @@ func Test_databaseLock_Owner_Empty(t *testing.T) {
 }
 
 func Test_databaseLock_Release_Success(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT `cache_locks`")).
 		WillReturnRows(lockRows(lock))
@@ -173,7 +158,6 @@ func Test_databaseLock_Release_Success(t *testing.T) {
 }
 
 func Test_databaseLock_Release_NotOwner(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	other := NewDatabaseLock(timer.NewReal(), nil, mlog.NewForConfig(nil))
 	rows := sqlmock.NewRows([]string{"id", "key", "owner", "expired_at"}).
@@ -184,7 +168,6 @@ func Test_databaseLock_Release_NotOwner(t *testing.T) {
 }
 
 func Test_databaseLock_ForceRelease(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM `cache_locks`")).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -193,7 +176,6 @@ func Test_databaseLock_ForceRelease(t *testing.T) {
 
 // Test_databaseLock_ForceRelease_DeleteError 覆盖 ForceRelease 中 DELETE 失败时返回 false 的分支。
 func Test_databaseLock_ForceRelease_DeleteError(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM `cache_locks`")).
 		WillReturnError(errors.New("delete boom"))
@@ -201,7 +183,6 @@ func Test_databaseLock_ForceRelease_DeleteError(t *testing.T) {
 }
 
 func Test_databaseLock_RenewalAcquire_Success(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `cache_locks`")).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -220,7 +201,6 @@ func Test_databaseLock_RenewalAcquire_Success(t *testing.T) {
 }
 
 func Test_databaseLock_RenewalAcquire_Fail(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `cache_locks`")).
 		WillReturnError(errors.New("duplicate key"))
@@ -235,7 +215,6 @@ func Test_databaseLock_RenewalAcquire_Fail(t *testing.T) {
 
 // Test_databaseLock_renewalExistKey_Success 用真实事务（Begin/fn/Commit）覆盖续期成功路径。
 func Test_databaseLock_renewalExistKey_Success(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT `cache_locks`")).
@@ -251,7 +230,6 @@ func Test_databaseLock_renewalExistKey_Success(t *testing.T) {
 
 // Test_databaseLock_renewalExistKey_QueryError 覆盖锁不存在时 Only 返回错误的 not-found 分支。
 func Test_databaseLock_renewalExistKey_QueryError(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT `cache_locks`")).
@@ -262,7 +240,6 @@ func Test_databaseLock_renewalExistKey_QueryError(t *testing.T) {
 
 // Test_databaseLock_renewalExistKey_NotOwner 覆盖锁已被他人持有时的 "not owner" 错误分支。
 func Test_databaseLock_renewalExistKey_NotOwner(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	other := NewDatabaseLock(timer.NewReal(), nil, mlog.NewForConfig(nil))
 	rows := sqlmock.NewRows([]string{"id", "key", "owner", "expired_at"}).
@@ -277,7 +254,6 @@ func Test_databaseLock_renewalExistKey_NotOwner(t *testing.T) {
 // Test_databaseLock_renewalRoutine_RenewError 覆盖续期出错（DB 未就绪，getDB 返回 nil）时
 // 打印日志并退出 goroutine 的分支。
 func Test_databaseLock_renewalRoutine_RenewError(t *testing.T) {
-	t.Parallel()
 	lock := NewDatabaseLock(timer.NewReal(), func() *ent.Client { return nil }, mlog.NewForConfig(nil)).(*databaseLock)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -299,7 +275,6 @@ func Test_databaseLock_renewalRoutine_RenewError(t *testing.T) {
 // Test_databaseLock_renewalRoutine_Cancel 覆盖 ctx 取消后 goroutine 退出且不再续期的分支。
 // renewalSeconds=60 使 ticker 在测试窗口内不触发，纯靠 ctx 取消驱动退出，确定性无 flake。
 func Test_databaseLock_renewalRoutine_Cancel(t *testing.T) {
-	t.Parallel()
 	lock, _, _ := newMockDatabaseLock(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -322,7 +297,6 @@ func Test_databaseLock_renewalRoutine_Cancel(t *testing.T) {
 // ForceRelease=false / renewalExistKey=error。这是 wire 构造期早于 InitDB
 // 场景下的安全兜底。
 func Test_databaseLock_NilDB(t *testing.T) {
-	t.Parallel()
 	lock := NewDatabaseLock(timer.NewReal(), func() *ent.Client { return nil }, mlog.NewForConfig(nil)).(*databaseLock)
 
 	assert.False(t, lock.Acquire("key", 60))
@@ -334,7 +308,6 @@ func Test_databaseLock_NilDB(t *testing.T) {
 
 // Test_databaseLock_Release_QueryError 覆盖 Release 中持有者查询失败的错误分支。
 func Test_databaseLock_Release_QueryError(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT `cache_locks`")).
 		WillReturnError(errors.New("not found"))
@@ -343,7 +316,6 @@ func Test_databaseLock_Release_QueryError(t *testing.T) {
 
 // Test_databaseLock_Release_DeleteError 覆盖 Release 中 DELETE 失败时返回 false 的分支。
 func Test_databaseLock_Release_DeleteError(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT `cache_locks`")).
 		WillReturnRows(lockRows(lock))
@@ -354,7 +326,6 @@ func Test_databaseLock_Release_DeleteError(t *testing.T) {
 
 // Test_databaseLock_renewalExistKey_BeginError 覆盖 db.Tx 启动事务失败的错误分支。
 func Test_databaseLock_renewalExistKey_BeginError(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectBegin().WillReturnError(errors.New("begin error"))
 	assert.Error(t, lock.renewalExistKey("key", 60))
@@ -362,7 +333,6 @@ func Test_databaseLock_renewalExistKey_BeginError(t *testing.T) {
 
 // Test_databaseLock_renewalExistKey_UpdateError 覆盖续期 UPDATE 失败的错误分支。
 func Test_databaseLock_renewalExistKey_UpdateError(t *testing.T) {
-	t.Parallel()
 	lock, _, mock := newMockDatabaseLock(t)
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT `cache_locks`")).

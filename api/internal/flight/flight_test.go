@@ -10,7 +10,6 @@ import (
 )
 
 func TestDo_DeduplicatesConcurrent(t *testing.T) {
-	t.Parallel()
 	g := new(Group)
 	var calls int32
 	fn := func() (interface{}, error) {
@@ -44,7 +43,6 @@ func TestDo_DeduplicatesConcurrent(t *testing.T) {
 }
 
 func TestDo_DistinctKeysNoDedup(t *testing.T) {
-	t.Parallel()
 	g := new(Group)
 	var calls int32
 	for i := 0; i < 3; i++ {
@@ -68,7 +66,6 @@ func TestDo_DistinctKeysNoDedup(t *testing.T) {
 }
 
 func TestDo_PropagatesError(t *testing.T) {
-	t.Parallel()
 	wantErr := errors.New("boom")
 	g := new(Group)
 	_, err, _ := g.Do("key", func() (interface{}, error) {
@@ -80,7 +77,6 @@ func TestDo_PropagatesError(t *testing.T) {
 }
 
 func TestDo_ExecutesAgainAfterCompletion(t *testing.T) {
-	t.Parallel()
 	g := new(Group)
 	var calls int32
 	for i := 0; i < 2; i++ {

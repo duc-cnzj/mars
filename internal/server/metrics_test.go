@@ -16,7 +16,6 @@ import (
 // TestNewMetricsRunner 覆盖构造器：WithModule + 端口 + server 装配（真实 *http.Server，
 // 含 metricsHandler 构建的处理器）。
 func TestNewMetricsRunner(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockLogger := mlog.NewMockLogger(m)
@@ -33,7 +32,6 @@ func TestNewMetricsRunner(t *testing.T) {
 // TestMetricsRunnerRunAndShutdown 覆盖 Run/Shutdown 生命周期：注入 mock server，
 // channel 同步等 ListenAndServe 真正执行后再 Shutdown，不绑真实端口、无 time.Sleep。
 func TestMetricsRunnerRunAndShutdown(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -58,7 +56,6 @@ func TestMetricsRunnerRunAndShutdown(t *testing.T) {
 // （此前静默吞错，端口冲突时指标服务静默下线无任何日志——本测试为其兜底，删除错误
 // 处理回归裸 `m.s.ListenAndServe()` 时 Error EXPECT 缺失即炸）。
 func TestMetricsRunnerRunError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -82,7 +79,6 @@ func TestMetricsRunnerRunError(t *testing.T) {
 
 // TestMetricsRunnerShutdownError 覆盖 Shutdown 的失败路径：底层 server 关闭出错时上抛。
 func TestMetricsRunnerShutdownError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -95,7 +91,6 @@ func TestMetricsRunnerShutdownError(t *testing.T) {
 // Test_metricsHandler 直测 /metrics 端点行为（不绑真实端口）：注册测试指标后
 // GET /metrics 返回 200 且响应体含指标名，未注册路径 404。
 func Test_metricsHandler(t *testing.T) {
-	t.Parallel()
 	reg := prometheus.NewRegistry()
 	reg.MustRegister(prometheus.NewGauge(prometheus.GaugeOpts{Name: "audit_test_metric", Help: "test metric"}))
 	h := metricsHandler(reg)

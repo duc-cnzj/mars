@@ -56,7 +56,6 @@ func newReadyClient(t *testing.T, onConn func(c *websocket.Conn)) *Client {
 }
 
 func TestSend_ExecShell(t *testing.T) {
-	t.Parallel()
 	received := make(chan struct{})
 	cli := newReadyClient(t, func(c *websocket.Conn) {
 		var in websocket_pb.WsHandleExecShellInput
@@ -79,7 +78,6 @@ func TestSend_ExecShell(t *testing.T) {
 }
 
 func TestSend_TerminalMessages(t *testing.T) {
-	t.Parallel()
 	// 依次验证 stdin / resize / close 三帧。
 	expect := []struct {
 		op   string

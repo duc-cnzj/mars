@@ -53,7 +53,6 @@ import (
 )
 
 func TestNewK8sRepo(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -84,7 +83,6 @@ func TestNewK8sRepo(t *testing.T) {
 // GetSecret 通过 K8sClient 实时读取命名空间下的 secret：
 // 存在返回 secret，不存在返回 k8s NotFound 错误。
 func TestK8sRepo_GetSecret(t *testing.T) {
-	t.Parallel()
 	sec := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-tls", Namespace: "default"},
 		Type:       corev1.SecretTypeTLS,
@@ -106,7 +104,6 @@ func TestK8sRepo_GetSecret(t *testing.T) {
 }
 
 func TestSplitManifests(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -153,7 +150,6 @@ func TestSplitManifests(t *testing.T) {
 }
 
 func Test_k8sRepo_CreateDockerSecrets(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -198,7 +194,6 @@ func Test_k8sRepo_CreateDockerSecrets(t *testing.T) {
 }
 
 func Test_k8sRepo_GetNamespace(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -227,7 +222,6 @@ func NewEventLister(events ...*eventsv1.Event) eventsv1lister.EventLister {
 }
 
 func Test_k8sRepo_ListEvents(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -247,7 +241,6 @@ func Test_k8sRepo_ListEvents(t *testing.T) {
 }
 
 func TestGetPod(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -267,7 +260,6 @@ func TestGetPod(t *testing.T) {
 }
 
 func TestFindDefaultContainer(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -323,7 +315,6 @@ func TestFindDefaultContainer(t *testing.T) {
 }
 
 func TestIsPodRunning(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -388,7 +379,6 @@ func TestIsPodRunning(t *testing.T) {
 }
 
 func TestGetCpuAndMemoryQuantity(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -434,7 +424,6 @@ func TestGetCpuAndMemoryQuantity(t *testing.T) {
 }
 
 func TestAnalyseMetricsToCpuAndMemory(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -512,7 +501,6 @@ func TestAnalyseMetricsToCpuAndMemory(t *testing.T) {
 }
 
 func Test_getStatus(t *testing.T) {
-	t.Parallel()
 	var tests = []struct {
 		CpuRate    float64
 		MemoryRate float64
@@ -567,7 +555,6 @@ func Test_getStatus(t *testing.T) {
 }
 
 func TestClusterInfo(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	cpu := &resource.Quantity{}
@@ -718,7 +705,6 @@ func TestClusterInfo(t *testing.T) {
 // TestClusterInfo_CacheHit 覆盖 30s 缓存的合并读：首次调用实时 List 一次并回填，TTL 内
 // 第二次调用命中缓存不重复 List nodes（用 fake reactor 计数验证），且两次结果一致。
 func TestClusterInfo_CacheHit(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	cpu := &resource.Quantity{}
@@ -766,7 +752,6 @@ func TestClusterInfo_CacheHit(t *testing.T) {
 
 // Nodes().List 失败时不能 panic（nil 解引用），应返回空 biz.ClusterInfo。
 func TestClusterInfo_NodesListError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	fc := fake.NewSimpleClientset()
@@ -783,7 +768,6 @@ func TestClusterInfo_NodesListError(t *testing.T) {
 
 // NodeMetricses().List 失败时不能 panic，应按空用量继续统计。
 func TestClusterInfo_MetricsListError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	cpu := &resource.Quantity{}
@@ -820,7 +804,6 @@ func TestClusterInfo_MetricsListError(t *testing.T) {
 // 锁死注释承诺的「未命中/缓存出错时降级实时计算」。与 RefreshClusterInfo 的「失败
 // 整体上抛」刻意区分：无 err 返回值封装层的失败必须对调用方保底而非吞掉。
 func TestClusterInfo_CacheErrorFallsBack(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	cache := NewMockCache(m)
@@ -865,7 +848,6 @@ func TestClusterInfo_CacheErrorFallsBack(t *testing.T) {
 // force=true（跳过缓存读直接回填），锁死 Remember 第四参数——这是「cron/启动预热
 // 消灭冷窗口」的核心语义，防止被误改成惰性读。
 func TestK8sRepo_RefreshClusterInfo_Force(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	cache := NewMockCache(m)
@@ -881,7 +863,6 @@ func TestK8sRepo_RefreshClusterInfo_Force(t *testing.T) {
 // TestK8sRepo_RefreshClusterInfo_UnmarshalError 覆盖缓存值损坏（非合法 JSON）时
 // RefreshClusterInfo 整体上抛，与 ClusterBoard 的 UnmarshalError 防御语义一致。
 func TestK8sRepo_RefreshClusterInfo_UnmarshalError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	cache := NewMockCache(m)
@@ -898,7 +879,6 @@ func TestK8sRepo_RefreshClusterInfo_UnmarshalError(t *testing.T) {
 // 时 RefreshClusterInfo 整体上抛、不静默降级：预热方（cron/启动）据此记录错误，下一轮重试。
 // 与 ClusterInfo() 的"缓存失败降级实时计算"语义刻意区分——force 入口失败必须让调用方可见。
 func TestK8sRepo_RefreshClusterInfo_RememberError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	cache := NewMockCache(m)
@@ -912,7 +892,6 @@ func TestK8sRepo_RefreshClusterInfo_RememberError(t *testing.T) {
 }
 
 func Test_getNodeRequestCpuAndMemory(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	cpu := &resource.Quantity{}
@@ -989,7 +968,6 @@ func Test_getNodeRequestCpuAndMemory(t *testing.T) {
 }
 
 func Test_getPodSelectorsInDeploymentAndStatefulSetByManifest(t *testing.T) {
-	t.Parallel()
 	var tests = []struct {
 		in  string
 		out string
@@ -1209,7 +1187,6 @@ func Test_getPodSelectorsInDeploymentAndStatefulSetByManifest(t *testing.T) {
 }
 
 func TestDeleteNamespace(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -1227,7 +1204,6 @@ func TestDeleteNamespace(t *testing.T) {
 }
 
 func TestDeletePod(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -1267,7 +1243,6 @@ func TestDeletePod(t *testing.T) {
 }
 
 func TestDeleteSecret(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -1290,7 +1265,6 @@ func TestDeleteSecret(t *testing.T) {
 }
 
 func TestExecutor(t *testing.T) {
-	t.Parallel()
 	ex := &executor{}
 	ex.WithMethod("GET")
 	assert.Equal(t, "GET", ex.method)
@@ -1334,7 +1308,6 @@ func (f *fakeTerminalSizeQueue) Next() *biz.TerminalSize {
 // API 故障/连接断开/上下文超时）原样透传映射 500、容器 exec 启动失败翻译为领域 ExecFailure、
 // CodeExitError 翻译为领域 ExecExitError。
 func Test_translateExecError(t *testing.T) {
-	t.Parallel()
 	assert.Nil(t, translateExecError(nil))
 
 	// 容器 exec 启动失败（命令不存在等）→ ExecFailure，归为"容器执行结果"。
@@ -1372,7 +1345,6 @@ func Test_translateExecError(t *testing.T) {
 // Test_toRemotecommandTerminalSizeQueue 覆盖尺寸队列适配：nil 输入返回 nil、
 // 领域尺寸转换为 remotecommand 尺寸、领域队列返回 nil 时透传 nil。
 func Test_toRemotecommandTerminalSizeQueue(t *testing.T) {
-	t.Parallel()
 	assert.Nil(t, toRemotecommandTerminalSizeQueue(nil))
 
 	adapter := toRemotecommandTerminalSizeQueue(&fakeTerminalSizeQueue{})
@@ -1382,7 +1354,6 @@ func Test_toRemotecommandTerminalSizeQueue(t *testing.T) {
 }
 
 func Test_defaultRemoteExecutor_New(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -1393,7 +1364,6 @@ func Test_defaultRemoteExecutor_New(t *testing.T) {
 }
 
 func Test_k8sRepo_Execute(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	manager := NewMockExecutorManager(m)
@@ -1419,7 +1389,6 @@ func Test_k8sRepo_Execute(t *testing.T) {
 }
 
 func Test_defaultRemoteExecutor_NewFileCopy(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -1440,7 +1409,6 @@ func Test_defaultRemoteExecutor_NewFileCopy(t *testing.T) {
 	assert.Nil(t, shared.NegotiatedSerializer)
 }
 func TestGetPodLogs(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -1466,7 +1434,6 @@ func TestGetPodLogs(t *testing.T) {
 	})
 }
 func TestCopyFromPod(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -1503,7 +1470,6 @@ func TestCopyFromPod(t *testing.T) {
 }
 
 func TestCopyFromPod1(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -1549,7 +1515,6 @@ func TestCopyFromPod1(t *testing.T) {
 }
 
 func TestCopyFromPod_success(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -1651,7 +1616,6 @@ func (m *mockFileCopy) CopyFromPod(ctx context.Context, src k8sutil.CopyFileSpec
 
 // TestK8sRepo_UpdateSecret 覆盖更新指定 secret 内容的端口（cron TLS 同步用）。
 func TestK8sRepo_UpdateSecret(t *testing.T) {
-	t.Parallel()
 	sec := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "s", Namespace: "default"},
 		Data:       map[string][]byte{"tls.crt": []byte("old")},
@@ -1671,7 +1635,6 @@ func TestK8sRepo_UpdateSecret(t *testing.T) {
 // TestK8sRepo_CreateDockerSecrets 覆盖按 servers 子集创建 docker secret 的端口：
 // 只含命中 server 的凭据，config 不泄漏进业务层。
 func TestK8sRepo_CreateDockerSecrets(t *testing.T) {
-	t.Parallel()
 	d := NewDataImpl(&NewDataParams{
 		Cfg: &config.Config{ImagePullSecrets: config.DockerAuths{
 			{Server: "reg.io", Username: "u", Password: "p", Email: "e"},
@@ -1695,7 +1658,6 @@ func TestK8sRepo_CreateDockerSecrets(t *testing.T) {
 // TestK8sRepo_SubscribePodEvents 覆盖 Pod 事件订阅端口的转换链路：
 // informer fanout 的 Obj 泛型转换为领域 PodEvent，取消订阅关闭事件通道。
 func TestK8sRepo_SubscribePodEvents(t *testing.T) {
-	t.Parallel()
 	input := make(chan Obj[*corev1.Pod], 4)
 	fan := newFanOut[*corev1.Pod](mlog.NewForConfig(nil), "pod", input, map[string]chan<- Obj[*corev1.Pod]{})
 	d := NewDataImpl(&NewDataParams{
@@ -1727,7 +1689,6 @@ func TestK8sRepo_SubscribePodEvents(t *testing.T) {
 // （k8s.go L393 if !ok return）：直接移除 listener 关闭 raw 而不触发 done，goroutine
 // 应读取到 raw 已关闭（ok=false）而从外层 select 的 !ok 分支退出，而非依赖 done。
 func TestK8sRepo_SubscribePodEvents_RawClosed(t *testing.T) {
-	t.Parallel()
 	input := make(chan Obj[*corev1.Pod], 4)
 	fan := newFanOut[*corev1.Pod](mlog.NewForConfig(nil), "pod", input, map[string]chan<- Obj[*corev1.Pod]{})
 	d := NewDataImpl(&NewDataParams{
@@ -1753,7 +1714,6 @@ func TestK8sRepo_SubscribePodEvents_RawClosed(t *testing.T) {
 // 阻塞在 inner select 的 out<- 发送；此时 unsubscribe 关闭 done，goroutine 应从 L405 退出，
 // 而非永久悬挂（本次内存泄露修复的核心场景）。
 func TestK8sRepo_SubscribePodEvents_DoneWhileOutFull(t *testing.T) {
-	t.Parallel()
 	input := make(chan Obj[*corev1.Pod], 4)
 	fan := newFanOut[*corev1.Pod](mlog.NewForConfig(nil), "pod", input, map[string]chan<- Obj[*corev1.Pod]{})
 	d := NewDataImpl(&NewDataParams{
@@ -1807,7 +1767,6 @@ func TestK8sRepo_SubscribePodEvents_DoneWhileOutFull(t *testing.T) {
 // TestIsPodRunning_WaitingAndNotRunning 补齐 IsPodRunning 的两个剩余分支：
 // 容器处于 Waiting 态（取 Waiting.Reason/Message）与无容器状态（"pod not running."）。
 func TestIsPodRunning_WaitingAndNotRunning(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -1844,7 +1803,6 @@ func TestIsPodRunning_WaitingAndNotRunning(t *testing.T) {
 
 // TestFindDefaultContainer_NoContainers 补齐零容器时返回 "未找到容器" 的分支。
 func TestFindDefaultContainer_NoContainers(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -1869,7 +1827,6 @@ func TestFindDefaultContainer_NoContainers(t *testing.T) {
 // 非法 selector 解析跳过、informer List 失败跳过。LabelSelectorAsSelector
 // 错误分支不可达（入参恒来自 ParseToLabelSelector，见实现处注释）。
 func TestListPodsBySelectors(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -1959,7 +1916,6 @@ func newMetricsFake(pms ...*v1beta1.PodMetrics) *fake2.Clientset {
 
 // TestK8sRepo_AddTlsSecret 覆盖创建 TLS secret 的端口。
 func TestK8sRepo_AddTlsSecret(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -1981,7 +1937,6 @@ func TestK8sRepo_AddTlsSecret(t *testing.T) {
 
 // TestK8sRepo_GetPodMetrics 覆盖单 Pod 指标查询端口。
 func TestK8sRepo_GetPodMetrics(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -2001,7 +1956,6 @@ func TestK8sRepo_GetPodMetrics(t *testing.T) {
 // TestK8sRepo_GetAllPodMetrics 覆盖按 PodSelectors 聚合集群指标：
 // 空选择器返回 nil、命中聚合、selector 无匹配跳过。
 func TestK8sRepo_GetAllPodMetrics(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -2039,7 +1993,6 @@ func TestK8sRepo_GetAllPodMetrics(t *testing.T) {
 
 // TestK8sRepo_GetAllPodMetrics_SelectorError 覆盖 selector 解析失败跳过分支（k8s.go 257-260）。
 func TestK8sRepo_GetAllPodMetrics_SelectorError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -2058,7 +2011,6 @@ func TestK8sRepo_GetAllPodMetrics_SelectorError(t *testing.T) {
 
 // TestK8sRepo_GetAllPodMetrics_ListerError 覆盖 PodLister 查询失败跳过分支（k8s.go 263-265）。
 func TestK8sRepo_GetAllPodMetrics_ListerError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -2077,7 +2029,6 @@ func TestK8sRepo_GetAllPodMetrics_ListerError(t *testing.T) {
 
 // TestK8sRepo_GetAllPodMetrics_MetricsError 覆盖 metrics 查询失败跳过分支（k8s.go 273-275）。
 func TestK8sRepo_GetAllPodMetrics_MetricsError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -2101,7 +2052,6 @@ func TestK8sRepo_GetAllPodMetrics_MetricsError(t *testing.T) {
 
 // TestK8sRepo_GetCpuAndMemoryInNamespace 覆盖命名空间 CPU/内存汇总端口。
 func TestK8sRepo_GetCpuAndMemoryInNamespace(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -2122,7 +2072,6 @@ func TestK8sRepo_GetCpuAndMemoryInNamespace(t *testing.T) {
 
 // TestDefaultArchiver 覆盖归档/打开/删除三个端口的真实文件操作。
 func TestDefaultArchiver(t *testing.T) {
-	t.Parallel()
 	dir := t.TempDir()
 	src := filepath.Join(dir, "a.txt")
 	require.NoError(t, os.WriteFile(src, []byte("hi"), 0o644))
@@ -2217,7 +2166,6 @@ func execDrain(ec *MockExecutor) {
 
 // TestCopyFromPod_pwdError 覆盖 pwd Execute 失败的错误分支。
 func TestCopyFromPod_pwdError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2236,7 +2184,6 @@ func TestCopyFromPod_pwdError(t *testing.T) {
 // TestCopyFromPod_invalidPath 覆盖 FilePath 不在 pwd 前缀之下的错误分支
 // pwd 返回相对路径 "a"，绝对路径 /p 前缀不匹配。
 func TestCopyFromPod_invalidPath(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2257,7 +2204,6 @@ func TestCopyFromPod_invalidPath(t *testing.T) {
 // TestCopyFromPod_fileCopyError 覆盖归档复制失败分支：err 非 nil 触发
 // defer 里的 up.Delete(file.Name())并返回错误。
 func TestCopyFromPod_fileCopyError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2285,7 +2231,6 @@ func TestCopyFromPod_fileCopyError(t *testing.T) {
 
 // TestCopyFromPod_statError 覆盖归档成功后 file.Stat 失败的错误分支。
 func TestCopyFromPod_statError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2313,7 +2258,6 @@ func TestCopyFromPod_statError(t *testing.T) {
 
 // TestK8sRepo_CopyFileToPod_GetError 覆盖 CopyFileToPod 先查文件记录失败的分支
 func TestK8sRepo_CopyFileToPod_GetError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockData := NewMockDataStore(m)
@@ -2327,7 +2271,6 @@ func TestK8sRepo_CopyFileToPod_GetError(t *testing.T) {
 // TestK8sRepo_CopyFileToPod 覆盖 CopyFileToPod 全链路：真实归档 + mock
 // executor/uploader，落到 fileRepo.Update。
 func TestK8sRepo_CopyFileToPod(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2363,7 +2306,6 @@ func TestK8sRepo_CopyFileToPod(t *testing.T) {
 // TestK8sRepo_CopyToPod_SizeExceeded 覆盖 copyToPod 超过 maxUploadSize 的错误分支
 // 文件大小超限直接返回，不进入下载/打包。
 func TestK8sRepo_CopyToPod_SizeExceeded(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2385,7 +2327,6 @@ func TestK8sRepo_CopyToPod_SizeExceeded(t *testing.T) {
 // TestK8sRepo_CopyToPod_NonLocalReadError 覆盖非 Local 类型下载远程文件失败的错误分支
 // uploader.Read 返回错误，拷贝在进入打包前终止。
 func TestK8sRepo_CopyToPod_NonLocalReadError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2409,7 +2350,6 @@ func TestK8sRepo_CopyToPod_NonLocalReadError(t *testing.T) {
 // TestK8sRepo_CopyToPod_NonLocalPutError 覆盖非 Local 类型 Put 到本地失败的错误分支
 // Read 成功但 Exists 不存在，Put 报错即返回。
 func TestK8sRepo_CopyToPod_NonLocalPutError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2440,7 +2380,6 @@ func TestK8sRepo_CopyToPod_NonLocalPutError(t *testing.T) {
 // Read → Exists→Delete → Put → 本地打包 → 上传容器。
 // localUploader 与 uploader 同 mock：本地落地路径需真实文件供归档读取。
 func TestK8sRepo_CopyToPod_NonLocal(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2488,7 +2427,6 @@ func TestK8sRepo_CopyToPod_NonLocal(t *testing.T) {
 
 // TestK8sRepo_CopyToPod_StatError 覆盖 uploader.Stat 失败的错误分支。
 func TestK8sRepo_CopyToPod_StatError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2507,7 +2445,6 @@ func TestK8sRepo_CopyToPod_StatError(t *testing.T) {
 
 // TestK8sRepo_CopyToPod_ArchiveError 覆盖归档失败的错误分支。
 func TestK8sRepo_CopyToPod_ArchiveError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2530,7 +2467,6 @@ func TestK8sRepo_CopyToPod_ArchiveError(t *testing.T) {
 
 // TestK8sRepo_CopyToPod_OpenError 覆盖归档打开失败的错误分支。
 func TestK8sRepo_CopyToPod_OpenError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2555,7 +2491,6 @@ func TestK8sRepo_CopyToPod_OpenError(t *testing.T) {
 // Open 返回读即报错的 reader，goroutine 内 io.Copy 出错仅打日志，
 // Execute 仍照常执行（mock 消费 Stdin）。
 func TestK8sRepo_CopyToPod_IOCopyError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2582,7 +2517,6 @@ func TestK8sRepo_CopyToPod_IOCopyError(t *testing.T) {
 // TestK8sRepo_CopyFileToPod_UpdateError 覆盖 CopyFileToPod 最后写文件记录失败的分支
 // copyToPod 成功后 fileRepo.Update 返回错误。
 func TestK8sRepo_CopyFileToPod_UpdateError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockUploader := uploader.NewMockUploader(m)
@@ -2714,7 +2648,6 @@ func newK8sRepoWithClient(mockData *MockDataStore, c *K8sClient) *k8sRepo {
 }
 
 func TestK8sRepo_ListReplicaSets(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	rs := &appsv1.ReplicaSet{ObjectMeta: metav1.ObjectMeta{Name: "web-abc", Namespace: "ns"}}
@@ -2733,7 +2666,6 @@ func TestK8sRepo_ListReplicaSets(t *testing.T) {
 }
 
 func TestK8sRepo_GetDeployment(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	dep := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "web", Namespace: "ns"}}
@@ -2750,7 +2682,6 @@ func TestK8sRepo_GetDeployment(t *testing.T) {
 }
 
 func TestK8sRepo_GetStatefulSet(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	sts := &appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "db", Namespace: "ns"}}
@@ -2766,7 +2697,6 @@ func TestK8sRepo_GetStatefulSet(t *testing.T) {
 }
 
 func TestK8sRepo_GetDaemonSet(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	ds := &appsv1.DaemonSet{ObjectMeta: metav1.ObjectMeta{Name: "agent", Namespace: "ns"}}
@@ -2784,7 +2714,6 @@ func TestK8sRepo_GetDaemonSet(t *testing.T) {
 // TestK8sRepo_GetWorkloadsByManifest 覆盖从 manifest 解析三类工作负载：Deployment/STS/DS
 // 各识别一个，Service/无法解码片段跳过。
 func TestK8sRepo_GetWorkloadsByManifest(t *testing.T) {
-	t.Parallel()
 	kr := &k8sRepo{logger: mlog.NewForConfig(nil)}
 	deployments, statefulSets, daemonSets := kr.GetWorkloadsByManifest([]string{
 		dedent.Dedent(`
@@ -2833,7 +2762,6 @@ func TestK8sRepo_GetWorkloadsByManifest(t *testing.T) {
 // TestK8sRepo_ClusterBoard 集群看板快照：一次拉取节点/节点指标/命名空间/Pod/Pod 指标，
 // fake 客户端注入全量数据后断言各切片完整落位。
 func TestK8sRepo_ClusterBoard(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -2924,7 +2852,6 @@ func TestK8sRepo_ClusterBoard(t *testing.T) {
 // TestK8sRepo_ClusterBoard_Cache 覆盖 30s 缓存语义：force=false 首次调用触发 List 并回填，
 // 二次调用命中缓存不再触发 List；force=true 强制刷新重新触发 List（cron 预热路径）。
 func TestK8sRepo_ClusterBoard_Cache(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -2964,7 +2891,6 @@ func TestK8sRepo_ClusterBoard_Cache(t *testing.T) {
 // TestK8sRepo_ClusterBoard_UnmarshalError 覆盖缓存值损坏（非合法 JSON）时反序列化
 // 失败整体上抛，不产生半成品快照（防御缓存被外部污染的分支）。
 func TestK8sRepo_ClusterBoard_UnmarshalError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	cache := NewMockCache(m)
@@ -2981,7 +2907,6 @@ func TestK8sRepo_ClusterBoard_UnmarshalError(t *testing.T) {
 // ResourceSnapshot=600s，锁死 Remember 的 seconds 参数。注意断言用字面契约值
 // （600）而非常量引用：若常量被误改，测试仍能抓住错配。
 func TestK8sRepo_CacheTTLs(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -2998,7 +2923,6 @@ func TestK8sRepo_CacheTTLs(t *testing.T) {
 
 // TestK8sRepo_ResourceSnapshot_UnmarshalError 同上：空间资源快照缓存损坏时反序列化失败上抛。
 func TestK8sRepo_ResourceSnapshot_UnmarshalError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	cache := NewMockCache(m)
@@ -3014,7 +2938,6 @@ func TestK8sRepo_ResourceSnapshot_UnmarshalError(t *testing.T) {
 // TestK8sRepo_ClusterBoard_Errors 集群看板各资源 List 失败整体上抛：任一环节失败
 // 返回 errs.Wrap 错误且快照为 nil，不产生半成品。
 func TestK8sRepo_ClusterBoard_Errors(t *testing.T) {
-	t.Parallel()
 	cases := []struct {
 		name            string
 		coreResource    string // fc 上注入失败 reactor 的资源；空串表示不注入
@@ -3056,7 +2979,6 @@ func TestK8sRepo_ClusterBoard_Errors(t *testing.T) {
 // TestK8sRepo_ResourceSnapshot 空间资源快照：拉 Running Pod、ReplicaSet 与其指标
 // 三段数据，Pod List 必须携带 status.phase=Running 字段选择器，切片完整落位。
 func TestK8sRepo_ResourceSnapshot(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -3113,7 +3035,6 @@ func TestK8sRepo_ResourceSnapshot(t *testing.T) {
 // TestK8sRepo_ResourceSnapshot_Errors 空间资源快照各 List 失败整体上抛：
 // Pod、ReplicaSet 与 Pod 指标任一环节失败均返回错误且快照为 nil，不产生半成品。
 func TestK8sRepo_ResourceSnapshot_Errors(t *testing.T) {
-	t.Parallel()
 	cases := []struct {
 		name            string
 		coreResource    string // fc 上注入失败 reactor 的资源；空串表示不注入

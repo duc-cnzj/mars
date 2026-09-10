@@ -20,9 +20,7 @@ import (
 // encodeQuery 全字段分派：bool/enum/int/uint/float/double/bytes/嵌套/重复 bool，
 // 以及 proto3 optional 零值跳过。用真实 proto 消息逐 kind 验证。
 func Test_encodeQuery_AllKinds(t *testing.T) {
-	t.Parallel()
 	t.Run("bool+enum+int32+optional zero-skip", func(t *testing.T) {
-		t.Parallel()
 		// atomic=true 走 scalarString bool true；type 枚举走 enum 分支；namespace_id 走 int32。
 		got := encodeQuery(&websocket.CreateProjectInput{
 			Type:        websocket.Type_CreateProject,
@@ -37,7 +35,6 @@ func Test_encodeQuery_AllKinds(t *testing.T) {
 	})
 
 	t.Run("optional零值仍被Range枚举并跳过", func(t *testing.T) {
-		t.Parallel()
 		// proto3 optional 显式置零会出现在 Range 里 → appendQuery 的 isZeroScalar return true。
 		// 结果应不含 atomic（零值跳过）。
 		got := encodeQuery(&websocket.CreateProjectInput{Atomic: ptr(false)})
@@ -47,7 +44,6 @@ func Test_encodeQuery_AllKinds(t *testing.T) {
 	})
 
 	t.Run("uint32+bytes", func(t *testing.T) {
-		t.Parallel()
 		got := encodeQuery(&websocket.TerminalMessage{
 			Op:     "resize",
 			Height: 24,
@@ -61,7 +57,6 @@ func Test_encodeQuery_AllKinds(t *testing.T) {
 	})
 
 	t.Run("double", func(t *testing.T) {
-		t.Parallel()
 		got := encodeQuery(&metrics.TopPodResponse{Cpu: 1.5, Memory: 2.5})
 		for _, want := range []string{"cpu=1.5", "memory=2.5"} {
 			if !strings.Contains(got, want) {
@@ -71,7 +66,6 @@ func Test_encodeQuery_AllKinds(t *testing.T) {
 	})
 
 	t.Run("嵌套消息带prefix递归", func(t *testing.T) {
-		t.Parallel()
 		got := encodeQuery(&websocket.WsMetadataResponse{
 			Metadata: &websocket.Metadata{Id: "x", Type: websocket.Type_SetUid},
 		})
@@ -85,7 +79,6 @@ func Test_encodeQuery_AllKinds(t *testing.T) {
 
 // encodeQuery(nil) → 空串。
 func Test_encodeQuery_NilMessage(t *testing.T) {
-	t.Parallel()
 	if got := encodeQuery(nil); got != "" {
 		t.Errorf("got %q, want empty", got)
 	}
@@ -93,7 +86,6 @@ func Test_encodeQuery_NilMessage(t *testing.T) {
 
 // 动态消息合成 float32 / repeated bool 字段（全仓 proto 无此类字段，用 descriptor 合成直测）。
 func Test_encodeQuery_DynamicKinds(t *testing.T) {
-	t.Parallel()
 	fd := &descriptorpb.FileDescriptorProto{
 		Syntax:  strPtr("proto3"),
 		Name:    strPtr("query_kinds.proto"),
@@ -131,7 +123,6 @@ func Test_encodeQuery_DynamicKinds(t *testing.T) {
 
 // isZeroScalar 各 kind 零值判定（纯函数直测，覆盖 proto3 下 Range 枚举不到的分支）。
 func Test_isZeroScalar(t *testing.T) {
-	t.Parallel()
 	field := func(m protoreflect.Message, name string) protoreflect.FieldDescriptor {
 		return m.Descriptor().Fields().ByName(protoreflect.Name(name))
 	}
@@ -168,7 +159,6 @@ func Test_isZeroScalar(t *testing.T) {
 
 // scalarString 各 kind 序列化（纯函数直测，覆盖 encodeQuery 枚举不到的分支）。
 func Test_scalarString(t *testing.T) {
-	t.Parallel()
 	field := func(m protoreflect.Message, name string) protoreflect.FieldDescriptor {
 		return m.Descriptor().Fields().ByName(protoreflect.Name(name))
 	}
@@ -206,7 +196,6 @@ func Test_scalarString(t *testing.T) {
 
 // protojson.Marshal 失败：proto3 string 字段含非法 UTF-8 → Marshal 返回 ErrInvalidUTF8。
 func TestDoReq_MarshalError(t *testing.T) {
-	t.Parallel()
 	cli, err := NewClient("http://example.com")
 	if err != nil {
 		t.Fatal(err)
@@ -221,7 +210,6 @@ func TestDoReq_MarshalError(t *testing.T) {
 
 // 2xx 且 resp 为 nil：doReq 直接返回 nil（无响应绑定）。
 func TestDoReq_NilResponse(t *testing.T) {
-	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{}`))
 	})
@@ -238,7 +226,6 @@ func TestDoReq_NilResponse(t *testing.T) {
 
 // 2xx 但读 body 失败：io.ReadAll error。
 func TestDoReq_ReadBodyError(t *testing.T) {
-	t.Parallel()
 	cli, err := NewClient("http://example.com", WithHTTPClient(&http.Client{Transport: bodyErrTransport{}}))
 	if err != nil {
 		t.Fatal(err)

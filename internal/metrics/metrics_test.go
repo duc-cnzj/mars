@@ -34,7 +34,6 @@ var expectedFamilies = []string{
 // 断言 16 个指标家族全部出现且 Help 文案非空。
 // 覆盖的是"注册了且可收集"这一完整链路，而不是像 assert.NotNil 那样只验证对象非空。
 func TestNewRegistry(t *testing.T) {
-	t.Parallel()
 	registry := NewRegistry()
 
 	// 给每个指标写一个样本，保证 Gather 时系列必然存在。

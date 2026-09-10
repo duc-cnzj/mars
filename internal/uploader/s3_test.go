@@ -98,7 +98,6 @@ func newTestS3WithDisk(t *testing.T, fake *fakeMinio, root string) (*s3Uploader,
 }
 
 func TestNewS3(t *testing.T) {
-	t.Parallel()
 	up := newS3(nil, "bkt", nil, "root")
 	assert.Implements(t, (*Uploader)(nil), up)
 	assert.Equal(t, "root", up.(*s3Uploader).rootDir)
@@ -108,7 +107,6 @@ func TestNewS3(t *testing.T) {
 }
 
 func TestS3_Type(t *testing.T) {
-	t.Parallel()
 	up := newS3(nil, "bkt", nil, "root")
 
 	assert.Equal(t, schematype.S3, up.Type())
@@ -173,7 +171,6 @@ func TestS3_DeleteDir(t *testing.T) {
 }
 
 func TestS3_DirSize(t *testing.T) {
-	t.Parallel()
 	t.Run("sum sizes", func(t *testing.T) {
 		s3u := newTestS3(&fakeMinio{
 			listFn: func(string) <-chan minio.ObjectInfo {
@@ -227,7 +224,6 @@ func TestS3_Delete(t *testing.T) {
 }
 
 func TestS3_Exists(t *testing.T) {
-	t.Parallel()
 	t.Run("exists", func(t *testing.T) {
 		s3u := newTestS3(&fakeMinio{statFn: func(string, string) (minio.ObjectInfo, error) {
 			return minio.ObjectInfo{}, nil
@@ -246,14 +242,12 @@ func TestS3_Exists(t *testing.T) {
 }
 
 func TestS3_MkDir(t *testing.T) {
-	t.Parallel()
 	up := newS3(nil, "bkt", nil, "root")
 
 	assert.NoError(t, up.MkDir("", true))
 }
 
 func TestS3_Read(t *testing.T) {
-	t.Parallel()
 	t.Run("not exists", func(t *testing.T) {
 		s3u := newTestS3(&fakeMinio{statFn: func(string, string) (minio.ObjectInfo, error) {
 			return minio.ObjectInfo{}, errors.New("not found")
@@ -292,14 +286,12 @@ func TestS3_Read(t *testing.T) {
 }
 
 func TestS3_AbsolutePath(t *testing.T) {
-	t.Parallel()
 	up := newS3(nil, "bkt", nil, "data")
 
 	assert.Equal(t, "data/aaa", up.AbsolutePath("aaa"))
 }
 
 func TestS3_Stat(t *testing.T) {
-	t.Parallel()
 	t.Run("ok", func(t *testing.T) {
 		tm := time.Now()
 		s3u := newTestS3(&fakeMinio{statFn: func(string, object string) (minio.ObjectInfo, error) {
@@ -368,7 +360,6 @@ func TestS3_Put(t *testing.T) {
 }
 
 func TestS3_uploadToS3(t *testing.T) {
-	t.Parallel()
 	t.Run("ok", func(t *testing.T) {
 		var gotBucket, gotObject, gotLocal string
 		s3u := newTestS3(&fakeMinio{fputFn: func(bucket, object, localPath string) (minio.UploadInfo, error) {
@@ -396,7 +387,6 @@ func TestS3_uploadToS3(t *testing.T) {
 }
 
 func TestS3_AllDirectoryFiles(t *testing.T) {
-	t.Parallel()
 	t.Run("ok", func(t *testing.T) {
 		s3u := newTestS3(&fakeMinio{listFn: func(string) <-chan minio.ObjectInfo {
 			return listOf(
@@ -459,7 +449,6 @@ func TestS3_NewFile(t *testing.T) {
 }
 
 func TestS3_getPath(t *testing.T) {
-	t.Parallel()
 	s3u := &s3Uploader{rootDir: "data"}
 
 	assert.Equal(t, "data/a", s3u.getPath("a"))
@@ -467,7 +456,6 @@ func TestS3_getPath(t *testing.T) {
 }
 
 func TestS3_root(t *testing.T) {
-	t.Parallel()
 	s3u := &s3Uploader{rootDir: "data"}
 	assert.Equal(t, "data", s3u.root())
 
@@ -476,21 +464,18 @@ func TestS3_root(t *testing.T) {
 }
 
 func Test_s3File_Name(t *testing.T) {
-	t.Parallel()
 	s3f := &s3File{name: "aaa"}
 
 	assert.Equal(t, "aaa", s3f.Name())
 }
 
 func Test_s3OsFileInfo_Name(t *testing.T) {
-	t.Parallel()
 	info := &s3OsFileInfo{name: "aaa"}
 
 	assert.Equal(t, "aaa", info.Name())
 }
 
 func Test_s3File_Seek(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	file := NewMockFile(m)
@@ -606,7 +591,6 @@ func Test_s3File_Close(t *testing.T) {
 // Test_minioClient_GetObject 覆盖 minioClient 适配器的转发路径：连接必拒的端点
 // 必然返回错误，无需真实 minio 服务，即可验证 *minio.Client 的 GetObject 被正确包装。
 func Test_minioClient_GetObject(t *testing.T) {
-	t.Parallel()
 	cli, err := minio.New("127.0.0.1:1", &minio.Options{
 		Creds:  credentials.NewStaticV4("k", "s", ""),
 		Secure: false,

@@ -27,7 +27,6 @@ import (
 )
 
 func TestNewContainerSvc(t *testing.T) {
-	t.Parallel()
 	svc, _ := newContainerSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.eventBiz)
@@ -37,7 +36,6 @@ func TestNewContainerSvc(t *testing.T) {
 }
 
 func Test_containerSvc_IsPodRunning(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -52,7 +50,6 @@ func Test_containerSvc_IsPodRunning(t *testing.T) {
 }
 
 func Test_containerSvc_IsPodRunning_PermissionDenied(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
@@ -64,7 +61,6 @@ func Test_containerSvc_IsPodRunning_PermissionDenied(t *testing.T) {
 }
 
 func Test_containerSvc_IsPodExists(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -79,7 +75,6 @@ func Test_containerSvc_IsPodExists(t *testing.T) {
 }
 
 func Test_containerSvc_IsPodExists_Fail(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -94,7 +89,6 @@ func Test_containerSvc_IsPodExists_Fail(t *testing.T) {
 }
 
 func Test_containerSvc_IsPodExists_NotFound(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -110,7 +104,6 @@ func Test_containerSvc_IsPodExists_NotFound(t *testing.T) {
 }
 
 func TestContainerSvc_ContainerLog_PodNotFound(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -124,7 +117,6 @@ func TestContainerSvc_ContainerLog_PodNotFound(t *testing.T) {
 }
 
 func TestContainerSvc_ContainerLog_PodPending(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -138,7 +130,6 @@ func TestContainerSvc_ContainerLog_PodPending(t *testing.T) {
 }
 
 func TestContainerSvc_ContainerLog_PodRunning(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -159,7 +150,6 @@ func TestContainerSvc_ContainerLog_PodRunning(t *testing.T) {
 // 终止（Succeeded/Failed）pod 的日志同样可能巨大，必须与 Running 一样只取尾部，
 // 否则全量读进内存有 OOM 风险。锁定 TailLines 恒被设置的行为。
 func TestContainerSvc_ContainerLog_PodSucceeded_TailLines(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -178,7 +168,6 @@ func TestContainerSvc_ContainerLog_PodSucceeded_TailLines(t *testing.T) {
 }
 
 func TestContainerSvc_ContainerLog_GetPodLogs_error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -193,7 +182,6 @@ func TestContainerSvc_ContainerLog_GetPodLogs_error(t *testing.T) {
 }
 
 func TestContainerSvc_ContainerLog_PodPending1(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -219,7 +207,6 @@ func TestContainerSvc_ContainerLog_PodPending1(t *testing.T) {
 }
 
 func TestContainerSvc_ContainerLog_Pending_EventFilterIsolation(t *testing.T) {
-	t.Parallel()
 	// 回归防护：Pending + ShowEvents 时，只收集「本 pod 且 Kind==Pod」的事件，
 	// 其他 pod / 其他 Kind 的事件不得混入（隔离语义）。改坏过滤条件
 	// （去掉 Kind 或 pod 名判断）时此测试 FAIL。
@@ -265,7 +252,6 @@ func (l *logStreamServer) Context() context.Context {
 }
 
 func TestContainerSvc_CopyToPod_PodNotRunning(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -282,7 +268,6 @@ func TestContainerSvc_CopyToPod_PodNotRunning(t *testing.T) {
 }
 
 func TestContainerSvc_CopyToPod_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -313,7 +298,6 @@ func TestContainerSvc_CopyToPod_Success(t *testing.T) {
 	assert.Nil(t, err)
 }
 func TestContainerSvc_CopyToPod_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -340,7 +324,6 @@ func TestContainerSvc_CopyToPod_Error(t *testing.T) {
 // 与 StreamCopyToPod 的"空则找默认"语义对齐。去掉 ResolveContainer 时本测试
 // 会因 FindDefaultContainer 未被调用而失败。
 func TestContainerSvc_CopyToPod_DefaultContainer(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -373,7 +356,6 @@ func TestContainerSvc_CopyToPod_DefaultContainer(t *testing.T) {
 
 // CopyToPod 在"空 container + 默认容器解析失败"时 fail-fast：不触达 CopyFileToPod。
 func TestContainerSvc_CopyToPod_ResolveContainerError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -391,7 +373,6 @@ func TestContainerSvc_CopyToPod_ResolveContainerError(t *testing.T) {
 }
 
 func TestContainerSvc_StreamContainerLog_PodNotFound(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -405,7 +386,6 @@ func TestContainerSvc_StreamContainerLog_PodNotFound(t *testing.T) {
 }
 
 func TestContainerSvc_StreamContainerLog_PodPending(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -419,7 +399,6 @@ func TestContainerSvc_StreamContainerLog_PodPending(t *testing.T) {
 }
 
 func TestContainerSvc_StreamContainerLog_PodRunning(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -441,7 +420,6 @@ func TestContainerSvc_StreamContainerLog_PodRunning(t *testing.T) {
 }
 
 func TestContainerSvc_StreamContainerLog_PodSucceeded(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -459,7 +437,6 @@ func TestContainerSvc_StreamContainerLog_PodSucceeded(t *testing.T) {
 
 // scannerText 回调里 Send 失败（客户端断连）时只打日志，scannerText 仍返回 nil。
 func TestContainerSvc_StreamContainerLog_SendErrorInScanner(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -476,7 +453,6 @@ func TestContainerSvc_StreamContainerLog_SendErrorInScanner(t *testing.T) {
 }
 
 func TestContainerSvc_StreamContainerLog_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -492,7 +468,6 @@ func TestContainerSvc_StreamContainerLog_Error(t *testing.T) {
 }
 
 func TestContainerSvc_StreamContainerLog_PodFailed(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -509,7 +484,6 @@ func TestContainerSvc_StreamContainerLog_PodFailed(t *testing.T) {
 }
 
 func TestContainerSvc_StreamContainerLog_PodPending1(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -525,7 +499,6 @@ func TestContainerSvc_StreamContainerLog_PodPending1(t *testing.T) {
 }
 
 func TestContainerSvc_StreamContainerLog_PodPending_ShowEvents(t *testing.T) {
-	t.Parallel()
 	// 回归防护：Pending + ShowEvents=true 必须走 ContainerLog 事件路径（container.go
 	// line 300 的 PodPending 分组），把 ListEvents 过滤后的 Note 逐行流式下发；而非落到
 	// LogStream 实时流（实时流对 Pending pod 无日志可读，行为完全不同）。变异去掉
@@ -585,7 +558,6 @@ func (l *streamCopyToPodServer) Context() context.Context {
 }
 
 func TestContainerSvc_StreamCopyToPod_PodNotRunning(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -603,7 +575,6 @@ func TestContainerSvc_StreamCopyToPod_PodNotRunning(t *testing.T) {
 }
 
 func TestContainerSvc_StreamCopyToPod_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), gomock.Any()).Return(&biz.Namespace{}, nil).AnyTimes()
@@ -612,7 +583,6 @@ func TestContainerSvc_StreamCopyToPod_Error(t *testing.T) {
 }
 
 func TestContainerSvc_StreamCopyToPod_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -683,7 +653,6 @@ func (l *execOnceServer) Send(response *container.ExecResponse) error {
 }
 
 func TestContainerSvc_ExecOnce_PodNotRunning(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -698,7 +667,6 @@ func TestContainerSvc_ExecOnce_PodNotRunning(t *testing.T) {
 }
 
 func TestContainerSvc_ExecOnce_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -794,7 +762,6 @@ func (e *execOnceMatcher) String() string {
 // --- 分支补充:权限/错误路径 ---
 
 func Test_containerSvc_CheckNamespaceAccess_FindByNameError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(nil, errors.New("boom"))
@@ -804,7 +771,6 @@ func Test_containerSvc_CheckNamespaceAccess_FindByNameError(t *testing.T) {
 }
 
 func TestContainerSvc_ContainerLog_PermissionDenied(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
@@ -814,7 +780,6 @@ func TestContainerSvc_ContainerLog_PermissionDenied(t *testing.T) {
 }
 
 func TestContainerSvc_ContainerLog_GetPodError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -826,7 +791,6 @@ func TestContainerSvc_ContainerLog_GetPodError(t *testing.T) {
 }
 
 func TestContainerSvc_ContainerLog_Pending_ListEventsError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -840,7 +804,6 @@ func TestContainerSvc_ContainerLog_Pending_ListEventsError(t *testing.T) {
 }
 
 func TestContainerSvc_CopyToPod_PermissionDenied(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
@@ -853,7 +816,6 @@ func TestContainerSvc_CopyToPod_PermissionDenied(t *testing.T) {
 // 这里刻意不设 IsPodRunning/CopyFileToPod 期望，一旦实现吞掉加载错误继续往下走，
 // gomock 会以"未预期调用"直接失败。
 func TestContainerSvc_CopyToPod_GetByIDError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	fileRepo := mocks.fileRepo
@@ -873,7 +835,6 @@ func TestContainerSvc_CopyToPod_GetByIDError(t *testing.T) {
 // 且不得触达 IsPodRunning/CopyFileToPod——否则可把他人文件拷进自己可控的 pod 读走
 // （跨租户 IDOR）。去掉 RequireFileAccess 时，本测试会因 CopyFileToPod 未被 mock 而失败。
 func TestContainerSvc_CopyToPod_FileAccessDenied(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	fileRepo := mocks.fileRepo
@@ -892,7 +853,6 @@ func TestContainerSvc_CopyToPod_FileAccessDenied(t *testing.T) {
 
 // 回归防护：admin 不受文件归属限制（与 file.go/file_handler.go 的 admin 放行语义一致）。
 func TestContainerSvc_CopyToPod_FileAccessAdminAllowed(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -915,7 +875,6 @@ func TestContainerSvc_CopyToPod_FileAccessAdminAllowed(t *testing.T) {
 }
 
 func TestContainerSvc_StreamCopyToPod_PermissionDenied(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
@@ -927,7 +886,6 @@ func TestContainerSvc_StreamCopyToPod_PermissionDenied(t *testing.T) {
 }
 
 func TestContainerSvc_StreamCopyToPod_FindDefaultContainerError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -942,7 +900,6 @@ func TestContainerSvc_StreamCopyToPod_FindDefaultContainerError(t *testing.T) {
 }
 
 func TestContainerSvc_StreamCopyToPod_StreamUploadError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -958,7 +915,6 @@ func TestContainerSvc_StreamCopyToPod_StreamUploadError(t *testing.T) {
 }
 
 func TestContainerSvc_StreamCopyToPod_CopyError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -975,7 +931,6 @@ func TestContainerSvc_StreamCopyToPod_CopyError(t *testing.T) {
 }
 
 func TestContainerSvc_StreamContainerLog_PermissionDenied(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
@@ -985,7 +940,6 @@ func TestContainerSvc_StreamContainerLog_PermissionDenied(t *testing.T) {
 }
 
 func TestContainerSvc_StreamContainerLog_GetPodError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -997,7 +951,6 @@ func TestContainerSvc_StreamContainerLog_GetPodError(t *testing.T) {
 }
 
 func TestContainerSvc_StreamContainerLog_LogStreamError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -1022,7 +975,6 @@ func (l *logStreamServerErr) Context() context.Context {
 }
 
 func TestContainerSvc_StreamContainerLog_SendError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -1038,7 +990,6 @@ func TestContainerSvc_StreamContainerLog_SendError(t *testing.T) {
 }
 
 func TestContainerSvc_ExecOnce_PermissionDenied(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
@@ -1048,7 +999,6 @@ func TestContainerSvc_ExecOnce_PermissionDenied(t *testing.T) {
 }
 
 func TestContainerSvc_ExecOnce_FindDefaultContainerError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -1061,7 +1011,6 @@ func TestContainerSvc_ExecOnce_FindDefaultContainerError(t *testing.T) {
 }
 
 func TestContainerSvc_Exec_RecvError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), gomock.Any()).Return(&biz.Namespace{}, nil).AnyTimes()
@@ -1071,7 +1020,6 @@ func TestContainerSvc_Exec_RecvError(t *testing.T) {
 }
 
 func TestContainerSvc_Exec_PermissionDenied(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
@@ -1081,7 +1029,6 @@ func TestContainerSvc_Exec_PermissionDenied(t *testing.T) {
 }
 
 func TestContainerSvc_Exec_FindDefaultContainerError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -1094,7 +1041,6 @@ func TestContainerSvc_Exec_FindDefaultContainerError(t *testing.T) {
 }
 
 func Test_containerSvc_IsPodExists_PermissionDenied(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
@@ -1104,7 +1050,6 @@ func Test_containerSvc_IsPodExists_PermissionDenied(t *testing.T) {
 }
 
 func TestContainerSvc_StreamCopyToPod_MultipleMessages(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -1149,7 +1094,6 @@ func (l *streamCopyToPodServerRecvErr) Context() context.Context {
 }
 
 func TestContainerSvc_StreamCopyToPod_RecvError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -1166,7 +1110,6 @@ func TestContainerSvc_StreamCopyToPod_RecvError(t *testing.T) {
 }
 
 func TestContainerSvc_StreamCopyToPod_CtxCancelled(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	ctx, cancel := context.WithCancel(newAdminUserCtx())
 	cancel()
@@ -1214,7 +1157,6 @@ func (e *execServerAll) Context() context.Context {
 }
 
 func TestContainerSvc_Exec_SendError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -1247,7 +1189,6 @@ func TestContainerSvc_Exec_SendError(t *testing.T) {
 // recv goroutine 的首个 message 写入失败（reader 已被关闭）时，
 // 只能记录日志，不能 panic / 中断整个 Exec。
 func TestContainerSvc_Exec_FirstWriteError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -1314,7 +1255,6 @@ func (e *concurrentSendExecServer) Context() context.Context {
 }
 
 func TestContainerSvc_Exec_ConcurrentSend(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -1384,7 +1324,6 @@ func (e *concurrentSendExecOnceServer) Context() context.Context {
 }
 
 func TestContainerSvc_ExecOnce_ConcurrentSend(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -1438,7 +1377,6 @@ func (l *execOnceServerErr) Send(response *container.ExecResponse) error {
 }
 
 func TestContainerSvc_ExecOnce_SendError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -1464,7 +1402,6 @@ func TestContainerSvc_ExecOnce_SendError(t *testing.T) {
 }
 
 func TestContainerSvc_Exec_PodNotRunning(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -1476,7 +1413,6 @@ func TestContainerSvc_Exec_PodNotRunning(t *testing.T) {
 }
 
 func TestContainerSvc_Exec_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
@@ -1603,7 +1539,6 @@ func (r *recorderMock) Duration() time.Duration {
 }
 
 func TestScannerText_SingleLine(t *testing.T) {
-	t.Parallel()
 	var result string
 	err := scannerText("single line", func(s string) {
 		result = s
@@ -1613,7 +1548,6 @@ func TestScannerText_SingleLine(t *testing.T) {
 }
 
 func TestScannerText_MultipleLines(t *testing.T) {
-	t.Parallel()
 	var result []string
 	err := scannerText("line1\nline2\nline3", func(s string) {
 		result = append(result, s)
@@ -1623,7 +1557,6 @@ func TestScannerText_MultipleLines(t *testing.T) {
 }
 
 func TestScannerText_EmptyString(t *testing.T) {
-	t.Parallel()
 	var result []string
 	err := scannerText("", func(s string) {
 		result = append(result, s)
@@ -1634,7 +1567,6 @@ func TestScannerText_EmptyString(t *testing.T) {
 
 // 单行超过默认 64KB token 上限时必须仍能完整流式返回（容器日志常见超长行）。
 func TestScannerText_LongLine(t *testing.T) {
-	t.Parallel()
 	long := strings.Repeat("a", 100*1024) // 100KB > bufio.MaxScanTokenSize(64KB)
 	var result string
 	err := scannerText(long, func(s string) {
@@ -1645,7 +1577,6 @@ func TestScannerText_LongLine(t *testing.T) {
 }
 
 func Test_toValidUTF8String(t *testing.T) {
-	t.Parallel()
 	// 测试有效的 UTF-8 字符串
 	validUTF8 := []byte("hello, 世界")
 	assert.Equal(t, "hello, 世界", toValidUTF8String(validUTF8))
@@ -1670,7 +1601,6 @@ func Test_toValidUTF8String(t *testing.T) {
 }
 
 func Test_containerSvc_ForceDeletePod_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{}, nil).AnyTimes()
 	mocks.k8sRepo.EXPECT().DeletePod(gomock.Any(), "a", "b", gomock.Any()).Return(nil)
@@ -1687,7 +1617,6 @@ func Test_containerSvc_ForceDeletePod_Success(t *testing.T) {
 }
 
 func Test_containerSvc_ForceDeletePod_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{}, nil).AnyTimes()
 	mocks.k8sRepo.EXPECT().DeletePod(gomock.Any(), "a", "b", gomock.Any()).Return(errors.New("k8s delete failed"))
@@ -1701,7 +1630,6 @@ func Test_containerSvc_ForceDeletePod_Error(t *testing.T) {
 }
 
 func Test_containerSvc_ForceDeletePod_PermissionDenied(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newContainerSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
 	_, err := svc.ForceDeletePod(newOtherUserCtx(), &container.ForceDeletePodRequest{

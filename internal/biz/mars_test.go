@@ -12,7 +12,6 @@ import (
 )
 
 func TestGetMarsNamespaceWithPrefix(t *testing.T) {
-	t.Parallel()
 	ns := "dev"
 	prefix := "devops-"
 	expected := "devops-dev"
@@ -23,7 +22,6 @@ func TestGetMarsNamespaceWithPrefix(t *testing.T) {
 }
 
 func TestGetMarsNamespaceWithoutPrefix(t *testing.T) {
-	t.Parallel()
 	ns := "devops-dev"
 	prefix := "devops-"
 	expected := "devops-dev"
@@ -34,7 +32,6 @@ func TestGetMarsNamespaceWithoutPrefix(t *testing.T) {
 }
 
 func TestBranchPass(t *testing.T) {
-	t.Parallel()
 	cfg := &mars2.Config{
 		Branches: []string{"master"},
 	}
@@ -62,7 +59,6 @@ func TestBranchPass(t *testing.T) {
 }
 
 func TestParseInputConfig(t *testing.T) {
-	t.Parallel()
 	var tests = []struct {
 		IsSimpleEnv bool
 		ConfigField string
@@ -235,7 +231,6 @@ command:
 	for _, test := range tests {
 		tt := test
 		t.Run(tt.ConfigField, func(t *testing.T) {
-			t.Parallel()
 			res, err := biz.ParseInputConfig(&mars2.Config{
 				IsSimpleEnv: tt.IsSimpleEnv,
 				ValuesYaml:  tt.ValuesYaml,
@@ -252,7 +247,6 @@ command:
 }
 
 func TestIsRemoteLocalChartPath(t *testing.T) {
-	t.Parallel()
 	tests := []struct {
 		name  string
 		input string
@@ -276,7 +270,6 @@ func TestIsRemoteLocalChartPath(t *testing.T) {
 }
 
 func TestParseInputConfigWithInvalidYaml(t *testing.T) {
-	t.Parallel()
 	m := &mars2.Config{
 		ValuesYaml:  "command: [\"sh\", \"-c\", \"sleep 3600;exit\"]",
 		ConfigField: "command",
@@ -293,7 +286,6 @@ func TestParseInputConfigWithInvalidYaml(t *testing.T) {
 // 无规则返回原始状态；全部命中成功才 success；命中失败/运行/缺失各自按语义返回。
 // 原始状态用 StatusUnknown 区分，确保结果来自规则计算而非原样透传。
 func TestPipelinePassStatus(t *testing.T) {
-	t.Parallel()
 	job := func(stage, name string, status biz.Status) biz.PipelineJob {
 		return biz.PipelineJob{Name: name, Status: status, StageName: stage}
 	}

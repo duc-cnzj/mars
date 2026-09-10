@@ -49,7 +49,6 @@ func netErrClient(t *testing.T) *Client {
 
 // URL 构造失败：baseURL 非法 → NewRequestWithContext error。
 func TestFileSvc_UploadFile_BadURL(t *testing.T) {
-	t.Parallel()
 	_, err := badBaseClient(t).File().UploadFile(context.Background(), "a.txt", strings.NewReader("x"))
 	if err == nil {
 		t.Fatal("want error")
@@ -58,7 +57,6 @@ func TestFileSvc_UploadFile_BadURL(t *testing.T) {
 
 // 网络错误：hc.Do 失败。
 func TestFileSvc_UploadFile_NetworkError(t *testing.T) {
-	t.Parallel()
 	_, err := netErrClient(t).File().UploadFile(context.Background(), "a.txt", strings.NewReader("x"))
 	if err == nil {
 		t.Fatal("want error")
@@ -67,7 +65,6 @@ func TestFileSvc_UploadFile_NetworkError(t *testing.T) {
 
 // 源 reader 报错：multipart 复制文件内容失败 → io.Copy error。
 func TestFileSvc_UploadFile_CopyError(t *testing.T) {
-	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		t.Error("不应到达服务端")
 	})
@@ -84,7 +81,6 @@ func TestFileSvc_UploadFile_CopyError(t *testing.T) {
 
 // 带 token：Authorization 头正确注入（UploadFile token 分支）。
 func TestFileSvc_UploadFile_WithToken(t *testing.T) {
-	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("Authorization"); got != "Bearer tok" {
 			t.Errorf("Authorization = %q", got)
@@ -105,9 +101,7 @@ func TestFileSvc_UploadFile_WithToken(t *testing.T) {
 
 // 服务端返回非 201：gateway 错误体 → codes.Error；非 gateway 兜底 → unexpected status。
 func TestFileSvc_UploadFile_NonCreated(t *testing.T) {
-	t.Parallel()
 	t.Run("gateway错误体还原为codes.Error", func(t *testing.T) {
-		t.Parallel()
 		srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = w.Write([]byte(`{"code":5,"message":"not found"}`))
@@ -124,7 +118,6 @@ func TestFileSvc_UploadFile_NonCreated(t *testing.T) {
 	})
 
 	t.Run("code为0的body走unexpected兜底", func(t *testing.T) {
-		t.Parallel()
 		// {"code":0} 被 parseGatewayError 判为非法错误体 → 走到 errFromStatus 的兜底分支。
 		srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -144,7 +137,6 @@ func TestFileSvc_UploadFile_NonCreated(t *testing.T) {
 
 // 服务端返回 200（而非 201）：也应视为成功并解析 body（状态码判定回归）。
 func TestFileSvc_UploadFile_200(t *testing.T) {
-	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"id":42}`))
@@ -165,7 +157,6 @@ func TestFileSvc_UploadFile_200(t *testing.T) {
 
 // 服务端 201 但 body 不是合法 JSON：json.Unmarshal error。
 func TestFileSvc_UploadFile_BadJSON(t *testing.T) {
-	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte(`not-json`))
@@ -184,7 +175,6 @@ func TestFileSvc_UploadFile_BadJSON(t *testing.T) {
 
 // URL 构造失败。
 func TestFileSvc_DownloadFile_BadURL(t *testing.T) {
-	t.Parallel()
 	if _, _, err := badBaseClient(t).File().DownloadFile(context.Background(), 1); err == nil {
 		t.Fatal("want error")
 	}
@@ -192,7 +182,6 @@ func TestFileSvc_DownloadFile_BadURL(t *testing.T) {
 
 // 网络错误。
 func TestFileSvc_DownloadFile_NetworkError(t *testing.T) {
-	t.Parallel()
 	if _, _, err := netErrClient(t).File().DownloadFile(context.Background(), 1); err == nil {
 		t.Fatal("want error")
 	}
@@ -200,7 +189,6 @@ func TestFileSvc_DownloadFile_NetworkError(t *testing.T) {
 
 // 服务端 4xx：errFromStatus 还原错误。
 func TestFileSvc_DownloadFile_ServerError(t *testing.T) {
-	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"code":5,"message":"no such file"}`))
@@ -217,7 +205,6 @@ func TestFileSvc_DownloadFile_ServerError(t *testing.T) {
 
 // 带 token。
 func TestFileSvc_DownloadFile_WithToken(t *testing.T) {
-	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("Authorization"); got != "Bearer tok" {
 			t.Errorf("Authorization = %q", got)
@@ -241,7 +228,6 @@ func TestFileSvc_DownloadFile_WithToken(t *testing.T) {
 
 // URL 构造失败。
 func TestFileSvc_CopyFromPod_BadURL(t *testing.T) {
-	t.Parallel()
 	req := &CopyFromPodRequest{Namespace: "n", Pod: "p", Container: "c", FilePath: "/x"}
 	if _, _, err := badBaseClient(t).File().CopyFromPod(context.Background(), req); err == nil {
 		t.Fatal("want error")
@@ -250,7 +236,6 @@ func TestFileSvc_CopyFromPod_BadURL(t *testing.T) {
 
 // 网络错误。
 func TestFileSvc_CopyFromPod_NetworkError(t *testing.T) {
-	t.Parallel()
 	req := &CopyFromPodRequest{Namespace: "n", Pod: "p", Container: "c", FilePath: "/x"}
 	if _, _, err := netErrClient(t).File().CopyFromPod(context.Background(), req); err == nil {
 		t.Fatal("want error")
@@ -259,7 +244,6 @@ func TestFileSvc_CopyFromPod_NetworkError(t *testing.T) {
 
 // 服务端 4xx。
 func TestFileSvc_CopyFromPod_ServerError(t *testing.T) {
-	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(`{"code":3,"message":"bad req"}`))
@@ -277,7 +261,6 @@ func TestFileSvc_CopyFromPod_ServerError(t *testing.T) {
 
 // 带 token。
 func TestFileSvc_CopyFromPod_WithToken(t *testing.T) {
-	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("Authorization"); got != "Bearer tok" {
 			t.Errorf("Authorization = %q", got)
@@ -300,7 +283,6 @@ func TestFileSvc_CopyFromPod_WithToken(t *testing.T) {
 
 // 服务端返回 Content-Disposition：下载元信息解析 filename（CopyFromPod 侧 CD 分支）。
 func TestFileSvc_CopyFromPod_ContentDisposition(t *testing.T) {
-	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Disposition", `attachment; filename="b.txt"`)
 		_, _ = w.Write([]byte("data"))
@@ -323,7 +305,6 @@ func TestFileSvc_CopyFromPod_ContentDisposition(t *testing.T) {
 
 // 下载无 Content-Disposition 头：Filename 保持空，不应 panic。
 func TestFileSvc_DownloadFile_NoContentDisposition(t *testing.T) {
-	t.Parallel()
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("data"))
 	})

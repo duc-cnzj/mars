@@ -21,20 +21,17 @@ import (
 )
 
 func TestRemotePathString(t *testing.T) {
-	t.Parallel()
 	path := NewRemotePath("/test/path")
 	assert.Equal(t, "/test/path", path.String())
 }
 
 func TestStripTrailingSlash(t *testing.T) {
-	t.Parallel()
 	assert.Equal(t, "/test/path", stripTrailingSlash("/test/path/"))
 	assert.Equal(t, "/test/path", stripTrailingSlash("/test/path"))
 	assert.Equal(t, "", stripTrailingSlash(""))
 }
 
 func TestNewCopyOptions(t *testing.T) {
-	t.Parallel()
 	options := NewCopyOptions(mlog.NewForConfig(nil), &restclient.Config{}, fake.NewSimpleClientset(), 10, &bytes.Buffer{})
 	assert.NotNil(t, options)
 	assert.NotNil(t, options.logger)
@@ -85,7 +82,6 @@ func newTestCopyOptions(maxTries int) *CopyOptions {
 // TestCopyOptions_CopyFromPod_Success 覆盖 CopyFromPod 成功路径：execute 因 pod
 // 不存在快速失败、goroutine 关闭 pipe，主流程 io.Copy 读到 EOF 返回 nil。
 func TestCopyOptions_CopyFromPod_Success(t *testing.T) {
-	t.Parallel()
 	o := newTestCopyOptions(5)
 	err := o.CopyFromPod(context.Background(), spec(), newFakeUploadFile())
 	assert.NoError(t, err)
@@ -94,7 +90,6 @@ func TestCopyOptions_CopyFromPod_Success(t *testing.T) {
 // TestCopyOptions_CopyFromPod_MaxTriesZero 覆盖 initReadFrom 的 MaxTries==0 分支
 // （默认 tar 命令，不带 tail 续传）。
 func TestCopyOptions_CopyFromPod_MaxTriesZero(t *testing.T) {
-	t.Parallel()
 	o := newTestCopyOptions(0)
 	err := o.CopyFromPod(context.Background(), spec(), newFakeUploadFile())
 	assert.NoError(t, err)
@@ -104,7 +99,6 @@ func TestCopyOptions_CopyFromPod_MaxTriesZero(t *testing.T) {
 // reactor 让 goroutine 停在 execute（pipe 永不关闭），预取消 ctx 使 io.Copy
 // 立即拿到 ctx.Err() 而非 EOF，确定性触发 `if err != io.EOF`。
 func TestCopyOptions_CopyFromPod_CtxCanceled(t *testing.T) {
-	t.Parallel()
 	client := fake.NewSimpleClientset()
 	block := make(chan struct{})
 	client.PrependReactor("get", "pods", func(_ k8stesting.Action) (bool, runtime.Object, error) {
@@ -126,7 +120,6 @@ func TestCopyOptions_CopyFromPod_CtxCanceled(t *testing.T) {
 
 // TestTarPipe_Read_CtxDone 覆盖 Read 的 ctx.Done 早退分支。
 func TestTarPipe_Read_CtxDone(t *testing.T) {
-	t.Parallel()
 	pr, pw := io.Pipe()
 	defer pw.Close()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -140,7 +133,6 @@ func TestTarPipe_Read_CtxDone(t *testing.T) {
 
 // TestTarPipe_Read_EOF 覆盖 Read 的 io.EOF 分支（写端干净关闭）。
 func TestTarPipe_Read_EOF(t *testing.T) {
-	t.Parallel()
 	pr, pw := io.Pipe()
 	tp := &TarPipe{reader: pr, outStream: pw, ctx: context.Background(), o: newTestCopyOptions(5)}
 	_ = pw.Close()
@@ -152,7 +144,6 @@ func TestTarPipe_Read_EOF(t *testing.T) {
 
 // TestTarPipe_Read_Data 覆盖 Read 的正常数据分支（bytesRead 累加）。
 func TestTarPipe_Read_Data(t *testing.T) {
-	t.Parallel()
 	pr, pw := io.Pipe()
 	tp := &TarPipe{reader: pr, outStream: pw, ctx: context.Background(), o: newTestCopyOptions(5)}
 
@@ -172,7 +163,6 @@ func TestTarPipe_Read_Data(t *testing.T) {
 // TestTarPipe_Read_Retry 覆盖 Read 重试分支：CloseWithError 令 pipe 返回非 EOF
 // 错误，retries(0) < MaxTries(5) 走 initReadFrom 续传并重置 err。
 func TestTarPipe_Read_Retry(t *testing.T) {
-	t.Parallel()
 	pr, pw := io.Pipe()
 	tp := &TarPipe{
 		reader: pr, outStream: pw, ctx: context.Background(),
@@ -190,7 +180,6 @@ func TestTarPipe_Read_Retry(t *testing.T) {
 // TestTarPipe_Read_Drop 覆盖 Read 丢弃分支：MaxTries==0 时重试条件恒假，
 // 保留非 EOF 错误原样返回。
 func TestTarPipe_Read_Drop(t *testing.T) {
-	t.Parallel()
 	pr, pw := io.Pipe()
 	tp := &TarPipe{reader: pr, outStream: pw, ctx: context.Background(), o: newTestCopyOptions(0)}
 	_ = pw.CloseWithError(errors.New("boom"))
@@ -203,7 +192,6 @@ func TestTarPipe_Read_Drop(t *testing.T) {
 // TestCopyOptions_execute_ValidateError 覆盖 execute 的 Validate 失败分支：
 // 空 ExecOptions 使 Validate 报错并提前返回。
 func TestCopyOptions_execute_ValidateError(t *testing.T) {
-	t.Parallel()
 	o := newTestCopyOptions(5)
 	err := o.execute(&exec.ExecOptions{})
 	assert.Error(t, err)
@@ -212,7 +200,6 @@ func TestCopyOptions_execute_ValidateError(t *testing.T) {
 // TestCopyOptions_execute_RunError 覆盖 execute 的 Run 失败分支：options 齐全
 // 通过 Validate，Run 经 fake clientset Get 不存在的 pod 返回 NotFound。
 func TestCopyOptions_execute_RunError(t *testing.T) {
-	t.Parallel()
 	o := newTestCopyOptions(5)
 
 	options := &exec.ExecOptions{

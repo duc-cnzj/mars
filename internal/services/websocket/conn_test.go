@@ -15,7 +15,6 @@ import (
 )
 
 func TestWsConn_ID(t *testing.T) {
-	t.Parallel()
 	conn := &wsConn{
 		id: "id",
 	}
@@ -23,13 +22,11 @@ func TestWsConn_ID(t *testing.T) {
 }
 
 func TestWsConn_UID(t *testing.T) {
-	t.Parallel()
 	conn := &wsConn{uid: "uid"}
 	assert.Equal(t, "uid", conn.UID())
 }
 
 func TestWsConn_SetUser_GetUser(t *testing.T) {
-	t.Parallel()
 	conn := &wsConn{}
 	userInfo := &biz.UserInfo{Name: "testUser"}
 	conn.SetUser(userInfo)
@@ -37,7 +34,6 @@ func TestWsConn_SetUser_GetUser(t *testing.T) {
 }
 
 func TestWsConn_AddTask_RunTask_RemoveTask(t *testing.T) {
-	t.Parallel()
 	conn := &wsConn{taskManager: NewTaskManager(mlog.NewForConfig(nil))}
 	err := conn.AddCancelDeployTask("task1", func(err error) {})
 	assert.Nil(t, err)
@@ -52,7 +48,6 @@ func TestWsConn_AddTask_RunTask_RemoveTask(t *testing.T) {
 }
 
 func TestWebsocketManager_newWsConn(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	c := counter.NewCounter()
@@ -65,7 +60,6 @@ func TestWebsocketManager_newWsConn(t *testing.T) {
 }
 
 func TestWsConn_GetPtyHandler(t *testing.T) {
-	t.Parallel()
 	_, b := (&wsConn{
 		sessions: NewSessionMap(mlog.NewForConfig(nil)),
 	}).GetPtyHandler("sessionID")
@@ -73,7 +67,6 @@ func TestWsConn_GetPtyHandler(t *testing.T) {
 }
 
 func TestWsConn_SetPtyHandler(t *testing.T) {
-	t.Parallel()
 	w := &wsConn{
 		sessions: NewSessionMap(mlog.NewForConfig(nil)),
 	}
@@ -84,7 +77,6 @@ func TestWsConn_SetPtyHandler(t *testing.T) {
 }
 
 func TestWsConn_ClosePty(t *testing.T) {
-	t.Parallel()
 	w := &wsConn{
 		sessions: NewSessionMap(mlog.NewForConfig(nil)),
 	}
@@ -95,7 +87,6 @@ func TestWsConn_ClosePty(t *testing.T) {
 }
 
 func TestWsConn_CloseAndClean(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -125,7 +116,6 @@ func TestWsConn_CloseAndClean(t *testing.T) {
 // 本测试把 gauge 打到已知值 10，连续调用两次 CloseAndClean，
 // 断言：四个 mock 各只被调一次（gomock 默认 Times(1)），gauge 只递减到 9（而非 8）。
 func TestWsConn_CloseAndClean_Idempotent(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 

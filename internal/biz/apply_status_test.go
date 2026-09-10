@@ -88,7 +88,6 @@ func rsPodForTest(name, rsUID, waitingReason string) *corev1.Pod {
 // ---------- judgeDeploymentRollout ----------
 
 func TestJudgeDeploymentRollout_DesiredZero(t *testing.T) {
-	t.Parallel()
 	st, reason, fails := judgeDeploymentRollout(newDepForTest(0, 0, 0), nil, nil)
 	assert.Equal(t, types.Deploy_StatusDeployed, st)
 	assert.Contains(t, reason, "副本数为 0")
@@ -96,7 +95,6 @@ func TestJudgeDeploymentRollout_DesiredZero(t *testing.T) {
 }
 
 func TestJudgeDeploymentRollout_NotObserved(t *testing.T) {
-	t.Parallel()
 	dep := newDepForTest(1, 1, 1)
 	dep.Status.ObservedGeneration = 1 // < Generation(2)
 	st, reason, fails := judgeDeploymentRollout(dep, nil, nil)
@@ -106,7 +104,6 @@ func TestJudgeDeploymentRollout_NotObserved(t *testing.T) {
 }
 
 func TestJudgeDeploymentRollout_NoNewPods(t *testing.T) {
-	t.Parallel()
 	st, reason, fails := judgeDeploymentRollout(newDepForTest(0, 5, 5), nil, nil)
 	assert.Equal(t, types.Deploy_StatusDeploying, st)
 	assert.Contains(t, reason, "新版本 pod 尚未创建")
@@ -114,7 +111,6 @@ func TestJudgeDeploymentRollout_NoNewPods(t *testing.T) {
 }
 
 func TestJudgeDeploymentRollout_NewPodFailed(t *testing.T) {
-	t.Parallel()
 	dep := newDepForTest(1, 0, 1)
 	dep.UID = "dep"
 	rss := []*appsv1.ReplicaSet{newRSForTest("rs-new", "2", "dep")}
@@ -132,7 +128,6 @@ func TestJudgeDeploymentRollout_NewPodFailed(t *testing.T) {
 // TestJudgeDeploymentRollout_Progress 覆盖用户关切场景：5 个副本滚动中 3 个就绪，
 // 不应判 Deployed，而应返回 Deploying。
 func TestJudgeDeploymentRollout_Progress(t *testing.T) {
-	t.Parallel()
 	st, reason, fails := judgeDeploymentRollout(newDepForTest(3, 3, 5), nil, nil)
 	assert.Equal(t, types.Deploy_StatusDeploying, st)
 	assert.Contains(t, reason, "3/5")
@@ -140,7 +135,6 @@ func TestJudgeDeploymentRollout_Progress(t *testing.T) {
 }
 
 func TestJudgeDeploymentRollout_Deployed(t *testing.T) {
-	t.Parallel()
 	st, reason, fails := judgeDeploymentRollout(newDepForTest(3, 3, 3), nil, nil)
 	assert.Equal(t, types.Deploy_StatusDeployed, st)
 	assert.Empty(t, reason)
@@ -151,7 +145,6 @@ func TestJudgeDeploymentRollout_Deployed(t *testing.T) {
 // 未就绪（ContainerCreating），旧 pod 仍在运行撑起 AvailableReplicas——Deployment 计数
 // 满足 updated=available=desired 但新 pod 未 Ready，不得误判 Deployed。
 func TestJudgeDeploymentRollout_NewPodNotReady(t *testing.T) {
-	t.Parallel()
 	dep := newDepForTest(1, 1, 1) // UpdatedReplicas=1, AvailableReplicas=1, desired=1
 	dep.UID = "dep"
 	rss := []*appsv1.ReplicaSet{
@@ -169,7 +162,6 @@ func TestJudgeDeploymentRollout_NewPodNotReady(t *testing.T) {
 
 // TestJudgeDeploymentRollout_NewPodReady 覆盖滚动窗口收尾：新 pod 已 Ready 才判 Deployed。
 func TestJudgeDeploymentRollout_NewPodReady(t *testing.T) {
-	t.Parallel()
 	dep := newDepForTest(1, 1, 1)
 	dep.UID = "dep"
 	rss := []*appsv1.ReplicaSet{
@@ -187,7 +179,6 @@ func TestJudgeDeploymentRollout_NewPodReady(t *testing.T) {
 // ---------- judgeStatefulSetRollout ----------
 
 func TestJudgeStatefulSetRollout_DesiredZero(t *testing.T) {
-	t.Parallel()
 	st, reason, fails := judgeStatefulSetRollout(newStsForTest(0, 0, 0, "rev2"), nil)
 	assert.Equal(t, types.Deploy_StatusDeployed, st)
 	assert.Contains(t, reason, "副本数为 0")
@@ -195,7 +186,6 @@ func TestJudgeStatefulSetRollout_DesiredZero(t *testing.T) {
 }
 
 func TestJudgeStatefulSetRollout_NotObserved(t *testing.T) {
-	t.Parallel()
 	sts := newStsForTest(1, 1, 1, "rev2")
 	sts.Status.ObservedGeneration = 1
 	st, reason, fails := judgeStatefulSetRollout(sts, nil)
@@ -205,7 +195,6 @@ func TestJudgeStatefulSetRollout_NotObserved(t *testing.T) {
 }
 
 func TestJudgeStatefulSetRollout_NoNewPods(t *testing.T) {
-	t.Parallel()
 	st, reason, fails := judgeStatefulSetRollout(newStsForTest(0, 3, 3, "rev2"), nil)
 	assert.Equal(t, types.Deploy_StatusDeploying, st)
 	assert.Contains(t, reason, "新版本 pod 尚未创建")
@@ -214,7 +203,6 @@ func TestJudgeStatefulSetRollout_NoNewPods(t *testing.T) {
 
 // TestJudgeStatefulSetRollout_NewPodFailed 覆盖最新版本 pod（hash==updateRevision）崩溃 → Failed。
 func TestJudgeStatefulSetRollout_NewPodFailed(t *testing.T) {
-	t.Parallel()
 	sts := newStsForTest(1, 0, 1, "rev2")
 	pods := []*corev1.Pod{{
 		ObjectMeta: metav1.ObjectMeta{
@@ -236,7 +224,6 @@ func TestJudgeStatefulSetRollout_NewPodFailed(t *testing.T) {
 }
 
 func TestJudgeStatefulSetRollout_Progress(t *testing.T) {
-	t.Parallel()
 	st, reason, fails := judgeStatefulSetRollout(newStsForTest(2, 2, 3, "rev2"), nil)
 	assert.Equal(t, types.Deploy_StatusDeploying, st)
 	assert.Contains(t, reason, "2/3")
@@ -244,7 +231,6 @@ func TestJudgeStatefulSetRollout_Progress(t *testing.T) {
 }
 
 func TestJudgeStatefulSetRollout_Deployed(t *testing.T) {
-	t.Parallel()
 	st, reason, fails := judgeStatefulSetRollout(newStsForTest(2, 2, 2, "rev2"), nil)
 	assert.Equal(t, types.Deploy_StatusDeployed, st)
 	assert.Empty(t, reason)
@@ -254,7 +240,6 @@ func TestJudgeStatefulSetRollout_Deployed(t *testing.T) {
 // TestJudgeStatefulSetRollout_NewPodNotReady 覆盖 STS 滚动窗口期最新版本 pod 未 Ready：
 // 计数满足但新 pod 未就绪，不得误判 Deployed。
 func TestJudgeStatefulSetRollout_NewPodNotReady(t *testing.T) {
-	t.Parallel()
 	sts := newStsForTest(1, 1, 1, "rev2")
 	newPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: "sts-new", Namespace: "ns", Labels: map[string]string{appsv1.ControllerRevisionHashLabelKey: "rev2"}},
@@ -270,7 +255,6 @@ func TestJudgeStatefulSetRollout_NewPodNotReady(t *testing.T) {
 // ---------- judgeDaemonSetRollout ----------
 
 func TestJudgeDaemonSetRollout_DesiredZero(t *testing.T) {
-	t.Parallel()
 	st, reason, fails := judgeDaemonSetRollout(newDsForTest(0, 0, 0), nil)
 	assert.Equal(t, types.Deploy_StatusDeployed, st)
 	assert.Contains(t, reason, "无节点需调度")
@@ -278,7 +262,6 @@ func TestJudgeDaemonSetRollout_DesiredZero(t *testing.T) {
 }
 
 func TestJudgeDaemonSetRollout_NotObserved(t *testing.T) {
-	t.Parallel()
 	ds := newDsForTest(2, 2, 2)
 	ds.Status.ObservedGeneration = 1
 	st, reason, fails := judgeDaemonSetRollout(ds, nil)
@@ -288,7 +271,6 @@ func TestJudgeDaemonSetRollout_NotObserved(t *testing.T) {
 }
 
 func TestJudgeDaemonSetRollout_NoNewPods(t *testing.T) {
-	t.Parallel()
 	st, reason, fails := judgeDaemonSetRollout(newDsForTest(0, 3, 3), nil)
 	assert.Equal(t, types.Deploy_StatusDeploying, st)
 	assert.Contains(t, reason, "新版本 pod 尚未创建")
@@ -297,7 +279,6 @@ func TestJudgeDaemonSetRollout_NoNewPods(t *testing.T) {
 
 // TestJudgeDaemonSetRollout_NewPodFailed 覆盖最新 hash 组 pod 崩溃 → Failed。
 func TestJudgeDaemonSetRollout_NewPodFailed(t *testing.T) {
-	t.Parallel()
 	ds := newDsForTest(1, 0, 1)
 	pods := []*corev1.Pod{{
 		ObjectMeta: metav1.ObjectMeta{
@@ -319,7 +300,6 @@ func TestJudgeDaemonSetRollout_NewPodFailed(t *testing.T) {
 }
 
 func TestJudgeDaemonSetRollout_Progress(t *testing.T) {
-	t.Parallel()
 	st, reason, fails := judgeDaemonSetRollout(newDsForTest(1, 1, 3), nil)
 	assert.Equal(t, types.Deploy_StatusDeploying, st)
 	assert.Contains(t, reason, "1/3")
@@ -327,7 +307,6 @@ func TestJudgeDaemonSetRollout_Progress(t *testing.T) {
 }
 
 func TestJudgeDaemonSetRollout_Deployed(t *testing.T) {
-	t.Parallel()
 	st, reason, fails := judgeDaemonSetRollout(newDsForTest(3, 3, 3), nil)
 	assert.Equal(t, types.Deploy_StatusDeployed, st)
 	assert.Empty(t, reason)
@@ -337,7 +316,6 @@ func TestJudgeDaemonSetRollout_Deployed(t *testing.T) {
 // TestJudgeDaemonSetRollout_NewPodNotReady 覆盖 DS 滚动窗口期最新 hash 组 pod 未 Ready：
 // 计数满足但新 pod 未就绪，不得误判 Deployed。
 func TestJudgeDaemonSetRollout_NewPodNotReady(t *testing.T) {
-	t.Parallel()
 	ds := newDsForTest(1, 1, 1)
 	newPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: "ds-new", Namespace: "ns", CreationTimestamp: metav1.Time{Time: time.Now()}, Labels: map[string]string{appsv1.ControllerRevisionHashLabelKey: "hash-new"}},
@@ -353,7 +331,6 @@ func TestJudgeDaemonSetRollout_NewPodNotReady(t *testing.T) {
 // ---------- collectPodFailures ----------
 
 func TestCollectPodFailures_PodFailed(t *testing.T) {
-	t.Parallel()
 	pods := []*corev1.Pod{{
 		ObjectMeta: metav1.ObjectMeta{Name: "pod-failed"},
 		Status:     corev1.PodStatus{Phase: corev1.PodFailed, Reason: "Evicted", Message: "node full"},
@@ -368,7 +345,6 @@ func TestCollectPodFailures_PodFailed(t *testing.T) {
 }
 
 func TestCollectPodFailures_PodFailedNoReason(t *testing.T) {
-	t.Parallel()
 	refs := collectPodFailures([]*corev1.Pod{{
 		ObjectMeta: metav1.ObjectMeta{Name: "pod-failed"},
 		Status:     corev1.PodStatus{Phase: corev1.PodFailed},
@@ -379,7 +355,6 @@ func TestCollectPodFailures_PodFailedNoReason(t *testing.T) {
 }
 
 func TestCollectPodFailures_FatalWaiting(t *testing.T) {
-	t.Parallel()
 	for _, reason := range []string{"CrashLoopBackOff", "ImagePullBackOff", "CreateContainerConfigError", "InvalidImageName", "RunContainerError"} {
 		refs := collectPodFailures([]*corev1.Pod{rsPodForTest("p", "rs", reason)})
 		if assert.Len(t, refs, 1, "reason=%s", reason) {
@@ -389,7 +364,6 @@ func TestCollectPodFailures_FatalWaiting(t *testing.T) {
 }
 
 func TestCollectPodFailures_FatalTerminated(t *testing.T) {
-	t.Parallel()
 	for _, reason := range []string{"Error", "OOMKilled", "ContainerCannotRun"} {
 		pods := []*corev1.Pod{{
 			ObjectMeta: metav1.ObjectMeta{Name: "p"},
@@ -408,7 +382,6 @@ func TestCollectPodFailures_FatalTerminated(t *testing.T) {
 // TestCollectPodFailures_TransientIgnored 覆盖瞬时态不误判：ContainerCreating/ErrImagePull
 // 属拉镜像/创建中的过渡状态，不应报失败。
 func TestCollectPodFailures_TransientIgnored(t *testing.T) {
-	t.Parallel()
 	pods := []*corev1.Pod{
 		{
 			ObjectMeta: metav1.ObjectMeta{Name: "p"},
@@ -424,7 +397,6 @@ func TestCollectPodFailures_TransientIgnored(t *testing.T) {
 
 // TestPodAllContainersReady 覆盖无容器状态/任一容器未就绪/全部就绪三条分支。
 func TestPodAllContainersReady(t *testing.T) {
-	t.Parallel()
 	assert.False(t, podAllContainersReady(&corev1.Pod{})) // 无容器状态 → 未就绪
 	assert.False(t, podAllContainersReady(&corev1.Pod{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{
 		{Name: "web", Ready: false}, {Name: "sidecar", Ready: true},
@@ -436,7 +408,6 @@ func TestPodAllContainersReady(t *testing.T) {
 
 // TestPodReadyCount 覆盖空列表与混合就绪态的计数。
 func TestPodReadyCount(t *testing.T) {
-	t.Parallel()
 	pods := []*corev1.Pod{
 		{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{Name: "web", Ready: true}}}},
 		{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{Name: "web", Ready: false}}}},
@@ -449,7 +420,6 @@ func TestPodReadyCount(t *testing.T) {
 // ---------- 新版本 pod 定位辅助 ----------
 
 func TestLatestReplicaSet_PicksMaxRevision(t *testing.T) {
-	t.Parallel()
 	dep := newDepForTest(2, 2, 2)
 	dep.UID = "dep-uid"
 	rss := []*appsv1.ReplicaSet{
@@ -462,7 +432,6 @@ func TestLatestReplicaSet_PicksMaxRevision(t *testing.T) {
 }
 
 func TestLatestReplicaSet_IgnoresForeign(t *testing.T) {
-	t.Parallel()
 	dep := newDepForTest(1, 1, 1)
 	dep.UID = "dep-uid"
 	rss := []*appsv1.ReplicaSet{newRSForTest("rs-other", "99", "other-dep")}
@@ -470,12 +439,10 @@ func TestLatestReplicaSet_IgnoresForeign(t *testing.T) {
 }
 
 func TestLatestReplicaSet_Empty(t *testing.T) {
-	t.Parallel()
 	assert.Nil(t, latestReplicaSet(newDepForTest(0, 0, 0), nil))
 }
 
 func TestRevisionOf(t *testing.T) {
-	t.Parallel()
 	rs := newRSForTest("rs", "7", "dep")
 	assert.Equal(t, 7, revisionOf(rs))
 	rs.Annotations[deploymentRevisionAnnotation] = "abc"
@@ -484,7 +451,6 @@ func TestRevisionOf(t *testing.T) {
 }
 
 func TestDeploymentNewPods(t *testing.T) {
-	t.Parallel()
 	dep := newDepForTest(2, 2, 2)
 	dep.UID = "dep-uid"
 	rss := []*appsv1.ReplicaSet{
@@ -502,14 +468,12 @@ func TestDeploymentNewPods(t *testing.T) {
 }
 
 func TestDeploymentNewPods_NoLatestRS(t *testing.T) {
-	t.Parallel()
 	dep := newDepForTest(1, 1, 1)
 	dep.UID = "dep-uid"
 	assert.Nil(t, deploymentNewPods(dep, []*appsv1.ReplicaSet{newRSForTest("rs", "1", "other")}, []*corev1.Pod{rsPodForTest("p", "rs", "")}))
 }
 
 func TestStatefulSetNewPods(t *testing.T) {
-	t.Parallel()
 	sts := newStsForTest(2, 2, 2, "rev2")
 	pods := []*corev1.Pod{
 		{ObjectMeta: metav1.ObjectMeta{Name: "old", Labels: map[string]string{appsv1.ControllerRevisionHashLabelKey: "rev1"}}},
@@ -521,13 +485,11 @@ func TestStatefulSetNewPods(t *testing.T) {
 }
 
 func TestStatefulSetNewPods_EmptyRevision(t *testing.T) {
-	t.Parallel()
 	sts := newStsForTest(0, 0, 0, "")
 	assert.Nil(t, statefulSetNewPods(sts, nil))
 }
 
 func TestDaemonSetNewPods_NewestGroup(t *testing.T) {
-	t.Parallel()
 	now := time.Now()
 	pods := []*corev1.Pod{
 		{ObjectMeta: metav1.ObjectMeta{Name: "old", CreationTimestamp: metav1.Time{Time: now.Add(-time.Hour)}, Labels: map[string]string{appsv1.ControllerRevisionHashLabelKey: "old-hash"}}},
@@ -539,14 +501,12 @@ func TestDaemonSetNewPods_NewestGroup(t *testing.T) {
 }
 
 func TestDaemonSetNewPods_NoHashFallback(t *testing.T) {
-	t.Parallel()
 	pods := []*corev1.Pod{{ObjectMeta: metav1.ObjectMeta{Name: "p1"}}, {ObjectMeta: metav1.ObjectMeta{Name: "p2"}}}
 	got := daemonSetNewPods(pods)
 	assert.Len(t, got, 2)
 }
 
 func TestOwnedBy(t *testing.T) {
-	t.Parallel()
 	obj := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{OwnerReferences: []metav1.OwnerReference{{UID: "a"}, {UID: "b"}}}}
 	assert.True(t, ownedBy(obj, "a"))
 	assert.True(t, ownedBy(obj, "b"))
@@ -555,7 +515,6 @@ func TestOwnedBy(t *testing.T) {
 }
 
 func TestPodsOwnedBy(t *testing.T) {
-	t.Parallel()
 	pods := []*corev1.Pod{
 		rsPodForTest("m1", "rs", ""),
 		rsPodForTest("m2", "rs", ""),
@@ -568,7 +527,6 @@ func TestPodsOwnedBy(t *testing.T) {
 // ---------- formatReason / toDomainFailures ----------
 
 func TestFormatReason(t *testing.T) {
-	t.Parallel()
 	got := formatReason([]failedContainerRef{
 		{Pod: "p1", Container: "web", Reason: "CrashLoopBackOff"},
 		{Pod: "p2", Reason: "Evicted"},
@@ -577,7 +535,6 @@ func TestFormatReason(t *testing.T) {
 }
 
 func TestToDomainFailures(t *testing.T) {
-	t.Parallel()
 	got := toDomainFailures([]failedContainerRef{{Pod: "p", Container: "web", Reason: "Error", Message: "m"}}, "Deployment", "dep")
 	if assert.Len(t, got, 1) {
 		assert.Equal(t, "Deployment", got[0].Kind)
@@ -603,7 +560,6 @@ func (f *fakeStsK8sRepo) GetStatefulSet(namespace, name string) (*appsv1.Statefu
 }
 
 func TestCollectWorkloadOldPods_StatefulSet(t *testing.T) {
-	t.Parallel()
 	pods := []*corev1.Pod{
 		{ObjectMeta: metav1.ObjectMeta{Name: "sts-new", Namespace: "ns", Labels: map[string]string{appsv1.ControllerRevisionHashLabelKey: "rev2"}, OwnerReferences: []metav1.OwnerReference{{Kind: "StatefulSet", Name: "sts", UID: "u"}}}},
 		{ObjectMeta: metav1.ObjectMeta{Name: "sts-old", Namespace: "ns", Labels: map[string]string{appsv1.ControllerRevisionHashLabelKey: "rev1"}, OwnerReferences: []metav1.OwnerReference{{Kind: "StatefulSet", Name: "sts", UID: "u"}}}},
@@ -616,21 +572,18 @@ func TestCollectWorkloadOldPods_StatefulSet(t *testing.T) {
 }
 
 func TestCollectWorkloadOldPods_StatefulSet_ReadFail(t *testing.T) {
-	t.Parallel()
 	pods := []*corev1.Pod{{ObjectMeta: metav1.ObjectMeta{Name: "sts-pod", Namespace: "ns", Labels: map[string]string{appsv1.ControllerRevisionHashLabelKey: "rev1"}, OwnerReferences: []metav1.OwnerReference{{Kind: "StatefulSet", Name: "sts"}}}}}
 	got := collectWorkloadOldPods(&fakeStsK8sRepo{err: errors.New("boom")}, pods)
 	assert.Empty(t, got)
 }
 
 func TestCollectWorkloadOldPods_StatefulSet_NoUpdateRevision(t *testing.T) {
-	t.Parallel()
 	pods := []*corev1.Pod{{ObjectMeta: metav1.ObjectMeta{Name: "sts-pod", Namespace: "ns", Labels: map[string]string{appsv1.ControllerRevisionHashLabelKey: "rev1"}, OwnerReferences: []metav1.OwnerReference{{Kind: "StatefulSet", Name: "sts"}}}}}
 	got := collectWorkloadOldPods(&fakeStsK8sRepo{sts: newStsForTest(1, 1, 1, "")}, pods)
 	assert.Empty(t, got)
 }
 
 func TestCollectWorkloadOldPods_DaemonSet(t *testing.T) {
-	t.Parallel()
 	now := time.Now()
 	pods := []*corev1.Pod{
 		{ObjectMeta: metav1.ObjectMeta{Name: "ds-new", Namespace: "ns", CreationTimestamp: metav1.Time{Time: now}, Labels: map[string]string{appsv1.ControllerRevisionHashLabelKey: "hash-new"}, OwnerReferences: []metav1.OwnerReference{{Kind: "DaemonSet", Name: "ds", UID: "u"}}}},
@@ -643,7 +596,6 @@ func TestCollectWorkloadOldPods_DaemonSet(t *testing.T) {
 }
 
 func TestCollectWorkloadOldPods_NoStsDs(t *testing.T) {
-	t.Parallel()
 	pods := []*corev1.Pod{rsPodForTest("dep-pod", "rs", "")}
 	assert.Empty(t, collectWorkloadOldPods(&fakeStsK8sRepo{}, pods))
 }
@@ -748,7 +700,6 @@ func newStatusProjectBiz(repo ProjectRepo, k8s K8sRepo) *projectBiz {
 }
 
 func TestCheckApplyStatus_ShowError(t *testing.T) {
-	t.Parallel()
 	k := &fakeStatusK8sRepo{}
 	b := newStatusProjectBiz(&fakeStatusProjectRepo{err: errors.New("show down")}, k)
 	got, err := b.CheckApplyStatus(context.TODO(), 1)
@@ -758,7 +709,6 @@ func TestCheckApplyStatus_ShowError(t *testing.T) {
 
 // TestCheckApplyStatus_NoWorkloads 覆盖无 Deployment/StatefulSet/DaemonSet 时返回 UNKNOWN。
 func TestCheckApplyStatus_NoWorkloads(t *testing.T) {
-	t.Parallel()
 	k := &fakeStatusK8sRepo{}
 	proj := &Project{Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=a"}}
 	b := newStatusProjectBiz(&fakeStatusProjectRepo{project: proj}, k)
@@ -770,7 +720,6 @@ func TestCheckApplyStatus_NoWorkloads(t *testing.T) {
 
 // TestCheckApplyStatus_DeploymentNotFound 覆盖 Deployment 尚未创建 → Deploying。
 func TestCheckApplyStatus_DeploymentNotFound(t *testing.T) {
-	t.Parallel()
 	k := &fakeStatusK8sRepo{depWorkloads: []*appsv1.Deployment{{ObjectMeta: metav1.ObjectMeta{Name: "web"}}}}
 	proj := &Project{Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=a"}, Manifest: []string{"deploy"}}
 	b := newStatusProjectBiz(&fakeStatusProjectRepo{project: proj}, k)
@@ -781,7 +730,6 @@ func TestCheckApplyStatus_DeploymentNotFound(t *testing.T) {
 }
 
 func TestCheckApplyStatus_DeploymentError(t *testing.T) {
-	t.Parallel()
 	k := &fakeStatusK8sRepo{
 		depWorkloads: []*appsv1.Deployment{{ObjectMeta: metav1.ObjectMeta{Name: "web"}}},
 		getDeployErr: errors.New("boom"),
@@ -795,7 +743,6 @@ func TestCheckApplyStatus_DeploymentError(t *testing.T) {
 
 // TestCheckApplyStatus_BuildContainersError 覆盖 buildStateContainers 失败时 CheckApplyStatus 上抛。
 func TestCheckApplyStatus_BuildContainersError(t *testing.T) {
-	t.Parallel()
 	k := &fakeStatusK8sRepo{listPodsErr: errors.New("list down")}
 	proj := &Project{Namespace: &Namespace{Name: "ns"}, PodSelectors: []string{"app=a"}, Manifest: []string{"deploy"}}
 	b := newStatusProjectBiz(&fakeStatusProjectRepo{project: proj}, k)
@@ -807,7 +754,6 @@ func TestCheckApplyStatus_BuildContainersError(t *testing.T) {
 // TestCheckApplyStatus_NoPodSelectors 覆盖项目无 PodSelectors 时 buildStateContainers
 // 提前返回（不触发 k8s 调用），判定仍走工作负载状态。
 func TestCheckApplyStatus_NoPodSelectors(t *testing.T) {
-	t.Parallel()
 	k := &fakeStatusK8sRepo{}
 	proj := &Project{Namespace: &Namespace{Name: "ns"}, Manifest: []string{"deploy"}}
 	b := newStatusProjectBiz(&fakeStatusProjectRepo{project: proj}, k)
@@ -819,7 +765,6 @@ func TestCheckApplyStatus_NoPodSelectors(t *testing.T) {
 // TestCheckApplyStatus_FailedChain 覆盖整条失败链路：STS 最新版本 pod CrashLoopBackOff →
 // Failed + failures 明细 + fillFailureLogs 拉取日志尾部。
 func TestCheckApplyStatus_FailedChain(t *testing.T) {
-	t.Parallel()
 	sts := newStsForTest(1, 0, 1, "rev2")
 	sts.Name = "sts"
 	failPod := &corev1.Pod{
@@ -856,7 +801,6 @@ func TestCheckApplyStatus_FailedChain(t *testing.T) {
 // Deployment 计数 updated=available=desired 已满足，但新版本 web pod 未 Ready、旧 pod
 // 仍 Ready（撑起 AvailableReplicas），整体必须判 Deploying 而非 Deployed。
 func TestCheckApplyStatus_TransitionWindowNewPodNotReady(t *testing.T) {
-	t.Parallel()
 	dep := newDepForTest(1, 1, 1)
 	dep.Name = "web"
 	dep.UID = "dep"
@@ -882,7 +826,6 @@ func TestCheckApplyStatus_TransitionWindowNewPodNotReady(t *testing.T) {
 // ---------- judgeWorkloads 聚合 ----------
 
 func TestJudgeWorkloads_Deployed(t *testing.T) {
-	t.Parallel()
 	dep := newDepForTest(2, 2, 2)
 	dep.Name = "web"
 	k := &fakeStatusK8sRepo{
@@ -900,7 +843,6 @@ func TestJudgeWorkloads_Deployed(t *testing.T) {
 
 // TestJudgeWorkloads_FailedPriority 覆盖聚合优先级：一个失败 + 一个进行中 → 整体 Failed。
 func TestJudgeWorkloads_FailedPriority(t *testing.T) {
-	t.Parallel()
 	depFailed := newDepForTest(1, 0, 1)
 	depFailed.Name = "web"
 	depFailed.UID = "dep"
@@ -922,7 +864,6 @@ func TestJudgeWorkloads_FailedPriority(t *testing.T) {
 
 // TestJudgeWorkloads_DeployingAggregation 覆盖全部进行中且无失败 → 整体 Deploying。
 func TestJudgeWorkloads_DeployingAggregation(t *testing.T) {
-	t.Parallel()
 	dep := newDepForTest(1, 1, 2)
 	dep.Name = "web"
 	k := &fakeStatusK8sRepo{
@@ -939,7 +880,6 @@ func TestJudgeWorkloads_DeployingAggregation(t *testing.T) {
 }
 
 func TestJudgeWorkloads_ListReplicaSetsError(t *testing.T) {
-	t.Parallel()
 	dep := newDepForTest(1, 1, 1)
 	dep.Name = "web"
 	k := &fakeStatusK8sRepo{depWorkloads: []*appsv1.Deployment{dep}, listRSErr: errors.New("rs down")}
@@ -949,7 +889,6 @@ func TestJudgeWorkloads_ListReplicaSetsError(t *testing.T) {
 }
 
 func TestJudgeWorkloads_StatefulSetNotFound(t *testing.T) {
-	t.Parallel()
 	sts := newStsForTest(1, 1, 1, "rev2")
 	sts.Name = "sts"
 	k := &fakeStatusK8sRepo{stsWorkloads: []*appsv1.StatefulSet{sts}} // statefulSets 空 → 未创建
@@ -962,7 +901,6 @@ func TestJudgeWorkloads_StatefulSetNotFound(t *testing.T) {
 }
 
 func TestJudgeWorkloads_StatefulSetError(t *testing.T) {
-	t.Parallel()
 	sts := newStsForTest(1, 1, 1, "rev2")
 	sts.Name = "sts"
 	k := &fakeStatusK8sRepo{stsWorkloads: []*appsv1.StatefulSet{sts}, getStsErr: errors.New("boom")}
@@ -972,7 +910,6 @@ func TestJudgeWorkloads_StatefulSetError(t *testing.T) {
 }
 
 func TestJudgeWorkloads_DaemonSetNotFound(t *testing.T) {
-	t.Parallel()
 	ds := newDsForTest(2, 2, 2)
 	ds.Name = "ds"
 	k := &fakeStatusK8sRepo{dsWorkloads: []*appsv1.DaemonSet{ds}} // daemonSets 空 → 未创建
@@ -985,7 +922,6 @@ func TestJudgeWorkloads_DaemonSetNotFound(t *testing.T) {
 }
 
 func TestJudgeWorkloads_DaemonSetError(t *testing.T) {
-	t.Parallel()
 	ds := newDsForTest(2, 2, 2)
 	ds.Name = "ds"
 	k := &fakeStatusK8sRepo{dsWorkloads: []*appsv1.DaemonSet{ds}, getDsErr: errors.New("boom")}
@@ -997,7 +933,6 @@ func TestJudgeWorkloads_DaemonSetError(t *testing.T) {
 // TestPodsByWorkload_InvalidSelector 覆盖 selector 解析失败返回 nil 的防御分支
 // （manifest 中合法对象 selector 必可解析，此为对异常输入的兜底）。
 func TestPodsByWorkload_InvalidSelector(t *testing.T) {
-	t.Parallel()
 	k := &fakeStatusK8sRepo{}
 	b := newStatusProjectBiz(&fakeStatusProjectRepo{}, k)
 	sel := &metav1.LabelSelector{MatchExpressions: []metav1.LabelSelectorRequirement{
@@ -1009,7 +944,6 @@ func TestPodsByWorkload_InvalidSelector(t *testing.T) {
 // TestJudgeWorkloads_MixedWorkloads 覆盖三类工作负载混合：Deployment Deployed、
 // StatefulSet Deploying、DaemonSet Deployed → 整体 Deploying。
 func TestJudgeWorkloads_MixedWorkloads(t *testing.T) {
-	t.Parallel()
 	dep := newDepForTest(1, 1, 1)
 	dep.Name = "web"
 	sts := newStsForTest(1, 0, 2, "rev2")
@@ -1034,7 +968,6 @@ func TestJudgeWorkloads_MixedWorkloads(t *testing.T) {
 // ---------- fillFailureLogs ----------
 
 func TestFillFailureLogs_CrashLoopPrevious(t *testing.T) {
-	t.Parallel()
 	k := &fakeStatusK8sRepo{logs: map[string]string{"p": "  log line  \n"}}
 	b := newStatusProjectBiz(&fakeStatusProjectRepo{}, k)
 	failures := []*ContainerFailure{{Pod: "p", Container: "web", Reason: "CrashLoopBackOff"}}
@@ -1043,7 +976,6 @@ func TestFillFailureLogs_CrashLoopPrevious(t *testing.T) {
 }
 
 func TestFillFailureLogs_LogErrorSwallowed(t *testing.T) {
-	t.Parallel()
 	k := &fakeStatusK8sRepo{logErr: errors.New("no logs")}
 	b := newStatusProjectBiz(&fakeStatusProjectRepo{}, k)
 	failures := []*ContainerFailure{{Pod: "p", Container: "web", Reason: "ImagePullBackOff"}}
@@ -1052,7 +984,6 @@ func TestFillFailureLogs_LogErrorSwallowed(t *testing.T) {
 }
 
 func TestFillFailureLogs_SkipEmptyContainer(t *testing.T) {
-	t.Parallel()
 	k := &fakeStatusK8sRepo{logs: map[string]string{"p": "x"}}
 	b := newStatusProjectBiz(&fakeStatusProjectRepo{}, k)
 	failures := []*ContainerFailure{{Pod: "p", Reason: "Evicted"}}

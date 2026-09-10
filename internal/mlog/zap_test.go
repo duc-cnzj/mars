@@ -34,7 +34,6 @@ func parseZap(t *testing.T, buf *bytes.Buffer) map[string]any {
 }
 
 func TestZapLogger_Entry_Levels(t *testing.T) {
-	t.Parallel()
 	cases := []struct {
 		name string
 		log  func(l Logger)
@@ -47,7 +46,6 @@ func TestZapLogger_Entry_Levels(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			t.Parallel()
 			z, buf := newTestZap(t)
 			c.log(z)
 			m := parseZap(t, buf)
@@ -58,7 +56,6 @@ func TestZapLogger_Entry_Levels(t *testing.T) {
 }
 
 func TestZapLogger_FileField_NoTrailingDot(t *testing.T) {
-	t.Parallel()
 	z, buf := newTestZap(t)
 	z.Info("x")
 	m := parseZap(t, buf)
@@ -70,14 +67,12 @@ func TestZapLogger_FileField_NoTrailingDot(t *testing.T) {
 
 // 无 panic 时 HandlePanic 不产生任何副作用（不 panic、无日志输出）。
 func TestZapLogger_HandlePanic_NoPanic(t *testing.T) {
-	t.Parallel()
 	z, buf := newTestZap(t)
 	z.HandlePanic("boom")
 	assert.Empty(t, buf.Bytes())
 }
 
 func TestZapLogger_HandlePanic_LogsEntry(t *testing.T) {
-	t.Parallel()
 	z, buf := newTestZap(t)
 	z.debug = false // 避免 re-panic，验证日志内容
 	func() {
@@ -91,7 +86,6 @@ func TestZapLogger_HandlePanic_LogsEntry(t *testing.T) {
 }
 
 func TestZapLogger_HandlePanic_DebugRepanic(t *testing.T) {
-	t.Parallel()
 	z, _ := newTestZap(t)
 	assert.PanicsWithValue(t, "boom", func() {
 		defer z.HandlePanic("boom")
@@ -101,7 +95,6 @@ func TestZapLogger_HandlePanic_DebugRepanic(t *testing.T) {
 
 // panic 值为非 error/string 类型时 callback 仍须触发（P0-3 锁定）。
 func TestZapLogger_HandlePanicWithCallback_NonErrorValue(t *testing.T) {
-	t.Parallel()
 	z, _ := newTestZap(t)
 	z.debug = false
 	var got error
@@ -114,7 +107,6 @@ func TestZapLogger_HandlePanicWithCallback_NonErrorValue(t *testing.T) {
 }
 
 func TestZapLogger_HandlePanicWithCallback_String(t *testing.T) {
-	t.Parallel()
 	z, _ := newTestZap(t)
 	z.debug = false
 	var got error
@@ -126,7 +118,6 @@ func TestZapLogger_HandlePanicWithCallback_String(t *testing.T) {
 }
 
 func TestZapLogger_HandlePanicWithCallback_DebugRepanic(t *testing.T) {
-	t.Parallel()
 	z, _ := newTestZap(t)
 	assert.PanicsWithValue(t, "boom", func() {
 		defer z.HandlePanicWithCallback("boom", func(error) {})
@@ -135,7 +126,6 @@ func TestZapLogger_HandlePanicWithCallback_DebugRepanic(t *testing.T) {
 }
 
 func TestZapLogger_HandlePanicWithCallback_Error(t *testing.T) {
-	t.Parallel()
 	z, _ := newTestZap(t)
 	z.debug = false
 	root := errors.New("root")
@@ -148,26 +138,22 @@ func TestZapLogger_HandlePanicWithCallback_Error(t *testing.T) {
 }
 
 func TestZapLoggerDebugMode(t *testing.T) {
-	t.Parallel()
 	logger := NewZapLogger(true)
 	assert.True(t, logger.(*zapLogger).debug)
 }
 
 func TestZapLoggerProductionMode(t *testing.T) {
-	t.Parallel()
 	logger := NewZapLogger(false)
 	assert.False(t, logger.(*zapLogger).debug)
 }
 
 func TestZapLoggerFlush(t *testing.T) {
-	t.Parallel()
 	logger := NewZapLogger(true)
 	logger.Flush()
 }
 
 // WithModule 在 sugar 链上附加 module 字段，不重建 core、不丢 caller 记录。
 func Test_zapLogger_WithModule(t *testing.T) {
-	t.Parallel()
 	z, buf := newTestZap(t)
 	z.WithModule("grpc").Info("x")
 	m := parseZap(t, buf)
@@ -180,7 +166,6 @@ func Test_zapLogger_WithModule(t *testing.T) {
 // 一帧补偿 1 层 caller。双层闭包模拟生产链路（外层=真实调用点，内层=
 // logWrapper.Info 包装帧），补偿后 caller 越过包装帧指向外层真实调用点。
 func Test_zapLogger_WithCallerSkip(t *testing.T) {
-	t.Parallel()
 	z, buf := newTestZap(t)
 	// 同一结构两次打点：无补偿 vs WithCallerSkip(1)。
 	logAt := func(wrapped bool) string {
@@ -206,7 +191,6 @@ func Test_zapLogger_WithCallerSkip(t *testing.T) {
 }
 
 func TestZapLogger_FormatMethods(t *testing.T) {
-	t.Parallel()
 	cases := []struct {
 		name string
 		log  func(l Logger)
@@ -219,7 +203,6 @@ func TestZapLogger_FormatMethods(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			t.Parallel()
 			z, buf := newTestZap(t)
 			c.log(z)
 			m := parseZap(t, buf)

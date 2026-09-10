@@ -12,14 +12,12 @@ import (
 )
 
 func TestFromEvent_NilInput(t *testing.T) {
-	t.Parallel()
 	var e *biz.Event
 	result := transformer.FromEvent(e)
 	assert.Nil(t, result)
 }
 
 func TestFromEvent_ValidInput(t *testing.T) {
-	t.Parallel()
 	now := time.Now()
 	e := &biz.Event{
 		ID:            1,
@@ -56,7 +54,6 @@ func TestFromEvent_ValidInput(t *testing.T) {
 }
 
 func TestFromEvent_DeletedEvent(t *testing.T) {
-	t.Parallel()
 	now := time.Now()
 	e := &biz.Event{
 		ID:        1,
@@ -78,7 +75,6 @@ func TestFromEvent_DeletedEvent(t *testing.T) {
 }
 
 func TestFromEvent_WithFileID(t *testing.T) {
-	t.Parallel()
 	now := time.Now()
 	fileID := 42
 	e := &biz.Event{

@@ -43,14 +43,12 @@ func newOtherUserCtx() context.Context {
 }
 
 func TestMaskToken(t *testing.T) {
-	t.Parallel()
 	assert.Equal(t, "******", maskToken(""))
 	assert.Equal(t, "******", maskToken("12345678"))
 	assert.Equal(t, "1234****9012", maskToken("123456789012"))
 }
 
 func TestNewAccessTokenSvc(t *testing.T) {
-	t.Parallel()
 	svc, _ := newAccessTokenSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.logger)
@@ -59,7 +57,6 @@ func TestNewAccessTokenSvc(t *testing.T) {
 }
 
 func Test_accessTokenSvc_Grant(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAccessTokenSvcWithMocks(t)
 	tokenRepo := mocks.accessTokenBiz
 
@@ -76,7 +73,6 @@ func Test_accessTokenSvc_Grant(t *testing.T) {
 }
 
 func TestAccessTokenSvc_Grant_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAccessTokenSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 	tokenRepo := mocks.accessTokenBiz
@@ -115,7 +111,6 @@ func TestAccessTokenSvc_Grant_Success(t *testing.T) {
 // 审计日志必须含脱敏形式、且绝不能出现完整 token。
 // 现有空 token 测试的 mask 恒为 "******"，判别力不足。
 func TestAccessTokenSvc_Grant_AuditLogMasksFullToken(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAccessTokenSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 	tokenRepo := mocks.accessTokenBiz
@@ -141,7 +136,6 @@ func TestAccessTokenSvc_Grant_AuditLogMasksFullToken(t *testing.T) {
 }
 
 func TestAccessTokenSvc_Lease_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAccessTokenSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 	tokenRepo := mocks.accessTokenBiz
@@ -172,7 +166,6 @@ func TestAccessTokenSvc_Lease_Success(t *testing.T) {
 }
 
 func TestAccessTokenSvc_Lease_Failure(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAccessTokenSvcWithMocks(t)
 	tokenRepo := mocks.accessTokenBiz
 
@@ -186,7 +179,6 @@ func TestAccessTokenSvc_Lease_Failure(t *testing.T) {
 }
 
 func TestAccessTokenSvc_Revoke_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAccessTokenSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 	tokenRepo := mocks.accessTokenBiz
@@ -208,7 +200,6 @@ func TestAccessTokenSvc_Revoke_Success(t *testing.T) {
 }
 
 func TestAccessTokenSvc_Revoke_Failure(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAccessTokenSvcWithMocks(t)
 	tokenRepo := mocks.accessTokenBiz
 
@@ -225,7 +216,6 @@ func TestAccessTokenSvc_Revoke_Failure(t *testing.T) {
 // 0 行假成功、续租 NotFound、复制无效密钥）；视觉脱敏由前端展示层承担，maskToken 仅
 // 服务于审计日志。
 func TestAccessTokenSvc_List_Admin_SeesAllUsers_FullToken(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAccessTokenSvcWithMocks(t)
 	tokenRepo := mocks.accessTokenBiz
 
@@ -263,7 +253,6 @@ func TestAccessTokenSvc_List_Admin_SeesAllUsers_FullToken(t *testing.T) {
 
 // 非 admin 视图：List 只查本人令牌（Email=当前用户），且令牌值原样返回（所有者可见自己的密钥）。
 func TestAccessTokenSvc_List_NonAdmin_OnlyOwn_FullToken(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAccessTokenSvcWithMocks(t)
 	tokenRepo := mocks.accessTokenBiz
 
@@ -290,7 +279,6 @@ func TestAccessTokenSvc_List_NonAdmin_OnlyOwn_FullToken(t *testing.T) {
 
 // 非 admin 传 all：无权限展开全量，等效无操作，仍只查本人令牌（Email=当前用户）且原样返回。
 func TestAccessTokenSvc_List_NonAdmin_All_Noop(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAccessTokenSvcWithMocks(t)
 	tokenRepo := mocks.accessTokenBiz
 
@@ -318,7 +306,6 @@ func TestAccessTokenSvc_List_NonAdmin_All_Noop(t *testing.T) {
 // admin 默认（不传 all）：收敛到本人令牌（Email=当前用户），最小权限默认态；
 // 本人令牌保留完整值（不脱敏），可复制。
 func TestAccessTokenSvc_List_Admin_Default_OnlyOwn_FullToken(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAccessTokenSvcWithMocks(t)
 	tokenRepo := mocks.accessTokenBiz
 
@@ -343,7 +330,6 @@ func TestAccessTokenSvc_List_Admin_Default_OnlyOwn_FullToken(t *testing.T) {
 }
 
 func TestAccessTokenSvc_List_Failure(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAccessTokenSvcWithMocks(t)
 	tokenRepo := mocks.accessTokenBiz
 
@@ -364,7 +350,6 @@ func TestAccessTokenSvc_List_Failure(t *testing.T) {
 
 // 状态过滤透传：List 把 status 原样交给 biz（服务端过滤，前端只发三态字符串）。
 func TestAccessTokenSvc_List_StatusFilter_Passthrough(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAccessTokenSvcWithMocks(t)
 	tokenRepo := mocks.accessTokenBiz
 
@@ -392,7 +377,6 @@ func TestAccessTokenSvc_List_StatusFilter_Passthrough(t *testing.T) {
 
 // 非法 status：未知值直接 400（边界校验拒绝静默吞错），不触达 repo（无 EXPECT = 未调用即失败）。
 func TestAccessTokenSvc_List_InvalidStatus(t *testing.T) {
-	t.Parallel()
 	svc, _ := newAccessTokenSvcWithMocks(t)
 
 	_, err := svc.List(newAdminUserCtx(), &token.ListRequest{

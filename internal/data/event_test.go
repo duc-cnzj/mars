@@ -237,7 +237,6 @@ func TestEventRepo_AuditMethods(t *testing.T) {
 
 // TestToEvent 覆盖 nil 与实体两种转换。
 func TestToEvent(t *testing.T) {
-	t.Parallel()
 	assert.Nil(t, toEvent(nil))
 	got := toEvent(&ent.Event{ID: 1, Message: "m", HasDiff: true})
 	assert.Equal(t, "m", got.Message)
@@ -246,7 +245,6 @@ func TestToEvent(t *testing.T) {
 
 // TestAuditOptions 覆盖各 AuditOption 构造器与审计日志载荷 getter。
 func TestAuditOptions(t *testing.T) {
-	t.Parallel()
 	e := &auditLogImpl{}
 
 	AuditWithOldNewStr("o", "n")(e)

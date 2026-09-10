@@ -50,7 +50,6 @@ func newTestPodListener(m *gomock.Controller) (*PodEventListener, *data.MockK8sR
 // TestPodEventListener_Run_StopsOnCtxCancel 覆盖 Run 的常驻语义：
 // 消费事件直至 ctx 取消，退出时注销订阅并返回 nil。
 func TestPodEventListener_Run_StopsOnCtxCancel(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	l, kr, _, pub := newTestPodListener(m)
@@ -84,7 +83,6 @@ func TestPodEventListener_Run_StopsOnCtxCancel(t *testing.T) {
 // TestPodEventListener_Handle_UpdatePhaseChanged 覆盖更新事件相位变化分支：
 // 新旧相位不同即发布。
 func TestPodEventListener_Handle_UpdatePhaseChanged(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	l, _, nr, pub := newTestPodListener(m)
@@ -102,7 +100,6 @@ func TestPodEventListener_Handle_UpdatePhaseChanged(t *testing.T) {
 // TestPodEventListener_Handle_UpdateContainerChanged 覆盖更新事件容器就绪变化分支：
 // 相位相同但容器 Ready 翻转即发布。
 func TestPodEventListener_Handle_UpdateContainerChanged(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	l, _, nr, pub := newTestPodListener(m)
@@ -125,7 +122,6 @@ func TestPodEventListener_Handle_UpdateContainerChanged(t *testing.T) {
 // TestPodEventListener_Handle_UpdateUnchangedSkips 覆盖更新事件无变化分支：
 // 相位与容器均未变则不发布。
 func TestPodEventListener_Handle_UpdateUnchangedSkips(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	l, _, _, pub := newTestPodListener(m)
@@ -141,7 +137,6 @@ func TestPodEventListener_Handle_UpdateUnchangedSkips(t *testing.T) {
 
 // TestPodEventListener_Handle_AddPublish 覆盖新增事件分支：直接发布。
 func TestPodEventListener_Handle_AddPublish(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	l, _, nr, pub := newTestPodListener(m)
@@ -157,7 +152,6 @@ func TestPodEventListener_Handle_AddPublish(t *testing.T) {
 
 // TestPodEventListener_Handle_DeletePublish 覆盖删除事件分支：直接发布。
 func TestPodEventListener_Handle_DeletePublish(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	l, _, nr, pub := newTestPodListener(m)
@@ -173,7 +167,6 @@ func TestPodEventListener_Handle_DeletePublish(t *testing.T) {
 // TestPodEventListener_Handle_PublishErrorLogsOnly 覆盖发布失败分支：
 // 错误只打日志不 panic。
 func TestPodEventListener_Handle_PublishErrorLogsOnly(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	l, _, nr, pub := newTestPodListener(m)
@@ -192,7 +185,6 @@ func TestPodEventListener_Handle_PublishErrorLogsOnly(t *testing.T) {
 // TestPodEventListener_Handle_NamespaceNotFoundSkips 覆盖 namespace 解析失败分支：
 // 不发布、不中断。
 func TestPodEventListener_Handle_NamespaceNotFoundSkips(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	l, _, nr, pub := newTestPodListener(m)
@@ -207,7 +199,6 @@ func TestPodEventListener_Handle_NamespaceNotFoundSkips(t *testing.T) {
 
 // TestPodEventListener_Handle_UnknownTypeNoop 覆盖未知事件类型分支：no-op。
 func TestPodEventListener_Handle_UnknownTypeNoop(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	l, _, _, pub := newTestPodListener(m)
@@ -218,7 +209,6 @@ func TestPodEventListener_Handle_UnknownTypeNoop(t *testing.T) {
 
 // TestPodEventListener_NewPodEventListener 验证构造器注入模块化 logger。
 func TestPodEventListener_NewPodEventListener(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	l := NewPodEventListener(mlog.NewForConfig(nil), data.NewMockK8sRepo(m), data.NewMockNamespaceRepo(m), &fakePodPublisher{})
@@ -229,7 +219,6 @@ func TestPodEventListener_NewPodEventListener(t *testing.T) {
 // TestContainerStatusChanged 覆盖容器状态对比各分支：
 // 数量不一致、Ready 翻转、Ready 一致、容器集合变化均为 true，完全一致为 false。
 func TestContainerStatusChanged(t *testing.T) {
-	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	status := func(ready ...bool) []corev1.ContainerStatus {
 		var out []corev1.ContainerStatus
@@ -273,7 +262,6 @@ func TestContainerStatusChanged(t *testing.T) {
 // TestPodEventListener_Run_StopsOnChannelClose 覆盖 Run 消费 channel 关闭分支：
 // informer 订阅 channel 被 close 时记录警告并返回 nil，不再阻塞消费。
 func TestPodEventListener_Run_StopsOnChannelClose(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	l, kr, _, pub := newTestPodListener(m)
@@ -291,7 +279,6 @@ func TestPodEventListener_Run_StopsOnChannelClose(t *testing.T) {
 // TestPodEventListener_Handle_UpdatePublishErrorLogsOnly 覆盖更新事件发布失败分支：
 // 相位变化后 UPDATE 路径发布失败只打日志不 panic（与 ADD/DELETE 路径互为镜像）。
 func TestPodEventListener_Handle_UpdatePublishErrorLogsOnly(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	l, _, nr, pub := newTestPodListener(m)

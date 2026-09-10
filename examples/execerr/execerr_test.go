@@ -4,7 +4,6 @@ import "testing"
 
 // TestDescribe 锁定 Describe 的语义描述：覆盖三个固定错误码分支与默认退出码分支。
 func TestDescribe(t *testing.T) {
-	t.Parallel()
 	cases := []struct {
 		name string
 		code int64
@@ -19,7 +18,6 @@ func TestDescribe(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 			if got := Describe(tc.code); got != tc.want {
 				t.Fatalf("Describe(%d) = %q，期望 %q", tc.code, got, tc.want)
 			}

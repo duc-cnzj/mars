@@ -15,7 +15,6 @@ import (
 )
 
 func TestManager_List(t *testing.T) {
-	t.Parallel()
 	m := NewManager(nil, nil, nil, mlog.NewForConfig(nil))
 	m.NewCommand("a", func() error {
 		return nil
@@ -34,7 +33,6 @@ func TestManager_List(t *testing.T) {
 }
 
 func TestManager_NewCommand(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	runner := NewMockRunner(m)
@@ -61,7 +59,6 @@ func TestManager_NewCommand(t *testing.T) {
 }
 
 func TestManager_Run(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	runner := NewMockRunner(m)
@@ -74,7 +71,6 @@ func TestManager_Run(t *testing.T) {
 }
 
 func TestManager_Run_err(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	runner := NewMockRunner(m)
@@ -88,7 +84,6 @@ func TestManager_Run_err(t *testing.T) {
 }
 
 func TestManager_Shutdown(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	runner := NewMockRunner(m)
@@ -99,7 +94,6 @@ func TestManager_Shutdown(t *testing.T) {
 }
 
 func TestNewManager(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	runner := NewMockRunner(m)
@@ -112,7 +106,6 @@ func TestNewManager(t *testing.T) {
 }
 
 func Test_sortCommand(t *testing.T) {
-	t.Parallel()
 	cmds := []Command{
 		&command{
 			name: "c",
@@ -132,7 +125,6 @@ func Test_sortCommand(t *testing.T) {
 }
 
 func Test_cronManager_wrap(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	runner := NewMockRunner(m)

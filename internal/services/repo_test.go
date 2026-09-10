@@ -28,7 +28,6 @@ import (
 )
 
 func TestNewRepoSvc(t *testing.T) {
-	t.Parallel()
 	svc, _ := newRepoSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.eventBiz)
@@ -37,7 +36,6 @@ func TestNewRepoSvc(t *testing.T) {
 }
 
 func Test_repoSvc_Clone_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 	eventRepo := mocks.eventRepo
@@ -72,7 +70,6 @@ func Test_repoSvc_Clone_Success(t *testing.T) {
 }
 
 func Test_repoSvc_Clone_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -94,7 +91,6 @@ func Test_repoSvc_Clone_Error(t *testing.T) {
 }
 
 func Test_repoSvc_Clone_GetError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -114,7 +110,6 @@ func Test_repoSvc_Clone_GetError(t *testing.T) {
 }
 
 func TestRepoSvc_Create_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 	eventRepo := mocks.eventRepo
@@ -156,7 +151,6 @@ func TestRepoSvc_Create_Success(t *testing.T) {
 }
 
 func TestRepoSvc_Create_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -183,7 +177,6 @@ func TestRepoSvc_Create_Error(t *testing.T) {
 }
 
 func TestRepoSvc_Delete_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 	eventRepo := mocks.eventRepo
@@ -207,7 +200,6 @@ func TestRepoSvc_Delete_Success(t *testing.T) {
 }
 
 func TestRepoSvc_Delete_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -223,7 +215,6 @@ func TestRepoSvc_Delete_Error(t *testing.T) {
 }
 
 func TestRepoSvc_List_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -261,7 +252,6 @@ func TestRepoSvc_List_Success(t *testing.T) {
 }
 
 func TestRepoSvc_List_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -285,7 +275,6 @@ func TestRepoSvc_List_Error(t *testing.T) {
 }
 
 func TestRepoSvc_Show_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -305,7 +294,6 @@ func TestRepoSvc_Show_Success(t *testing.T) {
 }
 
 func TestRepoSvc_Show_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -320,7 +308,6 @@ func TestRepoSvc_Show_Error(t *testing.T) {
 }
 
 func TestRepoSvc_ToggleEnabled_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 	eventRepo := mocks.eventRepo
@@ -353,7 +340,6 @@ func TestRepoSvc_ToggleEnabled_Success(t *testing.T) {
 }
 
 func TestRepoSvc_ToggleEnabled_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -370,7 +356,6 @@ func TestRepoSvc_ToggleEnabled_Error(t *testing.T) {
 }
 
 func TestRepoSvc_Update_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 	eventRepo := mocks.eventRepo
@@ -420,7 +405,6 @@ func TestRepoSvc_Update_Success(t *testing.T) {
 }
 
 func TestRepoSvc_Update_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -440,7 +424,6 @@ func TestRepoSvc_Update_Error(t *testing.T) {
 }
 
 func TestRepoSvc_Update_Error2(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -463,7 +446,6 @@ func TestRepoSvc_Update_Error2(t *testing.T) {
 }
 
 func TestRepoSvc_Authorize_AdminUser(t *testing.T) {
-	t.Parallel()
 	svc, _ := newRepoSvcWithMocks(t)
 
 	ctx := newAdminUserCtx()
@@ -473,7 +455,6 @@ func TestRepoSvc_Authorize_AdminUser(t *testing.T) {
 }
 
 func TestRepoSvc_Authorize_AdminUser2(t *testing.T) {
-	t.Parallel()
 	svc, _ := newRepoSvcWithMocks(t)
 
 	ctx := newAdminUserCtx()
@@ -483,7 +464,6 @@ func TestRepoSvc_Authorize_AdminUser2(t *testing.T) {
 }
 
 func TestRepoSvc_Authorize_ListMethod(t *testing.T) {
-	t.Parallel()
 	svc, _ := newRepoSvcWithMocks(t)
 
 	ctx := newOtherUserCtx()
@@ -494,7 +474,6 @@ func TestRepoSvc_Authorize_ListMethod(t *testing.T) {
 }
 
 func TestRepoSvc_Authorize_NonListMethod(t *testing.T) {
-	t.Parallel()
 	svc, _ := newRepoSvcWithMocks(t)
 
 	ctx := newOtherUserCtx()
@@ -505,7 +484,6 @@ func TestRepoSvc_Authorize_NonListMethod(t *testing.T) {
 }
 
 func TestRepoSvc_Export_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -524,7 +502,6 @@ func TestRepoSvc_Export_Success(t *testing.T) {
 }
 
 func TestRepoSvc_Export_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -537,7 +514,6 @@ func TestRepoSvc_Export_Error(t *testing.T) {
 }
 
 func TestRepoSvc_ExportOne_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -553,7 +529,6 @@ func TestRepoSvc_ExportOne_Success(t *testing.T) {
 }
 
 func TestRepoSvc_ExportOne_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -566,7 +541,6 @@ func TestRepoSvc_ExportOne_Error(t *testing.T) {
 }
 
 func TestRepoSvc_Import_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 	eventRepo := mocks.eventRepo
@@ -605,7 +579,6 @@ func TestRepoSvc_Import_Success(t *testing.T) {
 }
 
 func TestRepoSvc_Import_Empty(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 	eventRepo := mocks.eventRepo
@@ -633,7 +606,6 @@ func TestRepoSvc_Import_Empty(t *testing.T) {
 }
 
 func TestRepoSvc_Import_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -652,7 +624,6 @@ func TestRepoSvc_Import_Error(t *testing.T) {
 }
 
 func TestRepoSvc_Import_DryRun(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -685,7 +656,6 @@ func TestRepoSvc_Import_DryRun(t *testing.T) {
 }
 
 func TestRepoSvc_Import_DryRun_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -702,7 +672,6 @@ func TestRepoSvc_Import_DryRun_Error(t *testing.T) {
 }
 
 func TestRepoSvc_Import_DryRun_SnapshotError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -720,7 +689,6 @@ func TestRepoSvc_Import_DryRun_SnapshotError(t *testing.T) {
 }
 
 func TestRepoSvc_Import_SnapshotBeforeError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -734,7 +702,6 @@ func TestRepoSvc_Import_SnapshotBeforeError(t *testing.T) {
 }
 
 func TestRepoSvc_Import_SnapshotAfterError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -750,7 +717,6 @@ func TestRepoSvc_Import_SnapshotAfterError(t *testing.T) {
 }
 
 func Test_ExportImport_RoundTrip(t *testing.T) {
-	t.Parallel()
 	// round-trip 闭环：biz.Repo → FromRepo（导出）→ toImportRepoItem（导入抽取）
 	// 必须保住可落库字段（name/enabled/need_git_repo/git_project_id/mars_config/description），
 	// 服务器生成字段（id/时间戳/git 项目名）有意丢弃由 data 层重新推导。
@@ -787,7 +753,6 @@ func Test_ExportImport_RoundTrip(t *testing.T) {
 }
 
 func Test_toImportRepoItem(t *testing.T) {
-	t.Parallel()
 	assert.Nil(t, toImportRepoItem(nil))
 
 	item := toImportRepoItem(&types.RepoModel{
@@ -818,7 +783,6 @@ func Test_toImportRepoItem(t *testing.T) {
 }
 
 func TestRepoSvc_Authorize_ExportImportExportOne_Admin(t *testing.T) {
-	t.Parallel()
 	svc, _ := newRepoSvcWithMocks(t)
 
 	_, err := svc.Authorize(newAdminUserCtx(), reposerver.Repo_Export_FullMethodName)
@@ -830,7 +794,6 @@ func TestRepoSvc_Authorize_ExportImportExportOne_Admin(t *testing.T) {
 }
 
 func TestRepoSvc_Authorize_Export_NonAdmin(t *testing.T) {
-	t.Parallel()
 	svc, _ := newRepoSvcWithMocks(t)
 
 	_, err := svc.Authorize(newOtherUserCtx(), reposerver.Repo_Export_FullMethodName)
@@ -840,7 +803,6 @@ func TestRepoSvc_Authorize_Export_NonAdmin(t *testing.T) {
 }
 
 func TestRepoSvc_Authorize_Import_NonAdmin(t *testing.T) {
-	t.Parallel()
 	svc, _ := newRepoSvcWithMocks(t)
 
 	_, err := svc.Authorize(newOtherUserCtx(), reposerver.Repo_Import_FullMethodName)
@@ -850,7 +812,6 @@ func TestRepoSvc_Authorize_Import_NonAdmin(t *testing.T) {
 }
 
 func TestRepoSvc_Authorize_ExportOne_NonAdmin(t *testing.T) {
-	t.Parallel()
 	svc, _ := newRepoSvcWithMocks(t)
 
 	_, err := svc.Authorize(newOtherUserCtx(), reposerver.Repo_ExportOne_FullMethodName)
@@ -864,7 +825,6 @@ func TestRepoSvc_Authorize_ExportOne_NonAdmin(t *testing.T) {
 // 剔除服务器生成的 id/时间戳/git 项目名——否则导入/更新审计 diff 会被
 // updated_at 刷新等业务无关噪声刷屏（用户明确不关注 created_at/updated_at）。
 func Test_repoAuditYaml(t *testing.T) {
-	t.Parallel()
 	out := repoAuditYaml([]*types.RepoModel{
 		{
 			Id:             1,
@@ -903,7 +863,6 @@ func Test_repoAuditYaml(t *testing.T) {
 // Export 而非被 Show 的 /api/repos/{id} 通配吞掉。grpc-gateway 按注册逆序试匹配，
 // Export 排在 Show 之后（proto service 块顺序），晚注册先命中；此测试锁定该顺序。
 func TestRepoGatewayRoute_ExportNotShadowedByShow(t *testing.T) {
-	t.Parallel()
 	mux := runtime.NewServeMux()
 	server := &routeRecorderRepoServer{}
 	require.NoError(t, reposerver.RegisterRepoHandlerServer(context.TODO(), mux, server))
@@ -921,7 +880,6 @@ func TestRepoGatewayRoute_ExportNotShadowedByShow(t *testing.T) {
 // TestRepoGatewayRoute_ExportOne 锁定单条导出路由 /api/repos/{id}/export 命中 ExportOne，
 // 且不被 Show 的 /api/repos/{id} 或 Export 的 /api/repos/export 遮蔽（段数不同，天然隔离）。
 func TestRepoGatewayRoute_ExportOne(t *testing.T) {
-	t.Parallel()
 	mux := runtime.NewServeMux()
 	server := &routeRecorderRepoServer{}
 	require.NoError(t, reposerver.RegisterRepoHandlerServer(context.TODO(), mux, server))

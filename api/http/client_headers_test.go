@@ -12,7 +12,6 @@ import (
 
 // WithHeader 单条：自定义 header 到达服务端（unary 路径）。
 func TestWithHeader_Applied(t *testing.T) {
-	t.Parallel()
 	var got string
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		got = r.Header.Get("X-Request-ID")
@@ -35,7 +34,6 @@ func TestWithHeader_Applied(t *testing.T) {
 
 // WithHeaders 批量：多个自定义 header 全部生效；空 key 被忽略（不产生空 header、不 panic）。
 func TestWithHeaders_Applied(t *testing.T) {
-	t.Parallel()
 	var got map[string]string
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		got = map[string]string{
@@ -65,7 +63,6 @@ func TestWithHeaders_Applied(t *testing.T) {
 
 // 覆盖策略：自定义 Authorization 覆盖 SDK 自动注入的 Bearer token。
 func TestWithHeader_OverridesAuthorization(t *testing.T) {
-	t.Parallel()
 	var gotAuth string
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		gotAuth = r.Header.Get("Authorization")
@@ -88,7 +85,6 @@ func TestWithHeader_OverridesAuthorization(t *testing.T) {
 
 // WithHeader 空 key 忽略：不 panic，仅非空 key 生效。
 func TestWithHeader_IgnoresEmptyKey(t *testing.T) {
-	t.Parallel()
 	var got string
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		got = r.Header.Get("X-OK")
@@ -111,7 +107,6 @@ func TestWithHeader_IgnoresEmptyKey(t *testing.T) {
 
 // 自定义 headers 覆盖全部 5 条请求出口：unary / streaming / upload / download / copy_from_pod。
 func TestHeaders_OnAllPaths(t *testing.T) {
-	t.Parallel()
 	got := make(map[string]string)
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		got[r.URL.Path] = r.Header.Get("X-Custom-Header")

@@ -44,7 +44,6 @@ func newChangelogSvcWithMocks(t *testing.T) (*changelogSvc, *changelogSvcMocks) 
 }
 
 func TestNewChangelogSvc(t *testing.T) {
-	t.Parallel()
 	svc, _ := newChangelogSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.clBiz)
@@ -52,7 +51,6 @@ func TestNewChangelogSvc(t *testing.T) {
 }
 
 func Test_changelogSvc_FindLastChangelogsByProjectID_RepoError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newChangelogSvcWithMocks(t)
 	clRepo, projRepo, nsRepo := mocks.clRepo, mocks.projRepo, mocks.nsRepo
 
@@ -73,7 +71,6 @@ func Test_changelogSvc_FindLastChangelogsByProjectID_RepoError(t *testing.T) {
 }
 
 func Test_changelogSvc_FindLastChangelogsByProjectID_ProjectShowError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newChangelogSvcWithMocks(t)
 	projRepo := mocks.projRepo
 
@@ -87,7 +84,6 @@ func Test_changelogSvc_FindLastChangelogsByProjectID_ProjectShowError(t *testing
 }
 
 func Test_changelogSvc_FindLastChangelogsByProjectID_NamespaceShowError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newChangelogSvcWithMocks(t)
 	projRepo, nsRepo := mocks.projRepo, mocks.nsRepo
 
@@ -105,7 +101,6 @@ func Test_changelogSvc_FindLastChangelogsByProjectID_NamespaceShowError(t *testi
 // 非 admin / 非创建者 / 非成员读取。去掉 FindLastChangelogsByProjectID 里的
 // CanAccess 检查，本测试必须失败。
 func Test_changelogSvc_FindLastChangelogsByProjectID_AccessDenied(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newChangelogSvcWithMocks(t)
 	projRepo, nsRepo := mocks.projRepo, mocks.nsRepo
 
@@ -121,7 +116,6 @@ func Test_changelogSvc_FindLastChangelogsByProjectID_AccessDenied(t *testing.T) 
 }
 
 func Test_changelogSvc_FindLastChangelogsByProjectID_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newChangelogSvcWithMocks(t)
 	clRepo, projRepo, nsRepo := mocks.clRepo, mocks.projRepo, mocks.nsRepo
 

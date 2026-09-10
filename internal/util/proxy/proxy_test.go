@@ -9,14 +9,12 @@ import (
 )
 
 func TestNewHTTPProxyClient(t *testing.T) {
-	t.Parallel()
 	client := NewHTTPProxyClient("http://localhost:8080")
 	assert.NotNil(t, client)
 	assert.Equal(t, 2*time.Minute, client.Timeout)
 }
 
 func TestProxyFunc(t *testing.T) {
-	t.Parallel()
 	proxyURL := "http://localhost:8080"
 	f := proxyFunc(proxyURL)
 	req := &http.Request{}
@@ -27,7 +25,6 @@ func TestProxyFunc(t *testing.T) {
 }
 
 func TestProxyFuncEmpty(t *testing.T) {
-	t.Parallel()
 	f := proxyFunc("")
 	req := &http.Request{}
 	u, err := f(req)

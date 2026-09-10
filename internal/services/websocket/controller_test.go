@@ -27,7 +27,6 @@ import (
 )
 
 func TestWebsocketManager_HandleAuthorize(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -63,12 +62,10 @@ func TestWebsocketManager_HandleAuthorize(t *testing.T) {
 }
 
 func TestUpgrader(t *testing.T) {
-	t.Parallel()
 	assert.True(t, upgrader.CheckOrigin(nil))
 }
 
 func TestWebsocketManager_HandleJoinRoom(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -112,7 +109,6 @@ func TestWebsocketManager_HandleJoinRoom(t *testing.T) {
 }
 
 func TestWebsocketManager_HandleStartShell(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -152,7 +148,6 @@ func TestWebsocketManager_HandleStartShell(t *testing.T) {
 }
 
 func TestWebsocketManager_HandleShellMessage(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -180,7 +175,6 @@ func TestWebsocketManager_HandleShellMessage(t *testing.T) {
 }
 
 func TestWebsocketManager_HandleCloseShell(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -205,7 +199,6 @@ func TestWebsocketManager_HandleCloseShell(t *testing.T) {
 }
 
 func TestWebsocketManager_HandleCancelDeploy(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -233,7 +226,6 @@ func TestWebsocketManager_HandleCancelDeploy(t *testing.T) {
 }
 
 func TestWebsocketManager_HandleCreateProject(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -303,7 +295,6 @@ func TestWebsocketManager_HandleCreateProject(t *testing.T) {
 }
 
 func TestWebsocketManager_HandleUpdateProject(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -375,7 +366,6 @@ func TestWebsocketManager_HandleUpdateProject(t *testing.T) {
 }
 
 func TestNewWebsocketManager(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	logger := mlog.NewForConfig(nil)
@@ -435,7 +425,6 @@ func TestNewWebsocketManager(t *testing.T) {
 	assert.Len(t, wm.handlers, 8)
 }
 func TestWebsocketManager_TickClusterHealth(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -470,7 +459,6 @@ func TestWebsocketManager_TickClusterHealth(t *testing.T) {
 	wm.TickClusterHealth(done)
 }
 func TestWebsocketManager_Info(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -497,7 +485,6 @@ func TestWebsocketManager_Info(t *testing.T) {
 }
 
 func TestWebsocketManager_Shutdown(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -511,11 +498,9 @@ func TestWebsocketManager_Shutdown(t *testing.T) {
 	assert.NoError(t, err)
 }
 func TestWebsocketManager_dispatchEvent(t *testing.T) {
-	t.Parallel()
 	// 必须设 timer：dispatchEvent 的 defer 参数 wc.timer.Now() 对 nil timer 会 panic，被
 	// HandlePanicWithCallback 静默吞掉 → handler 不执行 = 测试空转。删不得。
 	t.Run("valid type calls handler", func(t *testing.T) {
-		t.Parallel()
 		wm := &websocketManager{logger: mlog.NewForConfig(nil), timer: timer.NewReal()}
 		conn := &wsConn{user: &biz.UserInfo{}}
 		called := false
@@ -533,7 +518,6 @@ func TestWebsocketManager_dispatchEvent(t *testing.T) {
 	})
 
 	t.Run("unknown type skipped", func(t *testing.T) {
-		t.Parallel()
 		wm := &websocketManager{logger: mlog.NewForConfig(nil), timer: timer.NewReal()}
 		wm.handlers = map[websocket_pb.Type]HandleRequestFunc{}
 		conn := &wsConn{user: &biz.UserInfo{}}
@@ -541,7 +525,6 @@ func TestWebsocketManager_dispatchEvent(t *testing.T) {
 	})
 
 	t.Run("user not authorized sends pending frame", func(t *testing.T) {
-		t.Parallel()
 		m := gomock.NewController(t)
 		defer m.Finish()
 		wm := &websocketManager{logger: mlog.NewForConfig(nil), timer: timer.NewReal()}
@@ -560,7 +543,6 @@ func TestWebsocketManager_dispatchEvent(t *testing.T) {
 	})
 
 	t.Run("handler panic recovered internally", func(t *testing.T) {
-		t.Parallel()
 		wm := &websocketManager{logger: mlog.NewForConfig(nil), timer: timer.NewReal()}
 		conn := &wsConn{user: &biz.UserInfo{}}
 		wm.handlers = map[websocket_pb.Type]HandleRequestFunc{
@@ -576,7 +558,6 @@ func TestWebsocketManager_dispatchEvent(t *testing.T) {
 }
 
 func TestWebsocketManager_Input_error(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 

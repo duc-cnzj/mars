@@ -13,7 +13,6 @@ import (
 // 防漂移红线：proto 一改，生成器输出必须与已提交的 rest/*.gen.http.go 一致，否则 CI 直接红。
 // 改完 .proto 忘了 go generate 会在这里现形。
 func TestGeneratedStubsUpToDate(t *testing.T) {
-	t.Parallel()
 	_, thisFile, _, _ := runtime.Caller(0)
 	pkgDir := filepath.Dir(thisFile)
 
@@ -66,7 +65,6 @@ func TestGeneratedStubsUpToDate(t *testing.T) {
 
 // 生成器必须清掉 rest/ 里不在本次生成集合内的 *.gen.http.go，保持目录干净。
 func TestGeneratedStubsRemoveStale(t *testing.T) {
-	t.Parallel()
 	tmp := t.TempDir()
 	restDir := filepath.Join(tmp, "rest")
 	if err := os.MkdirAll(restDir, 0o755); err != nil {

@@ -44,7 +44,6 @@ func podOfPhase(phase v1.PodPhase) *v1.Pod {
 }
 
 func TestContainerBiz_Log_PodNotFound(t *testing.T) {
-	t.Parallel()
 	cb := newTestContainerBiz(&fakeK8sBizForLog{
 		getPod: func(namespace, pod string) (*v1.Pod, error) { return nil, nil },
 	}, nil, nil)
@@ -53,7 +52,6 @@ func TestContainerBiz_Log_PodNotFound(t *testing.T) {
 }
 
 func TestContainerBiz_Log_GetPodError_Propagate(t *testing.T) {
-	t.Parallel()
 	// GetPod 返回错误时原样上抛（错误由最上层 services 统一打印），不吞错继续走后续逻辑。
 	var hit bool
 	cb := newTestContainerBiz(&fakeK8sBizForLog{
@@ -72,7 +70,6 @@ func TestContainerBiz_Log_GetPodError_Propagate(t *testing.T) {
 }
 
 func TestContainerBiz_Log_Pending_NoShowEvents_NotFound(t *testing.T) {
-	t.Parallel()
 	cb := newTestContainerBiz(&fakeK8sBizForLog{
 		getPod: func(namespace, pod string) (*v1.Pod, error) { return podOfPhase(v1.PodPending), nil },
 	}, nil, nil)
@@ -81,7 +78,6 @@ func TestContainerBiz_Log_Pending_NoShowEvents_NotFound(t *testing.T) {
 }
 
 func TestContainerBiz_Log_Pending_ShowEvents_AggregateAndSort(t *testing.T) {
-	t.Parallel()
 	// 只聚合「本 pod 且 Kind==Pod」的事件，且按 ResourceVersion 数值升序（"10" 在 "9" 之后）。
 	cb := newTestContainerBiz(&fakeK8sBizForLog{
 		getPod: func(namespace, pod string) (*v1.Pod, error) { return podOfPhase(v1.PodPending), nil },
@@ -100,7 +96,6 @@ func TestContainerBiz_Log_Pending_ShowEvents_AggregateAndSort(t *testing.T) {
 }
 
 func TestContainerBiz_Log_Pending_ListEventsError_EmptyContent(t *testing.T) {
-	t.Parallel()
 	// ListEvents 失败只打 Debug 日志，事件区置空不报错。
 	cb := newTestContainerBiz(&fakeK8sBizForLog{
 		getPod: func(namespace, pod string) (*v1.Pod, error) { return podOfPhase(v1.PodPending), nil },
@@ -114,7 +109,6 @@ func TestContainerBiz_Log_Pending_ListEventsError_EmptyContent(t *testing.T) {
 }
 
 func TestContainerBiz_Log_Pending_ShowEvents_NonNumericVersionFallback(t *testing.T) {
-	t.Parallel()
 	// ResourceVersion 非数值时回退字符串比较（保持调用方顺序的稳定性），不 panic。
 	cb := newTestContainerBiz(&fakeK8sBizForLog{
 		getPod: func(namespace, pod string) (*v1.Pod, error) { return podOfPhase(v1.PodPending), nil },
@@ -131,7 +125,6 @@ func TestContainerBiz_Log_Pending_ShowEvents_NonNumericVersionFallback(t *testin
 }
 
 func TestContainerBiz_Log_GetPodLogsError(t *testing.T) {
-	t.Parallel()
 	cb := newTestContainerBiz(&fakeK8sBizForLog{
 		getPod: func(namespace, pod string) (*v1.Pod, error) { return podOfPhase(v1.PodSucceeded), nil },
 		getPodLogs: func(ctx context.Context, ns, pod string, opts *v1.PodLogOptions) (string, error) {
@@ -143,7 +136,6 @@ func TestContainerBiz_Log_GetPodLogsError(t *testing.T) {
 }
 
 func TestContainerBiz_LogStream_Running_Live(t *testing.T) {
-	t.Parallel()
 	ch := make(chan []byte, 1)
 	ch <- []byte("live")
 	close(ch)
@@ -161,7 +153,6 @@ func TestContainerBiz_LogStream_Running_Live(t *testing.T) {
 }
 
 func TestContainerBiz_LogStream_Running_LogStreamError(t *testing.T) {
-	t.Parallel()
 	cb := newTestContainerBiz(&fakeK8sBizForLog{
 		getPod: func(namespace, pod string) (*v1.Pod, error) { return podOfPhase(v1.PodRunning), nil },
 		logStream: func(ctx context.Context, ns, pod, container string) (chan []byte, error) {
@@ -173,7 +164,6 @@ func TestContainerBiz_LogStream_Running_LogStreamError(t *testing.T) {
 }
 
 func TestContainerBiz_LogStream_Succeeded_Tail(t *testing.T) {
-	t.Parallel()
 	cb := newTestContainerBiz(&fakeK8sBizForLog{
 		getPod: func(namespace, pod string) (*v1.Pod, error) { return podOfPhase(v1.PodSucceeded), nil },
 		getPodLogs: func(ctx context.Context, ns, pod string, opts *v1.PodLogOptions) (string, error) {
@@ -187,7 +177,6 @@ func TestContainerBiz_LogStream_Succeeded_Tail(t *testing.T) {
 }
 
 func TestContainerBiz_LogStream_Pending_ShowEvents(t *testing.T) {
-	t.Parallel()
 	cb := newTestContainerBiz(&fakeK8sBizForLog{
 		getPod: func(namespace, pod string) (*v1.Pod, error) { return podOfPhase(v1.PodPending), nil },
 		listEvents: func(namespace string) ([]*eventv1.Event, error) {
@@ -203,7 +192,6 @@ func TestContainerBiz_LogStream_Pending_ShowEvents(t *testing.T) {
 }
 
 func TestContainerBiz_LogStream_LogError(t *testing.T) {
-	t.Parallel()
 	// 非 Running pod 且 Log 内部出错（如 GetPodLogs 失败）时，错误原样透传。
 	cb := newTestContainerBiz(&fakeK8sBizForLog{
 		getPod: func(namespace, pod string) (*v1.Pod, error) { return podOfPhase(v1.PodSucceeded), nil },
@@ -216,7 +204,6 @@ func TestContainerBiz_LogStream_LogError(t *testing.T) {
 }
 
 func TestContainerBiz_LogStream_PodNotFound(t *testing.T) {
-	t.Parallel()
 	cb := newTestContainerBiz(&fakeK8sBizForLog{
 		getPod: func(namespace, pod string) (*v1.Pod, error) { return nil, nil },
 	}, nil, nil)
@@ -227,7 +214,6 @@ func TestContainerBiz_LogStream_PodNotFound(t *testing.T) {
 // ---- sortEvents（随日志规则从 transport 迁入 biz）----
 
 func TestSortEvents(t *testing.T) {
-	t.Parallel()
 	event1 := &eventv1.Event{ObjectMeta: metav1.ObjectMeta{ResourceVersion: "1"}}
 	event2 := &eventv1.Event{ObjectMeta: metav1.ObjectMeta{ResourceVersion: "2"}}
 	event3 := &eventv1.Event{ObjectMeta: metav1.ObjectMeta{ResourceVersion: "3"}}
@@ -242,7 +228,6 @@ func TestSortEvents(t *testing.T) {
 
 // ResourceVersion 是数字字符串，必须按数值比较，否则 "10" 会排在 "9" 前面。
 func TestSortEvents_NumericOrder(t *testing.T) {
-	t.Parallel()
 	mk := func(rv string) *eventv1.Event {
 		return &eventv1.Event{ObjectMeta: metav1.ObjectMeta{ResourceVersion: rv}}
 	}
@@ -255,7 +240,6 @@ func TestSortEvents_NumericOrder(t *testing.T) {
 
 // 非数字 ResourceVersion 时回退到字符串比较，不 panic。
 func TestSortEvents_NonNumericFallback(t *testing.T) {
-	t.Parallel()
 	mk := func(rv string) *eventv1.Event {
 		return &eventv1.Event{ObjectMeta: metav1.ObjectMeta{ResourceVersion: rv}}
 	}
@@ -269,7 +253,6 @@ func TestSortEvents_NonNumericFallback(t *testing.T) {
 // 若用 ParseInt 会解析失败回退字符串比较，导致位数不同的两个大版本号排错顺序。
 // 9.99e18（19 位）必须排在 1e19（20 位）前面。
 func TestSortEvents_HugeNumericOrder(t *testing.T) {
-	t.Parallel()
 	mk := func(rv string) *eventv1.Event {
 		return &eventv1.Event{ObjectMeta: metav1.ObjectMeta{ResourceVersion: rv}}
 	}

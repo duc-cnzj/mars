@@ -38,7 +38,6 @@ func newClBizForTest(repo ChangelogRepo) ChangelogBiz {
 }
 
 func TestChangelogBiz_Create_NilInput(t *testing.T) {
-	t.Parallel()
 	c := newClBizForTest(&fakeClRepoForChangelogBiz{})
 	got, err := c.Create(context.TODO(), nil)
 	assert.Nil(t, got)
@@ -47,7 +46,6 @@ func TestChangelogBiz_Create_NilInput(t *testing.T) {
 }
 
 func TestChangelogBiz_Create_InvalidProjectID(t *testing.T) {
-	t.Parallel()
 	c := newClBizForTest(&fakeClRepoForChangelogBiz{})
 	got, err := c.Create(context.TODO(), &CreateChangeLogInput{ProjectID: 0})
 	assert.Nil(t, got)
@@ -56,7 +54,6 @@ func TestChangelogBiz_Create_InvalidProjectID(t *testing.T) {
 }
 
 func TestChangelogBiz_Create_Valid(t *testing.T) {
-	t.Parallel()
 	f := &fakeClRepoForChangelogBiz{}
 	c := newClBizForTest(f)
 	got, err := c.Create(context.TODO(), &CreateChangeLogInput{ProjectID: 1})
@@ -66,7 +63,6 @@ func TestChangelogBiz_Create_Valid(t *testing.T) {
 }
 
 func TestChangelogBiz_FindLastChangelogsByProjectID(t *testing.T) {
-	t.Parallel()
 	f := &fakeClRepoForChangelogBiz{}
 	c := newClBizForTest(f)
 	got, err := c.FindLastChangelogsByProjectID(context.TODO(), &FindLastChangelogsByProjectIDChangeLogInput{ProjectID: 1})
@@ -76,7 +72,6 @@ func TestChangelogBiz_FindLastChangelogsByProjectID(t *testing.T) {
 }
 
 func TestChangelogBiz_FindLastChangeByProjectID(t *testing.T) {
-	t.Parallel()
 	f := &fakeClRepoForChangelogBiz{}
 	c := newClBizForTest(f)
 	got, err := c.FindLastChangeByProjectID(context.TODO(), 5)
@@ -107,7 +102,6 @@ func todayLocalStartForTest() time.Time {
 // 分桶 + 零填充 + 升序：同一天多条累加，无部署的天补 0，长度恒等于 days，末位为今天；
 // 同时校验传给 repo 的窗口是 [今天-(days-1) 00:00, 明天 00:00)。
 func TestChangelogBiz_DeployDailyCounts_ZeroFillAndOrder(t *testing.T) {
-	t.Parallel()
 	today := todayLocalStartForTest()
 	f := &fakeClRepoDaily{created: []time.Time{
 		today.Add(2 * time.Hour),
@@ -129,7 +123,6 @@ func TestChangelogBiz_DeployDailyCounts_ZeroFillAndOrder(t *testing.T) {
 
 // days=1 是窗口下界：只回今天一个桶，since 即今日 00:00。
 func TestChangelogBiz_DeployDailyCounts_SingleDay(t *testing.T) {
-	t.Parallel()
 	today := todayLocalStartForTest()
 	f := &fakeClRepoDaily{created: []time.Time{today.Add(time.Minute)}}
 	c := newClBizForTest(f)
@@ -143,7 +136,6 @@ func TestChangelogBiz_DeployDailyCounts_SingleDay(t *testing.T) {
 
 // repo 失败原样上抛，不吞错、不返回半成品切片。
 func TestChangelogBiz_DeployDailyCounts_RepoError(t *testing.T) {
-	t.Parallel()
 	f := &fakeClRepoDaily{err: errors.New("db down")}
 	c := newClBizForTest(f)
 
@@ -154,7 +146,6 @@ func TestChangelogBiz_DeployDailyCounts_RepoError(t *testing.T) {
 
 // 窗口内无任何记录：仍返回满长度全 0，而不是空切片——前端按固定长度画趋势图。
 func TestChangelogBiz_DeployDailyCounts_EmptyWindow(t *testing.T) {
-	t.Parallel()
 	f := &fakeClRepoDaily{}
 	c := newClBizForTest(f)
 
@@ -168,7 +159,6 @@ func TestChangelogBiz_DeployDailyCounts_EmptyWindow(t *testing.T) {
 
 // dayKey 折叠为本地时区的 YYYY-MM-DD，个位月/日须补零。
 func TestDayKey(t *testing.T) {
-	t.Parallel()
 	assert.Equal(t, "2026-03-05", dayKey(time.Date(2026, 3, 5, 23, 59, 59, 0, time.Local)))
 	assert.Equal(t, "2026-01-09", dayKey(time.Date(2026, 1, 9, 0, 0, 0, 0, time.Local)))
 }

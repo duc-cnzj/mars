@@ -45,7 +45,6 @@ func newTestCoordinator(m *gomock.Controller, getCerts func() (string, string, s
 // 5 个业务事件监听（4 个跨域生命周期 + 1 个 audit 落库，每个事件恰好一个），
 // 且不调用插件闭包（惰性闭包不解析）。
 func TestNewEventCoordinator_RegistersListeners(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	disp := event.NewDispatcher(mlog.NewForConfig(nil))
@@ -69,7 +68,6 @@ func TestNewEventCoordinator_RegistersListeners(t *testing.T) {
 // TestEventCoordinator_HandleInjectTlsSecret 覆盖 TLS 注入三态：
 // 空证书跳过、证书就绪成功注入、注入失败原地打日志（错误不上抛）。
 func TestEventCoordinator_HandleInjectTlsSecret(t *testing.T) {
-	t.Parallel()
 	t.Run("空证书跳过注入", func(t *testing.T) {
 		m := gomock.NewController(t)
 		t.Cleanup(m.Finish)
@@ -109,7 +107,6 @@ func TestEventCoordinator_HandleInjectTlsSecret(t *testing.T) {
 
 // TestEventCoordinator_HandleNamespaceDeleted 验证广播 reload 消息且携带 namespace id。
 func TestEventCoordinator_HandleNamespaceDeleted(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	var got proto.Message
@@ -128,7 +125,6 @@ func TestEventCoordinator_HandleNamespaceDeleted(t *testing.T) {
 // 成功落库带 configChanged 判定、项目读取失败上抛、上一条记录缺失仍落库、
 // 错误负载为 no-op。
 func TestEventCoordinator_HandleProjectChanged(t *testing.T) {
-	t.Parallel()
 	proj := &biz.Project{
 		ID:          1,
 		Version:     3,
@@ -210,7 +206,6 @@ func TestEventCoordinator_HandleProjectChanged(t *testing.T) {
 // 插件闭包（GetCerts/ToAll）与 listen 内联回调体：同步取出 dispatcher 上注册的
 // 监听并触发，走完整的闭包 → 用例链（wire 期构造、运行期触发的时序）。
 func TestEventCoordinator_FiresRegisteredListeners(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 
@@ -255,7 +250,6 @@ func TestEventCoordinator_FiresRegisteredListeners(t *testing.T) {
 
 // TestEventCoordinator_HandleProjectDeleted 验证广播 reload 消息且携带 namespace id。
 func TestEventCoordinator_HandleProjectDeleted(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 	var got proto.Message
@@ -273,7 +267,6 @@ func TestEventCoordinator_HandleProjectDeleted(t *testing.T) {
 // TestEventCoordinator_HandleAuditLog 覆盖 audit 委托两分支：
 // 成功透传事件Repo 的 nil，落库失败错误原样返回（由 dispatcher 统一消费）。
 func TestEventCoordinator_HandleAuditLog(t *testing.T) {
-	t.Parallel()
 	t.Run("成功委托落库", func(t *testing.T) {
 		m := gomock.NewController(t)
 		t.Cleanup(m.Finish)

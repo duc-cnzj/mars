@@ -12,14 +12,12 @@ import (
 )
 
 func TestFromFile_NilInput(t *testing.T) {
-	t.Parallel()
 	var f *biz.File
 	result := transformer.FromFile(f)
 	assert.Nil(t, result)
 }
 
 func TestFromFile_ValidInput(t *testing.T) {
-	t.Parallel()
 	now := time.Now()
 	f := &biz.File{
 		ID:            1,
@@ -50,7 +48,6 @@ func TestFromFile_ValidInput(t *testing.T) {
 }
 
 func TestFromFile_DeletedFile(t *testing.T) {
-	t.Parallel()
 	now := time.Now()
 	f := &biz.File{
 		ID:            1,

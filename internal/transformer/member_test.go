@@ -9,14 +9,12 @@ import (
 )
 
 func TestFromMember_NilInput(t *testing.T) {
-	t.Parallel()
 	var member *biz.Member
 	result := transformer.FromMember(member)
 	assert.Nil(t, result)
 }
 
 func TestFromMember_ValidInput(t *testing.T) {
-	t.Parallel()
 	member := &biz.Member{
 		ID:    1,
 		Email: "test@example.com",

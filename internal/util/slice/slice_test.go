@@ -8,7 +8,6 @@ import (
 )
 
 func TestMapWithIntegers(t *testing.T) {
-	t.Parallel()
 	input := []int{1, 2, 3, 4, 5}
 	expected := []int{2, 4, 6, 8, 10}
 
@@ -20,7 +19,6 @@ func TestMapWithIntegers(t *testing.T) {
 }
 
 func TestMapWithEmptySlice(t *testing.T) {
-	t.Parallel()
 	input := []int{}
 	expected := []int{}
 
@@ -32,7 +30,6 @@ func TestMapWithEmptySlice(t *testing.T) {
 }
 
 func TestMapWithStrings(t *testing.T) {
-	t.Parallel()
 	input := []string{"a", "b", "c"}
 	expected := []string{"aa", "bb", "cc"}
 
@@ -44,7 +41,6 @@ func TestMapWithStrings(t *testing.T) {
 }
 
 func TestMapWithNilSlice(t *testing.T) {
-	t.Parallel()
 	var input []int
 	var expected = []int{}
 

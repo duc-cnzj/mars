@@ -11,7 +11,6 @@ import (
 )
 
 func TestNewUploader_WithValidConfig_ReturnsUploader(t *testing.T) {
-	t.Parallel()
 	cfg := &config.Config{}
 	logger := mlog.NewForConfig(cfg)
 
@@ -24,7 +23,6 @@ func TestNewUploader_WithValidConfig_ReturnsUploader(t *testing.T) {
 }
 
 func TestNewUploader_WithS3Enabled_ReturnsS3Uploader(t *testing.T) {
-	t.Parallel()
 	cfg := &config.Config{S3Enabled: true, S3Bucket: "test-bucket"}
 	logger := mlog.NewForConfig(cfg)
 

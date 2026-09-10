@@ -10,7 +10,6 @@ import (
 // TestLogo 断言 Logo 的渐变输出结构：
 // 首行为起点青色，末行为终点洋红，原始 ASCII 逐行保留，默认无署名。
 func TestLogo(t *testing.T) {
-	t.Parallel()
 	out := Logo()
 
 	assert.NotEmpty(t, out)
@@ -28,7 +27,6 @@ func TestLogo(t *testing.T) {
 
 // TestLogoWithAppends 直测 WithAppends：追加内容出现在输出中，且继续参与渐变。
 func TestLogoWithAppends(t *testing.T) {
-	t.Parallel()
 	out := Logo(WithAppends([]byte("\nTAIL")))
 
 	assert.True(t, strings.Contains(stripANSI(out), "TAIL"))
@@ -38,7 +36,6 @@ func TestLogoWithAppends(t *testing.T) {
 
 // TestWithAuthor 断言署名行存在且按 logo 最宽行右对齐。
 func TestWithAuthor(t *testing.T) {
-	t.Parallel()
 	out := WithAuthor()
 
 	assert.True(t, strings.Contains(out, "created by duc@2023."))

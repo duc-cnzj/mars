@@ -14,7 +14,6 @@ import (
 )
 
 func TestRouteLogger(t *testing.T) {
-	t.Parallel()
 	controller := gomock.NewController(t)
 	defer controller.Finish()
 	l := mlog.NewMockLogger(controller)
@@ -25,7 +24,6 @@ func TestRouteLogger(t *testing.T) {
 }
 
 func TestLoggerUnaryServerInterceptor(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 

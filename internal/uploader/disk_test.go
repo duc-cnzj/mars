@@ -28,7 +28,6 @@ func TestNewUploader(t *testing.T) {
 }
 
 func TestFileInfo_Path(t *testing.T) {
-	t.Parallel()
 	cfg := &config.Config{UploadDir: "/disk"}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -37,7 +36,6 @@ func TestFileInfo_Path(t *testing.T) {
 }
 
 func TestUploader_AbsolutePath(t *testing.T) {
-	t.Parallel()
 	cfg := &config.Config{UploadDir: "/disk"}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -45,7 +43,6 @@ func TestUploader_AbsolutePath(t *testing.T) {
 }
 
 func TestUploader_Disk(t *testing.T) {
-	t.Parallel()
 	cfg := &config.Config{UploadDir: "/disk"}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -57,7 +54,6 @@ func TestUploader_Disk(t *testing.T) {
 }
 
 func TestUploader_root(t *testing.T) {
-	t.Parallel()
 	cfg := &config.Config{UploadDir: "/disk"}
 	logger := mlog.NewForConfig(nil)
 	up, _ := NewUploader(cfg, logger, nil)
@@ -67,7 +63,6 @@ func TestUploader_root(t *testing.T) {
 }
 
 func TestFileInfo(t *testing.T) {
-	t.Parallel()
 	assert.Equal(t, uint64(100), (&fileInfo{size: uint64(100)}).Size())
 	assert.Equal(t, "/xxx", (&fileInfo{path: "/xxx"}).Path())
 	n := time.Now()
@@ -231,7 +226,6 @@ func TestUploader_Stat(t *testing.T) {
 }
 
 func Test_diskUploader_LocalUploader(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	localup := NewMockUploader(m)
@@ -244,7 +238,6 @@ func Test_diskUploader_LocalUploader(t *testing.T) {
 // Test_diskUploader_DirSize_MissingRoot 回归：root 目录不存在时 DirSize 必须返回错误而非 panic。
 // 修复前 filepath.Walk 以 err!=nil、info==nil 调用 walkFn，info.IsDir() 直接 nil-deref 崩溃。
 func Test_diskUploader_DirSize_MissingRoot(t *testing.T) {
-	t.Parallel()
 	up, err := NewDiskUploader("/nonexistent-dir-xyz", mlog.NewForConfig(nil))
 	assert.NoError(t, err)
 
@@ -256,7 +249,6 @@ func Test_diskUploader_DirSize_MissingRoot(t *testing.T) {
 // Test_diskUploader_RemoveEmptyDir_MissingRoot 回归：root 目录不存在时 RemoveEmptyDir 必须静默返回 nil。
 // 修复前 WalkDir 回调 d==nil 时 d.IsDir() nil-deref 崩溃。
 func Test_diskUploader_RemoveEmptyDir_MissingRoot(t *testing.T) {
-	t.Parallel()
 	up, err := NewDiskUploader("/nonexistent-dir-xyz", mlog.NewForConfig(nil))
 	assert.NoError(t, err)
 
@@ -265,7 +257,6 @@ func Test_diskUploader_RemoveEmptyDir_MissingRoot(t *testing.T) {
 
 // Test_diskUploader_AllDirectoryFiles_MissingRoot 回归：root 目录不存在时 AllDirectoryFiles 返回错误而非 panic。
 func Test_diskUploader_AllDirectoryFiles_MissingRoot(t *testing.T) {
-	t.Parallel()
 	up, err := NewDiskUploader("/nonexistent-dir-xyz", mlog.NewForConfig(nil))
 	assert.NoError(t, err)
 

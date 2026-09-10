@@ -180,7 +180,6 @@ func Test_userRepo_List_ErrorBranch(t *testing.T) {
 
 // TestToUser 覆盖 nil 与实体两种转换。
 func TestToUser(t *testing.T) {
-	t.Parallel()
 	assert.Nil(t, toUser(nil))
 	now := time.Now()
 	u := toUser(&ent.User{ID: 1, Email: "a@b.c", Name: "a", Roles: []string{}, LastLogin: &now, CreatedAt: now})
@@ -193,7 +192,6 @@ func TestToUser(t *testing.T) {
 
 // TestToggleMarsAdmin 覆盖追加/移除/幂等去重。
 func TestToggleMarsAdmin(t *testing.T) {
-	t.Parallel()
 	assert.Equal(t, []string{"mars_admin"}, toggleMarsAdmin([]string{}, true))
 	assert.Equal(t, []string{"mars_admin"}, toggleMarsAdmin([]string{"mars_admin"}, true), "已存在时保持去重")
 	assert.Empty(t, toggleMarsAdmin([]string{"mars_admin"}, false))
@@ -408,7 +406,6 @@ func Test_userRepo_SyncLoginUser_NilRoles(t *testing.T) {
 
 // TestLocalPartOf 覆盖邮箱本地部分提取：含 @ 取前缀，无 @ 原样返回。
 func TestLocalPartOf(t *testing.T) {
-	t.Parallel()
 	assert.Equal(t, "alice", localPartOf("alice@x.com"))
 	assert.Equal(t, "nouser", localPartOf("nouser"), "无 @ 的邮箱原样返回")
 	assert.Equal(t, "", localPartOf(""), "空串原样返回")

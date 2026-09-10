@@ -62,7 +62,6 @@ func TestMain(t *testing.M) {
 }
 
 func TestDatabaseLockAcquire(t *testing.T) {
-	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
@@ -77,7 +76,6 @@ func TestDatabaseLockAcquire(t *testing.T) {
 }
 
 func TestDatabaseLockAcquireWhenLockAlreadyExists(t *testing.T) {
-	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
@@ -90,7 +88,6 @@ func TestDatabaseLockAcquireWhenLockAlreadyExists(t *testing.T) {
 }
 
 func TestDatabaseLockRelease(t *testing.T) {
-	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
@@ -106,7 +103,6 @@ func TestDatabaseLockRelease(t *testing.T) {
 }
 
 func TestDatabaseLockForceRelease(t *testing.T) {
-	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
@@ -121,7 +117,6 @@ func TestDatabaseLockForceRelease(t *testing.T) {
 }
 
 func TestDatabaseLockRenewalAcquire(t *testing.T) {
-	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
@@ -152,7 +147,6 @@ func setupDatabaseLock(t *testing.T) (*databaseLock, string) {
 }
 
 func Test_databaseLock_Type(t *testing.T) {
-	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
@@ -162,7 +156,6 @@ func Test_databaseLock_Type(t *testing.T) {
 }
 
 func Test_databaseLock_Release(t *testing.T) {
-	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
@@ -181,7 +174,6 @@ func Test_databaseLock_Release(t *testing.T) {
 }
 
 func Test_databaseLock_renewalExistKey(t *testing.T) {
-	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
@@ -202,7 +194,6 @@ func Test_databaseLock_renewalExistKey(t *testing.T) {
 }
 
 func Test_databaseLock_renewalExistKey_Concurrent(t *testing.T) {
-	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
@@ -232,7 +223,6 @@ func Test_databaseLock_renewalExistKey_Concurrent(t *testing.T) {
 }
 
 func TestDatabaseLock_ConcurrentRenewalExistKey(t *testing.T) {
-	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
@@ -307,7 +297,6 @@ func TestDatabaseLock_ConcurrentRenewalExistKey(t *testing.T) {
 }
 
 func Test_databaseLock_Acquire(t *testing.T) {
-	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
@@ -325,7 +314,6 @@ func Test_databaseLock_Acquire(t *testing.T) {
 }
 
 func Test_databaseLock_RenewalAcquire(t *testing.T) {
-	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}
@@ -343,7 +331,6 @@ func deleteTestKey(key string) {
 }
 
 func Test_databaseLock_renewalRoutine(t *testing.T) {
-	t.Parallel()
 	if !prepared {
 		t.Skip("Database not prepared")
 	}

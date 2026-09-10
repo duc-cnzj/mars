@@ -17,7 +17,6 @@ import (
 // TestNewForConfigWrapped 断言 NewForConfig 返回的实例总是被 logWrapper 包裹，
 // 覆盖 zap/logrus/未知 channel 回落/nil 配置四条分支。
 func TestNewForConfigWrapped(t *testing.T) {
-	t.Parallel()
 	cfgs := []*config.Config{
 		{LogChannel: "zap", Debug: true},
 		{LogChannel: "logrus", Debug: true},
@@ -32,7 +31,6 @@ func TestNewForConfigWrapped(t *testing.T) {
 
 // TestNewForConfigZapChannel 断言 zap channel 时内层后端是 zap。
 func TestNewForConfigZapChannel(t *testing.T) {
-	t.Parallel()
 	inner := NewForConfig(&config.Config{LogChannel: "zap", Debug: true}).(*logWrapper).Logger
 	_, ok := inner.(*zapLogger)
 	assert.True(t, ok)
@@ -40,7 +38,6 @@ func TestNewForConfigZapChannel(t *testing.T) {
 
 // TestNewForConfigLogrusChannel 断言 logrus channel 时内层后端是 logrus。
 func TestNewForConfigLogrusChannel(t *testing.T) {
-	t.Parallel()
 	inner := NewForConfig(&config.Config{LogChannel: "logrus", Debug: true}).(*logWrapper).Logger
 	_, ok := inner.(*logrusLogger)
 	assert.True(t, ok)
@@ -48,7 +45,6 @@ func TestNewForConfigLogrusChannel(t *testing.T) {
 
 // TestNewForConfigDefaultChannel 断言未知 channel 回落 logrus 默认后端。
 func TestNewForConfigDefaultChannel(t *testing.T) {
-	t.Parallel()
 	inner := NewForConfig(&config.Config{LogChannel: "unknown", Debug: true}).(*logWrapper).Logger
 	_, ok := inner.(*logrusLogger)
 	assert.True(t, ok)
@@ -56,7 +52,6 @@ func TestNewForConfigDefaultChannel(t *testing.T) {
 
 // TestNewForConfigNilConfig 断言 nil 配置走 logrus 默认后端且保持包裹。
 func TestNewForConfigNilConfig(t *testing.T) {
-	t.Parallel()
 	inner := NewForConfig(nil).(*logWrapper).Logger
 	_, ok := inner.(*logrusLogger)
 	assert.True(t, ok)
@@ -126,7 +121,6 @@ func TestNewLogWrapper_CallerPointsToCallSite(t *testing.T) {
 // 真实调用点 → helper（多一层）→ logWrapper。无补偿时 caller 落在 helper 帧，
 // 补偿 1 帧后越过 helper 指向真实调用点（两次 caller 落点不同）。
 func Test_logWrapper_WithCallerSkip(t *testing.T) {
-	t.Parallel()
 	z, buf := newTestZap(t)
 	wrapped := NewLogWrapper(z)
 	logAt := func(skip bool) string {
@@ -153,7 +147,6 @@ func Test_logWrapper_WithCallerSkip(t *testing.T) {
 // logWrapper 内层不实现 CallerSkipAdjuster（如 mock）时：WithCallerSkip 静默
 // 跳过补偿返回自身，不破坏原有日志链路（对齐 NewLogWrapper/With 的同类回退）。
 func Test_logWrapper_WithCallerSkip_NoInnerAdjuster(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	wrapped := &logWrapper{Logger: NewMockLogger(m)}
@@ -210,7 +203,6 @@ func TestErrorLogWrapper_ErrorCtxf_Formats(t *testing.T) {
 
 // formatError 对 nil 错误返回空串。
 func TestFormatError_Nil(t *testing.T) {
-	t.Parallel()
 	assert.Equal(t, "", formatError(nil))
 }
 
@@ -231,7 +223,6 @@ func TestErrorLogWrapper_NoZapDuplicateStacktrace(t *testing.T) {
 // 并断言 With 附加的 trace.id 字段生效（经 FieldsInjector 落后端）。
 // Fatal 系列 os.Exit 不可测（S 级排除项）。
 func TestErrorLogWrapper_AllLevels(t *testing.T) {
-	t.Parallel()
 	sc := trace.NewSpanContext(trace.SpanContextConfig{
 		TraceID:    trace.TraceID{0x01},
 		SpanID:     trace.SpanID{0x02},
@@ -425,7 +416,6 @@ func TestWith_CallerPointsToCallSite(t *testing.T) {
 
 // evalValuers 纯函数：跳过 nil 键/nil 值/空串，命名 Valuer 与未命名闭包都求值。
 func TestEvalValuers(t *testing.T) {
-	t.Parallel()
 	fields := evalValuers([]any{
 		"nil_val", nil,
 		nil, "no_key",
@@ -441,14 +431,12 @@ func TestEvalValuers(t *testing.T) {
 // TestEvalValuers_OddLengthDropsDanglingKey 锁定奇数长度 kvs 的边界：最后的悬空
 // key 无配对 value 时静默丢弃，不 panic 不落字段（约定调用方传偶数 kvs）。
 func TestEvalValuers_OddLengthDropsDanglingKey(t *testing.T) {
-	t.Parallel()
 	fields := evalValuers([]any{"a", 1, "b", 2, "dangling"}, context.Background())
 	assert.Equal(t, map[string]any{"a": 1, "b": 2}, fields, "悬空 key 应静默丢弃")
 }
 
 // With 包住不实现 CallerSkipAdjuster 的 logger（如 mock）：静默跳过补偿，返回 wrapper。
 func TestWith_BareLoggerNoCallerSkipAdjuster(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mock := NewMockLogger(m)
@@ -459,7 +447,6 @@ func TestWith_BareLoggerNoCallerSkipAdjuster(t *testing.T) {
 
 // withFields 对不实现 FieldsInjector 的内层：字段求值非空但无法附加，静默丢弃不 panic。
 func TestWith_InnerNoFieldsInjector_DropsFields(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mock := NewMockLogger(m)
@@ -469,7 +456,6 @@ func TestWith_InnerNoFieldsInjector_DropsFields(t *testing.T) {
 
 // NewLogWrapper 对不实现 CallerSkipAdjuster 的 logger：静默跳过补偿，仍正常打日志。
 func TestNewLogWrapper_NoCallerSkipAdjuster(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mock := NewMockLogger(m)
@@ -510,7 +496,6 @@ func TestHandlePanic_InterfaceDeferRecovers(t *testing.T) {
 // 截断只切栈底，panicStack/TestPanicStackGrowth 两帧在栈顶 5KB 内必在——只查它俩
 // 时去掉倍增逻辑测试仍通过（实锤变异可存活）；tRunner 是最外层帧，仅完整缓冲才有。
 func TestPanicStackGrowth(t *testing.T) {
-	t.Parallel()
 	var deep func(n int) []byte
 	deep = func(n int) []byte {
 		if n <= 0 {

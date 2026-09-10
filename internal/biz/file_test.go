@@ -74,7 +74,6 @@ func newFileBizForTest(repo FileRepo) FileBiz {
 }
 
 func TestFileBiz_Create_EmptyPath(t *testing.T) {
-	t.Parallel()
 	b := newFileBizForTest(&fakeFileRepoForFileBiz{})
 	got, err := b.Create(context.TODO(), &CreateFileInput{Path: ""})
 	assert.Nil(t, got)
@@ -83,7 +82,6 @@ func TestFileBiz_Create_EmptyPath(t *testing.T) {
 }
 
 func TestFileBiz_Create_Valid(t *testing.T) {
-	t.Parallel()
 	f := &fakeFileRepoForFileBiz{}
 	b := newFileBizForTest(f)
 	got, err := b.Create(context.TODO(), &CreateFileInput{Path: "/tmp/a"})
@@ -93,7 +91,6 @@ func TestFileBiz_Create_Valid(t *testing.T) {
 }
 
 func TestFileBiz_Update_InvalidID(t *testing.T) {
-	t.Parallel()
 	b := newFileBizForTest(&fakeFileRepoForFileBiz{})
 	got, err := b.Update(context.TODO(), &UpdateFileRequest{ID: 0})
 	assert.Nil(t, got)
@@ -102,7 +99,6 @@ func TestFileBiz_Update_InvalidID(t *testing.T) {
 }
 
 func TestFileBiz_Update_Valid(t *testing.T) {
-	t.Parallel()
 	f := &fakeFileRepoForFileBiz{}
 	b := newFileBizForTest(f)
 	got, err := b.Update(context.TODO(), &UpdateFileRequest{ID: 1})
@@ -112,7 +108,6 @@ func TestFileBiz_Update_Valid(t *testing.T) {
 }
 
 func TestFileBiz_Delete_InvalidID(t *testing.T) {
-	t.Parallel()
 	b := newFileBizForTest(&fakeFileRepoForFileBiz{})
 	err := b.Delete(context.TODO(), 0)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -120,7 +115,6 @@ func TestFileBiz_Delete_InvalidID(t *testing.T) {
 }
 
 func TestFileBiz_Delete_Valid(t *testing.T) {
-	t.Parallel()
 	f := &fakeFileRepoForFileBiz{}
 	b := newFileBizForTest(f)
 	assert.NoError(t, b.Delete(context.TODO(), 1))
@@ -128,7 +122,6 @@ func TestFileBiz_Delete_Valid(t *testing.T) {
 }
 
 func TestFileBiz_StreamUploadFile_EmptyFileName(t *testing.T) {
-	t.Parallel()
 	b := newFileBizForTest(&fakeFileRepoForFileBiz{})
 	got, err := b.StreamUploadFile(context.TODO(), &StreamUploadFileRequest{FileName: ""})
 	assert.Nil(t, got)
@@ -137,7 +130,6 @@ func TestFileBiz_StreamUploadFile_EmptyFileName(t *testing.T) {
 }
 
 func TestFileBiz_StreamUploadFile_Valid(t *testing.T) {
-	t.Parallel()
 	f := &fakeFileRepoForFileBiz{}
 	b := newFileBizForTest(f)
 	got, err := b.StreamUploadFile(context.TODO(), &StreamUploadFileRequest{FileName: "a.txt"})
@@ -149,7 +141,6 @@ func TestFileBiz_StreamUploadFile_Valid(t *testing.T) {
 // ---- 纯透传查询 ----
 
 func TestFileBiz_MaxUploadSize(t *testing.T) {
-	t.Parallel()
 	f := &fakeFileRepoForFileBiz{}
 	b := newFileBizForTest(f)
 	assert.Equal(t, uint64(1024), b.MaxUploadSize())
@@ -157,7 +148,6 @@ func TestFileBiz_MaxUploadSize(t *testing.T) {
 }
 
 func TestFileBiz_ShowRecords(t *testing.T) {
-	t.Parallel()
 	f := &fakeFileRepoForFileBiz{}
 	b := newFileBizForTest(f)
 	rc, err := b.ShowRecords(context.TODO(), 1)
@@ -167,7 +157,6 @@ func TestFileBiz_ShowRecords(t *testing.T) {
 }
 
 func TestFileBiz_DiskInfo(t *testing.T) {
-	t.Parallel()
 	f := &fakeFileRepoForFileBiz{}
 	b := newFileBizForTest(f)
 	n, err := b.DiskInfo(false)
@@ -177,7 +166,6 @@ func TestFileBiz_DiskInfo(t *testing.T) {
 }
 
 func TestFileBiz_List(t *testing.T) {
-	t.Parallel()
 	f := &fakeFileRepoForFileBiz{}
 	b := newFileBizForTest(f)
 	files, pag, err := b.List(context.TODO(), &ListFileInput{})
@@ -188,7 +176,6 @@ func TestFileBiz_List(t *testing.T) {
 }
 
 func TestFileBiz_GetByID(t *testing.T) {
-	t.Parallel()
 	f := &fakeFileRepoForFileBiz{}
 	b := newFileBizForTest(f)
 	got, err := b.GetByID(context.TODO(), 7)
@@ -198,7 +185,6 @@ func TestFileBiz_GetByID(t *testing.T) {
 }
 
 func TestFileBiz_NewRecorder(t *testing.T) {
-	t.Parallel()
 	f := &fakeFileRepoForFileBiz{}
 	b := newFileBizForTest(f)
 	r := b.NewRecorder(&UserInfo{Name: "u"}, &Container{Namespace: "ns", Pod: "p", Container: "c"})

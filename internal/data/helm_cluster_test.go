@@ -69,7 +69,6 @@ func seedRelease(t *testing.T, cfg *action.Configuration, name, namespace string
 
 // Test_runInstall 覆盖 runInstall 三个分支：chart 不可安装、Devel 版本回落 + 成功安装、values 合并失败。
 func Test_runInstall(t *testing.T) {
-	t.Parallel()
 	t.Run("checkIfInstallable error", func(t *testing.T) {
 		client := action.NewInstall(helmMemConfig())
 		_, err := (&DefaultHelmer{logger: mlog.NewForConfig(nil)}).runInstall(
@@ -183,7 +182,6 @@ func Test_releaseStatus_Deployed(t *testing.T) {
 
 // Test_packageChart_LoadDirError 覆盖 packageChart 加载 chart 目录失败分支（helm.go 437-439）。
 func Test_packageChart_LoadDirError(t *testing.T) {
-	t.Parallel()
 	_, err := packageChart(filepath.Join(t.TempDir(), "nonexistent"), "", config.DockerAuths{}, false)
 	assert.Error(t, err)
 }

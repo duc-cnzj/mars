@@ -21,7 +21,6 @@ func (s *stubServiceRegistrar) RegisterService(sd *grpc.ServiceDesc, _ any) {
 }
 
 func Test_NewGrpcRegistry_Success(t *testing.T) {
-	t.Parallel()
 	reg := NewGrpcRegistry(NewGrpcRegistryDeps{})
 
 	assert.IsType(t, &app.GrpcRegistry{}, reg)
@@ -30,7 +29,6 @@ func Test_NewGrpcRegistry_Success(t *testing.T) {
 }
 
 func Test_NewGrpcRegistry_RegistersAllServices(t *testing.T) {
-	t.Parallel()
 	reg := NewGrpcRegistry(NewGrpcRegistryDeps{})
 
 	registrar := &stubServiceRegistrar{}
@@ -62,7 +60,6 @@ func Test_NewGrpcRegistry_RegistersAllServices(t *testing.T) {
 // MustGetUser 从 ctx 提取——admin 上下文过 admin 门禁、非 admin 拒绝。
 // repo 传 nil 即可（RequireAdmin 不触达实体加载，符合 NewAccessBiz 的"repo 懒加载"约定）。
 func Test_AccessGetUserBinding(t *testing.T) {
-	t.Parallel()
 	ab := biz.NewAccessBiz(nil, nil)
 	//nolint:staticcheck // 编译期断言返回类型满足 AccessBiz 接口，显式类型声明是断言意图，不可省略。
 	var _ biz.AccessBiz = ab

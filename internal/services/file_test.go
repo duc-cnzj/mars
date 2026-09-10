@@ -23,7 +23,6 @@ import (
 )
 
 func TestNewFileSvc(t *testing.T) {
-	t.Parallel()
 	svc, _ := newFileSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.logger)
@@ -32,7 +31,6 @@ func TestNewFileSvc(t *testing.T) {
 }
 
 func TestFileSvc_Authorize_AdminUser(t *testing.T) {
-	t.Parallel()
 	svc, _ := newFileSvcWithMocks(t)
 
 	_, err := svc.Authorize(newAdminUserCtx(), "TestMethod")
@@ -40,7 +38,6 @@ func TestFileSvc_Authorize_AdminUser(t *testing.T) {
 }
 
 func TestFileSvc_Authorize_NonAdminUser(t *testing.T) {
-	t.Parallel()
 	svc, _ := newFileSvcWithMocks(t)
 
 	_, err := svc.Authorize(newOtherUserCtx(), "TestMethod")
@@ -49,7 +46,6 @@ func TestFileSvc_Authorize_NonAdminUser(t *testing.T) {
 }
 
 func TestFileSvc_Authorize_MaxUploadSize(t *testing.T) {
-	t.Parallel()
 	svc, _ := newFileSvcWithMocks(t)
 
 	_, err := svc.Authorize(newOtherUserCtx(), "/file.File/MaxUploadSize")
@@ -61,7 +57,6 @@ func TestFileSvc_Authorize_MaxUploadSize(t *testing.T) {
 // TestFileSvc_Authorize_ShowRecords 覆盖 ShowRecords 进入 allowlist：非 admin 与
 // 无用户 ctx 均可过 Authorize 门禁（方法体内 RequireFileAccess 再做所有者/admin 判定）。
 func TestFileSvc_Authorize_ShowRecords(t *testing.T) {
-	t.Parallel()
 	svc, _ := newFileSvcWithMocks(t)
 
 	_, err := svc.Authorize(newOtherUserCtx(), "/file.File/ShowRecords")
@@ -71,7 +66,6 @@ func TestFileSvc_Authorize_ShowRecords(t *testing.T) {
 }
 
 func Test_fileSvc_Delete(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -83,7 +77,6 @@ func Test_fileSvc_Delete(t *testing.T) {
 }
 
 func Test_fileSvc_Delete2(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -95,7 +88,6 @@ func Test_fileSvc_Delete2(t *testing.T) {
 }
 
 func Test_fileSvc_Delete3(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 	eventRepo := mocks.eventRepo
@@ -115,7 +107,6 @@ func Test_fileSvc_Delete3(t *testing.T) {
 }
 
 func Test_fileSvc_MaxUploadSize(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -129,7 +120,6 @@ func Test_fileSvc_MaxUploadSize(t *testing.T) {
 }
 
 func TestFileSvc_DiskInfo_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -143,7 +133,6 @@ func TestFileSvc_DiskInfo_Success(t *testing.T) {
 }
 
 func TestFileSvc_DiskInfo_Failure(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -154,7 +143,6 @@ func TestFileSvc_DiskInfo_Failure(t *testing.T) {
 }
 
 func TestFileSvc_List_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -174,7 +162,6 @@ func TestFileSvc_List_Success(t *testing.T) {
 }
 
 func TestFileSvc_List_Failure(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -186,7 +173,6 @@ func TestFileSvc_List_Failure(t *testing.T) {
 
 // TestFileSvc_ShowRecords_Success 覆盖文件所有者（非 admin）回放自己的会话：应放行并整体回传记录。
 func TestFileSvc_ShowRecords_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -202,7 +188,6 @@ func TestFileSvc_ShowRecords_Success(t *testing.T) {
 // TestFileSvc_ShowRecords_Denied 覆盖非所有者非 admin 的越权回放：返回
 // PermissionDenied，且不触达 ShowRecords 读取（未设置该调用期望，误调即 gomock 失败）。
 func TestFileSvc_ShowRecords_Denied(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -216,7 +201,6 @@ func TestFileSvc_ShowRecords_Denied(t *testing.T) {
 
 // TestFileSvc_ShowRecords_Admin 覆盖 admin 查看非本人文件：admin 任意放行，正常读取。
 func TestFileSvc_ShowRecords_Admin(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -231,7 +215,6 @@ func TestFileSvc_ShowRecords_Admin(t *testing.T) {
 
 // TestFileSvc_ShowRecords_GetByIDError 覆盖加载文件元数据失败：直接返回错误，不读取记录。
 func TestFileSvc_ShowRecords_GetByIDError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -244,7 +227,6 @@ func TestFileSvc_ShowRecords_GetByIDError(t *testing.T) {
 
 // TestFileSvc_ShowRecords_Failure 覆盖文件元数据通过但读取记录失败：返回错误。
 func TestFileSvc_ShowRecords_Failure(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 
@@ -266,7 +248,6 @@ func (errorReadCloser) Read(_ []byte) (int, error) {
 func (errorReadCloser) Close() error { return nil }
 
 func TestFileSvc_ShowRecords_ReadError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newFileSvcWithMocks(t)
 	fileRepo := mocks.fileRepo
 

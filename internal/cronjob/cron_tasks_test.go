@@ -27,7 +27,6 @@ import (
 // 非 NotFound 错误（网络/权限）时不得 nil-deref panic，也不得误走 AddTlsSecret 分支，
 // 只记录后跳过该 namespace。同步逻辑全部走端口，不触碰基础设施门面。
 func TestTasks_SyncDomainSecret_NonNotFoundErrorNoPanic(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -51,7 +50,6 @@ func TestTasks_SyncDomainSecret_NonNotFoundErrorNoPanic(t *testing.T) {
 // TestTasks_SyncDomainSecret_NotFoundRegistersTls 覆盖 TLS 证书缺失分支：
 // secret 不存在时经 AddTlsSecret 端口创建，不走门面。
 func TestTasks_SyncDomainSecret_NotFoundRegistersTls(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -73,7 +71,6 @@ func TestTasks_SyncDomainSecret_NotFoundRegistersTls(t *testing.T) {
 // TestTasks_SyncDomainSecret_CertChangedUpdates 覆盖证书内容不一致分支：
 // 经 UpdateSecret 端口更新 secret 数据。
 func TestTasks_SyncDomainSecret_CertChangedUpdates(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -99,7 +96,6 @@ func TestTasks_SyncDomainSecret_CertChangedUpdates(t *testing.T) {
 // TestTasks_SyncDomainSecret_NoCertsSkips 覆盖无证书配置分支：GetCerts 全空时
 // 不查 namespace、不触碰 k8s，直接返回。
 func TestTasks_SyncDomainSecret_NoCertsSkips(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -113,7 +109,6 @@ func TestTasks_SyncDomainSecret_NoCertsSkips(t *testing.T) {
 
 // TestTasks_SyncImagePullSecrets 覆盖缺 secret 创建 + 回写 imagePullSecrets 分支。
 func TestTasks_SyncImagePullSecrets(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -162,7 +157,6 @@ func newImagePullTasks(m *gomock.Controller, ns []*biz.Namespace) (*Tasks, *data
 
 // TestTasks_NewTasks 验证构造器全部依赖注入。
 func TestTasks_NewTasks(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	tasks := NewTasks(
@@ -187,7 +181,6 @@ func TestTasks_NewTasks(t *testing.T) {
 
 // TestTasks_CacheAllBranches 覆盖并发拉取分支：重复 GitProjectID 被 UniqBy 去重。
 func TestTasks_CacheAllBranches(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	repoRepo := data.NewMockRepoRepo(m)
@@ -205,7 +198,6 @@ func TestTasks_CacheAllBranches(t *testing.T) {
 
 // TestTasks_CacheAllBranches_ConcurrentLimit 覆盖仓库数超 10 时 worker 收敛到 8。
 func TestTasks_CacheAllBranches_ConcurrentLimit(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	var repos []*biz.Repo
@@ -225,7 +217,6 @@ func TestTasks_CacheAllBranches_ConcurrentLimit(t *testing.T) {
 }
 
 func TestTasks_CacheAllBranches_RepoError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	repoRepo := data.NewMockRepoRepo(m)
@@ -236,7 +227,6 @@ func TestTasks_CacheAllBranches_RepoError(t *testing.T) {
 }
 
 func TestTasks_CacheAllProjects(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	gitRepo := data.NewMockGitRepo(m)
@@ -247,7 +237,6 @@ func TestTasks_CacheAllProjects(t *testing.T) {
 }
 
 func TestTasks_CacheAllProjects_Error(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	gitRepo := data.NewMockGitRepo(m)
@@ -258,7 +247,6 @@ func TestTasks_CacheAllProjects_Error(t *testing.T) {
 }
 
 func TestTasks_SyncImagePullSecrets_ListAllError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
@@ -270,7 +258,6 @@ func TestTasks_SyncImagePullSecrets_ListAllError(t *testing.T) {
 // TestTasks_SyncImagePullSecrets_GetSecretNotFoundDeletes 覆盖 GetSecret NotFound
 // 分支：删除旧 secret、清空列表后补建缺失 registry。
 func TestTasks_SyncImagePullSecrets_GetSecretNotFoundDeletes(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	repo, nsRepo, k8sRepo := newImagePullTasks(m, []*biz.Namespace{{ID: 1, Name: "ns1", ImagePullSecrets: []string{"old"}}})
@@ -285,7 +272,6 @@ func TestTasks_SyncImagePullSecrets_GetSecretNotFoundDeletes(t *testing.T) {
 // TestTasks_SyncImagePullSecrets_GetSecretOtherErrorSkips 覆盖非 NotFound 错误：
 // 不删除只记日志，随后仍补建缺失 registry。
 func TestTasks_SyncImagePullSecrets_GetSecretOtherErrorSkips(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	repo, nsRepo, k8sRepo := newImagePullTasks(m, []*biz.Namespace{{ID: 1, Name: "ns1", ImagePullSecrets: []string{"old"}}})
@@ -299,7 +285,6 @@ func TestTasks_SyncImagePullSecrets_GetSecretOtherErrorSkips(t *testing.T) {
 // TestTasks_SyncImagePullSecrets_DockerSecretNoDiff 覆盖 docker 配置与凭据完全一致：
 // 无 UpdateSecret、无 CreateDockerSecrets（被误调即 panic，反向证明未走分支）。
 func TestTasks_SyncImagePullSecrets_DockerSecretNoDiff(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	auth := base64.StdEncoding.EncodeToString([]byte("u:p"))
@@ -314,7 +299,6 @@ func TestTasks_SyncImagePullSecrets_DockerSecretNoDiff(t *testing.T) {
 
 // TestTasks_SyncImagePullSecrets_DockerSecretDiffSyncs 覆盖凭据不一致：自动同步更新 secret。
 func TestTasks_SyncImagePullSecrets_DockerSecretDiffSyncs(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	secret := &corev1.Secret{
@@ -329,7 +313,6 @@ func TestTasks_SyncImagePullSecrets_DockerSecretDiffSyncs(t *testing.T) {
 }
 
 func TestTasks_SyncImagePullSecrets_DockerSecretUpdateError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	secret := &corev1.Secret{
@@ -346,7 +329,6 @@ func TestTasks_SyncImagePullSecrets_DockerSecretUpdateError(t *testing.T) {
 // TestTasks_SyncImagePullSecrets_DockerSecretNoMatchDeletes 覆盖 docker 配置里没有
 // 任何受管 registry：删除该 secret 后补建缺失。
 func TestTasks_SyncImagePullSecrets_DockerSecretNoMatchDeletes(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	secret := &corev1.Secret{
@@ -365,7 +347,6 @@ func TestTasks_SyncImagePullSecrets_DockerSecretNoMatchDeletes(t *testing.T) {
 
 // TestTasks_SyncImagePullSecrets_DockerSecretDecodeError 覆盖 docker 配置解析失败：跳过该 secret。
 func TestTasks_SyncImagePullSecrets_DockerSecretDecodeError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	secret := &corev1.Secret{
@@ -381,7 +362,6 @@ func TestTasks_SyncImagePullSecrets_DockerSecretDecodeError(t *testing.T) {
 
 // TestTasks_SyncImagePullSecrets_NonDockerTypeSkips 覆盖非 docker 类型 secret：跳过不做处理。
 func TestTasks_SyncImagePullSecrets_NonDockerTypeSkips(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	secret := &corev1.Secret{Type: corev1.SecretTypeOpaque}
@@ -394,7 +374,6 @@ func TestTasks_SyncImagePullSecrets_NonDockerTypeSkips(t *testing.T) {
 
 // TestTasks_SyncImagePullSecrets_CreateDockerSecretsError 覆盖创建失败分支：静默跳过。
 func TestTasks_SyncImagePullSecrets_CreateDockerSecretsError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	repo, _, k8sRepo := newImagePullTasks(m, []*biz.Namespace{{ID: 1, Name: "ns1", ImagePullSecrets: []string{}}})
@@ -404,7 +383,6 @@ func TestTasks_SyncImagePullSecrets_CreateDockerSecretsError(t *testing.T) {
 
 // TestTasks_SyncImagePullSecrets_UpdateNsError 覆盖回写 namespace 失败分支：记日志不中断。
 func TestTasks_SyncImagePullSecrets_UpdateNsError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	repo, nsRepo, k8sRepo := newImagePullTasks(m, []*biz.Namespace{{ID: 1, Name: "ns1", ImagePullSecrets: []string{}}})
@@ -414,7 +392,6 @@ func TestTasks_SyncImagePullSecrets_UpdateNsError(t *testing.T) {
 }
 
 func TestTasks_deleteSecret_Success(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
@@ -427,7 +404,6 @@ func TestTasks_deleteSecret_Success(t *testing.T) {
 }
 
 func TestTasks_deleteSecret_DeleteSecretError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
@@ -440,7 +416,6 @@ func TestTasks_deleteSecret_DeleteSecretError(t *testing.T) {
 }
 
 func TestTasks_deleteSecret_UpdateNsError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
@@ -453,7 +428,6 @@ func TestTasks_deleteSecret_UpdateNsError(t *testing.T) {
 }
 
 func TestTasks_SyncDomainSecret_ListAllError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
@@ -464,7 +438,6 @@ func TestTasks_SyncDomainSecret_ListAllError(t *testing.T) {
 
 // TestTasks_SyncDomainSecret_AddTlsError 覆盖 AddTlsSecret 失败分支：记日志不中断。
 func TestTasks_SyncDomainSecret_AddTlsError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
@@ -478,7 +451,6 @@ func TestTasks_SyncDomainSecret_AddTlsError(t *testing.T) {
 
 // TestTasks_SyncDomainSecret_UpdateSecretError 覆盖证书更新失败分支：记日志不中断。
 func TestTasks_SyncDomainSecret_UpdateSecretError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
@@ -495,7 +467,6 @@ func TestTasks_SyncDomainSecret_UpdateSecretError(t *testing.T) {
 }
 
 func TestTasks_FixDeployStatus(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	projectRepo := data.NewMockProjectRepo(m)
@@ -512,7 +483,6 @@ func TestTasks_FixDeployStatus(t *testing.T) {
 
 // TestTasks_FixDeployStatus_SkipsUnchanged 覆盖 helm 实测状态仍为失败：不更新（误调即 panic）。
 func TestTasks_FixDeployStatus_SkipsUnchanged(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	projectRepo := data.NewMockProjectRepo(m)
@@ -527,7 +497,6 @@ func TestTasks_FixDeployStatus_SkipsUnchanged(t *testing.T) {
 }
 
 func TestTasks_FixDeployStatus_ListError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	projectRepo := data.NewMockProjectRepo(m)
@@ -538,7 +507,6 @@ func TestTasks_FixDeployStatus_ListError(t *testing.T) {
 }
 
 func TestTasks_FixDeployStatus_UpdateError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	projectRepo := data.NewMockProjectRepo(m)
@@ -554,7 +522,6 @@ func TestTasks_FixDeployStatus_UpdateError(t *testing.T) {
 }
 
 func TestTasks_DiskInfo(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	fileRepo := data.NewMockFileRepo(m)
@@ -567,7 +534,6 @@ func TestTasks_DiskInfo(t *testing.T) {
 }
 
 func TestTasks_DiskInfo_Error(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	fileRepo := data.NewMockFileRepo(m)
@@ -581,7 +547,6 @@ func TestTasks_DiskInfo_Error(t *testing.T) {
 // TestTasks_CleanUploadFiles 覆盖对账主路径：孤儿记录删除、游离文件清理、
 // 目录里已记录文件跳过、非受管类型跳过、删除失败仅警告。
 func TestTasks_CleanUploadFiles(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	now := time.Now()
@@ -637,7 +602,6 @@ func TestTasks_CleanUploadFiles(t *testing.T) {
 }
 
 func TestTasks_CleanUploadFiles_ListError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	fileRepo := data.NewMockFileRepo(m)
@@ -652,7 +616,6 @@ func TestTasks_CleanUploadFiles_ListError(t *testing.T) {
 
 // Test_listFiles_PrettyYaml 覆盖列表的 YAML 序列化与空列表边界。
 func Test_listFiles_PrettyYaml(t *testing.T) {
-	t.Parallel()
 	files := listFiles{
 		{Path: "/a.txt", HumanizeSize: "1.0 kB"},
 		{Path: "/b.txt", HumanizeSize: "2.0 kB"},
@@ -668,7 +631,6 @@ func Test_listFiles_PrettyYaml(t *testing.T) {
 // TestTasks_CacheClusterBoard 覆盖集群看板 30s 预热任务：force=true 触发一次刷新，
 // 成功后无错误。
 func TestTasks_CacheClusterBoard(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
@@ -679,7 +641,6 @@ func TestTasks_CacheClusterBoard(t *testing.T) {
 
 // TestTasks_CacheClusterBoard_Error 覆盖集群看板刷新失败路径：错误原样上抛。
 func TestTasks_CacheClusterBoard_Error(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
@@ -691,7 +652,6 @@ func TestTasks_CacheClusterBoard_Error(t *testing.T) {
 // TestTasks_CacheResourceSnapshot 覆盖空间资源快照 5m 预热任务：force=true 触发一次
 // 刷新，成功后无错误。
 func TestTasks_CacheResourceSnapshot(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
@@ -702,7 +662,6 @@ func TestTasks_CacheResourceSnapshot(t *testing.T) {
 
 // TestTasks_CacheResourceSnapshot_Error 覆盖空间资源快照刷新失败路径：错误原样上抛。
 func TestTasks_CacheResourceSnapshot_Error(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
@@ -713,7 +672,6 @@ func TestTasks_CacheResourceSnapshot_Error(t *testing.T) {
 
 // TestTasks_CacheClusterInfo 覆盖集群信息统计 30s 预热任务：force 刷新一次，成功后无错误。
 func TestTasks_CacheClusterInfo(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
@@ -724,7 +682,6 @@ func TestTasks_CacheClusterInfo(t *testing.T) {
 
 // TestTasks_CacheClusterInfo_Error 覆盖集群信息刷新失败路径：错误原样上抛。
 func TestTasks_CacheClusterInfo_Error(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)

@@ -67,7 +67,6 @@ func TestGrpcRunner_RecoveryHandler(t *testing.T) {
 }
 
 func TestAuthenticate(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -98,7 +97,6 @@ func TestAuthenticate(t *testing.T) {
 }
 
 func TestNewGrpcRunner(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -114,7 +112,6 @@ func TestNewGrpcRunner(t *testing.T) {
 }
 
 func TestGrpcRunner_Shutdown(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -154,7 +151,6 @@ func TestGrpcRunner_Shutdown(t *testing.T) {
 }
 
 func Test_grpcRunner_initServer(t *testing.T) {
-	t.Parallel()
 	var ss any
 	(&grpcRunner{
 		grpcRegistry: &app.GrpcRegistry{
@@ -243,7 +239,6 @@ func newBufconnGRPCRunner(m *gomock.Controller) (*grpcRunner, *bufconn.Listener)
 // 缺失 token 的请求在 authFn 处即被拒（Unauthenticated）。两个方向覆盖 authFn 闭包的
 // 全部执行路径，补上 Test_grpcRunner_initServer 只验注册不验调用的缺口。
 func Test_grpcRunner_initServer_UnaryRPC(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	runner, lis := newBufconnGRPCRunner(m)
@@ -282,7 +277,6 @@ func Test_grpcRunner_initServer_UnaryRPC(t *testing.T) {
 // 此前只有 recoveryHandler 的单元测试，链上 panic 无任何断言——变异（Recovery 挪回最内）
 // 时全部测试仍绿，本测试为「Recovery 必须最外层」的链序不变量补上承重断言。
 func Test_grpcRunner_initServer_InterceptorPanicRecovered(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -331,7 +325,6 @@ func Test_grpcRunner_initServer_InterceptorPanicRecovered(t *testing.T) {
 // 若将来有人把 AccessLog 挪回 Login 外层，defer 持原始 ctx 导致 grpcUser 返回匿名，
 // Infof 的 user 参数不再等于 "duc"，断言即失败。
 func Test_grpcRunner_initServer_AccessLogPrintsUser(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -383,7 +376,6 @@ func Test_grpcRunner_initServer_AccessLogPrintsUser(t *testing.T) {
 // initServer 装配、goroutine 内 Serve 拉起，Shutdown 触发的 GracefulStop 让 Serve 返回
 // 并被 goroutine 吞掉。此前 Run 全程零覆盖。
 func Test_grpcRunner_Run_SuccessAndServe(t *testing.T) {
-	t.Parallel()
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	assert.Nil(t, err)
 	port := l.Addr().(*net.TCPAddr).Port
@@ -408,7 +400,6 @@ func Test_grpcRunner_Run_SuccessAndServe(t *testing.T) {
 // Test_grpcRunner_Run_ListenError 覆盖 Run 的失败路径：非法 endpoint 让 net.Listen
 // 报错并直接返回，不进入 initServer/Serve。
 func Test_grpcRunner_Run_ListenError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	runner := &grpcRunner{

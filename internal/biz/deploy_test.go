@@ -48,7 +48,6 @@ func deployBizForTest(proj ProjectRepo, helmer HelmerRepo, event EventRepo) Depl
 }
 
 func TestDeployBiz_DeleteProject_HappyPath(t *testing.T) {
-	t.Parallel()
 	var deletedID int
 	var dispatched EventKey
 	helmer := &fakeHelmerRepo{uninstall: func(releaseName, namespace string, log LogFn) error {
@@ -70,7 +69,6 @@ func TestDeployBiz_DeleteProject_HappyPath(t *testing.T) {
 }
 
 func TestDeployBiz_DeleteProject_UninstallNotFoundStillDeletes(t *testing.T) {
-	t.Parallel()
 	// release 已不存在（手动清理/孤儿）不算失败，继续删 DB + 派发事件，
 	// 避免把已经没 release 的项目锁死无法删除。
 	var deleted bool
@@ -87,7 +85,6 @@ func TestDeployBiz_DeleteProject_UninstallNotFoundStillDeletes(t *testing.T) {
 }
 
 func TestDeployBiz_DeleteProject_UninstallErrorAborts(t *testing.T) {
-	t.Parallel()
 	// 回归防护：卸载 release 失败（非 not-found）必须中止删除、保留 DB 记录，
 	// 否则会留下无记录、无法重试的孤儿 release。
 	var deleted, dispatched bool
@@ -105,7 +102,6 @@ func TestDeployBiz_DeleteProject_UninstallErrorAborts(t *testing.T) {
 }
 
 func TestDeployBiz_DeleteProject_DeleteErrorNoDispatch(t *testing.T) {
-	t.Parallel()
 	// DB 删除失败时不派发项目删除事件（事件代表删除已生效）。
 	var dispatched bool
 	helmer := &fakeHelmerRepo{uninstall: func(releaseName, namespace string, log LogFn) error { return nil }}
@@ -119,7 +115,6 @@ func TestDeployBiz_DeleteProject_DeleteErrorNoDispatch(t *testing.T) {
 }
 
 func TestDeployBiz_DeleteProject_NilProject(t *testing.T) {
-	t.Parallel()
 	d := deployBizForTest(nil, nil, nil)
 	err := d.DeleteProject(context.TODO(), 1, nil, nil)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))

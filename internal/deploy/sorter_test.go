@@ -7,7 +7,6 @@ import (
 )
 
 func TestPriority_Add(t *testing.T) {
-	t.Parallel()
 	p := priority[string]{}
 	p.Add(1, "a")
 	p.Add(3, "b")
@@ -16,13 +15,11 @@ func TestPriority_Add(t *testing.T) {
 }
 
 func TestPriority_Sort(t *testing.T) {
-	t.Parallel()
 	p := priority[string]{}
 	assert.Equal(t, []string{}, p.Sort())
 }
 
 func TestPriority_Sort_DoesNotMutateInternalList(t *testing.T) {
-	t.Parallel()
 	p := priority[string]{}
 	p.Add(1, "a")
 	p.Add(3, "b")

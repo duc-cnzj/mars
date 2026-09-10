@@ -32,7 +32,6 @@ func newNamespaceMockEntClient(t *testing.T) (*ent.Client, sqlmock.Sqlmock) {
 // 查询该用户最大 sort_order 失败（非 NotFound）的防御分支：DB 抖动必须返回错误而非
 // 被误判为"无历史关注"继续写入。
 func Test_namespaceRepo_Favorite_MaxSortOrderQueryError(t *testing.T) {
-	t.Parallel()
 	client, mock := newNamespaceMockEntClient(t)
 	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: client}))
 	ctx := context.TODO()
@@ -51,7 +50,6 @@ func Test_namespaceRepo_Favorite_MaxSortOrderQueryError(t *testing.T) {
 // Test_namespaceRepo_FavoriteSort_QueryError 覆盖事务内查询两个关注空间失败的防御分支：
 // 查询失败直接回滚事务返回错误，不进入移动/回填逻辑。
 func Test_namespaceRepo_FavoriteSort_QueryError(t *testing.T) {
-	t.Parallel()
 	client, mock := newNamespaceMockEntClient(t)
 	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: client}))
 	ctx := context.TODO()
@@ -68,7 +66,6 @@ func Test_namespaceRepo_FavoriteSort_QueryError(t *testing.T) {
 // Test_namespaceRepo_FavoriteSort_UpdateError 覆盖事务内区间顺移写入失败的防御分支：
 // 顺移/落位任一步写入失败即回滚整个事务，不留下半程移动状态。
 func Test_namespaceRepo_FavoriteSort_UpdateError(t *testing.T) {
-	t.Parallel()
 	client, mock := newNamespaceMockEntClient(t)
 	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: client}))
 	ctx := context.TODO()
@@ -89,7 +86,6 @@ func Test_namespaceRepo_FavoriteSort_UpdateError(t *testing.T) {
 // Test_namespaceRepo_FavoriteSort_BackwardUpdateError 覆盖后移分支（firstID 在 secondID 之后，
 // 中间区间 +1）顺移写入失败的防御分支：失败即回滚整个事务。
 func Test_namespaceRepo_FavoriteSort_BackwardUpdateError(t *testing.T) {
-	t.Parallel()
 	client, mock := newNamespaceMockEntClient(t)
 	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: client}))
 	ctx := context.TODO()
@@ -111,7 +107,6 @@ func Test_namespaceRepo_FavoriteSort_BackwardUpdateError(t *testing.T) {
 // Test_namespaceRepo_FavoriteSort_RenumberQueryError 覆盖两空间 sort_order 相同时触发的懒重排：
 // 重排查询（按 email 取全部关注）失败的防御分支，DB 抖动必须返回错误而非静默原地移动。
 func Test_namespaceRepo_FavoriteSort_RenumberQueryError(t *testing.T) {
-	t.Parallel()
 	client, mock := newNamespaceMockEntClient(t)
 	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: client}))
 	ctx := context.TODO()
@@ -134,7 +129,6 @@ func Test_namespaceRepo_FavoriteSort_RenumberQueryError(t *testing.T) {
 // Test_namespaceRepo_FavoriteSort_RenumberUpdateError 覆盖懒重排落位写入失败的防御分支：
 // 重排 UPDATE 失败即回滚整个事务，不留半程重排状态。
 func Test_namespaceRepo_FavoriteSort_RenumberUpdateError(t *testing.T) {
-	t.Parallel()
 	client, mock := newNamespaceMockEntClient(t)
 	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: client}))
 	ctx := context.TODO()
@@ -161,7 +155,6 @@ func Test_namespaceRepo_FavoriteSort_RenumberUpdateError(t *testing.T) {
 // Test_namespaceRepo_FavoriteSort_RenumberRereadError 覆盖懒重排成功后重读两空间落位失败的
 // 防御分支：重读失败即回滚整个事务，不进入区间顺移。
 func Test_namespaceRepo_FavoriteSort_RenumberRereadError(t *testing.T) {
-	t.Parallel()
 	client, mock := newNamespaceMockEntClient(t)
 	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: client}))
 	ctx := context.TODO()

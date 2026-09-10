@@ -13,7 +13,6 @@ import (
 // TestMockMetricsStreamTopPodServer_AllMethods 逐个调用生成 mock 的全部方法，
 // 让 mockgen 生成的样板代码被完整覆盖。
 func TestMockMetricsStreamTopPodServer_AllMethods(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	srv := NewMockMetrics_StreamTopPodServer(m)
 

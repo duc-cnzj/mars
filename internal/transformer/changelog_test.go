@@ -14,14 +14,12 @@ import (
 )
 
 func TestFromChangelog_NilInput(t *testing.T) {
-	t.Parallel()
 	var c *biz.Changelog
 	result := transformer.FromChangelog(c)
 	assert.Nil(t, result)
 }
 
 func TestFromChangelog_ValidInput(t *testing.T) {
-	t.Parallel()
 	now := time.Now()
 	c := &biz.Changelog{
 		ID:            1,
@@ -81,7 +79,6 @@ func TestFromChangelog_ValidInput(t *testing.T) {
 }
 
 func TestFromChangelog_DeletedChangelog(t *testing.T) {
-	t.Parallel()
 	now := time.Now()
 	c := &biz.Changelog{
 		ID:            1,
@@ -121,7 +118,6 @@ func TestFromChangelog_DeletedChangelog(t *testing.T) {
 }
 
 func TestFromChangelog_ZeroValues(t *testing.T) {
-	t.Parallel()
 	c := &biz.Changelog{
 		ID:        1,
 		CreatedAt: time.Now(),

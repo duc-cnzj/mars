@@ -18,7 +18,6 @@ import (
 // 私有方法 authenticate 成功注入用户后放行、私有方法 authenticate 失败不进 handler；
 // 失败分支另以 mock logger 承重断言 [auth audit] Warning 审计日志落盘（401 审计兜底）。
 func TestLoginUnaryServerInterceptor(t *testing.T) {
-	t.Parallel()
 	authCalled := 0
 	authFn := func(ctx context.Context) (context.Context, error) {
 		authCalled++
@@ -73,7 +72,6 @@ func TestLoginUnaryServerInterceptor(t *testing.T) {
 // 私有方法 authenticate 成功注入用户后放行、私有方法 authenticate 失败不进 handler。
 // ss 复用 validator_test.go 中的测试桩实现 grpc.ServerStream。
 func TestLoginStreamServerInterceptor(t *testing.T) {
-	t.Parallel()
 	authCalled := 0
 	authFn := func(ctx context.Context) (context.Context, error) {
 		authCalled++
@@ -126,7 +124,6 @@ func TestLoginStreamServerInterceptor(t *testing.T) {
 
 // TestLoginHTTP_Success 验证校验通过时中间件放行，且 next 收到携带注入用户的新 ctx。
 func TestLoginHTTP_Success(t *testing.T) {
-	t.Parallel()
 	type ctxKey struct{}
 	user := "duc"
 	verify := func(ctx context.Context, token string) (context.Context, error) {
@@ -145,7 +142,6 @@ func TestLoginHTTP_Success(t *testing.T) {
 // TestLoginHTTP_Unauthorized 验证校验失败时中间件写 401、不进入业务 handler，
 // 并以 mock logger 承重断言 [auth audit] Warning 审计日志落盘（401 审计兜底）。
 func TestLoginHTTP_Unauthorized(t *testing.T) {
-	t.Parallel()
 	verify := func(ctx context.Context, token string) (context.Context, error) {
 		return nil, errors.New("invalid token")
 	}
@@ -167,7 +163,6 @@ func TestLoginHTTP_Unauthorized(t *testing.T) {
 
 // TestLoginHTTP_TokenFromHeader 验证 verify 收到的是请求头 Authorization 的原始值。
 func TestLoginHTTP_TokenFromHeader(t *testing.T) {
-	t.Parallel()
 	var gotToken string
 	verify := func(ctx context.Context, token string) (context.Context, error) {
 		gotToken = token

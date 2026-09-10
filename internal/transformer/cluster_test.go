@@ -9,13 +9,11 @@ import (
 )
 
 func TestFromClusterInfo_NilInput(t *testing.T) {
-	t.Parallel()
 	result := transformer.FromClusterInfo(nil)
 	assert.Nil(t, result)
 }
 
 func TestFromClusterInfo_ValidInput(t *testing.T) {
-	t.Parallel()
 	info := &biz.ClusterInfo{
 		Status:            "Running",
 		FreeMemory:        "1024",

@@ -37,7 +37,6 @@ func newTokenManagerForTest(biz AccessTokenBiz) TokenManager {
 }
 
 func TestAccessTokenManager_VerifyAndTouch_Valid(t *testing.T) {
-	t.Parallel()
 	f := &fakeAccessTokenBizForManager{user: &UserInfo{Name: "duc", Email: "duc@x.io"}}
 	m := newTokenManagerForTest(f)
 	now := time.Date(2026, 8, 11, 10, 0, 0, 0, time.UTC)
@@ -49,7 +48,6 @@ func TestAccessTokenManager_VerifyAndTouch_Valid(t *testing.T) {
 }
 
 func TestAccessTokenManager_VerifyAndTouch_FindError(t *testing.T) {
-	t.Parallel()
 	f := &fakeAccessTokenBizForManager{findErr: errors.New("db down"), user: &UserInfo{}}
 	m := newTokenManagerForTest(f)
 	got, ok := m.VerifyAndTouch(context.TODO(), "tok", time.Now())
@@ -60,7 +58,6 @@ func TestAccessTokenManager_VerifyAndTouch_FindError(t *testing.T) {
 }
 
 func TestAccessTokenManager_VerifyAndTouch_TouchError(t *testing.T) {
-	t.Parallel()
 	// TouchLastUsedAt 失败只告警不回退，仍返回用户。
 	f := &fakeAccessTokenBizForManager{touchErr: errors.New("touch down"), user: &UserInfo{Name: "duc"}}
 	m := newTokenManagerForTest(f)

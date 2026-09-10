@@ -18,7 +18,6 @@ import (
 )
 
 func TestIsValidShell(t *testing.T) {
-	t.Parallel()
 	validShells := []string{"bash", "sh", "powershell", "cmd"}
 
 	assert.True(t, isValidShell(validShells, "bash"))
@@ -29,14 +28,12 @@ func TestIsValidShell(t *testing.T) {
 }
 
 func TestSilence(t *testing.T) {
-	t.Parallel()
 	assert.True(t, shouldSilenceShellError(errors.New("command terminated with exit code 126")))
 	assert.True(t, shouldSilenceShellError(errors.New("command terminated with exit code 130")))
 	assert.False(t, shouldSilenceShellError(errors.New("command terminated with exit code 131")))
 }
 
 func TestSizeStore(t *testing.T) {
-	t.Parallel()
 	s := &sizeStore{}
 
 	s.Set(10, 20)
@@ -52,7 +49,6 @@ func TestSizeStore(t *testing.T) {
 }
 
 func TestContainer(t *testing.T) {
-	t.Parallel()
 	container := &biz.Container{
 		Namespace: "namespace",
 		Pod:       "pod",
@@ -65,7 +61,6 @@ func TestContainer(t *testing.T) {
 }
 
 func TestPtyHandler_SetShell(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	recorder := data.NewMockRecorder(m)
@@ -77,7 +72,6 @@ func TestPtyHandler_SetShell(t *testing.T) {
 }
 
 func TestPtyHandler_IsClosed(t *testing.T) {
-	t.Parallel()
 	pty := &ptyHandler{}
 	assert.False(t, pty.IsClosed())
 	pty.Closeable.Close()
@@ -85,7 +79,6 @@ func TestPtyHandler_IsClosed(t *testing.T) {
 }
 
 func TestPtyHandler_sizeStore(t *testing.T) {
-	t.Parallel()
 	pty := &ptyHandler{
 		sizeStore: &sizeStore{},
 	}
@@ -98,7 +91,6 @@ func TestPtyHandler_sizeStore(t *testing.T) {
 }
 
 func TestPtyHandler_Read(t *testing.T) {
-	t.Parallel()
 	pty := &ptyHandler{
 		doneChan: make(chan struct{}),
 		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
@@ -112,7 +104,6 @@ func TestPtyHandler_Read(t *testing.T) {
 }
 
 func TestPtyHandler_Toast(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	conn := NewMockConn(m)
@@ -130,7 +121,6 @@ func TestPtyHandler_Toast(t *testing.T) {
 }
 
 func TestSessionMap_Get(t *testing.T) {
-	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	sm := NewSessionMap(logger)
 	session := &ptyHandler{}
@@ -145,7 +135,6 @@ func TestSessionMap_Get(t *testing.T) {
 }
 
 func TestSessionMap_Set(t *testing.T) {
-	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	sm := NewSessionMap(logger)
 	session := &ptyHandler{}
@@ -170,7 +159,6 @@ func (*testPtyHandler) IsClosed() bool {
 }
 
 func TestSessionMap_CloseAll(t *testing.T) {
-	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	sm := NewSessionMap(logger)
 	session1 := &testPtyHandler{}
@@ -189,7 +177,6 @@ func TestSessionMap_CloseAll(t *testing.T) {
 }
 
 func TestSessionMap_Close(t *testing.T) {
-	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	sm := NewSessionMap(logger)
 	session := &testPtyHandler{}
@@ -202,7 +189,6 @@ func TestSessionMap_Close(t *testing.T) {
 }
 
 func TestWebsocketManager_execInContainer(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	sRepo := data.NewMockK8sRepo(m)
@@ -223,7 +209,6 @@ func TestWebsocketManager_execInContainer(t *testing.T) {
 }
 
 func TestWebsocketManager_runTerminal(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	sRepo := data.NewMockK8sRepo(m)
@@ -243,7 +228,6 @@ func TestWebsocketManager_runTerminal(t *testing.T) {
 }
 
 func TestWebsocketManager_runTerminal2(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	sRepo := data.NewMockK8sRepo(m)
@@ -263,7 +247,6 @@ func TestWebsocketManager_runTerminal2(t *testing.T) {
 }
 
 func TestWebsocketManager_runTerminal3(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	sRepo := data.NewMockK8sRepo(m)
@@ -285,7 +268,6 @@ type testRecorder struct {
 }
 
 func Test_resetSession(t *testing.T) {
-	t.Parallel()
 	old := &ptyHandler{
 		container: &biz.Container{
 			Namespace: "a",
@@ -319,7 +301,6 @@ func Test_resetSession(t *testing.T) {
 }
 
 func Test_resetSession4(t *testing.T) {
-	t.Parallel()
 	old := &ptyHandler{
 		container: &biz.Container{
 			Namespace: "a",
@@ -346,7 +327,6 @@ func Test_resetSession4(t *testing.T) {
 }
 
 func Test_resetSession1(t *testing.T) {
-	t.Parallel()
 	old := &ptyHandler{
 		container: &biz.Container{
 			Namespace: "a",
@@ -374,7 +354,6 @@ func Test_resetSession1(t *testing.T) {
 }
 
 func Test_resetSession2(t *testing.T) {
-	t.Parallel()
 	old := &ptyHandler{
 		container: &biz.Container{
 			Namespace: "a",
@@ -402,7 +381,6 @@ func Test_resetSession2(t *testing.T) {
 }
 
 func TestPtyHandler_Next_DoneChan(t *testing.T) {
-	t.Parallel()
 	p := &ptyHandler{
 		recorder: &testRecorder{},
 		sizeChan: make(chan biz.TerminalSize, 1),
@@ -414,7 +392,6 @@ func TestPtyHandler_Next_DoneChan(t *testing.T) {
 }
 
 func TestPtyHandler_Next(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	r := data.NewMockRecorder(m)
@@ -470,7 +447,6 @@ func TestPtyHandler_Next(t *testing.T) {
 }
 
 func TestPtyHandler_Read2(t *testing.T) {
-	t.Parallel()
 	p := &ptyHandler{
 		sessionID: "duc",
 		recorder:  &testRecorder{},
@@ -550,7 +526,6 @@ func TestPtyHandler_Read2(t *testing.T) {
 // 命中 doneChan 分支，shellCh/sizeChan 只应被首个调用方关闭一次，二次调用不得
 // "close of closed channel" panic。修复前两次调用即 panic。
 func TestPtyHandler_SendResize_AfterDoneChanClose(t *testing.T) {
-	t.Parallel()
 	p := &ptyHandler{
 		sessionID: "duc",
 		logger:    mlog.NewForConfig(nil),
@@ -572,7 +547,6 @@ func TestPtyHandler_SendResize_AfterDoneChanClose(t *testing.T) {
 }
 
 func Test_sizeStore_Changed(t *testing.T) {
-	t.Parallel()
 	ss := sizeStore{
 		width:  0,
 		height: 0,
@@ -586,7 +560,6 @@ func Test_sizeStore_Changed(t *testing.T) {
 }
 
 func TestPtyHandler_Close(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	recorder := data.NewMockRecorder(m)
@@ -673,7 +646,6 @@ func TestPtyHandler_Close(t *testing.T) {
 }
 
 func TestPtyHandler_sendControlFrame_canceledCtx(t *testing.T) {
-	t.Parallel()
 	p := &ptyHandler{
 		sessionID: "duc",
 		logger:    mlog.NewForConfig(nil),
@@ -688,7 +660,6 @@ func TestPtyHandler_sendControlFrame_canceledCtx(t *testing.T) {
 }
 
 func TestPtyHandler_waitShellDrained_timeout(t *testing.T) {
-	t.Parallel()
 	p := &ptyHandler{
 		sessionID: "duc",
 		logger:    mlog.NewForConfig(nil),
@@ -703,7 +674,6 @@ func TestPtyHandler_waitShellDrained_timeout(t *testing.T) {
 }
 
 func TestPtyHandler_Write(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	recorder := data.NewMockRecorder(m)
@@ -752,7 +722,6 @@ func TestPtyHandler_Write(t *testing.T) {
 }
 
 func TestPtyHandler_Write3(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	ps := app.NewMockPubSub(m)
@@ -792,7 +761,6 @@ func TestPtyHandler_Write3(t *testing.T) {
 }
 
 func TestPtyHandler_Write_with_chan_full(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	ps := app.NewMockPubSub(m)
@@ -820,7 +788,6 @@ func TestPtyHandler_Write_with_chan_full(t *testing.T) {
 }
 
 func TestStartShell_WithValidSessionID(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -852,7 +819,6 @@ func TestStartShell_WithValidSessionID(t *testing.T) {
 }
 
 func TestStartShell_EmptySessionID(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -877,7 +843,6 @@ func TestStartShell_EmptySessionID(t *testing.T) {
 }
 
 func Test_ptyHandler_Send(t *testing.T) {
-	t.Parallel()
 	ctx, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
 	assert.Equal(t, context.Canceled, (&ptyHandler{}).Send(ctx, nil))
@@ -887,7 +852,6 @@ func Test_ptyHandler_Send(t *testing.T) {
 // bash 失败 → resetSession 重建会话 → 重试 sh 成功。resetSession 对 session 做
 // *ptyHandler 类型断言，故用真实 handler（带非零 sizeStore 跳过轮询），recorder 用 mock。
 func TestWebsocketManager_runTerminal_shellRetry(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 

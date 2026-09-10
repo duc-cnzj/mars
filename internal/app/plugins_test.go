@@ -119,7 +119,6 @@ func TestGetPluginsReturnsCopy(t *testing.T) {
 }
 
 func TestGetPluginUnregistered(t *testing.T) {
-	t.Parallel()
 	_, err := GetPlugin[WsSender](config.Plugin{Name: "not_registered_plugin"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not_registered_plugin")
@@ -127,13 +126,11 @@ func TestGetPluginUnregistered(t *testing.T) {
 }
 
 func TestManagerDestroyNilSafe(t *testing.T) {
-	t.Parallel()
 	ma := &manager{logger: mlog.NewForConfig(nil)}
 	assert.NotPanics(t, ma.Destroy)
 }
 
 func TestManagerDestroyOrderAndContinuesOnError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -155,7 +152,6 @@ func TestManagerDestroyOrderAndContinuesOnError(t *testing.T) {
 }
 
 func TestPluginManagerLoad_MidwayError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	ma := &manager{
@@ -168,7 +164,6 @@ func TestPluginManagerLoad_MidwayError(t *testing.T) {
 }
 
 func TestPluginManagerLoad_WsError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	git := NewMockGitServer(m)
@@ -185,7 +180,6 @@ func TestPluginManagerLoad_WsError(t *testing.T) {
 }
 
 func TestPluginManagerLoad_DomainError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	git := NewMockGitServer(m)
@@ -209,7 +203,6 @@ func TestPluginManagerLoad_DomainError(t *testing.T) {
 }
 
 func TestPluginManagerLoad_PictureError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	git := NewMockGitServer(m)
@@ -273,7 +266,6 @@ func TestGetPlugin_TypeMismatch(t *testing.T) {
 }
 
 func TestNewPluginManager_Unregistered(t *testing.T) {
-	t.Parallel()
 	_, err := NewPluginManager(&config.Config{
 		DomainManagerPlugin: config.Plugin{Name: "no_such_plugin"},
 	}, mlog.NewForConfig(nil))
@@ -321,7 +313,6 @@ func (resolverApp) Logger() mlog.Logger          { return mlog.NewForConfig(nil)
 func (resolverApp) ProjectRepo() biz.ProjectRepo { return nil }
 
 func TestResolve(t *testing.T) {
-	t.Parallel()
 	// 成功：动态类型实现窄视图，返回视图实例。
 	d := Resolve[interface{ Logger() mlog.Logger }](resolverApp{})
 	assert.NotNil(t, d.Logger())

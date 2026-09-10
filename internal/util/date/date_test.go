@@ -8,7 +8,6 @@ import (
 )
 
 func TestToHumanizeDateTime(t *testing.T) {
-	t.Parallel()
 	now := time.Now()
 	assert.Equal(t, "现在", ToHumanizeDateTime(&now))
 
@@ -23,7 +22,6 @@ func TestToHumanizeDateTime(t *testing.T) {
 }
 
 func TestToRFC3339(t *testing.T) {
-	t.Parallel()
 	now := time.Now()
 	assert.Equal(t, now.Format(time.RFC3339), ToRFC3339(&now))
 
@@ -35,7 +33,6 @@ func TestToRFC3339(t *testing.T) {
 }
 
 func TestHumanDuration(t *testing.T) {
-	t.Parallel()
 	assert.Equal(t, "0秒", HumanDuration(0))
 	assert.Equal(t, "1秒", HumanDuration(time.Second))
 	assert.Equal(t, "60秒", HumanDuration(1*time.Minute))
@@ -48,7 +45,6 @@ func TestHumanDuration(t *testing.T) {
 	assert.Equal(t, "<invalid>", HumanDuration(-1*time.Second))
 }
 func TestHumanDurationWithYearsAndDays(t *testing.T) {
-	t.Parallel()
 	twoYearsAndThreeDays := 2*365*24*time.Hour + 3*24*time.Hour
 	assert.Equal(t, "2年3天", HumanDuration(twoYearsAndThreeDays))
 
@@ -57,36 +53,30 @@ func TestHumanDurationWithYearsAndDays(t *testing.T) {
 }
 
 func TestHumanDurationWithSeconds(t *testing.T) {
-	t.Parallel()
 	twoSecondsDuration := 2 * time.Second
 	assert.Equal(t, "2秒", HumanDuration(twoSecondsDuration))
 }
 
 func TestHumanDurationWithMinutesAndSeconds(t *testing.T) {
-	t.Parallel()
 	nineMinutesAndThirtySecondsDuration := 9*time.Minute + 30*time.Second
 	assert.Equal(t, "9分钟30秒", HumanDuration(nineMinutesAndThirtySecondsDuration))
 }
 
 func TestHumanDurationWithHoursAndMinutes(t *testing.T) {
-	t.Parallel()
 	sevenHoursAndFortyFiveMinutes := 7*time.Hour + 45*time.Minute
 	assert.Equal(t, "7小时45分钟", HumanDuration(sevenHoursAndFortyFiveMinutes))
 }
 
 func TestHumanDurationWithDaysAndHours(t *testing.T) {
-	t.Parallel()
 	sevenDaysAndSixHours := 7*24*time.Hour + 6*time.Hour
 	assert.Equal(t, "7天6小时", HumanDuration(sevenDaysAndSixHours))
 }
 func TestHumanDurationWithFortyEightHours(t *testing.T) {
-	t.Parallel()
 	fortyEightHours := 47 * time.Hour
 	assert.Equal(t, "47小时", HumanDuration(fortyEightHours))
 }
 
 func TestHumanDurationWithTwoYears(t *testing.T) {
-	t.Parallel()
 	twoYears := (2 * 365 * 24 * time.Hour) - 1*time.Hour
 	assert.Equal(t, "729天", HumanDuration(twoYears))
 }

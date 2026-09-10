@@ -23,7 +23,6 @@ import (
 // 配合 controller_test.go + controller_ws_test.go 将非 mock 生产函数覆盖补到 100%。
 
 func TestWebsocketManager_HandleJoinRoom_errors(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -54,7 +53,6 @@ func TestWebsocketManager_HandleJoinRoom_errors(t *testing.T) {
 // 越权回归：普通用户 join 私有命名空间项目被 RequireProjectAccess 拒绝，
 // 回错误帧且不触达 PubSub.Join——订阅 Pod 事件流不得泄露私有项目动态。
 func TestWebsocketManager_HandleJoinRoom_denied(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -80,7 +78,6 @@ func TestWebsocketManager_HandleJoinRoom_denied(t *testing.T) {
 }
 
 func TestWebsocketManager_HandleStartShell_success(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -143,7 +140,6 @@ func TestWebsocketManager_HandleStartShell_success(t *testing.T) {
 // 拒绝，回错误帧且不触达 StartShell——交互终端可执行任意命令，不得绕过命名空间访问控制
 // 进入私有命名空间容器（RCE 级越权，与 gRPC container.Exec 对齐）。
 func TestWebsocketManager_HandleStartShell_denied(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -172,7 +168,6 @@ func TestWebsocketManager_HandleStartShell_denied(t *testing.T) {
 }
 
 func TestWebsocketManager_HandleCreateProject_installError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -206,7 +201,6 @@ func TestWebsocketManager_HandleCreateProject_installError(t *testing.T) {
 }
 
 func TestWebsocketManager_HandleUpdateProject_showError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -228,7 +222,6 @@ func TestWebsocketManager_HandleUpdateProject_showError(t *testing.T) {
 // 越权回归：普通用户更新私有命名空间项目被 RequireProjectAccess 拒绝，
 // 回错误帧且不触达部署流水线——更新帧不得用于探测或操作私有项目（与 HandleJoinRoom 对齐）。
 func TestWebsocketManager_HandleUpdateProject_denied(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -256,7 +249,6 @@ func TestWebsocketManager_HandleUpdateProject_denied(t *testing.T) {
 }
 
 func TestWebsocketManager_HandleUpdateProject_installError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -292,7 +284,6 @@ func TestWebsocketManager_HandleUpdateProject_installError(t *testing.T) {
 }
 
 func TestWebsocketManager_HandleCancelDeploy_showError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -311,7 +302,6 @@ func TestWebsocketManager_HandleCancelDeploy_showError(t *testing.T) {
 }
 
 func TestWebsocketManager_installProject_addCancelDeployTaskError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -355,7 +345,6 @@ func TestWebsocketManager_installProject_addCancelDeployTaskError(t *testing.T) 
 }
 
 func TestWebsocketManager_installProject_onFinallyCallback(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -395,7 +384,6 @@ func TestWebsocketManager_installProject_onFinallyCallback(t *testing.T) {
 	assert.False(t, conn.taskManager.Has("taskID"))
 }
 func TestMessageSenderFunctionality(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -412,7 +400,6 @@ func TestMessageSenderFunctionality(t *testing.T) {
 // TestMessageSender_SetSlug 覆盖 slug 就地重算：创建部署名缺省解析后由 ApplyProject 调用，
 // 保证出站帧携带最终名（前端 toSlug 关联的日志 key）。
 func TestMessageSender_SetSlug(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -423,7 +410,6 @@ func TestMessageSender_SetSlug(t *testing.T) {
 }
 
 func TestSendDeployedResultFunctionality(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -449,7 +435,6 @@ func TestSendDeployedResultFunctionality(t *testing.T) {
 }
 
 func TestSendEndErrorFunctionality(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -470,7 +455,6 @@ func TestSendEndErrorFunctionality(t *testing.T) {
 }
 
 func TestSendProcessPercentFunctionality(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -492,7 +476,6 @@ func TestSendProcessPercentFunctionality(t *testing.T) {
 }
 
 func TestSendMsgFunctionality(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -514,7 +497,6 @@ func TestSendMsgFunctionality(t *testing.T) {
 }
 
 func TestSendMsgWithContainerLogFunctionality(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -539,7 +521,6 @@ func TestSendMsgWithContainerLogFunctionality(t *testing.T) {
 }
 
 func TestSendProtoMsgFunctionality(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -556,7 +537,6 @@ func TestSendProtoMsgFunctionality(t *testing.T) {
 }
 
 func TestProcessPercentAddFunctionality(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -577,7 +557,6 @@ func TestProcessPercentAddFunctionality(t *testing.T) {
 }
 
 func TestProcessPercentToFunctionality(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -599,7 +578,6 @@ func TestProcessPercentToFunctionality(t *testing.T) {
 }
 
 func Test_messageSender_Current(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 

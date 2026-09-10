@@ -14,7 +14,6 @@ import (
 // TestAccessLogUnaryServerInterceptor 覆盖 Unary 访问日志：有用户/无用户都打日志，
 // 无用户（公开方法）用户名为空串；返回值透传 handler。
 func TestAccessLogUnaryServerInterceptor(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	logger := mlog.NewMockLogger(m)
@@ -37,7 +36,6 @@ func TestAccessLogUnaryServerInterceptor(t *testing.T) {
 // TestAccessLogStreamServerInterceptor 覆盖 Stream 访问日志：流会话结束时打日志，
 // 有用户/无用户均打，use 为整段会话时长。
 func TestAccessLogStreamServerInterceptor(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	logger := mlog.NewMockLogger(m)
@@ -58,7 +56,6 @@ func TestAccessLogStreamServerInterceptor(t *testing.T) {
 
 // Test_grpcUser 覆盖用户解析两分支：已注入返回原用户，未注入返回空 UserInfo 而非 nil。
 func Test_grpcUser(t *testing.T) {
-	t.Parallel()
 	ctx := biz.SetUser(context.TODO(), &biz.UserInfo{Name: "duc"})
 	assert.Equal(t, "duc", grpcUser(ctx).Name)
 

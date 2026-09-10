@@ -20,7 +20,6 @@ import (
 )
 
 func TestNewAuthSvc(t *testing.T) {
-	t.Parallel()
 	svc, _ := newAuthSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.logger)
@@ -32,7 +31,6 @@ func TestNewAuthSvc(t *testing.T) {
 // Test_authSvc_Info 覆盖 Info 成功路径：用户由鉴权拦截器经 biz.SetUser 注入 ctx，
 // Info 不再自行验签，仅做「取 ctx 用户 → 映射响应」。
 func Test_authSvc_Info(t *testing.T) {
-	t.Parallel()
 	svc, _ := newAuthSvcWithMocks(t)
 	user := &biz.UserInfo{
 		ID:        "123",
@@ -57,7 +55,6 @@ func Test_authSvc_Info(t *testing.T) {
 
 // Test_authSvc_Info_SuperAdmin 内置超级管理员固定邮箱登录 → is_super_admin = true。
 func Test_authSvc_Info_SuperAdmin(t *testing.T) {
-	t.Parallel()
 	svc, _ := newAuthSvcWithMocks(t)
 	resp, err := svc.Info(biz.SetUser(context.TODO(), &biz.UserInfo{
 		Email: biz.SuperAdminEmail,
@@ -70,7 +67,6 @@ func Test_authSvc_Info_SuperAdmin(t *testing.T) {
 }
 
 func TestAuthSvc_Login_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAuthSvcWithMocks(t)
 	eventRepo := mocks.eventRepo
 	authBizMock := mocks.authBiz
@@ -110,7 +106,6 @@ func TestAuthSvc_Login_Success(t *testing.T) {
 // TestAuthSvc_Login_SyncUserErrorNotBlocking 投影写库失败不阻断登录（与 OIDC Exchange 一致）：
 // 凭证已校验、登录事件已落库，users 只是管理投影，该用户下次登录会由 SyncLoginUser 自动补回。
 func TestAuthSvc_Login_SyncUserErrorNotBlocking(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAuthSvcWithMocks(t)
 	authBizMock := mocks.authBiz
 	eventRepo := mocks.eventRepo
@@ -141,7 +136,6 @@ func TestAuthSvc_Login_SyncUserErrorNotBlocking(t *testing.T) {
 }
 
 func TestAuthSvc_Login_Failure(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAuthSvcWithMocks(t)
 	authBizMock := mocks.authBiz
 
@@ -158,7 +152,6 @@ func TestAuthSvc_Login_Failure(t *testing.T) {
 }
 
 func TestAuthSvc_Settings_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAuthSvcWithMocks(t)
 	authBizMock := mocks.authBiz
 
@@ -169,7 +162,6 @@ func TestAuthSvc_Settings_Success(t *testing.T) {
 }
 
 func TestAuthSvc_Exchange_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAuthSvcWithMocks(t)
 	authBizMock := mocks.authBiz
 	eventRepo := mocks.eventRepo
@@ -198,7 +190,6 @@ func TestAuthSvc_Exchange_Success(t *testing.T) {
 // TestAuthSvc_Exchange_SyncUserErrorNotBlocking 投影写库失败不阻断登录：OIDC 凭证已校验、
 // 登录事件已落库，users 只是管理投影，该用户下次登录会由 SyncLoginUser 自动补回。
 func TestAuthSvc_Exchange_SyncUserErrorNotBlocking(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAuthSvcWithMocks(t)
 	authBizMock := mocks.authBiz
 	eventRepo := mocks.eventRepo
@@ -216,7 +207,6 @@ func TestAuthSvc_Exchange_SyncUserErrorNotBlocking(t *testing.T) {
 }
 
 func TestAuthSvc_Exchange_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAuthSvcWithMocks(t)
 	authBizMock := mocks.authBiz
 
@@ -228,7 +218,6 @@ func TestAuthSvc_Exchange_Error(t *testing.T) {
 }
 
 func TestAuthSvc_Exchange_CodeNotEchoed(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAuthSvcWithMocks(t)
 	authBizMock := mocks.authBiz
 
@@ -242,7 +231,6 @@ func TestAuthSvc_Exchange_CodeNotEchoed(t *testing.T) {
 }
 
 func TestAuthSvc_Exchange_SignError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAuthSvcWithMocks(t)
 	authBizMock := mocks.authBiz
 
@@ -256,7 +244,6 @@ func TestAuthSvc_Exchange_SignError(t *testing.T) {
 }
 
 func TestAuthSvc_Settings_NoSettings(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAuthSvcWithMocks(t)
 	authBizMock := mocks.authBiz
 
@@ -268,7 +255,6 @@ func TestAuthSvc_Settings_NoSettings(t *testing.T) {
 }
 
 func TestAuthSvc_Settings_ErrorFetchingSettings(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAuthSvcWithMocks(t)
 	authBizMock := mocks.authBiz
 
@@ -291,7 +277,6 @@ func TestAuthSvc_Settings_ErrorFetchingSettings(t *testing.T) {
 }
 
 func TestAuthSvc_Settings_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newAuthSvcWithMocks(t)
 	authBizMock := mocks.authBiz
 

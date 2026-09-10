@@ -17,7 +17,6 @@ import (
 )
 
 func TestIsHttpPortName(t *testing.T) {
-	t.Parallel()
 	tests := []struct {
 		name     string
 		input    string
@@ -59,7 +58,6 @@ func TestIsHttpPortName(t *testing.T) {
 }
 
 func TestSortEndpoint_Len(t *testing.T) {
-	t.Parallel()
 	endpoints := sortEndpoint{
 		{Name: "Endpoint1"},
 		{Name: "Endpoint2"},
@@ -69,7 +67,6 @@ func TestSortEndpoint_Len(t *testing.T) {
 }
 
 func TestSortEndpoint_Swap(t *testing.T) {
-	t.Parallel()
 	endpoints := sortEndpoint{
 		{Name: "Endpoint1"},
 		{Name: "Endpoint2"},
@@ -80,7 +77,6 @@ func TestSortEndpoint_Swap(t *testing.T) {
 }
 
 func TestSortEndpoint_Less(t *testing.T) {
-	t.Parallel()
 	endpoints := sortEndpoint{
 		{Name: "Endpoint1", Url: "http://example.com"},
 		{Name: "Endpoint2", Url: "https://example.com"},
@@ -89,7 +85,6 @@ func TestSortEndpoint_Less(t *testing.T) {
 }
 
 func TestRuntimeObjectList_Has(t *testing.T) {
-	t.Parallel()
 	list := RuntimeObjectList{
 		&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "Pod1"}},
 		&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "Pod2"}},
@@ -107,7 +102,6 @@ func TestRuntimeObjectList_Has(t *testing.T) {
 }
 
 func TestProjectObjectMap_GetProject(t *testing.T) {
-	t.Parallel()
 	mapObj := projectObjectMap{
 		"Project1": RuntimeObjectList{
 			&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "Pod1"}},
@@ -133,7 +127,6 @@ func TestProjectObjectMap_GetProject(t *testing.T) {
 }
 
 func TestEndpointMapping_AllEndpoints(t *testing.T) {
-	t.Parallel()
 	mapping := EndpointMapping{
 		"Project1": []*types.ServiceEndpoint{
 			{Name: "Endpoint1", Url: "http://example.com"},
@@ -153,7 +146,6 @@ func TestEndpointMapping_AllEndpoints(t *testing.T) {
 }
 
 func TestEndpointMapping_Sort(t *testing.T) {
-	t.Parallel()
 	mapping := EndpointMapping{
 		"Project1": []*types.ServiceEndpoint{
 			{Name: "Endpoint1", Url: "http://example.com"},
@@ -179,7 +171,6 @@ func TestEndpointMapping_Sort(t *testing.T) {
 }
 
 func TestFilterK8sTypeFromManifest(t *testing.T) {
-	t.Parallel()
 	data := []string{`apiVersion: v1
 kind: Service
 metadata:
@@ -233,7 +224,6 @@ spec:
 // TestFilterRuntimeObjectFromManifests_InvalidYaml 覆盖 YAML 反序列化失败分支：无效 manifest
 // 记录 Warning 日志后跳过，不影响其余对象解析。
 func TestFilterRuntimeObjectFromManifests_InvalidYaml(t *testing.T) {
-	t.Parallel()
 	res := FilterRuntimeObjectFromManifests[*corev1.Service](mlog.NewForConfig(nil), []string{"[invalid yaml"})
 	assert.Len(t, res, 0)
 }
@@ -319,14 +309,12 @@ spec:
 )
 
 func TestBuildGatewayHTTPRouteMappingByProjects_ListErr(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{gatewayInstalled: true, listHTTPRoutesErr: errors.New("routes down")}
 	_, err := BuildGatewayHTTPRouteMappingByProjects(context.TODO(), mlog.NewForConfig(nil), k, "ns", &Project{Name: "proj1", Manifest: []string{httpRouteManifest}})
 	assert.ErrorContains(t, err, "routes down")
 }
 
 func TestBuildGatewayHTTPRouteMappingByProjects_GatewayNotInstalled(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{gatewayInstalled: false}
 	got, err := BuildGatewayHTTPRouteMappingByProjects(context.TODO(), mlog.NewForConfig(nil), k, "ns", &Project{Name: "proj1", Manifest: []string{httpRouteManifest}})
 	assert.NoError(t, err)
@@ -334,7 +322,6 @@ func TestBuildGatewayHTTPRouteMappingByProjects_GatewayNotInstalled(t *testing.T
 }
 
 func TestBuildGatewayHTTPRouteMappingByProjects_HappyPath(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{
 		gatewayInstalled: true,
 		httpRoutes: []*gatewayv1.HTTPRoute{{
@@ -348,14 +335,12 @@ func TestBuildGatewayHTTPRouteMappingByProjects_HappyPath(t *testing.T) {
 }
 
 func TestBuildNodePortMappingByProjects_ListErr(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{listServicesErr: errors.New("svc down")}
 	_, err := BuildNodePortMappingByProjects(context.TODO(), mlog.NewForConfig(nil), k, "ns", &Project{Name: "proj1", Manifest: []string{svcManifest}})
 	assert.ErrorContains(t, err, "svc down")
 }
 
 func TestBuildNodePortMappingByProjects_HappyPath(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{
 		externalIP: "10.0.0.1",
 		services: []*corev1.Service{{
@@ -372,14 +357,12 @@ func TestBuildNodePortMappingByProjects_HappyPath(t *testing.T) {
 }
 
 func TestBuildIngressMappingByProjects_ListErr(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{listIngressesErr: errors.New("ing down")}
 	_, err := BuildIngressMappingByProjects(context.TODO(), mlog.NewForConfig(nil), k, "ns", &Project{Name: "proj1", Manifest: []string{ingressManifest}})
 	assert.ErrorContains(t, err, "ing down")
 }
 
 func TestBuildIngressMappingByProjects_HappyPath(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{
 		ingresses: []*networkingv1.Ingress{{
 			ObjectMeta: metav1.ObjectMeta{Name: "web-ing", Namespace: "ns"},
@@ -397,14 +380,12 @@ func TestBuildIngressMappingByProjects_HappyPath(t *testing.T) {
 }
 
 func TestBuildLoadBalancerMappingByProjects_ListErr(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{listServicesErr: errors.New("svc down")}
 	_, err := BuildLoadBalancerMappingByProjects(context.TODO(), mlog.NewForConfig(nil), k, "ns", &Project{Name: "proj1", Manifest: []string{svcManifest}})
 	assert.ErrorContains(t, err, "svc down")
 }
 
 func TestBuildLoadBalancerMappingByProjects_HappyPath(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{
 		services: []*corev1.Service{{
 			ObjectMeta: metav1.ObjectMeta{Name: "web-svc", Namespace: "ns"},
@@ -422,7 +403,6 @@ func TestBuildLoadBalancerMappingByProjects_HappyPath(t *testing.T) {
 }
 
 func TestBuildLoadBalancerMappingByProjects_Port80(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{
 		services: []*corev1.Service{{
 			ObjectMeta: metav1.ObjectMeta{Name: "web-svc", Namespace: "ns"},
@@ -440,7 +420,6 @@ func TestBuildLoadBalancerMappingByProjects_Port80(t *testing.T) {
 }
 
 func TestBuildLoadBalancerMappingByProjects_NonHttpPort(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{
 		services: []*corev1.Service{{
 			ObjectMeta: metav1.ObjectMeta{Name: "web-svc", Namespace: "ns"},
@@ -460,7 +439,6 @@ func TestBuildLoadBalancerMappingByProjects_NonHttpPort(t *testing.T) {
 // 以下四个测试覆盖各 Build* 在"无项目"时 projectMap 为空的提前返回分支。
 
 func TestBuildGatewayHTTPRouteMappingByProjects_NoProjects(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{gatewayInstalled: true}
 	got, err := BuildGatewayHTTPRouteMappingByProjects(context.TODO(), mlog.NewForConfig(nil), k, "ns")
 	assert.NoError(t, err)
@@ -468,7 +446,6 @@ func TestBuildGatewayHTTPRouteMappingByProjects_NoProjects(t *testing.T) {
 }
 
 func TestBuildNodePortMappingByProjects_NoProjects(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{}
 	got, err := BuildNodePortMappingByProjects(context.TODO(), mlog.NewForConfig(nil), k, "ns")
 	assert.NoError(t, err)
@@ -476,7 +453,6 @@ func TestBuildNodePortMappingByProjects_NoProjects(t *testing.T) {
 }
 
 func TestBuildIngressMappingByProjects_NoProjects(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{}
 	got, err := BuildIngressMappingByProjects(context.TODO(), mlog.NewForConfig(nil), k, "ns")
 	assert.NoError(t, err)
@@ -484,7 +460,6 @@ func TestBuildIngressMappingByProjects_NoProjects(t *testing.T) {
 }
 
 func TestBuildLoadBalancerMappingByProjects_NoProjects(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{}
 	got, err := BuildLoadBalancerMappingByProjects(context.TODO(), mlog.NewForConfig(nil), k, "ns")
 	assert.NoError(t, err)
@@ -493,7 +468,6 @@ func TestBuildLoadBalancerMappingByProjects_NoProjects(t *testing.T) {
 
 // TestBuildNodePortMappingByProjects_NonHttpPort 覆盖 NodePort 编排的非 http 端口名 default 分支。
 func TestBuildNodePortMappingByProjects_NonHttpPort(t *testing.T) {
-	t.Parallel()
 	k := &fakeEndpointK8sRepo{
 		externalIP: "10.0.0.1",
 		services: []*corev1.Service{{

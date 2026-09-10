@@ -24,7 +24,6 @@ import (
 )
 
 func TestInstallProject(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	job := NewMockJob(m)
@@ -42,7 +41,6 @@ type fakeSleeper struct{}
 func (f fakeSleeper) Sleep(time.Duration) {}
 
 func TestNewProcessPercent(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -52,7 +50,6 @@ func TestNewProcessPercent(t *testing.T) {
 }
 
 func TestProcessPercent_Add(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -67,7 +64,6 @@ func TestProcessPercent_Add(t *testing.T) {
 }
 
 func TestProcessPercent_To(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -81,7 +77,6 @@ func TestProcessPercent_To(t *testing.T) {
 }
 
 func TestRealSleeper(t *testing.T) {
-	t.Parallel()
 	s := NewRealSleeper()
 	start := time.Now()
 	s.Sleep(5 * time.Millisecond)
@@ -89,7 +84,6 @@ func TestRealSleeper(t *testing.T) {
 }
 
 func TestDefaultFileOpener(t *testing.T) {
-	t.Parallel()
 	f, err := os.CreateTemp("", "opener-*")
 	assert.NoError(t, err)
 	name := f.Name()
@@ -108,7 +102,6 @@ func TestDefaultFileOpener(t *testing.T) {
 }
 
 func TestDefaultChartLoader(t *testing.T) {
-	t.Parallel()
 	cl := &defaultChartLoader{}
 	// 空目录缺 Chart.yaml
 	_, err := cl.LoadDir(t.TempDir())
@@ -119,7 +112,6 @@ func TestDefaultChartLoader(t *testing.T) {
 }
 
 func TestUserConfigLoader_Load_nonEOFError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	em := NewMockDeployMsger(m)
@@ -141,7 +133,6 @@ func TestUserConfigLoader_Load_nonEOFError(t *testing.T) {
 }
 
 func TestElementsLoader_Load_defaultError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	em := NewMockDeployMsger(m)
@@ -164,13 +155,11 @@ func TestElementsLoader_Load_defaultError(t *testing.T) {
 }
 
 func TestElementsLoader_deepSetItems_error(t *testing.T) {
-	t.Parallel()
 	items := (&ElementsLoader{}).deepSetItems(map[string]any{"->a": "x"})
 	assert.Empty(t, items)
 }
 
 func TestSystemVariableLoader_Load_templateError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	pl := app.NewMockPluginManager(m)
@@ -201,7 +190,6 @@ func TestSystemVariableLoader_Load_templateError(t *testing.T) {
 }
 
 func TestChartFileLoader_PackageChartError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	em := NewMockDeployMsger(m)
@@ -244,7 +232,6 @@ func (f failOpener) Open(name string) (io.ReadCloser, error) {
 func (f failOpener) Close() error { return nil }
 
 func TestChartFileLoader_OpenError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	em := NewMockDeployMsger(m)
@@ -282,7 +269,6 @@ func TestChartFileLoader_OpenError(t *testing.T) {
 // GetDirectoryFilesWithBranch 返回空列表直接报"charts 文件不存在"，
 // 不进入打包流程（chartLoader/fileOpener/Helmer 均无需准备）。
 func TestChartFileLoader_NoFilesError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	em := NewMockDeployMsger(m)
@@ -302,7 +288,6 @@ func TestChartFileLoader_NoFilesError(t *testing.T) {
 }
 
 func TestMergeValuesLoader_NewYAMLError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -319,7 +304,6 @@ func TestMergeValuesLoader_NewYAMLError(t *testing.T) {
 }
 
 func TestMergeValuesLoader_WriteConfigError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -341,7 +325,6 @@ func TestMergeValuesLoader_WriteConfigError(t *testing.T) {
 }
 
 func TestMergeValuesLoader_OnFinallyClose(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := NewMockDeployMsger(m)
@@ -372,7 +355,6 @@ func TestMergeValuesLoader_OnFinallyClose(t *testing.T) {
 }
 
 func TestDownloadFilesToDir(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	gits := app.NewMockGitServer(m)

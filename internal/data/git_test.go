@@ -82,7 +82,6 @@ func newTestGitRepo(cached bool, f fakeGitServer) *gitRepo {
 }
 
 func TestGitRepo_AllProjects(t *testing.T) {
-	t.Parallel()
 	for _, cached := range []bool{true, false} {
 		g := newTestGitRepo(cached, fakeGitServer{})
 		projects, err := g.AllProjects(context.TODO(), true)
@@ -97,7 +96,6 @@ func TestGitRepo_AllProjects(t *testing.T) {
 }
 
 func TestGitRepo_AllBranches(t *testing.T) {
-	t.Parallel()
 	for _, cached := range []bool{true, false} {
 		g := newTestGitRepo(cached, fakeGitServer{})
 		branches, err := g.AllBranches(context.TODO(), 100, true)
@@ -112,7 +110,6 @@ func TestGitRepo_AllBranches(t *testing.T) {
 }
 
 func TestGitRepo_GetChartValuesYaml(t *testing.T) {
-	t.Parallel()
 	g := newTestGitRepo(false, fakeGitServer{})
 	// 非远端路径（无 "|" 三段结构）直接返回空串。
 	v, err := g.GetChartValuesYaml(context.TODO(), "local")
@@ -125,7 +122,6 @@ func TestGitRepo_GetChartValuesYaml(t *testing.T) {
 }
 
 func TestGitRepo_ListCommits(t *testing.T) {
-	t.Parallel()
 	g := newTestGitRepo(false, fakeGitServer{})
 	commits, err := g.ListCommits(context.TODO(), 100, "main")
 	assert.NoError(t, err)
@@ -138,7 +134,6 @@ func TestGitRepo_ListCommits(t *testing.T) {
 }
 
 func TestGitRepo_GetProject(t *testing.T) {
-	t.Parallel()
 	g := newTestGitRepo(false, fakeGitServer{})
 	project, err := g.GetProject(context.TODO(), 100)
 	assert.NoError(t, err)
@@ -151,7 +146,6 @@ func TestGitRepo_GetProject(t *testing.T) {
 }
 
 func TestGitRepo_GetFileContentWithBranch(t *testing.T) {
-	t.Parallel()
 	g := newTestGitRepo(false, fakeGitServer{})
 	content, err := g.GetFileContentWithBranch(context.TODO(), 100, "main", "chart/values.yaml")
 	assert.NoError(t, err)
@@ -164,7 +158,6 @@ func TestGitRepo_GetFileContentWithBranch(t *testing.T) {
 }
 
 func TestGitRepo_GetCommit(t *testing.T) {
-	t.Parallel()
 	g := newTestGitRepo(false, fakeGitServer{})
 	commit, err := g.GetCommit(context.TODO(), 100, "sha1")
 	assert.NoError(t, err)
@@ -178,7 +171,6 @@ func TestGitRepo_GetCommit(t *testing.T) {
 }
 
 func TestGitRepo_GetCommitPipeline(t *testing.T) {
-	t.Parallel()
 	g := newTestGitRepo(false, fakeGitServer{})
 	pipeline, err := g.GetCommitPipeline(context.TODO(), 100, "main", "sha1")
 	assert.NoError(t, err)
@@ -197,7 +189,6 @@ func TestGitRepo_GetCommitPipeline(t *testing.T) {
 }
 
 func TestGitRepo_PipelineJobOptions(t *testing.T) {
-	t.Parallel()
 	g := newTestGitRepo(false, fakeGitServer{})
 	stages, jobs, err := g.PipelineJobOptions(context.TODO(), 100, "main")
 	assert.NoError(t, err)
@@ -217,7 +208,6 @@ func TestGitRepo_PipelineJobOptions(t *testing.T) {
 }
 
 func TestGitRepo_GetByProjectID(t *testing.T) {
-	t.Parallel()
 	// 委托 GetProject：成功透传数据，错误带 "git get project" 上下文。
 	g := newTestGitRepo(false, fakeGitServer{})
 	project, err := g.GetByProjectID(context.TODO(), 100)

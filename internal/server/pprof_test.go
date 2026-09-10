@@ -16,7 +16,6 @@ import (
 // TestNewPprofRunner 覆盖构造器：WithModule + server 装配（真实 *http.Server，
 // 含 pprofMux 构建的处理器）。
 func TestNewPprofRunner(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockLogger := mlog.NewMockLogger(m)
@@ -32,7 +31,6 @@ func TestNewPprofRunner(t *testing.T) {
 // TestPprofRunnerRunAndShutdown 覆盖 Run/Shutdown 生命周期：注入 mock server，
 // channel 同步等 ListenAndServe 真正执行后再 Shutdown，不绑真实端口、无 time.Sleep。
 func TestPprofRunnerRunAndShutdown(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -57,7 +55,6 @@ func TestPprofRunnerRunAndShutdown(t *testing.T) {
 
 // TestPprofRunnerRunError 覆盖 Run 的失败路径：ListenAndServe 出错时记录 Error 日志。
 func TestPprofRunnerRunError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -82,7 +79,6 @@ func TestPprofRunnerRunError(t *testing.T) {
 
 // Test_pprofRunner_Shutdown 覆盖 Shutdown 的正常路径：底层 server 关闭成功。
 func Test_pprofRunner_Shutdown(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockLogger := mlog.NewMockLogger(m)
@@ -96,7 +92,6 @@ func Test_pprofRunner_Shutdown(t *testing.T) {
 // Test_pprofMux 直测 /debug/pprof 端点行为（不绑真实端口）：cmdline 返回 200 + 非空，
 // 索引页 200，未注册路径 404。
 func Test_pprofMux(t *testing.T) {
-	t.Parallel()
 	h := pprofMux()
 
 	rr := httptest.NewRecorder()

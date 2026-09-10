@@ -89,7 +89,6 @@ func newTestClient(t *testing.T, lis *bufconn.Listener, opts ...Option) *Client 
 }
 
 func TestNewClient_WithAuth_IssuesToken(t *testing.T) {
-	t.Parallel()
 	lis := newBufconnServer(t, func(s *grpc.Server) { auth.RegisterAuthServer(s, &fakeAuthServer{}) })
 	c := newTestClient(t, lis, WithAuth("admin", "123456"))
 	if got := c.authToken(); got != "Bearer token-1" {
@@ -101,7 +100,6 @@ func TestNewClient_WithAuth_IssuesToken(t *testing.T) {
 }
 
 func TestNewClient_WithAuth_BadCredentials_Error(t *testing.T) {
-	t.Parallel()
 	lis := newBufconnServer(t, func(s *grpc.Server) { auth.RegisterAuthServer(s, &fakeAuthServer{}) })
 	cli, err := NewClient("bufnet", WithAuth("wrong", "creds"), withBufconnDialer(lis))
 	if err == nil {
@@ -113,14 +111,12 @@ func TestNewClient_WithAuth_BadCredentials_Error(t *testing.T) {
 // 畸形 target（非法 percent-encoding）构造即失败：透传 error，
 // 而非留下 conn==nil 的 client（首次 RPC 会 nil panic）。
 func TestNewClient_MalformedTarget_ReturnsError(t *testing.T) {
-	t.Parallel()
 	if _, err := NewClient("%zz"); err == nil {
 		t.Fatal("畸形 target 应返回 error")
 	}
 }
 
 func TestNewClient_WithBearerToken_NoLogin(t *testing.T) {
-	t.Parallel()
 	lis := newBufconnServer(t, func(s *grpc.Server) {})
 	c := newTestClient(t, lis, WithBearerToken("tokenvalue123"))
 	if got := c.authToken(); got != "Bearer tokenvalue123" {
@@ -129,7 +125,6 @@ func TestNewClient_WithBearerToken_NoLogin(t *testing.T) {
 }
 
 func TestNewClient_NoCredentials_NoToken(t *testing.T) {
-	t.Parallel()
 	lis := newBufconnServer(t, func(s *grpc.Server) {})
 	c := newTestClient(t, lis)
 	if got := c.authToken(); got != "" {
@@ -142,7 +137,6 @@ func TestNewClient_NoCredentials_NoToken(t *testing.T) {
 }
 
 func TestTokenAutoRefresh_RetriesAfterUnauthenticated(t *testing.T) {
-	t.Parallel()
 	lis := newBufconnServer(t, func(s *grpc.Server) {
 		auth.RegisterAuthServer(s, &fakeAuthServer{})
 		version.RegisterVersionServer(s, &fakeVersionServer{failFirst: true})
@@ -166,7 +160,6 @@ func TestTokenAutoRefresh_RetriesAfterUnauthenticated(t *testing.T) {
 }
 
 func TestSetToken_NormalizesPrefix(t *testing.T) {
-	t.Parallel()
 	c := &Client{}
 	for _, tc := range []struct{ in, want string }{
 		{"", ""},                          // 空 token 原样保留
@@ -185,7 +178,6 @@ func TestSetToken_NormalizesPrefix(t *testing.T) {
 }
 
 func TestClientauth_GetRequestMetadata(t *testing.T) {
-	t.Parallel()
 	c := &Client{}
 	c.setToken("Bearer xyz")
 	a := &clientauth{c: c}
@@ -202,7 +194,6 @@ func TestClientauth_GetRequestMetadata(t *testing.T) {
 }
 
 func TestOptions_AppendInterceptors(t *testing.T) {
-	t.Parallel()
 	var unary, stream int
 	c := &Client{}
 	WithUnaryClientInterceptor(func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
@@ -220,7 +211,6 @@ func TestOptions_AppendInterceptors(t *testing.T) {
 
 // 全部 17 个 service 访问器都应返回非 nil 客户端。
 func TestServiceAccessors_AllWired(t *testing.T) {
-	t.Parallel()
 	lis := newBufconnServer(t, func(s *grpc.Server) {})
 	c := newTestClient(t, lis)
 	for name, svc := range map[string]interface{}{
@@ -249,7 +239,6 @@ func TestServiceAccessors_AllWired(t *testing.T) {
 }
 
 func TestClose_NilConn(t *testing.T) {
-	t.Parallel()
 	c := &Client{}
 	if err := c.Close(); err != nil {
 		t.Fatalf("nil conn Close 应返回 nil，实际 %v", err)
@@ -260,7 +249,6 @@ func TestClose_NilConn(t *testing.T) {
 // 而不是挂死。旧实现 guard 写错方法路径（"/Auth/Login"），Login 401 时递归触发
 // getToken → flight.Do 自我死锁。
 func TestTokenAutoRefresh_BadRuntimeCreds_NoDeadlock(t *testing.T) {
-	t.Parallel()
 	lis := newBufconnServer(t, func(s *grpc.Server) { auth.RegisterAuthServer(s, &fakeAuthServer{}) })
 	done := make(chan error, 1)
 	go func() {
@@ -311,7 +299,6 @@ func selfSignedServerTLS(t *testing.T) *tls.Config {
 
 // TLS 传输凭据：自签名证书 + InsecureSkipVerify 走完整握手完成一次 unary RPC。
 func TestWithTransportCredentials_TLS_RoundTrip(t *testing.T) {
-	t.Parallel()
 	lis := bufconn.Listen(1024 * 1024)
 	srv := grpc.NewServer(grpc.Creds(credentials.NewTLS(selfSignedServerTLS(t))))
 	version.RegisterVersionServer(srv, &fakeVersionServer{})
@@ -347,7 +334,6 @@ func (f *fakeContainerStreamServer) StreamContainerLog(_ *container.LogRequest, 
 
 // server-streaming 自动刷新：流首个消息遇 401 → 刷新 token → 重建流 → 继续读取。
 func TestStreamAutoRefresh_ReestablishesAfterUnauthenticated(t *testing.T) {
-	t.Parallel()
 	lis := newBufconnServer(t, func(s *grpc.Server) {
 		auth.RegisterAuthServer(s, &fakeAuthServer{})
 		container.RegisterContainerServer(s, &fakeContainerStreamServer{})
@@ -385,7 +371,6 @@ func TestStreamAutoRefresh_ReestablishesAfterUnauthenticated(t *testing.T) {
 
 // server-streaming 自动刷新但重登失败：流应返回登录错误，而非挂起或吞错。
 func TestStreamAutoRefresh_RefreshLoginFails_ReturnsError(t *testing.T) {
-	t.Parallel()
 	lis := newBufconnServer(t, func(s *grpc.Server) {
 		auth.RegisterAuthServer(s, &fakeAuthServer{failAfter: 1}) // 构造期签发后拒绝续期
 		container.RegisterContainerServer(s, &fakeContainerStreamServer{})
@@ -408,7 +393,6 @@ func TestStreamAutoRefresh_RefreshLoginFails_ReturnsError(t *testing.T) {
 }
 
 func TestSkipAutoRefresh(t *testing.T) {
-	t.Parallel()
 	c := &Client{}
 	if !c.skipAutoRefresh("/version.Version/Version") {
 		t.Fatal("无凭据时任何方法都应跳过刷新")
@@ -426,7 +410,6 @@ func TestSkipAutoRefresh(t *testing.T) {
 }
 
 func TestWithTracer_AppendsStatsHandler(t *testing.T) {
-	t.Parallel()
 	c := &Client{}
 	before := len(c.dialOptions)
 	WithTracer()(c)
@@ -445,7 +428,6 @@ func (f *fakeClientStream) SendMsg(interface{}) error { return nil }
 
 // 流拦截器只应包装纯 server-streaming；bidi/client/unary 直接透传原始流。
 func TestWithTokenAutoRefresh_StreamInterceptor_WrapsOnlyServerStreams(t *testing.T) {
-	t.Parallel()
 	c := &Client{username: "admin", password: "123456"}
 	WithTokenAutoRefresh()(c)
 	inter := c.StreamClientInterceptors[0]
@@ -505,7 +487,6 @@ func (f *fakeRecvStream) SendMsg(interface{}) error { return f.sendErr }
 
 // unary 刷新重试中 getToken 失败：应返回登录错误而非吞掉；用超时 ctx 控制 backoff 提前终止。
 func TestTokenAutoRefresh_UnaryGetTokenFails_ReturnsError(t *testing.T) {
-	t.Parallel()
 	lis := newBufconnServer(t, func(s *grpc.Server) {
 		auth.RegisterAuthServer(s, &fakeAuthServer{failAfter: 1}) // 构造期签发后拒绝续期
 		version.RegisterVersionServer(s, &fakeVersionServer{failFirst: true})
@@ -533,7 +514,6 @@ func TestTokenAutoRefresh_UnaryGetTokenFails_ReturnsError(t *testing.T) {
 
 // stream 拦截器里 NewStream 本身失败：应原样透传 streamer 的错误。
 func TestWithTokenAutoRefresh_StreamNewStreamFails(t *testing.T) {
-	t.Parallel()
 	c := &Client{username: "admin", password: "123456"}
 	WithTokenAutoRefresh()(c)
 	inter := c.StreamClientInterceptors[0]
@@ -549,7 +529,6 @@ func TestWithTokenAutoRefresh_StreamNewStreamFails(t *testing.T) {
 
 // autoRefreshStream 重建流的 NewStream 失败：返回 streamer 错误，且已标记 refreshed。
 func TestAutoRefreshStream_ReestablishNewStreamFails(t *testing.T) {
-	t.Parallel()
 	c := &Client{username: "admin", password: "123456"}
 	c.auth = &fakeAuthClient{token: "token-2"}
 
@@ -574,7 +553,6 @@ func TestAutoRefreshStream_ReestablishNewStreamFails(t *testing.T) {
 
 // autoRefreshStream 重建后重发请求消息失败：应返回 SendMsg 的错误。
 func TestAutoRefreshStream_ReestablishSendMsgFails(t *testing.T) {
-	t.Parallel()
 	c := &Client{username: "admin", password: "123456"}
 	c.auth = &fakeAuthClient{token: "token-2"}
 

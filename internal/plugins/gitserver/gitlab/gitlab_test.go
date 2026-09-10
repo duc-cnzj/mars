@@ -70,12 +70,10 @@ func jobsJSON(n, startID int, name, status, stage string) []map[string]any {
 // ---------------------------------------------------------------------------
 
 func TestGitlabName(t *testing.T) {
-	t.Parallel()
 	assert.Equal(t, "gitlab", (&server{}).Name())
 }
 
 func TestGitlabInitialize_valid(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	t.Cleanup(srv.Close)
 
@@ -90,21 +88,18 @@ func TestGitlabInitialize_valid(t *testing.T) {
 }
 
 func TestGitlabInitialize_missing_token(t *testing.T) {
-	t.Parallel()
 	s := &server{}
 	err := s.Initialize(gitApp{logger: mlog.NewForConfig(nil)}, map[string]any{"baseurl": "http://x"})
 	assert.ErrorContains(t, err, "token required")
 }
 
 func TestGitlabInitialize_missing_baseurl(t *testing.T) {
-	t.Parallel()
 	s := &server{}
 	err := s.Initialize(gitApp{logger: mlog.NewForConfig(nil)}, map[string]any{"token": "tok"})
 	assert.ErrorContains(t, err, "baseurl required")
 }
 
 func TestGitlabInitialize_bad_proxy_type(t *testing.T) {
-	t.Parallel()
 	s := &server{}
 	err := s.Initialize(gitApp{logger: mlog.NewForConfig(nil)}, map[string]any{
 		"token":      "tok",
@@ -115,7 +110,6 @@ func TestGitlabInitialize_bad_proxy_type(t *testing.T) {
 }
 
 func TestGitlabInitialize_invalid_baseurl(t *testing.T) {
-	t.Parallel()
 	s := &server{}
 	err := s.Initialize(gitApp{logger: mlog.NewForConfig(nil)}, map[string]any{
 		"token":   "tok",
@@ -125,7 +119,6 @@ func TestGitlabInitialize_invalid_baseurl(t *testing.T) {
 }
 
 func TestGitlabDestroy(t *testing.T) {
-	t.Parallel()
 	s := &server{logger: mlog.NewForConfig(nil)}
 	assert.NoError(t, s.Destroy())
 }
@@ -135,7 +128,6 @@ func TestGitlabDestroy(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetProject_success(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/v4/projects/7", r.URL.Path)
 		writeJSON(w, map[string]any{
@@ -156,7 +148,6 @@ func TestGetProject_success(t *testing.T) {
 }
 
 func TestGetProject_error(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		writeJSON(w, map[string]any{"message": "404 Not Found"})
@@ -175,7 +166,6 @@ func TestGetProject_error(t *testing.T) {
 // 404→NotFound、400→InvalidArgument、401→Unauthenticated、403→PermissionDenied，
 // 5xx 与非 *gitlab.ErrorResponse 原样透传（data 层 errs.Wrap 落 500）、nil 返回 nil。
 func TestClassifyGitlabError(t *testing.T) {
-	t.Parallel()
 	t.Run("nil input", func(t *testing.T) {
 		assert.Nil(t, classifyGitlabError(nil))
 	})
@@ -228,7 +218,6 @@ func TestClassifyGitlabError(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAllProjects_pagination(t *testing.T) {
-	t.Parallel()
 	var pageCalls []string
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		page := r.URL.Query().Get("page")
@@ -253,7 +242,6 @@ func TestAllProjects_pagination(t *testing.T) {
 }
 
 func TestAllProjects_error(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		writeJSON(w, map[string]any{"message": "forbidden"})
@@ -266,7 +254,6 @@ func TestAllProjects_error(t *testing.T) {
 }
 
 func TestAllBranches_error(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		writeJSON(w, map[string]any{"message": "forbidden"})
@@ -279,7 +266,6 @@ func TestAllBranches_error(t *testing.T) {
 }
 
 func TestAllBranches_pagination(t *testing.T) {
-	t.Parallel()
 	var pageCalls []string
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		page := r.URL.Query().Get("page")
@@ -308,7 +294,6 @@ func TestAllBranches_pagination(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetCommit_error(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		writeJSON(w, map[string]any{"message": "404"})
@@ -321,7 +306,6 @@ func TestGetCommit_error(t *testing.T) {
 }
 
 func TestGetCommit_success(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/v4/projects/1/repository/commits/abc123", r.URL.Path)
 		writeJSON(w, map[string]any{
@@ -342,7 +326,6 @@ func TestGetCommit_success(t *testing.T) {
 }
 
 func TestListCommits_success(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/v4/projects/1/repository/commits", r.URL.Path)
 		writeJSON(w, []map[string]any{
@@ -360,7 +343,6 @@ func TestListCommits_success(t *testing.T) {
 }
 
 func TestListCommits_error_returns_empty(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	})))
@@ -377,7 +359,6 @@ func TestListCommits_error_returns_empty(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetCommitPipeline_success(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v4/projects/1/pipelines":
@@ -406,7 +387,6 @@ func TestGetCommitPipeline_success(t *testing.T) {
 }
 
 func TestGetCommitPipeline_skips_other_sources(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v4/projects/1/pipelines":
@@ -434,7 +414,6 @@ func TestGetCommitPipeline_skips_other_sources(t *testing.T) {
 }
 
 func TestGetCommitPipeline_error(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		writeJSON(w, map[string]any{"message": "forbidden"})
@@ -447,7 +426,6 @@ func TestGetCommitPipeline_error(t *testing.T) {
 }
 
 func TestGetCommitPipeline_not_found(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, []map[string]any{{"id": 1, "source": "schedule", "status": "failed"}})
 	})))
@@ -462,7 +440,6 @@ func TestGetCommitPipeline_not_found(t *testing.T) {
 
 // TestGetCommitPipeline_jobs_mixed 验证每个 job 返回自己的名称与状态，空名 job 被忽略。
 func TestGetCommitPipeline_jobs_mixed(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v4/projects/1/pipelines":
@@ -502,7 +479,6 @@ func TestGetCommitPipeline_jobs_mixed(t *testing.T) {
 
 // TestGetCommitPipeline_jobs_error 验证拉 job 失败时整个请求返回错误（fail-fast）。
 func TestGetCommitPipeline_jobs_error(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v4/projects/1/pipelines":
@@ -523,7 +499,6 @@ func TestGetCommitPipeline_jobs_error(t *testing.T) {
 
 // TestGetCommitPipeline_jobs_pagination 验证 job 超过一页时分页拉全。
 func TestGetCommitPipeline_jobs_pagination(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v4/projects/1/pipelines":
@@ -556,7 +531,6 @@ func TestGetCommitPipeline_jobs_pagination(t *testing.T) {
 // 低版本 GitLab 的 pipeline 详情无 stages 数组、job 接口也不保证顺序，
 // 但 job id 按 stage 声明顺序分配，故按 id 手动排序即可还原执行顺序。
 func TestGetCommitPipeline_jobs_sorted_by_id(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v4/projects/1/pipelines":
@@ -595,7 +569,6 @@ func TestGetCommitPipeline_jobs_sorted_by_id(t *testing.T) {
 
 // TestPipelineJobOptions_success_with_branch 验证传 branch 时带 ref 过滤，返回去重后的 stage/job。
 func TestPipelineJobOptions_success_with_branch(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v4/projects/1/pipelines":
@@ -623,7 +596,6 @@ func TestPipelineJobOptions_success_with_branch(t *testing.T) {
 
 // TestPipelineJobOptions_success_without_branch 验证 branch 为空时不带 ref 过滤（取项目最近 pipeline）。
 func TestPipelineJobOptions_success_without_branch(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v4/projects/1/pipelines":
@@ -650,7 +622,6 @@ func TestPipelineJobOptions_success_without_branch(t *testing.T) {
 
 // TestPipelineJobOptions_dedup 验证重复的 stage/job 名按出现顺序去重。
 func TestPipelineJobOptions_dedup(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v4/projects/1/pipelines":
@@ -681,7 +652,6 @@ func TestPipelineJobOptions_dedup(t *testing.T) {
 
 // TestPipelineJobOptions_skips_other_sources 验证 schedule 等非 push/web pipeline 被跳过。
 func TestPipelineJobOptions_skips_other_sources(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v4/projects/1/pipelines":
@@ -707,7 +677,6 @@ func TestPipelineJobOptions_skips_other_sources(t *testing.T) {
 }
 
 func TestPipelineJobOptions_not_found(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, []map[string]any{{"id": 1, "source": "schedule", "status": "failed"}})
 	})))
@@ -720,7 +689,6 @@ func TestPipelineJobOptions_not_found(t *testing.T) {
 }
 
 func TestPipelineJobOptions_pipelines_error(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		writeJSON(w, map[string]any{"message": "forbidden"})
@@ -733,7 +701,6 @@ func TestPipelineJobOptions_pipelines_error(t *testing.T) {
 }
 
 func TestPipelineJobOptions_jobs_error(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v4/projects/1/pipelines":
@@ -759,7 +726,6 @@ func TestPipelineJobOptions_jobs_error(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetFileContentWithSha_and_Branch(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Contains(t, r.URL.Path, "/repository/files/README.md/raw")
 		w.Header().Set("Content-Type", "text/plain")
@@ -778,7 +744,6 @@ func TestGetFileContentWithSha_and_Branch(t *testing.T) {
 }
 
 func TestGetRawFile_empty_ref(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("no-ref"))
 	}))
@@ -796,7 +761,6 @@ func TestGetRawFile_empty_ref(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetDirectoryFiles_filters_blobs_and_paginates(t *testing.T) {
-	t.Parallel()
 	var pageCalls []string
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		page := r.URL.Query().Get("page")
@@ -829,7 +793,6 @@ func TestGetDirectoryFiles_filters_blobs_and_paginates(t *testing.T) {
 }
 
 func TestGetDirectoryFiles_error(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		writeJSON(w, map[string]any{"message": "forbidden"})
@@ -842,7 +805,6 @@ func TestGetDirectoryFiles_error(t *testing.T) {
 }
 
 func TestGetDirectoryFilesWithSha(t *testing.T) {
-	t.Parallel()
 	srv := httptest.NewServer(apiHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "1", r.URL.Query().Get("page"))
 		writeJSON(w, []map[string]any{{"id": "f", "type": "blob", "path": "a.go"}})
@@ -860,27 +822,22 @@ func TestGetDirectoryFilesWithSha(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestToGitProject_nil(t *testing.T) {
-	t.Parallel()
 	assert.Nil(t, toGitProject(nil))
 }
 
 func TestToBranch_nil(t *testing.T) {
-	t.Parallel()
 	assert.Nil(t, toBranch(nil))
 }
 
 func TestToCommit_nil(t *testing.T) {
-	t.Parallel()
 	assert.Nil(t, toCommit(nil))
 }
 
 func TestToPipeline_nil(t *testing.T) {
-	t.Parallel()
 	assert.Nil(t, toPipeline(nil))
 }
 
 func TestToGitProject_maps_fields(t *testing.T) {
-	t.Parallel()
 	p := toGitProject(&gitlab.Project{ID: 5, Name: "n", DefaultBranch: "main", WebURL: "w", Path: "p", AvatarURL: "a", Description: "d"})
 	require.NotNil(t, p)
 	assert.Equal(t, int64(5), p.ID)
@@ -893,7 +850,6 @@ func TestToGitProject_maps_fields(t *testing.T) {
 }
 
 func TestToBranch_maps_fields(t *testing.T) {
-	t.Parallel()
 	b := toBranch(&gitlab.Branch{Name: "dev", Default: true, WebURL: "w"})
 	require.NotNil(t, b)
 	assert.Equal(t, "dev", b.Name)
@@ -902,7 +858,6 @@ func TestToBranch_maps_fields(t *testing.T) {
 }
 
 func TestToCommit_maps_fields(t *testing.T) {
-	t.Parallel()
 	c := toCommit(&gitlab.Commit{ID: "id", ShortID: "sid", Title: "t", Message: "m", WebURL: "w", AuthorName: "an", AuthorEmail: "ae", CommitterName: "cn", CommitterEmail: "ce"})
 	require.NotNil(t, c)
 	assert.Equal(t, "id", c.ID)
@@ -917,7 +872,6 @@ func TestToCommit_maps_fields(t *testing.T) {
 }
 
 func TestPipelineStatus_mapping(t *testing.T) {
-	t.Parallel()
 	assert.Equal(t, biz.StatusFailed, pipelineStatus("failed"))
 	assert.Equal(t, biz.StatusFailed, pipelineStatus("skipped"))
 	assert.Equal(t, biz.StatusRunning, pipelineStatus("running"))
@@ -928,7 +882,6 @@ func TestPipelineStatus_mapping(t *testing.T) {
 }
 
 func TestToPipeline_maps_fields(t *testing.T) {
-	t.Parallel()
 	p := toPipeline(&gitlab.PipelineInfo{ID: 9, ProjectID: 1, Status: "success", Ref: "main", SHA: "s", WebURL: "w"})
 	require.NotNil(t, p)
 	assert.Equal(t, int64(9), p.ID)
@@ -941,6 +894,5 @@ func TestToPipeline_maps_fields(t *testing.T) {
 
 // TestRegister_interface ensures the plugin satisfies app.GitServer.
 func TestRegister_interface(t *testing.T) {
-	t.Parallel()
 	var _ app.GitServer = (*server)(nil)
 }

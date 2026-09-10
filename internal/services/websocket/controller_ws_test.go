@@ -52,7 +52,6 @@ func newWsConnForLoop(m *gomock.Controller, mockWs *MockGorillaWs, sub app.PubSu
 }
 
 func TestWebsocketManager_read_readError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockWs := NewMockGorillaWs(m)
@@ -67,7 +66,6 @@ func TestWebsocketManager_read_readError(t *testing.T) {
 }
 
 func TestWebsocketManager_read_unmarshalError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -88,7 +86,6 @@ func TestWebsocketManager_read_unmarshalError(t *testing.T) {
 }
 
 func TestWebsocketManager_read_validMessage(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -125,7 +122,6 @@ func TestWebsocketManager_read_validMessage(t *testing.T) {
 // 保证 SetUser 先于后续非授权帧完成，否则 ExecShell/Resize 会因 GetUser()==nil
 // 被"认证中，请稍等~"拒绝（实际线上表现为"能输入但没有返回"）。
 func TestWebsocketManager_read_authorizeOrdering(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -166,7 +162,6 @@ func TestWebsocketManager_read_authorizeOrdering(t *testing.T) {
 }
 
 func TestWebsocketManager_write(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -199,7 +194,6 @@ func TestWebsocketManager_write(t *testing.T) {
 }
 
 func TestWebsocketManager_write_ctxDone(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -223,7 +217,6 @@ func TestWebsocketManager_write_ctxDone(t *testing.T) {
 }
 
 func TestWebsocketManager_write_nextWriterError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -249,7 +242,6 @@ func TestWebsocketManager_write_nextWriterError(t *testing.T) {
 }
 
 func TestWebsocketManager_write_closeWriterError(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -338,7 +330,6 @@ func TestWebsocketManager_write_pingWriteError(t *testing.T) {
 // TestWebsocketManager_Serve 走真实 gorilla 握手：httptest 服务端 + 客户端 ws 连接，
 // 覆盖 Serve/read/write/dispatchEvent 主链路与 WsSetUid 握手帧、counter 增减。
 func TestWebsocketManager_Serve(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 
@@ -428,7 +419,6 @@ func TestWebsocketManager_Serve(t *testing.T) {
 }
 
 func TestWebsocketManager_Serve_upgradeError(t *testing.T) {
-	t.Parallel()
 	wm := &websocketManager{logger: mlog.NewForConfig(nil)}
 	server := httptest.NewServer(http.HandlerFunc(wm.Serve))
 	defer server.Close()

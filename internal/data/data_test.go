@@ -30,7 +30,6 @@ import (
 )
 
 func Test_dataImpl(t *testing.T) {
-	t.Parallel()
 	d := &dataImpl{minioCli: &minio.Client{}, oidc: biz.OidcConfig{}}
 	assert.NotNil(t, d.MinioCli())
 	assert.NotNil(t, d.OidcConfig())
@@ -38,13 +37,11 @@ func Test_dataImpl(t *testing.T) {
 
 // TestDataImpl_AdminPassword 覆盖 admin 登录密码取数（供 biz.AuthConfigProvider 使用）。
 func TestDataImpl_AdminPassword(t *testing.T) {
-	t.Parallel()
 	d := &dataImpl{cfg: &config.Config{AdminPassword: "secret"}}
 	assert.Equal(t, "secret", d.AdminPassword())
 }
 
 func Test_filterEvent(t *testing.T) {
-	t.Parallel()
 	b := filterEvent("aaa")(&eventsv1.Event{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "aaa-bbb-ccc",
@@ -65,7 +62,6 @@ func Test_filterEvent(t *testing.T) {
 }
 
 func Test_filterPod(t *testing.T) {
-	t.Parallel()
 	b := filterPod("aaa")(&corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "aaa-bbb-ccc",
@@ -79,7 +75,6 @@ func Test_filterPod(t *testing.T) {
 // 回归防护：InitDB 失败必须透出错误（修复前 once.Do 吞错，恒返 (nil, nil)），
 // DB 初始化失败时调用方（DBBootstrapper）才能 fail-fast。
 func TestDataImpl_InitDB_ErrorPropagated(t *testing.T) {
-	t.Parallel()
 	d := &dataImpl{
 		cfg:    &config.Config{DBDriver: "oracle"},
 		logger: mlog.NewForConfig(nil),
@@ -92,7 +87,6 @@ func TestDataImpl_InitDB_ErrorPropagated(t *testing.T) {
 
 // 成功路径：closeFunc 非 nil 且可关闭，DB 客户端已就位。
 func TestDataImpl_InitDB_Success(t *testing.T) {
-	t.Parallel()
 	d := &dataImpl{
 		cfg:    &config.Config{DBDriver: "sqlite", DBDatabase: ":memory:"},
 		logger: mlog.NewForConfig(nil),
@@ -135,7 +129,6 @@ func TestDataImpl_Migrate(t *testing.T) {
 
 // TestDataImpl_InitS3 覆盖 S3 初始化三分支：禁用早退 / 配置缺失报错 / 正常建客户端。
 func TestDataImpl_InitS3(t *testing.T) {
-	t.Parallel()
 	t.Run("disabled skips", func(t *testing.T) {
 		d := &dataImpl{cfg: &config.Config{}, logger: mlog.NewForConfig(nil)}
 		assert.NoError(t, d.InitS3())
@@ -198,7 +191,6 @@ func newOidcServer(t *testing.T, withScopes bool) *httptest.Server {
 
 // TestDataImpl_InitOidcProvider 覆盖 OIDC provider 装配：全禁用 / 启用成功 / provider 拉取失败。
 func TestDataImpl_InitOidcProvider(t *testing.T) {
-	t.Parallel()
 	t.Run("all disabled leaves empty", func(t *testing.T) {
 		d := &dataImpl{
 			cfg:    &config.Config{Oidc: []config.OidcSetting{{Name: "a", Enabled: false}}},
@@ -287,7 +279,6 @@ func TestDataImpl_InitOidcProvider(t *testing.T) {
 // kubeconfig 路径无效 / 集群外无 InClusterConfig。happy path 需真实集群（informer 同步），
 // 属集成边界，不在单测范围。
 func TestDataImpl_InitK8s_ErrorBranches(t *testing.T) {
-	t.Parallel()
 	t.Run("invalid kubeconfig path", func(t *testing.T) {
 		d := &dataImpl{
 			cfg:    &config.Config{KubeConfig: "/nonexistent/kubeconfig"},
@@ -311,7 +302,6 @@ func TestDataImpl_InitK8s_ErrorBranches(t *testing.T) {
 
 // TestAddOidcCfg 覆盖 scopes 缺省回退分支（发现文档不含 scopes_supported → ScopeOpenID）。
 func TestAddOidcCfg(t *testing.T) {
-	t.Parallel()
 	srv := newOidcServer(t, false)
 	provider, err := oidc.NewProvider(context.TODO(), srv.URL)
 	require.NoError(t, err)
@@ -563,7 +553,6 @@ func TestDataImpl_InitK8s_CrdListError(t *testing.T) {
 
 // Test_sendOrDrop 覆盖事件投递二分：通道有空位 → 投递成功；通道已满 → 走 default 丢弃。
 func Test_sendOrDrop(t *testing.T) {
-	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	pod := newObj[*corev1.Pod](nil, &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "p"}}, Add)
 

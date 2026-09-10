@@ -33,7 +33,6 @@ func findTask(tasks []CronTask, name string) CronTask {
 
 // TestTasks_Registry_Base 覆盖基础 4 任务：无条件任务的枚举与调度/执行体非空。
 func TestTasks_Registry_Base(t *testing.T) {
-	t.Parallel()
 	tasks := Registry(&Tasks{}, &config.Config{})
 	assert.ElementsMatch(t, []string{
 		"clean_upload_files", "fix_project_deploy_status", "sync_domain_secret", "disk_info",
@@ -47,7 +46,6 @@ func TestTasks_Registry_Base(t *testing.T) {
 // TestTasks_Registry_Conditional 覆盖条件任务：GitServerCached 追加两个缓存任务，
 // K8s 环境（KubeConfig 非空）追加镜像拉取 secret 同步与三个快照预热任务。
 func TestTasks_Registry_Conditional(t *testing.T) {
-	t.Parallel()
 	withCache := Registry(&Tasks{}, &config.Config{GitServerCached: true})
 	assert.ElementsMatch(t, []string{
 		"clean_upload_files", "fix_project_deploy_status", "sync_domain_secret", "disk_info",
@@ -71,7 +69,6 @@ func TestTasks_Registry_Conditional(t *testing.T) {
 // TestTasks_Registry_DiskInfoAdapter 覆盖 DiskInfo 适配闭包：把 (int64, error)
 // 降为 error 供 cron 执行体使用，size 被丢弃。
 func TestTasks_Registry_DiskInfoAdapter(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	t.Cleanup(m.Finish)
 
@@ -85,7 +82,6 @@ func TestTasks_Registry_DiskInfoAdapter(t *testing.T) {
 // TestTasks_Registry_Schedules 覆盖 5 个调度构造器：经真实 cron.Manager 注册
 // Registry 产出的全部任务（含条件任务），断言命令名与 cron 表达式。
 func TestTasks_Registry_Schedules(t *testing.T) {
-	t.Parallel()
 	cm := cron.NewManager(timer.NewReal(), nil, nil, mlog.NewForConfig(nil))
 	tasks := Registry(&Tasks{}, &config.Config{GitServerCached: true, KubeConfig: "/tmp/kube"})
 	for _, task := range tasks {

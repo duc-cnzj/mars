@@ -13,13 +13,11 @@ import (
 )
 
 func TestNewMemoryLock(t *testing.T) {
-	t.Parallel()
 	lock := NewMemoryLock(timer.NewReal(), NewMemStore(), mlog.NewForConfig(nil))
 	assert.Implements(t, (*Locker)(nil), lock)
 }
 
 func TestMemoryLock_Acquire(t *testing.T) {
-	t.Parallel()
 	key := "Acquire"
 	key2 := "Acquire2"
 	lock := NewMemoryLock(timer.NewReal(), NewMemStore(), mlog.NewForConfig(nil))
@@ -61,7 +59,6 @@ func (m *mockTimer) Now() time.Time {
 }
 
 func TestMemoryLock_Acquire_CleanupExpired(t *testing.T) {
-	t.Parallel()
 
 	key := "AcquireCleanup"
 	key2 := "AcquireCleanup2"
@@ -81,7 +78,6 @@ func TestMemoryLock_Acquire_CleanupExpired(t *testing.T) {
 }
 
 func TestMemoryLock_ForceRelease(t *testing.T) {
-	t.Parallel()
 	key := "ForceRelease"
 	s := NewMemStore()
 	lockOne := NewMemoryLock(timer.NewReal(), s, mlog.NewForConfig(nil)).(*memoryLock)
@@ -98,7 +94,6 @@ func TestMemoryLock_ForceRelease(t *testing.T) {
 }
 
 func TestMemoryLock_Owner(t *testing.T) {
-	t.Parallel()
 	key := "Owner"
 	key2 := "Owner2"
 	s := NewMemStore()
@@ -120,7 +115,6 @@ func TestMemoryLock_Owner(t *testing.T) {
 }
 
 func TestMemoryLock_Release(t *testing.T) {
-	t.Parallel()
 	key := "Release"
 	s := NewMemStore()
 	lockOne := NewMemoryLock(timer.NewReal(), s, mlog.NewForConfig(nil)).(*memoryLock)
@@ -135,7 +129,6 @@ func TestMemoryLock_Release(t *testing.T) {
 }
 
 func TestMemoryLock_RenewalAcquire(t *testing.T) {
-	t.Parallel()
 	key := "RenewalAcquire"
 	s := NewMemStore()
 	lock := NewMemoryLock(timer.NewReal(), s, mlog.NewForConfig(nil))
@@ -161,7 +154,6 @@ func TestMemoryLock_RenewalAcquire(t *testing.T) {
 }
 
 func TestMemoryLock_RenewalAcquire2(t *testing.T) {
-	t.Parallel()
 	lock := NewMemoryLock(timer.NewReal(), NewMemStore(), mlog.NewForConfig(nil)).(*memoryLock)
 	assert.False(t, lock.renewalExistKey("not-exists", 10))
 	key := "RenewalAcquire2"
@@ -174,7 +166,6 @@ func TestMemoryLock_RenewalAcquire2(t *testing.T) {
 }
 
 func TestMemoryLock_RenewalAcquire3(t *testing.T) {
-	t.Parallel()
 	key := "RenewalAcquire3"
 	s := NewMemStore()
 	lock := NewMemoryLock(timer.NewReal(), s, mlog.NewForConfig(nil))
@@ -211,12 +202,10 @@ func BenchmarkMemoryLock_RenewalAcquire(b *testing.B) {
 }
 
 func Test_memoryLock_ID(t *testing.T) {
-	t.Parallel()
 	id := NewMemoryLock(timer.NewReal(), NewMemStore(), mlog.NewForConfig(nil)).(*memoryLock).ID()
 	assert.Len(t, id, 40)
 }
 
 func Test_memoryLock_Type(t *testing.T) {
-	t.Parallel()
 	assert.Equal(t, "memory", NewMemoryLock(timer.NewReal(), NewMemStore(), mlog.NewForConfig(nil)).Type())
 }

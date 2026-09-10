@@ -54,7 +54,6 @@ func newEventBizForTest(repo EventRepo) EventBiz {
 }
 
 func TestEventBiz_List(t *testing.T) {
-	t.Parallel()
 	f := &fakeEventRepoForEventBiz{}
 	e := newEventBizForTest(f)
 	_, _, err := e.List(context.TODO(), &ListEventInput{})
@@ -63,7 +62,6 @@ func TestEventBiz_List(t *testing.T) {
 }
 
 func TestEventBiz_Show(t *testing.T) {
-	t.Parallel()
 	f := &fakeEventRepoForEventBiz{}
 	e := newEventBizForTest(f)
 	got, err := e.Show(context.TODO(), 1)
@@ -73,7 +71,6 @@ func TestEventBiz_Show(t *testing.T) {
 }
 
 func TestEventBiz_AuditLog(t *testing.T) {
-	t.Parallel()
 	f := &fakeEventRepoForEventBiz{}
 	e := newEventBizForTest(f)
 	e.AuditLog(types.EventActionType_Delete, "user", "user@example.com", "msg")
@@ -81,7 +78,6 @@ func TestEventBiz_AuditLog(t *testing.T) {
 }
 
 func TestEventBiz_AuditLogWithChange(t *testing.T) {
-	t.Parallel()
 	f := &fakeEventRepoForEventBiz{}
 	e := newEventBizForTest(f)
 	e.AuditLogWithChange(types.EventActionType_Update, "user", "user@example.com", "msg", nil, nil)
@@ -89,7 +85,6 @@ func TestEventBiz_AuditLogWithChange(t *testing.T) {
 }
 
 func TestEventBiz_AuditLogWithRequest(t *testing.T) {
-	t.Parallel()
 	f := &fakeEventRepoForEventBiz{}
 	e := newEventBizForTest(f)
 	e.AuditLogWithRequest(types.EventActionType_Create, "user", "user@example.com", "msg", map[string]string{"a": "b"})
@@ -97,7 +92,6 @@ func TestEventBiz_AuditLogWithRequest(t *testing.T) {
 }
 
 func TestEventBiz_FileAuditLog(t *testing.T) {
-	t.Parallel()
 	f := &fakeEventRepoForEventBiz{}
 	e := newEventBizForTest(f)
 	e.FileAuditLog(types.EventActionType_Create, "user", "user@example.com", "msg", 1)
@@ -105,7 +99,6 @@ func TestEventBiz_FileAuditLog(t *testing.T) {
 }
 
 func TestEventBiz_FileAuditLogWithDuration(t *testing.T) {
-	t.Parallel()
 	f := &fakeEventRepoForEventBiz{}
 	e := newEventBizForTest(f)
 	e.FileAuditLogWithDuration(types.EventActionType_Create, "user", "user@example.com", "msg", 1, time.Second)

@@ -39,7 +39,6 @@ func newSettingsSvcWithMocks(t *testing.T) (*settingsSvc, *settingsSvcMocks) {
 }
 
 func TestNewSettingsSvc(t *testing.T) {
-	t.Parallel()
 	svc, _ := newSettingsSvcWithMocks(t)
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.settingsBiz)
@@ -48,7 +47,6 @@ func TestNewSettingsSvc(t *testing.T) {
 
 // Test_settingsSvc_Get 成功路径：biz 配置分组映射到 proto 响应，masked 落位。
 func Test_settingsSvc_Get(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newSettingsSvcWithMocks(t)
 	mocks.settingsBiz.EXPECT().Get().Return(&biz.Settings{Groups: []*biz.ConfigGroup{
 		{ID: "server", Items: []*biz.ConfigItem{
@@ -75,7 +73,6 @@ func Test_settingsSvc_Get(t *testing.T) {
 
 // Test_settingsSvc_Get_Empty 空分组：响应为空不报错。
 func Test_settingsSvc_Get_Empty(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newSettingsSvcWithMocks(t)
 	mocks.settingsBiz.EXPECT().Get().Return(&biz.Settings{Groups: []*biz.ConfigGroup{}})
 
@@ -97,7 +94,6 @@ func newOrdinaryAdminUserCtx() context.Context {
 // Test_settingsSvc_Authorize 授权门禁：仅内置超级管理员放行（newAdminUserCtx 的
 // adminEmail 即超管固定邮箱），普通管理员（mars_admin）与普通用户均拒绝。
 func Test_settingsSvc_Authorize(t *testing.T) {
-	t.Parallel()
 	svc, _ := newSettingsSvcWithMocks(t)
 
 	ctx, err := svc.Authorize(newAdminUserCtx(), settings.Settings_Get_FullMethodName)

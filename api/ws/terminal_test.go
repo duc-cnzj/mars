@@ -40,7 +40,6 @@ func assertTerminalID(t *testing.T, id string) {
 }
 
 func TestTerminal_FullLifecycle(t *testing.T) {
-	t.Parallel()
 	srv := newWsServer(t, func(c *websocket.Conn) {
 		defer c.Close()
 		readAuthorize(t, c)
@@ -97,7 +96,6 @@ func TestTerminal_FullLifecycle(t *testing.T) {
 }
 
 func TestTerminal_Write(t *testing.T) {
-	t.Parallel()
 	received := make(chan string, 1)
 	srv := newWsServer(t, func(c *websocket.Conn) {
 		defer c.Close()
@@ -148,7 +146,6 @@ func TestTerminal_Write(t *testing.T) {
 // TestTerminal_Pump 验证数据面编排快乐路径：in 字节源 → 远端 stdin、
 // 远端 stdout/toast → 消费闭包，且返回的 stop 幂等可安全多次调用。
 func TestTerminal_Pump(t *testing.T) {
-	t.Parallel()
 	outCh := make(chan []byte, 4)
 	toastCh := make(chan []byte, 4)
 	stdinCh := make(chan string, 1)
@@ -226,7 +223,6 @@ func TestTerminal_Pump(t *testing.T) {
 // TestTerminal_Pump_NilHandlers 验证 stdout/toast 闭包传 nil 时不启转发、
 // in 读到 EOF 静默退出，stop 幂等。
 func TestTerminal_Pump_NilHandlers(t *testing.T) {
-	t.Parallel()
 	stdinCh := make(chan string, 1)
 	srv := newWsServer(t, func(c *websocket.Conn) {
 		defer c.Close()
@@ -272,7 +268,6 @@ func TestTerminal_Pump_NilHandlers(t *testing.T) {
 
 // TestTerminal_Pump_WriteError 验证远端已关（Write 失败）时 in 转发静默停止。
 func TestTerminal_Pump_WriteError(t *testing.T) {
-	t.Parallel()
 	srv := newWsServer(t, func(c *websocket.Conn) {
 		defer c.Close()
 		readAuthorize(t, c)
@@ -305,7 +300,6 @@ func TestTerminal_Pump_WriteError(t *testing.T) {
 
 // TestTerminal_Pump_NoRaw 验证 WithRawMode(false) 时跳过 raw 切换分支，stop 幂等。
 func TestTerminal_Pump_NoRaw(t *testing.T) {
-	t.Parallel()
 	srv := newWsServer(t, func(c *websocket.Conn) {
 		defer c.Close()
 		readAuthorize(t, c)
@@ -340,7 +334,6 @@ func TestTerminal_Pump_NoRaw(t *testing.T) {
 // TestTerminal_Pump_NonTTYFile 验证 in 是普通文件（非 tty）时不切 raw（IsTerminal 为 false），
 // in 内容仍被转发、stop 幂等。
 func TestTerminal_Pump_NonTTYFile(t *testing.T) {
-	t.Parallel()
 	f, err := os.CreateTemp(t.TempDir(), "pump")
 	if err != nil {
 		t.Fatal(err)

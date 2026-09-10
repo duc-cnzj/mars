@@ -25,7 +25,6 @@ func newEndedSpan() (*tracetest.SpanRecorder, func(error)) {
 
 // TestEndSpan_NoError 验证 endSpan 对 nil 错误：span 已结束、状态保持 Unset、无异常事件。
 func TestEndSpan_NoError(t *testing.T) {
-	t.Parallel()
 	rec, end := newEndedSpan()
 	end(nil)
 	ended := rec.Ended()
@@ -37,7 +36,6 @@ func TestEndSpan_NoError(t *testing.T) {
 
 // TestEndSpan_Error 验证 endSpan 对非 nil 错误：span 置 Error 状态、落一条 exception 事件。
 func TestEndSpan_Error(t *testing.T) {
-	t.Parallel()
 	rec, end := newEndedSpan()
 	end(errors.New("boom"))
 	ended := rec.Ended()
@@ -51,7 +49,6 @@ func TestEndSpan_Error(t *testing.T) {
 
 // TestTracerName 固化 tracer 命名约定，防止误改后失去 instrumentation scope 区分。
 func TestTracerName(t *testing.T) {
-	t.Parallel()
 	assert.Equal(t, "github.com/duc-cnzj/mars/v6/internal/data", tracerName)
 }
 

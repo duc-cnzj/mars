@@ -159,7 +159,6 @@ func TestRepoImpl_ToggleEnabled_WithProjects(t *testing.T) {
 }
 
 func TestRepo_GetMarsConfig_WithExistingConfig(t *testing.T) {
-	t.Parallel()
 	r := &biz.Repo{
 		MarsConfig: &mars.Config{ConfigField: "existing_config"},
 	}
@@ -169,7 +168,6 @@ func TestRepo_GetMarsConfig_WithExistingConfig(t *testing.T) {
 }
 
 func TestRepo_GetMarsConfig_WithoutExistingConfig(t *testing.T) {
-	t.Parallel()
 	r := &biz.Repo{}
 	cfg := r.GetMarsConfig()
 	assert.NotNil(t, cfg)
@@ -197,7 +195,6 @@ func TestRepoImpl_GetByName(t *testing.T) {
 }
 
 func TestRepoImpl_GetProjNameAndBranch_WithExistingProject(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockGitRepo := NewMockGitRepo(m)
@@ -213,7 +210,6 @@ func TestRepoImpl_GetProjNameAndBranch_WithExistingProject(t *testing.T) {
 }
 
 func TestRepoImpl_GetProjNameAndBranch_WithNonExistingProject(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	mockGitRepo := NewMockGitRepo(m)
@@ -428,7 +424,6 @@ func TestRepoImpl_ErrorBranches(t *testing.T) {
 // TestRepoImpl_IsSimpleEnv 覆盖 isSimpleEnv 的边界分支：
 // 空配置早退 true 与本地 yaml 解析成功直接返回。
 func TestRepoImpl_IsSimpleEnv(t *testing.T) {
-	t.Parallel()
 	ctx := context.TODO()
 	repo := &repoImpl{}
 

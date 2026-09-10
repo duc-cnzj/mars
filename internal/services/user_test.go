@@ -40,7 +40,6 @@ func newUserSvcWithMocks(t *testing.T) (*userSvc, *userSvcMocks) {
 
 // TestNewUserSvc_Creation 构造后字段落位。
 func TestNewUserSvc_Creation(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newUserSvcWithMocks(t)
 	assert.NotNil(t, svc.userBiz)
 	assert.NotNil(t, svc.accessBiz)
@@ -50,7 +49,6 @@ func TestNewUserSvc_Creation(t *testing.T) {
 
 // Test_userSvc_Authorize 管理员放行，普通用户被拒（RequireAdmin 门卫）。
 func Test_userSvc_Authorize(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newUserSvcWithMocks(t)
 	defer mocks.ctrl.Finish()
 
@@ -63,7 +61,6 @@ func Test_userSvc_Authorize(t *testing.T) {
 
 // Test_userSvc_List 成功路径：搜索/角色过滤入参透传，结果映射到响应（含统计）。
 func Test_userSvc_List(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newUserSvcWithMocks(t)
 	defer mocks.ctrl.Finish()
 
@@ -106,7 +103,6 @@ func Test_userSvc_List(t *testing.T) {
 
 // Test_userSvc_List_Error 透传 biz 错误。
 func Test_userSvc_List_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newUserSvcWithMocks(t)
 	defer mocks.ctrl.Finish()
 
@@ -117,7 +113,6 @@ func Test_userSvc_List_Error(t *testing.T) {
 
 // Test_userSvc_ToggleAdmin 成功路径透传。
 func Test_userSvc_ToggleAdmin(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newUserSvcWithMocks(t)
 	defer mocks.ctrl.Finish()
 
@@ -128,7 +123,6 @@ func Test_userSvc_ToggleAdmin(t *testing.T) {
 
 // Test_userSvc_ToggleAdmin_Error 透传 biz 错误（保留原始状态码）。
 func Test_userSvc_ToggleAdmin_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newUserSvcWithMocks(t)
 	defer mocks.ctrl.Finish()
 
@@ -140,7 +134,6 @@ func Test_userSvc_ToggleAdmin_Error(t *testing.T) {
 
 // Test_userSvc_ResetRolesOverride 成功路径透传。
 func Test_userSvc_ResetRolesOverride(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newUserSvcWithMocks(t)
 	defer mocks.ctrl.Finish()
 
@@ -151,7 +144,6 @@ func Test_userSvc_ResetRolesOverride(t *testing.T) {
 
 // Test_userSvc_ResetRolesOverride_Error 透传 biz 错误（保留原始状态码）。
 func Test_userSvc_ResetRolesOverride_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newUserSvcWithMocks(t)
 	defer mocks.ctrl.Finish()
 

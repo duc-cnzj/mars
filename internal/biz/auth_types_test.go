@@ -9,7 +9,6 @@ import (
 // TestOidcClaims_ToUserInfo 验证 OIDC 声明转用户信息：邮箱转小写，
 // Sub/Name/Roles/LogoutUrl 原样透传。
 func TestOidcClaims_ToUserInfo(t *testing.T) {
-	t.Parallel()
 	c := OidcClaims{
 		LogoutUrl: "aaa.com",
 		OpenIDClaims: OpenIDClaims{

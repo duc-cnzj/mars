@@ -22,7 +22,6 @@ import (
 )
 
 func TestNewApiGateway(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := app.NewMockApp(m)
@@ -37,7 +36,6 @@ func TestNewApiGateway(t *testing.T) {
 }
 
 func Test_apiGateway_Run(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	server := NewMockHttpServer(m)
@@ -62,7 +60,6 @@ func Test_apiGateway_Run(t *testing.T) {
 }
 
 func Test_apiGateway_Shutdown(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	server := NewMockHttpServer(m)
@@ -81,7 +78,6 @@ func Test_apiGateway_Shutdown(t *testing.T) {
 }
 
 func TestMiddlewareList_Wrap(t *testing.T) {
-	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("test"))
@@ -108,7 +104,6 @@ func TestMiddlewareList_Wrap(t *testing.T) {
 }
 
 func TestMiddlewareList_Wrap_Empty(t *testing.T) {
-	t.Parallel()
 	logger := mlog.NewForConfig(nil)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("test"))
@@ -128,7 +123,6 @@ func TestMiddlewareList_Wrap_Empty(t *testing.T) {
 }
 
 func TestHeaderMatcher(t *testing.T) {
-	t.Parallel()
 	// Test case: tracestate key
 	key, ok := headerMatcher("tracestate")
 	assert.True(t, ok)
@@ -175,7 +169,6 @@ func Test_initServer(t *testing.T) {
 // Test_apiGateway_Run_InitServerError 覆盖 Run 的装配失败分支：initServer 返回错误时
 // 直接上抛，不启动任何协程。
 func Test_apiGateway_Run_InitServerError(t *testing.T) {
-	t.Parallel()
 	gw := &apiGateway{
 		newServerFunc: func(ctx context.Context, a *apiGateway) (HttpServer, error) {
 			return nil, errors.New("boom")
@@ -311,7 +304,6 @@ func Test_initServer_SpaFallback(t *testing.T) {
 // Test_apiGateway_shouldTagRPC 覆盖 gRPC 统计过滤判定：白名单内方法不计入（返回 false）、
 // 白名单外方法计入（返回 true），两次均打 Debugf。
 func Test_apiGateway_shouldTagRPC(t *testing.T) {
-	t.Parallel()
 	m := gomock.NewController(t)
 	defer m.Finish()
 	logger := mlog.NewMockLogger(m)
@@ -327,7 +319,6 @@ func Test_apiGateway_shouldTagRPC(t *testing.T) {
 // Test_apiGateway_setNosniff 覆盖 ForwardResponseOption：REST 响应补 X-Content-Type-Options:
 // nosniff 头，返回值恒为 nil。
 func Test_apiGateway_setNosniff(t *testing.T) {
-	t.Parallel()
 	gw := &apiGateway{}
 	rr := httptest.NewRecorder()
 	assert.Nil(t, gw.setNosniff(context.TODO(), rr, &emptypb.Empty{}))

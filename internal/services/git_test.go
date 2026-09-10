@@ -21,7 +21,6 @@ import (
 )
 
 func TestNewGitSvc(t *testing.T) {
-	t.Parallel()
 	svc, _ := newGitSvcWithMocks(t)
 
 	assert.NotNil(t, svc)
@@ -31,7 +30,6 @@ func TestNewGitSvc(t *testing.T) {
 }
 
 func Test_gitSvc_AllRepos(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	gitRepo := mocks.gitRepo
 
@@ -42,7 +40,6 @@ func Test_gitSvc_AllRepos(t *testing.T) {
 }
 
 func Test_gitSvc_AllRepos_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	gitRepo := mocks.gitRepo
 
@@ -60,7 +57,6 @@ func Test_gitSvc_AllRepos_Success(t *testing.T) {
 }
 
 func Test_gitSvc_ProjectOptions(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -71,7 +67,6 @@ func Test_gitSvc_ProjectOptions(t *testing.T) {
 }
 
 func Test_gitSvc_ProjectOptions_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
 
@@ -98,7 +93,6 @@ func Test_gitSvc_ProjectOptions_Success(t *testing.T) {
 }
 
 func Test_gitSvc_BranchOptions(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	gitRepo := mocks.gitRepo
 	gitRepo.EXPECT().AllBranches(gomock.Any(), 1, false).Return(nil, errors.New("error"))
@@ -111,7 +105,6 @@ func Test_gitSvc_BranchOptions(t *testing.T) {
 }
 
 func Test_gitSvc_BranchOptions_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	gitRepo := mocks.gitRepo
 	repoRepo := mocks.repoRepo
@@ -141,7 +134,6 @@ func Test_gitSvc_BranchOptions_Success(t *testing.T) {
 }
 
 func Test_gitSvc_BranchOptions_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	gitRepo := mocks.gitRepo
 	repoRepo := mocks.repoRepo
@@ -167,7 +159,6 @@ func Test_gitSvc_BranchOptions_Error(t *testing.T) {
 }
 
 func Test_gitSvc_BranchOptions_NoRepo(t *testing.T) {
-	t.Parallel()
 	// 回归防护：RepoId=0（表单未选仓库）时跳过分支白名单过滤，直接返回全部分支。
 	// 改坏实现（>0 写成 >=0 或去掉守卫）会误调用 repoRepo.Get(0)，
 	// 下方未设置该期望，gomock 遇到意外调用必然 FAIL。
@@ -188,7 +179,6 @@ func Test_gitSvc_BranchOptions_NoRepo(t *testing.T) {
 }
 
 func Test_gitSvc_Commit(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	gitRepo := mocks.gitRepo
 	gitRepo.EXPECT().GetCommit(gomock.Any(), 1, "commit").Return(nil, errors.New("error"))
@@ -202,7 +192,6 @@ func Test_gitSvc_Commit(t *testing.T) {
 }
 
 func Test_gitSvc_Commit_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	gitRepo := mocks.gitRepo
 	gitRepo.EXPECT().GetCommit(gomock.Any(), 1, "commit").Return(&biz.Commit{
@@ -240,7 +229,6 @@ func Test_gitSvc_Commit_Success(t *testing.T) {
 }
 
 func Test_gitSvc_CommitOptions(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	gitRepo := mocks.gitRepo
 	gitRepo.EXPECT().ListCommits(gomock.Any(), 1, "xxx").Return(nil, errors.New("error"))
@@ -253,7 +241,6 @@ func Test_gitSvc_CommitOptions(t *testing.T) {
 }
 
 func Test_gitSvc_CommitOptions_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	gitRepo := mocks.gitRepo
 	gitRepo.EXPECT().ListCommits(gomock.Any(), 1, "xxx").Return([]*biz.Commit{
@@ -272,7 +259,6 @@ func Test_gitSvc_CommitOptions_Success(t *testing.T) {
 }
 
 func Test_gitSvc_GetChartValuesYaml(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	gitRepo := mocks.gitRepo
 	gitRepo.EXPECT().GetChartValuesYaml(gomock.Any(), "chart-values").Return("image: nginx:latest", nil)
@@ -286,7 +272,6 @@ func Test_gitSvc_GetChartValuesYaml(t *testing.T) {
 }
 
 func Test_gitSvc_GetChartValuesYaml_error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	gitRepo := mocks.gitRepo
 	gitRepo.EXPECT().GetChartValuesYaml(gomock.Any(), "").Return("", errors.New("x"))
@@ -298,7 +283,6 @@ func Test_gitSvc_GetChartValuesYaml_error(t *testing.T) {
 }
 
 func Test_gitSvc_PipelineInfo_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	gitRepo := mocks.gitRepo
 
@@ -333,7 +317,6 @@ func Test_gitSvc_PipelineInfo_Success(t *testing.T) {
 // Test_gitSvc_PipelineInfoByRepoId_Success 验证 repo 未配置 pass 规则时 status 为流水线整体状态：
 // repo 解析出 gitProjectID=100，pipeline 返回 running → status running。
 func Test_gitSvc_PipelineInfoByRepoId_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 
 	mocks.repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{ID: 1, Name: "app", GitProjectID: 100}, nil)
@@ -357,7 +340,6 @@ func Test_gitSvc_PipelineInfoByRepoId_Success(t *testing.T) {
 // Test_gitSvc_PipelineInfoByRepoId_WithPassRule 验证 repo 配置 pass 规则后 status 由规则判定：
 // 规则命中 build@stage1 成功，忽略其他 job 失败，返回 success。
 func Test_gitSvc_PipelineInfoByRepoId_WithPassRule(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 
 	mocks.repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{
@@ -391,7 +373,6 @@ func Test_gitSvc_PipelineInfoByRepoId_WithPassRule(t *testing.T) {
 // Test_gitSvc_PipelineInfoByRepoId_RepoNotFound 验证 repo 不存在时透传 404（NotFound），
 // 而非被误映射成 500。
 func Test_gitSvc_PipelineInfoByRepoId_RepoNotFound(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 
 	mocks.repoRepo.EXPECT().Get(gomock.Any(), 1).Return(nil, errs.NotFound("repo not found"))
@@ -408,7 +389,6 @@ func Test_gitSvc_PipelineInfoByRepoId_RepoNotFound(t *testing.T) {
 
 // Test_gitSvc_PipelineInfoByRepoId_RepoQueryError 验证 repo 查询失败（DB 抖动等）时透传错误。
 func Test_gitSvc_PipelineInfoByRepoId_RepoQueryError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 
 	mocks.repoRepo.EXPECT().Get(gomock.Any(), 1).Return(nil, errors.New("db down"))
@@ -425,7 +405,6 @@ func Test_gitSvc_PipelineInfoByRepoId_RepoQueryError(t *testing.T) {
 
 // Test_gitSvc_PipelineInfoByRepoId_PipelineError 验证流水线查询失败时透传错误。
 func Test_gitSvc_PipelineInfoByRepoId_PipelineError(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 
 	mocks.repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{ID: 1, GitProjectID: 100}, nil)
@@ -442,7 +421,6 @@ func Test_gitSvc_PipelineInfoByRepoId_PipelineError(t *testing.T) {
 }
 
 func Test_gitSvc_PipelineInfo_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 	gitRepo := mocks.gitRepo
 
@@ -461,7 +439,6 @@ func Test_gitSvc_PipelineInfo_Error(t *testing.T) {
 // Test_gitSvc_PipelineInfo_NotFound 回归防护：无 pipeline 应透传 404（NotFound），
 // 而非被误映射成 500——插件用 errs.NotFound 构造、data 层 Wrap 保留原码、handler 原样透传。
 func Test_gitSvc_PipelineInfo_NotFound(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 
 	mocks.gitRepo.EXPECT().GetCommitPipeline(gomock.Any(), 1, "main", "commit").Return(
@@ -477,7 +454,6 @@ func Test_gitSvc_PipelineInfo_NotFound(t *testing.T) {
 }
 
 func Test_gitSvc_PipelineJobOptions_Success(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 
 	mocks.gitRepo.EXPECT().PipelineJobOptions(gomock.Any(), 1, "main").Return(
@@ -494,7 +470,6 @@ func Test_gitSvc_PipelineJobOptions_Success(t *testing.T) {
 }
 
 func Test_gitSvc_PipelineJobOptions_Error(t *testing.T) {
-	t.Parallel()
 	svc, mocks := newGitSvcWithMocks(t)
 
 	mocks.gitRepo.EXPECT().PipelineJobOptions(gomock.Any(), 1, "").Return(nil, nil, errors.New("boom"))

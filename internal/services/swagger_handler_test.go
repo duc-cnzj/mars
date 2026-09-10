@@ -11,7 +11,6 @@ import (
 )
 
 func Test_swaggerHandler_swaggerJSON(t *testing.T) {
-	t.Parallel()
 	h := newSwaggerHandlerWithMocks(t)
 	w := httptest.NewRecorder()
 	r := &http.Request{}
@@ -41,7 +40,6 @@ func (f *failWriter) WriteHeader(status int) {
 }
 
 func Test_swaggerHandler_swaggerJSON_WriteError(t *testing.T) {
-	t.Parallel()
 	h := newSwaggerHandlerWithMocks(t)
 	w := &failWriter{}
 	h.swaggerJSON(w, &http.Request{})
@@ -53,7 +51,6 @@ func Test_swaggerHandler_swaggerJSON_WriteError(t *testing.T) {
 // 回归防护：/doc/swagger.json 与 /docs/ 静态页必须通过 mux 路由可达，
 // 且都套 HttpCache 缓存中间件（不 panic）。
 func Test_swaggerHandler_Register(t *testing.T) {
-	t.Parallel()
 	h := newSwaggerHandlerWithMocks(t)
 	router := mux.NewRouter()
 	h.Register(router)

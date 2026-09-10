@@ -14,7 +14,6 @@ import (
 )
 
 func TestStreamServerInterceptor(t *testing.T) {
-	t.Parallel()
 	assert.IsType(t, (grpc.StreamServerInterceptor)(nil), ValidatorStreamServerInterceptor())
 	called := false
 	ValidatorStreamServerInterceptor()("", nil, nil, func(srv any, stream grpc.ServerStream) error {
@@ -34,7 +33,6 @@ func (m *mockValidator) Validate() error {
 }
 
 func TestUnaryServerInterceptor(t *testing.T) {
-	t.Parallel()
 	assert.IsType(t, (grpc.UnaryServerInterceptor)(nil), ValidatorUnaryServerInterceptor())
 
 	called := 0
@@ -101,7 +99,6 @@ func (v *v) Validate() error {
 }
 
 func Test_recvWrapper_RecvMsg(t *testing.T) {
-	t.Parallel()
 	r := recvWrapper{ServerStream: &ss{}}
 	vv := &v{}
 	r.RecvMsg(vv)

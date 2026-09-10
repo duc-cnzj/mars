@@ -13,7 +13,6 @@ import (
 )
 
 func TestAutoHandleWindowSize(t *testing.T) {
-	t.Parallel()
 	resizeCh := make(chan [2]uint32, 8)
 	resize := func(h, w uint32) { resizeCh <- [2]uint32{h, w} }
 	var size atomic.Uint32
@@ -58,7 +57,6 @@ func TestAutoHandleWindowSize(t *testing.T) {
 }
 
 func TestAutoHandleWindowSize_NoTTY(t *testing.T) {
-	t.Parallel()
 	resizeCh := make(chan [2]uint32, 1)
 	resize := func(h, w uint32) { resizeCh <- [2]uint32{h, w} }
 	current := func() (uint32, uint32, bool) { return 0, 0, false } // 读不到尺寸
@@ -87,7 +85,6 @@ func TestAutoHandleWindowSize_NoTTY(t *testing.T) {
 }
 
 func TestAutoHandleWindowSize_Nil(t *testing.T) {
-	t.Parallel()
 	// 非 unix 平台 current/changes 为 nil → 返回 no-op stop，不 panic。
 	stop := autoHandleWindowSize(nil, nil, func() {}, func(uint32, uint32) {})
 	stop()
@@ -97,7 +94,6 @@ func TestAutoHandleWindowSize_Nil(t *testing.T) {
 // TestTerminal_AutoHandleWindowSize 冒烟：真实走平台 windowSizeSource（unix 下
 // 注册 SIGWINCH；非 tty 时 current 返回 false 不 resize），stop 后退出不 panic。
 func TestTerminal_AutoHandleWindowSize(t *testing.T) {
-	t.Parallel()
 	term := &Terminal{}
 	stop := term.AutoHandleWindowSize()
 	stop()
