@@ -27,6 +27,7 @@ func TestResolveDriver_SQLiteFallback(t *testing.T) {
 }
 
 func TestNewLocker_WithDBDriver(t *testing.T) {
+	t.Parallel()
 
 	locker := NewLocker(DriverDB, func() *ent.Client { return nil }, mlog.NewForConfig(nil), timer.NewReal())
 
@@ -34,6 +35,7 @@ func TestNewLocker_WithDBDriver(t *testing.T) {
 }
 
 func TestNewLocker_WithMemoryDriver(t *testing.T) {
+	t.Parallel()
 
 	locker := NewLocker(DriverMemory, func() *ent.Client { return nil }, mlog.NewForConfig(nil), timer.NewReal())
 
@@ -41,6 +43,7 @@ func TestNewLocker_WithMemoryDriver(t *testing.T) {
 }
 
 func TestNewLocker_WithUnknownDriver(t *testing.T) {
+	t.Parallel()
 
 	locker := NewLocker(Driver("unknown"), func() *ent.Client { return nil }, mlog.NewForConfig(nil), timer.NewReal())
 

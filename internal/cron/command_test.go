@@ -28,6 +28,7 @@ func TestCommand_At(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run(tt.time, func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tt.wants, newCommand().At(tt.time).Expression())
 		})
 	}
@@ -47,6 +48,7 @@ func TestCommand_Cron(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run(tt.expr, func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tt.expr, newCommand().Cron(tt.expr).Expression())
 		})
 	}
@@ -73,6 +75,7 @@ func TestCommand_DailyAt(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run(tt.time, func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tt.wants, newCommand().DailyAt(tt.time).Expression())
 		})
 	}
@@ -95,6 +98,7 @@ func TestCommand_Days(t *testing.T) {
 	for i, test := range tests {
 		tt := test
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tt.wants, newCommand().Days(tt.days).Expression())
 		})
 	}
@@ -227,6 +231,7 @@ func TestCommand_HourlyAt(t *testing.T) {
 	for i, test := range tests {
 		tt := test
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tt.wants, newCommand().HourlyAt(tt.time).Expression())
 		})
 	}
@@ -264,6 +269,7 @@ func TestCommand_MonthlyOn(t *testing.T) {
 	for i, test := range tests {
 		tt := test
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tt.wants, newCommand().MonthlyOn(tt.dom, tt.time).Expression())
 		})
 	}
@@ -298,6 +304,7 @@ func TestCommand_QuarterlyOn(t *testing.T) {
 	for i, test := range tests {
 		tt := test
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tt.wants, newCommand().QuarterlyOn(tt.doq, tt.time).Expression())
 		})
 	}

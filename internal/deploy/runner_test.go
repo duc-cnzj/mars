@@ -859,6 +859,7 @@ func TestElementsLoader_typedValue(t *testing.T) {
 	for i, test := range tests {
 		tt := test
 		t.Run(fmt.Sprintf("test-%v", i), func(t *testing.T) {
+			t.Parallel()
 			value, err := (&ElementsLoader{}).typedValue(tt.ele, tt.input)
 			if err != nil {
 				assert.Equal(t, err.Error(), tt.err)
@@ -1077,6 +1078,7 @@ func TestJober_OnFinally(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run("", func(t *testing.T) {
+			t.Parallel()
 			job := &jobRunner{err: tt}
 			job.OnFinally(1, func(err error, sendResultToUser func()) {
 				assert.Equal(t, tt, err)
