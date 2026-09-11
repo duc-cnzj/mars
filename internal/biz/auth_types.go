@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/v6/internal/biz/schematype"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // Expired 是签发的 JWT 会话 token 的过期时长。
@@ -30,7 +30,7 @@ type Auth interface {
 
 // JwtClaims 是 JWT 载荷结构：标准声明 + 内嵌用户信息。
 type JwtClaims struct {
-	*jwt.StandardClaims
+	jwt.RegisteredClaims
 	UserInfo *UserInfo `json:"user_info"`
 }
 

@@ -1,7 +1,9 @@
 package data
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -2070,23 +2072,146 @@ func TestK8sRepo_GetCpuAndMemoryInNamespace(t *testing.T) {
 	assert.NotEmpty(t, mem)
 }
 
-// TestDefaultArchiver 覆盖归档/打开/删除三个端口的真实文件操作。
+// TestDefaultArchiver 覆盖归档/打开/删除三个端口的真实文件操作，并把生产契约钉死：
+// 产出必须是合法 gzip+tar、恰好一个条目、条目名等于源文件 base（容器内
+// `tar -zmxf - -C <dir>` 据此落地为 <dir>/<base>）、内容与源逐字节一致。
 func TestDefaultArchiver(t *testing.T) {
 	dir := t.TempDir()
 	src := filepath.Join(dir, "a.txt")
-	require.NoError(t, os.WriteFile(src, []byte("hi"), 0o644))
+	content := []byte("hi")
+	require.NoError(t, os.WriteFile(src, content, 0o644))
 	dst := filepath.Join(dir, "a.tar.gz")
 
 	ar := NewDefaultArchiver()
 	require.NoError(t, ar.Archive([]string{src}, dst))
 	rc, err := ar.Open(dst)
 	require.NoError(t, err)
-	_, err = io.Copy(io.Discard, rc)
+	defer rc.Close()
+
+	gzipReader, err := gzip.NewReader(rc)
 	require.NoError(t, err)
-	require.NoError(t, rc.Close())
+	tarReader := tar.NewReader(gzipReader)
+
+	header, err := tarReader.Next()
+	require.NoError(t, err)
+	assert.Equal(t, "a.txt", header.Name)
+	assert.Equal(t, byte(tar.TypeReg), header.Typeflag)
+	assert.Equal(t, int64(len(content)), header.Size)
+	assert.Equal(t, fs.FileMode(0o644), header.FileInfo().Mode().Perm())
+
+	got, err := io.ReadAll(tarReader)
+	require.NoError(t, err)
+	assert.Equal(t, content, got)
+
+	// 恰好一个条目
+	_, err = tarReader.Next()
+	assert.ErrorIs(t, err, io.EOF)
+
 	require.NoError(t, ar.Remove(dst))
 	_, err = os.Stat(dst)
 	assert.Error(t, err)
+}
+
+// TestDefaultArchiver_MultiSourceDeepPath 覆盖多源与深层路径：
+// 多源产出多条目，且条目名只取 base，源路径的目录层级不进条目名
+// （与容器内落地 <dir>/<base> 的约定一致）。
+func TestDefaultArchiver_MultiSourceDeepPath(t *testing.T) {
+	dir := t.TempDir()
+	deep := filepath.Join(dir, "x", "y", "z")
+	require.NoError(t, os.MkdirAll(deep, 0o755))
+	first := filepath.Join(deep, "one.txt")
+	second := filepath.Join(dir, "two.bin")
+	require.NoError(t, os.WriteFile(first, []byte("one"), 0o644))
+	require.NoError(t, os.WriteFile(second, []byte("two"), 0o600))
+
+	dst := filepath.Join(dir, "multi.tar.gz")
+	ar := NewDefaultArchiver()
+	require.NoError(t, ar.Archive([]string{first, second}, dst))
+	defer ar.Remove(dst)
+
+	rc, err := ar.Open(dst)
+	require.NoError(t, err)
+	defer rc.Close()
+	gzipReader, err := gzip.NewReader(rc)
+	require.NoError(t, err)
+	tarReader := tar.NewReader(gzipReader)
+
+	names := make([]string, 0, 2)
+	modes := make(map[string]fs.FileMode)
+	for {
+		header, err := tarReader.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		require.NoError(t, err)
+		names = append(names, header.Name)
+		modes[header.Name] = header.FileInfo().Mode().Perm()
+	}
+	slices.Sort(names)
+	assert.Equal(t, []string{"one.txt", "two.bin"}, names)
+	assert.Equal(t, fs.FileMode(0o644), modes["one.txt"])
+	assert.Equal(t, fs.FileMode(0o600), modes["two.bin"])
+}
+
+// TestDefaultArchiver_Errors 覆盖归档失败分支：源不存在、源是目录、
+// 目标路径不可写，均显式报错而非产出语义不明的归档。
+func TestDefaultArchiver_Errors(t *testing.T) {
+	dir := t.TempDir()
+	ar := NewDefaultArchiver()
+
+	// 源不存在
+	err := ar.Archive([]string{filepath.Join(dir, "nope.txt")}, filepath.Join(dir, "o.tar.gz"))
+	assert.Error(t, err)
+
+	// 源是目录：显式拒绝
+	err = ar.Archive([]string{dir}, filepath.Join(dir, "d.tar.gz"))
+	assert.ErrorContains(t, err, "不支持目录归档")
+
+	// 目标不可写（父目录不存在）
+	src := filepath.Join(dir, "a.txt")
+	require.NoError(t, os.WriteFile(src, []byte("hi"), 0o644))
+	err = ar.Archive([]string{src}, filepath.Join(dir, "no-such-dir", "x.tar.gz"))
+	assert.Error(t, err)
+
+	// Open 不存在路径报错
+	_, err = ar.Open(filepath.Join(dir, "missing.tar.gz"))
+	assert.Error(t, err)
+
+	// 归档写入失败：底层 writer 在写 tar 头时报错，显式上抛而非静默产出坏包
+	src2 := filepath.Join(dir, "b.txt")
+	require.NoError(t, os.WriteFile(src2, []byte("x"), 0o644))
+	err = tarOneFile(tar.NewWriter(&errWriter{}), src2)
+	assert.Error(t, err)
+}
+
+// TestTarOneFile_Socket 覆盖 os.Stat 成功但 tar.FileInfoHeader 失败的边界：
+// archive/tar 明确不支持套接字文件，必须显式上抛而非产出语义不明的归档。
+func TestTarOneFile_Socket(t *testing.T) {
+	// unix socket 路径有长度上限（darwin sun_path 104 字节），
+	// t.TempDir() 的用例名路径偏长，故用 os.TempDir() 下的短名；
+	// 带上 pid + 纳秒后缀避免 -count>1 或并行进程撞同一个路径。
+	sockPath := filepath.Join(os.TempDir(), fmt.Sprintf("mars_arch_%d_%d.sock", os.Getpid(), time.Now().UnixNano()))
+	defer os.Remove(sockPath)
+	l, err := net.Listen("unix", sockPath)
+	require.NoError(t, err)
+	defer l.Close()
+
+	err = tarOneFile(tar.NewWriter(&bytes.Buffer{}), sockPath)
+	assert.ErrorContains(t, err, "sockets not supported")
+}
+
+// TestTarOneFile_UnreadableFile 覆盖 os.Stat 通过、os.Open 失败的边界：
+// 权限位清零的普通文件 Stat 可读元信息，但读取内容时被拒，必须显式上抛。
+func TestTarOneFile_UnreadableFile(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root 可无视权限位，无法构造 os.Open 失败")
+	}
+	src := filepath.Join(t.TempDir(), "noperm.txt")
+	require.NoError(t, os.WriteFile(src, []byte("x"), 0o600))
+	require.NoError(t, os.Chmod(src, 0o000))
+
+	err := tarOneFile(tar.NewWriter(&bytes.Buffer{}), src)
+	assert.ErrorContains(t, err, "permission denied")
 }
 
 // errFileCopy 是 CopyFromPod 恒报错的 FileCopy 替身，
@@ -2118,6 +2243,11 @@ func (e *errArchiver) Remove(_ string) error { return nil }
 type errReader struct{}
 
 func (e *errReader) Read(_ []byte) (int, error) { return 0, errors.New("read boom") }
+
+// errWriter 是写即报错的 io.Writer，供 tarOneFile 覆盖写 tar 头失败分支。
+type errWriter struct{}
+
+func (e *errWriter) Write(_ []byte) (int, error) { return 0, errors.New("write boom") }
 
 // copyFromPodK8sRepo 构造覆盖 CopyFromPod 错误分支所需的 k8sRepo。
 // 三个 Execute 调用统一用 AnyTimes 的 executor mock，由 gomock.Cond 区分命令。

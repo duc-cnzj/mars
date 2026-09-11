@@ -14,7 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -164,7 +164,8 @@ func TestGetProject_error(t *testing.T) {
 
 // TestClassifyGitlabError 覆盖 gitlab API 错误按 HTTP 状态码归类的全部分支：
 // 404→NotFound、400→InvalidArgument、401→Unauthenticated、403→PermissionDenied，
-// 5xx 与非 *gitlab.ErrorResponse 原样透传（data 层 errs.Wrap 落 500）、nil 返回 nil。
+// 5xx、非 *gitlab.ErrorResponse 与 404 哨兵 gitlab.ErrNotFound 原样透传/单独归类、
+// nil 返回 nil。
 func TestClassifyGitlabError(t *testing.T) {
 	t.Run("nil input", func(t *testing.T) {
 		assert.Nil(t, classifyGitlabError(nil))
@@ -173,6 +174,18 @@ func TestClassifyGitlabError(t *testing.T) {
 	t.Run("non gitlab error passthrough", func(t *testing.T) {
 		plain := errors.New("connection refused")
 		assert.Same(t, plain, classifyGitlabError(plain))
+	})
+
+	t.Run("native not found sentinel", func(t *testing.T) {
+		// 新版 SDK 对 404 直接返回导出哨兵 gitlab.ErrNotFound（不再构造 *ErrorResponse），
+		// 须单独归类为 NotFound，否则会落 500 把"资源不存在"误报成系统故障。
+		got := classifyGitlabError(gitlab.ErrNotFound)
+		assert.Equal(t, codes.NotFound, status.Code(got))
+		assert.ErrorIs(t, got, gitlab.ErrNotFound)
+
+		// 被 %w 包裹后仍应命中（errors.Is 语义），防止 SDK 或调用方再包一层时归类失效。
+		wrapped := classifyGitlabError(fmt.Errorf("get project: %w", gitlab.ErrNotFound))
+		assert.Equal(t, codes.NotFound, status.Code(wrapped))
 	})
 
 	testCases := []struct {

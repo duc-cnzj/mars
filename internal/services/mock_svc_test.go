@@ -14,7 +14,7 @@ import (
 // 让 mockgen 生成的样板代码被完整覆盖。
 func TestMockMetricsStreamTopPodServer_AllMethods(t *testing.T) {
 	m := gomock.NewController(t)
-	srv := NewMockMetrics_StreamTopPodServer(m)
+	srv := NewMockMetrics_StreamTopPodServer[metrics.TopPodResponse](m)
 
 	srv.EXPECT().Context().Return(context.TODO())
 	srv.EXPECT().RecvMsg(gomock.Any()).Return(nil)

@@ -42,7 +42,9 @@ services:
     networks:
       - mars
   db:
-    image: mysql:8.0
+    # 8.4 LTS：与 CI（.github/workflows/test.yaml）和 dev/atlas.hcl 的 dev 库统一到同一大版本。
+    # 8.0 已于 2026-04-30 EOL。
+    image: mysql:8.4
     environment:
       # 与 config_example.yaml 默认值对齐：root / 空密码
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"

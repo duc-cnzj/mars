@@ -46,7 +46,7 @@ func TestWithAuthor(t *testing.T) {
 	assert.True(t, strings.Contains(out, expected))
 }
 
-// stripANSI 去掉 pterm 的 ANSI 转义序列，便于断言纯文本内容。
+// stripANSI 去掉 ANSI 转义序列，便于断言纯文本内容。
 func stripANSI(s string) string {
 	var sb strings.Builder
 	for i := 0; i < len(s); {

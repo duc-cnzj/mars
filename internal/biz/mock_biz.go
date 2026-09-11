@@ -15,7 +15,6 @@ import (
 	time "time"
 
 	types "github.com/duc-cnzj/mars/api/v6/proto/types"
-	schematype "github.com/duc-cnzj/mars/v6/internal/biz/schematype"
 	pagination "github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/api/core/v1"
@@ -28,6 +27,7 @@ import (
 type MockAuthBiz struct {
 	ctrl     *gomock.Controller
 	recorder *MockAuthBizMockRecorder
+	isgomock struct{}
 }
 
 // MockAuthBizMockRecorder is the mock recorder for MockAuthBiz.
@@ -48,99 +48,100 @@ func (m *MockAuthBiz) EXPECT() *MockAuthBizMockRecorder {
 }
 
 // EffectiveRoles mocks base method.
-func (m *MockAuthBiz) EffectiveRoles(arg0 context.Context, arg1 string, arg2 []string) ([]string, error) {
+func (m *MockAuthBiz) EffectiveRoles(ctx context.Context, email string, ssoRoles []string) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EffectiveRoles", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "EffectiveRoles", ctx, email, ssoRoles)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // EffectiveRoles indicates an expected call of EffectiveRoles.
-func (mr *MockAuthBizMockRecorder) EffectiveRoles(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockAuthBizMockRecorder) EffectiveRoles(ctx, email, ssoRoles any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveRoles", reflect.TypeOf((*MockAuthBiz)(nil).EffectiveRoles), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveRoles", reflect.TypeOf((*MockAuthBiz)(nil).EffectiveRoles), ctx, email, ssoRoles)
 }
 
 // Exchange mocks base method.
-func (m *MockAuthBiz) Exchange(arg0 context.Context, arg1 string) (*schematype.UserInfo, error) {
+func (m *MockAuthBiz) Exchange(ctx context.Context, code string) (*UserInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Exchange", arg0, arg1)
-	ret0, _ := ret[0].(*schematype.UserInfo)
+	ret := m.ctrl.Call(m, "Exchange", ctx, code)
+	ret0, _ := ret[0].(*UserInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Exchange indicates an expected call of Exchange.
-func (mr *MockAuthBizMockRecorder) Exchange(arg0, arg1 any) *gomock.Call {
+func (mr *MockAuthBizMockRecorder) Exchange(ctx, code any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exchange", reflect.TypeOf((*MockAuthBiz)(nil).Exchange), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exchange", reflect.TypeOf((*MockAuthBiz)(nil).Exchange), ctx, code)
 }
 
 // Login mocks base method.
-func (m *MockAuthBiz) Login(arg0 context.Context, arg1 *LoginInput) (*LoginResponse, error) {
+func (m *MockAuthBiz) Login(ctx context.Context, input *LoginInput) (*LoginResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Login", arg0, arg1)
+	ret := m.ctrl.Call(m, "Login", ctx, input)
 	ret0, _ := ret[0].(*LoginResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Login indicates an expected call of Login.
-func (mr *MockAuthBizMockRecorder) Login(arg0, arg1 any) *gomock.Call {
+func (mr *MockAuthBizMockRecorder) Login(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockAuthBiz)(nil).Login), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockAuthBiz)(nil).Login), ctx, input)
 }
 
 // Settings mocks base method.
-func (m *MockAuthBiz) Settings(arg0 context.Context) (OidcConfig, error) {
+func (m *MockAuthBiz) Settings(ctx context.Context) (OidcConfig, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Settings", arg0)
+	ret := m.ctrl.Call(m, "Settings", ctx)
 	ret0, _ := ret[0].(OidcConfig)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Settings indicates an expected call of Settings.
-func (mr *MockAuthBizMockRecorder) Settings(arg0 any) *gomock.Call {
+func (mr *MockAuthBizMockRecorder) Settings(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Settings", reflect.TypeOf((*MockAuthBiz)(nil).Settings), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Settings", reflect.TypeOf((*MockAuthBiz)(nil).Settings), ctx)
 }
 
 // Sign mocks base method.
-func (m *MockAuthBiz) Sign(arg0 context.Context, arg1 *schematype.UserInfo) (*LoginResponse, error) {
+func (m *MockAuthBiz) Sign(ctx context.Context, input *UserInfo) (*LoginResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Sign", arg0, arg1)
+	ret := m.ctrl.Call(m, "Sign", ctx, input)
 	ret0, _ := ret[0].(*LoginResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Sign indicates an expected call of Sign.
-func (mr *MockAuthBizMockRecorder) Sign(arg0, arg1 any) *gomock.Call {
+func (mr *MockAuthBizMockRecorder) Sign(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sign", reflect.TypeOf((*MockAuthBiz)(nil).Sign), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sign", reflect.TypeOf((*MockAuthBiz)(nil).Sign), ctx, input)
 }
 
 // VerifyToken mocks base method.
-func (m *MockAuthBiz) VerifyToken(arg0 context.Context, arg1 string) (*schematype.UserInfo, error) {
+func (m *MockAuthBiz) VerifyToken(ctx context.Context, token string) (*UserInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VerifyToken", arg0, arg1)
-	ret0, _ := ret[0].(*schematype.UserInfo)
+	ret := m.ctrl.Call(m, "VerifyToken", ctx, token)
+	ret0, _ := ret[0].(*UserInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // VerifyToken indicates an expected call of VerifyToken.
-func (mr *MockAuthBizMockRecorder) VerifyToken(arg0, arg1 any) *gomock.Call {
+func (mr *MockAuthBizMockRecorder) VerifyToken(ctx, token any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyToken", reflect.TypeOf((*MockAuthBiz)(nil).VerifyToken), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyToken", reflect.TypeOf((*MockAuthBiz)(nil).VerifyToken), ctx, token)
 }
 
 // MockEndpointBiz is a mock of EndpointBiz interface.
 type MockEndpointBiz struct {
 	ctrl     *gomock.Controller
 	recorder *MockEndpointBizMockRecorder
+	isgomock struct{}
 }
 
 // MockEndpointBizMockRecorder is the mock recorder for MockEndpointBiz.
@@ -161,39 +162,40 @@ func (m *MockEndpointBiz) EXPECT() *MockEndpointBizMockRecorder {
 }
 
 // InNamespace mocks base method.
-func (m *MockEndpointBiz) InNamespace(arg0 context.Context, arg1 int) ([]*types.ServiceEndpoint, error) {
+func (m *MockEndpointBiz) InNamespace(ctx context.Context, namespaceID int) ([]*types.ServiceEndpoint, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InNamespace", arg0, arg1)
+	ret := m.ctrl.Call(m, "InNamespace", ctx, namespaceID)
 	ret0, _ := ret[0].([]*types.ServiceEndpoint)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // InNamespace indicates an expected call of InNamespace.
-func (mr *MockEndpointBizMockRecorder) InNamespace(arg0, arg1 any) *gomock.Call {
+func (mr *MockEndpointBizMockRecorder) InNamespace(ctx, namespaceID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InNamespace", reflect.TypeOf((*MockEndpointBiz)(nil).InNamespace), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InNamespace", reflect.TypeOf((*MockEndpointBiz)(nil).InNamespace), ctx, namespaceID)
 }
 
 // InProject mocks base method.
-func (m *MockEndpointBiz) InProject(arg0 context.Context, arg1 int) ([]*types.ServiceEndpoint, error) {
+func (m *MockEndpointBiz) InProject(ctx context.Context, projectID int) ([]*types.ServiceEndpoint, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InProject", arg0, arg1)
+	ret := m.ctrl.Call(m, "InProject", ctx, projectID)
 	ret0, _ := ret[0].([]*types.ServiceEndpoint)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // InProject indicates an expected call of InProject.
-func (mr *MockEndpointBizMockRecorder) InProject(arg0, arg1 any) *gomock.Call {
+func (mr *MockEndpointBizMockRecorder) InProject(ctx, projectID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InProject", reflect.TypeOf((*MockEndpointBiz)(nil).InProject), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InProject", reflect.TypeOf((*MockEndpointBiz)(nil).InProject), ctx, projectID)
 }
 
 // MockAccessTokenBiz is a mock of AccessTokenBiz interface.
 type MockAccessTokenBiz struct {
 	ctrl     *gomock.Controller
 	recorder *MockAccessTokenBizMockRecorder
+	isgomock struct{}
 }
 
 // MockAccessTokenBizMockRecorder is the mock recorder for MockAccessTokenBiz.
@@ -214,54 +216,54 @@ func (m *MockAccessTokenBiz) EXPECT() *MockAccessTokenBizMockRecorder {
 }
 
 // FindByToken mocks base method.
-func (m *MockAccessTokenBiz) FindByToken(arg0 context.Context, arg1 string) (*AccessToken, error) {
+func (m *MockAccessTokenBiz) FindByToken(ctx context.Context, token string) (*AccessToken, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindByToken", arg0, arg1)
+	ret := m.ctrl.Call(m, "FindByToken", ctx, token)
 	ret0, _ := ret[0].(*AccessToken)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindByToken indicates an expected call of FindByToken.
-func (mr *MockAccessTokenBizMockRecorder) FindByToken(arg0, arg1 any) *gomock.Call {
+func (mr *MockAccessTokenBizMockRecorder) FindByToken(ctx, token any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByToken", reflect.TypeOf((*MockAccessTokenBiz)(nil).FindByToken), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByToken", reflect.TypeOf((*MockAccessTokenBiz)(nil).FindByToken), ctx, token)
 }
 
 // Grant mocks base method.
-func (m *MockAccessTokenBiz) Grant(arg0 context.Context, arg1 *GrantAccessTokenInput) (*AccessToken, error) {
+func (m *MockAccessTokenBiz) Grant(ctx context.Context, input *GrantAccessTokenInput) (*AccessToken, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Grant", arg0, arg1)
+	ret := m.ctrl.Call(m, "Grant", ctx, input)
 	ret0, _ := ret[0].(*AccessToken)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Grant indicates an expected call of Grant.
-func (mr *MockAccessTokenBizMockRecorder) Grant(arg0, arg1 any) *gomock.Call {
+func (mr *MockAccessTokenBizMockRecorder) Grant(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Grant", reflect.TypeOf((*MockAccessTokenBiz)(nil).Grant), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Grant", reflect.TypeOf((*MockAccessTokenBiz)(nil).Grant), ctx, input)
 }
 
 // Lease mocks base method.
-func (m *MockAccessTokenBiz) Lease(arg0 context.Context, arg1 string, arg2 int32) (*AccessToken, error) {
+func (m *MockAccessTokenBiz) Lease(ctx context.Context, token string, expireSeconds int32) (*AccessToken, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Lease", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Lease", ctx, token, expireSeconds)
 	ret0, _ := ret[0].(*AccessToken)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Lease indicates an expected call of Lease.
-func (mr *MockAccessTokenBizMockRecorder) Lease(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockAccessTokenBizMockRecorder) Lease(ctx, token, expireSeconds any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lease", reflect.TypeOf((*MockAccessTokenBiz)(nil).Lease), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lease", reflect.TypeOf((*MockAccessTokenBiz)(nil).Lease), ctx, token, expireSeconds)
 }
 
 // List mocks base method.
-func (m *MockAccessTokenBiz) List(arg0 context.Context, arg1 *ListAccessTokenInput) ([]*AccessToken, *pagination.Pagination, error) {
+func (m *MockAccessTokenBiz) List(ctx context.Context, input *ListAccessTokenInput) ([]*AccessToken, *pagination.Pagination, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", arg0, arg1)
+	ret := m.ctrl.Call(m, "List", ctx, input)
 	ret0, _ := ret[0].([]*AccessToken)
 	ret1, _ := ret[1].(*pagination.Pagination)
 	ret2, _ := ret[2].(error)
@@ -269,43 +271,44 @@ func (m *MockAccessTokenBiz) List(arg0 context.Context, arg1 *ListAccessTokenInp
 }
 
 // List indicates an expected call of List.
-func (mr *MockAccessTokenBizMockRecorder) List(arg0, arg1 any) *gomock.Call {
+func (mr *MockAccessTokenBizMockRecorder) List(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAccessTokenBiz)(nil).List), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAccessTokenBiz)(nil).List), ctx, input)
 }
 
 // Revoke mocks base method.
-func (m *MockAccessTokenBiz) Revoke(arg0 context.Context, arg1 string) error {
+func (m *MockAccessTokenBiz) Revoke(ctx context.Context, token string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Revoke", arg0, arg1)
+	ret := m.ctrl.Call(m, "Revoke", ctx, token)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Revoke indicates an expected call of Revoke.
-func (mr *MockAccessTokenBizMockRecorder) Revoke(arg0, arg1 any) *gomock.Call {
+func (mr *MockAccessTokenBizMockRecorder) Revoke(ctx, token any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revoke", reflect.TypeOf((*MockAccessTokenBiz)(nil).Revoke), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revoke", reflect.TypeOf((*MockAccessTokenBiz)(nil).Revoke), ctx, token)
 }
 
 // TouchLastUsedAt mocks base method.
-func (m *MockAccessTokenBiz) TouchLastUsedAt(arg0 context.Context, arg1 string, arg2 time.Time) error {
+func (m *MockAccessTokenBiz) TouchLastUsedAt(ctx context.Context, token string, t time.Time) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TouchLastUsedAt", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "TouchLastUsedAt", ctx, token, t)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // TouchLastUsedAt indicates an expected call of TouchLastUsedAt.
-func (mr *MockAccessTokenBizMockRecorder) TouchLastUsedAt(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockAccessTokenBizMockRecorder) TouchLastUsedAt(ctx, token, t any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TouchLastUsedAt", reflect.TypeOf((*MockAccessTokenBiz)(nil).TouchLastUsedAt), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TouchLastUsedAt", reflect.TypeOf((*MockAccessTokenBiz)(nil).TouchLastUsedAt), ctx, token, t)
 }
 
 // MockPictureBiz is a mock of PictureBiz interface.
 type MockPictureBiz struct {
 	ctrl     *gomock.Controller
 	recorder *MockPictureBizMockRecorder
+	isgomock struct{}
 }
 
 // MockPictureBizMockRecorder is the mock recorder for MockPictureBiz.
@@ -326,24 +329,25 @@ func (m *MockPictureBiz) EXPECT() *MockPictureBizMockRecorder {
 }
 
 // Get mocks base method.
-func (m *MockPictureBiz) Get(arg0 context.Context, arg1 bool) (*PictureItem, error) {
+func (m *MockPictureBiz) Get(ctx context.Context, random bool) (*PictureItem, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret := m.ctrl.Call(m, "Get", ctx, random)
 	ret0, _ := ret[0].(*PictureItem)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockPictureBizMockRecorder) Get(arg0, arg1 any) *gomock.Call {
+func (mr *MockPictureBizMockRecorder) Get(ctx, random any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockPictureBiz)(nil).Get), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockPictureBiz)(nil).Get), ctx, random)
 }
 
 // MockGitBiz is a mock of GitBiz interface.
 type MockGitBiz struct {
 	ctrl     *gomock.Controller
 	recorder *MockGitBizMockRecorder
+	isgomock struct{}
 }
 
 // MockGitBizMockRecorder is the mock recorder for MockGitBiz.
@@ -364,39 +368,39 @@ func (m *MockGitBiz) EXPECT() *MockGitBizMockRecorder {
 }
 
 // AllBranches mocks base method.
-func (m *MockGitBiz) AllBranches(arg0 context.Context, arg1 int, arg2 bool) ([]*Branch, error) {
+func (m *MockGitBiz) AllBranches(ctx context.Context, projectID int, forceFresh bool) ([]*Branch, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AllBranches", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "AllBranches", ctx, projectID, forceFresh)
 	ret0, _ := ret[0].([]*Branch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AllBranches indicates an expected call of AllBranches.
-func (mr *MockGitBizMockRecorder) AllBranches(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockGitBizMockRecorder) AllBranches(ctx, projectID, forceFresh any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllBranches", reflect.TypeOf((*MockGitBiz)(nil).AllBranches), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllBranches", reflect.TypeOf((*MockGitBiz)(nil).AllBranches), ctx, projectID, forceFresh)
 }
 
 // AllProjects mocks base method.
-func (m *MockGitBiz) AllProjects(arg0 context.Context, arg1 bool) ([]*GitProject, error) {
+func (m *MockGitBiz) AllProjects(ctx context.Context, forceFresh bool) ([]*GitProject, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AllProjects", arg0, arg1)
+	ret := m.ctrl.Call(m, "AllProjects", ctx, forceFresh)
 	ret0, _ := ret[0].([]*GitProject)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AllProjects indicates an expected call of AllProjects.
-func (mr *MockGitBizMockRecorder) AllProjects(arg0, arg1 any) *gomock.Call {
+func (mr *MockGitBizMockRecorder) AllProjects(ctx, forceFresh any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllProjects", reflect.TypeOf((*MockGitBiz)(nil).AllProjects), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllProjects", reflect.TypeOf((*MockGitBiz)(nil).AllProjects), ctx, forceFresh)
 }
 
 // EnsureBranchAndCommit mocks base method.
-func (m *MockGitBiz) EnsureBranchAndCommit(arg0 context.Context, arg1 *Repo, arg2, arg3 string) (string, string, []string, error) {
+func (m *MockGitBiz) EnsureBranchAndCommit(ctx context.Context, show *Repo, inBranch, inCommit string) (string, string, []string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EnsureBranchAndCommit", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "EnsureBranchAndCommit", ctx, show, inBranch, inCommit)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].([]string)
@@ -405,120 +409,120 @@ func (m *MockGitBiz) EnsureBranchAndCommit(arg0 context.Context, arg1 *Repo, arg
 }
 
 // EnsureBranchAndCommit indicates an expected call of EnsureBranchAndCommit.
-func (mr *MockGitBizMockRecorder) EnsureBranchAndCommit(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockGitBizMockRecorder) EnsureBranchAndCommit(ctx, show, inBranch, inCommit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsureBranchAndCommit", reflect.TypeOf((*MockGitBiz)(nil).EnsureBranchAndCommit), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsureBranchAndCommit", reflect.TypeOf((*MockGitBiz)(nil).EnsureBranchAndCommit), ctx, show, inBranch, inCommit)
 }
 
 // GetByProjectID mocks base method.
-func (m *MockGitBiz) GetByProjectID(arg0 context.Context, arg1 int) (*GitProject, error) {
+func (m *MockGitBiz) GetByProjectID(ctx context.Context, id int) (*GitProject, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByProjectID", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetByProjectID", ctx, id)
 	ret0, _ := ret[0].(*GitProject)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByProjectID indicates an expected call of GetByProjectID.
-func (mr *MockGitBizMockRecorder) GetByProjectID(arg0, arg1 any) *gomock.Call {
+func (mr *MockGitBizMockRecorder) GetByProjectID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByProjectID", reflect.TypeOf((*MockGitBiz)(nil).GetByProjectID), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByProjectID", reflect.TypeOf((*MockGitBiz)(nil).GetByProjectID), ctx, id)
 }
 
 // GetChartValuesYaml mocks base method.
-func (m *MockGitBiz) GetChartValuesYaml(arg0 context.Context, arg1 string) (string, error) {
+func (m *MockGitBiz) GetChartValuesYaml(ctx context.Context, localChartPath string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetChartValuesYaml", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetChartValuesYaml", ctx, localChartPath)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetChartValuesYaml indicates an expected call of GetChartValuesYaml.
-func (mr *MockGitBizMockRecorder) GetChartValuesYaml(arg0, arg1 any) *gomock.Call {
+func (mr *MockGitBizMockRecorder) GetChartValuesYaml(ctx, localChartPath any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChartValuesYaml", reflect.TypeOf((*MockGitBiz)(nil).GetChartValuesYaml), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChartValuesYaml", reflect.TypeOf((*MockGitBiz)(nil).GetChartValuesYaml), ctx, localChartPath)
 }
 
 // GetCommit mocks base method.
-func (m *MockGitBiz) GetCommit(arg0 context.Context, arg1 int, arg2 string) (*Commit, error) {
+func (m *MockGitBiz) GetCommit(ctx context.Context, projectID int, sha string) (*Commit, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCommit", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetCommit", ctx, projectID, sha)
 	ret0, _ := ret[0].(*Commit)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetCommit indicates an expected call of GetCommit.
-func (mr *MockGitBizMockRecorder) GetCommit(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockGitBizMockRecorder) GetCommit(ctx, projectID, sha any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommit", reflect.TypeOf((*MockGitBiz)(nil).GetCommit), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommit", reflect.TypeOf((*MockGitBiz)(nil).GetCommit), ctx, projectID, sha)
 }
 
 // GetCommitPipeline mocks base method.
-func (m *MockGitBiz) GetCommitPipeline(arg0 context.Context, arg1 int, arg2, arg3 string) (*Pipeline, error) {
+func (m *MockGitBiz) GetCommitPipeline(ctx context.Context, projectID int, branch, sha string) (*Pipeline, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCommitPipeline", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "GetCommitPipeline", ctx, projectID, branch, sha)
 	ret0, _ := ret[0].(*Pipeline)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetCommitPipeline indicates an expected call of GetCommitPipeline.
-func (mr *MockGitBizMockRecorder) GetCommitPipeline(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockGitBizMockRecorder) GetCommitPipeline(ctx, projectID, branch, sha any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommitPipeline", reflect.TypeOf((*MockGitBiz)(nil).GetCommitPipeline), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommitPipeline", reflect.TypeOf((*MockGitBiz)(nil).GetCommitPipeline), ctx, projectID, branch, sha)
 }
 
 // GetFileContentWithBranch mocks base method.
-func (m *MockGitBiz) GetFileContentWithBranch(arg0 context.Context, arg1 int, arg2, arg3 string) (string, error) {
+func (m *MockGitBiz) GetFileContentWithBranch(ctx context.Context, projectID int, branch, path string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFileContentWithBranch", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "GetFileContentWithBranch", ctx, projectID, branch, path)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetFileContentWithBranch indicates an expected call of GetFileContentWithBranch.
-func (mr *MockGitBizMockRecorder) GetFileContentWithBranch(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockGitBizMockRecorder) GetFileContentWithBranch(ctx, projectID, branch, path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFileContentWithBranch", reflect.TypeOf((*MockGitBiz)(nil).GetFileContentWithBranch), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFileContentWithBranch", reflect.TypeOf((*MockGitBiz)(nil).GetFileContentWithBranch), ctx, projectID, branch, path)
 }
 
 // GetProject mocks base method.
-func (m *MockGitBiz) GetProject(arg0 context.Context, arg1 int) (*GitProject, error) {
+func (m *MockGitBiz) GetProject(ctx context.Context, id int) (*GitProject, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetProject", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetProject", ctx, id)
 	ret0, _ := ret[0].(*GitProject)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetProject indicates an expected call of GetProject.
-func (mr *MockGitBizMockRecorder) GetProject(arg0, arg1 any) *gomock.Call {
+func (mr *MockGitBizMockRecorder) GetProject(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProject", reflect.TypeOf((*MockGitBiz)(nil).GetProject), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProject", reflect.TypeOf((*MockGitBiz)(nil).GetProject), ctx, id)
 }
 
 // ListCommits mocks base method.
-func (m *MockGitBiz) ListCommits(arg0 context.Context, arg1 int, arg2 string) ([]*Commit, error) {
+func (m *MockGitBiz) ListCommits(ctx context.Context, projectID int, branch string) ([]*Commit, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListCommits", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "ListCommits", ctx, projectID, branch)
 	ret0, _ := ret[0].([]*Commit)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListCommits indicates an expected call of ListCommits.
-func (mr *MockGitBizMockRecorder) ListCommits(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockGitBizMockRecorder) ListCommits(ctx, projectID, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommits", reflect.TypeOf((*MockGitBiz)(nil).ListCommits), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommits", reflect.TypeOf((*MockGitBiz)(nil).ListCommits), ctx, projectID, branch)
 }
 
 // PipelineJobOptions mocks base method.
-func (m *MockGitBiz) PipelineJobOptions(arg0 context.Context, arg1 int, arg2 string) ([]string, []string, error) {
+func (m *MockGitBiz) PipelineJobOptions(ctx context.Context, projectID int, branch string) ([]string, []string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PipelineJobOptions", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "PipelineJobOptions", ctx, projectID, branch)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].([]string)
 	ret2, _ := ret[2].(error)
@@ -526,15 +530,16 @@ func (m *MockGitBiz) PipelineJobOptions(arg0 context.Context, arg1 int, arg2 str
 }
 
 // PipelineJobOptions indicates an expected call of PipelineJobOptions.
-func (mr *MockGitBizMockRecorder) PipelineJobOptions(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockGitBizMockRecorder) PipelineJobOptions(ctx, projectID, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PipelineJobOptions", reflect.TypeOf((*MockGitBiz)(nil).PipelineJobOptions), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PipelineJobOptions", reflect.TypeOf((*MockGitBiz)(nil).PipelineJobOptions), ctx, projectID, branch)
 }
 
 // MockProjectBiz is a mock of ProjectBiz interface.
 type MockProjectBiz struct {
 	ctrl     *gomock.Controller
 	recorder *MockProjectBizMockRecorder
+	isgomock struct{}
 }
 
 // MockProjectBizMockRecorder is the mock recorder for MockProjectBiz.
@@ -555,99 +560,99 @@ func (m *MockProjectBiz) EXPECT() *MockProjectBizMockRecorder {
 }
 
 // CheckApplyStatus mocks base method.
-func (m *MockProjectBiz) CheckApplyStatus(arg0 context.Context, arg1 int) (*ApplyStatus, error) {
+func (m *MockProjectBiz) CheckApplyStatus(ctx context.Context, id int) (*ApplyStatus, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckApplyStatus", arg0, arg1)
+	ret := m.ctrl.Call(m, "CheckApplyStatus", ctx, id)
 	ret0, _ := ret[0].(*ApplyStatus)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CheckApplyStatus indicates an expected call of CheckApplyStatus.
-func (mr *MockProjectBizMockRecorder) CheckApplyStatus(arg0, arg1 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) CheckApplyStatus(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckApplyStatus", reflect.TypeOf((*MockProjectBiz)(nil).CheckApplyStatus), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckApplyStatus", reflect.TypeOf((*MockProjectBiz)(nil).CheckApplyStatus), ctx, id)
 }
 
 // Create mocks base method.
-func (m *MockProjectBiz) Create(arg0 context.Context, arg1 *CreateProjectInput) (*Project, error) {
+func (m *MockProjectBiz) Create(ctx context.Context, project *CreateProjectInput) (*Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", arg0, arg1)
+	ret := m.ctrl.Call(m, "Create", ctx, project)
 	ret0, _ := ret[0].(*Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockProjectBizMockRecorder) Create(arg0, arg1 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) Create(ctx, project any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockProjectBiz)(nil).Create), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockProjectBiz)(nil).Create), ctx, project)
 }
 
 // Delete mocks base method.
-func (m *MockProjectBiz) Delete(arg0 context.Context, arg1 int) error {
+func (m *MockProjectBiz) Delete(ctx context.Context, id int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockProjectBizMockRecorder) Delete(arg0, arg1 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) Delete(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockProjectBiz)(nil).Delete), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockProjectBiz)(nil).Delete), ctx, id)
 }
 
 // FindByName mocks base method.
-func (m *MockProjectBiz) FindByName(arg0 context.Context, arg1 string, arg2 int) (*Project, error) {
+func (m *MockProjectBiz) FindByName(ctx context.Context, name string, nsID int) (*Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindByName", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "FindByName", ctx, name, nsID)
 	ret0, _ := ret[0].(*Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindByName indicates an expected call of FindByName.
-func (mr *MockProjectBizMockRecorder) FindByName(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) FindByName(ctx, name, nsID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByName", reflect.TypeOf((*MockProjectBiz)(nil).FindByName), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByName", reflect.TypeOf((*MockProjectBiz)(nil).FindByName), ctx, name, nsID)
 }
 
 // FindByVersion mocks base method.
-func (m *MockProjectBiz) FindByVersion(arg0 context.Context, arg1, arg2 int) (*Project, error) {
+func (m *MockProjectBiz) FindByVersion(ctx context.Context, id, version int) (*Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindByVersion", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "FindByVersion", ctx, id, version)
 	ret0, _ := ret[0].(*Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindByVersion indicates an expected call of FindByVersion.
-func (mr *MockProjectBizMockRecorder) FindByVersion(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) FindByVersion(ctx, id, version any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByVersion", reflect.TypeOf((*MockProjectBiz)(nil).FindByVersion), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByVersion", reflect.TypeOf((*MockProjectBiz)(nil).FindByVersion), ctx, id, version)
 }
 
 // GetAllActiveContainers mocks base method.
-func (m *MockProjectBiz) GetAllActiveContainers(arg0 context.Context, arg1 int) ([]*types.StateContainer, error) {
+func (m *MockProjectBiz) GetAllActiveContainers(ctx context.Context, id int) ([]*types.StateContainer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllActiveContainers", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetAllActiveContainers", ctx, id)
 	ret0, _ := ret[0].([]*types.StateContainer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAllActiveContainers indicates an expected call of GetAllActiveContainers.
-func (mr *MockProjectBizMockRecorder) GetAllActiveContainers(arg0, arg1 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) GetAllActiveContainers(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllActiveContainers", reflect.TypeOf((*MockProjectBiz)(nil).GetAllActiveContainers), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllActiveContainers", reflect.TypeOf((*MockProjectBiz)(nil).GetAllActiveContainers), ctx, id)
 }
 
 // GetProjectEndpointsInNamespace mocks base method.
-func (m *MockProjectBiz) GetProjectEndpointsInNamespace(arg0 context.Context, arg1 string, arg2 ...int) ([]*types.ServiceEndpoint, error) {
+func (m *MockProjectBiz) GetProjectEndpointsInNamespace(ctx context.Context, namespace string, projectIDs ...int) ([]*types.ServiceEndpoint, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, namespace}
+	for _, a := range projectIDs {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetProjectEndpointsInNamespace", varargs...)
@@ -657,16 +662,16 @@ func (m *MockProjectBiz) GetProjectEndpointsInNamespace(arg0 context.Context, ar
 }
 
 // GetProjectEndpointsInNamespace indicates an expected call of GetProjectEndpointsInNamespace.
-func (mr *MockProjectBizMockRecorder) GetProjectEndpointsInNamespace(arg0, arg1 any, arg2 ...any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) GetProjectEndpointsInNamespace(ctx, namespace any, projectIDs ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, namespace}, projectIDs...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProjectEndpointsInNamespace", reflect.TypeOf((*MockProjectBiz)(nil).GetProjectEndpointsInNamespace), varargs...)
 }
 
 // List mocks base method.
-func (m *MockProjectBiz) List(arg0 context.Context, arg1 *ListProjectInput) ([]*Project, *pagination.Pagination, error) {
+func (m *MockProjectBiz) List(ctx context.Context, input *ListProjectInput) ([]*Project, *pagination.Pagination, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", arg0, arg1)
+	ret := m.ctrl.Call(m, "List", ctx, input)
 	ret0, _ := ret[0].([]*Project)
 	ret1, _ := ret[1].(*pagination.Pagination)
 	ret2, _ := ret[2].(error)
@@ -674,150 +679,151 @@ func (m *MockProjectBiz) List(arg0 context.Context, arg1 *ListProjectInput) ([]*
 }
 
 // List indicates an expected call of List.
-func (mr *MockProjectBizMockRecorder) List(arg0, arg1 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) List(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockProjectBiz)(nil).List), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockProjectBiz)(nil).List), ctx, input)
 }
 
 // ListAllProjectBriefs mocks base method.
-func (m *MockProjectBiz) ListAllProjectBriefs(arg0 context.Context) ([]*Project, error) {
+func (m *MockProjectBiz) ListAllProjectBriefs(ctx context.Context) ([]*Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListAllProjectBriefs", arg0)
+	ret := m.ctrl.Call(m, "ListAllProjectBriefs", ctx)
 	ret0, _ := ret[0].([]*Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListAllProjectBriefs indicates an expected call of ListAllProjectBriefs.
-func (mr *MockProjectBizMockRecorder) ListAllProjectBriefs(arg0 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) ListAllProjectBriefs(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllProjectBriefs", reflect.TypeOf((*MockProjectBiz)(nil).ListAllProjectBriefs), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllProjectBriefs", reflect.TypeOf((*MockProjectBiz)(nil).ListAllProjectBriefs), ctx)
 }
 
 // Liveness mocks base method.
-func (m *MockProjectBiz) Liveness(arg0 context.Context, arg1 *LivenessInput) (*LivenessResult, error) {
+func (m *MockProjectBiz) Liveness(ctx context.Context, input *LivenessInput) (*LivenessResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Liveness", arg0, arg1)
+	ret := m.ctrl.Call(m, "Liveness", ctx, input)
 	ret0, _ := ret[0].(*LivenessResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Liveness indicates an expected call of Liveness.
-func (mr *MockProjectBizMockRecorder) Liveness(arg0, arg1 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) Liveness(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Liveness", reflect.TypeOf((*MockProjectBiz)(nil).Liveness), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Liveness", reflect.TypeOf((*MockProjectBiz)(nil).Liveness), ctx, input)
 }
 
 // ResourceTree mocks base method.
-func (m *MockProjectBiz) ResourceTree(arg0 context.Context, arg1 int) (*ResourceTree, error) {
+func (m *MockProjectBiz) ResourceTree(ctx context.Context, id int) (*ResourceTree, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourceTree", arg0, arg1)
+	ret := m.ctrl.Call(m, "ResourceTree", ctx, id)
 	ret0, _ := ret[0].(*ResourceTree)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ResourceTree indicates an expected call of ResourceTree.
-func (mr *MockProjectBizMockRecorder) ResourceTree(arg0, arg1 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) ResourceTree(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceTree", reflect.TypeOf((*MockProjectBiz)(nil).ResourceTree), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceTree", reflect.TypeOf((*MockProjectBiz)(nil).ResourceTree), ctx, id)
 }
 
 // Show mocks base method.
-func (m *MockProjectBiz) Show(arg0 context.Context, arg1 int) (*Project, error) {
+func (m *MockProjectBiz) Show(ctx context.Context, id int) (*Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Show", arg0, arg1)
+	ret := m.ctrl.Call(m, "Show", ctx, id)
 	ret0, _ := ret[0].(*Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Show indicates an expected call of Show.
-func (mr *MockProjectBizMockRecorder) Show(arg0, arg1 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) Show(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Show", reflect.TypeOf((*MockProjectBiz)(nil).Show), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Show", reflect.TypeOf((*MockProjectBiz)(nil).Show), ctx, id)
 }
 
 // UpdateDeployStatus mocks base method.
-func (m *MockProjectBiz) UpdateDeployStatus(arg0 context.Context, arg1 int, arg2 types.Deploy) (*Project, error) {
+func (m *MockProjectBiz) UpdateDeployStatus(ctx context.Context, id int, status types.Deploy) (*Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateDeployStatus", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "UpdateDeployStatus", ctx, id, status)
 	ret0, _ := ret[0].(*Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateDeployStatus indicates an expected call of UpdateDeployStatus.
-func (mr *MockProjectBizMockRecorder) UpdateDeployStatus(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) UpdateDeployStatus(ctx, id, status any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeployStatus", reflect.TypeOf((*MockProjectBiz)(nil).UpdateDeployStatus), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeployStatus", reflect.TypeOf((*MockProjectBiz)(nil).UpdateDeployStatus), ctx, id, status)
 }
 
 // UpdateProject mocks base method.
-func (m *MockProjectBiz) UpdateProject(arg0 context.Context, arg1 *UpdateProjectInput) (*Project, error) {
+func (m *MockProjectBiz) UpdateProject(ctx context.Context, input *UpdateProjectInput) (*Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateProject", arg0, arg1)
+	ret := m.ctrl.Call(m, "UpdateProject", ctx, input)
 	ret0, _ := ret[0].(*Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateProject indicates an expected call of UpdateProject.
-func (mr *MockProjectBizMockRecorder) UpdateProject(arg0, arg1 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) UpdateProject(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProject", reflect.TypeOf((*MockProjectBiz)(nil).UpdateProject), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProject", reflect.TypeOf((*MockProjectBiz)(nil).UpdateProject), ctx, input)
 }
 
 // UpdateStatusByVersion mocks base method.
-func (m *MockProjectBiz) UpdateStatusByVersion(arg0 context.Context, arg1 int, arg2 types.Deploy, arg3 int) (*Project, error) {
+func (m *MockProjectBiz) UpdateStatusByVersion(ctx context.Context, id int, status types.Deploy, version int) (*Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateStatusByVersion", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "UpdateStatusByVersion", ctx, id, status, version)
 	ret0, _ := ret[0].(*Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateStatusByVersion indicates an expected call of UpdateStatusByVersion.
-func (mr *MockProjectBizMockRecorder) UpdateStatusByVersion(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) UpdateStatusByVersion(ctx, id, status, version any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatusByVersion", reflect.TypeOf((*MockProjectBiz)(nil).UpdateStatusByVersion), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatusByVersion", reflect.TypeOf((*MockProjectBiz)(nil).UpdateStatusByVersion), ctx, id, status, version)
 }
 
 // UpdateVersion mocks base method.
-func (m *MockProjectBiz) UpdateVersion(arg0 context.Context, arg1, arg2 int) (*Project, error) {
+func (m *MockProjectBiz) UpdateVersion(ctx context.Context, id, version int) (*Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateVersion", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "UpdateVersion", ctx, id, version)
 	ret0, _ := ret[0].(*Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateVersion indicates an expected call of UpdateVersion.
-func (mr *MockProjectBizMockRecorder) UpdateVersion(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) UpdateVersion(ctx, id, version any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVersion", reflect.TypeOf((*MockProjectBiz)(nil).UpdateVersion), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVersion", reflect.TypeOf((*MockProjectBiz)(nil).UpdateVersion), ctx, id, version)
 }
 
 // Version mocks base method.
-func (m *MockProjectBiz) Version(arg0 context.Context, arg1 int) (int, error) {
+func (m *MockProjectBiz) Version(ctx context.Context, id int) (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Version", arg0, arg1)
+	ret := m.ctrl.Call(m, "Version", ctx, id)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Version indicates an expected call of Version.
-func (mr *MockProjectBizMockRecorder) Version(arg0, arg1 any) *gomock.Call {
+func (mr *MockProjectBizMockRecorder) Version(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Version", reflect.TypeOf((*MockProjectBiz)(nil).Version), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Version", reflect.TypeOf((*MockProjectBiz)(nil).Version), ctx, id)
 }
 
 // MockK8sBiz is a mock of K8sBiz interface.
 type MockK8sBiz struct {
 	ctrl     *gomock.Controller
 	recorder *MockK8sBizMockRecorder
+	isgomock struct{}
 }
 
 // MockK8sBizMockRecorder is the mock recorder for MockK8sBiz.
@@ -838,33 +844,33 @@ func (m *MockK8sBiz) EXPECT() *MockK8sBizMockRecorder {
 }
 
 // AddTlsSecret mocks base method.
-func (m *MockK8sBiz) AddTlsSecret(arg0, arg1, arg2, arg3 string) (*v1.Secret, error) {
+func (m *MockK8sBiz) AddTlsSecret(ns, name, key, crt string) (*v1.Secret, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddTlsSecret", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "AddTlsSecret", ns, name, key, crt)
 	ret0, _ := ret[0].(*v1.Secret)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AddTlsSecret indicates an expected call of AddTlsSecret.
-func (mr *MockK8sBizMockRecorder) AddTlsSecret(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) AddTlsSecret(ns, name, key, crt any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTlsSecret", reflect.TypeOf((*MockK8sBiz)(nil).AddTlsSecret), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTlsSecret", reflect.TypeOf((*MockK8sBiz)(nil).AddTlsSecret), ns, name, key, crt)
 }
 
 // ClusterBoard mocks base method.
-func (m *MockK8sBiz) ClusterBoard(arg0 context.Context, arg1 []string, arg2 string) (*ClusterBoard, error) {
+func (m *MockK8sBiz) ClusterBoard(ctx context.Context, managedNames []string, topSort string) (*ClusterBoard, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClusterBoard", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "ClusterBoard", ctx, managedNames, topSort)
 	ret0, _ := ret[0].(*ClusterBoard)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ClusterBoard indicates an expected call of ClusterBoard.
-func (mr *MockK8sBizMockRecorder) ClusterBoard(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) ClusterBoard(ctx, managedNames, topSort any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterBoard", reflect.TypeOf((*MockK8sBiz)(nil).ClusterBoard), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterBoard", reflect.TypeOf((*MockK8sBiz)(nil).ClusterBoard), ctx, managedNames, topSort)
 }
 
 // ClusterInfo mocks base method.
@@ -882,347 +888,348 @@ func (mr *MockK8sBizMockRecorder) ClusterInfo() *gomock.Call {
 }
 
 // CopyFileToPod mocks base method.
-func (m *MockK8sBiz) CopyFileToPod(arg0 context.Context, arg1 *CopyFileToPodInput) (*File, error) {
+func (m *MockK8sBiz) CopyFileToPod(ctx context.Context, input *CopyFileToPodInput) (*File, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CopyFileToPod", arg0, arg1)
+	ret := m.ctrl.Call(m, "CopyFileToPod", ctx, input)
 	ret0, _ := ret[0].(*File)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CopyFileToPod indicates an expected call of CopyFileToPod.
-func (mr *MockK8sBizMockRecorder) CopyFileToPod(arg0, arg1 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) CopyFileToPod(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyFileToPod", reflect.TypeOf((*MockK8sBiz)(nil).CopyFileToPod), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyFileToPod", reflect.TypeOf((*MockK8sBiz)(nil).CopyFileToPod), ctx, input)
 }
 
 // CopyFromPod mocks base method.
-func (m *MockK8sBiz) CopyFromPod(arg0 context.Context, arg1 *CopyFromPodInput) (*File, error) {
+func (m *MockK8sBiz) CopyFromPod(ctx context.Context, input *CopyFromPodInput) (*File, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CopyFromPod", arg0, arg1)
+	ret := m.ctrl.Call(m, "CopyFromPod", ctx, input)
 	ret0, _ := ret[0].(*File)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CopyFromPod indicates an expected call of CopyFromPod.
-func (mr *MockK8sBizMockRecorder) CopyFromPod(arg0, arg1 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) CopyFromPod(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyFromPod", reflect.TypeOf((*MockK8sBiz)(nil).CopyFromPod), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyFromPod", reflect.TypeOf((*MockK8sBiz)(nil).CopyFromPod), ctx, input)
 }
 
 // CreateDockerSecret mocks base method.
-func (m *MockK8sBiz) CreateDockerSecret(arg0 context.Context, arg1 string) (*v1.Secret, error) {
+func (m *MockK8sBiz) CreateDockerSecret(ctx context.Context, namespace string) (*v1.Secret, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateDockerSecret", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateDockerSecret", ctx, namespace)
 	ret0, _ := ret[0].(*v1.Secret)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateDockerSecret indicates an expected call of CreateDockerSecret.
-func (mr *MockK8sBizMockRecorder) CreateDockerSecret(arg0, arg1 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) CreateDockerSecret(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDockerSecret", reflect.TypeOf((*MockK8sBiz)(nil).CreateDockerSecret), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDockerSecret", reflect.TypeOf((*MockK8sBiz)(nil).CreateDockerSecret), ctx, namespace)
 }
 
 // CreateNamespace mocks base method.
-func (m *MockK8sBiz) CreateNamespace(arg0 context.Context, arg1 string) (*v1.Namespace, error) {
+func (m *MockK8sBiz) CreateNamespace(ctx context.Context, name string) (*v1.Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateNamespace", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateNamespace", ctx, name)
 	ret0, _ := ret[0].(*v1.Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateNamespace indicates an expected call of CreateNamespace.
-func (mr *MockK8sBizMockRecorder) CreateNamespace(arg0, arg1 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) CreateNamespace(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNamespace", reflect.TypeOf((*MockK8sBiz)(nil).CreateNamespace), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNamespace", reflect.TypeOf((*MockK8sBiz)(nil).CreateNamespace), ctx, name)
 }
 
 // DeleteNamespace mocks base method.
-func (m *MockK8sBiz) DeleteNamespace(arg0 context.Context, arg1 string) error {
+func (m *MockK8sBiz) DeleteNamespace(ctx context.Context, name string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteNamespace", arg0, arg1)
+	ret := m.ctrl.Call(m, "DeleteNamespace", ctx, name)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteNamespace indicates an expected call of DeleteNamespace.
-func (mr *MockK8sBizMockRecorder) DeleteNamespace(arg0, arg1 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) DeleteNamespace(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespace", reflect.TypeOf((*MockK8sBiz)(nil).DeleteNamespace), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespace", reflect.TypeOf((*MockK8sBiz)(nil).DeleteNamespace), ctx, name)
 }
 
 // DeleteSecret mocks base method.
-func (m *MockK8sBiz) DeleteSecret(arg0 context.Context, arg1, arg2 string) error {
+func (m *MockK8sBiz) DeleteSecret(ctx context.Context, namespace, secret string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteSecret", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "DeleteSecret", ctx, namespace, secret)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteSecret indicates an expected call of DeleteSecret.
-func (mr *MockK8sBizMockRecorder) DeleteSecret(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) DeleteSecret(ctx, namespace, secret any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSecret", reflect.TypeOf((*MockK8sBiz)(nil).DeleteSecret), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSecret", reflect.TypeOf((*MockK8sBiz)(nil).DeleteSecret), ctx, namespace, secret)
 }
 
 // Execute mocks base method.
-func (m *MockK8sBiz) Execute(arg0 context.Context, arg1 *Container, arg2 *ExecuteInput) error {
+func (m *MockK8sBiz) Execute(ctx context.Context, c *Container, input *ExecuteInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Execute", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Execute", ctx, c, input)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Execute indicates an expected call of Execute.
-func (mr *MockK8sBizMockRecorder) Execute(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) Execute(ctx, c, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockK8sBiz)(nil).Execute), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockK8sBiz)(nil).Execute), ctx, c, input)
 }
 
 // FindDefaultContainer mocks base method.
-func (m *MockK8sBiz) FindDefaultContainer(arg0 context.Context, arg1, arg2 string) (string, error) {
+func (m *MockK8sBiz) FindDefaultContainer(ctx context.Context, namespace, pod string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindDefaultContainer", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "FindDefaultContainer", ctx, namespace, pod)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindDefaultContainer indicates an expected call of FindDefaultContainer.
-func (mr *MockK8sBizMockRecorder) FindDefaultContainer(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) FindDefaultContainer(ctx, namespace, pod any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDefaultContainer", reflect.TypeOf((*MockK8sBiz)(nil).FindDefaultContainer), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDefaultContainer", reflect.TypeOf((*MockK8sBiz)(nil).FindDefaultContainer), ctx, namespace, pod)
 }
 
 // ForceDeletePod mocks base method.
-func (m *MockK8sBiz) ForceDeletePod(arg0 context.Context, arg1, arg2 string, arg3 int64) error {
+func (m *MockK8sBiz) ForceDeletePod(ctx context.Context, namespace, pod string, gracePeriodSeconds int64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ForceDeletePod", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "ForceDeletePod", ctx, namespace, pod, gracePeriodSeconds)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ForceDeletePod indicates an expected call of ForceDeletePod.
-func (mr *MockK8sBizMockRecorder) ForceDeletePod(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) ForceDeletePod(ctx, namespace, pod, gracePeriodSeconds any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForceDeletePod", reflect.TypeOf((*MockK8sBiz)(nil).ForceDeletePod), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForceDeletePod", reflect.TypeOf((*MockK8sBiz)(nil).ForceDeletePod), ctx, namespace, pod, gracePeriodSeconds)
 }
 
 // GetAllPodMetrics mocks base method.
-func (m *MockK8sBiz) GetAllPodMetrics(arg0 context.Context, arg1 *Project) []v1beta1.PodMetrics {
+func (m *MockK8sBiz) GetAllPodMetrics(ctx context.Context, proj *Project) []v1beta1.PodMetrics {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllPodMetrics", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetAllPodMetrics", ctx, proj)
 	ret0, _ := ret[0].([]v1beta1.PodMetrics)
 	return ret0
 }
 
 // GetAllPodMetrics indicates an expected call of GetAllPodMetrics.
-func (mr *MockK8sBizMockRecorder) GetAllPodMetrics(arg0, arg1 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) GetAllPodMetrics(ctx, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllPodMetrics", reflect.TypeOf((*MockK8sBiz)(nil).GetAllPodMetrics), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllPodMetrics", reflect.TypeOf((*MockK8sBiz)(nil).GetAllPodMetrics), ctx, proj)
 }
 
 // GetCpuAndMemory mocks base method.
-func (m *MockK8sBiz) GetCpuAndMemory(arg0 context.Context, arg1 []v1beta1.PodMetrics) (string, string) {
+func (m *MockK8sBiz) GetCpuAndMemory(ctx context.Context, list []v1beta1.PodMetrics) (string, string) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCpuAndMemory", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetCpuAndMemory", ctx, list)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(string)
 	return ret0, ret1
 }
 
 // GetCpuAndMemory indicates an expected call of GetCpuAndMemory.
-func (mr *MockK8sBizMockRecorder) GetCpuAndMemory(arg0, arg1 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) GetCpuAndMemory(ctx, list any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCpuAndMemory", reflect.TypeOf((*MockK8sBiz)(nil).GetCpuAndMemory), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCpuAndMemory", reflect.TypeOf((*MockK8sBiz)(nil).GetCpuAndMemory), ctx, list)
 }
 
 // GetCpuAndMemoryInNamespace mocks base method.
-func (m *MockK8sBiz) GetCpuAndMemoryInNamespace(arg0 context.Context, arg1 string) (string, string) {
+func (m *MockK8sBiz) GetCpuAndMemoryInNamespace(ctx context.Context, namespace string) (string, string) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCpuAndMemoryInNamespace", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetCpuAndMemoryInNamespace", ctx, namespace)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(string)
 	return ret0, ret1
 }
 
 // GetCpuAndMemoryInNamespace indicates an expected call of GetCpuAndMemoryInNamespace.
-func (mr *MockK8sBizMockRecorder) GetCpuAndMemoryInNamespace(arg0, arg1 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) GetCpuAndMemoryInNamespace(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCpuAndMemoryInNamespace", reflect.TypeOf((*MockK8sBiz)(nil).GetCpuAndMemoryInNamespace), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCpuAndMemoryInNamespace", reflect.TypeOf((*MockK8sBiz)(nil).GetCpuAndMemoryInNamespace), ctx, namespace)
 }
 
 // GetCpuAndMemoryQuantity mocks base method.
-func (m *MockK8sBiz) GetCpuAndMemoryQuantity(arg0 v1beta1.PodMetrics) (*resource.Quantity, *resource.Quantity) {
+func (m *MockK8sBiz) GetCpuAndMemoryQuantity(pod v1beta1.PodMetrics) (*resource.Quantity, *resource.Quantity) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCpuAndMemoryQuantity", arg0)
+	ret := m.ctrl.Call(m, "GetCpuAndMemoryQuantity", pod)
 	ret0, _ := ret[0].(*resource.Quantity)
 	ret1, _ := ret[1].(*resource.Quantity)
 	return ret0, ret1
 }
 
 // GetCpuAndMemoryQuantity indicates an expected call of GetCpuAndMemoryQuantity.
-func (mr *MockK8sBizMockRecorder) GetCpuAndMemoryQuantity(arg0 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) GetCpuAndMemoryQuantity(pod any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCpuAndMemoryQuantity", reflect.TypeOf((*MockK8sBiz)(nil).GetCpuAndMemoryQuantity), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCpuAndMemoryQuantity", reflect.TypeOf((*MockK8sBiz)(nil).GetCpuAndMemoryQuantity), pod)
 }
 
 // GetNamespace mocks base method.
-func (m *MockK8sBiz) GetNamespace(arg0 context.Context, arg1 string) (*v1.Namespace, error) {
+func (m *MockK8sBiz) GetNamespace(ctx context.Context, name string) (*v1.Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetNamespace", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetNamespace", ctx, name)
 	ret0, _ := ret[0].(*v1.Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetNamespace indicates an expected call of GetNamespace.
-func (mr *MockK8sBizMockRecorder) GetNamespace(arg0, arg1 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) GetNamespace(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespace", reflect.TypeOf((*MockK8sBiz)(nil).GetNamespace), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespace", reflect.TypeOf((*MockK8sBiz)(nil).GetNamespace), ctx, name)
 }
 
 // GetPod mocks base method.
-func (m *MockK8sBiz) GetPod(arg0, arg1 string) (*v1.Pod, error) {
+func (m *MockK8sBiz) GetPod(namespace, podName string) (*v1.Pod, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPod", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetPod", namespace, podName)
 	ret0, _ := ret[0].(*v1.Pod)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPod indicates an expected call of GetPod.
-func (mr *MockK8sBizMockRecorder) GetPod(arg0, arg1 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) GetPod(namespace, podName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPod", reflect.TypeOf((*MockK8sBiz)(nil).GetPod), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPod", reflect.TypeOf((*MockK8sBiz)(nil).GetPod), namespace, podName)
 }
 
 // GetPodLogs mocks base method.
-func (m *MockK8sBiz) GetPodLogs(arg0 context.Context, arg1, arg2 string, arg3 *v1.PodLogOptions) (string, error) {
+func (m *MockK8sBiz) GetPodLogs(ctx context.Context, namespace, podName string, options *v1.PodLogOptions) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPodLogs", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "GetPodLogs", ctx, namespace, podName, options)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPodLogs indicates an expected call of GetPodLogs.
-func (mr *MockK8sBizMockRecorder) GetPodLogs(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) GetPodLogs(ctx, namespace, podName, options any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodLogs", reflect.TypeOf((*MockK8sBiz)(nil).GetPodLogs), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodLogs", reflect.TypeOf((*MockK8sBiz)(nil).GetPodLogs), ctx, namespace, podName, options)
 }
 
 // GetPodMetrics mocks base method.
-func (m *MockK8sBiz) GetPodMetrics(arg0 context.Context, arg1, arg2 string) (*v1beta1.PodMetrics, error) {
+func (m *MockK8sBiz) GetPodMetrics(ctx context.Context, namespace, podName string) (*v1beta1.PodMetrics, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPodMetrics", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetPodMetrics", ctx, namespace, podName)
 	ret0, _ := ret[0].(*v1beta1.PodMetrics)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPodMetrics indicates an expected call of GetPodMetrics.
-func (mr *MockK8sBizMockRecorder) GetPodMetrics(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) GetPodMetrics(ctx, namespace, podName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodMetrics", reflect.TypeOf((*MockK8sBiz)(nil).GetPodMetrics), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodMetrics", reflect.TypeOf((*MockK8sBiz)(nil).GetPodMetrics), ctx, namespace, podName)
 }
 
 // GetPodSelectorsByManifest mocks base method.
-func (m *MockK8sBiz) GetPodSelectorsByManifest(arg0 []string) []string {
+func (m *MockK8sBiz) GetPodSelectorsByManifest(manifests []string) []string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPodSelectorsByManifest", arg0)
+	ret := m.ctrl.Call(m, "GetPodSelectorsByManifest", manifests)
 	ret0, _ := ret[0].([]string)
 	return ret0
 }
 
 // GetPodSelectorsByManifest indicates an expected call of GetPodSelectorsByManifest.
-func (mr *MockK8sBizMockRecorder) GetPodSelectorsByManifest(arg0 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) GetPodSelectorsByManifest(manifests any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodSelectorsByManifest", reflect.TypeOf((*MockK8sBiz)(nil).GetPodSelectorsByManifest), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodSelectorsByManifest", reflect.TypeOf((*MockK8sBiz)(nil).GetPodSelectorsByManifest), manifests)
 }
 
 // IsPodRunning mocks base method.
-func (m *MockK8sBiz) IsPodRunning(arg0, arg1 string) (bool, string) {
+func (m *MockK8sBiz) IsPodRunning(namespace, podName string) (bool, string) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsPodRunning", arg0, arg1)
+	ret := m.ctrl.Call(m, "IsPodRunning", namespace, podName)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(string)
 	return ret0, ret1
 }
 
 // IsPodRunning indicates an expected call of IsPodRunning.
-func (mr *MockK8sBizMockRecorder) IsPodRunning(arg0, arg1 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) IsPodRunning(namespace, podName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPodRunning", reflect.TypeOf((*MockK8sBiz)(nil).IsPodRunning), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPodRunning", reflect.TypeOf((*MockK8sBiz)(nil).IsPodRunning), namespace, podName)
 }
 
 // ListEvents mocks base method.
-func (m *MockK8sBiz) ListEvents(arg0 string) ([]*v10.Event, error) {
+func (m *MockK8sBiz) ListEvents(namespace string) ([]*v10.Event, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListEvents", arg0)
+	ret := m.ctrl.Call(m, "ListEvents", namespace)
 	ret0, _ := ret[0].([]*v10.Event)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListEvents indicates an expected call of ListEvents.
-func (mr *MockK8sBizMockRecorder) ListEvents(arg0 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) ListEvents(namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEvents", reflect.TypeOf((*MockK8sBiz)(nil).ListEvents), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEvents", reflect.TypeOf((*MockK8sBiz)(nil).ListEvents), namespace)
 }
 
 // LogStream mocks base method.
-func (m *MockK8sBiz) LogStream(arg0 context.Context, arg1, arg2, arg3 string) (chan []byte, error) {
+func (m *MockK8sBiz) LogStream(ctx context.Context, namespace, pod, container string) (chan []byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LogStream", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "LogStream", ctx, namespace, pod, container)
 	ret0, _ := ret[0].(chan []byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // LogStream indicates an expected call of LogStream.
-func (mr *MockK8sBizMockRecorder) LogStream(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) LogStream(ctx, namespace, pod, container any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogStream", reflect.TypeOf((*MockK8sBiz)(nil).LogStream), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogStream", reflect.TypeOf((*MockK8sBiz)(nil).LogStream), ctx, namespace, pod, container)
 }
 
 // ResourceBoard mocks base method.
-func (m *MockK8sBiz) ResourceBoard(arg0 context.Context, arg1 []string, arg2 []*Project) (*ResourceBoard, error) {
+func (m *MockK8sBiz) ResourceBoard(ctx context.Context, managedNames []string, projects []*Project) (*ResourceBoard, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourceBoard", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "ResourceBoard", ctx, managedNames, projects)
 	ret0, _ := ret[0].(*ResourceBoard)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ResourceBoard indicates an expected call of ResourceBoard.
-func (mr *MockK8sBizMockRecorder) ResourceBoard(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) ResourceBoard(ctx, managedNames, projects any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceBoard", reflect.TypeOf((*MockK8sBiz)(nil).ResourceBoard), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceBoard", reflect.TypeOf((*MockK8sBiz)(nil).ResourceBoard), ctx, managedNames, projects)
 }
 
 // SplitManifests mocks base method.
-func (m *MockK8sBiz) SplitManifests(arg0 string) []string {
+func (m *MockK8sBiz) SplitManifests(manifest string) []string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SplitManifests", arg0)
+	ret := m.ctrl.Call(m, "SplitManifests", manifest)
 	ret0, _ := ret[0].([]string)
 	return ret0
 }
 
 // SplitManifests indicates an expected call of SplitManifests.
-func (mr *MockK8sBizMockRecorder) SplitManifests(arg0 any) *gomock.Call {
+func (mr *MockK8sBizMockRecorder) SplitManifests(manifest any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SplitManifests", reflect.TypeOf((*MockK8sBiz)(nil).SplitManifests), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SplitManifests", reflect.TypeOf((*MockK8sBiz)(nil).SplitManifests), manifest)
 }
 
 // MockNamespaceBiz is a mock of NamespaceBiz interface.
 type MockNamespaceBiz struct {
 	ctrl     *gomock.Controller
 	recorder *MockNamespaceBizMockRecorder
+	isgomock struct{}
 }
 
 // MockNamespaceBizMockRecorder is the mock recorder for MockNamespaceBiz.
@@ -1243,9 +1250,9 @@ func (m *MockNamespaceBiz) EXPECT() *MockNamespaceBizMockRecorder {
 }
 
 // AdminList mocks base method.
-func (m *MockNamespaceBiz) AdminList(arg0 context.Context, arg1 *AdminListInput) ([]*AdminNamespace, *AdminLivenessStats, *pagination.Pagination, error) {
+func (m *MockNamespaceBiz) AdminList(ctx context.Context, input *AdminListInput) ([]*AdminNamespace, *AdminLivenessStats, *pagination.Pagination, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdminList", arg0, arg1)
+	ret := m.ctrl.Call(m, "AdminList", ctx, input)
 	ret0, _ := ret[0].([]*AdminNamespace)
 	ret1, _ := ret[1].(*AdminLivenessStats)
 	ret2, _ := ret[2].(*pagination.Pagination)
@@ -1254,15 +1261,15 @@ func (m *MockNamespaceBiz) AdminList(arg0 context.Context, arg1 *AdminListInput)
 }
 
 // AdminList indicates an expected call of AdminList.
-func (mr *MockNamespaceBizMockRecorder) AdminList(arg0, arg1 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) AdminList(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdminList", reflect.TypeOf((*MockNamespaceBiz)(nil).AdminList), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdminList", reflect.TypeOf((*MockNamespaceBiz)(nil).AdminList), ctx, input)
 }
 
 // Create mocks base method.
-func (m *MockNamespaceBiz) Create(arg0 context.Context, arg1, arg2, arg3 string) (*Namespace, bool, error) {
+func (m *MockNamespaceBiz) Create(ctx context.Context, namespace, description, creatorEmail string) (*Namespace, bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "Create", ctx, namespace, description, creatorEmail)
 	ret0, _ := ret[0].(*Namespace)
 	ret1, _ := ret[1].(bool)
 	ret2, _ := ret[2].(error)
@@ -1270,87 +1277,87 @@ func (m *MockNamespaceBiz) Create(arg0 context.Context, arg1, arg2, arg3 string)
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockNamespaceBizMockRecorder) Create(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) Create(ctx, namespace, description, creatorEmail any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockNamespaceBiz)(nil).Create), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockNamespaceBiz)(nil).Create), ctx, namespace, description, creatorEmail)
 }
 
 // Delete mocks base method.
-func (m *MockNamespaceBiz) Delete(arg0 context.Context, arg1 *Namespace) ([]string, error) {
+func (m *MockNamespaceBiz) Delete(ctx context.Context, ns *Namespace) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
+	ret := m.ctrl.Call(m, "Delete", ctx, ns)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockNamespaceBizMockRecorder) Delete(arg0, arg1 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) Delete(ctx, ns any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockNamespaceBiz)(nil).Delete), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockNamespaceBiz)(nil).Delete), ctx, ns)
 }
 
 // Favorite mocks base method.
-func (m *MockNamespaceBiz) Favorite(arg0 context.Context, arg1 *FavoriteNamespaceInput) error {
+func (m *MockNamespaceBiz) Favorite(ctx context.Context, input *FavoriteNamespaceInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Favorite", arg0, arg1)
+	ret := m.ctrl.Call(m, "Favorite", ctx, input)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Favorite indicates an expected call of Favorite.
-func (mr *MockNamespaceBizMockRecorder) Favorite(arg0, arg1 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) Favorite(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Favorite", reflect.TypeOf((*MockNamespaceBiz)(nil).Favorite), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Favorite", reflect.TypeOf((*MockNamespaceBiz)(nil).Favorite), ctx, input)
 }
 
 // FavoriteSort mocks base method.
-func (m *MockNamespaceBiz) FavoriteSort(arg0 context.Context, arg1 *FavoriteSortNamespaceInput) error {
+func (m *MockNamespaceBiz) FavoriteSort(ctx context.Context, input *FavoriteSortNamespaceInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FavoriteSort", arg0, arg1)
+	ret := m.ctrl.Call(m, "FavoriteSort", ctx, input)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // FavoriteSort indicates an expected call of FavoriteSort.
-func (mr *MockNamespaceBizMockRecorder) FavoriteSort(arg0, arg1 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) FavoriteSort(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FavoriteSort", reflect.TypeOf((*MockNamespaceBiz)(nil).FavoriteSort), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FavoriteSort", reflect.TypeOf((*MockNamespaceBiz)(nil).FavoriteSort), ctx, input)
 }
 
 // FindByName mocks base method.
-func (m *MockNamespaceBiz) FindByName(arg0 context.Context, arg1 string) (*Namespace, error) {
+func (m *MockNamespaceBiz) FindByName(ctx context.Context, name string) (*Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindByName", arg0, arg1)
+	ret := m.ctrl.Call(m, "FindByName", ctx, name)
 	ret0, _ := ret[0].(*Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindByName indicates an expected call of FindByName.
-func (mr *MockNamespaceBizMockRecorder) FindByName(arg0, arg1 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) FindByName(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByName", reflect.TypeOf((*MockNamespaceBiz)(nil).FindByName), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByName", reflect.TypeOf((*MockNamespaceBiz)(nil).FindByName), ctx, name)
 }
 
 // GetMarsNamespace mocks base method.
-func (m *MockNamespaceBiz) GetMarsNamespace(arg0 string) string {
+func (m *MockNamespaceBiz) GetMarsNamespace(name string) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMarsNamespace", arg0)
+	ret := m.ctrl.Call(m, "GetMarsNamespace", name)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // GetMarsNamespace indicates an expected call of GetMarsNamespace.
-func (mr *MockNamespaceBizMockRecorder) GetMarsNamespace(arg0 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) GetMarsNamespace(name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMarsNamespace", reflect.TypeOf((*MockNamespaceBiz)(nil).GetMarsNamespace), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMarsNamespace", reflect.TypeOf((*MockNamespaceBiz)(nil).GetMarsNamespace), name)
 }
 
 // List mocks base method.
-func (m *MockNamespaceBiz) List(arg0 context.Context, arg1 *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error) {
+func (m *MockNamespaceBiz) List(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", arg0, arg1)
+	ret := m.ctrl.Call(m, "List", ctx, input)
 	ret0, _ := ret[0].([]*Namespace)
 	ret1, _ := ret[1].(*pagination.Pagination)
 	ret2, _ := ret[2].(error)
@@ -1358,120 +1365,121 @@ func (m *MockNamespaceBiz) List(arg0 context.Context, arg1 *ListNamespaceInput) 
 }
 
 // List indicates an expected call of List.
-func (mr *MockNamespaceBizMockRecorder) List(arg0, arg1 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) List(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockNamespaceBiz)(nil).List), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockNamespaceBiz)(nil).List), ctx, input)
 }
 
 // ListAllNames mocks base method.
-func (m *MockNamespaceBiz) ListAllNames(arg0 context.Context) ([]string, error) {
+func (m *MockNamespaceBiz) ListAllNames(ctx context.Context) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListAllNames", arg0)
+	ret := m.ctrl.Call(m, "ListAllNames", ctx)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListAllNames indicates an expected call of ListAllNames.
-func (mr *MockNamespaceBizMockRecorder) ListAllNames(arg0 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) ListAllNames(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllNames", reflect.TypeOf((*MockNamespaceBiz)(nil).ListAllNames), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllNames", reflect.TypeOf((*MockNamespaceBiz)(nil).ListAllNames), ctx)
 }
 
 // Show mocks base method.
-func (m *MockNamespaceBiz) Show(arg0 context.Context, arg1 int) (*Namespace, error) {
+func (m *MockNamespaceBiz) Show(ctx context.Context, id int) (*Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Show", arg0, arg1)
+	ret := m.ctrl.Call(m, "Show", ctx, id)
 	ret0, _ := ret[0].(*Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Show indicates an expected call of Show.
-func (mr *MockNamespaceBizMockRecorder) Show(arg0, arg1 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) Show(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Show", reflect.TypeOf((*MockNamespaceBiz)(nil).Show), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Show", reflect.TypeOf((*MockNamespaceBiz)(nil).Show), ctx, id)
 }
 
 // SyncMembers mocks base method.
-func (m *MockNamespaceBiz) SyncMembers(arg0 context.Context, arg1 int, arg2 []string) (*Namespace, error) {
+func (m *MockNamespaceBiz) SyncMembers(ctx context.Context, namespaceID int, memberEmails []string) (*Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SyncMembers", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "SyncMembers", ctx, namespaceID, memberEmails)
 	ret0, _ := ret[0].(*Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SyncMembers indicates an expected call of SyncMembers.
-func (mr *MockNamespaceBizMockRecorder) SyncMembers(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) SyncMembers(ctx, namespaceID, memberEmails any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncMembers", reflect.TypeOf((*MockNamespaceBiz)(nil).SyncMembers), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncMembers", reflect.TypeOf((*MockNamespaceBiz)(nil).SyncMembers), ctx, namespaceID, memberEmails)
 }
 
 // Transfer mocks base method.
-func (m *MockNamespaceBiz) Transfer(arg0 context.Context, arg1 int, arg2 string) (*Namespace, error) {
+func (m *MockNamespaceBiz) Transfer(ctx context.Context, id int, email string) (*Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Transfer", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Transfer", ctx, id, email)
 	ret0, _ := ret[0].(*Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Transfer indicates an expected call of Transfer.
-func (mr *MockNamespaceBizMockRecorder) Transfer(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) Transfer(ctx, id, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Transfer", reflect.TypeOf((*MockNamespaceBiz)(nil).Transfer), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Transfer", reflect.TypeOf((*MockNamespaceBiz)(nil).Transfer), ctx, id, email)
 }
 
 // Update mocks base method.
-func (m *MockNamespaceBiz) Update(arg0 context.Context, arg1 *UpdateNamespaceInput) (*Namespace, error) {
+func (m *MockNamespaceBiz) Update(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", arg0, arg1)
+	ret := m.ctrl.Call(m, "Update", ctx, input)
 	ret0, _ := ret[0].(*Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockNamespaceBizMockRecorder) Update(arg0, arg1 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) Update(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockNamespaceBiz)(nil).Update), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockNamespaceBiz)(nil).Update), ctx, input)
 }
 
 // UpdateConfig mocks base method.
-func (m *MockNamespaceBiz) UpdateConfig(arg0 context.Context, arg1 *UpdateConfigInput) (*Namespace, error) {
+func (m *MockNamespaceBiz) UpdateConfig(ctx context.Context, input *UpdateConfigInput) (*Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateConfig", arg0, arg1)
+	ret := m.ctrl.Call(m, "UpdateConfig", ctx, input)
 	ret0, _ := ret[0].(*Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateConfig indicates an expected call of UpdateConfig.
-func (mr *MockNamespaceBizMockRecorder) UpdateConfig(arg0, arg1 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) UpdateConfig(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfig", reflect.TypeOf((*MockNamespaceBiz)(nil).UpdateConfig), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfig", reflect.TypeOf((*MockNamespaceBiz)(nil).UpdateConfig), ctx, input)
 }
 
 // UpdatePrivate mocks base method.
-func (m *MockNamespaceBiz) UpdatePrivate(arg0 context.Context, arg1 int, arg2 bool) (*Namespace, error) {
+func (m *MockNamespaceBiz) UpdatePrivate(ctx context.Context, namespaceID int, private bool) (*Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdatePrivate", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "UpdatePrivate", ctx, namespaceID, private)
 	ret0, _ := ret[0].(*Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdatePrivate indicates an expected call of UpdatePrivate.
-func (mr *MockNamespaceBizMockRecorder) UpdatePrivate(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockNamespaceBizMockRecorder) UpdatePrivate(ctx, namespaceID, private any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePrivate", reflect.TypeOf((*MockNamespaceBiz)(nil).UpdatePrivate), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePrivate", reflect.TypeOf((*MockNamespaceBiz)(nil).UpdatePrivate), ctx, namespaceID, private)
 }
 
 // MockRepoBiz is a mock of RepoBiz interface.
 type MockRepoBiz struct {
 	ctrl     *gomock.Controller
 	recorder *MockRepoBizMockRecorder
+	isgomock struct{}
 }
 
 // MockRepoBizMockRecorder is the mock recorder for MockRepoBiz.
@@ -1492,83 +1500,83 @@ func (m *MockRepoBiz) EXPECT() *MockRepoBizMockRecorder {
 }
 
 // All mocks base method.
-func (m *MockRepoBiz) All(arg0 context.Context, arg1 *AllRepoRequest) ([]*Repo, error) {
+func (m *MockRepoBiz) All(ctx context.Context, in *AllRepoRequest) ([]*Repo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "All", arg0, arg1)
+	ret := m.ctrl.Call(m, "All", ctx, in)
 	ret0, _ := ret[0].([]*Repo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // All indicates an expected call of All.
-func (mr *MockRepoBizMockRecorder) All(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoBizMockRecorder) All(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "All", reflect.TypeOf((*MockRepoBiz)(nil).All), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "All", reflect.TypeOf((*MockRepoBiz)(nil).All), ctx, in)
 }
 
 // Clone mocks base method.
-func (m *MockRepoBiz) Clone(arg0 context.Context, arg1 *CloneRepoInput) (*Repo, error) {
+func (m *MockRepoBiz) Clone(ctx context.Context, input *CloneRepoInput) (*Repo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Clone", arg0, arg1)
+	ret := m.ctrl.Call(m, "Clone", ctx, input)
 	ret0, _ := ret[0].(*Repo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Clone indicates an expected call of Clone.
-func (mr *MockRepoBizMockRecorder) Clone(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoBizMockRecorder) Clone(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clone", reflect.TypeOf((*MockRepoBiz)(nil).Clone), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clone", reflect.TypeOf((*MockRepoBiz)(nil).Clone), ctx, input)
 }
 
 // Create mocks base method.
-func (m *MockRepoBiz) Create(arg0 context.Context, arg1 *CreateRepoInput) (*Repo, error) {
+func (m *MockRepoBiz) Create(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", arg0, arg1)
+	ret := m.ctrl.Call(m, "Create", ctx, in)
 	ret0, _ := ret[0].(*Repo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockRepoBizMockRecorder) Create(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoBizMockRecorder) Create(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockRepoBiz)(nil).Create), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockRepoBiz)(nil).Create), ctx, in)
 }
 
 // Delete mocks base method.
-func (m *MockRepoBiz) Delete(arg0 context.Context, arg1 int) error {
+func (m *MockRepoBiz) Delete(ctx context.Context, id int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockRepoBizMockRecorder) Delete(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoBizMockRecorder) Delete(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRepoBiz)(nil).Delete), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRepoBiz)(nil).Delete), ctx, id)
 }
 
 // Get mocks base method.
-func (m *MockRepoBiz) Get(arg0 context.Context, arg1 int) (*Repo, error) {
+func (m *MockRepoBiz) Get(ctx context.Context, id int) (*Repo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret := m.ctrl.Call(m, "Get", ctx, id)
 	ret0, _ := ret[0].(*Repo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockRepoBizMockRecorder) Get(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoBizMockRecorder) Get(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepoBiz)(nil).Get), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepoBiz)(nil).Get), ctx, id)
 }
 
 // Import mocks base method.
-func (m *MockRepoBiz) Import(arg0 context.Context, arg1 []*ImportRepoItem) (int, int, error) {
+func (m *MockRepoBiz) Import(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Import", arg0, arg1)
+	ret := m.ctrl.Call(m, "Import", ctx, items)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
@@ -1576,15 +1584,15 @@ func (m *MockRepoBiz) Import(arg0 context.Context, arg1 []*ImportRepoItem) (int,
 }
 
 // Import indicates an expected call of Import.
-func (mr *MockRepoBizMockRecorder) Import(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoBizMockRecorder) Import(ctx, items any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockRepoBiz)(nil).Import), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockRepoBiz)(nil).Import), ctx, items)
 }
 
 // List mocks base method.
-func (m *MockRepoBiz) List(arg0 context.Context, arg1 *ListRepoRequest) ([]*Repo, *pagination.Pagination, error) {
+func (m *MockRepoBiz) List(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", arg0, arg1)
+	ret := m.ctrl.Call(m, "List", ctx, in)
 	ret0, _ := ret[0].([]*Repo)
 	ret1, _ := ret[1].(*pagination.Pagination)
 	ret2, _ := ret[2].(error)
@@ -1592,15 +1600,15 @@ func (m *MockRepoBiz) List(arg0 context.Context, arg1 *ListRepoRequest) ([]*Repo
 }
 
 // List indicates an expected call of List.
-func (mr *MockRepoBizMockRecorder) List(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoBizMockRecorder) List(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockRepoBiz)(nil).List), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockRepoBiz)(nil).List), ctx, in)
 }
 
 // PreviewImport mocks base method.
-func (m *MockRepoBiz) PreviewImport(arg0 context.Context, arg1 []*ImportRepoItem) (int, int, error) {
+func (m *MockRepoBiz) PreviewImport(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PreviewImport", arg0, arg1)
+	ret := m.ctrl.Call(m, "PreviewImport", ctx, items)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
@@ -1608,60 +1616,61 @@ func (m *MockRepoBiz) PreviewImport(arg0 context.Context, arg1 []*ImportRepoItem
 }
 
 // PreviewImport indicates an expected call of PreviewImport.
-func (mr *MockRepoBizMockRecorder) PreviewImport(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoBizMockRecorder) PreviewImport(ctx, items any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PreviewImport", reflect.TypeOf((*MockRepoBiz)(nil).PreviewImport), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PreviewImport", reflect.TypeOf((*MockRepoBiz)(nil).PreviewImport), ctx, items)
 }
 
 // Show mocks base method.
-func (m *MockRepoBiz) Show(arg0 context.Context, arg1 int) (*Repo, error) {
+func (m *MockRepoBiz) Show(ctx context.Context, id int) (*Repo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Show", arg0, arg1)
+	ret := m.ctrl.Call(m, "Show", ctx, id)
 	ret0, _ := ret[0].(*Repo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Show indicates an expected call of Show.
-func (mr *MockRepoBizMockRecorder) Show(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoBizMockRecorder) Show(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Show", reflect.TypeOf((*MockRepoBiz)(nil).Show), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Show", reflect.TypeOf((*MockRepoBiz)(nil).Show), ctx, id)
 }
 
 // ToggleEnabled mocks base method.
-func (m *MockRepoBiz) ToggleEnabled(arg0 context.Context, arg1 int, arg2 bool) (*Repo, error) {
+func (m *MockRepoBiz) ToggleEnabled(ctx context.Context, id int, enabled bool) (*Repo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ToggleEnabled", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "ToggleEnabled", ctx, id, enabled)
 	ret0, _ := ret[0].(*Repo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ToggleEnabled indicates an expected call of ToggleEnabled.
-func (mr *MockRepoBizMockRecorder) ToggleEnabled(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockRepoBizMockRecorder) ToggleEnabled(ctx, id, enabled any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToggleEnabled", reflect.TypeOf((*MockRepoBiz)(nil).ToggleEnabled), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToggleEnabled", reflect.TypeOf((*MockRepoBiz)(nil).ToggleEnabled), ctx, id, enabled)
 }
 
 // Update mocks base method.
-func (m *MockRepoBiz) Update(arg0 context.Context, arg1 *UpdateRepoInput) (*Repo, error) {
+func (m *MockRepoBiz) Update(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", arg0, arg1)
+	ret := m.ctrl.Call(m, "Update", ctx, in)
 	ret0, _ := ret[0].(*Repo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockRepoBizMockRecorder) Update(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoBizMockRecorder) Update(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepoBiz)(nil).Update), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepoBiz)(nil).Update), ctx, in)
 }
 
 // MockSettingsBiz is a mock of SettingsBiz interface.
 type MockSettingsBiz struct {
 	ctrl     *gomock.Controller
 	recorder *MockSettingsBizMockRecorder
+	isgomock struct{}
 }
 
 // MockSettingsBizMockRecorder is the mock recorder for MockSettingsBiz.
@@ -1699,6 +1708,7 @@ func (mr *MockSettingsBizMockRecorder) Get() *gomock.Call {
 type MockUserBiz struct {
 	ctrl     *gomock.Controller
 	recorder *MockUserBizMockRecorder
+	isgomock struct{}
 }
 
 // MockUserBizMockRecorder is the mock recorder for MockUserBiz.
@@ -1719,87 +1729,87 @@ func (m *MockUserBiz) EXPECT() *MockUserBizMockRecorder {
 }
 
 // IsGray mocks base method.
-func (m *MockUserBiz) IsGray(arg0 context.Context, arg1 string) (bool, error) {
+func (m *MockUserBiz) IsGray(ctx context.Context, email string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsGray", arg0, arg1)
+	ret := m.ctrl.Call(m, "IsGray", ctx, email)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // IsGray indicates an expected call of IsGray.
-func (mr *MockUserBizMockRecorder) IsGray(arg0, arg1 any) *gomock.Call {
+func (mr *MockUserBizMockRecorder) IsGray(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsGray", reflect.TypeOf((*MockUserBiz)(nil).IsGray), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsGray", reflect.TypeOf((*MockUserBiz)(nil).IsGray), ctx, email)
 }
 
 // List mocks base method.
-func (m *MockUserBiz) List(arg0 context.Context, arg1 *ListUserInput) (*ListUserResult, error) {
+func (m *MockUserBiz) List(ctx context.Context, input *ListUserInput) (*ListUserResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", arg0, arg1)
+	ret := m.ctrl.Call(m, "List", ctx, input)
 	ret0, _ := ret[0].(*ListUserResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockUserBizMockRecorder) List(arg0, arg1 any) *gomock.Call {
+func (mr *MockUserBizMockRecorder) List(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUserBiz)(nil).List), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUserBiz)(nil).List), ctx, input)
 }
 
 // ResetRolesOverride mocks base method.
-func (m *MockUserBiz) ResetRolesOverride(arg0 context.Context, arg1 string) error {
+func (m *MockUserBiz) ResetRolesOverride(ctx context.Context, email string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResetRolesOverride", arg0, arg1)
+	ret := m.ctrl.Call(m, "ResetRolesOverride", ctx, email)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ResetRolesOverride indicates an expected call of ResetRolesOverride.
-func (mr *MockUserBizMockRecorder) ResetRolesOverride(arg0, arg1 any) *gomock.Call {
+func (mr *MockUserBizMockRecorder) ResetRolesOverride(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetRolesOverride", reflect.TypeOf((*MockUserBiz)(nil).ResetRolesOverride), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetRolesOverride", reflect.TypeOf((*MockUserBiz)(nil).ResetRolesOverride), ctx, email)
 }
 
 // SyncLoginUser mocks base method.
-func (m *MockUserBiz) SyncLoginUser(arg0 context.Context, arg1, arg2 string, arg3 []string) error {
+func (m *MockUserBiz) SyncLoginUser(ctx context.Context, email, name string, roles []string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SyncLoginUser", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "SyncLoginUser", ctx, email, name, roles)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SyncLoginUser indicates an expected call of SyncLoginUser.
-func (mr *MockUserBizMockRecorder) SyncLoginUser(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockUserBizMockRecorder) SyncLoginUser(ctx, email, name, roles any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncLoginUser", reflect.TypeOf((*MockUserBiz)(nil).SyncLoginUser), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncLoginUser", reflect.TypeOf((*MockUserBiz)(nil).SyncLoginUser), ctx, email, name, roles)
 }
 
 // ToggleAdmin mocks base method.
-func (m *MockUserBiz) ToggleAdmin(arg0 context.Context, arg1 string, arg2 bool) error {
+func (m *MockUserBiz) ToggleAdmin(ctx context.Context, email string, admin bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ToggleAdmin", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "ToggleAdmin", ctx, email, admin)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ToggleAdmin indicates an expected call of ToggleAdmin.
-func (mr *MockUserBizMockRecorder) ToggleAdmin(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockUserBizMockRecorder) ToggleAdmin(ctx, email, admin any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToggleAdmin", reflect.TypeOf((*MockUserBiz)(nil).ToggleAdmin), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToggleAdmin", reflect.TypeOf((*MockUserBiz)(nil).ToggleAdmin), ctx, email, admin)
 }
 
 // ToggleGray mocks base method.
-func (m *MockUserBiz) ToggleGray(arg0 context.Context, arg1 string, arg2 bool) error {
+func (m *MockUserBiz) ToggleGray(ctx context.Context, email string, gray bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ToggleGray", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "ToggleGray", ctx, email, gray)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ToggleGray indicates an expected call of ToggleGray.
-func (mr *MockUserBizMockRecorder) ToggleGray(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockUserBizMockRecorder) ToggleGray(ctx, email, gray any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToggleGray", reflect.TypeOf((*MockUserBiz)(nil).ToggleGray), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToggleGray", reflect.TypeOf((*MockUserBiz)(nil).ToggleGray), ctx, email, gray)
 }

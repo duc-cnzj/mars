@@ -11,7 +11,10 @@ jobs:
         ports:
           - 6379:6379
       mysql:
-        image: mysql:5.7
+        # 8.4 是当前 LTS；5.7 已于 2023-10-31 EOL、8.0 于 2026-04-30 EOL。
+        # 与 dev/atlas.hcl 的 dev 库（MySQL 8 系）及 dev/docker-compose.yml 对齐，
+        # 避免本地按 8.x 验证 schema、CI 却跑 5.7 的口径分裂。
+        image: mysql:8.4
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
           MYSQL_DATABASE: test
@@ -24,7 +27,7 @@ jobs:
           fetch-depth: 2
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.26'
       - name: Setup minio
         run: |
           docker run -d -p 9000:9000 --name minio \

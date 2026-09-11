@@ -2,8 +2,12 @@ package data
 
 import (
 	"context"
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
 	"math/big"
 	"testing"
 	"time"
@@ -12,8 +16,9 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/biz/schematype"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -92,12 +97,58 @@ func TestAuth_VerifyToken(t *testing.T) {
 	assert.False(t, b)
 }
 
+// TestJwtAuth_VerifyToken_AcceptsV3Token 钉死跨版本兼容契约：本仓库把 golang-jwt 从 v3
+// （StandardClaims）升到 v5（RegisteredClaims）后，**存量 token 必须仍能验签**，
+// 否则升级即静默登出所有已登录用户。这里用 stdlib 手工复刻 v3 的 RS256 令牌编码
+// （base64url(header).base64url(payload) + PKCS1v15 签名），payload 取 v3 的线上形状：
+// exp/iat 为整数秒、iss/sub 为字符串、user_info 内嵌——两版 JSON 键名与数值形态一致。
+func TestJwtAuth_VerifyToken_AcceptsV3Token(t *testing.T) {
+	auth := newJwtAuth(priKey, publicKey, timer.NewReal())
+	now := time.Now()
+	enc := base64.RawURLEncoding
+	headerB64 := enc.EncodeToString([]byte(`{"alg":"RS256","typ":"JWT"}`))
+
+	// signV3 以 v3 的编码方式（header.payload + RS256 PKCS1v15）手工签发一个 token。
+	signV3 := func(payload map[string]any) string {
+		raw, err := json.Marshal(payload)
+		require.NoError(t, err)
+		signingInput := headerB64 + "." + enc.EncodeToString(raw)
+		sum := sha256.Sum256([]byte(signingInput))
+		sig, err := rsa.SignPKCS1v15(rand.Reader, priKey, crypto.SHA256, sum[:])
+		require.NoError(t, err)
+		return signingInput + "." + enc.EncodeToString(sig)
+	}
+
+	v3Token := signV3(map[string]any{
+		"exp": now.Add(2 * time.Hour).Unix(),
+		"iat": now.Unix(),
+		"iss": "mars",
+		"sub": "v3@mars.local",
+		"user_info": map[string]any{
+			"id": "1", "email": "v3@mars.local", "name": "old-user",
+			"picture": "", "roles": []string{schematype.MarsAdmin}, "logout_url": "u",
+		},
+	})
+	claims, ok := auth.VerifyToken(v3Token)
+	require.True(t, ok, "v3 存量 token 必须仍可验签（跨版本兼容）")
+	assert.Equal(t, "mars", claims.Issuer)
+	assert.Equal(t, "v3@mars.local", claims.Subject)
+	require.NotNil(t, claims.UserInfo)
+	assert.Equal(t, "old-user", claims.UserInfo.Name)
+	assert.Equal(t, []string{schematype.MarsAdmin}, claims.UserInfo.Roles)
+
+	// 过期 token 仍须被拒：v3/v5 的 exp 校验语义都依赖 NumericDate 整数秒。
+	expired := signV3(map[string]any{"exp": now.Add(-time.Hour).Unix(), "iss": "mars", "sub": "x"})
+	_, ok = auth.VerifyToken(expired)
+	assert.False(t, ok, "过期 token 必须被拒")
+}
+
 // TestJwtAuth_VerifyToken_RejectsNonRSA 覆盖 alg 校验分支：HS256 签名的 token
 // 在 keyfunc 处被显式拒绝，防止 alg confusion（HS256 用公钥当密钥）。
 func TestJwtAuth_VerifyToken_RejectsNonRSA(t *testing.T) {
 	auth := newJwtAuth(priKey, publicKey, timer.NewReal())
 	hmac, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &biz.JwtClaims{
-		StandardClaims: &jwt.StandardClaims{Subject: "x"},
+		RegisteredClaims: jwt.RegisteredClaims{Subject: "x"},
 	}).SignedString([]byte("secret"))
 	assert.NoError(t, err)
 	_, ok := auth.VerifyToken(hmac)
