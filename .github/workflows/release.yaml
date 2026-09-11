@@ -61,6 +61,26 @@ jobs:
           sudo apt update --fix-missing && sudo apt-get install -y gcc-aarch64-linux-gnu
           make build_linux_amd64
           make build_linux_arm64
+      # 只压缩 linux 产物：upx 不支持 macOS——打包 Mach-O 会毁掉 Go 链接器写入的 ad-hoc 签名，
+      # Apple Silicon 上内核直接 SIGKILL（实测 exit 137，事后重新 codesign 也救不回来），
+      # 4.2.4 与 5.2.1 均如此，故 build-darwin job 保持原样。
+      # 版本钉住（勿改成浮动的 latest）：release 产物必须可复现，升级需手动验证后改这里。
+      # 5.2.1 = 当前上游 latest，与 Dockerfile 动态取的版本一致。
+      - name: UPX compress linux binaries
+        env:
+          UPX_VERSION: 5.2.1
+        run: |
+          curl -fsSL --retry 3 -o /tmp/upx.tar.xz \
+            "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz"
+          mkdir -p /tmp/upx && tar -xf /tmp/upx.tar.xz -C /tmp/upx --strip-components=1
+          sudo install -m 755 /tmp/upx/upx /usr/local/bin/upx
+          upx -V
+          # x86_64 的 upx 能直接压 aarch64 的 ELF：格式支持按宿主 OS 判定，与 CPU 架构无关
+          ls -lh bin/
+          upx -9 --no-progress bin/app-linux-amd64 bin/app-linux-arm64
+          # -t 会整份解压校验，确保压缩后的产物不是坏文件
+          upx -t bin/app-linux-amd64 bin/app-linux-arm64
+          ls -lh bin/
       - name: upload app-linux-amd64
         uses: actions/upload-artifact@v4
         with:
