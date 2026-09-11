@@ -1,8 +1,10 @@
 package data
 
 import (
+	"archive/tar"
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -26,7 +28,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/util/rand"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	"github.com/dustin/go-humanize"
-	"github.com/mholt/archiver/v3"
 	"github.com/samber/lo"
 	"go.opentelemetry.io/otel/attribute"
 	"helm.sh/helm/v3/pkg/releaseutil"
@@ -418,11 +419,17 @@ func (repo *k8sRepo) SubscribePodEvents(listener string) (<-chan biz.PodEvent, f
 }
 
 // GetNamespace 读取命名空间。
+// client-go 生成的 Get 用命名返回值预置了非 nil 的空对象，出错时会把该零值对象
+// 一并返回；这里显式归一化为 nil，保证"err 非 nil 时返回值为 nil"这一契约，
+// 避免调用方拿到 Name 为空的假对象。
 func (repo *k8sRepo) GetNamespace(ctx context.Context, name string) (ns *corev1.Namespace, err error) {
 	ctx, span := tracer.Start(ctx, "k8sRepo/GetNamespace")
 	defer func() { endSpan(span, err) }()
 	ns, err = repo.data.K8s().Client.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
-	return ns, errs.Wrap(err, "get namespace")
+	if err != nil {
+		return nil, errs.Wrap(err, "get namespace")
+	}
+	return ns, nil
 }
 
 // CreateNamespace 创建命名空间。
@@ -1471,9 +1478,9 @@ func (repo *k8sRepo) ExternalIp() string {
 }
 
 // Archiver 抽象文件归档/解压操作：归档多个源路径、打开归档文件、删除归档。
-// 具体实现委托第三方 archiver 库与 os 包，接口化便于测试替换与 k8sutil 复用。
+// 接口化便于测试替换。
 type Archiver interface {
-	// Archive 将多个源文件/目录归档到目标路径。
+	// Archive 把源文件归档到目标路径（格式固定为 gzip 压缩的 tar）。
 	Archive(sources []string, destination string) error
 	// Open 打开归档文件用于读取。
 	Open(path string) (io.ReadCloser, error)
@@ -1481,7 +1488,8 @@ type Archiver interface {
 	Remove(path string) error
 }
 
-// defaultArchiver 是 Archiver 的默认实现，直接透传 archiver.Archive 与 os 操作。
+// defaultArchiver 是 Archiver 的默认实现：归档用标准库 archive/tar + compress/gzip，
+// 打开/删除用 os 包。
 type defaultArchiver struct{}
 
 // NewDefaultArchiver 构造默认 Archiver 实现。
@@ -1489,9 +1497,56 @@ func NewDefaultArchiver() Archiver {
 	return &defaultArchiver{}
 }
 
-// Archive 将多个源文件/目录归档到目标路径（委托 archiver.Archive）。
+// Archive 把多个源文件写入 gzip 压缩的 tar（.tar.gz）目标路径。
+// 消费方是容器内的 `tar -zmxf - -C <dir>`，故格式固定为 gzip+tar，与目标路径的
+// 扩展名无关；条目名取 filepath.Base（源路径的目录层级不进条目名），
+// 保证容器内落地为 <dir>/<base>。
 func (m *defaultArchiver) Archive(sources []string, destination string) error {
-	return archiver.Archive(sources, destination)
+	f, err := os.Create(destination)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	gzipWriter := gzip.NewWriter(f)
+	tarWriter := tar.NewWriter(gzipWriter)
+
+	for _, source := range sources {
+		if err = tarOneFile(tarWriter, source); err != nil {
+			// 归档中途失败：仍需关闭写入器刷出缓冲避免句柄泄漏。
+			// errors.Join 保留原始失败原因，同时不掩盖关闭期的次生错误。
+			return errors.Join(err, tarWriter.Close(), gzipWriter.Close())
+		}
+	}
+	// tar 必须先于 gzip 关闭：tar 的结尾块要经 gzip 压缩后才算真正落盘。
+	return errors.Join(tarWriter.Close(), gzipWriter.Close())
+}
+
+// tarOneFile 以 filepath.Base(source) 为条目名，把单个源文件写入 tar。
+// 只接受普通文件——目录归档无调用方，直接显式报错而非产出语义不明的归档。
+func tarOneFile(tarWriter *tar.Writer, source string) error {
+	info, err := os.Stat(source)
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		return fmt.Errorf("archiver: 不支持目录归档: %s", source)
+	}
+	header, err := tar.FileInfoHeader(info, "")
+	if err != nil {
+		return err
+	}
+	header.Name = filepath.Base(source)
+	if err := tarWriter.WriteHeader(header); err != nil {
+		return err
+	}
+	f, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(tarWriter, f)
+	return err
 }
 
 // Open 打开归档文件用于读取。

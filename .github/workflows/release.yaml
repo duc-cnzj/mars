@@ -56,7 +56,7 @@ jobs:
             ${{ runner.os }}-go-
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.26'
       - run: |
           sudo apt update --fix-missing && sudo apt-get install -y gcc-aarch64-linux-gnu
           make build_linux_amd64
@@ -113,7 +113,7 @@ jobs:
             ${{ runner.os }}-go-
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.26'
       - run: |
           make build_darwin_arm64
           make build_darwin_amd64

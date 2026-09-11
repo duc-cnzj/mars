@@ -25,6 +25,7 @@ import (
 type MockJobManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockJobManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockJobManagerMockRecorder is the mock recorder for MockJobManager.
@@ -45,23 +46,24 @@ func (m *MockJobManager) EXPECT() *MockJobManagerMockRecorder {
 }
 
 // NewJob mocks base method.
-func (m *MockJobManager) NewJob(arg0 *JobInput) Job {
+func (m *MockJobManager) NewJob(input *JobInput) Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewJob", arg0)
+	ret := m.ctrl.Call(m, "NewJob", input)
 	ret0, _ := ret[0].(Job)
 	return ret0
 }
 
 // NewJob indicates an expected call of NewJob.
-func (mr *MockJobManagerMockRecorder) NewJob(arg0 any) *gomock.Call {
+func (mr *MockJobManagerMockRecorder) NewJob(input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewJob", reflect.TypeOf((*MockJobManager)(nil).NewJob), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewJob", reflect.TypeOf((*MockJobManager)(nil).NewJob), input)
 }
 
 // MockJob is a mock of Job interface.
 type MockJob struct {
 	ctrl     *gomock.Controller
 	recorder *MockJobMockRecorder
+	isgomock struct{}
 }
 
 // MockJobMockRecorder is the mock recorder for MockJob.
@@ -180,45 +182,45 @@ func (mr *MockJobMockRecorder) Manifests() *gomock.Call {
 }
 
 // OnError mocks base method.
-func (m *MockJob) OnError(arg0 int, arg1 func(error, func())) Job {
+func (m *MockJob) OnError(p int, fn func(error, func())) Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OnError", arg0, arg1)
+	ret := m.ctrl.Call(m, "OnError", p, fn)
 	ret0, _ := ret[0].(Job)
 	return ret0
 }
 
 // OnError indicates an expected call of OnError.
-func (mr *MockJobMockRecorder) OnError(arg0, arg1 any) *gomock.Call {
+func (mr *MockJobMockRecorder) OnError(p, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnError", reflect.TypeOf((*MockJob)(nil).OnError), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnError", reflect.TypeOf((*MockJob)(nil).OnError), p, fn)
 }
 
 // OnFinally mocks base method.
-func (m *MockJob) OnFinally(arg0 int, arg1 func(error, func())) Job {
+func (m *MockJob) OnFinally(p int, fn func(error, func())) Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OnFinally", arg0, arg1)
+	ret := m.ctrl.Call(m, "OnFinally", p, fn)
 	ret0, _ := ret[0].(Job)
 	return ret0
 }
 
 // OnFinally indicates an expected call of OnFinally.
-func (mr *MockJobMockRecorder) OnFinally(arg0, arg1 any) *gomock.Call {
+func (mr *MockJobMockRecorder) OnFinally(p, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnFinally", reflect.TypeOf((*MockJob)(nil).OnFinally), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnFinally", reflect.TypeOf((*MockJob)(nil).OnFinally), p, fn)
 }
 
 // OnSuccess mocks base method.
-func (m *MockJob) OnSuccess(arg0 int, arg1 func(error, func())) Job {
+func (m *MockJob) OnSuccess(p int, fn func(error, func())) Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OnSuccess", arg0, arg1)
+	ret := m.ctrl.Call(m, "OnSuccess", p, fn)
 	ret0, _ := ret[0].(Job)
 	return ret0
 }
 
 // OnSuccess indicates an expected call of OnSuccess.
-func (mr *MockJobMockRecorder) OnSuccess(arg0, arg1 any) *gomock.Call {
+func (mr *MockJobMockRecorder) OnSuccess(p, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnSuccess", reflect.TypeOf((*MockJob)(nil).OnSuccess), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnSuccess", reflect.TypeOf((*MockJob)(nil).OnSuccess), p, fn)
 }
 
 // Project mocks base method.
@@ -236,17 +238,17 @@ func (mr *MockJobMockRecorder) Project() *gomock.Call {
 }
 
 // Run mocks base method.
-func (m *MockJob) Run(arg0 context.Context) Job {
+func (m *MockJob) Run(ctx context.Context) Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Run", arg0)
+	ret := m.ctrl.Call(m, "Run", ctx)
 	ret0, _ := ret[0].(Job)
 	return ret0
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockJobMockRecorder) Run(arg0 any) *gomock.Call {
+func (mr *MockJobMockRecorder) Run(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockJob)(nil).Run), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockJob)(nil).Run), ctx)
 }
 
 // Stop mocks base method.
@@ -279,6 +281,7 @@ func (mr *MockJobMockRecorder) Validate() *gomock.Call {
 type MockPercentable struct {
 	ctrl     *gomock.Controller
 	recorder *MockPercentableMockRecorder
+	isgomock struct{}
 }
 
 // MockPercentableMockRecorder is the mock recorder for MockPercentable.
@@ -325,21 +328,22 @@ func (mr *MockPercentableMockRecorder) Current() *gomock.Call {
 }
 
 // To mocks base method.
-func (m *MockPercentable) To(arg0 int64) {
+func (m *MockPercentable) To(percent int64) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "To", arg0)
+	m.ctrl.Call(m, "To", percent)
 }
 
 // To indicates an expected call of To.
-func (mr *MockPercentableMockRecorder) To(arg0 any) *gomock.Call {
+func (mr *MockPercentableMockRecorder) To(percent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "To", reflect.TypeOf((*MockPercentable)(nil).To), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "To", reflect.TypeOf((*MockPercentable)(nil).To), percent)
 }
 
 // MockReleaseInstaller is a mock of ReleaseInstaller interface.
 type MockReleaseInstaller struct {
 	ctrl     *gomock.Controller
 	recorder *MockReleaseInstallerMockRecorder
+	isgomock struct{}
 }
 
 // MockReleaseInstallerMockRecorder is the mock recorder for MockReleaseInstaller.
@@ -360,24 +364,25 @@ func (m *MockReleaseInstaller) EXPECT() *MockReleaseInstallerMockRecorder {
 }
 
 // Run mocks base method.
-func (m *MockReleaseInstaller) Run(arg0 context.Context, arg1 *InstallInput) (*release.Release, error) {
+func (m *MockReleaseInstaller) Run(ctx context.Context, input *InstallInput) (*release.Release, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Run", arg0, arg1)
+	ret := m.ctrl.Call(m, "Run", ctx, input)
 	ret0, _ := ret[0].(*release.Release)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockReleaseInstallerMockRecorder) Run(arg0, arg1 any) *gomock.Call {
+func (mr *MockReleaseInstallerMockRecorder) Run(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockReleaseInstaller)(nil).Run), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockReleaseInstaller)(nil).Run), ctx, input)
 }
 
 // MockDeployMsger is a mock of DeployMsger interface.
 type MockDeployMsger struct {
 	ctrl     *gomock.Controller
 	recorder *MockDeployMsgerMockRecorder
+	isgomock struct{}
 }
 
 // MockDeployMsgerMockRecorder is the mock recorder for MockDeployMsger.
@@ -424,15 +429,15 @@ func (mr *MockDeployMsgerMockRecorder) Current() *gomock.Call {
 }
 
 // SendDeployedResult mocks base method.
-func (m *MockDeployMsger) SendDeployedResult(arg0 websocket.ResultType, arg1 string, arg2 *types.ProjectModel) {
+func (m *MockDeployMsger) SendDeployedResult(t websocket.ResultType, msg string, p *types.ProjectModel) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SendDeployedResult", arg0, arg1, arg2)
+	m.ctrl.Call(m, "SendDeployedResult", t, msg, p)
 }
 
 // SendDeployedResult indicates an expected call of SendDeployedResult.
-func (mr *MockDeployMsgerMockRecorder) SendDeployedResult(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) SendDeployedResult(t, msg, p any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendDeployedResult", reflect.TypeOf((*MockDeployMsger)(nil).SendDeployedResult), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendDeployedResult", reflect.TypeOf((*MockDeployMsger)(nil).SendDeployedResult), t, msg, p)
 }
 
 // SendEndError mocks base method.
@@ -460,15 +465,15 @@ func (mr *MockDeployMsgerMockRecorder) SendMsg(arg0 any) *gomock.Call {
 }
 
 // SendMsgWithContainerLog mocks base method.
-func (m *MockDeployMsger) SendMsgWithContainerLog(arg0 string, arg1 []*websocket.Container) {
+func (m *MockDeployMsger) SendMsgWithContainerLog(msg string, containers []*websocket.Container) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SendMsgWithContainerLog", arg0, arg1)
+	m.ctrl.Call(m, "SendMsgWithContainerLog", msg, containers)
 }
 
 // SendMsgWithContainerLog indicates an expected call of SendMsgWithContainerLog.
-func (mr *MockDeployMsgerMockRecorder) SendMsgWithContainerLog(arg0, arg1 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) SendMsgWithContainerLog(msg, containers any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsgWithContainerLog", reflect.TypeOf((*MockDeployMsger)(nil).SendMsgWithContainerLog), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsgWithContainerLog", reflect.TypeOf((*MockDeployMsger)(nil).SendMsgWithContainerLog), msg, containers)
 }
 
 // SendProcessPercent mocks base method.
@@ -496,33 +501,34 @@ func (mr *MockDeployMsgerMockRecorder) SendProtoMsg(arg0 any) *gomock.Call {
 }
 
 // SetSlug mocks base method.
-func (m *MockDeployMsger) SetSlug(arg0 string) {
+func (m *MockDeployMsger) SetSlug(slug string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetSlug", arg0)
+	m.ctrl.Call(m, "SetSlug", slug)
 }
 
 // SetSlug indicates an expected call of SetSlug.
-func (mr *MockDeployMsgerMockRecorder) SetSlug(arg0 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) SetSlug(slug any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSlug", reflect.TypeOf((*MockDeployMsger)(nil).SetSlug), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSlug", reflect.TypeOf((*MockDeployMsger)(nil).SetSlug), slug)
 }
 
 // To mocks base method.
-func (m *MockDeployMsger) To(arg0 int64) {
+func (m *MockDeployMsger) To(percent int64) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "To", arg0)
+	m.ctrl.Call(m, "To", percent)
 }
 
 // To indicates an expected call of To.
-func (mr *MockDeployMsgerMockRecorder) To(arg0 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) To(percent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "To", reflect.TypeOf((*MockDeployMsger)(nil).To), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "To", reflect.TypeOf((*MockDeployMsger)(nil).To), percent)
 }
 
 // MockSafeWriteMessageChan is a mock of SafeWriteMessageChan interface.
 type MockSafeWriteMessageChan struct {
 	ctrl     *gomock.Controller
 	recorder *MockSafeWriteMessageChanMockRecorder
+	isgomock struct{}
 }
 
 // MockSafeWriteMessageChanMockRecorder is the mock recorder for MockSafeWriteMessageChan.
@@ -569,13 +575,13 @@ func (mr *MockSafeWriteMessageChanMockRecorder) Close() *gomock.Call {
 }
 
 // Send mocks base method.
-func (m *MockSafeWriteMessageChan) Send(arg0 MessageItem) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Send", arg0)
+func (m_2 *MockSafeWriteMessageChan) Send(m MessageItem) {
+	m_2.ctrl.T.Helper()
+	m_2.ctrl.Call(m_2, "Send", m)
 }
 
 // Send indicates an expected call of Send.
-func (mr *MockSafeWriteMessageChanMockRecorder) Send(arg0 any) *gomock.Call {
+func (mr *MockSafeWriteMessageChanMockRecorder) Send(m any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockSafeWriteMessageChan)(nil).Send), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockSafeWriteMessageChan)(nil).Send), m)
 }

@@ -38,19 +38,54 @@ $(PROTOC): | $(BIN_DIR)
 .PHONY: protoc
 protoc: $(PROTOC)
 
+# go install 的落地目录（GOBIN 未设置时回退 GOPATH/bin）；自检按同一路径读二进制，
+# 否则"钉了版本"和"protoc 实际启动的插件"可能是两个东西。
+TOOLS_BIN := $(or $(shell go env GOBIN),$(shell go env GOPATH)/bin)
+
+# 生成器钉版本（安装与自检共用同一批变量，杜绝两处版本号各写一遍再次漂移）
+PGV_VERSION     := v1.3.3
+GATEWAY_VERSION := v2.30.0
+GO_GRPC_VERSION := v1.6.2
+GO_VERSION      := v1.36.12
+OPENAPI_VERSION := v0.7.0
+
 .PHONY: build_tools
-# go install 不带 @version 时按主模块 MVS 解析版本安装，可能被传递依赖顶高（grpc-gateway 就被
-# go.opentelemetry.io/proto/otlp 顶到 v2.27.1），导致生成器与 go.mod 声明漂移、输出不可复现。
-# 这里全部显式钉版本；grpc-gateway 钉 v2.21.0（与 go.mod 声明一致，勿动，除非有意升级）。
-# 其余与 go list -m 解析版本一致。改版本号需同时改 go.mod 对应依赖。
+# 生成器版本必须显式钉死：不带 @version 的 go install 按主模块 MVS 解析，会被传递依赖顶高，
+# 导致生成器与 go.mod 声明漂移、产物不可复现。钉版本是产物可复现的唯一事实来源——
+# 改这里必须重生成 api/ 下产物并一起提交，CI 不跑 make api，漂移没人替你发现。
+# 四个 Go 插件版本与 go.mod 声明对齐（protobuf v1.36.12 / grpc-gateway v2.30.0 /
+# protoc-gen-validate v1.3.3；protoc-gen-go-grpc 独立模块，版本与 grpc 运行时无关）。
+# protoc-gen-openapi(gnostic) 被 kube-openapi 钳在 v0.7.0，升 v0.7.1 会换 yaml module path 断 build，勿动。
 build_tools:
 	# go install 一次调用要求所有参数同模块同版本，各工具版本不同，必须拆开
-	# 注意：protoc-gen-go-grpc 已从 grpc 主模块拆出为独立模块，版本号与 grpc 运行时（v1.79.3）无关
-	go install github.com/envoyproxy/protoc-gen-validate@v1.3.0
-	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.21.0
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.1
-	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
-	go install github.com/google/gnostic/cmd/protoc-gen-openapi@v0.7.0
+	go install github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION)
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@$(GATEWAY_VERSION)
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(GO_GRPC_VERSION)
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@$(GO_VERSION)
+	go install github.com/google/gnostic/cmd/protoc-gen-openapi@$(OPENAPI_VERSION)
+	@echo "== 工具链版本自检 =="
+	# 不用插件各自的 --version：protoc-gen-validate / gnostic 的 protoc-gen-openapi 都不支持该参数，
+	# 其余输出格式也不统一（有的带 v 前缀有的不带）。二进制内嵌的 module path+version 是唯一统一口径。
+	# PATH 断言同样承重：protoc 按 PATH 找插件，钉版本装在别处等于没钉。
+	@fail=0; for spec in \
+		protoc-gen-validate:github.com/envoyproxy/protoc-gen-validate:$(PGV_VERSION) \
+		protoc-gen-grpc-gateway:github.com/grpc-ecosystem/grpc-gateway/v2:$(GATEWAY_VERSION) \
+		protoc-gen-go-grpc:google.golang.org/grpc/cmd/protoc-gen-go-grpc:$(GO_GRPC_VERSION) \
+		protoc-gen-go:google.golang.org/protobuf:$(GO_VERSION) \
+		protoc-gen-openapi:github.com/google/gnostic:$(OPENAPI_VERSION) ; do \
+		bin="$${spec%%:*}"; rest="$${spec#*:}"; mod="$${rest%:*}"; want="$${rest##*:}"; \
+		path="$(TOOLS_BIN)/$$bin"; \
+		got="$$(go version -m "$$path" 2>/dev/null | awk -v m="$$mod" '$$1=="mod" && $$2==m {print $$3; exit}')"; \
+		onpath="$$(command -v $$bin 2>/dev/null || true)"; \
+		if [ "$$got" = "$$want" ] && [ "$$onpath" = "$$path" ]; then \
+			echo "  [ok]   $$bin $$got"; \
+		else \
+			echo "  [FAIL] $$bin 钉版本 $$want / 实际 '$$got' / PATH 解析 '$$onpath'"; fail=1; \
+		fi; \
+	done; \
+	if [ "$$fail" -ne 0 ]; then \
+		echo "工具链自检失败：生效版本与钉版本不一致，产物将不可复现"; exit 1; \
+	fi
 
 .PHONY: api
 api: $(PROTOC)

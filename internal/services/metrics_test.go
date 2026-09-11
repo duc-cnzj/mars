@@ -328,7 +328,7 @@ func TestMetricsSvc_StreamTopPod_Success(t *testing.T) {
 	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), "namespace1", "pod1").Return(&v1beta1.PodMetrics{}, nil).AnyTimes()
 	k8sRepo.EXPECT().GetCpuAndMemoryQuantity(gomock.Any()).Return(&resource.Quantity{}, &resource.Quantity{}).AnyTimes()
 
-	server := NewMockMetrics_StreamTopPodServer(mocks.ctrl)
+	server := NewMockMetrics_StreamTopPodServer[metrics.TopPodResponse](mocks.ctrl)
 	timeout, cancelFunc := context.WithTimeout(newAdminUserCtx(), 500*time.Millisecond)
 	defer cancelFunc()
 	server.EXPECT().Context().Return(timeout).AnyTimes()
@@ -352,7 +352,7 @@ func TestMetricsSvc_StreamTopPod_Error(t *testing.T) {
 	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), "namespace1", "pod1").Return(nil, errors.New("x"))
 	k8sRepo.EXPECT().IsPodRunning("namespace1", "pod1").Return(true, "")
 
-	server := NewMockMetrics_StreamTopPodServer(mocks.ctrl)
+	server := NewMockMetrics_StreamTopPodServer[metrics.TopPodResponse](mocks.ctrl)
 	server.EXPECT().Context().Return(newAdminUserCtx()).AnyTimes()
 	server.EXPECT().Send(gomock.Any()).Return(nil).AnyTimes()
 
@@ -377,7 +377,7 @@ func TestMetricsSvc_StreamTopPod_SendError(t *testing.T) {
 	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), "namespace1", "pod1").Return(&v1beta1.PodMetrics{}, nil).AnyTimes()
 	k8sRepo.EXPECT().GetCpuAndMemoryQuantity(gomock.Any()).Return(&resource.Quantity{}, &resource.Quantity{}).AnyTimes()
 
-	server := NewMockMetrics_StreamTopPodServer(mocks.ctrl)
+	server := NewMockMetrics_StreamTopPodServer[metrics.TopPodResponse](mocks.ctrl)
 	server.EXPECT().Context().Return(newAdminUserCtx()).AnyTimes()
 	server.EXPECT().Send(gomock.Any()).Return(errors.New("send error")).AnyTimes()
 
@@ -398,7 +398,7 @@ func TestMetricsSvc_StreamTopPod_PodNotRunning(t *testing.T) {
 	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), "namespace1", "pod1").Return(nil, errors.New("error")).AnyTimes()
 	k8sRepo.EXPECT().IsPodRunning("namespace1", "pod1").Return(false, "pod not running").AnyTimes()
 
-	server := NewMockMetrics_StreamTopPodServer(mocks.ctrl)
+	server := NewMockMetrics_StreamTopPodServer[metrics.TopPodResponse](mocks.ctrl)
 	timeout, cancelFunc := context.WithTimeout(newAdminUserCtx(), 3*time.Second)
 	defer cancelFunc()
 	server.EXPECT().Context().Return(timeout).AnyTimes()
@@ -427,7 +427,7 @@ func TestMetricsSvc_StreamTopPod_AccessDenied(t *testing.T) {
 	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), gomock.Any(), gomock.Any()).Return(&v1beta1.PodMetrics{}, nil).AnyTimes()
 	k8sRepo.EXPECT().GetCpuAndMemoryQuantity(gomock.Any()).Return(&resource.Quantity{}, &resource.Quantity{}).AnyTimes()
 
-	server := NewMockMetrics_StreamTopPodServer(mocks.ctrl)
+	server := NewMockMetrics_StreamTopPodServer[metrics.TopPodResponse](mocks.ctrl)
 	timeout, cancelFunc := context.WithTimeout(newOtherUserCtx(), 3*time.Second)
 	defer cancelFunc()
 	server.EXPECT().Context().Return(timeout).AnyTimes()

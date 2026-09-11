@@ -5,14 +5,17 @@ import { Empty, RefreshFade, SkeletonList, Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/shadcn/tooltip'
 import { copyText } from '@/lib/copy'
+import { formatDateTime } from '@/lib/format'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
+import { useVersion } from '@/hooks/useVersion'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
 import type { components } from '@/api/schema'
 import type { TKey } from '@/i18n/keys'
 
 type ConfigGroup = components['schemas']['settings.ConfigGroup']
+type VersionResponse = components['schemas']['version.Response']
 
 /** 敏感值统一掩码（与源码值隔离，避免密钥类明文常显） */
 const MASK = '••••••'
@@ -59,6 +62,31 @@ const SETTING_LABEL_KEY: Record<string, TKey> = {
   s3_secret_access_key: 'settings.s3SecretKey',
   admin_password: 'settings.adminPassword',
 }
+
+/**
+ * /api/version 字段 → 词条标签，按语义排序：构建标识（版本/时间/Git）→ 工具链 → 运行平台。
+ * format 用于需二次加工的字段（构建时间戳转本地日期时间），缺省原样展示。
+ */
+const VERSION_FIELDS: {
+  key: keyof VersionResponse
+  labelKey: TKey
+  format?: (value: string) => string
+}[] = [
+  { key: 'version', labelKey: 'settings.versionLabel' },
+  { key: 'buildDate', labelKey: 'settings.versionBuildDate', format: formatDateTime },
+  { key: 'gitBranch', labelKey: 'settings.versionGitBranch' },
+  { key: 'gitCommit', labelKey: 'settings.versionGitCommit' },
+  { key: 'gitTag', labelKey: 'settings.versionGitTag' },
+  { key: 'gitRepo', labelKey: 'settings.versionGitRepo' },
+  { key: 'goVersion', labelKey: 'settings.versionGo' },
+  { key: 'compiler', labelKey: 'settings.versionCompiler' },
+  { key: 'platform', labelKey: 'settings.versionPlatform' },
+  { key: 'kubectlVersion', labelKey: 'settings.versionKubectl' },
+  { key: 'helmVersion', labelKey: 'settings.versionHelm' },
+]
+
+/** 空值占位符：后端部分字段（如未打 tag 的构建）为空串，占位保证行数稳定、不因构建差异跳版 */
+const EMPTY_PLACEHOLDER = '—'
 
 /**
  * 单行截断文本：超出容器宽度时悬停显示全文（shadcn Tooltip，原生 title 有延迟且无样式、用户感知不到）
@@ -112,9 +140,13 @@ function TruncatedText({ text, className }: { text: string; className?: string }
  * - 数据由 /api/admin/settings 提供：按六组返回扁平 key/value 条目
  * - 敏感项（密码/凭证/token 等 masked=true）默认掩码，点眼睛查看明文、点复制复制明文
  * - 标签优先取词条映射，插件参数/镜像仓库凭证/OIDC 等扁平化子项回退展示原始配置 key
+ * - 另置「版本信息」卡：/api/version 的构建元数据（见 VERSION_FIELDS），与配置无关但同属
+ *   系统级只读信息，聚合在此页便于运维排查「跑的是哪个构建」
  */
 export function SystemSettings() {
   const { t } = useTranslation()
+  // 版本元数据走 useVersion 单例：Topbar/Footer 已全站拉过一次，此处命中缓存不再打请求
+  const version = useVersion()
   const [groups, setGroups] = useState<ConfigGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -169,6 +201,48 @@ export function SystemSettings() {
           {t('settings.sourceNote')}
         </p>
       </div>
+
+      {/* 版本信息卡：/api/version 构建元数据（只读，与 config.yaml 无关，故独立成卡置顶）。
+          未取到数据（服务端未返回/请求失败）时整卡不渲染——不占位、不空转骨架。 */}
+      {version && (
+        <section className="overflow-hidden rounded-lg border border-line bg-surface">
+          <div className="border-b border-line px-4 py-2.5 text-[13px] font-medium text-ink">
+            {t('settings.groupVersion')}
+          </div>
+          <div className="divide-y divide-line">
+            {VERSION_FIELDS.map(({ key, labelKey, format }) => {
+              const raw = version[key]
+              const value = raw ? (format ? format(raw) : raw) : ''
+              return (
+                <div
+                  key={key}
+                  className="grid grid-cols-[16rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5"
+                >
+                  <TruncatedText className="text-[13px] text-mute" text={t(labelKey)} />
+                  {/* 空值占位符用 text-faint 与实值区分；mono 字体对齐配置行的值列观感 */}
+                  <TruncatedText
+                    className={`font-mono text-[13px] ${value ? 'text-ink' : 'text-faint'}`}
+                    text={value || EMPTY_PLACEHOLDER}
+                  />
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      aria-label={t('common.copy')}
+                      disabled={!value}
+                      onClick={() => copyValue(value)}
+                    >
+                      <Icon name="copy" className="size-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       {loading && groups.length === 0 ? (
         <section className="overflow-hidden rounded-lg border border-line bg-surface">

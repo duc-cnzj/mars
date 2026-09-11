@@ -10,6 +10,7 @@ package settings
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
@@ -24,29 +25,35 @@ import (
 )
 
 // Suppress "imported and not used" errors
-var _ codes.Code
-var _ io.Reader
-var _ status.Status
-var _ = runtime.String
-var _ = utilities.NewDoubleArray
-var _ = metadata.Join
+var (
+	_ codes.Code
+	_ io.Reader
+	_ status.Status
+	_ = errors.New
+	_ = runtime.String
+	_ = utilities.NewDoubleArray
+	_ = metadata.Join
+)
 
 func request_Settings_Get_0(ctx context.Context, marshaler runtime.Marshaler, client SettingsClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq GetRequest
+		metadata runtime.ServerMetadata
+	)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	msg, err := client.Get(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_Settings_Get_0(ctx context.Context, marshaler runtime.Marshaler, server SettingsServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq GetRequest
+		metadata runtime.ServerMetadata
+	)
 	msg, err := server.Get(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 // RegisterSettingsHandlerServer registers the http handlers for service Settings to "mux".
@@ -55,16 +62,13 @@ func local_request_Settings_Get_0(ctx context.Context, marshaler runtime.Marshal
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterSettingsHandlerFromEndpoint instead.
 // GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterSettingsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server SettingsServer) error {
-
-	mux.Handle("GET", pattern_Settings_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_Settings_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/settings.Settings/Get", runtime.WithHTTPPathPattern("/api/admin/settings"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/settings.Settings/Get", runtime.WithHTTPPathPattern("/api/admin/settings"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -76,9 +80,7 @@ func RegisterSettingsHandlerServer(ctx context.Context, mux *runtime.ServeMux, s
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_Settings_Get_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	return nil
@@ -105,7 +107,6 @@ func RegisterSettingsHandlerFromEndpoint(ctx context.Context, mux *runtime.Serve
 			}
 		}()
 	}()
-
 	return RegisterSettingsHandler(ctx, mux, conn)
 }
 
@@ -121,14 +122,11 @@ func RegisterSettingsHandler(ctx context.Context, mux *runtime.ServeMux, conn *g
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
 // "SettingsClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterSettingsHandlerClient(ctx context.Context, mux *runtime.ServeMux, client SettingsClient) error {
-
-	mux.Handle("GET", pattern_Settings_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_Settings_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/settings.Settings/Get", runtime.WithHTTPPathPattern("/api/admin/settings"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/settings.Settings/Get", runtime.WithHTTPPathPattern("/api/admin/settings"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -139,11 +137,8 @@ func RegisterSettingsHandlerClient(ctx context.Context, mux *runtime.ServeMux, c
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_Settings_Get_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
 	return nil
 }
 

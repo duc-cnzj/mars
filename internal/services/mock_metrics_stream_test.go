@@ -19,30 +19,31 @@ import (
 )
 
 // MockMetrics_StreamTopPodServer is a mock of Metrics_StreamTopPodServer interface.
-type MockMetrics_StreamTopPodServer struct {
+type MockMetrics_StreamTopPodServer[Res any] struct {
 	ctrl     *gomock.Controller
-	recorder *MockMetrics_StreamTopPodServerMockRecorder
+	recorder *MockMetrics_StreamTopPodServerMockRecorder[Res]
+	isgomock struct{}
 }
 
 // MockMetrics_StreamTopPodServerMockRecorder is the mock recorder for MockMetrics_StreamTopPodServer.
-type MockMetrics_StreamTopPodServerMockRecorder struct {
-	mock *MockMetrics_StreamTopPodServer
+type MockMetrics_StreamTopPodServerMockRecorder[Res any] struct {
+	mock *MockMetrics_StreamTopPodServer[Res]
 }
 
 // NewMockMetrics_StreamTopPodServer creates a new mock instance.
-func NewMockMetrics_StreamTopPodServer(ctrl *gomock.Controller) *MockMetrics_StreamTopPodServer {
-	mock := &MockMetrics_StreamTopPodServer{ctrl: ctrl}
-	mock.recorder = &MockMetrics_StreamTopPodServerMockRecorder{mock}
+func NewMockMetrics_StreamTopPodServer[Res any](ctrl *gomock.Controller) *MockMetrics_StreamTopPodServer[Res] {
+	mock := &MockMetrics_StreamTopPodServer[Res]{ctrl: ctrl}
+	mock.recorder = &MockMetrics_StreamTopPodServerMockRecorder[Res]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockMetrics_StreamTopPodServer) EXPECT() *MockMetrics_StreamTopPodServerMockRecorder {
+func (m *MockMetrics_StreamTopPodServer[Res]) EXPECT() *MockMetrics_StreamTopPodServerMockRecorder[Res] {
 	return m.recorder
 }
 
 // Context mocks base method.
-func (m *MockMetrics_StreamTopPodServer) Context() context.Context {
+func (m *MockMetrics_StreamTopPodServer[Res]) Context() context.Context {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Context")
 	ret0, _ := ret[0].(context.Context)
@@ -50,27 +51,27 @@ func (m *MockMetrics_StreamTopPodServer) Context() context.Context {
 }
 
 // Context indicates an expected call of Context.
-func (mr *MockMetrics_StreamTopPodServerMockRecorder) Context() *gomock.Call {
+func (mr *MockMetrics_StreamTopPodServerMockRecorder[Res]) Context() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockMetrics_StreamTopPodServer)(nil).Context))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockMetrics_StreamTopPodServer[Res])(nil).Context))
 }
 
 // RecvMsg mocks base method.
-func (m *MockMetrics_StreamTopPodServer) RecvMsg(arg0 any) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RecvMsg", arg0)
+func (m_2 *MockMetrics_StreamTopPodServer[Res]) RecvMsg(m any) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RecvMsg indicates an expected call of RecvMsg.
-func (mr *MockMetrics_StreamTopPodServerMockRecorder) RecvMsg(arg0 any) *gomock.Call {
+func (mr *MockMetrics_StreamTopPodServerMockRecorder[Res]) RecvMsg(m any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockMetrics_StreamTopPodServer)(nil).RecvMsg), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockMetrics_StreamTopPodServer[Res])(nil).RecvMsg), m)
 }
 
 // Send mocks base method.
-func (m *MockMetrics_StreamTopPodServer) Send(arg0 *metrics.TopPodResponse) error {
+func (m *MockMetrics_StreamTopPodServer[Res]) Send(arg0 *metrics.TopPodResponse) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0)
 	ret0, _ := ret[0].(error)
@@ -78,13 +79,13 @@ func (m *MockMetrics_StreamTopPodServer) Send(arg0 *metrics.TopPodResponse) erro
 }
 
 // Send indicates an expected call of Send.
-func (mr *MockMetrics_StreamTopPodServerMockRecorder) Send(arg0 any) *gomock.Call {
+func (mr *MockMetrics_StreamTopPodServerMockRecorder[Res]) Send(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockMetrics_StreamTopPodServer)(nil).Send), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockMetrics_StreamTopPodServer[Res])(nil).Send), arg0)
 }
 
 // SendHeader mocks base method.
-func (m *MockMetrics_StreamTopPodServer) SendHeader(arg0 metadata.MD) error {
+func (m *MockMetrics_StreamTopPodServer[Res]) SendHeader(arg0 metadata.MD) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendHeader", arg0)
 	ret0, _ := ret[0].(error)
@@ -92,27 +93,27 @@ func (m *MockMetrics_StreamTopPodServer) SendHeader(arg0 metadata.MD) error {
 }
 
 // SendHeader indicates an expected call of SendHeader.
-func (mr *MockMetrics_StreamTopPodServerMockRecorder) SendHeader(arg0 any) *gomock.Call {
+func (mr *MockMetrics_StreamTopPodServerMockRecorder[Res]) SendHeader(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockMetrics_StreamTopPodServer)(nil).SendHeader), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockMetrics_StreamTopPodServer[Res])(nil).SendHeader), arg0)
 }
 
 // SendMsg mocks base method.
-func (m *MockMetrics_StreamTopPodServer) SendMsg(arg0 any) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendMsg", arg0)
+func (m_2 *MockMetrics_StreamTopPodServer[Res]) SendMsg(m any) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SendMsg indicates an expected call of SendMsg.
-func (mr *MockMetrics_StreamTopPodServerMockRecorder) SendMsg(arg0 any) *gomock.Call {
+func (mr *MockMetrics_StreamTopPodServerMockRecorder[Res]) SendMsg(m any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockMetrics_StreamTopPodServer)(nil).SendMsg), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockMetrics_StreamTopPodServer[Res])(nil).SendMsg), m)
 }
 
 // SetHeader mocks base method.
-func (m *MockMetrics_StreamTopPodServer) SetHeader(arg0 metadata.MD) error {
+func (m *MockMetrics_StreamTopPodServer[Res]) SetHeader(arg0 metadata.MD) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetHeader", arg0)
 	ret0, _ := ret[0].(error)
@@ -120,19 +121,19 @@ func (m *MockMetrics_StreamTopPodServer) SetHeader(arg0 metadata.MD) error {
 }
 
 // SetHeader indicates an expected call of SetHeader.
-func (mr *MockMetrics_StreamTopPodServerMockRecorder) SetHeader(arg0 any) *gomock.Call {
+func (mr *MockMetrics_StreamTopPodServerMockRecorder[Res]) SetHeader(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockMetrics_StreamTopPodServer)(nil).SetHeader), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockMetrics_StreamTopPodServer[Res])(nil).SetHeader), arg0)
 }
 
 // SetTrailer mocks base method.
-func (m *MockMetrics_StreamTopPodServer) SetTrailer(arg0 metadata.MD) {
+func (m *MockMetrics_StreamTopPodServer[Res]) SetTrailer(arg0 metadata.MD) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetTrailer", arg0)
 }
 
 // SetTrailer indicates an expected call of SetTrailer.
-func (mr *MockMetrics_StreamTopPodServerMockRecorder) SetTrailer(arg0 any) *gomock.Call {
+func (mr *MockMetrics_StreamTopPodServerMockRecorder[Res]) SetTrailer(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockMetrics_StreamTopPodServer)(nil).SetTrailer), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockMetrics_StreamTopPodServer[Res])(nil).SetTrailer), arg0)
 }

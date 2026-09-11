@@ -31,6 +31,7 @@ import (
 type MockPluginManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockPluginManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockPluginManagerMockRecorder is the mock recorder for MockPluginManager.
@@ -150,6 +151,7 @@ func (mr *MockPluginManagerMockRecorder) Ws() *gomock.Call {
 type MockPicture struct {
 	ctrl     *gomock.Controller
 	recorder *MockPictureMockRecorder
+	isgomock struct{}
 }
 
 // MockPictureMockRecorder is the mock recorder for MockPicture.
@@ -184,32 +186,32 @@ func (mr *MockPictureMockRecorder) Destroy() *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *MockPicture) Get(arg0 context.Context, arg1 bool) (*biz.PictureItem, error) {
+func (m *MockPicture) Get(ctx context.Context, random bool) (*biz.PictureItem, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret := m.ctrl.Call(m, "Get", ctx, random)
 	ret0, _ := ret[0].(*biz.PictureItem)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockPictureMockRecorder) Get(arg0, arg1 any) *gomock.Call {
+func (mr *MockPictureMockRecorder) Get(ctx, random any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockPicture)(nil).Get), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockPicture)(nil).Get), ctx, random)
 }
 
 // Initialize mocks base method.
-func (m *MockPicture) Initialize(arg0 PluginApp, arg1 map[string]any) error {
+func (m *MockPicture) Initialize(pluginApp PluginApp, args map[string]any) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Initialize", arg0, arg1)
+	ret := m.ctrl.Call(m, "Initialize", pluginApp, args)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Initialize indicates an expected call of Initialize.
-func (mr *MockPictureMockRecorder) Initialize(arg0, arg1 any) *gomock.Call {
+func (mr *MockPictureMockRecorder) Initialize(pluginApp, args any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockPicture)(nil).Initialize), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockPicture)(nil).Initialize), pluginApp, args)
 }
 
 // Name mocks base method.
@@ -230,6 +232,7 @@ func (mr *MockPictureMockRecorder) Name() *gomock.Call {
 type MockApp struct {
 	ctrl     *gomock.Controller
 	recorder *MockAppMockRecorder
+	isgomock struct{}
 }
 
 // MockAppMockRecorder is the mock recorder for MockApp.
@@ -511,6 +514,7 @@ func (mr *MockAppMockRecorder) Shutdown() *gomock.Call {
 type MockPubSub struct {
 	ctrl     *gomock.Controller
 	recorder *MockPubSubMockRecorder
+	isgomock struct{}
 }
 
 // MockPubSubMockRecorder is the mock recorder for MockPubSub.
@@ -573,59 +577,59 @@ func (mr *MockPubSubMockRecorder) Info() *gomock.Call {
 }
 
 // Join mocks base method.
-func (m *MockPubSub) Join(arg0 int64) error {
+func (m *MockPubSub) Join(projectID int64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Join", arg0)
+	ret := m.ctrl.Call(m, "Join", projectID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Join indicates an expected call of Join.
-func (mr *MockPubSubMockRecorder) Join(arg0 any) *gomock.Call {
+func (mr *MockPubSubMockRecorder) Join(projectID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Join", reflect.TypeOf((*MockPubSub)(nil).Join), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Join", reflect.TypeOf((*MockPubSub)(nil).Join), projectID)
 }
 
 // Leave mocks base method.
-func (m *MockPubSub) Leave(arg0, arg1 int64) error {
+func (m *MockPubSub) Leave(nsID, projectID int64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Leave", arg0, arg1)
+	ret := m.ctrl.Call(m, "Leave", nsID, projectID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Leave indicates an expected call of Leave.
-func (mr *MockPubSubMockRecorder) Leave(arg0, arg1 any) *gomock.Call {
+func (mr *MockPubSubMockRecorder) Leave(nsID, projectID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Leave", reflect.TypeOf((*MockPubSub)(nil).Leave), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Leave", reflect.TypeOf((*MockPubSub)(nil).Leave), nsID, projectID)
 }
 
 // Publish mocks base method.
-func (m *MockPubSub) Publish(arg0 int64, arg1 *v1.Pod) error {
+func (m *MockPubSub) Publish(nsID int64, pod *v1.Pod) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Publish", arg0, arg1)
+	ret := m.ctrl.Call(m, "Publish", nsID, pod)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Publish indicates an expected call of Publish.
-func (mr *MockPubSubMockRecorder) Publish(arg0, arg1 any) *gomock.Call {
+func (mr *MockPubSubMockRecorder) Publish(nsID, pod any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Publish", reflect.TypeOf((*MockPubSub)(nil).Publish), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Publish", reflect.TypeOf((*MockPubSub)(nil).Publish), nsID, pod)
 }
 
 // Run mocks base method.
-func (m *MockPubSub) Run(arg0 context.Context) error {
+func (m *MockPubSub) Run(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Run", arg0)
+	ret := m.ctrl.Call(m, "Run", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockPubSubMockRecorder) Run(arg0 any) *gomock.Call {
+func (mr *MockPubSubMockRecorder) Run(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockPubSub)(nil).Run), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockPubSub)(nil).Run), ctx)
 }
 
 // Subscribe mocks base method.
@@ -688,6 +692,7 @@ func (mr *MockPubSubMockRecorder) Uid() *gomock.Call {
 type MockWsSender struct {
 	ctrl     *gomock.Controller
 	recorder *MockWsSenderMockRecorder
+	isgomock struct{}
 }
 
 // MockWsSenderMockRecorder is the mock recorder for MockWsSender.
@@ -722,17 +727,17 @@ func (mr *MockWsSenderMockRecorder) Destroy() *gomock.Call {
 }
 
 // Initialize mocks base method.
-func (m *MockWsSender) Initialize(arg0 PluginApp, arg1 map[string]any) error {
+func (m *MockWsSender) Initialize(pluginApp PluginApp, args map[string]any) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Initialize", arg0, arg1)
+	ret := m.ctrl.Call(m, "Initialize", pluginApp, args)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Initialize indicates an expected call of Initialize.
-func (mr *MockWsSenderMockRecorder) Initialize(arg0, arg1 any) *gomock.Call {
+func (mr *MockWsSenderMockRecorder) Initialize(pluginApp, args any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockWsSender)(nil).Initialize), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockWsSender)(nil).Initialize), pluginApp, args)
 }
 
 // Name mocks base method.
@@ -750,23 +755,24 @@ func (mr *MockWsSenderMockRecorder) Name() *gomock.Call {
 }
 
 // New mocks base method.
-func (m *MockWsSender) New(arg0, arg1 string) PubSub {
+func (m *MockWsSender) New(uid, id string) PubSub {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "New", arg0, arg1)
+	ret := m.ctrl.Call(m, "New", uid, id)
 	ret0, _ := ret[0].(PubSub)
 	return ret0
 }
 
 // New indicates an expected call of New.
-func (mr *MockWsSenderMockRecorder) New(arg0, arg1 any) *gomock.Call {
+func (mr *MockWsSenderMockRecorder) New(uid, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "New", reflect.TypeOf((*MockWsSender)(nil).New), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "New", reflect.TypeOf((*MockWsSender)(nil).New), uid, id)
 }
 
 // MockGitServer is a mock of GitServer interface.
 type MockGitServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockGitServerMockRecorder
+	isgomock struct{}
 }
 
 // MockGitServerMockRecorder is the mock recorder for MockGitServer.
@@ -787,18 +793,18 @@ func (m *MockGitServer) EXPECT() *MockGitServerMockRecorder {
 }
 
 // AllBranches mocks base method.
-func (m *MockGitServer) AllBranches(arg0 string) ([]*biz.Branch, error) {
+func (m *MockGitServer) AllBranches(pid string) ([]*biz.Branch, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AllBranches", arg0)
+	ret := m.ctrl.Call(m, "AllBranches", pid)
 	ret0, _ := ret[0].([]*biz.Branch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AllBranches indicates an expected call of AllBranches.
-func (mr *MockGitServerMockRecorder) AllBranches(arg0 any) *gomock.Call {
+func (mr *MockGitServerMockRecorder) AllBranches(pid any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllBranches", reflect.TypeOf((*MockGitServer)(nil).AllBranches), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllBranches", reflect.TypeOf((*MockGitServer)(nil).AllBranches), pid)
 }
 
 // AllProjects mocks base method.
@@ -831,137 +837,137 @@ func (mr *MockGitServerMockRecorder) Destroy() *gomock.Call {
 }
 
 // GetCommit mocks base method.
-func (m *MockGitServer) GetCommit(arg0, arg1 string) (*biz.Commit, error) {
+func (m *MockGitServer) GetCommit(pid, sha string) (*biz.Commit, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCommit", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetCommit", pid, sha)
 	ret0, _ := ret[0].(*biz.Commit)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetCommit indicates an expected call of GetCommit.
-func (mr *MockGitServerMockRecorder) GetCommit(arg0, arg1 any) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetCommit(pid, sha any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommit", reflect.TypeOf((*MockGitServer)(nil).GetCommit), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommit", reflect.TypeOf((*MockGitServer)(nil).GetCommit), pid, sha)
 }
 
 // GetCommitPipeline mocks base method.
-func (m *MockGitServer) GetCommitPipeline(arg0, arg1, arg2 string) (*biz.Pipeline, error) {
+func (m *MockGitServer) GetCommitPipeline(pid, branch, sha string) (*biz.Pipeline, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCommitPipeline", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetCommitPipeline", pid, branch, sha)
 	ret0, _ := ret[0].(*biz.Pipeline)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetCommitPipeline indicates an expected call of GetCommitPipeline.
-func (mr *MockGitServerMockRecorder) GetCommitPipeline(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetCommitPipeline(pid, branch, sha any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommitPipeline", reflect.TypeOf((*MockGitServer)(nil).GetCommitPipeline), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommitPipeline", reflect.TypeOf((*MockGitServer)(nil).GetCommitPipeline), pid, branch, sha)
 }
 
 // GetDirectoryFilesWithBranch mocks base method.
-func (m *MockGitServer) GetDirectoryFilesWithBranch(arg0, arg1, arg2 string, arg3 bool) ([]string, error) {
+func (m *MockGitServer) GetDirectoryFilesWithBranch(pid, branch, path string, recursive bool) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDirectoryFilesWithBranch", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "GetDirectoryFilesWithBranch", pid, branch, path, recursive)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetDirectoryFilesWithBranch indicates an expected call of GetDirectoryFilesWithBranch.
-func (mr *MockGitServerMockRecorder) GetDirectoryFilesWithBranch(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetDirectoryFilesWithBranch(pid, branch, path, recursive any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDirectoryFilesWithBranch", reflect.TypeOf((*MockGitServer)(nil).GetDirectoryFilesWithBranch), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDirectoryFilesWithBranch", reflect.TypeOf((*MockGitServer)(nil).GetDirectoryFilesWithBranch), pid, branch, path, recursive)
 }
 
 // GetDirectoryFilesWithSha mocks base method.
-func (m *MockGitServer) GetDirectoryFilesWithSha(arg0, arg1, arg2 string, arg3 bool) ([]string, error) {
+func (m *MockGitServer) GetDirectoryFilesWithSha(pid, sha, path string, recursive bool) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDirectoryFilesWithSha", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "GetDirectoryFilesWithSha", pid, sha, path, recursive)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetDirectoryFilesWithSha indicates an expected call of GetDirectoryFilesWithSha.
-func (mr *MockGitServerMockRecorder) GetDirectoryFilesWithSha(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetDirectoryFilesWithSha(pid, sha, path, recursive any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDirectoryFilesWithSha", reflect.TypeOf((*MockGitServer)(nil).GetDirectoryFilesWithSha), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDirectoryFilesWithSha", reflect.TypeOf((*MockGitServer)(nil).GetDirectoryFilesWithSha), pid, sha, path, recursive)
 }
 
 // GetFileContentWithBranch mocks base method.
-func (m *MockGitServer) GetFileContentWithBranch(arg0, arg1, arg2 string) (string, error) {
+func (m *MockGitServer) GetFileContentWithBranch(pid, branch, filename string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFileContentWithBranch", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetFileContentWithBranch", pid, branch, filename)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetFileContentWithBranch indicates an expected call of GetFileContentWithBranch.
-func (mr *MockGitServerMockRecorder) GetFileContentWithBranch(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetFileContentWithBranch(pid, branch, filename any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFileContentWithBranch", reflect.TypeOf((*MockGitServer)(nil).GetFileContentWithBranch), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFileContentWithBranch", reflect.TypeOf((*MockGitServer)(nil).GetFileContentWithBranch), pid, branch, filename)
 }
 
 // GetFileContentWithSha mocks base method.
-func (m *MockGitServer) GetFileContentWithSha(arg0, arg1, arg2 string) (string, error) {
+func (m *MockGitServer) GetFileContentWithSha(pid, sha, filename string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFileContentWithSha", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetFileContentWithSha", pid, sha, filename)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetFileContentWithSha indicates an expected call of GetFileContentWithSha.
-func (mr *MockGitServerMockRecorder) GetFileContentWithSha(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetFileContentWithSha(pid, sha, filename any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFileContentWithSha", reflect.TypeOf((*MockGitServer)(nil).GetFileContentWithSha), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFileContentWithSha", reflect.TypeOf((*MockGitServer)(nil).GetFileContentWithSha), pid, sha, filename)
 }
 
 // GetProject mocks base method.
-func (m *MockGitServer) GetProject(arg0 string) (*biz.GitProject, error) {
+func (m *MockGitServer) GetProject(pid string) (*biz.GitProject, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetProject", arg0)
+	ret := m.ctrl.Call(m, "GetProject", pid)
 	ret0, _ := ret[0].(*biz.GitProject)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetProject indicates an expected call of GetProject.
-func (mr *MockGitServerMockRecorder) GetProject(arg0 any) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetProject(pid any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProject", reflect.TypeOf((*MockGitServer)(nil).GetProject), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProject", reflect.TypeOf((*MockGitServer)(nil).GetProject), pid)
 }
 
 // Initialize mocks base method.
-func (m *MockGitServer) Initialize(arg0 PluginApp, arg1 map[string]any) error {
+func (m *MockGitServer) Initialize(pluginApp PluginApp, args map[string]any) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Initialize", arg0, arg1)
+	ret := m.ctrl.Call(m, "Initialize", pluginApp, args)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Initialize indicates an expected call of Initialize.
-func (mr *MockGitServerMockRecorder) Initialize(arg0, arg1 any) *gomock.Call {
+func (mr *MockGitServerMockRecorder) Initialize(pluginApp, args any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockGitServer)(nil).Initialize), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockGitServer)(nil).Initialize), pluginApp, args)
 }
 
 // ListCommits mocks base method.
-func (m *MockGitServer) ListCommits(arg0, arg1 string) ([]*biz.Commit, error) {
+func (m *MockGitServer) ListCommits(pid, branch string) ([]*biz.Commit, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListCommits", arg0, arg1)
+	ret := m.ctrl.Call(m, "ListCommits", pid, branch)
 	ret0, _ := ret[0].([]*biz.Commit)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListCommits indicates an expected call of ListCommits.
-func (mr *MockGitServerMockRecorder) ListCommits(arg0, arg1 any) *gomock.Call {
+func (mr *MockGitServerMockRecorder) ListCommits(pid, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommits", reflect.TypeOf((*MockGitServer)(nil).ListCommits), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommits", reflect.TypeOf((*MockGitServer)(nil).ListCommits), pid, branch)
 }
 
 // Name mocks base method.
@@ -979,9 +985,9 @@ func (mr *MockGitServerMockRecorder) Name() *gomock.Call {
 }
 
 // PipelineJobOptions mocks base method.
-func (m *MockGitServer) PipelineJobOptions(arg0, arg1 string) ([]string, []string, error) {
+func (m *MockGitServer) PipelineJobOptions(pid, branch string) ([]string, []string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PipelineJobOptions", arg0, arg1)
+	ret := m.ctrl.Call(m, "PipelineJobOptions", pid, branch)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].([]string)
 	ret2, _ := ret[2].(error)
@@ -989,15 +995,16 @@ func (m *MockGitServer) PipelineJobOptions(arg0, arg1 string) ([]string, []strin
 }
 
 // PipelineJobOptions indicates an expected call of PipelineJobOptions.
-func (mr *MockGitServerMockRecorder) PipelineJobOptions(arg0, arg1 any) *gomock.Call {
+func (mr *MockGitServerMockRecorder) PipelineJobOptions(pid, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PipelineJobOptions", reflect.TypeOf((*MockGitServer)(nil).PipelineJobOptions), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PipelineJobOptions", reflect.TypeOf((*MockGitServer)(nil).PipelineJobOptions), pid, branch)
 }
 
 // MockDomainManager is a mock of DomainManager interface.
 type MockDomainManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockDomainManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockDomainManagerMockRecorder is the mock recorder for MockDomainManager.
@@ -1032,17 +1039,17 @@ func (mr *MockDomainManagerMockRecorder) Destroy() *gomock.Call {
 }
 
 // GetCertSecretName mocks base method.
-func (m *MockDomainManager) GetCertSecretName(arg0 string, arg1 int) string {
+func (m *MockDomainManager) GetCertSecretName(projectName string, index int) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCertSecretName", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetCertSecretName", projectName, index)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // GetCertSecretName indicates an expected call of GetCertSecretName.
-func (mr *MockDomainManagerMockRecorder) GetCertSecretName(arg0, arg1 any) *gomock.Call {
+func (mr *MockDomainManagerMockRecorder) GetCertSecretName(projectName, index any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCertSecretName", reflect.TypeOf((*MockDomainManager)(nil).GetCertSecretName), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCertSecretName", reflect.TypeOf((*MockDomainManager)(nil).GetCertSecretName), projectName, index)
 }
 
 // GetCerts mocks base method.
@@ -1076,31 +1083,31 @@ func (mr *MockDomainManagerMockRecorder) GetClusterIssuer() *gomock.Call {
 }
 
 // GetDomainByIndex mocks base method.
-func (m *MockDomainManager) GetDomainByIndex(arg0, arg1 string, arg2, arg3 int) string {
+func (m *MockDomainManager) GetDomainByIndex(projectName, namespace string, index, preOccupiedLen int) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDomainByIndex", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "GetDomainByIndex", projectName, namespace, index, preOccupiedLen)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // GetDomainByIndex indicates an expected call of GetDomainByIndex.
-func (mr *MockDomainManagerMockRecorder) GetDomainByIndex(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockDomainManagerMockRecorder) GetDomainByIndex(projectName, namespace, index, preOccupiedLen any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDomainByIndex", reflect.TypeOf((*MockDomainManager)(nil).GetDomainByIndex), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDomainByIndex", reflect.TypeOf((*MockDomainManager)(nil).GetDomainByIndex), projectName, namespace, index, preOccupiedLen)
 }
 
 // Initialize mocks base method.
-func (m *MockDomainManager) Initialize(arg0 PluginApp, arg1 map[string]any) error {
+func (m *MockDomainManager) Initialize(pluginApp PluginApp, args map[string]any) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Initialize", arg0, arg1)
+	ret := m.ctrl.Call(m, "Initialize", pluginApp, args)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Initialize indicates an expected call of Initialize.
-func (mr *MockDomainManagerMockRecorder) Initialize(arg0, arg1 any) *gomock.Call {
+func (mr *MockDomainManagerMockRecorder) Initialize(pluginApp, args any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockDomainManager)(nil).Initialize), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockDomainManager)(nil).Initialize), pluginApp, args)
 }
 
 // Name mocks base method.
@@ -1121,6 +1128,7 @@ func (mr *MockDomainManagerMockRecorder) Name() *gomock.Call {
 type MockHttpHandler struct {
 	ctrl     *gomock.Controller
 	recorder *MockHttpHandlerMockRecorder
+	isgomock struct{}
 }
 
 // MockHttpHandlerMockRecorder is the mock recorder for MockHttpHandler.
@@ -1141,15 +1149,15 @@ func (m *MockHttpHandler) EXPECT() *MockHttpHandlerMockRecorder {
 }
 
 // Info mocks base method.
-func (m *MockHttpHandler) Info(arg0 http.ResponseWriter, arg1 *http.Request) {
+func (m *MockHttpHandler) Info(writer http.ResponseWriter, request *http.Request) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Info", arg0, arg1)
+	m.ctrl.Call(m, "Info", writer, request)
 }
 
 // Info indicates an expected call of Info.
-func (mr *MockHttpHandlerMockRecorder) Info(arg0, arg1 any) *gomock.Call {
+func (mr *MockHttpHandlerMockRecorder) Info(writer, request any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockHttpHandler)(nil).Info), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockHttpHandler)(nil).Info), writer, request)
 }
 
 // RegisterFileRoute mocks base method.
@@ -1189,39 +1197,39 @@ func (mr *MockHttpHandlerMockRecorder) RegisterWsRoute(arg0 any) *gomock.Call {
 }
 
 // Serve mocks base method.
-func (m *MockHttpHandler) Serve(arg0 http.ResponseWriter, arg1 *http.Request) {
+func (m *MockHttpHandler) Serve(w http.ResponseWriter, r *http.Request) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Serve", arg0, arg1)
+	m.ctrl.Call(m, "Serve", w, r)
 }
 
 // Serve indicates an expected call of Serve.
-func (mr *MockHttpHandlerMockRecorder) Serve(arg0, arg1 any) *gomock.Call {
+func (mr *MockHttpHandlerMockRecorder) Serve(w, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serve", reflect.TypeOf((*MockHttpHandler)(nil).Serve), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serve", reflect.TypeOf((*MockHttpHandler)(nil).Serve), w, r)
 }
 
 // Shutdown mocks base method.
-func (m *MockHttpHandler) Shutdown(arg0 context.Context) error {
+func (m *MockHttpHandler) Shutdown(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Shutdown", arg0)
+	ret := m.ctrl.Call(m, "Shutdown", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Shutdown indicates an expected call of Shutdown.
-func (mr *MockHttpHandlerMockRecorder) Shutdown(arg0 any) *gomock.Call {
+func (mr *MockHttpHandlerMockRecorder) Shutdown(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockHttpHandler)(nil).Shutdown), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockHttpHandler)(nil).Shutdown), ctx)
 }
 
 // TickClusterHealth mocks base method.
-func (m *MockHttpHandler) TickClusterHealth(arg0 <-chan struct{}) {
+func (m *MockHttpHandler) TickClusterHealth(done <-chan struct{}) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "TickClusterHealth", arg0)
+	m.ctrl.Call(m, "TickClusterHealth", done)
 }
 
 // TickClusterHealth indicates an expected call of TickClusterHealth.
-func (mr *MockHttpHandlerMockRecorder) TickClusterHealth(arg0 any) *gomock.Call {
+func (mr *MockHttpHandlerMockRecorder) TickClusterHealth(done any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TickClusterHealth", reflect.TypeOf((*MockHttpHandler)(nil).TickClusterHealth), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TickClusterHealth", reflect.TypeOf((*MockHttpHandler)(nil).TickClusterHealth), done)
 }

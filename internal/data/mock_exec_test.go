@@ -23,6 +23,7 @@ import (
 type MockExecutorManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockExecutorManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockExecutorManagerMockRecorder is the mock recorder for MockExecutorManager.
@@ -57,23 +58,24 @@ func (mr *MockExecutorManagerMockRecorder) New() *gomock.Call {
 }
 
 // NewFileCopy mocks base method.
-func (m *MockExecutorManager) NewFileCopy(arg0 int, arg1 io.Writer) k8sutil.FileCopy {
+func (m *MockExecutorManager) NewFileCopy(maxTries int, errOut io.Writer) k8sutil.FileCopy {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewFileCopy", arg0, arg1)
+	ret := m.ctrl.Call(m, "NewFileCopy", maxTries, errOut)
 	ret0, _ := ret[0].(k8sutil.FileCopy)
 	return ret0
 }
 
 // NewFileCopy indicates an expected call of NewFileCopy.
-func (mr *MockExecutorManagerMockRecorder) NewFileCopy(arg0, arg1 any) *gomock.Call {
+func (mr *MockExecutorManagerMockRecorder) NewFileCopy(maxTries, errOut any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewFileCopy", reflect.TypeOf((*MockExecutorManager)(nil).NewFileCopy), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewFileCopy", reflect.TypeOf((*MockExecutorManager)(nil).NewFileCopy), maxTries, errOut)
 }
 
 // MockExecutor is a mock of Executor interface.
 type MockExecutor struct {
 	ctrl     *gomock.Controller
 	recorder *MockExecutorMockRecorder
+	isgomock struct{}
 }
 
 // MockExecutorMockRecorder is the mock recorder for MockExecutor.
@@ -108,43 +110,43 @@ func (mr *MockExecutorMockRecorder) Execute(arg0, arg1 any) *gomock.Call {
 }
 
 // WithCommand mocks base method.
-func (m *MockExecutor) WithCommand(arg0 []string) Executor {
+func (m *MockExecutor) WithCommand(cmd []string) Executor {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithCommand", arg0)
+	ret := m.ctrl.Call(m, "WithCommand", cmd)
 	ret0, _ := ret[0].(Executor)
 	return ret0
 }
 
 // WithCommand indicates an expected call of WithCommand.
-func (mr *MockExecutorMockRecorder) WithCommand(arg0 any) *gomock.Call {
+func (mr *MockExecutorMockRecorder) WithCommand(cmd any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithCommand", reflect.TypeOf((*MockExecutor)(nil).WithCommand), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithCommand", reflect.TypeOf((*MockExecutor)(nil).WithCommand), cmd)
 }
 
 // WithContainer mocks base method.
-func (m *MockExecutor) WithContainer(arg0, arg1, arg2 string) Executor {
+func (m *MockExecutor) WithContainer(namespace, pod, container string) Executor {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithContainer", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "WithContainer", namespace, pod, container)
 	ret0, _ := ret[0].(Executor)
 	return ret0
 }
 
 // WithContainer indicates an expected call of WithContainer.
-func (mr *MockExecutorMockRecorder) WithContainer(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockExecutorMockRecorder) WithContainer(namespace, pod, container any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithContainer", reflect.TypeOf((*MockExecutor)(nil).WithContainer), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithContainer", reflect.TypeOf((*MockExecutor)(nil).WithContainer), namespace, pod, container)
 }
 
 // WithMethod mocks base method.
-func (m *MockExecutor) WithMethod(arg0 string) Executor {
+func (m *MockExecutor) WithMethod(method string) Executor {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithMethod", arg0)
+	ret := m.ctrl.Call(m, "WithMethod", method)
 	ret0, _ := ret[0].(Executor)
 	return ret0
 }
 
 // WithMethod indicates an expected call of WithMethod.
-func (mr *MockExecutorMockRecorder) WithMethod(arg0 any) *gomock.Call {
+func (mr *MockExecutorMockRecorder) WithMethod(method any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithMethod", reflect.TypeOf((*MockExecutor)(nil).WithMethod), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithMethod", reflect.TypeOf((*MockExecutor)(nil).WithMethod), method)
 }

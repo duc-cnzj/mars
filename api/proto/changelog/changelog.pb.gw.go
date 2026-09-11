@@ -10,6 +10,7 @@ package changelog
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
@@ -24,37 +25,41 @@ import (
 )
 
 // Suppress "imported and not used" errors
-var _ codes.Code
-var _ io.Reader
-var _ status.Status
-var _ = runtime.String
-var _ = utilities.NewDoubleArray
-var _ = metadata.Join
+var (
+	_ codes.Code
+	_ io.Reader
+	_ status.Status
+	_ = errors.New
+	_ = runtime.String
+	_ = utilities.NewDoubleArray
+	_ = metadata.Join
+)
 
 func request_Changelog_FindLastChangelogsByProjectID_0(ctx context.Context, marshaler runtime.Marshaler, client ChangelogClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq FindLastChangelogsByProjectIDRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq FindLastChangelogsByProjectIDRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	msg, err := client.FindLastChangelogsByProjectID(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_Changelog_FindLastChangelogsByProjectID_0(ctx context.Context, marshaler runtime.Marshaler, server ChangelogServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq FindLastChangelogsByProjectIDRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq FindLastChangelogsByProjectIDRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.FindLastChangelogsByProjectID(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 // RegisterChangelogHandlerServer registers the http handlers for service Changelog to "mux".
@@ -63,16 +68,13 @@ func local_request_Changelog_FindLastChangelogsByProjectID_0(ctx context.Context
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterChangelogHandlerFromEndpoint instead.
 // GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterChangelogHandlerServer(ctx context.Context, mux *runtime.ServeMux, server ChangelogServer) error {
-
-	mux.Handle("POST", pattern_Changelog_FindLastChangelogsByProjectID_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_Changelog_FindLastChangelogsByProjectID_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/changelog.Changelog/FindLastChangelogsByProjectID", runtime.WithHTTPPathPattern("/api/changelogs/find_last_changelogs_by_project_id"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/changelog.Changelog/FindLastChangelogsByProjectID", runtime.WithHTTPPathPattern("/api/changelogs/find_last_changelogs_by_project_id"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -84,9 +86,7 @@ func RegisterChangelogHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_Changelog_FindLastChangelogsByProjectID_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	return nil
@@ -113,7 +113,6 @@ func RegisterChangelogHandlerFromEndpoint(ctx context.Context, mux *runtime.Serv
 			}
 		}()
 	}()
-
 	return RegisterChangelogHandler(ctx, mux, conn)
 }
 
@@ -129,14 +128,11 @@ func RegisterChangelogHandler(ctx context.Context, mux *runtime.ServeMux, conn *
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
 // "ChangelogClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterChangelogHandlerClient(ctx context.Context, mux *runtime.ServeMux, client ChangelogClient) error {
-
-	mux.Handle("POST", pattern_Changelog_FindLastChangelogsByProjectID_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_Changelog_FindLastChangelogsByProjectID_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/changelog.Changelog/FindLastChangelogsByProjectID", runtime.WithHTTPPathPattern("/api/changelogs/find_last_changelogs_by_project_id"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/changelog.Changelog/FindLastChangelogsByProjectID", runtime.WithHTTPPathPattern("/api/changelogs/find_last_changelogs_by_project_id"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -147,11 +143,8 @@ func RegisterChangelogHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_Changelog_FindLastChangelogsByProjectID_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
 	return nil
 }
 

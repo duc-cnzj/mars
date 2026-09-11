@@ -10,7 +10,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // authn 是 biz.Auth 的组合实现：把 JWT 验签与 TokenManager（DB 访问令牌）两类
@@ -96,10 +96,10 @@ func (a *jwtAuth) VerifyToken(t string) (*biz.JwtClaims, bool) {
 // Sign 用 RSA 私钥签发 RS256 JWT，过期时间对齐 biz.Expired。
 func (a *jwtAuth) Sign(info *biz.UserInfo) (*biz.SignData, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, &biz.JwtClaims{
-		StandardClaims: &jwt.StandardClaims{
-			ExpiresAt: a.timer.Now().Add(biz.Expired).Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(a.timer.Now().Add(biz.Expired)),
 			Issuer:    "mars",
-			IssuedAt:  a.timer.Now().Unix(),
+			IssuedAt:  jwt.NewNumericDate(a.timer.Now()),
 			Subject:   info.Email,
 		},
 		UserInfo: info,

@@ -147,7 +147,9 @@ func (wc *websocketManager) HandleCloseShell(ctx context.Context, c Conn, t webs
 		return
 	}
 	msg := fmt.Sprintf("[Websocket]: %v 收到客户端主动断开的消息", input.Message.SessionId)
-	wc.logger.Debugf(msg)
+	// msg 已完成格式化，用 Debug（非格式串重载）输出；若走 Debugf 会把 msg 当格式串，
+	// 客户端传入含 % 的 SessionId 时会被二次解析成 %!x(MISSING)（Go 1.26 vet 会直接报错）。
+	wc.logger.Debug(msg)
 	c.ClosePty(ctx, input.Message.SessionId, 0, msg)
 }
 

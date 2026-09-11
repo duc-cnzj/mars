@@ -20,6 +20,7 @@ import (
 type MockRunner struct {
 	ctrl     *gomock.Controller
 	recorder *MockRunnerMockRecorder
+	isgomock struct{}
 }
 
 // MockRunnerMockRecorder is the mock recorder for MockRunner.
@@ -40,17 +41,17 @@ func (m *MockRunner) EXPECT() *MockRunnerMockRecorder {
 }
 
 // AddCommand mocks base method.
-func (m *MockRunner) AddCommand(arg0, arg1 string, arg2 func()) error {
+func (m *MockRunner) AddCommand(name, expression string, fn func()) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddCommand", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "AddCommand", name, expression, fn)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddCommand indicates an expected call of AddCommand.
-func (mr *MockRunnerMockRecorder) AddCommand(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockRunnerMockRecorder) AddCommand(name, expression, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCommand", reflect.TypeOf((*MockRunner)(nil).AddCommand), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCommand", reflect.TypeOf((*MockRunner)(nil).AddCommand), name, expression, fn)
 }
 
 // Run mocks base method.
@@ -85,6 +86,7 @@ func (mr *MockRunnerMockRecorder) Shutdown(arg0 any) *gomock.Call {
 type MockManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockManagerMockRecorder is the mock recorder for MockManager.
@@ -119,17 +121,17 @@ func (mr *MockManagerMockRecorder) List() *gomock.Call {
 }
 
 // NewCommand mocks base method.
-func (m *MockManager) NewCommand(arg0 string, arg1 func() error) Command {
+func (m *MockManager) NewCommand(name string, fn func() error) Command {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewCommand", arg0, arg1)
+	ret := m.ctrl.Call(m, "NewCommand", name, fn)
 	ret0, _ := ret[0].(Command)
 	return ret0
 }
 
 // NewCommand indicates an expected call of NewCommand.
-func (mr *MockManagerMockRecorder) NewCommand(arg0, arg1 any) *gomock.Call {
+func (mr *MockManagerMockRecorder) NewCommand(name, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewCommand", reflect.TypeOf((*MockManager)(nil).NewCommand), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewCommand", reflect.TypeOf((*MockManager)(nil).NewCommand), name, fn)
 }
 
 // Run mocks base method.
