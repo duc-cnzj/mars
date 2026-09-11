@@ -65,10 +65,14 @@ jobs:
       # Apple Silicon 上内核直接 SIGKILL（实测 exit 137，事后重新 codesign 也救不回来），
       # 4.2.4 与 5.2.1 均如此，故 build-darwin job 保持原样。
       # 版本钉住（勿改成浮动的 latest）：release 产物必须可复现，升级需手动验证后改这里。
-      # 5.2.1 = 当前上游 latest，与 Dockerfile 动态取的版本一致。
+      # ⚠️ 必须停在 4.2.4，不要升 5.x：5.1.1/5.2.0/5.2.1 压本项目的 CGO=1 Linux 产物时
+      #   压缩成功、自带校验却误报（5.2.1=compressed data violation，5.1.x/5.2.0=checksum
+      #   error），把 release 假失败挡在最后一步——实测是 5.x 校验器回归而非产物损坏
+      #   （被报坏的产物运行输出与未压缩原产物逐字节相同）。4.2.4 压同一产物 -t 直接 OK。
+      #   注：Dockerfile 侧仍动态取 latest，未随本次钉版本，两处版本号不再对齐。
       - name: UPX compress linux binaries
         env:
-          UPX_VERSION: 5.2.1
+          UPX_VERSION: 4.2.4
         run: |
           curl -fsSL --retry 3 -o /tmp/upx.tar.xz \
             "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz"
