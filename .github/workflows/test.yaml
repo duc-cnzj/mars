@@ -30,10 +30,13 @@ jobs:
           go-version: '1.26'
       - name: Setup minio
         run: |
+          # 镜像源必须走 quay.io：Docker Hub 的 minio/minio 已被上游收回（拉取返回
+          # denied: requested access to the resource is denied），CI 会直接 125 退出。
+          # 凭据变量名与 dev/docker-compose.yml、config_example.yaml s3_ 配置对齐。
           docker run -d -p 9000:9000 --name minio \
-            -e "MINIO_ACCESS_KEY=minioadmin" \
-            -e "MINIO_SECRET_KEY=minioadmin" \
-            minio/minio server /data
+            -e "MINIO_ROOT_USER=minioadmin" \
+            -e "MINIO_ROOT_PASSWORD=minioadmin" \
+            quay.io/minio/minio server /data
       - name: Setup Nsq
         run: |
           docker run --name nsqlookupd -p 4160:4160 -p 4161:4161 -d nsqio/nsq /nsqlookupd
