@@ -4,7 +4,11 @@ WORKDIR /app
 
 COPY ./frontend .
 
-RUN yarn install --registry=https://registry.npm.taobao.org && \
+# 刻意不指定 --registry：yarn v1 以 yarn.lock 的 resolved URL 为准
+# （473 条全部指向 registry.npmjs.org），指定源对锁定依赖根本不生效；
+# 且旧的 registry.npm.taobao.org 域名已废弃（2022 年迁至 registry.npmmirror.com），
+# 留着只会误导下一个读文件的人。
+RUN yarn install && \
     yarn build
 
 FROM --platform=linux/amd64 golang:1.26 AS builder
