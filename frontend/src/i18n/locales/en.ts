@@ -180,7 +180,7 @@ export default {
   workbench: {
     allSpaces: 'All spaces',
     favorites: 'Favorites',
-    searchPlaceholder: 'Search namespace name',
+    searchPlaceholder: 'Search namespace or project name',
     addNamespace: 'New namespace',
     addNamespaceShort: 'New space',
     refresh: 'Refresh spaces',

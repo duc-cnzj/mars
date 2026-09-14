@@ -313,6 +313,42 @@ func TestProjectRepoList_AccessFilter(t *testing.T) {
 	assert.Len(t, projects, 3)
 }
 
+// 回归防护：成员被移出私有命名空间后，其项目不得再出现在该成员的列表中。
+// 移出走 Member.Delete() → SoftDeleteMixin 钩子转软删，而 HasMembersWith 的裸
+// sql.Selector 子查询不被 ent Interceptor 覆盖；谓词里漏写 member.DeletedAtIsNil()
+// 时，被移出者仍能看到私有空间内容（越权，曾实测复现）。
+func TestProjectRepoList_AccessFilter_RemovedMemberSoftDeleted(t *testing.T) {
+	ctx := context.TODO()
+	logger := mlog.NewForConfig(nil)
+	db, _ := NewSqliteDB()
+	defer db.Close()
+	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
+	r := NewProjectRepo(logger, data)
+
+	pub := db.Namespace.Create().SetCreatorEmail("pub-owner@x.com").SetName("pub").SaveX(ctx)
+	pri := db.Namespace.Create().SetCreatorEmail("owner@x.com").SetName("pri").SetPrivate(true).SaveX(ctx)
+	mem := db.Member.Create().SetEmail("member@x.com").SetNamespaceID(pri.ID).SaveX(ctx)
+	db.Project.Create().SetName("p-pub").SetNamespaceID(pub.ID).SetGitProjectID(1).SetCreator("").SaveX(ctx)
+	db.Project.Create().SetName("p-pri").SetNamespaceID(pri.ID).SetGitProjectID(1).SetCreator("").SaveX(ctx)
+
+	// 在册：成员可见公开 + 其私有空间，共 2 个。
+	projects, _, err := r.List(ctx, &biz.ListProjectInput{Page: 1, PageSize: 10, Email: "member@x.com"})
+	assert.NoError(t, err)
+	assert.Len(t, projects, 2, "在册成员应能看到所属私有空间的项目")
+
+	// 移出（生产路径：Member.Delete() → 钩子转软删）。
+	require.NoError(t, db.Member.DeleteOneID(mem.ID).Exec(ctx))
+	_, gerr := db.Member.Get(ctx, mem.ID)
+	require.Error(t, gerr, "钩子须把成员删除转成软删，否则本测试不判别")
+
+	// 移出后：只剩公开空间的项目。
+	projects, pagination, err := r.List(ctx, &biz.ListProjectInput{Page: 1, PageSize: 10, Email: "member@x.com"})
+	assert.NoError(t, err)
+	require.Len(t, projects, 1, "被移出成员不得再看到私有空间的项目")
+	assert.Equal(t, "p-pub", projects[0].Name)
+	assert.Equal(t, int32(1), pagination.Count, "count 也须排除私有空间，否则分页数泄漏")
+}
+
 func TestProjectRepoList_Empty(t *testing.T) {
 	ctx := context.TODO()
 	logger := mlog.NewForConfig(nil)

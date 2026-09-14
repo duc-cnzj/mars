@@ -13,6 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/server/middlewares"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -323,4 +324,74 @@ func Test_apiGateway_setNosniff(t *testing.T) {
 	rr := httptest.NewRecorder()
 	assert.Nil(t, gw.setNosniff(context.TODO(), rr, &emptypb.Empty{}))
 	assert.Equal(t, "nosniff", rr.Header().Get("X-Content-Type-Options"))
+}
+
+// Test_apiGateway_setOidcStateCookie_Settings 覆盖 Settings 响应下发 state Cookie：
+// 取所有 provider 共用的 state 写入 HttpOnly + SameSite=Lax + 限定路径的 Cookie。
+func Test_apiGateway_setOidcStateCookie_Settings(t *testing.T) {
+	gw := &apiGateway{}
+
+	t.Run("有 provider 时下发 state", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		err := gw.setOidcStateCookie(context.TODO(), rr, &authpb.SettingsResponse{
+			Items: []*authpb.SettingsResponse_OidcSetting{
+				{Name: "a", State: "shared-state"},
+				{Name: "b", State: "shared-state"},
+			},
+		})
+		assert.Nil(t, err)
+		cookies := rr.Result().Cookies()
+		assert.Len(t, cookies, 1)
+		assert.Equal(t, middlewares.OidcStateCookieName, cookies[0].Name)
+		assert.Equal(t, "shared-state", cookies[0].Value)
+		assert.Equal(t, middlewares.OidcStateCookiePath, cookies[0].Path)
+		assert.Equal(t, middlewares.OidcStateCookieMaxAge, cookies[0].MaxAge)
+		assert.True(t, cookies[0].HttpOnly)
+		assert.Equal(t, http.SameSiteLaxMode, cookies[0].SameSite)
+		// ctx 未标记 HTTPS：不加 Secure，否则明文 HTTP 部署的浏览器会直接丢弃 Cookie。
+		assert.False(t, cookies[0].Secure)
+	})
+
+	t.Run("HTTPS 请求加 Secure", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		ctx := middlewares.WithOidcCookieSecure(context.TODO(), true)
+		err := gw.setOidcStateCookie(ctx, rr, &authpb.SettingsResponse{
+			Items: []*authpb.SettingsResponse_OidcSetting{{Name: "a", State: "s"}},
+		})
+		assert.Nil(t, err)
+		cookies := rr.Result().Cookies()
+		assert.Len(t, cookies, 1)
+		assert.True(t, cookies[0].Secure)
+	})
+
+	t.Run("无 provider 时不下发", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		assert.Nil(t, gw.setOidcStateCookie(context.TODO(), rr, &authpb.SettingsResponse{}))
+		assert.Empty(t, rr.Result().Cookies())
+	})
+}
+
+// Test_apiGateway_setOidcStateCookie_Exchange 覆盖 Exchange 响应清除 state Cookie：
+// 换发成功即一次性消费，旧 state 不可重放（Max-Age=0 即删除）。
+func Test_apiGateway_setOidcStateCookie_Exchange(t *testing.T) {
+	gw := &apiGateway{}
+	rr := httptest.NewRecorder()
+	assert.Nil(t, gw.setOidcStateCookie(context.TODO(), rr, &authpb.ExchangeResponse{Token: "t"}))
+
+	cookies := rr.Result().Cookies()
+	assert.Len(t, cookies, 1)
+	assert.Equal(t, middlewares.OidcStateCookieName, cookies[0].Name)
+	assert.Equal(t, "", cookies[0].Value)
+	assert.Equal(t, middlewares.OidcStateCookiePath, cookies[0].Path)
+	assert.Equal(t, -1, cookies[0].MaxAge)
+	assert.True(t, cookies[0].HttpOnly)
+}
+
+// Test_apiGateway_setOidcStateCookie_OtherResponse 覆盖非 auth 响应：不写任何 Cookie、
+// 返回 nil（该回调挂在所有 REST 响应上，必须对无关消息类型无副作用）。
+func Test_apiGateway_setOidcStateCookie_OtherResponse(t *testing.T) {
+	gw := &apiGateway{}
+	rr := httptest.NewRecorder()
+	assert.Nil(t, gw.setOidcStateCookie(context.TODO(), rr, &emptypb.Empty{}))
+	assert.Empty(t, rr.Result().Cookies())
 }

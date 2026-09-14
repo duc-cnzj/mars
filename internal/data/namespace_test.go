@@ -686,6 +686,65 @@ func Test_namespaceRepo_Transfer(t *testing.T) {
 }
 
 // TestNamespaceRepo_ListAll 覆盖全量返回 namespace 的端口，cron 同步依赖。
+// TestNamespaceRepo_List_NameMatchesProject 首页搜索框的 name 参数除匹配空间名外，
+// 还须匹配该空间下的项目名（用户往往记得项目名而记不住空间名）。三条承重断言：
+//  1. 项目名命中 → 返回其所属空间；
+//  2. 同一空间多个项目命中 → 该空间只出现一次（HasProjectsWith 必须是子查询而非 JOIN，
+//     否则行会被放大、分页与 count 双双失真）；
+//  3. 项目名命中私有空间 → 非成员/非管理员仍不可见（新增的 OR 分支不得绕过可见性）。
+func TestNamespaceRepo_List_NameMatchesProject(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ctx := context.TODO()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{
+		Cfg: &config.Config{},
+		DB:  entdb,
+	}))
+
+	// 公开空间：两个项目名都含 "alpha"，用于验证不放大行数。
+	pub := entdb.Namespace.Create().SetCreatorEmail("a@a.c").SetName("ns-public").SaveX(ctx)
+	entdb.Project.Create().SetName("alpha-api").SetNamespaceID(pub.ID).SetCreator("").SaveX(ctx)
+	entdb.Project.Create().SetName("inner-alpha").SetNamespaceID(pub.ID).SetCreator("").SaveX(ctx)
+	// 私有空间：项目名含 "alpha"，但对非成员不可见。
+	pri := entdb.Namespace.Create().SetCreatorEmail("b@b.c").SetName("ns-private").SetPrivate(true).SaveX(ctx)
+	entdb.Project.Create().SetName("alpha-secret").SetNamespaceID(pri.ID).SetCreator("").SaveX(ctx)
+
+	// ①+② 管理员视角：项目名命中所属空间，且多项目命中同一空间只返回一行。
+	res, pag, err := repo.List(ctx, &biz.ListNamespaceInput{
+		Page: 1, PageSize: 10, IsAdmin: true, Email: "a@a.c", Name: lo.ToPtr("alpha"),
+	})
+	assert.NoError(t, err)
+	require.Len(t, res, 2, "两个空间各有项目命中；公开空间下两个项目命中不得令其重复出现")
+	assert.Equal(t, int32(2), pag.Count, "count 必须与去重后的命中空间数一致")
+
+	// ③ 非成员视角：私有空间的 name 命中同样不泄漏，只剩公开空间。
+	res, pag, err = repo.List(ctx, &biz.ListNamespaceInput{
+		Page: 1, PageSize: 10, IsAdmin: false, Email: "outsider@x.c", Name: lo.ToPtr("alpha"),
+	})
+	assert.NoError(t, err)
+	require.Len(t, res, 1, "私有空间的项目名命中不得绕过可见性过滤")
+	assert.Equal(t, int32(1), pag.Count)
+	assert.Equal(t, pub.ID, res[0].ID)
+
+	// 空间名匹配的原有语义不变（回归保护）。
+	res, _, err = repo.List(ctx, &biz.ListNamespaceInput{
+		Page: 1, PageSize: 10, IsAdmin: true, Email: "a@a.c", Name: lo.ToPtr("ns-public"),
+	})
+	assert.NoError(t, err)
+	require.Len(t, res, 1)
+	assert.Equal(t, pub.ID, res[0].ID)
+
+	// 无命中：项目名与空间名都不匹配时返回空。
+	res, pag, err = repo.List(ctx, &biz.ListNamespaceInput{
+		Page: 1, PageSize: 10, IsAdmin: true, Email: "a@a.c", Name: lo.ToPtr("no-such-thing"),
+	})
+	assert.NoError(t, err)
+	assert.Empty(t, res)
+	assert.Equal(t, int32(0), pag.Count)
+}
+
 func TestNamespaceRepo_ListAll(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	t.Cleanup(func() { entdb.Close() })
@@ -698,6 +757,139 @@ func TestNamespaceRepo_ListAll(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, list, 2)
 	assert.ElementsMatch(t, []string{"ns-a", "ns-b"}, []string{list[0].Name, list[1].Name})
+}
+
+// TestNamespaceRepo_List_NameMatchesProject_SoftDeletedProject 守护 HasProjectsWith
+// 子查询的软删过滤。SoftDeleteMixin 靠 ent Interceptor 注入 deleted_at IS NULL，而
+// Interceptor 只遍历生成的查询图，**不会**进入 Has*With 产生的裸 sql.Selector 子查询——
+// 谓词里漏写 project.DeletedAtIsNil() 时，已软删项目仍会命中其所属空间（回归曾实测复现）。
+// 两条承重断言：① 唯一命中的项目被软删 → 空间不可再被搜到；② 同空间另有一存活项目命中
+// → 空间仍可见（证明补的是过滤，不是把子查询整体误杀）。
+func TestNamespaceRepo_List_NameMatchesProject_SoftDeletedProject(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ctx := context.TODO()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{
+		Cfg: &config.Config{},
+		DB:  entdb,
+	}))
+
+	// ① 空间名与搜索词刻意不相交（"ns-holder-one" 不含 ghost），确保命中只能来自项目谓词；
+	// 该唯一项目软删后，空间不得再被项目名搜到。
+	ns := entdb.Namespace.Create().SetCreatorEmail("a@a.c").SetName("ns-holder-one").SaveX(ctx)
+	ghost := entdb.Project.Create().SetName("ghost-project").SetNamespaceID(ns.ID).SetCreator("").SaveX(ctx)
+	require.NoError(t, entdb.Project.DeleteOneID(ghost.ID).Exec(ctx))
+
+	res, pag, err := repo.List(ctx, &biz.ListNamespaceInput{
+		Page: 1, PageSize: 10, IsAdmin: true, Email: "a@a.c", Name: lo.ToPtr("ghost"),
+	})
+	assert.NoError(t, err)
+	assert.Empty(t, res, "软删项目名不得再命中其所属空间")
+	assert.Equal(t, int32(0), pag.Count)
+	// 空间本身健在：按空间名仍搜得到，证明命中的消失源于项目软删而非空间被误过滤。
+	res, _, err = repo.List(ctx, &biz.ListNamespaceInput{
+		Page: 1, PageSize: 10, IsAdmin: true, Email: "a@a.c", Name: lo.ToPtr("ns-holder-one"),
+	})
+	assert.NoError(t, err)
+	require.Len(t, res, 1)
+	assert.Equal(t, ns.ID, res[0].ID)
+
+	// ② 另一空间：一个项目软删 + 一个存活，项目名命中时空间仍须出现一次。
+	ns2 := entdb.Namespace.Create().SetCreatorEmail("a@a.c").SetName("ns-mixed").SaveX(ctx)
+	dead := entdb.Project.Create().SetName("beta-dead").SetNamespaceID(ns2.ID).SetCreator("").SaveX(ctx)
+	entdb.Project.Create().SetName("beta-alive").SetNamespaceID(ns2.ID).SetCreator("").SaveX(ctx)
+	require.NoError(t, entdb.Project.DeleteOneID(dead.ID).Exec(ctx))
+
+	res, pag, err = repo.List(ctx, &biz.ListNamespaceInput{
+		Page: 1, PageSize: 10, IsAdmin: true, Email: "a@a.c", Name: lo.ToPtr("beta"),
+	})
+	assert.NoError(t, err)
+	require.Len(t, res, 1, "存活项目命中即须返回其空间；软删项目不得放大行数")
+	assert.Equal(t, ns2.ID, res[0].ID)
+	assert.Equal(t, int32(1), pag.Count)
+}
+
+// TestNamespaceRepo_List_RemovedMemberSoftDeleted 守 members 谓词的软删过滤：成员被移出
+// 私有空间后（Member.Delete() → 钩子转软删），该用户不得再在列表里看到这个空间。
+// 谓词漏写 member.DeletedAtIsNil() 时本测试必须失败（越权回归，曾实测复现）。
+func TestNamespaceRepo_List_RemovedMemberSoftDeleted(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ctx := context.TODO()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+
+	// 他人创建的私有空间 + X 是成员 + 另一个公开空间作对照（证明过滤只掐私有那条分支）。
+	pri := entdb.Namespace.Create().SetCreatorEmail("owner@a.c").SetName("ns-pri").
+		SetPrivate(true).SaveX(ctx)
+	mem := entdb.Member.Create().SetNamespaceID(pri.ID).SetEmail("x@a.c").SaveX(ctx)
+	pub := entdb.Namespace.Create().SetCreatorEmail("owner@a.c").SetName("ns-pub").SaveX(ctx)
+
+	res, pag, err := repo.List(ctx, &biz.ListNamespaceInput{
+		Page: 1, PageSize: 10, IsAdmin: false, Email: "x@a.c",
+	})
+	assert.NoError(t, err)
+	require.Len(t, res, 2, "在册成员应能看到公开空间 + 所属私有空间")
+	assert.Equal(t, int32(2), pag.Count)
+
+	// 移出空间。
+	require.NoError(t, entdb.Member.DeleteOneID(mem.ID).Exec(ctx))
+	_, gerr := entdb.Member.Get(ctx, mem.ID)
+	require.Error(t, gerr, "钩子须把成员删除转成软删，否则本测试不判别")
+
+	res, pag, err = repo.List(ctx, &biz.ListNamespaceInput{
+		Page: 1, PageSize: 10, IsAdmin: false, Email: "x@a.c",
+	})
+	assert.NoError(t, err)
+	require.Len(t, res, 1, "被移出成员不得再看到私有空间")
+	assert.Equal(t, pub.ID, res[0].ID)
+	assert.Equal(t, int32(1), pag.Count, "count 也须排除私有空间")
+}
+
+// TestNamespaceRepo_Liveness_SoftDeletedProjectsNotActive 守活跃度谓词的软删过滤：
+// 项目全部被软删的空间不得再被判为「活跃」。谓词漏写 project.DeletedAtIsNil() 时
+// 本测试必须失败（后台统计失真回归，曾实测 Active 多算）。
+func TestNamespaceRepo_Liveness_SoftDeletedProjectsNotActive(t *testing.T) {
+	repo, entdb := newNsRepo(t)
+	ctx := context.TODO()
+
+	// A：唯一项目刚创建（活跃）→ 软删后应回落为僵尸。
+	nsA := entdb.Namespace.Create().SetName("ns-a").SetCreatorEmail("a@b.c").SaveX(ctx)
+	pA := entdb.Project.Create().SetName("pa").SetNamespaceID(nsA.ID).SetCreator("").SaveX(ctx)
+	// B：唯一项目刚创建且保持存活 → 仍为活跃，证明补的是过滤不是整体误杀。
+	nsB := entdb.Namespace.Create().SetName("ns-b").SetCreatorEmail("b@b.c").SaveX(ctx)
+	entdb.Project.Create().SetName("pb").SetNamespaceID(nsB.ID).SetCreator("").SaveX(ctx)
+
+	// 前置：两个空间都算活跃。
+	before, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Page: 1, PageSize: 10, Now: time.Now()})
+	require.NoError(t, err)
+	assert.Equal(t, biz.AdminLivenessStats{Total: 2, Active: 2}, before.Stats)
+
+	// 软删 A 的项目。
+	require.NoError(t, entdb.Project.DeleteOneID(pA.ID).Exec(ctx))
+
+	got, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{Page: 1, PageSize: 10, Now: time.Now()})
+	require.NoError(t, err)
+	assert.Equal(t, biz.AdminLivenessStats{Total: 2, Active: 1, Zombie: 1}, got.Stats,
+		"项目全被软删的空间不得再算活跃；存活项目所在空间仍须活跃")
+
+	// 分类过滤同样生效：active 只剩 B，zombie 只剩 A。
+	gotActive, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{
+		Liveness: "active", Page: 1, PageSize: 10, Now: time.Now(),
+	})
+	require.NoError(t, err)
+	require.Len(t, gotActive.Namespaces, 1)
+	assert.Equal(t, nsB.ID, gotActive.Namespaces[0].ID)
+
+	gotZombie, err := repo.ListAdminPage(ctx, &biz.AdminListPageQuery{
+		Liveness: "zombie", Page: 1, PageSize: 10, Now: time.Now(),
+	})
+	require.NoError(t, err)
+	require.Len(t, gotZombie.Namespaces, 1)
+	assert.Equal(t, nsA.ID, gotZombie.Namespaces[0].ID)
 }
 
 // timePtr 构造 time.Time 指针，供边界奇偶性测试的「无项目（nil）vs 有项目」种子区分。

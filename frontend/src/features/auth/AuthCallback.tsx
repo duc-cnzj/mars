@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
-import { getState, removeState, setToken } from '@/api/token'
+import { setToken } from '@/api/token'
 import { toast } from '@/lib/toast'
 import { markLoginSuccess, useAuth } from './AuthProvider'
 
@@ -11,8 +11,12 @@ import { markLoginSuccess, useAuth } from './AuthProvider'
 const OIDC_DONE_KEY = 'mars_oidc_done'
 
 /**
- * OIDC 回调页：用 code 换 token（POST /api/auth/exchange），
- * 校验 state 防止 CSRF，成功后写 token、跳主页（成功提示由 AuthProvider 统一弹）。
+ * OIDC 回调页：把 code 与 state 一起交给 POST /api/auth/exchange 换 token，
+ * 成功后写 token、跳主页（成功提示由 AuthProvider 统一弹）。
+ *
+ * state 只做「原样回传」，不在这里校验：判定由服务端比对下发给本浏览器的 HttpOnly
+ * Cookie（见后端 services.verifyOidcState）。前端持有判定权等于把 CSRF 防线押在前端
+ * 实现细节上，任何绕过本页面的调用路径都会失守。
  */
 export function AuthCallback() {
   const { t } = useTranslation()
@@ -30,9 +34,8 @@ export function AuthCallback() {
   const handledRef = useRef(false)
 
   useEffect(() => {
-    // StrictMode（开发态）会把挂载 effect 连跑两遍（setup→cleanup→setup）：第一遍在首个
-    // await 之前已同步 removeState()，第二遍再比对 getState() 必然失配 →
-    // 误报「用户名或密码错误」并踢回登录页。ref 在双跑间保持不变，用它保证只处理一次。
+    // StrictMode（开发态）会把挂载 effect 连跑两遍（setup→cleanup→setup）。ref 在双跑间
+    // 保持不变，用它保证只处理一次（否则会把同一个一次性 code 换发两遍）。
     if (handledRef.current) return
     handledRef.current = true
 
@@ -49,15 +52,13 @@ export function AuthCallback() {
         navigate('/', { replace: true })
         return
       }
-      // state 不一致：拒绝，回登录
-      if (state !== getState()) {
+      // state 缺失说明回调 URL 不完整，直接回登录页（存在但不对的情况交给服务端判定）
+      if (!state) {
         toast.error(t('auth.loginFailed'))
-        removeState()
         navigate('/login', { replace: true })
         return
       }
-      removeState()
-      const { data, error } = await api.POST(API.authExchange, { body: { code } })
+      const { data, error } = await api.POST(API.authExchange, { body: { code, state } })
       if (error || !data?.token) {
         navigate('/login', { replace: true })
         return

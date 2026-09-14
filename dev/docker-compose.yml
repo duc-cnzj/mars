@@ -54,7 +54,9 @@ services:
     networks:
       - mars
   minio:
-    image: minio/minio
+    # 镜像源必须走 quay.io：Docker Hub 的 minio/minio 已被上游收回（拉取返回
+    # denied: requested access to the resource is denied），与 CI 保持同一来源。
+    image: quay.io/minio/minio
     command: server /data --console-address ":9001"
     environment:
       # 与 config_example.yaml s3_ 配置对齐：minioadmin / minioadmin

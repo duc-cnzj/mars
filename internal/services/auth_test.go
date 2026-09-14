@@ -12,12 +12,26 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/server/middlewares"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
+
+// oidcStateCtx 模拟「grpc-gateway 把 HTTP Cookie 头映射成 metadata」之后的 ctx：
+// DefaultHeaderMatcher 给 Cookie 加 "grpcgateway-" 前缀，故键名为 grpcgateway-cookie。
+// rawCookie 传原始 Cookie 头串（非单值），便于覆盖解析失败的用例。
+func oidcStateCtx(rawCookie string) context.Context {
+	return metadata.NewIncomingContext(context.TODO(), metadata.Pairs(oidcCookieMetadataKey, rawCookie))
+}
+
+// oidcStateCtxWithState 是 oidcStateCtx 的常用形态：只带一个 mars_oidc_state 的合法 Cookie 头。
+func oidcStateCtxWithState(state string) context.Context {
+	return oidcStateCtx(fmt.Sprintf("%s=%s", middlewares.OidcStateCookieName, state))
+}
 
 func TestNewAuthSvc(t *testing.T) {
 	svc, _ := newAuthSvcWithMocks(t)
@@ -202,7 +216,7 @@ func TestAuthSvc_Exchange_Success(t *testing.T) {
 	// 登录成功即同步用户投影（不存在则创建、存在则推进最近登录），SSO 角色随投影写入
 	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), "DUC@example.com", "duc", []string{biz.MarsAdmin}).Return(nil)
 
-	resp, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: "code"})
+	resp, err := svc.Exchange(oidcStateCtxWithState("state"), &apiauth.ExchangeRequest{Code: "code", State: "state"})
 	assert.NoError(t, err)
 	assert.Equal(t, "signed", resp.Token)
 	assert.Equal(t, int64(3600), resp.ExpiresIn)
@@ -222,7 +236,7 @@ func TestAuthSvc_Exchange_SyncUserErrorNotBlocking(t *testing.T) {
 	eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	userBizMock.EXPECT().SyncLoginUser(gomock.Any(), "duc@example.com", "duc", []string{biz.MarsAdmin}).Return(errors.New("projection boom"))
 
-	resp, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: "code"})
+	resp, err := svc.Exchange(oidcStateCtxWithState("state"), &apiauth.ExchangeRequest{Code: "code", State: "state"})
 	assert.NoError(t, err, "投影写库失败不得阻断登录")
 	assert.Equal(t, "signed", resp.Token)
 }
@@ -233,7 +247,7 @@ func TestAuthSvc_Exchange_Error(t *testing.T) {
 
 	authBizMock.EXPECT().Exchange(gomock.Any(), "code").Return(nil, errors.New("boom"))
 
-	_, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: "code"})
+	_, err := svc.Exchange(oidcStateCtxWithState("state"), &apiauth.ExchangeRequest{Code: "code", State: "state"})
 	assert.Error(t, err)
 	assert.Equal(t, "boom", err.Error())
 }
@@ -246,7 +260,7 @@ func TestAuthSvc_Exchange_CodeNotEchoed(t *testing.T) {
 	code := "auth-code-SECRET-abc123"
 	authBizMock.EXPECT().Exchange(gomock.Any(), code).Return(nil, status.Errorf(codes.InvalidArgument, "invalid code"))
 
-	_, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: code})
+	_, err := svc.Exchange(oidcStateCtxWithState("state"), &apiauth.ExchangeRequest{Code: code, State: "state"})
 	assert.Error(t, err)
 	assert.NotContains(t, err.Error(), code)
 }
@@ -259,9 +273,108 @@ func TestAuthSvc_Exchange_SignError(t *testing.T) {
 	authBizMock.EXPECT().Exchange(gomock.Any(), "code").Return(userinfo, nil)
 	authBizMock.EXPECT().Sign(gomock.Any(), userinfo).Return(nil, errors.New("sign boom"))
 
-	_, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: "code"})
+	_, err := svc.Exchange(oidcStateCtxWithState("state"), &apiauth.ExchangeRequest{Code: "code", State: "state"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "sign boom")
+}
+
+// TestAuthSvc_Exchange_MissingStateCookie 无 state Cookie 时必须拒绝，且不得触达 IdP。
+// 这正是「登录 CSRF」的形态：攻击者只拿得到自己的 code，拿不到受害者浏览器上的 Cookie。
+// 不设 authBiz.Exchange 期望——门卫一旦漏过、换发被调用，gomock 会直接判失败。
+func TestAuthSvc_Exchange_MissingStateCookie(t *testing.T) {
+	svc, _ := newAuthSvcWithMocks(t)
+
+	_, err := svc.Exchange(context.TODO(), &apiauth.ExchangeRequest{Code: "code", State: "state"})
+	assert.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+// TestAuthSvc_Exchange_MetadataWithoutCookieKey 带 metadata 但不含 cookie 键时必须拒绝：
+// 跨站表单 POST 不带任何 Cookie 时 grpc-gateway 不会写出 grpcgateway-cookie 键，
+// 这是攻击请求最常见的形态。不设 authBiz.Exchange 期望，门卫漏过即 gomock 判失败。
+func TestAuthSvc_Exchange_MetadataWithoutCookieKey(t *testing.T) {
+	svc, _ := newAuthSvcWithMocks(t)
+
+	ctx := metadata.NewIncomingContext(context.TODO(), metadata.Pairs("grpcgateway-authorization", "Bearer x"))
+	_, err := svc.Exchange(ctx, &apiauth.ExchangeRequest{Code: "code", State: "state"})
+	assert.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+// TestAuthSvc_Exchange_StateMismatch Cookie 携带的 state 与请求体回传的不一致时必须拒绝
+// （攻击者拿自己申请到的合法 state 塞给受害者浏览器的场景）。
+func TestAuthSvc_Exchange_StateMismatch(t *testing.T) {
+	svc, _ := newAuthSvcWithMocks(t)
+
+	_, err := svc.Exchange(oidcStateCtxWithState("cookie-state"), &apiauth.ExchangeRequest{Code: "code", State: "body-state"})
+	assert.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+// TestAuthSvc_Exchange_MalformedCookieHeader Cookie 头无法解析时按校验失败处理，不 panic。
+func TestAuthSvc_Exchange_MalformedCookieHeader(t *testing.T) {
+	svc, _ := newAuthSvcWithMocks(t)
+
+	_, err := svc.Exchange(oidcStateCtx("malformed-cookie-without-equals"), &apiauth.ExchangeRequest{Code: "code", State: "state"})
+	assert.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+// TestAuthSvc_Exchange_CookieWithoutStateKey Cookie 可解析但缺少 mars_oidc_state 键时拒绝。
+func TestAuthSvc_Exchange_CookieWithoutStateKey(t *testing.T) {
+	svc, _ := newAuthSvcWithMocks(t)
+
+	_, err := svc.Exchange(oidcStateCtx("other=1"), &apiauth.ExchangeRequest{Code: "code", State: "state"})
+	assert.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+// TestAuthSvc_Exchange_CookieAmongOthers 同一个 Cookie 头里混有其他 Cookie 时仍能取出 state。
+func TestAuthSvc_Exchange_CookieAmongOthers(t *testing.T) {
+	svc, mocks := newAuthSvcWithMocks(t)
+
+	userinfo := &biz.UserInfo{Name: "duc", Email: "duc@example.com"}
+	mocks.authBiz.EXPECT().Exchange(gomock.Any(), "code").Return(userinfo, nil)
+	mocks.authBiz.EXPECT().Sign(gomock.Any(), userinfo).Return(&biz.LoginResponse{Token: "signed", ExpiredIn: 1}, nil)
+	mocks.eventRepo.EXPECT().AuditLogWithRequest(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	mocks.userBiz.EXPECT().SyncLoginUser(gomock.Any(), "duc@example.com", "duc", gomock.Any()).Return(nil)
+
+	ctx := oidcStateCtx(fmt.Sprintf("other=1; %s=state; another=2", middlewares.OidcStateCookieName))
+	resp, err := svc.Exchange(ctx, &apiauth.ExchangeRequest{Code: "code", State: "state"})
+	assert.NoError(t, err)
+	assert.Equal(t, "signed", resp.Token)
+}
+
+// TestAuthSvc_Settings_SharedState 所有 provider 必须共用同一个 state：state 绑定的是
+// 「这次浏览器发起的登录尝试」而非某个 provider，且 state Cookie 只有一个槽位，
+// per-provider 各发一个会让回调时无从比对（旧实现正是每 provider 各生成一个）。
+func TestAuthSvc_Settings_SharedState(t *testing.T) {
+	svc, mocks := newAuthSvcWithMocks(t)
+	mocks.authBiz.EXPECT().Settings(gomock.Any()).Return(biz.OidcConfig{
+		"b-provider": {Config: oauth2.Config{
+			ClientID: "b",
+			Endpoint: oauth2.Endpoint{AuthURL: "https://b.example/auth"},
+		}},
+		"a-provider": {Config: oauth2.Config{
+			ClientID: "a",
+			Endpoint: oauth2.Endpoint{AuthURL: "https://a.example/auth"},
+		}},
+	}, nil)
+
+	resp, err := svc.Settings(context.TODO(), &apiauth.SettingsRequest{})
+	assert.NoError(t, err)
+	if !assert.Len(t, resp.Items, 2) {
+		return
+	}
+	// 排序稳定：按 provider 名字升序
+	assert.Equal(t, "a-provider", resp.Items[0].Name)
+	assert.Equal(t, "b-provider", resp.Items[1].Name)
+
+	state := resp.Items[0].State
+	assert.NotEmpty(t, state)
+	assert.Equal(t, state, resp.Items[1].State, "所有 provider 必须共用同一个 state")
+	assert.Contains(t, resp.Items[0].Url, state)
+	assert.Contains(t, resp.Items[1].Url, state)
 }
 
 func TestAuthSvc_Settings_NoSettings(t *testing.T) {

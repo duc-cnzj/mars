@@ -1341,6 +1341,8 @@ export interface components {
     schemas: {
         "auth.ExchangeRequest": {
             code: string;
+            /** @description 防登录 CSRF：必须回传 /api/auth/settings 下发的 state，服务端会与 state Cookie 比对。 */
+            state: string;
         };
         "auth.ExchangeResponse": {
             token: string;

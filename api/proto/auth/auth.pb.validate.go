@@ -293,6 +293,17 @@ func (m *ExchangeRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if len(m.GetState()) < 1 {
+		err := ExchangeRequestValidationError{
+			field:  "State",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return ExchangeRequestMultiError(errors)
 	}
