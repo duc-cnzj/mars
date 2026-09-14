@@ -47,7 +47,9 @@ message LoginResponse {
 }
 
 message ExchangeRequest {
-  string code = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string code  = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  // 防登录 CSRF：必须回传 /api/auth/settings 下发的 state，服务端会与 state Cookie 比对。
+  string state = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
 }
 
 message ExchangeResponse {

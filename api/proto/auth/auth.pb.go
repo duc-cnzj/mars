@@ -130,8 +130,10 @@ func (x *LoginResponse) GetExpiresIn() int64 {
 }
 
 type ExchangeRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Code  string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	// 防登录 CSRF：必须回传 /api/auth/settings 下发的 state，服务端会与 state Cookie 比对。
+	State         string `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -169,6 +171,13 @@ func (*ExchangeRequest) Descriptor() ([]byte, []int) {
 func (x *ExchangeRequest) GetCode() string {
 	if x != nil {
 		return x.Code
+	}
+	return ""
+}
+
+func (x *ExchangeRequest) GetState() string {
+	if x != nil {
+		return x.State
 	}
 	return ""
 }
@@ -528,9 +537,10 @@ const file_proto_auth_auth_proto_rawDesc = "" +
 	"\rLoginResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1d\n" +
 	"\n" +
-	"expires_in\x18\x02 \x01(\x03R\texpiresIn\"2\n" +
+	"expires_in\x18\x02 \x01(\x03R\texpiresIn\"U\n" +
 	"\x0fExchangeRequest\x12\x1f\n" +
-	"\x04code\x18\x01 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\x04code\"G\n" +
+	"\x04code\x18\x01 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\x04code\x12!\n" +
+	"\x05state\x18\x02 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\x05state\"G\n" +
 	"\x10ExchangeResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1d\n" +
 	"\n" +

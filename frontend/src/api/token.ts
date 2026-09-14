@@ -6,7 +6,6 @@
 
 const TOKEN_KEY = 'token'
 const LOGOUT_URL_KEY = 'logout_url'
-const STATE_KEY = 'state'
 
 /** 写入 token（自动补 `Bearer ` 前缀，与后端 Authorization 头约定一致） */
 export const setToken = (token: string): void => {
@@ -40,15 +39,4 @@ export const toggleRandomBg = (): boolean => {
   const next = !isRandomBg()
   localStorage.setItem('random_bg', next ? '1' : '0')
   return next
-}
-
-/** OIDC state（防 CSRF） */
-export const setState = (state: string): void => {
-  localStorage.setItem(STATE_KEY, state)
-}
-
-export const getState = (): string => localStorage.getItem(STATE_KEY) ?? ''
-
-export const removeState = (): void => {
-  localStorage.removeItem(STATE_KEY)
 }

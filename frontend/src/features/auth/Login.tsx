@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
-import { setState, isRandomBg, toggleRandomBg } from '@/api/token'
+import { isRandomBg, toggleRandomBg } from '@/api/token'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/shadcn/tabs'
@@ -88,8 +88,8 @@ export function Login() {
   }
 
   const onSso = (item: OidcSetting) => {
-    // 记录 state 供回调校验（防 CSRF）
-    setState(item.state)
+    // state 已随本次 /api/auth/settings 响应写进 HttpOnly Cookie，这里只需跳转；
+    // 回调时由服务端拿回传的 state 与该 Cookie 比对（判定权不在前端）。
     window.location.href = item.url
   }
 

@@ -181,7 +181,7 @@ export default {
   workbench: {
     allSpaces: '全部空间',
     favorites: '我的关注',
-    searchPlaceholder: '搜索空间名称',
+    searchPlaceholder: '搜索空间或项目名称',
     addNamespace: '新建命名空间',
     addNamespaceShort: '新建空间',
     refresh: '刷新空间',

@@ -234,7 +234,21 @@ func NewNamespaceRepo(data dataStore) biz.NamespaceRepo {
 func (repo *namespaceRepo) adminNamespaceBaseQuery(input *biz.ListNamespaceInput) *ent.NamespaceQuery {
 	return repo.data.DB().Namespace.Query().
 		Where(
-			filters.IfNameLike(lo.FromPtr(input.Name)),
+			// 名称模糊：匹配空间名，**或**该空间下任一项目名——首页搜索框输入项目名
+			// 同样能定位到它所属的空间（用户往往记得项目名而记不住空间名）。
+			// 空间名一侧保持原有的 Contains 语义不变，仅 OR 叠加项目名条件。
+			// ⚠️ 子查询必须显式带 project.DeletedAtIsNil()：SoftDeleteMixin 靠 ent
+			// Interceptor 注入 deleted_at IS NULL，而 Interceptor 只遍历生成的查询图，
+			// **不会**进入 Has*With 产生的裸 sql.Selector 子查询；漏掉即让已软删项目
+			// 仍能被搜到（回归见 TestNamespaceRepo_List_NameMatchesProject_SoftDeletedProject）。
+			filters.If(func(s string) bool {
+				return s != ""
+			}, func(t string) func(*sql.Selector) {
+				return namespace.Or(
+					namespace.NameContains(t),
+					namespace.HasProjectsWith(project.DeletedAtIsNil(), project.NameContainsFold(t)),
+				)
+			})(lo.FromPtr(input.Name)),
 			// 管理后台搜索：模糊匹配空间名或创建者邮箱，空串不过滤。
 			filters.If(func(s string) bool {
 				return s != ""
@@ -295,7 +309,10 @@ func (repo *namespaceRepo) List(ctx context.Context, input *biz.ListNamespaceInp
 		query = query.Where(
 			namespace.Or(
 				namespace.And(
-					namespace.HasMembersWith(member.Email(input.Email)),
+					// ⚠️ member.DeletedAtIsNil() 必须显式带：成员被移出空间走 Member.Delete()
+					// → SoftDeleteMixin 钩子转软删，而 HasMembersWith 的裸 sql.Selector 子查询
+					// 不被 ent Interceptor 覆盖；漏掉即让「被移出者仍能看见私有空间」（越权）。
+					namespace.HasMembersWith(member.DeletedAtIsNil(), member.Email(input.Email)),
 					namespace.Private(true),
 				),
 				namespace.Private(false),
@@ -422,16 +439,23 @@ func (repo *namespaceRepo) ListAll(ctx context.Context) (out []*biz.Namespace, e
 // 非法 liveness 值返回恒假谓词，复现旧逻辑「无行命中非法分类」的空列表语义。
 func namespaceLivenessPred(liveness string, now time.Time) func(*sql.Selector) {
 	active, zombie := livenessBoundaries(now)
-	// hasRecent = 是否存在项目 updated_at > boundary。
+	// hasRecent = 是否存在「存活且」updated_at > boundary 的项目。
+	// ⚠️ project.DeletedAtIsNil() 必须显式带：SoftDeleteMixin 靠 ent Interceptor 注入
+	// deleted_at IS NULL，而 Interceptor 不覆盖 Has*With 的裸 sql.Selector 子查询；漏掉即把
+	// 「项目已被软删」的空间误判为活跃（回归见
+	// TestNamespaceRepo_Liveness_SoftDeletedProjectsNotActive）。
 	hasRecent := func(boundary time.Time) func(*sql.Selector) {
-		return namespace.HasProjectsWith(project.UpdatedAtGT(boundary))
+		return namespace.HasProjectsWith(project.DeletedAtIsNil(), project.UpdatedAtGT(boundary))
 	}
 	switch liveness {
 	case "active":
 		return hasRecent(active)
 	case "zombie":
-		// 无项目 或 最近活跃已过僵尸边界。
-		return namespace.Or(namespace.Not(namespace.HasProjects()), namespace.Not(hasRecent(zombie)))
+		// 无（存活）项目 或 最近活跃已过僵尸边界。同样补软删过滤，与 hasRecent 语义对齐。
+		return namespace.Or(
+			namespace.Not(namespace.HasProjectsWith(project.DeletedAtIsNil())),
+			namespace.Not(hasRecent(zombie)),
+		)
 	case "dormant":
 		return namespace.And(hasRecent(zombie), namespace.Not(hasRecent(active)))
 	default:

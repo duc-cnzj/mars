@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	apiauth "github.com/duc-cnzj/mars/api/v6/proto/auth"
 	containerpb "github.com/duc-cnzj/mars/api/v6/proto/container"
 	metricspb "github.com/duc-cnzj/mars/api/v6/proto/metrics"
 	"github.com/duc-cnzj/mars/v6/frontend"
@@ -109,6 +110,49 @@ func (a *apiGateway) setNosniff(ctx context.Context, writer http.ResponseWriter,
 	return nil
 }
 
+// setOidcStateCookie 是 grpc-gateway 的 ForwardResponseOption：把 OIDC 登录 state 经
+// Set-Cookie 下发（Settings）与清除（Exchange）。
+//
+// 之所以要由 HTTP 层来写：state 必须绑定到「发起登录的那个浏览器」，而浏览器身份唯一
+// 不可伪造的载体就是 Cookie——攻击者能自己申请到一份合法的 state+code，服务端存储 state
+// 或签名 state 都拦不住，只有「攻击者写不了受害者浏览器上的本域 Cookie」这一条能拦住
+// （完整契约与理由见 middlewares.OidcStateCookieName 的注释）。
+func (a *apiGateway) setOidcStateCookie(ctx context.Context, writer http.ResponseWriter, message proto.Message) error {
+	// Secure 判定由 OidcCookieSecureMiddleware 经 ctx 传入：本回调拿不到 *http.Request。
+	secure := middlewares.IsOidcCookieSecure(ctx)
+
+	switch resp := message.(type) {
+	case *apiauth.SettingsResponse:
+		// 所有 provider 共用同一个 state（state 绑定的是「这次登录尝试」而非某个 provider，
+		// 且 Cookie 只有一个槽位），故取任一项即可；未配置 provider 时无需下发。
+		if len(resp.Items) == 0 {
+			return nil
+		}
+		http.SetCookie(writer, &http.Cookie{
+			Name:     middlewares.OidcStateCookieName,
+			Value:    resp.Items[0].State,
+			Path:     middlewares.OidcStateCookiePath,
+			MaxAge:   middlewares.OidcStateCookieMaxAge,
+			HttpOnly: true,
+			Secure:   secure,
+			SameSite: http.SameSiteLaxMode,
+		})
+	case *apiauth.ExchangeResponse:
+		// 一次性消费：换发成功即清 Cookie，旧 state 不可重放。
+		http.SetCookie(writer, &http.Cookie{
+			Name:     middlewares.OidcStateCookieName,
+			Value:    "",
+			Path:     middlewares.OidcStateCookiePath,
+			MaxAge:   -1,
+			HttpOnly: true,
+			Secure:   secure,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
+
+	return nil
+}
+
 // initServer 装配 HTTP 网关：构建 grpc-gateway ServeMux（headers/forward/JSON 编解码）、
 // grpc 拨号选项（OpenTelemetry 过滤、最大接收消息）、注册 API 路由/文件/ws/swagger/前端路由，
 // 最终用中间件链 + otelhttp 包裹返回可启动的 http.Server。
@@ -122,6 +166,7 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 		runtime.WithOutgoingHeaderMatcher(headerMatcher),
 		runtime.WithIncomingHeaderMatcher(headerMatcher),
 		runtime.WithForwardResponseOption(a.setNosniff),
+		runtime.WithForwardResponseOption(a.setOidcStateCookie),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
 				UseEnumNumbers:  false,
@@ -157,7 +202,8 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 	// /api 前缀统一交给 grpc-gateway：必须先于前端 SPA 兜底注册，否则 /api/xxx
 	// 会被 LoadFrontendRoutes 的 /{any:.*} 兜底吞成 index.html。全仓 HTTP API
 	// 均约定挂在 /api 下（proto http 注解 + 文件路由，见 fileHandler.RegisterFileRoute）。
-	router.PathPrefix("/api/").Handler(gmux)
+	// 外层多包一层：把「本次请求是否经 HTTPS」经 ctx 带进 gmux，供 state Cookie 决定 Secure。
+	router.PathPrefix("/api/").Handler(middlewares.OidcCookieSecureMiddleware(gmux))
 	// swagger 文档路由先于前端兜底注册，避免 /docs/ 与 /doc/swagger.json 被 SPA 兜底拦截。
 	a.handler.RegisterSwaggerUIRoute(router)
 	frontend.LoadFrontendRoutes(router)

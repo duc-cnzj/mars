@@ -236,7 +236,12 @@ func (repo *projectRepo) List(ctx context.Context, input *biz.ListProjectInput) 
 			project.HasNamespaceWith(
 				namespace.Or(
 					namespace.And(
-						namespace.HasMembersWith(member.Email(input.Email)),
+						// ⚠️ member.DeletedAtIsNil() 必须显式带：成员被移出空间走 Member.Delete()
+						// → SoftDeleteMixin 钩子转软删，而 HasMembersWith 的裸 sql.Selector 子查询
+						// 不被 ent Interceptor 覆盖；与 namespaceRepo.List 同款谓词，漏掉即由
+						// 全局项目列表泄漏私有空间内容（回归见
+						// TestProjectRepoList_AccessFilter_RemovedMemberSoftDeleted）。
+						namespace.HasMembersWith(member.DeletedAtIsNil(), member.Email(input.Email)),
 						namespace.Private(true),
 					),
 					namespace.Private(false),

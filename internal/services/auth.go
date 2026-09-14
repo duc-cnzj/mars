@@ -2,16 +2,26 @@ package services
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
+	"net/http"
 	"sort"
 
 	apiauth "github.com/duc-cnzj/mars/api/v6/proto/auth"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/server/middlewares"
 	"github.com/duc-cnzj/mars/v6/internal/util/rand"
 	"github.com/spf13/cast"
+	"google.golang.org/grpc/metadata"
 )
+
+// oidcCookieMetadataKey 是 grpc-gateway 把 HTTP Cookie 头映射进 gRPC metadata 后的键名：
+// DefaultHeaderMatcher 会给 isPermanentHTTPHeader 白名单内的头（Cookie 在列）加上
+// "grpcgateway-" 前缀；键名小写由 metadata 包自身保证（MD.Get 先做 ToLower）。
+const oidcCookieMetadataKey = "grpcgateway-cookie"
 
 var _ apiauth.AuthServer = (*authSvc)(nil)
 
@@ -105,17 +115,22 @@ func (a *authSvc) Info(ctx context.Context, req *apiauth.InfoRequest) (*apiauth.
 	}, nil
 }
 
-// Settings 返回可用的 OIDC 登录方式：为每个 provider 生成一次性 state 拼出
-// 授权码 URL，按名字排序后返回，供前端渲染登录页。
+// Settings 返回可用的 OIDC 登录方式：拼出带一次性 state 的授权码 URL，按名字排序后返回，
+// 供前端渲染登录页。
+//
+// 所有 provider 共用同一个 state：state 绑定的是「这一次浏览器发起的登录尝试」而非某个
+// provider，且 state Cookie 只有一个槽位，per-provider 各发一个会让回调时无从比对。
+// state 由 HTTP 层随本响应写入 Cookie（见 server.(*apiGateway).setOidcStateCookie），
+// Exchange 侧再拿回调回传的 state 与该 Cookie 比对。
 func (a *authSvc) Settings(ctx context.Context, request *apiauth.SettingsRequest) (*apiauth.SettingsResponse, error) {
 	settings, err := a.authBiz.Settings(ctx)
 	if err != nil {
 		return nil, logError(ctx, a.logger, err)
 	}
+	state := rand.String(32)
+
 	var items = make([]*apiauth.SettingsResponse_OidcSetting, 0, len(settings))
 	for name, setting := range settings {
-		state := rand.String(32)
-
 		items = append(items, &apiauth.SettingsResponse_OidcSetting{
 			Enabled:            true,
 			Name:               name,
@@ -133,8 +148,14 @@ func (a *authSvc) Settings(ctx context.Context, request *apiauth.SettingsRequest
 }
 
 // Exchange 用 OIDC 授权码换发登录凭证：换发编排（遍历 provider/验签/claims 解码）
-// 已下沉 biz.AuthBiz.Exchange，这里只做 transport 份内事——签名、审计与响应映射。
+// 已下沉 biz.AuthBiz.Exchange，这里只做 transport 份内事——防 CSRF 校验、签名、审计与响应映射。
 func (a *authSvc) Exchange(ctx context.Context, request *apiauth.ExchangeRequest) (*apiauth.ExchangeResponse, error) {
+	// 先过 CSRF 门卫，再做任何换发动作：未经校验的 code 不该触达 IdP（既是安全边界，
+	// 也避免攻击者拿本接口当探测 IdP 是否可达的探针）。
+	if err := verifyOidcState(ctx, request.State); err != nil {
+		return nil, logError(ctx, a.logger, err)
+	}
+
 	userinfo, err := a.authBiz.Exchange(ctx, request.Code)
 	if err != nil {
 		return nil, logError(ctx, a.logger, err)
@@ -164,4 +185,52 @@ func (a *authSvc) Exchange(ctx context.Context, request *apiauth.ExchangeRequest
 		Token:     data.Token,
 		ExpiresIn: data.ExpiredIn,
 	}, nil
+}
+
+// verifyOidcState 校验 OIDC 回调回传的 state 与当初下发到浏览器的 state Cookie 是否一致，
+// 是防「登录 CSRF」的唯一有效手段。
+//
+// 为什么不是「存起来」或「签名」：攻击者可以自己正常走一遍 /api/auth/settings，拿到一份
+// 完全合法的 state（无论它被服务端存了还是签了名），再自己完成 IdP 登录拿到 code，然后把
+// 这对 (state, code) 塞给受害者浏览器——那两种方案都会照单放行。state 的职责是绑定「发起
+// 登录的那个浏览器」，而浏览器身份唯一不可伪造的载体是 Cookie（攻击者写不了本域 Cookie），
+// 所以必须拿回传值和 Cookie 比对（契约见 middlewares.OidcStateCookieName）。
+//
+// 用 InvalidArgument 而非 Unauthenticated：与 biz.AuthBiz.Exchange 全部失败时的错误码保持一致，
+// 同时避开前端对 401 的「清 token + 跳登出」副作用（那条路径留给真正的会话过期）。
+// 对外不区分「state 不匹配」与「code 换发失败」，避免给攻击者留下探测 oracle。
+func verifyOidcState(ctx context.Context, state string) error {
+	cookieValue, ok := oidcStateFromMetadata(ctx)
+	if !ok {
+		return errs.InvalidArgument("OIDC 登录校验失败")
+	}
+	// 常数时间比对：state 是可直接换取登录凭证的凭据，随机串逐字节比较会泄露前缀信息。
+	if subtle.ConstantTimeCompare([]byte(cookieValue), []byte(state)) != 1 {
+		return errs.InvalidArgument("OIDC 登录校验失败")
+	}
+	return nil
+}
+
+// oidcStateFromMetadata 从 gRPC metadata 取回 HTTP 请求的 Cookie 头并解析出 state 值。
+// 原生 gRPC 调用不带该 metadata（Cookie 是纯 HTTP 概念），取不到即返回 false，
+// 由调用方按校验失败处理。
+func oidcStateFromMetadata(ctx context.Context) (string, bool) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return "", false
+	}
+	raw := md.Get(oidcCookieMetadataKey)
+	if len(raw) == 0 {
+		return "", false
+	}
+	cookies, err := http.ParseCookie(raw[0])
+	if err != nil {
+		return "", false
+	}
+	for _, c := range cookies {
+		if c.Name == middlewares.OidcStateCookieName {
+			return c.Value, true
+		}
+	}
+	return "", false
 }
