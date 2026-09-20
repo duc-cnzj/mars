@@ -12,6 +12,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/shadcn/tooltip'
 import { nextZIndex } from '@/lib/zIndex'
+import { EndpointUrl } from '@/components/EndpointUrl'
 import { KIND_ICON, STATUS_TONE } from './mockTopology'
 import type { NodeStatus, TopoEndpoint, TopoNode } from './topologyTypes'
 
@@ -71,6 +72,12 @@ function NodeName({ name }: { name: string }) {
   )
 }
 
+/**
+ * 端点 URL 展示组件：外层 span 配 min-w-0 flex-1 truncate 受父 flex 行约束，
+ * 内层 <a>/<span> 配受控 Tooltip（截断 + 悬浮才显示完整 URL）。
+ * controlled 模式：open={truncated && hover} + onOpenChange={() => {}}，
+ * 同本文件 NodeName / ProjectRow / SystemSettings 一致的受控 pattern。
+ */
 interface TopologyDetailProps {
   node: TopoNode
   onClose: () => void
@@ -124,7 +131,7 @@ export function TopologyDetail({ node, onClose, actions, endpoints }: TopologyDe
         </div>
         {/* 项目访问地址：
             - Application 根节点：全部端点平铺展示
-            - Ingress/Service 节点：仅显示匹配该资源的端点
+            - Ingress/Service 节点：仅显示 ingressName/svcName 匹配该资源名称的端点
             http(s) 链接可点开，hostname/IP 纯文本（对齐 ProjectRow 端点展示策略）。
             数据由父组件注入：直播 Tab 传 /api/endpoints 全量；空列表不渲染该区块 */}
         {['Application', 'Ingress', 'Service'].includes(node.kind) && endpoints && endpoints.length > 0 && (
@@ -133,40 +140,28 @@ export function TopologyDetail({ node, onClose, actions, endpoints }: TopologyDe
             <div className="flex flex-col gap-1">
               {endpoints.filter(ep => {
                 if (node.kind === 'Application') return true
-                if (node.kind === 'Ingress') return ep.type === 'Ingress'
-                if (node.kind === 'Service') return ep.type === 'Service'
+                if (node.kind === 'Ingress') return ep.ingressName === node.name
+                if (node.kind === 'Service') return ep.svcName === node.name
                 return false
               }).map((ep, i) => (
-                <div key={i} className="flex items-center gap-1.5 py-0.5">
+                <div key={i} className="border-l-2 border-line pl-2.5 py-0.5">
                   {(ep.svcName || ep.ingressName) && (
-                    <span className="shrink-0 font-mono text-[11px] text-faint">{ep.svcName || ep.ingressName}:</span>
+                    <div className="mb-0.5 font-mono text-[11px] text-faint">{ep.svcName || ep.ingressName}</div>
                   )}
-                  {ep.url.startsWith('http') ? (
-                    <a
-                      href={ep.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      translate="no"
-                      className="min-w-0 flex-1 truncate text-[12px] text-primary hover:underline"
+                  <div className="flex items-center gap-1.5">
+                    <EndpointUrl url={ep.url} isLink={ep.url.startsWith('http')} className="text-[12px]" />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => { copyText(ep.url); toast.success(t('common.copied')) }}
+                      aria-label={t('common.copy')}
+                      title={t('common.copy')}
+                      className="shrink-0 text-faint hover:text-primary"
                     >
-                      {ep.url}
-                    </a>
-                  ) : (
-                    <span className="min-w-0 flex-1 truncate text-[12px] text-ink" translate="no">
-                      {ep.url}
-                    </span>
-                  )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => { copyText(ep.url); toast.success(t('common.copied')) }}
-                    aria-label={t('common.copy')}
-                    title={t('common.copy')}
-                    className="shrink-0 text-faint hover:text-primary"
-                  >
-                    <Icon name="copy" className="text-[11px]" />
-                  </Button>
+                      <Icon name="copy" className="text-[11px]" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

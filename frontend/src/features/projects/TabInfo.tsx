@@ -139,7 +139,9 @@ export function TabInfo({
                   </span>
                 )}
                 {(ep.svcName || ep.ingressName) && (
-                  <Tag tone="info" dot={false} className="shrink-0">{ep.svcName || ep.ingressName}</Tag>
+                  <span onDoubleClick={selectAllOnDoubleClick}>
+                    <Tag tone="info" dot={false} className="shrink-0">{ep.svcName || ep.ingressName}</Tag>
+                  </span>
                 )}
                 {/* 访问地址复制：对齐 ProjectRow 端点弹层同款按钮（ghost icon-xs，hover 提亮主色） */}
                 <Button

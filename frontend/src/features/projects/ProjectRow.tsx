@@ -8,6 +8,7 @@ import { getEndpoints } from '@/api/endpointsCache'
 import { copyText } from '@/lib/copy'
 import { cn } from '@/lib/utils'
 import { Icon } from '@/components/Icons'
+import { EndpointUrl } from '@/components/EndpointUrl'
 import { Button, buttonVariants } from '@/components/ui/shadcn/button'
 import { DeployStatusIcon } from './DeployStatusIcon'
 import {
@@ -230,18 +231,7 @@ function ProjectEndpoints({ projectId }: { projectId: number }) {
                 {(ep.svcName || ep.ingressName) && (
                   <span className="shrink-0 text-faint">{ep.svcName || ep.ingressName}:</span>
                 )}
-                {ep.url.startsWith('http') ? (
-                  <a
-                    href={ep.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="min-w-0 flex-1 truncate text-primary hover:underline"
-                  >
-                    {ep.url}
-                  </a>
-                ) : (
-                  <span className="min-w-0 flex-1 truncate text-mute">{ep.url}</span>
-                )}
+                <EndpointUrl url={ep.url} isLink={ep.url.startsWith('http')} />
                 <Button
                   type="button"
                   variant="ghost"

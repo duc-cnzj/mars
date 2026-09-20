@@ -17,6 +17,7 @@ import { copyText } from '@/lib/copy'
 import { selectAllOnDoubleClick } from '@/lib/selection'
 import { useOverlayZ } from '@/hooks/useOverlayZ'
 import { Icon } from '@/components/Icons'
+import { EndpointUrl } from '@/components/EndpointUrl'
 import { Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
@@ -719,6 +720,7 @@ function NamespaceDescription({
  * 管理员邮箱（creator_email）/ 空间资源总使用量（懒拉 metricsNamespaceCpuMemory）/ 空间访问地址（懒拉 endpointsNamespace）。
  * 两块远端数据都在弹窗打开时拉取、各带「已加载则短路」的缓存，语义与原 popover 一致（不问不拉、拉过不重拉）。
  */
+
 function NamespaceInfoDialog({
   ns,
   open,
@@ -776,10 +778,10 @@ function NamespaceInfoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* 比同文件的成员/管理弹窗(512) 宽两档到 2xl(672)：主体是访问地址，地址整条展开吃横向空间。
+      {/* 比同文件的成员/管理弹窗(512) 宽两档到 4xl(896)：主体是访问地址，地址整条展开吃横向空间。
           加高走「容器留白」——p-8 替代基类 p-6、gap-6 替代 gap-4，只放大卡片内边距与标题间隔，
           不碰列表行距（行距刚收过，再放大会反弹成上一版的松散感） */}
-      <DialogContent className="sm:max-w-2xl gap-6 p-8" style={{ zIndex: z }} raiseOverlay>
+      <DialogContent className="sm:max-w-4xl gap-6 p-8" style={{ zIndex: z }} raiseOverlay>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-[15px]">
             <Icon name="namespace" className="text-[17px]" />
@@ -799,7 +801,7 @@ function NamespaceInfoDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3 py-1">
+        <div className="min-w-0 space-y-3 py-1">
           {/* 管理员：双击邮箱整选 + 复制（与卡片标题、成员弹窗行同一交互） */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-[13px] text-mute">
@@ -847,8 +849,10 @@ function NamespaceInfoDialog({
               <Icon name="link" className="text-[13px]" />
               {t('workbench.endpoints')}
             </div>
-            {/* 外框只留 4px：行自带 px-2 py-1.5（悬停底色要贴边），外框再给 8px 会双层内缩 */}
-            <div className="rounded-md border border-line p-1">
+            {/* 外框只留 4px：行自带 px-2 py-1.5（悬停底色要贴边），外框再给 8px 会双层内缩。
+	               min-w-0 overflow-hidden：外层 grid 已加 min-w-0，这里显式兜底确保 flex 子行
+	               的 min-w-0 flex-1 truncate 拿到有效剩余空间 */}
+            <div className="min-w-0 overflow-hidden rounded-md border border-line p-1">
               {!epsLoaded ? (
                 <div className="flex items-center gap-1.5 px-2 py-1.5 text-[13px] text-faint">
                   <Icon name="loader" className="size-3 animate-spin" />
@@ -865,19 +869,9 @@ function NamespaceInfoDialog({
                     >
                       <span className="shrink-0 font-medium text-ink">{ep.name}</span>
                       {ep.url.startsWith('http') ? (
-                        <a
-                          href={ep.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          title={ep.url}
-                          className="min-w-0 flex-1 truncate font-mono text-primary hover:underline"
-                        >
-                          {ep.url}
-                        </a>
+                        <EndpointUrl url={ep.url} isLink className="font-mono" />
                       ) : (
-                        <span className="min-w-0 flex-1 truncate font-mono text-ink" title={ep.url}>
-                          {ep.url}
-                        </span>
+                        <EndpointUrl url={ep.url} className="font-mono" />
                       )}
                       {(ep.svcName || ep.ingressName) && (
                         <Tag tone="info" dot={false} className="shrink-0">{ep.svcName || ep.ingressName}</Tag>
