@@ -160,6 +160,7 @@ func BuildGatewayHTTPRouteMappingByProjects(ctx context.Context, logger mlog.Log
 				m[projectName] = append(data, &types.ServiceEndpoint{
 					Name: projectName,
 					Url:  "https://" + string(hostname),
+					Type: "HTTPRoute",
 				})
 			}
 		}
@@ -201,12 +202,16 @@ func BuildNodePortMappingByProjects(ctx context.Context, logger mlog.Logger, k8s
 						Name:     projectName,
 						PortName: port.Name,
 						Url:      fmt.Sprintf("http://%s:%d", externalIp, port.NodePort),
+						SvcName:  item.Name,
+						Type:     "Service",
 					})
 				default:
 					m[projectName] = append(data, &types.ServiceEndpoint{
 						Name:     projectName,
 						PortName: port.Name,
 						Url:      fmt.Sprintf("%s:%d", externalIp, port.NodePort),
+						SvcName:  item.Name,
+						Type:     "Service",
 					})
 				}
 			}
@@ -237,6 +242,7 @@ func BuildIngressMappingByProjects(ctx context.Context, logger mlog.Logger, k8sR
 	type Host = string
 	var allHosts = make(map[Host]struct {
 		projectName string
+		ingressName string
 		tls         bool
 	})
 	for _, item := range list {
@@ -244,8 +250,9 @@ func BuildIngressMappingByProjects(ctx context.Context, logger mlog.Logger, k8sR
 			if projectName, ok := projectMap.GetProject(item); ok {
 				allHosts[rules.Host] = struct {
 					projectName string
+					ingressName string
 					tls         bool
-				}{projectName: projectName, tls: false}
+				}{projectName: projectName, ingressName: item.Name, tls: false}
 			}
 		}
 		for _, tls := range item.Spec.TLS {
@@ -253,8 +260,9 @@ func BuildIngressMappingByProjects(ctx context.Context, logger mlog.Logger, k8sR
 				for _, host := range tls.Hosts {
 					allHosts[host] = struct {
 						projectName string
+						ingressName string
 						tls         bool
-					}{projectName: projectName, tls: true}
+					}{projectName: projectName, ingressName: item.Name, tls: true}
 				}
 			}
 		}
@@ -265,8 +273,10 @@ func BuildIngressMappingByProjects(ctx context.Context, logger mlog.Logger, k8sR
 			urlScheme = "https"
 		}
 		m[data.projectName] = append(m[data.projectName], &types.ServiceEndpoint{
-			Name: data.projectName,
-			Url:  fmt.Sprintf("%s://%s", urlScheme, host),
+			Name:        data.projectName,
+			Url:         fmt.Sprintf("%s://%s", urlScheme, host),
+			IngressName: data.ingressName,
+			Type:        "Ingress",
 		})
 	}
 	m.Sort()
@@ -311,12 +321,16 @@ func BuildLoadBalancerMappingByProjects(ctx context.Context, logger mlog.Logger,
 						Name:     projectName,
 						PortName: port.Name,
 						Url:      url,
+						SvcName:  item.Name,
+						Type:     "Service",
 					})
 				default:
 					m[projectName] = append(data, &types.ServiceEndpoint{
 						Name:     projectName,
 						PortName: port.Name,
 						Url:      fmt.Sprintf("%s:%d", lbIP, port.Port),
+						SvcName:  item.Name,
+						Type:     "Service",
 					})
 				}
 			}

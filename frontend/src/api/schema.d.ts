@@ -2363,10 +2363,18 @@ export interface components {
             updatedAt: string;
             deletedAt: string;
         };
+        /** @description ServiceEndpoint 是一条可访问的服务地址，携带来源资源元信息。 */
         "types.ServiceEndpoint": {
             name: string;
             url: string;
+            /** @description Deprecated: 下个大版本即将废弃，请使用 svc_name/ingress_name */
             portName: string;
+            /** @description svc_name 是产生该地址的 k8s Service 名（NodePort/LoadBalancer 来源），Ingress 来源留空。 */
+            svcName: string;
+            /** @description ingress_name 是产生该地址的 k8s Ingress 名（Ingress 来源），Service 来源留空。 */
+            ingressName: string;
+            /** @description type 标记来源类型："Ingress" / "Service" / "HTTPRoute"。 */
+            type: string;
         };
         "types.StateContainer": {
             namespace: string;

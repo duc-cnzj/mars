@@ -332,6 +332,9 @@ func TestBuildGatewayHTTPRouteMappingByProjects_HappyPath(t *testing.T) {
 	got, err := BuildGatewayHTTPRouteMappingByProjects(context.TODO(), mlog.NewForConfig(nil), k, "ns", &Project{Name: "proj1", Manifest: []string{httpRouteManifest}})
 	assert.NoError(t, err)
 	assert.Equal(t, "https://x.example.com", got["proj1"][0].Url)
+	assert.Equal(t, "HTTPRoute", got["proj1"][0].Type)
+	assert.Equal(t, "", got["proj1"][0].SvcName)
+	assert.Equal(t, "", got["proj1"][0].IngressName)
 }
 
 func TestBuildNodePortMappingByProjects_ListErr(t *testing.T) {
@@ -354,6 +357,8 @@ func TestBuildNodePortMappingByProjects_HappyPath(t *testing.T) {
 	got, err := BuildNodePortMappingByProjects(context.TODO(), mlog.NewForConfig(nil), k, "ns", &Project{Name: "proj1", Manifest: []string{svcManifest}})
 	assert.NoError(t, err)
 	assert.Equal(t, "http://10.0.0.1:30080", got["proj1"][0].Url)
+	assert.Equal(t, "Service", got["proj1"][0].Type)
+	assert.Equal(t, "web-svc", got["proj1"][0].SvcName)
 }
 
 func TestBuildIngressMappingByProjects_ListErr(t *testing.T) {
@@ -377,6 +382,9 @@ func TestBuildIngressMappingByProjects_HappyPath(t *testing.T) {
 	// 排序后 https 在前：https://b.example.com 应排在 http://a.example.com 前。
 	assert.ElementsMatch(t, []string{"http://a.example.com", "https://b.example.com"}, []string{got["proj1"][0].Url, got["proj1"][1].Url})
 	assert.True(t, strings.HasPrefix(got["proj1"][0].Url, "https"))
+	assert.Equal(t, "Ingress", got["proj1"][0].Type)
+	assert.Equal(t, "web-ing", got["proj1"][0].IngressName)
+	assert.Equal(t, "", got["proj1"][0].SvcName)
 }
 
 func TestBuildLoadBalancerMappingByProjects_ListErr(t *testing.T) {
@@ -400,6 +408,8 @@ func TestBuildLoadBalancerMappingByProjects_HappyPath(t *testing.T) {
 	assert.NoError(t, err)
 	// 端口 443 + http 端口名 → https 无端口号。
 	assert.Equal(t, "https://1.2.3.4", got["proj1"][0].Url)
+	assert.Equal(t, "Service", got["proj1"][0].Type)
+	assert.Equal(t, "web-svc", got["proj1"][0].SvcName)
 }
 
 func TestBuildLoadBalancerMappingByProjects_Port80(t *testing.T) {
@@ -417,6 +427,8 @@ func TestBuildLoadBalancerMappingByProjects_Port80(t *testing.T) {
 	assert.NoError(t, err)
 	// 端口 80 + http 端口名 → http 无端口号。
 	assert.Equal(t, "http://1.2.3.4", got["proj1"][0].Url)
+	assert.Equal(t, "Service", got["proj1"][0].Type)
+	assert.Equal(t, "web-svc", got["proj1"][0].SvcName)
 }
 
 func TestBuildLoadBalancerMappingByProjects_NonHttpPort(t *testing.T) {
@@ -434,6 +446,8 @@ func TestBuildLoadBalancerMappingByProjects_NonHttpPort(t *testing.T) {
 	assert.NoError(t, err)
 	// 非 http 端口名 → 不带协议前缀的 host:port。
 	assert.Equal(t, "1.2.3.4:3306", got["proj1"][0].Url)
+	assert.Equal(t, "Service", got["proj1"][0].Type)
+	assert.Equal(t, "web-svc", got["proj1"][0].SvcName)
 }
 
 // 以下四个测试覆盖各 Build* 在"无项目"时 projectMap 为空的提前返回分支。
@@ -481,4 +495,6 @@ func TestBuildNodePortMappingByProjects_NonHttpPort(t *testing.T) {
 	got, err := BuildNodePortMappingByProjects(context.TODO(), mlog.NewForConfig(nil), k, "ns", &Project{Name: "proj1", Manifest: []string{svcManifest}})
 	assert.NoError(t, err)
 	assert.Equal(t, "10.0.0.1:33306", got["proj1"][0].Url)
+	assert.Equal(t, "Service", got["proj1"][0].Type)
+	assert.Equal(t, "web-svc", got["proj1"][0].SvcName)
 }

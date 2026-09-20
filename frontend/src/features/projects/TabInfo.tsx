@@ -10,8 +10,8 @@ import { copyText } from '@/lib/copy'
 import { selectAllOnDoubleClick } from '@/lib/selection'
 import { useOverlayZ } from '@/hooks/useOverlayZ'
 import { Icon, type IconName } from '@/components/Icons'
-import { Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
+import { Tag } from '@/components/ui'
 import {
   Dialog,
   DialogContent,
@@ -132,13 +132,14 @@ export function TabInfo({
                     className="break-all text-primary hover:underline"
                   >
                     {ep.url}
-                    {ep.portName && <span className="text-faint"> ({ep.portName})</span>}
                   </a>
                 ) : (
                   <span className="break-all text-ink" translate="no">
                     {ep.url}
-                    {ep.portName && <span className="text-faint"> ({ep.portName})</span>}
                   </span>
+                )}
+                {(ep.svcName || ep.ingressName) && (
+                  <Tag tone="info" dot={false} className="shrink-0">{ep.svcName || ep.ingressName}</Tag>
                 )}
                 {/* 访问地址复制：对齐 ProjectRow 端点弹层同款按钮（ghost icon-xs，hover 提亮主色） */}
                 <Button
@@ -152,10 +153,7 @@ export function TabInfo({
                 >
                   <Icon name="copy" className="text-[11px]" />
                 </Button>
-                <Tag tone="mute" dot={false}>
-                  {ep.name}
-                </Tag>
-              </li>
+                </li>
             ))}
           </ul>
         )}

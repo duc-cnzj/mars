@@ -863,13 +863,7 @@ function NamespaceInfoDialog({
                       key={i}
                       className="flex items-center gap-2 rounded-md px-2 py-1 text-[13px] hover:bg-raised"
                     >
-                      {/* 名称/端口 + 地址同行不换行：名称是扫读锚点放最左（加粗 ink，不再是原来
-                          压成 text-faint 几乎糊掉的那版），与地址之间留 gap-2 断开、不再用冒号粘连；
-                          地址 truncate 保证永不折行，完整值靠 title 悬停与右侧复制按钮兜底 */}
-                      <span className="shrink-0">
-                        <span className="font-medium text-ink">{ep.name}</span>
-                        {ep.portName && <span className="text-mute"> · {ep.portName}</span>}
-                      </span>
+                      <span className="shrink-0 font-medium text-ink">{ep.name}</span>
                       {ep.url.startsWith('http') ? (
                         <a
                           href={ep.url}
@@ -884,6 +878,9 @@ function NamespaceInfoDialog({
                         <span className="min-w-0 flex-1 truncate font-mono text-ink" title={ep.url}>
                           {ep.url}
                         </span>
+                      )}
+                      {(ep.svcName || ep.ingressName) && (
+                        <Tag tone="info" dot={false} className="shrink-0">{ep.svcName || ep.ingressName}</Tag>
                       )}
                       <Button
                         type="button"

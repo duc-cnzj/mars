@@ -227,10 +227,9 @@ function ProjectEndpoints({ projectId }: { projectId: number }) {
                 key={i}
                 className="flex items-center gap-1.5 rounded-md px-1 py-1 text-[12px] hover:bg-raised"
               >
-                <span className="shrink-0 text-faint">
-                  {ep.name}
-                  {ep.portName ? `(${ep.portName})` : ''}:
-                </span>
+                {(ep.svcName || ep.ingressName) && (
+                  <span className="shrink-0 text-faint">{ep.svcName || ep.ingressName}:</span>
+                )}
                 {ep.url.startsWith('http') ? (
                   <a
                     href={ep.url}

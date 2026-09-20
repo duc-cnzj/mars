@@ -300,11 +300,19 @@ func (x *StateContainer) GetReady() bool {
 	return false
 }
 
+// ServiceEndpoint 是一条可访问的服务地址，携带来源资源元信息。
 type ServiceEndpoint struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
-	PortName      string                 `protobuf:"bytes,3,opt,name=port_name,json=portName,proto3" json:"port_name,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Url   string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	// Deprecated: 下个大版本即将废弃，请使用 svc_name/ingress_name
+	PortName string `protobuf:"bytes,3,opt,name=port_name,json=portName,proto3" json:"port_name,omitempty"`
+	// svc_name 是产生该地址的 k8s Service 名（NodePort/LoadBalancer 来源），Ingress 来源留空。
+	SvcName string `protobuf:"bytes,4,opt,name=svc_name,json=svcName,proto3" json:"svc_name,omitempty"`
+	// ingress_name 是产生该地址的 k8s Ingress 名（Ingress 来源），Service 来源留空。
+	IngressName string `protobuf:"bytes,5,opt,name=ingress_name,json=ingressName,proto3" json:"ingress_name,omitempty"`
+	// type 标记来源类型："Ingress" / "Service" / "HTTPRoute"。
+	Type          string `protobuf:"bytes,6,opt,name=type,proto3" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -356,6 +364,27 @@ func (x *ServiceEndpoint) GetUrl() string {
 func (x *ServiceEndpoint) GetPortName() string {
 	if x != nil {
 		return x.PortName
+	}
+	return ""
+}
+
+func (x *ServiceEndpoint) GetSvcName() string {
+	if x != nil {
+		return x.SvcName
+	}
+	return ""
+}
+
+func (x *ServiceEndpoint) GetIngressName() string {
+	if x != nil {
+		return x.IngressName
+	}
+	return ""
+}
+
+func (x *ServiceEndpoint) GetType() string {
+	if x != nil {
+		return x.Type
 	}
 	return ""
 }
@@ -1814,11 +1843,14 @@ const file_proto_types_types_proto_rawDesc = "" +
 	"\x06is_old\x18\x04 \x01(\bR\x05isOld\x12 \n" +
 	"\vterminating\x18\x05 \x01(\bR\vterminating\x12\x18\n" +
 	"\apending\x18\x06 \x01(\bR\apending\x12\x14\n" +
-	"\x05ready\x18\a \x01(\bR\x05ready\"T\n" +
+	"\x05ready\x18\a \x01(\bR\x05ready\"\xa6\x01\n" +
 	"\x0fServiceEndpoint\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\x12\x1b\n" +
-	"\tport_name\x18\x03 \x01(\tR\bportName\"\xab\a\n" +
+	"\tport_name\x18\x03 \x01(\tR\bportName\x12\x19\n" +
+	"\bsvc_name\x18\x04 \x01(\tR\asvcName\x12!\n" +
+	"\fingress_name\x18\x05 \x01(\tR\vingressName\x12\x12\n" +
+	"\x04type\x18\x06 \x01(\tR\x04type\"\xab\a\n" +
 	"\x0eChangelogModel\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\x05R\aversion\x12\x1a\n" +

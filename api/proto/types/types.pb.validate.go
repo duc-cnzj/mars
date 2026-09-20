@@ -279,6 +279,12 @@ func (m *ServiceEndpoint) validate(all bool) error {
 
 	// no validation rules for PortName
 
+	// no validation rules for SvcName
+
+	// no validation rules for IngressName
+
+	// no validation rules for Type
+
 	if len(errors) > 0 {
 		return ServiceEndpointMultiError(errors)
 	}

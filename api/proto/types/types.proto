@@ -42,10 +42,18 @@ message StateContainer {
   bool   ready       = 7;
 }
 
+// ServiceEndpoint 是一条可访问的服务地址，携带来源资源元信息。
 message ServiceEndpoint {
-  string name      = 1;
-  string url       = 2;
-  string port_name = 3;
+  string name         = 1;
+  string url          = 2;
+  // Deprecated: 下个大版本即将废弃，请使用 svc_name/ingress_name
+  string port_name    = 3;
+  // svc_name 是产生该地址的 k8s Service 名（NodePort/LoadBalancer 来源），Ingress 来源留空。
+  string svc_name     = 4;
+  // ingress_name 是产生该地址的 k8s Ingress 名（Ingress 来源），Service 来源留空。
+  string ingress_name = 5;
+  // type 标记来源类型："Ingress" / "Service" / "HTTPRoute"。
+  string type         = 6;
 }
 
 message ChangelogModel {

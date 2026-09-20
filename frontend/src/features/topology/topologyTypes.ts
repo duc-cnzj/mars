@@ -45,12 +45,15 @@ export interface TopoNode {
   lifecycle?: PodLifecycle
 }
 
-/** 项目访问地址（对齐后端 types.ServiceEndpoint：name / url / portName）。
+/** 项目访问地址（对齐后端 types.ServiceEndpoint：name / url / portName / svcName / ingressName / type）。
  *  非节点字段：全部平铺在 Application 根节点详情卡片（直播 Tab 由 /api/endpoints 传入） */
 export interface TopoEndpoint {
   name: string
   url: string
   portName?: string
+  svcName?: string
+  ingressName?: string
+  type?: string
 }
 
 /** 拓扑图边：两个节点间的关系 */

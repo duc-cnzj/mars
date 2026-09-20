@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@/components/Icons'
+import { copyText } from '@/lib/copy'
+import { toast } from '@/lib/toast'
 import { Button } from '@/components/ui/shadcn/button'
 import { Tag } from '@/components/ui/Tag'
 import {
@@ -74,14 +76,15 @@ interface TopologyDetailProps {
   onClose: () => void
   /** 面板主体自定义操作区（直播 Tab 传 Pod 日志/强杀） */
   actions?: ReactNode
-  /** 项目访问地址列表（仅 Application 根节点展示全部；直播 Tab 由 /api/endpoints 传入） */
+  /** 项目访问地址列表（Application 展示全部；Ingress/Service 按 type 过滤；直播 Tab 由 /api/endpoints 传入） */
   endpoints?: TopoEndpoint[]
 }
 
 /**
  * 节点详情面板：画布容器内的绝对定位覆盖层（非 portal，避免与 pan/zoom 打架）。
- * 展示状态/命名空间；仅 Pod 节点展示事件（运行单元层面信号），Application 根节点额外
- * 平铺展示全部项目访问地址；操作区（Pod 日志/强杀）由父组件注入。
+ * 展示状态/命名空间；仅 Pod 节点展示事件（运行单元层面信号），Application/Ingress/Service
+ * 节点展示端点访问地址（Application 平铺全部，Ingress/Service 按 type 过滤）；
+ * 操作区（Pod 日志/强杀）由父组件注入。
  */
 export function TopologyDetail({ node, onClose, actions, endpoints }: TopologyDetailProps) {
   const { t } = useTranslation()
@@ -119,19 +122,25 @@ export function TopologyDetail({ node, onClose, actions, endpoints }: TopologyDe
           <span className="text-[12px] text-mute">{t('topology.namespace')}</span>
           <span className="font-mono text-[12px] text-ink">{node.namespace}</span>
         </div>
-        {/* 项目访问地址（仅 Application 根节点）：全部端点平铺展示，http(s) 链接可点开、
-            hostname/IP 纯文本（对齐 ProjectRow 端点展示策略）。数据由父组件注入：
-            直播 Tab 传 /api/endpoints 全量；空列表不渲染该区块 */}
-        {node.kind === 'Application' && endpoints && endpoints.length > 0 && (
+        {/* 项目访问地址：
+            - Application 根节点：全部端点平铺展示
+            - Ingress/Service 节点：仅显示匹配该资源的端点
+            http(s) 链接可点开，hostname/IP 纯文本（对齐 ProjectRow 端点展示策略）。
+            数据由父组件注入：直播 Tab 传 /api/endpoints 全量；空列表不渲染该区块 */}
+        {['Application', 'Ingress', 'Service'].includes(node.kind) && endpoints && endpoints.length > 0 && (
           <div className="py-1">
             <div className="mb-1.5 text-[12px] text-mute">{t('topology.accessAddresses')}</div>
             <div className="flex flex-col gap-1">
-              {endpoints.map((ep, i) => (
+              {endpoints.filter(ep => {
+                if (node.kind === 'Application') return true
+                if (node.kind === 'Ingress') return ep.type === 'Ingress'
+                if (node.kind === 'Service') return ep.type === 'Service'
+                return false
+              }).map((ep, i) => (
                 <div key={i} className="flex items-center gap-1.5 py-0.5">
-                  <span className="shrink-0 font-mono text-[11px] text-faint">
-                    {ep.name}
-                    {ep.portName ? `(${ep.portName})` : ''}:
-                  </span>
+                  {(ep.svcName || ep.ingressName) && (
+                    <span className="shrink-0 font-mono text-[11px] text-faint">{ep.svcName || ep.ingressName}:</span>
+                  )}
                   {ep.url.startsWith('http') ? (
                     <a
                       href={ep.url}
@@ -147,6 +156,17 @@ export function TopologyDetail({ node, onClose, actions, endpoints }: TopologyDe
                       {ep.url}
                     </span>
                   )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => { copyText(ep.url); toast.success(t('common.copied')) }}
+                    aria-label={t('common.copy')}
+                    title={t('common.copy')}
+                    className="shrink-0 text-faint hover:text-primary"
+                  >
+                    <Icon name="copy" className="text-[11px]" />
+                  </Button>
                 </div>
               ))}
             </div>
