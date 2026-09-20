@@ -12,24 +12,65 @@ import { Button } from '@/components/ui/shadcn/button'
 
 type ViewMode = 'split' | 'unified'
 
-/** 旧版 defaultStyle（react-diff-viewer 全局配置，还原旧版视觉） */
+/** 行内代码基座：fontFamily/lineHeight 对齐外面配置编辑器（CodeMirror monospace + 1.4）。
+ *  库默认是 25px 行高 + Tailwind Preflight 的 ui-monospace 栈，与配置区观感不一致。
+ *  写成 as const 的窄字面量：它会 spread 进 emotion 的 CSSObject（pre 键），
+ *  标成 React.CSSProperties 那种宽类型时 TS 会判定该嵌套对象不是 Interpolation */
+const codeBase = { lineHeight: 1.4, fontFamily: 'monospace' } as const
+
+/** 容器基座：table 高度填满外层滚动容器（min-h-0 grow overflow-auto 有定高时生效）；
+ *  内容超高的部分从 table 溢出、由外层容器接管垂直滚动，内容不足时 table 撑满不留空。
+ *  同样用 as const：它会 spread 进 emotion 的 CSSObject，宽类型会被判定为不可赋值 */
+const containerBase = { display: 'block', width: '100%', height: '100%', overflowX: 'auto' } as const
+
+/** 选中高亮与 CodeMirror 对齐（同一套 #2f81f7，见 lib/prism-material-dark.ts 的选中蓝）：
+ *  全局 ::selection 是品牌色 30% 淡底，落在此处暗底 #2e303c 上偏淡，还把选中文字染成
+ *  var(--text)（默认浅色主题下近黑）——而本组件恒为暗底白字，就成了黑字压蓝底。
+ *  覆写按组件作用域（emotion 编成 `.css-哈希 ::selection`），只命中 diff 内容。
+ *  文字色必须写死暗色主题的 diffViewerColor #FFF：不能用 color: inherit——Blink 的高亮
+ *  伪元素继承自根元素而非宿主元素，inherit 取回的是 body 的 var(--text)，等于没改。
+ *  写死白字也正合编辑器行为：只换底色，文字保持内容本身颜色。 */
+const selectionRule = { '& ::selection': { backgroundColor: '#2f81f7', color: '#FFF' } }
+
+/** 统一视图样式（旧版 defaultStyle，还原旧版视觉）。
+ *  单列，长行不折行：table 占满宽度、超宽内容由 table 自身横向滚动（display:block 才有
+ *  overflow），行高恒定。
+ *  库默认 pre{white-space:pre-wrap} 会把窄列里的长 diff 行折成两行，行高变高、看起来"多出一行" */
 const defaultStyle: ReactDiffViewerStylesOverride = {
   gutter: { padding: '0 5px', minWidth: 25 },
   marker: { padding: '0 6px' },
   diffContainer: {
-    display: 'block',
-    width: '100%',
-    // table 高度填满外层滚动容器（min-h-0 grow overflow-auto 有定高时生效）；
-    // 内容超高的部分从 table 溢出、由外层容器接管垂直滚动，内容不足时 table 撑满不留空
-    height: '100%',
-    overflowX: 'auto',
-    // 长行强制不换行（横向滚动）：库默认 pre{white-space:pre-wrap} + line{word-break:break-word}
-    // 会把窄列里的长 diff 行折成两行，行高变高、看起来"多出一行"。这里压回 pre，行高恒定。
-    // fontFamily/lineHeight 对齐外面配置编辑器（CodeMirror monospace + 1.4）：
-    // 库默认 pre 是 25px 行高 + Tailwind Preflight 的 ui-monospace 栈，和配置区观感不一致。
-    pre: { whiteSpace: 'pre', lineHeight: 1.4, fontFamily: 'monospace' },
+    ...containerBase,
+    ...selectionRule,
+    pre: { whiteSpace: 'pre', ...codeBase },
   },
   line: { fontSize: 12 },
+}
+
+/** 分屏视图样式：左右严格 5:5，超长行就地折行（以此换取两列恒等宽）。
+ *
+ *  auto 布局下两个内容列按各自 max-content 抢宽（实测 900px 容器里左 1496px / 右 152px，
+ *  即 91%:9%）——左边一句长 yaml 就能把右半屏挤没。把长行折掉之后，内容列的 min-content
+ *  降到一个 token 的宽度，库自带的 `.splitView .content{width:50%}` 才真正生效，两列恒为
+ *  1:1（实测 900px 容器里 406:406）。不折行那版只能反过来给表格写死总宽、把横向滚动推给
+ *  外层容器（表格固定布局 + 2×最长行的总宽），代价是长行看不全，故不采用。
+ *
+ *  折行必须挂在容器 pre 上：内容 pre 里还有一层 renderContent 自带的 `<pre style="display:
+ *  inline">`，它不是 contentText，只有 `容器 pre` 这条规则能命中它——挂在 contentText 上时
+ *  内层 pre 仍是 white-space:pre，单元格 min-content 照样被撑到 1496px，白改。
+ *  库默认 line 无 word-break，长 token（URL/超长注解）不折，故显式 overflow-wrap:anywhere。
+ *  行号列被这条容器规则一并放开折行，要单独用 lineNumber 压回去——实测 320px 窄容器下不压的
+ *  话三位数行号会被折成两行。压的手段是嵌套 `&&`：emotion 会把类名写两遍编成 `.css-hash.css-hash`
+ *  （0,2,0），比容器的 `.css-hash pre`（0,1,1）高，无需 `!important`——csstype 不接受带
+ *  `!important` 的 whiteSpace 值，直接写会过不了类型检查。 */
+const splitStyle: ReactDiffViewerStylesOverride = {
+  ...defaultStyle,
+  diffContainer: {
+    ...containerBase,
+    ...selectionRule,
+    pre: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', ...codeBase },
+  },
+  lineNumber: { '&&': { whiteSpace: 'pre' } },
 }
 
 /**
@@ -175,7 +216,7 @@ export function DiffViewer({
           disableWordDiff
           renderContent={renderContent}
           showDiffOnly={diffOnly}
-          styles={defaultStyle}
+          styles={view === 'split' ? splitStyle : defaultStyle}
         />
       </div>
     </div>

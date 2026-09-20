@@ -40,7 +40,7 @@ func NewChangelogSvc(deps ChangelogSvcDeps) changelog.ChangelogServer {
 	}
 }
 
-// FindLastChangelogsByProjectID 查询指定项目最近 5 条变更记录（可按 only_changed
+// FindLastChangelogsByProjectID 查询指定项目最近 15 条变更记录（可按 only_changed
 // 过滤只返回版本有变化的），响应前做项目级访问控制。
 func (c *changelogSvc) FindLastChangelogsByProjectID(ctx context.Context, request *changelog.FindLastChangelogsByProjectIDRequest) (*changelog.FindLastChangelogsByProjectIDResponse, error) {
 	// 与 project.MemoryCpuAndEndpoints / metrics / endpoint 对齐：changelog 携带
@@ -54,7 +54,7 @@ func (c *changelogSvc) FindLastChangelogsByProjectID(ctx context.Context, reques
 		OnlyChanged:        request.OnlyChanged,
 		ProjectID:          int(request.ProjectId),
 		OrderByVersionDesc: lo.ToPtr(true),
-		Limit:              5,
+		Limit:              15,
 	})
 	if err != nil {
 		return nil, logError(ctx, c.logger, err)

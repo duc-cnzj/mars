@@ -60,7 +60,7 @@ func Test_changelogSvc_FindLastChangelogsByProjectID_RepoError(t *testing.T) {
 		OnlyChanged:        true,
 		ProjectID:          1,
 		OrderByVersionDesc: lo.ToPtr(true),
-		Limit:              5,
+		Limit:              15,
 	}).Return(nil, errors.New("x"))
 
 	_, err := svc.FindLastChangelogsByProjectID(newAdminUserCtx(), &changelog.FindLastChangelogsByProjectIDRequest{
@@ -125,7 +125,7 @@ func Test_changelogSvc_FindLastChangelogsByProjectID_Success(t *testing.T) {
 		OnlyChanged:        true,
 		ProjectID:          1,
 		OrderByVersionDesc: lo.ToPtr(true),
-		Limit:              5,
+		Limit:              15,
 	}).Return([]*biz.Changelog{}, nil)
 
 	resp, err := svc.FindLastChangelogsByProjectID(newAdminUserCtx(), &changelog.FindLastChangelogsByProjectIDRequest{
