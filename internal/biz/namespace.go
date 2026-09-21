@@ -116,15 +116,14 @@ func NewNamespaceBiz(logger mlog.Logger, nsRepo NamespaceRepo, k8sRepo K8sRepo, 
 func (n *namespaceBiz) Create(ctx context.Context, namespace, description, creatorEmail string) (*Namespace, bool, error) {
 	nsName := n.nsRepo.GetMarsNamespace(namespace)
 	preCheckNs, err := n.nsRepo.FindByName(ctx, nsName)
-	if err != nil {
-		// 只有 NotFound 才说明名称空间可创建；其余错误（如 DB 故障）必须上抛，
-		// 不能误判为"不存在"后继续走 k8s 创建流程。
-		if !errs.IsNotFound(err) {
-			return nil, false, err
-		}
-	} else {
+	if err == nil {
 		// 已存在：不建新记录，原样返回交给调用方按 IgnoreIfExists 策略决策。
 		return preCheckNs, true, nil
+	}
+	// 只有 NotFound 才说明名称空间可创建；其余错误（如 DB 故障）必须上抛，
+	// 不能误判为"不存在"后继续走 k8s 创建流程。
+	if !errs.IsNotFound(err) {
+		return nil, false, err
 	}
 
 	create, err := n.k8sRepo.CreateNamespace(ctx, nsName)
@@ -147,16 +146,7 @@ func (n *namespaceBiz) Create(ctx context.Context, namespace, description, creat
 	}
 	n.logger.Debug("成功创建namespace: ", create.Name)
 
-	var imagePullSecrets []string
-	secret, err := n.k8sRepo.CreateDockerSecret(ctx, create.Name)
-	if err == nil {
-		imagePullSecrets = append(imagePullSecrets, secret.Name)
-	} else {
-		// CreateDockerSecret 失败只可能是 k8s API 错误（RBAC/网络/配额），
-		// 属于真实基建问题——namespace 创建继续（降级），但必须 Error 级可见，
-		// 否则后续私有镜像 pull 失败会以"不透明的拉取失败"浮出，排障无抓手。
-		n.logger.ErrorCtx(ctx, fmt.Sprintf("创建 namespace %s 的 docker secret 失败", create.Name), err)
-	}
+	imagePullSecrets := n.createImagePullSecrets(ctx, create.Name, "创建")
 
 	ns, err := n.nsRepo.Create(ctx, &CreateNamespaceInput{
 		Name:             create.Name,
@@ -189,6 +179,19 @@ func (n *namespaceBiz) Create(ctx context.Context, namespace, description, creat
 	})
 
 	return ns, false, nil
+}
+
+// createImagePullSecrets 为 namespace 创建 docker secret，成功返回其名称列表，失败返回 nil。
+// action 是日志用的操作名（创建/恢复），失败只降级不报错——CreateDockerSecret 失败只可能是
+// k8s API 错误（RBAC/网络/配额），属真实基建问题，必须 Error 级可见，否则后续私有镜像 pull
+// 失败会以"不透明的拉取失败"浮出，本条日志是排障锚点。
+func (n *namespaceBiz) createImagePullSecrets(ctx context.Context, nsName, action string) []string {
+	secret, err := n.k8sRepo.CreateDockerSecret(ctx, nsName)
+	if err != nil {
+		n.logger.ErrorCtx(ctx, fmt.Sprintf("%s namespace %s 的 docker secret 失败", action, nsName), err)
+		return nil
+	}
+	return []string{secret.Name}
 }
 
 // Delete 实现 NamespaceBiz.Delete：见接口注释。
@@ -273,13 +276,15 @@ func (n *namespaceBiz) Restore(ctx context.Context, name string) (*Namespace, er
 	}
 	// 同名在册空间已存在时不得恢复：两行同名的"在册"空间会让后续按名定位（部署/成员/
 	// 端点汇总）出现歧义，且 k8s 侧同名 namespace 也无法存在第二份。
-	if live, err := n.nsRepo.FindByName(ctx, deleted.Name); err == nil {
+	live, err := n.nsRepo.FindByName(ctx, deleted.Name)
+	if err == nil {
 		return nil, errs.WrapInvalidArgument(
 			fmt.Errorf("空间 %s 已存在（id=%d），请先删除或重命名后再恢复", live.Name, live.ID),
 			"restore namespace",
 		)
-	} else if !errs.IsNotFound(err) {
-		// 只有 NotFound 才说明没有同名在册空间；真实 DB 故障必须上抛，不能当作"可用"放行。
+	}
+	// 只有 NotFound 才说明没有同名在册空间；真实 DB 故障必须上抛，不能当作"可用"放行。
+	if !errs.IsNotFound(err) {
 		return nil, err
 	}
 
@@ -307,13 +312,7 @@ func (n *namespaceBiz) Restore(ctx context.Context, name string) (*Namespace, er
 
 	// docker secret 随 namespace 一起被物理删除，必须重建并回写 DB 记录；失败只降级
 	// （与 Create 一致）：私有镜像 pull 会以拉取失败浮出，本条 Error 日志是排障锚点。
-	var imagePullSecrets []string
-	secret, err := n.k8sRepo.CreateDockerSecret(ctx, create.Name)
-	if err == nil {
-		imagePullSecrets = append(imagePullSecrets, secret.Name)
-	} else {
-		n.logger.ErrorCtx(ctx, fmt.Sprintf("恢复 namespace %s 的 docker secret 失败", create.Name), err)
-	}
+	imagePullSecrets := n.createImagePullSecrets(ctx, create.Name, "恢复")
 
 	// 回滚本次自建的 k8s 骨架（收养的不动）：只在 DB 侧尚未落库时调用——一旦 deleted_at 已清，
 	// DB 就已在册，再删 k8s 骨架等于制造相反方向的错位。回滚失败只记日志，不掩盖原始错误。

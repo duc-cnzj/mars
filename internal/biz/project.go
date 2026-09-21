@@ -207,13 +207,15 @@ func (p *projectBiz) Restore(ctx context.Context, nsID int, name string) (*Proje
 	// 同名在册项目已存在时不得恢复：(namespace_id, name) 在库里没有唯一约束，恢复会让
 	// 同名项目出现两条"在册"记录，此后部署按 name 反查 ProjectID 将命中任意一条（歧义），
 	// 可能把新配置部署到旧记录上。要求调用方先清理同名项目。
-	if live, err := p.projRepo.FindByName(ctx, name, nsID); err == nil {
+	live, err := p.projRepo.FindByName(ctx, name, nsID)
+	if err == nil {
 		return nil, errs.WrapInvalidArgument(
 			fmt.Errorf("空间下已存在同名项目 %s（id=%d），请先删除或重命名后再恢复", name, live.ID),
 			"restore project",
 		)
-	} else if !errs.IsNotFound(err) {
-		// 只有 NotFound 才说明没有同名在册项目；真实 DB 故障必须上抛，不能当作"可用"放行。
+	}
+	// 只有 NotFound 才说明没有同名在册项目；真实 DB 故障必须上抛，不能当作"可用"放行。
+	if !errs.IsNotFound(err) {
 		return nil, err
 	}
 	if err := p.projRepo.RestoreDeleted(ctx, deleted.ID); err != nil {
