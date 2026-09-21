@@ -7825,6 +7825,7 @@ type ProjectMutation struct {
 	git_commit_title         *string
 	git_commit_author        *string
 	git_commit_date          *time.Time
+	deleted_with_namespace   *bool
 	clearedFields            map[string]struct{}
 	changelogs               map[int]struct{}
 	removedchangelogs        map[int]struct{}
@@ -9299,6 +9300,42 @@ func (m *ProjectMutation) ResetRepoID() {
 	delete(m.clearedFields, project.FieldRepoID)
 }
 
+// SetDeletedWithNamespace sets the "deleted_with_namespace" field.
+func (m *ProjectMutation) SetDeletedWithNamespace(b bool) {
+	m.deleted_with_namespace = &b
+}
+
+// DeletedWithNamespace returns the value of the "deleted_with_namespace" field in the mutation.
+func (m *ProjectMutation) DeletedWithNamespace() (r bool, exists bool) {
+	v := m.deleted_with_namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedWithNamespace returns the old "deleted_with_namespace" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldDeletedWithNamespace(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedWithNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedWithNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedWithNamespace: %w", err)
+	}
+	return oldValue.DeletedWithNamespace, nil
+}
+
+// ResetDeletedWithNamespace resets all changes to the "deleted_with_namespace" field.
+func (m *ProjectMutation) ResetDeletedWithNamespace() {
+	m.deleted_with_namespace = nil
+}
+
 // AddChangelogIDs adds the "changelogs" edge to the Changelog entity by ids.
 func (m *ProjectMutation) AddChangelogIDs(ids ...int) {
 	if m.changelogs == nil {
@@ -9441,7 +9478,7 @@ func (m *ProjectMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectMutation) Fields() []string {
-	fields := make([]string, 0, 27)
+	fields := make([]string, 0, 28)
 	if m.created_at != nil {
 		fields = append(fields, project.FieldCreatedAt)
 	}
@@ -9523,6 +9560,9 @@ func (m *ProjectMutation) Fields() []string {
 	if m.repo != nil {
 		fields = append(fields, project.FieldRepoID)
 	}
+	if m.deleted_with_namespace != nil {
+		fields = append(fields, project.FieldDeletedWithNamespace)
+	}
 	return fields
 }
 
@@ -9585,6 +9625,8 @@ func (m *ProjectMutation) Field(name string) (ent.Value, bool) {
 		return m.NamespaceID()
 	case project.FieldRepoID:
 		return m.RepoID()
+	case project.FieldDeletedWithNamespace:
+		return m.DeletedWithNamespace()
 	}
 	return nil, false
 }
@@ -9648,6 +9690,8 @@ func (m *ProjectMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldNamespaceID(ctx)
 	case project.FieldRepoID:
 		return m.OldRepoID(ctx)
+	case project.FieldDeletedWithNamespace:
+		return m.OldDeletedWithNamespace(ctx)
 	}
 	return nil, fmt.Errorf("unknown Project field %s", name)
 }
@@ -9845,6 +9889,13 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRepoID(v)
+		return nil
+	case project.FieldDeletedWithNamespace:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedWithNamespace(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Project field %s", name)
@@ -10125,6 +10176,9 @@ func (m *ProjectMutation) ResetField(name string) error {
 		return nil
 	case project.FieldRepoID:
 		m.ResetRepoID()
+		return nil
+	case project.FieldDeletedWithNamespace:
+		m.ResetDeletedWithNamespace()
 		return nil
 	}
 	return fmt.Errorf("unknown Project field %s", name)

@@ -655,8 +655,10 @@ function ManageDialog({
             <p className="text-[11px] text-faint">{t('namespaces.privateTip')}</p>
           </div>
 
-          {/* 成员 */}
-          <div className="space-y-1.5">
+          {/* 成员 —— ⚠️ 容器用 flex + gap，不能写 space-y 系列：space-y 靠子元素 margin-block 生效，
+              而 <label> 默认 display:inline，行内元素的垂直 margin 不参与布局，间距会静默失效（实测只剩
+              3px）。flex 把 label 块级化，gap 才真正落下去 */}
+          <div className="flex flex-col gap-1.5">
             <label className="text-[12px] text-mute">{t('namespaces.membersLabel')}</label>
             <MemberInput
               value={membersList}
@@ -666,8 +668,8 @@ function ManageDialog({
             <p className="text-[11px] text-faint">{t('namespaces.membersTip')}</p>
           </div>
 
-          {/* 转让管理员 */}
-          <div className="space-y-1.5">
+          {/* 转让管理员 —— 同「成员」：label 是行内元素，必须 flex 块级化后 gap 才生效 */}
+          <div className="flex flex-col gap-1.5">
             <label className="text-[12px] text-mute">{t('namespaces.transferLabel')}</label>
             <Input
               value={transferEmail}

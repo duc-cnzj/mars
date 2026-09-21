@@ -42,6 +42,9 @@ export default {
     namespaces: '空间治理',
     users: '用户管理',
     settings: '系统设置',
+    restore: '误删恢复',
+    // 侧栏超管专属项（误删恢复/系统设置）的角标文案；收起态下会并入 title 一并展示
+    superOnly: '超管',
   },
   admin: {
     collapseSidebar: '收起侧栏',
@@ -201,7 +204,11 @@ export default {
     favoriteSuccess: '关注成功',
     unfavoriteSuccess: '已取消关注',
     deleteNamespace: '删除命名空间',
-    deleteConfirm: '确定要删除该命名空间及其下所有项目吗？',
+    deleteConfirm: '确定要删除空间 <name>{{name}}</name> 及其下所有项目吗？',
+    // 必须是「超级管理员」不是「管理员」：后端 Restore 走 RequireSuperAdmin（名单内才放行），
+    // 普通管理员调用同样 403——文案写错会让用户去找一个根本没有恢复权限的人
+    deleteRecoverableTip: '如误删除，可联系超级管理员恢复。',
+    deleteTypeToConfirm: '请输入空间名称 <name>{{name}}</name> 以确认删除',
     deleteSuccess: '空间「{{name}}」已删除',
     members: '成员',
     private: '私有',
@@ -587,6 +594,41 @@ export default {
     versionKubectl: 'kubectl 版本',
     versionHelm: 'Helm 版本',
   },
+  restore: {
+    title: '误删恢复',
+    tabNamespaces: '空间',
+    tabProjects: '项目',
+    // —— 空间 Tab ——
+    nsHint: '恢复空间会重建 k8s 命名空间与 docker secret，并连带恢复随空间一起删除的项目（早先单独删除的项目不在其列，可到「项目」Tab 单独恢复）；helm release 不会重建，恢复后需重新部署才能运行。',
+    nsSearchPlaceholder: '搜索空间名或创建者',
+    nsEmpty: '没有已删除的空间',
+    nsSearchEmpty: '没有匹配「{{kw}}」的已删除空间',
+    nsColName: '空间',
+    nsColOwner: '创建者',
+    nsColProjects: '项目',
+    // —— 项目 Tab ——
+    projHint: '只列出单独删除的项目；随空间一起删除的项目请到「空间」Tab 恢复其所属空间（会连带恢复）。',
+    projSearchPlaceholder: '搜索项目名或所属空间',
+    projEmpty: '没有已删除的项目',
+    projSearchEmpty: '没有匹配「{{kw}}」的已删除项目',
+    projColName: '项目',
+    projColNamespace: '所属空间',
+    projColOperator: '最后操作人',
+    // —— 两 Tab 共用 ——
+    colDeletedAt: '删除时间',
+    colAction: '操作',
+    count: '共 {{count}} 条',
+    itemCount: '{{count}} 个项目',
+    restore: '恢复',
+    confirmNsTitle: '确认恢复该空间？',
+    confirmNsDesc: '恢复会在集群侧重建 k8s 命名空间与 docker secret，属于对集群状态的改动，请确认目标无误。',
+    confirmProjTitle: '确认恢复该项目？',
+    confirmProjDesc: '恢复会清除该项目的软删标记；helm release 不会重建，恢复后需重新部署才能运行。',
+    confirmAction: '确认恢复',
+    failed: '恢复失败，请稍后重试。',
+    successNs: '空间「{{name}}」已恢复',
+    successProj: '项目「{{namespace}}/{{name}}」已恢复',
+  },
   governance: {
     title: '项目治理',
     searchPlaceholder: '搜索项目或命名空间',
@@ -705,6 +747,10 @@ export default {
     copyOverrideValues: '已复制相关配置！',
     deleteProject: '删除项目',
     deleteConfirm: '确定要删除空间 <ns>{{namespace}}</ns> 下的项目 <name>{{name}}</name> 吗？',
+    // 必须是「超级管理员」不是「管理员」：后端 Restore 走 RequireSuperAdmin（名单内才放行），
+    // 普通管理员调用同样 403——文案写错会让用户去找一个根本没有恢复权限的人
+    deleteRecoverableTip: '如误删除，可联系超级管理员恢复。',
+    deleteTypeToConfirm: '请输入项目名称 <name>{{name}}</name> 以确认删除',
     deleteSuccess: '项目「{{name}}」已删除',
     noContainers: '该项目下暂无任何容器',
     copyContainerName: '复制完整 Pod 名',

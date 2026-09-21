@@ -22,7 +22,7 @@ mars 的客户端 SDK 模块（`github.com/duc-cnzj/mars/api/v6`）。提供 **g
 
 ### 能力差异：gRPC 特有 vs HTTP 特有
 
-gRPC 共 **84** 个方法，HTTP 共 **84** 个（81 个由 proto 的 `google.api.http` 注解生成 + 3 个手写）；其中 **81 个共享**（每个生成的 HTTP stub 在 gRPC 都有对应，签名一致）。差异只有两类，生成器/手写代码在源码里都有明确注释，可复核。
+gRPC 共 **89** 个方法，HTTP 共 **89** 个（86 个由 proto 的 `google.api.http` 注解生成 + 3 个手写）；其中 **86 个共享**（每个生成的 HTTP stub 在 gRPC 都有对应，签名一致）。差异只有两类，生成器/手写代码在源码里都有明确注释，可复核。
 
 **gRPC 特有（3 个）—— HTTP 侧无路由：**
 

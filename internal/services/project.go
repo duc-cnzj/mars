@@ -10,6 +10,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/deploy"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/transformer"
 	"github.com/duc-cnzj/mars/v6/internal/util/date"
@@ -124,7 +125,21 @@ func (p *projectSvc) Liveness(ctx context.Context, request *project.LivenessRequ
 
 // Authorize 是服务级授权门禁：项目服务仅新增的 Liveness（管理员后台）要求 admin，
 // 其余用户方法（列表/部署/展示/删除等）全部放行 allowlist，避免误伤普通用户。
+//
+// Restore 与 AdminDeletedList 是例外：二者都不享受 allowlist 豁免（故默认落 admin），并在下方
+// 先过一道 RequireSuperAdmin 强制名单——误删恢复属排障动作，阈值高于 admin，普通管理员亦无权限。
+//
+// ⚠️ 名单极性陷阱：RequireSuperAdmin 是「传了 superOnly 就以名单为准」的 fail-closed 语义，与
+// RequireAdmin 的 fail-open allowlist 相反；但**方法级门禁看不到请求参数**，所以「列出可恢复项目」
+// 与「执行恢复」同阈值是唯一自洽解——能看见什么就该能恢复什么。新增超管方法必须同时满足
+// 「出现在下面的 superOnly 名单里」+「不出现在 RequireAdmin allowlist 里」，否则会静默降级为 admin 可调。
 func (p *projectSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
+	if err := p.accessBiz.RequireSuperAdmin(ctx, fullMethodName,
+		project.Project_Restore_FullMethodName,
+		project.Project_AdminDeletedList_FullMethodName,
+	); err != nil {
+		return nil, err
+	}
 	return p.accessBiz.RequireAdmin(ctx, fullMethodName,
 		project.Project_List_FullMethodName,
 		project.Project_WebApply_FullMethodName,
@@ -324,6 +339,64 @@ func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 	)
 
 	return &project.DeleteResponse{}, nil
+}
+
+// Restore 恢复被误删的项目（仅超管）：按「空间名 + 项目名」定位软删项目并清除软删标记。
+// Authorize 中本方法先过 RequireSuperAdmin 强制名单（它同时也不在 allowlist 里），故阈值
+// 高于 admin——普通管理员被拒，仅内置超管放行。
+//
+// 先按空间名加载空间：项目必须挂在一个存在的空间下，空间自身被软删时 FindByName 返回
+// NotFound，此处改写为明确指引——否则管理员只会看到一个语焉不详的 404。
+func (p *projectSvc) Restore(ctx context.Context, input *project.RestoreRequest) (*project.RestoreResponse, error) {
+	user := biz.MustGetUser(ctx)
+	ns, err := p.accessBiz.RequireNamespaceAccessByName(ctx, input.Namespace)
+	if err != nil {
+		if errs.IsNotFound(err) {
+			return nil, logError(ctx, p.logger, errs.NotFound(
+				fmt.Sprintf("命名空间 %s 不存在或已被删除，请先恢复空间（其下项目会连带恢复）", input.Namespace),
+			))
+		}
+		return nil, logError(ctx, p.logger, err)
+	}
+
+	proj, err := p.projBiz.Restore(ctx, ns.ID, input.Name)
+	if err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+
+	p.eventBiz.AuditLogWithRequest(
+		types.EventActionType_Create,
+		user.Name,
+		user.Email,
+		fmt.Sprintf("恢复项目: id: '%d' '%s/%s'", proj.ID, ns.Name, proj.Name),
+		input,
+	)
+
+	return &project.RestoreResponse{Item: transformer.FromProject(proj)}, nil
+}
+
+// AdminDeletedList 分页返回「可恢复的已删除项目」列表（超管恢复页）：只含单独删除的行，
+// 随空间级联删除的那批须先恢复空间——见 biz.ProjectBiz.AdminDeletedList 的接口注释。
+func (p *projectSvc) AdminDeletedList(ctx context.Context, request *project.AdminDeletedListRequest) (*project.AdminDeletedListResponse, error) {
+	page, size := pagination.InitByDefault(request.Page, request.PageSize)
+	items, pag, err := p.projBiz.AdminDeletedList(ctx, &biz.ProjectDeletedListInput{
+		Page:     page,
+		PageSize: size,
+		Search:   request.Search,
+	})
+	if err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+	resp := &project.AdminDeletedListResponse{
+		Page:     pag.Page,
+		PageSize: pag.PageSize,
+		Count:    pag.Count,
+		Items:    make([]*types.ProjectModel, 0, len(items)),
+	}
+	for _, proj := range items {
+		resp.Items = append(resp.Items, transformer.FromProject(proj))
+	}
+	return resp, nil
 }
 
 // Version 返回项目当前部署版本号，响应前做项目级访问控制。

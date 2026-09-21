@@ -1,4 +1,4 @@
-import { lazy, Suspense, useLayoutEffect } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import 'sonner/dist/styles.css' // sonner 官方默认样式（明暗主题变量 + 类型色）
@@ -9,6 +9,7 @@ import { AuthProvider, GuestRoute, RequireAdmin, RequireSuperAdmin } from './fea
 import { themeClass, themes } from './themes'
 import { useTheme } from './hooks/useTheme'
 import { useThemeHotkeys } from './hooks/useThemeHotkeys'
+import { schedulePreloadGuardRelease } from './lib/preloadRecovery'
 
 // 登录后的应用壳（RequireAuth + WebSocket + AppLayout）懒加载：登录页只渲染 GuestRoute/Login，
 // 不需要顶栏/底栏/集群状态/WebSocket/protobuf 这一坨，懒加载后这些依赖不进登录页。
@@ -48,6 +49,10 @@ const SystemSettings = lazy(() =>
 const ProjectGovernance = lazy(() =>
   import('./features/governance/ProjectGovernance').then((m) => ({ default: m.ProjectGovernance })),
 )
+// 误删恢复（挂在管理后台 /admin/restore 下，仅内置超管）：按名字重建 k8s 骨架并清软删标记
+const RestoreDeleted = lazy(() =>
+  import('./features/restore/RestoreDeleted').then((m) => ({ default: m.RestoreDeleted })),
+)
 // 管理后台布局（左侧导航 + 右侧主体）：进入 /admin 才加载
 const AdminLayout = lazy(() =>
   import('./layout/AdminLayout').then((m) => ({ default: m.AdminLayout })),
@@ -80,6 +85,14 @@ export default function App() {
     document.body.classList.add(cls)
     return () => document.body.classList.remove(cls)
   }, [theme])
+
+  // 挂载后**延时**解除 chunk 加载失败的整页重载守卫，好让未来某次版本错配还能再自愈一次。
+  // 必须延时：本次文档的懒加载 chunk 此刻还没跑完，立即解除会让重试的失败落在守卫之外
+  //（详见 lib/preloadRecovery 的 GUARD_RELEASE_DELAY_MS）。
+  // 空依赖：只在挂载时跑一次，守卫是「本次会话」粒度而非「每次渲染」粒度。
+  useEffect(() => {
+    schedulePreloadGuardRelease()
+  }, [])
 
   return (
     <div className={`h-screen ${themeClass(theme)}`}>
@@ -141,6 +154,15 @@ export default function App() {
                       element={
                         <RequireSuperAdmin>
                           <SystemSettings />
+                        </RequireSuperAdmin>
+                      }
+                    />
+                    {/* 误删恢复仅超级管理员可访问（后端 Restore 走 RequireSuperAdmin 强制名单） */}
+                    <Route
+                      path="restore"
+                      element={
+                        <RequireSuperAdmin>
+                          <RestoreDeleted />
                         </RequireSuperAdmin>
                       }
                     />

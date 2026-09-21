@@ -41,6 +41,14 @@ message DeleteRequest {
 }
 message DeleteResponse {}
 
+message RestoreRequest {
+  // 空间名（界面展示名，免前缀）：后台已按 ns_prefix 幂等补全，带不带前缀均可命中。
+  string name = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+}
+message RestoreResponse {
+  types.NamespaceModel item = 1;
+}
+
 message FavoriteRequest{
   int32 id       = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
   bool  favorite = 2;
@@ -136,6 +144,25 @@ message AdminListResponse {
   LivenessStats stats = 5;
 }
 
+// AdminDeletedListRequest 已删除空间列表（仅超管）。复用 AdminList 的分页/搜索语义，
+// 但不提供私有/活跃度过滤：活跃度对已删除空间无意义，「只看私有」在恢复场景也无价值。
+message AdminDeletedListRequest {
+  optional int32 page      = 1;
+  optional int32 page_size = 2;
+  // 关键词：匹配空间名/创建者邮箱
+  string search = 3;
+}
+// AdminDeletedListResponse 已删除空间列表：items 直接复用 types.NamespaceModel——
+// 它自带 deleted_at（删除时间）、creator_email（空间创建者）、projects（随空间级联删除的
+// 项目，即会被 Restore 一并恢复的那批），恰好覆盖「选谁恢复」所需的全部信息，无需另立
+// Item 消息，也无需额外统计（本就不提供活跃度分类）。
+message AdminDeletedListResponse {
+  int32 page      = 1;
+  int32 page_size = 2;
+  int32 count     = 3;
+  repeated types.NamespaceModel items = 4;
+}
+
 service Namespace {
   rpc List(ListRequest) returns (ListResponse) {
     option (google.api.http)      = {
@@ -214,6 +241,18 @@ service Namespace {
     };
   }
 
+  // Restore 恢复被误删的名称空间（仅超管）：重建 k8s 命名空间骨架并清除软删标记，
+  // 空间下项目记录一并恢复，但**不重建**任何 helm release（需另行重新部署）。
+  rpc Restore(RestoreRequest) returns (RestoreResponse) {
+    option (google.api.http)      = {
+      post: "/api/admin/namespaces/restore",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "恢复被删除的名称空间（管理员）",
+    };
+  }
+
   rpc IsExists(IsExistsRequest) returns (IsExistsResponse) {
     option (google.api.http)      = {
       post: "/api/namespaces/exists"
@@ -263,6 +302,18 @@ service Namespace {
     };
     option (openapi.v3.operation) = {
       summary: "命名空间管理列表（管理员）",
+    };
+  }
+
+  // AdminDeletedList 已删除空间列表（仅超管）：Restore 的配套「选谁恢复」视图——
+  // 只列软删行（含删除时间与随空间级联删除的项目数），供误删恢复页按行选择后调 Restore。
+  // 阈值与 Restore 一致：能看见「有哪些空间可恢复」本身就属于恢复流程的一部分。
+  rpc AdminDeletedList(AdminDeletedListRequest) returns (AdminDeletedListResponse) {
+    option (google.api.http)      = {
+      get: "/api/admin/namespaces/deleted"
+    };
+    option (openapi.v3.operation) = {
+      summary: "已删除空间列表（管理员）",
     };
   }
 }

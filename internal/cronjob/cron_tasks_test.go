@@ -689,3 +689,28 @@ func TestTasks_CacheClusterInfo_Error(t *testing.T) {
 	repo := &Tasks{k8sRepo: k8sRepo}
 	assert.Equal(t, "cluster info boom", repo.CacheClusterInfo().Error())
 }
+
+// TestTasks_FixDeployStatus_SkipsNilNamespace 项目存活、其所属空间已软删时，ListByDeployStatus
+// 的命名空间边加载（走 SELECT，被软删拦截器过滤掉已软删空间）拿不到空间 → Namespace 为 nil；
+// 这类项目的 deploy_status 仍是列默认值 0（StatusUnknown），恰好落在失败/未知过滤条件内。
+// 缺 nil 守卫即 nil 解引用 panic，让整个定时任务永久失效。
+//
+// 用例混入一个正常项目：若为 nil 项目误调 helm，gomock 会因未预期调用而失败，双重兜底。
+func TestTasks_FixDeployStatus_SkipsNilNamespace(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	projectRepo := data.NewMockProjectRepo(m)
+	projectRepo.EXPECT().ListByDeployStatus(gomock.Any(), types.Deploy_StatusFailed, types.Deploy_StatusUnknown).
+		Return([]*biz.Project{
+			{ID: 1, Name: "orphan", Namespace: nil},
+			{ID: 2, Name: "p2", Namespace: &biz.Namespace{Name: "ns2"}},
+		}, nil)
+	helm := data.NewMockHelmerRepo(m)
+	helm.EXPECT().ReleaseStatus("p2", "ns2").Return(types.Deploy_StatusDeployed)
+	projectRepo.EXPECT().UpdateDeployStatus(gomock.Any(), 2, types.Deploy_StatusDeployed).Return(&biz.Project{}, nil)
+	repo := newTasksBase(m)
+	repo.projectRepo = projectRepo
+	repo.helm = helm
+
+	assert.NoError(t, repo.FixDeployStatus())
+}

@@ -349,6 +349,20 @@ func (_c *ProjectCreate) SetNillableRepoID(v *int) *ProjectCreate {
 	return _c
 }
 
+// SetDeletedWithNamespace sets the "deleted_with_namespace" field.
+func (_c *ProjectCreate) SetDeletedWithNamespace(v bool) *ProjectCreate {
+	_c.mutation.SetDeletedWithNamespace(v)
+	return _c
+}
+
+// SetNillableDeletedWithNamespace sets the "deleted_with_namespace" field if the given value is not nil.
+func (_c *ProjectCreate) SetNillableDeletedWithNamespace(v *bool) *ProjectCreate {
+	if v != nil {
+		_c.SetDeletedWithNamespace(*v)
+	}
+	return _c
+}
+
 // AddChangelogIDs adds the "changelogs" edge to the Changelog entity by IDs.
 func (_c *ProjectCreate) AddChangelogIDs(ids ...int) *ProjectCreate {
 	_c.mutation.AddChangelogIDs(ids...)
@@ -449,6 +463,10 @@ func (_c *ProjectCreate) defaults() error {
 		v := project.DefaultGitCommitAuthor
 		_c.mutation.SetGitCommitAuthor(v)
 	}
+	if _, ok := _c.mutation.DeletedWithNamespace(); !ok {
+		v := project.DefaultDeletedWithNamespace
+		_c.mutation.SetDeletedWithNamespace(v)
+	}
 	return nil
 }
 
@@ -515,6 +533,9 @@ func (_c *ProjectCreate) check() error {
 		if err := project.GitCommitAuthorValidator(v); err != nil {
 			return &ValidationError{Name: "git_commit_author", err: fmt.Errorf(`ent: validator failed for field "Project.git_commit_author": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.DeletedWithNamespace(); !ok {
+		return &ValidationError{Name: "deleted_with_namespace", err: errors.New(`ent: missing required field "Project.deleted_with_namespace"`)}
 	}
 	return nil
 }
@@ -642,6 +663,10 @@ func (_c *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.GitCommitDate(); ok {
 		_spec.SetField(project.FieldGitCommitDate, field.TypeTime, value)
 		_node.GitCommitDate = &value
+	}
+	if value, ok := _c.mutation.DeletedWithNamespace(); ok {
+		_spec.SetField(project.FieldDeletedWithNamespace, field.TypeBool, value)
+		_node.DeletedWithNamespace = value
 	}
 	if nodes := _c.mutation.ChangelogsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -1180,6 +1205,18 @@ func (u *ProjectUpsert) UpdateRepoID() *ProjectUpsert {
 // ClearRepoID clears the value of the "repo_id" field.
 func (u *ProjectUpsert) ClearRepoID() *ProjectUpsert {
 	u.SetNull(project.FieldRepoID)
+	return u
+}
+
+// SetDeletedWithNamespace sets the "deleted_with_namespace" field.
+func (u *ProjectUpsert) SetDeletedWithNamespace(v bool) *ProjectUpsert {
+	u.Set(project.FieldDeletedWithNamespace, v)
+	return u
+}
+
+// UpdateDeletedWithNamespace sets the "deleted_with_namespace" field to the value that was provided on create.
+func (u *ProjectUpsert) UpdateDeletedWithNamespace() *ProjectUpsert {
+	u.SetExcluded(project.FieldDeletedWithNamespace)
 	return u
 }
 
@@ -1736,6 +1773,20 @@ func (u *ProjectUpsertOne) UpdateRepoID() *ProjectUpsertOne {
 func (u *ProjectUpsertOne) ClearRepoID() *ProjectUpsertOne {
 	return u.Update(func(s *ProjectUpsert) {
 		s.ClearRepoID()
+	})
+}
+
+// SetDeletedWithNamespace sets the "deleted_with_namespace" field.
+func (u *ProjectUpsertOne) SetDeletedWithNamespace(v bool) *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.SetDeletedWithNamespace(v)
+	})
+}
+
+// UpdateDeletedWithNamespace sets the "deleted_with_namespace" field to the value that was provided on create.
+func (u *ProjectUpsertOne) UpdateDeletedWithNamespace() *ProjectUpsertOne {
+	return u.Update(func(s *ProjectUpsert) {
+		s.UpdateDeletedWithNamespace()
 	})
 }
 
@@ -2458,6 +2509,20 @@ func (u *ProjectUpsertBulk) UpdateRepoID() *ProjectUpsertBulk {
 func (u *ProjectUpsertBulk) ClearRepoID() *ProjectUpsertBulk {
 	return u.Update(func(s *ProjectUpsert) {
 		s.ClearRepoID()
+	})
+}
+
+// SetDeletedWithNamespace sets the "deleted_with_namespace" field.
+func (u *ProjectUpsertBulk) SetDeletedWithNamespace(v bool) *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.SetDeletedWithNamespace(v)
+	})
+}
+
+// UpdateDeletedWithNamespace sets the "deleted_with_namespace" field to the value that was provided on create.
+func (u *ProjectUpsertBulk) UpdateDeletedWithNamespace() *ProjectUpsertBulk {
+	return u.Update(func(s *ProjectUpsert) {
+		s.UpdateDeletedWithNamespace()
 	})
 }
 

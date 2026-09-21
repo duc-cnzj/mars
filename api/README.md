@@ -22,7 +22,7 @@ Both packages expose the same 17 service accessors: `Auth/Repo/Changelog/Cluster
 
 ### Capability differences: gRPC-only vs HTTP-only
 
-gRPC has **84** methods, HTTP also has **84** (81 generated from proto `google.api.http` annotations + 3 hand-written); **81 are shared** (every generated HTTP stub has a matching gRPC counterpart with an identical signature). There are only two kinds of difference, and both are called out explicitly in the generator or the hand-written source, so you can verify them yourself.
+gRPC has **89** methods, HTTP also has **89** (86 generated from proto `google.api.http` annotations + 3 hand-written); **86 are shared** (every generated HTTP stub has a matching gRPC counterpart with an identical signature). There are only two kinds of difference, and both are called out explicitly in the generator or the hand-written source, so you can verify them yourself.
 
 **gRPC-only (3) — no HTTP route exists:**
 

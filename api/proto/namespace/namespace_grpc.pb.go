@@ -20,19 +20,21 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Namespace_List_FullMethodName          = "/namespace.Namespace/List"
-	Namespace_UpdatePrivate_FullMethodName = "/namespace.Namespace/UpdatePrivate"
-	Namespace_SyncMembers_FullMethodName   = "/namespace.Namespace/SyncMembers"
-	Namespace_UpdateConfig_FullMethodName  = "/namespace.Namespace/UpdateConfig"
-	Namespace_Create_FullMethodName        = "/namespace.Namespace/Create"
-	Namespace_Show_FullMethodName          = "/namespace.Namespace/Show"
-	Namespace_UpdateDesc_FullMethodName    = "/namespace.Namespace/UpdateDesc"
-	Namespace_Delete_FullMethodName        = "/namespace.Namespace/Delete"
-	Namespace_IsExists_FullMethodName      = "/namespace.Namespace/IsExists"
-	Namespace_Favorite_FullMethodName      = "/namespace.Namespace/Favorite"
-	Namespace_FavoriteSort_FullMethodName  = "/namespace.Namespace/FavoriteSort"
-	Namespace_Transfer_FullMethodName      = "/namespace.Namespace/Transfer"
-	Namespace_AdminList_FullMethodName     = "/namespace.Namespace/AdminList"
+	Namespace_List_FullMethodName             = "/namespace.Namespace/List"
+	Namespace_UpdatePrivate_FullMethodName    = "/namespace.Namespace/UpdatePrivate"
+	Namespace_SyncMembers_FullMethodName      = "/namespace.Namespace/SyncMembers"
+	Namespace_UpdateConfig_FullMethodName     = "/namespace.Namespace/UpdateConfig"
+	Namespace_Create_FullMethodName           = "/namespace.Namespace/Create"
+	Namespace_Show_FullMethodName             = "/namespace.Namespace/Show"
+	Namespace_UpdateDesc_FullMethodName       = "/namespace.Namespace/UpdateDesc"
+	Namespace_Delete_FullMethodName           = "/namespace.Namespace/Delete"
+	Namespace_Restore_FullMethodName          = "/namespace.Namespace/Restore"
+	Namespace_IsExists_FullMethodName         = "/namespace.Namespace/IsExists"
+	Namespace_Favorite_FullMethodName         = "/namespace.Namespace/Favorite"
+	Namespace_FavoriteSort_FullMethodName     = "/namespace.Namespace/FavoriteSort"
+	Namespace_Transfer_FullMethodName         = "/namespace.Namespace/Transfer"
+	Namespace_AdminList_FullMethodName        = "/namespace.Namespace/AdminList"
+	Namespace_AdminDeletedList_FullMethodName = "/namespace.Namespace/AdminDeletedList"
 )
 
 // NamespaceClient is the client API for Namespace service.
@@ -47,12 +49,19 @@ type NamespaceClient interface {
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
 	UpdateDesc(ctx context.Context, in *UpdateDescRequest, opts ...grpc.CallOption) (*UpdateDescResponse, error)
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
+	// Restore 恢复被误删的名称空间（仅超管）：重建 k8s 命名空间骨架并清除软删标记，
+	// 空间下项目记录一并恢复，但**不重建**任何 helm release（需另行重新部署）。
+	Restore(ctx context.Context, in *RestoreRequest, opts ...grpc.CallOption) (*RestoreResponse, error)
 	IsExists(ctx context.Context, in *IsExistsRequest, opts ...grpc.CallOption) (*IsExistsResponse, error)
 	Favorite(ctx context.Context, in *FavoriteRequest, opts ...grpc.CallOption) (*FavoriteResponse, error)
 	FavoriteSort(ctx context.Context, in *FavoriteSortRequest, opts ...grpc.CallOption) (*FavoriteSortResponse, error)
 	Transfer(ctx context.Context, in *TransferRequest, opts ...grpc.CallOption) (*TransferResponse, error)
 	// AdminList 命名空间管理列表（管理员后台）：分页 + 关键词/私有过滤 + 实时 CPU/内存用量。
 	AdminList(ctx context.Context, in *AdminListRequest, opts ...grpc.CallOption) (*AdminListResponse, error)
+	// AdminDeletedList 已删除空间列表（仅超管）：Restore 的配套「选谁恢复」视图——
+	// 只列软删行（含删除时间与随空间级联删除的项目数），供误删恢复页按行选择后调 Restore。
+	// 阈值与 Restore 一致：能看见「有哪些空间可恢复」本身就属于恢复流程的一部分。
+	AdminDeletedList(ctx context.Context, in *AdminDeletedListRequest, opts ...grpc.CallOption) (*AdminDeletedListResponse, error)
 }
 
 type namespaceClient struct {
@@ -143,6 +152,16 @@ func (c *namespaceClient) Delete(ctx context.Context, in *DeleteRequest, opts ..
 	return out, nil
 }
 
+func (c *namespaceClient) Restore(ctx context.Context, in *RestoreRequest, opts ...grpc.CallOption) (*RestoreResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RestoreResponse)
+	err := c.cc.Invoke(ctx, Namespace_Restore_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *namespaceClient) IsExists(ctx context.Context, in *IsExistsRequest, opts ...grpc.CallOption) (*IsExistsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(IsExistsResponse)
@@ -193,6 +212,16 @@ func (c *namespaceClient) AdminList(ctx context.Context, in *AdminListRequest, o
 	return out, nil
 }
 
+func (c *namespaceClient) AdminDeletedList(ctx context.Context, in *AdminDeletedListRequest, opts ...grpc.CallOption) (*AdminDeletedListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminDeletedListResponse)
+	err := c.cc.Invoke(ctx, Namespace_AdminDeletedList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NamespaceServer is the server API for Namespace service.
 // All implementations must embed UnimplementedNamespaceServer
 // for forward compatibility.
@@ -205,12 +234,19 @@ type NamespaceServer interface {
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
 	UpdateDesc(context.Context, *UpdateDescRequest) (*UpdateDescResponse, error)
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
+	// Restore 恢复被误删的名称空间（仅超管）：重建 k8s 命名空间骨架并清除软删标记，
+	// 空间下项目记录一并恢复，但**不重建**任何 helm release（需另行重新部署）。
+	Restore(context.Context, *RestoreRequest) (*RestoreResponse, error)
 	IsExists(context.Context, *IsExistsRequest) (*IsExistsResponse, error)
 	Favorite(context.Context, *FavoriteRequest) (*FavoriteResponse, error)
 	FavoriteSort(context.Context, *FavoriteSortRequest) (*FavoriteSortResponse, error)
 	Transfer(context.Context, *TransferRequest) (*TransferResponse, error)
 	// AdminList 命名空间管理列表（管理员后台）：分页 + 关键词/私有过滤 + 实时 CPU/内存用量。
 	AdminList(context.Context, *AdminListRequest) (*AdminListResponse, error)
+	// AdminDeletedList 已删除空间列表（仅超管）：Restore 的配套「选谁恢复」视图——
+	// 只列软删行（含删除时间与随空间级联删除的项目数），供误删恢复页按行选择后调 Restore。
+	// 阈值与 Restore 一致：能看见「有哪些空间可恢复」本身就属于恢复流程的一部分。
+	AdminDeletedList(context.Context, *AdminDeletedListRequest) (*AdminDeletedListResponse, error)
 	mustEmbedUnimplementedNamespaceServer()
 }
 
@@ -245,6 +281,9 @@ func (UnimplementedNamespaceServer) UpdateDesc(context.Context, *UpdateDescReque
 func (UnimplementedNamespaceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
 }
+func (UnimplementedNamespaceServer) Restore(context.Context, *RestoreRequest) (*RestoreResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Restore not implemented")
+}
 func (UnimplementedNamespaceServer) IsExists(context.Context, *IsExistsRequest) (*IsExistsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method IsExists not implemented")
 }
@@ -259,6 +298,9 @@ func (UnimplementedNamespaceServer) Transfer(context.Context, *TransferRequest) 
 }
 func (UnimplementedNamespaceServer) AdminList(context.Context, *AdminListRequest) (*AdminListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AdminList not implemented")
+}
+func (UnimplementedNamespaceServer) AdminDeletedList(context.Context, *AdminDeletedListRequest) (*AdminDeletedListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminDeletedList not implemented")
 }
 func (UnimplementedNamespaceServer) mustEmbedUnimplementedNamespaceServer() {}
 func (UnimplementedNamespaceServer) testEmbeddedByValue()                   {}
@@ -425,6 +467,24 @@ func _Namespace_Delete_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Namespace_Restore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NamespaceServer).Restore(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Namespace_Restore_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NamespaceServer).Restore(ctx, req.(*RestoreRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Namespace_IsExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IsExistsRequest)
 	if err := dec(in); err != nil {
@@ -515,6 +575,24 @@ func _Namespace_AdminList_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Namespace_AdminDeletedList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminDeletedListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NamespaceServer).AdminDeletedList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Namespace_AdminDeletedList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NamespaceServer).AdminDeletedList(ctx, req.(*AdminDeletedListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Namespace_ServiceDesc is the grpc.ServiceDesc for Namespace service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -555,6 +633,10 @@ var Namespace_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Namespace_Delete_Handler,
 		},
 		{
+			MethodName: "Restore",
+			Handler:    _Namespace_Restore_Handler,
+		},
+		{
 			MethodName: "IsExists",
 			Handler:    _Namespace_IsExists_Handler,
 		},
@@ -573,6 +655,10 @@ var Namespace_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AdminList",
 			Handler:    _Namespace_AdminList_Handler,
+		},
+		{
+			MethodName: "AdminDeletedList",
+			Handler:    _Namespace_AdminDeletedList_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

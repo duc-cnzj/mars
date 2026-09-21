@@ -8,6 +8,7 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	"github.com/stretchr/testify/assert"
@@ -34,6 +35,16 @@ type fakeProjectRepoForProjectBiz struct {
 	findByIDsErr, showErr, listLivenessErr           error
 	listLivenessPageResult                           *LivenessPageResult
 	listLivenessPageQuery                            *LivenessPageQuery
+
+	// Restore 流程专用：非 nil 时覆盖同名字段的默认罐头返回，nil 时保持既有测试行为不变。
+	findByNameFn        func(ctx context.Context, name string, nsID int) (*Project, error)
+	findDeletedByNameFn func(ctx context.Context, name string, nsID int) (*Project, error)
+	restoreDeletedFn    func(ctx context.Context, id int) error
+	restoreDeletedArgs  []int
+
+	// AdminDeletedList 流程专用：记录下沉到底层的查询，供透传断言。
+	listAdminDeletedPageFn    func(ctx context.Context, query *ProjectDeletedListPageQuery) (*ProjectDeletedListPageResult, error)
+	listAdminDeletedPageQuery *ProjectDeletedListPageQuery
 }
 
 func (f *fakeProjectRepoForProjectBiz) Create(ctx context.Context, project *CreateProjectInput) (*Project, error) {
@@ -93,7 +104,24 @@ func (f *fakeProjectRepoForProjectBiz) Version(ctx context.Context, id int) (int
 
 func (f *fakeProjectRepoForProjectBiz) FindByName(ctx context.Context, name string, nsID int) (*Project, error) {
 	f.findByNameCalled = true
+	if f.findByNameFn != nil {
+		return f.findByNameFn(ctx, name, nsID)
+	}
 	return &Project{ID: 1, Name: name}, nil
+}
+
+func (f *fakeProjectRepoForProjectBiz) FindDeletedByName(ctx context.Context, name string, nsID int) (*Project, error) {
+	return f.findDeletedByNameFn(ctx, name, nsID)
+}
+
+func (f *fakeProjectRepoForProjectBiz) RestoreDeleted(ctx context.Context, id int) error {
+	f.restoreDeletedArgs = append(f.restoreDeletedArgs, id)
+	return f.restoreDeletedFn(ctx, id)
+}
+
+func (f *fakeProjectRepoForProjectBiz) ListAdminDeletedPage(ctx context.Context, query *ProjectDeletedListPageQuery) (*ProjectDeletedListPageResult, error) {
+	f.listAdminDeletedPageQuery = query
+	return f.listAdminDeletedPageFn(ctx, query)
 }
 
 func (f *fakeProjectRepoForProjectBiz) UpdateDeployStatus(ctx context.Context, id int, status types.Deploy) (*Project, error) {
@@ -649,4 +677,185 @@ func TestProjectBiz_Liveness_CountErr(t *testing.T) {
 	res, err := b.Liveness(context.TODO(), &LivenessInput{})
 	assert.Nil(t, res)
 	assert.ErrorContains(t, err, "count down")
+}
+
+// ---- Restore ----
+
+// TestProjectBiz_Restore_Happy 恢复主路径：清软删标记后用 Show 回读（带 namespace 边）。
+func TestProjectBiz_Restore_Happy(t *testing.T) {
+	f := &fakeProjectRepoForProjectBiz{
+		findDeletedByNameFn: func(ctx context.Context, name string, nsID int) (*Project, error) {
+			assert.Equal(t, "demo", name)
+			assert.Equal(t, 7, nsID)
+			return &Project{ID: 42, Name: name, NamespaceID: nsID}, nil
+		},
+		findByNameFn:     func(ctx context.Context, name string, nsID int) (*Project, error) { return nil, notFoundErr() },
+		restoreDeletedFn: func(ctx context.Context, id int) error { return nil },
+	}
+	b := newProjectBizForTest(f)
+
+	got, err := b.Restore(context.TODO(), 7, "demo")
+	assert.NoError(t, err)
+	assert.Equal(t, 42, got.ID)
+	assert.Equal(t, []int{42}, f.restoreDeletedArgs, "必须按软删记录的 id 恢复")
+	assert.True(t, f.showCalled, "恢复后必须走 Show 回读以携带 namespace 边")
+	assert.NotNil(t, got.Namespace)
+}
+
+// TestProjectBiz_Restore_FindDeletedError 软删记录查询失败直接上抛，不触碰写路径。
+func TestProjectBiz_Restore_FindDeletedError(t *testing.T) {
+	f := &fakeProjectRepoForProjectBiz{
+		findDeletedByNameFn: func(ctx context.Context, name string, nsID int) (*Project, error) {
+			return nil, errors.New("db down")
+		},
+		restoreDeletedFn: func(ctx context.Context, id int) error {
+			t.Fatal("查不到软删记录时不得调用恢复")
+			return nil
+		},
+	}
+	b := newProjectBizForTest(f)
+
+	got, err := b.Restore(context.TODO(), 7, "demo")
+	assert.Nil(t, got)
+	assert.Error(t, err)
+}
+
+// TestProjectBiz_Restore_NameConflict 空间下已存在同名在册项目时拒绝恢复，
+// 避免 (namespace_id, name) 出现两条在册记录导致按名反查歧义。
+func TestProjectBiz_Restore_NameConflict(t *testing.T) {
+	f := &fakeProjectRepoForProjectBiz{
+		findDeletedByNameFn: func(ctx context.Context, name string, nsID int) (*Project, error) {
+			return &Project{ID: 42, Name: name, NamespaceID: nsID}, nil
+		},
+		findByNameFn: func(ctx context.Context, name string, nsID int) (*Project, error) {
+			return &Project{ID: 88, Name: name}, nil
+		},
+		restoreDeletedFn: func(ctx context.Context, id int) error {
+			t.Fatal("同名冲突时不得调用恢复")
+			return nil
+		},
+	}
+	b := newProjectBizForTest(f)
+
+	got, err := b.Restore(context.TODO(), 7, "demo")
+	assert.Nil(t, got)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Contains(t, err.Error(), "同名项目")
+}
+
+// TestProjectBiz_Restore_FindByNameRealDBError 冲突预查遇到非 NotFound 的真实故障必须上抛，
+// 不能当作"无同名项目"放行。
+func TestProjectBiz_Restore_FindByNameRealDBError(t *testing.T) {
+	f := &fakeProjectRepoForProjectBiz{
+		findDeletedByNameFn: func(ctx context.Context, name string, nsID int) (*Project, error) {
+			return &Project{ID: 42, Name: name, NamespaceID: nsID}, nil
+		},
+		findByNameFn: func(ctx context.Context, name string, nsID int) (*Project, error) {
+			return nil, errors.New("db down")
+		},
+		restoreDeletedFn: func(ctx context.Context, id int) error {
+			t.Fatal("真实 DB 故障时不得调用恢复")
+			return nil
+		},
+	}
+	b := newProjectBizForTest(f)
+
+	got, err := b.Restore(context.TODO(), 7, "demo")
+	assert.Nil(t, got)
+	assert.Error(t, err)
+}
+
+// TestProjectBiz_Restore_RestoreDeletedError 清软删标记失败上抛，不再回读。
+func TestProjectBiz_Restore_RestoreDeletedError(t *testing.T) {
+	f := &fakeProjectRepoForProjectBiz{
+		findDeletedByNameFn: func(ctx context.Context, name string, nsID int) (*Project, error) {
+			return &Project{ID: 42, Name: name, NamespaceID: nsID}, nil
+		},
+		findByNameFn:     func(ctx context.Context, name string, nsID int) (*Project, error) { return nil, notFoundErr() },
+		restoreDeletedFn: func(ctx context.Context, id int) error { return errors.New("db down") },
+	}
+	b := newProjectBizForTest(f)
+
+	got, err := b.Restore(context.TODO(), 7, "demo")
+	assert.Nil(t, got)
+	assert.Error(t, err)
+	assert.False(t, f.showCalled)
+}
+
+// TestProjectBiz_Restore_NamespaceDeleted 项目所属空间仍处于软删状态：data 层拒绝恢复，
+// 错误原样上抛（提示调用方先恢复空间）。
+func TestProjectBiz_Restore_NamespaceDeleted(t *testing.T) {
+	f := &fakeProjectRepoForProjectBiz{
+		findDeletedByNameFn: func(ctx context.Context, name string, nsID int) (*Project, error) {
+			return &Project{ID: 42, Name: name, NamespaceID: nsID}, nil
+		},
+		findByNameFn: func(ctx context.Context, name string, nsID int) (*Project, error) { return nil, notFoundErr() },
+		restoreDeletedFn: func(ctx context.Context, id int) error {
+			return errs.WrapInvalidArgument(errors.New("项目所属空间已被删除"), "restore project")
+		},
+	}
+	b := newProjectBizForTest(f)
+
+	got, err := b.Restore(context.TODO(), 7, "demo")
+	assert.Nil(t, got)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Contains(t, err.Error(), "空间已被删除")
+}
+
+// TestProjectBiz_AdminDeletedList 已删除项目列表的编排：查询参数原样透传（搜索/分页），
+// 行集直接回传（不做行级加工），分页元信息由 biz 依 repo 回传的 Count 组装。Count 必须来自
+// repo 的命中总数而非 len(items)：它是未分页总数，分页器靠它算总页数，误用 len(items) 会
+// 永远只有一页。
+func TestProjectBiz_AdminDeletedList(t *testing.T) {
+	var gotQuery *ProjectDeletedListPageQuery
+	f := &fakeProjectRepoForProjectBiz{
+		listAdminDeletedPageFn: func(ctx context.Context, query *ProjectDeletedListPageQuery) (*ProjectDeletedListPageResult, error) {
+			gotQuery = query
+			return &ProjectDeletedListPageResult{
+				Projects: []*Project{
+					{ID: 7, Name: "alpha", Namespace: &Namespace{ID: 3, Name: "mars-a"}},
+					{ID: 9, Name: "beta", Namespace: &Namespace{ID: 3, Name: "mars-a"}},
+				},
+				Count: 42,
+			}, nil
+		},
+	}
+	b := newProjectBizForTest(f)
+
+	items, pag, err := b.AdminDeletedList(context.TODO(), &ProjectDeletedListInput{Page: 2, PageSize: 3, Search: "mars"})
+	assert.NoError(t, err)
+	if assert.NotNil(t, gotQuery) {
+		assert.Equal(t, "mars", gotQuery.Search)
+		assert.Equal(t, int32(2), gotQuery.Page)
+		assert.Equal(t, int32(3), gotQuery.PageSize)
+	}
+	if assert.Len(t, items, 2) {
+		assert.Equal(t, 7, items[0].ID)
+		assert.Equal(t, 9, items[1].ID)
+		// 空间边必须原样带出：恢复请求按「空间名 + 项目名」定位，行内缺了它就没法恢复。
+		if assert.NotNil(t, items[0].Namespace) {
+			assert.Equal(t, "mars-a", items[0].Namespace.Name)
+		}
+	}
+	if assert.NotNil(t, pag) {
+		assert.Equal(t, int32(2), pag.Page)
+		assert.Equal(t, int32(3), pag.PageSize)
+		assert.Equal(t, int32(42), pag.Count, "Count 取 repo 命中总数，不是本页行数")
+	}
+}
+
+// TestProjectBiz_AdminDeletedList_RepoError repo 出错时三个返回值全为 nil 且错误上抛
+// （不得吞错返回空列表——那会让恢复页显示「没有可恢复的项目」，掩盖真实的查询故障）。
+func TestProjectBiz_AdminDeletedList_RepoError(t *testing.T) {
+	f := &fakeProjectRepoForProjectBiz{
+		listAdminDeletedPageFn: func(ctx context.Context, query *ProjectDeletedListPageQuery) (*ProjectDeletedListPageResult, error) {
+			return nil, errors.New("db down")
+		},
+	}
+	b := newProjectBizForTest(f)
+
+	items, pag, err := b.AdminDeletedList(context.TODO(), &ProjectDeletedListInput{Page: 1, PageSize: 15})
+	assert.Nil(t, items)
+	assert.Nil(t, pag)
+	assert.Error(t, err)
 }

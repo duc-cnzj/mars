@@ -11,6 +11,7 @@ import { selectAllOnDoubleClick } from '@/lib/selection'
 import { useOverlayZ } from '@/hooks/useOverlayZ'
 import { Icon, type IconName } from '@/components/Icons'
 import { Button } from '@/components/ui/shadcn/button'
+import { Input } from '@/components/ui/shadcn/input'
 import { Tag } from '@/components/ui'
 import {
   Dialog,
@@ -41,6 +42,9 @@ export function TabInfo({
   // 触发源是普通 Button（非 Radix DialogTrigger），onOpenChange(true) 不会触发 → 只能由 effect 在打开时置顶
   const confirmZ = useOverlayZ(confirmOpen)
   const [deleting, setDeleting] = useState(false)
+  // 删除二次确认的「输入项目名」防误触：逐字敲对项目名才放行删除按钮
+  const [confirmText, setConfirmText] = useState('')
+  const confirmMatched = confirmText.trim() === detail.name
   // 相关配置默认折叠：配置通常很长，收起保持弹窗清爽，需要时展开看完整预览
   const [configOpen, setConfigOpen] = useState(false)
 
@@ -84,6 +88,7 @@ export function TabInfo({
       })
       if (error) throw new Error(error.message ?? String(error))
       setConfirmOpen(false)
+      setConfirmText('')
       toast.success(t('project.deleteSuccess', { name: detail.name }))
       onDeleted()
     } catch (e) {
@@ -278,35 +283,77 @@ export function TabInfo({
 
       {/* 删除项目 */}
       <div className="flex justify-end border-t border-line pt-4">
-        <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
+        <Button
+          variant="destructive"
+          onClick={() => {
+            setConfirmText('')
+            setConfirmOpen(true)
+          }}
+        >
           <Icon name="close" className="text-[13px]" />
           {t('project.deleteProject')}
         </Button>
       </div>
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      {/* 删除确认：目标回显（空间/项目名）+ 一句「如误删除，可联系管理员恢复」+ 输入项目名放行删除按钮 */}
+      <Dialog
+        open={confirmOpen}
+        onOpenChange={(o) => {
+          setConfirmOpen(o)
+          if (!o) setConfirmText('')
+        }}
+      >
         <DialogContent className="sm:max-w-md" style={{ zIndex: confirmZ }}>
           <DialogHeader>
             <DialogTitle>{t('project.deleteProject')}</DialogTitle>
           </DialogHeader>
-          <p className="text-[13px] leading-relaxed text-mute">
-            <Trans
-              i18nKey="project.deleteConfirm"
-              values={{
-                namespace: detail.namespace?.name ?? namespaceLabel(detail),
-                name: detail.name,
-              }}
-              components={{
-                ns: <span className="mx-1 text-err" />,
-                name: <span className="mx-1 font-medium text-ink" />,
-              }}
-            />
-          </p>
+          {/* 段距与内层容器都改用 gap（对齐空间删除弹窗）：space-y 的 margin 对行内 label 无效 */}
+          <div className="flex flex-col gap-2">
+            <p className="text-[13px] leading-snug text-mute">
+              <Trans
+                i18nKey="project.deleteConfirm"
+                values={{
+                  namespace: detail.namespace?.name ?? namespaceLabel(detail),
+                  name: detail.name,
+                }}
+                components={{
+                  // 空间名与项目名统一「红色 + 加粗」：与下方「照抄的名字」同款高亮，
+                  // 让用户在确认句里一眼定位到被删对象（原先名字是深色常规字重，混在句子里不显眼）
+                  ns: <span className="mx-1 font-semibold text-err" />,
+                  name: <span className="mx-1 font-semibold text-err" />,
+                }}
+              />
+            </p>
+            <p className="text-[13px] leading-snug text-mute">{t('project.deleteRecoverableTip')}</p>
+            {/* ⚠️ 同空间删除弹窗：<label> 默认 inline，space-y 系列的垂直 margin 不生效，必须 flex 块级化 */}
+            <div className="flex flex-col gap-2.5">
+              <label className="text-[12px] text-mute" htmlFor={`project-delete-confirm-${detail.id}`}>
+                {/* 与空间删除弹窗同款：Trans 渲染内嵌标签，待输入的项目名红色加粗，避免用户在长句里
+                    看漏要照抄的名字（目标名必须一眼可辨）。select-all 让双击（乃至单击）整段选中
+                    名称——原生双击以连字符/点为词边界，ductest-test 只会选中「ductest」，用户照着
+                    复制会漏字符；user-select: all 把该 span 视作一个不可分割的选区。 */}
+                <Trans
+                  i18nKey="project.deleteTypeToConfirm"
+                  values={{ name: detail.name }}
+                  components={{ name: <span className="font-semibold text-err select-all" /> }}
+                />
+              </label>
+              <Input
+                id={`project-delete-confirm-${detail.id}`}
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder={detail.name}
+                autoComplete="off"
+                spellCheck={false}
+                className="font-mono text-[12px]"
+              />
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
               {t('common.cancel')}
             </Button>
-            <Button variant="destructive" disabled={deleting} onClick={remove}>
+            <Button variant="destructive" disabled={deleting || !confirmMatched} onClick={remove}>
               {deleting && <Icon name="loader" className="size-4 animate-spin" />}
               {t('common.delete')}
             </Button>

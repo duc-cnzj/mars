@@ -115,6 +115,21 @@ func (mr *MockProjectRepoMockRecorder) FindByVersion(ctx, id, version any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByVersion", reflect.TypeOf((*MockProjectRepo)(nil).FindByVersion), ctx, id, version)
 }
 
+// FindDeletedByName mocks base method.
+func (m *MockProjectRepo) FindDeletedByName(ctx context.Context, name string, nsID int) (*biz.Project, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindDeletedByName", ctx, name, nsID)
+	ret0, _ := ret[0].(*biz.Project)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindDeletedByName indicates an expected call of FindDeletedByName.
+func (mr *MockProjectRepoMockRecorder) FindDeletedByName(ctx, name, nsID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDeletedByName", reflect.TypeOf((*MockProjectRepo)(nil).FindDeletedByName), ctx, name, nsID)
+}
+
 // FindProjectsByIDs mocks base method.
 func (m *MockProjectRepo) FindProjectsByIDs(ctx context.Context, ids ...int) ([]*biz.Project, error) {
 	m.ctrl.T.Helper()
@@ -149,6 +164,21 @@ func (m *MockProjectRepo) List(ctx context.Context, input *biz.ListProjectInput)
 func (mr *MockProjectRepoMockRecorder) List(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockProjectRepo)(nil).List), ctx, input)
+}
+
+// ListAdminDeletedPage mocks base method.
+func (m *MockProjectRepo) ListAdminDeletedPage(ctx context.Context, query *biz.ProjectDeletedListPageQuery) (*biz.ProjectDeletedListPageResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAdminDeletedPage", ctx, query)
+	ret0, _ := ret[0].(*biz.ProjectDeletedListPageResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAdminDeletedPage indicates an expected call of ListAdminDeletedPage.
+func (mr *MockProjectRepoMockRecorder) ListAdminDeletedPage(ctx, query any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAdminDeletedPage", reflect.TypeOf((*MockProjectRepo)(nil).ListAdminDeletedPage), ctx, query)
 }
 
 // ListAllProjectBriefs mocks base method.
@@ -199,6 +229,20 @@ func (m *MockProjectRepo) ListLivenessPage(ctx context.Context, query *biz.Liven
 func (mr *MockProjectRepoMockRecorder) ListLivenessPage(ctx, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLivenessPage", reflect.TypeOf((*MockProjectRepo)(nil).ListLivenessPage), ctx, query)
+}
+
+// RestoreDeleted mocks base method.
+func (m *MockProjectRepo) RestoreDeleted(ctx context.Context, id int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RestoreDeleted", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RestoreDeleted indicates an expected call of RestoreDeleted.
+func (mr *MockProjectRepoMockRecorder) RestoreDeleted(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RestoreDeleted", reflect.TypeOf((*MockProjectRepo)(nil).RestoreDeleted), ctx, id)
 }
 
 // Show mocks base method.
@@ -1874,6 +1918,21 @@ func (mr *MockNamespaceRepoMockRecorder) FindByName(ctx, name any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByName", reflect.TypeOf((*MockNamespaceRepo)(nil).FindByName), ctx, name)
 }
 
+// FindDeletedByName mocks base method.
+func (m *MockNamespaceRepo) FindDeletedByName(ctx context.Context, name string) (*biz.Namespace, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindDeletedByName", ctx, name)
+	ret0, _ := ret[0].(*biz.Namespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindDeletedByName indicates an expected call of FindDeletedByName.
+func (mr *MockNamespaceRepoMockRecorder) FindDeletedByName(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDeletedByName", reflect.TypeOf((*MockNamespaceRepo)(nil).FindDeletedByName), ctx, name)
+}
+
 // GetMarsNamespace mocks base method.
 func (m *MockNamespaceRepo) GetMarsNamespace(name string) string {
 	m.ctrl.T.Helper()
@@ -1904,6 +1963,21 @@ func (mr *MockNamespaceRepoMockRecorder) List(ctx, input any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockNamespaceRepo)(nil).List), ctx, input)
 }
 
+// ListAdminDeletedPage mocks base method.
+func (m *MockNamespaceRepo) ListAdminDeletedPage(ctx context.Context, query *biz.NamespaceDeletedListPageQuery) (*biz.NamespaceDeletedListPageResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAdminDeletedPage", ctx, query)
+	ret0, _ := ret[0].(*biz.NamespaceDeletedListPageResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAdminDeletedPage indicates an expected call of ListAdminDeletedPage.
+func (mr *MockNamespaceRepoMockRecorder) ListAdminDeletedPage(ctx, query any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAdminDeletedPage", reflect.TypeOf((*MockNamespaceRepo)(nil).ListAdminDeletedPage), ctx, query)
+}
+
 // ListAdminPage mocks base method.
 func (m *MockNamespaceRepo) ListAdminPage(ctx context.Context, query *biz.AdminListPageQuery) (*biz.AdminListPageResult, error) {
 	m.ctrl.T.Helper()
@@ -1932,6 +2006,21 @@ func (m *MockNamespaceRepo) ListAll(ctx context.Context) ([]*biz.Namespace, erro
 func (mr *MockNamespaceRepoMockRecorder) ListAll(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAll", reflect.TypeOf((*MockNamespaceRepo)(nil).ListAll), ctx)
+}
+
+// RestoreDeleted mocks base method.
+func (m *MockNamespaceRepo) RestoreDeleted(ctx context.Context, id int) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RestoreDeleted", ctx, id)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RestoreDeleted indicates an expected call of RestoreDeleted.
+func (mr *MockNamespaceRepoMockRecorder) RestoreDeleted(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RestoreDeleted", reflect.TypeOf((*MockNamespaceRepo)(nil).RestoreDeleted), ctx, id)
 }
 
 // Show mocks base method.

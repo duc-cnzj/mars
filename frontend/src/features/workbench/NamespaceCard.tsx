@@ -7,7 +7,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
 import type { TKey } from '@/i18n/keys'
@@ -129,6 +129,8 @@ export function NamespaceCard({
   const [busy, setBusy] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  // 删除二次确认的「输入空间名」防误触：只有逐字敲对空间名才放行删除按钮
+  const [confirmText, setConfirmText] = useState('')
   // 创建项目弹窗
   const [createOpen, setCreateOpen] = useState(false)
   // 项目 >6 时折叠：只展示按更新时间排序最新的 6 个，其余折叠（点击展开/收起）
@@ -167,6 +169,8 @@ export function NamespaceCard({
         .slice(0, projectsExpanded ? projectCount : 6)
     : ns.projects
   const foldedCount = foldProjects ? projectCount - 6 : 0
+  // 删除确认按钮的放行条件：忽略首尾空白后与空间名完全一致（粘贴带空格不算数）
+  const confirmMatched = confirmText.trim() === ns.name
 
   // 仅在弹窗打开瞬间从当前 ns 快照表单字段，避免父级刷新 ns 时冲掉未保存的编辑
   useEffect(() => {
@@ -208,6 +212,7 @@ export function NamespaceCard({
       })
       if (error) throw new Error(error.message ?? String(error))
       setConfirmOpen(false)
+      setConfirmText('')
       toast.success(t('workbench.deleteSuccess', { name: ns.name }))
       onDeleted(ns.id)
     } catch (e) {
@@ -412,7 +417,10 @@ export function NamespaceCard({
             <Button
               variant="ghost"
               size="icon-xs"
-              onClick={() => setConfirmOpen(true)}
+              onClick={() => {
+                setConfirmText('')
+                setConfirmOpen(true)
+              }}
               className="text-faint opacity-60 transition-[background-color,border-color,box-shadow,color,scale,opacity] hover:opacity-100 hover:text-err focus-visible:opacity-100"
               title={t('workbench.deleteNamespace')}
             >
@@ -490,8 +498,10 @@ export function NamespaceCard({
               </div>
             </div>
 
-            {/* 成员 */}
-            <div className="space-y-1.5">
+            {/* 成员 —— ⚠️ 容器用 flex + gap，不能写 space-y 系列：space-y 靠子元素 margin-block
+                生效，而 <label> 默认 display:inline，行内元素的垂直 margin 不参与布局，间距会静默失效
+                （实测盒距只剩 3px）。flex 把 label 块级化，gap 才真正落下去 */}
+            <div className="flex flex-col gap-1.5">
               <label className="text-[12px] text-mute">{t('workbench.membersLabel')}</label>
               <MemberInput
                 value={membersList}
@@ -501,8 +511,8 @@ export function NamespaceCard({
               <p className="text-[11px] text-faint">{t('workbench.membersTip')}</p>
             </div>
 
-            {/* 转让所有权 */}
-            <div className="space-y-1.5">
+            {/* 转让所有权 —— 同「成员」：label 是行内元素，必须 flex 块级化后 gap 才生效 */}
+            <div className="flex flex-col gap-1.5">
               <label className="text-[12px] text-mute">{t('workbench.transferLabel')}</label>
               <Input
                 value={transferEmail}
@@ -527,21 +537,72 @@ export function NamespaceCard({
         </DialogContent>
       </Dialog>
 
-      {/* 删除确认 */}
-      <Dialog open={confirmOpen} onOpenChange={(o) => !o && setConfirmOpen(false)}>
+      {/* 删除确认：目标名回显 + 一句「如误删除，可联系管理员恢复」+ 输入空间名放行删除按钮。
+          误删空间会连带软删其下项目并物理卸载 helm release，是本平台破坏性最强的操作，
+          光一个「确定/取消」挡不住手滑——真正的闸是「照抄空间名」，说明文字只留必要信息。 */}
+      <Dialog
+        open={confirmOpen}
+        onOpenChange={(o) => {
+          setConfirmOpen(o)
+          if (!o) setConfirmText('')
+        }}
+      >
         <DialogContent className="max-w-md" style={{ zIndex: confirmZ }} raiseOverlay>
           <DialogHeader>
             <DialogTitle>{t('workbench.deleteNamespace')}</DialogTitle>
           </DialogHeader>
-          <p className="text-[13px] leading-relaxed text-mute">
-            {t('workbench.deleteConfirm')}
-            <span className="ml-1 font-medium text-ink">{ns.name}</span>？
-          </p>
+          {/* 段距用 gap 不用 space-y：同理（space-y 的 margin 对行内 label 无效，见下方内层容器注释） */}
+          <div className="flex flex-col gap-2">
+            {/* 目标名走 Trans 内嵌标签：译者可控语序，也免了「…吗？」后再接一个悬空「名字？」的重复疑问。
+                名字「红色 + 加粗」与下方「照抄的名字」同款高亮——原先深色常规字重混在句子里不显眼。
+                ⚠️ 「及其下所有项目」不能从文案里删：删空间会连带软删其下全部项目 + 物理卸载 helm release，
+                是本平台破坏性最强的操作，后果必须写在用户点「删除」前正对着的那句话里。 */}
+
+            <p className="text-[13px] leading-snug text-mute">
+              <Trans
+                i18nKey="workbench.deleteConfirm"
+                values={{ name: ns.name }}
+                components={{ name: <span className="mx-1 font-semibold text-err" /> }}
+              />
+            </p>
+            <p className="text-[13px] leading-snug text-mute">{t('workbench.deleteRecoverableTip')}</p>
+            {/* ⚠️ 必须用 flex + gap，不能改回 space-y 系列：space-y 是靠子元素 margin-block 实现的，
+                而 <label> 默认 display:inline —— 行内元素的垂直 margin 根本不参与布局，间距会静默失效。
+                实测原写法的 margin-block-end 算出来是 6px，标签到输入框的真实盒距却只有 3px（作者本意
+                的 6px 全部蒸发）；把值调到 10px 也一样无效。flex 会把 label 块级化，gap 才真正落下去。
+                间隙 10px 刻意大于段落间的 8px：让「说明文字」抱团、「输入控件」自成一组。 */}
+            <div className="flex flex-col gap-2.5">
+              <label className="text-[12px] text-mute" htmlFor={`ns-delete-confirm-${ns.id}`}>
+                {/* Trans 渲染内嵌标签：待输入的空间名红色加粗，与周围说明文字拉开对比，
+                    防止用户在长句里看漏要照抄的名字（目标名必须一眼可辨）。select-all 让双击
+                    （乃至单击）整段选中名称——原生双击以连字符为词边界，ductest-test 只会选中
+                    「ductest」，用户照着复制会漏字符；user-select: all 把该 span 视作不可分割选区 */}
+                <Trans
+                  i18nKey="workbench.deleteTypeToConfirm"
+                  values={{ name: ns.name }}
+                  components={{ name: <span className="font-semibold text-err select-all" /> }}
+                />
+              </label>
+              <Input
+                id={`ns-delete-confirm-${ns.id}`}
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder={ns.name}
+                autoComplete="off"
+                spellCheck={false}
+                className="font-mono text-[12px]"
+              />
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
               {t('common.cancel')}
             </Button>
-            <Button variant="destructive" disabled={deleting} onClick={remove}>
+            <Button
+              variant="destructive"
+              disabled={deleting || !confirmMatched}
+              onClick={remove}
+            >
               {deleting && <Icon name="loader" className="size-4 animate-spin" />}
               {t('common.delete')}
             </Button>

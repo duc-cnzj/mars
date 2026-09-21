@@ -46,6 +46,11 @@ type NamespaceBiz interface {
 	// AdminList 返回命名空间管理列表（管理员后台）：全量空间 + 活跃度分类/统计，
 	// 支持活跃度分类过滤与内存分页。
 	AdminList(ctx context.Context, input *AdminListInput) ([]*AdminNamespace, *AdminLivenessStats, *pagination.Pagination, error)
+	// AdminDeletedList 返回已删除（软删）命名空间列表：Restore 的配套「选谁恢复」视图，
+	// 供超管在误删恢复页按行选择。支持关键词（空间名/创建者邮箱）与真 SQL 分页，
+	// 按删除时间倒序。每行 Projects 仅含随空间级联删除的那批（即 Restore 会一并恢复的项目）。
+	// 权限门禁在 services 层（RequireSuperAdmin）——本方法自身不做鉴权。
+	AdminDeletedList(ctx context.Context, input *NamespaceDeletedListInput) ([]*Namespace, *pagination.Pagination, error)
 	// ListAllNames 返回全部 mars 管理命名空间的 k8s 名称（集群看板按此过滤排行/Top Pod）。
 	ListAllNames(ctx context.Context) ([]string, error)
 	// Show 按 id 查询 namespace。
@@ -77,6 +82,12 @@ type NamespaceBiz interface {
 	// NotFound 中止）→ 删 DB → 轮询确认删除 → 派发 EventNamespaceDeleted。
 	// 返回被删除的项目名列表（供审计日志）。ns 为调用方已鉴权（RequireNamespaceOwner）的 Show 结果。
 	Delete(ctx context.Context, ns *Namespace) ([]string, error)
+	// Restore 恢复被误删的命名空间（仅超管，见 services 层 Authorize 的 RequireSuperAdmin 门禁）：
+	// 按展示名定位软删行 → 校验无同名在册空间 → 重建 k8s 命名空间骨架（含 docker
+	// secret）→ 清 deleted_at（连带同批次级联项目）→ 派发 EventNamespaceCreated 补注入
+	// TLS 证书。**不重建**任何 helm release，恢复后项目需另行重新部署。
+	// 返回恢复后的空间 + 本次一并恢复的项目名（供审计日志，与 Delete 返回被删项目名对称）。
+	Restore(ctx context.Context, name string) (*Namespace, []string, error)
 }
 
 var _ NamespaceBiz = (*namespaceBiz)(nil)
@@ -106,15 +117,14 @@ func NewNamespaceBiz(logger mlog.Logger, nsRepo NamespaceRepo, k8sRepo K8sRepo, 
 func (n *namespaceBiz) Create(ctx context.Context, namespace, description, creatorEmail string) (*Namespace, bool, error) {
 	nsName := n.nsRepo.GetMarsNamespace(namespace)
 	preCheckNs, err := n.nsRepo.FindByName(ctx, nsName)
-	if err != nil {
-		// 只有 NotFound 才说明名称空间可创建；其余错误（如 DB 故障）必须上抛，
-		// 不能误判为"不存在"后继续走 k8s 创建流程。
-		if !errs.IsNotFound(err) {
-			return nil, false, err
-		}
-	} else {
+	if err == nil {
 		// 已存在：不建新记录，原样返回交给调用方按 IgnoreIfExists 策略决策。
 		return preCheckNs, true, nil
+	}
+	// 只有 NotFound 才说明名称空间可创建；其余错误（如 DB 故障）必须上抛，
+	// 不能误判为"不存在"后继续走 k8s 创建流程。
+	if !errs.IsNotFound(err) {
+		return nil, false, err
 	}
 
 	create, err := n.k8sRepo.CreateNamespace(ctx, nsName)
@@ -137,16 +147,7 @@ func (n *namespaceBiz) Create(ctx context.Context, namespace, description, creat
 	}
 	n.logger.Debug("成功创建namespace: ", create.Name)
 
-	var imagePullSecrets []string
-	secret, err := n.k8sRepo.CreateDockerSecret(ctx, create.Name)
-	if err == nil {
-		imagePullSecrets = append(imagePullSecrets, secret.Name)
-	} else {
-		// CreateDockerSecret 失败只可能是 k8s API 错误（RBAC/网络/配额），
-		// 属于真实基建问题——namespace 创建继续（降级），但必须 Error 级可见，
-		// 否则后续私有镜像 pull 失败会以"不透明的拉取失败"浮出，排障无抓手。
-		n.logger.ErrorCtx(ctx, fmt.Sprintf("创建 namespace %s 的 docker secret 失败", create.Name), err)
-	}
+	imagePullSecrets := n.createImagePullSecrets(ctx, create.Name, "创建")
 
 	ns, err := n.nsRepo.Create(ctx, &CreateNamespaceInput{
 		Name:             create.Name,
@@ -179,6 +180,19 @@ func (n *namespaceBiz) Create(ctx context.Context, namespace, description, creat
 	})
 
 	return ns, false, nil
+}
+
+// createImagePullSecrets 为 namespace 创建 docker secret，成功返回其名称列表，失败返回 nil。
+// action 是日志用的操作名（创建/恢复），失败只降级不报错——CreateDockerSecret 失败只可能是
+// k8s API 错误（RBAC/网络/配额），属真实基建问题，必须 Error 级可见，否则后续私有镜像 pull
+// 失败会以"不透明的拉取失败"浮出，本条日志是排障锚点。
+func (n *namespaceBiz) createImagePullSecrets(ctx context.Context, nsName, action string) []string {
+	secret, err := n.k8sRepo.CreateDockerSecret(ctx, nsName)
+	if err != nil {
+		n.logger.ErrorCtx(ctx, fmt.Sprintf("%s namespace %s 的 docker secret 失败", action, nsName), err)
+		return nil
+	}
+	return []string{secret.Name}
 }
 
 // Delete 实现 NamespaceBiz.Delete：见接口注释。
@@ -245,6 +259,103 @@ loop:
 	return deletedProjectNames, nil
 }
 
+// Restore 实现 NamespaceBiz.Restore：见接口注释。
+//
+// 失败回滚与 Create 对齐：只有本次调用**真正创建**了 k8s namespace 时才在 DB 写失败后删掉它
+// （createdByUs 守卫），收养来的不删——同一条「只有建的人才有权删」的规则，避免并发场景下删掉
+// 另一个 Restore 正在复用的对象。DB 侧已落库（deleted_at 已清）之后不再回滚：那时再删 k8s 骨架
+// 只会制造「DB 在册、集群没有」的错位。
+//
+// 仍保留的取舍：孤儿 secret 不回收——CreateDockerSecret 成功但 DB 回写失败时，k8s 会留下一个
+// DB 不记录的 docker secret。清理它需要"按 namespace 列举 secret"的能力，而 K8sRepo 端口没有
+// （为此扩端口属另一件事，且删错 secret 会波及该空间下全部工作负载）。▲ 该残留只在收养路径
+// 出现：自建路径的 DB 失败已被上面的回滚连带清掉（删 namespace 会带走其下 secret）。
+func (n *namespaceBiz) Restore(ctx context.Context, name string) (*Namespace, []string, error) {
+	deleted, err := n.nsRepo.FindDeletedByName(ctx, name)
+	if err != nil {
+		return nil, nil, err
+	}
+	// 同名在册空间已存在时不得恢复：两行同名的"在册"空间会让后续按名定位（部署/成员/
+	// 端点汇总）出现歧义，且 k8s 侧同名 namespace 也无法存在第二份。
+	live, err := n.nsRepo.FindByName(ctx, deleted.Name)
+	if err == nil {
+		return nil, nil, errs.WrapInvalidArgument(
+			fmt.Errorf("空间 %s 已存在（id=%d），请先删除或重命名后再恢复", live.Name, live.ID),
+			"restore namespace",
+		)
+	}
+	// 只有 NotFound 才说明没有同名在册空间；真实 DB 故障必须上抛，不能当作"可用"放行。
+	if !errs.IsNotFound(err) {
+		return nil, nil, err
+	}
+
+	// 重建 k8s 骨架：删除空间时 k8s namespace 已被物理删除（连同其下 secret），只清
+	// deleted_at 会让恢复后的空间无法部署（目标 namespace 不存在）。AlreadyExists 说明
+	// k8s 侧仍在（重试/人工预先建好），收养它；Terminating 则拒绝对半成品操作。
+	create, err := n.k8sRepo.CreateNamespace(ctx, deleted.Name)
+	// 记录 namespace 是否由本次调用真正创建（而非收养已存在的），供 DB 写失败时决定是否回滚
+	// ——与 Create 的 createdByUs 同一模式：只有建的人才有权删。
+	createdByUs := err == nil
+	if err != nil {
+		if !k8sapierrors.IsAlreadyExists(err) {
+			return nil, nil, err
+		}
+		found, err := n.k8sRepo.GetNamespace(ctx, deleted.Name)
+		if err != nil {
+			return nil, nil, err
+		}
+		if found.Status.Phase == v1.NamespaceTerminating {
+			return nil, nil, ErrNamespaceTerminating
+		}
+		create = found
+	}
+	n.logger.Debug("成功恢复namespace: ", create.Name)
+
+	// docker secret 随 namespace 一起被物理删除，必须重建并回写 DB 记录；失败只降级
+	// （与 Create 一致）：私有镜像 pull 会以拉取失败浮出，本条 Error 日志是排障锚点。
+	imagePullSecrets := n.createImagePullSecrets(ctx, create.Name, "恢复")
+
+	// 回滚本次自建的 k8s 骨架（收养的不动）：只在 DB 侧尚未落库时调用——一旦 deleted_at 已清，
+	// DB 就已在册，再删 k8s 骨架等于制造相反方向的错位。回滚失败只记日志，不掩盖原始错误。
+	rollback := func() {
+		if !createdByUs {
+			return
+		}
+		if derr := n.k8sRepo.DeleteNamespace(ctx, create.Name); derr != nil {
+			n.logger.ErrorCtx(ctx, "回滚恢复失败的 namespace 时删除失败: "+create.Name, derr)
+		}
+	}
+
+	// 先补 DB 骨架再清软删标记：两者之间失败会留下"k8s 已建、DB 仍软删"的可重试中间态
+	// （再次调用 Restore 命中 AlreadyExists 收养路径），反之则会留下不可恢复的孤儿空间。
+	if err := n.nsRepo.UpdateImagePullSecrets(ctx, deleted.ID, imagePullSecrets); err != nil {
+		rollback()
+		return nil, nil, err
+	}
+	// 恢复范围（连带哪些项目）由 repo 在清软删标记的同一事务里捕获并回传，不在事务外自行
+	// 反查——空间下的"存活项目"还含竞态孤儿（项目存活但所属空间曾软删），反查会把从未被删的
+	// 项目也写进审计日志。
+	restoredProjects, err := n.nsRepo.RestoreDeleted(ctx, deleted.ID)
+	if err != nil {
+		rollback()
+		return nil, nil, err
+	}
+
+	ns, err := n.nsRepo.Show(ctx, deleted.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// 复用创建事件：HandleInjectTlsSecret 已注册在 EventNamespaceCreated 上，派发即
+	// 重新注入 TLS 证书，无需为恢复单独写一份证书注入逻辑。
+	n.eventRepo.Dispatch(EventNamespaceCreated, NamespaceCreatedData{
+		NsModel:  ns,
+		NsK8sObj: create,
+	})
+
+	return ns, restoredProjects, nil
+}
+
 // List 分页列出 namespace（透传 repo）。
 func (n *namespaceBiz) List(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error) {
 	return n.nsRepo.List(ctx, input)
@@ -267,6 +378,15 @@ type AdminListInput struct {
 	PrivateOnly    bool
 	// Liveness 活跃度分类过滤：空 = 全部，否则 active/dormant/zombie。
 	Liveness string
+}
+
+// NamespaceDeletedListInput 是已删除命名空间列表输入：恢复页的搜索 + 分页。
+// 无 PrivateOnly/Liveness：前者在恢复场景无价值，后者对已删除空间无意义（见
+// NamespaceDeletedListPageQuery 注释）。
+type NamespaceDeletedListInput struct {
+	Page, PageSize int32
+	// Search 关键词：模糊匹配空间名或创建者邮箱。
+	Search string
 }
 
 // AdminNamespace 是命名空间管理条目：空间模型 + 最近活跃时间（空间下所有项目
@@ -301,6 +421,29 @@ type AdminListPageResult struct {
 	Namespaces []*Namespace
 	Count      int
 	Stats      AdminLivenessStats
+}
+
+// NamespaceDeletedListPageQuery 是已删除命名空间分页查询输入：搜索与分页下沉 SQL。
+//
+// 刻意不复用 AdminListPageQuery：那张输入里的 PrivateOnly（「只看私有」在恢复场景无价值）
+// 与 Liveness/Now（活跃度分类对已删除空间无意义——空间都没了，谈不上活跃）在恢复语境下
+// 全部失效，共用只会让调用方传一堆恒零字段。同理结果侧也不带 AdminLivenessStats。
+type NamespaceDeletedListPageQuery struct {
+	// Search 关键词：模糊匹配空间名或创建者邮箱，空串不过滤。
+	Search string
+	// Page/PageSize 分页参数（PageSize<=0 时由 pagination 兜默认值）。
+	Page, PageSize int32
+}
+
+// NamespaceDeletedListPageResult 是已删除命名空间分页查询结果：已分页软删空间（含项目边）+
+// 搜索命中总数。Count 为搜索过滤后总数（未分页），驱动前端分页器。
+type NamespaceDeletedListPageResult struct {
+	// Namespaces 本页软删空间，按删除时间倒序（最近删除的排最前）。
+	// 每行的 Projects 只含 deleted_with_namespace=true 的「随空间级联删除」批，即 Restore
+	// 会实际恢复的那批，故前端展示的项目数就是恢复后的项目数。
+	Namespaces []*Namespace
+	// Count 搜索命中总数（不分页）。
+	Count int
 }
 
 // lastActiveAt 返回命名空间最近活跃时间：其下所有项目 UpdatedAt 的最大值。
@@ -341,6 +484,21 @@ func (n *namespaceBiz) AdminList(ctx context.Context, input *AdminListInput) ([]
 		})
 	}
 	return items, &page.Stats, pagination.NewPagination(input.Page, input.PageSize, page.Count), nil
+}
+
+// AdminDeletedList 返回已删除命名空间列表（仅超管恢复流程使用）。搜索/分页/项目边装配全部
+// 由 repo 下沉 SQL，biz 只补分页元信息——与 AdminList 的差别是不做行级活跃度分类（空间已
+// 删除，活跃度无意义），故无需遍历行、也不返回统计。
+func (n *namespaceBiz) AdminDeletedList(ctx context.Context, input *NamespaceDeletedListInput) ([]*Namespace, *pagination.Pagination, error) {
+	page, err := n.nsRepo.ListAdminDeletedPage(ctx, &NamespaceDeletedListPageQuery{
+		Search:   input.Search,
+		Page:     input.Page,
+		PageSize: input.PageSize,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return page.Namespaces, pagination.NewPagination(input.Page, input.PageSize, page.Count), nil
 }
 
 // Show 按 id 查询 namespace（透传 repo）。
@@ -425,6 +583,10 @@ type NamespaceRepo interface {
 	// 统计/分页全部下沉 SQL（真分页，分类键为「空间下项目 UpdatedAt 最大值」，SQL 侧以
 	// EXISTS 子查询等价表达），Now 为分类基准时间。
 	ListAdminPage(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error)
+	// ListAdminDeletedPage 分页列出已软删的命名空间（仅超管恢复流程使用）：必须绕过
+	// SoftDeleteMixin 拦截器才能看到软删行，搜索/分页下沉 SQL。行内项目边只装配
+	// deleted_with_namespace=true 的那批（Restore 的实际恢复范围），故前端项目数即恢复数。
+	ListAdminDeletedPage(ctx context.Context, query *NamespaceDeletedListPageQuery) (*NamespaceDeletedListPageResult, error)
 	// Create 创建命名空间。
 	Create(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error)
 	// Show 按 id 查询命名空间。
@@ -433,11 +595,18 @@ type NamespaceRepo interface {
 	Update(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error)
 	// Delete 删除命名空间。
 	Delete(ctx context.Context, id int) error
+	// FindDeletedByName 按名称查询已软删的命名空间（仅超管恢复流程使用）。
+	FindDeletedByName(ctx context.Context, name string) (*Namespace, error)
+	// RestoreDeleted 恢复软删的命名空间及其同批次级联删除的项目（清空 deleted_at），
+	// 返回本次一并恢复的项目名（按 id 升序）。
+	RestoreDeleted(ctx context.Context, id int) ([]string, error)
 	// GetMarsNamespace 返回 mars 保留命名空间名。
 	GetMarsNamespace(name string) string
 	// ListAll 返回全部 namespace（cron 同步 imagePullSecrets / TLS 证书需全量遍历）。
 	ListAll(ctx context.Context) ([]*Namespace, error)
-	// UpdateImagePullSecrets 更新 namespace 的 imagePullSecrets 列表（cron 对账后回写）。
+	// UpdateImagePullSecrets 更新 namespace 的 imagePullSecrets 列表。
+	// 两个调用方：cron 对账后回写；以及 Restore 在清 deleted_at **之前**补写 DB 骨架——后者
+	// 命中的是软删行，故实现刻意不带 deleted_at IS NULL 谓词。
 	UpdateImagePullSecrets(ctx context.Context, id int, secrets []string) error
 	// FindByName 按名称查询命名空间。
 	FindByName(ctx context.Context, name string) (*Namespace, error)

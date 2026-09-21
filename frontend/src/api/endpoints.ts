@@ -19,7 +19,15 @@ export const API = {
   adminResources: '/api/admin/cluster/resources',
   adminDeployTrend: '/api/admin/cluster/deploy_trend',
   adminNamespaces: '/api/admin/namespaces',
+  /** 恢复被误删的空间（软删除回滚；仅内置超管） */
+  adminNamespaceRestore: '/api/admin/namespaces/restore',
+  /** 已删除空间列表（恢复页「空间」Tab；仅内置超管） */
+  adminNamespaceDeleted: '/api/admin/namespaces/deleted',
   adminProjectsLiveness: '/api/admin/projects/liveness',
+  /** 恢复被误删的项目（软删除回滚；仅内置超管） */
+  adminProjectRestore: '/api/admin/projects/restore',
+  /** 已删除项目列表（恢复页「项目」Tab；仅内置超管） */
+  adminProjectDeleted: '/api/admin/projects/deleted',
   adminSettings: '/api/admin/settings',
   adminUsers: '/api/admin/users',
   adminUserRole: '/api/admin/users/{email}/role',

@@ -128,6 +128,12 @@ func (d *failDriver) Arm() {
 	d.armed.Store(true)
 }
 
+// Disarm 解除武装：被测方法返回后若还要回读库状态做断言（例如"失败必须回滚"），
+// 不解除会连断言用的查询一并注入失败。
+func (d *failDriver) Disarm() {
+	d.armed.Store(false)
+}
+
 func (d *failDriver) Query(ctx context.Context, query string, args, v any) error {
 	if !d.armed.Load() {
 		return d.Driver.Query(ctx, query, args, v)

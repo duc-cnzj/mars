@@ -290,6 +290,18 @@ func (repo *Tasks) FixDeployStatus() error {
 	}
 	for _, project := range projects {
 		p := project
+		// 所属空间为 nil 出现在「项目存活、其所属空间已软删」时：ListByDeployStatus 经
+		// WithNamespace() 做边加载，而边加载走 SELECT、软删拦截器会把已软删的空间过滤掉，
+		// 于是命名空间边为空（典型来源是项目级恢复与空间软删的并发竞态，见 data/project.go
+		// 的 RestoreDeleted 注释）。
+		//
+		// 命中条件不是"deploy_status 恰好是列默认值 0"，而是**能进入本次遍历的行其状态本就
+		// 已落在失败/未知两态**——级联软删不改 deploy_status，"已部署"的项目压根不会被
+		// ListByDeployStatus 取出。不跳过就会 nil 解引用 panic：robfig cron 的 Recover 中间件
+		// 兜得住进程，但本任务每轮都在同一行中断，其后的项目再也修不到，等于该任务失效。
+		if p.Namespace == nil {
+			continue
+		}
 		status := repo.helm.ReleaseStatus(p.Name, p.Namespace.Name)
 		if status != types.Deploy_StatusFailed && status != types.Deploy_StatusUnknown {
 			if _, err := repo.projectRepo.UpdateDeployStatus(context.TODO(), p.ID, status); err != nil {

@@ -142,7 +142,9 @@ func TestUserBiz_ToggleAdmin_RepoError(t *testing.T) {
 	assert.EqualError(t, err, "toggle boom")
 }
 
-// superAdminCtx 构造内置超级管理员身份的 ctx，供 ToggleAdmin 权限门卫放行。
+// superAdminCtx 构造内置超级管理员身份的 ctx，供 ToggleAdmin / RequireSuperAdmin
+// 等超管权限门卫放行。与 access_test.go 的 adminCtx 的唯一差别是邮箱——普通 admin
+// 恒非超管，这正是 IsSuperAdmin 的判据。
 func superAdminCtx() context.Context {
 	return SetUser(context.TODO(), &UserInfo{Email: SuperAdminEmail, Roles: []string{MarsAdmin}})
 }

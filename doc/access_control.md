@@ -3,7 +3,7 @@
 > 本表是 mars 全部传输接口（gRPC + HTTP）权限要求的权威清单，由 `internal/services/` 各服务实现反推归纳。
 > **维护约定**：改动任一服务的鉴权逻辑（登录白名单 / Authorize 门禁 / AccessBiz 调用）时，必须同步更新本文档，防止契约与实现漂移。
 
-## 1. 权限判定模型（6 级）
+## 1. 权限判定模型（7 级）
 
 | 等级 | 判定 | 说明 |
 |---|---|---|
@@ -12,6 +12,7 @@
 | 🛡️ 命名空间级 | `RequireNamespaceAccessByName` / `RequireNamespaceAccessByID` / `RequireProjectAccess` | 公开空间任意登录；私有空间仅 admin / 创建者 / 成员 |
 | 🏠 owner 专属 | `RequireNamespaceOwner` | 仅命名空间创建者 |
 | ⭐ admin 专属 | `RequireAdmin`（Authorize 门禁） | 仅 admin 角色；fullMethodName 精确命中 allowlist 时豁免 |
+| ⭐⭐ 超管专属 | `RequireSuperAdmin`（Authorize 强制名单，比 admin 更严） | 仅内置超管；fullMethodName 精确命中 superOnly 时收紧阈值，未命中放行 |
 | 📄 文件所有者/admin | `RequireFileAccess` | `fil.Username == user.Name` 或 admin |
 
 ## 2. 判定载体（AccessBiz 方法 → 权限等级）
@@ -23,6 +24,7 @@
 | `RequireProjectAccess(ctx, id)` | 🛡️ | 取项目 + 校验其所属命名空间可访问性，返回项目 |
 | `RequireNamespaceOwner(ctx, ns)` | 🏠 | 校验当前用户是否为命名空间创建者 |
 | `RequireAdmin(ctx, fullMethodName, allowlist...)` | ⭐ | allowlist 精确命中放行，否则要求 admin |
+| `RequireSuperAdmin(ctx, fullMethodName, superOnly...)` | ⭐⭐ | superOnly 精确命中时要求内置超管（否则 403），未命中放行。⚠️ 与 `RequireAdmin` **极性相反**：那里是「豁免 admin」的白名单，这里是「必须超管」的强制名单 |
 | `RequireFileAccess(ctx, fil)` | 📄 | 当前用户为文件所有者（Username 匹配）或 admin（独立于 gRPC admin 门禁，用于 HTTP 下载与 gRPC ShowRecords 回放） |
 | `CanAccessNamespace(ctx, ns)` | 🛡️（布尔） | 纯布尔谓词：admin / 创建者 / 成员 / 公开空间放行，不映射错误；供 IsExists「不可访问视同不存在」的静默场景 |
 
@@ -39,17 +41,18 @@
 | `RequireProjectAccess` | 这个项目能看吗？先查它挂在哪个命名空间下，再按命名空间规则判。项目携带部署配置/环境变量，必须查归属防枚举 ID 拖库 | ✅ 项目对象 |
 | `RequireNamespaceOwner` | 你是这个空间的房主（创建者）或 admin 吗？只管 yes/no，不返回对象 | ❌ |
 | `RequireAdmin` | 大门守卫：白名单精确命中就放行，否则必须是 admin（抄错一个字符都不算豁免） | ❌ |
+| `RequireSuperAdmin` | 比 admin 更高的闸：**调的是这个方法名**（如 Restore / AdminDeletedList）就必须是内置超管，普通 admin 也不行——恢复会重建集群骨架，阈值收得更紧 | ❌ |
 | `RequireFileAccess` | 文件上传者是你，或你是 admin？HTTP 下载直接对象比对；gRPC ShowRecords 回放先 `GetByID` 查库取文件元数据再比对 | ❌ |
 | `CanAccessNamespace` | 这个空间你能不能进？只回答能/不能，不报错——「进不去」当作「不存在」静默隐藏，不暴露存在性 | ❌ |
 
-记忆法：1/2/3 负责「能看某块资源吗」且通过后带实体；4 负责「你能动这块地吗」；5 是全局 admin 大闸；6 是文件所有者轻量闸（HTTP 下载 / ShowRecords 回放）；7 是 1/2/3 的纯布尔底座（能进=1、不能=0，不报错）。§3 鉴权链正是三层叠用：登录拦截器 → Authorize（5）→ 方法内（1/2/3/4/6）。
+记忆法：1/2/3 负责「能看某块资源吗」且通过后带实体；4 负责「你能动这块地吗」；5 是全局 admin 大闸；6 是「比 admin 更严」的超管闸（只对强制名单内的方法收紧）；7 是文件所有者轻量闸（HTTP 下载 / ShowRecords 回放）；8 是 1/2/3 的纯布尔底座（能进=1、不能=0，不报错）。§3 鉴权链正是三层叠用：登录拦截器 → Authorize（5/6）→ 方法内（1/2/3/4/7/8）。
 
 ## 3. gRPC 鉴权链（三层叠加）
 
 每个 gRPC 方法按序经过（`internal/server/grpc.go` + `internal/server/middlewares/login.go` + `interceptor.go`）：
 
 1. **登录拦截器**（`middlewares.LoginUnaryServerInterceptor(authFn, logger)` / Stream 版 `LoginStreamServerInterceptor(authFn, logger)`）：命中 `biz.IsPublicMethod` 白名单（与 §4.1 免登录清单逐行对应，白名单归属 biz 层）的公开方法直接放行；其余方法要求 Bearer token，校验通过后把用户注入上下文；认证失败打 `[auth audit]` Warning 审计日志（401 兜底）。
-2. **Authorize 门禁**（`AuthUnaryServerInterceptor`）：服务实现 `Authorize` 接口（file/repo）→ 自动调用 `Authorize(ctx, fullMethodName)`，内部走 `RequireAdmin`。
+2. **Authorize 门禁**（`AuthUnaryServerInterceptor`）：服务实现 `Authorize` 接口（file/repo/namespace/project/user/settings/cluster）→ 自动调用 `Authorize(ctx, fullMethodName)`，内部走 `RequireAdmin`；namespace/project 两个服务的 `Authorize` 会先过一道 `RequireSuperAdmin` 强制名单（收 Restore 及其配套的 AdminDeletedList，阈值严于 admin）。
 3. **方法内访问控制**：各服务方法体开头调用 AccessBiz 的 Require*/Can* 方法（命名空间/项目/owner 级）。
 
 ## 4. 各服务方法 → 权限对照
@@ -75,8 +78,19 @@
 | user | List / ToggleAdmin / Sync | ⭐ | user.go:38（Authorize → RequireAdmin，无 allowlist，整服务 admin） |
 | settings | Get | ⭐ | settings.go:40（Authorize → RequireAdmin，无 allowlist，整服务 admin） |
 | cluster | ClusterBoard / ResourceBoard / DeployTrend | ⭐ | cluster.go:52（Authorize → RequireAdmin，allowlist 仅 ClusterInfo，其余全 admin；ClusterInfo 免登录见 §4.1） |
-| namespace | AdminList | ⭐ | namespace.go:57（Authorize allowlist 放行用户方法，AdminList 未豁免） |
-| project | Liveness | ⭐ | project.go:174（Authorize allowlist 放行用户方法，Liveness 未豁免） |
+| namespace | AdminList | ⭐ | namespace.go:72（Authorize allowlist 放行用户方法，AdminList 未豁免 → 落到 RequireAdmin） |
+| namespace | **Restore** | ⭐⭐ | namespace.go:66（`RequireSuperAdmin` 强制名单；Restore 同时不在 allowlist 中） |
+| namespace | **AdminDeletedList** | ⭐⭐ | namespace.go:66（同上名单；列「有哪些空间可恢复」与恢复同阈值） |
+| project | Liveness | ⭐ | project.go:143（Authorize allowlist 放行用户方法，Liveness 未豁免 → 落到 RequireAdmin） |
+| project | **Restore** | ⭐⭐ | project.go:137（`RequireSuperAdmin` 强制名单；Restore 同时不在 allowlist 中） |
+| project | **AdminDeletedList** | ⭐⭐ | project.go:137（同上名单；列「有哪些项目可恢复」与恢复同阈值） |
+
+> **Restore（误删恢复）为超管专属性**：两个 Restore 在 `Authorize` 开头命中 `RequireSuperAdmin` 强制名单——**仅内置超管放行，普通 admin 一律 403**；它们同时也不在 `RequireAdmin` 的 allowlist 中。项目侧另有 `RequireNamespaceAccessByName` 作为第二道"空间可访问"前置校验。设计取舍：
+> - **恢复权限收归超管**：Restore 会重建 k8s namespace 骨架（含 docker secret），是对集群有副作用的管理动作，普通用户即使拥有原空间也需联系**超级管理员**（普通 admin 同样 403）。
+> - **列表与恢复同阈值**：AdminDeletedList 是 Restore 的配套「选谁恢复」视图，同列入超管名单。方法级门禁看不到请求参数，无法把「列全量」与「执行恢复」拆成两档权限——`能看见什么就该能恢复什么` 是唯一自洽的口径。
+> - **恢复范围是骨架、不含工作负载**：级联软删时 k8s namespace 已被物理删除，Restore 只重建 namespace + docker secret 并清 `deleted_at`（含随空间级联的整批项目），其下服务需人工重新部署才能恢复运行。
+> - **前端入口**：「管理后台 → 误删恢复」（`/admin/restore`，仅内置超管可见 + `RequireSuperAdmin` 路由守卫）。页面分「空间 / 项目」两个 Tab：空间 Tab 列出已删空间（行内以 chip 列出将连带恢复的项目**名称**，超出折行展示）并按名恢复；项目 Tab 只列**单独删除**的项目（`deleted_with_namespace=false`），随空间级联删除的那批须先恢复其所属空间——列表口径与 `projectRepo.RestoreDeleted` 的前置校验（空间须存活）严格一致。
+
 
 ### 4.3 命名空间/项目级访问控制（🛡️ / 🏠）
 

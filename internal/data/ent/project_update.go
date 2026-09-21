@@ -507,6 +507,20 @@ func (_u *ProjectUpdate) ClearRepoID() *ProjectUpdate {
 	return _u
 }
 
+// SetDeletedWithNamespace sets the "deleted_with_namespace" field.
+func (_u *ProjectUpdate) SetDeletedWithNamespace(v bool) *ProjectUpdate {
+	_u.mutation.SetDeletedWithNamespace(v)
+	return _u
+}
+
+// SetNillableDeletedWithNamespace sets the "deleted_with_namespace" field if the given value is not nil.
+func (_u *ProjectUpdate) SetNillableDeletedWithNamespace(v *bool) *ProjectUpdate {
+	if v != nil {
+		_u.SetDeletedWithNamespace(*v)
+	}
+	return _u
+}
+
 // AddChangelogIDs adds the "changelogs" edge to the Changelog entity by IDs.
 func (_u *ProjectUpdate) AddChangelogIDs(ids ...int) *ProjectUpdate {
 	_u.mutation.AddChangelogIDs(ids...)
@@ -822,6 +836,9 @@ func (_u *ProjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.GitCommitDateCleared() {
 		_spec.ClearField(project.FieldGitCommitDate, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DeletedWithNamespace(); ok {
+		_spec.SetField(project.FieldDeletedWithNamespace, field.TypeBool, value)
 	}
 	if _u.mutation.ChangelogsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1419,6 +1436,20 @@ func (_u *ProjectUpdateOne) ClearRepoID() *ProjectUpdateOne {
 	return _u
 }
 
+// SetDeletedWithNamespace sets the "deleted_with_namespace" field.
+func (_u *ProjectUpdateOne) SetDeletedWithNamespace(v bool) *ProjectUpdateOne {
+	_u.mutation.SetDeletedWithNamespace(v)
+	return _u
+}
+
+// SetNillableDeletedWithNamespace sets the "deleted_with_namespace" field if the given value is not nil.
+func (_u *ProjectUpdateOne) SetNillableDeletedWithNamespace(v *bool) *ProjectUpdateOne {
+	if v != nil {
+		_u.SetDeletedWithNamespace(*v)
+	}
+	return _u
+}
+
 // AddChangelogIDs adds the "changelogs" edge to the Changelog entity by IDs.
 func (_u *ProjectUpdateOne) AddChangelogIDs(ids ...int) *ProjectUpdateOne {
 	_u.mutation.AddChangelogIDs(ids...)
@@ -1764,6 +1795,9 @@ func (_u *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err er
 	}
 	if _u.mutation.GitCommitDateCleared() {
 		_spec.ClearField(project.FieldGitCommitDate, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DeletedWithNamespace(); ok {
+		_spec.SetField(project.FieldDeletedWithNamespace, field.TypeBool, value)
 	}
 	if _u.mutation.ChangelogsCleared() {
 		edge := &sqlgraph.EdgeSpec{

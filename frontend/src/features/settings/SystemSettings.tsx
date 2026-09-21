@@ -152,6 +152,8 @@ export function SystemSettings() {
   const [error, setError] = useState('')
   // 明文可见的敏感字段（key 集合）：默认全隐藏，点眼睛逐个展开
   const [revealed, setRevealed] = useState<Record<string, boolean>>({})
+  // 版本信息默认折叠：11 行构建元数据只在排查「跑的是哪个构建」时才看，常驻展开会把配置分组挤到首屏外
+  const [versionOpen, setVersionOpen] = useState(false)
 
   // 拉取配置分组视图（只读聚合，纯内存读取）
   useEffect(() => {
@@ -203,44 +205,61 @@ export function SystemSettings() {
       </div>
 
       {/* 版本信息卡：/api/version 构建元数据（只读，与 config.yaml 无关，故独立成卡置顶）。
+          默认折叠——标题行即开关（对齐项目详情「相关配置」的折叠交互：chevron 翻转 + aria 关联）。
+          折叠时标题行的下边框一并去掉，否则卡片会留下一条悬空的分隔线。
           未取到数据（服务端未返回/请求失败）时整卡不渲染——不占位、不空转骨架。 */}
       {version && (
         <section className="overflow-hidden rounded-lg border border-line bg-surface">
-          <div className="border-b border-line px-4 py-2.5 text-[13px] font-medium text-ink">
+          <button
+            type="button"
+            onClick={() => setVersionOpen((o) => !o)}
+            aria-expanded={versionOpen}
+            aria-controls="settings-version-panel"
+            className={cn(
+              'flex w-full items-center gap-1.5 px-4 py-2.5 text-left text-[13px] font-medium text-ink transition-colors hover:text-primary',
+              versionOpen && 'border-b border-line',
+            )}
+          >
             {t('settings.groupVersion')}
-          </div>
-          <div className="divide-y divide-line">
-            {VERSION_FIELDS.map(({ key, labelKey, format }) => {
-              const raw = version[key]
-              const value = raw ? (format ? format(raw) : raw) : ''
-              return (
-                <div
-                  key={key}
-                  className="grid grid-cols-[16rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5"
-                >
-                  <TruncatedText className="text-[13px] text-mute" text={t(labelKey)} />
-                  {/* 空值占位符用 text-faint 与实值区分；mono 字体对齐配置行的值列观感 */}
-                  <TruncatedText
-                    className={`font-mono text-[13px] ${value ? 'text-ink' : 'text-faint'}`}
-                    text={value || EMPTY_PLACEHOLDER}
-                  />
-                  <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-7"
-                      aria-label={t('common.copy')}
-                      disabled={!value}
-                      onClick={() => copyValue(value)}
-                    >
-                      <Icon name="copy" className="size-3.5" />
-                    </Button>
+            <Icon
+              name="chevron-down"
+              className={cn('text-[12px] text-faint transition-transform', versionOpen && 'rotate-180')}
+            />
+          </button>
+          {versionOpen && (
+            <div id="settings-version-panel" className="divide-y divide-line">
+              {VERSION_FIELDS.map(({ key, labelKey, format }) => {
+                const raw = version[key]
+                const value = raw ? (format ? format(raw) : raw) : ''
+                return (
+                  <div
+                    key={key}
+                    className="grid grid-cols-[16rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5"
+                  >
+                    <TruncatedText className="text-[13px] text-mute" text={t(labelKey)} />
+                    {/* 空值占位符用 text-faint 与实值区分；mono 字体对齐配置行的值列观感 */}
+                    <TruncatedText
+                      className={`font-mono text-[13px] ${value ? 'text-ink' : 'text-faint'}`}
+                      text={value || EMPTY_PLACEHOLDER}
+                    />
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        aria-label={t('common.copy')}
+                        disabled={!value}
+                        onClick={() => copyValue(value)}
+                      >
+                        <Icon name="copy" className="size-3.5" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </section>
       )}
 
