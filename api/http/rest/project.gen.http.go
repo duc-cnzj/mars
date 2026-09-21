@@ -72,6 +72,24 @@ func (s *ProjectSvc) Delete(ctx context.Context, req *project.DeleteRequest) (*p
 	return &out, nil
 }
 
+// Restore POST /api/admin/projects/restore。
+func (s *ProjectSvc) Restore(ctx context.Context, req *project.RestoreRequest) (*project.RestoreResponse, error) {
+	var out project.RestoreResponse
+	if err := s.C.Do(ctx, http.MethodPost, "/api/admin/projects/restore", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// AdminDeletedList GET /api/admin/projects/deleted。
+func (s *ProjectSvc) AdminDeletedList(ctx context.Context, req *project.AdminDeletedListRequest) (*project.AdminDeletedListResponse, error) {
+	var out project.AdminDeletedListResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, "/api/admin/projects/deleted", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // AllContainers GET /api/projects/{id}/containers。
 func (s *ProjectSvc) AllContainers(ctx context.Context, req *project.AllContainersRequest) (*project.AllContainersResponse, error) {
 	var out project.AllContainersResponse

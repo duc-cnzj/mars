@@ -54,7 +54,21 @@ func NewNamespaceSvc(deps NamespaceSvcDeps) namespace.NamespaceServer {
 // 其余用户方法（列表/创建/展示/删除/收藏/成员同步等）全部放行 allowlist，避免误伤
 // 普通用户——这些方法内部的 RequireNamespaceOwner/RequireNamespaceAccessByID 等
 // 访问控制仍照常生效。
+//
+// Restore 与 AdminDeletedList 是两个例外：它们不享受 allowlist 豁免（故默认落 admin），
+// 并在下方先过一道 RequireSuperAdmin 强制名单——两者同属「误删恢复」这一条链路，阈值一致：
+// 恢复会重建集群侧骨架，而列出「有哪些空间可恢复」本身就已属于恢复流程的一部分，能看见
+// 待恢复清单不该比能恢复它更宽松，故一并收在超管名单里（普通管理员同样 403）。
+//
+// ⚠️ RequireSuperAdmin 与 RequireAdmin 的极性相反：它是「名单内才放行」，方法名必须**同时**
+// 出现在这里的 superOnly 与下文 allowlist 之外才正确——只写一处会静默降级为 admin 可调。
 func (n *namespaceSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
+	if err := n.accessBiz.RequireSuperAdmin(ctx, fullMethodName,
+		namespace.Namespace_Restore_FullMethodName,
+		namespace.Namespace_AdminDeletedList_FullMethodName,
+	); err != nil {
+		return nil, err
+	}
 	return n.accessBiz.RequireAdmin(ctx, fullMethodName,
 		namespace.Namespace_List_FullMethodName,
 		namespace.Namespace_UpdatePrivate_FullMethodName,
@@ -179,6 +193,31 @@ func (n *namespaceSvc) AdminList(ctx context.Context, request *namespace.AdminLi
 	return resp, nil
 }
 
+// AdminDeletedList 返回已删除空间列表（仅超管）：Restore 的配套「选谁恢复」视图。
+// 经 Authorize 的 RequireSuperAdmin 强制名单门禁后仅内置超管可调用（普通 admin 亦 403）。
+// 每行 Projects 只含随空间级联删除的那批，即 Restore 会一并恢复的项目，前端据此显示恢复范围。
+func (n *namespaceSvc) AdminDeletedList(ctx context.Context, request *namespace.AdminDeletedListRequest) (*namespace.AdminDeletedListResponse, error) {
+	page, size := pagination.InitByDefault(request.Page, request.PageSize)
+	items, pag, err := n.nsBiz.AdminDeletedList(ctx, &biz.NamespaceDeletedListInput{
+		Page:     page,
+		PageSize: size,
+		Search:   request.Search,
+	})
+	if err != nil {
+		return nil, logError(ctx, n.logger, err)
+	}
+	resp := &namespace.AdminDeletedListResponse{
+		Page:     pag.Page,
+		PageSize: pag.PageSize,
+		Count:    pag.Count,
+		Items:    make([]*types.NamespaceModel, 0, len(items)),
+	}
+	for _, ns := range items {
+		resp.Items = append(resp.Items, transformer.FromNamespace(ns))
+	}
+	return resp, nil
+}
+
 // Create 创建命名空间：已存在时按 IgnoreIfExists 策略放行或返回 AlreadyExists；放行前
 // 校验当前用户对已存在空间的访问权限（无权访问私有空间直接 403），落创建审计日志。
 func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequest) (*namespace.CreateResponse, error) {
@@ -285,6 +324,30 @@ func (n *namespaceSvc) Delete(ctx context.Context, input *namespace.DeleteReques
 	)
 
 	return &namespace.DeleteResponse{}, nil
+}
+
+// Restore 恢复被误删的命名空间（仅超管）：重建 k8s 骨架 + 清除软删标记，落恢复审计日志。
+// Authorize 中本方法先过 RequireSuperAdmin 强制名单（它同时也不在 allowlist 里），故阈值
+// 高于 admin——普通管理员被拒，仅内置超管放行。恢复不做 owner 校验：软删行在 Show 中
+// 被过滤，owner 门卫根本取不到对象。
+func (n *namespaceSvc) Restore(ctx context.Context, input *namespace.RestoreRequest) (*namespace.RestoreResponse, error) {
+	user := biz.MustGetUser(ctx)
+	ns, err := n.nsBiz.Restore(ctx, input.Name)
+	if err != nil {
+		// 恢复编排（撞名检查/重建 k8s 骨架/重建 docker secret/清软删标记/派发事件）
+		// 已下沉 biz，错误原样上抛——错误日志统一由本层 logError 打印。
+		return nil, logError(ctx, n.logger, err)
+	}
+
+	n.eventBiz.AuditLogWithRequest(
+		types.EventActionType_Create,
+		user.Name,
+		user.Email,
+		fmt.Sprintf("恢复项目空间: id: '%d' '%s'", ns.ID, ns.Name),
+		input,
+	)
+
+	return &namespace.RestoreResponse{Item: transformer.FromNamespace(ns)}, nil
 }
 
 // IsExists 查询命名空间是否存在：对无权限用户隐藏存在性，私有空间视同不存在。

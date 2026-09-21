@@ -379,6 +379,10 @@ func init() {
 	project.DefaultGitCommitAuthor = projectDescGitCommitAuthor.Default.(string)
 	// project.GitCommitAuthorValidator is a validator for the "git_commit_author" field. It is called by the builders before save.
 	project.GitCommitAuthorValidator = projectDescGitCommitAuthor.Validators[0].(func(string) error)
+	// projectDescDeletedWithNamespace is the schema descriptor for deleted_with_namespace field.
+	projectDescDeletedWithNamespace := projectFields[24].Descriptor()
+	// project.DefaultDeletedWithNamespace holds the default value on creation for the deleted_with_namespace field.
+	project.DefaultDeletedWithNamespace = projectDescDeletedWithNamespace.Default.(bool)
 	repoMixin := schema.Repo{}.Mixin()
 	repoMixinHooks2 := repoMixin[2].Hooks()
 	repo.Hooks[0] = repoMixinHooks2[0]

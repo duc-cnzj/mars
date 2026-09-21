@@ -57,6 +57,11 @@ type AccessBiz interface {
 	// 否则要求当前用户为 admin。event/file/repo 三个服务的 Authorize 共用。
 	// 命中统一精确匹配（不混用 Contains/EqualFold），防止豁免条件意外放行。
 	RequireAdmin(ctx context.Context, fullMethodName string, allowlist ...string) (context.Context, error)
+	// RequireSuperAdmin 是方法级超管门禁：fullMethodName 精确命中 superOnly 时要求
+	// 当前用户为内置超级管理员，否则 errs.ErrorPermissionDenied；未命中放行。
+	// 与 RequireAdmin 的 allowlist 极性相反（那里是豁免名单，这里是强制名单）——
+	// 供"比 admin 更严"的方法（如 Restore）在 Authorize 中收紧阈值。
+	RequireSuperAdmin(ctx context.Context, fullMethodName string, superOnly ...string) error
 	// RequireFileAccess 是文件访问门卫：校验当前用户是否为文件所有者（Username
 	// 匹配）或 admin，否则 errs.ErrorPermissionDenied。文件可能含部署配置/执行记录等
 	// 敏感内容，只允许所有者或 admin 下载，防止枚举文件 ID 拖库。
@@ -164,6 +169,29 @@ func (a *accessBiz) RequireAdmin(ctx context.Context, fullMethodName string, all
 		return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, "管理员操作")
 	}
 	return ctx, nil
+}
+
+// RequireSuperAdmin 是方法级超管门禁：fullMethodName 精确命中 superOnly 时要求当前
+// 用户为内置超级管理员（身份判据见 UserInfo.IsSuperAdmin），否则 errs.ErrorPermissionDenied；
+// 未命中直接放行，把判据留给调用方（通常紧跟其后的 RequireAdmin）。
+//
+// ⚠️ 语义与 RequireAdmin **极性相反**：RequireAdmin 的可变参数是"豁免 admin 校验"的白名单
+// （命中即放宽到用户级），本方法的可变参数是"必须超管"的强制名单（命中即收紧到超管）。
+// 需求方向不同故极性不同，不要按 RequireAdmin 的直觉套用。
+//
+// 为什么需要它：RequireAdmin 的 allowlist 只能表达"比 admin 更宽"，无法表达"比 admin 更严"，
+// 而恢复被误删资源（Restore）会重建集群侧骨架（k8s namespace + docker secret），设计上收归
+// 超管。阈值收口于此处，避免同一权威判据在各服务手写后各自漂移。
+func (a *accessBiz) RequireSuperAdmin(ctx context.Context, fullMethodName string, superOnly ...string) error {
+	for _, name := range superOnly {
+		if fullMethodName == name {
+			if !MustGetUser(ctx).IsSuperAdmin() {
+				return errs.WrapPermissionDenied(errs.ErrorPermissionDenied, "超级管理员操作")
+			}
+			return nil
+		}
+	}
+	return nil
 }
 
 // RequireFileAccess 是文件访问门卫：校验当前用户是否为文件所有者（Username

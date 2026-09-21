@@ -42,6 +42,8 @@ export default {
     namespaces: 'Space Governance',
     users: 'User Management',
     settings: 'System Settings',
+    restore: 'Restore Deleted',
+    superOnly: 'Super admin',
   },
   admin: {
     collapseSidebar: 'Collapse sidebar',
@@ -200,7 +202,10 @@ export default {
     favoriteSuccess: 'Added to favorites',
     unfavoriteSuccess: 'Removed from favorites',
     deleteNamespace: 'Delete namespace',
-    deleteConfirm: 'Delete this namespace and all its projects?',
+    deleteConfirm: 'Delete namespace <name>{{name}}</name> and all its projects?',
+    // 必须是 super admin 不是 administrator：后端 Restore 走 RequireSuperAdmin
+    deleteRecoverableTip: 'If deleted in error, contact a super admin to restore it.',
+    deleteTypeToConfirm: 'Type the namespace name <name>{{name}}</name> to confirm',
     deleteSuccess: 'Namespace {{name}} deleted',
     members: 'Members',
     private: 'Private',
@@ -591,6 +596,45 @@ export default {
     versionKubectl: 'kubectl version',
     versionHelm: 'Helm version',
   },
+  restore: {
+    title: 'Restore Deleted',
+    tabNamespaces: 'Namespaces',
+    tabProjects: 'Projects',
+    // —— Namespace tab ——
+    nsHint:
+      'Restoring a namespace recreates the k8s namespace and docker secret and brings back the projects that were deleted together with it (projects you had deleted individually are not included — restore those from the Projects tab). The helm release is not rebuilt, so redeploy after restoring.',
+    nsSearchPlaceholder: 'Search namespace or creator',
+    nsEmpty: 'No deleted namespaces',
+    nsSearchEmpty: 'No deleted namespace matching "{{kw}}"',
+    nsColName: 'Namespace',
+    nsColOwner: 'Creator',
+    nsColProjects: 'Projects',
+    // —— Project tab ——
+    projHint:
+      'Only individually deleted projects are listed; projects deleted together with their namespace are restored from the Namespaces tab (which brings them back along with it).',
+    projSearchPlaceholder: 'Search project or namespace',
+    projEmpty: 'No deleted projects',
+    projSearchEmpty: 'No deleted project matching "{{kw}}"',
+    projColName: 'Project',
+    projColNamespace: 'Namespace',
+    projColOperator: 'Last operator',
+    // —— Shared by both tabs ——
+    colDeletedAt: 'Deleted at',
+    colAction: 'Action',
+    count: '{{count}} in total',
+    itemCount: '{{count}} project(s)',
+    restore: 'Restore',
+    confirmNsTitle: 'Restore this namespace?',
+    confirmNsDesc:
+      'Restoring recreates the k8s namespace and docker secret on the cluster, changing cluster state. Please make sure the target is correct.',
+    confirmProjTitle: 'Restore this project?',
+    confirmProjDesc:
+      'Restoring clears the soft-delete flag of this project. The helm release is not rebuilt, so redeploy after restoring.',
+    confirmAction: 'Restore',
+    failed: 'Restore failed, please try again later.',
+    successNs: 'Namespace {{name}} restored',
+    successProj: 'Project {{namespace}}/{{name}} restored',
+  },
   governance: {
     title: 'Project Governance',
     searchPlaceholder: 'Search project or namespace',
@@ -709,6 +753,9 @@ export default {
     copyOverrideValues: 'Config copied!',
     deleteProject: 'Delete project',
     deleteConfirm: 'Delete project <name>{{name}}</name> in namespace <ns>{{namespace}}</ns>?',
+    // 必须是 super admin 不是 administrator：后端 Restore 走 RequireSuperAdmin
+    deleteRecoverableTip: 'If deleted in error, contact a super admin to restore it.',
+    deleteTypeToConfirm: 'Type the project name <name>{{name}}</name> to confirm',
     deleteSuccess: 'Project {{name}} deleted',
     noContainers: 'No containers under this project',
     copyContainerName: 'Copy full pod name',

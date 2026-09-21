@@ -100,6 +100,9 @@ func (Project) Fields() []ent.Field {
 			Optional(),
 		field.Int("repo_id").
 			Optional(),
+		field.Bool("deleted_with_namespace").
+			Default(false).
+			Comment("是否随所属空间一并被删除（批次标识，仅软删期间为 true）"),
 	}
 }
 

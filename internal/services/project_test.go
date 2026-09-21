@@ -21,7 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"helm.sh/helm/v3/pkg/storage/driver"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -1385,16 +1387,37 @@ func TestProjectSvc_Liveness_SortAsc(t *testing.T) {
 	}
 }
 
-// TestProjectSvc_Authorize 门禁：仅 Liveness 要求 admin，其余用户方法全部放行 allowlist。
+// TestProjectSvc_Authorize 门禁：Liveness 要求 admin，Restore 与其配套的 AdminDeletedList
+// 更严为**超管专属**（Authorize 开头先过 RequireSuperAdmin 强制名单），其余用户方法全部放行 allowlist。
 func TestProjectSvc_Authorize(t *testing.T) {
 	svc, _ := newProjectSvcWithMocks(t)
-	// admin：任何方法放行。
+	// 超管（newAdminUserCtx 的邮箱即内置超管固定邮箱）：任何方法放行。
 	ctx, err := svc.Authorize(newAdminUserCtx(), project.Project_Liveness_FullMethodName)
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
-	// 非 admin：Liveness（管理员后台）拒绝。
-	_, err = svc.Authorize(newOtherUserCtx(), project.Project_Liveness_FullMethodName)
-	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	_, err = svc.Authorize(newAdminUserCtx(), project.Project_Restore_FullMethodName)
+	assert.NoError(t, err)
+	_, err = svc.Authorize(newAdminUserCtx(), project.Project_AdminDeletedList_FullMethodName)
+	assert.NoError(t, err)
+	// 普通管理员（mars_admin 但非超管）：Liveness 放行，Restore / AdminDeletedList 拒绝——恢复会
+	// 重建集群侧骨架，阈值严于 admin；列表与恢复同阈值（方法级门禁看不到请求参数，「能看见什么就
+	// 能恢复什么」是唯一自洽解）。此处是「admin ≠ 超管」的回归锚点：删掉 RequireSuperAdmin 门禁
+	// 后本断言立即变红。
+	_, err = svc.Authorize(newOrdinaryAdminUserCtx(), project.Project_Liveness_FullMethodName)
+	assert.NoError(t, err, "Liveness 是 admin 专属，普通管理员应放行")
+	_, err = svc.Authorize(newOrdinaryAdminUserCtx(), project.Project_Restore_FullMethodName)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied, "Restore 是超管专属，普通管理员应拒绝")
+	_, err = svc.Authorize(newOrdinaryAdminUserCtx(), project.Project_AdminDeletedList_FullMethodName)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied, "AdminDeletedList 是超管专属，普通管理员应拒绝")
+	// 非 admin：Liveness（管理员后台）/ Restore（排障恢复）/ AdminDeletedList（其配套列表）拒绝。
+	for _, m := range []string{
+		project.Project_Liveness_FullMethodName,
+		project.Project_Restore_FullMethodName,
+		project.Project_AdminDeletedList_FullMethodName,
+	} {
+		_, err := svc.Authorize(newOtherUserCtx(), m)
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied, "方法 %s 应拒绝普通用户", m)
+	}
 	// 非 admin：allowlist 内的用户方法全部放行，逐个覆盖防漏。
 	for _, m := range []string{
 		project.Project_List_FullMethodName,
@@ -1411,4 +1434,146 @@ func TestProjectSvc_Authorize(t *testing.T) {
 		_, err := svc.Authorize(newOtherUserCtx(), m)
 		assert.NoError(t, err, "方法 %s 应放行普通用户", m)
 	}
+}
+
+// TestProjectSvc_Restore_Success 恢复成功：按「空间名 + 项目名」定位并恢复软删项目，
+// 返回携带空间归属的 ProjectModel，落 Create 语义审计日志。
+func TestProjectSvc_Restore_Success(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.projectRepo.EXPECT().FindDeletedByName(gomock.Any(), "web", 7).Return(
+		&biz.Project{ID: 42, Name: "web", NamespaceID: 7}, nil)
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "web", 7).Return(
+		nil, errs.WrapNotFound(errors.New("not found"), "not found"))
+	mocks.projectRepo.EXPECT().RestoreDeleted(gomock.Any(), 42).Return(nil)
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 42).Return(
+		&biz.Project{ID: 42, Name: "web", Namespace: &biz.Namespace{ID: 7, Name: "mars-demo"}}, nil)
+
+	req := &project.RestoreRequest{Namespace: "mars-demo", Name: "web"}
+	mocks.eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Create,
+		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
+		"恢复项目: id: '42' 'mars-demo/web'",
+		req,
+	)
+
+	res, err := svc.Restore(newAdminUserCtx(), req)
+	assert.NoError(t, err)
+	assert.Equal(t, int32(42), res.Item.GetId())
+	assert.Equal(t, "web", res.Item.GetName())
+}
+
+// TestProjectSvc_Restore_SpaceNotFound 空间不存在（含空间自身被软删）时改写为带指引的
+// NotFound——否则管理员只看到语焉不详的 404，不知道"先恢复空间即可连带恢复项目"。
+func TestProjectSvc_Restore_SpaceNotFound(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "ghost").Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find namespace by name"))
+
+	res, err := svc.Restore(newAdminUserCtx(), &project.RestoreRequest{Namespace: "ghost", Name: "web"})
+	assert.Nil(t, res)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+	assert.Contains(t, status.Convert(err).Message(), "请先恢复空间")
+}
+
+// TestProjectSvc_Restore_SpaceQueryDBError 非 NotFound 的真实 DB 故障必须原样上抛，
+// 不能被改写成"空间不存在"的 404 误导排障。
+func TestProjectSvc_Restore_SpaceQueryDBError(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(nil, errors.New("db down"))
+
+	res, err := svc.Restore(newAdminUserCtx(), &project.RestoreRequest{Namespace: "mars-demo", Name: "web"})
+	assert.Nil(t, res)
+	assert.ErrorContains(t, err, "db down")
+	assert.NotEqual(t, codes.NotFound, status.Code(err))
+}
+
+// TestProjectSvc_Restore_ProjectNotFound 空间在册但项目名查无软删记录：NotFound 上抛，不落审计。
+func TestProjectSvc_Restore_ProjectNotFound(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.projectRepo.EXPECT().FindDeletedByName(gomock.Any(), "ghost-web", 7).Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find deleted project by name"))
+
+	res, err := svc.Restore(newAdminUserCtx(), &project.RestoreRequest{Namespace: "mars-demo", Name: "ghost-web"})
+	assert.Nil(t, res)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+// Test_projectSvc_AdminDeletedList 已删除项目列表成功路径：ListAdminDeletedPage 结果经
+// FromProject 映射为 ProjectModel，分页元信息与 Count 落位。DeletedAt 必须在响应里序列化成
+// RFC3339（前端靠它显示"何时被删"，nil 会退化为空串而看不出删除时间）；Namespace 边随行返回
+// ——恢复请求要按「空间名 + 项目名」定位，行内缺了它前端就无法发起恢复。
+func Test_projectSvc_AdminDeletedList(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	deletedAt := time.Date(2026, 8, 20, 10, 0, 0, 0, time.UTC)
+	mocks.projectRepo.EXPECT().ListAdminDeletedPage(gomock.Any(), gomock.Any()).Return(&biz.ProjectDeletedListPageResult{
+		Projects: []*biz.Project{{
+			ID:          42,
+			Name:        "web",
+			NamespaceID: 7,
+			Namespace:   &biz.Namespace{ID: 7, Name: "mars-demo"},
+			UpdatedBy:   "someone@demo.com",
+			DeletedAt:   &deletedAt,
+		}},
+		Count: 1,
+	}, nil)
+
+	resp, err := svc.AdminDeletedList(newAdminUserCtx(), &project.AdminDeletedListRequest{})
+	assert.NoError(t, err)
+	assert.Equal(t, int32(1), resp.Page)
+	assert.Equal(t, int32(15), resp.PageSize)
+	assert.Equal(t, int32(1), resp.Count)
+	if assert.Len(t, resp.Items, 1) {
+		item := resp.Items[0]
+		assert.Equal(t, "web", item.Name)
+		assert.Equal(t, "someone@demo.com", item.UpdatedBy)
+		assert.Equal(t, deletedAt.Format(time.RFC3339), item.DeletedAt)
+		if assert.NotNil(t, item.Namespace) {
+			assert.Equal(t, "mars-demo", item.Namespace.Name)
+		}
+	}
+}
+
+// Test_projectSvc_AdminDeletedList_PaginationPassthrough 分页参数透传：请求带的
+// page/page_size 原样落到 repo 查询并回显，Count 回显未分页总数（前端分页器依赖它）。
+func Test_projectSvc_AdminDeletedList_PaginationPassthrough(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	var gotQuery *biz.ProjectDeletedListPageQuery
+	mocks.projectRepo.EXPECT().ListAdminDeletedPage(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, q *biz.ProjectDeletedListPageQuery) (*biz.ProjectDeletedListPageResult, error) {
+			gotQuery = q
+			return &biz.ProjectDeletedListPageResult{Count: 40}, nil
+		})
+
+	page, size := int32(3), int32(5)
+	resp, err := svc.AdminDeletedList(newAdminUserCtx(), &project.AdminDeletedListRequest{
+		Page:     &page,
+		PageSize: &size,
+		Search:   "mars",
+	})
+	assert.NoError(t, err)
+	if assert.NotNil(t, gotQuery) {
+		assert.Equal(t, int32(3), gotQuery.Page)
+		assert.Equal(t, int32(5), gotQuery.PageSize)
+		assert.Equal(t, "mars", gotQuery.Search)
+	}
+	assert.Equal(t, int32(3), resp.Page)
+	assert.Equal(t, int32(5), resp.PageSize)
+	assert.Equal(t, int32(40), resp.Count)
+	assert.Empty(t, resp.Items)
+}
+
+// Test_projectSvc_AdminDeletedList_Error 查询失败：错误上抛且不返回半成品响应
+// （吞错返回空列表会让恢复页误显示"没有可恢复的项目"）。
+func Test_projectSvc_AdminDeletedList_Error(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.projectRepo.EXPECT().ListAdminDeletedPage(gomock.Any(), gomock.Any()).Return(nil, errors.New("boom"))
+
+	resp, err := svc.AdminDeletedList(newAdminUserCtx(), &project.AdminDeletedListRequest{})
+	assert.Nil(t, resp)
+	assert.Error(t, err)
 }

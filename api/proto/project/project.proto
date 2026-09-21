@@ -35,6 +35,37 @@ message DeleteRequest {
 }
 message DeleteResponse {}
 
+// RestoreRequest 按「空间名 + 项目名」定位被误删的项目（空间名免前缀，后台按 ns_prefix 幂等补全）。
+// 用业务名而非 id：软删记录已从列表消失，排障时手上往往只剩名字。
+message RestoreRequest {
+  string namespace = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string name      = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+}
+message RestoreResponse {
+  types.ProjectModel item = 1;
+}
+
+// AdminDeletedListRequest 已删除项目列表（仅超管）：Restore 的配套「选谁恢复」视图，
+// 分页/搜索语义与 namespace.AdminDeletedList 对齐。
+message AdminDeletedListRequest {
+  optional int32 page      = 1;
+  optional int32 page_size = 2;
+  // 关键词：匹配项目名或所属空间名
+  string search = 3;
+}
+// AdminDeletedListResponse 已删除项目列表：items 直接复用 types.ProjectModel——它自带
+// deleted_at（删除时间）、updated_by（最后操作人）与 namespace 边（恢复请求要按空间名定位，
+// 行内缺了它就是一条无法恢复的项目）。
+//
+// 只列「单独删除」的项目（deleted_with_namespace=false）：随空间级联删除的那批由恢复空间
+// 连带还原，本列表调 Restore 会被硬拒 400（所属空间已删），列出来只是不可点的死行。
+message AdminDeletedListResponse {
+  int32 page      = 1;
+  int32 page_size = 2;
+  int32 count     = 3;
+  repeated types.ProjectModel items = 4;
+}
+
 message VersionRequest {
   int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
@@ -260,6 +291,29 @@ service Project {
   rpc Delete(DeleteRequest) returns (DeleteResponse) {
     option (google.api.http) = {
       delete: "/api/projects/{id}"
+    };
+  }
+
+  // Restore 恢复被误删的项目（仅超管）：清除软删标记并把部署状态重置为未知，
+  // 项目配置/部署历史保留，但**不重建** helm release（需另行重新部署）。
+  rpc Restore(RestoreRequest) returns (RestoreResponse) {
+    option (google.api.http) = {
+      post: "/api/admin/projects/restore",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "恢复被删除的项目（管理员）",
+    };
+  }
+
+  // AdminDeletedList 已删除项目列表（仅超管）：Restore 的配套「选谁恢复」视图，只列
+  // 单独删除的项目（随空间级联删除的那批须先恢复空间，见 message 注释）。
+  rpc AdminDeletedList(AdminDeletedListRequest) returns (AdminDeletedListResponse) {
+    option (google.api.http) = {
+      get: "/api/admin/projects/deleted"
+    };
+    option (openapi.v3.operation) = {
+      summary: "已删除项目列表（管理员）",
     };
   }
 

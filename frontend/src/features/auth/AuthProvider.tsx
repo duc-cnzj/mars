@@ -21,10 +21,27 @@ import {
 } from '@/api/token'
 import { Spinner } from '@/components/ui'
 import { toast } from '@/lib/toast'
-import { alignGrayChannel, isReloadPending, setGrayChannel } from '@/hooks/useGrayChannel'
+import {
+  alignGrayChannel,
+  isReloadPending,
+  scheduleGrayChannelRenewal,
+  setGrayChannel,
+} from '@/hooks/useGrayChannel'
 import type { components } from '@/api/schema'
 
 type UserInfo = components['schemas']['auth.InfoResponse']
+
+/**
+ * 重新拉取后端灰度意图（供 useGrayChannel 的到期前重校验使用）。
+ *
+ * 抽成模块级函数而非 useCallback：它只依赖 api 层，不参与 React 依赖图，
+ * 也不会扰动 loadUser 的 useCallback 依赖数组。失败时向上抛出，由
+ * scheduleGrayChannelRenewal 的 catch 决定「不切通道」（理由见其 @param）。
+ */
+async function fetchGrayIntent(): Promise<boolean> {
+  const { data } = await api.GET(API.authInfo)
+  return data?.isGray ?? false
+}
 
 interface AuthCtxValue {
   user: UserInfo | null
@@ -85,6 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 这是「意图 → 事实」之间唯一的那根线；与当前 cookie 不一致时会硬刷新一次
       //（cookie 只对下一次文档请求生效，不刷新就永远停在旧通道），详见 alignGrayChannel。
       alignGrayChannel(data.isGray)
+      // 预约一次「到期前重校验」：cookie 是一次性写入 + Max-Age 单向倒计时，alignGrayChannel
+      // 只在文档加载时跑一次；挂得久的标签页中途没有任何时机重新对账，cookie 一过期，文档还是
+      // 灰度版、后续懒加载 chunk 却已回落稳定版并 404。这根线把那一次对账补上（详见其文档）。
+      scheduleGrayChannelRenewal(fetchGrayIntent)
       return data
     }
     // 会话恢复失败：清除无效 token，交给守卫回登录页
@@ -189,9 +210,10 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
 }
 
 /**
- * 超级管理员守卫：系统设置路由级门控（is_super_admin 来自 /api/auth/info）。
+ * 超级管理员守卫：超管专属路由级门控（is_super_admin 来自 /api/auth/info）——
+ * 现挂两处：/admin/settings（系统设置）、/admin/restore（误删恢复）。
  * 嵌套在 RequireAdmin 内（已登录且为管理员），仅内置超管放行，普通管理员重定向回首页，
- * 防止直接敲 URL 访问系统设置（可见性与可访问性双保险）。
+ * 防止直接敲 URL 访问（可见性与可访问性双保险，与侧栏 superOnly 隐藏配对）。
  */
 export function RequireSuperAdmin({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()

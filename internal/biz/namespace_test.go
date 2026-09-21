@@ -22,21 +22,40 @@ import (
 
 type fakeNamespaceRepoForNSBiz struct {
 	NamespaceRepo
-	getMars       func(name string) string
-	findByName    func(ctx context.Context, name string) (*Namespace, error)
-	create        func(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error)
-	delete        func(ctx context.Context, id int) error
-	favorite      func(ctx context.Context, input *FavoriteNamespaceInput) error
-	favoriteSort  func(ctx context.Context, email string, firstID, secondID int) error
-	list          func(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error)
-	listAll       func(ctx context.Context) ([]*Namespace, error)
-	listAdminPage func(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error)
-	update        func(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error)
-	show          func(ctx context.Context, id int) (*Namespace, error)
-	syncMembers   func(ctx context.Context, namespaceID int, memberEmails []string) (*Namespace, error)
-	updatePrivate func(ctx context.Context, namespaceID int, private bool) (*Namespace, error)
-	transfer      func(ctx context.Context, id int, email string) (*Namespace, error)
-	updateConfig  func(ctx context.Context, input *UpdateConfigInput) (*Namespace, error)
+	getMars              func(name string) string
+	findByName           func(ctx context.Context, name string) (*Namespace, error)
+	create               func(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error)
+	delete               func(ctx context.Context, id int) error
+	favorite             func(ctx context.Context, input *FavoriteNamespaceInput) error
+	favoriteSort         func(ctx context.Context, email string, firstID, secondID int) error
+	list                 func(ctx context.Context, input *ListNamespaceInput) ([]*Namespace, *pagination.Pagination, error)
+	listAll              func(ctx context.Context) ([]*Namespace, error)
+	listAdminPage        func(ctx context.Context, query *AdminListPageQuery) (*AdminListPageResult, error)
+	listAdminDeletedPage func(ctx context.Context, query *NamespaceDeletedListPageQuery) (*NamespaceDeletedListPageResult, error)
+	update               func(ctx context.Context, input *UpdateNamespaceInput) (*Namespace, error)
+	show                 func(ctx context.Context, id int) (*Namespace, error)
+	syncMembers          func(ctx context.Context, namespaceID int, memberEmails []string) (*Namespace, error)
+	updatePrivate        func(ctx context.Context, namespaceID int, private bool) (*Namespace, error)
+	transfer             func(ctx context.Context, id int, email string) (*Namespace, error)
+	updateConfig         func(ctx context.Context, input *UpdateConfigInput) (*Namespace, error)
+
+	findDeletedByName      func(ctx context.Context, name string) (*Namespace, error)
+	restoreDeleted         func(ctx context.Context, id int) error
+	updateImagePullSecrets func(ctx context.Context, id int, secrets []string) error
+}
+
+func (f *fakeNamespaceRepoForNSBiz) FindDeletedByName(ctx context.Context, name string) (*Namespace, error) {
+	return f.findDeletedByName(ctx, name)
+}
+func (f *fakeNamespaceRepoForNSBiz) RestoreDeleted(ctx context.Context, id int) error {
+	return f.restoreDeleted(ctx, id)
+}
+func (f *fakeNamespaceRepoForNSBiz) UpdateImagePullSecrets(ctx context.Context, id int, secrets []string) error {
+	return f.updateImagePullSecrets(ctx, id, secrets)
+}
+
+func (f *fakeNamespaceRepoForNSBiz) ListAdminDeletedPage(ctx context.Context, query *NamespaceDeletedListPageQuery) (*NamespaceDeletedListPageResult, error) {
+	return f.listAdminDeletedPage(ctx, query)
 }
 
 func (f *fakeNamespaceRepoForNSBiz) GetMarsNamespace(name string) string { return f.getMars(name) }
@@ -1052,6 +1071,56 @@ func TestNamespaceBiz_AdminList_RepoError(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// TestNamespaceBiz_AdminDeletedList 已删除空间列表的编排：查询参数原样透传（搜索/分页），
+// 行集直接回传（不做行级加工——空间已删除，没有活跃度可算），分页元信息由 biz 依 repo 回传的
+// Count 组装。Count 必须来自 repo 的命中总数而非 len(items)：它是未分页的总数，分页器靠它算
+// 总页数，若误用 len(items) 则永远只有一页。
+func TestNamespaceBiz_AdminDeletedList(t *testing.T) {
+	var gotQuery *NamespaceDeletedListPageQuery
+	ns := &fakeNamespaceRepoForNSBiz{listAdminDeletedPage: func(ctx context.Context, query *NamespaceDeletedListPageQuery) (*NamespaceDeletedListPageResult, error) {
+		gotQuery = query
+		return &NamespaceDeletedListPageResult{
+			Namespaces: []*Namespace{
+				{ID: 7, Name: "mars-a"},
+				{ID: 9, Name: "mars-b"},
+			},
+			Count: 42,
+		}, nil
+	}}
+	n := nsBizForTest(ns, &fakeK8sRepoForNSBiz{}, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
+
+	items, pag, err := n.AdminDeletedList(context.TODO(), &NamespaceDeletedListInput{Page: 2, PageSize: 3, Search: "mars"})
+	assert.NoError(t, err)
+	if assert.NotNil(t, gotQuery) {
+		assert.Equal(t, "mars", gotQuery.Search)
+		assert.Equal(t, int32(2), gotQuery.Page)
+		assert.Equal(t, int32(3), gotQuery.PageSize)
+	}
+	if assert.Len(t, items, 2) {
+		assert.Equal(t, 7, items[0].ID)
+		assert.Equal(t, 9, items[1].ID)
+	}
+	if assert.NotNil(t, pag) {
+		assert.Equal(t, int32(2), pag.Page)
+		assert.Equal(t, int32(3), pag.PageSize)
+		assert.Equal(t, int32(42), pag.Count, "Count 取 repo 命中总数，不是本页行数")
+	}
+}
+
+// TestNamespaceBiz_AdminDeletedList_RepoError repo 出错时三个返回值全为 nil 且错误上抛
+// （不得吞错返回空列表——那会让恢复页显示「没有可恢复的空间」，掩盖真实的查询故障）。
+func TestNamespaceBiz_AdminDeletedList_RepoError(t *testing.T) {
+	ns := &fakeNamespaceRepoForNSBiz{listAdminDeletedPage: func(ctx context.Context, query *NamespaceDeletedListPageQuery) (*NamespaceDeletedListPageResult, error) {
+		return nil, errors.New("boom")
+	}}
+	n := nsBizForTest(ns, &fakeK8sRepoForNSBiz{}, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
+
+	items, pag, err := n.AdminDeletedList(context.TODO(), &NamespaceDeletedListInput{Page: 1, PageSize: 15})
+	assert.Nil(t, items)
+	assert.Nil(t, pag)
+	assert.Error(t, err)
+}
+
 func TestNamespaceBiz_Show_Passthrough(t *testing.T) {
 	var gotID int
 	ns := &fakeNamespaceRepoForNSBiz{show: func(ctx context.Context, id int) (*Namespace, error) {
@@ -1082,4 +1151,312 @@ func TestNamespaceBiz_FindByName_Passthrough(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "ns", got.Name)
 	assert.Equal(t, "ns", gotName)
+}
+
+// ---- Restore ----
+
+// nsRestoreHarness 装配 Restore 测试的默认依赖：已软删空间 + 无同名在册空间 +
+// k8s 骨架重建成功 + docker secret 成功，只暴露需要区分分支的钩子。
+type nsRestoreHarness struct {
+	ns      *fakeNamespaceRepoForNSBiz
+	k8s     *fakeK8sRepoForNSBiz
+	event   *fakeEventRepoForNSBiz
+	restore NamespaceBiz
+}
+
+func newNsRestoreHarness(t *testing.T, deleted *Namespace) *nsRestoreHarness {
+	t.Helper()
+	h := &nsRestoreHarness{}
+	h.ns = &fakeNamespaceRepoForNSBiz{
+		findDeletedByName: func(ctx context.Context, name string) (*Namespace, error) { return deleted, nil },
+		findByName:        func(ctx context.Context, name string) (*Namespace, error) { return nil, notFoundErr() },
+		updateImagePullSecrets: func(ctx context.Context, id int, secrets []string) error {
+			assert.Equal(t, deleted.ID, id)
+			return nil
+		},
+		restoreDeleted: func(ctx context.Context, id int) error {
+			assert.Equal(t, deleted.ID, id)
+			return nil
+		},
+		show: func(ctx context.Context, id int) (*Namespace, error) {
+			return &Namespace{ID: id, Name: deleted.Name}, nil
+		},
+	}
+	h.k8s = &fakeK8sRepoForNSBiz{
+		createNamespace: func(ctx context.Context, name string) (*corev1.Namespace, error) {
+			return &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: name}}, nil
+		},
+		createDockerSecret: func(ctx context.Context, namespace string) (*corev1.Secret, error) {
+			return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "mars-docker-secret"}}, nil
+		},
+		deleteNamespace: func(ctx context.Context, name string) error { return nil },
+	}
+	h.event = &fakeEventRepoForNSBiz{dispatch: func(created EventKey, createdData any) {}}
+	h.restore = nsBizForTest(h.ns, h.k8s, &fakeHelmerRepoForNSBiz{}, h.event)
+	return h
+}
+
+// TestNamespaceBiz_Restore_Happy 恢复主路径：重建 k8s 骨架 + 回写 secret + 清软删标记，
+// 并以 EventNamespaceCreated 派发（复用已注册的 TLS 注入监听器）。
+func TestNamespaceBiz_Restore_Happy(t *testing.T) {
+	deleted := &Namespace{ID: 9, Name: "mars-demo"}
+	h := newNsRestoreHarness(t, deleted)
+
+	var gotSecrets []string
+	h.ns.updateImagePullSecrets = func(ctx context.Context, id int, secrets []string) error {
+		gotSecrets = secrets
+		return nil
+	}
+	var dispatchedKey EventKey
+	var dispatchedData any
+	h.event.dispatch = func(created EventKey, createdData any) { dispatchedKey, dispatchedData = created, createdData }
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.NoError(t, err)
+	assert.Equal(t, 9, got.ID)
+	assert.Equal(t, []string{"mars-docker-secret"}, gotSecrets)
+	assert.Equal(t, EventNamespaceCreated, dispatchedKey)
+	data, ok := dispatchedData.(NamespaceCreatedData)
+	assert.True(t, ok, "派发数据必须是 NamespaceCreatedData")
+	assert.Equal(t, 9, data.NsModel.ID)
+	assert.Equal(t, "mars-demo", data.NsK8sObj.Name)
+}
+
+// TestNamespaceBiz_Restore_FindDeletedError 软删记录查询失败直接上抛，不触碰 k8s。
+func TestNamespaceBiz_Restore_FindDeletedError(t *testing.T) {
+	h := newNsRestoreHarness(t, &Namespace{ID: 9, Name: "mars-demo"})
+	h.ns.findDeletedByName = func(ctx context.Context, name string) (*Namespace, error) {
+		return nil, errors.New("db down")
+	}
+	k8sCalled := false
+	h.k8s.createNamespace = func(ctx context.Context, name string) (*corev1.Namespace, error) {
+		k8sCalled = true
+		return nil, errors.New("must not be called")
+	}
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.Nil(t, got)
+	assert.Error(t, err)
+	assert.False(t, k8sCalled, "查不到软删记录时不得动 k8s")
+}
+
+// TestNamespaceBiz_Restore_NameConflict 同名在册空间存在时拒绝恢复（InvalidArgument），
+// 且不触碰 k8s / 不派发事件。
+func TestNamespaceBiz_Restore_NameConflict(t *testing.T) {
+	h := newNsRestoreHarness(t, &Namespace{ID: 9, Name: "mars-demo"})
+	h.ns.findByName = func(ctx context.Context, name string) (*Namespace, error) {
+		return &Namespace{ID: 11, Name: name}, nil
+	}
+	k8sCalled, dispatched := false, false
+	h.k8s.createNamespace = func(ctx context.Context, name string) (*corev1.Namespace, error) {
+		k8sCalled = true
+		return nil, errors.New("must not be called")
+	}
+	h.event.dispatch = func(created EventKey, createdData any) { dispatched = true }
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.Nil(t, got)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Contains(t, err.Error(), "已存在")
+	assert.False(t, k8sCalled)
+	assert.False(t, dispatched)
+}
+
+// TestNamespaceBiz_Restore_FindByNameRealDBError 冲突预查遇到非 NotFound 的真实故障必须上抛，
+// 不能当作"无同名空间"放行去建 k8s namespace。
+func TestNamespaceBiz_Restore_FindByNameRealDBError(t *testing.T) {
+	h := newNsRestoreHarness(t, &Namespace{ID: 9, Name: "mars-demo"})
+	h.ns.findByName = func(ctx context.Context, name string) (*Namespace, error) {
+		return nil, errors.New("db down")
+	}
+	k8sCalled := false
+	h.k8s.createNamespace = func(ctx context.Context, name string) (*corev1.Namespace, error) {
+		k8sCalled = true
+		return nil, errors.New("must not be called")
+	}
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.Nil(t, got)
+	assert.Error(t, err)
+	assert.False(t, k8sCalled)
+}
+
+// TestNamespaceBiz_Restore_K8sCreateError k8s 建 namespace 的非 AlreadyExists 失败上抛。
+func TestNamespaceBiz_Restore_K8sCreateError(t *testing.T) {
+	h := newNsRestoreHarness(t, &Namespace{ID: 9, Name: "mars-demo"})
+	h.k8s.createNamespace = func(ctx context.Context, name string) (*corev1.Namespace, error) {
+		return nil, errors.New("k8s boom")
+	}
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.Nil(t, got)
+	assert.Error(t, err)
+}
+
+// TestNamespaceBiz_Restore_AdoptTerminating k8s 侧同名 namespace 仍处于 Terminating：
+// 拒绝对半成品操作，不得清软删标记。
+func TestNamespaceBiz_Restore_AdoptTerminating(t *testing.T) {
+	h := newNsRestoreHarness(t, &Namespace{ID: 9, Name: "mars-demo"})
+	h.k8s.createNamespace = func(ctx context.Context, name string) (*corev1.Namespace, error) {
+		return nil, alreadyExistsErr()
+	}
+	h.k8s.getNamespace = func(ctx context.Context, name string) (*corev1.Namespace, error) {
+		return &corev1.Namespace{Status: corev1.NamespaceStatus{Phase: corev1.NamespaceTerminating}}, nil
+	}
+	restoredCalled := false
+	h.ns.restoreDeleted = func(ctx context.Context, id int) error {
+		restoredCalled = true
+		return nil
+	}
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.Nil(t, got)
+	assert.ErrorIs(t, err, ErrNamespaceTerminating)
+	assert.False(t, restoredCalled, "Terminating 空间不得清除软删标记")
+}
+
+// TestNamespaceBiz_Restore_AdoptGetError 收养路径上 k8s GetNamespace 失败：错误上抛，
+// 不得当成"可收养"继续清软删标记（否则 DB 说空间在册、k8s 里却没有 namespace）。
+func TestNamespaceBiz_Restore_AdoptGetError(t *testing.T) {
+	h := newNsRestoreHarness(t, &Namespace{ID: 9, Name: "mars-demo"})
+	h.k8s.createNamespace = func(ctx context.Context, name string) (*corev1.Namespace, error) {
+		return nil, alreadyExistsErr()
+	}
+	h.k8s.getNamespace = func(ctx context.Context, name string) (*corev1.Namespace, error) {
+		return nil, errors.New("k8s get boom")
+	}
+	restoredCalled := false
+	h.ns.restoreDeleted = func(ctx context.Context, id int) error {
+		restoredCalled = true
+		return nil
+	}
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.Nil(t, got)
+	assert.ErrorContains(t, err, "k8s get boom")
+	assert.False(t, restoredCalled)
+}
+
+// TestNamespaceBiz_Restore_AdoptExisting k8s 侧 namespace 仍在（例如上次恢复到一半），
+// 收养已有对象继续恢复，secret 失败降级为不走 imagePullSecrets。
+func TestNamespaceBiz_Restore_AdoptExisting(t *testing.T) {
+	deleted := &Namespace{ID: 9, Name: "mars-demo"}
+	h := newNsRestoreHarness(t, deleted)
+	h.k8s.createNamespace = func(ctx context.Context, name string) (*corev1.Namespace, error) {
+		return nil, alreadyExistsErr()
+	}
+	h.k8s.getNamespace = func(ctx context.Context, name string) (*corev1.Namespace, error) {
+		return &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: name}}, nil
+	}
+	h.k8s.createDockerSecret = func(ctx context.Context, namespace string) (*corev1.Secret, error) {
+		return nil, errors.New("registry unreachable")
+	}
+	var gotSecrets []string
+	h.ns.updateImagePullSecrets = func(ctx context.Context, id int, secrets []string) error {
+		gotSecrets = secrets
+		return nil
+	}
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.NoError(t, err, "secret 失败只降级，恢复仍应成功")
+	assert.Equal(t, 9, got.ID)
+	assert.Empty(t, gotSecrets, "secret 失败时 imagePullSecrets 必须为空而不是残留旧值")
+}
+
+// TestNamespaceBiz_Restore_UpdateSecretsError 回写 imagePullSecrets 失败时中止，
+// 不清软删标记（DB 骨架与 k8s 状态的一致性优先），并回滚本次自建的 k8s 骨架。
+func TestNamespaceBiz_Restore_UpdateSecretsError(t *testing.T) {
+	h := newNsRestoreHarness(t, &Namespace{ID: 9, Name: "mars-demo"})
+	h.ns.updateImagePullSecrets = func(ctx context.Context, id int, secrets []string) error {
+		return errors.New("db down")
+	}
+	restoredCalled := false
+	h.ns.restoreDeleted = func(ctx context.Context, id int) error {
+		restoredCalled = true
+		return nil
+	}
+	var rolledBack string
+	h.k8s.deleteNamespace = func(ctx context.Context, name string) error { rolledBack = name; return nil }
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.Nil(t, got)
+	assert.Error(t, err)
+	assert.False(t, restoredCalled)
+	assert.Equal(t, "mars-demo", rolledBack, "自建的 k8s 骨架必须随 DB 失败回滚")
+}
+
+// TestNamespaceBiz_Restore_ClearDeletedAtError 清软删标记失败上抛，不派发事件，
+// 并回滚本次自建的 k8s 骨架（此时 DB 仍在软删态，回滚不会造成反向错位）。
+func TestNamespaceBiz_Restore_ClearDeletedAtError(t *testing.T) {
+	h := newNsRestoreHarness(t, &Namespace{ID: 9, Name: "mars-demo"})
+	h.ns.restoreDeleted = func(ctx context.Context, id int) error { return errors.New("db down") }
+	dispatched := false
+	h.event.dispatch = func(created EventKey, createdData any) { dispatched = true }
+	var rolledBack string
+	h.k8s.deleteNamespace = func(ctx context.Context, name string) error { rolledBack = name; return nil }
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.Nil(t, got)
+	assert.Error(t, err)
+	assert.False(t, dispatched)
+	assert.Equal(t, "mars-demo", rolledBack, "自建的 k8s 骨架必须随 DB 失败回滚")
+}
+
+// TestNamespaceBiz_Restore_NoRollbackWhenAdopted 收养来的 k8s namespace 不得被回滚：本次调用
+// 没建它，就没有删它的权利——否则会删掉另一个并发 Restore 正在复用的对象。
+func TestNamespaceBiz_Restore_NoRollbackWhenAdopted(t *testing.T) {
+	h := newNsRestoreHarness(t, &Namespace{ID: 9, Name: "mars-demo"})
+	h.k8s.createNamespace = func(ctx context.Context, name string) (*corev1.Namespace, error) {
+		return nil, alreadyExistsErr()
+	}
+	h.k8s.getNamespace = func(ctx context.Context, name string) (*corev1.Namespace, error) {
+		return &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: name}}, nil
+	}
+	h.ns.restoreDeleted = func(ctx context.Context, id int) error { return errors.New("db down") }
+	deleted := false
+	h.k8s.deleteNamespace = func(ctx context.Context, name string) error { deleted = true; return nil }
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.Nil(t, got)
+	assert.Error(t, err)
+	assert.False(t, deleted, "收养路径的 DB 失败不得删除他人创建/复用的 k8s namespace")
+}
+
+// TestNamespaceBiz_Restore_NoRollbackAfterRestored DB 已落库（deleted_at 已清）之后不再回滚：
+// 那时删 k8s 骨架会制造「DB 在册、集群没有」的错位。Show 失败正落在这个窗口内。
+func TestNamespaceBiz_Restore_NoRollbackAfterRestored(t *testing.T) {
+	h := newNsRestoreHarness(t, &Namespace{ID: 9, Name: "mars-demo"})
+	h.ns.show = func(ctx context.Context, id int) (*Namespace, error) { return nil, errors.New("db down") }
+	deleted := false
+	h.k8s.deleteNamespace = func(ctx context.Context, name string) error { deleted = true; return nil }
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.Nil(t, got)
+	assert.Error(t, err)
+	assert.False(t, deleted, "DB 已落库后不得回滚 k8s 骨架")
+}
+
+// TestNamespaceBiz_Restore_RollbackErrorDoesNotMask 回滚删除本身失败时，原始错误仍原样上抛，
+// 不因补偿失败改变调用方看到的语义（回滚失败只留日志）。
+func TestNamespaceBiz_Restore_RollbackErrorDoesNotMask(t *testing.T) {
+	h := newNsRestoreHarness(t, &Namespace{ID: 9, Name: "mars-demo"})
+	h.ns.restoreDeleted = func(ctx context.Context, id int) error { return errors.New("db down") }
+	h.k8s.deleteNamespace = func(ctx context.Context, name string) error { return errors.New("k8s boom") }
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.Nil(t, got)
+	assert.ErrorContains(t, err, "db down", "回滚失败不得掩盖原始错误")
+}
+
+// TestNamespaceBiz_Restore_ShowError 清软删标记成功但回读失败：错误上抛且不派发事件。
+func TestNamespaceBiz_Restore_ShowError(t *testing.T) {
+	h := newNsRestoreHarness(t, &Namespace{ID: 9, Name: "mars-demo"})
+	h.ns.show = func(ctx context.Context, id int) (*Namespace, error) { return nil, errors.New("db down") }
+	dispatched := false
+	h.event.dispatch = func(created EventKey, createdData any) { dispatched = true }
+
+	got, err := h.restore.Restore(context.TODO(), "mars-demo")
+	assert.Nil(t, got)
+	assert.Error(t, err)
+	assert.False(t, dispatched)
 }

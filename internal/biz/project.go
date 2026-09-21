@@ -3,6 +3,7 @@ package biz
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
@@ -36,6 +37,15 @@ type ProjectBiz interface {
 	Delete(ctx context.Context, id int) error
 	// FindByName 按名称与命名空间查询项目。
 	FindByName(ctx context.Context, name string, nsID int) (*Project, error)
+	// Restore 恢复被误删的项目（仅超管，见 services 层 Authorize 的 RequireSuperAdmin 门禁）：按
+	// 空间 ID + 项目名定位软删行 → 校验无同名在册项目 → 校验所属空间未被软删（否则 400，
+	// 引导调用方先恢复空间以连带还原整批级联项目）→ 清 deleted_at 并重置部署状态为
+	// 未知。**不重建** helm release，恢复后需重新部署。nsID 由调用方按空间名解析。
+	Restore(ctx context.Context, nsID int, name string) (*Project, error)
+	// AdminDeletedList 分页列出「可恢复的已删除项目」（仅超管，见 services 层 Authorize）：只含
+	// 单独删除的行，随空间级联删除的那批不在其中——它们由恢复空间连带还原，单独调 Restore 会被
+	// 硬拒 400。返回已分页项目（含命名空间边，恢复请求要按空间名定位）与分页信息（Count 为未分页总数）。
+	AdminDeletedList(ctx context.Context, input *ProjectDeletedListInput) ([]*Project, *pagination.Pagination, error)
 	// UpdateDeployStatus 更新项目部署状态。
 	UpdateDeployStatus(ctx context.Context, id int, status types.Deploy) (*Project, error)
 	// UpdateVersion 更新项目版本号。
@@ -188,6 +198,65 @@ func (p *projectBiz) UpdateStatusByVersion(ctx context.Context, id int, status t
 	return p.projRepo.UpdateStatusByVersion(ctx, id, status, version)
 }
 
+// Restore 实现 ProjectBiz.Restore：见接口注释。
+func (p *projectBiz) Restore(ctx context.Context, nsID int, name string) (*Project, error) {
+	deleted, err := p.projRepo.FindDeletedByName(ctx, name, nsID)
+	if err != nil {
+		return nil, err
+	}
+	// 同名在册项目已存在时不得恢复：(namespace_id, name) 在库里没有唯一约束，恢复会让
+	// 同名项目出现两条"在册"记录，此后部署按 name 反查 ProjectID 将命中任意一条（歧义），
+	// 可能把新配置部署到旧记录上。要求调用方先清理同名项目。
+	if live, err := p.projRepo.FindByName(ctx, name, nsID); err == nil {
+		return nil, errs.WrapInvalidArgument(
+			fmt.Errorf("空间下已存在同名项目 %s（id=%d），请先删除或重命名后再恢复", name, live.ID),
+			"restore project",
+		)
+	} else if !errs.IsNotFound(err) {
+		// 只有 NotFound 才说明没有同名在册项目；真实 DB 故障必须上抛，不能当作"可用"放行。
+		return nil, err
+	}
+	if err := p.projRepo.RestoreDeleted(ctx, deleted.ID); err != nil {
+		return nil, err
+	}
+	// 回读用 Show（预加载 repo/namespace 边）而非 FindByName：恢复结果直接映射为
+	// ProjectModel 返回给前端，缺了 namespace 边就是一条没有归属空间的项目。
+	return p.projRepo.Show(ctx, deleted.ID)
+}
+
+// ProjectDeletedListInput 是已删除项目列表的输入。
+type ProjectDeletedListInput struct {
+	Page, PageSize int32
+	// Search 关键词：匹配项目名或所属空间名（模糊，不分大小写）。
+	Search string
+}
+
+// ProjectDeletedListPageQuery 是已删除项目分页查询输入：搜索/分页下沉 SQL。
+type ProjectDeletedListPageQuery struct {
+	Search         string
+	Page, PageSize int32
+}
+
+// ProjectDeletedListPageResult 是已删除项目分页查询结果：已分页项目（含命名空间边）+ 未分页总数。
+type ProjectDeletedListPageResult struct {
+	Projects []*Project
+	Count    int
+}
+
+// AdminDeletedList 实现 ProjectBiz.AdminDeletedList：见接口注释。排序（deleted_at 倒序 +
+// id 决胜键）、分页与「只取可恢复行」的过滤全部由 repo 下沉 SQL，biz 仅装配分页信息。
+func (p *projectBiz) AdminDeletedList(ctx context.Context, input *ProjectDeletedListInput) ([]*Project, *pagination.Pagination, error) {
+	page, err := p.projRepo.ListAdminDeletedPage(ctx, &ProjectDeletedListPageQuery{
+		Search:   input.Search,
+		Page:     input.Page,
+		PageSize: input.PageSize,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return page.Projects, pagination.NewPagination(input.Page, input.PageSize, page.Count), nil
+}
+
 // UpdateProject 校验输入后更新项目。
 func (p *projectBiz) UpdateProject(ctx context.Context, input *UpdateProjectInput) (*Project, error) {
 	if input.ID <= 0 {
@@ -333,6 +402,13 @@ type ProjectRepo interface {
 	Delete(ctx context.Context, id int) error
 	// FindByName 按名称与命名空间查询项目。
 	FindByName(ctx context.Context, name string, nsID int) (*Project, error)
+	// FindDeletedByName 按名称与命名空间查询已软删的项目（仅超管恢复流程使用）。
+	FindDeletedByName(ctx context.Context, name string, nsID int) (*Project, error)
+	// RestoreDeleted 恢复软删的项目（清空 deleted_at，deploy_status 重置为未知）。
+	RestoreDeleted(ctx context.Context, id int) error
+	// ListAdminDeletedPage 分页查询「可恢复的已删除项目」（含命名空间边）：只含单独删除的行，
+	// 随空间级联删除的那批（deleted_with_namespace=true）已排除，所属空间已软删的存量行亦排除。
+	ListAdminDeletedPage(ctx context.Context, query *ProjectDeletedListPageQuery) (*ProjectDeletedListPageResult, error)
 	// ListByDeployStatus 按部署状态过滤项目并携带 namespace（cron 修复部署状态用）。
 	ListByDeployStatus(ctx context.Context, statuses ...types.Deploy) ([]*Project, error)
 	// UpdateDeployStatus 更新项目部署状态。

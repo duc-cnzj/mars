@@ -1300,6 +1300,78 @@ func Test_namespaceSvc_AdminList(t *testing.T) {
 	}
 }
 
+// Test_namespaceSvc_AdminDeletedList 已删除列表成功路径：ListAdminDeletedPage 结果经
+// FromNamespace 映射为 NamespaceModel，分页元信息与 Count 落位。DeletedAt 必须在响应里
+// 序列化成 RFC3339（前端靠它显示"何时被删"，nil 会退化为空串而看不出删除时间）；
+// Projects 随行返回——前端据此展示"恢复后会有几个项目"。
+func Test_namespaceSvc_AdminDeletedList(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+	deletedAt := time.Date(2026, 8, 20, 10, 0, 0, 0, time.UTC)
+	mocks.nsRepo.EXPECT().ListAdminDeletedPage(gomock.Any(), gomock.Any()).Return(&biz.NamespaceDeletedListPageResult{
+		Namespaces: []*biz.Namespace{{
+			ID:           1,
+			Name:         "ductest-a",
+			CreatorEmail: "a@b.c",
+			DeletedAt:    &deletedAt,
+			Projects:     []*biz.Project{{ID: 11, Name: "p1"}, {ID: 12, Name: "p2"}},
+		}},
+		Count: 1,
+	}, nil)
+
+	resp, err := svc.AdminDeletedList(newAdminUserCtx(), &namespace.AdminDeletedListRequest{})
+	assert.NoError(t, err)
+	assert.Equal(t, int32(1), resp.Page)
+	assert.Equal(t, int32(15), resp.PageSize)
+	assert.Equal(t, int32(1), resp.Count)
+	if assert.Len(t, resp.Items, 1) {
+		item := resp.Items[0]
+		assert.Equal(t, "ductest-a", item.Name)
+		assert.Equal(t, "a@b.c", item.CreatorEmail)
+		assert.Equal(t, deletedAt.Format(time.RFC3339), item.DeletedAt)
+		assert.Len(t, item.Projects, 2, "项目随行返回，前端据此提示恢复后会带回几个项目")
+	}
+}
+
+// Test_namespaceSvc_AdminDeletedList_PaginationPassthrough 分页参数透传：请求带的
+// page/page_size 原样落到 repo 查询并回显，Count 回显未分页总数（前端分页器依赖它）。
+func Test_namespaceSvc_AdminDeletedList_PaginationPassthrough(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+	var gotQuery *biz.NamespaceDeletedListPageQuery
+	mocks.nsRepo.EXPECT().ListAdminDeletedPage(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, q *biz.NamespaceDeletedListPageQuery) (*biz.NamespaceDeletedListPageResult, error) {
+			gotQuery = q
+			return &biz.NamespaceDeletedListPageResult{Count: 40}, nil
+		})
+
+	page, size := int32(3), int32(5)
+	resp, err := svc.AdminDeletedList(newAdminUserCtx(), &namespace.AdminDeletedListRequest{
+		Page:     &page,
+		PageSize: &size,
+		Search:   "mars",
+	})
+	assert.NoError(t, err)
+	if assert.NotNil(t, gotQuery) {
+		assert.Equal(t, int32(3), gotQuery.Page)
+		assert.Equal(t, int32(5), gotQuery.PageSize)
+		assert.Equal(t, "mars", gotQuery.Search)
+	}
+	assert.Equal(t, int32(3), resp.Page)
+	assert.Equal(t, int32(5), resp.PageSize)
+	assert.Equal(t, int32(40), resp.Count)
+	assert.Empty(t, resp.Items)
+}
+
+// Test_namespaceSvc_AdminDeletedList_Error 查询失败：错误上抛且不返回半成品响应
+// （吞错返回空列表会让恢复页误显示"没有可恢复的空间"）。
+func Test_namespaceSvc_AdminDeletedList_Error(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().ListAdminDeletedPage(gomock.Any(), gomock.Any()).Return(nil, errors.New("boom"))
+
+	resp, err := svc.AdminDeletedList(newAdminUserCtx(), &namespace.AdminDeletedListRequest{})
+	assert.Nil(t, resp)
+	assert.Error(t, err)
+}
+
 // Test_namespaceSvc_AdminList_LastActiveAt 管理列表最近活跃时间：空间下所有项目
 // UpdatedAt 最大值转 RFC3339 字符串，由服务端算好返回（前端零计算）。
 func Test_namespaceSvc_AdminList_LastActiveAt(t *testing.T) {
@@ -1348,18 +1420,42 @@ func Test_namespaceSvc_AdminList_DefaultPagination(t *testing.T) {
 	assert.Empty(t, resp.Items)
 }
 
-// Test_namespaceSvc_Authorize 授权门禁：AdminList 未进 allowlist（admin 专属），
-// 其余 12 个用户方法全部在 allowlist 内放行普通用户，逐个覆盖防漏。
+// Test_namespaceSvc_Authorize 授权门禁：AdminList 为 admin 专属；Restore 与 AdminDeletedList
+// 更严为**超管专属**（Authorize 开头先过 RequireSuperAdmin 强制名单），其余 12 个用户方法
+// 全部在 allowlist 内放行普通用户，逐个覆盖防漏。
+//
+// AdminDeletedList 与 Restore 同为超管专属是刻意的：它列的是「有哪些空间可恢复」，能看见
+// 这份清单本身就已属于恢复流程的一部分，不该比执行恢复更宽松。两者共用一个 superOnly 名单，
+// 下面逐方法断言，防止将来只往名单里加一个而漏另一个。
 func Test_namespaceSvc_Authorize(t *testing.T) {
 	svc, _ := newNamespaceSvcWithMocks(t)
 
-	// admin：管理后台 AdminList 放行。
+	// 超管（newAdminUserCtx 的邮箱即内置超管固定邮箱）：AdminList / Restore / AdminDeletedList 均放行。
 	ctx, err := svc.Authorize(newAdminUserCtx(), namespace.Namespace_AdminList_FullMethodName)
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
-	// 非 admin：AdminList 拒绝。
-	_, err = svc.Authorize(newOtherUserCtx(), namespace.Namespace_AdminList_FullMethodName)
-	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	_, err = svc.Authorize(newAdminUserCtx(), namespace.Namespace_Restore_FullMethodName)
+	assert.NoError(t, err)
+	_, err = svc.Authorize(newAdminUserCtx(), namespace.Namespace_AdminDeletedList_FullMethodName)
+	assert.NoError(t, err)
+	// 普通管理员（mars_admin 但非超管）：AdminList 放行，Restore/AdminDeletedList 拒绝——恢复
+	// 会重建集群侧骨架，阈值严于 admin。此处是「admin ≠ 超管」的回归锚点：删掉
+	// RequireSuperAdmin 门禁后本断言立即变红。
+	_, err = svc.Authorize(newOrdinaryAdminUserCtx(), namespace.Namespace_AdminList_FullMethodName)
+	assert.NoError(t, err, "AdminList 是 admin 专属，普通管理员应放行")
+	_, err = svc.Authorize(newOrdinaryAdminUserCtx(), namespace.Namespace_Restore_FullMethodName)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied, "Restore 是超管专属，普通管理员应拒绝")
+	_, err = svc.Authorize(newOrdinaryAdminUserCtx(), namespace.Namespace_AdminDeletedList_FullMethodName)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied, "AdminDeletedList 与 Restore 同阈值，普通管理员应拒绝")
+	// 非 admin：AdminList / Restore / AdminDeletedList 均拒绝。
+	for _, m := range []string{
+		namespace.Namespace_AdminList_FullMethodName,
+		namespace.Namespace_Restore_FullMethodName,
+		namespace.Namespace_AdminDeletedList_FullMethodName,
+	} {
+		_, err := svc.Authorize(newOtherUserCtx(), m)
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied, "方法 %s 应拒绝普通用户", m)
+	}
 	// 非 admin：allowlist 内的用户方法全部放行，逐个覆盖防漏。
 	for _, m := range []string{
 		namespace.Namespace_List_FullMethodName,
@@ -1378,6 +1474,50 @@ func Test_namespaceSvc_Authorize(t *testing.T) {
 		_, err := svc.Authorize(newOtherUserCtx(), m)
 		assert.NoError(t, err, "方法 %s 应放行普通用户", m)
 	}
+}
+
+// TestNamespaceSvc_Restore_Success 恢复成功：biz 编排结果映射为 NamespaceModel 返回，
+// 并按 Create 语义落审计日志（恢复 = 重建资源）。
+func TestNamespaceSvc_Restore_Success(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindDeletedByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 9, Name: "mars-demo"}, nil)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		nil, errs.WrapNotFound(errors.New("not found"), "not found"))
+	mocks.k8sRepo.EXPECT().CreateNamespace(gomock.Any(), "mars-demo").Return(
+		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "mars-demo"}}, nil)
+	mocks.k8sRepo.EXPECT().CreateDockerSecret(gomock.Any(), "mars-demo").Return(
+		&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "docker-secret"}}, nil)
+	mocks.nsRepo.EXPECT().UpdateImagePullSecrets(gomock.Any(), 9, []string{"docker-secret"}).Return(nil)
+	mocks.nsRepo.EXPECT().RestoreDeleted(gomock.Any(), 9).Return(nil)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 9).Return(&biz.Namespace{ID: 9, Name: "mars-demo"}, nil)
+	mocks.eventRepo.EXPECT().Dispatch(biz.EventNamespaceCreated, gomock.Any())
+
+	req := &namespace.RestoreRequest{Name: "mars-demo"}
+	mocks.eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Create,
+		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
+		"恢复项目空间: id: '9' 'mars-demo'",
+		req,
+	)
+
+	res, err := svc.Restore(newAdminUserCtx(), req)
+	assert.NoError(t, err)
+	assert.Equal(t, int32(9), res.Item.GetId())
+	assert.Equal(t, "mars-demo", res.Item.GetName())
+}
+
+// TestNamespaceSvc_Restore_BizError 编排失败（例如软删记录不存在）原样上抛，不落审计。
+func TestNamespaceSvc_Restore_BizError(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindDeletedByName(gomock.Any(), "ghost").Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find deleted namespace by name"))
+
+	res, err := svc.Restore(newAdminUserCtx(), &namespace.RestoreRequest{Name: "ghost"})
+	assert.Nil(t, res)
+	assert.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
 }
 
 // loPtr32 返回 int32 的指针，用于构造 proto optional 字段的入参。

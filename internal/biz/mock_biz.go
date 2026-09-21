@@ -559,6 +559,22 @@ func (m *MockProjectBiz) EXPECT() *MockProjectBizMockRecorder {
 	return m.recorder
 }
 
+// AdminDeletedList mocks base method.
+func (m *MockProjectBiz) AdminDeletedList(ctx context.Context, input *ProjectDeletedListInput) ([]*Project, *pagination.Pagination, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdminDeletedList", ctx, input)
+	ret0, _ := ret[0].([]*Project)
+	ret1, _ := ret[1].(*pagination.Pagination)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// AdminDeletedList indicates an expected call of AdminDeletedList.
+func (mr *MockProjectBizMockRecorder) AdminDeletedList(ctx, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdminDeletedList", reflect.TypeOf((*MockProjectBiz)(nil).AdminDeletedList), ctx, input)
+}
+
 // CheckApplyStatus mocks base method.
 func (m *MockProjectBiz) CheckApplyStatus(ctx context.Context, id int) (*ApplyStatus, error) {
 	m.ctrl.T.Helper()
@@ -727,6 +743,21 @@ func (m *MockProjectBiz) ResourceTree(ctx context.Context, id int) (*ResourceTre
 func (mr *MockProjectBizMockRecorder) ResourceTree(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceTree", reflect.TypeOf((*MockProjectBiz)(nil).ResourceTree), ctx, id)
+}
+
+// Restore mocks base method.
+func (m *MockProjectBiz) Restore(ctx context.Context, nsID int, name string) (*Project, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Restore", ctx, nsID, name)
+	ret0, _ := ret[0].(*Project)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Restore indicates an expected call of Restore.
+func (mr *MockProjectBizMockRecorder) Restore(ctx, nsID, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Restore", reflect.TypeOf((*MockProjectBiz)(nil).Restore), ctx, nsID, name)
 }
 
 // Show mocks base method.
@@ -1249,6 +1280,22 @@ func (m *MockNamespaceBiz) EXPECT() *MockNamespaceBizMockRecorder {
 	return m.recorder
 }
 
+// AdminDeletedList mocks base method.
+func (m *MockNamespaceBiz) AdminDeletedList(ctx context.Context, input *NamespaceDeletedListInput) ([]*Namespace, *pagination.Pagination, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdminDeletedList", ctx, input)
+	ret0, _ := ret[0].([]*Namespace)
+	ret1, _ := ret[1].(*pagination.Pagination)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// AdminDeletedList indicates an expected call of AdminDeletedList.
+func (mr *MockNamespaceBizMockRecorder) AdminDeletedList(ctx, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdminDeletedList", reflect.TypeOf((*MockNamespaceBiz)(nil).AdminDeletedList), ctx, input)
+}
+
 // AdminList mocks base method.
 func (m *MockNamespaceBiz) AdminList(ctx context.Context, input *AdminListInput) ([]*AdminNamespace, *AdminLivenessStats, *pagination.Pagination, error) {
 	m.ctrl.T.Helper()
@@ -1383,6 +1430,21 @@ func (m *MockNamespaceBiz) ListAllNames(ctx context.Context) ([]string, error) {
 func (mr *MockNamespaceBizMockRecorder) ListAllNames(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllNames", reflect.TypeOf((*MockNamespaceBiz)(nil).ListAllNames), ctx)
+}
+
+// Restore mocks base method.
+func (m *MockNamespaceBiz) Restore(ctx context.Context, name string) (*Namespace, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Restore", ctx, name)
+	ret0, _ := ret[0].(*Namespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Restore indicates an expected call of Restore.
+func (mr *MockNamespaceBizMockRecorder) Restore(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Restore", reflect.TypeOf((*MockNamespaceBiz)(nil).Restore), ctx, name)
 }
 
 // Show mocks base method.

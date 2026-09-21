@@ -25,6 +25,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/shadcn/tabs'
 import { TabInfo } from './TabInfo'
 import { TabLog } from './TabLog'
 import { TopologyTab } from '../topology/TopologyTab'
+import { isWorkloadTab, visibleTabKeys, type TabKey } from './tabVisibility'
+import type { TKey } from '@/i18n/keys'
 
 // 命令行 Tab 依赖 xterm（约 300KB），按需加载直到真正打开 Shell 才拉取
 const TabShell = lazy(() => import('./TabShell').then((m) => ({ default: m.TabShell })))
@@ -33,11 +35,21 @@ const TabShell = lazy(() => import('./TabShell').then((m) => ({ default: m.TabSh
 const TabEdit = lazy(() => import('./TabEdit').then((m) => ({ default: m.TabEdit })))
 
 type ProjectModel = components['schemas']['types.ProjectModel']
-type TabKey = 'logs' | 'shell' | 'edit' | 'detail' | 'topology'
+
+/** Tab 键 → i18n 文案键（可见性规则见 tabVisibility.ts） */
+const TAB_LABELS: Record<TabKey, TKey> = {
+  logs: 'project.tabLogs',
+  shell: 'project.tabShell',
+  edit: 'project.tabEdit',
+  topology: 'project.tabTopology',
+  detail: 'project.tabDetail',
+}
 
 /**
  * 项目详情弹窗：忠实还原旧版 DraggableModal 的 Tab 结构。
- * 容器日志 / 命令行 / 配置更新 / 拓扑 仅在 Deployed/Deploying 时展示，详细信息始终存在。
+ * 容器日志 / 命令行 / 拓扑 仅在 Deployed/Deploying 时展示（都直连 pod，需工作负载在跑）；
+ * 「部署配置」与「详细信息」始终存在——部署配置不依赖运行态，未部署/状态未知的项目靠它点部署
+ * （判断依据见 WORKLOAD_TABS）。
  * 打开时拉取项目最新详情，成功后按需刷新；部署成功后从配置 Tab 自动切到拓扑 Tab。
  */
 export function ProjectDetailModal({
@@ -126,22 +138,16 @@ export function ProjectDetailModal({
     (detail ?? project).deployStatus === 'StatusDeployed' ||
     (detail ?? project).deployStatus === 'StatusDeploying'
 
-  const tabItems: { key: TabKey; label: string }[] = [
-    ...(canOperate
-      ? [
-          { key: 'logs' as const, label: t('project.tabLogs') },
-          { key: 'shell' as const, label: t('project.tabShell') },
-          { key: 'edit' as const, label: t('project.tabEdit') },
-          { key: 'topology' as const, label: t('project.tabTopology') },
-        ]
-      : []),
-    { key: 'detail' as const, label: t('project.tabDetail') },
-  ]
+  // 可见 Tab：不可操作时只剩「部署配置 + 详细信息」（edit 必须留——见 tabVisibility.ts 的
+  // WORKLOAD_TABS 注释，那是恢复后重新部署的唯一入口）
+  const tabItems = visibleTabKeys(canOperate).map((key) => ({ key, label: t(TAB_LABELS[key]) }))
 
-  // 兜底：detail 加载后若状态已不可操作（列表快照后刚失败），把停留在操作类 Tab 的选中收回详细信息
+  // 兜底：detail 加载后若状态已不可操作（列表快照后刚失败），把停留在**工作负载类** Tab 的选中
+  // 收回详细信息。判据是「所选 Tab 属于工作负载类」而非「所选 Tab ≠ detail」——后者会把停在
+  // 「部署配置」的用户一并踢走，正是恢复后项目重新部署的死结所在。
   useEffect(() => {
     if (!open || !detail) return
-    if (!canOperate && tab !== 'detail') setTab('detail')
+    if (!canOperate && isWorkloadTab(tab)) setTab('detail')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, detail])
 

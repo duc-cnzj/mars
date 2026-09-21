@@ -90,6 +90,15 @@ func (s *NamespaceSvc) Delete(ctx context.Context, req *namespace.DeleteRequest)
 	return &out, nil
 }
 
+// Restore POST /api/admin/namespaces/restore。
+func (s *NamespaceSvc) Restore(ctx context.Context, req *namespace.RestoreRequest) (*namespace.RestoreResponse, error) {
+	var out namespace.RestoreResponse
+	if err := s.C.Do(ctx, http.MethodPost, "/api/admin/namespaces/restore", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // IsExists POST /api/namespaces/exists。
 func (s *NamespaceSvc) IsExists(ctx context.Context, req *namespace.IsExistsRequest) (*namespace.IsExistsResponse, error) {
 	var out namespace.IsExistsResponse
@@ -130,6 +139,15 @@ func (s *NamespaceSvc) Transfer(ctx context.Context, req *namespace.TransferRequ
 func (s *NamespaceSvc) AdminList(ctx context.Context, req *namespace.AdminListRequest) (*namespace.AdminListResponse, error) {
 	var out namespace.AdminListResponse
 	if err := s.C.DoQuery(ctx, http.MethodGet, "/api/admin/namespaces", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// AdminDeletedList GET /api/admin/namespaces/deleted。
+func (s *NamespaceSvc) AdminDeletedList(ctx context.Context, req *namespace.AdminDeletedListRequest) (*namespace.AdminDeletedListResponse, error) {
+	var out namespace.AdminDeletedListResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, "/api/admin/namespaces/deleted", req, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

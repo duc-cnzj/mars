@@ -286,6 +286,7 @@ var (
 		{Name: "git_commit_title", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "longtext"}},
 		{Name: "git_commit_author", Type: field.TypeString, Size: 255, Default: ""},
 		{Name: "git_commit_date", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "deleted_with_namespace", Type: field.TypeBool, Default: false},
 		{Name: "namespace_id", Type: field.TypeInt, Nullable: true},
 		{Name: "repo_id", Type: field.TypeInt, Nullable: true},
 	}
@@ -297,13 +298,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "projects_namespaces_projects",
-				Columns:    []*schema.Column{ProjectsColumns[26]},
+				Columns:    []*schema.Column{ProjectsColumns[27]},
 				RefColumns: []*schema.Column{NamespacesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "projects_repos_projects",
-				Columns:    []*schema.Column{ProjectsColumns[27]},
+				Columns:    []*schema.Column{ProjectsColumns[28]},
 				RefColumns: []*schema.Column{ReposColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

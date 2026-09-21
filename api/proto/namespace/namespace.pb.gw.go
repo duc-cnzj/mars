@@ -301,6 +301,33 @@ func local_request_Namespace_Delete_0(ctx context.Context, marshaler runtime.Mar
 	return msg, metadata, err
 }
 
+func request_Namespace_Restore_0(ctx context.Context, marshaler runtime.Marshaler, client NamespaceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq RestoreRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.Restore(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_Namespace_Restore_0(ctx context.Context, marshaler runtime.Marshaler, server NamespaceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq RestoreRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := server.Restore(ctx, &protoReq)
+	return msg, metadata, err
+}
+
 var filter_Namespace_IsExists_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
 
 func request_Namespace_IsExists_0(ctx context.Context, marshaler runtime.Marshaler, client NamespaceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -449,6 +476,41 @@ func local_request_Namespace_AdminList_0(ctx context.Context, marshaler runtime.
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.AdminList(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+var filter_Namespace_AdminDeletedList_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+
+func request_Namespace_AdminDeletedList_0(ctx context.Context, marshaler runtime.Marshaler, client NamespaceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq AdminDeletedListRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Namespace_AdminDeletedList_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.AdminDeletedList(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_Namespace_AdminDeletedList_0(ctx context.Context, marshaler runtime.Marshaler, server NamespaceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq AdminDeletedListRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Namespace_AdminDeletedList_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := server.AdminDeletedList(ctx, &protoReq)
 	return msg, metadata, err
 }
 
@@ -618,6 +680,26 @@ func RegisterNamespaceHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		}
 		forward_Namespace_Delete_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodPost, pattern_Namespace_Restore_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/namespace.Namespace/Restore", runtime.WithHTTPPathPattern("/api/admin/namespaces/restore"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Namespace_Restore_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_Namespace_Restore_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	mux.Handle(http.MethodPost, pattern_Namespace_IsExists_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -717,6 +799,26 @@ func RegisterNamespaceHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 			return
 		}
 		forward_Namespace_AdminList_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodGet, pattern_Namespace_AdminDeletedList_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/namespace.Namespace/AdminDeletedList", runtime.WithHTTPPathPattern("/api/admin/namespaces/deleted"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Namespace_AdminDeletedList_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_Namespace_AdminDeletedList_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 
 	return nil
@@ -894,6 +996,23 @@ func RegisterNamespaceHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		}
 		forward_Namespace_Delete_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodPost, pattern_Namespace_Restore_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/namespace.Namespace/Restore", runtime.WithHTTPPathPattern("/api/admin/namespaces/restore"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Namespace_Restore_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_Namespace_Restore_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	mux.Handle(http.MethodPost, pattern_Namespace_IsExists_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -979,37 +1098,58 @@ func RegisterNamespaceHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		}
 		forward_Namespace_AdminList_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodGet, pattern_Namespace_AdminDeletedList_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/namespace.Namespace/AdminDeletedList", runtime.WithHTTPPathPattern("/api/admin/namespaces/deleted"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Namespace_AdminDeletedList_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_Namespace_AdminDeletedList_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	return nil
 }
 
 var (
-	pattern_Namespace_List_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "namespaces"}, ""))
-	pattern_Namespace_UpdatePrivate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "namespaces", "update_private"}, ""))
-	pattern_Namespace_SyncMembers_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "namespaces", "sync_members"}, ""))
-	pattern_Namespace_UpdateConfig_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "namespaces", "update_config"}, ""))
-	pattern_Namespace_Create_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "namespaces"}, ""))
-	pattern_Namespace_Show_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"api", "namespaces", "id"}, ""))
-	pattern_Namespace_UpdateDesc_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"api", "namespaces", "id", "update_desc"}, ""))
-	pattern_Namespace_Delete_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"api", "namespaces", "id"}, ""))
-	pattern_Namespace_IsExists_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "namespaces", "exists"}, ""))
-	pattern_Namespace_Favorite_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "namespaces", "favorite"}, ""))
-	pattern_Namespace_FavoriteSort_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "namespaces", "favorite", "sort"}, ""))
-	pattern_Namespace_Transfer_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "namespaces", "transfer"}, ""))
-	pattern_Namespace_AdminList_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "admin", "namespaces"}, ""))
+	pattern_Namespace_List_0             = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "namespaces"}, ""))
+	pattern_Namespace_UpdatePrivate_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "namespaces", "update_private"}, ""))
+	pattern_Namespace_SyncMembers_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "namespaces", "sync_members"}, ""))
+	pattern_Namespace_UpdateConfig_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "namespaces", "update_config"}, ""))
+	pattern_Namespace_Create_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "namespaces"}, ""))
+	pattern_Namespace_Show_0             = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"api", "namespaces", "id"}, ""))
+	pattern_Namespace_UpdateDesc_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"api", "namespaces", "id", "update_desc"}, ""))
+	pattern_Namespace_Delete_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"api", "namespaces", "id"}, ""))
+	pattern_Namespace_Restore_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "admin", "namespaces", "restore"}, ""))
+	pattern_Namespace_IsExists_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "namespaces", "exists"}, ""))
+	pattern_Namespace_Favorite_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "namespaces", "favorite"}, ""))
+	pattern_Namespace_FavoriteSort_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "namespaces", "favorite", "sort"}, ""))
+	pattern_Namespace_Transfer_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "namespaces", "transfer"}, ""))
+	pattern_Namespace_AdminList_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "admin", "namespaces"}, ""))
+	pattern_Namespace_AdminDeletedList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "admin", "namespaces", "deleted"}, ""))
 )
 
 var (
-	forward_Namespace_List_0          = runtime.ForwardResponseMessage
-	forward_Namespace_UpdatePrivate_0 = runtime.ForwardResponseMessage
-	forward_Namespace_SyncMembers_0   = runtime.ForwardResponseMessage
-	forward_Namespace_UpdateConfig_0  = runtime.ForwardResponseMessage
-	forward_Namespace_Create_0        = runtime.ForwardResponseMessage
-	forward_Namespace_Show_0          = runtime.ForwardResponseMessage
-	forward_Namespace_UpdateDesc_0    = runtime.ForwardResponseMessage
-	forward_Namespace_Delete_0        = runtime.ForwardResponseMessage
-	forward_Namespace_IsExists_0      = runtime.ForwardResponseMessage
-	forward_Namespace_Favorite_0      = runtime.ForwardResponseMessage
-	forward_Namespace_FavoriteSort_0  = runtime.ForwardResponseMessage
-	forward_Namespace_Transfer_0      = runtime.ForwardResponseMessage
-	forward_Namespace_AdminList_0     = runtime.ForwardResponseMessage
+	forward_Namespace_List_0             = runtime.ForwardResponseMessage
+	forward_Namespace_UpdatePrivate_0    = runtime.ForwardResponseMessage
+	forward_Namespace_SyncMembers_0      = runtime.ForwardResponseMessage
+	forward_Namespace_UpdateConfig_0     = runtime.ForwardResponseMessage
+	forward_Namespace_Create_0           = runtime.ForwardResponseMessage
+	forward_Namespace_Show_0             = runtime.ForwardResponseMessage
+	forward_Namespace_UpdateDesc_0       = runtime.ForwardResponseMessage
+	forward_Namespace_Delete_0           = runtime.ForwardResponseMessage
+	forward_Namespace_Restore_0          = runtime.ForwardResponseMessage
+	forward_Namespace_IsExists_0         = runtime.ForwardResponseMessage
+	forward_Namespace_Favorite_0         = runtime.ForwardResponseMessage
+	forward_Namespace_FavoriteSort_0     = runtime.ForwardResponseMessage
+	forward_Namespace_Transfer_0         = runtime.ForwardResponseMessage
+	forward_Namespace_AdminList_0        = runtime.ForwardResponseMessage
+	forward_Namespace_AdminDeletedList_0 = runtime.ForwardResponseMessage
 )

@@ -27,6 +27,8 @@ const (
 	Project_MemoryCpuAndEndpoints_FullMethodName = "/project.Project/MemoryCpuAndEndpoints"
 	Project_Version_FullMethodName               = "/project.Project/Version"
 	Project_Delete_FullMethodName                = "/project.Project/Delete"
+	Project_Restore_FullMethodName               = "/project.Project/Restore"
+	Project_AdminDeletedList_FullMethodName      = "/project.Project/AdminDeletedList"
 	Project_AllContainers_FullMethodName         = "/project.Project/AllContainers"
 	Project_CheckApplyStatus_FullMethodName      = "/project.Project/CheckApplyStatus"
 	Project_ResourceTree_FullMethodName          = "/project.Project/ResourceTree"
@@ -50,6 +52,12 @@ type ProjectClient interface {
 	Version(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error)
 	// Delete 删除项目
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
+	// Restore 恢复被误删的项目（仅超管）：清除软删标记并把部署状态重置为未知，
+	// 项目配置/部署历史保留，但**不重建** helm release（需另行重新部署）。
+	Restore(ctx context.Context, in *RestoreRequest, opts ...grpc.CallOption) (*RestoreResponse, error)
+	// AdminDeletedList 已删除项目列表（仅超管）：Restore 的配套「选谁恢复」视图，只列
+	// 单独删除的项目（随空间级联删除的那批须先恢复空间，见 message 注释）。
+	AdminDeletedList(ctx context.Context, in *AdminDeletedListRequest, opts ...grpc.CallOption) (*AdminDeletedListResponse, error)
 	// AllContainers 获取项目下的所有 pod
 	AllContainers(ctx context.Context, in *AllContainersRequest, opts ...grpc.CallOption) (*AllContainersResponse, error)
 	// CheckApplyStatus 判定项目最近一次部署后新版本容器是否正常运行。
@@ -154,6 +162,26 @@ func (c *projectClient) Delete(ctx context.Context, in *DeleteRequest, opts ...g
 	return out, nil
 }
 
+func (c *projectClient) Restore(ctx context.Context, in *RestoreRequest, opts ...grpc.CallOption) (*RestoreResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RestoreResponse)
+	err := c.cc.Invoke(ctx, Project_Restore_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectClient) AdminDeletedList(ctx context.Context, in *AdminDeletedListRequest, opts ...grpc.CallOption) (*AdminDeletedListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminDeletedListResponse)
+	err := c.cc.Invoke(ctx, Project_AdminDeletedList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *projectClient) AllContainers(ctx context.Context, in *AllContainersRequest, opts ...grpc.CallOption) (*AllContainersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AllContainersResponse)
@@ -211,6 +239,12 @@ type ProjectServer interface {
 	Version(context.Context, *VersionRequest) (*VersionResponse, error)
 	// Delete 删除项目
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
+	// Restore 恢复被误删的项目（仅超管）：清除软删标记并把部署状态重置为未知，
+	// 项目配置/部署历史保留，但**不重建** helm release（需另行重新部署）。
+	Restore(context.Context, *RestoreRequest) (*RestoreResponse, error)
+	// AdminDeletedList 已删除项目列表（仅超管）：Restore 的配套「选谁恢复」视图，只列
+	// 单独删除的项目（随空间级联删除的那批须先恢复空间，见 message 注释）。
+	AdminDeletedList(context.Context, *AdminDeletedListRequest) (*AdminDeletedListResponse, error)
 	// AllContainers 获取项目下的所有 pod
 	AllContainers(context.Context, *AllContainersRequest) (*AllContainersResponse, error)
 	// CheckApplyStatus 判定项目最近一次部署后新版本容器是否正常运行。
@@ -256,6 +290,12 @@ func (UnimplementedProjectServer) Version(context.Context, *VersionRequest) (*Ve
 }
 func (UnimplementedProjectServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedProjectServer) Restore(context.Context, *RestoreRequest) (*RestoreResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Restore not implemented")
+}
+func (UnimplementedProjectServer) AdminDeletedList(context.Context, *AdminDeletedListRequest) (*AdminDeletedListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminDeletedList not implemented")
 }
 func (UnimplementedProjectServer) AllContainers(context.Context, *AllContainersRequest) (*AllContainersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AllContainers not implemented")
@@ -409,6 +449,42 @@ func _Project_Delete_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Project_Restore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).Restore(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Project_Restore_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).Restore(ctx, req.(*RestoreRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Project_AdminDeletedList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminDeletedListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).AdminDeletedList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Project_AdminDeletedList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).AdminDeletedList(ctx, req.(*AdminDeletedListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Project_AllContainers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AllContainersRequest)
 	if err := dec(in); err != nil {
@@ -511,6 +587,14 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delete",
 			Handler:    _Project_Delete_Handler,
+		},
+		{
+			MethodName: "Restore",
+			Handler:    _Project_Restore_Handler,
+		},
+		{
+			MethodName: "AdminDeletedList",
+			Handler:    _Project_AdminDeletedList_Handler,
 		},
 		{
 			MethodName: "AllContainers",

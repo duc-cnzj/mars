@@ -242,6 +242,42 @@ func TestAccessBiz_RequireAdmin(t *testing.T) {
 	})
 }
 
+// TestAccessBiz_RequireSuperAdmin 覆盖超管门禁的三条语义：未命中强制名单放行（且不触达
+// 用户提取）、命中且为超管放行、命中但只是普通 admin 拒绝。普通 admin 被拒是本方法的存在
+// 理由——RequireAdmin 的 allowlist 只能放宽、无法收紧，而 Restore 这类会重建集群骨架的
+// 方法必须比 admin 更严。
+func TestAccessBiz_RequireSuperAdmin(t *testing.T) {
+	t.Run("method not in superOnly passes without extracting user", func(t *testing.T) {
+		// ctx 不注入用户：未命中强制名单即放行，不触达 MustGetUser，故不 panic。
+		ab, _ := newAccessBizFixture(t)
+
+		assert.NoError(t, ab.RequireSuperAdmin(context.TODO(), "/file.File/List", "/ns.Namespace/Restore", "/proj.Project/Restore"))
+	})
+
+	// ⚠️ 被测方法名要「再说一遍」进强制名单才生效：fullMethodName 与 superOnly 是两个
+	// 独立参数，只传前者（superOnly 为空）等于没开闸（fail-open）。下述用例刻意让命中
+	// 落在名单第二项，覆盖循环的 continue 分支。
+	t.Run("super admin passes on later list entry", func(t *testing.T) {
+		ab, _ := newAccessBizFixture(t)
+
+		err := ab.RequireSuperAdmin(
+			superAdminCtx(),
+			"/proj.Project/Restore",
+			"/ns.Namespace/Restore",
+			"/proj.Project/Restore",
+		)
+		assert.NoError(t, err)
+	})
+
+	t.Run("ordinary admin denied", func(t *testing.T) {
+		ab, _ := newAccessBizFixture(t)
+
+		err := ab.RequireSuperAdmin(adminCtx(), "/ns.Namespace/Restore", "/ns.Namespace/Restore")
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+		assert.ErrorContains(t, err, "超级管理员操作", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是什么操作")
+	})
+}
+
 // TestAccessBiz_CanAccessNamespace 直接覆盖 CanAccessNamespace 谓词的分支：nil ns
 // 拒绝、admin/创建者/成员/公开空间放行、非成员拒绝。nil-user 不再是合法输入——
 // ctx 无用户即编程错误，MustGetUser 直接 panic（见 context_test.go）。

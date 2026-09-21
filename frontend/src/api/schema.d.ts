@@ -120,6 +120,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/namespaces/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 已删除空间列表（管理员）
+         * @description AdminDeletedList 已删除空间列表（仅超管）：Restore 的配套「选谁恢复」视图——
+         *      只列软删行（含删除时间与随空间级联删除的项目数），供误删恢复页按行选择后调 Restore。
+         *      阈值与 Restore 一致：能看见「有哪些空间可恢复」本身就属于恢复流程的一部分。
+         */
+        get: operations["Namespace_AdminDeletedList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/namespaces/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 恢复被删除的名称空间（管理员）
+         * @description Restore 恢复被误删的名称空间（仅超管）：重建 k8s 命名空间骨架并清除软删标记，
+         *      空间下项目记录一并恢复，但**不重建**任何 helm release（需另行重新部署）。
+         */
+        post: operations["Namespace_Restore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/projects/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 已删除项目列表（管理员）
+         * @description AdminDeletedList 已删除项目列表（仅超管）：Restore 的配套「选谁恢复」视图，只列
+         *      单独删除的项目（随空间级联删除的那批须先恢复空间，见 message 注释）。
+         */
+        get: operations["Project_AdminDeletedList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/projects/liveness": {
         parameters: {
             query?: never;
@@ -135,6 +199,27 @@ export interface paths {
         get: operations["Project_Liveness"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/projects/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 恢复被删除的项目（管理员）
+         * @description Restore 恢复被误删的项目（仅超管）：清除软删标记并把部署状态重置为未知，
+         *      项目配置/部署历史保留，但**不重建** helm release（需另行重新部署）。
+         */
+        post: operations["Project_Restore"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1774,6 +1859,21 @@ export interface components {
             /** Format: int32 */
             length: number;
         };
+        /**
+         * @description AdminDeletedListResponse 已删除空间列表：items 直接复用 types.NamespaceModel——
+         *      它自带 deleted_at（删除时间）、creator_email（空间创建者）、projects（随空间级联删除的
+         *      项目，即会被 Restore 一并恢复的那批），恰好覆盖「选谁恢复」所需的全部信息，无需另立
+         *      Item 消息，也无需额外统计（本就不提供活跃度分类）。
+         */
+        "namespace.AdminDeletedListResponse": {
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            count: number;
+            items: components["schemas"]["types.NamespaceModel"][];
+        };
         /** @description AdminItem 命名空间管理条目：空间模型（含成员/创建者）+ 最近活跃时间 + 活跃度分类。 */
         "namespace.AdminItem": {
             ns: components["schemas"]["types.NamespaceModel"];
@@ -1851,6 +1951,13 @@ export interface components {
             /** Format: int32 */
             zombie: number;
         };
+        "namespace.RestoreRequest": {
+            /** @description 空间名（界面展示名，免前缀）：后台已按 ns_prefix 幂等补全，带不带前缀均可命中。 */
+            name: string;
+        };
+        "namespace.RestoreResponse": {
+            item: components["schemas"]["types.NamespaceModel"];
+        };
         "namespace.ShowResponse": {
             item: components["schemas"]["types.NamespaceModel"];
         };
@@ -1909,6 +2016,23 @@ export interface components {
         "picture.BackgroundResponse": {
             url: string;
             copyright: string;
+        };
+        /**
+         * @description AdminDeletedListResponse 已删除项目列表：items 直接复用 types.ProjectModel——它自带
+         *      deleted_at（删除时间）、updated_by（最后操作人）与 namespace 边（恢复请求要按空间名定位，
+         *      行内缺了它就是一条无法恢复的项目）。
+         *
+         *      只列「单独删除」的项目（deleted_with_namespace=false）：随空间级联删除的那批由恢复空间
+         *      连带还原，本列表调 Restore 会被硬拒 400（所属空间已删），列出来只是不可点的死行。
+         */
+        "project.AdminDeletedListResponse": {
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            count: number;
+            items: components["schemas"]["types.ProjectModel"][];
         };
         "project.AllContainersResponse": {
             items: components["schemas"]["types.StateContainer"][];
@@ -2037,6 +2161,17 @@ export interface components {
             status: ProjectResourceTreeResponseStatus;
             nodes: components["schemas"]["project.ResourceTreeNode"][];
             edges: components["schemas"]["project.ResourceTreeEdge"][];
+        };
+        /**
+         * @description RestoreRequest 按「空间名 + 项目名」定位被误删的项目（空间名免前缀，后台按 ns_prefix 幂等补全）。
+         *      用业务名而非 id：软删记录已从列表消失，排障时手上往往只剩名字。
+         */
+        "project.RestoreRequest": {
+            namespace: string;
+            name: string;
+        };
+        "project.RestoreResponse": {
+            item: components["schemas"]["types.ProjectModel"];
         };
         "project.ShowResponse": {
             item: components["schemas"]["types.ProjectModel"];
@@ -2741,6 +2876,107 @@ export interface operations {
             };
         };
     };
+    Namespace_AdminDeletedList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                /** @description 关键词：匹配空间名/创建者邮箱 */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["namespace.AdminDeletedListResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Namespace_Restore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["namespace.RestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["namespace.RestoreResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Project_AdminDeletedList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                /** @description 关键词：匹配项目名或所属空间名 */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["project.AdminDeletedListResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
     Project_Liveness: {
         parameters: {
             query?: {
@@ -2766,6 +3002,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["project.LivenessResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Project_Restore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["project.RestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["project.RestoreResponse"];
                 };
             };
             /** @description Default error response */

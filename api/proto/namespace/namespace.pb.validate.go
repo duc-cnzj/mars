@@ -945,6 +945,246 @@ var _ interface {
 	ErrorName() string
 } = DeleteResponseValidationError{}
 
+// Validate checks the field values on RestoreRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *RestoreRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RestoreRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in RestoreRequestMultiError,
+// or nil if none found.
+func (m *RestoreRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RestoreRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(m.GetName()) < 1 {
+		err := RestoreRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return RestoreRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RestoreRequestMultiError is an error wrapping multiple validation errors
+// returned by RestoreRequest.ValidateAll() if the designated constraints
+// aren't met.
+type RestoreRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RestoreRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RestoreRequestMultiError) AllErrors() []error { return m }
+
+// RestoreRequestValidationError is the validation error returned by
+// RestoreRequest.Validate if the designated constraints aren't met.
+type RestoreRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RestoreRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RestoreRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RestoreRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RestoreRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RestoreRequestValidationError) ErrorName() string { return "RestoreRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e RestoreRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRestoreRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RestoreRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RestoreRequestValidationError{}
+
+// Validate checks the field values on RestoreResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *RestoreResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RestoreResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RestoreResponseMultiError, or nil if none found.
+func (m *RestoreResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RestoreResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetItem()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, RestoreResponseValidationError{
+					field:  "Item",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, RestoreResponseValidationError{
+					field:  "Item",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetItem()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return RestoreResponseValidationError{
+				field:  "Item",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return RestoreResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RestoreResponseMultiError is an error wrapping multiple validation errors
+// returned by RestoreResponse.ValidateAll() if the designated constraints
+// aren't met.
+type RestoreResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RestoreResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RestoreResponseMultiError) AllErrors() []error { return m }
+
+// RestoreResponseValidationError is the validation error returned by
+// RestoreResponse.Validate if the designated constraints aren't met.
+type RestoreResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RestoreResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RestoreResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RestoreResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RestoreResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RestoreResponseValidationError) ErrorName() string { return "RestoreResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e RestoreResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRestoreResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RestoreResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RestoreResponseValidationError{}
+
 // Validate checks the field values on FavoriteRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
@@ -3072,6 +3312,260 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = AdminListResponseValidationError{}
+
+// Validate checks the field values on AdminDeletedListRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AdminDeletedListRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AdminDeletedListRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AdminDeletedListRequestMultiError, or nil if none found.
+func (m *AdminDeletedListRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AdminDeletedListRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Search
+
+	if m.Page != nil {
+		// no validation rules for Page
+	}
+
+	if m.PageSize != nil {
+		// no validation rules for PageSize
+	}
+
+	if len(errors) > 0 {
+		return AdminDeletedListRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// AdminDeletedListRequestMultiError is an error wrapping multiple validation
+// errors returned by AdminDeletedListRequest.ValidateAll() if the designated
+// constraints aren't met.
+type AdminDeletedListRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AdminDeletedListRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AdminDeletedListRequestMultiError) AllErrors() []error { return m }
+
+// AdminDeletedListRequestValidationError is the validation error returned by
+// AdminDeletedListRequest.Validate if the designated constraints aren't met.
+type AdminDeletedListRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AdminDeletedListRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AdminDeletedListRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AdminDeletedListRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AdminDeletedListRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AdminDeletedListRequestValidationError) ErrorName() string {
+	return "AdminDeletedListRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AdminDeletedListRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAdminDeletedListRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AdminDeletedListRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AdminDeletedListRequestValidationError{}
+
+// Validate checks the field values on AdminDeletedListResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AdminDeletedListResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AdminDeletedListResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AdminDeletedListResponseMultiError, or nil if none found.
+func (m *AdminDeletedListResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AdminDeletedListResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Page
+
+	// no validation rules for PageSize
+
+	// no validation rules for Count
+
+	for idx, item := range m.GetItems() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AdminDeletedListResponseValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AdminDeletedListResponseValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AdminDeletedListResponseValidationError{
+					field:  fmt.Sprintf("Items[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return AdminDeletedListResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// AdminDeletedListResponseMultiError is an error wrapping multiple validation
+// errors returned by AdminDeletedListResponse.ValidateAll() if the designated
+// constraints aren't met.
+type AdminDeletedListResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AdminDeletedListResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AdminDeletedListResponseMultiError) AllErrors() []error { return m }
+
+// AdminDeletedListResponseValidationError is the validation error returned by
+// AdminDeletedListResponse.Validate if the designated constraints aren't met.
+type AdminDeletedListResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AdminDeletedListResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AdminDeletedListResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AdminDeletedListResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AdminDeletedListResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AdminDeletedListResponseValidationError) ErrorName() string {
+	return "AdminDeletedListResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AdminDeletedListResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAdminDeletedListResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AdminDeletedListResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AdminDeletedListResponseValidationError{}
 
 // Validate checks the field values on TransferRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the

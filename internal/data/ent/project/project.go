@@ -70,6 +70,8 @@ const (
 	FieldNamespaceID = "namespace_id"
 	// FieldRepoID holds the string denoting the repo_id field in the database.
 	FieldRepoID = "repo_id"
+	// FieldDeletedWithNamespace holds the string denoting the deleted_with_namespace field in the database.
+	FieldDeletedWithNamespace = "deleted_with_namespace"
 	// EdgeChangelogs holds the string denoting the changelogs edge name in mutations.
 	EdgeChangelogs = "changelogs"
 	// EdgeRepo holds the string denoting the repo edge name in mutations.
@@ -131,6 +133,7 @@ var Columns = []string{
 	FieldGitCommitDate,
 	FieldNamespaceID,
 	FieldRepoID,
+	FieldDeletedWithNamespace,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -183,6 +186,8 @@ var (
 	DefaultGitCommitAuthor string
 	// GitCommitAuthorValidator is a validator for the "git_commit_author" field. It is called by the builders before save.
 	GitCommitAuthorValidator func(string) error
+	// DefaultDeletedWithNamespace holds the default value on creation for the "deleted_with_namespace" field.
+	DefaultDeletedWithNamespace bool
 )
 
 // OrderOption defines the ordering options for the Project queries.
@@ -296,6 +301,11 @@ func ByNamespaceID(opts ...sql.OrderTermOption) OrderOption {
 // ByRepoID orders the results by the repo_id field.
 func ByRepoID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRepoID, opts...).ToFunc()
+}
+
+// ByDeletedWithNamespace orders the results by the deleted_with_namespace field.
+func ByDeletedWithNamespace(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDeletedWithNamespace, opts...).ToFunc()
 }
 
 // ByChangelogsCount orders the results by changelogs count.

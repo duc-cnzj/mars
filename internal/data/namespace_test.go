@@ -18,6 +18,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/schema/mixin"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1539,4 +1540,547 @@ func Test_namespaceRepo_UpdateConfig_DeleteMembersDiffError(t *testing.T) {
 	_, err := repo.UpdateConfig(context.TODO(), &biz.UpdateConfigInput{ID: ns.ID, Emails: []string{}})
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "inject member delete error")
+}
+
+// createNamedProject 建一个指定名字的项目（createProject 固定用 testProject，同名项目
+// 无法区分，恢复相关用例需要按名定位）。
+func createNamedProject(entdb *ent.Client, nsID int, name string) *ent.Project {
+	return entdb.Project.Create().
+		SetGitProjectID(1).
+		SetConfig("").
+		SetCreator("").
+		SetName(name).
+		SetNamespaceID(nsID).
+		SaveX(context.TODO())
+}
+
+// TestNamespaceRepo_Delete_CascadeBatchFlag 删除空间时级联项目被软删并置批次标识
+// deleted_with_namespace=true（恢复时判定"同批"的依据）；其他空间的项目不受影响，
+// 标识保持 false。
+func TestNamespaceRepo_Delete_CascadeBatchFlag(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	ctx := context.TODO()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{
+		Cfg: &config.Config{NsPrefix: "abc"},
+		DB:  entdb,
+	}))
+
+	ns := createNamespace(entdb)
+	other := createNamespace(entdb)
+	p1 := createNamedProject(entdb, ns.ID, "p1")
+	p2 := createNamedProject(entdb, ns.ID, "p2")
+	p3 := createNamedProject(entdb, other.ID, "p3")
+
+	require.NoError(t, repo.Delete(ctx, ns.ID))
+
+	skip := mixin.SkipSoftDelete(ctx)
+	deletedNs := entdb.Namespace.Query().Where(namespace.ID(ns.ID)).OnlyX(skip)
+	require.NotNil(t, deletedNs.DeletedAt)
+
+	for _, id := range []int{p1.ID, p2.ID} {
+		got := entdb.Project.Query().Where(project.ID(id)).OnlyX(skip)
+		require.NotNil(t, got.DeletedAt, "级联项目 %d 应被软删", id)
+		assert.True(t, got.DeletedWithNamespace, "级联项目 %d 应带批次标识", id)
+		// 同一时刻下线只是一层可读语义，批次判定已改用上面的显式标识。
+		assert.Equal(t, *deletedNs.DeletedAt, *got.DeletedAt, "级联项目 %d 应与空间共享同一 deleted_at", id)
+	}
+
+	// 非本空间的项目不得被误删，也不得被标记。
+	untouched := entdb.Project.Query().Where(project.ID(p3.ID)).OnlyX(ctx)
+	assert.Nil(t, untouched.DeletedAt)
+	assert.False(t, untouched.DeletedWithNamespace)
+}
+
+// TestNamespaceRepo_RestoreDeleted_BatchPrecision 恢复空间只还原"随空间一起被删"的项目：
+// 用户早先单独删除的项目 deleted_at 更早，必须保持在软删态——否则恢复空间会把早已
+// 主动删除的项目静默复活成无部署资源的幽灵记录。这是本功能最容易写错的一条不变量。
+func TestNamespaceRepo_RestoreDeleted_BatchPrecision(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	ctx := context.TODO()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+
+	ns := createNamespace(entdb)
+	cascaded := createNamedProject(entdb, ns.ID, "cascaded")
+	earlier := createNamedProject(entdb, ns.ID, "earlier-by-user")
+
+	// 用户先单独删除 earlier（走软删钩子，deleted_at = 此刻），再删整个空间。
+	require.NoError(t, entdb.Project.DeleteOneID(earlier.ID).Exec(ctx))
+	require.NoError(t, repo.Delete(ctx, ns.ID))
+
+	require.NoError(t, repo.RestoreDeleted(ctx, ns.ID))
+
+	skip := mixin.SkipSoftDelete(ctx)
+	assert.Nil(t, entdb.Namespace.Query().Where(namespace.ID(ns.ID)).OnlyX(skip).DeletedAt, "空间应已恢复")
+	assert.Nil(t, entdb.Project.Query().Where(project.ID(cascaded.ID)).OnlyX(skip).DeletedAt,
+		"随空间一起删除的项目应被恢复")
+	assert.NotNil(t, entdb.Project.Query().Where(project.ID(earlier.ID)).OnlyX(skip).DeletedAt,
+		"用户早先单独删除的项目不得被恢复")
+
+	// 不变式：标记为 true ⟺ 项目正处于随空间级联软删的状态。
+	restored := entdb.Project.Query().Where(project.ID(cascaded.ID)).OnlyX(skip)
+	assert.False(t, restored.DeletedWithNamespace, "恢复后批次标识必须清零")
+	assert.False(t, entdb.Project.Query().Where(project.ID(earlier.ID)).OnlyX(skip).DeletedWithNamespace,
+		"用户单独删除的项目从不带批次标识")
+}
+
+// TestNamespaceRepo_RestoreDeleted_SameSecondCollision 核心回归：批次归属不再由 deleted_at
+// 的秒级相等推断。
+//
+// deleted_at 列是 MySQL `datetime`（= datetime(0)，秒级），若同一秒内先单独删了某项目、再删
+// 它所属空间，两行落库后 deleted_at 完全相同——旧实现（谓词 deleted_at EQ 空间的 deleted_at）
+// 会把用户早已主动删除的项目一并复活成 deploy_status 未知的幽灵记录。
+//
+// 本用例显式把单独删除的项目 deleted_at 覆写成与空间**逐字相等**的值来复现该碰撞（不依赖
+// 测试库的时间精度，sqlite 保留亚秒、MySQL 截断到秒，两者行为一致地命中同一分支），断言它
+// 在恢复空间时保持软删——旧实现在此必然失败。
+func TestNamespaceRepo_RestoreDeleted_SameSecondCollision(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	ctx := context.TODO()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+
+	ns := createNamespace(entdb)
+	cascaded := createNamedProject(entdb, ns.ID, "cascaded")
+	solo := createNamedProject(entdb, ns.ID, "solo-deleted-earlier")
+
+	// 用户先单独删除 solo，再删整个空间。
+	require.NoError(t, entdb.Project.DeleteOneID(solo.ID).Exec(ctx))
+	require.NoError(t, repo.Delete(ctx, ns.ID))
+
+	skip := mixin.SkipSoftDelete(ctx)
+	nsDeletedAt := *entdb.Namespace.Query().Where(namespace.ID(ns.ID)).OnlyX(skip).DeletedAt
+	// 复现"同秒"：把 solo 的删除时间强行对齐到与空间逐字相同。
+	entdb.Project.UpdateOneID(solo.ID).
+		SetDeletedAt(nsDeletedAt).
+		SaveX(skip)
+	require.Equal(t, nsDeletedAt,
+		*entdb.Project.Query().Where(project.ID(solo.ID)).OnlyX(skip).DeletedAt,
+		"前置：solo 与空间必须处于同一 deleted_at（碰撞已构造）")
+
+	require.NoError(t, repo.RestoreDeleted(ctx, ns.ID))
+
+	assert.Nil(t, entdb.Project.Query().Where(project.ID(cascaded.ID)).OnlyX(skip).DeletedAt,
+		"级联项目应被恢复")
+	assert.NotNil(t, entdb.Project.Query().Where(project.ID(solo.ID)).OnlyX(skip).DeletedAt,
+		"deleted_at 与空间同值的单独删除项目不得被恢复（批次判定不得依赖时间戳）")
+}
+
+// TestNamespaceRepo_RestoreDeleted_RepeatedCycles 反复"删除→恢复"多轮后批次标识不得跨轮
+// 污染：每轮级联只标记**当轮仍存活**的项目，用户单独删除的项目跨轮次始终保持软删且无标记。
+// 场景矩阵里最容易漏的一条——单轮通过不代表状态机收敛。
+func TestNamespaceRepo_RestoreDeleted_RepeatedCycles(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	ctx := context.TODO()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+
+	ns := createNamespace(entdb)
+	alive := createNamedProject(entdb, ns.ID, "alive")
+	// 用户单独删除的项目：此后无论空间删/恢复多少轮，都不得被复活或被打上批次标记。
+	solo := createNamedProject(entdb, ns.ID, "solo")
+	require.NoError(t, entdb.Project.DeleteOneID(solo.ID).Exec(ctx))
+
+	skip := mixin.SkipSoftDelete(ctx)
+	for round := 1; round <= 3; round++ {
+		require.NoError(t, repo.Delete(ctx, ns.ID), "第 %d 轮：删除空间", round)
+		require.NoError(t, repo.RestoreDeleted(ctx, ns.ID), "第 %d 轮：恢复空间", round)
+
+		assert.Nil(t, entdb.Namespace.Query().Where(namespace.ID(ns.ID)).OnlyX(skip).DeletedAt,
+			"第 %d 轮：空间应已恢复", round)
+
+		restored := entdb.Project.Query().Where(project.ID(alive.ID)).OnlyX(skip)
+		assert.Nil(t, restored.DeletedAt, "第 %d 轮：当轮存活的项目应被恢复", round)
+		assert.False(t, restored.DeletedWithNamespace, "第 %d 轮：恢复后批次标识必须清零", round)
+
+		untouched := entdb.Project.Query().Where(project.ID(solo.ID)).OnlyX(skip)
+		assert.NotNil(t, untouched.DeletedAt, "第 %d 轮：单独删除的项目不得被复活", round)
+		assert.False(t, untouched.DeletedWithNamespace, "第 %d 轮：单独删除的项目不得被打标记", round)
+	}
+}
+
+// TestNamespaceRepo_RestoreDeleted_ResetsDeployStatus 恢复时被还原项目的部署状态一律
+// 归为"未知"：删除空间时 helm release 已被物理卸载，残留的"已部署"是对不存在资源的
+// 错误描述，会让前端显示一个实际没有负载的"已部署"项目。
+func TestNamespaceRepo_RestoreDeleted_ResetsDeployStatus(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	ctx := context.TODO()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+
+	ns := createNamespace(entdb)
+	p := createNamedProject(entdb, ns.ID, "deployed")
+	entdb.Project.UpdateOneID(p.ID).SetDeployStatus(types.Deploy_StatusDeployed).SaveX(ctx)
+
+	require.NoError(t, repo.Delete(ctx, ns.ID))
+	require.NoError(t, repo.RestoreDeleted(ctx, ns.ID))
+
+	got := entdb.Project.Query().Where(project.ID(p.ID)).OnlyX(ctx)
+	assert.Equal(t, types.Deploy_StatusUnknown, got.DeployStatus)
+}
+
+// TestNamespaceRepo_RestoreDeleted_NotDeleted 未软删的空间调用恢复必须显式报错：
+// 静默成功会让调用方把"什么都没做"当成恢复完成。
+func TestNamespaceRepo_RestoreDeleted_NotDeleted(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+
+	ns := createNamespace(entdb)
+	err := repo.RestoreDeleted(context.TODO(), ns.ID)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "未被删除")
+}
+
+// TestNamespaceRepo_RestoreDeleted_MissingNamespace 恢复一个不存在的 id：加载软删空间即失败，
+// 错误必须按 NotFound 表达（而不是落成 500），调用方才能回「空间不存在」而不是「服务异常」。
+func TestNamespaceRepo_RestoreDeleted_MissingNamespace(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+
+	err := repo.RestoreDeleted(context.TODO(), 999999)
+	require.Error(t, err)
+	assert.True(t, errs.IsNotFound(err), "不存在的空间应表达为 NotFound，实际: %v", err)
+	assert.ErrorContains(t, err, "restore namespace")
+}
+
+// TestNamespaceRepo_RestoreDeleted_ProjectUpdateError 事务内还原项目的 UPDATE 失败：
+// 错误上抛且整个事务回滚（空间不得停在"已恢复但项目仍是软删"的半成品状态）。
+// SQL 序列：Q1 SELECT namespaces(Only) → E1 UPDATE projects（失败注入点）。
+func TestNamespaceRepo_RestoreDeleted_ProjectUpdateError(t *testing.T) {
+	ctx := context.TODO()
+	repo, fd := newNsFault(t, -1, 0)
+	ns := repo.data.DB().Namespace.Create().SetName("restore-fail").SetCreatorEmail("o@x").SaveX(ctx)
+	createNamedProject(repo.data.DB(), ns.ID, "p1")
+	require.NoError(t, repo.Delete(ctx, ns.ID))
+	fd.Arm()
+
+	err := repo.RestoreDeleted(ctx, ns.ID)
+	require.ErrorContains(t, err, "restore namespace")
+
+	// 事务回滚：空间仍处于软删态，未留下半恢复状态。
+	skip := mixin.SkipSoftDelete(ctx)
+	assert.NotNil(t, repo.data.DB().Namespace.Query().Where(namespace.ID(ns.ID)).OnlyX(skip).DeletedAt,
+		"项目还原失败时空间必须保持软删（事务回滚）")
+}
+
+// TestNamespaceRepo_FindDeletedByName 按展示名定位软删空间：前缀幂等（带不带前缀均可命中）、
+// 未删除时按 NotFound 表达、同名多行时取最近一次删除的那行。
+func TestNamespaceRepo_FindDeletedByName(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	ctx := context.TODO()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{
+		Cfg: &config.Config{NsPrefix: "abc-"},
+		DB:  entdb,
+	}))
+
+	ns := entdb.Namespace.Create().SetName("abc-demo").SetCreatorEmail("a@b.c").SaveX(ctx)
+
+	// 未删除：软删查询不应命中（否则会把在册空间当误删空间恢复）。
+	_, err := repo.FindDeletedByName(ctx, "demo")
+	require.Error(t, err)
+	assert.True(t, errs.IsNotFound(err), "在册空间对软删查询应表现为 NotFound")
+
+	require.NoError(t, repo.Delete(ctx, ns.ID))
+
+	for _, name := range []string{"demo", "abc-demo"} {
+		got, err := repo.FindDeletedByName(ctx, name)
+		require.NoError(t, err, "传 %q 应能命中", name)
+		assert.Equal(t, ns.ID, got.ID)
+	}
+
+	// 同名空间被"删除→新建→再删除"：应取最近一次删除的那行（id 更大的新空间）。
+	newer := entdb.Namespace.Create().SetName("abc-demo").SetCreatorEmail("a@b.c").SaveX(ctx)
+	require.NoError(t, repo.Delete(ctx, newer.ID))
+
+	got, err := repo.FindDeletedByName(ctx, "demo")
+	require.NoError(t, err)
+	assert.Equal(t, newer.ID, got.ID, "同名重复删除时应取最近一次删除的记录")
+}
+
+// TestNamespaceRepo_FindDeletedByName_SameSecondTie 同名空间在同一秒内被删两次时，必须取
+// id 更大（= 后删）的那条。理由同项目级同名用例：deleted_at 是秒级精度，同秒碰撞下仅按时间戳
+// 排序结果不确定，取错会让真正该恢复的那行被"同名在册"检查永久挡死。
+func TestNamespaceRepo_FindDeletedByName_SameSecondTie(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	ctx := context.TODO()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{
+		Cfg: &config.Config{NsPrefix: "abc-"},
+		DB:  entdb,
+	}))
+
+	older := entdb.Namespace.Create().SetName("abc-demo").SetCreatorEmail("a@b.c").SaveX(ctx)
+	require.NoError(t, repo.Delete(ctx, older.ID))
+	newer := entdb.Namespace.Create().SetName("abc-demo").SetCreatorEmail("a@b.c").SaveX(ctx)
+	require.NoError(t, repo.Delete(ctx, newer.ID))
+
+	// 复现"同秒"：把后删那行的删除时间强行对齐到与前一行逐字相等。
+	skip := mixin.SkipSoftDelete(ctx)
+	olderDeletedAt := *entdb.Namespace.Query().Where(namespace.ID(older.ID)).OnlyX(skip).DeletedAt
+	entdb.Namespace.UpdateOneID(newer.ID).SetDeletedAt(olderDeletedAt).SaveX(skip)
+	require.Equal(t, olderDeletedAt,
+		*entdb.Namespace.Query().Where(namespace.ID(newer.ID)).OnlyX(skip).DeletedAt,
+		"前置：两行必须处于同一 deleted_at（碰撞已构造）")
+
+	got, err := repo.FindDeletedByName(ctx, "demo")
+	require.NoError(t, err)
+	assert.Equal(t, newer.ID, got.ID, "deleted_at 相同时必须由主键决胜，取 id 更大的那行")
+}
+
+// TestNamespaceRepo_Delete_MissingNamespace 删除不存在的空间必须仍是 NotFound（404）。
+// 这是去掉事务外预查询后最主要的回归风险：404 原先来自预查询 First，现在改由目标
+// UPDATE 命中 0 行、经 sqlgraph ensureExists 带谓词复查给出。
+func TestNamespaceRepo_Delete_MissingNamespace(t *testing.T) {
+	repo, _ := newNsRepo(t)
+
+	err := repo.Delete(context.TODO(), 999999)
+	require.Error(t, err)
+	assert.True(t, errs.IsNotFound(err), "不存在的空间应表达为 NotFound，实际: %v", err)
+	assert.ErrorContains(t, err, "delete namespace")
+}
+
+// TestNamespaceRepo_Delete_RepeatDelete 重复删除已软删的空间：第二次必须 NotFound，
+// 且先执行的那条级联项目 UPDATE 不得留下副作用（事务回滚）。
+func TestNamespaceRepo_Delete_RepeatDelete(t *testing.T) {
+	ctx := context.TODO()
+	repo, entdb := newNsRepo(t)
+
+	ns := createNamespace(entdb)
+	p := createNamedProject(entdb, ns.ID, "p")
+
+	require.NoError(t, repo.Delete(ctx, ns.ID))
+
+	skip := mixin.SkipSoftDelete(ctx)
+	require.NotNil(t, entdb.Namespace.Query().Where(namespace.ID(ns.ID)).OnlyX(skip).DeletedAt)
+
+	err := repo.Delete(ctx, ns.ID)
+	require.Error(t, err)
+	assert.True(t, errs.IsNotFound(err), "重复删除应表达为 NotFound，实际: %v", err)
+
+	got := entdb.Project.Query().Where(project.ID(p.ID)).OnlyX(skip)
+	require.NotNil(t, got.DeletedAt)
+	assert.True(t, got.DeletedWithNamespace, "事务回滚后应保持首次删除写入的批次标识")
+}
+
+// TestNamespaceRepo_Delete_NoPreQueryFence 锁定「级联项目 UPDATE 无条件发出」这一事实：
+// 级联标记不再受「事务外预查询存活项目数 > 0」的守卫拦截。
+//
+// 判据用写入次数而非读取次数：ent 的 UpdateOneID(...).Exec() 内部走 Save() → sqlgraph.UpdateNode，
+// 为返回更新后的实体会额外发一次读（实测一次 Delete 恒有 qCount=1）。因此「有没有 SELECT」区分不了
+// 新旧实现，只有 Exec 数能：**空空间**下新实现仍会发出那条项目 UPDATE（0 行），eCount=2；
+// 旧守卫在空空间时直接跳过，eCount=1。守卫一旦被加回来，本用例立刻转红。
+func TestNamespaceRepo_Delete_NoPreQueryFence(t *testing.T) {
+	ctx := context.TODO()
+	repo, fd := newNsFault(t, -1, -1)
+	ns := repo.data.DB().Namespace.Create().SetName("fence").SetCreatorEmail("o@x").SaveX(ctx)
+	fd.Arm()
+
+	require.NoError(t, repo.Delete(ctx, ns.ID))
+	assert.EqualValues(t, 2, fd.eCount.Load(),
+		"空空间也必须无条件发出级联项目 UPDATE（第 1 条 Exec），随后才是空间自身 UPDATE（第 2 条）")
+}
+
+// TestNamespaceRepo_UpdateImagePullSecrets_SoftDeletedRowForRestore 回归护栏：本方法**必须**
+// 能写已软删的 namespace 行，故意不加 namespace.DeletedAtIsNil() 谓词。
+//
+// 原因：恢复被误删空间的链路（namespaceBiz.Restore）在清 deleted_at 之前，先用本方法回写
+// 重建的 docker secret 名单——"先补 DB 骨架再清软删标记"是刻意的顺序（换序会在失败时留下
+// 不可恢复的孤儿空间）。一旦给本方法加上软删谓词，此调用命中 0 行报 NotFound，恢复链路直接
+// 断裂；本用例就是拦住那次"顺手对齐"的防线。
+func TestNamespaceRepo_UpdateImagePullSecrets_SoftDeletedRowForRestore(t *testing.T) {
+	ctx := context.TODO()
+	repo, entdb := newNsRepo(t)
+
+	ns := createNamespace(entdb)
+	require.NoError(t, repo.Delete(ctx, ns.ID))
+
+	skip := mixin.SkipSoftDelete(ctx)
+	require.NotNil(t, entdb.Namespace.Query().Where(namespace.ID(ns.ID)).OnlyX(skip).DeletedAt,
+		"前置条件：空间已处于软删态")
+
+	require.NoError(t, repo.UpdateImagePullSecrets(ctx, ns.ID, []string{"restored-secret"}),
+		"恢复链路依赖向软删空间回写 secret 名单，本方法不得过滤软删行")
+	assert.Equal(t, []string{"restored-secret"},
+		entdb.Namespace.Query().Where(namespace.ID(ns.ID)).OnlyX(skip).ImagePullSecrets)
+}
+
+// TestNamespaceRepo_ListAdminDeletedPage_FiltersAndProjects 列「可恢复空间」的三条核心口径。
+// (1) 只软删行可见——在册空间与「删过又已恢复」的空间都不得出现（拦截器被绕过不等于不过滤）。
+// (2) 行内 DeletedAt 真的被 SELECT 出来——列裁剪漏 FieldDeletedAt 会静默为 nil，UI 就显示不出
+// 删除时间，这条断言专门守它。
+// (3) 项目边只含 deleted_with_namespace=true 的级联批，即 RestoreDeleted 的实际恢复集合；
+// 用户早先单独删除的项目不出现在计数里，否则前端会承诺恢复一个并不会被恢复的项目。
+func TestNamespaceRepo_ListAdminDeletedPage_FiltersAndProjects(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	ctx := context.TODO()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+	skip := mixin.SkipSoftDelete(ctx)
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	// 在册空间：从未删除，必须被 deleted_at IS NOT NULL 滤掉。
+	live := createNamespace(entdb)
+	// 恢复过的空间：deleted_at 已被清空，与在册空间等价，同样不得出现。
+	restored := createNamespace(entdb)
+	entdb.Namespace.UpdateOneID(restored.ID).SetDeletedAt(base).SaveX(skip)
+	entdb.Namespace.UpdateOneID(restored.ID).ClearDeletedAt().SaveX(skip)
+
+	target := createNamespace(entdb)
+	cascaded1 := createNamedProject(entdb, target.ID, "cascaded-1")
+	cascaded2 := createNamedProject(entdb, target.ID, "cascaded-2")
+	solo := createNamedProject(entdb, target.ID, "solo-by-user")
+
+	// 用户先单独删掉 solo（不带批次标识），随后整个空间下线（级联批打标）。
+	entdb.Project.UpdateOneID(solo.ID).SetDeletedAt(base.Add(-time.Hour)).SaveX(skip)
+	entdb.Project.Update().
+		Where(project.NamespaceID(target.ID), project.IDIn(cascaded1.ID, cascaded2.ID)).
+		SetDeletedAt(base).SetDeletedWithNamespace(true).ExecX(skip)
+	entdb.Namespace.UpdateOneID(target.ID).SetDeletedAt(base).SaveX(skip)
+
+	// 删过但无项目：必须出现（用户要能恢复空空间），且 Projects 为空切片而非 nil 造成前端崩溃。
+	empty := createNamespace(entdb)
+	entdb.Namespace.UpdateOneID(empty.ID).SetDeletedAt(base.Add(time.Minute)).SaveX(skip)
+
+	page, err := repo.ListAdminDeletedPage(ctx, &biz.NamespaceDeletedListPageQuery{Page: 1, PageSize: 10})
+	require.NoError(t, err)
+	assert.Equal(t, 2, page.Count, "只应命中 2 个待恢复空间")
+
+	ids := lo.Map(page.Namespaces, func(ns *biz.Namespace, _ int) int { return ns.ID })
+	assert.Equal(t, []int{empty.ID, target.ID}, ids, "按删除时间倒序：最近删除的 empty 在前")
+
+	assert.NotContains(t, ids, live.ID, "在册空间不得出现在恢复列表")
+	assert.NotContains(t, ids, restored.ID, "已恢复（deleted_at 为空）的空间不得出现在恢复列表")
+
+	byID := lo.KeyBy(page.Namespaces, func(ns *biz.Namespace) int { return ns.ID })
+	targetRow := byID[target.ID]
+	require.NotNil(t, targetRow.DeletedAt, "DeletedAt 必须被列裁剪 SELECT 出来，否则 UI 无法展示删除时间")
+	assert.Equal(t, base, *targetRow.DeletedAt)
+	assert.Empty(t, byID[empty.ID].Projects, "无项目的已删除空间 Projects 应为空")
+
+	projectIDs := lo.Map(targetRow.Projects, func(p *biz.Project, _ int) int { return p.ID })
+	assert.ElementsMatch(t, []int{cascaded1.ID, cascaded2.ID}, projectIDs,
+		"项目边只含随空间级联删除的那批（solo 不在恢复范围内，不得计入）")
+	assert.NotContains(t, projectIDs, solo.ID,
+		"用户早先单独删除的项目不得出现——它不会被 RestoreDeleted 恢复")
+}
+
+// TestNamespaceRepo_ListAdminDeletedPage_OrderAndPagination 顺序与分页：
+// 主键 deleted_at 倒序（最近删除优先）——恢复页最想看到的就是刚删错的那个；
+// 第二键 id 倒序——deleted_at 是秒级 datetime，同秒删除的多行只按它排序时
+// LIMIT/OFFSET 翻页结果不确定（可能同一行出现两次或整行漏掉），必须由 id 兜底稳定序。
+// Count 为搜索命中总数、与分页无关（前端分页器依赖它算总页数）。
+func TestNamespaceRepo_ListAdminDeletedPage_OrderAndPagination(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	ctx := context.TODO()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+	skip := mixin.SkipSoftDelete(ctx)
+	base := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+
+	// 三个空间同秒删除：顺序完全由 id 倒序决定（id 越大创建越晚）。
+	same1 := createNamespace(entdb)
+	same2 := createNamespace(entdb)
+	same3 := createNamespace(entdb)
+	older := createNamespace(entdb)
+	for _, id := range []int{same1.ID, same2.ID, same3.ID} {
+		entdb.Namespace.UpdateOneID(id).SetDeletedAt(base).SaveX(skip)
+	}
+	entdb.Namespace.UpdateOneID(older.ID).SetDeletedAt(base.Add(-time.Hour)).SaveX(skip)
+
+	// 全量：同秒三行按 id 倒序，随后是更早删除的 older。
+	all, err := repo.ListAdminDeletedPage(ctx, &biz.NamespaceDeletedListPageQuery{Page: 1, PageSize: 10})
+	require.NoError(t, err)
+	assert.Equal(t, 4, all.Count, "Count 为命中总数，不随分页裁剪")
+	assert.Equal(t, []int{same3.ID, same2.ID, same1.ID, older.ID},
+		lo.Map(all.Namespaces, func(ns *biz.Namespace, _ int) int { return ns.ID }),
+		"同秒按 id 倒序，再接更早删除的行")
+
+	// 分页：page=2 size=3 应只落最后一行（older），且 Count 仍为 4。
+	p2, err := repo.ListAdminDeletedPage(ctx, &biz.NamespaceDeletedListPageQuery{Page: 2, PageSize: 3})
+	require.NoError(t, err)
+	require.Len(t, p2.Namespaces, 1)
+	assert.Equal(t, older.ID, p2.Namespaces[0].ID)
+	assert.Equal(t, 4, p2.Count, "翻页不得改变 Count")
+
+	// 越界页返回空行集而非报错（前端翻过头不该炸），Count 仍为 4。
+	p9, err := repo.ListAdminDeletedPage(ctx, &biz.NamespaceDeletedListPageQuery{Page: 9, PageSize: 3})
+	require.NoError(t, err)
+	assert.Empty(t, p9.Namespaces)
+	assert.Equal(t, 4, p9.Count)
+}
+
+// TestNamespaceRepo_ListAdminDeletedPage_Search 搜索与「只列软删」两个条件必须叠加生效：
+// 关键词匹配空间名或创建者邮箱（复用 adminNamespaceBaseQuery 的 search 语义，与
+// ListAdminPage 保持一致），但命中的在册空间仍不得出现——搜索放宽不了软删过滤。
+func TestNamespaceRepo_ListAdminDeletedPage_Search(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	ctx := context.TODO()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+	skip := mixin.SkipSoftDelete(ctx)
+	base := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+
+	deletedByName := entdb.Namespace.Create().SetName("alpha-team").SetCreatorEmail("zed@mars.com").SaveX(ctx)
+	entdb.Namespace.UpdateOneID(deletedByName.ID).SetDeletedAt(base).SaveX(skip)
+	deletedByMail := entdb.Namespace.Create().SetName("beta-team").SetCreatorEmail("alpha-owner@mars.com").SaveX(ctx)
+	entdb.Namespace.UpdateOneID(deletedByMail.ID).SetDeletedAt(base).SaveX(skip)
+	// 名字与邮箱都含 alpha，但在册：搜索命中也必须被软删过滤排除。
+	liveAlpha := entdb.Namespace.Create().SetName("alpha-live").SetCreatorEmail("alpha@mars.com").SaveX(ctx)
+
+	page, err := repo.ListAdminDeletedPage(ctx, &biz.NamespaceDeletedListPageQuery{Search: "alpha", Page: 1, PageSize: 10})
+	require.NoError(t, err)
+	assert.Equal(t, 2, page.Count, "按名（alpha-team）与按邮箱（alpha-owner@）各命中一条")
+	ids := lo.Map(page.Namespaces, func(ns *biz.Namespace, _ int) int { return ns.ID })
+	assert.ElementsMatch(t, []int{deletedByName.ID, deletedByMail.ID}, ids)
+	assert.NotContains(t, ids, liveAlpha.ID, "在册空间即使被关键词命中也不得出现在恢复列表")
+
+	// 精确到邮箱前缀时只剩一条，证明邮箱侧确实参与了匹配（而非只匹配名字）。
+	byMail, err := repo.ListAdminDeletedPage(ctx, &biz.NamespaceDeletedListPageQuery{Search: "alpha-owner@", Page: 1, PageSize: 10})
+	require.NoError(t, err)
+	require.Len(t, byMail.Namespaces, 1)
+	assert.Equal(t, deletedByMail.ID, byMail.Namespaces[0].ID)
+
+	// 无命中：Count=0 且行集为空（不是错误）。
+	none, err := repo.ListAdminDeletedPage(ctx, &biz.NamespaceDeletedListPageQuery{Search: "no-such-space", Page: 1, PageSize: 10})
+	require.NoError(t, err)
+	assert.Equal(t, 0, none.Count)
+	assert.Empty(t, none.Namespaces)
+}
+
+// TestNamespaceRepo_ListAdminDeletedPage_QueryErrors 覆盖两条真实数据库错误分支：计数失败与
+// 取页失败都必须带着上下文上抛，不能返回"计数为 0 的空页"——那会把 DB 故障伪装成"没有可恢复空间"，
+// 让超管以为误删的空间凭空消失了。SQL 序列：Q1 COUNT(*) → Q2 SELECT namespaces(带项目边)。
+//
+//	qAfter=0 → 第 1 条查询（COUNT）失败，命中 "count deleted namespaces"；
+//	qAfter=1 → COUNT 成功后第 2 条查询（SELECT namespaces）失败，命中 "list deleted namespaces page"。
+func TestNamespaceRepo_ListAdminDeletedPage_QueryErrors(t *testing.T) {
+	ctx := context.TODO()
+	skip := mixin.SkipSoftDelete(ctx)
+
+	// setup 建一个已软删空间：让两条查询都有真实结果集要处理，而非空表短路。
+	setup := func(t *testing.T, repo *namespaceRepo) {
+		t.Helper()
+		ns := repo.data.DB().Namespace.Create().SetName("ldp-err").SetCreatorEmail("o@x").SaveX(ctx)
+		repo.data.DB().Namespace.UpdateOneID(ns.ID).SetDeletedAt(time.Now()).SaveX(skip)
+	}
+
+	t.Run("Count query error", func(t *testing.T) {
+		repo, fd := newNsFault(t, 0, -1)
+		setup(t, repo)
+		fd.Arm()
+		_, err := repo.ListAdminDeletedPage(ctx, &biz.NamespaceDeletedListPageQuery{Page: 1, PageSize: 10})
+		assert.ErrorContains(t, err, "count deleted namespaces")
+	})
+
+	t.Run("All query error", func(t *testing.T) {
+		repo, fd := newNsFault(t, 1, -1)
+		setup(t, repo)
+		fd.Arm()
+		_, err := repo.ListAdminDeletedPage(ctx, &biz.NamespaceDeletedListPageQuery{Page: 1, PageSize: 10})
+		assert.ErrorContains(t, err, "list deleted namespaces page")
+	})
 }

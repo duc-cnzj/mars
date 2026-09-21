@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/duc-cnzj/mars/v6/internal/biz"
@@ -12,6 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/member"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/schema/mixin"
 	"github.com/duc-cnzj/mars/v6/internal/data/filters"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -119,8 +121,8 @@ func projectLivenessPred(liveness string, now time.Time) func(*sql.Selector) {
 }
 
 // ListLivenessPage 分页查询活跃度聚合所需项目（真 SQL 分页）：分类过滤/排序/统计/分页全部
-// 下沉 SQL，stats 基于搜索命中全量（无 edges 的干净 query 计数，避免 JOIN/边查询放大，对齐
-// namespaceRepo.List 的计数口径），count 为分类过滤后总数（无过滤 = total）。
+// 下沉 SQL，stats 基于搜索命中全量（不带边的干净 query 计数，避免行侧 Order/Select 修饰符
+// 渗进 COUNT，对齐 namespaceRepo.List 的计数口径），count 为分类过滤后总数（无过滤 = total）。
 //
 // 排序：updated_at {desc|asc} + id {desc|asc} 决胜键——datetime 整秒精度下同秒多条排序非全序，
 // 加 id 保证 LIMIT/OFFSET 翻页不漂移/不重复。字段裁剪沿用旧 ListLiveness（短字段 + 边外键），
@@ -128,8 +130,9 @@ func projectLivenessPred(liveness string, now time.Time) func(*sql.Selector) {
 func (repo *projectRepo) ListLivenessPage(ctx context.Context, query *biz.LivenessPageQuery) (page *biz.LivenessPageResult, err error) {
 	ctx, span := tracer.Start(ctx, "projectRepo/ListLivenessPage")
 	defer func() { endSpan(span, err) }()
-	// 计数/统计用无 edges 干净 query：search 命中全量上做 4 次 COUNT（total + 三分类），
-	// 与分页行查询解耦，避免 WithNamespace/WithRepo 的 JOIN 放大计数。
+	// 计数/统计用不带边的干净 query：search 命中全量上做 4 次 COUNT（total + 三分类），
+	// 与分页行查询解耦——COUNT 会原样带上行查询的 Order/Select 修饰符，分开取才不被污染
+	// （边的 eager load 是独立往返，本就不参与 COUNT）。
 	base := repo.data.DB().Project.Query()
 	if query.Search != "" {
 		base = base.Where(projectSearchPred(query.Search))
@@ -334,6 +337,12 @@ func (repo *projectRepo) Delete(ctx context.Context, id int) (err error) {
 }
 
 // UpdateStatusByVersion 校验版本匹配后更新部署状态并递增版本号（乐观锁防并发覆盖）。
+//
+// 本方法与下方 UpdateVersion / UpdateDeployStatus **刻意不同**：那两者是纯写路径（直接
+// UpdateOneID），才必须自带 DeletedAtIsNil 谓词；本条属「读后写」家族，软删过滤由前置的
+// FindByVersion 那次 SELECT 经软删拦截器完成（写软删行会在读阶段拿到 404，UPDATE 根本到不了），
+// 故此处**不加**谓词并非漏写。副作用是留下与 RestoreDeleted 同类的 TOCTOU 窗口：读通过后、
+// 写提交前若并发软删该行，UPDATE 仍会落到已软删行上——要根治得把存活条件写进 UPDATE 自身。
 func (repo *projectRepo) UpdateStatusByVersion(ctx context.Context, id int, status types.Deploy, version int) (proj *biz.Project, err error) {
 	ctx, span := tracer.Start(ctx, "projectRepo/UpdateStatusByVersion")
 	defer func() { endSpan(span, err) }()
@@ -353,18 +362,31 @@ func (repo *projectRepo) FindByVersion(ctx context.Context, id, version int) (pr
 }
 
 // UpdateVersion 直接覆盖项目版本号。
+//
+// 显式带 project.DeletedAtIsNil()：SoftDeleteMixin 的拦截器只作用于 SELECT、钩子只挂删除操作，
+// UPDATE 路径没有任何自动软删过滤，谓词是承重代码——漏掉即让「写已软删行」静默成功。带上后，
+// 写软删行命中 0 行，经 sqlgraph ensureExists 复查报 NotFound（404）而非静默改写。
 func (repo *projectRepo) UpdateVersion(ctx context.Context, id int, version int) (proj *biz.Project, err error) {
 	ctx, span := tracer.Start(ctx, "projectRepo/UpdateVersion")
 	defer func() { endSpan(span, err) }()
-	save, err := repo.data.DB().Project.UpdateOneID(id).SetVersion(version).Save(ctx)
+	save, err := repo.data.DB().Project.UpdateOneID(id).
+		Where(project.DeletedAtIsNil()).
+		SetVersion(version).
+		Save(ctx)
 	return toProject(save), errs.Wrap(err, "update project version")
 }
 
 // UpdateDeployStatus 仅更新项目的部署状态。
+//
+// 显式带 project.DeletedAtIsNil()：原因同 UpdateVersion——UPDATE 不受软删拦截器/钩子约束，
+// 缺谓词会把「更新已软删项目」变成静默成功。
 func (repo *projectRepo) UpdateDeployStatus(ctx context.Context, id int, status types.Deploy) (proj *biz.Project, err error) {
 	ctx, span := tracer.Start(ctx, "projectRepo/UpdateDeployStatus")
 	defer func() { endSpan(span, err) }()
-	save, err := repo.data.DB().Project.UpdateOneID(id).SetDeployStatus(status).Save(ctx)
+	save, err := repo.data.DB().Project.UpdateOneID(id).
+		Where(project.DeletedAtIsNil()).
+		SetDeployStatus(status).
+		Save(ctx)
 	return toProject(save), errs.Wrap(err, "update deploy status")
 }
 
@@ -391,6 +413,154 @@ func (repo *projectRepo) FindByName(ctx context.Context, name string, nsID int) 
 	defer func() { endSpan(span, err) }()
 	first, err := repo.data.DB().Project.Query().Where(project.Name(name), project.NamespaceID(nsID)).First(ctx)
 	return toProject(first), errs.Wrap(err, "find project by name")
+}
+
+// FindDeletedByName 按名称 + 命名空间查询**已软删**的项目，供超管恢复被误删的项目使用。
+// 同名项目可能被反复"删除→重建→再删除"，故按 deleted_at 倒序取最近一次删除的那行。
+//
+// id 是必须的第二决胜键：deleted_at 是 MySQL datetime（秒级），"删→同名重建→再删"落在同一秒
+// 时两行时间戳相同，仅按它排序取哪行**不确定**——取错会让旧记录转在册，随后新记录被同名在册
+// 检查永久挡死。id 越大者创建越晚，同秒内也就是后删的那条，故同样倒序。「字段 + 主键」双键定序
+// 与 namespace.go 的 renumberFavoriteSortOrders（(sort_order, id) 稳定序）同理，那边写在单个
+// Order(f1, f2) 调用内，此处分两次 Order——语义等价（ent 的 Order 是 append 而非覆盖）。
+// 必须绕过软删拦截器：拦截器会给查询补 deleted_at IS NULL，与「只取软删行」自相矛盾。
+func (repo *projectRepo) FindDeletedByName(ctx context.Context, name string, nsID int) (proj *biz.Project, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/FindDeletedByName")
+	defer func() { endSpan(span, err) }()
+	first, err := repo.data.DB().Project.Query().
+		Where(
+			project.Name(name),
+			project.NamespaceID(nsID),
+			project.DeletedAtNotNil(),
+		).
+		Order(ent.Desc(project.FieldDeletedAt)).
+		Order(ent.Desc(project.FieldID)).
+		First(mixin.SkipSoftDelete(ctx))
+	return toProject(first), errs.Wrap(err, "find deleted project by name")
+}
+
+// ListAdminDeletedPage 分页查询「可恢复的已删除项目」（超管恢复页的列表），并携带命名空间边
+// ——恢复请求按「空间名 + 项目名」定位，行内缺了空间边就是一条无法恢复的记录。
+//
+// 「可恢复」由两个条件定义：项目已软删 + 所属空间仍存活。后者与 projectRepo.RestoreDeleted 的
+// 前置校验（空间存活，否则 400）严格对应——列表即「Restore 会接受什么」，不多不少。
+//
+// 刻意**不**加 deleted_with_namespace=false：该条件被「空间存活」严格蕴含。级联标记只在
+// namespaceRepo.Delete 软删空间的同一事务内置 true，也只在 namespaceRepo.RestoreDeleted 恢复
+// 空间的同一事务内清 false，故「标记为 true 且空间存活」不可达；而「空间已删」的行本就已被
+// 排除。多写一个恒不改变结果集的谓词属于冗余条件，会让读者误以为它承担了过滤职责。
+// （注意其中一类行确实只有本条件能挡：先单独删项目、后删其空间时，项目的级联标记仍是 false
+// ——namespaceRepo.Delete 只标记存活项目——但它所属空间已删，同样被「空间存活」排除。）
+//
+// HasNamespaceWith 产出的是裸 sql.Selector 子查询，SoftDeleteMixin 的拦截器进不去，故命名空间
+// 侧的 DeletedAtIsNil 必须显式写出来（此处本就走 SkipSoftDelete，更不能指望拦截器兜底）。
+//
+// 排序：deleted_at 倒序 + id 决胜键。「最近删除」是页面的核心语义，而 deleted_at 是 MySQL
+// datetime（秒级），同秒多条时仅按它排序非全序，LIMIT/OFFSET 翻页会漂移/重复；id 倒序即同秒内
+// 后删的那条在前，与 FindDeletedByName 的双键定序同理。
+//
+// 必须绕过软删拦截器：拦截器会给查询补 deleted_at IS NULL，与「只取软删行」自相矛盾。
+func (repo *projectRepo) ListAdminDeletedPage(ctx context.Context, query *biz.ProjectDeletedListPageQuery) (page *biz.ProjectDeletedListPageResult, err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/ListAdminDeletedPage")
+	defer func() { endSpan(span, err) }()
+	ctx = mixin.SkipSoftDelete(ctx)
+	base := repo.data.DB().Project.Query().
+		Where(
+			project.DeletedAtNotNil(),
+			project.HasNamespaceWith(namespace.DeletedAtIsNil()),
+		)
+	if query.Search != "" {
+		base = base.Where(projectSearchPred(query.Search))
+	}
+	// 计数用不带边的干净 query（对齐 ListLivenessPage 口径）：COUNT 会原样带上行查询的
+	// Order/Select 修饰符，故与分页行分开取；WithNamespace 的 eager load 是独立往返、
+	// 本就不参与 COUNT，挂上也不会放大。
+	count, err := base.Clone().Count(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "count deleted projects")
+	}
+	// 字段裁剪：只取列表要展示的列 + 空间边外键，避免拉 config/override_values/manifest 等
+	// longtext/JSON 大列；未选字段经 toProject 复制为零值，消费端不读它们。
+	all, err := base.Clone().
+		WithNamespace().
+		Select(
+			project.FieldID,
+			project.FieldName,
+			project.FieldNamespaceID,
+			project.FieldUpdatedBy,
+			project.FieldCreatedAt,
+			project.FieldUpdatedAt,
+			project.FieldDeletedAt,
+		).
+		Order(ent.Desc(project.FieldDeletedAt)).
+		Order(ent.Desc(project.FieldID)).
+		Offset(pagination.GetPageOffset(query.Page, query.PageSize)).
+		Limit(int(query.PageSize)).
+		All(ctx)
+	if err != nil {
+		return nil, errs.Wrap(err, "list deleted projects page")
+	}
+	return &biz.ProjectDeletedListPageResult{Projects: slice.Map(all, toProject), Count: count}, nil
+}
+
+// RestoreDeleted 恢复软删的项目：清空 deleted_at，并把 deploy_status 重置为 StatusUnknown。
+//
+// 重置 deploy_status 的原因：删除项目时 helm release 已被物理卸载，库里残留的"已部署"
+// 是对不存在资源的错误描述；StatusUnknown 正是 ReleaseStatus 对不存在 release 的返回值，
+// 与"记录已恢复、请重新部署"的语义一致。
+//
+// 恢复前校验所属命名空间未被软删：把项目复活到已删空间下等于制造脏数据——列表按空间聚合、
+// 重新部署都需要一个存在的环境。此时应引导调用方先恢复空间（连带恢复整批级联项目）。
+//
+// 本路径**不写** deleted_with_namespace：该标记是"随空间级联删除"的批次标识，不变量为「为
+// true ⟺ 项目正处于随空间级联软删的状态」——而下面的空间存活校验已把标记必为 true 的行全部
+// 挡在 400 之外（标记为 true 只可能由 namespaceRepo.Delete 在软删空间的**同一事务**写入），
+// 故能走到 UPDATE 的行该列必然已是 false，写回是恒等操作。清标记由两级恢复中真正需要它的那条
+// 承担：namespaceRepo.RestoreDeleted 的批量 UPDATE（它才是会碰到 true 的地方）。
+// （本列上线前的存量行保持列默认值 false，见迁移文件
+// 20260921012959_add_project_deleted_with_namespace.sql。）
+func (repo *projectRepo) RestoreDeleted(ctx context.Context, id int) (err error) {
+	ctx, span := tracer.Start(ctx, "projectRepo/RestoreDeleted")
+	defer func() { endSpan(span, err) }()
+	// 目标行本身是软删行，而本函数后续无论 SELECT 还是清 deleted_at 的 UPDATE 都与软删拦截器
+	// 补的 deleted_at IS NULL 相矛盾（SELECT 取不到会误报 NotFound，UPDATE 命中 0 行且静默
+	// "成功"），故整段统一绕过拦截器。
+	ctx = mixin.SkipSoftDelete(ctx)
+	proj, err := repo.data.DB().Project.Query().Where(project.ID(id)).Only(ctx)
+	if err != nil {
+		return errs.Wrap(err, "restore project")
+	}
+	if proj.DeletedAt == nil {
+		// 未软删的项目无需恢复：显式报错优于静默成功，避免调用方把「什么都没做」当完成。
+		return errs.WrapInvalidArgument(fmt.Errorf("项目 %d 未被删除，无需恢复", id), "restore project")
+	}
+	// 空间存活校验与项目写入放进同一事务：两者不平摊在两条独立 autocommit 语句上，校验通过后
+	// 不再有「语句间隙」被并发删除钻空子。
+	//
+	// 注意本事务只把窗口**收窄到事务自身范围**，并未根除：MySQL 默认 REPEATABLE READ 下，本事务
+	// 的 SELECT 建立快照后，并发事务仍可软删该空间并提交——我们的 UPDATE 落在 projects 行、
+	// 对方的落在 namespaces 行，互不冲突，写入照样落地，仍会产出「项目存活、所属空间软删」的
+	// 孤儿。要根除需把空间存活条件写进 UPDATE 自身的 WHERE（EXISTS 子查询）或对该空间行加锁。
+	// 这一残留窗口与 cron 侧的 nil 命名空间守卫（cron_tasks.go 的 FixDeployStatus）配套兜底：
+	// 真出现孤儿时定时任务不会 panic，只是跳过它。
+	return errs.Wrap(repo.data.WithTx(ctx, func(tx *ent.Tx) error {
+		ns, err := tx.Namespace.Query().Where(namespace.ID(proj.NamespaceID)).Only(ctx)
+		if err != nil {
+			return err
+		}
+		if ns.DeletedAt != nil {
+			// 这里只构造领域语义错误、不再包裹：外层 errs.Wrap 会保留本错误已带的 400 码
+			// （wrapErr 经 status.Convert 识别到确定码后原样保留），再包一层只会让日志链上
+			// 出现两条重复的 "restore project" 堆栈，客户端可见 message 二者相同。
+			return errs.InvalidArgument(
+				fmt.Sprintf("项目所属空间 %s 已被删除，请先恢复空间（连带恢复空间下整批项目）", ns.Name),
+			)
+		}
+		return tx.Project.UpdateOneID(id).
+			SetDeployStatus(types.Deploy_StatusUnknown).
+			ClearDeletedAt().
+			Exec(ctx)
+	}), "restore project")
 }
 
 // FindProjectsByIDs 按主键批量取项目。endpoint 编排依赖项目的 Name 与 Manifest

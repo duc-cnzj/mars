@@ -76,6 +76,8 @@ type Project struct {
 	NamespaceID int `json:"namespace_id,omitempty"`
 	// RepoID holds the value of the "repo_id" field.
 	RepoID int `json:"repo_id,omitempty"`
+	// 是否随所属空间一并被删除（批次标识，仅软删期间为 true）
+	DeletedWithNamespace bool `json:"deleted_with_namespace,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ProjectQuery when eager-loading is set.
 	Edges        ProjectEdges `json:"edges"`
@@ -133,7 +135,7 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case project.FieldDockerImage, project.FieldPodSelectors, project.FieldEnvValues, project.FieldExtraValues, project.FieldFinalExtraValues, project.FieldManifest:
 			values[i] = new([]byte)
-		case project.FieldAtomic:
+		case project.FieldAtomic, project.FieldDeletedWithNamespace:
 			values[i] = new(sql.NullBool)
 		case project.FieldID, project.FieldGitProjectID, project.FieldDeployStatus, project.FieldVersion, project.FieldNamespaceID, project.FieldRepoID:
 			values[i] = new(sql.NullInt64)
@@ -338,6 +340,12 @@ func (_m *Project) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.RepoID = int(value.Int64)
 			}
+		case project.FieldDeletedWithNamespace:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field deleted_with_namespace", values[i])
+			} else if value.Valid {
+				_m.DeletedWithNamespace = value.Bool
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -473,6 +481,9 @@ func (_m *Project) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("repo_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RepoID))
+	builder.WriteString(", ")
+	builder.WriteString("deleted_with_namespace=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DeletedWithNamespace))
 	builder.WriteByte(')')
 	return builder.String()
 }

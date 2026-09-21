@@ -162,6 +162,11 @@ func RepoID(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldRepoID, v))
 }
 
+// DeletedWithNamespace applies equality check predicate on the "deleted_with_namespace" field. It's identical to DeletedWithNamespaceEQ.
+func DeletedWithNamespace(v bool) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldDeletedWithNamespace, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldCreatedAt, v))
@@ -1399,6 +1404,16 @@ func RepoIDIsNil() predicate.Project {
 // RepoIDNotNil applies the NotNil predicate on the "repo_id" field.
 func RepoIDNotNil() predicate.Project {
 	return predicate.Project(sql.FieldNotNull(FieldRepoID))
+}
+
+// DeletedWithNamespaceEQ applies the EQ predicate on the "deleted_with_namespace" field.
+func DeletedWithNamespaceEQ(v bool) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldDeletedWithNamespace, v))
+}
+
+// DeletedWithNamespaceNEQ applies the NEQ predicate on the "deleted_with_namespace" field.
+func DeletedWithNamespaceNEQ(v bool) predicate.Project {
+	return predicate.Project(sql.FieldNEQ(FieldDeletedWithNamespace, v))
 }
 
 // HasChangelogs applies the HasEdge predicate on the "changelogs" edge.
