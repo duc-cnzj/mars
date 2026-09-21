@@ -1609,7 +1609,11 @@ func TestNamespaceRepo_RestoreDeleted_BatchPrecision(t *testing.T) {
 	require.NoError(t, entdb.Project.DeleteOneID(earlier.ID).Exec(ctx))
 	require.NoError(t, repo.Delete(ctx, ns.ID))
 
-	require.NoError(t, repo.RestoreDeleted(ctx, ns.ID))
+	restoredNames, err := repo.RestoreDeleted(ctx, ns.ID)
+	require.NoError(t, err)
+	// 回传的恢复名单就是审计日志的口径：只含随空间级联删除的那批，早先被用户单独删除的
+	// 项目（earlier-by-user）不得出现在里面。
+	assert.Equal(t, []string{"cascaded"}, restoredNames, "恢复名单必须精确等于级联批次")
 
 	skip := mixin.SkipSoftDelete(ctx)
 	assert.Nil(t, entdb.Namespace.Query().Where(namespace.ID(ns.ID)).OnlyX(skip).DeletedAt, "空间应已恢复")
@@ -1659,7 +1663,10 @@ func TestNamespaceRepo_RestoreDeleted_SameSecondCollision(t *testing.T) {
 		*entdb.Project.Query().Where(project.ID(solo.ID)).OnlyX(skip).DeletedAt,
 		"前置：solo 与空间必须处于同一 deleted_at（碰撞已构造）")
 
-	require.NoError(t, repo.RestoreDeleted(ctx, ns.ID))
+	restored, err := repo.RestoreDeleted(ctx, ns.ID)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"cascaded"}, restored,
+		"恢复名单不得含 deleted_at 与空间同值的单独删除项目（名单与 UPDATE 同谓词）")
 
 	assert.Nil(t, entdb.Project.Query().Where(project.ID(cascaded.ID)).OnlyX(skip).DeletedAt,
 		"级联项目应被恢复")
@@ -1685,7 +1692,10 @@ func TestNamespaceRepo_RestoreDeleted_RepeatedCycles(t *testing.T) {
 	skip := mixin.SkipSoftDelete(ctx)
 	for round := 1; round <= 3; round++ {
 		require.NoError(t, repo.Delete(ctx, ns.ID), "第 %d 轮：删除空间", round)
-		require.NoError(t, repo.RestoreDeleted(ctx, ns.ID), "第 %d 轮：恢复空间", round)
+		restoredNames, err := repo.RestoreDeleted(ctx, ns.ID)
+		require.NoError(t, err, "第 %d 轮：恢复空间", round)
+		assert.Equal(t, []string{"alive"}, restoredNames,
+			"第 %d 轮：恢复名单只含当轮存活的项目，跨轮不得污染", round)
 
 		assert.Nil(t, entdb.Namespace.Query().Where(namespace.ID(ns.ID)).OnlyX(skip).DeletedAt,
 			"第 %d 轮：空间应已恢复", round)
@@ -1714,7 +1724,9 @@ func TestNamespaceRepo_RestoreDeleted_ResetsDeployStatus(t *testing.T) {
 	entdb.Project.UpdateOneID(p.ID).SetDeployStatus(types.Deploy_StatusDeployed).SaveX(ctx)
 
 	require.NoError(t, repo.Delete(ctx, ns.ID))
-	require.NoError(t, repo.RestoreDeleted(ctx, ns.ID))
+	restored, err := repo.RestoreDeleted(ctx, ns.ID)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"deployed"}, restored)
 
 	got := entdb.Project.Query().Where(project.ID(p.ID)).OnlyX(ctx)
 	assert.Equal(t, types.Deploy_StatusUnknown, got.DeployStatus)
@@ -1728,8 +1740,9 @@ func TestNamespaceRepo_RestoreDeleted_NotDeleted(t *testing.T) {
 	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
 
 	ns := createNamespace(entdb)
-	err := repo.RestoreDeleted(context.TODO(), ns.ID)
+	restored, err := repo.RestoreDeleted(context.TODO(), ns.ID)
 	require.Error(t, err)
+	assert.Nil(t, restored, "报错时不得交出半份恢复名单")
 	assert.ErrorContains(t, err, "未被删除")
 }
 
@@ -1740,8 +1753,9 @@ func TestNamespaceRepo_RestoreDeleted_MissingNamespace(t *testing.T) {
 	defer entdb.Close()
 	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
 
-	err := repo.RestoreDeleted(context.TODO(), 999999)
+	restored, err := repo.RestoreDeleted(context.TODO(), 999999)
 	require.Error(t, err)
+	assert.Nil(t, restored, "报错时不得交出半份恢复名单")
 	assert.True(t, errs.IsNotFound(err), "不存在的空间应表达为 NotFound，实际: %v", err)
 	assert.ErrorContains(t, err, "restore namespace")
 }
@@ -1757,13 +1771,41 @@ func TestNamespaceRepo_RestoreDeleted_ProjectUpdateError(t *testing.T) {
 	require.NoError(t, repo.Delete(ctx, ns.ID))
 	fd.Arm()
 
-	err := repo.RestoreDeleted(ctx, ns.ID)
+	restored, err := repo.RestoreDeleted(ctx, ns.ID)
 	require.ErrorContains(t, err, "restore namespace")
+	assert.Nil(t, restored, "事务回滚后恢复名单随之作废")
 
 	// 事务回滚：空间仍处于软删态，未留下半恢复状态。
 	skip := mixin.SkipSoftDelete(ctx)
 	assert.NotNil(t, repo.data.DB().Namespace.Query().Where(namespace.ID(ns.ID)).OnlyX(skip).DeletedAt,
 		"项目还原失败时空间必须保持软删（事务回滚）")
+}
+
+// TestNamespaceRepo_RestoreDeleted_ProjectNamesQueryError 事务内捞恢复名单的 SELECT 失败：
+// 错误上抛且事务回滚。名单是审计日志的口径，查不出来就不该继续恢复——否则会落下一条
+// "空间恢复了、但日志说恢复了 0 个项目"的假记录，比直接失败更难排查。
+// SQL 序列：Q1 SELECT namespaces(Only) → Q2 SELECT projects(name)（失败注入点）。
+func TestNamespaceRepo_RestoreDeleted_ProjectNamesQueryError(t *testing.T) {
+	ctx := context.TODO()
+	repo, fd := newNsFault(t, 1, -1)
+	ns := repo.data.DB().Namespace.Create().SetName("restore-names-fail").SetCreatorEmail("o@x").SaveX(ctx)
+	createNamedProject(repo.data.DB(), ns.ID, "p1")
+	require.NoError(t, repo.Delete(ctx, ns.ID))
+	fd.Arm()
+
+	restored, err := repo.RestoreDeleted(ctx, ns.ID)
+	require.Error(t, err)
+	assert.Nil(t, restored, "查询失败不得交出恢复名单")
+
+	// 注入是持续的（命中条件后每条同类语句都失败），回读断言前必须解除武装。
+	fd.Disarm()
+
+	// 事务回滚：空间与项目都必须保持软删（没有"恢复了一半"的中间态）。
+	skip := mixin.SkipSoftDelete(ctx)
+	assert.NotNil(t, repo.data.DB().Namespace.Query().Where(namespace.ID(ns.ID)).OnlyX(skip).DeletedAt,
+		"名单查询失败时空间必须保持软删（事务回滚）")
+	assert.NotNil(t, repo.data.DB().Project.Query().Where(project.NamespaceID(ns.ID)).OnlyX(skip).DeletedAt,
+		"名单查询失败时级联项目必须保持软删（事务回滚）")
 }
 
 // TestNamespaceRepo_FindDeletedByName 按展示名定位软删空间：前缀幂等（带不带前缀均可命中）、

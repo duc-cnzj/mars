@@ -86,7 +86,8 @@ type NamespaceBiz interface {
 	// 按展示名定位软删行 → 校验无同名在册空间 → 重建 k8s 命名空间骨架（含 docker
 	// secret）→ 清 deleted_at（连带同批次级联项目）→ 派发 EventNamespaceCreated 补注入
 	// TLS 证书。**不重建**任何 helm release，恢复后项目需另行重新部署。
-	Restore(ctx context.Context, name string) (*Namespace, error)
+	// 返回恢复后的空间 + 本次一并恢复的项目名（供审计日志，与 Delete 返回被删项目名对称）。
+	Restore(ctx context.Context, name string) (*Namespace, []string, error)
 }
 
 var _ NamespaceBiz = (*namespaceBiz)(nil)
@@ -269,23 +270,23 @@ loop:
 // DB 不记录的 docker secret。清理它需要"按 namespace 列举 secret"的能力，而 K8sRepo 端口没有
 // （为此扩端口属另一件事，且删错 secret 会波及该空间下全部工作负载）。▲ 该残留只在收养路径
 // 出现：自建路径的 DB 失败已被上面的回滚连带清掉（删 namespace 会带走其下 secret）。
-func (n *namespaceBiz) Restore(ctx context.Context, name string) (*Namespace, error) {
+func (n *namespaceBiz) Restore(ctx context.Context, name string) (*Namespace, []string, error) {
 	deleted, err := n.nsRepo.FindDeletedByName(ctx, name)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// 同名在册空间已存在时不得恢复：两行同名的"在册"空间会让后续按名定位（部署/成员/
 	// 端点汇总）出现歧义，且 k8s 侧同名 namespace 也无法存在第二份。
 	live, err := n.nsRepo.FindByName(ctx, deleted.Name)
 	if err == nil {
-		return nil, errs.WrapInvalidArgument(
+		return nil, nil, errs.WrapInvalidArgument(
 			fmt.Errorf("空间 %s 已存在（id=%d），请先删除或重命名后再恢复", live.Name, live.ID),
 			"restore namespace",
 		)
 	}
 	// 只有 NotFound 才说明没有同名在册空间；真实 DB 故障必须上抛，不能当作"可用"放行。
 	if !errs.IsNotFound(err) {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// 重建 k8s 骨架：删除空间时 k8s namespace 已被物理删除（连同其下 secret），只清
@@ -297,14 +298,14 @@ func (n *namespaceBiz) Restore(ctx context.Context, name string) (*Namespace, er
 	createdByUs := err == nil
 	if err != nil {
 		if !k8sapierrors.IsAlreadyExists(err) {
-			return nil, err
+			return nil, nil, err
 		}
 		found, err := n.k8sRepo.GetNamespace(ctx, deleted.Name)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if found.Status.Phase == v1.NamespaceTerminating {
-			return nil, ErrNamespaceTerminating
+			return nil, nil, ErrNamespaceTerminating
 		}
 		create = found
 	}
@@ -329,16 +330,20 @@ func (n *namespaceBiz) Restore(ctx context.Context, name string) (*Namespace, er
 	// （再次调用 Restore 命中 AlreadyExists 收养路径），反之则会留下不可恢复的孤儿空间。
 	if err := n.nsRepo.UpdateImagePullSecrets(ctx, deleted.ID, imagePullSecrets); err != nil {
 		rollback()
-		return nil, err
+		return nil, nil, err
 	}
-	if err := n.nsRepo.RestoreDeleted(ctx, deleted.ID); err != nil {
+	// 恢复范围（连带哪些项目）由 repo 在清软删标记的同一事务里捕获并回传，不在事务外自行
+	// 反查——空间下的"存活项目"还含竞态孤儿（项目存活但所属空间曾软删），反查会把从未被删的
+	// 项目也写进审计日志。
+	restoredProjects, err := n.nsRepo.RestoreDeleted(ctx, deleted.ID)
+	if err != nil {
 		rollback()
-		return nil, err
+		return nil, nil, err
 	}
 
 	ns, err := n.nsRepo.Show(ctx, deleted.ID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// 复用创建事件：HandleInjectTlsSecret 已注册在 EventNamespaceCreated 上，派发即
@@ -348,7 +353,7 @@ func (n *namespaceBiz) Restore(ctx context.Context, name string) (*Namespace, er
 		NsK8sObj: create,
 	})
 
-	return ns, nil
+	return ns, restoredProjects, nil
 }
 
 // List 分页列出 namespace（透传 repo）。
@@ -592,8 +597,9 @@ type NamespaceRepo interface {
 	Delete(ctx context.Context, id int) error
 	// FindDeletedByName 按名称查询已软删的命名空间（仅超管恢复流程使用）。
 	FindDeletedByName(ctx context.Context, name string) (*Namespace, error)
-	// RestoreDeleted 恢复软删的命名空间及其同批次级联删除的项目（清空 deleted_at）。
-	RestoreDeleted(ctx context.Context, id int) error
+	// RestoreDeleted 恢复软删的命名空间及其同批次级联删除的项目（清空 deleted_at），
+	// 返回本次一并恢复的项目名（按 id 升序）。
+	RestoreDeleted(ctx context.Context, id int) ([]string, error)
 	// GetMarsNamespace 返回 mars 保留命名空间名。
 	GetMarsNamespace(name string) string
 	// ListAll 返回全部 namespace（cron 同步 imagePullSecrets / TLS 证书需全量遍历）。

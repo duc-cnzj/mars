@@ -1489,16 +1489,18 @@ func TestNamespaceSvc_Restore_Success(t *testing.T) {
 	mocks.k8sRepo.EXPECT().CreateDockerSecret(gomock.Any(), "mars-demo").Return(
 		&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "docker-secret"}}, nil)
 	mocks.nsRepo.EXPECT().UpdateImagePullSecrets(gomock.Any(), 9, []string{"docker-secret"}).Return(nil)
-	mocks.nsRepo.EXPECT().RestoreDeleted(gomock.Any(), 9).Return(nil)
+	mocks.nsRepo.EXPECT().RestoreDeleted(gomock.Any(), 9).Return([]string{"p1", "p2"}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 9).Return(&biz.Namespace{ID: 9, Name: "mars-demo"}, nil)
 	mocks.eventRepo.EXPECT().Dispatch(biz.EventNamespaceCreated, gomock.Any())
 
 	req := &namespace.RestoreRequest{Name: "mars-demo"}
+	// 审计日志必须带上本次一并恢复的项目名（与删除侧「删除的项目有」对称）：空间恢复会
+	// 连带复活同批次项目，只记空间本身等于把这条事实丢在事务里。
 	mocks.eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Create,
 		biz.MustGetUser(newAdminUserCtx()).Name,
 		biz.MustGetUser(newAdminUserCtx()).Email,
-		"恢复项目空间: id: '9' 'mars-demo'",
+		"恢复项目空间: id: '9' 'mars-demo', 恢复的项目有: 'p1, p2'",
 		req,
 	)
 

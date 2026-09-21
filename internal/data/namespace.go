@@ -709,7 +709,11 @@ func (repo *namespaceRepo) FindDeletedByName(ctx context.Context, name string) (
 // 被还原项目的 deploy_status 一律重置为 StatusUnknown：删除空间时 helm release 已被物理
 // 卸载，残留的"已部署"是对不存在资源的错误描述。StatusUnknown 与 ReleaseStatus 对不存在
 // release 的返回值一致，也对应"骨架已恢复、请重新部署"的语义。
-func (repo *namespaceRepo) RestoreDeleted(ctx context.Context, id int) (err error) {
+//
+// 返回值是本次一并恢复的项目名（按 id 升序），供上位层落审计日志——与 Delete 返回被删项目名
+// 对称：恢复范围只存在于本函数 UPDATE 的 WHERE 里，事务一结束就与"本就在册的项目"不可区分，
+// 调用方无法在事后自行补算（空间下的存活项目还含竞态孤儿，见 cronjob.FixDeployStatus 的守卫）。
+func (repo *namespaceRepo) RestoreDeleted(ctx context.Context, id int) (restored []string, err error) {
 	ctx, span := tracer.Start(ctx, "namespaceRepo/RestoreDeleted")
 	defer func() { endSpan(span, err) }()
 	// 目标行本身是软删行，而本函数后续无论 SELECT 还是清 deleted_at 的 UPDATE 都与软删拦截器
@@ -718,13 +722,25 @@ func (repo *namespaceRepo) RestoreDeleted(ctx context.Context, id int) (err erro
 	ctx = mixin.SkipSoftDelete(ctx)
 	ns, err := repo.data.DB().Namespace.Query().Where(namespace.ID(id)).Only(ctx)
 	if err != nil {
-		return errs.Wrap(err, "restore namespace")
+		return nil, errs.Wrap(err, "restore namespace")
 	}
 	if ns.DeletedAt == nil {
 		// 未软删的空间无需恢复：显式报错优于静默成功，避免调用方把「什么都没做」当完成。
-		return errs.WrapInvalidArgument(fmt.Errorf("空间 %d 未被删除，无需恢复", id), "restore namespace")
+		return nil, errs.WrapInvalidArgument(fmt.Errorf("空间 %d 未被删除，无需恢复", id), "restore namespace")
 	}
-	return errs.Wrap(repo.data.WithTx(ctx, func(tx *ent.Tx) error {
+	if err = errs.Wrap(repo.data.WithTx(ctx, func(tx *ent.Tx) error {
+		// 名单必须在清标记**之前**捞：UPDATE 只回影响行数，而这批行的 deleted_with_namespace
+		// 一旦被清零就与"本就在册的项目"不可区分，事后再查无从分辨。读取仅为留痕，恢复范围仍
+		// 由下面 UPDATE 的 WHERE 单方裁定——两者同事务同谓词，不存在读到的集合与写掉的集合不一致
+		// 的窗口。显式 Order 是因为无序 SELECT 的行序在 SQL 里不确定，审计日志顺序得稳定。
+		names, qerr := tx.Project.Query().
+			Where(project.NamespaceID(id), project.DeletedWithNamespace(true)).
+			Order(ent.Asc(project.FieldID)).
+			Select(project.FieldName).
+			Strings(ctx)
+		if qerr != nil {
+			return qerr
+		}
 		if err := tx.Project.
 			Update().
 			Where(project.NamespaceID(id), project.DeletedWithNamespace(true)).
@@ -734,8 +750,13 @@ func (repo *namespaceRepo) RestoreDeleted(ctx context.Context, id int) (err erro
 			Exec(ctx); err != nil {
 			return err
 		}
+		restored = names
 		return tx.Namespace.UpdateOneID(id).ClearDeletedAt().Exec(ctx)
-	}), "restore namespace")
+	}), "restore namespace"); err != nil {
+		// 事务已回滚：恢复名单随之一并作废，不向调用方交"半份结果 + 一个错误"的歧义。
+		return nil, err
+	}
+	return restored, nil
 }
 
 // Favorite 收藏/取消收藏 namespace：Favorite=true 幂等收藏，false 删除收藏。

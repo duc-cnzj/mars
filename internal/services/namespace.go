@@ -332,18 +332,21 @@ func (n *namespaceSvc) Delete(ctx context.Context, input *namespace.DeleteReques
 // 被过滤，owner 门卫根本取不到对象。
 func (n *namespaceSvc) Restore(ctx context.Context, input *namespace.RestoreRequest) (*namespace.RestoreResponse, error) {
 	user := biz.MustGetUser(ctx)
-	ns, err := n.nsBiz.Restore(ctx, input.Name)
+	ns, restoredProjectNames, err := n.nsBiz.Restore(ctx, input.Name)
 	if err != nil {
 		// 恢复编排（撞名检查/重建 k8s 骨架/重建 docker secret/清软删标记/派发事件）
 		// 已下沉 biz，错误原样上抛——错误日志统一由本层 logError 打印。
 		return nil, logError(ctx, n.logger, err)
 	}
 
+	// 恢复范围必须落日志：空间恢复会连带复活同批次级联删除的项目（deploy_status 已重置为
+	// 未知），只记空间本身等于把"N 个项目被一并复活"这条事实丢在事务里。措辞与 Delete 的
+	// 「删除的项目有」对称，便于按空间名串起"删了什么 / 又恢复了什么"。
 	n.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Create,
 		user.Name,
 		user.Email,
-		fmt.Sprintf("恢复项目空间: id: '%d' '%s'", ns.ID, ns.Name),
+		fmt.Sprintf("恢复项目空间: id: '%d' '%s', 恢复的项目有: '%s'", ns.ID, ns.Name, strings.Join(restoredProjectNames, ", ")),
 		input,
 	)
 

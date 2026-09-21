@@ -2009,11 +2009,12 @@ func (mr *MockNamespaceRepoMockRecorder) ListAll(ctx any) *gomock.Call {
 }
 
 // RestoreDeleted mocks base method.
-func (m *MockNamespaceRepo) RestoreDeleted(ctx context.Context, id int) error {
+func (m *MockNamespaceRepo) RestoreDeleted(ctx context.Context, id int) ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RestoreDeleted", ctx, id)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // RestoreDeleted indicates an expected call of RestoreDeleted.

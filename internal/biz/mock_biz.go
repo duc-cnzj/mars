@@ -1433,12 +1433,13 @@ func (mr *MockNamespaceBizMockRecorder) ListAllNames(ctx any) *gomock.Call {
 }
 
 // Restore mocks base method.
-func (m *MockNamespaceBiz) Restore(ctx context.Context, name string) (*Namespace, error) {
+func (m *MockNamespaceBiz) Restore(ctx context.Context, name string) (*Namespace, []string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Restore", ctx, name)
 	ret0, _ := ret[0].(*Namespace)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].([]string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // Restore indicates an expected call of Restore.
