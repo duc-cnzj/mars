@@ -32,6 +32,7 @@ import { SearchInput } from '@/components/SearchInput'
 import { AddNamespaceModal } from './AddNamespaceModal'
 import { NamespaceCard } from './NamespaceCard'
 import { useWebsocket } from '@/hooks/useWebsocket'
+import { useHistoryBackGuard } from '@/hooks/useHistoryBackGuard'
 // 项目详情弹窗静态依赖 TabEdit→CodeEditor(CodeMirror 620KB)/DiffViewer(react-diff-viewer)/prism，
 // 懒加载后这些重依赖延迟到真正点开项目卡片时才拉取，不进工作台首屏。
 const ProjectDetailModal = lazy(() =>
@@ -433,6 +434,20 @@ export function Workbench() {
     return () => clearTimeout(timer)
   }, [keyword, debouncedKw])
 
+  // 当前状态下 URL 的规范值：由下方「URL 同步」effect 每次写入，供 useHistoryBackGuard
+  // 补压/重写历史记录时取值（那时读 location.href 只会拿到「打开弹窗那一刻」的旧 query）。
+  // 初值取当前地址：深层链接（URL 自带 ?open=）在同步 effect 首次运行前也要能用。
+  const canonicalUrlRef = useRef(
+    window.location.pathname + window.location.search + window.location.hash,
+  )
+
+  // 项目详情弹窗打开期间吞掉浏览器后退/⌘←/触控板双指右滑：弹窗只能点 X 关闭，
+  // 别让一次误触的整页导航把弹窗连同命令行 xterm/WS 会话（正在跑的命令）一起销毁。
+  // 必须声明在下方「URL 同步」effect 之前：哨兵要先用「打开弹窗那一刻」的 URL 压栈，
+  // 再由 URL 同步 effect 把哨兵那条记录升级成带 ?open= 的规范值——这样压在下面的上一条
+  // 记录保持干净，摘哨兵回退时才不会落在「带着 ?open= 却没开弹窗」的脏 URL 上。
+  useHistoryBackGuard(openProjects.length > 0, canonicalUrlRef)
+
   // 页码/弹窗集合同步到 URL：翻页/切 Tab/搜索回第 1 页/开合弹窗用 replaceState 重写。
   // 替换式无弹栈副作用，刷新后停留在当前页；「关注」Tab 无分页不写页码。
   // open 参数只在水合完成后写：挂载帧（openProjects=[]）不把 ?open= 清掉，
@@ -447,11 +462,12 @@ export function Workbench() {
       else params.delete('open')
     }
     const qs = params.toString()
-    window.history.replaceState(
-      {},
-      '',
-      window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash,
-    )
+    const url = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash
+    canonicalUrlRef.current = url
+    // state 原样带回（原先传 {}）：后退哨兵把自己的标记也放在 history.state 上，传 {}
+    // 会顺手抹掉它、守卫就认不出自己的哨兵；顺带保住 react-router 存在这里的
+    // {usr,key,idx}（idx 是它算 POP 位移的依据）。
+    window.history.replaceState(window.history.state, '', url)
   }, [page, tab, openProjects, hydrated])
 
   // Tab 切换：回到第 1 页并持久化选择。

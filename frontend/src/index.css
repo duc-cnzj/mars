@@ -262,3 +262,19 @@ body {
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
+
+/* ============================================================
+   项目详情弹窗打开期间：掐掉触控板双指右滑的「页面间滑动」手势
+   ------------------------------------------------------------
+   双指右滑与后退按钮走同一套历史遍历（popstate），但它是浏览器在
+   overscroll 阶段就接管的手势，页面拿不到可取消的事件。给根滚动容器
+   声明 overscroll-behavior-x: none，浏览器不再把横向 overscroll 当成
+   「滑动翻页」，手势在导航发生之前就被掐掉（Chrome/Edge 生效）。
+   类由 useHistoryBackGuard 在弹窗打开期间挂到 <html>：只作用于该期间，
+   不影响其它页面的正常滑动返回；即便手势仍触发（如 Safari 自带手势），
+   同 URL 的 history 哨兵也会把这次遍历吞掉。
+   ============================================================ */
+html.back-guard-on,
+html.back-guard-on body {
+  overscroll-behavior-x: none;
+}
