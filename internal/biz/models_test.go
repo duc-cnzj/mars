@@ -39,6 +39,43 @@ func TestRepo_GetMarsConfig(t *testing.T) {
 	assert.NotNil(t, fallback)
 }
 
+// extraValuesChanged 是「只改自定义配置也算变更」的判定核心：只比 path/value，
+// 顺序无关、空值等价，description 不参与（元素定义改文案不该产生假变更）。
+func Test_extraValuesChanged(t *testing.T) {
+	ev := func(path, value, desc string) *websocket_pb.ExtraValue {
+		return &websocket_pb.ExtraValue{Path: path, Value: value, Description: desc}
+	}
+
+	// 承重用例：只有描述文案不同（如元素定义改说明）不算用户改动。
+	assert.False(t, extraValuesChanged(
+		[]*websocket_pb.ExtraValue{ev("resources.limits.cpu", "100m", "CPU 上限")},
+		[]*websocket_pb.ExtraValue{ev("resources.limits.cpu", "100m", "CPU 上限（已改名）")},
+	))
+	// 顺序不同不算变更：重排配置项不改变「用户配了什么」。
+	assert.False(t, extraValuesChanged(
+		[]*websocket_pb.ExtraValue{ev("a", "1", ""), ev("b", "2", "")},
+		[]*websocket_pb.ExtraValue{ev("b", "2", ""), ev("a", "1", "")},
+	))
+	// 取值变化算变更。
+	assert.True(t, extraValuesChanged(
+		[]*websocket_pb.ExtraValue{ev("a", "1", "")},
+		[]*websocket_pb.ExtraValue{ev("a", "2", "")},
+	))
+	// 同长度但 path 不同（换项）算变更。
+	assert.True(t, extraValuesChanged(
+		[]*websocket_pb.ExtraValue{ev("a", "1", "")},
+		[]*websocket_pb.ExtraValue{ev("b", "1", "")},
+	))
+	// 项数不同算变更。
+	assert.True(t, extraValuesChanged(
+		[]*websocket_pb.ExtraValue{ev("a", "1", "")},
+		nil,
+	))
+	// 两侧都空（nil 或空切片）不算变更。
+	assert.False(t, extraValuesChanged(nil, nil))
+	assert.False(t, extraValuesChanged([]*websocket_pb.ExtraValue{}, nil))
+}
+
 func TestWrapLogFn_UnWrap(t *testing.T) {
 	var (
 		gotContainer []*websocket_pb.Container

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import * as YAML from 'yaml'
 import { toast } from '@/lib/toast'
 import { nextZIndex } from '@/lib/zIndex'
 import type { components } from '@/api/schema'
@@ -24,10 +25,11 @@ import {
 import { DiffViewer } from '@/components/DiffViewer'
 
 type ChangelogModel = components['schemas']['types.ChangelogModel']
+type ExtraValue = components['schemas']['websocket.ExtraValue']
 
 /**
  * 配置历史：拉取项目配置改动日志，逐条展示「版本 + 更新人 + 提交 + 配置变更」，
- * 展开后显示与上一版本的逐行 diff（LCS）。
+ * 展开后显示与上一版本的配置文件 diff + 自定义配置（extraValues）取值变更。
  */
 export function ConfigHistory({
   projectId,
@@ -95,7 +97,15 @@ export function ConfigHistory({
               // prevItem 置空 → 分支/提交只显示当前值，配置按「全新增」处理（与展开区一致）。
               // 此时绝不能拿空串去比——那必然得出「已变更」，是缺数据而非真变更。
               const prevItem = idx + 1 < items.length ? items[idx + 1] : null
+              // 最老一条没有更早版本可比（onlyChanged 过滤 + limit 截断，它的更早版本可能压根
+              // 没返回）：中性态「无对比版本」，配置按全新增处理
+              const baseline = prevItem === null
               const configChanged = prevItem !== null && isConfigChanged(prevItem.config, item.config)
+              // 自定义配置（extraValues）是否变更：与展开区共用 changedExtraPaths 这一个判定，
+              // 行 tag 与展开区永远一致，不会 tag 说有变更、展开区说没有
+              const extraChanged =
+                prevItem !== null &&
+                changedExtraPaths(prevItem.extraValues, item.extraValues).length > 0
               const isExpanded = expanded === item.version
               return (
                 <div
@@ -115,15 +125,23 @@ export function ConfigHistory({
                       <span className="text-[13px] font-medium text-ink">{item.username}</span>
                       <span className="text-[12px] text-faint">{item.date}</span>
                       {/* 配置文件变更与否都给 tag（未变更用 mute 弱化），不让「没变更」的版本空着一块。
-                          最老一条没有更早版本可比 → 中性态「无对比版本」，不能谎报未变更/已变更 */}
-                      {prevItem === null ? (
+                          最老一条没有更早版本可比 → 中性态「无对比版本」，不能谎报未变更/已变更。
+                          自定义配置变更再挂一个 tag（info 色，与配置的 warn 一眼区分）：配置文件一字未动、
+                          只有部署参数改了也是「这版有变更」，这个信号不能只藏在展开区里。
+                          未变更时不挂——这条 tag 是给「config 没变但参数变了」的版本发的，没变就保持安静 */}
+                      {baseline ? (
                         <Tag tone="mute" className="ml-auto">
                           {t('project.configNoBaseline')}
                         </Tag>
                       ) : (
-                        <Tag tone={configChanged ? 'warn' : 'mute'} className="ml-auto">
-                          {configChanged ? t('project.configChanged') : t('project.configUnchanged')}
-                        </Tag>
+                        <>
+                          <Tag tone={configChanged ? 'warn' : 'mute'} className="ml-auto">
+                            {configChanged
+                              ? t('project.configChanged')
+                              : t('project.configUnchanged')}
+                          </Tag>
+                          {extraChanged && <Tag tone="info">{t('project.extraValuesChanged')}</Tag>}
+                        </>
                       )}
                       <Icon
                         name="chevron-down"
@@ -151,13 +169,30 @@ export function ConfigHistory({
                     </div>
                   </button>
                   {isExpanded && (
-                    <div className="border-t border-line px-3 py-2">
-                      <DiffLines
-                        oldText={prevItem?.config ?? ''}
-                        newText={item.config}
-                        lang={item.configType || configFileType || 'yaml'}
-                        baseline={prevItem === null}
-                      />
+                    <div className="flex flex-col gap-3 border-t border-line px-3 py-2">
+                      {/* 两块各自独立陈述变更与否、互不代言（配置文件一字未动、只有部署参数改了，
+                          这里照样把改了什么说清楚），也各自独立折叠（见 DiffSection） */}
+                      <DiffSection
+                        title={t('project.configSection')}
+                        defaultOpen={baseline || configChanged}
+                      >
+                        <DiffLines
+                          oldText={prevItem?.config ?? ''}
+                          newText={item.config}
+                          lang={item.configType || configFileType || 'yaml'}
+                          baseline={baseline}
+                        />
+                      </DiffSection>
+                      <DiffSection
+                        title={t('project.extraValues')}
+                        defaultOpen={baseline || extraChanged}
+                      >
+                        <ExtraValuesDelta
+                          prev={prevItem?.extraValues ?? []}
+                          curr={item.extraValues}
+                          baseline={baseline}
+                        />
+                      </DiffSection>
                     </div>
                   )}
                 </div>
@@ -174,12 +209,11 @@ export function ConfigHistory({
 /**
  * 配置文本相对上一版是否有变更（只比 config，不含 commit）。
  *
- * 不能用后端的 `item.configChanged`：它的判定是「配置或提交有一个变了」——
- * 后端 eventhandler/event_coordinator.go 里 `configChanged = lastChange.Config != proj.Config
- * || lastChange.GitCommit != proj.GitCommit`，onlyChanged 过滤用的也是这个布尔。照搬过来就会
- * 出现「只换了 commit、配置一字未动」的版本被打上「配置已变更」，展开后 diff 却说「无配置变更」
- * ——tag 与展开区互相打脸（重新部署同配置正是常见场景）。列表行的 tag 与展开区共用本判定，
- * 两者永远一致，不会各说各话。
+ * 不能用后端的 `item.configChanged`：它的判定比配置文本宽得多——后端 biz.ProjectConfigChanged
+ * 比的是「配置 / 分支 / 提交 / 自定义配置项」四样有没有一样变了，onlyChanged 过滤用的也是这个布尔。
+ * 照搬过来就会出现「只换了 commit」或「只改了自定义配置」的版本被打上「配置已变更」，展开后
+ * diff 却说「无配置变更」——tag 与展开区互相打脸（重新部署同配置正是常见场景）。列表行的 tag
+ * 与展开区共用本判定，两者永远一致，不会各说各话。
  *
  * 直接比字符串即可：split('\n')/join('\n') 可逆，所以逐行 LCS「全为 same」⟺ 两串全等，
  * 而这里只问「有没有一行不同」——LCS 的 O(n·m) 是白花的。列表最多 15 行（后端 Limit 写死 15）、
@@ -293,6 +327,54 @@ function CommitTitleLink({ href, title }: { href: string; title: string }) {
   )
 }
 
+/**
+ * 展开区里的可折叠小节：表头独占一行、点整行折起/展开内容。
+ *
+ * 为什么两块各自折叠、不共用一个开关：项目配置动辄上千行，它一个就能把下面的自定义配置挤出
+ * 屏幕，可这两块又是独立的事实（配置没变、部署参数变了很常见）——得能单独折起上面那块去看
+ * 下面那块，反之亦然。
+ *
+ * 默认开合跟「这块有没有改动」走（defaultOpen，调用方按各自的变更判定算）：有改动才摊开，
+ * 没改动的只留一行表头——展开一个版本时，有内容的块直接是内容，没内容的块不再拿一行
+ * 「（无…变更）」占着位置把有内容的挤下去。最老一条没有基准（baseline）是例外：它的块里是
+ * 整份配置按新增展示，是实打实的内容，折起来等于把内容藏了，故跟着展开。
+ * defaultOpen 只在挂载时取一次：用户手动折过之后，父组件重渲染不该把它掰回来；收起版本行再
+ * 展开会整棵重挂，那时又回到「没改动就折起」的默认——每次打开都先看要点。
+ *
+ * 表头要显眼（13px + font-semibold + text-ink，带可点的 hover 底）：它是这一块唯一的标题，
+ * 原先 12px/mute 那版和 diff 里的注释行一样轻，两块叠起来分不清哪是哪。箭头放标题前（折叠
+ * 面板的惯例），折起时转 -90° 指右——不用展开内容就能看出这块是收着的。
+ * 分隔线挂在节顶上、首节去掉（first:）：两块之间有线，和上面的行之间那条线由父容器给。
+ */
+function DiffSection({
+  title,
+  defaultOpen,
+  children,
+}: {
+  title: string
+  /** 挂载时的开合状态；调用方按「这块有没有改动」算（见上） */
+  defaultOpen: boolean
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="border-t border-line pt-2 first:border-t-0 first:pt-0">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="-mx-1.5 flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-raised"
+      >
+        <Icon
+          name="chevron-down"
+          className={`text-[12px] text-faint transition-transform ${open ? '' : '-rotate-90'}`}
+        />
+        <span className="text-[13px] font-semibold text-ink">{title}</span>
+      </button>
+      {open && <div className="mt-1.5">{children}</div>}
+    </div>
+  )
+}
+
 /** 版本 diff：无变更显示占位，有变更走增强 DiffViewer（分屏/高亮/复制） */
 function DiffLines({
   oldText,
@@ -319,4 +401,137 @@ function DiffLines({
     return <div className="text-[12px] text-faint">{t('project.noConfigChanged')}</div>
   }
   return <DiffViewer oldValue={oldText} newValue={newText} language={lang} />
+}
+
+/**
+ * extraValues → path 键的值映射。缺失与空串同义（都是「没有值」），取值处一律
+ * `map.get(path) ?? ''`，避免「这一侧没有该 path」被判成变更。
+ */
+function extraValuesMap(list: ExtraValue[] | undefined): Map<string, string> {
+  return new Map((list ?? []).map((v) => [v.path, v.value]))
+}
+
+/**
+ * 两侧有出入的 path（本版新增的、本版已没有的、以及取值变了的），按 path 升序。
+ *
+ * 行 tag 的「自定义配置已变更」与展开区的 diff 共用这一个判定——tag 说有变更、展开区说没有，
+ * 是最难查的一类不一致（同 isConfigChanged 的用意：一处判定，几处显示）。
+ */
+function changedExtraPaths(
+  prev: ExtraValue[] | undefined,
+  curr: ExtraValue[] | undefined,
+): string[] {
+  const prevMap = extraValuesMap(prev)
+  const currMap = extraValuesMap(curr)
+  return [...new Set([...prevMap.keys(), ...currMap.keys()])]
+    .filter((path) => (prevMap.get(path) ?? '') !== (currMap.get(path) ?? ''))
+    .sort()
+}
+
+/**
+ * 一条 extraValue 在界面上的标签：说明优先、为空回退 path。
+ *
+ * 与部署表单是同一条口径（Elements.tsx 的 `element.description || element.path`）——说明文案才是
+ * 表单上那个字段名，path（resources.limits.cpu 这类）是元素定义里的原始字符串，本质是内部键。
+ * 表单上看到的什么，历史里就该看到什么。说明由后端在部署落库时按当时的元素定义固化（仓库配置早被
+ * 改过也读得回来），历史数据可能整片没有，故这条回退必须有，不能渲染成空键。
+ */
+function extraLabel(v: ExtraValue): string {
+  return v.description || v.path
+}
+
+/**
+ * 把一版的 extraValues 合并成一份 yaml 文本（说明作键、取值作值，按 path 升序）。
+ *
+ * 键用说明而不是 path：path 在界面上是内部键，直接当键等于让人对着 `resources.limits.cpu` 猜
+ * 这是哪个字段；说明才是部署表单上那个字段名（见 extraLabel）。
+ *
+ * 说明会撞车——两个不同 path 写了同一句说明（「环境变量」这种），Map 会把后一个顶掉前一个，这份
+ * 文档就平白少一个键：取值真变了却在 diff 里看不见，是最难查的一类漏报。故同名的那一组一律补 path
+ * 后缀消歧，且只加在撞车的组上，不撞车时仍是干净的一句说明。两侧各算各的：某一项在本版才撞名时，
+ * 它会在本版一侧带上后缀，diff 里表现为这个键「改名」了——这正是「说明开始有歧义」该有的提示。
+ *
+ * 排序按 path、不是按显示出来的说明：path 唯一且稳定，说明文案改一个字，整份文档的键序不该跟着
+ * 全部挪位。排序交给 Map（不用普通对象）：Map 保插入序，而 path 万一取成纯数字（「10」/「2」），
+ * 普通对象的键会被按数值大小重排，两份文档的键序就不再一致，diff 会整片错位成「每个键都动了」。
+ *
+ * 值交给 yaml 库序列化，而不是手拼 `${label}: ${value}`：值可能是多行片段（TextArea 型字段），
+ * 也可能是「1」/「true」这种在 yaml 里类型有歧义的标量，库该加引号加引号、该出块标量出块标量；
+ * 手拼等于把值原样塞进文档，读回来已经不是同一个值。
+ */
+function extraValuesYaml(list: ExtraValue[] | undefined): string {
+  const entries = [...(list ?? [])]
+    .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
+    .map((v) => ({ label: extraLabel(v), path: v.path, value: v.value }))
+  // 同名标签计数：>1 的那组整组补 path 后缀消歧（见上），否则 Map 会把同名键悄悄并成一个
+  const dup = new Map<string, number>()
+  for (const e of entries) dup.set(e.label, (dup.get(e.label) ?? 0) + 1)
+  const rows = entries.map(
+    (e): [string, string] => [
+      (dup.get(e.label) ?? 0) > 1 ? `${e.label} (${e.path})` : e.label,
+      e.value,
+    ],
+  )
+  // 空表会 stringify 成 "{}\n"，diff 里平白多一行 "{}"；空就是空串
+  return rows.length === 0 ? '' : YAML.stringify(new Map(rows))
+}
+
+/**
+ * 自定义配置变更块：把两侧的 extraValues 各自合并成一份 yaml，走一个 diff。
+ *
+ * 为什么看 extraValues 而不是 finalExtraValues：两者都是「这次部署的额外配置项」，差别在
+ * finalExtraValues 是后端 ElementsLoader 拿元素定义把缺的 path 用默认值补齐后的最终生效值
+ * （typedValue 转换 + 兜底），每个版本都会带上一整片压根没动过的默认项；extraValues 是这次
+ * 实际提交上来的那一份，更贴近「用户改了什么」，噪音也小。
+ * 本块与配置文件的 diff 是两个独立事实，不共用判定（见上方 isConfigChanged 注释）。
+ *
+ * 为什么合并成一份 yaml 走单个 diff，而不是每个 path 各挂一个：按 path 各挂一个时，一屏里会
+ * 竖排 N 个各带工具栏的 diff 卡片，改动项一多整块就散成一片，看不出「这几个键是在同一处一起
+ * 变的」；合并成一份文档后，变更行按 path 顺序聚在一起，两侧相邻的未变键也在同一份文档里
+ * （DiffViewer 默认「仅显示变更」，未变的行折叠成一块，不会刷屏）。
+ *
+ * 键是说明、判定仍按 path，两者刻意分开：说明只是给人看的标签（见 extraValuesYaml），而「变没变」
+ * 只能按 path 判——说明由后端在部署时按当时的元素定义固化，仓库里改一次文案，同一项在前后两版就
+ * 是不同的说明，拿说明当判定基准会把「改了个说明」误报成「部署参数变了」。
+ *
+ * 某侧没有该 path（早期版本没提交过这个字段、或元素定义是后来才加的）按空串参与比较，于是新增
+ * 渲染成库原生的「整块纯增」、删除渲染成「整块纯删」——比画 `-` 占位更准确，也让「这一项是这版
+ * 才有的 / 这版没了」一眼可辨。缺失与空串同义（都是「没有值」），故 `'' ↔ 缺失` 不算变更，
+ * 不会留下两侧皆空的空 diff。
+ *
+ * language 固定 yaml：这份文档本身就是 extraValues 合并出来的 yaml，不存在「元素定义的真实
+ * 语言无从得知」的问题（changelog 载荷只带主配置文件的 configType）；值里的多行片段也按 yaml
+ * 处理，与全篇观感一致。
+ */
+function ExtraValuesDelta({
+  prev,
+  curr,
+  baseline,
+}: {
+  /** 上一版的 extraValues；列表最老一条没有更早版本可比 → 空数组 */
+  prev: ExtraValue[] | undefined
+  curr: ExtraValue[] | undefined
+  /** 最老一条：没有更早版本可比，整块按新增展示，先说明再看内容（同配置文件 diff） */
+  baseline?: boolean
+}) {
+  const { t } = useTranslation()
+  const changed = changedExtraPaths(prev, curr)
+
+  if (baseline) {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <div className="text-[12px] text-faint">{t('project.noBaselineConfig')}</div>
+        <DiffViewer oldValue="" newValue={extraValuesYaml(curr)} language="yaml" />
+      </div>
+    )
+  }
+  // 显式说「无变更」，不静默留白：留白与「这块没渲染出来」在观感上分不开
+  if (changed.length === 0) {
+    return <div className="text-[12px] text-faint">{t('project.noExtraValuesChanged')}</div>
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      <DiffViewer oldValue={extraValuesYaml(prev)} newValue={extraValuesYaml(curr)} language="yaml" />
+    </div>
+  )
 }

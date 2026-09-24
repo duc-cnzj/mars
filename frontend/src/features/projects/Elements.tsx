@@ -75,7 +75,8 @@ export function Elements({
     return m
   }, [value])
 
-  /** 更新指定 path 的取值（保留其余项），统一转字符串存储 */
+  /** 更新指定 path 的取值（保留其余项），统一转字符串存储。
+   *  description 由后端在部署落库时按元素定义固化，请求侧不必带（proto 里是可选字段） */
   const update = (path: string, raw: unknown) => {
     const next = value.filter((v) => v.path !== path)
     next.push({ path, value: String(raw) })

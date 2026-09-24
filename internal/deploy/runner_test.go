@@ -273,6 +273,63 @@ func TestMatchDockerImage(t *testing.T) {
 	}
 }
 
+// Test_extraValueDescriptions 覆盖固化助手的全部形状：命中元素/元素无说明/path 不在元素里/
+// nil 与空切片原样返回/不修改入参。description 只在落库那一刻由元素定义提供，写错就是历史记录永久错。
+func Test_extraValueDescriptions(t *testing.T) {
+	tests := []struct {
+		name     string
+		values   []*websocket_pb.ExtraValue
+		elements []*mars.Element
+		expected []*websocket_pb.ExtraValue
+	}{
+		{
+			name:     "命中元素的 path 带上说明",
+			values:   []*websocket_pb.ExtraValue{{Path: "a", Value: "1"}, {Path: "b", Value: "2"}},
+			elements: []*mars.Element{{Path: "a", Description: "说明 a"}, {Path: "b", Description: "说明 b"}},
+			expected: []*websocket_pb.ExtraValue{
+				{Path: "a", Value: "1", Description: "说明 a"},
+				{Path: "b", Value: "2", Description: "说明 b"},
+			},
+		},
+		{
+			name:     "元素没有说明时 description 为空",
+			values:   []*websocket_pb.ExtraValue{{Path: "a", Value: "1"}},
+			elements: []*mars.Element{{Path: "a"}},
+			expected: []*websocket_pb.ExtraValue{{Path: "a", Value: "1"}},
+		},
+		{
+			name:     "path 不在元素定义里（被 loader 拒掉的非法字段）保持原样",
+			values:   []*websocket_pb.ExtraValue{{Path: "unknown", Value: "1"}},
+			elements: []*mars.Element{{Path: "a", Description: "说明 a"}},
+			expected: []*websocket_pb.ExtraValue{{Path: "unknown", Value: "1"}},
+		},
+		{
+			name:     "nil 输入返回 nil",
+			values:   nil,
+			elements: []*mars.Element{{Path: "a", Description: "说明 a"}},
+			expected: nil,
+		},
+		{
+			name:     "空切片输入返回空切片",
+			values:   []*websocket_pb.ExtraValue{},
+			elements: nil,
+			expected: []*websocket_pb.ExtraValue{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extraValueDescriptions(tt.values, tt.elements)
+			assert.Equal(t, tt.expected, result)
+			// 入参不得被就地改写：dry-run 的审计 YAML 直接序列化 job 输入，
+			// 原地写说明会让 dry-run 与真实部署的审计口径分叉。
+			for _, v := range tt.values {
+				assert.Empty(t, v.Description)
+			}
+		})
+	}
+}
+
 func TestVars_ToKeyValue(t *testing.T) {
 	v := vars{
 		"key1": "value1",
@@ -1906,6 +1963,71 @@ func Test_jobRunner_Run_Success(t *testing.T) {
 	k8sRepo.EXPECT().GetPodSelectorsByManifest(gomock.Any())
 
 	assert.Nil(t, jb.Run(context.TODO()).Error())
+}
+
+// Test_jobRunner_Run_固化ExtraValueDescription 钉住 Run 的落库接线：额外配置项在写库前必须
+// 经 extraValueDescriptions 按当时的元素定义补上说明，且「本次输入」与「元素补齐后的最终值」
+// 两个字段都要过这道工序。只测助手本身接不住这条线——把接线摘掉助手照样 100% 绿。
+func Test_jobRunner_Run_固化ExtraValueDescription(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	installer := NewMockReleaseInstaller(m)
+	msger := NewMockDeployMsger(m)
+	k8sRepo := data.NewMockK8sRepo(m)
+	projRepo := data.NewMockProjectRepo(m)
+	eventRepo := data.NewMockEventRepo(m)
+	msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	ch := newSafeWriteMessageCh(mlog.NewForConfig(nil), 10)
+
+	jb := &jobRunner{
+		logger:    mlog.NewForConfig(nil),
+		projRepo:  projRepo,
+		k8sRepo:   k8sRepo,
+		eventRepo: eventRepo,
+		messager:  msger,
+		installer: installer,
+		config: &mars.Config{Elements: []*mars.Element{
+			{Path: "app->config", Description: "副本数"},
+		}},
+		chart:        &chart.Chart{Metadata: &chart.Metadata{}},
+		ns:           &biz.Namespace{},
+		project:      &biz.Project{},
+		deployResult: &deployResult{},
+		input: &JobInput{
+			ExtraValues: []*websocket_pb.ExtraValue{{Path: "app->config", Value: "3"}},
+		},
+		// 元素补齐后的最终值里混入一个元素定义里没有的 path，用于钉住「不臆造说明」。
+		finalExtraValues: []*websocket_pb.ExtraValue{
+			{Path: "app->config", Value: "3"},
+			{Path: "not-in-elements", Value: "x"},
+		},
+		user:      &biz.UserInfo{Name: "duc"},
+		commit:    &biz.Commit{},
+		messageCh: ch,
+	}
+
+	installer.EXPECT().Run(gomock.Any(), gomock.Any()).Return(&release.Release{Config: map[string]any{}}, nil)
+	var got *biz.UpdateProjectInput
+	projRepo.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, in *biz.UpdateProjectInput) (*biz.Project, error) {
+			got = in
+			return &biz.Project{}, nil
+		})
+	eventRepo.EXPECT().Dispatch(biz.EventProjectChanged, gomock.Any())
+	eventRepo.EXPECT().AuditLogWithChange(
+		gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	msger.EXPECT().To(gomock.Any()).AnyTimes()
+	k8sRepo.EXPECT().SplitManifests(gomock.Any())
+	k8sRepo.EXPECT().GetPodSelectorsByManifest(gomock.Any())
+
+	assert.Nil(t, jb.Run(context.TODO()).Error())
+	assert.Equal(t, []*websocket_pb.ExtraValue{
+		{Path: "app->config", Value: "3", Description: "副本数"},
+	}, got.ExtraValues)
+	assert.Equal(t, []*websocket_pb.ExtraValue{
+		{Path: "app->config", Value: "3", Description: "副本数"},
+		{Path: "not-in-elements", Value: "x"},
+	}, got.FinalExtraValues)
 }
 
 // 新建路径下 Create 成功后注册的 OnError 清理回调（删除项目）与 OnFinally 状态回收

@@ -153,6 +153,9 @@ export namespace websocket {
 
         /** ExtraValue value */
         value?: (string|null);
+
+        /** ExtraValue description */
+        description?: (string|null);
     }
 
     /** Represents an ExtraValue. */
@@ -169,6 +172,9 @@ export namespace websocket {
 
         /** ExtraValue value. */
         public value: string;
+
+        /** ExtraValue description. */
+        public description: string;
 
         /**
          * Encodes the specified ExtraValue message. Does not implicitly {@link websocket.ExtraValue.verify|verify} messages.

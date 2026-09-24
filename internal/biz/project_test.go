@@ -302,6 +302,54 @@ func TestProject_ToEventYaml(t *testing.T) {
 				},
 			},
 		},
+		{
+			// 空额外配置项：nil 与空切片在快照里保持各自原形态（不是统统变成一种），
+			// 否则「从来没有额外配置」的旧项目在快照里会凭空多出一个空列表。
+			name: "额外配置项为 nil 与空切片时原样进快照",
+			project: &Project{
+				ExtraValues:      nil,
+				FinalExtraValues: []*websocket_pb.ExtraValue{},
+			},
+			expected: AnyYamlPrettier{
+				"title":              "",
+				"branch":             "",
+				"commit":             "",
+				"atomic":             false,
+				"web_url":            "",
+				"config":             "",
+				"env_values":         []*types.KeyValue(nil),
+				"extra_values":       []*websocket_pb.ExtraValue(nil),
+				"final_extra_values": []*websocket_pb.ExtraValue{},
+			},
+		},
+		{
+			// 带 description 的额外配置项（部署落库固化的说明）原样进快照：审计快照不做裁剪，
+			// 升级后第一次部署会因此显示一次额外配置项差异，已确认接受。
+			name: "额外配置项带 description 时原样进快照",
+			project: &Project{
+				ExtraValues: []*websocket_pb.ExtraValue{
+					{Path: "path1", Value: "value1", Description: "说明一"},
+				},
+				FinalExtraValues: []*websocket_pb.ExtraValue{
+					{Path: "path2", Value: "value2", Description: "说明二"},
+				},
+			},
+			expected: AnyYamlPrettier{
+				"title":      "",
+				"branch":     "",
+				"commit":     "",
+				"atomic":     false,
+				"web_url":    "",
+				"config":     "",
+				"env_values": []*types.KeyValue(nil),
+				"extra_values": []*websocket_pb.ExtraValue{
+					{Path: "path1", Value: "value1", Description: "说明一"},
+				},
+				"final_extra_values": []*websocket_pb.ExtraValue{
+					{Path: "path2", Value: "value2", Description: "说明二"},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

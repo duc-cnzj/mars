@@ -94,6 +94,25 @@ func dayKey(t time.Time) string {
 	return fmt.Sprintf("%04d-%02d-%02d", t.Year(), t.Month(), t.Day())
 }
 
+// ProjectConfigChanged 判定本次部署相对上一条变更记录是否存在用户可见的配置变化，
+// 落库时写进 changelog.config_changed——「配置修改记录」列表的 onlyChanged 过滤就认这个布尔。
+//
+// 只比「用户能改、且列表会展示」的四样：配置文本、分支、提交、额外配置项（path/value 口径，
+// 说明文案是元素定义里的静态内容，改它不算用户改动）。docker_image/env_values 由仓库配置派生、
+// 列表也不展示，不参与判定。
+//
+// 为什么不能只比 config/commit：只改「自定义配置」的部署两样都没动，会被判成没变更而被过滤掉，
+// 用户看到的就是「我明明改了自定义配置，配置修改记录里却没这条」。
+//
+// last 由调用方保证非 nil：changelog repo 查不到记录时返回 err（不是 (nil, nil)），
+// 调用方以 err 判定，不会带着 nil 进来。
+func ProjectConfigChanged(last *Changelog, cur *Project) bool {
+	return last.Config != cur.Config ||
+		last.GitBranch != cur.GitBranch ||
+		last.GitCommit != cur.GitCommit ||
+		extraValuesChanged(last.ExtraValues, cur.ExtraValues)
+}
+
 // ChangelogRepo 是项目变更记录仓库端口。
 type ChangelogRepo interface {
 	// FindLastChangelogsByProjectID 查询项目最近一批变更记录。

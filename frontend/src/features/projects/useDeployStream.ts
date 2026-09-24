@@ -21,7 +21,7 @@ export interface DeployCreateParams {
   gitBranch?: string
   gitCommit?: string
   config: string
-  extraValues?: websocket.ExtraValue[]
+  extraValues?: websocket.IExtraValue[]
   atomic?: boolean
 }
 
@@ -31,7 +31,7 @@ export interface DeployUpdateParams {
   gitBranch?: string
   gitCommit?: string
   config: string
-  extraValues?: websocket.ExtraValue[]
+  extraValues?: websocket.IExtraValue[]
   atomic?: boolean
 }
 
@@ -141,7 +141,9 @@ export function useDeployStream(namespaceId: number, name: string) {
           gitBranch: p.gitBranch ?? '',
           gitCommit: p.gitCommit ?? '',
           config: p.config,
-          extraValues: p.extraValues ?? [],
+          // 编码入参声明的是 message 实例类型，而调用方只需给 path/value（description 由后端固化），
+          // 故在此物化成实例；未提供的字段落回原型默认值，proto3 默认值不写线，字节与不带该字段一致。
+          extraValues: (p.extraValues ?? []).map((v) => new websocket.ExtraValue(v)),
           atomic: p.atomic,
         }).finish(),
       )
@@ -163,7 +165,8 @@ export function useDeployStream(namespaceId: number, name: string) {
           gitBranch: p.gitBranch ?? '',
           gitCommit: p.gitCommit ?? '',
           config: p.config,
-          extraValues: p.extraValues ?? [],
+          // 同 create：入参可只给 path/value，这里物化成 message 实例再编码
+          extraValues: (p.extraValues ?? []).map((v) => new websocket.ExtraValue(v)),
           version: p.version,
           atomic: p.atomic,
         }).finish(),

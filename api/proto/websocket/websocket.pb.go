@@ -11,6 +11,7 @@ import (
 	sync "sync"
 	unsafe "unsafe"
 
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
@@ -342,9 +343,16 @@ func (x *ClusterInfo) GetRequestCpuRate() string {
 }
 
 type ExtraValue struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// path/value 标 REQUIRED 不是为了校验，是为了让 openapi 生成器产出 required 数组：
+	// gnostic 只在 message 至少有一个 REQUIRED 字段时才输出 required，否则整个数组缺失，
+	// 前端 openapi-typescript 的 --properties-required-by-default 会把 description 也当必填，
+	// 逼请求侧写一个后端必定覆写的空串。
+	Path  string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	// description 是元素定义（mars.Config.elements）里的说明文案：部署落库时由后端按当时的定义
+	// 固化写入，请求侧无需填写（填了会被固化值覆盖）；历史数据可能为空。
+	Description   string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -389,6 +397,13 @@ func (x *ExtraValue) GetPath() string {
 func (x *ExtraValue) GetValue() string {
 	if x != nil {
 		return x.Value
+	}
+	return ""
+}
+
+func (x *ExtraValue) GetDescription() string {
+	if x != nil {
+		return x.Description
 	}
 	return ""
 }
@@ -1511,7 +1526,7 @@ var File_proto_websocket_websocket_proto protoreflect.FileDescriptor
 
 const file_proto_websocket_websocket_proto_rawDesc = "" +
 	"\n" +
-	"\x1fproto/websocket/websocket.proto\x12\twebsocket\"\xa7\x03\n" +
+	"\x1fproto/websocket/websocket.proto\x12\twebsocket\x1a\x1fgoogle/api/field_behavior.proto\"\xa7\x03\n" +
 	"\vClusterInfo\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x1f\n" +
 	"\vfree_memory\x18\x02 \x01(\tR\n" +
@@ -1525,11 +1540,12 @@ const file_proto_websocket_websocket_proto_rawDesc = "" +
 	"\x0eusage_cpu_rate\x18\t \x01(\tR\fusageCpuRate\x12.\n" +
 	"\x13request_memory_rate\x18\n" +
 	" \x01(\tR\x11requestMemoryRate\x12(\n" +
-	"\x10request_cpu_rate\x18\v \x01(\tR\x0erequestCpuRate\"6\n" +
+	"\x10request_cpu_rate\x18\v \x01(\tR\x0erequestCpuRate\"d\n" +
 	"\n" +
-	"ExtraValue\x12\x12\n" +
-	"\x04path\x18\x01 \x01(\tR\x04path\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\"Y\n" +
+	"ExtraValue\x12\x18\n" +
+	"\x04path\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\x04path\x12\x1a\n" +
+	"\x05value\x18\x02 \x01(\tB\x04\xe2A\x01\x02R\x05value\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\"Y\n" +
 	"\tContainer\x12\x1c\n" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x10\n" +
 	"\x03pod\x18\x02 \x01(\tR\x03pod\x12\x1c\n" +

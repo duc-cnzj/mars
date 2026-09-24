@@ -148,12 +148,8 @@ export function CreateProjectModal({
         setConfig(marsConfig.configFileValues ?? '')
         setElements(marsConfig.elements ?? [])
         setGroupSettings(marsConfig.groupSettings ?? [])
-        setExtraValues(
-          (marsConfig.elements ?? []).map((e) => ({
-            path: e.path,
-            value: e.default,
-          })),
-        )
+        // description 由后端在部署落库时按元素定义固化，请求侧不必带（proto 里是可选字段）
+        setExtraValues((marsConfig.elements ?? []).map((e) => ({ path: e.path, value: e.default })))
         setConfigFileType(marsConfig.configFileType || 'yaml')
       }
     } catch (e) {
@@ -207,12 +203,10 @@ export function CreateProjectModal({
   )
   const hasTextarea = textareaElements.length > 0
 
-  /** 更新指定 path 的取值（保留其余项），统一转字符串存储（与 Elements 内部 update 同语义，同 TabEdit） */
+  /** 更新指定 path 的取值（保留其余项），统一转字符串存储（与 Elements 内部 update 同语义，同 TabEdit）。
+   *  description 由后端在部署落库时按元素定义固化，请求侧不必带（proto 里是可选字段） */
   const updateExtraValue = useCallback((path: string, raw: unknown) => {
-    setExtraValues((prev) => [
-      ...prev.filter((v) => v.path !== path),
-      { path, value: String(raw) },
-    ])
+    setExtraValues((prev) => [...prev.filter((v) => v.path !== path), { path, value: String(raw) }])
   }, [])
 
   // 整块弹窗区域滚轮重定向：标题/吸顶头等不可滚动区滚轮转发到内容区滚动条，不穿透滚主页面

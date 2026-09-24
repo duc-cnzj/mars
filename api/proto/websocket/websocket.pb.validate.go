@@ -182,6 +182,8 @@ func (m *ExtraValue) validate(all bool) error {
 
 	// no validation rules for Value
 
+	// no validation rules for Description
+
 	if len(errors) > 0 {
 		return ExtraValueMultiError(errors)
 	}

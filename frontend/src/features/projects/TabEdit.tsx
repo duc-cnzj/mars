@@ -228,12 +228,10 @@ export function TabEdit({
   // 一个 tab、标题取各自 description||path，多 TextArea 时即有多个 tab。无 TextArea 字段时不渲染 tab 栏
   const [bottomTab, setBottomTab] = useState<string>('config')
 
-  /** 更新指定 path 的取值（保留其余项），统一转字符串存储（与 Elements 内部 update 同语义） */
+  /** 更新指定 path 的取值（保留其余项），统一转字符串存储（与 Elements 内部 update 同语义）。
+   *  description 由后端在部署落库时按元素定义固化，请求侧不必带（proto 里是可选字段） */
   const updateExtraValue = useCallback((path: string, raw: unknown) => {
-    setExtraValues((prev) => [
-      ...prev.filter((v) => v.path !== path),
-      { path, value: String(raw) },
-    ])
+    setExtraValues((prev) => [...prev.filter((v) => v.path !== path), { path, value: String(raw) }])
   }, [])
 
   return (

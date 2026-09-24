@@ -361,6 +361,7 @@ export const websocket = $root.websocket = (() => {
          * @interface IExtraValue
          * @property {string|null} [path] ExtraValue path
          * @property {string|null} [value] ExtraValue value
+         * @property {string|null} [description] ExtraValue description
          */
 
         /**
@@ -395,6 +396,14 @@ export const websocket = $root.websocket = (() => {
         ExtraValue.prototype.value = "";
 
         /**
+         * ExtraValue description.
+         * @member {string} description
+         * @memberof websocket.ExtraValue
+         * @instance
+         */
+        ExtraValue.prototype.description = "";
+
+        /**
          * Encodes the specified ExtraValue message. Does not implicitly {@link websocket.ExtraValue.verify|verify} messages.
          * @function encode
          * @memberof websocket.ExtraValue
@@ -414,6 +423,8 @@ export const websocket = $root.websocket = (() => {
                 writer.uint32(/* id 1, wireType 2 =*/10).string(message.path);
             if (message.value != null && Object.hasOwnProperty.call(message, "value"))
                 writer.uint32(/* id 2, wireType 2 =*/18).string(message.value);
+            if (message.description != null && Object.hasOwnProperty.call(message, "description"))
+                writer.uint32(/* id 3, wireType 2 =*/26).string(message.description);
             return writer;
         };
 
@@ -447,6 +458,10 @@ export const websocket = $root.websocket = (() => {
                     }
                 case 2: {
                         message.value = reader.string();
+                        break;
+                    }
+                case 3: {
+                        message.description = reader.string();
                         break;
                     }
                 default:
