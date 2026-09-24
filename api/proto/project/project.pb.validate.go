@@ -523,6 +523,130 @@ var _ interface {
 	ErrorName() string
 } = ShowResponseValidationError{}
 
+// Validate checks the field values on ShowByNameRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ShowByNameRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ShowByNameRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ShowByNameRequestMultiError, or nil if none found.
+func (m *ShowByNameRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ShowByNameRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(m.GetNamespace()) < 1 {
+		err := ShowByNameRequestValidationError{
+			field:  "Namespace",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(m.GetName()) < 1 {
+		err := ShowByNameRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return ShowByNameRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ShowByNameRequestMultiError is an error wrapping multiple validation errors
+// returned by ShowByNameRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ShowByNameRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ShowByNameRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ShowByNameRequestMultiError) AllErrors() []error { return m }
+
+// ShowByNameRequestValidationError is the validation error returned by
+// ShowByNameRequest.Validate if the designated constraints aren't met.
+type ShowByNameRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ShowByNameRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ShowByNameRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ShowByNameRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ShowByNameRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ShowByNameRequestValidationError) ErrorName() string {
+	return "ShowByNameRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ShowByNameRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sShowByNameRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ShowByNameRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ShowByNameRequestValidationError{}
+
 // Validate checks the field values on DeleteRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -3131,6 +3255,191 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = WebApplyRequestValidationError{}
+
+// Validate checks the field values on WebApplyByNameRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *WebApplyByNameRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WebApplyByNameRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// WebApplyByNameRequestMultiError, or nil if none found.
+func (m *WebApplyByNameRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WebApplyByNameRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(m.GetNamespace()) < 1 {
+		err := WebApplyByNameRequestValidationError{
+			field:  "Namespace",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(m.GetName()) < 1 {
+		err := WebApplyByNameRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for GitBranch
+
+	// no validation rules for GitCommit
+
+	// no validation rules for Config
+
+	for idx, item := range m.GetExtraValues() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, WebApplyByNameRequestValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, WebApplyByNameRequestValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return WebApplyByNameRequestValidationError{
+					field:  fmt.Sprintf("ExtraValues[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for DryRun
+
+	if m.RepoId != nil {
+
+		if m.GetRepoId() < 0 {
+			err := WebApplyByNameRequestValidationError{
+				field:  "RepoId",
+				reason: "value must be greater than or equal to 0",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if m.Version != nil {
+		// no validation rules for Version
+	}
+
+	if len(errors) > 0 {
+		return WebApplyByNameRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// WebApplyByNameRequestMultiError is an error wrapping multiple validation
+// errors returned by WebApplyByNameRequest.ValidateAll() if the designated
+// constraints aren't met.
+type WebApplyByNameRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WebApplyByNameRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WebApplyByNameRequestMultiError) AllErrors() []error { return m }
+
+// WebApplyByNameRequestValidationError is the validation error returned by
+// WebApplyByNameRequest.Validate if the designated constraints aren't met.
+type WebApplyByNameRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WebApplyByNameRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WebApplyByNameRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WebApplyByNameRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WebApplyByNameRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WebApplyByNameRequestValidationError) ErrorName() string {
+	return "WebApplyByNameRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e WebApplyByNameRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWebApplyByNameRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WebApplyByNameRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WebApplyByNameRequestValidationError{}
 
 // Validate checks the field values on WebApplyResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the

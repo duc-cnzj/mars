@@ -544,6 +544,35 @@ func TestRepoBiz_Get_Passthrough(t *testing.T) {
 	assert.Equal(t, "app", got.Name)
 }
 
+// TestRepoBiz_GetByName_Passthrough 纯透传：按名字寻址的部署入口靠它由仓库名反查 id，
+// biz 层不做任何加工（名称唯一性校验只在 Create/Clone/Update 里显式调用）。
+func TestRepoBiz_GetByName_Passthrough(t *testing.T) {
+	var gotName string
+	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) {
+			gotName = name
+			return &Repo{ID: 1, Name: name}, nil
+		},
+	})
+	got, err := b.GetByName(context.TODO(), "app")
+	assert.NoError(t, err)
+	assert.Equal(t, "app", gotName)
+	assert.Equal(t, 1, got.ID)
+}
+
+// TestRepoBiz_GetByName_ErrorPassthrough 底层错误（含 NotFound）原样上抛，
+// 不在 biz 层改写语义——404 归类由 errs 在 data 边界完成。
+func TestRepoBiz_GetByName_ErrorPassthrough(t *testing.T) {
+	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) {
+			return nil, notFoundErr()
+		},
+	})
+	got, err := b.GetByName(context.TODO(), "ghost")
+	assert.Nil(t, got)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
 func TestRepoBiz_Show_Passthrough(t *testing.T) {
 	var showCalled bool
 	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{

@@ -23,7 +23,9 @@ const (
 	Project_List_FullMethodName                  = "/project.Project/List"
 	Project_Apply_FullMethodName                 = "/project.Project/Apply"
 	Project_WebApply_FullMethodName              = "/project.Project/WebApply"
+	Project_WebApplyByName_FullMethodName        = "/project.Project/WebApplyByName"
 	Project_Show_FullMethodName                  = "/project.Project/Show"
+	Project_ShowByName_FullMethodName            = "/project.Project/ShowByName"
 	Project_MemoryCpuAndEndpoints_FullMethodName = "/project.Project/MemoryCpuAndEndpoints"
 	Project_Version_FullMethodName               = "/project.Project/Version"
 	Project_Delete_FullMethodName                = "/project.Project/Delete"
@@ -45,8 +47,13 @@ type ProjectClient interface {
 	Apply(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ApplyResponse], error)
 	// WebApply 创建/更新/DryRun 项目
 	WebApply(ctx context.Context, in *WebApplyRequest, opts ...grpc.CallOption) (*WebApplyResponse, error)
+	// WebApplyByName 按「空间名 + 项目名」创建/更新/DryRun 项目：空间用名字替代 namespace_id，
+	// 仓库默认由 name 匹配仓库名、也可用 repo_id 显式指定（详见 message 注释）。
+	WebApplyByName(ctx context.Context, in *WebApplyByNameRequest, opts ...grpc.CallOption) (*WebApplyResponse, error)
 	// Show 项目详情
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
+	// ShowByName 按「空间名 + 项目名」查项目详情
+	ShowByName(ctx context.Context, in *ShowByNameRequest, opts ...grpc.CallOption) (*ShowResponse, error)
 	MemoryCpuAndEndpoints(ctx context.Context, in *MemoryCpuAndEndpointsRequest, opts ...grpc.CallOption) (*MemoryCpuAndEndpointsResponse, error)
 	// Version 版本号, 如果不存在则返回 0
 	Version(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error)
@@ -122,10 +129,30 @@ func (c *projectClient) WebApply(ctx context.Context, in *WebApplyRequest, opts 
 	return out, nil
 }
 
+func (c *projectClient) WebApplyByName(ctx context.Context, in *WebApplyByNameRequest, opts ...grpc.CallOption) (*WebApplyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WebApplyResponse)
+	err := c.cc.Invoke(ctx, Project_WebApplyByName_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *projectClient) Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ShowResponse)
 	err := c.cc.Invoke(ctx, Project_Show_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectClient) ShowByName(ctx context.Context, in *ShowByNameRequest, opts ...grpc.CallOption) (*ShowResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ShowResponse)
+	err := c.cc.Invoke(ctx, Project_ShowByName_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -232,8 +259,13 @@ type ProjectServer interface {
 	Apply(*ApplyRequest, grpc.ServerStreamingServer[ApplyResponse]) error
 	// WebApply 创建/更新/DryRun 项目
 	WebApply(context.Context, *WebApplyRequest) (*WebApplyResponse, error)
+	// WebApplyByName 按「空间名 + 项目名」创建/更新/DryRun 项目：空间用名字替代 namespace_id，
+	// 仓库默认由 name 匹配仓库名、也可用 repo_id 显式指定（详见 message 注释）。
+	WebApplyByName(context.Context, *WebApplyByNameRequest) (*WebApplyResponse, error)
 	// Show 项目详情
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
+	// ShowByName 按「空间名 + 项目名」查项目详情
+	ShowByName(context.Context, *ShowByNameRequest) (*ShowResponse, error)
 	MemoryCpuAndEndpoints(context.Context, *MemoryCpuAndEndpointsRequest) (*MemoryCpuAndEndpointsResponse, error)
 	// Version 版本号, 如果不存在则返回 0
 	Version(context.Context, *VersionRequest) (*VersionResponse, error)
@@ -279,8 +311,14 @@ func (UnimplementedProjectServer) Apply(*ApplyRequest, grpc.ServerStreamingServe
 func (UnimplementedProjectServer) WebApply(context.Context, *WebApplyRequest) (*WebApplyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method WebApply not implemented")
 }
+func (UnimplementedProjectServer) WebApplyByName(context.Context, *WebApplyByNameRequest) (*WebApplyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method WebApplyByName not implemented")
+}
 func (UnimplementedProjectServer) Show(context.Context, *ShowRequest) (*ShowResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Show not implemented")
+}
+func (UnimplementedProjectServer) ShowByName(context.Context, *ShowByNameRequest) (*ShowResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ShowByName not implemented")
 }
 func (UnimplementedProjectServer) MemoryCpuAndEndpoints(context.Context, *MemoryCpuAndEndpointsRequest) (*MemoryCpuAndEndpointsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method MemoryCpuAndEndpoints not implemented")
@@ -377,6 +415,24 @@ func _Project_WebApply_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Project_WebApplyByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WebApplyByNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).WebApplyByName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Project_WebApplyByName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).WebApplyByName(ctx, req.(*WebApplyByNameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Project_Show_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ShowRequest)
 	if err := dec(in); err != nil {
@@ -391,6 +447,24 @@ func _Project_Show_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProjectServer).Show(ctx, req.(*ShowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Project_ShowByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ShowByNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).ShowByName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Project_ShowByName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).ShowByName(ctx, req.(*ShowByNameRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -573,8 +647,16 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Project_WebApply_Handler,
 		},
 		{
+			MethodName: "WebApplyByName",
+			Handler:    _Project_WebApplyByName_Handler,
+		},
+		{
 			MethodName: "Show",
 			Handler:    _Project_Show_Handler,
+		},
+		{
+			MethodName: "ShowByName",
+			Handler:    _Project_ShowByName_Handler,
 		},
 		{
 			MethodName: "MemoryCpuAndEndpoints",

@@ -1636,6 +1636,21 @@ func (mr *MockRepoBizMockRecorder) Get(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepoBiz)(nil).Get), ctx, id)
 }
 
+// GetByName mocks base method.
+func (m *MockRepoBiz) GetByName(ctx context.Context, name string) (*Repo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByName", ctx, name)
+	ret0, _ := ret[0].(*Repo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByName indicates an expected call of GetByName.
+func (mr *MockRepoBizMockRecorder) GetByName(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByName", reflect.TypeOf((*MockRepoBiz)(nil).GetByName), ctx, name)
+}
+
 // Import mocks base method.
 func (m *MockRepoBiz) Import(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
 	m.ctrl.T.Helper()

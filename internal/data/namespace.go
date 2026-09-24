@@ -457,11 +457,20 @@ func (repo *namespaceRepo) GetMarsNamespace(name string) string {
 	return biz.GetNamespace(name, repo.nsPrefix)
 }
 
-// FindByName 按名称（自动加 nsPrefix 前缀）精确查找 namespace。
+// FindByName 按名称（自动加 nsPrefix 前缀）精确查找 namespace，并预加载成员列表。
+//
+// 必须 WithMembers：按名字寻址的访问门卫（RequireNamespaceAccessByName）用它的返回值
+// 做权限判定，而私有空间的成员判定读的正是 ns.Members（biz/access.go CanAccessNamespace）。
+// 漏加载会让 Members 恒空——私有空间的普通成员会被误判成无权访问（403），而其按 ID
+// 寻址的孪生入口（RequireNamespaceAccessByID → Show，本文件已 WithMembers）却能通过。
+// 预加载只补边、不过滤行，Create 的全局预查（不感知权限）语义不受影响。
 func (repo *namespaceRepo) FindByName(ctx context.Context, name string) (out *biz.Namespace, err error) {
 	ctx, span := tracer.Start(ctx, "namespaceRepo/FindByName")
 	defer func() { endSpan(span, err) }()
-	first, err := repo.data.DB().Namespace.Query().Where(namespace.Name(biz.GetNamespace(name, repo.nsPrefix))).First(ctx)
+	first, err := repo.data.DB().Namespace.Query().
+		WithMembers().
+		Where(namespace.Name(biz.GetNamespace(name, repo.nsPrefix))).
+		First(ctx)
 	return toNamespace(first), errs.Wrap(err, "find namespace by name")
 }
 

@@ -1138,6 +1138,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/apply_by_name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 按空间名+项目名创建/更新/DryRun 项目
+         * @description WebApplyByName 按「空间名 + 项目名」创建/更新/DryRun 项目：空间用名字替代 namespace_id，
+         *      仓库默认由 name 匹配仓库名、也可用 repo_id 显式指定（详见 message 注释）。
+         */
+        post: operations["Project_WebApplyByName"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/by_name/{namespace}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 按空间名+项目名查项目详情
+         * @description ShowByName 按「空间名 + 项目名」查项目详情
+         */
+        get: operations["Project_ShowByName"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{id}": {
         parameters: {
             query?: never;
@@ -2179,6 +2220,45 @@ export interface components {
         "project.VersionResponse": {
             /** Format: int32 */
             version: number;
+        };
+        /**
+         * @description WebApplyByNameRequest 是 WebApply 的「按名字寻址」版本：调用方只提供空间名与 name，
+         *      无需先查明 namespace_id。仓库默认按 name 精确匹配（见下），也可用 repo_id 显式指定。
+         *
+         *      不传 repo_id 时，name 同时充当**项目名**与**仓库名**——服务端据此精确匹配已配置的仓库
+         *      （repo.name 全局唯一，ns_prefix 不作用于仓库名），匹配不到直接报错。由此定下该调用方式的
+         *      契约：**同一空间下一个仓库只能对应一个项目**（项目名 == 仓库名），不支持「同一个仓库在同一
+         *      空间部署多个不同名称的项目」。
+         *
+         *      传了 repo_id 时以它为准（不再要求 name 命中某个仓库名），此时 name 只是项目名——想在同一
+         *      空间用同一个仓库部署多个不同名称的项目，就显式传 repo_id。旧的 WebApply 不受本约束影响。
+         */
+        "project.WebApplyByNameRequest": {
+            /** @description namespace 是空间名（免 ns_prefix 前缀，服务端幂等补全）。 */
+            namespace: string;
+            /** @description name 是项目名；不传 repo_id 时它还用于精确匹配仓库名。 */
+            name: string;
+            /**
+             * Format: int32
+             * @description repo_id 是可选的仓库显式指定：不传（或传 0）→ 用 name 精确匹配到的仓库，匹配不到报 404；
+             *      传了 → 直接用该仓库，name 仅作项目名（不再要求命中仓库名）。仓库不存在同样报 404。
+             *
+             *      注意：项目一旦创建，其 repo_id 不再变更（更新路径不写该字段）。因此同名项目已存在且
+             *      其绑定仓库与本次解析出的仓库不一致时，一律 400 拒绝，避免「按新仓库渲染、DB 仍记旧仓库」
+             *      的静默漂移——要换仓库请先删除项目。
+             */
+            repoId?: number;
+            gitBranch?: string;
+            /** @description git_commit 不传就用最新的 commit */
+            gitCommit?: string;
+            config?: string;
+            extraValues?: components["schemas"]["websocket.ExtraValue"][];
+            /**
+             * Format: int32
+             * @description 版本号：创建不传，更新必传（乐观锁，语义同 WebApply）
+             */
+            version?: number;
+            dryRun?: boolean;
         };
         "project.WebApplyRequest": {
             /** Format: int32 */
@@ -4794,6 +4874,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["project.WebApplyResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Project_WebApplyByName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["project.WebApplyByNameRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["project.WebApplyResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Project_ShowByName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                namespace: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["project.ShowResponse"];
                 };
             };
             /** @description Default error response */

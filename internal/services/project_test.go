@@ -150,6 +150,112 @@ func TestProjectSvc_Show_Failure2(t *testing.T) {
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
+// TestProjectSvc_ShowByName_Success 按「空间名 + 项目名」查详情：FindByName 只取 id，
+// 完整模型走 RequireProjectAccess（与 Show 同一出口），故响应必须带 repo/namespace 边
+// ——直接用 FindByName 的结果喂 FromProject 会让两端点变 nil，此断言即回归锚点。
+func TestProjectSvc_ShowByName_Success(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "web", 7).Return(
+		&biz.Project{ID: 42, Name: "web", NamespaceID: 7, RepoID: 3}, nil)
+	// RequireProjectAccess：Show 取回带边的完整模型，再复核其所属空间可访问性。
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 42).Return(&biz.Project{
+		ID:          42,
+		Name:        "web",
+		NamespaceID: 7,
+		RepoID:      3,
+		Namespace:   &biz.Namespace{ID: 7, Name: "mars-demo"},
+		Repo:        &biz.Repo{ID: 3, Name: "web"},
+	}, nil)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 7).Return(&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+
+	res, err := svc.ShowByName(newAdminUserCtx(), &project.ShowByNameRequest{Namespace: "mars-demo", Name: "web"})
+	assert.NoError(t, err)
+	if assert.NotNil(t, res) && assert.NotNil(t, res.Item) {
+		assert.Equal(t, int32(42), res.Item.Id)
+		assert.Equal(t, "web", res.Item.Name)
+		if assert.NotNil(t, res.Item.Repo, "repo 边必须随详情返回") {
+			assert.Equal(t, "web", res.Item.Repo.Name)
+		}
+		if assert.NotNil(t, res.Item.Namespace, "namespace 边必须随详情返回") {
+			assert.Equal(t, "mars-demo", res.Item.Namespace.Name)
+		}
+	}
+}
+
+// TestProjectSvc_ShowByName_ProjectNotFound 空间在册但项目名查无：404 + 可执行中文上下文。
+// 必须断言 message 而非只看 code——底层经 errs.Wrap 后客户端可见的原本是 ent 的
+// "ent: project not found"，只断 code 会放过文案回退成英文原文的回归。
+func TestProjectSvc_ShowByName_ProjectNotFound(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "ghost", 7).Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find project by name"))
+
+	res, err := svc.ShowByName(newAdminUserCtx(), &project.ShowByNameRequest{Namespace: "mars-demo", Name: "ghost"})
+	assert.Nil(t, res)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+	assert.Contains(t, status.Convert(err).Message(), "ghost")
+	assert.Contains(t, status.Convert(err).Message(), "mars-demo")
+}
+
+// TestProjectSvc_ShowByName_ProjectQueryDBError 项目查询遇到 DB 抖动（非 NotFound）：
+// 必须原样上抛，不得被上面那条 404 改写吞掉——否则"数据库连不上"会被误报成"项目不存在"，
+// 排障人按 404 去查项目名，方向从一开始就错了。
+func TestProjectSvc_ShowByName_ProjectQueryDBError(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "web", 7).Return(nil, errors.New("db down"))
+
+	res, err := svc.ShowByName(newAdminUserCtx(), &project.ShowByNameRequest{Namespace: "mars-demo", Name: "web"})
+	assert.Nil(t, res)
+	assert.ErrorContains(t, err, "db down")
+	assert.NotEqual(t, codes.NotFound, status.Code(err))
+}
+
+// TestProjectSvc_ShowByName_AccessCheckError 反查到的项目在 RequireProjectAccess 上失败
+// （此处复现其所属空间已被删除）：错误原样上抛，不能吞掉后返回半成品详情。
+func TestProjectSvc_ShowByName_AccessCheckError(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "web", 7).Return(
+		&biz.Project{ID: 42, Name: "web", NamespaceID: 7}, nil)
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 42).Return(
+		&biz.Project{ID: 42, Name: "web", NamespaceID: 7}, nil)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 7).Return(nil, errors.New("ns gone"))
+
+	res, err := svc.ShowByName(newAdminUserCtx(), &project.ShowByNameRequest{Namespace: "mars-demo", Name: "web"})
+	assert.Nil(t, res)
+	assert.ErrorContains(t, err, "ns gone")
+}
+
+// TestProjectSvc_ShowByName_SpaceNotFound 空间名同样查无：NotFound 原样上抛，不误分类为权限拒绝。
+func TestProjectSvc_ShowByName_SpaceNotFound(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "ghost-ns").Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find namespace by name"))
+
+	res, err := svc.ShowByName(newAdminUserCtx(), &project.ShowByNameRequest{Namespace: "ghost-ns", Name: "web"})
+	assert.Nil(t, res)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+// TestProjectSvc_ShowByName_PrivateNamespaceDenied 私有空间对非成员不可见：按名字寻址
+// 不能绕过空间级访问门卫（不能因为「只知道名字」就少一道校验）。
+func TestProjectSvc_ShowByName_PrivateNamespaceDenied(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "secret").Return(
+		&biz.Namespace{ID: 9, Name: "secret", Private: true}, nil)
+
+	res, err := svc.ShowByName(newOtherUserCtx(), &project.ShowByNameRequest{Namespace: "secret", Name: "web"})
+	assert.Nil(t, res)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+}
+
 func Test_projectSvc_Delete(t *testing.T) {
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: false}, nil)
@@ -427,6 +533,420 @@ func TestProjectSvc_WebApply_Failure(t *testing.T) {
 
 	assert.NotNil(t, err)
 	assert.Equal(t, "error", err.Error())
+}
+
+// TestProjectSvc_WebApplyByName_CreateSuccess 首次部署：空间名/仓库名均由服务端反查，
+// 未传 version 走创建分支；断言 JobInput 上的 NamespaceId/RepoID/Name 三个反查结果，
+// 以及响应里的项目模型（证明非 dry-run 会回读落库结果）。
+func TestProjectSvc_WebApplyByName_CreateSuccess(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.repoRepo.EXPECT().GetByName(gomock.Any(), "web").Return(
+		&biz.Repo{ID: 3, Name: "web", NeedGitRepo: true, GitProjectID: 100}, nil)
+	// 同名项目查无 → 首次部署，漂移守卫放行。
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "web", 7).Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find project by name"))
+	// deploy.ApplyProject 内部：访问复核按 id + 部署按 id 取仓库（不再走名字）。
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 7).Return(&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 3).Return(
+		&biz.Repo{ID: 3, Name: "web", NeedGitRepo: true, GitProjectID: 100}, nil)
+	mocks.gitRepo.EXPECT().ListCommits(gomock.Any(), 100, "dev").Return([]*biz.Commit{{ID: "commit-id"}}, nil)
+
+	job := deploy.NewMockJob(mocks.ctrl)
+	var gotInput *deploy.JobInput
+	mocks.jobManager.EXPECT().NewJob(gomock.Any()).DoAndReturn(func(input *deploy.JobInput) deploy.Job {
+		gotInput = input
+		return job
+	})
+	mockInstallProjectChain(job)
+	job.EXPECT().Manifests().Return([]string{"manifests"})
+	job.EXPECT().IsNotDryRun().Return(true)
+	job.EXPECT().Project().Return(&biz.Project{ID: 42})
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 42).Return(&biz.Project{
+		ID:          42,
+		Name:        "web",
+		NamespaceID: 7,
+		Namespace:   &biz.Namespace{ID: 7, Name: "mars-demo"},
+		Repo:        &biz.Repo{ID: 3, Name: "web"},
+	}, nil)
+
+	resp, err := svc.WebApplyByName(newAdminUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: "mars-demo",
+		Name:      "web",
+		GitBranch: "dev",
+	})
+
+	assert.NoError(t, err)
+	if assert.NotNil(t, gotInput) {
+		assert.Equal(t, int32(7), gotInput.NamespaceId, "空间名应反查为 namespace_id")
+		assert.Equal(t, int32(3), gotInput.RepoID, "name 应精确匹配仓库名并反查为 repo_id")
+		assert.Equal(t, "web", gotInput.Name, "name 同时是项目名")
+	}
+	if assert.NotNil(t, resp) {
+		assert.False(t, resp.GetDryRun())
+		assert.Equal(t, []string{"manifests"}, resp.GetYamlFiles())
+		if assert.NotNil(t, resp.GetProject()) {
+			assert.Equal(t, int32(42), resp.GetProject().Id)
+		}
+	}
+}
+
+// TestProjectSvc_WebApplyByName_UpdateSuccess 更新部署：传 version 时 deploy 侧会按
+// name+ns 反查 ProjectID（即 projectRepo.FindByName 被守卫与 ApplyProject 各调一次），
+// 断言 version 透传且同仓库（RepoID 一致）放行走更新分支。
+func TestProjectSvc_WebApplyByName_UpdateSuccess(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.repoRepo.EXPECT().GetByName(gomock.Any(), "web").Return(
+		&biz.Repo{ID: 3, Name: "web", NeedGitRepo: true, GitProjectID: 100}, nil)
+	// 守卫预检 + ApplyProject 版本反查：同一查询命中两次，两次都返回已绑同仓库的项目。
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "web", 7).Return(
+		&biz.Project{ID: 42, Name: "web", NamespaceID: 7, RepoID: 3}, nil).Times(2)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 7).Return(&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 3).Return(
+		&biz.Repo{ID: 3, Name: "web", NeedGitRepo: true, GitProjectID: 100}, nil)
+	mocks.gitRepo.EXPECT().ListCommits(gomock.Any(), 100, "dev").Return([]*biz.Commit{{ID: "commit-id"}}, nil)
+
+	job := deploy.NewMockJob(mocks.ctrl)
+	var gotInput *deploy.JobInput
+	mocks.jobManager.EXPECT().NewJob(gomock.Any()).DoAndReturn(func(input *deploy.JobInput) deploy.Job {
+		gotInput = input
+		return job
+	})
+	mockInstallProjectChain(job)
+	job.EXPECT().Manifests().Return([]string{"manifests"})
+	job.EXPECT().IsNotDryRun().Return(false)
+
+	version := int32(9)
+	resp, err := svc.WebApplyByName(newAdminUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: "mars-demo",
+		Name:      "web",
+		GitBranch: "dev",
+		Version:   &version,
+	})
+
+	assert.NoError(t, err)
+	if assert.NotNil(t, gotInput) {
+		assert.Equal(t, int32(42), gotInput.ProjectID, "传 version 时应反查出 ProjectID")
+		assert.Equal(t, int32(9), lo.FromPtr(gotInput.Version))
+		assert.Equal(t, int32(3), gotInput.RepoID)
+	}
+	assert.NotNil(t, resp)
+}
+
+// TestProjectSvc_WebApplyByName_DryRun dry-run 只渲染不出部署：不落库、不回读项目，
+// 但 dry_run 标志必须透传到 JobInput（否则会真部署）。
+func TestProjectSvc_WebApplyByName_DryRun(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.repoRepo.EXPECT().GetByName(gomock.Any(), "web").Return(
+		&biz.Repo{ID: 3, Name: "web", NeedGitRepo: true, GitProjectID: 100}, nil)
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "web", 7).Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find project by name"))
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 7).Return(&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 3).Return(
+		&biz.Repo{ID: 3, Name: "web", NeedGitRepo: true, GitProjectID: 100}, nil)
+	mocks.gitRepo.EXPECT().ListCommits(gomock.Any(), 100, "dev").Return([]*biz.Commit{{ID: "commit-id"}}, nil)
+
+	job := deploy.NewMockJob(mocks.ctrl)
+	var gotInput *deploy.JobInput
+	mocks.jobManager.EXPECT().NewJob(gomock.Any()).DoAndReturn(func(input *deploy.JobInput) deploy.Job {
+		gotInput = input
+		return job
+	})
+	mockInstallProjectChain(job)
+	job.EXPECT().Manifests().Return([]string{"manifests"})
+	job.EXPECT().IsNotDryRun().Return(false)
+
+	resp, err := svc.WebApplyByName(newAdminUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: "mars-demo",
+		Name:      "web",
+		GitBranch: "dev",
+		DryRun:    true,
+	})
+
+	assert.NoError(t, err)
+	if assert.NotNil(t, gotInput) {
+		assert.True(t, gotInput.DryRun, "dry_run 必须透传到 JobInput")
+	}
+	if assert.NotNil(t, resp) {
+		assert.True(t, resp.GetDryRun())
+		assert.Equal(t, []string{"manifests"}, resp.GetYamlFiles())
+		assert.Nil(t, resp.GetProject())
+	}
+}
+
+// TestProjectSvc_WebApplyByName_RepoNotFound name 对不上任何仓库：404 + 可执行中文上下文，
+// 且必须**不进入** NewJob（零调用即 gomock 未设期望时的强约束，漏设下游 mock 会 FAIL）。
+func TestProjectSvc_WebApplyByName_RepoNotFound(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.repoRepo.EXPECT().GetByName(gomock.Any(), "ghost").Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "get repo by name"))
+	// 后续链路（FindByName 守卫 / nsRepo.Show / jobManager.NewJob）均未设期望：一旦进入即 FAIL。
+
+	resp, err := svc.WebApplyByName(newAdminUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: "mars-demo",
+		Name:      "ghost",
+	})
+
+	assert.Nil(t, resp)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+	assert.Contains(t, status.Convert(err).Message(), "不存在")
+	assert.Contains(t, status.Convert(err).Message(), "ghost")
+}
+
+// TestProjectSvc_WebApplyByName_ExplicitRepoID 显式传 repo_id 时以它为准：不再按 name 匹配
+// 仓库（repoRepo.GetByName 未设期望，一旦调用即 FAIL），name 仅作项目名——由此恢复
+// 「同一空间同一个仓库部署多个不同名称项目」的能力，绕开 name==仓库名 的默认契约。
+func TestProjectSvc_WebApplyByName_ExplicitRepoID(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	// name 与仓库名不一致也不影响：直接按 id 取仓库。
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 3).Return(
+		&biz.Repo{ID: 3, Name: "web", NeedGitRepo: true, GitProjectID: 100}, nil)
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "another-project", 7).Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find project by name"))
+
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 7).Return(&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	// deploy.ApplyProject 按 id 再取一次仓库。
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 3).Return(
+		&biz.Repo{ID: 3, Name: "web", NeedGitRepo: true, GitProjectID: 100}, nil)
+	mocks.gitRepo.EXPECT().ListCommits(gomock.Any(), 100, "dev").Return([]*biz.Commit{{ID: "commit-id"}}, nil)
+
+	job := deploy.NewMockJob(mocks.ctrl)
+	var gotInput *deploy.JobInput
+	mocks.jobManager.EXPECT().NewJob(gomock.Any()).DoAndReturn(func(input *deploy.JobInput) deploy.Job {
+		gotInput = input
+		return job
+	})
+	mockInstallProjectChain(job)
+	job.EXPECT().Manifests().Return([]string{"manifests"})
+	job.EXPECT().IsNotDryRun().Return(false)
+
+	repoID := int32(3)
+	resp, err := svc.WebApplyByName(newAdminUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: "mars-demo",
+		Name:      "another-project",
+		RepoId:    &repoID,
+		GitBranch: "dev",
+	})
+
+	assert.NoError(t, err)
+	if assert.NotNil(t, gotInput) {
+		assert.Equal(t, int32(3), gotInput.RepoID, "显式 repo_id 应原样透传")
+		assert.Equal(t, "another-project", gotInput.Name, "name 只是项目名，不参与仓库匹配")
+	}
+	assert.NotNil(t, resp)
+}
+
+// TestProjectSvc_WebApplyByName_ExplicitRepoIDZero 显式把 repo_id 传成 0 必须与「没传」等价：
+// optional 字段的零值在 proto3 里无法与未设置区分，故判定只能是 GetRepoId() > 0——
+// 一旦有人把它改成 input.RepoId != nil（指针非空即当真），0 会被拿去 Get(0) 查仓库，
+// 本用例会因 repoRepo.Get 收到 0 触发 gomock 未设期望而 FAIL（GetByName 未调用同理）。
+func TestProjectSvc_WebApplyByName_ExplicitRepoIDZero(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	// 0 视同未传：仍按 name 精确匹配仓库名。
+	mocks.repoRepo.EXPECT().GetByName(gomock.Any(), "web").Return(
+		&biz.Repo{ID: 3, Name: "web", NeedGitRepo: true, GitProjectID: 100}, nil)
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "web", 7).Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find project by name"))
+
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 7).Return(&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	// 只允许 deploy.ApplyProject 按已解析出的 3 取一次仓库；任何 Get(_, 0) 都是回归信号。
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 3).Return(
+		&biz.Repo{ID: 3, Name: "web", NeedGitRepo: true, GitProjectID: 100}, nil)
+	mocks.gitRepo.EXPECT().ListCommits(gomock.Any(), 100, "dev").Return([]*biz.Commit{{ID: "commit-id"}}, nil)
+
+	job := deploy.NewMockJob(mocks.ctrl)
+	var gotInput *deploy.JobInput
+	mocks.jobManager.EXPECT().NewJob(gomock.Any()).DoAndReturn(func(input *deploy.JobInput) deploy.Job {
+		gotInput = input
+		return job
+	})
+	mockInstallProjectChain(job)
+	job.EXPECT().Manifests().Return([]string{"manifests"})
+	job.EXPECT().IsNotDryRun().Return(false)
+
+	zero := int32(0)
+	resp, err := svc.WebApplyByName(newAdminUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: "mars-demo",
+		Name:      "web",
+		RepoId:    &zero,
+		GitBranch: "dev",
+	})
+
+	assert.NoError(t, err)
+	if assert.NotNil(t, gotInput) {
+		assert.Equal(t, int32(3), gotInput.RepoID, "repo_id=0 应退回 name 匹配结果，而非 0")
+	}
+	assert.NotNil(t, resp)
+}
+
+// TestProjectSvc_WebApplyByName_ExplicitRepoIDNotFound 显式 repo_id 指向不存在的仓库：
+// 404 + 中文上下文（不能只回 "record not found"），且不进入部署。
+func TestProjectSvc_WebApplyByName_ExplicitRepoIDNotFound(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 99).Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "get repo"))
+	// GetByName 未被期望：传了 repo_id 就不该再走名字匹配。
+
+	repoID := int32(99)
+	resp, err := svc.WebApplyByName(newAdminUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: "mars-demo",
+		Name:      "web",
+		RepoId:    &repoID,
+	})
+
+	assert.Nil(t, resp)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+	assert.Contains(t, status.Convert(err).Message(), "#99")
+}
+
+// TestProjectSvc_WebApplyByName_ExplicitRepoIDQueryDBError 显式 repo_id 查询遇非 NotFound
+// 故障：原样上抛，不得伪装成「仓库不存在」。
+func TestProjectSvc_WebApplyByName_ExplicitRepoIDQueryDBError(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 3).Return(nil, errors.New("db down"))
+
+	repoID := int32(3)
+	resp, err := svc.WebApplyByName(newAdminUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: "mars-demo",
+		Name:      "web",
+		RepoId:    &repoID,
+	})
+
+	assert.Nil(t, resp)
+	assert.ErrorContains(t, err, "db down")
+	assert.NotEqual(t, codes.NotFound, status.Code(err))
+}
+
+// TestProjectSvc_WebApplyByName_ExplicitRepoIDDrift 漂移守卫对显式 repo_id 同样生效：
+// 项目已存在且绑的是别的仓库 → 400（repo_id 一经创建不可变更，换仓库须先删项目）。
+func TestProjectSvc_WebApplyByName_ExplicitRepoIDDrift(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 3).Return(&biz.Repo{ID: 3, Name: "web"}, nil)
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "web", 7).Return(
+		&biz.Project{ID: 42, Name: "web", NamespaceID: 7, RepoID: 1}, nil)
+
+	repoID := int32(3)
+	resp, err := svc.WebApplyByName(newAdminUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: "mars-demo",
+		Name:      "web",
+		RepoId:    &repoID,
+	})
+
+	assert.Nil(t, resp)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Contains(t, status.Convert(err).Message(), "#1")
+	assert.Contains(t, status.Convert(err).Message(), "#3")
+}
+
+// TestProjectSvc_WebApplyByName_RepoQueryDBError 仓库查询失败但非 NotFound（DB 抖动）
+// 必须原样上抛，不得伪装成「仓库不存在」的 404 误导排障。
+func TestProjectSvc_WebApplyByName_RepoQueryDBError(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.repoRepo.EXPECT().GetByName(gomock.Any(), "web").Return(nil, errors.New("db down"))
+
+	resp, err := svc.WebApplyByName(newAdminUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: "mars-demo",
+		Name:      "web",
+	})
+
+	assert.Nil(t, resp)
+	assert.ErrorContains(t, err, "db down")
+	assert.NotEqual(t, codes.NotFound, status.Code(err))
+}
+
+// TestProjectSvc_WebApplyByName_SpaceDenied 私有空间对非成员不可见：按名字寻址不得绕过
+// 空间级门卫，且在反查仓库之前就被拦下（repoRepo.GetByName 未设期望即 FAIL）。
+func TestProjectSvc_WebApplyByName_SpaceDenied(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "secret").Return(
+		&biz.Namespace{ID: 9, Name: "secret", Private: true}, nil)
+
+	resp, err := svc.WebApplyByName(newOtherUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: "secret",
+		Name:      "web",
+	})
+
+	assert.Nil(t, resp)
+	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+}
+
+// TestProjectSvc_WebApplyByName_RepoBindingDrift 漂移守卫：同名项目已存在但绑的是别的仓库
+// （repo_id 一经创建不再变更，放行会用新仓库渲染 helm 而 DB 行仍记旧仓库）→ 400 硬拒，
+// 绝不进入部署。此测试是「静默漂移」回归锚点：删掉守卫后 NewJob 被调用即 FAIL。
+func TestProjectSvc_WebApplyByName_RepoBindingDrift(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.repoRepo.EXPECT().GetByName(gomock.Any(), "web").Return(
+		&biz.Repo{ID: 3, Name: "web"}, nil)
+	// 项目已存在（ID=42）但绑定的是仓库 #1，与 name 匹配到的 #3 不一致。
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "web", 7).Return(
+		&biz.Project{ID: 42, Name: "web", NamespaceID: 7, RepoID: 1}, nil)
+	// 下游一律未设期望：硬拒后不得进入 apply 编排。
+
+	resp, err := svc.WebApplyByName(newAdminUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: "mars-demo",
+		Name:      "web",
+	})
+
+	assert.Nil(t, resp)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	msg := status.Convert(err).Message()
+	assert.Contains(t, msg, "web")
+	assert.Contains(t, msg, "#1")
+	assert.Contains(t, msg, "#3")
+}
+
+// TestProjectSvc_WebApplyByName_GuardQueryDBError 守卫的存在性查询遇非 NotFound 故障必须
+// 上抛——误判成「不存在」会让漂移项目被当成首次部署继续跑。
+func TestProjectSvc_WebApplyByName_GuardQueryDBError(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-demo").Return(
+		&biz.Namespace{ID: 7, Name: "mars-demo"}, nil)
+	mocks.repoRepo.EXPECT().GetByName(gomock.Any(), "web").Return(
+		&biz.Repo{ID: 3, Name: "web"}, nil)
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "web", 7).Return(nil, errors.New("db down"))
+
+	resp, err := svc.WebApplyByName(newAdminUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: "mars-demo",
+		Name:      "web",
+	})
+
+	assert.Nil(t, resp)
+	assert.ErrorContains(t, err, "db down")
+	assert.NotEqual(t, codes.NotFound, status.Code(err))
 }
 
 func TestProjectSvc_Apply_Success(t *testing.T) {
@@ -1422,8 +1942,10 @@ func TestProjectSvc_Authorize(t *testing.T) {
 	for _, m := range []string{
 		project.Project_List_FullMethodName,
 		project.Project_WebApply_FullMethodName,
+		project.Project_WebApplyByName_FullMethodName,
 		project.Project_Apply_FullMethodName,
 		project.Project_Show_FullMethodName,
+		project.Project_ShowByName_FullMethodName,
 		project.Project_MemoryCpuAndEndpoints_FullMethodName,
 		project.Project_Delete_FullMethodName,
 		project.Project_Version_FullMethodName,
