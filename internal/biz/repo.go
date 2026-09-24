@@ -24,6 +24,9 @@ type RepoBiz interface {
 	Create(ctx context.Context, in *CreateRepoInput) (*Repo, error)
 	// Get 按 id 查询仓库。
 	Get(ctx context.Context, id int) (*Repo, error)
+	// GetByName 按名称查询仓库（仓库名全局唯一，NotFound 由 errs 归类）。
+	// 供按名字寻址的部署入口（project.WebApplyByName）由仓库名反查 id。
+	GetByName(ctx context.Context, name string) (*Repo, error)
 	// Show 按 id 查询仓库（携带关联项目）。
 	Show(ctx context.Context, id int) (*Repo, error)
 	// Update 校验输入后更新仓库（同名冲突校验见实现）。
@@ -91,6 +94,12 @@ func (b *repoBiz) Create(ctx context.Context, in *CreateRepoInput) (*Repo, error
 // Get 按 id 查询仓库（透传 repo）。
 func (b *repoBiz) Get(ctx context.Context, id int) (*Repo, error) {
 	return b.repoRepo.Get(ctx, id)
+}
+
+// GetByName 按名称查询仓库（透传 repo，仓库名全局唯一）。
+// 按名字寻址的部署入口靠它由名字反查仓库 id；NotFound 保持领域语义由 errs 归类为 404。
+func (b *repoBiz) GetByName(ctx context.Context, name string) (*Repo, error) {
+	return b.repoRepo.GetByName(ctx, name)
 }
 
 // Show 按 id 查询仓库（透传 repo）。

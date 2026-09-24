@@ -65,6 +65,29 @@ func TestAccessBiz_RequireNamespaceAccessByName(t *testing.T) {
 		assert.Error(t, err)
 	})
 
+	t.Run("admin accesses private namespace", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "ns").Return(&Namespace{Name: "ns", Private: true, CreatorEmail: "owner@example.com"}, nil)
+
+		ns, err := ab.RequireNamespaceAccessByName(adminCtx(), "ns")
+		assert.NoError(t, err)
+		assert.Equal(t, "ns", ns.Name)
+	})
+
+	t.Run("member accesses private namespace", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		// 成员判定的输入是 ns.Members，故本用例的语义是「门卫按名字寻址时也必须认成员，
+		// 与按 ID 寻址的孪生入口完全一致」——接口注释承诺的放行规则就是这条。
+		// 注意：这里只能证明门卫的判定逻辑对；返回值是否真带 Members 由 data 层负责
+		// （namespaceRepo.FindByName 必须 WithMembers，见 data 包同名回归测试）。
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "ns").Return(
+			&Namespace{Name: "ns", Private: true, CreatorEmail: "owner@example.com", Members: []*Member{{Email: "user@example.com"}}}, nil)
+
+		ns, err := ab.RequireNamespaceAccessByName(plainCtx(), "ns")
+		assert.NoError(t, err)
+		assert.Equal(t, "ns", ns.Name)
+	})
+
 	t.Run("private namespace denied to non-member", func(t *testing.T) {
 		ab, m := newAccessBizFixture(t)
 		m.nsRepo.EXPECT().FindByName(gomock.Any(), "ns").Return(&Namespace{Private: true, CreatorEmail: "owner@example.com"}, nil)

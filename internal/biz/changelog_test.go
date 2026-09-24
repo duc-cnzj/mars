@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -161,4 +162,48 @@ func TestChangelogBiz_DeployDailyCounts_EmptyWindow(t *testing.T) {
 func TestDayKey(t *testing.T) {
 	assert.Equal(t, "2026-03-05", dayKey(time.Date(2026, 3, 5, 23, 59, 59, 0, time.Local)))
 	assert.Equal(t, "2026-01-09", dayKey(time.Date(2026, 1, 9, 0, 0, 0, 0, time.Local)))
+}
+
+// ProjectConfigChanged 判定口径：只比用户可见且列表会展示的四样
+// （config/branch/commit/extra values 的 path+value），每一样单独变化都要判为变更——
+// 否则只改那一样的部署会被 onlyChanged 过滤掉。
+func TestProjectConfigChanged(t *testing.T) {
+	base := func() (*Changelog, *Project) {
+		return &Changelog{
+				Config: "cfg", GitBranch: "main", GitCommit: "abc",
+				ExtraValues: []*websocket_pb.ExtraValue{{Path: "resources.limits.cpu", Value: "100m"}},
+			}, &Project{
+				Config: "cfg", GitBranch: "main", GitCommit: "abc",
+				ExtraValues: []*websocket_pb.ExtraValue{{Path: "resources.limits.cpu", Value: "100m"}},
+			}
+	}
+
+	// 四样全同不算变更（version/docker_image 等派生字段不参与判定）。
+	last, cur := base()
+	assert.False(t, ProjectConfigChanged(last, cur))
+
+	// 只改配置文本。
+	last, cur = base()
+	cur.Config = "cfg2"
+	assert.True(t, ProjectConfigChanged(last, cur))
+
+	// 只改分支。
+	last, cur = base()
+	cur.GitBranch = "dev"
+	assert.True(t, ProjectConfigChanged(last, cur))
+
+	// 只改提交。
+	last, cur = base()
+	cur.GitCommit = "def"
+	assert.True(t, ProjectConfigChanged(last, cur))
+
+	// 只改自定义配置取值——本用例是「只改自定义配置 changelog 没记录」的回归锚点。
+	last, cur = base()
+	cur.ExtraValues = []*websocket_pb.ExtraValue{{Path: "resources.limits.cpu", Value: "200m"}}
+	assert.True(t, ProjectConfigChanged(last, cur))
+
+	// 只有元素定义里的说明文案变了（用户没动配置）不算变更。
+	last, cur = base()
+	cur.ExtraValues = []*websocket_pb.ExtraValue{{Path: "resources.limits.cpu", Value: "100m", Description: "CPU 上限"}}
+	assert.False(t, ProjectConfigChanged(last, cur))
 }

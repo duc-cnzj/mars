@@ -9,6 +9,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/app"
@@ -127,6 +128,30 @@ func matchDockerImage(v pipelineVars, manifest string) []string {
 	}
 
 	return all
+}
+
+// extraValueDescriptions 按元素定义给额外配置项补上 description：description 是仓库配置里的
+// 静态说明，落库之后再读已无从查（元素定义可能早被改过），故在部署落库这一刻按当时的定义固化。
+// 元素里没有的 path（被 ElementsLoader 拒掉的非法字段）保持原样，description 为空；
+// 输入为空时原样返回，保持 nil 与空切片各自的原形态（落库 JSON 的 null 与 [] 是两种存量形态）。
+func extraValueDescriptions(values []*websocket_pb.ExtraValue, elements []*mars.Element) []*websocket_pb.ExtraValue {
+	if len(values) == 0 {
+		return values
+	}
+	descriptions := make(map[string]string, len(elements))
+	for _, element := range elements {
+		descriptions[element.Path] = element.Description
+	}
+	out := make([]*websocket_pb.ExtraValue, 0, len(values))
+	for _, value := range values {
+		out = append(out, &websocket_pb.ExtraValue{
+			Path:        value.Path,
+			Value:       value.Value,
+			Description: descriptions[value.Path],
+		})
+	}
+
+	return out
 }
 
 // imageUsedPipelineVars 使用的流水线变量的镜像，都把他当成是我们的目标镜像

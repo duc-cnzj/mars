@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"strings"
 	"testing"
 
 	"entgo.io/ent/dialect"
@@ -177,4 +178,62 @@ func Test_namespaceRepo_FavoriteSort_RenumberRereadError(t *testing.T) {
 
 	err := repo.FavoriteSort(ctx, "u@mars.com", 1, 2)
 	require.Error(t, err)
+}
+
+// sqlRecorder 是记录型 QueryMatcher：放行所有语句并留存实际 SQL，用于断言查询形状
+// （列/过滤条件），不依赖 ent 生成语句的逐字文本。
+type sqlRecorder struct{ sqls []string }
+
+func (r *sqlRecorder) Match(_, actualSQL string) error {
+	r.sqls = append(r.sqls, actualSQL)
+	return nil
+}
+
+// find 返回第一条包含子串的已记录语句，找不到返回空串。
+func (r *sqlRecorder) find(sub string) string {
+	for _, q := range r.sqls {
+		if strings.Contains(q, sub) {
+			return q
+		}
+	}
+	return ""
+}
+
+// Test_namespaceRepo_FindByName_LoadsMembers 断言 FindByName 预加载 members 边，且该边
+// 查询过滤软删。
+//
+// 为什么必须预加载：按名字寻址的访问门卫（biz.RequireNamespaceAccessByName）直接拿本方法的
+// 返回值判权限，而私有空间的成员判定读的正是 ns.Members（biz.CanAccessNamespace）。漏加载会让
+// Members 恒空，私有空间的普通成员被误判成无权访问（403），而其按 ID 寻址的孪生入口
+// （RequireNamespaceAccessByID → Show，同包已 WithMembers）却能通过——同名/同 id 两个入口行为
+// 不一致，且与接口注释承诺的「私有空间仅 admin/创建者/成员」放行规则相悖。
+//
+// 为什么还要断言软删过滤：成员表带 SoftDeleteMixin，授权类查询靠软删过滤排除已移除成员；
+// 嵌套边查询是否吃到该过滤不能靠假设，必须实证（漏过滤 = 已移除成员仍被认定有权限）。
+func Test_namespaceRepo_FindByName_LoadsMembers(t *testing.T) {
+	rec := &sqlRecorder{}
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(rec))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+	client := ent.NewClient(ent.Driver(entsql.OpenDB(dialect.MySQL, db)))
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: client}))
+
+	// 命名空间主查询命中一个私有空间行。
+	mock.ExpectQuery("").WillReturnRows(sqlmock.NewRows([]string{
+		"id", "created_at", "updated_at", "deleted_at", "name",
+		"image_pull_secrets", "private", "creator_email", "description",
+	}).AddRow(7, nil, nil, nil, "devops-demo", nil, true, "owner@mars.com", nil))
+	// members 边查询返回一个成员。
+	mock.ExpectQuery("").WillReturnRows(sqlmock.NewRows([]string{
+		"id", "created_at", "updated_at", "deleted_at", "email", "namespace_id",
+	}).AddRow(1, nil, nil, nil, "member@mars.com", 7))
+
+	ns, err := repo.FindByName(context.TODO(), "demo")
+	require.NoError(t, err)
+	require.Len(t, ns.Members, 1, "FindByName 必须带上成员边，否则私有空间成员会被误判无权")
+
+	membersSQL := rec.find("FROM `members`")
+	require.NotEmpty(t, membersSQL, "FindByName 未发出 members 边查询（WithMembers 缺失）")
+	require.Contains(t, membersSQL, "`members`.`deleted_at` IS NULL",
+		"成员边查询必须过滤软删——已移除的成员不得继续被判定为有访问权")
 }

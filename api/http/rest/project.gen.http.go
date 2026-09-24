@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/duc-cnzj/mars/api/v6/http/transport"
 	"github.com/duc-cnzj/mars/api/v6/proto/project"
@@ -36,10 +37,28 @@ func (s *ProjectSvc) WebApply(ctx context.Context, req *project.WebApplyRequest)
 	return &out, nil
 }
 
+// WebApplyByName POST /api/projects/apply_by_name。
+func (s *ProjectSvc) WebApplyByName(ctx context.Context, req *project.WebApplyByNameRequest) (*project.WebApplyResponse, error) {
+	var out project.WebApplyResponse
+	if err := s.C.Do(ctx, http.MethodPost, "/api/projects/apply_by_name", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // Show GET /api/projects/{id}。
 func (s *ProjectSvc) Show(ctx context.Context, req *project.ShowRequest) (*project.ShowResponse, error) {
 	var out project.ShowResponse
 	if err := s.C.DoQuery(ctx, http.MethodGet, fmt.Sprintf("/api/projects/%d", req.Id), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// ShowByName GET /api/projects/by_name/{namespace}/{name}。
+func (s *ProjectSvc) ShowByName(ctx context.Context, req *project.ShowByNameRequest) (*project.ShowResponse, error) {
+	var out project.ShowResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, fmt.Sprintf("/api/projects/by_name/%s/%s", url.PathEscape(req.Namespace), url.PathEscape(req.Name)), req, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

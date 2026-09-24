@@ -113,8 +113,8 @@ func (c *EventCoordinator) HandleNamespaceDeleted(d any, e biz.EventKey) error {
 	return nil
 }
 
-// HandleProjectChanged 处理项目变更事件：读取最新项目快照，对比上一条变更记录
-// 的 Config/GitCommit 判定配置是否变化，落一条新的变更日志。
+// HandleProjectChanged 处理项目变更事件：读取最新项目快照，与上一条变更记录比对
+// 判定配置是否变化（判定口径见 biz.ProjectConfigChanged），落一条新的变更日志。
 func (c *EventCoordinator) HandleProjectChanged(d any, e biz.EventKey) error {
 	if changedData, ok := d.(*biz.ProjectChangedData); ok {
 		proj, err := c.projectRepo.Show(context.TODO(), changedData.ID)
@@ -125,7 +125,7 @@ func (c *EventCoordinator) HandleProjectChanged(d any, e biz.EventKey) error {
 		var configChanged bool
 		if lastChange, err := c.clRepo.FindLastChangeByProjectID(context.TODO(), changedData.ID); err == nil {
 			c.logger.Debug(lastChange, "lastChange")
-			configChanged = lastChange.Config != proj.Config || lastChange.GitCommit != proj.GitCommit
+			configChanged = biz.ProjectConfigChanged(lastChange, proj)
 		}
 		if _, err := c.clRepo.Create(context.TODO(), &biz.CreateChangeLogInput{
 			Version:          proj.Version,

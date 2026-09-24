@@ -104,13 +104,20 @@ api: $(PROTOC)
 
 	npx openapi-typescript ./doc/openapi.yaml --enum --enum-values --properties-required-by-default -o ./frontend/src/api/schema.d.ts
 
+	# -p：websocket.proto 引入了 google/api/field_behavior.proto（ExtraValue.path/value 标 REQUIRED 用），
+	#     不加解析路径 pbjs 会按源文件目录去找而报 ENOENT。
+	# --sparse：只导出主文件引用到的类型。否则该 import 会把 descriptor.proto 整套带进产物（124KB → 354KB），
+	#     而这些纯描述符定义前端运行时用不到。加 --sparse 后的产物与加该 import 之前逐字节相同。
 	./frontend/node_modules/.bin/pbjs -t static-module -o ./frontend/src/api/websocket.js -w es6  ./api/proto/websocket/websocket.proto  \
       --no-verify \
       --no-convert \
       --no-create \
       --force-number \
       --force-message \
-      --no-delimited
+      --no-delimited \
+      --sparse \
+      -p ./api \
+      -p ./third_party/protos
 #      --keep-case \
     #  --no-encode \
     #  --no-decode \

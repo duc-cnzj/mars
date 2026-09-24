@@ -17,6 +17,8 @@
 //	go run ./examples/http -action top_pod             # server-streaming 实时指标（SSE）
 //	go run ./examples/http -action cluster             # unary 集群概览（运维）
 //	go run ./examples/http -action webapply            # DryRun 预览部署 yaml（无副作用）
+//	go run ./examples/http -action webapply_by_name    # 按「空间名+项目名(=仓库名)」DryRun 预览（免查 id）
+//	go run ./examples/http -action show_by_name        # 按「空间名+项目名」查详情（免查 id）
 //	go run ./examples/http -action upload              # multipart 上传一个假造的临时文件（HTTP 特有）
 //	go run ./examples/http -action download            # 按假造 file-id 二进制下载（HTTP 特有）
 package main
@@ -50,7 +52,7 @@ func main() {
 		baseURL = flag.String("addr", "http://localhost:4000", "grpc-gateway 地址（默认 :4000）")
 		user    = flag.String("user", "admin", "用户名")
 		pass    = flag.String("pass", "123456", "密码")
-		action  = flag.String("action", "list", "演示动作: list | logs | exec_once | pod_running | version | project | top_pod | cluster | webapply | upload | download")
+		action  = flag.String("action", "list", "演示动作: list | logs | exec_once | pod_running | version | project | top_pod | cluster | webapply | webapply_by_name | show_by_name | upload | download")
 		timeout = flag.Int64("timeout", 60, "命令最大执行秒数（0=服务端默认 1min，exec_once 动作使用）")
 	)
 	flag.Parse()
@@ -82,6 +84,10 @@ func main() {
 		listProjects(ctx, cli)
 	case "webapply":
 		webApplyPreview(ctx, cli)
+	case "webapply_by_name":
+		webApplyByNamePreview(ctx, cli)
+	case "show_by_name":
+		showProjectByName(ctx, cli)
 	case "top_pod":
 		streamTopPod(ctx, cli)
 	case "cluster":
@@ -255,6 +261,66 @@ func webApplyPreview(ctx context.Context, cli *http.Client) {
 		fmt.Println("---")
 		fmt.Println(y)
 	}
+}
+
+// webApplyByNamePreview 展示按「空间名 + 项目名」寻址的部署入口：无需先查 namespace_id。
+// 仓库默认由 name 精确匹配 repo.name（匹配不到返回 404）；也可传 repo_id 显式指定，
+// 此时 name 只是项目名（用同一仓库在同一空间部署多个不同名称项目就走这条路）。
+//
+// create 不传 version；update 必传（乐观锁）。此处演示 update 路径：先按名字取回当前 version。
+func webApplyByNamePreview(ctx context.Context, cli *http.Client) {
+	show, err := cli.Project().ShowByName(ctx, &project.ShowByNameRequest{
+		Namespace: "devops-demo",
+		Name:      "demo-project",
+	})
+	if err != nil {
+		// 首次部署时项目还不存在：create 路径不传 version（忽略 NotFound 即可继续）。
+		if status.Code(err) != codes.NotFound {
+			log.Fatal(err)
+		}
+		fmt.Println("-> ShowByName 404（项目尚不存在），按 create 路径继续")
+	}
+
+	req := &project.WebApplyByNameRequest{
+		Namespace: "devops-demo",
+		Name:      "demo-project",
+		// 可选覆盖：不传（或传 0）就用 name 精确匹配到的仓库；放开下面这行则直接用该仓库，
+		// name 仅作项目名——name 与仓库名不一致时就靠它。
+		// RepoId:    proto.Int32(2),
+		GitBranch: "main",
+		Config:    "replicaCount: 2\nimage:\n  repository: nginx\n  tag: 1.25\n",
+		ExtraValues: []*websocket.ExtraValue{
+			{Path: "replicaCount", Value: "1"},
+		},
+		DryRun: true,
+	}
+	if show.GetItem() != nil {
+		req.Version = proto.Int32(show.GetItem().GetVersion())
+	}
+	resp, err := cli.Project().WebApplyByName(ctx, req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("webapply_by_name(dry-run): %d 个渲染 yaml, dry_run=%v\n", len(resp.GetYamlFiles()), resp.GetDryRun())
+	for _, y := range resp.GetYamlFiles() {
+		fmt.Println("---")
+		fmt.Println(y)
+	}
+}
+
+// showProjectByName 展示按「空间名 + 项目名」查详情：省掉调用方一次 List/Show 反查 id。
+func showProjectByName(ctx context.Context, cli *http.Client) {
+	res, err := cli.Project().ShowByName(ctx, &project.ShowByNameRequest{
+		Namespace: "devops-demo",
+		Name:      "demo-project",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	item := res.GetItem()
+	fmt.Printf("project: id=%d name=%s ns=%s repo=%s branch=%s version=%d\n",
+		item.GetId(), item.GetName(), item.GetNamespace().GetName(),
+		item.GetRepo().GetName(), item.GetGitBranch(), item.GetVersion())
 }
 
 // streamTopPod 展示第三种流式能力——指标实时流（SSE）：与日志（streamLogs）/命令（execOnce）不同，

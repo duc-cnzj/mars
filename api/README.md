@@ -22,7 +22,7 @@ Both packages expose the same 17 service accessors: `Auth/Repo/Changelog/Cluster
 
 ### Capability differences: gRPC-only vs HTTP-only
 
-gRPC has **89** methods, HTTP also has **89** (86 generated from proto `google.api.http` annotations + 3 hand-written); **86 are shared** (every generated HTTP stub has a matching gRPC counterpart with an identical signature). There are only two kinds of difference, and both are called out explicitly in the generator or the hand-written source, so you can verify them yourself.
+gRPC has **91** methods, HTTP also has **91** (88 generated from proto `google.api.http` annotations + 3 hand-written); **88 are shared** (every generated HTTP stub has a matching gRPC counterpart with an identical signature). There are only two kinds of difference, and both are called out explicitly in the generator or the hand-written source, so you can verify them yourself.
 
 **gRPC-only (3) — no HTTP route exists:**
 
@@ -30,7 +30,7 @@ gRPC has **89** methods, HTTP also has **89** (86 generated from proto `google.a
 |---|---|---|
 | `Container.Exec` | bidi | Unrepresentable in HTTP/JSON; needs WebSocket (the mars ws channel carries the terminal) |
 | `Container.StreamCopyToPod` | client | Unrepresentable in HTTP/JSON; needs WebSocket |
-| `Project.Apply` | server | proto has **no `google.api.http` annotation**, so the gateway does not expose it; the HTTP-side alternative is `Project.WebApply` |
+| `Project.Apply` | server | proto has **no `google.api.http` annotation**, so the gateway does not expose it; the HTTP-side alternatives are `Project.WebApply` / `Project.WebApplyByName` |
 
 > The first two are impossible purely because of their streaming direction (client/bidi streaming) under HTTP/1.1 JSON; `Project.Apply` is server-streaming but its `.proto` carries no http annotation — the gateway has no route for it at all, so the HTTP SDK naturally has no method. `Container.ExecOnce` / `Container.StreamContainerLog` / `Metrics.StreamTopPod` are all server-streaming methods that **do** carry the annotation, so both SDKs offer them (native gRPC stream on one side, HTTP SSE on the other).
 

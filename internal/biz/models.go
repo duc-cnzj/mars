@@ -394,6 +394,27 @@ type Project struct {
 	Manifest         []string
 }
 
+// extraValuesChanged 判定两组额外配置项在用户可见语义下是否变化：只比 path/value，
+// description 是元素定义里的静态说明（改元素定义文案会整片跟着变），不构成用户改动。
+// path 在实际数据里唯一（元素定义唯一，前端也按元素构造），故按 path 建映射比对，
+// 重排配置项不改变「用户配了什么」。无法用 proto.Equal 比对：它会把 description 也算进去。
+func extraValuesChanged(a, b []*websocket_pb.ExtraValue) bool {
+	if len(a) != len(b) {
+		return true
+	}
+	byPath := make(map[string]string, len(a))
+	for _, v := range a {
+		byPath[v.Path] = v.Value
+	}
+	for _, v := range b {
+		if value, ok := byPath[v.Path]; !ok || value != v.Value {
+			return true
+		}
+	}
+
+	return false
+}
+
 // ToEventYaml 把项目关键字段排好序后转成 YAML 快照，供审计事件对比变更。
 // nil receiver 返回 nil（与既有调用语义一致，测试承重）。
 func (p *Project) ToEventYaml() YamlPrettier {
@@ -444,7 +465,6 @@ type CreateProjectInput struct {
 	GitBranch    string
 	GitCommit    string
 	Config       string
-	ExtraValues  []*websocket_pb.ExtraValue
 	Atomic       *bool
 	ConfigType   string
 	NamespaceID  int

@@ -143,8 +143,10 @@ func (p *projectSvc) Authorize(ctx context.Context, fullMethodName string) (cont
 	return p.accessBiz.RequireAdmin(ctx, fullMethodName,
 		project.Project_List_FullMethodName,
 		project.Project_WebApply_FullMethodName,
+		project.Project_WebApplyByName_FullMethodName,
 		project.Project_Apply_FullMethodName,
 		project.Project_Show_FullMethodName,
+		project.Project_ShowByName_FullMethodName,
 		project.Project_MemoryCpuAndEndpoints_FullMethodName,
 		project.Project_Delete_FullMethodName,
 		project.Project_Version_FullMethodName,
@@ -180,26 +182,127 @@ func (p *projectSvc) List(ctx context.Context, request *project.ListRequest) (*p
 }
 
 // WebApply 单请求发起部署：与 streaming Apply 共享 apply 编排，返回 manifests 与结果项目模型。
+// 请求带 namespace_id + repo_id（调用方自己解出两个 id）；按名字寻址的简化入口见 WebApplyByName。
 func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyRequest) (*project.WebApplyResponse, error) {
 	p.logger.DebugCtx(ctx, "WebApply..")
-	job, err := p.apply(
-		ctx,
-		biz.MustGetUser(ctx),
-		newEmptyMessager(),
-		&project.ApplyRequest{
-			NamespaceId: input.NamespaceId,
-			Name:        input.Name,
-			RepoId:      input.RepoId,
-			GitBranch:   input.GitBranch,
-			GitCommit:   input.GitCommit,
-			Config:      input.Config,
-			ExtraValues: input.ExtraValues,
-			Version:     input.Version,
-		},
+	return p.webApply(ctx, &project.ApplyRequest{
+		NamespaceId: input.NamespaceId,
+		Name:        input.Name,
+		RepoId:      input.RepoId,
+		GitBranch:   input.GitBranch,
+		GitCommit:   input.GitCommit,
+		Config:      input.Config,
+		ExtraValues: input.ExtraValues,
+		Version:     input.Version,
+	},
 		// ApplyRequest 没有 DryRun 字段，WebApplyRequest 才有，必须单独透传，
 		// 否则 dry_run=true 会真的部署（JobInput.DryRun 恒为 false）。
 		input.GetDryRun(),
 	)
+}
+
+// WebApplyByName 是 WebApply 的「按名字寻址」版本：namespace 传空间名（免 ns_prefix 前缀，
+// 由 data 层幂等补全），仓库默认按 name **精确匹配仓库名**（repo.name 全局唯一，不加前缀），
+// 也可用 repo_id 显式指定；服务端据此反查出 namespace_id / repo_id，再复用同一套部署编排。
+// 两种解析方式都取不到仓库时直接 404。
+//
+// repo_id 不传时的契约：一个空间下一个仓库只能对应一个项目（项目名 == 仓库名）；传了 repo_id
+// 则以它为准，name 仅作项目名——旧 WebApply 不受任何约束影响。
+func (p *projectSvc) WebApplyByName(ctx context.Context, input *project.WebApplyByNameRequest) (*project.WebApplyResponse, error) {
+	p.logger.DebugCtx(ctx, "WebApplyByName..")
+	ns, err := p.accessBiz.RequireNamespaceAccessByName(ctx, input.Namespace)
+	if err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+
+	repo, err := p.resolveRepo(ctx, input)
+	if err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+
+	if err := p.ensureRepoBindingMatched(ctx, ns.ID, input.Name, repo); err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+
+	return p.webApply(ctx, &project.ApplyRequest{
+		NamespaceId: int32(ns.ID),
+		// name 恒非空（proto REQUIRED），故 deploy 侧「名缺省取仓库名」分支永不触发。
+		Name:        input.Name,
+		RepoId:      int32(repo.ID),
+		GitBranch:   input.GitBranch,
+		GitCommit:   input.GitCommit,
+		Config:      input.Config,
+		ExtraValues: input.ExtraValues,
+		Version:     input.Version,
+	}, input.GetDryRun())
+}
+
+// resolveRepo 解析本次部署要用的仓库，取不到一律 404（文案按来源区分）。
+//
+// 用直接构造器（errs.NotFound）而非 WrapNotFound 改写：后者的 msg 只进日志，客户端可见的
+// 仍是底层 err.Error()（"record not found"），排障人拿不到"到底哪个 name/repo_id 没对上"。
+func (p *projectSvc) resolveRepo(ctx context.Context, input *project.WebApplyByNameRequest) (*biz.Repo, error) {
+	repo, missing, err := p.lookupRepo(ctx, input)
+	if err == nil {
+		return repo, nil
+	}
+	// DB 抖动等不确定错误原样上抛，不得伪装成 404。
+	if errs.IsNotFound(err) {
+		return nil, errs.NotFound(missing)
+	}
+	return nil, err
+}
+
+// lookupRepo 是仓库解析的单一决策点：显式传了 repo_id 就以它为准（name 只作项目名），
+// 否则按 name 精确匹配仓库名。未命中时的 404 文案随来源一并返回——「怎么取」与「取不到
+// 怎么说」在同一处决定，避免两处各判一次 repo_id 后文案与实际来源对不上。
+func (p *projectSvc) lookupRepo(ctx context.Context, input *project.WebApplyByNameRequest) (repo *biz.Repo, missing string, err error) {
+	if id := input.GetRepoId(); id > 0 {
+		repo, err = p.repoBiz.Get(ctx, int(id))
+		return repo, fmt.Sprintf("仓库 #%d 不存在", id), err
+	}
+	repo, err = p.repoBiz.GetByName(ctx, input.Name)
+	return repo, fmt.Sprintf(
+		"仓库 %s 不存在（name 必须精确等于已配置的仓库名，或用 repo_id 显式指定）", input.Name), err
+}
+
+// ensureRepoBindingMatched 守住「项目绑定的仓库不可变」：同名项目已存在时，其绑定的仓库必须
+// 与本次解析出的仓库（按 name 匹配或 repo_id 指定）是同一个，否则硬拒 400。
+//
+// 为什么必须拦：deploy 的更新分支只写部署状态与配置（biz.UpdateProjectInput 无 RepoID 字段，
+// data 侧 UpdateProject 也不 SetRepoID），repo_id 一经创建不再变更。若放行，本次会用新仓库
+// 渲染 helm，而 DB 行仍记着旧仓库——Show/前端显示仓库 A、实际部署来自仓库 B 的静默漂移。
+//
+// 为什么无条件判、不按「是否传了 version」收窄：漂移只在传入 version>0 时才可能**静默**发生
+// ——apply.go 仅在 Version>0 时按 name 反查 ProjectID，runner 更新分支随后用
+// UpdateStatusByVersion(ProjectID, version) 成功，于是 helm 按新仓库渲染而 DB 仍记旧仓库。
+// 反过来若收窄成「只在传了 version 时判」，被放过的那条路径恰好是唯一会静默漂移的路径。
+// （不传 version 时 ProjectID 恒为 0，更新会以 ErrorVersionNotMatched 显式失败——虽不静默，
+// 但报错语义远不如「仓库不一致」直指根因，故守卫仍先于它给出 400。）
+func (p *projectSvc) ensureRepoBindingMatched(ctx context.Context, nsID int, name string, repo *biz.Repo) error {
+	existing, err := p.projBiz.FindByName(ctx, name, nsID)
+	if err != nil {
+		// NotFound = 首次部署，正常放行；其余（DB 故障）上抛，不能误判成"可以直接创建"。
+		if errs.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	if existing.RepoID == repo.ID {
+		return nil
+	}
+	// 用直接构造器而非 WrapInvalidArgument：后者的 msg 只进日志，客户端可见的仍是底层
+	// err.Error()，排障人拿不到「当前绑的是哪个仓库」这一关键信息。
+	return errs.InvalidArgument(fmt.Sprintf(
+		"项目 %s 已存在，但其绑定的仓库 #%d 与本次指定的仓库 %s(#%d) 不一致，请改用 WebApply 或先删除该项目",
+		name, existing.RepoID, repo.Name, repo.ID,
+	))
+}
+
+// webApply 是 WebApply/WebApplyByName 共用的执行体：接收已解析出 id 的 ApplyRequest，
+// 跑 apply 编排并组装 WebApplyResponse（dryRun 由调用方透传）。
+func (p *projectSvc) webApply(ctx context.Context, req *project.ApplyRequest, dryRun bool) (*project.WebApplyResponse, error) {
+	job, err := p.apply(ctx, biz.MustGetUser(ctx), newEmptyMessager(), req, dryRun)
 	if err != nil {
 		return nil, logError(ctx, p.logger, err)
 	}
@@ -216,7 +319,7 @@ func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyReques
 	return &project.WebApplyResponse{
 		YamlFiles: job.Manifests(),
 		Project:   projectModel,
-		DryRun:    input.GetDryRun(),
+		DryRun:    dryRun,
 	}, nil
 }
 
@@ -297,6 +400,41 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 	return &project.ShowResponse{
 		Item: transformer.FromProject(projectModel),
 	}, nil
+}
+
+// ShowByName 按「空间名 + 项目名」返回项目详情：Show 要求先有项目 id，本方法由名字反查，
+// 省掉调用方一次 List/Show。
+//
+// 空间名先过访问门卫：空间不存在是 404，私有空间无权访问是 403（与按 ID 的门卫同源同语义，
+// 不做"视同不存在"的静默隐藏——静默隐藏是 IsExists/CanAccessNamespace 那条布尔谓词路径的事）。
+//
+// FindByName 只用来拿 id：它不预加载 repo/namespace 边（见 ProjectBiz.Restore 的注释），
+// 直接喂 FromProject 会得到 nil 边；完整模型一律走 RequireProjectAccess（与 Show 同一出口）。
+func (p *projectSvc) ShowByName(ctx context.Context, input *project.ShowByNameRequest) (*project.ShowResponse, error) {
+	ns, err := p.accessBiz.RequireNamespaceAccessByName(ctx, input.Namespace)
+	if err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+
+	found, err := p.projBiz.FindByName(ctx, input.Name, ns.ID)
+	if err != nil {
+		// 项目不存在时改写为可执行中文上下文：底层经 errs.Wrap 后客户端可见的仍是 ent 的
+		// "ent: project not found"，排障人拿不到是哪个空间的哪个项目没找到（对齐 Restore
+		// 对空间 404 的处理，也与本文件 resolveRepo 的 404 文案保持一致）。
+		if errs.IsNotFound(err) {
+			return nil, logError(ctx, p.logger, errs.NotFound(
+				fmt.Sprintf("项目 %s 在空间 %s 下不存在或已被删除", input.Name, input.Namespace),
+			))
+		}
+		return nil, logError(ctx, p.logger, err)
+	}
+
+	projectModel, err := p.accessBiz.RequireProjectAccess(ctx, found.ID)
+	if err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+
+	return &project.ShowResponse{Item: transformer.FromProject(projectModel)}, nil
 }
 
 // MemoryCpuAndEndpoints 返回项目的 CPU/内存聚合用量与端点列表，响应前做项目级访问控制。

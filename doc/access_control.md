@@ -102,7 +102,9 @@
 | namespace | Favorite | 🛡️ `RequireNamespaceAccessByID` | services/namespace.go:320（缺此校验会退化成空间存在性预言机，见下） |
 | namespace | **UpdateDesc** | 🔑 登录即可 | ⚠️ 无 owner/访问校验，见 §6.1 |
 | project | Show / MemoryCpuAndEndpoints / Delete / Version / AllContainers | 🛡️ `RequireProjectAccess` | project.go:206 |
+| project | ShowByName | 🛡️ `RequireNamespaceAccessByName` → `RequireProjectAccess` | 先按空间名过门卫，再用反查到的 id 走与 Show 同一出口 |
 | project | WebApply / Apply | 🛡️ `RequireNamespaceAccessByID` | deploy/apply.go:62（私有空间成员即可部署） |
+| project | WebApplyByName | 🛡️ `RequireNamespaceAccessByName`（再按 id 复核） | 空间名反查即过门卫，deploy.ApplyProject 内再复核 namespace_id；仓库由 name 匹配或 repo_id 指定，后续有「绑定仓库不可变」守卫 |
 | project | List | 🔑 | data 层按命名空间访问谓词过滤 |
 | container | IsPodRunning / IsPodExists / ContainerLog / CopyToPod / StreamCopyToPod / StreamContainerLog / Exec / ExecOnce | 🛡️ `RequireNamespaceAccessByName` | container.go |
 | endpoint | InNamespace | 🛡️ `RequireNamespaceAccessByID` | endpoint.go:42 |
@@ -140,8 +142,8 @@
 ### 6.1 namespace.UpdateDesc —— 越权改写面（潜在缺口）
 `UpdateDesc` 改任意命名空间描述（含私有空间）无需 owner/访问校验，与 Transfer/Delete/UpdatePrivate/SyncMembers 四个 owner 变更入口的收口不一致。若描述承载敏感信息，即构成越权改写。**建议**：统一走 `showNsAndCheckOwner`。
 
-### 6.2 project.Apply/WebApply —— 部署门槛 = 命名空间可访问性
-私有空间**任何成员**都可发起部署（helm 安装/资源变更）。部署是高风险副作用，如需收紧为 owner/admin，需在 `deploy/apply.go:62` 把 `RequireNamespaceAccessByID` 换成 owner 判定。
+### 6.2 project.Apply/WebApply/WebApplyByName —— 部署门槛 = 命名空间可访问性
+三个部署入口（`Apply`、`WebApply`、`WebApplyByName`）共用 `deploy/apply.go:62` 的同一道门卫，私有空间**任何成员**都可发起部署（helm 安装/资源变更）。部署是高风险副作用，如需收紧为 owner/admin，把该处的 `RequireNamespaceAccessByID` 换成 owner 判定即可三入口同时生效。
 
 ### 6.3 accessToken.Revoke/Lease —— 不校验 token 归属
 知道 token 值即可撤销/续租（`accessTokenBiz.Revoke` 直接 `repo.Revoke`）。token 是机密凭证（非可枚举 ID），"持有即有权"语义成立，属合理设计；但该约定必须钉死在文档/注释里，防止未来误加归属校验导致自助撤销失效。
@@ -158,3 +160,13 @@
 
 - `/api/ws_info`：`websocketManager.Info`（controller.go:159-165）零校验直接返回 `sub.Info()`——redis 后端为 `{subscribers, id}`，memory 后端为当前**全部连接的 id→uid 映射**（wssender/memory/memory.go:239-242）。定位是调试探活端点、非业务数据面；uid 在 `Serve` 中默认随机 uuid（仅客户端显式传 `?uid=` 才可控，controller.go:180-184），不构成真实用户身份泄露。
 - `/ws`：`upgrader.Upgrade`（controller.go:170）先握手建连，鉴权发生在建连后的 `HandleAuthorize` 帧——这是 WebSocket over HTTP 的协议固有顺序（握手阶段本就拿不到业务鉴权帧），"握手即鉴权"无法实现。代价是预认证连接可在 `pongWait` 内保活，且每连接即占 3 个 goroutine + 1 个 pubsub，**无限速/连接上限**；如需收敛，需在 `Serve` 入口加连接数上限或握手期 token 预校验。
+
+### 6.6 按名字寻址的访问门卫必须预加载 Members（已修复，须保持）
+
+**不变量**：`namespaceRepo.FindByName`（data/namespace.go）必须带 `WithMembers()`。
+
+**为什么**：`RequireNamespaceAccessByName` 直接用它的返回值判权限，而私有空间的成员判定读的正是 `ns.Members`（`CanAccessNamespace`）。此前 `FindByName` 漏了 `WithMembers`（`Show` 有），导致 `Members` 恒空 ⇒ **私有空间的普通成员在按名字寻址时被误判 403，而按 ID 寻址的孪生入口一律放行**——同一权限规则出现两套结果。受影响的是全部按名入口：`container`（Exec/Log/CopyToPod 等）、`metrics`、`endpoint.InNamespace`、`HTTP /api/copy_from_pod`，以及 `ShowByName` / `WebApplyByName`。
+
+**如何保持**：`FindByName` 的 `WithMembers()` 不得为"省一次查询"移除；新增返回 `*Namespace` 的查询方法时，若其结果会进入 `CanAccessNamespace` 判定，同样必须预加载成员。`data` 包有同名回归测试断言该边查询存在且过滤软删（成员表带 SoftDeleteMixin，授权查询必须排除已移除成员）。
+
+> 注：预加载只补边、不过滤行，故 §6.4 要求的「Create 的 FindByName 预查必须是全局查」不变量不受影响。

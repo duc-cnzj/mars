@@ -156,6 +156,28 @@ func TestEventCoordinator_HandleProjectChanged(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("只改自定义配置也判为变更", func(t *testing.T) {
+		m := gomock.NewController(t)
+		t.Cleanup(m.Finish)
+		c, pr, _, cl, _ := newTestCoordinator(m, nil, nil)
+		// 配置文本与提交都没动，只有额外配置项的取值不同。
+		sameCfgProj := &biz.Project{
+			ID: 1, Version: 4, Config: "cfg", GitBranch: "main", GitCommit: "abc",
+			ExtraValues: []*websocket_pb.ExtraValue{{Path: "resources.limits.cpu", Value: "200m"}},
+		}
+		pr.EXPECT().Show(gomock.Any(), 1).Return(sameCfgProj, nil)
+		cl.EXPECT().FindLastChangeByProjectID(gomock.Any(), 1).Return(&biz.Changelog{
+			Config: "cfg", GitBranch: "main", GitCommit: "abc",
+			ExtraValues: []*websocket_pb.ExtraValue{{Path: "resources.limits.cpu", Value: "100m"}},
+		}, nil)
+		cl.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, in *biz.CreateChangeLogInput) (*biz.Changelog, error) {
+			assert.True(t, in.ConfigChanged)
+			return &biz.Changelog{}, nil
+		})
+
+		assert.NoError(t, c.HandleProjectChanged(&biz.ProjectChangedData{ID: 1, Username: "u"}, biz.EventProjectChanged))
+	})
+
 	t.Run("项目读取失败上抛且不落库", func(t *testing.T) {
 		m := gomock.NewController(t)
 		t.Cleanup(m.Finish)

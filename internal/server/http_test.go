@@ -5,11 +5,14 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	authpb "github.com/duc-cnzj/mars/api/v6/proto/auth"
 	metricspb "github.com/duc-cnzj/mars/api/v6/proto/metrics"
+	projectpb "github.com/duc-cnzj/mars/api/v6/proto/project"
 	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -19,6 +22,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/stats"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -394,4 +398,198 @@ func Test_apiGateway_setOidcStateCookie_OtherResponse(t *testing.T) {
 	rr := httptest.NewRecorder()
 	assert.Nil(t, gw.setOidcStateCookie(context.TODO(), rr, &emptypb.Empty{}))
 	assert.Empty(t, rr.Result().Cookies())
+}
+
+// recordedProjectCall 记录一次经网关转发到 gRPC client 的调用。
+type recordedProjectCall struct {
+	method string
+	req    proto.Message
+}
+
+// recordingProjectClient 是 projectpb.ProjectClient 的记录型替身，只实现本用例涉及的一元方法。
+// 嵌入接口使未实现的方法保持 nil 指针——若请求被路由到预期之外的方法，调用会 panic，
+// 把"走错路由"直接暴露成失败而不是静默通过。
+type recordingProjectClient struct {
+	projectpb.ProjectClient
+	mu   sync.Mutex
+	seen []recordedProjectCall
+}
+
+func (c *recordingProjectClient) add(method string, req proto.Message) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.seen = append(c.seen, recordedProjectCall{method: method, req: req})
+}
+
+// take 取走最近一次调用并清空记录（用例间互不串味）。
+func (c *recordingProjectClient) take() recordedProjectCall {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if len(c.seen) == 0 {
+		return recordedProjectCall{}
+	}
+	last := c.seen[len(c.seen)-1]
+	c.seen = nil
+	return last
+}
+
+func (c *recordingProjectClient) Show(_ context.Context, req *projectpb.ShowRequest, _ ...grpc.CallOption) (*projectpb.ShowResponse, error) {
+	c.add("Show", req)
+	return &projectpb.ShowResponse{}, nil
+}
+
+func (c *recordingProjectClient) ShowByName(_ context.Context, req *projectpb.ShowByNameRequest, _ ...grpc.CallOption) (*projectpb.ShowResponse, error) {
+	c.add("ShowByName", req)
+	return &projectpb.ShowResponse{}, nil
+}
+
+func (c *recordingProjectClient) Version(_ context.Context, req *projectpb.VersionRequest, _ ...grpc.CallOption) (*projectpb.VersionResponse, error) {
+	c.add("Version", req)
+	return &projectpb.VersionResponse{}, nil
+}
+
+func (c *recordingProjectClient) WebApplyByName(_ context.Context, req *projectpb.WebApplyByNameRequest, _ ...grpc.CallOption) (*projectpb.WebApplyResponse, error) {
+	c.add("WebApplyByName", req)
+	return &projectpb.WebApplyResponse{}, nil
+}
+
+func (c *recordingProjectClient) WebApply(_ context.Context, req *projectpb.WebApplyRequest, _ ...grpc.CallOption) (*projectpb.WebApplyResponse, error) {
+	c.add("WebApply", req)
+	return &projectpb.WebApplyResponse{}, nil
+}
+
+// newProjectRouteTestServer 用与生产完全一致的装配（initServer：UnescapingModeAllExceptSlash
+// + JSONPb + /api 前缀 + 同一中间件链）注册 project 路由，返回可直接 ServeHTTP 的 handler。
+// 断言对象是「HTTP 请求 → 哪个 RPC + 路径/查询参数怎么解码」——只看"注册没报错"证明不了路由形状。
+func newProjectRouteTestServer(t *testing.T) (http.Handler, *recordingProjectClient) {
+	t.Helper()
+	m := gomock.NewController(t)
+	t.Cleanup(m.Finish)
+	handler := app.NewMockHttpHandler(m)
+	handler.EXPECT().RegisterSwaggerUIRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterWsRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterFileRoute(gomock.Not(nil)).Times(1)
+
+	cli := &recordingProjectClient{}
+	reg := &app.GrpcRegistry{EndpointFuncs: []app.EndpointFunc{
+		func(ctx context.Context, mux *runtime.ServeMux, _ string, _ []grpc.DialOption) error {
+			return projectpb.RegisterProjectHandlerClient(ctx, mux, cli)
+		},
+	}}
+	s, err := initServer(context.TODO(), &apiGateway{
+		endpoint:     "x",
+		port:         "1000",
+		logger:       mlog.NewForConfig(nil),
+		grpcRegistry: reg,
+		handler:      handler,
+	})
+	assert.NoError(t, err)
+	return s.(*http.Server).Handler, cli
+}
+
+// Test_initServer_ProjectRoutes_NewByNameEndpoints 覆盖新增的按名字寻址路由在真实网关上的
+// 解析结果，并回归守护既有路由不被新路由吃掉——新路由 `by_name/{ns}/{name}` 是 project 服务下
+// 唯一的五段模式，与既有 `{id}` / `{id}/version` 共存，路由优先级错一位就会静默错投。
+func Test_initServer_ProjectRoutes_NewByNameEndpoints(t *testing.T) {
+	h, cli := newProjectRouteTestServer(t)
+
+	t.Run("GET by_name/{ns}/{name} → ShowByName 且两段变量各自解码", func(t *testing.T) {
+		h.ServeHTTP(httptest.NewRecorder(),
+			httptest.NewRequest(http.MethodGet, "/api/projects/by_name/mars-demo/web", nil))
+
+		got := cli.take()
+		if !assert.Equal(t, "ShowByName", got.method) {
+			return
+		}
+		req := got.req.(*projectpb.ShowByNameRequest)
+		assert.Equal(t, "mars-demo", req.GetNamespace())
+		assert.Equal(t, "web", req.GetName())
+	})
+
+	t.Run("GET /{id} 仍路由到 Show，未被 by_name 抢占", func(t *testing.T) {
+		h.ServeHTTP(httptest.NewRecorder(),
+			httptest.NewRequest(http.MethodGet, "/api/projects/123", nil))
+
+		got := cli.take()
+		if !assert.Equal(t, "Show", got.method) {
+			return
+		}
+		assert.Equal(t, int32(123), got.req.(*projectpb.ShowRequest).GetId())
+	})
+
+	t.Run("GET /{id}/version 三段字面量路由不受影响", func(t *testing.T) {
+		h.ServeHTTP(httptest.NewRecorder(),
+			httptest.NewRequest(http.MethodGet, "/api/projects/123/version", nil))
+
+		got := cli.take()
+		if !assert.Equal(t, "Version", got.method) {
+			return
+		}
+		assert.Equal(t, int32(123), got.req.(*projectpb.VersionRequest).GetId())
+	})
+
+	t.Run("POST apply_by_name 走 WebApplyByName，body 字段被解码", func(t *testing.T) {
+		body := `{"namespace":"mars-demo","name":"web","gitBranch":"dev"}`
+		req := httptest.NewRequest(http.MethodPost, "/api/projects/apply_by_name", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		h.ServeHTTP(httptest.NewRecorder(), req)
+
+		got := cli.take()
+		if !assert.Equal(t, "WebApplyByName", got.method) {
+			return
+		}
+		byName := got.req.(*projectpb.WebApplyByNameRequest)
+		assert.Equal(t, "mars-demo", byName.GetNamespace())
+		assert.Equal(t, "web", byName.GetName())
+		assert.Equal(t, "dev", byName.GetGitBranch())
+	})
+
+	t.Run("POST apply 仍走 WebApply，未被 apply_by_name 抢占", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/api/projects/apply", strings.NewReader(`{"namespaceId":1,"repoId":2}`))
+		req.Header.Set("Content-Type", "application/json")
+		h.ServeHTTP(httptest.NewRecorder(), req)
+
+		got := cli.take()
+		if !assert.Equal(t, "WebApply", got.method) {
+			return
+		}
+		assert.Equal(t, int32(1), got.req.(*projectpb.WebApplyRequest).GetNamespaceId())
+		assert.Equal(t, int32(2), got.req.(*projectpb.WebApplyRequest).GetRepoId())
+	})
+
+	// 路径解码与段数边界：生产网关用 UnescapingModeAllExceptSlash，实测行为一并钉住——
+	// %20 正常解码为空格，%2F（编码斜杠）留在参数内不切段（否则会变成一次路由越权）。
+	t.Run("路径变量的转义解码：%20 解码、%2F 不切段", func(t *testing.T) {
+		h.ServeHTTP(httptest.NewRecorder(),
+			httptest.NewRequest(http.MethodGet, "/api/projects/by_name/mars%20demo/my%20proj", nil))
+		got := cli.take()
+		if !assert.Equal(t, "ShowByName", got.method) {
+			return
+		}
+		req := got.req.(*projectpb.ShowByNameRequest)
+		assert.Equal(t, "mars demo", req.GetNamespace())
+		assert.Equal(t, "my proj", req.GetName())
+
+		h.ServeHTTP(httptest.NewRecorder(),
+			httptest.NewRequest(http.MethodGet, "/api/projects/by_name/a%2Fb/c", nil))
+		got = cli.take()
+		if !assert.Equal(t, "ShowByName", got.method, "编码斜杠不得切出新路径段") {
+			return
+		}
+		assert.Equal(t, "a/b", got.req.(*projectpb.ShowByNameRequest).GetNamespace())
+	})
+
+	// 段数不匹配必须落 404，不能被 `/api/projects/{id}` 兜成"id 解析失败"或错投其他方法。
+	t.Run("段数不匹配落 404，不越界匹配", func(t *testing.T) {
+		for _, p := range []string{
+			"/api/projects/by_name/mars-demo",   // 少了 name
+			"/api/projects/by_name/ns/n/extra",  // 多了段
+			"/api/projects/apply_by_name/extra", // apply_by_name 不接受子路径
+		} {
+			rr := httptest.NewRecorder()
+			h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, p, nil))
+			assert.Equal(t, http.StatusNotFound, rr.Code, p)
+			assert.Empty(t, cli.take().method, p)
+		}
+	})
 }

@@ -22,7 +22,7 @@ mars 的客户端 SDK 模块（`github.com/duc-cnzj/mars/api/v6`）。提供 **g
 
 ### 能力差异：gRPC 特有 vs HTTP 特有
 
-gRPC 共 **89** 个方法，HTTP 共 **89** 个（86 个由 proto 的 `google.api.http` 注解生成 + 3 个手写）；其中 **86 个共享**（每个生成的 HTTP stub 在 gRPC 都有对应，签名一致）。差异只有两类，生成器/手写代码在源码里都有明确注释，可复核。
+gRPC 共 **91** 个方法，HTTP 共 **91** 个（88 个由 proto 的 `google.api.http` 注解生成 + 3 个手写）；其中 **88 个共享**（每个生成的 HTTP stub 在 gRPC 都有对应，签名一致）。差异只有两类，生成器/手写代码在源码里都有明确注释，可复核。
 
 **gRPC 特有（3 个）—— HTTP 侧无路由：**
 
@@ -30,7 +30,7 @@ gRPC 共 **89** 个方法，HTTP 共 **89** 个（86 个由 proto 的 `google.ap
 |---|---|---|
 | `Container.Exec` | bidi | HTTP/JSON 无解，需要 WebSocket（mars ws 通道承载终端） |
 | `Container.StreamCopyToPod` | client | HTTP/JSON 无解，需要 WebSocket |
-| `Project.Apply` | server | proto **无 `google.api.http` 注解**，gateway 不暴露；HTTP 侧替代是 `Project.WebApply` |
+| `Project.Apply` | server | proto **无 `google.api.http` 注解**，gateway 不暴露；HTTP 侧替代是 `Project.WebApply` / `Project.WebApplyByName` |
 
 > 前两个是流式方向本身（client/bidi streaming）在 HTTP/1.1 JSON 下无解；`Project.Apply` 是 server-streaming 但 `.proto` 没配 http 注解——gateway 根本没有对应 HTTP 路由，HTTP SDK 自然没有方法。`Container.ExecOnce` / `Container.StreamContainerLog` / `Metrics.StreamTopPod` 都是**配了注解**的 server-streaming，两套 SDK 都有（gRPC 原生流 / HTTP SSE）。
 
