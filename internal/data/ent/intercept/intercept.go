@@ -15,10 +15,12 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/event"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/favorite"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/file"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/hibernatewindow"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/member"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/predicate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/repo"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/user"
 )
@@ -268,6 +270,33 @@ func (f TraverseFile) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.FileQuery", q)
 }
 
+// The HibernateWindowFunc type is an adapter to allow the use of ordinary function as a Querier.
+type HibernateWindowFunc func(context.Context, *ent.HibernateWindowQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f HibernateWindowFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.HibernateWindowQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.HibernateWindowQuery", q)
+}
+
+// The TraverseHibernateWindow type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseHibernateWindow func(context.Context, *ent.HibernateWindowQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseHibernateWindow) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseHibernateWindow) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.HibernateWindowQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.HibernateWindowQuery", q)
+}
+
 // The MemberFunc type is an adapter to allow the use of ordinary function as a Querier.
 type MemberFunc func(context.Context, *ent.MemberQuery) (ent.Value, error)
 
@@ -349,6 +378,33 @@ func (f TraverseProject) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.ProjectQuery", q)
 }
 
+// The ProjectHibernateFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ProjectHibernateFunc func(context.Context, *ent.ProjectHibernateQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ProjectHibernateFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ProjectHibernateQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ProjectHibernateQuery", q)
+}
+
+// The TraverseProjectHibernate type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseProjectHibernate func(context.Context, *ent.ProjectHibernateQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseProjectHibernate) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseProjectHibernate) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ProjectHibernateQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ProjectHibernateQuery", q)
+}
+
 // The RepoFunc type is an adapter to allow the use of ordinary function as a Querier.
 type RepoFunc func(context.Context, *ent.RepoQuery) (ent.Value, error)
 
@@ -420,12 +476,16 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.FavoriteQuery, predicate.Favorite, favorite.OrderOption]{typ: ent.TypeFavorite, tq: q}, nil
 	case *ent.FileQuery:
 		return &query[*ent.FileQuery, predicate.File, file.OrderOption]{typ: ent.TypeFile, tq: q}, nil
+	case *ent.HibernateWindowQuery:
+		return &query[*ent.HibernateWindowQuery, predicate.HibernateWindow, hibernatewindow.OrderOption]{typ: ent.TypeHibernateWindow, tq: q}, nil
 	case *ent.MemberQuery:
 		return &query[*ent.MemberQuery, predicate.Member, member.OrderOption]{typ: ent.TypeMember, tq: q}, nil
 	case *ent.NamespaceQuery:
 		return &query[*ent.NamespaceQuery, predicate.Namespace, namespace.OrderOption]{typ: ent.TypeNamespace, tq: q}, nil
 	case *ent.ProjectQuery:
 		return &query[*ent.ProjectQuery, predicate.Project, project.OrderOption]{typ: ent.TypeProject, tq: q}, nil
+	case *ent.ProjectHibernateQuery:
+		return &query[*ent.ProjectHibernateQuery, predicate.ProjectHibernate, projecthibernate.OrderOption]{typ: ent.TypeProjectHibernate, tq: q}, nil
 	case *ent.RepoQuery:
 		return &query[*ent.RepoQuery, predicate.Repo, repo.OrderOption]{typ: ent.TypeRepo, tq: q}, nil
 	case *ent.UserQuery:

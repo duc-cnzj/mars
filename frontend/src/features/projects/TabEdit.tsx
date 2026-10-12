@@ -4,16 +4,22 @@ import { toast } from '@/lib/toast'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
+import { getHibernateWindows } from '@/api/hibernateWindowsCache'
+import { nextZIndex } from '@/lib/zIndex'
 import { Icon } from '@/components/Icons'
 import { CodeEditor, FILE_TYPES } from '@/components/CodeEditor'
 import { DiffViewer } from '@/components/DiffViewer'
 import { useConfetti } from '@/hooks/useConfetti'
 import { Button } from '@/components/ui/shadcn/button'
+import { Switch } from '@/components/ui/shadcn/switch'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/shadcn/tooltip'
 import { SearchableSelect } from '@/components/SearchableSelect'
 import { BottomTabButton, handleTablistKeyDown } from './configTabs'
 import { ConfigHistory } from './ConfigHistory'
 import { DeployLog } from './DeployLog'
 import { Elements } from './Elements'
+import { HibernateReplicaWarning } from './HibernateReplicaWarning'
+import { hibernateWindowLabel, hibernateWindowTimeRange, replicaFieldLabels, shouldWarnReplicaInHibernate } from './hibernate'
 import { PipelineInfo } from './PipelineInfo'
 import { SegmentedSkeleton } from '@/components/ui'
 import { useDeployStream } from './useDeployStream'
@@ -23,6 +29,7 @@ type GitOption = components['schemas']['git.Option']
 type Element = components['schemas']['mars.Element']
 type GroupSetting = components['schemas']['mars.GroupSetting']
 type ExtraValue = components['schemas']['websocket.ExtraValue']
+type HibernateWindowModel = components['schemas']['hibernate.HibernateWindow']
 
 /**
  * 配置更新 Tab（布局对齐旧版 DeployProjectForm）：
@@ -40,6 +47,7 @@ export function TabEdit({
   detail,
   active,
   onChanged,
+  onRefresh,
   onDeployed,
 }: {
   detail: ProjectModel
@@ -47,6 +55,9 @@ export function TabEdit({
    *  强制关闭可能开着、portal 挂在 body 上的弹层——否则切走瞬间残留成幽灵下拉（闪一帧淡出） */
   active?: boolean
   onChanged: () => void
+  /** 刷新配置：重拉项目最新详情（父级同时更新其 detail，其它 Tab/列表一并刷新）。
+   *  返回最新详情，失败返回 null（错误提示已由父级 reload 弹出，此处不重复提示） */
+  onRefresh: () => Promise<ProjectModel | null>
   /** 部署成功回调（弹窗据此从配置 Tab 切到拓扑 Tab 看最终资源树） */
   onDeployed?: () => void
 }) {
@@ -72,6 +83,34 @@ export function TabEdit({
   const [loadingCommit, setLoadingCommit] = useState(false)
   // 部署日志占位开关：部署中/后展示日志（替换表单），对齐旧版「查看/隐藏日志」切换
   const [showLog, setShowLog] = useState(false)
+  // 刷新按钮进行中：禁用按钮 + 转圈，避免重复点击
+  const [refreshing, setRefreshing] = useState(false)
+  // 仓库级休眠配置里的副本字段 path（来自 marsConfig.hibernate）：用于判定「窗口内被改成 >0」的提示
+  const [hibernateReplicaPaths, setHibernateReplicaPaths] = useState<string[]>([])
+  // 定时休眠开关显隐：仓库级能力（marsConfig.hibernate.enabled）开启才显示（同 TabInfo 门控）
+  const [hasHibernate, setHasHibernate] = useState(false)
+  // 本地开关态：初始同步 detail，切换时乐观更新（失败回滚），父级刷新后按最新 detail 重新对齐
+  const [hibEnabled, setHibEnabled] = useState(detail.hibernateEnabled)
+  const [hibSaving, setHibSaving] = useState(false)
+  // tooltip 的 z-index：portal 到 body，默认 z-50 会被宿主项目详情弹窗（useOverlayZ 分配的 52+）
+  // 盖住，故悬浮时现取 nextZIndex() 压到所有已分配浮层之上（同 ConfigHistory / EndpointUrl）
+  const [hibTipZ, setHibTipZ] = useState(50)
+  useEffect(() => {
+    setHibEnabled(detail.hibernateEnabled)
+  }, [detail.id, detail.hibernateEnabled])
+  // 开关旁展示的休眠时间段：仓库级 windowName + 全局时间窗列表（走缓存模块去重）拼成「窗名 (时段)」
+  const [hibernateWindowName, setHibernateWindowName] = useState('')
+  const [windows, setWindows] = useState<HibernateWindowModel[]>([])
+  useEffect(() => {
+    if (!hasHibernate) return
+    let alive = true
+    void getHibernateWindows().then((w) => {
+      if (alive) setWindows(w)
+    })
+    return () => {
+      alive = false
+    }
+  }, [hasHibernate])
 
   // 拉取 repo 的 mars 配置：elements 动态表单 + 编辑器语言。
   // loadingRepo 期间项目 select 骨架占位（本页「项目」API）
@@ -87,6 +126,9 @@ export function TabEdit({
         setElements(mc.elements ?? [])
         setGroupSettings(mc.groupSettings ?? [])
         setConfigFileType(mc.configFileType || 'yaml')
+        setHibernateReplicaPaths(mc.hibernate?.replicaPaths ?? [])
+        setHasHibernate(Boolean(mc.hibernate?.enabled))
+        setHibernateWindowName(mc.hibernate?.windowName ?? '')
       })
       .finally(() => {
         if (alive) setLoadingRepo(false)
@@ -95,6 +137,34 @@ export function TabEdit({
       alive = false
     }
   }, [detail.repoId])
+
+  /** 切换项目级定时休眠开关：仅改开关不触发重部署（副本映射/时间窗来自仓库级配置）；成功后通知
+   *  父级刷新详情与工作台列表，失败回滚本地态（同 TabInfo 交互） */
+  const toggleHibernate = async (next: boolean) => {
+    setHibEnabled(next)
+    setHibSaving(true)
+    try {
+      const { error } = await api.POST(API.projectsHibernate, {
+        params: { path: { projectId: detail.id } },
+        body: { projectId: detail.id, enabled: next },
+      })
+      if (error) throw new Error(error.message ?? String(error))
+      toast.success(next ? t('project.hibernateToggleOn') : t('project.hibernateToggleOff'))
+      onChanged()
+    } catch (e) {
+      setHibEnabled(!next)
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setHibSaving(false)
+    }
+  }
+
+  // 开关旁的休眠时间段（只显示 HH:MM-HH:MM、不掺窗名）；窗口未命中/未加载返回空串
+  const hibWindow = hibernateWindowTimeRange(hibernateWindowName, windows)
+  // ? tooltip 内用完整「窗名 (时段)」；窗口未命中/未加载回退窗名本身
+  const hibWindowFull = hibernateWindowLabel(hibernateWindowName, windows)
+  // 休眠期间会被置 0 的副本字段展示名（描述优先、回退 path），供横幅告知用户具体是哪些字段
+  const replicaLabels = replicaFieldLabels(hibernateReplicaPaths, elements)
 
   // 实时部署流：正式部署走 WS 通道（Create/UpdateProject 帧流式回投进度与日志）
   const stream = useDeployStream(detail.namespaceId, detail.name)
@@ -201,11 +271,37 @@ export function TabEdit({
     setExtraValues(detail.finalExtraValues ?? [])
   }
 
+  /** 刷新：从服务端重拉项目最新详情，把配置/部署参数/分支/commit 重置为最新值（丢弃本地未部署改动）。
+   *  重拉成功后父级 detail 同步更新（其它 Tab/列表一并刷新），失败提示由父级统一弹出 → 此处静默返回 */
+  const refresh = async () => {
+    setRefreshing(true)
+    try {
+      const fresh = await onRefresh()
+      if (!fresh) return
+      setConfig(fresh.config || '')
+      setBranch(fresh.gitBranch || '')
+      setCommit(fresh.gitCommit || '')
+      setExtraValues(fresh.finalExtraValues ?? [])
+      toast.success(t('project.configRefreshed'))
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   /** 配置相对当前部署版本是否有改动 → 决定右侧 diff 列是否展开（有改动才 12/12 并排） */
   const configChanged = (config || '') !== (detail.config || '')
   // 有部署活动（进行中或已结束）才显示「查看/隐藏日志」切换，对齐旧版 hasLog
   const hasLog = stream.loading || stream.status !== 'idle'
   const projectRepoName = detail.repo?.name || detail.name
+
+  /** 项目已开启定时休眠（hibernate_enabled===true）且处于休眠态（hibernate_state==='sleeping'），
+   *  同时有副本字段被改成 >0：对账（每 2 分钟一轮）会自动把它缩容回 0，故此处提示用户「这样改不会
+   *  立即生效」。判据见 hibernate.shouldWarnReplicaInHibernate。休眠开关统一在页面操作行，本横幅只
+   *  提示、不含开关——关掉开关后 hibernate_enabled 变 false，判据失效、横幅随之消失。 */
+  const replicaOverZero = useMemo(
+    () => shouldWarnReplicaInHibernate(detail, extraValues, hibernateReplicaPaths),
+    [detail, extraValues, hibernateReplicaPaths],
+  )
 
   /** 自定义节点字段拆分：TextArea 长文本块移出部署参数网格，进底部「自定义配置」tab；其余字段留网格 */
   const textareaElements = useMemo(
@@ -322,7 +418,7 @@ export function TabEdit({
               ))}
           </div>
 
-          {/* 操作按钮行：统一 xs 尺寸（部署/重置/历史主操作 + 部署中/日志切换一致高度） */}
+          {/* 操作按钮行：统一 xs 尺寸（部署/重置/刷新/历史主操作 + 部署中/日志切换一致高度） */}
           <div className="flex flex-wrap items-center gap-2">
             <Button size="xs" variant="default" disabled={stream.loading} onClick={realDeploy}>
               {stream.loading && <Icon name="loader" className="size-3.5 animate-spin" />}
@@ -332,6 +428,20 @@ export function TabEdit({
             <Button size="xs" variant="outline" disabled={stream.loading} onClick={reset}>
               <Icon name="refresh" className="text-[13px]" />
               {t('project.reset')}
+            </Button>
+            {/* 刷新配置：重拉服务端最新项目配置（重置按钮只回到已加载快照，本按钮才重新取数） */}
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={stream.loading || refreshing}
+              onClick={() => void refresh()}
+            >
+              {refreshing ? (
+                <Icon name="loader" className="size-3.5 animate-spin" />
+              ) : (
+                <Icon name="refresh-cw" className="text-[13px]" />
+              )}
+              {t('project.configRefresh')}
             </Button>
             {stream.loading && (
               <Button size="xs" variant="outline" onClick={stream.cancel}>
@@ -346,7 +456,67 @@ export function TabEdit({
               </Button>
             )}
             <ConfigHistory projectId={detail.id} configFileType={configFileType} />
+            {/* 定时休眠开关：仓库级启用休眠才显示，靠右排布并展示休眠时间段；切换即 POST
+                ToggleHibernate（不触发重部署） */}
+            {hasHibernate && (
+              <div className="ml-auto flex items-center gap-1.5">
+                <span className="flex items-center gap-1 text-[12px] text-mute">
+                  {t('project.hibernate')}
+                  {hibWindow ? ` · ${hibWindow}` : ''}
+                  {/* ? 悬浮说明：休眠期间会被置 0 的副本字段（常驻可查，不依赖横幅出现） */}
+                  {replicaLabels.length > 0 && (
+                    <TooltipProvider delayDuration={100}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label={t('project.hibernateReplicaZeroFields')}
+                            className="flex cursor-help items-center text-faint transition-colors hover:text-ink"
+                            onMouseEnter={() => setHibTipZ(nextZIndex())}
+                          >
+                            <Icon name="circle-question" className="size-3.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent style={{ zIndex: hibTipZ }}>
+                          {/* 结构对齐 TabInfo 只读休眠卡片：时间窗 / 副本字段 / 置 0 说明；
+                              标签与值同行（「休眠时间窗: 白天停机 (06:00-23:59)」），说明单独一行 */}
+                          <div className="flex flex-col gap-1 py-0.5 text-[12px] leading-snug">
+                            <div>
+                              <span className="text-background/70">
+                                {t('project.hibernateWindow')}:
+                              </span>{' '}
+                              <span>{hibWindowFull || '-'}</span>
+                            </div>
+                            <div>
+                              <span className="text-background/70">
+                                {t('project.hibernateReplicaFields')}:
+                              </span>{' '}
+                              <span>{replicaLabels.join(', ') || '-'}</span>
+                            </div>
+                            <div className="text-background/70">
+                              {t('project.hibernateReplicaZeroNote')}
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </span>
+                <Switch
+                  aria-label={t('project.hibernate')}
+                  checked={hibEnabled}
+                  disabled={hibSaving}
+                  onCheckedChange={toggleHibernate}
+                />
+              </div>
+            )}
           </div>
+
+          {/* 休眠态下把副本改成 >0：提示不会立即生效（对账 ~2 分钟内自动缩容回 0）。非阻断，只在
+              项目已开启定时休眠、处休眠态且副本字段被改成正数时出现，初值（副本库内为 0）不触发。
+              休眠开关统一放在上方操作行，横幅只做提示；关掉开关后 hibernate_enabled 变 false，判据
+              失效、横幅消失（见 hibernate.shouldWarnReplicaInHibernate） */}
+          {replicaOverZero && <HibernateReplicaWarning fields={replicaLabels} />}
         </div>
       </div>
 

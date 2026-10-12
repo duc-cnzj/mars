@@ -15,6 +15,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/util/slice"
 	"github.com/duc-cnzj/mars/v6/internal/util/yaml"
 	"github.com/samber/lo"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ biz.RepoRepo = (*repoImpl)(nil)
@@ -234,6 +235,22 @@ func (r *repoImpl) Clone(ctx context.Context, input *biz.CloneRepoInput) (out *b
 	})
 }
 
+// configWithHibernate 返回 cfg 的副本并把 hibernate 字段替换为 h（其余字段原样保留）。
+// 导入暂不支持定时休眠：新建置空（h=nil）、更新沿用库内既有值，避免导入把管理员已配好的
+// 休眠能力（副本字段/时间窗引用）清掉或带入悬空引用。
+// 必须克隆后再改：cfg 来自导入请求、可能被调用方复用，就地改会污染输入。
+func configWithHibernate(cfg *mars.Config, h *mars.Hibernate) *mars.Config {
+	if cfg == nil {
+		if h == nil {
+			return nil
+		}
+		return &mars.Config{Hibernate: h}
+	}
+	out := proto.Clone(cfg).(*mars.Config)
+	out.Hibernate = h
+	return out
+}
+
 // planImportItem 是单条导入的计划：判定创建/更新并预解析派生字段，外部查询在事务外完成。
 type planImportItem struct {
 	create        bool
@@ -241,6 +258,9 @@ type planImportItem struct {
 	item          *biz.ImportRepoItem
 	projName      *string
 	defaultBranch *string
+	// preservedHibernate 更新场景下沿用的库内既有休眠配置（导入暂不支持 hibernate，不改它）。
+	// 新建场景为 nil。
+	preservedHibernate *mars.Hibernate
 }
 
 // planImport 为导入条目逐条做计划：按 name 判定创建/更新，并预解析派生字段
@@ -259,6 +279,8 @@ func (r *repoImpl) planImport(ctx context.Context, items []*biz.ImportRepoItem) 
 			return nil, errs.WrapInvalidArgument(fmt.Errorf("repo 名称 %q 在数据库中重复（%d 行），请先清理后重试导入", item.Name, len(existing)), "import repo")
 		case len(existing) == 1:
 			p.id = existing[0].ID
+			// 导入暂不支持定时休眠：更新时沿用库内既有 hibernate，避免导出让仓库失去休眠能力。
+			p.preservedHibernate = existing[0].MarsConfig.GetHibernate()
 		default:
 			p.create = true
 		}
@@ -295,7 +317,7 @@ func (r *repoImpl) Import(ctx context.Context, items []*biz.ImportRepoItem) (cre
 					SetNillableDefaultBranch(p.defaultBranch).
 					SetEnabled(p.item.Enabled).
 					SetDescription(p.item.Description).
-					SetMarsConfig(p.item.MarsConfig).
+					SetMarsConfig(configWithHibernate(p.item.MarsConfig, nil)).
 					Save(ctx); err != nil {
 					return err
 				}
@@ -309,7 +331,7 @@ func (r *repoImpl) Import(ctx context.Context, items []*biz.ImportRepoItem) (cre
 				SetNillableGitProjectName(p.projName).
 				SetNillableDefaultBranch(p.defaultBranch).
 				SetDescription(p.item.Description).
-				SetMarsConfig(p.item.MarsConfig).
+				SetMarsConfig(configWithHibernate(p.item.MarsConfig, p.preservedHibernate)).
 				SetEnabled(p.item.Enabled)
 			if !p.item.NeedGitRepo {
 				up.ClearGitProjectID().ClearGitProjectName().ClearDefaultBranch()

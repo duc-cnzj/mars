@@ -26,12 +26,16 @@ type Tx struct {
 	Favorite *FavoriteClient
 	// File is the client for interacting with the File builders.
 	File *FileClient
+	// HibernateWindow is the client for interacting with the HibernateWindow builders.
+	HibernateWindow *HibernateWindowClient
 	// Member is the client for interacting with the Member builders.
 	Member *MemberClient
 	// Namespace is the client for interacting with the Namespace builders.
 	Namespace *NamespaceClient
 	// Project is the client for interacting with the Project builders.
 	Project *ProjectClient
+	// ProjectHibernate is the client for interacting with the ProjectHibernate builders.
+	ProjectHibernate *ProjectHibernateClient
 	// Repo is the client for interacting with the Repo builders.
 	Repo *RepoClient
 	// User is the client for interacting with the User builders.
@@ -174,9 +178,11 @@ func (tx *Tx) init() {
 	tx.Event = NewEventClient(tx.config)
 	tx.Favorite = NewFavoriteClient(tx.config)
 	tx.File = NewFileClient(tx.config)
+	tx.HibernateWindow = NewHibernateWindowClient(tx.config)
 	tx.Member = NewMemberClient(tx.config)
 	tx.Namespace = NewNamespaceClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)
+	tx.ProjectHibernate = NewProjectHibernateClient(tx.config)
 	tx.Repo = NewRepoClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }

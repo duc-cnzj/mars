@@ -120,6 +120,8 @@ type Config struct {
 	// 分区本身由 Element.group 派生，这里只记录分区的展示元数据。
 	// 旧配置无此字段 → 无分区配置 → 前端扁平渲染，行为与旧版一致。
 	GroupSettings []*GroupSetting `protobuf:"bytes,12,rep,name=group_settings,json=groupSettings,proto3" json:"group_settings,omitempty"`
+	// hibernate 定时休眠配置（repo 级，管理员在后台 repo 页面配置）。
+	Hibernate     *Hibernate `protobuf:"bytes,13,opt,name=hibernate,proto3" json:"hibernate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -238,6 +240,82 @@ func (x *Config) GetGroupSettings() []*GroupSetting {
 	return nil
 }
 
+func (x *Config) GetHibernate() *Hibernate {
+	if x != nil {
+		return x.Hibernate
+	}
+	return nil
+}
+
+// Hibernate 是仓库级的定时休眠（夜间缩容）配置：由管理员在后台配置，决定哪些
+// 自定义字段是「副本字段」以及引用哪个**全局休眠时间窗**。项目是否参与由项目级开关决定。
+type Hibernate struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// enabled 是否启用该仓库的定时休眠能力。
+	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// replica_paths 关联的副本字段：命中 Config.elements 里的 Element.path，
+	// 休眠时把它们置为 "0" 重部署，唤醒时按快照恢复。字段类型必须能承载 "0"
+	// （InputNumber/NumberSelect/NumberRadio，或 Select 的白名单含 "0"）。
+	ReplicaPaths []string `protobuf:"bytes,2,rep,name=replica_paths,json=replicaPaths,proto3" json:"replica_paths,omitempty"`
+	// window_name 引用的全局休眠时间窗名（hibernate_windows.name，管理员在后台维护）。
+	// 用「名字」而非 ID 引用——本配置是 JSON blob，会经导出/导入跨环境往返，ID 会错位。
+	// 启用（enabled=true）时必填；窗口被删后对账按未命中处理（该仓库视为不休眠）。
+	WindowName    string `protobuf:"bytes,3,opt,name=window_name,json=windowName,proto3" json:"window_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Hibernate) Reset() {
+	*x = Hibernate{}
+	mi := &file_proto_mars_mars_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Hibernate) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Hibernate) ProtoMessage() {}
+
+func (x *Hibernate) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mars_mars_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Hibernate.ProtoReflect.Descriptor instead.
+func (*Hibernate) Descriptor() ([]byte, []int) {
+	return file_proto_mars_mars_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Hibernate) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *Hibernate) GetReplicaPaths() []string {
+	if x != nil {
+		return x.ReplicaPaths
+	}
+	return nil
+}
+
+func (x *Hibernate) GetWindowName() string {
+	if x != nil {
+		return x.WindowName
+	}
+	return ""
+}
+
 // GroupSetting 是分区（group）的展示配置：分区排序与默认折叠。
 type GroupSetting struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -250,7 +328,7 @@ type GroupSetting struct {
 
 func (x *GroupSetting) Reset() {
 	*x = GroupSetting{}
-	mi := &file_proto_mars_mars_proto_msgTypes[1]
+	mi := &file_proto_mars_mars_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -262,7 +340,7 @@ func (x *GroupSetting) String() string {
 func (*GroupSetting) ProtoMessage() {}
 
 func (x *GroupSetting) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mars_mars_proto_msgTypes[1]
+	mi := &file_proto_mars_mars_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -275,7 +353,7 @@ func (x *GroupSetting) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GroupSetting.ProtoReflect.Descriptor instead.
 func (*GroupSetting) Descriptor() ([]byte, []int) {
-	return file_proto_mars_mars_proto_rawDescGZIP(), []int{1}
+	return file_proto_mars_mars_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GroupSetting) GetName() string {
@@ -310,7 +388,7 @@ type PipelinePassRule struct {
 
 func (x *PipelinePassRule) Reset() {
 	*x = PipelinePassRule{}
-	mi := &file_proto_mars_mars_proto_msgTypes[2]
+	mi := &file_proto_mars_mars_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -322,7 +400,7 @@ func (x *PipelinePassRule) String() string {
 func (*PipelinePassRule) ProtoMessage() {}
 
 func (x *PipelinePassRule) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mars_mars_proto_msgTypes[2]
+	mi := &file_proto_mars_mars_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -335,7 +413,7 @@ func (x *PipelinePassRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PipelinePassRule.ProtoReflect.Descriptor instead.
 func (*PipelinePassRule) Descriptor() ([]byte, []int) {
-	return file_proto_mars_mars_proto_rawDescGZIP(), []int{2}
+	return file_proto_mars_mars_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *PipelinePassRule) GetStageName() string {
@@ -372,7 +450,7 @@ type Element struct {
 
 func (x *Element) Reset() {
 	*x = Element{}
-	mi := &file_proto_mars_mars_proto_msgTypes[3]
+	mi := &file_proto_mars_mars_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -384,7 +462,7 @@ func (x *Element) String() string {
 func (*Element) ProtoMessage() {}
 
 func (x *Element) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mars_mars_proto_msgTypes[3]
+	mi := &file_proto_mars_mars_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -397,7 +475,7 @@ func (x *Element) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Element.ProtoReflect.Descriptor instead.
 func (*Element) Descriptor() ([]byte, []int) {
-	return file_proto_mars_mars_proto_rawDescGZIP(), []int{3}
+	return file_proto_mars_mars_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Element) GetPath() string {
@@ -460,7 +538,7 @@ var File_proto_mars_mars_proto protoreflect.FileDescriptor
 
 const file_proto_mars_mars_proto_rawDesc = "" +
 	"\n" +
-	"\x15proto/mars/mars.proto\x12\x04mars\x1a\x17validate/validate.proto\"\xab\x04\n" +
+	"\x15proto/mars/mars.proto\x12\x04mars\x1a\x17validate/validate.proto\"\xda\x04\n" +
 	"\x06Config\x12\x1f\n" +
 	"\vconfig_file\x18\x01 \x01(\tR\n" +
 	"configFile\x12,\n" +
@@ -476,7 +554,13 @@ const file_proto_mars_mars_proto_rawDesc = "" +
 	"\fdisplay_name\x18\n" +
 	" \x01(\tB)\xfaB&r$(@2\x1d^[A-Za-z]([A-Z-_a-z]*[^_-])*$\xd0\x01\x01R\vdisplayName\x12F\n" +
 	"\x13pipeline_pass_rules\x18\v \x03(\v2\x16.mars.PipelinePassRuleR\x11pipelinePassRules\x129\n" +
-	"\x0egroup_settings\x18\f \x03(\v2\x12.mars.GroupSettingR\rgroupSettings\"a\n" +
+	"\x0egroup_settings\x18\f \x03(\v2\x12.mars.GroupSettingR\rgroupSettings\x12-\n" +
+	"\thibernate\x18\r \x01(\v2\x0f.mars.HibernateR\thibernate\"q\n" +
+	"\tHibernate\x12\x18\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12#\n" +
+	"\rreplica_paths\x18\x02 \x03(\tR\freplicaPaths\x12\x1f\n" +
+	"\vwindow_name\x18\x03 \x01(\tR\n" +
+	"windowNameJ\x04\b\x04\x10\x05\"a\n" +
 	"\fGroupSetting\x12\x1d\n" +
 	"\x04name\x18\x01 \x01(\tB\t\xfaB\x06r\x04 \x01(@R\x04name\x12\x14\n" +
 	"\x05order\x18\x02 \x01(\rR\x05order\x12\x1c\n" +
@@ -519,24 +603,26 @@ func file_proto_mars_mars_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_mars_mars_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_mars_mars_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_proto_mars_mars_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_proto_mars_mars_proto_goTypes = []any{
 	(ElementType)(0),         // 0: mars.ElementType
 	(*Config)(nil),           // 1: mars.Config
-	(*GroupSetting)(nil),     // 2: mars.GroupSetting
-	(*PipelinePassRule)(nil), // 3: mars.PipelinePassRule
-	(*Element)(nil),          // 4: mars.Element
+	(*Hibernate)(nil),        // 2: mars.Hibernate
+	(*GroupSetting)(nil),     // 3: mars.GroupSetting
+	(*PipelinePassRule)(nil), // 4: mars.PipelinePassRule
+	(*Element)(nil),          // 5: mars.Element
 }
 var file_proto_mars_mars_proto_depIdxs = []int32{
-	4, // 0: mars.Config.elements:type_name -> mars.Element
-	3, // 1: mars.Config.pipeline_pass_rules:type_name -> mars.PipelinePassRule
-	2, // 2: mars.Config.group_settings:type_name -> mars.GroupSetting
-	0, // 3: mars.Element.type:type_name -> mars.ElementType
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	5, // 0: mars.Config.elements:type_name -> mars.Element
+	4, // 1: mars.Config.pipeline_pass_rules:type_name -> mars.PipelinePassRule
+	3, // 2: mars.Config.group_settings:type_name -> mars.GroupSetting
+	2, // 3: mars.Config.hibernate:type_name -> mars.Hibernate
+	0, // 4: mars.Element.type:type_name -> mars.ElementType
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_proto_mars_mars_proto_init() }
@@ -550,7 +636,7 @@ func file_proto_mars_mars_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_mars_mars_proto_rawDesc), len(file_proto_mars_mars_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

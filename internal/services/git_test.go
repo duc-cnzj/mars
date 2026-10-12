@@ -480,21 +480,23 @@ func Test_gitSvc_PipelineJobOptions_Error(t *testing.T) {
 }
 
 type gitSvcMocks struct {
-	ctrl     *gomock.Controller
-	gitRepo  *data.MockGitRepo
-	repoRepo *data.MockRepoRepo
+	ctrl          *gomock.Controller
+	gitRepo       *data.MockGitRepo
+	repoRepo      *data.MockRepoRepo
+	hibernateRepo *data.MockHibernateRepo
 }
 
 func newGitSvcWithMocks(t *testing.T) (*gitSvc, *gitSvcMocks) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	mocks := &gitSvcMocks{
-		ctrl:     ctrl,
-		gitRepo:  data.NewMockGitRepo(ctrl),
-		repoRepo: data.NewMockRepoRepo(ctrl),
+		ctrl:          ctrl,
+		gitRepo:       data.NewMockGitRepo(ctrl),
+		repoRepo:      data.NewMockRepoRepo(ctrl),
+		hibernateRepo: data.NewMockHibernateRepo(ctrl),
 	}
 	s, ok := NewGitSvc(GitSvcDeps{
-		RepoBiz: biz.NewRepoBiz(mocks.repoRepo),
+		RepoBiz: biz.NewRepoBiz(mocks.hibernateRepo, mocks.repoRepo),
 		Logger:  mlog.NewForConfig(nil),
 		GitBiz:  biz.NewGitBiz(mocks.gitRepo),
 	}).(*gitSvc)

@@ -501,6 +501,87 @@ func TestRepoImpl_Import_WithMarsConfig(t *testing.T) {
 	assert.True(t, got.MarsConfig.IsSimpleEnv)
 }
 
+// 导入暂不支持定时休眠：新建条目即便带了 hibernate 配置，落库也应被抹掉（其余字段保留）。
+func TestRepoImpl_Import_StripsHibernateOnCreate(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewRepo(NewDataImpl(&NewDataParams{DB: entdb}), NewMockGitRepo(m))
+
+	created, updated, err := repo.Import(context.TODO(), []*biz.ImportRepoItem{
+		{Name: "app", Enabled: true, MarsConfig: &mars.Config{
+			ConfigField: "cfg",
+			Hibernate:   &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"replicas"}, WindowName: "夜间"},
+		}},
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, created)
+	assert.Zero(t, updated)
+
+	got, err := repo.GetByName(context.TODO(), "app")
+	assert.Nil(t, err)
+	require.NotNil(t, got.MarsConfig)
+	assert.Nil(t, got.MarsConfig.Hibernate, "新建导入不应带入 hibernate")
+	assert.Equal(t, "cfg", got.MarsConfig.ConfigField, "其余配置字段应保留")
+}
+
+// 导入暂不支持定时休眠：更新条目不带 hibernate 时，库内既有 hibernate 应原样保留（不被清空）。
+func TestRepoImpl_Import_PreservesHibernateOnUpdate(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewRepo(NewDataImpl(&NewDataParams{DB: entdb}), NewMockGitRepo(m))
+
+	existing, err := repo.Create(context.TODO(), &biz.CreateRepoInput{
+		Name: "app", Enabled: true,
+		MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"replicas"}, WindowName: "夜间"}},
+	})
+	assert.Nil(t, err)
+
+	// 导入文件由导出产生、已不含 hibernate，更新后库内 hibernate 应保持不变。
+	created, updated, err := repo.Import(context.TODO(), []*biz.ImportRepoItem{
+		{Name: "app", Enabled: false, MarsConfig: &mars.Config{ConfigField: "cfg"}},
+	})
+	assert.Nil(t, err)
+	assert.Zero(t, created)
+	assert.Equal(t, 1, updated)
+
+	got, err := repo.Show(context.TODO(), existing.ID)
+	assert.Nil(t, err)
+	require.NotNil(t, got.MarsConfig)
+	require.NotNil(t, got.MarsConfig.Hibernate, "更新导入应保留库内既有 hibernate")
+	assert.Equal(t, "夜间", got.MarsConfig.Hibernate.WindowName)
+	assert.Equal(t, "cfg", got.MarsConfig.ConfigField)
+}
+
+// 边界：导入条目不带 mars_config（文件里没有配置）覆盖已配 hibernate 的仓库——
+// 其余配置按空处理，但库内既有 hibernate 仍应保留。
+func TestRepoImpl_Import_PreservesHibernateWhenConfigNil(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewRepo(NewDataImpl(&NewDataParams{DB: entdb}), NewMockGitRepo(m))
+
+	existing, err := repo.Create(context.TODO(), &biz.CreateRepoInput{
+		Name: "app", Enabled: true,
+		MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{Enabled: true, WindowName: "夜间"}},
+	})
+	assert.Nil(t, err)
+
+	_, updated, err := repo.Import(context.TODO(), []*biz.ImportRepoItem{{Name: "app", Enabled: true}})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, updated)
+
+	got, err := repo.Show(context.TODO(), existing.ID)
+	assert.Nil(t, err)
+	require.NotNil(t, got.MarsConfig)
+	require.NotNil(t, got.MarsConfig.Hibernate, "config 为空时仍应保留库内 hibernate")
+	assert.Equal(t, "夜间", got.MarsConfig.Hibernate.WindowName)
+}
+
 func TestRepoImpl_Import_UnrelatedReposUntouched(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()

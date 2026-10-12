@@ -342,7 +342,12 @@ export function NamespaceCard({
         <>
           <div className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
             {visibleProjects.map((p) => (
-              <ProjectRow key={p.id} project={p} onClick={() => onOpenProject(p)} />
+              <ProjectRow
+                key={p.id}
+                project={p}
+                onClick={() => onOpenProject(p)}
+                onChanged={() => onChanged(ns.id)}
+              />
             ))}
           </div>
           {foldProjects && (

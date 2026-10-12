@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: ""
+    version: api/v6.1.2
 paths:
     /api/access_tokens:
         get:
@@ -199,6 +199,88 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.ResourceBoardResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/admin/hibernate/windows:
+        post:
+            tags:
+                - Hibernate
+            summary: 创建全局休眠时间窗（管理员）
+            operationId: Hibernate_CreateWindow
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/hibernate.CreateWindowRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/hibernate.CreateWindowResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/admin/hibernate/windows/{id}:
+        put:
+            tags:
+                - Hibernate
+            summary: 更新全局休眠时间窗（管理员）
+            operationId: Hibernate_UpdateWindow
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/hibernate.UpdateWindowRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/hibernate.UpdateWindowResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+        delete:
+            tags:
+                - Hibernate
+            summary: 删除全局休眠时间窗（管理员）
+            operationId: Hibernate_DeleteWindow
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/hibernate.DeleteWindowResponse'
                 default:
                     description: Default error response
                     content:
@@ -1493,6 +1575,25 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/google.rpc.Status'
+    /api/hibernate/windows:
+        get:
+            tags:
+                - Hibernate
+            summary: 获取全局休眠时间窗列表（登录可读）
+            operationId: Hibernate_ListWindows
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/hibernate.ListWindowsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
     /api/metrics/namespace/{namespaceId}/cpu_memory:
         get:
             tags:
@@ -1966,6 +2067,12 @@ paths:
                   schema:
                     type: integer
                     format: int32
+                - name: repoId
+                  in: query
+                  description: 按所属仓库过滤（仓库列表「查看项目」用）；不传或 0 = 全部。
+                  schema:
+                    type: integer
+                    format: int32
             responses:
                 "200":
                     description: OK
@@ -2250,6 +2357,39 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.VersionResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/google.rpc.Status'
+    /api/projects/{projectId}/hibernate:
+        post:
+            tags:
+                - Project
+            summary: 切换项目定时休眠开关
+            description: ToggleHibernate 切换项目级定时休眠开关（仅切换开关，不触发重部署）。
+            operationId: Project_ToggleHibernate
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/project.ToggleHibernateRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.ToggleHibernateResponse'
                 default:
                     description: Default error response
                     content:
@@ -3197,6 +3337,80 @@ components:
                         $ref: '#/components/schemas/google.protobuf.Any'
                     description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
             description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+        hibernate.CreateWindowRequest:
+            required:
+                - name
+                - start
+                - end
+            type: object
+            properties:
+                name:
+                    type: string
+                start:
+                    type: string
+                end:
+                    type: string
+                description:
+                    type: string
+        hibernate.CreateWindowResponse:
+            type: object
+            properties:
+                window:
+                    $ref: '#/components/schemas/hibernate.HibernateWindow'
+        hibernate.DeleteWindowResponse:
+            type: object
+            properties: {}
+        hibernate.HibernateWindow:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                    description: name 时间窗名（全局唯一，仓库按名字引用）。
+                start:
+                    type: string
+                    description: start 休眠开始时间（服务端本地时区，HH:MM）。
+                end:
+                    type: string
+                    description: end 休眠结束时间（HH:MM，start>end 表示跨零点）。
+                description:
+                    type: string
+            description: |-
+                HibernateWindow 全局休眠时间窗：管理员在后台维护若干命名时段，
+                 各仓库的定时休眠配置按名字引用其中一个（mars.Hibernate.window_name）。
+        hibernate.ListWindowsResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/hibernate.HibernateWindow'
+        hibernate.UpdateWindowRequest:
+            required:
+                - id
+                - name
+                - start
+                - end
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                start:
+                    type: string
+                end:
+                    type: string
+                description:
+                    type: string
+        hibernate.UpdateWindowResponse:
+            type: object
+            properties:
+                window:
+                    $ref: '#/components/schemas/hibernate.HibernateWindow'
         mars.Config:
             type: object
             properties:
@@ -3252,6 +3466,10 @@ components:
                         group_settings 分区展示配置：分区排序（order 升序）+ 默认折叠（collapsed）。
                          分区本身由 Element.group 派生，这里只记录分区的展示元数据。
                          旧配置无此字段 → 无分区配置 → 前端扁平渲染，行为与旧版一致。
+                hibernate:
+                    allOf:
+                        - $ref: '#/components/schemas/mars.Hibernate'
+                    description: hibernate 定时休眠配置（repo 级，管理员在后台 repo 页面配置）。
         mars.Element:
             type: object
             properties:
@@ -3302,6 +3520,29 @@ components:
                 collapsed:
                     type: boolean
             description: GroupSetting 是分区（group）的展示配置：分区排序与默认折叠。
+        mars.Hibernate:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                    description: enabled 是否启用该仓库的定时休眠能力。
+                replicaPaths:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        replica_paths 关联的副本字段：命中 Config.elements 里的 Element.path，
+                         休眠时把它们置为 "0" 重部署，唤醒时按快照恢复。字段类型必须能承载 "0"
+                         （InputNumber/NumberSelect/NumberRadio，或 Select 的白名单含 "0"）。
+                windowName:
+                    type: string
+                    description: |-
+                        window_name 引用的全局休眠时间窗名（hibernate_windows.name，管理员在后台维护）。
+                         用「名字」而非 ID 引用——本配置是 JSON blob，会经导出/导入跨环境往返，ID 会错位。
+                         启用（enabled=true）时必填；窗口被删后对账按未命中处理（该仓库视为不休眠）。
+            description: |-
+                Hibernate 是仓库级的定时休眠（夜间缩容）配置：由管理员在后台配置，决定哪些
+                 自定义字段是「副本字段」以及引用哪个**全局休眠时间窗**。项目是否参与由项目级开关决定。
         mars.PipelinePassRule:
             type: object
             properties:
@@ -3870,6 +4111,26 @@ components:
             properties:
                 item:
                     $ref: '#/components/schemas/types.ProjectModel'
+        project.ToggleHibernateRequest:
+            required:
+                - projectId
+            type: object
+            properties:
+                projectId:
+                    type: integer
+                    format: int32
+                enabled:
+                    type: boolean
+            description: |-
+                ToggleHibernateRequest 项目级定时休眠开关：仅切换开关本身，不触发重部署
+                 （副本字段映射与时间窗来自仓库级 mars_config.hibernate）。
+        project.ToggleHibernateResponse:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                state:
+                    type: string
         project.VersionResponse:
             type: object
             properties:
@@ -4478,6 +4739,13 @@ components:
                     type: string
                 updatedBy:
                     type: string
+                hibernateEnabled:
+                    type: boolean
+                    description: |-
+                        hibernate_enabled 项目级定时休眠开关；hibernate_state 运行态（awake/sleeping，
+                         未配置该能力时为空串）。两者均由 project_hibernates 表派生，供前端展示与开关回显。
+                hibernateState:
+                    type: string
                 configType:
                     type: string
                 gitCommitWebUrl:
@@ -4740,6 +5008,11 @@ tags:
     - name: Event
     - name: File
     - name: Git
+    - name: Hibernate
+      description: |-
+        Hibernate 全局休眠时间窗的查询与后台管理服务，按方法分级授权（Authorize 门禁）：
+         ListWindows 登录即可读（项目卡片需按 window_name 展示时段），Create/Update/Delete 仅管理员。
+         路径前缀随权限分层：读接口挂 /api/（面向全体登录用户），写接口挂 /api/admin/（管理员专属）。
     - name: Metrics
     - name: Namespace
     - name: Picture

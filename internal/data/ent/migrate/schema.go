@@ -210,6 +210,29 @@ var (
 		Columns:    FilesColumns,
 		PrimaryKey: []*schema.Column{FilesColumns[0]},
 	}
+	// HibernateWindowsColumns holds the columns for the "hibernate_windows" table.
+	HibernateWindowsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "name", Type: field.TypeString, Size: 64},
+		{Name: "start", Type: field.TypeString, Size: 5},
+		{Name: "end", Type: field.TypeString, Size: 5},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+	}
+	// HibernateWindowsTable holds the schema information for the "hibernate_windows" table.
+	HibernateWindowsTable = &schema.Table{
+		Name:       "hibernate_windows",
+		Columns:    HibernateWindowsColumns,
+		PrimaryKey: []*schema.Column{HibernateWindowsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "hibernatewindow_name",
+				Unique:  true,
+				Columns: []*schema.Column{HibernateWindowsColumns[3]},
+			},
+		},
+	}
 	// MembersColumns holds the columns for the "members" table.
 	MembersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -317,6 +340,37 @@ var (
 			},
 		},
 	}
+	// ProjectHibernatesColumns holds the columns for the "project_hibernates" table.
+	ProjectHibernatesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "enabled", Type: field.TypeBool, Default: false},
+		{Name: "state", Type: field.TypeString, Size: 32, Default: "awake"},
+		{Name: "snapshot", Type: field.TypeJSON, Nullable: true},
+		{Name: "project_id", Type: field.TypeInt, Unique: true, Nullable: true},
+	}
+	// ProjectHibernatesTable holds the schema information for the "project_hibernates" table.
+	ProjectHibernatesTable = &schema.Table{
+		Name:       "project_hibernates",
+		Columns:    ProjectHibernatesColumns,
+		PrimaryKey: []*schema.Column{ProjectHibernatesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "project_hibernates_projects_hibernate",
+				Columns:    []*schema.Column{ProjectHibernatesColumns[6]},
+				RefColumns: []*schema.Column{ProjectsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "projecthibernate_project_id",
+				Unique:  true,
+				Columns: []*schema.Column{ProjectHibernatesColumns[6]},
+			},
+		},
+	}
 	// ReposColumns holds the columns for the "repos" table.
 	ReposColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -372,9 +426,11 @@ var (
 		EventsTable,
 		FavoritesTable,
 		FilesTable,
+		HibernateWindowsTable,
 		MembersTable,
 		NamespacesTable,
 		ProjectsTable,
+		ProjectHibernatesTable,
 		ReposTable,
 		UsersTable,
 	}
@@ -390,4 +446,5 @@ func init() {
 	MembersTable.ForeignKeys[0].RefTable = NamespacesTable
 	ProjectsTable.ForeignKeys[0].RefTable = NamespacesTable
 	ProjectsTable.ForeignKeys[1].RefTable = ReposTable
+	ProjectHibernatesTable.ForeignKeys[0].RefTable = ProjectsTable
 }

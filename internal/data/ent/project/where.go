@@ -1439,6 +1439,29 @@ func HasChangelogsWith(preds ...predicate.Changelog) predicate.Project {
 	})
 }
 
+// HasHibernate applies the HasEdge predicate on the "hibernate" edge.
+func HasHibernate() predicate.Project {
+	return predicate.Project(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, HibernateTable, HibernateColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasHibernateWith applies the HasEdge predicate on the "hibernate" edge with a given conditions (other predicates).
+func HasHibernateWith(preds ...predicate.ProjectHibernate) predicate.Project {
+	return predicate.Project(func(s *sql.Selector) {
+		step := newHibernateStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasRepo applies the HasEdge predicate on the "repo" edge.
 func HasRepo() predicate.Project {
 	return predicate.Project(func(s *sql.Selector) {

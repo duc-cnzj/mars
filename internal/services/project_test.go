@@ -114,6 +114,34 @@ func Test_projectSvc_List_NonAdmin(t *testing.T) {
 	}
 }
 
+// 仓库列表「查看项目」依赖 repo_id 透传：请求带 repo_id 时必须原样进入
+// ListProjectInput，data 层才会按仓库过滤。漏传（写成 0）会让弹窗列出全部仓库的项目，
+// 此测试必须 FAIL。
+func Test_projectSvc_List_FilterByRepoID(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+
+	mocks.projectRepo.EXPECT().List(gomock.Any(), &biz.ListProjectInput{
+		Page:          1,
+		PageSize:      11,
+		OrderByIDDesc: lo.ToPtr(true),
+		RepoID:        3,
+		Email:         adminEmail,
+		IsAdmin:       true,
+	}).Return([]*biz.Project{{ID: 1, Name: "p1", RepoID: 3}}, &pagination.Pagination{Page: 1, PageSize: 11, Count: 1}, nil)
+	list, err := svc.List(newAdminUserCtx(), &project.ListRequest{
+		Page:     lo.ToPtr(int32(1)),
+		PageSize: lo.ToPtr(int32(11)),
+		RepoId:   lo.ToPtr(int32(3)),
+	})
+	assert.Nil(t, err)
+	if assert.NotNil(t, list) {
+		assert.Equal(t, int32(1), list.Count)
+		if assert.Len(t, list.Items, 1) {
+			assert.Equal(t, int32(3), list.Items[0].RepoId)
+		}
+	}
+}
+
 func TestProjectSvc_Show_Success(t *testing.T) {
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: false}, nil)
@@ -1271,6 +1299,126 @@ func Test_projectSvc_MemoryCpuAndEndpoints_fail2(t *testing.T) {
 	assert.Nil(t, endpoints)
 }
 
+// Test_projectSvc_ToggleHibernate 覆盖开关切换：门卫通过后透传 biz 结果，响应回填开关与状态，
+// 并落一条携带项目 id/名与「开启」目标态的审计日志。
+func Test_projectSvc_ToggleHibernate(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	// RequireProjectAccess：加载项目 + 校验其所属空间可访问性。
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{ID: 1, Name: "web", NamespaceID: 7}, nil)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 7).Return(&biz.Namespace{ID: 7, Name: "ns"}, nil)
+	hb := biz.NewMockHibernateBiz(mocks.ctrl)
+	hb.EXPECT().Toggle(gomock.Any(), 1, true).Return(
+		&biz.ProjectHibernate{ProjectID: 1, Enabled: true, State: biz.HibernateStateSleeping}, nil)
+	svc.hibernateBiz = hb
+	req := &project.ToggleHibernateRequest{ProjectId: 1, Enabled: true}
+	mocks.eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Update,
+		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
+		"开启项目 1/web 的定时休眠",
+		req,
+	)
+
+	res, err := svc.ToggleHibernate(newAdminUserCtx(), req)
+	assert.NoError(t, err)
+	assert.True(t, res.Enabled)
+	assert.Equal(t, "sleeping", res.State)
+}
+
+// Test_projectSvc_ToggleHibernate_NonAdminUser 端到端锚点：非 admin 的普通用户（对项目所属
+// 命名空间可访问）经 Authorize 放行后能完整走通切换并落审计——这是「登录用户即可改」需求的
+// 直接锁。它与 TestProjectSvc_Authorize 的分工：后者只验门禁单点放行，本测试验「门禁 + handler
+// + biz + 审计」全链路对非 admin 生效；若谁把 admin 门重新加回（摘 allowlist 条目 / handler 内
+// 加 IsAdmin 判定），本测试即红。
+func Test_projectSvc_ToggleHibernate_NonAdminUser(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	ctx := newOtherUserCtx()
+	// 门禁：普通用户对 ToggleHibernate 必须放行（allowlist 命中，ctx 原样透传）。
+	authorizedCtx, err := svc.Authorize(ctx, project.Project_ToggleHibernate_FullMethodName)
+	assert.NoError(t, err)
+	// 命名空间 Private=false（公开）→ CanAccessNamespace 对任意登录用户放行。
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{ID: 1, Name: "web", NamespaceID: 7}, nil)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 7).Return(&biz.Namespace{ID: 7, Name: "ns"}, nil)
+	hb := biz.NewMockHibernateBiz(mocks.ctrl)
+	hb.EXPECT().Toggle(gomock.Any(), 1, true).Return(
+		&biz.ProjectHibernate{ProjectID: 1, Enabled: true, State: biz.HibernateStateSleeping}, nil)
+	svc.hibernateBiz = hb
+	req := &project.ToggleHibernateRequest{ProjectId: 1, Enabled: true}
+	user := biz.MustGetUser(ctx)
+	mocks.eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Update, user.Name, user.Email, "开启项目 1/web 的定时休眠", req)
+
+	res, err := svc.ToggleHibernate(authorizedCtx, req)
+	assert.NoError(t, err)
+	assert.True(t, res.Enabled)
+	assert.Equal(t, "sleeping", res.State)
+}
+
+// Test_projectSvc_ToggleHibernate_AccessDenied 门卫拒绝（项目不存在）：不触达 biz
+// （无 Toggle 期望，误调即 panic），原样上抛。
+func Test_projectSvc_ToggleHibernate_AccessDenied(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errs.WrapNotFound(errors.New("record not found"), "load project"))
+	hb := biz.NewMockHibernateBiz(mocks.ctrl)
+	svc.hibernateBiz = hb
+
+	res, err := svc.ToggleHibernate(newAdminUserCtx(), &project.ToggleHibernateRequest{ProjectId: 1, Enabled: true})
+	assert.Nil(t, res)
+	assert.Error(t, err)
+}
+
+// Test_projectSvc_ToggleHibernate_BizError biz 校验失败（如仓库未启用休眠）：原样上抛非法参数。
+func Test_projectSvc_ToggleHibernate_BizError(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{ID: 1, NamespaceID: 7}, nil)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 7).Return(&biz.Namespace{ID: 7, Name: "ns"}, nil)
+	hb := biz.NewMockHibernateBiz(mocks.ctrl)
+	hb.EXPECT().Toggle(gomock.Any(), 1, true).Return(nil, errs.InvalidArgument("仓库未启用休眠"))
+	svc.hibernateBiz = hb
+
+	res, err := svc.ToggleHibernate(newAdminUserCtx(), &project.ToggleHibernateRequest{ProjectId: 1, Enabled: true})
+	assert.Nil(t, res)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+// Test_enrichProjectHibernate 覆盖项目列表补充休眠态：命中记录回填开关与状态，
+// 未命中保持零值。
+func Test_enrichProjectHibernate(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	hb := biz.NewMockHibernateBiz(mocks.ctrl)
+	hb.EXPECT().ListByProjectIDs(gomock.Any(), 1, 2).Return(map[int]*biz.ProjectHibernate{
+		1: {ProjectID: 1, Enabled: true, State: biz.HibernateStateSleeping},
+	}, nil)
+
+	items := []*types.ProjectModel{{Id: 1}, {Id: 2}}
+	enrichProjectHibernate(newAdminUserCtx(), svc.logger, hb, items...)
+	assert.True(t, items[0].HibernateEnabled)
+	assert.Equal(t, "sleeping", items[0].HibernateState)
+	assert.False(t, items[1].HibernateEnabled)
+	assert.Empty(t, items[1].HibernateState)
+}
+
+// Test_enrichProjectHibernate_QueryError 覆盖休眠态查询失败：只记日志不阻断，模型保持零值。
+func Test_enrichProjectHibernate_QueryError(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	hb := biz.NewMockHibernateBiz(mocks.ctrl)
+	hb.EXPECT().ListByProjectIDs(gomock.Any(), 1).Return(nil, errors.New("db down"))
+
+	items := []*types.ProjectModel{{Id: 1}}
+	assert.NotPanics(t, func() { enrichProjectHibernate(newAdminUserCtx(), svc.logger, hb, items...) })
+	assert.False(t, items[0].HibernateEnabled)
+}
+
+// Test_enrichProjectHibernate_NoIDs 覆盖无有效 ID（新建/临时模型）：不查 biz。
+func Test_enrichProjectHibernate_NoIDs(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	hb := biz.NewMockHibernateBiz(mocks.ctrl)
+
+	items := []*types.ProjectModel{{Id: 0}}
+	enrichProjectHibernate(newAdminUserCtx(), svc.logger, hb, items...)
+	assert.False(t, items[0].HibernateEnabled)
+}
+
 // newProjectSvcWithMocks 构建一个挂满 fresh mock 的 projectSvc，用于 apply 路径的测试。
 // projectSvcMocks 聚合 newProjectSvcWithMocks 创建的全部 mock，测试按字段取用。
 // mocks.ctrl 仅供临时创建额外 mock（如 deploy.NewMockJob(mocks.ctrl)）。
@@ -1286,6 +1434,7 @@ type projectSvcMocks struct {
 	changelogRepo *data.MockChangelogRepo
 	plMgr         *app.MockPluginManager
 	jobManager    *deploy.MockJobManager
+	hibernateRepo *data.MockHibernateRepo
 }
 
 // newProjectSvcWithMocks 构造带全套 mock 的 projectSvc，消除各测试重复的
@@ -1305,19 +1454,25 @@ func newProjectSvcWithMocks(t *testing.T) (*projectSvc, *projectSvcMocks) {
 		changelogRepo: data.NewMockChangelogRepo(ctrl),
 		plMgr:         app.NewMockPluginManager(ctrl),
 		jobManager:    deploy.NewMockJobManager(ctrl),
+		hibernateRepo: data.NewMockHibernateRepo(ctrl),
 	}
+	// 列表/详情会对账项目休眠态；默认返回空 map（等价于未配置休眠，保持既有零值断言），
+	// 需要断言休眠态的测试自行替换 s.hibernateBiz 为带具体期望的实例。
+	mocks.hibernateRepo.EXPECT().ListByProjectIDs(gomock.Any(), gomock.Any()).
+		Return(map[int]*biz.ProjectHibernate{}, nil).AnyTimes()
 	logger := mlog.NewForConfig(nil)
 	s, ok := NewProjectSvc(ProjectSvcDeps{
-		RepoBiz:    biz.NewRepoBiz(mocks.repoRepo),
-		PluginMgr:  mocks.plMgr,
-		JobManager: mocks.jobManager,
-		ProjBiz:    biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo, mocks.changelogRepo),
-		GitBiz:     biz.NewGitBiz(mocks.gitRepo),
-		K8sBiz:     biz.NewK8sBiz(mocks.k8sRepo),
-		EventBiz:   biz.NewEventBiz(mocks.eventRepo),
-		Logger:     logger,
-		DeployBiz:  biz.NewDeployBiz(logger, mocks.projectRepo, mocks.helmerRepo, mocks.eventRepo),
-		AccessBiz:  biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo, mocks.changelogRepo)),
+		RepoBiz:      biz.NewRepoBiz(mocks.hibernateRepo, mocks.repoRepo),
+		PluginMgr:    mocks.plMgr,
+		JobManager:   mocks.jobManager,
+		ProjBiz:      biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo, mocks.changelogRepo),
+		GitBiz:       biz.NewGitBiz(mocks.gitRepo),
+		K8sBiz:       biz.NewK8sBiz(mocks.k8sRepo),
+		EventBiz:     biz.NewEventBiz(mocks.eventRepo),
+		Logger:       logger,
+		DeployBiz:    biz.NewDeployBiz(logger, mocks.projectRepo, mocks.helmerRepo, mocks.eventRepo),
+		AccessBiz:    biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), biz.NewProjectBiz(logger, mocks.projectRepo, mocks.k8sRepo, mocks.changelogRepo)),
+		HibernateBiz: biz.NewHibernateBiz(mocks.hibernateRepo, mocks.projectRepo, mocks.repoRepo),
 	}).(*projectSvc)
 	if !ok {
 		panic("NewProjectSvc returned unexpected type")
@@ -1520,7 +1675,7 @@ func TestProjectSvc_apply_InstallProjectPanic_UnblocksWatcher(t *testing.T) {
 	base := runtime.NumGoroutine()
 	ctx := newAdminUserCtx()
 	assert.Panics(t, func() {
-		_, _ = svc.apply(ctx, biz.MustGetUser(ctx), newEmptyMessager(), &project.ApplyRequest{
+		_, _ = svc.apply(ctx, biz.MustGetUser(ctx), deploy.NoopMsger{}, &project.ApplyRequest{
 			RepoId: 1, NamespaceId: 1, Name: "test",
 		}, false)
 	})
@@ -1766,29 +1921,6 @@ func Test_projectSvc_CheckApplyStatus_PermissionDenied(t *testing.T) {
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
-// TestEmptyMessager 覆盖 WebApply 场景下空 messager 的全部 no-op 方法：
-// 空对象模式要求所有方法可被安全调用且不产生任何副作用，WebApply 走部署编排时
-// deploy 侧无条件调用这些方法（不判 nil），此处逐一调用断言不 panic、无状态残留。
-func TestEmptyMessager(t *testing.T) {
-	e := newEmptyMessager()
-
-	// 唯一有返回值的方法：Current 恒为 0（进度未启动）。
-	assert.Equal(t, int64(0), e.Current())
-
-	// 其余方法均为空实现：调用不 panic、结果可忽略，逐一遍历防接口扩充时漏测。
-	e.Add()
-	e.To(100)
-	e.SendEndError(errors.New("boom"))
-	e.SendMsg("msg")
-	e.SendProtoMsg(nil)
-	e.SendProcessPercent(50)
-	e.SendMsgWithContainerLog("log", nil)
-	e.SendDeployedResult(websocket.ResultType_Success, "ok", nil)
-
-	// 全部调用后状态不变（无内部计数器/缓冲可泄漏）。
-	assert.Equal(t, int64(0), e.Current())
-}
-
 // ---- 项目活跃度（管理员后台） ----
 
 // TestProjectSvc_Liveness 聚合响应：条目映射（部署次数/命名空间/仓库/commit 信息）+
@@ -1952,6 +2084,7 @@ func TestProjectSvc_Authorize(t *testing.T) {
 		project.Project_AllContainers_FullMethodName,
 		project.Project_CheckApplyStatus_FullMethodName,
 		project.Project_ResourceTree_FullMethodName,
+		project.Project_ToggleHibernate_FullMethodName,
 	} {
 		_, err := svc.Authorize(newOtherUserCtx(), m)
 		assert.NoError(t, err, "方法 %s 应放行普通用户", m)

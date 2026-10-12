@@ -53,10 +53,11 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		return nil, err
 	}
 	versionServer := services.NewVersionSvc()
+	hibernateRepo := data.NewHibernateRepo(logger, dataImpl)
 	v2 := provideGitServer(pluginManager)
 	gitRepo := data.NewGitRepo(logger, cache, v2, configConfig)
 	repoRepo := data.NewRepo(dataImpl, gitRepo)
-	repoBiz := biz.NewRepoBiz(repoRepo)
+	repoBiz := biz.NewRepoBiz(hibernateRepo, repoRepo)
 	v3 := provideMinioClient(dataImpl)
 	uploaderUploader, err := uploader.NewUploader(configConfig, logger, v3)
 	if err != nil {
@@ -94,17 +95,19 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 	deployBiz := biz.NewDeployBiz(logger, projectRepo, helmerRepo, eventRepo)
 	namespaceBiz := biz.NewNamespaceBiz(logger, namespaceRepo, k8sRepo, helmerRepo, eventRepo)
 	accessBiz := biz.NewAccessBiz(namespaceBiz, projectBiz)
+	hibernateBiz := biz.NewHibernateBiz(hibernateRepo, projectRepo, repoRepo)
 	projectSvcDeps := services.ProjectSvcDeps{
-		RepoBiz:    repoBiz,
-		PluginMgr:  pluginManager,
-		JobManager: jobManager,
-		ProjBiz:    projectBiz,
-		GitBiz:     gitBiz,
-		K8sBiz:     k8sBiz,
-		EventBiz:   eventBiz,
-		Logger:     logger,
-		DeployBiz:  deployBiz,
-		AccessBiz:  accessBiz,
+		RepoBiz:      repoBiz,
+		PluginMgr:    pluginManager,
+		JobManager:   jobManager,
+		ProjBiz:      projectBiz,
+		GitBiz:       gitBiz,
+		K8sBiz:       k8sBiz,
+		EventBiz:     eventBiz,
+		Logger:       logger,
+		DeployBiz:    deployBiz,
+		AccessBiz:    accessBiz,
+		HibernateBiz: hibernateBiz,
 	}
 	projectServer := services.NewProjectSvc(projectSvcDeps)
 	pictureBiz := biz.NewPictureBiz(logger, pluginManager)
@@ -114,10 +117,11 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 	}
 	pictureServer := services.NewPictureSvc(pictureSvcDeps)
 	namespaceSvcDeps := services.NamespaceSvcDeps{
-		NsBiz:     namespaceBiz,
-		Logger:    logger,
-		EventBiz:  eventBiz,
-		AccessBiz: accessBiz,
+		NsBiz:        namespaceBiz,
+		Logger:       logger,
+		EventBiz:     eventBiz,
+		AccessBiz:    accessBiz,
+		HibernateBiz: hibernateBiz,
 	}
 	namespaceServer := services.NewNamespaceSvc(namespaceSvcDeps)
 	metricsBiz := biz.NewMetricsBiz(k8sBiz)
@@ -214,6 +218,14 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		Logger:    logger,
 	}
 	userServer := services.NewUserSvc(userSvcDeps)
+	hibernateWindowRepo := data.NewHibernateWindowRepo(logger, dataImpl)
+	hibernateWindowBiz := biz.NewHibernateWindowBiz(hibernateWindowRepo)
+	hibernateSvcDeps := services.HibernateSvcDeps{
+		HibernateWindowBiz: hibernateWindowBiz,
+		AccessBiz:          accessBiz,
+		Logger:             logger,
+	}
+	hibernateServer := services.NewHibernateSvc(hibernateSvcDeps)
 	newGrpcRegistryDeps := services.NewGrpcRegistryDeps{
 		Version:     versionServer,
 		Project:     projectServer,
@@ -232,11 +244,21 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		Repo:        repoServer,
 		Settings:    settingsServer,
 		User:        userServer,
+		Hibernate:   hibernateServer,
 	}
 	grpcRegistry := services.NewGrpcRegistry(newGrpcRegistryDeps)
 	registry := metrics.NewRegistry()
+	applyProjectDeps := deploy.ApplyProjectDeps{
+		AccessBiz:  accessBiz,
+		RepoBiz:    repoBiz,
+		GitBiz:     gitBiz,
+		ProjectBiz: projectBiz,
+		JobMgr:     jobManager,
+		Logger:     logger,
+	}
+	hibernateDeployer := deploy.NewHibernateDeployer(applyProjectDeps)
 	pluginDeps := provideCronDeps(pluginManager)
-	tasks := cronjob.NewTasks(timerTimer, logger, configConfig, fileRepo, projectRepo, repoRepo, namespaceRepo, k8sRepo, eventRepo, uploaderUploader, helmerRepo, gitRepo, pluginDeps)
+	tasks := cronjob.NewTasks(timerTimer, logger, configConfig, fileRepo, projectRepo, repoRepo, namespaceRepo, k8sRepo, eventRepo, uploaderUploader, helmerRepo, gitRepo, hibernateRepo, hibernateDeployer, hibernateWindowRepo, pluginDeps)
 	counterCounter := counter.NewCounter()
 	websocketManagerDeps := websocket.WebsocketManagerDeps{
 		Timer:         timerTimer,

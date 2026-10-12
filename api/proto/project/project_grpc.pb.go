@@ -35,6 +35,7 @@ const (
 	Project_CheckApplyStatus_FullMethodName      = "/project.Project/CheckApplyStatus"
 	Project_ResourceTree_FullMethodName          = "/project.Project/ResourceTree"
 	Project_Liveness_FullMethodName              = "/project.Project/Liveness"
+	Project_ToggleHibernate_FullMethodName       = "/project.Project/ToggleHibernate"
 )
 
 // ProjectClient is the client API for Project service.
@@ -80,6 +81,8 @@ type ProjectClient interface {
 	// Liveness 项目活跃度清单（管理员后台）：按 30/90 天阈值分类活跃/低活跃/僵尸，
 	// 服务端聚合累计部署次数与统计，识别长期无人使用的治理候选项目。
 	Liveness(ctx context.Context, in *LivenessRequest, opts ...grpc.CallOption) (*LivenessResponse, error)
+	// ToggleHibernate 切换项目级定时休眠开关（仅切换开关，不触发重部署）。
+	ToggleHibernate(ctx context.Context, in *ToggleHibernateRequest, opts ...grpc.CallOption) (*ToggleHibernateResponse, error)
 }
 
 type projectClient struct {
@@ -249,6 +252,16 @@ func (c *projectClient) Liveness(ctx context.Context, in *LivenessRequest, opts 
 	return out, nil
 }
 
+func (c *projectClient) ToggleHibernate(ctx context.Context, in *ToggleHibernateRequest, opts ...grpc.CallOption) (*ToggleHibernateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ToggleHibernateResponse)
+	err := c.cc.Invoke(ctx, Project_ToggleHibernate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServer is the server API for Project service.
 // All implementations must embed UnimplementedProjectServer
 // for forward compatibility.
@@ -292,6 +305,8 @@ type ProjectServer interface {
 	// Liveness 项目活跃度清单（管理员后台）：按 30/90 天阈值分类活跃/低活跃/僵尸，
 	// 服务端聚合累计部署次数与统计，识别长期无人使用的治理候选项目。
 	Liveness(context.Context, *LivenessRequest) (*LivenessResponse, error)
+	// ToggleHibernate 切换项目级定时休眠开关（仅切换开关，不触发重部署）。
+	ToggleHibernate(context.Context, *ToggleHibernateRequest) (*ToggleHibernateResponse, error)
 	mustEmbedUnimplementedProjectServer()
 }
 
@@ -346,6 +361,9 @@ func (UnimplementedProjectServer) ResourceTree(context.Context, *ResourceTreeReq
 }
 func (UnimplementedProjectServer) Liveness(context.Context, *LivenessRequest) (*LivenessResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Liveness not implemented")
+}
+func (UnimplementedProjectServer) ToggleHibernate(context.Context, *ToggleHibernateRequest) (*ToggleHibernateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ToggleHibernate not implemented")
 }
 func (UnimplementedProjectServer) mustEmbedUnimplementedProjectServer() {}
 func (UnimplementedProjectServer) testEmbeddedByValue()                 {}
@@ -631,6 +649,24 @@ func _Project_Liveness_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Project_ToggleHibernate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ToggleHibernateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).ToggleHibernate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Project_ToggleHibernate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).ToggleHibernate(ctx, req.(*ToggleHibernateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Project_ServiceDesc is the grpc.ServiceDesc for Project service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -693,6 +729,10 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Liveness",
 			Handler:    _Project_Liveness_Handler,
+		},
+		{
+			MethodName: "ToggleHibernate",
+			Handler:    _Project_ToggleHibernate_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

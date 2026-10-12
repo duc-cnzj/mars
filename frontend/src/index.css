@@ -67,6 +67,8 @@
   --color-err-soft: var(--err-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  /* 休眠中图标的专属蓝（浅色主题深蓝 / 深色主题亮蓝，各主题在 --hibernate 各自定值） */
+  --color-hibernate: var(--hibernate);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -90,13 +92,12 @@ body {
 
 * { box-sizing: border-box; }
 
-/* 选中高亮：品牌色 30% 淡底 + 常规文字色。
-   不用实心 --primary——实底在浅色主题下是白字、深色主题下是近黑字（--primary-foreground），
-   选中变成一整块大色块糊住文字；30% 透明度能看出选中范围，文字仍清晰。
-   透明度用 color-mix 按各主题 --primary 现算，8 套主题自动适配，不硬编码色值。 */
+/* 选中高亮：与 CodeMirror 选中同色——GitHub 暗色选中蓝 #2f81f7 底 + 白字。
+   色值硬编码而非按主题 --primary 现算：全站选中统一成一处观感，编辑器（prism-material-dark.ts）
+   与 diff（DiffViewer）都已用这支蓝，全局跟随同一支即可三处一致，切主题不再各变各的。 */
 ::selection {
-  background: color-mix(in srgb, var(--primary) 30%, transparent);
-  color: var(--text);
+  background: #2f81f7;
+  color: #fff;
 }
 
 /* 全局默认键盘焦点环（无障碍保留）：必须放进 @layer base —— 若写成无层级规则，

@@ -43,6 +43,7 @@ func Registry(t *Tasks, cfg *config.Config) []CronTask {
 			CronTask{Name: "cache_cluster_board", Schedule: cron.Command.EveryThirtySeconds, Run: t.CacheClusterBoard},
 			CronTask{Name: "cache_cluster_info", Schedule: cron.Command.EveryThirtySeconds, Run: t.CacheClusterInfo},
 			CronTask{Name: "cache_resource_snapshot", Schedule: cron.Command.EveryFiveMinutes, Run: t.CacheResourceSnapshot},
+			CronTask{Name: "hibernate_projects", Schedule: cron.Command.EveryTwoMinutes, Run: t.ReconcileHibernate},
 		)
 	}
 	return tasks

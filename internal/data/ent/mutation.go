@@ -22,10 +22,12 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/event"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/favorite"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/file"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/hibernatewindow"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/member"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/predicate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/repo"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/user"
 )
@@ -39,18 +41,20 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeAccessToken = "AccessToken"
-	TypeCacheLock   = "CacheLock"
-	TypeChangelog   = "Changelog"
-	TypeDBCache     = "DBCache"
-	TypeEvent       = "Event"
-	TypeFavorite    = "Favorite"
-	TypeFile        = "File"
-	TypeMember      = "Member"
-	TypeNamespace   = "Namespace"
-	TypeProject     = "Project"
-	TypeRepo        = "Repo"
-	TypeUser        = "User"
+	TypeAccessToken      = "AccessToken"
+	TypeCacheLock        = "CacheLock"
+	TypeChangelog        = "Changelog"
+	TypeDBCache          = "DBCache"
+	TypeEvent            = "Event"
+	TypeFavorite         = "Favorite"
+	TypeFile             = "File"
+	TypeHibernateWindow  = "HibernateWindow"
+	TypeMember           = "Member"
+	TypeNamespace        = "Namespace"
+	TypeProject          = "Project"
+	TypeProjectHibernate = "ProjectHibernate"
+	TypeRepo             = "Repo"
+	TypeUser             = "User"
 )
 
 // AccessTokenMutation represents an operation that mutates the AccessToken nodes in the graph.
@@ -6125,6 +6129,624 @@ func (m *FileMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown File edge %s", name)
 }
 
+// HibernateWindowMutation represents an operation that mutates the HibernateWindow nodes in the graph.
+type HibernateWindowMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	created_at    *time.Time
+	updated_at    *time.Time
+	name          *string
+	start         *string
+	end           *string
+	description   *string
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*HibernateWindow, error)
+	predicates    []predicate.HibernateWindow
+}
+
+var _ ent.Mutation = (*HibernateWindowMutation)(nil)
+
+// hibernatewindowOption allows management of the mutation configuration using functional options.
+type hibernatewindowOption func(*HibernateWindowMutation)
+
+// newHibernateWindowMutation creates new mutation for the HibernateWindow entity.
+func newHibernateWindowMutation(c config, op Op, opts ...hibernatewindowOption) *HibernateWindowMutation {
+	m := &HibernateWindowMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeHibernateWindow,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withHibernateWindowID sets the ID field of the mutation.
+func withHibernateWindowID(id int) hibernatewindowOption {
+	return func(m *HibernateWindowMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *HibernateWindow
+		)
+		m.oldValue = func(ctx context.Context) (*HibernateWindow, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().HibernateWindow.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withHibernateWindow sets the old HibernateWindow of the mutation.
+func withHibernateWindow(node *HibernateWindow) hibernatewindowOption {
+	return func(m *HibernateWindowMutation) {
+		m.oldValue = func(context.Context) (*HibernateWindow, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m HibernateWindowMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m HibernateWindowMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *HibernateWindowMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *HibernateWindowMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().HibernateWindow.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *HibernateWindowMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *HibernateWindowMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the HibernateWindow entity.
+// If the HibernateWindow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HibernateWindowMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *HibernateWindowMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *HibernateWindowMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *HibernateWindowMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the HibernateWindow entity.
+// If the HibernateWindow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HibernateWindowMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *HibernateWindowMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetName sets the "name" field.
+func (m *HibernateWindowMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *HibernateWindowMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the HibernateWindow entity.
+// If the HibernateWindow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HibernateWindowMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *HibernateWindowMutation) ResetName() {
+	m.name = nil
+}
+
+// SetStart sets the "start" field.
+func (m *HibernateWindowMutation) SetStart(s string) {
+	m.start = &s
+}
+
+// Start returns the value of the "start" field in the mutation.
+func (m *HibernateWindowMutation) Start() (r string, exists bool) {
+	v := m.start
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStart returns the old "start" field's value of the HibernateWindow entity.
+// If the HibernateWindow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HibernateWindowMutation) OldStart(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStart is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStart requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStart: %w", err)
+	}
+	return oldValue.Start, nil
+}
+
+// ResetStart resets all changes to the "start" field.
+func (m *HibernateWindowMutation) ResetStart() {
+	m.start = nil
+}
+
+// SetEnd sets the "end" field.
+func (m *HibernateWindowMutation) SetEnd(s string) {
+	m.end = &s
+}
+
+// End returns the value of the "end" field in the mutation.
+func (m *HibernateWindowMutation) End() (r string, exists bool) {
+	v := m.end
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnd returns the old "end" field's value of the HibernateWindow entity.
+// If the HibernateWindow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HibernateWindowMutation) OldEnd(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnd is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnd requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnd: %w", err)
+	}
+	return oldValue.End, nil
+}
+
+// ResetEnd resets all changes to the "end" field.
+func (m *HibernateWindowMutation) ResetEnd() {
+	m.end = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *HibernateWindowMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *HibernateWindowMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the HibernateWindow entity.
+// If the HibernateWindow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HibernateWindowMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *HibernateWindowMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[hibernatewindow.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *HibernateWindowMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[hibernatewindow.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *HibernateWindowMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, hibernatewindow.FieldDescription)
+}
+
+// Where appends a list predicates to the HibernateWindowMutation builder.
+func (m *HibernateWindowMutation) Where(ps ...predicate.HibernateWindow) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the HibernateWindowMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *HibernateWindowMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.HibernateWindow, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *HibernateWindowMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *HibernateWindowMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (HibernateWindow).
+func (m *HibernateWindowMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *HibernateWindowMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.created_at != nil {
+		fields = append(fields, hibernatewindow.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, hibernatewindow.FieldUpdatedAt)
+	}
+	if m.name != nil {
+		fields = append(fields, hibernatewindow.FieldName)
+	}
+	if m.start != nil {
+		fields = append(fields, hibernatewindow.FieldStart)
+	}
+	if m.end != nil {
+		fields = append(fields, hibernatewindow.FieldEnd)
+	}
+	if m.description != nil {
+		fields = append(fields, hibernatewindow.FieldDescription)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *HibernateWindowMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case hibernatewindow.FieldCreatedAt:
+		return m.CreatedAt()
+	case hibernatewindow.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case hibernatewindow.FieldName:
+		return m.Name()
+	case hibernatewindow.FieldStart:
+		return m.Start()
+	case hibernatewindow.FieldEnd:
+		return m.End()
+	case hibernatewindow.FieldDescription:
+		return m.Description()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *HibernateWindowMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case hibernatewindow.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case hibernatewindow.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case hibernatewindow.FieldName:
+		return m.OldName(ctx)
+	case hibernatewindow.FieldStart:
+		return m.OldStart(ctx)
+	case hibernatewindow.FieldEnd:
+		return m.OldEnd(ctx)
+	case hibernatewindow.FieldDescription:
+		return m.OldDescription(ctx)
+	}
+	return nil, fmt.Errorf("unknown HibernateWindow field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *HibernateWindowMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case hibernatewindow.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case hibernatewindow.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case hibernatewindow.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case hibernatewindow.FieldStart:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStart(v)
+		return nil
+	case hibernatewindow.FieldEnd:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnd(v)
+		return nil
+	case hibernatewindow.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	}
+	return fmt.Errorf("unknown HibernateWindow field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *HibernateWindowMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *HibernateWindowMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *HibernateWindowMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown HibernateWindow numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *HibernateWindowMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(hibernatewindow.FieldDescription) {
+		fields = append(fields, hibernatewindow.FieldDescription)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *HibernateWindowMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *HibernateWindowMutation) ClearField(name string) error {
+	switch name {
+	case hibernatewindow.FieldDescription:
+		m.ClearDescription()
+		return nil
+	}
+	return fmt.Errorf("unknown HibernateWindow nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *HibernateWindowMutation) ResetField(name string) error {
+	switch name {
+	case hibernatewindow.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case hibernatewindow.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case hibernatewindow.FieldName:
+		m.ResetName()
+		return nil
+	case hibernatewindow.FieldStart:
+		m.ResetStart()
+		return nil
+	case hibernatewindow.FieldEnd:
+		m.ResetEnd()
+		return nil
+	case hibernatewindow.FieldDescription:
+		m.ResetDescription()
+		return nil
+	}
+	return fmt.Errorf("unknown HibernateWindow field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *HibernateWindowMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *HibernateWindowMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *HibernateWindowMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *HibernateWindowMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *HibernateWindowMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *HibernateWindowMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *HibernateWindowMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown HibernateWindow unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *HibernateWindowMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown HibernateWindow edge %s", name)
+}
+
 // MemberMutation represents an operation that mutates the Member nodes in the graph.
 type MemberMutation struct {
 	config
@@ -7830,6 +8452,8 @@ type ProjectMutation struct {
 	changelogs               map[int]struct{}
 	removedchangelogs        map[int]struct{}
 	clearedchangelogs        bool
+	hibernate                *int
+	clearedhibernate         bool
 	repo                     *int
 	clearedrepo              bool
 	namespace                *int
@@ -9390,6 +10014,45 @@ func (m *ProjectMutation) ResetChangelogs() {
 	m.removedchangelogs = nil
 }
 
+// SetHibernateID sets the "hibernate" edge to the ProjectHibernate entity by id.
+func (m *ProjectMutation) SetHibernateID(id int) {
+	m.hibernate = &id
+}
+
+// ClearHibernate clears the "hibernate" edge to the ProjectHibernate entity.
+func (m *ProjectMutation) ClearHibernate() {
+	m.clearedhibernate = true
+}
+
+// HibernateCleared reports if the "hibernate" edge to the ProjectHibernate entity was cleared.
+func (m *ProjectMutation) HibernateCleared() bool {
+	return m.clearedhibernate
+}
+
+// HibernateID returns the "hibernate" edge ID in the mutation.
+func (m *ProjectMutation) HibernateID() (id int, exists bool) {
+	if m.hibernate != nil {
+		return *m.hibernate, true
+	}
+	return
+}
+
+// HibernateIDs returns the "hibernate" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// HibernateID instead. It exists only for internal usage by the builders.
+func (m *ProjectMutation) HibernateIDs() (ids []int) {
+	if id := m.hibernate; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetHibernate resets all changes to the "hibernate" edge.
+func (m *ProjectMutation) ResetHibernate() {
+	m.hibernate = nil
+	m.clearedhibernate = false
+}
+
 // ClearRepo clears the "repo" edge to the Repo entity.
 func (m *ProjectMutation) ClearRepo() {
 	m.clearedrepo = true
@@ -10186,9 +10849,12 @@ func (m *ProjectMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ProjectMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.changelogs != nil {
 		edges = append(edges, project.EdgeChangelogs)
+	}
+	if m.hibernate != nil {
+		edges = append(edges, project.EdgeHibernate)
 	}
 	if m.repo != nil {
 		edges = append(edges, project.EdgeRepo)
@@ -10209,6 +10875,10 @@ func (m *ProjectMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case project.EdgeHibernate:
+		if id := m.hibernate; id != nil {
+			return []ent.Value{*id}
+		}
 	case project.EdgeRepo:
 		if id := m.repo; id != nil {
 			return []ent.Value{*id}
@@ -10223,7 +10893,7 @@ func (m *ProjectMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ProjectMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedchangelogs != nil {
 		edges = append(edges, project.EdgeChangelogs)
 	}
@@ -10246,9 +10916,12 @@ func (m *ProjectMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ProjectMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedchangelogs {
 		edges = append(edges, project.EdgeChangelogs)
+	}
+	if m.clearedhibernate {
+		edges = append(edges, project.EdgeHibernate)
 	}
 	if m.clearedrepo {
 		edges = append(edges, project.EdgeRepo)
@@ -10265,6 +10938,8 @@ func (m *ProjectMutation) EdgeCleared(name string) bool {
 	switch name {
 	case project.EdgeChangelogs:
 		return m.clearedchangelogs
+	case project.EdgeHibernate:
+		return m.clearedhibernate
 	case project.EdgeRepo:
 		return m.clearedrepo
 	case project.EdgeNamespace:
@@ -10277,6 +10952,9 @@ func (m *ProjectMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ProjectMutation) ClearEdge(name string) error {
 	switch name {
+	case project.EdgeHibernate:
+		m.ClearHibernate()
+		return nil
 	case project.EdgeRepo:
 		m.ClearRepo()
 		return nil
@@ -10294,6 +10972,9 @@ func (m *ProjectMutation) ResetEdge(name string) error {
 	case project.EdgeChangelogs:
 		m.ResetChangelogs()
 		return nil
+	case project.EdgeHibernate:
+		m.ResetHibernate()
+		return nil
 	case project.EdgeRepo:
 		m.ResetRepo()
 		return nil
@@ -10302,6 +10983,717 @@ func (m *ProjectMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Project edge %s", name)
+}
+
+// ProjectHibernateMutation represents an operation that mutates the ProjectHibernate nodes in the graph.
+type ProjectHibernateMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *int
+	created_at     *time.Time
+	updated_at     *time.Time
+	enabled        *bool
+	state          *string
+	snapshot       *[]*websocket.ExtraValue
+	appendsnapshot []*websocket.ExtraValue
+	clearedFields  map[string]struct{}
+	project        *int
+	clearedproject bool
+	done           bool
+	oldValue       func(context.Context) (*ProjectHibernate, error)
+	predicates     []predicate.ProjectHibernate
+}
+
+var _ ent.Mutation = (*ProjectHibernateMutation)(nil)
+
+// projecthibernateOption allows management of the mutation configuration using functional options.
+type projecthibernateOption func(*ProjectHibernateMutation)
+
+// newProjectHibernateMutation creates new mutation for the ProjectHibernate entity.
+func newProjectHibernateMutation(c config, op Op, opts ...projecthibernateOption) *ProjectHibernateMutation {
+	m := &ProjectHibernateMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeProjectHibernate,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withProjectHibernateID sets the ID field of the mutation.
+func withProjectHibernateID(id int) projecthibernateOption {
+	return func(m *ProjectHibernateMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ProjectHibernate
+		)
+		m.oldValue = func(ctx context.Context) (*ProjectHibernate, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ProjectHibernate.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withProjectHibernate sets the old ProjectHibernate of the mutation.
+func withProjectHibernate(node *ProjectHibernate) projecthibernateOption {
+	return func(m *ProjectHibernateMutation) {
+		m.oldValue = func(context.Context) (*ProjectHibernate, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ProjectHibernateMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ProjectHibernateMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ProjectHibernateMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ProjectHibernateMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ProjectHibernate.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ProjectHibernateMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ProjectHibernateMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ProjectHibernate entity.
+// If the ProjectHibernate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectHibernateMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ProjectHibernateMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ProjectHibernateMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ProjectHibernateMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ProjectHibernate entity.
+// If the ProjectHibernate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectHibernateMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ProjectHibernateMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetEnabled sets the "enabled" field.
+func (m *ProjectHibernateMutation) SetEnabled(b bool) {
+	m.enabled = &b
+}
+
+// Enabled returns the value of the "enabled" field in the mutation.
+func (m *ProjectHibernateMutation) Enabled() (r bool, exists bool) {
+	v := m.enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnabled returns the old "enabled" field's value of the ProjectHibernate entity.
+// If the ProjectHibernate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectHibernateMutation) OldEnabled(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnabled: %w", err)
+	}
+	return oldValue.Enabled, nil
+}
+
+// ResetEnabled resets all changes to the "enabled" field.
+func (m *ProjectHibernateMutation) ResetEnabled() {
+	m.enabled = nil
+}
+
+// SetState sets the "state" field.
+func (m *ProjectHibernateMutation) SetState(s string) {
+	m.state = &s
+}
+
+// State returns the value of the "state" field in the mutation.
+func (m *ProjectHibernateMutation) State() (r string, exists bool) {
+	v := m.state
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldState returns the old "state" field's value of the ProjectHibernate entity.
+// If the ProjectHibernate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectHibernateMutation) OldState(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldState is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldState requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldState: %w", err)
+	}
+	return oldValue.State, nil
+}
+
+// ResetState resets all changes to the "state" field.
+func (m *ProjectHibernateMutation) ResetState() {
+	m.state = nil
+}
+
+// SetSnapshot sets the "snapshot" field.
+func (m *ProjectHibernateMutation) SetSnapshot(wv []*websocket.ExtraValue) {
+	m.snapshot = &wv
+	m.appendsnapshot = nil
+}
+
+// Snapshot returns the value of the "snapshot" field in the mutation.
+func (m *ProjectHibernateMutation) Snapshot() (r []*websocket.ExtraValue, exists bool) {
+	v := m.snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSnapshot returns the old "snapshot" field's value of the ProjectHibernate entity.
+// If the ProjectHibernate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectHibernateMutation) OldSnapshot(ctx context.Context) (v []*websocket.ExtraValue, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSnapshot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSnapshot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSnapshot: %w", err)
+	}
+	return oldValue.Snapshot, nil
+}
+
+// AppendSnapshot adds wv to the "snapshot" field.
+func (m *ProjectHibernateMutation) AppendSnapshot(wv []*websocket.ExtraValue) {
+	m.appendsnapshot = append(m.appendsnapshot, wv...)
+}
+
+// AppendedSnapshot returns the list of values that were appended to the "snapshot" field in this mutation.
+func (m *ProjectHibernateMutation) AppendedSnapshot() ([]*websocket.ExtraValue, bool) {
+	if len(m.appendsnapshot) == 0 {
+		return nil, false
+	}
+	return m.appendsnapshot, true
+}
+
+// ClearSnapshot clears the value of the "snapshot" field.
+func (m *ProjectHibernateMutation) ClearSnapshot() {
+	m.snapshot = nil
+	m.appendsnapshot = nil
+	m.clearedFields[projecthibernate.FieldSnapshot] = struct{}{}
+}
+
+// SnapshotCleared returns if the "snapshot" field was cleared in this mutation.
+func (m *ProjectHibernateMutation) SnapshotCleared() bool {
+	_, ok := m.clearedFields[projecthibernate.FieldSnapshot]
+	return ok
+}
+
+// ResetSnapshot resets all changes to the "snapshot" field.
+func (m *ProjectHibernateMutation) ResetSnapshot() {
+	m.snapshot = nil
+	m.appendsnapshot = nil
+	delete(m.clearedFields, projecthibernate.FieldSnapshot)
+}
+
+// SetProjectID sets the "project_id" field.
+func (m *ProjectHibernateMutation) SetProjectID(i int) {
+	m.project = &i
+}
+
+// ProjectID returns the value of the "project_id" field in the mutation.
+func (m *ProjectHibernateMutation) ProjectID() (r int, exists bool) {
+	v := m.project
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProjectID returns the old "project_id" field's value of the ProjectHibernate entity.
+// If the ProjectHibernate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectHibernateMutation) OldProjectID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProjectID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProjectID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProjectID: %w", err)
+	}
+	return oldValue.ProjectID, nil
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (m *ProjectHibernateMutation) ClearProjectID() {
+	m.project = nil
+	m.clearedFields[projecthibernate.FieldProjectID] = struct{}{}
+}
+
+// ProjectIDCleared returns if the "project_id" field was cleared in this mutation.
+func (m *ProjectHibernateMutation) ProjectIDCleared() bool {
+	_, ok := m.clearedFields[projecthibernate.FieldProjectID]
+	return ok
+}
+
+// ResetProjectID resets all changes to the "project_id" field.
+func (m *ProjectHibernateMutation) ResetProjectID() {
+	m.project = nil
+	delete(m.clearedFields, projecthibernate.FieldProjectID)
+}
+
+// ClearProject clears the "project" edge to the Project entity.
+func (m *ProjectHibernateMutation) ClearProject() {
+	m.clearedproject = true
+	m.clearedFields[projecthibernate.FieldProjectID] = struct{}{}
+}
+
+// ProjectCleared reports if the "project" edge to the Project entity was cleared.
+func (m *ProjectHibernateMutation) ProjectCleared() bool {
+	return m.ProjectIDCleared() || m.clearedproject
+}
+
+// ProjectIDs returns the "project" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ProjectID instead. It exists only for internal usage by the builders.
+func (m *ProjectHibernateMutation) ProjectIDs() (ids []int) {
+	if id := m.project; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetProject resets all changes to the "project" edge.
+func (m *ProjectHibernateMutation) ResetProject() {
+	m.project = nil
+	m.clearedproject = false
+}
+
+// Where appends a list predicates to the ProjectHibernateMutation builder.
+func (m *ProjectHibernateMutation) Where(ps ...predicate.ProjectHibernate) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ProjectHibernateMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ProjectHibernateMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ProjectHibernate, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ProjectHibernateMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ProjectHibernateMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ProjectHibernate).
+func (m *ProjectHibernateMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ProjectHibernateMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.created_at != nil {
+		fields = append(fields, projecthibernate.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, projecthibernate.FieldUpdatedAt)
+	}
+	if m.enabled != nil {
+		fields = append(fields, projecthibernate.FieldEnabled)
+	}
+	if m.state != nil {
+		fields = append(fields, projecthibernate.FieldState)
+	}
+	if m.snapshot != nil {
+		fields = append(fields, projecthibernate.FieldSnapshot)
+	}
+	if m.project != nil {
+		fields = append(fields, projecthibernate.FieldProjectID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ProjectHibernateMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case projecthibernate.FieldCreatedAt:
+		return m.CreatedAt()
+	case projecthibernate.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case projecthibernate.FieldEnabled:
+		return m.Enabled()
+	case projecthibernate.FieldState:
+		return m.State()
+	case projecthibernate.FieldSnapshot:
+		return m.Snapshot()
+	case projecthibernate.FieldProjectID:
+		return m.ProjectID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ProjectHibernateMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case projecthibernate.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case projecthibernate.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case projecthibernate.FieldEnabled:
+		return m.OldEnabled(ctx)
+	case projecthibernate.FieldState:
+		return m.OldState(ctx)
+	case projecthibernate.FieldSnapshot:
+		return m.OldSnapshot(ctx)
+	case projecthibernate.FieldProjectID:
+		return m.OldProjectID(ctx)
+	}
+	return nil, fmt.Errorf("unknown ProjectHibernate field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ProjectHibernateMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case projecthibernate.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case projecthibernate.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case projecthibernate.FieldEnabled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnabled(v)
+		return nil
+	case projecthibernate.FieldState:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetState(v)
+		return nil
+	case projecthibernate.FieldSnapshot:
+		v, ok := value.([]*websocket.ExtraValue)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSnapshot(v)
+		return nil
+	case projecthibernate.FieldProjectID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProjectID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ProjectHibernate field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ProjectHibernateMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ProjectHibernateMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ProjectHibernateMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown ProjectHibernate numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ProjectHibernateMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(projecthibernate.FieldSnapshot) {
+		fields = append(fields, projecthibernate.FieldSnapshot)
+	}
+	if m.FieldCleared(projecthibernate.FieldProjectID) {
+		fields = append(fields, projecthibernate.FieldProjectID)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ProjectHibernateMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ProjectHibernateMutation) ClearField(name string) error {
+	switch name {
+	case projecthibernate.FieldSnapshot:
+		m.ClearSnapshot()
+		return nil
+	case projecthibernate.FieldProjectID:
+		m.ClearProjectID()
+		return nil
+	}
+	return fmt.Errorf("unknown ProjectHibernate nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ProjectHibernateMutation) ResetField(name string) error {
+	switch name {
+	case projecthibernate.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case projecthibernate.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case projecthibernate.FieldEnabled:
+		m.ResetEnabled()
+		return nil
+	case projecthibernate.FieldState:
+		m.ResetState()
+		return nil
+	case projecthibernate.FieldSnapshot:
+		m.ResetSnapshot()
+		return nil
+	case projecthibernate.FieldProjectID:
+		m.ResetProjectID()
+		return nil
+	}
+	return fmt.Errorf("unknown ProjectHibernate field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ProjectHibernateMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.project != nil {
+		edges = append(edges, projecthibernate.EdgeProject)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ProjectHibernateMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case projecthibernate.EdgeProject:
+		if id := m.project; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ProjectHibernateMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ProjectHibernateMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ProjectHibernateMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedproject {
+		edges = append(edges, projecthibernate.EdgeProject)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ProjectHibernateMutation) EdgeCleared(name string) bool {
+	switch name {
+	case projecthibernate.EdgeProject:
+		return m.clearedproject
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ProjectHibernateMutation) ClearEdge(name string) error {
+	switch name {
+	case projecthibernate.EdgeProject:
+		m.ClearProject()
+		return nil
+	}
+	return fmt.Errorf("unknown ProjectHibernate unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ProjectHibernateMutation) ResetEdge(name string) error {
+	switch name {
+	case projecthibernate.EdgeProject:
+		m.ResetProject()
+		return nil
+	}
+	return fmt.Errorf("unknown ProjectHibernate edge %s", name)
 }
 
 // RepoMutation represents an operation that mutates the Repo nodes in the graph.

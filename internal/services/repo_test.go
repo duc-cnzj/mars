@@ -501,6 +501,26 @@ func TestRepoSvc_Export_Success(t *testing.T) {
 	assert.Equal(t, "b", res.Items[1].Name)
 }
 
+// 导出暂不支持定时休眠：mars_config.hibernate 应被抹掉、其余字段保留，且不得就地修改
+// biz 层共享的配置对象（否则会把仓库列表接口的返回一起改坏）。
+func TestRepoSvc_Export_StripsHibernate(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	input := &biz.Repo{ID: 1, Name: "a", MarsConfig: &mars.Config{
+		ConfigField: "cfg",
+		Hibernate:   &mars.Hibernate{Enabled: true, WindowName: "夜间"},
+	}}
+	mocks.repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return([]*biz.Repo{input}, nil)
+
+	res, err := svc.Export(context.TODO(), &reposerver.ExportRequest{})
+
+	assert.Nil(t, err)
+	require.Len(t, res.Items, 1)
+	require.NotNil(t, res.Items[0].MarsConfig)
+	assert.Nil(t, res.Items[0].MarsConfig.Hibernate, "导出产物不应含 hibernate")
+	assert.Equal(t, "cfg", res.Items[0].MarsConfig.ConfigField, "其余字段应保留")
+	assert.NotNil(t, input.MarsConfig.Hibernate, "不得就地修改 biz 层共享配置")
+}
+
 func TestRepoSvc_Export_Error(t *testing.T) {
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
@@ -528,6 +548,22 @@ func TestRepoSvc_ExportOne_Success(t *testing.T) {
 	assert.Equal(t, "a", res.Items[0].Name)
 }
 
+// 单条导出同 Export：亦抹掉 hibernate。
+func TestRepoSvc_ExportOne_StripsHibernate(t *testing.T) {
+	svc, mocks := newRepoSvcWithMocks(t)
+	mocks.repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{
+		ID: 1, Name: "a", MarsConfig: &mars.Config{
+			Hibernate: &mars.Hibernate{Enabled: true, WindowName: "夜间"},
+		},
+	}, nil)
+
+	res, err := svc.ExportOne(context.TODO(), &reposerver.ExportOneRequest{Id: 1})
+
+	assert.Nil(t, err)
+	require.Len(t, res.Items, 1)
+	assert.Nil(t, res.Items[0].MarsConfig.Hibernate)
+}
+
 func TestRepoSvc_ExportOne_Error(t *testing.T) {
 	svc, mocks := newRepoSvcWithMocks(t)
 	repoRepo := mocks.repoRepo
@@ -546,8 +582,12 @@ func TestRepoSvc_Import_Success(t *testing.T) {
 	eventRepo := mocks.eventRepo
 
 	// 导入前/后各采集一次全量快照：before 用于审计 old 字段，after 用于审计 new 字段。
+	// 库内 existing 带 hibernate：审计 old/new 同样不应含它（与导出同口径），
+	// 否则事件日志里会误显示成「本次导入改了休眠配置」。
 	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return([]*biz.Repo{
-		{ID: 1, Name: "existing", Enabled: true, Description: "d1"},
+		{ID: 1, Name: "existing", Enabled: true, Description: "d1", MarsConfig: &mars.Config{
+			Hibernate: &mars.Hibernate{Enabled: true, WindowName: "夜间"},
+		}},
 	}, nil).Times(2)
 
 	// 幂等覆盖在 data 层事务内完成，services 只委托一次。
@@ -560,14 +600,17 @@ func TestRepoSvc_Import_Success(t *testing.T) {
 		{Name: "existing", Enabled: true, Description: "d1"},
 		{Name: "new", Enabled: true, Description: "d2"},
 	}}
+	var auditOld, auditNew string
 	eventRepo.EXPECT().AuditLogWithChange(
 		types.EventActionType_Update,
 		biz.MustGetUser(newAdminUserCtx()).Name,
 		biz.MustGetUser(newAdminUserCtx()).Email,
 		"导入 repo: 共 2 个（新建 1，覆盖 1）",
-		gomock.Not(nil),
-		gomock.Not(nil),
-	)
+		gomock.Any(),
+		gomock.Any(),
+	).Do(func(_ types.EventActionType, _, _, _ string, oldS, newS biz.YamlPrettier) {
+		auditOld, auditNew = oldS.PrettyYaml(), newS.PrettyYaml()
+	})
 
 	res, err := svc.Import(newAdminUserCtx(), req)
 
@@ -576,6 +619,8 @@ func TestRepoSvc_Import_Success(t *testing.T) {
 	assert.Equal(t, int32(2), res.Total)
 	assert.Equal(t, int32(1), res.Created)
 	assert.Equal(t, int32(1), res.Updated)
+	assert.NotContains(t, auditOld, "hibernate", "审计 old 不应含 hibernate")
+	assert.NotContains(t, auditNew, "hibernate", "审计 new 不应含 hibernate")
 }
 
 func TestRepoSvc_Import_Empty(t *testing.T) {
@@ -632,8 +677,12 @@ func TestRepoSvc_Import_DryRun(t *testing.T) {
 		{Name: "existing", Enabled: true},
 		{Name: "new", Enabled: true},
 	}).Return(1, 1, nil)
+	// 库内 existing 带 hibernate：dry-run 旧值同样不应含它（与导出同口径），
+	// 否则前端 old→new diff 会误显示成「导入将删除休眠配置」。
 	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return([]*biz.Repo{
-		{ID: 1, Name: "existing", Enabled: true},
+		{ID: 1, Name: "existing", Enabled: true, MarsConfig: &mars.Config{
+			Hibernate: &mars.Hibernate{Enabled: true, WindowName: "夜间"},
+		}},
 	}, nil)
 
 	res, err := svc.Import(newAdminUserCtx(), &reposerver.ImportRequest{
@@ -653,6 +702,8 @@ func TestRepoSvc_Import_DryRun(t *testing.T) {
 	require.Len(t, res.UpdatedOld, 1)
 	assert.Equal(t, "existing", res.UpdatedOld[0].Name)
 	assert.Equal(t, true, res.UpdatedOld[0].Enabled)
+	require.NotNil(t, res.UpdatedOld[0].MarsConfig)
+	assert.Nil(t, res.UpdatedOld[0].MarsConfig.Hibernate, "dry-run 旧值不应含 hibernate")
 }
 
 func TestRepoSvc_Import_DryRun_Error(t *testing.T) {
@@ -924,24 +975,26 @@ func repoNotFound() error {
 }
 
 type repoSvcMocks struct {
-	ctrl      *gomock.Controller
-	eventRepo *data.MockEventRepo
-	repoRepo  *data.MockRepoRepo
+	ctrl          *gomock.Controller
+	eventRepo     *data.MockEventRepo
+	repoRepo      *data.MockRepoRepo
+	hibernateRepo *data.MockHibernateRepo
 }
 
 func newRepoSvcWithMocks(t *testing.T) (*repoSvc, *repoSvcMocks) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	mocks := &repoSvcMocks{
-		ctrl:      ctrl,
-		eventRepo: data.NewMockEventRepo(ctrl),
-		repoRepo:  data.NewMockRepoRepo(ctrl),
+		ctrl:          ctrl,
+		eventRepo:     data.NewMockEventRepo(ctrl),
+		repoRepo:      data.NewMockRepoRepo(ctrl),
+		hibernateRepo: data.NewMockHibernateRepo(ctrl),
 	}
 	logger := mlog.NewForConfig(nil)
 	s, ok := NewRepoSvc(RepoSvcDeps{
 		Logger:    logger,
 		EventBiz:  biz.NewEventBiz(mocks.eventRepo),
-		RepoBiz:   biz.NewRepoBiz(mocks.repoRepo),
+		RepoBiz:   biz.NewRepoBiz(mocks.hibernateRepo, mocks.repoRepo),
 		AccessBiz: biz.NewAccessBiz(nil, nil),
 	}).(*repoSvc)
 	if !ok {

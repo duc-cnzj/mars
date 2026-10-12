@@ -100,6 +100,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/hibernate/windows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 创建全局休眠时间窗（管理员） */
+        post: operations["Hibernate_CreateWindow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/hibernate/windows/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 更新全局休眠时间窗（管理员） */
+        put: operations["Hibernate_UpdateWindow"];
+        post?: never;
+        /** 删除全局休眠时间窗（管理员） */
+        delete: operations["Hibernate_DeleteWindow"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/namespaces": {
         parameters: {
             query?: never;
@@ -844,6 +879,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/hibernate/windows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取全局休眠时间窗列表（登录可读） */
+        get: operations["Hibernate_ListWindows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/metrics/namespace/{namespaceId}/cpu_memory": {
         parameters: {
             query?: never;
@@ -1291,6 +1343,26 @@ export interface paths {
         get: operations["Project_Version"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{projectId}/hibernate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 切换项目定时休眠开关
+         * @description ToggleHibernate 切换项目级定时休眠开关（仅切换开关，不触发重部署）。
+         */
+        post: operations["Project_ToggleHibernate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1808,6 +1880,45 @@ export interface components {
             /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
             details: components["schemas"]["google.protobuf.Any"][];
         };
+        "hibernate.CreateWindowRequest": {
+            name: string;
+            start: string;
+            end: string;
+            description?: string;
+        };
+        "hibernate.CreateWindowResponse": {
+            window: components["schemas"]["hibernate.HibernateWindow"];
+        };
+        "hibernate.DeleteWindowResponse": Record<string, never>;
+        /**
+         * @description HibernateWindow 全局休眠时间窗：管理员在后台维护若干命名时段，
+         *      各仓库的定时休眠配置按名字引用其中一个（mars.Hibernate.window_name）。
+         */
+        "hibernate.HibernateWindow": {
+            /** Format: int32 */
+            id: number;
+            /** @description name 时间窗名（全局唯一，仓库按名字引用）。 */
+            name: string;
+            /** @description start 休眠开始时间（服务端本地时区，HH:MM）。 */
+            start: string;
+            /** @description end 休眠结束时间（HH:MM，start>end 表示跨零点）。 */
+            end: string;
+            description: string;
+        };
+        "hibernate.ListWindowsResponse": {
+            items: components["schemas"]["hibernate.HibernateWindow"][];
+        };
+        "hibernate.UpdateWindowRequest": {
+            /** Format: int32 */
+            id: number;
+            name: string;
+            start: string;
+            end: string;
+            description?: string;
+        };
+        "hibernate.UpdateWindowResponse": {
+            window: components["schemas"]["hibernate.HibernateWindow"];
+        };
         "mars.Config": {
             /** @description config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename" */
             configFile: string;
@@ -1845,6 +1956,8 @@ export interface components {
              *      旧配置无此字段 → 无分区配置 → 前端扁平渲染，行为与旧版一致。
              */
             groupSettings: components["schemas"]["mars.GroupSetting"][];
+            /** @description hibernate 定时休眠配置（repo 级，管理员在后台 repo 页面配置）。 */
+            hibernate: components["schemas"]["mars.Hibernate"];
         };
         "mars.Element": {
             path: string;
@@ -1875,6 +1988,26 @@ export interface components {
             /** Format: uint32 */
             order: number;
             collapsed: boolean;
+        };
+        /**
+         * @description Hibernate 是仓库级的定时休眠（夜间缩容）配置：由管理员在后台配置，决定哪些
+         *      自定义字段是「副本字段」以及引用哪个**全局休眠时间窗**。项目是否参与由项目级开关决定。
+         */
+        "mars.Hibernate": {
+            /** @description enabled 是否启用该仓库的定时休眠能力。 */
+            enabled: boolean;
+            /**
+             * @description replica_paths 关联的副本字段：命中 Config.elements 里的 Element.path，
+             *      休眠时把它们置为 "0" 重部署，唤醒时按快照恢复。字段类型必须能承载 "0"
+             *      （InputNumber/NumberSelect/NumberRadio，或 Select 的白名单含 "0"）。
+             */
+            replicaPaths: string[];
+            /**
+             * @description window_name 引用的全局休眠时间窗名（hibernate_windows.name，管理员在后台维护）。
+             *      用「名字」而非 ID 引用——本配置是 JSON blob，会经导出/导入跨环境往返，ID 会错位。
+             *      启用（enabled=true）时必填；窗口被删后对账按未命中处理（该仓库视为不休眠）。
+             */
+            windowName: string;
         };
         /** @description PipelinePassRule 是流水线通过规则的单条匹配项：命中指定 stage 下名为 job_name 的 job。 */
         "mars.PipelinePassRule": {
@@ -2217,6 +2350,19 @@ export interface components {
         "project.ShowResponse": {
             item: components["schemas"]["types.ProjectModel"];
         };
+        /**
+         * @description ToggleHibernateRequest 项目级定时休眠开关：仅切换开关本身，不触发重部署
+         *      （副本字段映射与时间窗来自仓库级 mars_config.hibernate）。
+         */
+        "project.ToggleHibernateRequest": {
+            /** Format: int32 */
+            projectId: number;
+            enabled?: boolean;
+        };
+        "project.ToggleHibernateResponse": {
+            enabled: boolean;
+            state: string;
+        };
         "project.VersionResponse": {
             /** Format: int32 */
             version: number;
@@ -2548,6 +2694,12 @@ export interface components {
             humanizeCreatedAt: string;
             humanizeUpdatedAt: string;
             updatedBy: string;
+            /**
+             * @description hibernate_enabled 项目级定时休眠开关；hibernate_state 运行态（awake/sleeping，
+             *      未配置该能力时为空串）。两者均由 project_hibernates 表派生，供前端展示与开关回显。
+             */
+            hibernateEnabled: boolean;
+            hibernateState: string;
             configType: string;
             gitCommitWebUrl: string;
             gitCommitTitle: string;
@@ -2916,6 +3068,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["cluster.ResourceBoardResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Hibernate_CreateWindow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["hibernate.CreateWindowRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["hibernate.CreateWindowResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Hibernate_UpdateWindow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["hibernate.UpdateWindowRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["hibernate.UpdateWindowResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Hibernate_DeleteWindow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["hibernate.DeleteWindowResponse"];
                 };
             };
             /** @description Default error response */
@@ -4283,6 +4534,35 @@ export interface operations {
             };
         };
     };
+    Hibernate_ListWindows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["hibernate.ListWindowsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
     Metrics_CpuMemoryInNamespace: {
         parameters: {
             query?: never;
@@ -4838,6 +5118,8 @@ export interface operations {
             query?: {
                 page?: number;
                 pageSize?: number;
+                /** @description 按所属仓库过滤（仓库列表「查看项目」用）；不传或 0 = 全部。 */
+                repoId?: number;
             };
             header?: never;
             path?: never;
@@ -5167,6 +5449,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["project.VersionResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Project_ToggleHibernate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["project.ToggleHibernateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["project.ToggleHibernateResponse"];
                 };
             };
             /** @description Default error response */

@@ -26,46 +26,49 @@ var _ project.ProjectServer = (*projectSvc)(nil)
 type projectSvc struct {
 	project.UnimplementedProjectServer
 
-	jobManager deploy.JobManager
-	projBiz    biz.ProjectBiz
-	gitBiz     biz.GitBiz
-	k8sBiz     biz.K8sBiz
-	eventBiz   biz.EventBiz
-	logger     mlog.Logger
-	repoBiz    biz.RepoBiz
-	deployBiz  biz.DeployBiz
-	plMgr      app.PluginManager
-	accessBiz  biz.AccessBiz
+	jobManager   deploy.JobManager
+	projBiz      biz.ProjectBiz
+	gitBiz       biz.GitBiz
+	k8sBiz       biz.K8sBiz
+	eventBiz     biz.EventBiz
+	logger       mlog.Logger
+	repoBiz      biz.RepoBiz
+	deployBiz    biz.DeployBiz
+	plMgr        app.PluginManager
+	accessBiz    biz.AccessBiz
+	hibernateBiz biz.HibernateBiz
 }
 
 // ProjectSvcDeps 收口 NewProjectSvc 的构造依赖，由 wire 按字段注入。
 type ProjectSvcDeps struct {
-	RepoBiz    biz.RepoBiz
-	PluginMgr  app.PluginManager
-	JobManager deploy.JobManager
-	ProjBiz    biz.ProjectBiz
-	GitBiz     biz.GitBiz
-	K8sBiz     biz.K8sBiz
-	EventBiz   biz.EventBiz
-	Logger     mlog.Logger
-	DeployBiz  biz.DeployBiz
-	AccessBiz  biz.AccessBiz
+	RepoBiz      biz.RepoBiz
+	PluginMgr    app.PluginManager
+	JobManager   deploy.JobManager
+	ProjBiz      biz.ProjectBiz
+	GitBiz       biz.GitBiz
+	K8sBiz       biz.K8sBiz
+	EventBiz     biz.EventBiz
+	Logger       mlog.Logger
+	DeployBiz    biz.DeployBiz
+	AccessBiz    biz.AccessBiz
+	HibernateBiz biz.HibernateBiz
 }
 
 // NewProjectSvc 收口项目服务的构造依赖，由 wire 按字段注入。
 func NewProjectSvc(deps ProjectSvcDeps) project.ProjectServer {
 	logger := deps.Logger.WithModule("services/project")
 	return &projectSvc{
-		jobManager: deps.JobManager,
-		projBiz:    deps.ProjBiz,
-		gitBiz:     deps.GitBiz,
-		k8sBiz:     deps.K8sBiz,
-		eventBiz:   deps.EventBiz,
-		logger:     logger,
-		repoBiz:    deps.RepoBiz,
-		deployBiz:  deps.DeployBiz,
-		plMgr:      deps.PluginMgr,
-		accessBiz:  deps.AccessBiz,
+		jobManager:   deps.JobManager,
+		projBiz:      deps.ProjBiz,
+		gitBiz:       deps.GitBiz,
+		k8sBiz:       deps.K8sBiz,
+		eventBiz:     deps.EventBiz,
+		logger:       logger,
+		repoBiz:      deps.RepoBiz,
+		deployBiz:    deps.DeployBiz,
+		plMgr:        deps.PluginMgr,
+		accessBiz:    deps.AccessBiz,
+		hibernateBiz: deps.HibernateBiz,
 	}
 }
 
@@ -153,6 +156,11 @@ func (p *projectSvc) Authorize(ctx context.Context, fullMethodName string) (cont
 		project.Project_AllContainers_FullMethodName,
 		project.Project_CheckApplyStatus_FullMethodName,
 		project.Project_ResourceTree_FullMethodName,
+		// 定时休眠开关同属「项目访问范围内用户可调」：处理器首行 RequireProjectAccess 收口
+		// （命名空间 owner 放行），故与 MemoryCpuAndEndpoints 一样豁免 admin。漏登记会被
+		// RequireAdmin 的 fail-open 语义静默升为 admin 专属，与用户侧 UI（TabInfo/TabEdit 无
+		// isAdmin 门）冲突——本条目是「用户级」意图的唯一锚点。
+		project.Project_ToggleHibernate_FullMethodName,
 	)
 }
 
@@ -164,6 +172,8 @@ func (p *projectSvc) List(ctx context.Context, request *project.ListRequest) (*p
 		Page:          page,
 		PageSize:      size,
 		OrderByIDDesc: lo.ToPtr(true),
+		// 按所属仓库过滤（仓库列表「查看项目」用）；0 = 不过滤，保持原有「全部项目」语义。
+		RepoID: int(request.GetRepoId()),
 		// 透传当前用户，data 层按命名空间访问谓词过滤：非 admin 只能看到
 		// 可访问命名空间下的项目，与 namespace.List 的可见范围一致。
 		Email:   user.Email,
@@ -173,11 +183,14 @@ func (p *projectSvc) List(ctx context.Context, request *project.ListRequest) (*p
 		return nil, logError(ctx, p.logger, err)
 	}
 
+	items := slice.Map(list, transformer.FromProject)
+	enrichProjectHibernate(ctx, p.logger, p.hibernateBiz, items...)
+
 	return &project.ListResponse{
 		Page:     pag.Page,
 		PageSize: pag.PageSize,
 		Count:    pag.Count,
-		Items:    slice.Map(list, transformer.FromProject),
+		Items:    items,
 	}, nil
 }
 
@@ -302,7 +315,7 @@ func (p *projectSvc) ensureRepoBindingMatched(ctx context.Context, nsID int, nam
 // webApply 是 WebApply/WebApplyByName 共用的执行体：接收已解析出 id 的 ApplyRequest，
 // 跑 apply 编排并组装 WebApplyResponse（dryRun 由调用方透传）。
 func (p *projectSvc) webApply(ctx context.Context, req *project.ApplyRequest, dryRun bool) (*project.WebApplyResponse, error) {
-	job, err := p.apply(ctx, biz.MustGetUser(ctx), newEmptyMessager(), req, dryRun)
+	job, err := p.apply(ctx, biz.MustGetUser(ctx), deploy.NoopMsger{}, req, dryRun)
 	if err != nil {
 		return nil, logError(ctx, p.logger, err)
 	}
@@ -397,8 +410,11 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 		return nil, logError(ctx, p.logger, err)
 	}
 
+	item := transformer.FromProject(projectModel)
+	enrichProjectHibernate(ctx, p.logger, p.hibernateBiz, item)
+
 	return &project.ShowResponse{
-		Item: transformer.FromProject(projectModel),
+		Item: item,
 	}, nil
 }
 
@@ -434,7 +450,40 @@ func (p *projectSvc) ShowByName(ctx context.Context, input *project.ShowByNameRe
 		return nil, logError(ctx, p.logger, err)
 	}
 
-	return &project.ShowResponse{Item: transformer.FromProject(projectModel)}, nil
+	item := transformer.FromProject(projectModel)
+	enrichProjectHibernate(ctx, p.logger, p.hibernateBiz, item)
+
+	return &project.ShowResponse{Item: item}, nil
+}
+
+// ToggleHibernate 切换项目级定时休眠开关（仅切换开关，不触发重部署——休眠/唤醒由对账在
+// 窗口边界推进）。响应前做项目级访问控制，打开时 biz 层会校验所属仓库已启用休眠能力；
+// 变更成功后落审计日志（Update），消息携带项目 id/名与开关目标态，供运维追溯谁何时动了休眠。
+func (p *projectSvc) ToggleHibernate(ctx context.Context, req *project.ToggleHibernateRequest) (*project.ToggleHibernateResponse, error) {
+	proj, err := p.accessBiz.RequireProjectAccess(ctx, int(req.ProjectId))
+	if err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+	h, err := p.hibernateBiz.Toggle(ctx, int(req.ProjectId), req.Enabled)
+	if err != nil {
+		return nil, logError(ctx, p.logger, err)
+	}
+	stateStr := "关闭"
+	if h.Enabled {
+		stateStr = "开启"
+	}
+	user := biz.MustGetUser(ctx)
+	p.eventBiz.AuditLogWithRequest(
+		types.EventActionType_Update,
+		user.Name,
+		user.Email,
+		fmt.Sprintf("%s项目 %d/%s 的定时休眠", stateStr, proj.ID, proj.Name),
+		req,
+	)
+	return &project.ToggleHibernateResponse{
+		Enabled: h.Enabled,
+		State:   string(h.State),
+	}, nil
 }
 
 // MemoryCpuAndEndpoints 返回项目的 CPU/内存聚合用量与端点列表，响应前做项目级访问控制。
@@ -638,52 +687,6 @@ func mapDomainFailures(failures []*biz.ContainerFailure) []*project.ContainerFai
 	}
 	return out
 }
-
-var _ deploy.DeployMsger = (*emptyMessager)(nil)
-
-// emptyMessager 实现 deploy.DeployMsger 的空操作版本：所有推送方法均 no-op，
-// 供 WebApply 等非流式场景使用（丢弃全部部署进度/日志帧）。
-type emptyMessager struct{}
-
-// newEmptyMessager 构造一个丢弃全部消息的空 messager。
-func newEmptyMessager() *emptyMessager {
-	return &emptyMessager{}
-}
-
-// Current 返回当前进度（恒为 0）。
-func (e *emptyMessager) Current() int64 {
-	return 0
-}
-
-// Add 进度空操作。
-func (e *emptyMessager) Add() {
-}
-
-// To 空操作：直接设置进度被忽略。
-func (e *emptyMessager) To(percent int64) {
-}
-
-// SendEndError 空实现。
-func (e *emptyMessager) SendEndError(err error) {}
-
-// SendMsg 空实现。
-func (e *emptyMessager) SendMsg(s string) {}
-
-// SendProtoMsg 空实现。
-func (e *emptyMessager) SendProtoMsg(message app.WebsocketMessage) {}
-
-// SendProcessPercent 空实现。
-func (e *emptyMessager) SendProcessPercent(int64) {}
-
-// SendMsgWithContainerLog 空实现。
-func (e *emptyMessager) SendMsgWithContainerLog(msg string, containers []*websocket.Container) {}
-
-// SendDeployedResult 空实现。
-func (e *emptyMessager) SendDeployedResult(resultType websocket.ResultType, s string, p *types.ProjectModel) {
-}
-
-// SetSlug 空实现：丢弃全部帧的空 messager 无 slug 关联需求。
-func (e *emptyMessager) SetSlug(string) {}
 
 var _ deploy.DeployMsger = (*messager)(nil)
 

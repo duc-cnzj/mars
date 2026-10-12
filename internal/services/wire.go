@@ -10,6 +10,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/event"
 	"github.com/duc-cnzj/mars/api/v6/proto/file"
 	"github.com/duc-cnzj/mars/api/v6/proto/git"
+	"github.com/duc-cnzj/mars/api/v6/proto/hibernate"
 	"github.com/duc-cnzj/mars/api/v6/proto/metrics"
 	"github.com/duc-cnzj/mars/api/v6/proto/namespace"
 	"github.com/duc-cnzj/mars/api/v6/proto/picture"
@@ -24,7 +25,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-// WireServiceSet 是传输层服务装配集：供 wire 注入，组合 17 个 gRPC service
+// WireServiceSet 是传输层服务装配集：供 wire 注入，组合 18 个 gRPC service
 // （XxxSvcDeps wire.Struct 全字段注入 + 对应 NewXxxSvc 构造器）与 HTTP 处理器、
 // gRPC 注册表，构成 services 包对外可注入的全部传输层能力。
 var WireServiceSet = wire.NewSet(
@@ -45,6 +46,7 @@ var WireServiceSet = wire.NewSet(
 	wire.Struct(new(PictureSvcDeps), "*"),
 	wire.Struct(new(SettingsSvcDeps), "*"),
 	wire.Struct(new(UserSvcDeps), "*"),
+	wire.Struct(new(HibernateSvcDeps), "*"),
 	wire.Struct(new(NewGrpcRegistryDeps), "*"),
 	NewAccessTokenSvc,
 	NewAuthSvc,
@@ -57,6 +59,7 @@ var WireServiceSet = wire.NewSet(
 	NewFileSvc,
 	NewHttpHandler,
 	NewGitSvc,
+	NewHibernateSvc,
 	NewMetricsSvc,
 	NewNamespaceSvc,
 	NewPictureSvc,
@@ -67,7 +70,7 @@ var WireServiceSet = wire.NewSet(
 	NewGrpcRegistry,
 )
 
-// NewGrpcRegistryDeps 收口 NewGrpcRegistry 的 17 个 gRPC 服务实现，由 wire 按字段
+// NewGrpcRegistryDeps 收口 NewGrpcRegistry 的 18 个 gRPC 服务实现，由 wire 按字段
 // 注入。与全包 wire.Struct("*") 模式对齐：裸位置参数存在"错一个位置编译期全过、
 // 运行期串服务"的隐患，Deps struct 根除这一风险。
 type NewGrpcRegistryDeps struct {
@@ -88,6 +91,7 @@ type NewGrpcRegistryDeps struct {
 	Repo        repo.RepoServer
 	Settings    settings.SettingsServer
 	User        user.UserServer
+	Hibernate   hibernate.HibernateServer
 }
 
 // NewGrpcRegistry 组装 gRPC 网关路由表与服务器注册函数：把各服务实现注册到
@@ -105,6 +109,7 @@ func NewGrpcRegistry(deps NewGrpcRegistryDeps) *app.GrpcRegistry {
 			event.RegisterEventHandlerFromEndpoint,
 			file.RegisterFileHandlerFromEndpoint,
 			git.RegisterGitHandlerFromEndpoint,
+			hibernate.RegisterHibernateHandlerFromEndpoint,
 			metrics.RegisterMetricsHandlerFromEndpoint,
 			namespace.RegisterNamespaceHandlerFromEndpoint,
 			picture.RegisterPictureHandlerFromEndpoint,
@@ -124,6 +129,7 @@ func NewGrpcRegistry(deps NewGrpcRegistryDeps) *app.GrpcRegistry {
 			event.RegisterEventServer(s, deps.Event)
 			file.RegisterFileServer(s, deps.File)
 			git.RegisterGitServer(s, deps.Git)
+			hibernate.RegisterHibernateServer(s, deps.Hibernate)
 			metrics.RegisterMetricsServer(s, deps.Metrics)
 			namespace.RegisterNamespaceServer(s, deps.Namespace)
 			picture.RegisterPictureServer(s, deps.Picture)

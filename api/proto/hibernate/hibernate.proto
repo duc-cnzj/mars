@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package hibernate;
+
+import "openapi/v3/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+
+option go_package = "github.com/duc-cnzj/mars/api/v6/proto/hibernate;hibernate";
+
+// HibernateWindow 全局休眠时间窗：管理员在后台维护若干命名时段，
+// 各仓库的定时休眠配置按名字引用其中一个（mars.Hibernate.window_name）。
+message HibernateWindow {
+  int32  id          = 1;
+  // name 时间窗名（全局唯一，仓库按名字引用）。
+  string name        = 2;
+  // start 休眠开始时间（服务端本地时区，HH:MM）。
+  string start       = 3;
+  // end 休眠结束时间（HH:MM，start>end 表示跨零点）。
+  string end         = 4;
+  string description = 5;
+}
+
+message ListWindowsRequest {}
+
+message ListWindowsResponse {
+  repeated HibernateWindow items = 1;
+}
+
+message CreateWindowRequest {
+  string name        = 1 [(validate.rules).string = {min_bytes: 1, max_bytes: 64}, (google.api.field_behavior) = REQUIRED];
+  string start       = 2 [(validate.rules).string = {min_bytes: 1, max_bytes: 5}, (google.api.field_behavior) = REQUIRED];
+  string end         = 3 [(validate.rules).string = {min_bytes: 1, max_bytes: 5}, (google.api.field_behavior) = REQUIRED];
+  string description = 4;
+}
+
+message CreateWindowResponse {
+  HibernateWindow window = 1;
+}
+
+message UpdateWindowRequest {
+  int32  id          = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  string name        = 2 [(validate.rules).string = {min_bytes: 1, max_bytes: 64}, (google.api.field_behavior) = REQUIRED];
+  string start       = 3 [(validate.rules).string = {min_bytes: 1, max_bytes: 5}, (google.api.field_behavior) = REQUIRED];
+  string end         = 4 [(validate.rules).string = {min_bytes: 1, max_bytes: 5}, (google.api.field_behavior) = REQUIRED];
+  string description = 5;
+}
+
+message UpdateWindowResponse {
+  HibernateWindow window = 1;
+}
+
+message DeleteWindowRequest {
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
+
+message DeleteWindowResponse {}
+
+// Hibernate 全局休眠时间窗的查询与后台管理服务，按方法分级授权（Authorize 门禁）：
+// ListWindows 登录即可读（项目卡片需按 window_name 展示时段），Create/Update/Delete 仅管理员。
+// 路径前缀随权限分层：读接口挂 /api/（面向全体登录用户），写接口挂 /api/admin/（管理员专属）。
+service Hibernate {
+  rpc ListWindows(ListWindowsRequest) returns (ListWindowsResponse) {
+    option (google.api.http)      = {
+      get: "/api/hibernate/windows"
+    };
+    option (openapi.v3.operation) = {
+      summary: "获取全局休眠时间窗列表（登录可读）",
+    };
+  }
+
+  rpc CreateWindow(CreateWindowRequest) returns (CreateWindowResponse) {
+    option (google.api.http)      = {
+      post: "/api/admin/hibernate/windows",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "创建全局休眠时间窗（管理员）",
+    };
+  }
+
+  rpc UpdateWindow(UpdateWindowRequest) returns (UpdateWindowResponse) {
+    option (google.api.http)      = {
+      put: "/api/admin/hibernate/windows/{id}",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "更新全局休眠时间窗（管理员）",
+    };
+  }
+
+  rpc DeleteWindow(DeleteWindowRequest) returns (DeleteWindowResponse) {
+    option (google.api.http)      = {
+      delete: "/api/admin/hibernate/windows/{id}",
+    };
+    option (openapi.v3.operation) = {
+      summary: "删除全局休眠时间窗（管理员）",
+    };
+  }
+}

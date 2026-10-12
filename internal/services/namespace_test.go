@@ -625,8 +625,13 @@ func TestNamespaceSvc_Show_Success(t *testing.T) {
 	nsRepo := mocks.nsRepo
 
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{
-		ID:   1,
-		Name: "namespace1",
+		ID:       1,
+		Name:     "namespace1",
+		Projects: []*biz.Project{{ID: 10, Name: "projA"}},
+	}, nil)
+	// 详情里的嵌套项目补休眠态（工作台卡片原地刷新走本接口）：命中回填、未命中保持零值。
+	mocks.hibernate.EXPECT().ListByProjectIDs(gomock.Any(), 10).Return(map[int]*biz.ProjectHibernate{
+		10: {ProjectID: 10, Enabled: true, State: biz.HibernateStateSleeping},
 	}, nil)
 
 	res, err := svc.Show(newAdminUserCtx(), &namespace.ShowRequest{
@@ -637,6 +642,10 @@ func TestNamespaceSvc_Show_Success(t *testing.T) {
 	assert.NotNil(t, res)
 	assert.Equal(t, int32(1), res.Item.Id)
 	assert.Equal(t, "namespace1", res.Item.Name)
+	if assert.Len(t, res.Item.Projects, 1) {
+		assert.True(t, res.Item.Projects[0].HibernateEnabled)
+		assert.Equal(t, "sleeping", res.Item.Projects[0].HibernateState)
+	}
 }
 
 func TestNamespaceSvc_Show_NotFound(t *testing.T) {
@@ -802,6 +811,36 @@ func Test_namespaceSvc_List(t *testing.T) {
 		Name:     lo.ToPtr("name"),
 	})
 	assert.Error(t, err)
+}
+
+// Test_namespaceSvc_List_EnrichesNestedProjects 覆盖嵌套项目补充休眠态：
+// 工作台项目行直接从命名空间列表取数，漏补会让行上的休眠图标在点开弹层前恒为「未开启」。
+// 跨命名空间汇总 id 一次批量查询（避免逐空间 N+1）。
+func Test_namespaceSvc_List_EnrichesNestedProjects(t *testing.T) {
+	svc, mocks := newNamespaceSvcWithMocks(t)
+
+	mocks.nsRepo.EXPECT().List(gomock.Any(), gomock.Any()).Return([]*biz.Namespace{
+		{ID: 1, Name: "ns1", Projects: []*biz.Project{{ID: 10}, {ID: 11}}},
+		{ID: 2, Name: "ns2", Projects: []*biz.Project{{ID: 20}}},
+	}, &pagination.Pagination{}, nil)
+	// 跨三个命名空间项目一次批量查询（10/11/20 汇总）。
+	mocks.hibernate.EXPECT().ListByProjectIDs(gomock.Any(), 10, 11, 20).
+		Return(map[int]*biz.ProjectHibernate{
+			10: {ProjectID: 10, Enabled: true, State: biz.HibernateStateSleeping},
+			20: {ProjectID: 20, Enabled: true, State: biz.HibernateStateAwake},
+		}, nil)
+
+	res, err := svc.List(newOtherUserCtx(), &namespace.ListRequest{})
+	assert.NoError(t, err)
+	if assert.Len(t, res.Items, 2) {
+		assert.True(t, res.Items[0].Projects[0].HibernateEnabled)
+		assert.Equal(t, "sleeping", res.Items[0].Projects[0].HibernateState)
+		// 未命中（窗口 11 无记录）保持零值。
+		assert.False(t, res.Items[0].Projects[1].HibernateEnabled)
+		assert.Empty(t, res.Items[0].Projects[1].HibernateState)
+		assert.True(t, res.Items[1].Projects[0].HibernateEnabled)
+		assert.Equal(t, "awake", res.Items[1].Projects[0].HibernateState)
+	}
 }
 
 func Test_namespaceSvc_SyncMembers(t *testing.T) {
@@ -1221,6 +1260,7 @@ type namespaceSvcMocks struct {
 	nsRepo     *data.MockNamespaceRepo
 	k8sRepo    *data.MockK8sRepo
 	eventRepo  *data.MockEventRepo
+	hibernate  *biz.MockHibernateBiz
 }
 
 func newNamespaceSvcWithMocks(t *testing.T) (*namespaceSvc, *namespaceSvcMocks) {
@@ -1232,6 +1272,7 @@ func newNamespaceSvcWithMocks(t *testing.T) (*namespaceSvc, *namespaceSvcMocks) 
 		nsRepo:     data.NewMockNamespaceRepo(ctrl),
 		k8sRepo:    data.NewMockK8sRepo(ctrl),
 		eventRepo:  data.NewMockEventRepo(ctrl),
+		hibernate:  biz.NewMockHibernateBiz(ctrl),
 	}
 	logger := mlog.NewForConfig(nil)
 	s, ok := NewNamespaceSvc(NamespaceSvcDeps{
@@ -1242,9 +1283,10 @@ func newNamespaceSvcWithMocks(t *testing.T) (*namespaceSvc, *namespaceSvcMocks) 
 			mocks.helmerRepo,
 			mocks.eventRepo,
 		),
-		Logger:    logger,
-		EventBiz:  biz.NewEventBiz(mocks.eventRepo),
-		AccessBiz: biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), nil),
+		Logger:       logger,
+		EventBiz:     biz.NewEventBiz(mocks.eventRepo),
+		AccessBiz:    biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), nil),
+		HibernateBiz: mocks.hibernate,
 	}).(*namespaceSvc)
 	if !ok {
 		panic("NewNamespaceSvc returned unexpected type")

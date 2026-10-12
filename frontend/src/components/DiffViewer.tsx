@@ -24,8 +24,8 @@ const codeBase = { lineHeight: 1.4, fontFamily: 'monospace' } as const
 const containerBase = { display: 'block', width: '100%', height: '100%', overflowX: 'auto' } as const
 
 /** 选中高亮与 CodeMirror 对齐（同一套 #2f81f7，见 lib/prism-material-dark.ts 的选中蓝）：
- *  全局 ::selection 是品牌色 30% 淡底，落在此处暗底 #2e303c 上偏淡，还把选中文字染成
- *  var(--text)（默认浅色主题下近黑）——而本组件恒为暗底白字，就成了黑字压蓝底。
+ *  全局 ::selection 现已是同一支 #2f81f7 底 + #fff 字，本处 scoped 覆写在色值上已与全局等价，
+ *  保留只为把 diff 的选中样式显式钉在组件内（diff 恒暗底白字，不随全站选中主题再变）。
  *  覆写按组件作用域（emotion 编成 `.css-哈希 ::selection`），只命中 diff 内容。
  *  文字色必须写死暗色主题的 diffViewerColor #FFF：不能用 color: inherit——Blink 的高亮
  *  伪元素继承自根元素而非宿主元素，inherit 取回的是 body 的 var(--text)，等于没改。

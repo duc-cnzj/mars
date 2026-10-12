@@ -12,6 +12,7 @@ import { useOverlayZ } from '@/hooks/useOverlayZ'
 import { Icon, type IconName } from '@/components/Icons'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
+import { Switch } from '@/components/ui/shadcn/switch'
 import { Tag } from '@/components/ui'
 import {
   Dialog,
@@ -20,17 +21,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/shadcn/dialog'
+import { getHibernateWindows } from '@/api/hibernateWindowsCache'
+import { hibernateWindowLabel, replicaFieldLabels } from './hibernate'
 
 type ProjectModel = components['schemas']['types.ProjectModel']
 type ServiceEndpoint = components['schemas']['types.ServiceEndpoint']
+type HibernateWindowModel = components['schemas']['hibernate.HibernateWindow']
 
-/** 详细信息 Tab：id / cpu / memory / 端点 / git / 镜像 / 日期 / 配置，删除入口。 */
+/** 详细信息 Tab：基础信息（项目 ID 等标量）/ cpu / memory / 端点 / git / 镜像 / 日期 / 配置，删除入口。 */
 export function TabInfo({
   detail,
   onDeleted,
+  onChanged,
 }: {
   detail: ProjectModel
   onDeleted: () => void
+  /** 项目配置变更成功回调：休眠开关切换后通知父级刷新详情与工作台列表 */
+  onChanged: () => void
 }) {
   const { t } = useTranslation()
   const [endpoints, setEndpoints] = useState<ServiceEndpoint[]>([])
@@ -71,6 +78,53 @@ export function TabInfo({
     }
   }, [detail.id])
 
+  // 定时休眠：仓库级能力（marsConfig.hibernate.enabled）决定本区是否展示；
+  // 开关态回显自项目级记录（hibernateEnabled），运行态 hibernateState 为 awake/sleeping。
+  const hb = detail.repo?.marsConfig?.hibernate
+  const hasHibernate = Boolean(hb?.enabled)
+  // 全局时间窗：把只读展示的 window_name 映射成「窗名 (时段)」。仅在启用休眠时拉取，
+  // 走缓存模块去重；拉取失败/窗口未命中时回退为只显示窗名（helper 内部兜底）。
+  const [windows, setWindows] = useState<HibernateWindowModel[]>([])
+  useEffect(() => {
+    if (!hasHibernate) return
+    let cancelled = false
+    void getHibernateWindows().then((w) => {
+      if (!cancelled) setWindows(w)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [hasHibernate])
+  // 本地开关态：初始同步 detail，切换时乐观更新（失败回滚），父级刷新后按最新 detail 重新对齐
+  const [hibEnabled, setHibEnabled] = useState(detail.hibernateEnabled)
+  const [hibSaving, setHibSaving] = useState(false)
+  useEffect(() => {
+    setHibEnabled(detail.hibernateEnabled)
+  }, [detail.id, detail.hibernateEnabled])
+
+  /** 切换项目级休眠开关：仅改开关不触发重部署（副本映射/时间窗来自仓库级配置）；
+   *  成功后通知父级刷新详情与工作台列表，失败回滚本地态 */
+  const toggleHibernate = async (next: boolean) => {
+    setHibEnabled(next)
+    setHibSaving(true)
+    try {
+      const { error } = await api.POST(API.projectsHibernate, {
+        params: { path: { projectId: detail.id } },
+        body: { projectId: detail.id, enabled: next },
+      })
+      if (error) throw new Error(error.message ?? String(error))
+      toast.success(
+        next ? t('project.hibernateToggleOn') : t('project.hibernateToggleOff'),
+      )
+      onChanged()
+    } catch (e) {
+      setHibEnabled(!next)
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setHibSaving(false)
+    }
+  }
+
   /** 复制文本并统一反馈：相关配置 / 访问地址 / 容器镜像三处共用同一套交互
    *  （失败统一「复制失败」；成功文案按来源区分——doneKey 由调用点传入，
    *   「已复制访问地址！」「已复制镜像地址！」「已复制相关配置！」，不再一律「已复制」） */
@@ -102,20 +156,67 @@ export function TabInfo({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 关键指标 */}
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <MetricCard icon="rocket" label={t('project.projectId')} value={String(detail.id)} />
+      {/* 关键指标：仅 CPU / 内存两张卡（项目 ID 已移入下方「基础信息」区，不再占用指标卡位，
+          故网格由 3 列收为 2 列） */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <MetricCard icon="cpu" label={t('project.cpu')} value={metricsLoading ? '…' : cpu} />
         <MetricCard icon="memory" label={t('project.memory')} value={metricsLoading ? '…' : memory} />
       </div>
 
-      {/* 基础信息：show 接口标量元数据（repoId / version / gitProjectId / namespaceId） */}
+      {/* 基础信息：show 接口标量元数据（id / repoId / version / gitProjectId / namespaceId）。
+          项目 ID 作为最基础标识置首行，与其余标量元数据并列展示。 */}
       <Section icon="key" title={t('project.basicInfo')}>
+        <KV k={t('project.projectId')} v={detail.id ?? '-'} mono />
         <KV k={t('project.repoId')} v={detail.repoId ?? '-'} mono />
         <KV k={t('project.version')} v={detail.version ?? '-'} mono />
         <KV k={t('project.gitProjectId')} v={detail.gitProjectId ?? '-'} mono />
         <KV k={t('project.namespaceId')} v={detail.namespaceId ?? '-'} mono />
       </Section>
+
+      {/* 定时休眠：仅仓库启用休眠能力时展示；开关切换项目级参与，时间窗/副本字段来自仓库配置（只读） */}
+      {hasHibernate && hb && (
+        <Section icon="moon" title={t('project.hibernate')}>
+          <div className="flex items-center justify-between gap-2 rounded-md border border-line px-3 py-2">
+            <span className="flex items-center gap-2 text-[13px] text-ink">
+              <span className="text-mute" title={t('project.hibernateTip')}>
+                {t('project.hibernate')}
+              </span>
+              {hibEnabled && (
+                <Tag
+                  tone={detail.hibernateState === 'sleeping' ? 'warn' : 'ok'}
+                  dot={false}
+                  className="shrink-0"
+                >
+                  {detail.hibernateState === 'sleeping'
+                    ? t('project.hibernateStateSleeping')
+                    : t('project.hibernateStateAwake')}
+                </Tag>
+              )}
+            </span>
+            <Switch
+              checked={hibEnabled}
+              disabled={hibSaving}
+              onCheckedChange={toggleHibernate}
+            />
+          </div>
+          <KV
+            k={t('project.hibernateWindow')}
+            v={hibernateWindowLabel(hb.windowName, windows) || '-'}
+            mono
+          />
+          <KV
+            k={t('project.hibernateReplicaFields')}
+            v={
+              replicaFieldLabels(hb.replicaPaths, detail.repo?.marsConfig?.elements).join(', ') || '-'
+            }
+            mono
+          />
+          {/* 一句话说明：休眠时间段内副本字段被置 0，避免用户看到数量变化时误判 */}
+          <div className="text-[12px] leading-snug text-faint">
+            {t('project.hibernateReplicaZeroNote')}
+          </div>
+        </Section>
+      )}
 
       {/* 访问地址：link 图标与外部 ProjectRow URL 图标对齐（旧版 LinkOutlined 同款） */}
       <Section icon="link" title={t('project.endpoints')}>

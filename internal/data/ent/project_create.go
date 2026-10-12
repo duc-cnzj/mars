@@ -16,6 +16,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/changelog"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/repo"
 )
 
@@ -378,6 +379,25 @@ func (_c *ProjectCreate) AddChangelogs(v ...*Changelog) *ProjectCreate {
 	return _c.AddChangelogIDs(ids...)
 }
 
+// SetHibernateID sets the "hibernate" edge to the ProjectHibernate entity by ID.
+func (_c *ProjectCreate) SetHibernateID(id int) *ProjectCreate {
+	_c.mutation.SetHibernateID(id)
+	return _c
+}
+
+// SetNillableHibernateID sets the "hibernate" edge to the ProjectHibernate entity by ID if the given value is not nil.
+func (_c *ProjectCreate) SetNillableHibernateID(id *int) *ProjectCreate {
+	if id != nil {
+		_c = _c.SetHibernateID(*id)
+	}
+	return _c
+}
+
+// SetHibernate sets the "hibernate" edge to the ProjectHibernate entity.
+func (_c *ProjectCreate) SetHibernate(v *ProjectHibernate) *ProjectCreate {
+	return _c.SetHibernateID(v.ID)
+}
+
 // SetRepo sets the "repo" edge to the Repo entity.
 func (_c *ProjectCreate) SetRepo(v *Repo) *ProjectCreate {
 	return _c.SetRepoID(v.ID)
@@ -677,6 +697,22 @@ func (_c *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(changelog.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.HibernateIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   project.HibernateTable,
+			Columns: []string{project.HibernateColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projecthibernate.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

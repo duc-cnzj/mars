@@ -74,6 +74,8 @@ const (
 	FieldDeletedWithNamespace = "deleted_with_namespace"
 	// EdgeChangelogs holds the string denoting the changelogs edge name in mutations.
 	EdgeChangelogs = "changelogs"
+	// EdgeHibernate holds the string denoting the hibernate edge name in mutations.
+	EdgeHibernate = "hibernate"
 	// EdgeRepo holds the string denoting the repo edge name in mutations.
 	EdgeRepo = "repo"
 	// EdgeNamespace holds the string denoting the namespace edge name in mutations.
@@ -87,6 +89,13 @@ const (
 	ChangelogsInverseTable = "changelogs"
 	// ChangelogsColumn is the table column denoting the changelogs relation/edge.
 	ChangelogsColumn = "project_id"
+	// HibernateTable is the table that holds the hibernate relation/edge.
+	HibernateTable = "project_hibernates"
+	// HibernateInverseTable is the table name for the ProjectHibernate entity.
+	// It exists in this package in order to avoid circular dependency with the "projecthibernate" package.
+	HibernateInverseTable = "project_hibernates"
+	// HibernateColumn is the table column denoting the hibernate relation/edge.
+	HibernateColumn = "project_id"
 	// RepoTable is the table that holds the repo relation/edge.
 	RepoTable = "projects"
 	// RepoInverseTable is the table name for the Repo entity.
@@ -322,6 +331,13 @@ func ByChangelogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByHibernateField orders the results by hibernate field.
+func ByHibernateField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newHibernateStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByRepoField orders the results by repo field.
 func ByRepoField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -340,6 +356,13 @@ func newChangelogsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ChangelogsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ChangelogsTable, ChangelogsColumn),
+	)
+}
+func newHibernateStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(HibernateInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, HibernateTable, HibernateColumn),
 	)
 }
 func newRepoStep() *sqlgraph.Step {

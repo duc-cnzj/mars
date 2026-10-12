@@ -84,6 +84,7 @@
 | project | Liveness | ⭐ | project.go:143（Authorize allowlist 放行用户方法，Liveness 未豁免 → 落到 RequireAdmin） |
 | project | **Restore** | ⭐⭐ | project.go:137（`RequireSuperAdmin` 强制名单；Restore 同时不在 allowlist 中） |
 | project | **AdminDeletedList** | ⭐⭐ | project.go:137（同上名单；列「有哪些项目可恢复」与恢复同阈值） |
+| hibernate | CreateWindow / UpdateWindow / DeleteWindow | ⭐ | hibernate.go:46（Authorize allowlist 仅豁免 ListWindows 登录可读，其余未命中 → RequireAdmin） |
 
 > **Restore（误删恢复）为超管专属性**：两个 Restore 在 `Authorize` 开头命中 `RequireSuperAdmin` 强制名单——**仅内置超管放行，普通 admin 一律 403**；它们同时也不在 `RequireAdmin` 的 allowlist 中。项目侧另有 `RequireNamespaceAccessByName` 作为第二道"空间可访问"前置校验。设计取舍：
 > - **恢复权限收归超管**：Restore 会重建 k8s namespace 骨架（含 docker secret），是对集群有副作用的管理动作，普通用户即使拥有原空间也需联系**超级管理员**（普通 admin 同样 403）。
@@ -102,6 +103,7 @@
 | namespace | Favorite | 🛡️ `RequireNamespaceAccessByID` | services/namespace.go:320（缺此校验会退化成空间存在性预言机，见下） |
 | namespace | **UpdateDesc** | 🔑 登录即可 | ⚠️ 无 owner/访问校验，见 §6.1 |
 | project | Show / MemoryCpuAndEndpoints / Delete / Version / AllContainers | 🛡️ `RequireProjectAccess` | project.go:206 |
+| project | ToggleHibernate | 🛡️ `RequireProjectAccess` | project.go:462（allowlist 豁免 admin，命名空间成员即可切换休眠开关；UI 无 isAdmin 门） |
 | project | ShowByName | 🛡️ `RequireNamespaceAccessByName` → `RequireProjectAccess` | 先按空间名过门卫，再用反查到的 id 走与 Show 同一出口 |
 | project | WebApply / Apply | 🛡️ `RequireNamespaceAccessByID` | deploy/apply.go:62（私有空间成员即可部署） |
 | project | WebApplyByName | 🛡️ `RequireNamespaceAccessByName`（再按 id 复核） | 空间名反查即过门卫，deploy.ApplyProject 内再复核 namespace_id；仓库由 name 匹配或 repo_id 指定，后续有「绑定仓库不可变」守卫 |
@@ -123,6 +125,7 @@
 | accessToken | Grant / Lease / Revoke | 🔑 | 按 token 值操作，"持有即有权"（见 §6.3） |
 | git | AllRepos / ProjectOptions / BranchOptions / CommitOptions / Commit / PipelineInfo / GetChartValuesYaml | 🔑 | git 信息不绑定命名空间（全局仓库） |
 | event | List / Show | 🔑 登录即可（普通用户仅见本人） | event.go:54 按操作人邮箱（operator_email）归属过滤：admin 全量，普通用户只看自己的事件；Show 越权访问返回 404（视同不存在，防审计日志 id 枚举） |
+| hibernate | ListWindows | 🔑 | hibernate.go:46（Authorize allowlist 豁免，登录即可读全量时间窗；项目卡片按 window_name 展示时段需要。Create/Update/Delete 仍 admin，见 §4.2） |
 
 ## 5. HTTP 端点（httphandler.go / file_handler.go / swagger_handler.go）
 

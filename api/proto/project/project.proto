@@ -14,6 +14,8 @@ option go_package = "github.com/duc-cnzj/mars/api/v6/proto/project;project";
 message ListRequest {
   optional int32 page      = 1;
   optional int32 page_size = 2;
+  // 按所属仓库过滤（仓库列表「查看项目」用）；不传或 0 = 全部。
+  optional int32 repo_id   = 3;
 }
 message ListResponse {
   int32                       page      = 1;
@@ -41,6 +43,17 @@ message DeleteRequest {
   int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 message DeleteResponse {}
+
+// ToggleHibernateRequest 项目级定时休眠开关：仅切换开关本身，不触发重部署
+// （副本字段映射与时间窗来自仓库级 mars_config.hibernate）。
+message ToggleHibernateRequest {
+  int32 project_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  bool  enabled    = 2;
+}
+message ToggleHibernateResponse {
+  bool   enabled = 1;
+  string state   = 2;
+}
 
 // RestoreRequest 按「空间名 + 项目名」定位被误删的项目（空间名免前缀，后台按 ns_prefix 幂等补全）。
 // 用业务名而非 id：软删记录已从列表消失，排障时手上往往只剩名字。
@@ -418,6 +431,17 @@ service Project {
     };
     option (openapi.v3.operation) = {
       summary: "项目活跃度清单（管理员）",
+    };
+  }
+
+  // ToggleHibernate 切换项目级定时休眠开关（仅切换开关，不触发重部署）。
+  rpc ToggleHibernate(ToggleHibernateRequest) returns (ToggleHibernateResponse) {
+    option (google.api.http) = {
+      post: "/api/projects/{project_id}/hibernate",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "切换项目定时休眠开关",
     };
   }
 }

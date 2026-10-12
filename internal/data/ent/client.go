@@ -22,9 +22,11 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/event"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/favorite"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/file"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/hibernatewindow"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/member"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/repo"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/user"
 )
@@ -48,12 +50,16 @@ type Client struct {
 	Favorite *FavoriteClient
 	// File is the client for interacting with the File builders.
 	File *FileClient
+	// HibernateWindow is the client for interacting with the HibernateWindow builders.
+	HibernateWindow *HibernateWindowClient
 	// Member is the client for interacting with the Member builders.
 	Member *MemberClient
 	// Namespace is the client for interacting with the Namespace builders.
 	Namespace *NamespaceClient
 	// Project is the client for interacting with the Project builders.
 	Project *ProjectClient
+	// ProjectHibernate is the client for interacting with the ProjectHibernate builders.
+	ProjectHibernate *ProjectHibernateClient
 	// Repo is the client for interacting with the Repo builders.
 	Repo *RepoClient
 	// User is the client for interacting with the User builders.
@@ -76,9 +82,11 @@ func (c *Client) init() {
 	c.Event = NewEventClient(c.config)
 	c.Favorite = NewFavoriteClient(c.config)
 	c.File = NewFileClient(c.config)
+	c.HibernateWindow = NewHibernateWindowClient(c.config)
 	c.Member = NewMemberClient(c.config)
 	c.Namespace = NewNamespaceClient(c.config)
 	c.Project = NewProjectClient(c.config)
+	c.ProjectHibernate = NewProjectHibernateClient(c.config)
 	c.Repo = NewRepoClient(c.config)
 	c.User = NewUserClient(c.config)
 }
@@ -171,20 +179,22 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:         ctx,
-		config:      cfg,
-		AccessToken: NewAccessTokenClient(cfg),
-		CacheLock:   NewCacheLockClient(cfg),
-		Changelog:   NewChangelogClient(cfg),
-		DBCache:     NewDBCacheClient(cfg),
-		Event:       NewEventClient(cfg),
-		Favorite:    NewFavoriteClient(cfg),
-		File:        NewFileClient(cfg),
-		Member:      NewMemberClient(cfg),
-		Namespace:   NewNamespaceClient(cfg),
-		Project:     NewProjectClient(cfg),
-		Repo:        NewRepoClient(cfg),
-		User:        NewUserClient(cfg),
+		ctx:              ctx,
+		config:           cfg,
+		AccessToken:      NewAccessTokenClient(cfg),
+		CacheLock:        NewCacheLockClient(cfg),
+		Changelog:        NewChangelogClient(cfg),
+		DBCache:          NewDBCacheClient(cfg),
+		Event:            NewEventClient(cfg),
+		Favorite:         NewFavoriteClient(cfg),
+		File:             NewFileClient(cfg),
+		HibernateWindow:  NewHibernateWindowClient(cfg),
+		Member:           NewMemberClient(cfg),
+		Namespace:        NewNamespaceClient(cfg),
+		Project:          NewProjectClient(cfg),
+		ProjectHibernate: NewProjectHibernateClient(cfg),
+		Repo:             NewRepoClient(cfg),
+		User:             NewUserClient(cfg),
 	}, nil
 }
 
@@ -202,20 +212,22 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:         ctx,
-		config:      cfg,
-		AccessToken: NewAccessTokenClient(cfg),
-		CacheLock:   NewCacheLockClient(cfg),
-		Changelog:   NewChangelogClient(cfg),
-		DBCache:     NewDBCacheClient(cfg),
-		Event:       NewEventClient(cfg),
-		Favorite:    NewFavoriteClient(cfg),
-		File:        NewFileClient(cfg),
-		Member:      NewMemberClient(cfg),
-		Namespace:   NewNamespaceClient(cfg),
-		Project:     NewProjectClient(cfg),
-		Repo:        NewRepoClient(cfg),
-		User:        NewUserClient(cfg),
+		ctx:              ctx,
+		config:           cfg,
+		AccessToken:      NewAccessTokenClient(cfg),
+		CacheLock:        NewCacheLockClient(cfg),
+		Changelog:        NewChangelogClient(cfg),
+		DBCache:          NewDBCacheClient(cfg),
+		Event:            NewEventClient(cfg),
+		Favorite:         NewFavoriteClient(cfg),
+		File:             NewFileClient(cfg),
+		HibernateWindow:  NewHibernateWindowClient(cfg),
+		Member:           NewMemberClient(cfg),
+		Namespace:        NewNamespaceClient(cfg),
+		Project:          NewProjectClient(cfg),
+		ProjectHibernate: NewProjectHibernateClient(cfg),
+		Repo:             NewRepoClient(cfg),
+		User:             NewUserClient(cfg),
 	}, nil
 }
 
@@ -246,7 +258,8 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.AccessToken, c.CacheLock, c.Changelog, c.DBCache, c.Event, c.Favorite, c.File,
-		c.Member, c.Namespace, c.Project, c.Repo, c.User,
+		c.HibernateWindow, c.Member, c.Namespace, c.Project, c.ProjectHibernate,
+		c.Repo, c.User,
 	} {
 		n.Use(hooks...)
 	}
@@ -257,7 +270,8 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.AccessToken, c.CacheLock, c.Changelog, c.DBCache, c.Event, c.Favorite, c.File,
-		c.Member, c.Namespace, c.Project, c.Repo, c.User,
+		c.HibernateWindow, c.Member, c.Namespace, c.Project, c.ProjectHibernate,
+		c.Repo, c.User,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -280,12 +294,16 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Favorite.mutate(ctx, m)
 	case *FileMutation:
 		return c.File.mutate(ctx, m)
+	case *HibernateWindowMutation:
+		return c.HibernateWindow.mutate(ctx, m)
 	case *MemberMutation:
 		return c.Member.mutate(ctx, m)
 	case *NamespaceMutation:
 		return c.Namespace.mutate(ctx, m)
 	case *ProjectMutation:
 		return c.Project.mutate(ctx, m)
+	case *ProjectHibernateMutation:
+		return c.ProjectHibernate.mutate(ctx, m)
 	case *RepoMutation:
 		return c.Repo.mutate(ctx, m)
 	case *UserMutation:
@@ -1298,6 +1316,139 @@ func (c *FileClient) mutate(ctx context.Context, m *FileMutation) (Value, error)
 	}
 }
 
+// HibernateWindowClient is a client for the HibernateWindow schema.
+type HibernateWindowClient struct {
+	config
+}
+
+// NewHibernateWindowClient returns a client for the HibernateWindow from the given config.
+func NewHibernateWindowClient(c config) *HibernateWindowClient {
+	return &HibernateWindowClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `hibernatewindow.Hooks(f(g(h())))`.
+func (c *HibernateWindowClient) Use(hooks ...Hook) {
+	c.hooks.HibernateWindow = append(c.hooks.HibernateWindow, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `hibernatewindow.Intercept(f(g(h())))`.
+func (c *HibernateWindowClient) Intercept(interceptors ...Interceptor) {
+	c.inters.HibernateWindow = append(c.inters.HibernateWindow, interceptors...)
+}
+
+// Create returns a builder for creating a HibernateWindow entity.
+func (c *HibernateWindowClient) Create() *HibernateWindowCreate {
+	mutation := newHibernateWindowMutation(c.config, OpCreate)
+	return &HibernateWindowCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of HibernateWindow entities.
+func (c *HibernateWindowClient) CreateBulk(builders ...*HibernateWindowCreate) *HibernateWindowCreateBulk {
+	return &HibernateWindowCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *HibernateWindowClient) MapCreateBulk(slice any, setFunc func(*HibernateWindowCreate, int)) *HibernateWindowCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &HibernateWindowCreateBulk{err: fmt.Errorf("calling to HibernateWindowClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*HibernateWindowCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &HibernateWindowCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for HibernateWindow.
+func (c *HibernateWindowClient) Update() *HibernateWindowUpdate {
+	mutation := newHibernateWindowMutation(c.config, OpUpdate)
+	return &HibernateWindowUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *HibernateWindowClient) UpdateOne(_m *HibernateWindow) *HibernateWindowUpdateOne {
+	mutation := newHibernateWindowMutation(c.config, OpUpdateOne, withHibernateWindow(_m))
+	return &HibernateWindowUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *HibernateWindowClient) UpdateOneID(id int) *HibernateWindowUpdateOne {
+	mutation := newHibernateWindowMutation(c.config, OpUpdateOne, withHibernateWindowID(id))
+	return &HibernateWindowUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for HibernateWindow.
+func (c *HibernateWindowClient) Delete() *HibernateWindowDelete {
+	mutation := newHibernateWindowMutation(c.config, OpDelete)
+	return &HibernateWindowDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *HibernateWindowClient) DeleteOne(_m *HibernateWindow) *HibernateWindowDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *HibernateWindowClient) DeleteOneID(id int) *HibernateWindowDeleteOne {
+	builder := c.Delete().Where(hibernatewindow.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &HibernateWindowDeleteOne{builder}
+}
+
+// Query returns a query builder for HibernateWindow.
+func (c *HibernateWindowClient) Query() *HibernateWindowQuery {
+	return &HibernateWindowQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeHibernateWindow},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a HibernateWindow entity by its id.
+func (c *HibernateWindowClient) Get(ctx context.Context, id int) (*HibernateWindow, error) {
+	return c.Query().Where(hibernatewindow.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *HibernateWindowClient) GetX(ctx context.Context, id int) *HibernateWindow {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *HibernateWindowClient) Hooks() []Hook {
+	return c.hooks.HibernateWindow
+}
+
+// Interceptors returns the client interceptors.
+func (c *HibernateWindowClient) Interceptors() []Interceptor {
+	return c.inters.HibernateWindow
+}
+
+func (c *HibernateWindowClient) mutate(ctx context.Context, m *HibernateWindowMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&HibernateWindowCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&HibernateWindowUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&HibernateWindowUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&HibernateWindowDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown HibernateWindow mutation op: %q", m.Op())
+	}
+}
+
 // MemberClient is a client for the Member schema.
 type MemberClient struct {
 	config
@@ -1756,6 +1907,22 @@ func (c *ProjectClient) QueryChangelogs(_m *Project) *ChangelogQuery {
 	return query
 }
 
+// QueryHibernate queries the hibernate edge of a Project.
+func (c *ProjectClient) QueryHibernate(_m *Project) *ProjectHibernateQuery {
+	query := (&ProjectHibernateClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, id),
+			sqlgraph.To(projecthibernate.Table, projecthibernate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, project.HibernateTable, project.HibernateColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryRepo queries the repo edge of a Project.
 func (c *ProjectClient) QueryRepo(_m *Project) *RepoQuery {
 	query := (&RepoClient{config: c.config}).Query()
@@ -1812,6 +1979,155 @@ func (c *ProjectClient) mutate(ctx context.Context, m *ProjectMutation) (Value, 
 		return (&ProjectDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Project mutation op: %q", m.Op())
+	}
+}
+
+// ProjectHibernateClient is a client for the ProjectHibernate schema.
+type ProjectHibernateClient struct {
+	config
+}
+
+// NewProjectHibernateClient returns a client for the ProjectHibernate from the given config.
+func NewProjectHibernateClient(c config) *ProjectHibernateClient {
+	return &ProjectHibernateClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `projecthibernate.Hooks(f(g(h())))`.
+func (c *ProjectHibernateClient) Use(hooks ...Hook) {
+	c.hooks.ProjectHibernate = append(c.hooks.ProjectHibernate, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `projecthibernate.Intercept(f(g(h())))`.
+func (c *ProjectHibernateClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ProjectHibernate = append(c.inters.ProjectHibernate, interceptors...)
+}
+
+// Create returns a builder for creating a ProjectHibernate entity.
+func (c *ProjectHibernateClient) Create() *ProjectHibernateCreate {
+	mutation := newProjectHibernateMutation(c.config, OpCreate)
+	return &ProjectHibernateCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ProjectHibernate entities.
+func (c *ProjectHibernateClient) CreateBulk(builders ...*ProjectHibernateCreate) *ProjectHibernateCreateBulk {
+	return &ProjectHibernateCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ProjectHibernateClient) MapCreateBulk(slice any, setFunc func(*ProjectHibernateCreate, int)) *ProjectHibernateCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ProjectHibernateCreateBulk{err: fmt.Errorf("calling to ProjectHibernateClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ProjectHibernateCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ProjectHibernateCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ProjectHibernate.
+func (c *ProjectHibernateClient) Update() *ProjectHibernateUpdate {
+	mutation := newProjectHibernateMutation(c.config, OpUpdate)
+	return &ProjectHibernateUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ProjectHibernateClient) UpdateOne(_m *ProjectHibernate) *ProjectHibernateUpdateOne {
+	mutation := newProjectHibernateMutation(c.config, OpUpdateOne, withProjectHibernate(_m))
+	return &ProjectHibernateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ProjectHibernateClient) UpdateOneID(id int) *ProjectHibernateUpdateOne {
+	mutation := newProjectHibernateMutation(c.config, OpUpdateOne, withProjectHibernateID(id))
+	return &ProjectHibernateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ProjectHibernate.
+func (c *ProjectHibernateClient) Delete() *ProjectHibernateDelete {
+	mutation := newProjectHibernateMutation(c.config, OpDelete)
+	return &ProjectHibernateDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ProjectHibernateClient) DeleteOne(_m *ProjectHibernate) *ProjectHibernateDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ProjectHibernateClient) DeleteOneID(id int) *ProjectHibernateDeleteOne {
+	builder := c.Delete().Where(projecthibernate.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ProjectHibernateDeleteOne{builder}
+}
+
+// Query returns a query builder for ProjectHibernate.
+func (c *ProjectHibernateClient) Query() *ProjectHibernateQuery {
+	return &ProjectHibernateQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeProjectHibernate},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ProjectHibernate entity by its id.
+func (c *ProjectHibernateClient) Get(ctx context.Context, id int) (*ProjectHibernate, error) {
+	return c.Query().Where(projecthibernate.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ProjectHibernateClient) GetX(ctx context.Context, id int) *ProjectHibernate {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryProject queries the project edge of a ProjectHibernate.
+func (c *ProjectHibernateClient) QueryProject(_m *ProjectHibernate) *ProjectQuery {
+	query := (&ProjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(projecthibernate.Table, projecthibernate.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, projecthibernate.ProjectTable, projecthibernate.ProjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ProjectHibernateClient) Hooks() []Hook {
+	return c.hooks.ProjectHibernate
+}
+
+// Interceptors returns the client interceptors.
+func (c *ProjectHibernateClient) Interceptors() []Interceptor {
+	return c.inters.ProjectHibernate
+}
+
+func (c *ProjectHibernateClient) mutate(ctx context.Context, m *ProjectHibernateMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ProjectHibernateCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ProjectHibernateUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ProjectHibernateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ProjectHibernateDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ProjectHibernate mutation op: %q", m.Op())
 	}
 }
 
@@ -2102,11 +2418,13 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		AccessToken, CacheLock, Changelog, DBCache, Event, Favorite, File, Member,
-		Namespace, Project, Repo, User []ent.Hook
+		AccessToken, CacheLock, Changelog, DBCache, Event, Favorite, File,
+		HibernateWindow, Member, Namespace, Project, ProjectHibernate, Repo,
+		User []ent.Hook
 	}
 	inters struct {
-		AccessToken, CacheLock, Changelog, DBCache, Event, Favorite, File, Member,
-		Namespace, Project, Repo, User []ent.Interceptor
+		AccessToken, CacheLock, Changelog, DBCache, Event, Favorite, File,
+		HibernateWindow, Member, Namespace, Project, ProjectHibernate, Repo,
+		User []ent.Interceptor
 	}
 )

@@ -194,6 +194,10 @@ message ProjectModel {
   string                        humanize_created_at = 16;
   string                        humanize_updated_at = 17;
   string                        updated_by          = 26;
+  // hibernate_enabled 项目级定时休眠开关；hibernate_state 运行态（awake/sleeping，
+  // 未配置该能力时为空串）。两者均由 project_hibernates 表派生，供前端展示与开关回显。
+  bool                          hibernate_enabled   = 27;
+  string                        hibernate_state     = 28;
 
   string                        config_type         = 18;
   string                        git_commit_web_url  = 19;

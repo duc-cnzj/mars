@@ -354,6 +354,51 @@ func TestProjectRepoList_AccessFilter_RemovedMemberSoftDeleted(t *testing.T) {
 	assert.Equal(t, int32(1), pagination.Count, "count 也须排除私有空间，否则分页数泄漏")
 }
 
+// 回归防护：project.List 传 RepoID>0 时只返回该仓库的项目且 count 同步收窄；
+// 传 0 保持「全部项目」语义（仓库列表「查看项目」依赖本过滤，漏过滤会列出跨仓库项目）。
+func TestProjectRepoList_FilterByRepoID(t *testing.T) {
+	ctx := context.TODO()
+	logger := mlog.NewForConfig(nil)
+	db, _ := NewSqliteDB()
+	defer db.Close()
+	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
+	r := NewProjectRepo(logger, data)
+
+	ns := createNamespace(db).ID
+	// repo_id 有外键约束，须先建真实仓库行。
+	r1 := db.Repo.Create().SetName("r1").SaveX(ctx).ID
+	r2 := db.Repo.Create().SetName("r2").SaveX(ctx).ID
+	mk := func(repoID int, name string) {
+		db.Project.Create().
+			SetName(name).
+			SetNamespaceID(ns).
+			SetGitProjectID(1).
+			SetCreator("").
+			SetRepoID(repoID).
+			SaveX(ctx)
+	}
+	mk(r1, "p1-a")
+	mk(r1, "p1-b")
+	mk(r2, "p2-a")
+	// 无仓库项目（repo_id 为 NULL，用公共 helper），验证按仓库过滤时被排除。
+	createProject(db, ns)
+
+	// RepoID=r1：只返回该仓库项目，count 同步。
+	projects, pagination, err := r.List(ctx, &biz.ListProjectInput{Page: 1, PageSize: 10, IsAdmin: true, RepoID: r1})
+	require.NoError(t, err)
+	require.Len(t, projects, 2)
+	assert.Equal(t, int32(2), pagination.Count)
+	for _, p := range projects {
+		assert.Equal(t, r1, p.RepoID)
+	}
+
+	// RepoID=0：不过滤，返回全部（含无仓库项目）。
+	projects, pagination, err = r.List(ctx, &biz.ListProjectInput{Page: 1, PageSize: 10, IsAdmin: true, RepoID: 0})
+	require.NoError(t, err)
+	require.Len(t, projects, 4)
+	assert.Equal(t, int32(4), pagination.Count)
+}
+
 func TestProjectRepoList_Empty(t *testing.T) {
 	ctx := context.TODO()
 	logger := mlog.NewForConfig(nil)
