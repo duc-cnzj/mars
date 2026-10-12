@@ -2749,3 +2749,19 @@ func (mr *MockHibernateWindowRepoMockRecorder) Update(ctx, w any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockHibernateWindowRepo)(nil).Update), ctx, w)
 }
+
+// UpdateCascade mocks base method.
+func (m *MockHibernateWindowRepo) UpdateCascade(ctx context.Context, w *biz.HibernateWindow, oldName string) (*biz.HibernateWindow, int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCascade", ctx, w, oldName)
+	ret0, _ := ret[0].(*biz.HibernateWindow)
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// UpdateCascade indicates an expected call of UpdateCascade.
+func (mr *MockHibernateWindowRepoMockRecorder) UpdateCascade(ctx, w, oldName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCascade", reflect.TypeOf((*MockHibernateWindowRepo)(nil).UpdateCascade), ctx, w, oldName)
+}

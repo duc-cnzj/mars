@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: api/v6.1.2
+    version: ""
 paths:
     /api/access_tokens:
         get:
@@ -3406,11 +3406,20 @@ components:
                     type: string
                 description:
                     type: string
+                cascade:
+                    type: boolean
+                    description: |-
+                        cascade 改名时是否级联迁移引用该窗的仓库（把仓库的 mars_config.hibernate.window_name
+                         旧名改写为新名）。false（默认）时若旧名仍被引用则拒绝（400），须先手动迁移或改传 true。
         hibernate.UpdateWindowResponse:
             type: object
             properties:
                 window:
                     $ref: '#/components/schemas/hibernate.HibernateWindow'
+                updatedRepoCount:
+                    type: integer
+                    description: updated_repo_count 本次级联迁移（重写 window_name）的引用仓库数；未级联或未改名时为 0。
+                    format: int32
         mars.Config:
             type: object
             properties:

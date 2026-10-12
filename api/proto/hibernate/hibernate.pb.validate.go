@@ -719,6 +719,8 @@ func (m *UpdateWindowRequest) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for Cascade
+
 	if len(errors) > 0 {
 		return UpdateWindowRequestMultiError(errors)
 	}
@@ -849,6 +851,8 @@ func (m *UpdateWindowResponse) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for UpdatedRepoCount
 
 	if len(errors) > 0 {
 		return UpdateWindowResponseMultiError(errors)

@@ -87,14 +87,15 @@ func (s *hibernateSvc) CreateWindow(ctx context.Context, req *hibernatepb.Create
 }
 
 // UpdateWindow 更新全局休眠时间窗：不存在返回 404，名称重复返回 409，时段非法返回 400，落更新审计日志。
+// 改名时按 req.Cascade 分流：级联则迁移引用旧名的仓库并回报迁移数，否则旧名仍被引用则拒绝（400）。
 func (s *hibernateSvc) UpdateWindow(ctx context.Context, req *hibernatepb.UpdateWindowRequest) (*hibernatepb.UpdateWindowResponse, error) {
-	updated, err := s.hibernateWindowBiz.Update(ctx, &biz.HibernateWindow{
+	updated, migrated, err := s.hibernateWindowBiz.Update(ctx, &biz.HibernateWindow{
 		ID:          int(req.Id),
 		Name:        req.Name,
 		Start:       req.Start,
 		End:         req.End,
 		Description: req.Description,
-	})
+	}, req.Cascade)
 	if err != nil {
 		return nil, logError(ctx, s.logger, err)
 	}
@@ -103,10 +104,21 @@ func (s *hibernateSvc) UpdateWindow(ctx context.Context, req *hibernatepb.Update
 		types.EventActionType_Update,
 		user.Name,
 		user.Email,
-		fmt.Sprintf("更新休眠时间窗: %d: %s", updated.ID, updated.Name),
+		hibernateWindowUpdateAuditMsg(updated, migrated),
 		req,
 	)
-	return &hibernatepb.UpdateWindowResponse{Window: toHibernateWindowProto(updated)}, nil
+	return &hibernatepb.UpdateWindowResponse{
+		Window:           toHibernateWindowProto(updated),
+		UpdatedRepoCount: int32(migrated),
+	}, nil
+}
+
+// hibernateWindowUpdateAuditMsg 拼更新审计消息：级联迁移了引用仓库时附上迁移数量，便于事后追溯。
+func hibernateWindowUpdateAuditMsg(w *biz.HibernateWindow, migrated int) string {
+	if migrated > 0 {
+		return fmt.Sprintf("更新休眠时间窗并级联迁移 %d 个引用仓库: %d: %s", migrated, w.ID, w.Name)
+	}
+	return fmt.Sprintf("更新休眠时间窗: %d: %s", w.ID, w.Name)
 }
 
 // DeleteWindow 删除全局休眠时间窗（物理删除、幂等）：仍被仓库按名引用时拒绝（400），

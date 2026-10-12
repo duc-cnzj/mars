@@ -2020,16 +2020,17 @@ func (mr *MockHibernateWindowBizMockRecorder) List(ctx any) *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockHibernateWindowBiz) Update(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error) {
+func (m *MockHibernateWindowBiz) Update(ctx context.Context, w *HibernateWindow, cascade bool) (*HibernateWindow, int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, w)
+	ret := m.ctrl.Call(m, "Update", ctx, w, cascade)
 	ret0, _ := ret[0].(*HibernateWindow)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockHibernateWindowBizMockRecorder) Update(ctx, w any) *gomock.Call {
+func (mr *MockHibernateWindowBizMockRecorder) Update(ctx, w, cascade any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockHibernateWindowBiz)(nil).Update), ctx, w)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockHibernateWindowBiz)(nil).Update), ctx, w, cascade)
 }

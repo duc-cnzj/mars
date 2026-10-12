@@ -56,6 +56,10 @@ type HibernateWindowRepo interface {
 	Create(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error)
 	// Update 按 ID 更新时间窗；不存在返回 NotFound。
 	Update(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error)
+	// UpdateCascade 原子改名：在同一事务内把窗口更新为 w，并把所有按 oldName 引用它的仓库的
+	// window_name 改写为 w.Name，任一失败整体回滚；返回 (更新后的窗口, 被迁移引用的仓库数)。
+	// 不存在返回 404、名称重复返回 409。
+	UpdateCascade(ctx context.Context, w *HibernateWindow, oldName string) (*HibernateWindow, int, error)
 	// Delete 按 ID 删除时间窗（物理删除）；不存在不报错。
 	Delete(ctx context.Context, id int) error
 }
@@ -66,8 +70,9 @@ type HibernateWindowBiz interface {
 	List(ctx context.Context) ([]*HibernateWindow, error)
 	// Create 新建时间窗：校验名称与时段，名称重复返回 409。
 	Create(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error)
-	// Update 更新时间窗：校验名称与时段，不存在返回 404，名称重复返回 409。
-	Update(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error)
+	// Update 更新时间窗：校验名称与时段，不存在返回 404，名称重复返回 409。改名时按 cascade 分流：
+	// cascade=true 原子迁移引用旧名的仓库（返回迁移仓库数）；cascade=false 时旧名仍被引用则拒绝（400）。
+	Update(ctx context.Context, w *HibernateWindow, cascade bool) (*HibernateWindow, int, error)
 	// Delete 删除时间窗（物理删除，幂等）：仍有仓库按名引用时拒绝（400），无关联时删除。
 	Delete(ctx context.Context, id int) error
 }
@@ -95,11 +100,49 @@ func (b *hibernateWindowBiz) Create(ctx context.Context, w *HibernateWindow) (*H
 }
 
 // Update 更新时间窗：先校验名称与时段，再落库（不存在返回 404、名称重复返回 409）。
-func (b *hibernateWindowBiz) Update(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error) {
+// 改名时按 cascade 分流——时间窗被仓库的 mars_config.hibernate.window_name 按名引用，
+// 改名会让这些仓库的对账按旧名未命中而静默跳过，令其休眠悄然失效：
+//   - cascade=true：原子把引用旧名的仓库改写为新名（返回迁移仓库数）；
+//   - cascade=false：旧名仍被引用则拒绝（400），提示改以级联方式确认（对称 Delete 的引用守卫）。
+func (b *hibernateWindowBiz) Update(ctx context.Context, w *HibernateWindow, cascade bool) (*HibernateWindow, int, error) {
 	if err := ValidateHibernateWindow(w.Name, w.Start, w.End); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return b.repo.Update(ctx, w)
+	existing, err := b.repo.GetByID(ctx, w.ID)
+	if err != nil {
+		return nil, 0, err
+	}
+	// 窗口不存在或名称未变：无引用需迁移，走普通更新（不存在交由 repo.Update 落 404）。
+	if existing == nil || existing.Name == w.Name {
+		updated, err := b.repo.Update(ctx, w)
+		return updated, 0, err
+	}
+	// 改名且级联：由 repo 在同一事务内改名 + 迁移引用，返回迁移仓库数。
+	if cascade {
+		return b.repo.UpdateCascade(ctx, w, existing.Name)
+	}
+	if err := b.guardRenameRefs(ctx, existing.Name); err != nil {
+		return nil, 0, err
+	}
+	updated, err := b.repo.Update(ctx, w)
+	return updated, 0, err
+}
+
+// guardRenameRefs 校验「非级联改名」不击穿下游引用：旧名仍被仓库引用则返回 400，
+// 提示改用级联（cascade=true）或先手动迁移引用。
+func (b *hibernateWindowBiz) guardRenameRefs(ctx context.Context, oldName string) error {
+	refs, err := b.repo.ReposReferencing(ctx, oldName)
+	if err != nil {
+		return err
+	}
+	if len(refs) == 0 {
+		return nil
+	}
+	return errs.WrapInvalidArgument(
+		fmt.Errorf("休眠时间窗 %q 仍被 %d 个仓库引用（%s），改名会让这些仓库的休眠静默失效；请以级联方式改名，或先手动把引用迁移到新名后再改",
+			oldName, len(refs), summarizeHibernateWindowRefs(refs)),
+		"更新休眠时间窗",
+	)
 }
 
 // Delete 删除时间窗：先校验无下游关联（无仓库按名引用）再物理删除；窗口不存在时幂等成功。

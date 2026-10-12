@@ -143,6 +143,51 @@ func (h *hibernateWindowRepo) Update(ctx context.Context, w *biz.HibernateWindow
 	return toHibernateWindow(updated), nil
 }
 
+// UpdateCascade 原子改名：在同一事务内把时间窗更新为 w，并把所有按 oldName 引用它的仓库的
+// mars_config.hibernate.window_name 改写为 w.Name。任一失败整体回滚——避免「窗口已改名但引用未
+// 迁移」或反之的半迁移状态。返回 (更新后的窗口, 被迁移引用的仓库数)；不存在/名称重复由
+// errs.Wrap 归为 404 / 409。软删仓库由 SoftDeleteMixin 拦截器隐式过滤，与其语义一致（不迁移）。
+func (h *hibernateWindowRepo) UpdateCascade(ctx context.Context, w *biz.HibernateWindow, oldName string) (out *biz.HibernateWindow, migrated int, err error) {
+	ctx, span := tracer.Start(ctx, "hibernateWindowRepo/UpdateCascade")
+	defer func() { endSpan(span, err) }()
+	var updated *ent.HibernateWindow
+	err = h.data.WithTx(ctx, func(tx *ent.Tx) error {
+		u, txErr := tx.HibernateWindow.UpdateOneID(w.ID).
+			SetName(w.Name).
+			SetStart(w.Start).
+			SetEnd(w.End).
+			SetDescription(w.Description).
+			Save(ctx)
+		if txErr != nil {
+			return txErr
+		}
+		updated = u
+		all, txErr := tx.Repo.Query().
+			Where(repo.MarsConfigNotNil()).
+			All(ctx)
+		if txErr != nil {
+			return txErr
+		}
+		for _, e := range all {
+			hb := e.MarsConfig.GetHibernate()
+			// 名称未命中的仓库（含 hibernate 为 nil）跳过；命中的 hb 必非 nil。
+			if hb.GetWindowName() != oldName {
+				continue
+			}
+			hb.WindowName = w.Name
+			if _, txErr := tx.Repo.UpdateOneID(e.ID).SetMarsConfig(e.MarsConfig).Save(ctx); txErr != nil {
+				return txErr
+			}
+			migrated++
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, 0, errs.Wrap(err, "update hibernate window with cascade")
+	}
+	return toHibernateWindow(updated), migrated, nil
+}
+
 // Delete 按 ID 删除时间窗（物理删除）；不存在不报错。"无下游引用"的关联校验由 biz 层在调用前完成。
 func (h *hibernateWindowRepo) Delete(ctx context.Context, id int) (err error) {
 	ctx, span := tracer.Start(ctx, "hibernateWindowRepo/Delete")

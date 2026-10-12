@@ -19,6 +19,7 @@ type fakeHibernateWindowRepo struct {
 	refsFn    func(ctx context.Context, name string) ([]string, error)
 	createFn  func(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error)
 	updateFn  func(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error)
+	cascadeFn func(ctx context.Context, w *HibernateWindow, oldName string) (*HibernateWindow, int, error)
 	deleteFn  func(ctx context.Context, id int) error
 }
 
@@ -44,6 +45,10 @@ func (f *fakeHibernateWindowRepo) Create(ctx context.Context, w *HibernateWindow
 
 func (f *fakeHibernateWindowRepo) Update(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error) {
 	return f.updateFn(ctx, w)
+}
+
+func (f *fakeHibernateWindowRepo) UpdateCascade(ctx context.Context, w *HibernateWindow, oldName string) (*HibernateWindow, int, error) {
+	return f.cascadeFn(ctx, w, oldName)
 }
 
 func (f *fakeHibernateWindowRepo) Delete(ctx context.Context, id int) error {
@@ -117,34 +122,142 @@ func TestHibernateWindowBiz_Create(t *testing.T) {
 	}
 }
 
-// TestHibernateWindowBiz_Update 覆盖校验失败短路（不触达 repo）与合法更新。
+// TestHibernateWindowBiz_Update 覆盖更新路径：校验失败短路、未改名放行（不查引用）、
+// 非级联改名（无引用放行 / 有引用 400 / ReposReferencing 错误上抛）、级联改名（迁移引用返回数量 /
+// UpdateCascade 错误上抛）、窗口不存在透传 404、GetByID 与 repo.Update 错误上抛。
 func TestHibernateWindowBiz_Update(t *testing.T) {
-	// 校验失败：repo 的 Update 未设置，触发即 panic。
+	// 校验失败：repo 的 GetByID/Update 未设置，触发即 panic，证明被短路。
 	b := NewHibernateWindowBiz(&fakeHibernateWindowRepo{})
-	if _, err := b.Update(context.TODO(), &HibernateWindow{ID: 1, Name: "夜间", Start: "23:00", End: "23:00"}); err == nil {
+	if _, _, err := b.Update(context.TODO(), &HibernateWindow{ID: 1, Name: "夜间", Start: "23:00", End: "23:00"}, false); err == nil {
 		t.Fatal("启止相同应校验失败")
 	}
 
+	// 未改名：不触达 ReposReferencing/UpdateCascade（未设置即 panic），直接落库，迁移数为 0。
 	var updated *HibernateWindow
-	b = NewHibernateWindowBiz(&fakeHibernateWindowRepo{
+	sameName := NewHibernateWindowBiz(&fakeHibernateWindowRepo{
+		getByIDFn: func(ctx context.Context, id int) (*HibernateWindow, error) {
+			return &HibernateWindow{ID: id, Name: "午休"}, nil
+		},
 		updateFn: func(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error) {
 			updated = w
 			return w, nil
 		},
 	})
-	got, err := b.Update(context.TODO(), &HibernateWindow{ID: 3, Name: "午休", Start: "12:00", End: "13:00"})
+	got, n, err := sameName.Update(context.TODO(), &HibernateWindow{ID: 3, Name: "午休", Start: "12:00", End: "13:00"}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, got.ID)
 	assert.Equal(t, "午休", updated.Name)
+	assert.Zero(t, n)
 
-	// repo 错误（如不存在）上抛。
-	errB := NewHibernateWindowBiz(&fakeHibernateWindowRepo{
+	// 非级联改名且旧名无引用：放行，ReposReferencing 以旧名查询，迁移数为 0。
+	var renamed *HibernateWindow
+	okRename := NewHibernateWindowBiz(&fakeHibernateWindowRepo{
+		getByIDFn: func(ctx context.Context, id int) (*HibernateWindow, error) {
+			return &HibernateWindow{ID: id, Name: "夜间"}, nil
+		},
+		refsFn: func(ctx context.Context, name string) ([]string, error) {
+			assert.Equal(t, "夜间", name)
+			return nil, nil
+		},
 		updateFn: func(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error) {
+			renamed = w
+			return w, nil
+		},
+	})
+	got, n, err = okRename.Update(context.TODO(), &HibernateWindow{ID: 3, Name: "深夜", Start: "23:00", End: "06:00"}, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, got.ID)
+	assert.Equal(t, "深夜", renamed.Name)
+	assert.Zero(t, n)
+
+	// 非级联改名但旧名仍被引用：拒改（400），Update/UpdateCascade 均未被调用（未设置即 panic）。
+	blockedRename := NewHibernateWindowBiz(&fakeHibernateWindowRepo{
+		getByIDFn: func(ctx context.Context, id int) (*HibernateWindow, error) {
+			return &HibernateWindow{ID: id, Name: "夜间"}, nil
+		},
+		refsFn: func(ctx context.Context, name string) ([]string, error) {
+			return []string{"repo-a", "repo-b"}, nil
+		},
+	})
+	_, _, err = blockedRename.Update(context.TODO(), &HibernateWindow{ID: 3, Name: "深夜", Start: "23:00", End: "06:00"}, false)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Contains(t, status.Convert(err).Message(), "夜间")
+	assert.Contains(t, status.Convert(err).Message(), "repo-a, repo-b")
+
+	// 非级联改名：ReposReferencing 错误上抛（Update 不被调用）。
+	refsErr := NewHibernateWindowBiz(&fakeHibernateWindowRepo{
+		getByIDFn: func(ctx context.Context, id int) (*HibernateWindow, error) {
+			return &HibernateWindow{ID: id, Name: "夜间"}, nil
+		},
+		refsFn: func(ctx context.Context, name string) ([]string, error) { return nil, errors.New("boom") },
+	})
+	if _, _, err := refsErr.Update(context.TODO(), &HibernateWindow{ID: 3, Name: "深夜", Start: "23:00", End: "06:00"}, false); err == nil {
+		t.Fatal("ReposReferencing 错误应上抛")
+	}
+
+	// 级联改名：交由 repo.UpdateCascade（以旧名为参），迁移数透传；不触达 ReposReferencing/Update。
+	cascaded := NewHibernateWindowBiz(&fakeHibernateWindowRepo{
+		getByIDFn: func(ctx context.Context, id int) (*HibernateWindow, error) {
+			return &HibernateWindow{ID: id, Name: "夜间"}, nil
+		},
+		cascadeFn: func(ctx context.Context, w *HibernateWindow, oldName string) (*HibernateWindow, int, error) {
+			assert.Equal(t, "夜间", oldName)
+			assert.Equal(t, "深夜", w.Name)
+			return w, 3, nil
+		},
+	})
+	got, migrated, err := cascaded.Update(context.TODO(), &HibernateWindow{ID: 3, Name: "深夜", Start: "23:00", End: "06:00"}, true)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, got.ID)
+	assert.Equal(t, 3, migrated)
+
+	// 级联改名：UpdateCascade 错误上抛。
+	cascadeErr := NewHibernateWindowBiz(&fakeHibernateWindowRepo{
+		getByIDFn: func(ctx context.Context, id int) (*HibernateWindow, error) {
+			return &HibernateWindow{ID: id, Name: "夜间"}, nil
+		},
+		cascadeFn: func(ctx context.Context, w *HibernateWindow, oldName string) (*HibernateWindow, int, error) {
+			return nil, 0, errors.New("duplicate name")
+		},
+	})
+	if _, _, err := cascadeErr.Update(context.TODO(), &HibernateWindow{ID: 3, Name: "深夜", Start: "23:00", End: "06:00"}, true); err == nil {
+		t.Fatal("UpdateCascade 错误应上抛")
+	}
+
+	// 窗口不存在（GetByID 返回 nil）：跳过引用校验，交由 Update 落 404。
+	var notFoundTarget *HibernateWindow
+	missing := NewHibernateWindowBiz(&fakeHibernateWindowRepo{
+		getByIDFn: func(ctx context.Context, id int) (*HibernateWindow, error) { return nil, nil },
+		updateFn: func(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error) {
+			notFoundTarget = w
 			return nil, errors.New("not found")
 		},
 	})
-	if _, err := errB.Update(context.TODO(), &HibernateWindow{ID: 3, Name: "午休", Start: "12:00", End: "13:00"}); err == nil {
-		t.Fatal("repo 错误应上抛")
+	if _, _, err := missing.Update(context.TODO(), &HibernateWindow{ID: 99, Name: "夜间", Start: "23:00", End: "06:00"}, true); err == nil {
+		t.Fatal("窗口不存在应经 Update 返回错误")
+	}
+	assert.Equal(t, 99, notFoundTarget.ID)
+
+	// GetByID 错误上抛。
+	getErr := NewHibernateWindowBiz(&fakeHibernateWindowRepo{
+		getByIDFn: func(ctx context.Context, id int) (*HibernateWindow, error) { return nil, errors.New("db down") },
+	})
+	if _, _, err := getErr.Update(context.TODO(), &HibernateWindow{ID: 3, Name: "深夜", Start: "23:00", End: "06:00"}, true); err == nil {
+		t.Fatal("GetByID 错误应上抛")
+	}
+
+	// 非级联改名：repo.Update 错误（如名称重复）上抛。
+	updErr := NewHibernateWindowBiz(&fakeHibernateWindowRepo{
+		getByIDFn: func(ctx context.Context, id int) (*HibernateWindow, error) {
+			return &HibernateWindow{ID: id, Name: "夜间"}, nil
+		},
+		refsFn: func(ctx context.Context, name string) ([]string, error) { return nil, nil },
+		updateFn: func(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error) {
+			return nil, errors.New("duplicate name")
+		},
+	})
+	if _, _, err := updErr.Update(context.TODO(), &HibernateWindow{ID: 3, Name: "深夜", Start: "23:00", End: "06:00"}, false); err == nil {
+		t.Fatal("repo.Update 错误应上抛")
 	}
 }
 

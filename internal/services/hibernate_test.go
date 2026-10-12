@@ -139,30 +139,51 @@ func Test_hibernateSvc_CreateWindow(t *testing.T) {
 	assert.Error(t, err)
 }
 
-// Test_hibernateSvc_UpdateWindow 覆盖成功映射（ID 透传）与错误收敛。
+// Test_hibernateSvc_UpdateWindow 覆盖：非级联更新（cascade=false 透传、迁移数 0、普通审计）、
+// 级联改名（cascade=true 透传、迁移数写入响应与审计）、以及错误收敛。
 func Test_hibernateSvc_UpdateWindow(t *testing.T) {
 	svc, mocks := newHibernateSvcWithMocks(t)
-	mocks.window.EXPECT().Update(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(_ context.Context, w *biz.HibernateWindow) (*biz.HibernateWindow, error) {
+
+	// 非级联更新：cascade=false 透传，迁移数 0，审计为普通文案。
+	mocks.window.EXPECT().Update(gomock.Any(), gomock.Any(), false).
+		DoAndReturn(func(_ context.Context, w *biz.HibernateWindow, _ bool) (*biz.HibernateWindow, int, error) {
 			assert.Equal(t, 3, w.ID)
 			assert.Equal(t, "午休", w.Name)
-			return w, nil
+			return w, 0, nil
 		})
-
-	// 更新成功后落更新审计日志。
 	mocks.eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Update,
 		biz.MustGetUser(newAdminUserCtx()).Name,
 		biz.MustGetUser(newAdminUserCtx()).Email,
-		gomock.Any(), gomock.Any(),
+		"更新休眠时间窗: 3: 午休", gomock.Any(),
 	)
 	resp, err := svc.UpdateWindow(newAdminUserCtx(), &hibernatepb.UpdateWindowRequest{
 		Id: 3, Name: "午休", Start: "12:00", End: "13:00",
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, int32(3), resp.Window.Id)
+	assert.Zero(t, resp.UpdatedRepoCount)
 
-	mocks.window.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, errors.New("not found"))
+	// 级联改名：cascade=true 透传，迁移数写入响应，审计附上迁移数量。
+	mocks.window.EXPECT().Update(gomock.Any(), gomock.Any(), true).
+		DoAndReturn(func(_ context.Context, w *biz.HibernateWindow, _ bool) (*biz.HibernateWindow, int, error) {
+			return w, 2, nil
+		})
+	mocks.eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Update,
+		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
+		"更新休眠时间窗并级联迁移 2 个引用仓库: 3: 深夜", gomock.Any(),
+	)
+	resp, err = svc.UpdateWindow(newAdminUserCtx(), &hibernatepb.UpdateWindowRequest{
+		Id: 3, Name: "深夜", Start: "23:00", End: "06:00", Cascade: true,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, int32(3), resp.Window.Id)
+	assert.Equal(t, int32(2), resp.UpdatedRepoCount)
+
+	// 错误收敛。
+	mocks.window.EXPECT().Update(gomock.Any(), gomock.Any(), false).Return(nil, 0, errors.New("not found"))
 	_, err = svc.UpdateWindow(newAdminUserCtx(), &hibernatepb.UpdateWindowRequest{Id: 3, Name: "午休", Start: "12:00", End: "13:00"})
 	assert.Error(t, err)
 }

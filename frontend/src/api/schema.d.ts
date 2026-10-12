@@ -1915,9 +1915,19 @@ export interface components {
             start: string;
             end: string;
             description?: string;
+            /**
+             * @description cascade 改名时是否级联迁移引用该窗的仓库（把仓库的 mars_config.hibernate.window_name
+             *      旧名改写为新名）。false（默认）时若旧名仍被引用则拒绝（400），须先手动迁移或改传 true。
+             */
+            cascade?: boolean;
         };
         "hibernate.UpdateWindowResponse": {
             window: components["schemas"]["hibernate.HibernateWindow"];
+            /**
+             * Format: int32
+             * @description updated_repo_count 本次级联迁移（重写 window_name）的引用仓库数；未级联或未改名时为 0。
+             */
+            updatedRepoCount: number;
         };
         "mars.Config": {
             /** @description config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename" */

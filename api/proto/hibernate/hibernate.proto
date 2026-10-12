@@ -45,10 +45,15 @@ message UpdateWindowRequest {
   string start       = 3 [(validate.rules).string = {min_bytes: 1, max_bytes: 5}, (google.api.field_behavior) = REQUIRED];
   string end         = 4 [(validate.rules).string = {min_bytes: 1, max_bytes: 5}, (google.api.field_behavior) = REQUIRED];
   string description = 5;
+  // cascade 改名时是否级联迁移引用该窗的仓库（把仓库的 mars_config.hibernate.window_name
+  // 旧名改写为新名）。false（默认）时若旧名仍被引用则拒绝（400），须先手动迁移或改传 true。
+  bool cascade = 6;
 }
 
 message UpdateWindowResponse {
   HibernateWindow window = 1;
+  // updated_repo_count 本次级联迁移（重写 window_name）的引用仓库数；未级联或未改名时为 0。
+  int32 updated_repo_count = 2;
 }
 
 message DeleteWindowRequest {

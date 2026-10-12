@@ -9,6 +9,7 @@ import { Icon } from '@/components/Icons'
 import { Empty, SkeletonList } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
+import { Switch } from '@/components/ui/shadcn/switch'
 import { Textarea } from '@/components/ui/shadcn/textarea'
 import {
   AlertDialog,
@@ -28,10 +29,20 @@ import {
 
 type WindowModel = components['schemas']['hibernate.HibernateWindow']
 
-/** 弹窗表单草稿：编辑时带 id，新建时为空 */
-type Draft = { id?: number; name: string; start: string; end: string; description: string }
+/** 弹窗表单草稿：编辑时带 id（并记下原名用于判断是否改名），新建时为空 */
+type Draft = {
+  id?: number
+  /** 编辑时的原始名称：用于判断是否改名，仅改名时展示级联开关 */
+  originalName?: string
+  /** 改名时是否级联迁移引用旧名的仓库（仅改名时生效） */
+  cascade: boolean
+  name: string
+  start: string
+  end: string
+  description: string
+}
 
-const EMPTY_DRAFT: Draft = { name: '', start: '23:00', end: '06:00', description: '' }
+const EMPTY_DRAFT: Draft = { name: '', start: '23:00', end: '06:00', description: '', cascade: false }
 
 /**
  * 全局休眠时间窗管理（后台）：列表 + 新建/编辑 + 删除。
@@ -73,7 +84,15 @@ export function HibernateWindowManager() {
   const openCreate = () => setDraft({ ...EMPTY_DRAFT })
 
   const openEdit = (w: WindowModel) =>
-    setDraft({ id: w.id, name: w.name, start: w.start, end: w.end, description: w.description })
+    setDraft({
+      id: w.id,
+      originalName: w.name,
+      cascade: false,
+      name: w.name,
+      start: w.start,
+      end: w.end,
+      description: w.description,
+    })
 
   const submit = async () => {
     if (!draft) return
@@ -98,12 +117,18 @@ export function HibernateWindowManager() {
         if (error) throw new Error(error.message ?? String(error))
         toast.success(t('hibernateWindows.createSuccess'))
       } else {
-        const { error } = await api.PUT(API.adminHibernateWindowDetail, {
-          body: { id: draft.id, ...body },
+        // cascade 仅在改名时有意义：未改名时后端会走普通更新（迁移数 0），随草稿一并透传即可。
+        const { data, error } = await api.PUT(API.adminHibernateWindowDetail, {
+          body: { id: draft.id, ...body, cascade: draft.cascade },
           params: { path: { id: draft.id } },
         })
         if (error) throw new Error(error.message ?? String(error))
-        toast.success(t('hibernateWindows.updateSuccess'))
+        const migrated = data?.updatedRepoCount ?? 0
+        toast.success(
+          migrated > 0
+            ? t('hibernateWindows.cascadeSuccess', { count: migrated })
+            : t('hibernateWindows.updateSuccess'),
+        )
       }
       // 增/改成功 → 立即失效全局时间窗缓存，避免其它页面（仓库表单 / 项目卡片 / 详情）读到旧时段
       invalidateHibernateWindows()
@@ -247,6 +272,23 @@ export function HibernateWindowManager() {
                   onChange={(e) => setDraft({ ...draft, name: e.target.value })}
                 />
               </label>
+              {/* 级联开关仅在「编辑且改名」时出现：未改名时改的是时段/备注，不涉及引用迁移 */}
+              {draft.id != null && draft.name.trim() !== (draft.originalName ?? '') && (
+                <div className="flex flex-col gap-1.5 rounded-md border border-line bg-raised px-3 py-2.5">
+                  {/* 用 div 而非 label：Radix Switch 的 <button> 属可标注元素，label 会让整行点击都切换开关 */}
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={draft.cascade}
+                      onCheckedChange={(v) => setDraft({ ...draft, cascade: v })}
+                      aria-label={t('hibernateWindows.cascade')}
+                    />
+                    <span className="text-[12px] font-medium text-ink">
+                      {t('hibernateWindows.cascade')}
+                    </span>
+                  </div>
+                  <span className="text-[12px] text-faint">{t('hibernateWindows.cascadeTip')}</span>
+                </div>
+              )}
               <div className="flex gap-3">
                 <label className="flex flex-1 flex-col gap-1.5">
                   <span className="text-[12px] font-medium text-mute">{t('hibernateWindows.start')}</span>

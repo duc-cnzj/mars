@@ -74,6 +74,10 @@ export default {
     save: 'Save',
     nameRequired: 'Enter a window name',
     timeRequired: 'Fill in start and end time',
+    cascade: 'Cascade rename to referencing repos',
+    cascadeTip:
+      'When renaming, check this to rewrite repos that reference the old name to the new name. Without it, renaming is rejected while any repo still references the window.',
+    cascadeSuccess: 'Window renamed; cascaded to {{count}} referencing repos',
   },
   namespaces: {
     title: 'Space Governance',

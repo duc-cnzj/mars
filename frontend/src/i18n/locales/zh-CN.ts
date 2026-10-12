@@ -74,6 +74,10 @@ export default {
     save: '保存',
     nameRequired: '请填写时间窗名称',
     timeRequired: '请填写开始与结束时间',
+    cascade: '级联迁移引用仓库',
+    cascadeTip:
+      '改名时勾选：把引用旧名的仓库一并改写为新名并同步迁移。不勾选而该窗仍被仓库引用时，改名会被拒绝。',
+    cascadeSuccess: '时间窗已改名，并级联迁移 {{count}} 个引用仓库',
   },
   namespaces: {
     title: '空间治理',
