@@ -254,9 +254,7 @@ func (repo *projectRepo) List(ctx context.Context, input *biz.ListProjectInput) 
 		)
 	}
 	// 按所属仓库过滤（仓库列表「查看项目」用）：0 视为不过滤，保持原有「全部项目」语义。
-	if input.RepoID > 0 {
-		query = query.Where(project.RepoID(input.RepoID))
-	}
+	query = query.Where(filters.IfIntEQ[int](project.FieldRepoID)(input.RepoID))
 	all := query.Clone().
 		Offset(pagination.GetPageOffset(input.Page, input.PageSize)).
 		Limit(int(input.PageSize)).

@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	hibernatepb "github.com/duc-cnzj/mars/api/v6/proto/hibernate"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 )
@@ -19,6 +21,7 @@ type hibernateSvc struct {
 
 	hibernateWindowBiz biz.HibernateWindowBiz
 	accessBiz          biz.AccessBiz
+	eventBiz           biz.EventBiz
 	logger             mlog.Logger
 }
 
@@ -26,6 +29,7 @@ type hibernateSvc struct {
 type HibernateSvcDeps struct {
 	HibernateWindowBiz biz.HibernateWindowBiz
 	AccessBiz          biz.AccessBiz
+	EventBiz           biz.EventBiz
 	Logger             mlog.Logger
 }
 
@@ -34,6 +38,7 @@ func NewHibernateSvc(deps HibernateSvcDeps) hibernatepb.HibernateServer {
 	return &hibernateSvc{
 		hibernateWindowBiz: deps.HibernateWindowBiz,
 		accessBiz:          deps.AccessBiz,
+		eventBiz:           deps.EventBiz,
 		logger:             deps.Logger.WithModule("services/hibernate"),
 	}
 }
@@ -59,7 +64,7 @@ func (s *hibernateSvc) ListWindows(ctx context.Context, _ *hibernatepb.ListWindo
 	return resp, nil
 }
 
-// CreateWindow 新建全局休眠时间窗：名称重复返回 409，时段非法返回 400。
+// CreateWindow 新建全局休眠时间窗：名称重复返回 409，时段非法返回 400，落创建审计日志。
 func (s *hibernateSvc) CreateWindow(ctx context.Context, req *hibernatepb.CreateWindowRequest) (*hibernatepb.CreateWindowResponse, error) {
 	created, err := s.hibernateWindowBiz.Create(ctx, &biz.HibernateWindow{
 		Name:        req.Name,
@@ -70,10 +75,18 @@ func (s *hibernateSvc) CreateWindow(ctx context.Context, req *hibernatepb.Create
 	if err != nil {
 		return nil, logError(ctx, s.logger, err)
 	}
+	user := biz.MustGetUser(ctx)
+	s.eventBiz.AuditLogWithRequest(
+		types.EventActionType_Create,
+		user.Name,
+		user.Email,
+		fmt.Sprintf("创建休眠时间窗: %d: %s", created.ID, created.Name),
+		req,
+	)
 	return &hibernatepb.CreateWindowResponse{Window: toHibernateWindowProto(created)}, nil
 }
 
-// UpdateWindow 更新全局休眠时间窗：不存在返回 404，名称重复返回 409，时段非法返回 400。
+// UpdateWindow 更新全局休眠时间窗：不存在返回 404，名称重复返回 409，时段非法返回 400，落更新审计日志。
 func (s *hibernateSvc) UpdateWindow(ctx context.Context, req *hibernatepb.UpdateWindowRequest) (*hibernatepb.UpdateWindowResponse, error) {
 	updated, err := s.hibernateWindowBiz.Update(ctx, &biz.HibernateWindow{
 		ID:          int(req.Id),
@@ -85,15 +98,31 @@ func (s *hibernateSvc) UpdateWindow(ctx context.Context, req *hibernatepb.Update
 	if err != nil {
 		return nil, logError(ctx, s.logger, err)
 	}
+	user := biz.MustGetUser(ctx)
+	s.eventBiz.AuditLogWithRequest(
+		types.EventActionType_Update,
+		user.Name,
+		user.Email,
+		fmt.Sprintf("更新休眠时间窗: %d: %s", updated.ID, updated.Name),
+		req,
+	)
 	return &hibernatepb.UpdateWindowResponse{Window: toHibernateWindowProto(updated)}, nil
 }
 
 // DeleteWindow 删除全局休眠时间窗（物理删除、幂等）：仍被仓库按名引用时拒绝（400），
-// 无下游关联时删除；窗口不存在时幂等成功。
+// 无下游关联时删除；窗口不存在时幂等成功，落删除审计日志。
 func (s *hibernateSvc) DeleteWindow(ctx context.Context, req *hibernatepb.DeleteWindowRequest) (*hibernatepb.DeleteWindowResponse, error) {
 	if err := s.hibernateWindowBiz.Delete(ctx, int(req.Id)); err != nil {
 		return nil, logError(ctx, s.logger, err)
 	}
+	user := biz.MustGetUser(ctx)
+	s.eventBiz.AuditLogWithRequest(
+		types.EventActionType_Delete,
+		user.Name,
+		user.Email,
+		fmt.Sprintf("删除休眠时间窗: %d", req.Id),
+		req,
+	)
 	return &hibernatepb.DeleteWindowResponse{}, nil
 }
 

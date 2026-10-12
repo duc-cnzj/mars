@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	hibernatepb "github.com/duc-cnzj/mars/api/v6/proto/hibernate"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
@@ -18,17 +20,23 @@ import (
 // hibernateSvcMocks 聚合 hibernateSvc 的下游 mock，由 newHibernateSvcWithMocks 统一构造。
 // AccessBiz 用 nil repo 即可：hibernate 仅经 RequireAdmin 门禁，不触达实体加载。
 type hibernateSvcMocks struct {
-	ctrl   *gomock.Controller
-	window *biz.MockHibernateWindowBiz
+	ctrl      *gomock.Controller
+	window    *biz.MockHibernateWindowBiz
+	eventRepo *data.MockEventRepo
 }
 
 func newHibernateSvcWithMocks(t *testing.T) (*hibernateSvc, *hibernateSvcMocks) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
-	mocks := &hibernateSvcMocks{ctrl: ctrl, window: biz.NewMockHibernateWindowBiz(ctrl)}
+	mocks := &hibernateSvcMocks{
+		ctrl:      ctrl,
+		window:    biz.NewMockHibernateWindowBiz(ctrl),
+		eventRepo: data.NewMockEventRepo(ctrl),
+	}
 	s, ok := NewHibernateSvc(HibernateSvcDeps{
 		HibernateWindowBiz: mocks.window,
 		AccessBiz:          biz.NewAccessBiz(nil, nil),
+		EventBiz:           biz.NewEventBiz(mocks.eventRepo),
 		Logger:             mlog.NewForConfig(nil),
 	}).(*hibernateSvc)
 	if !ok {
@@ -43,6 +51,7 @@ func TestNewHibernateSvc(t *testing.T) {
 	assert.NotNil(t, svc)
 	assert.NotNil(t, svc.hibernateWindowBiz)
 	assert.NotNil(t, svc.accessBiz)
+	assert.NotNil(t, svc.eventBiz)
 	assert.NotNil(t, svc.logger)
 }
 
@@ -111,6 +120,13 @@ func Test_hibernateSvc_CreateWindow(t *testing.T) {
 			return w, nil
 		})
 
+	// 创建成功后落创建审计日志（与 repo/namespace 等后台写操作同口径）。
+	mocks.eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Create,
+		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
+		gomock.Any(), gomock.Any(),
+	)
 	resp, err := svc.CreateWindow(newAdminUserCtx(), &hibernatepb.CreateWindowRequest{
 		Name: "夜间", Start: "23:00", End: "06:00", Description: "过夜",
 	})
@@ -133,6 +149,13 @@ func Test_hibernateSvc_UpdateWindow(t *testing.T) {
 			return w, nil
 		})
 
+	// 更新成功后落更新审计日志。
+	mocks.eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Update,
+		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
+		gomock.Any(), gomock.Any(),
+	)
 	resp, err := svc.UpdateWindow(newAdminUserCtx(), &hibernatepb.UpdateWindowRequest{
 		Id: 3, Name: "午休", Start: "12:00", End: "13:00",
 	})
@@ -149,6 +172,13 @@ func Test_hibernateSvc_DeleteWindow(t *testing.T) {
 	svc, mocks := newHibernateSvcWithMocks(t)
 	mocks.window.EXPECT().Delete(gomock.Any(), 3).Return(nil)
 
+	// 删除成功后落删除审计日志。
+	mocks.eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Delete,
+		biz.MustGetUser(newAdminUserCtx()).Name,
+		biz.MustGetUser(newAdminUserCtx()).Email,
+		gomock.Any(), gomock.Any(),
+	)
 	resp, err := svc.DeleteWindow(newAdminUserCtx(), &hibernatepb.DeleteWindowRequest{Id: 3})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)

@@ -82,6 +82,31 @@ func TestIfIntsIN(t *testing.T) {
 	assert.Equal(t, 0, len(x3))
 }
 
+func TestIfIntEQ(t *testing.T) {
+	db := openTestDB(t)
+	id1 := db.Namespace.Create().SetCreatorEmail("a").SetName("t1").SaveX(context.TODO()).ID
+	db.Namespace.Create().SetCreatorEmail("a").SetName("t2").SaveX(context.TODO())
+	db.Namespace.Create().SetCreatorEmail("a").SetName("t3").SaveX(context.TODO())
+
+	// 输入非 0：追加 field = v，只命中相等行。
+	x := db.Namespace.Query().Where(IfIntEQ[int]("id")(id1)).AllX(context.TODO())
+	assert.Len(t, x, 1)
+	assert.Equal(t, id1, x[0].ID)
+
+	// 输入 0（未设置）：不过滤，返回全部——与 IfStrEQ「空串不过滤」对称的哨兵语义。
+	x2 := db.Namespace.Query().Where(IfIntEQ[int]("id")(0)).AllX(context.TODO())
+	assert.Len(t, x2, 3)
+
+	// 输入负数（非 0）：仍视为有效值追加 field = v，无匹配返回空。
+	x3 := db.Namespace.Query().Where(IfIntEQ[int]("id")(-1)).AllX(context.TODO())
+	assert.Empty(t, x3)
+
+	// ~int32 实例化：泛型类型集内同样工作，命中相等行。
+	x4 := db.Namespace.Query().Where(IfIntEQ[int32]("id")(int32(id1))).AllX(context.TODO())
+	assert.Len(t, x4, 1)
+	assert.Equal(t, id1, x4[0].ID)
+}
+
 func TestIfOrderByDesc(t *testing.T) {
 	db := openTestDB(t)
 	db.Namespace.Create().SetCreatorEmail("a").SetName("test").SaveX(context.TODO())

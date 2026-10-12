@@ -223,6 +223,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 	hibernateSvcDeps := services.HibernateSvcDeps{
 		HibernateWindowBiz: hibernateWindowBiz,
 		AccessBiz:          accessBiz,
+		EventBiz:           eventBiz,
 		Logger:             logger,
 	}
 	hibernateServer := services.NewHibernateSvc(hibernateSvcDeps)
