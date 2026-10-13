@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/shadcn/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/shadcn/radio-group'
 import { PodStateTag } from './PodStateTag'
 import { shortContainerName } from '@/lib/shortContainerName'
+import { selectAllOnDoubleClick } from '@/lib/selection'
 
 type StateContainer = components['schemas']['types.StateContainer']
 
@@ -448,8 +449,14 @@ export function TabLog({ projectId, projectName }: { projectId: number; projectN
           {/* 工具条：路径 + 搜索 + 实时状态 + 下载 + 刷新 */}
           <div className="flex flex-wrap items-center gap-2">
             {selected && (
+              // 双击整选：namespace/pod/container 含 `-`，浏览器默认双击按「词」断选
+              // （nano-ai-kratos-... 只选到 nano、uat-duc 只选到 uat），改选整个文本节点便于整段复制
               <span className="font-mono text-[11px] text-faint">
-                {selected.namespace} / {selected.pod} / {selected.container}
+                <span onDoubleClick={selectAllOnDoubleClick}>{selected.namespace}</span>
+                {' / '}
+                <span onDoubleClick={selectAllOnDoubleClick}>{selected.pod}</span>
+                {' / '}
+                <span onDoubleClick={selectAllOnDoubleClick}>{selected.container}</span>
               </span>
             )}
             <div className="relative w-60">
