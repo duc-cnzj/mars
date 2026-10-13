@@ -199,17 +199,19 @@ func BuildNodePortMappingByProjects(ctx context.Context, logger mlog.Logger, k8s
 				switch {
 				case isHttpPortName(port.Name):
 					m[projectName] = append(data, &types.ServiceEndpoint{
-						Name:    projectName,
-						Url:     fmt.Sprintf("http://%s:%d", externalIp, port.NodePort),
-						SvcName: item.Name,
-						Type:    "Service",
+						Name:     projectName,
+						PortName: port.Name, //nolint:staticcheck // 兼容存量客户端：port_name 在下一大版本移除前仍照常下发
+						Url:      fmt.Sprintf("http://%s:%d", externalIp, port.NodePort),
+						SvcName:  item.Name,
+						Type:     "Service",
 					})
 				default:
 					m[projectName] = append(data, &types.ServiceEndpoint{
-						Name:    projectName,
-						Url:     fmt.Sprintf("%s:%d", externalIp, port.NodePort),
-						SvcName: item.Name,
-						Type:    "Service",
+						Name:     projectName,
+						PortName: port.Name, //nolint:staticcheck // 兼容存量客户端：port_name 在下一大版本移除前仍照常下发
+						Url:      fmt.Sprintf("%s:%d", externalIp, port.NodePort),
+						SvcName:  item.Name,
+						Type:     "Service",
 					})
 				}
 			}
@@ -316,17 +318,19 @@ func BuildLoadBalancerMappingByProjects(ctx context.Context, logger mlog.Logger,
 						url = fmt.Sprintf("https://%s", lbIP)
 					}
 					m[projectName] = append(data, &types.ServiceEndpoint{
-						Name:    projectName,
-						Url:     url,
-						SvcName: item.Name,
-						Type:    "Service",
+						Name:     projectName,
+						PortName: port.Name, //nolint:staticcheck // 兼容存量客户端：port_name 在下一大版本移除前仍照常下发
+						Url:      url,
+						SvcName:  item.Name,
+						Type:     "Service",
 					})
 				default:
 					m[projectName] = append(data, &types.ServiceEndpoint{
-						Name:    projectName,
-						Url:     fmt.Sprintf("%s:%d", lbIP, port.Port),
-						SvcName: item.Name,
-						Type:    "Service",
+						Name:     projectName,
+						PortName: port.Name, //nolint:staticcheck // 兼容存量客户端：port_name 在下一大版本移除前仍照常下发
+						Url:      fmt.Sprintf("%s:%d", lbIP, port.Port),
+						SvcName:  item.Name,
+						Type:     "Service",
 					})
 				}
 			}
