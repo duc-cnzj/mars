@@ -1323,23 +1323,25 @@ type ProjectModel struct {
 	HumanizeUpdatedAt string                  `protobuf:"bytes,17,opt,name=humanize_updated_at,json=humanizeUpdatedAt,proto3" json:"humanize_updated_at,omitempty"`
 	UpdatedBy         string                  `protobuf:"bytes,26,opt,name=updated_by,json=updatedBy,proto3" json:"updated_by,omitempty"`
 	// hibernate_enabled 项目级定时休眠开关；hibernate_state 运行态（awake/sleeping，
-	// 未配置该能力时为空串）。两者均由 project_hibernates 表派生，供前端展示与开关回显。
-	HibernateEnabled bool            `protobuf:"varint,27,opt,name=hibernate_enabled,json=hibernateEnabled,proto3" json:"hibernate_enabled,omitempty"`
-	HibernateState   string          `protobuf:"bytes,28,opt,name=hibernate_state,json=hibernateState,proto3" json:"hibernate_state,omitempty"`
-	ConfigType       string          `protobuf:"bytes,18,opt,name=config_type,json=configType,proto3" json:"config_type,omitempty"`
-	GitCommitWebUrl  string          `protobuf:"bytes,19,opt,name=git_commit_web_url,json=gitCommitWebUrl,proto3" json:"git_commit_web_url,omitempty"`
-	GitCommitTitle   string          `protobuf:"bytes,20,opt,name=git_commit_title,json=gitCommitTitle,proto3" json:"git_commit_title,omitempty"`
-	GitCommitAuthor  string          `protobuf:"bytes,21,opt,name=git_commit_author,json=gitCommitAuthor,proto3" json:"git_commit_author,omitempty"`
-	GitCommitDate    string          `protobuf:"bytes,22,opt,name=git_commit_date,json=gitCommitDate,proto3" json:"git_commit_date,omitempty"`
-	Version          int32           `protobuf:"varint,23,opt,name=version,proto3" json:"version,omitempty"`
-	RepoId           int32           `protobuf:"varint,24,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
-	Repo             *RepoModel      `protobuf:"bytes,25,opt,name=repo,proto3" json:"repo,omitempty"`
-	Namespace        *NamespaceModel `protobuf:"bytes,50,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	CreatedAt        string          `protobuf:"bytes,100,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt        string          `protobuf:"bytes,101,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	DeletedAt        string          `protobuf:"bytes,102,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// 未配置该能力时为空串）。hibernate_window_names 项目从仓库窗列表里多选的子集
+	// （启用时非空，未选时为空）。三者均由 project_hibernates 表派生，供前端展示与回显。
+	HibernateEnabled     bool            `protobuf:"varint,27,opt,name=hibernate_enabled,json=hibernateEnabled,proto3" json:"hibernate_enabled,omitempty"`
+	HibernateState       string          `protobuf:"bytes,28,opt,name=hibernate_state,json=hibernateState,proto3" json:"hibernate_state,omitempty"`
+	HibernateWindowNames []string        `protobuf:"bytes,29,rep,name=hibernate_window_names,json=hibernateWindowNames,proto3" json:"hibernate_window_names,omitempty"`
+	ConfigType           string          `protobuf:"bytes,18,opt,name=config_type,json=configType,proto3" json:"config_type,omitempty"`
+	GitCommitWebUrl      string          `protobuf:"bytes,19,opt,name=git_commit_web_url,json=gitCommitWebUrl,proto3" json:"git_commit_web_url,omitempty"`
+	GitCommitTitle       string          `protobuf:"bytes,20,opt,name=git_commit_title,json=gitCommitTitle,proto3" json:"git_commit_title,omitempty"`
+	GitCommitAuthor      string          `protobuf:"bytes,21,opt,name=git_commit_author,json=gitCommitAuthor,proto3" json:"git_commit_author,omitempty"`
+	GitCommitDate        string          `protobuf:"bytes,22,opt,name=git_commit_date,json=gitCommitDate,proto3" json:"git_commit_date,omitempty"`
+	Version              int32           `protobuf:"varint,23,opt,name=version,proto3" json:"version,omitempty"`
+	RepoId               int32           `protobuf:"varint,24,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	Repo                 *RepoModel      `protobuf:"bytes,25,opt,name=repo,proto3" json:"repo,omitempty"`
+	Namespace            *NamespaceModel `protobuf:"bytes,50,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	CreatedAt            string          `protobuf:"bytes,100,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt            string          `protobuf:"bytes,101,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	DeletedAt            string          `protobuf:"bytes,102,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *ProjectModel) Reset() {
@@ -1510,6 +1512,13 @@ func (x *ProjectModel) GetHibernateState() string {
 		return x.HibernateState
 	}
 	return ""
+}
+
+func (x *ProjectModel) GetHibernateWindowNames() []string {
+	if x != nil {
+		return x.HibernateWindowNames
+	}
+	return nil
 }
 
 func (x *ProjectModel) GetConfigType() string {
@@ -1978,7 +1987,7 @@ const file_proto_types_types_proto_rawDesc = "" +
 	"deleted_at\x18f \x01(\tR\tdeletedAt\"2\n" +
 	"\bKeyValue\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\"\xc9\t\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"\xff\t\n" +
 	"\fProjectModel\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12$\n" +
@@ -2004,7 +2013,8 @@ const file_proto_types_types_proto_rawDesc = "" +
 	"\n" +
 	"updated_by\x18\x1a \x01(\tR\tupdatedBy\x12+\n" +
 	"\x11hibernate_enabled\x18\x1b \x01(\bR\x10hibernateEnabled\x12'\n" +
-	"\x0fhibernate_state\x18\x1c \x01(\tR\x0ehibernateState\x12\x1f\n" +
+	"\x0fhibernate_state\x18\x1c \x01(\tR\x0ehibernateState\x124\n" +
+	"\x16hibernate_window_names\x18\x1d \x03(\tR\x14hibernateWindowNames\x12\x1f\n" +
 	"\vconfig_type\x18\x12 \x01(\tR\n" +
 	"configType\x12+\n" +
 	"\x12git_commit_web_url\x18\x13 \x01(\tR\x0fgitCommitWebUrl\x12(\n" +

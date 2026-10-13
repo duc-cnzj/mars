@@ -72,7 +72,7 @@ interface FormState {
 }
 
 /** 默认休眠配置：未配置（或首次创建）时的零值——关闭能力、窗口留空由用户填写 */
-const DEFAULT_HIBERNATE: Hibernate = { enabled: false, replicaPaths: [], windowName: '' }
+const DEFAULT_HIBERNATE: Hibernate = { enabled: false, replicaPaths: [], windowNames: [] }
 
 const DEFAULTS: FormState = {
   name: '',
@@ -573,7 +573,7 @@ export function RepoFormModal({
     const h = form.hibernate
     if (!h.enabled) return null
     if (h.replicaPaths.length === 0) return t('repos.hibernateReplicaRequired')
-    if (!h.windowName.trim()) return t('repos.hibernateWindowRequired')
+    if (h.windowNames.length === 0) return t('repos.hibernateWindowRequired')
     const byPath = new Map(form.elements.map((el) => [el.path, el]))
     for (const p of h.replicaPaths) {
       const el = byPath.get(p)
@@ -1038,9 +1038,10 @@ export function RepoFormModal({
                 <label className="flex flex-col gap-1.5">
                   <span className={labelCls}>{t('repos.hibernateWindow')}</span>
                   <SearchableSelect
-                    value={form.hibernate.windowName}
+                    multiple
+                    value={form.hibernate.windowNames}
                     options={windowOptions}
-                    onChange={(v) => setHibernate({ windowName: Array.isArray(v) ? v[0] ?? '' : v })}
+                    onChange={(v) => setHibernate({ windowNames: Array.isArray(v) ? v : [v] })}
                     onOpenChange={(o) => o && void loadHibernateWindows()}
                     placeholder={t('repos.hibernateWindowPlaceholder')}
                     searchPlaceholder={t('common.search')}

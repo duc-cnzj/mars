@@ -12,7 +12,6 @@ import { useOverlayZ } from '@/hooks/useOverlayZ'
 import { Icon, type IconName } from '@/components/Icons'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
-import { Switch } from '@/components/ui/shadcn/switch'
 import { Tag } from '@/components/ui'
 import {
   Dialog,
@@ -32,12 +31,9 @@ type HibernateWindowModel = components['schemas']['hibernate.HibernateWindow']
 export function TabInfo({
   detail,
   onDeleted,
-  onChanged,
 }: {
   detail: ProjectModel
   onDeleted: () => void
-  /** 项目配置变更成功回调：休眠开关切换后通知父级刷新详情与工作台列表 */
-  onChanged: () => void
 }) {
   const { t } = useTranslation()
   const [endpoints, setEndpoints] = useState<ServiceEndpoint[]>([])
@@ -82,7 +78,7 @@ export function TabInfo({
   // 开关态回显自项目级记录（hibernateEnabled），运行态 hibernateState 为 awake/sleeping。
   const hb = detail.repo?.marsConfig?.hibernate
   const hasHibernate = Boolean(hb?.enabled)
-  // 全局时间窗：把只读展示的 window_name 映射成「窗名 (时段)」。仅在启用休眠时拉取，
+  // 全局时间窗：把只读展示的窗名映射成「窗名 (时段)」。仅在启用休眠时拉取，
   // 走缓存模块去重；拉取失败/窗口未命中时回退为只显示窗名（helper 内部兜底）。
   const [windows, setWindows] = useState<HibernateWindowModel[]>([])
   useEffect(() => {
@@ -95,35 +91,9 @@ export function TabInfo({
       cancelled = true
     }
   }, [hasHibernate])
-  // 本地开关态：初始同步 detail，切换时乐观更新（失败回滚），父级刷新后按最新 detail 重新对齐
-  const [hibEnabled, setHibEnabled] = useState(detail.hibernateEnabled)
-  const [hibSaving, setHibSaving] = useState(false)
-  useEffect(() => {
-    setHibEnabled(detail.hibernateEnabled)
-  }, [detail.id, detail.hibernateEnabled])
-
-  /** 切换项目级休眠开关：仅改开关不触发重部署（副本映射/时间窗来自仓库级配置）；
-   *  成功后通知父级刷新详情与工作台列表，失败回滚本地态 */
-  const toggleHibernate = async (next: boolean) => {
-    setHibEnabled(next)
-    setHibSaving(true)
-    try {
-      const { error } = await api.POST(API.projectsHibernate, {
-        params: { path: { projectId: detail.id } },
-        body: { projectId: detail.id, enabled: next },
-      })
-      if (error) throw new Error(error.message ?? String(error))
-      toast.success(
-        next ? t('project.hibernateToggleOn') : t('project.hibernateToggleOff'),
-      )
-      onChanged()
-    } catch (e) {
-      setHibEnabled(!next)
-      toast.error(e instanceof Error ? e.message : String(e))
-    } finally {
-      setHibSaving(false)
-    }
-  }
+  // 只读展示用：生效窗 = 项目选定子集（空 = 未选，不继承仓库全量）；映射成「窗名 (时段)」
+  // 列表，窗口未命中/未加载时回退窗名本身。本页不提供任何可变更操作
+  const hibernateWindowText = hibernateWindowLabel(detail.hibernateWindowNames ?? [], windows)
 
   /** 复制文本并统一反馈：相关配置 / 访问地址 / 容器镜像三处共用同一套交互
    *  （失败统一「复制失败」；成功文案按来源区分——doneKey 由调用点传入，
@@ -173,47 +143,49 @@ export function TabInfo({
         <KV k={t('project.namespaceId')} v={detail.namespaceId ?? '-'} mono />
       </Section>
 
-      {/* 定时休眠：仅仓库启用休眠能力时展示；开关切换项目级参与，时间窗/副本字段来自仓库配置（只读） */}
+      {/* 定时休眠：仅仓库启用休眠能力时展示。**纯只读**——状态标签直接跟在标题后（休眠中 /
+          运行中 / 未启用）/ 时间窗（生效窗 = 项目选定子集，空 = 未选）/ 副本字段 + 置零说明；
+          本页不提供任何可变更操作（开关与窗选择在项目行弹层）。行直接铺在 Section 内、与下方 KV 行同款，
+          不再额外套 card */}
       {hasHibernate && hb && (
-        <Section icon="moon" title={t('project.hibernate')}>
-          <div className="flex items-center justify-between gap-2 rounded-md border border-line px-3 py-2">
-            <span className="flex items-center gap-2 text-[13px] text-ink">
-              <span className="text-mute" title={t('project.hibernateTip')}>
-                {t('project.hibernate')}
-              </span>
-              {hibEnabled && (
-                <Tag
-                  tone={detail.hibernateState === 'sleeping' ? 'warn' : 'ok'}
-                  dot={false}
-                  className="shrink-0"
-                >
-                  {detail.hibernateState === 'sleeping'
-                    ? t('project.hibernateStateSleeping')
-                    : t('project.hibernateStateAwake')}
-                </Tag>
-              )}
+        <Section
+          icon="moon"
+          title={t('project.hibernate')}
+          extra={
+            <Tag
+              tone={detail.hibernateEnabled ? (detail.hibernateState === 'sleeping' ? 'warn' : 'ok') : 'mute'}
+              dot={false}
+              className="shrink-0"
+              title={t('project.hibernateTip')}
+            >
+              {detail.hibernateEnabled
+                ? detail.hibernateState === 'sleeping'
+                  ? t('project.hibernateStateSleeping')
+                  : t('project.hibernateStateAwake')
+                : t('project.hibernateDisabled')}
+            </Tag>
+          }
+        >
+          {/* 时间窗（只读）：生效窗映射成「窗名 (时段)」；项目未选子集时空 = 未选（不继承仓库全量） */}
+          <div className="flex items-baseline gap-2 text-[13px]">
+            <span className="shrink-0 text-faint">{t('project.hibernateWindow')}:</span>
+            <span className="min-w-0 break-all font-mono text-[12px] text-ink">
+              {hibernateWindowText || '-'}
             </span>
-            <Switch
-              checked={hibEnabled}
-              disabled={hibSaving}
-              onCheckedChange={toggleHibernate}
-            />
           </div>
-          <KV
-            k={t('project.hibernateWindow')}
-            v={hibernateWindowLabel(hb.windowName, windows) || '-'}
-            mono
-          />
-          <KV
-            k={t('project.hibernateReplicaFields')}
-            v={
-              replicaFieldLabels(hb.replicaPaths, detail.repo?.marsConfig?.elements).join(', ') || '-'
-            }
-            mono
-          />
-          {/* 一句话说明：休眠时间段内副本字段被置 0，避免用户看到数量变化时误判 */}
-          <div className="text-[12px] leading-snug text-faint">
-            {t('project.hibernateReplicaZeroNote')}
+
+          {/* 副本字段（只读）+ 置零说明：休眠期间这些字段被自动置 0，避免用户看到数量变化时误判 */}
+          <div className="flex flex-col gap-1 text-[13px]">
+            <div className="flex items-baseline gap-2">
+              <span className="shrink-0 text-faint">{t('project.hibernateReplicaFields')}:</span>
+              <span className="min-w-0 break-all font-mono text-[12px] text-ink">
+                {replicaFieldLabels(hb.replicaPaths, detail.repo?.marsConfig?.elements).join(', ') ||
+                  '-'}
+              </span>
+            </div>
+            <div className="text-[12px] leading-snug text-faint">
+              {t('project.hibernateReplicaZeroNote')}
+            </div>
           </div>
         </Section>
       )}
@@ -484,13 +456,24 @@ function MetricCard({ icon, label, value }: { icon: IconName; label: string; val
   )
 }
 
-/** 分组区块：图标标题 + 内容 */
-function Section({ icon, title, children }: { icon: IconName; title: string; children: ReactNode }) {
+/** 分组区块：图标标题 + 内容；extra 可选，渲染在标题正后方（如休眠态标签） */
+function Section({
+  icon,
+  title,
+  extra,
+  children,
+}: {
+  icon: IconName
+  title: string
+  extra?: ReactNode
+  children: ReactNode
+}) {
   return (
     <section className="flex flex-col gap-1.5">
       <h4 className="flex items-center gap-1.5 text-[13px] font-semibold text-ink">
         <Icon name={icon} className="text-[14px] text-primary" />
         {title}
+        {extra}
       </h4>
       <div className="flex flex-col gap-1 pl-0.5">{children}</div>
     </section>

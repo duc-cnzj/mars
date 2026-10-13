@@ -1937,18 +1937,18 @@ func (mr *MockHibernateBizMockRecorder) ListByProjectIDs(ctx any, projectIDs ...
 }
 
 // Toggle mocks base method.
-func (m *MockHibernateBiz) Toggle(ctx context.Context, projectID int, enabled bool) (*ProjectHibernate, error) {
+func (m *MockHibernateBiz) Toggle(ctx context.Context, projectID int, enabled bool, windowNames []string) (*ProjectHibernate, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Toggle", ctx, projectID, enabled)
+	ret := m.ctrl.Call(m, "Toggle", ctx, projectID, enabled, windowNames)
 	ret0, _ := ret[0].(*ProjectHibernate)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Toggle indicates an expected call of Toggle.
-func (mr *MockHibernateBizMockRecorder) Toggle(ctx, projectID, enabled any) *gomock.Call {
+func (mr *MockHibernateBizMockRecorder) Toggle(ctx, projectID, enabled, windowNames any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Toggle", reflect.TypeOf((*MockHibernateBiz)(nil).Toggle), ctx, projectID, enabled)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Toggle", reflect.TypeOf((*MockHibernateBiz)(nil).Toggle), ctx, projectID, enabled, windowNames)
 }
 
 // MockHibernateWindowBiz is a mock of HibernateWindowBiz interface.
@@ -2017,6 +2017,36 @@ func (m *MockHibernateWindowBiz) List(ctx context.Context) ([]*HibernateWindow, 
 func (mr *MockHibernateWindowBizMockRecorder) List(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockHibernateWindowBiz)(nil).List), ctx)
+}
+
+// ListCandidateRepos mocks base method.
+func (m *MockHibernateWindowBiz) ListCandidateRepos(ctx context.Context) ([]*HibernateRepoOption, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListCandidateRepos", ctx)
+	ret0, _ := ret[0].([]*HibernateRepoOption)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListCandidateRepos indicates an expected call of ListCandidateRepos.
+func (mr *MockHibernateWindowBizMockRecorder) ListCandidateRepos(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCandidateRepos", reflect.TypeOf((*MockHibernateWindowBiz)(nil).ListCandidateRepos), ctx)
+}
+
+// SetWindowRepos mocks base method.
+func (m *MockHibernateWindowBiz) SetWindowRepos(ctx context.Context, windowID int, repoIDs []int) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetWindowRepos", ctx, windowID, repoIDs)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetWindowRepos indicates an expected call of SetWindowRepos.
+func (mr *MockHibernateWindowBizMockRecorder) SetWindowRepos(ctx, windowID, repoIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWindowRepos", reflect.TypeOf((*MockHibernateWindowBiz)(nil).SetWindowRepos), ctx, windowID, repoIDs)
 }
 
 // Update mocks base method.

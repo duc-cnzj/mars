@@ -100,6 +100,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/hibernate/repos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 列出可引用休眠时间窗的候选仓库（管理员） */
+        get: operations["Hibernate_ListCandidateRepos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/hibernate/windows": {
         parameters: {
             query?: never;
@@ -130,6 +147,23 @@ export interface paths {
         post?: never;
         /** 删除全局休眠时间窗（管理员） */
         delete: operations["Hibernate_DeleteWindow"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/hibernate/windows/{id}/repos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 把一个休眠时间窗配置到多个仓库（管理员） */
+        put: operations["Hibernate_SetWindowRepos"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1890,9 +1924,15 @@ export interface components {
             window: components["schemas"]["hibernate.HibernateWindow"];
         };
         "hibernate.DeleteWindowResponse": Record<string, never>;
+        /** @description HibernateRepoOption 可引用休眠时间窗的候选仓库（已配置休眠段的仓库，含禁用）。 */
+        "hibernate.HibernateRepoOption": {
+            /** Format: int32 */
+            id: number;
+            name: string;
+        };
         /**
          * @description HibernateWindow 全局休眠时间窗：管理员在后台维护若干命名时段，
-         *      各仓库的定时休眠配置按名字引用其中一个（mars.Hibernate.window_name）。
+         *      各仓库的定时休眠配置按名字引用其中若干（mars.Hibernate.window_names）。
          */
         "hibernate.HibernateWindow": {
             /** Format: int32 */
@@ -1904,9 +1944,31 @@ export interface components {
             /** @description end 休眠结束时间（HH:MM，start>end 表示跨零点）。 */
             end: string;
             description: string;
+            /**
+             * @description repo_names 引用该时间窗的仓库名（升序）；仅 ListWindows 填充，供后台列表展示
+             *      「哪些仓库用了这个窗」。
+             */
+            repoNames: string[];
+        };
+        "hibernate.ListCandidateReposResponse": {
+            items: components["schemas"]["hibernate.HibernateRepoOption"][];
         };
         "hibernate.ListWindowsResponse": {
             items: components["schemas"]["hibernate.HibernateWindow"][];
+        };
+        /**
+         * @description SetWindowReposRequest 把一个全局时间窗的「引用仓库集合」重设为 repo_ids（集合语义：
+         *      在集合内=引用该窗，不在集合内=不引用——缺则加入、多则移除）。
+         */
+        "hibernate.SetWindowReposRequest": {
+            /** Format: int32 */
+            id: number;
+            /** @description repo_ids 目标引用集合（仓库 ID）；仅可含已配置休眠段的仓库。 */
+            repoIds?: number[];
+        };
+        "hibernate.SetWindowReposResponse": {
+            /** @description repo_names 保存后引用该时间窗的仓库名（升序），供前端即时刷新展示。 */
+            repoNames: string[];
         };
         "hibernate.UpdateWindowRequest": {
             /** Format: int32 */
@@ -2001,7 +2063,8 @@ export interface components {
         };
         /**
          * @description Hibernate 是仓库级的定时休眠（夜间缩容）配置：由管理员在后台配置，决定哪些
-         *      自定义字段是「副本字段」以及引用哪个**全局休眠时间窗**。项目是否参与由项目级开关决定。
+         *      自定义字段是「副本字段」以及引用哪几个**全局休眠时间窗**。项目是否参与、以及从这些
+         *      窗里多选哪个子集由项目级决定（见 project.ToggleHibernateRequest.window_names）。
          */
         "mars.Hibernate": {
             /** @description enabled 是否启用该仓库的定时休眠能力。 */
@@ -2013,11 +2076,12 @@ export interface components {
              */
             replicaPaths: string[];
             /**
-             * @description window_name 引用的全局休眠时间窗名（hibernate_windows.name，管理员在后台维护）。
+             * @description window_names 引用的全局休眠时间窗名列表（hibernate_windows.name，管理员在后台维护）。
              *      用「名字」而非 ID 引用——本配置是 JSON blob，会经导出/导入跨环境往返，ID 会错位。
-             *      启用（enabled=true）时必填；窗口被删后对账按未命中处理（该仓库视为不休眠）。
+             *      它是该仓库可用的窗「调色板」：启用（enabled=true）时至少一个；项目从中多选一个子集，
+             *      命中任一窗即休眠。窗被删后对账按未命中处理（该窗不参与判定）。
              */
-            windowName: string;
+            windowNames: string[];
         };
         /** @description PipelinePassRule 是流水线通过规则的单条匹配项：命中指定 stage 下名为 job_name 的 job。 */
         "mars.PipelinePassRule": {
@@ -2284,6 +2348,14 @@ export interface components {
             gitCommitTitle: string;
             gitCommitAuthor: string;
             gitCommitDate: string;
+            /** @description 定时休眠：是否已开启项目级休眠开关；未配置休眠的项目保持 false。 */
+            hibernateEnabled: boolean;
+            /** @description 定时休眠运行态：awake 清醒 / sleeping 已休眠；未配置时为空串。 */
+            hibernateState: string;
+            /** @description 项目选定的休眠时间窗名子集（引用全局时间窗）；未选/未配置时为空。 */
+            hibernateWindowNames: string[];
+            /** @description 所属仓库声明的可用休眠时间窗名列表（项目选定子集的合法范围）；仓库未启用休眠时为空。 */
+            hibernateRepoWindowNames: string[];
         };
         "project.LivenessResponse": {
             /** Format: int32 */
@@ -2362,16 +2434,24 @@ export interface components {
         };
         /**
          * @description ToggleHibernateRequest 项目级定时休眠开关：仅切换开关本身，不触发重部署
-         *      （副本字段映射与时间窗来自仓库级 mars_config.hibernate）。
+         *      （副本字段映射来自仓库级 mars_config.hibernate）。
          */
         "project.ToggleHibernateRequest": {
             /** Format: int32 */
             projectId: number;
             enabled?: boolean;
+            /**
+             * @description window_names 项目从所属仓库的 window_names 里多选的子集（命中任一窗即休眠）。
+             *      启用（enabled=true）时至少选一个，留空即 400（空选择不再表示继承仓库全量）；
+             *      每个名字必须属于仓库的窗列表，否则 400。
+             */
+            windowNames?: string[];
         };
         "project.ToggleHibernateResponse": {
             enabled: boolean;
             state: string;
+            /** @description window_names 回显项目当前选定的窗子集（未选时为空）。 */
+            windowNames: string[];
         };
         "project.VersionResponse": {
             /** Format: int32 */
@@ -2706,10 +2786,12 @@ export interface components {
             updatedBy: string;
             /**
              * @description hibernate_enabled 项目级定时休眠开关；hibernate_state 运行态（awake/sleeping，
-             *      未配置该能力时为空串）。两者均由 project_hibernates 表派生，供前端展示与开关回显。
+             *      未配置该能力时为空串）。hibernate_window_names 项目从仓库窗列表里多选的子集
+             *      （启用时非空，未选时为空）。三者均由 project_hibernates 表派生，供前端展示与回显。
              */
             hibernateEnabled: boolean;
             hibernateState: string;
+            hibernateWindowNames: string[];
             configType: string;
             gitCommitWebUrl: string;
             gitCommitTitle: string;
@@ -3091,6 +3173,35 @@ export interface operations {
             };
         };
     };
+    Hibernate_ListCandidateRepos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["hibernate.ListCandidateReposResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
     Hibernate_CreateWindow: {
         parameters: {
             query?: never;
@@ -3177,6 +3288,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["hibernate.DeleteWindowResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["google.rpc.Status"];
+                };
+            };
+        };
+    };
+    Hibernate_SetWindowRepos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["hibernate.SetWindowReposRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["hibernate.SetWindowReposResponse"];
                 };
             };
             /** @description Default error response */
@@ -3340,6 +3486,8 @@ export interface operations {
                 liveness?: string;
                 /** @description 排序方向：空 = 按更新时间倒序（desc）；asc/desc = 指定更新时间升/降序 */
                 sort?: string;
+                /** @description 定时休眠过滤：true = 只看已开启项目级休眠开关的项目；缺省/false = 不按休眠过滤（全部）。 */
+                hibernate?: boolean;
             };
             header?: never;
             path?: never;

@@ -217,6 +217,23 @@ func (r *repoImpl) ToggleEnabled(ctx context.Context, id int, enabled bool) (get
 	return toRepo(save), errs.Wrap(err, "toggle repo enabled")
 }
 
+// BatchUpdateMarsConfig 在一个事务内批量覆盖若干仓库的 mars_config（轻量：直接写配置列，
+// 不走 resolveRepoFields 的 git 解析）。任一仓库不存在或写失败整体回滚；id 缺失由 errs.Wrap
+// 归为 404。供「一键配置休眠时间窗到多仓库」这类只改配置的批量场景。
+func (r *repoImpl) BatchUpdateMarsConfig(ctx context.Context, configs map[int]*mars.Config) (err error) {
+	ctx, span := tracer.Start(ctx, "repoImpl/BatchUpdateMarsConfig")
+	defer func() { endSpan(span, err) }()
+	err = r.data.WithTx(ctx, func(tx *ent.Tx) error {
+		for id, cfg := range configs {
+			if _, txErr := tx.Repo.UpdateOneID(id).SetMarsConfig(cfg).Save(ctx); txErr != nil {
+				return txErr
+			}
+		}
+		return nil
+	})
+	return errs.Wrap(err, "batch update repo mars config")
+}
+
 // Clone 复制仓库：读取原仓库字段后用新名字重新创建。
 func (r *repoImpl) Clone(ctx context.Context, input *biz.CloneRepoInput) (out *biz.Repo, err error) {
 	ctx, span := tracer.Start(ctx, "repoImpl/Clone")

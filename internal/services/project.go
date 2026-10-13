@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/project"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
@@ -77,11 +78,12 @@ func NewProjectSvc(deps ProjectSvcDeps) project.ProjectServer {
 func (p *projectSvc) Liveness(ctx context.Context, request *project.LivenessRequest) (*project.LivenessResponse, error) {
 	page, size := pagination.InitByDefault(request.Page, request.PageSize)
 	result, err := p.projBiz.Liveness(ctx, &biz.LivenessInput{
-		Page:     page,
-		PageSize: size,
-		Search:   request.Search,
-		Liveness: request.Liveness,
-		Sort:     request.Sort,
+		Page:      page,
+		PageSize:  size,
+		Search:    request.Search,
+		Liveness:  request.Liveness,
+		Sort:      request.Sort,
+		Hibernate: request.GetHibernate(),
 	})
 	if err != nil {
 		return nil, logError(ctx, p.logger, err)
@@ -110,8 +112,12 @@ func (p *projectSvc) Liveness(ctx context.Context, request *project.LivenessRequ
 			GitCommitTitle:  it.Project.GitCommitTitle,
 			GitCommitAuthor: it.Project.GitCommitAuthor,
 			GitCommitDate:   date.ToRFC3339(it.Project.GitCommitDate),
+			// 仓库声明的可用窗列表（项目选定子集的合法范围）：治理列表据此渲染时间窗编辑器的选项
+			HibernateRepoWindowNames: repoHibernateWindowNames(it.Project.Repo),
 		})
 	}
+	// 补休眠运行态：治理列表据此标注「已开启定时休眠」并可过滤（见 LivenessRequest.hibernate）。
+	enrichLivenessHibernate(ctx, p.logger, p.hibernateBiz, items)
 	return &project.LivenessResponse{
 		Page:     result.Page,
 		PageSize: result.PageSize,
@@ -457,14 +463,16 @@ func (p *projectSvc) ShowByName(ctx context.Context, input *project.ShowByNameRe
 }
 
 // ToggleHibernate 切换项目级定时休眠开关（仅切换开关，不触发重部署——休眠/唤醒由对账在
-// 窗口边界推进）。响应前做项目级访问控制，打开时 biz 层会校验所属仓库已启用休眠能力；
-// 变更成功后落审计日志（Update），消息携带项目 id/名与开关目标态，供运维追溯谁何时动了休眠。
+// 窗口边界推进）。响应前做项目级访问控制，打开时 biz 层会校验所属仓库已启用休眠能力、
+// 且项目选定的时间窗子集（req.WindowNames）非空并落在仓库可用窗内——项目级休眠必须有生效窗，
+// 清空时间窗即表示关闭休眠（携带 enabled=false + 空窗）。
+// 变更成功后落审计日志（Update），消息携带项目 id/名、开关目标态与所选时间窗，供运维追溯。
 func (p *projectSvc) ToggleHibernate(ctx context.Context, req *project.ToggleHibernateRequest) (*project.ToggleHibernateResponse, error) {
 	proj, err := p.accessBiz.RequireProjectAccess(ctx, int(req.ProjectId))
 	if err != nil {
 		return nil, logError(ctx, p.logger, err)
 	}
-	h, err := p.hibernateBiz.Toggle(ctx, int(req.ProjectId), req.Enabled)
+	h, err := p.hibernateBiz.Toggle(ctx, int(req.ProjectId), req.Enabled, req.WindowNames)
 	if err != nil {
 		return nil, logError(ctx, p.logger, err)
 	}
@@ -472,17 +480,22 @@ func (p *projectSvc) ToggleHibernate(ctx context.Context, req *project.ToggleHib
 	if h.Enabled {
 		stateStr = "开启"
 	}
+	msg := fmt.Sprintf("%s项目 %d/%s 的定时休眠", stateStr, proj.ID, proj.Name)
+	if len(h.WindowNames) > 0 {
+		msg = fmt.Sprintf("%s项目 %d/%s 的定时休眠（时间窗：%s）", stateStr, proj.ID, proj.Name, strings.Join(h.WindowNames, "、"))
+	}
 	user := biz.MustGetUser(ctx)
 	p.eventBiz.AuditLogWithRequest(
 		types.EventActionType_Update,
 		user.Name,
 		user.Email,
-		fmt.Sprintf("%s项目 %d/%s 的定时休眠", stateStr, proj.ID, proj.Name),
+		msg,
 		req,
 	)
 	return &project.ToggleHibernateResponse{
-		Enabled: h.Enabled,
-		State:   string(h.State),
+		Enabled:     h.Enabled,
+		State:       string(h.State),
+		WindowNames: h.WindowNames,
 	}, nil
 }
 

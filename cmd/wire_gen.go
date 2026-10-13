@@ -219,7 +219,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 	}
 	userServer := services.NewUserSvc(userSvcDeps)
 	hibernateWindowRepo := data.NewHibernateWindowRepo(dataImpl)
-	hibernateWindowBiz := biz.NewHibernateWindowBiz(hibernateWindowRepo)
+	hibernateWindowBiz := biz.NewHibernateWindowBiz(hibernateWindowRepo, repoRepo)
 	hibernateSvcDeps := services.HibernateSvcDeps{
 		HibernateWindowBiz: hibernateWindowBiz,
 		AccessBiz:          accessBiz,

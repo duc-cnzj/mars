@@ -6,6 +6,7 @@ import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
 import { invalidateHibernateWindows } from '@/api/hibernateWindowsCache'
 import { Icon } from '@/components/Icons'
+import { SearchableSelect, type SearchableSelectOption } from '@/components/SearchableSelect'
 import { Empty, SkeletonList } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
@@ -44,6 +45,41 @@ type Draft = {
 
 const EMPTY_DRAFT: Draft = { name: '', start: '23:00', end: '06:00', description: '', cascade: false }
 
+/** 列表行「引用仓库」最多展示的 chip 数，超出折叠为 +N（hover 查看全部） */
+const MAX_REPO_CHIPS = 6
+
+/**
+ * 列表行「引用仓库」chips：空态展示 i18n 文案，非空最多渲染 MAX_REPO_CHIPS 个仓库名、
+ * 超出折叠为 +N（hover 显示其余）。名字过长行内截断（title 兜底）避免撑破行布局。
+ */
+function RepoRefChips({ names }: { names: string[] }) {
+  const { t } = useTranslation()
+  if (names.length === 0) {
+    return <span className="text-[12px] text-faint">{t('hibernateWindows.reposEmpty')}</span>
+  }
+  return (
+    <>
+      {names.slice(0, MAX_REPO_CHIPS).map((name) => (
+        <span
+          key={name}
+          className="max-w-[12rem] truncate rounded bg-raised px-1.5 py-0.5 font-mono text-[11px] text-mute"
+          title={name}
+        >
+          {name}
+        </span>
+      ))}
+      {names.length > MAX_REPO_CHIPS && (
+        <span
+          className="rounded bg-raised px-1.5 py-0.5 text-[11px] text-faint"
+          title={names.slice(MAX_REPO_CHIPS).join(', ')}
+        >
+          +{names.length - MAX_REPO_CHIPS}
+        </span>
+      )}
+    </>
+  )
+}
+
 /**
  * 全局休眠时间窗管理（后台）：列表 + 新建/编辑 + 删除。
  * 时间窗全局共享，仓库在表单里按名称引用其中一个；列表数据量小，一次拉全、不分页。
@@ -60,6 +96,15 @@ export function HibernateWindowManager() {
   // 待删除项：null=关闭；非空=确认删除（受控，删除成功前不关闭）
   const [deleteTarget, setDeleteTarget] = useState<WindowModel | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  // 一键配置引用仓库：null=关闭；非空=配置该窗引用哪些仓库（集合语义：勾选=引用）
+  const [configTarget, setConfigTarget] = useState<WindowModel | null>(null)
+  // 已勾选的仓库 ID（SearchableSelect 值为 string[]，提交前转 number）
+  const [configSelected, setConfigSelected] = useState<string[]>([])
+  // 候选仓库选项（懒拉 adminHibernateRepos，仅打开弹窗时拉一次）
+  const [repoOptions, setRepoOptions] = useState<SearchableSelectOption[]>([])
+  const [configLoading, setConfigLoading] = useState(false)
+  const [configSaving, setConfigSaving] = useState(false)
 
   const fetchList = useCallback(async () => {
     try {
@@ -167,6 +212,53 @@ export function HibernateWindowManager() {
     }
   }
 
+  // 打开「配置引用仓库」弹窗：清空选择后懒拉候选仓库（已配休眠段的仓库，含禁用），
+  // 并以该窗当前引用的仓库名预勾选（repoNames 与候选同源，正常情况下全部命中）。
+  const openConfig = async (w: WindowModel) => {
+    setConfigTarget(w)
+    setConfigSelected([])
+    setConfigLoading(true)
+    try {
+      const { data, error } = await api.GET(API.adminHibernateRepos)
+      if (error) throw new Error(error.message ?? String(error))
+      const opts: SearchableSelectOption[] = (data?.items ?? []).map((r) => ({
+        value: String(r.id),
+        label: r.name,
+      }))
+      setRepoOptions(opts)
+      const referenced = new Set(w.repoNames ?? [])
+      setConfigSelected(opts.filter((o) => referenced.has(o.label)).map((o) => o.value))
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+      setConfigTarget(null)
+    } finally {
+      setConfigLoading(false)
+    }
+  }
+
+  // 保存引用集合：PUT body.repoIds 为目标集合（集合语义，缺则加入、多则移除）。
+  // 后端 400（仓库未配休眠段、或移除会让某启用仓库失去最后一个窗）走原始消息 toast。
+  const saveConfig = async () => {
+    if (!configTarget || configSaving) return
+    setConfigSaving(true)
+    try {
+      const { data, error } = await api.PUT(API.adminHibernateWindowRepos, {
+        params: { path: { id: configTarget.id } },
+        body: { id: configTarget.id, repoIds: configSelected.map(Number) },
+      })
+      if (error) throw new Error(error.message ?? String(error))
+      toast.success(
+        t('hibernateWindows.configReposSuccess', { count: data?.repoNames?.length ?? 0 }),
+      )
+      setConfigTarget(null)
+      await refresh()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setConfigSaving(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
       {/* 工具栏：标题 + 刷新 + 新建 */}
@@ -218,8 +310,16 @@ export function HibernateWindowManager() {
                   {w.description && (
                     <div className="mt-1.5 text-[12px] text-mute">{w.description}</div>
                   )}
+                  {/* 引用仓库：展示哪些仓库用了这个窗（内容可能多，chips 折叠见 RepoRefChips） */}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[12px] text-faint">{t('hibernateWindows.reposLabel')}</span>
+                    <RepoRefChips names={w.repoNames ?? []} />
+                  </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={() => openConfig(w)}>
+                    {t('hibernateWindows.configRepos')}
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => openEdit(w)}>
                     {t('hibernateWindows.edit')}
                   </Button>
@@ -327,6 +427,53 @@ export function HibernateWindowManager() {
             </Button>
             <Button variant="default" disabled={saving} onClick={submit}>
               {saving && <Icon name="loader" className="size-4 animate-spin" />}
+              {t('hibernateWindows.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 一键配置引用仓库弹窗：把一个时间窗配置到多个仓库（集合语义：勾选=引用） */}
+      <Dialog
+        open={configTarget != null}
+        onOpenChange={(o) => !o && !configSaving && setConfigTarget(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t('hibernateWindows.configReposTitle', { name: configTarget?.name ?? '' })}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <span className="text-[12px] text-faint">{t('hibernateWindows.configReposHint')}</span>
+            {configLoading ? (
+              <SkeletonList count={2} bare />
+            ) : repoOptions.length === 0 ? (
+              <div className="flex items-center justify-center py-6">
+                <Empty text={t('hibernateWindows.configReposEmpty')} icon="repo" />
+              </div>
+            ) : (
+              <SearchableSelect
+                multiple
+                value={configSelected}
+                options={repoOptions}
+                onChange={(v) => setConfigSelected(v as string[])}
+                placeholder={t('hibernateWindows.configReposPlaceholder')}
+                searchPlaceholder={t('common.search')}
+                emptyText={t('common.empty')}
+              />
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" disabled={configSaving} onClick={() => setConfigTarget(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="default"
+              disabled={configSaving || configLoading || repoOptions.length === 0}
+              onClick={saveConfig}
+            >
+              {configSaving && <Icon name="loader" className="size-4 animate-spin" />}
               {t('hibernateWindows.save')}
             </Button>
           </DialogFooter>

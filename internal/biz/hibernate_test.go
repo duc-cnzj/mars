@@ -183,7 +183,7 @@ func TestReplicaValuesAllZero(t *testing.T) {
 	assert.True(t, ReplicaValuesAllZero(nil, nil))
 }
 
-// TestValidateHibernateConfig 覆盖禁用短路与启用时各校验分支（时间窗改为 window_name 引用）。
+// TestValidateHibernateConfig 覆盖禁用短路与启用时各校验分支（时间窗按 window_names 列表引用）。
 func TestValidateHibernateConfig(t *testing.T) {
 	inputNumber := &mars.Element{Path: "app->replicas", Type: mars.ElementType_ElementTypeInputNumber}
 	selectWithZero := &mars.Element{Path: "web->replicas", Type: mars.ElementType_ElementTypeSelect, SelectValues: []string{"0", "2"}}
@@ -196,41 +196,45 @@ func TestValidateHibernateConfig(t *testing.T) {
 
 	// 启用但副本字段为空。
 	assert.Error(t, ValidateHibernateConfig(&mars.Config{
-		Hibernate: &mars.Hibernate{Enabled: true, WindowName: "夜间"},
+		Hibernate: &mars.Hibernate{Enabled: true, WindowNames: []string{"夜间"}},
 	}))
 
 	// 启用、字段不在已定义元素中。
 	assert.Error(t, ValidateHibernateConfig(&mars.Config{
 		Elements:  []*mars.Element{inputNumber},
-		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"nope"}, WindowName: "夜间"},
+		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"nope"}, WindowNames: []string{"夜间"}},
 	}))
 
 	// 字段类型无法承载 0（字符串）。
 	assert.Error(t, ValidateHibernateConfig(&mars.Config{
 		Elements:  []*mars.Element{text},
-		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->note"}, WindowName: "夜间"},
+		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->note"}, WindowNames: []string{"夜间"}},
 	}))
 
 	// Select 白名单不含 0。
 	assert.Error(t, ValidateHibernateConfig(&mars.Config{
 		Elements:  []*mars.Element{selectNoZero},
-		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"web->replicas"}, WindowName: "夜间"},
+		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"web->replicas"}, WindowNames: []string{"夜间"}},
 	}))
 
-	// 副本字段合法但未选时间窗（window_name 为空/纯空白）。
+	// 副本字段合法但未选时间窗（window_names 为空/纯空白/全空白）。
 	assert.Error(t, ValidateHibernateConfig(&mars.Config{
 		Elements:  []*mars.Element{inputNumber},
 		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}},
 	}))
 	assert.Error(t, ValidateHibernateConfig(&mars.Config{
 		Elements:  []*mars.Element{inputNumber},
-		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowName: "  "},
+		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{"  "}},
+	}))
+	assert.Error(t, ValidateHibernateConfig(&mars.Config{
+		Elements:  []*mars.Element{inputNumber},
+		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{"", "  "}},
 	}))
 
-	// 合法：InputNumber + 白名单含 0 的 Select + 已选时间窗。
+	// 合法：InputNumber + 白名单含 0 的 Select + 已选多个时间窗。
 	assert.NoError(t, ValidateHibernateConfig(&mars.Config{
 		Elements:  []*mars.Element{inputNumber, selectWithZero},
-		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas", "web->replicas"}, WindowName: "夜间"},
+		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas", "web->replicas"}, WindowNames: []string{"夜间", "午休"}},
 	}))
 }
 
@@ -266,7 +270,7 @@ func TestHibernateBiz_ListByProjectIDs(t *testing.T) {
 }
 
 // TestHibernateBiz_Toggle 覆盖开关切换：项目不存在上抛；启用时仓库未启用休眠报非法参数；
-// 启用成功后保留既有运行态与快照。
+// 启用时未选时间窗（空选择）报非法参数；启用成功后保留既有运行态与快照。
 func TestHibernateBiz_Toggle(t *testing.T) {
 	projRepo := &fakeHibernateProjectRepo{
 		showFn: func(ctx context.Context, id int) (*Project, error) {
@@ -275,7 +279,7 @@ func TestHibernateBiz_Toggle(t *testing.T) {
 	}
 	repoRepo := &fakeHibernateRepoRepo{
 		getFn: func(ctx context.Context, id int) (*Repo, error) {
-			return &Repo{ID: id, Name: "r", MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"a"}, WindowName: "夜间"}}}, nil
+			return &Repo{ID: id, Name: "r", MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"a"}, WindowNames: []string{"夜间"}}}}, nil
 		},
 	}
 
@@ -292,16 +296,23 @@ func TestHibernateBiz_Toggle(t *testing.T) {
 	}
 	h := NewHibernateBiz(repo, projRepo, repoRepo)
 
-	got, err := h.Toggle(context.TODO(), 1, true)
+	got, err := h.Toggle(context.TODO(), 1, true, []string{"夜间"})
 	assert.NoError(t, err)
 	assert.True(t, got.Enabled)
 	assert.NotNil(t, upserted)
+
+	// 启用时未选任何时间窗：空选择不再表示「继承仓库全量」，而是「未选」——拒绝（400）且不落库。
+	upserted = nil
+	if _, err := h.Toggle(context.TODO(), 1, true, nil); err == nil {
+		t.Fatal("启用时未选时间窗应报错")
+	}
+	assert.Nil(t, upserted)
 
 	// 项目不存在。
 	badProj := &fakeHibernateProjectRepo{showFn: func(ctx context.Context, id int) (*Project, error) {
 		return nil, errors.New("not found")
 	}}
-	if _, err := NewHibernateBiz(repo, badProj, repoRepo).Toggle(context.TODO(), 1, true); err == nil {
+	if _, err := NewHibernateBiz(repo, badProj, repoRepo).Toggle(context.TODO(), 1, true, nil); err == nil {
 		t.Fatal("项目不存在应报错")
 	}
 
@@ -309,11 +320,11 @@ func TestHibernateBiz_Toggle(t *testing.T) {
 	offRepoRepo := &fakeHibernateRepoRepo{getFn: func(ctx context.Context, id int) (*Repo, error) {
 		return &Repo{ID: id, Name: "r", MarsConfig: &mars.Config{}}, nil
 	}}
-	if _, err := NewHibernateBiz(repo, projRepo, offRepoRepo).Toggle(context.TODO(), 1, true); err == nil {
+	if _, err := NewHibernateBiz(repo, projRepo, offRepoRepo).Toggle(context.TODO(), 1, true, nil); err == nil {
 		t.Fatal("仓库未启用休眠时启用开关应报错")
 	}
 	// 关闭开关不校验仓库能力。
-	if _, err := NewHibernateBiz(repo, projRepo, offRepoRepo).Toggle(context.TODO(), 1, false); err != nil {
+	if _, err := NewHibernateBiz(repo, projRepo, offRepoRepo).Toggle(context.TODO(), 1, false, nil); err != nil {
 		t.Fatalf("关闭开关不应校验仓库能力: %v", err)
 	}
 
@@ -321,7 +332,7 @@ func TestHibernateBiz_Toggle(t *testing.T) {
 	emptyPathsRepoRepo := &fakeHibernateRepoRepo{getFn: func(ctx context.Context, id int) (*Repo, error) {
 		return &Repo{ID: id, Name: "r", MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{Enabled: true}}}, nil
 	}}
-	if _, err := NewHibernateBiz(repo, projRepo, emptyPathsRepoRepo).Toggle(context.TODO(), 1, true); err == nil {
+	if _, err := NewHibernateBiz(repo, projRepo, emptyPathsRepoRepo).Toggle(context.TODO(), 1, true, nil); err == nil {
 		t.Fatal("副本字段为空时启用开关应报错")
 	}
 
@@ -329,7 +340,7 @@ func TestHibernateBiz_Toggle(t *testing.T) {
 	noWindowRepoRepo := &fakeHibernateRepoRepo{getFn: func(ctx context.Context, id int) (*Repo, error) {
 		return &Repo{ID: id, Name: "r", MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"a"}}}}, nil
 	}}
-	if _, err := NewHibernateBiz(repo, projRepo, noWindowRepoRepo).Toggle(context.TODO(), 1, true); err == nil {
+	if _, err := NewHibernateBiz(repo, projRepo, noWindowRepoRepo).Toggle(context.TODO(), 1, true, nil); err == nil {
 		t.Fatal("未选时间窗时启用开关应报错")
 	}
 
@@ -337,7 +348,7 @@ func TestHibernateBiz_Toggle(t *testing.T) {
 	errRepoRepo := &fakeHibernateRepoRepo{getFn: func(ctx context.Context, id int) (*Repo, error) {
 		return nil, errors.New("repo not found")
 	}}
-	if _, err := NewHibernateBiz(repo, projRepo, errRepoRepo).Toggle(context.TODO(), 1, true); err == nil {
+	if _, err := NewHibernateBiz(repo, projRepo, errRepoRepo).Toggle(context.TODO(), 1, true, nil); err == nil {
 		t.Fatal("仓库查询失败应上抛")
 	}
 
@@ -345,7 +356,7 @@ func TestHibernateBiz_Toggle(t *testing.T) {
 	errHibernateRepo := &fakeHibernateRepo{getFn: func(ctx context.Context, projectID int) (*ProjectHibernate, error) {
 		return nil, errors.New("db down")
 	}}
-	if _, err := NewHibernateBiz(errHibernateRepo, projRepo, repoRepo).Toggle(context.TODO(), 1, true); err == nil {
+	if _, err := NewHibernateBiz(errHibernateRepo, projRepo, repoRepo).Toggle(context.TODO(), 1, true, nil); err == nil {
 		t.Fatal("休眠记录查询失败应上抛")
 	}
 
@@ -360,11 +371,13 @@ func TestHibernateBiz_Toggle(t *testing.T) {
 			return in, nil
 		},
 	}
-	if _, err := NewHibernateBiz(withSnapshot, projRepo, repoRepo).Toggle(context.TODO(), 1, false); err != nil {
+	if _, err := NewHibernateBiz(withSnapshot, projRepo, repoRepo).Toggle(context.TODO(), 1, false, nil); err != nil {
 		t.Fatalf("关闭开关失败: %v", err)
 	}
 	assert.Equal(t, HibernateStateSleeping, kept.State)
 	assert.Len(t, kept.Snapshot, 1)
+	// 关闭时携带空窗（清空时间窗 = 关闭休眠）：落库的 WindowNames 须被清空（不含任何窗）。
+	assert.Empty(t, kept.WindowNames)
 
 	// 重新开启但副本字段非全 0（关闭期间被手动改过）：陈旧休眠态名不副实，重置为清醒并清空快照。
 	var corrected *ProjectHibernate
@@ -381,7 +394,7 @@ func TestHibernateBiz_Toggle(t *testing.T) {
 			return in, nil
 		},
 	}
-	if _, err := NewHibernateBiz(staleRepo, staleProj, repoRepo).Toggle(context.TODO(), 1, true); err != nil {
+	if _, err := NewHibernateBiz(staleRepo, staleProj, repoRepo).Toggle(context.TODO(), 1, true, []string{"夜间"}); err != nil {
 		t.Fatalf("重新开启失败: %v", err)
 	}
 	assert.Equal(t, HibernateStateAwake, corrected.State)
@@ -402,9 +415,53 @@ func TestHibernateBiz_Toggle(t *testing.T) {
 			return in, nil
 		},
 	}
-	if _, err := NewHibernateBiz(genuineRepo, genuineProj, repoRepo).Toggle(context.TODO(), 1, true); err != nil {
+	if _, err := NewHibernateBiz(genuineRepo, genuineProj, repoRepo).Toggle(context.TODO(), 1, true, []string{"夜间"}); err != nil {
 		t.Fatalf("重新开启失败: %v", err)
 	}
 	assert.Equal(t, HibernateStateSleeping, genuine.State)
 	assert.Len(t, genuine.Snapshot, 1)
+}
+
+// TestHibernateBiz_Toggle_WindowSubset 覆盖项目窗口子集的校验与落库：合法子集归一化后落库、
+// 空选择被拒（400，不再继承仓库全量）、越界名被拒（400）。
+func TestHibernateBiz_Toggle_WindowSubset(t *testing.T) {
+	projRepo := &fakeHibernateProjectRepo{
+		showFn: func(ctx context.Context, id int) (*Project, error) {
+			return &Project{ID: id, RepoID: 5}, nil
+		},
+	}
+	repoRepo := &fakeHibernateRepoRepo{
+		getFn: func(ctx context.Context, id int) (*Repo, error) {
+			return &Repo{ID: id, Name: "r", MarsConfig: &mars.Config{
+				Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"a"}, WindowNames: []string{"夜间", "午休"}},
+			}}, nil
+		},
+	}
+	var upserted *ProjectHibernate
+	repo := &fakeHibernateRepo{
+		getFn: func(ctx context.Context, projectID int) (*ProjectHibernate, error) {
+			return nil, nil
+		},
+		upsertFn: func(ctx context.Context, in *ProjectHibernate) (*ProjectHibernate, error) {
+			upserted = in
+			return in, nil
+		},
+	}
+	h := NewHibernateBiz(repo, projRepo, repoRepo)
+
+	// 合法子集（含空白与重复）：归一化（trim/去空/去重、保序）后落库。
+	got, err := h.Toggle(context.TODO(), 1, true, []string{"夜间", " 夜间 ", "午休", ""})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"夜间", "午休"}, got.WindowNames)
+	assert.Equal(t, []string{"夜间", "午休"}, upserted.WindowNames)
+
+	// 空选择：不再表示继承仓库全量，而是「未选」——启用即拒（400），不落库。
+	upserted = nil
+	_, err = h.Toggle(context.TODO(), 1, true, nil)
+	assert.Error(t, err)
+	assert.Nil(t, upserted)
+
+	// 越界名：不在仓库可用窗列表中，拒绝（400）。
+	_, err = h.Toggle(context.TODO(), 1, true, []string{"不存在"})
+	assert.Error(t, err)
 }

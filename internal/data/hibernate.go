@@ -16,13 +16,14 @@ func toProjectHibernate(e *ent.ProjectHibernate) *biz.ProjectHibernate {
 		return nil
 	}
 	return &biz.ProjectHibernate{
-		ID:        e.ID,
-		ProjectID: e.ProjectID,
-		Enabled:   e.Enabled,
-		State:     biz.HibernateState(e.State),
-		Snapshot:  e.Snapshot,
-		CreatedAt: e.CreatedAt,
-		UpdatedAt: e.UpdatedAt,
+		ID:          e.ID,
+		ProjectID:   e.ProjectID,
+		Enabled:     e.Enabled,
+		State:       biz.HibernateState(e.State),
+		Snapshot:    e.Snapshot,
+		WindowNames: e.WindowNames,
+		CreatedAt:   e.CreatedAt,
+		UpdatedAt:   e.UpdatedAt,
 	}
 }
 
@@ -97,6 +98,7 @@ func (h *hibernateRepo) Upsert(ctx context.Context, in *biz.ProjectHibernate) (o
 		SetEnabled(in.Enabled).
 		SetState(string(in.State)).
 		SetSnapshot(in.Snapshot).
+		SetWindowNames(in.WindowNames).
 		OnConflict(sql.ConflictColumns(projecthibernate.FieldProjectID)).
 		UpdateNewValues().
 		Exec(ctx)

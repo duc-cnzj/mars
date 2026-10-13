@@ -24,9 +24,11 @@ export function SkeletonDetail() {
         ))}
       </div>
 
-      {/* 分组区块：图标标题行 + KV 行（首个区块 5 行、其余 2 行，贴近基础信息/时间线）。
-          首块 5 行对齐 TabInfo 基础信息区：id / repoId / version / gitProjectId / namespaceId */}
-      {Array.from({ length: 3 }, (_, s) => (
+      {/* 分组区块：图标标题行 + KV 行（首个区块 5 行、其余 2 行，贴近基础信息/休眠/时间线）。
+          首块 5 行对齐 TabInfo 基础信息区（id / repoId / version / gitProjectId / namespaceId）；
+          次块（2 行）对齐 TabInfo 定时休眠区（时间窗 / 副本字段两行 KV，仓库启用休眠时才渲染，
+          骨架按常见态预留）。共 4 块覆盖详情页主要分组，避免加载完成时区块数从少变多跳动 */}
+      {Array.from({ length: 4 }, (_, s) => (
         <div key={s} className="flex flex-col gap-1.5">
           <div className="flex items-center gap-1.5">
             <Skeleton className="h-3.5 w-3.5 rounded" />

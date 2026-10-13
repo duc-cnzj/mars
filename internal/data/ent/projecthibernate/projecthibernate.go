@@ -24,6 +24,8 @@ const (
 	FieldState = "state"
 	// FieldSnapshot holds the string denoting the snapshot field in the database.
 	FieldSnapshot = "snapshot"
+	// FieldWindowNames holds the string denoting the window_names field in the database.
+	FieldWindowNames = "window_names"
 	// FieldProjectID holds the string denoting the project_id field in the database.
 	FieldProjectID = "project_id"
 	// EdgeProject holds the string denoting the project edge name in mutations.
@@ -47,6 +49,7 @@ var Columns = []string{
 	FieldEnabled,
 	FieldState,
 	FieldSnapshot,
+	FieldWindowNames,
 	FieldProjectID,
 }
 

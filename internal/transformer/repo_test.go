@@ -82,7 +82,7 @@ func TestWithoutHibernate(t *testing.T) {
 	t.Run("抹掉 hibernate 且不改原对象", func(t *testing.T) {
 		orig := &types.RepoModel{Id: 1, MarsConfig: &mars.Config{
 			ConfigField: "cfg",
-			Hibernate:   &mars.Hibernate{Enabled: true, WindowName: "夜间"},
+			Hibernate:   &mars.Hibernate{Enabled: true, WindowNames: []string{"夜间"}},
 		}}
 		out := transformer.WithoutHibernate(orig)
 		assert.NotSame(t, orig, out)

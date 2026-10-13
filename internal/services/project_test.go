@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	"github.com/duc-cnzj/mars/api/v6/proto/project"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/api/v6/proto/websocket"
@@ -1307,15 +1308,15 @@ func Test_projectSvc_ToggleHibernate(t *testing.T) {
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{ID: 1, Name: "web", NamespaceID: 7}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 7).Return(&biz.Namespace{ID: 7, Name: "ns"}, nil)
 	hb := biz.NewMockHibernateBiz(mocks.ctrl)
-	hb.EXPECT().Toggle(gomock.Any(), 1, true).Return(
-		&biz.ProjectHibernate{ProjectID: 1, Enabled: true, State: biz.HibernateStateSleeping}, nil)
+	hb.EXPECT().Toggle(gomock.Any(), 1, true, []string{"夜间"}).Return(
+		&biz.ProjectHibernate{ProjectID: 1, Enabled: true, State: biz.HibernateStateSleeping, WindowNames: []string{"夜间"}}, nil)
 	svc.hibernateBiz = hb
-	req := &project.ToggleHibernateRequest{ProjectId: 1, Enabled: true}
+	req := &project.ToggleHibernateRequest{ProjectId: 1, Enabled: true, WindowNames: []string{"夜间"}}
 	mocks.eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Update,
 		biz.MustGetUser(newAdminUserCtx()).Name,
 		biz.MustGetUser(newAdminUserCtx()).Email,
-		"开启项目 1/web 的定时休眠",
+		"开启项目 1/web 的定时休眠（时间窗：夜间）",
 		req,
 	)
 
@@ -1323,6 +1324,7 @@ func Test_projectSvc_ToggleHibernate(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, res.Enabled)
 	assert.Equal(t, "sleeping", res.State)
+	assert.Equal(t, []string{"夜间"}, res.WindowNames)
 }
 
 // Test_projectSvc_ToggleHibernate_NonAdminUser 端到端锚点：非 admin 的普通用户（对项目所属
@@ -1340,7 +1342,7 @@ func Test_projectSvc_ToggleHibernate_NonAdminUser(t *testing.T) {
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{ID: 1, Name: "web", NamespaceID: 7}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 7).Return(&biz.Namespace{ID: 7, Name: "ns"}, nil)
 	hb := biz.NewMockHibernateBiz(mocks.ctrl)
-	hb.EXPECT().Toggle(gomock.Any(), 1, true).Return(
+	hb.EXPECT().Toggle(gomock.Any(), 1, true, gomock.Any()).Return(
 		&biz.ProjectHibernate{ProjectID: 1, Enabled: true, State: biz.HibernateStateSleeping}, nil)
 	svc.hibernateBiz = hb
 	req := &project.ToggleHibernateRequest{ProjectId: 1, Enabled: true}
@@ -1373,7 +1375,7 @@ func Test_projectSvc_ToggleHibernate_BizError(t *testing.T) {
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{ID: 1, NamespaceID: 7}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 7).Return(&biz.Namespace{ID: 7, Name: "ns"}, nil)
 	hb := biz.NewMockHibernateBiz(mocks.ctrl)
-	hb.EXPECT().Toggle(gomock.Any(), 1, true).Return(nil, errs.InvalidArgument("仓库未启用休眠"))
+	hb.EXPECT().Toggle(gomock.Any(), 1, true, gomock.Any()).Return(nil, errs.InvalidArgument("仓库未启用休眠"))
 	svc.hibernateBiz = hb
 
 	res, err := svc.ToggleHibernate(newAdminUserCtx(), &project.ToggleHibernateRequest{ProjectId: 1, Enabled: true})
@@ -2037,6 +2039,108 @@ func TestProjectSvc_Liveness_SortAsc(t *testing.T) {
 		assert.Equal(t, "old", resp.Items[0].Name) // 最早更新在前
 		assert.Equal(t, "web", resp.Items[1].Name)
 	}
+}
+
+// TestProjectSvc_Liveness_HibernateEnriched 休眠过滤 + 补字段：hibernate=true 透传到 repo 查询，
+// 命中的项目回填开关/状态/时间窗，未命中保持零值。
+func TestProjectSvc_Liveness_HibernateEnriched(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	now := time.Now()
+	mocks.projectRepo.EXPECT().ListLivenessPage(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, q *biz.LivenessPageQuery) (*biz.LivenessPageResult, error) {
+			assert.True(t, q.Hibernate)
+			return &biz.LivenessPageResult{
+				Projects: []*biz.Project{
+					{ID: 1, Name: "hib", UpdatedAt: now},
+					{ID: 2, Name: "plain", UpdatedAt: now},
+				},
+				Count: 2,
+			}, nil
+		})
+	mocks.changelogRepo.EXPECT().CountByProjectIDs(gomock.Any(), 1, 2).Return(map[int]int{}, nil)
+	hb := biz.NewMockHibernateBiz(mocks.ctrl)
+	hb.EXPECT().ListByProjectIDs(gomock.Any(), 1, 2).Return(map[int]*biz.ProjectHibernate{
+		1: {ProjectID: 1, Enabled: true, State: biz.HibernateStateSleeping, WindowNames: []string{"夜间"}},
+	}, nil)
+	svc.hibernateBiz = hb
+
+	resp, err := svc.Liveness(newAdminUserCtx(), &project.LivenessRequest{
+		Page:      lo.ToPtr(int32(1)),
+		PageSize:  lo.ToPtr(int32(10)),
+		Hibernate: lo.ToPtr(true),
+	})
+	assert.NoError(t, err)
+	if assert.NotNil(t, resp) && assert.Len(t, resp.Items, 2) {
+		assert.True(t, resp.Items[0].HibernateEnabled)
+		assert.Equal(t, "sleeping", resp.Items[0].HibernateState)
+		assert.Equal(t, []string{"夜间"}, resp.Items[0].HibernateWindowNames)
+		assert.False(t, resp.Items[1].HibernateEnabled)
+		assert.Empty(t, resp.Items[1].HibernateState)
+	}
+}
+
+// TestProjectSvc_Liveness_RepoWindowNames 仓库可用窗列表回填：条目携带仓库休眠配置时，
+// 从 repo.MarsConfig.Hibernate.WindowNames 取可用窗列表（前端时间窗编辑器的合法范围）；
+// 仓库为空 / 未配置休眠段时留空（前端据此不提供编辑入口，越界选择后端会 400）。
+func TestProjectSvc_Liveness_RepoWindowNames(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	now := time.Now()
+	mocks.projectRepo.EXPECT().ListLivenessPage(gomock.Any(), gomock.Any()).Return(&biz.LivenessPageResult{
+		Projects: []*biz.Project{
+			{ID: 1, Name: "with-repo", UpdatedAt: now, Repo: &biz.Repo{
+				MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{Enabled: true, WindowNames: []string{"夜间", "午休"}}},
+			}},
+			{ID: 2, Name: "no-repo", UpdatedAt: now},
+			{ID: 3, Name: "repo-not-enabled", UpdatedAt: now, Repo: &biz.Repo{MarsConfig: &mars.Config{}}},
+		},
+		Count: 3,
+	}, nil)
+	mocks.changelogRepo.EXPECT().CountByProjectIDs(gomock.Any(), 1, 2, 3).Return(map[int]int{}, nil)
+
+	resp, err := svc.Liveness(newAdminUserCtx(), &project.LivenessRequest{
+		Page:     lo.ToPtr(int32(1)),
+		PageSize: lo.ToPtr(int32(10)),
+	})
+	assert.NoError(t, err)
+	if assert.NotNil(t, resp) && assert.Len(t, resp.Items, 3) {
+		assert.Equal(t, []string{"夜间", "午休"}, resp.Items[0].HibernateRepoWindowNames)
+		assert.Empty(t, resp.Items[1].HibernateRepoWindowNames)
+		assert.Empty(t, resp.Items[2].HibernateRepoWindowNames)
+	}
+}
+
+// Test_repoHibernateWindowNames 仓库可用窗提取的 nil 安全：仓库为空、配置为空、
+// 或未配置休眠段时一律返回 nil，不 panic。
+func Test_repoHibernateWindowNames(t *testing.T) {
+	assert.Nil(t, repoHibernateWindowNames(nil))
+	assert.Nil(t, repoHibernateWindowNames(&biz.Repo{}))
+	assert.Nil(t, repoHibernateWindowNames(&biz.Repo{MarsConfig: &mars.Config{}}))
+	assert.Equal(t,
+		[]string{"夜间"},
+		repoHibernateWindowNames(&biz.Repo{MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{WindowNames: []string{"夜间"}}}}),
+	)
+}
+
+// Test_enrichLivenessHibernate_QueryError 休眠补字段查询失败：只记日志不阻断（不 panic），
+// 条目保持零值。
+func Test_enrichLivenessHibernate_QueryError(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	hb := biz.NewMockHibernateBiz(mocks.ctrl)
+	hb.EXPECT().ListByProjectIDs(gomock.Any(), 1).Return(nil, errors.New("db down"))
+
+	items := []*project.LivenessItem{{Id: 1}}
+	assert.NotPanics(t, func() { enrichLivenessHibernate(newAdminUserCtx(), svc.logger, hb, items) })
+	assert.False(t, items[0].HibernateEnabled)
+}
+
+// Test_enrichLivenessHibernate_NoIDs 无有效 ID（越界页/空页）：不查 biz。
+func Test_enrichLivenessHibernate_NoIDs(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	hb := biz.NewMockHibernateBiz(mocks.ctrl)
+
+	items := []*project.LivenessItem{{Id: 0}}
+	enrichLivenessHibernate(newAdminUserCtx(), svc.logger, hb, items)
+	assert.False(t, items[0].HibernateEnabled)
 }
 
 // TestProjectSvc_Authorize 门禁：Liveness 要求 admin，Restore 与其配套的 AdminDeletedList

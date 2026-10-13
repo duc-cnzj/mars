@@ -248,7 +248,8 @@ func (x *Config) GetHibernate() *Hibernate {
 }
 
 // Hibernate 是仓库级的定时休眠（夜间缩容）配置：由管理员在后台配置，决定哪些
-// 自定义字段是「副本字段」以及引用哪个**全局休眠时间窗**。项目是否参与由项目级开关决定。
+// 自定义字段是「副本字段」以及引用哪几个**全局休眠时间窗**。项目是否参与、以及从这些
+// 窗里多选哪个子集由项目级决定（见 project.ToggleHibernateRequest.window_names）。
 type Hibernate struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// enabled 是否启用该仓库的定时休眠能力。
@@ -257,10 +258,11 @@ type Hibernate struct {
 	// 休眠时把它们置为 "0" 重部署，唤醒时按快照恢复。字段类型必须能承载 "0"
 	// （InputNumber/NumberSelect/NumberRadio，或 Select 的白名单含 "0"）。
 	ReplicaPaths []string `protobuf:"bytes,2,rep,name=replica_paths,json=replicaPaths,proto3" json:"replica_paths,omitempty"`
-	// window_name 引用的全局休眠时间窗名（hibernate_windows.name，管理员在后台维护）。
+	// window_names 引用的全局休眠时间窗名列表（hibernate_windows.name，管理员在后台维护）。
 	// 用「名字」而非 ID 引用——本配置是 JSON blob，会经导出/导入跨环境往返，ID 会错位。
-	// 启用（enabled=true）时必填；窗口被删后对账按未命中处理（该仓库视为不休眠）。
-	WindowName    string `protobuf:"bytes,3,opt,name=window_name,json=windowName,proto3" json:"window_name,omitempty"`
+	// 它是该仓库可用的窗「调色板」：启用（enabled=true）时至少一个；项目从中多选一个子集，
+	// 命中任一窗即休眠。窗被删后对账按未命中处理（该窗不参与判定）。
+	WindowNames   []string `protobuf:"bytes,3,rep,name=window_names,json=windowNames,proto3" json:"window_names,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -309,11 +311,11 @@ func (x *Hibernate) GetReplicaPaths() []string {
 	return nil
 }
 
-func (x *Hibernate) GetWindowName() string {
+func (x *Hibernate) GetWindowNames() []string {
 	if x != nil {
-		return x.WindowName
+		return x.WindowNames
 	}
-	return ""
+	return nil
 }
 
 // GroupSetting 是分区（group）的展示配置：分区排序与默认折叠。
@@ -555,12 +557,11 @@ const file_proto_mars_mars_proto_rawDesc = "" +
 	" \x01(\tB)\xfaB&r$(@2\x1d^[A-Za-z]([A-Z-_a-z]*[^_-])*$\xd0\x01\x01R\vdisplayName\x12F\n" +
 	"\x13pipeline_pass_rules\x18\v \x03(\v2\x16.mars.PipelinePassRuleR\x11pipelinePassRules\x129\n" +
 	"\x0egroup_settings\x18\f \x03(\v2\x12.mars.GroupSettingR\rgroupSettings\x12-\n" +
-	"\thibernate\x18\r \x01(\v2\x0f.mars.HibernateR\thibernate\"q\n" +
+	"\thibernate\x18\r \x01(\v2\x0f.mars.HibernateR\thibernate\"m\n" +
 	"\tHibernate\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12#\n" +
-	"\rreplica_paths\x18\x02 \x03(\tR\freplicaPaths\x12\x1f\n" +
-	"\vwindow_name\x18\x03 \x01(\tR\n" +
-	"windowNameJ\x04\b\x04\x10\x05\"a\n" +
+	"\rreplica_paths\x18\x02 \x03(\tR\freplicaPaths\x12!\n" +
+	"\fwindow_names\x18\x03 \x03(\tR\vwindowNames\"a\n" +
 	"\fGroupSetting\x12\x1d\n" +
 	"\x04name\x18\x01 \x01(\tB\t\xfaB\x06r\x04 \x01(@R\x04name\x12\x14\n" +
 	"\x05order\x18\x02 \x01(\rR\x05order\x12\x1c\n" +

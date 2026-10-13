@@ -185,7 +185,7 @@ func TestRepoBiz_Create_ValidHibernateConfig(t *testing.T) {
 		Name: "app",
 		MarsConfig: &mars.Config{
 			Elements:  []*mars.Element{{Path: "app->replicas", Type: mars.ElementType_ElementTypeInputNumber}},
-			Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowName: "夜间"},
+			Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{"夜间"}},
 		},
 	})
 	assert.NoError(t, err)
@@ -337,7 +337,7 @@ func enabledHibernateRepo() *Repo {
 			Hibernate: &mars.Hibernate{
 				Enabled:      true,
 				ReplicaPaths: []string{"app->replicas"},
-				WindowName:   "夜间",
+				WindowNames:  []string{"夜间"},
 			},
 		},
 		Projects: []*Project{{ID: 1, Name: "web"}, {ID: 2, Name: "api"}},
@@ -437,7 +437,7 @@ func TestRepoBiz_Update_AllowDisableHibernateWhenRepoHasNoProjects(t *testing.T)
 					Hibernate: &mars.Hibernate{
 						Enabled:      true,
 						ReplicaPaths: []string{"app->replicas"},
-						WindowName:   "夜间",
+						WindowNames:  []string{"夜间"},
 					},
 				},
 			}, nil
@@ -471,7 +471,7 @@ func TestRepoBiz_Update_AllowHibernateStillEnabled(t *testing.T) {
 		Name: "app",
 		MarsConfig: &mars.Config{
 			Elements:  []*mars.Element{{Path: "app->replicas", Type: mars.ElementType_ElementTypeInputNumber}},
-			Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowName: "夜间"},
+			Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{"夜间"}},
 		},
 	})
 	assert.NoError(t, err)

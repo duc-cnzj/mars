@@ -49,7 +49,8 @@ message Config {
 }
 
 // Hibernate 是仓库级的定时休眠（夜间缩容）配置：由管理员在后台配置，决定哪些
-// 自定义字段是「副本字段」以及引用哪个**全局休眠时间窗**。项目是否参与由项目级开关决定。
+// 自定义字段是「副本字段」以及引用哪几个**全局休眠时间窗**。项目是否参与、以及从这些
+// 窗里多选哪个子集由项目级决定（见 project.ToggleHibernateRequest.window_names）。
 message Hibernate {
   // enabled 是否启用该仓库的定时休眠能力。
   bool enabled = 1;
@@ -57,11 +58,11 @@ message Hibernate {
   // 休眠时把它们置为 "0" 重部署，唤醒时按快照恢复。字段类型必须能承载 "0"
   // （InputNumber/NumberSelect/NumberRadio，或 Select 的白名单含 "0"）。
   repeated string replica_paths = 2;
-  // window_name 引用的全局休眠时间窗名（hibernate_windows.name，管理员在后台维护）。
+  // window_names 引用的全局休眠时间窗名列表（hibernate_windows.name，管理员在后台维护）。
   // 用「名字」而非 ID 引用——本配置是 JSON blob，会经导出/导入跨环境往返，ID 会错位。
-  // 启用（enabled=true）时必填；窗口被删后对账按未命中处理（该仓库视为不休眠）。
-  string window_name = 3;
-  reserved 4; // 原 end 字段：时间窗已改由全局 window_name 引用
+  // 它是该仓库可用的窗「调色板」：启用（enabled=true）时至少一个；项目从中多选一个子集，
+  // 命中任一窗即休眠。窗被删后对账按未命中处理（该窗不参与判定）。
+  repeated string window_names = 3;
 }
 
 // GroupSetting 是分区（group）的展示配置：分区排序与默认折叠。

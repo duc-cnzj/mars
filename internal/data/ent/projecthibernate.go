@@ -30,6 +30,8 @@ type ProjectHibernate struct {
 	State string `json:"state,omitempty"`
 	// 休眠前副本字段的值快照，唤醒时据此恢复
 	Snapshot []*websocket.ExtraValue `json:"snapshot,omitempty"`
+	// 项目选定的时间窗名子集（引用仓库 Hibernate.window_names）；启用时非空，空 = 该项目休眠已关闭
+	WindowNames []string `json:"window_names,omitempty"`
 	// ProjectID holds the value of the "project_id" field.
 	ProjectID int `json:"project_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -63,7 +65,7 @@ func (*ProjectHibernate) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case projecthibernate.FieldSnapshot:
+		case projecthibernate.FieldSnapshot, projecthibernate.FieldWindowNames:
 			values[i] = new([]byte)
 		case projecthibernate.FieldEnabled:
 			values[i] = new(sql.NullBool)
@@ -124,6 +126,14 @@ func (_m *ProjectHibernate) assignValues(columns []string, values []any) error {
 			} else if value != nil && len(*value) > 0 {
 				if err := json.Unmarshal(*value, &_m.Snapshot); err != nil {
 					return fmt.Errorf("unmarshal field snapshot: %w", err)
+				}
+			}
+		case projecthibernate.FieldWindowNames:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field window_names", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.WindowNames); err != nil {
+					return fmt.Errorf("unmarshal field window_names: %w", err)
 				}
 			}
 		case projecthibernate.FieldProjectID:
@@ -187,6 +197,9 @@ func (_m *ProjectHibernate) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("snapshot=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Snapshot))
+	builder.WriteString(", ")
+	builder.WriteString("window_names=")
+	builder.WriteString(fmt.Sprintf("%v", _m.WindowNames))
 	builder.WriteString(", ")
 	builder.WriteString("project_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ProjectID))

@@ -15,6 +15,7 @@ import (
 	reflect "reflect"
 	time "time"
 
+	mars "github.com/duc-cnzj/mars/api/v6/proto/mars"
 	types "github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocket "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	biz "github.com/duc-cnzj/mars/v6/internal/biz"
@@ -1656,6 +1657,20 @@ func (mr *MockRepoRepoMockRecorder) All(ctx, in any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "All", reflect.TypeOf((*MockRepoRepo)(nil).All), ctx, in)
 }
 
+// BatchUpdateMarsConfig mocks base method.
+func (m *MockRepoRepo) BatchUpdateMarsConfig(ctx context.Context, configs map[int]*mars.Config) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BatchUpdateMarsConfig", ctx, configs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BatchUpdateMarsConfig indicates an expected call of BatchUpdateMarsConfig.
+func (mr *MockRepoRepoMockRecorder) BatchUpdateMarsConfig(ctx, configs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchUpdateMarsConfig", reflect.TypeOf((*MockRepoRepo)(nil).BatchUpdateMarsConfig), ctx, configs)
+}
+
 // Clone mocks base method.
 func (m *MockRepoRepo) Clone(ctx context.Context, input *biz.CloneRepoInput) (*biz.Repo, error) {
 	m.ctrl.T.Helper()
@@ -2720,6 +2735,36 @@ func (mr *MockHibernateWindowRepoMockRecorder) List(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockHibernateWindowRepo)(nil).List), ctx)
 }
 
+// ProjectReferencingRepoIDs mocks base method.
+func (m *MockHibernateWindowRepo) ProjectReferencingRepoIDs(ctx context.Context, name string) (map[int]int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProjectReferencingRepoIDs", ctx, name)
+	ret0, _ := ret[0].(map[int]int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ProjectReferencingRepoIDs indicates an expected call of ProjectReferencingRepoIDs.
+func (mr *MockHibernateWindowRepoMockRecorder) ProjectReferencingRepoIDs(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProjectReferencingRepoIDs", reflect.TypeOf((*MockHibernateWindowRepo)(nil).ProjectReferencingRepoIDs), ctx, name)
+}
+
+// ProjectsReferencing mocks base method.
+func (m *MockHibernateWindowRepo) ProjectsReferencing(ctx context.Context, name string) ([]int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProjectsReferencing", ctx, name)
+	ret0, _ := ret[0].([]int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ProjectsReferencing indicates an expected call of ProjectsReferencing.
+func (mr *MockHibernateWindowRepoMockRecorder) ProjectsReferencing(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProjectsReferencing", reflect.TypeOf((*MockHibernateWindowRepo)(nil).ProjectsReferencing), ctx, name)
+}
+
 // ReposReferencing mocks base method.
 func (m *MockHibernateWindowRepo) ReposReferencing(ctx context.Context, name string) ([]string, error) {
 	m.ctrl.T.Helper()
@@ -2764,4 +2809,19 @@ func (m *MockHibernateWindowRepo) UpdateCascade(ctx context.Context, w *biz.Hibe
 func (mr *MockHibernateWindowRepoMockRecorder) UpdateCascade(ctx, w, oldName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCascade", reflect.TypeOf((*MockHibernateWindowRepo)(nil).UpdateCascade), ctx, w, oldName)
+}
+
+// WindowRepoRefs mocks base method.
+func (m *MockHibernateWindowRepo) WindowRepoRefs(ctx context.Context) (map[string][]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WindowRepoRefs", ctx)
+	ret0, _ := ret[0].(map[string][]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// WindowRepoRefs indicates an expected call of WindowRepoRefs.
+func (mr *MockHibernateWindowRepoMockRecorder) WindowRepoRefs(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WindowRepoRefs", reflect.TypeOf((*MockHibernateWindowRepo)(nil).WindowRepoRefs), ctx)
 }

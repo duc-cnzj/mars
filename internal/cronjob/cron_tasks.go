@@ -426,8 +426,10 @@ func (repo *Tasks) reconcileHibernateProject(ctx context.Context, now time.Time,
 	}
 	inWindow := false
 	if cfg.Hibernate != nil && cfg.Hibernate.Enabled {
-		if start, end, wok := repo.resolveHibernateWindow(ctx, cfg.Hibernate); wok {
-			inWindow = biz.InHibernateWindow(now, start, end)
+		// 生效窗：项目自身选定的子集（启用时已保证非空），命中任一窗即算在窗内（并集语义）。
+		// 空选择（历史/异常数据）不继承仓库全量——按「未选即未启用」处理：解析不到窗即不参与休眠。
+		if wins, wok := repo.resolveHibernateWindows(ctx, rec.WindowNames); wok {
+			inWindow = anyHibernateWindowHit(now, wins)
 		}
 	}
 	actuallySleeping := rec.State == biz.HibernateStateSleeping &&
@@ -463,10 +465,11 @@ func (repo *Tasks) sleepHibernateProject(ctx context.Context, proj *biz.Project,
 	snapshot := biz.SnapshotReplicaValues(base, replicaPaths)
 	target := biz.SleepExtraValues(base, replicaPaths)
 	if _, err := repo.hibernateRepo.Upsert(ctx, &biz.ProjectHibernate{
-		ProjectID: proj.ID,
-		Enabled:   rec.Enabled,
-		State:     biz.HibernateStateSleeping,
-		Snapshot:  snapshot,
+		ProjectID:   proj.ID,
+		Enabled:     rec.Enabled,
+		State:       biz.HibernateStateSleeping,
+		Snapshot:    snapshot,
+		WindowNames: rec.WindowNames,
 	}); err != nil {
 		repo.logger.Errorf("[hibernate]: 项目 %s 休眠状态落库失败: %v", proj.Name, err)
 		return
@@ -488,9 +491,10 @@ func (repo *Tasks) wakeHibernateProject(ctx context.Context, proj *biz.Project, 
 		return
 	}
 	if _, err := repo.hibernateRepo.Upsert(ctx, &biz.ProjectHibernate{
-		ProjectID: proj.ID,
-		Enabled:   rec.Enabled,
-		State:     biz.HibernateStateAwake,
+		ProjectID:   proj.ID,
+		Enabled:     rec.Enabled,
+		State:       biz.HibernateStateAwake,
+		WindowNames: rec.WindowNames,
 	}); err != nil {
 		repo.logger.Errorf("[hibernate]: 项目 %s 唤醒状态落库失败: %v", proj.Name, err)
 		return
@@ -505,35 +509,51 @@ func (repo *Tasks) wakeHibernateProject(ctx context.Context, proj *biz.Project, 
 func (repo *Tasks) releaseHibernateProject(ctx context.Context, proj *biz.Project, rec *biz.ProjectHibernate) {
 	repo.logger.Warningf("[hibernate]: 项目 %s 标记休眠中但副本字段非全 0，释放接管权并转清醒", proj.Name)
 	if _, err := repo.hibernateRepo.Upsert(ctx, &biz.ProjectHibernate{
-		ProjectID: proj.ID,
-		Enabled:   rec.Enabled,
-		State:     biz.HibernateStateAwake,
+		ProjectID:   proj.ID,
+		Enabled:     rec.Enabled,
+		State:       biz.HibernateStateAwake,
+		WindowNames: rec.WindowNames,
 	}); err != nil {
 		repo.logger.Errorf("[hibernate]: 项目 %s 释放休眠接管权落库失败: %v", proj.Name, err)
 	}
 }
 
-// resolveHibernateWindow 按仓库休眠配置引用的全局时间窗名解析启止时段。名字为空或窗口
-// 不存在（被删/导出到未同步的环境）时返回 ok=false——调用方按「无窗口」处理：休眠侧跳过、
-// 唤醒侧继续唤醒，避免悬空引用让项目永久卡在休眠态。
-func (repo *Tasks) resolveHibernateWindow(ctx context.Context, h *mars.Hibernate) (string, string, bool) {
-	if h == nil || strings.TrimSpace(h.WindowName) == "" {
-		return "", "", false
-	}
-	win, err := repo.hibernateWindowRepo.GetByName(ctx, h.WindowName)
-	if err != nil {
-		repo.logger.Warningf("[hibernate]: 解析休眠时间窗 %q 失败: %v", h.WindowName, err)
-		return "", "", false
-	}
-	if win == nil {
-		// 悬空引用是预期态（窗口被删/跨环境未同步），对账每 2 分钟一轮、逐轮告警会刷屏淹没真信号；
-		// 同一窗名只告警一次（去重），保留可观测性又去掉噪声。
-		if _, loaded := repo.warnedMissingWindow.LoadOrStore(h.WindowName, struct{}{}); !loaded {
-			repo.logger.Warningf("[hibernate]: 引用的休眠时间窗 %q 不存在，跳过（同名不再重复告警）", h.WindowName)
+// resolveHibernateWindows 按名字列表逐个解析全局时间窗，返回全部可解析的窗。名字全空、
+// 或全部名字都悬空（被删/导出到未同步的环境）时返回 ok=false——调用方按「无窗口」处理：
+// 休眠侧跳过、唤醒侧继续唤醒，避免悬空引用让项目永久卡在休眠态。单个名字悬空逐个跳过
+// （同名只告警一次，避免每轮刷屏），不牵连其余可解析的窗。
+func (repo *Tasks) resolveHibernateWindows(ctx context.Context, names []string) (out []*biz.HibernateWindow, ok bool) {
+	for _, name := range names {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
 		}
-		return "", "", false
+		win, err := repo.hibernateWindowRepo.GetByName(ctx, name)
+		if err != nil {
+			repo.logger.Warningf("[hibernate]: 解析休眠时间窗 %q 失败: %v", name, err)
+			continue
+		}
+		if win == nil {
+			// 悬空引用是预期态（窗口被删/跨环境未同步），对账每 2 分钟一轮、逐轮告警会刷屏淹没真信号；
+			// 同一窗名只告警一次（去重），保留可观测性又去掉噪声。
+			if _, loaded := repo.warnedMissingWindow.LoadOrStore(name, struct{}{}); !loaded {
+				repo.logger.Warningf("[hibernate]: 引用的休眠时间窗 %q 不存在，跳过（同名不再重复告警）", name)
+			}
+			continue
+		}
+		out = append(out, win)
 	}
-	return win.Start, win.End, true
+	return out, len(out) > 0
+}
+
+// anyHibernateWindowHit 判定 now 是否落在任一已解析窗内（项目多选窗的并集语义）。
+func anyHibernateWindowHit(now time.Time, wins []*biz.HibernateWindow) bool {
+	for _, w := range wins {
+		if biz.InHibernateWindow(now, w.Start, w.End) {
+			return true
+		}
+	}
+	return false
 }
 
 // loadHibernateTarget 加载休眠对账所需的项目与其所属仓库配置；任一步失败记日志返回 ok=false，

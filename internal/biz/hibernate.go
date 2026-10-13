@@ -32,9 +32,32 @@ type ProjectHibernate struct {
 	Enabled   bool
 	State     HibernateState
 	// Snapshot 休眠前副本字段的值，唤醒时据此恢复。
-	Snapshot  []*websocket_pb.ExtraValue
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Snapshot []*websocket_pb.ExtraValue
+	// WindowNames 项目从仓库窗列表里多选的子集（引用 repo.MarsConfig.Hibernate.WindowNames）。
+	// 启用（Enabled）时必须非空——空选择不再是「继承仓库全量」，而是「未选」，Toggle 会拒；
+	// 关闭时保留上次选择，供重新开启时回显。
+	WindowNames []string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+// normalizeWindowNames 归一化时间窗名列表：逐个 trim、丢弃空串、按首次出现顺序去重。
+// 返回切片元素均非空；无有效元素时返回 nil。仓库配置与项目选择共用同一口径。
+func normalizeWindowNames(names []string) []string {
+	seen := make(map[string]bool, len(names))
+	out := make([]string, 0, len(names))
+	for _, n := range names {
+		n = strings.TrimSpace(n)
+		if n == "" || seen[n] {
+			continue
+		}
+		seen[n] = true
+		out = append(out, n)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 // InHibernateWindow 判定 now 是否落在 [start, end) 休眠窗口内（服务端本地时区，HH:MM）。
@@ -145,7 +168,7 @@ func ReplicaValuesAllZero(cur []*websocket_pb.ExtraValue, replicaPaths []string)
 }
 
 // ValidateHibernateConfig 校验仓库级休眠配置：启用时要求副本字段非空、每个字段都命中
-// 已定义的自定义字段、且字段类型能承载 "0"，并引用了一个全局休眠时间窗（window_name 非空）。
+// 已定义的自定义字段、且字段类型能承载 "0"，并至少引用了一个全局休眠时间窗（window_names 非空）。
 // 时间窗本身的有效性（HH:MM、启止不同）由后台时间窗管理校验；本函数只保证引用非空——
 // 保持纯函数不查库（导入路径不经过本函数；删除时间窗的关联校验在后台删窗路径，不在此；
 // 其余途径产生的悬空引用由对账按未命中跳过兜底）。禁用时不校验。
@@ -173,8 +196,8 @@ func ValidateHibernateConfig(cfg *mars.Config) error {
 			)
 		}
 	}
-	if strings.TrimSpace(h.WindowName) == "" {
-		return errs.WrapInvalidArgument(errors.New("启用定时休眠时，必须选择一个全局休眠时间窗"), "校验仓库休眠配置")
+	if len(normalizeWindowNames(h.WindowNames)) == 0 {
+		return errs.WrapInvalidArgument(errors.New("启用定时休眠时，至少选择一个全局休眠时间窗"), "校验仓库休眠配置")
 	}
 	return nil
 }
@@ -224,10 +247,12 @@ type HibernateDeployer interface {
 type HibernateBiz interface {
 	// ListByProjectIDs 批量查询项目休眠运行态（key = project_id）。
 	ListByProjectIDs(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error)
-	// Toggle 打开/关闭项目级休眠开关。打开时要求所属仓库已启用休眠能力，否则 400；
+	// Toggle 打开/关闭项目级休眠开关。打开时要求所属仓库已启用休眠能力且项目至少选定一个时间窗，
+	// 任一不满足即 400（空选择不再表示「继承仓库全量」，而是「未选」，须提示先选）；
+	// windowNames 是项目从仓库时间窗里多选的子集，每个必须属于仓库可用窗列表（否则 400）。
 	// 打开时若既有休眠态已名不副实（副本字段非全 0），重置为清醒并清空快照。
 	// 仅切换开关，不触发重部署（休眠/唤醒由对账在窗口边界推进）。
-	Toggle(ctx context.Context, projectID int, enabled bool) (*ProjectHibernate, error)
+	Toggle(ctx context.Context, projectID int, enabled bool, windowNames []string) (*ProjectHibernate, error)
 }
 
 type hibernateBiz struct {
@@ -249,14 +274,16 @@ func (h *hibernateBiz) ListByProjectIDs(ctx context.Context, projectIDs ...int) 
 	return h.repo.ListByProjectIDs(ctx, projectIDs...)
 }
 
-// Toggle 打开/关闭项目级休眠开关：校验项目存在、打开时所属仓库已启用休眠能力，
-// 再按 project_id upsert（已存在则保留运行态与快照，只改开关）。打开时若既有休眠态已
-// 名不副实（副本字段非全 0），重置为清醒并清空快照，交回对账重新判定。
-func (h *hibernateBiz) Toggle(ctx context.Context, projectID int, enabled bool) (*ProjectHibernate, error) {
+// Toggle 打开/关闭项目级休眠开关：校验项目存在、打开时所属仓库已启用休眠能力、且项目至少选定
+// 一个时间窗（空选择即 400）、选定的窗口子集落在仓库可用窗列表内，再按 project_id upsert
+// （已存在则保留运行态与快照，只改开关与窗口选择）。打开时若既有休眠态已名不副实（副本字段非
+// 全 0），重置为清醒并清空快照，交回对账重新判定。
+func (h *hibernateBiz) Toggle(ctx context.Context, projectID int, enabled bool, windowNames []string) (*ProjectHibernate, error) {
 	proj, err := h.projRepo.Show(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}
+	sel := normalizeWindowNames(windowNames)
 	current, err := h.repo.Get(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -274,11 +301,24 @@ func (h *hibernateBiz) Toggle(ctx context.Context, projectID int, enabled bool) 
 		}
 		cfg := repo.GetMarsConfig()
 		if cfg.Hibernate == nil || !cfg.Hibernate.Enabled ||
-			len(cfg.Hibernate.ReplicaPaths) == 0 || strings.TrimSpace(cfg.Hibernate.WindowName) == "" {
+			len(cfg.Hibernate.ReplicaPaths) == 0 || len(normalizeWindowNames(cfg.Hibernate.WindowNames)) == 0 {
 			return nil, errs.WrapInvalidArgument(
 				fmt.Errorf("仓库 %s 未启用定时休眠（需在后台配置副本字段与时间窗）", repo.Name),
 				"切换项目休眠开关",
 			)
+		}
+		// 启用必须显式选择至少一个时间窗：空选择 = 未选（不继承仓库全量），拒绝开启并提示先选。
+		// 清空时间窗不走这里——它由前端以 enabled=false + 空窗提交，直接落到函数末尾的 Upsert，
+		// 语义为「不再休眠该项目」（项目级休眠必须有生效窗，无窗即不停机）；故本闸门只在
+		// 真正开启（enabled=true）时生效。
+		if len(sel) == 0 {
+			return nil, errs.WrapInvalidArgument(
+				errors.New("启用定时休眠时，至少选择一个时间窗"),
+				"切换项目休眠开关",
+			)
+		}
+		if err := validateWindowSubset(sel, cfg.Hibernate.WindowNames); err != nil {
+			return nil, err
 		}
 		// 重新开启时校正陈旧休眠态：仅当副本字段确实仍全为 "0"（真在休眠）才沿用 sleeping + 快照。
 		// 关闭期间若被手动改过副本数，旧快照已失效、状态名不副实——重置为 awake 并清空快照，
@@ -290,9 +330,28 @@ func (h *hibernateBiz) Toggle(ctx context.Context, projectID int, enabled bool) 
 		}
 	}
 	return h.repo.Upsert(ctx, &ProjectHibernate{
-		ProjectID: projectID,
-		Enabled:   enabled,
-		State:     state,
-		Snapshot:  snapshot,
+		ProjectID:   projectID,
+		Enabled:     enabled,
+		State:       state,
+		Snapshot:    snapshot,
+		WindowNames: sel,
 	})
+}
+
+// validateWindowSubset 校验项目选定的窗口名子集是否全部落在仓库可用窗列表内。空选择的
+// 拦截在 Toggle 调用前完成；命中首个不在列表内的名字即返回 400。
+func validateWindowSubset(selected, available []string) error {
+	allowed := make(map[string]bool, len(available))
+	for _, n := range normalizeWindowNames(available) {
+		allowed[n] = true
+	}
+	for _, n := range selected {
+		if !allowed[n] {
+			return errs.WrapInvalidArgument(
+				fmt.Errorf("时间窗 %s 不在仓库可用窗列表中", n),
+				"切换项目休眠开关",
+			)
+		}
+	}
+	return nil
 }

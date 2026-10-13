@@ -12,14 +12,20 @@ import { DiffViewer } from '@/components/DiffViewer'
 import { useConfetti } from '@/hooks/useConfetti'
 import { Button } from '@/components/ui/shadcn/button'
 import { Switch } from '@/components/ui/shadcn/switch'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/shadcn/tooltip'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/shadcn/popover'
 import { SearchableSelect } from '@/components/SearchableSelect'
 import { BottomTabButton, handleTablistKeyDown } from './configTabs'
 import { ConfigHistory } from './ConfigHistory'
 import { DeployLog } from './DeployLog'
 import { Elements } from './Elements'
 import { HibernateReplicaWarning } from './HibernateReplicaWarning'
-import { hibernateWindowLabel, hibernateWindowTimeRange, replicaFieldLabels, shouldWarnReplicaInHibernate } from './hibernate'
+import { HibernateWindowSelect } from './HibernateWindowSelect'
+import { hibernateIconActive, iconTriggerCls } from './iconTrigger'
+import {
+  hibernateWindowTimeRange,
+  replicaFieldLabels,
+  shouldWarnReplicaInHibernate,
+} from './hibernate'
 import { PipelineInfo } from './PipelineInfo'
 import { SegmentedSkeleton } from '@/components/ui'
 import { useDeployStream } from './useDeployStream'
@@ -92,15 +98,21 @@ export function TabEdit({
   // 本地开关态：初始同步 detail，切换时乐观更新（失败回滚），父级刷新后按最新 detail 重新对齐
   const [hibEnabled, setHibEnabled] = useState(detail.hibernateEnabled)
   const [hibSaving, setHibSaving] = useState(false)
-  // tooltip 的 z-index：portal 到 body，默认 z-50 会被宿主项目详情弹窗（useOverlayZ 分配的 52+）
-  // 盖住，故悬浮时现取 nextZIndex() 压到所有已分配浮层之上（同 ConfigHistory / EndpointUrl）
-  const [hibTipZ, setHibTipZ] = useState(50)
+  // 仓库声明的休眠时间窗列表（项目多选的选择范围）+ 项目本地选定的窗子集（空 = 未选）。
+  // 展示用的时段由「生效窗」拼出（走缓存模块去重的全局时间窗列表）。
+  const [repoWindowNames, setRepoWindowNames] = useState<string[]>([])
+  const [hibWindows, setHibWindows] = useState<string[]>(detail.hibernateWindowNames ?? [])
+  const [windows, setWindows] = useState<HibernateWindowModel[]>([])
+  // 月亮弹层（编辑时间窗）开合 + z-index：**受控**开合，对齐 SearchableSelect / useOverlayZ 的
+  // 既定写法——Radix 触发器打开的浮层在点击事件里同步 onOpenChange，同一批次就能定好 z；
+  // 初始 0 是有意的（不打开就不占用共享计数器）。portal 到 body，默认 z-50 会被宿主项目详情
+  // 弹窗（useOverlayZ 分配的 52+）盖住，故打开时现取 nextZIndex() 压到所有已分配浮层之上。
+  const [hibOpen, setHibOpen] = useState(false)
+  const [hibZ, setHibZ] = useState(0)
   useEffect(() => {
     setHibEnabled(detail.hibernateEnabled)
-  }, [detail.id, detail.hibernateEnabled])
-  // 开关旁展示的休眠时间段：仓库级 windowName + 全局时间窗列表（走缓存模块去重）拼成「窗名 (时段)」
-  const [hibernateWindowName, setHibernateWindowName] = useState('')
-  const [windows, setWindows] = useState<HibernateWindowModel[]>([])
+    setHibWindows(detail.hibernateWindowNames ?? [])
+  }, [detail.id, detail.hibernateEnabled, detail.hibernateWindowNames])
   useEffect(() => {
     if (!hasHibernate) return
     let alive = true
@@ -128,7 +140,7 @@ export function TabEdit({
         setConfigFileType(mc.configFileType || 'yaml')
         setHibernateReplicaPaths(mc.hibernate?.replicaPaths ?? [])
         setHasHibernate(Boolean(mc.hibernate?.enabled))
-        setHibernateWindowName(mc.hibernate?.windowName ?? '')
+        setRepoWindowNames(mc.hibernate?.windowNames ?? [])
       })
       .finally(() => {
         if (alive) setLoadingRepo(false)
@@ -139,14 +151,19 @@ export function TabEdit({
   }, [detail.repoId])
 
   /** 切换项目级定时休眠开关：仅改开关不触发重部署（副本映射/时间窗来自仓库级配置）；成功后通知
-   *  父级刷新详情与工作台列表，失败回滚本地态（同 TabInfo 交互） */
+   *  父级刷新详情与工作台列表，失败回滚本地态（同 TabInfo 交互）。开启前必须已选至少一个时间窗
+   *  （空选 = 未选，不继承仓库全量）——未选则拒绝开启并提示，不发请求、不翻本地开关 */
   const toggleHibernate = async (next: boolean) => {
+    if (next && hibWindows.length === 0) {
+      toast.error(t('project.hibernateWindowRequired'))
+      return
+    }
     setHibEnabled(next)
     setHibSaving(true)
     try {
       const { error } = await api.POST(API.projectsHibernate, {
         params: { path: { projectId: detail.id } },
-        body: { projectId: detail.id, enabled: next },
+        body: { projectId: detail.id, enabled: next, windowNames: hibWindows },
       })
       if (error) throw new Error(error.message ?? String(error))
       toast.success(next ? t('project.hibernateToggleOn') : t('project.hibernateToggleOff'))
@@ -159,10 +176,39 @@ export function TabEdit({
     }
   }
 
-  // 开关旁的休眠时间段（只显示 HH:MM-HH:MM、不掺窗名）；窗口未命中/未加载返回空串
-  const hibWindow = hibernateWindowTimeRange(hibernateWindowName, windows)
-  // ? tooltip 内用完整「窗名 (时段)」；窗口未命中/未加载回退窗名本身
-  const hibWindowFull = hibernateWindowLabel(hibernateWindowName, windows)
+  /** 保存项目选定的休眠时间窗子集（月亮弹层内多选）：复用 ToggleHibernate 端点，只改 windowNames。
+   *  清空（不选任何窗）= 关闭该项目休眠：项目级休眠必须有生效窗，故提交 enabled=false 并清空选择，
+   *  避免留下「开着开关却没有窗」的空转态；仍在选窗时 enabled 原样回传，仅换子集。
+   *  成功后通知父级刷新；失败回滚本地选择/开关并提示（不让失败的改动误回显）。
+   *  保存中守卫 + 弹层内多选禁用（同 ProjectGovernance/RepoProjectsDialog 范式）：避免并发写竞态，
+   *  也避免受控组件在守卫下吞 onChange 造成勾选回弹。 */
+  const saveWindows = async (names: string[]) => {
+    if (hibSaving) return
+    const prevEnabled = hibEnabled
+    const prevWindows = hibWindows
+    const nextEnabled = names.length > 0 ? hibEnabled : false
+    setHibWindows(names)
+    setHibEnabled(nextEnabled)
+    setHibSaving(true)
+    try {
+      const { error } = await api.POST(API.projectsHibernate, {
+        params: { path: { projectId: detail.id } },
+        body: { projectId: detail.id, enabled: nextEnabled, windowNames: names },
+      })
+      if (error) throw new Error(error.message ?? String(error))
+      onChanged()
+    } catch (e) {
+      setHibWindows(prevWindows)
+      setHibEnabled(prevEnabled)
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setHibSaving(false)
+    }
+  }
+
+  // 生效窗 = 项目选定子集本身（空 = 未选，不继承仓库全量；与后端对账同名同义）
+  // 生效时间段（只显示 HH:MM-HH:MM、不掺窗名）；TabEdit 操作行只读展示，改窗在月亮弹层
+  const hibWindow = hibernateWindowTimeRange(hibWindows, windows)
   // 休眠期间会被置 0 的副本字段展示名（描述优先、回退 path），供横幅告知用户具体是哪些字段
   const replicaLabels = replicaFieldLabels(hibernateReplicaPaths, elements)
 
@@ -456,51 +502,62 @@ export function TabEdit({
               </Button>
             )}
             <ConfigHistory projectId={detail.id} configFileType={configFileType} />
-            {/* 定时休眠开关：仓库级启用休眠才显示，靠右排布并展示休眠时间段；切换即 POST
-                ToggleHibernate（不触发重部署） */}
+            {/* 定时休眠：仓库级启用休眠才显示，靠右排布。月亮图标在「定时休眠」文案左侧，点开弹层
+                编辑时间窗（多选仓库窗子集），其余只读展示生效时段；右侧开关切换启用/停用。编辑入口
+                从旧 `?` 只读说明升级为可写弹层——列表行月亮入口下线后，此处是改窗的就地入口；
+                开关只管启用/停用，弹层只管时间窗，职责分离。均 POST ToggleHibernate（不触发重部署）。 */}
             {hasHibernate && (
               <div className="ml-auto flex items-center gap-1.5">
+                <Popover
+                  open={hibOpen}
+                  onOpenChange={(o) => {
+                    // 打开时现取 z：可拖拽宿主弹窗每次指针交互（bringToFront）会递增 z，须打开时才算
+                    if (o) setHibZ(nextZIndex())
+                    setHibOpen(o)
+                  }}
+                >
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label={t('project.hibernateWindow')}
+                      title={t('project.hibernateWindow')}
+                      // -mr-1 抵消 24px 命中区图标自身的 4px 右内边距，让月亮与紧邻的「定时休眠」文字更紧凑
+                      className={`${hibEnabled ? hibernateIconActive : iconTriggerCls} -mr-1`}
+                    >
+                      <Icon name={hibEnabled ? 'moon-fill' : 'moon'} className="size-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    sideOffset={4}
+                    style={{ zIndex: hibZ || undefined }}
+                    className="w-[min(480px,90vw)] p-3"
+                  >
+                    {/* 时间窗（可写）：多选仓库窗子集 + 生效时段一览 */}
+                    <HibernateWindowSelect
+                      value={hibWindows}
+                      repoWindowNames={repoWindowNames}
+                      windows={windows}
+                      onChange={saveWindows}
+                      disabled={hibSaving}
+                    />
+                    {/* 副本字段（只读）：休眠期间会被置 0 的字段名 + 置 0 说明 */}
+                    {replicaLabels.length > 0 && (
+                      <div className="mt-2.5 border-t border-line pt-2 text-[11px] leading-snug text-mute">
+                        <span className="text-faint">
+                          {t('project.hibernateReplicaFields')}:{' '}
+                        </span>
+                        <span className="font-mono">{replicaLabels.join(', ')}</span>
+                        <div className="mt-1 text-faint">
+                          {t('project.hibernateReplicaZeroNote')}
+                        </div>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
                 <span className="flex items-center gap-1 text-[12px] text-mute">
                   {t('project.hibernate')}
                   {hibWindow ? ` · ${hibWindow}` : ''}
-                  {/* ? 悬浮说明：休眠期间会被置 0 的副本字段（常驻可查，不依赖横幅出现） */}
-                  {replicaLabels.length > 0 && (
-                    <TooltipProvider delayDuration={100}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            aria-label={t('project.hibernateReplicaZeroFields')}
-                            className="flex cursor-help items-center text-faint transition-colors hover:text-ink"
-                            onMouseEnter={() => setHibTipZ(nextZIndex())}
-                          >
-                            <Icon name="circle-question" className="size-3.5" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent style={{ zIndex: hibTipZ }}>
-                          {/* 结构对齐 TabInfo 只读休眠卡片：时间窗 / 副本字段 / 置 0 说明；
-                              标签与值同行（「休眠时间窗: 白天停机 (06:00-23:59)」），说明单独一行 */}
-                          <div className="flex flex-col gap-1 py-0.5 text-[12px] leading-snug">
-                            <div>
-                              <span className="text-background/70">
-                                {t('project.hibernateWindow')}:
-                              </span>{' '}
-                              <span>{hibWindowFull || '-'}</span>
-                            </div>
-                            <div>
-                              <span className="text-background/70">
-                                {t('project.hibernateReplicaFields')}:
-                              </span>{' '}
-                              <span>{replicaLabels.join(', ') || '-'}</span>
-                            </div>
-                            <div className="text-background/70">
-                              {t('project.hibernateReplicaZeroNote')}
-                            </div>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
                 </span>
                 <Switch
                   aria-label={t('project.hibernate')}
@@ -514,8 +571,8 @@ export function TabEdit({
 
           {/* 休眠态下把副本改成 >0：提示不会立即生效（对账 ~2 分钟内自动缩容回 0）。非阻断，只在
               项目已开启定时休眠、处休眠态且副本字段被改成正数时出现，初值（副本库内为 0）不触发。
-              休眠开关统一放在上方操作行，横幅只做提示；关掉开关后 hibernate_enabled 变 false，判据
-              失效、横幅消失（见 hibernate.shouldWarnReplicaInHibernate） */}
+              休眠开关统一放在上方独立休眠行，横幅只做提示；关掉开关后 hibernate_enabled 变 false，
+              判据失效、横幅消失（见 hibernate.shouldWarnReplicaInHibernate） */}
           {replicaOverZero && <HibernateReplicaWarning fields={replicaLabels} />}
         </div>
       </div>

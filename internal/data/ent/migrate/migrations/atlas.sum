@@ -1,4 +1,4 @@
-h1:3Gk1/M5yYBdG7z17OJdAK3sN8/9cTg+DFCzbArDWUuk=
+h1:6OBL7g3HqnIHq9kmOxlNylbCS1eZKwj6fYYEqHuxDN8=
 20240830070729_init_table.sql h1:MpFJpzgZTlpydgXSrQ16Lx/VXCwM4HOeCnv8BGylyy8=
 20240902102428_add_namespace_rbac.sql h1:J8aI8b1/C0Cti8c2/naluS3dCUDZ1mGvPzz+SAsa6bE=
 20240911141124_change_config_longtext_to_changelogs_table.sql h1:7Pt3DN0d4e4Z9UG1+KDrKjAqarJ/omTRaX8f1I+58d4=
@@ -12,5 +12,6 @@ h1:3Gk1/M5yYBdG7z17OJdAK3sN8/9cTg+DFCzbArDWUuk=
 20260902090526_add_changelog_deleted_created_index.sql h1:12H6W262uE5aeXPyCJqPVEA/om914nF8OTZtE5icHz0=
 20260910065346_add_users_is_gray.sql h1:TW8bghzteU9zn5mxf3BHIJh5Vl9Ca1t+fdPHYknOcaU=
 20260921012959_add_project_deleted_with_namespace.sql h1:wUNS9P7+xn6rZXVOTPYxGIHoXZEnDVnr+Crwkk9vvvI=
-20261010120000_add_project_hibernates.sql h1:LynQoWkp02KBIRS/YPrIC1cJL5rqQXDbKQVIc1P5SXA=
-20261010130000_add_hibernate_windows.sql h1:BAouC1AIWQSTl9G0+FDHA62PDvnrw/zNAiwSJCv7O5M=
+20261010120000_add_project_hibernates.sql h1:X3HqZy/u9nsOsEOg7eTqTfTlZwwvsXnE+gIcPMnikAs=
+20261010130000_add_hibernate_windows.sql h1:RJgIe6YK8WqGE3KEGGqvGSgg4b5Q5oOOIQcTHXchTZE=
+20261013062120_add_project_hibernate_window_names.sql h1:gpweRiIPWAbOeOd80u2dti2yaM702iE83z3ykF0KCG8=

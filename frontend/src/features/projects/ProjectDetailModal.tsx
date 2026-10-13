@@ -286,7 +286,7 @@ export function ProjectDetailModal({
                   )}
                   {it.key === 'topology' && <TopologyTab project={detail} resizeAt={resizeAt} />}
                   {it.key === 'detail' && (
-                    <TabInfo detail={detail} onDeleted={onDeleted} onChanged={handleChanged} />
+                    <TabInfo detail={detail} onDeleted={onDeleted} />
                   )}
                 </div>
               )

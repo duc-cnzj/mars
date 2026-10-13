@@ -40,6 +40,10 @@ export const API = {
   adminHibernateWindows: '/api/admin/hibernate/windows',
   /** 单个时间窗：更新（PUT）/删除（DELETE，管理员） */
   adminHibernateWindowDetail: '/api/admin/hibernate/windows/{id}',
+  /** 把一个时间窗配置到多个仓库（PUT，管理员）：body.repoIds 为目标引用集合（集合语义） */
+  adminHibernateWindowRepos: '/api/admin/hibernate/windows/{id}/repos',
+  /** 可引用时间窗的候选仓库列表（GET，管理员）：已配置休眠段（含禁用）的仓库 */
+  adminHibernateRepos: '/api/admin/hibernate/repos',
 
   // --- changelogs（配置历史） ---
   changelogsFindLast: '/api/changelogs/find_last_changelogs_by_project_id',

@@ -379,11 +379,15 @@ func (*DeleteResponse) Descriptor() ([]byte, []int) {
 }
 
 // ToggleHibernateRequest 项目级定时休眠开关：仅切换开关本身，不触发重部署
-// （副本字段映射与时间窗来自仓库级 mars_config.hibernate）。
+// （副本字段映射来自仓库级 mars_config.hibernate）。
 type ToggleHibernateRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ProjectId     int32                  `protobuf:"varint,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
-	Enabled       bool                   `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId int32                  `protobuf:"varint,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Enabled   bool                   `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// window_names 项目从所属仓库的 window_names 里多选的子集（命中任一窗即休眠）。
+	// 启用（enabled=true）时至少选一个，留空即 400（空选择不再表示继承仓库全量）；
+	// 每个名字必须属于仓库的窗列表，否则 400。
+	WindowNames   []string `protobuf:"bytes,3,rep,name=window_names,json=windowNames,proto3" json:"window_names,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -432,10 +436,19 @@ func (x *ToggleHibernateRequest) GetEnabled() bool {
 	return false
 }
 
+func (x *ToggleHibernateRequest) GetWindowNames() []string {
+	if x != nil {
+		return x.WindowNames
+	}
+	return nil
+}
+
 type ToggleHibernateResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Enabled       bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	State         string                 `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Enabled bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	State   string                 `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	// window_names 回显项目当前选定的窗子集（未选时为空）。
+	WindowNames   []string `protobuf:"bytes,3,rep,name=window_names,json=windowNames,proto3" json:"window_names,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -482,6 +495,13 @@ func (x *ToggleHibernateResponse) GetState() string {
 		return x.State
 	}
 	return ""
+}
+
+func (x *ToggleHibernateResponse) GetWindowNames() []string {
+	if x != nil {
+		return x.WindowNames
+	}
+	return nil
 }
 
 // RestoreRequest 按「空间名 + 项目名」定位被误删的项目（空间名免前缀，后台按 ns_prefix 幂等补全）。
@@ -1978,7 +1998,9 @@ type LivenessRequest struct {
 	// 活跃度过滤：空 = 全部；active/dormant/zombie = 只看对应活跃度
 	Liveness string `protobuf:"bytes,4,opt,name=liveness,proto3" json:"liveness,omitempty"`
 	// 排序方向：空 = 按更新时间倒序（desc）；asc/desc = 指定更新时间升/降序
-	Sort          string `protobuf:"bytes,5,opt,name=sort,proto3" json:"sort,omitempty"`
+	Sort string `protobuf:"bytes,5,opt,name=sort,proto3" json:"sort,omitempty"`
+	// 定时休眠过滤：true = 只看已开启项目级休眠开关的项目；缺省/false = 不按休眠过滤（全部）。
+	Hibernate     *bool `protobuf:"varint,6,opt,name=hibernate,proto3,oneof" json:"hibernate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2048,6 +2070,13 @@ func (x *LivenessRequest) GetSort() string {
 	return ""
 }
 
+func (x *LivenessRequest) GetHibernate() bool {
+	if x != nil && x.Hibernate != nil {
+		return *x.Hibernate
+	}
+	return false
+}
+
 // LivenessItem 单个项目的活跃度条目：标识 + 部署状态/次数 + 最近更新。
 type LivenessItem struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
@@ -2069,8 +2098,16 @@ type LivenessItem struct {
 	GitCommitTitle  string `protobuf:"bytes,10,opt,name=git_commit_title,json=gitCommitTitle,proto3" json:"git_commit_title,omitempty"`
 	GitCommitAuthor string `protobuf:"bytes,11,opt,name=git_commit_author,json=gitCommitAuthor,proto3" json:"git_commit_author,omitempty"`
 	GitCommitDate   string `protobuf:"bytes,12,opt,name=git_commit_date,json=gitCommitDate,proto3" json:"git_commit_date,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// 定时休眠：是否已开启项目级休眠开关；未配置休眠的项目保持 false。
+	HibernateEnabled bool `protobuf:"varint,14,opt,name=hibernate_enabled,json=hibernateEnabled,proto3" json:"hibernate_enabled,omitempty"`
+	// 定时休眠运行态：awake 清醒 / sleeping 已休眠；未配置时为空串。
+	HibernateState string `protobuf:"bytes,15,opt,name=hibernate_state,json=hibernateState,proto3" json:"hibernate_state,omitempty"`
+	// 项目选定的休眠时间窗名子集（引用全局时间窗）；未选/未配置时为空。
+	HibernateWindowNames []string `protobuf:"bytes,16,rep,name=hibernate_window_names,json=hibernateWindowNames,proto3" json:"hibernate_window_names,omitempty"`
+	// 所属仓库声明的可用休眠时间窗名列表（项目选定子集的合法范围）；仓库未启用休眠时为空。
+	HibernateRepoWindowNames []string `protobuf:"bytes,17,rep,name=hibernate_repo_window_names,json=hibernateRepoWindowNames,proto3" json:"hibernate_repo_window_names,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *LivenessItem) Reset() {
@@ -2192,6 +2229,34 @@ func (x *LivenessItem) GetGitCommitDate() string {
 		return x.GitCommitDate
 	}
 	return ""
+}
+
+func (x *LivenessItem) GetHibernateEnabled() bool {
+	if x != nil {
+		return x.HibernateEnabled
+	}
+	return false
+}
+
+func (x *LivenessItem) GetHibernateState() string {
+	if x != nil {
+		return x.HibernateState
+	}
+	return ""
+}
+
+func (x *LivenessItem) GetHibernateWindowNames() []string {
+	if x != nil {
+		return x.HibernateWindowNames
+	}
+	return nil
+}
+
+func (x *LivenessItem) GetHibernateRepoWindowNames() []string {
+	if x != nil {
+		return x.HibernateRepoWindowNames
+	}
+	return nil
 }
 
 // LivenessStats 活跃度统计（服务端按 30/90 天阈值计算）。
@@ -2367,14 +2432,16 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\x04name\",\n" +
 	"\rDeleteRequest\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\"\x10\n" +
-	"\x0eDeleteResponse\"^\n" +
+	"\x0eDeleteResponse\"\x81\x01\n" +
 	"\x16ToggleHibernateRequest\x12*\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\tprojectId\x12\x18\n" +
-	"\aenabled\x18\x02 \x01(\bR\aenabled\"I\n" +
+	"\aenabled\x18\x02 \x01(\bR\aenabled\x12!\n" +
+	"\fwindow_names\x18\x03 \x03(\tR\vwindowNames\"l\n" +
 	"\x17ToggleHibernateResponse\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x14\n" +
-	"\x05state\x18\x02 \x01(\tR\x05state\"\\\n" +
+	"\x05state\x18\x02 \x01(\tR\x05state\x12!\n" +
+	"\fwindow_names\x18\x03 \x03(\tR\vwindowNames\"\\\n" +
 	"\x0eRestoreRequest\x12)\n" +
 	"\tnamespace\x18\x01 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\tnamespace\x12\x1f\n" +
 	"\x04name\x18\x02 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\x04name\":\n" +
@@ -2500,16 +2567,19 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\x1dMemoryCpuAndEndpointsResponse\x12*\n" +
 	"\x04urls\x18\x01 \x03(\v2\x16.types.ServiceEndpointR\x04urls\x12\x10\n" +
 	"\x03cpu\x18\x02 \x01(\tR\x03cpu\x12\x16\n" +
-	"\x06memory\x18\x03 \x01(\tR\x06memory\"\xab\x01\n" +
+	"\x06memory\x18\x03 \x01(\tR\x06memory\"\xdc\x01\n" +
 	"\x0fLivenessRequest\x12\x17\n" +
 	"\x04page\x18\x01 \x01(\x05H\x00R\x04page\x88\x01\x01\x12 \n" +
 	"\tpage_size\x18\x02 \x01(\x05H\x01R\bpageSize\x88\x01\x01\x12\x16\n" +
 	"\x06search\x18\x03 \x01(\tR\x06search\x12\x1a\n" +
 	"\bliveness\x18\x04 \x01(\tR\bliveness\x12\x12\n" +
-	"\x04sort\x18\x05 \x01(\tR\x04sortB\a\n" +
+	"\x04sort\x18\x05 \x01(\tR\x04sort\x12!\n" +
+	"\thibernate\x18\x06 \x01(\bH\x02R\thibernate\x88\x01\x01B\a\n" +
 	"\x05_pageB\f\n" +
 	"\n" +
-	"_page_size\"\xb5\x03\n" +
+	"_page_sizeB\f\n" +
+	"\n" +
+	"_hibernate\"\x80\x05\n" +
 	"\fLivenessItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1c\n" +
@@ -2528,7 +2598,11 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\x10git_commit_title\x18\n" +
 	" \x01(\tR\x0egitCommitTitle\x12*\n" +
 	"\x11git_commit_author\x18\v \x01(\tR\x0fgitCommitAuthor\x12&\n" +
-	"\x0fgit_commit_date\x18\f \x01(\tR\rgitCommitDate\"o\n" +
+	"\x0fgit_commit_date\x18\f \x01(\tR\rgitCommitDate\x12+\n" +
+	"\x11hibernate_enabled\x18\x0e \x01(\bR\x10hibernateEnabled\x12'\n" +
+	"\x0fhibernate_state\x18\x0f \x01(\tR\x0ehibernateState\x124\n" +
+	"\x16hibernate_window_names\x18\x10 \x03(\tR\x14hibernateWindowNames\x12=\n" +
+	"\x1bhibernate_repo_window_names\x18\x11 \x03(\tR\x18hibernateRepoWindowNames\"o\n" +
 	"\rLivenessStats\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\x05R\x05total\x12\x16\n" +
 	"\x06active\x18\x02 \x01(\x05R\x06active\x12\x18\n" +

@@ -25,11 +25,18 @@ export function SkeletonTabEdit() {
             <SegmentedSkeleton className="md:-ml-px md:rounded-none md:border-l-0" />
             <SegmentedSkeleton className="md:-ml-px md:rounded-l-none md:border-l-0" />
           </div>
-          {/* 操作按钮行：部署/重置/历史（Button xs 高，占位宽 24 对齐） */}
+          {/* 操作按钮行：部署/重置/历史（Button xs 高，占位宽 24 对齐）+ 右对齐的定时休眠簇 */}
           <div className="flex flex-wrap items-center gap-2">
             <Skeleton className="h-7 w-24 rounded-md" />
             <Skeleton className="h-7 w-24 rounded-md" />
             <Skeleton className="h-7 w-24 rounded-md" />
+            {/* 定时休眠簇（ml-auto 靠右）：月亮图标 + 「定时休眠」文字 + 开关——对齐 TabEdit 真实头部。
+                仓库未启用休眠时该簇不渲染，骨架按常见态预留，避免加载完成时该簇从无到有撑高行 */}
+            <div className="ml-auto flex items-center gap-1.5">
+              <Skeleton className="size-6 shrink-0 rounded-md" />
+              <Skeleton className="h-3.5 w-16" />
+              <Skeleton className="h-5 w-9 rounded-full" />
+            </div>
           </div>
         </div>
       </div>

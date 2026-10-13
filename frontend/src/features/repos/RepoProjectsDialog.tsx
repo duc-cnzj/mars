@@ -85,7 +85,7 @@ export function RepoProjectsDialog({
   const [hb, setHb] = useState<HibernateConfig | null>(null)
   /** 仓库自定义配置字段：把副本字段 path 映射成用户填的「字段描述」，展示更直观 */
   const [elements, setElements] = useState<Element[]>([])
-  /** 全局休眠时间窗：把 window_name 映射成「窗名 (HH:MM-HH:MM)」 */
+  /** 全局休眠时间窗：把仓库声明的 window_names 映射成「窗名 (HH:MM-HH:MM)」列表展示 */
   const [windows, setWindows] = useState<HibernateWindow[]>([])
   /** 正在切换的项目 id（>0 表示某行开关进行中，禁用该行避免重复提交） */
   const [togglingId, setTogglingId] = useState(0)
@@ -136,19 +136,26 @@ export function RepoProjectsDialog({
         setElements(cfg?.elements ?? [])
       })
       .catch(() => setCapable(false))
-    // 全局时间窗：把 window_name 映射成「窗名 (时段)」；缓存模块去重，不额外打请求风暴
+    // 全局时间窗：把仓库声明的 window_names 映射成「窗名 (时段)」；缓存模块去重，不额外打请求风暴
     void getHibernateWindows().then(setWindows)
   }, [open, repoId, load])
 
-  // 切换项目级休眠开关：乐观更新，失败回滚并提示（语义对齐 ProjectRow.ProjectHibernate）
+  // 切换项目级休眠开关：乐观更新，失败回滚并提示（语义对齐 TabEdit.toggleHibernate）。
+  // 开启前必须已选至少一个时间窗（空选 = 未选，不继承仓库全量）——本弹窗无选窗入口，
+  // 未选则拒绝开启并提示去项目详情配置，不翻开关、不发请求
   const toggle = async (p: ProjectModel, next: boolean) => {
     if (togglingId !== 0) return
+    if (next && (p.hibernateWindowNames?.length ?? 0) === 0) {
+      toast.error(t('project.hibernateWindowRequired'))
+      return
+    }
     setTogglingId(p.id)
     setItems((prev) => prev.map((it) => (it.id === p.id ? { ...it, hibernateEnabled: next } : it)))
     try {
       const { error } = await api.POST(API.projectsHibernate, {
         params: { path: { projectId: p.id } },
-        body: { projectId: p.id, enabled: next },
+        // 带上项目已选定的窗口子集，避免仅切开关时把选择清空（空数组 = 未选，后端会拒）
+        body: { projectId: p.id, enabled: next, windowNames: p.hibernateWindowNames ?? [] },
       })
       if (error) throw new Error(error.message ?? String(error))
       toast.success(next ? t('project.hibernateToggleOn') : t('project.hibernateToggleOff'))
@@ -185,7 +192,7 @@ export function RepoProjectsDialog({
           <div className="grid gap-1.5 rounded-md border border-line bg-raised/40 px-3 py-2 text-[12px]">
             <div className="flex flex-wrap items-baseline gap-2">
               <span className="w-16 shrink-0 text-faint">{t('project.hibernateWindow')}</span>
-              <span className="font-mono text-ink">{hibernateWindowLabel(hb.windowName, windows) || '-'}</span>
+              <span className="font-mono text-ink">{hibernateWindowLabel(hb.windowNames ?? [], windows) || '-'}</span>
             </div>
             <div className="flex flex-wrap items-baseline gap-2">
               <span className="w-16 shrink-0 text-faint">{t('project.hibernateReplicaFields')}</span>

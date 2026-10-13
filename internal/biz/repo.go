@@ -307,6 +307,9 @@ type RepoRepo interface {
 	Clone(ctx context.Context, input *CloneRepoInput) (*Repo, error)
 	// ToggleEnabled 启用/禁用仓库。
 	ToggleEnabled(ctx context.Context, id int, enabled bool) (*Repo, error)
+	// BatchUpdateMarsConfig 在一个事务内批量覆盖若干仓库的 mars_config（轻量：不触发 git 解析，
+	// 仅供「一键配置休眠时间窗到多仓库」这类只改配置的批量场景）。任一失败整体回滚。
+	BatchUpdateMarsConfig(ctx context.Context, configs map[int]*mars.Config) error
 	// Import 批量导入仓库（按名称幂等，事务性整体应用）。
 	Import(ctx context.Context, items []*ImportRepoItem) (created, updated int, err error)
 	// PreviewImport 干跑导入：同 Import 的校验与计数判定，但不落库（导入前预览用）。

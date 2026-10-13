@@ -14,24 +14,31 @@ export function replicaFieldLabels(paths: string[], elements?: Element[]): strin
 }
 
 /**
- * 休眠时间窗展示名：把仓库配置引用的窗口名与其启止时段拼成「窗名 (HH:MM-HH:MM)」。
+ * 休眠时间窗展示名（多窗）：把每个窗口名与其启止时段拼成「窗名 (HH:MM-HH:MM)」再以逗号连接。
  * 窗口未命中（被删 / 跨环境未同步）或列表尚未加载时回退为窗名本身——时段缺失不应吞掉窗名。
  */
-export function hibernateWindowLabel(name: string, windows: HibernateWindow[]): string {
-  const w = windows.find((it) => it.name === name)
-  if (!w) return name
-  return `${name} (${w.start}-${w.end})`
+export function hibernateWindowLabel(names: string[], windows: HibernateWindow[]): string {
+  return names
+    .map((name) => {
+      const w = windows.find((it) => it.name === name)
+      return w ? `${name} (${w.start}-${w.end})` : name
+    })
+    .join(', ')
 }
 
 /**
- * 休眠时间窗的时段展示名：按窗名取全局窗口的「HH:MM-HH:MM」。窗口未命中（被删 / 跨环境未同步）或
- * 列表尚未加载时返回空串——用于只需时段、不掺窗名的紧凑场景（如配置更新页开关旁的提示）。
- * 与 hibernateWindowLabel 的区别：后者带窗名，用于详情页的只读键值展示。
+ * 休眠时间窗的时段展示名（多窗）：每个窗名对应的「HH:MM-HH:MM」以逗号连接。窗口未命中
+ * （被删 / 跨环境未同步）或列表尚未加载时该窗跳过（不掺入空段）——用于只需时段、不掺窗名的
+ * 紧凑场景（如配置更新页开关旁的提示）。与 hibernateWindowLabel 的区别：后者带窗名，用于只读键值展示。
  */
-export function hibernateWindowTimeRange(name: string, windows: HibernateWindow[]): string {
-  const w = windows.find((it) => it.name === name)
-  if (!w) return ''
-  return `${w.start}-${w.end}`
+export function hibernateWindowTimeRange(names: string[], windows: HibernateWindow[]): string {
+  return names
+    .map((name) => {
+      const w = windows.find((it) => it.name === name)
+      return w ? `${w.start}-${w.end}` : ''
+    })
+    .filter(Boolean)
+    .join(', ')
 }
 
 /**

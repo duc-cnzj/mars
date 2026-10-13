@@ -348,6 +348,7 @@ var (
 		{Name: "enabled", Type: field.TypeBool, Default: false},
 		{Name: "state", Type: field.TypeString, Size: 32, Default: "awake"},
 		{Name: "snapshot", Type: field.TypeJSON, Nullable: true},
+		{Name: "window_names", Type: field.TypeJSON, Nullable: true},
 		{Name: "project_id", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
 	// ProjectHibernatesTable holds the schema information for the "project_hibernates" table.
@@ -358,7 +359,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "project_hibernates_projects_hibernate",
-				Columns:    []*schema.Column{ProjectHibernatesColumns[6]},
+				Columns:    []*schema.Column{ProjectHibernatesColumns[7]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -367,7 +368,7 @@ var (
 			{
 				Name:    "projecthibernate_project_id",
 				Unique:  true,
-				Columns: []*schema.Column{ProjectHibernatesColumns[6]},
+				Columns: []*schema.Column{ProjectHibernatesColumns[7]},
 			},
 		},
 	}

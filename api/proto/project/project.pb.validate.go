@@ -4088,6 +4088,10 @@ func (m *LivenessRequest) validate(all bool) error {
 		// no validation rules for PageSize
 	}
 
+	if m.Hibernate != nil {
+		// no validation rules for Hibernate
+	}
+
 	if len(errors) > 0 {
 		return LivenessRequestMultiError(errors)
 	}
@@ -4213,6 +4217,10 @@ func (m *LivenessItem) validate(all bool) error {
 	// no validation rules for GitCommitAuthor
 
 	// no validation rules for GitCommitDate
+
+	// no validation rules for HibernateEnabled
+
+	// no validation rules for HibernateState
 
 	if len(errors) > 0 {
 		return LivenessItemMultiError(errors)

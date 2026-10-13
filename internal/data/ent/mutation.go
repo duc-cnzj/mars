@@ -10988,21 +10988,23 @@ func (m *ProjectMutation) ResetEdge(name string) error {
 // ProjectHibernateMutation represents an operation that mutates the ProjectHibernate nodes in the graph.
 type ProjectHibernateMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *int
-	created_at     *time.Time
-	updated_at     *time.Time
-	enabled        *bool
-	state          *string
-	snapshot       *[]*websocket.ExtraValue
-	appendsnapshot []*websocket.ExtraValue
-	clearedFields  map[string]struct{}
-	project        *int
-	clearedproject bool
-	done           bool
-	oldValue       func(context.Context) (*ProjectHibernate, error)
-	predicates     []predicate.ProjectHibernate
+	op                 Op
+	typ                string
+	id                 *int
+	created_at         *time.Time
+	updated_at         *time.Time
+	enabled            *bool
+	state              *string
+	snapshot           *[]*websocket.ExtraValue
+	appendsnapshot     []*websocket.ExtraValue
+	window_names       *[]string
+	appendwindow_names []string
+	clearedFields      map[string]struct{}
+	project            *int
+	clearedproject     bool
+	done               bool
+	oldValue           func(context.Context) (*ProjectHibernate, error)
+	predicates         []predicate.ProjectHibernate
 }
 
 var _ ent.Mutation = (*ProjectHibernateMutation)(nil)
@@ -11312,6 +11314,71 @@ func (m *ProjectHibernateMutation) ResetSnapshot() {
 	delete(m.clearedFields, projecthibernate.FieldSnapshot)
 }
 
+// SetWindowNames sets the "window_names" field.
+func (m *ProjectHibernateMutation) SetWindowNames(s []string) {
+	m.window_names = &s
+	m.appendwindow_names = nil
+}
+
+// WindowNames returns the value of the "window_names" field in the mutation.
+func (m *ProjectHibernateMutation) WindowNames() (r []string, exists bool) {
+	v := m.window_names
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWindowNames returns the old "window_names" field's value of the ProjectHibernate entity.
+// If the ProjectHibernate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectHibernateMutation) OldWindowNames(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWindowNames is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWindowNames requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWindowNames: %w", err)
+	}
+	return oldValue.WindowNames, nil
+}
+
+// AppendWindowNames adds s to the "window_names" field.
+func (m *ProjectHibernateMutation) AppendWindowNames(s []string) {
+	m.appendwindow_names = append(m.appendwindow_names, s...)
+}
+
+// AppendedWindowNames returns the list of values that were appended to the "window_names" field in this mutation.
+func (m *ProjectHibernateMutation) AppendedWindowNames() ([]string, bool) {
+	if len(m.appendwindow_names) == 0 {
+		return nil, false
+	}
+	return m.appendwindow_names, true
+}
+
+// ClearWindowNames clears the value of the "window_names" field.
+func (m *ProjectHibernateMutation) ClearWindowNames() {
+	m.window_names = nil
+	m.appendwindow_names = nil
+	m.clearedFields[projecthibernate.FieldWindowNames] = struct{}{}
+}
+
+// WindowNamesCleared returns if the "window_names" field was cleared in this mutation.
+func (m *ProjectHibernateMutation) WindowNamesCleared() bool {
+	_, ok := m.clearedFields[projecthibernate.FieldWindowNames]
+	return ok
+}
+
+// ResetWindowNames resets all changes to the "window_names" field.
+func (m *ProjectHibernateMutation) ResetWindowNames() {
+	m.window_names = nil
+	m.appendwindow_names = nil
+	delete(m.clearedFields, projecthibernate.FieldWindowNames)
+}
+
 // SetProjectID sets the "project_id" field.
 func (m *ProjectHibernateMutation) SetProjectID(i int) {
 	m.project = &i
@@ -11422,7 +11489,7 @@ func (m *ProjectHibernateMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectHibernateMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.created_at != nil {
 		fields = append(fields, projecthibernate.FieldCreatedAt)
 	}
@@ -11437,6 +11504,9 @@ func (m *ProjectHibernateMutation) Fields() []string {
 	}
 	if m.snapshot != nil {
 		fields = append(fields, projecthibernate.FieldSnapshot)
+	}
+	if m.window_names != nil {
+		fields = append(fields, projecthibernate.FieldWindowNames)
 	}
 	if m.project != nil {
 		fields = append(fields, projecthibernate.FieldProjectID)
@@ -11459,6 +11529,8 @@ func (m *ProjectHibernateMutation) Field(name string) (ent.Value, bool) {
 		return m.State()
 	case projecthibernate.FieldSnapshot:
 		return m.Snapshot()
+	case projecthibernate.FieldWindowNames:
+		return m.WindowNames()
 	case projecthibernate.FieldProjectID:
 		return m.ProjectID()
 	}
@@ -11480,6 +11552,8 @@ func (m *ProjectHibernateMutation) OldField(ctx context.Context, name string) (e
 		return m.OldState(ctx)
 	case projecthibernate.FieldSnapshot:
 		return m.OldSnapshot(ctx)
+	case projecthibernate.FieldWindowNames:
+		return m.OldWindowNames(ctx)
 	case projecthibernate.FieldProjectID:
 		return m.OldProjectID(ctx)
 	}
@@ -11526,6 +11600,13 @@ func (m *ProjectHibernateMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetSnapshot(v)
 		return nil
+	case projecthibernate.FieldWindowNames:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWindowNames(v)
+		return nil
 	case projecthibernate.FieldProjectID:
 		v, ok := value.(int)
 		if !ok {
@@ -11569,6 +11650,9 @@ func (m *ProjectHibernateMutation) ClearedFields() []string {
 	if m.FieldCleared(projecthibernate.FieldSnapshot) {
 		fields = append(fields, projecthibernate.FieldSnapshot)
 	}
+	if m.FieldCleared(projecthibernate.FieldWindowNames) {
+		fields = append(fields, projecthibernate.FieldWindowNames)
+	}
 	if m.FieldCleared(projecthibernate.FieldProjectID) {
 		fields = append(fields, projecthibernate.FieldProjectID)
 	}
@@ -11588,6 +11672,9 @@ func (m *ProjectHibernateMutation) ClearField(name string) error {
 	switch name {
 	case projecthibernate.FieldSnapshot:
 		m.ClearSnapshot()
+		return nil
+	case projecthibernate.FieldWindowNames:
+		m.ClearWindowNames()
 		return nil
 	case projecthibernate.FieldProjectID:
 		m.ClearProjectID()
@@ -11614,6 +11701,9 @@ func (m *ProjectHibernateMutation) ResetField(name string) error {
 		return nil
 	case projecthibernate.FieldSnapshot:
 		m.ResetSnapshot()
+		return nil
+	case projecthibernate.FieldWindowNames:
+		m.ResetWindowNames()
 		return nil
 	case projecthibernate.FieldProjectID:
 		m.ResetProjectID()

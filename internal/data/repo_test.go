@@ -512,7 +512,7 @@ func TestRepoImpl_Import_StripsHibernateOnCreate(t *testing.T) {
 	created, updated, err := repo.Import(context.TODO(), []*biz.ImportRepoItem{
 		{Name: "app", Enabled: true, MarsConfig: &mars.Config{
 			ConfigField: "cfg",
-			Hibernate:   &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"replicas"}, WindowName: "夜间"},
+			Hibernate:   &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"replicas"}, WindowNames: []string{"夜间"}},
 		}},
 	})
 	assert.Nil(t, err)
@@ -536,7 +536,7 @@ func TestRepoImpl_Import_PreservesHibernateOnUpdate(t *testing.T) {
 
 	existing, err := repo.Create(context.TODO(), &biz.CreateRepoInput{
 		Name: "app", Enabled: true,
-		MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"replicas"}, WindowName: "夜间"}},
+		MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"replicas"}, WindowNames: []string{"夜间"}}},
 	})
 	assert.Nil(t, err)
 
@@ -552,7 +552,7 @@ func TestRepoImpl_Import_PreservesHibernateOnUpdate(t *testing.T) {
 	assert.Nil(t, err)
 	require.NotNil(t, got.MarsConfig)
 	require.NotNil(t, got.MarsConfig.Hibernate, "更新导入应保留库内既有 hibernate")
-	assert.Equal(t, "夜间", got.MarsConfig.Hibernate.WindowName)
+	assert.Equal(t, []string{"夜间"}, got.MarsConfig.Hibernate.WindowNames)
 	assert.Equal(t, "cfg", got.MarsConfig.ConfigField)
 }
 
@@ -567,7 +567,7 @@ func TestRepoImpl_Import_PreservesHibernateWhenConfigNil(t *testing.T) {
 
 	existing, err := repo.Create(context.TODO(), &biz.CreateRepoInput{
 		Name: "app", Enabled: true,
-		MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{Enabled: true, WindowName: "夜间"}},
+		MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{Enabled: true, WindowNames: []string{"夜间"}}},
 	})
 	assert.Nil(t, err)
 
@@ -579,7 +579,7 @@ func TestRepoImpl_Import_PreservesHibernateWhenConfigNil(t *testing.T) {
 	assert.Nil(t, err)
 	require.NotNil(t, got.MarsConfig)
 	require.NotNil(t, got.MarsConfig.Hibernate, "config 为空时仍应保留库内 hibernate")
-	assert.Equal(t, "夜间", got.MarsConfig.Hibernate.WindowName)
+	assert.Equal(t, []string{"夜间"}, got.MarsConfig.Hibernate.WindowNames)
 }
 
 func TestRepoImpl_Import_UnrelatedReposUntouched(t *testing.T) {
@@ -898,4 +898,68 @@ func TestRepoImpl_PreviewImport_GetByNameError(t *testing.T) {
 
 	_, _, err := repo.PreviewImport(context.TODO(), []*biz.ImportRepoItem{{Name: "app"}})
 	assert.NotNil(t, err)
+}
+
+// TestRepoImpl_BatchUpdateMarsConfig 覆盖批量覆盖 mars_config 的事务语义：全部成功时逐个写入；
+// 含不存在 id 时错误归类为 404 且整体回滚（存在的仓库也不被覆盖）；事务内写失败（故障注入）时
+// 同样整体回滚。该路径是「一键配置时间窗到多仓库」的落库口，只写配置列、不触发 git 解析。
+func TestRepoImpl_BatchUpdateMarsConfig(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	repo := NewRepo(NewDataImpl(&NewDataParams{DB: entdb}), NewMockGitRepo(m))
+
+	mk := func(name string, cfg *mars.Config) int {
+		b := entdb.Repo.Create().SetName(name)
+		if cfg != nil {
+			b = b.SetMarsConfig(cfg)
+		}
+		e, err := b.Save(context.TODO())
+		require.NoError(t, err)
+		return e.ID
+	}
+	cfgOf := func(id int) *mars.Config {
+		e, err := entdb.Repo.Get(context.TODO(), id)
+		require.NoError(t, err)
+		return e.MarsConfig
+	}
+
+	a := mk("a", nil)
+	b := mk("b", nil)
+
+	// 全部成功：两个仓库的 mars_config 都被覆盖。
+	err := repo.BatchUpdateMarsConfig(context.TODO(), map[int]*mars.Config{
+		a: {Hibernate: &mars.Hibernate{WindowNames: []string{"夜间"}}},
+		b: {Hibernate: &mars.Hibernate{WindowNames: []string{"午休"}}},
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"夜间"}, cfgOf(a).GetHibernate().GetWindowNames())
+	assert.Equal(t, []string{"午休"}, cfgOf(b).GetHibernate().GetWindowNames())
+
+	// 含不存在 id：错误归类为 404，且整体回滚——a 保持上一次的「夜间」未被本次覆盖。
+	err = repo.BatchUpdateMarsConfig(context.TODO(), map[int]*mars.Config{
+		a:     {Hibernate: &mars.Hibernate{WindowNames: []string{"午休"}}},
+		99999: {Hibernate: &mars.Hibernate{WindowNames: []string{"幽灵"}}},
+	})
+	assert.NotNil(t, err)
+	s, _ := status.FromError(err)
+	assert.Equal(t, codes.NotFound, s.Code())
+	assert.Equal(t, []string{"夜间"}, cfgOf(a).GetHibernate().GetWindowNames())
+
+	// 事务内写失败（故障注入 exec#1）：整体回滚，配置未改动。
+	client, fd := newFailDB(t, -1, 0)
+	pre := client.Repo.Create()
+	target, err := pre.SetName("tx-fail").Save(context.TODO())
+	require.NoError(t, err)
+	fd.Arm()
+	err = NewRepo(NewDataImpl(&NewDataParams{DB: client}), NewMockGitRepo(m)).BatchUpdateMarsConfig(
+		context.TODO(),
+		map[int]*mars.Config{target.ID: {Hibernate: &mars.Hibernate{WindowNames: []string{"夜间-tx"}}}},
+	)
+	fd.Disarm()
+	assert.NotNil(t, err)
+	got, err := client.Repo.Get(context.TODO(), target.ID)
+	require.NoError(t, err)
+	assert.Nil(t, got.MarsConfig.GetHibernate())
 }

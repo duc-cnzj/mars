@@ -83,6 +83,24 @@ func (_u *ProjectHibernateUpdate) ClearSnapshot() *ProjectHibernateUpdate {
 	return _u
 }
 
+// SetWindowNames sets the "window_names" field.
+func (_u *ProjectHibernateUpdate) SetWindowNames(v []string) *ProjectHibernateUpdate {
+	_u.mutation.SetWindowNames(v)
+	return _u
+}
+
+// AppendWindowNames appends value to the "window_names" field.
+func (_u *ProjectHibernateUpdate) AppendWindowNames(v []string) *ProjectHibernateUpdate {
+	_u.mutation.AppendWindowNames(v)
+	return _u
+}
+
+// ClearWindowNames clears the value of the "window_names" field.
+func (_u *ProjectHibernateUpdate) ClearWindowNames() *ProjectHibernateUpdate {
+	_u.mutation.ClearWindowNames()
+	return _u
+}
+
 // SetProjectID sets the "project_id" field.
 func (_u *ProjectHibernateUpdate) SetProjectID(v int) *ProjectHibernateUpdate {
 	_u.mutation.SetProjectID(v)
@@ -197,6 +215,17 @@ func (_u *ProjectHibernateUpdate) sqlSave(ctx context.Context) (_node int, err e
 	if _u.mutation.SnapshotCleared() {
 		_spec.ClearField(projecthibernate.FieldSnapshot, field.TypeJSON)
 	}
+	if value, ok := _u.mutation.WindowNames(); ok {
+		_spec.SetField(projecthibernate.FieldWindowNames, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedWindowNames(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, projecthibernate.FieldWindowNames, value)
+		})
+	}
+	if _u.mutation.WindowNamesCleared() {
+		_spec.ClearField(projecthibernate.FieldWindowNames, field.TypeJSON)
+	}
 	if _u.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -295,6 +324,24 @@ func (_u *ProjectHibernateUpdateOne) AppendSnapshot(v []*websocket.ExtraValue) *
 // ClearSnapshot clears the value of the "snapshot" field.
 func (_u *ProjectHibernateUpdateOne) ClearSnapshot() *ProjectHibernateUpdateOne {
 	_u.mutation.ClearSnapshot()
+	return _u
+}
+
+// SetWindowNames sets the "window_names" field.
+func (_u *ProjectHibernateUpdateOne) SetWindowNames(v []string) *ProjectHibernateUpdateOne {
+	_u.mutation.SetWindowNames(v)
+	return _u
+}
+
+// AppendWindowNames appends value to the "window_names" field.
+func (_u *ProjectHibernateUpdateOne) AppendWindowNames(v []string) *ProjectHibernateUpdateOne {
+	_u.mutation.AppendWindowNames(v)
+	return _u
+}
+
+// ClearWindowNames clears the value of the "window_names" field.
+func (_u *ProjectHibernateUpdateOne) ClearWindowNames() *ProjectHibernateUpdateOne {
+	_u.mutation.ClearWindowNames()
 	return _u
 }
 
@@ -441,6 +488,17 @@ func (_u *ProjectHibernateUpdateOne) sqlSave(ctx context.Context) (_node *Projec
 	}
 	if _u.mutation.SnapshotCleared() {
 		_spec.ClearField(projecthibernate.FieldSnapshot, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.WindowNames(); ok {
+		_spec.SetField(projecthibernate.FieldWindowNames, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedWindowNames(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, projecthibernate.FieldWindowNames, value)
+		})
+	}
+	if _u.mutation.WindowNamesCleared() {
+		_spec.ClearField(projecthibernate.FieldWindowNames, field.TypeJSON)
 	}
 	if _u.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

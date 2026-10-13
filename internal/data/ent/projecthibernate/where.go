@@ -245,6 +245,16 @@ func SnapshotNotNil() predicate.ProjectHibernate {
 	return predicate.ProjectHibernate(sql.FieldNotNull(FieldSnapshot))
 }
 
+// WindowNamesIsNil applies the IsNil predicate on the "window_names" field.
+func WindowNamesIsNil() predicate.ProjectHibernate {
+	return predicate.ProjectHibernate(sql.FieldIsNull(FieldWindowNames))
+}
+
+// WindowNamesNotNil applies the NotNil predicate on the "window_names" field.
+func WindowNamesNotNil() predicate.ProjectHibernate {
+	return predicate.ProjectHibernate(sql.FieldNotNull(FieldWindowNames))
+}
+
 // ProjectIDEQ applies the EQ predicate on the "project_id" field.
 func ProjectIDEQ(v int) predicate.ProjectHibernate {
 	return predicate.ProjectHibernate(sql.FieldEQ(FieldProjectID, v))

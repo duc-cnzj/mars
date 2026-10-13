@@ -13,6 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/member"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/schema/mixin"
 	"github.com/duc-cnzj/mars/v6/internal/data/filters"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
@@ -119,6 +120,7 @@ func projectLivenessPred(liveness string, now time.Time) func(*sql.Selector) {
 // ListLivenessPage 分页查询活跃度聚合所需项目（真 SQL 分页）：分类过滤/排序/统计/分页全部
 // 下沉 SQL，stats 基于搜索命中全量（不带边的干净 query 计数，避免行侧 Order/Select 修饰符
 // 渗进 COUNT，对齐 namespaceRepo.List 的计数口径），count 为分类过滤后总数（无过滤 = total）。
+// query.Hibernate=true 时统计与分页行都再收窄到「已开启项目级休眠开关」的子集。
 //
 // 排序：updated_at {desc|asc} + id {desc|asc} 决胜键——datetime 整秒精度下同秒多条排序非全序，
 // 加 id 保证 LIMIT/OFFSET 翻页不漂移/不重复。字段裁剪沿用旧 ListLiveness（短字段 + 边外键），
@@ -132,6 +134,12 @@ func (repo *projectRepo) ListLivenessPage(ctx context.Context, query *biz.Livene
 	base := repo.data.DB().Project.Query()
 	if query.Search != "" {
 		base = base.Where(projectSearchPred(query.Search))
+	}
+	// 休眠过滤收窄统计与分页的同一「命中全量」作用域：只看已开启休眠的项目时，total/三分类
+	// 与 count 都基于该子集——避免「列表只剩休眠项目、统计卡却仍显示全量」的口径错位。
+	// ProjectHibernate 无软删 mixin，HasHibernateWith 无需 DeletedAtIsNil 兜底。
+	if query.Hibernate {
+		base = base.Where(project.HasHibernateWith(projecthibernate.Enabled(true)))
 	}
 	total, err := base.Clone().Count(ctx)
 	if err != nil {
@@ -166,6 +174,9 @@ func (repo *projectRepo) ListLivenessPage(ctx context.Context, query *biz.Livene
 	rows := repo.data.DB().Project.Query().WithNamespace().WithRepo()
 	if query.Search != "" {
 		rows = rows.Where(projectSearchPred(query.Search))
+	}
+	if query.Hibernate {
+		rows = rows.Where(project.HasHibernateWith(projecthibernate.Enabled(true)))
 	}
 	if query.Liveness != "" {
 		rows = rows.Where(projectLivenessPred(query.Liveness, query.Now))

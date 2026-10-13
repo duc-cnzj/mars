@@ -507,7 +507,7 @@ func TestRepoSvc_Export_StripsHibernate(t *testing.T) {
 	svc, mocks := newRepoSvcWithMocks(t)
 	input := &biz.Repo{ID: 1, Name: "a", MarsConfig: &mars.Config{
 		ConfigField: "cfg",
-		Hibernate:   &mars.Hibernate{Enabled: true, WindowName: "夜间"},
+		Hibernate:   &mars.Hibernate{Enabled: true, WindowNames: []string{"夜间"}},
 	}}
 	mocks.repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return([]*biz.Repo{input}, nil)
 
@@ -553,7 +553,7 @@ func TestRepoSvc_ExportOne_StripsHibernate(t *testing.T) {
 	svc, mocks := newRepoSvcWithMocks(t)
 	mocks.repoRepo.EXPECT().Get(gomock.Any(), 1).Return(&biz.Repo{
 		ID: 1, Name: "a", MarsConfig: &mars.Config{
-			Hibernate: &mars.Hibernate{Enabled: true, WindowName: "夜间"},
+			Hibernate: &mars.Hibernate{Enabled: true, WindowNames: []string{"夜间"}},
 		},
 	}, nil)
 
@@ -586,7 +586,7 @@ func TestRepoSvc_Import_Success(t *testing.T) {
 	// 否则事件日志里会误显示成「本次导入改了休眠配置」。
 	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return([]*biz.Repo{
 		{ID: 1, Name: "existing", Enabled: true, Description: "d1", MarsConfig: &mars.Config{
-			Hibernate: &mars.Hibernate{Enabled: true, WindowName: "夜间"},
+			Hibernate: &mars.Hibernate{Enabled: true, WindowNames: []string{"夜间"}},
 		}},
 	}, nil).Times(2)
 
@@ -681,7 +681,7 @@ func TestRepoSvc_Import_DryRun(t *testing.T) {
 	// 否则前端 old→new diff 会误显示成「导入将删除休眠配置」。
 	repoRepo.EXPECT().All(gomock.Any(), &biz.AllRepoRequest{}).Return([]*biz.Repo{
 		{ID: 1, Name: "existing", Enabled: true, MarsConfig: &mars.Config{
-			Hibernate: &mars.Hibernate{Enabled: true, WindowName: "夜间"},
+			Hibernate: &mars.Hibernate{Enabled: true, WindowNames: []string{"夜间"}},
 		}},
 	}, nil)
 

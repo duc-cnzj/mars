@@ -26,7 +26,7 @@ const (
 )
 
 // HibernateWindow 全局休眠时间窗：管理员在后台维护若干命名时段，
-// 各仓库的定时休眠配置按名字引用其中一个（mars.Hibernate.window_name）。
+// 各仓库的定时休眠配置按名字引用其中若干（mars.Hibernate.window_names）。
 type HibernateWindow struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Id    int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -35,8 +35,11 @@ type HibernateWindow struct {
 	// start 休眠开始时间（服务端本地时区，HH:MM）。
 	Start string `protobuf:"bytes,3,opt,name=start,proto3" json:"start,omitempty"`
 	// end 休眠结束时间（HH:MM，start>end 表示跨零点）。
-	End           string `protobuf:"bytes,4,opt,name=end,proto3" json:"end,omitempty"`
-	Description   string `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	End         string `protobuf:"bytes,4,opt,name=end,proto3" json:"end,omitempty"`
+	Description string `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	// repo_names 引用该时间窗的仓库名（升序）；仅 ListWindows 填充，供后台列表展示
+	// 「哪些仓库用了这个窗」。
+	RepoNames     []string `protobuf:"bytes,6,rep,name=repo_names,json=repoNames,proto3" json:"repo_names,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -104,6 +107,13 @@ func (x *HibernateWindow) GetDescription() string {
 		return x.Description
 	}
 	return ""
+}
+
+func (x *HibernateWindow) GetRepoNames() []string {
+	if x != nil {
+		return x.RepoNames
+	}
+	return nil
 }
 
 type ListWindowsRequest struct {
@@ -517,17 +527,252 @@ func (*DeleteWindowResponse) Descriptor() ([]byte, []int) {
 	return file_proto_hibernate_hibernate_proto_rawDescGZIP(), []int{8}
 }
 
+// SetWindowReposRequest 把一个全局时间窗的「引用仓库集合」重设为 repo_ids（集合语义：
+// 在集合内=引用该窗，不在集合内=不引用——缺则加入、多则移除）。
+type SetWindowReposRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	// repo_ids 目标引用集合（仓库 ID）；仅可含已配置休眠段的仓库。
+	RepoIds       []int32 `protobuf:"varint,2,rep,packed,name=repo_ids,json=repoIds,proto3" json:"repo_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetWindowReposRequest) Reset() {
+	*x = SetWindowReposRequest{}
+	mi := &file_proto_hibernate_hibernate_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetWindowReposRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetWindowReposRequest) ProtoMessage() {}
+
+func (x *SetWindowReposRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_hibernate_hibernate_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetWindowReposRequest.ProtoReflect.Descriptor instead.
+func (*SetWindowReposRequest) Descriptor() ([]byte, []int) {
+	return file_proto_hibernate_hibernate_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SetWindowReposRequest) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *SetWindowReposRequest) GetRepoIds() []int32 {
+	if x != nil {
+		return x.RepoIds
+	}
+	return nil
+}
+
+type SetWindowReposResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// repo_names 保存后引用该时间窗的仓库名（升序），供前端即时刷新展示。
+	RepoNames     []string `protobuf:"bytes,1,rep,name=repo_names,json=repoNames,proto3" json:"repo_names,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetWindowReposResponse) Reset() {
+	*x = SetWindowReposResponse{}
+	mi := &file_proto_hibernate_hibernate_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetWindowReposResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetWindowReposResponse) ProtoMessage() {}
+
+func (x *SetWindowReposResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_hibernate_hibernate_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetWindowReposResponse.ProtoReflect.Descriptor instead.
+func (*SetWindowReposResponse) Descriptor() ([]byte, []int) {
+	return file_proto_hibernate_hibernate_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *SetWindowReposResponse) GetRepoNames() []string {
+	if x != nil {
+		return x.RepoNames
+	}
+	return nil
+}
+
+type ListCandidateReposRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCandidateReposRequest) Reset() {
+	*x = ListCandidateReposRequest{}
+	mi := &file_proto_hibernate_hibernate_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCandidateReposRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCandidateReposRequest) ProtoMessage() {}
+
+func (x *ListCandidateReposRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_hibernate_hibernate_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCandidateReposRequest.ProtoReflect.Descriptor instead.
+func (*ListCandidateReposRequest) Descriptor() ([]byte, []int) {
+	return file_proto_hibernate_hibernate_proto_rawDescGZIP(), []int{11}
+}
+
+// HibernateRepoOption 可引用休眠时间窗的候选仓库（已配置休眠段的仓库，含禁用）。
+type HibernateRepoOption struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HibernateRepoOption) Reset() {
+	*x = HibernateRepoOption{}
+	mi := &file_proto_hibernate_hibernate_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HibernateRepoOption) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HibernateRepoOption) ProtoMessage() {}
+
+func (x *HibernateRepoOption) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_hibernate_hibernate_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HibernateRepoOption.ProtoReflect.Descriptor instead.
+func (*HibernateRepoOption) Descriptor() ([]byte, []int) {
+	return file_proto_hibernate_hibernate_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *HibernateRepoOption) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *HibernateRepoOption) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type ListCandidateReposResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*HibernateRepoOption `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCandidateReposResponse) Reset() {
+	*x = ListCandidateReposResponse{}
+	mi := &file_proto_hibernate_hibernate_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCandidateReposResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCandidateReposResponse) ProtoMessage() {}
+
+func (x *ListCandidateReposResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_hibernate_hibernate_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCandidateReposResponse.ProtoReflect.Descriptor instead.
+func (*ListCandidateReposResponse) Descriptor() ([]byte, []int) {
+	return file_proto_hibernate_hibernate_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ListCandidateReposResponse) GetItems() []*HibernateRepoOption {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
 var File_proto_hibernate_hibernate_proto protoreflect.FileDescriptor
 
 const file_proto_hibernate_hibernate_proto_rawDesc = "" +
 	"\n" +
-	"\x1fproto/hibernate/hibernate.proto\x12\thibernate\x1a\x1copenapi/v3/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\"\x7f\n" +
+	"\x1fproto/hibernate/hibernate.proto\x12\thibernate\x1a\x1copenapi/v3/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\"\x9e\x01\n" +
 	"\x0fHibernateWindow\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
 	"\x05start\x18\x03 \x01(\tR\x05start\x12\x10\n" +
 	"\x03end\x18\x04 \x01(\tR\x03end\x12 \n" +
-	"\vdescription\x18\x05 \x01(\tR\vdescription\"\x14\n" +
+	"\vdescription\x18\x05 \x01(\tR\vdescription\x12\x1d\n" +
+	"\n" +
+	"repo_names\x18\x06 \x03(\tR\trepoNames\"\x14\n" +
 	"\x12ListWindowsRequest\"G\n" +
 	"\x13ListWindowsResponse\x120\n" +
 	"\x05items\x18\x01 \x03(\v2\x1a.hibernate.HibernateWindowR\x05items\"\xa0\x01\n" +
@@ -550,12 +795,26 @@ const file_proto_hibernate_hibernate_proto_rawDesc = "" +
 	"\x12updated_repo_count\x18\x02 \x01(\x05R\x10updatedRepoCount\"2\n" +
 	"\x13DeleteWindowRequest\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\"\x16\n" +
-	"\x14DeleteWindowResponse2\xb7\x05\n" +
+	"\x14DeleteWindowResponse\"O\n" +
+	"\x15SetWindowReposRequest\x12\x1b\n" +
+	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\x12\x19\n" +
+	"\brepo_ids\x18\x02 \x03(\x05R\arepoIds\"7\n" +
+	"\x16SetWindowReposResponse\x12\x1d\n" +
+	"\n" +
+	"repo_names\x18\x01 \x03(\tR\trepoNames\"\x1b\n" +
+	"\x19ListCandidateReposRequest\"9\n" +
+	"\x13HibernateRepoOption\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\"R\n" +
+	"\x1aListCandidateReposResponse\x124\n" +
+	"\x05items\x18\x01 \x03(\v2\x1e.hibernate.HibernateRepoOptionR\x05items2\xcd\b\n" +
 	"\tHibernate\x12\xa4\x01\n" +
 	"\vListWindows\x12\x1d.hibernate.ListWindowsRequest\x1a\x1e.hibernate.ListWindowsResponse\"V\xbaG5\x123获取全局休眠时间窗列表（登录可读）\x82\xd3\xe4\x93\x02\x18\x12\x16/api/hibernate/windows\x12\xa7\x01\n" +
 	"\fCreateWindow\x12\x1e.hibernate.CreateWindowRequest\x1a\x1f.hibernate.CreateWindowResponse\"V\xbaG,\x12*创建全局休眠时间窗（管理员）\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/api/admin/hibernate/windows\x12\xac\x01\n" +
 	"\fUpdateWindow\x12\x1e.hibernate.UpdateWindowRequest\x1a\x1f.hibernate.UpdateWindowResponse\"[\xbaG,\x12*更新全局休眠时间窗（管理员）\x82\xd3\xe4\x93\x02&:\x01*\x1a!/api/admin/hibernate/windows/{id}\x12\xa9\x01\n" +
-	"\fDeleteWindow\x12\x1e.hibernate.DeleteWindowRequest\x1a\x1f.hibernate.DeleteWindowResponse\"X\xbaG,\x12*删除全局休眠时间窗（管理员）\x82\xd3\xe4\x93\x02#*!/api/admin/hibernate/windows/{id}B;Z9github.com/duc-cnzj/mars/api/v6/proto/hibernate;hibernateb\x06proto3"
+	"\fDeleteWindow\x12\x1e.hibernate.DeleteWindowRequest\x1a\x1f.hibernate.DeleteWindowResponse\"X\xbaG,\x12*删除全局休眠时间窗（管理员）\x82\xd3\xe4\x93\x02#*!/api/admin/hibernate/windows/{id}\x12\xca\x01\n" +
+	"\x0eSetWindowRepos\x12 .hibernate.SetWindowReposRequest\x1a!.hibernate.SetWindowReposResponse\"s\xbaG>\x12<把一个休眠时间窗配置到多个仓库（管理员）\x82\xd3\xe4\x93\x02,:\x01*\x1a'/api/admin/hibernate/windows/{id}/repos\x12\xc6\x01\n" +
+	"\x12ListCandidateRepos\x12$.hibernate.ListCandidateReposRequest\x1a%.hibernate.ListCandidateReposResponse\"c\xbaG>\x12<列出可引用休眠时间窗的候选仓库（管理员）\x82\xd3\xe4\x93\x02\x1c\x12\x1a/api/admin/hibernate/reposB;Z9github.com/duc-cnzj/mars/api/v6/proto/hibernate;hibernateb\x06proto3"
 
 var (
 	file_proto_hibernate_hibernate_proto_rawDescOnce sync.Once
@@ -569,35 +828,45 @@ func file_proto_hibernate_hibernate_proto_rawDescGZIP() []byte {
 	return file_proto_hibernate_hibernate_proto_rawDescData
 }
 
-var file_proto_hibernate_hibernate_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_proto_hibernate_hibernate_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_proto_hibernate_hibernate_proto_goTypes = []any{
-	(*HibernateWindow)(nil),      // 0: hibernate.HibernateWindow
-	(*ListWindowsRequest)(nil),   // 1: hibernate.ListWindowsRequest
-	(*ListWindowsResponse)(nil),  // 2: hibernate.ListWindowsResponse
-	(*CreateWindowRequest)(nil),  // 3: hibernate.CreateWindowRequest
-	(*CreateWindowResponse)(nil), // 4: hibernate.CreateWindowResponse
-	(*UpdateWindowRequest)(nil),  // 5: hibernate.UpdateWindowRequest
-	(*UpdateWindowResponse)(nil), // 6: hibernate.UpdateWindowResponse
-	(*DeleteWindowRequest)(nil),  // 7: hibernate.DeleteWindowRequest
-	(*DeleteWindowResponse)(nil), // 8: hibernate.DeleteWindowResponse
+	(*HibernateWindow)(nil),            // 0: hibernate.HibernateWindow
+	(*ListWindowsRequest)(nil),         // 1: hibernate.ListWindowsRequest
+	(*ListWindowsResponse)(nil),        // 2: hibernate.ListWindowsResponse
+	(*CreateWindowRequest)(nil),        // 3: hibernate.CreateWindowRequest
+	(*CreateWindowResponse)(nil),       // 4: hibernate.CreateWindowResponse
+	(*UpdateWindowRequest)(nil),        // 5: hibernate.UpdateWindowRequest
+	(*UpdateWindowResponse)(nil),       // 6: hibernate.UpdateWindowResponse
+	(*DeleteWindowRequest)(nil),        // 7: hibernate.DeleteWindowRequest
+	(*DeleteWindowResponse)(nil),       // 8: hibernate.DeleteWindowResponse
+	(*SetWindowReposRequest)(nil),      // 9: hibernate.SetWindowReposRequest
+	(*SetWindowReposResponse)(nil),     // 10: hibernate.SetWindowReposResponse
+	(*ListCandidateReposRequest)(nil),  // 11: hibernate.ListCandidateReposRequest
+	(*HibernateRepoOption)(nil),        // 12: hibernate.HibernateRepoOption
+	(*ListCandidateReposResponse)(nil), // 13: hibernate.ListCandidateReposResponse
 }
 var file_proto_hibernate_hibernate_proto_depIdxs = []int32{
-	0, // 0: hibernate.ListWindowsResponse.items:type_name -> hibernate.HibernateWindow
-	0, // 1: hibernate.CreateWindowResponse.window:type_name -> hibernate.HibernateWindow
-	0, // 2: hibernate.UpdateWindowResponse.window:type_name -> hibernate.HibernateWindow
-	1, // 3: hibernate.Hibernate.ListWindows:input_type -> hibernate.ListWindowsRequest
-	3, // 4: hibernate.Hibernate.CreateWindow:input_type -> hibernate.CreateWindowRequest
-	5, // 5: hibernate.Hibernate.UpdateWindow:input_type -> hibernate.UpdateWindowRequest
-	7, // 6: hibernate.Hibernate.DeleteWindow:input_type -> hibernate.DeleteWindowRequest
-	2, // 7: hibernate.Hibernate.ListWindows:output_type -> hibernate.ListWindowsResponse
-	4, // 8: hibernate.Hibernate.CreateWindow:output_type -> hibernate.CreateWindowResponse
-	6, // 9: hibernate.Hibernate.UpdateWindow:output_type -> hibernate.UpdateWindowResponse
-	8, // 10: hibernate.Hibernate.DeleteWindow:output_type -> hibernate.DeleteWindowResponse
-	7, // [7:11] is the sub-list for method output_type
-	3, // [3:7] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0,  // 0: hibernate.ListWindowsResponse.items:type_name -> hibernate.HibernateWindow
+	0,  // 1: hibernate.CreateWindowResponse.window:type_name -> hibernate.HibernateWindow
+	0,  // 2: hibernate.UpdateWindowResponse.window:type_name -> hibernate.HibernateWindow
+	12, // 3: hibernate.ListCandidateReposResponse.items:type_name -> hibernate.HibernateRepoOption
+	1,  // 4: hibernate.Hibernate.ListWindows:input_type -> hibernate.ListWindowsRequest
+	3,  // 5: hibernate.Hibernate.CreateWindow:input_type -> hibernate.CreateWindowRequest
+	5,  // 6: hibernate.Hibernate.UpdateWindow:input_type -> hibernate.UpdateWindowRequest
+	7,  // 7: hibernate.Hibernate.DeleteWindow:input_type -> hibernate.DeleteWindowRequest
+	9,  // 8: hibernate.Hibernate.SetWindowRepos:input_type -> hibernate.SetWindowReposRequest
+	11, // 9: hibernate.Hibernate.ListCandidateRepos:input_type -> hibernate.ListCandidateReposRequest
+	2,  // 10: hibernate.Hibernate.ListWindows:output_type -> hibernate.ListWindowsResponse
+	4,  // 11: hibernate.Hibernate.CreateWindow:output_type -> hibernate.CreateWindowResponse
+	6,  // 12: hibernate.Hibernate.UpdateWindow:output_type -> hibernate.UpdateWindowResponse
+	8,  // 13: hibernate.Hibernate.DeleteWindow:output_type -> hibernate.DeleteWindowResponse
+	10, // 14: hibernate.Hibernate.SetWindowRepos:output_type -> hibernate.SetWindowReposResponse
+	13, // 15: hibernate.Hibernate.ListCandidateRepos:output_type -> hibernate.ListCandidateReposResponse
+	10, // [10:16] is the sub-list for method output_type
+	4,  // [4:10] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_proto_hibernate_hibernate_proto_init() }
@@ -611,7 +880,7 @@ func file_proto_hibernate_hibernate_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_hibernate_hibernate_proto_rawDesc), len(file_proto_hibernate_hibernate_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

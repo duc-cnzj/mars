@@ -53,3 +53,21 @@ func (s *HibernateSvc) DeleteWindow(ctx context.Context, req *hibernate.DeleteWi
 	}
 	return &out, nil
 }
+
+// SetWindowRepos PUT /api/admin/hibernate/windows/{id}/repos。
+func (s *HibernateSvc) SetWindowRepos(ctx context.Context, req *hibernate.SetWindowReposRequest) (*hibernate.SetWindowReposResponse, error) {
+	var out hibernate.SetWindowReposResponse
+	if err := s.C.Do(ctx, http.MethodPut, fmt.Sprintf("/api/admin/hibernate/windows/%d/repos", req.Id), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// ListCandidateRepos GET /api/admin/hibernate/repos。
+func (s *HibernateSvc) ListCandidateRepos(ctx context.Context, req *hibernate.ListCandidateReposRequest) (*hibernate.ListCandidateReposResponse, error) {
+	var out hibernate.ListCandidateReposResponse
+	if err := s.C.DoQuery(ctx, http.MethodGet, "/api/admin/hibernate/repos", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

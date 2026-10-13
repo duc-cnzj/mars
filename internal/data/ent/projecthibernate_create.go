@@ -86,6 +86,12 @@ func (_c *ProjectHibernateCreate) SetSnapshot(v []*websocket.ExtraValue) *Projec
 	return _c
 }
 
+// SetWindowNames sets the "window_names" field.
+func (_c *ProjectHibernateCreate) SetWindowNames(v []string) *ProjectHibernateCreate {
+	_c.mutation.SetWindowNames(v)
+	return _c
+}
+
 // SetProjectID sets the "project_id" field.
 func (_c *ProjectHibernateCreate) SetProjectID(v int) *ProjectHibernateCreate {
 	_c.mutation.SetProjectID(v)
@@ -224,6 +230,10 @@ func (_c *ProjectHibernateCreate) createSpec() (*ProjectHibernate, *sqlgraph.Cre
 		_spec.SetField(projecthibernate.FieldSnapshot, field.TypeJSON, value)
 		_node.Snapshot = value
 	}
+	if value, ok := _c.mutation.WindowNames(); ok {
+		_spec.SetField(projecthibernate.FieldWindowNames, field.TypeJSON, value)
+		_node.WindowNames = value
+	}
 	if nodes := _c.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -344,6 +354,24 @@ func (u *ProjectHibernateUpsert) UpdateSnapshot() *ProjectHibernateUpsert {
 // ClearSnapshot clears the value of the "snapshot" field.
 func (u *ProjectHibernateUpsert) ClearSnapshot() *ProjectHibernateUpsert {
 	u.SetNull(projecthibernate.FieldSnapshot)
+	return u
+}
+
+// SetWindowNames sets the "window_names" field.
+func (u *ProjectHibernateUpsert) SetWindowNames(v []string) *ProjectHibernateUpsert {
+	u.Set(projecthibernate.FieldWindowNames, v)
+	return u
+}
+
+// UpdateWindowNames sets the "window_names" field to the value that was provided on create.
+func (u *ProjectHibernateUpsert) UpdateWindowNames() *ProjectHibernateUpsert {
+	u.SetExcluded(projecthibernate.FieldWindowNames)
+	return u
+}
+
+// ClearWindowNames clears the value of the "window_names" field.
+func (u *ProjectHibernateUpsert) ClearWindowNames() *ProjectHibernateUpsert {
+	u.SetNull(projecthibernate.FieldWindowNames)
 	return u
 }
 
@@ -470,6 +498,27 @@ func (u *ProjectHibernateUpsertOne) UpdateSnapshot() *ProjectHibernateUpsertOne 
 func (u *ProjectHibernateUpsertOne) ClearSnapshot() *ProjectHibernateUpsertOne {
 	return u.Update(func(s *ProjectHibernateUpsert) {
 		s.ClearSnapshot()
+	})
+}
+
+// SetWindowNames sets the "window_names" field.
+func (u *ProjectHibernateUpsertOne) SetWindowNames(v []string) *ProjectHibernateUpsertOne {
+	return u.Update(func(s *ProjectHibernateUpsert) {
+		s.SetWindowNames(v)
+	})
+}
+
+// UpdateWindowNames sets the "window_names" field to the value that was provided on create.
+func (u *ProjectHibernateUpsertOne) UpdateWindowNames() *ProjectHibernateUpsertOne {
+	return u.Update(func(s *ProjectHibernateUpsert) {
+		s.UpdateWindowNames()
+	})
+}
+
+// ClearWindowNames clears the value of the "window_names" field.
+func (u *ProjectHibernateUpsertOne) ClearWindowNames() *ProjectHibernateUpsertOne {
+	return u.Update(func(s *ProjectHibernateUpsert) {
+		s.ClearWindowNames()
 	})
 }
 
@@ -765,6 +814,27 @@ func (u *ProjectHibernateUpsertBulk) UpdateSnapshot() *ProjectHibernateUpsertBul
 func (u *ProjectHibernateUpsertBulk) ClearSnapshot() *ProjectHibernateUpsertBulk {
 	return u.Update(func(s *ProjectHibernateUpsert) {
 		s.ClearSnapshot()
+	})
+}
+
+// SetWindowNames sets the "window_names" field.
+func (u *ProjectHibernateUpsertBulk) SetWindowNames(v []string) *ProjectHibernateUpsertBulk {
+	return u.Update(func(s *ProjectHibernateUpsert) {
+		s.SetWindowNames(v)
+	})
+}
+
+// UpdateWindowNames sets the "window_names" field to the value that was provided on create.
+func (u *ProjectHibernateUpsertBulk) UpdateWindowNames() *ProjectHibernateUpsertBulk {
+	return u.Update(func(s *ProjectHibernateUpsert) {
+		s.UpdateWindowNames()
+	})
+}
+
+// ClearWindowNames clears the value of the "window_names" field.
+func (u *ProjectHibernateUpsertBulk) ClearWindowNames() *ProjectHibernateUpsertBulk {
+	return u.Update(func(s *ProjectHibernateUpsert) {
+		s.ClearWindowNames()
 	})
 }
 

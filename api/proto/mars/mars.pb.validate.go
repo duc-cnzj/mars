@@ -330,8 +330,6 @@ func (m *Hibernate) validate(all bool) error {
 
 	// no validation rules for Enabled
 
-	// no validation rules for WindowName
-
 	if len(errors) > 0 {
 		return HibernateMultiError(errors)
 	}

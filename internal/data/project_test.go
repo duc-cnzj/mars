@@ -1300,6 +1300,40 @@ func TestProjectRepo_ListLivenessPage(t *testing.T) {
 	})
 }
 
+// TestProjectRepo_ListLivenessPage_HibernateFilter 休眠过滤：Hibernate=true 只返回已开启项目级
+// 休眠开关的项目，未开启（enabled=false）与未配置（无休眠行）的项目都被排除；统计与 count
+// 同步收窄到该子集（列表与统计卡口径一致）。
+func TestProjectRepo_ListLivenessPage_HibernateFilter(t *testing.T) {
+	ctx := context.TODO()
+	db, _ := NewSqliteDB()
+	defer db.Close()
+	r := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	ns := db.Namespace.Create().SetName("hib").SetCreatorEmail("a@q.c").SaveX(ctx)
+	repo := createRepo(db)
+	on := db.Project.Create().SetName("on").SetCreator("u").SetGitProjectID(1).SetNamespaceID(ns.ID).SetRepoID(repo.ID).SaveX(ctx)
+	off := db.Project.Create().SetName("off").SetCreator("u").SetGitProjectID(2).SetNamespaceID(ns.ID).SetRepoID(repo.ID).SaveX(ctx)
+	// 第三条不建休眠行（未配置）；off 建行但开关为 false。
+	db.Project.Create().SetName("none").SetCreator("u").SetGitProjectID(3).SetNamespaceID(ns.ID).SetRepoID(repo.ID).SaveX(ctx)
+	db.ProjectHibernate.Create().SetProjectID(on.ID).SetEnabled(true).SetState("sleeping").SetWindowNames([]string{"夜间"}).SaveX(ctx)
+	db.ProjectHibernate.Create().SetProjectID(off.ID).SetEnabled(false).SetState("awake").SaveX(ctx)
+
+	t.Run("Hibernate=true 只留已开启", func(t *testing.T) {
+		page, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Page: 1, PageSize: 10, Now: time.Now(), Hibernate: true})
+		assert.NoError(t, err)
+		assert.Equal(t, 1, page.Count)
+		assert.Equal(t, biz.LivenessStats{Total: 1, Active: 1}, page.Stats)
+		if assert.Len(t, page.Projects, 1) {
+			assert.Equal(t, "on", page.Projects[0].Name)
+		}
+	})
+
+	t.Run("Hibernate=false 不过滤", func(t *testing.T) {
+		page, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Page: 1, PageSize: 10, Now: time.Now()})
+		assert.NoError(t, err)
+		assert.Equal(t, 3, page.Count)
+	})
+}
+
 // TestProjectRepo_ListLivenessPage_KindFilter 分类过滤 + 排序决胜键：kind 谓词命中正确行，
 // 排序为 updated_at {desc|asc} + id 决胜键（同秒不漂移），stats 不随分类过滤裁剪。
 func TestProjectRepo_ListLivenessPage_KindFilter(t *testing.T) {

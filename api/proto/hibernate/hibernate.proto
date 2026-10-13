@@ -10,7 +10,7 @@ import "validate/validate.proto";
 option go_package = "github.com/duc-cnzj/mars/api/v6/proto/hibernate;hibernate";
 
 // HibernateWindow 全局休眠时间窗：管理员在后台维护若干命名时段，
-// 各仓库的定时休眠配置按名字引用其中一个（mars.Hibernate.window_name）。
+// 各仓库的定时休眠配置按名字引用其中若干（mars.Hibernate.window_names）。
 message HibernateWindow {
   int32  id          = 1;
   // name 时间窗名（全局唯一，仓库按名字引用）。
@@ -20,6 +20,9 @@ message HibernateWindow {
   // end 休眠结束时间（HH:MM，start>end 表示跨零点）。
   string end         = 4;
   string description = 5;
+  // repo_names 引用该时间窗的仓库名（升序）；仅 ListWindows 填充，供后台列表展示
+  // 「哪些仓库用了这个窗」。
+  repeated string repo_names = 6;
 }
 
 message ListWindowsRequest {}
@@ -62,6 +65,31 @@ message DeleteWindowRequest {
 
 message DeleteWindowResponse {}
 
+// SetWindowReposRequest 把一个全局时间窗的「引用仓库集合」重设为 repo_ids（集合语义：
+// 在集合内=引用该窗，不在集合内=不引用——缺则加入、多则移除）。
+message SetWindowReposRequest {
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  // repo_ids 目标引用集合（仓库 ID）；仅可含已配置休眠段的仓库。
+  repeated int32 repo_ids = 2;
+}
+
+message SetWindowReposResponse {
+  // repo_names 保存后引用该时间窗的仓库名（升序），供前端即时刷新展示。
+  repeated string repo_names = 1;
+}
+
+message ListCandidateReposRequest {}
+
+// HibernateRepoOption 可引用休眠时间窗的候选仓库（已配置休眠段的仓库，含禁用）。
+message HibernateRepoOption {
+  int32  id   = 1;
+  string name = 2;
+}
+
+message ListCandidateReposResponse {
+  repeated HibernateRepoOption items = 1;
+}
+
 // Hibernate 全局休眠时间窗的查询与后台管理服务，按方法分级授权（Authorize 门禁）：
 // ListWindows 登录即可读（项目卡片需按 window_name 展示时段），Create/Update/Delete 仅管理员。
 // 路径前缀随权限分层：读接口挂 /api/（面向全体登录用户），写接口挂 /api/admin/（管理员专属）。
@@ -101,6 +129,25 @@ service Hibernate {
     };
     option (openapi.v3.operation) = {
       summary: "删除全局休眠时间窗（管理员）",
+    };
+  }
+
+  rpc SetWindowRepos(SetWindowReposRequest) returns (SetWindowReposResponse) {
+    option (google.api.http)      = {
+      put: "/api/admin/hibernate/windows/{id}/repos",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "把一个休眠时间窗配置到多个仓库（管理员）",
+    };
+  }
+
+  rpc ListCandidateRepos(ListCandidateReposRequest) returns (ListCandidateReposResponse) {
+    option (google.api.http)      = {
+      get: "/api/admin/hibernate/repos"
+    };
+    option (openapi.v3.operation) = {
+      summary: "列出可引用休眠时间窗的候选仓库（管理员）",
     };
   }
 }

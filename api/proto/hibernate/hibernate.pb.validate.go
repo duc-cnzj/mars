@@ -1148,3 +1148,562 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = DeleteWindowResponseValidationError{}
+
+// Validate checks the field values on SetWindowReposRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SetWindowReposRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SetWindowReposRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SetWindowReposRequestMultiError, or nil if none found.
+func (m *SetWindowReposRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SetWindowReposRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetId() <= 0 {
+		err := SetWindowReposRequestValidationError{
+			field:  "Id",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return SetWindowReposRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SetWindowReposRequestMultiError is an error wrapping multiple validation
+// errors returned by SetWindowReposRequest.ValidateAll() if the designated
+// constraints aren't met.
+type SetWindowReposRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SetWindowReposRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SetWindowReposRequestMultiError) AllErrors() []error { return m }
+
+// SetWindowReposRequestValidationError is the validation error returned by
+// SetWindowReposRequest.Validate if the designated constraints aren't met.
+type SetWindowReposRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SetWindowReposRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SetWindowReposRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SetWindowReposRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SetWindowReposRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SetWindowReposRequestValidationError) ErrorName() string {
+	return "SetWindowReposRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SetWindowReposRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSetWindowReposRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SetWindowReposRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SetWindowReposRequestValidationError{}
+
+// Validate checks the field values on SetWindowReposResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SetWindowReposResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SetWindowReposResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SetWindowReposResponseMultiError, or nil if none found.
+func (m *SetWindowReposResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SetWindowReposResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return SetWindowReposResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SetWindowReposResponseMultiError is an error wrapping multiple validation
+// errors returned by SetWindowReposResponse.ValidateAll() if the designated
+// constraints aren't met.
+type SetWindowReposResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SetWindowReposResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SetWindowReposResponseMultiError) AllErrors() []error { return m }
+
+// SetWindowReposResponseValidationError is the validation error returned by
+// SetWindowReposResponse.Validate if the designated constraints aren't met.
+type SetWindowReposResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SetWindowReposResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SetWindowReposResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SetWindowReposResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SetWindowReposResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SetWindowReposResponseValidationError) ErrorName() string {
+	return "SetWindowReposResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SetWindowReposResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSetWindowReposResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SetWindowReposResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SetWindowReposResponseValidationError{}
+
+// Validate checks the field values on ListCandidateReposRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListCandidateReposRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListCandidateReposRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListCandidateReposRequestMultiError, or nil if none found.
+func (m *ListCandidateReposRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListCandidateReposRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ListCandidateReposRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListCandidateReposRequestMultiError is an error wrapping multiple validation
+// errors returned by ListCandidateReposRequest.ValidateAll() if the
+// designated constraints aren't met.
+type ListCandidateReposRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListCandidateReposRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListCandidateReposRequestMultiError) AllErrors() []error { return m }
+
+// ListCandidateReposRequestValidationError is the validation error returned by
+// ListCandidateReposRequest.Validate if the designated constraints aren't met.
+type ListCandidateReposRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListCandidateReposRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListCandidateReposRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListCandidateReposRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListCandidateReposRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListCandidateReposRequestValidationError) ErrorName() string {
+	return "ListCandidateReposRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListCandidateReposRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListCandidateReposRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListCandidateReposRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListCandidateReposRequestValidationError{}
+
+// Validate checks the field values on HibernateRepoOption with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *HibernateRepoOption) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on HibernateRepoOption with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// HibernateRepoOptionMultiError, or nil if none found.
+func (m *HibernateRepoOption) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *HibernateRepoOption) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for Name
+
+	if len(errors) > 0 {
+		return HibernateRepoOptionMultiError(errors)
+	}
+
+	return nil
+}
+
+// HibernateRepoOptionMultiError is an error wrapping multiple validation
+// errors returned by HibernateRepoOption.ValidateAll() if the designated
+// constraints aren't met.
+type HibernateRepoOptionMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m HibernateRepoOptionMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m HibernateRepoOptionMultiError) AllErrors() []error { return m }
+
+// HibernateRepoOptionValidationError is the validation error returned by
+// HibernateRepoOption.Validate if the designated constraints aren't met.
+type HibernateRepoOptionValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e HibernateRepoOptionValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e HibernateRepoOptionValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e HibernateRepoOptionValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e HibernateRepoOptionValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e HibernateRepoOptionValidationError) ErrorName() string {
+	return "HibernateRepoOptionValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e HibernateRepoOptionValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sHibernateRepoOption.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = HibernateRepoOptionValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = HibernateRepoOptionValidationError{}
+
+// Validate checks the field values on ListCandidateReposResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListCandidateReposResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListCandidateReposResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListCandidateReposResponseMultiError, or nil if none found.
+func (m *ListCandidateReposResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListCandidateReposResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetItems() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListCandidateReposResponseValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListCandidateReposResponseValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListCandidateReposResponseValidationError{
+					field:  fmt.Sprintf("Items[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListCandidateReposResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListCandidateReposResponseMultiError is an error wrapping multiple
+// validation errors returned by ListCandidateReposResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ListCandidateReposResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListCandidateReposResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListCandidateReposResponseMultiError) AllErrors() []error { return m }
+
+// ListCandidateReposResponseValidationError is the validation error returned
+// by ListCandidateReposResponse.Validate if the designated constraints aren't met.
+type ListCandidateReposResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListCandidateReposResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListCandidateReposResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListCandidateReposResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListCandidateReposResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListCandidateReposResponseValidationError) ErrorName() string {
+	return "ListCandidateReposResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListCandidateReposResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListCandidateReposResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListCandidateReposResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListCandidateReposResponseValidationError{}

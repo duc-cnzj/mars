@@ -20,10 +20,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Hibernate_ListWindows_FullMethodName  = "/hibernate.Hibernate/ListWindows"
-	Hibernate_CreateWindow_FullMethodName = "/hibernate.Hibernate/CreateWindow"
-	Hibernate_UpdateWindow_FullMethodName = "/hibernate.Hibernate/UpdateWindow"
-	Hibernate_DeleteWindow_FullMethodName = "/hibernate.Hibernate/DeleteWindow"
+	Hibernate_ListWindows_FullMethodName        = "/hibernate.Hibernate/ListWindows"
+	Hibernate_CreateWindow_FullMethodName       = "/hibernate.Hibernate/CreateWindow"
+	Hibernate_UpdateWindow_FullMethodName       = "/hibernate.Hibernate/UpdateWindow"
+	Hibernate_DeleteWindow_FullMethodName       = "/hibernate.Hibernate/DeleteWindow"
+	Hibernate_SetWindowRepos_FullMethodName     = "/hibernate.Hibernate/SetWindowRepos"
+	Hibernate_ListCandidateRepos_FullMethodName = "/hibernate.Hibernate/ListCandidateRepos"
 )
 
 // HibernateClient is the client API for Hibernate service.
@@ -38,6 +40,8 @@ type HibernateClient interface {
 	CreateWindow(ctx context.Context, in *CreateWindowRequest, opts ...grpc.CallOption) (*CreateWindowResponse, error)
 	UpdateWindow(ctx context.Context, in *UpdateWindowRequest, opts ...grpc.CallOption) (*UpdateWindowResponse, error)
 	DeleteWindow(ctx context.Context, in *DeleteWindowRequest, opts ...grpc.CallOption) (*DeleteWindowResponse, error)
+	SetWindowRepos(ctx context.Context, in *SetWindowReposRequest, opts ...grpc.CallOption) (*SetWindowReposResponse, error)
+	ListCandidateRepos(ctx context.Context, in *ListCandidateReposRequest, opts ...grpc.CallOption) (*ListCandidateReposResponse, error)
 }
 
 type hibernateClient struct {
@@ -88,6 +92,26 @@ func (c *hibernateClient) DeleteWindow(ctx context.Context, in *DeleteWindowRequ
 	return out, nil
 }
 
+func (c *hibernateClient) SetWindowRepos(ctx context.Context, in *SetWindowReposRequest, opts ...grpc.CallOption) (*SetWindowReposResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetWindowReposResponse)
+	err := c.cc.Invoke(ctx, Hibernate_SetWindowRepos_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hibernateClient) ListCandidateRepos(ctx context.Context, in *ListCandidateReposRequest, opts ...grpc.CallOption) (*ListCandidateReposResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListCandidateReposResponse)
+	err := c.cc.Invoke(ctx, Hibernate_ListCandidateRepos_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HibernateServer is the server API for Hibernate service.
 // All implementations must embed UnimplementedHibernateServer
 // for forward compatibility.
@@ -100,6 +124,8 @@ type HibernateServer interface {
 	CreateWindow(context.Context, *CreateWindowRequest) (*CreateWindowResponse, error)
 	UpdateWindow(context.Context, *UpdateWindowRequest) (*UpdateWindowResponse, error)
 	DeleteWindow(context.Context, *DeleteWindowRequest) (*DeleteWindowResponse, error)
+	SetWindowRepos(context.Context, *SetWindowReposRequest) (*SetWindowReposResponse, error)
+	ListCandidateRepos(context.Context, *ListCandidateReposRequest) (*ListCandidateReposResponse, error)
 	mustEmbedUnimplementedHibernateServer()
 }
 
@@ -121,6 +147,12 @@ func (UnimplementedHibernateServer) UpdateWindow(context.Context, *UpdateWindowR
 }
 func (UnimplementedHibernateServer) DeleteWindow(context.Context, *DeleteWindowRequest) (*DeleteWindowResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteWindow not implemented")
+}
+func (UnimplementedHibernateServer) SetWindowRepos(context.Context, *SetWindowReposRequest) (*SetWindowReposResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetWindowRepos not implemented")
+}
+func (UnimplementedHibernateServer) ListCandidateRepos(context.Context, *ListCandidateReposRequest) (*ListCandidateReposResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCandidateRepos not implemented")
 }
 func (UnimplementedHibernateServer) mustEmbedUnimplementedHibernateServer() {}
 func (UnimplementedHibernateServer) testEmbeddedByValue()                   {}
@@ -215,6 +247,42 @@ func _Hibernate_DeleteWindow_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Hibernate_SetWindowRepos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetWindowReposRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HibernateServer).SetWindowRepos(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Hibernate_SetWindowRepos_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HibernateServer).SetWindowRepos(ctx, req.(*SetWindowReposRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Hibernate_ListCandidateRepos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCandidateReposRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HibernateServer).ListCandidateRepos(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Hibernate_ListCandidateRepos_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HibernateServer).ListCandidateRepos(ctx, req.(*ListCandidateReposRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Hibernate_ServiceDesc is the grpc.ServiceDesc for Hibernate service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -237,6 +305,14 @@ var Hibernate_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteWindow",
 			Handler:    _Hibernate_DeleteWindow_Handler,
+		},
+		{
+			MethodName: "SetWindowRepos",
+			Handler:    _Hibernate_SetWindowRepos_Handler,
+		},
+		{
+			MethodName: "ListCandidateRepos",
+			Handler:    _Hibernate_ListCandidateRepos_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

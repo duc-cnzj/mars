@@ -31,28 +31,33 @@ func TestHibernateRepo_CRUD(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, all)
 
-	// Upsert 写入。
+	// Upsert 写入（含项目选定的时间窗子集）。
 	saved, err := repo.Upsert(context.TODO(), &biz.ProjectHibernate{
-		ProjectID: p1.ID,
-		Enabled:   true,
-		State:     biz.HibernateStateAwake,
-		Snapshot:  []*websocket_pb.ExtraValue{{Path: "a", Value: "3"}},
+		ProjectID:   p1.ID,
+		Enabled:     true,
+		State:       biz.HibernateStateAwake,
+		Snapshot:    []*websocket_pb.ExtraValue{{Path: "a", Value: "3"}},
+		WindowNames: []string{"夜间", "午休"},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, p1.ID, saved.ProjectID)
 	assert.Equal(t, biz.HibernateStateAwake, saved.State)
+	assert.Equal(t, []string{"夜间", "午休"}, saved.WindowNames)
 
 	// Upsert 幂等：同 project_id 再写为更新而非新增。
 	saved2, err := repo.Upsert(context.TODO(), &biz.ProjectHibernate{
-		ProjectID: p1.ID,
-		Enabled:   true,
-		State:     biz.HibernateStateSleeping,
+		ProjectID:   p1.ID,
+		Enabled:     true,
+		State:       biz.HibernateStateSleeping,
+		WindowNames: []string{"午休"},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, p1.ID, saved2.ProjectID)
 	assert.Equal(t, biz.HibernateStateSleeping, saved2.State)
 	// 快照被本次 Upsert 覆盖（UpdateNewValues 语义）。
 	assert.Empty(t, saved2.Snapshot)
+	// 时间窗子集同样被覆盖，回读一致。
+	assert.Equal(t, []string{"午休"}, saved2.WindowNames)
 
 	// 第二条记录，供批量/检索断言。
 	_, err = repo.Upsert(context.TODO(), &biz.ProjectHibernate{ProjectID: p2.ID, Enabled: false, State: biz.HibernateStateAwake})
@@ -62,6 +67,7 @@ func TestHibernateRepo_CRUD(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, byIDs, 2)
 	assert.Equal(t, biz.HibernateStateSleeping, byIDs[p1.ID].State)
+	assert.Equal(t, []string{"午休"}, byIDs[p1.ID].WindowNames)
 
 	enabled, err := repo.ListEnabled(context.TODO())
 	assert.NoError(t, err)

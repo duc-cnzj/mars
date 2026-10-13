@@ -138,6 +138,43 @@ func (s *hibernateSvc) DeleteWindow(ctx context.Context, req *hibernatepb.Delete
 	return &hibernatepb.DeleteWindowResponse{}, nil
 }
 
+// SetWindowRepos 把一个全局休眠时间窗的引用仓库集合重设为 req.RepoIds（集合语义：在集合内=引用
+// 该窗，不在=不引用——缺则加入、多则移除）。窗不存在返回 404；repo_ids 含未配置休眠段的仓库、
+// 或移除会使某启用仓库失去最后一个窗返回 400；成功返回保存后引用该窗的仓库名，并落更新审计日志。
+func (s *hibernateSvc) SetWindowRepos(ctx context.Context, req *hibernatepb.SetWindowReposRequest) (*hibernatepb.SetWindowReposResponse, error) {
+	ids := make([]int, 0, len(req.RepoIds))
+	for _, id := range req.RepoIds {
+		ids = append(ids, int(id))
+	}
+	names, err := s.hibernateWindowBiz.SetWindowRepos(ctx, int(req.Id), ids)
+	if err != nil {
+		return nil, logError(ctx, s.logger, err)
+	}
+	user := biz.MustGetUser(ctx)
+	s.eventBiz.AuditLogWithRequest(
+		types.EventActionType_Update,
+		user.Name,
+		user.Email,
+		fmt.Sprintf("配置休眠时间窗引用仓库: 时间窗 %d 现被 %d 个仓库引用", req.Id, len(names)),
+		req,
+	)
+	return &hibernatepb.SetWindowReposResponse{RepoNames: names}, nil
+}
+
+// ListCandidateRepos 列出可引用休眠时间窗的候选仓库（已配置休眠段，含禁用），供后台「一键配置
+// 时间窗到多仓库」选择器使用。仅管理员（Authorize 未豁免本方法）。
+func (s *hibernateSvc) ListCandidateRepos(ctx context.Context, _ *hibernatepb.ListCandidateReposRequest) (*hibernatepb.ListCandidateReposResponse, error) {
+	list, err := s.hibernateWindowBiz.ListCandidateRepos(ctx)
+	if err != nil {
+		return nil, logError(ctx, s.logger, err)
+	}
+	resp := &hibernatepb.ListCandidateReposResponse{Items: make([]*hibernatepb.HibernateRepoOption, 0, len(list))}
+	for _, r := range list {
+		resp.Items = append(resp.Items, &hibernatepb.HibernateRepoOption{Id: int32(r.ID), Name: r.Name})
+	}
+	return resp, nil
+}
+
 // toHibernateWindowProto 把领域对象映射为 proto（nil 安全）。
 func toHibernateWindowProto(w *biz.HibernateWindow) *hibernatepb.HibernateWindow {
 	if w == nil {
@@ -149,5 +186,6 @@ func toHibernateWindowProto(w *biz.HibernateWindow) *hibernatepb.HibernateWindow
 		Start:       w.Start,
 		End:         w.End,
 		Description: w.Description,
+		RepoNames:   w.RepoNames,
 	}
 }

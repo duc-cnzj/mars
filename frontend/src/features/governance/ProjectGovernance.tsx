@@ -5,6 +5,9 @@ import { StatCard } from '@/components/StatCard'
 import { Empty, RefreshFade, SkeletonList, Tag, type Tone } from '@/components/ui'
 import { SearchInput } from '@/components/SearchInput'
 import { Button } from '@/components/ui/shadcn/button'
+import { Switch } from '@/components/ui/shadcn/switch'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/shadcn/popover'
+import { TruncatedText } from '@/components/TruncatedText'
 import {
   Tooltip,
   TooltipContent,
@@ -17,7 +20,11 @@ import { humanizeDateTime } from '@/lib/humanizeDateTime'
 import { toast } from '@/lib/toast'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
+import { getHibernateWindows } from '@/api/hibernateWindowsCache'
 import type { components } from '@/api/schema'
+import { HibernateWindowSelect } from '@/features/projects/HibernateWindowSelect'
+import { hibernateWindowLabel } from '@/features/projects/hibernate'
+import { hibernateIconActive, iconTriggerCls } from '@/features/projects/iconTrigger'
 import type { TKey } from '@/i18n/keys'
 
 /** 活跃度筛选：'all' = 不筛选（全部项目） */
@@ -34,6 +41,9 @@ type LivenessStats = components['schemas']['project.LivenessStats']
 
 /** 服务端活跃度清单单条项目 */
 type LivenessItem = components['schemas']['project.LivenessItem']
+
+/** 全局休眠时间窗：把项目选定的窗名映射成「窗名 (HH:MM-HH:MM)」展示（见 hibernateWindowLabel） */
+type HibernateWindow = components['schemas']['hibernate.HibernateWindow']
 
 /** 活跃阈值（天）：距最后更新时间不超过此值视为活跃 */
 const ACTIVE_DAYS = 30
@@ -103,17 +113,33 @@ const GovernanceRow = memo(function GovernanceRow({
   item,
   status,
   liveness,
+  windows,
+  disabled,
+  onToggle,
+  onSaveWindows,
   className,
   style,
 }: {
   item: LivenessItem
   status: ProjectStatus
   liveness: Liveness
+  /** 全局休眠时间窗：把项目选定的窗名渲染成「窗名 (时段)」 */
+  windows: HibernateWindow[]
+  /** 任一行休眠开关切换进行中即禁用全部开关（后端 Toggle 无并发语义，避免重复提交） */
+  disabled: boolean
+  /** 切换该项目级休眠开关（父级处理乐观更新与回滚） */
+  onToggle: (item: LivenessItem, next: boolean) => void
+  /** 保存项目选定的休眠时间窗子集（父级处理乐观更新与回滚） */
+  onSaveWindows: (item: LivenessItem, names: string[]) => void
   /** RefreshFade 经 cloneElement 注入的渐入 class/延迟——须转发到根元素才生效 */
   className?: string
   style?: CSSProperties
 }) {
   const { t } = useTranslation()
+  // 时间窗编辑弹层（铅笔）开合：受控，仅供本行使用
+  const [winOpen, setWinOpen] = useState(false)
+  // 所属仓库是否声明了可用时间窗：无则不给编辑入口（选项为空、越界选择后端会 400）
+  const hasRepoWindows = (item.hibernateRepoWindowNames ?? []).length > 0
   // 最近提交 cell 溢出检测：scrollWidth > clientWidth 判定内容被省略，仅省略时挂 tooltip 展示全文
   const commitRef = useRef<HTMLDivElement>(null)
   const [commitOverflow, setCommitOverflow] = useState(false)
@@ -139,13 +165,11 @@ const GovernanceRow = memo(function GovernanceRow({
 
   return (
     <div
-      className={`grid grid-cols-1 gap-1 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-2 lg:grid-cols-[1fr_3fr_1fr_6rem_4.5rem_5.5rem_5.5rem] lg:items-center lg:gap-3 ${className ?? ''}`}
+      className={`grid grid-cols-1 gap-1 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-2 lg:grid-cols-[1fr_3fr_1fr_5.5rem_11rem_4.5rem_5.5rem_5.5rem] lg:items-center lg:gap-3 ${className ?? ''}`}
       style={style}
     >
-      {/* 项目名 */}
-      <div className="min-w-0 truncate text-[13px] font-medium text-ink" title={item.name}>
-        {item.name}
-      </div>
+      {/* 项目名（休眠信息在独立的「休眠」列展示，见状态列之后）；列窄超长省略时 tooltip 展示全名 */}
+      <TruncatedText text={item.name} className="min-w-0 text-[13px] font-medium text-ink" />
 
       {/* 最近提交：提交人 + 标题 + 时间（判断代码是否仍有人维护）；无提交信息时占位。
           超长省略（commitOverflow）时 tooltip 展示全文，未省略不高频弹窗。
@@ -171,11 +195,73 @@ const GovernanceRow = memo(function GovernanceRow({
         )}
       </div>
 
-      {/* 命名空间 */}
-      <span className="truncate text-[12px] text-mute">{item.namespace}</span>
+      {/* 命名空间：列窄，超长省略时 tooltip 展示全名 */}
+      <TruncatedText text={item.namespace} className="text-[12px] text-mute" />
 
       {/* 最近部署状态 */}
       <Tag tone={STATUS_TONE[status]}>{t(PROJECT_STATUS_KEY[status])}</Tag>
+
+      {/* 定时休眠：内联开关（仅切换开关，不触发重部署）+ 运行态（休眠中 / 已开启 / 未开启）
+          + 选定时间窗（带时段，如「夜间停机 (22:00-08:00)」）。铅笔（仓库声明了可用窗时才有）
+          打开弹层，从仓库窗列表里多选本项目的子集——就地改窗，不必跳项目详情。开关与改窗都
+          POST 同一 ToggleHibernate 端点（不触发重部署）：改窗保留开关态，清空时间窗则连带关闭休眠。 */}
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <div className="flex items-center gap-1.5">
+          <Switch
+            size="sm"
+            aria-label={`${item.name} ${t('governance.hibernate')}`}
+            checked={item.hibernateEnabled}
+            disabled={disabled}
+            onCheckedChange={(next) => onToggle(item, next)}
+          />
+          {item.hibernateEnabled ? (
+            <span
+              className={`inline-flex items-center gap-1 text-[12px] ${
+                item.hibernateState === 'sleeping' ? 'text-primary' : 'text-mute'
+              }`}
+            >
+              <Icon name={item.hibernateState === 'sleeping' ? 'moon-fill' : 'moon'} className="size-3.5" />
+              {item.hibernateState === 'sleeping'
+                ? t('governance.hibernateSleeping')
+                : t('governance.hibernateAwake')}
+            </span>
+          ) : (
+            <span className="text-[12px] text-faint">{t('governance.hibernateOff')}</span>
+          )}
+          {/* 时间窗编辑入口：仅仓库声明了可用窗时给出（与「查看项目」弹窗同款「无选窗入口」判据） */}
+          {hasRepoWindows && (
+            <Popover open={winOpen} onOpenChange={setWinOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t('project.hibernateWindow')}
+                  title={t('project.hibernateWindow')}
+                  disabled={disabled}
+                  className={`${item.hibernateEnabled ? hibernateIconActive : iconTriggerCls} -mr-1 ml-auto`}
+                >
+                  <Icon name="pencil" className="size-3.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" sideOffset={4} className="w-[min(420px,90vw)] p-3">
+                {/* 时间窗（可写）：多选仓库窗子集 + 生效时段一览；每次勾选即提交（enabled 不变） */}
+                <HibernateWindowSelect
+                  value={item.hibernateWindowNames ?? []}
+                  repoWindowNames={item.hibernateRepoWindowNames ?? []}
+                  windows={windows}
+                  onChange={(names) => onSaveWindows(item, names)}
+                  disabled={disabled}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
+        {(item.hibernateWindowNames ?? []).length > 0 && (
+          <TruncatedText
+            text={hibernateWindowLabel(item.hibernateWindowNames ?? [], windows)}
+            className="text-[11px] text-faint"
+          />
+        )}
+      </div>
 
       {/* 部署次数 */}
       <span className="font-mono text-[12px] text-ink">
@@ -184,9 +270,7 @@ const GovernanceRow = memo(function GovernanceRow({
       </span>
 
       {/* 最近更新人：人为更新（创建/成功部署）者，系统状态变更不刷新；历史项目可能为空 */}
-      <span className="truncate text-[12px] text-mute" title={item.updatedBy}>
-        {item.updatedBy || '—'}
-      </span>
+      <TruncatedText text={item.updatedBy || '—'} className="text-[12px] text-mute" />
 
       {/* 最后更新时间：相对为主，精确放 tooltip；非活跃项目前置标签 */}
       <div className="flex min-w-0 flex-wrap items-center gap-1.5">
@@ -220,11 +304,15 @@ const GovernanceRow = memo(function GovernanceRow({
  *
  * 跨命名空间聚合的项目活跃度清单，用于识别「哪些项目已经没有人使用了」：
  * - 顶部三卡统计：项目总数 / 活跃（30 天内更新）/ 僵尸（90 天未更新），数据来自服务端 stats
- * - 关键词搜索 + 活跃度筛选 + 最后更新时间排序均走服务端 query（搜索输入 300ms 防抖），
- *   更新时间列点击切换升/降序（服务端排序）
+ * - 关键词搜索 + 活跃度筛选 + 定时休眠筛选 + 最后更新时间排序均走服务端 query（搜索输入 300ms
+ *   防抖），更新时间列点击切换升/降序（服务端排序）
  * - 无限下拉（服务端分页，滚动触底追加下一页）；行内活跃度标签按同阈值前端推导
- *   （服务端不回传分类），行同时展示仓库/最近提交（判断代码是否仍有人维护）
- * - 数据由 /api/admin/projects/liveness 提供
+ *   （服务端不回传分类），行同时展示最近提交（判断代码是否仍有人维护）
+ * - 休眠列内联开关直接切换项目级定时休眠（仅切开关，不触发重部署），并展示运行态与选定时间窗
+ *   （带时段）；仓库声明了可用窗时另有铅笔入口，弹层内多选本项目的时间窗子集（就地改窗，
+ *   复用同一 ToggleHibernate 端点，enabled 原样回传）——开启需至少选定一个时间窗，未选即拒
+ * - 数据由 /api/admin/projects/liveness（含仓库可用窗 hibernateRepoWindowNames）提供；
+ *   时间窗时段来自 /api/hibernate/windows（模块缓存）
  */
 export function ProjectGovernance() {
   const { t } = useTranslation()
@@ -235,6 +323,12 @@ export function ProjectGovernance() {
   // 防抖后的关键词：SearchInput 逐键触发 onChange，避免每次击键都打后端
   const [debouncedKeyword, setDebouncedKeyword] = useState('')
   const [livenessFilter, setLivenessFilter] = useState<LivenessFilter>('all')
+  // 定时休眠过滤：true = 只看已开启项目级休眠开关的项目（服务端过滤，非前端裁剪）
+  const [hibernateOnly, setHibernateOnly] = useState(false)
+  // 全局休眠时间窗：把项目选定的窗名渲染成「窗名 (时段)」（模块内按 TTL 缓存去重，不额外打请求风暴）
+  const [windows, setWindows] = useState<HibernateWindow[]>([])
+  // 正在切换休眠开关的项目 id（>0 表示某行切换进行中，禁用全部开关避免重复提交）
+  const [togglingId, setTogglingId] = useState(0)
   const [page, setPage] = useState(1)
   const [initialLoading, setInitialLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -269,9 +363,15 @@ export function ProjectGovernance() {
     return () => window.clearTimeout(timer)
   }, [keyword])
 
-  // 过滤条件指纹：搜索 / 活跃度筛选 / 排序方向任一变化都视为新的过滤条件
+  // 全局休眠时间窗一次性拉取（模块内缓存 + 并发去重）：把项目选定的窗名补上时段展示；
+  // 失败返回空数组，行内 hibernateWindowLabel 回退为纯窗名，不阻断治理清单渲染
+  useEffect(() => {
+    void getHibernateWindows().then(setWindows)
+  }, [])
+
+  // 过滤条件指纹：搜索 / 活跃度筛选 / 休眠筛选 / 排序方向任一变化都视为新的过滤条件
   //（排序切换走服务端重新拉取，故也纳入指纹）
-  const filterKey = `${debouncedKeyword}|${livenessFilter}|${timeSort}`
+  const filterKey = `${debouncedKeyword}|${livenessFilter}|${timeSort}|${hibernateOnly}`
   // 每渲染同步最新过滤条件（供 fetchList 落地校验，见 filterKeyRef 声明注释）
   filterKeyRef.current = filterKey
 
@@ -297,6 +397,8 @@ export function ProjectGovernance() {
               search: debouncedKeyword.trim() || undefined,
               liveness: livenessFilter === 'all' ? undefined : livenessFilter,
               sort: timeSort,
+              // 只在开启时下发 hibernate 参数（false/缺省 = 不按休眠过滤，与后端口径一致）
+              hibernate: hibernateOnly || undefined,
             },
           },
         })
@@ -320,7 +422,7 @@ export function ProjectGovernance() {
         setLoadingMore(false)
       }
     },
-    [debouncedKeyword, livenessFilter, timeSort],
+    [debouncedKeyword, livenessFilter, timeSort, hibernateOnly],
   )
 
   useEffect(() => {
@@ -354,6 +456,75 @@ export function ProjectGovernance() {
     refreshingRef.current = false
     setRefreshing(false)
   }
+
+  /** 切换项目级休眠开关：乐观更新，失败回滚并提示（语义对齐仓库「查看项目」弹窗）。
+   *  开启前必须已选至少一个时间窗（空选 = 未选，不继承仓库全量）——未选则拒绝开启并提示，
+   *  不翻开关、不发请求；选窗走休眠列的铅笔入口（仓库有可用窗时才有）。仅切换开关，不触发重部署。 */
+  const toggleHibernate = useCallback(
+    async (item: LivenessItem, next: boolean) => {
+      if (togglingId !== 0) return
+      if (next && (item.hibernateWindowNames?.length ?? 0) === 0) {
+        toast.error(t('project.hibernateWindowRequired'))
+        return
+      }
+      setTogglingId(item.id)
+      setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, hibernateEnabled: next } : it)))
+      try {
+        const { error } = await api.POST(API.projectsHibernate, {
+          params: { path: { projectId: item.id } },
+          // 带上项目已选定的窗口子集，避免仅切开关时把选择清空（空数组 = 未选，后端会拒）
+          body: { projectId: item.id, enabled: next, windowNames: item.hibernateWindowNames ?? [] },
+        })
+        if (error) throw new Error(error.message ?? String(error))
+        toast.success(next ? t('project.hibernateToggleOn') : t('project.hibernateToggleOff'))
+      } catch (e) {
+        setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, hibernateEnabled: !next } : it)))
+        toast.error(e instanceof Error ? e.message : String(e))
+      } finally {
+        setTogglingId(0)
+      }
+    },
+    [togglingId, t],
+  )
+
+  /** 保存项目选定的休眠时间窗子集（休眠列铅笔弹层内多选）：乐观更新，失败回滚并提示。
+   *  复用 ToggleHibernate 端点——只改 windowNames（不触发重部署）。
+   *  清空（不选任何窗）= 关闭该项目休眠：项目级休眠必须有生效窗，「清空」的语义就是不再休眠，
+   *  故提交 enabled=false 并清空选择——避免留下「开关开着却没有任何窗」的空转态；
+   *  仍在选窗（非空）时 enabled 原样回传，仅换子集。 */
+  const saveWindows = useCallback(
+    async (item: LivenessItem, names: string[]) => {
+      if (togglingId !== 0) return
+      const prevNames = item.hibernateWindowNames ?? []
+      const nextEnabled = names.length > 0 ? item.hibernateEnabled : false
+      setTogglingId(item.id)
+      setItems((p) =>
+        p.map((it) =>
+          it.id === item.id ? { ...it, hibernateWindowNames: names, hibernateEnabled: nextEnabled } : it,
+        ),
+      )
+      try {
+        const { error } = await api.POST(API.projectsHibernate, {
+          params: { path: { projectId: item.id } },
+          body: { projectId: item.id, enabled: nextEnabled, windowNames: names },
+        })
+        if (error) throw new Error(error.message ?? String(error))
+        toast.success(names.length > 0 ? t('project.hibernateWindowSaved') : t('project.hibernateWindowCleared'))
+      } catch (e) {
+        setItems((p) =>
+          p.map((it) =>
+            it.id === item.id
+              ? { ...it, hibernateWindowNames: prevNames, hibernateEnabled: item.hibernateEnabled }
+              : it,
+          ),
+        )
+        toast.error(e instanceof Error ? e.message : String(e))
+      } finally {
+        setTogglingId(0)
+      }
+    },
+    [togglingId, t],
+  )
 
   // 底部哨兵进入列表容器视口（含 300px 预加载区）且非忙碌/非刷新时 → 翻下一页（服务端分页）
   useEffect(() => {
@@ -452,16 +623,34 @@ export function ProjectGovernance() {
               </TooltipContent>
             </Tooltip>
           ))}
+          {/* 定时休眠筛选：独立于活跃度分类的「结构」过滤——只看已开启项目级休眠开关的项目 */}
+          <span className="mx-0.5 h-4 w-px bg-line" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => setHibernateOnly((v) => !v)}
+                className={chipCls(hibernateOnly)}
+              >
+                <span className="inline-flex items-center gap-1">
+                  <Icon name={hibernateOnly ? 'moon-fill' : 'moon'} className="size-3" />
+                  {t('governance.hibernateOnly')}
+                </span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{t('governance.hibernateTip')}</TooltipContent>
+          </Tooltip>
         </div>
       </TooltipProvider>
 
       {/* 项目列表：固定表头 + 内部滚动容器（无限下拉 root） */}
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-surface">
-        <div className="hidden grid-cols-[1fr_3fr_1fr_6rem_4.5rem_5.5rem_5.5rem] items-center gap-3 border-b border-line px-4 py-2 text-[11px] font-medium text-faint lg:grid">
+        <div className="hidden grid-cols-[1fr_3fr_1fr_5.5rem_11rem_4.5rem_5.5rem_5.5rem] items-center gap-3 border-b border-line px-4 py-2 text-[11px] font-medium text-faint lg:grid">
           <span>{t('governance.project')}</span>
           <span>{t('governance.lastCommit')}</span>
           <span>{t('governance.namespace')}</span>
           <span>{t('governance.status')}</span>
+          <span>{t('governance.hibernate')}</span>
           <span>{t('governance.deployCount')}</span>
           <span>{t('governance.updatedBy')}</span>
           <button
@@ -495,6 +684,10 @@ export function ProjectGovernance() {
               item={p}
               status={STATUS_MAP[p.deployStatus]}
               liveness={classifyLiveness(p.updatedAt, now)}
+              windows={windows}
+              disabled={togglingId !== 0}
+              onToggle={toggleHibernate}
+              onSaveWindows={saveWindows}
             />
           ))}
           </RefreshFade>

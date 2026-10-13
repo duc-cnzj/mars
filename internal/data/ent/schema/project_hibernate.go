@@ -29,6 +29,9 @@ func (ProjectHibernate) Fields() []ent.Field {
 		field.JSON("snapshot", []*websocket_pb.ExtraValue{}).
 			Optional().
 			Comment("休眠前副本字段的值快照，唤醒时据此恢复"),
+		field.Strings("window_names").
+			Optional().
+			Comment("项目选定的时间窗名子集（引用仓库 Hibernate.window_names）；启用时非空，空 = 该项目休眠已关闭"),
 		field.Int("project_id").
 			Optional(),
 	}
