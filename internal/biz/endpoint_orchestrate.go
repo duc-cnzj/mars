@@ -199,19 +199,17 @@ func BuildNodePortMappingByProjects(ctx context.Context, logger mlog.Logger, k8s
 				switch {
 				case isHttpPortName(port.Name):
 					m[projectName] = append(data, &types.ServiceEndpoint{
-						Name:     projectName,
-						PortName: port.Name,
-						Url:      fmt.Sprintf("http://%s:%d", externalIp, port.NodePort),
-						SvcName:  item.Name,
-						Type:     "Service",
+						Name:    projectName,
+						Url:     fmt.Sprintf("http://%s:%d", externalIp, port.NodePort),
+						SvcName: item.Name,
+						Type:    "Service",
 					})
 				default:
 					m[projectName] = append(data, &types.ServiceEndpoint{
-						Name:     projectName,
-						PortName: port.Name,
-						Url:      fmt.Sprintf("%s:%d", externalIp, port.NodePort),
-						SvcName:  item.Name,
-						Type:     "Service",
+						Name:    projectName,
+						Url:     fmt.Sprintf("%s:%d", externalIp, port.NodePort),
+						SvcName: item.Name,
+						Type:    "Service",
 					})
 				}
 			}
@@ -318,19 +316,17 @@ func BuildLoadBalancerMappingByProjects(ctx context.Context, logger mlog.Logger,
 						url = fmt.Sprintf("https://%s", lbIP)
 					}
 					m[projectName] = append(data, &types.ServiceEndpoint{
-						Name:     projectName,
-						PortName: port.Name,
-						Url:      url,
-						SvcName:  item.Name,
-						Type:     "Service",
+						Name:    projectName,
+						Url:     url,
+						SvcName: item.Name,
+						Type:    "Service",
 					})
 				default:
 					m[projectName] = append(data, &types.ServiceEndpoint{
-						Name:     projectName,
-						PortName: port.Name,
-						Url:      fmt.Sprintf("%s:%d", lbIP, port.Port),
-						SvcName:  item.Name,
-						Type:     "Service",
+						Name:    projectName,
+						Url:     fmt.Sprintf("%s:%d", lbIP, port.Port),
+						SvcName: item.Name,
+						Type:    "Service",
 					})
 				}
 			}
