@@ -826,6 +826,36 @@ func TestTasks_ReconcileHibernate_Sleep(t *testing.T) {
 	assert.Equal(t, "3", rec.Snapshot[0].Value)
 }
 
+// TestTasks_ReconcileHibernate_SleepPersistsSnapshotBeforeDeploy 是「休眠不幂等丢数」的回归闸门：
+// 必须先落「休眠态+快照」再重部署。反序（先部署后落库）会让部署把副本置 0 落库后、若落库失败则
+// 下一轮对账以全 0 基座重拍快照，永久丢原始副本数（唤醒只能恢复成 0）。用 InOrder 钉死调用顺序，
+// 并在落库回调里断言快照仍是休眠前原值（3），反序时该值会变成 0 而被抓住。
+func TestTasks_ReconcileHibernate_SleepPersistsSnapshotBeforeDeploy(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake},
+	}, nil)
+	proj := hibernateProject()
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+
+	gomock.InOrder(
+		hr.EXPECT().Upsert(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(_ context.Context, h *biz.ProjectHibernate) (*biz.ProjectHibernate, error) {
+				assert.Equal(t, biz.HibernateStateSleeping, h.State)
+				assert.Len(t, h.Snapshot, 1)
+				assert.Equal(t, "3", h.Snapshot[0].Value)
+				return h, nil
+			}),
+		hd.EXPECT().Redeploy(gomock.Any(), proj, gomock.Any()).Return(nil),
+	)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
 // TestTasks_ReconcileHibernate_SleepSkipNotInWindow 覆盖清醒态但未命中窗口：
 // 不重部署、不改状态（无 Redeploy/Upsert 期望，误调即 panic）。
 func TestTasks_ReconcileHibernate_SleepSkipNotInWindow(t *testing.T) {
@@ -1168,8 +1198,8 @@ func TestTasks_ReconcileHibernate_RepoGetErrorSkips(t *testing.T) {
 	assert.NoError(t, repo.ReconcileHibernate())
 }
 
-// TestTasks_ReconcileHibernate_SleepRedeployError 覆盖休眠重部署失败：记日志不改状态
-// （无 Upsert 期望，误调即 panic）。
+// TestTasks_ReconcileHibernate_SleepRedeployError 覆盖休眠「先落库成功、后重部署失败」：
+// 状态与快照已落库（转 sleeping），仅记重部署告警、本轮无错。
 func TestTasks_ReconcileHibernate_SleepRedeployError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -1181,16 +1211,19 @@ func TestTasks_ReconcileHibernate_SleepRedeployError(t *testing.T) {
 	proj := hibernateProject()
 	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
 	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+	// 先落「休眠态+快照」成功，再重部署失败（顺序见 SleepPersistsSnapshotBeforeDeploy）。
+	hr.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(&biz.ProjectHibernate{}, nil)
 	hd.EXPECT().Redeploy(gomock.Any(), proj, gomock.Any()).Return(errors.New("deploy err"))
 
 	assert.NoError(t, repo.ReconcileHibernate())
 }
 
-// TestTasks_ReconcileHibernate_SleepUpsertError 覆盖休眠状态落库失败：仅告警，本轮无错。
+// TestTasks_ReconcileHibernate_SleepUpsertError 覆盖休眠状态落库失败：落库失败即中止本轮、
+// 不重部署（无 Redeploy 期望，误调即 panic），避免「部署已置 0 但快照未留」的丢数窗口。
 func TestTasks_ReconcileHibernate_SleepUpsertError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowIn())
+	repo, hr, _, pr, rr := newHibernateTasks(m, hibernateNowIn())
 
 	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
 		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake},
@@ -1198,7 +1231,6 @@ func TestTasks_ReconcileHibernate_SleepUpsertError(t *testing.T) {
 	proj := hibernateProject()
 	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
 	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
-	hd.EXPECT().Redeploy(gomock.Any(), proj, gomock.Any()).Return(nil)
 	hr.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil, errors.New("upsert err"))
 
 	assert.NoError(t, repo.ReconcileHibernate())

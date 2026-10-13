@@ -386,16 +386,18 @@ func (repo *Tasks) reconcileHibernateProject(now time.Time, rec *biz.ProjectHibe
 	}
 }
 
-// sleepHibernateProject 执行单个项目的休眠：快照副本字段当前值、置 0 重部署、状态转 sleeping
-// 并写入快照。窗口判定与「仓库是否启用休眠」由调用方完成，本方法只负责落动作。
+// sleepHibernateProject 执行单个项目的休眠：快照副本字段当前值并**先**落库「休眠态+快照」，
+// 再把副本字段置 0 重部署。窗口判定与「仓库是否启用休眠」由调用方完成，本方法只负责落动作。
+//
+// 顺序是幂等的承重点：重部署会把置 0 后的副本值写回项目记录（deploy 管线 UpdateProject）。
+// 若先部署后落库，一旦部署成功而落库失败/进程崩溃，下一轮对账读到的基座副本已被置 0，会据此
+// 重拍出「全 0 快照」覆盖真快照，令原始副本数永久丢失（唤醒只能恢复成 0）。改为先落库后：
+// 落库失败则本轮不部署、基座未变，下一轮重拍仍是原值；落库成功而部署失败，下一轮以同一快照
+// 重试（基座同样未变）。两种失败都基于「基座未变」而自愈，故顺序不可颠倒。
 func (repo *Tasks) sleepHibernateProject(proj *biz.Project, rec *biz.ProjectHibernate, replicaPaths []string) {
 	base := proj.FinalExtraValues
 	snapshot := biz.SnapshotReplicaValues(base, replicaPaths)
 	target := biz.SleepExtraValues(base, replicaPaths)
-	if err := repo.hibernateDeployer.Redeploy(context.TODO(), proj, target); err != nil {
-		repo.logger.Errorf("[hibernate]: 项目 %s 休眠重部署失败: %v", proj.Name, err)
-		return
-	}
 	if _, err := repo.hibernateRepo.Upsert(context.TODO(), &biz.ProjectHibernate{
 		ProjectID: proj.ID,
 		Enabled:   rec.Enabled,
@@ -403,6 +405,10 @@ func (repo *Tasks) sleepHibernateProject(proj *biz.Project, rec *biz.ProjectHibe
 		Snapshot:  snapshot,
 	}); err != nil {
 		repo.logger.Errorf("[hibernate]: 项目 %s 休眠状态落库失败: %v", proj.Name, err)
+		return
+	}
+	if err := repo.hibernateDeployer.Redeploy(context.TODO(), proj, target); err != nil {
+		repo.logger.Errorf("[hibernate]: 项目 %s 休眠重部署失败: %v", proj.Name, err)
 	}
 }
 
