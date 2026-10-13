@@ -8,7 +8,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
-	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -77,7 +76,7 @@ func (f fakeGitServer) PipelineJobOptions(pid, branch string) ([]string, []strin
 // newTestGitRepo 构造 gitRepo：注入返回 fakeGitServer 的惰性取数闭包（对齐生产
 // 路径 provideGitServer 的解析方式），cached 决定走缓存还是透传路径。
 func newTestGitRepo(cached bool, f fakeGitServer) *gitRepo {
-	r := NewGitRepo(mlog.NewForConfig(nil), &noCache{}, func() GitServer { return f }, &config.Config{GitServerCached: cached})
+	r := NewGitRepo(&noCache{}, func() GitServer { return f }, &config.Config{GitServerCached: cached})
 	return r.(*gitRepo)
 }
 

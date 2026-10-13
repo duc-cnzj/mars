@@ -7,7 +7,6 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	entrepo "github.com/duc-cnzj/mars/v6/internal/data/ent/repo"
-	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +17,7 @@ func TestHibernateWindowRepo_CRUD(t *testing.T) {
 	entdb, err := NewSqliteDB()
 	assert.NoError(t, err)
 	defer entdb.Close()
-	repo := NewHibernateWindowRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+	repo := NewHibernateWindowRepo(NewDataImpl(&NewDataParams{DB: entdb}))
 
 	// 空表。
 	all, err := repo.List(context.TODO())
@@ -97,7 +96,7 @@ func TestHibernateWindowRepo_UpdateCascade(t *testing.T) {
 	entdb, err := NewSqliteDB()
 	assert.NoError(t, err)
 	defer entdb.Close()
-	repo := NewHibernateWindowRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+	repo := NewHibernateWindowRepo(NewDataImpl(&NewDataParams{DB: entdb}))
 
 	night, err := repo.Create(context.TODO(), &biz.HibernateWindow{Name: "夜间", Start: "23:00", End: "06:00"})
 	assert.NoError(t, err)
@@ -174,7 +173,7 @@ func TestHibernateWindowRepo_UpdateCascade_SoftDeletedExcluded(t *testing.T) {
 	entdb, err := NewSqliteDB()
 	assert.NoError(t, err)
 	defer entdb.Close()
-	repo := NewHibernateWindowRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+	repo := NewHibernateWindowRepo(NewDataImpl(&NewDataParams{DB: entdb}))
 
 	night, err := repo.Create(context.TODO(), &biz.HibernateWindow{Name: "夜间-sd", Start: "23:00", End: "06:00"})
 	require.NoError(t, err)
@@ -218,7 +217,7 @@ func TestHibernateWindowRepo_UpdateCascade_TxErrors(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			client, fd := newFailDB(t, tc.qAfter, tc.eAfter)
-			repo := NewHibernateWindowRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: client}))
+			repo := NewHibernateWindowRepo(NewDataImpl(&NewDataParams{DB: client}))
 
 			night, err := repo.Create(context.TODO(), &biz.HibernateWindow{Name: "夜间-txerr", Start: "23:00", End: "06:00"})
 			require.NoError(t, err)
@@ -249,7 +248,7 @@ func TestHibernateWindowRepo_UpdateCascade_TxErrors(t *testing.T) {
 func TestHibernateWindowRepo_GetByID(t *testing.T) {
 	entdb, err := NewSqliteDB()
 	assert.NoError(t, err)
-	repo := NewHibernateWindowRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+	repo := NewHibernateWindowRepo(NewDataImpl(&NewDataParams{DB: entdb}))
 
 	w, err := repo.Create(context.TODO(), &biz.HibernateWindow{Name: "夜间", Start: "23:00", End: "06:00"})
 	assert.NoError(t, err)
@@ -276,7 +275,7 @@ func TestHibernateWindowRepo_GetByID(t *testing.T) {
 func TestHibernateWindowRepo_ReposReferencing(t *testing.T) {
 	entdb, err := NewSqliteDB()
 	assert.NoError(t, err)
-	repo := NewHibernateWindowRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+	repo := NewHibernateWindowRepo(NewDataImpl(&NewDataParams{DB: entdb}))
 
 	mk := func(name string, cfg *mars.Config) {
 		b := entdb.Repo.Create().SetName(name)
@@ -311,7 +310,7 @@ func TestHibernateWindowRepo_ReposReferencing(t *testing.T) {
 func TestHibernateWindowRepo_Errors(t *testing.T) {
 	entdb, err := NewSqliteDB()
 	assert.NoError(t, err)
-	repo := NewHibernateWindowRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+	repo := NewHibernateWindowRepo(NewDataImpl(&NewDataParams{DB: entdb}))
 	entdb.Close()
 
 	_, err = repo.List(context.TODO())

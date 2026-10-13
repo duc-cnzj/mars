@@ -10,7 +10,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/changelog"
 	"github.com/duc-cnzj/mars/v6/internal/data/filters"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
-	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/slice"
 	"github.com/samber/lo"
 )
@@ -48,13 +47,12 @@ var _ biz.ChangelogRepo = (*changelogRepo)(nil)
 
 // changelogRepo 是 changelog 的持久化实现：负责变更记录的创建与按项目查询。
 type changelogRepo struct {
-	logger mlog.Logger
-	data   dataStore
+	data dataStore
 }
 
 // NewChangelogRepo 构造 changelog repo。
-func NewChangelogRepo(logger mlog.Logger, data dataStore) biz.ChangelogRepo {
-	return &changelogRepo{logger: logger.WithModule("repo/changelog"), data: data}
+func NewChangelogRepo(data dataStore) biz.ChangelogRepo {
+	return &changelogRepo{data: data}
 }
 
 // Create 创建一条变更记录并返回转换后的领域对象。

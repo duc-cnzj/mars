@@ -9,7 +9,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/hibernatewindow"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/repo"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
-	"github.com/duc-cnzj/mars/v6/internal/mlog"
 )
 
 // toHibernateWindow 把 ent.HibernateWindow 转换为 biz.HibernateWindow（nil 安全）。
@@ -32,13 +31,12 @@ var _ biz.HibernateWindowRepo = (*hibernateWindowRepo)(nil)
 
 // hibernateWindowRepo 是全局休眠时间窗的持久化实现：管理员在后台维护命名时段，各仓库按名字引用。
 type hibernateWindowRepo struct {
-	logger mlog.Logger
-	data   dataStore
+	data dataStore
 }
 
 // NewHibernateWindowRepo 构造全局休眠时间窗 repo。
-func NewHibernateWindowRepo(logger mlog.Logger, data dataStore) biz.HibernateWindowRepo {
-	return &hibernateWindowRepo{logger: logger.WithModule("repo/hibernate_window"), data: data}
+func NewHibernateWindowRepo(data dataStore) biz.HibernateWindowRepo {
+	return &hibernateWindowRepo{data: data}
 }
 
 // List 返回全部时间窗（按名称升序）。

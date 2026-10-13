@@ -34,7 +34,7 @@ func TestTasks_SyncDomainSecret_NonNotFoundErrorNoPanic(t *testing.T) {
 	defer m.Finish()
 
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
 	k8sRepo := data.NewMockK8sRepo(m)
 	k8sRepo.EXPECT().GetSecret(gomock.Any(), "ns1", "secret-name").Return(nil, errors.New("permission denied"))
 	// 无 AddTlsSecret EXPECT：若被误调会 panic，反向证明未走创建分支。
@@ -57,7 +57,7 @@ func TestTasks_SyncDomainSecret_NotFoundRegistersTls(t *testing.T) {
 	defer m.Finish()
 
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
 	k8sRepo := data.NewMockK8sRepo(m)
 	k8sRepo.EXPECT().GetSecret(gomock.Any(), "ns1", "secret-name").Return(nil, apierrors.NewNotFound(schema.GroupResource{}, "secret-name"))
 	k8sRepo.EXPECT().AddTlsSecret("ns1", "secret-name", "tls-key", "tls-crt").Return(nil, nil)
@@ -78,7 +78,7 @@ func TestTasks_SyncDomainSecret_CertChangedUpdates(t *testing.T) {
 	defer m.Finish()
 
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "ns1", Name: "secret-name"},
 		Data:       map[string][]byte{"tls.crt": []byte("old-crt"), "tls.key": []byte("old-key")},
@@ -116,7 +116,7 @@ func TestTasks_SyncImagePullSecrets(t *testing.T) {
 	defer m.Finish()
 
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return([]*biz.Namespace{{ID: 1, Name: "ns1", ImagePullSecrets: []string{}}}, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return([]*biz.Namespace{{ID: 1, Name: "ns1", ImagePullSecrets: []string{}}}, nil)
 	k8sRepo := data.NewMockK8sRepo(m)
 	k8sRepo.EXPECT().CreateDockerSecrets(gomock.Any(), "ns1", []string{"reg.io"}).Return(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "mars-abc"}}, nil)
 	nsRepo.EXPECT().UpdateImagePullSecrets(gomock.Any(), 1, []string{"mars-abc"}).Return(nil)
@@ -148,7 +148,7 @@ func newTasksBase(m *gomock.Controller) *Tasks {
 // ListAll 返回给定 namespace 列表，供 SyncImagePullSecrets 分支矩阵复用。
 func newImagePullTasks(m *gomock.Controller, ns []*biz.Namespace) (*Tasks, *data.MockNamespaceRepo, *data.MockK8sRepo) {
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return(ns, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return(ns, nil)
 	k8sRepo := data.NewMockK8sRepo(m)
 	return &Tasks{
 		logger:  mlog.NewForConfig(nil),
@@ -256,7 +256,7 @@ func TestTasks_SyncImagePullSecrets_ListAllError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return(nil, errors.New("list err"))
+	nsRepo.EXPECT().ListAll(context.Background()).Return(nil, errors.New("list err"))
 	repo := &Tasks{logger: mlog.NewForConfig(nil), cfg: &config.Config{}, nsRepo: nsRepo}
 	assert.Equal(t, "list err", repo.SyncImagePullSecrets().Error())
 }
@@ -437,7 +437,7 @@ func TestTasks_SyncDomainSecret_ListAllError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return(nil, errors.New("list err"))
+	nsRepo.EXPECT().ListAll(context.Background()).Return(nil, errors.New("list err"))
 	repo := &Tasks{logger: mlog.NewForConfig(nil), getCerts: func() (string, string, string) { return "secret-name", "k", "c" }, nsRepo: nsRepo}
 	assert.Equal(t, "list err", repo.SyncDomainSecret().Error())
 }
@@ -447,7 +447,7 @@ func TestTasks_SyncDomainSecret_AddTlsError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
 	k8sRepo := data.NewMockK8sRepo(m)
 	k8sRepo.EXPECT().GetSecret(gomock.Any(), "ns1", "secret-name").Return(nil, apierrors.NewNotFound(schema.GroupResource{}, "secret-name"))
 	k8sRepo.EXPECT().AddTlsSecret("ns1", "secret-name", "k", "c").Return(nil, errors.New("add err"))
@@ -460,7 +460,7 @@ func TestTasks_SyncDomainSecret_UpdateSecretError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "ns1", Name: "secret-name"},
 		Data:       map[string][]byte{"tls.crt": []byte("old-crt"), "tls.key": []byte("old-key")},
@@ -640,7 +640,7 @@ func TestTasks_CacheClusterBoard(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
-	k8sRepo.EXPECT().ClusterBoard(context.TODO(), true).Return(&biz.ClusterBoardData{}, nil)
+	k8sRepo.EXPECT().ClusterBoard(context.Background(), true).Return(&biz.ClusterBoardData{}, nil)
 	repo := &Tasks{k8sRepo: k8sRepo}
 	assert.NoError(t, repo.CacheClusterBoard())
 }
@@ -650,7 +650,7 @@ func TestTasks_CacheClusterBoard_Error(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
-	k8sRepo.EXPECT().ClusterBoard(context.TODO(), true).Return(nil, errors.New("cluster board boom"))
+	k8sRepo.EXPECT().ClusterBoard(context.Background(), true).Return(nil, errors.New("cluster board boom"))
 	repo := &Tasks{k8sRepo: k8sRepo}
 	assert.Equal(t, "cluster board boom", repo.CacheClusterBoard().Error())
 }
@@ -661,7 +661,7 @@ func TestTasks_CacheResourceSnapshot(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
-	k8sRepo.EXPECT().ResourceSnapshot(context.TODO(), true).Return(&biz.ResourceSnapshotData{}, nil)
+	k8sRepo.EXPECT().ResourceSnapshot(context.Background(), true).Return(&biz.ResourceSnapshotData{}, nil)
 	repo := &Tasks{k8sRepo: k8sRepo}
 	assert.NoError(t, repo.CacheResourceSnapshot())
 }
@@ -671,7 +671,7 @@ func TestTasks_CacheResourceSnapshot_Error(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
-	k8sRepo.EXPECT().ResourceSnapshot(context.TODO(), true).Return(nil, errors.New("snapshot boom"))
+	k8sRepo.EXPECT().ResourceSnapshot(context.Background(), true).Return(nil, errors.New("snapshot boom"))
 	repo := &Tasks{k8sRepo: k8sRepo}
 	assert.Equal(t, "snapshot boom", repo.CacheResourceSnapshot().Error())
 }
@@ -924,25 +924,25 @@ func TestTasks_ResolveHibernateWindow(t *testing.T) {
 	tk := &Tasks{logger: mlog.NewForConfig(nil), hibernateWindowRepo: hw}
 
 	// 空名（含纯空白）：不解析、直接 ok=false。
-	_, _, ok := tk.resolveHibernateWindow(&mars.Hibernate{WindowName: ""})
+	_, _, ok := tk.resolveHibernateWindow(context.Background(), &mars.Hibernate{WindowName: ""})
 	assert.False(t, ok)
-	_, _, ok = tk.resolveHibernateWindow(&mars.Hibernate{WindowName: "  "})
+	_, _, ok = tk.resolveHibernateWindow(context.Background(), &mars.Hibernate{WindowName: "  "})
 	assert.False(t, ok)
 
 	// 窗口不存在（被删/未同步环境）：GetByName 返回 nil → ok=false。
 	hw.EXPECT().GetByName(gomock.Any(), "不存在").Return(nil, nil)
-	_, _, ok = tk.resolveHibernateWindow(&mars.Hibernate{WindowName: "不存在"})
+	_, _, ok = tk.resolveHibernateWindow(context.Background(), &mars.Hibernate{WindowName: "不存在"})
 	assert.False(t, ok)
 
 	// 查询报错：ok=false（不阻断对账）。
 	hw.EXPECT().GetByName(gomock.Any(), "出错").Return(nil, errors.New("boom"))
-	_, _, ok = tk.resolveHibernateWindow(&mars.Hibernate{WindowName: "出错"})
+	_, _, ok = tk.resolveHibernateWindow(context.Background(), &mars.Hibernate{WindowName: "出错"})
 	assert.False(t, ok)
 
 	// 命中：返回启止时段。
 	hw.EXPECT().GetByName(gomock.Any(), "夜间").Return(
 		&biz.HibernateWindow{Name: "夜间", Start: "23:00", End: "06:00"}, nil)
-	start, end, ok := tk.resolveHibernateWindow(&mars.Hibernate{WindowName: "夜间"})
+	start, end, ok := tk.resolveHibernateWindow(context.Background(), &mars.Hibernate{WindowName: "夜间"})
 	assert.True(t, ok)
 	assert.Equal(t, "23:00", start)
 	assert.Equal(t, "06:00", end)

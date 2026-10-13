@@ -53,9 +53,9 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		return nil, err
 	}
 	versionServer := services.NewVersionSvc()
-	hibernateRepo := data.NewHibernateRepo(logger, dataImpl)
+	hibernateRepo := data.NewHibernateRepo(dataImpl)
 	v2 := provideGitServer(pluginManager)
-	gitRepo := data.NewGitRepo(logger, cache, v2, configConfig)
+	gitRepo := data.NewGitRepo(cache, v2, configConfig)
 	repoRepo := data.NewRepo(dataImpl, gitRepo)
 	repoBiz := biz.NewRepoBiz(hibernateRepo, repoRepo)
 	v3 := provideMinioClient(dataImpl)
@@ -70,8 +70,8 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 	helmerRepo := data.NewDefaultHelmer(k8sRepo, dataImpl, configConfig, logger)
 	releaseInstaller := deploy.NewReleaseInstaller(logger, helmerRepo, configConfig, timerTimer)
 	namespaceRepo := data.NewNamespaceRepo(dataImpl)
-	projectRepo := data.NewProjectRepo(logger, dataImpl)
-	eventRepo := data.NewEventRepo(logger, dataImpl, dispatcher)
+	projectRepo := data.NewProjectRepo(dataImpl)
+	eventRepo := data.NewEventRepo(dataImpl, dispatcher)
 	jobManagerDeps := deploy.JobManagerDeps{
 		Timer:            timerTimer,
 		Logger:           logger,
@@ -87,7 +87,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		PluginManager:    pluginManager,
 	}
 	jobManager := deploy.NewJobManager(jobManagerDeps)
-	changelogRepo := data.NewChangelogRepo(logger, dataImpl)
+	changelogRepo := data.NewChangelogRepo(dataImpl)
 	projectBiz := biz.NewProjectBiz(logger, projectRepo, k8sRepo, changelogRepo)
 	gitBiz := biz.NewGitBiz(gitRepo)
 	k8sBiz := biz.NewK8sBiz(k8sRepo)
@@ -218,7 +218,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		Logger:    logger,
 	}
 	userServer := services.NewUserSvc(userSvcDeps)
-	hibernateWindowRepo := data.NewHibernateWindowRepo(logger, dataImpl)
+	hibernateWindowRepo := data.NewHibernateWindowRepo(dataImpl)
 	hibernateWindowBiz := biz.NewHibernateWindowBiz(hibernateWindowRepo)
 	hibernateSvcDeps := services.HibernateSvcDeps{
 		HibernateWindowBiz: hibernateWindowBiz,

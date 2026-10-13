@@ -51,11 +51,10 @@ func createRepo(db *ent.Client) *ent.Repo {
 }
 func TestProjectRepoCreate(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 	repo := createRepo(db)
 	ns := createNamespace(db)
 	input := &biz.CreateProjectInput{
@@ -91,11 +90,10 @@ func TestProjectRepoCreate(t *testing.T) {
 
 func TestProjectRepoUpdateProject(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	p := createProject(db, createNamespace(db).ID)
 
@@ -129,11 +127,10 @@ func TestProjectRepoUpdateProject(t *testing.T) {
 // 超长 commit 标题会炸整个部署；放宽为 longtext 后应原样保存、不截断。
 func TestProjectRepoUpdateProject_LongGitCommitTitle(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	p := createProject(db, createNamespace(db).ID)
 
@@ -151,11 +148,10 @@ func TestProjectRepoUpdateProject_LongGitCommitTitle(t *testing.T) {
 
 func TestProjectRepoDelete(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	err := r.Delete(ctx, 1)
 	assert.Error(t, err)
@@ -167,11 +163,10 @@ func TestProjectRepoDelete(t *testing.T) {
 
 func TestProjectRepoFindByName(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	p := createProject(db, createNamespace(db).ID)
 
@@ -183,11 +178,10 @@ func TestProjectRepoFindByName(t *testing.T) {
 
 func TestProjectRepoUpdateDeployStatus(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	p := createProject(db, createNamespace(db).ID)
 
@@ -198,11 +192,10 @@ func TestProjectRepoUpdateDeployStatus(t *testing.T) {
 
 func TestProjectRepoUpdateVersion(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	p := createProject(db, createNamespace(db).ID)
 
@@ -213,11 +206,10 @@ func TestProjectRepoUpdateVersion(t *testing.T) {
 
 func TestProjectRepoFindProjectsByIDs(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	// 空 ids 直接返回 nil，不触达 DB。
 	empty, err := r.FindProjectsByIDs(ctx)
@@ -235,11 +227,10 @@ func TestProjectRepoFindProjectsByIDs(t *testing.T) {
 
 func TestProjectRepoList(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	// Create some projects
 	for i := 0; i < 5; i++ {
@@ -279,11 +270,10 @@ func TestProjectRepoList(t *testing.T) {
 // 去掉 data 层 List 里的访问过滤，本测试必须失败。
 func TestProjectRepoList_AccessFilter(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	// 公开命名空间 + 私有命名空间（创建者 owner@x.com）+ 私有命名空间带成员 member@x.com
 	pub := db.Namespace.Create().SetCreatorEmail("pub-owner@x.com").SetName("pub").SaveX(ctx)
@@ -324,11 +314,10 @@ func TestProjectRepoList_AccessFilter(t *testing.T) {
 // 时，被移出者仍能看到私有空间内容（越权，曾实测复现）。
 func TestProjectRepoList_AccessFilter_RemovedMemberSoftDeleted(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	pub := db.Namespace.Create().SetCreatorEmail("pub-owner@x.com").SetName("pub").SaveX(ctx)
 	pri := db.Namespace.Create().SetCreatorEmail("owner@x.com").SetName("pri").SetPrivate(true).SaveX(ctx)
@@ -358,11 +347,10 @@ func TestProjectRepoList_AccessFilter_RemovedMemberSoftDeleted(t *testing.T) {
 // 传 0 保持「全部项目」语义（仓库列表「查看项目」依赖本过滤，漏过滤会列出跨仓库项目）。
 func TestProjectRepoList_FilterByRepoID(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	ns := createNamespace(db).ID
 	// repo_id 有外键约束，须先建真实仓库行。
@@ -401,11 +389,10 @@ func TestProjectRepoList_FilterByRepoID(t *testing.T) {
 
 func TestProjectRepoList_Empty(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	// Test list when no projects exist
 	input := &biz.ListProjectInput{
@@ -421,11 +408,10 @@ func TestProjectRepoList_Empty(t *testing.T) {
 }
 
 func Test_projectRepo_Show(t *testing.T) {
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	repo := createRepo(db)
 	project := createProject(db, createNamespace(db).ID)
@@ -439,11 +425,10 @@ func Test_projectRepo_Show(t *testing.T) {
 }
 
 func Test_projectRepo_FindByVersion(t *testing.T) {
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	project := createProject(db, createNamespace(db).ID)
 	version, err := r.FindByVersion(context.TODO(), project.ID, 1)
@@ -457,7 +442,6 @@ func Test_projectRepo_GetAllPods(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 
@@ -668,9 +652,9 @@ func Test_projectRepo_GetAllPods(t *testing.T) {
 		PodLister:        NewPodLister(pod1, pod2, pod3, pod4, pod5, podWithErrorRsName),
 		ReplicaSetLister: NewRsLister(rs, rs2, rs3, rs4),
 	}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 	// 容器拓扑推导已迁入 biz.ProjectBiz，data 侧用真实 k8sRepo 薄包装跑全链路。
-	b := biz.NewProjectBiz(mlog.NewForConfig(nil), r, &k8sRepo{data: data, logger: logger}, nil)
+	b := biz.NewProjectBiz(mlog.NewForConfig(nil), r, &k8sRepo{data: data, logger: mlog.NewForConfig(nil)}, nil)
 	project.Update().SetPodSelectors(nil).Save(context.TODO())
 	_, err := b.GetAllActiveContainers(context.TODO(), project.ID)
 
@@ -691,11 +675,10 @@ func Test_projectRepo_GetAllPods(t *testing.T) {
 }
 
 func Test_projectRepo_UpdateStatusByVersion(t *testing.T) {
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(logger, data)
+	r := NewProjectRepo(data)
 
 	project := createProject(db, createNamespace(db).ID)
 	project.Update().SetDeployStatus(types.Deploy_StatusDeployed).Save(context.TODO())
@@ -1141,8 +1124,7 @@ func Test_projectRepo_GetProjectEndpointsInNamespace(t *testing.T) {
 	defer db.Close()
 	mockData := NewMockDataStore(m)
 	projRepo := &projectRepo{
-		logger: mlog.NewForConfig(nil),
-		data:   mockData,
+		data: mockData,
 	}
 	k8s := &k8sRepo{
 		logger: mlog.NewForConfig(nil),
@@ -1162,8 +1144,7 @@ func Test_projectRepo_Version(t *testing.T) {
 	defer db.Close()
 	mockData := NewMockDataStore(m)
 	repo := &projectRepo{
-		logger: mlog.NewForConfig(nil),
-		data:   mockData,
+		data: mockData,
 	}
 	mockData.EXPECT().DB().Return(db).AnyTimes()
 	_, err := repo.Version(context.TODO(), 1)
@@ -1185,7 +1166,7 @@ func TestProjectRepo_ListByDeployStatus(t *testing.T) {
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
-	r := NewProjectRepo(mlog.NewForConfig(nil), data)
+	r := NewProjectRepo(data)
 	repo := createRepo(db)
 	ns := createNamespace(db)
 
@@ -1218,7 +1199,7 @@ func TestProjectRepo_ListByDeployStatus(t *testing.T) {
 // TestProjectRepo_ErrorBranches 用 closed DB 触发 projectRepo 各查询错误分支。
 func TestProjectRepo_ErrorBranches(t *testing.T) {
 	closed := NewDataImpl(&NewDataParams{DB: mustClosedDB(t), Cfg: &config.Config{}})
-	repo := NewProjectRepo(mlog.NewForConfig(nil), closed).(*projectRepo)
+	repo := NewProjectRepo(closed).(*projectRepo)
 	ctx := context.TODO()
 
 	t.Run("UpdateProject query error", func(t *testing.T) {
@@ -1257,10 +1238,9 @@ func TestProjectRepo_ErrorBranches(t *testing.T) {
 // 无命中返回空。分页/分类/排序由 kind 专项测试覆盖。
 func TestProjectRepo_ListLivenessPage(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
-	r := NewProjectRepo(logger, NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	r := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 
 	ns := db.Namespace.Create().SetName("team-apps").SetCreatorEmail("a@q.c").SaveX(ctx)
 	legacyNS := db.Namespace.Create().SetName("legacy").SetCreatorEmail("b@q.c").SaveX(ctx)
@@ -1324,10 +1304,9 @@ func TestProjectRepo_ListLivenessPage(t *testing.T) {
 // 排序为 updated_at {desc|asc} + id 决胜键（同秒不漂移），stats 不随分类过滤裁剪。
 func TestProjectRepo_ListLivenessPage_KindFilter(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
-	r := NewProjectRepo(logger, NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	r := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 	ns := db.Namespace.Create().SetName("kind").SetCreatorEmail("a@q.c").SaveX(ctx)
 	repo := createRepo(db)
 	now := time.Now()
@@ -1407,10 +1386,9 @@ func TestProjectRepo_ListLivenessPage_KindFilter(t *testing.T) {
 // stats 四分类计数与各 kind 过滤命中行 == Go 逐行分类结果，防边界公式漂移。
 func TestProjectRepo_ListLivenessPage_BoundaryParity(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
-	r := NewProjectRepo(logger, NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	r := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 	ns := db.Namespace.Create().SetName("parity").SetCreatorEmail("a@q.c").SaveX(ctx)
 	repo := createRepo(db)
 	now := time.Now()
@@ -1454,7 +1432,6 @@ func TestProjectRepo_ListLivenessPage_BoundaryParity(t *testing.T) {
 // n=5 无过滤覆盖 listAll 错误。
 func TestProjectRepo_ListLivenessPage_QueryErrors(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	cases := []struct {
 		name     string
 		failAt   int
@@ -1480,7 +1457,7 @@ func TestProjectRepo_ListLivenessPage_QueryErrors(t *testing.T) {
 					return next.Query(ctx, q)
 				})
 			}))
-			r := NewProjectRepo(logger, NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+			r := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 			_, err := r.ListLivenessPage(ctx, &biz.LivenessPageQuery{Liveness: tc.liveness, Page: 1, PageSize: 10, Now: time.Now()})
 			require.Error(t, err)
 			assert.ErrorContains(t, err, "inject project query error")
@@ -1492,10 +1469,9 @@ func TestProjectRepo_ListLivenessPage_QueryErrors(t *testing.T) {
 // 不分页返回全部并按 id 倒序，供空间资源聚合做 pod→项目归属映射。
 func TestProjectRepo_ListAllProjectBriefs(t *testing.T) {
 	ctx := context.TODO()
-	logger := mlog.NewForConfig(nil)
 	db, _ := NewSqliteDB()
 	defer db.Close()
-	r := NewProjectRepo(logger, NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	r := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 
 	ns := db.Namespace.Create().SetName("team-apps").SetCreatorEmail("a@q.c").SaveX(ctx)
 	repo1 := createRepo(db)
@@ -1529,7 +1505,7 @@ func TestProjectRepo_FindAndRestoreDeleted(t *testing.T) {
 	ctx := context.TODO()
 	db, _ := NewSqliteDB()
 	defer db.Close()
-	repo := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	repo := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 	ns := createNamespace(db)
 	p := createNamedProject(db, ns.ID, "victim")
 	db.Project.UpdateOneID(p.ID).SetDeployStatus(types.Deploy_StatusDeployed).SaveX(ctx)
@@ -1561,7 +1537,7 @@ func TestProjectRepo_FindDeletedByName_Latest(t *testing.T) {
 	ctx := context.TODO()
 	db, _ := NewSqliteDB()
 	defer db.Close()
-	repo := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	repo := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 	ns := createNamespace(db)
 
 	older := createNamedProject(db, ns.ID, "dup")
@@ -1590,7 +1566,7 @@ func TestProjectRepo_FindDeletedByName_SameSecondTie(t *testing.T) {
 	ctx := context.TODO()
 	db, _ := NewSqliteDB()
 	defer db.Close()
-	repo := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	repo := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 	ns := createNamespace(db)
 
 	older := createNamedProject(db, ns.ID, "dup")
@@ -1637,7 +1613,7 @@ func TestProjectRepo_ListAdminDeletedPage_Filters(t *testing.T) {
 	ctx := context.TODO()
 	db, _ := NewSqliteDB()
 	defer db.Close()
-	repo := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	repo := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 	base := time.Date(2026, 8, 20, 10, 0, 0, 0, time.UTC)
 
 	liveNS := createNamespace(db)
@@ -1683,7 +1659,7 @@ func TestProjectRepo_ListAdminDeletedPage_OrderAndPagination(t *testing.T) {
 	ctx := context.TODO()
 	db, _ := NewSqliteDB()
 	defer db.Close()
-	repo := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	repo := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 	ns := createNamespace(db)
 	base := time.Date(2026, 8, 20, 10, 0, 0, 0, time.UTC)
 
@@ -1726,7 +1702,7 @@ func TestProjectRepo_ListAdminDeletedPage_Search(t *testing.T) {
 	ctx := context.TODO()
 	db, _ := NewSqliteDB()
 	defer db.Close()
-	repo := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	repo := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 	base := time.Date(2026, 8, 20, 10, 0, 0, 0, time.UTC)
 
 	nsOne := db.Namespace.Create().SetName("team-one").SetCreatorEmail("one@q.c").SaveX(ctx)
@@ -1781,7 +1757,7 @@ func TestProjectRepo_ListAdminDeletedPage_QueryErrors(t *testing.T) {
 
 	t.Run("Count query error", func(t *testing.T) {
 		db, fd := newFailDB(t, 0, -1)
-		repo := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+		repo := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 		setup(t, db)
 		fd.Arm()
 		_, err := repo.ListAdminDeletedPage(ctx, &biz.ProjectDeletedListPageQuery{Page: 1, PageSize: 10})
@@ -1790,7 +1766,7 @@ func TestProjectRepo_ListAdminDeletedPage_QueryErrors(t *testing.T) {
 
 	t.Run("All query error", func(t *testing.T) {
 		db, fd := newFailDB(t, 1, -1)
-		repo := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+		repo := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 		setup(t, db)
 		fd.Arm()
 		_, err := repo.ListAdminDeletedPage(ctx, &biz.ProjectDeletedListPageQuery{Page: 1, PageSize: 10})
@@ -1803,7 +1779,7 @@ func TestProjectRepo_ListAdminDeletedPage_QueryErrors(t *testing.T) {
 func TestProjectRepo_RestoreDeleted_MissingProject(t *testing.T) {
 	db, _ := NewSqliteDB()
 	defer db.Close()
-	repo := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	repo := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 
 	err := repo.RestoreDeleted(context.TODO(), 999999)
 	require.Error(t, err)
@@ -1817,7 +1793,7 @@ func TestProjectRepo_RestoreDeleted_MissingProject(t *testing.T) {
 func TestProjectRepo_RestoreDeleted_NamespaceQueryError(t *testing.T) {
 	ctx := context.TODO()
 	db, fd := newFailDB(t, 1, -1)
-	repo := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	repo := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 	ns := createNamespace(db)
 	p := createNamedProject(db, ns.ID, "ns-lookup-fail")
 	require.NoError(t, repo.Delete(ctx, p.ID))
@@ -1843,7 +1819,7 @@ func TestProjectRepo_RestoreDeleted_NamespaceDeleted(t *testing.T) {
 	db, _ := NewSqliteDB()
 	defer db.Close()
 	nsRepo := NewNamespaceRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
-	repo := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	repo := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 	ns := createNamespace(db)
 	p := createNamedProject(db, ns.ID, "orphan-candidate")
 
@@ -1945,7 +1921,7 @@ func newTxTraceDB(t *testing.T) (*ent.Client, *txTraceDriver) {
 func TestProjectRepo_RestoreDeleted_NamespaceCheckAndWriteInSameTx(t *testing.T) {
 	ctx := context.TODO()
 	db, tracer := newTxTraceDB(t)
-	repo := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	repo := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 	ns := createNamespace(db)
 	p := createNamedProject(db, ns.ID, "atomic")
 	require.NoError(t, repo.Delete(ctx, p.ID))
@@ -1973,7 +1949,7 @@ func TestProjectRepo_UpdateVersion_SoftDeletedRejected(t *testing.T) {
 	ctx := context.TODO()
 	db, _ := NewSqliteDB()
 	defer db.Close()
-	r := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	r := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 	ns := createNamespace(db)
 	p := createNamedProject(db, ns.ID, "victim")
 	require.NoError(t, r.Delete(ctx, p.ID))
@@ -1994,7 +1970,7 @@ func TestProjectRepo_UpdateDeployStatus_SoftDeletedRejected(t *testing.T) {
 	ctx := context.TODO()
 	db, _ := NewSqliteDB()
 	defer db.Close()
-	r := NewProjectRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
+	r := NewProjectRepo(NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}}))
 	ns := createNamespace(db)
 	p := createNamedProject(db, ns.ID, "victim")
 	require.NoError(t, r.Delete(ctx, p.ID))

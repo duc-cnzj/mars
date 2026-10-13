@@ -16,7 +16,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/schema/mixin"
 	"github.com/duc-cnzj/mars/v6/internal/data/filters"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
-	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v6/internal/util/slice"
 )
@@ -63,16 +62,13 @@ var _ biz.ProjectRepo = (*projectRepo)(nil)
 
 // projectRepo 是 biz.ProjectRepo 的实现：封装 ent Project 查询与命名空间过滤。
 type projectRepo struct {
-	logger mlog.Logger
-
 	externalIp string
 	data       dataStore
 }
 
-// NewProjectRepo 构造项目 repo 实现，注入日志与 dataStore。
-func NewProjectRepo(logger mlog.Logger, data dataStore) biz.ProjectRepo {
+// NewProjectRepo 构造项目 repo 实现，注入 dataStore。
+func NewProjectRepo(data dataStore) biz.ProjectRepo {
 	return &projectRepo{
-		logger:     logger.WithModule("repo/project"),
 		externalIp: data.Config().ExternalIp,
 		data:       data,
 	}

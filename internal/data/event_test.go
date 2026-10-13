@@ -12,7 +12,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
 	entevent "github.com/duc-cnzj/mars/v6/internal/data/ent/event"
 	"github.com/duc-cnzj/mars/v6/internal/event"
-	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,7 +38,7 @@ func newEventRepo(t *testing.T) (*eventRepo, *ent.Client, *event.MockDispatcher)
 	require.NoError(t, err)
 	t.Cleanup(func() { entdb.Close() })
 	eventer := event.NewMockDispatcher(m)
-	repo := NewEventRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb, Cfg: &config.Config{}}), eventer).(*eventRepo)
+	repo := NewEventRepo(NewDataImpl(&NewDataParams{DB: entdb, Cfg: &config.Config{}}), eventer).(*eventRepo)
 	return repo, entdb, eventer
 }
 
@@ -69,7 +68,7 @@ func TestEventRepo_HandleAuditLog(t *testing.T) {
 
 	t.Run("DB error propagated", func(t *testing.T) {
 		closed := NewDataImpl(&NewDataParams{DB: mustClosedDB(t), Cfg: &config.Config{}})
-		bad := &eventRepo{logger: mlog.NewForConfig(nil), d: closed}
+		bad := &eventRepo{d: closed}
 		err := bad.HandleAuditLog(NewEventAuditLog("x", types.EventActionType_Create, "boom"), biz.AuditLogEvent)
 		assert.Error(t, err)
 	})

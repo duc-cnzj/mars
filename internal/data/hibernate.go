@@ -8,7 +8,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
-	"github.com/duc-cnzj/mars/v6/internal/mlog"
 )
 
 // toProjectHibernate 把 ent.ProjectHibernate 转换为 biz.ProjectHibernate（nil 安全）。
@@ -31,13 +30,12 @@ var _ biz.HibernateRepo = (*hibernateRepo)(nil)
 
 // hibernateRepo 是项目休眠运行态的持久化实现：按 project_id 读写开关/运行态/快照。
 type hibernateRepo struct {
-	logger mlog.Logger
-	data   dataStore
+	data dataStore
 }
 
 // NewHibernateRepo 构造 hibernate repo。
-func NewHibernateRepo(logger mlog.Logger, data dataStore) biz.HibernateRepo {
-	return &hibernateRepo{logger: logger.WithModule("repo/hibernate"), data: data}
+func NewHibernateRepo(data dataStore) biz.HibernateRepo {
+	return &hibernateRepo{data: data}
 }
 
 // Get 按项目 ID 查休眠记录；未配置返回 (nil, nil)，不把"未配置"当错误。

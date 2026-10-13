@@ -6,7 +6,6 @@ import (
 
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
-	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +15,7 @@ func TestHibernateRepo_CRUD(t *testing.T) {
 	entdb, err := NewSqliteDB()
 	assert.NoError(t, err)
 	defer entdb.Close()
-	repo := NewHibernateRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+	repo := NewHibernateRepo(NewDataImpl(&NewDataParams{DB: entdb}))
 
 	ns := createNamespace(entdb)
 	p1 := createProject(entdb, ns.ID)
@@ -86,7 +85,7 @@ func TestToProjectHibernate_Nil(t *testing.T) {
 func TestHibernateRepo_Errors(t *testing.T) {
 	entdb, err := NewSqliteDB()
 	assert.NoError(t, err)
-	repo := NewHibernateRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+	repo := NewHibernateRepo(NewDataImpl(&NewDataParams{DB: entdb}))
 	entdb.Close()
 
 	_, err = repo.Get(context.TODO(), 1)
