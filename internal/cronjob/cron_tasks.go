@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"maps"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -334,6 +335,14 @@ func (repo *Tasks) FixDeployStatus() error {
 	return nil
 }
 
+// hibernateReconcileWorkers 是休眠对账的并发度上限。单个项目的跃迁要同步跑完一次 helm
+// 重部署（受 install_timeout 约束，默认 90s）；若共用同一时间窗的 K 个项目在窗口边界齐齐
+// 跃迁，串行会叠加成 K×T 的长尾（如 K=20、T=30s → 约 10 分钟，远超 2 分钟调度周期），
+// 且队尾项目被前序项目耗时之和拖累。固定 worker 池把长尾压到 ⌈K/并发度⌉×T，同时限制
+// 并发 helm 数量，避免大量重部署同时冲击 apiserver/helm。取 5：一轮对账约等于一个调度
+// 周期，又不至于并发过高惊群。
+const hibernateReconcileWorkers = 5
+
 // ReconcileHibernate 对账项目定时休眠：每 2 分钟推进一步状态机。
 // 总闸：只接管项目级开关已开（Enabled=true）的记录——ListEnabled 已在查询侧过滤掉开关已关的
 // 记录，故开关一关，对账即彻底放弃该项目，无论它当前处于什么状态（含已置 0 的休眠态）都不再做
@@ -342,6 +351,9 @@ func (repo *Tasks) FixDeployStatus() error {
 // sleeping 且副本字段全 0）」即时归位——窗口内非真休眠即休眠（含错位当轮重睡，无需等下一轮）、
 // 窗口外真休眠即唤醒、窗口外错位则释放接管权。单个项目失败只记日志并跳过（下一轮重试），
 // 不阻断本轮其它项目；列表查询失败才上抛。
+// 并发：一趟内用固定 worker 池（hibernateReconcileWorkers）有界并发处理各项目——各项目互相
+// 独立（不同 projectID，部署侧 GlobalLock 按 slug 分键互不冲突），并行不改变单项目状态机语义；
+// 并发度封顶以避免同窗项目齐齐跃迁时全量重部署惊群。
 func (repo *Tasks) ReconcileHibernate() error {
 	// 对账无请求上下文，入口开根 span 并派生 ctx 贯穿全程：下游 repo/部署调用的 span 与日志
 	// 因此挂到同一条 trace 上，可追溯「哪轮对账 → 哪个项目 → 哪次重部署」。
@@ -352,9 +364,48 @@ func (repo *Tasks) ReconcileHibernate() error {
 	if err != nil {
 		return err
 	}
-	for _, rec := range enabled {
-		repo.reconcileHibernateProject(ctx, now, rec)
+	if len(enabled) == 0 {
+		return nil
 	}
+
+	workers := len(enabled)
+	if workers > hibernateReconcileWorkers {
+		workers = hibernateReconcileWorkers
+	}
+	// 缓冲容量设为全长：投递侧不因 worker 回收而阻塞（避免 worker 异常退出时投递侧死锁），
+	// 未被消费的记录随本轮结束丢弃、下一轮重试。
+	ch := make(chan *biz.ProjectHibernate, len(enabled))
+	wg := &sync.WaitGroup{}
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func() {
+			defer wg.Done()
+			for rec := range ch {
+				// 每个项目包一层独立 recover 帧：单项目 panic 只作废该项目、下一轮重试，
+				// 不再像串行那样顺循环上抛拖垮整趟对账（串行时一个 panic 令本轮其余项目全部跳过）。
+				//
+				// 这里刻意不用 logger.HandlePanic：它会在 debug 模式把 panic 重新抛出，而本
+				// worker 是独立 goroutine——robfig 的 Recover 只兜住它自己那个调度 goroutine，
+				// 重抛的 panic 无人接住会直接崩掉整个进程（串行实现下的 panic 有 wrap 的
+				// HandlePanicWithCallback 承接，故当时 debug 不会崩）。改用不重抛的 recover：
+				// 记栈日志后继续消费下一项目，debug/prod 行为一致且都不崩进程。
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							repo.logger.Errorf("[Panic]: [cron]: reconcileHibernateProject, err: %v --- [%s]", r, debug.Stack())
+						}
+					}()
+					repo.reconcileHibernateProject(ctx, now, rec)
+				}()
+			}
+		}()
+	}
+	for _, rec := range enabled {
+		ch <- rec
+	}
+	close(ch)
+	wg.Wait()
+
 	return nil
 }
 

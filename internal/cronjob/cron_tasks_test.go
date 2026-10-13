@@ -1288,3 +1288,90 @@ func TestTasks_ReconcileHibernate_WakeOrphanSelfHeal(t *testing.T) {
 
 	assert.NoError(t, repo.ReconcileHibernate())
 }
+
+// TestTasks_ReconcileHibernate_MultipleProjectsAllProcessed 覆盖有界并发消费：一趟内记录数
+// 超过并发上限时全部仍被处理（各自唤醒重部署），证明 worker 池封顶后不遗漏、不串号。
+func TestTasks_ReconcileHibernate_MultipleProjectsAllProcessed(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowOut())
+
+	snap := []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}}
+	ids := []int{9, 10, 11, 12, 13, 14} // 6 条 > hibernateReconcileWorkers(5)，触发封顶分支
+	records := make([]*biz.ProjectHibernate, 0, len(ids))
+	for _, id := range ids {
+		records = append(records, &biz.ProjectHibernate{ProjectID: id, Enabled: true, State: biz.HibernateStateSleeping, Snapshot: snap})
+	}
+	hr.EXPECT().ListEnabled(gomock.Any()).Return(records, nil)
+	for _, id := range ids {
+		pr.EXPECT().Show(gomock.Any(), id).Return(&biz.Project{ID: id, Name: "app", RepoID: 2, FinalExtraValues: []*websocket_pb.ExtraValue{
+			{Path: "app->replicas", Value: "0"},
+		}}, nil)
+	}
+	// 六个项目共用仓库 2，各自唤醒都要取一次仓库配置；六次唤醒、六次落库。
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil).Times(len(ids))
+	hd.EXPECT().Redeploy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(len(ids))
+	hr.EXPECT().Upsert(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, h *biz.ProjectHibernate) (*biz.ProjectHibernate, error) { return h, nil }).Times(len(ids))
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_ProjectPanicIsolated 覆盖单项目 panic 隔离：一个项目在加载期
+// panic（模拟代码缺陷）只作废该项目，同趟其它项目照常处理，整趟不 panic 上抛（串行实现下
+// panic 会顺循环上抛、令本轮其余项目全部跳过）。项目 10 的唤醒期望即反向证据。
+func TestTasks_ReconcileHibernate_ProjectPanicIsolated(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowOut())
+
+	snap := []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}}
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateSleeping, Snapshot: snap},
+		{ProjectID: 10, Enabled: true, State: biz.HibernateStateSleeping, Snapshot: snap},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).DoAndReturn(func(context.Context, int) (*biz.Project, error) {
+		panic("boom")
+	})
+	pr.EXPECT().Show(gomock.Any(), 10).Return(&biz.Project{ID: 10, Name: "app", RepoID: 2, FinalExtraValues: []*websocket_pb.ExtraValue{
+		{Path: "app->replicas", Value: "0"},
+	}}, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+	hd.EXPECT().Redeploy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	hr.EXPECT().Upsert(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, h *biz.ProjectHibernate) (*biz.ProjectHibernate, error) { return h, nil })
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_NoProjects 覆盖无启用记录：直接返回、不起 worker。
+// 无任何 Show/Redeploy/Upsert 期望，误调即 panic（反向证明空列表未触发下游端口）。
+func TestTasks_ReconcileHibernate_NoProjects(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, _, _ := newHibernateTasks(m, hibernateNowOut())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{}, nil)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_PanicIsolatedInDebugMode 是「worker 崩进程」的回归闸门：
+// worker 是独立 goroutine，若用 logger.HandlePanic（debug 下把 panic 重新抛出）则单项目
+// panic 会逃出 goroutine、直接崩掉整个进程。用 debug=true 的 logger 触发同款 panic，断言整趟
+// 仍返回 nil——一旦回退到 HandlePanic，本测试会因进程崩溃而失败。
+func TestTasks_ReconcileHibernate_PanicIsolatedInDebugMode(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, _ := newHibernateTasks(m, hibernateNowOut())
+	repo.logger = mlog.NewForConfig(&config.Config{LogChannel: "zap", Debug: true})
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).DoAndReturn(func(context.Context, int) (*biz.Project, error) {
+		panic("boom-debug")
+	})
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
