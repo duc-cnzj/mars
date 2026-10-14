@@ -255,8 +255,8 @@ type Hibernate struct {
 	// enabled 是否启用该仓库的定时休眠能力。
 	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	// replica_paths 关联的副本字段：命中 Config.elements 里的 Element.path，
-	// 休眠时把它们置为 "0" 重部署，唤醒时按快照恢复。字段类型必须能承载 "0"
-	// （InputNumber/NumberSelect/NumberRadio，或 Select 的白名单含 "0"）。
+	// 休眠时把它们置为休眠零值（数字/枚举类置 "0"、开关类关闭）重部署，唤醒时按快照恢复。
+	// 字段类型必须能承载该零值（InputNumber、Switch，或白名单含 "0" 的 Select/Radio/Number*）。
 	ReplicaPaths []string `protobuf:"bytes,2,rep,name=replica_paths,json=replicaPaths,proto3" json:"replica_paths,omitempty"`
 	// window_names 引用的全局休眠时间窗名列表（hibernate_windows.name，管理员在后台维护）。
 	// 用「名字」而非 ID 引用——本配置是 JSON blob，会经导出/导入跨环境往返，ID 会错位。

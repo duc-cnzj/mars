@@ -431,7 +431,7 @@ export default {
       'Once enabled, admins configure the replica fields and hibernate window; projects can then opt in',
     hibernateReplicaPaths: 'Replica fields',
     hibernateReplicaPathsTip:
-      'During hibernate these fields are set to "0" and redeployed, then restored from the snapshot on wake; field types must hold "0"',
+      'During hibernate these fields are set to their zero value (numeric to 0, switch off) and redeployed, then restored from the snapshot on wake; field types must hold that zero value',
     hibernateReplicaPathsPlaceholder: 'Pick field paths from the custom config above',
     hibernateReplicaPathsEmpty: 'Add fields in the custom config above first',
     hibernateWindow: 'Hibernate window',
@@ -439,7 +439,7 @@ export default {
     hibernateWindowEmpty: 'No windows yet — create one in the admin "Hibernate Windows" page',
     hibernateReplicaRequired: 'Select at least one replica field when hibernate is enabled',
     hibernateWindowRequired: 'Select at least one hibernate window when hibernate is enabled',
-    hibernateReplicaInvalid: 'Replica field "{{path}}" cannot hold 0, pick a numeric field',
+    hibernateReplicaInvalid: 'Replica field "{{path}}" cannot hold the hibernate zero value, pick a numeric or switch field',
     export: 'Export',
     import: 'Import',
     exportSuccess: 'repos.json exported',

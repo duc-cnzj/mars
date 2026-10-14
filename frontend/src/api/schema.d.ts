@@ -2071,8 +2071,8 @@ export interface components {
             enabled: boolean;
             /**
              * @description replica_paths 关联的副本字段：命中 Config.elements 里的 Element.path，
-             *      休眠时把它们置为 "0" 重部署，唤醒时按快照恢复。字段类型必须能承载 "0"
-             *      （InputNumber/NumberSelect/NumberRadio，或 Select 的白名单含 "0"）。
+             *      休眠时把它们置为休眠零值（数字/枚举类置 "0"、开关类关闭）重部署，唤醒时按快照恢复。
+             *      字段类型必须能承载该零值（InputNumber、Switch，或白名单含 "0" 的 Select/Radio/Number*）。
              */
             replicaPaths: string[];
             /**

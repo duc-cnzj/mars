@@ -102,8 +102,9 @@ export function windowTrackSegments(
 
 /**
  * 副本字段中是否至少有一个被设成了 >0 的数：项目休眠窗口内这类值会被对账（每 2 分钟一轮）自动
- * 缩容为 0，配置更新页据此提示用户「改了不会立即生效」。副本字段类型保证值可解析为数字
- * （见后端 elementSupportsZero），解析非有限数（空/缺失/非数字）一律按不触发处理，避免误报。
+ * 缩容为零值，配置更新页据此提示用户「改了不会立即生效」。副本字段含数字类（InputNumber 与
+ * 白名单含 "0" 的 Select/Radio/Number*）与开关类：数字类 >0 判为触发；开关类取值恒非数字
+ * （"true"/"false"），解析非有限数（空/缺失/非数字）一律按不触发处理，避免误报。
  * replicaPaths 为空 → 恒 false（该仓库未配置副本字段，无从判起）。
  */
 export function hasReplicaAboveZero(

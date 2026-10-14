@@ -761,6 +761,25 @@ func TestElementsLoader_Load(t *testing.T) {
 	assert.Nil(t, (&ElementsLoader{}).Load(ctx3))
 }
 
+// TestElementsLoader_SwitchHibernateZeroRoundTrip 钉住开关类副本字段的休眠零值回环：休眠侧写入
+// 的 "0" 经装载侧 strconv.ParseBool 解析为 bool、再按 %v 落库为 "false"。biz 的「是否仍处休眠态」
+// 判定（ReplicaValuesAllZero）必须把开关零值取为 "false" 才能与该回读值对齐——若取 "0"，开关类
+// 项目休眠后被判为错位而反复重睡或永不唤醒。此测试是对八字口径（biz.replicaZeroValue）的跨包印证。
+func TestElementsLoader_SwitchHibernateZeroRoundTrip(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	em := NewMockDeployMsger(m)
+	em.EXPECT().To(gomock.Any()).AnyTimes()
+	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	ctx := &LoadContext{
+		Input:    &JobInput{ExtraValues: []*websocket_pb.ExtraValue{{Path: "app->hpa", Value: "0"}}},
+		Messager: em,
+		Config:   &mars.Config{Elements: []*mars.Element{{Path: "app->hpa", Type: mars.ElementType_ElementTypeSwitch}}},
+	}
+	assert.Nil(t, (&ElementsLoader{}).Load(ctx))
+	assert.Equal(t, "false", ctx.FinalExtraValues[0].Value)
+}
+
 func TestElementsLoader_deepSetItems(t *testing.T) {
 	items := (&ElementsLoader{}).deepSetItems(map[string]any{"a": "a"})
 	assert.Equal(t, "a: a\n", items[0])

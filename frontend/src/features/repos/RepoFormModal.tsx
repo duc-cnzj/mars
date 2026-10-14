@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/shadcn/skeleton'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
 import { SearchableSelect, type SearchableSelectOption } from '@/components/SearchableSelect'
+import { useScrollPropagationGuard } from '@/hooks/useScrollPropagationGuard'
 import { Switch } from '@/components/ui/shadcn/switch'
 import {
   Popover,
@@ -49,9 +50,11 @@ const ELEMENT_TYPE_LABEL = new Map<string, TKey>(
 )
 
 /** 副本字段候选类型判定：与后端 biz.elementSupportsZero 对齐——InputNumber 可承载任意整数，
- *  Select/Radio/Number* 走白名单校验故白名单须含 "0"；其余类型不是副本数，不支持 */
-const supportsZero = (el: Element): boolean =>
+ *  Switch 的休眠零值是关闭（false），Select/Radio/Number* 走白名单校验故白名单须含 "0"；
+ *  其余类型不是副本数，不支持。导出供冒烟断言候选口径（与后端同款规则，防两处漂移） */
+export const supportsZero = (el: Element): boolean =>
   el.type === 'ElementTypeInputNumber' ||
+  el.type === 'ElementTypeSwitch' ||
   (SELECTIVE_TYPES.has(el.type) && el.selectValues.includes('0'))
 
 interface FormState {
@@ -150,6 +153,9 @@ export function RepoFormModal({
   const [configFileContent, setConfigFileContent] = useState('')
   const [configDetected, setConfigDetected] = useState(false)
   const [configPopoverOpen, setConfigPopoverOpen] = useState(false)
+  // 「已自动识别配置」预览 <pre> 挂滚动传播截断：宿主 Sheet 的滚动锁会吞掉弹层内滚动
+  // （详见 useScrollPropagationGuard）
+  const bindPreviewScroll = useScrollPropagationGuard<HTMLPreElement>()
   // charts 默认值抽屉开关：默认打开（用户要求默认可见，可收起让表单全宽）
   const [chartsOpen, setChartsOpen] = useState(true)
   // 自定义配置分区的编辑器视图展开态（Record<分区名, 是否展开>）。纯视图状态，与 group_settings
@@ -480,7 +486,7 @@ export function RepoFormModal({
 
   /** 副本字段候选：当前表单已定义的自定义字段路径（取 path 非空者）。
    *  主展示用「字段描述」（描述为空时回退 path），副行 chip 展示「路径 · 类型」——描述便于辨认字段，
-   *  路径是提交用的真实键，类型便于挑出能承载 "0" 的字段（提交时再按后端同款规则校验） */
+   *  路径是提交用的真实键，类型便于挑出能承载休眠零值的字段（提交时再按后端同款规则校验） */
   const replicaPathOptions = useMemo(
     () =>
       form.elements
@@ -568,7 +574,7 @@ export function RepoFormModal({
   }
 
   /** 定时休眠配置校验：对齐后端 biz.ValidateHibernateConfig——启用时要求副本字段非空且
-   *  每个都命中已定义元素、类型能承载 "0"，且已选中一个全局休眠时间窗；禁用时不校验 */
+   *  每个都命中已定义元素、类型能承载休眠零值，且已选中一个全局休眠时间窗；禁用时不校验 */
   const validateHibernate = (): string | null => {
     const h = form.hibernate
     if (!h.enabled) return null
@@ -928,7 +934,10 @@ export function RepoFormModal({
                         {t('repos.useConfig')}
                       </Button>
                     </div>
-                    <pre className="max-h-56 overflow-auto overscroll-contain rounded-md bg-black/80 p-2 font-mono text-[11px] leading-relaxed text-green-300">
+                    <pre
+                      ref={bindPreviewScroll}
+                      className="max-h-56 overflow-auto overscroll-contain rounded-md bg-black/80 p-2 font-mono text-[11px] leading-relaxed text-green-300"
+                    >
                       {configFileContent}
                     </pre>
                   </PopoverContent>

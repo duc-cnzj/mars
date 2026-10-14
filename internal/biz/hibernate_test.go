@@ -108,21 +108,31 @@ func TestParseClockMinutes(t *testing.T) {
 	}
 }
 
-// TestSleepExtraValues 覆盖命中字段置 0、缺失字段追加、非副本字段原样保留且不改动入参切片。
+// TestSleepExtraValues 覆盖命中字段按类型置零值（数字类置 "0"、开关类置 "false"）、缺失字段
+// 追加对应零值、非副本字段原样保留且不改动入参切片。
 func TestSleepExtraValues(t *testing.T) {
 	cur := []*websocket_pb.ExtraValue{
 		{Path: "app->replicas", Value: "3", Description: "副本数"},
+		{Path: "app->hpa", Value: "true", Description: "自动扩缩"},
 		{Path: "app->image", Value: "nginx:1.0", Description: "镜像"},
 	}
-	out := SleepExtraValues(cur, []string{"app->replicas", "worker->replicas"})
+	elements := []*mars.Element{
+		{Path: "app->replicas", Type: mars.ElementType_ElementTypeInputNumber},
+		{Path: "app->hpa", Type: mars.ElementType_ElementTypeSwitch},
+	}
+	out := SleepExtraValues(cur, elements, []string{"app->replicas", "app->hpa", "worker->replicas"})
 
 	assert.Equal(t, "0", out[0].Value)
 	assert.Equal(t, "副本数", out[0].Description)
-	assert.Equal(t, "nginx:1.0", out[1].Value)
-	assert.Equal(t, "worker->replicas", out[2].Path)
-	assert.Equal(t, "0", out[2].Value)
+	// 开关类副本字段的零值是 "false"（装载侧 ParseBool 回读恒为 "false"，写入须与之对齐）。
+	assert.Equal(t, "false", out[1].Value)
+	assert.Equal(t, "nginx:1.0", out[2].Value)
+	// 缺失字段追加，零值按类型取——worker->replicas 无元素定义，兜底 "0"。
+	assert.Equal(t, "worker->replicas", out[3].Path)
+	assert.Equal(t, "0", out[3].Value)
 	// 入参未被改写，且不是同一元素指针（新切片独立对象）。
 	assert.Equal(t, "3", cur[0].Value)
+	assert.Equal(t, "true", cur[1].Value)
 	assert.NotSame(t, cur[0], out[0])
 }
 
@@ -155,8 +165,8 @@ func TestWakeExtraValues(t *testing.T) {
 	assert.NotSame(t, cur[0], out[0])
 }
 
-// TestReplicaValuesAllZero 覆盖副本字段全 0 判据的各分支：全 0 为休眠态；任一非 0 或字段
-// 缺失都判为「已被外部改动」；空副本字段列表按无改动处理（真空真）。
+// TestReplicaValuesAllZero 覆盖副本字段休眠零值判据的各分支：全部处零值为休眠态；任一非零值或
+// 字段缺失都判为「已被外部改动」；空副本字段列表按无改动处理（真空真）。
 func TestReplicaValuesAllZero(t *testing.T) {
 	cur := []*websocket_pb.ExtraValue{
 		{Path: "app->replicas", Value: "0"},
@@ -166,26 +176,34 @@ func TestReplicaValuesAllZero(t *testing.T) {
 	paths := []string{"app->replicas", "app->min"}
 
 	// 全部副本字段为 "0"（非副本字段不参与判定）→ 仍在休眠态。
-	assert.True(t, ReplicaValuesAllZero(cur, paths))
+	assert.True(t, ReplicaValuesAllZero(cur, nil, paths))
 
 	// 任一副本字段非 0 → 已被用户改动。
 	modified := []*websocket_pb.ExtraValue{
 		{Path: "app->replicas", Value: "5"},
 		{Path: "app->min", Value: "0"},
 	}
-	assert.False(t, ReplicaValuesAllZero(modified, paths))
+	assert.False(t, ReplicaValuesAllZero(modified, nil, paths))
 
-	// 副本字段缺失（不在 cur 中）→ 视为已改动（休眠落态会把缺失字段补齐为 "0"）。
-	assert.False(t, ReplicaValuesAllZero(cur, []string{"app->ghost"}))
+	// 副本字段缺失（不在 cur 中）→ 视为已改动（休眠落态会把缺失字段补齐为零值）。
+	assert.False(t, ReplicaValuesAllZero(cur, nil, []string{"app->ghost"}))
 
 	// 无副本字段可判 → 真空真，交回正常唤醒流程。
-	assert.True(t, ReplicaValuesAllZero(cur, nil))
-	assert.True(t, ReplicaValuesAllZero(nil, nil))
+	assert.True(t, ReplicaValuesAllZero(cur, nil, nil))
+	assert.True(t, ReplicaValuesAllZero(nil, nil, nil))
+
+	// 开关类副本字段：休眠落态回读为 "false"，判为零值（仍在休眠）；被手动打开（"true"）→ 非休眠。
+	switchEl := []*mars.Element{{Path: "app->hpa", Type: mars.ElementType_ElementTypeSwitch}}
+	sleeping := []*websocket_pb.ExtraValue{{Path: "app->hpa", Value: "false"}}
+	assert.True(t, ReplicaValuesAllZero(sleeping, switchEl, []string{"app->hpa"}))
+	awoken := []*websocket_pb.ExtraValue{{Path: "app->hpa", Value: "true"}}
+	assert.False(t, ReplicaValuesAllZero(awoken, switchEl, []string{"app->hpa"}))
 }
 
 // TestValidateHibernateConfig 覆盖禁用短路与启用时各校验分支（时间窗按 window_names 列表引用）。
 func TestValidateHibernateConfig(t *testing.T) {
 	inputNumber := &mars.Element{Path: "app->replicas", Type: mars.ElementType_ElementTypeInputNumber}
+	switchEl := &mars.Element{Path: "app->hpa", Type: mars.ElementType_ElementTypeSwitch}
 	selectWithZero := &mars.Element{Path: "web->replicas", Type: mars.ElementType_ElementTypeSelect, SelectValues: []string{"0", "2"}}
 	selectNoZero := &mars.Element{Path: "web->replicas", Type: mars.ElementType_ElementTypeSelect, SelectValues: []string{"2", "3"}}
 	text := &mars.Element{Path: "app->note", Type: mars.ElementType_ElementTypeInput}
@@ -231,21 +249,33 @@ func TestValidateHibernateConfig(t *testing.T) {
 		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{"", "  "}},
 	}))
 
-	// 合法：InputNumber + 白名单含 0 的 Select + 已选多个时间窗。
+	// 合法：InputNumber + Switch（开关类零值为 "false"）+ 白名单含 0 的 Select + 已选多个时间窗。
 	assert.NoError(t, ValidateHibernateConfig(&mars.Config{
-		Elements:  []*mars.Element{inputNumber, selectWithZero},
-		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas", "web->replicas"}, WindowNames: []string{"夜间", "午休"}},
+		Elements:  []*mars.Element{inputNumber, switchEl, selectWithZero},
+		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas", "app->hpa", "web->replicas"}, WindowNames: []string{"夜间", "午休"}},
 	}))
 }
 
-// TestElementSupportsZero 覆盖各元素类型对 "0" 的承载判定。
+// TestElementSupportsZero 覆盖各元素类型对休眠零值的承载判定。
 func TestElementSupportsZero(t *testing.T) {
 	assert.True(t, elementSupportsZero(&mars.Element{Type: mars.ElementType_ElementTypeInputNumber}))
+	assert.True(t, elementSupportsZero(&mars.Element{Type: mars.ElementType_ElementTypeSwitch}))
 	assert.True(t, elementSupportsZero(&mars.Element{Type: mars.ElementType_ElementTypeRadio, SelectValues: []string{"0"}}))
 	assert.True(t, elementSupportsZero(&mars.Element{Type: mars.ElementType_ElementTypeNumberSelect, SelectValues: []string{"0"}}))
 	assert.True(t, elementSupportsZero(&mars.Element{Type: mars.ElementType_ElementTypeNumberRadio, SelectValues: []string{"0"}}))
 	assert.False(t, elementSupportsZero(&mars.Element{Type: mars.ElementType_ElementTypeSelect, SelectValues: []string{"1"}}))
 	assert.False(t, elementSupportsZero(&mars.Element{Type: mars.ElementType_ElementTypeInput}))
+}
+
+// TestReplicaZeroValue 钉住各类型休眠零值，尤其是 Switch 的 "false"：它与 deploy 装载侧
+// （Switch 经 strconv.ParseBool 解析、%v 落库为 "false"）回读值一致，是「不误判为已被外部改动」
+// 的前提——若零值定成 "0"，开关类项目休眠后回读 "false" ≠ "0"，将对账判为错位而反复重睡。
+func TestReplicaZeroValue(t *testing.T) {
+	assert.Equal(t, "0", replicaZeroValue(&mars.Element{Type: mars.ElementType_ElementTypeInputNumber}))
+	assert.Equal(t, "0", replicaZeroValue(&mars.Element{Type: mars.ElementType_ElementTypeSelect}))
+	assert.Equal(t, "false", replicaZeroValue(&mars.Element{Type: mars.ElementType_ElementTypeSwitch}))
+	// 元素定义缺失（悬空 path）兜底 "0"。
+	assert.Equal(t, "0", replicaZeroValue(nil))
 }
 
 // TestHibernateBiz_ListByProjectIDs 覆盖透传查询：空入参不发查询（直接返回空表）。

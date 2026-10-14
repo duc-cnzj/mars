@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/shadcn/input'
 import { nextZIndex } from '@/lib/zIndex'
+import { useScrollPropagationGuard } from '@/hooks/useScrollPropagationGuard'
 import {
   Popover,
   PopoverContent,
@@ -101,6 +102,8 @@ export function SearchableSelect({
   const [tipHover, setTipHover] = useState(false)
   // tooltip content 走 portal 挂 body，须盖过可拖拽宿主弹窗的动态 z-index（同 Elements 注释）
   const [tipZ, setTipZ] = useState(50)
+  // 选项滚动容器挂滚动传播截断：宿主 modal 的滚动锁会吞掉弹层内滚动（详见 useScrollPropagationGuard）
+  const bindScrollList = useScrollPropagationGuard<HTMLDivElement>()
 
   // 契约：multiple 时 value 为 string[]，否则为 string。TS 无法从 boolean 窄化 value，
   // 单选分支用 as 收敛。selectedValues 固定为 string[]，否则推导类型会污染成联合数组。
@@ -397,8 +400,13 @@ export function SearchableSelect({
           </button>
         )}
         {/* 原生 div 滚动：Radix ScrollArea 的 viewport 高度 100% 依赖父级确定高度，
-            max-height 不构成确定高度，选项多时会把内容撑高被 overflow-hidden 截断而无法滚动 */}
-        <div className="max-h-[min(16rem,45vh)] overflow-y-auto">
+            max-height 不构成确定高度，选项多时会把内容撑高被 overflow-hidden 截断而无法滚动。
+            ref 回调见 bindScrollList：截断滚轮传播，避免宿主 modal 的 RemoveScroll 吞掉列表滚动 */}
+        <div
+          ref={bindScrollList}
+          data-slot="searchable-select-list"
+          className="max-h-[min(16rem,45vh)] overflow-y-auto"
+        >
           {shown.map((o, i) => {
             const isSel = multiple
               ? selectedSet.has(o.value)

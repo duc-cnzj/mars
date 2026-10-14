@@ -345,10 +345,10 @@ const hibernateReconcileWorkers = 5
 
 // ReconcileHibernate 对账项目定时休眠：每 2 分钟推进一步状态机。
 // 总闸：只接管项目级开关已开（Enabled=true）的记录——ListEnabled 已在查询侧过滤掉开关已关的
-// 记录，故开关一关，对账即彻底放弃该项目，无论它当前处于什么状态（含已置 0 的休眠态）都不再做
+// 记录，故开关一关，对账即彻底放弃该项目，无论它当前处于什么状态（含已置零的休眠态）都不再做
 // 任何修改，交由用户手动掌控；重新打开开关即恢复接管。
 // 单趟遍历：不再分「清醒轮 / 休眠轮」两趟，每条记录按「是否在窗口内」与「是否真在休眠（状态
-// sleeping 且副本字段全 0）」即时归位——窗口内非真休眠即休眠（含错位当轮重睡，无需等下一轮）、
+// sleeping 且副本字段均处休眠零值）」即时归位——窗口内非真休眠即休眠（含错位当轮重睡，无需等下一轮）、
 // 窗口外真休眠即唤醒、窗口外错位则释放接管权。单个项目失败只记日志并跳过（下一轮重试），
 // 不阻断本轮其它项目；列表查询失败才上抛。
 // 并发：一趟内用固定 worker 池（hibernateReconcileWorkers）有界并发处理各项目——各项目互相
@@ -417,8 +417,8 @@ func (repo *Tasks) reconcileHibernateProject(ctx context.Context, now time.Time,
 	if !ok {
 		return
 	}
-	// replicaPaths 只要仓库配了休眠就取：即便仓库级能力已关，判断「副本是否真全 0」仍需求值，
-	// 以免把「已置 0 的休眠态」误判为错位。未配置休眠时为 nil，ReplicaValuesAllZero 恒真，
+	// replicaPaths 只要仓库配了休眠就取：即便仓库级能力已关，判断「副本是否真处休眠零值」仍需求值，
+	// 以免把「已置零的休眠态」误判为错位。未配置休眠时为 nil，ReplicaValuesAllZero 恒真，
 	// 退化为只看状态，保证此类项目仍能按快照被唤醒。
 	var replicaPaths []string
 	if cfg.Hibernate != nil {
@@ -433,37 +433,38 @@ func (repo *Tasks) reconcileHibernateProject(ctx context.Context, now time.Time,
 		}
 	}
 	actuallySleeping := rec.State == biz.HibernateStateSleeping &&
-		biz.ReplicaValuesAllZero(proj.FinalExtraValues, replicaPaths)
+		biz.ReplicaValuesAllZero(proj.FinalExtraValues, cfg.Elements, replicaPaths)
 
 	switch {
 	case inWindow && actuallySleeping:
 		// 窗口内且确在休眠：保持，不做任何改动。
 		return
 	case inWindow:
-		// 清醒态命中窗口，或标记休眠但副本非全 0 的错位：本轮回休眠（错位时当前值成为新快照），
+		// 清醒态命中窗口，或标记休眠但副本非处零值的错位：本轮回休眠（错位时当前值成为新快照），
 		// 与修正同一轮完成，不再等下一轮对账。
-		repo.sleepHibernateProject(ctx, proj, rec, replicaPaths)
+		repo.sleepHibernateProject(ctx, proj, rec, cfg.Elements, replicaPaths)
 	case actuallySleeping:
 		// 窗口外且确在休眠：按快照回填唤醒。
 		repo.wakeHibernateProject(ctx, proj, rec)
 	case rec.State == biz.HibernateStateSleeping:
-		// 窗口外仍标记 sleeping 但副本非全 0：释放接管权（保留当前值）。
+		// 窗口外仍标记 sleeping 但副本非处零值：释放接管权（保留当前值）。
 		repo.releaseHibernateProject(ctx, proj, rec)
 	}
 }
 
 // sleepHibernateProject 执行单个项目的休眠：快照副本字段当前值并**先**落库「休眠态+快照」，
-// 再把副本字段置 0 重部署。窗口判定与「仓库是否启用休眠」由调用方完成，本方法只负责落动作。
+// 再把副本字段置为各自的休眠零值重部署（数字类置 0、开关类关闭）。窗口判定与「仓库是否启用
+// 休眠」由调用方完成，本方法只负责落动作。
 //
-// 顺序是幂等的承重点：重部署会把置 0 后的副本值写回项目记录（deploy 管线 UpdateProject）。
-// 若先部署后落库，一旦部署成功而落库失败/进程崩溃，下一轮对账读到的基座副本已被置 0，会据此
-// 重拍出「全 0 快照」覆盖真快照，令原始副本数永久丢失（唤醒只能恢复成 0）。改为先落库后：
+// 顺序是幂等的承重点：重部署会把置零后的副本值写回项目记录（deploy 管线 UpdateProject）。
+// 若先部署后落库，一旦部署成功而落库失败/进程崩溃，下一轮对账读到的基座副本已被置零，会据此
+// 重拍出「全零快照」覆盖真快照，令原始副本数永久丢失（唤醒只能恢复成零）。改为先落库后：
 // 落库失败则本轮不部署、基座未变，下一轮重拍仍是原值；落库成功而部署失败，下一轮以同一快照
 // 重试（基座同样未变）。两种失败都基于「基座未变」而自愈，故顺序不可颠倒。
-func (repo *Tasks) sleepHibernateProject(ctx context.Context, proj *biz.Project, rec *biz.ProjectHibernate, replicaPaths []string) {
+func (repo *Tasks) sleepHibernateProject(ctx context.Context, proj *biz.Project, rec *biz.ProjectHibernate, elements []*mars.Element, replicaPaths []string) {
 	base := proj.FinalExtraValues
 	snapshot := biz.SnapshotReplicaValues(base, replicaPaths)
-	target := biz.SleepExtraValues(base, replicaPaths)
+	target := biz.SleepExtraValues(base, elements, replicaPaths)
 	if _, err := repo.hibernateRepo.Upsert(ctx, &biz.ProjectHibernate{
 		ProjectID:   proj.ID,
 		Enabled:     rec.Enabled,
@@ -478,12 +479,12 @@ func (repo *Tasks) sleepHibernateProject(ctx context.Context, proj *biz.Project,
 		repo.logger.Errorf("[hibernate]: 项目 %s 休眠重部署失败: %v", proj.Name, err)
 		return
 	}
-	// 自动把副本置 0 是运维需要可追溯的状态变更，成功也留 Info（此前仅失败有痕）。
-	repo.logger.Infof("[hibernate]: 项目 %s 命中休眠窗口，副本字段已置 0（快照 %d 个字段）", proj.Name, len(snapshot))
+	// 自动把副本置零是运维需要可追溯的状态变更，成功也留 Info（此前仅失败有痕）。
+	repo.logger.Infof("[hibernate]: 项目 %s 命中休眠窗口，副本字段已置为休眠零值（快照 %d 个字段）", proj.Name, len(snapshot))
 }
 
 // wakeHibernateProject 执行单个项目的唤醒：按快照回填副本字段重部署、状态转 awake 并清空快照。
-// 仅由对账在「窗口外且确在休眠（副本全 0）」时调用，故无需再判窗口。
+// 仅由对账在「窗口外且确在休眠（副本均处休眠零值）」时调用，故无需再判窗口。
 func (repo *Tasks) wakeHibernateProject(ctx context.Context, proj *biz.Project, rec *biz.ProjectHibernate) {
 	target := biz.WakeExtraValues(proj.FinalExtraValues, rec.Snapshot)
 	if err := repo.hibernateDeployer.Redeploy(ctx, proj, target); err != nil {
@@ -504,10 +505,10 @@ func (repo *Tasks) wakeHibernateProject(ctx context.Context, proj *biz.Project, 
 }
 
 // releaseHibernateProject 释放单个项目的休眠接管权：状态转 awake 并清空快照、保留当前副本值，
-// 不重部署。用于「窗口外仍标记 sleeping 但副本非全 0」的错位（关闭期间改过副本数后重开），
+// 不重部署。用于「窗口外仍标记 sleeping 但副本非处休眠零值」的错位（关闭期间改过副本数后重开），
 // 交回用户当前值掌控；窗口内出现同类错位则由休眠侧当轮重睡（见 reconcileHibernateProject）。
 func (repo *Tasks) releaseHibernateProject(ctx context.Context, proj *biz.Project, rec *biz.ProjectHibernate) {
-	repo.logger.Warningf("[hibernate]: 项目 %s 标记休眠中但副本字段非全 0，释放接管权并转清醒", proj.Name)
+	repo.logger.Warningf("[hibernate]: 项目 %s 标记休眠中但副本字段非处休眠零值，释放接管权并转清醒", proj.Name)
 	if _, err := repo.hibernateRepo.Upsert(ctx, &biz.ProjectHibernate{
 		ProjectID:   proj.ID,
 		Enabled:     rec.Enabled,

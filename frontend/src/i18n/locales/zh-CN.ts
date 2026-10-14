@@ -429,7 +429,7 @@ export default {
     hibernateTip: '开启后由管理员配置副本字段与休眠时间窗，项目侧才能开启定时休眠',
     hibernateReplicaPaths: '副本字段',
     hibernateReplicaPathsTip:
-      '休眠时把这些字段置为 "0" 重新部署，唤醒时按快照恢复；字段类型必须能承载 "0"（数字类或白名单含 "0" 的下拉）',
+      '休眠时把这些字段置为休眠零值（数字类置 0、开关类关闭）重新部署，唤醒时按快照恢复；字段类型必须能承载该零值（数字类、开关类，或白名单含 "0" 的下拉）',
     hibernateReplicaPathsPlaceholder: '从上方「自定义配置」的字段路径中选择',
     hibernateReplicaPathsEmpty: '请先在上方「自定义配置」中添加字段',
     hibernateWindow: '休眠时间窗',
@@ -437,7 +437,7 @@ export default {
     hibernateWindowEmpty: '暂无可用时间窗，请先在后台「休眠时间窗」中创建',
     hibernateReplicaRequired: '启用定时休眠时请至少选择一个副本字段',
     hibernateWindowRequired: '启用定时休眠时请至少选择一个休眠时间窗',
-    hibernateReplicaInvalid: '副本字段「{{path}}」类型无法承载 0，请选数字类字段',
+    hibernateReplicaInvalid: '副本字段「{{path}}」类型无法承载休眠零值，请选数字类或开关类字段',
     export: '导出',
     import: '导入',
     exportSuccess: '已导出 repos.json',
