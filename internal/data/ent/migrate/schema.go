@@ -364,13 +364,6 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "projecthibernate_project_id",
-				Unique:  true,
-				Columns: []*schema.Column{ProjectHibernatesColumns[7]},
-			},
-		},
 	}
 	// ReposColumns holds the columns for the "repos" table.
 	ReposColumns = []*schema.Column{

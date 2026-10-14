@@ -4,7 +4,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"entgo.io/ent/schema/index"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/schema/mixin"
 )
@@ -47,13 +46,10 @@ func (ProjectHibernate) Edges() []ent.Edge {
 	}
 }
 
-// Indexes of the ProjectHibernate.
-func (ProjectHibernate) Indexes() []ent.Index {
-	return []ent.Index{
-		// 每项目一条：DB 级幂等兜底（Upsert 的 ON CONFLICT 依赖它）。
-		index.Fields("project_id").Unique(),
-	}
-}
+// 不在 Indexes 里重复声明 project_id 唯一索引：project 到 hibernate 是 O2O 唯一边
+// （edge.From(...).Unique().Field("project_id")），ent 会为该唯一列自动生成 `project_id`
+// 唯一索引，「每项目一行」的 DB 级幂等兜底已由它保证，再显式加一条只会产出重复的
+// 第二把唯一索引（旧 `projecthibernate_project_id`，已由 20261014120000 迁移删除）。
 
 // Mixin of the ProjectHibernate.
 // 不挂 SoftDeleteMixin：本表是运行态附属行、无审计保留价值，且唯一索引落在 project_id 上——
