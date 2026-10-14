@@ -99,7 +99,7 @@ func projectSearchPred(search string) func(*sql.Selector) {
 
 // projectLivenessPred 项目活跃度分类 SQL 谓词：分类键是普通列 updated_at，直接按边界比较。
 // 边界由分类基准 now 推导（活跃=updated_at > now-31d；僵尸=<= now-90d；低活跃=两者之间），
-// 与 biz.classifyLiveness 的 int(now.Sub(ts).Hours()/24) 阈值数学等价（datetime 整秒存储 +
+// 与 biz.ClassifyLiveness 的 int(now.Sub(ts).Hours()/24) 阈值数学等价（datetime 整秒存储 +
 // DSN loc=Local 使 SQL 边界参数与 Go time.Now() 同墙钟，见 internal/config/config.go DSN）。
 // 非法 liveness 值返回恒假谓词，复现旧逻辑「无行命中非法分类」的空列表语义。
 func projectLivenessPred(liveness string, now time.Time) func(*sql.Selector) {

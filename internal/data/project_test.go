@@ -1456,7 +1456,7 @@ func TestProjectRepo_ListLivenessPage_KindFilter(t *testing.T) {
 }
 
 // TestProjectRepo_ListLivenessPage_BoundaryParity 边界奇偶性守护：SQL kind 计数 == Go
-// classifyLiveness 逐行分类。种入跨边界项目（now-31d±1s、now-90d±1s、从未更新），断言
+// biz.ClassifyLiveness 逐行分类。种入跨边界项目（now-31d±1s、now-90d±1s、从未更新），断言
 // stats 四分类计数与各 kind 过滤命中行 == Go 逐行分类结果，防边界公式漂移。
 func TestProjectRepo_ListLivenessPage_BoundaryParity(t *testing.T) {
 	ctx := context.TODO()

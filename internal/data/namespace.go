@@ -490,7 +490,7 @@ func (repo *namespaceRepo) ListAll(ctx context.Context) (out []*biz.Namespace, e
 // namespaceLivenessPred 命名空间活跃度分类 SQL 谓词：分类键是「空间下项目 UpdatedAt 最大值」
 // 的跨表聚合，SQL 侧以 ent 原生 EXISTS 谓词等价表达（MAX(updated_at) > X ⟺ EXISTS(项目
 // updated_at > X)），免建 correlated subquery 新地基；边界由分类基准 now 推导（活跃=最大
-// updated_at > now-31d；僵尸=<= now-90d；低活跃=两者之间），与 biz.classifyLiveness 阈值
+// updated_at > now-31d；僵尸=<= now-90d；低活跃=两者之间），与 biz.ClassifyLiveness 阈值
 // 数学等价。无项目（从未活跃 → 零值时间 → 僵尸）以 NOT EXISTS(任意项目) 表达。
 // 非法 liveness 值返回恒假谓词，复现旧逻辑「无行命中非法分类」的空列表语义。
 func namespaceLivenessPred(liveness string, now time.Time) func(*sql.Selector) {

@@ -69,11 +69,12 @@ type HibernateWindowRepo interface {
 	// ReposReferencing 返回 mars_config.hibernate.window_names 含 name 的仓库名（升序）。
 	// 删除/改名时间窗前据此判"是否仍有下游关联"。实现为 WindowRepoRefs 的单名查表。
 	ReposReferencing(ctx context.Context, name string) ([]string, error)
-	// ProjectsReferencing 返回 project_hibernates.window_names 含 name 的项目 ID（升序）。
-	// 项目从仓库窗列表里多选子集，故项目引用独立于仓库引用，删除/改名守卫须一并计入。
+	// ProjectsReferencing 返回 project_hibernates.window_names 含 name 且**项目级开关已开**（Enabled=true）
+	// 的项目 ID（升序）。项目从仓库窗列表里多选子集，故项目引用独立于仓库引用，删除/改名守卫须一并计入——
+	// 但只计已开休眠的项目：禁用行的窗名只是保留的选择草稿、不参与对账，计入会形成幽灵引用锁（见 data 实现）。
 	ProjectsReferencing(ctx context.Context, name string) ([]int, error)
-	// ProjectReferencingRepoIDs 返回「引用该窗的项目 ID → 所属仓库 ID」映射，供「从仓库移除窗」时
-	// 按受影响仓库收窄项目子集漂移校验（见 SetWindowRepos）：只拦真正会失去该窗的仓库下的项目。
+	// ProjectReferencingRepoIDs 返回「引用该窗且**已开休眠**的项目 ID → 所属仓库 ID」映射，供「从仓库
+	// 移除窗」时按受影响仓库收窄项目子集漂移校验（见 SetWindowRepos）：只拦真正会失去该窗的仓库下的项目。
 	ProjectReferencingRepoIDs(ctx context.Context, name string) (map[int]int, error)
 	// Create 新建时间窗；名称重复由唯一索引兜底（返回 409）。
 	Create(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error)
@@ -183,7 +184,8 @@ func (b *hibernateWindowBiz) Update(ctx context.Context, w *HibernateWindow, cas
 }
 
 // guardRenameRefs 校验「非级联改名」不击穿下游引用：旧名仍被仓库或项目引用则返回 400，
-// 提示改用级联（cascade=true）或先手动迁移引用。
+// 提示改用级联（cascade=true）或先手动迁移引用。项目侧只计已开休眠（Enabled=true）的项目——
+// 禁用项目的窗名只是保留的选择草稿、不参与对账，不算关联。
 func (b *hibernateWindowBiz) guardRenameRefs(ctx context.Context, oldName string) error {
 	repos, projects, err := b.referencingRefs(ctx, oldName)
 	if err != nil {
@@ -203,6 +205,7 @@ func (b *hibernateWindowBiz) guardRenameRefs(ctx context.Context, oldName string
 // 存在引用则拒绝（400）——时间窗被仓库的 mars_config.hibernate.window_names 与项目的
 // project_hibernates.window_names 按名引用，删掉会让这些引用的对账按名未命中而静默跳过，
 // 令其休眠悄然失效，故必须先解除引用（同理，睡眠中的项目会因窗被删而对账判定为出窗并正常唤醒）。
+// 项目侧引用只计已开休眠（Enabled=true）的项目：禁用项目不参与对账，其保留的窗名不构成关联。
 func (b *hibernateWindowBiz) Delete(ctx context.Context, id int) error {
 	w, err := b.repo.GetByID(ctx, id)
 	if err != nil {

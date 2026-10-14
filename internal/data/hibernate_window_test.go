@@ -341,23 +341,26 @@ func TestHibernateWindowRepo_ReposReferencing(t *testing.T) {
 }
 
 // TestHibernateWindowRepo_ProjectsReferencing 覆盖按 project_hibernates.window_names 过滤与
-// ID 升序：命中（含多窗里命中其一）、非命中、空选择均正确处理；无引用返回空；DB 故障上抛。
+// ID 升序：命中（含多窗里命中其一）、非命中、空选择均正确处理；**禁用行（Enabled=false）即便命中
+// 窗名也不计入**（幽灵引用锁修复：禁用项目不参与对账，其窗名只是保留的选择草稿）；无引用返回空；
+// DB 故障上抛。
 func TestHibernateWindowRepo_ProjectsReferencing(t *testing.T) {
 	entdb, err := NewSqliteDB()
 	assert.NoError(t, err)
 	repo := NewHibernateWindowRepo(NewDataImpl(&NewDataParams{DB: entdb}))
 
 	ns := createNamespace(entdb)
-	mk := func(windows []string) int {
+	mk := func(enabled bool, windows []string) int {
 		p := createProject(entdb, ns.ID)
-		_, err := entdb.ProjectHibernate.Create().SetProjectID(p.ID).SetWindowNames(windows).Save(context.TODO())
+		_, err := entdb.ProjectHibernate.Create().SetProjectID(p.ID).SetEnabled(enabled).SetWindowNames(windows).Save(context.TODO())
 		require.NoError(t, err)
 		return p.ID
 	}
-	mk([]string{"午休"})               // 非命中
-	hitA := mk([]string{"午休", "夜间"}) // 命中（多窗含目标）
-	mk(nil)                          // 空选择：不按名引用任何窗（未选即未启用）
-	hitB := mk([]string{"夜间"})       // 命中
+	mk(true, []string{"午休"})               // 已开、非命中
+	hitA := mk(true, []string{"午休", "夜间"}) // 已开、命中（多窗含目标）
+	mk(true, nil)                          // 已开、空选择：不按名引用任何窗
+	hitB := mk(true, []string{"夜间"})       // 已开、命中
+	mk(false, []string{"夜间"})              // 禁用、命中窗名：开关未开不参与对账 → 不算引用
 
 	refs, err := repo.ProjectsReferencing(context.TODO(), "夜间")
 	assert.NoError(t, err)
@@ -376,7 +379,7 @@ func TestHibernateWindowRepo_ProjectsReferencing(t *testing.T) {
 
 // TestHibernateWindowRepo_ProjectReferencingRepoIDs 覆盖「引用该窗的项目 ID → 所属仓库 ID」映射：
 // 命中项目映射到各自仓库、项目无仓库时 repo_id 为 0、软删项目的悬留休眠行不计入、
-// 无引用返回空映射、DB 故障上抛。
+// **禁用行（Enabled=false）即便命中窗名也不计入**（同款幽灵引用锁修复）、无引用返回空映射、DB 故障上抛。
 func TestHibernateWindowRepo_ProjectReferencingRepoIDs(t *testing.T) {
 	entdb, err := NewSqliteDB()
 	assert.NoError(t, err)
@@ -388,7 +391,7 @@ func TestHibernateWindowRepo_ProjectReferencingRepoIDs(t *testing.T) {
 	r2 := entdb.Repo.Create().SetName("r2").SaveX(context.TODO())
 
 	// mk 造「带休眠行」的项目；repoID 为 0 时不设 repo_id（存 NULL，读回 0）。
-	mk := func(repoID int, windows []string) int {
+	mk := func(repoID int, enabled bool, windows []string) int {
 		b := entdb.Project.Create().
 			SetGitBranch("").SetGitCommit("").SetConfig("").SetGitProjectID(1).
 			SetCreator("").SetName("p").SetNamespaceID(ns.ID)
@@ -396,17 +399,18 @@ func TestHibernateWindowRepo_ProjectReferencingRepoIDs(t *testing.T) {
 			b = b.SetRepoID(repoID)
 		}
 		p := b.SaveX(context.TODO())
-		_, e := entdb.ProjectHibernate.Create().SetProjectID(p.ID).SetWindowNames(windows).Save(context.TODO())
+		_, e := entdb.ProjectHibernate.Create().SetProjectID(p.ID).SetEnabled(enabled).SetWindowNames(windows).Save(context.TODO())
 		require.NoError(t, e)
 		return p.ID
 	}
-	hitA := mk(r1.ID, []string{"午休", "夜间"}) // 命中 → r1
-	hitB := mk(r2.ID, []string{"夜间"})       // 命中 → r2
-	mk(r1.ID, []string{"午休"})               // 非命中（不含目标窗）
-	noRepo := mk(0, []string{"夜间"})         // 命中但无仓库 → repo_id 0
+	hitA := mk(r1.ID, true, []string{"午休", "夜间"}) // 命中 → r1
+	hitB := mk(r2.ID, true, []string{"夜间"})       // 命中 → r2
+	mk(r1.ID, true, []string{"午休"})               // 非命中（不含目标窗）
+	noRepo := mk(0, true, []string{"夜间"})         // 命中但无仓库 → repo_id 0
+	mk(r1.ID, false, []string{"夜间"})              // 禁用、命中窗名：开关未开不参与对账 → 不算引用
 
 	// 软删项目：其悬留的休眠行不应计入（Project 查询经拦截器过滤软删行）。
-	ghost := mk(r1.ID, []string{"夜间"})
+	ghost := mk(r1.ID, true, []string{"夜间"})
 	entdb.Project.UpdateOneID(ghost).SetDeletedAt(time.Now()).SaveX(mixin.SkipSoftDelete(context.TODO()))
 
 	got, err := repo.ProjectReferencingRepoIDs(context.TODO(), "夜间")
@@ -432,7 +436,7 @@ func TestHibernateWindowRepo_ProjectReferencingRepoIDs_SecondQueryFails(t *testi
 
 	ns := createNamespace(client)
 	p := createProject(client, ns.ID)
-	_, err := client.ProjectHibernate.Create().SetProjectID(p.ID).SetWindowNames([]string{"夜间-repofail"}).Save(context.TODO())
+	_, err := client.ProjectHibernate.Create().SetProjectID(p.ID).SetEnabled(true).SetWindowNames([]string{"夜间-repofail"}).Save(context.TODO())
 	require.NoError(t, err)
 
 	fd.Arm()

@@ -127,16 +127,20 @@ func (h *hibernateWindowRepo) ReposReferencing(ctx context.Context, name string)
 	return refs[name], nil
 }
 
-// ProjectsReferencing 返回 project_hibernates.window_names 含 name 的项目 ID（升序）。
-// 删除/改名时间窗前判"项目是否仍有下游关联"用。window_names 是 JSON 数组列，跨方言包含查询
-// 不便，故取回后在 Go 内过滤（项目引用行为可控）。本表无软删 mixin，全部行都参与判定——
-// 软删项目不再留悬留行（项目软删时其休眠行随事务一并删除，见 projectRepo/namespaceRepo.Delete），
-// 故不存在"幽灵引用锁死窗口"。
+// ProjectsReferencing 返回 project_hibernates.window_names 含 name 且**项目级开关已开**（Enabled=true）
+// 的项目 ID（升序）。删除/改名时间窗前判"项目是否仍有下游关联"用。必须按 Enabled 收窄：只有已开休眠的
+// 项目才会被对账按窗推进，删/改名才会真正击穿其休眠；禁用行（Enabled=false）的 window_names 只是"上次
+// 选择"草稿（关闭时前端回传当前选择、保留供重新开启时回显），对账根本不看它——若把禁用行也算作引用，
+// 任何拥有项目的普通成员只要把某窗名留在禁用行里，就能让该全局窗从此删不掉、改不了名（幽灵引用锁，
+// 越权 DoS），故按 Enabled 收窄是安全所需，非优化。window_names 是 JSON 数组列，跨方言包含查询不便，
+// 故取回后在 Go 内过滤（项目引用行为可控）。本表无软删 mixin，全部行都参与判定——软删项目不再留悬留行
+// （项目软删时其休眠行随事务一并删除，见 projectRepo/namespaceRepo.Delete），故不存在"幽灵引用锁死窗口"。
 func (h *hibernateWindowRepo) ProjectsReferencing(ctx context.Context, name string) (out []int, err error) {
 	ctx, span := tracer.Start(ctx, "hibernateWindowRepo/ProjectsReferencing")
 	defer func() { endSpan(span, err) }()
 	all, err := h.data.DB().ProjectHibernate.Query().
 		Select(projecthibernate.FieldProjectID, projecthibernate.FieldWindowNames).
+		Where(projecthibernate.Enabled(true)).
 		All(ctx)
 	if err != nil {
 		return nil, errs.Wrap(err, "query projects referencing hibernate window")
@@ -152,13 +156,16 @@ func (h *hibernateWindowRepo) ProjectsReferencing(ctx context.Context, name stri
 
 // ProjectReferencingRepoIDs 返回「引用该窗的项目 ID → 所属仓库 ID」映射，供「从仓库移除窗」时
 // 按受影响仓库收窄漂移校验：只拦真正会失去该窗的仓库下的项目，不误伤引用同名窗的其它仓库。
-// 先单趟扫 project_hibernates 命中窗名收集项目 ID，再按 ID 批量取仓库归属——Project 查询经
-// SoftDeleteMixin 拦截器过滤软删项目，故其悬留的休眠行不计入；项目无仓库时 repo_id 为 0。
+// 与 ProjectsReferencing 同口径只计**已开休眠**（Enabled=true）的项目：禁用行不参与对账，其窗名只是
+// 保留的选择草稿，计入会让普通成员以禁用行钉死仓库的窗子集（同款幽灵引用锁）。先单趟扫
+// project_hibernates 命中窗名收集项目 ID，再按 ID 批量取仓库归属——Project 查询经 SoftDeleteMixin
+// 拦截器过滤软删项目，故其悬留的休眠行不计入；项目无仓库时 repo_id 为 0。
 func (h *hibernateWindowRepo) ProjectReferencingRepoIDs(ctx context.Context, name string) (out map[int]int, err error) {
 	ctx, span := tracer.Start(ctx, "hibernateWindowRepo/ProjectReferencingRepoIDs")
 	defer func() { endSpan(span, err) }()
 	rows, err := h.data.DB().ProjectHibernate.Query().
 		Select(projecthibernate.FieldProjectID, projecthibernate.FieldWindowNames).
+		Where(projecthibernate.Enabled(true)).
 		All(ctx)
 	if err != nil {
 		return nil, errs.Wrap(err, "query projects referencing hibernate window")
