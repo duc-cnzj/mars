@@ -8,7 +8,7 @@ import (
 )
 
 // HibernateWindow 是全局共享的休眠时间窗：管理员在后台维护若干命名时段，
-// 各仓库的定时休眠配置按名字引用其中一个（repos.mars_config.hibernate.window_name）。
+// 各仓库的定时休眠配置按名字引用其中若干（repos.mars_config.hibernate.window_names）。
 // 时间窗全局共享、副本字段仓库各自配置——本表只存时段本身。
 type HibernateWindow struct {
 	ent.Schema

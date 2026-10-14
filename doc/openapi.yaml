@@ -3513,7 +3513,7 @@ components:
                 cascade:
                     type: boolean
                     description: |-
-                        cascade 改名时是否级联迁移引用该窗的仓库（把仓库的 mars_config.hibernate.window_name
+                        cascade 改名时是否级联迁移引用该窗的仓库（把仓库的 mars_config.hibernate.window_names
                          旧名改写为新名）。false（默认）时若旧名仍被引用则拒绝（400），须先手动迁移或改传 true。
         hibernate.UpdateWindowResponse:
             type: object
@@ -3522,7 +3522,7 @@ components:
                     $ref: '#/components/schemas/hibernate.HibernateWindow'
                 updatedRepoCount:
                     type: integer
-                    description: updated_repo_count 本次级联迁移（重写 window_name）的引用仓库数；未级联或未改名时为 0。
+                    description: updated_repo_count 本次级联迁移（重写 window_names）的引用仓库数；未级联或未改名时为 0。
                     format: int32
         mars.Config:
             type: object
@@ -3765,6 +3765,9 @@ components:
                     description: 已存在则忽略，不会报错
                 description:
                     type: string
+                    description: |-
+                        description 列在 MySQL 为 text（上限 65535 字节），此规则与之对齐，
+                         避免超长描述穿透校验后触发 DB 1406「Data too long」而被归为 500（应 400）。
         namespace.CreateResponse:
             type: object
             properties:
@@ -5162,7 +5165,7 @@ tags:
     - name: Hibernate
       description: |-
         Hibernate 全局休眠时间窗的查询与后台管理服务，按方法分级授权（Authorize 门禁）：
-         ListWindows 登录即可读（项目卡片需按 window_name 展示时段），Create/Update/Delete 仅管理员。
+         ListWindows 登录即可读（项目卡片需按 window_names 展示时段），Create/Update/Delete 仅管理员。
          路径前缀随权限分层：读接口挂 /api/（面向全体登录用户），写接口挂 /api/admin/（管理员专属）。
     - name: Metrics
     - name: Namespace

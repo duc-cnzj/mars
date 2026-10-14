@@ -70,7 +70,16 @@ func (m *CreateRequest) validate(all bool) error {
 
 	// no validation rules for IgnoreIfExists
 
-	// no validation rules for Description
+	if len(m.GetDescription()) > 65535 {
+		err := CreateRequestValidationError{
+			field:  "Description",
+			reason: "value length must be at most 65535 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return CreateRequestMultiError(errors)

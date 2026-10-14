@@ -60,6 +60,48 @@ func normalizeWindowNames(names []string) []string {
 	return out
 }
 
+// normalizeRepoHibernateWindowNames 就地把仓库配置里引用的窗名归一化（trim + 去重 + 丢空），令仓库侧
+// 引用与时间窗的规范名对齐：项目侧 Toggle 已在写入前归一化，仓库侧此前遗漏——经 API/导入存入带空白
+// 的窗名（如 " 夜间 "）会让按规范名的一切判定（列表「引用仓库」展示、删窗/改名守卫、SetWindowRepos
+// 候选比对）全部落空，留下悬空引用并令休眠静默失效。cfg 或 Hibernate 为 nil 时不动（禁用态无引用）。
+func normalizeRepoHibernateWindowNames(cfg *mars.Config) {
+	if cfg == nil || cfg.Hibernate == nil {
+		return
+	}
+	cfg.Hibernate.WindowNames = normalizeWindowNames(cfg.Hibernate.WindowNames)
+}
+
+// removedWindowNames 返回「oldNames 有而 nextNames 没有」的窗名（按 oldNames 归一化后的顺序）。
+// 两侧都经 normalizeWindowNames 归一化（trim + 去重），故比较的是规范名。用于仓库编辑表单移除窗
+// 时判定「本次移除了哪些窗」。
+func removedWindowNames(oldNames, nextNames []string) []string {
+	keep := make(map[string]bool, len(nextNames))
+	for _, n := range normalizeWindowNames(nextNames) {
+		keep[n] = true
+	}
+	var out []string
+	for _, n := range normalizeWindowNames(oldNames) {
+		if !keep[n] {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// intersectsWindowNames 判断 selected 与 names 是否存在交集（用于「某项目是否选用了被移除的窗」）。
+func intersectsWindowNames(selected, names []string) bool {
+	set := make(map[string]bool, len(names))
+	for _, n := range names {
+		set[n] = true
+	}
+	for _, n := range selected {
+		if set[n] {
+			return true
+		}
+	}
+	return false
+}
+
 // InHibernateWindow 判定 now 是否落在 [start, end) 休眠窗口内（服务端本地时区，HH:MM）。
 // start > end 表示跨零点（如 23:00→06:00）。任一时刻无法解析、或 start == end 时视为
 // 无窗口，返回 false。

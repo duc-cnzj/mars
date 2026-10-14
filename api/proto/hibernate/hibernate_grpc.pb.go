@@ -33,7 +33,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
 // Hibernate 全局休眠时间窗的查询与后台管理服务，按方法分级授权（Authorize 门禁）：
-// ListWindows 登录即可读（项目卡片需按 window_name 展示时段），Create/Update/Delete 仅管理员。
+// ListWindows 登录即可读（项目卡片需按 window_names 展示时段），Create/Update/Delete 仅管理员。
 // 路径前缀随权限分层：读接口挂 /api/（面向全体登录用户），写接口挂 /api/admin/（管理员专属）。
 type HibernateClient interface {
 	ListWindows(ctx context.Context, in *ListWindowsRequest, opts ...grpc.CallOption) (*ListWindowsResponse, error)
@@ -117,7 +117,7 @@ func (c *hibernateClient) ListCandidateRepos(ctx context.Context, in *ListCandid
 // for forward compatibility.
 //
 // Hibernate 全局休眠时间窗的查询与后台管理服务，按方法分级授权（Authorize 门禁）：
-// ListWindows 登录即可读（项目卡片需按 window_name 展示时段），Create/Update/Delete 仅管理员。
+// ListWindows 登录即可读（项目卡片需按 window_names 展示时段），Create/Update/Delete 仅管理员。
 // 路径前缀随权限分层：读接口挂 /api/（面向全体登录用户），写接口挂 /api/admin/（管理员专属）。
 type HibernateServer interface {
 	ListWindows(context.Context, *ListWindowsRequest) (*ListWindowsResponse, error)

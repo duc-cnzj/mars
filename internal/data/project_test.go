@@ -19,6 +19,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/schema/mixin"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -159,6 +160,45 @@ func TestProjectRepoDelete(t *testing.T) {
 	project := createProject(db, createNamespace(db).ID)
 	err = r.Delete(ctx, project.ID)
 	assert.Nil(t, err)
+}
+
+// TestProjectRepo_Delete_RemovesHibernateRow 软删项目须在同一事务内清掉其 1:1 休眠运行态：
+// 休眠行无软删 mixin、不随项目级联，残留会成为孤儿并被时间窗守卫当作幽灵引用（详见 Delete 注释）；
+// 其它项目的休眠行不得被误删。
+func TestProjectRepo_Delete_RemovesHibernateRow(t *testing.T) {
+	ctx := context.TODO()
+	db, _ := NewSqliteDB()
+	defer db.Close()
+	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
+	r := NewProjectRepo(data)
+
+	p := createProject(db, createNamespace(db).ID)
+	other := createProject(db, createNamespace(db).ID)
+	db.ProjectHibernate.Create().SetProjectID(p.ID).SetEnabled(false).SetState("awake").SetWindowNames([]string{"夜间"}).SaveX(ctx)
+	db.ProjectHibernate.Create().SetProjectID(other.ID).SetEnabled(false).SetState("awake").SaveX(ctx)
+
+	require.NoError(t, r.Delete(ctx, p.ID))
+
+	assert.Equal(t, 0, db.ProjectHibernate.Query().Where(projecthibernate.ProjectID(p.ID)).CountX(ctx))
+	assert.Equal(t, 1, db.ProjectHibernate.Query().Where(projecthibernate.ProjectID(other.ID)).CountX(ctx))
+}
+
+// TestProjectRepo_Delete_HibernateDeleteError 休眠行清理失败须整体回滚：项目软删一并作废，
+// 不留「项目已删、休眠行残留」的半量状态。故障注入在第 2 次 Exec（休眠行删除）失败。
+func TestProjectRepo_Delete_HibernateDeleteError(t *testing.T) {
+	ctx := context.TODO()
+	db, fd := newFailDB(t, -1, 1)
+	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
+	r := NewProjectRepo(data)
+
+	p := createProject(db, createNamespace(db).ID)
+	fd.Arm()
+	require.Error(t, r.Delete(ctx, p.ID))
+	fd.Disarm()
+
+	// 事务回滚：项目仍在册（未被软删）。
+	got := db.Project.Query().Where(project.ID(p.ID)).OnlyX(ctx)
+	assert.Nil(t, got.DeletedAt)
 }
 
 func TestProjectRepoFindByName(t *testing.T) {

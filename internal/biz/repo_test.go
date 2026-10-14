@@ -520,6 +520,322 @@ func TestRepoBiz_Update_DisableHibernateListError(t *testing.T) {
 	assert.False(t, updated)
 }
 
+// ---- Update：移除休眠时间窗守卫 ----
+
+// hibernateCfgWithWindows 造一个启用态、可承载 "0"（副本字段为 InputNumber）且引用给定窗的仓库
+// 休眠配置——过 ValidateHibernateConfig，供移除窗守卫用例作「本次提交」的配置。
+func hibernateCfgWithWindows(windows ...string) *mars.Config {
+	return &mars.Config{
+		Elements:  []*mars.Element{{Path: "app->replicas", Type: mars.ElementType_ElementTypeInputNumber}},
+		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: windows},
+	}
+}
+
+// windowedHibernateRepo 返回「仓库原本已启用休眠能力、引用两个窗」的 Repo（含 web/api 两个项目），
+// 供移除窗守卫用例复用。
+func windowedHibernateRepo() *Repo {
+	return &Repo{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows("夜间", "午休"),
+		Projects:   []*Project{{ID: 1, Name: "web"}, {ID: 2, Name: "api"}},
+	}
+}
+
+// TestRepoBiz_Update_BlockRemoveWindowSelectedByProject 覆盖核心守卫：仓库原本引用两个窗、本次只保留
+// 一个（移除「午休」），而其下 web 项目（已禁用也计入——选择保留待重开）仍选定「午休」→ 400 点名项目，
+// 不落库。这是「从仓库移除窗」的第二条路径（第一条是 SetWindowRepos 的 guardProjectWindowSubset）。
+func TestRepoBiz_Update_BlockRemoveWindowSelectedByProject(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return windowedHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return nil, nil
+		},
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			assert.ElementsMatch(t, []int{1, 2}, projectIDs)
+			return map[int]*ProjectHibernate{
+				1: {ProjectID: 1, Enabled: false, WindowNames: []string{"午休"}},
+				2: {ProjectID: 2, Enabled: true, WindowNames: []string{"夜间"}},
+			}, nil
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	got, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows("夜间"),
+	})
+	assert.Nil(t, got)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Equal(t,
+		"仓库下仍有 1 个项目选用了将被移除的休眠时间窗（web），请先在项目详情里取消这些项目对这些窗的休眠选择，再从仓库移除",
+		status.Convert(err).Message(),
+	)
+	assert.False(t, updated, "守卫命中不应落库更新")
+}
+
+// TestRepoBiz_Update_BlockRemoveWindowManyProjects 覆盖多个项目选用被移除窗：项目名按字典序拼接。
+func TestRepoBiz_Update_BlockRemoveWindowManyProjects(t *testing.T) {
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return windowedHibernateRepo(), nil },
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			return map[int]*ProjectHibernate{
+				1: {ProjectID: 1, WindowNames: []string{"午休"}},
+				2: {ProjectID: 2, WindowNames: []string{"午休", "夜间"}},
+			}, nil
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows("夜间"),
+	})
+	assert.Error(t, err)
+	assert.Contains(t, status.Convert(err).Message(), "（api、web）")
+}
+
+// TestRepoBiz_Update_AllowRemoveWindowNoProjectSelected 覆盖放行：项目选择与移除集无交集 → 放行落库。
+func TestRepoBiz_Update_AllowRemoveWindowNoProjectSelected(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return windowedHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return &Repo{ID: 1}, nil
+		},
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			return map[int]*ProjectHibernate{
+				1: {ProjectID: 1, WindowNames: []string{"夜间"}},
+				2: {ProjectID: 2, WindowNames: nil}, // 未选任何窗
+			}, nil
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows("夜间"),
+	})
+	assert.NoError(t, err)
+	assert.True(t, updated)
+}
+
+// TestRepoBiz_Update_AllowNoWindowRemoved 覆盖放行：本次未移除任何窗（窗列表未缩减）→ 守卫短路，
+// 不查项目级记录（hb 未设置 listFn，若被调用即 panic）。
+func TestRepoBiz_Update_AllowNoWindowRemoved(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return windowedHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return &Repo{ID: 1}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows("夜间", "午休"),
+	})
+	assert.NoError(t, err)
+	assert.True(t, updated)
+}
+
+// TestRepoBiz_Update_AllowRemoveWindowNoProjects 覆盖放行：仓库原本引用窗、本次移除，但其下没有任何
+// 项目 → 守卫短路，不查项目级记录（hb 未设置 listFn，若被调用即 panic）。禁用休眠同时清空窗列表，
+// 无项目时放行。
+func TestRepoBiz_Update_AllowRemoveWindowNoProjects(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show: func(ctx context.Context, id int) (*Repo, error) {
+			return &Repo{
+				ID:   1,
+				Name: "app",
+				MarsConfig: &mars.Config{
+					Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{"夜间"}},
+				},
+			}, nil
+		},
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return &Repo{ID: 1}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "app", MarsConfig: &mars.Config{}})
+	assert.NoError(t, err)
+	assert.True(t, updated)
+}
+
+// TestRepoBiz_Update_RemoveWindowListError 覆盖项目级记录查询失败：原样上抛，不静默放行、不落库。
+func TestRepoBiz_Update_RemoveWindowListError(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return windowedHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return nil, nil
+		},
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			return nil, errors.New("db down")
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows("夜间"),
+	})
+	assert.Equal(t, "db down", err.Error())
+	assert.False(t, updated)
+}
+
+// TestRepoBiz_Update_BlockRemoveWindowWhenDisabling 覆盖「停用仓库休眠同时清空窗列表」仍受子集守卫约束：
+// 仓库原本启用、本次停用且移除全部窗，其下 web 项目（已禁用）仍选定被移除的窗 → 400（对称地计入禁用
+// 项目的选择；停用守卫只拦启用中的项目，本守卫补齐禁用项目的漂移）。
+func TestRepoBiz_Update_BlockRemoveWindowWhenDisabling(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return windowedHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return nil, nil
+		},
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			return map[int]*ProjectHibernate{
+				1: {ProjectID: 1, Enabled: false, WindowNames: []string{"夜间", "午休"}},
+			}, nil
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "app", MarsConfig: &mars.Config{}})
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Contains(t, status.Convert(err).Message(), "（web）")
+	assert.False(t, updated)
+}
+
+// TestRemovedWindowNames 覆盖移除集计算：两侧归一化后取差集，保持 oldNames 顺序。
+func TestRemovedWindowNames(t *testing.T) {
+	cases := []struct {
+		name     string
+		oldNames []string
+		next     []string
+		want     []string
+	}{
+		{"移除一个", []string{"a", "b"}, []string{"b"}, []string{"a"}},
+		{"移除多个", []string{"a", "b", "c"}, []string{"c"}, []string{"a", "b"}},
+		{"无移除", []string{"a"}, []string{"a"}, nil},
+		{"新增不算移除", []string{"a"}, []string{"a", "b"}, nil},
+		{"两侧皆空", nil, nil, nil},
+		{"清空全部", []string{"a", "b"}, nil, []string{"a", "b"}},
+		{"两侧含空白与重复", []string{" a ", "a", "b"}, []string{"b"}, []string{"a"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, removedWindowNames(tc.oldNames, tc.next))
+		})
+	}
+}
+
+// TestIntersectsWindowNames 覆盖交集判定：命中/未命中/空集。
+func TestIntersectsWindowNames(t *testing.T) {
+	assert.True(t, intersectsWindowNames([]string{"a"}, []string{"a", "b"}))
+	assert.False(t, intersectsWindowNames([]string{"c"}, []string{"a", "b"}))
+	assert.False(t, intersectsWindowNames(nil, []string{"a"}))
+	assert.False(t, intersectsWindowNames([]string{"a"}, nil))
+}
+
+// ---- 仓库侧休眠窗名归一化（Finding 3）----
+
+// TestNormalizeRepoHibernateWindowNames 覆盖仓库侧引用窗名归一化：nil 配置/无休眠段不动、
+// 有休眠段则 trim + 去重 + 丢空（禁用态也归一化，与启用与否无关）。
+func TestNormalizeRepoHibernateWindowNames(t *testing.T) {
+	// nil 配置。
+	assert.NotPanics(t, func() { normalizeRepoHibernateWindowNames(nil) })
+
+	// 无休眠段：不动。
+	noHb := &mars.Config{Elements: []*mars.Element{{Path: "a"}}}
+	normalizeRepoHibernateWindowNames(noHb)
+	assert.Nil(t, noHb.Hibernate)
+
+	// 有休眠段：trim + 去重 + 丢空。
+	cfg := &mars.Config{Hibernate: &mars.Hibernate{WindowNames: []string{" 夜间 ", "夜间", "", "午休"}}}
+	normalizeRepoHibernateWindowNames(cfg)
+	assert.Equal(t, []string{"夜间", "午休"}, cfg.Hibernate.WindowNames)
+
+	// 全为空白：归一化为 nil。
+	blank := &mars.Config{Hibernate: &mars.Hibernate{WindowNames: []string{"  ", ""}}}
+	normalizeRepoHibernateWindowNames(blank)
+	assert.Nil(t, blank.Hibernate.WindowNames)
+}
+
+// TestRepoBiz_Create_NormalizesWindowNames 覆盖创建路径落库前归一化窗名：带空白的窗名被 trim 成规范名，
+// 否则它与时间窗名不再等价，按名引用的展示/守卫/候选比对会全部漏判。
+func TestRepoBiz_Create_NormalizesWindowNames(t *testing.T) {
+	var got *mars.Config
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		create: func(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
+			got = in.MarsConfig
+			return &Repo{ID: 1}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	_, err := b.Create(context.TODO(), &CreateRepoInput{
+		Name: "app",
+		MarsConfig: &mars.Config{
+			Elements:  []*mars.Element{{Path: "app->replicas", Type: mars.ElementType_ElementTypeInputNumber}},
+			Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{" 夜间 ", "夜间", "午休"}},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"夜间", "午休"}, got.Hibernate.WindowNames)
+}
+
+// TestRepoBiz_Update_NormalizesWindowNames 覆盖更新路径落库前归一化窗名：仓库既有窗「夜间」、
+// 本次提交「 夜间 」trim 后同名，故不产生移除（guard 短路，hb 未设置 listFn 即 panic），落库为规范名。
+func TestRepoBiz_Update_NormalizesWindowNames(t *testing.T) {
+	var got *mars.Config
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show: func(ctx context.Context, id int) (*Repo, error) {
+			return &Repo{ID: 1, Name: "app", MarsConfig: hibernateCfgWithWindows("夜间")}, nil
+		},
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			got = in.MarsConfig
+			return &Repo{ID: 1}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows(" 夜间 "),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"夜间"}, got.Hibernate.WindowNames)
+}
+
 // ---- Clone ----
 
 func TestRepoBiz_Clone_NameTaken(t *testing.T) {

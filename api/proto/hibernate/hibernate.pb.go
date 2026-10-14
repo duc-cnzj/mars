@@ -315,7 +315,7 @@ type UpdateWindowRequest struct {
 	Start       string                 `protobuf:"bytes,3,opt,name=start,proto3" json:"start,omitempty"`
 	End         string                 `protobuf:"bytes,4,opt,name=end,proto3" json:"end,omitempty"`
 	Description string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
-	// cascade 改名时是否级联迁移引用该窗的仓库（把仓库的 mars_config.hibernate.window_name
+	// cascade 改名时是否级联迁移引用该窗的仓库（把仓库的 mars_config.hibernate.window_names
 	// 旧名改写为新名）。false（默认）时若旧名仍被引用则拒绝（400），须先手动迁移或改传 true。
 	Cascade       bool `protobuf:"varint,6,opt,name=cascade,proto3" json:"cascade,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -397,7 +397,7 @@ func (x *UpdateWindowRequest) GetCascade() bool {
 type UpdateWindowResponse struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Window *HibernateWindow       `protobuf:"bytes,1,opt,name=window,proto3" json:"window,omitempty"`
-	// updated_repo_count 本次级联迁移（重写 window_name）的引用仓库数；未级联或未改名时为 0。
+	// updated_repo_count 本次级联迁移（重写 window_names）的引用仓库数；未级联或未改名时为 0。
 	UpdatedRepoCount int32 `protobuf:"varint,2,opt,name=updated_repo_count,json=updatedRepoCount,proto3" json:"updated_repo_count,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -775,20 +775,20 @@ const file_proto_hibernate_hibernate_proto_rawDesc = "" +
 	"repo_names\x18\x06 \x03(\tR\trepoNames\"\x14\n" +
 	"\x12ListWindowsRequest\"G\n" +
 	"\x13ListWindowsResponse\x120\n" +
-	"\x05items\x18\x01 \x03(\v2\x1a.hibernate.HibernateWindowR\x05items\"\xa0\x01\n" +
+	"\x05items\x18\x01 \x03(\v2\x1a.hibernate.HibernateWindowR\x05items\"\xaa\x01\n" +
 	"\x13CreateWindowRequest\x12!\n" +
 	"\x04name\x18\x01 \x01(\tB\r\xe2A\x01\x02\xfaB\x06r\x04 \x01(@R\x04name\x12#\n" +
 	"\x05start\x18\x02 \x01(\tB\r\xe2A\x01\x02\xfaB\x06r\x04 \x01(\x05R\x05start\x12\x1f\n" +
-	"\x03end\x18\x03 \x01(\tB\r\xe2A\x01\x02\xfaB\x06r\x04 \x01(\x05R\x03end\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\"J\n" +
+	"\x03end\x18\x03 \x01(\tB\r\xe2A\x01\x02\xfaB\x06r\x04 \x01(\x05R\x03end\x12*\n" +
+	"\vdescription\x18\x04 \x01(\tB\b\xfaB\x05r\x03(\xff\x01R\vdescription\"J\n" +
 	"\x14CreateWindowResponse\x122\n" +
-	"\x06window\x18\x01 \x01(\v2\x1a.hibernate.HibernateWindowR\x06window\"\xd7\x01\n" +
+	"\x06window\x18\x01 \x01(\v2\x1a.hibernate.HibernateWindowR\x06window\"\xe1\x01\n" +
 	"\x13UpdateWindowRequest\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\x12!\n" +
 	"\x04name\x18\x02 \x01(\tB\r\xe2A\x01\x02\xfaB\x06r\x04 \x01(@R\x04name\x12#\n" +
 	"\x05start\x18\x03 \x01(\tB\r\xe2A\x01\x02\xfaB\x06r\x04 \x01(\x05R\x05start\x12\x1f\n" +
-	"\x03end\x18\x04 \x01(\tB\r\xe2A\x01\x02\xfaB\x06r\x04 \x01(\x05R\x03end\x12 \n" +
-	"\vdescription\x18\x05 \x01(\tR\vdescription\x12\x18\n" +
+	"\x03end\x18\x04 \x01(\tB\r\xe2A\x01\x02\xfaB\x06r\x04 \x01(\x05R\x03end\x12*\n" +
+	"\vdescription\x18\x05 \x01(\tB\b\xfaB\x05r\x03(\xff\x01R\vdescription\x12\x18\n" +
 	"\acascade\x18\x06 \x01(\bR\acascade\"x\n" +
 	"\x14UpdateWindowResponse\x122\n" +
 	"\x06window\x18\x01 \x01(\v2\x1a.hibernate.HibernateWindowR\x06window\x12,\n" +

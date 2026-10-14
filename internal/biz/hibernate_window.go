@@ -139,21 +139,26 @@ func (b *hibernateWindowBiz) List(ctx context.Context) ([]*HibernateWindow, erro
 	return windows, nil
 }
 
-// Create 新建时间窗：先校验名称与时段，再落库（名称重复由唯一索引兜底返回 409）。
+// Create 新建时间窗：先把名称 trim 归一化（窗名是仓库与项目按名引用的自然键，引用侧一律
+// normalizeWindowNames 取规范名；落库前不对齐会让「 W」与「W」成为两个名字，令引用按名未命中而
+// 休眠静默失效），再校验名称与时段，最后落库（名称重复由唯一索引兜底返回 409）。
 func (b *hibernateWindowBiz) Create(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error) {
+	w.Name = strings.TrimSpace(w.Name)
 	if err := ValidateHibernateWindow(w.Name, w.Start, w.End); err != nil {
 		return nil, err
 	}
 	return b.repo.Create(ctx, w)
 }
 
-// Update 更新时间窗：先校验名称与时段，再落库（不存在返回 404、名称重复返回 409）。
+// Update 更新时间窗：先把名称 trim 归一化（同 Create 的自然键对齐理由），再校验名称与时段，
+// 最后落库（不存在返回 404、名称重复返回 409）。
 // 改名时按 cascade 分流——时间窗被仓库的 mars_config.hibernate.window_names 与项目的
 // project_hibernates.window_names 按名引用，改名会让这些引用的对账按旧名未命中而静默跳过，
 // 令其休眠悄然失效：
 //   - cascade=true：原子把引用旧名的仓库与项目改写为新名（返回迁移引用数）；
 //   - cascade=false：旧名仍被引用则拒绝（400），提示改以级联方式确认（对称 Delete 的引用守卫）。
 func (b *hibernateWindowBiz) Update(ctx context.Context, w *HibernateWindow, cascade bool) (*HibernateWindow, int, error) {
+	w.Name = strings.TrimSpace(w.Name)
 	if err := ValidateHibernateWindow(w.Name, w.Start, w.End); err != nil {
 		return nil, 0, err
 	}
@@ -393,7 +398,8 @@ func describeHibernateWindowRefs(repoNames []string, projectIDs []int) string {
 }
 
 // summarizeHibernateWindowRefs 把引用该时间窗的仓库名压成报错用的短串：最多列前 5 个，
-// 超出则以「等 N 个」收尾，避免引用方很多时错误消息过长。
+// 超出则以「等 N 个」收尾，避免引用方很多时错误消息过长。项目 ID 侧的 summarizeHibernateWindowIDs
+// 复用本函数（字符串化后同款截断），保持两类引用展开口径一致。
 func summarizeHibernateWindowRefs(names []string) string {
 	const limit = 5
 	if len(names) > limit {
@@ -402,16 +408,12 @@ func summarizeHibernateWindowRefs(names []string) string {
 	return strings.Join(names, ", ")
 }
 
-// summarizeHibernateWindowIDs 把引用该时间窗的项目 ID 压成报错用的短串：最多列前 5 个，
-// 超出则以「等 N 个」收尾。
+// summarizeHibernateWindowIDs 把引用该时间窗的项目 ID 压成报错用的短串：字符串化后委托
+// summarizeHibernateWindowRefs 做同款「最多 5 个 + 等 N 个」截断。
 func summarizeHibernateWindowIDs(ids []int) string {
-	const limit = 5
 	strs := make([]string, 0, len(ids))
 	for _, id := range ids {
 		strs = append(strs, strconv.Itoa(id))
 	}
-	if len(strs) > limit {
-		return fmt.Sprintf("%s 等 %d 个", strings.Join(strs[:limit], ", "), len(strs))
-	}
-	return strings.Join(strs, ", ")
+	return summarizeHibernateWindowRefs(strs)
 }

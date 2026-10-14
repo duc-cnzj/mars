@@ -30,10 +30,12 @@ type CreateRequest struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	Namespace string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	// 已存在则忽略，不会报错
-	IgnoreIfExists bool   `protobuf:"varint,2,opt,name=ignore_if_exists,json=ignoreIfExists,proto3" json:"ignore_if_exists,omitempty"`
-	Description    string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	IgnoreIfExists bool `protobuf:"varint,2,opt,name=ignore_if_exists,json=ignoreIfExists,proto3" json:"ignore_if_exists,omitempty"`
+	// description 列在 MySQL 为 text（上限 65535 字节），此规则与之对齐，
+	// 避免超长描述穿透校验后触发 DB 1406「Data too long」而被归为 500（应 400）。
+	Description   string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateRequest) Reset() {
@@ -1747,11 +1749,11 @@ var File_proto_namespace_namespace_proto protoreflect.FileDescriptor
 
 const file_proto_namespace_namespace_proto_rawDesc = "" +
 	"\n" +
-	"\x1fproto/namespace/namespace.proto\x12\tnamespace\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17proto/types/types.proto\x1a\x17validate/validate.proto\x1a\x1copenapi/v3/annotations.proto\"\x86\x01\n" +
+	"\x1fproto/namespace/namespace.proto\x12\tnamespace\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17proto/types/types.proto\x1a\x17validate/validate.proto\x1a\x1copenapi/v3/annotations.proto\"\x91\x01\n" +
 	"\rCreateRequest\x12)\n" +
 	"\tnamespace\x18\x01 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\tnamespace\x12(\n" +
-	"\x10ignore_if_exists\x18\x02 \x01(\bR\x0eignoreIfExists\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\"S\n" +
+	"\x10ignore_if_exists\x18\x02 \x01(\bR\x0eignoreIfExists\x12+\n" +
+	"\vdescription\x18\x03 \x01(\tB\t\xfaB\x06r\x04(\xff\xff\x03R\vdescription\"S\n" +
 	"\x0eCreateResponse\x12)\n" +
 	"\x04item\x18\x01 \x01(\v2\x15.types.NamespaceModelR\x04item\x12\x16\n" +
 	"\x06exists\x18\x02 \x01(\bR\x06exists\"*\n" +

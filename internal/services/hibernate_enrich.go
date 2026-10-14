@@ -10,44 +10,17 @@ import (
 	"github.com/samber/lo"
 )
 
-// enrichProjectHibernate 给一批项目模型补充项目级休眠运行态（开关 + 状态）。
-//
-// 项目列表/详情与命名空间列表/详情（其中的嵌套项目）统一走这个出口——工作台的
-// 项目行直接从命名空间列表取数，若只补项目侧接口，行上的休眠图标在点开弹层前
-// 永远显示为「未开启」（列表项零值），用户必须先点一下才能看到真实的开关态。
-//
-// 未配置休眠的项目保持零值（Enabled=false、State=""）。补充失败只记日志不阻断主响应——
-// 休眠信息是附加展示，其查询故障不应让列表/详情整体 500。
-// 传入的模型可跨多个命名空间：id 汇总后一次批量查询，避免逐命名空间 N+1。
-func enrichProjectHibernate(ctx context.Context, logger mlog.Logger, hb biz.HibernateBiz, models ...*types.ProjectModel) {
-	ids := lo.FilterMap(models, func(m *types.ProjectModel, _ int) (int, bool) {
-		return int(m.Id), m.Id > 0
-	})
-	if len(ids) == 0 {
-		return
-	}
-	hmap, err := hb.ListByProjectIDs(ctx, ids...)
-	if err != nil {
-		logger.WarningCtxf(ctx, "补充项目休眠状态失败: %v", err)
-		return
-	}
-	for _, m := range models {
-		h, ok := hmap[int(m.Id)]
-		if !ok || h == nil {
-			continue
-		}
-		m.HibernateEnabled = h.Enabled
-		m.HibernateState = string(h.State)
-		m.HibernateWindowNames = h.WindowNames
-	}
-}
-
-// enrichLivenessHibernate 给项目治理清单条目补充项目级休眠运行态（开关 + 状态 + 选定时间窗），
-// 使后台治理列表能标注并过滤「已开启定时休眠」的项目。与列表/详情同款附加展示语义：id 汇总后
-// 一次批量查询，补充失败只记日志不阻断主响应（休眠信息查询故障不应让治理清单整体 500）。
-func enrichLivenessHibernate(ctx context.Context, logger mlog.Logger, hb biz.HibernateBiz, items []*project.LivenessItem) {
-	ids := lo.FilterMap(items, func(m *project.LivenessItem, _ int) (int, bool) {
-		return int(m.Id), m.Id > 0
+// enrichHibernate 是项目型模型补充休眠运行态的公因子：items 为待补模型，idOf 取模型的项目 ID
+// （id <= 0 的模型跳过），apply 把查到的运行态写回模型。id 汇总后一次批量查询避免 N+1；
+// 补充失败只记日志不阻断主响应——休眠信息是附加展示，其查询故障不应让列表/详情整体 500。
+// 项目列表/详情与命名空间列表/详情（嵌套项目）、治理清单共用此出口。
+func enrichHibernate[T any](
+	ctx context.Context, logger mlog.Logger, hb biz.HibernateBiz,
+	items []T, idOf func(T) int, apply func(T, *biz.ProjectHibernate),
+) {
+	ids := lo.FilterMap(items, func(m T, _ int) (int, bool) {
+		id := idOf(m)
+		return id, id > 0
 	})
 	if len(ids) == 0 {
 		return
@@ -58,14 +31,41 @@ func enrichLivenessHibernate(ctx context.Context, logger mlog.Logger, hb biz.Hib
 		return
 	}
 	for _, m := range items {
-		h, ok := hmap[int(m.Id)]
+		h, ok := hmap[idOf(m)]
 		if !ok || h == nil {
 			continue
 		}
-		m.HibernateEnabled = h.Enabled
-		m.HibernateState = string(h.State)
-		m.HibernateWindowNames = h.WindowNames
+		apply(m, h)
 	}
+}
+
+// enrichProjectHibernate 给一批项目模型补充项目级休眠运行态（开关 + 状态 + 选定时间窗）。
+//
+// 项目列表/详情与命名空间列表/详情（其中的嵌套项目）统一走这个出口——工作台的
+// 项目行直接从命名空间列表取数，若只补项目侧接口，行上的休眠图标在点开弹层前
+// 永远显示为「未开启」（列表项零值），用户必须先点一下才能看到真实的开关态。
+// 传入的模型可跨多个命名空间：id 汇总后一次批量查询，避免逐命名空间 N+1。
+func enrichProjectHibernate(ctx context.Context, logger mlog.Logger, hb biz.HibernateBiz, models ...*types.ProjectModel) {
+	enrichHibernate(ctx, logger, hb, models,
+		func(m *types.ProjectModel) int { return int(m.Id) },
+		func(m *types.ProjectModel, h *biz.ProjectHibernate) {
+			m.HibernateEnabled = h.Enabled
+			m.HibernateState = string(h.State)
+			m.HibernateWindowNames = h.WindowNames
+		})
+}
+
+// enrichLivenessHibernate 给项目治理清单条目补充项目级休眠运行态（开关 + 状态 + 选定时间窗），
+// 使后台治理列表能标注并过滤「已开启定时休眠」的项目。与列表/详情同款附加展示语义（见
+// enrichHibernate）。
+func enrichLivenessHibernate(ctx context.Context, logger mlog.Logger, hb biz.HibernateBiz, items []*project.LivenessItem) {
+	enrichHibernate(ctx, logger, hb, items,
+		func(m *project.LivenessItem) int { return int(m.Id) },
+		func(m *project.LivenessItem, h *biz.ProjectHibernate) {
+			m.HibernateEnabled = h.Enabled
+			m.HibernateState = string(h.State)
+			m.HibernateWindowNames = h.WindowNames
+		})
 }
 
 // repoHibernateWindowNames 取仓库声明的可用休眠时间窗名列表（项目选定子集的合法范围）。

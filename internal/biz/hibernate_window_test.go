@@ -407,6 +407,44 @@ func TestHibernateWindowBiz_Create(t *testing.T) {
 	}
 }
 
+// TestHibernateWindowBiz_Create_TrimsName 覆盖名称归一化：落库前 trim，令「 夜间 」与「夜间」对齐为
+// 同一自然键（引用侧一律取 normalizeWindowNames 的规范名，否则按名引用会未命中、休眠静默失效）。
+func TestHibernateWindowBiz_Create_TrimsName(t *testing.T) {
+	var created *HibernateWindow
+	b := newWindowBiz(&fakeHibernateWindowRepo{
+		createFn: func(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error) {
+			created = w
+			w.ID = 9
+			return w, nil
+		},
+	})
+	got, err := b.Create(context.TODO(), &HibernateWindow{Name: "  夜间  ", Start: "23:00", End: "06:00"})
+	assert.NoError(t, err)
+	assert.Equal(t, "夜间", created.Name)
+	assert.Equal(t, "夜间", got.Name)
+}
+
+// TestHibernateWindowBiz_Update_TrimsName 覆盖名称归一化：更新前先 trim 再比对是否改名。既有记录
+// 名「午休」、本次提交「 午休 」trim 后同名 → 视为未改名（不触发引用校验：refsFn 未设置即 panic），
+// 直接落库。若 trim 晚于比对，此处会误判为改名并进入非级联守卫。
+func TestHibernateWindowBiz_Update_TrimsName(t *testing.T) {
+	var updated *HibernateWindow
+	b := newWindowBiz(&fakeHibernateWindowRepo{
+		getByIDFn: func(ctx context.Context, id int) (*HibernateWindow, error) {
+			return &HibernateWindow{ID: id, Name: "午休"}, nil
+		},
+		updateFn: func(ctx context.Context, w *HibernateWindow) (*HibernateWindow, error) {
+			updated = w
+			return w, nil
+		},
+	})
+	got, n, err := b.Update(context.TODO(), &HibernateWindow{ID: 3, Name: " 午休 ", Start: "12:00", End: "13:00"}, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, got.ID)
+	assert.Equal(t, "午休", updated.Name)
+	assert.Zero(t, n)
+}
+
 // TestHibernateWindowBiz_Update 覆盖更新路径：校验失败短路、未改名放行（不查引用）、
 // 非级联改名（无引用放行 / 有引用 400 / ReposReferencing 错误上抛）、级联改名（迁移引用返回数量 /
 // UpdateCascade 错误上抛）、窗口不存在透传 404、GetByID 与 repo.Update 错误上抛。

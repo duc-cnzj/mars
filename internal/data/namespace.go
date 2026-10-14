@@ -14,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/member"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/schema/mixin"
 	"github.com/duc-cnzj/mars/v6/internal/data/filters"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
@@ -662,6 +663,17 @@ func (repo *namespaceRepo) Delete(ctx context.Context, id int) (err error) {
 		//
 		// 项目按 namespace_id 外键列直连过滤，不用 HasNamespaceWith：后者产出裸
 		// sql.Selector 子查询，不被软删拦截器覆盖（已知的软删陷阱），外键判定等价且更直接。
+		//
+		// 先取本空间下将被级联软删的项目 ID（必须在 UPDATE 之前取：UPDATE 后其 deleted_at 已非空，
+		// 再按 DeletedAtIsNil 查就匹配不到），供随后一并清掉它们的 1:1 休眠运行态——休眠行不随
+		// 项目级联、也无软删 mixin，残留会变孤儿并被时间窗守卫当作幽灵引用（见 projectRepo.Delete
+		// 的同类说明）。
+		cascadeIDs, err := tx.Project.Query().
+			Where(project.NamespaceID(id), project.DeletedAtIsNil()).
+			IDs(ctx)
+		if err != nil {
+			return err
+		}
 		if err := tx.Project.
 			Update().
 			Where(project.NamespaceID(id), project.DeletedAtIsNil()).
@@ -669,6 +681,13 @@ func (repo *namespaceRepo) Delete(ctx context.Context, id int) (err error) {
 			SetDeletedWithNamespace(true).
 			Exec(ctx); err != nil {
 			return err
+		}
+		if len(cascadeIDs) > 0 {
+			if _, err := tx.ProjectHibernate.Delete().
+				Where(projecthibernate.ProjectIDIn(cascadeIDs...)).
+				Exec(ctx); err != nil {
+				return err
+			}
 		}
 		// 空间不存在或已被软删：本条 UPDATE 命中 0 行，UpdateOne 经 sqlgraph 的 ensureExists
 		// 复查（谓词被带进 EXISTS 子查询）返回 ent NotFound，errs.Wrap 归类为 404——与原先

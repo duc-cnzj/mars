@@ -338,11 +338,28 @@ func (repo *projectRepo) Show(ctx context.Context, id int) (proj *biz.Project, e
 	return toProject(first), nil
 }
 
-// Delete 按 ID 删除项目。
+// Delete 按 ID 删除项目（软删），并在同一事务内删除其 1:1 休眠运行态。
+// 休眠行不随项目级联、也无软删 mixin，留在库里会变成孤儿：时间窗守卫 ProjectsReferencing
+// 扫全部休眠行、不论开关状态都按 window_names 计入，于是已删项目仍被当成下游引用，令该窗
+// 从此删不掉也改不了名；而软删项目在 UI 里不可见，管理员没有解除路径。对账侧的兜底清理
+// 只覆盖开关已开（Enabled=true）的记录——开关已关闭的孤儿永远无人回收，是永久锁。故在删除
+// 源头一并清掉。（代价：误删恢复不重建休眠行，恢复后项目休眠配置不再保留，与对账对启用
+// 记录已有的行为一致。）
 func (repo *projectRepo) Delete(ctx context.Context, id int) (err error) {
 	ctx, span := tracer.Start(ctx, "projectRepo/Delete")
 	defer func() { endSpan(span, err) }()
-	return errs.Wrap(repo.data.DB().Project.DeleteOneID(id).Exec(ctx), "delete project")
+	err = repo.data.WithTx(ctx, func(tx *ent.Tx) error {
+		if txErr := tx.Project.DeleteOneID(id).Exec(ctx); txErr != nil {
+			return txErr
+		}
+		if _, txErr := tx.ProjectHibernate.Delete().
+			Where(projecthibernate.ProjectID(id)).
+			Exec(ctx); txErr != nil {
+			return txErr
+		}
+		return nil
+	})
+	return errs.Wrap(err, "delete project")
 }
 
 // UpdateStatusByVersion 校验版本匹配后更新部署状态并递增版本号（乐观锁防并发覆盖）。

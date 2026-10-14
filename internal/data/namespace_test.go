@@ -17,6 +17,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/favorite"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/schema/mixin"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/samber/lo"
@@ -1590,6 +1591,59 @@ func TestNamespaceRepo_Delete_CascadeBatchFlag(t *testing.T) {
 	untouched := entdb.Project.Query().Where(project.ID(p3.ID)).OnlyX(ctx)
 	assert.Nil(t, untouched.DeletedAt)
 	assert.False(t, untouched.DeletedWithNamespace)
+}
+
+// TestNamespaceRepo_Delete_RemovesCascadedHibernateRows 删空间级联软删项目时，须一并清掉这些
+// 项目的 1:1 休眠运行态（详见 Delete 注释）——否则残留行变孤儿，被时间窗守卫当作幽灵引用；
+// 其它空间下的项目休眠行不得被误删。
+func TestNamespaceRepo_Delete_RemovesCascadedHibernateRows(t *testing.T) {
+	entdb, _ := NewSqliteDB()
+	defer entdb.Close()
+	ctx := context.TODO()
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+
+	ns := createNamespace(entdb)
+	other := createNamespace(entdb)
+	p1 := createNamedProject(entdb, ns.ID, "p1")
+	p2 := createNamedProject(entdb, ns.ID, "p2")
+	p3 := createNamedProject(entdb, other.ID, "p3")
+	for _, id := range []int{p1.ID, p2.ID, p3.ID} {
+		entdb.ProjectHibernate.Create().SetProjectID(id).SetEnabled(false).SetState("awake").SetWindowNames([]string{"夜间"}).SaveX(ctx)
+	}
+
+	require.NoError(t, repo.Delete(ctx, ns.ID))
+
+	assert.Equal(t, 0, entdb.ProjectHibernate.Query().Where(projecthibernate.ProjectIDIn(p1.ID, p2.ID)).CountX(ctx))
+	assert.Equal(t, 1, entdb.ProjectHibernate.Query().Where(projecthibernate.ProjectID(p3.ID)).CountX(ctx))
+}
+
+// TestNamespaceRepo_Delete_CascadeIDsQueryError 取级联项目 ID 的查询失败须整体回滚上抛，
+// 不静默跳过休眠行清理（否则留下孤儿）。故障注入在第 1 次 Query 失败。
+func TestNamespaceRepo_Delete_CascadeIDsQueryError(t *testing.T) {
+	entdb, fd := newFailDB(t, 0, -1)
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+	ns := createNamespace(entdb)
+
+	fd.Arm()
+	require.Error(t, repo.Delete(context.TODO(), ns.ID))
+	fd.Disarm()
+}
+
+// TestNamespaceRepo_Delete_HibernateDeleteError 级联项目的休眠行清理失败须整体回滚：
+// 空间与项目软删一并作废，不留半量状态。故障注入在第 2 次 Exec（休眠行删除）失败。
+func TestNamespaceRepo_Delete_HibernateDeleteError(t *testing.T) {
+	entdb, fd := newFailDB(t, -1, 1)
+	repo := NewNamespaceRepo(NewDataImpl(&NewDataParams{Cfg: &config.Config{}, DB: entdb}))
+	ns := createNamespace(entdb)
+	createNamedProject(entdb, ns.ID, "p")
+
+	fd.Arm()
+	require.Error(t, repo.Delete(context.TODO(), ns.ID))
+	fd.Disarm()
+
+	// 事务回滚：空间仍在册（未被软删）。
+	got := entdb.Namespace.Query().Where(namespace.ID(ns.ID)).OnlyX(context.TODO())
+	assert.Nil(t, got.DeletedAt)
 }
 
 // TestNamespaceRepo_RestoreDeleted_BatchPrecision 恢复空间只还原"随空间一起被删"的项目：

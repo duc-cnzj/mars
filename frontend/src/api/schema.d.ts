@@ -1978,7 +1978,7 @@ export interface components {
             end: string;
             description?: string;
             /**
-             * @description cascade 改名时是否级联迁移引用该窗的仓库（把仓库的 mars_config.hibernate.window_name
+             * @description cascade 改名时是否级联迁移引用该窗的仓库（把仓库的 mars_config.hibernate.window_names
              *      旧名改写为新名）。false（默认）时若旧名仍被引用则拒绝（400），须先手动迁移或改传 true。
              */
             cascade?: boolean;
@@ -1987,7 +1987,7 @@ export interface components {
             window: components["schemas"]["hibernate.HibernateWindow"];
             /**
              * Format: int32
-             * @description updated_repo_count 本次级联迁移（重写 window_name）的引用仓库数；未级联或未改名时为 0。
+             * @description updated_repo_count 本次级联迁移（重写 window_names）的引用仓库数；未级联或未改名时为 0。
              */
             updatedRepoCount: number;
         };
@@ -2145,6 +2145,10 @@ export interface components {
             namespace: string;
             /** @description 已存在则忽略，不会报错 */
             ignoreIfExists?: boolean;
+            /**
+             * @description description 列在 MySQL 为 text（上限 65535 字节），此规则与之对齐，
+             *      避免超长描述穿透校验后触发 DB 1406「Data too long」而被归为 500（应 400）。
+             */
             description?: string;
         };
         "namespace.CreateResponse": {

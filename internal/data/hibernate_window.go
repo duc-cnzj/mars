@@ -129,7 +129,9 @@ func (h *hibernateWindowRepo) ReposReferencing(ctx context.Context, name string)
 
 // ProjectsReferencing 返回 project_hibernates.window_names 含 name 的项目 ID（升序）。
 // 删除/改名时间窗前判"项目是否仍有下游关联"用。window_names 是 JSON 数组列，跨方言包含查询
-// 不便，故取回后在 Go 内过滤（项目引用行为可控）。本表无软删 mixin，全部行都参与判定。
+// 不便，故取回后在 Go 内过滤（项目引用行为可控）。本表无软删 mixin，全部行都参与判定——
+// 软删项目不再留悬留行（项目软删时其休眠行随事务一并删除，见 projectRepo/namespaceRepo.Delete），
+// 故不存在"幽灵引用锁死窗口"。
 func (h *hibernateWindowRepo) ProjectsReferencing(ctx context.Context, name string) (out []int, err error) {
 	ctx, span := tracer.Start(ctx, "hibernateWindowRepo/ProjectsReferencing")
 	defer func() { endSpan(span, err) }()

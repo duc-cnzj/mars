@@ -190,7 +190,7 @@ func TestHibernateWindowRepo_UpdateCascade(t *testing.T) {
 
 // TestHibernateWindowRepo_UpdateCascade_SoftDeletedExcluded 验证级联改名不吃进软删仓库：
 // 引用旧名的仓库中，软删的不参与迁移（迁移数只算活跃引用），即 SoftDeleteMixin 拦截器在
-// 事务内同样生效——避免给已删仓库写回 window_name（依赖 UpdateCascade 注释所声称的不变量）。
+// 事务内同样生效——避免给已删仓库写回 window_names（依赖 UpdateCascade 注释所声称的不变量）。
 func TestHibernateWindowRepo_UpdateCascade_SoftDeletedExcluded(t *testing.T) {
 	entdb, err := NewSqliteDB()
 	assert.NoError(t, err)

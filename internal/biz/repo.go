@@ -94,6 +94,7 @@ func (b *repoBiz) Create(ctx context.Context, in *CreateRepoInput) (*Repo, error
 	if err := b.ensureRepoNameFree(ctx, in.Name, "create repo"); err != nil {
 		return nil, err
 	}
+	normalizeRepoHibernateWindowNames(in.MarsConfig)
 	if err := ValidateHibernateConfig(in.MarsConfig); err != nil {
 		return nil, err
 	}
@@ -116,7 +117,9 @@ func (b *repoBiz) Show(ctx context.Context, id int) (*Repo, error) {
 	return b.repoRepo.Show(ctx, id)
 }
 
-// Update 更新仓库，先校验名称唯一（排除自身）与"有项目不可改名"两条业务规则。
+// Update 更新仓库，先校验名称唯一（排除自身）与"有项目不可改名"两条业务规则，再守两条休眠
+// 不变式：停用休眠能力不得留下启用记录的悬空（ensureHibernateDisableAllowed）、移除的窗不得越出
+// 项目选择（ensureWindowRemovalAllowed）。
 func (b *repoBiz) Update(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
 	if in.ID <= 0 {
 		return nil, errs.WrapInvalidArgument(errors.New("repo id 不能小于等于 0"), "update repo")
@@ -136,10 +139,14 @@ func (b *repoBiz) Update(ctx context.Context, in *UpdateRepoInput) (*Repo, error
 	if show.Name != in.Name && len(show.Projects) > 0 {
 		return nil, errs.WrapInvalidArgument(fmt.Errorf("repo 下面还有 %d 个项目，不能修改名称", len(show.Projects)), "update repo")
 	}
+	normalizeRepoHibernateWindowNames(in.MarsConfig)
 	if err := ValidateHibernateConfig(in.MarsConfig); err != nil {
 		return nil, err
 	}
 	if err := b.ensureHibernateDisableAllowed(ctx, show, in.MarsConfig); err != nil {
+		return nil, err
+	}
+	if err := b.ensureWindowRemovalAllowed(ctx, show, in.MarsConfig); err != nil {
 		return nil, err
 	}
 	return b.repoRepo.Update(ctx, in)
@@ -187,6 +194,53 @@ func (b *repoBiz) ensureHibernateDisableAllowed(ctx context.Context, existing *R
 		fmt.Errorf(
 			"仓库下仍有 %d 个项目开启着定时休眠（%s），请先关闭这些项目的休眠开关，再停用仓库的定时休眠能力",
 			len(names), strings.Join(names, "、"),
+		),
+		"更新仓库",
+	)
+}
+
+// ensureWindowRemovalAllowed 校验「从仓库移除休眠时间窗」不击穿项目选择的子集不变式（项目选定的
+// 窗必须落在其仓库可用窗列表内）。仓库编辑表单是「一键配置到多仓库」之外的第二条移除路径：仓库
+// 原本引用了某些窗、本次更新把它们从 window_names 里拿掉，而其下仍有项目选定这些窗时拒绝并点名
+// 项目——否则这些项目的选择将越出仓库可用窗列表（对称 SetWindowRepos 的 guardProjectWindowSubset，
+// 同样计入已禁用项目：其选择保留待重开、UI 可清，非死锁）。仓库从未引用任何窗时 removed 为空，
+// 自然放行。项目级记录查询失败时上抛，不静默放行。
+func (b *repoBiz) ensureWindowRemovalAllowed(ctx context.Context, existing *Repo, next *mars.Config) error {
+	removed := removedWindowNames(
+		existing.GetMarsConfig().GetHibernate().GetWindowNames(),
+		next.GetHibernate().GetWindowNames(),
+	)
+	if len(removed) == 0 {
+		return nil
+	}
+	if len(existing.Projects) == 0 {
+		return nil
+	}
+	ids := make([]int, 0, len(existing.Projects))
+	nameByID := make(map[int]string, len(existing.Projects))
+	for _, p := range existing.Projects {
+		ids = append(ids, p.ID)
+		nameByID[p.ID] = p.Name
+	}
+	records, err := b.hibernateRepo.ListByProjectIDs(ctx, ids...)
+	if err != nil {
+		return err
+	}
+	blocked := make([]string, 0, len(records))
+	for id, rec := range records {
+		if rec == nil || !intersectsWindowNames(rec.WindowNames, removed) {
+			continue
+		}
+		blocked = append(blocked, nameByID[id])
+	}
+	if len(blocked) == 0 {
+		return nil
+	}
+	slices.Sort(blocked)
+	return errs.WrapInvalidArgument(
+		fmt.Errorf(
+			"仓库下仍有 %d 个项目选用了将被移除的休眠时间窗（%s），请先在项目详情里取消这些项目对这些窗的休眠选择，再从仓库移除",
+			len(blocked), strings.Join(blocked, "、"),
 		),
 		"更新仓库",
 	)
@@ -243,6 +297,8 @@ func validateImportItems(items []*ImportRepoItem) error {
 // Import 批量导入仓库：先整体校验所有 name（任一非法或重复即返回、不做任何变更），
 // 再委托 data 层在单个事务内按 name 幂等应用——已存在走 Update（保留原 ID 与关联项目），
 // 不存在走 Create；任一条目落库失败整体回滚，不留下部分导入结果。
+// 注：导入不写仓库的定时休眠配置（新建置空、更新沿用库内既有值，见 data.configWithHibernate），
+// 故无需在此归一化窗名引用。
 func (b *repoBiz) Import(ctx context.Context, items []*ImportRepoItem) (created, updated int, err error) {
 	if len(items) == 0 {
 		return 0, 0, nil

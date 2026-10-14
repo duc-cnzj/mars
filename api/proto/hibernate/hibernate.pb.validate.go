@@ -438,7 +438,16 @@ func (m *CreateWindowRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Description
+	if len(m.GetDescription()) > 255 {
+		err := CreateWindowRequestValidationError{
+			field:  "Description",
+			reason: "value length must be at most 255 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return CreateWindowRequestMultiError(errors)
@@ -717,7 +726,16 @@ func (m *UpdateWindowRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Description
+	if len(m.GetDescription()) > 255 {
+		err := UpdateWindowRequestValidationError{
+			field:  "Description",
+			reason: "value length must be at most 255 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Cascade
 

@@ -57,7 +57,7 @@ func TestNewHibernateSvc(t *testing.T) {
 
 // Test_hibernateSvc_Authorize 覆盖分级门禁：
 //   - ListWindows 登录即可读（admin 与非 admin 均放行）——项目卡片被普通用户可见，
-//     需按 window_name 展示时段；
+//     需按 window_names 展示时段；
 //   - CreateWindow 这类维护操作仍限管理员，非 admin 拒绝。
 func Test_hibernateSvc_Authorize(t *testing.T) {
 	svc, _ := newHibernateSvcWithMocks(t)

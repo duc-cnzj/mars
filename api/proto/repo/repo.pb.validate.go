@@ -846,7 +846,16 @@ func (m *CreateRequest) validate(all bool) error {
 
 	// no validation rules for NeedGitRepo
 
-	// no validation rules for Description
+	if len(m.GetDescription()) > 255 {
+		err := CreateRequestValidationError{
+			field:  "Description",
+			reason: "value length must be at most 255 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if m.GitProjectId != nil {
 		// no validation rules for GitProjectId
@@ -1147,7 +1156,16 @@ func (m *UpdateRequest) validate(all bool) error {
 
 	// no validation rules for NeedGitRepo
 
-	// no validation rules for Description
+	if len(m.GetDescription()) > 255 {
+		err := UpdateRequestValidationError{
+			field:  "Description",
+			reason: "value length must be at most 255 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if m.GitProjectId != nil {
 		// no validation rules for GitProjectId

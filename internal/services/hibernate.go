@@ -14,7 +14,7 @@ var _ hibernatepb.HibernateServer = (*hibernateSvc)(nil)
 
 // hibernateSvc 是 hibernate.HibernateServer 的 gRPC 实现：管理员在后台维护全局共享的
 // 休眠时间窗（命名时段），各仓库按名字引用。经 Authorize 分级门禁：**查询**（ListWindows）
-// 登录即可读——项目卡片对普通用户可见，需按 window_name 展示时段，故查询放行到用户级；
+// 登录即可读——项目卡片对普通用户可见，需按 window_names 展示时段，故查询放行到用户级；
 // **增删改**仍限管理员（时间窗是仓库级休眠配置的前置依赖，维护权限对齐后台）。
 type hibernateSvc struct {
 	hibernatepb.UnimplementedHibernateServer
