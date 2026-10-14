@@ -53,6 +53,8 @@ export type IconName =
   | 'database'
   | 'check'
   | 'moon'
+  | 'moon-fill'
+  | 'zzz'
   | 'sun'
   | 'collapse'
   | 'expand'
@@ -267,6 +269,17 @@ const paths: Record<IconName, ReactNode> = {
   ),
   check: <path d="m5 12 4.5 4.5L19 7" />,
   moon: <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" />,
+  // 与 moon 同款几何，改为填实（fill=currentColor 去掉描边）：休眠开启态只让月亮本体实心，不再靠外层色块
+  'moon-fill': <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" fill="currentColor" stroke="none" />,
+  // 睡眠符号：三个逐级放大的 Z（左下最小 4×4 → 中间 5.5×5.5 → 右上最大 7×7，沿对角线排布），
+  // 项目休眠中时挂在行内提示「已入睡」
+  zzz: (
+    <>
+      <path d="M2 16h4l-4 4h4" />
+      <path d="M8 10.5h5.5l-5.5 5.5h5.5" />
+      <path d="M14.5 3h7l-7 7h7" />
+    </>
+  ),
   sun: (
     <>
       <circle cx="12" cy="12" r="4" />

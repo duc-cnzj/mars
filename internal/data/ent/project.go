@@ -14,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/repo"
 )
 
@@ -88,13 +89,15 @@ type Project struct {
 type ProjectEdges struct {
 	// Changelogs holds the value of the changelogs edge.
 	Changelogs []*Changelog `json:"changelogs,omitempty"`
+	// Hibernate holds the value of the hibernate edge.
+	Hibernate *ProjectHibernate `json:"hibernate,omitempty"`
 	// Repo holds the value of the repo edge.
 	Repo *Repo `json:"repo,omitempty"`
 	// Namespace holds the value of the namespace edge.
 	Namespace *Namespace `json:"namespace,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // ChangelogsOrErr returns the Changelogs value or an error if the edge
@@ -106,12 +109,23 @@ func (e ProjectEdges) ChangelogsOrErr() ([]*Changelog, error) {
 	return nil, &NotLoadedError{edge: "changelogs"}
 }
 
+// HibernateOrErr returns the Hibernate value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ProjectEdges) HibernateOrErr() (*ProjectHibernate, error) {
+	if e.Hibernate != nil {
+		return e.Hibernate, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: projecthibernate.Label}
+	}
+	return nil, &NotLoadedError{edge: "hibernate"}
+}
+
 // RepoOrErr returns the Repo value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e ProjectEdges) RepoOrErr() (*Repo, error) {
 	if e.Repo != nil {
 		return e.Repo, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: repo.Label}
 	}
 	return nil, &NotLoadedError{edge: "repo"}
@@ -122,7 +136,7 @@ func (e ProjectEdges) RepoOrErr() (*Repo, error) {
 func (e ProjectEdges) NamespaceOrErr() (*Namespace, error) {
 	if e.Namespace != nil {
 		return e.Namespace, nil
-	} else if e.loadedTypes[2] {
+	} else if e.loadedTypes[3] {
 		return nil, &NotFoundError{label: namespace.Label}
 	}
 	return nil, &NotLoadedError{edge: "namespace"}
@@ -362,6 +376,11 @@ func (_m *Project) Value(name string) (ent.Value, error) {
 // QueryChangelogs queries the "changelogs" edge of the Project entity.
 func (_m *Project) QueryChangelogs() *ChangelogQuery {
 	return NewProjectClient(_m.config).QueryChangelogs(_m)
+}
+
+// QueryHibernate queries the "hibernate" edge of the Project entity.
+func (_m *Project) QueryHibernate() *ProjectHibernateQuery {
+	return NewProjectClient(_m.config).QueryHibernate(_m)
 }
 
 // QueryRepo queries the "repo" edge of the Project entity.

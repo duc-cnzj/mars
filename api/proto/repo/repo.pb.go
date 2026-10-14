@@ -1135,25 +1135,25 @@ const file_proto_repo_repo_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\x12\x1e\n" +
 	"\aenabled\x18\x02 \x01(\bB\x04\xe2A\x01\x02R\aenabled\"=\n" +
 	"\x15ToggleEnabledResponse\x12$\n" +
-	"\x04item\x18\x01 \x01(\v2\x10.types.RepoModelR\x04item\"\xf5\x01\n" +
+	"\x04item\x18\x01 \x01(\v2\x10.types.RepoModelR\x04item\"\xff\x01\n" +
 	"\rCreateRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaB\x16r\x14 \x012\x10^[a-zA-Z0-9_-]+$R\x04name\x12)\n" +
 	"\x0egit_project_id\x18\x02 \x01(\x05H\x00R\fgitProjectId\x88\x01\x01\x12-\n" +
 	"\vmars_config\x18\x03 \x01(\v2\f.mars.ConfigR\n" +
 	"marsConfig\x12\"\n" +
-	"\rneed_git_repo\x18\x04 \x01(\bR\vneedGitRepo\x12 \n" +
-	"\vdescription\x18\x05 \x01(\tR\vdescriptionB\x11\n" +
+	"\rneed_git_repo\x18\x04 \x01(\bR\vneedGitRepo\x12*\n" +
+	"\vdescription\x18\x05 \x01(\tB\b\xfaB\x05r\x03(\xff\x01R\vdescriptionB\x11\n" +
 	"\x0f_git_project_id\"6\n" +
 	"\x0eCreateResponse\x12$\n" +
-	"\x04item\x18\x01 \x01(\v2\x10.types.RepoModelR\x04item\"\x92\x02\n" +
+	"\x04item\x18\x01 \x01(\v2\x10.types.RepoModelR\x04item\"\x9c\x02\n" +
 	"\rUpdateRequest\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\x121\n" +
 	"\x04name\x18\x02 \x01(\tB\x1d\xe2A\x01\x02\xfaB\x16r\x14 \x012\x10^[a-zA-Z0-9_-]+$R\x04name\x12)\n" +
 	"\x0egit_project_id\x18\x03 \x01(\x05H\x00R\fgitProjectId\x88\x01\x01\x12-\n" +
 	"\vmars_config\x18\x04 \x01(\v2\f.mars.ConfigR\n" +
 	"marsConfig\x12\"\n" +
-	"\rneed_git_repo\x18\x05 \x01(\bR\vneedGitRepo\x12 \n" +
-	"\vdescription\x18\x06 \x01(\tR\vdescriptionB\x11\n" +
+	"\rneed_git_repo\x18\x05 \x01(\bR\vneedGitRepo\x12*\n" +
+	"\vdescription\x18\x06 \x01(\tB\b\xfaB\x05r\x03(\xff\x01R\vdescriptionB\x11\n" +
 	"\x0f_git_project_id\"6\n" +
 	"\x0eUpdateResponse\x12$\n" +
 	"\x04item\x18\x01 \x01(\v2\x10.types.RepoModelR\x04item\"7\n" +

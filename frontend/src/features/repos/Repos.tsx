@@ -31,6 +31,7 @@ import {
 import { DiffViewer } from '@/components/DiffViewer'
 import { copyText } from '@/lib/copy'
 import { RepoFormModal } from './RepoFormModal'
+import { RepoProjectsDialog } from './RepoProjectsDialog'
 
 type RepoModel = components['schemas']['types.RepoModel']
 
@@ -70,6 +71,8 @@ export function Repos() {
   const [toggleTarget, setToggleTarget] = useState<RepoModel | null>(null)
   // 删除确认弹窗：null=关闭；非空=确认删除该仓库（受控弹窗，DELETE 成功前不关闭）
   const [deleteTarget, setDeleteTarget] = useState<RepoModel | null>(null)
+  // 「查看项目」弹窗目标：null=关闭；非空=展示该仓库下的项目 + 逐项启停定时休眠
+  const [projectsTarget, setProjectsTarget] = useState<RepoModel | null>(null)
   // 删除进行中（防重复提交；进行中禁止关闭弹窗，失败保持打开可重试）
   const [deletingId, setDeletingId] = useState(0)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -520,6 +523,11 @@ export function Repos() {
                 </div>
               </div>
               <div className="flex shrink-0 flex-wrap items-center gap-2">
+                {/* 查看项目：弹窗列出该仓库下的项目并逐项启停定时休眠 */}
+                <Button size="sm" variant="outline" onClick={() => setProjectsTarget(item)}>
+                  <Icon name="project" className="size-4" />
+                  {t('repos.projects')}
+                </Button>
                 <Button
                   size="sm"
                   variant="outline"
@@ -636,6 +644,13 @@ export function Repos() {
           ) : null}
         </div>
       </div>
+
+      {/* 查看项目：列出使用该仓库的项目 + 逐项启停定时休眠 */}
+      <RepoProjectsDialog
+        open={!!projectsTarget}
+        repo={projectsTarget}
+        onClose={() => setProjectsTarget(null)}
+      />
 
       {/* 添加 / 编辑 */}
       <RepoFormModal

@@ -309,6 +309,8 @@ type LivenessInput struct {
 	Liveness string
 	// Sort 排序方向：空 = 按更新时间倒序（desc）；asc/desc = 指定更新时间升/降序。
 	Sort string
+	// Hibernate 定时休眠过滤：true = 只看已开启项目级休眠开关的项目，false = 不过滤（全部）。
+	Hibernate bool
 }
 
 // LivenessItem 是活跃度清单中的单条项目：携带部署次数。
@@ -329,6 +331,8 @@ type LivenessPageQuery struct {
 	Search, Liveness, Sort string
 	Page, PageSize         int32
 	Now                    time.Time
+	// Hibernate 为 true 时只返回已开启项目级休眠开关的项目（SQL 侧 HasHibernateWith 过滤）。
+	Hibernate bool
 }
 
 // LivenessPageResult 是活跃度分页查询结果：已分页项目（含仓库/命名空间边）+ 全量统计。
@@ -352,12 +356,13 @@ type LivenessResult struct {
 func (p *projectBiz) Liveness(ctx context.Context, input *LivenessInput) (*LivenessResult, error) {
 	now := time.Now()
 	page, err := p.projRepo.ListLivenessPage(ctx, &LivenessPageQuery{
-		Search:   input.Search,
-		Liveness: input.Liveness,
-		Sort:     input.Sort,
-		Page:     input.Page,
-		PageSize: input.PageSize,
-		Now:      now,
+		Search:    input.Search,
+		Liveness:  input.Liveness,
+		Sort:      input.Sort,
+		Page:      input.Page,
+		PageSize:  input.PageSize,
+		Now:       now,
+		Hibernate: input.Hibernate,
 	})
 	if err != nil {
 		return nil, err

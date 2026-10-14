@@ -18,6 +18,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/predicate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/repo"
 )
 
@@ -536,6 +537,25 @@ func (_u *ProjectUpdate) AddChangelogs(v ...*Changelog) *ProjectUpdate {
 	return _u.AddChangelogIDs(ids...)
 }
 
+// SetHibernateID sets the "hibernate" edge to the ProjectHibernate entity by ID.
+func (_u *ProjectUpdate) SetHibernateID(id int) *ProjectUpdate {
+	_u.mutation.SetHibernateID(id)
+	return _u
+}
+
+// SetNillableHibernateID sets the "hibernate" edge to the ProjectHibernate entity by ID if the given value is not nil.
+func (_u *ProjectUpdate) SetNillableHibernateID(id *int) *ProjectUpdate {
+	if id != nil {
+		_u = _u.SetHibernateID(*id)
+	}
+	return _u
+}
+
+// SetHibernate sets the "hibernate" edge to the ProjectHibernate entity.
+func (_u *ProjectUpdate) SetHibernate(v *ProjectHibernate) *ProjectUpdate {
+	return _u.SetHibernateID(v.ID)
+}
+
 // SetRepo sets the "repo" edge to the Repo entity.
 func (_u *ProjectUpdate) SetRepo(v *Repo) *ProjectUpdate {
 	return _u.SetRepoID(v.ID)
@@ -570,6 +590,12 @@ func (_u *ProjectUpdate) RemoveChangelogs(v ...*Changelog) *ProjectUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveChangelogIDs(ids...)
+}
+
+// ClearHibernate clears the "hibernate" edge to the ProjectHibernate entity.
+func (_u *ProjectUpdate) ClearHibernate() *ProjectUpdate {
+	_u.mutation.ClearHibernate()
+	return _u
 }
 
 // ClearRepo clears the "repo" edge to the Repo entity.
@@ -878,6 +904,35 @@ func (_u *ProjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(changelog.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.HibernateCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   project.HibernateTable,
+			Columns: []string{project.HibernateColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projecthibernate.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.HibernateIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   project.HibernateTable,
+			Columns: []string{project.HibernateColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projecthibernate.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1465,6 +1520,25 @@ func (_u *ProjectUpdateOne) AddChangelogs(v ...*Changelog) *ProjectUpdateOne {
 	return _u.AddChangelogIDs(ids...)
 }
 
+// SetHibernateID sets the "hibernate" edge to the ProjectHibernate entity by ID.
+func (_u *ProjectUpdateOne) SetHibernateID(id int) *ProjectUpdateOne {
+	_u.mutation.SetHibernateID(id)
+	return _u
+}
+
+// SetNillableHibernateID sets the "hibernate" edge to the ProjectHibernate entity by ID if the given value is not nil.
+func (_u *ProjectUpdateOne) SetNillableHibernateID(id *int) *ProjectUpdateOne {
+	if id != nil {
+		_u = _u.SetHibernateID(*id)
+	}
+	return _u
+}
+
+// SetHibernate sets the "hibernate" edge to the ProjectHibernate entity.
+func (_u *ProjectUpdateOne) SetHibernate(v *ProjectHibernate) *ProjectUpdateOne {
+	return _u.SetHibernateID(v.ID)
+}
+
 // SetRepo sets the "repo" edge to the Repo entity.
 func (_u *ProjectUpdateOne) SetRepo(v *Repo) *ProjectUpdateOne {
 	return _u.SetRepoID(v.ID)
@@ -1499,6 +1573,12 @@ func (_u *ProjectUpdateOne) RemoveChangelogs(v ...*Changelog) *ProjectUpdateOne 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveChangelogIDs(ids...)
+}
+
+// ClearHibernate clears the "hibernate" edge to the ProjectHibernate entity.
+func (_u *ProjectUpdateOne) ClearHibernate() *ProjectUpdateOne {
+	_u.mutation.ClearHibernate()
+	return _u
 }
 
 // ClearRepo clears the "repo" edge to the Repo entity.
@@ -1837,6 +1917,35 @@ func (_u *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(changelog.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.HibernateCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   project.HibernateTable,
+			Columns: []string{project.HibernateColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projecthibernate.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.HibernateIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   project.HibernateTable,
+			Columns: []string{project.HibernateColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projecthibernate.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

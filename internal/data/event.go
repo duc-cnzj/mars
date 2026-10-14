@@ -13,7 +13,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/filters"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/event"
-	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/date"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v6/internal/util/slice"
@@ -44,14 +43,13 @@ var _ biz.EventRepo = (*eventRepo)(nil)
 
 // eventRepo 是 biz.EventRepo 的实现：把审计日志写入 DB，并透传事件分发。
 type eventRepo struct {
-	logger  mlog.Logger
 	eventer event.Dispatcher
 	d       dataStore
 }
 
 // NewEventRepo 构造事件 repo 实现，注入事件分发器与 dataStore。
-func NewEventRepo(logger mlog.Logger, d dataStore, eventer event.Dispatcher) biz.EventRepo {
-	return &eventRepo{logger: logger.WithModule("repo/event"), eventer: eventer, d: d}
+func NewEventRepo(d dataStore, eventer event.Dispatcher) biz.EventRepo {
+	return &eventRepo{eventer: eventer, d: d}
 }
 
 // HandleAuditLog 消费事件负载：把 AuditLog 落库为一条事件记录（含变更对比与可选文件 ID）。

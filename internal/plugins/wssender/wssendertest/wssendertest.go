@@ -120,7 +120,7 @@ func NewDB(t *testing.T) *ent.Client {
 func NewTestRepo(t *testing.T, db *ent.Client) biz.ProjectRepo {
 	t.Helper()
 	impl := data.NewDataImpl(&data.NewDataParams{Cfg: &config.Config{}, DB: db})
-	return data.NewProjectRepo(mlog.NewForConfig(nil), impl)
+	return data.NewProjectRepo(impl)
 }
 
 // SeedProject 创建 namespace + project 并返回 nsID、projectID。

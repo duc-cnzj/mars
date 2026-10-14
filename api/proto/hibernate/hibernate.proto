@@ -1,0 +1,153 @@
+syntax = "proto3";
+
+package hibernate;
+
+import "openapi/v3/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+
+option go_package = "github.com/duc-cnzj/mars/api/v6/proto/hibernate;hibernate";
+
+// HibernateWindow 全局休眠时间窗：管理员在后台维护若干命名时段，
+// 各仓库的定时休眠配置按名字引用其中若干（mars.Hibernate.window_names）。
+message HibernateWindow {
+  int32  id          = 1;
+  // name 时间窗名（全局唯一，仓库按名字引用）。
+  string name        = 2;
+  // start 休眠开始时间（服务端本地时区，HH:MM）。
+  string start       = 3;
+  // end 休眠结束时间（HH:MM，start>end 表示跨零点）。
+  string end         = 4;
+  string description = 5;
+  // repo_names 引用该时间窗的仓库名（升序）；仅 ListWindows 填充，供后台列表展示
+  // 「哪些仓库用了这个窗」。
+  repeated string repo_names = 6;
+}
+
+message ListWindowsRequest {}
+
+message ListWindowsResponse {
+  repeated HibernateWindow items = 1;
+}
+
+message CreateWindowRequest {
+  string name        = 1 [(validate.rules).string = {min_bytes: 1, max_bytes: 64}, (google.api.field_behavior) = REQUIRED];
+  string start       = 2 [(validate.rules).string = {min_bytes: 1, max_bytes: 5}, (google.api.field_behavior) = REQUIRED];
+  string end         = 3 [(validate.rules).string = {min_bytes: 1, max_bytes: 5}, (google.api.field_behavior) = REQUIRED];
+  string description = 4 [(validate.rules).string = {max_bytes: 255}];
+}
+
+message CreateWindowResponse {
+  HibernateWindow window = 1;
+}
+
+message UpdateWindowRequest {
+  int32  id          = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  string name        = 2 [(validate.rules).string = {min_bytes: 1, max_bytes: 64}, (google.api.field_behavior) = REQUIRED];
+  string start       = 3 [(validate.rules).string = {min_bytes: 1, max_bytes: 5}, (google.api.field_behavior) = REQUIRED];
+  string end         = 4 [(validate.rules).string = {min_bytes: 1, max_bytes: 5}, (google.api.field_behavior) = REQUIRED];
+  string description = 5 [(validate.rules).string = {max_bytes: 255}];
+  // cascade 改名时是否级联迁移引用该窗的仓库（把仓库的 mars_config.hibernate.window_names
+  // 旧名改写为新名）。false（默认）时若旧名仍被引用则拒绝（400），须先手动迁移或改传 true。
+  bool cascade = 6;
+}
+
+message UpdateWindowResponse {
+  HibernateWindow window = 1;
+  // updated_repo_count 本次级联迁移（重写 window_names）的引用仓库数；未级联或未改名时为 0。
+  int32 updated_repo_count = 2;
+}
+
+message DeleteWindowRequest {
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
+
+message DeleteWindowResponse {}
+
+// SetWindowReposRequest 把一个全局时间窗的「引用仓库集合」重设为 repo_ids（集合语义：
+// 在集合内=引用该窗，不在集合内=不引用——缺则加入、多则移除）。
+message SetWindowReposRequest {
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  // repo_ids 目标引用集合（仓库 ID）；仅可含已配置休眠段的仓库。
+  repeated int32 repo_ids = 2;
+}
+
+message SetWindowReposResponse {
+  // repo_names 保存后引用该时间窗的仓库名（升序），供前端即时刷新展示。
+  repeated string repo_names = 1;
+}
+
+message ListCandidateReposRequest {}
+
+// HibernateRepoOption 可引用休眠时间窗的候选仓库（已配置休眠段的仓库，含禁用）。
+message HibernateRepoOption {
+  int32  id   = 1;
+  string name = 2;
+}
+
+message ListCandidateReposResponse {
+  repeated HibernateRepoOption items = 1;
+}
+
+// Hibernate 全局休眠时间窗的查询与后台管理服务，按方法分级授权（Authorize 门禁）：
+// ListWindows 登录即可读（项目卡片需按 window_names 展示时段），Create/Update/Delete 仅管理员。
+// 路径前缀随权限分层：读接口挂 /api/（面向全体登录用户），写接口挂 /api/admin/（管理员专属）。
+service Hibernate {
+  rpc ListWindows(ListWindowsRequest) returns (ListWindowsResponse) {
+    option (google.api.http)      = {
+      get: "/api/hibernate/windows"
+    };
+    option (openapi.v3.operation) = {
+      summary: "获取全局休眠时间窗列表（登录可读）",
+    };
+  }
+
+  rpc CreateWindow(CreateWindowRequest) returns (CreateWindowResponse) {
+    option (google.api.http)      = {
+      post: "/api/admin/hibernate/windows",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "创建全局休眠时间窗（管理员）",
+    };
+  }
+
+  rpc UpdateWindow(UpdateWindowRequest) returns (UpdateWindowResponse) {
+    option (google.api.http)      = {
+      put: "/api/admin/hibernate/windows/{id}",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "更新全局休眠时间窗（管理员）",
+    };
+  }
+
+  rpc DeleteWindow(DeleteWindowRequest) returns (DeleteWindowResponse) {
+    option (google.api.http)      = {
+      delete: "/api/admin/hibernate/windows/{id}",
+    };
+    option (openapi.v3.operation) = {
+      summary: "删除全局休眠时间窗（管理员）",
+    };
+  }
+
+  rpc SetWindowRepos(SetWindowReposRequest) returns (SetWindowReposResponse) {
+    option (google.api.http)      = {
+      put: "/api/admin/hibernate/windows/{id}/repos",
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "把一个休眠时间窗配置到多个仓库（管理员）",
+    };
+  }
+
+  rpc ListCandidateRepos(ListCandidateReposRequest) returns (ListCandidateReposResponse) {
+    option (google.api.http)      = {
+      get: "/api/admin/hibernate/repos"
+    };
+    option (openapi.v3.operation) = {
+      summary: "列出可引用休眠时间窗的候选仓库（管理员）",
+    };
+  }
+}

@@ -93,6 +93,18 @@ func (f FileFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FileMutation", m)
 }
 
+// The HibernateWindowFunc type is an adapter to allow the use of ordinary
+// function as HibernateWindow mutator.
+type HibernateWindowFunc func(context.Context, *ent.HibernateWindowMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f HibernateWindowFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.HibernateWindowMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HibernateWindowMutation", m)
+}
+
 // The MemberFunc type is an adapter to allow the use of ordinary
 // function as Member mutator.
 type MemberFunc func(context.Context, *ent.MemberMutation) (ent.Value, error)
@@ -127,6 +139,18 @@ func (f ProjectFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProjectMutation", m)
+}
+
+// The ProjectHibernateFunc type is an adapter to allow the use of ordinary
+// function as ProjectHibernate mutator.
+type ProjectHibernateFunc func(context.Context, *ent.ProjectHibernateMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ProjectHibernateFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ProjectHibernateMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProjectHibernateMutation", m)
 }
 
 // The RepoFunc type is an adapter to allow the use of ordinary

@@ -23,30 +23,34 @@ var _ namespace.NamespaceServer = (*namespaceSvc)(nil)
 type namespaceSvc struct {
 	namespace.UnimplementedNamespaceServer
 
-	nsBiz     biz.NamespaceBiz
-	logger    mlog.Logger
-	eventBiz  biz.EventBiz
-	accessBiz biz.AccessBiz
+	nsBiz        biz.NamespaceBiz
+	logger       mlog.Logger
+	eventBiz     biz.EventBiz
+	accessBiz    biz.AccessBiz
+	hibernateBiz biz.HibernateBiz
 }
 
 // NamespaceSvcDeps 收口 NewNamespaceSvc 的构造依赖，由 wire 按字段注入。
 // namespace 域单一业务接口 NamespaceBiz 承载 CRUD 门面 + Create/Delete 编排，
-// 传输层只保留鉴权、协议映射与审计日志（EventBiz）。
+// 传输层只保留鉴权、协议映射与审计日志（EventBiz）；HibernateBiz 用于给列表/详情
+// 里的嵌套项目补项目级休眠态（工作台项目行直接从命名空间列表取数）。
 type NamespaceSvcDeps struct {
-	NsBiz     biz.NamespaceBiz
-	Logger    mlog.Logger
-	EventBiz  biz.EventBiz
-	AccessBiz biz.AccessBiz
+	NsBiz        biz.NamespaceBiz
+	Logger       mlog.Logger
+	EventBiz     biz.EventBiz
+	AccessBiz    biz.AccessBiz
+	HibernateBiz biz.HibernateBiz
 }
 
 // NewNamespaceSvc 收口命名空间服务的构造依赖，由 wire 按字段注入。
 func NewNamespaceSvc(deps NamespaceSvcDeps) namespace.NamespaceServer {
 	logger := deps.Logger.WithModule("services/namespace")
 	return &namespaceSvc{
-		nsBiz:     deps.NsBiz,
-		logger:    logger,
-		eventBiz:  deps.EventBiz,
-		accessBiz: deps.AccessBiz,
+		nsBiz:        deps.NsBiz,
+		logger:       logger,
+		eventBiz:     deps.EventBiz,
+		accessBiz:    deps.AccessBiz,
+		hibernateBiz: deps.HibernateBiz,
 	}
 }
 
@@ -153,6 +157,11 @@ func (n *namespaceSvc) List(ctx context.Context, request *namespace.ListRequest)
 		v.Favorite = fav
 		res.Items = append(res.Items, v)
 	}
+
+	// 嵌套项目补项目级休眠态：工作台项目行直接从这里取数，漏补会让行上的休眠图标
+	// 在点开弹层前恒为「未开启」。跨命名空间汇总 id 一次批量查询，避免逐空间 N+1。
+	enrichProjectHibernate(ctx, n.logger, n.hibernateBiz, lo.FlatMap(res.Items,
+		func(m *types.NamespaceModel, _ int) []*types.ProjectModel { return m.Projects })...)
 
 	return res, nil
 }
@@ -264,7 +273,10 @@ func (n *namespaceSvc) Show(ctx context.Context, input *namespace.ShowRequest) (
 	if nerr != nil {
 		return nil, logError(ctx, n.logger, nerr)
 	}
-	return &namespace.ShowResponse{Item: transformer.FromNamespace(ns)}, nil
+	item := transformer.FromNamespace(ns)
+	// 与 List 同口径：详情里的嵌套项目也要补休眠态（工作台卡片原地刷新走本接口）
+	enrichProjectHibernate(ctx, n.logger, n.hibernateBiz, item.Projects...)
+	return &namespace.ShowResponse{Item: item}, nil
 }
 
 // UpdateDesc 更新命名空间描述，落变更审计日志（含前后 diff）。

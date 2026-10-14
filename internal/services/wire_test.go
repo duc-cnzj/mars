@@ -24,7 +24,7 @@ func Test_NewGrpcRegistry_Success(t *testing.T) {
 	reg := NewGrpcRegistry(NewGrpcRegistryDeps{})
 
 	assert.IsType(t, &app.GrpcRegistry{}, reg)
-	assert.Len(t, reg.EndpointFuncs, 17)
+	assert.Len(t, reg.EndpointFuncs, 18)
 	assert.NotNil(t, reg.RegistryFunc)
 }
 
@@ -44,6 +44,7 @@ func Test_NewGrpcRegistry_RegistersAllServices(t *testing.T) {
 		"event.Event",
 		"file.File",
 		"git.Git",
+		"hibernate.Hibernate",
 		"metrics.Metrics",
 		"namespace.Namespace",
 		"picture.Picture",

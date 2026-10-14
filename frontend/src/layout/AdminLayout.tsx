@@ -16,6 +16,8 @@ import type { TKey } from '@/i18n/keys'
 const ADMIN_NAV: { icon: IconName; labelKey: TKey; to: string; superOnly?: boolean }[] = [
   { icon: 'cluster', labelKey: 'nav.cluster', to: '/admin/cluster' },
   { icon: 'repo', labelKey: 'nav.repo', to: '/admin/repos' },
+  // 全局休眠时间窗：仓库定时休眠的全局前置配置（管理员级、非超管专属），紧邻仓库管理
+  { icon: 'clock', labelKey: 'nav.hibernate', to: '/admin/hibernate' },
   { icon: 'pulse', labelKey: 'nav.events', to: '/admin/events' },
   { icon: 'key', labelKey: 'nav.token', to: '/admin/tokens' },
   { icon: 'boxes', labelKey: 'nav.projects', to: '/admin/projects' },

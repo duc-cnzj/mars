@@ -7,9 +7,10 @@ import { Skeleton } from './shadcn/skeleton'
 export function SkeletonDetail() {
   return (
     <div className="flex flex-col gap-4">
-      {/* 关键指标：3 张卡片（图标块 + 标签 + 值） */}
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        {Array.from({ length: 3 }, (_, i) => (
+      {/* 关键指标：2 张卡片（图标块 + 标签 + 值）——对齐 TabInfo（项目 ID 已移入基础信息，
+          指标卡只剩 CPU / 内存，网格由 3 列收为 2 列） */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {Array.from({ length: 2 }, (_, i) => (
           <div
             key={i}
             className="flex items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2.5"
@@ -23,15 +24,18 @@ export function SkeletonDetail() {
         ))}
       </div>
 
-      {/* 分组区块：图标标题行 + KV 行（首个区块 4 行、其余 2 行，贴近基本信息/时间线） */}
-      {Array.from({ length: 3 }, (_, s) => (
+      {/* 分组区块：图标标题行 + KV 行（首个区块 5 行、其余 2 行，贴近基础信息/休眠/时间线）。
+          首块 5 行对齐 TabInfo 基础信息区（id / repoId / version / gitProjectId / namespaceId）；
+          次块（2 行）对齐 TabInfo 定时休眠区（时间窗 / 副本字段两行 KV，仓库启用休眠时才渲染，
+          骨架按常见态预留）。共 4 块覆盖详情页主要分组，避免加载完成时区块数从少变多跳动 */}
+      {Array.from({ length: 4 }, (_, s) => (
         <div key={s} className="flex flex-col gap-1.5">
           <div className="flex items-center gap-1.5">
             <Skeleton className="h-3.5 w-3.5 rounded" />
             <Skeleton className="h-3.5 w-24" />
           </div>
           <div className="flex flex-col gap-1 pl-0.5">
-            {Array.from({ length: s === 0 ? 4 : 2 }, (_, r) => (
+            {Array.from({ length: s === 0 ? 5 : 2 }, (_, r) => (
               <div key={r} className="flex items-baseline gap-2">
                 <Skeleton className="h-3 w-14" />
                 <Skeleton className="h-3 w-32" />

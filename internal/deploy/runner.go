@@ -559,7 +559,7 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 		)
 
 		if j.IsNotDryRun() {
-			updated, uerr := j.projRepo.UpdateProject(context.TODO(), updateProjectInput)
+			updated, uerr := j.projRepo.UpdateProject(ctx, updateProjectInput)
 			if uerr != nil {
 				// 失败时不得把 j.project 覆盖为 nil：Validate 阶段注册的 OnError/OnFinally
 				// 回调在 Finish 时会解引用 j.project.ID（版本回滚/状态回收），置空会触发

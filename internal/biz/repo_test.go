@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
@@ -85,7 +86,7 @@ func TestRepoBiz_Create_NilInput(t *testing.T) {
 			return nil, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.Create(context.TODO(), nil)
 	assert.Nil(t, got)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -104,7 +105,7 @@ func TestRepoBiz_Create_NameTaken(t *testing.T) {
 			return &Repo{ID: 2, Name: in.Name}, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.Create(context.TODO(), &CreateRepoInput{Name: "app"})
 	assert.Nil(t, got)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -122,7 +123,7 @@ func TestRepoBiz_Create_NameFree(t *testing.T) {
 			return &Repo{ID: 1, Name: in.Name}, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.Create(context.TODO(), &CreateRepoInput{Name: "app"})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, got.ID)
@@ -139,11 +140,83 @@ func TestRepoBiz_Create_GetByNameError(t *testing.T) {
 			return nil, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.Create(context.TODO(), &CreateRepoInput{Name: "app"})
 	assert.Nil(t, got)
 	assert.Equal(t, "db down", err.Error())
 	assert.False(t, created)
+}
+
+// TestRepoBiz_Create_InvalidHibernateConfig 覆盖创建时休眠配置非法（启用但副本字段为空）：
+// 校验失败即报错，不落库（create 未被调用）。
+func TestRepoBiz_Create_InvalidHibernateConfig(t *testing.T) {
+	var created bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) {
+			return nil, notFoundErr()
+		},
+		create: func(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
+			created = true
+			return &Repo{ID: 1}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	got, err := b.Create(context.TODO(), &CreateRepoInput{
+		Name:       "app",
+		MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{Enabled: true}},
+	})
+	assert.Nil(t, got)
+	assert.Error(t, err)
+	assert.False(t, created)
+}
+
+// TestRepoBiz_Create_ValidHibernateConfig 覆盖创建时休眠配置合法：透传到 repo。
+func TestRepoBiz_Create_ValidHibernateConfig(t *testing.T) {
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) {
+			return nil, notFoundErr()
+		},
+		create: func(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
+			return &Repo{ID: 1, Name: in.Name}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	got, err := b.Create(context.TODO(), &CreateRepoInput{
+		Name: "app",
+		MarsConfig: &mars.Config{
+			Elements:  []*mars.Element{{Path: "app->replicas", Type: mars.ElementType_ElementTypeInputNumber}},
+			Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{"夜间"}},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, got.ID)
+}
+
+// TestRepoBiz_Update_InvalidHibernateConfig 覆盖更新时休眠配置非法：校验失败即报错，
+// 不落库（update 未被调用）。
+func TestRepoBiz_Update_InvalidHibernateConfig(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) {
+			return nil, notFoundErr()
+		},
+		show: func(ctx context.Context, id int) (*Repo, error) {
+			return &Repo{ID: 1, Name: "app"}, nil
+		},
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return &Repo{ID: 1}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	got, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{Enabled: true}},
+	})
+	assert.Nil(t, got)
+	assert.Error(t, err)
+	assert.False(t, updated)
 }
 
 // ---- Update ----
@@ -160,7 +233,7 @@ func TestRepoBiz_Update_NameTakenByOther(t *testing.T) {
 			return nil, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "app"})
 	assert.Nil(t, got)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -181,7 +254,7 @@ func TestRepoBiz_Update_SelfNameNoConflict(t *testing.T) {
 			return &Repo{ID: int(in.ID), Name: in.Name}, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "app"})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, got.ID)
@@ -200,7 +273,7 @@ func TestRepoBiz_Update_RenameWithoutProjectsAllowed(t *testing.T) {
 			return &Repo{ID: 1, Name: "new"}, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "new"})
 	assert.Nil(t, err)
 	assert.Equal(t, "new", got.Name)
@@ -219,7 +292,7 @@ func TestRepoBiz_Update_RenameWithProjectsBlocked(t *testing.T) {
 			return nil, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "new"})
 	assert.Nil(t, got)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -232,7 +305,7 @@ func TestRepoBiz_Update_GetByNameError(t *testing.T) {
 			return nil, errors.New("db down")
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "new"})
 	assert.Nil(t, got)
 	assert.Equal(t, "db down", err.Error())
@@ -247,10 +320,520 @@ func TestRepoBiz_Update_ShowError(t *testing.T) {
 			return nil, errors.New("db down")
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "new"})
 	assert.Nil(t, got)
 	assert.Equal(t, "db down", err.Error())
+}
+
+// ---- Update：停用休眠能力守卫 ----
+
+// enabledHibernateRepo 返回「仓库原本已启用休眠能力」的 Repo（含两个项目），供停用守卫用例复用。
+func enabledHibernateRepo() *Repo {
+	return &Repo{
+		ID:   1,
+		Name: "app",
+		MarsConfig: &mars.Config{
+			Hibernate: &mars.Hibernate{
+				Enabled:      true,
+				ReplicaPaths: []string{"app->replicas"},
+				WindowNames:  []string{"夜间"},
+			},
+		},
+		Projects: []*Project{{ID: 1, Name: "web"}, {ID: 2, Name: "api"}},
+	}
+}
+
+// TestRepoBiz_Update_BlockDisableHibernateWithEnabledProjects 覆盖核心守卫：仓库原本启用休眠、
+// 本次要停用，且其下仍有项目开着休眠开关（web 开 / api 关）→ 400，提示点名在用项目，不落库。
+func TestRepoBiz_Update_BlockDisableHibernateWithEnabledProjects(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return enabledHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return nil, nil
+		},
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			assert.ElementsMatch(t, []int{1, 2}, projectIDs)
+			return map[int]*ProjectHibernate{
+				1: {ProjectID: 1, Enabled: true},
+				2: {ProjectID: 2, Enabled: false},
+			}, nil
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	got, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: &mars.Config{}, // 不再启用休眠能力
+	})
+	assert.Nil(t, got)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Equal(t,
+		"仓库下仍有 1 个项目开启着定时休眠（web），请先关闭这些项目的休眠开关，再停用仓库的定时休眠能力",
+		status.Convert(err).Message(),
+	)
+	assert.False(t, updated, "守卫命中不应落库更新")
+}
+
+// TestRepoBiz_Update_BlockDisableHibernateManyProjects 覆盖多个项目在用：项目名按字典序拼接。
+func TestRepoBiz_Update_BlockDisableHibernateManyProjects(t *testing.T) {
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return enabledHibernateRepo(), nil },
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			return map[int]*ProjectHibernate{
+				1: {ProjectID: 1, Enabled: true},
+				2: {ProjectID: 2, Enabled: true},
+			}, nil
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "app", MarsConfig: &mars.Config{}})
+	assert.Error(t, err)
+	assert.Contains(t, status.Convert(err).Message(), "（api、web）")
+}
+
+// TestRepoBiz_Update_AllowDisableHibernateWhenNoEnabledProjects 覆盖放行：仓库原本启用休眠、
+// 本次停用，但其下项目级开关全部未开启 → 准许停用。
+func TestRepoBiz_Update_AllowDisableHibernateWhenNoEnabledProjects(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return enabledHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return &Repo{ID: 1}, nil
+		},
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			return map[int]*ProjectHibernate{1: {ProjectID: 1, Enabled: false}}, nil
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "app", MarsConfig: &mars.Config{}})
+	assert.NoError(t, err)
+	assert.True(t, updated)
+}
+
+// TestRepoBiz_Update_AllowDisableHibernateWhenRepoHasNoProjects 覆盖放行：仓库原本启用休眠、
+// 本次停用，且其下没有任何项目 → 无需查项目级记录（hb 未设置 listFn，若被调用即 panic），直接放行。
+func TestRepoBiz_Update_AllowDisableHibernateWhenRepoHasNoProjects(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show: func(ctx context.Context, id int) (*Repo, error) {
+			return &Repo{
+				ID:   1,
+				Name: "app",
+				MarsConfig: &mars.Config{
+					Hibernate: &mars.Hibernate{
+						Enabled:      true,
+						ReplicaPaths: []string{"app->replicas"},
+						WindowNames:  []string{"夜间"},
+					},
+				},
+			}, nil
+		},
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return &Repo{ID: 1}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "app", MarsConfig: &mars.Config{}})
+	assert.NoError(t, err)
+	assert.True(t, updated)
+}
+
+// TestRepoBiz_Update_AllowHibernateStillEnabled 覆盖放行：本次仍保持启用休眠能力 → 守卫短路，
+// 不查项目级记录（hb 未设置 listFn，若被调用即 panic）。
+func TestRepoBiz_Update_AllowHibernateStillEnabled(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return enabledHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return &Repo{ID: 1}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:   1,
+		Name: "app",
+		MarsConfig: &mars.Config{
+			Elements:  []*mars.Element{{Path: "app->replicas", Type: mars.ElementType_ElementTypeInputNumber}},
+			Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{"夜间"}},
+		},
+	})
+	assert.NoError(t, err)
+	assert.True(t, updated)
+}
+
+// TestRepoBiz_Update_AllowWhenRepoNeverEnabledHibernate 覆盖放行：仓库原本就未启用休眠能力
+// （历史残留 Enabled 记录不应卡死仓库编辑）→ 守卫短路，不查项目级记录。
+func TestRepoBiz_Update_AllowWhenRepoNeverEnabledHibernate(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show: func(ctx context.Context, id int) (*Repo, error) {
+			return &Repo{ID: 1, Name: "app", Projects: []*Project{{ID: 1, Name: "web"}}}, nil
+		},
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return &Repo{ID: 1}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "app", MarsConfig: &mars.Config{}})
+	assert.NoError(t, err)
+	assert.True(t, updated)
+}
+
+// TestRepoBiz_Update_DisableHibernateListError 覆盖项目级记录查询失败：原样上抛，不静默放行、不落库。
+func TestRepoBiz_Update_DisableHibernateListError(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return enabledHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return nil, nil
+		},
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			return nil, errors.New("db down")
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "app", MarsConfig: &mars.Config{}})
+	assert.Equal(t, "db down", err.Error())
+	assert.False(t, updated)
+}
+
+// ---- Update：移除休眠时间窗守卫 ----
+
+// hibernateCfgWithWindows 造一个启用态、可承载 "0"（副本字段为 InputNumber）且引用给定窗的仓库
+// 休眠配置——过 ValidateHibernateConfig，供移除窗守卫用例作「本次提交」的配置。
+func hibernateCfgWithWindows(windows ...string) *mars.Config {
+	return &mars.Config{
+		Elements:  []*mars.Element{{Path: "app->replicas", Type: mars.ElementType_ElementTypeInputNumber}},
+		Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: windows},
+	}
+}
+
+// windowedHibernateRepo 返回「仓库原本已启用休眠能力、引用两个窗」的 Repo（含 web/api 两个项目），
+// 供移除窗守卫用例复用。
+func windowedHibernateRepo() *Repo {
+	return &Repo{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows("夜间", "午休"),
+		Projects:   []*Project{{ID: 1, Name: "web"}, {ID: 2, Name: "api"}},
+	}
+}
+
+// TestRepoBiz_Update_BlockRemoveWindowSelectedByProject 覆盖核心守卫：仓库原本引用两个窗、本次只保留
+// 一个（移除「午休」），而其下 web 项目（已禁用也计入——选择保留待重开）仍选定「午休」→ 400 点名项目，
+// 不落库。这是「从仓库移除窗」的第二条路径（第一条是 SetWindowRepos 的 guardProjectWindowSubset）。
+func TestRepoBiz_Update_BlockRemoveWindowSelectedByProject(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return windowedHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return nil, nil
+		},
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			assert.ElementsMatch(t, []int{1, 2}, projectIDs)
+			return map[int]*ProjectHibernate{
+				1: {ProjectID: 1, Enabled: false, WindowNames: []string{"午休"}},
+				2: {ProjectID: 2, Enabled: true, WindowNames: []string{"夜间"}},
+			}, nil
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	got, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows("夜间"),
+	})
+	assert.Nil(t, got)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Equal(t,
+		"仓库下仍有 1 个项目选用了将被移除的休眠时间窗（web），请先在项目详情里取消这些项目对这些窗的休眠选择，再从仓库移除",
+		status.Convert(err).Message(),
+	)
+	assert.False(t, updated, "守卫命中不应落库更新")
+}
+
+// TestRepoBiz_Update_BlockRemoveWindowManyProjects 覆盖多个项目选用被移除窗：项目名按字典序拼接。
+func TestRepoBiz_Update_BlockRemoveWindowManyProjects(t *testing.T) {
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return windowedHibernateRepo(), nil },
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			return map[int]*ProjectHibernate{
+				1: {ProjectID: 1, WindowNames: []string{"午休"}},
+				2: {ProjectID: 2, WindowNames: []string{"午休", "夜间"}},
+			}, nil
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows("夜间"),
+	})
+	assert.Error(t, err)
+	assert.Contains(t, status.Convert(err).Message(), "（api、web）")
+}
+
+// TestRepoBiz_Update_AllowRemoveWindowNoProjectSelected 覆盖放行：项目选择与移除集无交集 → 放行落库。
+func TestRepoBiz_Update_AllowRemoveWindowNoProjectSelected(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return windowedHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return &Repo{ID: 1}, nil
+		},
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			return map[int]*ProjectHibernate{
+				1: {ProjectID: 1, WindowNames: []string{"夜间"}},
+				2: {ProjectID: 2, WindowNames: nil}, // 未选任何窗
+			}, nil
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows("夜间"),
+	})
+	assert.NoError(t, err)
+	assert.True(t, updated)
+}
+
+// TestRepoBiz_Update_AllowNoWindowRemoved 覆盖放行：本次未移除任何窗（窗列表未缩减）→ 守卫短路，
+// 不查项目级记录（hb 未设置 listFn，若被调用即 panic）。
+func TestRepoBiz_Update_AllowNoWindowRemoved(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return windowedHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return &Repo{ID: 1}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows("夜间", "午休"),
+	})
+	assert.NoError(t, err)
+	assert.True(t, updated)
+}
+
+// TestRepoBiz_Update_AllowRemoveWindowNoProjects 覆盖放行：仓库原本引用窗、本次移除，但其下没有任何
+// 项目 → 守卫短路，不查项目级记录（hb 未设置 listFn，若被调用即 panic）。禁用休眠同时清空窗列表，
+// 无项目时放行。
+func TestRepoBiz_Update_AllowRemoveWindowNoProjects(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show: func(ctx context.Context, id int) (*Repo, error) {
+			return &Repo{
+				ID:   1,
+				Name: "app",
+				MarsConfig: &mars.Config{
+					Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{"夜间"}},
+				},
+			}, nil
+		},
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return &Repo{ID: 1}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "app", MarsConfig: &mars.Config{}})
+	assert.NoError(t, err)
+	assert.True(t, updated)
+}
+
+// TestRepoBiz_Update_RemoveWindowListError 覆盖项目级记录查询失败：原样上抛，不静默放行、不落库。
+func TestRepoBiz_Update_RemoveWindowListError(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return windowedHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return nil, nil
+		},
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			return nil, errors.New("db down")
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows("夜间"),
+	})
+	assert.Equal(t, "db down", err.Error())
+	assert.False(t, updated)
+}
+
+// TestRepoBiz_Update_BlockRemoveWindowWhenDisabling 覆盖「停用仓库休眠同时清空窗列表」仍受子集守卫约束：
+// 仓库原本启用、本次停用且移除全部窗，其下 web 项目（已禁用）仍选定被移除的窗 → 400（对称地计入禁用
+// 项目的选择；停用守卫只拦启用中的项目，本守卫补齐禁用项目的漂移）。
+func TestRepoBiz_Update_BlockRemoveWindowWhenDisabling(t *testing.T) {
+	var updated bool
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show:      func(ctx context.Context, id int) (*Repo, error) { return windowedHibernateRepo(), nil },
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			updated = true
+			return nil, nil
+		},
+	}
+	hb := &fakeHibernateRepo{
+		listFn: func(ctx context.Context, projectIDs ...int) (map[int]*ProjectHibernate, error) {
+			return map[int]*ProjectHibernate{
+				1: {ProjectID: 1, Enabled: false, WindowNames: []string{"夜间", "午休"}},
+			}, nil
+		},
+	}
+	b := NewRepoBiz(hb, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 1, Name: "app", MarsConfig: &mars.Config{}})
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Contains(t, status.Convert(err).Message(), "（web）")
+	assert.False(t, updated)
+}
+
+// TestRemovedWindowNames 覆盖移除集计算：两侧归一化后取差集，保持 oldNames 顺序。
+func TestRemovedWindowNames(t *testing.T) {
+	cases := []struct {
+		name     string
+		oldNames []string
+		next     []string
+		want     []string
+	}{
+		{"移除一个", []string{"a", "b"}, []string{"b"}, []string{"a"}},
+		{"移除多个", []string{"a", "b", "c"}, []string{"c"}, []string{"a", "b"}},
+		{"无移除", []string{"a"}, []string{"a"}, nil},
+		{"新增不算移除", []string{"a"}, []string{"a", "b"}, nil},
+		{"两侧皆空", nil, nil, nil},
+		{"清空全部", []string{"a", "b"}, nil, []string{"a", "b"}},
+		{"两侧含空白与重复", []string{" a ", "a", "b"}, []string{"b"}, []string{"a"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, removedWindowNames(tc.oldNames, tc.next))
+		})
+	}
+}
+
+// TestIntersectsWindowNames 覆盖交集判定：命中/未命中/空集。
+func TestIntersectsWindowNames(t *testing.T) {
+	assert.True(t, intersectsWindowNames([]string{"a"}, []string{"a", "b"}))
+	assert.False(t, intersectsWindowNames([]string{"c"}, []string{"a", "b"}))
+	assert.False(t, intersectsWindowNames(nil, []string{"a"}))
+	assert.False(t, intersectsWindowNames([]string{"a"}, nil))
+}
+
+// ---- 仓库侧休眠窗名归一化（Finding 3）----
+
+// TestNormalizeRepoHibernateWindowNames 覆盖仓库侧引用窗名归一化：nil 配置/无休眠段不动、
+// 有休眠段则 trim + 去重 + 丢空（禁用态也归一化，与启用与否无关）。
+func TestNormalizeRepoHibernateWindowNames(t *testing.T) {
+	// nil 配置。
+	assert.NotPanics(t, func() { normalizeRepoHibernateWindowNames(nil) })
+
+	// 无休眠段：不动。
+	noHb := &mars.Config{Elements: []*mars.Element{{Path: "a"}}}
+	normalizeRepoHibernateWindowNames(noHb)
+	assert.Nil(t, noHb.Hibernate)
+
+	// 有休眠段：trim + 去重 + 丢空。
+	cfg := &mars.Config{Hibernate: &mars.Hibernate{WindowNames: []string{" 夜间 ", "夜间", "", "午休"}}}
+	normalizeRepoHibernateWindowNames(cfg)
+	assert.Equal(t, []string{"夜间", "午休"}, cfg.Hibernate.WindowNames)
+
+	// 全为空白：归一化为 nil。
+	blank := &mars.Config{Hibernate: &mars.Hibernate{WindowNames: []string{"  ", ""}}}
+	normalizeRepoHibernateWindowNames(blank)
+	assert.Nil(t, blank.Hibernate.WindowNames)
+}
+
+// TestRepoBiz_Create_NormalizesWindowNames 覆盖创建路径落库前归一化窗名：带空白的窗名被 trim 成规范名，
+// 否则它与时间窗名不再等价，按名引用的展示/守卫/候选比对会全部漏判。
+func TestRepoBiz_Create_NormalizesWindowNames(t *testing.T) {
+	var got *mars.Config
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		create: func(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
+			got = in.MarsConfig
+			return &Repo{ID: 1}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	_, err := b.Create(context.TODO(), &CreateRepoInput{
+		Name: "app",
+		MarsConfig: &mars.Config{
+			Elements:  []*mars.Element{{Path: "app->replicas", Type: mars.ElementType_ElementTypeInputNumber}},
+			Hibernate: &mars.Hibernate{Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{" 夜间 ", "夜间", "午休"}},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"夜间", "午休"}, got.Hibernate.WindowNames)
+}
+
+// TestRepoBiz_Update_NormalizesWindowNames 覆盖更新路径落库前归一化窗名：仓库既有窗「夜间」、
+// 本次提交「 夜间 」trim 后同名，故不产生移除（guard 短路，hb 未设置 listFn 即 panic），落库为规范名。
+func TestRepoBiz_Update_NormalizesWindowNames(t *testing.T) {
+	var got *mars.Config
+	r := &fakeRepoRepoForRepoBiz{
+		getByName: func(ctx context.Context, name string) (*Repo, error) { return nil, notFoundErr() },
+		show: func(ctx context.Context, id int) (*Repo, error) {
+			return &Repo{ID: 1, Name: "app", MarsConfig: hibernateCfgWithWindows("夜间")}, nil
+		},
+		update: func(ctx context.Context, in *UpdateRepoInput) (*Repo, error) {
+			got = in.MarsConfig
+			return &Repo{ID: 1}, nil
+		},
+	}
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
+	_, err := b.Update(context.TODO(), &UpdateRepoInput{
+		ID:         1,
+		Name:       "app",
+		MarsConfig: hibernateCfgWithWindows(" 夜间 "),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"夜间"}, got.Hibernate.WindowNames)
 }
 
 // ---- Clone ----
@@ -267,7 +850,7 @@ func TestRepoBiz_Clone_NameTaken(t *testing.T) {
 			return nil, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.Clone(context.TODO(), &CloneRepoInput{ID: 1, Name: "app"})
 	assert.Nil(t, got)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -286,7 +869,7 @@ func TestRepoBiz_Clone_NameFree(t *testing.T) {
 			return &Repo{ID: 2, Name: "app"}, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.Clone(context.TODO(), &CloneRepoInput{ID: 1, Name: "app"})
 	assert.Nil(t, err)
 	assert.Equal(t, 2, got.ID)
@@ -303,7 +886,7 @@ func TestRepoBiz_Clone_GetByNameError(t *testing.T) {
 			return nil, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.Clone(context.TODO(), &CloneRepoInput{ID: 1, Name: "app"})
 	assert.Nil(t, got)
 	assert.Equal(t, "db down", err.Error())
@@ -324,7 +907,7 @@ func TestRepoBiz_Delete_HasProjectsBlocked(t *testing.T) {
 			return nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	err := b.Delete(context.TODO(), 1)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
 	assert.Equal(t, "repo 下面还有 2 个项目，不能删除", status.Convert(err).Message())
@@ -341,7 +924,7 @@ func TestRepoBiz_Delete_Happy(t *testing.T) {
 			return nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	assert.Nil(t, b.Delete(context.TODO(), 1))
 }
 
@@ -351,7 +934,7 @@ func TestRepoBiz_Delete_ShowError(t *testing.T) {
 			return nil, errors.New("db down")
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	assert.Equal(t, "db down", b.Delete(context.TODO(), 1).Error())
 }
 
@@ -371,7 +954,7 @@ func TestRepoBiz_ToggleEnabled_DisableWithProjectsBlocked(t *testing.T) {
 			return nil, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.ToggleEnabled(context.TODO(), 1, false)
 	assert.Nil(t, got)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -392,7 +975,7 @@ func TestRepoBiz_ToggleEnabled_DisableWithoutProjectsAllowed(t *testing.T) {
 			return &Repo{ID: 1, Name: "app", Enabled: false}, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.ToggleEnabled(context.TODO(), 1, false)
 	assert.Nil(t, err)
 	assert.False(t, got.Enabled)
@@ -408,7 +991,7 @@ func TestRepoBiz_ToggleEnabled_EnableNoProjectsCheck(t *testing.T) {
 			return &Repo{ID: 1, Name: "app", Enabled: true}, nil
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.ToggleEnabled(context.TODO(), 1, true)
 	assert.Nil(t, err)
 	assert.True(t, got.Enabled)
@@ -420,7 +1003,7 @@ func TestRepoBiz_ToggleEnabled_GetError(t *testing.T) {
 			return nil, errors.New("db down")
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.ToggleEnabled(context.TODO(), 1, true)
 	assert.Nil(t, got)
 	assert.Equal(t, "db down", err.Error())
@@ -435,7 +1018,7 @@ func TestRepoBiz_ToggleEnabled_ShowError(t *testing.T) {
 			return nil, errors.New("db down")
 		},
 	}
-	b := NewRepoBiz(r)
+	b := NewRepoBiz(&fakeHibernateRepo{}, r)
 	got, err := b.ToggleEnabled(context.TODO(), 1, false)
 	assert.Nil(t, got)
 	assert.Equal(t, "db down", err.Error())
@@ -445,7 +1028,7 @@ func TestRepoBiz_ToggleEnabled_ShowError(t *testing.T) {
 
 func TestRepoBiz_Create_EmptyName(t *testing.T) {
 	var created bool
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{create: func(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{create: func(ctx context.Context, in *CreateRepoInput) (*Repo, error) {
 		created = true
 		return &Repo{}, nil
 	}})
@@ -457,7 +1040,7 @@ func TestRepoBiz_Create_EmptyName(t *testing.T) {
 }
 
 func TestRepoBiz_Update_InvalidID(t *testing.T) {
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{})
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{})
 	got, err := b.Update(context.TODO(), &UpdateRepoInput{ID: 0})
 	assert.Nil(t, got)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -465,14 +1048,14 @@ func TestRepoBiz_Update_InvalidID(t *testing.T) {
 }
 
 func TestRepoBiz_Delete_InvalidID(t *testing.T) {
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{})
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{})
 	err := b.Delete(context.TODO(), 0)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
 	assert.Equal(t, "repo id 不能小于等于 0", status.Convert(err).Message())
 }
 
 func TestRepoBiz_Clone_InvalidID(t *testing.T) {
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{})
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{})
 	got, err := b.Clone(context.TODO(), &CloneRepoInput{ID: 0, Name: "app"})
 	assert.Nil(t, got)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -480,7 +1063,7 @@ func TestRepoBiz_Clone_InvalidID(t *testing.T) {
 }
 
 func TestRepoBiz_Clone_EmptyName(t *testing.T) {
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{})
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{})
 	got, err := b.Clone(context.TODO(), &CloneRepoInput{ID: 1, Name: ""})
 	assert.Nil(t, got)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -488,7 +1071,7 @@ func TestRepoBiz_Clone_EmptyName(t *testing.T) {
 }
 
 func TestRepoBiz_ToggleEnabled_InvalidID(t *testing.T) {
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{})
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{})
 	got, err := b.ToggleEnabled(context.TODO(), 0, false)
 	assert.Nil(t, got)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -500,7 +1083,7 @@ func TestRepoBiz_ToggleEnabled_InvalidID(t *testing.T) {
 func TestRepoBiz_All_Passthrough(t *testing.T) {
 	enabled := true
 	var allCalled bool
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		all: func(ctx context.Context, in *AllRepoRequest) ([]*Repo, error) {
 			allCalled = true
 			assert.True(t, *in.Enabled)
@@ -515,7 +1098,7 @@ func TestRepoBiz_All_Passthrough(t *testing.T) {
 
 func TestRepoBiz_List_Passthrough(t *testing.T) {
 	var listCalled bool
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		list: func(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error) {
 			listCalled = true
 			assert.Equal(t, int32(1), in.Page)
@@ -531,7 +1114,7 @@ func TestRepoBiz_List_Passthrough(t *testing.T) {
 
 func TestRepoBiz_Get_Passthrough(t *testing.T) {
 	var getCalled bool
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		get: func(ctx context.Context, id int) (*Repo, error) {
 			getCalled = true
 			assert.Equal(t, 1, id)
@@ -548,7 +1131,7 @@ func TestRepoBiz_Get_Passthrough(t *testing.T) {
 // biz 层不做任何加工（名称唯一性校验只在 Create/Clone/Update 里显式调用）。
 func TestRepoBiz_GetByName_Passthrough(t *testing.T) {
 	var gotName string
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
 			gotName = name
 			return &Repo{ID: 1, Name: name}, nil
@@ -563,7 +1146,7 @@ func TestRepoBiz_GetByName_Passthrough(t *testing.T) {
 // TestRepoBiz_GetByName_ErrorPassthrough 底层错误（含 NotFound）原样上抛，
 // 不在 biz 层改写语义——404 归类由 errs 在 data 边界完成。
 func TestRepoBiz_GetByName_ErrorPassthrough(t *testing.T) {
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		getByName: func(ctx context.Context, name string) (*Repo, error) {
 			return nil, notFoundErr()
 		},
@@ -575,7 +1158,7 @@ func TestRepoBiz_GetByName_ErrorPassthrough(t *testing.T) {
 
 func TestRepoBiz_Show_Passthrough(t *testing.T) {
 	var showCalled bool
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		show: func(ctx context.Context, id int) (*Repo, error) {
 			showCalled = true
 			return &Repo{ID: id, Name: "app"}, nil
@@ -591,7 +1174,7 @@ func TestRepoBiz_Show_Passthrough(t *testing.T) {
 
 func TestRepoBiz_Import_EmptyItems(t *testing.T) {
 	var called bool
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		importFn: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
 			called = true
 			return 0, 0, nil
@@ -606,7 +1189,7 @@ func TestRepoBiz_Import_EmptyItems(t *testing.T) {
 
 func TestRepoBiz_Import_NilItem(t *testing.T) {
 	var called bool
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		importFn: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
 			called = true
 			return 0, 0, nil
@@ -624,7 +1207,7 @@ func TestRepoBiz_Import_InvalidName(t *testing.T) {
 	for _, name := range []string{"", "bad name", "bad/name", "中文"} {
 		t.Run(name, func(t *testing.T) {
 			var called bool
-			b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+			b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 				importFn: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
 					called = true
 					return 0, 0, nil
@@ -644,7 +1227,7 @@ func TestRepoBiz_Import_DuplicateName(t *testing.T) {
 	// 同一导入文件内同名：若放行，pre-phase 两条都判 create，无唯一约束下会落重复行。
 	// 必须在委托前整体拒绝（零部分变更）。
 	var called bool
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		importFn: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
 			called = true
 			return 0, 0, nil
@@ -664,7 +1247,7 @@ func TestRepoBiz_Import_DuplicateName(t *testing.T) {
 func TestRepoBiz_Import_ValidationBeforeAnyMutation(t *testing.T) {
 	// 校验先行：首个 name 合法、第二个非法时，import 不被调用（零部分变更）。
 	var called bool
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		importFn: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
 			called = true
 			return 0, 0, nil
@@ -687,7 +1270,7 @@ func TestRepoBiz_Import_Delegates(t *testing.T) {
 		{Name: "new", Enabled: false},
 	}
 	var got []*ImportRepoItem
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		importFn: func(ctx context.Context, in []*ImportRepoItem) (int, int, error) {
 			got = in
 			return 1, 1, nil
@@ -701,7 +1284,7 @@ func TestRepoBiz_Import_Delegates(t *testing.T) {
 }
 
 func TestRepoBiz_Import_ErrorPassthrough(t *testing.T) {
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		importFn: func(ctx context.Context, in []*ImportRepoItem) (int, int, error) {
 			return 0, 0, errors.New("db down")
 		},
@@ -716,7 +1299,7 @@ func TestRepoBiz_Import_ErrorPassthrough(t *testing.T) {
 
 func TestRepoBiz_PreviewImport_EmptyItems(t *testing.T) {
 	var called bool
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		previewImport: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
 			called = true
 			return 0, 0, nil
@@ -743,7 +1326,7 @@ func TestRepoBiz_PreviewImport_InvalidItems(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var called bool
-			b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+			b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 				previewImport: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
 					called = true
 					return 0, 0, nil
@@ -762,7 +1345,7 @@ func TestRepoBiz_PreviewImport_InvalidItems(t *testing.T) {
 func TestRepoBiz_PreviewImport_Delegates(t *testing.T) {
 	items := []*ImportRepoItem{{Name: "app"}, {Name: "new"}}
 	var got []*ImportRepoItem
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		previewImport: func(ctx context.Context, in []*ImportRepoItem) (int, int, error) {
 			got = in
 			return 1, 1, nil
@@ -776,7 +1359,7 @@ func TestRepoBiz_PreviewImport_Delegates(t *testing.T) {
 }
 
 func TestRepoBiz_PreviewImport_ErrorPassthrough(t *testing.T) {
-	b := NewRepoBiz(&fakeRepoRepoForRepoBiz{
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
 		previewImport: func(ctx context.Context, in []*ImportRepoItem) (int, int, error) {
 			return 0, 0, errors.New("db down")
 		},

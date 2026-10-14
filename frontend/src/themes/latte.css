@@ -28,6 +28,7 @@
   --warn: #df8e1d; --warn-soft: rgba(223, 142, 29, 0.08);
   --err: #d20f39;  --err-soft: rgba(210, 15, 57, 0.08);
   --info: #179299; --info-soft: rgba(23, 146, 153, 0.08);
+  --hibernate: #1e40af;
 
   --chart-1: #1e66f5;
   --chart-2: #179299;

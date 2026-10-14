@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import * as YAML from 'yaml'
 import type { components } from '@/api/schema'
+import type { TKey } from '@/i18n/keys'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
 import { CodeEditor, getMode } from '@/components/CodeEditor'
@@ -11,7 +12,7 @@ import { Tag } from '@/components/ui'
 import { Skeleton } from '@/components/ui/shadcn/skeleton'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
-import { SearchableSelect } from '@/components/SearchableSelect'
+import { SearchableSelect, type SearchableSelectOption } from '@/components/SearchableSelect'
 import { Switch } from '@/components/ui/shadcn/switch'
 import {
   Popover,
@@ -27,7 +28,12 @@ import { copyText } from '@/lib/copy'
 import { cn } from '@/lib/utils'
 import { buildSections, DEFAULT_GROUP } from '@/lib/groupSections'
 import { SelectFileType } from './SelectFileType'
-import { DEFAULT_REQUIRED_TYPES, DynamicElement, SELECTIVE_TYPES } from './DynamicElement'
+import {
+  DEFAULT_REQUIRED_TYPES,
+  DynamicElement,
+  ELEMENT_TYPE_KEYS,
+  SELECTIVE_TYPES,
+} from './DynamicElement'
 
 type RepoModel = components['schemas']['types.RepoModel']
 type GitItem = components['schemas']['git.AllReposResponse_Item']
@@ -35,6 +41,18 @@ type BranchOption = components['schemas']['git.Option']
 type PipelinePassRule = components['schemas']['mars.PipelinePassRule']
 type Element = components['schemas']['mars.Element']
 type GroupSetting = components['schemas']['mars.GroupSetting']
+type Hibernate = components['schemas']['mars.Hibernate']
+
+/** 元素类型枚举 → i18n 文案键（复用 DynamicElement 的类型下拉，作为副本字段选项说明里的类型标签） */
+const ELEMENT_TYPE_LABEL = new Map<string, TKey>(
+  ELEMENT_TYPE_KEYS.map((o) => [o.value as string, o.key]),
+)
+
+/** 副本字段候选类型判定：与后端 biz.elementSupportsZero 对齐——InputNumber 可承载任意整数，
+ *  Select/Radio/Number* 走白名单校验故白名单须含 "0"；其余类型不是副本数，不支持 */
+const supportsZero = (el: Element): boolean =>
+  el.type === 'ElementTypeInputNumber' ||
+  (SELECTIVE_TYPES.has(el.type) && el.selectValues.includes('0'))
 
 interface FormState {
   name: string
@@ -50,7 +68,11 @@ interface FormState {
   valuesYaml: string
   elements: Element[]
   groupSettings: GroupSetting[]
+  hibernate: Hibernate
 }
+
+/** 默认休眠配置：未配置（或首次创建）时的零值——关闭能力、窗口留空由用户填写 */
+const DEFAULT_HIBERNATE: Hibernate = { enabled: false, replicaPaths: [], windowNames: [] }
 
 const DEFAULTS: FormState = {
   name: '',
@@ -66,6 +88,7 @@ const DEFAULTS: FormState = {
   valuesYaml: '',
   elements: [],
   groupSettings: [],
+  hibernate: DEFAULT_HIBERNATE,
 }
 
 /** 复用表单行样式 */
@@ -143,6 +166,33 @@ export function RepoFormModal({
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }))
 
+  /** 局部更新休眠配置（开关/副本字段/时间窗各自独立改动，避免整体覆盖丢字段） */
+  const setHibernate = (patch: Partial<Hibernate>) =>
+    setForm((f) => ({ ...f, hibernate: { ...f.hibernate, ...patch } }))
+
+  // 全局休眠时间窗候选（懒拉：仅在打开下拉时拉一次，失败允许下次重试）
+  const [windowOptions, setWindowOptions] = useState<SearchableSelectOption[]>([])
+  const windowsLoadedRef = useRef(false)
+  /** 打开时间窗下拉时懒拉全局时间窗列表（仓库按名称引用全局时间窗，见后台「休眠时间窗」页） */
+  const loadHibernateWindows = async () => {
+    if (windowsLoadedRef.current) return
+    windowsLoadedRef.current = true
+    try {
+      const { data, error } = await api.GET(API.hibernateWindows)
+      if (error) throw new Error(error.message ?? String(error))
+      setWindowOptions(
+        (data?.items ?? []).map((w) => ({
+          value: w.name,
+          label: w.name,
+          description: `${w.start} → ${w.end}`,
+        })),
+      )
+    } catch (e) {
+      windowsLoadedRef.current = false
+      toast.error(e instanceof Error ? e.message : String(e))
+    }
+  }
+
   // 自定义配置的具名分区（标题旁「折叠/展开所有组」按钮的候选）。未分组不可折叠、不参与；
   // buildSections 与 DynamicElement 同源，保证按钮的分区列表与渲染完全一致
   const namedSections = useMemo(
@@ -180,6 +230,7 @@ export function RepoFormModal({
       valuesYaml: c?.valuesYaml ?? '',
       elements: withDefaultGroup(c?.elements ?? []),
       groupSettings: c?.groupSettings ?? [],
+      hibernate: c?.hibernate ?? DEFAULT_HIBERNATE,
     })
   }
 
@@ -202,6 +253,7 @@ export function RepoFormModal({
       valuesYaml: c?.valuesYaml ?? '',
       elements: withDefaultGroup(c?.elements ?? []),
       groupSettings: c?.groupSettings ?? [],
+      hibernate: c?.hibernate ?? DEFAULT_HIBERNATE,
     }))
   }
 
@@ -213,6 +265,9 @@ export function RepoFormModal({
     setChartDefaults('') // 左侧 chart 模板重置，等待重新拉取
     setOpenGroups({}) // 分区视图展开态重置（默认全展开），独立于 group_settings 配置
     setChartsOpen(true) // charts 默认值抽屉默认展开
+    // 时间窗选项每次打开弹窗都重新拉取：本组件常驻挂载（Repos 里 open 受控），不重置则
+    // windowsLoadedRef 一旦置真就再不刷新，管理员增删改时间窗后仍显示旧列表、甚至选中已删除的窗
+    windowsLoadedRef.current = false
     if (!editItem) {
       setForm(DEFAULTS)
       gitSelectionRef.current = 0
@@ -423,6 +478,25 @@ export function RepoFormModal({
     [pipelineOptions.jobs],
   )
 
+  /** 副本字段候选：当前表单已定义的自定义字段路径（取 path 非空者）。
+   *  主展示用「字段描述」（描述为空时回退 path），副行 chip 展示「路径 · 类型」——描述便于辨认字段，
+   *  路径是提交用的真实键，类型便于挑出能承载 "0" 的字段（提交时再按后端同款规则校验） */
+  const replicaPathOptions = useMemo(
+    () =>
+      form.elements
+        .filter((el) => el.path.trim())
+        .map((el) => {
+          const typeLabel = t(ELEMENT_TYPE_LABEL.get(el.type) ?? 'repos.elementTypeUnknown')
+          const desc = el.description.trim()
+          return {
+            value: el.path,
+            label: desc || el.path,
+            description: desc ? `${el.path} · ${typeLabel}` : typeLabel,
+          }
+        }),
+    [form.elements, t],
+  )
+
   const updateRule = (i: number, key: 'stageName' | 'jobName', v: string) => {
     setForm((f) => {
       const next = [...f.pipelinePassRules]
@@ -474,6 +548,7 @@ export function RepoFormModal({
     valuesYaml: form.valuesYaml,
     elements: form.elements,
     groupSettings: normalizeGroupSettings(),
+    hibernate: form.hibernate,
     displayName: '',
   })
 
@@ -488,6 +563,21 @@ export function RepoFormModal({
         return t('repos.elementDefaultRequired')
       if (SELECTIVE_TYPES.has(el.type) && el.default !== '' && !el.selectValues.includes(el.default))
         return t('repos.elementDefaultInValues')
+    }
+    return null
+  }
+
+  /** 定时休眠配置校验：对齐后端 biz.ValidateHibernateConfig——启用时要求副本字段非空且
+   *  每个都命中已定义元素、类型能承载 "0"，且已选中一个全局休眠时间窗；禁用时不校验 */
+  const validateHibernate = (): string | null => {
+    const h = form.hibernate
+    if (!h.enabled) return null
+    if (h.replicaPaths.length === 0) return t('repos.hibernateReplicaRequired')
+    if (h.windowNames.length === 0) return t('repos.hibernateWindowRequired')
+    const byPath = new Map(form.elements.map((el) => [el.path, el]))
+    for (const p of h.replicaPaths) {
+      const el = byPath.get(p)
+      if (!el || !supportsZero(el)) return t('repos.hibernateReplicaInvalid', { path: p })
     }
     return null
   }
@@ -509,6 +599,11 @@ export function RepoFormModal({
     const elErr = validateElements()
     if (elErr) {
       toast.error(elErr)
+      return
+    }
+    const hbErr = validateHibernate()
+    if (hbErr) {
+      toast.error(hbErr)
       return
     }
     setSaving(true)
@@ -662,10 +757,17 @@ export function RepoFormModal({
             </label>
           </div>
 
-          <label className="flex items-center gap-3">
+          {/* 用 div 而非 label：label 会关联其首个「可标注」后代（Radix Switch 渲染的 <button> 属可标注
+              元素），于是点击 label 整行（含开关右侧空白）都会被转发成对开关的激活；改 div 后仅开关本体可切换，
+              文本语义改用 Switch 的 aria-label 承担 */}
+          <div className="flex items-center gap-3">
             <span className={labelCls}>{t('repos.needGitRepo')}</span>
-            <Switch checked={form.needGitRepo} onCheckedChange={(v) => set('needGitRepo', v)} />
-          </label>
+            <Switch
+              checked={form.needGitRepo}
+              onCheckedChange={(v) => set('needGitRepo', v)}
+              aria-label={t('repos.needGitRepo')}
+            />
+          </div>
 
           {form.needGitRepo && (
             <>
@@ -893,6 +995,65 @@ export function RepoFormModal({
                 setOpenGroups((m) => ({ ...m, [name]: !(m[name] ?? true) }))
               }
             />
+          </div>
+
+          {/* 定时休眠：仓库级能力开关 + 副本字段（候选来自上方已定义的自定义配置）+ 休眠时间窗 */}
+          <div className="flex flex-col gap-2.5 rounded-lg border border-line bg-surface p-3">
+            {/* 用 div 而非 label：label 会关联其首个「可标注」后代（Radix Switch 渲染的 <button> 属可标注
+                元素），于是点击 label 整行（含开关右侧空白）都会被转发成对开关的激活；改 div 后仅开关本体可切换，
+                文本语义改用 Switch 的 aria-label 承担 */}
+            <div className="flex items-center gap-2.5">
+              <Icon name="moon" className="text-[14px] text-primary" />
+              <span className={labelCls} title={t('repos.hibernateTip')}>
+                {t('repos.hibernate')}
+              </span>
+              <Switch
+                checked={form.hibernate.enabled}
+                onCheckedChange={(v) => setHibernate({ enabled: v })}
+                aria-label={t('repos.hibernate')}
+              />
+            </div>
+            {form.hibernate.enabled && (
+              <>
+                <label className="flex flex-col gap-1.5">
+                  <span className={labelCls} title={t('repos.hibernateReplicaPathsTip')}>
+                    {t('repos.hibernateReplicaPaths')}
+                  </span>
+                  <SearchableSelect
+                    multiple
+                    value={form.hibernate.replicaPaths}
+                    options={replicaPathOptions}
+                    onChange={(v) =>
+                      setHibernate({ replicaPaths: Array.isArray(v) ? v : [v] })
+                    }
+                    placeholder={t('repos.hibernateReplicaPathsPlaceholder')}
+                    searchPlaceholder={t('common.search')}
+                    emptyText={
+                      replicaPathOptions.length === 0
+                        ? t('repos.hibernateReplicaPathsEmpty')
+                        : t('common.empty')
+                    }
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className={labelCls}>{t('repos.hibernateWindow')}</span>
+                  <SearchableSelect
+                    multiple
+                    value={form.hibernate.windowNames}
+                    options={windowOptions}
+                    onChange={(v) => setHibernate({ windowNames: Array.isArray(v) ? v : [v] })}
+                    onOpenChange={(o) => o && void loadHibernateWindows()}
+                    placeholder={t('repos.hibernateWindowPlaceholder')}
+                    searchPlaceholder={t('common.search')}
+                    emptyText={
+                      windowOptions.length === 0
+                        ? t('repos.hibernateWindowEmpty')
+                        : t('common.empty')
+                    }
+                  />
+                </label>
+              </>
+            )}
           </div>
 
           <label className="flex flex-col gap-1.5">

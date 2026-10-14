@@ -670,6 +670,29 @@ func TestProjectBiz_Liveness_FilterByKind(t *testing.T) {
 	}
 }
 
+// TestProjectBiz_Liveness_FilterByHibernate 休眠过滤透传：Hibernate=true 原样交给 repo
+// （SQL 侧按已开启项目级开关过滤），条目/统计直接反映 repo 结果。
+func TestProjectBiz_Liveness_FilterByHibernate(t *testing.T) {
+	f := &fakeProjectRepoForProjectBiz{
+		listLivenessPageResult: &LivenessPageResult{
+			Projects: []*Project{{ID: 7, UpdatedAt: time.Now()}},
+			Count:    1,
+		},
+	}
+	b := newProjectBizForTest(f)
+	res, err := b.Liveness(context.TODO(), &LivenessInput{Page: 1, PageSize: 10, Hibernate: true})
+	assert.NoError(t, err)
+	if assert.NotNil(t, f.listLivenessPageQuery) {
+		assert.True(t, f.listLivenessPageQuery.Hibernate)
+	}
+	if assert.NotNil(t, res) {
+		assert.Equal(t, int32(1), res.Count)
+		if assert.Len(t, res.Items, 1) {
+			assert.Equal(t, 7, res.Items[0].Project.ID)
+		}
+	}
+}
+
 // TestProjectBiz_Liveness_Pagination 分页参数透传：Page/PageSize 交给 repo，结果直接反映
 // repo 返回的页内条目。
 func TestProjectBiz_Liveness_Pagination(t *testing.T) {

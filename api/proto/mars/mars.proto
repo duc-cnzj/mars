@@ -43,6 +43,26 @@ message Config {
   // 分区本身由 Element.group 派生，这里只记录分区的展示元数据。
   // 旧配置无此字段 → 无分区配置 → 前端扁平渲染，行为与旧版一致。
   repeated GroupSetting group_settings = 12;
+
+  // hibernate 定时休眠配置（repo 级，管理员在后台 repo 页面配置）。
+  Hibernate hibernate = 13;
+}
+
+// Hibernate 是仓库级的定时休眠（夜间缩容）配置：由管理员在后台配置，决定哪些
+// 自定义字段是「副本字段」以及引用哪几个**全局休眠时间窗**。项目是否参与、以及从这些
+// 窗里多选哪个子集由项目级决定（见 project.ToggleHibernateRequest.window_names）。
+message Hibernate {
+  // enabled 是否启用该仓库的定时休眠能力。
+  bool enabled = 1;
+  // replica_paths 关联的副本字段：命中 Config.elements 里的 Element.path，
+  // 休眠时把它们置为 "0" 重部署，唤醒时按快照恢复。字段类型必须能承载 "0"
+  // （InputNumber/NumberSelect/NumberRadio，或 Select 的白名单含 "0"）。
+  repeated string replica_paths = 2;
+  // window_names 引用的全局休眠时间窗名列表（hibernate_windows.name，管理员在后台维护）。
+  // 用「名字」而非 ID 引用——本配置是 JSON blob，会经导出/导入跨环境往返，ID 会错位。
+  // 它是该仓库可用的窗「调色板」：启用（enabled=true）时至少一个；项目从中多选一个子集，
+  // 命中任一窗即休眠。窗被删后对账按未命中处理（该窗不参与判定）。
+  repeated string window_names = 3;
 }
 
 // GroupSetting 是分区（group）的展示配置：分区排序与默认折叠。

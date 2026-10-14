@@ -7,11 +7,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
+	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/biz/schematype"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/uploader"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
@@ -31,7 +34,7 @@ func TestTasks_SyncDomainSecret_NonNotFoundErrorNoPanic(t *testing.T) {
 	defer m.Finish()
 
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
 	k8sRepo := data.NewMockK8sRepo(m)
 	k8sRepo.EXPECT().GetSecret(gomock.Any(), "ns1", "secret-name").Return(nil, errors.New("permission denied"))
 	// 无 AddTlsSecret EXPECT：若被误调会 panic，反向证明未走创建分支。
@@ -54,7 +57,7 @@ func TestTasks_SyncDomainSecret_NotFoundRegistersTls(t *testing.T) {
 	defer m.Finish()
 
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
 	k8sRepo := data.NewMockK8sRepo(m)
 	k8sRepo.EXPECT().GetSecret(gomock.Any(), "ns1", "secret-name").Return(nil, apierrors.NewNotFound(schema.GroupResource{}, "secret-name"))
 	k8sRepo.EXPECT().AddTlsSecret("ns1", "secret-name", "tls-key", "tls-crt").Return(nil, nil)
@@ -75,7 +78,7 @@ func TestTasks_SyncDomainSecret_CertChangedUpdates(t *testing.T) {
 	defer m.Finish()
 
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "ns1", Name: "secret-name"},
 		Data:       map[string][]byte{"tls.crt": []byte("old-crt"), "tls.key": []byte("old-key")},
@@ -113,7 +116,7 @@ func TestTasks_SyncImagePullSecrets(t *testing.T) {
 	defer m.Finish()
 
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return([]*biz.Namespace{{ID: 1, Name: "ns1", ImagePullSecrets: []string{}}}, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return([]*biz.Namespace{{ID: 1, Name: "ns1", ImagePullSecrets: []string{}}}, nil)
 	k8sRepo := data.NewMockK8sRepo(m)
 	k8sRepo.EXPECT().CreateDockerSecrets(gomock.Any(), "ns1", []string{"reg.io"}).Return(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "mars-abc"}}, nil)
 	nsRepo.EXPECT().UpdateImagePullSecrets(gomock.Any(), 1, []string{"mars-abc"}).Return(nil)
@@ -145,7 +148,7 @@ func newTasksBase(m *gomock.Controller) *Tasks {
 // ListAll 返回给定 namespace 列表，供 SyncImagePullSecrets 分支矩阵复用。
 func newImagePullTasks(m *gomock.Controller, ns []*biz.Namespace) (*Tasks, *data.MockNamespaceRepo, *data.MockK8sRepo) {
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return(ns, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return(ns, nil)
 	k8sRepo := data.NewMockK8sRepo(m)
 	return &Tasks{
 		logger:  mlog.NewForConfig(nil),
@@ -172,6 +175,9 @@ func TestTasks_NewTasks(t *testing.T) {
 		uploader.NewMockUploader(m),
 		data.NewMockHelmerRepo(m),
 		data.NewMockGitRepo(m),
+		data.NewMockHibernateRepo(m),
+		data.NewMockHibernateDeployer(m),
+		data.NewMockHibernateWindowRepo(m),
 		&PluginDeps{GetCerts: func() (string, string, string) { return "", "", "" }},
 	)
 	assert.NotNil(t, tasks)
@@ -250,7 +256,7 @@ func TestTasks_SyncImagePullSecrets_ListAllError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return(nil, errors.New("list err"))
+	nsRepo.EXPECT().ListAll(context.Background()).Return(nil, errors.New("list err"))
 	repo := &Tasks{logger: mlog.NewForConfig(nil), cfg: &config.Config{}, nsRepo: nsRepo}
 	assert.Equal(t, "list err", repo.SyncImagePullSecrets().Error())
 }
@@ -431,7 +437,7 @@ func TestTasks_SyncDomainSecret_ListAllError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return(nil, errors.New("list err"))
+	nsRepo.EXPECT().ListAll(context.Background()).Return(nil, errors.New("list err"))
 	repo := &Tasks{logger: mlog.NewForConfig(nil), getCerts: func() (string, string, string) { return "secret-name", "k", "c" }, nsRepo: nsRepo}
 	assert.Equal(t, "list err", repo.SyncDomainSecret().Error())
 }
@@ -441,7 +447,7 @@ func TestTasks_SyncDomainSecret_AddTlsError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
 	k8sRepo := data.NewMockK8sRepo(m)
 	k8sRepo.EXPECT().GetSecret(gomock.Any(), "ns1", "secret-name").Return(nil, apierrors.NewNotFound(schema.GroupResource{}, "secret-name"))
 	k8sRepo.EXPECT().AddTlsSecret("ns1", "secret-name", "k", "c").Return(nil, errors.New("add err"))
@@ -454,7 +460,7 @@ func TestTasks_SyncDomainSecret_UpdateSecretError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	nsRepo := data.NewMockNamespaceRepo(m)
-	nsRepo.EXPECT().ListAll(context.TODO()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
+	nsRepo.EXPECT().ListAll(context.Background()).Return([]*biz.Namespace{{ID: 1, Name: "ns1"}}, nil)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "ns1", Name: "secret-name"},
 		Data:       map[string][]byte{"tls.crt": []byte("old-crt"), "tls.key": []byte("old-key")},
@@ -634,7 +640,7 @@ func TestTasks_CacheClusterBoard(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
-	k8sRepo.EXPECT().ClusterBoard(context.TODO(), true).Return(&biz.ClusterBoardData{}, nil)
+	k8sRepo.EXPECT().ClusterBoard(context.Background(), true).Return(&biz.ClusterBoardData{}, nil)
 	repo := &Tasks{k8sRepo: k8sRepo}
 	assert.NoError(t, repo.CacheClusterBoard())
 }
@@ -644,7 +650,7 @@ func TestTasks_CacheClusterBoard_Error(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
-	k8sRepo.EXPECT().ClusterBoard(context.TODO(), true).Return(nil, errors.New("cluster board boom"))
+	k8sRepo.EXPECT().ClusterBoard(context.Background(), true).Return(nil, errors.New("cluster board boom"))
 	repo := &Tasks{k8sRepo: k8sRepo}
 	assert.Equal(t, "cluster board boom", repo.CacheClusterBoard().Error())
 }
@@ -655,7 +661,7 @@ func TestTasks_CacheResourceSnapshot(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
-	k8sRepo.EXPECT().ResourceSnapshot(context.TODO(), true).Return(&biz.ResourceSnapshotData{}, nil)
+	k8sRepo.EXPECT().ResourceSnapshot(context.Background(), true).Return(&biz.ResourceSnapshotData{}, nil)
 	repo := &Tasks{k8sRepo: k8sRepo}
 	assert.NoError(t, repo.CacheResourceSnapshot())
 }
@@ -665,7 +671,7 @@ func TestTasks_CacheResourceSnapshot_Error(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	k8sRepo := data.NewMockK8sRepo(m)
-	k8sRepo.EXPECT().ResourceSnapshot(context.TODO(), true).Return(nil, errors.New("snapshot boom"))
+	k8sRepo.EXPECT().ResourceSnapshot(context.Background(), true).Return(nil, errors.New("snapshot boom"))
 	repo := &Tasks{k8sRepo: k8sRepo}
 	assert.Equal(t, "snapshot boom", repo.CacheResourceSnapshot().Error())
 }
@@ -713,4 +719,788 @@ func TestTasks_FixDeployStatus_SkipsNilNamespace(t *testing.T) {
 	repo.helm = helm
 
 	assert.NoError(t, repo.FixDeployStatus())
+}
+
+// ---------- ReconcileHibernate ----------
+
+// hibernateNowIn 返回落在休眠窗口 [23:00, 06:00) 内的固定时刻，配合固定时钟消除时区/跨日 flake。
+func hibernateNowIn() time.Time {
+	return time.Date(2026, 10, 10, 23, 30, 0, 0, time.Local)
+}
+
+// hibernateNowOut 返回落在休眠窗口外的固定时刻（同一日中午）。
+func hibernateNowOut() time.Time {
+	return time.Date(2026, 10, 10, 12, 0, 0, 0, time.Local)
+}
+
+// hibernateCfgRepo 返回启用休眠的仓库：副本字段 app->replicas，引用全局时间窗「夜间」
+// （helper 默认把该窗解析为 23:00-06:00）。
+func hibernateCfgRepo(id int) *biz.Repo {
+	return &biz.Repo{ID: id, MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{
+		Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{"夜间"},
+	}}}
+}
+
+// hibernateProject 返回副本数为 3 的项目，供休眠对账分支复用。
+func hibernateProject() *biz.Project {
+	return &biz.Project{ID: 9, Name: "app", RepoID: 2, FinalExtraValues: []*websocket_pb.ExtraValue{
+		{Path: "app->replicas", Value: "3"},
+		{Path: "app->image", Value: "nginx:1.0"},
+	}}
+}
+
+// hibernateSleepingProject 返回副本字段已置 0 的项目，代表「确实处于休眠态」——供一致性守卫
+// 需判为不命中的分支（真休眠）复用。
+func hibernateSleepingProject() *biz.Project {
+	return &biz.Project{ID: 9, Name: "app", RepoID: 2, FinalExtraValues: []*websocket_pb.ExtraValue{
+		{Path: "app->replicas", Value: "0"},
+		{Path: "app->image", Value: "nginx:1.0"},
+	}}
+}
+
+// newHibernateTasks 构造注入固定时钟与四个端口 mock 的 Tasks，供休眠对账分支矩阵复用。
+// 另注册一个时间窗解析的默认期望（把「夜间」解析为 23:00-06:00，AnyTimes）：不触达解析的
+// 分支零调用亦无碍；需要「空名/窗口不存在」的用例自行构造 Tasks（见 TestTasks_ResolveHibernateWindow_*）。
+func newHibernateTasks(m *gomock.Controller, now time.Time) (*Tasks, *data.MockHibernateRepo, *data.MockHibernateDeployer, *data.MockProjectRepo, *data.MockRepoRepo) {
+	hr := data.NewMockHibernateRepo(m)
+	hd := data.NewMockHibernateDeployer(m)
+	pr := data.NewMockProjectRepo(m)
+	rr := data.NewMockRepoRepo(m)
+	hw := data.NewMockHibernateWindowRepo(m)
+	hw.EXPECT().GetByName(gomock.Any(), gomock.Any()).Return(
+		&biz.HibernateWindow{Name: "夜间", Start: "23:00", End: "06:00"}, nil).AnyTimes()
+	return &Tasks{
+		timer:               fakeTimer{now: now},
+		logger:              mlog.NewForConfig(nil),
+		hibernateRepo:       hr,
+		hibernateDeployer:   hd,
+		projectRepo:         pr,
+		repoRepo:            rr,
+		hibernateWindowRepo: hw,
+	}, hr, hd, pr, rr
+}
+
+// captureHibernateDeploy 注册 Redeploy 期望并把实参副本字段快照写入 out。
+func captureHibernateDeploy(hd *data.MockHibernateDeployer, proj *biz.Project, out *[]*websocket_pb.ExtraValue) {
+	hd.EXPECT().Redeploy(gomock.Any(), proj, gomock.Any()).DoAndReturn(
+		func(_ context.Context, _ *biz.Project, ev []*websocket_pb.ExtraValue) error {
+			*out = ev
+			return nil
+		})
+}
+
+// captureHibernateUpsert 注册 Upsert 期望并把落库记录写入 out。
+func captureHibernateUpsert(hr *data.MockHibernateRepo, out **biz.ProjectHibernate) {
+	hr.EXPECT().Upsert(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, h *biz.ProjectHibernate) (*biz.ProjectHibernate, error) {
+			*out = h
+			return h, nil
+		})
+}
+
+// customHibernateTasks 构造可按名字返回不同时间窗（未列出的名字返回 nil=悬空）的 Tasks，
+// 供「多窗并集 / 悬空窗」分支用例复用；其余端口与 newHibernateTasks 一致。
+func customHibernateTasks(m *gomock.Controller, now time.Time, wins map[string]*biz.HibernateWindow) (*Tasks, *data.MockHibernateRepo, *data.MockHibernateDeployer, *data.MockProjectRepo, *data.MockRepoRepo) {
+	hr := data.NewMockHibernateRepo(m)
+	hd := data.NewMockHibernateDeployer(m)
+	pr := data.NewMockProjectRepo(m)
+	rr := data.NewMockRepoRepo(m)
+	hw := data.NewMockHibernateWindowRepo(m)
+	hw.EXPECT().GetByName(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, name string) (*biz.HibernateWindow, error) {
+			return wins[name], nil
+		}).AnyTimes()
+	return &Tasks{
+		timer:               fakeTimer{now: now},
+		logger:              mlog.NewForConfig(nil),
+		hibernateRepo:       hr,
+		hibernateDeployer:   hd,
+		projectRepo:         pr,
+		repoRepo:            rr,
+		hibernateWindowRepo: hw,
+	}, hr, hd, pr, rr
+}
+
+// TestTasks_ReconcileHibernate_Sleep 覆盖清醒→休眠：命中窗口时副本字段置 0 重部署、
+// 状态转 sleeping 并保留休眠前副本快照。
+func TestTasks_ReconcileHibernate_Sleep(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake, WindowNames: []string{"夜间"}},
+	}, nil)
+	proj := hibernateProject()
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+
+	var target []*websocket_pb.ExtraValue
+	captureHibernateDeploy(hd, proj, &target)
+	var rec *biz.ProjectHibernate
+	captureHibernateUpsert(hr, &rec)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+	assert.Equal(t, "0", target[0].Value)
+	assert.Equal(t, "nginx:1.0", target[1].Value)
+	assert.Equal(t, biz.HibernateStateSleeping, rec.State)
+	assert.True(t, rec.Enabled)
+	assert.Len(t, rec.Snapshot, 1)
+	assert.Equal(t, "3", rec.Snapshot[0].Value)
+}
+
+// TestTasks_ReconcileHibernate_SleepUnionSecondWindow 覆盖项目多窗子集的并集语义：项目选了
+// 两个窗，此刻只有第二个窗命中（第一个已出窗）——命中任一即算在窗内，正常休眠且选择原样回写。
+func TestTasks_ReconcileHibernate_SleepUnionSecondWindow(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := customHibernateTasks(m, hibernateNowIn(), map[string]*biz.HibernateWindow{
+		"夜间": {Name: "夜间", Start: "23:00", End: "06:00"}, // 午间：错过
+		"午休": {Name: "午休", Start: "11:00", End: "14:00"}, // 午间：命中
+	})
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake, WindowNames: []string{"夜间", "午休"}},
+	}, nil)
+	proj := hibernateProject()
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2, MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{
+		Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{"夜间", "午休"},
+	}}}, nil)
+
+	var target []*websocket_pb.ExtraValue
+	captureHibernateDeploy(hd, proj, &target)
+	var rec *biz.ProjectHibernate
+	captureHibernateUpsert(hr, &rec)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+	assert.Equal(t, "0", target[0].Value)
+	assert.Equal(t, biz.HibernateStateSleeping, rec.State)
+	// 项目多窗选择原样回写，不被对账清空。
+	assert.Equal(t, []string{"夜间", "午休"}, rec.WindowNames)
+}
+
+// TestTasks_ReconcileHibernate_EmptySelectionNoInherit 覆盖「空选择不再继承仓库全量」：项目未选任何
+// 窗（WindowNames 空）时按「未选即未启用」处理——不参与休眠判定。即便此刻恰落在仓库某窗内
+// （now 取命中时刻、仓库两窗其一命中），也零动作：无 Redeploy/Upsert（未注册期望，误调即 panic）。
+func TestTasks_ReconcileHibernate_EmptySelectionNoInherit(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, rr := customHibernateTasks(m, hibernateNowIn(), map[string]*biz.HibernateWindow{
+		"夜间": {Name: "夜间", Start: "23:00", End: "06:00"}, // 错过
+		"午休": {Name: "午休", Start: "11:00", End: "14:00"}, // 命中
+	})
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake}, // WindowNames 空 = 未选，不继承仓库全量
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).Return(hibernateProject(), nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2, MarsConfig: &mars.Config{Hibernate: &mars.Hibernate{
+		Enabled: true, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{"夜间", "午休"},
+	}}}, nil)
+
+	// 无 Redeploy/Upsert 期望：空选择既不继承窗、也不休眠/唤醒，零副作用即通过。
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_WakeDanglingWindow 覆盖「睡眠中唯一被引用的窗被删」：对账按名
+// 解析全失败 → 视为无窗口（出窗）→ 确在休眠则正常唤醒，避免悬空引用让项目永久卡在休眠态。
+func TestTasks_ReconcileHibernate_WakeDanglingWindow(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	// 所有名字都解析不到（模拟窗被删 / 跨环境未同步）。
+	repo, hr, hd, pr, rr := customHibernateTasks(m, hibernateNowIn(), nil)
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateSleeping,
+			Snapshot:    []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}},
+			WindowNames: []string{"已删除的窗"}},
+	}, nil)
+	proj := hibernateSleepingProject()
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+
+	var target []*websocket_pb.ExtraValue
+	captureHibernateDeploy(hd, proj, &target)
+	var rec *biz.ProjectHibernate
+	captureHibernateUpsert(hr, &rec)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+	assert.Equal(t, "3", target[0].Value)
+	assert.Equal(t, biz.HibernateStateAwake, rec.State)
+}
+
+// TestTasks_ReconcileHibernate_SleepPersistsSnapshotBeforeDeploy 是「休眠不幂等丢数」的回归闸门：
+// 必须先落「休眠态+快照」再重部署。反序（先部署后落库）会让部署把副本置 0 落库后、若落库失败则
+// 下一轮对账以全 0 基座重拍快照，永久丢原始副本数（唤醒只能恢复成 0）。用 InOrder 钉死调用顺序，
+// 并在落库回调里断言快照仍是休眠前原值（3），反序时该值会变成 0 而被抓住。
+func TestTasks_ReconcileHibernate_SleepPersistsSnapshotBeforeDeploy(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake, WindowNames: []string{"夜间"}},
+	}, nil)
+	proj := hibernateProject()
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+
+	gomock.InOrder(
+		hr.EXPECT().Upsert(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(_ context.Context, h *biz.ProjectHibernate) (*biz.ProjectHibernate, error) {
+				assert.Equal(t, biz.HibernateStateSleeping, h.State)
+				assert.Len(t, h.Snapshot, 1)
+				assert.Equal(t, "3", h.Snapshot[0].Value)
+				return h, nil
+			}),
+		hd.EXPECT().Redeploy(gomock.Any(), proj, gomock.Any()).Return(nil),
+	)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_SleepSkipNotInWindow 覆盖清醒态但未命中窗口：
+// 不重部署、不改状态（无 Redeploy/Upsert 期望，误调即 panic）。
+func TestTasks_ReconcileHibernate_SleepSkipNotInWindow(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, rr := newHibernateTasks(m, hibernateNowOut())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake, WindowNames: []string{"夜间"}},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).Return(hibernateProject(), nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_SleepSkipRepoDisabled 覆盖仓库未配置休眠：直接跳过。
+func TestTasks_ReconcileHibernate_SleepSkipRepoDisabled(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, rr := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake, WindowNames: []string{"夜间"}},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).Return(hibernateProject(), nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2}, nil)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_SleepSkipNoWindow 覆盖清醒态但引用的全局时间窗不存在
+// （被删/未同步环境）：解析失败按无窗口处理，不重部署、不改状态（无 Redeploy/Upsert 期望）。
+func TestTasks_ReconcileHibernate_SleepSkipNoWindow(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	hr := data.NewMockHibernateRepo(m)
+	pr := data.NewMockProjectRepo(m)
+	rr := data.NewMockRepoRepo(m)
+	hw := data.NewMockHibernateWindowRepo(m)
+	repo := &Tasks{
+		timer:               fakeTimer{now: hibernateNowIn()},
+		logger:              mlog.NewForConfig(nil),
+		hibernateRepo:       hr,
+		projectRepo:         pr,
+		repoRepo:            rr,
+		hibernateWindowRepo: hw,
+	}
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake, WindowNames: []string{"夜间"}},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).Return(hibernateProject(), nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+	hw.EXPECT().GetByName(gomock.Any(), "夜间").Return(nil, nil)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ResolveHibernateWindows 覆盖全局时间窗列表解析的各分支：空列表/纯空白名不查库、
+// 逐名解析（悬空与报错逐个跳过、不牵连其余），返回全部可解析窗；全部不可解析才 ok=false。
+func TestTasks_ResolveHibernateWindows(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	hw := data.NewMockHibernateWindowRepo(m)
+	tk := &Tasks{logger: mlog.NewForConfig(nil), hibernateWindowRepo: hw}
+
+	// 空列表 / 纯空白名：不解析、直接 ok=false（无 GetByName 期望，误调即 panic）。
+	_, ok := tk.resolveHibernateWindows(context.Background(), nil)
+	assert.False(t, ok)
+	_, ok = tk.resolveHibernateWindows(context.Background(), []string{"", "  "})
+	assert.False(t, ok)
+
+	// 唯一名不存在（被删/未同步环境）：GetByName 返回 nil → 全部不可解析 → ok=false。
+	hw.EXPECT().GetByName(gomock.Any(), "不存在").Return(nil, nil)
+	_, ok = tk.resolveHibernateWindows(context.Background(), []string{"不存在"})
+	assert.False(t, ok)
+
+	// 唯一名查询报错：不阻断对账，全部不可解析 → ok=false。
+	hw.EXPECT().GetByName(gomock.Any(), "出错").Return(nil, errors.New("boom"))
+	_, ok = tk.resolveHibernateWindows(context.Background(), []string{"出错"})
+	assert.False(t, ok)
+
+	// 命中：返回该窗。
+	hw.EXPECT().GetByName(gomock.Any(), "夜间").Return(
+		&biz.HibernateWindow{Name: "夜间", Start: "23:00", End: "06:00"}, nil)
+	wins, ok := tk.resolveHibernateWindows(context.Background(), []string{"夜间"})
+	assert.True(t, ok)
+	assert.Len(t, wins, 1)
+	assert.Equal(t, "夜间", wins[0].Name)
+
+	// 多窗：悬空 + 空白 + 命中混合——只有可解析的进结果，整体 ok=true（有任一可解析即可）。
+	hw.EXPECT().GetByName(gomock.Any(), "悬空").Return(nil, nil)
+	hw.EXPECT().GetByName(gomock.Any(), "午休").Return(
+		&biz.HibernateWindow{Name: "午休", Start: "12:00", End: "13:00"}, nil)
+	wins, ok = tk.resolveHibernateWindows(context.Background(), []string{"悬空", "  ", "午休"})
+	assert.True(t, ok)
+	assert.Len(t, wins, 1)
+	assert.Equal(t, "午休", wins[0].Name)
+
+	// 多窗全部悬空：ok=false（视为无窗口）。
+	hw.EXPECT().GetByName(gomock.Any(), "悬空A").Return(nil, nil)
+	hw.EXPECT().GetByName(gomock.Any(), "悬空B").Return(nil, nil)
+	wins, ok = tk.resolveHibernateWindows(context.Background(), []string{"悬空A", "悬空B"})
+	assert.False(t, ok)
+	assert.Empty(t, wins)
+}
+
+// TestTasks_ReconcileHibernate_KeepSleeping 覆盖已休眠（副本确实全 0）且仍在窗口内：保持
+// sleeping，不重部署、不改状态、不清空快照（无 Redeploy/Upsert 期望，误调即 panic）。
+func TestTasks_ReconcileHibernate_KeepSleeping(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, rr := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateSleeping,
+			Snapshot:    []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}},
+			WindowNames: []string{"夜间"}},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).Return(hibernateSleepingProject(), nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_Wake 覆盖休眠→唤醒（已出窗口）：按快照回填副本字段重部署、
+// 状态转 awake 并清空快照。
+func TestTasks_ReconcileHibernate_Wake(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowOut())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateSleeping,
+			Snapshot:    []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}},
+			WindowNames: []string{"夜间"}},
+	}, nil)
+	proj := hibernateSleepingProject()
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+
+	var target []*websocket_pb.ExtraValue
+	captureHibernateDeploy(hd, proj, &target)
+	var rec *biz.ProjectHibernate
+	captureHibernateUpsert(hr, &rec)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+	assert.Equal(t, "3", target[0].Value)
+	assert.Equal(t, biz.HibernateStateAwake, rec.State)
+	assert.True(t, rec.Enabled)
+	assert.Empty(t, rec.Snapshot)
+}
+
+// TestTasks_ReconcileHibernate_WakeRepoDisabled 覆盖仓库不再启用休眠：即便仍在窗口内也唤醒。
+func TestTasks_ReconcileHibernate_WakeRepoDisabled(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateSleeping,
+			Snapshot:    []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}},
+			WindowNames: []string{"夜间"}},
+	}, nil)
+	proj := hibernateSleepingProject()
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2}, nil)
+
+	var target []*websocket_pb.ExtraValue
+	captureHibernateDeploy(hd, proj, &target)
+	var rec *biz.ProjectHibernate
+	captureHibernateUpsert(hr, &rec)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+	assert.Equal(t, "3", target[0].Value)
+	assert.Equal(t, biz.HibernateStateAwake, rec.State)
+}
+
+// TestTasks_ReconcileHibernate_WakeRepoCapabilityDisabled 覆盖仓库休眠配置仍在、但仓库级能力已被
+// 关掉（Enabled=false）且项目仍标记休眠：视同无窗口——确在休眠即唤醒，不因配置残留而卡在休眠。
+func TestTasks_ReconcileHibernate_WakeRepoCapabilityDisabled(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateSleeping,
+			Snapshot:    []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}},
+			WindowNames: []string{"夜间"}},
+	}, nil)
+	proj := hibernateSleepingProject()
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2, MarsConfig: &mars.Config{
+		Hibernate: &mars.Hibernate{Enabled: false, ReplicaPaths: []string{"app->replicas"}, WindowNames: []string{"夜间"}},
+	}}, nil)
+
+	var target []*websocket_pb.ExtraValue
+	captureHibernateDeploy(hd, proj, &target)
+	var rec *biz.ProjectHibernate
+	captureHibernateUpsert(hr, &rec)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+	assert.Equal(t, "3", target[0].Value)
+	assert.Equal(t, biz.HibernateStateAwake, rec.State)
+}
+
+// TestTasks_ReconcileHibernate_ReleaseMismatchOutWindow 覆盖窗口外「标记休眠中但副本已被手动
+// 扩容」（非全 0）：放弃按快照回填（否则会把人的意图覆盖回旧值），仅释放接管权——状态转 awake、
+// 清空快照，保留用户改后的值，开关态原样保留。
+func TestTasks_ReconcileHibernate_ReleaseMismatchOutWindow(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, rr := newHibernateTasks(m, hibernateNowOut())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateSleeping,
+			Snapshot:    []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}},
+			WindowNames: []string{"夜间"}},
+	}, nil)
+	proj := &biz.Project{ID: 9, Name: "app", RepoID: 2, FinalExtraValues: []*websocket_pb.ExtraValue{
+		{Path: "app->replicas", Value: "5"}, // 用户手动扩容后的值
+		{Path: "app->image", Value: "nginx:1.0"},
+	}}
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+
+	// 无 Redeploy 期望：释放接管权不重部署（误调即 panic）。
+	var rec *biz.ProjectHibernate
+	captureHibernateUpsert(hr, &rec)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+	assert.Equal(t, biz.HibernateStateAwake, rec.State)
+	assert.True(t, rec.Enabled)
+	assert.Empty(t, rec.Snapshot)
+}
+
+// TestTasks_ReconcileHibernate_FixMismatchSameTick 覆盖窗口内「标记休眠中但副本已被手动扩容」
+// （非全 0）的错位：同一轮即修正并重新休眠——快照当前值、置 0 重部署、状态仍 sleeping，
+// 无需等下一轮对账（这是单趟对账相对旧「两趟」的关键改进）。
+func TestTasks_ReconcileHibernate_FixMismatchSameTick(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateSleeping,
+			Snapshot:    []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}},
+			WindowNames: []string{"夜间"}},
+	}, nil)
+	proj := &biz.Project{ID: 9, Name: "app", RepoID: 2, FinalExtraValues: []*websocket_pb.ExtraValue{
+		{Path: "app->replicas", Value: "5"},
+		{Path: "app->image", Value: "nginx:1.0"},
+	}}
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+
+	var target []*websocket_pb.ExtraValue
+	captureHibernateDeploy(hd, proj, &target)
+	var rec *biz.ProjectHibernate
+	captureHibernateUpsert(hr, &rec)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+	assert.Equal(t, "0", target[0].Value) // 同轮置 0
+	assert.Equal(t, "nginx:1.0", target[1].Value)
+	assert.Equal(t, biz.HibernateStateSleeping, rec.State)
+	// 快照刷新为当前值 5（不是旧快照 3）。
+	assert.Len(t, rec.Snapshot, 1)
+	assert.Equal(t, "5", rec.Snapshot[0].Value)
+}
+
+// TestTasks_ReconcileHibernate_ReleaseUpsertError 覆盖释放接管权落库失败（窗口外错位）：仅告警，
+// 本轮无错，不重部署。
+func TestTasks_ReconcileHibernate_ReleaseUpsertError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, rr := newHibernateTasks(m, hibernateNowOut())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateSleeping,
+			Snapshot:    []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}},
+			WindowNames: []string{"夜间"}},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).Return(&biz.Project{ID: 9, Name: "app", RepoID: 2,
+		FinalExtraValues: []*websocket_pb.ExtraValue{
+			{Path: "app->replicas", Value: "5"},
+		}}, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+	hr.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil, errors.New("upsert err"))
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_ListEnabledError 覆盖启用列表查询失败：原样上抛。
+func TestTasks_ReconcileHibernate_ListEnabledError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, _, _ := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return(nil, errors.New("enabled err"))
+
+	assert.Equal(t, "enabled err", repo.ReconcileHibernate().Error())
+}
+
+// TestTasks_ReconcileHibernate_OrphanSelfHeal 覆盖项目已删（NotFound）：清理孤儿休眠记录，
+// 不再重部署。
+func TestTasks_ReconcileHibernate_OrphanSelfHeal(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, _ := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake, WindowNames: []string{"夜间"}},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).Return(nil, errs.NotFound("project gone"))
+	hr.EXPECT().Delete(gomock.Any(), 9).Return(nil)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_OrphanDeleteError 覆盖孤儿记录清理失败：仅告警，本轮无错。
+func TestTasks_ReconcileHibernate_OrphanDeleteError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, _ := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake, WindowNames: []string{"夜间"}},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).Return(nil, errs.NotFound("project gone"))
+	hr.EXPECT().Delete(gomock.Any(), 9).Return(errors.New("del err"))
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_ShowOtherErrorSkips 覆盖项目查询非 NotFound 错误：
+// 跳过本轮（无 Delete 期望，反向证明未走孤儿清理）。
+func TestTasks_ReconcileHibernate_ShowOtherErrorSkips(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, _ := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake, WindowNames: []string{"夜间"}},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).Return(nil, errors.New("db down"))
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_RepoGetErrorSkips 覆盖仓库查询失败：跳过本轮。
+func TestTasks_ReconcileHibernate_RepoGetErrorSkips(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, rr := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake, WindowNames: []string{"夜间"}},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).Return(hibernateProject(), nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(nil, errors.New("repo err"))
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_SleepRedeployError 覆盖休眠「先落库成功、后重部署失败」：
+// 状态与快照已落库（转 sleeping），仅记重部署告警、本轮无错。
+func TestTasks_ReconcileHibernate_SleepRedeployError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake, WindowNames: []string{"夜间"}},
+	}, nil)
+	proj := hibernateProject()
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+	// 先落「休眠态+快照」成功，再重部署失败（顺序见 SleepPersistsSnapshotBeforeDeploy）。
+	hr.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(&biz.ProjectHibernate{}, nil)
+	hd.EXPECT().Redeploy(gomock.Any(), proj, gomock.Any()).Return(errors.New("deploy err"))
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_SleepUpsertError 覆盖休眠状态落库失败：落库失败即中止本轮、
+// 不重部署（无 Redeploy 期望，误调即 panic），避免「部署已置 0 但快照未留」的丢数窗口。
+func TestTasks_ReconcileHibernate_SleepUpsertError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, rr := newHibernateTasks(m, hibernateNowIn())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake, WindowNames: []string{"夜间"}},
+	}, nil)
+	proj := hibernateProject()
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+	hr.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil, errors.New("upsert err"))
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_WakeRedeployError 覆盖唤醒重部署失败：记日志不改状态。
+func TestTasks_ReconcileHibernate_WakeRedeployError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowOut())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateSleeping,
+			Snapshot:    []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}},
+			WindowNames: []string{"夜间"}},
+	}, nil)
+	proj := hibernateSleepingProject()
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+	hd.EXPECT().Redeploy(gomock.Any(), proj, gomock.Any()).Return(errors.New("deploy err"))
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_WakeUpsertError 覆盖唤醒状态落库失败：仅告警，本轮无错。
+func TestTasks_ReconcileHibernate_WakeUpsertError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowOut())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateSleeping,
+			Snapshot:    []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}},
+			WindowNames: []string{"夜间"}},
+	}, nil)
+	proj := hibernateSleepingProject()
+	pr.EXPECT().Show(gomock.Any(), 9).Return(proj, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+	hd.EXPECT().Redeploy(gomock.Any(), proj, gomock.Any()).Return(nil)
+	hr.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil, errors.New("upsert err"))
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_WakeOrphanSelfHeal 覆盖休眠态记录对应的项目已删：
+// 唤醒轮同样触发孤儿清理并跳过（无 Redeploy 期望，反向证明未重部署）。
+func TestTasks_ReconcileHibernate_WakeOrphanSelfHeal(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, _ := newHibernateTasks(m, hibernateNowOut())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateSleeping, WindowNames: []string{"夜间"}},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).Return(nil, errs.NotFound("project gone"))
+	hr.EXPECT().Delete(gomock.Any(), 9).Return(nil)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_MultipleProjectsAllProcessed 覆盖有界并发消费：一趟内记录数
+// 超过并发上限时全部仍被处理（各自唤醒重部署），证明 worker 池封顶后不遗漏、不串号。
+func TestTasks_ReconcileHibernate_MultipleProjectsAllProcessed(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowOut())
+
+	snap := []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}}
+	ids := []int{9, 10, 11, 12, 13, 14} // 6 条 > hibernateReconcileWorkers(5)，触发封顶分支
+	records := make([]*biz.ProjectHibernate, 0, len(ids))
+	for _, id := range ids {
+		records = append(records, &biz.ProjectHibernate{ProjectID: id, Enabled: true, State: biz.HibernateStateSleeping, Snapshot: snap})
+	}
+	hr.EXPECT().ListEnabled(gomock.Any()).Return(records, nil)
+	for _, id := range ids {
+		pr.EXPECT().Show(gomock.Any(), id).Return(&biz.Project{ID: id, Name: "app", RepoID: 2, FinalExtraValues: []*websocket_pb.ExtraValue{
+			{Path: "app->replicas", Value: "0"},
+		}}, nil)
+	}
+	// 六个项目共用仓库 2，各自唤醒都要取一次仓库配置；六次唤醒、六次落库。
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil).Times(len(ids))
+	hd.EXPECT().Redeploy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(len(ids))
+	hr.EXPECT().Upsert(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, h *biz.ProjectHibernate) (*biz.ProjectHibernate, error) { return h, nil }).Times(len(ids))
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_ProjectPanicIsolated 覆盖单项目 panic 隔离：一个项目在加载期
+// panic（模拟代码缺陷）只作废该项目，同趟其它项目照常处理，整趟不 panic 上抛（串行实现下
+// panic 会顺循环上抛、令本轮其余项目全部跳过）。项目 10 的唤醒期望即反向证据。
+func TestTasks_ReconcileHibernate_ProjectPanicIsolated(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, hd, pr, rr := newHibernateTasks(m, hibernateNowOut())
+
+	snap := []*websocket_pb.ExtraValue{{Path: "app->replicas", Value: "3"}}
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateSleeping, Snapshot: snap},
+		{ProjectID: 10, Enabled: true, State: biz.HibernateStateSleeping, Snapshot: snap},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).DoAndReturn(func(context.Context, int) (*biz.Project, error) {
+		panic("boom")
+	})
+	pr.EXPECT().Show(gomock.Any(), 10).Return(&biz.Project{ID: 10, Name: "app", RepoID: 2, FinalExtraValues: []*websocket_pb.ExtraValue{
+		{Path: "app->replicas", Value: "0"},
+	}}, nil)
+	rr.EXPECT().Get(gomock.Any(), 2).Return(hibernateCfgRepo(2), nil)
+	hd.EXPECT().Redeploy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	hr.EXPECT().Upsert(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, h *biz.ProjectHibernate) (*biz.ProjectHibernate, error) { return h, nil })
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_NoProjects 覆盖无启用记录：直接返回、不起 worker。
+// 无任何 Show/Redeploy/Upsert 期望，误调即 panic（反向证明空列表未触发下游端口）。
+func TestTasks_ReconcileHibernate_NoProjects(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, _, _ := newHibernateTasks(m, hibernateNowOut())
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{}, nil)
+
+	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// TestTasks_ReconcileHibernate_PanicIsolatedInDebugMode 是「worker 崩进程」的回归闸门：
+// worker 是独立 goroutine，若用 logger.HandlePanic（debug 下把 panic 重新抛出）则单项目
+// panic 会逃出 goroutine、直接崩掉整个进程。用 debug=true 的 logger 触发同款 panic，断言整趟
+// 仍返回 nil——一旦回退到 HandlePanic，本测试会因进程崩溃而失败。
+func TestTasks_ReconcileHibernate_PanicIsolatedInDebugMode(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, hr, _, pr, _ := newHibernateTasks(m, hibernateNowOut())
+	repo.logger = mlog.NewForConfig(&config.Config{LogChannel: "zap", Debug: true})
+
+	hr.EXPECT().ListEnabled(gomock.Any()).Return([]*biz.ProjectHibernate{
+		{ProjectID: 9, Enabled: true, State: biz.HibernateStateAwake, WindowNames: []string{"夜间"}},
+	}, nil)
+	pr.EXPECT().Show(gomock.Any(), 9).DoAndReturn(func(context.Context, int) (*biz.Project, error) {
+		panic("boom-debug")
+	})
+
+	assert.NoError(t, repo.ReconcileHibernate())
 }

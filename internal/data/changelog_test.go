@@ -10,7 +10,6 @@ import (
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
-	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/rand"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +19,7 @@ import (
 func TestChangelogRepo_Create(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	defer entdb.Close()
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{
 		DB: entdb,
 	}))
 
@@ -70,7 +69,7 @@ func TestChangelogRepo_Create(t *testing.T) {
 func TestChangelogRepo_Create_LongGitCommitTitle(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	defer entdb.Close()
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{
 		DB: entdb,
 	}))
 
@@ -92,7 +91,7 @@ func TestChangelogRepo_Create_LongGitCommitTitle(t *testing.T) {
 func TestChangelogRepo_FindLastChangelogsByProjectID(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	defer entdb.Close()
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{
 		DB: entdb,
 	}))
 
@@ -139,7 +138,7 @@ func TestChangelogRepo_FindLastChangelogsByProjectID(t *testing.T) {
 func TestChangelogRepo_FindLastChangeByProjectID_WithValidProjectID(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	defer entdb.Close()
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{
 		DB: entdb,
 	}))
 
@@ -163,7 +162,7 @@ func TestChangelogRepo_FindLastChangeByProjectID_WithValidProjectID(t *testing.T
 func TestChangelogRepo_FindLastChangeByProjectID_WithInvalidProjectID(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	defer entdb.Close()
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{
 		DB: entdb,
 	}))
 
@@ -175,7 +174,7 @@ func TestChangelogRepo_FindLastChangeByProjectID_WithInvalidProjectID(t *testing
 func TestChangelogRepo_FindLastChangeByProjectID_WithNoChangelog(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	defer entdb.Close()
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{
 		DB: entdb,
 	}))
 
@@ -188,9 +187,8 @@ func TestChangelogRepo_FindLastChangeByProjectID_WithNoChangelog(t *testing.T) {
 }
 
 func TestNewChangelogRepo(t *testing.T) {
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{}))
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{}))
 	assert.NotNil(t, repo)
-	assert.NotNil(t, repo.(*changelogRepo).logger)
 	assert.NotNil(t, repo.(*changelogRepo).data)
 }
 
@@ -247,7 +245,7 @@ func TestToChangeLog_WithNilChangelog(t *testing.T) {
 func TestChangelogRepoCreate_WithValidInput(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	defer entdb.Close()
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{
 		DB: entdb,
 	}))
 
@@ -279,7 +277,7 @@ func TestChangelogRepoCreate_WithValidInput(t *testing.T) {
 func TestChangelogRepoCreate_WithInvalidInput(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	defer entdb.Close()
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{
 		DB: entdb,
 	}))
 
@@ -325,7 +323,7 @@ func createNamespace(entdb *ent.Client) *ent.Namespace {
 func TestChangelogRepo_CountByProjectIDs(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	defer entdb.Close()
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{DB: entdb}))
 
 	ns := createNamespace(entdb)
 	p1 := createProject(entdb, ns.ID)
@@ -344,7 +342,7 @@ func TestChangelogRepo_CountByProjectIDs(t *testing.T) {
 func TestChangelogRepo_CountByProjectIDs_Empty(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	defer entdb.Close()
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{DB: entdb}))
 
 	counts, err := repo.CountByProjectIDs(context.TODO())
 	assert.NoError(t, err)
@@ -353,7 +351,7 @@ func TestChangelogRepo_CountByProjectIDs_Empty(t *testing.T) {
 
 // TestChangelogRepo_CountByProjectIDs_Error GROUP BY 聚合失败整体上抛（关闭的 DB）。
 func TestChangelogRepo_CountByProjectIDs_Error(t *testing.T) {
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: mustClosedDB(t)}))
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{DB: mustClosedDB(t)}))
 	counts, err := repo.CountByProjectIDs(context.TODO(), 1, 2)
 	assert.Nil(t, counts)
 	assert.Error(t, err)
@@ -364,7 +362,7 @@ func TestChangelogRepo_CountByProjectIDs_Error(t *testing.T) {
 func TestChangelogRepo_SelectCreatedAtBetween(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	defer entdb.Close()
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{DB: entdb}))
 
 	// 窗口锚点：留足前后余量，确保下述 created_at 全部落在 [lo, hi) 内。
 	lo := time.Now().Add(-time.Hour)
@@ -394,7 +392,7 @@ func TestChangelogRepo_SelectCreatedAtBetween(t *testing.T) {
 func TestChangelogRepo_SelectCreatedAtBetween_Empty(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	defer entdb.Close()
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: entdb}))
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{DB: entdb}))
 
 	created, err := repo.SelectCreatedAtBetween(context.TODO(), time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC))
 	assert.NoError(t, err)
@@ -403,7 +401,7 @@ func TestChangelogRepo_SelectCreatedAtBetween_Empty(t *testing.T) {
 
 // TestChangelogRepo_SelectCreatedAtBetween_Error 查询失败整体上抛（关闭的 DB）。
 func TestChangelogRepo_SelectCreatedAtBetween_Error(t *testing.T) {
-	repo := NewChangelogRepo(mlog.NewForConfig(nil), NewDataImpl(&NewDataParams{DB: mustClosedDB(t)}))
+	repo := NewChangelogRepo(NewDataImpl(&NewDataParams{DB: mustClosedDB(t)}))
 	created, err := repo.SelectCreatedAtBetween(context.TODO(), time.Now().Add(-time.Hour), time.Now())
 	assert.Nil(t, created)
 	assert.Error(t, err)

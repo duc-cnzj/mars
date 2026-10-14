@@ -110,6 +110,8 @@ func (Project) Fields() []ent.Field {
 func (Project) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("changelogs", Changelog.Type),
+		edge.To("hibernate", ProjectHibernate.Type).
+			Unique(),
 		edge.From("repo", Repo.Type).
 			Ref("projects").
 			Unique().

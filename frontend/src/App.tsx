@@ -53,6 +53,11 @@ const ProjectGovernance = lazy(() =>
 const RestoreDeleted = lazy(() =>
   import('./features/restore/RestoreDeleted').then((m) => ({ default: m.RestoreDeleted })),
 )
+const HibernateWindowManager = lazy(() =>
+  import('./features/hibernate/HibernateWindowManager').then((m) => ({
+    default: m.HibernateWindowManager,
+  })),
+)
 // 管理后台布局（左侧导航 + 右侧主体）：进入 /admin 才加载
 const AdminLayout = lazy(() =>
   import('./layout/AdminLayout').then((m) => ({ default: m.AdminLayout })),
@@ -143,6 +148,8 @@ export default function App() {
                     {/* 后台入口传 adminView：全平台事件（admin 发 all=true 看全部）；下拉 /events 不传 → 个人视图 */}
                     <Route path="events" element={<Events adminView />} />
                     <Route path="repos" element={<Repos />} />
+                    {/* 全局休眠时间窗：仓库定时休眠的全局前置配置（管理员级） */}
+                    <Route path="hibernate" element={<HibernateWindowManager />} />
                     <Route path="namespaces" element={<NamespaceManager />} />
                     <Route path="resources" element={<ResourceManagement />} />
                     {/* 后台入口传 adminView：全平台视图（mars_admin 可查全平台令牌）；下拉 /tokens 不传 → 个人视图 */}

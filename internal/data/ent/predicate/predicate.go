@@ -27,6 +27,9 @@ type Favorite func(*sql.Selector)
 // File is the predicate function for file builders.
 type File func(*sql.Selector)
 
+// HibernateWindow is the predicate function for hibernatewindow builders.
+type HibernateWindow func(*sql.Selector)
+
 // Member is the predicate function for member builders.
 type Member func(*sql.Selector)
 
@@ -35,6 +38,9 @@ type Namespace func(*sql.Selector)
 
 // Project is the predicate function for project builders.
 type Project func(*sql.Selector)
+
+// ProjectHibernate is the predicate function for projecthibernate builders.
+type ProjectHibernate func(*sql.Selector)
 
 // Repo is the predicate function for repo builders.
 type Repo func(*sql.Selector)

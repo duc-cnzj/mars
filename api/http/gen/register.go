@@ -12,6 +12,7 @@ import (
 	_ "github.com/duc-cnzj/mars/api/v6/proto/event"
 	_ "github.com/duc-cnzj/mars/api/v6/proto/file"
 	_ "github.com/duc-cnzj/mars/api/v6/proto/git"
+	_ "github.com/duc-cnzj/mars/api/v6/proto/hibernate"
 	_ "github.com/duc-cnzj/mars/api/v6/proto/metrics"
 	_ "github.com/duc-cnzj/mars/api/v6/proto/namespace"
 	_ "github.com/duc-cnzj/mars/api/v6/proto/picture"

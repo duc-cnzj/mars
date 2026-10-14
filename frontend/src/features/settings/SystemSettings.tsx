@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@/components/Icons'
 import { Empty, RefreshFade, SkeletonList, Tag } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/shadcn/tooltip'
+import { TruncatedText } from '@/components/TruncatedText'
 import { copyText } from '@/lib/copy'
 import { formatDateTime } from '@/lib/format'
 import { toast } from '@/lib/toast'
@@ -87,50 +87,6 @@ const VERSION_FIELDS: {
 
 /** 空值占位符：后端部分字段（如未打 tag 的构建）为空串，占位保证行数稳定、不因构建差异跳版 */
 const EMPTY_PLACEHOLDER = '—'
-
-/**
- * 单行截断文本：超出容器宽度时悬停显示全文（shadcn Tooltip，原生 title 有延迟且无样式、用户感知不到）
- *
- * 对齐 ProjectRow / Elements FieldLabel 的既有模式——恒走 Tooltip 分支、open 受控
- * （truncated && hover，onOpenChange 置空）：不要按 truncated 在裸文本 ↔ Tooltip 之间切换 DOM，
- * 也不要把 onOpenChange 接真实 setState（Radix 受控开合逻辑会和鼠标事件互斗，悬停一开就关）。
- */
-function TruncatedText({ text, className }: { text: string; className?: string }) {
-  const ref = useRef<HTMLSpanElement>(null)
-  const [truncated, setTruncated] = useState(false)
-  const [hover, setHover] = useState(false)
-
-  // 截断检测：scrollWidth > clientWidth（+1px 缓冲防亚像素抖动）；ResizeObserver 跟随容器尺寸变化重算
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const measure = () => setTruncated(el.scrollWidth > el.clientWidth + 1)
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [text])
-
-  return (
-    <TooltipProvider delayDuration={100}>
-      <Tooltip open={truncated && hover} onOpenChange={() => {}}>
-        <TooltipTrigger asChild>
-          <span
-            ref={ref}
-            onMouseEnter={() => setHover(true)}
-            onMouseLeave={() => setHover(false)}
-            className={cn('truncate', className)}
-          >
-            {text}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[min(320px,80vw)] break-words">
-          {text}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  )
-}
 
 /**
  * 系统设置（管理员后台 · 只读配置展示）

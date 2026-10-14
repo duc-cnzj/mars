@@ -462,6 +462,9 @@ func (c *Client) File() *FileAPI { return &FileAPI{FileSvc: &rest.FileSvc{C: ops
 // Git 返回 Git(git)服务的 HTTP SDK 客户端。
 func (c *Client) Git() *rest.GitSvc { return &rest.GitSvc{C: ops{c}} }
 
+// Hibernate 返回定时休眠(hibernate)服务的 HTTP SDK 客户端（全局休眠时间窗的增删改查）。
+func (c *Client) Hibernate() *rest.HibernateSvc { return &rest.HibernateSvc{C: ops{c}} }
+
 // Metrics 返回指标(metrics)服务的 HTTP SDK 客户端。
 func (c *Client) Metrics() *rest.MetricsSvc { return &rest.MetricsSvc{C: ops{c}} }
 

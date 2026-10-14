@@ -93,17 +93,21 @@ export function ProjectDetailModal({
       : 'detail',
   )
 
-  const reload = async () => {
+  /** 重拉项目最新详情：打开弹窗/部署完成/配置刷新共用。返回最新详情供调用方复用，
+   *  失败就地提示并返回 null（调用方无需重复处理错误） */
+  const reload = async (): Promise<ProjectModel | null> => {
     setLoading(true)
     try {
       const { data, error } = await api.GET(API.projectsDetail, {
         params: { path: { id: project.id } },
       })
       if (error) throw new Error(error.message ?? String(error))
-      if (!data?.item) return
+      if (!data?.item) return null
       setDetail(data.item)
+      return data.item
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
+      return null
     } finally {
       setLoading(false)
     }
@@ -273,6 +277,7 @@ export function ProjectDetailModal({
                         detail={detail}
                         active={active}
                         onChanged={handleChanged}
+                        onRefresh={reload}
                         onDeployed={() => {
                           if (tab === 'edit') setTab('topology')
                         }}
@@ -280,7 +285,9 @@ export function ProjectDetailModal({
                     </Suspense>
                   )}
                   {it.key === 'topology' && <TopologyTab project={detail} resizeAt={resizeAt} />}
-                  {it.key === 'detail' && <TabInfo detail={detail} onDeleted={onDeleted} />}
+                  {it.key === 'detail' && (
+                    <TabInfo detail={detail} onDeleted={onDeleted} />
+                  )}
                 </div>
               )
             })

@@ -5,40 +5,57 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"maps"
+	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/biz/schematype"
 	"github.com/duc-cnzj/mars/v6/internal/config"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/uploader"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
+	"go.opentelemetry.io/otel"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
+// cronjobTracerName 是定时任务用例的 OpenTelemetry tracer 名称（取 module path），
+// 让系统发起的周期工作（如休眠对账）在 trace 面板与其触发的下游调用串联成一条链：
+// 对账本身无请求上下文，需在入口开根 span，下游 data 层 repo span 才能挂到同一条 trace 上。
+const cronjobTracerName = "github.com/duc-cnzj/mars/v6/internal/cronjob"
+
 // Tasks 是定时任务用例集合：7 个任务由注册表 Registry 枚举声明（CronTask 值），
 // 内部仅依赖各 biz 端口/uploader/helm/git 完成周期清理、状态修复与缓存预热，是
 // 纯应用层用例，不触碰任何基础设施门面（DB/K8sClient/Config 均经端口访问）。
 type Tasks struct {
-	timer       timer.Timer
-	logger      mlog.Logger
-	event       biz.EventRepo
-	cfg         *config.Config
-	up          uploader.Uploader
-	helm        biz.HelmerRepo
-	gitRepo     biz.GitRepo
-	getCerts    func() (name, key, crt string)
-	k8sRepo     biz.K8sRepo
-	nsRepo      biz.NamespaceRepo
-	repoRepo    biz.RepoRepo
-	fileRepo    biz.FileRepo
-	projectRepo biz.ProjectRepo
+	timer             timer.Timer
+	logger            mlog.Logger
+	event             biz.EventRepo
+	cfg               *config.Config
+	up                uploader.Uploader
+	helm              biz.HelmerRepo
+	gitRepo           biz.GitRepo
+	getCerts          func() (name, key, crt string)
+	k8sRepo           biz.K8sRepo
+	nsRepo            biz.NamespaceRepo
+	repoRepo          biz.RepoRepo
+	fileRepo          biz.FileRepo
+	projectRepo       biz.ProjectRepo
+	hibernateRepo     biz.HibernateRepo
+	hibernateDeployer biz.HibernateDeployer
+	// hibernateWindowRepo 解析仓库引用的全局休眠时间窗（按名字查启止时段）。
+	hibernateWindowRepo biz.HibernateWindowRepo
+	// warnedMissingWindow 记录已告警过的悬空窗口名：悬空引用是对账每轮都会遇到的预期态，
+	// 去重后同一窗名只告警一次，既保留可观测性又避免每 2 分钟刷屏淹没真信号。
+	warnedMissingWindow sync.Map
 }
 
 // PluginDeps 定时任务用例的插件能力集合。字段为惰性闭包：wire 期构造
@@ -63,22 +80,28 @@ func NewTasks(
 	up uploader.Uploader,
 	helm biz.HelmerRepo,
 	gitRepo biz.GitRepo,
+	hibernateRepo biz.HibernateRepo,
+	hibernateDeployer biz.HibernateDeployer,
+	hibernateWindowRepo biz.HibernateWindowRepo,
 	deps *PluginDeps,
 ) *Tasks {
 	return &Tasks{
-		timer:       tm,
-		fileRepo:    fileRepo,
-		logger:      logger.WithModule("app/cron"),
-		event:       event,
-		cfg:         cfg,
-		up:          up,
-		helm:        helm,
-		gitRepo:     gitRepo,
-		getCerts:    deps.GetCerts,
-		k8sRepo:     k8sRepo,
-		nsRepo:      nsRepo,
-		repoRepo:    repoRepo,
-		projectRepo: projectRepo,
+		timer:               tm,
+		fileRepo:            fileRepo,
+		logger:              logger.WithModule("app/cron"),
+		event:               event,
+		cfg:                 cfg,
+		up:                  up,
+		helm:                helm,
+		gitRepo:             gitRepo,
+		getCerts:            deps.GetCerts,
+		k8sRepo:             k8sRepo,
+		nsRepo:              nsRepo,
+		repoRepo:            repoRepo,
+		projectRepo:         projectRepo,
+		hibernateRepo:       hibernateRepo,
+		hibernateDeployer:   hibernateDeployer,
+		hibernateWindowRepo: hibernateWindowRepo,
 	}
 }
 
@@ -89,7 +112,7 @@ func (repo *Tasks) CacheAllBranches() error {
 	}(repo.timer.Now())
 
 	var wg = &sync.WaitGroup{}
-	all, err := repo.repoRepo.All(context.TODO(), &biz.AllRepoRequest{Enabled: lo.ToPtr(true), NeedGitRepo: lo.ToPtr(true)})
+	all, err := repo.repoRepo.All(context.Background(), &biz.AllRepoRequest{Enabled: lo.ToPtr(true), NeedGitRepo: lo.ToPtr(true)})
 	if err != nil {
 		return err
 	}
@@ -103,7 +126,7 @@ func (repo *Tasks) CacheAllBranches() error {
 		go func() {
 			defer wg.Done()
 			for id := range ch {
-				repo.gitRepo.AllBranches(context.TODO(), int(id), true)
+				repo.gitRepo.AllBranches(context.Background(), int(id), true)
 			}
 		}()
 	}
@@ -133,7 +156,7 @@ func (repo *Tasks) SyncImagePullSecrets() error {
 			Auth:     base64.StdEncoding.EncodeToString([]byte(s.Username + ":" + s.Password)),
 		}
 	}
-	namespaceList, err := repo.nsRepo.ListAll(context.TODO())
+	namespaceList, err := repo.nsRepo.ListAll(context.Background())
 	if err != nil {
 		return err
 	}
@@ -144,7 +167,7 @@ func (repo *Tasks) SyncImagePullSecrets() error {
 			ns      = namespace
 		)
 		for _, secretName := range ns.ImagePullSecrets {
-			secret, err := repo.k8sRepo.GetSecret(context.TODO(), ns.Name, secretName)
+			secret, err := repo.k8sRepo.GetSecret(context.Background(), ns.Name, secretName)
 			if err != nil {
 				logger.Warningf("[syncImagePullSecrets]: error get secret '%s', err %v", secretName, err)
 				if apierrors.IsNotFound(err) {
@@ -181,7 +204,7 @@ func (repo *Tasks) SyncImagePullSecrets() error {
 					logger.Warningf("[syncImagePullSecrets]: Find Diff, Auto Sync: '%s'", secretName)
 					marshal, _ := json.Marshal(&newConfigJson)
 					secret.Data[corev1.DockerConfigJsonKey] = marshal
-					if _, err := repo.k8sRepo.UpdateSecret(context.TODO(), ns.Name, secret.Name, secret); err != nil {
+					if _, err := repo.k8sRepo.UpdateSecret(context.Background(), ns.Name, secret.Name, secret); err != nil {
 						logger.Warningf("[syncImagePullSecrets]: update secret '%s', err %v", secretName, err)
 					}
 				}
@@ -195,10 +218,10 @@ func (repo *Tasks) SyncImagePullSecrets() error {
 		}
 
 		if len(missing) > 0 {
-			secret, err := repo.k8sRepo.CreateDockerSecrets(context.TODO(), ns.Name, missing)
+			secret, err := repo.k8sRepo.CreateDockerSecrets(context.Background(), ns.Name, missing)
 			if err == nil {
 				logger.Warningf("[syncImagePullSecrets]: Missing %v", missing)
-				if err := repo.nsRepo.UpdateImagePullSecrets(context.TODO(), ns.ID, append(ns.ImagePullSecrets, secret.Name)); err != nil {
+				if err := repo.nsRepo.UpdateImagePullSecrets(context.Background(), ns.ID, append(ns.ImagePullSecrets, secret.Name)); err != nil {
 					logger.Warningf("[syncImagePullSecrets]: update namespace '%s' imagePullSecrets, err %v", ns.Name, err)
 				}
 			}
@@ -213,7 +236,7 @@ func (repo *Tasks) deleteSecret(ns *biz.Namespace, secretName string) *biz.Names
 	logger := repo.logger
 	logger.Warningf("[syncImagePullSecrets]: DELETE: %s", secretName)
 
-	if err := repo.k8sRepo.DeleteSecret(context.TODO(), ns.Name, secretName); err != nil {
+	if err := repo.k8sRepo.DeleteSecret(context.Background(), ns.Name, secretName); err != nil {
 		logger.Warningf("[syncImagePullSecrets]: delete k8s secret '%s', err %v", secretName, err)
 	}
 	var newNsArray []string
@@ -222,7 +245,7 @@ func (repo *Tasks) deleteSecret(ns *biz.Namespace, secretName string) *biz.Names
 			newNsArray = append(newNsArray, name)
 		}
 	}
-	if err := repo.nsRepo.UpdateImagePullSecrets(context.TODO(), ns.ID, newNsArray); err != nil {
+	if err := repo.nsRepo.UpdateImagePullSecrets(context.Background(), ns.ID, newNsArray); err != nil {
 		logger.Warningf("[syncImagePullSecrets]: update namespace '%s' imagePullSecrets, err %v", ns.Name, err)
 	}
 	ns.ImagePullSecrets = newNsArray
@@ -238,12 +261,12 @@ func (repo *Tasks) SyncDomainSecret() error {
 	)
 	secretName, tlsKey, tlsCrt := repo.getCerts()
 	if secretName != "" && tlsKey != "" && tlsCrt != "" {
-		allNamespaces, err := repo.nsRepo.ListAll(context.TODO())
+		allNamespaces, err := repo.nsRepo.ListAll(context.Background())
 		if err != nil {
 			return err
 		}
 		for _, n := range allNamespaces {
-			secret, err := repo.k8sRepo.GetSecret(context.TODO(), n.Name, secretName)
+			secret, err := repo.k8sRepo.GetSecret(context.Background(), n.Name, secretName)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
 					repo.logger.Infof("[TLS]: Register secret namespace: %s, name %s.", n.Name, secretName)
@@ -273,7 +296,7 @@ func (repo *Tasks) SyncDomainSecret() error {
 		repo.logger.Warning("[TLS]: certs changed, updating...")
 		for _, secret := range changedSecrets {
 			secret.StringData = sdata
-			_, err := repo.k8sRepo.UpdateSecret(context.TODO(), secret.Namespace, secret.Name, secret)
+			_, err := repo.k8sRepo.UpdateSecret(context.Background(), secret.Namespace, secret.Name, secret)
 			if err == nil {
 				repo.logger.Infof("[TLS]: namespace: %s, name %s updated", secret.Namespace, secret.Name)
 			}
@@ -284,7 +307,7 @@ func (repo *Tasks) SyncDomainSecret() error {
 
 // FixDeployStatus 用 helm 实测状态修复标记为失败/未知的项目。
 func (repo *Tasks) FixDeployStatus() error {
-	projects, err := repo.projectRepo.ListByDeployStatus(context.TODO(), types.Deploy_StatusFailed, types.Deploy_StatusUnknown)
+	projects, err := repo.projectRepo.ListByDeployStatus(context.Background(), types.Deploy_StatusFailed, types.Deploy_StatusUnknown)
 	if err != nil {
 		return err
 	}
@@ -304,12 +327,257 @@ func (repo *Tasks) FixDeployStatus() error {
 		}
 		status := repo.helm.ReleaseStatus(p.Name, p.Namespace.Name)
 		if status != types.Deploy_StatusFailed && status != types.Deploy_StatusUnknown {
-			if _, err := repo.projectRepo.UpdateDeployStatus(context.TODO(), p.ID, status); err != nil {
+			if _, err := repo.projectRepo.UpdateDeployStatus(context.Background(), p.ID, status); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
+}
+
+// hibernateReconcileWorkers 是休眠对账的并发度上限。单个项目的跃迁要同步跑完一次 helm
+// 重部署（受 install_timeout 约束，默认 90s）；若共用同一时间窗的 K 个项目在窗口边界齐齐
+// 跃迁，串行会叠加成 K×T 的长尾（如 K=20、T=30s → 约 10 分钟，远超 2 分钟调度周期），
+// 且队尾项目被前序项目耗时之和拖累。固定 worker 池把长尾压到 ⌈K/并发度⌉×T，同时限制
+// 并发 helm 数量，避免大量重部署同时冲击 apiserver/helm。取 5：一轮对账约等于一个调度
+// 周期，又不至于并发过高惊群。
+const hibernateReconcileWorkers = 5
+
+// ReconcileHibernate 对账项目定时休眠：每 2 分钟推进一步状态机。
+// 总闸：只接管项目级开关已开（Enabled=true）的记录——ListEnabled 已在查询侧过滤掉开关已关的
+// 记录，故开关一关，对账即彻底放弃该项目，无论它当前处于什么状态（含已置 0 的休眠态）都不再做
+// 任何修改，交由用户手动掌控；重新打开开关即恢复接管。
+// 单趟遍历：不再分「清醒轮 / 休眠轮」两趟，每条记录按「是否在窗口内」与「是否真在休眠（状态
+// sleeping 且副本字段全 0）」即时归位——窗口内非真休眠即休眠（含错位当轮重睡，无需等下一轮）、
+// 窗口外真休眠即唤醒、窗口外错位则释放接管权。单个项目失败只记日志并跳过（下一轮重试），
+// 不阻断本轮其它项目；列表查询失败才上抛。
+// 并发：一趟内用固定 worker 池（hibernateReconcileWorkers）有界并发处理各项目——各项目互相
+// 独立（不同 projectID，部署侧 GlobalLock 按 slug 分键互不冲突），并行不改变单项目状态机语义；
+// 并发度封顶以避免同窗项目齐齐跃迁时全量重部署惊群。
+func (repo *Tasks) ReconcileHibernate() error {
+	// 对账无请求上下文，入口开根 span 并派生 ctx 贯穿全程：下游 repo/部署调用的 span 与日志
+	// 因此挂到同一条 trace 上，可追溯「哪轮对账 → 哪个项目 → 哪次重部署」。
+	ctx, span := otel.Tracer(cronjobTracerName).Start(context.Background(), "cronjob/ReconcileHibernate")
+	defer span.End()
+	now := repo.timer.Now()
+	enabled, err := repo.hibernateRepo.ListEnabled(ctx)
+	if err != nil {
+		return err
+	}
+	if len(enabled) == 0 {
+		return nil
+	}
+
+	workers := len(enabled)
+	if workers > hibernateReconcileWorkers {
+		workers = hibernateReconcileWorkers
+	}
+	// 缓冲容量设为全长：投递侧不因 worker 回收而阻塞（避免 worker 异常退出时投递侧死锁），
+	// 未被消费的记录随本轮结束丢弃、下一轮重试。
+	ch := make(chan *biz.ProjectHibernate, len(enabled))
+	wg := &sync.WaitGroup{}
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func() {
+			defer wg.Done()
+			for rec := range ch {
+				// 每个项目包一层独立 recover 帧：单项目 panic 只作废该项目、下一轮重试，
+				// 不再像串行那样顺循环上抛拖垮整趟对账（串行时一个 panic 令本轮其余项目全部跳过）。
+				//
+				// 这里刻意不用 logger.HandlePanic：它会在 debug 模式把 panic 重新抛出，而本
+				// worker 是独立 goroutine——robfig 的 Recover 只兜住它自己那个调度 goroutine，
+				// 重抛的 panic 无人接住会直接崩掉整个进程（串行实现下的 panic 有 wrap 的
+				// HandlePanicWithCallback 承接，故当时 debug 不会崩）。改用不重抛的 recover：
+				// 记栈日志后继续消费下一项目，debug/prod 行为一致且都不崩进程。
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							repo.logger.Errorf("[Panic]: [cron]: reconcileHibernateProject, err: %v --- [%s]", r, debug.Stack())
+						}
+					}()
+					repo.reconcileHibernateProject(ctx, now, rec)
+				}()
+			}
+		}()
+	}
+	for _, rec := range enabled {
+		ch <- rec
+	}
+	close(ch)
+	wg.Wait()
+
+	return nil
+}
+
+// reconcileHibernateProject 推进单条「开关已开」休眠记录的状态：加载项目与所属仓库配置，按
+// 窗口内外与真实休眠态的四象限分派到休眠 / 唤醒 / 释放，或原样保持。加载失败由
+// loadHibernateTarget 记日志并返回 ok=false，直接跳过（下一轮重试）。
+func (repo *Tasks) reconcileHibernateProject(ctx context.Context, now time.Time, rec *biz.ProjectHibernate) {
+	proj, cfg, ok := repo.loadHibernateTarget(ctx, rec.ProjectID)
+	if !ok {
+		return
+	}
+	// replicaPaths 只要仓库配了休眠就取：即便仓库级能力已关，判断「副本是否真全 0」仍需求值，
+	// 以免把「已置 0 的休眠态」误判为错位。未配置休眠时为 nil，ReplicaValuesAllZero 恒真，
+	// 退化为只看状态，保证此类项目仍能按快照被唤醒。
+	var replicaPaths []string
+	if cfg.Hibernate != nil {
+		replicaPaths = cfg.Hibernate.ReplicaPaths
+	}
+	inWindow := false
+	if cfg.Hibernate != nil && cfg.Hibernate.Enabled {
+		// 生效窗：项目自身选定的子集（启用时已保证非空），命中任一窗即算在窗内（并集语义）。
+		// 空选择（历史/异常数据）不继承仓库全量——按「未选即未启用」处理：解析不到窗即不参与休眠。
+		if wins, wok := repo.resolveHibernateWindows(ctx, rec.WindowNames); wok {
+			inWindow = anyHibernateWindowHit(now, wins)
+		}
+	}
+	actuallySleeping := rec.State == biz.HibernateStateSleeping &&
+		biz.ReplicaValuesAllZero(proj.FinalExtraValues, replicaPaths)
+
+	switch {
+	case inWindow && actuallySleeping:
+		// 窗口内且确在休眠：保持，不做任何改动。
+		return
+	case inWindow:
+		// 清醒态命中窗口，或标记休眠但副本非全 0 的错位：本轮回休眠（错位时当前值成为新快照），
+		// 与修正同一轮完成，不再等下一轮对账。
+		repo.sleepHibernateProject(ctx, proj, rec, replicaPaths)
+	case actuallySleeping:
+		// 窗口外且确在休眠：按快照回填唤醒。
+		repo.wakeHibernateProject(ctx, proj, rec)
+	case rec.State == biz.HibernateStateSleeping:
+		// 窗口外仍标记 sleeping 但副本非全 0：释放接管权（保留当前值）。
+		repo.releaseHibernateProject(ctx, proj, rec)
+	}
+}
+
+// sleepHibernateProject 执行单个项目的休眠：快照副本字段当前值并**先**落库「休眠态+快照」，
+// 再把副本字段置 0 重部署。窗口判定与「仓库是否启用休眠」由调用方完成，本方法只负责落动作。
+//
+// 顺序是幂等的承重点：重部署会把置 0 后的副本值写回项目记录（deploy 管线 UpdateProject）。
+// 若先部署后落库，一旦部署成功而落库失败/进程崩溃，下一轮对账读到的基座副本已被置 0，会据此
+// 重拍出「全 0 快照」覆盖真快照，令原始副本数永久丢失（唤醒只能恢复成 0）。改为先落库后：
+// 落库失败则本轮不部署、基座未变，下一轮重拍仍是原值；落库成功而部署失败，下一轮以同一快照
+// 重试（基座同样未变）。两种失败都基于「基座未变」而自愈，故顺序不可颠倒。
+func (repo *Tasks) sleepHibernateProject(ctx context.Context, proj *biz.Project, rec *biz.ProjectHibernate, replicaPaths []string) {
+	base := proj.FinalExtraValues
+	snapshot := biz.SnapshotReplicaValues(base, replicaPaths)
+	target := biz.SleepExtraValues(base, replicaPaths)
+	if _, err := repo.hibernateRepo.Upsert(ctx, &biz.ProjectHibernate{
+		ProjectID:   proj.ID,
+		Enabled:     rec.Enabled,
+		State:       biz.HibernateStateSleeping,
+		Snapshot:    snapshot,
+		WindowNames: rec.WindowNames,
+	}); err != nil {
+		repo.logger.Errorf("[hibernate]: 项目 %s 休眠状态落库失败: %v", proj.Name, err)
+		return
+	}
+	if err := repo.hibernateDeployer.Redeploy(ctx, proj, target); err != nil {
+		repo.logger.Errorf("[hibernate]: 项目 %s 休眠重部署失败: %v", proj.Name, err)
+		return
+	}
+	// 自动把副本置 0 是运维需要可追溯的状态变更，成功也留 Info（此前仅失败有痕）。
+	repo.logger.Infof("[hibernate]: 项目 %s 命中休眠窗口，副本字段已置 0（快照 %d 个字段）", proj.Name, len(snapshot))
+}
+
+// wakeHibernateProject 执行单个项目的唤醒：按快照回填副本字段重部署、状态转 awake 并清空快照。
+// 仅由对账在「窗口外且确在休眠（副本全 0）」时调用，故无需再判窗口。
+func (repo *Tasks) wakeHibernateProject(ctx context.Context, proj *biz.Project, rec *biz.ProjectHibernate) {
+	target := biz.WakeExtraValues(proj.FinalExtraValues, rec.Snapshot)
+	if err := repo.hibernateDeployer.Redeploy(ctx, proj, target); err != nil {
+		repo.logger.Errorf("[hibernate]: 项目 %s 唤醒重部署失败: %v", proj.Name, err)
+		return
+	}
+	if _, err := repo.hibernateRepo.Upsert(ctx, &biz.ProjectHibernate{
+		ProjectID:   proj.ID,
+		Enabled:     rec.Enabled,
+		State:       biz.HibernateStateAwake,
+		WindowNames: rec.WindowNames,
+	}); err != nil {
+		repo.logger.Errorf("[hibernate]: 项目 %s 唤醒状态落库失败: %v", proj.Name, err)
+		return
+	}
+	// 成功唤醒同样留 Info，供运维追溯自动回填的产生。
+	repo.logger.Infof("[hibernate]: 项目 %s 已唤醒（按快照回填 %d 个副本字段）", proj.Name, len(rec.Snapshot))
+}
+
+// releaseHibernateProject 释放单个项目的休眠接管权：状态转 awake 并清空快照、保留当前副本值，
+// 不重部署。用于「窗口外仍标记 sleeping 但副本非全 0」的错位（关闭期间改过副本数后重开），
+// 交回用户当前值掌控；窗口内出现同类错位则由休眠侧当轮重睡（见 reconcileHibernateProject）。
+func (repo *Tasks) releaseHibernateProject(ctx context.Context, proj *biz.Project, rec *biz.ProjectHibernate) {
+	repo.logger.Warningf("[hibernate]: 项目 %s 标记休眠中但副本字段非全 0，释放接管权并转清醒", proj.Name)
+	if _, err := repo.hibernateRepo.Upsert(ctx, &biz.ProjectHibernate{
+		ProjectID:   proj.ID,
+		Enabled:     rec.Enabled,
+		State:       biz.HibernateStateAwake,
+		WindowNames: rec.WindowNames,
+	}); err != nil {
+		repo.logger.Errorf("[hibernate]: 项目 %s 释放休眠接管权落库失败: %v", proj.Name, err)
+	}
+}
+
+// resolveHibernateWindows 按名字列表逐个解析全局时间窗，返回全部可解析的窗。名字全空、
+// 或全部名字都悬空（被删/导出到未同步的环境）时返回 ok=false——调用方按「无窗口」处理：
+// 休眠侧跳过、唤醒侧继续唤醒，避免悬空引用让项目永久卡在休眠态。单个名字悬空逐个跳过
+// （同名只告警一次，避免每轮刷屏），不牵连其余可解析的窗。
+func (repo *Tasks) resolveHibernateWindows(ctx context.Context, names []string) (out []*biz.HibernateWindow, ok bool) {
+	for _, name := range names {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+		win, err := repo.hibernateWindowRepo.GetByName(ctx, name)
+		if err != nil {
+			repo.logger.Warningf("[hibernate]: 解析休眠时间窗 %q 失败: %v", name, err)
+			continue
+		}
+		if win == nil {
+			// 悬空引用是预期态（窗口被删/跨环境未同步），对账每 2 分钟一轮、逐轮告警会刷屏淹没真信号；
+			// 同一窗名只告警一次（去重），保留可观测性又去掉噪声。
+			if _, loaded := repo.warnedMissingWindow.LoadOrStore(name, struct{}{}); !loaded {
+				repo.logger.Warningf("[hibernate]: 引用的休眠时间窗 %q 不存在，跳过（同名不再重复告警）", name)
+			}
+			continue
+		}
+		out = append(out, win)
+	}
+	return out, len(out) > 0
+}
+
+// anyHibernateWindowHit 判定 now 是否落在任一已解析窗内（项目多选窗的并集语义）。
+func anyHibernateWindowHit(now time.Time, wins []*biz.HibernateWindow) bool {
+	for _, w := range wins {
+		if biz.InHibernateWindow(now, w.Start, w.End) {
+			return true
+		}
+	}
+	return false
+}
+
+// loadHibernateTarget 加载休眠对账所需的项目与其所属仓库配置；任一步失败记日志返回 ok=false，
+// 由调用方跳过本轮（下一轮重试），避免单个坏项目阻断整轮对账。
+// 项目已删（NotFound）时顺手清理孤儿休眠记录：项目可能经空间级联软删离场，那条路径不经过
+// projectRepo.Delete，不清理会让本任务每轮都去 Show 一个已删项目、反复告警。
+func (repo *Tasks) loadHibernateTarget(ctx context.Context, projectID int) (*biz.Project, *mars.Config, bool) {
+	proj, err := repo.projectRepo.Show(ctx, projectID)
+	if err != nil {
+		if errs.IsNotFound(err) {
+			if derr := repo.hibernateRepo.Delete(ctx, projectID); derr != nil {
+				repo.logger.Warningf("[hibernate]: 清理项目 %d 的孤儿休眠记录失败: %v", projectID, derr)
+			}
+			return nil, nil, false
+		}
+		repo.logger.Warningf("[hibernate]: 加载项目 %d 失败: %v", projectID, err)
+		return nil, nil, false
+	}
+	r, err := repo.repoRepo.Get(ctx, proj.RepoID)
+	if err != nil {
+		repo.logger.Warningf("[hibernate]: 加载项目 %s 的仓库 %d 失败: %v", proj.Name, proj.RepoID, err)
+		return nil, nil, false
+	}
+	return proj, r.GetMarsConfig(), true
 }
 
 // DiskInfo 返回文件仓库的磁盘用量。
@@ -333,7 +601,7 @@ func (repo *Tasks) CleanUploadFiles() error {
 
 		cleanFunc = func(up uploader.Uploader, fileID int, filePath string) bool {
 			if !up.Exists(filePath) {
-				if err := repo.fileRepo.DeleteRecord(context.TODO(), fileID); err != nil {
+				if err := repo.fileRepo.DeleteRecord(context.Background(), fileID); err != nil {
 					repo.logger.Warningf("[CleanUploadFiles]: delete record %d err %v", fileID, err)
 				}
 				return true
@@ -342,7 +610,7 @@ func (repo *Tasks) CleanUploadFiles() error {
 		}
 	)
 
-	files, err := repo.fileRepo.ListByCreatedAtRange(context.TODO(), startOfDay, endOfDay)
+	files, err := repo.fileRepo.ListByCreatedAtRange(context.Background(), startOfDay, endOfDay)
 	if err != nil {
 		return err
 	}
@@ -419,7 +687,7 @@ func (l listFiles) PrettyYaml() string {
 // CacheAllProjects 拉取全部 git 项目并写入缓存。
 func (repo *Tasks) CacheAllProjects() error {
 	repo.logger.Info("CacheAllProjects")
-	_, err := repo.gitRepo.AllProjects(context.TODO(), true)
+	_, err := repo.gitRepo.AllProjects(context.Background(), true)
 	return err
 }
 
@@ -427,7 +695,7 @@ func (repo *Tasks) CacheAllProjects() error {
 // List。force=true 使 data 层跳过缓存读直接回填。失败即上抛，由 cron 记录，
 // 下一轮自动重试。
 func (repo *Tasks) CacheClusterBoard() error {
-	_, err := repo.k8sRepo.ClusterBoard(context.TODO(), true)
+	_, err := repo.k8sRepo.ClusterBoard(context.Background(), true)
 	return err
 }
 
@@ -435,7 +703,7 @@ func (repo *Tasks) CacheClusterBoard() error {
 // TTL 更密，读端总命中热缓存），避免读端高峰期触达全集群 List。force=true 使
 // data 层跳过缓存读直接回填。失败即上抛，由 cron 记录，下一轮自动重试。
 func (repo *Tasks) CacheResourceSnapshot() error {
-	_, err := repo.k8sRepo.ResourceSnapshot(context.TODO(), true)
+	_, err := repo.k8sRepo.ResourceSnapshot(context.Background(), true)
 	return err
 }
 

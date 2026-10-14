@@ -10,7 +10,8 @@ import (
 )
 
 // DeployMsger 是部署流水线向用户汇报进度的端口。实现方由传输层提供：
-// websocket 侧用 messageSender，gRPC 侧用 services 里的 messager/emptyMessager。
+// websocket 侧用 messageSender，gRPC 流式侧用 services 里的 messager；非流式（无交互客户端）
+// 场景一律复用本包 NoopMsger 丢弃全部帧。
 // SetSlug 是部署帧 slug 的唯一权威回填入口：slug 依赖最终部署名（创建项目场景前端不发
 // name，名由 ApplyProject 缺省解析），传输层构造期不绑定 slug，由共享编排 ApplyProject
 // 名解析后就地回填，实现方据此保证后续所有帧（含 git ensure 消息）携带最终名。
@@ -25,6 +26,43 @@ type DeployMsger interface {
 	SendProtoMsg(app.WebsocketMessage)
 	SendMsgWithContainerLog(msg string, containers []*websocket_pb.Container)
 }
+
+var _ DeployMsger = (*NoopMsger)(nil)
+
+// NoopMsger 是 DeployMsger 的空实现：所有推送方法均 no-op，进度恒为 0。供「无交互客户端」
+// 的部署场景复用——系统自动重部署（定时休眠/唤醒）、gRPC WebApply 等非流式入口，都只需满足
+// 部署流水线对 DeployMsger 的调用契约、把进度/日志/结果帧一律丢弃，无需各自再造一份空实现。
+type NoopMsger struct{}
+
+// Current 恒返回 0（无进度追踪）。
+func (NoopMsger) Current() int64 { return 0 }
+
+// Add 空实现。
+func (NoopMsger) Add() {}
+
+// To 空实现。
+func (NoopMsger) To(int64) {}
+
+// SetSlug 空实现：丢弃全部帧的空 messager 无 slug 关联需求。
+func (NoopMsger) SetSlug(string) {}
+
+// SendProcessPercent 空实现。
+func (NoopMsger) SendProcessPercent(int64) {}
+
+// SendDeployedResult 空实现。
+func (NoopMsger) SendDeployedResult(websocket_pb.ResultType, string, *types.ProjectModel) {}
+
+// SendEndError 空实现。
+func (NoopMsger) SendEndError(error) {}
+
+// SendMsg 空实现。
+func (NoopMsger) SendMsg(string) {}
+
+// SendProtoMsg 空实现。
+func (NoopMsger) SendProtoMsg(app.WebsocketMessage) {}
+
+// SendMsgWithContainerLog 空实现。
+func (NoopMsger) SendMsgWithContainerLog(string, []*websocket_pb.Container) {}
 
 // Sleeper 是休眠抽象，进度上报的节流间隔可注入（测试用假休眠器）。
 type Sleeper interface {

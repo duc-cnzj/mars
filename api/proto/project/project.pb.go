@@ -28,9 +28,11 @@ const (
 )
 
 type ListRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Page          *int32                 `protobuf:"varint,1,opt,name=page,proto3,oneof" json:"page,omitempty"`
-	PageSize      *int32                 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3,oneof" json:"page_size,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Page     *int32                 `protobuf:"varint,1,opt,name=page,proto3,oneof" json:"page,omitempty"`
+	PageSize *int32                 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3,oneof" json:"page_size,omitempty"`
+	// 按所属仓库过滤（仓库列表「查看项目」用）；不传或 0 = 全部。
+	RepoId        *int32 `protobuf:"varint,3,opt,name=repo_id,json=repoId,proto3,oneof" json:"repo_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -75,6 +77,13 @@ func (x *ListRequest) GetPage() int32 {
 func (x *ListRequest) GetPageSize() int32 {
 	if x != nil && x.PageSize != nil {
 		return *x.PageSize
+	}
+	return 0
+}
+
+func (x *ListRequest) GetRepoId() int32 {
+	if x != nil && x.RepoId != nil {
+		return *x.RepoId
 	}
 	return 0
 }
@@ -369,6 +378,132 @@ func (*DeleteResponse) Descriptor() ([]byte, []int) {
 	return file_proto_project_project_proto_rawDescGZIP(), []int{6}
 }
 
+// ToggleHibernateRequest 项目级定时休眠开关：仅切换开关本身，不触发重部署
+// （副本字段映射来自仓库级 mars_config.hibernate）。
+type ToggleHibernateRequest struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId int32                  `protobuf:"varint,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Enabled   bool                   `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// window_names 项目从所属仓库的 window_names 里多选的子集（命中任一窗即休眠）。
+	// 启用（enabled=true）时至少选一个，留空即 400（空选择不再表示继承仓库全量）；
+	// 每个名字必须属于仓库的窗列表，否则 400。
+	WindowNames   []string `protobuf:"bytes,3,rep,name=window_names,json=windowNames,proto3" json:"window_names,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToggleHibernateRequest) Reset() {
+	*x = ToggleHibernateRequest{}
+	mi := &file_proto_project_project_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToggleHibernateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToggleHibernateRequest) ProtoMessage() {}
+
+func (x *ToggleHibernateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_project_project_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToggleHibernateRequest.ProtoReflect.Descriptor instead.
+func (*ToggleHibernateRequest) Descriptor() ([]byte, []int) {
+	return file_proto_project_project_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ToggleHibernateRequest) GetProjectId() int32 {
+	if x != nil {
+		return x.ProjectId
+	}
+	return 0
+}
+
+func (x *ToggleHibernateRequest) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *ToggleHibernateRequest) GetWindowNames() []string {
+	if x != nil {
+		return x.WindowNames
+	}
+	return nil
+}
+
+type ToggleHibernateResponse struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Enabled bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	State   string                 `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	// window_names 回显项目当前选定的窗子集（未选时为空）。
+	WindowNames   []string `protobuf:"bytes,3,rep,name=window_names,json=windowNames,proto3" json:"window_names,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToggleHibernateResponse) Reset() {
+	*x = ToggleHibernateResponse{}
+	mi := &file_proto_project_project_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToggleHibernateResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToggleHibernateResponse) ProtoMessage() {}
+
+func (x *ToggleHibernateResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_project_project_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToggleHibernateResponse.ProtoReflect.Descriptor instead.
+func (*ToggleHibernateResponse) Descriptor() ([]byte, []int) {
+	return file_proto_project_project_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ToggleHibernateResponse) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *ToggleHibernateResponse) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *ToggleHibernateResponse) GetWindowNames() []string {
+	if x != nil {
+		return x.WindowNames
+	}
+	return nil
+}
+
 // RestoreRequest 按「空间名 + 项目名」定位被误删的项目（空间名免前缀，后台按 ns_prefix 幂等补全）。
 // 用业务名而非 id：软删记录已从列表消失，排障时手上往往只剩名字。
 type RestoreRequest struct {
@@ -381,7 +516,7 @@ type RestoreRequest struct {
 
 func (x *RestoreRequest) Reset() {
 	*x = RestoreRequest{}
-	mi := &file_proto_project_project_proto_msgTypes[7]
+	mi := &file_proto_project_project_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -393,7 +528,7 @@ func (x *RestoreRequest) String() string {
 func (*RestoreRequest) ProtoMessage() {}
 
 func (x *RestoreRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[7]
+	mi := &file_proto_project_project_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -406,7 +541,7 @@ func (x *RestoreRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreRequest.ProtoReflect.Descriptor instead.
 func (*RestoreRequest) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{7}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *RestoreRequest) GetNamespace() string {
@@ -432,7 +567,7 @@ type RestoreResponse struct {
 
 func (x *RestoreResponse) Reset() {
 	*x = RestoreResponse{}
-	mi := &file_proto_project_project_proto_msgTypes[8]
+	mi := &file_proto_project_project_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -444,7 +579,7 @@ func (x *RestoreResponse) String() string {
 func (*RestoreResponse) ProtoMessage() {}
 
 func (x *RestoreResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[8]
+	mi := &file_proto_project_project_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -457,7 +592,7 @@ func (x *RestoreResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreResponse.ProtoReflect.Descriptor instead.
 func (*RestoreResponse) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{8}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *RestoreResponse) GetItem() *types.ProjectModel {
@@ -481,7 +616,7 @@ type AdminDeletedListRequest struct {
 
 func (x *AdminDeletedListRequest) Reset() {
 	*x = AdminDeletedListRequest{}
-	mi := &file_proto_project_project_proto_msgTypes[9]
+	mi := &file_proto_project_project_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -493,7 +628,7 @@ func (x *AdminDeletedListRequest) String() string {
 func (*AdminDeletedListRequest) ProtoMessage() {}
 
 func (x *AdminDeletedListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[9]
+	mi := &file_proto_project_project_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -506,7 +641,7 @@ func (x *AdminDeletedListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AdminDeletedListRequest.ProtoReflect.Descriptor instead.
 func (*AdminDeletedListRequest) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{9}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *AdminDeletedListRequest) GetPage() int32 {
@@ -548,7 +683,7 @@ type AdminDeletedListResponse struct {
 
 func (x *AdminDeletedListResponse) Reset() {
 	*x = AdminDeletedListResponse{}
-	mi := &file_proto_project_project_proto_msgTypes[10]
+	mi := &file_proto_project_project_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -560,7 +695,7 @@ func (x *AdminDeletedListResponse) String() string {
 func (*AdminDeletedListResponse) ProtoMessage() {}
 
 func (x *AdminDeletedListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[10]
+	mi := &file_proto_project_project_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -573,7 +708,7 @@ func (x *AdminDeletedListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AdminDeletedListResponse.ProtoReflect.Descriptor instead.
 func (*AdminDeletedListResponse) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{10}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *AdminDeletedListResponse) GetPage() int32 {
@@ -613,7 +748,7 @@ type VersionRequest struct {
 
 func (x *VersionRequest) Reset() {
 	*x = VersionRequest{}
-	mi := &file_proto_project_project_proto_msgTypes[11]
+	mi := &file_proto_project_project_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -625,7 +760,7 @@ func (x *VersionRequest) String() string {
 func (*VersionRequest) ProtoMessage() {}
 
 func (x *VersionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[11]
+	mi := &file_proto_project_project_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -638,7 +773,7 @@ func (x *VersionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VersionRequest.ProtoReflect.Descriptor instead.
 func (*VersionRequest) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{11}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *VersionRequest) GetId() int32 {
@@ -657,7 +792,7 @@ type VersionResponse struct {
 
 func (x *VersionResponse) Reset() {
 	*x = VersionResponse{}
-	mi := &file_proto_project_project_proto_msgTypes[12]
+	mi := &file_proto_project_project_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -669,7 +804,7 @@ func (x *VersionResponse) String() string {
 func (*VersionResponse) ProtoMessage() {}
 
 func (x *VersionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[12]
+	mi := &file_proto_project_project_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -682,7 +817,7 @@ func (x *VersionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VersionResponse.ProtoReflect.Descriptor instead.
 func (*VersionResponse) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{12}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *VersionResponse) GetVersion() int32 {
@@ -701,7 +836,7 @@ type AllContainersRequest struct {
 
 func (x *AllContainersRequest) Reset() {
 	*x = AllContainersRequest{}
-	mi := &file_proto_project_project_proto_msgTypes[13]
+	mi := &file_proto_project_project_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -713,7 +848,7 @@ func (x *AllContainersRequest) String() string {
 func (*AllContainersRequest) ProtoMessage() {}
 
 func (x *AllContainersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[13]
+	mi := &file_proto_project_project_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -726,7 +861,7 @@ func (x *AllContainersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AllContainersRequest.ProtoReflect.Descriptor instead.
 func (*AllContainersRequest) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{13}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *AllContainersRequest) GetId() int32 {
@@ -745,7 +880,7 @@ type AllContainersResponse struct {
 
 func (x *AllContainersResponse) Reset() {
 	*x = AllContainersResponse{}
-	mi := &file_proto_project_project_proto_msgTypes[14]
+	mi := &file_proto_project_project_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -757,7 +892,7 @@ func (x *AllContainersResponse) String() string {
 func (*AllContainersResponse) ProtoMessage() {}
 
 func (x *AllContainersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[14]
+	mi := &file_proto_project_project_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -770,7 +905,7 @@ func (x *AllContainersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AllContainersResponse.ProtoReflect.Descriptor instead.
 func (*AllContainersResponse) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{14}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *AllContainersResponse) GetItems() []*types.StateContainer {
@@ -796,7 +931,7 @@ type ContainerFailure struct {
 
 func (x *ContainerFailure) Reset() {
 	*x = ContainerFailure{}
-	mi := &file_proto_project_project_proto_msgTypes[15]
+	mi := &file_proto_project_project_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -808,7 +943,7 @@ func (x *ContainerFailure) String() string {
 func (*ContainerFailure) ProtoMessage() {}
 
 func (x *ContainerFailure) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[15]
+	mi := &file_proto_project_project_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -821,7 +956,7 @@ func (x *ContainerFailure) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContainerFailure.ProtoReflect.Descriptor instead.
 func (*ContainerFailure) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{15}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ContainerFailure) GetKind() string {
@@ -882,7 +1017,7 @@ type CheckApplyStatusRequest struct {
 
 func (x *CheckApplyStatusRequest) Reset() {
 	*x = CheckApplyStatusRequest{}
-	mi := &file_proto_project_project_proto_msgTypes[16]
+	mi := &file_proto_project_project_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -894,7 +1029,7 @@ func (x *CheckApplyStatusRequest) String() string {
 func (*CheckApplyStatusRequest) ProtoMessage() {}
 
 func (x *CheckApplyStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[16]
+	mi := &file_proto_project_project_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -907,7 +1042,7 @@ func (x *CheckApplyStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckApplyStatusRequest.ProtoReflect.Descriptor instead.
 func (*CheckApplyStatusRequest) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{16}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *CheckApplyStatusRequest) GetId() int32 {
@@ -934,7 +1069,7 @@ type CheckApplyStatusResponse struct {
 
 func (x *CheckApplyStatusResponse) Reset() {
 	*x = CheckApplyStatusResponse{}
-	mi := &file_proto_project_project_proto_msgTypes[17]
+	mi := &file_proto_project_project_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -946,7 +1081,7 @@ func (x *CheckApplyStatusResponse) String() string {
 func (*CheckApplyStatusResponse) ProtoMessage() {}
 
 func (x *CheckApplyStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[17]
+	mi := &file_proto_project_project_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -959,7 +1094,7 @@ func (x *CheckApplyStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckApplyStatusResponse.ProtoReflect.Descriptor instead.
 func (*CheckApplyStatusResponse) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{17}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *CheckApplyStatusResponse) GetStatus() types.Deploy {
@@ -1010,7 +1145,7 @@ type ResourceTreeNode struct {
 
 func (x *ResourceTreeNode) Reset() {
 	*x = ResourceTreeNode{}
-	mi := &file_proto_project_project_proto_msgTypes[18]
+	mi := &file_proto_project_project_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1022,7 +1157,7 @@ func (x *ResourceTreeNode) String() string {
 func (*ResourceTreeNode) ProtoMessage() {}
 
 func (x *ResourceTreeNode) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[18]
+	mi := &file_proto_project_project_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1035,7 +1170,7 @@ func (x *ResourceTreeNode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceTreeNode.ProtoReflect.Descriptor instead.
 func (*ResourceTreeNode) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{18}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ResourceTreeNode) GetId() string {
@@ -1100,7 +1235,7 @@ type ResourceTreeEdge struct {
 
 func (x *ResourceTreeEdge) Reset() {
 	*x = ResourceTreeEdge{}
-	mi := &file_proto_project_project_proto_msgTypes[19]
+	mi := &file_proto_project_project_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1112,7 +1247,7 @@ func (x *ResourceTreeEdge) String() string {
 func (*ResourceTreeEdge) ProtoMessage() {}
 
 func (x *ResourceTreeEdge) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[19]
+	mi := &file_proto_project_project_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1125,7 +1260,7 @@ func (x *ResourceTreeEdge) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceTreeEdge.ProtoReflect.Descriptor instead.
 func (*ResourceTreeEdge) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{19}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ResourceTreeEdge) GetId() string {
@@ -1165,7 +1300,7 @@ type ResourceTreeRequest struct {
 
 func (x *ResourceTreeRequest) Reset() {
 	*x = ResourceTreeRequest{}
-	mi := &file_proto_project_project_proto_msgTypes[20]
+	mi := &file_proto_project_project_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1177,7 +1312,7 @@ func (x *ResourceTreeRequest) String() string {
 func (*ResourceTreeRequest) ProtoMessage() {}
 
 func (x *ResourceTreeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[20]
+	mi := &file_proto_project_project_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1190,7 +1325,7 @@ func (x *ResourceTreeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceTreeRequest.ProtoReflect.Descriptor instead.
 func (*ResourceTreeRequest) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{20}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ResourceTreeRequest) GetId() int32 {
@@ -1212,7 +1347,7 @@ type ResourceTreeResponse struct {
 
 func (x *ResourceTreeResponse) Reset() {
 	*x = ResourceTreeResponse{}
-	mi := &file_proto_project_project_proto_msgTypes[21]
+	mi := &file_proto_project_project_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1224,7 +1359,7 @@ func (x *ResourceTreeResponse) String() string {
 func (*ResourceTreeResponse) ProtoMessage() {}
 
 func (x *ResourceTreeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[21]
+	mi := &file_proto_project_project_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1237,7 +1372,7 @@ func (x *ResourceTreeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceTreeResponse.ProtoReflect.Descriptor instead.
 func (*ResourceTreeResponse) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{21}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ResourceTreeResponse) GetStatus() types.Deploy {
@@ -1271,7 +1406,7 @@ type ApplyResponse struct {
 
 func (x *ApplyResponse) Reset() {
 	*x = ApplyResponse{}
-	mi := &file_proto_project_project_proto_msgTypes[22]
+	mi := &file_proto_project_project_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1283,7 +1418,7 @@ func (x *ApplyResponse) String() string {
 func (*ApplyResponse) ProtoMessage() {}
 
 func (x *ApplyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[22]
+	mi := &file_proto_project_project_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1296,7 +1431,7 @@ func (x *ApplyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplyResponse.ProtoReflect.Descriptor instead.
 func (*ApplyResponse) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{22}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ApplyResponse) GetMetadata() *websocket.Metadata {
@@ -1339,7 +1474,7 @@ type ApplyRequest struct {
 
 func (x *ApplyRequest) Reset() {
 	*x = ApplyRequest{}
-	mi := &file_proto_project_project_proto_msgTypes[23]
+	mi := &file_proto_project_project_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1351,7 +1486,7 @@ func (x *ApplyRequest) String() string {
 func (*ApplyRequest) ProtoMessage() {}
 
 func (x *ApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[23]
+	mi := &file_proto_project_project_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1364,7 +1499,7 @@ func (x *ApplyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplyRequest.ProtoReflect.Descriptor instead.
 func (*ApplyRequest) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{23}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ApplyRequest) GetNamespaceId() int32 {
@@ -1470,7 +1605,7 @@ type WebApplyRequest struct {
 
 func (x *WebApplyRequest) Reset() {
 	*x = WebApplyRequest{}
-	mi := &file_proto_project_project_proto_msgTypes[24]
+	mi := &file_proto_project_project_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1482,7 +1617,7 @@ func (x *WebApplyRequest) String() string {
 func (*WebApplyRequest) ProtoMessage() {}
 
 func (x *WebApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[24]
+	mi := &file_proto_project_project_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1495,7 +1630,7 @@ func (x *WebApplyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WebApplyRequest.ProtoReflect.Descriptor instead.
 func (*WebApplyRequest) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{24}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *WebApplyRequest) GetNamespaceId() int32 {
@@ -1598,7 +1733,7 @@ type WebApplyByNameRequest struct {
 
 func (x *WebApplyByNameRequest) Reset() {
 	*x = WebApplyByNameRequest{}
-	mi := &file_proto_project_project_proto_msgTypes[25]
+	mi := &file_proto_project_project_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1610,7 +1745,7 @@ func (x *WebApplyByNameRequest) String() string {
 func (*WebApplyByNameRequest) ProtoMessage() {}
 
 func (x *WebApplyByNameRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[25]
+	mi := &file_proto_project_project_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1623,7 +1758,7 @@ func (x *WebApplyByNameRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WebApplyByNameRequest.ProtoReflect.Descriptor instead.
 func (*WebApplyByNameRequest) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{25}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *WebApplyByNameRequest) GetNamespace() string {
@@ -1700,7 +1835,7 @@ type WebApplyResponse struct {
 
 func (x *WebApplyResponse) Reset() {
 	*x = WebApplyResponse{}
-	mi := &file_proto_project_project_proto_msgTypes[26]
+	mi := &file_proto_project_project_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1712,7 +1847,7 @@ func (x *WebApplyResponse) String() string {
 func (*WebApplyResponse) ProtoMessage() {}
 
 func (x *WebApplyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[26]
+	mi := &file_proto_project_project_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1725,7 +1860,7 @@ func (x *WebApplyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WebApplyResponse.ProtoReflect.Descriptor instead.
 func (*WebApplyResponse) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{26}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *WebApplyResponse) GetYamlFiles() []string {
@@ -1758,7 +1893,7 @@ type MemoryCpuAndEndpointsRequest struct {
 
 func (x *MemoryCpuAndEndpointsRequest) Reset() {
 	*x = MemoryCpuAndEndpointsRequest{}
-	mi := &file_proto_project_project_proto_msgTypes[27]
+	mi := &file_proto_project_project_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1770,7 +1905,7 @@ func (x *MemoryCpuAndEndpointsRequest) String() string {
 func (*MemoryCpuAndEndpointsRequest) ProtoMessage() {}
 
 func (x *MemoryCpuAndEndpointsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[27]
+	mi := &file_proto_project_project_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1783,7 +1918,7 @@ func (x *MemoryCpuAndEndpointsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryCpuAndEndpointsRequest.ProtoReflect.Descriptor instead.
 func (*MemoryCpuAndEndpointsRequest) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{27}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *MemoryCpuAndEndpointsRequest) GetId() int32 {
@@ -1804,7 +1939,7 @@ type MemoryCpuAndEndpointsResponse struct {
 
 func (x *MemoryCpuAndEndpointsResponse) Reset() {
 	*x = MemoryCpuAndEndpointsResponse{}
-	mi := &file_proto_project_project_proto_msgTypes[28]
+	mi := &file_proto_project_project_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1816,7 +1951,7 @@ func (x *MemoryCpuAndEndpointsResponse) String() string {
 func (*MemoryCpuAndEndpointsResponse) ProtoMessage() {}
 
 func (x *MemoryCpuAndEndpointsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[28]
+	mi := &file_proto_project_project_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1829,7 +1964,7 @@ func (x *MemoryCpuAndEndpointsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryCpuAndEndpointsResponse.ProtoReflect.Descriptor instead.
 func (*MemoryCpuAndEndpointsResponse) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{28}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *MemoryCpuAndEndpointsResponse) GetUrls() []*types.ServiceEndpoint {
@@ -1863,14 +1998,16 @@ type LivenessRequest struct {
 	// 活跃度过滤：空 = 全部；active/dormant/zombie = 只看对应活跃度
 	Liveness string `protobuf:"bytes,4,opt,name=liveness,proto3" json:"liveness,omitempty"`
 	// 排序方向：空 = 按更新时间倒序（desc）；asc/desc = 指定更新时间升/降序
-	Sort          string `protobuf:"bytes,5,opt,name=sort,proto3" json:"sort,omitempty"`
+	Sort string `protobuf:"bytes,5,opt,name=sort,proto3" json:"sort,omitempty"`
+	// 定时休眠过滤：true = 只看已开启项目级休眠开关的项目；缺省/false = 不按休眠过滤（全部）。
+	Hibernate     *bool `protobuf:"varint,6,opt,name=hibernate,proto3,oneof" json:"hibernate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LivenessRequest) Reset() {
 	*x = LivenessRequest{}
-	mi := &file_proto_project_project_proto_msgTypes[29]
+	mi := &file_proto_project_project_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1882,7 +2019,7 @@ func (x *LivenessRequest) String() string {
 func (*LivenessRequest) ProtoMessage() {}
 
 func (x *LivenessRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[29]
+	mi := &file_proto_project_project_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1895,7 +2032,7 @@ func (x *LivenessRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LivenessRequest.ProtoReflect.Descriptor instead.
 func (*LivenessRequest) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{29}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *LivenessRequest) GetPage() int32 {
@@ -1933,6 +2070,13 @@ func (x *LivenessRequest) GetSort() string {
 	return ""
 }
 
+func (x *LivenessRequest) GetHibernate() bool {
+	if x != nil && x.Hibernate != nil {
+		return *x.Hibernate
+	}
+	return false
+}
+
 // LivenessItem 单个项目的活跃度条目：标识 + 部署状态/次数 + 最近更新。
 type LivenessItem struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
@@ -1954,13 +2098,21 @@ type LivenessItem struct {
 	GitCommitTitle  string `protobuf:"bytes,10,opt,name=git_commit_title,json=gitCommitTitle,proto3" json:"git_commit_title,omitempty"`
 	GitCommitAuthor string `protobuf:"bytes,11,opt,name=git_commit_author,json=gitCommitAuthor,proto3" json:"git_commit_author,omitempty"`
 	GitCommitDate   string `protobuf:"bytes,12,opt,name=git_commit_date,json=gitCommitDate,proto3" json:"git_commit_date,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// 定时休眠：是否已开启项目级休眠开关；未配置休眠的项目保持 false。
+	HibernateEnabled bool `protobuf:"varint,14,opt,name=hibernate_enabled,json=hibernateEnabled,proto3" json:"hibernate_enabled,omitempty"`
+	// 定时休眠运行态：awake 清醒 / sleeping 已休眠；未配置时为空串。
+	HibernateState string `protobuf:"bytes,15,opt,name=hibernate_state,json=hibernateState,proto3" json:"hibernate_state,omitempty"`
+	// 项目选定的休眠时间窗名子集（引用全局时间窗）；未选/未配置时为空。
+	HibernateWindowNames []string `protobuf:"bytes,16,rep,name=hibernate_window_names,json=hibernateWindowNames,proto3" json:"hibernate_window_names,omitempty"`
+	// 所属仓库声明的可用休眠时间窗名列表（项目选定子集的合法范围）；仓库未启用休眠时为空。
+	HibernateRepoWindowNames []string `protobuf:"bytes,17,rep,name=hibernate_repo_window_names,json=hibernateRepoWindowNames,proto3" json:"hibernate_repo_window_names,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *LivenessItem) Reset() {
 	*x = LivenessItem{}
-	mi := &file_proto_project_project_proto_msgTypes[30]
+	mi := &file_proto_project_project_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1972,7 +2124,7 @@ func (x *LivenessItem) String() string {
 func (*LivenessItem) ProtoMessage() {}
 
 func (x *LivenessItem) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[30]
+	mi := &file_proto_project_project_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1985,7 +2137,7 @@ func (x *LivenessItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LivenessItem.ProtoReflect.Descriptor instead.
 func (*LivenessItem) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{30}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *LivenessItem) GetId() int32 {
@@ -2079,6 +2231,34 @@ func (x *LivenessItem) GetGitCommitDate() string {
 	return ""
 }
 
+func (x *LivenessItem) GetHibernateEnabled() bool {
+	if x != nil {
+		return x.HibernateEnabled
+	}
+	return false
+}
+
+func (x *LivenessItem) GetHibernateState() string {
+	if x != nil {
+		return x.HibernateState
+	}
+	return ""
+}
+
+func (x *LivenessItem) GetHibernateWindowNames() []string {
+	if x != nil {
+		return x.HibernateWindowNames
+	}
+	return nil
+}
+
+func (x *LivenessItem) GetHibernateRepoWindowNames() []string {
+	if x != nil {
+		return x.HibernateRepoWindowNames
+	}
+	return nil
+}
+
 // LivenessStats 活跃度统计（服务端按 30/90 天阈值计算）。
 type LivenessStats struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -2092,7 +2272,7 @@ type LivenessStats struct {
 
 func (x *LivenessStats) Reset() {
 	*x = LivenessStats{}
-	mi := &file_proto_project_project_proto_msgTypes[31]
+	mi := &file_proto_project_project_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2104,7 +2284,7 @@ func (x *LivenessStats) String() string {
 func (*LivenessStats) ProtoMessage() {}
 
 func (x *LivenessStats) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[31]
+	mi := &file_proto_project_project_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2117,7 +2297,7 @@ func (x *LivenessStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LivenessStats.ProtoReflect.Descriptor instead.
 func (*LivenessStats) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{31}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *LivenessStats) GetTotal() int32 {
@@ -2161,7 +2341,7 @@ type LivenessResponse struct {
 
 func (x *LivenessResponse) Reset() {
 	*x = LivenessResponse{}
-	mi := &file_proto_project_project_proto_msgTypes[32]
+	mi := &file_proto_project_project_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2173,7 +2353,7 @@ func (x *LivenessResponse) String() string {
 func (*LivenessResponse) ProtoMessage() {}
 
 func (x *LivenessResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_project_project_proto_msgTypes[32]
+	mi := &file_proto_project_project_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2186,7 +2366,7 @@ func (x *LivenessResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LivenessResponse.ProtoReflect.Descriptor instead.
 func (*LivenessResponse) Descriptor() ([]byte, []int) {
-	return file_proto_project_project_proto_rawDescGZIP(), []int{32}
+	return file_proto_project_project_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *LivenessResponse) GetPage() int32 {
@@ -2228,13 +2408,16 @@ var File_proto_project_project_proto protoreflect.FileDescriptor
 
 const file_proto_project_project_proto_rawDesc = "" +
 	"\n" +
-	"\x1bproto/project/project.proto\x12\aproject\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1fproto/websocket/websocket.proto\x1a\x17validate/validate.proto\x1a\x1copenapi/v3/annotations.proto\x1a\x17proto/types/types.proto\"_\n" +
+	"\x1bproto/project/project.proto\x12\aproject\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1fproto/websocket/websocket.proto\x1a\x17validate/validate.proto\x1a\x1copenapi/v3/annotations.proto\x1a\x17proto/types/types.proto\"\x89\x01\n" +
 	"\vListRequest\x12\x17\n" +
 	"\x04page\x18\x01 \x01(\x05H\x00R\x04page\x88\x01\x01\x12 \n" +
-	"\tpage_size\x18\x02 \x01(\x05H\x01R\bpageSize\x88\x01\x01B\a\n" +
+	"\tpage_size\x18\x02 \x01(\x05H\x01R\bpageSize\x88\x01\x01\x12\x1c\n" +
+	"\arepo_id\x18\x03 \x01(\x05H\x02R\x06repoId\x88\x01\x01B\a\n" +
 	"\x05_pageB\f\n" +
 	"\n" +
-	"_page_size\"\x80\x01\n" +
+	"_page_sizeB\n" +
+	"\n" +
+	"\b_repo_id\"\x80\x01\n" +
 	"\fListResponse\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x14\n" +
@@ -2249,7 +2432,16 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\x04name\",\n" +
 	"\rDeleteRequest\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\"\x10\n" +
-	"\x0eDeleteResponse\"\\\n" +
+	"\x0eDeleteResponse\"\x81\x01\n" +
+	"\x16ToggleHibernateRequest\x12*\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\tprojectId\x12\x18\n" +
+	"\aenabled\x18\x02 \x01(\bR\aenabled\x12!\n" +
+	"\fwindow_names\x18\x03 \x03(\tR\vwindowNames\"l\n" +
+	"\x17ToggleHibernateResponse\x12\x18\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x14\n" +
+	"\x05state\x18\x02 \x01(\tR\x05state\x12!\n" +
+	"\fwindow_names\x18\x03 \x03(\tR\vwindowNames\"\\\n" +
 	"\x0eRestoreRequest\x12)\n" +
 	"\tnamespace\x18\x01 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\tnamespace\x12\x1f\n" +
 	"\x04name\x18\x02 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\x04name\":\n" +
@@ -2375,16 +2567,19 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\x1dMemoryCpuAndEndpointsResponse\x12*\n" +
 	"\x04urls\x18\x01 \x03(\v2\x16.types.ServiceEndpointR\x04urls\x12\x10\n" +
 	"\x03cpu\x18\x02 \x01(\tR\x03cpu\x12\x16\n" +
-	"\x06memory\x18\x03 \x01(\tR\x06memory\"\xab\x01\n" +
+	"\x06memory\x18\x03 \x01(\tR\x06memory\"\xdc\x01\n" +
 	"\x0fLivenessRequest\x12\x17\n" +
 	"\x04page\x18\x01 \x01(\x05H\x00R\x04page\x88\x01\x01\x12 \n" +
 	"\tpage_size\x18\x02 \x01(\x05H\x01R\bpageSize\x88\x01\x01\x12\x16\n" +
 	"\x06search\x18\x03 \x01(\tR\x06search\x12\x1a\n" +
 	"\bliveness\x18\x04 \x01(\tR\bliveness\x12\x12\n" +
-	"\x04sort\x18\x05 \x01(\tR\x04sortB\a\n" +
+	"\x04sort\x18\x05 \x01(\tR\x04sort\x12!\n" +
+	"\thibernate\x18\x06 \x01(\bH\x02R\thibernate\x88\x01\x01B\a\n" +
 	"\x05_pageB\f\n" +
 	"\n" +
-	"_page_size\"\xb5\x03\n" +
+	"_page_sizeB\f\n" +
+	"\n" +
+	"_hibernate\"\x80\x05\n" +
 	"\fLivenessItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1c\n" +
@@ -2403,7 +2598,11 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\x10git_commit_title\x18\n" +
 	" \x01(\tR\x0egitCommitTitle\x12*\n" +
 	"\x11git_commit_author\x18\v \x01(\tR\x0fgitCommitAuthor\x12&\n" +
-	"\x0fgit_commit_date\x18\f \x01(\tR\rgitCommitDate\"o\n" +
+	"\x0fgit_commit_date\x18\f \x01(\tR\rgitCommitDate\x12+\n" +
+	"\x11hibernate_enabled\x18\x0e \x01(\bR\x10hibernateEnabled\x12'\n" +
+	"\x0fhibernate_state\x18\x0f \x01(\tR\x0ehibernateState\x124\n" +
+	"\x16hibernate_window_names\x18\x10 \x03(\tR\x14hibernateWindowNames\x12=\n" +
+	"\x1bhibernate_repo_window_names\x18\x11 \x03(\tR\x18hibernateRepoWindowNames\"o\n" +
 	"\rLivenessStats\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\x05R\x05total\x12\x16\n" +
 	"\x06active\x18\x02 \x01(\x05R\x06active\x12\x18\n" +
@@ -2414,7 +2613,7 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x14\n" +
 	"\x05count\x18\x03 \x01(\x05R\x05count\x12,\n" +
 	"\x05stats\x18\x04 \x01(\v2\x16.project.LivenessStatsR\x05stats\x12+\n" +
-	"\x05items\x18\x05 \x03(\v2\x15.project.LivenessItemR\x05items2\xcc\x0f\n" +
+	"\x05items\x18\x05 \x03(\v2\x15.project.LivenessItemR\x05items2\xf7\x10\n" +
 	"\aProject\x12J\n" +
 	"\x04List\x12\x14.project.ListRequest\x1a\x15.project.ListResponse\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/api/projects\x128\n" +
 	"\x05Apply\x12\x15.project.ApplyRequest\x1a\x16.project.ApplyResponse0\x01\x12\x88\x01\n" +
@@ -2431,7 +2630,8 @@ const file_proto_project_project_proto_rawDesc = "" +
 	"\rAllContainers\x12\x1d.project.AllContainersRequest\x1a\x1e.project.AllContainersResponse\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/projects/{id}/containers\x12\xaf\x01\n" +
 	"\x10CheckApplyStatus\x12 .project.CheckApplyStatusRequest\x1a!.project.CheckApplyStatusResponse\"V\xbaG,\x12*检查项目部署后的容器运行状态\x82\xd3\xe4\x93\x02!\x12\x1f/api/projects/{id}/apply_status\x12\x95\x01\n" +
 	"\fResourceTree\x12\x1c.project.ResourceTreeRequest\x1a\x1d.project.ResourceTreeResponse\"H\xbaG\x1d\x12\x1b获取项目资源拓扑树\x82\xd3\xe4\x93\x02\"\x12 /api/projects/{id}/resource_tree\x12\x8e\x01\n" +
-	"\bLiveness\x12\x18.project.LivenessRequest\x1a\x19.project.LivenessResponse\"M\xbaG&\x12$项目活跃度清单（管理员）\x82\xd3\xe4\x93\x02\x1e\x12\x1c/api/admin/projects/livenessB7Z5github.com/duc-cnzj/mars/api/v6/proto/project;projectb\x06proto3"
+	"\bLiveness\x12\x18.project.LivenessRequest\x1a\x19.project.LivenessResponse\"M\xbaG&\x12$项目活跃度清单（管理员）\x82\xd3\xe4\x93\x02\x1e\x12\x1c/api/admin/projects/liveness\x12\xa8\x01\n" +
+	"\x0fToggleHibernate\x12\x1f.project.ToggleHibernateRequest\x1a .project.ToggleHibernateResponse\"R\xbaG \x12\x1e切换项目定时休眠开关\x82\xd3\xe4\x93\x02):\x01*\"$/api/projects/{project_id}/hibernateB7Z5github.com/duc-cnzj/mars/api/v6/proto/project;projectb\x06proto3"
 
 var (
 	file_proto_project_project_proto_rawDescOnce sync.Once
@@ -2445,7 +2645,7 @@ func file_proto_project_project_proto_rawDescGZIP() []byte {
 	return file_proto_project_project_proto_rawDescData
 }
 
-var file_proto_project_project_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
+var file_proto_project_project_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_proto_project_project_proto_goTypes = []any{
 	(*ListRequest)(nil),                   // 0: project.ListRequest
 	(*ListResponse)(nil),                  // 1: project.ListResponse
@@ -2454,95 +2654,99 @@ var file_proto_project_project_proto_goTypes = []any{
 	(*ShowByNameRequest)(nil),             // 4: project.ShowByNameRequest
 	(*DeleteRequest)(nil),                 // 5: project.DeleteRequest
 	(*DeleteResponse)(nil),                // 6: project.DeleteResponse
-	(*RestoreRequest)(nil),                // 7: project.RestoreRequest
-	(*RestoreResponse)(nil),               // 8: project.RestoreResponse
-	(*AdminDeletedListRequest)(nil),       // 9: project.AdminDeletedListRequest
-	(*AdminDeletedListResponse)(nil),      // 10: project.AdminDeletedListResponse
-	(*VersionRequest)(nil),                // 11: project.VersionRequest
-	(*VersionResponse)(nil),               // 12: project.VersionResponse
-	(*AllContainersRequest)(nil),          // 13: project.AllContainersRequest
-	(*AllContainersResponse)(nil),         // 14: project.AllContainersResponse
-	(*ContainerFailure)(nil),              // 15: project.ContainerFailure
-	(*CheckApplyStatusRequest)(nil),       // 16: project.CheckApplyStatusRequest
-	(*CheckApplyStatusResponse)(nil),      // 17: project.CheckApplyStatusResponse
-	(*ResourceTreeNode)(nil),              // 18: project.ResourceTreeNode
-	(*ResourceTreeEdge)(nil),              // 19: project.ResourceTreeEdge
-	(*ResourceTreeRequest)(nil),           // 20: project.ResourceTreeRequest
-	(*ResourceTreeResponse)(nil),          // 21: project.ResourceTreeResponse
-	(*ApplyResponse)(nil),                 // 22: project.ApplyResponse
-	(*ApplyRequest)(nil),                  // 23: project.ApplyRequest
-	(*WebApplyRequest)(nil),               // 24: project.WebApplyRequest
-	(*WebApplyByNameRequest)(nil),         // 25: project.WebApplyByNameRequest
-	(*WebApplyResponse)(nil),              // 26: project.WebApplyResponse
-	(*MemoryCpuAndEndpointsRequest)(nil),  // 27: project.MemoryCpuAndEndpointsRequest
-	(*MemoryCpuAndEndpointsResponse)(nil), // 28: project.MemoryCpuAndEndpointsResponse
-	(*LivenessRequest)(nil),               // 29: project.LivenessRequest
-	(*LivenessItem)(nil),                  // 30: project.LivenessItem
-	(*LivenessStats)(nil),                 // 31: project.LivenessStats
-	(*LivenessResponse)(nil),              // 32: project.LivenessResponse
-	nil,                                   // 33: project.ResourceTreeNode.LabelsEntry
-	(*types.ProjectModel)(nil),            // 34: types.ProjectModel
-	(*types.StateContainer)(nil),          // 35: types.StateContainer
-	(types.Deploy)(0),                     // 36: types.Deploy
-	(*websocket.Metadata)(nil),            // 37: websocket.Metadata
-	(*websocket.ExtraValue)(nil),          // 38: websocket.ExtraValue
-	(*types.ServiceEndpoint)(nil),         // 39: types.ServiceEndpoint
+	(*ToggleHibernateRequest)(nil),        // 7: project.ToggleHibernateRequest
+	(*ToggleHibernateResponse)(nil),       // 8: project.ToggleHibernateResponse
+	(*RestoreRequest)(nil),                // 9: project.RestoreRequest
+	(*RestoreResponse)(nil),               // 10: project.RestoreResponse
+	(*AdminDeletedListRequest)(nil),       // 11: project.AdminDeletedListRequest
+	(*AdminDeletedListResponse)(nil),      // 12: project.AdminDeletedListResponse
+	(*VersionRequest)(nil),                // 13: project.VersionRequest
+	(*VersionResponse)(nil),               // 14: project.VersionResponse
+	(*AllContainersRequest)(nil),          // 15: project.AllContainersRequest
+	(*AllContainersResponse)(nil),         // 16: project.AllContainersResponse
+	(*ContainerFailure)(nil),              // 17: project.ContainerFailure
+	(*CheckApplyStatusRequest)(nil),       // 18: project.CheckApplyStatusRequest
+	(*CheckApplyStatusResponse)(nil),      // 19: project.CheckApplyStatusResponse
+	(*ResourceTreeNode)(nil),              // 20: project.ResourceTreeNode
+	(*ResourceTreeEdge)(nil),              // 21: project.ResourceTreeEdge
+	(*ResourceTreeRequest)(nil),           // 22: project.ResourceTreeRequest
+	(*ResourceTreeResponse)(nil),          // 23: project.ResourceTreeResponse
+	(*ApplyResponse)(nil),                 // 24: project.ApplyResponse
+	(*ApplyRequest)(nil),                  // 25: project.ApplyRequest
+	(*WebApplyRequest)(nil),               // 26: project.WebApplyRequest
+	(*WebApplyByNameRequest)(nil),         // 27: project.WebApplyByNameRequest
+	(*WebApplyResponse)(nil),              // 28: project.WebApplyResponse
+	(*MemoryCpuAndEndpointsRequest)(nil),  // 29: project.MemoryCpuAndEndpointsRequest
+	(*MemoryCpuAndEndpointsResponse)(nil), // 30: project.MemoryCpuAndEndpointsResponse
+	(*LivenessRequest)(nil),               // 31: project.LivenessRequest
+	(*LivenessItem)(nil),                  // 32: project.LivenessItem
+	(*LivenessStats)(nil),                 // 33: project.LivenessStats
+	(*LivenessResponse)(nil),              // 34: project.LivenessResponse
+	nil,                                   // 35: project.ResourceTreeNode.LabelsEntry
+	(*types.ProjectModel)(nil),            // 36: types.ProjectModel
+	(*types.StateContainer)(nil),          // 37: types.StateContainer
+	(types.Deploy)(0),                     // 38: types.Deploy
+	(*websocket.Metadata)(nil),            // 39: websocket.Metadata
+	(*websocket.ExtraValue)(nil),          // 40: websocket.ExtraValue
+	(*types.ServiceEndpoint)(nil),         // 41: types.ServiceEndpoint
 }
 var file_proto_project_project_proto_depIdxs = []int32{
-	34, // 0: project.ListResponse.items:type_name -> types.ProjectModel
-	34, // 1: project.ShowResponse.item:type_name -> types.ProjectModel
-	34, // 2: project.RestoreResponse.item:type_name -> types.ProjectModel
-	34, // 3: project.AdminDeletedListResponse.items:type_name -> types.ProjectModel
-	35, // 4: project.AllContainersResponse.items:type_name -> types.StateContainer
-	36, // 5: project.CheckApplyStatusResponse.status:type_name -> types.Deploy
-	35, // 6: project.CheckApplyStatusResponse.containers:type_name -> types.StateContainer
-	15, // 7: project.CheckApplyStatusResponse.failures:type_name -> project.ContainerFailure
-	33, // 8: project.ResourceTreeNode.labels:type_name -> project.ResourceTreeNode.LabelsEntry
-	36, // 9: project.ResourceTreeResponse.status:type_name -> types.Deploy
-	18, // 10: project.ResourceTreeResponse.nodes:type_name -> project.ResourceTreeNode
-	19, // 11: project.ResourceTreeResponse.edges:type_name -> project.ResourceTreeEdge
-	37, // 12: project.ApplyResponse.metadata:type_name -> websocket.Metadata
-	34, // 13: project.ApplyResponse.project:type_name -> types.ProjectModel
-	38, // 14: project.ApplyRequest.extra_values:type_name -> websocket.ExtraValue
-	38, // 15: project.WebApplyRequest.extra_values:type_name -> websocket.ExtraValue
-	38, // 16: project.WebApplyByNameRequest.extra_values:type_name -> websocket.ExtraValue
-	34, // 17: project.WebApplyResponse.project:type_name -> types.ProjectModel
-	39, // 18: project.MemoryCpuAndEndpointsResponse.urls:type_name -> types.ServiceEndpoint
-	36, // 19: project.LivenessItem.deploy_status:type_name -> types.Deploy
-	31, // 20: project.LivenessResponse.stats:type_name -> project.LivenessStats
-	30, // 21: project.LivenessResponse.items:type_name -> project.LivenessItem
+	36, // 0: project.ListResponse.items:type_name -> types.ProjectModel
+	36, // 1: project.ShowResponse.item:type_name -> types.ProjectModel
+	36, // 2: project.RestoreResponse.item:type_name -> types.ProjectModel
+	36, // 3: project.AdminDeletedListResponse.items:type_name -> types.ProjectModel
+	37, // 4: project.AllContainersResponse.items:type_name -> types.StateContainer
+	38, // 5: project.CheckApplyStatusResponse.status:type_name -> types.Deploy
+	37, // 6: project.CheckApplyStatusResponse.containers:type_name -> types.StateContainer
+	17, // 7: project.CheckApplyStatusResponse.failures:type_name -> project.ContainerFailure
+	35, // 8: project.ResourceTreeNode.labels:type_name -> project.ResourceTreeNode.LabelsEntry
+	38, // 9: project.ResourceTreeResponse.status:type_name -> types.Deploy
+	20, // 10: project.ResourceTreeResponse.nodes:type_name -> project.ResourceTreeNode
+	21, // 11: project.ResourceTreeResponse.edges:type_name -> project.ResourceTreeEdge
+	39, // 12: project.ApplyResponse.metadata:type_name -> websocket.Metadata
+	36, // 13: project.ApplyResponse.project:type_name -> types.ProjectModel
+	40, // 14: project.ApplyRequest.extra_values:type_name -> websocket.ExtraValue
+	40, // 15: project.WebApplyRequest.extra_values:type_name -> websocket.ExtraValue
+	40, // 16: project.WebApplyByNameRequest.extra_values:type_name -> websocket.ExtraValue
+	36, // 17: project.WebApplyResponse.project:type_name -> types.ProjectModel
+	41, // 18: project.MemoryCpuAndEndpointsResponse.urls:type_name -> types.ServiceEndpoint
+	38, // 19: project.LivenessItem.deploy_status:type_name -> types.Deploy
+	33, // 20: project.LivenessResponse.stats:type_name -> project.LivenessStats
+	32, // 21: project.LivenessResponse.items:type_name -> project.LivenessItem
 	0,  // 22: project.Project.List:input_type -> project.ListRequest
-	23, // 23: project.Project.Apply:input_type -> project.ApplyRequest
-	24, // 24: project.Project.WebApply:input_type -> project.WebApplyRequest
-	25, // 25: project.Project.WebApplyByName:input_type -> project.WebApplyByNameRequest
+	25, // 23: project.Project.Apply:input_type -> project.ApplyRequest
+	26, // 24: project.Project.WebApply:input_type -> project.WebApplyRequest
+	27, // 25: project.Project.WebApplyByName:input_type -> project.WebApplyByNameRequest
 	2,  // 26: project.Project.Show:input_type -> project.ShowRequest
 	4,  // 27: project.Project.ShowByName:input_type -> project.ShowByNameRequest
-	27, // 28: project.Project.MemoryCpuAndEndpoints:input_type -> project.MemoryCpuAndEndpointsRequest
-	11, // 29: project.Project.Version:input_type -> project.VersionRequest
+	29, // 28: project.Project.MemoryCpuAndEndpoints:input_type -> project.MemoryCpuAndEndpointsRequest
+	13, // 29: project.Project.Version:input_type -> project.VersionRequest
 	5,  // 30: project.Project.Delete:input_type -> project.DeleteRequest
-	7,  // 31: project.Project.Restore:input_type -> project.RestoreRequest
-	9,  // 32: project.Project.AdminDeletedList:input_type -> project.AdminDeletedListRequest
-	13, // 33: project.Project.AllContainers:input_type -> project.AllContainersRequest
-	16, // 34: project.Project.CheckApplyStatus:input_type -> project.CheckApplyStatusRequest
-	20, // 35: project.Project.ResourceTree:input_type -> project.ResourceTreeRequest
-	29, // 36: project.Project.Liveness:input_type -> project.LivenessRequest
-	1,  // 37: project.Project.List:output_type -> project.ListResponse
-	22, // 38: project.Project.Apply:output_type -> project.ApplyResponse
-	26, // 39: project.Project.WebApply:output_type -> project.WebApplyResponse
-	26, // 40: project.Project.WebApplyByName:output_type -> project.WebApplyResponse
-	3,  // 41: project.Project.Show:output_type -> project.ShowResponse
-	3,  // 42: project.Project.ShowByName:output_type -> project.ShowResponse
-	28, // 43: project.Project.MemoryCpuAndEndpoints:output_type -> project.MemoryCpuAndEndpointsResponse
-	12, // 44: project.Project.Version:output_type -> project.VersionResponse
-	6,  // 45: project.Project.Delete:output_type -> project.DeleteResponse
-	8,  // 46: project.Project.Restore:output_type -> project.RestoreResponse
-	10, // 47: project.Project.AdminDeletedList:output_type -> project.AdminDeletedListResponse
-	14, // 48: project.Project.AllContainers:output_type -> project.AllContainersResponse
-	17, // 49: project.Project.CheckApplyStatus:output_type -> project.CheckApplyStatusResponse
-	21, // 50: project.Project.ResourceTree:output_type -> project.ResourceTreeResponse
-	32, // 51: project.Project.Liveness:output_type -> project.LivenessResponse
-	37, // [37:52] is the sub-list for method output_type
-	22, // [22:37] is the sub-list for method input_type
+	9,  // 31: project.Project.Restore:input_type -> project.RestoreRequest
+	11, // 32: project.Project.AdminDeletedList:input_type -> project.AdminDeletedListRequest
+	15, // 33: project.Project.AllContainers:input_type -> project.AllContainersRequest
+	18, // 34: project.Project.CheckApplyStatus:input_type -> project.CheckApplyStatusRequest
+	22, // 35: project.Project.ResourceTree:input_type -> project.ResourceTreeRequest
+	31, // 36: project.Project.Liveness:input_type -> project.LivenessRequest
+	7,  // 37: project.Project.ToggleHibernate:input_type -> project.ToggleHibernateRequest
+	1,  // 38: project.Project.List:output_type -> project.ListResponse
+	24, // 39: project.Project.Apply:output_type -> project.ApplyResponse
+	28, // 40: project.Project.WebApply:output_type -> project.WebApplyResponse
+	28, // 41: project.Project.WebApplyByName:output_type -> project.WebApplyResponse
+	3,  // 42: project.Project.Show:output_type -> project.ShowResponse
+	3,  // 43: project.Project.ShowByName:output_type -> project.ShowResponse
+	30, // 44: project.Project.MemoryCpuAndEndpoints:output_type -> project.MemoryCpuAndEndpointsResponse
+	14, // 45: project.Project.Version:output_type -> project.VersionResponse
+	6,  // 46: project.Project.Delete:output_type -> project.DeleteResponse
+	10, // 47: project.Project.Restore:output_type -> project.RestoreResponse
+	12, // 48: project.Project.AdminDeletedList:output_type -> project.AdminDeletedListResponse
+	16, // 49: project.Project.AllContainers:output_type -> project.AllContainersResponse
+	19, // 50: project.Project.CheckApplyStatus:output_type -> project.CheckApplyStatusResponse
+	23, // 51: project.Project.ResourceTree:output_type -> project.ResourceTreeResponse
+	34, // 52: project.Project.Liveness:output_type -> project.LivenessResponse
+	8,  // 53: project.Project.ToggleHibernate:output_type -> project.ToggleHibernateResponse
+	38, // [38:54] is the sub-list for method output_type
+	22, // [22:38] is the sub-list for method input_type
 	22, // [22:22] is the sub-list for extension type_name
 	22, // [22:22] is the sub-list for extension extendee
 	0,  // [0:22] is the sub-list for field type_name
@@ -2554,18 +2758,18 @@ func file_proto_project_project_proto_init() {
 		return
 	}
 	file_proto_project_project_proto_msgTypes[0].OneofWrappers = []any{}
-	file_proto_project_project_proto_msgTypes[9].OneofWrappers = []any{}
-	file_proto_project_project_proto_msgTypes[23].OneofWrappers = []any{}
-	file_proto_project_project_proto_msgTypes[24].OneofWrappers = []any{}
+	file_proto_project_project_proto_msgTypes[11].OneofWrappers = []any{}
 	file_proto_project_project_proto_msgTypes[25].OneofWrappers = []any{}
-	file_proto_project_project_proto_msgTypes[29].OneofWrappers = []any{}
+	file_proto_project_project_proto_msgTypes[26].OneofWrappers = []any{}
+	file_proto_project_project_proto_msgTypes[27].OneofWrappers = []any{}
+	file_proto_project_project_proto_msgTypes[31].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_project_project_proto_rawDesc), len(file_proto_project_project_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   34,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -53,6 +53,17 @@ func IfIntsIN[T ~int | ~int32](field string) func([]T) func(*sql.Selector) {
 	})
 }
 
+// IfIntEQ 整数相等过滤：输入非 0 时才追加 field = v（0 视为未设置，不过滤）。
+// 与 IfStrEQ 的「空串不过滤」对称，常用于「可选 id 过滤」参数（如按 repo_id
+// 过滤项目，0 = 全部项目、非 0 = 只取该仓库）。
+func IfIntEQ[T ~int | ~int32](field string) func(T) func(*sql.Selector) {
+	return If[T](func(v T) bool {
+		return v != 0
+	}, func(v T) func(*sql.Selector) {
+		return sql.FieldEQ(field, v)
+	})
+}
+
 // IfOrderByDesc 倒序过滤：输入指针非 nil 且为 true 时追加 field DESC。
 func IfOrderByDesc(field string) func(*bool) func(*sql.Selector) {
 	return If[*bool](func(s *bool) bool {

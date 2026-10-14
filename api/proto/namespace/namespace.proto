@@ -14,7 +14,9 @@ message CreateRequest {
   string namespace        = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   // 已存在则忽略，不会报错
   bool   ignore_if_exists = 2;
-  string description      = 3;
+  // description 列在 MySQL 为 text（上限 65535 字节），此规则与之对齐，
+  // 避免超长描述穿透校验后触发 DB 1406「Data too long」而被归为 500（应 400）。
+  string description      = 3 [(validate.rules).string = {max_bytes: 65535}];
 }
 message CreateResponse {
   types.NamespaceModel item   = 1;

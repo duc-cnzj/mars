@@ -23,6 +23,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/event"
 	"github.com/duc-cnzj/mars/api/v6/proto/file"
 	"github.com/duc-cnzj/mars/api/v6/proto/git"
+	"github.com/duc-cnzj/mars/api/v6/proto/hibernate"
 	"github.com/duc-cnzj/mars/api/v6/proto/metrics"
 	"github.com/duc-cnzj/mars/api/v6/proto/namespace"
 	"github.com/duc-cnzj/mars/api/v6/proto/picture"
@@ -64,6 +65,7 @@ type Client struct {
 	event       event.EventClient
 	file        file.FileClient
 	git         git.GitClient
+	hibernate   hibernate.HibernateClient
 	metrics     metrics.MetricsClient
 	namespace   namespace.NamespaceClient
 	picture     picture.PictureClient
@@ -106,6 +108,7 @@ func NewClient(addr string, opts ...Option) (*Client, error) {
 	c.container = container.NewContainerClient(dial)
 	c.event = event.NewEventClient(dial)
 	c.git = git.NewGitClient(dial)
+	c.hibernate = hibernate.NewHibernateClient(dial)
 	c.metrics = metrics.NewMetricsClient(dial)
 	c.namespace = namespace.NewNamespaceClient(dial)
 	c.picture = picture.NewPictureClient(dial)
@@ -191,6 +194,11 @@ func (c *Client) File() file.FileClient {
 // Git 返回 Git(git)服务的 gRPC 客户端。
 func (c *Client) Git() git.GitClient {
 	return c.git
+}
+
+// Hibernate 返回定时休眠(hibernate)服务的 gRPC 客户端（全局休眠时间窗的增删改查）。
+func (c *Client) Hibernate() hibernate.HibernateClient {
+	return c.hibernate
 }
 
 // Metrics 返回指标(metrics)服务的 gRPC 客户端。

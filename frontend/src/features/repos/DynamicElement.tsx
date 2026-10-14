@@ -46,8 +46,9 @@ export const DEFAULT_REQUIRED_TYPES = new Set([
   'ElementTypeSwitch',
 ])
 
-/** 类型下拉选项：value 为 schema 枚举字符串，label 走 i18n（as const 保住 key 字面量类型） */
-const ELEMENT_TYPE_KEYS = [
+/** 类型下拉选项：value 为 schema 枚举字符串，label 走 i18n（as const 保住 key 字面量类型）。
+ *  导出供 RepoFormModal 的「副本字段」选项复用同一份类型文案，避免两处枚举各写一份漂移 */
+export const ELEMENT_TYPE_KEYS = [
   { value: 'ElementTypeUnknown', key: 'repos.elementTypeUnknown' },
   { value: 'ElementTypeInput', key: 'repos.elementTypeInput' },
   { value: 'ElementTypeInputNumber', key: 'repos.elementTypeInputNumber' },

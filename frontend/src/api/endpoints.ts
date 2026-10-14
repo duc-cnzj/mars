@@ -33,6 +33,17 @@ export const API = {
   adminUserRole: '/api/admin/users/{email}/role',
   adminUserRolesOverride: '/api/admin/users/{email}/roles_override',
   adminUserGray: '/api/admin/users/{email}/gray',
+  /** 全局休眠时间窗**列表**（GET，登录即可读）——面向全体登录用户故不带 admin 前缀；
+   *  项目卡片/仓库表单按 window_name 展示时段要用，管理员后台与普通用户共用。 */
+  hibernateWindows: '/api/hibernate/windows',
+  /** 新建时间窗（POST，管理员） */
+  adminHibernateWindows: '/api/admin/hibernate/windows',
+  /** 单个时间窗：更新（PUT）/删除（DELETE，管理员） */
+  adminHibernateWindowDetail: '/api/admin/hibernate/windows/{id}',
+  /** 把一个时间窗配置到多个仓库（PUT，管理员）：body.repoIds 为目标引用集合（集合语义） */
+  adminHibernateWindowRepos: '/api/admin/hibernate/windows/{id}/repos',
+  /** 可引用时间窗的候选仓库列表（GET，管理员）：已配置休眠段（含禁用）的仓库 */
+  adminHibernateRepos: '/api/admin/hibernate/repos',
 
   // --- changelogs（配置历史） ---
   changelogsFindLast: '/api/changelogs/find_last_changelogs_by_project_id',
@@ -82,7 +93,11 @@ export const API = {
   namespacesUpdateDesc: '/api/namespaces/{id}/update_desc',
 
   // --- projects ---
+  /** 项目列表（GET）；query 支持 page/page_size/repo_id 过滤 */
+  projects: '/api/projects',
   projectsDetail: '/api/projects/{id}',
+  /** 项目级定时休眠开关（仅切换开关，不触发重部署） */
+  projectsHibernate: '/api/projects/{projectId}/hibernate',
   projectsContainers: '/api/projects/{id}/containers',
   projectsMemoryCpuEndpoints: '/api/projects/{id}/memory_cpu_and_endpoints',
   projectsResourceTree: '/api/projects/{id}/resource_tree',

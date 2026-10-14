@@ -5,7 +5,7 @@
  * 只选中其中一段（mars-demo 只选到 demo、registry.uco.com/mars/demo:v1.0.0 只选到一段），
  * 想整段复制得手动拖选。统一改成双击选中整个文本节点，截断显示下同样能拿到完整内容。
  *
- * 高亮色由全局 ::selection（品牌色 30% 淡底）承担，此处不涉及样式。
+ * 高亮色由全局 ::selection（CodeMirror 同款选中蓝 #2f81f7 + 白字）承担，此处不涉及样式。
  */
 import type { MouseEvent } from 'react'
 

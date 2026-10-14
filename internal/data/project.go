@@ -13,10 +13,10 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/member"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/schema/mixin"
 	"github.com/duc-cnzj/mars/v6/internal/data/filters"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
-	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v6/internal/util/slice"
 )
@@ -63,16 +63,13 @@ var _ biz.ProjectRepo = (*projectRepo)(nil)
 
 // projectRepo 是 biz.ProjectRepo 的实现：封装 ent Project 查询与命名空间过滤。
 type projectRepo struct {
-	logger mlog.Logger
-
 	externalIp string
 	data       dataStore
 }
 
-// NewProjectRepo 构造项目 repo 实现，注入日志与 dataStore。
-func NewProjectRepo(logger mlog.Logger, data dataStore) biz.ProjectRepo {
+// NewProjectRepo 构造项目 repo 实现，注入 dataStore。
+func NewProjectRepo(data dataStore) biz.ProjectRepo {
 	return &projectRepo{
-		logger:     logger.WithModule("repo/project"),
 		externalIp: data.Config().ExternalIp,
 		data:       data,
 	}
@@ -102,7 +99,7 @@ func projectSearchPred(search string) func(*sql.Selector) {
 
 // projectLivenessPred 项目活跃度分类 SQL 谓词：分类键是普通列 updated_at，直接按边界比较。
 // 边界由分类基准 now 推导（活跃=updated_at > now-31d；僵尸=<= now-90d；低活跃=两者之间），
-// 与 biz.classifyLiveness 的 int(now.Sub(ts).Hours()/24) 阈值数学等价（datetime 整秒存储 +
+// 与 biz.ClassifyLiveness 的 int(now.Sub(ts).Hours()/24) 阈值数学等价（datetime 整秒存储 +
 // DSN loc=Local 使 SQL 边界参数与 Go time.Now() 同墙钟，见 internal/config/config.go DSN）。
 // 非法 liveness 值返回恒假谓词，复现旧逻辑「无行命中非法分类」的空列表语义。
 func projectLivenessPred(liveness string, now time.Time) func(*sql.Selector) {
@@ -123,6 +120,7 @@ func projectLivenessPred(liveness string, now time.Time) func(*sql.Selector) {
 // ListLivenessPage 分页查询活跃度聚合所需项目（真 SQL 分页）：分类过滤/排序/统计/分页全部
 // 下沉 SQL，stats 基于搜索命中全量（不带边的干净 query 计数，避免行侧 Order/Select 修饰符
 // 渗进 COUNT，对齐 namespaceRepo.List 的计数口径），count 为分类过滤后总数（无过滤 = total）。
+// query.Hibernate=true 时统计与分页行都再收窄到「已开启项目级休眠开关」的子集。
 //
 // 排序：updated_at {desc|asc} + id {desc|asc} 决胜键——datetime 整秒精度下同秒多条排序非全序，
 // 加 id 保证 LIMIT/OFFSET 翻页不漂移/不重复。字段裁剪沿用旧 ListLiveness（短字段 + 边外键），
@@ -136,6 +134,12 @@ func (repo *projectRepo) ListLivenessPage(ctx context.Context, query *biz.Livene
 	base := repo.data.DB().Project.Query()
 	if query.Search != "" {
 		base = base.Where(projectSearchPred(query.Search))
+	}
+	// 休眠过滤收窄统计与分页的同一「命中全量」作用域：只看已开启休眠的项目时，total/三分类
+	// 与 count 都基于该子集——避免「列表只剩休眠项目、统计卡却仍显示全量」的口径错位。
+	// ProjectHibernate 无软删 mixin，HasHibernateWith 无需 DeletedAtIsNil 兜底。
+	if query.Hibernate {
+		base = base.Where(project.HasHibernateWith(projecthibernate.Enabled(true)))
 	}
 	total, err := base.Clone().Count(ctx)
 	if err != nil {
@@ -170,6 +174,9 @@ func (repo *projectRepo) ListLivenessPage(ctx context.Context, query *biz.Livene
 	rows := repo.data.DB().Project.Query().WithNamespace().WithRepo()
 	if query.Search != "" {
 		rows = rows.Where(projectSearchPred(query.Search))
+	}
+	if query.Hibernate {
+		rows = rows.Where(project.HasHibernateWith(projecthibernate.Enabled(true)))
 	}
 	if query.Liveness != "" {
 		rows = rows.Where(projectLivenessPred(query.Liveness, query.Now))
@@ -253,6 +260,8 @@ func (repo *projectRepo) List(ctx context.Context, input *biz.ListProjectInput) 
 			),
 		)
 	}
+	// 按所属仓库过滤（仓库列表「查看项目」用）：0 视为不过滤，保持原有「全部项目」语义。
+	query = query.Where(filters.IfIntEQ[int](project.FieldRepoID)(input.RepoID))
 	all := query.Clone().
 		Offset(pagination.GetPageOffset(input.Page, input.PageSize)).
 		Limit(int(input.PageSize)).
@@ -329,11 +338,28 @@ func (repo *projectRepo) Show(ctx context.Context, id int) (proj *biz.Project, e
 	return toProject(first), nil
 }
 
-// Delete 按 ID 删除项目。
+// Delete 按 ID 删除项目（软删），并在同一事务内删除其 1:1 休眠运行态。
+// 休眠行不随项目级联、也无软删 mixin，留在库里会变成孤儿：时间窗守卫 ProjectsReferencing
+// 扫全部休眠行、不论开关状态都按 window_names 计入，于是已删项目仍被当成下游引用，令该窗
+// 从此删不掉也改不了名；而软删项目在 UI 里不可见，管理员没有解除路径。对账侧的兜底清理
+// 只覆盖开关已开（Enabled=true）的记录——开关已关闭的孤儿永远无人回收，是永久锁。故在删除
+// 源头一并清掉。（代价：误删恢复不重建休眠行，恢复后项目休眠配置不再保留，与对账对启用
+// 记录已有的行为一致。）
 func (repo *projectRepo) Delete(ctx context.Context, id int) (err error) {
 	ctx, span := tracer.Start(ctx, "projectRepo/Delete")
 	defer func() { endSpan(span, err) }()
-	return errs.Wrap(repo.data.DB().Project.DeleteOneID(id).Exec(ctx), "delete project")
+	err = repo.data.WithTx(ctx, func(tx *ent.Tx) error {
+		if txErr := tx.Project.DeleteOneID(id).Exec(ctx); txErr != nil {
+			return txErr
+		}
+		if _, txErr := tx.ProjectHibernate.Delete().
+			Where(projecthibernate.ProjectID(id)).
+			Exec(ctx); txErr != nil {
+			return txErr
+		}
+		return nil
+	})
+	return errs.Wrap(err, "delete project")
 }
 
 // UpdateStatusByVersion 校验版本匹配后更新部署状态并递增版本号（乐观锁防并发覆盖）。

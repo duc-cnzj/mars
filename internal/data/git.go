@@ -10,7 +10,6 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
-	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/spf13/cast"
 )
 
@@ -42,7 +41,6 @@ var _ biz.GitRepo = (*gitRepo)(nil)
 // 插件（插件在 bootstrap 阶段才 Initialize，wire 期拿不到实例），GitServerCached
 // 开关决定走缓存还是透传，透传时统一 errs.Wrap 携带上下文。
 type gitRepo struct {
-	logger    mlog.Logger
 	gitServer func() GitServer
 	cfg       *config.Config
 	cache     Cache
@@ -52,9 +50,8 @@ type gitRepo struct {
 // gitRepo 只读 GitServerCached 判断缓存开关（ISP），不摸 DB/k8s 客户端。
 // gitServer 是惰性取数闭包：插件在 bootstrap 阶段才完成 Initialize，wire 期
 // pm.Git() 恒为 nil，首次调用方法时才实时解析。
-func NewGitRepo(logger mlog.Logger, c Cache, gitServer func() GitServer, cfg *config.Config) biz.GitRepo {
+func NewGitRepo(c Cache, gitServer func() GitServer, cfg *config.Config) biz.GitRepo {
 	return &gitRepo{
-		logger:    logger.WithModule("repo/git"),
 		gitServer: gitServer,
 		cache:     c,
 		cfg:       cfg,

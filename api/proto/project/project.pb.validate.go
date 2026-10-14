@@ -69,6 +69,10 @@ func (m *ListRequest) validate(all bool) error {
 		// no validation rules for PageSize
 	}
 
+	if m.RepoId != nil {
+		// no validation rules for RepoId
+	}
+
 	if len(errors) > 0 {
 		return ListRequestMultiError(errors)
 	}
@@ -857,6 +861,227 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = DeleteResponseValidationError{}
+
+// Validate checks the field values on ToggleHibernateRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ToggleHibernateRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ToggleHibernateRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ToggleHibernateRequestMultiError, or nil if none found.
+func (m *ToggleHibernateRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ToggleHibernateRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetProjectId() <= 0 {
+		err := ToggleHibernateRequestValidationError{
+			field:  "ProjectId",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Enabled
+
+	if len(errors) > 0 {
+		return ToggleHibernateRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ToggleHibernateRequestMultiError is an error wrapping multiple validation
+// errors returned by ToggleHibernateRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ToggleHibernateRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ToggleHibernateRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ToggleHibernateRequestMultiError) AllErrors() []error { return m }
+
+// ToggleHibernateRequestValidationError is the validation error returned by
+// ToggleHibernateRequest.Validate if the designated constraints aren't met.
+type ToggleHibernateRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ToggleHibernateRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ToggleHibernateRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ToggleHibernateRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ToggleHibernateRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ToggleHibernateRequestValidationError) ErrorName() string {
+	return "ToggleHibernateRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ToggleHibernateRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sToggleHibernateRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ToggleHibernateRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ToggleHibernateRequestValidationError{}
+
+// Validate checks the field values on ToggleHibernateResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ToggleHibernateResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ToggleHibernateResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ToggleHibernateResponseMultiError, or nil if none found.
+func (m *ToggleHibernateResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ToggleHibernateResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Enabled
+
+	// no validation rules for State
+
+	if len(errors) > 0 {
+		return ToggleHibernateResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ToggleHibernateResponseMultiError is an error wrapping multiple validation
+// errors returned by ToggleHibernateResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ToggleHibernateResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ToggleHibernateResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ToggleHibernateResponseMultiError) AllErrors() []error { return m }
+
+// ToggleHibernateResponseValidationError is the validation error returned by
+// ToggleHibernateResponse.Validate if the designated constraints aren't met.
+type ToggleHibernateResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ToggleHibernateResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ToggleHibernateResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ToggleHibernateResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ToggleHibernateResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ToggleHibernateResponseValidationError) ErrorName() string {
+	return "ToggleHibernateResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ToggleHibernateResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sToggleHibernateResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ToggleHibernateResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ToggleHibernateResponseValidationError{}
 
 // Validate checks the field values on RestoreRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -3863,6 +4088,10 @@ func (m *LivenessRequest) validate(all bool) error {
 		// no validation rules for PageSize
 	}
 
+	if m.Hibernate != nil {
+		// no validation rules for Hibernate
+	}
+
 	if len(errors) > 0 {
 		return LivenessRequestMultiError(errors)
 	}
@@ -3988,6 +4217,10 @@ func (m *LivenessItem) validate(all bool) error {
 	// no validation rules for GitCommitAuthor
 
 	// no validation rules for GitCommitDate
+
+	// no validation rules for HibernateEnabled
+
+	// no validation rules for HibernateState
 
 	if len(errors) > 0 {
 		return LivenessItemMultiError(errors)

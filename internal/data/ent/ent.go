@@ -19,9 +19,11 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/event"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/favorite"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/file"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/hibernatewindow"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/member"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/repo"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/user"
 )
@@ -84,18 +86,20 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			accesstoken.Table: accesstoken.ValidColumn,
-			cachelock.Table:   cachelock.ValidColumn,
-			changelog.Table:   changelog.ValidColumn,
-			dbcache.Table:     dbcache.ValidColumn,
-			event.Table:       event.ValidColumn,
-			favorite.Table:    favorite.ValidColumn,
-			file.Table:        file.ValidColumn,
-			member.Table:      member.ValidColumn,
-			namespace.Table:   namespace.ValidColumn,
-			project.Table:     project.ValidColumn,
-			repo.Table:        repo.ValidColumn,
-			user.Table:        user.ValidColumn,
+			accesstoken.Table:      accesstoken.ValidColumn,
+			cachelock.Table:        cachelock.ValidColumn,
+			changelog.Table:        changelog.ValidColumn,
+			dbcache.Table:          dbcache.ValidColumn,
+			event.Table:            event.ValidColumn,
+			favorite.Table:         favorite.ValidColumn,
+			file.Table:             file.ValidColumn,
+			hibernatewindow.Table:  hibernatewindow.ValidColumn,
+			member.Table:           member.ValidColumn,
+			namespace.Table:        namespace.ValidColumn,
+			project.Table:          project.ValidColumn,
+			projecthibernate.Table: projecthibernate.ValidColumn,
+			repo.Table:             repo.ValidColumn,
+			user.Table:             user.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

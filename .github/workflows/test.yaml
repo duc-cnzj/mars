@@ -30,13 +30,17 @@ jobs:
           go-version: '1.26'
       - name: Setup minio
         run: |
-          # 镜像源必须走 quay.io：Docker Hub 的 minio/minio 已被上游收回（拉取返回
-          # denied: requested access to the resource is denied），CI 会直接 125 退出。
+          # MinIO 官方镜像已从 Docker Hub 与 quay.io 双双下架：匿名拉取 quay.io/minio/minio
+          # 现直接 401（unauthorized），容器起不来、CI 125 退出。改用 Chainguard 构建的同源
+          # minio——同一二进制、同样的 MINIO_ROOT_* 变量与 "server /data" 命令，行为零漂移。
+          # 该镜像默认非 root（uid 65532）无法在容器内创建 /data，故 --user 0:0 改回 root。
+          # 免费层只供 :latest；需要极致可复现时按 digest 钉死。
           # 凭据变量名与 dev/docker-compose.yml、config_example.yaml s3_ 配置对齐。
           docker run -d -p 9000:9000 --name minio \
+            --user 0:0 \
             -e "MINIO_ROOT_USER=minioadmin" \
             -e "MINIO_ROOT_PASSWORD=minioadmin" \
-            quay.io/minio/minio server /data
+            cgr.dev/chainguard/minio:latest server /data
       - name: Setup Nsq
         run: |
           docker run --name nsqlookupd -p 4160:4160 -p 4161:4161 -d nsqio/nsq /nsqlookupd

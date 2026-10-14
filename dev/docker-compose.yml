@@ -54,9 +54,11 @@ services:
     networks:
       - mars
   minio:
-    # 镜像源必须走 quay.io：Docker Hub 的 minio/minio 已被上游收回（拉取返回
-    # denied: requested access to the resource is denied），与 CI 保持同一来源。
-    image: quay.io/minio/minio
+    # MinIO 官方镜像已从 Docker Hub 与 quay.io 双双下架（匿名拉取 quay.io/minio/minio 现 401），
+    # 改用 Chainguard 构建的同源 minio，与 CI（.github/workflows/test.yaml）保持同一来源。
+    image: cgr.dev/chainguard/minio:latest
+    # 镜像默认非 root（uid 65532）无法写 /data，改回 root 才能在容器内创建数据目录。
+    user: "0:0"
     command: server /data --console-address ":9001"
     environment:
       # 与 config_example.yaml s3_ 配置对齐：minioadmin / minioadmin

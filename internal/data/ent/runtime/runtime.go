@@ -14,9 +14,11 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/event"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/favorite"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/file"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/hibernatewindow"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/member"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/repo"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/schema"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/user"
@@ -250,6 +252,35 @@ func init() {
 	file.DefaultContainerPath = fileDescContainerPath.Default.(string)
 	// file.ContainerPathValidator is a validator for the "container_path" field. It is called by the builders before save.
 	file.ContainerPathValidator = fileDescContainerPath.Validators[0].(func(string) error)
+	hibernatewindowMixin := schema.HibernateWindow{}.Mixin()
+	hibernatewindowMixinFields0 := hibernatewindowMixin[0].Fields()
+	_ = hibernatewindowMixinFields0
+	hibernatewindowMixinFields1 := hibernatewindowMixin[1].Fields()
+	_ = hibernatewindowMixinFields1
+	hibernatewindowFields := schema.HibernateWindow{}.Fields()
+	_ = hibernatewindowFields
+	// hibernatewindowDescCreatedAt is the schema descriptor for created_at field.
+	hibernatewindowDescCreatedAt := hibernatewindowMixinFields0[0].Descriptor()
+	// hibernatewindow.DefaultCreatedAt holds the default value on creation for the created_at field.
+	hibernatewindow.DefaultCreatedAt = hibernatewindowDescCreatedAt.Default.(func() time.Time)
+	// hibernatewindowDescUpdatedAt is the schema descriptor for updated_at field.
+	hibernatewindowDescUpdatedAt := hibernatewindowMixinFields1[0].Descriptor()
+	// hibernatewindow.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	hibernatewindow.DefaultUpdatedAt = hibernatewindowDescUpdatedAt.Default.(func() time.Time)
+	// hibernatewindow.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	hibernatewindow.UpdateDefaultUpdatedAt = hibernatewindowDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// hibernatewindowDescName is the schema descriptor for name field.
+	hibernatewindowDescName := hibernatewindowFields[0].Descriptor()
+	// hibernatewindow.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	hibernatewindow.NameValidator = hibernatewindowDescName.Validators[0].(func(string) error)
+	// hibernatewindowDescStart is the schema descriptor for start field.
+	hibernatewindowDescStart := hibernatewindowFields[1].Descriptor()
+	// hibernatewindow.StartValidator is a validator for the "start" field. It is called by the builders before save.
+	hibernatewindow.StartValidator = hibernatewindowDescStart.Validators[0].(func(string) error)
+	// hibernatewindowDescEnd is the schema descriptor for end field.
+	hibernatewindowDescEnd := hibernatewindowFields[2].Descriptor()
+	// hibernatewindow.EndValidator is a validator for the "end" field. It is called by the builders before save.
+	hibernatewindow.EndValidator = hibernatewindowDescEnd.Validators[0].(func(string) error)
 	memberMixin := schema.Member{}.Mixin()
 	memberMixinHooks2 := memberMixin[2].Hooks()
 	member.Hooks[0] = memberMixinHooks2[0]
@@ -383,6 +414,33 @@ func init() {
 	projectDescDeletedWithNamespace := projectFields[24].Descriptor()
 	// project.DefaultDeletedWithNamespace holds the default value on creation for the deleted_with_namespace field.
 	project.DefaultDeletedWithNamespace = projectDescDeletedWithNamespace.Default.(bool)
+	projecthibernateMixin := schema.ProjectHibernate{}.Mixin()
+	projecthibernateMixinFields0 := projecthibernateMixin[0].Fields()
+	_ = projecthibernateMixinFields0
+	projecthibernateMixinFields1 := projecthibernateMixin[1].Fields()
+	_ = projecthibernateMixinFields1
+	projecthibernateFields := schema.ProjectHibernate{}.Fields()
+	_ = projecthibernateFields
+	// projecthibernateDescCreatedAt is the schema descriptor for created_at field.
+	projecthibernateDescCreatedAt := projecthibernateMixinFields0[0].Descriptor()
+	// projecthibernate.DefaultCreatedAt holds the default value on creation for the created_at field.
+	projecthibernate.DefaultCreatedAt = projecthibernateDescCreatedAt.Default.(func() time.Time)
+	// projecthibernateDescUpdatedAt is the schema descriptor for updated_at field.
+	projecthibernateDescUpdatedAt := projecthibernateMixinFields1[0].Descriptor()
+	// projecthibernate.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	projecthibernate.DefaultUpdatedAt = projecthibernateDescUpdatedAt.Default.(func() time.Time)
+	// projecthibernate.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	projecthibernate.UpdateDefaultUpdatedAt = projecthibernateDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// projecthibernateDescEnabled is the schema descriptor for enabled field.
+	projecthibernateDescEnabled := projecthibernateFields[0].Descriptor()
+	// projecthibernate.DefaultEnabled holds the default value on creation for the enabled field.
+	projecthibernate.DefaultEnabled = projecthibernateDescEnabled.Default.(bool)
+	// projecthibernateDescState is the schema descriptor for state field.
+	projecthibernateDescState := projecthibernateFields[1].Descriptor()
+	// projecthibernate.DefaultState holds the default value on creation for the state field.
+	projecthibernate.DefaultState = projecthibernateDescState.Default.(string)
+	// projecthibernate.StateValidator is a validator for the "state" field. It is called by the builders before save.
+	projecthibernate.StateValidator = projecthibernateDescState.Validators[0].(func(string) error)
 	repoMixin := schema.Repo{}.Mixin()
 	repoMixinHooks2 := repoMixin[2].Hooks()
 	repo.Hooks[0] = repoMixinHooks2[0]

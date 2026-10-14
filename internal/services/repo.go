@@ -217,8 +217,15 @@ func (r *repoSvc) Export(ctx context.Context, req *reposerver.ExportRequest) (*r
 		return nil, logError(ctx, r.logger, err)
 	}
 	return &reposerver.ExportResponse{
-		Items: slice.Map(repos, transformer.FromRepo),
+		Items: slice.Map(repos, repoModelWithoutHibernate),
 	}, nil
+}
+
+// repoModelWithoutHibernate 组装导出/导入传输用的仓库视图：导出文件、导入预览 diff 与导入审计
+// 一律不含定时休眠配置（导出/导入暂不支持 hibernate）。复用同一函数保证三处口径一致——
+// 否则导出文件不带 hibernate、而预览 diff 的「旧值」带着它，会误显示成「导入将删除休眠配置」。
+func repoModelWithoutHibernate(repo *biz.Repo) *types.RepoModel {
+	return transformer.WithoutHibernate(transformer.FromRepo(repo))
 }
 
 // ExportOne 导出单个 repo 为 JSON：返回体与导入请求同构（ExportResponse 单元素 items），
@@ -230,7 +237,7 @@ func (r *repoSvc) ExportOne(ctx context.Context, req *reposerver.ExportOneReques
 		return nil, logError(ctx, r.logger, err)
 	}
 	return &reposerver.ExportResponse{
-		Items: []*types.RepoModel{transformer.FromRepo(repo)},
+		Items: []*types.RepoModel{repoModelWithoutHibernate(repo)},
 	}, nil
 }
 
@@ -240,7 +247,7 @@ func (r *repoSvc) snapshotRepos(ctx context.Context) ([]*types.RepoModel, error)
 	if err != nil {
 		return nil, err
 	}
-	return slice.Map(repos, transformer.FromRepo), nil
+	return slice.Map(repos, repoModelWithoutHibernate), nil
 }
 
 // Import 批量导入 repo：请求体与导出 JSON 同构，按名称幂等覆盖（biz 层实现）。

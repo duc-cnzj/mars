@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/mars"
+	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/transformer"
 	"github.com/stretchr/testify/assert"
@@ -62,6 +63,33 @@ func TestFromRepo_DeletedRepo(t *testing.T) {
 	result := transformer.FromRepo(r)
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.DeletedAt)
+}
+
+// WithoutHibernate：nil 安全；无 hibernate 时原样返回（不克隆）；有 hibernate 时返回副本且
+// 抹掉该字段、不改动原对象（原对象常引用 biz 层共享配置，就地改会污染调用方）。
+func TestWithoutHibernate(t *testing.T) {
+	t.Run("nil 输入", func(t *testing.T) {
+		assert.Nil(t, transformer.WithoutHibernate(nil))
+	})
+	t.Run("无 mars_config 原样返回", func(t *testing.T) {
+		m := &types.RepoModel{Id: 1, Name: "a"}
+		assert.Same(t, m, transformer.WithoutHibernate(m))
+	})
+	t.Run("无 hibernate 原样返回", func(t *testing.T) {
+		m := &types.RepoModel{Id: 1, MarsConfig: &mars.Config{ConfigField: "cfg"}}
+		assert.Same(t, m, transformer.WithoutHibernate(m))
+	})
+	t.Run("抹掉 hibernate 且不改原对象", func(t *testing.T) {
+		orig := &types.RepoModel{Id: 1, MarsConfig: &mars.Config{
+			ConfigField: "cfg",
+			Hibernate:   &mars.Hibernate{Enabled: true, WindowNames: []string{"夜间"}},
+		}}
+		out := transformer.WithoutHibernate(orig)
+		assert.NotSame(t, orig, out)
+		assert.Nil(t, out.MarsConfig.Hibernate, "副本应已抹掉 hibernate")
+		assert.Equal(t, "cfg", out.MarsConfig.ConfigField, "其余字段应保留")
+		assert.NotNil(t, orig.MarsConfig.Hibernate, "原对象不应被就地修改")
+	})
 }
 
 func TestFromRepo_ZeroValues(t *testing.T) {

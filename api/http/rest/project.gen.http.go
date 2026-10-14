@@ -144,3 +144,12 @@ func (s *ProjectSvc) Liveness(ctx context.Context, req *project.LivenessRequest)
 	}
 	return &out, nil
 }
+
+// ToggleHibernate POST /api/projects/{project_id}/hibernate。
+func (s *ProjectSvc) ToggleHibernate(ctx context.Context, req *project.ToggleHibernateRequest) (*project.ToggleHibernateResponse, error) {
+	var out project.ToggleHibernateResponse
+	if err := s.C.Do(ctx, http.MethodPost, fmt.Sprintf("/api/projects/%d/hibernate", req.ProjectId), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

@@ -17,6 +17,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/namespace"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/predicate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/project"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent/projecthibernate"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/repo"
 )
 
@@ -28,6 +29,7 @@ type ProjectQuery struct {
 	inters         []Interceptor
 	predicates     []predicate.Project
 	withChangelogs *ChangelogQuery
+	withHibernate  *ProjectHibernateQuery
 	withRepo       *RepoQuery
 	withNamespace  *NamespaceQuery
 	modifiers      []func(*sql.Selector)
@@ -82,6 +84,28 @@ func (_q *ProjectQuery) QueryChangelogs() *ChangelogQuery {
 			sqlgraph.From(project.Table, project.FieldID, selector),
 			sqlgraph.To(changelog.Table, changelog.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, project.ChangelogsTable, project.ChangelogsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryHibernate chains the current query on the "hibernate" edge.
+func (_q *ProjectQuery) QueryHibernate() *ProjectHibernateQuery {
+	query := (&ProjectHibernateClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, selector),
+			sqlgraph.To(projecthibernate.Table, projecthibernate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, project.HibernateTable, project.HibernateColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -326,6 +350,7 @@ func (_q *ProjectQuery) Clone() *ProjectQuery {
 		inters:         append([]Interceptor{}, _q.inters...),
 		predicates:     append([]predicate.Project{}, _q.predicates...),
 		withChangelogs: _q.withChangelogs.Clone(),
+		withHibernate:  _q.withHibernate.Clone(),
 		withRepo:       _q.withRepo.Clone(),
 		withNamespace:  _q.withNamespace.Clone(),
 		// clone intermediate query.
@@ -342,6 +367,17 @@ func (_q *ProjectQuery) WithChangelogs(opts ...func(*ChangelogQuery)) *ProjectQu
 		opt(query)
 	}
 	_q.withChangelogs = query
+	return _q
+}
+
+// WithHibernate tells the query-builder to eager-load the nodes that are connected to
+// the "hibernate" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ProjectQuery) WithHibernate(opts ...func(*ProjectHibernateQuery)) *ProjectQuery {
+	query := (&ProjectHibernateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withHibernate = query
 	return _q
 }
 
@@ -445,8 +481,9 @@ func (_q *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 	var (
 		nodes       = []*Project{}
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			_q.withChangelogs != nil,
+			_q.withHibernate != nil,
 			_q.withRepo != nil,
 			_q.withNamespace != nil,
 		}
@@ -476,6 +513,12 @@ func (_q *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 		if err := _q.loadChangelogs(ctx, query, nodes,
 			func(n *Project) { n.Edges.Changelogs = []*Changelog{} },
 			func(n *Project, e *Changelog) { n.Edges.Changelogs = append(n.Edges.Changelogs, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withHibernate; query != nil {
+		if err := _q.loadHibernate(ctx, query, nodes, nil,
+			func(n *Project, e *ProjectHibernate) { n.Edges.Hibernate = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -509,6 +552,33 @@ func (_q *ProjectQuery) loadChangelogs(ctx context.Context, query *ChangelogQuer
 	}
 	query.Where(predicate.Changelog(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(project.ChangelogsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ProjectID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "project_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *ProjectQuery) loadHibernate(ctx context.Context, query *ProjectHibernateQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectHibernate)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Project)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(projecthibernate.FieldProjectID)
+	}
+	query.Where(predicate.ProjectHibernate(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(project.HibernateColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

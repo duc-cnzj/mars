@@ -1731,6 +1731,10 @@ func (m *ProjectModel) validate(all bool) error {
 
 	// no validation rules for UpdatedBy
 
+	// no validation rules for HibernateEnabled
+
+	// no validation rules for HibernateState
+
 	// no validation rules for ConfigType
 
 	// no validation rules for GitCommitWebUrl

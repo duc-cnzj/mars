@@ -198,6 +198,35 @@ func (m *Config) validate(all bool) error {
 
 	}
 
+	if all {
+		switch v := interface{}(m.GetHibernate()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ConfigValidationError{
+					field:  "Hibernate",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ConfigValidationError{
+					field:  "Hibernate",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetHibernate()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ConfigValidationError{
+				field:  "Hibernate",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return ConfigMultiError(errors)
 	}
@@ -276,6 +305,107 @@ var _ interface {
 } = ConfigValidationError{}
 
 var _Config_DisplayName_Pattern = regexp.MustCompile("^[A-Za-z]([A-Z-_a-z]*[^_-])*$")
+
+// Validate checks the field values on Hibernate with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Hibernate) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Hibernate with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in HibernateMultiError, or nil
+// if none found.
+func (m *Hibernate) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Hibernate) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Enabled
+
+	if len(errors) > 0 {
+		return HibernateMultiError(errors)
+	}
+
+	return nil
+}
+
+// HibernateMultiError is an error wrapping multiple validation errors returned
+// by Hibernate.ValidateAll() if the designated constraints aren't met.
+type HibernateMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m HibernateMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m HibernateMultiError) AllErrors() []error { return m }
+
+// HibernateValidationError is the validation error returned by
+// Hibernate.Validate if the designated constraints aren't met.
+type HibernateValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e HibernateValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e HibernateValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e HibernateValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e HibernateValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e HibernateValidationError) ErrorName() string { return "HibernateValidationError" }
+
+// Error satisfies the builtin error interface
+func (e HibernateValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sHibernate.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = HibernateValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = HibernateValidationError{}
 
 // Validate checks the field values on GroupSetting with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
