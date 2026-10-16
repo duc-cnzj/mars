@@ -405,9 +405,9 @@ func TestFileRepo_MaxUploadSize(t *testing.T) {
 	assert.Equal(t, uint64(10_000_000), repo.MaxUploadSize())
 }
 
-// TestFileRepo_Delete 覆盖删记录 + 删物理文件 + 不存在记录报错。
+// TestFileRepo_Delete 覆盖删记录 + 删物理文件 + 不存在记录报错 + 跨后端记录报错不删行。
 func TestFileRepo_Delete(t *testing.T) {
-	repo, _, up := newFileRepo(t)
+	repo, entdb, up := newFileRepo(t)
 	ctx := context.TODO()
 
 	nf, err := up.NewFile("del.txt")
@@ -425,6 +425,52 @@ func TestFileRepo_Delete(t *testing.T) {
 
 	err = repo.Delete(ctx, 999999)
 	assert.Error(t, err)
+
+	// 跨后端回归：S3 记录 + 本地主上传器（S3 未启用）→ 报错且记录行保留，
+	// 不能出现"行已删、物理文件还在"的半删状态。
+	s3rec := entdb.File.Create().SetPath("mars/users/x").SetUsername("u").SetSize(1).SetUploadType(schematype.S3).SaveX(ctx)
+	err = repo.Delete(ctx, s3rec.ID)
+	assert.Error(t, err)
+	_, err = repo.GetByID(ctx, s3rec.ID)
+	assert.NoError(t, err)
+}
+
+// TestPickUploader 白盒覆盖上传器选择的全部分支：Local 取本地镜像、S3 需后端匹配、
+// 后端不匹配与未知类型均报错，防止记录 path 语义与上传器错配。
+func TestPickUploader(t *testing.T) {
+	m := gomock.NewController(t)
+	t.Cleanup(m.Finish)
+
+	t.Run("local record uses local mirror", func(t *testing.T) {
+		main := uploader.NewMockUploader(m)
+		local := uploader.NewMockUploader(m)
+		main.EXPECT().LocalUploader().Return(local)
+		got, err := pickUploader(main, schematype.Local)
+		assert.NoError(t, err)
+		assert.Equal(t, local, got)
+	})
+
+	t.Run("s3 record with s3 backend returns main", func(t *testing.T) {
+		main := uploader.NewMockUploader(m)
+		main.EXPECT().Type().Return(schematype.S3)
+		got, err := pickUploader(main, schematype.S3)
+		assert.NoError(t, err)
+		assert.Equal(t, main, got)
+	})
+
+	t.Run("s3 record with non-s3 backend errors", func(t *testing.T) {
+		main := uploader.NewMockUploader(m)
+		main.EXPECT().Type().Return(schematype.Local)
+		_, err := pickUploader(main, schematype.S3)
+		assert.ErrorContains(t, err, "S3 存储后端未启用")
+	})
+
+	t.Run("unknown upload type errors", func(t *testing.T) {
+		// 未知类型不触达主上传器任何方法，直接报记录损坏，防 nil 上传器继续读写。
+		main := uploader.NewMockUploader(m)
+		_, err := pickUploader(main, schematype.UploadType("weird"))
+		assert.ErrorContains(t, err, "未知的上传类型")
+	})
 }
 
 // TestFileRepo_ShowRecords 覆盖本地读取分支、S3 mock 分支与 DB 错误分支。
@@ -455,13 +501,9 @@ func TestFileRepo_ShowRecords(t *testing.T) {
 		d := NewDataImpl(&NewDataParams{DB: entdb, Cfg: &config.Config{UploadMaxSize: "1M"}})
 
 		s3mock := uploader.NewMockUploader(m)
-		localMock := uploader.NewMockUploader(m)
-		gomock.InOrder(
-			s3mock.EXPECT().LocalUploader().Return(localMock),
-			localMock.EXPECT().Type().Return(schematype.Local),
-			s3mock.EXPECT().Type().Return(schematype.S3),
-			s3mock.EXPECT().Read("s3path").Return(io.NopCloser(strings.NewReader("s3data")), nil),
-		)
+		// S3 记录：pickUploader 先确认主上传器就是 S3，再直接用它读对象。
+		s3mock.EXPECT().Type().Return(schematype.S3)
+		s3mock.EXPECT().Read("s3path").Return(io.NopCloser(strings.NewReader("s3data")), nil)
 		repo := NewFileRepo(mlog.NewForConfig(nil), d, &noCache{}, s3mock, timer.NewReal()).(*fileRepo)
 
 		created := entdb.File.Create().SetPath("s3path").SetUsername("u").SetSize(1).SetUploadType(schematype.S3).SaveX(ctx)
@@ -469,6 +511,38 @@ func TestFileRepo_ShowRecords(t *testing.T) {
 		assert.NoError(t, err)
 		data, _ := io.ReadAll(rc)
 		assert.Equal(t, "s3data", string(data))
+	})
+
+	t.Run("local record reads via local mirror while main is s3", func(t *testing.T) {
+		m := gomock.NewController(t)
+		t.Cleanup(m.Finish)
+		entdb, _ := NewSqliteDB()
+		t.Cleanup(func() { entdb.Close() })
+		d := NewDataImpl(&NewDataParams{DB: entdb, Cfg: &config.Config{UploadMaxSize: "1M"}})
+
+		s3mock := uploader.NewMockUploader(m)
+		localMock := uploader.NewMockUploader(m)
+		// 跨后端回归：主上传器是 S3，但记录 UploadType=Local → 必须走本地镜像读，
+		// 不能拿本地绝对路径去 S3 上找对象。
+		s3mock.EXPECT().LocalUploader().Return(localMock)
+		localMock.EXPECT().Read("/abs/local.txt").Return(io.NopCloser(strings.NewReader("localdata")), nil)
+		repo := NewFileRepo(mlog.NewForConfig(nil), d, &noCache{}, s3mock, timer.NewReal()).(*fileRepo)
+
+		created := entdb.File.Create().SetPath("/abs/local.txt").SetUsername("u").SetSize(1).SetUploadType(schematype.Local).SaveX(ctx)
+		rc, err := repo.ShowRecords(ctx, created.ID)
+		assert.NoError(t, err)
+		data, _ := io.ReadAll(rc)
+		assert.Equal(t, "localdata", string(data))
+	})
+
+	t.Run("s3 record with local backend errors instead of nil panic", func(t *testing.T) {
+		// 回归：S3 记录 + 主上传器是本地磁盘（S3 未启用）时，旧实现 switch 无 default
+		// 会让 up 保持 nil 并 up.Read 触发空指针 panic；现应返回明确错误。
+		repo, entdb, _ := newFileRepo(t)
+		created := entdb.File.Create().SetPath("mars/users/x").SetUsername("u").SetSize(1).SetUploadType(schematype.S3).SaveX(ctx)
+
+		_, err := repo.ShowRecords(ctx, created.ID)
+		assert.Error(t, err)
 	})
 
 	t.Run("missing file errors", func(t *testing.T) {

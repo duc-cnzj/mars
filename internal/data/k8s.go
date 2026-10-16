@@ -648,7 +648,9 @@ type copyToPodResult struct {
 
 // copyToPod 把上传文件打包为 tar.gz 并经 SPDY 流管道解压到容器目标目录：
 // 非 Local 类型上传先拉回本地再打包，包体经 io.Pipe 边拷贝边喂给 tar 解压命令。
-func (repo *k8sRepo) copyToPod(ctx context.Context, namespace, pod, container, fpath, targetContainerDir string) (result *copyToPodResult, err error) {
+// fpath 来自库中文件记录，其语义随 upType 而变（Local=绝对路径，S3=相对对象键），
+// 故上传器必须按 upType 选（pickUploader），不能固定用主上传器。
+func (repo *k8sRepo) copyToPod(ctx context.Context, namespace, pod, container, fpath string, upType schematype.UploadType, targetContainerDir string) (result *copyToPodResult, err error) {
 	ctx, span := tracer.Start(ctx, "k8sRepo/copyToPod")
 	defer func() { endSpan(span, err) }()
 	span.SetAttributes(
@@ -661,11 +663,13 @@ func (repo *k8sRepo) copyToPod(ctx context.Context, namespace, pod, container, f
 	var (
 		errbf, outbf      = bytes.NewBuffer([]byte{}), bytes.NewBuffer([]byte{})
 		reader, outStream = io.Pipe()
-		uploader          = repo.uploader
-		localUploader     = repo.uploader.LocalUploader()
 	)
 	if targetContainerDir == "" {
 		targetContainerDir = "/tmp"
+	}
+	uploader, err := pickUploader(repo.uploader, upType)
+	if err != nil {
+		return nil, err
 	}
 	st, err := uploader.Stat(fpath)
 	if err != nil {
@@ -679,13 +683,14 @@ func (repo *k8sRepo) copyToPod(ctx context.Context, namespace, pod, container, f
 
 	baseName := filepath.Base(fpath)
 	var localPath = fpath
-	// 如果是非 local 类型的，需要远程下载到 local 进行打包，再上传到容器
-	if uploader.Type() != schematype.Local {
+	// 非 Local 记录（对象存储）：先把远端对象拉回本地镜像再打包，再喂给容器。
+	if upType != schematype.Local {
 		read, err := uploader.Read(fpath)
 		if err != nil {
 			return nil, err
 		}
 		defer read.Close()
+		localUploader := uploader.LocalUploader()
 		if localUploader.Exists(localPath) {
 			localUploader.Delete(localPath)
 		}
@@ -766,7 +771,7 @@ func (repo *k8sRepo) CopyFileToPod(ctx context.Context, input *biz.CopyFileToPod
 		return nil, err
 	}
 
-	result, err := repo.copyToPod(ctx, input.Namespace, input.Pod, input.Container, file.Path, "")
+	result, err := repo.copyToPod(ctx, input.Namespace, input.Pod, input.Container, file.Path, file.UploadType, "")
 	if err != nil {
 		return nil, errs.Wrap(err, "copy file to pod")
 	}

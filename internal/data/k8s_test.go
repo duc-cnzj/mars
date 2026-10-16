@@ -2409,21 +2409,19 @@ func TestK8sRepo_CopyFileToPod(t *testing.T) {
 	kr.archiver = NewDefaultArchiver()
 	kr.maxUploadSize = 1 << 20
 
-	// copyToPod：uploader.Stat 返回小文件信息，Local 类型跳过下载分支。
-	// 注：LocalUploader()无条件调用，Local 分支实际不消费其返回值，
-	// 但 gomock 仍须给出期望。
+	// copyToPod：记录 UploadType=Local → pickUploader 选本地上传器（LocalUploader 返回自身），
+	// Stat 返回小文件信息，Local 类型跳过下载分支。
 	info := uploader.NewMockFileInfo(m)
 	info.EXPECT().Size().Return(uint64(8)).AnyTimes()
 	dir := t.TempDir()
 	srcPath := filepath.Join(dir, "a.txt")
 	require.NoError(t, os.WriteFile(srcPath, []byte("hi"), 0o644))
-	mockUploader.EXPECT().LocalUploader().Return(uploader.NewMockUploader(m))
+	mockUploader.EXPECT().LocalUploader().Return(mockUploader)
 	mockUploader.EXPECT().Stat(srcPath).Return(info, nil)
-	mockUploader.EXPECT().Type().Return(schematype.Local)
 
 	execDrain(ec)
 
-	mockFileRepo.EXPECT().GetByID(gomock.Any(), 7).Return(&biz.File{Path: srcPath}, nil)
+	mockFileRepo.EXPECT().GetByID(gomock.Any(), 7).Return(&biz.File{Path: srcPath, UploadType: schematype.Local}, nil)
 	mockFileRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&biz.File{}, nil)
 
 	got, err := kr.CopyFileToPod(context.TODO(), &biz.CopyFileToPodInput{
@@ -2448,10 +2446,26 @@ func TestK8sRepo_CopyToPod_SizeExceeded(t *testing.T) {
 	srcPath := "/some/big/file"
 	mockUploader.EXPECT().LocalUploader().Return(mockUploader)
 	mockUploader.EXPECT().Stat(srcPath).Return(info, nil)
-	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath}, nil)
+	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath, UploadType: schematype.Local}, nil)
 
 	_, err := kr.CopyFileToPod(context.TODO(), &biz.CopyFileToPodInput{FileId: 1})
 	assert.ErrorContains(t, err, "最大不得超过")
+}
+
+// TestK8sRepo_CopyToPod_PickUploaderError 覆盖记录上传类型无法解析出存储后端时，
+// copyToPod 在建流前提前报错，不触达 Stat/归档。
+func TestK8sRepo_CopyToPod_PickUploaderError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockUploader := uploader.NewMockUploader(m)
+	mockFileRepo := NewMockFileRepo(m)
+	kr, _, _ := copyFromPodK8sRepo(t, m, mockUploader, mockFileRepo)
+	kr.maxUploadSize = 1 << 20
+
+	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: "x", UploadType: schematype.UploadType("weird")}, nil)
+
+	_, err := kr.CopyFileToPod(context.TODO(), &biz.CopyFileToPodInput{FileId: 1})
+	assert.ErrorContains(t, err, "未知的上传类型")
 }
 
 // TestK8sRepo_CopyToPod_NonLocalReadError 覆盖非 Local 类型下载远程文件失败的错误分支
@@ -2467,11 +2481,11 @@ func TestK8sRepo_CopyToPod_NonLocalReadError(t *testing.T) {
 	info := uploader.NewMockFileInfo(m)
 	info.EXPECT().Size().Return(uint64(8)).AnyTimes()
 	srcPath := "/remote/file"
-	mockUploader.EXPECT().LocalUploader().Return(mockUploader)
-	mockUploader.EXPECT().Stat(srcPath).Return(info, nil)
+	// S3 记录：pickUploader 先 Type 确认后端，再 Stat；Read 失败即返回，不触达本地镜像。
 	mockUploader.EXPECT().Type().Return(schematype.S3)
+	mockUploader.EXPECT().Stat(srcPath).Return(info, nil)
 	mockUploader.EXPECT().Read(srcPath).Return(nil, errors.New("read boom"))
-	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath}, nil)
+	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath, UploadType: schematype.S3}, nil)
 
 	_, err := kr.CopyFileToPod(context.TODO(), &biz.CopyFileToPodInput{FileId: 1})
 	assert.ErrorContains(t, err, "read boom")
@@ -2493,14 +2507,14 @@ func TestK8sRepo_CopyToPod_NonLocalPutError(t *testing.T) {
 	read := uploader.NewMockFile(m)
 	read.EXPECT().Close()
 	gomock.InOrder(
-		mockUploader.EXPECT().LocalUploader().Return(mockUploader),
-		mockUploader.EXPECT().Stat(srcPath).Return(info, nil),
 		mockUploader.EXPECT().Type().Return(schematype.S3),
+		mockUploader.EXPECT().Stat(srcPath).Return(info, nil),
 		mockUploader.EXPECT().Read(srcPath).Return(read, nil),
+		mockUploader.EXPECT().LocalUploader().Return(mockUploader),
 		mockUploader.EXPECT().Exists(srcPath).Return(false),
 		mockUploader.EXPECT().Put(srcPath, read).Return(nil, errors.New("put boom")),
 	)
-	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath}, nil)
+	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath, UploadType: schematype.S3}, nil)
 
 	_, err := kr.CopyFileToPod(context.TODO(), &biz.CopyFileToPodInput{FileId: 1})
 	assert.ErrorContains(t, err, "put boom")
@@ -2531,21 +2545,20 @@ func TestK8sRepo_CopyToPod_NonLocal(t *testing.T) {
 	put := uploader.NewMockFileInfo(m)
 	put.EXPECT().Path().Return(localPath).AnyTimes()
 
-	// copyToPod 顺序：LocalUploader → Stat → Size → Type != Local → Read →
-	// Exists→Delete(旧) → Put → localPath=put.Path() → defer Delete(新) →
-	// 归档 → executor。
+	// copyToPod 顺序：Type(确认 S3 后端) → Stat → Read → LocalUploader(取本地镜像) →
+	// Exists→Delete(旧) → Put → localPath=put.Path() → defer Delete(新) → 归档 → executor。
 	gomock.InOrder(
-		mockUploader.EXPECT().LocalUploader().Return(mockUploader),
-		mockUploader.EXPECT().Stat(srcPath).Return(info, nil),
 		mockUploader.EXPECT().Type().Return(schematype.S3),
+		mockUploader.EXPECT().Stat(srcPath).Return(info, nil),
 		mockUploader.EXPECT().Read(srcPath).Return(read, nil),
+		mockUploader.EXPECT().LocalUploader().Return(mockUploader),
 		mockUploader.EXPECT().Exists(srcPath).Return(true),
 		mockUploader.EXPECT().Delete(srcPath).Return(nil),
 		mockUploader.EXPECT().Put(srcPath, read).Return(put, nil),
 		mockUploader.EXPECT().Delete(localPath).Return(nil),
 	)
 	execDrain(ec)
-	mockFileRepo.EXPECT().GetByID(gomock.Any(), 7).Return(&biz.File{Path: srcPath}, nil)
+	mockFileRepo.EXPECT().GetByID(gomock.Any(), 7).Return(&biz.File{Path: srcPath, UploadType: schematype.S3}, nil)
 	mockFileRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&biz.File{}, nil)
 
 	got, err := kr.CopyFileToPod(context.TODO(), &biz.CopyFileToPodInput{
@@ -2585,16 +2598,16 @@ func TestK8sRepo_CopyToPod_S3RelativeKey(t *testing.T) {
 	put.EXPECT().Path().Return(localPath).AnyTimes()
 
 	gomock.InOrder(
-		mockUploader.EXPECT().LocalUploader().Return(mockUploader),
-		mockUploader.EXPECT().Stat(s3Key).Return(info, nil),
 		mockUploader.EXPECT().Type().Return(schematype.S3),
+		mockUploader.EXPECT().Stat(s3Key).Return(info, nil),
 		mockUploader.EXPECT().Read(s3Key).Return(read, nil),
+		mockUploader.EXPECT().LocalUploader().Return(mockUploader),
 		mockUploader.EXPECT().Exists(s3Key).Return(false),
 		mockUploader.EXPECT().Put(s3Key, read).Return(put, nil),
 		mockUploader.EXPECT().Delete(localPath).Return(nil),
 	)
 	execDrain(ec)
-	mockFileRepo.EXPECT().GetByID(gomock.Any(), 7).Return(&biz.File{Path: s3Key}, nil)
+	mockFileRepo.EXPECT().GetByID(gomock.Any(), 7).Return(&biz.File{Path: s3Key, UploadType: schematype.S3}, nil)
 	mockFileRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&biz.File{}, nil)
 
 	_, err := kr.CopyFileToPod(context.TODO(), &biz.CopyFileToPodInput{
@@ -2615,7 +2628,7 @@ func TestK8sRepo_CopyToPod_StatError(t *testing.T) {
 	srcPath := "/some/file"
 	mockUploader.EXPECT().LocalUploader().Return(mockUploader)
 	mockUploader.EXPECT().Stat(srcPath).Return(nil, errors.New("stat boom"))
-	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath}, nil)
+	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath, UploadType: schematype.Local}, nil)
 
 	_, err := kr.CopyFileToPod(context.TODO(), &biz.CopyFileToPodInput{FileId: 1})
 	assert.ErrorContains(t, err, "stat boom")
@@ -2636,8 +2649,7 @@ func TestK8sRepo_CopyToPod_ArchiveError(t *testing.T) {
 	srcPath := "/some/file"
 	mockUploader.EXPECT().LocalUploader().Return(mockUploader)
 	mockUploader.EXPECT().Stat(srcPath).Return(info, nil)
-	mockUploader.EXPECT().Type().Return(schematype.Local)
-	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath}, nil)
+	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath, UploadType: schematype.Local}, nil)
 
 	_, err := kr.CopyFileToPod(context.TODO(), &biz.CopyFileToPodInput{FileId: 1})
 	assert.ErrorContains(t, err, "archive boom")
@@ -2658,8 +2670,7 @@ func TestK8sRepo_CopyToPod_OpenError(t *testing.T) {
 	srcPath := "/some/file"
 	mockUploader.EXPECT().LocalUploader().Return(mockUploader)
 	mockUploader.EXPECT().Stat(srcPath).Return(info, nil)
-	mockUploader.EXPECT().Type().Return(schematype.Local)
-	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath}, nil)
+	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath, UploadType: schematype.Local}, nil)
 
 	_, err := kr.CopyFileToPod(context.TODO(), &biz.CopyFileToPodInput{FileId: 1})
 	assert.ErrorContains(t, err, "open boom")
@@ -2682,9 +2693,8 @@ func TestK8sRepo_CopyToPod_IOCopyError(t *testing.T) {
 	srcPath := "/some/file"
 	mockUploader.EXPECT().LocalUploader().Return(mockUploader)
 	mockUploader.EXPECT().Stat(srcPath).Return(info, nil)
-	mockUploader.EXPECT().Type().Return(schematype.Local)
 	execDrain(ec)
-	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath}, nil)
+	mockFileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{Path: srcPath, UploadType: schematype.Local}, nil)
 	mockFileRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&biz.File{}, nil)
 
 	got, err := kr.CopyFileToPod(context.TODO(), &biz.CopyFileToPodInput{FileId: 1})
@@ -2708,11 +2718,10 @@ func TestK8sRepo_CopyFileToPod_UpdateError(t *testing.T) {
 	dir := t.TempDir()
 	srcPath := filepath.Join(dir, "a.txt")
 	require.NoError(t, os.WriteFile(srcPath, []byte("hi"), 0o644))
-	mockUploader.EXPECT().LocalUploader().Return(uploader.NewMockUploader(m))
+	mockUploader.EXPECT().LocalUploader().Return(mockUploader)
 	mockUploader.EXPECT().Stat(srcPath).Return(info, nil)
-	mockUploader.EXPECT().Type().Return(schematype.Local)
 	execDrain(ec)
-	mockFileRepo.EXPECT().GetByID(gomock.Any(), 7).Return(&biz.File{Path: srcPath}, nil)
+	mockFileRepo.EXPECT().GetByID(gomock.Any(), 7).Return(&biz.File{Path: srcPath, UploadType: schematype.Local}, nil)
 	mockFileRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, errors.New("update boom"))
 
 	_, err := kr.CopyFileToPod(context.TODO(), &biz.CopyFileToPodInput{

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"unicode/utf8"
 
@@ -159,7 +160,9 @@ func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToP
 
 	return &container.CopyToPodResponse{
 		PodFilePath: file.ContainerPath,
-		FileName:    file.Path,
+		// file.Path 是存储路径：S3 下为相对对象键（mars/users/...），本地下为绝对路径，
+		// 都不是文件名。file_name 字段语义是文件名，故必须取基名，否则会把整条存储路径回吐给客户端。
+		FileName: filepath.Base(file.Path),
 	}, nil
 }
 
@@ -247,7 +250,8 @@ func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPo
 		Pod:         file.Pod,
 		Namespace:   file.Namespace,
 		Container:   file.Container,
-		Filename:    res.Path,
+		// 同 CopyToPod：res.Path 是存储路径（S3 对象键/本地绝对路径），filename 需取基名。
+		Filename: filepath.Base(res.Path),
 	})
 }
 

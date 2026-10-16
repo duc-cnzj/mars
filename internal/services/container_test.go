@@ -288,14 +288,22 @@ func TestContainerSvc_CopyToPod_Success(t *testing.T) {
 		Namespace: "a",
 		Pod:       "b",
 		Container: "c",
-	}).Return(&biz.File{ID: 11}, nil)
-	_, err := svc.CopyToPod(newAdminUserCtx(), &container.CopyToPodRequest{
+	}).Return(&biz.File{
+		ID:            11,
+		Path:          "mars/users/duc/2026-10-16/10-12-32-ka3L/ducc.xlsx",
+		ContainerPath: "/tmp/ducc.xlsx",
+	}, nil)
+	resp, err := svc.CopyToPod(newAdminUserCtx(), &container.CopyToPodRequest{
 		FileId:    1,
 		Namespace: "a",
 		Pod:       "b",
 		Container: "c",
 	})
 	assert.Nil(t, err)
+	// file.Path 是存储路径（S3 相对对象键/本地绝对路径），file_name 必须只回吐基名，
+	// 否则 S3 场景会把整条对象键暴露给客户端（e12ebb3f 同族缺陷）。
+	assert.Equal(t, "ducc.xlsx", resp.FileName)
+	assert.Equal(t, "/tmp/ducc.xlsx", resp.PodFilePath)
 }
 func TestContainerSvc_CopyToPod_Error(t *testing.T) {
 	svc, mocks := newContainerSvcWithMocks(t)
@@ -529,6 +537,8 @@ type streamCopyToPodServer struct {
 	err  error
 	idx  int
 	recv []*container.StreamCopyToPodRequest
+	// sent 记录 SendAndClose 下发的终帧，供断言响应字段。
+	sent *container.StreamCopyToPodResponse
 }
 
 func (l *streamCopyToPodServer) Send(response *container.StreamCopyToPodResponse) error {
@@ -536,6 +546,7 @@ func (l *streamCopyToPodServer) Send(response *container.StreamCopyToPodResponse
 }
 
 func (l *streamCopyToPodServer) SendAndClose(response *container.StreamCopyToPodResponse) error {
+	l.sent = response
 	return nil
 }
 
@@ -619,8 +630,11 @@ func TestContainerSvc_StreamCopyToPod_Success(t *testing.T) {
 		Namespace: "a",
 		Pod:       "b",
 		Container: "c",
-	}).Return(&biz.File{}, nil)
-	err := svc.StreamCopyToPod(&streamCopyToPodServer{recv: []*container.StreamCopyToPodRequest{
+	}).Return(&biz.File{
+		Path:          "mars/grpc_upload/duc/2026-10-16/10-12-32-ka3L/a.txt",
+		ContainerPath: "/tmp/a.txt",
+	}, nil)
+	server := &streamCopyToPodServer{recv: []*container.StreamCopyToPodRequest{
 		{
 			Namespace: "a",
 			Pod:       "b",
@@ -628,8 +642,12 @@ func TestContainerSvc_StreamCopyToPod_Success(t *testing.T) {
 			FileName:  "a.txt",
 			Data:      []byte("data"),
 		},
-	}})
+	}}
+	err := svc.StreamCopyToPod(server)
 	assert.Nil(t, err)
+	// 同 CopyToPod：filename 取存储路径的基名，而非整条 S3 对象键。
+	assert.Equal(t, "a.txt", server.sent.GetFilename())
+	assert.Equal(t, "/tmp/a.txt", server.sent.GetPodFilePath())
 }
 
 type execOnceServer struct {

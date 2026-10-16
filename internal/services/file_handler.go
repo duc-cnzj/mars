@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -116,7 +117,7 @@ func (f *fileHandler) httpDownload(w http.ResponseWriter, r *http.Request, pathP
 		),
 		fil.ID,
 	)
-	f.handleDownload(w, fil)
+	f.handleDownload(ctx, w, fil)
 }
 
 // copyFromPod 处理 POST /api/copy_from_pod：解析 body 后先做命名空间级访问控制，
@@ -175,7 +176,7 @@ func (f *fileHandler) copyFromPod(w http.ResponseWriter, r *http.Request, pathPa
 		fmt.Sprintf("从 Pod '%s' 复制文件 '%s' 到本地", input.Pod, input.FilePath),
 		fromPod.ID,
 	)
-	f.handleDownload(w, fromPod)
+	f.handleDownload(ctx, w, fromPod)
 }
 
 // toHttpError 把 gRPC status 错误映射为 HTTP 状态码写回：有 code 的走
@@ -199,11 +200,15 @@ type copyFromPodRequest struct {
 
 // handleDownload 把文件对象从存储流回 HTTP 响应：设置下载相关响应头后按 2MB 缓冲
 // io.Copy 传输。文件名用 filepath.Base 防目录穿越，非 ASCII 走 RFC 2231 编码。
-func (f *fileHandler) handleDownload(w http.ResponseWriter, fil *biz.File) {
+// 读取经 fileBiz.ShowRecords 按记录自身的 UploadType 选上传器（记录路径语义随类型而变），
+// 不能直接用主上传器（f.uploader）——否则 S3 相对对象键会被当本地路径、本地绝对路径会被当对象键。
+func (f *fileHandler) handleDownload(ctx context.Context, w http.ResponseWriter, fil *biz.File) {
 	fileName := filepath.Base(fil.Path)
-	read, err := f.uploader.Read(fil.Path)
+	read, err := f.fileBiz.ShowRecords(ctx, fil.ID)
 	if err != nil {
-		if os.IsNotExist(err) {
+		// ShowRecords 经 errs.Wrap 包裹后 os.IsNotExist 不再穿透 Unwrap 链，改用 errors.Is；
+		// 本地文件缺失（*fs.PathError）与 S3 对象缺失（s3Uploader.Read 返回 os.ErrNotExist）均命中 404。
+		if errors.Is(err, os.ErrNotExist) {
 			http.Error(w, "file not found", http.StatusNotFound)
 			return
 		}

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/biz/schematype"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/file"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/schema/mixin"
@@ -146,6 +147,29 @@ func (repo *fileRepo) MaxUploadSize() uint64 {
 	return repo.maxUploadSize
 }
 
+// pickUploader 按文件记录的上传类型选出负责其物理存储的上传器。
+// 记录里的 path 语义随上传类型而变（本地=绝对文件路径，S3=相对对象键），
+// 因此凡是用「库中记录」的 path 去读写/删除物理文件，都必须先按记录的 UploadType
+// 选上传器，不能想当然用主上传器（主上传器由 cfg.S3Enabled 决定，可能与记录类型不一致）：
+//   - Local 记录走 main.LocalUploader()（S3 上传器会返回其本地镜像）；
+//   - S3 记录要求主上传器就是 S3，否则该记录在当前部署下无存储后端可用，报错；
+//   - 其余/空类型视为记录损坏，报错。
+//
+// 选不到上传器属于服务端配置或数据不一致（非客户端入参问题），统一按 Internal(500) 返回。
+func pickUploader(main uploader.Uploader, upType schematype.UploadType) (uploader.Uploader, error) {
+	switch upType {
+	case schematype.Local:
+		return main.LocalUploader(), nil
+	case schematype.S3:
+		if main.Type() != schematype.S3 {
+			return nil, errs.Wrap(fmt.Errorf("S3 存储后端未启用，无法访问上传类型为 %q 的文件", upType), "pick uploader")
+		}
+		return main, nil
+	default:
+		return nil, errs.Wrap(fmt.Errorf("未知的上传类型: %q", upType), "pick uploader")
+	}
+}
+
 // Delete 删除文件记录并连带删除物理文件。
 func (repo *fileRepo) Delete(ctx context.Context, id int) (err error) {
 	ctx, span := tracer.Start(ctx, "fileRepo/Delete")
@@ -155,10 +179,16 @@ func (repo *fileRepo) Delete(ctx context.Context, id int) (err error) {
 	if err != nil {
 		return errs.Wrap(err, "delete file")
 	}
+	// 删物理文件前先按记录的上传类型选上传器；选不到（如 S3 记录但后端未启用）
+	// 就直接报错返回，不删记录行，避免"行已删、物理文件还在"的半删状态。
+	up, err := pickUploader(repo.uploader, f.UploadType)
+	if err != nil {
+		return err
+	}
 	if err = db.File.DeleteOneID(id).Exec(ctx); err != nil {
 		return errs.Wrap(err, "delete file")
 	}
-	return errs.Wrap(repo.uploader.Delete(f.Path), "delete file upload")
+	return errs.Wrap(up.Delete(f.Path), "delete file upload")
 }
 
 // DeleteRecord 仅删除文件记录行，不触碰物理文件。cron CleanUploadFiles 对账时
@@ -192,12 +222,9 @@ func (repo *fileRepo) ShowRecords(ctx context.Context, id int) (read io.ReadClos
 	if err != nil {
 		return nil, errs.Wrap(err, "show file records")
 	}
-	var up uploader.Uploader
-	switch f.UploadType {
-	case repo.uploader.LocalUploader().Type():
-		up = repo.uploader.LocalUploader()
-	case repo.uploader.Type():
-		up = repo.uploader
+	up, err := pickUploader(repo.uploader, f.UploadType)
+	if err != nil {
+		return nil, err
 	}
 	read, err = up.Read(f.Path)
 	return read, errs.Wrap(err, "read file records")

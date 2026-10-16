@@ -19,6 +19,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/biz/schematype"
 	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/uploader"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/stretchr/testify/assert"
@@ -226,13 +227,13 @@ binary data
 
 func Test_fileHandler_handleDownload(t *testing.T) {
 	h, mocks := newFileHandlerWithMocks(t)
-	mockUploader := mocks.uploader
+	fileRepo := mocks.fileRepo
 
 	rr := httptest.NewRecorder()
 
-	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil)
+	fileRepo.EXPECT().ShowRecords(gomock.Any(), 1).Return(io.NopCloser(strings.NewReader("aaa")), nil)
 
-	h.handleDownload(rr, &biz.File{
+	h.handleDownload(context.TODO(), rr, &biz.File{
 		ID:   1,
 		Path: "/aaa/b.txt",
 	})
@@ -257,11 +258,11 @@ func Test_fileHandler_handleDownload_ContentDisposition(t *testing.T) {
 		{path: "/aaa/中文.txt", want: `attachment; filename*=utf-8''%E4%B8%AD%E6%96%87.txt`},
 	} {
 		h, mocks := newFileHandlerWithMocks(t)
-		mockUploader := mocks.uploader
-		mockUploader.EXPECT().Read(tt.path).Return(io.NopCloser(strings.NewReader("data")), nil)
+		fileRepo := mocks.fileRepo
+		fileRepo.EXPECT().ShowRecords(gomock.Any(), gomock.Any()).Return(io.NopCloser(strings.NewReader("data")), nil)
 
 		rr := httptest.NewRecorder()
-		h.handleDownload(rr, &biz.File{Path: tt.path})
+		h.handleDownload(context.TODO(), rr, &biz.File{Path: tt.path})
 
 		assert.Equal(t, tt.want, rr.Header().Get("Content-Disposition"))
 	}
@@ -316,7 +317,7 @@ func Test_fileHandler_copyFromPod_Success(t *testing.T) {
 	k8sRepo := mocks.k8sRepo
 	eventRepo := mocks.eventRepo
 	nsRepo := mocks.nsRepo
-	mockUploader := mocks.uploader
+	fileRepo := mocks.fileRepo
 	w := httptest.NewRecorder()
 	marshal, _ := json.Marshal(&copyFromPodRequest{
 		Namespace: "a",
@@ -328,7 +329,7 @@ func Test_fileHandler_copyFromPod_Success(t *testing.T) {
 	r := (&http.Request{
 		Body: io.NopCloser(bytes.NewReader(marshal)),
 	}).WithContext(biz.SetUser(context.Background(), &biz.UserInfo{Name: "duc"}))
-	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil)
+	fileRepo.EXPECT().ShowRecords(gomock.Any(), 1).Return(io.NopCloser(strings.NewReader("aaa")), nil)
 
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Name: "a"}, nil)
 	k8sRepo.EXPECT().CopyFromPod(gomock.Any(), &biz.CopyFromPodInput{
@@ -351,7 +352,7 @@ func Test_fileHandler_copyFromPod_DefaultContainer(t *testing.T) {
 	k8sRepo := mocks.k8sRepo
 	eventRepo := mocks.eventRepo
 	nsRepo := mocks.nsRepo
-	mockUploader := mocks.uploader
+	fileRepo := mocks.fileRepo
 	w := httptest.NewRecorder()
 	// Container 故意留空：应解析为默认容器 "c" 后再拷文件。
 	marshal, _ := json.Marshal(&copyFromPodRequest{
@@ -363,7 +364,7 @@ func Test_fileHandler_copyFromPod_DefaultContainer(t *testing.T) {
 	r := (&http.Request{
 		Body: io.NopCloser(bytes.NewReader(marshal)),
 	}).WithContext(biz.SetUser(context.Background(), &biz.UserInfo{Name: "duc"}))
-	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil)
+	fileRepo.EXPECT().ShowRecords(gomock.Any(), 1).Return(io.NopCloser(strings.NewReader("aaa")), nil)
 
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Name: "a"}, nil)
 	k8sRepo.EXPECT().FindDefaultContainer(gomock.Any(), "a", "b").Return("c", nil)
@@ -408,14 +409,14 @@ func Test_fileHandler_copyFromPod_AccessDenied(t *testing.T) {
 	k8sRepo := mocks.k8sRepo
 	nsRepo := mocks.nsRepo
 	eventRepo := mocks.eventRepo
-	mockUploader := mocks.uploader
+	fileRepo := mocks.fileRepo
 
 	// 当前用户 "other" 非命名空间成员，对私有空间无访问权限 → 403
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true, CreatorEmail: "user@mars.com"}, nil)
 	// 若访问控制被删除，请求会继续走到 CopyFromPod + 下载路径 → 200，而非 403
 	k8sRepo.EXPECT().CopyFromPod(gomock.Any(), gomock.Any()).Return(&biz.File{ID: 1, Path: "/aaa/b.txt"}, nil).AnyTimes()
 	eventRepo.EXPECT().FileAuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil).AnyTimes()
+	fileRepo.EXPECT().ShowRecords(gomock.Any(), gomock.Any()).Return(io.NopCloser(strings.NewReader("aaa")), nil).AnyTimes()
 
 	marshal, _ := json.Marshal(&copyFromPodRequest{Namespace: "a", Pod: "b", Container: "c", FilePath: "d"})
 	w := httptest.NewRecorder()
@@ -453,10 +454,9 @@ func Test_fileHandler_httpDownload_Ok(t *testing.T) {
 	h, mocks := newFileHandlerWithMocks(t)
 	eventRepo := mocks.eventRepo
 	fileRepo := mocks.fileRepo
-	mockUploader := mocks.uploader
 	fileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{ID: 1, Path: "/aaa/b.txt", Username: "duc"}, nil)
 	eventRepo.EXPECT().FileAuditLog(types.EventActionType_Download, "duc", gomock.Any(), gomock.Any(), 1)
-	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil)
+	fileRepo.EXPECT().ShowRecords(gomock.Any(), 1).Return(io.NopCloser(strings.NewReader("aaa")), nil)
 
 	w := httptest.NewRecorder()
 	r := (&http.Request{}).WithContext(biz.SetUser(context.Background(), &biz.UserInfo{Name: "duc"}))
@@ -484,15 +484,13 @@ func Test_fileHandler_httpDownload_AccessDenied(t *testing.T) {
 	h, mocks := newFileHandlerWithMocks(t)
 	fileRepo := mocks.fileRepo
 	eventRepo := mocks.eventRepo
-	mockUploader := mocks.uploader
 
 	// 文件属于其他人，当前用户非 admin → 403
 	fileRepo.EXPECT().GetByID(gomock.Any(), 1).Return(&biz.File{ID: 1, Path: "/aaa/b.txt", Username: "someone-else"}, nil)
 	h.eventBiz = biz.NewEventBiz(eventRepo)
-	h.uploader = mockUploader
 	// 若所有权检查被删除，会走到下载路径 → 200，而非 403
 	eventRepo.EXPECT().FileAuditLog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	mockUploader.EXPECT().Read("/aaa/b.txt").Return(io.NopCloser(strings.NewReader("aaa")), nil).AnyTimes()
+	fileRepo.EXPECT().ShowRecords(gomock.Any(), 1).Return(io.NopCloser(strings.NewReader("aaa")), nil).AnyTimes()
 
 	w := httptest.NewRecorder()
 	r := (&http.Request{}).WithContext(biz.SetUser(context.Background(), &biz.UserInfo{Name: "duc"}))
@@ -518,23 +516,26 @@ func Test_fileHandler_copyFromPod_K8sError(t *testing.T) {
 
 func Test_fileHandler_handleDownload_NotFound(t *testing.T) {
 	h, mocks := newFileHandlerWithMocks(t)
-	up := mocks.uploader
+	fileRepo := mocks.fileRepo
 
-	up.EXPECT().Read("/missing.txt").Return(nil, &os.PathError{Op: "open", Path: "/missing.txt", Err: os.ErrNotExist})
+	// 回归：ShowRecords 经 errs.Wrap 包裹后 os.IsNotExist 不再穿透 wrap 链，
+	// handleDownload 必须用 errors.Is 才能识别出"文件不存在"→ 404。
+	fileRepo.EXPECT().ShowRecords(gomock.Any(), 1).
+		Return(nil, errs.Wrap(&os.PathError{Op: "open", Path: "/missing.txt", Err: os.ErrNotExist}, "read file records"))
 
 	w := httptest.NewRecorder()
-	h.handleDownload(w, &biz.File{Path: "/missing.txt"})
+	h.handleDownload(context.TODO(), w, &biz.File{ID: 1, Path: "/missing.txt"})
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func Test_fileHandler_handleDownload_ReadError(t *testing.T) {
 	h, mocks := newFileHandlerWithMocks(t)
-	up := mocks.uploader
+	fileRepo := mocks.fileRepo
 
-	up.EXPECT().Read("/x.txt").Return(nil, errors.New("boom"))
+	fileRepo.EXPECT().ShowRecords(gomock.Any(), gomock.Any()).Return(nil, errors.New("boom"))
 
 	w := httptest.NewRecorder()
-	h.handleDownload(w, &biz.File{Path: "/x.txt"})
+	h.handleDownload(context.TODO(), w, &biz.File{Path: "/x.txt"})
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
@@ -544,12 +545,12 @@ func (errorReader) Read([]byte) (int, error) { return 0, errors.New("read boom")
 
 func Test_fileHandler_handleDownload_CopyError(t *testing.T) {
 	h, mocks := newFileHandlerWithMocks(t)
-	up := mocks.uploader
+	fileRepo := mocks.fileRepo
 
-	up.EXPECT().Read("/x.txt").Return(io.NopCloser(errorReader{}), nil)
+	fileRepo.EXPECT().ShowRecords(gomock.Any(), gomock.Any()).Return(io.NopCloser(errorReader{}), nil)
 
 	w := httptest.NewRecorder()
-	h.handleDownload(w, &biz.File{Path: "/x.txt"})
+	h.handleDownload(context.TODO(), w, &biz.File{Path: "/x.txt"})
 	// 响应头在 io.Copy 前已 flush，所以状态码保持 200
 	assert.Equal(t, http.StatusOK, w.Code)
 }
