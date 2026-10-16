@@ -678,8 +678,6 @@ func (repo *k8sRepo) copyToPod(ctx context.Context, namespace, pod, container, f
 	}
 
 	baseName := filepath.Base(fpath)
-	path := filepath.Join(filepath.Dir(fpath), baseName+".tar.gz")
-	repo.logger.Debugf("[CopyFileToPod]: %v", path)
 	var localPath = fpath
 	// 如果是非 local 类型的，需要远程下载到 local 进行打包，再上传到容器
 	if uploader.Type() != schematype.Local {
@@ -698,6 +696,11 @@ func (repo *k8sRepo) copyToPod(ctx context.Context, namespace, pod, container, f
 		localPath = put.Path()
 		defer localUploader.Delete(localPath)
 	}
+	// 归档目标必须落在真实本地文件旁：S3 场景下 fpath 是相对对象键（如 "mars/users/..."），
+	// 拿它当本地路径拼 .tar.gz 会让 os.Create 因父目录在本地不存在而报
+	// "open mars/users/...: no such file or directory"。必须以本地路径 localPath 为基准。
+	path := localPath + ".tar.gz"
+	repo.logger.Debugf("[CopyFileToPod]: %v", path)
 	if err := repo.archiver.Archive([]string{localPath}, path); err != nil {
 		return nil, err
 	}

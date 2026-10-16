@@ -2555,6 +2555,54 @@ func TestK8sRepo_CopyToPod_NonLocal(t *testing.T) {
 	assert.NotNil(t, got)
 }
 
+// TestK8sRepo_CopyToPod_S3RelativeKey 覆盖 S3 场景：file.Path 是相对对象键
+// （"mars/users/..."，本地 cwd 下无此目录）。回归"归档目标路径必须落在真实本地
+// 文件旁，而不能拼在相对对象键上"，否则 os.Create 报
+// "open mars/users/...: no such file or directory"（线上实锤）。
+func TestK8sRepo_CopyToPod_S3RelativeKey(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	mockUploader := uploader.NewMockUploader(m)
+	mockFileRepo := NewMockFileRepo(m)
+	kr, _, ec := copyFromPodK8sRepo(t, m, mockUploader, mockFileRepo)
+	kr.archiver = NewDefaultArchiver()
+	kr.maxUploadSize = 1 << 20
+
+	info := uploader.NewMockFileInfo(m)
+	info.EXPECT().Size().Return(uint64(8)).AnyTimes()
+
+	// S3 对象键是相对路径，其父目录在本地 cwd（internal/data）下不存在。
+	s3Key := filepath.Join("mars", "users", "u", "2026-10-16", "10-12-32-ka3LFvpGPDhHNiixJNKM", "file.tar.gz")
+
+	// 本地镜像路径：真实存在的绝对路径，归档源须从这里读。
+	dir := t.TempDir()
+	localPath := filepath.Join(dir, "file.tar.gz")
+	require.NoError(t, os.WriteFile(localPath, []byte("hi"), 0o644))
+
+	read := uploader.NewMockFile(m)
+	read.EXPECT().Close()
+	put := uploader.NewMockFileInfo(m)
+	put.EXPECT().Path().Return(localPath).AnyTimes()
+
+	gomock.InOrder(
+		mockUploader.EXPECT().LocalUploader().Return(mockUploader),
+		mockUploader.EXPECT().Stat(s3Key).Return(info, nil),
+		mockUploader.EXPECT().Type().Return(schematype.S3),
+		mockUploader.EXPECT().Read(s3Key).Return(read, nil),
+		mockUploader.EXPECT().Exists(s3Key).Return(false),
+		mockUploader.EXPECT().Put(s3Key, read).Return(put, nil),
+		mockUploader.EXPECT().Delete(localPath).Return(nil),
+	)
+	execDrain(ec)
+	mockFileRepo.EXPECT().GetByID(gomock.Any(), 7).Return(&biz.File{Path: s3Key}, nil)
+	mockFileRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&biz.File{}, nil)
+
+	_, err := kr.CopyFileToPod(context.TODO(), &biz.CopyFileToPodInput{
+		FileId: 7, Namespace: "ns", Pod: "p", Container: "c",
+	})
+	require.NoError(t, err)
+}
+
 // TestK8sRepo_CopyToPod_StatError 覆盖 uploader.Stat 失败的错误分支。
 func TestK8sRepo_CopyToPod_StatError(t *testing.T) {
 	m := gomock.NewController(t)
