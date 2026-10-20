@@ -731,12 +731,42 @@ function ShellTerminal({
       fontFamily: 'var(--font-mono-family)', // 跟随主题 mono 栈，与其余代码/日志一致
       cursorBlink: true,
       rows: 25,
+      // 应用开启鼠标捕获后（如 opencode），拖选由应用处理；macOS 需显式允许
+      // Option+拖 强制走终端原生选区，Windows/Linux 默认 Shift+拖 即可。
+      macOptionClickForcesSelection: true,
     })
     const fit = new FitAddon()
     term.loadAddon(fit)
     term.open(host)
     termRef.current = term
     fitRef.current = fit
+
+    // OSC 52：opencode 等 TUI 捕获鼠标后，选中复制走 ESC ]52;c;<base64> ST。
+    // xterm.js 内核不解析 OSC 52，不注册就会被静默丢弃（表现为 TUI 提示已复制、
+    // 浏览器剪贴板却没变）。与直接拖拽 xterm 选区不同，这里的复制由应用决定范围，
+    // 不会把分屏右侧的信息一起选中。
+    const osc52 = term.parser.registerOscHandler(52, (data) => {
+      const sep = data.indexOf(';')
+      if (sep < 0) return false
+      const target = data.slice(0, sep)
+      if (target !== '' && target !== 'c') return true // 只允许写系统剪贴板
+      const payload = data.slice(sep + 1)
+      if (payload === '?') return true // 拒绝读查询，避免远端进程窃取剪贴板
+      let text: string
+      try {
+        const bin = atob(payload)
+        // atob 得到 Latin-1 字节串，必须按 UTF-8 解码，否则中文/emoji 乱码。
+        text = new TextDecoder('utf-8', { fatal: true }).decode(
+          Uint8Array.from(bin, (c) => c.charCodeAt(0)),
+        )
+      } catch {
+        return true
+      }
+      void copyText(text).then((ok) => {
+        if (!ok) toast.error(t('common.copyFailed'))
+      })
+      return true
+    })
 
     /** 把一段终端输入（字符串）编码成 stdin 帧发给容器。 */
     const sendStdin = (str: string) => {
@@ -837,11 +867,12 @@ function ShellTerminal({
         }).finish(),
       )
       unsubscribe()
+      osc52.dispose()
       termRef.current = null
       fitRef.current = null
       term.dispose()
     }
-  }, [sessionId, namespace, pod, container, send, subscribe, toast])
+  }, [sessionId, namespace, pod, container, send, subscribe, toast, t])
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-line bg-black/85">
