@@ -362,15 +362,19 @@ type FavoriteSortNamespaceInput struct {
 
 // Project 是项目领域模型。
 type Project struct {
-	ID               int
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	DeletedAt        *time.Time
-	Name             string
-	GitProjectID     int
-	GitBranch        string
-	GitCommit        string
-	Config           string
+	ID           int
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    *time.Time
+	Name         string
+	GitProjectID int
+	GitBranch    string
+	GitCommit    string
+	Config       string
+	// Creator 是项目创建者邮箱，创建后不再变更；UpdatedBy 是最近一次操作人。
+	// AI Agent 沙箱的部署令牌必须以 Creator 为准（见 deploy.injectUserToken），
+	// 不能用 UpdatedBy——管理员代为更新时 UpdatedBy 会变成管理员。
+	Creator          string
 	UpdatedBy        string
 	OverrideValues   string
 	DockerImage      []string
@@ -522,6 +526,8 @@ type Repo struct {
 	NeedGitRepo    bool
 	MarsConfig     *mars.Config `json:"mars_config"`
 	Description    string
+	// AIAgent 标记该仓库是否为 AI Agent 仓库（全局至多一个）。
+	AIAgent bool
 
 	Projects []*Project
 }
@@ -548,6 +554,8 @@ type ListRepoRequest struct {
 	Enabled        *bool
 	Name           string
 	OrderByIDDesc  *bool
+	// AIAgent 为 nil 时不过滤；非 nil 时只返回 ai_agent 等于该值的仓库。
+	AIAgent *bool
 }
 
 // CreateRepoInput 是创建仓库的输入。
@@ -558,6 +566,8 @@ type CreateRepoInput struct {
 	GitProjectID *int32
 	MarsConfig   *mars.Config
 	Description  string
+	// AIAgent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库（顶替旧配置）。
+	AIAgent bool
 }
 
 // UpdateRepoInput 是更新仓库的输入。
@@ -568,6 +578,10 @@ type UpdateRepoInput struct {
 	GitProjectID *int32
 	MarsConfig   *mars.Config
 	Description  string
+	// AIAgent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库（顶替旧配置）；
+	// 为 false 时清除自身的 AI Agent 标记；nil 表示未指定，保持现状
+	// （旧客户端不传该字段，不能因 proto3 缺省值 false 清掉标记）。
+	AIAgent *bool
 }
 
 // CloneRepoInput 是克隆仓库的输入。
@@ -585,6 +599,8 @@ type ImportRepoItem struct {
 	GitProjectID *int32
 	MarsConfig   *mars.Config
 	Description  string
+	// AIAgent 随导出/导入 round-trip；导入条目中至多一条为 true（见 validateImportItems）。
+	AIAgent bool
 }
 
 // ---------- Git ----------

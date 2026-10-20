@@ -833,11 +833,15 @@ func (x *IsPodExistsResponse) GetExists() bool {
 }
 
 type LogRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Pod           string                 `protobuf:"bytes,2,opt,name=pod,proto3" json:"pod,omitempty"`
-	Container     string                 `protobuf:"bytes,3,opt,name=container,proto3" json:"container,omitempty"`
-	ShowEvents    bool                   `protobuf:"varint,4,opt,name=show_events,json=showEvents,proto3" json:"show_events,omitempty"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Namespace  string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Pod        string                 `protobuf:"bytes,2,opt,name=pod,proto3" json:"pod,omitempty"`
+	Container  string                 `protobuf:"bytes,3,opt,name=container,proto3" json:"container,omitempty"`
+	ShowEvents bool                   `protobuf:"varint,4,opt,name=show_events,json=showEvents,proto3" json:"show_events,omitempty"`
+	// 日志尾部行数（对应 k8s PodLogOptions.TailLines）：0 或缺省表示默认 1000 行。
+	// 作用于一次性拉取（ContainerLog）与非 Running Pod 的流式回退；Running Pod 的实时流
+	// 仍需先回补历史日志，固定 1000 行（实时流另有独立读取路径）。
+	TailLines     int64 `protobuf:"varint,5,opt,name=tail_lines,json=tailLines,proto3" json:"tail_lines,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -898,6 +902,13 @@ func (x *LogRequest) GetShowEvents() bool {
 		return x.ShowEvents
 	}
 	return false
+}
+
+func (x *LogRequest) GetTailLines() int64 {
+	if x != nil {
+		return x.TailLines
+	}
+	return 0
 }
 
 type LogResponse struct {
@@ -1156,14 +1167,16 @@ const file_proto_container_container_proto_rawDesc = "" +
 	"\tnamespace\x18\x01 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\tnamespace\x12\x1d\n" +
 	"\x03pod\x18\x02 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\x03pod\"-\n" +
 	"\x13IsPodExistsResponse\x12\x16\n" +
-	"\x06exists\x18\x01 \x01(\bR\x06exists\"\xa2\x01\n" +
+	"\x06exists\x18\x01 \x01(\bR\x06exists\"\xca\x01\n" +
 	"\n" +
 	"LogRequest\x12)\n" +
 	"\tnamespace\x18\x01 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\tnamespace\x12\x1d\n" +
 	"\x03pod\x18\x02 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\x03pod\x12)\n" +
 	"\tcontainer\x18\x03 \x01(\tB\v\xe2A\x01\x02\xfaB\x04r\x02 \x01R\tcontainer\x12\x1f\n" +
 	"\vshow_events\x18\x04 \x01(\bR\n" +
-	"showEvents\"\x7f\n" +
+	"showEvents\x12&\n" +
+	"\n" +
+	"tail_lines\x18\x05 \x01(\x03B\a\xfaB\x04\"\x02(\x00R\ttailLines\"\x7f\n" +
 	"\vLogResponse\x12\x1c\n" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x19\n" +
 	"\bpod_name\x18\x02 \x01(\tR\apodName\x12%\n" +

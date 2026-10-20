@@ -49,6 +49,8 @@ func TestEndpointSvc_InProject_PermissionDenied(t *testing.T) {
 	nsRepo := mocks.nsRepo
 	projRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
+	// 项目级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 	_, err := svc.InProject(newOtherUserCtx(), &endpoint.InProjectRequest{ProjectId: 1})
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }

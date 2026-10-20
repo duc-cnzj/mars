@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import marsLogo from '@/assets/marslogo.png'
+import { AISparklesIcon } from '@/components/Icons'
 import { ThemeSwitcher } from '@/components/ui/ThemeSwitcher'
 import { useVersion } from '@/hooks/useVersion'
 import { getLocale, setLocale, type Locale } from '@/i18n'
@@ -11,14 +12,17 @@ import { UserMenu } from './UserMenu'
 
 /**
  * 渐变顶栏（还原旧版 AppHeader 布局）：无侧边栏，
- * 左 logo + "Mars" 字标 + 版本号，右 集群状态灯 + 主题/语言切换 + 用户下拉。
+ * 左 logo + "Mars" 字标 + 版本号，右 AI 助手入口 + 集群状态灯 + 主题/语言切换 + 用户下拉。
  */
 export function Topbar({
   theme,
   onSelectTheme,
+  onOpenAI,
 }: {
   theme: ThemeId
   onSelectTheme: (t: ThemeId) => void
+  /** AI 助手入口：唤醒当前用户的 agent 沙箱并打开其项目详情弹窗 */
+  onOpenAI: () => void
 }) {
   const { t } = useTranslation()
   const [locale, setLocaleState] = useState<Locale>(getLocale())
@@ -61,6 +65,16 @@ export function Topbar({
 
       {/* 右：工具 + 用户 + 状态（集群状态在最右）；min-w-0 + 用户名截断，避免小屏溢出 */}
       <div className="flex min-w-0 items-center gap-2">
+        {/* AI 助手入口：点击唤醒当前用户的 agent 沙箱，随后打开与普通项目一致的项目详情弹窗 */}
+        <button
+          onClick={onOpenAI}
+          className="flex size-8 items-center justify-center rounded-lg text-primary-foreground transition-colors hover:bg-primary-foreground/10"
+          title={t('ai.open')}
+          aria-label={t('ai.open')}
+        >
+          {/* 七彩流动星芒：颜色沿星芒循环流动，不随顶栏前景色变灰 */}
+          <AISparklesIcon className="text-[26px]" />
+        </button>
         {/* 语言切换：无边框纯文字按钮，位于主题切换左侧；与主题/用户触发器同高，hover 浅底提示可点 */}
         <button
           onClick={switchLocale}

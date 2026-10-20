@@ -21,6 +21,7 @@ func FromRepo(repo *biz.Repo) *types.RepoModel {
 		MarsConfig:     repo.GetMarsConfig(),
 		NeedGitRepo:    repo.NeedGitRepo,
 		Description:    repo.Description,
+		AiAgent:        repo.AIAgent,
 		CreatedAt:      date.ToHumanizeDateTime(&repo.CreatedAt),
 		UpdatedAt:      date.ToHumanizeDateTime(&repo.UpdatedAt),
 		DeletedAt:      date.ToHumanizeDateTime(repo.DeletedAt),

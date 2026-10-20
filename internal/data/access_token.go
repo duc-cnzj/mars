@@ -148,6 +148,18 @@ func (r *accessTokenRepo) Revoke(ctx context.Context, token string) (err error) 
 	return errs.Wrap(err, "revoke access token")
 }
 
+// RevokeByUsageExcept 撤销同一 usage 下除 keepToken 外的所有令牌（软删除）。
+// 部署临时令牌的轮换语义：新 release 安装成功后调用，旧 token 立即失效。
+func (r *accessTokenRepo) RevokeByUsageExcept(ctx context.Context, usage, keepToken string) (err error) {
+	ctx, span := tracer.Start(ctx, "accessTokenRepo/RevokeByUsageExcept")
+	defer func() { endSpan(span, err) }()
+	db := r.data.DB()
+	_, err = db.AccessToken.Delete().
+		Where(accesstoken.Usage(usage), accesstoken.TokenNEQ(keepToken)).
+		Exec(ctx)
+	return errs.Wrap(err, "revoke access tokens by usage")
+}
+
 // TouchLastUsedAt 回写 token 的最近使用时间。
 func (r *accessTokenRepo) TouchLastUsedAt(ctx context.Context, token string, t time.Time) (err error) {
 	ctx, span := tracer.Start(ctx, "accessTokenRepo/TouchLastUsedAt")

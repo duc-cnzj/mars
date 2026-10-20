@@ -100,6 +100,9 @@ type LogInput struct {
 	Pod        string
 	Container  string
 	ShowEvents bool
+	// TailLines 是日志尾部行数；<=0 时回落到 defaultTailLines（1000），
+	// 防止终止 pod 的大日志全量读入内存。
+	TailLines int64
 }
 
 // LogSource 是容器日志的读取策略：一次性文本还是实时流。
@@ -334,7 +337,7 @@ func sendExecResultFrame(sendFn func(*container.ExecResponse) error, err error) 
 	if errors.As(err, &execFailure) {
 		return true, sendFn(&container.ExecResponse{
 			Error: &container.ExecError{
-				Code:    execOnceExecFailedCode,
+				Code:    ExecOnceExecFailedCode,
 				Message: execFailure.Message,
 			},
 		})
@@ -423,7 +426,7 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 		// 只发一条明确的截断错误帧，让客户端知道输出不完整，而非静默断流。
 		if sendErr := sendMsg(&container.ExecResponse{
 			Error: &container.ExecError{
-				Code:    execOnceTruncatedCode,
+				Code:    ExecOnceTruncatedCode,
 				Message: fmt.Sprintf("命令输出超过 %d 字节上限，已强制终止", maxExecOnceStreamSize),
 			},
 		}); sendErr != nil {
@@ -439,7 +442,7 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 			// 基础设施错误会被误标为"命令超时"（实应为 500）。
 			if sendErr := sendMsg(&container.ExecResponse{
 				Error: &container.ExecError{
-					Code:    execOnceTimeoutCode,
+					Code:    ExecOnceTimeoutCode,
 					Message: fmt.Sprintf("命令执行超过 %d 秒上限，已强制终止", int(execOnceDeadline(input.TimeoutSeconds)/time.Second)),
 				},
 			}); sendErr != nil {
@@ -517,9 +520,13 @@ func (cb *containerBiz) Log(ctx context.Context, input *LogInput) (*LogResult, e
 		return &LogResult{Content: strings.Join(logs, "\n")}, nil
 	}
 
+	tail := input.TailLines
+	if tail <= 0 {
+		tail = defaultTailLines
+	}
 	logs, err := cb.k8sBiz.GetPodLogs(ctx, input.Namespace, input.Pod, &v1.PodLogOptions{
 		Container: input.Container,
-		TailLines: &tailLines,
+		TailLines: &tail,
 	})
 	if err != nil {
 		return nil, err
@@ -551,8 +558,9 @@ func (cb *containerBiz) LogStream(ctx context.Context, input *LogInput) (*LogStr
 	return &LogStreamResult{Source: LogSourceContent, Content: res.Content}, nil
 }
 
-// tailLines 是日志尾部行数，需要指针传给 PodLogOptions.TailLines，故声明为 var 而非 const。
-var tailLines int64 = 1000
+// defaultTailLines 是请求未指定尾部行数时的默认值：只取尾部日志，
+// 防止终止 pod 的全量日志读入内存。调用方经 LogInput.TailLines 覆盖。
+const defaultTailLines int64 = 1000
 
 // sortEvents 按 k8s ResourceVersion 数值升序排序事件。
 type sortEvents []*eventsv1.Event
@@ -620,17 +628,19 @@ const defaultExecOnceTimeout = 60
 // 与 maxExecOnceLogSize 解耦：日志侧与流侧各有上限，互不掩盖。
 const maxExecOnceStreamSize = 5 << 20 // 5MiB
 
-// execOnceTruncatedCode 是 ExecOnce 输出超限被截断时的错误码。真实退出码 0-255，
+// ExecOnceTruncatedCode 是 ExecOnce 输出超限被截断时的错误码。真实退出码 0-255，
 // 此码取其外（-1）以示区别，客户端据此识别"输出被截断"而非正常退出。
-const execOnceTruncatedCode int64 = -1
+// 导出供 MCP 工具侧复用：错误帧码是对外契约，工具侧必须引用同一常量而非复刻字面量，
+// 否则这里改码值会在 MCP 侧静默错映射。
+const ExecOnceTruncatedCode int64 = -1
 
-// execOnceExecFailedCode 是 ExecOnce 容器 exec 启动/执行失败（如命令在容器内不存在）时的
+// ExecOnceExecFailedCode 是 ExecOnce 容器 exec 启动/执行失败（如命令在容器内不存在）时的
 // 错误码。取截断码之外（-2），客户端据此识别"exec 未成功启动"这一容器执行结果。
-const execOnceExecFailedCode int64 = -2
+const ExecOnceExecFailedCode int64 = -2
 
-// execOnceTimeoutCode 是 ExecOnce 命令执行超时被服务端强制终止时的错误码。取截断/启动失败码
+// ExecOnceTimeoutCode 是 ExecOnce 命令执行超时被服务端强制终止时的错误码。取截断/启动失败码
 // 之外（-3），客户端据此区分"命令执行超时"与"exec 未成功启动/输出被截断"。
-const execOnceTimeoutCode int64 = -3
+const ExecOnceTimeoutCode int64 = -3
 
 // execOnceDeadline 依据请求超时（0 用默认 1min）推导 ExecOnce 的执行截止时长。
 func execOnceDeadline(timeoutSeconds int64) time.Duration {

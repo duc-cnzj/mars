@@ -1,6 +1,6 @@
 package biz
 
-//go:generate go tool mockgen -destination ./mock_biz.go -package biz github.com/duc-cnzj/mars/v6/internal/biz AuthBiz,EndpointBiz,AccessTokenBiz,PictureBiz,GitBiz,ProjectBiz,K8sBiz,NamespaceBiz,RepoBiz,SettingsBiz,UserBiz,HibernateBiz,HibernateWindowBiz
+//go:generate go tool mockgen -destination ./mock_biz.go -package biz github.com/duc-cnzj/mars/v6/internal/biz AuthBiz,EndpointBiz,AccessTokenBiz,PictureBiz,GitBiz,ProjectBiz,K8sBiz,NamespaceBiz,RepoBiz,SettingsBiz,UserBiz,HibernateBiz,HibernateWindowBiz,AgentActivity
 
 import "github.com/google/wire"
 

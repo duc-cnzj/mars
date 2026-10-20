@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 )
@@ -48,7 +49,26 @@ type AccessBiz interface {
 	// 命名空间】的可访问性，可访问返回项目，否则 errs.ErrorPermissionDenied。
 	// 安全意义：私有命名空间的项目携带完整部署配置与环境变量，漏掉校验等于
 	// 任意登录用户可枚举 ID 读取敏感数据。
+	// AI Agent 自助例外：mars-agent 空间刻意私有（仅管理员可见），但普通用户需要
+	// 查看/操作自己的沙箱项目，故当前用户邮箱派生的 agent 项目额外放行。
 	RequireProjectAccess(ctx context.Context, id int) (*Project, error)
+	// RequireProjectAccessByName 是「按空间名 + 项目名」的项目访问门卫：先走命名空间
+	// ACL，拒绝时仅放行当前用户自己的 AI 沙箱项目（mars-agent 空间 + 邮箱派生项目名）。
+	// 供按名字寻址的项目级入口（ShowByName / WebApplyByName）使用；命名空间级 API
+	// 仍走 RequireNamespaceAccessByName，自助例外刻意不外溢到空间维度。
+	RequireProjectAccessByName(ctx context.Context, namespace, projectName string) (*Namespace, error)
+	// RequireProjectAccessByNamespaceID 是上述门卫的按 ID 寻址孪生实现，语义完全一致：
+	// 供只有 NamespaceId 的部署编排（deploy.ApplyProject）复用，保证「服务层放行、
+	// 部署层再拒」的双门卫不会漂移。
+	RequireProjectAccessByNamespaceID(ctx context.Context, namespaceID int, projectName string) (*Namespace, error)
+	// RequirePodAccess 是 Pod 级访问门卫：按命名空间名与 Pod 名校验当前用户
+	// 可访问性，可访问返回命名空间，否则 errs.ErrorPermissionDenied。
+	// 放行规则：先按命名空间 ACL（公开空间任意登录用户；私有空间 admin/创建者/成员）；
+	// 再叠加 AI Agent 自助例外——mars-agent 空间内只放行 Pod 名前缀等于当前用户
+	// 派生 Deployment 名的 Pod（即用户自己的沙箱），其他用户的 Pod 一律拒绝。
+	// 供容器日志/终端/文件拷贝/强制删除等以 Pod 为操作对象的敏感方法开头调用；
+	// 命名空间维度的操作（如列出整个空间的事件）不得使用本方法。
+	RequirePodAccess(ctx context.Context, namespace, pod string) (*Namespace, error)
 	// RequireNamespaceOwner 是命名空间所有权门卫：校验当前用户是否为命名空间
 	// owner，仅 owner 放行（admin 例外），否则 errs.ErrorPermissionDenied。
 	// 只允许 owner 执行的变更（转让/改描述/删除/改私有/同步成员）统一走这里。
@@ -126,22 +146,156 @@ func (a *accessBiz) RequireNamespaceAccessByID(ctx context.Context, id int) (*Na
 
 // RequireProjectAccess 是项目访问门卫：加载项目并校验当前用户对【项目所属
 // 命名空间】的可访问性，可访问返回项目，否则 errs.ErrorPermissionDenied。
-// 实现约定：项目加载失败返回原始错误；命名空间级校验委托 RequireNamespaceAccessByID。
+// 实现约定：项目加载失败返回原始错误；命名空间级校验委托 RequireNamespaceAccessByID；
+// 命名空间拒绝后再判定 AI Agent 自助例外（当前用户自己的 agent 项目）。
 // 错误日志由消费方（services 层）统一打印。
 func (a *accessBiz) RequireProjectAccess(ctx context.Context, id int) (*Project, error) {
 	proj, err := a.projBiz.Show(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	if _, nserr := a.RequireNamespaceAccessByID(ctx, proj.NamespaceID); nserr != nil {
-		// 仅当底层确实是权限拒绝时才追加项目上下文；命名空间加载失败（DB/网络）
-		// 等不确定错误原样上抛，不得被误分类为 PermissionDenied。
-		if errors.Is(nserr, errs.ErrorPermissionDenied) {
-			return nil, errs.WrapPermissionDenied(nserr, fmt.Sprintf("访问项目 #%d", id))
-		}
+	_, nserr := a.RequireNamespaceAccessByID(ctx, proj.NamespaceID)
+	if nserr == nil {
+		return proj, nil
+	}
+	// 仅当底层确实是权限拒绝时才追加项目上下文；命名空间加载失败（DB/网络）
+	// 等不确定错误原样上抛，不得被误分类为 PermissionDenied。
+	if !errors.Is(nserr, errs.ErrorPermissionDenied) {
 		return nil, nserr
 	}
+	own, ownErr := a.isOwnAgentProject(ctx, proj)
+	if ownErr != nil {
+		return nil, ownErr
+	}
+	if !own {
+		return nil, errs.WrapPermissionDenied(nserr, fmt.Sprintf("访问项目 #%d", id))
+	}
 	return proj, nil
+}
+
+// RequireProjectAccessByName 是「按空间名 + 项目名」的项目访问门卫：按空间名加载后
+// 复用项目级判定。命名空间加载失败原样上抛，判定失败返回 errs.ErrorPermissionDenied。
+// 错误日志由消费方（services 层）统一打印。
+func (a *accessBiz) RequireProjectAccessByName(ctx context.Context, namespace, projectName string) (*Namespace, error) {
+	ns, err := a.nsRepo.FindByName(ctx, namespace)
+	if err != nil {
+		return nil, err
+	}
+	return a.requireProjectInNamespace(ctx, ns, projectName,
+		fmt.Sprintf("访问命名空间 %s 的项目 %s", namespace, projectName))
+}
+
+// RequireProjectAccessByNamespaceID 是 RequireProjectAccessByName 的按 ID 寻址孪生
+// 实现：命名空间按 ID 加载，判定逻辑完全共享。供部署编排（只有 NamespaceId）使用。
+func (a *accessBiz) RequireProjectAccessByNamespaceID(ctx context.Context, namespaceID int, projectName string) (*Namespace, error) {
+	ns, err := a.nsRepo.Show(ctx, namespaceID)
+	if err != nil {
+		return nil, err
+	}
+	return a.requireProjectInNamespace(ctx, ns, projectName,
+		fmt.Sprintf("访问命名空间 #%d 的项目 %s", namespaceID, projectName))
+}
+
+// requireProjectInNamespace 是「按名字寻址的项目门卫」的共享判定：空间 ACL 通过即
+// 放行；拒绝时按项目名反查，仅放行当前用户自己的 AI 沙箱项目。
+// 项目查无时统一回 PermissionDenied——私有空间内不得通过 403/404 的差异暴露项目
+// 是否存在；项目查询的底层故障（DB/网络）原样上抛，不得伪装成 403。
+// 空间为 nil 或项目名为空时无法判定归属，安全默认拒绝且不发起项目查询。
+func (a *accessBiz) requireProjectInNamespace(ctx context.Context, ns *Namespace, projectName, denyMsg string) (*Namespace, error) {
+	if a.CanAccessNamespace(ctx, ns) {
+		return ns, nil
+	}
+	if ns == nil || projectName == "" {
+		return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, denyMsg)
+	}
+	proj, err := a.projBiz.FindByName(ctx, projectName, ns.ID)
+	if err != nil {
+		if errs.IsNotFound(err) {
+			return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, denyMsg)
+		}
+		return nil, err
+	}
+	own, err := a.isOwnAgentProject(ctx, proj)
+	if err != nil {
+		return nil, err
+	}
+	if !own {
+		return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, denyMsg)
+	}
+	return ns, nil
+}
+
+// RequirePodAccess 是 Pod 级访问门卫：按命名空间名加载命名空间后，先走通用
+// 命名空间 ACL，拒绝时再判定 AI Agent 自助例外（自己的沙箱 Pod）。
+// 实现约定：命名空间加载失败返回原始错误；无权访问返回 errs.ErrorPermissionDenied。
+// 错误日志由消费方（services 层）统一打印。
+func (a *accessBiz) RequirePodAccess(ctx context.Context, namespace, pod string) (*Namespace, error) {
+	ns, err := a.nsRepo.FindByName(ctx, namespace)
+	if err != nil {
+		return nil, err
+	}
+	if a.CanAccessNamespace(ctx, ns) {
+		return ns, nil
+	}
+	own, ownErr := a.isOwnAgentPod(ctx, ns, pod)
+	if ownErr != nil {
+		return nil, ownErr
+	}
+	if !own {
+		return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied,
+			fmt.Sprintf("访问命名空间 %s 的 Pod %s", namespace, pod))
+	}
+	return ns, nil
+}
+
+// isOwnAgentProject 判定项目是否属于当前用户的自助 AI 沙箱：项目位于
+// mars-agent 专用空间，且项目名等于当前用户邮箱派生的 AgentProjectName。
+// 邮箱为空时恒为 false——空邮箱无法唯一标识用户，放行会共享同一个沙箱项目。
+func (a *accessBiz) isOwnAgentProject(ctx context.Context, proj *Project) (bool, error) {
+	email := MustGetUser(ctx).Email
+	if proj == nil || email == "" {
+		return false, nil
+	}
+	inAgentNS, err := a.isAgentNamespaceID(ctx, proj.NamespaceID)
+	if err != nil {
+		return false, err
+	}
+	return inAgentNS && proj.Name == AgentProjectName(email), nil
+}
+
+// isOwnAgentPod 判定 Pod 是否属于当前用户的自助 AI 沙箱：命名空间必须是
+// mars-agent 专用空间，且 Pod 名以该用户派生 Deployment 名加 "-" 为前缀
+// （Pod 名 = Deployment 名 + ReplicaSet 哈希 + Pod 哈希）。
+// 邮箱为空或 Pod 名为空时恒为 false。
+func (a *accessBiz) isOwnAgentPod(ctx context.Context, ns *Namespace, pod string) (bool, error) {
+	email := MustGetUser(ctx).Email
+	if ns == nil || pod == "" || email == "" {
+		return false, nil
+	}
+	inAgentNS, err := a.isAgentNamespaceID(ctx, ns.ID)
+	if err != nil {
+		return false, err
+	}
+	if !inAgentNS {
+		return false, nil
+	}
+	prefix := AgentDeploymentName(AgentProjectName(email)) + "-"
+	return strings.HasPrefix(pod, prefix), nil
+}
+
+// isAgentNamespaceID 判定命名空间 ID 是否为 AI Agent 专用空间。
+// 逻辑名 AgentNamespace 经 data 层补 ns_prefix 后才能定位实际空间，故必须按
+// 加载出的 ID 比较，不能拿命名空间名字面值与 AgentNamespace 直接对比。
+// 空间尚不存在（用户未启用过 AI）视为非 agent 空间，不产生错误。
+func (a *accessBiz) isAgentNamespaceID(ctx context.Context, id int) (bool, error) {
+	ns, err := a.nsRepo.FindByName(ctx, AgentNamespace)
+	if err != nil {
+		if errs.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return ns != nil && ns.ID == id, nil
 }
 
 // RequireNamespaceOwner 是命名空间所有权门卫：校验当前用户是否为命名空间 owner，

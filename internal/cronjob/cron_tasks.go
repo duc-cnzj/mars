@@ -15,7 +15,10 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/biz/schematype"
 	"github.com/duc-cnzj/mars/v6/internal/config"
+	"github.com/duc-cnzj/mars/v6/internal/deploy"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
+	"github.com/duc-cnzj/mars/v6/internal/locker"
+	"github.com/duc-cnzj/mars/v6/internal/metrics"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/uploader"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
@@ -51,6 +54,10 @@ type Tasks struct {
 	projectRepo       biz.ProjectRepo
 	hibernateRepo     biz.HibernateRepo
 	hibernateDeployer biz.HibernateDeployer
+	// agentActivity 判定 agent 沙箱是否仍在活跃窗口内（空闲关闭对账用）。
+	agentActivity biz.AgentActivity
+	// locker 让空闲缩容与唤醒/部署互斥：共用部署全局锁的项目级键。
+	locker locker.Locker
 	// hibernateWindowRepo 解析仓库引用的全局休眠时间窗（按名字查启止时段）。
 	hibernateWindowRepo biz.HibernateWindowRepo
 	// warnedMissingWindow 记录已告警过的悬空窗口名：悬空引用是对账每轮都会遇到的预期态，
@@ -83,6 +90,8 @@ func NewTasks(
 	hibernateRepo biz.HibernateRepo,
 	hibernateDeployer biz.HibernateDeployer,
 	hibernateWindowRepo biz.HibernateWindowRepo,
+	agentActivity biz.AgentActivity,
+	locker locker.Locker,
 	deps *PluginDeps,
 ) *Tasks {
 	return &Tasks{
@@ -102,7 +111,95 @@ func NewTasks(
 		hibernateRepo:       hibernateRepo,
 		hibernateDeployer:   hibernateDeployer,
 		hibernateWindowRepo: hibernateWindowRepo,
+		agentActivity:       agentActivity,
+		locker:              locker,
 	}
+}
+
+// ReconcileAgentIdle 关闭空闲的 AI Agent 沙箱：遍历 mars-agent 空间下的 agent 项目，
+// 把活跃窗口已过期且仍在运行的沙箱缩容到 0。活跃窗口由 LLM/MCP/配置入口的 Touch
+// 写入（TTL=ai.idle_timeout）。ai.idle_timeout 为负（禁用）时直接返回；空间不存在
+// 视为尚未启用 AI。单个项目的活跃度/缩容失败只记日志并跳过，下一轮重试。
+func (repo *Tasks) ReconcileAgentIdle() error {
+	if repo.cfg.AgentIdleTimeout() <= 0 {
+		return nil
+	}
+	// 对账无请求上下文，入口开根 span 让下游 repo 调用挂到同一条 trace 上。
+	ctx, span := otel.Tracer(cronjobTracerName).Start(context.Background(), "cronjob/ReconcileAgentIdle")
+	defer span.End()
+
+	ns, err := repo.nsRepo.FindByName(ctx, biz.AgentNamespace)
+	if err != nil {
+		if errs.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	projects, err := repo.projectRepo.ListAllProjectBriefs(ctx)
+	if err != nil {
+		return err
+	}
+	for _, proj := range projects {
+		if proj.Namespace == nil || proj.Namespace.Name != ns.Name ||
+			!strings.HasPrefix(proj.Name, biz.AgentProjectPrefix) {
+			continue
+		}
+		repo.closeIdleAgent(ctx, ns, proj)
+	}
+	return nil
+}
+
+// closeIdleAgent 处理单个 agent 项目：活跃中、未部署或已缩容都直接返回；
+// 缩容失败只记日志，交由下一轮对账重试。
+func (repo *Tasks) closeIdleAgent(ctx context.Context, ns *biz.Namespace, proj *biz.Project) {
+	active, err := repo.agentActivity.IsActive(ctx, proj.Name)
+	if err != nil {
+		repo.logger.Warningf("[agent-idle]: 查询项目 %s 活跃度失败，跳过本轮: %v", proj.Name, err)
+		return
+	}
+	if active {
+		return
+	}
+	name := biz.AgentDeploymentName(proj.Name)
+	dep, err := repo.k8sRepo.GetDeployment(ns.Name, name)
+	if err != nil {
+		if !errs.IsNotFound(err) {
+			repo.logger.Warningf("[agent-idle]: 查询项目 %s 的沙箱 Deployment 失败: %v", proj.Name, err)
+		}
+		return
+	}
+	if dep.Spec.Replicas != nil && *dep.Spec.Replicas == 0 {
+		return
+	}
+	// 与唤醒/部署共用同一把项目级锁，把「复查活跃度 + 缩容」整体串行化：
+	// 仅做二次复查仍留有检查与 Scale 之间的窗口，并发唤醒时可能刚唤醒又被关掉。
+	// 抢不到锁说明同一项目正在唤醒或部署，跳过本轮即可。
+	release, acquired := repo.locker.RenewalAcquire(
+		deploy.GetSlugName(ns.ID, proj.Name), deploy.LockTTLSeconds, deploy.LockRenewalSeconds)
+	if !acquired {
+		return
+	}
+	defer release()
+
+	active, err = repo.agentActivity.IsActive(ctx, proj.Name)
+	if err != nil {
+		repo.logger.Warningf("[agent-idle]: 缩容前复查项目 %s 活跃度失败，跳过本轮: %v", proj.Name, err)
+		return
+	}
+	if active {
+		return
+	}
+	if err := repo.k8sRepo.ScaleDeployment(ctx, ns.Name, name, 0); err != nil {
+		repo.logger.Warningf("[agent-idle]: 缩容项目 %s 的沙箱失败: %v", proj.Name, err)
+		return
+	}
+	metrics.AgentSandboxTransitionTotal.WithLabelValues(metrics.AgentSandboxActionSleep).Inc()
+	// 系统发起的缩容会直接影响用户沙箱可用性，与唤醒轮换令牌一样留审计痕迹
+	// （唤醒侧在 services 层记录，这里以 system 身份记录同一条状态变更）。
+	repo.event.AuditLogWithRequest(types.EventActionType_Update, "system", "",
+		"AI Agent 沙箱空闲缩容到 0",
+		map[string]any{"project_id": proj.ID, "project_name": proj.Name})
+	repo.logger.Infof("[agent-idle]: 项目 %s 空闲超过 %s，沙箱已缩容到 0", proj.Name, repo.cfg.AgentIdleTimeout())
 }
 
 // CacheAllBranches 并发拉取全部启用 git 仓库的分支并写入缓存（最多 8 个 goroutine）。

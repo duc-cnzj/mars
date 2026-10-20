@@ -14,6 +14,12 @@ export const API = {
   authSettings: '/api/auth/settings',
   pictureBackground: '/api/picture/background',
 
+  // --- ai（手写 HTTP 端点，不在 openapi schema 内，走裸 fetch） ---
+  /** AI 功能可用性 + 当前用户 agent 项目状态（GET） */
+  aiStatus: '/api/ai/status',
+  /** 启用/唤醒当前用户的 agent 沙箱（POST，幂等） */
+  aiAgentEnable: '/api/ai/agent/enable',
+
   // --- admin（后台） ---
   adminBoard: '/api/admin/cluster/board',
   adminResources: '/api/admin/cluster/resources',

@@ -50,6 +50,13 @@ func (Repo) Fields() []ent.Field {
 		field.String("description").
 			Default("").
 			Comment("描述"),
+		field.Bool("ai_agent").
+			Default(false).
+			Comment("是否为 AI Agent 仓库（全局至多一个）"),
+		field.String("ai_agent_key").
+			Optional().
+			Unique().
+			Comment("AI Agent 仓库唯一槽位：ai_agent=true 时为固定值 ai，否则 NULL"),
 	}
 }
 

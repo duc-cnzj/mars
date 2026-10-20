@@ -1696,6 +1696,17 @@ func (m *LogRequest) validate(all bool) error {
 
 	// no validation rules for ShowEvents
 
+	if m.GetTailLines() < 0 {
+		err := LogRequestValidationError{
+			field:  "TailLines",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return LogRequestMultiError(errors)
 	}

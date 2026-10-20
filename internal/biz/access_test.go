@@ -188,10 +188,68 @@ func TestAccessBiz_RequireProjectAccess(t *testing.T) {
 		ab, m := newAccessBizFixture(t)
 		m.proj.EXPECT().Show(gomock.Any(), 1).Return(&Project{ID: 1, NamespaceID: 5}, nil)
 		m.nsRepo.EXPECT().Show(gomock.Any(), 5).Return(&Namespace{Private: true, CreatorEmail: "owner@example.com"}, nil)
+		// 命名空间拒绝后还要判定 AI Agent 自助例外：agent 空间不存在 → 非自有项目。
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 
 		_, err := ab.RequireProjectAccess(plainCtx(), 1)
 		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 		assert.ErrorContains(t, err, "访问项目 #1", "拒绝信息必须带操作上下文，否则日志看不出拒绝的是哪个项目")
+	})
+
+	t.Run("own agent project allowed", func(t *testing.T) {
+		// mars-agent 空间私有且无成员，空间 ACL 必然拒绝；项目名等于当前用户邮箱派生名时自助放行。
+		ab, m := newAccessBizFixture(t)
+		proj := &Project{ID: 1, NamespaceID: 5, Name: AgentProjectName("user@example.com")}
+		m.proj.EXPECT().Show(gomock.Any(), 1).Return(proj, nil)
+		m.nsRepo.EXPECT().Show(gomock.Any(), 5).Return(&Namespace{ID: 5, Private: true, CreatorEmail: "admin@mars.local"}, nil)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), AgentNamespace).Return(&Namespace{ID: 5, Private: true}, nil)
+
+		got, err := ab.RequireProjectAccess(plainCtx(), 1)
+		assert.NoError(t, err)
+		assert.Same(t, proj, got)
+	})
+
+	t.Run("other user's agent project denied", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.proj.EXPECT().Show(gomock.Any(), 1).Return(
+			&Project{ID: 1, NamespaceID: 5, Name: AgentProjectName("other@example.com")}, nil)
+		m.nsRepo.EXPECT().Show(gomock.Any(), 5).Return(&Namespace{ID: 5, Private: true, CreatorEmail: "admin@mars.local"}, nil)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), AgentNamespace).Return(&Namespace{ID: 5, Private: true}, nil)
+
+		_, err := ab.RequireProjectAccess(plainCtx(), 1)
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	})
+
+	t.Run("same project name outside agent namespace denied", func(t *testing.T) {
+		// 项目名与当前用户的 agent 派生名相同，但不在 mars-agent 空间——自助例外不得跨空间放大。
+		ab, m := newAccessBizFixture(t)
+		m.proj.EXPECT().Show(gomock.Any(), 1).Return(
+			&Project{ID: 1, NamespaceID: 5, Name: AgentProjectName("user@example.com")}, nil)
+		m.nsRepo.EXPECT().Show(gomock.Any(), 5).Return(&Namespace{ID: 5, Private: true, CreatorEmail: "owner@example.com"}, nil)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), AgentNamespace).Return(&Namespace{ID: 99, Private: true}, nil)
+
+		_, err := ab.RequireProjectAccess(plainCtx(), 1)
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	})
+
+	t.Run("agent namespace lookup error propagates raw", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.proj.EXPECT().Show(gomock.Any(), 1).Return(&Project{ID: 1, NamespaceID: 5}, nil)
+		m.nsRepo.EXPECT().Show(gomock.Any(), 5).Return(&Namespace{ID: 5, Private: true}, nil)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), AgentNamespace).Return(nil, errors.New("db down"))
+
+		_, err := ab.RequireProjectAccess(plainCtx(), 1)
+		assert.EqualError(t, err, "db down")
+	})
+
+	t.Run("empty email cannot own agent project", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.proj.EXPECT().Show(gomock.Any(), 1).Return(
+			&Project{ID: 1, NamespaceID: 5, Name: AgentProjectName("")}, nil)
+		m.nsRepo.EXPECT().Show(gomock.Any(), 5).Return(&Namespace{ID: 5, Private: true, CreatorEmail: "owner@example.com"}, nil)
+
+		_, err := ab.RequireProjectAccess(userCtx(&UserInfo{}), 1)
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 	})
 
 	t.Run("namespace load error propagates raw", func(t *testing.T) {
@@ -204,6 +262,276 @@ func TestAccessBiz_RequireProjectAccess(t *testing.T) {
 
 		_, err := ab.RequireProjectAccess(plainCtx(), 1)
 		assert.EqualError(t, err, "boom")
+	})
+}
+
+// TestAccessBiz_RequireProjectAccessByName 覆盖「按空间名 + 项目名」的项目门卫：
+// 空间 ACL 通过时不查项目；拒绝后只放行当前用户自己的 AI 沙箱项目，项目查无统一
+// 403（不暴露私有空间内项目是否存在），底层查询故障原样上抛。
+func TestAccessBiz_RequireProjectAccessByName(t *testing.T) {
+	ownName := AgentProjectName("user@example.com")
+
+	t.Run("public namespace accessible without project lookup", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "ns").Return(&Namespace{ID: 1, Name: "ns", Private: false}, nil)
+
+		ns, err := ab.RequireProjectAccessByName(plainCtx(), "ns", "any-project")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ns.ID)
+	})
+
+	t.Run("namespace load error propagated", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "ns").Return(nil, errors.New("boom"))
+
+		_, err := ab.RequireProjectAccessByName(plainCtx(), "ns", "any-project")
+		assert.EqualError(t, err, "boom")
+	})
+
+	t.Run("own agent project allowed", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		agentNS := &Namespace{ID: 3, Name: AgentNamespace, Private: true, CreatorEmail: "owner@example.com"}
+		// 门卫按空间名加载 + isOwnAgentProject 回查 agent 空间：同一次查询命中两次。
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), AgentNamespace).Return(agentNS, nil).Times(2)
+		m.proj.EXPECT().FindByName(gomock.Any(), ownName, 3).Return(
+			&Project{ID: 7, NamespaceID: 3, Name: ownName}, nil)
+
+		ns, err := ab.RequireProjectAccessByName(plainCtx(), AgentNamespace, ownName)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, ns.ID)
+	})
+
+	t.Run("other user's agent project denied", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		agentNS := &Namespace{ID: 3, Name: AgentNamespace, Private: true, CreatorEmail: "owner@example.com"}
+		otherName := AgentProjectName("other@example.com")
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), AgentNamespace).Return(agentNS, nil).Times(2)
+		m.proj.EXPECT().FindByName(gomock.Any(), otherName, 3).Return(
+			&Project{ID: 7, NamespaceID: 3, Name: otherName}, nil)
+
+		_, err := ab.RequireProjectAccessByName(plainCtx(), AgentNamespace, otherName)
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+		assert.ErrorContains(t, err, "访问命名空间", "拒绝信息必须带空间与项目上下文")
+	})
+
+	t.Run("project not found denied without revealing existence", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "secret").Return(
+			&Namespace{ID: 9, Name: "secret", Private: true, CreatorEmail: "owner@example.com"}, nil)
+		m.proj.EXPECT().FindByName(gomock.Any(), "web", 9).Return(
+			nil, errs.WrapNotFound(errors.New("record not found"), "find project by name"))
+
+		_, err := ab.RequireProjectAccessByName(plainCtx(), "secret", "web")
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	})
+
+	t.Run("project query db error propagated", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "secret").Return(
+			&Namespace{ID: 9, Name: "secret", Private: true, CreatorEmail: "owner@example.com"}, nil)
+		m.proj.EXPECT().FindByName(gomock.Any(), "web", 9).Return(nil, errors.New("db down"))
+
+		_, err := ab.RequireProjectAccessByName(plainCtx(), "secret", "web")
+		assert.EqualError(t, err, "db down", "DB 故障不得被伪装成 403")
+	})
+
+	t.Run("empty project name denied without lookup", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "secret").Return(
+			&Namespace{ID: 9, Name: "secret", Private: true, CreatorEmail: "owner@example.com"}, nil)
+
+		_, err := ab.RequireProjectAccessByName(plainCtx(), "secret", "")
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	})
+
+	t.Run("nil namespace denied", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "ns").Return(nil, nil)
+
+		_, err := ab.RequireProjectAccessByName(plainCtx(), "ns", "web")
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	})
+
+	t.Run("own project name outside agent namespace denied", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "secret").Return(
+			&Namespace{ID: 9, Name: "secret", Private: true, CreatorEmail: "owner@example.com"}, nil)
+		m.proj.EXPECT().FindByName(gomock.Any(), ownName, 9).Return(
+			&Project{ID: 7, NamespaceID: 9, Name: ownName}, nil)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), AgentNamespace).Return(&Namespace{ID: 3, Private: true}, nil)
+
+		_, err := ab.RequireProjectAccessByName(plainCtx(), "secret", ownName)
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	})
+
+	t.Run("agent namespace lookup error propagated", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "secret").Return(
+			&Namespace{ID: 9, Name: "secret", Private: true, CreatorEmail: "owner@example.com"}, nil)
+		m.proj.EXPECT().FindByName(gomock.Any(), ownName, 9).Return(
+			&Project{ID: 7, NamespaceID: 9, Name: ownName}, nil)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), AgentNamespace).Return(nil, errors.New("db down"))
+
+		_, err := ab.RequireProjectAccessByName(plainCtx(), "secret", ownName)
+		assert.EqualError(t, err, "db down")
+	})
+}
+
+// TestAccessBiz_RequireProjectAccessByNamespaceID 覆盖部署编排使用的按 ID 孪生门卫：
+// 与按名字版本共享判定，仅寻址方式不同。
+func TestAccessBiz_RequireProjectAccessByNamespaceID(t *testing.T) {
+	t.Run("public namespace accessible", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&Namespace{ID: 1, Private: false}, nil)
+
+		ns, err := ab.RequireProjectAccessByNamespaceID(plainCtx(), 1, "web")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ns.ID)
+	})
+
+	t.Run("namespace load error propagated", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(nil, errors.New("boom"))
+
+		_, err := ab.RequireProjectAccessByNamespaceID(plainCtx(), 1, "web")
+		assert.EqualError(t, err, "boom")
+	})
+
+	t.Run("own agent project allowed", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		agentNS := &Namespace{ID: 3, Name: AgentNamespace, Private: true, CreatorEmail: "owner@example.com"}
+		ownName := AgentProjectName("user@example.com")
+		m.nsRepo.EXPECT().Show(gomock.Any(), 3).Return(agentNS, nil)
+		m.proj.EXPECT().FindByName(gomock.Any(), ownName, 3).Return(
+			&Project{ID: 7, NamespaceID: 3, Name: ownName}, nil)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), AgentNamespace).Return(agentNS, nil)
+
+		ns, err := ab.RequireProjectAccessByNamespaceID(plainCtx(), 3, ownName)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, ns.ID)
+	})
+
+	t.Run("project not found denied", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().Show(gomock.Any(), 9).Return(
+			&Namespace{ID: 9, Private: true, CreatorEmail: "owner@example.com"}, nil)
+		m.proj.EXPECT().FindByName(gomock.Any(), "web", 9).Return(
+			nil, errs.WrapNotFound(errors.New("record not found"), "find project by name"))
+
+		_, err := ab.RequireProjectAccessByNamespaceID(plainCtx(), 9, "web")
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	})
+}
+
+// TestAccessBiz_RequirePodAccess 覆盖 Pod 级门卫：通用命名空间 ACL 先行，
+// 拒绝后仅对「mars-agent 空间 + 当前用户派生 Deployment 名下的 Pod」自助放行。
+func TestAccessBiz_RequirePodAccess(t *testing.T) {
+	ownDeployment := AgentDeploymentName(AgentProjectName("user@example.com"))
+	ownPod := ownDeployment + "-7d9f8c6b5-x2kq9"
+	otherPod := AgentDeploymentName(AgentProjectName("other@example.com")) + "-7d9f8c6b5-x2kq9"
+
+	t.Run("public namespace accessible", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "ns").Return(&Namespace{ID: 1, Private: false}, nil)
+
+		ns, err := ab.RequirePodAccess(plainCtx(), "ns", "any-pod")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ns.ID)
+	})
+
+	t.Run("namespace load error propagated", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "ns").Return(nil, errors.New("boom"))
+
+		_, err := ab.RequirePodAccess(plainCtx(), "ns", "any-pod")
+		assert.EqualError(t, err, "boom")
+	})
+
+	t.Run("private namespace denied to non-member", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "ns").Return(&Namespace{ID: 1, Private: true, CreatorEmail: "owner@example.com"}, nil)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
+
+		_, err := ab.RequirePodAccess(plainCtx(), "ns", "any-pod")
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+		assert.ErrorContains(t, err, "访问命名空间 ns 的 Pod any-pod")
+	})
+
+	t.Run("own agent pod allowed", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		agentNS := &Namespace{ID: 3, Private: true, CreatorEmail: "admin@mars.local"}
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-agent").Return(agentNS, nil).Times(2)
+
+		ns, err := ab.RequirePodAccess(plainCtx(), "mars-agent", ownPod)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, ns.ID)
+	})
+
+	t.Run("other user's agent pod denied", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		agentNS := &Namespace{ID: 3, Private: true, CreatorEmail: "admin@mars.local"}
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-agent").Return(agentNS, nil).Times(2)
+
+		_, err := ab.RequirePodAccess(plainCtx(), "mars-agent", otherPod)
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	})
+
+	t.Run("agent pod prefix must not match a longer name", func(t *testing.T) {
+		// pod 名前缀必须是 Deployment 名 + "-"：缺少分隔符的相近名字不得被误放行。
+		ab, m := newAccessBizFixture(t)
+		agentNS := &Namespace{ID: 3, Private: true, CreatorEmail: "admin@mars.local"}
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-agent").Return(agentNS, nil).Times(2)
+
+		_, err := ab.RequirePodAccess(plainCtx(), "mars-agent", ownDeployment+"0")
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	})
+
+	t.Run("own deployment name outside agent namespace denied", func(t *testing.T) {
+		// 同一 Pod 名前缀出现在其他私有空间时不得放行——自助例外仅限 mars-agent。
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "ns").Return(&Namespace{ID: 1, Private: true, CreatorEmail: "owner@example.com"}, nil)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), AgentNamespace).Return(&Namespace{ID: 3, Private: true}, nil)
+
+		_, err := ab.RequirePodAccess(plainCtx(), "ns", ownPod)
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	})
+
+	t.Run("empty pod denied without agent lookup", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-agent").Return(
+			&Namespace{ID: 3, Private: true, CreatorEmail: "admin@mars.local"}, nil)
+
+		_, err := ab.RequirePodAccess(plainCtx(), "mars-agent", "")
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	})
+
+	t.Run("empty email cannot match agent pod", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-agent").Return(
+			&Namespace{ID: 3, Private: true, CreatorEmail: "admin@mars.local"}, nil)
+
+		_, err := ab.RequirePodAccess(userCtx(&UserInfo{}), "mars-agent", ownPod)
+		assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+	})
+
+	t.Run("agent namespace lookup error propagates raw", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-agent").Return(
+			&Namespace{ID: 3, Private: true, CreatorEmail: "admin@mars.local"}, nil)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), AgentNamespace).Return(nil, errors.New("db down"))
+
+		_, err := ab.RequirePodAccess(plainCtx(), "mars-agent", ownPod)
+		assert.EqualError(t, err, "db down")
+	})
+
+	t.Run("admin accesses any agent pod", func(t *testing.T) {
+		ab, m := newAccessBizFixture(t)
+		m.nsRepo.EXPECT().FindByName(gomock.Any(), "mars-agent").Return(
+			&Namespace{ID: 3, Private: true, CreatorEmail: "admin@mars.local"}, nil)
+
+		ns, err := ab.RequirePodAccess(adminCtx(), "mars-agent", otherPod)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, ns.ID)
 	})
 }
 

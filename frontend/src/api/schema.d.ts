@@ -2538,6 +2538,8 @@ export interface components {
             marsConfig?: components["schemas"]["mars.Config"];
             needGitRepo?: boolean;
             description?: string;
+            /** @description ai_agent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库。 */
+            aiAgent?: boolean;
         };
         "repo.CreateResponse": {
             item: components["schemas"]["types.RepoModel"];
@@ -2594,6 +2596,11 @@ export interface components {
             marsConfig?: components["schemas"]["mars.Config"];
             needGitRepo?: boolean;
             description?: string;
+            /**
+             * @description ai_agent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库；false 清除标记；
+             *      不传（nil）时保持现状——旧客户端不知道该字段，不能因缺省值把标记清掉。
+             */
+            aiAgent?: boolean;
         };
         "repo.UpdateResponse": {
             item: components["schemas"]["types.RepoModel"];
@@ -2822,6 +2829,8 @@ export interface components {
             marsConfig: components["schemas"]["mars.Config"];
             needGitRepo: boolean;
             description: string;
+            /** @description ai_agent 标记该仓库是否为全局唯一的 AI Agent 仓库。 */
+            aiAgent: boolean;
             createdAt: string;
             updatedAt: string;
             deletedAt: string;
@@ -3980,6 +3989,12 @@ export interface operations {
         parameters: {
             query?: {
                 showEvents?: boolean;
+                /**
+                 * @description 日志尾部行数（对应 k8s PodLogOptions.TailLines）：0 或缺省表示默认 1000 行。
+                 *      作用于一次性拉取（ContainerLog）与非 Running Pod 的流式回退；Running Pod 的实时流
+                 *      仍需先回补历史日志，固定 1000 行（实时流另有独立读取路径）。
+                 */
+                tailLines?: string;
             };
             header?: never;
             path: {
@@ -4015,6 +4030,12 @@ export interface operations {
         parameters: {
             query?: {
                 showEvents?: boolean;
+                /**
+                 * @description 日志尾部行数（对应 k8s PodLogOptions.TailLines）：0 或缺省表示默认 1000 行。
+                 *      作用于一次性拉取（ContainerLog）与非 Running Pod 的流式回退；Running Pod 的实时流
+                 *      仍需先回补历史日志，固定 1000 行（实时流另有独立读取路径）。
+                 */
+                tailLines?: string;
             };
             header?: never;
             path: {
@@ -5697,6 +5718,8 @@ export interface operations {
                 pageSize?: number;
                 enabled?: boolean;
                 name?: string;
+                /** @description ai_agent 为空时不按 AI Agent 标记过滤；true 只返回 AI Agent 仓库，false 只返回非 AI Agent 仓库。 */
+                aiAgent?: boolean;
             };
             header?: never;
             path?: never;

@@ -11804,6 +11804,8 @@ type RepoMutation struct {
 	need_git_repo     *bool
 	mars_config       **mars.Config
 	description       *string
+	ai_agent          *bool
+	ai_agent_key      *string
 	clearedFields     map[string]struct{}
 	projects          map[int]struct{}
 	removedprojects   map[int]struct{}
@@ -12393,6 +12395,91 @@ func (m *RepoMutation) ResetDescription() {
 	m.description = nil
 }
 
+// SetAiAgent sets the "ai_agent" field.
+func (m *RepoMutation) SetAiAgent(b bool) {
+	m.ai_agent = &b
+}
+
+// AiAgent returns the value of the "ai_agent" field in the mutation.
+func (m *RepoMutation) AiAgent() (r bool, exists bool) {
+	v := m.ai_agent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAiAgent returns the old "ai_agent" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldAiAgent(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAiAgent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAiAgent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAiAgent: %w", err)
+	}
+	return oldValue.AiAgent, nil
+}
+
+// ResetAiAgent resets all changes to the "ai_agent" field.
+func (m *RepoMutation) ResetAiAgent() {
+	m.ai_agent = nil
+}
+
+// SetAiAgentKey sets the "ai_agent_key" field.
+func (m *RepoMutation) SetAiAgentKey(s string) {
+	m.ai_agent_key = &s
+}
+
+// AiAgentKey returns the value of the "ai_agent_key" field in the mutation.
+func (m *RepoMutation) AiAgentKey() (r string, exists bool) {
+	v := m.ai_agent_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAiAgentKey returns the old "ai_agent_key" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldAiAgentKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAiAgentKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAiAgentKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAiAgentKey: %w", err)
+	}
+	return oldValue.AiAgentKey, nil
+}
+
+// ClearAiAgentKey clears the value of the "ai_agent_key" field.
+func (m *RepoMutation) ClearAiAgentKey() {
+	m.ai_agent_key = nil
+	m.clearedFields[repo.FieldAiAgentKey] = struct{}{}
+}
+
+// AiAgentKeyCleared returns if the "ai_agent_key" field was cleared in this mutation.
+func (m *RepoMutation) AiAgentKeyCleared() bool {
+	_, ok := m.clearedFields[repo.FieldAiAgentKey]
+	return ok
+}
+
+// ResetAiAgentKey resets all changes to the "ai_agent_key" field.
+func (m *RepoMutation) ResetAiAgentKey() {
+	m.ai_agent_key = nil
+	delete(m.clearedFields, repo.FieldAiAgentKey)
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by ids.
 func (m *RepoMutation) AddProjectIDs(ids ...int) {
 	if m.projects == nil {
@@ -12481,7 +12568,7 @@ func (m *RepoMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepoMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, repo.FieldCreatedAt)
 	}
@@ -12515,6 +12602,12 @@ func (m *RepoMutation) Fields() []string {
 	if m.description != nil {
 		fields = append(fields, repo.FieldDescription)
 	}
+	if m.ai_agent != nil {
+		fields = append(fields, repo.FieldAiAgent)
+	}
+	if m.ai_agent_key != nil {
+		fields = append(fields, repo.FieldAiAgentKey)
+	}
 	return fields
 }
 
@@ -12545,6 +12638,10 @@ func (m *RepoMutation) Field(name string) (ent.Value, bool) {
 		return m.MarsConfig()
 	case repo.FieldDescription:
 		return m.Description()
+	case repo.FieldAiAgent:
+		return m.AiAgent()
+	case repo.FieldAiAgentKey:
+		return m.AiAgentKey()
 	}
 	return nil, false
 }
@@ -12576,6 +12673,10 @@ func (m *RepoMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldMarsConfig(ctx)
 	case repo.FieldDescription:
 		return m.OldDescription(ctx)
+	case repo.FieldAiAgent:
+		return m.OldAiAgent(ctx)
+	case repo.FieldAiAgentKey:
+		return m.OldAiAgentKey(ctx)
 	}
 	return nil, fmt.Errorf("unknown Repo field %s", name)
 }
@@ -12662,6 +12763,20 @@ func (m *RepoMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDescription(v)
 		return nil
+	case repo.FieldAiAgent:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAiAgent(v)
+		return nil
+	case repo.FieldAiAgentKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAiAgentKey(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Repo field %s", name)
 }
@@ -12722,6 +12837,9 @@ func (m *RepoMutation) ClearedFields() []string {
 	if m.FieldCleared(repo.FieldMarsConfig) {
 		fields = append(fields, repo.FieldMarsConfig)
 	}
+	if m.FieldCleared(repo.FieldAiAgentKey) {
+		fields = append(fields, repo.FieldAiAgentKey)
+	}
 	return fields
 }
 
@@ -12750,6 +12868,9 @@ func (m *RepoMutation) ClearField(name string) error {
 		return nil
 	case repo.FieldMarsConfig:
 		m.ClearMarsConfig()
+		return nil
+	case repo.FieldAiAgentKey:
+		m.ClearAiAgentKey()
 		return nil
 	}
 	return fmt.Errorf("unknown Repo nullable field %s", name)
@@ -12791,6 +12912,12 @@ func (m *RepoMutation) ResetField(name string) error {
 		return nil
 	case repo.FieldDescription:
 		m.ResetDescription()
+		return nil
+	case repo.FieldAiAgent:
+		m.ResetAiAgent()
+		return nil
+	case repo.FieldAiAgentKey:
+		m.ResetAiAgentKey()
 		return nil
 	}
 	return fmt.Errorf("unknown Repo field %s", name)

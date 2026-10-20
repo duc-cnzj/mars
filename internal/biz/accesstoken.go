@@ -21,6 +21,8 @@ type AccessTokenBiz interface {
 	Lease(ctx context.Context, token string, expireSeconds int32) (*AccessToken, error)
 	// Revoke 撤销（软删除）指定 access token。
 	Revoke(ctx context.Context, token string) error
+	// RevokeByUsageExcept 撤销指定 usage 下除 keepToken 外的所有 access token。
+	RevokeByUsageExcept(ctx context.Context, usage, keepToken string) error
 	// FindByToken 按 token 原文查询一个 access token。
 	FindByToken(ctx context.Context, token string) (*AccessToken, error)
 	// TouchLastUsedAt 回写 token 的最近使用时间。
@@ -77,6 +79,15 @@ func (a *accessTokenBiz) Revoke(ctx context.Context, token string) error {
 	return a.repo.Revoke(ctx, token)
 }
 
+// RevokeByUsageExcept 撤销同一 usage 下的历史令牌，仅保留 keepToken：
+// 供部署系统变量在每次重新签发后清理上一份临时令牌（仅保留最新一份有效）。
+func (a *accessTokenBiz) RevokeByUsageExcept(ctx context.Context, usage, keepToken string) error {
+	if usage == "" || keepToken == "" {
+		return errs.WrapInvalidArgument(errors.New("usage 和 keepToken 不能为空"), "revoke access token by usage")
+	}
+	return a.repo.RevokeByUsageExcept(ctx, usage, keepToken)
+}
+
 // FindByToken 按 token 查询一个 access token（透传 repo）。
 func (a *accessTokenBiz) FindByToken(ctx context.Context, token string) (*AccessToken, error) {
 	return a.repo.FindByToken(ctx, token)
@@ -102,6 +113,8 @@ type AccessTokenRepo interface {
 	UpdateExpiresAt(ctx context.Context, token string, t time.Time) (*AccessToken, error)
 	// Revoke 撤销（软删除）指定 access token。
 	Revoke(ctx context.Context, token string) error
+	// RevokeByUsageExcept 撤销指定 usage 下除 keepToken 外的所有 access token（软删除）。
+	RevokeByUsageExcept(ctx context.Context, usage, keepToken string) error
 	// TouchLastUsedAt 回写 token 的最近使用时间。
 	TouchLastUsedAt(ctx context.Context, token string, t time.Time) error
 }

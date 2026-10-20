@@ -21,6 +21,7 @@ type fakeAccessTokenRepoForAccessTokenBiz struct {
 	AccessTokenRepo
 	grantCalled, leaseFindCalled, leaseUpdateCalled bool
 	revokeCalled, touchCalled                       bool
+	revokeByUsageCalled                             bool
 	listCalled                                      bool
 	findErr                                         error
 	expired                                         bool
@@ -60,6 +61,11 @@ func (f *fakeAccessTokenRepoForAccessTokenBiz) UpdateExpiresAt(ctx context.Conte
 
 func (f *fakeAccessTokenRepoForAccessTokenBiz) Revoke(ctx context.Context, token string) error {
 	f.revokeCalled = true
+	return nil
+}
+
+func (f *fakeAccessTokenRepoForAccessTokenBiz) RevokeByUsageExcept(ctx context.Context, usage, keepToken string) error {
+	f.revokeByUsageCalled = true
 	return nil
 }
 
@@ -168,6 +174,25 @@ func TestAccessTokenBiz_Revoke_Valid(t *testing.T) {
 	b := newAccessTokenBizForTest(f)
 	assert.NoError(t, b.Revoke(context.TODO(), "tok"))
 	assert.True(t, f.revokeCalled)
+}
+
+func TestAccessTokenBiz_RevokeByUsageExcept_Invalid(t *testing.T) {
+	b := newAccessTokenBizForTest(&fakeAccessTokenRepoForAccessTokenBiz{})
+	for _, tc := range []struct{ usage, keep string }{
+		{"", "tok"},
+		{"usage", ""},
+	} {
+		err := b.RevokeByUsageExcept(context.TODO(), tc.usage, tc.keep)
+		assert.Equal(t, codes.InvalidArgument, status.Code(err))
+		assert.Equal(t, "usage 和 keepToken 不能为空", status.Convert(err).Message())
+	}
+}
+
+func TestAccessTokenBiz_RevokeByUsageExcept_Valid(t *testing.T) {
+	f := &fakeAccessTokenRepoForAccessTokenBiz{}
+	b := newAccessTokenBizForTest(f)
+	assert.NoError(t, b.RevokeByUsageExcept(context.TODO(), "deploy-token:1", "tok"))
+	assert.True(t, f.revokeByUsageCalled)
 }
 
 func TestAccessTokenBiz_TouchLastUsedAt_EmptyToken(t *testing.T) {

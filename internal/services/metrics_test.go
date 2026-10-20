@@ -92,6 +92,8 @@ func TestMetricsSvc_TopPod_AccessDenied(t *testing.T) {
 	nsRepo := mocks.nsRepo
 
 	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(&biz.Namespace{Private: true, CreatorEmail: "other@x.com"}, nil)
+	// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 	// 去除门禁后 GetPodMetrics 成功 + metrics 组装成功 → 返回 200 响应，
 	// assert.ErrorIs 干净失败（err=nil），不产生误导性 panic。
 	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), gomock.Any(), gomock.Any()).Return(&v1beta1.PodMetrics{}, nil).AnyTimes()
@@ -243,6 +245,8 @@ func TestMetricsSvc_CpuMemoryInProject_AccessDenied(t *testing.T) {
 
 	projRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true, CreatorEmail: "other@x.com"}, nil)
+	// 项目级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 
 	res, err := svc.CpuMemoryInProject(newOtherUserCtx(), &metrics.CpuMemoryInProjectRequest{
 		ProjectId: 1,
@@ -422,6 +426,8 @@ func TestMetricsSvc_StreamTopPod_AccessDenied(t *testing.T) {
 	nsRepo := mocks.nsRepo
 
 	nsRepo.EXPECT().FindByName(gomock.Any(), "namespace1").Return(&biz.Namespace{Private: true, CreatorEmail: "other@x.com"}, nil)
+	// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 	// 去除门禁后 GetPodMetrics 成功 + Send 成功 → 循环直到 ctx 3s 超时返回 nil，
 	// assert.ErrorIs 干净失败（err=nil），不产生误导性 panic。
 	k8sRepo.EXPECT().GetPodMetrics(gomock.Any(), gomock.Any(), gomock.Any()).Return(&v1beta1.PodMetrics{}, nil).AnyTimes()

@@ -36,6 +36,26 @@ func TestInstallProject(t *testing.T) {
 	assert.Nil(t, InstallProject(context.TODO(), job))
 }
 
+// TestHasUserTokenTemplate 判定 values 是否引用 <.UserToken>（容忍空白）：
+// 启用 AI 沙箱的前置校验依赖它拦住「部署时不签发令牌」的软失败配置。
+func TestHasUserTokenTemplate(t *testing.T) {
+	tests := []struct {
+		name   string
+		values string
+		want   bool
+	}{
+		{name: "引用模板", values: "mars:\n  token: \"<.UserToken>\"", want: true},
+		{name: "容忍空白", values: "token: < .UserToken >", want: true},
+		{name: "未引用", values: "mars:\n  token: \"\"", want: false},
+		{name: "大小写不符", values: "token: \"<.usertoken>\"", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, HasUserTokenTemplate(tt.values))
+		})
+	}
+}
+
 type fakeSleeper struct{}
 
 func (f fakeSleeper) Sleep(time.Duration) {}

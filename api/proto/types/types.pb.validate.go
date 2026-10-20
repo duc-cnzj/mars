@@ -2077,6 +2077,8 @@ func (m *RepoModel) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for AiAgent
+
 	// no validation rules for CreatedAt
 
 	// no validation rules for UpdatedAt

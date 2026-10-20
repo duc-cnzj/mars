@@ -157,6 +157,9 @@ func Test_initServer(t *testing.T) {
 	handler.EXPECT().RegisterSwaggerUIRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterWsRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterFileRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterMCPRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterAIConfigRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterLLMProxyRoute(gomock.Not(nil)).Times(1)
 	httpServer, err := initServer(context.TODO(), &apiGateway{
 		endpoint:     "x",
 		port:         "1000",
@@ -214,6 +217,9 @@ func Test_initServer_RoutesAndClosures(t *testing.T) {
 	handler.EXPECT().RegisterSwaggerUIRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterWsRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterFileRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterMCPRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterAIConfigRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterLLMProxyRoute(gomock.Not(nil)).Times(1)
 
 	grpcRegistry := &app.GrpcRegistry{
 		EndpointFuncs: []app.EndpointFunc{
@@ -265,6 +271,9 @@ func Test_initServer_SpaFallback(t *testing.T) {
 	handler.EXPECT().RegisterSwaggerUIRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterWsRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterFileRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterMCPRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterAIConfigRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterLLMProxyRoute(gomock.Not(nil)).Times(1)
 
 	grpcRegistry := &app.GrpcRegistry{
 		EndpointFuncs: []app.EndpointFunc{
@@ -469,6 +478,9 @@ func newProjectRouteTestServer(t *testing.T) (http.Handler, *recordingProjectCli
 	handler.EXPECT().RegisterSwaggerUIRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterWsRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterFileRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterMCPRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterAIConfigRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterLLMProxyRoute(gomock.Not(nil)).Times(1)
 
 	cli := &recordingProjectClient{}
 	reg := &app.GrpcRegistry{EndpointFuncs: []app.EndpointFunc{

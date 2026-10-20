@@ -21,6 +21,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/user"
 	"github.com/duc-cnzj/mars/api/v6/proto/version"
 	"github.com/duc-cnzj/mars/v6/internal/app"
+	"github.com/duc-cnzj/mars/v6/internal/services/mcp"
 	"github.com/google/wire"
 	"google.golang.org/grpc"
 )
@@ -48,6 +49,8 @@ var WireServiceSet = wire.NewSet(
 	wire.Struct(new(UserSvcDeps), "*"),
 	wire.Struct(new(HibernateSvcDeps), "*"),
 	wire.Struct(new(NewGrpcRegistryDeps), "*"),
+	// MCP 服务端：标准 Streamable HTTP MCP，工具集复用 biz 层（与 gRPC 服务同依赖口径）。
+	wire.Struct(new(mcp.Deps), "*"),
 	NewAccessTokenSvc,
 	NewAuthSvc,
 	NewChangelogSvc,
@@ -68,6 +71,7 @@ var WireServiceSet = wire.NewSet(
 	NewVersionSvc,
 	NewUserSvc,
 	NewGrpcRegistry,
+	mcp.NewServer,
 )
 
 // NewGrpcRegistryDeps 收口 NewGrpcRegistry 的 18 个 gRPC 服务实现，由 wire 按字段

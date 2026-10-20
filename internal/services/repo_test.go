@@ -120,6 +120,7 @@ func TestRepoSvc_Create_Success(t *testing.T) {
 		Name:         "newRepo",
 		Enabled:      true,
 		NeedGitRepo:  true,
+		AIAgent:      true,
 		GitProjectID: lo.ToPtr(int32(1)),
 		MarsConfig:   &mars.Config{},
 		Description:  "description",
@@ -139,6 +140,7 @@ func TestRepoSvc_Create_Success(t *testing.T) {
 	res, err := svc.Create(newAdminUserCtx(), &reposerver.CreateRequest{
 		Name:         "newRepo",
 		NeedGitRepo:  true,
+		AiAgent:      true,
 		GitProjectId: lo.ToPtr(int32(1)),
 		MarsConfig:   &mars.Config{},
 		Description:  "description",
@@ -224,6 +226,7 @@ func TestRepoSvc_List_Success(t *testing.T) {
 		Enabled:       lo.ToPtr(true),
 		OrderByIDDesc: lo.ToPtr(true),
 		Name:          "test",
+		AIAgent:       lo.ToPtr(true),
 	}).Return([]*biz.Repo{
 		{
 			ID:   1,
@@ -240,6 +243,7 @@ func TestRepoSvc_List_Success(t *testing.T) {
 		PageSize: lo.ToPtr(int32(10)),
 		Enabled:  lo.ToPtr(true),
 		Name:     "test",
+		AiAgent:  lo.ToPtr(true),
 	})
 
 	assert.Nil(t, err)
@@ -261,6 +265,7 @@ func TestRepoSvc_List_Error(t *testing.T) {
 		Enabled:       lo.ToPtr(true),
 		OrderByIDDesc: lo.ToPtr(true),
 		Name:          "test",
+		AIAgent:       lo.ToPtr(false),
 	}).Return(nil, nil, errors.New("error"))
 
 	res, err := svc.List(context.TODO(), &reposerver.ListRequest{
@@ -268,6 +273,7 @@ func TestRepoSvc_List_Error(t *testing.T) {
 		PageSize: lo.ToPtr(int32(10)),
 		Enabled:  lo.ToPtr(true),
 		Name:     "test",
+		AiAgent:  lo.ToPtr(false),
 	})
 
 	assert.NotNil(t, err)
@@ -373,6 +379,7 @@ func TestRepoSvc_Update_Success(t *testing.T) {
 		ID:           1,
 		Name:         "updated",
 		NeedGitRepo:  true,
+		AIAgent:      lo.ToPtr(true),
 		GitProjectID: lo.ToPtr(int32(1)),
 		MarsConfig:   &mars.Config{},
 		Description:  "updated description",
@@ -393,6 +400,7 @@ func TestRepoSvc_Update_Success(t *testing.T) {
 		Id:           1,
 		Name:         "updated",
 		NeedGitRepo:  true,
+		AiAgent:      lo.ToPtr(true),
 		GitProjectId: lo.ToPtr(int32(1)),
 		MarsConfig:   &mars.Config{},
 		Description:  "updated description",
@@ -781,6 +789,7 @@ func Test_ExportImport_RoundTrip(t *testing.T) {
 		GitProjectID:   100,
 		Enabled:        true,
 		NeedGitRepo:    true,
+		AIAgent:        true,
 		MarsConfig:     &mars.Config{ConfigField: "c", LocalChartPath: "100|main|chart"},
 		Description:    "desc",
 	}
@@ -790,6 +799,7 @@ func Test_ExportImport_RoundTrip(t *testing.T) {
 	assert.Equal(t, "app", item.Name)
 	assert.True(t, item.Enabled)
 	assert.True(t, item.NeedGitRepo)
+	assert.True(t, item.AIAgent)
 	assert.Equal(t, lo.ToPtr(int32(100)), item.GitProjectID)
 	assert.Equal(t, &mars.Config{ConfigField: "c", LocalChartPath: "100|main|chart"}, item.MarsConfig)
 	assert.Equal(t, "desc", item.Description)

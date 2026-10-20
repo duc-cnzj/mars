@@ -191,6 +191,40 @@ func (_u *RepoUpdate) SetNillableDescription(v *string) *RepoUpdate {
 	return _u
 }
 
+// SetAiAgent sets the "ai_agent" field.
+func (_u *RepoUpdate) SetAiAgent(v bool) *RepoUpdate {
+	_u.mutation.SetAiAgent(v)
+	return _u
+}
+
+// SetNillableAiAgent sets the "ai_agent" field if the given value is not nil.
+func (_u *RepoUpdate) SetNillableAiAgent(v *bool) *RepoUpdate {
+	if v != nil {
+		_u.SetAiAgent(*v)
+	}
+	return _u
+}
+
+// SetAiAgentKey sets the "ai_agent_key" field.
+func (_u *RepoUpdate) SetAiAgentKey(v string) *RepoUpdate {
+	_u.mutation.SetAiAgentKey(v)
+	return _u
+}
+
+// SetNillableAiAgentKey sets the "ai_agent_key" field if the given value is not nil.
+func (_u *RepoUpdate) SetNillableAiAgentKey(v *string) *RepoUpdate {
+	if v != nil {
+		_u.SetAiAgentKey(*v)
+	}
+	return _u
+}
+
+// ClearAiAgentKey clears the value of the "ai_agent_key" field.
+func (_u *RepoUpdate) ClearAiAgentKey() *RepoUpdate {
+	_u.mutation.ClearAiAgentKey()
+	return _u
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
 func (_u *RepoUpdate) AddProjectIDs(ids ...int) *RepoUpdate {
 	_u.mutation.AddProjectIDs(ids...)
@@ -353,6 +387,15 @@ func (_u *RepoUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(repo.FieldDescription, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AiAgent(); ok {
+		_spec.SetField(repo.FieldAiAgent, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.AiAgentKey(); ok {
+		_spec.SetField(repo.FieldAiAgentKey, field.TypeString, value)
+	}
+	if _u.mutation.AiAgentKeyCleared() {
+		_spec.ClearField(repo.FieldAiAgentKey, field.TypeString)
 	}
 	if _u.mutation.ProjectsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -580,6 +623,40 @@ func (_u *RepoUpdateOne) SetNillableDescription(v *string) *RepoUpdateOne {
 	return _u
 }
 
+// SetAiAgent sets the "ai_agent" field.
+func (_u *RepoUpdateOne) SetAiAgent(v bool) *RepoUpdateOne {
+	_u.mutation.SetAiAgent(v)
+	return _u
+}
+
+// SetNillableAiAgent sets the "ai_agent" field if the given value is not nil.
+func (_u *RepoUpdateOne) SetNillableAiAgent(v *bool) *RepoUpdateOne {
+	if v != nil {
+		_u.SetAiAgent(*v)
+	}
+	return _u
+}
+
+// SetAiAgentKey sets the "ai_agent_key" field.
+func (_u *RepoUpdateOne) SetAiAgentKey(v string) *RepoUpdateOne {
+	_u.mutation.SetAiAgentKey(v)
+	return _u
+}
+
+// SetNillableAiAgentKey sets the "ai_agent_key" field if the given value is not nil.
+func (_u *RepoUpdateOne) SetNillableAiAgentKey(v *string) *RepoUpdateOne {
+	if v != nil {
+		_u.SetAiAgentKey(*v)
+	}
+	return _u
+}
+
+// ClearAiAgentKey clears the value of the "ai_agent_key" field.
+func (_u *RepoUpdateOne) ClearAiAgentKey() *RepoUpdateOne {
+	_u.mutation.ClearAiAgentKey()
+	return _u
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
 func (_u *RepoUpdateOne) AddProjectIDs(ids ...int) *RepoUpdateOne {
 	_u.mutation.AddProjectIDs(ids...)
@@ -772,6 +849,15 @@ func (_u *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) {
 	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(repo.FieldDescription, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AiAgent(); ok {
+		_spec.SetField(repo.FieldAiAgent, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.AiAgentKey(); ok {
+		_spec.SetField(repo.FieldAiAgentKey, field.TypeString, value)
+	}
+	if _u.mutation.AiAgentKeyCleared() {
+		_spec.ClearField(repo.FieldAiAgentKey, field.TypeString)
 	}
 	if _u.mutation.ProjectsCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	repoq "github.com/duc-cnzj/mars/v6/internal/data/ent/repo"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,10 +36,31 @@ func TestRepoImpl_List(t *testing.T) {
 	entdb, _ := NewSqliteDB()
 	defer entdb.Close()
 	repo := NewRepo(NewDataImpl(&NewDataParams{DB: entdb}), NewMockGitRepo(m))
+
+	_, err := repo.Create(context.TODO(), &biz.CreateRepoInput{Name: "plain", Enabled: true})
+	assert.Nil(t, err)
+	_, err = repo.Create(context.TODO(), &biz.CreateRepoInput{Name: "agent", Enabled: true, AIAgent: true})
+	assert.Nil(t, err)
+
+	// 不传 AIAgent 时不过滤，返回全部仓库。
 	res, pag, err := repo.List(context.TODO(), &biz.ListRepoRequest{})
 	assert.Nil(t, err)
-	assert.NotNil(t, res)
 	assert.NotNil(t, pag)
+	assert.Len(t, res, 2)
+
+	// AIAgent=true 只返回 AI Agent 仓库。
+	res, _, err = repo.List(context.TODO(), &biz.ListRepoRequest{AIAgent: lo.ToPtr(true)})
+	assert.Nil(t, err)
+	assert.Len(t, res, 1)
+	assert.Equal(t, "agent", res[0].Name)
+	assert.True(t, res[0].AIAgent)
+
+	// AIAgent=false 只返回非 AI Agent 仓库。
+	res, _, err = repo.List(context.TODO(), &biz.ListRepoRequest{AIAgent: lo.ToPtr(false)})
+	assert.Nil(t, err)
+	assert.Len(t, res, 1)
+	assert.Equal(t, "plain", res[0].Name)
+	assert.False(t, res[0].AIAgent)
 }
 
 func TestRepoImpl_Show(t *testing.T) {
@@ -114,6 +137,215 @@ func TestRepoImpl_Update(t *testing.T) {
 	assert.Equal(t, "dev", res.DefaultBranch)
 	assert.Equal(t, "a", res.GitProjectName)
 	assert.Equal(t, int32(100), res.GitProjectID)
+}
+
+// newRepoTestKit 构造 repo 测试的最小装配（SQLite + git mock），供 AI Agent 用例复用。
+func newRepoTestKit(t *testing.T) (*repoImpl, *MockGitRepo) {
+	t.Helper()
+	m := gomock.NewController(t)
+	entdb, _ := NewSqliteDB()
+	t.Cleanup(func() {
+		entdb.Close()
+		m.Finish()
+	})
+	git := NewMockGitRepo(m)
+	return NewRepo(NewDataImpl(&NewDataParams{DB: entdb}), git).(*repoImpl), git
+}
+
+// TestRepoImpl_GetAIAgent 覆盖未配置（NotFound）与配置后查询的语义。
+func TestRepoImpl_GetAIAgent(t *testing.T) {
+	repo, _ := newRepoTestKit(t)
+	ctx := context.TODO()
+
+	_, err := repo.GetAIAgent(ctx)
+	assert.True(t, errs.IsNotFound(err), "未配置 AI Agent 仓库时应返回 NotFound")
+
+	created, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "app", AIAgent: true})
+	require.NoError(t, err)
+	got, err := repo.GetAIAgent(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, created.ID, got.ID)
+	assert.True(t, got.AIAgent)
+}
+
+// TestRepoImpl_Create_SwitchesAIAgentSlot 覆盖新建 AI 仓库时顶替旧槽位，且含软删行。
+func TestRepoImpl_Create_SwitchesAIAgentSlot(t *testing.T) {
+	repo, _ := newRepoTestKit(t)
+	ctx := context.TODO()
+
+	first, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "first", AIAgent: true})
+	require.NoError(t, err)
+	second, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "second", AIAgent: true})
+	require.NoError(t, err)
+
+	got, err := repo.GetAIAgent(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, second.ID, got.ID, "新建 AI 仓库应顶替旧槽位")
+	old, err := repo.Get(ctx, first.ID)
+	require.NoError(t, err)
+	assert.False(t, old.AIAgent, "旧 AI 仓库标记应被清除")
+
+	// 软删行仍占用唯一索引：删除后新建 AI 仓库必须先把软删行槽位清掉才能成功。
+	require.NoError(t, repo.Delete(ctx, second.ID))
+	third, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "third", AIAgent: true})
+	require.NoError(t, err, "软删行的 AI 槽位必须被清理，否则唯一索引冲突")
+	got, err = repo.GetAIAgent(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, third.ID, got.ID)
+}
+
+// TestRepoImpl_Update_SwitchesAIAgentSlot 覆盖更新时顶替槽位，以及取消 AI 标记后查询 NotFound。
+func TestRepoImpl_Update_SwitchesAIAgentSlot(t *testing.T) {
+	repo, _ := newRepoTestKit(t)
+	ctx := context.TODO()
+
+	first, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "first", AIAgent: true})
+	require.NoError(t, err)
+	second, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "second"})
+	require.NoError(t, err)
+
+	_, err = repo.Update(ctx, &biz.UpdateRepoInput{ID: int32(second.ID), Name: "second", AIAgent: lo.ToPtr(true)})
+	require.NoError(t, err)
+	got, err := repo.GetAIAgent(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, second.ID, got.ID)
+	old, err := repo.Get(ctx, first.ID)
+	require.NoError(t, err)
+	assert.False(t, old.AIAgent)
+
+	_, err = repo.Update(ctx, &biz.UpdateRepoInput{ID: int32(second.ID), Name: "second", AIAgent: lo.ToPtr(false)})
+	require.NoError(t, err)
+	_, err = repo.GetAIAgent(ctx)
+	assert.True(t, errs.IsNotFound(err), "取消 AI 标记后应查不到 AI Agent 仓库")
+}
+
+// TestRepoImpl_Update_KeepsAIAgentWhenUnspecified 旧客户端更新时未传 ai_agent（nil），
+// 必须保持已有标记与唯一槽位——这是 optional 字段的核心兼容语义。
+func TestRepoImpl_Update_KeepsAIAgentWhenUnspecified(t *testing.T) {
+	repo, _ := newRepoTestKit(t)
+	ctx := context.TODO()
+
+	created, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "agent", AIAgent: true})
+	require.NoError(t, err)
+
+	got, err := repo.Update(ctx, &biz.UpdateRepoInput{ID: int32(created.ID), Name: "agent"})
+	require.NoError(t, err)
+	assert.True(t, got.AIAgent)
+	agent, err := repo.GetAIAgent(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, created.ID, agent.ID)
+}
+
+// TestRepoImpl_Clone_DoesNotCopyAIAgent 覆盖克隆不继承 AI 标记（克隆出的仓库只是普通仓库）。
+func TestRepoImpl_Clone_DoesNotCopyAIAgent(t *testing.T) {
+	repo, _ := newRepoTestKit(t)
+	ctx := context.TODO()
+
+	src, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "src", AIAgent: true})
+	require.NoError(t, err)
+	clone, err := repo.Clone(ctx, &biz.CloneRepoInput{ID: src.ID, Name: "clone"})
+	require.NoError(t, err)
+	assert.False(t, clone.AIAgent, "克隆不应继承 AI Agent 标记")
+
+	got, err := repo.GetAIAgent(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, src.ID, got.ID)
+}
+
+// TestRepoImpl_Import_AIAgentUniqueness 覆盖导入时的槽位顶替与取消。
+func TestRepoImpl_Import_AIAgentUniqueness(t *testing.T) {
+	repo, _ := newRepoTestKit(t)
+	ctx := context.TODO()
+
+	first, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "first", AIAgent: true})
+	require.NoError(t, err)
+	second, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "second"})
+	require.NoError(t, err)
+
+	created, updated, err := repo.Import(ctx, []*biz.ImportRepoItem{{Name: "second", AIAgent: true}})
+	require.NoError(t, err)
+	assert.Zero(t, created)
+	assert.Equal(t, 1, updated)
+	got, err := repo.GetAIAgent(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, second.ID, got.ID)
+	old, err := repo.Get(ctx, first.ID)
+	require.NoError(t, err)
+	assert.False(t, old.AIAgent)
+
+	// 导入条目不带 AI 标记即视为取消（导出/导入 round-trip 语义）。
+	_, _, err = repo.Import(ctx, []*biz.ImportRepoItem{{Name: "second"}})
+	require.NoError(t, err)
+	_, err = repo.GetAIAgent(ctx)
+	assert.True(t, errs.IsNotFound(err))
+}
+
+// installAIAgentSlotClearTrigger 安装一条仅拦「清除 AI 槽位」的 SQLite 触发器：
+// 让 clearOtherAIAgentSlots 确定性失败，覆盖各写入路径的事务内错误分支。
+func installAIAgentSlotClearTrigger(t *testing.T) {
+	t.Helper()
+	// ent.Client 不暴露裸 SQL 执行口：另开一条到同一 shared-cache 内存库的连接装触发器。
+	sqlDB, err := sql.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1&loc=Local")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = sqlDB.Close() })
+	_, err = sqlDB.ExecContext(context.TODO(), `CREATE TRIGGER fail_ai_slot_clear
+BEFORE UPDATE OF ai_agent_key ON repos
+WHEN OLD.ai_agent_key IS NOT NULL AND NEW.ai_agent_key IS NULL
+BEGIN SELECT RAISE(ABORT, 'slot clear boom'); END;`)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = sqlDB.ExecContext(context.TODO(), `DROP TRIGGER IF EXISTS fail_ai_slot_clear`)
+	})
+}
+
+// TestRepoImpl_AIAgentSlotClearErrors 覆盖 Create/Update/Import 三条写入路径中
+// 「清理旧 AI 槽位失败 → 整体回滚并上抛错误」的分支。
+func TestRepoImpl_AIAgentSlotClearErrors(t *testing.T) {
+	ctx := context.TODO()
+
+	t.Run("create", func(t *testing.T) {
+		repo, _ := newRepoTestKit(t)
+		_, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "first", AIAgent: true})
+		require.NoError(t, err)
+		installAIAgentSlotClearTrigger(t)
+
+		_, err = repo.Create(ctx, &biz.CreateRepoInput{Name: "second", AIAgent: true})
+		assert.ErrorContains(t, err, "slot clear boom")
+	})
+
+	t.Run("update", func(t *testing.T) {
+		repo, _ := newRepoTestKit(t)
+		_, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "first", AIAgent: true})
+		require.NoError(t, err)
+		second, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "second"})
+		require.NoError(t, err)
+		installAIAgentSlotClearTrigger(t)
+
+		_, err = repo.Update(ctx, &biz.UpdateRepoInput{ID: int32(second.ID), Name: "second", AIAgent: lo.ToPtr(true)})
+		assert.ErrorContains(t, err, "slot clear boom")
+	})
+
+	t.Run("import create", func(t *testing.T) {
+		repo, _ := newRepoTestKit(t)
+		_, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "first", AIAgent: true})
+		require.NoError(t, err)
+		installAIAgentSlotClearTrigger(t)
+
+		_, _, err = repo.Import(ctx, []*biz.ImportRepoItem{{Name: "second", AIAgent: true}})
+		assert.ErrorContains(t, err, "slot clear boom")
+	})
+
+	t.Run("import update", func(t *testing.T) {
+		repo, _ := newRepoTestKit(t)
+		_, err := repo.Create(ctx, &biz.CreateRepoInput{Name: "first", AIAgent: true})
+		require.NoError(t, err)
+		_, err = repo.Create(ctx, &biz.CreateRepoInput{Name: "second"})
+		require.NoError(t, err)
+		installAIAgentSlotClearTrigger(t)
+
+		_, _, err = repo.Import(ctx, []*biz.ImportRepoItem{{Name: "second", AIAgent: true}})
+		assert.ErrorContains(t, err, "slot clear boom")
+	})
 }
 
 func TestRepoImpl_ToggleEnabled(t *testing.T) {

@@ -7,8 +7,11 @@ import (
 
 	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/locker"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/services/mcp"
 	"github.com/duc-cnzj/mars/v6/internal/uploader"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	"github.com/gorilla/mux"
@@ -33,11 +36,18 @@ func TestNewHttpHandler(t *testing.T) {
 	assert.NotNil(t, handler.files.timer)
 	assert.NotNil(t, handler.files.k8sBiz)
 	assert.NotNil(t, handler.files.accessBiz)
+	assert.NotNil(t, handler.aiConfig)
+	assert.NotNil(t, handler.llmProxy)
 
 	router := mux.NewRouter()
 	handler.RegisterWsRoute(router)
 	handler.RegisterSwaggerUIRoute(router)
 	handler.RegisterFileRoute(runtime.NewServeMux())
+	handler.RegisterAIConfigRoute(router)
+	handler.RegisterLLMProxyRoute(router)
+	handler.RegisterMCPRoute(router)
+	// 委托注册必须真正落到 mux 上（路由名由 mcp.Server.Register 固定为 "mcp"）。
+	assert.NotNil(t, router.GetRoute("mcp"))
 
 	httpHandler.EXPECT().Shutdown(gomock.Not(nil)).Times(1)
 	_ = handler.Shutdown(context.TODO())
@@ -63,6 +73,8 @@ type httpHandlerMocks struct {
 	eventRepo  *data.MockEventRepo
 	k8sRepo    *data.MockK8sRepo
 	nsRepo     *data.MockNamespaceRepo
+	pluginMgr  *app.MockPluginManager
+	locker     *locker.MockLocker
 }
 
 func newHttpHandlerMocks(t *testing.T) *httpHandlerMocks {
@@ -78,6 +90,8 @@ func newHttpHandlerMocks(t *testing.T) *httpHandlerMocks {
 		eventRepo:  data.NewMockEventRepo(ctrl),
 		k8sRepo:    data.NewMockK8sRepo(ctrl),
 		nsRepo:     data.NewMockNamespaceRepo(ctrl),
+		pluginMgr:  app.NewMockPluginManager(ctrl),
+		locker:     locker.NewMockLocker(ctrl),
 	}
 }
 
@@ -98,6 +112,10 @@ func buildHttpHandlerDeps(t *testing.T, mocks *httpHandlerMocks) HttpHandlerDeps
 		// copyFromPod 的容器解析走真实 ContainerBiz：非空 container 直返，不触达 k8sRepo。
 		ContainerBiz: biz.NewContainerBiz(logger, biz.NewK8sBiz(mocks.k8sRepo), biz.NewFileBiz(mocks.fileRepo), biz.NewEventBiz(mocks.eventRepo), timer.NewReal()),
 		AccessBiz:    biz.NewAccessBiz(biz.NewNamespaceBiz(logger, mocks.nsRepo, nil, nil, nil), nil),
+		Locker:       mocks.locker,
+		PluginMgr:    mocks.pluginMgr,
+		MCP:          mcp.NewServer(mcp.Deps{Logger: logger}),
+		Config:       &config.Config{AI: config.AIConfig{Model: "demo-model"}},
 	}
 }
 

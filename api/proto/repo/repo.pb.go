@@ -28,11 +28,13 @@ const (
 )
 
 type ListRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Page          *int32                 `protobuf:"varint,1,opt,name=page,proto3,oneof" json:"page,omitempty"`
-	PageSize      *int32                 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3,oneof" json:"page_size,omitempty"`
-	Enabled       *bool                  `protobuf:"varint,3,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
-	Name          string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Page     *int32                 `protobuf:"varint,1,opt,name=page,proto3,oneof" json:"page,omitempty"`
+	PageSize *int32                 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3,oneof" json:"page_size,omitempty"`
+	Enabled  *bool                  `protobuf:"varint,3,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
+	Name     string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	// ai_agent 为空时不按 AI Agent 标记过滤；true 只返回 AI Agent 仓库，false 只返回非 AI Agent 仓库。
+	AiAgent       *bool `protobuf:"varint,5,opt,name=ai_agent,json=aiAgent,proto3,oneof" json:"ai_agent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -93,6 +95,13 @@ func (x *ListRequest) GetName() string {
 		return x.Name
 	}
 	return ""
+}
+
+func (x *ListRequest) GetAiAgent() bool {
+	if x != nil && x.AiAgent != nil {
+		return *x.AiAgent
+	}
+	return false
 }
 
 type ListResponse struct {
@@ -348,12 +357,14 @@ func (x *ToggleEnabledResponse) GetItem() *types.RepoModel {
 }
 
 type CreateRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	GitProjectId  *int32                 `protobuf:"varint,2,opt,name=git_project_id,json=gitProjectId,proto3,oneof" json:"git_project_id,omitempty"`
-	MarsConfig    *mars.Config           `protobuf:"bytes,3,opt,name=mars_config,json=marsConfig,proto3" json:"mars_config,omitempty"`
-	NeedGitRepo   bool                   `protobuf:"varint,4,opt,name=need_git_repo,json=needGitRepo,proto3" json:"need_git_repo,omitempty"`
-	Description   string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Name         string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	GitProjectId *int32                 `protobuf:"varint,2,opt,name=git_project_id,json=gitProjectId,proto3,oneof" json:"git_project_id,omitempty"`
+	MarsConfig   *mars.Config           `protobuf:"bytes,3,opt,name=mars_config,json=marsConfig,proto3" json:"mars_config,omitempty"`
+	NeedGitRepo  bool                   `protobuf:"varint,4,opt,name=need_git_repo,json=needGitRepo,proto3" json:"need_git_repo,omitempty"`
+	Description  string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	// ai_agent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库。
+	AiAgent       bool `protobuf:"varint,6,opt,name=ai_agent,json=aiAgent,proto3" json:"ai_agent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -423,6 +434,13 @@ func (x *CreateRequest) GetDescription() string {
 	return ""
 }
 
+func (x *CreateRequest) GetAiAgent() bool {
+	if x != nil {
+		return x.AiAgent
+	}
+	return false
+}
+
 type CreateResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Item          *types.RepoModel       `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
@@ -468,13 +486,16 @@ func (x *CreateResponse) GetItem() *types.RepoModel {
 }
 
 type UpdateRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	GitProjectId  *int32                 `protobuf:"varint,3,opt,name=git_project_id,json=gitProjectId,proto3,oneof" json:"git_project_id,omitempty"`
-	MarsConfig    *mars.Config           `protobuf:"bytes,4,opt,name=mars_config,json=marsConfig,proto3" json:"mars_config,omitempty"`
-	NeedGitRepo   bool                   `protobuf:"varint,5,opt,name=need_git_repo,json=needGitRepo,proto3" json:"need_git_repo,omitempty"`
-	Description   string                 `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Id           int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name         string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	GitProjectId *int32                 `protobuf:"varint,3,opt,name=git_project_id,json=gitProjectId,proto3,oneof" json:"git_project_id,omitempty"`
+	MarsConfig   *mars.Config           `protobuf:"bytes,4,opt,name=mars_config,json=marsConfig,proto3" json:"mars_config,omitempty"`
+	NeedGitRepo  bool                   `protobuf:"varint,5,opt,name=need_git_repo,json=needGitRepo,proto3" json:"need_git_repo,omitempty"`
+	Description  string                 `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
+	// ai_agent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库；false 清除标记；
+	// 不传（nil）时保持现状——旧客户端不知道该字段，不能因缺省值把标记清掉。
+	AiAgent       *bool `protobuf:"varint,7,opt,name=ai_agent,json=aiAgent,proto3,oneof" json:"ai_agent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -549,6 +570,13 @@ func (x *UpdateRequest) GetDescription() string {
 		return x.Description
 	}
 	return ""
+}
+
+func (x *UpdateRequest) GetAiAgent() bool {
+	if x != nil && x.AiAgent != nil {
+		return *x.AiAgent
+	}
+	return false
 }
 
 type UpdateResponse struct {
@@ -1111,17 +1139,19 @@ var File_proto_repo_repo_proto protoreflect.FileDescriptor
 
 const file_proto_repo_repo_proto_rawDesc = "" +
 	"\n" +
-	"\x15proto/repo/repo.proto\x12\x04repo\x1a\x1copenapi/v3/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\x1a\x17proto/types/types.proto\x1a\x15proto/mars/mars.proto\"\x9e\x01\n" +
+	"\x15proto/repo/repo.proto\x12\x04repo\x1a\x1copenapi/v3/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17validate/validate.proto\x1a\x17proto/types/types.proto\x1a\x15proto/mars/mars.proto\"\xcb\x01\n" +
 	"\vListRequest\x12\x17\n" +
 	"\x04page\x18\x01 \x01(\x05H\x00R\x04page\x88\x01\x01\x12 \n" +
 	"\tpage_size\x18\x02 \x01(\x05H\x01R\bpageSize\x88\x01\x01\x12\x1d\n" +
 	"\aenabled\x18\x03 \x01(\bH\x02R\aenabled\x88\x01\x01\x12\x12\n" +
-	"\x04name\x18\x04 \x01(\tR\x04nameB\a\n" +
+	"\x04name\x18\x04 \x01(\tR\x04name\x12\x1e\n" +
+	"\bai_agent\x18\x05 \x01(\bH\x03R\aaiAgent\x88\x01\x01B\a\n" +
 	"\x05_pageB\f\n" +
 	"\n" +
 	"_page_sizeB\n" +
 	"\n" +
-	"\b_enabled\"}\n" +
+	"\b_enabledB\v\n" +
+	"\t_ai_agent\"}\n" +
 	"\fListResponse\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x14\n" +
@@ -1135,17 +1165,18 @@ const file_proto_repo_repo_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\x12\x1e\n" +
 	"\aenabled\x18\x02 \x01(\bB\x04\xe2A\x01\x02R\aenabled\"=\n" +
 	"\x15ToggleEnabledResponse\x12$\n" +
-	"\x04item\x18\x01 \x01(\v2\x10.types.RepoModelR\x04item\"\xff\x01\n" +
+	"\x04item\x18\x01 \x01(\v2\x10.types.RepoModelR\x04item\"\x9a\x02\n" +
 	"\rCreateRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaB\x16r\x14 \x012\x10^[a-zA-Z0-9_-]+$R\x04name\x12)\n" +
 	"\x0egit_project_id\x18\x02 \x01(\x05H\x00R\fgitProjectId\x88\x01\x01\x12-\n" +
 	"\vmars_config\x18\x03 \x01(\v2\f.mars.ConfigR\n" +
 	"marsConfig\x12\"\n" +
 	"\rneed_git_repo\x18\x04 \x01(\bR\vneedGitRepo\x12*\n" +
-	"\vdescription\x18\x05 \x01(\tB\b\xfaB\x05r\x03(\xff\x01R\vdescriptionB\x11\n" +
+	"\vdescription\x18\x05 \x01(\tB\b\xfaB\x05r\x03(\xff\x01R\vdescription\x12\x19\n" +
+	"\bai_agent\x18\x06 \x01(\bR\aaiAgentB\x11\n" +
 	"\x0f_git_project_id\"6\n" +
 	"\x0eCreateResponse\x12$\n" +
-	"\x04item\x18\x01 \x01(\v2\x10.types.RepoModelR\x04item\"\x9c\x02\n" +
+	"\x04item\x18\x01 \x01(\v2\x10.types.RepoModelR\x04item\"\xc9\x02\n" +
 	"\rUpdateRequest\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\x05B\v\xe2A\x01\x02\xfaB\x04\x1a\x02 \x00R\x02id\x121\n" +
 	"\x04name\x18\x02 \x01(\tB\x1d\xe2A\x01\x02\xfaB\x16r\x14 \x012\x10^[a-zA-Z0-9_-]+$R\x04name\x12)\n" +
@@ -1153,8 +1184,10 @@ const file_proto_repo_repo_proto_rawDesc = "" +
 	"\vmars_config\x18\x04 \x01(\v2\f.mars.ConfigR\n" +
 	"marsConfig\x12\"\n" +
 	"\rneed_git_repo\x18\x05 \x01(\bR\vneedGitRepo\x12*\n" +
-	"\vdescription\x18\x06 \x01(\tB\b\xfaB\x05r\x03(\xff\x01R\vdescriptionB\x11\n" +
-	"\x0f_git_project_id\"6\n" +
+	"\vdescription\x18\x06 \x01(\tB\b\xfaB\x05r\x03(\xff\x01R\vdescription\x12\x1e\n" +
+	"\bai_agent\x18\a \x01(\bH\x01R\aaiAgent\x88\x01\x01B\x11\n" +
+	"\x0f_git_project_idB\v\n" +
+	"\t_ai_agent\"6\n" +
 	"\x0eUpdateResponse\x12$\n" +
 	"\x04item\x18\x01 \x01(\v2\x10.types.RepoModelR\x04item\"7\n" +
 	"\n" +

@@ -37,6 +37,10 @@ const (
 	FieldMarsConfig = "mars_config"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
+	// FieldAiAgent holds the string denoting the ai_agent field in the database.
+	FieldAiAgent = "ai_agent"
+	// FieldAiAgentKey holds the string denoting the ai_agent_key field in the database.
+	FieldAiAgentKey = "ai_agent_key"
 	// EdgeProjects holds the string denoting the projects edge name in mutations.
 	EdgeProjects = "projects"
 	// Table holds the table name of the repo in the database.
@@ -64,6 +68,8 @@ var Columns = []string{
 	FieldNeedGitRepo,
 	FieldMarsConfig,
 	FieldDescription,
+	FieldAiAgent,
+	FieldAiAgentKey,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -100,6 +106,8 @@ var (
 	DefaultNeedGitRepo bool
 	// DefaultDescription holds the default value on creation for the "description" field.
 	DefaultDescription string
+	// DefaultAiAgent holds the default value on creation for the "ai_agent" field.
+	DefaultAiAgent bool
 )
 
 // OrderOption defines the ordering options for the Repo queries.
@@ -158,6 +166,16 @@ func ByNeedGitRepo(opts ...sql.OrderTermOption) OrderOption {
 // ByDescription orders the results by the description field.
 func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
+// ByAiAgent orders the results by the ai_agent field.
+func ByAiAgent(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAiAgent, opts...).ToFunc()
+}
+
+// ByAiAgentKey orders the results by the ai_agent_key field.
+func ByAiAgentKey(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAiAgentKey, opts...).ToFunc()
 }
 
 // ByProjectsCount orders the results by projects count.

@@ -57,9 +57,9 @@ func NewContainerSvc(deps ContainerSvcDeps) container.ContainerServer {
 	}
 }
 
-// IsPodRunning 查询指定 pod 是否处于 Running 状态（含原因），响应前做命名空间级访问控制。
+// IsPodRunning 查询指定 pod 是否处于 Running 状态（含原因），响应前做 Pod 级访问控制。
 func (c *containerSvc) IsPodRunning(ctx context.Context, request *container.IsPodRunningRequest) (*container.IsPodRunningResponse, error) {
-	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.GetNamespace()); err != nil {
+	if _, err := c.accessBiz.RequirePodAccess(ctx, request.GetNamespace(), request.GetPod()); err != nil {
 		return nil, logError(ctx, c.logger, err)
 	}
 	running, reason := c.k8sBiz.IsPodRunning(request.GetNamespace(), request.GetPod())
@@ -67,9 +67,9 @@ func (c *containerSvc) IsPodRunning(ctx context.Context, request *container.IsPo
 	return &container.IsPodRunningResponse{Running: running, Reason: reason}, nil
 }
 
-// IsPodExists 查询指定 pod 是否存在：Get 失败即视为不存在（响应前做命名空间级访问控制）。
+// IsPodExists 查询指定 pod 是否存在：Get 失败即视为不存在（响应前做 Pod 级访问控制）。
 func (c *containerSvc) IsPodExists(ctx context.Context, request *container.IsPodExistsRequest) (*container.IsPodExistsResponse, error) {
-	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.GetNamespace()); err != nil {
+	if _, err := c.accessBiz.RequirePodAccess(ctx, request.GetNamespace(), request.GetPod()); err != nil {
 		return nil, logError(ctx, c.logger, err)
 	}
 	_, err := c.k8sBiz.GetPod(request.GetNamespace(), request.GetPod())
@@ -88,7 +88,7 @@ func (c *containerSvc) IsPodExists(ctx context.Context, request *container.IsPod
 // ContainerLog 返回一次性容器日志：守卫、Pending 事件聚合、尾部日志策略均下沉
 // containerBiz.Log，transport 只做鉴权与 UTF-8 序列化卫生。
 func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogRequest) (*container.LogResponse, error) {
-	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.Namespace); err != nil {
+	if _, err := c.accessBiz.RequirePodAccess(ctx, request.Namespace, request.Pod); err != nil {
 		return nil, logError(ctx, c.logger, err)
 	}
 	res, err := c.containerBiz.Log(ctx, &biz.LogInput{
@@ -96,6 +96,7 @@ func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogR
 		Pod:        request.Pod,
 		Container:  request.Container,
 		ShowEvents: request.ShowEvents,
+		TailLines:  request.TailLines,
 	})
 	if err != nil {
 		return nil, logError(ctx, c.logger, err)
@@ -112,7 +113,7 @@ func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogR
 // CopyToPod 把已上传的文件写入指定 pod 容器路径：先校验命名空间访问与文件归属，
 // 再校验 pod 运行态，落上传审计日志。
 func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToPodRequest) (*container.CopyToPodResponse, error) {
-	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.Namespace); err != nil {
+	if _, err := c.accessBiz.RequirePodAccess(ctx, request.Namespace, request.Pod); err != nil {
 		return nil, logError(ctx, c.logger, err)
 	}
 	// 文件归属门卫：CopyToPod 按 FileId 直接取库内文件，若只校验命名空间权限，
@@ -176,7 +177,7 @@ func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPo
 	if err != nil {
 		return err
 	}
-	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, recv.Namespace); err != nil {
+	if _, err := c.accessBiz.RequirePodAccess(ctx, recv.Namespace, recv.Pod); err != nil {
 		return logError(ctx, c.logger, err)
 	}
 	c.logger.DebugCtx(ctx, "StreamUploadFile", recv.Namespace, recv.Pod, recv.Container, recv.FileName)
@@ -258,7 +259,7 @@ func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPo
 // StreamContainerLog 流式返回容器日志：实时流/一次性文本的策略选择下沉 containerBiz.LogStream，
 // transport 只做鉴权与帧下发（Running 逐帧转发，其余阶段逐行切分）。
 func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server container.Container_StreamContainerLogServer) error {
-	if _, err := c.accessBiz.RequireNamespaceAccessByName(server.Context(), request.Namespace); err != nil {
+	if _, err := c.accessBiz.RequirePodAccess(server.Context(), request.Namespace, request.Pod); err != nil {
 		return logError(server.Context(), c.logger, err)
 	}
 	c.logger.DebugCtxf(server.Context(), "StreamContainerLog: %v", request)
@@ -267,6 +268,7 @@ func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server 
 		Pod:        request.Pod,
 		Container:  request.Container,
 		ShowEvents: request.ShowEvents,
+		TailLines:  request.TailLines,
 	})
 	if err != nil {
 		return logError(server.Context(), c.logger, err)
@@ -306,7 +308,7 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 	if err != nil {
 		return err
 	}
-	if _, err := c.accessBiz.RequireNamespaceAccessByName(server.Context(), recv.Namespace); err != nil {
+	if _, err := c.accessBiz.RequirePodAccess(server.Context(), recv.Namespace, recv.Pod); err != nil {
 		return logError(server.Context(), c.logger, err)
 	}
 	// 首帧携带的 Message/SizeQueue 一并传给 biz：Message 作为终端首屏输入，
@@ -323,7 +325,7 @@ func (c *containerSvc) Exec(server container.Container_ExecServer) error {
 
 // ExecOnce 执行单次命令并把结果流回客户端，透传给 containerBiz.ExecOnce。
 func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server container.Container_ExecOnceServer) error {
-	if _, err := c.accessBiz.RequireNamespaceAccessByName(server.Context(), request.Namespace); err != nil {
+	if _, err := c.accessBiz.RequirePodAccess(server.Context(), request.Namespace, request.Pod); err != nil {
 		return logError(server.Context(), c.logger, err)
 	}
 	return c.containerBiz.ExecOnce(server.Context(), server, biz.MustGetUser(server.Context()), &biz.ExecOnceInput{
@@ -335,11 +337,11 @@ func (c *containerSvc) ExecOnce(request *container.ExecOnceRequest, server conta
 	})
 }
 
-// ForceDeletePod 强制删除指定 pod：先做命名空间级访问控制，再以指定宽限期执行
+// ForceDeletePod 强制删除指定 pod：先做 Pod 级访问控制，再以指定宽限期执行
 // 强制删除（gracePeriodSeconds=0 即不等优雅终止）。成功与失败均落审计日志
 // （EventActionType_ForceDeletePod），错误统一经 logError 打印。
 func (c *containerSvc) ForceDeletePod(ctx context.Context, request *container.ForceDeletePodRequest) (*container.ForceDeletePodResponse, error) {
-	if _, err := c.accessBiz.RequireNamespaceAccessByName(ctx, request.GetNamespace()); err != nil {
+	if _, err := c.accessBiz.RequirePodAccess(ctx, request.GetNamespace(), request.GetPod()); err != nil {
 		return nil, logError(ctx, c.logger, err)
 	}
 	user := biz.MustGetUser(ctx)

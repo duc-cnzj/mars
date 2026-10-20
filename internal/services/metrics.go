@@ -57,11 +57,11 @@ var (
 	length       = timeSpan / tickDuration
 )
 
-// TopPod 返回指定 pod 的实时 CPU/内存资源用量，响应前做命名空间级访问控制。
+// TopPod 返回指定 pod 的实时 CPU/内存资源用量，响应前做 Pod 级访问控制。
 func (m *metricsSvc) TopPod(ctx context.Context, request *metrics.TopPodRequest) (*metrics.TopPodResponse, error) {
-	// 与 CpuMemoryInProject/Namespace 对齐：原始 k8s namespace 名必须过访问控制，
-	// 否则任意登录用户可枚举任意命名空间内 pod 的资源用量。
-	if _, err := m.accessBiz.RequireNamespaceAccessByName(ctx, request.Namespace); err != nil {
+	// 原始 k8s namespace 名必须过访问控制，否则任意登录用户可枚举任意命名空间内
+	// pod 的资源用量；RequirePodAccess 额外放行用户自己的 AI 沙箱 Pod。
+	if _, err := m.accessBiz.RequirePodAccess(ctx, request.Namespace, request.Pod); err != nil {
 		return nil, logError(ctx, m.logger, err)
 	}
 	sample, err := m.metricsBiz.PodSample(ctx, request.Namespace, request.Pod)
@@ -77,11 +77,11 @@ func (m *metricsSvc) TopPod(ctx context.Context, request *metrics.TopPodRequest)
 	return m.buildTopPodResponse(sample), nil
 }
 
-// StreamTopPod 周期推送指定 pod 的资源用量：先做命名空间级访问控制，
+// StreamTopPod 周期推送指定 pod 的资源用量：先做 Pod 级访问控制，
 // 随后按 tickDuration 间隔持续下发，直到客户端断开。
 func (m *metricsSvc) StreamTopPod(request *metrics.TopPodRequest, server metrics.Metrics_StreamTopPodServer) error {
-	// 与 TopPod 一致：流式场景同样要求命名空间访问控制，防止未授权用户订阅任意 pod 资源用量。
-	if _, err := m.accessBiz.RequireNamespaceAccessByName(server.Context(), request.Namespace); err != nil {
+	// 与 TopPod 一致：流式场景同样要求 Pod 级访问控制，防止未授权用户订阅任意 pod 资源用量。
+	if _, err := m.accessBiz.RequirePodAccess(server.Context(), request.Namespace, request.Pod); err != nil {
 		return logError(server.Context(), m.logger, err)
 	}
 	ticker := time.NewTicker(tickDuration)

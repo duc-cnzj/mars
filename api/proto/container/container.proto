@@ -103,6 +103,10 @@ message LogRequest {
   string pod         = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   string container   = 3 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   bool   show_events = 4;
+  // 日志尾部行数（对应 k8s PodLogOptions.TailLines）：0 或缺省表示默认 1000 行。
+  // 作用于一次性拉取（ContainerLog）与非 Running Pod 的流式回退；Running Pod 的实时流
+  // 仍需先回补历史日志，固定 1000 行（实时流另有独立读取路径）。
+  int64  tail_lines  = 5 [(validate.rules).int64.gte = 0];
 }
 
 message LogResponse {

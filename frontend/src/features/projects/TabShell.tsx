@@ -11,9 +11,9 @@ import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import { POD_DEBOUNCE_MS } from '@/lib/constants'
 import { API } from '@/api/endpoints'
-import { Terminal } from 'xterm'
-import { FitAddon } from 'xterm-addon-fit'
-import 'xterm/css/xterm.css'
+import { Terminal } from '@xterm/xterm'
+import { FitAddon } from '@xterm/addon-fit'
+import '@xterm/xterm/css/xterm.css'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
 import { getToken } from '@/api/token'
@@ -667,6 +667,10 @@ function ShellTerminal({
   const hostRef = useRef<HTMLDivElement>(null)
   const termRef = useRef<Terminal | null>(null)
   const fitRef = useRef<FitAddon | null>(null)
+  // modifyOtherKeys 当前等级（0=关闭）：xterm.js 不实现该协议，Enter 带 Shift/Ctrl 时
+  // 一律退化成 \r；opentui 系 TUI（如 opencode）启动会发 CSI > 4;1m 声明按该协议解码，
+  // 不桥接就会把 Shift+Enter 当提交。等级从应用输出里探测，普通 shell 不受影响。
+  const modifyOtherKeysRef = useRef(0)
   const sessionId = useMemo(
     () => crypto.randomUUID(),
     // 依赖容器三元组：切容器时重新生成不透明 id，触发下方会话 effect 关闭旧会话、为
@@ -718,8 +722,12 @@ function ShellTerminal({
     const host = hostRef.current
     if (!host) return
 
+    // 新会话从关闭态开始，等应用自己声明（旧会话的等级不能泄漏到新进程）
+    modifyOtherKeysRef.current = 0
     const term = new Terminal({
       fontSize: 14,
+      // 行高略大于字形高度，拉开终端行间距，长日志更易扫读（xterm 默认 1.0 偏挤）。
+      lineHeight: 1.25,
       fontFamily: 'var(--font-mono-family)', // 跟随主题 mono 栈，与其余代码/日志一致
       cursorBlink: true,
       rows: 25,
@@ -729,6 +737,27 @@ function ShellTerminal({
     term.open(host)
     termRef.current = term
     fitRef.current = fit
+
+    /** 把一段终端输入（字符串）编码成 stdin 帧发给容器。 */
+    const sendStdin = (str: string) => {
+      send(
+        websocket.TerminalMessageInput.encode({
+          type: websocket.Type.HandleExecShellMsg,
+          message: { sessionId, op: 'stdin', data: encoder.encode(str), width: 0, height: 0 },
+        }).finish(),
+      )
+    }
+
+    // 探测应用是否启用了 modifyOtherKeys（CSI > 4 ; N m）：只保留末尾一小段做跨帧拼接，
+    // 取最后一次匹配作为当前等级。xterm.js 会把该序列当未知 CSI 丢弃，不影响渲染。
+    let capTail = ''
+    const capDecoder = new TextDecoder()
+    const trackModifyOtherKeys = (data: Uint8Array) => {
+      capTail = (capTail + capDecoder.decode(data, { stream: true })).slice(-64)
+      let last: RegExpMatchArray | null = null
+      for (const m of capTail.matchAll(/\x1b\[>4(?:;(\d+))?m/g)) last = m
+      if (last) modifyOtherKeysRef.current = Number(last[1] ?? 0)
+    }
 
     // stdout / toast 帧：后端把 session_id 作为 slug 回投，帧体解码为 WsHandleShellResponse
     const unsubscribe = subscribe(sessionId, (meta, raw) => {
@@ -744,7 +773,10 @@ function ShellTerminal({
       }
       const tm = res.terminalMessage
       if (!tm) return
-      if (tm.op === 'stdout' && tm.data) term.write(tm.data)
+      if (tm.op === 'stdout' && tm.data) {
+        trackModifyOtherKeys(tm.data)
+        term.write(tm.data)
+      }
       if (tm.op === 'toast' && tm.data) toast.error(decoder.decode(tm.data))
     })
 
@@ -757,15 +789,22 @@ function ShellTerminal({
       }).finish(),
     )
 
-    let resizeTimer: ReturnType<typeof setTimeout> | null = null
-    term.onData((str) => {
-      send(
-        websocket.TerminalMessageInput.encode({
-          type: websocket.Type.HandleExecShellMsg,
-          message: { sessionId, op: 'stdin', data: encoder.encode(str), width: 0, height: 0 },
-        }).finish(),
-      )
+    // xterm.js 缺 modifyOtherKeys：应用启用后，带修饰键的 Enter 按 xterm 规范编码成
+    // CSI 27 ; modifier ; 13 ~（如 Shift+Enter = ESC[27;2;13~），否则 TUI 里无法换行、
+    // 只能靠 Ctrl+J 兜底。仅在该应用主动启用时拦截，普通 shell 行为不变。
+    term.attachCustomKeyEventHandler((ev) => {
+      if (ev.type !== 'keydown' || !modifyOtherKeysRef.current) return true
+      if (ev.key !== 'Enter') return true
+      const modifier =
+        1 + (ev.shiftKey ? 1 : 0) + (ev.altKey ? 2 : 0) + (ev.ctrlKey ? 4 : 0) + (ev.metaKey ? 8 : 0)
+      if (modifier === 1) return true
+      ev.preventDefault()
+      sendStdin(`\u001b[27;${modifier};13~`)
+      return false
     })
+
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null
+    term.onData(sendStdin)
     term.onResize(({ cols, rows }) => {
       if (resizeTimer) clearTimeout(resizeTimer)
       resizeTimer = setTimeout(() => {

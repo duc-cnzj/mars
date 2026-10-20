@@ -1,8 +1,14 @@
+import { Suspense, lazy, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Topbar } from './Topbar'
 import { Footer } from './Footer'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import type { ThemeId } from '@/themes'
+
+// 顶栏 AI 入口：唤醒沙箱 + 复用项目详情弹窗，按需加载
+const AIAgentLauncher = lazy(() =>
+  import('@/features/ai/AIAgentLauncher').then((m) => ({ default: m.AIAgentLauncher })),
+)
 
 /**
  * 应用整体布局（旧版风格）：全宽渐变顶栏 + 居中内容区 + 渐变底栏。
@@ -25,11 +31,13 @@ export function AppLayout({
   // 管理后台（/admin/*）是控制台形态：隐藏营销底栏，文档高度恰好锁死 100dvh 不产生页面滚动，
   // AdminLayout 的侧栏导航 + 面包屑才能真正常驻固顶（否则 footer 会把文档撑出视口高，导航随页漂移）。
   const isAdmin = location.pathname.startsWith('/admin')
+  // AI 助手开关：挂布局层——唤醒后的项目详情弹窗要用 useWebsocket（Provider 在 AppShell 上层）
+  const [aiOpen, setAiOpen] = useState(false)
 
   return (
     // 页面随文档整体滚动，footer 位于内容末尾（不固定到底部）——对齐旧版 antd Layout 行为
     <div className="flex min-h-screen flex-col bg-bg text-ink">
-      <Topbar theme={theme} onSelectTheme={onSelectTheme} />
+      <Topbar theme={theme} onSelectTheme={onSelectTheme} onOpenAI={() => setAiOpen(true)} />
       <main className="flex-1 px-4 pt-6 pb-3 sm:px-6 lg:px-10">
         <div className="h-full w-full">
           {/* 错误边界按页面出口重建（key=pathname）：页面崩溃切页即恢复，
@@ -41,6 +49,11 @@ export function AppLayout({
       </main>
       {/* 管理后台无底栏（控制台形态）；工作台/事件/令牌保留营销底栏 */}
       {!isAdmin && <Footer theme={theme} />}
+
+      {/* AI 助手（顶栏入口）：先唤醒沙箱，再渲染与普通项目一致的项目详情弹窗 */}
+      <Suspense fallback={null}>
+        {aiOpen && <AIAgentLauncher open onClose={() => setAiOpen(false)} />}
+      </Suspense>
     </div>
   )
 }

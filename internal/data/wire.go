@@ -32,6 +32,7 @@ var WireDataSet = wire.NewSet(
 	NewFileRepo,
 	NewGitRepo,
 	NewAuthn,
+	NewAgentActivityRepo,
 	wire.Bind(new(biz.UserRepo), new(*userRepo)),
 	wire.Bind(new(biz.EffectiveRolesProvider), new(*userRepo)),
 )

@@ -175,6 +175,32 @@ var (
 		Help:        "fanout 通道当前积压长度",
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"name"})
+
+	// AgentSandboxTransitionTotal 记录 AI Agent 沙箱的休眠/唤醒次数，
+	// action 维度区分 sleep/wake，用于观察缩容策略的实际执行量。
+	AgentSandboxTransitionTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Subsystem:   system,
+		Name:        "agent_sandbox_transition_total",
+		Help:        "AI Agent 沙箱休眠/唤醒次数",
+		ConstLabels: prometheus.Labels{"version": appVersion},
+	}, []string{"action"})
+
+	// AgentLLMProxyRequestsTotal 记录通过 AI 功能准入校验、实际转发的 LLM 代理
+	// 请求数，用于观察沙箱对话流量与被准入拒绝的比例（拒绝不计入）。
+	AgentLLMProxyRequestsTotal = prometheus.NewCounter(prometheus.CounterOpts{
+		Subsystem:   system,
+		Name:        "agent_llm_proxy_requests_total",
+		Help:        "AI Agent LLM 代理转发请求数",
+		ConstLabels: prometheus.Labels{"version": appVersion},
+	})
+)
+
+// AI Agent 沙箱状态迁移动作，作为 AgentSandboxTransitionTotal 的 action 标签值。
+const (
+	// AgentSandboxActionSleep 表示因空闲被缩容到 0。
+	AgentSandboxActionSleep = "sleep"
+	// AgentSandboxActionWake 表示用户再次启用时从 0 扩容到 1。
+	AgentSandboxActionWake = "wake"
 )
 
 // NewRegistry 构造并注册全部应用指标 + Go/进程运行时收集器，返回可用的 prometheus.Registry。
@@ -198,6 +224,8 @@ func NewRegistry() *prometheus.Registry {
 		CronDuration,
 		CronCommandCount,
 		CronErrorCount,
+		AgentSandboxTransitionTotal,
+		AgentLLMProxyRequestsTotal,
 		K8sInformerFanOutListenerCount,
 	)
 

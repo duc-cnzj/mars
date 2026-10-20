@@ -29,6 +29,18 @@ import (
 // ErrorVersionNotMatched 是部署版本冲突错误：多为并发部署或项目已存在导致。
 var ErrorVersionNotMatched = errors.New("[部署冲突]: 1. 可能是多个人同时部署导致 2. 项目已经存在")
 
+// ErrDeployInProgress 表示同一项目的部署流水线正在运行，本次变更被全局锁拒绝。
+// 导出为可判定的哨兵：上层（如 AI Agent 启用入口）据此把并发请求映射为 409。
+var ErrDeployInProgress = errors.New("正在部署中，请稍后再试")
+
+const (
+	// LockTTLSeconds 是项目级全局锁的过期秒数。
+	LockTTLSeconds int64 = 30
+	// LockRenewalSeconds 是全局锁的后台续期间隔秒数（必须小于 TTL）。
+	// 部署、AI Agent 唤醒与空闲缩容共用同一把项目级锁，参数必须一致。
+	LockRenewalSeconds int64 = 20
+)
+
 // ErrCancel 是部署被取消的信号错误，jobRunner.Stop 会记录它；
 // ws 传输层的 TaskManager 停止任务（手动取消）时也用它作为取消原因。
 var ErrCancel = errors.New("取消本次部署，自动回滚到上一个版本！")
@@ -97,6 +109,7 @@ type JobManagerDeps struct {
 	K8sRepo          biz.K8sRepo
 	EventRepo        biz.EventRepo
 	PluginManager    app.PluginManager
+	AccessTokenBiz   biz.AccessTokenBiz
 }
 
 type jobManager struct {
@@ -111,9 +124,10 @@ type jobManager struct {
 	helmRepo         biz.HelmerRepo
 	repoRepo         biz.RepoRepo
 
-	locker        locker.Locker
-	uploader      uploader.Uploader
-	pluginManager app.PluginManager
+	locker         locker.Locker
+	uploader       uploader.Uploader
+	pluginManager  app.PluginManager
+	accessTokenBiz biz.AccessTokenBiz
 }
 
 // NewJobManager 构造部署任务管理器，依赖由 wire 从 JobManagerDeps 注入。
@@ -131,6 +145,7 @@ func NewJobManager(deps JobManagerDeps) JobManager {
 		helmRepo:         deps.Helmer,
 		locker:           deps.Locker,
 		eventRepo:        deps.EventRepo,
+		accessTokenBiz:   deps.AccessTokenBiz,
 	}
 }
 
@@ -149,6 +164,7 @@ func (j *jobManager) NewJob(input *JobInput) Job {
 		eventRepo:       j.eventRepo,
 		timer:           j.timer,
 		uploader:        j.uploader,
+		accessTokenBiz:  j.accessTokenBiz,
 		loaders:         defaultLoaders(),
 		dryRun:          input.DryRun,
 		input:           input,
@@ -214,6 +230,7 @@ type jobRunner struct {
 	messager        DeployMsger
 	timeoutSeconds  int64
 	uploader        uploader.Uploader
+	accessTokenBiz  biz.AccessTokenBiz
 	pluginMgr       app.PluginManager
 	installer       ReleaseInstaller
 	messageCh       SafeWriteMessageChan
@@ -269,9 +286,9 @@ func (j *jobRunner) GlobalLock() Job {
 	if j.HasError() {
 		return j
 	}
-	releaseFn, acquired := j.locker.RenewalAcquire(j.ID(), 30, 20)
+	releaseFn, acquired := j.locker.RenewalAcquire(j.ID(), LockTTLSeconds, LockRenewalSeconds)
 	if !acquired {
-		return j.SetError(errors.New("正在部署中，请稍后再试"))
+		return j.SetError(ErrDeployInProgress)
 	}
 
 	return j.OnFinally(-1, func(err error, sendResultToUser func()) {
@@ -429,6 +446,7 @@ func (j *jobRunner) newLoadContext() *LoadContext {
 		ValuesOptions:    &values.Options{},
 		uploader:         j.uploader,
 		timer:            j.timer,
+		AccessTokenBiz:   j.accessTokenBiz,
 	}
 }
 
@@ -522,6 +540,16 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 				Type: MessageError,
 			})
 			return err
+		}
+
+		// 安装成功后再撤销同项目的上一份临时令牌：失败/回滚时线上旧实例必须继续持有
+		// 有效令牌。清理失败不推翻已成功的部署，留待下次部署或 12h 过期兜底。
+		if j.IsNotDryRun() {
+			if userToken := j.vars.MustGetString(VarUserToken); userToken != "" {
+				if rerr := j.accessTokenBiz.RevokeByUsageExcept(ctx, UserTokenUsage(j.project.ID), userToken); rerr != nil {
+					j.logger.WarningCtxf(ctx, "撤销旧部署令牌失败: %v", rerr)
+				}
+			}
 		}
 
 		coalesceValues, _ := chartutil.CoalesceValues(j.chart, result.Config)

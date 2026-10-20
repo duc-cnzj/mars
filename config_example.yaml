@@ -117,6 +117,21 @@ imagepullsecrets:
     email: "john@example.com"
     server: "registry.cn-hangzhou.aliyuncs.com"
 
+# ai 段是沙箱 AI 助手（mars-agent）的集中配置：agent 启动时经 GET /api/ai/config
+# 拉取，chart 里不再逐个下发。model 为裸模型 id（agent 会写成 mars/<id>）；
+# 留空时该接口返回 503，agent 无法启动。
+#
+# base_url / api_key 是 LLM 上游（OpenAI 兼容）的地址与密钥，只存在于 mars：
+# agent 统一请求 <gateway>/llm/v1，由 mars 转发到上游并替换 Authorization。
+# 例：DeepSeek → base_url: https://api.deepseek.com/v1，model: deepseek-chat。
+# 更换厂商只改这里，沙箱镜像与 chart 都不用动。
+#ai:
+#  model: "deepseek-chat"
+#  base_url: "https://api.deepseek.com/v1"
+#  api_key: "sk-xxxx"
+#  # 沙箱空闲自动关闭阈值（默认 30m）：超过该时长无请求即缩容到 0；负数关闭该能力
+#  idle_timeout: 30m
+
 #oidc:
 #  - name: "sso1"
 #    enabled: true

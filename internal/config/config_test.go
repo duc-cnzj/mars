@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/spf13/viper"
@@ -126,6 +127,25 @@ func TestIsK8sEnv(t *testing.T) {
 		t.Setenv("KUBERNETES_SERVICE_PORT", "")
 		cfg := &config.Config{}
 		assert.False(t, cfg.IsK8sEnv())
+	})
+}
+
+// TestAgentIdleTimeout 验证空闲阈值三态：正值原样返回、负值表示禁用（归零）、
+// 零值（未配置）回退默认 30 分钟。
+func TestAgentIdleTimeout(t *testing.T) {
+	t.Run("positive value", func(t *testing.T) {
+		cfg := &config.Config{AI: config.AIConfig{IdleTimeout: 5 * time.Minute}}
+		assert.Equal(t, 5*time.Minute, cfg.AgentIdleTimeout())
+	})
+
+	t.Run("negative disables", func(t *testing.T) {
+		cfg := &config.Config{AI: config.AIConfig{IdleTimeout: -time.Second}}
+		assert.Zero(t, cfg.AgentIdleTimeout())
+	})
+
+	t.Run("zero falls back to default", func(t *testing.T) {
+		cfg := &config.Config{}
+		assert.Equal(t, config.DefaultAgentIdleTimeout, cfg.AgentIdleTimeout())
 	})
 }
 

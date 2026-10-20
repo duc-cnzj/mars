@@ -7,6 +7,7 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -17,6 +18,7 @@ type fakeRepoRepoForRepoBiz struct {
 	RepoRepo
 	get           func(ctx context.Context, id int) (*Repo, error)
 	getByName     func(ctx context.Context, name string) (*Repo, error)
+	getAIAgent    func(ctx context.Context) (*Repo, error)
 	show          func(ctx context.Context, id int) (*Repo, error)
 	create        func(ctx context.Context, in *CreateRepoInput) (*Repo, error)
 	update        func(ctx context.Context, in *UpdateRepoInput) (*Repo, error)
@@ -43,6 +45,10 @@ func (f *fakeRepoRepoForRepoBiz) Get(ctx context.Context, id int) (*Repo, error)
 
 func (f *fakeRepoRepoForRepoBiz) GetByName(ctx context.Context, name string) (*Repo, error) {
 	return f.getByName(ctx, name)
+}
+
+func (f *fakeRepoRepoForRepoBiz) GetAIAgent(ctx context.Context) (*Repo, error) {
+	return f.getAIAgent(ctx)
 }
 
 func (f *fakeRepoRepoForRepoBiz) Show(ctx context.Context, id int) (*Repo, error) {
@@ -1102,10 +1108,11 @@ func TestRepoBiz_List_Passthrough(t *testing.T) {
 		list: func(ctx context.Context, in *ListRepoRequest) ([]*Repo, *pagination.Pagination, error) {
 			listCalled = true
 			assert.Equal(t, int32(1), in.Page)
+			assert.Equal(t, lo.ToPtr(true), in.AIAgent)
 			return []*Repo{{ID: 1, Name: "app"}}, &pagination.Pagination{Page: 1}, nil
 		},
 	})
-	got, pag, err := b.List(context.TODO(), &ListRepoRequest{Page: 1})
+	got, pag, err := b.List(context.TODO(), &ListRepoRequest{Page: 1, AIAgent: lo.ToPtr(true)})
 	assert.NoError(t, err)
 	assert.True(t, listCalled)
 	assert.Len(t, got, 1)
@@ -1152,6 +1159,34 @@ func TestRepoBiz_GetByName_ErrorPassthrough(t *testing.T) {
 		},
 	})
 	got, err := b.GetByName(context.TODO(), "ghost")
+	assert.Nil(t, got)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+// TestRepoBiz_GetAIAgent_Passthrough 纯透传：AI 状态查询依赖它取全局唯一 AI Agent 仓库，
+// 未配置时底层 NotFound 原样上抛（服务层按「功能未启用」处理）。
+func TestRepoBiz_GetAIAgent_Passthrough(t *testing.T) {
+	var called bool
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
+		getAIAgent: func(ctx context.Context) (*Repo, error) {
+			called = true
+			return &Repo{ID: 9, Name: "agent-repo", AIAgent: true}, nil
+		},
+	})
+	got, err := b.GetAIAgent(context.TODO())
+	assert.NoError(t, err)
+	assert.True(t, called)
+	assert.Equal(t, 9, got.ID)
+	assert.True(t, got.AIAgent)
+}
+
+func TestRepoBiz_GetAIAgent_ErrorPassthrough(t *testing.T) {
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
+		getAIAgent: func(ctx context.Context) (*Repo, error) {
+			return nil, notFoundErr()
+		},
+	})
+	got, err := b.GetAIAgent(context.TODO())
 	assert.Nil(t, got)
 	assert.Equal(t, codes.NotFound, status.Code(err))
 }
@@ -1244,6 +1279,27 @@ func TestRepoBiz_Import_DuplicateName(t *testing.T) {
 	assert.False(t, called)
 }
 
+// TestRepoBiz_Import_MultipleAIAgentsRejected AI Agent 仓库全局唯一：导入文件出现多条
+// ai_agent=true 直接拒绝（单例语义跨环境导出也成立），且不触碰数据层。
+func TestRepoBiz_Import_MultipleAIAgentsRejected(t *testing.T) {
+	var called bool
+	b := NewRepoBiz(&fakeHibernateRepo{}, &fakeRepoRepoForRepoBiz{
+		importFn: func(ctx context.Context, items []*ImportRepoItem) (int, int, error) {
+			called = true
+			return 0, 0, nil
+		},
+	})
+	created, updated, err := b.Import(context.TODO(), []*ImportRepoItem{
+		{Name: "app", AIAgent: true},
+		{Name: "other", AIAgent: true},
+	})
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Contains(t, status.Convert(err).Message(), "AI Agent")
+	assert.Zero(t, created)
+	assert.Zero(t, updated)
+	assert.False(t, called)
+}
+
 func TestRepoBiz_Import_ValidationBeforeAnyMutation(t *testing.T) {
 	// 校验先行：首个 name 合法、第二个非法时，import 不被调用（零部分变更）。
 	var called bool
@@ -1322,6 +1378,7 @@ func TestRepoBiz_PreviewImport_InvalidItems(t *testing.T) {
 		{"nil item", []*ImportRepoItem{nil}, "导入数据不能为空"},
 		{"invalid name", []*ImportRepoItem{{Name: "bad name"}}, "不合法"},
 		{"duplicate name", []*ImportRepoItem{{Name: "app"}, {Name: "app"}}, "重复"},
+		{"multiple ai agents", []*ImportRepoItem{{Name: "a", AIAgent: true}, {Name: "b", AIAgent: true}}, "AI Agent"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

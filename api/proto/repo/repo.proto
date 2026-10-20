@@ -16,6 +16,8 @@ message ListRequest {
   optional int32 page_size = 2;
   optional bool  enabled   = 3;
   string         name      = 4;
+  // ai_agent 为空时不按 AI Agent 标记过滤；true 只返回 AI Agent 仓库，false 只返回非 AI Agent 仓库。
+  optional bool  ai_agent  = 5;
 }
 
 message ListResponse {
@@ -46,6 +48,8 @@ message CreateRequest{
   mars.Config    mars_config    = 3;
   bool           need_git_repo  = 4;
   string         description    = 5 [(validate.rules).string = {max_bytes: 255}];
+  // ai_agent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库。
+  bool           ai_agent       = 6;
 }
 message CreateResponse{
   types.RepoModel item = 1;
@@ -57,6 +61,9 @@ message UpdateRequest{
   mars.Config    mars_config    = 4;
   bool           need_git_repo  = 5;
   string         description    = 6 [(validate.rules).string = {max_bytes: 255}];
+  // ai_agent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库；false 清除标记；
+  // 不传（nil）时保持现状——旧客户端不知道该字段，不能因缺省值把标记清掉。
+  optional bool  ai_agent       = 7;
 }
 message UpdateResponse{
   types.RepoModel item = 1;

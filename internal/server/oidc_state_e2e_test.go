@@ -78,6 +78,9 @@ func newOidcHarness(t *testing.T, overWire bool) *oidcHarness {
 	handler.EXPECT().RegisterSwaggerUIRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterWsRoute(gomock.Not(nil)).Times(1)
 	handler.EXPECT().RegisterFileRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterMCPRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterAIConfigRoute(gomock.Not(nil)).Times(1)
+	handler.EXPECT().RegisterLLMProxyRoute(gomock.Not(nil)).Times(1)
 
 	httpServer, err := initServer(context.TODO(), &apiGateway{
 		endpoint: endpoint,
