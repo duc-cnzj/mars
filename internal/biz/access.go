@@ -52,6 +52,15 @@ type AccessBiz interface {
 	// AI Agent 自助例外：mars-agent 空间刻意私有（仅管理员可见），但普通用户需要
 	// 查看/操作自己的沙箱项目，故当前用户邮箱派生的 agent 项目额外放行。
 	RequireProjectAccess(ctx context.Context, id int) (*Project, error)
+	// RequireProjectAccessByName 是「按空间名 + 项目名」的项目访问门卫：先走命名空间
+	// ACL，拒绝时仅放行当前用户自己的 AI 沙箱项目（mars-agent 空间 + 邮箱派生项目名）。
+	// 供按名字寻址的项目级入口（ShowByName / WebApplyByName）使用；命名空间级 API
+	// 仍走 RequireNamespaceAccessByName，自助例外刻意不外溢到空间维度。
+	RequireProjectAccessByName(ctx context.Context, namespace, projectName string) (*Namespace, error)
+	// RequireProjectAccessByNamespaceID 是上述门卫的按 ID 寻址孪生实现，语义完全一致：
+	// 供只有 NamespaceId 的部署编排（deploy.ApplyProject）复用，保证「服务层放行、
+	// 部署层再拒」的双门卫不会漂移。
+	RequireProjectAccessByNamespaceID(ctx context.Context, namespaceID int, projectName string) (*Namespace, error)
 	// RequirePodAccess 是 Pod 级访问门卫：按命名空间名与 Pod 名校验当前用户
 	// 可访问性，可访问返回命名空间，否则 errs.ErrorPermissionDenied。
 	// 放行规则：先按命名空间 ACL（公开空间任意登录用户；私有空间 admin/创建者/成员）；
@@ -162,6 +171,58 @@ func (a *accessBiz) RequireProjectAccess(ctx context.Context, id int) (*Project,
 		return nil, errs.WrapPermissionDenied(nserr, fmt.Sprintf("访问项目 #%d", id))
 	}
 	return proj, nil
+}
+
+// RequireProjectAccessByName 是「按空间名 + 项目名」的项目访问门卫：按空间名加载后
+// 复用项目级判定。命名空间加载失败原样上抛，判定失败返回 errs.ErrorPermissionDenied。
+// 错误日志由消费方（services 层）统一打印。
+func (a *accessBiz) RequireProjectAccessByName(ctx context.Context, namespace, projectName string) (*Namespace, error) {
+	ns, err := a.nsRepo.FindByName(ctx, namespace)
+	if err != nil {
+		return nil, err
+	}
+	return a.requireProjectInNamespace(ctx, ns, projectName,
+		fmt.Sprintf("访问命名空间 %s 的项目 %s", namespace, projectName))
+}
+
+// RequireProjectAccessByNamespaceID 是 RequireProjectAccessByName 的按 ID 寻址孪生
+// 实现：命名空间按 ID 加载，判定逻辑完全共享。供部署编排（只有 NamespaceId）使用。
+func (a *accessBiz) RequireProjectAccessByNamespaceID(ctx context.Context, namespaceID int, projectName string) (*Namespace, error) {
+	ns, err := a.nsRepo.Show(ctx, namespaceID)
+	if err != nil {
+		return nil, err
+	}
+	return a.requireProjectInNamespace(ctx, ns, projectName,
+		fmt.Sprintf("访问命名空间 #%d 的项目 %s", namespaceID, projectName))
+}
+
+// requireProjectInNamespace 是「按名字寻址的项目门卫」的共享判定：空间 ACL 通过即
+// 放行；拒绝时按项目名反查，仅放行当前用户自己的 AI 沙箱项目。
+// 项目查无时统一回 PermissionDenied——私有空间内不得通过 403/404 的差异暴露项目
+// 是否存在；项目查询的底层故障（DB/网络）原样上抛，不得伪装成 403。
+// 空间为 nil 或项目名为空时无法判定归属，安全默认拒绝且不发起项目查询。
+func (a *accessBiz) requireProjectInNamespace(ctx context.Context, ns *Namespace, projectName, denyMsg string) (*Namespace, error) {
+	if a.CanAccessNamespace(ctx, ns) {
+		return ns, nil
+	}
+	if ns == nil || projectName == "" {
+		return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, denyMsg)
+	}
+	proj, err := a.projBiz.FindByName(ctx, projectName, ns.ID)
+	if err != nil {
+		if errs.IsNotFound(err) {
+			return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, denyMsg)
+		}
+		return nil, err
+	}
+	own, err := a.isOwnAgentProject(ctx, proj)
+	if err != nil {
+		return nil, err
+	}
+	if !own {
+		return nil, errs.WrapPermissionDenied(errs.ErrorPermissionDenied, denyMsg)
+	}
+	return ns, nil
 }
 
 // RequirePodAccess 是 Pod 级访问门卫：按命名空间名加载命名空间后，先走通用

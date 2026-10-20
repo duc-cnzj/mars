@@ -31,7 +31,7 @@ func applyTestKit(t *testing.T, ctrl *gomock.Controller) (
 func applyDepsOf(nsRepo *biz.MockNamespaceBiz, repo *biz.MockRepoBiz, git *biz.MockGitBiz,
 	proj *biz.MockProjectBiz, jobMgr *MockJobManager, msger *MockDeployMsger) ApplyProjectDeps {
 	return ApplyProjectDeps{
-		AccessBiz:  biz.NewAccessBiz(nsRepo, nil),
+		AccessBiz:  biz.NewAccessBiz(nsRepo, proj),
 		RepoBiz:    repo,
 		GitBiz:     git,
 		ProjectBiz: proj,
@@ -92,14 +92,45 @@ func TestApplyProject_AnonymousRejected(t *testing.T) {
 func TestApplyProject_PermissionDenied(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	nsRepo, repo, _, _, jobMgr, _ := applyTestKit(t, ctrl)
+	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
 
-	// 私有命名空间 + 非成员非 admin 用户 → RequireNamespaceAccessByID 拒绝。
+	// 私有命名空间 + 非成员非 admin 用户 → 项目级门卫先按项目名反查：
+	// 项目不存在（非当前用户的 agent 沙箱）→ PermissionDenied。
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(privNs(), nil)
+	proj.EXPECT().FindByName(gomock.Any(), "app", 1).Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find project by name"))
 
-	job, err := ApplyProject(context.Background(), applyDepsOf(nsRepo, repo, biz.NewMockGitBiz(ctrl), biz.NewMockProjectBiz(ctrl), jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{JobInput: baseJobInput()})
+	job, err := ApplyProject(context.Background(), applyDepsOf(nsRepo, repo, git, proj, jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{JobInput: baseJobInput()})
 	assert.Nil(t, job)
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+}
+
+// TestApplyProject_OwnAgentProjectAllowed 覆盖部署层的 AI 自助例外：私有 mars-agent
+// 空间里，普通用户部署「项目名 = 自己邮箱派生名」的项目时项目级门卫放行——否则
+// services 层放行、部署层再拒，MCP apply_project 仍会 403。后续编排照常执行。
+func TestApplyProject_OwnAgentProjectAllowed(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
+	job := NewMockJob(ctrl)
+
+	agentNS := &biz.Namespace{ID: 1, Name: biz.AgentNamespace, Private: true, CreatorEmail: "owner@mars.local"}
+	projectName := biz.AgentProjectName("tester@mars.local")
+	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(agentNS, nil)
+	proj.EXPECT().FindByName(gomock.Any(), projectName, 1).Return(
+		&biz.Project{ID: 9, Name: projectName, NamespaceID: 1}, nil)
+	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(agentNS, nil)
+
+	repo.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2, Name: "app", NeedGitRepo: false}, nil)
+	jobMgr.EXPECT().NewJob(gomock.Any()).Return(job)
+	expectInstallChain(job, nil)
+
+	input := baseJobInput()
+	input.Name = projectName
+
+	got, err := ApplyProject(context.Background(), applyDepsOf(nsRepo, repo, git, proj, jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{JobInput: input})
+	assert.NoError(t, err)
+	assert.Same(t, job, got)
 }
 
 // TestApplyProject_TrustedNamespaceSkipsAccessCheck 覆盖平台内部受信部署：

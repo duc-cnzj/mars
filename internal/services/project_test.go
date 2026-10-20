@@ -281,10 +281,65 @@ func TestProjectSvc_ShowByName_PrivateNamespaceDenied(t *testing.T) {
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "secret").Return(
 		&biz.Namespace{ID: 9, Name: "secret", Private: true}, nil)
+	// 项目级门卫在空间 ACL 拒绝后按项目名反查：查无项目 → 不暴露存在性，仍按 403 处理。
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "web", 9).Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find project by name"))
 
 	res, err := svc.ShowByName(newOtherUserCtx(), &project.ShowByNameRequest{Namespace: "secret", Name: "web"})
 	assert.Nil(t, res)
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
+}
+
+// TestProjectSvc_ShowByName_OwnAgentProjectAllowed 私有 mars-agent 空间里的普通用户
+// 可以按「空间名 + 自己邮箱派生项目名」查看自己的沙箱项目——MCP get_project/apply_project
+// 依赖这条自助路径；空间级 API 不受影响。
+func TestProjectSvc_ShowByName_OwnAgentProjectAllowed(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	user := biz.MustGetUser(newOtherUserCtx())
+	projectName := biz.AgentProjectName(user.Email)
+	agentNS := &biz.Namespace{ID: 9, Name: biz.AgentNamespace, Private: true, CreatorEmail: "admin@mars.local"}
+	// 门卫加载空间 + 两次 isOwnAgentProject（门卫内一次、RequireProjectAccess 一次）。
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(agentNS, nil).Times(3)
+	// 门卫反查一次 + ShowByName 取 id 一次。
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), projectName, 9).Return(
+		&biz.Project{ID: 42, Name: projectName, NamespaceID: 9}, nil).Times(2)
+	mocks.projectRepo.EXPECT().Show(gomock.Any(), 42).Return(&biz.Project{
+		ID:          42,
+		Name:        projectName,
+		NamespaceID: 9,
+		Namespace:   agentNS,
+	}, nil)
+	mocks.nsRepo.EXPECT().Show(gomock.Any(), 9).Return(agentNS, nil)
+
+	res, err := svc.ShowByName(newOtherUserCtx(), &project.ShowByNameRequest{Namespace: biz.AgentNamespace, Name: projectName})
+	assert.NoError(t, err)
+	if assert.NotNil(t, res) && assert.NotNil(t, res.Item) {
+		assert.Equal(t, int32(42), res.Item.Id)
+		assert.Equal(t, projectName, res.Item.Name)
+	}
+}
+
+// TestProjectSvc_WebApplyByName_OwnAgentProjectPassesGate 普通用户在自己邮箱派生的
+// agent 项目上发起部署：应通过项目级门卫（随后因仓库名对不上返回 404，而非 403）——
+// 断言 404 是「门卫已放行」的回归锚点，防止自助例外只修了 ShowByName 漏了部署入口。
+func TestProjectSvc_WebApplyByName_OwnAgentProjectPassesGate(t *testing.T) {
+	svc, mocks := newProjectSvcWithMocks(t)
+	user := biz.MustGetUser(newOtherUserCtx())
+	projectName := biz.AgentProjectName(user.Email)
+	agentNS := &biz.Namespace{ID: 9, Name: biz.AgentNamespace, Private: true, CreatorEmail: "admin@mars.local"}
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(agentNS, nil).Times(2)
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), projectName, 9).Return(
+		&biz.Project{ID: 42, Name: projectName, NamespaceID: 9}, nil)
+	// 未传 repo_id：按项目名精确匹配仓库，查无 → 404（证明门卫已放行）。
+	mocks.repoRepo.EXPECT().GetByName(gomock.Any(), projectName).Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find repo by name"))
+
+	res, err := svc.WebApplyByName(newOtherUserCtx(), &project.WebApplyByNameRequest{
+		Namespace: biz.AgentNamespace,
+		Name:      projectName,
+	})
+	assert.Nil(t, res)
+	assert.Equal(t, codes.NotFound, status.Code(err), "门卫必须放行自己的 agent 项目，失败点应在仓库解析而非权限")
 }
 
 func Test_projectSvc_Delete(t *testing.T) {
@@ -919,12 +974,15 @@ func TestProjectSvc_WebApplyByName_RepoQueryDBError(t *testing.T) {
 }
 
 // TestProjectSvc_WebApplyByName_SpaceDenied 私有空间对非成员不可见：按名字寻址不得绕过
-// 空间级门卫，且在反查仓库之前就被拦下（repoRepo.GetByName 未设期望即 FAIL）。
+// 空间级门卫；项目名查无时统一 403，且在反查仓库之前就被拦下（repoRepo.GetByName 未设
+// 期望即 FAIL）。
 func TestProjectSvc_WebApplyByName_SpaceDenied(t *testing.T) {
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "secret").Return(
 		&biz.Namespace{ID: 9, Name: "secret", Private: true}, nil)
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "web", 9).Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find project by name"))
 
 	resp, err := svc.WebApplyByName(newOtherUserCtx(), &project.WebApplyByNameRequest{
 		Namespace: "secret",
@@ -1050,6 +1108,9 @@ func TestProjectSvc_Apply_Failure2(t *testing.T) {
 	svc, mocks := newProjectSvcWithMocks(t)
 
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
+	// 项目级门卫在空间 ACL 拒绝后按项目名反查：查无 → 仍按 403 处理。
+	mocks.projectRepo.EXPECT().FindByName(gomock.Any(), "test", 0).Return(
+		nil, errs.WrapNotFound(errors.New("record not found"), "find project by name"))
 
 	mockServer := &mockProjectApplyServer{
 		Ctx: newOtherUserCtx(),

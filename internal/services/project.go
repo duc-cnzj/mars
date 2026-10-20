@@ -227,9 +227,13 @@ func (p *projectSvc) WebApply(ctx context.Context, input *project.WebApplyReques
 //
 // repo_id 不传时的契约：一个空间下一个仓库只能对应一个项目（项目名 == 仓库名）；传了 repo_id
 // 则以它为准，name 仅作项目名——旧 WebApply 不受任何约束影响。
+//
+// 门卫用 RequireProjectAccessByName（而非纯命名空间门卫）：AI Agent 沙箱空间是私有的，
+// 普通用户只能通过「项目名 = 自己邮箱派生名」的自助例外更新自己的沙箱；新建项目仍被拒
+// （项目反查不到 → 无权），命名空间级 API 不受影响。
 func (p *projectSvc) WebApplyByName(ctx context.Context, input *project.WebApplyByNameRequest) (*project.WebApplyResponse, error) {
 	p.logger.DebugCtx(ctx, "WebApplyByName..")
-	ns, err := p.accessBiz.RequireNamespaceAccessByName(ctx, input.Namespace)
+	ns, err := p.accessBiz.RequireProjectAccessByName(ctx, input.Namespace, input.Name)
 	if err != nil {
 		return nil, logError(ctx, p.logger, err)
 	}
@@ -430,10 +434,14 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 // 空间名先过访问门卫：空间不存在是 404，私有空间无权访问是 403（与按 ID 的门卫同源同语义，
 // 不做"视同不存在"的静默隐藏——静默隐藏是 IsExists/CanAccessNamespace 那条布尔谓词路径的事）。
 //
+// 门卫用 RequireProjectAccessByName：私有 mars-agent 空间里的普通用户，只有按
+// 「空间名 + 自己邮箱派生项目名」反查命中时才放行（MCP get_project / apply_project
+// 依赖这条自助路径）；其他私有空间/其他用户的项目仍 403。
+//
 // FindByName 只用来拿 id：它不预加载 repo/namespace 边（见 ProjectBiz.Restore 的注释），
 // 直接喂 FromProject 会得到 nil 边；完整模型一律走 RequireProjectAccess（与 Show 同一出口）。
 func (p *projectSvc) ShowByName(ctx context.Context, input *project.ShowByNameRequest) (*project.ShowResponse, error) {
-	ns, err := p.accessBiz.RequireNamespaceAccessByName(ctx, input.Namespace)
+	ns, err := p.accessBiz.RequireProjectAccessByName(ctx, input.Namespace, input.Name)
 	if err != nil {
 		return nil, logError(ctx, p.logger, err)
 	}

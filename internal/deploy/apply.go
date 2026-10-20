@@ -78,9 +78,14 @@ func ApplyProject(ctx context.Context, deps ApplyProjectDeps, input *ApplyProjec
 
 	// 命名空间访问校验：私有命名空间对非成员/非 admin 隐藏部署入口。
 	// 错误码与 services 侧 AccessBiz 语义一致（ErrorPermissionDenied）。
+	// 用「空间 ID + 项目名」的项目级门卫而非纯命名空间门卫：AI Agent 沙箱空间是私有
+	// 的，普通用户需通过「项目名 = 自己邮箱派生名」的自助例外更新自己的沙箱——与
+	// services 层 ShowByName/WebApplyByName 的判定同源，避免服务层放行、部署层再拒。
+	// 新建项目在 agent 空间反查不到 → 仍拒绝；其他私有空间语义不变。
 	// 平台内部受信编排（AI Agent 部署到私有空间）可跳过——标记只能由本包写入。
 	if !hasTrustedNamespaceAccess(ctx) {
-		if _, err := deps.AccessBiz.RequireNamespaceAccessByID(ctx, int(input.JobInput.NamespaceId)); err != nil {
+		if _, err := deps.AccessBiz.RequireProjectAccessByNamespaceID(
+			ctx, int(input.JobInput.NamespaceId), input.JobInput.Name); err != nil {
 			return nil, err
 		}
 	}
