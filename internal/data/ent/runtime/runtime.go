@@ -496,6 +496,10 @@ func init() {
 	repoDescDescription := repoFields[7].Descriptor()
 	// repo.DefaultDescription holds the default value on creation for the description field.
 	repo.DefaultDescription = repoDescDescription.Default.(string)
+	// repoDescAiAgent is the schema descriptor for ai_agent field.
+	repoDescAiAgent := repoFields[8].Descriptor()
+	// repo.DefaultAiAgent holds the default value on creation for the ai_agent field.
+	repo.DefaultAiAgent = repoDescAiAgent.Default.(bool)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0

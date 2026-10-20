@@ -46,7 +46,7 @@ func NewRepoSvc(deps RepoSvcDeps) reposerver.RepoServer {
 	}
 }
 
-// List 分页列出仓库，支持按名称与启用状态过滤，按 id 倒序返回。
+// List 分页列出仓库，支持按名称、启用状态与 AI Agent 标记过滤，按 id 倒序返回。
 func (r *repoSvc) List(ctx context.Context, request *reposerver.ListRequest) (*reposerver.ListResponse, error) {
 	page, pageSize := pagination.InitByDefault(request.Page, request.PageSize)
 
@@ -56,6 +56,7 @@ func (r *repoSvc) List(ctx context.Context, request *reposerver.ListRequest) (*r
 		Enabled:       request.Enabled,
 		OrderByIDDesc: lo.ToPtr(true),
 		Name:          request.Name,
+		AIAgent:       request.AiAgent,
 	})
 	if err != nil {
 		return nil, logError(ctx, r.logger, err)
@@ -77,6 +78,7 @@ func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*r
 		GitProjectID: req.GitProjectId,
 		MarsConfig:   req.MarsConfig,
 		Description:  req.Description,
+		AIAgent:      req.AiAgent,
 	})
 	if err != nil {
 		return nil, logError(ctx, r.logger, err)
@@ -118,6 +120,7 @@ func (r *repoSvc) Update(ctx context.Context, req *reposerver.UpdateRequest) (*r
 		GitProjectID: req.GitProjectId,
 		MarsConfig:   req.MarsConfig,
 		Description:  req.Description,
+		AIAgent:      req.AiAgent,
 	})
 	if err != nil {
 		return nil, logError(ctx, r.logger, err)
@@ -330,6 +333,7 @@ func repoAuditYaml(repos []*types.RepoModel) string {
 			"name":           m.Name,
 			"enabled":        m.Enabled,
 			"need_git_repo":  m.NeedGitRepo,
+			"ai_agent":       m.AiAgent,
 			"git_project_id": m.GitProjectId,
 			"description":    m.Description,
 			"mars_config":    m.MarsConfig,
@@ -350,6 +354,7 @@ func toImportRepoItem(m *types.RepoModel) *biz.ImportRepoItem {
 		NeedGitRepo: m.NeedGitRepo,
 		MarsConfig:  m.MarsConfig,
 		Description: m.Description,
+		AIAgent:     m.AiAgent,
 	}
 	// GitProjectID 仅在需要 git 仓库且 id 有效时携带；0 视为未配置，
 	// 避免把无效 0 值作为显式指针落库（data 层会按 0 查 git 项目）。

@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import type { ReactNode, SVGProps } from 'react'
 
 /** 1.6px 描边线性图标基底，随 currentColor 着色 */
@@ -572,5 +573,72 @@ export function Icon({
     <Svg className={className} {...rest}>
       {paths[name]}
     </Svg>
+  )
+}
+
+/**
+ * 七彩渐变段数。具体色值只在 index.css 的 --ai-rainbow-1..8 定义一次：
+ * 组件渲染静态渐变与关键帧循环动画共用同一批变量，避免两处维护。
+ * 这套色值刻意避开全部 8 套主题的 primary/状态色（无任何相同色值），
+ * 保证无论切到哪个主题，星芒都不会和顶栏或强调色"融"在一起。
+ */
+const AI_RAINBOW_STOPS = 8
+
+/** 七彩流动一圈的时长（秒）；同步驱动每段颜色的 stagger 延迟 */
+const AI_RAINBOW_DURATION = 8
+
+/**
+ * AI 助手实心彩色星芒：八段彩虹渐变 + 颜色沿星芒流动的循环动效。
+ * 每段 stop 运行同一个 stop-color 色相循环关键帧（index.css），
+ * 按 -i 秒错峰启动，于是同一时刻整颗星呈完整彩虹，并持续缓慢流动。
+ * 命中系统「减少动态效果」时动画关闭，退回静态彩虹渐变（纯 CSS 媒体查询）。
+ * 主星芒沿用 lucide sparkles 的闭合路径；原小星点是四条零面积线段，
+ * 实心会消失，这里改为同等位置的凹角小星形。
+ * 渐变 id 用 useId 保证多实例唯一（同名 id 在文档内会解析到第一个定义）；
+ * 不塞进通用 Icon，避免给其它图标引入无意义的 <defs>。
+ */
+export function AISparklesIcon({ className }: { className?: string }) {
+  const gradientId = useId()
+  const stepDelay = AI_RAINBOW_DURATION / AI_RAINBOW_STOPS
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="1em"
+      height="1em"
+      fill={`url(#${gradientId})`}
+      className={className}
+      style={{ filter: 'drop-shadow(0 0 2.5px var(--ai-glow))' }}
+      aria-hidden
+    >
+      <defs>
+        <linearGradient
+          id={gradientId}
+          x1="2"
+          y1="2"
+          x2="22"
+          y2="22"
+          gradientUnits="userSpaceOnUse"
+        >
+          {Array.from({ length: AI_RAINBOW_STOPS }, (_, i) => (
+            <stop
+              key={i}
+              offset={`${(i / (AI_RAINBOW_STOPS - 1)) * 100}%`}
+              className="ai-rainbow-stop"
+              style={{
+                stopColor: `var(--ai-rainbow-${i + 1})`,
+                animationDuration: `${AI_RAINBOW_DURATION}s`,
+                animationDelay: `${-i * stepDelay}s`,
+              }}
+            />
+          ))}
+        </linearGradient>
+      </defs>
+      {/* 主星芒（lucide sparkles 闭合路径） */}
+      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0Z" />
+      {/* 右上小星形：替代原四条线段的加号标记 */}
+      <path d="M20.5 3.2Q20.9 4.6 22.3 5Q20.9 5.4 20.5 6.8Q20.1 5.4 18.7 5Q20.1 4.6 20.5 3.2Z" />
+      {/* 左下小星形 */}
+      <path d="M4 16.2Q4.35 17.65 5.8 18Q4.35 18.35 4 19.8Q3.65 18.35 2.2 18Q3.65 17.65 4 16.2Z" />
+    </svg>
   )
 }

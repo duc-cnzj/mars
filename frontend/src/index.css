@@ -4,6 +4,49 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
+   AI 助手星芒：七彩流动渐变
+   - 8 段颜色只在 :root 定义一次（--ai-rainbow-N）：组件用它渲染静态渐变，
+     关键帧也引用同一批变量，避免两份色值各自漂移。
+   - 每段 stop 相位错开 1s（总时长 8s），同一时刻整颗星呈完整彩虹并持续流动。
+   - 尊重系统「减少动态效果」：关闭动画后退回静态彩虹渐变。
+   ============================================================ */
+:root {
+  --ai-rainbow-1: #ff2e63;
+  --ai-rainbow-2: #ff8c1a;
+  --ai-rainbow-3: #ffd93d;
+  --ai-rainbow-4: #2ee6a8;
+  --ai-rainbow-5: #00d9ff;
+  --ai-rainbow-6: #1e90ff;
+  --ai-rainbow-7: #9d4edd;
+  --ai-rainbow-8: #ff4dd2;
+  --ai-glow: rgba(255, 77, 210, 0.7);
+}
+
+@keyframes ai-rainbow-stop {
+  0% { stop-color: var(--ai-rainbow-1); }
+  12.5% { stop-color: var(--ai-rainbow-2); }
+  25% { stop-color: var(--ai-rainbow-3); }
+  37.5% { stop-color: var(--ai-rainbow-4); }
+  50% { stop-color: var(--ai-rainbow-5); }
+  62.5% { stop-color: var(--ai-rainbow-6); }
+  75% { stop-color: var(--ai-rainbow-7); }
+  87.5% { stop-color: var(--ai-rainbow-8); }
+  100% { stop-color: var(--ai-rainbow-1); }
+}
+
+.ai-rainbow-stop {
+  animation-name: ai-rainbow-stop;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-rainbow-stop {
+    animation-name: none;
+  }
+}
+
+/* ============================================================
    品牌字体：dank mono（旧版 Mars 字标，从旧 frontend 迁移）
    ============================================================ */
 @font-face {

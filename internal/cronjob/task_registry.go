@@ -46,5 +46,19 @@ func Registry(t *Tasks, cfg *config.Config) []CronTask {
 			CronTask{Name: "hibernate_projects", Schedule: cron.Command.EveryTwoMinutes, Run: t.ReconcileHibernate},
 		)
 	}
+	// 空闲关闭仅在 k8s 环境、ai.idle_timeout 未禁用且缓存驱动能持久化活跃度时注册：
+	// 无集群可缩容；阈值 <=0 表示用户显式关闭该能力；noCache 下活跃度永远读不到。
+	if cfg.IsK8sEnv() && cfg.AgentIdleTimeout() > 0 && agentActivityCacheAvailable(cfg.CacheDriver) {
+		tasks = append(tasks,
+			CronTask{Name: "agent_idle_reconcile", Schedule: cron.Command.EveryMinute, Run: t.ReconcileAgentIdle},
+		)
+	}
 	return tasks
+}
+
+// agentActivityCacheAvailable 判断缓存驱动能否保存活跃度键：仅 memory/db 可用。
+// 未识别的驱动在 data.NewCacheImpl 里回落 noCache（Get 恒未命中），若仍注册空闲
+// 对账，IsActive 恒 false 会把运行中的 agent 沙箱误缩容到 0。
+func agentActivityCacheAvailable(driver string) bool {
+	return driver == config.CacheDriverMemory || driver == config.CacheDriverDB
 }

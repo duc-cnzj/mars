@@ -199,6 +199,14 @@ func initServer(ctx context.Context, a *apiGateway) (HttpServer, error) {
 
 	a.handler.RegisterFileRoute(gmux)
 	a.handler.RegisterWsRoute(router)
+	// MCP 端点（/mcp）：标准 Streamable HTTP，供沙箱 agent 与第三方 MCP 客户端调用。
+	// 同样必须先于前端 SPA 兜底注册，否则会被 /{any:.*} 吞成 index.html。
+	a.handler.RegisterMCPRoute(router)
+	// 沙箱 agent 运行时配置（/api/ai/config）：必须在下面的 /api/ 前缀路由之前注册，
+	// 否则会被 grpc-gateway 的 PathPrefix 吞掉（与 /api/ws_info 同一顺序约束）。
+	a.handler.RegisterAIConfigRoute(router)
+	// LLM 代理（/llm/v1/*）：同样必须先于前端 SPA 兜底注册，否则会被吞成 index.html。
+	a.handler.RegisterLLMProxyRoute(router)
 	// /api 前缀统一交给 grpc-gateway：必须先于前端 SPA 兜底注册，否则 /api/xxx
 	// 会被 LoadFrontendRoutes 的 /{any:.*} 兜底吞成 index.html。全仓 HTTP API
 	// 均约定挂在 /api 下（proto http 注解 + 文件路由，见 fileHandler.RegisterFileRoute）。

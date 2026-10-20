@@ -20,6 +20,31 @@ import (
 
 var _ biz.RepoRepo = (*repoImpl)(nil)
 
+// aiAgentSlotKey 是 AI Agent 仓库唯一槽位的固定值：ai_agent=true 时写入，否则为 NULL。
+// 可空唯一列天然保证「至多一行 true」——MySQL/SQLite 的唯一索引允许多个 NULL，
+// 并发把两个仓库设为 AI Agent 时由唯一索引兜底（ent.ConstraintError → 409）。
+const aiAgentSlotKey = "ai"
+
+// aiAgentSlotKeyFor 返回 ai_agent 对应的唯一槽位值（false 时为 nil）。
+func aiAgentSlotKeyFor(aiAgent bool) *string {
+	if !aiAgent {
+		return nil
+	}
+	return lo.ToPtr(aiAgentSlotKey)
+}
+
+// clearOtherAIAgentSlots 清除除 keepID 外的 AI Agent 槽位。keepID 传 0 表示新建场景，
+// 清除全部旧槽位。必须含软删行：软删行仍占用唯一索引，漏清会让新 AI 仓库写入撞唯一约束。
+// 批量 Update 不经过软删查询拦截器（拦截器只作用于 Query），故软删行天然命中。
+func clearOtherAIAgentSlots(ctx context.Context, tx *ent.Tx, keepID int) error {
+	up := tx.Repo.Update().Where(repo.AiAgentKeyNotNil())
+	if keepID > 0 {
+		up = up.Where(repo.IDNEQ(keepID))
+	}
+	_, err := up.SetAiAgent(false).ClearAiAgentKey().Save(ctx)
+	return err
+}
+
 // repoImpl 是 biz.RepoRepo 的实现：封装 ent Repo 查询与 git 项目名/默认分支解析。
 type repoImpl struct {
 	data    dataStore
@@ -40,6 +65,14 @@ func (r *repoImpl) GetByName(ctx context.Context, name string) (out *biz.Repo, e
 	defer func() { endSpan(span, err) }()
 	get, err := r.data.DB().Repo.Query().Where(repo.Name(name)).First(ctx)
 	return toRepo(get), errs.Wrap(err, "get repo by name")
+}
+
+// GetAIAgent 返回全局唯一的 AI Agent 仓库；未配置时返回 ent.NotFound（由 errs.Wrap 归类 404）。
+func (r *repoImpl) GetAIAgent(ctx context.Context) (out *biz.Repo, err error) {
+	ctx, span := tracer.Start(ctx, "repoImpl/GetAIAgent")
+	defer func() { endSpan(span, err) }()
+	first, err := r.data.DB().Repo.Query().Where(repo.AiAgentEQ(true)).First(ctx)
+	return toRepo(first), errs.Wrap(err, "get ai agent repo")
 }
 
 // NewRepo 构造仓库 repo 实现，注入 git 端口供创建/更新时解析项目名与默认分支。
@@ -73,6 +106,7 @@ func (r *repoImpl) List(ctx context.Context, in *biz.ListRepoRequest) (repos []*
 		Where(
 			filters.IfOrderByIDDesc(in.OrderByIDDesc),
 			filters.IfEnabled(in.Enabled),
+			filters.IfAIAgent(in.AIAgent),
 			filters.IfNameLike(in.Name),
 		)
 	all, err := query.Clone().
@@ -84,6 +118,7 @@ func (r *repoImpl) List(ctx context.Context, in *biz.ListRepoRequest) (repos []*
 			repo.FieldGitProjectName,
 			repo.FieldNeedGitRepo,
 			repo.FieldDescription,
+			repo.FieldAiAgent,
 			repo.FieldCreatedAt,
 			repo.FieldUpdatedAt,
 		).
@@ -107,21 +142,34 @@ func (r *repoImpl) Create(ctx context.Context, in *biz.CreateRepoInput) (get *bi
 		return nil, err
 	}
 
-	cr := r.data.DB().Repo.Create().
-		SetName(in.Name).
-		SetNeedGitRepo(in.NeedGitRepo).
-		SetNillableGitProjectName(projName).
-		SetNillableDefaultBranch(defaultBranch).
-		SetNillableGitProjectID(in.GitProjectID).
-		SetEnabled(in.Enabled).
-		SetDescription(in.Description).
-		SetMarsConfig(in.MarsConfig)
-	if !in.NeedGitRepo {
-		cr.SetNillableGitProjectID(nil).
-			SetNillableDefaultBranch(nil).
-			SetNillableGitProjectName(nil)
-	}
-	save, err := cr.Save(ctx)
+	var save *ent.Repo
+	err = r.data.WithTx(ctx, func(tx *ent.Tx) error {
+		// AI Agent 仓库全局唯一：先清掉旧槽位（含软删行），再插入新行，避免撞唯一索引。
+		if in.AIAgent {
+			if txErr := clearOtherAIAgentSlots(ctx, tx, 0); txErr != nil {
+				return txErr
+			}
+		}
+		cr := tx.Repo.Create().
+			SetName(in.Name).
+			SetNeedGitRepo(in.NeedGitRepo).
+			SetNillableGitProjectName(projName).
+			SetNillableDefaultBranch(defaultBranch).
+			SetNillableGitProjectID(in.GitProjectID).
+			SetEnabled(in.Enabled).
+			SetDescription(in.Description).
+			SetMarsConfig(in.MarsConfig).
+			SetAiAgent(in.AIAgent).
+			SetNillableAiAgentKey(aiAgentSlotKeyFor(in.AIAgent))
+		if !in.NeedGitRepo {
+			cr.SetNillableGitProjectID(nil).
+				SetNillableDefaultBranch(nil).
+				SetNillableGitProjectName(nil)
+		}
+		s, txErr := cr.Save(ctx)
+		save = s
+		return txErr
+	})
 	return toRepo(save), errs.Wrap(err, "create repo")
 }
 
@@ -173,19 +221,39 @@ func (r *repoImpl) Update(ctx context.Context, in *biz.UpdateRepoInput) (get *bi
 		return nil, err
 	}
 
-	up := r.data.DB().Repo.
-		UpdateOneID(int(in.ID)).
-		SetName(in.Name).
-		SetNeedGitRepo(in.NeedGitRepo).
-		SetNillableGitProjectID(in.GitProjectID).
-		SetNillableGitProjectName(projName).
-		SetNillableDefaultBranch(defaultBranch).
-		SetDescription(in.Description).
-		SetMarsConfig(in.MarsConfig)
-	if !in.NeedGitRepo {
-		up.ClearGitProjectID().ClearGitProjectName().ClearDefaultBranch()
-	}
-	save, err := up.Save(ctx)
+	var save *ent.Repo
+	err = r.data.WithTx(ctx, func(tx *ent.Tx) error {
+		// 设为 AI Agent 仓库时先清掉其它仓库（含软删行）的槽位，事务内保证唯一。
+		if in.AIAgent != nil && *in.AIAgent {
+			if txErr := clearOtherAIAgentSlots(ctx, tx, int(in.ID)); txErr != nil {
+				return txErr
+			}
+		}
+		up := tx.Repo.
+			UpdateOneID(int(in.ID)).
+			SetName(in.Name).
+			SetNeedGitRepo(in.NeedGitRepo).
+			SetNillableGitProjectID(in.GitProjectID).
+			SetNillableGitProjectName(projName).
+			SetNillableDefaultBranch(defaultBranch).
+			SetDescription(in.Description).
+			SetMarsConfig(in.MarsConfig)
+		// nil 表示调用方未指定该字段：保持现有 AI 标记与唯一槽位不变。
+		if in.AIAgent != nil {
+			up.SetAiAgent(*in.AIAgent)
+			if *in.AIAgent {
+				up.SetAiAgentKey(aiAgentSlotKey)
+			} else {
+				up.ClearAiAgentKey()
+			}
+		}
+		if !in.NeedGitRepo {
+			up.ClearGitProjectID().ClearGitProjectName().ClearDefaultBranch()
+		}
+		s, txErr := up.Save(ctx)
+		save = s
+		return txErr
+	})
 	return toRepo(save), errs.Wrap(err, "update repo")
 }
 
@@ -326,6 +394,12 @@ func (r *repoImpl) Import(ctx context.Context, items []*biz.ImportRepoItem) (cre
 	if err := r.data.WithTx(ctx, func(tx *ent.Tx) error {
 		for _, p := range plans {
 			if p.create {
+				// 导入中的 AI Agent 仓库同样要顶替目标环境旧槽位（唯一索引兜底）。
+				if p.item.AIAgent {
+					if err := clearOtherAIAgentSlots(ctx, tx, 0); err != nil {
+						return err
+					}
+				}
 				if _, err := tx.Repo.Create().
 					SetName(p.item.Name).
 					SetNeedGitRepo(p.item.NeedGitRepo).
@@ -335,11 +409,18 @@ func (r *repoImpl) Import(ctx context.Context, items []*biz.ImportRepoItem) (cre
 					SetEnabled(p.item.Enabled).
 					SetDescription(p.item.Description).
 					SetMarsConfig(configWithHibernate(p.item.MarsConfig, nil)).
+					SetAiAgent(p.item.AIAgent).
+					SetNillableAiAgentKey(aiAgentSlotKeyFor(p.item.AIAgent)).
 					Save(ctx); err != nil {
 					return err
 				}
 				created++
 				continue
+			}
+			if p.item.AIAgent {
+				if err := clearOtherAIAgentSlots(ctx, tx, p.id); err != nil {
+					return err
+				}
 			}
 			up := tx.Repo.UpdateOneID(p.id).
 				SetName(p.item.Name).
@@ -349,7 +430,13 @@ func (r *repoImpl) Import(ctx context.Context, items []*biz.ImportRepoItem) (cre
 				SetNillableDefaultBranch(p.defaultBranch).
 				SetDescription(p.item.Description).
 				SetMarsConfig(configWithHibernate(p.item.MarsConfig, p.preservedHibernate)).
-				SetEnabled(p.item.Enabled)
+				SetEnabled(p.item.Enabled).
+				SetAiAgent(p.item.AIAgent)
+			if p.item.AIAgent {
+				up.SetAiAgentKey(aiAgentSlotKey)
+			} else {
+				up.ClearAiAgentKey()
+			}
 			if !p.item.NeedGitRepo {
 				up.ClearGitProjectID().ClearGitProjectName().ClearDefaultBranch()
 			}
@@ -401,6 +488,7 @@ func toRepo(data *ent.Repo) *biz.Repo {
 		NeedGitRepo:    data.NeedGitRepo,
 		MarsConfig:     data.MarsConfig,
 		Description:    data.Description,
+		AIAgent:        data.AiAgent,
 		Projects:       slice.Map(data.Edges.Projects, toProject),
 	}
 }

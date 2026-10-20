@@ -40,6 +40,17 @@ func IfStrEQPtr(field string) func(*string) func(*sql.Selector) {
 	})
 }
 
+// IfStrContainsFold 字符串大小写不敏感包含过滤：输入非空时才追加
+// LOWER(field) LIKE LOWER(%s)，空串不过滤；方言差异由 ent 的
+// sql.FieldContainsFold 统一处理。
+func IfStrContainsFold(field string) func(string) func(*sql.Selector) {
+	return If[string](func(s string) bool {
+		return s != ""
+	}, func(s string) func(*sql.Selector) {
+		return sql.FieldContainsFold(field, s)
+	})
+}
+
 // IfIntsIN 整数多值 IN 过滤：输入非空时才追加 field IN (vs...)。
 func IfIntsIN[T ~int | ~int32](field string) func([]T) func(*sql.Selector) {
 	return If[[]T](func(s []T) bool {
@@ -82,10 +93,11 @@ func IfBool(field string) func(*bool) func(*sql.Selector) {
 	})
 }
 
-// IfEmail/IfEnabled/IfOrderByIDDesc/IfNameLike 是常用查询过滤器的命名实例。
+// IfEmail/IfEnabled/IfAIAgent/IfOrderByIDDesc/IfNameLike 是常用查询过滤器的命名实例。
 var (
 	IfEmail         = IfStrEQ("email")
 	IfEnabled       = IfBool("enabled")
+	IfAIAgent       = IfBool("ai_agent")
 	IfOrderByIDDesc = IfOrderByDesc("id")
 	IfNameLike      = If(func(s string) bool {
 		return s != ""

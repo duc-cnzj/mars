@@ -379,6 +379,8 @@ var (
 		{Name: "need_git_repo", Type: field.TypeBool, Default: false},
 		{Name: "mars_config", Type: field.TypeJSON, Nullable: true},
 		{Name: "description", Type: field.TypeString, Default: ""},
+		{Name: "ai_agent", Type: field.TypeBool, Default: false},
+		{Name: "ai_agent_key", Type: field.TypeString, Unique: true, Nullable: true},
 	}
 	// ReposTable holds the schema information for the "repos" table.
 	ReposTable = &schema.Table{

@@ -53,6 +53,21 @@ func (mr *MockCacheMockRecorder) Clear(key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clear", reflect.TypeOf((*MockCache)(nil).Clear), key)
 }
 
+// Get mocks base method.
+func (m *MockCache) Get(key CacheKey) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", key)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockCacheMockRecorder) Get(key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockCache)(nil).Get), key)
+}
+
 // Remember mocks base method.
 func (m *MockCache) Remember(key CacheKey, seconds int, fn func() ([]byte, error), force bool) ([]byte, error) {
 	m.ctrl.T.Helper()

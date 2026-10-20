@@ -966,6 +966,14 @@ paths:
                   in: query
                   schema:
                     type: boolean
+                - name: tailLines
+                  in: query
+                  description: |-
+                    日志尾部行数（对应 k8s PodLogOptions.TailLines）：0 或缺省表示默认 1000 行。
+                     作用于一次性拉取（ContainerLog）与非 Running Pod 的流式回退；Running Pod 的实时流
+                     仍需先回补历史日志，固定 1000 行（实时流另有独立读取路径）。
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -1005,6 +1013,14 @@ paths:
                   in: query
                   schema:
                     type: boolean
+                - name: tailLines
+                  in: query
+                  description: |-
+                    日志尾部行数（对应 k8s PodLogOptions.TailLines）：0 或缺省表示默认 1000 行。
+                     作用于一次性拉取（ContainerLog）与非 Running Pod 的流式回退；Running Pod 的实时流
+                     仍需先回补历史日志，固定 1000 行（实时流另有独立读取路径）。
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -2503,6 +2519,11 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: aiAgent
+                  in: query
+                  description: ai_agent 为空时不按 AI Agent 标记过滤；true 只返回 AI Agent 仓库，false 只返回非 AI Agent 仓库。
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -4410,6 +4431,9 @@ components:
                     type: boolean
                 description:
                     type: string
+                aiAgent:
+                    type: boolean
+                    description: ai_agent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库。
         repo.CreateResponse:
             type: object
             properties:
@@ -4512,6 +4536,11 @@ components:
                     type: boolean
                 description:
                     type: string
+                aiAgent:
+                    type: boolean
+                    description: |-
+                        ai_agent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库；false 清除标记；
+                         不传（nil）时保持现状——旧客户端不知道该字段，不能因缺省值把标记清掉。
         repo.UpdateResponse:
             type: object
             properties:
@@ -4947,6 +4976,9 @@ components:
                     type: boolean
                 description:
                     type: string
+                aiAgent:
+                    type: boolean
+                    description: ai_agent 标记该仓库是否为全局唯一的 AI Agent 仓库。
                 createdAt:
                     type: string
                 updatedAt:

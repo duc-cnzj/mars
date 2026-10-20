@@ -427,6 +427,60 @@ func TestProjectRepoList_FilterByRepoID(t *testing.T) {
 	assert.Equal(t, int32(4), pagination.Count)
 }
 
+// 回归防护：project.List 支持按命名空间与项目名过滤（MCP list_projects 依赖）——
+// NamespaceID>0 时只返回该空间项目且 count 同步收窄；Name 模糊且大小写不敏感；
+// NamespaceID=0 / Name="" 保持「不过滤」的原有语义。
+func TestProjectRepoList_FilterByNameAndNamespace(t *testing.T) {
+	ctx := context.TODO()
+	db, _ := NewSqliteDB()
+	defer db.Close()
+	data := NewDataImpl(&NewDataParams{DB: db, Cfg: &config.Config{}})
+	r := NewProjectRepo(data)
+
+	ns1 := createNamespace(db).ID
+	ns2 := createNamespace(db).ID
+	mk := func(ns int, name string) {
+		db.Project.Create().
+			SetName(name).
+			SetNamespaceID(ns).
+			SetGitProjectID(1).
+			SetCreator("").
+			SaveX(ctx)
+	}
+	mk(ns1, "web-prod")
+	mk(ns1, "api-prod")
+	mk(ns2, "web-dev")
+	mk(ns2, "db")
+
+	// NamespaceID 过滤：只剩 ns1 的两个项目，count 同步。
+	projects, pag, err := r.List(ctx, &biz.ListProjectInput{Page: 1, PageSize: 10, IsAdmin: true, NamespaceID: int32(ns1)})
+	require.NoError(t, err)
+	require.Len(t, projects, 2)
+	assert.Equal(t, int32(2), pag.Count)
+	for _, p := range projects {
+		assert.Equal(t, ns1, p.NamespaceID)
+	}
+
+	// Name 模糊过滤：大小写不敏感，跨命名空间匹配。
+	projects, pag, err = r.List(ctx, &biz.ListProjectInput{Page: 1, PageSize: 10, IsAdmin: true, Name: "WEB"})
+	require.NoError(t, err)
+	require.Len(t, projects, 2)
+	assert.Equal(t, int32(2), pag.Count)
+
+	// 两个过滤条件叠加：落在 ns2 且名字含 web。
+	projects, pag, err = r.List(ctx, &biz.ListProjectInput{Page: 1, PageSize: 10, IsAdmin: true, NamespaceID: int32(ns2), Name: "web"})
+	require.NoError(t, err)
+	require.Len(t, projects, 1)
+	assert.Equal(t, "web-dev", projects[0].Name)
+	assert.Equal(t, int32(1), pag.Count)
+
+	// NamespaceID=0 + Name=""：不过滤，返回全部。
+	projects, pag, err = r.List(ctx, &biz.ListProjectInput{Page: 1, PageSize: 10, IsAdmin: true})
+	require.NoError(t, err)
+	require.Len(t, projects, 4)
+	assert.Equal(t, int32(4), pag.Count)
+}
+
 func TestProjectRepoList_Empty(t *testing.T) {
 	ctx := context.TODO()
 	db, _ := NewSqliteDB()

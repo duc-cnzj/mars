@@ -244,6 +244,41 @@ func TestAccessTokenRepo_Revoke_TouchLastUsedAt(t *testing.T) {
 	assert.Equal(t, granted.ID, visible.ID)
 }
 
+// TestAccessTokenRepo_RevokeByUsageExcept 覆盖按 usage 轮换：同 usage 的旧令牌被软删，
+// keepToken 与其他 usage 的令牌保持有效。
+func TestAccessTokenRepo_RevokeByUsageExcept(t *testing.T) {
+	repo, _ := newAccessTokenRepo(t)
+	ctx := context.TODO()
+
+	grant := func(usage string) *biz.AccessToken {
+		tok, err := repo.Grant(ctx, &biz.GrantAccessTokenInput{
+			User:          &biz.UserInfo{Email: "a@b.c"},
+			Usage:         usage,
+			ExpireSeconds: 3600,
+		})
+		require.NoError(t, err)
+		return tok
+	}
+	old1 := grant("deploy-token:1")
+	old2 := grant("deploy-token:1")
+	keep := grant("deploy-token:1")
+	other := grant("deploy-token:2")
+
+	require.NoError(t, repo.RevokeByUsageExcept(ctx, "deploy-token:1", keep.Token))
+
+	for _, tok := range []*biz.AccessToken{old1, old2} {
+		_, err := repo.FindByToken(ctx, tok.Token)
+		assert.Error(t, err)
+		_, err = repo.FindByToken(mixin.SkipSoftDelete(ctx), tok.Token)
+		assert.NoError(t, err)
+	}
+
+	_, err := repo.FindByToken(ctx, keep.Token)
+	assert.NoError(t, err)
+	_, err = repo.FindByToken(ctx, other.Token)
+	assert.NoError(t, err)
+}
+
 // TestToAccessToken 覆盖 nil 与实体两种转换。
 func TestToAccessToken(t *testing.T) {
 	assert.Nil(t, toAccessToken(nil))

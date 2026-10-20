@@ -32,6 +32,25 @@ type ApplyProjectDeps struct {
 	Logger     mlog.Logger
 }
 
+// trustedNamespaceAccessKey 是「平台内部受信部署」的 context key 类型。
+// 用未导出的结构体类型作 key，保证只有本包能写入该标记——外部包无法伪造。
+type trustedNamespaceAccessKey struct{}
+
+// WithTrustedNamespaceAccess 标记该 ctx 的部署由平台内部受信编排发起（当前唯一调用方：
+// AI Agent 自动部署到私有 mars-agent 空间），从而跳过命名空间访问校验。
+//
+// ⚠️ 仅限平台内部调用：传输层绝不能从请求参数派生此标记，否则等于给任意登录用户
+// 开放任意私有空间。使用未导出 key 类型正是为了在编译期堵死这条越权路径。
+func WithTrustedNamespaceAccess(ctx context.Context) context.Context {
+	return context.WithValue(ctx, trustedNamespaceAccessKey{}, true)
+}
+
+// hasTrustedNamespaceAccess 判断 ctx 是否携带平台内部受信部署标记。
+func hasTrustedNamespaceAccess(ctx context.Context) bool {
+	v, _ := ctx.Value(trustedNamespaceAccessKey{}).(bool)
+	return v
+}
+
 // ApplyProjectInput 是共享部署编排的输入：JobInput 为调用方已填好的部署参数
 // （Type/NamespaceId/RepoID/GitBranch/GitCommit/Config/Atomic/ExtraValues/Version/
 // User/DryRun/PubSub/Messager）；OnJob 为传输层钩子（WS 用它登记取消回调），
@@ -59,8 +78,11 @@ func ApplyProject(ctx context.Context, deps ApplyProjectDeps, input *ApplyProjec
 
 	// 命名空间访问校验：私有命名空间对非成员/非 admin 隐藏部署入口。
 	// 错误码与 services 侧 AccessBiz 语义一致（ErrorPermissionDenied）。
-	if _, err := deps.AccessBiz.RequireNamespaceAccessByID(ctx, int(input.JobInput.NamespaceId)); err != nil {
-		return nil, err
+	// 平台内部受信编排（AI Agent 部署到私有空间）可跳过——标记只能由本包写入。
+	if !hasTrustedNamespaceAccess(ctx) {
+		if _, err := deps.AccessBiz.RequireNamespaceAccessByID(ctx, int(input.JobInput.NamespaceId)); err != nil {
+			return nil, err
+		}
 	}
 
 	show, err := deps.RepoBiz.Get(ctx, int(input.JobInput.RepoID))

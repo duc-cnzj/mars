@@ -435,7 +435,7 @@ func TestContainerBiz_Exec_SuccessExitError(t *testing.T) {
 }
 
 // TestContainerBiz_Exec_ExecFailure 覆盖容器 exec 启动失败（如命令在容器内不存在）：
-// 属"容器执行结果"，经流内错误帧（execOnceExecFailedCode）传达后 Exec 返回 nil，
+// 属"容器执行结果"，经流内错误帧（ExecOnceExecFailedCode）传达后 Exec 返回 nil，
 // 不提升为传输层 500。
 func TestContainerBiz_Exec_ExecFailure(t *testing.T) {
 	k := &fakeK8sBizForContainer{
@@ -454,7 +454,7 @@ func TestContainerBiz_Exec_ExecFailure(t *testing.T) {
 		Namespace: "a", Pod: "b", Container: "c", Command: []string{"cc"},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, execOnceExecFailedCode, stream.lastExitCode())
+	assert.Equal(t, ExecOnceExecFailedCode, stream.lastExitCode())
 }
 
 // TestContainerBiz_Exec_ExecFailureSendFailure 覆盖 exec 失败错误帧发送失败分支：
@@ -722,7 +722,7 @@ func TestContainerBiz_ExecOnce_ExitErrorSendFailure(t *testing.T) {
 }
 
 // TestContainerBiz_ExecOnce_ExecFailure 覆盖容器 exec 启动失败（如命令在容器内不存在）：
-// 属"容器执行结果"，经流内错误帧（execOnceExecFailedCode）传达后 ExecOnce 返回 nil，
+// 属"容器执行结果"，经流内错误帧（ExecOnceExecFailedCode）传达后 ExecOnce 返回 nil，
 // 不提升为传输层 500。
 func TestContainerBiz_ExecOnce_ExecFailure(t *testing.T) {
 	k := &fakeK8sBizForContainer{
@@ -744,7 +744,7 @@ func TestContainerBiz_ExecOnce_ExecFailure(t *testing.T) {
 		Namespace: "a", Pod: "b", Command: []string{"cc"},
 	})
 	assert.NoError(t, err)
-	frame := stream.findError(execOnceExecFailedCode)
+	frame := stream.findError(ExecOnceExecFailedCode)
 	assert.NotNil(t, frame)
 	assert.Contains(t, frame.Message, "executable file not found")
 	assert.Contains(t, captured["error"].(string), "executable file not found")
@@ -769,7 +769,7 @@ func TestContainerBiz_ExecOnce_ExecFailureSendFailure(t *testing.T) {
 		Namespace: "a", Pod: "b", Command: []string{"cc"},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, execOnceExecFailedCode, stream.lastExitCode())
+	assert.Equal(t, ExecOnceExecFailedCode, stream.lastExitCode())
 }
 
 // ---- execOnceDeadline / cappedWriter 单元 ----
@@ -837,7 +837,7 @@ func TestCappedWriter_NilCancelAndWriteError(t *testing.T) {
 // ---- ExecOnce 超时 wiring 与输出截断 ----
 
 // TestContainerBiz_ExecOnce_Timeout 覆盖命令执行超过 timeout_seconds 上限被强制终止：
-// 发一条明确的超时错误帧（execOnceTimeoutCode=-3）而非误标为 -2"exec 启动失败"，
+// 发一条明确的超时错误帧（ExecOnceTimeoutCode=-3）而非误标为 -2"exec 启动失败"，
 // ExecOnce 返回 nil（属服务端执行策略，不提升为传输层错误）。
 func TestContainerBiz_ExecOnce_Timeout(t *testing.T) {
 	k := &fakeK8sBizForContainer{
@@ -860,10 +860,10 @@ func TestContainerBiz_ExecOnce_Timeout(t *testing.T) {
 		Namespace: "a", Pod: "b", Command: []string{"sleep"}, TimeoutSeconds: 1,
 	})
 	assert.NoError(t, err)
-	timeoutFrame := stream.findError(execOnceTimeoutCode)
+	timeoutFrame := stream.findError(ExecOnceTimeoutCode)
 	assert.NotNil(t, timeoutFrame, "应发送一条超时错误帧而非误标为 exec 启动失败")
 	assert.Contains(t, timeoutFrame.Message, "秒上限")
-	assert.Nil(t, stream.findError(execOnceExecFailedCode), "超时不应当误标为 -2 exec 启动失败")
+	assert.Nil(t, stream.findError(ExecOnceExecFailedCode), "超时不应当误标为 -2 exec 启动失败")
 }
 
 // TestContainerBiz_ExecOnce_Timeout_NetError 覆盖 deadline 到期但 err 被 SPDY 包装成
@@ -889,9 +889,9 @@ func TestContainerBiz_ExecOnce_Timeout_NetError(t *testing.T) {
 		Namespace: "a", Pod: "b", Command: []string{"sleep"}, TimeoutSeconds: 1,
 	})
 	assert.NoError(t, err)
-	timeoutFrame := stream.findError(execOnceTimeoutCode)
+	timeoutFrame := stream.findError(ExecOnceTimeoutCode)
 	assert.NotNil(t, timeoutFrame, "net.Error 超时（deadline 到期）应识别为 -3 超时帧")
-	assert.Nil(t, stream.findError(execOnceExecFailedCode))
+	assert.Nil(t, stream.findError(ExecOnceExecFailedCode))
 }
 
 // TestContainerBiz_ExecOnce_TimeoutSendError 覆盖超时错误帧（-3）发送失败分支：
@@ -962,7 +962,7 @@ func TestContainerBiz_ExecOnce_Truncation(t *testing.T) {
 		Namespace: "a", Pod: "b", Command: []string{"cat"},
 	})
 	assert.NoError(t, err)
-	truncFrame := stream.findError(execOnceTruncatedCode)
+	truncFrame := stream.findError(ExecOnceTruncatedCode)
 	assert.NotNil(t, truncFrame, "应发送一条输出超限截断错误帧")
 	assert.Contains(t, truncFrame.Message, "上限")
 }

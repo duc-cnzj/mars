@@ -523,6 +523,12 @@ func (repo *k8sRepo) IsPodRunning(namespace, podName string) (running bool, notR
 	}
 
 	for _, status := range podInfo.Status.ContainerStatuses {
+		// Waiting 为 nil 说明容器已 Terminated（Succeeded/非 Evicted 的 Failed 等终止态）
+		// 或正在 Running；这里只负责取 Waiting 原因，nil 必须跳过，否则解引用直接 panic
+		// （check_pod_status 工具会因此 500）。全部跳过时落到下方 "pod not running."。
+		if status.State.Waiting == nil {
+			continue
+		}
 		return false, fmt.Sprintf("%s %s", status.State.Waiting.Reason, status.State.Waiting.Message)
 	}
 
@@ -1424,6 +1430,22 @@ func (repo *k8sRepo) ListReplicaSets(namespace string) ([]*appsv1.ReplicaSet, er
 func (repo *k8sRepo) GetDeployment(namespace, name string) (*appsv1.Deployment, error) {
 	dep, err := repo.data.K8s().DeploymentLister.Deployments(namespace).Get(name)
 	return dep, errs.Wrap(err, "get deployment")
+}
+
+// ScaleDeployment 经 scale 子资源调整 Deployment 副本数：先读 scale 再写回，
+// 避免整对象更新携带过期 resourceVersion 导致冲突。agent 沙箱空闲缩容与唤醒共用。
+func (repo *k8sRepo) ScaleDeployment(ctx context.Context, namespace, name string, replicas int32) (err error) {
+	ctx, span := tracer.Start(ctx, "k8sRepo/ScaleDeployment")
+	defer func() { endSpan(span, err) }()
+
+	deployments := repo.data.K8s().Client.AppsV1().Deployments(namespace)
+	scale, err := deployments.GetScale(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return errs.Wrap(err, "get deployment scale")
+	}
+	scale.Spec.Replicas = replicas
+	_, err = deployments.UpdateScale(ctx, name, scale, metav1.UpdateOptions{})
+	return errs.Wrap(err, "scale deployment")
 }
 
 // GetStatefulSet 经 informer lister 读取 StatefulSet（部署后状态判定用）。

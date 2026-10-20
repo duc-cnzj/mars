@@ -86,10 +86,10 @@ func (wc *websocketManager) HandleStartShell(ctx context.Context, c Conn, t webs
 		newMessageSender(c, t).SendEndError(err)
 		return
 	}
-	// 拉起容器内 shell 前必须做命名空间级访问控制：交互终端可执行任意命令，
-	// 与 gRPC container.Exec 对齐（containerSvc.Exec 首行 RequireNamespaceAccessByName），
-	// 防止任意已认证用户枚举 namespace/pod/container 进入私有命名空间的容器 shell（RCE）。
-	if _, err := wc.accessBiz.RequireNamespaceAccessByName(ctx, input.Container.GetNamespace()); err != nil {
+	// 拉起容器内 shell 前必须做 Pod 级访问控制：交互终端可执行任意命令，与 gRPC
+	// container.Exec 对齐（containerSvc.Exec 首行 RequirePodAccess），防止任意已认证
+	// 用户枚举 namespace/pod/container 进入私有命名空间或他人沙箱的容器 shell（RCE）。
+	if _, err := wc.accessBiz.RequirePodAccess(ctx, input.Container.GetNamespace(), input.Container.GetPod()); err != nil {
 		wc.logger.Error("[Websocket]: start shell permission denied: ", err)
 		newMessageSender(c, t).SendEndError(err)
 		return

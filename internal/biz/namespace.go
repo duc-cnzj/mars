@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/v6/internal/biz/schematype"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
@@ -116,6 +117,13 @@ func NewNamespaceBiz(logger mlog.Logger, nsRepo NamespaceRepo, k8sRepo K8sRepo, 
 // Create 实现 NamespaceBiz.Create：见接口注释。
 func (n *namespaceBiz) Create(ctx context.Context, namespace, description, creatorEmail string) (*Namespace, bool, error) {
 	nsName := n.nsRepo.GetMarsNamespace(namespace)
+	// 系统保留空间（AI Agent）只能由平台以超管身份创建。普通用户先占位后，
+	// services 层 ensureAgentNamespace 的 fail-closed 校验会拒绝所有人启用 AI，
+	// 形成跨用户的功能级 DoS。按计入 ns_prefix 后的真实 k8s 名比较，防止用
+	// 已带前缀的名字绕过。
+	if nsName == n.nsRepo.GetMarsNamespace(AgentNamespace) && creatorEmail != schematype.SuperAdminEmail {
+		return nil, false, errs.InvalidArgument(fmt.Sprintf("名称空间 %s 为系统保留空间", namespace))
+	}
 	preCheckNs, err := n.nsRepo.FindByName(ctx, nsName)
 	if err == nil {
 		// 已存在：不建新记录，原样返回交给调用方按 IgnoreIfExists 策略决策。

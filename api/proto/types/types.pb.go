@@ -1741,11 +1741,13 @@ type RepoModel struct {
 	MarsConfig     *mars.Config           `protobuf:"bytes,6,opt,name=mars_config,json=marsConfig,proto3" json:"mars_config,omitempty"`
 	NeedGitRepo    bool                   `protobuf:"varint,7,opt,name=need_git_repo,json=needGitRepo,proto3" json:"need_git_repo,omitempty"`
 	Description    string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
-	CreatedAt      string                 `protobuf:"bytes,100,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt      string                 `protobuf:"bytes,101,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	DeletedAt      string                 `protobuf:"bytes,102,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// ai_agent 标记该仓库是否为全局唯一的 AI Agent 仓库。
+	AiAgent       bool   `protobuf:"varint,9,opt,name=ai_agent,json=aiAgent,proto3" json:"ai_agent,omitempty"`
+	CreatedAt     string `protobuf:"bytes,100,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     string `protobuf:"bytes,101,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	DeletedAt     string `protobuf:"bytes,102,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RepoModel) Reset() {
@@ -1832,6 +1834,13 @@ func (x *RepoModel) GetDescription() string {
 		return x.Description
 	}
 	return ""
+}
+
+func (x *RepoModel) GetAiAgent() bool {
+	if x != nil {
+		return x.AiAgent
+	}
+	return false
 }
 
 func (x *RepoModel) GetCreatedAt() string {
@@ -2049,7 +2058,7 @@ const file_proto_types_types_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18e \x01(\tR\tupdatedAt\x12\x1d\n" +
 	"\n" +
-	"deleted_at\x18f \x01(\tR\tdeletedAt\"\xeb\x02\n" +
+	"deleted_at\x18f \x01(\tR\tdeletedAt\"\x86\x03\n" +
 	"\tRepoModel\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12$\n" +
@@ -2059,7 +2068,8 @@ const file_proto_types_types_proto_rawDesc = "" +
 	"\vmars_config\x18\x06 \x01(\v2\f.mars.ConfigR\n" +
 	"marsConfig\x12\"\n" +
 	"\rneed_git_repo\x18\a \x01(\bR\vneedGitRepo\x12 \n" +
-	"\vdescription\x18\b \x01(\tR\vdescription\x12\x1d\n" +
+	"\vdescription\x18\b \x01(\tR\vdescription\x12\x19\n" +
+	"\bai_agent\x18\t \x01(\bR\aaiAgent\x12\x1d\n" +
 	"\n" +
 	"created_at\x18d \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +

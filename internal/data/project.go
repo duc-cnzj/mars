@@ -36,6 +36,7 @@ func toProject(project *ent.Project) *biz.Project {
 		GitBranch:        project.GitBranch,
 		GitCommit:        project.GitCommit,
 		Config:           project.Config,
+		Creator:          project.Creator,
 		UpdatedBy:        project.UpdatedBy,
 		OverrideValues:   project.OverrideValues,
 		DockerImage:      project.DockerImage,
@@ -260,8 +261,14 @@ func (repo *projectRepo) List(ctx context.Context, input *biz.ListProjectInput) 
 			),
 		)
 	}
-	// 按所属仓库过滤（仓库列表「查看项目」用）：0 视为不过滤，保持原有「全部项目」语义。
-	query = query.Where(filters.IfIntEQ[int](project.FieldRepoID)(input.RepoID))
+	query = query.Where(
+		// 按命名空间过滤（MCP list_projects 按空间列项目用）：0 视为不过滤，保持「全部可见项目」语义。
+		filters.IfIntEQ[int32](project.FieldNamespaceID)(input.NamespaceID),
+		// 项目名模糊过滤（MCP list_projects 用）：空串不过滤，大小写不敏感。
+		filters.IfStrContainsFold(project.FieldName)(input.Name),
+		// 按所属仓库过滤（仓库列表「查看项目」用）：0 视为不过滤，保持原有「全部项目」语义。
+		filters.IfIntEQ[int](project.FieldRepoID)(input.RepoID),
+	)
 	all := query.Clone().
 		Offset(pagination.GetPageOffset(input.Page, input.PageSize)).
 		Limit(int(input.PageSize)).

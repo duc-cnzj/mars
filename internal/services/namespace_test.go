@@ -1274,6 +1274,9 @@ func newNamespaceSvcWithMocks(t *testing.T) (*namespaceSvc, *namespaceSvcMocks) 
 		eventRepo:  data.NewMockEventRepo(ctrl),
 		hibernate:  biz.NewMockHibernateBiz(ctrl),
 	}
+	// NamespaceBiz.Create 会用真实 repo 计算保留空间（AgentNamespace）的实际 k8s 名，
+	// 用于拒绝普通用户占用系统空间。各用例只关心自己的入参名，这条默认桩避免逐用例重复声明。
+	mocks.nsRepo.EXPECT().GetMarsNamespace(biz.AgentNamespace).Return("devops-mars-agent").AnyTimes()
 	logger := mlog.NewForConfig(nil)
 	s, ok := NewNamespaceSvc(NamespaceSvcDeps{
 		NsBiz: biz.NewNamespaceBiz(

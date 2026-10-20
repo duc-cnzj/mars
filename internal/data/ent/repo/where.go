@@ -105,6 +105,16 @@ func Description(v string) predicate.Repo {
 	return predicate.Repo(sql.FieldEQ(FieldDescription, v))
 }
 
+// AiAgent applies equality check predicate on the "ai_agent" field. It's identical to AiAgentEQ.
+func AiAgent(v bool) predicate.Repo {
+	return predicate.Repo(sql.FieldEQ(FieldAiAgent, v))
+}
+
+// AiAgentKey applies equality check predicate on the "ai_agent_key" field. It's identical to AiAgentKeyEQ.
+func AiAgentKey(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldEQ(FieldAiAgentKey, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Repo {
 	return predicate.Repo(sql.FieldEQ(FieldCreatedAt, v))
@@ -593,6 +603,91 @@ func DescriptionEqualFold(v string) predicate.Repo {
 // DescriptionContainsFold applies the ContainsFold predicate on the "description" field.
 func DescriptionContainsFold(v string) predicate.Repo {
 	return predicate.Repo(sql.FieldContainsFold(FieldDescription, v))
+}
+
+// AiAgentEQ applies the EQ predicate on the "ai_agent" field.
+func AiAgentEQ(v bool) predicate.Repo {
+	return predicate.Repo(sql.FieldEQ(FieldAiAgent, v))
+}
+
+// AiAgentNEQ applies the NEQ predicate on the "ai_agent" field.
+func AiAgentNEQ(v bool) predicate.Repo {
+	return predicate.Repo(sql.FieldNEQ(FieldAiAgent, v))
+}
+
+// AiAgentKeyEQ applies the EQ predicate on the "ai_agent_key" field.
+func AiAgentKeyEQ(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldEQ(FieldAiAgentKey, v))
+}
+
+// AiAgentKeyNEQ applies the NEQ predicate on the "ai_agent_key" field.
+func AiAgentKeyNEQ(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldNEQ(FieldAiAgentKey, v))
+}
+
+// AiAgentKeyIn applies the In predicate on the "ai_agent_key" field.
+func AiAgentKeyIn(vs ...string) predicate.Repo {
+	return predicate.Repo(sql.FieldIn(FieldAiAgentKey, vs...))
+}
+
+// AiAgentKeyNotIn applies the NotIn predicate on the "ai_agent_key" field.
+func AiAgentKeyNotIn(vs ...string) predicate.Repo {
+	return predicate.Repo(sql.FieldNotIn(FieldAiAgentKey, vs...))
+}
+
+// AiAgentKeyGT applies the GT predicate on the "ai_agent_key" field.
+func AiAgentKeyGT(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldGT(FieldAiAgentKey, v))
+}
+
+// AiAgentKeyGTE applies the GTE predicate on the "ai_agent_key" field.
+func AiAgentKeyGTE(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldGTE(FieldAiAgentKey, v))
+}
+
+// AiAgentKeyLT applies the LT predicate on the "ai_agent_key" field.
+func AiAgentKeyLT(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldLT(FieldAiAgentKey, v))
+}
+
+// AiAgentKeyLTE applies the LTE predicate on the "ai_agent_key" field.
+func AiAgentKeyLTE(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldLTE(FieldAiAgentKey, v))
+}
+
+// AiAgentKeyContains applies the Contains predicate on the "ai_agent_key" field.
+func AiAgentKeyContains(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldContains(FieldAiAgentKey, v))
+}
+
+// AiAgentKeyHasPrefix applies the HasPrefix predicate on the "ai_agent_key" field.
+func AiAgentKeyHasPrefix(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldHasPrefix(FieldAiAgentKey, v))
+}
+
+// AiAgentKeyHasSuffix applies the HasSuffix predicate on the "ai_agent_key" field.
+func AiAgentKeyHasSuffix(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldHasSuffix(FieldAiAgentKey, v))
+}
+
+// AiAgentKeyIsNil applies the IsNil predicate on the "ai_agent_key" field.
+func AiAgentKeyIsNil() predicate.Repo {
+	return predicate.Repo(sql.FieldIsNull(FieldAiAgentKey))
+}
+
+// AiAgentKeyNotNil applies the NotNil predicate on the "ai_agent_key" field.
+func AiAgentKeyNotNil() predicate.Repo {
+	return predicate.Repo(sql.FieldNotNull(FieldAiAgentKey))
+}
+
+// AiAgentKeyEqualFold applies the EqualFold predicate on the "ai_agent_key" field.
+func AiAgentKeyEqualFold(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldEqualFold(FieldAiAgentKey, v))
+}
+
+// AiAgentKeyContainsFold applies the ContainsFold predicate on the "ai_agent_key" field.
+func AiAgentKeyContainsFold(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldContainsFold(FieldAiAgentKey, v))
 }
 
 // HasProjects applies the HasEdge predicate on the "projects" edge.

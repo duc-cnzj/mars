@@ -2,6 +2,7 @@ package cronjob
 
 import (
 	"testing"
+	"time"
 
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/cron"
@@ -52,19 +53,44 @@ func TestTasks_Registry_Conditional(t *testing.T) {
 		"all_branch_cache", "all_project_cache",
 	}, taskNames(withCache))
 
-	inK8s := Registry(&Tasks{}, &config.Config{KubeConfig: "/tmp/kube"})
+	inK8s := Registry(&Tasks{}, &config.Config{KubeConfig: "/tmp/kube", CacheDriver: config.CacheDriverDB})
 	assert.ElementsMatch(t, []string{
 		"clean_upload_files", "fix_project_deploy_status", "sync_domain_secret", "disk_info",
 		"sync_image_pull_secrets", "cache_cluster_board", "cache_cluster_info", "cache_resource_snapshot",
-		"hibernate_projects",
+		"hibernate_projects", "agent_idle_reconcile",
 	}, taskNames(inK8s))
 
-	// 条件全开：6 + 5。
-	both := Registry(&Tasks{}, &config.Config{GitServerCached: true, KubeConfig: "/tmp/kube"})
+	// 条件全开：6 + 6。
+	both := Registry(&Tasks{}, &config.Config{GitServerCached: true, KubeConfig: "/tmp/kube", CacheDriver: config.CacheDriverDB})
 	assert.ElementsMatch(t, []string{
 		"clean_upload_files", "fix_project_deploy_status", "sync_domain_secret", "disk_info",
 		"all_branch_cache", "all_project_cache", "sync_image_pull_secrets", "cache_cluster_board", "cache_cluster_info", "cache_resource_snapshot", "hibernate_projects",
+		"agent_idle_reconcile",
 	}, taskNames(both))
+}
+
+// TestTasks_Registry_AgentIdleDisabled ai.idle_timeout 为负（显式关闭）时不注册空闲关闭任务。
+func TestTasks_Registry_AgentIdleDisabled(t *testing.T) {
+	tasks := Registry(&Tasks{}, &config.Config{
+		KubeConfig:  "/tmp/kube",
+		CacheDriver: config.CacheDriverDB,
+		AI:          config.AIConfig{IdleTimeout: -time.Minute},
+	})
+	assert.NotContains(t, taskNames(tasks), "agent_idle_reconcile")
+}
+
+// TestTasks_Registry_AgentIdleRequiresTTLCache 覆盖无 TTL 缓存时的守卫：空驱动与
+// 未识别驱动都会回落 noCache（IsActive 恒 false），此时注册空闲对账会误缩容活跃沙箱。
+func TestTasks_Registry_AgentIdleRequiresTTLCache(t *testing.T) {
+	for _, driver := range []string{"", "redis"} {
+		t.Run("driver="+driver, func(t *testing.T) {
+			tasks := Registry(&Tasks{}, &config.Config{KubeConfig: "/tmp/kube", CacheDriver: driver})
+			assert.NotContains(t, taskNames(tasks), "agent_idle_reconcile")
+		})
+	}
+
+	memory := Registry(&Tasks{}, &config.Config{KubeConfig: "/tmp/kube", CacheDriver: config.CacheDriverMemory})
+	assert.Contains(t, taskNames(memory), "agent_idle_reconcile")
 }
 
 // TestTasks_Registry_DiskInfoAdapter 覆盖 DiskInfo 适配闭包：把 (int64, error)
@@ -84,7 +110,7 @@ func TestTasks_Registry_DiskInfoAdapter(t *testing.T) {
 // Registry 产出的全部任务（含条件任务），断言命令名与 cron 表达式。
 func TestTasks_Registry_Schedules(t *testing.T) {
 	cm := cron.NewManager(timer.NewReal(), nil, nil, mlog.NewForConfig(nil))
-	tasks := Registry(&Tasks{}, &config.Config{GitServerCached: true, KubeConfig: "/tmp/kube"})
+	tasks := Registry(&Tasks{}, &config.Config{GitServerCached: true, KubeConfig: "/tmp/kube", CacheDriver: config.CacheDriverDB})
 	for _, task := range tasks {
 		task.Schedule(cm.NewCommand(task.Name, task.Run))
 	}
@@ -105,4 +131,5 @@ func TestTasks_Registry_Schedules(t *testing.T) {
 	assert.Equal(t, "0,30 * * * * *", exprs["cache_cluster_info"])
 	assert.Equal(t, "0 */5 * * * *", exprs["cache_resource_snapshot"])
 	assert.Equal(t, "0 */2 * * * *", exprs["hibernate_projects"])
+	assert.Equal(t, "0 * * * * *", exprs["agent_idle_reconcile"])
 }

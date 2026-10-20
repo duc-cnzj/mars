@@ -13,6 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/data"
 	"github.com/duc-cnzj/mars/v6/internal/deploy"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -61,6 +62,8 @@ func TestWebsocketManager_HandleJoinRoom_denied(t *testing.T) {
 	projBiz.EXPECT().Show(gomock.Any(), 2).Return(&biz.Project{ID: 2, NamespaceID: 1}, nil)
 	// 私有命名空间：仅 admin/创建者/成员可见，普通用户 u 无权访问。
 	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns", Private: true, CreatorEmail: "owner@mars.com"}, nil)
+	// 项目级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	nsBiz.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 
 	sub := app.NewMockPubSub(m)
 	// 越权拦截 → SendEndError 回错误帧（ToSelf）；不设 Join 期望：若实现误调
@@ -147,6 +150,8 @@ func TestWebsocketManager_HandleStartShell_denied(t *testing.T) {
 	// 私有命名空间：仅 admin/创建者/成员可见，普通用户 u 无权访问。
 	nsBiz.EXPECT().FindByName(gomock.Any(), "testNamespace").
 		Return(&biz.Namespace{Name: "testNamespace", Private: true, CreatorEmail: "owner@mars.com"}, nil)
+	// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	nsBiz.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 
 	sub := app.NewMockPubSub(m)
 	// 越权拦截 → SendEndError 回错误帧（ToSelf）；不设 sessionMap/k8s 期望：
@@ -230,6 +235,8 @@ func TestWebsocketManager_HandleUpdateProject_denied(t *testing.T) {
 	// 私有命名空间：仅 admin/创建者/成员可见，普通用户 u 无权访问。
 	nsBiz := biz.NewMockNamespaceBiz(m)
 	nsBiz.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Name: "ns", Private: true, CreatorEmail: "owner@mars.com"}, nil)
+	// 项目级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	nsBiz.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 
 	sub := app.NewMockPubSub(m)
 	// 越权拦截 → SendEndError 回错误帧（ToSelf）；jobManager 恒 nil——若实现误触达

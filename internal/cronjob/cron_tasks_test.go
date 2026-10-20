@@ -14,12 +14,16 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/biz/schematype"
 	"github.com/duc-cnzj/mars/v6/internal/config"
 	"github.com/duc-cnzj/mars/v6/internal/data"
+	"github.com/duc-cnzj/mars/v6/internal/deploy"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
+	"github.com/duc-cnzj/mars/v6/internal/locker"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/uploader"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -178,11 +182,14 @@ func TestTasks_NewTasks(t *testing.T) {
 		data.NewMockHibernateRepo(m),
 		data.NewMockHibernateDeployer(m),
 		data.NewMockHibernateWindowRepo(m),
+		biz.NewMockAgentActivity(m),
+		locker.NewMockLocker(m),
 		&PluginDeps{GetCerts: func() (string, string, string) { return "", "", "" }},
 	)
 	assert.NotNil(t, tasks)
 	assert.NotNil(t, tasks.getCerts)
 	assert.NotNil(t, tasks.logger)
+	assert.NotNil(t, tasks.locker)
 }
 
 // TestTasks_CacheAllBranches 覆盖并发拉取分支：重复 GitProjectID 被 UniqBy 去重。
@@ -1503,4 +1510,192 @@ func TestTasks_ReconcileHibernate_PanicIsolatedInDebugMode(t *testing.T) {
 	})
 
 	assert.NoError(t, repo.ReconcileHibernate())
+}
+
+// ---- agent 空闲关闭 ----
+
+// newAgentIdleTasks 构造只挂 agent 空闲关闭所需端口的 Tasks，便于逐分支断言。
+func newAgentIdleTasks(m *gomock.Controller, timeout time.Duration) (*Tasks, *data.MockNamespaceRepo, *data.MockProjectRepo, *data.MockK8sRepo, *biz.MockAgentActivity, *locker.MockLocker, *data.MockEventRepo) {
+	nsRepo := data.NewMockNamespaceRepo(m)
+	projRepo := data.NewMockProjectRepo(m)
+	k8sRepo := data.NewMockK8sRepo(m)
+	activity := biz.NewMockAgentActivity(m)
+	lk := locker.NewMockLocker(m)
+	eventRepo := data.NewMockEventRepo(m)
+	return &Tasks{
+		logger:        mlog.NewForConfig(nil),
+		cfg:           &config.Config{AI: config.AIConfig{IdleTimeout: timeout}},
+		nsRepo:        nsRepo,
+		projectRepo:   projRepo,
+		k8sRepo:       k8sRepo,
+		agentActivity: activity,
+		locker:        lk,
+		event:         eventRepo,
+	}, nsRepo, projRepo, k8sRepo, activity, lk, eventRepo
+}
+
+// expectAgentIdleLock 预置缩容临界区的项目级锁获取成功，键与部署全局锁一致。
+func expectAgentIdleLock(lk *locker.MockLocker, namespaceID int, name string) {
+	lk.EXPECT().
+		RenewalAcquire(deploy.GetSlugName(namespaceID, name), deploy.LockTTLSeconds, deploy.LockRenewalSeconds).
+		Return(func() {}, true)
+}
+
+// TestTasks_ReconcileAgentIdle_Disabled 空闲阈值 <= 0（显式关闭）时不触碰任何依赖。
+func TestTasks_ReconcileAgentIdle_Disabled(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, _, _, _, _, _, _ := newAgentIdleTasks(m, -time.Minute)
+	assert.NoError(t, repo.ReconcileAgentIdle())
+}
+
+// TestTasks_ReconcileAgentIdle_NamespaceNotFound 空间不存在（AI 尚未启用）：静默返回。
+func TestTasks_ReconcileAgentIdle_NamespaceNotFound(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, nsRepo, _, _, _, _, _ := newAgentIdleTasks(m, time.Minute)
+	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).
+		Return(nil, errs.WrapNotFound(errors.New("no ns"), "find ns"))
+	assert.NoError(t, repo.ReconcileAgentIdle())
+}
+
+// TestTasks_ReconcileAgentIdle_QueryErrors 空间/项目列表查询失败向上返回。
+func TestTasks_ReconcileAgentIdle_QueryErrors(t *testing.T) {
+	t.Run("空间查询失败", func(t *testing.T) {
+		m := gomock.NewController(t)
+		defer m.Finish()
+		repo, nsRepo, _, _, _, _, _ := newAgentIdleTasks(m, time.Minute)
+		nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errors.New("db down"))
+		assert.EqualError(t, repo.ReconcileAgentIdle(), "db down")
+	})
+	t.Run("项目列表失败", func(t *testing.T) {
+		m := gomock.NewController(t)
+		defer m.Finish()
+		repo, nsRepo, projRepo, _, _, _, _ := newAgentIdleTasks(m, time.Minute)
+		nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(&biz.Namespace{ID: 3}, nil)
+		projRepo.EXPECT().ListAllProjectBriefs(gomock.Any()).Return(nil, errors.New("db down"))
+		assert.EqualError(t, repo.ReconcileAgentIdle(), "db down")
+	})
+}
+
+// TestTasks_ReconcileAgentIdle_ScalesIdle 只处理 mars-agent 空间下 agent- 前缀的项目；
+// 其余项目（空间不符/前缀不符/无空间）直接跳过。
+func TestTasks_ReconcileAgentIdle_ScalesIdle(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	repo, nsRepo, projRepo, k8sRepo, activity, lk, eventRepo := newAgentIdleTasks(m, 30*time.Minute)
+	ns := &biz.Namespace{ID: 3, Name: "prefix-mars-agent"}
+	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(ns, nil)
+	projRepo.EXPECT().ListAllProjectBriefs(gomock.Any()).Return([]*biz.Project{
+		{ID: 1, Name: "agent-other", Namespace: &biz.Namespace{Name: "another-ns"}},
+		{ID: 2, Name: "normal-project", Namespace: ns},
+		{ID: 3, Name: "agent-no-ns", Namespace: nil},
+		{ID: 4, Name: "agent-idle", Namespace: ns},
+	}, nil)
+	// 缩容前会再复查一次活跃度，故两次都返回未活跃。
+	activity.EXPECT().IsActive(gomock.Any(), "agent-idle").Return(false, nil).Times(2)
+	name := biz.AgentDeploymentName("agent-idle")
+	k8sRepo.EXPECT().GetDeployment(ns.Name, name).
+		Return(&appsv1.Deployment{Spec: appsv1.DeploymentSpec{Replicas: lo.ToPtr(int32(1))}}, nil)
+	k8sRepo.EXPECT().ScaleDeployment(gomock.Any(), ns.Name, name, int32(0)).Return(nil)
+	expectAgentIdleLock(lk, ns.ID, "agent-idle")
+	// 缩容成功必须留系统审计（与唤醒侧审计对称），且只记标识不记令牌等敏感内容。
+	eventRepo.EXPECT().AuditLogWithRequest(
+		types.EventActionType_Update, "system", "",
+		"AI Agent 沙箱空闲缩容到 0",
+		map[string]any{"project_id": 4, "project_name": "agent-idle"},
+	)
+
+	assert.NoError(t, repo.ReconcileAgentIdle())
+}
+
+// TestTasks_ReconcileAgentIdle_Skips 活跃中、活跃度查询失败、Deployment 已缩容/不存在/
+// 查询失败、缩容失败都只跳过，不影响对账返回。
+func TestTasks_ReconcileAgentIdle_Skips(t *testing.T) {
+	cases := map[string]struct {
+		setup func(*data.MockK8sRepo, *biz.MockAgentActivity, *locker.MockLocker)
+	}{
+		"活跃中": {
+			setup: func(_ *data.MockK8sRepo, activity *biz.MockAgentActivity, _ *locker.MockLocker) {
+				activity.EXPECT().IsActive(gomock.Any(), "agent-idle").Return(true, nil)
+			},
+		},
+		"活跃度查询失败": {
+			setup: func(_ *data.MockK8sRepo, activity *biz.MockAgentActivity, _ *locker.MockLocker) {
+				activity.EXPECT().IsActive(gomock.Any(), "agent-idle").Return(false, errors.New("cache down"))
+			},
+		},
+		"Deployment 不存在": {
+			setup: func(k8sRepo *data.MockK8sRepo, activity *biz.MockAgentActivity, _ *locker.MockLocker) {
+				activity.EXPECT().IsActive(gomock.Any(), "agent-idle").Return(false, nil)
+				k8sRepo.EXPECT().GetDeployment(gomock.Any(), gomock.Any()).
+					Return(nil, errs.WrapNotFound(errors.New("not found"), "get deployment"))
+			},
+		},
+		"Deployment 查询失败": {
+			setup: func(k8sRepo *data.MockK8sRepo, activity *biz.MockAgentActivity, _ *locker.MockLocker) {
+				activity.EXPECT().IsActive(gomock.Any(), "agent-idle").Return(false, nil)
+				k8sRepo.EXPECT().GetDeployment(gomock.Any(), gomock.Any()).Return(nil, errors.New("k8s down"))
+			},
+		},
+		"已缩容": {
+			setup: func(k8sRepo *data.MockK8sRepo, activity *biz.MockAgentActivity, _ *locker.MockLocker) {
+				activity.EXPECT().IsActive(gomock.Any(), "agent-idle").Return(false, nil)
+				k8sRepo.EXPECT().GetDeployment(gomock.Any(), gomock.Any()).
+					Return(&appsv1.Deployment{Spec: appsv1.DeploymentSpec{Replicas: lo.ToPtr(int32(0))}}, nil)
+			},
+		},
+		"抢不到锁": {
+			// 同一项目正在唤醒/部署：直接跳过，不再复查活跃度也不缩容。
+			setup: func(k8sRepo *data.MockK8sRepo, activity *biz.MockAgentActivity, lk *locker.MockLocker) {
+				activity.EXPECT().IsActive(gomock.Any(), "agent-idle").Return(false, nil)
+				k8sRepo.EXPECT().GetDeployment(gomock.Any(), gomock.Any()).Return(&appsv1.Deployment{}, nil)
+				lk.EXPECT().
+					RenewalAcquire(deploy.GetSlugName(3, "agent-idle"), deploy.LockTTLSeconds, deploy.LockRenewalSeconds).
+					Return(nil, false)
+			},
+		},
+		"缩容失败": {
+			setup: func(k8sRepo *data.MockK8sRepo, activity *biz.MockAgentActivity, lk *locker.MockLocker) {
+				activity.EXPECT().IsActive(gomock.Any(), "agent-idle").Return(false, nil).Times(2)
+				k8sRepo.EXPECT().GetDeployment(gomock.Any(), gomock.Any()).Return(&appsv1.Deployment{}, nil)
+				k8sRepo.EXPECT().ScaleDeployment(gomock.Any(), gomock.Any(), gomock.Any(), int32(0)).
+					Return(errors.New("scale failed"))
+				expectAgentIdleLock(lk, 3, "agent-idle")
+			},
+		},
+		"缩容前被唤醒": {
+			setup: func(k8sRepo *data.MockK8sRepo, activity *biz.MockAgentActivity, lk *locker.MockLocker) {
+				gomock.InOrder(
+					activity.EXPECT().IsActive(gomock.Any(), "agent-idle").Return(false, nil),
+					activity.EXPECT().IsActive(gomock.Any(), "agent-idle").Return(true, nil),
+				)
+				k8sRepo.EXPECT().GetDeployment(gomock.Any(), gomock.Any()).Return(&appsv1.Deployment{}, nil)
+				expectAgentIdleLock(lk, 3, "agent-idle")
+			},
+		},
+		"缩容前复查失败": {
+			setup: func(k8sRepo *data.MockK8sRepo, activity *biz.MockAgentActivity, lk *locker.MockLocker) {
+				gomock.InOrder(
+					activity.EXPECT().IsActive(gomock.Any(), "agent-idle").Return(false, nil),
+					activity.EXPECT().IsActive(gomock.Any(), "agent-idle").Return(false, errors.New("cache down")),
+				)
+				k8sRepo.EXPECT().GetDeployment(gomock.Any(), gomock.Any()).Return(&appsv1.Deployment{}, nil)
+				expectAgentIdleLock(lk, 3, "agent-idle")
+			},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			m := gomock.NewController(t)
+			defer m.Finish()
+			repo, nsRepo, projRepo, k8sRepo, activity, lk, _ := newAgentIdleTasks(m, time.Minute)
+			ns := &biz.Namespace{ID: 3, Name: "prefix-mars-agent"}
+			nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(ns, nil)
+			projRepo.EXPECT().ListAllProjectBriefs(gomock.Any()).
+				Return([]*biz.Project{{ID: 4, Name: "agent-idle", Namespace: ns}}, nil)
+			tc.setup(k8sRepo, activity, lk)
+			assert.NoError(t, repo.ReconcileAgentIdle())
+		})
+	}
 }

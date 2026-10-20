@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"text/template"
+	"time"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
@@ -66,10 +68,11 @@ type LoadContext struct {
 	ImagePullSecrets []string
 
 	// 依赖：传输层/插件层端口。
-	Messager  DeployMsger
-	PluginMgr app.PluginManager
-	Helmer    biz.HelmerRepo
-	Logger    mlog.Logger
+	Messager       DeployMsger
+	PluginMgr      app.PluginManager
+	Helmer         biz.HelmerRepo
+	Logger         mlog.Logger
+	AccessTokenBiz biz.AccessTokenBiz
 
 	// 中间产物：由加载链依次写入，链结束后由 jobRunner 收口回自身字段。
 	Chart            *chart.Chart
@@ -338,8 +341,11 @@ func (d *ElementsLoader) Load(ctx *LoadContext) error {
 		return elements[x].Order < elements[y].Order
 	})
 	var configElementsMap = make(map[string]*mars.Element)
+	// declaredPaths 按元素声明顺序（已按 Order 排序）收集允许的字段名，仅供拒绝时的提示文案使用。
+	declaredPaths := make([]string, 0, len(elements))
 	for _, element := range elements {
 		configElementsMap[element.Path] = element
+		declaredPaths = append(declaredPaths, element.Path)
 		defaultValue, e := d.typedValue(element, element.Default)
 		if e != nil {
 			return e
@@ -350,19 +356,23 @@ func (d *ElementsLoader) Load(ctx *LoadContext) error {
 
 	// validate
 	for _, value := range ctx.Input.ExtraValues {
-		var fieldValid bool
-		if element, ok := configElementsMap[value.Path]; ok {
-			fieldValid = true
-			useDefaultMap[value.Path] = false
-			typeValue, err := d.typedValue(element, value.Value)
-			if err != nil {
-				return err
+		element, ok := configElementsMap[value.Path]
+		if !ok {
+			// 声明外字段只在「历史残留」时容忍：仓库配置此后删掉了该元素，但项目行里仍留着
+			// 它、前端会照搬 finalExtraValues 回传——丢弃即可，不能因此卡死老项目。
+			// 真正的凭空字段一律拒绝：静默丢弃会让调用方以为设上了，实际没生效。
+			if isLegacyExtraValue(ctx.Project, value.Path) {
+				continue
 			}
-			validValuesMap[value.Path] = typeValue
+			return errs.InvalidArgument(
+				fmt.Sprintf("不允许自定义字段 %s, 允许的字段为 '%s'", value.Path, strings.Join(declaredPaths, ",")))
 		}
-		if !fieldValid {
-			ctx.Messager.SendMsg(fmt.Sprintf("不允许自定义字段 %s", value.Path))
+		useDefaultMap[value.Path] = false
+		typeValue, err := d.typedValue(element, value.Value)
+		if err != nil {
+			return err
 		}
+		validValuesMap[value.Path] = typeValue
 	}
 
 	ctx.ElementValues = d.deepSetItems(validValuesMap)
@@ -389,6 +399,8 @@ func (d *ElementsLoader) Load(ctx *LoadContext) error {
 }
 
 // typedValue 按元素声明的类型校验并转换输入值（bool/整数/枚举/透传）。
+// 校验失败一律用 errs.InvalidArgument 构造：这是调用方的入参错误（400），
+// 不是服务端故障，裸 error 会被协议层归成 Unknown 让调用方无从判断。
 func (d *ElementsLoader) typedValue(element *mars.Element, input string) (any, error) {
 	switch element.Type {
 	case mars.ElementType_ElementTypeSwitch:
@@ -397,7 +409,7 @@ func (d *ElementsLoader) typedValue(element *mars.Element, input string) (any, e
 		}
 		v, err := strconv.ParseBool(input)
 		if err != nil {
-			return nil, fmt.Errorf("%s 字段类型不正确，应该为 bool，你传入的是 %s", element.Path, input)
+			return nil, errs.InvalidArgument(fmt.Sprintf("%s 字段类型不正确，应该为 bool，你传入的是 %s", element.Path, input))
 		}
 		return v, nil
 	case mars.ElementType_ElementTypeInputNumber:
@@ -406,7 +418,7 @@ func (d *ElementsLoader) typedValue(element *mars.Element, input string) (any, e
 		}
 		v, err := strconv.ParseInt(input, 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("%s 字段类型不正确，应该为整数，你传入的是 %s", element.Path, input)
+			return nil, errs.InvalidArgument(fmt.Sprintf("%s 字段类型不正确，应该为整数，你传入的是 %s", element.Path, input))
 		}
 		return v, nil
 	case mars.ElementType_ElementTypeRadio,
@@ -421,20 +433,36 @@ func (d *ElementsLoader) typedValue(element *mars.Element, input string) (any, e
 			}
 		}
 		if !in {
-			return nil, fmt.Errorf("%s 必须在 '%v' 里面, 你传的是 %s", element.Path, strings.Join(element.SelectValues, ","), input)
+			return nil, errs.InvalidArgument(
+				fmt.Sprintf("%s 必须在 '%v' 里面, 你传的是 %s", element.Path, strings.Join(element.SelectValues, ","), input))
 		}
 		if element.Type == mars.ElementType_ElementTypeNumberSelect ||
 			element.Type == mars.ElementType_ElementTypeNumberRadio {
 			if atoi, err := strconv.Atoi(input); err == nil {
 				return atoi, nil
 			}
-			return nil, fmt.Errorf("[ElementsLoader]: '%v' 非 number 类型, 无法转换", input)
+			return nil, errs.InvalidArgument(fmt.Sprintf("[ElementsLoader]: '%v' 非 number 类型, 无法转换", input))
 		}
 
 		return input, nil
 	default:
 		return input, nil
 	}
+}
+
+// isLegacyExtraValue 判断该字段名是不是「项目已落库的自定义元素值」的历史残留：仓库配置此后
+// 删除了该元素，但项目行里仍留着它，前端会按 finalExtraValues 原样回传。只有这种情况才容忍
+// 丢弃——项目的当前值就是权威依据，凭它可区分「老数据尾随」与「调用方凭空捏造」。
+func isLegacyExtraValue(project *biz.Project, path string) bool {
+	if project == nil {
+		return false
+	}
+	for _, v := range project.FinalExtraValues {
+		if v.GetPath() == path {
+			return true
+		}
+	}
+	return false
 }
 
 // deepSetItems 将 map 展开为按路径深设的 yaml 片段列表。
@@ -465,9 +493,28 @@ const (
 	VarTlsSecret              = "TlsSecret"
 	VarNamespace              = "Namespace"
 	VarLongCommit             = "LongCommit"
+	VarUserToken              = "UserToken"
 )
 
-var tagRegex = regexp.MustCompile(leftDelim + `\s*(\.Branch|\.Commit|\.Pipeline)\s*` + rightDelim)
+// UserTokenTTL 是部署时签发给部署用户的临时令牌有效期。导出供 agent 沙箱
+// 唤醒刷新令牌时复用同一时长。
+//
+// 注意：令牌签发后不续期。AI 沙箱持续运行超过 12h 会因令牌过期而无法回连 mars；
+// 默认空闲 30m 会先缩容、唤醒时轮换令牌，只有空闲关闭被禁用或调大到 12h 以上时
+// 才会触发该边界。
+const UserTokenTTL = 12 * time.Hour
+
+var (
+	tagRegex          = regexp.MustCompile(leftDelim + `\s*(\.Branch|\.Commit|\.Pipeline)\s*` + rightDelim)
+	userTokenTagRegex = regexp.MustCompile(leftDelim + `\s*\.` + VarUserToken + `\s*` + rightDelim)
+)
+
+// HasUserTokenTemplate 判断 values.yaml 是否引用了 <.UserToken>。上层（AI Agent
+// 沙箱的启用入口）用它做前置校验：未被引用时部署不会签发令牌，沙箱起来后访问
+// mars 会全部 401——这是没有报错的软失败，必须在使用前拦住。
+func HasUserTokenTemplate(valuesYaml string) bool {
+	return userTokenTagRegex.MatchString(valuesYaml)
+}
 
 // SystemVariableLoader 系统内置变量替换， values.yaml 中的 <.var> 变量
 // 例如：<.Branch> <.Commit> <.Pipeline> <.Host1> <.TlsSecret1>
@@ -495,6 +542,12 @@ func (v *SystemVariableLoader) Load(ctx *LoadContext) error {
 	if v.values == nil {
 		v.values = vars{}
 	}
+
+	// 部署用户临时令牌：每次部署重新签发，并撤销该项目上一份令牌。
+	if err := v.injectUserToken(ctx); err != nil {
+		return err
+	}
+
 	type pullSecrets struct {
 		ImagePullSecrets []string
 	}
@@ -570,6 +623,57 @@ func (v *SystemVariableLoader) Load(ctx *LoadContext) error {
 	ctx.Vars = v.values
 
 	return nil
+}
+
+// UserTokenUsage 返回项目部署临时令牌的 usage 标记：按项目维度轮换，仅保留最新
+// 一份有效。导出供 agent 沙箱唤醒刷新令牌时复用同一轮换维度。
+func UserTokenUsage(projectID int) string {
+	return fmt.Sprintf("deploy-token:%d", projectID)
+}
+
+// injectUserToken 为本次部署签发 12h 临时 access token，写入 <.UserToken>。
+// dry-run 与无用户上下文的部署不签发（变量渲染为空串）。
+// 旧令牌不在加载阶段撤销：必须等新 release 安装成功后再撤销（见 jobRunner.Run），
+// 否则安装失败/回滚时线上旧实例的令牌会提前失效。
+func (v *SystemVariableLoader) injectUserToken(ctx *LoadContext) error {
+	v.Add(VarUserToken, "")
+	if !ctx.Input.IsNotDryRun() || ctx.Input.User == nil {
+		return nil
+	}
+	// values.yaml 未引用该变量时不签发，避免为用不到令牌的项目持续产生令牌记录。
+	if !HasUserTokenTemplate(ctx.Config.ValuesYaml) {
+		return nil
+	}
+
+	token, err := ctx.AccessTokenBiz.Grant(context.TODO(), &biz.GrantAccessTokenInput{
+		ExpireSeconds: int32(UserTokenTTL / time.Second),
+		Usage:         UserTokenUsage(ctx.Project.ID),
+		User:          tokenUser(ctx),
+	})
+	if err != nil {
+		return err
+	}
+
+	v.Add(VarUserToken, token.Token)
+	return nil
+}
+
+// tokenUser 返回部署令牌应绑定的身份：AI Agent 沙箱项目恒为项目创建者，其余项目
+// 为本次部署发起人。
+//
+// 沙箱里的 agent 用这份令牌回连 mars（配置/MCP/LLM 代理），它代表的是「沙箱归谁」，
+// 不是「谁点了这次部署」。管理员进入别人的 agent 项目重新部署时，若沿用发起人身份，
+// 沙箱就会以管理员令牌运行——越权面被放大。创建者本人触发时沿用其完整 UserInfo
+// （保留角色与展示名）；跨用户触发时只带创建者邮箱，角色按最小权限留空。
+//
+// 调用前置条件由 injectUserToken 保证：User 为 nil 时已提前返回，Project 为 nil 时
+// 取 Usage 会先 panic，故此处无需再判空。
+func tokenUser(ctx *LoadContext) *biz.UserInfo {
+	requester := ctx.Input.User
+	if requester.Email != ctx.Project.Creator && biz.IsAgentProjectOf(ctx.Project.Name, ctx.Project.Creator) {
+		return &biz.UserInfo{Email: ctx.Project.Creator}
+	}
+	return requester
 }
 
 // MergeValuesLoader 合并系统变量/用户配置/后台元素与镜像拉取密钥为一份 values.yaml。

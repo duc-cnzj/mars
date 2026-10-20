@@ -27,11 +27,13 @@ var expectedFamilies = []string{
 	"mars_cron_command_total",
 	"mars_cron_error_total",
 	"mars_fanout_listener_count",
+	"mars_agent_sandbox_transition_total",
+	"mars_agent_llm_proxy_requests_total",
 }
 
 // TestNewRegistry 验证 NewRegistry 返回的 registry 能真实输出全部应用指标：
 // 先给每个指标打一个样本值（确保系列存在），再 Gather 抓取，
-// 断言 16 个指标家族全部出现且 Help 文案非空。
+// 断言 18 个指标家族全部出现且 Help 文案非空。
 // 覆盖的是"注册了且可收集"这一完整链路，而不是像 assert.NotNil 那样只验证对象非空。
 func TestNewRegistry(t *testing.T) {
 	registry := NewRegistry()
@@ -53,6 +55,8 @@ func TestNewRegistry(t *testing.T) {
 	CronDuration.WithLabelValues("cron_name").Observe(1)
 	K8sInformerFanOutListenerCount.WithLabelValues("pod").Set(1)
 	FanOutChannelLength.WithLabelValues("fanout").Set(0)
+	AgentSandboxTransitionTotal.WithLabelValues(AgentSandboxActionSleep).Inc()
+	AgentLLMProxyRequestsTotal.Inc()
 
 	families, err := registry.Gather()
 	require.NoError(t, err)

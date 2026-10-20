@@ -281,6 +281,12 @@ function buildYamlCompletions(t: TFunction): Completion[] {
     type: 'text',
     detail: `# ${t('repos.yamlCompleteLongCommit')}`,
   },
+  {
+    apply: '<.UserToken>',
+    label: '<.UserToken>',
+    type: 'text',
+    detail: `# ${t('repos.yamlCompleteUserToken')}`,
+  },
   { apply: '<.Host1>', label: '<.Host1>', type: 'text' },
   { apply: '<.Host2>', label: '<.Host2>', type: 'text' },
   { apply: '<.Host3>', label: '<.Host3>', type: 'text' },

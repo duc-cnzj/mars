@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/v6/internal/biz/schematype"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/pagination"
@@ -178,6 +179,78 @@ func withFastDeletePolling(t *testing.T) {
 }
 
 // ---- Create ----
+
+// TestNamespaceBiz_Create_RejectsReservedAgentNamespace 普通用户抢占 AI Agent 系统保留
+// 空间必须被拒绝：否则 ensureAgentNamespace 的 fail-closed 校验会让所有用户都无法启用
+// AI（跨用户功能级 DoS）。校验必须先于任何 k8s/DB 操作，不留下可被抢注的对象。
+func TestNamespaceBiz_Create_RejectsReservedAgentNamespace(t *testing.T) {
+	repoCalled := false
+	nsRepo := &fakeNamespaceRepoForNSBiz{
+		getMars: func(name string) string { return "devops-" + name },
+		findByName: func(ctx context.Context, name string) (*Namespace, error) {
+			repoCalled = true
+			return nil, notFoundErr()
+		},
+	}
+	n := nsBizForTest(nsRepo, &fakeK8sRepoForNSBiz{}, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
+
+	got, exists, err := n.Create(context.TODO(), AgentNamespace, "desc", "attacker@example.com")
+	assert.Nil(t, got)
+	assert.False(t, exists)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "系统保留空间")
+	assert.False(t, repoCalled, "保留名必须在任何 k8s/DB 操作之前拒绝")
+}
+
+// TestNamespaceBiz_Create_RejectsReservedAgentNamespaceWithPrefix 已带前缀的等价写法
+// （devops-mars-agent）同样命中保留名，防止换个写法绕过校验。
+func TestNamespaceBiz_Create_RejectsReservedAgentNamespaceWithPrefix(t *testing.T) {
+	nsRepo := &fakeNamespaceRepoForNSBiz{
+		getMars: func(name string) string {
+			if name == "devops-mars-agent" {
+				return name
+			}
+			return "devops-" + name
+		},
+	}
+	n := nsBizForTest(nsRepo, &fakeK8sRepoForNSBiz{}, &fakeHelmerRepoForNSBiz{}, &fakeEventRepoForNSBiz{})
+
+	got, exists, err := n.Create(context.TODO(), "devops-mars-agent", "desc", "attacker@example.com")
+	assert.Nil(t, got)
+	assert.False(t, exists)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "系统保留空间")
+}
+
+// TestNamespaceBiz_Create_AllowsReservedAgentNamespaceForSuperAdmin 平台以超管身份创建
+// AI Agent 空间是唯一合法入口，不能被保留名校验误伤。
+func TestNamespaceBiz_Create_AllowsReservedAgentNamespaceForSuperAdmin(t *testing.T) {
+	nsRepo := &fakeNamespaceRepoForNSBiz{
+		getMars:    func(name string) string { return "devops-" + name },
+		findByName: func(ctx context.Context, name string) (*Namespace, error) { return nil, notFoundErr() },
+		create: func(ctx context.Context, input *CreateNamespaceInput) (*Namespace, error) {
+			assert.Equal(t, "devops-mars-agent", input.Name)
+			assert.Equal(t, schematype.SuperAdminEmail, input.CreatorEmail)
+			return &Namespace{ID: 9, Name: input.Name}, nil
+		},
+		favorite: func(ctx context.Context, input *FavoriteNamespaceInput) error { return nil },
+	}
+	k8s := &fakeK8sRepoForNSBiz{
+		createNamespace: func(ctx context.Context, name string) (*corev1.Namespace, error) {
+			return &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: name}}, nil
+		},
+		createDockerSecret: func(ctx context.Context, namespace string) (*corev1.Secret, error) {
+			return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "s"}}, nil
+		},
+	}
+	event := &fakeEventRepoForNSBiz{dispatch: func(created EventKey, createdData any) {}}
+	n := nsBizForTest(nsRepo, k8s, &fakeHelmerRepoForNSBiz{}, event)
+
+	got, exists, err := n.Create(context.TODO(), AgentNamespace, "desc", schematype.SuperAdminEmail)
+	assert.Nil(t, err)
+	assert.False(t, exists)
+	assert.Equal(t, 9, got.ID)
+}
 
 func TestNamespaceBiz_Create_FindByNameNonNotFoundError(t *testing.T) {
 	ns := &fakeNamespaceRepoForNSBiz{

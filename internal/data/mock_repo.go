@@ -1373,6 +1373,20 @@ func (mr *MockK8sRepoMockRecorder) ResourceSnapshot(ctx, force any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceSnapshot", reflect.TypeOf((*MockK8sRepo)(nil).ResourceSnapshot), ctx, force)
 }
 
+// ScaleDeployment mocks base method.
+func (m *MockK8sRepo) ScaleDeployment(ctx context.Context, namespace, name string, replicas int32) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ScaleDeployment", ctx, namespace, name, replicas)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ScaleDeployment indicates an expected call of ScaleDeployment.
+func (mr *MockK8sRepoMockRecorder) ScaleDeployment(ctx, namespace, name, replicas any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScaleDeployment", reflect.TypeOf((*MockK8sRepo)(nil).ScaleDeployment), ctx, namespace, name, replicas)
+}
+
 // SplitManifests mocks base method.
 func (m *MockK8sRepo) SplitManifests(manifest string) []string {
 	m.ctrl.T.Helper()
@@ -1728,6 +1742,21 @@ func (m *MockRepoRepo) Get(ctx context.Context, id int) (*biz.Repo, error) {
 func (mr *MockRepoRepoMockRecorder) Get(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepoRepo)(nil).Get), ctx, id)
+}
+
+// GetAIAgent mocks base method.
+func (m *MockRepoRepo) GetAIAgent(ctx context.Context) (*biz.Repo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAIAgent", ctx)
+	ret0, _ := ret[0].(*biz.Repo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAIAgent indicates an expected call of GetAIAgent.
+func (mr *MockRepoRepoMockRecorder) GetAIAgent(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAIAgent", reflect.TypeOf((*MockRepoRepo)(nil).GetAIAgent), ctx)
 }
 
 // GetByName mocks base method.

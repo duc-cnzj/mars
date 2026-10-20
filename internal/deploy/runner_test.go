@@ -10,6 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
@@ -27,6 +28,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli/values"
@@ -49,6 +52,7 @@ func TestNewJobManager(t *testing.T) {
 		K8sRepo:          data.NewMockK8sRepo(m),
 		EventRepo:        data.NewMockEventRepo(m),
 		PluginManager:    app.NewMockPluginManager(m),
+		AccessTokenBiz:   biz.NewMockAccessTokenBiz(m),
 	}).(*jobManager)
 	assert.NotNil(t, manager)
 	assert.NotNil(t, manager.timer)
@@ -63,6 +67,7 @@ func TestNewJobManager(t *testing.T) {
 	assert.NotNil(t, manager.k8sRepo)
 	assert.NotNil(t, manager.eventRepo)
 	assert.NotNil(t, manager.pluginManager)
+	assert.NotNil(t, manager.accessTokenBiz)
 }
 
 func TestNewJob(t *testing.T) {
@@ -722,16 +727,15 @@ func TestElementsLoader_Load(t *testing.T) {
 			},
 		},
 	})
-	assert.Error(t, err)
-	assert.Equal(t, "app->config 必须在 '1,2,3' 里面, 你传的是 4", err.Error())
+	require.Error(t, err)
+	// errs.InvalidArgument 的 Error() 带 "rpc error: code = InvalidArgument desc = " 前缀，
+	// 比对用户可见文案须取 status 的 message；同时钉死协议码——调用方入参错误必须是 400 而非 Unknown。
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Equal(t, "app->config 必须在 '1,2,3' 里面, 你传的是 4", status.Convert(err).Message())
 
 	ctx2 := &LoadContext{
 		Input: &JobInput{
 			ExtraValues: []*websocket_pb.ExtraValue{
-				{
-					Path:  "app->config",
-					Value: "4",
-				},
 				{
 					Path:  "duc",
 					Value: "xxx",
@@ -759,6 +763,74 @@ func TestElementsLoader_Load(t *testing.T) {
 		Config:   &mars.Config{},
 	}
 	assert.Nil(t, (&ElementsLoader{}).Load(ctx3))
+}
+
+// TestElementsLoader_Load_UnknownExtraValuePath 覆盖「声明外字段」的两条分叉：
+// 一是项目里根本没有过的凭空字段——必须拒绝（静默丢弃会让调用方以为设上了）；
+// 二是项目已落库的自定义元素值（仓库配置此后删掉了该元素）——必须容忍，否则前端照搬
+// finalExtraValues 回传会把这类老项目永久卡死（UI 无法移除已不存在的字段）。
+func TestElementsLoader_Load_UnknownExtraValuePath(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	em := NewMockDeployMsger(m)
+	em.EXPECT().To(gomock.Any()).AnyTimes()
+	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+	config := &mars.Config{Elements: []*mars.Element{
+		{Path: "web->image", Type: mars.ElementType_ElementTypeInput, Default: "nginx"},
+	}}
+
+	t.Run("凭空字段：拒绝并列出允许的字段", func(t *testing.T) {
+		ctx := &LoadContext{
+			Input: &JobInput{ExtraValues: []*websocket_pb.ExtraValue{
+				{Path: "web->replicas", Value: "3"},
+			}},
+			Messager: em,
+			Config:   config,
+		}
+		err := (&ElementsLoader{}).Load(ctx)
+		require.Error(t, err)
+		assert.Equal(t, codes.InvalidArgument, status.Code(err))
+		assert.Equal(t, "不允许自定义字段 web->replicas, 允许的字段为 'web->image'", status.Convert(err).Message())
+	})
+
+	t.Run("历史残留：项目已落库的路径容忍丢弃", func(t *testing.T) {
+		ctx := &LoadContext{
+			Input: &JobInput{ExtraValues: []*websocket_pb.ExtraValue{
+				{Path: "web->removed", Value: "x"},
+				{Path: "web->image", Value: "redis"},
+			}},
+			Project: &biz.Project{FinalExtraValues: []*websocket_pb.ExtraValue{
+				{Path: "web->removed", Value: "x"},
+				{Path: "web->image", Value: "nginx"},
+			}},
+			Messager: em,
+			Config:   config,
+		}
+		require.NoError(t, (&ElementsLoader{}).Load(ctx))
+		// 残留字段不参与渲染，声明字段照常生效。
+		assert.Equal(t, []string{"web:\n  image: redis\n"}, ctx.ElementValues)
+	})
+
+	t.Run("首次部署（Project 为空）：无历史可循，同样拒绝", func(t *testing.T) {
+		ctx := &LoadContext{
+			Input: &JobInput{ExtraValues: []*websocket_pb.ExtraValue{
+				{Path: "web->removed", Value: "x"},
+			}},
+			Messager: em,
+			Config:   config,
+		}
+		err := (&ElementsLoader{}).Load(ctx)
+		require.Error(t, err)
+		assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	})
+}
+
+// Test_isLegacyExtraValue 覆盖历史残留判定的边界：nil 项目（首次部署）恒 false。
+func Test_isLegacyExtraValue(t *testing.T) {
+	assert.False(t, isLegacyExtraValue(nil, "a"))
+	proj := &biz.Project{FinalExtraValues: []*websocket_pb.ExtraValue{{Path: "a", Value: "1"}}}
+	assert.True(t, isLegacyExtraValue(proj, "a"))
+	assert.False(t, isLegacyExtraValue(proj, "b"))
 }
 
 // TestElementsLoader_SwitchHibernateZeroRoundTrip 钉住开关类副本字段的休眠零值回环：休眠侧写入
@@ -938,7 +1010,9 @@ func TestElementsLoader_typedValue(t *testing.T) {
 			t.Parallel()
 			value, err := (&ElementsLoader{}).typedValue(tt.ele, tt.input)
 			if err != nil {
-				assert.Equal(t, err.Error(), tt.err)
+				// errs.InvalidArgument 的 Error() 带 rpc 状态前缀，用户可见文案取 status message。
+				assert.Equal(t, codes.InvalidArgument, status.Code(err))
+				assert.Equal(t, tt.err, status.Convert(err).Message())
 			} else {
 				assert.Equal(t, tt.result, value)
 			}
@@ -1353,6 +1427,161 @@ image: <.Pipeline>-<.Branch>
 		Repo:             &biz.Repo{NeedGitRepo: true, GitProjectID: 1},
 	}
 	assert.Error(t, (&SystemVariableLoader{}).Load(ctx))
+}
+
+// newSystemVariableLoaderCtx 构造只关注 UserToken 注入的 LoadContext：
+// 关闭 NeedGitRepo 避免依赖流水线查询，域名相关依赖统一放宽匹配。
+func newSystemVariableLoaderCtx(t *testing.T, input *JobInput, tokenBiz biz.AccessTokenBiz) *LoadContext {
+	t.Helper()
+	m := gomock.NewController(t)
+	pl := app.NewMockPluginManager(m)
+	domain := app.NewMockDomainManager(m)
+	pl.EXPECT().Domain().Return(domain).AnyTimes()
+	domain.EXPECT().GetDomainByIndex(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	domain.EXPECT().GetCertSecretName(gomock.Any(), gomock.Any()).AnyTimes()
+	domain.EXPECT().GetClusterIssuer().Return("").AnyTimes()
+	em := NewMockDeployMsger(m)
+	em.EXPECT().To(gomock.Any()).AnyTimes()
+	em.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+
+	return &LoadContext{
+		Commit:         &biz.Commit{ShortID: "short_id"},
+		PluginMgr:      pl,
+		Config:         &mars.Config{ValuesYaml: "token: <.UserToken>"},
+		Input:          input,
+		Logger:         mlog.NewForConfig(nil),
+		Project:        &biz.Project{ID: 42, Name: "app"},
+		Namespace:      &biz.Namespace{Name: "ns"},
+		Messager:       em,
+		Repo:           &biz.Repo{},
+		AccessTokenBiz: tokenBiz,
+	}
+}
+
+// TestSystemVariableLoader_Load_UserToken 验证每次部署都重新签发 12h 令牌，
+// 并撤销同项目上一份令牌（保留新令牌）。
+func TestSystemVariableLoader_Load_UserToken(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	user := &biz.UserInfo{Email: "u@x", Name: "u"}
+	tokenBiz := biz.NewMockAccessTokenBiz(m)
+	tokenBiz.EXPECT().Grant(gomock.Any(), &biz.GrantAccessTokenInput{
+		ExpireSeconds: int32((12 * time.Hour) / time.Second),
+		Usage:         "deploy-token:42",
+		User:          user,
+	}).Return(&biz.AccessToken{Token: "new-token"}, nil)
+
+	ctx := newSystemVariableLoaderCtx(t, &JobInput{User: user}, tokenBiz)
+	assert.NoError(t, (&SystemVariableLoader{}).Load(ctx))
+	assert.Equal(t, "new-token", ctx.Vars[VarUserToken])
+	assert.Equal(t, "token: new-token", ctx.SystemValuesYaml)
+}
+
+// TestSystemVariableLoader_Load_UserToken_DryRun 验证 dry-run 不签发令牌，变量为空串。
+func TestSystemVariableLoader_Load_UserToken_DryRun(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	ctx := newSystemVariableLoaderCtx(t, &JobInput{User: &biz.UserInfo{Email: "u@x"}, DryRun: true}, biz.NewMockAccessTokenBiz(m))
+	assert.NoError(t, (&SystemVariableLoader{}).Load(ctx))
+	assert.Empty(t, ctx.Vars[VarUserToken])
+}
+
+// TestSystemVariableLoader_Load_UserToken_Unused 验证 values.yaml 未引用变量时不签发令牌。
+func TestSystemVariableLoader_Load_UserToken_Unused(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	ctx := newSystemVariableLoaderCtx(t, &JobInput{User: &biz.UserInfo{Email: "u@x"}}, biz.NewMockAccessTokenBiz(m))
+	ctx.Config.ValuesYaml = "foo: bar"
+	assert.NoError(t, (&SystemVariableLoader{}).Load(ctx))
+	assert.Empty(t, ctx.Vars[VarUserToken])
+}
+
+// TestSystemVariableLoader_Load_UserToken_NoUser 验证无用户上下文（内部部署）不签发令牌。
+func TestSystemVariableLoader_Load_UserToken_NoUser(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	ctx := newSystemVariableLoaderCtx(t, &JobInput{}, biz.NewMockAccessTokenBiz(m))
+	assert.NoError(t, (&SystemVariableLoader{}).Load(ctx))
+	assert.Empty(t, ctx.Vars[VarUserToken])
+}
+
+// TestSystemVariableLoader_Load_UserToken_GrantError 验证令牌签发失败会中断部署。
+func TestSystemVariableLoader_Load_UserToken_GrantError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	tokenBiz := biz.NewMockAccessTokenBiz(m)
+	tokenBiz.EXPECT().Grant(gomock.Any(), gomock.Any()).Return(nil, errors.New("grant err"))
+
+	ctx := newSystemVariableLoaderCtx(t, &JobInput{User: &biz.UserInfo{Email: "u@x"}}, tokenBiz)
+	assert.EqualError(t, (&SystemVariableLoader{}).Load(ctx), "grant err")
+}
+
+// TestSystemVariableLoader_Load_UserToken_AgentProjectUsesCreator 沙箱令牌必须锚定
+// 项目创建者：管理员进入别人的 agent 项目重新部署时，<.UserToken> 不能变成管理员身份。
+func TestSystemVariableLoader_Load_UserToken_AgentProjectUsesCreator(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	owner := "owner@x"
+	admin := &biz.UserInfo{Email: "admin@x", Name: "admin", Roles: []string{"mars_admin"}}
+	tokenBiz := biz.NewMockAccessTokenBiz(m)
+	tokenBiz.EXPECT().Grant(gomock.Any(), &biz.GrantAccessTokenInput{
+		ExpireSeconds: int32(UserTokenTTL / time.Second),
+		Usage:         UserTokenUsage(42),
+		User:          &biz.UserInfo{Email: owner},
+	}).Return(&biz.AccessToken{Token: "creator-token"}, nil)
+
+	ctx := newSystemVariableLoaderCtx(t, &JobInput{User: admin}, tokenBiz)
+	ctx.Project.Name = biz.AgentProjectName(owner)
+	ctx.Project.Creator = owner
+	assert.NoError(t, (&SystemVariableLoader{}).Load(ctx))
+	assert.Equal(t, "creator-token", ctx.Vars[VarUserToken])
+}
+
+// TestSystemVariableLoader_Load_UserToken_AgentProjectOwnerKeepsIdentity 创建者本人
+// 触发部署时沿用其完整 UserInfo（保留角色/展示名），不降级成只有邮箱的身份。
+func TestSystemVariableLoader_Load_UserToken_AgentProjectOwnerKeepsIdentity(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	owner := &biz.UserInfo{Email: "owner@x", Name: "Owner", Roles: []string{"mars_admin"}}
+	tokenBiz := biz.NewMockAccessTokenBiz(m)
+	tokenBiz.EXPECT().Grant(gomock.Any(), &biz.GrantAccessTokenInput{
+		ExpireSeconds: int32(UserTokenTTL / time.Second),
+		Usage:         UserTokenUsage(42),
+		User:          owner,
+	}).Return(&biz.AccessToken{Token: "owner-token"}, nil)
+
+	ctx := newSystemVariableLoaderCtx(t, &JobInput{User: owner}, tokenBiz)
+	ctx.Project.Name = biz.AgentProjectName(owner.Email)
+	ctx.Project.Creator = owner.Email
+	assert.NoError(t, (&SystemVariableLoader{}).Load(ctx))
+	assert.Equal(t, "owner-token", ctx.Vars[VarUserToken])
+}
+
+// TestSystemVariableLoader_Load_UserToken_NonAgentProjectUsesRequester 非 agent 项目
+// 不受创建者锚定规则影响：仍以本次部署发起人身份签发。
+func TestSystemVariableLoader_Load_UserToken_NonAgentProjectUsesRequester(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	admin := &biz.UserInfo{Email: "admin@x", Name: "admin"}
+	tokenBiz := biz.NewMockAccessTokenBiz(m)
+	tokenBiz.EXPECT().Grant(gomock.Any(), &biz.GrantAccessTokenInput{
+		ExpireSeconds: int32(UserTokenTTL / time.Second),
+		Usage:         UserTokenUsage(42),
+		User:          admin,
+	}).Return(&biz.AccessToken{Token: "admin-token"}, nil)
+
+	ctx := newSystemVariableLoaderCtx(t, &JobInput{User: admin}, tokenBiz)
+	ctx.Project.Creator = "owner@x"
+	assert.NoError(t, (&SystemVariableLoader{}).Load(ctx))
+	assert.Equal(t, "admin-token", ctx.Vars[VarUserToken])
 }
 
 func TestChartFileLoader_Load2(t *testing.T) {
@@ -1982,6 +2211,64 @@ func Test_jobRunner_Run_Success(t *testing.T) {
 	k8sRepo.EXPECT().GetPodSelectorsByManifest(gomock.Any())
 
 	assert.Nil(t, jb.Run(context.TODO()).Error())
+}
+
+// Test_jobRunner_Run_RevokesOldUserToken 验证新 release 安装成功后才撤销同项目旧令牌；
+// 撤销失败不推翻已成功的部署（仅告警，留待下次部署或过期兜底）。
+func Test_jobRunner_Run_RevokesOldUserToken(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		revokeErr error
+	}{
+		{name: "revoke ok"},
+		{name: "revoke failed still success", revokeErr: errors.New("revoke err")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := gomock.NewController(t)
+			defer m.Finish()
+			installer := NewMockReleaseInstaller(m)
+			msger := NewMockDeployMsger(m)
+			k8sRepo := data.NewMockK8sRepo(m)
+			projRepo := data.NewMockProjectRepo(m)
+			eventRepo := data.NewMockEventRepo(m)
+			tokenBiz := biz.NewMockAccessTokenBiz(m)
+			msger.EXPECT().SendMsg(gomock.Any()).AnyTimes()
+			msger.EXPECT().To(gomock.Any()).AnyTimes()
+			ch := newSafeWriteMessageCh(mlog.NewForConfig(nil), 10)
+
+			jb := &jobRunner{
+				logger:         mlog.NewForConfig(nil),
+				projRepo:       projRepo,
+				k8sRepo:        k8sRepo,
+				eventRepo:      eventRepo,
+				messager:       msger,
+				installer:      installer,
+				accessTokenBiz: tokenBiz,
+				config:         &mars.Config{},
+				chart:          &chart.Chart{Metadata: &chart.Metadata{}},
+				ns:             &biz.Namespace{},
+				project:        &biz.Project{ID: 42},
+				deployResult:   &deployResult{},
+				input:          &JobInput{},
+				user:           &biz.UserInfo{Name: "duc"},
+				commit:         &biz.Commit{},
+				vars:           vars{VarUserToken: "new-token"},
+				messageCh:      ch,
+			}
+
+			installer.EXPECT().Run(gomock.Any(), gomock.Any()).Return(&release.Release{
+				Config: map[string]any{},
+			}, nil)
+			tokenBiz.EXPECT().RevokeByUsageExcept(gomock.Any(), "deploy-token:42", "new-token").Return(tc.revokeErr)
+			projRepo.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Return(&biz.Project{}, nil)
+			eventRepo.EXPECT().Dispatch(biz.EventProjectChanged, gomock.Any())
+			eventRepo.EXPECT().AuditLogWithChange(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+			k8sRepo.EXPECT().SplitManifests(gomock.Any())
+			k8sRepo.EXPECT().GetPodSelectorsByManifest(gomock.Any())
+
+			assert.Nil(t, jb.Run(context.TODO()).Error())
+		})
+	}
 }
 
 // Test_jobRunner_Run_固化ExtraValueDescription 钉住 Run 的落库接线：额外配置项在写库前必须

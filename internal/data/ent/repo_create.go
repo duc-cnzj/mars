@@ -162,6 +162,34 @@ func (_c *RepoCreate) SetNillableDescription(v *string) *RepoCreate {
 	return _c
 }
 
+// SetAiAgent sets the "ai_agent" field.
+func (_c *RepoCreate) SetAiAgent(v bool) *RepoCreate {
+	_c.mutation.SetAiAgent(v)
+	return _c
+}
+
+// SetNillableAiAgent sets the "ai_agent" field if the given value is not nil.
+func (_c *RepoCreate) SetNillableAiAgent(v *bool) *RepoCreate {
+	if v != nil {
+		_c.SetAiAgent(*v)
+	}
+	return _c
+}
+
+// SetAiAgentKey sets the "ai_agent_key" field.
+func (_c *RepoCreate) SetAiAgentKey(v string) *RepoCreate {
+	_c.mutation.SetAiAgentKey(v)
+	return _c
+}
+
+// SetNillableAiAgentKey sets the "ai_agent_key" field if the given value is not nil.
+func (_c *RepoCreate) SetNillableAiAgentKey(v *string) *RepoCreate {
+	if v != nil {
+		_c.SetAiAgentKey(*v)
+	}
+	return _c
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
 func (_c *RepoCreate) AddProjectIDs(ids ...int) *RepoCreate {
 	_c.mutation.AddProjectIDs(ids...)
@@ -240,6 +268,10 @@ func (_c *RepoCreate) defaults() error {
 		v := repo.DefaultDescription
 		_c.mutation.SetDescription(v)
 	}
+	if _, ok := _c.mutation.AiAgent(); !ok {
+		v := repo.DefaultAiAgent
+		_c.mutation.SetAiAgent(v)
+	}
 	return nil
 }
 
@@ -277,6 +309,9 @@ func (_c *RepoCreate) check() error {
 	}
 	if _, ok := _c.mutation.Description(); !ok {
 		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "Repo.description"`)}
+	}
+	if _, ok := _c.mutation.AiAgent(); !ok {
+		return &ValidationError{Name: "ai_agent", err: errors.New(`ent: missing required field "Repo.ai_agent"`)}
 	}
 	return nil
 }
@@ -348,6 +383,14 @@ func (_c *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(repo.FieldDescription, field.TypeString, value)
 		_node.Description = value
+	}
+	if value, ok := _c.mutation.AiAgent(); ok {
+		_spec.SetField(repo.FieldAiAgent, field.TypeBool, value)
+		_node.AiAgent = value
+	}
+	if value, ok := _c.mutation.AiAgentKey(); ok {
+		_spec.SetField(repo.FieldAiAgentKey, field.TypeString, value)
+		_node.AiAgentKey = value
 	}
 	if nodes := _c.mutation.ProjectsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -570,6 +613,36 @@ func (u *RepoUpsert) SetDescription(v string) *RepoUpsert {
 // UpdateDescription sets the "description" field to the value that was provided on create.
 func (u *RepoUpsert) UpdateDescription() *RepoUpsert {
 	u.SetExcluded(repo.FieldDescription)
+	return u
+}
+
+// SetAiAgent sets the "ai_agent" field.
+func (u *RepoUpsert) SetAiAgent(v bool) *RepoUpsert {
+	u.Set(repo.FieldAiAgent, v)
+	return u
+}
+
+// UpdateAiAgent sets the "ai_agent" field to the value that was provided on create.
+func (u *RepoUpsert) UpdateAiAgent() *RepoUpsert {
+	u.SetExcluded(repo.FieldAiAgent)
+	return u
+}
+
+// SetAiAgentKey sets the "ai_agent_key" field.
+func (u *RepoUpsert) SetAiAgentKey(v string) *RepoUpsert {
+	u.Set(repo.FieldAiAgentKey, v)
+	return u
+}
+
+// UpdateAiAgentKey sets the "ai_agent_key" field to the value that was provided on create.
+func (u *RepoUpsert) UpdateAiAgentKey() *RepoUpsert {
+	u.SetExcluded(repo.FieldAiAgentKey)
+	return u
+}
+
+// ClearAiAgentKey clears the value of the "ai_agent_key" field.
+func (u *RepoUpsert) ClearAiAgentKey() *RepoUpsert {
+	u.SetNull(repo.FieldAiAgentKey)
 	return u
 }
 
@@ -797,6 +870,41 @@ func (u *RepoUpsertOne) SetDescription(v string) *RepoUpsertOne {
 func (u *RepoUpsertOne) UpdateDescription() *RepoUpsertOne {
 	return u.Update(func(s *RepoUpsert) {
 		s.UpdateDescription()
+	})
+}
+
+// SetAiAgent sets the "ai_agent" field.
+func (u *RepoUpsertOne) SetAiAgent(v bool) *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.SetAiAgent(v)
+	})
+}
+
+// UpdateAiAgent sets the "ai_agent" field to the value that was provided on create.
+func (u *RepoUpsertOne) UpdateAiAgent() *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.UpdateAiAgent()
+	})
+}
+
+// SetAiAgentKey sets the "ai_agent_key" field.
+func (u *RepoUpsertOne) SetAiAgentKey(v string) *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.SetAiAgentKey(v)
+	})
+}
+
+// UpdateAiAgentKey sets the "ai_agent_key" field to the value that was provided on create.
+func (u *RepoUpsertOne) UpdateAiAgentKey() *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.UpdateAiAgentKey()
+	})
+}
+
+// ClearAiAgentKey clears the value of the "ai_agent_key" field.
+func (u *RepoUpsertOne) ClearAiAgentKey() *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.ClearAiAgentKey()
 	})
 }
 
@@ -1190,6 +1298,41 @@ func (u *RepoUpsertBulk) SetDescription(v string) *RepoUpsertBulk {
 func (u *RepoUpsertBulk) UpdateDescription() *RepoUpsertBulk {
 	return u.Update(func(s *RepoUpsert) {
 		s.UpdateDescription()
+	})
+}
+
+// SetAiAgent sets the "ai_agent" field.
+func (u *RepoUpsertBulk) SetAiAgent(v bool) *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.SetAiAgent(v)
+	})
+}
+
+// UpdateAiAgent sets the "ai_agent" field to the value that was provided on create.
+func (u *RepoUpsertBulk) UpdateAiAgent() *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.UpdateAiAgent()
+	})
+}
+
+// SetAiAgentKey sets the "ai_agent_key" field.
+func (u *RepoUpsertBulk) SetAiAgentKey(v string) *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.SetAiAgentKey(v)
+	})
+}
+
+// UpdateAiAgentKey sets the "ai_agent_key" field to the value that was provided on create.
+func (u *RepoUpsertBulk) UpdateAiAgentKey() *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.UpdateAiAgentKey()
+	})
+}
+
+// ClearAiAgentKey clears the value of the "ai_agent_key" field.
+func (u *RepoUpsertBulk) ClearAiAgentKey() *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.ClearAiAgentKey()
 	})
 }
 

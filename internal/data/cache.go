@@ -3,10 +3,12 @@ package data
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/duc-cnzj/mars/v6/internal/config"
+	"github.com/duc-cnzj/mars/v6/internal/data/ent"
 	"github.com/duc-cnzj/mars/v6/internal/data/ent/dbcache"
 	"github.com/duc-cnzj/mars/v6/internal/metrics"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
@@ -33,8 +35,15 @@ type CacheKey interface {
 	Slug() string
 }
 
-// Cache 是缓存门面：Remember 带 singleflight 合并与过期读取，SetWithTTL/Clear 直通 store 后端。
+// ErrCacheMiss 表示缓存键不存在或已过期。调用方用 errors.Is 区分「未命中」与
+// 「后端故障」：未命中是正常语义，后端故障应上抛交由调用方降级处理。
+var ErrCacheMiss = errors.New("cache miss")
+
+// Cache 是缓存门面：Remember 带 singleflight 合并与过期读取，Get 直读，
+// SetWithTTL/Clear 直通 store 后端。
 type Cache interface {
+	// Get 直接读取缓存值；键不存在或已过期时返回 ErrCacheMiss。
+	Get(key CacheKey) ([]byte, error)
 	// SetWithTTL 直接写缓存值并指定过期秒数。
 	SetWithTTL(key CacheKey, value []byte, seconds int) error
 	// Remember 读取缓存，未命中/过期时执行 fn 回填（带 singleflight 合并）。
@@ -64,8 +73,13 @@ func (c *Key) Slug() string {
 	return c.slug
 }
 
-// noCache 是 Cache 的空实现（未配置缓存驱动时的兜底）：Remember 直接执行 fn，其余方法空转。
+// noCache 是 Cache 的空实现（未配置缓存驱动时的兜底）：Remember 直接执行 fn，Get 恒未命中。
 type noCache struct{}
+
+// Get 恒返回 ErrCacheMiss：无缓存后端时任何键都不存在。
+func (n *noCache) Get(key CacheKey) ([]byte, error) {
+	return nil, ErrCacheMiss
+}
 
 // Remember 不缓存，直接调用 fn。
 func (n *noCache) Remember(key CacheKey, seconds int, fn func() ([]byte, error), force bool) ([]byte, error) {
@@ -90,6 +104,11 @@ type metricsForCache struct {
 // newMetricsForCache 用指标装饰器包一层 Cache。
 func newMetricsForCache(c Cache) Cache {
 	return &metricsForCache{cache: c}
+}
+
+// Get 委托内部 Cache。
+func (m *metricsForCache) Get(key CacheKey) ([]byte, error) {
+	return m.cache.Get(key)
 }
 
 // Remember 观测缓存读耗时，成功后记录字节数。
@@ -133,7 +152,7 @@ func NewCacheImpl(cfg *config.Config, d DBGetter, logger mlog.Logger) Cache {
 
 	var ca Cache
 	switch cfg.CacheDriver {
-	case "memory":
+	case config.CacheDriverMemory:
 		ca = newCache(
 			newGoCacheAdapter(
 				gocache.New(5*time.Minute, 10*time.Minute),
@@ -141,7 +160,7 @@ func NewCacheImpl(cfg *config.Config, d DBGetter, logger mlog.Logger) Cache {
 			logger,
 			sf,
 		)
-	case "db":
+	case config.CacheDriverDB:
 		ca = newCache(newCacheDBStore(d), logger, sf)
 	default:
 		ca = &noCache{}
@@ -152,6 +171,11 @@ func NewCacheImpl(cfg *config.Config, d DBGetter, logger mlog.Logger) Cache {
 // newCache 构造 cacheImpl。
 func newCache(store store, logger mlog.Logger, sf *singleflight.Group) Cache {
 	return &cacheImpl{store: store, sf: sf, logger: logger}
+}
+
+// Get 直接读取缓存值，未命中/过期时返回 ErrCacheMiss。
+func (c *cacheImpl) Get(key CacheKey) ([]byte, error) {
+	return c.store.Get(key.String())
 }
 
 // Remember 带 singleflight 合并读缓存；seconds<=0 或未命中时执行 fn 并回写。
@@ -210,10 +234,14 @@ func newCacheDBStore(d DBGetter) store {
 	return &cacheDBStore{d: d}
 }
 
-// Get 读取未过期（ExpiredAt >= 当前时间）的缓存值并 base64 解码返回；无记录时返回底层错误。
+// Get 读取未过期（ExpiredAt >= 当前时间）的缓存值并 base64 解码返回；无记录时
+// 归一为 ErrCacheMiss，其余错误（DB 故障）原样上抛以便调用方区分降级。
 func (d *cacheDBStore) Get(key string) (value []byte, err error) {
 	first, err := d.d.DB().DBCache.Query().Where(dbcache.Key(key), dbcache.ExpiredAtGTE(time.Now())).Only(context.TODO())
-	if err != nil {
+	switch {
+	case ent.IsNotFound(err):
+		return nil, ErrCacheMiss
+	case err != nil:
 		return nil, err
 	}
 
@@ -257,11 +285,11 @@ func newGoCacheAdapter(c *gocache.Cache) store {
 	return &goCacheAdapter{c: c}
 }
 
-// Get 读取缓存值，未命中返回带键的错误。
+// Get 读取缓存值，未命中返回 ErrCacheMiss。
 func (g *goCacheAdapter) Get(key string) (value []byte, err error) {
 	v, b := g.c.Get(key)
 	if !b {
-		return nil, fmt.Errorf("key %s not found", key)
+		return nil, ErrCacheMiss
 	}
 	return v.([]byte), nil
 }

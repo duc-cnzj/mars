@@ -41,6 +41,10 @@ type Repo struct {
 	MarsConfig *mars.Config `json:"mars_config,omitempty"`
 	// 描述
 	Description string `json:"description,omitempty"`
+	// 是否为 AI Agent 仓库（全局至多一个）
+	AiAgent bool `json:"ai_agent,omitempty"`
+	// AI Agent 仓库唯一槽位：ai_agent=true 时为固定值 ai，否则 NULL
+	AiAgentKey string `json:"ai_agent_key,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RepoQuery when eager-loading is set.
 	Edges        RepoEdges `json:"edges"`
@@ -72,11 +76,11 @@ func (*Repo) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case repo.FieldMarsConfig:
 			values[i] = new([]byte)
-		case repo.FieldEnabled, repo.FieldNeedGitRepo:
+		case repo.FieldEnabled, repo.FieldNeedGitRepo, repo.FieldAiAgent:
 			values[i] = new(sql.NullBool)
 		case repo.FieldID, repo.FieldGitProjectID:
 			values[i] = new(sql.NullInt64)
-		case repo.FieldName, repo.FieldDefaultBranch, repo.FieldGitProjectName, repo.FieldDescription:
+		case repo.FieldName, repo.FieldDefaultBranch, repo.FieldGitProjectName, repo.FieldDescription, repo.FieldAiAgentKey:
 			values[i] = new(sql.NullString)
 		case repo.FieldCreatedAt, repo.FieldUpdatedAt, repo.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -170,6 +174,18 @@ func (_m *Repo) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Description = value.String
 			}
+		case repo.FieldAiAgent:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field ai_agent", values[i])
+			} else if value.Valid {
+				_m.AiAgent = value.Bool
+			}
+		case repo.FieldAiAgentKey:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field ai_agent_key", values[i])
+			} else if value.Valid {
+				_m.AiAgentKey = value.String
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -245,6 +261,12 @@ func (_m *Repo) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(_m.Description)
+	builder.WriteString(", ")
+	builder.WriteString("ai_agent=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AiAgent))
+	builder.WriteString(", ")
+	builder.WriteString("ai_agent_key=")
+	builder.WriteString(_m.AiAgentKey)
 	builder.WriteByte(')')
 	return builder.String()
 }

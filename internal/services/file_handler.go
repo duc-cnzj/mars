@@ -138,12 +138,12 @@ func (f *fileHandler) copyFromPod(w http.ResponseWriter, r *http.Request, pathPa
 
 	ctx := r.Context()
 	info := biz.MustGetUser(ctx)
-	// 与 gRPC container.CopyToPod 对齐：从 pod 拷文件必须先做命名空间级访问控制，
-	// 否则任意登录用户可枚举 namespace/pod/container/filepath 把私有命名空间的
-	// 容器文件（含 .env、密钥、配置）拷走。
+	// 与 gRPC container.CopyToPod 对齐：从 pod 拷文件必须先做 Pod 级访问控制，
+	// 否则任意登录用户可枚举 namespace/pod/container/filepath 把私有命名空间或
+	// 他人沙箱的容器文件（含 .env、密钥、配置）拷走。
 	// 命名空间解析失败或无权访问：toHttpError 会把 ErrorPermissionDenied(403)
 	// 映射为同样的 403 响应，与显式 http.Error 分支等价，无需区分两种错误。
-	if _, nserr := f.accessBiz.RequireNamespaceAccessByName(ctx, input.Namespace); nserr != nil {
+	if _, nserr := f.accessBiz.RequirePodAccess(ctx, input.Namespace, input.Pod); nserr != nil {
 		f.logger.ErrorCtx(ctx, nserr)
 		toHttpError(w, nserr)
 		return

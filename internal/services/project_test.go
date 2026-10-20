@@ -173,6 +173,8 @@ func TestProjectSvc_Show_Failure2(t *testing.T) {
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
+	// 项目级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 	_, err := svc.Show(newOtherUserCtx(), &project.ShowRequest{
 		Id: 1,
 	})
@@ -382,6 +384,8 @@ func Test_projectSvc_Delete_Fail2(t *testing.T) {
 func Test_projectSvc_Delete_Fail3(t *testing.T) {
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), gomock.Any()).Return(&biz.Namespace{Private: true}, nil)
+	// 项目级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{Name: "app", Namespace: &biz.Namespace{Name: "ns"}}, nil)
 	// 若访问控制被删除，请求会继续卸载→删 DB→发事件→审计，返回成功（非 403），
 	// 让 assert.ErrorIs 干净失败而非 nil 解引用 panic。下游 mock 用 AnyTimes 保证走通。
@@ -419,6 +423,8 @@ func Test_projectSvc_Version_AccessDenied(t *testing.T) {
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true, CreatorEmail: "other@x.com"}, nil)
+	// 项目级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 	// 若访问控制被删除，请求会继续走到 Version → 返回 100，而非 errs.ErrorPermissionDenied
 	mocks.projectRepo.EXPECT().Version(gomock.Any(), 1).Return(100, nil).AnyTimes()
 
@@ -1716,6 +1722,8 @@ func Test_projectSvc_MemoryCpuAndEndpoints_PermissionDenied(t *testing.T) {
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
+	// 项目级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 	_, err := svc.MemoryCpuAndEndpoints(newOtherUserCtx(), &project.MemoryCpuAndEndpointsRequest{Id: 1})
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
@@ -1751,6 +1759,8 @@ func Test_projectSvc_AllContainers_PermissionDenied(t *testing.T) {
 
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
+	// 项目级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 	_, err := svc.AllContainers(newOtherUserCtx(), &project.AllContainersRequest{Id: 1})
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
@@ -1911,6 +1921,8 @@ func Test_projectSvc_ResourceTree_PermissionDenied(t *testing.T) {
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
+	// 项目级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 	_, err := svc.ResourceTree(newOtherUserCtx(), &project.ResourceTreeRequest{Id: 1})
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
@@ -1919,6 +1931,8 @@ func Test_projectSvc_CheckApplyStatus_PermissionDenied(t *testing.T) {
 	svc, mocks := newProjectSvcWithMocks(t)
 	mocks.projectRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Project{NamespaceID: 1}, nil)
 	mocks.nsRepo.EXPECT().Show(gomock.Any(), 1).Return(&biz.Namespace{Private: true}, nil)
+	// 项目级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
+	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 	_, err := svc.CheckApplyStatus(newOtherUserCtx(), &project.CheckApplyStatusRequest{Id: 1})
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }

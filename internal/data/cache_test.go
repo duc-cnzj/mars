@@ -252,7 +252,7 @@ func TestDBStore_Get(t *testing.T) {
 		d: NewDataImpl(&NewDataParams{DB: sqliteDB}),
 	}
 	_, err := s.Get("test")
-	assert.Error(t, err)
+	assert.ErrorIs(t, err, ErrCacheMiss)
 
 	sqliteDB.DBCache.Create().SetKey("test").SetValue("test").SetExpiredAt(time.Now().Add(10 * time.Second)).Exec(context.TODO())
 
@@ -260,6 +260,50 @@ func TestDBStore_Get(t *testing.T) {
 	assert.Nil(t, err)
 	decodeString, _ := base64.StdEncoding.DecodeString("test")
 	assert.Equal(t, decodeString, v)
+}
+
+// TestDBStore_Get_BackendError DB 故障（连接关闭）时 Get 上抛底层错误而非 ErrCacheMiss，
+// 让调用方能把「缓存未命中」与「后端故障」区分开。
+func TestDBStore_Get_BackendError(t *testing.T) {
+	sqliteDB, _ := NewSqliteDB()
+	s := &cacheDBStore{d: NewDataImpl(&NewDataParams{DB: sqliteDB})}
+	sqliteDB.Close()
+
+	_, err := s.Get("test")
+	assert.Error(t, err)
+	assert.NotErrorIs(t, err, ErrCacheMiss)
+}
+
+// TestNoCache_Get noCache 后端直读恒未命中。
+func TestNoCache_Get(t *testing.T) {
+	cache := &noCache{}
+	_, err := cache.Get(NewKey("aaa"))
+	assert.ErrorIs(t, err, ErrCacheMiss)
+}
+
+// TestCacheImpl_Get 覆盖 cacheImpl 直读：未命中透传 ErrCacheMiss，写入后可读回。
+func TestCacheImpl_Get(t *testing.T) {
+	cache := newCache(newGoCacheAdapter(gocache.New(time.Minute, time.Minute)), mlog.NewForConfig(nil), &singleflight.Group{})
+	_, err := cache.Get(NewKey("missing"))
+	assert.ErrorIs(t, err, ErrCacheMiss)
+
+	assert.NoError(t, cache.SetWithTTL(NewKey("k"), []byte("v"), 10))
+	got, err := cache.Get(NewKey("k"))
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("v"), got)
+}
+
+// TestMetricsForCache_Get 指标装饰器的 Get 原样委托内部 Cache。
+func TestMetricsForCache_Get(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	c := NewMockCache(m)
+	c.EXPECT().Get(NewKey("a")).Return([]byte("v"), nil)
+	mc := &metricsForCache{cache: c}
+
+	got, err := mc.Get(NewKey("a"))
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("v"), got)
 }
 
 // TestDBStore_Set 覆盖 DB 后端的写入与 upsert：二次 Set 同键更新 value 且刷新过期时间。
@@ -351,7 +395,7 @@ func TestNewGoCacheAdapter(t *testing.T) {
 func TestGoCacheAdapter_Get_Set_Delete(t *testing.T) {
 	adapter := newGoCacheAdapter(gocache.New(1*time.Minute, 10*time.Minute))
 	_, err := adapter.Get("aaa")
-	assert.Equal(t, "key aaa not found", err.Error())
+	assert.ErrorIs(t, err, ErrCacheMiss)
 	assert.Nil(t, adapter.Set("aaa", []byte("aaa"), 1))
 	v, err := adapter.Get("aaa")
 	assert.Nil(t, err)
@@ -359,11 +403,11 @@ func TestGoCacheAdapter_Get_Set_Delete(t *testing.T) {
 	// Set 的 TTL 为 1 秒，等待超过 TTL 触发懒过期。
 	time.Sleep(1100 * time.Millisecond)
 	_, err = adapter.Get("aaa")
-	assert.Equal(t, "key aaa not found", err.Error())
+	assert.ErrorIs(t, err, ErrCacheMiss)
 	assert.Nil(t, adapter.Set("bbb", []byte("bbb"), 100))
 	assert.Nil(t, adapter.Delete("bbb"))
 	_, err = adapter.Get("bbb")
-	assert.Equal(t, "key bbb not found", err.Error())
+	assert.ErrorIs(t, err, ErrCacheMiss)
 }
 
 func TestMetricsForCache_Clear(t *testing.T) {

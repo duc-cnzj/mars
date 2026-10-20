@@ -44,6 +44,25 @@ func TestIfStrEQ(t *testing.T) {
 	assert.Equal(t, "test2", x4[0].Name)
 }
 
+// TestIfStrContainsFold 大小写不敏感包含过滤：非空输入按子串命中，空串不过滤。
+func TestIfStrContainsFold(t *testing.T) {
+	db := openTestDB(t)
+	db.Namespace.Create().SetName("Web-Prod").SetCreatorEmail("a").SaveX(context.TODO())
+	db.Namespace.Create().SetName("api").SetCreatorEmail("a").SaveX(context.TODO())
+
+	x := db.Namespace.Query().Where(IfStrContainsFold("name")("WEB")).AllX(context.TODO())
+	assert.Len(t, x, 1)
+	assert.Equal(t, "Web-Prod", x[0].Name)
+
+	// 空串不过滤：返回全部。
+	x2 := db.Namespace.Query().Where(IfStrContainsFold("name")("")).AllX(context.TODO())
+	assert.Len(t, x2, 2)
+
+	// 无匹配子串：返回空。
+	x3 := db.Namespace.Query().Where(IfStrContainsFold("name")("zzz")).AllX(context.TODO())
+	assert.Empty(t, x3)
+}
+
 func TestIfStrEQPtr(t *testing.T) {
 	db := openTestDB(t)
 	db.Namespace.Create().SetName("test").SetCreatorEmail("a").SaveX(context.TODO())
@@ -131,4 +150,20 @@ func TestIfBool(t *testing.T) {
 	x3 := db.Repo.Query().Where(IfBool("enabled")(lo.ToPtr(true))).AllX(context.TODO())
 	assert.Equal(t, 1, len(x3))
 	assert.Equal(t, "test", x3[0].Name)
+}
+
+func TestIfAIAgent(t *testing.T) {
+	db := openTestDB(t)
+	db.Repo.Create().SetName("plain").SetAiAgent(false).SaveX(context.TODO())
+	db.Repo.Create().SetName("agent").SetAiAgent(true).SetAiAgentKey("ai").SaveX(context.TODO())
+	// nil 不过滤：两条都返回。
+	assert.Len(t, db.Repo.Query().Where(IfAIAgent(nil)).AllX(context.TODO()), 2)
+	// true 只返回 AI Agent 仓库。
+	x := db.Repo.Query().Where(IfAIAgent(lo.ToPtr(true))).AllX(context.TODO())
+	assert.Len(t, x, 1)
+	assert.Equal(t, "agent", x[0].Name)
+	// false 只返回非 AI Agent 仓库。
+	x2 := db.Repo.Query().Where(IfAIAgent(lo.ToPtr(false))).AllX(context.TODO())
+	assert.Len(t, x2, 1)
+	assert.Equal(t, "plain", x2[0].Name)
 }

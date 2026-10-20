@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
@@ -133,6 +134,36 @@ func TestContainerBiz_Log_GetPodLogsError(t *testing.T) {
 	}, nil, nil)
 	_, err := cb.Log(context.TODO(), &LogInput{Namespace: "a", Pod: "b"})
 	assert.Equal(t, "x", err.Error())
+}
+
+// TestContainerBiz_Log_TailLines 锁定尾部行数策略：未指定（0）或负数回落到
+// defaultTailLines（1000），显式指定则原样透传给 PodLogOptions.TailLines。
+func TestContainerBiz_Log_TailLines(t *testing.T) {
+	tests := []struct {
+		name string
+		in   int64
+		want int64
+	}{
+		{name: "未指定回落到默认", in: 0, want: defaultTailLines},
+		{name: "负数回落到默认", in: -5, want: defaultTailLines},
+		{name: "显式指定原样透传", in: 42, want: 42},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got int64
+			cb := newTestContainerBiz(&fakeK8sBizForLog{
+				getPod: func(namespace, pod string) (*v1.Pod, error) { return podOfPhase(v1.PodSucceeded), nil },
+				getPodLogs: func(ctx context.Context, ns, pod string, opts *v1.PodLogOptions) (string, error) {
+					require.NotNil(t, opts.TailLines)
+					got = *opts.TailLines
+					return "log", nil
+				},
+			}, nil, nil)
+			_, err := cb.Log(context.TODO(), &LogInput{Namespace: "a", Pod: "b", TailLines: tt.in})
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }
 
 func TestContainerBiz_LogStream_Running_Live(t *testing.T) {

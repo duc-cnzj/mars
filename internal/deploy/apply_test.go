@@ -102,6 +102,29 @@ func TestApplyProject_PermissionDenied(t *testing.T) {
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
 }
 
+// TestApplyProject_TrustedNamespaceSkipsAccessCheck 覆盖平台内部受信部署：
+// 携带 WithTrustedNamespaceAccess 标记时跳过命名空间访问校验（私有空间也可部署），
+// 后续编排照常执行。标记只能由 deploy 包构造，杜绝传输层伪造越权。
+func TestApplyProject_TrustedNamespaceSkipsAccessCheck(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	// 私有空间故意不设 Show 预期：一旦仍走 AccessBiz 就会因未预期调用而失败。
+	_, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
+	job := NewMockJob(ctrl)
+
+	repo.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2, Name: "app", NeedGitRepo: false}, nil)
+	jobMgr.EXPECT().NewJob(gomock.Any()).Return(job)
+	expectInstallChain(job, nil)
+
+	ctx := WithTrustedNamespaceAccess(context.Background())
+	assert.True(t, hasTrustedNamespaceAccess(ctx))
+	assert.False(t, hasTrustedNamespaceAccess(context.Background()))
+
+	got, err := ApplyProject(ctx, applyDepsOf(biz.NewMockNamespaceBiz(ctrl), repo, git, proj, jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{JobInput: baseJobInput()})
+	assert.NoError(t, err)
+	assert.Same(t, job, got)
+}
+
 func TestApplyProject_RepoGetError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

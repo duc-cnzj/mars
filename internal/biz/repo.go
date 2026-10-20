@@ -30,6 +30,8 @@ type RepoBiz interface {
 	// GetByName 按名称查询仓库（仓库名全局唯一，NotFound 由 errs 归类）。
 	// 供按名字寻址的部署入口（project.WebApplyByName）由仓库名反查 id。
 	GetByName(ctx context.Context, name string) (*Repo, error)
+	// GetAIAgent 返回全局唯一的 AI Agent 仓库；未配置时返回 NotFound。
+	GetAIAgent(ctx context.Context) (*Repo, error)
 	// Show 按 id 查询仓库（携带关联项目）。
 	Show(ctx context.Context, id int) (*Repo, error)
 	// Update 校验输入后更新仓库（同名冲突校验见实现）。
@@ -110,6 +112,11 @@ func (b *repoBiz) Get(ctx context.Context, id int) (*Repo, error) {
 // 按名字寻址的部署入口靠它由名字反查仓库 id；NotFound 保持领域语义由 errs 归类为 404。
 func (b *repoBiz) GetByName(ctx context.Context, name string) (*Repo, error) {
 	return b.repoRepo.GetByName(ctx, name)
+}
+
+// GetAIAgent 返回全局唯一的 AI Agent 仓库（透传 repo）；未配置时 NotFound。
+func (b *repoBiz) GetAIAgent(ctx context.Context) (*Repo, error) {
+	return b.repoRepo.GetAIAgent(ctx)
 }
 
 // Show 按 id 查询仓库（透传 repo）。
@@ -279,6 +286,7 @@ func (b *repoBiz) Clone(ctx context.Context, input *CloneRepoInput) (*Repo, erro
 // 调用方（Import/PreviewImport）已对空切片短路，此处空切片自然返回 nil。
 func validateImportItems(items []*ImportRepoItem) error {
 	seen := make(map[string]struct{}, len(items))
+	aiAgents := 0
 	for _, item := range items {
 		if item == nil {
 			return errs.WrapInvalidArgument(errors.New("导入数据不能为空"), "import repo")
@@ -290,6 +298,13 @@ func validateImportItems(items []*ImportRepoItem) error {
 			return errs.WrapInvalidArgument(fmt.Errorf("repo 名称 %q 在导入文件中重复", item.Name), "import repo")
 		}
 		seen[item.Name] = struct{}{}
+		if item.AIAgent {
+			aiAgents++
+		}
+	}
+	// AI Agent 仓库全局唯一：导入文件里出现多条 true 无法确定保留哪条，直接拒绝（PreviewImport 同步生效）。
+	if aiAgents > 1 {
+		return errs.WrapInvalidArgument(fmt.Errorf("导入文件中 AI Agent 仓库只能有 1 个，实际 %d 个", aiAgents), "import repo")
 	}
 	return nil
 }
@@ -353,6 +368,8 @@ type RepoRepo interface {
 	Get(ctx context.Context, id int) (*Repo, error)
 	// GetByName 按名称查询仓库。
 	GetByName(ctx context.Context, name string) (*Repo, error)
+	// GetAIAgent 返回全局唯一的 AI Agent 仓库（未配置时 NotFound）。
+	GetAIAgent(ctx context.Context) (*Repo, error)
 	// Show 按 id 查询仓库（携带关联项目）。
 	Show(ctx context.Context, id int) (*Repo, error)
 	// Update 更新仓库。
