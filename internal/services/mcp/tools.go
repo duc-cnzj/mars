@@ -892,5 +892,5 @@ func formatTime(t metav1.Time) string {
 	if t.IsZero() {
 		return ""
 	}
-	return t.Time.Format(time.RFC3339)
+	return t.Format(time.RFC3339)
 }

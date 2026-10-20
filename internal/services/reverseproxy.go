@@ -21,13 +21,13 @@ import (
 //   - 客户端主动断开（context.Canceled）不写响应、不刷错误日志；其余上游故障
 //     统一记 Error 并返回 errorMsg（502）。
 //
-// director 负责改写目标地址与剥离 mars 凭据，由调用方按各自的上游契约实现。
+// rewrite 负责改写目标地址与剥离 mars 凭据，由调用方按各自的上游契约实现。
 func newStreamingReverseProxy(
 	headerTimeout time.Duration,
 	logger mlog.Logger,
 	errorLogMsg string,
 	errorMsg string,
-	director func(*http.Request),
+	rewrite func(*httputil.ProxyRequest),
 ) *httputil.ReverseProxy {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.ResponseHeaderTimeout = headerTimeout
@@ -35,7 +35,7 @@ func newStreamingReverseProxy(
 	return &httputil.ReverseProxy{
 		Transport:     transport,
 		FlushInterval: -1,
-		Director:      director,
+		Rewrite:       rewrite,
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
 			// 客户端主动断开不算服务端故障，不刷错误日志。
 			if errors.Is(err, context.Canceled) {

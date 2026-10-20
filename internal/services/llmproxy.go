@@ -173,14 +173,18 @@ func newLLMReverseProxy(baseURL, apiKey string, logger mlog.Logger) *httputil.Re
 		logger,
 		"proxy llm request: ",
 		"LLM 上游不可用",
-		func(req *http.Request) {
+		func(pr *httputil.ProxyRequest) {
+			req := pr.Out
 			incomingPath := req.URL.Path
 			req.URL.Scheme = target.Scheme
 			req.URL.Host = target.Host
 			req.URL.Path = joinURLPath(target.Path, strings.TrimPrefix(incomingPath, llmProxyPath))
-			// 路径已被重写，清除可能存在的转义形式，避免 ReverseProxy 按旧 RawPath 发送。
+			// 路径已被重写，清除可能存在的转义形式，避免按旧 RawPath 发送。
 			req.URL.RawPath = ""
 			req.Host = target.Host
+			// Rewrite 模式不再自动补 X-Forwarded-For，显式补齐（同时带 Host/Proto，
+			// 均为标准转发头；进入 Rewrite 前网关已剥离客户端伪造的同名头）。
+			pr.SetXForwarded()
 			// Authorization 换成 provider key；无上游 key（如本地无鉴权端点）时删除，
 			// 防止沙箱令牌泄露。Cookie 属于浏览器与 mars 的会话，必须一律剥离，
 			// 否则会随代理请求发到模型服务。

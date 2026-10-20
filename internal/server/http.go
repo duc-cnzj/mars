@@ -128,7 +128,7 @@ func (a *apiGateway) setOidcStateCookie(ctx context.Context, writer http.Respons
 		if len(resp.Items) == 0 {
 			return nil
 		}
-		http.SetCookie(writer, &http.Cookie{
+		http.SetCookie(writer, &http.Cookie{ // #nosec G124 -- Secure 随部署 scheme 动态决定（本地 HTTP 需可登录）；HttpOnly/SameSite 已静态设置
 			Name:     middlewares.OidcStateCookieName,
 			Value:    resp.Items[0].State,
 			Path:     middlewares.OidcStateCookiePath,
@@ -139,7 +139,7 @@ func (a *apiGateway) setOidcStateCookie(ctx context.Context, writer http.Respons
 		})
 	case *apiauth.ExchangeResponse:
 		// 一次性消费：换发成功即清 Cookie，旧 state 不可重放。
-		http.SetCookie(writer, &http.Cookie{
+		http.SetCookie(writer, &http.Cookie{ // #nosec G124 -- 同上，Secure 由部署 scheme 决定；HttpOnly/SameSite 已静态设置
 			Name:     middlewares.OidcStateCookieName,
 			Value:    "",
 			Path:     middlewares.OidcStateCookiePath,
