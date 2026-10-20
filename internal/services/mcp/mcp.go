@@ -11,14 +11,15 @@
 // 各工具内部再按命名空间/项目做 RBAC 判定（与 gRPC 服务同一套 AccessBiz）。
 //
 // 出参口径：**能复用平台 gRPC 服务接口的能力一律复用**（NamespaceSvc/ProjectSvc/
-// ContainerSvc/MetricsSvc/ChangelogSvc），工具只做入参搬运，出参直接回吐服务返回的
-// 模型 JSON——与 mars 界面完全同源，且不声明 MCP outputSchema（tools/list 保持精简，
-// 模型拿到的是原始 JSON）。只有平台没有对应接口的三个能力直连 biz 并自行收敛字段。
+// ContainerSvc/MetricsSvc/ChangelogSvc/GitSvc/RepoSvc/EventSvc/HibernateSvc），工具只做
+// 入参搬运，出参直接回吐服务返回的模型 JSON——与 mars 界面完全同源，且不声明 MCP
+// outputSchema（tools/list 保持精简，模型拿到的是原始 JSON）。只有平台没有对应接口的
+// 三个能力直连 biz 并自行收敛字段。
 //
 // 安全边界：**读工具只读，写工具交人工确认**。
 //
 //   - 读工具（list_*/get_*/check_*）打 ReadOnlyHint=true，客户端可免确认直接执行；
-//   - 写工具（apply_project/restart_pod/exec_command）**刻意不打** ReadOnlyHint，
+//   - 写工具（apply_project/toggle_hibernate/restart_pod/exec_command）**刻意不打** ReadOnlyHint，
 //     按 MCP 规范即「非只读」，客户端（opencode/Claude Code/Cursor）会在真正发出
 //     tools/call 前弹人工确认——这是本批采纳的审批机制（最轻量，零 DB 改动）。
 //   - 不提供 delete_project 等销毁类能力：写工具集已含改名/改配置/删 Pod 的破坏面，
@@ -36,9 +37,13 @@ import (
 
 	changelogpb "github.com/duc-cnzj/mars/api/v6/proto/changelog"
 	containerpb "github.com/duc-cnzj/mars/api/v6/proto/container"
+	eventpb "github.com/duc-cnzj/mars/api/v6/proto/event"
+	gitpb "github.com/duc-cnzj/mars/api/v6/proto/git"
+	hibernatepb "github.com/duc-cnzj/mars/api/v6/proto/hibernate"
 	metricspb "github.com/duc-cnzj/mars/api/v6/proto/metrics"
 	namespacepb "github.com/duc-cnzj/mars/api/v6/proto/namespace"
 	projectpb "github.com/duc-cnzj/mars/api/v6/proto/project"
+	repopb "github.com/duc-cnzj/mars/api/v6/proto/repo"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/server/middlewares"
@@ -70,7 +75,7 @@ const serverInstructions = `你是 mars 平台（Kubernetes 应用管理平台�
 
 资源模型：命名空间（namespace/空间）→ 项目（project/应用）→ Pod → 容器（container）。
 - 命名空间是权限边界：公开空间人人可见，私有空间仅管理员、创建者与成员可见。
-- 一个项目是一次部署，可能对应多个 Pod（滚动更新时新旧 Pod 并存）。
+- 一个项目是一个持续存在的部署配置，每次 apply 版本号递增；可能对应多个 Pod（滚动更新时新旧 Pod 并存）。
 
 目标项目定位（先对齐，再动手）：
 - 用户没点名项目、或点名的名字有多个候选时，禁止自行挑一个：先调 list_namespaces（name 可模糊匹配
@@ -78,16 +83,18 @@ const serverInstructions = `你是 mars 平台（Kubernetes 应用管理平台�
   列给用户，请其确认后再继续；只有候选唯一时才能直接采用。
 - 用户只说「我的项目」且可见项目不止一个时，同样先列候选再追问，不要默认最近部署的那个。
 - 用户确认目标项目后，本次会话后续默认沿用该项目；用户明确切换时才更换。
-- 写操作（apply_project / restart_pod / exec_command）目标不唯一时一律停止并追问——
+- 写操作（apply_project / toggle_hibernate / restart_pod / exec_command）目标不唯一时一律停止并追问——
   宁可多问一句，不可改错项目。读操作可先做跨项目汇总（如整体健康概览），但下钻到具体项目、
   拉日志或执行命令前仍需完成上面的对齐。
 - 用户用简称/部分名称指代时，先用上面的 name 模糊过滤定位；命中多个就走候选列表流程，不要猜。
 
 工具分层（每个工具的完整入参、出参与语义以它自己的 description 为准，本说明不复述）：
 - 只读诊断（ReadOnlyHint，客户端免确认）：get_current_user、list_namespaces、list_projects、
-  get_project、list_project_containers、check_pod_status、list_namespace_events、
-  get_container_logs、get_pod_metrics、list_project_changelogs。
-- 写操作（客户端会弹人工确认）：apply_project、restart_pod、exec_command。
+  get_project、list_hibernate_windows、list_project_containers、check_apply_status、
+  get_project_endpoints、get_project_resource_tree、check_pod_status、list_namespace_events、
+  list_operation_events、get_container_logs、get_pod_metrics、list_project_changelogs、
+  list_git_branches、list_git_commits、get_commit_detail、get_pipeline_status。
+- 写操作（客户端会弹人工确认）：apply_project、toggle_hibernate、restart_pod、exec_command。
 - 身份确认：get_current_user 返回本次调用绑定的 mars 身份。AI 沙箱令牌锚定的是 agent
   项目创建者——管理员进入别人的沙箱时，这里也只会看到创建者，跨权限操作一律被拒绝。
 
@@ -98,23 +105,33 @@ const serverInstructions = `你是 mars 平台（Kubernetes 应用管理平台�
    2=StatusDeployed、3=StatusFailed。**唯一例外**是 list_projects，它的 deploy_status 是字符串
    （StatusUnknown/StatusDeploying/StatusDeployed/StatusFailed）。
 3. 入参寻址方式各不相同：list_namespaces 用 name（界面名，免 k8s 前缀）；list_projects 用
-   namespace + 可选 name；get_project / list_project_containers / list_project_changelogs 用
-   project_id；check_pod_status / get_container_logs / get_pod_metrics / restart_pod /
-   exec_command 用 namespace + pod（+ container）。不要混用 ID 与名字。
+   namespace + 可选 name；get_project / list_project_containers / check_apply_status /
+   get_project_endpoints / get_project_resource_tree / list_project_changelogs /
+   list_git_branches / list_git_commits / get_commit_detail / get_pipeline_status /
+   toggle_hibernate 用 project_id；check_pod_status / get_container_logs / get_pod_metrics /
+   restart_pod / exec_command 用 namespace + pod（+ container）。不要混用 ID 与名字。
 4. 工具失败会以 isError=true 回吐原因（NotFound / PermissionDenied / 参数校验失败等）；
    成功返回也不代表异步动作已完成（apply 的部署、restart 的重建都要再做一次状态确认）。
 
 推荐排查路径：
 1. 先用 list_projects / get_project 定位目标项目，用 list_project_containers 拿到它当前的 Pod 与容器名。
-2. 用 check_pod_status 判断 Pod 是否运行；非运行时读其 reason（reason 含 not found 说明 Pod 名错了或 Pod 已消失）。
-3. 用 list_namespace_events 看 Pod 事件（调度失败、拉镜像失败、OOMKilled、CrashLoopBackOff 等），
-   按返回里的 object 字段过滤出目标 Pod；count 是累计次数。
-4. 用 get_container_logs 拉容器日志定位应用层错误（默认尾部 1000 行，可用 tail_lines 调整；多容器 Pod 必须传 container；
+2. 部署/发版后先调 check_apply_status 拿整体判定、失败原因与上一次崩溃日志；再看
+   get_project_endpoints 确认入口与资源用量，get_project_resource_tree 确认 Ingress/Service/工作负载链路。
+3. 用 check_pod_status 判断单个 Pod 是否运行；非运行时读其 reason（reason 含 not found 说明 Pod 名错了或 Pod 已消失）。
+4. 用 list_namespace_events 看 Pod 事件（调度失败、拉镜像失败、OOMKilled、CrashLoopBackOff 等），
+   按返回里的 object 字段过滤出目标 Pod；count 是累计次数。mars 平台操作审计是另一个工具
+   list_operation_events，别把两者混为一谈。
+5. 用 get_container_logs 拉容器日志定位应用层错误（默认尾部 1000 行，可用 tail_lines 调整；多容器 Pod 必须传 container；
    日志末尾出现“已截断”提示说明日志不完整）；如需资源画像用 get_pod_metrics。
+6. 需要把线上版本与代码/发布对上号时：list_project_changelogs 看最近部署记录，list_git_commits 取提交，
+   get_commit_detail 看提交说明，get_pipeline_status 确认 CI 结论（CI 成功 ≠ 已部署，部署结果仍看 check_apply_status）。
 
 配置模型（细节见 get_project / apply_project 的工具描述）：
 - 用户能改的只有两块：① config——mars 配置片段；② 自定义参数（custom values）——仓库后台声明的字段。
   两者都按仓库声明的落点路径合并进 helm values 后再渲染，所以**用户看到的 config 不是 helm values.yaml 本身**。
+- 自定义字段的权威清单在 get_project 返回的 repo.mars_config.elements：path 是 extra_values 的
+  唯一合法键；type 决定取值约束（Switch=bool、InputNumber=整数、Select/Radio 必须落在
+  select_values 内，其余类型透传）。仓库级副本字段与休眠窗配置也在这份 mars_config 里。
 - helm values.yaml 属仓库级、由管理员维护，**没有任何工具能直接编辑它**。要改的东西若不在上述两块里，
   说明 mars 没开放给用户，应引导用户联系仓库管理员补自定义字段，不要在 config 里硬塞 helm 原始键。
 
@@ -126,8 +143,9 @@ const serverInstructions = `你是 mars 平台（Kubernetes 应用管理平台�
   因此**不需要**每次把完整配置搬上来。
 
 写工具（会真正改动环境，每次调用都会触发客户端的用户确认弹窗）：
-- apply_project（更新已有项目的部署/配置）、restart_pod（强制删除 Pod 交控制器重建）、
-  exec_command（容器内一次性命令）。可改范围、增量语义、返回值与失败含义见各工具 description。
+- apply_project（更新已有项目的部署/配置）、toggle_hibernate（切换项目定时休眠开关，不触发重部署）、
+  restart_pod（强制删除 Pod 交控制器重建）、exec_command（容器内一次性命令）。
+  可改范围、增量语义、返回值与失败含义见各工具 description。
 
 汇报与展示约定（向用户输出内容时必须遵守）：
 - 凡是列出或定位到资源，**必须同时给出 ID 与名称**，不能只写名称：
@@ -149,6 +167,10 @@ const serverInstructions = `你是 mars 平台（Kubernetes 应用管理平台�
 // *Svc 是 services 层的 gRPC 服务接口（定义在 api proto 包，不在 internal 下，
 // 故不引入 import 环）：**平台已有对应接口的能力一律复用它**——门卫、审计、
 // 出参 JSON 形状全部与 mars UI 同源，避免 MCP 侧再造一套迟早漂移的投影。
+// GitSvc/RepoSvc 服务的是分支/提交/pipeline 查询；这两个服务本身没有项目级 ACL
+// （Repo.Show 仅要求登录、Git 服务无 Authorize），故工具入口必须先过 RequireProjectAccess。
+// EventSvc.List 自带「按 ctx 用户收敛本人事件」的归属过滤；HibernateSvc 的 ListWindows
+// 已在 Authorize 白名单里对登录用户放行，两者的读写边界都由服务自己兜住。
 // 剩余 biz 依赖只服务三个没有现成接口的能力：list_projects（无按空间+项目名过滤的
 // 接口）、list_namespace_events（EventSvc.List 是操作审计日志，不是 k8s 事件）、
 // exec_command（services 的 ExecOnce 是 streaming RPC，MCP 侧构造不出其 server）。
@@ -164,6 +186,10 @@ type Deps struct {
 	ContainerSvc  containerpb.ContainerServer
 	MetricsSvc    metricspb.MetricsServer
 	ChangelogSvc  changelogpb.ChangelogServer
+	GitSvc        gitpb.GitServer
+	RepoSvc       repopb.RepoServer
+	EventSvc      eventpb.EventServer
+	HibernateSvc  hibernatepb.HibernateServer
 	Logger        mlog.Logger
 }
 

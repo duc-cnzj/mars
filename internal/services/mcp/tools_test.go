@@ -3,14 +3,19 @@ package mcp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	changelogpb "github.com/duc-cnzj/mars/api/v6/proto/changelog"
 	containerpb "github.com/duc-cnzj/mars/api/v6/proto/container"
+	eventpb "github.com/duc-cnzj/mars/api/v6/proto/event"
+	gitpb "github.com/duc-cnzj/mars/api/v6/proto/git"
+	hibernatepb "github.com/duc-cnzj/mars/api/v6/proto/hibernate"
 	metricspb "github.com/duc-cnzj/mars/api/v6/proto/metrics"
 	namespacepb "github.com/duc-cnzj/mars/api/v6/proto/namespace"
 	projectpb "github.com/duc-cnzj/mars/api/v6/proto/project"
+	repopb "github.com/duc-cnzj/mars/api/v6/proto/repo"
 	apitypes "github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocketpb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
@@ -928,6 +933,551 @@ func TestToolset_ExecCommand(t *testing.T) {
 
 		_, _, err := ts.execCommand(ctxWithUser(adminUser()), nil, execCommandIn{Namespace: "team-a", Pod: "web-0", Command: []string{"id"}})
 		require.ErrorContains(t, err, "spdy 建连失败")
+	})
+}
+
+// repoShowWithGitProject 造一个已绑定 GitLab 项目的仓库模型。
+func repoShowWithGitProject(repoID, gitProjectID int32) *repopb.ShowResponse {
+	return &repopb.ShowResponse{Item: &apitypes.RepoModel{Id: repoID, Name: "svc-repo", GitProjectId: gitProjectID}}
+}
+
+// commitOptions 造 n 条提交选项（value 为递增的假 SHA）。
+func commitOptions(n int) *gitpb.CommitOptionsResponse {
+	items := make([]*gitpb.Option, 0, n)
+	for i := 0; i < n; i++ {
+		items = append(items, &gitpb.Option{
+			Value:  fmt.Sprintf("sha-%03d", i),
+			Branch: "main",
+			Type:   "commit",
+			IsLeaf: true,
+		})
+	}
+	return &gitpb.CommitOptionsResponse{Items: items}
+}
+
+// TestToolset_ListGitBranches 覆盖分支查询的定位链（项目 → 仓库 → GitLab 项目）、
+// 白名单过滤开关与配置缺失/下游报错分支。
+func TestToolset_ListGitBranches(t *testing.T) {
+	t.Run("默认按仓库白名单过滤", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 3)
+		repoID, gitProjectID := int32(3), int32(9)
+		e.repoSvc.showFn = func(_ context.Context, req *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			assert.Equal(t, repoID, req.GetId())
+			return repoShowWithGitProject(repoID, gitProjectID), nil
+		}
+		var got *gitpb.BranchOptionsRequest
+		e.gitSvc.branchOptionsFn = func(_ context.Context, req *gitpb.BranchOptionsRequest) (*gitpb.BranchOptionsResponse, error) {
+			got = req
+			return &gitpb.BranchOptionsResponse{Items: []*gitpb.Option{{Value: "main", Branch: "main", Type: "branch"}}}, nil
+		}
+
+		_, out, err := e.toolset().listGitBranches(ctxWithUser(adminUser()), nil, listGitBranchesIn{ProjectID: 7})
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		assert.Equal(t, gitProjectID, got.GetGitProjectId())
+		assert.Equal(t, repoID, got.GetRepoId(), "默认必须下发 repo_id 让服务按白名单过滤")
+		items := out.(*gitpb.BranchOptionsResponse).GetItems()
+		require.Len(t, items, 1)
+		assert.Equal(t, "main", items[0].GetValue())
+	})
+
+	t.Run("include_all 时不下发 repo_id", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 3)
+		e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			return repoShowWithGitProject(3, 9), nil
+		}
+		e.gitSvc.branchOptionsFn = func(_ context.Context, req *gitpb.BranchOptionsRequest) (*gitpb.BranchOptionsResponse, error) {
+			assert.Zero(t, req.GetRepoId(), "include_all 时不得按仓库白名单过滤")
+			return &gitpb.BranchOptionsResponse{}, nil
+		}
+
+		_, _, err := e.toolset().listGitBranches(ctxWithUser(adminUser()), nil, listGitBranchesIn{ProjectID: 7, IncludeAll: true})
+		require.NoError(t, err)
+	})
+
+	t.Run("项目未绑定仓库返回 InvalidArgument", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 0)
+
+		_, _, err := e.toolset().listGitBranches(ctxWithUser(adminUser()), nil, listGitBranchesIn{ProjectID: 7})
+		require.ErrorContains(t, err, "未绑定仓库")
+	})
+
+	t.Run("仓库未配置 GitLab 项目返回 InvalidArgument", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 3)
+		e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			return repoShowWithGitProject(3, 0), nil
+		}
+
+		_, _, err := e.toolset().listGitBranches(ctxWithUser(adminUser()), nil, listGitBranchesIn{ProjectID: 7})
+		require.ErrorContains(t, err, "未配置 GitLab 项目")
+	})
+
+	t.Run("仓库查询报错原样上抛", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 3)
+		e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			return nil, errors.New("repo query failed")
+		}
+
+		_, _, err := e.toolset().listGitBranches(ctxWithUser(adminUser()), nil, listGitBranchesIn{ProjectID: 7})
+		require.ErrorContains(t, err, "repo query failed")
+	})
+
+	t.Run("下游报错原样上抛", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 3)
+		e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			return repoShowWithGitProject(3, 9), nil
+		}
+		e.gitSvc.branchOptionsFn = func(context.Context, *gitpb.BranchOptionsRequest) (*gitpb.BranchOptionsResponse, error) {
+			return nil, errors.New("gitlab 不可达")
+		}
+
+		_, _, err := e.toolset().listGitBranches(ctxWithUser(adminUser()), nil, listGitBranchesIn{ProjectID: 7})
+		require.ErrorContains(t, err, "gitlab 不可达")
+	})
+
+	t.Run("门卫拒绝时不触达下游", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.nsRepo.EXPECT().Show(gomock.Any(), 2).Return(
+			&biz.Namespace{ID: 2, Name: "private-ns", Private: true, CreatorEmail: "other@mars.com"}, nil)
+		e.projRepo.EXPECT().Show(gomock.Any(), 7).Return(
+			&biz.Project{ID: 7, RepoID: 3, NamespaceID: 2}, nil)
+		// 命名空间拒绝后门卫回查 agent 命名空间；NotFound 表示非 agent 空间。
+		e.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
+		// 非当前用户的 agent 项目：门卫回 PermissionDenied，下游 fake 未设函数即证明未触达。
+		_, _, err := e.toolset().listGitBranches(ctxWithUser(normalUser()), nil, listGitBranchesIn{ProjectID: 7})
+		require.ErrorContains(t, err, "没有权限执行该操作")
+	})
+}
+
+// TestToolset_ListGitCommits 覆盖提交查询的入参搬运、limit 缺省/上限截断与参数校验。
+func TestToolset_ListGitCommits(t *testing.T) {
+	t.Run("入参搬运与 limit 截断", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 3)
+		e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			return repoShowWithGitProject(3, 9), nil
+		}
+		var got *gitpb.CommitOptionsRequest
+		e.gitSvc.commitOptionsFn = func(_ context.Context, req *gitpb.CommitOptionsRequest) (*gitpb.CommitOptionsResponse, error) {
+			got = req
+			return commitOptions(25), nil
+		}
+
+		_, out, err := e.toolset().listGitCommits(ctxWithUser(adminUser()), nil,
+			listGitCommitsIn{ProjectID: 7, Branch: "main", Limit: 3})
+		require.NoError(t, err)
+		assert.Equal(t, int32(9), got.GetGitProjectId())
+		assert.Equal(t, "main", got.GetBranch())
+		items := out.(*gitpb.CommitOptionsResponse).GetItems()
+		require.Len(t, items, 3)
+		assert.Equal(t, "sha-000", items[0].GetValue(), "value 必须是完整 commit SHA")
+	})
+
+	t.Run("limit 缺省 20", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 3)
+		e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			return repoShowWithGitProject(3, 9), nil
+		}
+		e.gitSvc.commitOptionsFn = func(context.Context, *gitpb.CommitOptionsRequest) (*gitpb.CommitOptionsResponse, error) {
+			return commitOptions(25), nil
+		}
+
+		_, out, err := e.toolset().listGitCommits(ctxWithUser(adminUser()), nil,
+			listGitCommitsIn{ProjectID: 7, Branch: "main"})
+		require.NoError(t, err)
+		assert.Len(t, out.(*gitpb.CommitOptionsResponse).GetItems(), defaultCommitLimit)
+	})
+
+	t.Run("limit 超上限截到 100", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 3)
+		e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			return repoShowWithGitProject(3, 9), nil
+		}
+		e.gitSvc.commitOptionsFn = func(context.Context, *gitpb.CommitOptionsRequest) (*gitpb.CommitOptionsResponse, error) {
+			return commitOptions(120), nil
+		}
+
+		_, out, err := e.toolset().listGitCommits(ctxWithUser(adminUser()), nil,
+			listGitCommitsIn{ProjectID: 7, Branch: "main", Limit: 500})
+		require.NoError(t, err)
+		assert.Len(t, out.(*gitpb.CommitOptionsResponse).GetItems(), maxCommitLimit)
+	})
+
+	t.Run("branch 为空直接拒绝且不触达门卫", func(t *testing.T) {
+		e := newTestEnv(t)
+		// 未设任何门卫/下游 mock：一旦继续执行即因缺期望而失败。
+		_, _, err := e.toolset().listGitCommits(ctxWithUser(adminUser()), nil, listGitCommitsIn{ProjectID: 7})
+		require.ErrorContains(t, err, "branch 不能为空")
+	})
+
+	t.Run("项目未绑定仓库返回 InvalidArgument", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 0)
+
+		_, _, err := e.toolset().listGitCommits(ctxWithUser(adminUser()), nil,
+			listGitCommitsIn{ProjectID: 7, Branch: "main"})
+		require.ErrorContains(t, err, "未绑定仓库")
+	})
+
+	t.Run("下游报错原样上抛", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 3)
+		e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			return repoShowWithGitProject(3, 9), nil
+		}
+		e.gitSvc.commitOptionsFn = func(context.Context, *gitpb.CommitOptionsRequest) (*gitpb.CommitOptionsResponse, error) {
+			return nil, errors.New("branch not found")
+		}
+
+		_, _, err := e.toolset().listGitCommits(ctxWithUser(adminUser()), nil,
+			listGitCommitsIn{ProjectID: 7, Branch: "nope"})
+		require.ErrorContains(t, err, "branch not found")
+	})
+}
+
+// TestToolset_CheckApplyStatus 覆盖部署判定工具的入参搬运与失败诊断出参。
+func TestToolset_CheckApplyStatus(t *testing.T) {
+	t.Run("入参搬运与失败诊断回吐", func(t *testing.T) {
+		e := newTestEnv(t)
+		var got *projectpb.CheckApplyStatusRequest
+		e.projectSvc.checkApplyFn = func(_ context.Context, req *projectpb.CheckApplyStatusRequest) (*projectpb.CheckApplyStatusResponse, error) {
+			got = req
+			return &projectpb.CheckApplyStatusResponse{
+				Status: 3, Reason: "容器异常",
+				Failures: []*projectpb.ContainerFailure{{Reason: "CrashLoopBackOff", Logs: "boom"}},
+			}, nil
+		}
+
+		_, out, err := e.toolset().checkApplyStatus(ctxWithUser(adminUser()), nil, checkApplyStatusIn{ProjectID: 7})
+		require.NoError(t, err)
+		assert.Equal(t, int32(7), got.GetId())
+		resp := out.(*projectpb.CheckApplyStatusResponse)
+		assert.Equal(t, int32(3), int32(resp.GetStatus()))
+		assert.Equal(t, "容器异常", resp.GetReason())
+		require.Len(t, resp.GetFailures(), 1)
+		assert.Equal(t, "boom", resp.GetFailures()[0].GetLogs())
+	})
+
+	t.Run("下游报错原样上抛", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.projectSvc.checkApplyFn = func(context.Context, *projectpb.CheckApplyStatusRequest) (*projectpb.CheckApplyStatusResponse, error) {
+			return nil, errors.New("k8s unavailable")
+		}
+
+		_, _, err := e.toolset().checkApplyStatus(ctxWithUser(adminUser()), nil, checkApplyStatusIn{ProjectID: 7})
+		require.ErrorContains(t, err, "k8s unavailable")
+	})
+}
+
+// TestToolset_GetProjectEndpoints 覆盖入口地址与资源用量汇总的出参回吐。
+func TestToolset_GetProjectEndpoints(t *testing.T) {
+	t.Run("入参搬运与端点回吐", func(t *testing.T) {
+		e := newTestEnv(t)
+		var got *projectpb.MemoryCpuAndEndpointsRequest
+		e.projectSvc.endpointsFn = func(_ context.Context, req *projectpb.MemoryCpuAndEndpointsRequest) (*projectpb.MemoryCpuAndEndpointsResponse, error) {
+			got = req
+			return &projectpb.MemoryCpuAndEndpointsResponse{
+				Urls: []*apitypes.ServiceEndpoint{{Name: "web", Url: "https://svc.example.com", Type: "Ingress"}},
+				Cpu:  "300m", Memory: "300Mi",
+			}, nil
+		}
+
+		_, out, err := e.toolset().getProjectEndpoints(ctxWithUser(adminUser()), nil, getProjectEndpointsIn{ProjectID: 7})
+		require.NoError(t, err)
+		assert.Equal(t, int32(7), got.GetId())
+		resp := out.(*projectpb.MemoryCpuAndEndpointsResponse)
+		require.Len(t, resp.GetUrls(), 1)
+		assert.Equal(t, "https://svc.example.com", resp.GetUrls()[0].GetUrl())
+		assert.Equal(t, "300m", resp.GetCpu())
+		assert.Equal(t, "300Mi", resp.GetMemory())
+	})
+
+	t.Run("下游报错原样上抛", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.projectSvc.endpointsFn = func(context.Context, *projectpb.MemoryCpuAndEndpointsRequest) (*projectpb.MemoryCpuAndEndpointsResponse, error) {
+			return nil, errors.New("ingress query failed")
+		}
+
+		_, _, err := e.toolset().getProjectEndpoints(ctxWithUser(adminUser()), nil, getProjectEndpointsIn{ProjectID: 7})
+		require.ErrorContains(t, err, "ingress query failed")
+	})
+}
+
+// TestToolset_GetProjectResourceTree 覆盖拓扑树的入参搬运与节点/边回吐。
+func TestToolset_GetProjectResourceTree(t *testing.T) {
+	t.Run("入参搬运与拓扑回吐", func(t *testing.T) {
+		e := newTestEnv(t)
+		var got *projectpb.ResourceTreeRequest
+		e.projectSvc.resourceTreeFn = func(_ context.Context, req *projectpb.ResourceTreeRequest) (*projectpb.ResourceTreeResponse, error) {
+			got = req
+			return &projectpb.ResourceTreeResponse{
+				Status: 2,
+				Nodes:  []*projectpb.ResourceTreeNode{{Id: "pod-web-1", Kind: "Pod", Name: "web-1", Status: "healthy"}},
+				Edges:  []*projectpb.ResourceTreeEdge{{Id: "e1", Type: "owner", Source: "deployment-web", Target: "pod-web-1"}},
+			}, nil
+		}
+
+		_, out, err := e.toolset().getProjectResourceTree(ctxWithUser(adminUser()), nil, getProjectResourceTreeIn{ProjectID: 7})
+		require.NoError(t, err)
+		assert.Equal(t, int32(7), got.GetId())
+		resp := out.(*projectpb.ResourceTreeResponse)
+		require.Len(t, resp.GetNodes(), 1)
+		assert.Equal(t, "Pod", resp.GetNodes()[0].GetKind())
+		require.Len(t, resp.GetEdges(), 1)
+		assert.Equal(t, "owner", resp.GetEdges()[0].GetType())
+	})
+
+	t.Run("下游报错原样上抛", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.projectSvc.resourceTreeFn = func(context.Context, *projectpb.ResourceTreeRequest) (*projectpb.ResourceTreeResponse, error) {
+			return nil, errors.New("list resources failed")
+		}
+
+		_, _, err := e.toolset().getProjectResourceTree(ctxWithUser(adminUser()), nil, getProjectResourceTreeIn{ProjectID: 7})
+		require.ErrorContains(t, err, "list resources failed")
+	})
+}
+
+// TestToolset_GetCommitDetail 覆盖提交详情入参校验、项目→仓库→GitLab 定位链与下游报错。
+func TestToolset_GetCommitDetail(t *testing.T) {
+	t.Run("入参搬运与详情回吐", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 3)
+		e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			return repoShowWithGitProject(3, 9), nil
+		}
+		var got *gitpb.CommitRequest
+		e.gitSvc.commitFn = func(_ context.Context, req *gitpb.CommitRequest) (*gitpb.CommitResponse, error) {
+			got = req
+			return &gitpb.CommitResponse{
+				Id: "abc123def456", Title: "fix crash", AuthorName: "duc",
+				AuthorEmail: "duc@mars.com", WebUrl: "https://gitlab/commit/abc123def456",
+				Message: "fix crash\n\nbody",
+			}, nil
+		}
+
+		_, out, err := e.toolset().getCommitDetail(ctxWithUser(adminUser()), nil,
+			getCommitDetailIn{ProjectID: 7, Branch: "main", Commit: "abc123def456"})
+		require.NoError(t, err)
+		assert.Equal(t, int32(9), got.GetGitProjectId())
+		assert.Equal(t, "main", got.GetBranch())
+		assert.Equal(t, "abc123def456", got.GetCommit())
+		resp := out.(*gitpb.CommitResponse)
+		assert.Equal(t, "duc@mars.com", resp.GetAuthorEmail())
+		assert.Equal(t, "https://gitlab/commit/abc123def456", resp.GetWebUrl())
+	})
+
+	t.Run("branch 为空直接拒绝且不触达门卫", func(t *testing.T) {
+		e := newTestEnv(t)
+		_, _, err := e.toolset().getCommitDetail(ctxWithUser(adminUser()), nil,
+			getCommitDetailIn{ProjectID: 7, Commit: "abc"})
+		require.ErrorContains(t, err, "branch 不能为空")
+	})
+
+	t.Run("commit 为空直接拒绝且不触达门卫", func(t *testing.T) {
+		e := newTestEnv(t)
+		_, _, err := e.toolset().getCommitDetail(ctxWithUser(adminUser()), nil,
+			getCommitDetailIn{ProjectID: 7, Branch: "main"})
+		require.ErrorContains(t, err, "commit 不能为空")
+	})
+
+	t.Run("项目未绑定仓库返回 InvalidArgument", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 0)
+
+		_, _, err := e.toolset().getCommitDetail(ctxWithUser(adminUser()), nil,
+			getCommitDetailIn{ProjectID: 7, Branch: "main", Commit: "abc"})
+		require.ErrorContains(t, err, "未绑定仓库")
+	})
+
+	t.Run("下游报错原样上抛", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 3)
+		e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			return repoShowWithGitProject(3, 9), nil
+		}
+		e.gitSvc.commitFn = func(context.Context, *gitpb.CommitRequest) (*gitpb.CommitResponse, error) {
+			return nil, errors.New("commit not found")
+		}
+
+		_, _, err := e.toolset().getCommitDetail(ctxWithUser(adminUser()), nil,
+			getCommitDetailIn{ProjectID: 7, Branch: "main", Commit: "nope"})
+		require.ErrorContains(t, err, "commit not found")
+	})
+}
+
+// TestToolset_GetPipelineStatus 覆盖 pipeline 查询的 repo_id 推导、入参校验与下游报错。
+func TestToolset_GetPipelineStatus(t *testing.T) {
+	t.Run("按项目绑定仓库查询并回吐 job", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 3)
+		e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			return repoShowWithGitProject(3, 9), nil
+		}
+		var got *gitpb.PipelineInfoByRepoIdRequest
+		e.gitSvc.pipelineByRepoFn = func(_ context.Context, req *gitpb.PipelineInfoByRepoIdRequest) (*gitpb.PipelineInfoResponse, error) {
+			got = req
+			return &gitpb.PipelineInfoResponse{
+				Status: "success", WebUrl: "https://gitlab/pipeline/1",
+				Jobs: []*gitpb.PipelineJob{{Name: "build", Status: "success", StageName: "build"}},
+			}, nil
+		}
+
+		_, out, err := e.toolset().getPipelineStatus(ctxWithUser(adminUser()), nil,
+			getPipelineStatusIn{ProjectID: 7, Branch: "main", Commit: "abc123def456"})
+		require.NoError(t, err)
+		assert.Equal(t, int32(3), got.GetRepoId(), "repo_id 必须来自项目绑定，不能由调用方直传")
+		assert.Equal(t, "abc123def456", got.GetCommit())
+		resp := out.(*gitpb.PipelineInfoResponse)
+		assert.Equal(t, "success", resp.GetStatus())
+		require.Len(t, resp.GetJobs(), 1)
+		assert.Equal(t, "build", resp.GetJobs()[0].GetName())
+	})
+
+	t.Run("branch 为空直接拒绝且不触达门卫", func(t *testing.T) {
+		e := newTestEnv(t)
+		_, _, err := e.toolset().getPipelineStatus(ctxWithUser(adminUser()), nil,
+			getPipelineStatusIn{ProjectID: 7, Commit: "abc"})
+		require.ErrorContains(t, err, "branch 不能为空")
+	})
+
+	t.Run("commit 为空直接拒绝且不触达门卫", func(t *testing.T) {
+		e := newTestEnv(t)
+		_, _, err := e.toolset().getPipelineStatus(ctxWithUser(adminUser()), nil,
+			getPipelineStatusIn{ProjectID: 7, Branch: "main"})
+		require.ErrorContains(t, err, "commit 不能为空")
+	})
+
+	t.Run("项目未绑定仓库返回 InvalidArgument", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 0)
+
+		_, _, err := e.toolset().getPipelineStatus(ctxWithUser(adminUser()), nil,
+			getPipelineStatusIn{ProjectID: 7, Branch: "main", Commit: "abc"})
+		require.ErrorContains(t, err, "未绑定仓库")
+	})
+
+	t.Run("下游报错原样上抛", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.expectProjectAccess(7, 3)
+		e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+			return repoShowWithGitProject(3, 9), nil
+		}
+		e.gitSvc.pipelineByRepoFn = func(context.Context, *gitpb.PipelineInfoByRepoIdRequest) (*gitpb.PipelineInfoResponse, error) {
+			return nil, errors.New("pipeline api failed")
+		}
+
+		_, _, err := e.toolset().getPipelineStatus(ctxWithUser(adminUser()), nil,
+			getPipelineStatusIn{ProjectID: 7, Branch: "main", Commit: "abc"})
+		require.ErrorContains(t, err, "pipeline api failed")
+	})
+}
+
+// TestToolset_ListOperationEvents 覆盖审计日志的分页/搜索/all 入参搬运与下游报错。
+func TestToolset_ListOperationEvents(t *testing.T) {
+	t.Run("分页与过滤条件搬进请求", func(t *testing.T) {
+		e := newTestEnv(t)
+		var got *eventpb.ListRequest
+		e.eventSvc.listFn = func(_ context.Context, req *eventpb.ListRequest) (*eventpb.ListResponse, error) {
+			got = req
+			return &eventpb.ListResponse{
+				Page: 2, PageSize: 5,
+				Items: []*apitypes.EventModel{{Id: 11, Message: "更新项目 7/svc", Username: "admin"}},
+			}, nil
+		}
+
+		_, out, err := e.toolset().listOperationEvents(ctxWithUser(adminUser()), nil,
+			listOperationEventsIn{Page: 2, PageSize: 5, Search: "svc", All: true})
+		require.NoError(t, err)
+		require.NotNil(t, got.GetPage())
+		assert.Equal(t, int32(2), got.GetPage())
+		assert.Equal(t, int32(5), got.GetPageSize())
+		assert.Equal(t, "svc", got.GetSearch())
+		assert.True(t, got.GetAll())
+		resp := out.(*eventpb.ListResponse)
+		require.Len(t, resp.GetItems(), 1)
+		assert.Equal(t, "更新项目 7/svc", resp.GetItems()[0].GetMessage())
+	})
+
+	t.Run("下游报错原样上抛", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.eventSvc.listFn = func(context.Context, *eventpb.ListRequest) (*eventpb.ListResponse, error) {
+			return nil, errors.New("db down")
+		}
+
+		_, _, err := e.toolset().listOperationEvents(ctxWithUser(adminUser()), nil, listOperationEventsIn{})
+		require.ErrorContains(t, err, "db down")
+	})
+}
+
+// TestToolset_ListHibernateWindows 覆盖全局休眠时间窗列表回吐与下游报错。
+func TestToolset_ListHibernateWindows(t *testing.T) {
+	t.Run("回吐时间窗定义", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.hibSvc.listWindowsFn = func(_ context.Context, _ *hibernatepb.ListWindowsRequest) (*hibernatepb.ListWindowsResponse, error) {
+			return &hibernatepb.ListWindowsResponse{Items: []*hibernatepb.HibernateWindow{
+				{Id: 1, Name: "night", Start: "22:00", End: "08:00", RepoNames: []string{"svc-repo"}},
+			}}, nil
+		}
+
+		_, out, err := e.toolset().listHibernateWindows(ctxWithUser(adminUser()), nil, listHibernateWindowsIn{})
+		require.NoError(t, err)
+		resp := out.(*hibernatepb.ListWindowsResponse)
+		require.Len(t, resp.GetItems(), 1)
+		assert.Equal(t, "night", resp.GetItems()[0].GetName())
+		assert.Equal(t, "22:00", resp.GetItems()[0].GetStart())
+		assert.Equal(t, "08:00", resp.GetItems()[0].GetEnd())
+	})
+
+	t.Run("下游报错原样上抛", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.hibSvc.listWindowsFn = func(context.Context, *hibernatepb.ListWindowsRequest) (*hibernatepb.ListWindowsResponse, error) {
+			return nil, errors.New("window query failed")
+		}
+
+		_, _, err := e.toolset().listHibernateWindows(ctxWithUser(adminUser()), nil, listHibernateWindowsIn{})
+		require.ErrorContains(t, err, "window query failed")
+	})
+}
+
+// TestToolset_ToggleHibernate 覆盖休眠开关的入参搬运与下游报错。
+func TestToolset_ToggleHibernate(t *testing.T) {
+	t.Run("开关与时间窗搬运", func(t *testing.T) {
+		e := newTestEnv(t)
+		var got *projectpb.ToggleHibernateRequest
+		e.projectSvc.toggleHibernateFn = func(_ context.Context, req *projectpb.ToggleHibernateRequest) (*projectpb.ToggleHibernateResponse, error) {
+			got = req
+			return &projectpb.ToggleHibernateResponse{Enabled: true, State: "awake", WindowNames: []string{"night"}}, nil
+		}
+
+		_, out, err := e.toolset().toggleHibernate(ctxWithUser(adminUser()), nil,
+			toggleHibernateIn{ProjectID: 7, Enabled: true, WindowNames: []string{"night"}})
+		require.NoError(t, err)
+		assert.Equal(t, int32(7), got.GetProjectId())
+		assert.True(t, got.GetEnabled())
+		assert.Equal(t, []string{"night"}, got.GetWindowNames())
+		resp := out.(*projectpb.ToggleHibernateResponse)
+		assert.True(t, resp.GetEnabled())
+		assert.Equal(t, "awake", resp.GetState())
+	})
+
+	t.Run("下游报错原样上抛", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.projectSvc.toggleHibernateFn = func(context.Context, *projectpb.ToggleHibernateRequest) (*projectpb.ToggleHibernateResponse, error) {
+			return nil, errors.New("window not allowed")
+		}
+
+		_, _, err := e.toolset().toggleHibernate(ctxWithUser(adminUser()), nil,
+			toggleHibernateIn{ProjectID: 7, Enabled: true, WindowNames: []string{"night"}})
+		require.ErrorContains(t, err, "window not allowed")
 	})
 }
 

@@ -13,9 +13,13 @@ import (
 
 	changelogpb "github.com/duc-cnzj/mars/api/v6/proto/changelog"
 	containerpb "github.com/duc-cnzj/mars/api/v6/proto/container"
+	eventpb "github.com/duc-cnzj/mars/api/v6/proto/event"
+	gitpb "github.com/duc-cnzj/mars/api/v6/proto/git"
+	hibernatepb "github.com/duc-cnzj/mars/api/v6/proto/hibernate"
 	metricspb "github.com/duc-cnzj/mars/api/v6/proto/metrics"
 	namespacepb "github.com/duc-cnzj/mars/api/v6/proto/namespace"
 	projectpb "github.com/duc-cnzj/mars/api/v6/proto/project"
+	repopb "github.com/duc-cnzj/mars/api/v6/proto/repo"
 	apitypes "github.com/duc-cnzj/mars/api/v6/proto/types"
 	websocketpb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
@@ -34,10 +38,14 @@ import (
 // 只覆写被测方法，从而能精确断言「MCP 入参怎么搬运成 proto 请求」。
 type fakeProjectSvc struct {
 	projectpb.ProjectServer
-	applyFn         func(context.Context, *projectpb.WebApplyByNameRequest) (*projectpb.WebApplyResponse, error)
-	showFn          func(context.Context, *projectpb.ShowRequest) (*projectpb.ShowResponse, error)
-	showByNameFn    func(context.Context, *projectpb.ShowByNameRequest) (*projectpb.ShowResponse, error)
-	allContainersFn func(context.Context, *projectpb.AllContainersRequest) (*projectpb.AllContainersResponse, error)
+	applyFn           func(context.Context, *projectpb.WebApplyByNameRequest) (*projectpb.WebApplyResponse, error)
+	showFn            func(context.Context, *projectpb.ShowRequest) (*projectpb.ShowResponse, error)
+	showByNameFn      func(context.Context, *projectpb.ShowByNameRequest) (*projectpb.ShowResponse, error)
+	allContainersFn   func(context.Context, *projectpb.AllContainersRequest) (*projectpb.AllContainersResponse, error)
+	checkApplyFn      func(context.Context, *projectpb.CheckApplyStatusRequest) (*projectpb.CheckApplyStatusResponse, error)
+	endpointsFn       func(context.Context, *projectpb.MemoryCpuAndEndpointsRequest) (*projectpb.MemoryCpuAndEndpointsResponse, error)
+	resourceTreeFn    func(context.Context, *projectpb.ResourceTreeRequest) (*projectpb.ResourceTreeResponse, error)
+	toggleHibernateFn func(context.Context, *projectpb.ToggleHibernateRequest) (*projectpb.ToggleHibernateResponse, error)
 }
 
 // WebApplyByName 委派给测试注入的 applyFn。
@@ -58,6 +66,26 @@ func (f *fakeProjectSvc) ShowByName(ctx context.Context, req *projectpb.ShowByNa
 // AllContainers 委派给测试注入的 allContainersFn。
 func (f *fakeProjectSvc) AllContainers(ctx context.Context, req *projectpb.AllContainersRequest) (*projectpb.AllContainersResponse, error) {
 	return f.allContainersFn(ctx, req)
+}
+
+// CheckApplyStatus 委派给测试注入的 checkApplyFn。
+func (f *fakeProjectSvc) CheckApplyStatus(ctx context.Context, req *projectpb.CheckApplyStatusRequest) (*projectpb.CheckApplyStatusResponse, error) {
+	return f.checkApplyFn(ctx, req)
+}
+
+// MemoryCpuAndEndpoints 委派给测试注入的 endpointsFn。
+func (f *fakeProjectSvc) MemoryCpuAndEndpoints(ctx context.Context, req *projectpb.MemoryCpuAndEndpointsRequest) (*projectpb.MemoryCpuAndEndpointsResponse, error) {
+	return f.endpointsFn(ctx, req)
+}
+
+// ResourceTree 委派给测试注入的 resourceTreeFn。
+func (f *fakeProjectSvc) ResourceTree(ctx context.Context, req *projectpb.ResourceTreeRequest) (*projectpb.ResourceTreeResponse, error) {
+	return f.resourceTreeFn(ctx, req)
+}
+
+// ToggleHibernate 委派给测试注入的 toggleHibernateFn。
+func (f *fakeProjectSvc) ToggleHibernate(ctx context.Context, req *projectpb.ToggleHibernateRequest) (*projectpb.ToggleHibernateResponse, error) {
+	return f.toggleHibernateFn(ctx, req)
 }
 
 // showByNameItem 造一个只带「增量 apply 需要继承的字段」的项目模型（分支/提交/配置/版本/仓库绑定、
@@ -126,6 +154,69 @@ func (f *fakeChangelogSvc) FindLastChangelogsByProjectID(ctx context.Context, re
 	return f.findFn(ctx, req)
 }
 
+// fakeGitSvc 是 gitpb.GitServer 的测试替身，覆写分支/提交选项查询两个只读方法。
+type fakeGitSvc struct {
+	gitpb.GitServer
+	branchOptionsFn  func(context.Context, *gitpb.BranchOptionsRequest) (*gitpb.BranchOptionsResponse, error)
+	commitOptionsFn  func(context.Context, *gitpb.CommitOptionsRequest) (*gitpb.CommitOptionsResponse, error)
+	commitFn         func(context.Context, *gitpb.CommitRequest) (*gitpb.CommitResponse, error)
+	pipelineByRepoFn func(context.Context, *gitpb.PipelineInfoByRepoIdRequest) (*gitpb.PipelineInfoResponse, error)
+}
+
+// BranchOptions 委派给测试注入的 branchOptionsFn。
+func (f *fakeGitSvc) BranchOptions(ctx context.Context, req *gitpb.BranchOptionsRequest) (*gitpb.BranchOptionsResponse, error) {
+	return f.branchOptionsFn(ctx, req)
+}
+
+// CommitOptions 委派给测试注入的 commitOptionsFn。
+func (f *fakeGitSvc) CommitOptions(ctx context.Context, req *gitpb.CommitOptionsRequest) (*gitpb.CommitOptionsResponse, error) {
+	return f.commitOptionsFn(ctx, req)
+}
+
+// Commit 委派给测试注入的 commitFn。
+func (f *fakeGitSvc) Commit(ctx context.Context, req *gitpb.CommitRequest) (*gitpb.CommitResponse, error) {
+	return f.commitFn(ctx, req)
+}
+
+// PipelineInfoByRepoId 委派给测试注入的 pipelineByRepoFn。
+func (f *fakeGitSvc) PipelineInfoByRepoId(ctx context.Context, req *gitpb.PipelineInfoByRepoIdRequest) (*gitpb.PipelineInfoResponse, error) {
+	return f.pipelineByRepoFn(ctx, req)
+}
+
+// fakeRepoSvc 是 repopb.RepoServer 的测试替身，覆写 Show（分支/提交工具用它
+// 从 repo_id 解析 git_project_id）。
+type fakeRepoSvc struct {
+	repopb.RepoServer
+	showFn func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error)
+}
+
+// Show 委派给测试注入的 showFn。
+func (f *fakeRepoSvc) Show(ctx context.Context, req *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+	return f.showFn(ctx, req)
+}
+
+// fakeEventSvc 是 eventpb.EventServer 的测试替身，覆写操作审计 List。
+type fakeEventSvc struct {
+	eventpb.EventServer
+	listFn func(context.Context, *eventpb.ListRequest) (*eventpb.ListResponse, error)
+}
+
+// List 委派给测试注入的 listFn。
+func (f *fakeEventSvc) List(ctx context.Context, req *eventpb.ListRequest) (*eventpb.ListResponse, error) {
+	return f.listFn(ctx, req)
+}
+
+// fakeHibernateSvc 是 hibernatepb.HibernateServer 的测试替身，覆写全局时间窗 ListWindows。
+type fakeHibernateSvc struct {
+	hibernatepb.HibernateServer
+	listWindowsFn func(context.Context, *hibernatepb.ListWindowsRequest) (*hibernatepb.ListWindowsResponse, error)
+}
+
+// ListWindows 委派给测试注入的 listWindowsFn。
+func (f *fakeHibernateSvc) ListWindows(ctx context.Context, req *hibernatepb.ListWindowsRequest) (*hibernatepb.ListWindowsResponse, error) {
+	return f.listWindowsFn(ctx, req)
+}
+
 // 测试用固定令牌：LoginHTTP → biz.Authenticate → MockAuthBiz.VerifyToken 认它。
 const testToken = "Bearer test-token"
 
@@ -147,6 +238,10 @@ type testEnv struct {
 	nsSvc      *fakeNamespaceSvc
 	metricSvc  *fakeMetricsSvc
 	changeSvc  *fakeChangelogSvc
+	gitSvc     *fakeGitSvc
+	repoSvc    *fakeRepoSvc
+	eventSvc   *fakeEventSvc
+	hibSvc     *fakeHibernateSvc
 	activity   *biz.MockAgentActivity
 	// touchedActivity 记录每次活跃度刷新的项目名，供断言心跳键。
 	touchedActivity []string
@@ -179,6 +274,10 @@ func newTestEnv(t *testing.T) *testEnv {
 		nsSvc:      &fakeNamespaceSvc{},
 		metricSvc:  &fakeMetricsSvc{},
 		changeSvc:  &fakeChangelogSvc{},
+		gitSvc:     &fakeGitSvc{},
+		repoSvc:    &fakeRepoSvc{},
+		eventSvc:   &fakeEventSvc{},
+		hibSvc:     &fakeHibernateSvc{},
 		activity:   biz.NewMockAgentActivity(ctrl),
 	}
 	// 所有已鉴权请求都会刷新活跃度：默认放行并记录项目名。
@@ -205,6 +304,10 @@ func newTestEnv(t *testing.T) *testEnv {
 		ContainerSvc:  e.contSvc,
 		MetricsSvc:    e.metricSvc,
 		ChangelogSvc:  e.changeSvc,
+		GitSvc:        e.gitSvc,
+		RepoSvc:       e.repoSvc,
+		EventSvc:      e.eventSvc,
+		HibernateSvc:  e.hibSvc,
 		Logger:        logger,
 	}
 	e.server = NewServer(e.deps)
@@ -225,7 +328,19 @@ func (e *testEnv) toolset() *toolset {
 		containerSvc: e.deps.ContainerSvc,
 		metricsSvc:   e.deps.MetricsSvc,
 		changelogSvc: e.deps.ChangelogSvc,
+		gitSvc:       e.deps.GitSvc,
+		repoSvc:      e.deps.RepoSvc,
+		eventSvc:     e.deps.EventSvc,
+		hibernateSvc: e.deps.HibernateSvc,
 	}
+}
+
+// expectProjectAccess 让项目级门卫放行：projRepo.Show 返回项目（含仓库绑定），
+// nsRepo.Show 返回公开命名空间。供需要 RequireProjectAccess 的工具测试复用。
+func (e *testEnv) expectProjectAccess(projectID, repoID int) {
+	e.projRepo.EXPECT().Show(gomock.Any(), projectID).Return(
+		&biz.Project{ID: projectID, RepoID: repoID, NamespaceID: 2}, nil)
+	e.nsRepo.EXPECT().Show(gomock.Any(), 2).Return(&biz.Namespace{ID: 2, Name: "team-a"}, nil)
 }
 
 // ctxWithUser 构造携带指定用户的 ctx，模拟鉴权中间件注入用户后的请求上下文。
@@ -334,7 +449,7 @@ func TestServer_Unauthenticated(t *testing.T) {
 }
 
 // TestServer_InitializeAndListTools 走完整 initialize + tools/list 流程，断言工具集
-// 覆盖只读排查工具与 3 个写工具，且绝不包含 delete_project 等破坏性能力。
+// 覆盖只读排查工具与 4 个写工具，且绝不包含 delete_project 等破坏性能力。
 //
 // 关键断言：写工具的 annotations.readOnlyHint 必须不为 true——这是「客户端弹人工确认」
 // 这道审批闸门唯一的生效依据，一旦被打上只读标，客户端会静默放行写操作。
@@ -355,16 +470,19 @@ func TestServer_InitializeAndListTools(t *testing.T) {
 
 	readOnly := []string{
 		"get_current_user",
-		"list_namespaces", "list_projects", "get_project", "list_project_containers",
-		"check_pod_status", "list_namespace_events", "get_container_logs",
-		"get_pod_metrics", "list_project_changelogs",
+		"list_namespaces", "list_projects", "get_project", "list_hibernate_windows",
+		"list_project_containers", "check_apply_status", "get_project_endpoints",
+		"get_project_resource_tree", "check_pod_status", "list_namespace_events",
+		"list_operation_events", "get_container_logs", "get_pod_metrics",
+		"list_project_changelogs", "list_git_branches", "list_git_commits",
+		"get_commit_detail", "get_pipeline_status",
 	}
-	write := []string{"apply_project", "restart_pod", "exec_command"}
+	write := []string{"apply_project", "toggle_hibernate", "restart_pod", "exec_command"}
 	for _, want := range append(append([]string{}, readOnly...), write...) {
 		assert.Contains(t, byName, want)
 	}
 	assert.NotContains(t, byName, "delete_project")
-	assert.Len(t, byName, 13)
+	assert.Len(t, byName, 23)
 
 	for _, name := range readOnly {
 		ann, _ := byName[name]["annotations"].(map[string]any)
@@ -438,6 +556,66 @@ func TestServer_CallTool_GetProjectReturnsConfig(t *testing.T) {
 	require.NotEqual(t, true, res["isError"], "get_project 不应报错: %v", body)
 	content := res["content"].([]any)[0].(map[string]any)["text"].(string)
 	assert.Contains(t, content, `"config":"image:\n  tag: v1\nreplicas: 1"`)
+}
+
+// TestServer_CallTool_ListGitCommits 端到端证明分支/提交工具经传输层可用：入参按
+// 项目 → 仓库 → GitLab 项目链解析，出参 JSON 里必须带完整 commit SHA（value），
+// 否则模型拿不到可传给 apply_project 的 git_commit。
+func TestServer_CallTool_ListGitCommits(t *testing.T) {
+	e := newTestEnv(t)
+	e.expectAuth(adminUser())
+	e.expectProjectAccess(7, 3)
+	e.repoSvc.showFn = func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error) {
+		return repoShowWithGitProject(3, 9), nil
+	}
+	e.gitSvc.commitOptionsFn = func(_ context.Context, req *gitpb.CommitOptionsRequest) (*gitpb.CommitOptionsResponse, error) {
+		assert.Equal(t, int32(9), req.GetGitProjectId())
+		assert.Equal(t, "main", req.GetBranch())
+		// value 必须是完整 SHA；label 是服务端展示串，模型不得解析它。
+		return &gitpb.CommitOptionsResponse{Items: []*gitpb.Option{
+			{Value: "abc123def456", Label: "[3 天以前]: fix crash", Branch: "main", Type: "commit", IsLeaf: true},
+		}}, nil
+	}
+
+	sessionID := e.initSession(t, testToken)
+	code, _, body := e.post(t, sessionID, testToken,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_git_commits","arguments":{"project_id":7,"branch":"main"}}}`)
+	require.Equal(t, http.StatusOK, code, body)
+
+	res := sseJSON(t, body)["result"].(map[string]any)
+	require.NotEqual(t, true, res["isError"], "提交查询不应报错: %v", body)
+	content := res["content"].([]any)[0].(map[string]any)["text"].(string)
+	assert.Contains(t, content, `"value":"abc123def456"`)
+}
+
+// TestServer_CallTool_CheckApplyStatus 端到端证明部署判定工具经传输层可用：
+// 失败容器诊断（reason/message/logs）必须原样到达模型，这是排障闭环的关键证据。
+func TestServer_CallTool_CheckApplyStatus(t *testing.T) {
+	e := newTestEnv(t)
+	e.expectAuth(adminUser())
+	e.projectSvc.checkApplyFn = func(_ context.Context, req *projectpb.CheckApplyStatusRequest) (*projectpb.CheckApplyStatusResponse, error) {
+		assert.Equal(t, int32(7), req.GetId())
+		return &projectpb.CheckApplyStatusResponse{
+			Status: 3,
+			Reason: "容器异常",
+			Failures: []*projectpb.ContainerFailure{{
+				Kind: "Deployment", Workload: "web", Pod: "web-1", Container: "app",
+				Reason: "CrashLoopBackOff", Message: "back-off restarting failed container",
+				Logs: "panic: nil pointer",
+			}},
+		}, nil
+	}
+
+	sessionID := e.initSession(t, testToken)
+	code, _, body := e.post(t, sessionID, testToken,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"check_apply_status","arguments":{"project_id":7}}}`)
+	require.Equal(t, http.StatusOK, code, body)
+
+	res := sseJSON(t, body)["result"].(map[string]any)
+	require.NotEqual(t, true, res["isError"], "部署判定不应报错: %v", body)
+	content := res["content"].([]any)[0].(map[string]any)["text"].(string)
+	assert.Contains(t, content, `"reason":"CrashLoopBackOff"`)
+	assert.Contains(t, content, `"logs":"panic: nil pointer"`)
 }
 
 // TestServer_CallTool_PermissionDenied 验证越权访问被 RBAC 拦下：普通用户访问私有

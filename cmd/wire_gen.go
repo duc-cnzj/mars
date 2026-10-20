@@ -295,6 +295,10 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		ContainerSvc:  containerServer,
 		MetricsSvc:    metricsServer,
 		ChangelogSvc:  changelogServer,
+		GitSvc:        gitServer,
+		RepoSvc:       repoServer,
+		EventSvc:      eventServer,
+		HibernateSvc:  hibernateServer,
 		Logger:        logger,
 	}
 	server := mcp.NewServer(deps)

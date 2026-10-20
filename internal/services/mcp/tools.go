@@ -11,9 +11,13 @@ import (
 
 	changelogpb "github.com/duc-cnzj/mars/api/v6/proto/changelog"
 	containerpb "github.com/duc-cnzj/mars/api/v6/proto/container"
+	eventpb "github.com/duc-cnzj/mars/api/v6/proto/event"
+	gitpb "github.com/duc-cnzj/mars/api/v6/proto/git"
+	hibernatepb "github.com/duc-cnzj/mars/api/v6/proto/hibernate"
 	metricspb "github.com/duc-cnzj/mars/api/v6/proto/metrics"
 	namespacepb "github.com/duc-cnzj/mars/api/v6/proto/namespace"
 	projectpb "github.com/duc-cnzj/mars/api/v6/proto/project"
+	repopb "github.com/duc-cnzj/mars/api/v6/proto/repo"
 	websocketpb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
@@ -61,6 +65,10 @@ type toolset struct {
 	containerSvc containerpb.ContainerServer
 	metricsSvc   metricspb.MetricsServer
 	changelogSvc changelogpb.ChangelogServer
+	gitSvc       gitpb.GitServer
+	repoSvc      repopb.RepoServer
+	eventSvc     eventpb.EventServer
+	hibernateSvc hibernatepb.HibernateServer
 }
 
 // registerTools 把全部排查工具注册到 MCP server 上：前半是只读诊断工具（免客户端确认），
@@ -77,6 +85,10 @@ func registerTools(srv *sdk.Server, deps Deps) {
 		containerSvc: deps.ContainerSvc,
 		metricsSvc:   deps.MetricsSvc,
 		changelogSvc: deps.ChangelogSvc,
+		gitSvc:       deps.GitSvc,
+		repoSvc:      deps.RepoSvc,
+		eventSvc:     deps.EventSvc,
+		hibernateSvc: deps.HibernateSvc,
 	}
 
 	sdk.AddTool(srv, &sdk.Tool{
@@ -118,11 +130,21 @@ func registerTools(srv *sdk.Server, deps Deps) {
 			"config（该项目当前存储的 mars 配置片段，**不是** helm values.yaml；改配置时要把改好的整段传给 apply_project）；" +
 			"final_extra_values（[{path,value}]，当前生效的自定义参数，其中 path 就是 apply_project.extra_values 的键）；" +
 			"version（部署版本号/乐观锁）、deploy_status（数字枚举：0=StatusUnknown、1=StatusDeploying、2=StatusDeployed、3=StatusFailed）、" +
-			"git_branch、git_commit、docker_image（镜像列表）、pod_selectors、env_values、repo_id/repo（仓库绑定，不可经工具修改）、namespace、hibernate_*（定时休眠）。" +
+			"git_branch、git_commit、docker_image（镜像列表）、pod_selectors、env_values、repo_id/repo（仓库绑定，不可经工具修改；repo.mars_config 里有 branches 可部署分支白名单（空=不限）、elements 自定义字段定义、hibernate 仓库级休眠配置）、namespace、hibernate_*（定时休眠）。" +
+			"elements 决定 extra_values 的合法内容：path 是唯一合法键；type 决定取值约束——Switch 传 bool 字符串、InputNumber 传整数字符串、Select/Radio 的取值必须落在 select_values 内（Number 变体还须是整数），其余类型原样透传。" +
 			"注意：所有工具出参都是带 omitempty 的 JSON——零值字段会直接缺失（缺失=空串/0/false/空数组），不要把“字段不存在”当成“未知”。" +
 			"项目不存在或无权限时返回工具错误。",
 		Annotations: readOnlyAnnotations,
 	}, ts.getProject)
+
+	sdk.AddTool(srv, &sdk.Tool{
+		Name: "list_hibernate_windows",
+		Description: "列出全局定时休眠时间窗定义（管理员在仓库后台维护，项目再从仓库允许的窗里多选子集）。" +
+			"返回 {items:[{id,name,start,end,description,repo_names}]}：start/end 是服务端本地时区的 HH:MM；start>end 表示跨零点；" +
+			"repo_names 是引用该时间窗的仓库名（仅本列表填充）。" +
+			"项目自身的休眠开关/状态/已选时间窗见 get_project 的 hibernate_enabled / hibernate_state / hibernate_window_names；某个项目可选的窗集合是 get_project 的 repo.mars_config.hibernate.window_names；修改开关用 toggle_hibernate。",
+		Annotations: readOnlyAnnotations,
+	}, ts.listHibernateWindows)
 
 	sdk.AddTool(srv, &sdk.Tool{
 		Name: "list_project_containers",
@@ -133,6 +155,35 @@ func registerTools(srv *sdk.Server, deps Deps) {
 			"同一 Pod 可能有多个容器，调用日志/exec 时把对应 container 一并传入。",
 		Annotations: readOnlyAnnotations,
 	}, ts.listProjectContainers)
+
+	sdk.AddTool(srv, &sdk.Tool{
+		Name: "check_apply_status",
+		Description: "查询项目最近一次部署后的实际运行结果（判据与 mars 界面的部署状态一致），比逐 Pod 探测更快拿到结论。返回 {status, reason, containers, failures}：" +
+			"status 是数字枚举——0=StatusUnknown、1=StatusDeploying、2=StatusDeployed（正常）、3=StatusFailed；" +
+			"reason 是失败/进行中时的人类可读描述；containers 同 list_project_containers；" +
+			"failures 仅在失败时出现，每条含 kind/workload/pod/container、reason（CrashLoopBackOff/ImagePullBackOff/Error/OOMKilled/Evicted）、message 与 logs（容器日志尾部；CrashLoopBackOff 时是**上一次崩溃**的日志）。" +
+			"部署后确认结果优先用本工具；判断某个具体 Pod 是否 Running 用 check_pod_status，要完整实时日志用 get_container_logs。",
+		Annotations: readOnlyAnnotations,
+	}, ts.checkApplyStatus)
+
+	sdk.AddTool(srv, &sdk.Tool{
+		Name: "get_project_endpoints",
+		Description: "返回项目的访问地址与资源用量汇总。返回 {urls:[{name,url,type,svc_name,ingress_name}], cpu, memory}：" +
+			"urls 是可访问的服务地址，type=Ingress|Service|HTTPRoute；" +
+			"cpu/memory 是项目全部 Pod 的合计用量，服务端格式化字符串（如 '300 m'、'300 MB'；无指标时为 '0 m'/'0 MB'）。" +
+			"注意：项目未部署或没有暴露入口时 urls 为空数组，这是正常的否定结果，不是工具失败。",
+		Annotations: readOnlyAnnotations,
+	}, ts.getProjectEndpoints)
+
+	sdk.AddTool(srv, &sdk.Tool{
+		Name: "get_project_resource_tree",
+		Description: "返回项目资源拓扑树（Application → Ingress/Service → Deployment/StatefulSet/DaemonSet → ReplicaSet → Pod），用于排查「入口通不通」「Service 有没有挂到工作负载」「是否残留旧副本」。" +
+			"返回 {status, nodes:[{id,kind,name,namespace,status,labels,old}], edges:[{id,type,source,target}]}：" +
+			"kind=Application|Ingress|Service|Deployment|ReplicaSet|Pod|StatefulSet|DaemonSet；节点 status=healthy|degraded|progressing|unknown；old=true 表示滚动更新中的旧副本；" +
+			"edge type=owner|selector|route（owner=属主引用、selector=标签选择、route=路由后端）。" +
+			"整体 status 是数字枚举（同 get_project 的 deploy_status）。只看当前容器列表用 list_project_containers。",
+		Annotations: readOnlyAnnotations,
+	}, ts.getProjectResourceTree)
 
 	sdk.AddTool(srv, &sdk.Tool{
 		Name: "check_pod_status",
@@ -153,6 +204,17 @@ func registerTools(srv *sdk.Server, deps Deps) {
 			"返回的是整个命名空间的事件且顺序不保证——需自行按 object 过滤。k8s 事件默认只保留约 1 小时，事件缺失不代表历史上没出过问题。",
 		Annotations: readOnlyAnnotations,
 	}, ts.listNamespaceEvents)
+
+	sdk.AddTool(srv, &sdk.Tool{
+		Name: "list_operation_events",
+		Description: "列出 mars 平台的**操作审计事件**（谁在什么时候改了什么），按 id 倒序。" +
+			"注意：这不是 Kubernetes 集群事件——Pod 调度/拉镜像/OOM 等集群侧问题用 list_namespace_events。" +
+			"可见范围：普通用户默认且只能看到自己的事件；管理员显式传 all=true 才展开全部用户（普通用户传 all 无效果）。" +
+			"返回 {page, page_size, items:[{id,action,username,message,old,new,has_diff,event_at,operator_email,...}]}：" +
+			"action 是数字枚举（1=Create、2=Update、3=Delete、4=Upload、5=Download、6=DryRun、7=Shell、8=Login、9=CancelDeploy、10=Exec、11=ForceDeletePod、0=Unknown）；" +
+			"search 模糊匹配 message 与 username；event_at 是服务端生成的中文相对时间（如 '3 天以前'，不要做字符串解析），解析时间请用 created_at（RFC3339）。exec_command / restart_pod / apply_project 的调用都能在这里查到回声。",
+		Annotations: readOnlyAnnotations,
+	}, ts.listOperationEvents)
 
 	sdk.AddTool(srv, &sdk.Tool{
 		Name: "get_container_logs",
@@ -187,9 +249,50 @@ func registerTools(srv *sdk.Server, deps Deps) {
 	}, ts.listProjectChangelogs)
 
 	sdk.AddTool(srv, &sdk.Tool{
+		Name: "list_git_branches",
+		Description: "列出项目所绑定 GitLab 仓库的分支，用于给 apply_project 选 git_branch（或核对线上分支是否存在）。" +
+			"返回 {items:[{value, label, type, branch, git_project_id}]}：value 与 branch 都是分支名（apply_project 的 git_branch 直接用它），label 是展示串。" +
+			"默认只返回仓库 mars 配置白名单内的**可部署分支**（白名单为空表示不限，返回全部分支）；include_all=true 才返回 GitLab 上的全部分支（其中可能有不可部署分支）。" +
+			"定位链：project_id → 项目绑定的仓库 → GitLab 项目；项目未绑定仓库、或仓库未配置 GitLab 项目时返回工具错误（这是配置缺失，不是该仓库没有分支）。" +
+			"注意：分支名区分大小写，必须原样传给 apply_project。",
+		Annotations: readOnlyAnnotations,
+	}, ts.listGitBranches)
+
+	sdk.AddTool(srv, &sdk.Tool{
+		Name: "list_git_commits",
+		Description: "列出项目所绑定 GitLab 仓库指定分支的提交历史（服务端最多取 100 条，按 GitLab 返回顺序，通常新提交在前），用于给 apply_project 选 git_commit 或核对线上版本对应的代码。" +
+			"返回 {items:[{value, label, type, branch, git_project_id}]}：value 是完整 commit SHA（apply_project 的 git_commit 直接用它），label 是服务端生成的「[相对时间]: 提交标题」展示串，**不要**对它做字符串解析。" +
+			"本工具**不返回**作者、邮箱、完整 commit message 与 web URL——需要这些信息请用 get_commit_detail（或引导用户去 GitLab 查看）。" +
+			"branch 必填，且必须是该仓库存在的分支（先调 list_git_branches 获取）；分支不存在时返回工具错误。" +
+			"limit 缺省 20、上限 100（服务端固定最多拉 100 条，传更大也拿不到更多）。",
+		Annotations: readOnlyAnnotations,
+	}, ts.listGitCommits)
+
+	sdk.AddTool(srv, &sdk.Tool{
+		Name: "get_commit_detail",
+		Description: "返回指定提交的完整详情——补 list_git_commits 刻意省略的部分（作者、提交说明、GitLab 链接）。" +
+			"返回 {id,short_id,git_project_id,label,title,branch,author_name,author_email,committer_name,committer_email,web_url,message,committed_date,created_at}：" +
+			"id 是完整 SHA；committed_date/created_at 是 RFC3339；label 是展示串，不要解析。" +
+			"commit 必须传完整 SHA（来自 list_git_commits 的 value）；branch 必填，但仅用于回显（服务端按 SHA 定位，不校验该分支是否真实存在）。" +
+			"项目未绑定仓库、或仓库未配置 GitLab 项目时返回工具错误（配置缺失，不是提交不存在）。",
+		Annotations: readOnlyAnnotations,
+	}, ts.getCommitDetail)
+
+	sdk.AddTool(srv, &sdk.Tool{
+		Name: "get_pipeline_status",
+		Description: "查询项目绑定仓库在指定分支/提交上的 CI 流水线状态，用于部署前确认「这个提交的 CI 到底过没过」。" +
+			"返回 {status, web_url, jobs:[{name,status,stage_name}]}：status=success|failed|running|manual|unknown；" +
+			"仓库配置了流水线通过规则时按规则判定（规则指定的 stage/job 全部成功才算 success，规则 job 缺失时回退整体状态），否则为整条流水线的状态；" +
+			"jobs 按执行顺序排列。branch 与 commit 必填，commit 用完整 SHA（来自 list_git_commits 的 value）。" +
+			"指定提交没有 push/web 流水线时返回 NotFound 错误（“pipeline not found”）——这是“该提交没有 CI 记录”，不是服务故障。" +
+			"注意：success 只代表 CI 结论，不代表项目已部署——部署结果用 check_apply_status。",
+		Annotations: readOnlyAnnotations,
+	}, ts.getPipelineStatus)
+
+	sdk.AddTool(srv, &sdk.Tool{
 		Name: "apply_project",
 		Description: "[写操作] **更新已有项目的部署配置**（不创建新项目）。用 namespace + name 定位已存在的项目；项目不存在直接报错，请先用 list_projects / get_project 确认项目已存在。项目名、所属空间、仓库绑定都**不可通过本工具修改**（仓库绑定在项目创建时即固化）。" +
-			"**改配置只有两条通道**：① config——mars 配置片段；② 自定义参数（custom values）——仓库后台声明的自定义元素（replicas、镜像 tag 等），用 extra_values 指定。两者都是**片段**，由服务端按仓库配置的落点路径合并进 helm values 后再渲染；**没有直接编辑 helm values.yaml 的入口**（helm values.yaml 属仓库级、由管理员在后台维护）。所以想改的东西若既不在 config 片段里、也不是声明过的自定义参数，说明 mars 没把它开放给用户改——引导用户找仓库管理员加自定义字段，不要往 config 里硬塞 helm 的原始键（会落到错误的层级）。" +
+			"**改配置只有两条通道**：① config——mars 配置片段；② 自定义参数（custom values）——仓库后台声明的自定义元素（replicas、镜像 tag 等），用 extra_values 指定。两者都是**片段**，由服务端按仓库配置的落点路径合并进 helm values 后再渲染；**没有直接编辑 helm values.yaml 的入口**（helm values.yaml 属仓库级、由管理员在后台维护）。所以想改的东西若既不在 config 片段里、也不是声明过的自定义参数，说明 mars 没把它开放给用户改——引导用户找仓库管理员加自定义字段，不要往 config 里硬塞 helm 的原始键（会落到错误的层级）。合法元素清单见 get_project 返回的 repo.mars_config.elements。" +
 			"**增量更新语义**：除 version 外其余入参不传即沿用项目当前值——只想换分支就只传 git_branch，不必把 config 再抄一遍；要改配置就传 config（**整段替换**，不是键级合并，改一个键也要带上整段）；要改自定义参数就只在 extra_values 里传要改的那几个（key 用 get_project 返回的 final_extra_values 里的 path），未列出的元素沿用项目现状、不会被重置回仓库默认。version 不传则由工具自动取当前版本（乐观锁，等价于以线上现状为基准），显式传则可检出期间的并发部署。" +
 			"局限：config / git_branch 这类字符串字段无法用本工具清空（没传与传空串无法区分，需清空请到 mars 界面）；extra_values 不受此限（键存在即设定，传空串就是置空）。" +
 			"**返回值** {yaml_files, project, dry_run}：yaml_files 是本次渲染出的 Kubernetes 清单；" +
@@ -199,6 +302,15 @@ func registerTools(srv *sdk.Server, deps Deps) {
 			"强烈建议先 dry_run=true 预览渲染出的 YAML 再正式部署——正式部署会真实改动线上环境。",
 		Annotations: writeAnnotations,
 	}, ts.applyProject)
+
+	sdk.AddTool(srv, &sdk.Tool{
+		Name: "toggle_hibernate",
+		Description: "[写操作] 切换项目级定时休眠开关（只改开关与所选时间窗，**不触发重部署**）。" +
+			"入参：project_id 必填；enabled=true 时 window_names **至少一个**，且必须落在仓库允许的窗集合内——可用集合是 get_project 返回的 repo.mars_config.hibernate.window_names（仓库调色板），**不是**项目当前的 hibernate_window_names（那只是已选子集）；窗的时段说明可再用 list_hibernate_windows 查。留空或传了仓库未引用的名字会返回参数错误。" +
+			"关闭休眠传 enabled=false 且 window_names 留空。" +
+			"返回 {enabled, state, window_names}：state 是运行态（如 awake/sleeping）。变更会写入 mars 审计。",
+		Annotations: writeAnnotations,
+	}, ts.toggleHibernate)
 
 	sdk.AddTool(srv, &sdk.Tool{
 		Name: "restart_pod",
@@ -369,6 +481,25 @@ func (t *toolset) getProject(ctx context.Context, _ *sdk.CallToolRequest, in get
 	return nil, resp.GetItem(), nil
 }
 
+// ---------- list_hibernate_windows ----------
+
+// listHibernateWindowsIn 是 list_hibernate_windows 的入参：无参数，空对象。
+type listHibernateWindowsIn struct{}
+
+// listHibernateWindows 列出全局休眠时间窗：复用 HibernateSvc.ListWindows。
+//
+// 注意：MCP 在进程内直调服务方法，**不经过 gRPC 的 Authorize 拦截器**——所以这里能读
+// 的真实依据是「/mcp 已由 LoginHTTP 强制登录」+「本方法的策略本身就是登录可读」，两者
+// 与 gRPC 侧在 allowlist 中放行的效果一致。以后若把 ListWindows 收紧为管理员专属，
+// 必须在本工具内补显式门卫，不能指望 Authorize 生效。
+func (t *toolset) listHibernateWindows(ctx context.Context, _ *sdk.CallToolRequest, _ listHibernateWindowsIn) (*sdk.CallToolResult, any, error) {
+	resp, err := t.hibernateSvc.ListWindows(ctx, &hibernatepb.ListWindowsRequest{})
+	if err != nil {
+		return nil, nil, err
+	}
+	return nil, resp, nil
+}
+
 // ---------- list_project_containers ----------
 
 // listProjectContainersIn 是 list_project_containers 的入参。
@@ -381,6 +512,58 @@ type listProjectContainersIn struct {
 // 是后续 check_pod_status / get_container_logs 的取参来源。
 func (t *toolset) listProjectContainers(ctx context.Context, _ *sdk.CallToolRequest, in listProjectContainersIn) (*sdk.CallToolResult, any, error) {
 	resp, err := t.projectSvc.AllContainers(ctx, &projectpb.AllContainersRequest{Id: int32(in.ProjectID)})
+	if err != nil {
+		return nil, nil, err
+	}
+	return nil, resp, nil
+}
+
+// ---------- check_apply_status ----------
+
+// checkApplyStatusIn 是 check_apply_status 的入参。
+type checkApplyStatusIn struct {
+	ProjectID int `json:"project_id" jsonschema:"项目 ID（必填）"`
+}
+
+// checkApplyStatus 返回项目最近一次部署后的运行判定：复用 ProjectSvc.CheckApplyStatus
+// （项目级门卫、状态聚合、失败容器诊断都在服务/biz 内部）。相比逐个 Pod 调
+// check_pod_status，它还能给出失败原因、容器 message 与上一次崩溃日志。
+func (t *toolset) checkApplyStatus(ctx context.Context, _ *sdk.CallToolRequest, in checkApplyStatusIn) (*sdk.CallToolResult, any, error) {
+	resp, err := t.projectSvc.CheckApplyStatus(ctx, &projectpb.CheckApplyStatusRequest{Id: int32(in.ProjectID)})
+	if err != nil {
+		return nil, nil, err
+	}
+	return nil, resp, nil
+}
+
+// ---------- get_project_endpoints ----------
+
+// getProjectEndpointsIn 是 get_project_endpoints 的入参。
+type getProjectEndpointsIn struct {
+	ProjectID int `json:"project_id" jsonschema:"项目 ID（必填）"`
+}
+
+// getProjectEndpoints 返回项目访问地址与资源用量汇总：复用 ProjectSvc.MemoryCpuAndEndpoints
+// （项目级门卫与 endpoint 解析都在服务内部）。urls 为空表示没有暴露入口，不是错误。
+func (t *toolset) getProjectEndpoints(ctx context.Context, _ *sdk.CallToolRequest, in getProjectEndpointsIn) (*sdk.CallToolResult, any, error) {
+	resp, err := t.projectSvc.MemoryCpuAndEndpoints(ctx, &projectpb.MemoryCpuAndEndpointsRequest{Id: int32(in.ProjectID)})
+	if err != nil {
+		return nil, nil, err
+	}
+	return nil, resp, nil
+}
+
+// ---------- get_project_resource_tree ----------
+
+// getProjectResourceTreeIn 是 get_project_resource_tree 的入参。
+type getProjectResourceTreeIn struct {
+	ProjectID int `json:"project_id" jsonschema:"项目 ID（必填）"`
+}
+
+// getProjectResourceTree 返回项目资源拓扑树：复用 ProjectSvc.ResourceTree（项目级门卫
+// 与 k8s 资源链路解析都在服务内部），用于判断入口/Service/工作负载之间的连接关系。
+func (t *toolset) getProjectResourceTree(ctx context.Context, _ *sdk.CallToolRequest, in getProjectResourceTreeIn) (*sdk.CallToolResult, any, error) {
+	resp, err := t.projectSvc.ResourceTree(ctx, &projectpb.ResourceTreeRequest{Id: int32(in.ProjectID)})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -455,6 +638,32 @@ func (t *toolset) listNamespaceEvents(ctx context.Context, _ *sdk.CallToolReques
 		})
 	}
 	return nil, out, nil
+}
+
+// ---------- list_operation_events ----------
+
+// listOperationEventsIn 是 list_operation_events 的入参。
+type listOperationEventsIn struct {
+	Page     int32  `json:"page,omitempty" jsonschema:"页码，从 1 开始，缺省 1"`
+	PageSize int32  `json:"page_size,omitempty" jsonschema:"每页条数，缺省 15"`
+	Search   string `json:"search,omitempty" jsonschema:"模糊搜索（可选）：匹配事件 message 与操作人 username"`
+	All      bool   `json:"all,omitempty" jsonschema:"仅管理员有效：true 时查看全部用户的事件；普通用户传了也仍只看本人"`
+}
+
+// listOperationEvents 查询 mars 操作审计日志：复用 EventSvc.List——它按 ctx 中的用户
+// 身份强制注入归属过滤（普通用户只看本人），all 只有管理员才真正展开全量，MCP 侧
+// 不自行拼过滤条件，避免绕过服务端的最小权限语义。
+func (t *toolset) listOperationEvents(ctx context.Context, _ *sdk.CallToolRequest, in listOperationEventsIn) (*sdk.CallToolResult, any, error) {
+	resp, err := t.eventSvc.List(ctx, &eventpb.ListRequest{
+		Page:     &in.Page,
+		PageSize: &in.PageSize,
+		Search:   in.Search,
+		All:      in.All,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return nil, resp, nil
 }
 
 // ---------- get_container_logs ----------
@@ -568,6 +777,178 @@ func (t *toolset) listProjectChangelogs(ctx context.Context, _ *sdk.CallToolRequ
 		resp.Items = resp.Items[:limit]
 	}
 	return nil, resp, nil
+}
+
+// ---------- list_git_branches ----------
+
+// listGitBranchesIn 是 list_git_branches 的入参。
+type listGitBranchesIn struct {
+	ProjectID  int  `json:"project_id" jsonschema:"项目 ID（必填）"`
+	IncludeAll bool `json:"include_all,omitempty" jsonschema:"是否返回仓库分支白名单之外的分支（默认 false，只返回可部署分支）"`
+}
+
+// listGitBranches 列出项目绑定仓库的分支：复用 GitSvc.BranchOptions（前端部署表单同源）。
+// 默认把 repo_id 一并下发，让服务按仓库 mars.config.branches 白名单过滤——模型拿到的是
+// 「apply_project 可用的分支」；include_all=true 时才省略 repo_id 返回 GitLab 全部分支。
+func (t *toolset) listGitBranches(ctx context.Context, _ *sdk.CallToolRequest, in listGitBranchesIn) (*sdk.CallToolResult, any, error) {
+	gitProjectID, repoID, err := t.resolveGitProject(ctx, in.ProjectID)
+	if err != nil {
+		return nil, nil, err
+	}
+	req := &gitpb.BranchOptionsRequest{GitProjectId: gitProjectID}
+	// RepoId=0 在服务端即「不按仓库白名单过滤」；只有显式要求全部分支时才留 0。
+	if !in.IncludeAll {
+		req.RepoId = repoID
+	}
+	resp, err := t.gitSvc.BranchOptions(ctx, req)
+	if err != nil {
+		return nil, nil, err
+	}
+	return nil, resp, nil
+}
+
+// ---------- list_git_commits ----------
+
+// defaultCommitLimit 是 list_git_commits 的缺省返回条数：GitLab 单次最多给 100 条，
+// 全量回吐可能让相对时间标签堆满上下文，故默认只取最近的 20 条。
+const defaultCommitLimit = 20
+
+// maxCommitLimit 是 list_git_commits 的返回上限，与 GitLab ListCommits 单页 100 条一致。
+const maxCommitLimit = 100
+
+// listGitCommitsIn 是 list_git_commits 的入参。
+type listGitCommitsIn struct {
+	ProjectID int    `json:"project_id" jsonschema:"项目 ID（必填）"`
+	Branch    string `json:"branch" jsonschema:"分支名（必填，先用 list_git_branches 获取）"`
+	Limit     int    `json:"limit,omitempty" jsonschema:"最多返回几条，缺省 20、上限 100"`
+}
+
+// listGitCommits 列出项目绑定仓库指定分支的提交：复用 GitSvc.CommitOptions（前端部署
+// 表单同源），出参的 value 即完整 commit SHA、label 是「[相对时间]: 标题」。
+// 分支必填：空串会被 GitLab 当作默认分支，模型会误以为是用户点名的那个分支。
+// 截断在 MCP 侧就地做——服务固定最多给 100 条，没有更细的分页参数。
+func (t *toolset) listGitCommits(ctx context.Context, _ *sdk.CallToolRequest, in listGitCommitsIn) (*sdk.CallToolResult, any, error) {
+	if in.Branch == "" {
+		return nil, nil, errs.InvalidArgument("branch 不能为空：先用 list_git_branches 获取分支名")
+	}
+	gitProjectID, _, err := t.resolveGitProject(ctx, in.ProjectID)
+	if err != nil {
+		return nil, nil, err
+	}
+	resp, err := t.gitSvc.CommitOptions(ctx, &gitpb.CommitOptionsRequest{
+		GitProjectId: gitProjectID,
+		Branch:       in.Branch,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	limit := in.Limit
+	if limit <= 0 {
+		limit = defaultCommitLimit
+	}
+	if limit > maxCommitLimit {
+		limit = maxCommitLimit
+	}
+	if len(resp.GetItems()) > limit {
+		resp.Items = resp.Items[:limit]
+	}
+	return nil, resp, nil
+}
+
+// ---------- get_commit_detail ----------
+
+// getCommitDetailIn 是 get_commit_detail 的入参。
+type getCommitDetailIn struct {
+	ProjectID int    `json:"project_id" jsonschema:"项目 ID（必填）"`
+	Branch    string `json:"branch" jsonschema:"分支名（必填，先用 list_git_branches 获取）"`
+	Commit    string `json:"commit" jsonschema:"完整 commit SHA（必填，来自 list_git_commits 的 value）"`
+}
+
+// getCommitDetail 返回单个提交的完整详情：复用 GitSvc.Commit（前端提交详情同源）。
+// 与 list_git_commits 一样必须先过 resolveGitProject——GitSvc 本身没有项目级 ACL，
+// 且 git_project_id 不能由调用方直接传入，否则可枚举任意私有仓库的提交。
+func (t *toolset) getCommitDetail(ctx context.Context, _ *sdk.CallToolRequest, in getCommitDetailIn) (*sdk.CallToolResult, any, error) {
+	if in.Branch == "" {
+		return nil, nil, errs.InvalidArgument("branch 不能为空：先用 list_git_branches 获取分支名")
+	}
+	if in.Commit == "" {
+		return nil, nil, errs.InvalidArgument("commit 不能为空：先用 list_git_commits 获取完整 SHA")
+	}
+	gitProjectID, _, err := t.resolveGitProject(ctx, in.ProjectID)
+	if err != nil {
+		return nil, nil, err
+	}
+	resp, err := t.gitSvc.Commit(ctx, &gitpb.CommitRequest{
+		GitProjectId: gitProjectID,
+		Branch:       in.Branch,
+		Commit:       in.Commit,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return nil, resp, nil
+}
+
+// ---------- get_pipeline_status ----------
+
+// getPipelineStatusIn 是 get_pipeline_status 的入参。
+type getPipelineStatusIn struct {
+	ProjectID int    `json:"project_id" jsonschema:"项目 ID（必填）"`
+	Branch    string `json:"branch" jsonschema:"分支名（必填）"`
+	Commit    string `json:"commit" jsonschema:"完整 commit SHA（必填，来自 list_git_commits 的 value）"`
+}
+
+// getPipelineStatus 查询指定提交的流水线状态：复用 GitSvc.PipelineInfoByRepoId，
+// 由服务按仓库配置的 pass 规则判定 status。repo_id 只能来自项目绑定（resolveGitProject），
+// 绝不接受调用方直传——GitSvc 无项目级 ACL，直传 repo_id 可绕过私有空间边界。
+func (t *toolset) getPipelineStatus(ctx context.Context, _ *sdk.CallToolRequest, in getPipelineStatusIn) (*sdk.CallToolResult, any, error) {
+	if in.Branch == "" {
+		return nil, nil, errs.InvalidArgument("branch 不能为空：先用 list_git_branches 获取分支名")
+	}
+	if in.Commit == "" {
+		return nil, nil, errs.InvalidArgument("commit 不能为空：先用 list_git_commits 获取完整 SHA")
+	}
+	_, repoID, err := t.resolveGitProject(ctx, in.ProjectID)
+	if err != nil {
+		return nil, nil, err
+	}
+	resp, err := t.gitSvc.PipelineInfoByRepoId(ctx, &gitpb.PipelineInfoByRepoIdRequest{
+		RepoId: repoID,
+		Branch: in.Branch,
+		Commit: in.Commit,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return nil, resp, nil
+}
+
+// resolveGitProject 把项目 ID 解析为「项目绑定的仓库 → GitLab 项目 ID」，同时返回
+// mars 仓库 ID（分支白名单过滤要用）。
+//
+// 为什么先过项目级门卫：Git/Repo 两个服务本身没有项目级 ACL（Repo.Show 只要求登录），
+// 若不在 MCP 入口用 RequireProjectAccess 收口，任意登录用户就能凭 project_id/git_project_id
+// 枚举任意私有空间项目绑定的仓库分支与提交。
+// 为什么配置缺失返回 InvalidArgument 而不是空列表：未绑定仓库/未配置 GitLab 项目时
+// 空列表会被模型解读成「该仓库没有分支」，掩盖真实的配置问题。
+func (t *toolset) resolveGitProject(ctx context.Context, projectID int) (gitProjectID, repoID int32, err error) {
+	proj, err := t.accessBiz.RequireProjectAccess(ctx, projectID)
+	if err != nil {
+		return 0, 0, err
+	}
+	if proj.RepoID <= 0 {
+		return 0, 0, errs.InvalidArgument(fmt.Sprintf("项目 #%d 未绑定仓库，无法查询 Git 分支/提交", projectID))
+	}
+	repo, err := t.repoSvc.Show(ctx, &repopb.ShowRequest{Id: int32(proj.RepoID)})
+	if err != nil {
+		return 0, 0, err
+	}
+	item := repo.GetItem()
+	if item.GetGitProjectId() <= 0 {
+		return 0, 0, errs.InvalidArgument(fmt.Sprintf(
+			"项目 #%d 绑定的仓库 %s（id=%d）未配置 GitLab 项目，无法查询分支/提交", projectID, item.GetName(), proj.RepoID))
+	}
+	return item.GetGitProjectId(), int32(proj.RepoID), nil
 }
 
 // ---------- apply_project ----------
@@ -719,6 +1100,30 @@ func mergeExtraValues(base []*websocketpb.ExtraValue, override map[string]string
 		merged = append(merged, &websocketpb.ExtraValue{Path: path, Value: override[path]})
 	}
 	return merged
+}
+
+// ---------- toggle_hibernate ----------
+
+// toggleHibernateIn 是 toggle_hibernate 的入参。
+type toggleHibernateIn struct {
+	ProjectID   int      `json:"project_id" jsonschema:"项目 ID（必填）"`
+	Enabled     bool     `json:"enabled" jsonschema:"是否启用项目级定时休眠；false 表示关闭（此时 window_names 留空）"`
+	WindowNames []string `json:"window_names,omitempty" jsonschema:"启用时选中的时间窗名（至少一个，且必须是项目所属仓库允许的窗；关闭时留空）"`
+}
+
+// toggleHibernate 切换项目级定时休眠开关：复用 ProjectSvc.ToggleHibernate（项目级门卫、
+// 仓库窗子集校验与审计都在服务内部）。本工具只切开关，不会触发重部署——服务契约如此，
+// 不要把它当成「立即缩容/扩容」的入口。
+func (t *toolset) toggleHibernate(ctx context.Context, _ *sdk.CallToolRequest, in toggleHibernateIn) (*sdk.CallToolResult, any, error) {
+	resp, err := t.projectSvc.ToggleHibernate(ctx, &projectpb.ToggleHibernateRequest{
+		ProjectId:   int32(in.ProjectID),
+		Enabled:     in.Enabled,
+		WindowNames: in.WindowNames,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return nil, resp, nil
 }
 
 // ---------- restart_pod ----------
