@@ -20,7 +20,7 @@ type VersionResponse = components['schemas']['version.Response']
 /** 敏感值统一掩码（与源码值隔离，避免密钥类明文常显） */
 const MASK = '••••••'
 
-/** 配置分组 ID → i18n 词条键（后端固定返回六组：服务/运行/插件/数据库/集群/认证） */
+/** 配置分组 ID → i18n 词条键（后端固定返回七组：服务/运行/插件/数据库/集群/认证/AI） */
 const GROUP_TITLE_KEY: Record<string, TKey> = {
   server: 'settings.groupServer',
   runtime: 'settings.groupRuntime',
@@ -28,14 +28,17 @@ const GROUP_TITLE_KEY: Record<string, TKey> = {
   database: 'settings.groupDatabase',
   cluster: 'settings.groupCluster',
   auth: 'settings.groupAuth',
+  ai: 'settings.groupAi',
 }
 
 /** 标量配置 key → i18n 词条键；插件参数/凭证/OIDC 等扁平化子项不在映射内，标签回退原始 key */
 const SETTING_LABEL_KEY: Record<string, TKey> = {
   app_port: 'settings.appPort',
   grpc_port: 'settings.grpcPort',
+  metrics_port: 'settings.metricsPort',
   debug: 'settings.debug',
   external_ip: 'settings.externalIp',
+  exclude_server: 'settings.excludeServer',
   log_channel: 'settings.logChannel',
   tracing_endpoint: 'settings.tracingEndpoint',
   cache_driver: 'settings.cacheDriver',
@@ -51,6 +54,7 @@ const SETTING_LABEL_KEY: Record<string, TKey> = {
   db_password: 'settings.dbPassword',
   db_slow_log_enabled: 'settings.dbSlowLogEnabled',
   db_slow_log_threshold: 'settings.dbSlowLogThreshold',
+  db_debug: 'settings.dbDebug',
   kubeconfig: 'settings.kubeconfig',
   ns_prefix: 'settings.nsPrefix',
   install_timeout: 'settings.installTimeout',
@@ -61,6 +65,10 @@ const SETTING_LABEL_KEY: Record<string, TKey> = {
   s3_access_key_id: 'settings.s3AccessKey',
   s3_secret_access_key: 'settings.s3SecretKey',
   admin_password: 'settings.adminPassword',
+  'ai.model': 'settings.aiModel',
+  'ai.base_url': 'settings.aiBaseUrl',
+  'ai.api_key': 'settings.aiApiKey',
+  'ai.idle_timeout': 'settings.aiIdleTimeout',
 }
 
 /**

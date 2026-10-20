@@ -51,7 +51,7 @@ func NewSettingsBiz(cfg *config.Config) SettingsBiz {
 }
 
 // Get 返回平台配置分组视图：服务 / 运行与优化 / 插件 / 数据库 / 集群与存储 /
-// 认证与安全 六组，全部来自只读枚举，敏感字段标 Masked。
+// 认证与安全 / AI 助手 七组，全部来自只读枚举，敏感字段标 Masked。
 func (s *settingsBiz) Get() *Settings {
 	return &Settings{Groups: []*ConfigGroup{
 		settingsServerGroup(s.cfg),
@@ -60,6 +60,7 @@ func (s *settingsBiz) Get() *Settings {
 		settingsDatabaseGroup(s.cfg),
 		settingsClusterGroup(s.cfg),
 		settingsAuthGroup(s.cfg),
+		settingsAIGroup(s.cfg),
 	}}
 }
 
@@ -68,13 +69,16 @@ func setting(key string, value any, masked bool) *ConfigItem {
 	return &ConfigItem{Key: key, Value: fmt.Sprintf("%v", value), Masked: masked}
 }
 
-// settingsServerGroup 枚举服务组配置：端口/调试开关/对外地址。
+// settingsServerGroup 枚举服务组配置：HTTP/gRPC/metrics 端口、调试开关、对外地址、
+// 启动排除的服务标签。
 func settingsServerGroup(cfg *config.Config) *ConfigGroup {
 	return &ConfigGroup{ID: "server", Items: []*ConfigItem{
 		setting("app_port", cfg.AppPort, false),
 		setting("grpc_port", cfg.GrpcPort, false),
+		setting("metrics_port", cfg.MetricsPort, false),
 		setting("debug", cfg.Debug, false),
 		setting("external_ip", cfg.ExternalIp, false),
+		setting("exclude_server", cfg.ExcludeServer, false),
 	}}
 }
 
@@ -117,7 +121,7 @@ func settingsPluginGroup(cfg *config.Config) *ConfigGroup {
 	return &ConfigGroup{ID: "plugins", Items: items}
 }
 
-// settingsDatabaseGroup 枚举数据库组配置：连接串字段，密码标 Masked。
+// settingsDatabaseGroup 枚举数据库组配置：连接串字段、慢查询与调试开关，密码标 Masked。
 func settingsDatabaseGroup(cfg *config.Config) *ConfigGroup {
 	return &ConfigGroup{ID: "database", Items: []*ConfigItem{
 		setting("db_driver", cfg.DBDriver, false),
@@ -128,6 +132,7 @@ func settingsDatabaseGroup(cfg *config.Config) *ConfigGroup {
 		setting("db_password", cfg.DBPassword, true),
 		setting("db_slow_log_enabled", cfg.DBSlowLogEnabled, false),
 		setting("db_slow_log_threshold", cfg.DBSlowLogThreshold, false),
+		setting("db_debug", cfg.DBDebug, false),
 	}}
 }
 
@@ -167,6 +172,16 @@ func settingsAuthGroup(cfg *config.Config) *ConfigGroup {
 		)
 	}
 	return &ConfigGroup{ID: "auth", Items: items}
+}
+
+// settingsAIGroup 枚举 AI 助手组配置：模型/上游地址/密钥（掩码）/沙箱空闲关闭阈值。
+func settingsAIGroup(cfg *config.Config) *ConfigGroup {
+	return &ConfigGroup{ID: "ai", Items: []*ConfigItem{
+		setting("ai.model", cfg.AI.Model, false),
+		setting("ai.base_url", cfg.AI.BaseURL, false),
+		setting("ai.api_key", cfg.AI.APIKey, true),
+		setting("ai.idle_timeout", cfg.AI.IdleTimeout, false),
+	}}
 }
 
 // sensitiveSettingKey 判定插件参数键是否敏感（含 token/password/secret 片段），
