@@ -10,8 +10,8 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/duc-cnzj/mars/api/v6/internal/flight"
 	"github.com/duc-cnzj/mars/api/v6/proto/auth"
@@ -70,11 +70,11 @@ func TestSetToken_NormalizesPrefix(t *testing.T) {
 // refreshToken 并发去重：10 个 goroutine 同时刷新，只发 1 次登录请求。
 func TestClient_refresh_singleflight(t *testing.T) {
 	var (
-		mu      sync.Mutex
-		logins  int
-		started = make(chan struct{})
-		release = make(chan struct{})
-		barrier atomic.Bool // 构造登录已过，之后进入"刷新同步模式"
+		mu        sync.Mutex
+		logins    int
+		started   = make(chan struct{})
+		release   = make(chan struct{})
+		startOnce sync.Once
 	)
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/auth/login" || r.Method != http.MethodPost {
@@ -84,38 +84,49 @@ func TestClient_refresh_singleflight(t *testing.T) {
 		mu.Lock()
 		logins++
 		mu.Unlock()
-		if !barrier.CompareAndSwap(false, true) {
-			// 构造期那次 login 直接放行；之后的第一次刷新 login 进入同步阻塞。
-			close(started)
-			<-release
-		}
+		// 刷新期的登录全部阻塞在此：去重生效时只会有一个请求进来；若去重失效，
+		// 多余请求也一并阻塞（由 logins 断言暴露）。close 用 Once 兜底，避免
+		// 重复关闭 panic 打断连接、让真正的失败原因被 EOF 噪声掩盖。
+		startOnce.Do(func() { close(started) })
+		<-release
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"token":"t"}`))
 	})
-	cli, err := NewClient(srv.URL, WithAuth("a", "b")) // 构造登录 1 次
+	// 不用 WithAuth 构造：绕开构造期的登录，测试里每次 login 都是刷新，
+	// 计数口径单一（否则要先区分"构造登录"与"首次刷新"）。
+	cli, err := NewClient(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer cli.Close()
+	cli.username, cli.password = "a", "b"
 	cli.setToken("stale") // 模拟过期 token
-	mu.Lock()
-	logins = 0 // 只统计刷新阶段
-	mu.Unlock()
 
 	firstDone := make(chan error, 1)
 	go func() { firstDone <- cli.refreshToken() }()
-	<-started // 刷新阶段的第一次 login 已在途
+	<-started // 刷新期的第一个 login 已在途
 
+	// follower 进入 Do 内部后没有可观测的「已挂起等待」信号：先让每个 goroutine
+	// 报到，再留一个调度窗口，确保 release 时它们都已加入同一在途调用。否则
+	// 晚到者会在首个调用完成、key 删除之后合法地发起新登录，误报去重失效。
+	const followers = 9
 	var wg sync.WaitGroup
-	for i := 0; i < 9; i++ {
+	ready := make(chan struct{})
+	for i := 0; i < followers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			ready <- struct{}{}
 			if err := cli.refreshToken(); err != nil {
 				t.Error(err)
 			}
 		}()
 	}
+	for i := 0; i < followers; i++ {
+		<-ready
+	}
+	time.Sleep(50 * time.Millisecond)
+
 	close(release) // 放行，singleflight 只让一个 login 通过
 	wg.Wait()
 	if err := <-firstDone; err != nil {
