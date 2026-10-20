@@ -27,6 +27,14 @@ export function isWorkloadTab(tab: TabKey): boolean {
 }
 
 /**
+ * 打开弹窗时的默认 Tab：可操作时用调用方偏好（工作台默认容器日志，AI 入口偏好命令行），
+ * 不可操作一律回落到详细信息——此时工作负载类 Tab 根本没有 pod 可连。
+ */
+export function initialTabKey(canOperate: boolean, preferred: TabKey = 'logs'): TabKey {
+  return canOperate ? preferred : 'detail'
+}
+
+/**
  * 按运行态过滤可见 Tab：canOperate=false 时只留不依赖工作负载的「部署配置 + 详细信息」，
  * 顺序沿用 ALL_TAB_KEYS。canOperate 由调用方按 deployStatus（Deployed/Deploying）判定。
  */

@@ -25,7 +25,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/shadcn/tabs'
 import { TabInfo } from './TabInfo'
 import { TabLog } from './TabLog'
 import { TopologyTab } from '../topology/TopologyTab'
-import { isWorkloadTab, visibleTabKeys, type TabKey } from './tabVisibility'
+import { initialTabKey, isWorkloadTab, visibleTabKeys, type TabKey } from './tabVisibility'
 import type { TKey } from '@/i18n/keys'
 
 // 命令行 Tab 依赖 xterm（约 300KB），按需加载直到真正打开 Shell 才拉取
@@ -57,6 +57,7 @@ export function ProjectDetailModal({
   namespaceName,
   open,
   frontAt = 0,
+  defaultTab = 'logs',
   onClose,
   onDeleted,
   onChanged,
@@ -66,6 +67,8 @@ export function ProjectDetailModal({
   open: boolean
   /** 外部重复点击已打开的该项目卡片时递增：让对应弹窗置顶 */
   frontAt?: number
+  /** 打开时默认选中的 Tab（默认 logs）：工作负载不可操作时仍回落到 detail */
+  defaultTab?: TabKey
   onClose: () => void
   onDeleted: () => void
   onChanged: () => void
@@ -88,9 +91,10 @@ export function ProjectDetailModal({
   // 初始 tab 直接按列表项状态定（与下方「打开即同步默认 Tab」的 open effect 同源）：
   // 避免先渲染默认 tab 再靠 effect 切换造成闪跳/重复挂载。
   const [tab, setTab] = useState<TabKey>(() =>
-    project.deployStatus === 'StatusDeployed' || project.deployStatus === 'StatusDeploying'
-      ? 'logs'
-      : 'detail',
+    initialTabKey(
+      project.deployStatus === 'StatusDeployed' || project.deployStatus === 'StatusDeploying',
+      defaultTab,
+    ),
   )
 
   /** 重拉项目最新详情：打开弹窗/部署完成/配置刷新共用。返回最新详情供调用方复用，
@@ -122,7 +126,7 @@ export function ProjectDetailModal({
   useEffect(() => {
     if (open) {
       // 打开即同步选定默认 Tab：列表项已带部署状态，无需等 detail 异步加载后再跳转（避免“详细信息→容器日志”的闪烁）
-      setTab(canOperate ? 'logs' : 'detail')
+      setTab(initialTabKey(canOperate, defaultTab))
       void reload()
     } else {
       setDetail(null)

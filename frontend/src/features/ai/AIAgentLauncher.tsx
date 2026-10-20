@@ -124,6 +124,8 @@ export function AIAgentLauncher({ open, onClose }: { open: boolean; onClose: () 
             project={project}
             namespaceName={project.namespace?.name ?? ''}
             open
+            // AI 入口默认落到命令行 Tab：用户点 AI 图标就是为了直接对话
+            defaultTab="shell"
             onClose={onClose}
             onDeleted={() => {
               toast.warning(t('ai.projectDeleted'))
