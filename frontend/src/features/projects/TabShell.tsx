@@ -783,10 +783,53 @@ function ShellTerminal({
     let capTail = ''
     const capDecoder = new TextDecoder()
     const trackModifyOtherKeys = (data: Uint8Array) => {
-      capTail = (capTail + capDecoder.decode(data, { stream: true })).slice(-64)
+      // 只有出现 ESC 才需要解码：正常输出（含中文）没有 ESC 时跳过 TextDecoder，
+      // 避免流式输出把整条数据流都额外解码一遍。序列被拆到两帧时，
+      // ESC 仍保留在 capTail 里，判断不会漏。
+      if (!capTail.includes('\x1b') && !data.includes(0x1b)) return
+      // 非流式解码：ESC 序列全是 ASCII，帧边界即使切开多字节字符也不影响匹配；
+      // 跳过整帧时不能沿用 stream 状态，否则解码器会停在半个字符上。
+      capTail = (capTail + capDecoder.decode(data)).slice(-64)
       let last: RegExpMatchArray | null = null
       for (const m of capTail.matchAll(/\x1b\[>4(?:;(\d+))?m/g)) last = m
       if (last) modifyOtherKeysRef.current = Number(last[1] ?? 0)
+    }
+
+    // stdout 合批：把短窗口内的多帧合并成一次 term.write，减少 xterm 解析与
+    // 调度次数。8ms 小于一帧（16.7ms），用户无感；超过 64KB 立即写出，
+    // 避免后台标签页定时器被节流时缓冲无限增长。
+    let pending: Uint8Array[] = []
+    let pendingBytes = 0
+    let flushTimer: ReturnType<typeof setTimeout> | null = null
+    const flushOutput = () => {
+      if (flushTimer) {
+        clearTimeout(flushTimer)
+        flushTimer = null
+      }
+      if (!pending.length) return
+      let chunk: Uint8Array
+      if (pending.length === 1) {
+        chunk = pending[0]
+      } else {
+        chunk = new Uint8Array(pendingBytes)
+        let offset = 0
+        for (const part of pending) {
+          chunk.set(part, offset)
+          offset += part.length
+        }
+      }
+      pending = []
+      pendingBytes = 0
+      term.write(chunk)
+    }
+    const enqueueOutput = (data: Uint8Array) => {
+      pending.push(data)
+      pendingBytes += data.length
+      if (pendingBytes >= 64 << 10) {
+        flushOutput()
+        return
+      }
+      if (!flushTimer) flushTimer = setTimeout(flushOutput, 8)
     }
 
     // stdout / toast 帧：后端把 session_id 作为 slug 回投，帧体解码为 WsHandleShellResponse
@@ -805,7 +848,7 @@ function ShellTerminal({
       if (!tm) return
       if (tm.op === 'stdout' && tm.data) {
         trackModifyOtherKeys(tm.data)
-        term.write(tm.data)
+        enqueueOutput(tm.data)
       }
       if (tm.op === 'toast' && tm.data) toast.error(decoder.decode(tm.data))
     })
@@ -860,6 +903,9 @@ function ShellTerminal({
     return () => {
       clearTimeout(fitTimer)
       if (resizeTimer) clearTimeout(resizeTimer)
+      if (flushTimer) clearTimeout(flushTimer)
+      pending = []
+      pendingBytes = 0
       send(
         websocket.TerminalMessageInput.encode({
           type: websocket.Type.HandleCloseShell,
