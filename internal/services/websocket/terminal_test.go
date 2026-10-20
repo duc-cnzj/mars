@@ -1,8 +1,10 @@
 package websocket
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -724,6 +726,275 @@ func TestPtyHandler_Write(t *testing.T) {
 	n, err := pty.Write([]byte("data"))
 	assert.NoError(t, err)
 	assert.Equal(t, 4, n)
+	// Write 只入合批缓冲，flush 后才落录音与 WS 帧（定时器窗口 10ms）。
+	pty.flushOutput()
+}
+
+// TestPtyHandler_Write_coalesces 验证同一窗口内的多次 PTY 写入合并投递，
+// 且数据按写入顺序拼接到一起（流式输出帧数从 ~1000/s 降下来）。
+//
+// 断言累积后的字节内容而非调用次数：窗口是真实时钟（10ms），调度抖动把
+// 一批拆成两帧时内容仍必须完整有序，不能让测试因时序假失败。
+func TestPtyHandler_Write_coalesces(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	recorder := data.NewMockRecorder(m)
+	conn := NewMockConn(m)
+	sub := app.NewMockPubSub(m)
+	p := &ptyHandler{
+		sessionID: "sid",
+		conn:      conn,
+		logger:    mlog.NewForConfig(nil),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
+		recorder:  recorder,
+		container: &biz.Container{Namespace: "a", Pod: "b", Container: "c"},
+	}
+	conn.EXPECT().PubSub().Return(sub).AnyTimes()
+	conn.EXPECT().ID().Return("id").AnyTimes()
+	conn.EXPECT().UID().Return("uid").AnyTimes()
+	var gotRecorder, gotFrame []byte
+	recorder.EXPECT().Write(gomock.Any()).AnyTimes().Do(func(b []byte) {
+		gotRecorder = append(gotRecorder, b...)
+	})
+	sub.EXPECT().ToSelf(gomock.Any()).AnyTimes().Do(func(msg app.WebsocketMessage) {
+		res := msg.(*websocket_pb.WsHandleShellResponse)
+		assert.Equal(t, OpStdout, res.TerminalMessage.Op)
+		gotFrame = append(gotFrame, res.TerminalMessage.Data...)
+	})
+
+	for _, s := range []string{"a", "b", "c"} {
+		n, err := p.Write([]byte(s))
+		assert.NoError(t, err)
+		assert.Equal(t, 1, n)
+	}
+	p.flushOutput()
+
+	assert.Equal(t, []byte("abc"), gotRecorder, "录音内容必须完整且有序")
+	assert.Equal(t, []byte("abc"), gotFrame, "WS 帧内容必须完整且有序")
+}
+
+// TestPtyHandler_Write_flushTimer 验证没有后续写入时，合批窗口到期会自动
+// flush，交互式输出的最后一段不会滞留在缓冲区里。
+func TestPtyHandler_Write_flushTimer(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	recorder := data.NewMockRecorder(m)
+	conn := NewMockConn(m)
+	sub := app.NewMockPubSub(m)
+	p := &ptyHandler{
+		sessionID: "sid",
+		conn:      conn,
+		logger:    mlog.NewForConfig(nil),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
+		recorder:  recorder,
+		container: &biz.Container{Namespace: "a", Pod: "b", Container: "c"},
+	}
+	sent := make(chan struct{})
+	conn.EXPECT().PubSub().Return(sub)
+	conn.EXPECT().ID().Return("id")
+	conn.EXPECT().UID().Return("uid")
+	recorder.EXPECT().Write([]byte("x")).Times(1)
+	sub.EXPECT().ToSelf(gomock.Any()).Times(1).Do(func(app.WebsocketMessage) { close(sent) })
+
+	_, err := p.Write([]byte("x"))
+	assert.NoError(t, err)
+
+	select {
+	case <-sent:
+	case <-time.After(time.Second):
+		t.Fatal("合批窗口到期后未 flush")
+	}
+}
+
+// TestPtyHandler_Write_preservesOrderAndBytes 用不同长度的分块验证合批只改变
+// 帧数量，不改变字节内容与顺序（终端输出是字节流，错一个字节就可能是乱码）。
+func TestPtyHandler_Write_preservesOrderAndBytes(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	recorder := data.NewMockRecorder(m)
+	conn := NewMockConn(m)
+	sub := app.NewMockPubSub(m)
+	p := &ptyHandler{
+		sessionID: "sid",
+		conn:      conn,
+		logger:    mlog.NewForConfig(nil),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
+		recorder:  recorder,
+		container: &biz.Container{Namespace: "a", Pod: "b", Container: "c"},
+	}
+	conn.EXPECT().PubSub().Return(sub).AnyTimes()
+	conn.EXPECT().ID().Return("id").AnyTimes()
+	conn.EXPECT().UID().Return("uid").AnyTimes()
+
+	var want, gotRecorder, gotFrame []byte
+	// 累积而非覆盖：窗口到期把一批拆成多帧时，只有拼接后的内容才是完整字节流。
+	recorder.EXPECT().Write(gomock.Any()).AnyTimes().Do(func(b []byte) {
+		gotRecorder = append(gotRecorder, b...)
+	})
+	sub.EXPECT().ToSelf(gomock.Any()).AnyTimes().Do(func(msg app.WebsocketMessage) {
+		gotFrame = append(gotFrame, msg.(*websocket_pb.WsHandleShellResponse).TerminalMessage.Data...)
+	})
+
+	for i := 0; i < 50; i++ {
+		chunk := bytes.Repeat([]byte{byte('a' + i%26)}, i%7+1)
+		want = append(want, chunk...)
+		_, err := p.Write(chunk)
+		assert.NoError(t, err)
+	}
+	p.flushOutput()
+
+	assert.Equal(t, want, gotRecorder, "录音内容必须与写入顺序一致")
+	assert.Equal(t, want, gotFrame, "WS 帧内容必须与写入顺序一致")
+}
+
+// TestPtyHandler_Write_flushAtLimit 验证积压达到 ptyFlushBytes 时由 Write 内
+// 同步 flush（不等定时器），并覆盖临界值两侧：单次写入正好达标、已有
+// 上限-1 字节时再写 1 字节达标；达标后不得遗留窗口定时器。
+func TestPtyHandler_Write_flushAtLimit(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	recorder := data.NewMockRecorder(m)
+	conn := NewMockConn(m)
+	sub := app.NewMockPubSub(m)
+	p := &ptyHandler{
+		sessionID: "sid",
+		conn:      conn,
+		logger:    mlog.NewForConfig(nil),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
+		recorder:  recorder,
+		container: &biz.Container{Namespace: "a", Pod: "b", Container: "c"},
+	}
+	conn.EXPECT().PubSub().Return(sub).AnyTimes()
+	conn.EXPECT().ID().Return("id").AnyTimes()
+	conn.EXPECT().UID().Return("uid").AnyTimes()
+	var gotRecorder, gotFrame []byte
+	recorder.EXPECT().Write(gomock.Any()).AnyTimes().Do(func(b []byte) {
+		gotRecorder = append(gotRecorder, b...)
+	})
+	sub.EXPECT().ToSelf(gomock.Any()).AnyTimes().Do(func(msg app.WebsocketMessage) {
+		gotFrame = append(gotFrame, msg.(*websocket_pb.WsHandleShellResponse).TerminalMessage.Data...)
+	})
+
+	// 边界一：单次写入正好等于上限，Write 内立即 flush，不启动定时器。
+	atLimit := bytes.Repeat([]byte("x"), ptyFlushBytes)
+	_, err := p.Write(atLimit)
+	assert.NoError(t, err)
+	p.outMu.Lock()
+	assert.Nil(t, p.outTimer, "达到上限应立即 flush，不应遗留定时器")
+	p.outMu.Unlock()
+	assert.Equal(t, atLimit, gotRecorder, "达到上限应立即落录音")
+	assert.Equal(t, atLimit, gotFrame, "达到上限应立即推 WS 帧")
+
+	// 边界二：缓冲已有上限-1 字节，再写 1 字节正好达标，同样立即 flush。
+	gotRecorder, gotFrame = nil, nil
+	p.outMu.Lock()
+	p.outBuf = bytes.Repeat([]byte("a"), ptyFlushBytes-1)
+	p.outMu.Unlock()
+	_, err = p.Write([]byte("b"))
+	assert.NoError(t, err)
+	p.outMu.Lock()
+	assert.Nil(t, p.outTimer, "补足上限后不应遗留定时器")
+	p.outMu.Unlock()
+	want := append(bytes.Repeat([]byte("a"), ptyFlushBytes-1), 'b')
+	assert.Equal(t, want, gotRecorder, "补足上限应立即落录音")
+	assert.Equal(t, want, gotFrame, "补足上限应立即推 WS 帧")
+}
+
+// TestPtyHandler_flushOutput_discardsAfterDoneChanClose 验证 doneChan 关闭后
+// 迟到的 flush 不再投递：Close/CloseDoneChan 都在关通道前先 flush，这里只
+// 兜住"Write 已通过 IsClosed 检查、随后会话才关闭"的竞态尾部。
+func TestPtyHandler_flushOutput_discardsAfterDoneChanClose(t *testing.T) {
+	// 最小依赖构造：若 doneChan 分支没有提前返回，nil 的 recorder/conn 会直接
+	// panic，等价于"关闭后绝不再投递"的断言。
+	p := &ptyHandler{doneChan: make(chan struct{})}
+	p.outBuf = []byte("late")
+
+	close(p.doneChan)
+	p.flushOutput()
+
+	assert.Nil(t, p.outBuf, "关闭后的待发缓冲应被丢弃，不再滞留")
+}
+
+// TestPtyHandler_CloseDoneChan_flushesPending 验证 shell 回退路径（resetSession
+// → CloseDoneChan）也会 flush 待发输出，不会丢掉上一个 shell 的最后一段错误信息。
+func TestPtyHandler_CloseDoneChan_flushesPending(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	recorder := data.NewMockRecorder(m)
+	conn := NewMockConn(m)
+	sub := app.NewMockPubSub(m)
+	p := &ptyHandler{
+		sessionID: "sid",
+		conn:      conn,
+		logger:    mlog.NewForConfig(nil),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
+		recorder:  recorder,
+		container: &biz.Container{Namespace: "a", Pod: "b", Container: "c"},
+	}
+	conn.EXPECT().PubSub().Return(sub)
+	conn.EXPECT().ID().Return("id")
+	conn.EXPECT().UID().Return("uid")
+	recorder.EXPECT().Write([]byte("tail")).Times(1)
+	sub.EXPECT().ToSelf(gomock.Any()).Times(1).Do(func(msg app.WebsocketMessage) {
+		assert.Equal(t, []byte("tail"), msg.(*websocket_pb.WsHandleShellResponse).TerminalMessage.Data)
+	})
+
+	_, err := p.Write([]byte("tail"))
+	assert.NoError(t, err)
+	assert.True(t, p.CloseDoneChan())
+
+	_, err = p.Write([]byte("x"))
+	assert.Error(t, err, "doneChan 关闭后不再接受写入")
+}
+
+// TestPtyHandler_Write_streamingFrames 用接近实测的节奏（1KB / 1ms，约等于
+// opencode 流式输出的 1000 次/秒）驱动 Write，验证合批把帧数压到窗口数量级。
+//
+// 只断言上界而不锁死次数：窗口是真实时钟，负载高时 Sleep 被拉长、写入间隔
+// 可能超过 10ms，窗口会在两次写入之间到期从而多出几帧；不合批则恒为 100 帧，
+// 上界足以区分两种实现。字节总数必须严格相等，合批不允许丢数据。
+func TestPtyHandler_Write_streamingFrames(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	recorder := data.NewMockRecorder(m)
+	conn := NewMockConn(m)
+	sub := app.NewMockPubSub(m)
+	p := &ptyHandler{
+		sessionID: "sid",
+		conn:      conn,
+		logger:    mlog.NewForConfig(nil),
+		doneChan:  make(chan struct{}),
+		sizeStore: &sizeStore{},
+		recorder:  recorder,
+		container: &biz.Container{Namespace: "a", Pod: "b", Container: "c"},
+	}
+	var frames, sentBytes int32
+	conn.EXPECT().PubSub().Return(sub).AnyTimes()
+	conn.EXPECT().ID().Return("id").AnyTimes()
+	conn.EXPECT().UID().Return("uid").AnyTimes()
+	recorder.EXPECT().Write(gomock.Any()).AnyTimes()
+	sub.EXPECT().ToSelf(gomock.Any()).AnyTimes().Do(func(msg app.WebsocketMessage) {
+		atomic.AddInt32(&frames, 1)
+		res := msg.(*websocket_pb.WsHandleShellResponse)
+		atomic.AddInt32(&sentBytes, int32(len(res.TerminalMessage.Data)))
+	})
+
+	chunk := bytes.Repeat([]byte("x"), 1024)
+	for i := 0; i < 100; i++ {
+		_, err := p.Write(chunk)
+		assert.NoError(t, err)
+		time.Sleep(time.Millisecond)
+	}
+	p.flushOutput()
+
+	t.Logf("100 次 1KB 写入（1ms 间隔）→ %d 帧", atomic.LoadInt32(&frames))
+	assert.Less(t, int(atomic.LoadInt32(&frames)), 40, "100 次 1KB 写入应合批到几十帧")
+	assert.Equal(t, int32(100*1024), atomic.LoadInt32(&sentBytes), "合批不能丢数据")
 }
 
 func TestPtyHandler_Write3(t *testing.T) {
@@ -750,6 +1021,7 @@ func TestPtyHandler_Write3(t *testing.T) {
 	n, err := p.Write([]byte("aaa"))
 	assert.Nil(t, err)
 	assert.Equal(t, 3, n)
+	p.flushOutput()
 	p.Closeable.Close()
 	n, err = p.Write([]byte("aaa"))
 	assert.Equal(t, "[Websocket]: duc ws already closed", err.Error())
@@ -790,6 +1062,7 @@ func TestPtyHandler_Write_with_chan_full(t *testing.T) {
 	n, err := p.Write([]byte("aaa"))
 	assert.Nil(t, err)
 	assert.Equal(t, 3, n)
+	p.flushOutput()
 }
 
 func TestStartShell_WithValidSessionID(t *testing.T) {

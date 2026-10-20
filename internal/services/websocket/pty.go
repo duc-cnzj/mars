@@ -39,6 +39,20 @@ const (
 // 超过即放弃优雅退出，交由 close(doneChan) 后的 SIGHUP 兜底。
 const shellDrainTimeout = 200 * time.Millisecond
 
+const (
+	// ptyFlushInterval 是终端输出合批窗口。opencode 流式输出实测约 1000 次
+	// PTY 写入/秒、每次 1KB，逐条转发意味着同样数量的 protobuf 编码、WS 帧
+	// （启用 Redis pubsub 时还有同样数量的 PUBLISH）。合并到一个短窗口后
+	// 帧数降到约 1/间隔，10ms 低于一帧（16.7ms），用户无感。
+	ptyFlushInterval = 10 * time.Millisecond
+	// ptyFlushBytes 是合批上限：积压达到该值立即 flush，既限制单帧大小，
+	// 也避免后台标签页等场景下缓冲区无限增长。
+	ptyFlushBytes = 32 << 10
+
+	// 初始缓冲区大小：交互式输出多为小块，避免每次 append 反复扩容。
+	ptyFlushInitBytes = 4 << 10
+)
+
 // sizeStore 记录终端尺寸（width/height）与"尺寸重置"标志，供 pty 在
 // shell 回退后按用户上次尺寸重建终端时使用；内部以 RWMutex 保护并发访问。
 type sizeStore struct {
@@ -157,6 +171,13 @@ type ptyHandler struct {
 	// sizeCloseOnce 与 shellCloseOnce 同理，守卫 Resize 的 close(sizeChan)。
 	sizeCloseOnce sync.Once
 
+	// outMu 保护 stdout 合批缓冲：Write 只追加，由定时器或达到上限时
+	// flushOutput 一次性投递（录音与 WS 帧各一次），避免高频小块逐条发送。
+	outMu  sync.Mutex
+	outBuf []byte
+	// outTimer 是当前待触发的 flush 定时器；非 nil 表示窗口已开启。
+	outTimer *time.Timer
+
 	closeable.Closeable
 }
 
@@ -232,7 +253,11 @@ func (t *ptyHandler) shellResponse(wsType websocket_pb.Type, op string, data []b
 	}
 }
 
-// Write 把容器 stdout 转发给客户端，并在需要时按上次尺寸重置终端。
+// Write 把容器 stdout 追加到合批缓冲，并在需要时按上次尺寸重置终端。
+//
+// 这里不再逐条发送：调用方（exec 输出拷贝循环）的 p 会被复用，必须先拷贝；
+// 达到 ptyFlushBytes 立即 flush，否则由 ptyFlushInterval 定时器统一 flush。
+// 单条交互输出最多延迟一个窗口（10ms），流式输出则把 ~1000 帧/秒压到 ~100。
 func (t *ptyHandler) Write(p []byte) (n int, err error) {
 	select {
 	case <-t.doneChan:
@@ -243,9 +268,6 @@ func (t *ptyHandler) Write(p []byte) (n int, err error) {
 		return len(p), fmt.Errorf("[Websocket]: %v ws already closed", t.sessionID)
 	}
 
-	if _, err = t.recorder.Write(p); err != nil {
-		t.logger.Debugf("[Websocket]: %v recorder write failed: %v", t.sessionID, err)
-	}
 	if t.sizeStore.TerminalRowColNeedReset() && t.sizeStore.Width() != 0 {
 		t.logger.Debugf("reset shell size height: %d, width: %d", t.sizeStore.Height(), t.sizeStore.Width())
 		t.sizeStore.ResetTerminalRowCol(false)
@@ -253,9 +275,61 @@ func (t *ptyHandler) Write(p []byte) (n int, err error) {
 			t.logger.Debugf("resize shell size failed: %v", err)
 		}
 	}
-	newMessageSender(t.conn, WsHandleExecShellMsg).SendProtoMsg(t.shellResponse(WsHandleExecShellMsg, OpStdout, p))
+
+	t.outMu.Lock()
+	if t.outBuf == nil {
+		t.outBuf = make([]byte, 0, ptyFlushInitBytes)
+	}
+	t.outBuf = append(t.outBuf, p...)
+	full := len(t.outBuf) >= ptyFlushBytes
+	if !full && t.outTimer == nil {
+		t.outTimer = time.AfterFunc(ptyFlushInterval, t.flushOutput)
+	}
+	t.outMu.Unlock()
+
+	if full {
+		t.flushOutput()
+	}
 
 	return len(p), nil
+}
+
+// flushOutput 把合批缓冲一次性写入录音与客户端（各一次）。
+//
+// 可能被 Write、定时器、Close 并发调用：outMu 保证缓冲只被取走一次；
+// 空缓冲直接返回，因此重复调用安全。
+//
+// 投递全程持锁：若取走缓冲后先解锁再发送，两个并发 flush 可能乱序到达
+// （后取的先发），终端输出会错乱。持锁发送与合批前的同步行为一致，
+// 最坏只让调用方多等一次网络往返，属于正常背压。
+//
+// doneChan 关闭后到达的 flush 会丢弃缓冲：Close/CloseDoneChan 都在关通道前
+// 先调用本方法，这里只兜住 "Write 已通过 IsClosed 检查、随后会话才关闭" 的
+// 竞态尾部——该帧按语义不应再投递给客户端。
+func (t *ptyHandler) flushOutput() {
+	t.outMu.Lock()
+	defer t.outMu.Unlock()
+	if t.outTimer != nil {
+		t.outTimer.Stop()
+		t.outTimer = nil
+	}
+	if len(t.outBuf) == 0 {
+		return
+	}
+	data := t.outBuf
+	t.outBuf = nil
+
+	// doneChan 关闭后不再投递（timer 可能晚于会话关闭触发）。
+	select {
+	case <-t.doneChan:
+		return
+	default:
+	}
+
+	if _, err := t.recorder.Write(data); err != nil {
+		t.logger.Debugf("[Websocket]: %v recorder write failed: %v", t.sessionID, err)
+	}
+	newMessageSender(t.conn, WsHandleExecShellMsg).SendProtoMsg(t.shellResponse(WsHandleExecShellMsg, OpStdout, data))
 }
 
 // ResetTerminalRowCol 设置是否需要重置终端行列尺寸。
@@ -334,10 +408,15 @@ func (t *ptyHandler) IsClosed() bool {
 }
 
 // CloseDoneChan 关闭会话并关闭 doneChan（幂等）。
+//
+// shell 回退（resetSession）会走这里：必须先 flush，否则上一个 shell 在
+// 合批窗口内产生的最后一段输出（如 "bash: not found"）会随 doneChan 关闭
+// 被丢弃；此时 recorder 仍归新会话复用，flush 到它上面与合批前语义一致。
 func (t *ptyHandler) CloseDoneChan() bool {
 	if !t.Closeable.Close() {
 		return false
 	}
+	t.flushOutput()
 	close(t.doneChan)
 	return true
 }
@@ -386,6 +465,9 @@ func (t *ptyHandler) Close(ctx context.Context, reason string) bool {
 	if !t.Closeable.Close() {
 		return false
 	}
+	// 先把合批缓冲投递完，再发关闭帧：否则最后一小段输出会被定时器丢弃
+	// （doneChan 在 Close 末尾才关闭，此处 flush 仍可正常发送）。
+	t.flushOutput()
 	newMessageSender(t.conn, WsHandleCloseShell).SendProtoMsg(t.shellResponse(WsHandleCloseShell, OpStdout, []byte(reason)))
 
 	t.sendControlFrame(ctx, ETX)
