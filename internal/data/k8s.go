@@ -972,8 +972,10 @@ func (repo *k8sRepo) ClusterBoard(ctx context.Context, force bool) (*biz.Cluster
 
 // fetchClusterBoard 一次性拉取集群看板快照：节点列表、节点指标、命名空间、全部
 // Running Pod 与 Pod 指标，返回前归约为瘦身 DTO（缓存只存消费字段，丢弃
-// annotations/conditions 等大块）。任一资源 List 失败即整体上抛（errs.Wrap
-// 自动归类），展示层的角色/状态派生与 TopN 排序收敛在 biz 纯函数，本方法只做数据获取。
+// annotations/conditions 等大块）。节点/命名空间/Pod 三类核心 List 任一失败即整体
+// 上抛（errs.Wrap 自动归类）；指标 List 属于可选数据源（集群未装 metrics-server 时
+// 会 404），失败只记录日志并降级为空用量，保证看板其余数据与 cron 预热不受拖累。
+// 展示层的角色/状态派生与 TopN 排序收敛在 biz 纯函数，本方法只做数据获取。
 // 每个 List 经 spanCall 包一层 child span，trace 面板可定位是哪一类 k8s API 慢。
 func (repo *k8sRepo) fetchClusterBoard(ctx context.Context) (data *biz.ClusterBoardData, err error) {
 	ctx, span := tracer.Start(ctx, "k8sRepo/fetchClusterBoard")
@@ -989,7 +991,10 @@ func (repo *k8sRepo) fetchClusterBoard(ctx context.Context) (data *biz.ClusterBo
 		return repo.data.K8s().MetricsClient.MetricsV1beta1().NodeMetricses().List(ctx, metav1.ListOptions{})
 	})
 	if err != nil {
-		return nil, errs.Wrap(err, "list cluster board node metrics")
+		// metrics API 是可选数据源：未装 metrics-server（APIService 缺失）时 List
+		// 返回 NotFound。此处降级为空用量继续，否则整张看板与 30s cron 预热会持续失败。
+		repo.logger.Errorf("list cluster board node metrics: %v", err)
+		nodeMetrics = &v1beta1.NodeMetricsList{}
 	}
 	namespaces, err := spanCall(ctx, "k8sRepo/fetchClusterBoard/namespaces", func(ctx context.Context) (*corev1.NamespaceList, error) {
 		return repo.data.K8s().Client.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
@@ -1009,7 +1014,9 @@ func (repo *k8sRepo) fetchClusterBoard(ctx context.Context) (data *biz.ClusterBo
 		return repo.data.K8s().MetricsClient.MetricsV1beta1().PodMetricses("").List(ctx, metav1.ListOptions{})
 	})
 	if err != nil {
-		return nil, errs.Wrap(err, "list cluster board pod metrics")
+		// 同上：Pod 用量缺失只影响看板用量列，节点/命名空间/Pod 名单仍然有效。
+		repo.logger.Errorf("list cluster board pod metrics: %v", err)
+		podMetrics = &v1beta1.PodMetricsList{}
 	}
 	return &biz.ClusterBoardData{
 		Nodes:       mapBoardNodes(nodes.Items),
@@ -1043,8 +1050,10 @@ func (repo *k8sRepo) ResourceSnapshot(ctx context.Context, force bool) (*biz.Res
 // fetchResourceSnapshot 拉取全部 Running Pod、ReplicaSet 与其 metrics 快照，供空间
 // 资源聚合（requests 取 pod spec、实际用量取 PodMetrics），返回前归约为瘦身 DTO。
 // ReplicaSet 供项目 pod → Deployment 属主链解析（pod 直接属主是 RS，RS 属主是
-// Deployment）。比 ClusterBoard 少了节点/命名空间两次 List。每个 List 经 spanCall
-// 包一层 child span，trace 面板可定位是哪一类 k8s API 慢。
+// Deployment）。比 ClusterBoard 少了节点/命名空间两次 List。Pod/ReplicaSet 失败整体
+// 上抛；指标 List 失败降级为空用量（与 fetchClusterBoard 同口径，metrics-server 缺失
+// 不应让资源板整块不可用）。每个 List 经 spanCall 包一层 child span，trace 面板可
+// 定位是哪一类 k8s API 慢。
 func (repo *k8sRepo) fetchResourceSnapshot(ctx context.Context) (data *biz.ResourceSnapshotData, err error) {
 	ctx, span := tracer.Start(ctx, "k8sRepo/fetchResourceSnapshot")
 	defer func() { endSpan(span, err) }()
@@ -1067,7 +1076,10 @@ func (repo *k8sRepo) fetchResourceSnapshot(ctx context.Context) (data *biz.Resou
 		return repo.data.K8s().MetricsClient.MetricsV1beta1().PodMetricses("").List(ctx, metav1.ListOptions{})
 	})
 	if err != nil {
-		return nil, errs.Wrap(err, "list resource board pod metrics")
+		// 与 fetchClusterBoard 同口径：用量是可选数据源，缺失时 requests 与 Pod
+		// 名单仍然可用，降级为空用量而不是让整张资源板（及 cron 预热）失败。
+		repo.logger.Errorf("list resource board pod metrics: %v", err)
+		podMetrics = &v1beta1.PodMetricsList{}
 	}
 	return &biz.ResourceSnapshotData{
 		Pods:        mapResourcePods(pods.Items),

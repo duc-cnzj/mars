@@ -20,6 +20,11 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     build: {
+      // Firefox 78 不支持逻辑赋值（||=），esbuild 按 es2020 降级时会把它错编成
+      // `(void 0 || (i = {}))`（丢掉 let 声明）。xterm 6.0.0 的 requestMode 正好
+      // 用了 `let r; (…)(r ||= {})`，DECRQM（CSI ? Ps $ p）一到就 ReferenceError，
+      // 终端写管道中断、浏览器里看起来像卡死。目标抬到 Firefox 79 即可绕开。
+      target: ['chrome87', 'edge88', 'firefox79', 'safari14'],
       // 产物目录用 build/（默认 dist/）：并入 mars 后由 frontend/embed.go 的
       // //go:embed build/* 内嵌到 /resources/，与旧版 CRA 产物目录契约一致，
       // Makefile build_web / Dockerfile / CI 无需改动。
