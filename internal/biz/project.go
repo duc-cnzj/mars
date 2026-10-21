@@ -24,8 +24,9 @@ type ProjectBiz interface {
 	ResourceTree(ctx context.Context, id int) (*ResourceTree, error)
 	// List 分页列出项目。
 	List(ctx context.Context, input *ListProjectInput) ([]*Project, *pagination.Pagination, error)
-	// ListAllProjectBriefs 返回全部项目的精简投影（仅空间资源聚合消费的字段：
-	// Name/PodSelectors/Namespace.Name，其余字段为零值），供聚合做 pod→项目归属映射。
+	// ListAllProjectBriefs 返回全部项目的精简投影（仅消费方需要的字段：
+	// Name/PodSelectors/Creator/Namespace.Name，其余字段为零值），供聚合做 pod→项目归属映射、
+	// agent 空闲缩容识别沙箱归属用户。
 	ListAllProjectBriefs(ctx context.Context) ([]*Project, error)
 	// Create 校验输入后创建项目。
 	Create(ctx context.Context, project *CreateProjectInput) (*Project, error)
@@ -133,7 +134,8 @@ func (p *projectBiz) List(ctx context.Context, input *ListProjectInput) ([]*Proj
 	return p.projRepo.List(ctx, input)
 }
 
-// ListAllProjectBriefs 返回全部项目的精简投影（透传 repo），跨命名空间做 pod→项目归属映射用。
+// ListAllProjectBriefs 返回全部项目的精简投影（透传 repo），跨命名空间做 pod→项目归属映射，
+// 并供 agent 空闲缩容按创建者标识沙箱归属用户。
 func (p *projectBiz) ListAllProjectBriefs(ctx context.Context) ([]*Project, error) {
 	return p.projRepo.ListAllProjectBriefs(ctx)
 }
@@ -397,7 +399,7 @@ type ProjectRepo interface {
 	ListLivenessPage(ctx context.Context, query *LivenessPageQuery) (*LivenessPageResult, error)
 	// List 分页列出项目（可按命名空间/名称/访问谓词过滤）。
 	List(ctx context.Context, input *ListProjectInput) ([]*Project, *pagination.Pagination, error)
-	// ListAllProjectBriefs 查询全部项目的精简投影（仅 Name/PodSelectors/Namespace.Name）。
+	// ListAllProjectBriefs 查询全部项目的精简投影（仅 Name/PodSelectors/Creator/Namespace.Name）。
 	ListAllProjectBriefs(ctx context.Context) ([]*Project, error)
 	// Create 创建项目。
 	Create(ctx context.Context, project *CreateProjectInput) (*Project, error)

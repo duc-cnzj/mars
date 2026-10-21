@@ -1593,8 +1593,8 @@ func TestProjectRepo_ListLivenessPage_QueryErrors(t *testing.T) {
 	}
 }
 
-// TestProjectRepo_ListAllProjectBriefs 全量项目精简投影（仅 Name/PodSelectors + 命名空间边）：
-// 不分页返回全部并按 id 倒序，供空间资源聚合做 pod→项目归属映射。
+// TestProjectRepo_ListAllProjectBriefs 全量项目精简投影（仅 Name/PodSelectors/Creator + 命名空间边）：
+// 不分页返回全部并按 id 倒序，供空间资源聚合做 pod→项目归属映射、agent 空闲缩容识别沙箱归属用户。
 func TestProjectRepo_ListAllProjectBriefs(t *testing.T) {
 	ctx := context.TODO()
 	db, _ := NewSqliteDB()
@@ -1617,6 +1617,7 @@ func TestProjectRepo_ListAllProjectBriefs(t *testing.T) {
 		for _, p := range all {
 			assert.Equal(t, "team-apps", p.Namespace.Name, "命名空间边应加载")
 			assert.NotEmpty(t, p.PodSelectors, "Pod selectors 应加载")
+			assert.Equal(t, "u", p.Creator, "项目创建者应加载（agent 空闲缩容审计需要）")
 			// 反向断言：未投影的 longtext/JSON 大列应保持零值——这正是精简投影的卖点，
 			// 若未来回归全列拉取（如误加 Select(FieldAll)），此处应失败。
 			assert.Empty(t, p.Config, "未投影的 config 大列应保持空")

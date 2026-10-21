@@ -1590,7 +1590,7 @@ func TestTasks_ReconcileAgentIdle_ScalesIdle(t *testing.T) {
 		{ID: 1, Name: "agent-other", Namespace: &biz.Namespace{Name: "another-ns"}},
 		{ID: 2, Name: "normal-project", Namespace: ns},
 		{ID: 3, Name: "agent-no-ns", Namespace: nil},
-		{ID: 4, Name: "agent-idle", Namespace: ns},
+		{ID: 4, Name: "agent-idle", Namespace: ns, Creator: "alice@mars.local"},
 	}, nil)
 	// 缩容前会再复查一次活跃度，故两次都返回未活跃。
 	activity.EXPECT().IsActive(gomock.Any(), "agent-idle").Return(false, nil).Times(2)
@@ -1599,11 +1599,12 @@ func TestTasks_ReconcileAgentIdle_ScalesIdle(t *testing.T) {
 		Return(&appsv1.Deployment{Spec: appsv1.DeploymentSpec{Replicas: lo.ToPtr(int32(1))}}, nil)
 	k8sRepo.EXPECT().ScaleDeployment(gomock.Any(), ns.Name, name, int32(0)).Return(nil)
 	expectAgentIdleLock(lk, ns.ID, "agent-idle")
-	// 缩容成功必须留系统审计（与唤醒侧审计对称），且只记标识不记令牌等敏感内容。
+	// 缩容成功必须留系统审计（与唤醒侧审计对称）：操作人恒为 system，沙箱归属用户
+	// 由项目创建者标识；只记标识不记令牌等敏感内容。
 	eventRepo.EXPECT().AuditLogWithRequest(
 		types.EventActionType_Update, "system", "",
-		"AI Agent 沙箱空闲缩容到 0",
-		map[string]any{"project_id": 4, "project_name": "agent-idle"},
+		"AI Agent 沙箱空闲缩容到 0（用户 alice@mars.local）",
+		map[string]any{"project_id": 4, "project_name": "agent-idle", "creator": "alice@mars.local"},
 	)
 
 	assert.NoError(t, repo.ReconcileAgentIdle())

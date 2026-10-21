@@ -30,6 +30,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/shadcn/radio-group'
 import { copyText } from '@/lib/copy'
 import { PodMetrics } from './PodMetrics'
 import { PodStateTag } from './PodStateTag'
+import { IS_WINDOWS, isWindowsCtrlCCopy } from './terminalCopy'
 import { shortContainerName } from '@/lib/shortContainerName'
 
 type StateContainer = components['schemas']['types.StateContainer']
@@ -55,11 +56,14 @@ export function TabShell({
   projectId,
   projectName,
   resizeAt,
+  initialCommand,
 }: {
   projectId: number
   projectName: string
   /** 宿主弹窗尺寸变化信号：缩放/最大化/还原时 bump，用于终端 refit（对齐旧版 resizeAt 机制） */
   resizeAt?: number
+  /** 会话建立后自动执行的命令（AI 沙箱传 mai）：每个新终端只执行一次 */
+  initialCommand?: string
 }) {
   const { t } = useTranslation()
   const { ready, send, subscribe, subscribeProjectPodEvent } = useWebsocket()
@@ -610,6 +614,7 @@ export function TabShell({
                 send={send}
                 subscribe={subscribe}
                 resizeAt={`${resizeRev}:${resizeAt ?? 0}`}
+                initialCommand={initialCommand}
                 onClose={() => removePane(p.id)}
               />
             </div>
@@ -656,11 +661,13 @@ function ShellTerminal({
   send,
   subscribe,
   resizeAt,
+  initialCommand,
   onClose,
 }: NPC & {
   send: (bytes: Uint8Array) => void
   subscribe: (slug: string, handler: FrameHandler) => () => void
   resizeAt: number | string
+  initialCommand?: string
   onClose: () => void
 }) {
   const { t } = useTranslation()
@@ -778,6 +785,16 @@ function ShellTerminal({
       )
     }
 
+    // 自动执行初始命令（AI 沙箱的 mai）：等首个 stdout 帧再下发——那说明 shell
+    // 已经启动并接上 stdout，避免在 bash 回退到 sh 时第一笔输入落空。
+    // 每个会话只发一次；重连/切容器会重建会话，自然重新执行。
+    let initialCommandSent = false
+    const maybeSendInitialCommand = () => {
+      if (initialCommandSent || !initialCommand) return
+      initialCommandSent = true
+      sendStdin(`${initialCommand}\r`)
+    }
+
     // 探测应用是否启用了 modifyOtherKeys（CSI > 4 ; N m）：只保留末尾一小段做跨帧拼接，
     // 取最后一次匹配作为当前等级。xterm.js 会把该序列当未知 CSI 丢弃，不影响渲染。
     let capTail = ''
@@ -849,6 +866,7 @@ function ShellTerminal({
       if (tm.op === 'stdout' && tm.data) {
         trackModifyOtherKeys(tm.data)
         enqueueOutput(tm.data)
+        maybeSendInitialCommand()
       }
       if (tm.op === 'toast' && tm.data) toast.error(decoder.decode(tm.data))
     })
@@ -865,8 +883,26 @@ function ShellTerminal({
     // xterm.js 缺 modifyOtherKeys：应用启用后，带修饰键的 Enter 按 xterm 规范编码成
     // CSI 27 ; modifier ; 13 ~（如 Shift+Enter = ESC[27;2;13~），否则 TUI 里无法换行、
     // 只能靠 Ctrl+J 兜底。仅在该应用主动启用时拦截，普通 shell 行为不变。
+    //
+    // 同一 handler 里兼顾 Windows 的 Ctrl+C 复制：xterm 默认把 Ctrl+C 一律当 SIGINT
+    // 下发，Windows 用户选中文本后按 Ctrl+C 只会中断程序、剪贴板没变化。这里模仿
+    // Windows Terminal 的语义——有选区时复制并吞掉按键，无选区时照常下发 ^C。
+    // attachCustomKeyEventHandler 是「替换」而非「追加」，故必须合并在同一个 handler。
     term.attachCustomKeyEventHandler((ev) => {
-      if (ev.type !== 'keydown' || !modifyOtherKeysRef.current) return true
+      if (ev.type !== 'keydown') return true
+      // 有选区才拦截：无选区时放行，运行长命令时 Ctrl+C 仍必须是 SIGINT。
+      if (isWindowsCtrlCCopy(ev, term.hasSelection(), IS_WINDOWS)) {
+        const selected = term.getSelection()
+        if (selected) {
+          void copyText(selected).then((ok) => {
+            if (!ok) toast.error(t('common.copyFailed'))
+          })
+          ev.preventDefault()
+          return false
+        }
+      }
+
+      if (!modifyOtherKeysRef.current) return true
       if (ev.key !== 'Enter') return true
       const modifier =
         1 + (ev.shiftKey ? 1 : 0) + (ev.altKey ? 2 : 0) + (ev.ctrlKey ? 4 : 0) + (ev.metaKey ? 8 : 0)
@@ -918,7 +954,7 @@ function ShellTerminal({
       fitRef.current = null
       term.dispose()
     }
-  }, [sessionId, namespace, pod, container, send, subscribe, toast, t])
+  }, [sessionId, namespace, pod, container, initialCommand, send, subscribe, toast, t])
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-line bg-black/85">

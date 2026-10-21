@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
     title: mars api.
-    version: api/v6.3.5
+    version: api/v6.3.6
 paths:
     /api/access_tokens:
         get:

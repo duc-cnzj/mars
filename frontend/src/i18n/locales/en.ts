@@ -802,9 +802,11 @@ export default {
   ai: {
     open: 'AI Assistant',
     waking: 'Waking up the AI sandbox…',
+    starting: 'Starting the AI sandbox. The first start may take a few minutes…',
+    startTimeout: 'Timed out waiting for the AI sandbox to start. Please try again later.',
     disabled: 'AI is not enabled. Ask an administrator to configure the AI Agent repository.',
     notDeployed: 'The AI sandbox is not deployed yet. Please try again later.',
-    deployInProgress: 'The AI sandbox is deploying. Project details have been opened.',
+    deployInProgress: 'The AI sandbox is deploying. It will open automatically once ready.',
     projectMissing: 'Failed to load the AI project details',
     projectDeleted: 'The AI project has been deleted',
   },

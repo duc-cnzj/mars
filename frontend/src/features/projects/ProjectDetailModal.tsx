@@ -25,7 +25,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/shadcn/tabs'
 import { TabInfo } from './TabInfo'
 import { TabLog } from './TabLog'
 import { TopologyTab } from '../topology/TopologyTab'
-import { initialTabKey, isWorkloadTab, visibleTabKeys, type TabKey } from './tabVisibility'
+import { isWorkloadTab, resolveInitialTab, visibleTabKeys, type TabKey } from './tabVisibility'
 import type { TKey } from '@/i18n/keys'
 
 // 命令行 Tab 依赖 xterm（约 300KB），按需加载直到真正打开 Shell 才拉取
@@ -58,6 +58,8 @@ export function ProjectDetailModal({
   open,
   frontAt = 0,
   defaultTab = 'logs',
+  allowedTabs,
+  autoShellCommand,
   onClose,
   onDeleted,
   onChanged,
@@ -69,6 +71,10 @@ export function ProjectDetailModal({
   frontAt?: number
   /** 打开时默认选中的 Tab（默认 logs）：工作负载不可操作时仍回落到 detail */
   defaultTab?: TabKey
+  /** 可用 Tab 白名单（缺省 = 全部）：AI 沙箱只要日志 + 命令行，其余 Tab 不渲染 */
+  allowedTabs?: readonly TabKey[]
+  /** 命令行会话建立后自动执行的命令（AI 沙箱传 mai，免去用户手动进入交互） */
+  autoShellCommand?: string
   onClose: () => void
   onDeleted: () => void
   onChanged: () => void
@@ -91,9 +97,10 @@ export function ProjectDetailModal({
   // 初始 tab 直接按列表项状态定（与下方「打开即同步默认 Tab」的 open effect 同源）：
   // 避免先渲染默认 tab 再靠 effect 切换造成闪跳/重复挂载。
   const [tab, setTab] = useState<TabKey>(() =>
-    initialTabKey(
+    resolveInitialTab(
       project.deployStatus === 'StatusDeployed' || project.deployStatus === 'StatusDeploying',
       defaultTab,
+      allowedTabs,
     ),
   )
 
@@ -126,7 +133,7 @@ export function ProjectDetailModal({
   useEffect(() => {
     if (open) {
       // 打开即同步选定默认 Tab：列表项已带部署状态，无需等 detail 异步加载后再跳转（避免“详细信息→容器日志”的闪烁）
-      setTab(initialTabKey(canOperate, defaultTab))
+      setTab(resolveInitialTab(canOperate, defaultTab, allowedTabs))
       void reload()
     } else {
       setDetail(null)
@@ -148,14 +155,25 @@ export function ProjectDetailModal({
 
   // 可见 Tab：不可操作时只剩「部署配置 + 详细信息」（edit 必须留——见 tabVisibility.ts 的
   // WORKLOAD_TABS 注释，那是恢复后重新部署的唯一入口）
-  const tabItems = visibleTabKeys(canOperate).map((key) => ({ key, label: t(TAB_LABELS[key]) }))
+  const tabItems = visibleTabKeys(canOperate, allowedTabs).map((key) => ({
+    key,
+    label: t(TAB_LABELS[key]),
+  }))
 
   // 兜底：detail 加载后若状态已不可操作（列表快照后刚失败），把停留在**工作负载类** Tab 的选中
   // 收回详细信息。判据是「所选 Tab 属于工作负载类」而非「所选 Tab ≠ detail」——后者会把停在
   // 「部署配置」的用户一并踢走，正是恢复后项目重新部署的死结所在。
   useEffect(() => {
     if (!open || !detail) return
-    if (!canOperate && isWorkloadTab(tab)) setTab('detail')
+    if (!canOperate && isWorkloadTab(tab)) {
+      // 优先收回「详细信息」（旧行为）；白名单收窄到没有 detail 时（AI 沙箱只有
+      // 日志/命令行）再退到第一个非工作负载 Tab，最后保持现状，不落入未渲染的空壳。
+      const visible = visibleTabKeys(canOperate, allowedTabs)
+      const next = visible.includes('detail')
+        ? 'detail'
+        : visible.find((key) => !isWorkloadTab(key))
+      if (next) setTab(next)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, detail])
 
@@ -269,7 +287,12 @@ export function ProjectDetailModal({
                   {it.key === 'logs' && <TabLog projectId={detail.id} projectName={detail.name} />}
                   {it.key === 'shell' && (
                     <Suspense fallback={<SkeletonTabShell />}>
-                      <TabShell projectId={detail.id} projectName={detail.name} resizeAt={resizeAt} />
+                      <TabShell
+                        projectId={detail.id}
+                        projectName={detail.name}
+                        resizeAt={resizeAt}
+                        initialCommand={autoShellCommand}
+                      />
                     </Suspense>
                   )}
                   {it.key === 'edit' && (

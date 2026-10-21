@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"maps"
 	"runtime/debug"
 	"strings"
@@ -196,10 +197,11 @@ func (repo *Tasks) closeIdleAgent(ctx context.Context, ns *biz.Namespace, proj *
 	metrics.AgentSandboxTransitionTotal.WithLabelValues(metrics.AgentSandboxActionSleep).Inc()
 	// 系统发起的缩容会直接影响用户沙箱可用性，与唤醒轮换令牌一样留审计痕迹
 	// （唤醒侧在 services 层记录，这里以 system 身份记录同一条状态变更）。
+	// 操作人恒为 system，沙箱归属用户由项目创建者标识（与部署/唤醒令牌绑定的身份一致）。
 	repo.event.AuditLogWithRequest(types.EventActionType_Update, "system", "",
-		"AI Agent 沙箱空闲缩容到 0",
-		map[string]any{"project_id": proj.ID, "project_name": proj.Name})
-	repo.logger.Infof("[agent-idle]: 项目 %s 空闲超过 %s，沙箱已缩容到 0", proj.Name, repo.cfg.AgentIdleTimeout())
+		fmt.Sprintf("AI Agent 沙箱空闲缩容到 0（用户 %s）", proj.Creator),
+		map[string]any{"project_id": proj.ID, "project_name": proj.Name, "creator": proj.Creator})
+	repo.logger.Infof("[agent-idle]: 项目 %s（用户 %s）空闲超过 %s，沙箱已缩容到 0", proj.Name, proj.Creator, repo.cfg.AgentIdleTimeout())
 }
 
 // CacheAllBranches 并发拉取全部启用 git 仓库的分支并写入缓存（最多 8 个 goroutine）。

@@ -791,9 +791,11 @@ export default {
   ai: {
     open: 'AI 助手',
     waking: '正在唤醒 AI 沙箱…',
+    starting: 'AI 沙箱启动中，首次启动可能需要几分钟…',
+    startTimeout: 'AI 沙箱启动超时，请稍后重试',
     disabled: 'AI 功能未启用：请联系管理员配置 AI Agent 仓库',
     notDeployed: 'AI 沙箱尚未部署，请稍后重试',
-    deployInProgress: 'AI 沙箱正在部署中，已为你打开项目详情',
+    deployInProgress: 'AI 沙箱正在部署中，就绪后将自动打开',
     projectMissing: '未能读取 AI 项目详情',
     projectDeleted: 'AI 项目已被删除',
   },

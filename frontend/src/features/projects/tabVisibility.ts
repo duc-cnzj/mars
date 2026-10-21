@@ -37,7 +37,24 @@ export function initialTabKey(canOperate: boolean, preferred: TabKey = 'logs'): 
 /**
  * 按运行态过滤可见 Tab：canOperate=false 时只留不依赖工作负载的「部署配置 + 详细信息」，
  * 顺序沿用 ALL_TAB_KEYS。canOperate 由调用方按 deployStatus（Deployed/Deploying）判定。
+ * allowed 可选：调用方进一步收窄可用 Tab 集合（如 AI 沙箱只留日志 + 命令行）。
  */
-export function visibleTabKeys(canOperate: boolean): TabKey[] {
-  return ALL_TAB_KEYS.filter((key) => canOperate || !isWorkloadTab(key))
+export function visibleTabKeys(canOperate: boolean, allowed?: readonly TabKey[]): TabKey[] {
+  return ALL_TAB_KEYS.filter(
+    (key) => (canOperate || !isWorkloadTab(key)) && (!allowed || allowed.includes(key)),
+  )
+}
+
+/**
+ * 解析打开弹窗时的初始 Tab：优先用调用方偏好，若偏好不在当前可见集合内
+ * （被 allowed 收窄，或运行态不可操作回落到 detail）则取第一个可见 Tab。
+ */
+export function resolveInitialTab(
+  canOperate: boolean,
+  preferred: TabKey = 'logs',
+  allowed?: readonly TabKey[],
+): TabKey {
+  const visible = visibleTabKeys(canOperate, allowed)
+  const wanted = initialTabKey(canOperate, preferred)
+  return visible.includes(wanted) ? wanted : (visible[0] ?? 'detail')
 }
