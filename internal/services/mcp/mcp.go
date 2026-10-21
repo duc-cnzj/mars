@@ -6,6 +6,10 @@
 // 该端点是「标准」MCP：任何支持 Streamable HTTP 的客户端（opencode、Claude Code、
 // Cursor 等）带上 mars bearer token 即可连接，不依赖 mars 私有协议。
 //
+// 部署口径：mars 网关在生产是多副本且 Service 无会话粘滞，故传输层必须用
+// **Stateless 模式**——会话状态不落在任何单个 pod 的内存里，initialize 与后续请求
+// 落到不同副本也能正常工作（详见 NewServer 里的说明）。
+//
 // 鉴权：与 gRPC 拦截器、文件路由共用 middlewares.LoginHTTP + biz.Authenticate——
 // 调用方必须在 Authorization 头携带 mars token；令牌校验通过后把用户注入 ctx，
 // 各工具内部再按命名空间/项目做 RBAC 判定（与 gRPC 服务同一套 AccessBiz）。
@@ -33,7 +37,6 @@ package mcp
 import (
 	"context"
 	"net/http"
-	"time"
 
 	changelogpb "github.com/duc-cnzj/mars/api/v6/proto/changelog"
 	containerpb "github.com/duc-cnzj/mars/api/v6/proto/container"
@@ -55,14 +58,6 @@ import (
 // Path 是 MCP 端点在 mars 网关上的挂载路径。沙箱侧 mars-agent 生成的 opencode
 // 配置按 /mcp 拼接 MCP 地址（见 agent/config.go），改动此处需同步该约定。
 const Path = "/mcp"
-
-// sessionTimeout 是空闲 MCP 会话的回收时长：客户端长时间不再发请求即关闭会话，
-// 避免第三方客户端忘记 DELETE 时会话在服务端无限累积。
-//
-// 注意：go-sdk 未提供会话数上限，空闲回收前会话表仍可增长；/mcp 要求 bearer 鉴权，
-// 累积速度受已认证账号数 × 并发会话数约束，属接受的残余风险。切 Stateless 会拒绝
-// GET SSE、可能破坏部分客户端，故保留有状态模式。
-const sessionTimeout = 30 * time.Minute
 
 // serverInstructions 是 MCP initialize 响应里的 instructions 字段：客户端（含其
 // 背后的 LLM）在建立会话时即可看到，用来交代 mars 的资源模型、工具用法与安全约定。
@@ -201,9 +196,9 @@ type Server struct {
 }
 
 // NewServer 构造标准 MCP 服务端：注册只读工具集 → 用 Streamable HTTP 传输承载
-// （官方 go-sdk 实现，自带 initialize/tools/list/tools/call 与 SSE 会话管理）→
-// 外层套 LoginHTTP 完成 token 校验与用户注入；鉴权核心与 gRPC、文件路由共用
-// biz.Authenticate，杜绝第二套鉴权实现。
+// （官方 go-sdk 实现，自带 initialize/tools/list/tools/call）→ 外层套 LoginHTTP
+// 完成 token 校验与用户注入；鉴权核心与 gRPC、文件路由共用 biz.Authenticate，
+// 杜绝第二套鉴权实现。
 func NewServer(deps Deps) *Server {
 	logger := deps.Logger.WithModule("services/mcp")
 
@@ -213,11 +208,20 @@ func NewServer(deps Deps) *Server {
 	)
 	registerTools(srv, deps)
 
+	// 必须用 Stateless：mars 网关是多副本（K8s Service 默认无会话粘滞，请求会被
+	// 轮询到任意 pod），而 go-sdk 的有状态模式把会话表存在单进程内存里——initialize
+	// 落在 pod A、后续请求落到 pod B 时服务端返回 404 "session not found"，客户端
+	// 会把整条连接判为失败（opencode 随后回退到旧 SSE 传输，GET /mcp 拿到 400，
+	// 最终报成「SSE error: Non-200 status code (400)」，掩盖真实原因）。
+	// Stateless 模式下每个请求自包含，跨副本安全；代价是不支持 GET SSE 推送流
+	// （go-sdk 按规范返回 405，主流客户端如 opencode/Claude Code 视为「服务端不提供
+	// 推送」并继续工作）与 server→client 请求——本服务工具集不依赖这两项能力。
+	//
+	// 会话身份不靠传输层：全部 pod 共用同一个 MCP server 实例的工具集，按请求身份
+	// 做区分的职责由工具内部读取 ctx 中的用户完成（鉴权中间件逐请求注入）。
 	streamable := sdk.NewStreamableHTTPHandler(
-		// 全部会话共用同一个 MCP server：工具集是静态的，按请求身份做区分的职责
-		// 由工具内部读取 ctx 中的用户完成，不在传输层分叉。
 		func(*http.Request) *sdk.Server { return srv },
-		&sdk.StreamableHTTPOptions{SessionTimeout: sessionTimeout},
+		&sdk.StreamableHTTPOptions{Stateless: true},
 	)
 
 	auth := middlewares.LoginHTTP(func(ctx context.Context, token string) (context.Context, error) {

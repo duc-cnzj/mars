@@ -762,3 +762,39 @@ func TestNewServer_RegistersMcpRoute(t *testing.T) {
 	assert.Equal(t, "/mcp", Path)
 	assert.NotNil(t, e.server.handler)
 }
+
+// TestNewServer_StatelessAcrossReplicas 是多副本部署的回归测试：生产网关有 3 个副本且
+// Service 无会话粘滞，同一客户端的 initialize 与后续请求会落到不同 pod。若传输层用
+// 有状态模式，会话表只存在建会话的那个 pod 内存里，后续请求会得到 404 "session not
+// found"，客户端整条连接失败（opencode 随后回退旧 SSE 传输，GET /mcp 得到 400，
+// 最终报成「SSE error: Non-200 status code (400)」）。
+//
+// 这里用两个独立的 Server 实例模拟两个副本（各自持有独立会话表），断言在副本 A 上
+// initialize 拿到的 session id 拿到副本 B 上仍能正常处理 tools/list。
+func TestNewServer_StatelessAcrossReplicas(t *testing.T) {
+	e := newTestEnv(t)
+	e.expectAuth(adminUser())
+	sessionID := e.initSession(t, testToken)
+
+	replica := NewServer(e.deps)
+	httpSrv2 := httptest.NewServer(replica.handler)
+	t.Cleanup(httpSrv2.Close)
+
+	req, err := http.NewRequest(http.MethodPost, httpSrv2.URL+Path,
+		strings.NewReader(`{"jsonrpc":"2.0","id":2,"method":"tools/list"}`))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	req.Header.Set("Authorization", testToken)
+	req.Header.Set("Mcp-Session-Id", sessionID)
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	require.Equal(t, http.StatusOK, resp.StatusCode, "跨副本请求不得因会话不存在被拒绝: %s", string(raw))
+	result, ok := sseJSON(t, string(raw))["result"].(map[string]any)
+	require.True(t, ok, "tools/list 必须返回 result: %s", string(raw))
+	assert.NotEmpty(t, result["tools"])
+}
