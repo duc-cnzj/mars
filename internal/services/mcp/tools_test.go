@@ -60,7 +60,8 @@ func TestToolset_ListNamespaces(t *testing.T) {
 			}, nil
 		}
 
-		res, out, err := e.toolset().listNamespaces(ctxWithUser(adminUser()), nil, listNamespacesIn{Name: "team", Page: 2, PageSize: 5})
+		res, out, err := e.toolset().listNamespaces(ctxWithUser(adminUser()), nil,
+			listNamespacesIn{paginationIn: paginationIn{Page: 2, PageSize: 5}, Name: "team"})
 		require.NoError(t, err)
 		assert.Nil(t, res)
 		require.NotNil(t, got.Name)
@@ -1395,7 +1396,7 @@ func TestToolset_ListOperationEvents(t *testing.T) {
 		}
 
 		_, out, err := e.toolset().listOperationEvents(ctxWithUser(adminUser()), nil,
-			listOperationEventsIn{Page: 2, PageSize: 5, Search: "svc", All: true})
+			listOperationEventsIn{paginationIn: paginationIn{Page: 2, PageSize: 5}, Search: "svc", All: true})
 		require.NoError(t, err)
 		require.NotNil(t, got.GetPage())
 		assert.Equal(t, int32(2), got.GetPage())

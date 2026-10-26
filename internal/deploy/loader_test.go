@@ -23,6 +23,8 @@ import (
 	"helm.sh/helm/v3/pkg/cli/values"
 )
 
+// TestInstallProject 验证部署编排顺序：GlobalLock → Validate → LoadConfigs → Run →
+// Finish/Error，全链路成功时返回 nil。
 func TestInstallProject(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -56,10 +58,13 @@ func TestHasUserTokenTemplate(t *testing.T) {
 	}
 }
 
+// fakeSleeper 是进度器测试用的休眠替身：立即返回，避免测试真实等待。
 type fakeSleeper struct{}
 
+// Sleep 空实现，满足 Sleeper 接口且不引入等待。
 func (f fakeSleeper) Sleep(time.Duration) {}
 
+// TestNewProcessPercent 验证进度器构造：绑定 messager、初始进度为 0。
 func TestNewProcessPercent(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -69,6 +74,7 @@ func TestNewProcessPercent(t *testing.T) {
 	assert.Equal(t, int64(0), pp.Current())
 }
 
+// TestProcessPercent_Add 验证进度递增与上报；到达 100 后 Add 为 no-op，不再增长。
 func TestProcessPercent_Add(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -83,6 +89,8 @@ func TestProcessPercent_Add(t *testing.T) {
 	assert.Equal(t, int64(100), pp.Current())
 }
 
+// TestProcessPercent_To 验证 To 设置进度：目标低于当前值时直接落盘目标值，
+// 不会倒退等待（覆盖「目标 <= 当前」分支）。
 func TestProcessPercent_To(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -96,6 +104,7 @@ func TestProcessPercent_To(t *testing.T) {
 	assert.Equal(t, int64(5), pp.Current())
 }
 
+// TestRealSleeper 验证真实休眠器至少等待指定时长。
 func TestRealSleeper(t *testing.T) {
 	s := NewRealSleeper()
 	start := time.Now()
@@ -103,6 +112,7 @@ func TestRealSleeper(t *testing.T) {
 	assert.GreaterOrEqual(t, time.Since(start), 5*time.Millisecond)
 }
 
+// TestDefaultFileOpener 覆盖默认文件打开器的成功与文件不存在两条路径。
 func TestDefaultFileOpener(t *testing.T) {
 	f, err := os.CreateTemp("", "opener-*")
 	assert.NoError(t, err)
@@ -121,6 +131,8 @@ func TestDefaultFileOpener(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// TestDefaultChartLoader 覆盖默认 chart 加载器的错误分支：空目录缺 Chart.yaml、
+// 归档内容非法。
 func TestDefaultChartLoader(t *testing.T) {
 	cl := &defaultChartLoader{}
 	// 空目录缺 Chart.yaml
@@ -131,6 +143,8 @@ func TestDefaultChartLoader(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// TestUserConfigLoader_Load_nonEOFError 验证非 io.EOF 的配置解析错误（非法路径分隔符）
+// 会被原样上抛，而不是被当成「配置为空」静默吞掉。
 func TestUserConfigLoader_Load_nonEOFError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -152,6 +166,8 @@ func TestUserConfigLoader_Load_nonEOFError(t *testing.T) {
 	assert.Error(t, (&UserConfigLoader{}).Load(ctx))
 }
 
+// TestElementsLoader_Load_defaultError 验证元素默认值非法（Switch 非 bool）时部署
+// 加载直接报错——与仓库配置写入时的 ValidateElementDefault 共用同一套规则。
 func TestElementsLoader_Load_defaultError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -174,11 +190,14 @@ func TestElementsLoader_Load_defaultError(t *testing.T) {
 	assert.Error(t, (&ElementsLoader{}).Load(ctx))
 }
 
+// TestElementsLoader_deepSetItems_error 验证非法路径的键被丢弃，不产生任何 item。
 func TestElementsLoader_deepSetItems_error(t *testing.T) {
 	items := (&ElementsLoader{}).deepSetItems(map[string]any{"->a": "x"})
 	assert.Empty(t, items)
 }
 
+// TestSystemVariableLoader_Load_templateError 验证 values.yaml 模板 action 未闭合时
+// 解析失败并返回错误。
 func TestSystemVariableLoader_Load_templateError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -209,6 +228,8 @@ func TestSystemVariableLoader_Load_templateError(t *testing.T) {
 	assert.Error(t, (&SystemVariableLoader{}).Load(ctx))
 }
 
+// TestChartFileLoader_PackageChartError 验证远程 chart 目录打包失败时 Load 透传
+// PackageChart 的原始错误。
 func TestChartFileLoader_PackageChartError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -243,14 +264,18 @@ func TestChartFileLoader_PackageChartError(t *testing.T) {
 	assert.Equal(t, "package err", l.Load(ctx).Error())
 }
 
+// failOpener 是恒失败的 chart 文件打开器替身，用于覆盖打开错误分支。
 type failOpener struct{}
 
+// Open 恒返回错误，模拟 chart 文件不可读。
 func (f failOpener) Open(name string) (io.ReadCloser, error) {
 	return nil, errors.New("open err")
 }
 
+// Close 空实现，满足 fileOpener 接口。
 func (f failOpener) Close() error { return nil }
 
+// TestChartFileLoader_OpenError 验证 chart 文件打开失败时 Load 透传打开错误。
 func TestChartFileLoader_OpenError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -307,6 +332,8 @@ func TestChartFileLoader_NoFilesError(t *testing.T) {
 	assert.Equal(t, "charts 文件不存在: 9999|master|dir", (&ChartFileLoader{}).Load(ctx).Error())
 }
 
+// TestMergeValuesLoader_NewYAMLError 验证系统 values YAML 本身非法时，合并阶段
+// 在写文件前就报错。
 func TestMergeValuesLoader_NewYAMLError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -323,6 +350,8 @@ func TestMergeValuesLoader_NewYAMLError(t *testing.T) {
 	assert.Error(t, (&MergeValuesLoader{}).Load(ctx))
 }
 
+// TestMergeValuesLoader_WriteConfigError 验证临时配置文件写入失败时 Load 透传
+// uploader 的原始错误。
 func TestMergeValuesLoader_WriteConfigError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -344,6 +373,8 @@ func TestMergeValuesLoader_WriteConfigError(t *testing.T) {
 	assert.Equal(t, "put err", (&MergeValuesLoader{}).Load(ctx).Error())
 }
 
+// TestMergeValuesLoader_OnFinallyClose 验证合并成功后登记清理函数：Load 返回 nil，
+// 执行清理时会删除临时配置文件。
 func TestMergeValuesLoader_OnFinallyClose(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -374,6 +405,8 @@ func TestMergeValuesLoader_OnFinallyClose(t *testing.T) {
 	}
 }
 
+// TestDownloadFilesToDir 覆盖多文件下载的各类分支：git 拉取失败仍写空内容、
+// Put 失败与成功、deleteFn 删除失败与成功、空文件列表。
 func TestDownloadFilesToDir(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -407,4 +440,38 @@ func TestDownloadFilesToDir(t *testing.T) {
 	dir2, deleteFn2 := ctx.DownloadFilesToDir(9, "master", nil, "/dir2")
 	assert.Equal(t, "/dir2", dir2)
 	deleteFn2()
+}
+
+// TestValidateElementDefault 覆盖各元素类型的默认值校验：它与 ElementsLoader.typedValue
+// 共用同一套转换规则（Switch→bool、InputNumber→整数、选择类→白名单、Number*→整数），
+// 确保仓库配置写入时能提前拦住「保存成功但部署必失败」的默认值。
+func TestValidateElementDefault(t *testing.T) {
+	tests := []struct {
+		name    string
+		element *mars.Element
+		wantErr bool
+	}{
+		{name: "Switch 空默认值按 false", element: &mars.Element{Path: "a", Type: mars.ElementType_ElementTypeSwitch}},
+		{name: "Switch 合法 bool", element: &mars.Element{Path: "a", Type: mars.ElementType_ElementTypeSwitch, Default: "true"}},
+		{name: "Switch 非 bool", element: &mars.Element{Path: "a", Type: mars.ElementType_ElementTypeSwitch, Default: "yes"}, wantErr: true},
+		{name: "InputNumber 空默认值按 0", element: &mars.Element{Path: "a", Type: mars.ElementType_ElementTypeInputNumber}},
+		{name: "InputNumber 合法整数", element: &mars.Element{Path: "a", Type: mars.ElementType_ElementTypeInputNumber, Default: "3"}},
+		{name: "InputNumber 非整数", element: &mars.Element{Path: "a", Type: mars.ElementType_ElementTypeInputNumber, Default: "3.5"}, wantErr: true},
+		{name: "Select 默认值在白名单", element: &mars.Element{Path: "a", Type: mars.ElementType_ElementTypeSelect, Default: "a", SelectValues: []string{"a", "b"}}},
+		{name: "Select 默认值不在白名单", element: &mars.Element{Path: "a", Type: mars.ElementType_ElementTypeSelect, Default: "c", SelectValues: []string{"a", "b"}}, wantErr: true},
+		{name: "NumberSelect 合法整数", element: &mars.Element{Path: "a", Type: mars.ElementType_ElementTypeNumberSelect, Default: "2", SelectValues: []string{"1", "2"}}},
+		{name: "NumberSelect 非整数", element: &mars.Element{Path: "a", Type: mars.ElementType_ElementTypeNumberSelect, Default: "x", SelectValues: []string{"x"}}, wantErr: true},
+		{name: "Input 原样透传", element: &mars.Element{Path: "a", Type: mars.ElementType_ElementTypeInput, Default: "nginx:1.27"}},
+		{name: "TextArea 原样透传", element: &mars.Element{Path: "a", Type: mars.ElementType_ElementTypeTextArea, Default: "k: v"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateElementDefault(tt.element)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -183,16 +184,30 @@ func (f *fakeGitSvc) PipelineInfoByRepoId(ctx context.Context, req *gitpb.Pipeli
 	return f.pipelineByRepoFn(ctx, req)
 }
 
-// fakeRepoSvc 是 repopb.RepoServer 的测试替身，覆写 Show（分支/提交工具用它
-// 从 repo_id 解析 git_project_id）。
+// fakeRepoSvc 是 repopb.RepoServer 的测试替身，覆写 List（列仓库工具）、Show
+// （分支/提交工具用它从 repo_id 解析 git_project_id）与 Update（自定义字段工具
+// 用它回写仓库配置）。updateFn 为 nil 时 Update 直接 panic——未注入即被调用说明
+// 用例漏配替身，让问题立刻暴露。
 type fakeRepoSvc struct {
 	repopb.RepoServer
-	showFn func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error)
+	listFn   func(context.Context, *repopb.ListRequest) (*repopb.ListResponse, error)
+	showFn   func(context.Context, *repopb.ShowRequest) (*repopb.ShowResponse, error)
+	updateFn func(context.Context, *repopb.UpdateRequest) (*repopb.UpdateResponse, error)
+}
+
+// List 委派给测试注入的 listFn。
+func (f *fakeRepoSvc) List(ctx context.Context, req *repopb.ListRequest) (*repopb.ListResponse, error) {
+	return f.listFn(ctx, req)
 }
 
 // Show 委派给测试注入的 showFn。
 func (f *fakeRepoSvc) Show(ctx context.Context, req *repopb.ShowRequest) (*repopb.ShowResponse, error) {
 	return f.showFn(ctx, req)
+}
+
+// Update 委派给测试注入的 updateFn。
+func (f *fakeRepoSvc) Update(ctx context.Context, req *repopb.UpdateRequest) (*repopb.UpdateResponse, error) {
+	return f.updateFn(ctx, req)
 }
 
 // fakeEventSvc 是 eventpb.EventServer 的测试替身，覆写操作审计 List。
@@ -449,7 +464,7 @@ func TestServer_Unauthenticated(t *testing.T) {
 }
 
 // TestServer_InitializeAndListTools 走完整 initialize + tools/list 流程，断言工具集
-// 覆盖只读排查工具与 4 个写工具，且绝不包含 delete_project 等破坏性能力。
+// 覆盖只读排查工具与 5 个写工具，且绝不包含 delete_project 等破坏性能力。
 //
 // 关键断言：写工具的 annotations.readOnlyHint 必须不为 true——这是「客户端弹人工确认」
 // 这道审批闸门唯一的生效依据，一旦被打上只读标，客户端会静默放行写操作。
@@ -475,14 +490,17 @@ func TestServer_InitializeAndListTools(t *testing.T) {
 		"get_project_resource_tree", "check_pod_status", "list_namespace_events",
 		"list_operation_events", "get_container_logs", "get_pod_metrics",
 		"list_project_changelogs", "list_git_branches", "list_git_commits",
-		"get_commit_detail", "get_pipeline_status",
+		"get_commit_detail", "get_pipeline_status", "list_repos", "get_repo_custom_fields",
 	}
-	write := []string{"apply_project", "toggle_hibernate", "restart_pod", "exec_command"}
+	write := []string{
+		"apply_project", "toggle_hibernate", "restart_pod", "exec_command",
+		"update_repo_custom_fields",
+	}
 	for _, want := range append(append([]string{}, readOnly...), write...) {
 		assert.Contains(t, byName, want)
 	}
 	assert.NotContains(t, byName, "delete_project")
-	assert.Len(t, byName, 23)
+	assert.Len(t, byName, 26)
 
 	for _, name := range readOnly {
 		ann, _ := byName[name]["annotations"].(map[string]any)
@@ -493,6 +511,117 @@ func TestServer_InitializeAndListTools(t *testing.T) {
 		assert.NotEqual(t, true, ann["readOnlyHint"],
 			"%s 是写工具，readOnlyHint 不得为 true，否则客户端不会弹确认", name)
 	}
+}
+
+// TestServer_PaginationSchemaFlattened 锁定分页公共片段（paginationIn）的 schema 形状。
+// go-sdk 底层的 jsonschema-go 通过 reflect.VisibleFields 把匿名嵌入结构体的提升字段
+// 平铺进 inputSchema.properties；一旦 SDK 升级或有人改成具名字段，page/page_size 会被嵌
+// 进子对象——模型按错误层级传参且 tools/call 静默忽略，编译期与调用期都发现不了，只能
+// 靠本测试兜底。同时锁定类型（integer）与可选性（不得进 required）：前者防止模型传字符串，
+// 后者保证「缺省即第 1 页 / 每页 15 条」的约定不被 schema 强制掉。
+func TestServer_PaginationSchemaFlattened(t *testing.T) {
+	e := newTestEnv(t)
+	e.expectAuth(adminUser())
+
+	sessionID := e.initSession(t, testToken)
+	code, _, body := e.post(t, sessionID, testToken, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	require.Equal(t, http.StatusOK, code, body)
+
+	tools := sseJSON(t, body)["result"].(map[string]any)["tools"].([]any)
+	byName := make(map[string]map[string]any, len(tools))
+	for _, raw := range tools {
+		m := raw.(map[string]any)
+		byName[m["name"].(string)] = m
+	}
+
+	for _, name := range []string{"list_namespaces", "list_projects", "list_repos", "list_operation_events"} {
+		tool := byName[name]
+		require.NotNil(t, tool, "%s 必须已注册", name)
+		schema, ok := tool["inputSchema"].(map[string]any)
+		require.True(t, ok, "%s 必须有 inputSchema", name)
+		props, ok := schema["properties"].(map[string]any)
+		require.True(t, ok, "%s 的 inputSchema 必须有 properties", name)
+
+		page, ok := props["page"].(map[string]any)
+		require.True(t, ok, "%s 的 page 必须平铺在顶层，实际 properties=%v", name, props)
+		assert.Equal(t, "integer", page["type"], "%s 的 page 必须是整数，不能退化成字符串", name)
+		assert.Equal(t, "页码，从 1 开始，缺省 1", page["description"])
+		pageSize, ok := props["page_size"].(map[string]any)
+		require.True(t, ok, "%s 的 page_size 必须平铺在顶层，实际 properties=%v", name, props)
+		assert.Equal(t, "integer", pageSize["type"], "%s 的 page_size 必须是整数，不能退化成字符串", name)
+		assert.Equal(t, "每页条数，缺省 15", pageSize["description"])
+		assert.NotContains(t, props, "paginationIn", "匿名嵌入结构体不得作为嵌套对象出现在 schema 中")
+
+		required, _ := schema["required"].([]any)
+		assert.NotContains(t, required, "page", "%s 的 page 可省略（缺省 1），不得进入 required", name)
+		assert.NotContains(t, required, "page_size", "%s 的 page_size 可省略（缺省 15），不得进入 required", name)
+	}
+
+	// 反空断言：list_projects 的 namespace 不带 omitempty，必须出现在 required 里。
+	// 用它证明 required 机制被真实激发，上面的 NotContains 不是空数组上的假阴性。
+	projectsSchema, ok := byName["list_projects"]["inputSchema"].(map[string]any)
+	require.True(t, ok)
+	assert.Contains(t, projectsSchema["required"], "namespace",
+		"namespace 是必填参数，必须出现在 required 中以证明可选性断言非空转")
+}
+
+// TestServer_NonAdminSeesOnlyPublicTools 验证权限差异从连接时就体现：普通用户的
+// tools/list 只含公共工具；管理员专属工具既不在列表里、instructions 也不提及，
+// 即使客户端凭空 tools/call 也会被协议层按未知工具拒绝。
+func TestServer_NonAdminSeesOnlyPublicTools(t *testing.T) {
+	e := newTestEnv(t)
+	e.expectAuth(normalUser())
+
+	code, hdr, body := e.post(t, "", testToken,
+		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test-client","version":"1.0.0"}}}`)
+	require.Equal(t, http.StatusOK, code, body)
+	sessionID := hdr.Get("Mcp-Session-Id")
+	require.NotEmpty(t, sessionID)
+
+	// instructions 不该出现普通用户根本看不到的工具名，否则模型会凭空尝试调用。
+	adminTools := []string{"list_repos", "get_repo_custom_fields", "update_repo_custom_fields"}
+	instructions := sseJSON(t, body)["result"].(map[string]any)["instructions"].(string)
+	for _, name := range adminTools {
+		assert.NotContains(t, instructions, name, "普通用户的 instructions 不得提及 %s", name)
+	}
+
+	code, _, body = e.post(t, sessionID, testToken, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	require.Equal(t, http.StatusOK, code, body)
+	tools := sseJSON(t, body)["result"].(map[string]any)["tools"].([]any)
+	byName := make(map[string]struct{}, len(tools))
+	for _, raw := range tools {
+		byName[raw.(map[string]any)["name"].(string)] = struct{}{}
+	}
+	for _, name := range adminTools {
+		assert.NotContains(t, byName, name, "普通用户的 tools/list 不得出现 %s", name)
+	}
+	assert.Len(t, byName, 23, "普通用户只看到公共工具：26 - 3 个管理员专属 = 23")
+
+	// 绕过列表直接调用：该 server 实例上根本没有这些工具表，协议层直接拒绝。
+	for i, name := range adminTools {
+		code, _, body = e.post(t, sessionID, testToken,
+			fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":%q,"arguments":{}}}`, 3+i, name))
+		require.Equal(t, http.StatusOK, code, body)
+		res := sseJSON(t, body)
+		errObj, ok := res["error"].(map[string]any)
+		require.True(t, ok, "未知工具 %s 必须返回 JSON-RPC error: %v", name, body)
+		assert.Contains(t, errObj["message"], "unknown tool")
+	}
+}
+
+// TestServerInstructionsFor 锁定两种身份的 instructions 拼装口径：公共说明必须
+// 完全一致，管理员版本只在末尾追加专属能力段，避免两份说明各写一套产生漂移。
+func TestServerInstructionsFor(t *testing.T) {
+	user := serverInstructionsFor(false)
+	admin := serverInstructionsFor(true)
+
+	assert.True(t, strings.HasPrefix(admin, user), "管理员说明必须以公共说明为前缀")
+	assert.NotContains(t, user, "list_repos")
+	assert.NotContains(t, user, "get_repo_custom_fields")
+	assert.NotContains(t, user, "update_repo_custom_fields")
+	assert.Contains(t, admin, "list_repos")
+	assert.Contains(t, admin, "get_repo_custom_fields")
+	assert.Contains(t, admin, "update_repo_custom_fields")
 }
 
 // TestServer_TouchesAgentActivity 已鉴权的 MCP 请求按用户邮箱派生的项目刷新活跃度，

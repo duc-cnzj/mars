@@ -14,6 +14,12 @@
 // 调用方必须在 Authorization 头携带 mars token；令牌校验通过后把用户注入 ctx，
 // 各工具内部再按命名空间/项目做 RBAC 判定（与 gRPC 服务同一套 AccessBiz）。
 //
+// 权限可见性：工具集按连接身份裁剪——管理员连接拿全量工具，普通用户连接拿公共工具，
+// 管理员专属工具（list_repos、get/update_repo_custom_fields）不注册进普通用户的
+// server 实例，故 tools/list 的差异从连接那一刻就体现。实现上是两个预构建的
+// sdk.Server 实例，由 Streamable HTTP 的 getServer 回调按请求身份选择（stateless 下
+// 逐请求调用，不存在跨请求的身份缓存）。
+//
 // 出参口径：**能复用平台 gRPC 服务接口的能力一律复用**（NamespaceSvc/ProjectSvc/
 // ContainerSvc/MetricsSvc/ChangelogSvc/GitSvc/RepoSvc/EventSvc/HibernateSvc），工具只做
 // 入参搬运，出参直接回吐服务返回的模型 JSON——与 mars 界面完全同源，且不声明 MCP
@@ -23,9 +29,13 @@
 // 安全边界：**读工具只读，写工具交人工确认**。
 //
 //   - 读工具（list_*/get_*/check_*）打 ReadOnlyHint=true，客户端可免确认直接执行；
-//   - 写工具（apply_project/toggle_hibernate/restart_pod/exec_command）**刻意不打** ReadOnlyHint，
-//     按 MCP 规范即「非只读」，客户端（opencode/Claude Code/Cursor）会在真正发出
-//     tools/call 前弹人工确认——这是本批采纳的审批机制（最轻量，零 DB 改动）。
+//   - 写工具（apply_project/toggle_hibernate/restart_pod/exec_command/update_repo_custom_fields）
+//     **刻意不打** ReadOnlyHint，按 MCP 规范即「非只读」，客户端（opencode/Claude Code/Cursor）
+//     会在真正发出 tools/call 前弹人工确认——这是本批采纳的审批机制（最轻量，零 DB 改动）。
+//   - 仓库级管理工具（list_repos 只读、get/update_repo_custom_fields 读写）不受项目权限
+//     边界约束，故**仅管理员可调**：工具入口自行过 AccessBiz.RequireAdmin（MCP 在进程内直调
+//     services，gRPC 的 Authorize 拦截器不会执行）；写库前还要自校验元素定义，因为
+//     ValidatorUnaryServerInterceptor 同样不生效。
 //   - 不提供 delete_project 等销毁类能力：写工具集已含改名/改配置/删 Pod 的破坏面，
 //     再叠加不可逆的资源销毁会让「客户端确认」这道闸门不足以兜底，故不纳入。
 //
@@ -157,6 +167,32 @@ const serverInstructions = `你是 mars 平台（Kubernetes 应用管理平台�
   调用前先向用户说明「将要做什么、影响哪个环境」，拿到确认后再调；不要连续自动调用多个写工具。
 - 工具的返回即最终结果：失败会以 isError=true 明确回吐原因，不要假设已成功。`
 
+// adminToolInstructions 是追加给管理员连接的说明：管理员专属工具只在管理员的
+// server 实例里注册（普通用户的 tools/list 看不到），故这段也只在管理员连接时下发，
+// 避免普通用户的模型被告知「有一批你根本看不到的工具」。
+const adminToolInstructions = `
+
+管理员专属工具（仅本连接可见；普通用户的 tools/list 不会出现下面这三个工具）：
+- list_repos（只读）：列出仓库（部署模板来源），支持按名称模糊、启用状态、AI Agent 标记过滤；
+  items 只有仓库概要，不含 mars_config。用它定位 repo_id。
+- get_repo_custom_fields（只读）：读取仓库配置——自定义字段定义 repo.mars_config.elements（项目「自定义参数」的
+  唯一权威清单，path 即 apply_project 的 extra_values 键，type 决定取值约束），以及 values.yaml 模板、分支白名单、
+  分区配置、定时休眠；repo_id 从 list_repos 取。改字段前先读它。
+- update_repo_custom_fields（写，客户端弹确认）：增量新增/整条覆盖/删除仓库级自定义字段；只改 elements，
+  values.yaml/branches/配置片段/分区/休眠配置原样保留。合法性与失败语义见工具 description。
+- 这三个工具作用于仓库级配置，与项目权限边界无关，入口即过 RequireAdmin；普通用户需要新增字段时
+  应引导其联系仓库管理员。注意 AI 沙箱令牌锚定项目创建者：创建者非管理员时，沙箱内调不动它们，
+  需用管理员本人 token 直连 /mcp。`
+
+// serverInstructionsFor 按连接身份返回 instructions：普通用户只拿到通用排查说明，
+// 管理员额外追加仓库管理能力（列仓库 + 自定义字段读写）——与 tools/list 的裁剪口径一致。
+func serverInstructionsFor(admin bool) string {
+	if admin {
+		return serverInstructions + adminToolInstructions
+	}
+	return serverInstructions
+}
+
 // Deps 收口 MCP 服务端的构造依赖，由 wire 按字段注入。不引入数据层。
 //
 // *Svc 是 services 层的 gRPC 服务接口（定义在 api proto 包，不在 internal 下，
@@ -195,18 +231,28 @@ type Server struct {
 	logger  mlog.Logger
 }
 
-// NewServer 构造标准 MCP 服务端：注册只读工具集 → 用 Streamable HTTP 传输承载
-// （官方 go-sdk 实现，自带 initialize/tools/list/tools/call）→ 外层套 LoginHTTP
-// 完成 token 校验与用户注入；鉴权核心与 gRPC、文件路由共用 biz.Authenticate，
+// NewServer 构造标准 MCP 服务端：按权限各建一个工具集实例 → 用 Streamable HTTP
+// 传输承载（官方 go-sdk 实现，自带 initialize/tools/list/tools/call）→ 外层套
+// LoginHTTP 完成 token 校验与用户注入；鉴权核心与 gRPC、文件路由共用 biz.Authenticate，
 // 杜绝第二套鉴权实现。
 func NewServer(deps Deps) *Server {
 	logger := deps.Logger.WithModule("services/mcp")
 
-	srv := sdk.NewServer(
-		&sdk.Implementation{Name: "mars", Version: marsVersion.GetVersion().Version},
-		&sdk.ServerOptions{Instructions: serverInstructions},
-	)
-	registerTools(srv, deps)
+	// 两套 server 实例，差别只在「注册哪些工具 + 下发哪份 instructions」：
+	//   - admin：全量工具（含仓库自定义字段管理）；
+	//   - user：公共工具。
+	// tools/list 直接由所选实例的工具表生成，因此权限差异在连接时就体现，
+	// 普通用户看不到也无法调用管理员专属工具。
+	newMCPServer := func(admin bool) *sdk.Server {
+		srv := sdk.NewServer(
+			&sdk.Implementation{Name: "mars", Version: marsVersion.GetVersion().Version},
+			&sdk.ServerOptions{Instructions: serverInstructionsFor(admin)},
+		)
+		registerTools(srv, deps, admin)
+		return srv
+	}
+	adminSrv := newMCPServer(true)
+	userSrv := newMCPServer(false)
 
 	// 必须用 Stateless：mars 网关是多副本（K8s Service 默认无会话粘滞，请求会被
 	// 轮询到任意 pod），而 go-sdk 的有状态模式把会话表存在单进程内存里——initialize
@@ -217,10 +263,17 @@ func NewServer(deps Deps) *Server {
 	// （go-sdk 按规范返回 405，主流客户端如 opencode/Claude Code 视为「服务端不提供
 	// 推送」并继续工作）与 server→client 请求——本服务工具集不依赖这两项能力。
 	//
-	// 会话身份不靠传输层：全部 pod 共用同一个 MCP server 实例的工具集，按请求身份
-	// 做区分的职责由工具内部读取 ctx 中的用户完成（鉴权中间件逐请求注入）。
+	// 权限分流：stateless 模式不会缓存会话，getServer 在**每个请求**上被调用，
+	// 此时 LoginHTTP 已把用户注入 req.Context，故按当前身份挑实例即可——不存在
+	// 「initialize 时是管理员、后续请求降权」之类的跨请求状态。取不到用户时保守
+	// 回退到最小权限实例（正常链路上鉴权中间件已拦掉未认证请求，这是防御分支）。
 	streamable := sdk.NewStreamableHTTPHandler(
-		func(*http.Request) *sdk.Server { return srv },
+		func(req *http.Request) *sdk.Server {
+			if user, err := biz.GetUser(req.Context()); err == nil && user.IsAdmin() {
+				return adminSrv
+			}
+			return userSrv
+		},
 		&sdk.StreamableHTTPOptions{Stateless: true},
 	)
 
