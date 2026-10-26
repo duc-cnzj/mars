@@ -46,6 +46,14 @@ var readOnlyAnnotations = &sdk.ToolAnnotations{ReadOnlyHint: true}
 // 谁把某个写工具的 Annotations 换成 readOnlyAnnotations，这里就是唯一的审查抓手。
 var writeAnnotations = &sdk.ToolAnnotations{}
 
+// paginationIn 是分页工具的公共入参片段，由 list_namespaces / list_projects /
+// list_repos / list_operation_events 匿名内嵌复用。字段名与 jsonschema 描述是
+// 下发给模型的契约，集中一处定义才能保证四处的分页语义不会各自漂移。
+type paginationIn struct {
+	Page     int32 `json:"page,omitempty" jsonschema:"页码，从 1 开始，缺省 1"`
+	PageSize int32 `json:"page_size,omitempty" jsonschema:"每页条数，缺省 15"`
+}
+
 // toolset 持有工具实现所需的依赖。每个工具都是它的方法，注册时以方法值绑定，
 // 这样单个工具函数只关心「入参 → 调用 → 出参」，不需要层层传依赖。
 //
@@ -71,10 +79,14 @@ type toolset struct {
 	hibernateSvc hibernatepb.HibernateServer
 }
 
-// registerTools 把全部排查工具注册到 MCP server 上：前半是只读诊断工具（免客户端确认），
+// registerTools 把排查工具注册到 MCP server 上：前半是只读诊断工具（免客户端确认），
 // 后半是写工具（不打 ReadOnlyHint，由客户端弹人工确认）。新增工具请同步
 // mcp.go 的 serverInstructions，避免模型不知道该怎么用。
-func registerTools(srv *sdk.Server, deps Deps) {
+//
+// includeAdmin 控制是否注册管理员专属工具：MCP 传输层按连接身份选用不同的 server
+// 实例（见 mcp.go 的 NewServer），普通用户的 tools/list 里不会出现它们——权限差异
+// 从「连接时能看到什么」就开始体现，而不是等调用时才被 RequireAdmin 拒绝。
+func registerTools(srv *sdk.Server, deps Deps, includeAdmin bool) {
 	ts := &toolset{
 		projectBiz:   deps.ProjectBiz,
 		containerBiz: deps.ContainerBiz,
@@ -332,15 +344,74 @@ func registerTools(srv *sdk.Server, deps Deps) {
 			"需要管道、&&、重定向等 shell 特性时把 command 写成 [\"sh\",\"-c\",\"<完整命令>\"]；Pod 未运行或容器名不存在时返回工具错误。命令与结果会写入 mars 审计。",
 		Annotations: writeAnnotations,
 	}, ts.execCommand)
+
+	if includeAdmin {
+		registerAdminTools(srv, ts)
+	}
+}
+
+// requireAdmin 是管理员专属 MCP 工具的公共门禁。MCP 在进程内直调 services，
+// gRPC 的 Authorize 拦截器不会执行，故每个管理员工具都必须自己过同一套 AccessBiz 判据。
+func (t *toolset) requireAdmin(ctx context.Context, tool string) error {
+	if _, err := t.accessBiz.RequireAdmin(ctx, "mcp/"+tool); err != nil {
+		return err
+	}
+	return nil
+}
+
+// registerAdminTools 注册管理员专属工具。它们服务于仓库级管理（列仓库、读/改仓库
+// 自定义字段），不受项目权限边界约束，故**只注册进管理员视角的 server 实例**：
+// 普通用户连接时 tools/list 就看不到，模型不会误以为可调；即使绕过列表强行
+// tools/call，SDK 也会按未知工具拒绝（该 server 上根本没有这张表）。
+func registerAdminTools(srv *sdk.Server, ts *toolset) {
+	sdk.AddTool(srv, &sdk.Tool{
+		Name: "list_repos",
+		Description: "[仅管理员] 列出 mars 仓库（部署模板来源，项目从仓库创建），支持分页与名称/状态/AI Agent 标记过滤。" +
+			"返回 {page,page_size,count,items}：items 每项含 id、name、description（空时缺失）、enabled（false 时缺失）、" +
+			"need_git_repo（false 时缺失）、git_project_id、git_project_name、ai_agent（false 时缺失）、created_at、updated_at，按 id 倒序。" +
+			"name 是子串模糊匹配；enabled/ai_agent 传 true/false 即按该值筛选，不传则不筛。" +
+			"**items 不含 mars_config**（values.yaml、自定义字段定义、分支白名单、休眠配置都不在列表里）：" +
+			"要看某仓库的主要配置（values.yaml、分支、分区、休眠）和自定义字段，用 items[].id 作 repo_id 调 get_repo_custom_fields；改字段用 update_repo_custom_fields。" +
+			"count 为命中总数；分页缺省 page=1、page_size=15。无匹配结果时 items 与 count 因 proto omitempty 直接缺省，语义等同空列表（不是错误）。",
+		Annotations: readOnlyAnnotations,
+	}, ts.listRepos)
+
+	sdk.AddTool(srv, &sdk.Tool{
+		Name: "get_repo_custom_fields",
+		Description: "[仅管理员] 读取仓库配置：自定义字段定义（repo.mars_config.elements，项目「自定义参数」的唯一权威清单）" +
+			"以及部署相关的主要配置（values.yaml 模板、分支白名单、分区展示配置、定时休眠；config_file 等其余字段不在本工具出参内）。" +
+			"path 是 apply_project 的 extra_values 唯一合法键，type 决定取值约束，select_values 给出可选值域。" +
+			"返回 {repo_id, repo_name, values_yaml, branches[], group_settings[{name,order,collapsed}], " +
+			"hibernate{enabled,replica_paths,window_names}|null, elements[{path,type,default,description,select_values,order,textarea_language,group}]}；" +
+			"type 是**类型名字符串**（Input/InputNumber/Select/Radio/Switch/TextArea/NumberSelect/NumberRadio），不是数字枚举；" +
+			"elements/branches/group_settings 恒出现且为空时是空数组；hibernate 为 null 表示该仓库未配置休眠（区别于 enabled=false）。" +
+			"values_yaml 是仓库模板原文，可能含敏感配置（密钥、账号等）——仅管理员可见，请勿写入外部记录或转发。" +
+			"本工具只读，不修改仓库配置。",
+		Annotations: readOnlyAnnotations,
+	}, ts.getRepoCustomFields)
+
+	sdk.AddTool(srv, &sdk.Tool{
+		Name: "update_repo_custom_fields",
+		Description: "[仅管理员][写操作] 增量新增/整条覆盖/删除仓库级自定义字段（repo.mars_config.elements）。" +
+			"入参：repo_id 必填；upsert_elements 按 path 新增或整条替换（同一次调用内 path 不得重复）；remove_paths 删除已存在字段（路径不存在报错，不静默跳过）。" +
+			"两者至少提供一个，且同一 path 不能同时出现在 upsert 与 remove 中。" +
+			"type 接受短名（InputNumber）或枚举全名（ElementTypeInputNumber）；description 必填；默认值按元素类型强校验（Switch 必须是 bool、InputNumber/Number* 必须是整数、Select/Radio/Number* 必须落在 select_values 内），且 InputNumber/Switch/Select/Radio/Number* 的默认值不能为空（Input/TextArea 可空，与后台仓库表单口径一致）；非法即整次调用失败、仓库配置不变。" +
+			"order 是可选：更新已有字段不传则保留原顺序，新增字段不传则追加到末尾；显式传值以入参为准。" +
+			"**只改 elements，其余仓库配置（values.yaml、branches、配置片段、分区、休眠窗配置）原样保留**；本工具也不改仓库名、Git 绑定与描述。" +
+			"返回更新后的仓库配置（形状同 get_repo_custom_fields：repo_id、repo_name、values_yaml、branches、group_settings、hibernate、elements）。" +
+			"风险：**删除或改坏被休眠配置 replica_paths 引用的字段会直接报错**（事务不落库）；改了默认值只影响之后的新部署，不会重部署存量项目。" +
+			"**对存量项目的影响**：本工具只改仓库模板、不会自动重部署，但之后任何重部署或定时唤醒都会用项目已存的自定义值按**新定义**重新校验——改 type 或收窄 select_values 会让不兼容的项目部署失败（表现为 InvalidArgument，需改回定义或调整项目值）；删除字段会让该项目值在下次部署时被静默丢弃，并从项目记录中移除。改前务必确认影响面。" +
+			"并发风险：本工具先读后写且无版本校验，两个管理员同时编辑同一仓库时后写者会覆盖先写者的改动（包括名称与 Git 绑定回填），请避免并发编辑。",
+		Annotations: writeAnnotations,
+	}, ts.updateRepoCustomFields)
 }
 
 // ---------- list_namespaces ----------
 
 // listNamespacesIn 是 list_namespaces 的入参。
 type listNamespacesIn struct {
-	Page     int32  `json:"page,omitempty" jsonschema:"页码，从 1 开始，缺省 1"`
-	PageSize int32  `json:"page_size,omitempty" jsonschema:"每页条数，缺省 15"`
-	Name     string `json:"name,omitempty" jsonschema:"模糊过滤（可选）：匹配空间名，或该空间下任一项目名（用户常记得项目名而记不住空间名）"`
+	paginationIn
+	Name string `json:"name,omitempty" jsonschema:"模糊过滤（可选）：匹配空间名，或该空间下任一项目名（用户常记得项目名而记不住空间名）"`
 }
 
 // listNamespaces 列出当前用户可见的命名空间：直接复用 NamespaceSvc.List，由它按
@@ -402,8 +473,7 @@ func (t *toolset) getCurrentUser(ctx context.Context, _ *sdk.CallToolRequest, _ 
 type listProjectsIn struct {
 	Namespace string `json:"namespace" jsonschema:"命名空间名称（必填）"`
 	Name      string `json:"name,omitempty" jsonschema:"按项目名模糊过滤（可选，大小写不敏感）"`
-	Page      int32  `json:"page,omitempty" jsonschema:"页码，从 1 开始，缺省 1"`
-	PageSize  int32  `json:"page_size,omitempty" jsonschema:"每页条数，缺省 15"`
+	paginationIn
 }
 
 // projectSummary 是项目的精简视图。它是本工具集里唯一的「手工投影」——因为平台
@@ -644,10 +714,9 @@ func (t *toolset) listNamespaceEvents(ctx context.Context, _ *sdk.CallToolReques
 
 // listOperationEventsIn 是 list_operation_events 的入参。
 type listOperationEventsIn struct {
-	Page     int32  `json:"page,omitempty" jsonschema:"页码，从 1 开始，缺省 1"`
-	PageSize int32  `json:"page_size,omitempty" jsonschema:"每页条数，缺省 15"`
-	Search   string `json:"search,omitempty" jsonschema:"模糊搜索（可选）：匹配事件 message 与操作人 username"`
-	All      bool   `json:"all,omitempty" jsonschema:"仅管理员有效：true 时查看全部用户的事件；普通用户传了也仍只看本人"`
+	paginationIn
+	Search string `json:"search,omitempty" jsonschema:"模糊搜索（可选）：匹配事件 message 与操作人 username"`
+	All    bool   `json:"all,omitempty" jsonschema:"仅管理员有效：true 时查看全部用户的事件；普通用户传了也仍只看本人"`
 }
 
 // listOperationEvents 查询 mars 操作审计日志：复用 EventSvc.List——它按 ctx 中的用户

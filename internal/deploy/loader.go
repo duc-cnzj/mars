@@ -160,11 +160,13 @@ func (c *LoadContext) WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, 
 	}), nil
 }
 
+// helmChartLoader 抽象 helm chart 的加载方式（目录/归档），便于测试注入替身。
 type helmChartLoader interface {
 	LoadDir(dir string) (*chart.Chart, error)
 	LoadArchive(in io.Reader) (*chart.Chart, error)
 }
 
+// defaultFileOpener 是打开本地 chart 文件的默认实现。
 type defaultFileOpener struct{}
 
 // Open 打开本地文件，句柄由调用方（ChartFileLoader）负责关闭。
@@ -172,6 +174,7 @@ func (d *defaultFileOpener) Open(name string) (io.ReadCloser, error) {
 	return os.Open(name)
 }
 
+// defaultChartLoader 是 helm chart 加载器的默认实现，直接委托 helm 库。
 type defaultChartLoader struct{}
 
 // LoadArchive 从 Reader 加载 helm chart 归档。
@@ -184,6 +187,7 @@ func (d *defaultChartLoader) LoadDir(dir string) (*chart.Chart, error) {
 	return loader.LoadDir(dir)
 }
 
+// fileOpener 抽象 chart 文件的打开方式，便于测试注入恒失败替身。
 type fileOpener interface {
 	Open(name string) (io.ReadCloser, error)
 }
@@ -317,6 +321,7 @@ ingress:
 	enables: true
 ```
 */
+// ElementsLoader 把仓库配置的自定义字段定义应用到用户传入的 ExtraValues 上。
 type ElementsLoader struct{}
 
 // Load 按后台配置的元素定义校验用户传入的 ExtraValues，
@@ -450,6 +455,14 @@ func (d *ElementsLoader) typedValue(element *mars.Element, input string) (any, e
 	}
 }
 
+// ValidateElementDefault 按元素类型校验其默认值能被部署链路正确转换，供仓库配置写入时
+// 前置校验复用——部署时 ElementsLoader 走的是同一套 typedValue，提前校验可避免
+// 「配置保存成功、部署时才失败」。
+func ValidateElementDefault(element *mars.Element) error {
+	_, err := (&ElementsLoader{}).typedValue(element, element.Default)
+	return err
+}
+
 // isLegacyExtraValue 判断该字段名是不是「项目已落库的自定义元素值」的历史残留：仓库配置此后
 // 删除了该元素，但项目行里仍留着它，前端会按 finalExtraValues 原样回传。只有这种情况才容忍
 // 丢弃——项目的当前值就是权威依据，凭它可区分「老数据尾随」与「调用方凭空捏造」。
@@ -504,8 +517,11 @@ const (
 // 才会触发该边界。
 const UserTokenTTL = 12 * time.Hour
 
+// 系统变量与用户令牌占位符的匹配规则。
 var (
-	tagRegex          = regexp.MustCompile(leftDelim + `\s*(\.Branch|\.Commit|\.Pipeline)\s*` + rightDelim)
+	// tagRegex 匹配 <.Branch> / <.Commit> / <.Pipeline> 等系统变量占位符。
+	tagRegex = regexp.MustCompile(leftDelim + `\s*(\.Branch|\.Commit|\.Pipeline)\s*` + rightDelim)
+	// userTokenTagRegex 匹配 <.UserToken> 占位符（容忍内部空白）。
 	userTokenTagRegex = regexp.MustCompile(leftDelim + `\s*\.` + VarUserToken + `\s*` + rightDelim)
 )
 
