@@ -15,14 +15,14 @@ mars 的客户端 SDK 模块（`github.com/duc-cnzj/mars/api/v6`）。提供 **g
 | 传输 | HTTP/2 gRPC | HTTP/1.1 JSON（grpc-gateway） | WebSocket（二进制 protobuf 帧） |
 | 客户端 | `grpc.NewClient(addr, opts...)` | `http.NewClient(baseURL, opts...)` | `ws.NewClient(url, opts...)` |
 | 访问器 | `cli.Namespace().List(ctx, req)` | `cli.Namespace().List(ctx, req)` | `cli.OpenTerminal(ctx, container)` 终端入口 |
-| 流式 | 原生 gRPC stream | server-streaming → SSE/NDJSON |
-| 需要服务端 | mars gRPC 端口（如 `:50000`） | mars gateway 端口（如 `:4000`） |
+| 流式 | 原生 gRPC stream | server-streaming → SSE/NDJSON | bidi protobuf 帧（容器终端） |
+| 需要服务端 | mars gRPC 端口（如 `:50000`） | mars gateway 端口（如 `:4000`） | mars gateway WebSocket 端点（如 `:4000/ws`） |
 
-两个包都暴露同一批 17 个 service 访问器：`Auth/Repo/Changelog/Cluster/Container/Event/AccessToken/File/Git/Metrics/Namespace/Picture/Project/Version/Endpoint/Settings/User`。
+两个包都暴露同一批 18 个 service 访问器：`Auth/Repo/Changelog/Cluster/Container/Event/AccessToken/File/Git/Hibernate/Metrics/Namespace/Picture/Project/Version/Endpoint/Settings/User`。
 
 ### 能力差异：gRPC 特有 vs HTTP 特有
 
-gRPC 共 **91** 个方法，HTTP 共 **91** 个（88 个由 proto 的 `google.api.http` 注解生成 + 3 个手写）；其中 **88 个共享**（每个生成的 HTTP stub 在 gRPC 都有对应，签名一致）。差异只有两类，生成器/手写代码在源码里都有明确注释，可复核。
+gRPC 共 **98** 个方法，HTTP 共 **98** 个（95 个由 proto 的 `google.api.http` 注解生成 + 3 个手写）；其中 **95 个共享**（每个生成的 HTTP stub 在 gRPC 都有对应，签名一致）。差异只有两类，生成器/手写代码在源码里都有明确注释，可复核。
 
 **gRPC 特有（3 个）—— HTTP 侧无路由：**
 
@@ -258,7 +258,7 @@ go vet ./...               # 静态检查
 go test ./...              # 单测（手写生产代码 100%，rest/ 生成 stub 由漂移测试兜底）
 ```
 
-- grpc 包：bufconn 内存 gRPC 测试，覆盖登录/token 前缀/自动刷新/singleflight 去重/拦截器注入/17 个 service 访问器；
+- grpc 包：bufconn 内存 gRPC 测试，覆盖登录/token 前缀/自动刷新/singleflight 去重/拦截器注入/service 访问器装配；
 - http/transport 包：fake stream/conn 覆盖泛型流工厂与错误传播；
 - internal/flight 包：singleflight 去重（同 key 并发只执行一次、其余共享结果、完成后不缓存）全覆盖。
 

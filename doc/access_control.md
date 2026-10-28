@@ -3,16 +3,18 @@
 > 本表是 mars 全部传输接口（gRPC + HTTP）权限要求的权威清单，由 `internal/services/` 各服务实现反推归纳。
 > **维护约定**：改动任一服务的鉴权逻辑（登录白名单 / Authorize 门禁 / AccessBiz 调用）时，必须同步更新本文档，防止契约与实现漂移。
 
-## 1. 权限判定模型（7 级）
+## 1. 权限判定模型（9 级）
 
 | 等级 | 判定 | 说明 |
 |---|---|---|
 | 🆓 公开 | 命中 `biz.IsPublicMethod` 白名单（登录拦截器放行） | 无需任何凭证即可调用 |
 | 🔑 登录即可 | gRPC 登录拦截器校验 Bearer token | 任意有效 token 用户 |
-| 🛡️ 命名空间级 | `RequireNamespaceAccessByName` / `RequireNamespaceAccessByID` / `RequireProjectAccess` | 公开空间任意登录；私有空间仅 admin / 创建者 / 成员 |
+| 🛡️ 命名空间级 | `RequireNamespaceAccessByName` / `RequireNamespaceAccessByID` | 公开空间任意登录；私有空间仅 admin / 创建者 / 成员 |
+| 🧩 项目级 | `RequireProjectAccess` / `RequireProjectAccessByName` / `RequireProjectAccessByNamespaceID` | 先定位项目所属命名空间再按空间规则判定；按名/按空间 ID 的两个入口额外放行「当前用户自己的 AI 沙箱项目」 |
+| 🐳 Pod 级 | `RequirePodAccess` | 先按命名空间判可访问性，再额外放行「当前用户自己的 AI 沙箱 Pod」；供容器日志 / exec / 指标等 Pod 级操作使用 |
 | 🏠 owner 专属 | `RequireNamespaceOwner` | 仅命名空间创建者 |
 | ⭐ admin 专属 | `RequireAdmin`（Authorize 门禁） | 仅 admin 角色；fullMethodName 精确命中 allowlist 时豁免 |
-| ⭐⭐ 超管专属 | `RequireSuperAdmin`（Authorize 强制名单，比 admin 更严） | 仅内置超管；fullMethodName 精确命中 superOnly 时收紧阈值，未命中放行 |
+| ⭐⭐ 超管专属 | `RequireSuperAdmin` / 直接 `IsSuperAdmin` 判定（Authorize 强制名单，比 admin 更严） | 仅内置超管；`RequireSuperAdmin` 在 fullMethodName 精确命中 superOnly 时收紧阈值，未命中放行；settings 服务则无条件要求超管 |
 | 📄 文件所有者/admin | `RequireFileAccess` | `fil.Username == user.Name` 或 admin |
 
 ## 2. 判定载体（AccessBiz 方法 → 权限等级）
@@ -21,7 +23,10 @@
 |---|---|---|
 | `RequireNamespaceAccessByName(ctx, namespace)` | 🛡️ | 按 k8s 命名空间名定位 + 校验可访问性，返回命名空间 |
 | `RequireNamespaceAccessByID(ctx, id)` | 🛡️ | 按命名空间 ID 定位 + 校验可访问性，返回命名空间 |
-| `RequireProjectAccess(ctx, id)` | 🛡️ | 取项目 + 校验其所属命名空间可访问性，返回项目 |
+| `RequireProjectAccess(ctx, id)` | 🧩 | 取项目 + 校验其所属命名空间可访问性，返回项目 |
+| `RequireProjectAccessByName(ctx, namespace, projectName)` | 🧩 | 按「空间名 + 项目名」定位并校验；空间 ACL 拒绝时仅放行当前用户自己的 AI 沙箱项目 |
+| `RequireProjectAccessByNamespaceID(ctx, namespaceID, projectName)` | 🧩 | 上述门卫的按 ID 寻址孪生，语义一致；deploy 编排使用本入口 |
+| `RequirePodAccess(ctx, namespace, pod)` | 🐳 | 按命名空间判可访问性，并额外放行当前用户自己的 AI 沙箱 Pod |
 | `RequireNamespaceOwner(ctx, ns)` | 🏠 | 校验当前用户是否为命名空间创建者 |
 | `RequireAdmin(ctx, fullMethodName, allowlist...)` | ⭐ | allowlist 精确命中放行，否则要求 admin |
 | `RequireSuperAdmin(ctx, fullMethodName, superOnly...)` | ⭐⭐ | superOnly 精确命中时要求内置超管（否则 403），未命中放行。⚠️ 与 `RequireAdmin` **极性相反**：那里是「豁免 admin」的白名单，这里是「必须超管」的强制名单 |
@@ -39,21 +44,24 @@
 | `RequireNamespaceAccessByName` | 这个叫 X 的空间，你能进吗？能进就把空间对象顺带还你 | ✅ 空间对象 |
 | `RequireNamespaceAccessByID` | 这个报 ID 的空间，你能进吗？判定逻辑同上，只是按 ID 定位 | ✅ 空间对象 |
 | `RequireProjectAccess` | 这个项目能看吗？先查它挂在哪个命名空间下，再按命名空间规则判。项目携带部署配置/环境变量，必须查归属防枚举 ID 拖库 | ✅ 项目对象 |
+| `RequireProjectAccessByName` | 这个空间里的这个项目，你能动吗？空间 ACL 拒绝时，只有「当前用户自己的 AI 沙箱项目」例外放行 | ✅ 空间对象 |
+| `RequireProjectAccessByNamespaceID` | 同上，只是空间用 ID 定位；部署编排走这个入口 | ✅ 空间对象 |
+| `RequirePodAccess` | 这个 Pod 你能操作吗？先判空间可访问性，再对「当前用户自己的 AI 沙箱 Pod」例外放行 | ✅ 空间对象 |
 | `RequireNamespaceOwner` | 你是这个空间的房主（创建者）或 admin 吗？只管 yes/no，不返回对象 | ❌ |
 | `RequireAdmin` | 大门守卫：白名单精确命中就放行，否则必须是 admin（抄错一个字符都不算豁免） | ❌ |
 | `RequireSuperAdmin` | 比 admin 更高的闸：**调的是这个方法名**（如 Restore / AdminDeletedList）就必须是内置超管，普通 admin 也不行——恢复会重建集群骨架，阈值收得更紧 | ❌ |
 | `RequireFileAccess` | 文件上传者是你，或你是 admin？HTTP 下载直接对象比对；gRPC ShowRecords 回放先 `GetByID` 查库取文件元数据再比对 | ❌ |
 | `CanAccessNamespace` | 这个空间你能不能进？只回答能/不能，不报错——「进不去」当作「不存在」静默隐藏，不暴露存在性 | ❌ |
 
-记忆法：1/2/3 负责「能看某块资源吗」且通过后带实体；4 负责「你能动这块地吗」；5 是全局 admin 大闸；6 是「比 admin 更严」的超管闸（只对强制名单内的方法收紧）；7 是文件所有者轻量闸（HTTP 下载 / ShowRecords 回放）；8 是 1/2/3 的纯布尔底座（能进=1、不能=0，不报错）。§3 鉴权链正是三层叠用：登录拦截器 → Authorize（5/6）→ 方法内（1/2/3/4/7/8）。
+记忆法：命名空间 / 项目 / Pod 级负责「能看、能动某块资源吗」且通过后带实体；owner 负责「你能动这块地吗」；admin 是全局大闸；superadmin 是「比 admin 更严」的闸；file 是文件所有者轻量闸（HTTP 下载 / ShowRecords 回放）；`CanAccessNamespace` 是命名空间级的纯布尔底座（能进=1、不能=0，不报错）。§3 鉴权链正是三层叠用：登录拦截器 → Authorize（admin/superadmin）→ 方法内（命名空间/项目/Pod/owner/file 级）。
 
 ## 3. gRPC 鉴权链（三层叠加）
 
 每个 gRPC 方法按序经过（`internal/server/grpc.go` + `internal/server/middlewares/login.go` + `interceptor.go`）：
 
 1. **登录拦截器**（`middlewares.LoginUnaryServerInterceptor(authFn, logger)` / Stream 版 `LoginStreamServerInterceptor(authFn, logger)`）：命中 `biz.IsPublicMethod` 白名单（与 §4.1 免登录清单逐行对应，白名单归属 biz 层）的公开方法直接放行；其余方法要求 Bearer token，校验通过后把用户注入上下文；认证失败打 `[auth audit]` Warning 审计日志（401 兜底）。
-2. **Authorize 门禁**（`AuthUnaryServerInterceptor`）：服务实现 `Authorize` 接口（file/repo/namespace/project/user/settings/cluster）→ 自动调用 `Authorize(ctx, fullMethodName)`，内部走 `RequireAdmin`；namespace/project 两个服务的 `Authorize` 会先过一道 `RequireSuperAdmin` 强制名单（收 Restore 及其配套的 AdminDeletedList，阈值严于 admin）。
-3. **方法内访问控制**：各服务方法体开头调用 AccessBiz 的 Require*/Can* 方法（命名空间/项目/owner 级）。
+2. **Authorize 门禁**（`AuthUnaryServerInterceptor`）：服务实现 `Authorize` 接口（file/repo/hibernate/namespace/project/user/settings/cluster）→ 自动调用 `Authorize(ctx, fullMethodName)`，内部走 `RequireAdmin`；settings 例外，直接 `IsSuperAdmin` 要求内置超管；namespace/project 两个服务的 `Authorize` 会先过一道 `RequireSuperAdmin` 强制名单（收 Restore 及其配套的 AdminDeletedList，阈值严于 admin）。
+3. **方法内访问控制**：各服务方法体开头调用 AccessBiz 的 Require*/Can* 方法（命名空间/项目/Pod/owner/file 级）。
 
 ## 4. 各服务方法 → 权限对照
 
@@ -66,24 +74,24 @@
 | picture | Background | 🆓 | biz.IsPublicMethod 白名单 |
 | version | Version | 🆓 | biz.IsPublicMethod 白名单 |
 
-### 4.2 admin 门禁服务（⭐，Authorize → RequireAdmin）
+### 4.2 admin / 超管门禁服务（⭐ / ⭐⭐，Authorize 门禁）
 
 | 服务 | 方法 | 权限 | 依据 |
 |---|---|---|---|
 | file | MaxUploadSize | 🔑 | allowlist `/file.File/MaxUploadSize` |
-| file | ShowRecords | 📄 `RequireFileAccess`（所有者/admin） | file.go:79 方法体 `GetByID` + `RequireFileAccess`；allowlist file.go:135 放行后做所有者判定 |
+| file | ShowRecords | 📄 `RequireFileAccess`（所有者/admin） | file.go:86 方法体 `GetByID` + `RequireFileAccess`；allowlist file.go:135 放行后做所有者判定 |
 | file | List / DiskInfo / Delete | ⭐ | file.go:135（Authorize 门禁） |
 | repo | List / Show | 🔑 | allowlist `/repo.Repo/List` `/Show` |
-| repo | Create / Update / ToggleEnabled / Delete / Clone / Import / Export / ExportOne | ⭐ | repo.go:357（Authorize 门禁） |
-| user | List / ToggleAdmin / Sync | ⭐ | user.go:38（Authorize → RequireAdmin，无 allowlist，整服务 admin） |
-| settings | Get | ⭐ | settings.go:40（Authorize → RequireAdmin，无 allowlist，整服务 admin） |
-| cluster | ClusterBoard / ResourceBoard / DeployTrend | ⭐ | cluster.go:52（Authorize → RequireAdmin，allowlist 仅 ClusterInfo，其余全 admin；ClusterInfo 免登录见 §4.1） |
-| namespace | AdminList | ⭐ | namespace.go:72（Authorize allowlist 放行用户方法，AdminList 未豁免 → 落到 RequireAdmin） |
-| namespace | **Restore** | ⭐⭐ | namespace.go:66（`RequireSuperAdmin` 强制名单；Restore 同时不在 allowlist 中） |
-| namespace | **AdminDeletedList** | ⭐⭐ | namespace.go:66（同上名单；列「有哪些空间可恢复」与恢复同阈值） |
-| project | Liveness | ⭐ | project.go:143（Authorize allowlist 放行用户方法，Liveness 未豁免 → 落到 RequireAdmin） |
-| project | **Restore** | ⭐⭐ | project.go:137（`RequireSuperAdmin` 强制名单；Restore 同时不在 allowlist 中） |
-| project | **AdminDeletedList** | ⭐⭐ | project.go:137（同上名单；列「有哪些项目可恢复」与恢复同阈值） |
+| repo | Create / Update / ToggleEnabled / Delete / Clone / Import / Export / ExportOne | ⭐ | repo.go:369（Authorize 门禁） |
+| user | List / ToggleAdmin / ResetRolesOverride / ToggleGray | ⭐ | user.go:38（Authorize → RequireAdmin，无 allowlist，整服务 admin） |
+| settings | Get | ⭐⭐ 内置超管 | settings.go:39（Authorize 直接 `IsSuperAdmin`，无 allowlist，整服务超管） |
+| cluster | ClusterBoard / ResourceBoard / DeployTrend | ⭐ | cluster.go:51（Authorize → RequireAdmin，allowlist 仅 ClusterInfo，其余全 admin；ClusterInfo 免登录见 §4.1） |
+| namespace | AdminList | ⭐ | namespace.go:76（Authorize allowlist 放行用户方法，AdminList 未豁免 → 落到 RequireAdmin） |
+| namespace | **Restore** | ⭐⭐ | namespace.go:70（`RequireSuperAdmin` 强制名单；Restore 同时不在 allowlist 中） |
+| namespace | **AdminDeletedList** | ⭐⭐ | namespace.go:70（同上名单；列「有哪些空间可恢复」与恢复同阈值） |
+| project | Liveness | ⭐ | project.go:152（Authorize allowlist 放行用户方法，Liveness 未豁免 → 落到 RequireAdmin） |
+| project | **Restore** | ⭐⭐ | project.go:146（`RequireSuperAdmin` 强制名单；Restore 同时不在 allowlist 中） |
+| project | **AdminDeletedList** | ⭐⭐ | project.go:146（同上名单；列「有哪些项目可恢复」与恢复同阈值） |
 | hibernate | CreateWindow / UpdateWindow / DeleteWindow / SetWindowRepos / ListCandidateRepos | ⭐ | hibernate.go:50（Authorize allowlist 仅豁免 ListWindows 登录可读，其余未命中 → RequireAdmin） |
 
 > **Restore（误删恢复）为超管专属性**：两个 Restore 在 `Authorize` 开头命中 `RequireSuperAdmin` 强制名单——**仅内置超管放行，普通 admin 一律 403**；它们同时也不在 `RequireAdmin` 的 allowlist 中。项目侧另有 `RequireNamespaceAccessByName` 作为第二道"空间可访问"前置校验。设计取舍：
@@ -93,75 +101,83 @@
 > - **前端入口**：「管理后台 → 误删恢复」（`/admin/restore`，仅内置超管可见 + `RequireSuperAdmin` 路由守卫）。页面分「空间 / 项目」两个 Tab：空间 Tab 列出已删空间（行内以 chip 列出将连带恢复的项目**名称**，超出折行展示）并按名恢复；项目 Tab 只列**单独删除**的项目（`deleted_with_namespace=false`），随空间级联删除的那批须先恢复其所属空间——列表口径与 `projectRepo.RestoreDeleted` 的前置校验（空间须存活）严格一致。
 
 
-### 4.3 命名空间/项目级访问控制（🛡️ / 🏠）
+### 4.3 命名空间/项目/Pod 级访问控制（🛡️ / 🧩 / 🐳 / 🏠）
 
 | 服务 | 方法 | 权限 | 依据 |
 |---|---|---|---|
-| namespace | Show | 🛡️ `RequireNamespaceAccessByID` | namespace.go:165 |
-| namespace | Transfer / Delete / UpdatePrivate / SyncMembers | 🏠 `RequireNamespaceOwner` | namespace.go:55 `showNsAndCheckOwner` |
-| namespace | List / Create / IsExists | 🔑 | List 按 user 过滤；IsExists 私有空间视同不存在；Create+IgnoreIfExists 命中无权访问空间返 403（namespace.go:139） |
-| namespace | Favorite | 🛡️ `RequireNamespaceAccessByID` | services/namespace.go:320（缺此校验会退化成空间存在性预言机，见下） |
-| namespace | **UpdateDesc** | 🔑 登录即可 | ⚠️ 无 owner/访问校验，见 §6.1 |
-| project | Show / MemoryCpuAndEndpoints / Delete / Version / AllContainers | 🛡️ `RequireProjectAccess` | project.go:206 |
-| project | ToggleHibernate | 🛡️ `RequireProjectAccess` | project.go:462（allowlist 豁免 admin，命名空间成员即可切换休眠开关；UI 无 isAdmin 门） |
-| project | ShowByName | 🛡️ `RequireNamespaceAccessByName` → `RequireProjectAccess` | 先按空间名过门卫，再用反查到的 id 走与 Show 同一出口 |
-| project | WebApply / Apply | 🛡️ `RequireNamespaceAccessByID` | deploy/apply.go:62（私有空间成员即可部署） |
-| project | WebApplyByName | 🛡️ `RequireNamespaceAccessByName`（再按 id 复核） | 空间名反查即过门卫，deploy.ApplyProject 内再复核 namespace_id；仓库由 name 匹配或 repo_id 指定，后续有「绑定仓库不可变」守卫 |
+| namespace | Show | 🛡️ `RequireNamespaceAccessByID` | namespace.go:272 |
+| namespace | Transfer / Delete / UpdatePrivate / SyncMembers / UpdateConfig | 🏠 `RequireNamespaceOwner` | `showNsAndCheckOwner` namespace.go:95；UpdateConfig 调用点 :501 |
+| namespace | List / Create / IsExists | 🔑 | List 按 user 过滤；IsExists 私有空间视同不存在；Create+IgnoreIfExists 命中无权访问空间返 403（namespace.go:246） |
+| namespace | Favorite | 🛡️ `RequireNamespaceAccessByID` | namespace.go:398（缺此校验会退化成空间存在性预言机，见下） |
+| namespace | FavoriteSort | 🔑 登录即可（仅调整本人关注排序，无资源级校验） | namespace.go:425 |
+| namespace | **UpdateDesc** | 🔑 登录即可 | ⚠️ 无 owner/访问校验，见 §6.1（namespace.go:283） |
+| project | Show / MemoryCpuAndEndpoints / Delete / Version / AllContainers | 🧩 `RequireProjectAccess` | project.go:418 / 512 / 530 / 614 / 628 |
+| project | ToggleHibernate | 🧩 `RequireProjectAccess` | project.go:462（allowlist 豁免 admin，命名空间成员即可切换休眠开关；UI 无 isAdmin 门） |
+| project | CheckApplyStatus / ResourceTree | 🧩 `RequireProjectAccess` | project.go:642 / 659 |
+| project | ShowByName | 🧩 `RequireProjectAccessByName` | project.go:444（空间 ACL 拒绝时仅放行自己的 AI 沙箱项目） |
+| project | WebApply / Apply | 🧩 `RequireProjectAccessByNamespaceID` | deploy/apply.go:87（私有空间成员即可部署；平台受信编排可跳过，标记仅 deploy 包内可写） |
+| project | WebApplyByName | 🧩 `RequireProjectAccessByName`（部署编排再复核） | project.go:236；deploy.ApplyProject 内 apply.go:87 再按空间 ID + 项目名复核；仓库由 name 匹配或 repo_id 指定，后续有「绑定仓库不可变」守卫 |
 | project | List | 🔑 | data 层按命名空间访问谓词过滤 |
-| container | IsPodRunning / IsPodExists / ContainerLog / CopyToPod / StreamCopyToPod / StreamContainerLog / Exec / ExecOnce | 🛡️ `RequireNamespaceAccessByName` | container.go |
+| container | IsPodRunning / IsPodExists / ContainerLog / CopyToPod / StreamCopyToPod / StreamContainerLog / Exec / ExecOnce / ForceDeletePod | 🐳 `RequirePodAccess` | container.go:62 / 72 / 91 / 116 / 180 / 262 / 311 / 328 / 344；CopyToPod 另加 `RequireFileAccess`（container.go:128） |
 | endpoint | InNamespace | 🛡️ `RequireNamespaceAccessByID` | endpoint.go:42 |
-| endpoint | InProject | 🛡️ `RequireProjectAccess` | endpoint.go:55 |
-| changelog | FindLastChangelogsByProjectID | 🛡️ `RequireProjectAccess` | changelog.go:49（携带完整 Config/EnvValues） |
-| metrics | TopPod / StreamTopPod | 🛡️ `RequireNamespaceAccessByName` | metrics.go:64 / 84 |
-| metrics | CpuMemoryInProject | 🛡️ `RequireProjectAccess` | metrics.go:127 |
-| metrics | CpuMemoryInNamespace | 🛡️ `RequireNamespaceAccessByID` | metrics.go:143 |
+| endpoint | InProject | 🧩 `RequireProjectAccess` | endpoint.go:55 |
+| changelog | FindLastChangelogsByProjectID | 🧩 `RequireProjectAccess` | changelog.go:49（携带完整 Config/EnvValues） |
+| metrics | TopPod / StreamTopPod | 🐳 `RequirePodAccess` | metrics.go:64 / 84 |
+| metrics | CpuMemoryInProject | 🧩 `RequireProjectAccess` | metrics.go:126 |
+| metrics | CpuMemoryInNamespace | 🛡️ `RequireNamespaceAccessByID` | metrics.go:142 |
 
 ### 4.4 登录即可（🔑，无资源级控制）
 
 | 服务 | 方法 | 权限 | 依据 |
 |---|---|---|---|
 | auth | Info | 🔑 | 登录拦截器验签后注入 ctx 用户，本方法 `MustGetUser` 取用户做映射（无用户=编程错误 panic，白名单不含 Info） |
-| accessToken | List | 🔑 | 按 Email 只返回本人 token（access_token.go:55） |
+| accessToken | List | 🔑 | 按 Email 只返回本人 token（access_token.go:58） |
 | accessToken | Grant / Lease / Revoke | 🔑 | 按 token 值操作，"持有即有权"（见 §6.3） |
-| git | AllRepos / ProjectOptions / BranchOptions / CommitOptions / Commit / PipelineInfo / GetChartValuesYaml | 🔑 | git 信息不绑定命名空间（全局仓库） |
-| event | List / Show | 🔑 登录即可（普通用户仅见本人） | event.go:54 按操作人邮箱（operator_email）归属过滤：admin 全量，普通用户只看自己的事件；Show 越权访问返回 404（视同不存在，防审计日志 id 枚举） |
-| hibernate | ListWindows | 🔑 | hibernate.go:46（Authorize allowlist 豁免，登录即可读全量时间窗；项目卡片按 window_names 展示时段需要。Create/Update/Delete 仍 admin，见 §4.2） |
+| git | AllRepos / ProjectOptions / BranchOptions / CommitOptions / Commit / PipelineInfo / PipelineInfoByRepoId / PipelineJobOptions / GetChartValuesYaml | 🔑 | git 信息不绑定命名空间（全局仓库） |
+| event | List / Show | 🔑 登录即可（普通用户仅见本人） | event.go:55 按操作人邮箱（operator_email）归属过滤：admin 全量，普通用户只看自己的事件；Show（event.go:92）越权访问返回 404（视同不存在，防审计日志 id 枚举） |
+| hibernate | ListWindows | 🔑 | hibernate.go:55（Authorize allowlist 豁免，登录即可读全量时间窗；项目卡片按 window_names 展示时段需要。Create/Update/Delete 仍 admin，见 §4.2） |
 
-## 5. HTTP 端点（httphandler.go / file_handler.go / swagger_handler.go）
+## 5. HTTP 端点（`server/http.go` 路由装配 + 各 handler）
 
 | 端点 | 权限 | 依据 |
 |---|---|---|
-| POST /api/files（上传） | 🔑 authenticated | file_handler.go:62（authHandler 包装） |
-| GET /api/download_file/{id} | 📄 `RequireFileAccess` | file_handler.go:104 |
-| POST /api/copy_from_pod | 🛡️ `RequireNamespaceAccessByName` | file_handler.go:144 |
-| /api/ws_info | 🆓 公开（仅 `Recovery/RouteLogger/AllowCORS`） | httphandler.go:60 注册在**裸 router**（不经 gmux 鉴权链），INFO 为调试探活端点；见 §6.5 |
-| /ws | 🆓 握手公开，鉴权在 `HandleAuthorize` 帧 | httphandler.go:61；controller.go:170 先 `upgrader.Upgrade` 建连，鉴权发生在后续 `HandleAuthorize` 帧（协议固有），未鉴权连接在 `pongWait` 内可保活 |
+| POST /api/files（上传） | 🔑 authenticated | file_handler.go:63（authHandler 包装） |
+| GET /api/download_file/{id} | 📄 `RequireFileAccess` | file_handler.go:105 |
+| POST /api/copy_from_pod | 🐳 `RequirePodAccess` | file_handler.go:146 |
+| POST /mcp（Streamable HTTP） | 🔑 LoginHTTP | server/http.go:204 注册在裸 router；`services/mcp/mcp.go` 内部复用 `middlewares.LoginHTTP`，并按连接身份裁剪工具集 |
+| GET /api/ai/config | 🔑 LoginHTTP | aiconfig.go:56（agent 运行时配置只读） |
+| GET /api/ai/status、POST /api/ai/agent/enable | 🔑 LoginHTTP | aiagent.go:133-134 |
+| /llm/v1/* | 🔑 LoginHTTP + 「AI 已启用且当前用户已部署 agent」闸 | llmproxy.go:86 路由；llmproxy.go:92-115 准入校验 |
+| /api/ws_info | 🆓 公开（仅 `Recovery/RouteLogger/AllowCORS`） | httphandler.go:101 注册在**裸 router**（不经 gmux 鉴权链），INFO 为调试探活端点；见 §6.5 |
+| /ws | 🆓 握手公开，鉴权在 `HandleAuthorize` 帧 | httphandler.go:102；controller.go:170 先 `upgrader.Upgrade` 建连，鉴权发生在后续 `HandleAuthorize` 帧（协议固有），未鉴权连接在 `pongWait` 内可保活 |
 | /doc/swagger.json、/docs/ | 🆓 公开（仅 HttpCache） | swagger_handler.go:26 |
+
+> `/mcp`、`/api/ai/*`、`/llm/v1/*` 与 `/api/ws_info`、`/ws` 一样注册在 **裸 router** 上，必须先于 `PathPrefix("/api/")` 与 SPA 兜底注册，否则会被 grpc-gateway / index.html 吞掉；它们的鉴权由 handler 内部 `middlewares.LoginHTTP` 完成，不经过 gmux 鉴权链。`/api/files`、`/api/download_file/{id}`、`/api/copy_from_pod` 则注册在 gmux 上，走与 gRPC 同一套登录链。
 
 > gRPC file 服务的 admin 门禁与文件所有者判定是**两条独立规则**：HTTP 下载与 gRPC ShowRecords 共用 `RequireFileAccess` 放行文件所有者/admin，其余 gRPC 文件管理（列表/磁盘信息/删除）仍走 Authorize admin 门禁。ShowRecords 先 allowlist 过 admin 门禁，再在方法体内 `RequireFileAccess` 做所有者判定——两层叠加，普通用户仅能回放自己的会话。
 
 ## 6. 审计观察（蓝军视角）
 
 ### 6.1 namespace.UpdateDesc —— 越权改写面（潜在缺口）
-`UpdateDesc` 改任意命名空间描述（含私有空间）无需 owner/访问校验，与 Transfer/Delete/UpdatePrivate/SyncMembers 四个 owner 变更入口的收口不一致。若描述承载敏感信息，即构成越权改写。**建议**：统一走 `showNsAndCheckOwner`。
+`UpdateDesc` 改任意命名空间描述（含私有空间）无需 owner/访问校验，与 Transfer/Delete/UpdatePrivate/SyncMembers/UpdateConfig 五个 owner 变更入口的收口不一致。若描述承载敏感信息，即构成越权改写。**建议**：统一走 `showNsAndCheckOwner`。
 
-### 6.2 project.Apply/WebApply/WebApplyByName —— 部署门槛 = 命名空间可访问性
-三个部署入口（`Apply`、`WebApply`、`WebApplyByName`）共用 `deploy/apply.go:62` 的同一道门卫，私有空间**任何成员**都可发起部署（helm 安装/资源变更）。部署是高风险副作用，如需收紧为 owner/admin，把该处的 `RequireNamespaceAccessByID` 换成 owner 判定即可三入口同时生效。
+### 6.2 project.Apply/WebApply/WebApplyByName —— 部署门槛 = 项目级访问控制
+三个部署入口（`Apply`、`WebApply`、`WebApplyByName`）最终共用 `deploy/apply.go:87` 的同一道项目级门卫 `RequireProjectAccessByNamespaceID`：私有空间**任何成员**都可发起部署（helm 安装/资源变更），同时按「空间 ID + 项目名」额外放行当前用户自己的 AI 沙箱项目。平台内部受信编排（AI Agent 部署到私有空间）可通过 `hasTrustedNamespaceAccess` 跳过，该标记只能由 deploy 包写入。`WebApplyByName` 在进入编排前还会先走 `RequireProjectAccessByName`（`project.go:236`）。部署是高风险副作用，如需收紧为 owner/admin，把 `apply.go:87` 的判定换成 owner 判定即可三入口同时生效。
 
 ### 6.3 accessToken.Revoke/Lease —— 不校验 token 归属
 知道 token 值即可撤销/续租（`accessTokenBiz.Revoke` 直接 `repo.Revoke`）。token 是机密凭证（非可枚举 ID），"持有即有权"语义成立，属合理设计；但该约定必须钉死在文档/注释里，防止未来误加归属校验导致自助撤销失效。
 
 ### 6.4 namespace.Create+IgnoreIfExists —— 幂等放行的访问门禁（已修复）
 
-`IgnoreIfExists=true` 命中已存在命名空间时原本原样返回该空间完整对象——`preCheckNs` 来自全局 `FindByName`（不感知权限），若命中的是私有空间且调用者无权访问，描述/成员邮箱/创建者等元数据会泄露给无权限用户。已修复（services/namespace.go:139）：放行前先 `n.access.CanAccessNamespace` 校验，无权访问直接 403，与 IsExists"私有空间视同不存在"的隐藏语义对齐。
+`IgnoreIfExists=true` 命中已存在命名空间时原本原样返回该空间完整对象——`preCheckNs` 来自全局 `FindByName`（不感知权限），若命中的是私有空间且调用者无权访问，描述/成员邮箱/创建者等元数据会泄露给无权限用户。已修复（services/namespace.go:246）：放行前先 `n.accessBiz.CanAccessNamespace` 校验，无权访问直接 403，与 IsExists"私有空间视同不存在"的隐藏语义对齐。
 
 **残留（可接受）**：`IgnoreIfExists=false` 的 AlreadyExists 响应仍向调用者暴露同名空间"存在"这一事实（存在性预言机）。因 k8s 命名空间全局唯一，此事实在集群层本就公开，无法彻底消除；代价是 IsExists 的存在性隐藏被 Create 部分绕过。**保持不变量**：Create 的 FindByName 预查必须是全局查（不按权限过滤）——若改成权限过滤，无权限用户会被引导去 k8s 创建同名空间，撞 k8s 全局唯一性后反推"存在"反而更糟，且幂等部署会误判重复创建。
 
 ### 6.5 /api/ws_info 与 /ws —— 免登录端点（文档已对齐实现，非缺口）
 
-`RegisterWsRoute`（httphandler.go:59-62）把两个端点注册在**裸 `router`** 上而非 `gmux`；之后的 `router.PathPrefix("/api/")`（http.go:160）只兜底未被精确匹配的路径，`gmux` 的鉴权链不经此处。两者只过 `defaultMiddlewares`（http.go:29-33：`Recovery/RouteLogger/AllowCORS`，均无鉴权）。
+`RegisterWsRoute`（httphandler.go:98-102）把两个端点注册在**裸 `router`** 上而非 `gmux`；之后的 `router.PathPrefix("/api/")`（http.go:214）只兜底未被精确匹配的路径，`gmux` 的鉴权链不经此处。两者只过 `defaultMiddlewares`（http.go:29-33：`Recovery/RouteLogger/AllowCORS`，均无鉴权）。
 
-- `/api/ws_info`：`websocketManager.Info`（controller.go:159-165）零校验直接返回 `sub.Info()`——redis 后端为 `{subscribers, id}`，memory 后端为当前**全部连接的 id→uid 映射**（wssender/memory/memory.go:239-242）。定位是调试探活端点、非业务数据面；uid 在 `Serve` 中默认随机 uuid（仅客户端显式传 `?uid=` 才可控，controller.go:180-184），不构成真实用户身份泄露。
+- `/api/ws_info`：`websocketManager.Info`（controller.go:159-165）零校验直接返回 `sub.Info()`——redis 后端为 `{subscribers, id}`，memory 后端为当前**全部连接的 id→uid 映射**（wssender/memory/memory.go:236-244）。定位是调试探活端点、非业务数据面；uid 在 `Serve` 中默认随机 uuid（仅客户端显式传 `?uid=` 才可控，controller.go:177-186），不构成真实用户身份泄露。
 - `/ws`：`upgrader.Upgrade`（controller.go:170）先握手建连，鉴权发生在建连后的 `HandleAuthorize` 帧——这是 WebSocket over HTTP 的协议固有顺序（握手阶段本就拿不到业务鉴权帧），"握手即鉴权"无法实现。代价是预认证连接可在 `pongWait` 内保活，且每连接即占 3 个 goroutine + 1 个 pubsub，**无限速/连接上限**；如需收敛，需在 `Serve` 入口加连接数上限或握手期 token 预校验。
 
 ### 6.6 按名字寻址的访问门卫必须预加载 Members（已修复，须保持）

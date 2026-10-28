@@ -15,14 +15,14 @@ The client SDK module for mars (`github.com/duc-cnzj/mars/api/v6`). It ships thr
 | Transport | HTTP/2 gRPC | HTTP/1.1 JSON (grpc-gateway) | WebSocket (binary protobuf frames) |
 | Client | `grpc.NewClient(addr, opts...)` | `http.NewClient(baseURL, opts...)` | `ws.NewClient(url, opts...)` |
 | Accessor | `cli.Namespace().List(ctx, req)` | `cli.Namespace().List(ctx, req)` | `cli.OpenTerminal(ctx, container)` terminal entry point |
-| Streaming | native gRPC stream | server-streaming → SSE/NDJSON |
-| Server needed | mars gRPC port (e.g. `:50000`) | mars gateway port (e.g. `:4000`) |
+| Streaming | native gRPC stream | server-streaming → SSE/NDJSON | bidi protobuf frames (container terminal) |
+| Server needed | mars gRPC port (e.g. `:50000`) | mars gateway port (e.g. `:4000`) | mars gateway WebSocket endpoint (e.g. `:4000/ws`) |
 
-Both packages expose the same 17 service accessors: `Auth/Repo/Changelog/Cluster/Container/Event/AccessToken/File/Git/Metrics/Namespace/Picture/Project/Version/Endpoint/Settings/User`.
+Both packages expose the same 18 service accessors: `Auth/Repo/Changelog/Cluster/Container/Event/AccessToken/File/Git/Hibernate/Metrics/Namespace/Picture/Project/Version/Endpoint/Settings/User`.
 
 ### Capability differences: gRPC-only vs HTTP-only
 
-gRPC has **91** methods, HTTP also has **91** (88 generated from proto `google.api.http` annotations + 3 hand-written); **88 are shared** (every generated HTTP stub has a matching gRPC counterpart with an identical signature). There are only two kinds of difference, and both are called out explicitly in the generator or the hand-written source, so you can verify them yourself.
+gRPC has **98** methods, HTTP also has **98** (95 generated from proto `google.api.http` annotations + 3 hand-written); **95 are shared** (every generated HTTP stub has a matching gRPC counterpart with an identical signature). There are only two kinds of difference, and both are called out explicitly in the generator or the hand-written source, so you can verify them yourself.
 
 **gRPC-only (3) — no HTTP route exists:**
 
@@ -263,7 +263,7 @@ go vet ./...               # static analysis
 go test ./...              # unit tests (hand-written production code at 100%; rest/ generated stubs are covered by the drift test)
 ```
 
-- grpc package: bufconn in-memory gRPC tests covering login / token prefix / auto-refresh / singleflight dedup / interceptor injection / the 17 service accessors;
+- grpc package: bufconn in-memory gRPC tests covering login / token prefix / auto-refresh / singleflight dedup / interceptor injection / service accessor wiring;
 - http/transport package: fake stream/conn covering the generic stream factory and error propagation;
 - internal/flight package: full coverage of singleflight dedup (concurrent calls on the same key execute once, the rest share the result, and nothing is cached after completion).
 

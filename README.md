@@ -36,6 +36,8 @@ As DevOps takes hold, software development now demands not only efficiency but a
 - Automatic HTTPS domain configuration.
 - High availability with elastic scaling.
 - Full CLI support.
+- MCP (Model Context Protocol) endpoint `/mcp` over standard Streamable HTTP, usable from Claude Code / opencode / Cursor for container troubleshooting and deployment config — see [doc/mcp.md](doc/mcp.md).
+- Built-in AI Agent sandbox assistant: spins up a per-user sandbox (opencode + `mai`) that troubleshoots containers over MCP and chats through the LLM proxy, scaling to zero when idle — see [doc/ai_agent.md](doc/ai_agent.md); the sandbox source and chart live in [mars-ai-agent](https://github.com/duc-cnzj/mars-ai-agent).
 - View container logs.
 - View container CPU and memory usage.
 - Pluggable
@@ -84,13 +86,13 @@ Mars reads YAML configuration via `-c, --config`; it defaults to `config.yaml` i
 | Key                         | Default                          | Description                                                    |
 | --------------------------- | -------------------------------- | -------------------------------------------------------------- |
 | `app_port`                  | `4000`                           | HTTP/JSON (gateway) port; `--app_port` flag defaults to `6000` |
-| `grpc_port`                 | `50000`                          | gRPC port                                                      |
+| `grpc_port`                 | auto (free port)                 | gRPC port; auto-assigns a free port when empty                 |
 | `db_driver` / `db_database` | `sqlite` / `/tmp/mars-sqlite.db` | Storage driver: `sqlite` / `mysql`                             |
 | `git_server_plugin`         | gitlab                           | Git server, requires `token` + `baseurl`                       |
 | `ws_sender_plugin`          | `ws_sender_memory`               | Real-time messaging: memory / nsq / redis                      |
 | `domain_manager_plugin`     | `default_domain_manager`         | HTTPS domains: manual / sync_secret / cert-manager             |
 | `picture_plugin`            | `picture_bing`                   | Background images: bing / cartoon                              |
-| `cache_driver`              | `memory`                         | Cache: `memory` / `db`                                         |
+| `cache_driver`              | `memory` (code fallback `db`)    | Cache: `memory` / `db`                                         |
 | `admin_password`            | `123456`                         | Admin password                                                 |
 | `kubeconfig`                | empty                            | Required when running outside the cluster                      |
 
@@ -159,7 +161,7 @@ Pull requests are welcome. Before submitting, please make sure:
 - `make test_all` + `make lint` + `make sec` all pass;
 - If proto changed, run `make api` to regenerate and commit the output.
 
-Docs and examples live in [doc/](doc/) (OpenAPI) and [examples/](examples/).
+Docs and examples live in [doc/](doc/) (OpenAPI, [MCP integration](doc/mcp.md), [AI Agent](doc/ai_agent.md), [access control](doc/access_control.md)) and [examples/](examples/).
 
 ## 📄 License
 

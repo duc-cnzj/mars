@@ -36,6 +36,8 @@
 - 支持自动配置 https 域名。
 - 支持高可用，弹性部署。
 - 支持命令行操作。
+- 支持 MCP（Model Context Protocol）接入：`/mcp` 标准 Streamable HTTP，可供 Claude Code / opencode / Cursor 等 AI 客户端做容器排查与部署配置，见 [doc/mcp.md](doc/mcp.md)。
+- 内置 AI Agent 沙箱助手：为每个用户拉起独立沙箱（opencode + `mai`），经 MCP 排查容器、经 LLM 代理安全对话，空闲自动缩容，见 [doc/ai_agent.md](doc/ai_agent.md)；沙箱侧源码与 chart 在 [mars-ai-agent](https://github.com/duc-cnzj/mars-ai-agent)。
 - 支持查看容器日志。
 - 支持查看容器 cpu 和内存使用情况。
 - 插件化
@@ -84,13 +86,13 @@ mars 通过 `-c, --config` 读取 YAML 配置，默认使用当前目录 `config
 | 配置项                      | 默认                             | 说明                                                    |
 | --------------------------- | -------------------------------- | ------------------------------------------------------- |
 | `app_port`                  | `4000`                           | HTTP/JSON（gateway）端口；`--app_port` flag 默认 `6000` |
-| `grpc_port`                 | `50000`                          | gRPC 端口                                               |
+| `grpc_port`                 | 自动（空闲端口）                 | gRPC 端口；为空时自动分配空闲端口                       |
 | `db_driver` / `db_database` | `sqlite` / `/tmp/mars-sqlite.db` | 存储驱动：`sqlite` / `mysql`                            |
 | `git_server_plugin`         | gitlab                           | 代码仓库，需 `token` + `baseurl`                        |
 | `ws_sender_plugin`          | `ws_sender_memory`               | 实时消息：memory / nsq / redis                          |
 | `domain_manager_plugin`     | `default_domain_manager`         | HTTPS 域名：manual / sync_secret / cert-manager         |
 | `picture_plugin`            | `picture_bing`                   | 背景图：bing / cartoon                                  |
-| `cache_driver`              | `memory`                         | 缓存：`memory` / `db`                                   |
+| `cache_driver`              | `memory`（代码兜底 `db`）        | 缓存：`memory` / `db`                                   |
 | `admin_password`            | `123456`                         | 管理员密码                                              |
 | `kubeconfig`                | 空                               | 集群外运行需配置                                        |
 
@@ -158,7 +160,7 @@ make sec        # gosec 安全扫描
 - `make test` + `make lint` + `make sec` 全绿；
 - proto 有变更时跑 `make api` 重新生成并提交产物。
 
-文档与示例见 [doc/](doc/)（OpenAPI）与 [examples/](examples/)。
+文档与示例见 [doc/](doc/)（OpenAPI、[MCP 接入说明](doc/mcp.md)、[AI Agent 说明](doc/ai_agent.md)、[权限对照表](doc/access_control.md)）与 [examples/](examples/)。
 
 ## 📄 License
 
