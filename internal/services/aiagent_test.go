@@ -8,8 +8,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,9 +25,11 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/deploy"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/locker"
+	"github.com/duc-cnzj/mars/v6/internal/metrics"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/hasher"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -83,11 +87,14 @@ func newAIAgentTestKit(t *testing.T) *aiAgentTestKit {
 		wsSender:  app.NewMockWsSender(ctrl),
 	}
 	h := newAIAgentHandler(aiAgentDeps{
-		AuthBiz:        k.authBiz,
-		RepoBiz:        k.repoBiz,
-		NamespaceBiz:   k.nsBiz,
-		ProjectBiz:     k.projBiz,
-		K8sRepo:        k.k8sRepo,
+		AuthBiz:      k.authBiz,
+		RepoBiz:      k.repoBiz,
+		NamespaceBiz: k.nsBiz,
+		ProjectBiz:   k.projBiz,
+		K8sRepo:      k.k8sRepo,
+		// AccessBiz 直接复用 nsBiz/projBiz 两个 mock 组装真实实现：
+		// mock 的命名空间/项目仓库即可驱动全部判定分支。
+		AccessBiz:      biz.NewAccessBiz(k.nsBiz, k.projBiz),
 		AccessTokenBiz: k.tokenBiz,
 		AgentActivity:  k.activity,
 		Locker:         k.locker,
@@ -150,7 +157,17 @@ func (k *aiAgentTestKit) expectDeployPubSub() *app.MockPubSub {
 // do 发起请求并返回响应记录器；token 为空表示不携带鉴权头。
 func (k *aiAgentTestKit) do(t *testing.T, method, path, token string) *httptest.ResponseRecorder {
 	t.Helper()
-	req := httptest.NewRequest(method, path, nil)
+	return k.doBody(t, method, path, token, "")
+}
+
+// doBody 发起带请求体的请求；body 为空时不设置 Body。
+func (k *aiAgentTestKit) doBody(t *testing.T, method, path, token, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	var reader io.Reader
+	if body != "" {
+		reader = strings.NewReader(body)
+	}
+	req := httptest.NewRequest(method, path, reader)
 	if token != "" {
 		req.Header.Set("Authorization", token)
 	}
@@ -968,6 +985,107 @@ func TestAIAgentHandler_Enable_ReadBackError(t *testing.T) {
 	rec := k.do(t, http.MethodPost, aiAgentEnablePath, "Bearer tok")
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	assert.Contains(t, rec.Body.String(), "回读")
+}
+
+// ---- POST /api/ai/usage ----
+
+// TestAIAgentHandler_Usage_ValidEvent 白名单事件返回 204，并让对应计数器 +1。
+func TestAIAgentHandler_Usage_ValidEvent(t *testing.T) {
+	k := newAIAgentTestKit(t)
+	k.expectLogin(aiAgentTestEmail)
+	before := testutil.ToFloat64(metrics.AgentUsageEventTotal.WithLabelValues(agentUsageEntryClick))
+
+	rec := k.doBody(t, http.MethodPost, aiUsagePath, "Bearer tok", `{"event":"entry_click"}`)
+	assert.Equal(t, http.StatusNoContent, rec.Code)
+	assert.Equal(t, before+1, testutil.ToFloat64(metrics.AgentUsageEventTotal.WithLabelValues(agentUsageEntryClick)))
+}
+
+// histogramSampleCount 从应用指标 registry 读取指定直方图的累计样本数。
+func histogramSampleCount(t *testing.T, name string) uint64 {
+	t.Helper()
+	families, err := metrics.NewRegistry().Gather()
+	require.NoError(t, err)
+	for _, f := range families {
+		if f.GetName() != name {
+			continue
+		}
+		require.Len(t, f.GetMetric(), 1)
+		return f.GetMetric()[0].GetHistogram().GetSampleCount()
+	}
+	t.Fatalf("指标 %s 未注册", name)
+	return 0
+}
+
+// TestAIAgentHandler_Usage_SandboxReadyDuration sandbox_ready 带有效耗时计入直方图；
+// 0 或超上限的耗时不计入，避免错误上报污染冷启动百分位。
+func TestAIAgentHandler_Usage_SandboxReadyDuration(t *testing.T) {
+	k := newAIAgentTestKit(t)
+	// 本用例连发 4 次请求（1 次有效耗时 + 3 次非法耗时），每次都要走一遍登录鉴权。
+	k.expectLogin(aiAgentTestEmail)
+	k.expectLogin(aiAgentTestEmail)
+	k.expectLogin(aiAgentTestEmail)
+	k.expectLogin(aiAgentTestEmail)
+	before := histogramSampleCount(t, "mars_agent_open_latency_seconds")
+
+	rec := k.doBody(t, http.MethodPost, aiUsagePath, "Bearer tok", `{"event":"sandbox_ready","duration_ms":1500}`)
+	assert.Equal(t, http.StatusNoContent, rec.Code)
+	after := histogramSampleCount(t, "mars_agent_open_latency_seconds")
+	require.Equal(t, before+1, after)
+
+	// 负数、0 毫秒与超过 10 分钟的耗时都不观察。
+	for _, body := range []string{
+		`{"event":"sandbox_ready","duration_ms":-1}`,
+		`{"event":"sandbox_ready","duration_ms":0}`,
+		`{"event":"sandbox_ready","duration_ms":600001}`,
+	} {
+		out := k.doBody(t, http.MethodPost, aiUsagePath, "Bearer tok", body)
+		assert.Equal(t, http.StatusNoContent, out.Code)
+		assert.Equal(t, after, histogramSampleCount(t, "mars_agent_open_latency_seconds"))
+	}
+}
+
+// TestAIAgentHandler_Usage_Invalid 非法 JSON、空事件与不在白名单的事件一律 400：
+// 指标 label 不能由客户端任意决定，否则会生成无界时间序列。
+func TestAIAgentHandler_Usage_Invalid(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+	}{
+		{name: "非法 JSON", body: `not-json`},
+		{name: "空事件", body: `{}`},
+		{name: "未知事件", body: `{"event":"hack_the_metric"}`},
+		// 超过 1 KiB 的请求体被 MaxBytesReader 拒绝，避免大包占用解析资源。
+		{name: "请求体超限", body: `{"event":"` + strings.Repeat("a", 2048) + `"}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			k := newAIAgentTestKit(t)
+			k.expectLogin(aiAgentTestEmail)
+			rec := k.doBody(t, http.MethodPost, aiUsagePath, "Bearer tok", tt.body)
+			assert.Equal(t, http.StatusBadRequest, rec.Code)
+		})
+	}
+}
+
+// ---- POST /api/ai/activity ----
+
+// TestAIAgentHandler_Activity_Touches 心跳按邮箱派生项目名刷新活跃度，返回 204。
+func TestAIAgentHandler_Activity_Touches(t *testing.T) {
+	k := newAIAgentTestKit(t)
+	k.expectLogin(aiAgentTestEmail)
+	k.activity.EXPECT().Touch(gomock.Any(), biz.AgentProjectName(aiAgentTestEmail)).Return(nil)
+
+	rec := k.do(t, http.MethodPost, aiActivityPath, "Bearer tok")
+	assert.Equal(t, http.StatusNoContent, rec.Code)
+}
+
+// TestAIAgentHandler_Activity_MissingEmail 缺少邮箱时 400，且不写活跃度。
+func TestAIAgentHandler_Activity_MissingEmail(t *testing.T) {
+	k := newAIAgentTestKit(t)
+	k.expectLogin("")
+
+	rec := k.do(t, http.MethodPost, aiActivityPath, "Bearer tok")
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
 
 // ---- 纯函数 ----

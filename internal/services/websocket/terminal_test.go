@@ -105,6 +105,20 @@ func TestPtyHandler_Read(t *testing.T) {
 	assert.Equal(t, "data", string(p))
 }
 
+// TestPtyHandler_ReadCapturesCommand 覆盖 stdin 帧进入命令日志（只记回车提交的行）。
+func TestPtyHandler_ReadCapturesCommand(t *testing.T) {
+	p := &ptyHandler{
+		doneChan: make(chan struct{}),
+		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
+	}
+	p.shellCh <- &websocket_pb.TerminalMessage{Op: OpStdin, Data: []byte("kubectl get pods\r")}
+	buf := make([]byte, 64)
+	n, err := p.Read(buf)
+	assert.NoError(t, err)
+	assert.Equal(t, len("kubectl get pods\r"), n)
+	assert.Equal(t, "kubectl get pods", p.commands.Snapshot(256))
+}
+
 func TestPtyHandler_Toast(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -583,10 +597,13 @@ func TestPtyHandler_Close(t *testing.T) {
 		eventRepo: eventRepo,
 		logger:    mlog.NewForConfig(nil),
 	}
+	var auditMsg string
 	eventRepo.EXPECT().FileAuditLogWithDuration(
 		types.EventActionType_Shell, "duc", "duc@x.com",
-		gomock.Not(nil), 1,
-		time.Second)
+		gomock.Any(), 1,
+		time.Second).Do(func(_ types.EventActionType, _, _ string, msg string, _ int, _ time.Duration) {
+		auditMsg = msg
+	})
 	recorder.EXPECT().User().Return(&biz.UserInfo{Name: "duc", Email: "duc@x.com"}).AnyTimes()
 	recorder.EXPECT().Duration().Return(time.Second)
 	recorder.EXPECT().Container().Return(&biz.Container{}).AnyTimes()
@@ -605,8 +622,10 @@ func TestPtyHandler_Close(t *testing.T) {
 		}
 	}()
 
+	p.commands.Feed([]byte("kubectl get pods\r"))
 	p.Close(context.TODO(), "aaaa")
 	assert.True(t, p.IsClosed())
+	assert.Contains(t, auditMsg, ", 命令: 'kubectl get pods'")
 	// 第二次 Close 幂等：Closeable 已关，直接返回 false，不再入队。
 	p.Close(context.TODO(), "aaaa")
 

@@ -739,14 +739,14 @@ func TestContainerSvc_ExecOnce_Success(t *testing.T) {
 			if !ok {
 				return false
 			}
-			command, ok := v["command"].([]string)
+			command, ok := v["command"].(string)
 			if !ok {
 				return false
 			}
 			return ns == "a" &&
 				pod == "b" &&
 				containerName == "c" &&
-				slices.Equal(command, []string{"ls"}) &&
+				command == "ls" &&
 				v["error"] == "xx" &&
 				v["result"] == ""
 		}),

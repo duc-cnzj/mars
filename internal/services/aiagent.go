@@ -3,6 +3,8 @@ package services
 // aiagent.go 提供 AI Agent 的用户侧入口：
 //   - GET  /api/ai/status        查询 AI 功能是否可用 + 当前用户 agent 项目状态
 //   - POST /api/ai/agent/enable  以当前用户身份把 AI Agent 仓库部署成一个项目
+//   - POST /api/ai/usage         上报 AI 使用漏斗事件（服务端白名单校验）
+//   - POST /api/ai/activity      刷新当前用户沙箱活跃度（弹窗可见期间心跳）
 //
 // AI 功能的可用性由「全局唯一的 AI Agent 仓库」（repos.ai_agent）决定；所有用户的
 // agent 项目统一落在写死的私有命名空间 mars-agent 下（实际 k8s 名带 ns_prefix 前缀），
@@ -39,11 +41,52 @@ const (
 
 	aiStatusPath      = "/api/ai/status"
 	aiAgentEnablePath = "/api/ai/agent/enable"
+	aiUsagePath       = "/api/ai/usage"
+	aiActivityPath    = "/api/ai/activity"
 
 	// aiAgentNamespaceLockKey 串行化 mars-agent 空间的「查无 → 创建」流程：
 	// NamespaceBiz.Create 是查后创建，两个用户并发首次启用会同时走到 k8s/DB 写入。
 	aiAgentNamespaceLockKey = "ai-agent:namespace"
 )
+
+// AI 使用漏斗事件名：前端上报、服务端白名单校验后写入低基数指标。
+// 新增事件时在常量块追加常量并在 isAIUsageEvent 中补 case，否则接口按未知事件拒绝。
+const (
+	agentUsageEntryClick     = "entry_click"
+	agentUsageStatusDisabled = "status_disabled"
+	agentUsageEnableStart    = "enable_start"
+	agentUsageEnableOK       = "enable_ok"
+	agentUsageEnableFail     = "enable_fail"
+	agentUsageSandboxReady   = "sandbox_ready"
+	agentUsageSandboxOpen    = "sandbox_open"
+)
+
+// isAIUsageEvent 判断事件名是否命中受限白名单：指标 label 不能由客户端任意决定，
+// 否则每个新字符串都会生成一条时间序列，造成基数爆炸。新增事件时在常量块加常量、
+// 并在 switch 中补一个 case，两处都指向同一组常量，不存在值重复维护。
+func isAIUsageEvent(name string) bool {
+	switch name {
+	case agentUsageEntryClick,
+		agentUsageStatusDisabled,
+		agentUsageEnableStart,
+		agentUsageEnableOK,
+		agentUsageEnableFail,
+		agentUsageSandboxReady,
+		agentUsageSandboxOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// aiUsageRequest 是 POST /api/ai/usage 的请求体。
+type aiUsageRequest struct {
+	// Event 必须命中 isAIUsageEvent 白名单。
+	Event string `json:"event"`
+	// DurationMS 仅 sandbox_ready 使用：从点击入口到沙箱就绪的毫秒数；
+	// 负数或超过 10 分钟视为无效样本，只记事件不计入耗时直方图。
+	DurationMS int64 `json:"duration_ms"`
+}
 
 // errAgentNamespaceOccupied 标记「mars-agent 空间已被非系统创建者占用」这一业务冲突，
 // 供 serveEnable 区分 409（可解释冲突）与 500（真实内部错误）。
@@ -105,8 +148,8 @@ type aiAgentDeps struct {
 	Logger    mlog.Logger
 }
 
-// aiAgentHandler 提供 AI 状态查询与一键启用 agent 的 HTTP 端点，
-// 路由本身套 LoginHTTP 鉴权。
+// aiAgentHandler 提供 AI 状态查询、使用事件上报、活跃度心跳与一键启用 agent
+// 的 HTTP 端点，路由本身套 LoginHTTP 鉴权。
 type aiAgentHandler struct {
 	deps   aiAgentDeps
 	apply  applyProjectFunc
@@ -132,6 +175,8 @@ func newAIAgentHandler(deps aiAgentDeps) *aiAgentHandler {
 func (h *aiAgentHandler) Register(mux *mux.Router) {
 	mux.Handle(aiStatusPath, h.authMW(http.HandlerFunc(h.serveStatus))).Methods(http.MethodGet).Name("ai_status")
 	mux.Handle(aiAgentEnablePath, h.authMW(http.HandlerFunc(h.serveEnable))).Methods(http.MethodPost).Name("ai_agent_enable")
+	mux.Handle(aiUsagePath, h.authMW(http.HandlerFunc(h.serveUsage))).Methods(http.MethodPost).Name("ai_usage")
+	mux.Handle(aiActivityPath, h.authMW(http.HandlerFunc(h.serveActivity))).Methods(http.MethodPost).Name("ai_activity")
 }
 
 // serveStatus 返回 AI 功能是否可用以及当前用户的 agent 项目状态。
@@ -148,6 +193,43 @@ func (h *aiAgentHandler) serveStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	// NotFound 时 repo 为 nil（data 层 toRepo 的 nil 安全语义），buildStatus 按未配置处理。
 	h.respond(ctx, w, user.Email, repo)
+}
+
+// serveUsage 接收前端上报的 AI 使用漏斗事件。事件名走白名单，未知名直接 400：
+// 指标 label 不能由客户端任意决定，否则每个新字符串都会生成一条时间序列。
+// 请求体限制 1 KiB；sandbox_ready 附带有效耗时（0～10 分钟）时计入直方图。
+func (h *aiAgentHandler) serveUsage(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1024)
+	var req aiUsageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "无效的 AI 使用事件", http.StatusBadRequest)
+		return
+	}
+	if !isAIUsageEvent(req.Event) {
+		http.Error(w, "未知的 AI 使用事件", http.StatusBadRequest)
+		return
+	}
+	metrics.AgentUsageEventTotal.WithLabelValues(req.Event).Inc()
+	if req.Event == agentUsageSandboxReady &&
+		req.DurationMS > 0 && req.DurationMS <= int64(10*time.Minute/time.Millisecond) {
+		metrics.AgentOpenLatency.Observe(float64(req.DurationMS) / 1000)
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// serveActivity 刷新当前用户 agent 沙箱的活跃度：AI 弹窗打开期间前端按可见性
+// 定时调用，避免用户正在看日志/终端时被空闲缩容任务误关。刻意不挂在 status 上——
+// 状态查询会被入口显隐逻辑在页面加载时调用，若它刷新活跃度，任何一次页面加载
+// 都会把沙箱唤醒窗口续命，空闲回收就永远不生效。
+func (h *aiAgentHandler) serveActivity(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := biz.MustGetUser(ctx)
+	if user.Email == "" {
+		http.Error(w, "当前用户缺少 email，无法刷新 AI 活跃度", http.StatusBadRequest)
+		return
+	}
+	biz.TouchAgentActivity(ctx, h.deps.AgentActivity, h.deps.Logger, user.Email)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // serveEnable 以当前用户身份启用 agent：

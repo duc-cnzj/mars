@@ -118,15 +118,25 @@ ai:
 
 ### 4.1 顶栏入口
 
-顶栏的 AI 星芒按钮常驻。点击后的编排（对应 `frontend/src/features/ai/AIAgentLauncher.tsx`）：
+顶栏的 AI 星芒按钮在功能启用时常驻；`GET /api/ai/status` 明确返回 `enabled=false`
+时隐藏入口（查询失败保持可见，点击时再给出明确提示）。点击后的编排（对应
+`frontend/src/features/ai/AIAgentLauncher.tsx`）：
 
 1. `GET /api/ai/status`：仓库未配置/已禁用（`enabled=false`）→ 提示并结束；
 2. 沙箱 `sleeping` / `absent` 或尚未部署 → `POST /api/ai/agent/enable`（后端幂等，
    内部会扩容到 1 或重建丢失的 Deployment）；
 3. 轮询 `/api/ai/status`，直到 `sandbox=running`（就绪探针通过）；间隔 1.5s，
    超时 3 分钟（首次启动可能包含镜像拉取）；
-4. 拉取项目详情，复用普通项目的详情弹窗——但只开放**日志 + 命令行**两个 Tab，
+4. 拉取项目详情，复用普通项目的详情弹窗——但只开放**命令行**一个 Tab，
    并自动在命令行里执行 `mai`，用户不用再手敲。
+
+弹窗打开且页面可见时，前端每分钟调一次 `POST /api/ai/activity` 续活跃度：
+用户正在看日志/思考时不会被空闲任务误缩容；后台标签页不续活，把资源让给
+真正在用的人。停止续活后仍按 `ai.idle_timeout` 正常休眠。
+
+为把冷启动等待挪到用户看不见的地方，布局挂载时还会对「最近 7 天用过且当前
+`sleeping`」的沙箱做一次后台预热（`POST /api/ai/agent/enable`），同一浏览器
+24 小时内最多一次；从未用过的用户不会被被动创建沙箱。
 
 沙箱运行态（`agent.sandbox`）：
 
@@ -139,13 +149,61 @@ ai:
 
 整个 `agent` 字段为 `null` 表示当前用户尚未部署沙箱。
 
-### 4.2 接口一览
+### 4.2 场景入口（项目卡片 / 项目详情 / 容器日志）
+
+入口分两类：项目卡片上是一枚常驻的轻量 AI 图标，详情弹窗与日志 Tab 只在需要时给提示条：
+
+| 位置 | 条件 | 按钮 | 交给 AI 的上下文 |
+|---|---|---|---|
+| 工作台项目卡片 | AI 功能已启用（不区分部署状态） | 「问 AI」图标（点击不打开详情弹窗） | **只绑定**空间名 + 项目名作为默认上下文，不代发问题 |
+| 项目详情弹窗 | `deployStatus=StatusFailed` | 「让 AI 诊断」（红色提示条） | 空间名 + 项目名，排查部署失败原因 |
+| 容器日志 Tab | 普通项目（非 AI 沙箱） | 「让 AI 分析」 | 项目名 + 项目 id；无可用容器时同样展示 |
+
+所有入口复用同一套唤醒编排，命令行都只自动执行交互式 `mai`（不使用 `mai run`）。
+
+**项目卡片入口只绑定、不提问**：点击后命令行执行 `mai --bind '<空间>/<项目>'`，
+`mars-agent` 复用当前目录最近会话（没有则新建），用 `noReply + synthetic` 注入一段
+隐藏的绑定上下文（TUI 里看不到额外消息、也不触发模型回复），再 attach 同一会话。
+用户进入 TUI 后自己输入第一条消息即可，不必再说明「问的是哪个项目」；模型在问题
+未明确指定项目时默认按该绑定作答。绑定常驻 server 不可达时无法注入，`mai` 告警后
+仍按普通 TUI 启动，不阻断使用。
+
+**场景问题（详情/日志入口）**作为 `mai` 的位置参数随初始命令一起下发
+（`mai '<问题>'`，空白折叠为单行、POSIX 单引号转义），由 `mars-agent` 在沙箱内完成
+投递：常驻 server 可达时把问题写入当前目录最近更新的会话（没有则新建）并 attach
+该会话，用户进入 TUI 时问题已发送、回复在流式输出；server 不可达时退回
+`opencode --prompt`，由内核自己填充并提交。问题走 HTTP 请求体而不是终端按键注入，
+因此不存在抢在 TUI 就绪前丢失、或同帧回车被当成粘贴内容的问题。问题只携带结构化的
+定位信息，要求 AI 用 mars MCP 工具自查最近事件、容器日志与项目配置，不把原始日志
+塞进输入。
+
+> AI 页面（复用项目详情弹窗）标题栏下方常驻一条**绑定条**，显示当前绑定的范围，
+> 支持两种粒度**多选**：整个「空间」（`--bind '<空间>'`，含该空间全部项目）或
+> 「空间/项目」（`--bind '<空间>/<项目>'`），也可清除绑定；确认后命令行以多个 `--bind`
+> 重建会话（历史对话仍复用同一会话），让新的绑定上下文生效，且不会重发进入时的首条问题。
+> Pod 不参与绑定：滚动更新后 Pod 名会变，绑定到项目/空间、由 AI 通过 MCP 工具
+> （`list_project_containers` / `check_pod_status` 等）现查更稳。
+
+> 绑定条下方还有一条**常见问题**（三条固定文案）：「帮我部署到最新代码」「为什么容器
+> 一直未就绪」「分析容器日志是否有错误」。点击只把完整问题**复制到剪贴板**（toast 提示
+> 已复制），由用户自行粘贴到 `mai` 输入框发送——不重建终端会话、不模拟按键，也不发起
+> 任何网络请求；按钮文案与复制内容都走 i18n，切换语言不影响语义。
+>
+> 复制出的第一条是**写操作**问题：用户发送后 AI 通过 MCP `apply_project` 部署最新提交，
+> 由 MCP 客户端确认后执行，权限按当前用户的项目 ACL 校验；其余两条只读。
+
+> 安全边界：场景问题作为 `mai` 的参数传入，不经过 shell 解释；即使 `mai` 启动
+> 失败停留在 shell 提示符，问题文本也不会被当作命令执行。
+
+### 4.3 接口一览
 
 | 方法与路径 | 鉴权 | 说明 |
 |---|---|---|
 | `GET /api/ai/status` | 登录用户 | 返回 `enabled` 与 `agent`（含 `project_id` / `sandbox`），未部署时 `agent` 为 null |
 | `POST /api/ai/agent/enable` | 登录用户 | 启用/唤醒当前用户的沙箱；幂等；返回同 status |
 | `GET /api/ai/config` | 登录用户（沙箱令牌） | 返回 `{model}`；未配置 `ai.model` 时 503 |
+| `POST /api/ai/usage` | 登录用户 | 上报使用漏斗事件（`entry_click` / `enable_start` 等白名单）；未知事件 400；204 |
+| `POST /api/ai/activity` | 登录用户 | 刷新当前用户沙箱活跃度（页面可见时前端每分钟一次）；204 |
 | `GET/POST /llm/v1/*` | 登录用户（沙箱令牌） | OpenAI 兼容代理，转发到 `ai.base_url` |
 | `/mcp` | 登录用户（沙箱令牌） | MCP Streamable HTTP，工具集按身份裁剪 |
 
@@ -199,8 +257,9 @@ ai:
 
 - 任务 `agent_idle_reconcile` **每分钟**执行；仅在 k8s 环境、`idle_timeout > 0`、
   缓存驱动为 `memory`/`db` 时注册；
-- 活跃度由 `LLM 代理 / MCP 调用 / /api/ai/config 拉取 / 启用唤醒` 刷新（TTL =
-  `ai.idle_timeout`）；仅查看日志不会刷新；
+- 活跃度由 `LLM 代理 / MCP 调用 / /api/ai/config 拉取 / 启用唤醒 / /api/ai/activity
+  心跳` 刷新（TTL = `ai.idle_timeout`）；心跳仅在弹窗打开且页面可见时发送，
+  仅查看日志（后台标签页）不会刷新；
 - 活跃窗口过期且副本数 > 0 的沙箱被缩容到 0；缩容与唤醒/部署**共用项目级锁**，
   缩容前在锁内二次复查活跃度，宁可漏关也不误关正在使用的沙箱；
 - 唤醒流程：点击 AI → `enable` → 抢同一把项目锁 → 判断 Deployment 运行态 →
@@ -215,6 +274,8 @@ ai:
 |---|---|---|
 | `mars_agent_sandbox_transition_total{action}` | Counter | 沙箱状态迁移次数：`action=sleep`（空闲缩容）/ `action=wake`（唤醒扩容） |
 | `mars_agent_llm_proxy_requests_total` | Counter | 通过准入并实际转发的 LLM 代理请求数（被拒绝的不计） |
+| `mars_agent_usage_event_total{event}` | Counter | AI 使用漏斗事件数（`entry_click` / `status_disabled` / `enable_start` / `enable_ok` / `enable_fail` / `sandbox_ready` / `sandbox_open`；标签取白名单，基数有界） |
+| `mars_agent_open_latency_seconds` | Histogram | 从点击入口到沙箱就绪的耗时（仅 `sandbox_ready` 事件带合法时长时记录） |
 
 审计事件（`AuditLogWithRequest`）：
 

@@ -24,6 +24,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v6/proto/types"
 	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/util/termcmd"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
 	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
@@ -209,6 +210,9 @@ func (cb *containerBiz) Exec(ctx context.Context, stream ExecStream, user *UserI
 	pipe, pipeWriter := io.Pipe()
 	w := io.MultiWriter(pipeWriter, r)
 
+	// commands 只记录用户经 stdin 提交的命令行；容器输出只进 recorder，不参与审计命令段。
+	var commands termcmd.Journal
+
 	closeAll := func() {
 		once.Do(func() {
 			cb.logger.DebugCtx(ctx, "closeAll")
@@ -223,11 +227,17 @@ func (cb *containerBiz) Exec(ctx context.Context, stream ExecStream, user *UserI
 			if r.File() != nil {
 				fid = r.File().ID
 			}
+			msg := ContainerExecAuditMessage("Exec", r.Container().Container, r.Container().Namespace, r.Container().Pod)
+			commandsText := commands.Snapshot(AuditCommandBudget(msg))
+			if commandsText == "" {
+				// 非交互命令可能没有 stdin（直接执行 input.Command），作为兜底记录。
+				commandsText = strings.Join(input.Command, " ")
+			}
 			cb.eventBiz.FileAuditLogWithDuration(
 				types.EventActionType_Exec,
 				r.User().Name,
 				r.User().Email,
-				fmt.Sprintf("[Exec]: 用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.Container().Container, r.Container().Namespace, r.Container().Pod),
+				WithAuditCommands(msg, commandsText),
 				fid,
 				r.Duration(),
 			)
@@ -238,6 +248,7 @@ func (cb *containerBiz) Exec(ctx context.Context, stream ExecStream, user *UserI
 		defer closeAll()
 		defer cb.logger.HandlePanic("biz.ContainerBiz.Exec: recv loop")
 		if len(input.FirstMessage) > 0 {
+			commands.Feed(input.FirstMessage)
 			if _, err := writer.Write(input.FirstMessage); err != nil {
 				cb.logger.DebugCtx(ctx, err)
 			}
@@ -262,6 +273,7 @@ func (cb *containerBiz) Exec(ctx context.Context, stream ExecStream, user *UserI
 			}
 
 			cb.logger.DebugCtxf(ctx, "Exec: %q", request.Message)
+			commands.Feed(request.Message)
 			if _, err := writer.Write(request.Message); err != nil {
 				cb.logger.DebugCtx(ctx, err)
 			}
@@ -462,16 +474,20 @@ func (cb *containerBiz) ExecOnce(ctx context.Context, stream ExecOnceStream, use
 		types.EventActionType_Exec,
 		user.Name,
 		user.Email,
-		fmt.Sprintf("[ExecOnce]: 用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", co, input.Namespace, input.Pod),
+		WithAuditCommands(
+			ContainerExecAuditMessage("ExecOnce", co, input.Namespace, input.Pod),
+			strings.Join(input.Command, " "),
+		),
 		nil,
 		AnyYamlPrettier{
 			"namespace": input.Namespace,
 			"pod":       input.Pod,
 			"container": co,
-			"command":   input.Command,
-			"result":    bf.String(),
-			"error":     toErrStr(err),
-			"duration":  cb.timer.Since(startTime).String(),
+			// 与消息段共用脱敏口径：原文可能带 --password/TOKEN 等，不能只脱敏消息。
+			"command":  RedactAuditCommands(strings.Join(input.Command, " ")),
+			"result":   bf.String(),
+			"error":    toErrStr(err),
+			"duration": cb.timer.Since(startTime).String(),
 		},
 	)
 	cb.logger.DebugCtx(ctx, "ExecOnce: 彻底退出", err)

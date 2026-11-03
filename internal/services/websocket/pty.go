@@ -19,6 +19,7 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/deploy"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/util/closeable"
+	"github.com/duc-cnzj/mars/v6/internal/util/termcmd"
 )
 
 // ETX 是 Ctrl-C 控制字符（\x03），用于中断容器内的前台进程。
@@ -156,6 +157,9 @@ type ptyHandler struct {
 	recorder  biz.Recorder
 	eventRepo biz.EventRepo
 	conn      Conn
+	// commands 记录用户按回车提交的命令（只采 stdin，不采容器输出），
+	// 会话结束时写入 Shell 审计消息，供事件列表展示。
+	commands termcmd.Journal
 
 	doneChan  chan struct{}
 	sizeStore *sizeStore
@@ -219,6 +223,8 @@ func (t *ptyHandler) Read(p []byte) (n int, err error) {
 
 	switch msg.Op {
 	case OpStdin:
+		// 只解析 stdin：用户按回车提交的命令进入审计，容器输出不参与。
+		t.commands.Feed(msg.Data)
 		return copy(p, msg.Data), nil
 	case OpResize:
 		t.logger.Debugf("[Websocket]: resize width: %v  height: %v", msg.Width, msg.Height)
@@ -484,11 +490,13 @@ func (t *ptyHandler) Close(ctx context.Context, reason string) bool {
 	if rf != nil {
 		fid = rf.ID
 	}
+	msg := biz.ContainerExecAuditMessage("", recoder.Container().Container, recoder.Container().Namespace, recoder.Container().Pod)
+	msg = biz.WithAuditCommands(msg, t.commands.Snapshot(biz.AuditCommandBudget(msg)))
 	t.eventRepo.FileAuditLogWithDuration(
 		types.EventActionType_Shell,
 		recoder.User().Name,
 		recoder.User().Email,
-		fmt.Sprintf("用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", recoder.Container().Container, recoder.Container().Namespace, recoder.Container().Pod),
+		msg,
 		fid,
 		recoder.Duration(),
 	)
