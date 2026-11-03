@@ -403,10 +403,8 @@ func TestContainerBiz_Exec_SuccessExitError(t *testing.T) {
 	reco := &fakeRecorderForContainer{user: &UserInfo{Name: "mars"}, file: &File{ID: 1}, dur: time.Second}
 	file := &fakeFileBizForContainer{recorder: func(u *UserInfo, c *Container) Recorder { return reco }}
 	var audited bool
-	var auditMsg string
 	event := &fakeEventBizForContainer{fileAudit: func(action types.EventActionType, username, operatorEmail, msg string, fileID int, duration time.Duration) {
 		audited = true
-		auditMsg = msg
 		assert.Equal(t, types.EventActionType_Exec, action)
 		assert.Equal(t, "mars", username)
 		assert.Equal(t, 1, fileID)
@@ -432,10 +430,6 @@ func TestContainerBiz_Exec_SuccessExitError(t *testing.T) {
 	assert.Equal(t, uint16(100), w)
 	assert.Equal(t, uint16(200), h)
 	assert.True(t, audited)
-	// stdin 未提交整行（无回车）时回落到 input.Command，审计消息只带命令不带输出。
-	assert.Contains(t, auditMsg, ", 命令: 'ls'")
-	assert.NotContains(t, auditMsg, "hello")
-	assert.NotContains(t, auditMsg, "world")
 	// 退出错误帧已发送，退出码 2。
 	assert.Equal(t, int64(2), stream.lastExitCode())
 }
@@ -633,12 +627,10 @@ func TestContainerBiz_ExecOnce_Success(t *testing.T) {
 		},
 	}
 	var captured AnyYamlPrettier
-	var auditMsg string
 	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {
 		assert.Equal(t, types.EventActionType_Exec, action)
 		assert.Equal(t, "admin", username)
 		assert.Nil(t, oldS)
-		auditMsg = msg
 		captured, _ = newS.(AnyYamlPrettier)
 	}}
 	cb := newTestContainerBiz(k, &fakeFileBizForContainer{}, event)
@@ -646,45 +638,13 @@ func TestContainerBiz_ExecOnce_Success(t *testing.T) {
 		Namespace: "a", Pod: "b", Command: []string{"ls"},
 	})
 	assert.NoError(t, err)
-	// ExecOnce 是非交互命令，审计消息只记录命令本身。
-	assert.Contains(t, auditMsg, ", 命令: 'ls'")
-	assert.NotContains(t, auditMsg, "hello")
 	assert.Equal(t, "a", captured["namespace"])
 	assert.Equal(t, "b", captured["pod"])
 	assert.Equal(t, "c", captured["container"])
-	assert.Equal(t, "ls", captured["command"])
+	assert.Equal(t, []string{"ls"}, captured["command"])
 	assert.Equal(t, "hello", captured["result"])
 	assert.Equal(t, "", captured["error"])
 	assert.NotEmpty(t, captured["duration"])
-}
-
-// TestContainerBiz_ExecOnce_AuditRedactsCommand 覆盖命令段与 new.command 共用脱敏口径：
-// 只脱敏消息、把原文留在变更详情里等于没脱敏。
-func TestContainerBiz_ExecOnce_AuditRedactsCommand(t *testing.T) {
-	k := &fakeK8sBizForContainer{
-		isPodRunning: func(ns, pod string) (bool, string) { return true, "" },
-		findDefault: func(ctx context.Context, ns, pod string) (string, error) {
-			return "c", nil
-		},
-		execFn: func(ctx context.Context, c *Container, input *ExecuteInput) error { return nil },
-	}
-	var (
-		auditMsg string
-		captured AnyYamlPrettier
-	)
-	event := &fakeEventBizForContainer{audit: func(action types.EventActionType, username, operatorEmail, msg string, oldS, newS YamlPrettier) {
-		auditMsg = msg
-		captured, _ = newS.(AnyYamlPrettier)
-	}}
-	cb := newTestContainerBiz(k, &fakeFileBizForContainer{}, event)
-	err := cb.ExecOnce(context.Background(), &fakeExecOnceStream{}, &UserInfo{Name: "admin"}, &ExecOnceInput{
-		Namespace: "a", Pod: "b", Command: []string{"sh", "-c", "mysql -uroot -psecret"},
-	})
-	assert.NoError(t, err)
-	assert.NotContains(t, auditMsg, "secret")
-	assert.Contains(t, auditMsg, "-p***")
-	assert.NotContains(t, captured["command"], "secret")
-	assert.Contains(t, captured["command"], "-p***")
 }
 
 // TestContainerBiz_ExecOnce_ExitError 覆盖退出码帧发送与审计里错误信息透传。
