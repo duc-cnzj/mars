@@ -1,6 +1,9 @@
 import { API } from '@/api/endpoints'
 import { getToken } from '@/api/token'
 
+/** 最近一次成功使用 AI 的时间戳（毫秒）存储键：入口预热据此判断是否值得唤起。 */
+export const AI_LAST_USED_STORAGE_KEY = 'mars_ai_last_used_at'
+
 /** 沙箱运行态：由后端按 Deployment 副本数与就绪数派生。 */
 export type AISandboxState = 'running' | 'starting' | 'sleeping' | 'absent'
 
@@ -58,4 +61,49 @@ export function fetchAIStatus(): Promise<AIStatus> {
 /** 启用/唤醒当前用户的 agent 沙箱（POST /api/ai/agent/enable，后端幂等）。 */
 export function enableAIAgent(): Promise<AIStatus> {
   return requestAI(API.aiAgentEnable, { method: 'POST' })
+}
+
+/** AI 使用漏斗事件名，与服务端 isAIUsageEvent 白名单保持一致。 */
+export type AIUsageEvent =
+  | 'entry_click'
+  | 'status_disabled'
+  | 'enable_start'
+  | 'enable_ok'
+  | 'enable_fail'
+  | 'sandbox_ready'
+  | 'sandbox_open'
+
+/**
+ * 上报一个 AI 使用漏斗事件（POST /api/ai/usage）。
+ * 埋点是尽力而为：网络失败静默吞掉，绝不能影响入口编排的主流程。
+ * durationMs 仅 sandbox_ready 使用，表示从点击入口到沙箱就绪的毫秒数。
+ */
+export function reportAIUsage(event: AIUsageEvent, durationMs?: number): void {
+  void postAIEvent(API.aiUsage, { event, duration_ms: durationMs })
+}
+
+/**
+ * 刷新 agent 沙箱活跃度（POST /api/ai/activity）。
+ * AI 弹窗打开且页面可见时定时调用，避免用户正在看日志/终端却被空闲缩容误关；
+ * 失败静默，心跳不能变成用户交互的故障点。
+ */
+export function touchAIActivity(): void {
+  void postAIEvent(API.aiActivity)
+}
+
+/** 发送无响应体的 AI 辅助请求；所有失败（网络/HTTP）都静默。 */
+async function postAIEvent(path: string, body?: unknown): Promise<void> {
+  try {
+    await fetch(path, {
+      method: 'POST',
+      headers: {
+        Authorization: getToken(),
+        'X-Requested-With': 'XMLHttpRequest',
+        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  } catch {
+    // 尽力而为的埋点/心跳，不让网络错误冒泡。
+  }
 }

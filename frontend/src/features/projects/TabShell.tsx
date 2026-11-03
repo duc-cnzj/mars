@@ -6,6 +6,7 @@ import {
   useState,
   type ChangeEvent,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
@@ -57,13 +58,20 @@ export function TabShell({
   projectName,
   resizeAt,
   initialCommand,
+  aiBindingBar,
+  showShellTools = true,
 }: {
   projectId: number
   projectName: string
   /** 宿主弹窗尺寸变化信号：缩放/最大化/还原时 bump，用于终端 refit（对齐旧版 resizeAt 机制） */
   resizeAt?: number
-  /** 会话建立后自动执行的命令（AI 沙箱传 mai）：每个新终端只执行一次 */
+  /** 会话建立后自动执行的命令（AI 沙箱传 `mai` 或 `mai '<问题>'`）：每个新终端只执行一次 */
   initialCommand?: string
+  /** 是否展示多终端/上传/下载/强杀工具条。
+   *  AI 沙箱关闭：mai TUI 只需一个会话，上传/下载/强杀对沙箱没有意义且强杀会打断对话。 */
+  showShellTools?: boolean
+  /** AI 绑定条：展示在终端上方，显示当前绑定的空间/项目 */
+  aiBindingBar?: ReactNode
 }) {
   const { t } = useTranslation()
   const { ready, send, subscribe, subscribeProjectPodEvent } = useWebsocket()
@@ -419,72 +427,94 @@ export function TabShell({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
-      {/* 容器选择：RadioGroup（与日志页 TabLog 视觉一致） */}
-      <RadioGroup
-        value={target ? `${target.pod}|${target.container}` : ''}
-        onValueChange={(v) => {
-          const [pod, container] = v.split('|')
-          const next = containers.find((c) => c.pod === pod && c.container === container)
-          if (next) setTarget({ namespace: next.namespace, pod: next.pod, container: next.container })
-        }}
-        className="flex flex-wrap items-center gap-x-4 gap-y-1.5"
-      >
-        {containers.map((c) => {
-          const id = `${c.pod}|${c.container}`
-          return (
-            <div key={id} className="flex items-center gap-1.5">
-              {/* 点击已选中的 radio 圆点 → 重建 shell 连接（未选中切换仍走 Radix onValueChange） */}
-              <RadioGroupItem
-                id={id}
-                value={id}
-                className="size-3.5"
-                onClick={() => handleSameReconnect(c)}
-              />
-              {/* 点击文字同样触发切换/重连：显式 onClick 与胶囊一致，不依赖 htmlFor 转发
-                  （preventDefault 阻止原生 label→button 转发，避免与 handleSameReconnect 双重触发） */}
-              <label
-                htmlFor={id}
-                className="cursor-pointer select-none text-[13px] text-ink"
-                onClick={(e) => {
-                  e.preventDefault()
-                  selectContainer(c)
-                }}
-              >
-                {shortContainerName(c.container, projectName)}
-              </label>
-              {/* 点击标签同样选中 radio；标签内复制按钮 hover 显示、复制完整容器名。
-                  点击已选中容器（radio 点/标签/胶囊）重建 shell 连接 */}
-              <PodStateTag
-                container={c}
-                projectName={projectName}
-                onClick={() => selectContainer(c)}
-                onCopy={() => {
-                  // 复制的是完整 pod 名（标签展示的是 pod 短名）
-                  void copyText(c.pod).then((ok) => {
-                    if (ok) toast.success(t('project.copyPodSuccess'))
-                  })
-                }}
-              />
-            </div>
-          )
-        })}
-      </RadioGroup>
+      {/* AI 绑定条：由 AI 入口注入，普通项目不传。 */}
+      {aiBindingBar && (
+        <div className="rounded-lg border border-primary/30 bg-primary-soft/60 px-2.5 py-2">
+          {aiBindingBar}
+        </div>
+      )}
+
+      {/* 容器选择：RadioGroup（与日志页 TabLog 视觉一致）。
+          AI 沙箱没有工具条，资源用量直接放在容器行右侧，与 pod 名同一行。
+          顶部对齐（items-start）而非居中：CPU/内存的标签行在迷你图上方，
+          居中对齐会让标签行高出 pod 名约 4px，看起来不在一条水平线上。 */}
+      <div className="flex flex-wrap items-start gap-x-4 gap-y-1.5">
+        <RadioGroup
+          value={target ? `${target.pod}|${target.container}` : ''}
+          onValueChange={(v) => {
+            const [pod, container] = v.split('|')
+            const next = containers.find((c) => c.pod === pod && c.container === container)
+            if (next) setTarget({ namespace: next.namespace, pod: next.pod, container: next.container })
+          }}
+          className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5"
+        >
+          {containers.map((c) => {
+            const id = `${c.pod}|${c.container}`
+            return (
+              <div key={id} className="flex items-center gap-1.5">
+                {/* 点击已选中的 radio 圆点 → 重建 shell 连接（未选中切换仍走 Radix onValueChange） */}
+                <RadioGroupItem
+                  id={id}
+                  value={id}
+                  className="size-3.5"
+                  onClick={() => handleSameReconnect(c)}
+                />
+                {/* 点击文字同样触发切换/重连：显式 onClick 与胶囊一致，不依赖 htmlFor 转发
+                    （preventDefault 阻止原生 label→button 转发，避免与 handleSameReconnect 双重触发） */}
+                <label
+                  htmlFor={id}
+                  className="cursor-pointer select-none text-[13px] text-ink"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    selectContainer(c)
+                  }}
+                >
+                  {shortContainerName(c.container, projectName)}
+                </label>
+                {/* 点击标签同样选中 radio；标签内复制按钮 hover 显示、复制完整容器名。
+                    点击已选中容器（radio 点/标签/胶囊）重建 shell 连接 */}
+                <PodStateTag
+                  container={c}
+                  projectName={projectName}
+                  onClick={() => selectContainer(c)}
+                  onCopy={() => {
+                    // 复制的是完整 pod 名（标签展示的是 pod 短名）
+                    void copyText(c.pod).then((ok) => {
+                      if (ok) toast.success(t('project.copyPodSuccess'))
+                    })
+                  }}
+                />
+              </div>
+            )
+          })}
+        </RadioGroup>
+        {/* 不用 ml-auto（auto margin 会吃掉剩余空间，flex-1 就撑不满了）：靠 flex-1
+            占满容器行剩余宽度，CPU/内存两张迷你图各占一半。
+            mt-1 把标签行压到与 pod 名同一条水平线（见容器行 items-start 注释）。 */}
+        {!showShellTools && target && (
+          <div className="mt-1 flex min-w-0 flex-1 items-stretch justify-end gap-1">
+            <PodMetrics namespace={target.namespace} pod={target.pod} />
+          </div>
+        )}
+      </div>
 
       {/* 单行工具栏（沿用旧版布局）：新增终端（最多 4 个）+ 上传/下载 + 强杀，字体小号，
-          资源用量图表内联在右侧（旧版是按钮 + 图表同一行） */}
-      <div className="flex flex-wrap items-center gap-1">
-        <Button
-          size="xs"
-          variant="outline"
-          disabled={!target || panes.length >= MAX_PANES}
-          onClick={addPane}
-          title={panes.length >= MAX_PANES ? t('project.maxTerminals') : undefined}
-        >
-          <Icon name="plus" className="text-[11px]" />
-          {t('project.addTerminal')}
-        </Button>
+          资源用量图表内联在右侧（旧版是按钮 + 图表同一行）。
+          AI 沙箱隐藏整行（没有可用的工具）；资源用量已挪到上面的容器行。 */}
+      {showShellTools && (
+        <div className="flex flex-wrap items-center gap-1">
+          <Button
+            size="xs"
+            variant="outline"
+            disabled={!target || panes.length >= MAX_PANES}
+            onClick={addPane}
+            title={panes.length >= MAX_PANES ? t('project.maxTerminals') : undefined}
+          >
+            <Icon name="plus" className="text-[11px]" />
+            {t('project.addTerminal')}
+          </Button>
 
-        {target && (
+          {target && (
           <>
             <span className="mx-0.5 h-3.5 w-px bg-line" aria-hidden />
             <input ref={fileInputRef} type="file" className="hidden" onChange={onFileSelected} />
@@ -584,13 +614,14 @@ export function TabShell({
           </>
         )}
 
-        {/* 选中 pod 的实时资源用量：内联在工具栏右侧（沿用旧版单行布局） */}
-        {target && (
-          <div className="ml-auto flex min-w-0 flex-1 items-stretch justify-end gap-1">
-            <PodMetrics namespace={target.namespace} pod={target.pod} />
-          </div>
-        )}
-      </div>
+          {/* 选中 pod 的实时资源用量：内联在工具栏右侧（沿用旧版单行布局） */}
+          {target && (
+            <div className="ml-auto flex min-w-0 flex-1 items-stretch justify-end gap-1">
+              <PodMetrics namespace={target.namespace} pod={target.pod} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 分屏终端网格：2×2「田」字布局，填充顺序 左上→右上→左下→右下（新增顺序 右→下→右下）。
           CSS Grid 单父容器：pane 按 gridColumn/gridRow 定位，增删时其余 pane 依稳定 key 复用实例、
@@ -684,7 +715,6 @@ function ShellTerminal({
     // 新容器建立新会话（该 id 是会话 effect 的依赖，改动它才能正确重建）。
     [namespace, pod, container],
   )
-
   // 容器尺寸变化即 refit：覆盖弹窗缩放/最大化/还原、分屏拖拽、窗口 resize 等一切路径，
   // rAF 节流避免同帧多次 fit；保证终端始终贴合宿主宽高（resizeAt 信号保留作兜底）
   useEffect(() => {
@@ -784,7 +814,6 @@ function ShellTerminal({
         }).finish(),
       )
     }
-
     // 自动执行初始命令（AI 沙箱的 mai）：等首个 stdout 帧再下发——那说明 shell
     // 已经启动并接上 stdout，避免在 bash 回退到 sh 时第一笔输入落空。
     // 每个会话只发一次；重连/切容器会重建会话，自然重新执行。
@@ -795,8 +824,9 @@ function ShellTerminal({
       sendStdin(`${initialCommand}\r`)
     }
 
-    // 探测应用是否启用了 modifyOtherKeys（CSI > 4 ; N m）：只保留末尾一小段做跨帧拼接，
-    // 取最后一次匹配作为当前等级。xterm.js 会把该序列当未知 CSI 丢弃，不影响渲染。
+    // 探测 modifyOtherKeys 等级（CSI > 4 ; N m）：xterm.js 不实现该协议，
+    // 靠应用输出里声明的等级桥接带修饰键的 Enter。只保留末尾一小段做跨帧拼接，
+    // 取最后一次匹配作为当前等级；xterm.js 会把未知 CSI 丢弃，不影响渲染。
     let capTail = ''
     const capDecoder = new TextDecoder()
     const trackModifyOtherKeys = (data: Uint8Array) => {
@@ -809,7 +839,8 @@ function ShellTerminal({
       capTail = (capTail + capDecoder.decode(data)).slice(-64)
       let last: RegExpMatchArray | null = null
       for (const m of capTail.matchAll(/\x1b\[>4(?:;(\d+))?m/g)) last = m
-      if (last) modifyOtherKeysRef.current = Number(last[1] ?? 0)
+      if (!last) return
+      modifyOtherKeysRef.current = Number(last[1] ?? 0)
     }
 
     // stdout 合批：把短窗口内的多帧合并成一次 term.write，减少 xterm 解析与

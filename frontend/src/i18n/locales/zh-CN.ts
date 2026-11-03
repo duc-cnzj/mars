@@ -193,17 +193,12 @@ export default {
   },
   themes: {
     switchTo: '切换主题：',
-    dark: '暗',
-    light: '亮',
     // 顺序与 themes/index.ts 注册表一致（决定切换器/快捷键的显示顺序）
     seiji: { name: '蔚蓝', tagline: '雪白 · 靛蓝 · 极简 SaaS' },
     magenta: { name: '璀璨洋红', tagline: '璀璨洋红 · 珊瑚粉 · 年轻活力' },
     latte: { name: '拿铁', tagline: '奶白 · 蓝莓蓝 · 柔和拿铁' },
     mint: { name: '薄荷', tagline: '清爽白 · 翡翠绿 · 洁净自然' },
     lavender: { name: '薰衣草', tagline: '柔白 · 紫罗兰 · 温和静谧' },
-    cherry: { name: '车厘子红', tagline: '车厘子红 · 墨夜黑 · 高性能座舱' },
-    violet: { name: '紫罗兰', tagline: '靛黑 · 紫罗兰 · 神秘夜' },
-    lime: { name: '荧光绿', tagline: '橄榄黑 · 霓虹绿 · 高能跃动' },
   },
   auth: {
     signIn: '登 录',
@@ -790,6 +785,7 @@ export default {
   },
   ai: {
     open: 'AI 助手',
+    assistantTitle: '{{name}} 的 AI 助手',
     waking: '正在唤醒 AI 沙箱…',
     starting: 'AI 沙箱启动中，首次启动可能需要几分钟…',
     startTimeout: 'AI 沙箱启动超时，请稍后重试',
@@ -798,6 +794,42 @@ export default {
     deployInProgress: 'AI 沙箱正在部署中，就绪后将自动打开',
     projectMissing: '未能读取 AI 项目详情',
     projectDeleted: 'AI 项目已被删除',
+    diagnose: '让 AI 诊断',
+    diagnoseHint: '项目部署失败，可让 AI 结合 mars 事件与日志排查',
+    diagnosePrompt:
+      '项目 {{namespace}}/{{project}} 部署失败。请用 mars MCP 工具查看最近事件、容器日志与项目配置，定位根因并给出修复建议。',
+    analyzeLogs: '让 AI 分析',
+    logPrompt:
+      '请用 mars MCP 工具查看项目 {{project}}（project_id={{id}}）最近的事件与容器日志，分析是否有异常并给出结论。',
+    cardEntry: '问 AI',
+    bindingLabel: '当前绑定',
+    bindingNone: '未绑定范围',
+    bindingAllProjects: '全部项目',
+    bindingHint: '提问未指定范围时，AI 默认按所选空间/项目作答',
+    bindingLoadFailed: '加载空间/项目失败，请重试',
+    // 固定常见问题：label 是按钮文案，Prompt 是点击后复制到剪贴板的完整问题。
+    quickPromptsLabel: '常见问题',
+    quickPromptDeploy: '帮我部署到最新代码',
+    quickPromptDeployPrompt:
+      '请把当前绑定的项目部署到最新代码（如果绑定的是命名空间，先确认要部署哪个项目）：用 mars MCP 的 apply_project 工具部署项目配置分支的最新提交，完成后告诉我部署结果；如果仓库需要更新，先说明将要部署的分支和提交。',
+    quickPromptNotReady: '为什么容器一直未就绪',
+    quickPromptNotReadyPrompt:
+      '当前绑定范围内的容器一直未就绪，请用 mars MCP 工具排查：Pod 状态与就绪探针失败原因、相关事件（镜像拉取、调度、探针失败）、容器日志中的报错，给出根因和修复建议。',
+    quickPromptLogs: '分析容器日志是否有错误',
+    quickPromptLogsPrompt:
+      '分析当前绑定范围内最近的容器日志，指出是否存在错误或异常，并判断可能的根因。',
+  },
+  mcpGuide: {
+    open: 'MCP 接入',
+    title: 'MCP 接入',
+    desc: '把 mars 的排查与部署能力接入任意支持 Streamable HTTP 的 MCP 客户端。',
+    endpoint: '服务地址',
+    tokenHint:
+      '鉴权使用本页创建的访问令牌（Authorization: Bearer <token>），令牌权限等于签发它的用户；请把令牌放进环境变量 MARS_TOKEN，不要写进要分享的配置。',
+    clientClaude: 'Claude Code',
+    clientOpencode: 'opencode',
+    clientCursor: 'Cursor',
+    copy: '复制配置',
   },
   console: {
     open: '控制台',

@@ -18,18 +18,12 @@ type ThemeNameKey =
   | 'themes.latte.name'
   | 'themes.mint.name'
   | 'themes.lavender.name'
-  | 'themes.cherry.name'
-  | 'themes.violet.name'
-  | 'themes.lime.name'
 type ThemeTaglineKey =
   | 'themes.seiji.tagline'
   | 'themes.magenta.tagline'
   | 'themes.latte.tagline'
   | 'themes.mint.tagline'
   | 'themes.lavender.tagline'
-  | 'themes.cherry.tagline'
-  | 'themes.violet.tagline'
-  | 'themes.lime.tagline'
 
 const THEME_NAME_KEY: Record<ThemeId, ThemeNameKey> = {
   seiji: 'themes.seiji.name',
@@ -37,9 +31,6 @@ const THEME_NAME_KEY: Record<ThemeId, ThemeNameKey> = {
   latte: 'themes.latte.name',
   mint: 'themes.mint.name',
   lavender: 'themes.lavender.name',
-  cherry: 'themes.cherry.name',
-  violet: 'themes.violet.name',
-  lime: 'themes.lime.name',
 }
 const THEME_TAGLINE_KEY: Record<ThemeId, ThemeTaglineKey> = {
   seiji: 'themes.seiji.tagline',
@@ -47,14 +38,11 @@ const THEME_TAGLINE_KEY: Record<ThemeId, ThemeTaglineKey> = {
   latte: 'themes.latte.tagline',
   mint: 'themes.mint.tagline',
   lavender: 'themes.lavender.tagline',
-  cherry: 'themes.cherry.tagline',
-  violet: 'themes.violet.tagline',
-  lime: 'themes.lime.tagline',
 }
 
 /**
  * 主题切换器：下拉框，当前主题显示色点 + 名称，打开列出全部主题。
- * 每个选项：色点 + 名称 + 一句定位 + 明暗标记 + 当前项勾选。
+ * 每个选项：色点 + 名称 + 一句定位 + 当前项勾选。
  * variant：
  * - surface（默认）：常规表面底色（白/深底）
  * - overlay：用于渐变 Header 上的半透明白底 + 白字适配
@@ -134,9 +122,6 @@ export function ThemeSwitcher({
                 <span className="truncate text-[10px] leading-tight text-mute">
                   {t(THEME_TAGLINE_KEY[th.id])}
                 </span>
-              </span>
-              <span className={`shrink-0 text-[10px] ${active ? 'text-primary' : 'text-mute'}`}>
-                {t(th.mode === 'dark' ? 'themes.dark' : 'themes.light')}
               </span>
               {active && <Icon name="check" className="size-3.5 shrink-0 text-primary" />}
             </DropdownMenuItem>

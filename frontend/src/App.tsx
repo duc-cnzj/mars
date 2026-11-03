@@ -2,11 +2,11 @@ import { lazy, Suspense, useEffect, useLayoutEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import 'sonner/dist/styles.css' // sonner 官方默认样式（明暗主题变量 + 类型色）
-import './toast.css' // toast 主题化设计：与 15 个系统主题语义 token 联动（玻璃表面 + 类型色相）
+import './toast.css' // toast 主题化设计：与 5 个系统主题语义 token 联动（玻璃表面 + 类型色相）
 import { Spinner } from './components/ui'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AuthProvider, GuestRoute, RequireAdmin, RequireSuperAdmin } from './features/auth/AuthProvider'
-import { themeClass, themes } from './themes'
+import { themeClass } from './themes'
 import { useTheme } from './hooks/useTheme'
 import { useThemeHotkeys } from './hooks/useThemeHotkeys'
 import { schedulePreloadGuardRelease } from './lib/preloadRecovery'
@@ -69,18 +69,12 @@ import './themes/magenta.css'
 import './themes/latte.css'
 import './themes/mint.css'
 import './themes/lavender.css'
-import './themes/cherry.css'
-import './themes/violet.css'
-import './themes/lime.css'
 
 /** 应用根：主题作用域包裹路由，认证 + Toast + 布局全在这层编排 */
 export default function App() {
   const { theme, setTheme } = useTheme()
   // 主题快捷键：Ctrl/⌘ + Shift + ，/ 。按注册顺序循环切换（编辑态不接管）
   useThemeHotkeys({ theme, setTheme })
-
-  // 应用主题有明暗之分，换算成 sonner 的明暗模式（dark 深色饱和渐变 / light 浅色粉彩）
-  const toastTheme = themes.find((t) => t.id === theme)?.mode ?? 'dark'
 
   // shadcn 门户组件（Dialog/Dropdown/Select）渲染在 body 层级，
   // 主题 CSS 变量必须同步挂到 body，否则门户元素拿不到变量（透明背景/无样式）。
@@ -105,7 +99,7 @@ export default function App() {
         {/* sonner Toaster：挂在主题类 div 内，--nx-* 主题变量可直接级联到 toast 元素 */}
         <Toaster
           richColors
-          theme={toastTheme}
+          theme="light"
           position="bottom-right"
           duration={3000}
           visibleToasts={3}
