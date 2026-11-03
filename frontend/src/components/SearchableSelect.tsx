@@ -58,6 +58,9 @@ export function SearchableSelect({
   truncateTip = false,
   /** 弹层开合回调：供宿主在点开时拉取最新选项（如分支/commit 列表），SearchableSelect 自身不请求数据 */
   onOpenChange,
+  maxTagCount,
+  tagClassName,
+  contentClassName,
 }: {
   value: string | string[]
   options: SearchableSelectOption[]
@@ -87,6 +90,14 @@ export function SearchableSelect({
   truncateTip?: boolean
   /** 弹层开合回调（打开/关闭都触发；仅通知，不改变组件自身开合行为） */
   onOpenChange?: (open: boolean) => void
+  /** trigger 里最多展示的 chip 数（默认 10）；超出折叠为 +N，hover 查看剩余项。
+   *  长文本场景（如 `空间/项目`）调小可避免 trigger 被 chips 撑成多行。 */
+  maxTagCount?: number
+  /** 追加到 trigger 内每个 chip 的类名（宿主可限制宽度/字号，长值截断后 hover 看 title） */
+  tagClassName?: string
+  /** 弹层内容类名：宿主可覆盖默认宽度（默认跟随 trigger 宽度）；
+   *  紧凑触发器 + 长选项（如 `空间/项目`）时传更宽的定值，避免下拉行被截断 */
+  contentClassName?: string
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -113,6 +124,8 @@ export function SearchableSelect({
       ? []
       : [value as string]
   const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues])
+  /** trigger 内展示的 chip 上限：宿主可按文本长度调小（长 `空间/项目` 场景避免撑成多行）。 */
+  const tagLimit = maxTagCount ?? MAX_TAGS
   /** 值 → 展示 label（选项里没有时回退到原始值，如自定义分支/手输 stage） */
   const labelOf = (v: string) => options.find((o) => o.value === v)?.label ?? v
   /** 单选 trigger 展示文本：选中项 label 或占位符 */
@@ -250,10 +263,13 @@ export function SearchableSelect({
                 {selectedValues.length === 0 && (
                   <span className="text-ink/30">{placeholder}</span>
                 )}
-                {selectedValues.slice(0, MAX_TAGS).map((v) => (
+                {selectedValues.slice(0, tagLimit).map((v) => (
                   <span
                     key={v}
-                    className="flex max-w-full items-center gap-0.5 rounded-md bg-secondary px-1.5 py-0.5 text-[12px] text-secondary-foreground"
+                    className={cn(
+                      'flex max-w-full items-center gap-0.5 rounded-md bg-secondary px-1.5 py-0.5 text-[12px] text-secondary-foreground',
+                      tagClassName,
+                    )}
                   >
                     <span className="truncate" title={labelOf(v)}>
                       {labelOf(v)}
@@ -273,17 +289,17 @@ export function SearchableSelect({
                     </button>
                   </span>
                 ))}
-                {selectedValues.length > MAX_TAGS && (
+                {selectedValues.length > tagLimit && (
                   <TooltipProvider>
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
                         <span className="cursor-help rounded-md bg-secondary px-1.5 py-0.5 text-[12px] text-secondary-foreground">
-                          +{selectedValues.length - MAX_TAGS}
+                          +{selectedValues.length - tagLimit}
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" align="start" className="max-w-[18rem] p-2">
                         <div className="flex flex-wrap gap-1">
-                          {selectedValues.slice(MAX_TAGS).map((v) => (
+                          {selectedValues.slice(tagLimit).map((v) => (
                             <span
                               key={v}
                               className="max-w-full truncate rounded bg-background/15 px-1.5 py-0.5 text-[12px] text-background"
@@ -363,7 +379,10 @@ export function SearchableSelect({
         align="start"
         sideOffset={4}
         style={{ zIndex: zIndex ?? (popZ || undefined) }}
-        className="w-[var(--radix-popover-trigger-width)] min-w-[12rem] overflow-hidden p-0"
+        className={cn(
+          'w-[var(--radix-popover-trigger-width)] min-w-[12rem] overflow-hidden p-0',
+          contentClassName,
+        )}
       >
         <div className="border-b border-line p-1.5">
           <div className="relative">

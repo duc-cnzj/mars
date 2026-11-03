@@ -193,6 +193,26 @@ var (
 		Help:        "AI Agent LLM 代理转发请求数",
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	})
+
+	// AgentUsageEventTotal 记录前端上报的 AI 使用漏斗事件（入口点击、未启用、
+	// 唤醒成功/失败、沙箱就绪、弹窗打开）。event 为服务端白名单枚举，
+	// 刻意不带用户维度，避免指标基数随用户数膨胀。
+	AgentUsageEventTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Subsystem:   system,
+		Name:        "agent_usage_event_total",
+		Help:        "AI 使用漏斗事件数",
+		ConstLabels: prometheus.Labels{"version": appVersion},
+	}, []string{"event"})
+
+	// AgentOpenLatency 记录从点击 AI 入口到沙箱就绪的耗时（前端上报），
+	// 用于衡量冷启动体验：低频使用下几乎每次都是冷启动，这是关键体验指标。
+	AgentOpenLatency = prometheus.NewHistogram(prometheus.HistogramOpts{
+		Subsystem:   system,
+		Name:        "agent_open_latency_seconds",
+		Help:        "AI 入口点击到沙箱就绪的耗时（秒）",
+		ConstLabels: prometheus.Labels{"version": appVersion},
+		Buckets:     []float64{1, 2, 5, 10, 20, 30, 60, 120, 180, 300},
+	})
 )
 
 // AI Agent 沙箱状态迁移动作，作为 AgentSandboxTransitionTotal 的 action 标签值。
@@ -226,6 +246,8 @@ func NewRegistry() *prometheus.Registry {
 		CronErrorCount,
 		AgentSandboxTransitionTotal,
 		AgentLLMProxyRequestsTotal,
+		AgentUsageEventTotal,
+		AgentOpenLatency,
 		K8sInformerFanOutListenerCount,
 	)
 

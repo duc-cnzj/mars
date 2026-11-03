@@ -5,7 +5,7 @@ import { toast as sonnerToast } from 'sonner'
  * - 裸调用 `toast(msg)` → info（对齐旧版 NotifyX 默认态语义，sonner 裸调用是 data-type=default
  *   中性态，会失去主题色相映射，因此显式映射到 info）
  * - `toast.success / error / warning / info` 一一对应
- * 明暗主题由 App 挂载的 <Toaster theme={...}/> 按当前主题同步。
+ * 外观为浅色主题，由 App 挂载的 <Toaster theme="light"/> 固定。
  */
 export interface ToastFn {
   (message: string): string | number

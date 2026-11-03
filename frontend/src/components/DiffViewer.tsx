@@ -76,7 +76,7 @@ const splitStyle: ReactDiffViewerStylesOverride = {
 /**
  * 通用 diff 查看器（沿用旧版 react-diff-viewer 组件）：
  * split/unified 切换 + Prism 语法高亮 + copy old/new + 仅显示变更开关。
- * 明暗跟随当前主题（旧版固定 useDarkTheme，这里按 theme.mode 自适应）。
+ * diff 区固定深色语法高亮（编辑器同款 material-dark），不随应用主题变化。
  * 对外 API 与旧包装一致：{ oldValue, newValue, language }。
  */
 export function DiffViewer({

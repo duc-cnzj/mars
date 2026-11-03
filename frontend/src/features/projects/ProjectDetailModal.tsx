@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import { selectAllOnDoubleClick } from '@/lib/selection'
@@ -22,6 +22,8 @@ import {
   DialogTitle,
 } from '@/components/ui/shadcn/dialog'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/shadcn/tabs'
+import { Button } from '@/components/ui/shadcn/button'
+import { useAIEntry } from '../ai/AIContext'
 import { TabInfo } from './TabInfo'
 import { TabLog } from './TabLog'
 import { TopologyTab } from '../topology/TopologyTab'
@@ -60,6 +62,8 @@ export function ProjectDetailModal({
   defaultTab = 'logs',
   allowedTabs,
   autoShellCommand,
+  aiBindingBar,
+  titleOverride,
   onClose,
   onDeleted,
   onChanged,
@@ -71,10 +75,15 @@ export function ProjectDetailModal({
   frontAt?: number
   /** 打开时默认选中的 Tab（默认 logs）：工作负载不可操作时仍回落到 detail */
   defaultTab?: TabKey
-  /** 可用 Tab 白名单（缺省 = 全部）：AI 沙箱只要日志 + 命令行，其余 Tab 不渲染 */
+  /** 可用 Tab 白名单（缺省 = 全部）：AI 沙箱只剩命令行，其余 Tab 不渲染 */
   allowedTabs?: readonly TabKey[]
-  /** 命令行会话建立后自动执行的命令（AI 沙箱传 mai，免去用户手动进入交互） */
+  /** 命令行会话建立后自动执行的命令（AI 沙箱传 `mai` 或 `mai '<问题>'`，免去用户手动进入交互） */
   autoShellCommand?: string
+  /** AI 绑定条（仅 AI 沙箱传入）：展示在命令行上方 */
+  aiBindingBar?: ReactNode
+  /** 标题覆盖（仅 AI 助手传入）：沙箱项目名/空间对用户没有意义，改为展示
+   *  「<用户> 的 AI 助手」这类产品化标题；缺省仍展示项目名 + 空间 */
+  titleOverride?: string
   onClose: () => void
   onDeleted: () => void
   onChanged: () => void
@@ -92,6 +101,8 @@ export function ProjectDetailModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frontAt])
   const { joinProjectPodEvent } = useWebsocket()
+  // 场景嵌入：部署失败时给一个「让 AI 诊断」入口，复用顶栏的唤醒编排。
+  const { available: aiAvailable, open: openAI } = useAIEntry()
   const [detail, setDetail] = useState<ProjectModel | null>(null)
   const [loading, setLoading] = useState(false)
   // 初始 tab 直接按列表项状态定（与下方「打开即同步默认 Tab」的 open effect 同源）：
@@ -152,6 +163,8 @@ export function ProjectDetailModal({
   const canOperate =
     (detail ?? project).deployStatus === 'StatusDeployed' ||
     (detail ?? project).deployStatus === 'StatusDeploying'
+  // 部署失败才展示红色「让 AI 诊断」提示条；其余状态不展示项目级 AI 入口。
+  const failedProject = (detail ?? project).deployStatus === 'StatusFailed'
 
   // 可见 Tab：不可操作时只剩「部署配置 + 详细信息」（edit 必须留——见 tabVisibility.ts 的
   // WORKLOAD_TABS 注释，那是恢复后重新部署的唯一入口）
@@ -166,8 +179,8 @@ export function ProjectDetailModal({
   useEffect(() => {
     if (!open || !detail) return
     if (!canOperate && isWorkloadTab(tab)) {
-      // 优先收回「详细信息」（旧行为）；白名单收窄到没有 detail 时（AI 沙箱只有
-      // 日志/命令行）再退到第一个非工作负载 Tab，最后保持现状，不落入未渲染的空壳。
+      // 优先收回「详细信息」（旧行为）；白名单收窄到没有 detail 时（AI 沙箱只剩
+      // 命令行）再退到第一个非工作负载 Tab，最后保持现状，不落入未渲染的空壳。
       const visible = visibleTabKeys(canOperate, allowedTabs)
       const next = visible.includes('detail')
         ? 'detail'
@@ -223,33 +236,63 @@ export function ProjectDetailModal({
                 className="block truncate text-[18px] font-semibold text-ink"
                 onDoubleClick={selectAllOnDoubleClick}
               >
-                {project.name}
+                {titleOverride ?? project.name}
               </span>
-              <span
-                className="absolute left-full top-0 ml-0.5 -mt-1 whitespace-nowrap text-[10px] leading-none text-primary"
-                style={{ fontFamily: '"dank mono", ui-monospace, monospace' }}
-                onDoubleClick={selectAllOnDoubleClick}
-              >
-                {namespaceName}
-              </span>
+              {/* AI 助手定制标题：沙箱项目名/空间是内部实现，不展示命名空间 */}
+              {titleOverride === undefined && (
+                <span
+                  className="absolute left-full top-0 ml-0.5 -mt-1 whitespace-nowrap text-[10px] leading-none text-primary"
+                  style={{ fontFamily: '"dank mono", ui-monospace, monospace' }}
+                  onDoubleClick={selectAllOnDoubleClick}
+                >
+                  {namespaceName}
+                </span>
+              )}
             </span>
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-          <TabsList variant="line" className="w-full border-b border-line">
-            {tabItems.map((it) => (
-              // 去掉焦点态主题色边框（TabsTrigger 基座自带 focus-visible:border-ring/ring/outline）
-              <TabsTrigger
-                key={it.key}
-                value={it.key}
-                className="focus-visible:!border-transparent focus-visible:!ring-0 focus-visible:!outline-none"
-              >
-                {it.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+        {/* 只有一个可见 Tab 时不渲染 Tab 条：AI 沙箱只剩命令行，单独一行「命令行」
+            标签既占高度又没有切换意义。多 Tab（普通项目）行为不变。 */}
+        {tabItems.length > 1 && (
+          <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+            <TabsList variant="line" className="w-full border-b border-line">
+              {tabItems.map((it) => (
+                // 去掉焦点态主题色边框（TabsTrigger 基座自带 focus-visible:border-ring/ring/outline）
+                <TabsTrigger
+                  key={it.key}
+                  value={it.key}
+                  className="focus-visible:!border-transparent focus-visible:!ring-0 focus-visible:!outline-none"
+                >
+                  {it.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        )}
+
+        {/* 项目级 AI 入口：仅部署失败时展示红色自救提示，把结构化的空间/项目名交给 AI，
+            由它经 MCP 查事件与日志。只在普通项目弹窗出现（AI 沙箱自身传了 allowedTabs，
+            不递归展示）。 */}
+        {aiAvailable && allowedTabs === undefined && failedProject && (
+          <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-err/30 bg-err/5 px-3 py-1.5 text-[12px] text-err">
+            <span className="min-w-0 truncate">{t('ai.diagnoseHint')}</span>
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() =>
+                openAI(
+                  t('ai.diagnosePrompt', {
+                    namespace: namespaceName,
+                    project: project.name,
+                  }),
+                )
+              }
+            >
+              {t('ai.diagnose')}
+            </Button>
+          </div>
+        )}
 
         <div ref={contentRef} className="mt-1 min-h-0 flex-1 overflow-auto overscroll-contain">
           {loading && !detail ? (
@@ -284,7 +327,9 @@ export function ProjectDetailModal({
                   key={it.key}
                   className={active ? 'h-full overflow-auto overscroll-contain' : 'hidden'}
                 >
-                  {it.key === 'logs' && <TabLog projectId={detail.id} projectName={detail.name} />}
+                  {it.key === 'logs' && (
+                    <TabLog projectId={detail.id} projectName={detail.name} />
+                  )}
                   {it.key === 'shell' && (
                     <Suspense fallback={<SkeletonTabShell />}>
                       <TabShell
@@ -292,6 +337,10 @@ export function ProjectDetailModal({
                         projectName={detail.name}
                         resizeAt={resizeAt}
                         initialCommand={autoShellCommand}
+                        aiBindingBar={aiBindingBar}
+                        // AI 沙箱（传了 allowedTabs）隐藏新增终端/上传/下载/强杀：
+                        // mai TUI 单会话即可，强杀还会直接打断正在进行的对话。
+                        showShellTools={allowedTabs === undefined}
                       />
                     </Suspense>
                   )}

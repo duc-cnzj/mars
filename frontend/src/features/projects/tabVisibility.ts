@@ -37,7 +37,7 @@ export function initialTabKey(canOperate: boolean, preferred: TabKey = 'logs'): 
 /**
  * 按运行态过滤可见 Tab：canOperate=false 时只留不依赖工作负载的「部署配置 + 详细信息」，
  * 顺序沿用 ALL_TAB_KEYS。canOperate 由调用方按 deployStatus（Deployed/Deploying）判定。
- * allowed 可选：调用方进一步收窄可用 Tab 集合（如 AI 沙箱只留日志 + 命令行）。
+ * allowed 可选：调用方进一步收窄可用 Tab 集合（如 AI 沙箱只留命令行）。
  */
 export function visibleTabKeys(canOperate: boolean, allowed?: readonly TabKey[]): TabKey[] {
   return ALL_TAB_KEYS.filter(

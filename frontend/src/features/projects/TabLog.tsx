@@ -9,7 +9,7 @@ import { getToken } from '@/api/token'
 import { useWebsocket } from '@/hooks/useWebsocket'
 import { AnsiText } from '@/components/AnsiText'
 import { copyText } from '@/lib/copy'
-import { Icon } from '@/components/Icons'
+import { AISparklesIcon, Icon } from '@/components/Icons'
 import { Empty, SkeletonTabLog } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import { Input } from '@/components/ui/shadcn/input'
@@ -17,6 +17,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/shadcn/radio-group'
 import { PodStateTag } from './PodStateTag'
 import { shortContainerName } from '@/lib/shortContainerName'
 import { selectAllOnDoubleClick } from '@/lib/selection'
+import { useAIEntry } from '@/features/ai/AIContext'
 
 type StateContainer = components['schemas']['types.StateContainer']
 
@@ -70,8 +71,16 @@ export const LogLine = memo(function LogLine({
  * - pod 事件（ProjectPodEvent）触发 debounce 重拉容器列表，pod 重建后新容器自动出现在列表
  * - 行号 / 下载 / 断流自动恢复 / Cmd(Ctrl)+F 聚焦搜索
  */
-export function TabLog({ projectId, projectName }: { projectId: number; projectName: string }) {
+export function TabLog({
+  projectId,
+  projectName,
+}: {
+  projectId: number
+  projectName: string
+}) {
   const { t } = useTranslation()
+  // 日志分析只传项目定位，日志正文由 AI 经 MCP 自行获取（避免超长参数与转义风险）。
+  const { available: aiAvailable, open: openAI } = useAIEntry()
   const { subscribeProjectPodEvent } = useWebsocket()
   const [containers, setContainers] = useState<StateContainer[]>([])
   const [selected, setSelected] = useState<StateContainer | null>(null)
@@ -381,6 +390,19 @@ export function TabLog({ projectId, projectName }: { projectId: number; projectN
     ? lines.map((l, i) => ({ line: l, idx: i })).filter((x) => x.line.toLowerCase().includes(kw))
     : lines.map((l, i) => ({ line: l, idx: i }))
   const isEmpty = kw ? filtered.length === 0 : lines.length === 0
+  // 日志分析只传项目定位，日志正文由 AI 经 MCP 自行获取。无容器（pod 未起来/刚崩溃）
+  // 时同样保留入口——这正是最需要 AI 结合事件排查的场景。
+  const aiAction = aiAvailable && (
+    <Button
+      size="sm"
+      variant="outline"
+      className="h-7"
+      onClick={() => openAI(t('ai.logPrompt', { project: projectName, id: projectId }))}
+    >
+      <AISparklesIcon className="text-[16px]" />
+      {t('ai.analyzeLogs')}
+    </Button>
+  )
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
@@ -440,7 +462,7 @@ export function TabLog({ projectId, projectName }: { projectId: number; projectN
         // 容器列表加载中：整块骨架占位（单选行 + 工具条 + 深色日志面板），避免切数据跳动
         <SkeletonTabLog />
       ) : (
-        <Empty text={t('project.noContainers')} icon="logs" />
+        <Empty text={t('project.noContainers')} icon="logs" action={aiAction} />
       )}
 
       {/* 工具条 + 断流提示 + 日志面板：仅在有容器时渲染，无容器只留 Empty 提示 */}
@@ -498,6 +520,7 @@ export function TabLog({ projectId, projectName }: { projectId: number; projectN
             )}
             <span className="font-mono text-[11px] text-faint">{t('project.logLineCount', { count: lines.length })}</span>
             <div className="ml-auto flex items-center gap-1.5">
+              {aiAction}
               <Button
                 size="sm"
                 variant="outline"

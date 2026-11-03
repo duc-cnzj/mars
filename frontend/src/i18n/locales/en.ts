@@ -192,17 +192,12 @@ export default {
   },
   themes: {
     switchTo: 'Switch to: ',
-    dark: 'Dark',
-    light: 'Light',
     // 顺序与 themes/index.ts 注册表一致（决定切换器/快捷键的显示顺序）
     seiji: { name: 'Azure', tagline: 'Snow white · Indigo · Minimal SaaS' },
     magenta: { name: 'Brilliant Magenta', tagline: 'Magenta · Coral · Playful energy' },
     latte: { name: 'Latte', tagline: 'Milky white · Blueberry blue · Soft Latte' },
     mint: { name: 'Mint', tagline: 'Fresh white · Emerald · Clean nature' },
     lavender: { name: 'Lavender', tagline: 'Soft white · Violet · Gentle calm' },
-    cherry: { name: 'Cherry Red', tagline: 'Cherry red · Midnight · Performance cockpit' },
-    violet: { name: 'Violet', tagline: 'Indigo-black · Violet · Mystic night' },
-    lime: { name: 'Lime', tagline: 'Olive-black · Neon lime · High energy' },
   },
   auth: {
     signIn: 'Sign in',
@@ -801,6 +796,7 @@ export default {
   },
   ai: {
     open: 'AI Assistant',
+    assistantTitle: "{{name}}'s AI Assistant",
     waking: 'Waking up the AI sandbox…',
     starting: 'Starting the AI sandbox. The first start may take a few minutes…',
     startTimeout: 'Timed out waiting for the AI sandbox to start. Please try again later.',
@@ -809,6 +805,42 @@ export default {
     deployInProgress: 'The AI sandbox is deploying. It will open automatically once ready.',
     projectMissing: 'Failed to load the AI project details',
     projectDeleted: 'The AI project has been deleted',
+    diagnose: 'Diagnose with AI',
+    diagnoseHint: 'Deployment failed — let AI inspect mars events and logs',
+    diagnosePrompt:
+      'Project {{namespace}}/{{project}} failed to deploy. Use the mars MCP tools to inspect recent events, container logs, and the project config; identify the root cause and suggest a fix.',
+    analyzeLogs: 'Analyze with AI',
+    logPrompt:
+      'Use the mars MCP tools to inspect project {{project}} (project_id={{id}}): recent events and container logs. Identify any anomalies and give a conclusion.',
+    cardEntry: 'Ask AI',
+    bindingLabel: 'Bound to',
+    bindingNone: 'No scope bound',
+    bindingAllProjects: 'All projects',
+    bindingHint:
+      'AI answers about the selected namespaces/projects unless your question names another',
+    bindingLoadFailed: 'Failed to load namespaces/projects. Please try again.',
+    quickPromptsLabel: 'Common questions',
+    quickPromptDeploy: 'Deploy the latest code for me',
+    quickPromptDeployPrompt:
+      'Deploy my bound project to the latest code (if I bound a namespace, confirm which project first): use the mars MCP apply_project tool to deploy the latest commit on the project config branch, then report the result. If the repo needs updating, state the branch and commit you are about to deploy first.',
+    quickPromptNotReady: 'Why is the container never ready?',
+    quickPromptNotReadyPrompt:
+      'Containers in my bound scope never become ready. Investigate with the mars MCP tools: pod status and readiness probe failures, related events (image pull, scheduling, probe failures), and errors in container logs. Give the root cause and a fix.',
+    quickPromptLogs: 'Are there errors in the container logs?',
+    quickPromptLogsPrompt:
+      'Analyze the recent container logs in my bound scope, point out errors or anomalies, and determine the likely root cause.',
+  },
+  mcpGuide: {
+    open: 'MCP setup',
+    title: 'MCP setup',
+    desc: 'Connect mars investigation and deployment capabilities to any Streamable HTTP MCP client.',
+    endpoint: 'Server URL',
+    tokenHint:
+      'Authenticate with an access token created on this page (Authorization: Bearer <token>). The token carries the permissions of the user who issued it; keep it in the MARS_TOKEN environment variable, not in a config you share.',
+    clientClaude: 'Claude Code',
+    clientOpencode: 'opencode',
+    clientCursor: 'Cursor',
+    copy: 'Copy config',
   },
   console: {
     open: 'Console',

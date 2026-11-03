@@ -5,15 +5,15 @@ import { useGrayChannel } from '@/hooks/useGrayChannel'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui'
 import { Coffee as CoffeeCard } from './Coffee'
 import { IconFont } from '@/components/IconFont'
-import { barGradient, type ThemeId } from '@/themes'
+import { barGradient } from '@/themes'
 
 /**
  * 渐变底栏（还原旧版 AppFooter）：版权 + 版本号 + 构建时间 + 请喝咖啡赞助入口。
  * 沿用旧版：dank mono 品牌字体 + 两行结构（line1 created by，line2 version/buildAt）居中。
- * 背景渐变与 header 保持一致（barGradient 按明暗分支），文字白。
+ * 背景渐变与 header 保持一致（barGradient），文字白。
  * 处于灰度通道时额外在版本号右侧挂一枚「抢先体验」标记（见下方注释）。
  */
-export function Footer({ theme }: { theme: ThemeId }) {
+export function Footer() {
   const { t } = useTranslation()
   const version = useVersion()
   const year = new Date().getFullYear()
@@ -22,7 +22,7 @@ export function Footer({ theme }: { theme: ThemeId }) {
   // 判据是灰度路由 cookie 而非后端 isGray：标记要反映「此刻真正生效的通道」，而 cookie
   // 才是 ingress 分流时实际读的那个东西（详见 useGrayChannel 的注释）。
   // 颜色全部由 currentColor 派生（color-mix），不引入硬编码色值：底栏前景色已按主题调好，
-  // 标记跟着走即可，明暗主题都不用另配一套。
+  // 标记跟着走即可，各主题都不用另配一套。
   const isGray = useGrayChannel()
 
   return (
@@ -31,8 +31,8 @@ export function Footer({ theme }: { theme: ThemeId }) {
       style={
         {
           fontFamily: '"dank mono", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
-          // 与 header 一致：深色主题压暗、浅色主题亮渐变；前景取各主题自带 primary-foreground，不推白
-          background: barGradient(theme),
+          // 与 header 一致：主题亮渐变；前景取各主题自带 primary-foreground，不推白
+          background: barGradient,
         }
       }
     >

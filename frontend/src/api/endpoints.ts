@@ -19,6 +19,10 @@ export const API = {
   aiStatus: '/api/ai/status',
   /** 启用/唤醒当前用户的 agent 沙箱（POST，幂等） */
   aiAgentEnable: '/api/ai/agent/enable',
+  /** 上报 AI 使用漏斗事件（POST，事件名走服务端白名单） */
+  aiUsage: '/api/ai/usage',
+  /** 刷新 agent 沙箱活跃度（POST，AI 弹窗打开期间心跳） */
+  aiActivity: '/api/ai/activity',
 
   // --- admin（后台） ---
   adminBoard: '/api/admin/cluster/board',

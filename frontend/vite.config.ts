@@ -60,6 +60,13 @@ export default defineConfig(({ command, mode }) => {
           ws: true,
           secure: true,
         },
+        // MCP Streamable HTTP：令牌页「MCP 接入」展示的地址是 `${origin}/mcp`，
+        // 开发期同样要走代理，否则引导里给出的是 5173 上的 404 地址。
+        '/mcp': {
+          target: env.VITE_API_TARGET,
+          changeOrigin: true,
+          secure: true,
+        },
       },
     },
   }

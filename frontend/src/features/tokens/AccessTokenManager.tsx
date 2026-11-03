@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/shadcn/dialog'
 import { copyText } from '@/lib/copy'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { McpGuideButton } from '@/features/ai/McpGuide'
 import type { TKey } from '@/i18n/keys'
 
 type TokenModel = components['schemas']['types.AccessTokenModel']
@@ -389,6 +390,8 @@ export function AccessTokenManager({ adminView = false }: { adminView?: boolean 
                 size="sm"
               />
             )}
+            {/* MCP 接入引导：把令牌页变成「拿到令牌即可接入外部客户端」的闭环入口 */}
+            <McpGuideButton />
             <Button size="sm" variant="outline" disabled={refreshing} onClick={refresh}>
               {refreshing ? (
                 <Icon name="loader" className="size-4 animate-spin" />

@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* 系统主题已全部为浅色：保留该覆盖，阻止 Tailwind 默认的 prefers-color-scheme
+   暗色变体跟随操作系统生效，让 shadcn 组件里的 dark: 类保持不激活。 */
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
@@ -110,7 +112,7 @@
   --color-err-soft: var(--err-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
-  /* 休眠中图标的专属蓝（浅色主题深蓝 / 深色主题亮蓝，各主题在 --hibernate 各自定值） */
+  /* 休眠中图标的专属蓝（各主题在 --hibernate 各自定值） */
   --color-hibernate: var(--hibernate);
 
   --color-chart-1: var(--chart-1);

@@ -8,7 +8,8 @@ import { getEndpoints } from '@/api/endpointsCache'
 import { getHibernateWindows } from '@/api/hibernateWindowsCache'
 import { copyText } from '@/lib/copy'
 import { cn } from '@/lib/utils'
-import { Icon } from '@/components/Icons'
+import { AISparklesIcon, Icon } from '@/components/Icons'
+import { useAIEntry } from '@/features/ai/AIContext'
 import { EndpointUrl } from '@/components/EndpointUrl'
 import { TruncatedText } from '@/components/TruncatedText'
 import { Button, buttonVariants } from '@/components/ui/shadcn/button'
@@ -29,17 +30,26 @@ type HibernateWindowModel = components['schemas']['hibernate.HibernateWindow']
  * 项目行：命名空间卡片内联的项目入口（对齐标准 dashed variant：同「次级入口」虚线语言，hover 点亮 primary）。
  * 展示部署状态 + 项目名；部署成功时右侧追加访问地址与 CPU/内存（对齐旧版 ProjectDetail）。
  * 项目名被省略号截断时，hover 名称文字本体弹完整名 tooltip；未截断不弹。
- * 名称 span 点击冒泡到行按钮，正常打开详情弹窗；CPU/URL/休眠 zzz 三个图标为独立交互区（onClick stopPropagation）。
- * 三者一律用点击 Popover（而非仅 hover）——ui-ux-pro-max「Hover vs Tap」规则；
+ * 名称 span 点击冒泡到行按钮，正常打开详情弹窗；AI/CPU/URL/休眠 zzz 图标为独立交互区（onClick stopPropagation）。
+ * CPU/URL/zzz 一律用点击 Popover（而非仅 hover）——ui-ux-pro-max「Hover vs Tap」规则；
  * 图标为 24px 命中区且可聚焦，满足 WCAG 2.2 目标尺寸。点击行（含项目名）打开 ProjectDetailModal。
  */
 export function ProjectRow({
   project,
+  namespaceName,
   onClick,
 }: {
   project: ProjectModel
+  /** 所属命名空间名：AI 入口据此把本行项目设为 AI 的默认上下文（只绑定，不代发问题）。 */
+  namespaceName: string
   onClick: () => void
 }) {
+  const { t } = useTranslation()
+  // AI 入口：把卡片所属的「空间/项目」交给 AI 作为默认上下文，不替用户发问——点开 AI 后
+  // 由用户自己输入第一条消息，只是不必再说明「问的是哪个项目」。
+  const { available: aiAvailable, open: openAI } = useAIEntry()
+  const aiBinding = { namespace: namespaceName, project: project.name }
+
   // 全名 tooltip：名称超长截断时 hover 弹完整名——统一走 TruncatedText（测量 / hover / 受控 open 封装，
   // 与 SystemSettings / ProjectGovernance 同源）；点击名称仍冒泡到行按钮打开详情弹窗。
 
@@ -88,7 +98,7 @@ export function ProjectRow({
           <HibernateSleepTip projectId={project.id} windowNames={project.hibernateWindowNames} />
         )}
       </span>
-      {/* 工具簇：CPU/内存 + 访问地址两个 24px 命中区图标，用独立容器 gap-0.5（2px）收紧，
+      {/* 工具簇：AI / CPU/内存 / 访问地址 24px 命中区图标，用独立容器 gap-0.5（2px）收紧，
           与行级 gap-2 解耦——只收紧图标间距，不动「部署状态↔名称」的间距。
           shrink-0：簇整体不被 flex 压缩；items-center 对齐图标垂直中线。
           定时休眠编辑入口已迁至详情弹窗标题栏，列表行只留 zzz 被动信号。 */}
@@ -99,6 +109,30 @@ export function ProjectRow({
             <ProjectCpuMemory projectId={project.id} />
             <ProjectEndpoints projectId={project.id} />
           </>
+        )}
+        {/* AI 入口：与 CPU/端点同款独立交互区（stopPropagation 防误开详情弹窗）。
+            点击只把本行「空间/项目」绑定为 AI 默认上下文，不代发问题。
+            不随部署状态隐藏——未部署/失败的项目同样可以问 AI 排查。 */}
+        {aiAvailable && (
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation()
+              openAI(undefined, aiBinding)
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return
+              e.preventDefault()
+              e.stopPropagation()
+              openAI(undefined, aiBinding)
+            }}
+            className={iconTriggerCls}
+            aria-label={t('ai.cardEntry')}
+            title={t('ai.cardEntry')}
+          >
+            <AISparklesIcon className="size-4" />
+          </span>
         )}
       </span>
     </div>
@@ -325,7 +359,7 @@ function HibernateSleepTip({
           <>
             {/* 24h 迷你时间轴：轨道铺满一天，高亮段 = 休眠时段（跨零点自动拆两段）。
                 一眼看清「何时入睡、睡多久」——比文字列时段更直观。
-                整条轨道**跟随主题强调色**（--primary，各主题各自取值：seiji 靛蓝 / mint 绿 / cherry 红 …），
+                整条轨道**跟随主题强调色**（--primary，各主题各自取值：seiji 靛蓝 / mint 绿 / magenta 洋红 …），
                 底轨 /15、高亮段 /42 两档同族——不用固定色，切主题轨道随之变色。
                 高亮段叠在同色底轨（而非浅灰底轨）之上，混色不往灰里掉、不发浑；两档拉开即「何时入睡」清晰可辨。
                 注意：只轨道跟随主题；zzz 图标仍用休眠专属「夜蓝」（--hibernate，跨主题固定）。 */}
