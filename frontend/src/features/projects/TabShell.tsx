@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -223,8 +222,8 @@ export function TabShell({
   }, [containers])
 
   // 切换目标容器 → 所有分屏终端跟随切换到新容器。
-  // pane 的 npc 更新后 ShellTerminal 的 sessionId 随之变化，触发旧会话关闭、
-  // 新会话建立——即「点哪个容器，终端就切到哪个容器」。
+  // pane 的 npc 更新后 ShellTerminal 的会话 effect 重跑（容器是依赖），关闭旧会话、
+  // 以新的 sessionId 建立新会话——即「点哪个容器，终端就切到哪个容器」。
   // （pane 只负责网格排布，容器永远跟随 target，与旧版把所有 ShellWindow 绑定到同一 value 一致）
   useEffect(() => {
     if (!target) return
@@ -709,12 +708,6 @@ function ShellTerminal({
   // 一律退化成 \r；opentui 系 TUI（如 opencode）启动会发 CSI > 4;1m 声明按该协议解码，
   // 不桥接就会把 Shift+Enter 当提交。等级从应用输出里探测，普通 shell 不受影响。
   const modifyOtherKeysRef = useRef(0)
-  const sessionId = useMemo(
-    () => crypto.randomUUID(),
-    // 依赖容器三元组：切容器时重新生成不透明 id，触发下方会话 effect 关闭旧会话、为
-    // 新容器建立新会话（该 id 是会话 effect 的依赖，改动它才能正确重建）。
-    [namespace, pod, container],
-  )
   // 容器尺寸变化即 refit：覆盖弹窗缩放/最大化/还原、分屏拖拽、窗口 resize 等一切路径，
   // rAF 节流避免同帧多次 fit；保证终端始终贴合宿主宽高（resizeAt 信号保留作兜底）
   useEffect(() => {
@@ -758,6 +751,14 @@ function ShellTerminal({
   useEffect(() => {
     const host = hostRef.current
     if (!host) return
+
+    // 每次重建会话都生成新的不透明 id，绝不复用上一次的：切容器/改绑（AI 默认上下文
+    // 变化）都会让本 effect 重跑，cleanup 的「关闭旧会话」与新 effect 的「开启新会话」
+    // 在服务端是并发分发的（controller.go 对非鉴权帧逐个起 goroutine）。复用同一 id 时
+    // 关闭帧可能删掉刚登记的新 pty（终端停在原地不再执行初始命令）；旧会话的关闭通知
+    // 也会按同一 slug 回到新终端，被误判成「首个输出」而提前下发命令（pty 未就绪，输入
+    // 被丢弃且不会重试）。新 id 让两份生命周期彻底隔离。
+    const sessionId = crypto.randomUUID()
 
     // 新会话从关闭态开始，等应用自己声明（旧会话的等级不能泄漏到新进程）
     modifyOtherKeysRef.current = 0
@@ -814,9 +815,10 @@ function ShellTerminal({
         }).finish(),
       )
     }
-    // 自动执行初始命令（AI 沙箱的 mai）：等首个 stdout 帧再下发——那说明 shell
-    // 已经启动并接上 stdout，避免在 bash 回退到 sh 时第一笔输入落空。
-    // 每个会话只发一次；重连/切容器会重建会话，自然重新执行。
+    // 自动执行初始命令（AI 沙箱的 mai）：等首个「常规输出」帧再下发——那说明 shell
+    // 已经启动并接上 stdout，避免在 bash 回退到 sh 时第一笔输入落空。关闭帧也带
+    // op=stdout，调用方必须按 meta.type 排除（见订阅处），否则会提前下发并丢输入。
+    // 每个会话只发一次；重连/切容器/改绑会重建会话（新 sessionId），自然重新执行。
     let initialCommandSent = false
     const maybeSendInitialCommand = () => {
       if (initialCommandSent || !initialCommand) return
@@ -897,7 +899,10 @@ function ShellTerminal({
       if (tm.op === 'stdout' && tm.data) {
         trackModifyOtherKeys(tm.data)
         enqueueOutput(tm.data)
-        maybeSendInitialCommand()
+        // 只有常规输出帧才算 shell 就绪：关闭帧同样携带 op=stdout（内容是关闭原因），
+        // 不能拿它触发初始命令——否则会在新 pty 尚未登记时下发输入并被服务端丢弃，
+        // 且 initialCommandSent 已置位，本次会话再也不会重发（表现为停在 bash 提示符）。
+        if (meta.type === websocket.Type.HandleExecShellMsg) maybeSendInitialCommand()
       }
       if (tm.op === 'toast' && tm.data) toast.error(decoder.decode(tm.data))
     })
@@ -985,7 +990,7 @@ function ShellTerminal({
       fitRef.current = null
       term.dispose()
     }
-  }, [sessionId, namespace, pod, container, initialCommand, send, subscribe, toast, t])
+  }, [namespace, pod, container, initialCommand, send, subscribe, toast, t])
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-line bg-black/85">
