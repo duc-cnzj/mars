@@ -87,14 +87,11 @@ func newAIAgentTestKit(t *testing.T) *aiAgentTestKit {
 		wsSender:  app.NewMockWsSender(ctrl),
 	}
 	h := newAIAgentHandler(aiAgentDeps{
-		AuthBiz:      k.authBiz,
-		RepoBiz:      k.repoBiz,
-		NamespaceBiz: k.nsBiz,
-		ProjectBiz:   k.projBiz,
-		K8sRepo:      k.k8sRepo,
-		// AccessBiz 直接复用 nsBiz/projBiz 两个 mock 组装真实实现：
-		// mock 的命名空间/项目仓库即可驱动全部判定分支。
-		AccessBiz:      biz.NewAccessBiz(k.nsBiz, k.projBiz),
+		AuthBiz:        k.authBiz,
+		RepoBiz:        k.repoBiz,
+		NamespaceBiz:   k.nsBiz,
+		ProjectBiz:     k.projBiz,
+		K8sRepo:        k.k8sRepo,
 		AccessTokenBiz: k.tokenBiz,
 		AgentActivity:  k.activity,
 		Locker:         k.locker,
