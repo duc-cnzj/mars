@@ -829,6 +829,8 @@ export default {
     quickPromptLogs: 'Are there errors in the container logs?',
     quickPromptLogsPrompt:
       'Analyze the recent container logs in my bound scope, point out errors or anomalies, and determine the likely root cause.',
+    skillsHint:
+      'You can install your own skills; they take effect only after the container is force-deleted.',
   },
   mcpGuide: {
     open: 'MCP setup',

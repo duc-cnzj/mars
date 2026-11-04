@@ -818,6 +818,7 @@ export default {
     quickPromptLogs: '分析容器日志是否有错误',
     quickPromptLogsPrompt:
       '分析当前绑定范围内最近的容器日志，指出是否存在错误或异常，并判断可能的根因。',
+    skillsHint: '可自行安装 skills；安装后必须强杀容器才会生效。',
   },
   mcpGuide: {
     open: 'MCP 接入',

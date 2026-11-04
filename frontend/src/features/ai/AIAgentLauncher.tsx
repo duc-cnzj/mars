@@ -5,6 +5,7 @@ import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
 import { Spinner } from '@/components/ui/Spinner'
 import { Button } from '@/components/ui/shadcn/button'
+import { Icon } from '@/components/Icons'
 import { toast } from '@/lib/toast'
 import {
   AI_LAST_USED_STORAGE_KEY,
@@ -369,6 +370,12 @@ export function AIAgentLauncher({
                   onChange={handleBindingChange}
                 />
                 <AIQuickPrompts />
+                {/* skills 安装提示：沙箱镜像内的 skills 需重启容器才会被 mai 加载，
+                    因此安装完成后必须「强杀容器」，仅断开会话不会生效。 */}
+                <p className="flex items-center gap-1 text-[11px] leading-snug text-mute">
+                  <Icon name="info" className="shrink-0 text-[11px]" />
+                  {t('ai.skillsHint')}
+                </p>
               </div>
             }
             onClose={onClose}

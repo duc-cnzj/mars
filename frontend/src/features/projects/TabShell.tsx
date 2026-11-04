@@ -36,6 +36,8 @@ import { shortContainerName } from '@/lib/shortContainerName'
 type StateContainer = components['schemas']['types.StateContainer']
 type NPC = { namespace: string; pod: string; container: string }
 type Pane = { id: string; npc: NPC }
+/** 可裁剪的终端工具按钮：调用方（AI 沙箱）按场景隐藏不需要的入口。 */
+type ShellToolKey = 'addTerminal' | 'upload' | 'download' | 'forceDelete'
 
 const MAX_PANES = 4
 
@@ -58,7 +60,7 @@ export function TabShell({
   resizeAt,
   initialCommand,
   aiBindingBar,
-  showShellTools = true,
+  hiddenShellTools = [],
 }: {
   projectId: number
   projectName: string
@@ -66,9 +68,9 @@ export function TabShell({
   resizeAt?: number
   /** 会话建立后自动执行的命令（AI 沙箱传 `mai` 或 `mai '<问题>'`）：每个新终端只执行一次 */
   initialCommand?: string
-  /** 是否展示多终端/上传/下载/强杀工具条。
-   *  AI 沙箱关闭：mai TUI 只需一个会话，上传/下载/强杀对沙箱没有意义且强杀会打断对话。 */
-  showShellTools?: boolean
+  /** 需要隐藏的终端工具按钮（缺省全部展示）：AI 沙箱按场景裁剪，
+   *  如隐藏新增终端（mai TUI 单会话即可）与下载（沙箱不落文件）。 */
+  hiddenShellTools?: readonly ShellToolKey[]
   /** AI 绑定条：展示在终端上方，显示当前绑定的空间/项目 */
   aiBindingBar?: ReactNode
 }) {
@@ -487,21 +489,13 @@ export function TabShell({
             )
           })}
         </RadioGroup>
-        {/* 不用 ml-auto（auto margin 会吃掉剩余空间，flex-1 就撑不满了）：靠 flex-1
-            占满容器行剩余宽度，CPU/内存两张迷你图各占一半。
-            mt-1 把标签行压到与 pod 名同一条水平线（见容器行 items-start 注释）。 */}
-        {!showShellTools && target && (
-          <div className="mt-1 flex min-w-0 flex-1 items-stretch justify-end gap-1">
-            <PodMetrics namespace={target.namespace} pod={target.pod} />
-          </div>
-        )}
       </div>
 
       {/* 单行工具栏（沿用旧版布局）：新增终端（最多 4 个）+ 上传/下载 + 强杀，字体小号，
           资源用量图表内联在右侧（旧版是按钮 + 图表同一行）。
-          AI 沙箱隐藏整行（没有可用的工具）；资源用量已挪到上面的容器行。 */}
-      {showShellTools && (
-        <div className="flex flex-wrap items-center gap-1">
+          各按钮可按 hiddenShellTools 裁剪：AI 沙箱隐藏新增终端与下载。 */}
+      <div className="flex flex-wrap items-center gap-1">
+        {!hiddenShellTools.includes('addTerminal') && (
           <Button
             size="xs"
             variant="outline"
@@ -512,115 +506,126 @@ export function TabShell({
             <Icon name="plus" className="text-[11px]" />
             {t('project.addTerminal')}
           </Button>
+        )}
 
-          {target && (
+        {target && (
           <>
-            <span className="mx-0.5 h-3.5 w-px bg-line" aria-hidden />
-            <input ref={fileInputRef} type="file" className="hidden" onChange={onFileSelected} />
-            <Button
-              size="xs"
-              variant="outline"
-              disabled={uploading}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {uploading ? <Icon name="loader" className="size-3 animate-spin" /> : <Icon name="copy" className="text-[11px]" />}
-              {t('project.uploadToPod')}
-            </Button>
+            {!hiddenShellTools.includes('addTerminal') && (
+              <span className="mx-0.5 h-3.5 w-px bg-line" aria-hidden />
+            )}
+
+            {!hiddenShellTools.includes('upload') && (
+              <>
+                <input ref={fileInputRef} type="file" className="hidden" onChange={onFileSelected} />
+                <Button
+                  size="xs"
+                  variant="outline"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploading ? <Icon name="loader" className="size-3 animate-spin" /> : <Icon name="copy" className="text-[11px]" />}
+                  {t('project.uploadToPod')}
+                </Button>
+              </>
+            )}
 
             {/* 下载文件：沿用旧版 Popconfirm 方式——点击按钮弹出路径输入，不再把 input 内联到一行 */}
-            <Popover open={dlOpen} onOpenChange={(o) => { if (o) setDlZ(nextZIndex()); setDlOpen(o) }}>
-              <PopoverTrigger asChild>
-                <Button size="xs" variant="outline" disabled={downloading}>
-                  {downloading ? <Icon name="loader" className="size-3 animate-spin" /> : <Icon name="logs" className="text-[11px]" />}
-                  {t('project.downloadFromPod')}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" sideOffset={6} className="w-80 p-3" style={{ zIndex: dlZ }}>
-                <div className="flex flex-col gap-2">
-                  <div className="text-[12px] font-medium text-ink">{t('project.downloadFromPod')}</div>
-                  <Input
-                    autoFocus
-                    aria-label={t('project.filePathPlaceholder')}
-                    value={dlPath}
-                    onChange={(e) => setDlPath(e.target.value)}
-                    placeholder={t('project.filePathPlaceholder')}
-                    className="h-7 font-mono text-[11px]"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') void onDownload()
-                    }}
-                  />
-                  <div className="flex justify-end gap-1.5">
-                    <Button size="xs" variant="outline" onClick={() => setDlOpen(false)}>
-                      {t('common.cancel')}
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="default"
-                      disabled={downloading || !dlPath.trim()}
-                      onClick={onDownload}
-                    >
-                      {downloading && <Icon name="loader" className="size-3 animate-spin" />}
-                      {t('project.downloadFromPod')}
-                    </Button>
+            {!hiddenShellTools.includes('download') && (
+              <Popover open={dlOpen} onOpenChange={(o) => { if (o) setDlZ(nextZIndex()); setDlOpen(o) }}>
+                <PopoverTrigger asChild>
+                  <Button size="xs" variant="outline" disabled={downloading}>
+                    {downloading ? <Icon name="loader" className="size-3 animate-spin" /> : <Icon name="logs" className="text-[11px]" />}
+                    {t('project.downloadFromPod')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" sideOffset={6} className="w-80 p-3" style={{ zIndex: dlZ }}>
+                  <div className="flex flex-col gap-2">
+                    <div className="text-[12px] font-medium text-ink">{t('project.downloadFromPod')}</div>
+                    <Input
+                      autoFocus
+                      aria-label={t('project.filePathPlaceholder')}
+                      value={dlPath}
+                      onChange={(e) => setDlPath(e.target.value)}
+                      placeholder={t('project.filePathPlaceholder')}
+                      className="h-7 font-mono text-[11px]"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') void onDownload()
+                      }}
+                    />
+                    <div className="flex justify-end gap-1.5">
+                      <Button size="xs" variant="outline" onClick={() => setDlOpen(false)}>
+                        {t('common.cancel')}
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="default"
+                        disabled={downloading || !dlPath.trim()}
+                        onClick={onDownload}
+                      >
+                        {downloading && <Icon name="loader" className="size-3 animate-spin" />}
+                        {t('project.downloadFromPod')}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverContent>
+              </Popover>
+            )}
 
             {/* 强杀容器：沿用下载弹层同款 Popover 小确认框（对齐旧版 Popconfirm），不再用全屏确认框 */}
-            <Popover
-              open={confirmOpen}
-              onOpenChange={(o) => {
-                if (o) setConfirmZ(nextZIndex())
-                setConfirmOpen(o)
-              }}
-            >
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 rounded-md border border-err/40 px-2 py-0.5 text-[11px] text-err transition-colors hover:bg-err-soft"
-                >
-                  <Icon name="power" className="text-[11px]" />
-                  {t('project.forceDeletePod')}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="start" sideOffset={6} className="w-80 p-3" style={{ zIndex: confirmZ }}>
-                <div className="flex flex-col gap-2">
-                  <div className="text-[12px] font-medium text-ink">{t('project.forceDeleteTitle')}</div>
-                  <div className="text-[11px] leading-snug text-mute">
-                    {t('project.forceDeleteDesc', { pod: target.pod })}
+            {!hiddenShellTools.includes('forceDelete') && (
+              <Popover
+                open={confirmOpen}
+                onOpenChange={(o) => {
+                  if (o) setConfirmZ(nextZIndex())
+                  setConfirmOpen(o)
+                }}
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-md border border-err/40 px-2 py-0.5 text-[11px] text-err transition-colors hover:bg-err-soft"
+                  >
+                    <Icon name="power" className="text-[11px]" />
+                    {t('project.forceDeletePod')}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" sideOffset={6} className="w-80 p-3" style={{ zIndex: confirmZ }}>
+                  <div className="flex flex-col gap-2">
+                    <div className="text-[12px] font-medium text-ink">{t('project.forceDeleteTitle')}</div>
+                    <div className="text-[11px] leading-snug text-mute">
+                      {t('project.forceDeleteDesc', { pod: target.pod })}
+                    </div>
+                    <div className="flex justify-end gap-1.5">
+                      <Button size="xs" variant="outline" onClick={() => setConfirmOpen(false)}>
+                        {t('common.cancel')}
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="destructive"
+                        disabled={forceDeleting}
+                        onClick={() => {
+                          void forceDelete()
+                          setConfirmOpen(false)
+                        }}
+                      >
+                        {forceDeleting && <Icon name="loader" className="size-3 animate-spin" />}
+                        {t('project.forceDeletePod')}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex justify-end gap-1.5">
-                    <Button size="xs" variant="outline" onClick={() => setConfirmOpen(false)}>
-                      {t('common.cancel')}
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="destructive"
-                      disabled={forceDeleting}
-                      onClick={() => {
-                        void forceDelete()
-                        setConfirmOpen(false)
-                      }}
-                    >
-                      {forceDeleting && <Icon name="loader" className="size-3 animate-spin" />}
-                      {t('project.forceDeletePod')}
-                    </Button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverContent>
+              </Popover>
+            )}
           </>
         )}
 
-          {/* 选中 pod 的实时资源用量：内联在工具栏右侧（沿用旧版单行布局） */}
-          {target && (
-            <div className="ml-auto flex min-w-0 flex-1 items-stretch justify-end gap-1">
-              <PodMetrics namespace={target.namespace} pod={target.pod} />
-            </div>
-          )}
-        </div>
-      )}
+        {/* 选中 pod 的实时资源用量：内联在工具栏右侧（沿用旧版单行布局） */}
+        {target && (
+          <div className="ml-auto flex min-w-0 flex-1 items-stretch justify-end gap-1">
+            <PodMetrics namespace={target.namespace} pod={target.pod} />
+          </div>
+        )}
+      </div>
 
       {/* 分屏终端网格：2×2「田」字布局，填充顺序 左上→右上→左下→右下（新增顺序 右→下→右下）。
           CSS Grid 单父容器：pane 按 gridColumn/gridRow 定位，增删时其余 pane 依稳定 key 复用实例、

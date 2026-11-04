@@ -338,9 +338,11 @@ export function ProjectDetailModal({
                         resizeAt={resizeAt}
                         initialCommand={autoShellCommand}
                         aiBindingBar={aiBindingBar}
-                        // AI 沙箱（传了 allowedTabs）隐藏新增终端/上传/下载/强杀：
-                        // mai TUI 单会话即可，强杀还会直接打断正在进行的对话。
-                        showShellTools={allowedTabs === undefined}
+                        // AI 沙箱（传了 allowedTabs）隐藏「新增终端」与「下载」：
+                        // mai TUI 单会话即可、沙箱不落文件；上传/强杀保留。
+                        hiddenShellTools={
+                          allowedTabs === undefined ? [] : ['addTerminal', 'download']
+                        }
                       />
                     </Suspense>
                   )}
