@@ -1373,20 +1373,6 @@ func (mr *MockK8sRepoMockRecorder) ResourceSnapshot(ctx, force any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceSnapshot", reflect.TypeOf((*MockK8sRepo)(nil).ResourceSnapshot), ctx, force)
 }
 
-// ScaleDeployment mocks base method.
-func (m *MockK8sRepo) ScaleDeployment(ctx context.Context, namespace, name string, replicas int32) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ScaleDeployment", ctx, namespace, name, replicas)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ScaleDeployment indicates an expected call of ScaleDeployment.
-func (mr *MockK8sRepoMockRecorder) ScaleDeployment(ctx, namespace, name, replicas any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScaleDeployment", reflect.TypeOf((*MockK8sRepo)(nil).ScaleDeployment), ctx, namespace, name, replicas)
-}
-
 // SplitManifests mocks base method.
 func (m *MockK8sRepo) SplitManifests(manifest string) []string {
 	m.ctrl.T.Helper()

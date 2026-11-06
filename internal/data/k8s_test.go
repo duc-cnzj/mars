@@ -34,7 +34,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -2900,43 +2899,6 @@ func TestK8sRepo_GetDeployment(t *testing.T) {
 	krErr := newK8sRepoWithClient(NewMockDataStore(m), &K8sClient{DeploymentLister: errDeploymentLister{}})
 	_, err = krErr.GetDeployment("ns", "web")
 	assert.ErrorContains(t, err, "get deployment")
-}
-
-// TestK8sRepo_ScaleDeployment 经 scale 子资源调整副本数；Deployment 不存在时
-// 返回带上下文的包装错误。fake clientset 的 scale 子资源需要显式 reactor
-// （默认实现会把 Deployment 断言成 Scale 而 panic）。
-func TestK8sRepo_ScaleDeployment(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	clientset := fake.NewSimpleClientset()
-	var updated *autoscalingv1.Scale
-	clientset.PrependReactor("get", "deployments", func(action testing2.Action) (bool, runtime.Object, error) {
-		if action.GetSubresource() != "scale" {
-			return false, nil, nil
-		}
-		if action.(testing2.GetAction).GetName() != "web" {
-			return true, nil, apierrors.NewNotFound(appsv1.Resource("deployments"), "missing")
-		}
-		return true, &autoscalingv1.Scale{
-			ObjectMeta: metav1.ObjectMeta{Name: "web", Namespace: "ns"},
-			Spec:       autoscalingv1.ScaleSpec{Replicas: 1},
-		}, nil
-	})
-	clientset.PrependReactor("update", "deployments", func(action testing2.Action) (bool, runtime.Object, error) {
-		if action.GetSubresource() != "scale" {
-			return false, nil, nil
-		}
-		updated = action.(testing2.UpdateAction).GetObject().(*autoscalingv1.Scale)
-		return true, updated, nil
-	})
-	kr := newK8sRepoWithClient(NewMockDataStore(m), &K8sClient{Client: clientset})
-
-	require.NoError(t, kr.ScaleDeployment(context.TODO(), "ns", "web", 0))
-	require.NotNil(t, updated)
-	assert.Equal(t, int32(0), updated.Spec.Replicas)
-
-	err := kr.ScaleDeployment(context.TODO(), "ns", "missing", 1)
-	assert.ErrorContains(t, err, "get deployment scale")
 }
 
 func TestK8sRepo_GetStatefulSet(t *testing.T) {
