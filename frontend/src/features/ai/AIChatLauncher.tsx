@@ -609,10 +609,11 @@ export function AIChatLauncher({
               </p>
             ) : (
               <ul className="flex flex-col gap-0.5">
+                {/* 行右侧让出 24px（容器 px-2 + 行 pr-4），避免删除按钮压在对话框右边缘的移动手势条下面。 */}
                 {historySessions.map((session) => (
                   <li
                     key={session.id}
-                    className={`flex items-center gap-1 rounded-md pr-1 transition-colors hover:bg-primary/10 ${
+                    className={`flex items-center gap-1 rounded-md pr-4 transition-colors hover:bg-primary/10 ${
                       session.id === store.activeId ? 'bg-primary/10' : ''
                     }`}
                   >
