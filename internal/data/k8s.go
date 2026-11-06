@@ -1444,22 +1444,6 @@ func (repo *k8sRepo) GetDeployment(namespace, name string) (*appsv1.Deployment, 
 	return dep, errs.Wrap(err, "get deployment")
 }
 
-// ScaleDeployment 经 scale 子资源调整 Deployment 副本数：先读 scale 再写回，
-// 避免整对象更新携带过期 resourceVersion 导致冲突。agent 沙箱空闲缩容与唤醒共用。
-func (repo *k8sRepo) ScaleDeployment(ctx context.Context, namespace, name string, replicas int32) (err error) {
-	ctx, span := tracer.Start(ctx, "k8sRepo/ScaleDeployment")
-	defer func() { endSpan(span, err) }()
-
-	deployments := repo.data.K8s().Client.AppsV1().Deployments(namespace)
-	scale, err := deployments.GetScale(ctx, name, metav1.GetOptions{})
-	if err != nil {
-		return errs.Wrap(err, "get deployment scale")
-	}
-	scale.Spec.Replicas = replicas
-	_, err = deployments.UpdateScale(ctx, name, scale, metav1.UpdateOptions{})
-	return errs.Wrap(err, "scale deployment")
-}
-
 // GetStatefulSet 经 informer lister 读取 StatefulSet（部署后状态判定用）。
 func (repo *k8sRepo) GetStatefulSet(namespace, name string) (*appsv1.StatefulSet, error) {
 	sts, err := repo.data.K8s().StatefulSetLister.StatefulSets(namespace).Get(name)

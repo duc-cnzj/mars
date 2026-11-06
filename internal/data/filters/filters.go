@@ -93,11 +93,10 @@ func IfBool(field string) func(*bool) func(*sql.Selector) {
 	})
 }
 
-// IfEmail/IfEnabled/IfAIAgent/IfOrderByIDDesc/IfNameLike 是常用查询过滤器的命名实例。
+// IfEmail/IfEnabled/IfOrderByIDDesc/IfNameLike 是常用查询过滤器的命名实例。
 var (
 	IfEmail         = IfStrEQ("email")
 	IfEnabled       = IfBool("enabled")
-	IfAIAgent       = IfBool("ai_agent")
 	IfOrderByIDDesc = IfOrderByDesc("id")
 	IfNameLike      = If(func(s string) bool {
 		return s != ""

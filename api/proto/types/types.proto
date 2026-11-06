@@ -235,6 +235,10 @@ message AccessTokenModel {
 }
 
 message RepoModel {
+  // 9 原为 ai_agent（AI Agent 仓库标记），沙箱下线后移除，编号与名称保留防误复用。
+  reserved 9;
+  reserved "ai_agent";
+
   int32       id               = 1;
   string      name             = 2;
   int32       git_project_id   = 3;
@@ -243,8 +247,6 @@ message RepoModel {
   mars.Config mars_config      = 6;
   bool        need_git_repo    = 7;
   string      description      = 8;
-  // ai_agent 标记该仓库是否为全局唯一的 AI Agent 仓库。
-  bool        ai_agent         = 9;
 
   string      created_at       = 100;
   string      updated_at       = 101;

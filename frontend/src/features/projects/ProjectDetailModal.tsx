@@ -1,10 +1,11 @@
-import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import { selectAllOnDoubleClick } from '@/lib/selection'
 import type { components } from '@/api/schema'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
+import { DialogDragFrame } from '@/components/DialogDragFrame'
 import {
   SkeletonDetail,
   SkeletonTabEdit,
@@ -59,11 +60,6 @@ export function ProjectDetailModal({
   namespaceName,
   open,
   frontAt = 0,
-  defaultTab = 'logs',
-  allowedTabs,
-  autoShellCommand,
-  aiBindingBar,
-  titleOverride,
   onClose,
   onDeleted,
   onChanged,
@@ -73,17 +69,6 @@ export function ProjectDetailModal({
   open: boolean
   /** 外部重复点击已打开的该项目卡片时递增：让对应弹窗置顶 */
   frontAt?: number
-  /** 打开时默认选中的 Tab（默认 logs）：工作负载不可操作时仍回落到 detail */
-  defaultTab?: TabKey
-  /** 可用 Tab 白名单（缺省 = 全部）：AI 沙箱只剩命令行，其余 Tab 不渲染 */
-  allowedTabs?: readonly TabKey[]
-  /** 命令行会话建立后自动执行的命令（AI 沙箱传 `mai` 或 `mai '<问题>'`，免去用户手动进入交互） */
-  autoShellCommand?: string
-  /** AI 绑定条（仅 AI 沙箱传入）：展示在命令行上方 */
-  aiBindingBar?: ReactNode
-  /** 标题覆盖（仅 AI 助手传入）：沙箱项目名/空间对用户没有意义，改为展示
-   *  「<用户> 的 AI 助手」这类产品化标题；缺省仍展示项目名 + 空间 */
-  titleOverride?: string
   onClose: () => void
   onDeleted: () => void
   onChanged: () => void
@@ -110,8 +95,6 @@ export function ProjectDetailModal({
   const [tab, setTab] = useState<TabKey>(() =>
     resolveInitialTab(
       project.deployStatus === 'StatusDeployed' || project.deployStatus === 'StatusDeploying',
-      defaultTab,
-      allowedTabs,
     ),
   )
 
@@ -144,7 +127,7 @@ export function ProjectDetailModal({
   useEffect(() => {
     if (open) {
       // 打开即同步选定默认 Tab：列表项已带部署状态，无需等 detail 异步加载后再跳转（避免“详细信息→容器日志”的闪烁）
-      setTab(resolveInitialTab(canOperate, defaultTab, allowedTabs))
+      setTab(resolveInitialTab(canOperate))
       void reload()
     } else {
       setDetail(null)
@@ -168,7 +151,7 @@ export function ProjectDetailModal({
 
   // 可见 Tab：不可操作时只剩「部署配置 + 详细信息」（edit 必须留——见 tabVisibility.ts 的
   // WORKLOAD_TABS 注释，那是恢复后重新部署的唯一入口）
-  const tabItems = visibleTabKeys(canOperate, allowedTabs).map((key) => ({
+  const tabItems = visibleTabKeys(canOperate).map((key) => ({
     key,
     label: t(TAB_LABELS[key]),
   }))
@@ -179,9 +162,8 @@ export function ProjectDetailModal({
   useEffect(() => {
     if (!open || !detail) return
     if (!canOperate && isWorkloadTab(tab)) {
-      // 优先收回「详细信息」（旧行为）；白名单收窄到没有 detail 时（AI 沙箱只剩
-      // 命令行）再退到第一个非工作负载 Tab，最后保持现状，不落入未渲染的空壳。
-      const visible = visibleTabKeys(canOperate, allowedTabs)
+      // 收回「详细信息」：不可操作时它是唯一非工作负载 Tab 的首选项。
+      const visible = visibleTabKeys(canOperate)
       const next = visible.includes('detail')
         ? 'detail'
         : visible.find((key) => !isWorkloadTab(key))
@@ -236,24 +218,20 @@ export function ProjectDetailModal({
                 className="block truncate text-[18px] font-semibold text-ink"
                 onDoubleClick={selectAllOnDoubleClick}
               >
-                {titleOverride ?? project.name}
+                {project.name}
               </span>
-              {/* AI 助手定制标题：沙箱项目名/空间是内部实现，不展示命名空间 */}
-              {titleOverride === undefined && (
-                <span
-                  className="absolute left-full top-0 ml-0.5 -mt-1 whitespace-nowrap text-[10px] leading-none text-primary"
-                  style={{ fontFamily: '"dank mono", ui-monospace, monospace' }}
-                  onDoubleClick={selectAllOnDoubleClick}
-                >
-                  {namespaceName}
-                </span>
-              )}
+              <span
+                className="absolute left-full top-0 ml-0.5 -mt-1 whitespace-nowrap text-[10px] leading-none text-primary"
+                style={{ fontFamily: '"dank mono", ui-monospace, monospace' }}
+                onDoubleClick={selectAllOnDoubleClick}
+              >
+                {namespaceName}
+              </span>
             </span>
           </DialogTitle>
         </DialogHeader>
 
-        {/* 只有一个可见 Tab 时不渲染 Tab 条：AI 沙箱只剩命令行，单独一行「命令行」
-            标签既占高度又没有切换意义。多 Tab（普通项目）行为不变。 */}
+        {/* 只有一个可见 Tab 时不渲染 Tab 条：单独一行标签既占高度又没有切换意义。 */}
         {tabItems.length > 1 && (
           <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
             <TabsList variant="line" className="w-full border-b border-line">
@@ -272,9 +250,8 @@ export function ProjectDetailModal({
         )}
 
         {/* 项目级 AI 入口：仅部署失败时展示红色自救提示，把结构化的空间/项目名交给 AI，
-            由它经 MCP 查事件与日志。只在普通项目弹窗出现（AI 沙箱自身传了 allowedTabs，
-            不递归展示）。 */}
-        {aiAvailable && allowedTabs === undefined && failedProject && (
+            由它经 MCP 查事件与日志。 */}
+        {aiAvailable && failedProject && (
           <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-err/30 bg-err/5 px-3 py-1.5 text-[12px] text-err">
             <span className="min-w-0 truncate">{t('ai.diagnoseHint')}</span>
             <Button
@@ -336,13 +313,6 @@ export function ProjectDetailModal({
                         projectId={detail.id}
                         projectName={detail.name}
                         resizeAt={resizeAt}
-                        initialCommand={autoShellCommand}
-                        aiBindingBar={aiBindingBar}
-                        // AI 沙箱（传了 allowedTabs）隐藏「新增终端」与「下载」：
-                        // mai TUI 单会话即可、沙箱不落文件；上传/强杀保留。
-                        hiddenShellTools={
-                          allowedTabs === undefined ? [] : ['addTerminal', 'download']
-                        }
                       />
                     </Suspense>
                   )}
@@ -371,28 +341,8 @@ export function ProjectDetailModal({
             })
           )}
         </div>
-        {/* 四边交互分层（盖住 dialog 的 p-6 padding 环）：
-            1. 外层 24px 边条（dragHandleProps）：拖拽移动 + 双击全屏/还原——保留旧版整边拖动手感；
-               最大化时也保留（双击边条还原全屏，拖动被 clamp 钳制）
-            2. 贴边界 6px 细沿 + 四角 16px（getResizeHandleProps(dir)）：resize，对边锚定拖哪边只有哪边动；
-               只非最大化时渲染（全屏无可伸缩边）。细化后伸缩命中区小、不再抢占边条的移动手势。
-            关闭钮（基座 render、z-20）在最上不受影响；内容区在 padding 内侧不被覆盖。 */}
-        <div aria-hidden title={t('project.dragTitle')} {...dnd.dragHandleProps} className="pointer-events-auto absolute inset-x-0 top-0 h-6 cursor-move" />
-        <div aria-hidden title={t('project.dragTitle')} {...dnd.dragHandleProps} className="pointer-events-auto absolute inset-x-0 bottom-0 h-6 cursor-move" />
-        <div aria-hidden title={t('project.dragTitle')} {...dnd.dragHandleProps} className="pointer-events-auto absolute inset-y-0 left-0 w-6 cursor-move" />
-        <div aria-hidden title={t('project.dragTitle')} {...dnd.dragHandleProps} className="pointer-events-auto absolute inset-y-0 right-0 w-6 cursor-move" />
-        {!dnd.isMaximized && (
-          <>
-            <div aria-hidden title={t('project.resizeEdge')} {...dnd.getResizeHandleProps('n')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute inset-x-0 top-0 z-10 h-1.5 cursor-ns-resize" />
-            <div aria-hidden title={t('project.resizeEdge')} {...dnd.getResizeHandleProps('s')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute inset-x-0 bottom-0 z-10 h-1.5 cursor-ns-resize" />
-            <div aria-hidden title={t('project.resizeEdge')} {...dnd.getResizeHandleProps('w')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute inset-y-0 left-0 z-10 w-1.5 cursor-ew-resize" />
-            <div aria-hidden title={t('project.resizeEdge')} {...dnd.getResizeHandleProps('e')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute inset-y-0 right-0 z-10 w-1.5 cursor-ew-resize" />
-            <div aria-hidden title={t('project.resizeCorner')} {...dnd.getResizeHandleProps('nw')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute top-0 left-0 z-10 size-4 cursor-nwse-resize" />
-            <div aria-hidden title={t('project.resizeCorner')} {...dnd.getResizeHandleProps('ne')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute top-0 right-0 z-10 size-4 cursor-nesw-resize" />
-            <div aria-hidden title={t('project.resizeCorner')} {...dnd.getResizeHandleProps('sw')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute bottom-0 left-0 z-10 size-4 cursor-nesw-resize" />
-            <div aria-hidden title={t('project.resizeCorner')} {...dnd.getResizeHandleProps('se')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute bottom-0 right-0 z-10 size-4 cursor-nwse-resize" />
-          </>
-        )}
+        {/* 四边拖拽移动 + 八向缩放：与新建项目/控制台/AI 对话共用同一外框（含整边拖动手感） */}
+        <DialogDragFrame dnd={dnd} />
       </DialogContent>
     </Dialog>
   )

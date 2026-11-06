@@ -67,26 +67,16 @@ func (a DockerAuths) FormatDockerCfg() []byte {
 	return marshal
 }
 
-// AIConfig 是沙箱 AI 助手（mars-agent）的集中配置。mars 是唯一事实来源：
-// agent 启动时经 GET /api/ai/config 拉取，chart 不再逐个下发这些参数。
+// AIConfig 是服务端 AI 对话（/api/ai/chat）的集中配置。
 type AIConfig struct {
-	// Model 是 agent 使用的模型 id（裸 id，agent 配置里会写成 mars/<id>）。
+	// Model 是对话使用的模型 id。
 	Model string `mapstructure:"model"`
 	// BaseURL 是 LLM 上游（OpenAI 兼容）地址，如 DeepSeek 的
-	// https://api.deepseek.com/v1。agent 统一请求 <gateway>/llm/v1，由 mars
-	// 代理转发到这里；该地址不会下发给沙箱。
+	// https://api.deepseek.com/v1。
 	BaseURL string `mapstructure:"base_url"`
-	// APIKey 是上游 LLM 的 API Key。只在 mars 转发时注入上游请求头，
-	// 绝不下发给沙箱，也不写进 agent 配置。
+	// APIKey 是上游 LLM 的 API Key，只存在于服务端，不下发给前端。
 	APIKey string `mapstructure:"api_key"`
-	// IdleTimeout 是沙箱空闲自动关闭阈值：超过该时长没有 LLM/MCP/配置请求，
-	// 定时任务会把沙箱缩容到 0。负数表示关闭该能力；零值（未配置）按
-	// DefaultAgentIdleTimeout 处理。
-	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 }
-
-// DefaultAgentIdleTimeout 是未配置 ai.idle_timeout 时的沙箱空闲关闭阈值。
-const DefaultAgentIdleTimeout = 30 * time.Minute
 
 // ExcludeServerTags 是以 ',' 分隔的启动排除服务标签列表。
 type ExcludeServerTags string
@@ -163,20 +153,8 @@ type Config struct {
 	InstallTimeout time.Duration `mapstructure:"install_timeout" json:"-"`
 	Oidc           []OidcSetting `mapstructure:"oidc"`
 
-	// AI 是沙箱 AI 助手的集中配置（agent 启动时经 /api/ai/config 拉取）。
+	// AI 是服务端 AI 对话的集中配置。
 	AI AIConfig `mapstructure:"ai"`
-}
-
-// AgentIdleTimeout 返回沙箱空闲关闭阈值：正值原样返回，负值表示禁用（返回 0），
-// 零值（未配置）回退默认 30 分钟。
-func (c *Config) AgentIdleTimeout() time.Duration {
-	if c.AI.IdleTimeout > 0 {
-		return c.AI.IdleTimeout
-	}
-	if c.AI.IdleTimeout < 0 {
-		return 0
-	}
-	return DefaultAgentIdleTimeout
 }
 
 // IsK8sEnv 判断是否运行在 Kubernetes 环境：显式配置了 kubeconfig，

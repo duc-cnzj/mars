@@ -1594,7 +1594,7 @@ func TestProjectRepo_ListLivenessPage_QueryErrors(t *testing.T) {
 }
 
 // TestProjectRepo_ListAllProjectBriefs 全量项目精简投影（仅 Name/PodSelectors/Creator + 命名空间边）：
-// 不分页返回全部并按 id 倒序，供空间资源聚合做 pod→项目归属映射、agent 空闲缩容识别沙箱归属用户。
+// 不分页返回全部并按 id 倒序，供空间资源聚合做 pod→项目归属映射。
 func TestProjectRepo_ListAllProjectBriefs(t *testing.T) {
 	ctx := context.TODO()
 	db, _ := NewSqliteDB()

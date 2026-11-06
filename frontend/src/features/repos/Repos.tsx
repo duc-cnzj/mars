@@ -42,7 +42,6 @@ function repoImportYaml(m: RepoModel): string {
     needGitRepo: m.needGitRepo,
     gitProjectId: m.gitProjectId,
     description: m.description,
-    aiAgent: m.aiAgent,
     marsConfig: m.marsConfig,
   })
 }
@@ -64,8 +63,6 @@ export function Repos() {
   const [keyword, setKeyword] = useState(() => searchParams.get('name') ?? '')
   /** 搜索防抖 300ms（SEARCH_DEBOUNCE_MS，对齐 events 页）：避免每敲一个键就触发一次「整列表变骨架」的重拉 */
   const [debouncedKeyword, setDebouncedKeyword] = useState(() => searchParams.get('name') ?? '')
-  // 「只看 AI Agent」快速筛选：从 URL query 恢复，刷新/分享链接保留筛选态
-  const [aiAgentOnly, setAIAgentOnly] = useState(() => searchParams.get('aiAgent') === '1')
   const [initialLoading, setInitialLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -82,16 +79,13 @@ export function Repos() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const busyRef = useRef(false)
   const refreshingRef = useRef(false)
-  /** 上次实际发出的 (debouncedKeyword, page, aiAgentOnly)：刷新完成后的 effect 重跑据此去重 */
+  /** 上次实际发出的 (debouncedKeyword, page)：刷新完成后的 effect 重跑据此去重 */
   const lastKwRef = useRef('')
   const lastPageRef = useRef(0)
-  const lastAIAgentRef = useRef(aiAgentOnly)
-  /** 最新筛选条件快照（渲染期同步）：fetchList 落地时校验响应是否仍属当前条件，
-   *  丢弃「旧关键词/旧筛选的追加页晚到」的跨条件污染（对齐 Events reqIdRef / NamespaceManager filterKeyRef） */
+  /** 最新关键词快照（渲染期同步）：fetchList 落地时校验响应是否仍属当前条件，
+   *  丢弃「旧关键词的追加页晚到」的跨条件污染（对齐 Events reqIdRef / NamespaceManager filterKeyRef） */
   const kwRef = useRef(debouncedKeyword)
   kwRef.current = debouncedKeyword
-  const aiAgentOnlyRef = useRef(aiAgentOnly)
-  aiAgentOnlyRef.current = aiAgentOnly
   const hasMore = items.length < count
 
   const [formOpen, setFormOpen] = useState(false)
@@ -116,7 +110,7 @@ export function Repos() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchList = useCallback(
-    async (p: number, kw?: string, append = false, agentOnly = false) => {
+    async (p: number, kw?: string, append = false) => {
       busyRef.current = true
       if (append) setLoadingMore(true)
       else setInitialLoading(true)
@@ -127,16 +121,14 @@ export function Repos() {
               page: p,
               pageSize: PAGE_SIZE,
               name: kw?.trim() || undefined,
-              // 不筛选时不传：后端把 nil 视为「全部」，传 false 会变成「只看非 AI Agent」
-              aiAgent: agentOnly ? true : undefined,
             },
           },
         })
         if (error) throw new Error(error.message ?? String(error))
         if (!data) return
-        // 过期响应（关键词或筛选条件已变、此响应属于旧条件）：丢弃不落地——
+        // 过期响应（关键词已变、此响应属于旧条件）：丢弃不落地——
         // 触底加载的追加页晚到时不能把旧条件的下一页 append 进新结果，否则跨条件污染
-        if (kwRef.current !== kw || aiAgentOnlyRef.current !== agentOnly) return
+        if (kwRef.current !== kw) return
         setItems((prev) => (append ? [...prev, ...data.items] : data.items))
         setCount(data.count)
       } catch (e) {
@@ -162,21 +154,16 @@ export function Repos() {
     // 防抖未落定（keyword 已变、debouncedKeyword 尚未跟上）不拉：否则 onChange 里 setPage(1)
     // 会让「深翻页后首次输入」以旧关键词抢拉一次第 1 页（旧数据闪现 + 一次浪费请求）
     if (keyword !== debouncedKeyword) return
-    // 同 (debouncedKeyword, page, aiAgentOnly) 去重：刷新完成后的 effect 重跑不重复拉第 1 页
-    if (
-      lastKwRef.current === debouncedKeyword &&
-      lastPageRef.current === page &&
-      lastAIAgentRef.current === aiAgentOnly
-    ) {
+    // 同 (debouncedKeyword, page) 去重：刷新完成后的 effect 重跑不重复拉第 1 页
+    if (lastKwRef.current === debouncedKeyword && lastPageRef.current === page) {
       return
     }
     lastKwRef.current = debouncedKeyword
     lastPageRef.current = page
-    lastAIAgentRef.current = aiAgentOnly
-    void fetchList(page, debouncedKeyword, page > 1, aiAgentOnly)
-  }, [page, debouncedKeyword, keyword, aiAgentOnly, fetchList, refreshing])
+    void fetchList(page, debouncedKeyword, page > 1)
+  }, [page, debouncedKeyword, keyword, fetchList, refreshing])
 
-  // 搜索关键词/筛选条件变化 → 同步 URL query。replace 避免每次输入堆一条历史；
+  // 搜索关键词变化 → 同步 URL query。replace 避免每次输入堆一条历史；
   // 空值直接删参数，URL 保持干净；其余参数原样保留
   useEffect(() => {
     setSearchParams(
@@ -184,13 +171,11 @@ export function Repos() {
         const next = new URLSearchParams(prev)
         if (keyword) next.set('name', keyword)
         else next.delete('name')
-        if (aiAgentOnly) next.set('aiAgent', '1')
-        else next.delete('aiAgent')
         return next
       },
       { replace: true },
     )
-  }, [keyword, aiAgentOnly, setSearchParams])
+  }, [keyword, setSearchParams])
 
   // 触底加载：sentinel 进入列表容器视口（提前 300px）且非忙碌/非刷新时翻下一页
   useEffect(() => {
@@ -218,11 +203,10 @@ export function Repos() {
     // 回到顶部：让哨兵离开视口，刷新后不会自动加载后续页
     if (scrollRef.current) scrollRef.current.scrollTop = 0
     setPage(1)
-    // 预标记本次刷新要拉的 (debouncedKeyword, 1, aiAgentOnly)，effect 重跑据此去重
+    // 预标记本次刷新要拉的 (debouncedKeyword, 1)，effect 重跑据此去重
     lastKwRef.current = debouncedKeyword
     lastPageRef.current = 1
-    lastAIAgentRef.current = aiAgentOnly
-    await fetchList(1, debouncedKeyword, false, aiAgentOnly)
+    await fetchList(1, debouncedKeyword, false)
     busyRef.current = false
     refreshingRef.current = false
     setRefreshing(false)
@@ -441,20 +425,6 @@ export function Repos() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-[16px] font-semibold text-ink">{t('repos.title')}</h2>
           <div className="flex flex-wrap items-center gap-2">
-            {/* 快速筛选：一键只看 AI Agent 仓库（选中态高亮，再点清除） */}
-            <Button
-              size="sm"
-              variant={aiAgentOnly ? 'default' : 'outline'}
-              aria-pressed={aiAgentOnly}
-              title={t('repos.aiAgentFilterTip')}
-              onClick={() => {
-                setAIAgentOnly((v) => !v)
-                setPage(1)
-              }}
-            >
-              <Icon name="filter" className="size-4" />
-              {t('repos.aiAgentFilter')}
-            </Button>
             {/* 搜索统一放标题行右上角（对齐 Events/治理/工作台） */}
             <SearchInput
               value={keyword}
@@ -532,7 +502,6 @@ export function Repos() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[13px] font-medium text-ink">{item.name}</span>
-                  {item.aiAgent && <Tag tone="accent">{t('repos.aiAgentTag')}</Tag>}
                   <Tag tone={item.enabled ? 'ok' : 'mute'}>
                     {item.enabled ? t('repos.enable') : t('repos.disable')}
                   </Tag>

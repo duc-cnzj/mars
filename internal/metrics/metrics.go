@@ -176,51 +176,51 @@ var (
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"name"})
 
-	// AgentSandboxTransitionTotal 记录 AI Agent 沙箱的休眠/唤醒次数，
-	// action 维度区分 sleep/wake，用于观察缩容策略的实际执行量。
-	AgentSandboxTransitionTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+	// AIUsageEventTotal 记录前端上报的 AI 使用漏斗事件（入口点击、首 token、
+	// 对话完成/失败）。event 为服务端白名单枚举，刻意不带用户维度，
+	// 避免指标基数随用户数膨胀。
+	AIUsageEventTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
-		Name:        "agent_sandbox_transition_total",
-		Help:        "AI Agent 沙箱休眠/唤醒次数",
-		ConstLabels: prometheus.Labels{"version": appVersion},
-	}, []string{"action"})
-
-	// AgentLLMProxyRequestsTotal 记录通过 AI 功能准入校验、实际转发的 LLM 代理
-	// 请求数，用于观察沙箱对话流量与被准入拒绝的比例（拒绝不计入）。
-	AgentLLMProxyRequestsTotal = prometheus.NewCounter(prometheus.CounterOpts{
-		Subsystem:   system,
-		Name:        "agent_llm_proxy_requests_total",
-		Help:        "AI Agent LLM 代理转发请求数",
-		ConstLabels: prometheus.Labels{"version": appVersion},
-	})
-
-	// AgentUsageEventTotal 记录前端上报的 AI 使用漏斗事件（入口点击、未启用、
-	// 唤醒成功/失败、沙箱就绪、弹窗打开）。event 为服务端白名单枚举，
-	// 刻意不带用户维度，避免指标基数随用户数膨胀。
-	AgentUsageEventTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Subsystem:   system,
-		Name:        "agent_usage_event_total",
+		Name:        "ai_usage_event_total",
 		Help:        "AI 使用漏斗事件数",
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"event"})
 
-	// AgentOpenLatency 记录从点击 AI 入口到沙箱就绪的耗时（前端上报），
-	// 用于衡量冷启动体验：低频使用下几乎每次都是冷启动，这是关键体验指标。
-	AgentOpenLatency = prometheus.NewHistogram(prometheus.HistogramOpts{
+	// AIChatRequestsTotal 记录服务端 AI 对话请求数（一轮 chat 或 confirm 计一次），
+	// result 区分正常结束（含暂停等待确认）与失败。
+	AIChatRequestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
-		Name:        "agent_open_latency_seconds",
-		Help:        "AI 入口点击到沙箱就绪的耗时（秒）",
+		Name:        "ai_chat_requests_total",
+		Help:        "服务端 AI 对话请求数",
 		ConstLabels: prometheus.Labels{"version": appVersion},
-		Buckets:     []float64{1, 2, 5, 10, 20, 30, 60, 120, 180, 300},
+	}, []string{"result"})
+
+	// AIChatFirstTokenSeconds 记录从请求开始到模型首段文本的耗时，
+	// 直接反映用户感知的「多久开始出字」。
+	AIChatFirstTokenSeconds = prometheus.NewHistogram(prometheus.HistogramOpts{
+		Subsystem:   system,
+		Name:        "ai_chat_first_token_seconds",
+		Help:        "AI 对话首 token 耗时（秒）",
+		ConstLabels: prometheus.Labels{"version": appVersion},
+		Buckets:     []float64{0.1, 0.3, 0.5, 1, 2, 5, 10, 20, 30, 60},
 	})
+
+	// AIChatToolCallsTotal 记录对话中执行的工具调用数，tool 为工具名、result 区分
+	// 成功与业务失败（isError）。
+	AIChatToolCallsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Subsystem:   system,
+		Name:        "ai_chat_tool_calls_total",
+		Help:        "服务端 AI 对话工具调用数",
+		ConstLabels: prometheus.Labels{"version": appVersion},
+	}, []string{"tool", "result"})
 )
 
-// AI Agent 沙箱状态迁移动作，作为 AgentSandboxTransitionTotal 的 action 标签值。
+// AI 对话指标的结果标签值。
 const (
-	// AgentSandboxActionSleep 表示因空闲被缩容到 0。
-	AgentSandboxActionSleep = "sleep"
-	// AgentSandboxActionWake 表示用户再次启用时从 0 扩容到 1。
-	AgentSandboxActionWake = "wake"
+	// AIChatResultOK 表示本轮对话正常结束或按预期暂停等待确认。
+	AIChatResultOK = "ok"
+	// AIChatResultError 表示上游、工具协议或轮数上限导致的失败。
+	AIChatResultError = "error"
 )
 
 // NewRegistry 构造并注册全部应用指标 + Go/进程运行时收集器，返回可用的 prometheus.Registry。
@@ -244,10 +244,10 @@ func NewRegistry() *prometheus.Registry {
 		CronDuration,
 		CronCommandCount,
 		CronErrorCount,
-		AgentSandboxTransitionTotal,
-		AgentLLMProxyRequestsTotal,
-		AgentUsageEventTotal,
-		AgentOpenLatency,
+		AIUsageEventTotal,
+		AIChatRequestsTotal,
+		AIChatFirstTokenSeconds,
+		AIChatToolCallsTotal,
 		K8sInformerFanOutListenerCount,
 	)
 

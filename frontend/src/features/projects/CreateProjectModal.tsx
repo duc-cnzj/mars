@@ -5,6 +5,7 @@ import type { components } from '@/api/schema'
 import { api } from '@/api/client'
 import { API } from '@/api/endpoints'
 import { Icon } from '@/components/Icons'
+import { DialogDragFrame } from '@/components/DialogDragFrame'
 import { Tag, SegmentedSkeleton } from '@/components/ui'
 import { Button } from '@/components/ui/shadcn/button'
 import {
@@ -543,26 +544,8 @@ export function CreateProjectModal({
           )}
         </div>
 
-        {/* 四边交互分层（与 ProjectDetailModal 一致）：
-            1. 外层 24px 边条（dragHandleProps）：拖拽移动 + 双击全屏/还原（保留移动窗口功能，含最大化时）
-            2. 贴边界 6px 细沿 + 四角 16px（getResizeHandleProps(dir)）：resize，对边锚定；只非最大化时渲染
-            关闭钮（DialogContent 基座内 render、z-20）在最上不受遮挡 */}
-        <div aria-hidden title={t('project.dragTitle')} {...dnd.dragHandleProps} className="pointer-events-auto absolute inset-x-0 top-0 h-6 cursor-move" />
-        <div aria-hidden title={t('project.dragTitle')} {...dnd.dragHandleProps} className="pointer-events-auto absolute inset-x-0 bottom-0 h-6 cursor-move" />
-        <div aria-hidden title={t('project.dragTitle')} {...dnd.dragHandleProps} className="pointer-events-auto absolute inset-y-0 left-0 w-6 cursor-move" />
-        <div aria-hidden title={t('project.dragTitle')} {...dnd.dragHandleProps} className="pointer-events-auto absolute inset-y-0 right-0 w-6 cursor-move" />
-        {!dnd.isMaximized && (
-          <>
-            <div aria-hidden title={t('project.resizeEdge')} {...dnd.getResizeHandleProps('n')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute inset-x-0 top-0 z-10 h-1.5 cursor-ns-resize" />
-            <div aria-hidden title={t('project.resizeEdge')} {...dnd.getResizeHandleProps('s')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute inset-x-0 bottom-0 z-10 h-1.5 cursor-ns-resize" />
-            <div aria-hidden title={t('project.resizeEdge')} {...dnd.getResizeHandleProps('w')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute inset-y-0 left-0 z-10 w-1.5 cursor-ew-resize" />
-            <div aria-hidden title={t('project.resizeEdge')} {...dnd.getResizeHandleProps('e')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute inset-y-0 right-0 z-10 w-1.5 cursor-ew-resize" />
-            <div aria-hidden title={t('project.resizeCorner')} {...dnd.getResizeHandleProps('nw')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute top-0 left-0 z-10 size-4 cursor-nwse-resize" />
-            <div aria-hidden title={t('project.resizeCorner')} {...dnd.getResizeHandleProps('ne')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute top-0 right-0 z-10 size-4 cursor-nesw-resize" />
-            <div aria-hidden title={t('project.resizeCorner')} {...dnd.getResizeHandleProps('sw')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute bottom-0 left-0 z-10 size-4 cursor-nesw-resize" />
-            <div aria-hidden title={t('project.resizeCorner')} {...dnd.getResizeHandleProps('se')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute bottom-0 right-0 z-10 size-4 cursor-nwse-resize" />
-          </>
-        )}
+        {/* 四边拖拽移动 + 八向缩放：与项目详情/控制台/AI 对话共用同一外框 */}
+        <DialogDragFrame dnd={dnd} />
       </DialogContent>
     </Dialog>
   )

@@ -207,7 +207,7 @@ type WsHttpServer interface {
 	Shutdown(ctx context.Context) error
 }
 
-// HttpHandler HTTP handler 面：ws、swagger UI、文件、MCP 与 AI 配置/状态路由。
+// HttpHandler HTTP handler 面：ws、swagger UI、文件、MCP 与 AI 对话路由。
 type HttpHandler interface {
 	WsHttpServer
 
@@ -218,12 +218,9 @@ type HttpHandler interface {
 	// RegisterFileRoute 在 mux 上注册文件服务路由。
 	RegisterFileRoute(mux *runtime.ServeMux)
 	// RegisterMCPRoute 在 mux 上注册标准 MCP（Streamable HTTP）路由，
-	// 供沙箱 agent 与第三方 MCP 客户端访问。
+	// 供第三方 MCP 客户端访问。
 	RegisterMCPRoute(mux *mux.Router)
-	// RegisterAIConfigRoute 在 mux 上注册 AI 相关路由：沙箱运行配置（/api/ai/config）
-	// 与用户侧状态/启用入口（/api/ai/status、/api/ai/agent/enable）。
-	RegisterAIConfigRoute(mux *mux.Router)
-	// RegisterLLMProxyRoute 在 mux 上注册 LLM 代理路由（/llm/v1/*），
-	// 转发到 mars 配置的 OpenAI 兼容上游。
-	RegisterLLMProxyRoute(mux *mux.Router)
+	// RegisterAIRoute 在 mux 上注册 AI 相关路由：使用事件上报
+	// （/api/ai/usage）与服务端对话（/api/ai/chat*）。
+	RegisterAIRoute(mux *mux.Router)
 }

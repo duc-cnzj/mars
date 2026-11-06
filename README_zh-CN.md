@@ -37,7 +37,7 @@
 - 支持高可用，弹性部署。
 - 支持命令行操作。
 - 支持 MCP（Model Context Protocol）接入：`/mcp` 标准 Streamable HTTP，可供 Claude Code / opencode / Cursor 等 AI 客户端做容器排查与部署配置，见 [doc/mcp.md](doc/mcp.md)。
-- 内置 AI Agent 沙箱助手：为每个用户拉起独立沙箱（opencode + `mai`），经 MCP 排查容器、经 LLM 代理安全对话，空闲自动缩容，见 [doc/ai_agent.md](doc/ai_agent.md)；沙箱侧源码与 chart 在 [mars-ai-agent](https://github.com/duc-cnzj/mars-ai-agent)。
+- 内置服务端 AI 对话助手：SSE 流式输出，复用同一套 MCP 工具（只读直接执行、写操作人工确认），全程以当前登录用户身份运行，见 [doc/ai_agent.md](doc/ai_agent.md)。
 - 支持查看容器日志。
 - 支持查看容器 cpu 和内存使用情况。
 - 插件化
@@ -160,7 +160,7 @@ make sec        # gosec 安全扫描
 - `make test` + `make lint` + `make sec` 全绿；
 - proto 有变更时跑 `make api` 重新生成并提交产物。
 
-文档与示例见 [doc/](doc/)（OpenAPI、[MCP 接入说明](doc/mcp.md)、[AI Agent 说明](doc/ai_agent.md)、[权限对照表](doc/access_control.md)）与 [examples/](examples/)。
+文档与示例见 [doc/](doc/)（OpenAPI、[MCP 接入说明](doc/mcp.md)、[AI 对话说明](doc/ai_agent.md)、[权限对照表](doc/access_control.md)）与 [examples/](examples/)。
 
 ## 📄 License
 

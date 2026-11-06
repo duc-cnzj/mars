@@ -338,12 +338,6 @@ export default {
     nameRequired: 'Please enter a name',
     appDescription: 'App description',
     needGitRepo: 'Link a Git repository',
-    aiAgent: 'AI Agent repository',
-    aiAgentTag: 'AI Agent',
-    aiAgentFilter: 'AI Agent only',
-    aiAgentFilterTip: 'Show only repositories marked as the AI Agent repository',
-    aiAgentTip:
-      'Only one repository can be the AI Agent repository; the AI feature is available only after it is configured',
     gitRepo: 'Git repository',
     enabledBranches: 'Enabled branches',
     allBranches: 'All',
@@ -656,7 +650,6 @@ export default {
     aiModel: 'AI model',
     aiBaseUrl: 'LLM upstream URL',
     aiApiKey: 'LLM API key',
-    aiIdleTimeout: 'Sandbox idle timeout',
     groupVersion: 'Version Info',
     versionLabel: 'Version',
     versionBuildDate: 'Build time',
@@ -797,14 +790,46 @@ export default {
   ai: {
     open: 'AI Assistant',
     assistantTitle: "{{name}}'s AI Assistant",
-    waking: 'Waking up the AI sandbox…',
-    starting: 'Starting the AI sandbox. The first start may take a few minutes…',
-    startTimeout: 'Timed out waiting for the AI sandbox to start. Please try again later.',
-    disabled: 'AI is not enabled. Ask an administrator to configure the AI Agent repository.',
-    notDeployed: 'The AI sandbox is not deployed yet. Please try again later.',
-    deployInProgress: 'The AI sandbox is deploying. It will open automatically once ready.',
-    projectMissing: 'Failed to load the AI project details',
-    projectDeleted: 'The AI project has been deleted',
+    chat: {
+      newChat: 'New chat',
+      newChatHint: 'Start a new conversation; the current one stays in history',
+      history: 'History',
+      historyHint:
+        'Browse and switch conversations saved in this browser. Sessions unused for 7 days are removed automatically.',
+      historyEmpty: 'No saved conversations yet',
+      untitled: 'Untitled conversation',
+      deleteSession: 'Delete this conversation',
+      deleteSessionConfirm:
+        'Delete the conversation “{{title}}”? This cannot be undone.',
+      clearChat: 'Clear chat',
+      clearChatHint:
+        'Delete the local record of this conversation permanently (other saved conversations are kept)',
+      autoApprove: 'No confirm',
+      autoApproveHint:
+        'Write actions run automatically without asking for approval each time. The switch is remembered in this browser. Use with caution.',
+      autoApproveActive:
+        'No-confirm mode is on: write actions run immediately without an approval prompt.',
+      emptyTitle: 'How can I help?',
+      emptyHint:
+        'Ask AI to investigate containers, read logs, or deploy. Write actions always ask for your approval first.',
+      placeholder: 'Describe your question. Enter to send, Shift+Enter for a new line',
+      confirmPlaceholder: 'Confirm the write action above first',
+      inputHint: 'History is stored in this browser. Verify AI conclusions against reality.',
+      bindingSwitched:
+        'Binding scope changed. A new conversation was started; the previous one stays in history.',
+      send: 'Send',
+      stop: 'Stop',
+      confirmTitle: 'Write action needs your approval',
+      confirmHint:
+        'Approving runs the tool as you; rejecting tells the model and continues the conversation.',
+      approve: 'Approve',
+      reject: 'Reject',
+      toolPending: 'Awaiting approval',
+      toolRunning: 'Running…',
+      toolOK: 'Succeeded',
+      toolError: 'Failed',
+      toolResult: 'Tool result',
+    },
     diagnose: 'Diagnose with AI',
     diagnoseHint: 'Deployment failed — let AI inspect mars events and logs',
     diagnosePrompt:
@@ -817,7 +842,7 @@ export default {
     bindingNone: 'No scope bound',
     bindingAllProjects: 'All projects',
     bindingHint:
-      'AI answers about the selected namespaces/projects unless your question names another',
+      'AI answers about the selected namespaces/projects unless your question names another; switching the binding starts a new conversation',
     bindingLoadFailed: 'Failed to load namespaces/projects. Please try again.',
     quickPromptsLabel: 'Common questions',
     quickPromptDeploy: 'Deploy the latest code for me',
@@ -829,8 +854,6 @@ export default {
     quickPromptLogs: 'Are there errors in the container logs?',
     quickPromptLogsPrompt:
       'Analyze the recent container logs in my bound scope, point out errors or anomalies, and determine the likely root cause.',
-    skillsHint:
-      'You can install your own skills; they take effect only after the container is force-deleted.',
   },
   mcpGuide: {
     open: 'MCP setup',

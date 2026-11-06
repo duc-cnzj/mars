@@ -28,13 +28,11 @@ func TestToolset_ListRepos(t *testing.T) {
 			return want, nil
 		}
 		disabled := false
-		aiAgent := true
 
 		_, out, err := e.toolset().listRepos(ctxWithUser(adminUser()), nil, listReposIn{
 			paginationIn: paginationIn{Page: 2, PageSize: 5},
 			Name:         "app",
 			Enabled:      &disabled,
-			AiAgent:      &aiAgent,
 		})
 		require.NoError(t, err)
 
@@ -44,8 +42,6 @@ func TestToolset_ListRepos(t *testing.T) {
 		assert.Equal(t, "app", got.GetName())
 		require.NotNil(t, got.Enabled, "显式 false 是有效筛选条件，必须原样下发")
 		assert.False(t, got.GetEnabled())
-		require.NotNil(t, got.AiAgent)
-		assert.True(t, got.GetAiAgent())
 		assert.Same(t, want, out, "出参直接回吐服务模型，不另造投影")
 	})
 
@@ -62,11 +58,10 @@ func TestToolset_ListRepos(t *testing.T) {
 
 		require.NotNil(t, got)
 		// page/page_size 恒下发零值指针，由 RepoSvc 的 InitByDefault 回退到 1/15；
-		// 两个布尔过滤保持 nil 才是「不筛选」，不能被零值 false 静默变成「只看停用」。
+		// enabled 过滤保持 nil 才是「不筛选」，不能被零值 false 静默变成「只看停用」。
 		assert.Equal(t, int32(0), got.GetPage())
 		assert.Equal(t, int32(0), got.GetPageSize())
 		assert.Nil(t, got.Enabled)
-		assert.Nil(t, got.AiAgent)
 		assert.Empty(t, got.GetName())
 		assert.Equal(t, &repopb.ListResponse{}, out)
 	})

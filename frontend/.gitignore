@@ -47,3 +47,12 @@ pnpm-debug.log*
 
 # Coverage
 coverage
+# 冒烟测试：只忽略 esbuild 生成的 .cjs bundle（node 运行产物），
+# .smoke/ 下的 check-*.tsx / harness.tsx / stub-*.tsx 是测试源码，必须入库——
+# 整目录忽略会让整套冒烟测试对 git 隐身，fresh clone 后 yarn smoke 直接缺源失败
+/.smoke/*.cjs
+# check-events 打包 react-diff-viewer 时 esbuild 副产物
+/.smoke/*.css
+# 真浏览器冒烟：只忽略 esbuild 的 browser bundle，entry.ts/html 是测试源码需入库
+/.smoke/browser/*.js
+/.smoke/browser/*.css

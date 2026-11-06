@@ -68,7 +68,6 @@ const SETTING_LABEL_KEY: Record<string, TKey> = {
   'ai.model': 'settings.aiModel',
   'ai.base_url': 'settings.aiBaseUrl',
   'ai.api_key': 'settings.aiApiKey',
-  'ai.idle_timeout': 'settings.aiIdleTimeout',
 }
 
 /**

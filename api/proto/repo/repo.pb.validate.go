@@ -71,10 +71,6 @@ func (m *ListRequest) validate(all bool) error {
 		// no validation rules for Enabled
 	}
 
-	if m.AiAgent != nil {
-		// no validation rules for AiAgent
-	}
-
 	if len(errors) > 0 {
 		return ListRequestMultiError(errors)
 	}
@@ -861,8 +857,6 @@ func (m *CreateRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for AiAgent
-
 	if m.GitProjectId != nil {
 		// no validation rules for GitProjectId
 	}
@@ -1175,10 +1169,6 @@ func (m *UpdateRequest) validate(all bool) error {
 
 	if m.GitProjectId != nil {
 		// no validation rules for GitProjectId
-	}
-
-	if m.AiAgent != nil {
-		// no validation rules for AiAgent
 	}
 
 	if len(errors) > 0 {

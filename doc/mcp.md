@@ -13,7 +13,7 @@ mars 把「容器排查 + 部署配置」能力以标准 **MCP（Model Context P
 - **端点**：`/mcp`（与 Web、gRPC、`/api` 同一个 mars 网关地址）
 - **传输**：Streamable HTTP（MCP 规范 2025-06-18 起的标准远程传输），**Stateless 模式**
 - **客户端**：任何支持 Streamable HTTP 的 MCP 客户端——opencode、Claude Code、Cursor 等；
-  沙箱内的 `opencode` agent 由 `mars-agent` 自动注入配置，无需手工接入
+  mars 服务端 AI 对话（`/api/ai/chat`）也复用同一工具集，无需额外接入
 - **鉴权**：mars token（`Authorization: Bearer <token>`），与 gRPC 拦截器、文件路由共用
   `biz.Authenticate`；工具内部再按命名空间/项目做 RBAC（同一套 `AccessBiz`）
 - **能力范围**：命名空间/项目/Pod/容器/事件/日志/指标/变更记录/Git 分支与提交/CI 流水线查询，
@@ -82,10 +82,8 @@ claude mcp add --transport http mars https://mars.example.com/mcp \
 }
 ```
 
-> AI 沙箱内由 `mars-agent` 自动生成 opencode 的 MCP 配置（地址按 `/mcp` 拼接，token 为沙箱令牌），
-> 不需要手工配置。沙箱令牌锚定 **agent 项目创建者**——管理员进入别人的沙箱时，
-> `get_current_user` 看到的也是创建者，跨权限操作一律被拒绝。沙箱的启用、空闲缩容与
-> 唤醒机制见 [ai_agent.md](ai_agent.md)。
+> mars 服务端 AI 对话在进程内复用同一工具集，工具调用继承当前登录用户身份，
+> 越权同样返回 `PermissionDenied`，详见 [ai_agent.md](ai_agent.md)。
 
 ### 2.3 手工冒烟（curl）
 
@@ -188,7 +186,7 @@ curl -sS https://mars.example.com/mcp \
 
 | 工具 | 类型 | 寻址入参 | 说明 |
 |---|---|---|---|
-| `list_repos` | 只读 | 分页 + `name`/`enabled`/`ai_agent` 过滤 | 仓库概要，**不含** `mars_config`；用于拿 `repo_id` |
+| `list_repos` | 只读 | 分页 + `name`/`enabled` 过滤 | 仓库概要，**不含** `mars_config`；用于拿 `repo_id` |
 | `get_repo_custom_fields` | 只读 | `repo_id` | 仓库配置：`values_yaml`、分支白名单、分区、休眠、自定义字段定义 `elements` |
 | `update_repo_custom_fields` | 写 | `repo_id` + `upsert_elements` / `remove_paths` | 增量新增/整条覆盖/删除仓库级自定义字段；**只改 `elements`**，其余配置原样保留 |
 
@@ -257,7 +255,6 @@ values.yaml 本身**。helm values.yaml 属仓库级、由管理员维护，**�
 |---|---|
 | 多副本 | **必须 Stateless**：网关是多副本且 Service 无会话粘滞，有状态模式会把会话表留在单 pod 内存，跨副本请求返回 404 `session not found`（客户端常误报成 SSE 400） |
 | 不支持的能力 | Stateless 下不提供 GET SSE 推送流（go-sdk 按规范返回 405，主流客户端视为「服务端不推送」继续工作）与 server→client 请求；本工具集不依赖它们 |
-| 沙箱活跃度 | 每个已鉴权 MCP 请求都会刷新沙箱活跃度，工具调用期间不会被空闲关闭任务缩容；刷新失败只记日志，不阻断请求 |
 | 路由顺序 | `/mcp` 必须在前端 SPA 兜底路由 `/{any:.*}` **之前**注册，否则会被吞成 `index.html`（与 `/api`、`/ws` 同一约束） |
 | 日志上限 | `get_container_logs` 单次最多 128 KiB 并追加截断提示；`exec_command` 服务端上限 5 MiB、MCP 侧回吐约 128 KiB |
 

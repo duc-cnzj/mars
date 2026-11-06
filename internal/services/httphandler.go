@@ -7,9 +7,8 @@ import (
 	"github.com/duc-cnzj/mars/v6/internal/app"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
 	"github.com/duc-cnzj/mars/v6/internal/config"
-	"github.com/duc-cnzj/mars/v6/internal/deploy"
-	"github.com/duc-cnzj/mars/v6/internal/locker"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
+	"github.com/duc-cnzj/mars/v6/internal/services/aichat"
 	"github.com/duc-cnzj/mars/v6/internal/services/mcp"
 	"github.com/duc-cnzj/mars/v6/internal/uploader"
 	"github.com/duc-cnzj/mars/v6/internal/util/timer"
@@ -20,45 +19,33 @@ import (
 var _ app.HttpHandler = (*httpHandlerImpl)(nil)
 
 // httpHandlerImpl 是 HTTP 传输层的门面：内嵌 websocket 服务器（WsHttpServer）承载
-// /ws 与 /api/ws_info，swagger、文件、MCP 与 agent 配置路由分别委托给
-// swaggerHandler/fileHandler/mcp.Server/aiConfigHandler。
+// /ws 与 /api/ws_info，swagger、文件、MCP、AI 使用上报与服务端对话分别委托给
+// swaggerHandler/fileHandler/mcp.Server/aiUsageHandler/aichat.Server。
 // 自身只保留 ws 路由注册与优雅关闭，不再持有文件边界的任何依赖。
 type httpHandlerImpl struct {
 	app.WsHttpServer
-	logger   mlog.Logger
-	swagger  *swaggerHandler
-	files    *fileHandler
-	mcp      *mcp.Server
-	aiConfig *aiConfigHandler
-	aiAgent  *aiAgentHandler
-	llmProxy *llmProxyHandler
+	logger  mlog.Logger
+	swagger *swaggerHandler
+	files   *fileHandler
+	mcp     *mcp.Server
+	aiUsage *aiUsageHandler
+	aiChat  *aichat.Server
 }
 
 // HttpHandlerDeps 收口 NewHttpHandler 的构造依赖，由 wire 按字段注入。
 type HttpHandlerDeps struct {
-	WsHttpServer   app.WsHttpServer
-	Logger         mlog.Logger
-	Uploader       uploader.Uploader
-	AuthBiz        biz.AuthBiz
-	UserBiz        biz.UserBiz
-	EventBiz       biz.EventBiz
-	FileBiz        biz.FileBiz
-	Timer          timer.Timer
-	K8sBiz         biz.K8sBiz
-	ContainerBiz   biz.ContainerBiz
-	AccessBiz      biz.AccessBiz
-	AccessTokenBiz biz.AccessTokenBiz
-	RepoBiz        biz.RepoBiz
-	NamespaceBiz   biz.NamespaceBiz
-	ProjectBiz     biz.ProjectBiz
-	GitBiz         biz.GitBiz
-	K8sRepo        biz.K8sRepo
-	AgentActivity  biz.AgentActivity
-	Locker         locker.Locker
-	JobManager     deploy.JobManager
-	PluginMgr      app.PluginManager
-	MCP            *mcp.Server
-	Config         *config.Config
+	WsHttpServer app.WsHttpServer
+	Logger       mlog.Logger
+	Uploader     uploader.Uploader
+	AuthBiz      biz.AuthBiz
+	EventBiz     biz.EventBiz
+	FileBiz      biz.FileBiz
+	Timer        timer.Timer
+	K8sBiz       biz.K8sBiz
+	ContainerBiz biz.ContainerBiz
+	AccessBiz    biz.AccessBiz
+	MCP          *mcp.Server
+	Config       *config.Config
 }
 
 // NewHttpHandler 收口 HTTP 传输层的构造依赖：websocket 服务器（WsHttpServer）、
@@ -73,25 +60,13 @@ func NewHttpHandler(deps HttpHandlerDeps) app.HttpHandler {
 		swagger:      newSwaggerHandler(logger),
 		files:        newFileHandler(deps),
 		mcp:          deps.MCP,
-		aiConfig:     newAIConfigHandler(deps.Config, deps.AuthBiz, deps.AgentActivity, logger),
-		aiAgent: newAIAgentHandler(aiAgentDeps{
-			AuthBiz:        deps.AuthBiz,
-			RepoBiz:        deps.RepoBiz,
-			NamespaceBiz:   deps.NamespaceBiz,
-			ProjectBiz:     deps.ProjectBiz,
-			GitBiz:         deps.GitBiz,
-			AccessBiz:      deps.AccessBiz,
-			AccessTokenBiz: deps.AccessTokenBiz,
-			K8sRepo:        deps.K8sRepo,
-			AgentActivity:  deps.AgentActivity,
-			JobMgr:         deps.JobManager,
-			Locker:         deps.Locker,
-			EventBiz:       deps.EventBiz,
-			PluginMgr:      deps.PluginMgr,
-			Logger:         logger,
+		aiUsage:      newAIUsageHandler(deps.AuthBiz, logger),
+		aiChat: aichat.NewServer(aichat.Deps{
+			Config:  deps.Config,
+			AuthBiz: deps.AuthBiz,
+			MCP:     deps.MCP,
+			Logger:  logger,
 		}),
-		llmProxy: newLLMProxyHandler(
-			deps.Config, deps.AuthBiz, deps.RepoBiz, deps.NamespaceBiz, deps.ProjectBiz, deps.AgentActivity, logger),
 	}
 }
 
@@ -117,18 +92,11 @@ func (h *httpHandlerImpl) RegisterMCPRoute(mux *mux.Router) {
 	h.mcp.Register(mux)
 }
 
-// RegisterAIConfigRoute 注册 AI 相关 HTTP 路由：
-// 沙箱 agent 运行时配置（/api/ai/config）与用户侧 AI 状态/启用入口
-// （/api/ai/status、/api/ai/agent/enable），分别委托给 aiConfigHandler/aiAgentHandler。
-func (h *httpHandlerImpl) RegisterAIConfigRoute(mux *mux.Router) {
-	h.aiConfig.Register(mux)
-	h.aiAgent.Register(mux)
-}
-
-// RegisterLLMProxyRoute 注册沙箱 agent 的 LLM 代理路由（/llm/v1/*），
-// 把请求转发到 mars 配置的 OpenAI 兼容上游。
-func (h *httpHandlerImpl) RegisterLLMProxyRoute(mux *mux.Router) {
-	h.llmProxy.Register(mux)
+// RegisterAIRoute 注册 AI 相关 HTTP 路由：使用事件上报（/api/ai/usage）
+// 与服务端对话（/api/ai/chat*），分别委托给 aiUsageHandler/aichat.Server。
+func (h *httpHandlerImpl) RegisterAIRoute(mux *mux.Router) {
+	h.aiUsage.Register(mux)
+	h.aiChat.Register(mux)
 }
 
 // Shutdown 带超时优雅关闭 websocket 服务器，超时或失败只记 Warning 不阻断主流程。

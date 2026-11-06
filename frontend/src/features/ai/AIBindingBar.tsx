@@ -13,7 +13,7 @@ type NamespaceModel = components['schemas']['types.NamespaceModel']
 const BINDING_LIST_PAGE_SIZE = 500
 
 /** 把选择器的字符串数组还原成绑定对象（保留用户选择顺序）：
- *  单段 `空间` = 绑定整个空间，两段 `空间/项目` = 只绑定该项目（与 `mai --bind` 一致）。 */
+ *  单段 `空间` = 绑定整个空间，两段 `空间/项目` = 只绑定该项目（与后端 bindings 结构一致）。 */
 function toBindings(keys: string[]): AIBinding[] {
   return keys.map((key) => {
     const at = key.indexOf('/')
@@ -33,24 +33,25 @@ function sameSelection(a: string[], b: string[]): boolean {
  * AI 绑定条：显示当前默认针对的「空间」或「空间/项目」（可多选），并可增删或清空绑定。
  *
  * 复用全局 `SearchableSelect`（multiple）：搜索、chips、弹层 z-index 与滚动锁都由
- * 组件内部处理，本组件只负责提供选项与提交时机。绑定只影响 AI 的默认上下文
- * （由 `mai --bind` 重复注入会话），不会代发任何问题。具体 Pod 不参与绑定：
+ * 组件内部处理，本组件只负责提供选项与提交时机。绑定随每次对话请求下发，
+ * 只影响 system prompt 里的默认关注范围，不会代发任何问题。具体 Pod 不参与绑定：
  * 滚动更新后 Pod 名会变，按空间/项目绑定、由 AI 用 MCP 工具现查更稳。
  *
- * 提交时机：弹层打开期间只改草稿（勾选多个项目不会每点一次就重建终端会话），
+ * 提交时机：弹层打开期间只改草稿（勾选多个项目不会每点一次就触发一次对话状态变更），
  * 关闭弹层时一次性提交；关闭态直接点 chip 上的 X 则立即提交。
+ * 换绑会重置对话，因此生成中/等待确认时整条置灰禁用（disabled），避免打断进行中的轮次。
  */
 export function AIBindingBar({
   bindings,
-  excludeProjectId,
   onChange,
+  disabled = false,
 }: {
   /** 当前绑定列表；为空表示未绑定（AI 按用户提问里明确写出的范围作答） */
   bindings: AIBinding[]
-  /** 排除 AI 沙箱自身项目：把 AI 绑定到它能查的工具沙箱没有业务意义 */
-  excludeProjectId?: number
   /** 用户确认新的绑定列表或清空时回调 */
   onChange: (bindings: AIBinding[]) => void
+  /** 禁用修改（生成中或等待写工具确认） */
+  disabled?: boolean
 }) {
   const { t } = useTranslation()
   const [namespaces, setNamespaces] = useState<NamespaceModel[] | null>(null)
@@ -78,25 +79,23 @@ export function AIBindingBar({
       .finally(() => setLoading(false))
   }
 
-  /** 选项 = 每个可见空间（绑定整个空间）+ 空间下的项目（排除 AI 沙箱自身）；
+  /** 选项 = 每个可见空间（绑定整个空间）+ 空间下的项目；
    *  已绑定但不在列表里的旧项（项目已删/权限收紧）由 SearchableSelect 回退显示原始值，
    *  不会凭空消失。
    *  label 用 `空间/项目` 全名：项目名在不同空间可能重名，只显示项目名无法分辨
    *  绑定到了哪个空间；空间项则标注「全部项目」，与单项目选项区分开。
-   *  排除后没有任何可见项目的空间（如 AI 沙箱自己所在的空间）不提供空间级选项，
-   *  绑定一个没有可查询项目的空空间没有意义。
+   *  没有任何可见项目的空间不提供空间级选项，绑定一个没有可查询项目的空空间没有意义。
    *  chip 端靠 maxTagCount + 宽度截断控制长度。
    *  列表按需加载：未打开过弹层时用当前绑定兜底建选项，保证 chip 从首帧起就有 label。 */
   const options = useMemo<SearchableSelectOption[]>(() => {
     const map = new Map<string, SearchableSelectOption>()
     for (const ns of namespaces ?? []) {
-      const projects = ns.projects.filter((p) => p.id !== excludeProjectId)
-      if (projects.length === 0) continue
+      if (ns.projects.length === 0) continue
       map.set(ns.name, {
         value: ns.name,
         label: `${ns.name} · ${t('ai.bindingAllProjects')}`,
       })
-      for (const p of projects) {
+      for (const p of ns.projects) {
         map.set(`${ns.name}/${p.name}`, {
           value: `${ns.name}/${p.name}`,
           label: `${ns.name}/${p.name}`,
@@ -109,7 +108,7 @@ export function AIBindingBar({
       map.set(key, { value: key, label: key })
     }
     return [...map.values()]
-  }, [namespaces, excludeProjectId, bindings, t])
+  }, [namespaces, bindings, t])
 
   /** 提交一组选择；与当前绑定等价时不重复通知父级。 */
   const commit = (keys: string[]) => {
@@ -118,6 +117,7 @@ export function AIBindingBar({
 
   /** 弹层开合：打开时开草稿并拉选项，关闭时把草稿一次性提交。 */
   const handleOpenChange = (open: boolean) => {
+    if (disabled) return
     if (open) {
       setDraft(selected)
       load()
@@ -129,6 +129,7 @@ export function AIBindingBar({
 
   /** 选择变化：弹层内只更新草稿；关闭态（chip X）立即提交。 */
   const handleChange = (value: string | string[]) => {
+    if (disabled) return
     const keys = Array.isArray(value) ? value : [value]
     if (draft !== null) {
       setDraft(keys)
@@ -144,7 +145,12 @@ export function AIBindingBar({
       : t('common.empty')
 
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px]">
+    <div
+      aria-disabled={disabled}
+      className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] ${
+        disabled ? 'pointer-events-none opacity-60' : ''
+      }`}
+    >
       <span className="inline-flex items-center gap-1.5 font-medium text-primary">
         <AISparklesIcon className="text-[14px]" />
         {t('ai.bindingLabel')}

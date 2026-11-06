@@ -257,12 +257,9 @@ type testEnv struct {
 	repoSvc    *fakeRepoSvc
 	eventSvc   *fakeEventSvc
 	hibSvc     *fakeHibernateSvc
-	activity   *biz.MockAgentActivity
-	// touchedActivity 记录每次活跃度刷新的项目名，供断言心跳键。
-	touchedActivity []string
-	deps            Deps
-	server          *Server
-	httpSrv         *httptest.Server
+	deps       Deps
+	server     *Server
+	httpSrv    *httptest.Server
 }
 
 // newTestEnv 组装被测 MCP 服务端并起一个 httptest server：走真实 http.Handler，
@@ -293,14 +290,7 @@ func newTestEnv(t *testing.T) *testEnv {
 		repoSvc:    &fakeRepoSvc{},
 		eventSvc:   &fakeEventSvc{},
 		hibSvc:     &fakeHibernateSvc{},
-		activity:   biz.NewMockAgentActivity(ctrl),
 	}
-	// 所有已鉴权请求都会刷新活跃度：默认放行并记录项目名。
-	e.activity.EXPECT().Touch(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(_ context.Context, projectName string) error {
-			e.touchedActivity = append(e.touchedActivity, projectName)
-			return nil
-		}).AnyTimes()
 
 	logger := mlog.NewForConfig(nil)
 	k8sBiz := biz.NewK8sBiz(e.k8sRepo)
@@ -308,22 +298,21 @@ func newTestEnv(t *testing.T) *testEnv {
 	projBiz := biz.NewProjectBiz(logger, e.projRepo, e.k8sRepo, e.clRepo)
 
 	e.deps = Deps{
-		ProjectBiz:    projBiz,
-		ContainerBiz:  biz.NewContainerBiz(logger, k8sBiz, biz.NewFileBiz(e.fileRepo), biz.NewEventBiz(e.eventRepo), timer.NewReal()),
-		K8sBiz:        k8sBiz,
-		AccessBiz:     biz.NewAccessBiz(nsBiz, projBiz),
-		AuthBiz:       e.authBiz,
-		AgentActivity: e.activity,
-		NamespaceSvc:  e.nsSvc,
-		ProjectSvc:    e.projectSvc,
-		ContainerSvc:  e.contSvc,
-		MetricsSvc:    e.metricSvc,
-		ChangelogSvc:  e.changeSvc,
-		GitSvc:        e.gitSvc,
-		RepoSvc:       e.repoSvc,
-		EventSvc:      e.eventSvc,
-		HibernateSvc:  e.hibSvc,
-		Logger:        logger,
+		ProjectBiz:   projBiz,
+		ContainerBiz: biz.NewContainerBiz(logger, k8sBiz, biz.NewFileBiz(e.fileRepo), biz.NewEventBiz(e.eventRepo), timer.NewReal()),
+		K8sBiz:       k8sBiz,
+		AccessBiz:    biz.NewAccessBiz(nsBiz, projBiz),
+		AuthBiz:      e.authBiz,
+		NamespaceSvc: e.nsSvc,
+		ProjectSvc:   e.projectSvc,
+		ContainerSvc: e.contSvc,
+		MetricsSvc:   e.metricSvc,
+		ChangelogSvc: e.changeSvc,
+		GitSvc:       e.gitSvc,
+		RepoSvc:      e.repoSvc,
+		EventSvc:     e.eventSvc,
+		HibernateSvc: e.hibSvc,
+		Logger:       logger,
 	}
 	e.server = NewServer(e.deps)
 	e.httpSrv = httptest.NewServer(e.server.handler)
@@ -624,18 +613,6 @@ func TestServerInstructionsFor(t *testing.T) {
 	assert.Contains(t, admin, "update_repo_custom_fields")
 }
 
-// TestServer_TouchesAgentActivity 已鉴权的 MCP 请求按用户邮箱派生的项目刷新活跃度，
-// 使工具调用期间空闲关闭任务不会误缩容沙箱。
-func TestServer_TouchesAgentActivity(t *testing.T) {
-	e := newTestEnv(t)
-	e.expectAuth(adminUser())
-
-	e.initSession(t, testToken)
-
-	require.NotEmpty(t, e.touchedActivity)
-	assert.Equal(t, biz.AgentProjectName("admin@mars.com"), e.touchedActivity[0])
-}
-
 // TestServer_CallTool_ListNamespaces 验证一次真实 tools/call 能打通「HTTP → 鉴权 →
 // 工具 → NamespaceSvc → 回吐服务模型 JSON」全链路，并把入参如实搬运成 proto 请求。
 func TestServer_CallTool_ListNamespaces(t *testing.T) {
@@ -851,43 +828,11 @@ func Test_toProjectSummary(t *testing.T) {
 	assert.NotEmpty(t, got.DeployStatus)
 }
 
-// TestNewServer_TouchActivityError 覆盖活跃度刷新失败分支：只记 Warning，不得阻断
-// MCP 请求——活跃度是空闲缩容的优化依据，不能变成请求的故障点。
-func TestNewServer_TouchActivityError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	authBiz := biz.NewMockAuthBiz(ctrl)
-	authBiz.EXPECT().VerifyToken(gomock.Any(), gomock.Any()).Return(adminUser(), nil)
-	authBiz.EXPECT().EffectiveRoles(gomock.Any(), gomock.Any(), gomock.Any()).
-		Return([]string{schematype.MarsAdmin}, nil)
-	activity := biz.NewMockAgentActivity(ctrl)
-	activity.EXPECT().Touch(gomock.Any(), biz.AgentProjectName("admin@mars.com")).
-		Return(errors.New("cache down")).Times(1)
-
-	server := NewServer(Deps{
-		AuthBiz:       authBiz,
-		AgentActivity: activity,
-		Logger:        mlog.NewForConfig(nil),
-	})
-	httpSrv := httptest.NewServer(server.handler)
-	t.Cleanup(httpSrv.Close)
-
-	req, err := http.NewRequest(http.MethodPost, httpSrv.URL+Path, strings.NewReader(
-		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test-client","version":"1.0.0"}}}`))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json, text/event-stream")
-	req.Header.Set("Authorization", testToken)
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "活跃度刷新失败不得阻断 MCP 请求")
-}
-
 // TestNewServer_RegistersMcpRoute 验证服务端门面装配完成且路径契约固定为 /mcp。
 func TestNewServer_RegistersMcpRoute(t *testing.T) {
 	e := newTestEnv(t)
 	assert.NotNil(t, e.server)
-	// Path 契约：沙箱侧 agent/config.go 按 "/mcp" 拼接 MCP 地址，改动需同步。
+	// Path 契约：客户端按 "/mcp" 拼接 MCP 地址，改动需同步。
 	assert.Equal(t, "/mcp", Path)
 	assert.NotNil(t, e.server.handler)
 }

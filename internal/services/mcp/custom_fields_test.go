@@ -236,7 +236,6 @@ func TestToolset_UpdateRepoCustomFields(t *testing.T) {
 		require.NotNil(t, req.GitProjectId)
 		assert.Equal(t, int32(42), req.GetGitProjectId())
 		assert.Equal(t, "应用仓库", req.GetDescription())
-		assert.Nil(t, req.AiAgent, "AiAgent 留 nil 表示保持现状")
 
 		cfg := req.GetMarsConfig()
 		assert.NotSame(t, current.GetMarsConfig(), cfg, "必须在克隆上修改，不能改 Show 返回的共享对象")

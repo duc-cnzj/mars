@@ -61,7 +61,6 @@ interface FormState {
   name: string
   description: string
   needGitRepo: boolean
-  aiAgent: boolean
   gitProjectId: number
   branches: string[]
   pipelinePassRules: PipelinePassRule[]
@@ -82,7 +81,6 @@ const DEFAULTS: FormState = {
   name: '',
   description: '',
   needGitRepo: true,
-  aiAgent: false,
   gitProjectId: 0,
   branches: ['*'],
   pipelinePassRules: [],
@@ -227,7 +225,6 @@ export function RepoFormModal({
       name: item.name,
       description: item.description,
       needGitRepo: item.needGitRepo,
-      aiAgent: item.aiAgent ?? false,
       gitProjectId: item.gitProjectId ?? 0,
       // 未配置具体分支（空数组 = 全部）时回填为 '*'，默认「全部」
       branches: c?.branches?.length ? c.branches : ['*'],
@@ -620,7 +617,6 @@ export function RepoFormModal({
       name: form.name.trim(),
       description: form.description.trim(),
       needGitRepo: form.needGitRepo,
-      aiAgent: form.aiAgent,
       gitProjectId: form.needGitRepo ? form.gitProjectId || undefined : undefined,
       marsConfig: buildConfig(),
     }
@@ -776,17 +772,6 @@ export function RepoFormModal({
               checked={form.needGitRepo}
               onCheckedChange={(v) => set('needGitRepo', v)}
               aria-label={t('repos.needGitRepo')}
-            />
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className={labelCls} title={t('repos.aiAgentTip')}>
-              {t('repos.aiAgent')}
-            </span>
-            <Switch
-              checked={form.aiAgent}
-              onCheckedChange={(v) => set('aiAgent', v)}
-              aria-label={t('repos.aiAgent')}
             />
           </div>
 
