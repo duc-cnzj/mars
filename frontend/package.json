@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "build:dev": "tsc -b && vite build --mode development --minify false --sourcemap",
     "preview": "vite preview",
-    "smoke": "for f in check-cluster check-namespaces check-resources check-users check-tokens check-events check-governance check-settings check-tab-visibility check-restore check-admin-nav check-recovery check-config-history check-hibernate-windows check-hibernate-track check-repo-hibernate check-repo-projects check-project-row check-project-sleeping check-hibernate-warning check-ai-launcher; do esbuild .smoke/$f.tsx --bundle --platform=node --format=cjs --outfile=.smoke/$f.cjs --alias:@/components/ui/shadcn/alert-dialog=./.smoke/stub-alert-dialog.tsx --alias:@/components/ui/shadcn/dialog=./.smoke/stub-dialog.tsx --alias:@/components/ui/shadcn/sheet=./.smoke/stub-sheet.tsx --alias:@/components/ui/shadcn/tooltip=./.smoke/stub-tooltip.tsx --alias:@/components/ui/shadcn/popover=./.smoke/stub-popover.tsx --alias:@/components/ui/shadcn/select=./.smoke/stub-select.tsx --alias:@/components/ui/shadcn/switch=./.smoke/stub-switch.tsx --alias:react-diff-viewer=./.smoke/stub-diff-viewer.tsx --alias:@=./src && node .smoke/$f.cjs || exit 1; done && node .smoke/check-settings.cjs missing"
+    "smoke": "for f in check-cluster check-namespaces check-resources check-users check-tokens check-events check-governance check-settings check-tab-visibility check-restore check-admin-nav check-recovery check-config-history check-hibernate-windows check-hibernate-track check-repo-hibernate check-repo-projects check-project-row check-project-sleeping check-hibernate-warning check-ai-chat check-ai-binding-bar check-mcp-guide check-terminal-copy; do esbuild .smoke/$f.tsx --bundle --platform=node --format=cjs --outfile=.smoke/$f.cjs --alias:@/components/ui/shadcn/alert-dialog=./.smoke/stub-alert-dialog.tsx --alias:@/components/ui/shadcn/dialog=./.smoke/stub-dialog.tsx --alias:@/components/ui/shadcn/sheet=./.smoke/stub-sheet.tsx --alias:@/components/ui/shadcn/tooltip=./.smoke/stub-tooltip.tsx --alias:@/components/ui/shadcn/popover=./.smoke/stub-popover.tsx --alias:@/components/ui/shadcn/select=./.smoke/stub-select.tsx --alias:@/components/ui/shadcn/switch=./.smoke/stub-switch.tsx --alias:react-diff-viewer=./.smoke/stub-diff-viewer.tsx --alias:@=./src && node .smoke/$f.cjs || exit 1; done && node .smoke/check-settings.cjs missing"
   },
   "dependencies": {
     "@codemirror/lang-json": "^6.0.2",
@@ -40,7 +40,9 @@
     "react-diff-viewer": "^3.1.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.2",
+    "remark-gfm": "^4.0.1",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0",
     "tw-animate-css": "^1.4.0",

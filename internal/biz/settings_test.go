@@ -59,10 +59,9 @@ func fullSettingsConfig() *config.Config {
 			{Name: "gitlab", Enabled: true, ProviderUrl: "https://gitlab/.well-known/openid-configuration", ClientID: "cid", ClientSecret: "cs", RedirectUrl: "https://mars/cb"},
 		},
 		AI: config.AIConfig{
-			Model:       "deepseek-chat",
-			BaseURL:     "https://api.deepseek.com/v1",
-			APIKey:      "sk-0",
-			IdleTimeout: 45 * time.Minute,
+			Model:   "deepseek-chat",
+			BaseURL: "https://api.deepseek.com/v1",
+			APIKey:  "sk-0",
 		},
 	}
 }
@@ -141,7 +140,6 @@ func TestSettingsBiz_Get(t *testing.T) {
 	assert.False(t, findSetting(t, ai, "ai.base_url").Masked)
 	assert.Equal(t, "sk-0", findSetting(t, ai, "ai.api_key").Value)
 	assert.True(t, findSetting(t, ai, "ai.api_key").Masked)
-	assert.Equal(t, "45m0s", findSetting(t, ai, "ai.idle_timeout").Value)
 }
 
 // TestSettingsBiz_Get_Empty 空配置聚合：七组仍存在且 id 非空，插件组无 args 行。
@@ -161,15 +159,14 @@ func TestSettingsBiz_Get_Empty(t *testing.T) {
 	assert.Equal(t, "", findSetting(t, server, "exclude_server").Value)
 	database := got.Groups[3]
 	assert.Equal(t, "false", findSetting(t, database, "db_debug").Value)
-	// 空配置下 AI 组仍为完整四项：模型/地址/密钥空串（密钥仍掩码），阈值 0s。
+	// 空配置下 AI 组仍为完整三项：模型/地址/密钥空串（密钥仍掩码）。
 	ai := got.Groups[6]
 	assert.Equal(t, "ai", ai.ID)
-	assert.Len(t, ai.Items, 4)
+	assert.Len(t, ai.Items, 3)
 	assert.Equal(t, "", findSetting(t, ai, "ai.model").Value)
 	assert.Equal(t, "", findSetting(t, ai, "ai.base_url").Value)
 	assert.Equal(t, "", findSetting(t, ai, "ai.api_key").Value)
 	assert.True(t, findSetting(t, ai, "ai.api_key").Masked)
-	assert.Equal(t, "0s", findSetting(t, ai, "ai.idle_timeout").Value)
 }
 
 // TestSensitiveSettingKey 敏感参数键判定：token/password/secret 片段命中，其余放行。

@@ -53,8 +53,6 @@ func Test_containerSvc_IsPodRunning_PermissionDenied(t *testing.T) {
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
-	// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；此处返回 NotFound 表示非 agent 空间。
-	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns")).AnyTimes()
 	_, err := svc.IsPodRunning(newOtherUserCtx(), &container.IsPodRunningRequest{
 		Namespace: "a",
 		Pod:       "b",
@@ -816,8 +814,6 @@ func TestContainerSvc_ContainerLog_PermissionDenied(t *testing.T) {
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
-	// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；此处返回 NotFound 表示非 agent 空间。
-	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns")).AnyTimes()
 
 	_, err := svc.ContainerLog(newOtherUserCtx(), &container.LogRequest{Namespace: "a", Pod: "b"})
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
@@ -851,8 +847,6 @@ func TestContainerSvc_CopyToPod_PermissionDenied(t *testing.T) {
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
-	// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；此处返回 NotFound 表示非 agent 空间。
-	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns")).AnyTimes()
 
 	_, err := svc.CopyToPod(newOtherUserCtx(), &container.CopyToPodRequest{Namespace: "a", Pod: "b"})
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
@@ -924,8 +918,6 @@ func TestContainerSvc_StreamCopyToPod_PermissionDenied(t *testing.T) {
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
-	// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；此处返回 NotFound 表示非 agent 空间。
-	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns")).AnyTimes()
 
 	err := svc.StreamCopyToPod(&streamCopyToPodServer{ctx: newOtherUserCtx(), recv: []*container.StreamCopyToPodRequest{
 		{Namespace: "a", Pod: "b", Container: "c"},
@@ -982,8 +974,6 @@ func TestContainerSvc_StreamContainerLog_PermissionDenied(t *testing.T) {
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
-	// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；此处返回 NotFound 表示非 agent 空间。
-	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns")).AnyTimes()
 
 	err := svc.StreamContainerLog(&container.LogRequest{Namespace: "a", Pod: "b"}, &logStreamServer{ctx: newOtherUserCtx()})
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
@@ -1043,8 +1033,6 @@ func TestContainerSvc_ExecOnce_PermissionDenied(t *testing.T) {
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
-	// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；此处返回 NotFound 表示非 agent 空间。
-	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns")).AnyTimes()
 
 	err := svc.ExecOnce(&container.ExecOnceRequest{Namespace: "a", Pod: "b"}, &execOnceServer{ctx: newOtherUserCtx()})
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
@@ -1075,8 +1063,6 @@ func TestContainerSvc_Exec_PermissionDenied(t *testing.T) {
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
-	// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；此处返回 NotFound 表示非 agent 空间。
-	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns")).AnyTimes()
 
 	err := svc.Exec(&execServerMock{})
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
@@ -1098,8 +1084,6 @@ func Test_containerSvc_IsPodExists_PermissionDenied(t *testing.T) {
 	svc, mocks := newContainerSvcWithMocks(t)
 	nsRepo := mocks.nsRepo
 	nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
-	// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；此处返回 NotFound 表示非 agent 空间。
-	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns")).AnyTimes()
 
 	_, err := svc.IsPodExists(newOtherUserCtx(), &container.IsPodExistsRequest{Namespace: "a", Pod: "b"})
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
@@ -1688,8 +1672,6 @@ func Test_containerSvc_ForceDeletePod_Error(t *testing.T) {
 func Test_containerSvc_ForceDeletePod_PermissionDenied(t *testing.T) {
 	svc, mocks := newContainerSvcWithMocks(t)
 	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), "a").Return(&biz.Namespace{Private: true}, nil).AnyTimes()
-	// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；此处返回 NotFound 表示非 agent 空间。
-	mocks.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns")).AnyTimes()
 	_, err := svc.ForceDeletePod(newOtherUserCtx(), &container.ForceDeletePodRequest{
 		Namespace: "a",
 		Pod:       "b",

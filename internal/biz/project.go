@@ -25,8 +25,7 @@ type ProjectBiz interface {
 	// List 分页列出项目。
 	List(ctx context.Context, input *ListProjectInput) ([]*Project, *pagination.Pagination, error)
 	// ListAllProjectBriefs 返回全部项目的精简投影（仅消费方需要的字段：
-	// Name/PodSelectors/Creator/Namespace.Name，其余字段为零值），供聚合做 pod→项目归属映射、
-	// agent 空闲缩容识别沙箱归属用户。
+	// Name/PodSelectors/Creator/Namespace.Name，其余字段为零值），供聚合做 pod→项目归属映射。
 	ListAllProjectBriefs(ctx context.Context) ([]*Project, error)
 	// Create 校验输入后创建项目。
 	Create(ctx context.Context, project *CreateProjectInput) (*Project, error)
@@ -134,8 +133,7 @@ func (p *projectBiz) List(ctx context.Context, input *ListProjectInput) ([]*Proj
 	return p.projRepo.List(ctx, input)
 }
 
-// ListAllProjectBriefs 返回全部项目的精简投影（透传 repo），跨命名空间做 pod→项目归属映射，
-// 并供 agent 空闲缩容按创建者标识沙箱归属用户。
+// ListAllProjectBriefs 返回全部项目的精简投影（透传 repo），供跨命名空间做 pod→项目归属映射。
 func (p *projectBiz) ListAllProjectBriefs(ctx context.Context) ([]*Project, error) {
 	return p.projRepo.ListAllProjectBriefs(ctx)
 }

@@ -185,7 +185,6 @@ func (t *toolset) updateRepoCustomFields(ctx context.Context, _ *sdk.CallToolReq
 		GitProjectId: currentGitProjectID(current),
 		MarsConfig:   cfg,
 		Description:  current.GetDescription(),
-		// AiAgent 留 nil：表示未指定，保持仓库现有 AI Agent 标记不变。
 	})
 	if err != nil {
 		return nil, nil, err

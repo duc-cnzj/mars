@@ -378,8 +378,6 @@ func TestToolset_GetContainerLogs(t *testing.T) {
 		e := newTestEnv(t)
 		e.nsRepo.EXPECT().FindByName(gomock.Any(), "private-ns").Return(
 			&biz.Namespace{ID: 9, Name: "private-ns", Private: true, CreatorEmail: "other@mars.com"}, nil)
-		// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
-		e.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 		// 未设置 k8sRepo.GetPod 期望：越权场景下不得读 Pod（否则 gomock 直接失败）。
 
 		_, _, err := e.toolset().getContainerLogs(ctxWithUser(normalUser()), nil,
@@ -917,8 +915,6 @@ func TestToolset_ExecCommand(t *testing.T) {
 		e := newTestEnv(t)
 		e.nsRepo.EXPECT().FindByName(gomock.Any(), "private-ns").Return(
 			&biz.Namespace{ID: 9, Name: "private-ns", Private: true, CreatorEmail: "other@mars.com"}, nil)
-		// Pod 级门卫在命名空间拒绝后会回查 agent 命名空间；NotFound 表示非 agent 空间。
-		e.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
 		ts := e.toolset()
 		// 未设 execOnceFn：一旦门卫漏过，fake 解引用 nil 会 panic，测试即失败。
 		ts.containerBiz = &fakeContainerBiz{}
@@ -1048,9 +1044,7 @@ func TestToolset_ListGitBranches(t *testing.T) {
 			&biz.Namespace{ID: 2, Name: "private-ns", Private: true, CreatorEmail: "other@mars.com"}, nil)
 		e.projRepo.EXPECT().Show(gomock.Any(), 7).Return(
 			&biz.Project{ID: 7, RepoID: 3, NamespaceID: 2}, nil)
-		// 命名空间拒绝后门卫回查 agent 命名空间；NotFound 表示非 agent 空间。
-		e.nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(nil, errs.WrapNotFound(errors.New("no ns"), "find agent ns"))
-		// 非当前用户的 agent 项目：门卫回 PermissionDenied，下游 fake 未设函数即证明未触达。
+		// 私有空间内他人的项目：门卫回 PermissionDenied，下游 fake 未设函数即证明未触达。
 		_, _, err := e.toolset().listGitBranches(ctxWithUser(normalUser()), nil, listGitBranchesIn{ProjectID: 7})
 		require.ErrorContains(t, err, "没有权限执行该操作")
 	})

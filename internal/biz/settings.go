@@ -174,13 +174,12 @@ func settingsAuthGroup(cfg *config.Config) *ConfigGroup {
 	return &ConfigGroup{ID: "auth", Items: items}
 }
 
-// settingsAIGroup 枚举 AI 助手组配置：模型/上游地址/密钥（掩码）/沙箱空闲关闭阈值。
+// settingsAIGroup 枚举 AI 助手组配置：模型/上游地址/密钥（掩码）。
 func settingsAIGroup(cfg *config.Config) *ConfigGroup {
 	return &ConfigGroup{ID: "ai", Items: []*ConfigItem{
 		setting("ai.model", cfg.AI.Model, false),
 		setting("ai.base_url", cfg.AI.BaseURL, false),
 		setting("ai.api_key", cfg.AI.APIKey, true),
-		setting("ai.idle_timeout", cfg.AI.IdleTimeout, false),
 	}}
 }
 

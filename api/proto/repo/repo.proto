@@ -12,12 +12,14 @@ import "proto/mars/mars.proto";
 option go_package = "github.com/duc-cnzj/mars/api/v6/proto/repo;repo";
 
 message ListRequest {
+  // 5 原为 ai_agent（AI Agent 仓库标记过滤），沙箱下线后移除，编号与名称保留防误复用。
+  reserved 5;
+  reserved "ai_agent";
+
   optional int32 page      = 1;
   optional int32 page_size = 2;
   optional bool  enabled   = 3;
   string         name      = 4;
-  // ai_agent 为空时不按 AI Agent 标记过滤；true 只返回 AI Agent 仓库，false 只返回非 AI Agent 仓库。
-  optional bool  ai_agent  = 5;
 }
 
 message ListResponse {
@@ -43,27 +45,30 @@ message ToggleEnabledResponse{
 }
 
 message CreateRequest{
+  // 6 原为 ai_agent（AI Agent 仓库标记），沙箱下线后移除，编号与名称保留防误复用。
+  reserved 6;
+  reserved "ai_agent";
+
   string         name           = 1 [(validate.rules).string = {min_bytes: 1, pattern: "^[a-zA-Z0-9_-]+$"}, (google.api.field_behavior) = REQUIRED];
   optional int32 git_project_id = 2;
   mars.Config    mars_config    = 3;
   bool           need_git_repo  = 4;
   string         description    = 5 [(validate.rules).string = {max_bytes: 255}];
-  // ai_agent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库。
-  bool           ai_agent       = 6;
 }
 message CreateResponse{
   types.RepoModel item = 1;
 }
 message UpdateRequest{
+  // 7 原为 ai_agent（AI Agent 仓库标记），沙箱下线后移除，编号与名称保留防误复用。
+  reserved 7;
+  reserved "ai_agent";
+
   int32          id             = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
   string         name           = 2 [(validate.rules).string = {min_bytes: 1, pattern: "^[a-zA-Z0-9_-]+$"}, (google.api.field_behavior) = REQUIRED];
   optional int32 git_project_id = 3;
   mars.Config    mars_config    = 4;
   bool           need_git_repo  = 5;
   string         description    = 6 [(validate.rules).string = {max_bytes: 255}];
-  // ai_agent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库；false 清除标记；
-  // 不传（nil）时保持现状——旧客户端不知道该字段，不能因缺省值把标记清掉。
-  optional bool  ai_agent       = 7;
 }
 message UpdateResponse{
   types.RepoModel item = 1;

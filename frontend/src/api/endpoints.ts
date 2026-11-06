@@ -15,14 +15,14 @@ export const API = {
   pictureBackground: '/api/picture/background',
 
   // --- ai（手写 HTTP 端点，不在 openapi schema 内，走裸 fetch） ---
-  /** AI 功能可用性 + 当前用户 agent 项目状态（GET） */
-  aiStatus: '/api/ai/status',
-  /** 启用/唤醒当前用户的 agent 沙箱（POST，幂等） */
-  aiAgentEnable: '/api/ai/agent/enable',
+  /** AI 对话可用性（GET）：{ enabled, model } */
+  aiChatStatus: '/api/ai/chat/status',
+  /** 发起一轮对话（POST，text/event-stream） */
+  aiChat: '/api/ai/chat',
+  /** 提交写工具确认结果并续跑（POST，text/event-stream） */
+  aiChatConfirm: '/api/ai/chat/confirm',
   /** 上报 AI 使用漏斗事件（POST，事件名走服务端白名单） */
   aiUsage: '/api/ai/usage',
-  /** 刷新 agent 沙箱活跃度（POST，AI 弹窗打开期间心跳） */
-  aiActivity: '/api/ai/activity',
 
   // --- admin（后台） ---
   adminBoard: '/api/admin/cluster/board',

@@ -5,7 +5,6 @@ import {
   useState,
   type ChangeEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
@@ -36,8 +35,6 @@ import { shortContainerName } from '@/lib/shortContainerName'
 type StateContainer = components['schemas']['types.StateContainer']
 type NPC = { namespace: string; pod: string; container: string }
 type Pane = { id: string; npc: NPC }
-/** 可裁剪的终端工具按钮：调用方（AI 沙箱）按场景隐藏不需要的入口。 */
-type ShellToolKey = 'addTerminal' | 'upload' | 'download' | 'forceDelete'
 
 const MAX_PANES = 4
 
@@ -58,21 +55,11 @@ export function TabShell({
   projectId,
   projectName,
   resizeAt,
-  initialCommand,
-  aiBindingBar,
-  hiddenShellTools = [],
 }: {
   projectId: number
   projectName: string
   /** 宿主弹窗尺寸变化信号：缩放/最大化/还原时 bump，用于终端 refit（对齐旧版 resizeAt 机制） */
   resizeAt?: number
-  /** 会话建立后自动执行的命令（AI 沙箱传 `mai` 或 `mai '<问题>'`）：每个新终端只执行一次 */
-  initialCommand?: string
-  /** 需要隐藏的终端工具按钮（缺省全部展示）：AI 沙箱按场景裁剪，
-   *  如隐藏新增终端（mai TUI 单会话即可）与下载（沙箱不落文件）。 */
-  hiddenShellTools?: readonly ShellToolKey[]
-  /** AI 绑定条：展示在终端上方，显示当前绑定的空间/项目 */
-  aiBindingBar?: ReactNode
 }) {
   const { t } = useTranslation()
   const { ready, send, subscribe, subscribeProjectPodEvent } = useWebsocket()
@@ -428,15 +415,8 @@ export function TabShell({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
-      {/* AI 绑定条：由 AI 入口注入，普通项目不传。 */}
-      {aiBindingBar && (
-        <div className="rounded-lg border border-primary/30 bg-primary-soft/60 px-2.5 py-2">
-          {aiBindingBar}
-        </div>
-      )}
-
       {/* 容器选择：RadioGroup（与日志页 TabLog 视觉一致）。
-          AI 沙箱没有工具条，资源用量直接放在容器行右侧，与 pod 名同一行。
+          资源用量直接放在容器行右侧，与 pod 名同一行。
           顶部对齐（items-start）而非居中：CPU/内存的标签行在迷你图上方，
           居中对齐会让标签行高出 pod 名约 4px，看起来不在一条水平线上。 */}
       <div className="flex flex-wrap items-start gap-x-4 gap-y-1.5">
@@ -492,130 +472,117 @@ export function TabShell({
       </div>
 
       {/* 单行工具栏（沿用旧版布局）：新增终端（最多 4 个）+ 上传/下载 + 强杀，字体小号，
-          资源用量图表内联在右侧（旧版是按钮 + 图表同一行）。
-          各按钮可按 hiddenShellTools 裁剪：AI 沙箱隐藏新增终端与下载。 */}
+          资源用量图表内联在右侧（旧版是按钮 + 图表同一行）。 */}
       <div className="flex flex-wrap items-center gap-1">
-        {!hiddenShellTools.includes('addTerminal') && (
-          <Button
-            size="xs"
-            variant="outline"
-            disabled={!target || panes.length >= MAX_PANES}
-            onClick={addPane}
-            title={panes.length >= MAX_PANES ? t('project.maxTerminals') : undefined}
-          >
-            <Icon name="plus" className="text-[11px]" />
-            {t('project.addTerminal')}
-          </Button>
-        )}
+        <Button
+          size="xs"
+          variant="outline"
+          disabled={!target || panes.length >= MAX_PANES}
+          onClick={addPane}
+          title={panes.length >= MAX_PANES ? t('project.maxTerminals') : undefined}
+        >
+          <Icon name="plus" className="text-[11px]" />
+          {t('project.addTerminal')}
+        </Button>
 
         {target && (
           <>
-            {!hiddenShellTools.includes('addTerminal') && (
-              <span className="mx-0.5 h-3.5 w-px bg-line" aria-hidden />
-            )}
+            <span className="mx-0.5 h-3.5 w-px bg-line" aria-hidden />
 
-            {!hiddenShellTools.includes('upload') && (
-              <>
-                <input ref={fileInputRef} type="file" className="hidden" onChange={onFileSelected} />
-                <Button
-                  size="xs"
-                  variant="outline"
-                  disabled={uploading}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {uploading ? <Icon name="loader" className="size-3 animate-spin" /> : <Icon name="copy" className="text-[11px]" />}
-                  {t('project.uploadToPod')}
-                </Button>
-              </>
-            )}
+            <input ref={fileInputRef} type="file" className="hidden" onChange={onFileSelected} />
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {uploading ? <Icon name="loader" className="size-3 animate-spin" /> : <Icon name="copy" className="text-[11px]" />}
+              {t('project.uploadToPod')}
+            </Button>
 
             {/* 下载文件：沿用旧版 Popconfirm 方式——点击按钮弹出路径输入，不再把 input 内联到一行 */}
-            {!hiddenShellTools.includes('download') && (
-              <Popover open={dlOpen} onOpenChange={(o) => { if (o) setDlZ(nextZIndex()); setDlOpen(o) }}>
-                <PopoverTrigger asChild>
-                  <Button size="xs" variant="outline" disabled={downloading}>
-                    {downloading ? <Icon name="loader" className="size-3 animate-spin" /> : <Icon name="logs" className="text-[11px]" />}
-                    {t('project.downloadFromPod')}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="start" sideOffset={6} className="w-80 p-3" style={{ zIndex: dlZ }}>
-                  <div className="flex flex-col gap-2">
-                    <div className="text-[12px] font-medium text-ink">{t('project.downloadFromPod')}</div>
-                    <Input
-                      autoFocus
-                      aria-label={t('project.filePathPlaceholder')}
-                      value={dlPath}
-                      onChange={(e) => setDlPath(e.target.value)}
-                      placeholder={t('project.filePathPlaceholder')}
-                      className="h-7 font-mono text-[11px]"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') void onDownload()
-                      }}
-                    />
-                    <div className="flex justify-end gap-1.5">
-                      <Button size="xs" variant="outline" onClick={() => setDlOpen(false)}>
-                        {t('common.cancel')}
-                      </Button>
-                      <Button
-                        size="xs"
-                        variant="default"
-                        disabled={downloading || !dlPath.trim()}
-                        onClick={onDownload}
-                      >
-                        {downloading && <Icon name="loader" className="size-3 animate-spin" />}
-                        {t('project.downloadFromPod')}
-                      </Button>
-                    </div>
+            <Popover open={dlOpen} onOpenChange={(o) => { if (o) setDlZ(nextZIndex()); setDlOpen(o) }}>
+              <PopoverTrigger asChild>
+                <Button size="xs" variant="outline" disabled={downloading}>
+                  {downloading ? <Icon name="loader" className="size-3 animate-spin" /> : <Icon name="logs" className="text-[11px]" />}
+                  {t('project.downloadFromPod')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" sideOffset={6} className="w-80 p-3" style={{ zIndex: dlZ }}>
+                <div className="flex flex-col gap-2">
+                  <div className="text-[12px] font-medium text-ink">{t('project.downloadFromPod')}</div>
+                  <Input
+                    autoFocus
+                    aria-label={t('project.filePathPlaceholder')}
+                    value={dlPath}
+                    onChange={(e) => setDlPath(e.target.value)}
+                    placeholder={t('project.filePathPlaceholder')}
+                    className="h-7 font-mono text-[11px]"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') void onDownload()
+                    }}
+                  />
+                  <div className="flex justify-end gap-1.5">
+                    <Button size="xs" variant="outline" onClick={() => setDlOpen(false)}>
+                      {t('common.cancel')}
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="default"
+                      disabled={downloading || !dlPath.trim()}
+                      onClick={onDownload}
+                    >
+                      {downloading && <Icon name="loader" className="size-3 animate-spin" />}
+                      {t('project.downloadFromPod')}
+                    </Button>
                   </div>
-                </PopoverContent>
-              </Popover>
-            )}
+                </div>
+              </PopoverContent>
+            </Popover>
 
             {/* 强杀容器：沿用下载弹层同款 Popover 小确认框（对齐旧版 Popconfirm），不再用全屏确认框 */}
-            {!hiddenShellTools.includes('forceDelete') && (
-              <Popover
-                open={confirmOpen}
-                onOpenChange={(o) => {
-                  if (o) setConfirmZ(nextZIndex())
-                  setConfirmOpen(o)
-                }}
-              >
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1 rounded-md border border-err/40 px-2 py-0.5 text-[11px] text-err transition-colors hover:bg-err-soft"
-                  >
-                    <Icon name="power" className="text-[11px]" />
-                    {t('project.forceDeletePod')}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="start" sideOffset={6} className="w-80 p-3" style={{ zIndex: confirmZ }}>
-                  <div className="flex flex-col gap-2">
-                    <div className="text-[12px] font-medium text-ink">{t('project.forceDeleteTitle')}</div>
-                    <div className="text-[11px] leading-snug text-mute">
-                      {t('project.forceDeleteDesc', { pod: target.pod })}
-                    </div>
-                    <div className="flex justify-end gap-1.5">
-                      <Button size="xs" variant="outline" onClick={() => setConfirmOpen(false)}>
-                        {t('common.cancel')}
-                      </Button>
-                      <Button
-                        size="xs"
-                        variant="destructive"
-                        disabled={forceDeleting}
-                        onClick={() => {
-                          void forceDelete()
-                          setConfirmOpen(false)
-                        }}
-                      >
-                        {forceDeleting && <Icon name="loader" className="size-3 animate-spin" />}
-                        {t('project.forceDeletePod')}
-                      </Button>
-                    </div>
+            <Popover
+              open={confirmOpen}
+              onOpenChange={(o) => {
+                if (o) setConfirmZ(nextZIndex())
+                setConfirmOpen(o)
+              }}
+            >
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-md border border-err/40 px-2 py-0.5 text-[11px] text-err transition-colors hover:bg-err-soft"
+                >
+                  <Icon name="power" className="text-[11px]" />
+                  {t('project.forceDeletePod')}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" sideOffset={6} className="w-80 p-3" style={{ zIndex: confirmZ }}>
+                <div className="flex flex-col gap-2">
+                  <div className="text-[12px] font-medium text-ink">{t('project.forceDeleteTitle')}</div>
+                  <div className="text-[11px] leading-snug text-mute">
+                    {t('project.forceDeleteDesc', { pod: target.pod })}
                   </div>
-                </PopoverContent>
-              </Popover>
-            )}
+                  <div className="flex justify-end gap-1.5">
+                    <Button size="xs" variant="outline" onClick={() => setConfirmOpen(false)}>
+                      {t('common.cancel')}
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="destructive"
+                      disabled={forceDeleting}
+                      onClick={() => {
+                        void forceDelete()
+                        setConfirmOpen(false)
+                      }}
+                    >
+                      {forceDeleting && <Icon name="loader" className="size-3 animate-spin" />}
+                      {t('project.forceDeletePod')}
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </>
         )}
 
@@ -649,7 +616,6 @@ export function TabShell({
                 send={send}
                 subscribe={subscribe}
                 resizeAt={`${resizeRev}:${resizeAt ?? 0}`}
-                initialCommand={initialCommand}
                 onClose={() => removePane(p.id)}
               />
             </div>
@@ -696,13 +662,11 @@ function ShellTerminal({
   send,
   subscribe,
   resizeAt,
-  initialCommand,
   onClose,
 }: NPC & {
   send: (bytes: Uint8Array) => void
   subscribe: (slug: string, handler: FrameHandler) => () => void
   resizeAt: number | string
-  initialCommand?: string
   onClose: () => void
 }) {
   const { t } = useTranslation()
@@ -820,17 +784,6 @@ function ShellTerminal({
         }).finish(),
       )
     }
-    // 自动执行初始命令（AI 沙箱的 mai）：等首个「常规输出」帧再下发——那说明 shell
-    // 已经启动并接上 stdout，避免在 bash 回退到 sh 时第一笔输入落空。关闭帧也带
-    // op=stdout，调用方必须按 meta.type 排除（见订阅处），否则会提前下发并丢输入。
-    // 每个会话只发一次；重连/切容器/改绑会重建会话（新 sessionId），自然重新执行。
-    let initialCommandSent = false
-    const maybeSendInitialCommand = () => {
-      if (initialCommandSent || !initialCommand) return
-      initialCommandSent = true
-      sendStdin(`${initialCommand}\r`)
-    }
-
     // 探测 modifyOtherKeys 等级（CSI > 4 ; N m）：xterm.js 不实现该协议，
     // 靠应用输出里声明的等级桥接带修饰键的 Enter。只保留末尾一小段做跨帧拼接，
     // 取最后一次匹配作为当前等级；xterm.js 会把未知 CSI 丢弃，不影响渲染。
@@ -904,10 +857,6 @@ function ShellTerminal({
       if (tm.op === 'stdout' && tm.data) {
         trackModifyOtherKeys(tm.data)
         enqueueOutput(tm.data)
-        // 只有常规输出帧才算 shell 就绪：关闭帧同样携带 op=stdout（内容是关闭原因），
-        // 不能拿它触发初始命令——否则会在新 pty 尚未登记时下发输入并被服务端丢弃，
-        // 且 initialCommandSent 已置位，本次会话再也不会重发（表现为停在 bash 提示符）。
-        if (meta.type === websocket.Type.HandleExecShellMsg) maybeSendInitialCommand()
       }
       if (tm.op === 'toast' && tm.data) toast.error(decoder.decode(tm.data))
     })
@@ -995,7 +944,7 @@ function ShellTerminal({
       fitRef.current = null
       term.dispose()
     }
-  }, [namespace, pod, container, initialCommand, send, subscribe, toast, t])
+  }, [namespace, pod, container, send, subscribe, toast, t])
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-line bg-black/85">

@@ -333,7 +333,7 @@ type K8sRepo interface {
 	ListReplicaSets(namespace string) ([]*appsv1.ReplicaSet, error)
 	// GetDeployment 读取 Deployment 实时对象（部署后状态判定用）。
 	GetDeployment(namespace, name string) (*appsv1.Deployment, error)
-	// ScaleDeployment 把 Deployment 的副本数调整为 replicas（agent 沙箱空闲缩容/唤醒用）。
+	// ScaleDeployment 把 Deployment 的副本数调整为 replicas。
 	ScaleDeployment(ctx context.Context, namespace, name string, replicas int32) error
 	// GetStatefulSet 读取 StatefulSet 实时对象（部署后状态判定用）。
 	GetStatefulSet(namespace, name string) (*appsv1.StatefulSet, error)

@@ -1,6 +1,5 @@
 // Package mcp 把 mars 的「容器排查」能力以标准 MCP（Model Context Protocol）
-// 暴露出去，供 mars 沙箱侧的 opencode agent 以及任意第三方 MCP 客户端经 mars
-// 网关调用。
+// 暴露出去，供任意第三方 MCP 客户端经 mars 网关调用。
 //
 // 传输：MCP Streamable HTTP（MCP 规范 2025-06-18 起的标准远程传输），挂在 /mcp。
 // 该端点是「标准」MCP：任何支持 Streamable HTTP 的客户端（opencode、Claude Code、
@@ -58,6 +57,7 @@ import (
 	projectpb "github.com/duc-cnzj/mars/api/v6/proto/project"
 	repopb "github.com/duc-cnzj/mars/api/v6/proto/repo"
 	"github.com/duc-cnzj/mars/v6/internal/biz"
+	"github.com/duc-cnzj/mars/v6/internal/errs"
 	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/duc-cnzj/mars/v6/internal/server/middlewares"
 	marsVersion "github.com/duc-cnzj/mars/v6/internal/version"
@@ -65,13 +65,12 @@ import (
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// Path 是 MCP 端点在 mars 网关上的挂载路径。沙箱侧 mars-agent 生成的 opencode
-// 配置按 /mcp 拼接 MCP 地址（见 agent/config.go），改动此处需同步该约定。
+// Path 是 MCP 端点在 mars 网关上的挂载路径。外部 MCP 客户端与服务端 AI 对话
+// （aichat）共用该地址，改动此处需同步客户端配置约定。
 const Path = "/mcp"
 
 // serverInstructions 是 MCP initialize 响应里的 instructions 字段：客户端（含其
 // 背后的 LLM）在建立会话时即可看到，用来交代 mars 的资源模型、工具用法与安全约定。
-// 这是「进入容器后给模型的提示词」的服务端一半，另一半由沙箱镜像的 AGENTS.md 承载。
 //
 // 分层约定：本段只写**跨工具**的信息（资源模型、返回值通用约定、推荐排查路径、配置模型
 // 的边界），单个工具的入参/出参/语义一律写在 tools.go 的 Tool.Description 里，两处不复述
@@ -100,8 +99,8 @@ const serverInstructions = `你是 mars 平台（Kubernetes 应用管理平台�
   list_operation_events、get_container_logs、get_pod_metrics、list_project_changelogs、
   list_git_branches、list_git_commits、get_commit_detail、get_pipeline_status。
 - 写操作（客户端会弹人工确认）：apply_project、toggle_hibernate、restart_pod、exec_command。
-- 身份确认：get_current_user 返回本次调用绑定的 mars 身份。AI 沙箱令牌锚定的是 agent
-  项目创建者——管理员进入别人的沙箱时，这里也只会看到创建者，跨权限操作一律被拒绝。
+- 身份确认：get_current_user 返回本次调用绑定的 mars 身份，即请求所用 token 的持有人；
+  跨权限访问一律被拒绝。
 
 返回值通用约定（不理解这四条最容易误读）：
 1. 所有出参都是标准 JSON（snake_case），且服务端模型带 omitempty——**零值字段直接缺失**：
@@ -173,7 +172,7 @@ const serverInstructions = `你是 mars 平台（Kubernetes 应用管理平台�
 const adminToolInstructions = `
 
 管理员专属工具（仅本连接可见；普通用户的 tools/list 不会出现下面这三个工具）：
-- list_repos（只读）：列出仓库（部署模板来源），支持按名称模糊、启用状态、AI Agent 标记过滤；
+- list_repos（只读）：列出仓库（部署模板来源），支持按名称模糊、启用状态过滤；
   items 只有仓库概要，不含 mars_config。用它定位 repo_id。
 - get_repo_custom_fields（只读）：读取仓库配置——自定义字段定义 repo.mars_config.elements（项目「自定义参数」的
   唯一权威清单，path 即 apply_project 的 extra_values 键，type 决定取值约束），以及 values.yaml 模板、分支白名单、
@@ -181,8 +180,7 @@ const adminToolInstructions = `
 - update_repo_custom_fields（写，客户端弹确认）：增量新增/整条覆盖/删除仓库级自定义字段；只改 elements，
   values.yaml/branches/配置片段/分区/休眠配置原样保留。合法性与失败语义见工具 description。
 - 这三个工具作用于仓库级配置，与项目权限边界无关，入口即过 RequireAdmin；普通用户需要新增字段时
-  应引导其联系仓库管理员。注意 AI 沙箱令牌锚定项目创建者：创建者非管理员时，沙箱内调不动它们，
-  需用管理员本人 token 直连 /mcp。`
+  应引导其联系仓库管理员，需用管理员本人 token 直连 /mcp。`
 
 // serverInstructionsFor 按连接身份返回 instructions：普通用户只拿到通用排查说明，
 // 管理员额外追加仓库管理能力（列仓库 + 自定义字段读写）——与 tools/list 的裁剪口径一致。
@@ -191,6 +189,13 @@ func serverInstructionsFor(admin bool) string {
 		return serverInstructions + adminToolInstructions
 	}
 	return serverInstructions
+}
+
+// InstructionsFor 导出按身份裁剪后的 instructions 文本。
+// 服务端对话（internal/services/aichat）与 /mcp 入口共用同一份口径：模型在两条链路上
+// 看到的资源模型、工具用法与安全约定必须一致，否则同一句话会得到两种行为。
+func InstructionsFor(admin bool) string {
+	return serverInstructionsFor(admin)
 }
 
 // Deps 收口 MCP 服务端的构造依赖，由 wire 按字段注入。不引入数据层。
@@ -206,29 +211,32 @@ func serverInstructionsFor(admin bool) string {
 // 接口）、list_namespace_events（EventSvc.List 是操作审计日志，不是 k8s 事件）、
 // exec_command（services 的 ExecOnce 是 streaming RPC，MCP 侧构造不出其 server）。
 type Deps struct {
-	ProjectBiz    biz.ProjectBiz
-	ContainerBiz  biz.ContainerBiz
-	K8sBiz        biz.K8sBiz
-	AccessBiz     biz.AccessBiz
-	AuthBiz       biz.AuthBiz
-	AgentActivity biz.AgentActivity
-	NamespaceSvc  namespacepb.NamespaceServer
-	ProjectSvc    projectpb.ProjectServer
-	ContainerSvc  containerpb.ContainerServer
-	MetricsSvc    metricspb.MetricsServer
-	ChangelogSvc  changelogpb.ChangelogServer
-	GitSvc        gitpb.GitServer
-	RepoSvc       repopb.RepoServer
-	EventSvc      eventpb.EventServer
-	HibernateSvc  hibernatepb.HibernateServer
-	Logger        mlog.Logger
+	ProjectBiz   biz.ProjectBiz
+	ContainerBiz biz.ContainerBiz
+	K8sBiz       biz.K8sBiz
+	AccessBiz    biz.AccessBiz
+	AuthBiz      biz.AuthBiz
+	NamespaceSvc namespacepb.NamespaceServer
+	ProjectSvc   projectpb.ProjectServer
+	ContainerSvc containerpb.ContainerServer
+	MetricsSvc   metricspb.MetricsServer
+	ChangelogSvc changelogpb.ChangelogServer
+	GitSvc       gitpb.GitServer
+	RepoSvc      repopb.RepoServer
+	EventSvc     eventpb.EventServer
+	HibernateSvc hibernatepb.HibernateServer
+	Logger       mlog.Logger
 }
 
 // Server 是 MCP 服务端门面：持有已套好鉴权中间件的 http.Handler，注册到 mars
-// 网关的 /mcp 路径上。第三方 MCP 客户端与沙箱 agent 走的是同一个入口。
+// 网关的 /mcp 路径上，第三方 MCP 客户端与服务端对话共用同一个入口。
+//
+// adminSrv/userSrv 同时供进程内对话（OpenSession）复用：HTTP 入口按请求身份挑实例，
+// 进程内会话按 ctx 身份挑实例，两条链路的工具裁剪口径因此天然一致。
 type Server struct {
-	handler http.Handler
-	logger  mlog.Logger
+	handler  http.Handler
+	adminSrv *sdk.Server
+	userSrv  *sdk.Server
 }
 
 // NewServer 构造标准 MCP 服务端：按权限各建一个工具集实例 → 用 Streamable HTTP
@@ -281,16 +289,52 @@ func NewServer(deps Deps) *Server {
 		return biz.Authenticate(ctx, deps.AuthBiz, token)
 	}, logger)
 
-	// 套在鉴权之内：每个已鉴权的 MCP 请求都刷新沙箱活跃度，工具调用期间
-	// 沙箱不会被空闲关闭任务缩容。刷新失败只记日志，不阻断 MCP 请求。
-	withActivity := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if user, err := biz.GetUser(r.Context()); err == nil {
-			biz.TouchAgentActivity(r.Context(), deps.AgentActivity, logger, user.Email)
-		}
-		streamable.ServeHTTP(w, r)
-	})
+	return &Server{
+		handler:  auth(streamable),
+		adminSrv: adminSrv,
+		userSrv:  userSrv,
+	}
+}
 
-	return &Server{handler: auth(withActivity), logger: logger}
+// OpenSession 以 ctx 中的用户身份建立一条**进程内** MCP 会话，供服务端对话
+// （internal/services/aichat）直接调用工具，不经过 HTTP、不需要二次鉴权。
+//
+// 身份来源：ctx 必须已由 biz.Authenticate / biz.SetUser 注入当前用户。go-sdk 的
+// Server.Connect 会把传入 ctx 作为 jsonrpc2 连接的基座上下文，工具 handler 里的
+// biz.GetUser(ctx) 因此能拿到该用户——这与 HTTP 链路上 LoginHTTP 注入用户后的效果
+// 完全一致，权限判定仍由各工具内的 Require* 自行完成。
+//
+// 工具集按身份裁剪：管理员连接 adminSrv（含仓库管理工具），其余连接 userSrv。
+// 取不到用户时保守回退最小权限实例（调用方 aichat 已在入口完成鉴权，这是防御分支）。
+//
+// 返回的 cleanup 负责关闭 client/server 两条会话，调用方应在整轮对话结束时 defer。
+func (s *Server) OpenSession(ctx context.Context) (*sdk.ClientSession, func(), error) {
+	srv := s.userSrv
+	if user, err := biz.GetUser(ctx); err == nil && user.IsAdmin() {
+		srv = s.adminSrv
+	}
+
+	serverTransport, clientTransport := sdk.NewInMemoryTransports()
+	// 服务端建连恒成功：InMemoryTransport.Connect 只是包装 net.Pipe 的连接，没有失败源
+	// （go-sdk v1.3.1 transport.go:connect 唯一的错误出口就是它）。真正的握手失败只会
+	// 发生在下面客户端的 initialize，因此这里不设不可达的错误分支。
+	serverSession, _ := srv.Connect(ctx, serverTransport, nil)
+
+	client := sdk.NewClient(
+		&sdk.Implementation{Name: "mars-chat", Version: marsVersion.GetVersion().Version},
+		nil,
+	)
+	clientSession, err := client.Connect(ctx, clientTransport, nil)
+	if err != nil {
+		_ = serverSession.Close()
+		return nil, nil, errs.Wrap(err, "连接进程内 MCP 客户端")
+	}
+
+	cleanup := func() {
+		_ = clientSession.Close()
+		_ = serverSession.Close()
+	}
+	return clientSession, cleanup, nil
 }
 
 // Register 把 MCP 端点挂到 mars 网关路由上。必须在前端 SPA 兜底路由之前调用，

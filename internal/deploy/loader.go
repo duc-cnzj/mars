@@ -2,7 +2,6 @@ package deploy
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -14,7 +13,6 @@ import (
 	"strings"
 	"sync"
 	"text/template"
-	"time"
 
 	"github.com/duc-cnzj/mars/api/v6/proto/mars"
 	websocket_pb "github.com/duc-cnzj/mars/api/v6/proto/websocket"
@@ -68,11 +66,10 @@ type LoadContext struct {
 	ImagePullSecrets []string
 
 	// 依赖：传输层/插件层端口。
-	Messager       DeployMsger
-	PluginMgr      app.PluginManager
-	Helmer         biz.HelmerRepo
-	Logger         mlog.Logger
-	AccessTokenBiz biz.AccessTokenBiz
+	Messager  DeployMsger
+	PluginMgr app.PluginManager
+	Helmer    biz.HelmerRepo
+	Logger    mlog.Logger
 
 	// 中间产物：由加载链依次写入，链结束后由 jobRunner 收口回自身字段。
 	Chart            *chart.Chart
@@ -506,31 +503,10 @@ const (
 	VarTlsSecret              = "TlsSecret"
 	VarNamespace              = "Namespace"
 	VarLongCommit             = "LongCommit"
-	VarUserToken              = "UserToken"
 )
 
-// UserTokenTTL 是部署时签发给部署用户的临时令牌有效期。导出供 agent 沙箱
-// 唤醒刷新令牌时复用同一时长。
-//
-// 注意：令牌签发后不续期。AI 沙箱持续运行超过 12h 会因令牌过期而无法回连 mars；
-// 默认空闲 30m 会先缩容、唤醒时轮换令牌，只有空闲关闭被禁用或调大到 12h 以上时
-// 才会触发该边界。
-const UserTokenTTL = 12 * time.Hour
-
-// 系统变量与用户令牌占位符的匹配规则。
-var (
-	// tagRegex 匹配 <.Branch> / <.Commit> / <.Pipeline> 等系统变量占位符。
-	tagRegex = regexp.MustCompile(leftDelim + `\s*(\.Branch|\.Commit|\.Pipeline)\s*` + rightDelim)
-	// userTokenTagRegex 匹配 <.UserToken> 占位符（容忍内部空白）。
-	userTokenTagRegex = regexp.MustCompile(leftDelim + `\s*\.` + VarUserToken + `\s*` + rightDelim)
-)
-
-// HasUserTokenTemplate 判断 values.yaml 是否引用了 <.UserToken>。上层（AI Agent
-// 沙箱的启用入口）用它做前置校验：未被引用时部署不会签发令牌，沙箱起来后访问
-// mars 会全部 401——这是没有报错的软失败，必须在使用前拦住。
-func HasUserTokenTemplate(valuesYaml string) bool {
-	return userTokenTagRegex.MatchString(valuesYaml)
-}
+// tagRegex 匹配 <.Branch> / <.Commit> / <.Pipeline> 等系统变量占位符。
+var tagRegex = regexp.MustCompile(leftDelim + `\s*(\.Branch|\.Commit|\.Pipeline)\s*` + rightDelim)
 
 // SystemVariableLoader 系统内置变量替换， values.yaml 中的 <.var> 变量
 // 例如：<.Branch> <.Commit> <.Pipeline> <.Host1> <.TlsSecret1>
@@ -557,11 +533,6 @@ func (v *SystemVariableLoader) Load(ctx *LoadContext) error {
 
 	if v.values == nil {
 		v.values = vars{}
-	}
-
-	// 部署用户临时令牌：每次部署重新签发，并撤销该项目上一份令牌。
-	if err := v.injectUserToken(ctx); err != nil {
-		return err
 	}
 
 	type pullSecrets struct {
@@ -639,57 +610,6 @@ func (v *SystemVariableLoader) Load(ctx *LoadContext) error {
 	ctx.Vars = v.values
 
 	return nil
-}
-
-// UserTokenUsage 返回项目部署临时令牌的 usage 标记：按项目维度轮换，仅保留最新
-// 一份有效。导出供 agent 沙箱唤醒刷新令牌时复用同一轮换维度。
-func UserTokenUsage(projectID int) string {
-	return fmt.Sprintf("deploy-token:%d", projectID)
-}
-
-// injectUserToken 为本次部署签发 12h 临时 access token，写入 <.UserToken>。
-// dry-run 与无用户上下文的部署不签发（变量渲染为空串）。
-// 旧令牌不在加载阶段撤销：必须等新 release 安装成功后再撤销（见 jobRunner.Run），
-// 否则安装失败/回滚时线上旧实例的令牌会提前失效。
-func (v *SystemVariableLoader) injectUserToken(ctx *LoadContext) error {
-	v.Add(VarUserToken, "")
-	if !ctx.Input.IsNotDryRun() || ctx.Input.User == nil {
-		return nil
-	}
-	// values.yaml 未引用该变量时不签发，避免为用不到令牌的项目持续产生令牌记录。
-	if !HasUserTokenTemplate(ctx.Config.ValuesYaml) {
-		return nil
-	}
-
-	token, err := ctx.AccessTokenBiz.Grant(context.TODO(), &biz.GrantAccessTokenInput{
-		ExpireSeconds: int32(UserTokenTTL / time.Second),
-		Usage:         UserTokenUsage(ctx.Project.ID),
-		User:          tokenUser(ctx),
-	})
-	if err != nil {
-		return err
-	}
-
-	v.Add(VarUserToken, token.Token)
-	return nil
-}
-
-// tokenUser 返回部署令牌应绑定的身份：AI Agent 沙箱项目恒为项目创建者，其余项目
-// 为本次部署发起人。
-//
-// 沙箱里的 agent 用这份令牌回连 mars（配置/MCP/LLM 代理），它代表的是「沙箱归谁」，
-// 不是「谁点了这次部署」。管理员进入别人的 agent 项目重新部署时，若沿用发起人身份，
-// 沙箱就会以管理员令牌运行——越权面被放大。创建者本人触发时沿用其完整 UserInfo
-// （保留角色与展示名）；跨用户触发时只带创建者邮箱，角色按最小权限留空。
-//
-// 调用前置条件由 injectUserToken 保证：User 为 nil 时已提前返回，Project 为 nil 时
-// 取 Usage 会先 panic，故此处无需再判空。
-func tokenUser(ctx *LoadContext) *biz.UserInfo {
-	requester := ctx.Input.User
-	if requester.Email != ctx.Project.Creator && biz.IsAgentProjectOf(ctx.Project.Name, ctx.Project.Creator) {
-		return &biz.UserInfo{Email: ctx.Project.Creator}
-	}
-	return requester
 }
 
 // MergeValuesLoader 合并系统变量/用户配置/后台元素与镜像拉取密钥为一份 values.yaml。

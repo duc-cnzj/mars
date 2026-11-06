@@ -1445,7 +1445,7 @@ func (repo *k8sRepo) GetDeployment(namespace, name string) (*appsv1.Deployment, 
 }
 
 // ScaleDeployment 经 scale 子资源调整 Deployment 副本数：先读 scale 再写回，
-// 避免整对象更新携带过期 resourceVersion 导致冲突。agent 沙箱空闲缩容与唤醒共用。
+// 避免整对象更新携带过期 resourceVersion 导致冲突。
 func (repo *k8sRepo) ScaleDeployment(ctx context.Context, namespace, name string, replicas int32) (err error) {
 	ctx, span := tracer.Start(ctx, "k8sRepo/ScaleDeployment")
 	defer func() { endSpan(span, err) }()

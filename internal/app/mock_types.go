@@ -1160,16 +1160,16 @@ func (mr *MockHttpHandlerMockRecorder) Info(writer, request any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockHttpHandler)(nil).Info), writer, request)
 }
 
-// RegisterAIConfigRoute mocks base method.
-func (m *MockHttpHandler) RegisterAIConfigRoute(arg0 *mux.Router) {
+// RegisterAIRoute mocks base method.
+func (m *MockHttpHandler) RegisterAIRoute(arg0 *mux.Router) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RegisterAIConfigRoute", arg0)
+	m.ctrl.Call(m, "RegisterAIRoute", arg0)
 }
 
-// RegisterAIConfigRoute indicates an expected call of RegisterAIConfigRoute.
-func (mr *MockHttpHandlerMockRecorder) RegisterAIConfigRoute(arg0 any) *gomock.Call {
+// RegisterAIRoute indicates an expected call of RegisterAIRoute.
+func (mr *MockHttpHandlerMockRecorder) RegisterAIRoute(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterAIConfigRoute", reflect.TypeOf((*MockHttpHandler)(nil).RegisterAIConfigRoute), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterAIRoute", reflect.TypeOf((*MockHttpHandler)(nil).RegisterAIRoute), arg0)
 }
 
 // RegisterFileRoute mocks base method.
@@ -1182,18 +1182,6 @@ func (m *MockHttpHandler) RegisterFileRoute(arg0 *runtime.ServeMux) {
 func (mr *MockHttpHandlerMockRecorder) RegisterFileRoute(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterFileRoute", reflect.TypeOf((*MockHttpHandler)(nil).RegisterFileRoute), arg0)
-}
-
-// RegisterLLMProxyRoute mocks base method.
-func (m *MockHttpHandler) RegisterLLMProxyRoute(arg0 *mux.Router) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RegisterLLMProxyRoute", arg0)
-}
-
-// RegisterLLMProxyRoute indicates an expected call of RegisterLLMProxyRoute.
-func (mr *MockHttpHandlerMockRecorder) RegisterLLMProxyRoute(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterLLMProxyRoute", reflect.TypeOf((*MockHttpHandler)(nil).RegisterLLMProxyRoute), arg0)
 }
 
 // RegisterMCPRoute mocks base method.

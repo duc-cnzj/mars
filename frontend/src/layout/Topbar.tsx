@@ -22,7 +22,7 @@ export function Topbar({
 }: {
   theme: ThemeId
   onSelectTheme: (t: ThemeId) => void
-  /** AI 助手入口：唤醒当前用户的 agent 沙箱并打开其项目详情弹窗 */
+  /** AI 助手入口：打开服务端对话面板 */
   onOpenAI: () => void
   /** AI 功能是否启用：明确未启用时隐藏入口，避免点击后才提示配置缺失 */
   aiEnabled?: boolean

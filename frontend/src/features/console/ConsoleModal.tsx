@@ -4,6 +4,7 @@ import { selectAllOnDoubleClick } from '@/lib/selection'
 import { useDraggableDialog } from '@/hooks/useDraggableDialog'
 import { useWheelRedirect } from '@/hooks/useWheelRedirect'
 import { Icon } from '@/components/Icons'
+import { DialogDragFrame } from '@/components/DialogDragFrame'
 import {
   Dialog,
   DialogContent,
@@ -100,23 +101,8 @@ export function ConsoleModal({ open, onClose }: { open: boolean; onClose: () => 
           {tab === 'shell' ? <CommandPane /> : <LogPane />}
         </div>
 
-        {/* 四边交互分层：逐字复制 ProjectDetailModal 的边条 / 缩放把手（手势行为必须一致） */}
-        <div aria-hidden title={t('project.dragTitle')} {...dnd.dragHandleProps} className="pointer-events-auto absolute inset-x-0 top-0 h-6 cursor-move" />
-        <div aria-hidden title={t('project.dragTitle')} {...dnd.dragHandleProps} className="pointer-events-auto absolute inset-x-0 bottom-0 h-6 cursor-move" />
-        <div aria-hidden title={t('project.dragTitle')} {...dnd.dragHandleProps} className="pointer-events-auto absolute inset-y-0 left-0 w-6 cursor-move" />
-        <div aria-hidden title={t('project.dragTitle')} {...dnd.dragHandleProps} className="pointer-events-auto absolute inset-y-0 right-0 w-6 cursor-move" />
-        {!dnd.isMaximized && (
-          <>
-            <div aria-hidden title={t('project.resizeEdge')} {...dnd.getResizeHandleProps('n')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute inset-x-0 top-0 z-10 h-1.5 cursor-ns-resize" />
-            <div aria-hidden title={t('project.resizeEdge')} {...dnd.getResizeHandleProps('s')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute inset-x-0 bottom-0 z-10 h-1.5 cursor-ns-resize" />
-            <div aria-hidden title={t('project.resizeEdge')} {...dnd.getResizeHandleProps('w')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute inset-y-0 left-0 z-10 w-1.5 cursor-ew-resize" />
-            <div aria-hidden title={t('project.resizeEdge')} {...dnd.getResizeHandleProps('e')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute inset-y-0 right-0 z-10 w-1.5 cursor-ew-resize" />
-            <div aria-hidden title={t('project.resizeCorner')} {...dnd.getResizeHandleProps('nw')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute top-0 left-0 z-10 size-4 cursor-nwse-resize" />
-            <div aria-hidden title={t('project.resizeCorner')} {...dnd.getResizeHandleProps('ne')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute top-0 right-0 z-10 size-4 cursor-nesw-resize" />
-            <div aria-hidden title={t('project.resizeCorner')} {...dnd.getResizeHandleProps('sw')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute bottom-0 left-0 z-10 size-4 cursor-nesw-resize" />
-            <div aria-hidden title={t('project.resizeCorner')} {...dnd.getResizeHandleProps('se')} onDoubleClick={dnd.dragHandleProps.onDoubleClick} className="pointer-events-auto absolute bottom-0 right-0 z-10 size-4 cursor-nwse-resize" />
-          </>
-        )}
+        {/* 四边拖拽移动 + 八向缩放：与项目详情/新建项目/AI 对话共用同一外框（手势行为必须一致） */}
+        <DialogDragFrame dnd={dnd} />
       </DialogContent>
     </Dialog>
   )

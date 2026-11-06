@@ -94,66 +94,12 @@ func TestApplyProject_PermissionDenied(t *testing.T) {
 	defer ctrl.Finish()
 	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
 
-	// 私有命名空间 + 非成员非 admin 用户 → 项目级门卫先按项目名反查：
-	// 项目不存在（非当前用户的 agent 沙箱）→ PermissionDenied。
+	// 私有命名空间 + 非成员非 admin 用户 → 命名空间门卫直接拒绝，不触达项目查询。
 	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(privNs(), nil)
-	proj.EXPECT().FindByName(gomock.Any(), "app", 1).Return(
-		nil, errs.WrapNotFound(errors.New("record not found"), "find project by name"))
 
 	job, err := ApplyProject(context.Background(), applyDepsOf(nsRepo, repo, git, proj, jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{JobInput: baseJobInput()})
 	assert.Nil(t, job)
 	assert.ErrorIs(t, err, errs.ErrorPermissionDenied)
-}
-
-// TestApplyProject_OwnAgentProjectAllowed 覆盖部署层的 AI 自助例外：私有 mars-agent
-// 空间里，普通用户部署「项目名 = 自己邮箱派生名」的项目时项目级门卫放行——否则
-// services 层放行、部署层再拒，MCP apply_project 仍会 403。后续编排照常执行。
-func TestApplyProject_OwnAgentProjectAllowed(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	nsRepo, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
-	job := NewMockJob(ctrl)
-
-	agentNS := &biz.Namespace{ID: 1, Name: biz.AgentNamespace, Private: true, CreatorEmail: "owner@mars.local"}
-	projectName := biz.AgentProjectName("tester@mars.local")
-	nsRepo.EXPECT().Show(gomock.Any(), 1).Return(agentNS, nil)
-	proj.EXPECT().FindByName(gomock.Any(), projectName, 1).Return(
-		&biz.Project{ID: 9, Name: projectName, NamespaceID: 1}, nil)
-	nsRepo.EXPECT().FindByName(gomock.Any(), biz.AgentNamespace).Return(agentNS, nil)
-
-	repo.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2, Name: "app", NeedGitRepo: false}, nil)
-	jobMgr.EXPECT().NewJob(gomock.Any()).Return(job)
-	expectInstallChain(job, nil)
-
-	input := baseJobInput()
-	input.Name = projectName
-
-	got, err := ApplyProject(context.Background(), applyDepsOf(nsRepo, repo, git, proj, jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{JobInput: input})
-	assert.NoError(t, err)
-	assert.Same(t, job, got)
-}
-
-// TestApplyProject_TrustedNamespaceSkipsAccessCheck 覆盖平台内部受信部署：
-// 携带 WithTrustedNamespaceAccess 标记时跳过命名空间访问校验（私有空间也可部署），
-// 后续编排照常执行。标记只能由 deploy 包构造，杜绝传输层伪造越权。
-func TestApplyProject_TrustedNamespaceSkipsAccessCheck(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	// 私有空间故意不设 Show 预期：一旦仍走 AccessBiz 就会因未预期调用而失败。
-	_, repo, git, proj, jobMgr, _ := applyTestKit(t, ctrl)
-	job := NewMockJob(ctrl)
-
-	repo.EXPECT().Get(gomock.Any(), 2).Return(&biz.Repo{ID: 2, Name: "app", NeedGitRepo: false}, nil)
-	jobMgr.EXPECT().NewJob(gomock.Any()).Return(job)
-	expectInstallChain(job, nil)
-
-	ctx := WithTrustedNamespaceAccess(context.Background())
-	assert.True(t, hasTrustedNamespaceAccess(ctx))
-	assert.False(t, hasTrustedNamespaceAccess(context.Background()))
-
-	got, err := ApplyProject(ctx, applyDepsOf(biz.NewMockNamespaceBiz(ctrl), repo, git, proj, jobMgr, NewMockDeployMsger(ctrl)), &ApplyProjectInput{JobInput: baseJobInput()})
-	assert.NoError(t, err)
-	assert.Same(t, job, got)
 }
 
 func TestApplyProject_RepoGetError(t *testing.T) {

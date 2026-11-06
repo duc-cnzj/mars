@@ -1744,21 +1744,6 @@ func (mr *MockRepoRepoMockRecorder) Get(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepoRepo)(nil).Get), ctx, id)
 }
 
-// GetAIAgent mocks base method.
-func (m *MockRepoRepo) GetAIAgent(ctx context.Context) (*biz.Repo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAIAgent", ctx)
-	ret0, _ := ret[0].(*biz.Repo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAIAgent indicates an expected call of GetAIAgent.
-func (mr *MockRepoRepoMockRecorder) GetAIAgent(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAIAgent", reflect.TypeOf((*MockRepoRepo)(nil).GetAIAgent), ctx)
-}
-
 // GetByName mocks base method.
 func (m *MockRepoRepo) GetByName(ctx context.Context, name string) (*biz.Repo, error) {
 	m.ctrl.T.Helper()

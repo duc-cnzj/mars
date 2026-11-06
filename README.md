@@ -37,7 +37,7 @@ As DevOps takes hold, software development now demands not only efficiency but a
 - High availability with elastic scaling.
 - Full CLI support.
 - MCP (Model Context Protocol) endpoint `/mcp` over standard Streamable HTTP, usable from Claude Code / opencode / Cursor for container troubleshooting and deployment config — see [doc/mcp.md](doc/mcp.md).
-- Built-in AI Agent sandbox assistant: spins up a per-user sandbox (opencode + `mai`) that troubleshoots containers over MCP and chats through the LLM proxy, scaling to zero when idle — see [doc/ai_agent.md](doc/ai_agent.md); the sandbox source and chart live in [mars-ai-agent](https://github.com/duc-cnzj/mars-ai-agent).
+- Built-in server-side AI assistant: streams chat over SSE and drives the same MCP tools (read-only tools run directly, write tools require human confirmation) with the current user's identity — see [doc/ai_agent.md](doc/ai_agent.md).
 - View container logs.
 - View container CPU and memory usage.
 - Pluggable
@@ -161,7 +161,7 @@ Pull requests are welcome. Before submitting, please make sure:
 - `make test_all` + `make lint` + `make sec` all pass;
 - If proto changed, run `make api` to regenerate and commit the output.
 
-Docs and examples live in [doc/](doc/) (OpenAPI, [MCP integration](doc/mcp.md), [AI Agent](doc/ai_agent.md), [access control](doc/access_control.md)) and [examples/](examples/).
+Docs and examples live in [doc/](doc/) (OpenAPI, [MCP integration](doc/mcp.md), [AI chat](doc/ai_agent.md), [access control](doc/access_control.md)) and [examples/](examples/).
 
 ## 📄 License
 

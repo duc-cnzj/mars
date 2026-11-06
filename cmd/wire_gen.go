@@ -86,7 +86,6 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		K8sRepo:          k8sRepo,
 		EventRepo:        eventRepo,
 		PluginManager:    pluginManager,
-		AccessTokenBiz:   accessTokenBiz,
 	}
 	jobManager := deploy.NewJobManager(jobManagerDeps)
 	changelogRepo := data.NewChangelogRepo(dataImpl)
@@ -260,9 +259,8 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 		Logger:     logger,
 	}
 	hibernateDeployer := deploy.NewHibernateDeployer(applyProjectDeps)
-	agentActivity := data.NewAgentActivityRepo(cache, configConfig)
 	pluginDeps := provideCronDeps(pluginManager)
-	tasks := cronjob.NewTasks(timerTimer, logger, configConfig, fileRepo, projectRepo, repoRepo, namespaceRepo, k8sRepo, eventRepo, uploaderUploader, helmerRepo, gitRepo, hibernateRepo, hibernateDeployer, hibernateWindowRepo, agentActivity, lockerLocker, pluginDeps)
+	tasks := cronjob.NewTasks(timerTimer, logger, configConfig, fileRepo, projectRepo, repoRepo, namespaceRepo, k8sRepo, eventRepo, uploaderUploader, helmerRepo, gitRepo, hibernateRepo, hibernateDeployer, hibernateWindowRepo, pluginDeps)
 	counterCounter := counter.NewCounter()
 	websocketManagerDeps := websocket.WebsocketManagerDeps{
 		Timer:         timerTimer,
@@ -284,48 +282,36 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []app.Bo
 	}
 	wsHttpServer := websocket.NewWebsocketManager(websocketManagerDeps)
 	deps := mcp.Deps{
-		ProjectBiz:    projectBiz,
-		ContainerBiz:  containerBiz,
-		K8sBiz:        k8sBiz,
-		AccessBiz:     accessBiz,
-		AuthBiz:       authBiz,
-		AgentActivity: agentActivity,
-		NamespaceSvc:  namespaceServer,
-		ProjectSvc:    projectServer,
-		ContainerSvc:  containerServer,
-		MetricsSvc:    metricsServer,
-		ChangelogSvc:  changelogServer,
-		GitSvc:        gitServer,
-		RepoSvc:       repoServer,
-		EventSvc:      eventServer,
-		HibernateSvc:  hibernateServer,
-		Logger:        logger,
+		ProjectBiz:   projectBiz,
+		ContainerBiz: containerBiz,
+		K8sBiz:       k8sBiz,
+		AccessBiz:    accessBiz,
+		AuthBiz:      authBiz,
+		NamespaceSvc: namespaceServer,
+		ProjectSvc:   projectServer,
+		ContainerSvc: containerServer,
+		MetricsSvc:   metricsServer,
+		ChangelogSvc: changelogServer,
+		GitSvc:       gitServer,
+		RepoSvc:      repoServer,
+		EventSvc:     eventServer,
+		HibernateSvc: hibernateServer,
+		Logger:       logger,
 	}
 	server := mcp.NewServer(deps)
 	httpHandlerDeps := services.HttpHandlerDeps{
-		WsHttpServer:   wsHttpServer,
-		Logger:         logger,
-		Uploader:       uploaderUploader,
-		AuthBiz:        authBiz,
-		UserBiz:        userBiz,
-		EventBiz:       eventBiz,
-		FileBiz:        fileBiz,
-		Timer:          timerTimer,
-		K8sBiz:         k8sBiz,
-		ContainerBiz:   containerBiz,
-		AccessBiz:      accessBiz,
-		AccessTokenBiz: accessTokenBiz,
-		RepoBiz:        repoBiz,
-		NamespaceBiz:   namespaceBiz,
-		ProjectBiz:     projectBiz,
-		GitBiz:         gitBiz,
-		K8sRepo:        k8sRepo,
-		AgentActivity:  agentActivity,
-		Locker:         lockerLocker,
-		JobManager:     jobManager,
-		PluginMgr:      pluginManager,
-		MCP:            server,
-		Config:         configConfig,
+		WsHttpServer: wsHttpServer,
+		Logger:       logger,
+		Uploader:     uploaderUploader,
+		AuthBiz:      authBiz,
+		EventBiz:     eventBiz,
+		FileBiz:      fileBiz,
+		Timer:        timerTimer,
+		K8sBiz:       k8sBiz,
+		ContainerBiz: containerBiz,
+		AccessBiz:    accessBiz,
+		MCP:          server,
+		Config:       configConfig,
 	}
 	httpHandler := services.NewHttpHandler(httpHandlerDeps)
 	eventhandlerPluginDeps := provideEventDeps(pluginManager)

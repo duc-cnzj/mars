@@ -2538,8 +2538,6 @@ export interface components {
             marsConfig?: components["schemas"]["mars.Config"];
             needGitRepo?: boolean;
             description?: string;
-            /** @description ai_agent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库。 */
-            aiAgent?: boolean;
         };
         "repo.CreateResponse": {
             item: components["schemas"]["types.RepoModel"];
@@ -2596,11 +2594,6 @@ export interface components {
             marsConfig?: components["schemas"]["mars.Config"];
             needGitRepo?: boolean;
             description?: string;
-            /**
-             * @description ai_agent 为 true 时把该仓库设为全局唯一的 AI Agent 仓库；false 清除标记；
-             *      不传（nil）时保持现状——旧客户端不知道该字段，不能因缺省值把标记清掉。
-             */
-            aiAgent?: boolean;
         };
         "repo.UpdateResponse": {
             item: components["schemas"]["types.RepoModel"];
@@ -2829,8 +2822,6 @@ export interface components {
             marsConfig: components["schemas"]["mars.Config"];
             needGitRepo: boolean;
             description: string;
-            /** @description ai_agent 标记该仓库是否为全局唯一的 AI Agent 仓库。 */
-            aiAgent: boolean;
             createdAt: string;
             updatedAt: string;
             deletedAt: string;
@@ -5718,8 +5709,6 @@ export interface operations {
                 pageSize?: number;
                 enabled?: boolean;
                 name?: string;
-                /** @description ai_agent 为空时不按 AI Agent 标记过滤；true 只返回 AI Agent 仓库，false 只返回非 AI Agent 仓库。 */
-                aiAgent?: boolean;
             };
             header?: never;
             path?: never;

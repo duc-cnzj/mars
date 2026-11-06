@@ -1,7 +1,7 @@
 import { createContext, useContext, type ReactNode } from 'react'
 
 /**
- * AI 默认上下文：AI 未明确指定范围时，默认按该绑定作答（由 `mai --bind` 注入会话）。
+ * AI 默认上下文：AI 未明确指定范围时，默认按该绑定作答（随对话请求下发给服务端）。
  * - 只填 `namespace` 表示绑定整个命名空间（含其下全部项目）；
  * - 同时填 `project` 表示只绑定「空间/项目」。
  */
@@ -12,7 +12,7 @@ export interface AIBinding {
 
 /**
  * 绑定项的文本形式：有项目时为 `空间/项目`，仅命名空间时为 `空间`。
- * 与 `mai --bind` 的两种取值范围一一对应，也用作选择器的 value 与比较依据。
+ * 与绑定选择的两种取值范围一一对应，也用作选择器的 value 与比较依据。
  */
 export function aiBindingKey(binding: AIBinding): string {
   return binding.project ? `${binding.namespace}/${binding.project}` : binding.namespace
@@ -24,8 +24,8 @@ export interface AIEntry {
   available: boolean
   /**
    * 打开 AI 助手。
-   * - prompt 非空时以 `mai '<prompt>'` 进入交互式 TUI 并自动发送；
-   * - binding 非空时以 `mai --bind '<空间>'`（或 `'<空间>/<项目>'`）进入，只绑定默认范围、不代发问题。
+   * - prompt 非空时自动作为首条问题发送；
+   * - binding 非空时只设定默认关注范围、不代发问题。
    * 两者可同时提供（先绑定，再发问题）。
    */
   open: (prompt?: string, binding?: AIBinding) => void

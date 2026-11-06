@@ -151,19 +151,3 @@ func TestIfBool(t *testing.T) {
 	assert.Equal(t, 1, len(x3))
 	assert.Equal(t, "test", x3[0].Name)
 }
-
-func TestIfAIAgent(t *testing.T) {
-	db := openTestDB(t)
-	db.Repo.Create().SetName("plain").SetAiAgent(false).SaveX(context.TODO())
-	db.Repo.Create().SetName("agent").SetAiAgent(true).SetAiAgentKey("ai").SaveX(context.TODO())
-	// nil 不过滤：两条都返回。
-	assert.Len(t, db.Repo.Query().Where(IfAIAgent(nil)).AllX(context.TODO()), 2)
-	// true 只返回 AI Agent 仓库。
-	x := db.Repo.Query().Where(IfAIAgent(lo.ToPtr(true))).AllX(context.TODO())
-	assert.Len(t, x, 1)
-	assert.Equal(t, "agent", x[0].Name)
-	// false 只返回非 AI Agent 仓库。
-	x2 := db.Repo.Query().Where(IfAIAgent(lo.ToPtr(false))).AllX(context.TODO())
-	assert.Len(t, x2, 1)
-	assert.Equal(t, "plain", x2[0].Name)
-}

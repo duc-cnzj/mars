@@ -119,7 +119,7 @@ func registerTools(srv *sdk.Server, deps Deps, includeAdmin bool) {
 	sdk.AddTool(srv, &sdk.Tool{
 		Name: "get_current_user",
 		Description: "返回当前 MCP 调用者的 mars 身份与权限属性：{id, email, name, roles, is_admin, is_super_admin}。" +
-			"用于确认「我现在以谁的身份操作」——尤其在 AI 沙箱里：沙箱令牌锚定的是 agent 项目创建者，管理员进入别人的沙箱时这里返回的仍是创建者而非管理员。" +
+			"用于确认「我现在以谁的身份操作」——返回的是本次调用所用 token 的持有人。" +
 			"所有工具的实际权限都受这个身份约束；跨权限访问会返回 PermissionDenied，不要试图绕过。" +
 			"注意：roles 是生效角色（后台手动升降级已生效），is_admin 等价于 roles 含 mars_admin。",
 		Annotations: readOnlyAnnotations,
@@ -366,10 +366,10 @@ func (t *toolset) requireAdmin(ctx context.Context, tool string) error {
 func registerAdminTools(srv *sdk.Server, ts *toolset) {
 	sdk.AddTool(srv, &sdk.Tool{
 		Name: "list_repos",
-		Description: "[仅管理员] 列出 mars 仓库（部署模板来源，项目从仓库创建），支持分页与名称/状态/AI Agent 标记过滤。" +
+		Description: "[仅管理员] 列出 mars 仓库（部署模板来源，项目从仓库创建），支持分页与名称/状态过滤。" +
 			"返回 {page,page_size,count,items}：items 每项含 id、name、description（空时缺失）、enabled（false 时缺失）、" +
-			"need_git_repo（false 时缺失）、git_project_id、git_project_name、ai_agent（false 时缺失）、created_at、updated_at，按 id 倒序。" +
-			"name 是子串模糊匹配；enabled/ai_agent 传 true/false 即按该值筛选，不传则不筛。" +
+			"need_git_repo（false 时缺失）、git_project_id、git_project_name、created_at、updated_at，按 id 倒序。" +
+			"name 是子串模糊匹配；enabled 传 true/false 即按该值筛选，不传则不筛。" +
 			"**items 不含 mars_config**（values.yaml、自定义字段定义、分支白名单、休眠配置都不在列表里）：" +
 			"要看某仓库的主要配置（values.yaml、分支、分区、休眠）和自定义字段，用 items[].id 作 repo_id 调 get_repo_custom_fields；改字段用 update_repo_custom_fields。" +
 			"count 为命中总数；分页缺省 page=1、page_size=15。无匹配结果时 items 与 count 因 proto omitempty 直接缺省，语义等同空列表（不是错误）。",
@@ -762,9 +762,9 @@ func (t *toolset) getContainerLogs(ctx context.Context, _ *sdk.CallToolRequest, 
 		return nil, nil, errs.InvalidArgument("tail_lines 不能为负数：省略或传 0 表示默认 1000 行")
 	}
 	if in.Container == "" {
-		// 先过 Pod 级门卫再读 Pod：GetPod 的错误信息会区分「不存在」与其他失败，
+		// 先过命名空间门卫再读 Pod：GetPod 的错误信息会区分「不存在」与其他失败，
 		// 不能让它先于鉴权执行，否则构成跨租户 Pod 存在性侧信道。
-		if _, err := t.accessBiz.RequirePodAccess(ctx, in.Namespace, in.Pod); err != nil {
+		if _, err := t.accessBiz.RequireNamespaceAccessByName(ctx, in.Namespace); err != nil {
 			return nil, nil, err
 		}
 		pod, err := t.k8sBiz.GetPod(in.Namespace, in.Pod)
@@ -1090,7 +1090,7 @@ func (t *toolset) applyProject(ctx context.Context, _ *sdk.CallToolRequest, in a
 // 分支/提交/配置重置」。所以要改哪个字段就只传哪个，其余由这里从当前项目补上。
 //
 // 为什么要连自定义元素值一起继承：extra_values 空同样被 ElementsLoader 当「全用仓库默认值」，
-// 于是元素会先落进 useDefaultMap 再被持久化（loader.go + runner.go），agent 只想改 config
+// 于是元素会先落进 useDefaultMap 再被持久化（loader.go + runner.go），模型只想改 config
 // 却把 replicas 之类的自定义值悄悄抹回仓库默认。项目行里的 finalExtraValues 就是权威现状，
 // 原样回传即「保持不动」——与 config/分支的继承语义一致。
 //
@@ -1246,7 +1246,7 @@ type execCommandOut struct {
 // 其 server 类型 MCP 侧无法构造；这与 list_namespace_events 等既有工具的「先门卫再调
 // biz」同模式。
 func (t *toolset) execCommand(ctx context.Context, _ *sdk.CallToolRequest, in execCommandIn) (*sdk.CallToolResult, execCommandOut, error) {
-	if _, err := t.accessBiz.RequirePodAccess(ctx, in.Namespace, in.Pod); err != nil {
+	if _, err := t.accessBiz.RequireNamespaceAccessByName(ctx, in.Namespace); err != nil {
 		return nil, execCommandOut{}, err
 	}
 	stream := &execOnceStream{ctx: ctx}
