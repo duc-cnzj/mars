@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/duc-cnzj/mars/v6/internal/biz"
@@ -21,6 +22,32 @@ import (
 // testLogger 返回一个不写文件的测试日志器。
 func testLogger() mlog.Logger {
 	return mlog.NewForConfig(nil)
+}
+
+// captureLogger 把 InfoCtxf 输出收集到内存，供摘要日志断言；其余方法透传给测试日志器。
+type captureLogger struct {
+	mlog.Logger
+	mu    sync.Mutex
+	lines []string
+}
+
+// newCaptureLogger 构造一个可读取 Info 日志的测试日志器。
+func newCaptureLogger() *captureLogger {
+	return &captureLogger{Logger: testLogger()}
+}
+
+// InfoCtxf 收集格式化后的 info 日志行。
+func (c *captureLogger) InfoCtxf(_ context.Context, format string, v ...any) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.lines = append(c.lines, fmt.Sprintf(format, v...))
+}
+
+// Lines 返回已收集的日志行副本。
+func (c *captureLogger) Lines() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return append([]string(nil), c.lines...)
 }
 
 // testConfig 构造一份可用的 AI 配置；baseURL 传空串即得到「未启用」状态。

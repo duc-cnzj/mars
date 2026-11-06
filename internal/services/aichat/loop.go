@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/duc-cnzj/mars/v6/internal/metrics"
@@ -38,6 +39,19 @@ const (
 	eventNeedConfirm = "need_confirm"
 	eventError       = "error"
 	eventDone        = "done"
+)
+
+// 请求摘要日志的结局取值：只描述本次请求如何结束，不携带对话内容。
+const (
+	// outcomeOK 表示模型给出最终回答，正常结束。
+	outcomeOK = "ok"
+	// outcomeError 表示上游模型失败或工具调用轮数超过上限导致的失败
+	// （工具自身的协议错误会转成 isError 结果继续对话，不算请求失败）。
+	outcomeError = "error"
+	// outcomePaused 表示遇到写工具，已下发 need_confirm 并暂停等待确认。
+	outcomePaused = "paused"
+	// outcomeDisconnect 表示连接中断或流已关闭，请求被提前终止。
+	outcomeDisconnect = "disconnect"
 )
 
 // metaEvent 是流开始帧。
@@ -149,6 +163,17 @@ type chatLoop struct {
 	// specs 是当前身份可见的工具集合，specByName 用于判定只读性。
 	specs      []toolSpec
 	specByName map[string]toolSpec
+
+	// 以下字段只服务于请求结束时的摘要日志，不参与业务判定；
+	// chatLoop 每个请求构造一次，因此无需额外同步。
+	// outcome 是本次请求的结束方式（outcomeOK/outcomeError/outcomePaused/outcomeDisconnect）。
+	outcome string
+	// rounds 是已发起模型调用的轮数（含失败的那一次）。
+	rounds int
+	// toolNames 是本次请求中模型提出并进入服务端处理流程的工具名（去重、保持首次出现顺序）。
+	toolNames []string
+	// toolSeen 是 toolNames 的去重索引。
+	toolSeen map[string]struct{}
 }
 
 // newChatLoop 构造对话循环并建立工具名索引。
@@ -176,6 +201,7 @@ func newChatLoop(
 		system:     system,
 		specs:      specs,
 		specByName: byName,
+		toolSeen:   make(map[string]struct{}, len(specs)),
 	}
 }
 
@@ -195,7 +221,12 @@ func (l *chatLoop) resume(ctx context.Context, conversation []chatMessage, pendi
 // 「请求模型 → 派发工具」循环。
 func (l *chatLoop) execute(ctx context.Context, conversation []chatMessage, pending []toolCall, start int, approval *confirmation) {
 	started := time.Now()
+	// 每个请求（含 confirm 续跑）在结束时打一条请求摘要，便于排障与按人归因；
+	// 只记录元数据，不记录对话内容与工具参数。
+	defer func() { l.logSummary(ctx, time.Since(started)) }()
+
 	if err := l.sse.writeEvent(eventMeta, metaEvent{Model: l.llm.model}); err != nil {
+		l.outcome = outcomeDisconnect
 		return
 	}
 
@@ -220,6 +251,7 @@ func (l *chatLoop) execute(ctx context.Context, conversation []chatMessage, pend
 	}
 
 	for round := 1; round <= maxToolRounds; round++ {
+		l.rounds = round
 		text, calls, err := l.llm.stream(ctx, l.upstreamMessages(conversation), l.toolDefinitions(), onDelta)
 		if err != nil {
 			l.fail(ctx, err, upstreamErrorMessage)
@@ -241,6 +273,7 @@ func (l *chatLoop) execute(ctx context.Context, conversation []chatMessage, pend
 	}
 
 	// 直到轮数上限仍在请求工具：如实终止，不编造完成。
+	l.outcome = outcomeError
 	metrics.AIChatRequestsTotal.WithLabelValues(metrics.AIChatResultError).Inc()
 	_ = l.sse.writeEvent(eventError, errorEvent{Message: "工具调用轮数超过上限，已停止"})
 }
@@ -259,6 +292,7 @@ func (l *chatLoop) processCalls(
 ) (bool, error) {
 	for i := start; i < len(calls); i++ {
 		call := calls[i]
+		l.noteTool(call.Function.Name)
 		spec, ok := l.specByName[call.Function.Name]
 		if !ok {
 			l.reportToolResult(call, toolResult{
@@ -338,6 +372,7 @@ func (l *chatLoop) reportToolResult(call toolCall, result toolResult, conversati
 
 // pause 签发确认票据并下发 need_confirm；返回写帧错误（连接已断时由调用方终止）。
 func (l *chatLoop) pause(call toolCall, conversation []chatMessage) error {
+	l.outcome = outcomePaused
 	ticket := l.tickets.issue(l.email, call)
 	metrics.AIChatRequestsTotal.WithLabelValues(metrics.AIChatResultOK).Inc()
 	return l.sse.writeEvent(eventNeedConfirm, needConfirmEvent{
@@ -352,6 +387,7 @@ func (l *chatLoop) pause(call toolCall, conversation []chatMessage) error {
 
 // finish 回吐 done 帧并记账成功请求。
 func (l *chatLoop) finish(rounds int, started time.Time) {
+	l.outcome = outcomeOK
 	metrics.AIChatRequestsTotal.WithLabelValues(metrics.AIChatResultOK).Inc()
 	_ = l.sse.writeEvent(eventDone, doneEvent{
 		Rounds:    rounds,
@@ -363,10 +399,34 @@ func (l *chatLoop) finish(rounds int, started time.Time) {
 // 收尾，不把连接中断记成服务端错误。
 func (l *chatLoop) fail(ctx context.Context, err error, message string) {
 	if ctx.Err() == nil && !errors.Is(err, errSSEClosed) {
+		l.outcome = outcomeError
 		metrics.AIChatRequestsTotal.WithLabelValues(metrics.AIChatResultError).Inc()
 		l.logger.ErrorCtx(ctx, "AI 对话失败: ", err)
+	} else {
+		l.outcome = outcomeDisconnect
 	}
 	_ = l.sse.writeEvent(eventError, errorEvent{Message: message})
+}
+
+// noteTool 记录一次进入服务端处理流程的工具名：去重并保持首次出现顺序，
+// 只为摘要日志提供「本次调了哪些工具」，不记录参数。
+func (l *chatLoop) noteTool(name string) {
+	if _, ok := l.toolSeen[name]; ok {
+		return
+	}
+	l.toolSeen[name] = struct{}{}
+	l.toolNames = append(l.toolNames, name)
+}
+
+// logSummary 打一条请求摘要日志：谁、用的哪个模型、几轮、调了哪些工具、
+// 如何结束、耗时。刻意不记录对话内容与工具参数（可能含敏感信息）。
+func (l *chatLoop) logSummary(ctx context.Context, elapsed time.Duration) {
+	tools := "-"
+	if len(l.toolNames) > 0 {
+		tools = strings.Join(l.toolNames, ",")
+	}
+	l.logger.InfoCtxf(ctx, "[aichat]: user: %s, model: %s, rounds: %d, tools: %s, result: %s, use: %s.",
+		l.email, l.llm.model, l.rounds, tools, l.outcome, elapsed)
 }
 
 // upstreamMessages 在对话前拼上服务端 system prompt（只发给上游，不回传前端）。

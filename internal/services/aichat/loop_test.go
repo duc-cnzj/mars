@@ -11,6 +11,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/duc-cnzj/mars/v6/internal/mlog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -64,6 +65,12 @@ func testSpecs() []toolSpec {
 // newTestLoop 构造一套带响应记录器的对话循环。
 func newTestLoop(t *testing.T, upstreamURL string, session toolSession) (*chatLoop, *httptest.ResponseRecorder, *ticketSigner) {
 	t.Helper()
+	return newTestLoopWithLogger(t, upstreamURL, session, testLogger())
+}
+
+// newTestLoopWithLogger 用指定日志器构造对话循环，供摘要日志断言使用。
+func newTestLoopWithLogger(t *testing.T, upstreamURL string, session toolSession, logger mlog.Logger) (*chatLoop, *httptest.ResponseRecorder, *ticketSigner) {
+	t.Helper()
 	recorder := newRecorder()
 	sse, err := newSSEWriter(recorder)
 	require.NoError(t, err)
@@ -74,7 +81,7 @@ func newTestLoop(t *testing.T, upstreamURL string, session toolSession) (*chatLo
 		&toolbox{session: session, skills: mustLoadEmbeddedSkills()},
 		sse,
 		tickets,
-		testLogger(),
+		logger,
 		"u@example.com",
 		"system prompt",
 		testSpecs(),
@@ -216,7 +223,8 @@ func TestChatLoopResumeApprove(t *testing.T) {
 		writeSSEDone(t, w)
 	})
 	session := &fakeToolSession{}
-	loop, recorder, tickets := newTestLoop(t, server.URL, session)
+	logger := newCaptureLogger()
+	loop, recorder, tickets := newTestLoopWithLogger(t, server.URL, session, logger)
 	conversation, calls, payload := resumeSetup(t, tickets, "restart_pod", `{"namespace":"ns","pod":"p"}`)
 
 	loop.resume(context.Background(), conversation, calls, 0, &confirmation{payload: payload, approved: true})
@@ -229,6 +237,12 @@ func TestChatLoopResumeApprove(t *testing.T) {
 	require.Len(t, eventsOf(frames, eventToolResult), 1)
 	assert.Len(t, eventsOf(frames, eventDone), 1)
 	assert.Equal(t, []string{"restart_pod"}, session.calls)
+
+	lines := logger.Lines()
+	require.Len(t, lines, 1)
+	assert.Contains(t, lines[0], "rounds: 1")
+	assert.Contains(t, lines[0], "tools: restart_pod")
+	assert.Contains(t, lines[0], "result: ok")
 }
 
 // TestChatLoopResumeReject 验证拒绝后不执行工具，只是把拒绝结果回填给模型。
@@ -238,7 +252,8 @@ func TestChatLoopResumeReject(t *testing.T) {
 		writeSSEDone(t, w)
 	})
 	session := &fakeToolSession{}
-	loop, recorder, tickets := newTestLoop(t, server.URL, session)
+	logger := newCaptureLogger()
+	loop, recorder, tickets := newTestLoopWithLogger(t, server.URL, session, logger)
 	conversation, calls, payload := resumeSetup(t, tickets, "restart_pod", `{}`)
 
 	loop.resume(context.Background(), conversation, calls, 0, &confirmation{payload: payload, approved: false})
@@ -251,6 +266,12 @@ func TestChatLoopResumeReject(t *testing.T) {
 	assert.Contains(t, resultEvent.Content, "拒绝")
 	assert.Len(t, eventsOf(frames, eventDone), 1)
 	assert.Empty(t, session.calls)
+
+	// 拒绝的写工具仍计入 tools（语义是"模型提出"，不是"已执行"）。
+	lines := logger.Lines()
+	require.Len(t, lines, 1)
+	assert.Contains(t, lines[0], "tools: restart_pod")
+	assert.Contains(t, lines[0], "result: ok")
 }
 
 // TestChatLoopSecondWritePauses 验证批准第一个写工具后，同批第二个写工具会重新确认。
@@ -290,7 +311,8 @@ func TestChatLoopMaxRounds(t *testing.T) {
 		writeSSEDone(t, w)
 	})
 	session := &fakeToolSession{}
-	loop, recorder, _ := newTestLoop(t, server.URL, session)
+	logger := newCaptureLogger()
+	loop, recorder, _ := newTestLoopWithLogger(t, server.URL, session, logger)
 
 	loop.run(context.Background(), []chatMessage{{Role: roleUser, Content: "循环"}})
 
@@ -302,6 +324,11 @@ func TestChatLoopMaxRounds(t *testing.T) {
 	assert.Contains(t, errorEvent.Message, "上限")
 	assert.Equal(t, maxToolRounds, upstream.CallCount())
 	assert.Len(t, session.calls, maxToolRounds)
+
+	lines := logger.Lines()
+	require.Len(t, lines, 1)
+	assert.Contains(t, lines[0], "rounds: 30")
+	assert.Contains(t, lines[0], "result: error")
 }
 
 // TestChatLoopUpstreamError 验证上游失败只回吐通用错误，不泄漏上游响应体。
@@ -504,6 +531,119 @@ func TestChatLoopResumePauseWriteFailure(t *testing.T) {
 
 	assert.Equal(t, []string{"restart_pod"}, session.calls)
 	assert.Equal(t, 0, upstream.CallCount())
+}
+
+// TestChatLoopSummaryLog 验证每个请求结束时打一条摘要日志：只含用户、模型、
+// 轮数、工具名、结局与耗时，不含对话内容与工具参数。
+func TestChatLoopSummaryLog(t *testing.T) {
+	t.Run("正常结束", func(t *testing.T) {
+		_, server := newScriptedServer(t, func(_ int, w http.ResponseWriter, _ llmRequest) {
+			writeSSEJSON(t, w, contentChunk("secret answer"))
+			writeSSEDone(t, w)
+		})
+		logger := newCaptureLogger()
+		loop, _, _ := newTestLoopWithLogger(t, server.URL, &fakeToolSession{}, logger)
+
+		loop.run(context.Background(), []chatMessage{{Role: roleUser, Content: "secret question"}})
+
+		lines := logger.Lines()
+		require.Len(t, lines, 1)
+		assert.Contains(t, lines[0], "user: u@example.com")
+		assert.Contains(t, lines[0], "model: test-model")
+		assert.Contains(t, lines[0], "rounds: 1")
+		assert.Contains(t, lines[0], "tools: -")
+		assert.Contains(t, lines[0], "result: ok")
+		assert.NotContains(t, lines[0], "secret question")
+		assert.NotContains(t, lines[0], "secret answer")
+	})
+
+	t.Run("工具按首次出现去重", func(t *testing.T) {
+		_, server := newScriptedServer(t, func(call int, w http.ResponseWriter, _ llmRequest) {
+			if call <= 2 {
+				writeSSEJSON(t, w, toolChunk(toolDelta(0, "call_1", "list_projects", `{}`)))
+				writeSSEDone(t, w)
+				return
+			}
+			writeSSEJSON(t, w, contentChunk("完成"))
+			writeSSEDone(t, w)
+		})
+		logger := newCaptureLogger()
+		loop, _, _ := newTestLoopWithLogger(t, server.URL, &fakeToolSession{}, logger)
+
+		loop.run(context.Background(), []chatMessage{{Role: roleUser, Content: "列项目"}})
+
+		lines := logger.Lines()
+		require.Len(t, lines, 1)
+		assert.Contains(t, lines[0], "rounds: 3")
+		assert.Contains(t, lines[0], "tools: list_projects")
+		assert.NotContains(t, lines[0], "list_projects,list_projects")
+		assert.Contains(t, lines[0], "result: ok")
+	})
+
+	t.Run("写工具暂停", func(t *testing.T) {
+		_, server := newScriptedServer(t, func(_ int, w http.ResponseWriter, _ llmRequest) {
+			writeSSEJSON(t, w, toolChunk(toolDelta(0, "call_1", "restart_pod", `{}`)))
+			writeSSEDone(t, w)
+		})
+		logger := newCaptureLogger()
+		loop, _, _ := newTestLoopWithLogger(t, server.URL, &fakeToolSession{}, logger)
+
+		loop.run(context.Background(), []chatMessage{{Role: roleUser, Content: "重启"}})
+
+		lines := logger.Lines()
+		require.Len(t, lines, 1)
+		assert.Contains(t, lines[0], "rounds: 1")
+		assert.Contains(t, lines[0], "tools: restart_pod")
+		assert.Contains(t, lines[0], "result: paused")
+	})
+
+	t.Run("上游失败", func(t *testing.T) {
+		_, server := newScriptedServer(t, func(_ int, w http.ResponseWriter, _ llmRequest) {
+			w.WriteHeader(http.StatusInternalServerError)
+		})
+		logger := newCaptureLogger()
+		loop, _, _ := newTestLoopWithLogger(t, server.URL, &fakeToolSession{}, logger)
+
+		loop.run(context.Background(), []chatMessage{{Role: roleUser, Content: "hi"}})
+
+		lines := logger.Lines()
+		require.Len(t, lines, 1)
+		assert.Contains(t, lines[0], "rounds: 1")
+		assert.Contains(t, lines[0], "tools: -")
+		assert.Contains(t, lines[0], "result: error")
+	})
+
+	t.Run("客户端取消", func(t *testing.T) {
+		_, server := newScriptedServer(t, func(_ int, w http.ResponseWriter, _ llmRequest) {
+			t.Error("ctx 已取消，不应请求上游")
+		})
+		logger := newCaptureLogger()
+		loop, _, _ := newTestLoopWithLogger(t, server.URL, &fakeToolSession{}, logger)
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		loop.run(ctx, []chatMessage{{Role: roleUser, Content: "hi"}})
+
+		lines := logger.Lines()
+		require.Len(t, lines, 1)
+		assert.Contains(t, lines[0], "result: disconnect")
+	})
+
+	t.Run("流已关闭", func(t *testing.T) {
+		_, server := newScriptedServer(t, func(_ int, w http.ResponseWriter, _ llmRequest) {
+			t.Error("流已关闭，不应请求上游")
+		})
+		logger := newCaptureLogger()
+		loop, _, _ := newTestLoopWithLogger(t, server.URL, &fakeToolSession{}, logger)
+		loop.sse.close()
+
+		loop.run(context.Background(), []chatMessage{{Role: roleUser, Content: "hi"}})
+
+		lines := logger.Lines()
+		require.Len(t, lines, 1)
+		assert.Contains(t, lines[0], "rounds: 0")
+		assert.Contains(t, lines[0], "result: disconnect")
+	})
 }
 
 // TestSummarizeToolCall 验证确认条摘要的空参数与超长截断。
